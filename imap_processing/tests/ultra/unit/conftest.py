@@ -4,6 +4,7 @@ from unittest import mock
 
 import numpy as np
 import pytest
+import xarray as xr
 
 from imap_processing import decom, imap_module_directory
 from imap_processing.ultra.l0.decom_ultra import process_ultra_apids
@@ -201,19 +202,48 @@ def aux_dataset(ccsds_path_theta_0, xtce_path):
 
 
 @pytest.fixture()
+def test_aux_dataset():
+    """Fixture to compute and return aux test data."""
+
+    epoch = np.arange(760591716184000000, 760591716184000000 + 7 * 15000000000, 15000000000)
+    spin_number = np.arange(127,142)
+    spin_start_time = np.arange(0, 105, 15)
+    spin_period_sec = np.full(7, 15)
+    spin_period_sec[-1] = 14
+    spin_start_sec = np.arange(0, 105, 15)
+    spin_start_subsec = np.zeros(7)
+
+    test_aux_dataset = xr.Dataset(
+        data_vars={
+            "TIMESPINSTART": ("epoch", spin_start_sec),
+            "TIMESPINSTARTSUB": ("epoch", spin_start_subsec),
+            "DURATION": ("epoch", spin_period_sec),
+            "SPINNUMBER": ("epoch", spin_number),
+            "TIMESPINDATA": ("epoch", spin_start_time),
+            "SPINPERIOD": ("epoch", spin_period_sec),
+        },
+        coords={
+            "epoch": ("epoch", epoch)
+        })
+
+    return test_aux_dataset
+
+
+@pytest.fixture()
 @mock.patch("imap_processing.ultra.l1b.de.get_annotated_particle_velocity")
 def l1b_datasets(
-    mock_get_annotated_particle_velocity, de_dataset, use_fake_spin_data_for_time
+    mock_get_annotated_particle_velocity, de_dataset, use_fake_spin_data_for_time,
+    rates_dataset, test_aux_dataset
 ):
     """L1B test data"""
 
     data_dict = {}
     data_dict[de_dataset.attrs["Logical_source"]] = de_dataset
+    data_dict["imap_ultra_l1a_45sensor-aux"] = test_aux_dataset
     # TODO: this is a placeholder for the hk dataset.
-    data_dict["imap_ultra_l1a_45sensor-hk"] = aux_dataset
+    data_dict["imap_ultra_l1a_45sensor-hk"] = test_aux_dataset
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
-    # Create a spin table that cover spin 0-141
-    use_fake_spin_data_for_time(0, 141 * 15)
+    use_fake_spin_data_for_time(0, 15 * 147)
 
     # Mock get_annotated_particle_velocity to avoid needing kernels
     def side_effect_func(event_times, position, ultra_frame, dps_frame, sc_frame):

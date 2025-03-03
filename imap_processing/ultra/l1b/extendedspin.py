@@ -11,6 +11,7 @@ from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 
 def calculate_extendedspin(
+    aux_dataset: xr.Dataset,
     hk_dataset: xr.Dataset,
     rates_dataset: xr.Dataset,
     de_dataset: xr.Dataset,
@@ -22,6 +23,8 @@ def calculate_extendedspin(
 
     Parameters
     ----------
+    aux_dataset : xarray.Dataset
+        Dataset containing l1a aux data.
     hk_dataset : xarray.Dataset
         Dataset containing l1a hk data.
     rates_dataset : xarray.Dataset
@@ -40,15 +43,15 @@ def calculate_extendedspin(
     """
     extendedspin_dict = {}
     rates_qf, spin, energy_midpoints, n_sigma_per_energy = flag_spin(
-        de_dataset["event_times"].values,
+        de_dataset["spin"].values,
         de_dataset["energy"].values,
     )
-    spin_number = get_spin(de_dataset["event_times"].values)
     count_rates, _, counts, _ = get_energy_histogram(
-        spin_number, de_dataset["energy"].values
+        de_dataset["spin"].values, de_dataset["energy"].values
     )
     attitude_qf, spin_rates, spin_period, spin_starttime = flag_attitude(
-        de_dataset["event_times"].values
+        de_dataset["spin"].values,
+        aux_dataset
     )
 
     # These will be the coordinates.

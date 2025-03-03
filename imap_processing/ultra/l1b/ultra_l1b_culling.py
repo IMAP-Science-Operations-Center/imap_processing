@@ -2,10 +2,11 @@
 
 import numpy as np
 from numpy.typing import NDArray
+import pandas as pd
 import xarray as xr
 
 from imap_processing.quality_flags import ImapAttitudeUltraFlags, ImapRatesUltraFlags
-from imap_processing.spice.spin import get_spin_data, interpolate_spin_data
+from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
 
 
@@ -97,7 +98,7 @@ def flag_attitude(spin_number: NDArray,
         spin_rates.shape, ImapAttitudeUltraFlags.NONE.value, dtype=np.uint16
     )
     quality_flags[bad_spin_rate_indices] |= ImapAttitudeUltraFlags.SPINRATE.value
-    mismatch_indices = compare_aux_univ_spin_table(aux_dataset, spins)
+    mismatch_indices = compare_aux_univ_spin_table(aux_dataset, spins, spin_df)
     quality_flags[mismatch_indices] |= ImapAttitudeUltraFlags.AUXMISMATCH.value
 
     return quality_flags, spin_rates, spin_period, spin_starttime
@@ -180,6 +181,7 @@ def flag_spin(
 def compare_aux_univ_spin_table(
     aux_dataset: xr.Dataset,
     spins: NDArray,
+    spin_df: pd.DataFrame
 ) -> NDArray:
     """
     Compare the auxiliary and Universal Spin Table.
@@ -196,8 +198,6 @@ def compare_aux_univ_spin_table(
     mismatch_indices : np.ndarray
         Boolean array indicating which spins have mismatches.
     """
-    spin_df = get_spin_data()
-
     univ_mask = np.isin(spin_df["spin_number"].values, spins)
     aux_mask = np.isin(aux_dataset["SPINNUMBER"].values, spins)
 

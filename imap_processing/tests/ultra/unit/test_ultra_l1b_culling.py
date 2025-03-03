@@ -12,6 +12,7 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     flag_spin,
     get_energy_histogram,
     get_n_sigma,
+    get_spin_data,
 )
 
 
@@ -41,34 +42,6 @@ def test_data(use_fake_spin_data_for_time):
     return time, spin_number, energy, expected_counts
 
 
-@pytest.fixture()
-def test_aux_dataset(use_fake_spin_data_for_time):
-    """Fixture to compute and return aux test data."""
-
-    epoch = np.arange(760591716184000000, 760591716184000000 + 7 * 15000000000, 15000000000)
-    spin_number = np.arange(7)
-    spin_start_time = np.arange(0, 105, 15)
-    spin_period_sec = np.full(7, 15)
-    spin_period_sec[-1] = 14
-    spin_start_sec = np.arange(0, 105, 15)
-    spin_start_subsec = np.zeros(7)
-
-    test_aux_dataset = xr.Dataset(
-        data_vars={
-            "TIMESPINSTART": ("epoch", spin_start_sec),
-            "TIMESPINSTARTSUB": ("epoch", spin_start_subsec),
-            "DURATION": ("epoch", spin_period_sec),
-            "SPINNUMBER": ("epoch", spin_number),
-            "TIMESPINDATA": ("epoch", spin_start_time),
-            "SPINPERIOD": ("epoch", spin_period_sec),
-        },
-        coords={
-            "epoch": ("epoch", epoch)
-        })
-
-    return test_aux_dataset
-
-
 def test_get_energy_histogram(test_data):
     """Tests get_energy_histogram function."""
 
@@ -84,11 +57,8 @@ def test_get_energy_histogram(test_data):
 def test_flag_attitude(use_fake_spin_data_for_time, test_aux_dataset):
     """Tests flag_attitude function."""
 
-    start = 4.45015658e08
-    stop = 4.45015873e08
-    use_fake_spin_data_for_time(start, stop)
-    spins = np.array([ 0,  0,  1,  2,  3,  3,  4,  5,  6,  6,  7,  8,  9,  9, 10, 11, 12,
-       12, 13, 14])
+    use_fake_spin_data_for_time(0, 15 * 6)
+    spins = np.array([ 0,  0,  1,  2,  3,  3,  4,  5,  6,  6])
     quality_flags, spin_rates, spin_period, spin_start_time = flag_attitude(
         spins,
         test_aux_dataset
@@ -96,7 +66,7 @@ def test_flag_attitude(use_fake_spin_data_for_time, test_aux_dataset):
 
     flag = ImapAttitudeUltraFlags(quality_flags[0])
     assert flag.name == "NONE"
-    assert np.all(quality_flags == ImapAttitudeUltraFlags.NONE.value)
+    assert quality_flags[-1] == ImapAttitudeUltraFlags.AUXMISMATCH.value
     assert np.all(spin_rates == 60 / spin_period)
     assert np.all(np.diff(spin_start_time) == 15)
 
@@ -134,10 +104,12 @@ def test_flag_spin(test_data):
 def test_compare_aux_univ_spin_table(use_fake_spin_data_for_time,
                                      test_aux_dataset):
     """Tests compare_aux_univ_spin_table function."""
-    use_fake_spin_data_for_time(0, 15 * 6)
+    use_fake_spin_data_for_time(0, 15 * 147)
     spins = test_aux_dataset["SPINNUMBER"].values
+    spin_df = get_spin_data()
 
     result = compare_aux_univ_spin_table(test_aux_dataset,
-                                         spins)
+                                         spins,
+                                         spin_df)
 
     assert np.all(result == np.array([False, False, False, False, False, False, True]))
