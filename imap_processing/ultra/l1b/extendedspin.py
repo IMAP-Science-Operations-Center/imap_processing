@@ -6,7 +6,6 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     flag_attitude,
     flag_spin,
     get_energy_histogram,
-    get_spin,
 )
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 

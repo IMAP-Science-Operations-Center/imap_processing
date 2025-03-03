@@ -12,7 +12,6 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     flag_spin,
     get_energy_histogram,
     get_n_sigma,
-    get_spin,
 )
 
 
@@ -50,6 +49,7 @@ def test_aux_dataset(use_fake_spin_data_for_time):
     spin_number = np.arange(7)
     spin_start_time = np.arange(0, 105, 15)
     spin_period_sec = np.full(7, 15)
+    spin_period_sec[-1] = 14
     spin_start_sec = np.arange(0, 105, 15)
     spin_start_subsec = np.zeros(7)
 
@@ -68,20 +68,6 @@ def test_aux_dataset(use_fake_spin_data_for_time):
 
     return test_aux_dataset
 
-def test_get_spin(use_fake_spin_data_for_time):
-    """Tests get_spin function."""
-
-    nspins = 5
-    spin_period = 15
-    start = 0
-    stop = start + (nspins + 1) * spin_period
-    use_fake_spin_data_for_time(start, stop)
-    spin_number = get_spin(np.linspace(start, stop, num=20))
-
-    assert len(spin_number) == len(np.linspace(start, stop, num=20))
-    expected_num_spins = np.ceil((stop - start) / 15) + 1
-    assert np.array_equal(len(np.unique(spin_number)), expected_num_spins)
-
 
 def test_get_energy_histogram(test_data):
     """Tests get_energy_histogram function."""
@@ -95,14 +81,17 @@ def test_get_energy_histogram(test_data):
     assert duration == 15
 
 
-def test_flag_attitude(use_fake_spin_data_for_time):
+def test_flag_attitude(use_fake_spin_data_for_time, test_aux_dataset):
     """Tests flag_attitude function."""
 
     start = 4.45015658e08
     stop = 4.45015873e08
     use_fake_spin_data_for_time(start, stop)
+    spins = np.array([ 0,  0,  1,  2,  3,  3,  4,  5,  6,  6,  7,  8,  9,  9, 10, 11, 12,
+       12, 13, 14])
     quality_flags, spin_rates, spin_period, spin_start_time = flag_attitude(
-        np.linspace(start, stop, num=20)
+        spins,
+        test_aux_dataset
     )
 
     flag = ImapAttitudeUltraFlags(quality_flags[0])
@@ -130,8 +119,8 @@ def test_get_n_sigma():
 def test_flag_spin(test_data):
     """Tests flag_spin function."""
 
-    time, _, energy, expected_counts = test_data
-    quality_flags, spin, energy, _ = flag_spin(time, energy, 1)
+    _, spin_number, energy, expected_counts = test_data
+    quality_flags, spin, energy, _ = flag_spin(spin_number, energy, 1)
     threshold = get_n_sigma(expected_counts / 15, 15, 1)
 
     # At the first energy level were the rates > threshold and the counts > threshold?
@@ -145,9 +134,10 @@ def test_flag_spin(test_data):
 def test_compare_aux_univ_spin_table(use_fake_spin_data_for_time,
                                      test_aux_dataset):
     """Tests compare_aux_univ_spin_table function."""
-    use_fake_spin_data_for_time(0,15*7)
+    use_fake_spin_data_for_time(0, 15 * 6)
     spins = test_aux_dataset["SPINNUMBER"].values
-    spins = np.array([0,1,99])
 
     result = compare_aux_univ_spin_table(test_aux_dataset,
                                          spins)
+
+    assert np.all(result == np.array([False, False, False, False, False, False, True]))
