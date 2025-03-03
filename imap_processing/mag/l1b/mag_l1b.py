@@ -45,28 +45,32 @@ def mag_l1b(
         )
         logger.info("Using default test calibration file.")
 
-    if "raw" in input_dataset.attrs["Logical_source"]:
+    source = input_dataset.attrs["Logical_source"]
+    if isinstance(source, list):
+        source = source[0]
+
+    if "raw" in source:
         # Raw files should not be processed in L1B.
         raise ValueError("Raw L1A file passed into L1B. Unable to process.")
 
-    output_dataset = mag_l1b_processing(input_dataset, calibration_dataset)
-    attribute_manager = ImapCdfAttributes()
-    attribute_manager.add_instrument_global_attrs("mag")
-    attribute_manager.add_global_attribute("Data_version", version)
+    mag_attributes = ImapCdfAttributes()
+    mag_attributes.add_instrument_global_attrs("mag")
+    mag_attributes.add_instrument_variable_attrs("mag", "l1b")
+    mag_attributes.add_global_attribute("Data_version", version)
+    source = source.replace("l1a", "l1b")
 
-    # Variable attributes can remain the same as L1A
-    input_logical_source = input_dataset.attrs["Logical_source"]
-    if isinstance(input_dataset.attrs["Logical_source"], list):
-        input_logical_source = input_dataset.attrs["Logical_source"][0]
-
-    logical_source = input_logical_source.replace("l1a", "l1b")
-    output_dataset.attrs = attribute_manager.get_global_attributes(logical_source)
+    output_dataset = mag_l1b_processing(
+        input_dataset, calibration_dataset, mag_attributes, source
+    )
 
     return output_dataset
 
 
 def mag_l1b_processing(
-    input_dataset: xr.Dataset, calibration_dataset: xr.Dataset
+    input_dataset: xr.Dataset,
+    calibration_dataset: xr.Dataset,
+    mag_attributes: ImapCdfAttributes,
+    logical_source: str,
 ) -> xr.Dataset:
     """
     Will process MAG L1B data from L1A data.
@@ -85,30 +89,24 @@ def mag_l1b_processing(
     calibration_dataset : xr.Dataset
         The calibration dataset containing calibration matrices and timeshift values for
         mago and magi.
+    mag_attributes : ImapCdfAttributes
+        Attribute class for output CDF containing MAG L1B attributes.
+    logical_source : str
+        The expected logical source of the output file. Should look something like:
+        imap_mag_l1b_norm-magi.
 
     Returns
     -------
     output_dataset : xr.Dataset
         L1b dataset.
     """
-    # TODO: There is a time alignment step that will add a lot of complexity.
-    # This needs to be done once we have some SPICE time data.
-
-    mag_attributes = ImapCdfAttributes()
-    mag_attributes.add_instrument_variable_attrs("mag", "l1")
-
     dims = [["direction"], ["compression"]]
     new_dims = [["direction"], ["compression"]]
 
-    # TODO: add time shift
-    # TODO: Check validity of time range for calibration
-    source = input_dataset.attrs["Logical_source"]
-    if isinstance(source, list):
-        source = source[0]
-    if "mago" in source:
+    if "mago" in logical_source:
         calibration_matrix = calibration_dataset["MFOTOURFO"]
         time_shift = calibration_dataset["OTS"]
-    elif "magi" in source:
+    elif "magi" in logical_source:
         calibration_matrix = calibration_dataset["MFITOURFI"]
         time_shift = calibration_dataset["ITS"]
     else:
@@ -116,6 +114,8 @@ def mag_l1b_processing(
             f"Calibration matrix not found, invalid logical source "
             f"{input_dataset.attrs['Logical_source']}"
         )
+
+    # TODO: Check validity of time range for calibration
 
     l1b_fields = xr.apply_ufunc(
         update_vector,
@@ -128,26 +128,85 @@ def mag_l1b_processing(
         kwargs={"calibration_matrix": calibration_matrix},
     )
 
-    output_dataset = input_dataset.copy()
+    epoch_time = shift_time(input_dataset["epoch"], time_shift)
+    epoch_time.attrs = mag_attributes.get_variable_attributes("epoch")
+
+    direction = xr.DataArray(
+        np.arange(4),
+        name="direction",
+        dims=["direction"],
+        attrs=mag_attributes.get_variable_attributes(
+            "direction_attrs", check_schema=False
+        ),
+    )
+
+    compression = xr.DataArray(
+        np.arange(2),
+        name="compression",
+        dims=["compression"],
+        attrs=mag_attributes.get_variable_attributes(
+            "compression_attrs", check_schema=False
+        ),
+    )
+
+    direction_label = xr.DataArray(
+        direction.values.astype(str),
+        name="direction_label",
+        dims=["direction_label"],
+        attrs=mag_attributes.get_variable_attributes(
+            "direction_label", check_schema=False
+        ),
+    )
+
+    compression_label = xr.DataArray(
+        compression.values.astype(str),
+        name="compression_label",
+        dims=["compression_label"],
+        attrs=mag_attributes.get_variable_attributes(
+            "compression_label", check_schema=False
+        ),
+    )
+
+    global_attributes = mag_attributes.get_global_attributes(logical_source)
+    try:
+        global_attributes["is_mago"] = input_dataset.attrs["is_mago"]
+        global_attributes["is_active"] = input_dataset.attrs["is_active"]
+        global_attributes["vectors_per_second"] = input_dataset.attrs[
+            "vectors_per_second"
+        ]
+        global_attributes["missing_sequences"] = input_dataset.attrs[
+            "missing_sequences"
+        ]
+    except KeyError as e:
+        logger.info(
+            f"Key error when assigning global attributes, attribute not found in "
+            f"L1A file: {e}"
+        )
+
+    output_dataset = xr.Dataset(
+        coords={
+            "epoch": epoch_time,
+            "direction": direction,
+            "compression": compression,
+            "direction_label": direction_label,
+            "compression_label": compression_label,
+        },
+        attrs=global_attributes,
+    )
     # Fill the output with data
-    output_dataset["vectors"].data = l1b_fields[0].data
-    output_dataset["epoch"] = shift_time(input_dataset["epoch"], time_shift)
-
-    # Set output attributes
-    output_dataset["epoch"].attrs = mag_attributes.get_variable_attributes("epoch")
-    output_dataset["direction"].attrs = mag_attributes.get_variable_attributes(
-        "direction_attrs"
-    )
-    output_dataset["compression"].attrs = mag_attributes.get_variable_attributes(
-        "compression_attrs"
-    )
-    output_dataset["direction_label"].attrs = mag_attributes.get_variable_attributes(
-        "direction_label", check_schema=False
-    )
-    output_dataset["compression_label"].attrs = mag_attributes.get_variable_attributes(
-        "compression_label", check_schema=False
+    output_dataset["vectors"] = xr.DataArray(
+        l1b_fields[0].data,
+        name="vectors",
+        dims=["epoch", "direction"],
+        attrs=mag_attributes.get_variable_attributes("vector_attrs"),
     )
 
+    output_dataset["compression_flags"] = xr.DataArray(
+        input_dataset["compression_flags"].data,
+        name="compression_flags",
+        dims=["epoch", "compression"],
+        attrs=mag_attributes.get_variable_attributes("compression_flags_attrs"),
+    )
     return output_dataset
 
 

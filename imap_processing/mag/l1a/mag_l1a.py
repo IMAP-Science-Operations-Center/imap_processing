@@ -334,12 +334,18 @@ def generate_dataset(
         ),
     )
     global_attributes = attribute_manager.get_global_attributes(logical_file_id)
+    # TODO: this method won't work because these values are not in the schema.
     global_attributes["is_mago"] = str(bool(single_file_l1a.is_mago))
     global_attributes["is_active"] = str(bool(single_file_l1a.is_active))
     global_attributes["vectors_per_second"] = (
         single_file_l1a.vectors_per_second_attribute()
     )
-    global_attributes["missing_sequences"] = single_file_l1a.missing_sequences
+    # empty arrays are removed in cdflib
+    global_attributes["missing_sequences"] = (
+        single_file_l1a.missing_sequences
+        if single_file_l1a.missing_sequences
+        else "None"
+    )
 
     output = xr.Dataset(
         coords={
@@ -349,6 +355,7 @@ def generate_dataset(
         },
         attrs=global_attributes,
     )
+
     output["direction_label"] = direction_label
     output["compression_label"] = compression_label
     output["vectors"] = vectors
