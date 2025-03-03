@@ -240,6 +240,7 @@ class MagL1a:
     decode_fib_zig_zag()
     twos_complement()
     update_compression_array()
+    vectors_per_second_attribute()
     """
 
     is_mago: bool

@@ -53,10 +53,10 @@ def test_mag_l1a_validation(test_number):
             == secondary["vectors"].data[index][3]
         )
 
-        assert expected_output["pri_coarse"].iloc[index] == raw["PRI_COARSETM"].data[0]
-        assert expected_output["pri_fine"].iloc[index] == raw["PRI_FNTM"].data[0]
-        assert expected_output["sec_coarse"].iloc[index] == raw["SEC_COARSETM"].data[0]
-        assert expected_output["sec_fine"].iloc[index] == raw["SEC_FNTM"].data[0]
+        assert expected_output["pri_coarse"].iloc[index] == raw["pri_coarsetm"].data[0]
+        assert expected_output["pri_fine"].iloc[index] == raw["pri_fntm"].data[0]
+        assert expected_output["sec_coarse"].iloc[index] == raw["sec_coarsetm"].data[0]
+        assert expected_output["sec_fine"].iloc[index] == raw["sec_fntm"].data[0]
 
         expected_pri_time = TimeTuple(
             expected_output["pri_coarse"].iloc[index],
