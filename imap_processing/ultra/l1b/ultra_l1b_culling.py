@@ -9,24 +9,6 @@ from imap_processing.spice.spin import get_spin_data, interpolate_spin_data
 from imap_processing.ultra.constants import UltraConstants
 
 
-def get_spin(eventtimes_met: NDArray) -> NDArray:
-    """
-    Get spin number for each event.
-
-    Parameters
-    ----------
-    eventtimes_met : NDArray
-        Event Times in Mission Elapsed Time.
-
-    Returns
-    -------
-    spin_number : NDArray
-        Spin number at each event derived the from Universal Spin Table.
-    """
-    spin_df = interpolate_spin_data(eventtimes_met)
-    return spin_df["spin_number"].values
-
-
 def get_energy_histogram(
     spin_number: NDArray, energy: NDArray
 ) -> tuple[NDArray, NDArray, NDArray, float]:
@@ -78,15 +60,15 @@ def get_energy_histogram(
     return hist, spin_edges, counts, mean_duration
 
 
-def flag_attitude(eventtimes_met: NDArray,
+def flag_attitude(spin_number: NDArray,
                   aux_dataset: xr.Dataset) -> tuple[NDArray, NDArray, NDArray, NDArray]:
     """
     Flag data based on attitude.
 
     Parameters
     ----------
-    eventtimes_met : NDArray
-        Event Times in Mission Elapsed Time.
+    spin_number : NDArray
+        Spin number at each direct event.
     aux_dataset : xarray.Dataset
         Auxiliary dataset.
 
@@ -101,7 +83,7 @@ def flag_attitude(eventtimes_met: NDArray,
     spin_starttime : NDArray
         Spin start time.
     """
-    spins = np.unique(get_spin(eventtimes_met))  # Get unique spins
+    spins = np.unique(spin_number)  # Get unique spins
     spin_df = get_spin_data()  # Load spin data
 
     spin_period = spin_df.loc[spin_df.spin_number.isin(spins), "spin_period_sec"]
@@ -150,15 +132,15 @@ def get_n_sigma(count_rates: NDArray, mean_duration: float, sigma: int = 6) -> N
 
 
 def flag_spin(
-    eventtimes_met: NDArray, energy: NDArray, sigma: int = 6
+    spin_number: NDArray, energy: NDArray, sigma: int = 6
 ) -> tuple[NDArray, NDArray, NDArray, NDArray]:
     """
     Flag data based on counts and negative energies.
 
     Parameters
     ----------
-    eventtimes_met : NDArray
-        Event Times in Mission Elapsed Time.
+    spin_number : NDArray
+        Spin number at each direct event.
     energy : NDArray
         Energy data.
     sigma : int (default=6)
@@ -175,7 +157,6 @@ def flag_spin(
     n_sigma_per_energy_reshape : NDArray
         N sigma per energy.
     """
-    spin = get_spin(eventtimes_met)
     count_rates, spin_edges, counts, duration = get_energy_histogram(spin, energy)
     quality_flags = np.full(
         count_rates.shape, ImapRatesUltraFlags.NONE.value, dtype=np.uint16
@@ -187,7 +168,7 @@ def flag_spin(
 
     bin_edges = np.array(UltraConstants.CULLING_ENERGY_BIN_EDGES)
     energy_midpoints = np.sqrt(bin_edges[:-1] * bin_edges[1:])
-    spin = np.unique(spin)
+    spin = np.unique(spin_number)
 
     # Indices where the counts exceed the threshold
     indices_n_sigma = count_rates > threshold[:, np.newaxis]
@@ -215,16 +196,17 @@ def compare_aux_univ_spin_table(
     mismatch_indices : np.ndarray
         Boolean array indicating which spins have mismatches.
     """
+    # Load the Universal Spin Table
     spin_df = get_spin_data()
+
+    if not spins in spin_df["spin_number"].values:
+        raise ValueError("Some spin numbers are missing from the Universal Spin Table.")
+
+    if not spins in aux_dataset["SPINNUMBER"]:
+        raise ValueError("Some spin numbers are missing from Aux Packet.")
 
     indices_univ = np.nonzero(np.isin(spin_df["spin_number"].values, spins))[0]
     indices_aux = np.nonzero(np.isin(aux_dataset["SPINNUMBER"].values, spins))[0]
-
-    if not len(indices_univ) == len(spins):
-        raise ValueError("Some spin numbers are missing from Universal Spin Table.")
-
-    if not len(indices_aux) == len(spins):
-        raise ValueError("Some spin numbers are missing from Aux Packet.")
 
     fields_to_compare = [
         ("TIMESPINSTART", "spin_start_sec"),
