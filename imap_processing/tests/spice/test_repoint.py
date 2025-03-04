@@ -74,7 +74,7 @@ def test_interpolate_repoint_data_with_use_fake_fixture(use_fake_repoint_data_fo
     """Test coverage for using use_fake_repoint_data_for_time fixutre."""
     repoint_period = 24 * 60 * 60
     repoint_start_times = np.arange(1000, 1000 + 10 * repoint_period, repoint_period)
-    _ = use_fake_repoint_data_for_time(repoint_start_times)
+    _ = use_fake_repoint_data_for_time(repoint_start_times, repoint_id_start=10)
     # Query times are all start times concatenated with 16 minutes after each start time
     query_times = np.concat([repoint_start_times, repoint_start_times + 16 * 60])
     repoint_df = interpolate_repoint_data(query_times)
@@ -93,7 +93,10 @@ def test_interpolate_repoint_data_with_use_fake_fixture(use_fake_repoint_data_fo
     np.testing.assert_array_equal(
         repoint_df["repoint_id"].values,
         np.concat(
-            [np.arange(repoint_start_times.size), np.arange(repoint_start_times.size)]
+            [
+                np.arange(repoint_start_times.size) + 10,
+                np.arange(repoint_start_times.size) + 10,
+            ]
         ),
     )
     # Expected repoint_in_progress

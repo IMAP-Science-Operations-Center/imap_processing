@@ -500,6 +500,7 @@ def use_test_repoint_data_csv(monkeypatch):
 def generate_repoint_data(
     repoint_start_met: Union[float, np.ndarray],
     repoint_end_met: Optional[Union[float, np.ndarray]] = None,
+    repoint_id_start: Optional[int] = 0,
 ) -> pd.DataFrame:
     """
     Generate a repoint dataframe for the star/end times provided.
@@ -511,6 +512,9 @@ def generate_repoint_data(
     repoint_end_met : float, np.ndarray, optional
         Provides the repoint end time(s) in MET. If not provided, end times
         will be 15 minutes after start times.
+    repoint_id_start : int, optional
+        Provides the starting repoint id number of the first repoint in the
+        generated data.
 
     Returns
     -------
@@ -525,7 +529,8 @@ def generate_repoint_data(
         {
             "repoint_start_time": repoint_start_times,
             "repoint_end_time": np.array(repoint_end_met),
-            "repoint_id": np.arange(repoint_start_times.size, dtype=int),
+            "repoint_id": np.arange(repoint_start_times.size, dtype=int)
+            + repoint_id_start,
         }
     )
     return repoint_df
@@ -548,6 +553,7 @@ def use_fake_repoint_data_for_time(use_test_repoint_data_csv, tmpdir):
     def wrapped_repoint_data_filepath(
         repoint_start_met: Union[float, np.ndarray],
         repoint_end_met: Optional[Union[float, np.ndarray]] = None,
+        repoint_id_start: Optional[int] = 0,
     ) -> pd.DataFrame:
         """
         Generate and use fake repoint data for testing.
@@ -558,8 +564,15 @@ def use_fake_repoint_data_for_time(use_test_repoint_data_csv, tmpdir):
         repoint_end_met : float, np.ndarray
             Provides the repoint end time(s) in MET. If not provided, end times
             will be 15 minutes after start times.
+        repoint_id_start : int, optional
+            Provides the starting repoint id number of the first repoint in the
+            generated data.
         """
-        repoint_df = generate_repoint_data(repoint_start_met, repoint_end_met)
+        repoint_df = generate_repoint_data(
+            repoint_start_met,
+            repoint_end_met=repoint_end_met,
+            repoint_id_start=repoint_id_start,
+        )
         repoint_csv_file_path = tmpdir / "repoint_data.repointing.csv"
         repoint_df.to_csv(repoint_csv_file_path, index=False)
         use_test_repoint_data_csv(repoint_csv_file_path)

@@ -47,8 +47,16 @@ def interpolate_repoint_data(
     """
     Interpolate repointing data to the queried MET times.
 
-    Query times that are between a pointing end time and the next pointing start
-    time will cause an exception to be raised.
+    In addition to the repoint start, end, and id values that come directly from
+    the universal repointing table, a column is added to the output dataframe
+    which indicates whether each query met time occurs during a repoint maneuver
+    i.e. between the repoint start and end times of a row in the repointing
+    table.
+
+    Query times that are more than 24-hours after that last repoint start time
+    in the repoint table will cause an error to be raised. The assumption here
+    is that we shouldn't be processing data that occurs that close to the next
+    expected repoint start time before getting an updated repoint table.
 
     Parameters
     ----------
@@ -67,19 +75,13 @@ def interpolate_repoint_data(
 
     Raises
     ------
-    ValueError : If any of the query_met_times are outside the set of
-    [repoint_start_time, repoint_end_time] time ranges defined in the repoint
-    table.
+    ValueError : If any of the query_met_times are before the first repoint
+    start time or after the last repoint start time plus 24-hours.
     """
     repoint_df = get_repoint_data()
 
     # Ensure query_met_times is an array
-    query_met_times = np.asarray(query_met_times)
-    is_scalar = query_met_times.ndim == 0
-    if is_scalar:
-        # Force scalar to array because np.asarray() will not
-        # convert scalar to array
-        query_met_times = np.atleast_1d(query_met_times)
+    query_met_times = np.atleast_1d(query_met_times)
 
     # Make sure no query times are before the first repoint in the dataframe.
     repoint_df_start_time = repoint_df["repoint_start_time"].values[0]
