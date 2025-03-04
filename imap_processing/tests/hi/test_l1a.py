@@ -29,6 +29,8 @@ def test_diag_fee_decom(hi_l0_test_data_path):
     bin_data_path = hi_l0_test_data_path / "H45_diag_fee_20250208.bin"
     processed_data = hi_l1a(packet_file_path=bin_data_path, data_version="001")
     dataset = processed_data[0]
+    cdf_filepath = write_cdf(processed_data[0], istp=False)
+    assert cdf_filepath.name == "imap_hi_l1a_45sensor-diagfee_20250208_v001.cdf"
 
     assert np.unique(processed_data[0]["pkt_apid"].values) == HIAPID.H45_DIAG_FEE.value
 
