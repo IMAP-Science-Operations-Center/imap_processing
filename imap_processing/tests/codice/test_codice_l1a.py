@@ -52,7 +52,7 @@ EXPECTED_ARRAY_SHAPES = [
     (77, 19, 12, 128),  # lo-nsw-angular
     (77, 1, 6, 1),  # hi-counters-aggregated
     (77, 1, 12, 1),  # hi-counters-singles
-    (77, 15, 4, 1),  # hi-omni
+    (77, 15, 4),  # hi-omni
     (77, 8, 12, 12),  # hi-sectored
     (),  # hi-priority  # TODO: Need to implement
     (),  # lo-pha  # TODO: Need to implement
@@ -219,7 +219,6 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         "lo-sw-species",
         "lo-nsw-species",
     ]
-    able_to_be_validated = ["hi-omni"]
 
     if descriptor in able_to_be_validated:
         counters = getattr(
@@ -227,8 +226,6 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         )
         processed_dataset = test_l1a_data[index]
         validation_dataset = load_cdf(VALIDATION_DATA[index])
-
-        print(processed_dataset)
 
         for counter in counters:
             # Ensure the data arrays are equal
