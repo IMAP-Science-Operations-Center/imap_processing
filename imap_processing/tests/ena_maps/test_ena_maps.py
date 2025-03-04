@@ -204,23 +204,7 @@ class TestRectangularSkyMap:
         with pytest.raises(ValueError, match="Value key invalid not found"):
             rectangular_map.project_pset_values_to_map(
                 self.ultra_psets[0],
-                pset_value_keys=["invalid"],
-                index_match_method=index_matching_method,
-            )
-
-        # An error should be raised if the number of pset_value_keys does not match
-        # the number of skymap_value_keys
-        with pytest.raises(
-            ValueError,
-            match=(
-                "The number of pointing set value keys must match the number of"
-                " sky map value keys."
-            ),
-        ):
-            rectangular_map.project_pset_values_to_map(
-                self.ultra_psets[0],
-                pset_value_keys=["counts", "exposure_time"],
-                skymap_value_keys=["counts_map"],
+                value_keys=["invalid"],
                 index_match_method=index_matching_method,
             )
 

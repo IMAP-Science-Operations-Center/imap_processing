@@ -143,7 +143,7 @@ def mock_l1c_pset_product(
         },
         coords={
             "epoch": [
-                ensure_spice(spice.str2et, time_kernels_only=True)(timestr),
+                tt_j2000ns,
             ],
             "azimuth_bin_center": np.arange(0 + spacing_deg / 2, 360, spacing_deg),
             "elevation_bin_center": np.arange(-90 + spacing_deg / 2, 90, spacing_deg),

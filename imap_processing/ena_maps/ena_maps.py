@@ -471,9 +471,9 @@ class RectangularSkyMap(AbstractSkyMap):
         """
         if value_keys is None:
             value_keys = list(pointing_set.data.data_vars.keys())
-        for pset_key in value_keys:
-            if pset_key not in pointing_set.data.data_vars:
-                raise ValueError(f"Value key {pset_key} not found in pointing set.")
+        for value_key in value_keys:
+            if value_key not in pointing_set.data.data_vars:
+                raise ValueError(f"Value key {value_key} not found in pointing set.")
 
         if index_match_method is IndexMatchMethod.PUSH:
             # Determine the indices of the sky map grid that correspond to
@@ -522,7 +522,7 @@ class RectangularSkyMap(AbstractSkyMap):
             elif index_match_method is IndexMatchMethod.PULL:
                 # We know that there will only be one value per sky map pixel,
                 # so we can use the matched indices directly
-                pointing_projected_values = raveled_pset_data[matched_indices_pull]
+                pointing_projected_values = raveled_pset_data[..., matched_indices_pull]
             else:
                 raise NotImplementedError(
                     "Only PUSH and PULL index matching methods are supported."
