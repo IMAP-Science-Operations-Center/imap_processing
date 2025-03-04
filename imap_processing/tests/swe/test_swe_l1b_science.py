@@ -9,6 +9,7 @@ from imap_processing.swe.l1b.swe_l1b_science import (
     apply_in_flight_calibration,
     get_indices_of_full_cycles,
 )
+from imap_processing.swe.utils import swe_constants
 
 
 @pytest.fixture(scope="session")
@@ -57,8 +58,17 @@ def test_in_flight_calibration_factor(mock_read_in_flight_cal_data, l1a_test_dat
 
     input_time = 453051355.0
     input_count = 19967
-    one_full_cycle_data = np.full((24, 30, 7), input_count)
-    acquisition_time = np.full((24, 30), input_time)
+    one_full_cycle_data = np.full(
+        (
+            swe_constants.N_ESA_STEPS,
+            swe_constants.N_ANGLE_SECTORS,
+            swe_constants.N_CEMS,
+        ),
+        input_count,
+    )
+    acquisition_time = np.full(
+        (swe_constants.N_ESA_STEPS, swe_constants.N_ANGLE_SECTORS), input_time
+    )
 
     # Test that calibration factor is within correct range given test data
     expected_cal_factor = 1 + ((2 - 1) / (453051900 - 453051300)) * (
@@ -72,13 +82,22 @@ def test_in_flight_calibration_factor(mock_read_in_flight_cal_data, l1a_test_dat
 
     np.testing.assert_allclose(
         calibrated_count,
-        np.full((24, 30, 7), input_count * expected_cal_factor),
+        np.full(
+            (
+                swe_constants.N_ESA_STEPS,
+                swe_constants.N_ANGLE_SECTORS,
+                swe_constants.N_CEMS,
+            ),
+            input_count * expected_cal_factor,
+        ),
         rtol=1e-9,
     )
 
     # Check for value outside of calibration time range
     input_time = 1.0
-    acquisition_time = np.full((24, 30), input_time)
+    acquisition_time = np.full(
+        (swe_constants.N_ESA_STEPS, swe_constants.N_ANGLE_SECTORS), input_time
+    )
 
     with pytest.raises(ValueError, match="Acquisition min/max times: "):
         apply_in_flight_calibration(one_full_cycle_data, acquisition_time)

@@ -1,5 +1,6 @@
 """MAG L1B Processing."""
 
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -9,8 +10,12 @@ from xarray import Dataset
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 
+logger = logging.getLogger(__name__)
 
-def mag_l1b(input_dataset: xr.Dataset, version: str) -> Dataset:
+
+def mag_l1b(
+    input_dataset: xr.Dataset, version: str, calibration_dataset: xr.Dataset = None
+) -> Dataset:
     """
     Will process MAG L1B data from L1A data.
 
@@ -20,6 +25,10 @@ def mag_l1b(input_dataset: xr.Dataset, version: str) -> Dataset:
         The input dataset to process.
     version : str
         The version of the output data.
+    calibration_dataset : xr.Dataset
+        The calibration dataset containing calibration matrices and timeshift values for
+        mago and magi.
+        When None, this defaults to the test calibration file.
 
     Returns
     -------
@@ -28,12 +37,19 @@ def mag_l1b(input_dataset: xr.Dataset, version: str) -> Dataset:
     """
     # TODO:
     # Read in calibration file
-    # multiply all vectors by calibration file
+
+    # TODO: This should definitely be loaded from AWS
+    if calibration_dataset is None:
+        calibration_dataset = load_cdf(
+            Path(__file__).parent / "imap_calibration_mag_20240229_v01.cdf"
+        )
+        logger.info("Using default test calibration file.")
+
     if "raw" in input_dataset.attrs["Logical_source"]:
         # Raw files should not be processed in L1B.
         raise ValueError("Raw L1A file passed into L1B. Unable to process.")
 
-    output_dataset = mag_l1b_processing(input_dataset)
+    output_dataset = mag_l1b_processing(input_dataset, calibration_dataset)
     attribute_manager = ImapCdfAttributes()
     attribute_manager.add_instrument_global_attrs("mag")
     attribute_manager.add_global_attribute("Data_version", version)
@@ -49,17 +65,26 @@ def mag_l1b(input_dataset: xr.Dataset, version: str) -> Dataset:
     return output_dataset
 
 
-def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
+def mag_l1b_processing(
+    input_dataset: xr.Dataset, calibration_dataset: xr.Dataset
+) -> xr.Dataset:
     """
     Will process MAG L1B data from L1A data.
 
     MAG L1B is almost identical to L1A, with only the vectors and attributes getting
     updated. All non-vector variables are the same.
 
+    This step rescales the vector data according to the compression width, and then
+    multiplies the vector according to the calibration matrix for a given range. It
+    also shifts the timestamps by the values defined in calibration_dataset.
+
     Parameters
     ----------
     input_dataset : xr.Dataset
         The input dataset to process.
+    calibration_dataset : xr.Dataset
+        The calibration dataset containing calibration matrices and timeshift values for
+        mago and magi.
 
     Returns
     -------
@@ -74,16 +99,23 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
 
     dims = [["direction"], ["compression"]]
     new_dims = [["direction"], ["compression"]]
-    # TODO: This should definitely be loaded from AWS
-    calibration_dataset = load_cdf(
-        Path(__file__).parent / "imap_calibration_mag_20240229_v01.cdf"
-    )
+
     # TODO: add time shift
     # TODO: Check validity of time range for calibration
-    if "mago" in input_dataset.attrs["Logical_source"][0]:
+    source = input_dataset.attrs["Logical_source"]
+    if isinstance(source, list):
+        source = source[0]
+    if "mago" in source:
         calibration_matrix = calibration_dataset["MFOTOURFO"]
-    else:
+        time_shift = calibration_dataset["OTS"]
+    elif "magi" in source:
         calibration_matrix = calibration_dataset["MFITOURFI"]
+        time_shift = calibration_dataset["ITS"]
+    else:
+        raise ValueError(
+            f"Calibration matrix not found, invalid logical source "
+            f"{input_dataset.attrs['Logical_source']}"
+        )
 
     l1b_fields = xr.apply_ufunc(
         update_vector,
@@ -97,8 +129,11 @@ def mag_l1b_processing(input_dataset: xr.Dataset) -> xr.Dataset:
     )
 
     output_dataset = input_dataset.copy()
+    # Fill the output with data
     output_dataset["vectors"].data = l1b_fields[0].data
+    output_dataset["epoch"] = shift_time(input_dataset["epoch"], time_shift)
 
+    # Set output attributes
     output_dataset["epoch"].attrs = mag_attributes.get_variable_attributes("epoch")
     output_dataset["direction"].attrs = mag_attributes.get_variable_attributes(
         "direction_attrs"
@@ -177,11 +212,13 @@ def rescale_vector(
     output_vector : numpy.ndarray
         Updated vector.
     """
-    if not compression_flags[0]:
-        return input_vector
-    else:
+    output_vector: np.ndarray = input_vector.astype(np.float64)
+
+    if compression_flags[0]:
         factor = np.float_power(2, (16 - compression_flags[1]))
-        return input_vector * factor  # type: ignore
+        output_vector[:3] = input_vector.astype(np.float64)[:3] * factor
+
+    return output_vector
 
 
 def calibrate_vector(
@@ -206,8 +243,54 @@ def calibrate_vector(
     updated_vector : numpy.ndarray
         Calibrated vector.
     """
-    updated_vector = input_vector.copy()
-    updated_vector[:3] = np.dot(
-        calibration_matrix.values[:, :, int(input_vector[3])], input_vector[:3]
-    )
+    updated_vector: np.ndarray = input_vector.copy()
+    if input_vector[3] % 1 != 0:
+        raise ValueError("Range must be an integer.")
+
+    range = int(input_vector[3])
+    x_y_z = input_vector[:3]
+    updated_vector[:3] = np.dot(calibration_matrix.values[:, :, range], x_y_z)
     return updated_vector
+
+
+def shift_time(epoch_times: xr.DataArray, time_shift: xr.DataArray) -> xr.DataArray:
+    """
+    Shift epoch times by the provided time_shift calibration value.
+
+    Sometimes the time values calculated from the sensor vary slightly from the "actual"
+    time the data was captured. To correct for this, the MAG team provides time shift
+    values in the calibration file. This function applies the time shift to the epoch
+    times.
+
+    The time shift is provided in seconds. A positive shift is adding time, while a
+    negative shift subtracts it (so the values move backwards.)
+
+    This may mean vectors shift out of the specific day that is being processed. To
+    manage this, all MAG L0, L1A, L1B, and L1C science data files contain an extra 30
+    minute buffer on either side (so the data ranges from
+    midnight - 30 minutes to midnight + 24 hours + 30 minutes.)
+    The extra buffer is removed at L1D and L2 so those science files are exactly 24
+    hours long.
+
+    For more information please refer to the algorithm document.
+
+    Parameters
+    ----------
+    epoch_times : xr.DataArray
+        The input epoch times, in J2000 ns.
+    time_shift : xr.DataArray
+        The time shift to apply for the given sensor. This should be one value and is
+        in seconds.
+
+    Returns
+    -------
+    shifted_times : xr.DataArray
+        The shifted epoch times, equal to epoch_times with time_shift added to each
+        value.
+    """
+    if time_shift.size != 1:
+        raise ValueError("Time shift must be a single value.")
+    # Time shift is in seconds
+    time_shift_ns = time_shift.data * 1e9
+
+    return epoch_times + time_shift_ns

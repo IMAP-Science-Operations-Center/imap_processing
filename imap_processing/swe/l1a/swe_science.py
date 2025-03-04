@@ -6,6 +6,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.swe.utils import swe_constants
 from imap_processing.swe.utils.swe_utils import SWEAPID
 
 logger = logging.getLogger(__name__)
@@ -119,7 +120,9 @@ def swe_science(l0_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     # 4. Reshape the data to 180 x 7
     raw_science_array = np.array(
         [
-            np.frombuffer(binary_string, dtype=np.uint8).reshape(180, 7)
+            np.frombuffer(binary_string, dtype=np.uint8).reshape(
+                180, swe_constants.N_CEMS
+            )
             for binary_string in l0_dataset["science_data"].values
         ]
     )
@@ -157,7 +160,7 @@ def swe_science(l0_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     )
 
     cem_id = xr.DataArray(
-        np.arange(7),
+        np.arange(swe_constants.N_CEMS),
         name="cem_id",
         dims=["cem_id"],
         attrs=cdf_attrs.get_variable_attributes("cem_id"),

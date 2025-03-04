@@ -131,6 +131,31 @@ def test_pset_geometry(mock_frame_transform, mock_geom_frame_transform, sensor_s
     )
 
 
+def test_find_second_de_packet_data():
+    """Test coverage for find_second_de_packet_data function"""
+    # Create a test l1b_dataset
+    # Expect to remove index 0 and 5 due to missing esa_step pair
+    # Expect to remove index 11 due to 0 being a calibration step
+    # Expect to return indices 2, 4, 7, 9, 13
+    esa_steps = np.array([1, 2, 2, 3, 3, 4, 5, 5, 6, 6, 0, 0, 7, 7])
+    l1b_dataset = xr.Dataset(
+        coords={
+            "epoch": xr.DataArray(
+                np.arange(esa_steps.size),
+                dims=["epoch"],
+            )
+        },
+        data_vars={
+            "esa_step": xr.DataArray(
+                esa_steps,
+                dims=["epoch"],
+            )
+        },
+    )
+    subset = hi_l1c.find_second_de_packet_data(l1b_dataset)
+    np.testing.assert_array_equal(subset.epoch.data, np.array([2, 4, 7, 9, 13]))
+
+
 class TestCalibrationProductConfig:
     """
     All test coverage for the pd.DataFrame accessor extension "cal_prod_config".

@@ -10,8 +10,6 @@ from imap_processing.cdf.utils import write_cdf
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
 from imap_processing.swe.l2.swe_l2 import (
-    ENERGY_CONVERSION_FACTOR,
-    VELOCITY_CONVERSION_FACTOR,
     calculate_flux,
     calculate_phase_space_density,
     find_angle_bin_indices,
@@ -19,17 +17,25 @@ from imap_processing.swe.l2.swe_l2 import (
     put_data_into_angle_bins,
     swe_l2,
 )
-from imap_processing.swe.utils.swe_utils import read_lookup_table
+from imap_processing.swe.utils import swe_constants
+from imap_processing.swe.utils.swe_utils import (
+    read_lookup_table,
+)
 
 
 def test_get_particle_energy():
     """Test get_particle_energy function."""
     all_energy = get_particle_energy()
-    expected_energy = read_lookup_table()["esa_v"].values * ENERGY_CONVERSION_FACTOR
+    expected_energy = (
+        read_lookup_table()["esa_v"].values * swe_constants.ENERGY_CONVERSION_FACTOR
+    )
     np.testing.assert_array_equal(all_energy["energy"], expected_energy)
 
 
-@patch("imap_processing.swe.l2.swe_l2.GEOMETRIC_FACTORS", new=np.full(7, 1))
+@patch(
+    "imap_processing.swe.utils.swe_constants.GEOMETRIC_FACTORS",
+    new=np.full(swe_constants.N_CEMS, 1),
+)
 @patch(
     "imap_processing.swe.l2.swe_l2.get_particle_energy",
     return_value=pd.DataFrame(
@@ -50,21 +56,34 @@ def test_calculate_phase_space_density(patch_get_particle_energy):
         {
             "science_data": (
                 ["epoch", "energy", "angle", "cem"],
-                np.full((total_sweeps, 24, 30, 7), 1),
+                np.full(
+                    (
+                        total_sweeps,
+                        swe_constants.N_ESA_STEPS,
+                        swe_constants.N_ANGLE_SECTORS,
+                        swe_constants.N_CEMS,
+                    ),
+                    1,
+                ),
             ),
-            "acq_duration": (["epoch", "cycle"], np.full((total_sweeps, 4), 80.0)),
+            "acq_duration": (
+                ["epoch", "cycle"],
+                np.full((total_sweeps, swe_constants.N_QUARTER_CYCLES), 80.0),
+            ),
             "esa_table_num": (
                 ["epoch", "cycle"],
-                np.repeat([0, 1], 4).reshape(total_sweeps, 4),
+                np.repeat([0, 1], swe_constants.N_QUARTER_CYCLES).reshape(
+                    total_sweeps, swe_constants.N_QUARTER_CYCLES
+                ),
             ),
         }
     )
     phase_space_density_ds = calculate_phase_space_density(l1b_dataset)
     assert phase_space_density_ds["phase_space_density"].shape == (
         total_sweeps,
-        24,
-        30,
-        7,
+        swe_constants.N_ESA_STEPS,
+        swe_constants.N_ANGLE_SECTORS,
+        swe_constants.N_CEMS,
     )
 
     # Test that first sweep has correct values. In patch,
@@ -72,16 +91,34 @@ def test_calculate_phase_space_density(patch_get_particle_energy):
     #   2. we have set energy to 1.
     #   3. we have set science_data to 1.
     # Using this in the formula, we calculate expected density value.
-    expected_calculated_density = (2 * 1) / (1 * VELOCITY_CONVERSION_FACTOR * 1**2)
-    expected_density = np.full((24, 30, 7), expected_calculated_density)
+    expected_calculated_density = (2 * 1) / (
+        1 * swe_constants.VELOCITY_CONVERSION_FACTOR * 1**2
+    )
+    expected_density = np.full(
+        (
+            swe_constants.N_ESA_STEPS,
+            swe_constants.N_ANGLE_SECTORS,
+            swe_constants.N_CEMS,
+        ),
+        expected_calculated_density,
+    )
     np.testing.assert_array_equal(
         phase_space_density_ds["phase_space_density"][0].data, expected_density
     )
 
     # Test that second sweep has correct values, similar to first sweep,
     # but with energy 2.
-    expected_calculated_density = (2 * 1) / (1 * VELOCITY_CONVERSION_FACTOR * 2**2)
-    expected_density = np.full((24, 30, 7), expected_calculated_density)
+    expected_calculated_density = (2 * 1) / (
+        1 * swe_constants.VELOCITY_CONVERSION_FACTOR * 2**2
+    )
+    expected_density = np.full(
+        (
+            swe_constants.N_ESA_STEPS,
+            swe_constants.N_ANGLE_SECTORS,
+            swe_constants.N_CEMS,
+        ),
+        expected_calculated_density,
+    )
     np.testing.assert_array_equal(
         phase_space_density_ds["phase_space_density"][1].data, expected_density
     )
@@ -96,18 +133,36 @@ def test_calculate_flux():
         {
             "science_data": (
                 ["epoch", "energy", "angle", "cem"],
-                np.full((total_sweeps, 24, 30, 7), 1),
+                np.full(
+                    (
+                        total_sweeps,
+                        swe_constants.N_ESA_STEPS,
+                        swe_constants.N_ANGLE_SECTORS,
+                        swe_constants.N_CEMS,
+                    ),
+                    1,
+                ),
             ),
-            "acq_duration": (["epoch", "cycle"], np.full((total_sweeps, 4), 80.0)),
+            "acq_duration": (
+                ["epoch", "cycle"],
+                np.full((total_sweeps, swe_constants.N_QUARTER_CYCLES), 80.0),
+            ),
             "esa_table_num": (
                 ["epoch", "cycle"],
-                np.repeat([0, 1], 4).reshape(total_sweeps, 4),
+                np.repeat([0, 1], swe_constants.N_QUARTER_CYCLES).reshape(
+                    total_sweeps, swe_constants.N_QUARTER_CYCLES
+                ),
             ),
         }
     )
 
     flux = calculate_flux(l1b_dataset)
-    assert flux.shape == (total_sweeps, 24, 30, 7)
+    assert flux.shape == (
+        total_sweeps,
+        swe_constants.N_ESA_STEPS,
+        swe_constants.N_ANGLE_SECTORS,
+        swe_constants.N_CEMS,
+    )
     assert type(flux) == np.ndarray
 
 
@@ -142,18 +197,19 @@ def test_find_angle_bin_indices():
 def test_put_data_into_angle_bins():
     """Test put_data_into_angle_bins function."""
     num_cycles = 1
-    num_esa_step = 24
-    num_angle_bins = 30
-    num_cems = 7
     # Create test counts data to test
     # Find all even numbers in the range 0 to 30
     even_numbers = np.arange(0, 30, 2)
     # repeat it twice now to get:
     # [0, 0, 2, 2, ...., 28, 28]
     example_data = np.repeat(even_numbers, 2)
-    energy_angle_test_data = np.tile(example_data, (num_cycles, num_esa_step, 1))
+    energy_angle_test_data = np.tile(
+        example_data, (num_cycles, swe_constants.N_ESA_STEPS, 1)
+    )
     # Expand to include 7 CEMs by repeating across last dimension
-    test_data = np.repeat(energy_angle_test_data[..., np.newaxis], num_cems, axis=-1)
+    test_data = np.repeat(
+        energy_angle_test_data[..., np.newaxis], swe_constants.N_CEMS, axis=-1
+    )
 
     # Took this example from intermediate output from actual data
     angle_bins_example = [
@@ -190,16 +246,28 @@ def test_put_data_into_angle_bins():
     ]
     # Now data with every row to be same as angle_bins_example
     test_angle_bin_indices_data = np.full(
-        (num_cycles, num_esa_step, num_angle_bins), angle_bins_example
+        (num_cycles, swe_constants.N_ESA_STEPS, swe_constants.N_ANGLE_SECTORS),
+        angle_bins_example,
     )
 
     binned_data = put_data_into_angle_bins(test_data, test_angle_bin_indices_data)
-    assert binned_data.shape == (num_cycles, num_esa_step, num_angle_bins, num_cems)
+    assert binned_data.shape == (
+        num_cycles,
+        swe_constants.N_ESA_STEPS,
+        swe_constants.N_ANGLE_BINS,
+        swe_constants.N_CEMS,
+    )
 
     # Test that the binned data has correct values in correct bins by
     # checking that odd number columns are filled with nan
     expected_binned_data = np.full(
-        (num_cycles, num_esa_step, num_angle_bins, num_cems), np.nan
+        (
+            num_cycles,
+            swe_constants.N_ESA_STEPS,
+            swe_constants.N_ANGLE_BINS,
+            swe_constants.N_CEMS,
+        ),
+        np.nan,
     )
     np.testing.assert_array_equal(
         binned_data[0, 0, 1::2, 0], expected_binned_data[0, 0, 1::2, 0]
@@ -259,9 +327,23 @@ def test_swe_l2(mock_read_in_flight_cal_data, use_fake_spin_data_for_time):
     l2_dataset = swe_l2(l1b_dataset[0], "002")
 
     assert type(l2_dataset) == xr.Dataset
-    assert l2_dataset["phase_space_density_spin_sector"].shape == (6, 24, 30, 7)
-    assert l2_dataset["flux_spin_sector"].shape == (6, 24, 30, 7)
-    assert l2_dataset["acquisition_time"].shape == (6, 24, 30)
+    assert l2_dataset["phase_space_density_spin_sector"].shape == (
+        6,
+        swe_constants.N_ESA_STEPS,
+        swe_constants.N_ANGLE_SECTORS,
+        swe_constants.N_CEMS,
+    )
+    assert l2_dataset["flux_spin_sector"].shape == (
+        6,
+        swe_constants.N_ESA_STEPS,
+        swe_constants.N_ANGLE_SECTORS,
+        swe_constants.N_CEMS,
+    )
+    assert l2_dataset["acquisition_time"].shape == (
+        6,
+        swe_constants.N_ESA_STEPS,
+        swe_constants.N_ANGLE_SECTORS,
+    )
 
     # Write L2 to CDF
     l2_cdf_filepath = write_cdf(l2_dataset)

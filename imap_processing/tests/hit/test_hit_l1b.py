@@ -5,7 +5,17 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.hit.l1a import hit_l1a
-from imap_processing.hit.l1b import hit_l1b
+from imap_processing.hit.l1b.hit_l1b import (
+    PARTICLE_ENERGY_RANGE_MAPPING,
+    SummedCounts,
+    add_energy_variables,
+    add_rates_to_dataset,
+    calculate_summed_counts,
+    create_particle_data_arrays,
+    hit_l1b,
+    process_standard_rates_data,
+    process_summed_rates_data,
+)
 from imap_processing.tests.hit.helpers.l1_validation import (
     prepare_standard_rates_validation_data,
 )
@@ -48,7 +58,7 @@ def dependencies(packet_filepath, sci_packet_filepath):
 @pytest.fixture()
 def l1b_hk_dataset(dependencies):
     """Get the housekeeping dataset"""
-    datasets = hit_l1b.hit_l1b(dependencies, "001")
+    datasets = hit_l1b(dependencies, "001")
     for dataset in datasets:
         if dataset.attrs["Logical_source"] == "imap_hit_l1b_hk":
             return dataset
@@ -58,7 +68,7 @@ def l1b_hk_dataset(dependencies):
 def l1b_standard_rates_dataset(dependencies):
     """Get the standard rates dataset"""
     # TODO: use this fixture in future unit test to validate the standard rates dataset
-    datasets = hit_l1b.hit_l1b(dependencies, "001")
+    datasets = hit_l1b(dependencies, "001")
     for dataset in datasets:
         if dataset.attrs["Logical_source"] == "imap_hit_l1b_standard-rates":
             return dataset
@@ -73,11 +83,228 @@ def l1a_counts_dataset(sci_packet_filepath):
             return dataset
 
 
-def test_process_standard_rates_data(l1a_counts_dataset):
-    """Test function for processing standard rates data"""
-    l1b_standard_rates_dataset = hit_l1b.process_standard_rates_data(l1a_counts_dataset)
+@pytest.fixture()
+def livetime(l1a_counts_dataset):
+    """Calculate livetime for L1A counts dataset"""
+    return l1a_counts_dataset["livetime_counter"] / 270
 
-    # Check that a xarray dataset with the correct logical source is returned
+
+def test_calculate_summed_counts():
+    # Create a mock raw_counts_dataset
+    data = {
+        "l2fgrates": (
+            ("epoch", "index"),
+            np.array([[1, 2, 3, 4, 5]] * 5, dtype=np.int64),
+        ),
+        "l3fgrates": (
+            ("epoch", "index"),
+            np.array([[6, 7, 8, 9, 10]] * 5, dtype=np.int64),
+        ),
+        "penfgrates": (
+            ("epoch", "index"),
+            np.array([[11, 12, 13, 14, 15]] * 5, dtype=np.int64),
+        ),
+        "l2fgrates_delta_minus": (
+            ("epoch", "index"),
+            np.zeros((5, 5), dtype=np.float32),
+        ),
+        "l3fgrates_delta_minus": (
+            ("epoch", "index"),
+            np.full((5, 5), 0.01, dtype=np.float32),
+        ),
+        "penfgrates_delta_minus": (
+            ("epoch", "index"),
+            np.full((5, 5), 0.001, dtype=np.float32),
+        ),
+        "l2fgrates_delta_plus": (
+            ("epoch", "index"),
+            np.full((5, 5), 0.02, dtype=np.float32),
+        ),
+        "l3fgrates_delta_plus": (
+            ("epoch", "index"),
+            np.full((5, 5), 0.002, dtype=np.float32),
+        ),
+        "penfgrates_delta_plus": (
+            ("epoch", "index"),
+            np.full((5, 5), 0.003, dtype=np.float32),
+        ),
+    }
+    coords = {"epoch": np.arange(5), "index": np.arange(5)}
+    raw_counts_dataset = xr.Dataset(data, coords=coords)
+
+    # Define count_indices
+    count_indices = {
+        "R2": [0, 1],
+        "R3": [2, 3],
+        "R4": [4],
+    }
+
+    # Call the function
+    summed_counts, summed_counts_delta_minus, summed_counts_delta_plus = (
+        calculate_summed_counts(raw_counts_dataset, count_indices)
+    )
+
+    # Expected values based on `count_indices`
+    expected_summed_counts = np.array([35, 35, 35, 35, 35])
+    expected_summed_counts_delta_minus = np.array([0.021, 0.021, 0.021, 0.021, 0.021])
+    expected_summed_counts_delta_plus = np.array([0.047, 0.047, 0.047, 0.047, 0.047])
+
+    # Assertions
+    assert summed_counts.shape == (5,)
+    assert summed_counts_delta_minus.shape == (5,)
+    assert summed_counts_delta_plus.shape == (5,)
+
+    np.testing.assert_array_almost_equal(summed_counts.values, expected_summed_counts)
+    np.testing.assert_array_almost_equal(
+        summed_counts_delta_minus.values, expected_summed_counts_delta_minus
+    )
+    np.testing.assert_array_almost_equal(
+        summed_counts_delta_plus.values, expected_summed_counts_delta_plus
+    )
+
+    # Check dtype consistency
+    assert summed_counts.dtype == np.int64, f"Unexpected dtype: {summed_counts.dtype}"
+    assert (
+        summed_counts_delta_minus.dtype == np.float32
+    ), f"Unexpected dtype: {summed_counts_delta_minus.dtype}"
+    assert (
+        summed_counts_delta_plus.dtype == np.float32
+    ), f"Unexpected dtype: {summed_counts_delta_plus.dtype}"
+
+
+def test_add_rates_to_dataset():
+    # Create a sample dataset
+    dataset = xr.Dataset(
+        {
+            "epoch": ("epoch", np.arange(10)),
+            "livetime": ("epoch", np.random.rand(10) + 1),  # Avoid division by zero
+        }
+    )
+
+    # Add empty data arrays for a sample particle
+    particle = "test_particle"
+    dataset[particle] = xr.DataArray(
+        data=np.zeros((10, 5), dtype=np.float32),
+        dims=["epoch", f"{particle}_energy_index"],
+    )
+    dataset[f"{particle}_delta_minus"] = xr.DataArray(
+        data=np.zeros((10, 5), dtype=np.float32),
+        dims=["epoch", f"{particle}_energy_index"],
+    )
+    dataset[f"{particle}_delta_plus"] = xr.DataArray(
+        data=np.zeros((10, 5), dtype=np.float32),
+        dims=["epoch", f"{particle}_energy_index"],
+    )
+
+    # Set the random seed for reproducibility
+    np.random.seed(42)
+
+    # Define the summed counts with random values in a namedtuple
+    summed_counts = SummedCounts(
+        xr.DataArray(np.random.rand(10), dims=["epoch"]),
+        xr.DataArray(np.random.rand(10), dims=["epoch"]),
+        xr.DataArray(np.random.rand(10), dims=["epoch"]),
+    )
+
+    # Call the function
+    updated_dataset = add_rates_to_dataset(
+        dataset, particle, 0, summed_counts, dataset["livetime"]
+    )
+
+    # Check the results
+    np.testing.assert_array_almost_equal(
+        updated_dataset[particle][:, 0].values,
+        summed_counts.summed_counts / dataset["livetime"].values,
+    )
+    np.testing.assert_array_almost_equal(
+        updated_dataset[f"{particle}_delta_minus"][:, 0].values,
+        summed_counts.summed_counts_delta_minus / dataset["livetime"].values,
+    )
+    np.testing.assert_array_almost_equal(
+        updated_dataset[f"{particle}_delta_plus"][:, 0].values,
+        summed_counts.summed_counts_delta_plus / dataset["livetime"].values,
+    )
+
+
+def test_add_energy_variables():
+    dataset = xr.Dataset()
+    particle = "test_particle"
+    energy_min = np.array([1.8, 4.0, 6.0], dtype=np.float32)
+    energy_max = np.array([2.2, 6.0, 10.0], dtype=np.float32)
+    result = add_energy_variables(dataset, particle, energy_min, energy_max)
+    assert f"{particle}_energy_min" in result.data_vars
+    assert f"{particle}_energy_max" in result.data_vars
+    assert np.all(result[f"{particle}_energy_min"].values == energy_min)
+    assert np.all(result[f"{particle}_energy_max"].values == energy_max)
+
+
+def test_create_particle_data_arrays():
+    dataset = xr.Dataset()
+    particle = "test_particle"
+    result = create_particle_data_arrays(
+        dataset, particle, num_energy_ranges=3, epoch_size=10
+    )
+
+    assert f"{particle}" in result.data_vars
+    assert f"{particle}_delta_minus" in result.data_vars
+    assert f"{particle}_delta_plus" in result.data_vars
+    assert f"{particle}_energy_index" in result.coords
+
+    for var in result.data_vars:
+        assert result[var].shape == (10, 3)
+
+    assert result[f"{particle}_energy_index"].shape == (3,)
+
+
+def test_process_summed_rates_data(l1a_counts_dataset, livetime):
+    """Test the variables in the summed rates dataset"""
+
+    l1b_summed_rates_dataset = process_summed_rates_data(l1a_counts_dataset, livetime)
+
+    # Check that a xarray dataset is returned
+    assert isinstance(l1b_summed_rates_dataset, xr.Dataset)
+
+    valid_coords = {
+        "epoch",
+        "hydrogen_energy_index",
+        "helium3_energy_index",
+        "helium4_energy_index",
+        "helium_energy_index",
+        "carbon_energy_index",
+        "oxygen_energy_index",
+        "iron_energy_index",
+        "nitrogen_energy_index",
+        "silicon_energy_index",
+        "magnesium_energy_index",
+        "sulfur_energy_index",
+        "argon_energy_index",
+        "calcium_energy_index",
+        "sodium_energy_index",
+        "aluminum_energy_index",
+        "neon_energy_index",
+        "nickel_energy_index",
+    }
+
+    # Check that the dataset has the correct coords and variables
+    assert valid_coords == set(l1b_summed_rates_dataset.coords), "Coordinates mismatch"
+
+    assert "dynamic_threshold_state" in l1b_summed_rates_dataset.data_vars
+
+    for particle in PARTICLE_ENERGY_RANGE_MAPPING.keys():
+        assert f"{particle}" in l1b_summed_rates_dataset.data_vars
+        assert f"{particle}_delta_minus" in l1b_summed_rates_dataset.data_vars
+        assert f"{particle}_delta_plus" in l1b_summed_rates_dataset.data_vars
+        assert f"{particle}_energy_min" in l1b_summed_rates_dataset.data_vars
+        assert f"{particle}_energy_max" in l1b_summed_rates_dataset.data_vars
+
+
+def test_process_standard_rates_data(l1a_counts_dataset, livetime):
+    """Test the variables in the standard rates dataset"""
+    l1b_standard_rates_dataset = process_standard_rates_data(
+        l1a_counts_dataset, livetime
+    )
+
+    # Check that a xarray dataset is returned
     assert isinstance(l1b_standard_rates_dataset, xr.Dataset)
 
     # Define the data variables that should be present in the dataset
@@ -239,7 +466,7 @@ def test_validate_l1b_hk_data(l1b_hk_dataset):
 
     Parameters
     ----------
-    hk_dataset : xr.Dataset
+    l1b_hk_dataset : xr.Dataset
         Housekeeping dataset created by the L1B processing.
     """
     # TODO: finish test. HIT will provide an updated validation file to fix issues:
@@ -344,10 +571,11 @@ def test_hit_l1b(dependencies):
         Dictionary of L1A datasets and CCSDS packet file path
     """
     # TODO: update assertions after science data processing is completed
-    datasets = hit_l1b.hit_l1b(dependencies, "001")
+    datasets = hit_l1b(dependencies, "001")
 
-    assert len(datasets) == 2
+    assert len(datasets) == 3
     for dataset in datasets:
         assert isinstance(dataset, xr.Dataset)
     assert datasets[0].attrs["Logical_source"] == "imap_hit_l1b_hk"
     assert datasets[1].attrs["Logical_source"] == "imap_hit_l1b_standard-rates"
+    assert datasets[2].attrs["Logical_source"] == "imap_hit_l1b_summed-rates"

@@ -11,6 +11,7 @@ from numpy import ndarray
 from numpy.typing import NDArray
 
 from imap_processing.spice.geometry import cartesian_to_spherical
+from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
     get_back_position,
@@ -779,3 +780,45 @@ def get_de_az_el(v: NDArray) -> tuple[NDArray, NDArray]:
     spherical_coords = cartesian_to_spherical(v, degrees=False)
 
     return spherical_coords[:, 1], spherical_coords[:, 2]
+
+
+def get_eventtimes(
+    spin: NDArray, phase_angle: NDArray
+) -> tuple[NDArray, NDArray, NDArray]:
+    """
+    Get the event times.
+
+    Parameters
+    ----------
+    spin : np.ndarray
+        Spin number.
+    phase_angle : np.ndarray
+        Phase angle.
+
+    Returns
+    -------
+    event_times : np.ndarray
+        Event times.
+    spin_starts : np.ndarray
+        Spin start times.
+    spin_period_sec : np.ndarray
+        Spin period in seconds.
+
+    Notes
+    -----
+    Equation for event time:
+    t = t_(spin start) + t_(spin start sub)/1000 +
+    t_spin_period_sec * phase_angle/720
+    """
+    spin_df = get_spin_data()
+    index = np.searchsorted(spin_df["spin_number"].values, spin)
+    spin_starts = (
+        spin_df["spin_start_sec"].values[index]
+        + spin_df["spin_start_subsec"].values[index] / 1000
+    )
+
+    spin_period_sec = spin_df["spin_period_sec"].values[index]
+
+    event_times = spin_starts + spin_period_sec * (phase_angle / 720)
+
+    return event_times, spin_starts, spin_period_sec
