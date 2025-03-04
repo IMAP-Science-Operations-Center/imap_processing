@@ -178,11 +178,16 @@ class TestRectangularSkyMap:
         assert rectangular_map.data_dict != {}
 
         # Check that the map has the same values as the PSETs, summed
-        simple_summed_pset_counts = np.sum(
-            [pset["counts"].values for pset in self.l1c_pset_products], axis=0
-        ).reshape(rectangular_map.data_dict["counts"].shape)
+        simple_summed_pset_counts = np.zeros_like(rectangular_map.data_dict["counts"])
+        for pset in self.l1c_pset_products:
+            reshaped_pset_counts = pset["counts"].squeeze("epoch")
+            # Reshape to the map's counts shape
+            reshaped_pset_counts = reshaped_pset_counts.data.reshape(
+                rectangular_map.data_dict["counts"].shape
+            )
+            simple_summed_pset_counts += reshaped_pset_counts
 
-        np.testing.assert_allclose(
+        np.testing.assert_array_equal(
             rectangular_map.data_dict["counts"],
             simple_summed_pset_counts,
         )

@@ -207,6 +207,9 @@ class PointingSet(ABC):
     """
     Abstract class to contain pointing set (PSET) data in the context of ENA sky maps.
 
+    Any spatial axes - (azimuth, elevation) for Rectangularly gridded tilings or
+    (pixel index) for Healpix - must be stored in the last axis/axes of each data array.
+
     Parameters
     ----------
     dataset : xr.Dataset
@@ -362,7 +365,14 @@ class UltraPointingSet(PointingSet):
 
 # Define the Map classes
 class AbstractSkyMap(ABC):
-    """Abstract base class to contain map data in the context of ENA sky maps."""
+    """
+    Abstract base class to contain map data in the context of ENA sky maps.
+
+    Data values are stored in a dictionary, where the final (-1) axis
+    is the only spatial dimension. If the map is rectangular,
+    this axis is the raveled 2D grid.
+    If the map is Healpix, this axis is the 1D array of Healpix pixel indices.
+    """
 
     @abstractmethod
     def __init__(self) -> None:
@@ -384,7 +394,8 @@ class RectangularSkyMap(AbstractSkyMap):
     """
     Map which tiles the sky with a 2D rectangular grid of azimuth/elevation pixels.
 
-    NOTE: Internally, the map is stored as a 1D array of pixels.
+    NOTE: Internally, the map is stored as a 1D array of pixels,
+    with the final (-1) axis as the spatial axis.
 
     Parameters
     ----------
@@ -470,15 +481,17 @@ class RectangularSkyMap(AbstractSkyMap):
             )
 
         for value_key in value_keys:
-            # If multiple spatial axes present
-            # (i.e (az, el) for rectangular coordinate PSET),
-            # flatten them in the values array to match the raveled indices
-            raveled_pset_data = pointing_set.data[value_key].data.reshape(
-                pointing_set.num_points, -1
-            )
+            pset_values = pointing_set.data[value_key]
+
+            # If there is an epoch dim with size 1, flatten it out
+            if "epoch" in pset_values.dims and pset_values["epoch"].size == 1:
+                pset_values = pset_values.squeeze("epoch")
+
+            raveled_pset_data = pset_values.data.reshape(-1, pointing_set.num_points)
+
             if value_key not in self.data_dict:
                 # Initialize the map data array if it doesn't exist (values start at 0)
-                output_shape = (self.num_points, *raveled_pset_data.shape[1:])
+                output_shape = (*raveled_pset_data.shape[:-1], self.num_points)
                 self.data_dict[value_key] = np.zeros(output_shape)
 
             if index_match_method is IndexMatchMethod.PUSH:
