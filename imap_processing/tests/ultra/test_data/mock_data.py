@@ -145,9 +145,9 @@ def mock_l1c_pset_product(
             "epoch": [
                 tt_j2000ns,
             ],
+            "energy_bin_center": energy_bin_midpoints,
             "azimuth_bin_center": np.arange(0 + spacing_deg / 2, 360, spacing_deg),
             "elevation_bin_center": np.arange(-90 + spacing_deg / 2, 90, spacing_deg),
-            "energy_bin_center": energy_bin_midpoints,
         },
         attrs={
             "Logical_file_id": (
