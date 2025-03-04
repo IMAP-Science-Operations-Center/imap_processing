@@ -58,7 +58,7 @@ def interpolate_repoint_data(
     Returns
     -------
     repoint_df : pandas.DataFrame
-        Repoint table data with the interpolated such that there is one row
+        Repoint table data interpolated such that there is one row
         for each of the queried MET times. Output columns are:
             - `repoint_start_time`
             - `repoint_end_time`
