@@ -65,7 +65,7 @@ def test_l1b_cdf_filenames(l1b_dataset: xr.Dataset):
     l1b_dataset : xr.Dataset
         A ``xarray`` dataset containing the test data
     """
-    expected_src = "imap_idex_l1b_sci"
+    expected_src = "imap_idex_l1b_sci-1week"
     assert l1b_dataset.attrs["Logical_source"] == expected_src
 
 
@@ -81,7 +81,7 @@ def test_idex_cdf_file(l1b_dataset: xr.Dataset):
     file_name = write_cdf(l1b_dataset)
 
     assert file_name.exists()
-    assert file_name.name == "imap_idex_l1b_sci_20231214_v001.cdf"
+    assert file_name.name == "imap_idex_l1b_sci-1week_20231214_v001.cdf"
 
 
 def test_idex_waveform_units(l1b_dataset: xr.Dataset):

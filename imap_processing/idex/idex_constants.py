@@ -32,17 +32,17 @@ class IdexConstants:
 # Seconds per sample.
 FM_SAMPLING_RATE = 0.0038466235767167234e-6
 # Nanoseconds to seconds conversion
-NS_TO_S_CONV_FACTOR = 1e-9
+NS_TO_S = 1e-9
 # Microseconds to seconds conversion
-MS_TO_S_CONV_FACTOR = 1e-6
+US_TO_S = 1e-6
 
-TARGET_HIGH_FREQUENCY_CUTOFF = 100  # / 1e6  # Hz
+TARGET_HIGH_FREQUENCY_CUTOFF = 100
 
-TARGET_NOISE_FREQUENCY = 7000  # / 1e6  # MHz
+TARGET_NOISE_FREQUENCY = 7000
 
 
 class ConversionFactors(float, Enum):
-    """Enum class for conversion factor values."""
+    """Conversion factor values (DN to picocoulombs) for each of the six waveforms."""
 
     TOF_High = 2.89e-4
     TOF_Low = 5.14e-4

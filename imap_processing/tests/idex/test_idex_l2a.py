@@ -1,5 +1,7 @@
 """Tests the L2a processing for IDEX data"""
 
+from unittest import mock
+
 import numpy as np
 import pytest
 import xarray as xr
@@ -13,7 +15,6 @@ from imap_processing.idex.idex_l2a import (
     butter_lowpass_filter,
     calculate_kappa,
     calculate_snr,
-    emg,
     estimate_dust_mass,
     fit_impact,
     idex_l2a,
@@ -44,9 +45,10 @@ def l2a_dataset(decom_test_data: xr.Dataset) -> xr.Dataset:
     dataset : xr.Dataset
         A ``xarray`` dataset containing the test data
     """
-    dataset = idex_l2a(
-        idex_l1b(decom_test_data, data_version="001"), data_version="001"
-    )
+    with mock.patch("imap_processing.idex.idex_l1b.get_spice_data", return_value={}):
+        dataset = idex_l2a(
+            idex_l1b(decom_test_data, data_version="001"), data_version="001"
+        )
     return dataset
 
 
@@ -59,7 +61,7 @@ def test_l2a_cdf_filenames(l2a_dataset: xr.Dataset):
     l2a_dataset : xr.Dataset
         A ``xarray`` dataset containing the test data
     """
-    expected_src = "imap_idex_l2a_sci"
+    expected_src = "imap_idex_l2a_sci-1week"
     assert l2a_dataset.attrs["Logical_source"] == expected_src
 
 
@@ -223,13 +225,11 @@ def test_calculate_snr_warning(caplog):
     )
 
 
-@pytest.mark.filterwarnings("ignore:invalid")
-@pytest.mark.filterwarnings("ignore:overflow")
 def test_analyze_peaks_warning(caplog):
     """Tests that analyze_peaks() throws warning if the emg curve fit fails."""
     # Create a 2d list of peak indices
-    peaks = [[2, 3, 4]]
-    time = xr.DataArray(np.arange(10))
+    peaks = [[2]]
+    time = xr.DataArray(np.arange(6))
     # When there is a flat signal for TOF, we expect the fit to fail and a
     # warning to be logged.
     tof = np.ones_like(time)
@@ -243,26 +243,6 @@ def test_analyze_peaks_warning(caplog):
     # The fit_params and area_under_curve arrays should be zero
     assert np.all(fit_params == 0)
     assert np.all(area_under_curve == 0)
-
-
-def test_emg():
-    """Tests that emg() calculates an expected exponentially modified gaussian"""
-    mu = 4
-    sigma = 2.0
-    lam = 1.0
-    time = xr.DataArray(np.arange(100))
-    # The scipy.stats.exponnorm function's location and scale parameters match directly
-    # with mu and sigma from the standard EMG function, while its shape parameter K is
-    # found by taking one divided by the product of sigma and lambda.
-    # see:
-    # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.exponnorm.html
-    # for more details
-    k = 1 / (lam * sigma)
-    # Calculate the EMGs
-    g1 = exponnorm.pdf(time, k, loc=mu, scale=sigma)
-    g2 = emg(time, mu, sigma, lam)
-
-    assert np.allclose(g1, g2)
 
 
 def test_analyze_peaks_perfect_fits():
@@ -281,11 +261,12 @@ def test_analyze_peaks_perfect_fits():
     peaks = [np.asarray([peak_1, peak_2, peak_3]), np.asarray([])]
     sigma = 2.0
     lam = 1.0
+    k = 1 / (lam * sigma)
     # Create a tof array with an emg curve at each peak
     for peak in peaks[event]:
         # Create a perfect emg curve
         mu = peak - 0.4
-        gauss = emg(time.data, mu, sigma, lam)
+        gauss = exponnorm.pdf(time.data, k, mu, sigma)
         tof[peak - 5 : peak + 6] = gauss[peak - 5 : peak + 6]
 
     fit_params, area_under_curve = analyze_peaks(tof, time, mass_scale, event, peaks)
@@ -304,7 +285,6 @@ def test_estimate_dust_mass_no_noise_removal():
     Test that estimate_dust_mass() is fitting the signal properly when there is no
     noise removal.
     """
-    pass
     # TODO: The IDEX team is iterating on this function and will provide more
     #  information soon.
     start_time = -60
@@ -342,7 +322,7 @@ def test_lowpass_filter():
 
     Look at
     https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.filtfilt.html#scipy.signal.filtfilt
-    for source of testing example.
+    for the source of the testing example.
     """
 
     time = np.linspace(-60, 60, 512)

@@ -28,7 +28,7 @@ from numpy.typing import NDArray
 from scipy.integrate import quad
 from scipy.optimize import curve_fit
 from scipy.signal import butter, detrend, filtfilt, find_peaks
-from scipy.special import erfc
+from scipy.stats import exponnorm
 
 from imap_processing import imap_module_directory
 from imap_processing.idex import idex_constants
@@ -83,19 +83,19 @@ def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     )
 
     tof_high = l1b_dataset["TOF_High"]
-    hs_time = l1b_dataset["time_high_sr"]
-    ls_time = l1b_dataset["time_low_sr"]
+    hs_time = l1b_dataset["time_high_sample_rate"]
+    ls_time = l1b_dataset["time_low_sample_rate"]
 
     # Load an array of known masses of ions
     atomic_masses_path = f"{imap_module_directory}/idex/atomic_masses.csv"
     atomic_masses = pd.read_csv(atomic_masses_path)
-    masses = np.round(atomic_masses["Mass"], 1)
+    masses = atomic_masses["Mass"]
     stretches, shifts, mass_scales = time_to_mass(tof_high.data, hs_time.data, masses)
 
     mass_scales_da = xr.DataArray(
         name="mass_scale",
         data=mass_scales,
-        dims=("epoch", "time_high_sr_dim"),
+        dims=("epoch", "time_high_sample_rate_index"),
     )
     snr = calculate_snr(tof_high, hs_time)
     # Find peaks for each event. The peaks represent a TOF of an ion.
@@ -112,9 +112,9 @@ def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         np.arange(len(peaks_2d)),
         kwargs={"peaks_2d": peaks_2d},
         input_core_dims=[
-            ["time_high_sr_dim"],
-            ["time_high_sr_dim"],
-            ["time_high_sr_dim"],
+            ["time_high_sample_rate_index"],
+            ["time_high_sample_rate_index"],
+            ["time_high_sample_rate_index"],
             [],
         ],
         # TODO: Determine dimension name
@@ -135,8 +135,17 @@ def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             estimate_dust_mass,
             ls_time,
             waveform_dn,
-            input_core_dims=[["time_low_sr_dim"], ["time_low_sr_dim"]],
-            output_core_dims=[["fit_parameters"], [], [], [], ["time_low_sr_dim"]],
+            input_core_dims=[
+                ["time_low_sample_rate_index"],
+                ["time_low_sample_rate_index"],
+            ],
+            output_core_dims=[
+                ["fit_parameters"],
+                [],
+                [],
+                [],
+                ["time_low_sample_rate_index"],
+            ],
             vectorize=True,
             output_dtypes=[np.float64] * 6,
         )
@@ -187,11 +196,13 @@ def time_to_mass(
     Parameters
     ----------
     tof_high : numpy.ndarray
-        The time of flight array for one dust event.
+        The time of flight array for one dust event. Shape is
+        (epoch, high_time_sample_rate).
     high_sampling_time : numpy.ndarray
-        The high sampling time array for one dust event.
+        The high sampling time array for one dust event. Shape is
+        (epoch, high_time_sample_rate).
     masses : np.ndarray
-        Array of known masses of ions.
+        Array of known masses of ions. Shape is (21,).
 
     Returns
     -------
@@ -209,25 +220,32 @@ def time_to_mass(
     min_stretch = 1400
     random_stretches = np.linspace(min_stretch, min_stretch + 100, 10)
 
+    # Normalize time so start time is zero.
+    # This is necessary to find the correct time offset
     time = high_sampling_time - high_sampling_time[:, 0:1]
 
     # Start with a time offset of 0
     t_offset = 0
     shift = np.zeros((len(random_stretches), len(tof_high)))
-    corr = np.zeros_like(shift)
+    correlation = np.zeros_like(shift)
+    # Step 1
+    t_i = np.zeros((len(random_stretches), len(tof_high[0])))
+    # Step 2
+    t_calc = t_offset + random_stretches[:, np.newaxis] * np.sqrt(np.array(masses))
     for i in range(len(random_stretches)):
-        # Step 1
-        t_i = np.zeros(len(tof_high[0]))
-        # Step 2
-        t_calc = t_offset + random_stretches[i] * np.sqrt(masses)
-        # Loop through the elements of t_calc and set corresponding elements in t_i to 1
-        for idx in np.round(t_calc).astype(int):
-            if 0 <= idx < len(t_i):
-                t_i[idx] = 1
+        # Round every calculated time to the nearest int
+        t_calc_int = np.round(t_calc[i]).astype(int)
+        # Set values of t_i to 1 at the rounded calculated times if the time is less
+        # than the length of t_i
+        # E.g., if t_calc_int[0] = 5 then t_i[5] = 1.
+        t_i[i, t_calc_int[t_calc_int < len(t_i[0])]] = 1
         # Step 3
-        # Cross-correlate t_calc with TOF
+        # Cross-correlate t_i with TOF
+        # T_i simulates peaks at the times expected from the formula above,
+        # when this is cross correlated with the actual time of flight array with
+        # The measured peaks, we can measure the lags between them.
         for j in range(len(tof_high)):
-            cross_correlation = np.correlate(t_i, tof_high[j], mode="full")
+            cross_correlation = np.correlate(t_i[i], tof_high[j], mode="full")
             if np.all(cross_correlation == 0):
                 logger.warning(
                     "There are no correlations found between the TOF array "
@@ -236,26 +254,31 @@ def time_to_mass(
                 )
             # Find the lag corresponding to the maximum correlation
             # Represents the time lag from where the arrays are most correlated
-            # Zero lag position
-            middle = len(t_i) - 1
+
+            # When np.correlate mode is 'full', it returns the convolution at each
+            # point of overlap, with an output shape of (N+M-1,) where N and M are the
+            # lengths of the input arrays. The center point or zero lag is at index
+            # len(M) - 1. Positions before this are negative lags, and
+            # positions after are positive lags.
+            middle = len(t_i[0]) - 1
             shift[i, j] = np.argmax(cross_correlation) - middle
-            corr[i, j] = np.max(cross_correlation)
+            correlation[i, j] = np.max(cross_correlation)
 
     # Calculate the estimated mass for each time (after the time has been aligned using
     # the best t_offset and stretch_factor and converted to seconds).
     # Step 4
-    # Gets the best shift in seconds
+    # Gets the best shift in seconds (shift is currently in number of samples)
     best_shift = (
         idex_constants.FM_SAMPLING_RATE
-        * shift[np.argmax(corr, axis=0), np.arange(len(shift[0]))]
+        * shift[np.argmax(correlation, axis=0), np.arange(len(shift[0]))]
     )
     # Get the best stretch in seconds
     best_stretch = (
-        idex_constants.NS_TO_S_CONV_FACTOR * random_stretches[np.argmax(corr, axis=0)]
+        idex_constants.NS_TO_S * random_stretches[np.argmax(correlation, axis=0)]
     )
 
     mass_scale = (
-        (time * idex_constants.MS_TO_S_CONV_FACTOR - best_shift[:, np.newaxis])
+        (time * idex_constants.US_TO_S - best_shift[:, np.newaxis])
         / best_stretch[:, np.newaxis]
     ) ** 2
 
@@ -264,7 +287,11 @@ def time_to_mass(
 
 def calculate_kappa(mass_scales: np.ndarray, peaks_2d: list) -> NDArray:
     """
-    Calculate the kappa value for each peak.
+    Calculate the kappa value for each mass scale.
+
+    Kappa represents the difference between the observed mass peaks and their
+    expected integer values in the calculated mass scale. The value ranges between zero
+    and one. A kappa value closer to zero indicates a better accuracy of the mass scale.
 
     Parameters
     ----------
@@ -311,7 +338,7 @@ def calculate_snr(tof_high: xr.DataArray, hs_time: xr.DataArray) -> NDArray:
         np.logical_and(
             hs_time >= BaselineNoiseTime.START, hs_time <= BaselineNoiseTime.STOP
         ),
-        tof_high.data,
+        tof_high,
         np.nan,
     )
     if np.all(np.isnan(baseline_noise)):
@@ -320,9 +347,9 @@ def calculate_snr(tof_high: xr.DataArray, hs_time: xr.DataArray) -> NDArray:
             f"There is no signal from {BaselineNoiseTime.START} to "
             f"{BaselineNoiseTime.STOP} ns. Returning np.nan SNR values"
         )
-        return np.zeros(len(hs_time))
+        return np.full(len(hs_time), fill_value=np.nan)
     # Get the max signal without baseline noise
-    tof_max = np.max(tof_high.data, axis=1) - np.nanmean(baseline_noise, axis=1)
+    tof_max = np.max(tof_high, axis=1) - np.nanmean(baseline_noise, axis=1)
     tof_sigma = np.nanstd(baseline_noise, axis=1, ddof=1)
     # Return snr ratio
     return tof_max / tof_sigma
@@ -374,33 +401,45 @@ def analyze_peaks(
         start = max(0, peak - 5)
         end = min(len(tof_high), peak + 6)
 
-        time_slice = np.asarray(high_sampling_time[start:end].data)
-        tof_slice = np.asarray(tof_high[start:end].data)
+        time_slice = high_sampling_time[start:end]
+        tof_slice = tof_high[start:end]
 
         param = fit_emg(time_slice, tof_slice, event_num)
-        if param is not None:
-            area = calculate_area_under_emg(time_slice, param)
-            # Find the index where time is closest to mu
-            time_idx = np.argmin(np.abs(high_sampling_time.data - param[0]))
-            mass = mass_scale[time_idx]
-            # Round calculated mass to get the index
-            # If that index is already taken, keep increasing the index by one
-            # until we find an empty slot.
-            # This ensures we don't overwrite existing data when we have multiple peaks
-            # close to the same mass number
-            if mass < 0:
-                logger.warning(f"Warning: Calculated a negative mass: {mass}.")
+        if param is None:
+            continue
 
-            mass = max(0, round(mass))
-            while np.all(fit_params[mass:] != 0) and mass < 500:
-                mass += 1
-            if mass < 500:
-                fit_params[mass] = param
-                area_under_emg[mass] = area
-            else:
-                logger.warning(
-                    f"Unable to find a slot for mass: {mass}. Discarding " f"value."
-                )
+        area = calculate_area_under_emg(time_slice, param)
+        # extract the variables
+        k, mu, sigma = param
+        # Calculate lambda
+        lam = 1 / (k * sigma)
+        # Find the index where time is closest to mu
+        time_idx = np.argmin(np.abs(high_sampling_time.data - mu))
+        mass = mass_scale[time_idx]
+        # Round calculated mass to get the index
+        # If that index is already taken, keep increasing the index by one
+        # until we find an empty slot.
+        # This ensures we don't overwrite existing data when we have multiple peaks
+        # close to the same mass number
+        if mass < 0:
+            logger.warning(f"Warning: Calculated a negative mass: {mass}.")
+
+        mass = max(0, round(mass))
+        # Find the first index with non-zero fit parameters, starting from current mass
+        non_zero_idxs = np.nonzero(np.all(fit_params[mass:] != 0, axis=-1))[0]
+
+        # Determine index to use
+        # If no non-zero parameters found, use current mass index
+        # Otherwise, use the current mass plus offset to first non-zero index
+        idx = mass if not non_zero_idxs.size else mass + non_zero_idxs[0]
+
+        if idx < 500:
+            fit_params[idx] = np.array([mu, sigma, lam])
+            area_under_emg[idx] = area
+        else:
+            logger.warning(
+                f"Unable to find a slot for mass: {mass}. Discarding " f"value."
+            )
 
     return fit_params, area_under_emg
 
@@ -410,6 +449,10 @@ def fit_emg(
 ) -> Union[NDArray, None]:
     """
     Fit an exponentially modified gaussian function to the peak signal.
+
+    Scipy.stats.exponnorm.pdf uses parameters shape (k),
+    location (mu), and scale (sigma) where k = 1/(sigma*lambda)
+    with lambda being the exponential decay rate.
 
     Parameters
     ----------
@@ -423,8 +466,8 @@ def fit_emg(
     Returns
     -------
     param : numpy.ndarray or None
-        Fitted EMG optimal values for the parameters (popt) [mu, sigma, lambda]
-        if fit successful, None otherwise.
+        Fitted EMG optimal values for the parameters (popt) [k (shape parameter), mu,
+        sigma] if fit successful, None otherwise.
     """
     # Initial Guess for the parameters of the emg fit:
     # center of gaussian
@@ -432,11 +475,15 @@ def fit_emg(
     sigma = np.std(peak_time) / 10
     # Decay rate
     lam = 1 / (peak_time[-1] - peak_time[0])
-
-    p0 = [mu, sigma, lam]
+    # Calculate shape parameter K from lambda and sigma
+    k = 1 / (lam * sigma)
+    p0 = [k, mu, sigma]
 
     try:
-        param, _ = curve_fit(emg, peak_time, peak_signal, p0=p0, maxfev=100_000)
+        param, _ = curve_fit(
+            exponnorm.pdf, peak_time, peak_signal, p0=p0, maxfev=100_000
+        )
+
     except RuntimeError as e:
         logger.warning(
             f"Failed to fit EMG curve: {e}\n"
@@ -450,33 +497,6 @@ def fit_emg(
     return param
 
 
-def emg(time: np.ndarray, mu: float, sigma: float, lam: float) -> NDArray:
-    """
-    Define an exponentially modified gaussian function.
-
-    Parameters
-    ----------
-    time : numpy.ndarray
-        Time points at which to evaluate the EMG function.
-    mu : float
-       The distribution mean of the gaussian.
-    sigma : float
-       Distribution spread about the mean.
-    lam : float
-        Exponential decay rate.
-
-    Returns
-    -------
-    numpy.ndarray
-        EMG function values calculated at the input time points.
-    """
-    # A normally distributed gaussian with an exponential decay.
-    prefactor = lam / 2
-    exponent = np.exp(prefactor * (2 * mu + lam * sigma**2 - 2 * time))
-    erfc_part = erfc((mu + lam * sigma**2 - time) / (np.sqrt(2) * sigma))
-    return prefactor * exponent * erfc_part
-
-
 def calculate_area_under_emg(time_slice: np.ndarray, param: np.ndarray) -> float:
     """
     Calculate the area under the emg fit which is equal to the impact charge.
@@ -486,17 +506,17 @@ def calculate_area_under_emg(time_slice: np.ndarray, param: np.ndarray) -> float
     time_slice : numpy.ndarray
         Time values around the peak.
     param : numpy.ndarray
-        Optimal parameters (mu, sigma, lam) for the emg curve fit.
+        Optimal parameters (k, mu, sigma) for the emg curve fit.
 
     Returns
     -------
     float
         Total area under the emg curve.
     """
-    # Extract EMG fit parameters: mu, sigma, lam
-    mu, sigma, lam = param
+    # Extract EMG fit parameters: k, mu, sigma
+    k, mu, sigma = param
     # Compute integral
-    area, _ = quad(emg, time_slice[0], time_slice[-1], args=(mu, sigma, lam))
+    area, _ = quad(exponnorm.pdf, time_slice[0], time_slice[-1], args=(k, mu, sigma))
 
     return float(area)
 
@@ -539,11 +559,11 @@ def estimate_dust_mass(
     #         information soon.
     signal = np.array(target_signal.data)
     time = np.array(low_sampling_time.data)
-    mask = np.logical_and(
+    good_mask = np.logical_and(
         time >= BaselineNoiseTime.START,
         time <= BaselineNoiseTime.STOP,
     )
-    if not np.any(mask):
+    if not np.any(good_mask):
         logger.warning(
             "Unable to find baseline noise. "
             f"There is no signal from {BaselineNoiseTime.START} to "
@@ -551,7 +571,7 @@ def estimate_dust_mass(
         )
     if remove_noise:
         # Remove noise due to "microphonics"
-        signal = remove_signal_noise(time, signal, mask)
+        signal = remove_signal_noise(time, signal, good_mask)
     # Time before image charge
     pre = -2.0
     # Get signal values where the time is before the image charge
@@ -569,13 +589,14 @@ def estimate_dust_mass(
     p0 = [time_of_impact, constant_offset, amplitude, rise_time, discharge_time]
 
     try:
-        param, _ = curve_fit(
-            fit_impact,
-            time,
-            signal,
-            p0=p0,
-            maxfev=100_000,  # , epsfcn=1e-10
-        )
+        with np.errstate(invalid="ignore", over="ignore"):
+            param, _ = curve_fit(
+                fit_impact,
+                time,
+                signal,
+                p0=p0,
+                maxfev=100_000,  # , epsfcn=1e-10
+            )
     except RuntimeError as e:
         logger.warning(
             f"Failed to fit curve: {e}\n"
@@ -612,9 +633,7 @@ def fit_impact(
     discharge_time: float,
 ) -> NDArray:
     """
-    Fit function for the Ion Grid and two target signals given by (Horanyi, 2014).
-
-    Y(t) = C₀ + H(t - t₀)[C₂(1 - e^(-(t-t₀)/τ₁))e^(-(t-t₀)/τ₂) - C₁]]
+    Fit function for the Ion Grid and two target signals.
 
     Parameters
     ----------
@@ -635,6 +654,17 @@ def fit_impact(
     -------
     np.ndarray
         Function values calculated at the input time points.
+
+    Notes
+    -----
+    Impact charge fit function [1]_:
+    Y(t) = C₀ + H(t - t₀)[C₂(1 - e^(-(t-t₀)/τ₁))e^(-(t-t₀)/τ₂) - C₁]
+
+    References
+    ----------
+    .. [1] Horányi, M., et al. (2014), The Lunar Dust Experiment (LDEX) Onboard the
+       Lunar Atmosphere and Dust Environment Explorer (LADEE) mission, Space Sci. Rev.,
+       185(1–4), 93–113, doi:10.1007/s11214-014-0118-7.
     """
     exponent_1 = 1.0 - np.exp(-(time - time_of_impact) / rise_time)
     exponent_2 = np.exp(-(time - time_of_impact) / discharge_time)
@@ -644,7 +674,7 @@ def fit_impact(
 
 
 def remove_signal_noise(
-    time: np.ndarray, signal: np.ndarray, mask: np.ndarray
+    time: np.ndarray, signal: np.ndarray, good_mask: np.ndarray
 ) -> NDArray:
     """
     Remove linear, sine wave, and high frequency background noise from the input signal.
@@ -655,7 +685,7 @@ def remove_signal_noise(
         Time values for the signal.
     signal : numpy.ndarray
         Target or Ion Grid signal.
-    mask : numpy.ndarray
+    good_mask : numpy.ndarray
         Boolean mask for the signal array to determine where the baseline noise is.
 
     Returns
@@ -666,9 +696,9 @@ def remove_signal_noise(
     # Remove linear noise
     signal = detrend(signal, type="linear")
     # Remove sine wave Background
-    baseline_delined = signal[mask]
+    baseline_detrended = signal[good_mask]
     # Approximate initial values for the fit
-    amplitude: float = max(baseline_delined)
+    amplitude: float = max(baseline_detrended)
     frequency = idex_constants.TARGET_NOISE_FREQUENCY
     # Horizontal wave shift
     phase_shift = 45
@@ -679,7 +709,12 @@ def remove_signal_noise(
     try:
         # Set epsfcn to 1e-10 to mimic what lmfit minimize does
         param, _ = curve_fit(
-            sine_fit, time[mask], baseline_delined, p0=p0, maxfev=100_000, epsfcn=1e-10
+            sine_fit,
+            time[good_mask],
+            baseline_detrended,
+            p0=p0,
+            maxfev=100_000,
+            epsfcn=1e-10,
         )
         # Remove the sine wave background from the signal
         signal -= sine_fit(time, *param)
