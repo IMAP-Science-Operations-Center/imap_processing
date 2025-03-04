@@ -130,14 +130,14 @@ def filter_valid_groups(grouped_data: xr.Dataset) -> xr.Dataset:
     return filtered_data
 
 
-def find_groups(data: xr.Dataset) -> xr.Dataset:
+def find_groups(accumulated_data: xr.Dataset) -> xr.Dataset:
     """
     Group data based on `mag_acq_tm_coarse` values.
 
     Parameters
     ----------
-    data : xr.Dataset
-        Packets dataset.
+    accumulated_data : xr.Dataset
+        Packets dataset accumulated over 1 min.
 
     Returns
     -------
@@ -146,25 +146,28 @@ def find_groups(data: xr.Dataset) -> xr.Dataset:
     """
     pkt_range = (0, 3)
 
-    time_seconds = calculate_time(data["mag_acq_tm_coarse"], data["mag_acq_tm_fine"])
-    data["time_seconds"] = time_seconds
-    sorted_data = data.sortby("time_seconds", ascending=True)
+    time_seconds = calculate_time(
+        accumulated_data["mag_acq_tm_coarse"], accumulated_data["mag_acq_tm_fine"]
+    )
+    accumulated_data["time_seconds"] = time_seconds
+    sorted_data = accumulated_data.sortby("time_seconds", ascending=True)
     status_values = sorted_data["mag_status"]
 
     pkt_counter = get_pkt_counter(status_values)
-    data["pkt_counter"] = pkt_counter
+    accumulated_data["pkt_counter"] = pkt_counter
 
     # Use pkt_counter == 0 to define the beginning of the group.
     # Find time at this index and use it as the beginning time for the group.
-    start_times = data["time_seconds"][(pkt_counter == pkt_range[0])]
+    start_times = accumulated_data["time_seconds"][(pkt_counter == pkt_range[0])]
     start_time = start_times.min()
     # Use pkt_counter == 3 to define the end of the group.
-    end_times = data["time_seconds"][([pkt_counter == pkt_range[-1]][-1])]
+    end_times = accumulated_data["time_seconds"][([pkt_counter == pkt_range[-1]][-1])]
     end_time = end_times.max()
 
     # Filter out data before the pkt_counter=0 and after the last pkt_counter=3.
-    grouped_data = data.where(
-        (data["time_seconds"] >= start_time) & (data["time_seconds"] <= end_time),
+    grouped_data = accumulated_data.where(
+        (accumulated_data["time_seconds"] >= start_time)
+        & (accumulated_data["time_seconds"] <= end_time),
         drop=True,
     )
 
@@ -292,14 +295,14 @@ def get_time(grouped_data: xr.Dataset, group: int, pkt_counter: xr.DataArray) ->
     return time_data
 
 
-def parse_packet(xarray_data: xr.Dataset) -> list[dict]:
+def parse_packet(accumulated_data: xr.Dataset) -> list[dict]:
     """
     Parse the MAG packets.
 
     Parameters
     ----------
-    xarray_data : xr.Dataset
-        Packet data from 1 minute accumulated packets file.
+    accumulated_data : xr.Dataset
+        Packets dataset accumulated over 1 min.
 
     Returns
     -------
@@ -308,7 +311,7 @@ def parse_packet(xarray_data: xr.Dataset) -> list[dict]:
     """
     logger.info("Parsing MAG.")
 
-    grouped_data = find_groups(xarray_data)
+    grouped_data = find_groups(accumulated_data)
     unique_groups = np.unique(grouped_data["group"])
     mag_data = []
 

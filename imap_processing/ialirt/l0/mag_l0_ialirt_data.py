@@ -1,5 +1,9 @@
 """Classes for Level 0 MAG I-ALiRT data."""
 
+# Science samples are split across 4 sequential packets so
+# several packets need to be processed before a single science
+# sample can be processed. The packets are as follows:
+
 from __future__ import annotations
 
 
