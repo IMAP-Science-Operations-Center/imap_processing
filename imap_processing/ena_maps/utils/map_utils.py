@@ -15,17 +15,16 @@ def bin_single_array_at_indices(
     projection_grid_shape: tuple[int, int],
     projection_indices: NDArray,
     input_indices: NDArray | None = None,
-    spatial_axis: int = 0,
 ) -> NDArray:
     """
     Bin an array of values at the given indices.
 
-    NOTE: The output array's spatial axis is always the 0th axis.
+    NOTE: The output array's spatial axis is always the final (-1) axis.
 
     Parameters
     ----------
     value_array : NDArray
-        Array of values to bin. spatial_axis must be the one and only spatial axis.
+        Array of values to bin. The final axis be the one and only spatial axis.
         If other axes are present, they will be binned independently
         along the spatial axis.
     projection_grid_shape : tuple[int]
@@ -39,9 +38,7 @@ def bin_single_array_at_indices(
         Ordered indices for input grid, corresponding to indices in projection grid.
         1 dimensional. May be non-unique, depending on the projection method.
         If None (default), an arange of the same length as the
-        0th axis of value_array is used.
-    spatial_axis : int, optional
-        The axis along which the spatial indices are defined, by default 0.
+        final axis of value_array is used.
 
     Returns
     -------
@@ -57,10 +54,7 @@ def bin_single_array_at_indices(
         If the input value_array has dimensionality less than 1.
     """
     if input_indices is None:
-        input_indices = np.arange(value_array.shape[spatial_axis])
-
-    # Transpose the value array so the spatial axis is the 0th axis
-    value_array = np.moveaxis(value_array, spatial_axis, 0)
+        input_indices = np.arange(value_array.shape[-1])
 
     # Both sets of indices must be 1D with the same number of elements
     if input_indices.ndim != 1 or projection_indices.ndim != 1:
@@ -88,16 +82,11 @@ def bin_single_array_at_indices(
         binned_values = np.apply_along_axis(
             lambda x: np.bincount(
                 projection_indices,
-                weights=x[input_indices, ...],
+                weights=x[..., input_indices],
                 minlength=num_projection_indices,
             ),
-            axis=0,
+            axis=-1,
             arr=value_array,
-        )
-    else:
-        raise NotImplementedError(
-            "Only 1+ Dimensional arrays are supported for binning. "
-            f"Received array with shape {value_array.shape}."
         )
     return binned_values
 
@@ -107,7 +96,6 @@ def bin_values_at_indices(
     projection_grid_shape: tuple[int, int],
     projection_indices: NDArray,
     input_indices: NDArray | None = None,
-    spatial_axis: int = 0,
 ) -> dict[str, NDArray]:
     """
     Project values from input grid to projection grid based on matched indices.
@@ -116,9 +104,9 @@ def bin_values_at_indices(
     ----------
     input_values_to_bin : dict[str, NDArray]
         Dict matching variable names to arrays of values to bin.
-        The spatial_axis of each array must be the one and only spatial axis,
+        The final (-1) axis of each array must be the one and only spatial axis,
         which the indices correspond to and on which the values will be binned.
-        The other axes will be binned independently along this 0th axis.
+        The other axes will be binned independently along this final axis.
     projection_grid_shape : tuple[int, int]
         The shape of the grid onto which values are projected (rows, columns).
         This size of the resulting grid (rows * columns) will be the size of the
@@ -130,8 +118,6 @@ def bin_values_at_indices(
         Ordered indices for input grid, corresponding to indices in projection grid.
         1 dimensional. May be non-unique, depending on the projection method.
         If None (default), behavior is determined by bin_single_array_at_indices.
-    spatial_axis : int, optional
-        The axis along which the spatial indices are defined, by default 0.
 
     Returns
     -------
@@ -151,7 +137,6 @@ def bin_values_at_indices(
             projection_grid_shape=projection_grid_shape,
             projection_indices=projection_indices,
             input_indices=input_indices,
-            spatial_axis=spatial_axis,
         )
 
     return binned_values_dict

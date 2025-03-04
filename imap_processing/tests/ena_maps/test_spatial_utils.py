@@ -91,7 +91,7 @@ def test_rewrap_even_spaced_az_el_grid_1d(order):
     )
     rewrapped_grid_known_shape = spatial_utils.rewrap_even_spaced_az_el_grid(
         raveled_values,
-        shape=orig_shape,
+        grid_shape=orig_shape,
         order=order,
     )
 
@@ -102,19 +102,19 @@ def test_rewrap_even_spaced_az_el_grid_1d(order):
 @pytest.mark.parametrize("order", ["C", "F"])
 def test_rewrap_even_spaced_az_el_grid_2d(order):
     """Test rewrap_even_spaced_az_el_grid function, with extra axis."""
-    orig_shape = (360 * 12, 180 * 12, 5)
+    orig_shape = (5, 360 * 12, 180 * 12)
     orig_grid = np.fromfunction(lambda i, j, k: i**2 + j + k, orig_shape, dtype=int)
-    raveled_values = orig_grid.reshape(-1, 5, order=order)
+    raveled_values = orig_grid.reshape(5, -1, order=order)
     rewrapped_grid_infer_shape = spatial_utils.rewrap_even_spaced_az_el_grid(
         raveled_values,
         order=order,
     )
     rewrapped_grid_known_shape = spatial_utils.rewrap_even_spaced_az_el_grid(
         raveled_values,
-        shape=orig_shape,
+        grid_shape=orig_shape[-2:],
         order=order,
     )
-    assert raveled_values.shape == (360 * 12 * 180 * 12, 5)
+    assert raveled_values.shape == (5, 360 * 12 * 180 * 12)
     assert np.array_equal(rewrapped_grid_infer_shape, orig_grid)
     assert np.array_equal(rewrapped_grid_known_shape, orig_grid)
 

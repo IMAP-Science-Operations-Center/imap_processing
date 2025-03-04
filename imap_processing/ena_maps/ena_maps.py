@@ -368,8 +368,8 @@ class AbstractSkyMap(ABC):
     """
     Abstract base class to contain map data in the context of ENA sky maps.
 
-    Data values are stored in a dictionary, where the 0th axis is the
-    only spatial dimension. If the map is rectangular,
+    Data values are stored in a dictionary, where the final (-1) axis
+    is the only spatial dimension. If the map is rectangular,
     this axis is the raveled 2D grid.
     If the map is Healpix, this axis is the 1D array of Healpix pixel indices.
     """
@@ -395,7 +395,7 @@ class RectangularSkyMap(AbstractSkyMap):
     Map which tiles the sky with a 2D rectangular grid of azimuth/elevation pixels.
 
     NOTE: Internally, the map is stored as a 1D array of pixels,
-    with the 0th axis as the spatial axis.
+    with the final (-1) axis as the spatial axis.
 
     Parameters
     ----------
@@ -491,7 +491,7 @@ class RectangularSkyMap(AbstractSkyMap):
 
             if value_key not in self.data_dict:
                 # Initialize the map data array if it doesn't exist (values start at 0)
-                output_shape = (self.num_points, *raveled_pset_data.shape[:-1])
+                output_shape = (*raveled_pset_data.shape[:-1], self.num_points)
                 self.data_dict[value_key] = np.zeros(output_shape)
 
             if index_match_method is IndexMatchMethod.PUSH:
@@ -502,16 +502,12 @@ class RectangularSkyMap(AbstractSkyMap):
                         len(self.sky_grid.el_bin_midpoints),
                     ),
                     projection_indices=matched_indices_push,
-                    spatial_axis=-1,
                 )
             else:
                 raise NotImplementedError(
                     "The 'pull' method of index matching is not yet implemented."
                 )
             self.data_dict[value_key] += pointing_projected_values
-
-            # These are not used after the loop, and can be large - Delete them.
-            del pset_values, raveled_pset_data, pointing_projected_values
 
     def __repr__(self) -> str:
         """
