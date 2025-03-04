@@ -101,10 +101,31 @@ x_coin:
 
 event_times:
   <<: *default_float32
-  CATDESC: time of event as calculated using aux and de l1a packets
+  CATDESC: time of event as calculated using Universal Spin Table and de l1a packets
   FIELDNAM: event_times
   LABLAXIS: event times
   UNITS: seconds
+
+spin_starts:
+  <<: *default_float32
+  CATDESC: time of spin from Universal Spin Table.
+  FIELDNAM: spin_starts
+  LABLAXIS: spin starts
+  UNITS: seconds
+
+phase_angle:
+  <<: *default_float32
+  CATDESC: Phase angle from the direct event packet in 1/2 degree increments (range is 0-719)
+  FIELDNAM: phase_angle
+  LABLAXIS: phase angle
+  UNITS: degrees
+
+spin:
+  <<: *default_uint32
+  CATDESC: Spin number.
+  FIELDNAM: spin_number
+  LABLAXIS: spin number
+  UNITS: " "
 
 tof_start_stop:
   <<: *default_float32

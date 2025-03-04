@@ -171,7 +171,7 @@ class TestRectangularSkyMap:
         for ultra_pset in self.ultra_psets:
             rectangular_map.project_pset_values_to_map(
                 ultra_pset,
-                pset_value_keys=["counts", "exposure_time"],
+                value_keys=["counts", "exposure_time"],
                 index_match_method=index_matching_method,
             )
 
@@ -179,11 +179,16 @@ class TestRectangularSkyMap:
         assert rectangular_map.data_dict != {}
 
         # Check that the map has the same values as the PSETs, summed
-        simple_summed_pset_counts = np.sum(
-            [pset["counts"].values for pset in self.l1c_pset_products], axis=0
-        ).reshape(rectangular_map.data_dict["counts"].shape)
+        simple_summed_pset_counts = np.zeros_like(rectangular_map.data_dict["counts"])
+        for pset in self.l1c_pset_products:
+            reshaped_pset_counts = pset["counts"].squeeze("epoch")
+            # Reshape to the map's counts shape
+            reshaped_pset_counts = reshaped_pset_counts.data.reshape(
+                rectangular_map.data_dict["counts"].shape
+            )
+            simple_summed_pset_counts += reshaped_pset_counts
 
-        np.testing.assert_allclose(
+        np.testing.assert_array_equal(
             rectangular_map.data_dict["counts"],
             simple_summed_pset_counts,
         )
@@ -200,30 +205,14 @@ class TestRectangularSkyMap:
         with pytest.raises(ValueError, match="Value key invalid not found"):
             rectangular_map.project_pset_values_to_map(
                 self.ultra_psets[0],
-                pset_value_keys=["invalid"],
-                index_match_method=index_matching_method,
-            )
-
-        # An error should be raised if the number of pset_value_keys does not match
-        # the number of skymap_value_keys
-        with pytest.raises(
-            ValueError,
-            match=(
-                "The number of pointing set value keys must match the number of"
-                " sky map value keys."
-            ),
-        ):
-            rectangular_map.project_pset_values_to_map(
-                self.ultra_psets[0],
-                pset_value_keys=["counts", "exposure_time"],
-                skymap_value_keys=["counts_map"],
+                value_keys=["invalid"],
                 index_match_method=index_matching_method,
             )
 
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
     @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
     def test_project_pset_values_to_map_pull_method(self, mock_frame_transform_az_el):
-        """Test projection to Rect. Map fails w "pull" index matching method."""
+        """Test projection to Rect. Map with "pull" index matching method."""
 
         index_matching_method = ena_maps.IndexMatchMethod.PULL
         skymap_spacing = 10
@@ -255,7 +244,7 @@ class TestRectangularSkyMap:
 
             rectangular_map.project_pset_values_to_map(
                 ultra_pset,
-                pset_value_keys=["counts", "exposure_time"],
+                value_keys=["counts", "exposure_time"],
                 index_match_method=index_matching_method,
             )
             expected_value_every_pixel += pset_num
@@ -361,12 +350,13 @@ class TestHealpixSkyMap:
 
         input_bright_pixel_az_el_deg = (110, 55)
         mock_pset_input_frame.data["counts"].values[
+            :,
+            :,
             int(input_bright_pixel_az_el_deg[0] // mock_pset_input_frame.spacing_deg),
             int(
                 (90 + input_bright_pixel_az_el_deg[1])
                 // mock_pset_input_frame.spacing_deg
             ),
-            :,
         ] = 1
 
         # Create a Healpix map
@@ -379,7 +369,7 @@ class TestHealpixSkyMap:
         # Project the PointingSet to the Healpix map
         hp_map.project_pset_values_to_map(
             mock_pset_input_frame,
-            pset_value_keys=[
+            value_keys=[
                 "counts",
             ],
             index_match_method=index_matching_method,
@@ -389,7 +379,7 @@ class TestHealpixSkyMap:
         assert hp_map.data_dict != {}
 
         # Find the maximum value in the spatial pixel dimension of the healpix map
-        bright_hp_pixel_index = hp_map.data_dict["counts"][:, 0].argmax()
+        bright_hp_pixel_index = hp_map.data_dict["counts"][0, :].argmax()
         bright_hp_pixel_az_el = hp_map.az_el_points[bright_hp_pixel_index]
 
         np.testing.assert_allclose(

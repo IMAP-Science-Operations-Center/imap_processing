@@ -201,6 +201,9 @@ class PointingSet(ABC):
     """
     Abstract class to contain pointing set (PSET) data in the context of ENA sky maps.
 
+    Any spatial axes - (azimuth, elevation) for Rectangularly gridded tilings or
+    (pixel index) for Healpix - must be stored in the last axis/axes of each data array.
+
     Parameters
     ----------
     dataset : xr.Dataset
@@ -356,7 +359,14 @@ class UltraPointingSet(PointingSet):
 
 # Define the Map classes
 class AbstractSkyMap(ABC):
-    """Abstract base class to contain map data in the context of ENA sky maps."""
+    """
+    Abstract base class to contain map data in the context of ENA sky maps.
+
+    Data values are stored in a dictionary, where the final (-1) axis
+    is the only spatial dimension. If the map is rectangular,
+    this axis is the raveled 2D grid.
+    If the map is Healpix, this axis is the 1D array of Healpix pixel indices.
+    """
 
     @abstractmethod
     def __init__(self) -> None:
@@ -379,8 +389,7 @@ class AbstractSkyMap(ABC):
     def project_pset_values_to_map(
         self,
         pointing_set: PointingSet,
-        pset_value_keys: list[str] | None = None,
-        skymap_value_keys: list[str] | None = None,
+        value_keys: list[str] | None = None,
         index_match_method: IndexMatchMethod = IndexMatchMethod.PUSH,
     ) -> None:
         """
@@ -394,16 +403,12 @@ class AbstractSkyMap(ABC):
         ----------
         pointing_set : PointingSet
             The pointing set containing the values to project to the map.
-        pset_value_keys : list[tuple[str, IndexMatchMethod]] | None
+        value_keys : list[tuple[str, IndexMatchMethod]] | None
             The keys of the values in the PointingSet to project to the map.
             Ex.: ["counts", "flux"]
             data_vars named each key must be present, and of the same dimensionality in
             each pointing set which is to be projected to the map.
             Default is None, in which case all data_vars in the pointing set are used.
-        skymap_value_keys : list[str] | None
-            The keys to use for the projected values in the map.
-            Default is None, in which case the same keys as the pointing set are used.
-            If not None, must have the same length as pset_value_keys.
         index_match_method : IndexMatchMethod, optional
             The method of index matching to use for all values.
             Default is IndexMatchMethod.PUSH.
@@ -413,79 +418,82 @@ class AbstractSkyMap(ABC):
         ValueError
             If a value key is not found in the pointing set.
         """
-        if pset_value_keys is None:
-            pset_value_keys = list(pointing_set.data.data_vars.keys())
-        # If skymap_value_keys is not provided, use the same keys as the pointing set
-        if skymap_value_keys is None:
-            skymap_value_keys = pset_value_keys
-        # If it is provided, there must be one skymap value key for each pointing set
-        # value key
-        elif len(skymap_value_keys) != len(pset_value_keys):
-            raise ValueError(
-                "The number of pointing set value keys must match the number of "
-                "sky map value keys.\n"
-                f"Received Pointing Set Value Keys: {pset_value_keys}"
-                f"\nReceived Sky Map Value Keys: {skymap_value_keys}"
-            )
+        if value_keys is None:
+            value_keys = list(pointing_set.data.data_vars.keys())
+        for value_key in value_keys:
+            if value_key not in pointing_set.data.data_vars:
+                raise ValueError(f"Value key {value_key} not found in pointing set.")
 
-        for pset_key in pset_value_keys:
-            if pset_key not in pointing_set.data.data_vars:
-                raise ValueError(f"Value key {pset_key} not found in pointing set.")
-
-        # Determine the shape of the grid onto which values
-        # are projected in the binning step.
-        projection_grid_shape_: tuple[int, ...]  # To appease mypy
-        if self.tiling_type is SkyTilingType.HEALPIX:
-            # For Healpix, the projection grid shape is 1D
-            projection_grid_shape_ = (self.num_points,)
-        elif self.tiling_type is SkyTilingType.RECTANGULAR:
-            # For rectangular grid, the projection grid shape is 2D
-            projection_grid_shape_ = (
-                len(self.sky_grid.az_bin_midpoints),
-                len(self.sky_grid.el_bin_midpoints),
-            )
-
-        for pset_key, map_key in zip(pset_value_keys, skymap_value_keys):
-            # If multiple spatial axes present
-            # (i.e (az, el) for rectangular coordinate PSET),
-            # flatten them in the values array to match the raveled indices
-            raveled_pset_data = pointing_set.data[pset_key].data.reshape(
-                pointing_set.num_points, -1
-            )
-            if map_key not in self.data_dict:
-                # Initialize the map data array if it doesn't exist (values start at 0)
-                output_shape = (self.num_points, *raveled_pset_data.shape[1:])
-                self.data_dict[map_key] = np.zeros(output_shape)
-
-            if index_match_method is IndexMatchMethod.PUSH:
+        match index_match_method:
+            case IndexMatchMethod.PUSH:
                 # Determine the indices of the sky map grid that correspond to
                 # each pixel in the pointing set.
                 matched_indices_push = match_coords_to_indices(
                     input_object=pointing_set,
                     output_object=self,
                 )
-                # Bin the values at the matched indices. There may be multiple
-                # pointing set pixels that correspond to the same sky map pixel.
-                pointing_projected_values = map_utils.bin_single_array_at_indices(
-                    value_array=raveled_pset_data,
-                    projection_grid_shape=projection_grid_shape_,
-                    projection_indices=matched_indices_push,
-                )
-            elif index_match_method is IndexMatchMethod.PULL:
+                # Determine the shape of the grid/tessellation onto which values
+                # are projected in the binning step. Only necessary for pushing.
+                push_projection_grid_shape: tuple[int, ...]  # To appease mypy
+                if self.tiling_type is SkyTilingType.HEALPIX:
+                    # For Healpix, the projection grid shape is 1D
+                    push_projection_grid_shape = (self.num_points,)
+                elif self.tiling_type is SkyTilingType.RECTANGULAR:
+                    # For rectangular grid, the projection grid shape is 2D
+                    push_projection_grid_shape = (
+                        len(self.sky_grid.az_bin_midpoints),
+                        len(self.sky_grid.el_bin_midpoints),
+                    )
+
+            case IndexMatchMethod.PULL:
                 # Determine the indices of the pointing set grid that correspond to
                 # each pixel in the sky map.
                 matched_indices_pull = match_coords_to_indices(
                     input_object=self,
                     output_object=pointing_set,
                 )
-                # We know that there will only be one value per sky map pixel,
-                # so we can use the matched indices directly
-                pointing_projected_values = raveled_pset_data[matched_indices_pull]
-            else:
+            case _:
                 raise NotImplementedError(
                     "Only PUSH and PULL index matching methods are supported."
                 )
-            self.data_dict[map_key] += pointing_projected_values
+
+        for value_key in value_keys:
+            pset_values = pointing_set.data[value_key]
+
+            # If there is an epoch dim with size 1, flatten it out
+            if "epoch" in pset_values.dims and pset_values["epoch"].size == 1:
+                pset_values = pset_values.squeeze("epoch")
+
+            # If multiple spatial axes present
+            # (i.e (az, el) for rectangular coordinate PSET),
+            # flatten them in the values array to match the raveled indices
+            raveled_pset_data = pset_values.data.reshape(-1, pointing_set.num_points)
+
+            if value_key not in self.data_dict:
+                # Initialize the map data array if it doesn't exist (values start at 0)
+                output_shape = (*raveled_pset_data.shape[:-1], self.num_points)
+                self.data_dict[value_key] = np.zeros(output_shape)
+
+            match index_match_method:
+                case IndexMatchMethod.PUSH:
+                    # Bin the values at the matched indices. There may be multiple
+                    # pointing set pixels that correspond to the same sky map pixel.
+                    pointing_projected_values = map_utils.bin_single_array_at_indices(
+                        value_array=raveled_pset_data,
+                        projection_grid_shape=push_projection_grid_shape,
+                        projection_indices=matched_indices_push,
+                    )
+                case IndexMatchMethod.PULL:
+                    # We know that there will only be one value per sky map pixel,
+                    # so we can use the matched indices directly
+                    pointing_projected_values = raveled_pset_data[
+                        ..., matched_indices_pull
+                    ]
+                case _:
+                    raise NotImplementedError(
+                        "Only PUSH and PULL index matching methods are supported."
+                    )
+            self.data_dict[value_key] += pointing_projected_values
 
     def __repr__(self) -> str:
         """
@@ -503,7 +511,8 @@ class RectangularSkyMap(AbstractSkyMap):
     """
     Map which tiles the sky with a 2D rectangular grid of azimuth/elevation pixels.
 
-    NOTE: Internally, the map is stored as a 1D array of pixels.
+    NOTE: Internally, the map is stored as a 1D array of pixels,
+    with the final (-1) axis as the spatial axis.
 
     Parameters
     ----------

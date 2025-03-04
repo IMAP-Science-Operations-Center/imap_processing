@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     CoinType,
@@ -18,6 +19,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_de_velocity,
     get_energy_pulse_height,
     get_energy_ssd,
+    get_eventtimes,
     get_front_x_position,
     get_front_y_position,
     get_path_length,
@@ -28,8 +30,13 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
 
 
 @pytest.fixture()
-def yf_fixture(de_dataset, events_fsw_comparison_theta_0):
+def test_fixture(de_dataset, events_fsw_comparison_theta_0):
     """Fixture to compute and return yf and related data."""
+    # Remove start_type with fill values
+    de_dataset = de_dataset.where(
+        de_dataset["START_TYPE"] != np.iinfo(np.int64).min, drop=True
+    )
+
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[df["StartType"] != -1]
 
@@ -37,16 +44,15 @@ def yf_fixture(de_dataset, events_fsw_comparison_theta_0):
         de_dataset["START_TYPE"].data, df_filt.Yb.values.astype("float")
     )
 
-    return df_filt, d, yf
+    return df_filt, d, yf, de_dataset
 
 
 def test_get_front_x_position(
-    de_dataset,
-    yf_fixture,
+    test_fixture,
 ):
     """Tests get_front_x_position function."""
 
-    df_filt, _, _ = yf_fixture
+    df_filt, _, _, de_dataset = test_fixture
 
     xf = get_front_x_position(
         de_dataset["START_TYPE"].data,
@@ -56,18 +62,18 @@ def test_get_front_x_position(
     assert xf == pytest.approx(df_filt["Xf"].astype("float"), 1e-5)
 
 
-def test_get_front_y_position(yf_fixture):
+def test_get_front_y_position(test_fixture):
     """Tests get_front_y_position function."""
-    df_filt, d, yf = yf_fixture
+    df_filt, d, yf, _ = test_fixture
 
     assert yf == pytest.approx(df_filt["Yf"].astype("float"), abs=1e-5)
     assert d == pytest.approx(df_filt["d"].astype("float"), abs=1e-5)
 
 
-def test_get_path_length(de_dataset, yf_fixture):
+def test_get_path_length(test_fixture):
     """Tests get_path_length function."""
 
-    df_filt, d, yf = yf_fixture
+    df_filt, d, yf, _ = test_fixture
 
     test_xf = df_filt["Xf"].astype("float").values
     test_yf = df_filt["Yf"].astype("float").values
@@ -79,12 +85,11 @@ def test_get_path_length(de_dataset, yf_fixture):
 
 
 def test_get_ph_tof_and_back_positions(
-    de_dataset,
-    yf_fixture,
+    test_fixture,
 ):
     """Tests get_ph_tof_and_back_positions function."""
 
-    df_filt, _, _ = yf_fixture
+    df_filt, _, _, de_dataset = test_fixture
 
     ph_tof, _, ph_xb, ph_yb = get_ph_tof_and_back_positions(
         de_dataset, df_filt.Xf.astype("float").values, "ultra45"
@@ -104,10 +109,11 @@ def test_get_ph_tof_and_back_positions(
 
 
 def test_get_ssd_back_position_and_tof_offset(
-    de_dataset,
+    test_fixture,
     events_fsw_comparison_theta_0,
 ):
     """Tests get_ssd_back_position function."""
+    _, _, _, de_dataset = test_fixture
     yb, tof_offset, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset)
 
     df = pd.read_csv(events_fsw_comparison_theta_0)
@@ -143,9 +149,9 @@ def test_get_ssd_back_position_and_tof_offset(
     assert np.all(ssd_number_rt <= 7), "Values in ssd_number_rt out of range."
 
 
-def test_get_coincidence_positions(de_dataset, yf_fixture):
+def test_get_coincidence_positions(test_fixture):
     """Tests get_coincidence_positions function."""
-    df_filt, _, _ = yf_fixture
+    df_filt, _, _, de_dataset = test_fixture
     # Get particle tof (t2).
     _, t2, _, _ = get_ph_tof_and_back_positions(
         de_dataset, df_filt.Xf.astype("float").values, "ultra45"
@@ -167,9 +173,9 @@ def test_get_coincidence_positions(de_dataset, yf_fixture):
     )
 
 
-def test_calculate_etof_xc(de_dataset, yf_fixture):
+def test_calculate_etof_xc(test_fixture):
     """Tests calculate_etof_xc function."""
-    df_filt, _, _ = yf_fixture
+    df_filt, _, _, de_dataset = test_fixture
     # Get particle tof (t2).
     _, t2, _, _ = get_ph_tof_and_back_positions(
         de_dataset, df_filt.Xf.astype("float").values, "ultra45"
@@ -215,9 +221,9 @@ def test_calculate_etof_xc(de_dataset, yf_fixture):
     )
 
 
-def test_get_de_velocity(de_dataset, yf_fixture):
+def test_get_de_velocity(test_fixture):
     """Tests get_de_velocity function."""
-    df_filt, _, _ = yf_fixture
+    df_filt, _, _, _ = test_fixture
     df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
 
     test_xf, test_yf, test_xb, test_yb, test_d, test_tof = (
@@ -254,9 +260,9 @@ def test_get_de_velocity(de_dataset, yf_fixture):
     )
 
 
-def test_get_ssd_tof(de_dataset, yf_fixture):
+def test_get_ssd_tof(test_fixture):
     """Tests get_ssd_tof function."""
-    df_filt, _, _ = yf_fixture
+    df_filt, _, _, de_dataset = test_fixture
     df_ssd = df_filt[np.isin(df_filt["StopType"], [StopType.SSD.value])]
     test_xf = df_filt["Xf"].astype("float").values
 
@@ -267,9 +273,9 @@ def test_get_ssd_tof(de_dataset, yf_fixture):
     )
 
 
-def test_get_de_energy_kev(de_dataset, yf_fixture):
+def test_get_de_energy_kev(test_fixture):
     """Tests get_de_energy_kev function."""
-    df_filt, _, _ = yf_fixture
+    df_filt, _, _, _ = test_fixture
     df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
     df_ph = df_ph[df_ph["energy_revised"].astype("str") != "FILL"]
 
@@ -298,9 +304,9 @@ def test_get_de_energy_kev(de_dataset, yf_fixture):
     np.testing.assert_allclose(actual_energy, expected_energy, atol=1e-01, rtol=0)
 
 
-def test_get_energy_ssd(de_dataset, yf_fixture):
+def test_get_energy_ssd(test_fixture):
     """Tests get_energy_ssd function."""
-    df_filt, _, _ = yf_fixture
+    df_filt, _, _, de_dataset = test_fixture
     df_ssd = df_filt[np.isin(df_filt["StopType"], [StopType.SSD.value])]
     _, _, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset)
     energy = get_energy_ssd(de_dataset, ssd_number)
@@ -309,9 +315,9 @@ def test_get_energy_ssd(de_dataset, yf_fixture):
     assert np.array_equal(test_energy, energy)
 
 
-def test_get_energy_pulse_height(de_dataset, yf_fixture):
+def test_get_energy_pulse_height(test_fixture):
     """Tests get_energy_ssd function."""
-    df_filt, _, _ = yf_fixture
+    df_filt, _, _, de_dataset = test_fixture
     df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
     ph_indices = np.nonzero(
         np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
@@ -328,9 +334,9 @@ def test_get_energy_pulse_height(de_dataset, yf_fixture):
     assert np.array_equal(test_energy, energy[ph_indices])
 
 
-def test_get_ctof(yf_fixture):
+def test_get_ctof(test_fixture):
     """Tests get_ctof function."""
-    df_filt, _, _ = yf_fixture
+    df_filt, _, _, _ = test_fixture
     df_filt = df_filt[df_filt["eTOF"].astype("str") != "FILL"]
     df_filt = df_filt[df_filt["cTOF"].astype("float") > 0]
 
@@ -363,9 +369,9 @@ def test_get_ctof(yf_fixture):
     )
 
 
-def test_determine_species(yf_fixture):
+def test_determine_species(test_fixture):
     """Tests determine_species function."""
-    df_filt, _, _ = yf_fixture
+    df_filt, _, _, _ = test_fixture
     df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
     df_ssd = df_filt[np.isin(df_filt["StopType"], [StopType.SSD.value])]
 
@@ -396,9 +402,9 @@ def test_determine_species(yf_fixture):
     np.testing.assert_array_equal(h_indices_ssd, ctof_indices_ssd)
 
 
-def test_get_de_az_el(de_dataset, yf_fixture):
+def test_get_de_az_el(test_fixture):
     """Tests get_de_az_el function."""
-    df_filt, _, _ = yf_fixture
+    df_filt, _, _, _ = test_fixture
     df_filt = df_filt[
         (df_filt["event_theta"].astype("str") != "FILL")
         & (df_filt["TOF"].astype("float") >= 0)
@@ -420,3 +426,40 @@ def test_get_de_az_el(de_dataset, yf_fixture):
     expected_phi = df_ph["event_phi"].astype("float")
 
     np.testing.assert_allclose(az, expected_phi % (2 * np.pi), atol=1e-03, rtol=0)
+
+
+def test_get_eventtimes(test_fixture, use_fake_spin_data_for_time):
+    """Tests get_eventtimes function."""
+    df_filt, _, _, de_dataset = test_fixture
+    # Create a spin table that cover spin 0-141
+    use_fake_spin_data_for_time(0, 141 * 15)
+
+    event_times, spin_starts, spin_period_sec = get_eventtimes(
+        de_dataset["SPIN"].values, de_dataset["PHASE_ANGLE"].values
+    )
+
+    spin_df = get_spin_data()
+    expected_min_df = spin_df[spin_df["spin_number"] == de_dataset["SPIN"].values.min()]
+    expected_max_df = spin_df[spin_df["spin_number"] == de_dataset["SPIN"].values.max()]
+    spin_period_sec_min = expected_min_df["spin_period_sec"].values[0]
+    spin_period_sec_max = expected_max_df["spin_period_sec"].values[0]
+
+    spin_start_min = (
+        expected_min_df["spin_start_sec"] + expected_min_df["spin_start_subsec"] / 1000
+    )
+    spin_start_max = (
+        expected_max_df["spin_start_sec"] + expected_max_df["spin_start_subsec"] / 1000
+    )
+
+    assert spin_start_min.values[0] == spin_starts.min()
+    assert spin_start_max.values[0] == spin_starts.max()
+
+    event_times_min = spin_start_min.values[0] + spin_period_sec_min * (
+        de_dataset["PHASE_ANGLE"][0] / 720
+    )
+    event_times_max = spin_start_max.values[0] + spin_period_sec_max * (
+        de_dataset["PHASE_ANGLE"][-1] / 720
+    )
+
+    assert event_times_min == event_times.min()
+    assert event_times_max == event_times.max()

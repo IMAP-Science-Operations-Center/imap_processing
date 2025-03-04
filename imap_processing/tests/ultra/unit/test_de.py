@@ -21,6 +21,9 @@ def test_calculate_de(l1b_datasets, df_filt):
     """Tests calculate_de function."""
 
     l1b_de_dataset = l1b_datasets[0]
+    l1b_de_dataset = l1b_de_dataset.where(
+        l1b_de_dataset["start_type"] != np.iinfo(np.int64).min, drop=True
+    )
     # Front and back positions
     assert np.allclose(l1b_de_dataset["x_front"].data, df_filt["Xf"].astype("float"))
     assert np.allclose(l1b_de_dataset["y_front"], df_filt["Yf"].astype("float"))

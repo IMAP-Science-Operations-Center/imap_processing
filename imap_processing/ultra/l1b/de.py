@@ -18,6 +18,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_de_velocity,
     get_energy_pulse_height,
     get_energy_ssd,
+    get_eventtimes,
     get_front_x_position,
     get_front_y_position,
     get_path_length,
@@ -49,12 +50,36 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
     de_dict = {}
     sensor = parse_filename_like(name)["sensor"][0:2]
 
-    # Drop events with invalid start type.
-    de_dataset = de_dataset.where(
-        de_dataset["START_TYPE"] != np.iinfo(np.int64).min, drop=True
+    # Define epoch and spin.
+    de_dict["epoch"] = de_dataset["epoch"].data
+    de_dict["spin"] = de_dataset["SPIN"].data
+
+    # Add already populated fields.
+    keys = [
+        "coincidence_type",
+        "start_type",
+        "event_type",
+        "de_event_met",
+        "phase_angle",
+    ]
+    dataset_keys = ["COIN_TYPE", "START_TYPE", "STOP_TYPE", "SHCOARSE", "PHASE_ANGLE"]
+
+    de_dict.update(
+        {key: de_dataset[dataset_key] for key, dataset_key in zip(keys, dataset_keys)}
     )
 
+    valid_mask = de_dataset["START_TYPE"].data != np.iinfo(np.int64).min
+    ph_mask = np.isin(
+        de_dataset["STOP_TYPE"].data, [StopType.Top.value, StopType.Bottom.value]
+    )
+    ssd_mask = np.isin(de_dataset["STOP_TYPE"].data, [StopType.SSD.value])
+
+    valid_indices = np.nonzero(valid_mask)[0]
+    ph_indices = np.nonzero(valid_mask & ph_mask)[0]
+    ssd_indices = np.nonzero(valid_mask & ssd_mask)[0]
+
     # Instantiate arrays
+    xf = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
     yf = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
     xb = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
     yb = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
@@ -68,19 +93,25 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
     energy = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
     species_bin = np.full(len(de_dataset["epoch"]), "UNKNOWN", dtype="U10")
     t2 = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
+    event_times = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
+    spin_starts = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
+    spin_period_sec = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
 
-    # Define epoch.
-    de_dict["epoch"] = de_dataset["epoch"].data
+    xf[valid_indices] = get_front_x_position(
+        de_dataset["START_TYPE"].data[valid_indices],
+        de_dataset["START_POS_TDC"].data[valid_indices],
+    )
 
-    xf = get_front_x_position(
-        de_dataset["START_TYPE"].data,
-        de_dataset["START_POS_TDC"].data,
+    (
+        event_times[valid_indices],
+        spin_starts[valid_indices],
+        spin_period_sec[valid_indices],
+    ) = get_eventtimes(
+        de_dataset["SPIN"].data[valid_indices],
+        de_dataset["PHASE_ANGLE"].data[valid_indices],
     )
 
     # Pulse height
-    ph_indices = np.nonzero(
-        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
-    )[0]
     tof[ph_indices], t2[ph_indices], xb[ph_indices], yb[ph_indices] = (
         get_ph_tof_and_back_positions(de_dataset, xf, f"ultra{sensor}")
     )
@@ -107,7 +138,6 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
     )
 
     # SSD
-    ssd_indices = np.nonzero(np.isin(de_dataset["STOP_TYPE"], StopType.SSD.value))[0]
     tof[ssd_indices] = get_ssd_tof(de_dataset, xf)
     yb[ssd_indices], _, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset)
     xc[ssd_indices] = np.zeros(len(ssd_indices))
@@ -131,6 +161,9 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
 
     # Combine ph_yb and ssd_yb along with their indices
     de_dict["x_front"] = xf.astype(np.float32)
+    de_dict["event_times"] = event_times
+    de_dict["spin_starts"] = spin_starts
+    de_dict["spin_period"] = spin_period_sec
     de_dict["y_front"] = yf
     de_dict["x_back"] = xb
     de_dict["y_back"] = yb
@@ -141,19 +174,6 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
     de_dict["velocity_magnitude"] = magnitude_v
     de_dict["front_back_distance"] = d
     de_dict["path_length"] = r
-
-    keys = [
-        "coincidence_type",
-        "start_type",
-        "event_type",
-        "de_event_met",
-        "event_times",
-    ]
-    dataset_keys = ["COIN_TYPE", "START_TYPE", "STOP_TYPE", "SHCOARSE", "EVENTTIMES"]
-
-    de_dict.update(
-        {key: de_dataset[dataset_key] for key, dataset_key in zip(keys, dataset_keys)}
-    )
 
     v = get_de_velocity(
         (de_dict["x_front"], de_dict["y_front"]),
@@ -171,7 +191,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
     # Annotated Events.
     ultra_frame = getattr(SpiceFrame, f"IMAP_ULTRA_{sensor}")
     sc_velocity, sc_dps_velocity, helio_velocity = get_annotated_particle_velocity(
-        de_dataset.data_vars["EVENTTIMES"].values,
+        event_times,
         de_dict["direct_event_velocity"],
         ultra_frame,
         SpiceFrame.IMAP_DPS,
