@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 # TODO review logging levels to use (debug vs. info)
 
 
-def hit_l2(dependencies: dict, data_version: str) -> list[xr.Dataset]:
+def hit_l2(dependency: xr.Dataset, data_version: str) -> list[xr.Dataset]:
     """
     Will process HIT data to L2.
 
@@ -21,9 +21,9 @@ def hit_l2(dependencies: dict, data_version: str) -> list[xr.Dataset]:
 
     Parameters
     ----------
-    dependencies : dict
-        Dictionary of dependencies that are L1B xarray datasets
-        for science data.
+    dependency : xr.Dataset
+        L1B xarray science dataset that is either summed rates
+        standard rates or sector rates.
     data_version : str
         Version of the data product being created.
 
@@ -37,10 +37,10 @@ def hit_l2(dependencies: dict, data_version: str) -> list[xr.Dataset]:
 
     # Create L2 datasets
     l2_datasets: list = []
-    if "imap_hit_l1b_summed-rates" in dependencies:
+
+    if "imap_hit_l1b_summed-rates" in dependency.attrs["Logical_source"]:
         # Process science data to L2 datasets
-        l1b_summed_rates_dataset = dependencies["imap_hit_l1a_count-rates"]
-        l2_datasets.extend(process_summed_flux_data(l1b_summed_rates_dataset))
+        l2_datasets.append(process_summed_flux_data(dependency))
         logger.info("HIT L2 summed flux dataset created")
 
     return l2_datasets
@@ -74,7 +74,7 @@ def process_summed_flux_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Dataset
     #  - add check for dynamic_threshold_state to determine which ancillary table to use
 
     # Create a new dataset to store the L1B summed flux data
-    l1b_summed_flux_dataset = l1b_summed_rates_dataset.copy(deep=True)
+    l2_summed_flux_dataset = l1b_summed_rates_dataset.copy(deep=True)
 
     # Load ancillary data containing factors needed to convert L1B Summed count
     # rates to L2 fluxes (energy bin width, geometry factor, efficiency, and b)
@@ -89,7 +89,7 @@ def process_summed_flux_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Dataset
     ancillary_data["species"] = ancillary_data["species"].str.lower()
 
     # Calculate the summed flux using the appropriate ancillary table.
-    for var in l1b_summed_flux_dataset.data_vars:
+    for var in l2_summed_flux_dataset.data_vars:
         if var != "dynamic_threshold_state" and "energy_" not in var:
             # Get the species name from the variable name
             species = str(var).split("_")[0] if "_delta_" in var else var
@@ -98,11 +98,11 @@ def process_summed_flux_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Dataset
             var_anc_data = ancillary_data[ancillary_data["species"] == species]
 
             # Calculate the summed flux for each epoch and energy bin
-            for epoch in range(l1b_summed_flux_dataset[var].shape[0]):
+            for epoch in range(l2_summed_flux_dataset[var].shape[0]):
                 # TODO: Add check for energy max after updated ancillary file is
                 #  available fixing errors
                 # Get the energy min values for the current epoch
-                energy_min = l1b_summed_flux_dataset[f"{species}_energy_min"].values
+                energy_min = l2_summed_flux_dataset[f"{species}_energy_min"].values
 
                 # Get the factors needed to convert the summed count rates to fluxes for
                 # all energy bins
@@ -115,11 +115,11 @@ def process_summed_flux_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Dataset
                 b = flux_factors["b"].values
 
                 # Calculate the summed flux for this energy bin
-                l1b_summed_flux_dataset[var][epoch] = (
-                    l1b_summed_flux_dataset[var][epoch]
+                l2_summed_flux_dataset[var][epoch] = (
+                    l2_summed_flux_dataset[var][epoch]
                     / (60 * delta_e_factor * geometry_factor * efficiency)
                 ) - b
-    return l1b_summed_flux_dataset
+    return l2_summed_flux_dataset
 
 
 if __name__ == "__main__":
@@ -140,4 +140,8 @@ if __name__ == "__main__":
     # print(summed_rates)
     # print(summed_rates["hydrogen"][0])
 
-    l2_dataset = process_summed_flux_data(summed_rates)
+    # l2_dataset = process_summed_flux_data(summed_rates)
+
+    l2_datasets = hit_l2(summed_rates, "001")
+    print(type(l2_datasets))
+    print(l2_datasets)
