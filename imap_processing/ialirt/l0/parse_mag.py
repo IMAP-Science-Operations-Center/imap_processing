@@ -6,10 +6,10 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.ialirt.l0.mag_l0_ialirt_data import (
-    decode_packet0,
-    decode_packet1,
-    decode_packet2,
-    decode_packet3,
+    Packet0,
+    Packet1,
+    Packet2,
+    Packet3,
 )
 
 logger = logging.getLogger(__name__)
@@ -53,10 +53,10 @@ def get_status_data(status_values: xr.DataArray, pkt_counters: xr.DataArray) -> 
         Decoded packets.
     """
     decoders = {
-        0: decode_packet0,
-        1: decode_packet1,
-        2: decode_packet2,
-        3: decode_packet3,
+        0: Packet0,
+        1: Packet1,
+        2: Packet2,
+        3: Packet3,
     }
 
     combined_packets = {}
@@ -142,7 +142,7 @@ def find_groups(data: xr.Dataset) -> xr.Dataset:
     Returns
     -------
     grouped_data : xr.Dataset
-        Grouped data with an additional "group" coordinate.
+        Add "group" coordinate.
     """
     pkt_range = (0, 3)
 
@@ -299,7 +299,7 @@ def parse_packet(xarray_data: xr.Dataset) -> list[dict]:
     Parameters
     ----------
     xarray_data : xr.Dataset
-        Packet data.
+        Packet data from 1 minute accumulated packets file.
 
     Returns
     -------
