@@ -102,6 +102,9 @@ def rewrap_even_spaced_az_el_grid(
     """
     Take an unwrapped (raveled) 1D array and reshapes it into a 2D az/el grid.
 
+    In the input, unwrapped grid, the spatial axis is the 0th axis.
+    In the output, the spatial axes are the 0th (az) and 1st (el) axes.
+
     Assumes the following must be true of the original grid:
     1. Grid was evenly spaced in angular space,
     2. Grid had the same spacing in both azimuth and elevation.

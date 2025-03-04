@@ -22,17 +22,18 @@ def mock_l1c_pset_product(
     This is not meant to perfectly mimic the real data, but to provide a
     recognizable structure for L2 testing purposes.
     Function will produce an xarray.Dataset with at least the variables and shapes:
-    counts: (num_lat_bins, num_lon_bins, num_energy_bins)
-    exposure_time: (num_lat_bins, num_lon_bins)
-    sensitivity: (num_lat_bins, num_lon_bins, num_energy_bins)
+    counts: (1 epoch, num_energy_bins, num_lon_bins, num_lat_bins)
+    exposure_time: (num_lon_bins, num_lat_bins)
+    sensitivity: (1 epoch, num_energy_bins, num_lon_bins, num_lat_bins)
 
     and the coordinate variables:
-    latitude: (num_lat_bins)
-    longitude: (num_lon_bins)
+    the epoch (assumed to be a single time for each product).
     energy: (determined by build_energy_bins function)
-    head: Either '45' or '90'. Default is '45'.
+    longitude: (num_lon_bins)
+    latitude: (num_lat_bins)
 
-    as well as the epoch (assumed to be a single time for each product).
+    While not a coordinate, PSETs can also be distinguished by the 'head' attribute.
+    head: Either '45' or '90'. Default is '45'.
 
     The counts are generated along a stripe, centered at a given longitude.
     This stripe can be thought of as a 'vertical' line if the lon/az axis is plotted
@@ -51,23 +52,6 @@ def mock_l1c_pset_product(
     Azimuth/Longitude ->
 
     Fig. 1: Example of the '90' sensor head stripe
-
-    To distinguish between the two sensor heads, the counts are halved in the '45' head
-    at latitudes above 0 degrees.
-
-    ^  Elevation/Latitude
-    |
-    |    000000000000000000000000000123432100000000000000000
-    |    000000000000000000000000000123432100000000000000000
-    |    000000000000000000000000000123432100000000000000000
-    |    000000000000000000000000000123432100000000000000000
-    |    000000000000000000000000000246864200000000000000000
-    |    000000000000000000000000000246864200000000000000000
-    |    000000000000000000000000000246864200000000000000000
-    --------------------------------------------------------->
-    Azimuth/Longitude ->
-
-    Fig. 2: Example of the '45' sensor head stripe
 
     Parameters
     ----------

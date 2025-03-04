@@ -178,9 +178,14 @@ class TestRectangularSkyMap:
         assert rectangular_map.data_dict != {}
 
         # Check that the map has the same values as the PSETs, summed
-        simple_summed_pset_counts = np.sum(
-            [pset["counts"].values for pset in self.l1c_pset_products], axis=0
-        ).reshape(rectangular_map.data_dict["counts"].shape)
+        simple_summed_pset_counts = np.zeros(rectangular_map.data_dict["counts"].shape)
+        for pset in self.l1c_pset_products:
+            reshaped_pset_counts = pset["counts"].squeeze("epoch")
+            # transpose to put az, el first and then reshape to the map's counts shape
+            reshaped_pset_counts = reshaped_pset_counts.transpose(
+                "azimuth_bin_center", "elevation_bin_center", "energy_bin_center"
+            ).data.reshape(rectangular_map.data_dict["counts"].shape)
+            simple_summed_pset_counts += reshaped_pset_counts
 
         np.testing.assert_allclose(
             rectangular_map.data_dict["counts"],

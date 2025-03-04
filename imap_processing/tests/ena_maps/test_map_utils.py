@@ -28,14 +28,17 @@ class TestENAMapMappingUtils:
         """Test coverage for bin_single_array_at_indices function w/ simple 2D input,
         Corresponding to an extra axis that is not spatially binned.
         """
-        # Binning will occur along axis 0 (combining 1, 2, 3 and 4, 5, 6 separately)
+        # Binning will occur along axis 0 seen below
+        # (combining 1, 2, 3 and 4, 5, 6 separately).
+        # However, we will first transpose the array seen below, to test the
+        # binning along the specified spatial axis
         value_array = np.array(
             [
                 [1, 4],
                 [2, 5],
                 [3, 6],
             ]
-        )
+        ).transpose(1, 0)
         input_indices = np.array([0, 1, 2, 2])
         projection_indices = np.array([1, 0, 1, 6])
         projection_grid_shape = (7, 1)
@@ -55,6 +58,7 @@ class TestENAMapMappingUtils:
             input_indices=input_indices,
             projection_indices=projection_indices,
             projection_grid_shape=projection_grid_shape,
+            spatial_axis=1,
         )
 
         np.testing.assert_equal(projection_values, expected_projection_values)
