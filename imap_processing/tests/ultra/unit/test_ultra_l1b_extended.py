@@ -14,7 +14,6 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     determine_species,
     get_coincidence_positions,
     get_ctof,
-    get_de_az_el,
     get_de_energy_kev,
     get_de_velocity,
     get_energy_pulse_height,
@@ -24,6 +23,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_front_y_position,
     get_path_length,
     get_ph_tof_and_back_positions,
+    get_phi_theta,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
 )
@@ -402,30 +402,22 @@ def test_determine_species(test_fixture):
     np.testing.assert_array_equal(h_indices_ssd, ctof_indices_ssd)
 
 
-def test_get_de_az_el(test_fixture):
-    """Tests get_de_az_el function."""
-    df_filt, _, _, _ = test_fixture
-    df_filt = df_filt[
-        (df_filt["event_theta"].astype("str") != "FILL")
-        & (df_filt["TOF"].astype("float") >= 0)
-    ]
-    df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
+def test_get_phi_theta(test_fixture):
+    """Tests get_phi_theta function."""
+    df_filt, d, _, _ = test_fixture
 
-    test_xf, test_yf, test_xb, test_yb, test_d, test_tof = (
-        df_ph[col].astype("float").values
-        for col in ["Xf", "Yf", "Xb", "Yb", "d", "TOF"]
-    )
+    test_xf = df_filt["Xf"].astype("float").values
+    test_yf = df_filt["Yf"].astype("float").values
 
-    v = get_de_velocity(
-        (test_xf, test_yf),
-        (test_xb, test_yb),
-        test_d,
-        test_tof,
-    )
-    az, _ = get_de_az_el(v)
-    expected_phi = df_ph["event_phi"].astype("float")
+    test_xb = df_filt["Xb"].astype("float").values
+    test_yb = df_filt["Yb"].astype("float").values
 
-    np.testing.assert_allclose(az, expected_phi % (2 * np.pi), atol=1e-03, rtol=0)
+    phi, theta = get_phi_theta((test_xf, test_yf), (test_xb, test_yb), d)
+    expected_phi = df_filt["phi"].astype("float")
+    expected_theta = df_filt["theta"].astype("float")
+
+    np.testing.assert_allclose(phi, expected_phi, atol=1e-03, rtol=0)
+    np.testing.assert_allclose(theta, expected_theta, atol=1e-03, rtol=0)
 
 
 def test_get_eventtimes(test_fixture, use_fake_spin_data_for_time):

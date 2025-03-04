@@ -97,8 +97,13 @@ def test_calculate_de(l1b_datasets, df_filt):
         rtol=1e-2,
     )
     assert np.allclose(
-        l1b_de_dataset["azimuth"].values[condition],
-        df_filt["event_phi"].astype("float").values[condition] % (2 * np.pi),
+        l1b_de_dataset["phi"].values,
+        df_filt["phi"].astype("float").values,
+        rtol=1e-2,
+    )
+    assert np.allclose(
+        l1b_de_dataset["theta"].values,
+        df_filt["theta"].astype("float").values,
         rtol=1e-2,
     )
 
