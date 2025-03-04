@@ -4,6 +4,7 @@ import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.utils import packet_file_to_datasets
+from imap_processing.ialirt.l0.process_swe import process_swe
 
 
 @pytest.fixture(scope="session")
@@ -52,9 +53,9 @@ def xarray_data(binary_packet_path, xtce_swe_path):
     return xarray_data
 
 
-def test_decom_packets(xarray_data, swe_test_data):
-    """This function checks that all instrument parameters are accounted for."""
-
+@pytest.fixture()
+def fields_to_test():
+    """Create a dictionary to convert names"""
     fields_to_test = {
         "swe_shcoarse": "SHCOARSE",
         "swe_acq_sec": "ACQUISITION_TIME",
@@ -91,6 +92,11 @@ def test_decom_packets(xarray_data, swe_test_data):
         "swe_cem7_e3": "ELEC_COUNTS_SPIN_I_POL_6_E_2J",
         "swe_cem7_e4": "ELEC_COUNTS_SPIN_I_POL_6_E_3J",
     }
+    return fields_to_test
+
+
+def test_decom_packets(xarray_data, swe_test_data, fields_to_test):
+    """This function checks that all instrument parameters are accounted for."""
     _, index, test_index = np.intersect1d(
         xarray_data["swe_shcoarse"], swe_test_data["SHCOARSE"], return_indices=True
     )
@@ -106,7 +112,10 @@ def test_decom_packets(xarray_data, swe_test_data):
         )
 
 
-def test_process_swe(swe_test_data):
+def test_process_swe(swe_test_data, fields_to_test):
     """Test processing for swe."""
+    swe_test_data = swe_test_data.rename(columns={v: k for k, v in fields_to_test.items()})
     ds = swe_test_data.to_xarray()
+
+    process_swe(ds)
     print('hi')
