@@ -7,6 +7,7 @@ import pandas as pd
 import xarray as xr
 
 from imap_processing import imap_module_directory
+from imap_processing.hit.hit_utils import get_attribute_manager
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +33,18 @@ def hit_l2(dependency: xr.Dataset, data_version: str) -> list[xr.Dataset]:
     processed_data : list[xarray.Dataset]
         List of three L2 datasets.
     """
+    logger.info("Creating HIT L2 science datasets")
     # Create the attribute manager for this data level
-    # attr_mgr = get_attribute_manager(data_version, "l2")
+    attr_mgr = get_attribute_manager(data_version, "l2")
+
+    # Logical sources for the three L2 science products.
+    # TODO: add logical sources for other l2 products once processing functions
+    #  are written. "imap_hit_l2_standard-fluxes", "imap_hit_l2_sectored-fluxes"
+    logical_sources = ["imap_hit_l2_summed-fluxes"]
+
+    # TODO: Write functions to create the following datasets
+    #  Process sectored rates dataset
+    #  Process standard rates dataset
 
     # Create L2 datasets
     l2_datasets: list = []
@@ -42,6 +53,36 @@ def hit_l2(dependency: xr.Dataset, data_version: str) -> list[xr.Dataset]:
         # Process science data to L2 datasets
         l2_datasets.append(process_summed_flux_data(dependency))
         logger.info("HIT L2 summed flux dataset created")
+
+    # Update attributes and dimensions
+    for dataset, logical_source in zip(l2_datasets, logical_sources):
+        dataset.attrs = attr_mgr.get_global_attributes(logical_source)
+
+        # TODO: Add CDF attributes to yaml once they're defined for L2 science data
+        #  consider moving attribute handling to hit_utils.py
+        # Assign attributes and dimensions to each data array in the Dataset
+        for field in dataset.data_vars.keys():
+            try:
+                # Create a dict of dimensions using the DEPEND_I keys in the
+                # attributes
+                dims = {
+                    key: value
+                    for key, value in attr_mgr.get_variable_attributes(field).items()
+                    if "DEPEND" in key
+                }
+                dataset[field].attrs = attr_mgr.get_variable_attributes(field)
+                dataset[field].assign_coords(dims)
+            except KeyError:
+                print(f"Field {field} not found in attribute manager.")
+                logger.warning(f"Field {field} not found in attribute manager.")
+
+        # Skip schema check for epoch to prevent attr_mgr from adding the
+        # DEPEND_0 attribute which isn't required for epoch
+        dataset.epoch.attrs = attr_mgr.get_variable_attributes(
+            "epoch", check_schema=False
+        )
+
+        logger.info(f"HIT L2 dataset created for {logical_source}")
 
     return l2_datasets
 
@@ -72,6 +113,7 @@ def process_summed_flux_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Dataset
     #  - determine where to use attr manager
     #  - determine where to pull ancillary data. Storing it locally for now
     #  - add check for dynamic_threshold_state to determine which ancillary table to use
+    #    after additional ancillary files are provided
 
     # Create a new dataset to store the L1B summed flux data
     l2_summed_flux_dataset = l1b_summed_rates_dataset.copy(deep=True)
@@ -100,7 +142,7 @@ def process_summed_flux_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Dataset
             # Calculate the summed flux for each epoch and energy bin
             for epoch in range(l2_summed_flux_dataset[var].shape[0]):
                 # TODO: Add check for energy max after updated ancillary file is
-                #  available fixing errors
+                #  provided fixing errors
                 # Get the energy min values for the current epoch
                 energy_min = l2_summed_flux_dataset[f"{species}_energy_min"].values
 

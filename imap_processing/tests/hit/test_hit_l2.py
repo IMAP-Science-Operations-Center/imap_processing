@@ -28,7 +28,7 @@ def sci_packet_filepath():
 
 @pytest.fixture()
 def dependencies(packet_filepath, sci_packet_filepath):
-    """Get dependencies for L1B processing"""
+    """Get dependencies for L2 processing"""
     # Create dictionary of dependencies
     data_dict = {}
     l1a_datasets = hit_l1a.hit_l1a(sci_packet_filepath, "001")
@@ -107,8 +107,7 @@ def test_hit_l2(dependencies):
         Dictionary of L1B datasets
     """
     # TODO: update assertions after science data processing is completed
-    print(dependencies["imap_hit_l1b_summed-rates"])
     l1b_summed_dataset = dependencies["imap_hit_l1b_summed-rates"]
     datasets = hit_l2(l1b_summed_dataset, "001")
     assert len(datasets) == 1
-    # assert datasets[0].attrs["Logical_source"] == "imap_hit_l1b_summed-fluxes"
+    assert datasets[0].attrs["Logical_source"] == "imap_hit_l2_summed-fluxes"
