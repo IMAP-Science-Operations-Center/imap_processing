@@ -10,15 +10,6 @@ from imap_processing.hit.l1b.hit_l1b import (
 )
 from imap_processing.hit.l2.hit_l2 import hit_l2, process_summed_flux_data
 
-# TODO: test hit_l2
-
-
-@pytest.fixture(scope="module")
-def packet_filepath():
-    """Set path to L0 test data file"""
-    # TODO: Replace these with L1B CDF file paths
-    return imap_module_directory / "tests/hit/test_data/sci_sample.ccsds"
-
 
 @pytest.fixture(scope="module")
 def sci_packet_filepath():
@@ -27,7 +18,7 @@ def sci_packet_filepath():
 
 
 @pytest.fixture()
-def dependencies(packet_filepath, sci_packet_filepath):
+def dependencies(sci_packet_filepath):
     """Get dependencies for L2 processing"""
     # Create dictionary of dependencies
     data_dict = {}
