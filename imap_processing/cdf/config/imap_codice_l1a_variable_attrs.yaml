@@ -264,7 +264,7 @@ hi-omni-h:
     FIELDNAM: H
     DEPEND_1: esa_step
     DEPEND_2: inst_az
-    LABL_PTR_1: energy_h
+    LABL_PTR_1: esa_step
     LABL_PTR_2: inst_az
 
 hi-omni-energy_h:
