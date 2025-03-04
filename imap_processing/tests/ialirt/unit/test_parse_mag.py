@@ -5,13 +5,14 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.parse_mag import (
+    calculate_time,
+    filter_valid_groups,
     find_groups,
     get_bytes,
     get_pkt_counter,
     get_status_data,
     get_time,
     parse_packet,
-    unwrap_src_seq_ctr,
 )
 from imap_processing.utils import packet_file_to_datasets
 
@@ -70,6 +71,58 @@ def xarray_data(binary_packet_path, xtce_mag_path):
     return merged_xarray_data
 
 
+@pytest.fixture()
+def grouped_data():
+    """Creates grouped data for filter_valid_groups test."""
+    epoch = np.arange(12)
+
+    # Example `src_seq_ctr` values for 3 groups:
+    # Group 0 - valid, all diffs = 1
+    # Group 1 - invalid, has a jump of 5
+    # Group 2 - valid, wraps at -16383
+    src_seq_ctr = np.array(
+        [
+            100,
+            101,
+            102,
+            103,  # Group 0
+            200,
+            205,
+            206,
+            207,  # Group 1
+            16382,
+            16383,
+            0,
+            1,  # Group 2
+        ],
+        dtype=np.int32,
+    )
+
+    group = np.array(
+        [
+            0,
+            0,
+            0,
+            0,  # Group 0
+            1,
+            1,
+            1,
+            1,  # Group 1
+            2,
+            2,
+            2,
+            2,  # Group 2
+        ]
+    )
+
+    grouped_data = xr.Dataset(
+        data_vars={"src_seq_ctr": ("epoch", src_seq_ctr)},
+        coords={"epoch": epoch, "group": ("epoch", group)},
+    )
+
+    return grouped_data
+
+
 def test_get_pkt_counter(xarray_data):
     """Tests the get_pkt_counter function."""
     status_values = xarray_data["mag_status"].values
@@ -77,42 +130,31 @@ def test_get_pkt_counter(xarray_data):
     assert np.array_equal(pkt_counter, np.array([0, 1, 2, 3, 0, 1, 2, 3, 0]))
 
 
-def test_unwrap_src_seq_ctr(xarray_data):
-    """Tests the unwrap_src_seq_ctr function."""
-    # mag_acq_tm_coarse
-    # pkt_counter
-    # make certain it is in ascending order based on this
-    # 1. Simple sequence, no wrap
-    # src_seq_ctr_test_1 = np.array([0, 1, 2, 3, 4, 5, 6])
-    # mag_acq_tm_coarse_test_1 = np.array([461971382, 461971382, 461971383, 461971383, 461971386, 461971386,
-    #        461971386, 461971386, 461971390])
-    # pkt_counter_test_1 = np.array([0, 1, 2, 3, 0, 1, 2, 3, 0])
+def test_calculate_time(xarray_data):
+    """Tests calculate_time function."""
+    time = calculate_time(
+        xarray_data["mag_acq_tm_coarse"], xarray_data["mag_acq_tm_fine"]
+    )
 
-    # 2. Sequence with a single rollover (14-bit, so rolls over after 16383)
-    src_seq_ctr_test_2 = np.array([16381, 16382, 16383, 0, 1, 2, 3, 4])
-    mag_acq_tm_coarse_2 = np.array([461971382, 461971382, 461971382, 461971382, 461971386, 461971386,
-           461971386, 461971386])
-    pkt_counter_test_2 = np.array([0, 1, 2, 3, 0, 1, 2, 3, 0])
+    assert np.all(
+        time
+        == xarray_data["mag_acq_tm_coarse"] + xarray_data["mag_acq_tm_fine"] / 65535.0
+    )
 
-    # 4. Starts mid-sequence and rolls over
-    # src_seq_ctr_test_4 = np.array([408, 409, 410, 411, 412, 0, 1, 2])
-    # mag_acq_tm_coarse_4 = np.array([461971382, 461971382, 461971382, 461971382, 461971386, 461971386,
-    #        461971386, 461971386, 461971390])
 
-    # 5. Edge case — sequence of length 1 (no rollover possible)
-    # src_seq_ctr_test_5 = np.array([5])
-    # mag_acq_tm_coarse_5 = np.array([461971382])
+def test_filter_valid_groups(grouped_data):
+    """Tests filter_valid_groups function."""
 
-    unwrapped_src_seq_ctr = unwrap_src_seq_ctr(src_seq_ctr_test_2, mag_acq_tm_coarse_2, pkt_counter_test_2)
+    filtered_data = filter_valid_groups(grouped_data)
+
+    assert np.all(np.unique(filtered_data["group"]) == np.array([0, 2]))
 
 
 def test_find_groups(xarray_data):
     """Tests the find_groups function."""
     grouped_data = find_groups(xarray_data)
 
-    assert len(np.unique(grouped_data["mag_acq_tm_coarse"])) == len(
-        np.unique(grouped_data["group"])
-    )
+    assert np.all(np.unique(grouped_data["group"]) == np.array([1, 2]))
 
 
 def test_get_status_data(xarray_data, mag_test_data):
@@ -131,7 +173,7 @@ def test_get_status_data(xarray_data, mag_test_data):
 def test_get_time(xarray_data):
     """Tests the get_time function."""
     grouped_data = find_groups(xarray_data)
-    time_data = get_time(grouped_data, 0, np.array([0, 1, 2, 3]))
+    time_data = get_time(grouped_data, 1, np.array([0, 1, 2, 3]))
     assert time_data == {
         "pri_coarsetm": 461971382,
         "pri_fintm": 1502,

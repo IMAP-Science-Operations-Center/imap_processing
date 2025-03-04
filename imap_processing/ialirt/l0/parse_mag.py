@@ -3,7 +3,6 @@
 import logging
 
 import numpy as np
-from numpy.typing import NDArray
 import xarray as xr
 
 from imap_processing.ialirt.l0.mag_l0_ialirt_data import (
@@ -70,87 +69,65 @@ def get_status_data(status_values: xr.DataArray, pkt_counters: xr.DataArray) -> 
     return combined_packets
 
 
-def unwrap_src_seq_ctr(src_seq_ctr: NDArray, mag_acq_tm_coarse: NDArray,
-                       pkt_counter: NDArray) -> NDArray:
+def calculate_time(coarse_time: xr.DataArray, fin_time: xr.DataArray) -> xr.DataArray:
     """
-    Unwrap a 14-bit src_seq_ctr to handle counter rollovers.
-
-    The counter wraps at max_seq - 1 (default 16383 for 14-bit counters),
-    so the unwrapped version will be strictly increasing across rollovers.
+    Calculate the time.
 
     Parameters
     ----------
-    src_seq_ctr : NDArray
-        Source sequence counter values.
+    coarse_time : xr.DataArray
+        Coarse time.
+    fin_time : xr.DataArray
+        Fine time.
 
     Returns
     -------
-    unwrapped_seq : NDArray
-        Unwrapped sequence counter.
+    time_seconds: xr.DataArray
+        Calculated time.
+
+    Notes
+    -----
+    65535 fine time units = 1 second
     """
-    unwrapped_seq = src_seq_ctr.copy()
-    max_seq = 16384  # 2^14, max value + 1 for 14-bit counter
+    fine_time_fraction = fin_time / 65535.0
+    time_seconds = coarse_time + fine_time_fraction
 
-    # Detect where the counter wraps
-    rollovers = np.diff(src_seq_ctr) < 0
-
-    # Create an array that increments by 1 at each rollover
-    rollover_count = np.zeros_like(src_seq_ctr, dtype=int)
-    rollover_count[1:] = np.cumsum(rollovers)
-
-    # Apply the unwrapping adjustment
-    unwrapped_seq += rollover_count * max_seq
-
-    return unwrapped_seq
+    return time_seconds
 
 
-def sort_by_unwrapped_seq_and_pkt_counter(dataset: xr.Dataset, pkt_counter: xr.DataArray,
-                                          src_seq_ctr_name="src_seq_ctr") -> xr.Dataset:
+def filter_valid_groups(grouped_data: xr.Dataset) -> xr.Dataset:
     """
-    Sort an xarray Dataset by unwrapped src_seq_ctr and pkt_counter.
-
-    Handles 14-bit counter wraparound (0-16383) by unwrapping src_seq_ctr
-    into a strictly increasing sequence.
+    Filter out groups where `src_seq_ctr` diff are not 1 or -16383.
 
     Parameters
     ----------
-    dataset : xr.Dataset
-        The dataset to sort.
-    pkt_counter : xr.DataArray
-        Packet counter (same length as dataset's epoch dimension).
-    src_seq_ctr_name : str, optional
-        Name of the src_seq_ctr variable in the dataset.
+    grouped_data : xr.Dataset
+        Dataset with a "group" coordinate.
 
     Returns
     -------
-    xr.Dataset
-        Sorted dataset.
+    filtered_data : xr.Dataset
+        Filtered dataset with only valid groups remaining.
     """
-    MAX_SEQ = 16384  # 2^14, max value + 1 for 14-bit counter
+    valid_groups = []
+    unique_groups = np.unique(grouped_data["group"].values)
 
-    # Extract src_seq_ctr from dataset
-    src_seq_ctr = dataset[src_seq_ctr_name].values
+    for group in unique_groups:
+        src_seq_ctr = grouped_data["src_seq_ctr"][
+            (grouped_data["group"] == group).values
+        ]
+        src_seq_ctr_diff = np.diff(src_seq_ctr)
 
-    # Initialize unwrapped sequence counter
-    unwrapped_seq = src_seq_ctr.copy()
-    rollover_count = 0
+        # Accept group only if all diffs are 1 or -16383
+        if np.all(np.isin(src_seq_ctr_diff, [1, -16383])):
+            valid_groups.append(group)
 
-    # Unwrap the sequence counter
-    for i in range(1, len(src_seq_ctr)):
-        if src_seq_ctr[i] < src_seq_ctr[i - 1]:
-            rollover_count += 1
-        unwrapped_seq[i] += rollover_count * MAX_SEQ
+    filtered_data = grouped_data.where(
+        xr.DataArray(np.isin(grouped_data["group"], valid_groups), dims="epoch"),
+        drop=True,
+    )
 
-    # Combine unwrapped sequence counter with pkt_counter into a sortable key
-    combined_key = list(zip(unwrapped_seq, pkt_counter.values))
-
-    # Sort indices based on combined key
-    sort_indices = np.argsort(combined_key)
-
-    # Apply sorting to the dataset
-    sorted_dataset = dataset.isel(epoch=sort_indices)
-
-    return sorted_dataset
+    return filtered_data
 
 
 def find_groups(data: xr.Dataset) -> xr.Dataset:
@@ -169,21 +146,43 @@ def find_groups(data: xr.Dataset) -> xr.Dataset:
     """
     pkt_range = (0, 3)
 
-    data = data.sortby("mag_acq_tm_coarse", ascending=True)
-    status_values = data["mag_status"]
+    time_seconds = calculate_time(data["mag_acq_tm_coarse"], data["mag_acq_tm_fine"])
+    data["time_seconds"] = time_seconds
+    sorted_data = data.sortby("time_seconds", ascending=True)
+    status_values = sorted_data["mag_status"]
 
     pkt_counter = get_pkt_counter(status_values)
+    data["pkt_counter"] = pkt_counter
 
-    # pkt_counter == 0 to define the beginning of the group.
-    src_seq_ctr = data["src_seq_ctr"]
+    # Use pkt_counter == 0 to define the beginning of the group.
+    # Find time at this index and use it as the beginning time for the group.
+    start_times = data["time_seconds"][(pkt_counter == pkt_range[0])]
+    start_time = start_times.min()
+    # Use pkt_counter == 3 to define the end of the group.
+    end_times = data["time_seconds"][([pkt_counter == pkt_range[-1]][-1])]
+    end_time = end_times.max()
 
-    # Get unique acquisition times and create group labels
-    _, group_labels = np.unique(data["mag_acq_tm_coarse"], return_inverse=True)
+    # Filter out data before the pkt_counter=0 and after the last pkt_counter=3.
+    grouped_data = data.where(
+        (data["time_seconds"] >= start_time) & (data["time_seconds"] <= end_time),
+        drop=True,
+    )
 
-    # Assign group labels as a coordinate
-    data["group"] = ("group", group_labels)
+    # Assign labels based on the start_times.
+    group_labels = np.searchsorted(
+        start_times, grouped_data["time_seconds"], side="right"
+    )
+    # Example:
+    # grouped_data.coords
+    # Coordinates:
+    #   * epoch    (epoch) int64 7kB 315922822184000000 ... 315923721184000000
+    #   * group    (group) int64 7kB 1 1 1 1 1 1 1 1 1 ... 15 15 15 15 15 15 15 15 15
+    grouped_data["group"] = ("group", group_labels)
 
-    return data
+    # Filter out groups with non-sequential src_seq_ctr values.
+    filtered_data = filter_valid_groups(grouped_data)
+
+    return filtered_data
 
 
 def get_bytes(val: int) -> list[int]:
@@ -318,8 +317,9 @@ def parse_packet(xarray_data: xr.Dataset) -> list[dict]:
         status_values = grouped_data["mag_status"][
             (grouped_data["group"] == group).values
         ]
-        # Get the packet counters for each group.
-        pkt_counter = get_pkt_counter(status_values)
+        pkt_counter = grouped_data["pkt_counter"][
+            (grouped_data["group"] == group).values
+        ]
 
         if not np.array_equal(pkt_counter, np.arange(4)):
             logger.warning(
