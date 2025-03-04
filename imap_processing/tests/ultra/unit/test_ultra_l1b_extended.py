@@ -402,9 +402,9 @@ def test_determine_species(test_fixture):
     np.testing.assert_array_equal(h_indices_ssd, ctof_indices_ssd)
 
 
-def test_get_phi_theta(yf_fixture):
+def test_get_phi_theta(test_fixture):
     """Tests get_phi_theta function."""
-    df_filt, d, _ = yf_fixture
+    df_filt, d, _, _ = test_fixture
 
     test_xf = df_filt["Xf"].astype("float").values
     test_yf = df_filt["Yf"].astype("float").values
