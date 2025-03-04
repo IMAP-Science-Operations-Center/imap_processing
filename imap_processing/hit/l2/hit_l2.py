@@ -31,7 +31,7 @@ def hit_l2(dependency: xr.Dataset, data_version: str) -> list[xr.Dataset]:
     Returns
     -------
     processed_data : list[xarray.Dataset]
-        List of three L2 datasets.
+        List of L2 dataset.
     """
     logger.info("Creating HIT L2 science datasets")
     # Create the attribute manager for this data level
@@ -93,9 +93,9 @@ def process_summed_flux_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Dataset
 
     This function converts the L1B summed rates to L2 summed fluxes
     using ancillary tables containing factors needed to calculate the
-    fluxes (energy bin width, geometry factor, efficiency, and b).
+    flux (energy bin width, geometry factor, efficiency, and b).
 
-    Flux equation 11 from the HIT algorithm document:
+    Equation 11 from the HIT algorithm document:
       Summed Flux = (L1B Summed Rate) /
                     (60 * Delta E * Geometry Factor * Efficiency) - b
 
@@ -110,7 +110,6 @@ def process_summed_flux_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Dataset
         The processed L2 summed flux dataset.
     """
     # TODO:
-    #  - determine where to use attr manager
     #  - determine where to pull ancillary data. Storing it locally for now
     #  - add check for dynamic_threshold_state to determine which ancillary table to use
     #    after additional ancillary files are provided
@@ -118,8 +117,8 @@ def process_summed_flux_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Dataset
     # Create a new dataset to store the L1B summed flux data
     l2_summed_flux_dataset = l1b_summed_rates_dataset.copy(deep=True)
 
-    # Load ancillary data containing factors needed to convert L1B Summed count
-    # rates to L2 fluxes (energy bin width, geometry factor, efficiency, and b)
+    # Load ancillary data containing factors needed to convert rate to flux
+    # (energy bin width, geometry factor, efficiency, and b)
     ancillary_file = (
         imap_module_directory
         / "hit/ancillary/imap_hit_l1b-to-l2-summed-factors-20250219_v002.csv"
@@ -146,7 +145,7 @@ def process_summed_flux_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Dataset
                 # Get the energy min values for the current epoch
                 energy_min = l2_summed_flux_dataset[f"{species}_energy_min"].values
 
-                # Get the factors needed to convert the summed count rates to fluxes for
+                # Get factors needed to convert summed rates to fluxes for
                 # all energy bins
                 flux_factors = var_anc_data.set_index(
                     var_anc_data["lower energy (mev)"].astype(np.float32)
@@ -162,28 +161,3 @@ def process_summed_flux_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Dataset
                     / (60 * delta_e_factor * geometry_factor * efficiency)
                 ) - b
     return l2_summed_flux_dataset
-
-
-if __name__ == "__main__":
-    from imap_processing import imap_module_directory
-    from imap_processing.hit.l1a.hit_l1a import hit_l1a
-    from imap_processing.hit.l1b.hit_l1b import process_summed_rates_data
-
-    # L0 file path
-    packet_file = imap_module_directory / "tests/hit/test_data/sci_sample.ccsds"
-
-    datasets = hit_l1a(packet_file, "001")
-    counts = datasets[0]
-
-    # Calculate livetime from the livetime counter
-    livetime = counts["livetime_counter"] / 270
-
-    summed_rates = process_summed_rates_data(counts, livetime)
-    # print(summed_rates)
-    # print(summed_rates["hydrogen"][0])
-
-    # l2_dataset = process_summed_flux_data(summed_rates)
-
-    l2_datasets = hit_l2(summed_rates, "001")
-    print(type(l2_datasets))
-    print(l2_datasets)
