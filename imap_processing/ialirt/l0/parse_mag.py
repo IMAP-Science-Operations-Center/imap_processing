@@ -154,20 +154,20 @@ def find_groups(accumulated_data: xr.Dataset) -> xr.Dataset:
     status_values = sorted_data["mag_status"]
 
     pkt_counter = get_pkt_counter(status_values)
-    accumulated_data["pkt_counter"] = pkt_counter
+    sorted_data["pkt_counter"] = pkt_counter
 
     # Use pkt_counter == 0 to define the beginning of the group.
     # Find time at this index and use it as the beginning time for the group.
-    start_times = accumulated_data["time_seconds"][(pkt_counter == pkt_range[0])]
+    start_times = sorted_data["time_seconds"][(pkt_counter == pkt_range[0])]
     start_time = start_times.min()
     # Use pkt_counter == 3 to define the end of the group.
-    end_times = accumulated_data["time_seconds"][([pkt_counter == pkt_range[-1]][-1])]
+    end_times = sorted_data["time_seconds"][([pkt_counter == pkt_range[-1]][-1])]
     end_time = end_times.max()
 
     # Filter out data before the pkt_counter=0 and after the last pkt_counter=3.
-    grouped_data = accumulated_data.where(
-        (accumulated_data["time_seconds"] >= start_time)
-        & (accumulated_data["time_seconds"] <= end_time),
+    grouped_data = sorted_data.where(
+        (sorted_data["time_seconds"] >= start_time)
+        & (sorted_data["time_seconds"] <= end_time),
         drop=True,
     )
 
