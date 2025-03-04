@@ -39,7 +39,6 @@ from imap_processing.utils import convert_raw_to_eu
 logger = logging.getLogger(__name__)
 
 
-
 class TriggerMode(Enum):
     """
     Enum class for data collection trigger Modes.
