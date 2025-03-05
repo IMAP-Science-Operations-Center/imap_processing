@@ -355,7 +355,7 @@ def pset_exposure(
     # packet at an ESA step.
     for _, packet_row in data_subset.groupby("epoch"):
         clock_tick_mets, clock_tick_weights = get_de_clock_ticks_for_esa_step(
-            packet_row["ccsds_met"].values[0], spin_df
+            packet_row["ccsds_met"].values, spin_df
         )
 
         # Clock tick MET times are accumulation "edges". To get the mean spin-phase
@@ -379,7 +379,7 @@ def pset_exposure(
         # Accumulate the new exposure times for current esa_step
         i_esa = np.flatnonzero(
             pset_coords["esa_energy_step"].values
-            == packet_row["esa_energy_step"].values[0]
+            == packet_row["esa_energy_step"].values
         )[0]
         exposure_var["exposure_times"].values[:, i_esa] += new_exposure_times
 
