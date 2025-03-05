@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.process_swe import process_swe
@@ -112,6 +113,13 @@ def test_decom_packets(xarray_data, swe_test_data, fields_to_test):
         )
 
 
+def test_filter_valid_groups(grouped_data):
+    """Tests filter_valid_groups function."""
+
+    filtered_data = filter_valid_groups(grouped_data)
+
+    assert np.all(np.unique(filtered_data["group"]) == np.array([0, 2]))
+
 def test_process_swe(swe_test_data, fields_to_test):
     """Test processing for swe."""
     swe_test_data = swe_test_data.rename(
@@ -119,6 +127,5 @@ def test_process_swe(swe_test_data, fields_to_test):
     )
     swe_test_data.index.name = "epoch"
     ds = swe_test_data.to_xarray()
-    # TODO: fix this for MAG
     ds["src_seq_ctr"] = ("epoch", np.arange(len(ds["swe_shcoarse"])))
     process_swe(ds)

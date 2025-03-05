@@ -6,128 +6,11 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.swe.l1a.swe_science import decompressed_counts
+from imap_processing.ialirt.utils.grouping import find_groups
+from imap_processing.ialirt.utils.time import calculate_time
+
 
 logger = logging.getLogger(__name__)
-
-
-def calculate_time(coarse_time: xr.DataArray, fin_time: xr.DataArray) -> xr.DataArray:
-    """
-    Calculate the time.
-
-    Parameters
-    ----------
-    coarse_time : xr.DataArray
-        Coarse time.
-    fin_time : xr.DataArray
-        Fine time.
-
-    Returns
-    -------
-    time_seconds: xr.DataArray
-        Calculated time.
-
-    Notes
-    -----
-    1000000 fine time units = 1 second
-    """
-    # TODO: Confirm this is correction.
-    fine_time_fraction = fin_time / 1000000
-    time_seconds = coarse_time + fine_time_fraction
-
-    return time_seconds
-
-
-def filter_valid_groups(grouped_data: xr.Dataset) -> xr.Dataset:
-    """
-    Filter out groups where `src_seq_ctr` diff are not 1 or -16383.
-
-    Parameters
-    ----------
-    grouped_data : xr.Dataset
-        Dataset with a "group" coordinate.
-
-    Returns
-    -------
-    filtered_data : xr.Dataset
-        Filtered dataset with only valid groups remaining.
-    """
-    valid_groups = []
-    unique_groups = np.unique(grouped_data["group"].values)
-
-    for group in unique_groups:
-        src_seq_ctr = grouped_data["src_seq_ctr"][
-            (grouped_data["group"] == group).values
-        ]
-        src_seq_ctr_diff = np.diff(src_seq_ctr)
-
-        # Accept group only if all diffs are 1 or -16383
-        if np.all(np.isin(src_seq_ctr_diff, [1, -16383])):
-            valid_groups.append(group)
-
-    filtered_data = grouped_data.where(
-        xr.DataArray(np.isin(grouped_data["group"], valid_groups), dims="epoch"),
-        drop=True,
-    )
-
-    return filtered_data
-
-
-def find_groups(accumulated_data: xr.Dataset) -> xr.Dataset:
-    """
-    Group data based on swe_acq_sec and swe_acq_sub values.
-
-    Parameters
-    ----------
-    accumulated_data : xr.Dataset
-        Packets dataset accumulated over 1 min.
-
-    Returns
-    -------
-    grouped_data : xr.Dataset
-        Add "group" coordinate.
-    """
-    subcom_range = (0, 59)
-
-    time_seconds = calculate_time(
-        accumulated_data["swe_acq_sec"], accumulated_data["swe_acq_sub"]
-    )
-    accumulated_data["time_seconds"] = time_seconds
-    sorted_data = accumulated_data.sortby("time_seconds", ascending=True)
-
-    # Use subcom_range == 0 to define the beginning of the group.
-    # Find time at this index and use it as the beginning time for the group.
-    start_times = sorted_data["time_seconds"][
-        (sorted_data["swe_seq"] == subcom_range[0])
-    ]
-    start_time = start_times.min()
-    # Use subcom_range == 59 to define the end of the group.
-    end_times = sorted_data["time_seconds"][
-        ([sorted_data["swe_seq"] == subcom_range[-1]][-1])
-    ]
-    end_time = end_times.max()
-
-    # Filter out data before the subcom_range=0 and after the last subcom_range=59.
-    grouped_data = sorted_data.where(
-        (sorted_data["time_seconds"] >= start_time)
-        & (sorted_data["time_seconds"] <= end_time),
-        drop=True,
-    )
-
-    # Assign labels based on the start_times.
-    group_labels = np.searchsorted(
-        start_times, grouped_data["time_seconds"], side="right"
-    )
-    # Example:
-    # grouped_data.coords
-    # Coordinates:
-    #   * epoch    (epoch) int64 7kB 315922822184000000 ... 315923721184000000
-    #   * group    (group) int64 7kB 1 1 1 1 1 1 1 1 1 ... 15 15 15 15 15 15 15 15 15
-    grouped_data["group"] = ("group", group_labels)
-
-    # Filter out groups with non-sequential src_seq_ctr values.
-    filtered_data = filter_valid_groups(grouped_data)
-
-    return filtered_data
 
 
 def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
@@ -146,7 +29,15 @@ def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
     """
     logger.info("Processing SWE.")
 
-    grouped_data = find_groups(accumulated_data)
+    time_seconds = calculate_time(
+        accumulated_data["swe_acq_sec"],
+        accumulated_data["swe_acq_sub"],
+        1000000
+    )
+    accumulated_data["time_seconds"] = time_seconds
+
+    grouped_data = find_groups(accumulated_data, (0, 59), "swe_seq",
+                               "time_seconds")
     unique_groups = np.unique(grouped_data["group"])
     swe_data = []
 
