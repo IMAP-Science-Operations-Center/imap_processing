@@ -63,7 +63,7 @@ class IndexMatchMethod(Enum):
 def match_coords_to_indices(
     input_object: PointingSet | AbstractSkyMap,
     output_object: PointingSet | AbstractSkyMap,
-    event_time: float | None = None,
+    event_et: float | None = None,
 ) -> NDArray:
     """
     Find the output indices corresponding to each input coord between 2 spatial objects.
@@ -95,7 +95,7 @@ def match_coords_to_indices(
         The object containing a grid or tessellation of spatial pixels
         into which the input spatial pixel centers will 'land', and be matched to
         corresponding pixel 1D indices in the output frame.
-    event_time : float, optional
+    event_et : float, optional
         Event time at which to transform the input spatial object to the output frame.
         This can be manually specified, e.g., for converting between Maps which do not
         contain an epoch value.
@@ -125,14 +125,14 @@ def match_coords_to_indices(
     if isinstance(input_object, PointingSet) and isinstance(output_object, PointingSet):
         raise ValueError("Cannot match indices between two PointingSet objects.")
 
-    # If event_time is not specified, use epoch of the PointingSet, if present.
+    # If event_et is not specified, use epoch of the PointingSet, if present.
     # The epoch will be in units of terrestrial time (TT) J2000 nanoseconds,
     # which must be converted to ephemeris time (ET) for SPICE.
-    if event_time is None:
+    if event_et is None:
         if isinstance(input_object, PointingSet):
-            event_time = ttj2000ns_to_et(input_object.data["epoch"].values)
+            event_et = ttj2000ns_to_et(input_object.data["epoch"].values)
         elif isinstance(output_object, PointingSet):
-            event_time = ttj2000ns_to_et(output_object.data["epoch"].values)
+            event_et = ttj2000ns_to_et(output_object.data["epoch"].values)
         else:
             raise ValueError(
                 "Event time must be specified if both objects are SkyMaps."
@@ -143,7 +143,7 @@ def match_coords_to_indices(
 
     # Transform the input pixel centers to the output frame
     input_obj_az_el_output_frame = geometry.frame_transform_az_el(
-        et=event_time,
+        et=event_et,
         az_el=input_obj_az_el_input_frame,
         from_frame=input_object.spice_reference_frame,
         to_frame=output_object.spice_reference_frame,

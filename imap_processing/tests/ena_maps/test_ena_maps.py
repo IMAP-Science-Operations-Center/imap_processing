@@ -596,5 +596,5 @@ class TestIndexMatching:
 
         # No error if event time is specified
         _ = ena_maps.match_coords_to_indices(
-            mock_rect_map_1, mock_rect_map_2, event_time=0
+            mock_rect_map_1, mock_rect_map_2, event_et=0
         )
