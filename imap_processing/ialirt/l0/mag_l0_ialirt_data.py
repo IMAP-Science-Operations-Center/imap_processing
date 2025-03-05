@@ -29,18 +29,29 @@ class Packet0:
     """
 
     def __init__(self, status: int) -> None:
+        # +1.5v voltage warning flag raised
         self.hk1v5_warn = (status >> 20) & 0x01
+        # +1.5v voltage danger flag raised
         self.hk1v5_danger = (status >> 19) & 0x01
+        # +1.5v current warning flag raised
         self.hk1v5c_warn = (status >> 18) & 0x01
+        # +1.5v current danger flag raised
         self.hk1v5c_danger = (status >> 17) & 0x01
+        # +1.8v voltage warning flag raised
         self.hk1v8_warn = (status >> 16) & 0x01
+        # +1.8v voltage danger flag raised
         self.hk1v8_danger = (status >> 15) & 0x01
+        # +1.8v current warning flag raised
         self.hk1v8c_warn = (status >> 14) & 0x01
+        # +1.8v current danger flag raised
         self.hk1v8c_danger = (status >> 13) & 0x01
+        # Outboard (MAGo) sensor is saturated (danger)
         self.fob_saturated = (status >> 5) & 0x01
+        # Inboard (MAGi) sensor is saturated (danger)
         self.fib_saturated = (status >> 4) & 0x01
+        # Instrument mode
         self.mode = (status >> 0) & 0x0F
-        # instrument control unit temperature
+        # instrument control unit temperature (top 7/16 bits, eng. units)
         self.icu_temp = ((status >> 6) & 0x7F) << 5
 
 
@@ -62,13 +73,19 @@ class Packet1:
     """
 
     def __init__(self, status: int) -> None:
+        # +2.5v voltage warning flag raised
         self.hk2v5_warn = (status >> 20) & 0x01
+        # +2.5v voltage danger flag raised
         self.hk2v5_danger = (status >> 19) & 0x01
+        # +2.5v current warning flag raised
         self.hk2v5c_warn = (status >> 18) & 0x01
+        # +2.5v current warning flag raised
         self.hk2v5c_danger = (status >> 17) & 0x01
+        # +3.3v voltage (top 8/16 bits, in eng. units)
         self.hk3v3 = ((status >> 9) & 0xFF) << 4
+        # +3.3v current (top 9/16 bits, in eng. units)
         self.hk3v3_current = ((status >> 0) & 0x1FF) << 3
-        # Primary sensor validity flag
+        # Primary sensor (typically MAGo) science data is valid
         self.pri_isvalid = (status >> 21) & 0x01
 
 
@@ -90,11 +107,17 @@ class Packet2:
     """
 
     def __init__(self, status: int) -> None:
+        # +8.5v voltage warning flag raised
         self.hkp8v5_warn = (status >> 20) & 0x01
+        # +8.5v voltage danger flag raised
         self.hkp8v5_danger = (status >> 19) & 0x01
+        # +8.5v current warning flag raised
         self.hkp8v5c_warn = (status >> 18) & 0x01
+        # +8.5v current danger flag raised
         self.hkp8v5c_danger = (status >> 17) & 0x01
+        # -8.5v voltage (top 8/16 bits, in eng. units)
         self.hkn8v5 = ((status >> 9) & 0xFF) << 4
+        # -8.5v current (top 9/16 bits, in eng. units)
         self.hkn8v5_current = ((status >> 0) & 0x1FF) << 3
 
 
@@ -118,12 +141,15 @@ class Packet3:
     """
 
     def __init__(self, status: int) -> None:
-        # Temp of the Front End Electronics (FEE) connected to MAGo
+        # Temp of outboard (MAGo) sensor (top 8/16 bits, in eng. units)
         self.fob_temp = ((status >> 13) & 0xFF) << 4
-        # Temp of the Front End Electronics (FEE) connected to MAGi
+        # Temp of outboard (MAGo) sensor (top 8/16 bits, in eng. units)
         self.fib_temp = ((status >> 5) & 0xFF) << 4
+        # Outboard (MAGo) sensor range [0-3]
         self.fob_range = (status >> 3) & 0x03
+        # Inboard (MAGi) sensor range [0-3]
         self.fib_range = (status >> 1) & 0x03
+        # Multiple (SEU) memory error bits danger flag raised
         self.multbit_errs = (status >> 0) & 0x01
-        # Secondary sensor validity flag
+        # Secondary sensor (typically MAGi) science data is valid
         self.sec_isvalid = (status >> 21) & 0x01
