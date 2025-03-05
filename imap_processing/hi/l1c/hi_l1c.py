@@ -33,9 +33,9 @@ from imap_processing.spice.spin import (
 )
 from imap_processing.spice.time import ttj2000ns_to_et
 
-SPIN_PHASE_BIN_CENTERS = np.arange(0.05, 360, 0.1) / 360
-N_SPIN_BINS = SPIN_PHASE_BIN_CENTERS.size
+N_SPIN_BINS = 3600
 SPIN_PHASE_BIN_EDGES = np.linspace(0, 360, N_SPIN_BINS + 1) / 360
+SPIN_PHASE_BIN_CENTERS = SPIN_PHASE_BIN_EDGES[:-1] + SPIN_PHASE_BIN_EDGES[1] / 2
 
 logger = logging.getLogger(__name__)
 
@@ -344,9 +344,9 @@ def pset_exposure(
         fill_value=0,
     )
 
-    # find_second_de_packet_data only uses variables that have epoch
-    # as a coordinate, so the others are dropped from what gets passed in.
-    data_subset = find_second_de_packet_data(l1b_de_dataset.drop_dims("event_met"))
+    # Get a subset of the l1b_de_dataset that contains only the second
+    # of each pair of packets at an ESA step.
+    data_subset = find_second_de_packet_data(l1b_de_dataset)
 
     # Get the pandas dataframe with spin data
     spin_df = get_spin_data()
@@ -360,13 +360,15 @@ def pset_exposure(
 
         # Clock tick MET times are accumulation "edges". To get the mean spin-phase
         # for a given clock tick, add 1/2 clock tick and compute spin-phase.
-        spin_phases = get_instrument_spin_phase(
-            clock_tick_mets + HALF_CLOCK_TICK_S,
-            SpiceFrame[f"IMAP_HI_{sensor_number}"],
+        spin_phases = np.atleast_1d(
+            get_instrument_spin_phase(
+                clock_tick_mets + HALF_CLOCK_TICK_S,
+                SpiceFrame[f"IMAP_HI_{sensor_number}"],
+            )
         )
 
         # Remove ticks not in good times/angles
-        good_mask = good_time_and_phase_mask(clock_tick_mets, spin_phases)  # type: ignore[arg-type]
+        good_mask = good_time_and_phase_mask(clock_tick_mets, spin_phases)
         spin_phases = spin_phases[good_mask]
         clock_tick_weights = clock_tick_weights[good_mask]
 
@@ -400,9 +402,10 @@ def find_second_de_packet_data(l1b_dataset: xr.Dataset) -> xr.Dataset:
     reduced_dataset : xr.Dataset
         A dataset containing only the entries for the second packet at an ESA step.
     """
+    epoch_dataset = l1b_dataset.drop_dims("event_met")
     # We should get two CCSDS packets per 8-spin ESA step.
     # Get the indices of the packet before each ESA change.
-    esa_step = l1b_dataset["esa_step"].values
+    esa_step = epoch_dataset["esa_step"].values
     second_esa_packet_idx = np.append(
         np.flatnonzero(np.diff(esa_step) != 0), len(esa_step) - 1
     )
@@ -425,7 +428,7 @@ def find_second_de_packet_data(l1b_dataset: xr.Dataset) -> xr.Dataset:
         )
     second_esa_packet_idx = second_esa_packet_idx[~missing_esa_pair_mask]
     # Reduce the dataset to just the second packet entries
-    data_subset = l1b_dataset.isel(epoch=second_esa_packet_idx)
+    data_subset = epoch_dataset.isel(epoch=second_esa_packet_idx)
     return data_subset
 
 
