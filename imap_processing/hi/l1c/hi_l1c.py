@@ -12,7 +12,11 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.hi.l1a.science_direct_event import DE_CLOCK_TICK_S
-from imap_processing.hi.utils import create_dataset_variables, full_dataarray
+from imap_processing.hi.utils import (
+    CoincidenceBitmap,
+    create_dataset_variables,
+    full_dataarray,
+)
 from imap_processing.spice.geometry import (
     SpiceFrame,
     frame_transform,
@@ -443,6 +447,7 @@ class CalibrationProductConfig:
     def __init__(self, pandas_obj: pd.DataFrame) -> None:
         self._validate(pandas_obj)
         self._obj = pandas_obj
+        self._add_coincidence_values_column()
 
     def _validate(self, df: pd.DataFrame) -> None:
         """
@@ -469,6 +474,18 @@ class CalibrationProductConfig:
         # TODO: Verify that the same ESA energy steps exist in all unique calibration
         #   product numbers
 
+    def _add_coincidence_values_column(self) -> None:
+        """Generate and add the coincidence_type_values column to the dataframe."""
+        # Add a column that consists of the coincidence type strings converted
+        # to integer values
+        self._obj["coincidence_type_values"] = self._obj.apply(
+            lambda row: [
+                CoincidenceBitmap.detector_hit_str_to_int(entry)
+                for entry in row["coincidence_type_list"]
+            ],
+            axis=1,
+        )
+
     @classmethod
     def from_csv(cls, path: Path) -> pd.DataFrame:
         """
@@ -484,12 +501,15 @@ class CalibrationProductConfig:
         dataframe : pandas.DataFrame
             Validated calibration product configuration data frame.
         """
-        return pd.read_csv(
+        df = pd.read_csv(
             path,
             index_col=cls.index_columns,
             converters={"coincidence_type_list": lambda s: s.split("|")},
             comment="#",
         )
+        # Force the _init_ method to run by using the namespace
+        _ = df.cal_prod_config.number_of_products
+        return df
 
     @property
     def number_of_products(self) -> int:
