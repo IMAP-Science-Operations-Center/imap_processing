@@ -5,9 +5,6 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.parse_mag import (
-    calculate_time,
-    filter_valid_groups,
-    find_groups,
     get_bytes,
     get_pkt_counter,
     get_status_data,
@@ -73,50 +70,37 @@ def xarray_data(binary_packet_path, xtce_mag_path):
 
 @pytest.fixture()
 def grouped_data():
-    """Creates grouped data for filter_valid_groups test."""
+    """Creates grouped data for tests."""
     epoch = np.arange(12)
 
     # Example `src_seq_ctr` values for 3 groups:
     # Group 0 - valid, all diffs = 1
     # Group 1 - invalid, has a jump of 5
     # Group 2 - valid, wraps at -16383
-    src_seq_ctr = np.array(
+    src_seq_ctr = np.concatenate(
         [
-            100,
-            101,
-            102,
-            103,  # Group 0
-            200,
-            205,
-            206,
-            207,  # Group 1
-            16382,
-            16383,
-            0,
-            1,  # Group 2
+            np.arange(100, 104),
+            np.array([200, 205, 206, 207]),
+            np.array([16382, 16383, 0, 1]),
         ],
         dtype=np.int32,
     )
-
-    group = np.array(
-        [
-            0,
-            0,
-            0,
-            0,  # Group 0
-            1,
-            1,
-            1,
-            1,  # Group 1
-            2,
-            2,
-            2,
-            2,  # Group 2
-        ]
+    mag_acq_tm_coarse = np.repeat(
+        np.array([461971382, 461971386, 461971390], dtype=np.uint32), repeats=4
     )
 
+    mag_acq_tm_fine = np.array(
+        [1502, 1502, 1505, 1505, 1500, 1500, 1503, 1503, 1497, 1497, 1491, 1491]
+    )
+
+    group = np.tile(np.arange(3), 4).reshape(4, 3).T.ravel()
+
     grouped_data = xr.Dataset(
-        data_vars={"src_seq_ctr": ("epoch", src_seq_ctr)},
+        data_vars={
+            "src_seq_ctr": ("epoch", src_seq_ctr),
+            "mag_acq_tm_coarse": ("epoch", mag_acq_tm_coarse),
+            "mag_acq_tm_fine": ("epoch", mag_acq_tm_fine),
+        },
         coords={"epoch": epoch, "group": ("epoch", group)},
     )
 
@@ -128,33 +112,6 @@ def test_get_pkt_counter(xarray_data):
     status_values = xarray_data["mag_status"].values
     pkt_counter = get_pkt_counter(status_values)
     assert np.array_equal(pkt_counter, np.array([0, 1, 2, 3, 0, 1, 2, 3, 0]))
-
-
-def test_calculate_time(xarray_data):
-    """Tests calculate_time function."""
-    time = calculate_time(
-        xarray_data["mag_acq_tm_coarse"], xarray_data["mag_acq_tm_fine"]
-    )
-
-    assert np.all(
-        time
-        == xarray_data["mag_acq_tm_coarse"] + xarray_data["mag_acq_tm_fine"] / 65535.0
-    )
-
-
-def test_filter_valid_groups(grouped_data):
-    """Tests filter_valid_groups function."""
-
-    filtered_data = filter_valid_groups(grouped_data)
-
-    assert np.all(np.unique(filtered_data["group"]) == np.array([0, 2]))
-
-
-def test_find_groups(xarray_data):
-    """Tests the find_groups function."""
-    grouped_data = find_groups(xarray_data)
-
-    assert np.all(np.unique(grouped_data["group"]) == np.array([1, 2]))
 
 
 def test_get_status_data(xarray_data, mag_test_data):
@@ -170,15 +127,14 @@ def test_get_status_data(xarray_data, mag_test_data):
         assert status_data[key] == matching_row[key.upper()].values[0]
 
 
-def test_get_time(xarray_data):
+def test_get_time(grouped_data):
     """Tests the get_time function."""
-    grouped_data = find_groups(xarray_data)
     time_data = get_time(grouped_data, 1, np.array([0, 1, 2, 3]))
     assert time_data == {
-        "pri_coarsetm": 461971382,
-        "pri_fintm": 1502,
-        "sec_coarsetm": 461971382,
-        "sec_fintm": 1505,
+        "pri_coarsetm": 461971386,
+        "pri_fintm": 1500,
+        "sec_coarsetm": 461971386,
+        "sec_fintm": 1503,
     }
 
 
