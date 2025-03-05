@@ -4,7 +4,6 @@ import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import IntEnum
-from numbers import Number
 from typing import Optional, Union
 
 import numpy as np
@@ -102,7 +101,7 @@ def full_dataarray(
     attrs: dict,
     coords: Optional[dict[str, xr.DataArray]] = None,
     shape: Optional[Union[int, Sequence[int]]] = None,
-    fill_value: Optional[Number] = None,
+    fill_value: Optional[float] = None,
 ) -> xr.DataArray:
     """
     Generate an empty xarray.DataArray with appropriate attributes.
@@ -160,7 +159,7 @@ def create_dataset_variables(
     variable_names: list[str],
     variable_shape: Optional[Union[int, Sequence[int]]] = None,
     coords: Optional[dict[str, xr.DataArray]] = None,
-    fill_value: Optional[Number] = None,
+    fill_value: Optional[float] = None,
     att_manager_lookup_str: str = "{0}",
 ) -> dict[str, xr.DataArray]:
     """

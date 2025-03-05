@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import xarray as xr
+from numpy import typing as npt
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import parse_filename_like
@@ -359,7 +360,7 @@ def pset_exposure(
 
         # Clock tick MET times are accumulation "edges". To get the mean spin-phase
         # for a given clock tick, add 1/2 clock tick and compute spin-phase.
-        spin_phases = get_instrument_spin_phase(
+        spin_phases: np.ndarray = get_instrument_spin_phase(
             clock_tick_mets + HALF_CLOCK_TICK_S,
             SpiceFrame[f"IMAP_HI_{sensor_number}"],
         )
@@ -504,7 +505,7 @@ def get_de_clock_ticks_for_esa_step(
 
 def good_time_and_phase_mask(
     tick_mets: np.ndarray, spin_phases: np.ndarray
-) -> np.ndarray:
+) -> npt.NDArray:
     """
     Filter out the clock tick times that are not in good times and angles.
 
