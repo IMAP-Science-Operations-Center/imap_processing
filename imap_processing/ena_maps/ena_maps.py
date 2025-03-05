@@ -14,6 +14,7 @@ from numpy.typing import NDArray
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.ena_maps.utils import map_utils, spatial_utils
 from imap_processing.spice import geometry
+from imap_processing.spice.time import ttj2000ns_to_et
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +97,7 @@ def match_coords_to_indices(
         Event time at which to transform the input spatial object to the output frame.
         This can be manually specified, e.g., for converting between Maps which do not
         contain an epoch value.
+        If specified, must be in SPICE compatible ET.
         The default value is None, in which case the event time of the PointingSet
         object is used.
 
@@ -121,12 +123,14 @@ def match_coords_to_indices(
     if isinstance(input_object, PointingSet) and isinstance(output_object, PointingSet):
         raise ValueError("Cannot match indices between two PointingSet objects.")
 
-    # If event_time is not specified, use event_time of the PointingSet, if present.
+    # If event_time is not specified, use epoch of the PointingSet, if present.
+    # The epoch will be in units of terrestrial time (TT) J2000 nanoseconds,
+    # which must be converted to ephemeris time (ET) for SPICE.
     if event_time is None:
         if isinstance(input_object, PointingSet):
-            event_time = input_object.data["epoch"].values
+            event_time = ttj2000ns_to_et(input_object.data["epoch"].values)
         elif isinstance(output_object, PointingSet):
-            event_time = output_object.data["epoch"].values
+            event_time = ttj2000ns_to_et(output_object.data["epoch"].values)
         else:
             raise ValueError(
                 "Event time must be specified if both objects are SkyMaps."
@@ -451,7 +455,7 @@ class RectangularSkyMap(AbstractSkyMap):
         pointing_set : PointingSet
             The pointing set containing the values to project to the map.
         value_keys : list[tuple[str, IndexMatchMethod]] | None
-            The keys of the values to project to the map.
+            The keys of the values in the PointingSet to project to the map.
             Ex.: ["counts", "flux"]
             data_vars named each key must be present, and of the same dimensionality in
             each pointing set which is to be projected to the map.
@@ -467,17 +471,27 @@ class RectangularSkyMap(AbstractSkyMap):
         """
         if value_keys is None:
             value_keys = list(pointing_set.data.data_vars.keys())
-
         for value_key in value_keys:
             if value_key not in pointing_set.data.data_vars:
                 raise ValueError(f"Value key {value_key} not found in pointing set.")
 
-        # Determine the indices of the sky map grid that correspond to
-        # each pixel in the pointing set.
         if index_match_method is IndexMatchMethod.PUSH:
+            # Determine the indices of the sky map grid that correspond to
+            # each pixel in the pointing set.
             matched_indices_push = match_coords_to_indices(
                 input_object=pointing_set,
                 output_object=self,
+            )
+        elif index_match_method is IndexMatchMethod.PULL:
+            # Determine the indices of the pointing set grid that correspond to
+            # each pixel in the sky map.
+            matched_indices_pull = match_coords_to_indices(
+                input_object=self,
+                output_object=pointing_set,
+            )
+        else:
+            raise NotImplementedError(
+                "Only PUSH and PULL index matching methods are supported."
             )
 
         for value_key in value_keys:
@@ -495,6 +509,8 @@ class RectangularSkyMap(AbstractSkyMap):
                 self.data_dict[value_key] = np.zeros(output_shape)
 
             if index_match_method is IndexMatchMethod.PUSH:
+                # Bin the values at the matched indices. There may be multiple
+                # pointing set pixels that correspond to the same sky map pixel.
                 pointing_projected_values = map_utils.bin_single_array_at_indices(
                     value_array=raveled_pset_data,
                     projection_grid_shape=(
@@ -503,9 +519,13 @@ class RectangularSkyMap(AbstractSkyMap):
                     ),
                     projection_indices=matched_indices_push,
                 )
+            elif index_match_method is IndexMatchMethod.PULL:
+                # We know that there will only be one value per sky map pixel,
+                # so we can use the matched indices directly
+                pointing_projected_values = raveled_pset_data[..., matched_indices_pull]
             else:
                 raise NotImplementedError(
-                    "The 'pull' method of index matching is not yet implemented."
+                    "Only PUSH and PULL index matching methods are supported."
                 )
             self.data_dict[value_key] += pointing_projected_values
 
@@ -523,10 +543,3 @@ class RectangularSkyMap(AbstractSkyMap):
             f"{self.spice_reference_frame.name} ({self.spice_reference_frame.value}), "
             f"spacing_deg={self.spacing_deg}, num_points={self.num_points})"
         )
-
-
-# TODO:
-# Add pulling index matching in match_pset_coords_to_indices
-
-# TODO:
-# Check units of time which will be read in. Do we need to add j2000ns_to_j2000s?

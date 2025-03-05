@@ -5,6 +5,7 @@ import spiceypy as spice
 import xarray as xr
 
 from imap_processing.spice.kernels import ensure_spice
+from imap_processing.spice.time import str_to_et
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import build_energy_bins
 
 DEFAULT_SPACING_DEG_L1C = 0.5
@@ -109,6 +110,12 @@ def mock_l1c_pset_product(
     counts = counts.astype(int)
     sensitivity = np.ones(grid_shape)
 
+    # Determine the epoch, which is TT time in nanoseconds since J2000 epoch
+    tdb_et = str_to_et(timestr)
+    tt_j2000ns = (
+        ensure_spice(spice.unitim, time_kernels_only=True)(tdb_et, "ET", "TT") * 1e9
+    )
+
     pset_product = xr.Dataset(
         {
             "counts": (
@@ -136,11 +143,11 @@ def mock_l1c_pset_product(
         },
         coords={
             "epoch": [
-                ensure_spice(spice.str2et, time_kernels_only=True)(timestr),
+                tt_j2000ns,
             ],
+            "energy_bin_center": energy_bin_midpoints,
             "azimuth_bin_center": np.arange(0 + spacing_deg / 2, 360, spacing_deg),
             "elevation_bin_center": np.arange(-90 + spacing_deg / 2, 90, spacing_deg),
-            "energy_bin_center": energy_bin_midpoints,
         },
         attrs={
             "Logical_file_id": (
