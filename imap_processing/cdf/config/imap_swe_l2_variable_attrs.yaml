@@ -15,7 +15,7 @@ energy:
   CATDESC: Energy of the particle in eV
   FIELDNAM: Energy (eV)
   FILLVAL: -9223370000000000000
-  FORMAT: E5.4
+  FORMAT: E10.4
   LABLAXIS: Energy
   SCALE_TYP: linear
   UNITS: eV
@@ -39,7 +39,7 @@ inst_az:
   CATDESC: Spin angle in instrument frame. Angle resolution is 12 degree nominally
   FIELDNAM: Spin Angle
   FILLVAL: -9223370000000000000
-  FORMAT: E5.4
+  FORMAT: E10.4
   LABLAXIS: Degree
   SCALE_TYP: linear
   UNITS: Degree
@@ -67,7 +67,7 @@ inst_el:
   CATDESC: Angle of each CEM detector
   FIELDNAM: Polar Angle
   FILLVAL: -9223370000000000000
-  FORMAT: I2
+  FORMAT: I4
   LABLAXIS: Degree
   SCALE_TYP: linear
   UNITS: Degree
@@ -136,8 +136,8 @@ inst_az_spin_sector:
   LABL_PTR_2: spin_sector_label
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Spin Angle
-  FILLVAL: -1.0000000E+31
-  FORMAT: E4.5
+  FILLVAL: -1.0E+31
+  FORMAT: E10.5
   UNITS: Degree
   VALIDMAX: 359.99
   VALIDMIN: 0.0
@@ -155,11 +155,11 @@ phase_space_density_spin_sector:
   LABL_PTR_3: cem_id_label
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Phase Space Density
-  FILLVAL: -1.0000000E+31
+  FILLVAL: -1.0E+31
   UNITS: s^3 / cm^6
   FORMAT: E14.7
-  VALIDMAX: 1.0E-15
-  VALIDMIN: 1.0E-40
+  VALIDMAX: 0.000000000000001
+  VALIDMIN: 0.0
   VAR_TYPE: data
   DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:PhaseSpaceDensity,Qualifier:Array
 
@@ -175,11 +175,11 @@ phase_space_density:
   LABL_PTR_3: inst_el_label
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Phase Space Density
-  FILLVAL: -1.0000000E+31
+  FILLVAL: -1.0E+31
   UNITS: s^3 / cm^6
   FORMAT: E14.7
   VALIDMAX: 1.0E-15
-  VALIDMIN: 1.0E-40
+  VALIDMIN: 0.0
   VAR_TYPE: data
   DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:PhaseSpaceDensity,Qualifier:Array
 
@@ -194,10 +194,10 @@ flux_spin_sector:
   LABL_PTR_3: cem_id_label
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Flux
-  FILLVAL: -1.0000000E+31
+  FILLVAL: -1.0E+31
   UNITS: 1 / (2 * eV * cm^2 * s * ster)
   FORMAT: E14.7
-  VALIDMAX: 1.0E9
+  VALIDMAX: 1.0E+9
   VALIDMIN: 0.0
   VAR_TYPE: data
   DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:NumberFlux,Qualifier:Array
@@ -213,10 +213,10 @@ flux:
   LABL_PTR_3: inst_el_label
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Flux
-  FILLVAL: -1.0000000E+31
+  FILLVAL: -1.0E+31
   UNITS: 1 / (2 * eV * cm^2 * s * ster)
   FORMAT: E14.7
-  VALIDMAX: 1.0E9
+  VALIDMAX: 1.0E+9
   VALIDMIN: 0.0
   VAR_TYPE: data
   DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:NumberFlux,Qualifier:Array
@@ -231,8 +231,8 @@ acquisition_time:
   LABL_PTR_2: spin_sector_label
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Acquisition time by ESA step and spin sector
-  FILLVAL: -1.0000000E+31
-  FORMAT: I20
+  FILLVAL: -1.0E+31
+  FORMAT: E20.4
   VALIDMAX: 9223372036854775807
   VALIDMIN: 0
   UNITS: sec

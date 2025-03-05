@@ -1,7 +1,7 @@
 # <=== Coordinates ===>
 esa_step:
   CATDESC: Energy step id in lookup table
-  FIELDNAM: energy step
+  FIELDNAM: Energy Step
   FILLVAL: -9223370000000000000
   FORMAT: I2
   LABLAXIS: Energy Step
@@ -12,33 +12,32 @@ esa_step:
   VAR_TYPE: support_data
 
 spin_sector:
-  CATDESC: Spin angle step. Angle resolution is 12 degree nominally
-  FIELDNAM: spin angle step
+  CATDESC: Spin sector. 30 measurements nominally
+  FIELDNAM: Spin Sector
   FILLVAL: -9223370000000000000
   FORMAT: I2
-  LABLAXIS: Angle
+  LABLAXIS: Spin Sector
   SCALE_TYP: linear
-  UNITS: "Degree"
+  UNITS: " "
   VALIDMAX: 29
   VALIDMIN: 0
   VAR_TYPE: support_data
 
 cem_id:
-  CATDESC: Data rates of each CEM detectors
-  FIELDNAM: rates
+  CATDESC: CEM detector number
+  FIELDNAM: CEM Number
   FILLVAL: -9223370000000000000
-  FORMAT: E14.7
-  LABLAXIS: Rates
+  FORMAT: I2
+  LABLAXIS: CEM Number
   SCALE_TYP: linear
   UNITS: " "
-  VALIDMAX: 0.000015514
-  VALIDMIN: 0.0
-  VAR_NOTES: " "
+  VALIDMAX: 6
+  VALIDMIN: 0
   VAR_TYPE: support_data
 
 cycle:
   CATDESC: Full cycle data takes 4 spins' data
-  FIELDNAM: quarter cycle
+  FIELDNAM: Quarter Cycle
   FILLVAL: -9223370000000000000
   FORMAT: I2
   LABLAXIS: Cycle
@@ -57,14 +56,20 @@ esa_step_label:
   VAR_TYPE: metadata
 
 spin_sector_label:
-  CATDESC: Spin angle step. Angle resolution is 12 degree nominally
-  FIELDNAM: 12 Degree Resolution
+  CATDESC: Spin sector. 30 measurements nominally
+  FIELDNAM: Measurement
   FORMAT: A2
   VAR_TYPE: metadata
 
 cem_id_label:
-  CATDESC: Data rates of each CEM detectors
+  CATDESC: Data rates of each CEM detector
   FIELDNAM: CEM Rates
+  FORMAT: A1
+  VAR_TYPE: metadata
+
+cycle_label:
+  CATDESC: Quarter cycle number
+  FIELDNAM: Quarter Cycle
   FORMAT: A1
   VAR_TYPE: metadata
 
@@ -73,11 +78,12 @@ cem_id_label:
 
 default_attrs: &default
   DEPEND_0: epoch
-  DISPLAY_TYPE: 'no_plot'
-  LABLAXIS: ' '
+  DEPEND_1: cycle
+  LABL_PTR_1: cycle_label
+  DISPLAY_TYPE: time_series
   FILLVAL: -9223372036854775808
-  FORMAT: I19
-  UNITS: ' '
+  FORMAT: I20
+  UNITS: " "
   VALIDMIN: 0
   VALIDMAX: 9223372036854769664
   VAR_TYPE: support_data
@@ -95,7 +101,7 @@ science_data:
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Counts rate by volt step and spin sector and CEM
   FORMAT: E14.7
-  FILLVAL: -1.0000000E+31
+  FILLVAL: -9223372036854775808
   UNITS: counts/sec
   VALIDMAX: 0.000015514
   VALIDMIN: 0
@@ -113,7 +119,7 @@ acquisition_time:
   LABL_PTR_2: spin_sector_label
   DISPLAY_TYPE: spectrogram
   FIELDNAM: Acquisition time by volt step and spin sector
-  FILLVAL: -1.0000000E+31
+  FILLVAL: -9223372036854775808
   UNITS: sec
   VAR_TYPE: support_data
   VAR_NOTES: >
@@ -124,19 +130,16 @@ acquisition_time:
 
 shcoarse:
   <<: *default
-  DEPEND_1: cycle
   CATDESC: Mission elapsed time
   FIELDNAM: SHCOARSE
 
 acq_start_coarse:
   <<: *default
-  DEPEND_1: cycle
   CATDESC: Acquisition start time coarse in seconds
   FIELDNAM: Acquisition Time Coarse
 
 acq_start_fine:
   <<: *default
-  DEPEND_1: cycle
   CATDESC: Acquisition start time fine in microseconds
   FIELDNAM: Acquisition Time Fine
   FORMAT: I10
@@ -144,7 +147,6 @@ acq_start_fine:
 
 cem_nominal_only:
   <<: *default
-  DEPEND_1: cycle
   CATDESC: CEM Nominal status bit. '1' -- nominal, '0' -- not nominal
   FIELDNAM: CEM Nominal Status
   FORMAT: I1
@@ -152,7 +154,6 @@ cem_nominal_only:
 
 spin_period_validity:
   <<: *default
-  DEPEND_1: cycle
   CATDESC: Spin period valid bit. '1' -- valid, '0' -- invalid
   FIELDNAM: Spin Period Validity
   FORMAT: I1
@@ -160,7 +161,6 @@ spin_period_validity:
 
 spin_phase_validity:
   <<: *default
-  DEPEND_1: cycle
   CATDESC: Spin phase valid bit. '1' -- valid, '0' -- invalid
   FIELDNAM: Spin Phase Validity
   FORMAT: I1
@@ -168,7 +168,6 @@ spin_phase_validity:
 
 spin_period_source:
   <<: *default
-  DEPEND_1: cycle
   CATDESC: >
     Spin period source bit. '1' -- sun sensor (safing), '0' -- star tracker
     (nominal)
@@ -178,7 +177,6 @@ spin_period_source:
 
 settle_duration:
   <<: *default
-  DEPEND_1: cycle
   CATDESC: HVPS settling duration
   FIELDNAM: HVPS Setting Duration
   FORMAT: I5
@@ -186,7 +184,6 @@ settle_duration:
 
 acq_duration:
   <<: *default
-  DEPEND_1: cycle
   CATDESC: Acquisition duration
   FIELDNAM: Acquisition Duration
   FORMAT: I10
@@ -194,25 +191,22 @@ acq_duration:
 
 spin_phase:
   <<: *default
-  DEPEND_1: cycle
   CATDESC: Spin phase
   FIELDNAM: Spin Phase
   FORMAT: E14.7
   VALIDMAX: 65535
-  FILLVAL: -1.0000000E+31
+  FILLVAL: -9223372036854775808
 
 spin_period:
   <<: *default
-  DEPEND_1: cycle
   CATDESC: Spin period
   FIELDNAM: Spin Period
   FORMAT: E14.7
   VALIDMAX: 65535
-  FILLVAL: -1.0000000E+31
+  FILLVAL: -9223372036854775808
 
 repoint_warning:
   <<: *default
-  DEPEND_1: cycle
   CATDESC: >
     Thruster fired during this quarter cycle. '1' -- yes, warning received,
     '0' -- no, warning not received
@@ -222,7 +216,6 @@ repoint_warning:
 
 high_count:
   <<: *default
-  DEPEND_1: cycle
   CATDESC: >
     High CEM count observed for at least one CEM during this quarter cycle.
     '1' -- yes, high count occurred, '0' -- no, no high count occurred
@@ -232,7 +225,6 @@ high_count:
 
 stim_enabled:
   <<: *default
-  DEPEND_1: cycle
   CATDESC: Stim state. '1' -- enabled, '0' -- disabled
   FIELDNAM: Stim State
   FORMAT: I1
@@ -240,7 +232,6 @@ stim_enabled:
 
 quarter_cycle:
   <<: *default
-  DEPEND_1: cycle
   CATDESC: Quarter cycle number
   FIELDNAM: Quarter Cycle Number
   FORMAT: I3
@@ -248,7 +239,7 @@ quarter_cycle:
 
 esa_table_num:
   <<: *default
-  DEPEND_1: cycle
+
   CATDESC: ESA table identifier
   FIELDNAM: ESA table Identifier
   FORMAT: I3
@@ -256,7 +247,6 @@ esa_table_num:
 
 esa_acq_cfg:
   <<: *default
-  DEPEND_1: cycle
   CATDESC: ESA acquisition configuration
   FIELDNAM: ESA Acquisition Configuration
   FORMAT: I3
@@ -264,16 +254,14 @@ esa_acq_cfg:
 
 threshold_dac:
   <<: *default
-  DEPEND_1: cycle
   CATDESC: Threshold DAC value
   FIELDNAM: Threshold DAC Value
   FORMAT: E14.7
   VALIDMAX: 65535
-  FILLVAL: -1.0000000E+31
+  FILLVAL: -9223372036854775808
 
 stim_cfg_reg:
   <<: *default
-  DEPEND_1: cycle
   CATDESC: >
     Stim pulse configuration register. Bits 0-3, period, 4-7, duration, 8-9
     mode
@@ -283,7 +271,6 @@ stim_cfg_reg:
 
 cksum:
   <<: *default
-  DEPEND_1: cycle
   CATDESC: Checksum
   FIELDNAM: Checksum
   FORMAT: I5

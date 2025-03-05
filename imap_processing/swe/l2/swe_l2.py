@@ -330,14 +330,16 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         * swe_constants.ENERGY_CONVERSION_FACTOR,
         name="energy",
         dims=["energy"],
-        attrs=cdf_attributes.get_variable_attributes("energy"),
+        attrs=cdf_attributes.get_variable_attributes("energy", check_schema=False),
     )
 
     energy_label = xr.DataArray(
         np.array(list(swe_constants.ESA_VOLTAGE_ROW_INDEX_DICT.keys())).astype(str),
         name="energy_label",
         dims=["energy"],
-        attrs=cdf_attributes.get_variable_attributes("energy_label"),
+        attrs=cdf_attributes.get_variable_attributes(
+            "energy_label", check_schema=False
+        ),
     )
 
     # Angle of each CEM detectors.
@@ -345,27 +347,31 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         swe_constants.CEM_DETECTORS_ANGLE,
         name="inst_el",
         dims=["inst_el"],
-        attrs=cdf_attributes.get_variable_attributes("inst_el"),
+        attrs=cdf_attributes.get_variable_attributes("inst_el", check_schema=False),
     )
     inst_el_label = xr.DataArray(
         swe_constants.CEM_DETECTORS_ANGLE.astype(str),
         name="inst_el_label",
         dims=["inst_el"],
-        attrs=cdf_attributes.get_variable_attributes("inst_el_label"),
+        attrs=cdf_attributes.get_variable_attributes(
+            "inst_el_label", check_schema=False
+        ),
     )
 
     # Spin Angle bins storing bin center values.
     inst_az_xr = xr.DataArray(
-        np.arange(0, 360, 12) + 6,
+        np.arange(0, 360, 12, dtype=np.float32) + 6,
         name="inst_az",
         dims=["inst_az"],
-        attrs=cdf_attributes.get_variable_attributes("inst_az"),
+        attrs=cdf_attributes.get_variable_attributes("inst_az", check_schema=False),
     )
     inst_az_label = xr.DataArray(
         inst_az_xr.values.astype(str),
         name="inst_az_label",
         dims=["inst_az"],
-        attrs=cdf_attributes.get_variable_attributes("inst_az_label"),
+        attrs=cdf_attributes.get_variable_attributes(
+            "inst_az_label", check_schema=False
+        ),
     )
 
     dataset = xr.Dataset(
@@ -411,6 +417,10 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
 
     # Carry over acquisition times for L3 purposes.
     dataset["acquisition_time"] = l1b_dataset["acquisition_time"]
+    # Update the acquisition_time variable attributes.
+    dataset["acquisition_time"].attrs = cdf_attributes.get_variable_attributes(
+        "acquisition_time"
+    )
 
     # Calculate spin phase using SWE acquisition_time from the
     # L1B dataset. The L1B dataset stores acquisition_time with

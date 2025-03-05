@@ -568,14 +568,14 @@ def swe_l1b_science(l1a_data: xr.Dataset, data_version: str) -> xr.Dataset:
         met_to_ttj2000ns(center_time),
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch"),
+        attrs=cdf_attrs.get_variable_attributes("epoch", check_schema=False),
     )
 
     esa_step = xr.DataArray(
         np.arange(swe_constants.N_ESA_STEPS),
         name="esa_step",
         dims=["esa_step"],
-        attrs=cdf_attrs.get_variable_attributes("esa_step"),
+        attrs=cdf_attrs.get_variable_attributes("esa_step", check_schema=False),
     )
 
     # NOTE: LABL_PTR_1 should be CDF_CHAR.
@@ -583,14 +583,14 @@ def swe_l1b_science(l1a_data: xr.Dataset, data_version: str) -> xr.Dataset:
         esa_step.values.astype(str),
         name="esa_step_label",
         dims=["esa_step"],
-        attrs=cdf_attrs.get_variable_attributes("esa_step_label"),
+        attrs=cdf_attrs.get_variable_attributes("esa_step_label", check_schema=False),
     )
 
     spin_sector = xr.DataArray(
         np.arange(swe_constants.N_ANGLE_SECTORS),
         name="spin_sector",
         dims=["spin_sector"],
-        attrs=cdf_attrs.get_variable_attributes("spin_sector"),
+        attrs=cdf_attrs.get_variable_attributes("spin_sector", check_schema=False),
     )
 
     # NOTE: LABL_PTR_2 should be CDF_CHAR.
@@ -598,21 +598,30 @@ def swe_l1b_science(l1a_data: xr.Dataset, data_version: str) -> xr.Dataset:
         spin_sector.values.astype(str),
         name="spin_sector_label",
         dims=["spin_sector"],
-        attrs=cdf_attrs.get_variable_attributes("spin_sector_label"),
+        attrs=cdf_attrs.get_variable_attributes(
+            "spin_sector_label", check_schema=False
+        ),
     )
 
     cycle = xr.DataArray(
         np.arange(swe_constants.N_QUARTER_CYCLES),
         name="cycle",
         dims=["cycle"],
-        attrs=cdf_attrs.get_variable_attributes("cycle"),
+        attrs=cdf_attrs.get_variable_attributes("cycle", check_schema=False),
+    )
+
+    cycle_label = xr.DataArray(
+        cycle.values.astype(str),
+        name="cycle_label",
+        dims=["cycle"],
+        attrs=cdf_attrs.get_variable_attributes("cycle_label", check_schema=False),
     )
 
     cem_id = xr.DataArray(
-        np.arange(swe_constants.N_CEMS, dtype=np.float64),
+        np.arange(swe_constants.N_CEMS, dtype=np.int8),
         name="cem_id",
         dims=["cem_id"],
-        attrs=cdf_attrs.get_variable_attributes("cem_id"),
+        attrs=cdf_attrs.get_variable_attributes("cem_id", check_schema=False),
     )
 
     # NOTE: LABL_PTR_3 should be CDF_CHAR.
@@ -620,7 +629,7 @@ def swe_l1b_science(l1a_data: xr.Dataset, data_version: str) -> xr.Dataset:
         cem_id.values.astype(str),
         name="cem_id_label",
         dims=["cem_id"],
-        attrs=cdf_attrs.get_variable_attributes("cem_id_label"),
+        attrs=cdf_attrs.get_variable_attributes("cem_id_label", check_schema=False),
     )
 
     # Add science data and it's associated metadata into dataset.
@@ -648,6 +657,7 @@ def swe_l1b_science(l1a_data: xr.Dataset, data_version: str) -> xr.Dataset:
             "esa_step_label": esa_step_label,
             "spin_sector_label": spin_sector_label,
             "cem_id_label": cem_id_label,
+            "cycle_label": cycle_label,
         },
         attrs=cdf_attrs.get_global_attributes("imap_swe_l1b_sci"),
     )

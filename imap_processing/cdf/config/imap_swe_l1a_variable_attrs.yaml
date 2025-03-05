@@ -21,10 +21,9 @@ cem_id:
   FORMAT: I1
   LABLAXIS: Angle
   SCALE_TYP: linear
-  UNITS: int
+  UNITS: " "
   VALIDMAX: 6
   VALIDMIN: 0
-  VAR_NOTES: " "
   VAR_TYPE: support_data
 
 # <=== Label Attributes ===>
@@ -74,6 +73,7 @@ raw_counts:
   VALIDMIN: 0
   FILLVAL: -9223372036854775808
   VAR_TYPE: data
+  SCALETYP: linear
 
 science_data:
   CATDESC: Decompressed Counts
