@@ -369,7 +369,7 @@ def pset_exposure(
         spin_phases = spin_phases[good_mask]
         clock_tick_weights = clock_tick_weights[good_mask]
 
-        # TODO: Account for flyback time
+        # TODO: Account for flyback time. See alg doc section 2.3.5
 
         # Bin exposure times into spin-phase bins
         new_exposure_times, _ = np.histogram(

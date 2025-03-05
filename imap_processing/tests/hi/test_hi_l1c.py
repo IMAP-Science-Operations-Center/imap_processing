@@ -173,9 +173,17 @@ def test_pset_exposure(
         np.concat([np.ones(hi_l1c.N_SPIN_BINS), np.ones(hi_l1c.N_SPIN_BINS // 2) * 2]),
     )
 
+    # The above mocks mean no data needs to be in the l1b_dataset. It
+    # only needs to provide a logical source that contains "90sensor".
     l1b_dataset = MagicMock()
     l1b_dataset.attrs = {"Logical_source": "90sensor"}
+
+    # All the setup is done, call the pset_exposure function
     exposure_dict = hi_l1c.pset_exposure(empty_pset.coords, l1b_dataset)
+
+    # Based on the spin phase and clock_tick mocks, the expected output is:
+    # - Repeated values of 3, 1 for the first half of the spin bins
+    # - Repeated values of 3, 2 for the second half of the spin bins
     expected_values = np.stack(
         [
             np.tile([3, 1], hi_l1c.N_SPIN_BINS // 2),
