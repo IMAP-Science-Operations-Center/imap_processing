@@ -5,12 +5,38 @@ import logging
 import numpy as np
 import xarray as xr
 
-from imap_processing.swe.l1a.swe_science import decompressed_counts
 from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.ialirt.utils.time import calculate_time
-
+from imap_processing.swe.l1a.swe_science import decompressed_counts
+from imap_processing.swe.l1b.swe_l1b_science import deadtime_correction
 
 logger = logging.getLogger(__name__)
+
+
+def decompress_counts(raw_counts) -> int:
+    decompression_table = np.array([decompressed_counts(i) for i in range(256)])
+
+    # Decompress using the precomputed table
+    counts = decompression_table[raw_counts]
+
+    return counts
+
+
+def prepare_raw_counts(grouped_data, group):
+    # Prepare raw counts array just for this group (60 epochs, 7 CEMs, 4 energy steps)
+    raw_counts = np.zeros((60, 7, 4), dtype=np.uint8)
+
+    # Extract counts for this group
+    for cem in range(1, 8):
+        for e in range(1, 5):
+            key = f"swe_cem{cem}_e{e}"
+
+            # Slice out just the data for this group
+            raw_counts[:, cem - 1, e - 1] = grouped_data[key][
+                (grouped_data["group"] == group).values
+            ].values
+
+    return raw_counts
 
 
 def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
@@ -30,14 +56,11 @@ def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
     logger.info("Processing SWE.")
 
     time_seconds = calculate_time(
-        accumulated_data["swe_acq_sec"],
-        accumulated_data["swe_acq_sub"],
-        1000000
+        accumulated_data["swe_acq_sec"], accumulated_data["swe_acq_sub"], 1000000
     )
     accumulated_data["time_seconds"] = time_seconds
 
-    grouped_data = find_groups(accumulated_data, (0, 59), "swe_seq",
-                               "time_seconds")
+    grouped_data = find_groups(accumulated_data, (0, 59), "swe_seq", "time_seconds")
     unique_groups = np.unique(grouped_data["group"])
     swe_data = []
 
@@ -53,34 +76,14 @@ def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
             )
             continue
 
-        # Get science values for each group.
-        science_values = grouped_data["mag_data"][
-            (grouped_data["group"] == group).values
-        ]
+        # Prepare raw counts array just for this group (60 epochs, 7 CEMs, 4 energy steps)
+        raw_counts = prepare_raw_counts(grouped_data, group)
 
-        # We know we can only have 8 bit numbers input, so iterate over all
-        # possibilities once up front
-        decompression_table = np.array([decompressed_counts(i) for i in range(256)])
+        counts = decompress_counts(raw_counts)
+        # acq_duration = 80 milliseconds (hardcode)
+        corrected_counts = deadtime_correction(counts, 80 * 10 ^ 3)
 
-        # Loop through each packet individually with a list comprehension and
-        # perform the following steps:
-        # 1. Turn the binary string  of 0s and 1s to an int
-        # 2. Convert the int into a bytes object of length 1260 (10080 / 8)
-        #    Eg. "0000000011110011" --> b'\x00\xf3'
-        #    1260 = 15 seconds x 12 energy steps x 7 CEMs
-        # 3. Read that bytes data to a numpy array of uint8 through the buffer protocol
-        # 4. Reshape the data to 180 x 7
-        raw_science_array = np.array(
-            [
-                np.frombuffer(binary_string, dtype=np.uint8).reshape(
-                    180, swe_constants.N_CEMS
-                )
-                for binary_string in l0_dataset["science_data"].values
-            ]
-        )
-
-        # Decompress the raw science data using numpy broadcasting logic
-        # science_array will be the same shape as raw_science_array (npackets, 180, 7)
-        science_array = decompression_table[raw_science_array]
+        # TODO: start with normalizing the counts based on the
+        #  geometric factors for each CEM detector
 
     return swe_data

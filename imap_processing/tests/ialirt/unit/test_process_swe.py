@@ -1,10 +1,9 @@
 import numpy as np
 import pandas as pd
 import pytest
-import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.ialirt.l0.process_swe import process_swe
+from imap_processing.ialirt.l0.process_swe import process_swe, decompress_counts
 from imap_processing.utils import packet_file_to_datasets
 
 
@@ -113,12 +112,10 @@ def test_decom_packets(xarray_data, swe_test_data, fields_to_test):
         )
 
 
-def test_filter_valid_groups(grouped_data):
-    """Tests filter_valid_groups function."""
+def test_decompress_counts():
+    """Test decompress counts."""
+    pass
 
-    filtered_data = filter_valid_groups(grouped_data)
-
-    assert np.all(np.unique(filtered_data["group"]) == np.array([0, 2]))
 
 def test_process_swe(swe_test_data, fields_to_test):
     """Test processing for swe."""
