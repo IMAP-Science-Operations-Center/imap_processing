@@ -9,14 +9,13 @@ import xarray as xr
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.hi.l1a.hi_l1a import hi_l1a
 from imap_processing.hi.l1b.hi_l1b import (
-    CoincidenceBitmap,
     compute_coincidence_type_and_time_deltas,
     compute_hae_coordinates,
     de_esa_energy_step,
     de_nominal_bin_and_spin_phase,
     hi_l1b,
 )
-from imap_processing.hi.utils import HiConstants
+from imap_processing.hi.utils import CoincidenceBitmap, HiConstants
 from imap_processing.spice.geometry import SpiceFrame
 
 

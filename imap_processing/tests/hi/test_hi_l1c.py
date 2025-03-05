@@ -12,7 +12,7 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.hi.l1a.science_direct_event import DE_CLOCK_TICK_S
 from imap_processing.hi.l1c import hi_l1c
 from imap_processing.hi.l1c.hi_l1c import CalibrationProductConfig
-from imap_processing.hi.utils import HIAPID
+from imap_processing.hi.utils import HIAPID, CoincidenceBitmap
 
 
 @pytest.fixture(scope="module")
@@ -235,6 +235,15 @@ class TestCalibrationProductConfig:
         """Test coverage for read_csv function."""
         df = CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
         assert isinstance(df["coincidence_type_list"][0, 1], list)
+
+    def test_added_coincidence_type_values_column(self, hi_test_cal_prod_config_path):
+        df = CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
+        assert "coincidence_type_values" in df.columns
+        for _, row in df.iterrows():
+            for detect_string, val in zip(
+                row["coincidence_type_list"], row["coincidence_type_values"]
+            ):
+                assert val == CoincidenceBitmap.detector_hit_str_to_int(detect_string)
 
     def test_number_of_products(self, hi_test_cal_prod_config_path):
         """Test coverage for number of products accessor."""

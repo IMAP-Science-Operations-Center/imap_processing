@@ -12,6 +12,7 @@ from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.hi.l1a.science_direct_event import HALF_CLOCK_TICK_S
 from imap_processing.hi.utils import (
     HIAPID,
+    CoincidenceBitmap,
     HiConstants,
     create_dataset_variables,
     parse_sensor_number,
@@ -34,15 +35,6 @@ class TriggerId(IntEnum):
     A = 1
     B = 2
     C = 3
-
-
-class CoincidenceBitmap(IntEnum):
-    """IntEnum class for coincidence type bitmap values."""
-
-    A = 2**3
-    B = 2**2
-    C1 = 2**1
-    C2 = 2**0
 
 
 logger = logging.getLogger(__name__)

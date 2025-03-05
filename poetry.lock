@@ -489,7 +489,7 @@ typing = ["typing-extensions (>=4.12.2)"]
 name = "healpy"
 version = "1.18.0"
 description = "Healpix tools package for Python"
-optional = false
+optional = true
 python-versions = ">=3.10"
 files = [
     {file = "healpy-1.18.0-cp310-cp310-macosx_13_0_x86_64.whl", hash = "sha256:ed318fc2f4f4ee738eaff8a414805e928960b51201f10aa8581bd40bd4d4404f"},
@@ -1989,4 +1989,4 @@ tools = ["openpyxl", "pandas"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<4"
-content-hash = "93dadc3b06586191f7dfcf7135267a42fe8e21325ff9b00d9e7ee620f37c7baa"
+content-hash = "0ccb3b05dc798b02919859d96be08e5f24b87dc975d6200a12991de981d34211"

@@ -202,3 +202,40 @@ def create_dataset_variables(
             var, attrs, shape=variable_shape, coords=coords, fill_value=fill_value
         )
     return new_variables
+
+
+class CoincidenceBitmap(IntEnum):
+    """IntEnum class for coincidence type bitmap values."""
+
+    A = 2**3
+    B = 2**2
+    C1 = 2**1
+    C2 = 2**0
+
+    @staticmethod
+    def detector_hit_str_to_int(detector_hit_str: str) -> int:
+        """
+        Convert a detector hit string to a coincidence type integer value.
+
+        A detector hit string is a string containing all detectors that were hit
+        for a direct event. Possible detectors include: [A, B, C1, C2]. Converting
+        the detector hit string to a coincidence type integer value involves
+        summing the coincidence bitmap value for each detector hit. e.g. "AC1C2"
+        results in 2**3 + 2**1 + 2**0 = 11.
+
+        Parameters
+        ----------
+        detector_hit_str : str
+            The string containing the set of detectors hit.
+            e.g. "AC1C2".
+
+        Returns
+        -------
+        coincidence_type : int
+            The integer value of the coincidence type.
+        """
+        # Join all detector names with a pipe for use with regex
+        pattern = r"|".join(c.name for c in CoincidenceBitmap)
+        matches = re.findall(pattern, detector_hit_str)
+        # Sum the integer value assigned to the detector name for each match
+        return sum(CoincidenceBitmap[m] for m in matches)
