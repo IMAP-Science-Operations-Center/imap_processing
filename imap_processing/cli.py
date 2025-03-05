@@ -587,7 +587,7 @@ class Hit(ProcessInstrument):
             if len(dependencies) > 1:
                 raise ValueError(
                     f"Unexpected dependencies found for HIT L1b:"
-                    f"{dependencies}. Expected only two dependencies."
+                    f"{dependencies}. Expected only one dependency."
                 )
             data_dict = {}
             if self.dependencies[0]["data_level"] == "l0":
