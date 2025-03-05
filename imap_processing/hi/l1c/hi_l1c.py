@@ -527,6 +527,13 @@ def coincidence_type_string_to_int(coincidence_type_str: str) -> int:
     """
     Convert a coincidence type string to a coincidence type integer value.
 
+    A coincidence string is a string containing all detectors that were hit
+    for a direct event. Possible detectors include: [A, B, C1, C2]. Converting
+    the coincidence type string to a coincidence type integer value involves
+    summing the coincidence bitmap value for each detector hit. e.g. "AC1C2"
+    results in 2**3 + 2**1 + 2**0 = 11. See `CoincidenceBitmap` for the mapping
+    from detector name to integer value.
+
     Parameters
     ----------
     coincidence_type_str : str
@@ -538,6 +545,9 @@ def coincidence_type_string_to_int(coincidence_type_str: str) -> int:
     coincidence_type : int
         The integer value of the coincidence type.
     """
+    # CoincidenceBitmap defines the detector names and their associated
+    # values. Use regex to find matches to the detector names.
     pattern = r"|".join(c.name for c in CoincidenceBitmap)
     matches = re.findall(pattern, coincidence_type_str)
+    # Sum the integer value assigned to the detector name for each match
     return sum(CoincidenceBitmap[m] for m in matches)
