@@ -611,6 +611,6 @@ class HealpixSkyMap(AbstractSkyMap):
         self.az_el_points = np.column_stack((pixel_az, pixel_el))
         self.solid_angle = hp.nside2pixarea(nside, degrees=False)
         self.solid_angle_points = np.full(self.num_points, self.solid_angle)
-        self.resol = hp.nside2resol(nside, arcmin=False)
+        self.approx_resolution = hp.nside2resol(nside, arcmin=False)
         self.data_dict: dict[str, NDArray] = {}
         self.nested = nested
