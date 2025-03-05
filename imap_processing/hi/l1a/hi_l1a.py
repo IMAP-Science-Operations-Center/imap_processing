@@ -60,7 +60,7 @@ def hi_l1a(packet_file_path: Union[str, Path], data_version: str) -> list[xr.Dat
             gattr_key = "imap_hi_l1a_hk_attrs"
         elif apid_enum in [HIAPID.H45_DIAG_FEE, HIAPID.H90_DIAG_FEE]:
             data = datasets_by_apid[apid]
-            gattr_key = "imap_hi_l1a_diag_fee_attrs"
+            gattr_key = "imap_hi_l1a_diagfee_attrs"
 
         # Update dataset global attributes
         attr_mgr = ImapCdfAttributes()
