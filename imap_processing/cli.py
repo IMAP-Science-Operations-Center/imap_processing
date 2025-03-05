@@ -603,7 +603,7 @@ class Hit(ProcessInstrument):
             if len(dependencies) > 1:
                 raise ValueError(
                     f"Unexpected dependencies found for HIT L2:"
-                    f"{dependencies}. Expected only two dependencies."
+                    f"{dependencies}. Expected only one dependency."
                 )
             # Add L1B dataset to process science data
             l1b_dataset = load_cdf(dependencies[0])
