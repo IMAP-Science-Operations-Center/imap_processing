@@ -83,14 +83,39 @@ test-all = ["array-api-strict", "astropy[test]", "coverage[toml]", "ipython (>=4
 typing = ["typing_extensions (>=4.0.0)"]
 
 [[package]]
+name = "astropy-healpix"
+version = "1.1.2"
+description = "BSD-licensed HEALPix for Astropy"
+optional = false
+python-versions = ">=3.10"
+files = [
+    {file = "astropy_healpix-1.1.2-cp310-abi3-macosx_10_9_x86_64.whl", hash = "sha256:fb504c998e1661215c74da9537558cd2048d29b44acb2d63e613aae133b91668"},
+    {file = "astropy_healpix-1.1.2-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:00a0c9378d7e844aecb23d62c206a999e045a48781a320ac5f012f8c95ac4022"},
+    {file = "astropy_healpix-1.1.2-cp310-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ee37b14700d28cf53e2376c65f8cb6224a59f80067feb3f3cd6dd6f9a4577337"},
+    {file = "astropy_healpix-1.1.2-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:cf7a616af0b7df9c1d96f6af1e12382f29bd43e3fb88ce98f46992bfa23a149e"},
+    {file = "astropy_healpix-1.1.2-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:3526008fc5ccd4c13f3166a878bfb856b909a00912b27d26666992615c668e88"},
+    {file = "astropy_healpix-1.1.2-cp310-abi3-win32.whl", hash = "sha256:94f4a2fcee2e66ab68f8face8d20be4553cbf6ce81bd214052ddf307e2118513"},
+    {file = "astropy_healpix-1.1.2-cp310-abi3-win_amd64.whl", hash = "sha256:f6b3e50c49e73a66bb1847dc3451e1d22bf828c10881275bf359928e95d25fe3"},
+    {file = "astropy_healpix-1.1.2.tar.gz", hash = "sha256:03671df12a36ec3b357c244d5154b6786362ff5d80770675c7b24815101066e4"},
+]
+
+[package.dependencies]
+astropy = ">=5"
+numpy = ">=1.25"
+
+[package.extras]
+docs = ["matplotlib", "sphinx-astropy"]
+test = ["hypothesis", "pytest-astropy"]
+
+[[package]]
 name = "astropy-iers-data"
-version = "0.2025.2.24.0.34.4"
+version = "0.2025.3.3.0.34.45"
 description = "IERS Earth Rotation and Leap Second tables for the astropy core package"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "astropy_iers_data-0.2025.2.24.0.34.4-py3-none-any.whl", hash = "sha256:be8b3b75b09b1aa1d22de9b5243854e00d19936aca6d8f64466d16197c04bb28"},
-    {file = "astropy_iers_data-0.2025.2.24.0.34.4.tar.gz", hash = "sha256:fce62431ce38129d166360f59563f506fbe37b2d1df5e0038a4ad0b0277274f7"},
+    {file = "astropy_iers_data-0.2025.3.3.0.34.45-py3-none-any.whl", hash = "sha256:5c8762ec79dbc67e220d8b1cdf15e1d94a954f57750a5682023f385d41732f66"},
+    {file = "astropy_iers_data-0.2025.3.3.0.34.45.tar.gz", hash = "sha256:22ce2349ee288b09cb4cc13a6e015a3c8d4ace66ed2eae49b42119d943f6d5e8"},
 ]
 
 [package.extras]
@@ -560,13 +585,13 @@ files = [
 
 [[package]]
 name = "jinja2"
-version = "3.1.5"
+version = "3.1.6"
 description = "A very fast and expressive template engine."
 optional = true
 python-versions = ">=3.7"
 files = [
-    {file = "jinja2-3.1.5-py3-none-any.whl", hash = "sha256:aba0f4dc9ed8013c424088f68a5c226f7d6097ed89b246d7749c2ec4175c6adb"},
-    {file = "jinja2-3.1.5.tar.gz", hash = "sha256:8fefff8dc3034e27bb80d67c671eb8a9bc424c0ef4c0826edbff304cceff43bb"},
+    {file = "jinja2-3.1.6-py3-none-any.whl", hash = "sha256:85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67"},
+    {file = "jinja2-3.1.6.tar.gz", hash = "sha256:0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d"},
 ]
 
 [package.dependencies]
@@ -1243,13 +1268,13 @@ windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
 name = "pytest"
-version = "8.3.4"
+version = "8.3.5"
 description = "pytest: simple powerful testing with Python"
 optional = true
 python-versions = ">=3.8"
 files = [
-    {file = "pytest-8.3.4-py3-none-any.whl", hash = "sha256:50e16d954148559c9a74109af1eaf0c945ba2d8f30f0a3d3335edde19788b6f6"},
-    {file = "pytest-8.3.4.tar.gz", hash = "sha256:965370d062bce11e73868e0335abac31b4d3de0e82f4007408d242b4f8610761"},
+    {file = "pytest-8.3.5-py3-none-any.whl", hash = "sha256:c69214aa47deac29fad6c2a4f590b9c4a9fdb16a403176fe154b79c0b4d4d820"},
+    {file = "pytest-8.3.5.tar.gz", hash = "sha256:f4efe70cc14e511565ac476b57c279e12a855b11f48f212af1080ef2263d3845"},
 ]
 
 [package.dependencies]
@@ -1957,11 +1982,11 @@ viz = ["cartopy", "matplotlib", "nc-time-axis", "seaborn"]
 [extras]
 dev = ["mypy", "pre-commit", "ruff"]
 doc = ["numpydoc", "pydata-sphinx-theme", "sphinx", "sphinxcontrib-openapi"]
-maps = ["healpy"]
+map-visualization = ["healpy"]
 test = ["openpyxl", "pytest", "pytest-cov", "requests"]
 tools = ["openpyxl", "pandas"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<4"
-content-hash = "a61f94f49b603c2a52ca830ef431e368e61bf45465365b817d51da1731cbdf96"
+content-hash = "93dadc3b06586191f7dfcf7135267a42fe8e21325ff9b00d9e7ee620f37c7baa"

@@ -31,6 +31,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
+astropy-healpix = ">=1.0"
 cdflib = "^1.3.1"
 imap-data-access = ">=0.10.1"
 python = ">=3.10,<4"
@@ -61,7 +62,7 @@ dev = ["pre-commit", "ruff", "mypy"]
 doc = ["numpydoc", "pydata-sphinx-theme", "sphinx", "sphinxcontrib-openapi"]
 test = ["openpyxl", "pytest", "pytest-cov", "requests"]
 tools= ["openpyxl", "pandas"]
-maps= ["healpy"]
+map_visualization= ["healpy"]
 
 [project.urls]
 homepage = "https://github.com/IMAP-Science-Operations-Center"
