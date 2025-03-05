@@ -3,8 +3,8 @@ import pandas as pd
 import pytest
 
 from imap_processing import imap_module_directory
-from imap_processing.utils import packet_file_to_datasets
 from imap_processing.ialirt.l0.process_swe import process_swe
+from imap_processing.utils import packet_file_to_datasets
 
 
 @pytest.fixture(scope="session")
@@ -114,8 +114,11 @@ def test_decom_packets(xarray_data, swe_test_data, fields_to_test):
 
 def test_process_swe(swe_test_data, fields_to_test):
     """Test processing for swe."""
-    swe_test_data = swe_test_data.rename(columns={v: k for k, v in fields_to_test.items()})
+    swe_test_data = swe_test_data.rename(
+        columns={v: k for k, v in fields_to_test.items()}
+    )
+    swe_test_data.index.name = "epoch"
     ds = swe_test_data.to_xarray()
-
+    # TODO: fix this for MAG
+    ds["src_seq_ctr"] = ("epoch", np.arange(len(ds["swe_shcoarse"])))
     process_swe(ds)
-    print('hi')

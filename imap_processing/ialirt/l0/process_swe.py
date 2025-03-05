@@ -1,9 +1,11 @@
-"""Functions to support I-ALiRT MAG packet parsing."""
+"""Functions to support I-ALiRT SWE packet parsing."""
 
 import logging
 
 import numpy as np
 import xarray as xr
+
+from imap_processing.swe.l1a.swe_science import decompressed_counts
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +74,7 @@ def filter_valid_groups(grouped_data: xr.Dataset) -> xr.Dataset:
 
 def find_groups(accumulated_data: xr.Dataset) -> xr.Dataset:
     """
-    Group data based on `mag_acq_tm_coarse` values.
+    Group data based on swe_acq_sec and swe_acq_sub values.
 
     Parameters
     ----------
@@ -94,16 +96,20 @@ def find_groups(accumulated_data: xr.Dataset) -> xr.Dataset:
 
     # Use subcom_range == 0 to define the beginning of the group.
     # Find time at this index and use it as the beginning time for the group.
-    start_times = accumulated_data["time_seconds"][(accumulated_data["swe_seq"] == subcom_range[0])]
+    start_times = sorted_data["time_seconds"][
+        (sorted_data["swe_seq"] == subcom_range[0])
+    ]
     start_time = start_times.min()
     # Use subcom_range == 59 to define the end of the group.
-    end_times = accumulated_data["time_seconds"][([accumulated_data["swe_seq"] == subcom_range[-1]][-1])]
+    end_times = sorted_data["time_seconds"][
+        ([sorted_data["swe_seq"] == subcom_range[-1]][-1])
+    ]
     end_time = end_times.max()
 
     # Filter out data before the subcom_range=0 and after the last subcom_range=59.
-    grouped_data = accumulated_data.where(
-        (accumulated_data["time_seconds"] >= start_time)
-        & (accumulated_data["time_seconds"] <= end_time),
+    grouped_data = sorted_data.where(
+        (sorted_data["time_seconds"] >= start_time)
+        & (sorted_data["time_seconds"] <= end_time),
         drop=True,
     )
 
@@ -124,113 +130,6 @@ def find_groups(accumulated_data: xr.Dataset) -> xr.Dataset:
     return filtered_data
 
 
-def get_bytes(val: int) -> list[int]:
-    """
-    Extract three bytes from a 24-bit integer.
-
-    Parameters
-    ----------
-    val : int
-        24-bit integer value.
-
-    Returns
-    -------
-    list[int]
-        List of three extracted bytes.
-    """
-    return [
-        (val >> 16) & 0xFF,  # Most significant byte (Byte2)
-        (val >> 8) & 0xFF,  # Middle byte (Byte1)
-        (val >> 0) & 0xFF,  # Least significant byte (Byte0)
-    ]
-
-
-def extract_magnetic_vectors(science_values: xr.DataArray) -> dict:
-    """
-    Extract the magnetic vectors.
-
-    Parameters
-    ----------
-    science_values : xr.DataArray
-        Science data.
-
-    Returns
-    -------
-    vectors : dict
-        Magnetic vectors.
-    """
-    # Convert each 24-bit value to its three constituent bytes
-    science0 = get_bytes(int(science_values[0]))
-    science1 = get_bytes(int(science_values[1]))
-    science2 = get_bytes(int(science_values[2]))
-    science3 = get_bytes(int(science_values[3]))
-
-    # Primary sensor:
-    pri_x = (science0[0] << 8) | science0[1]
-    pri_y = (science0[2] << 8) | science1[0]
-    pri_z = (science1[1] << 8) | science1[2]
-
-    # Secondary sensor:
-    sec_x = (science2[0] << 8) | science2[1]
-    sec_y = (science2[2] << 8) | science3[0]
-    sec_z = (science3[1] << 8) | science3[2]
-
-    vectors = {
-        "pri_x": pri_x,
-        "pri_y": pri_y,
-        "pri_z": pri_z,
-        "sec_x": sec_x,
-        "sec_y": sec_y,
-        "sec_z": sec_z,
-    }
-
-    return vectors
-
-
-def get_time(grouped_data: xr.Dataset, group: int, pkt_counter: xr.DataArray) -> dict:
-    """
-    Get the time for the grouped data.
-
-    Parameters
-    ----------
-    grouped_data : xr.Dataset
-        Grouped data.
-    group : int
-        Group number.
-    pkt_counter : xr.DataArray
-        Packet counter.
-
-    Returns
-    -------
-    time_data : dict
-        Coarse and fine time for Primary and Secondary Sensors.
-    """
-    pri_coarsetm = grouped_data["mag_acq_tm_coarse"][
-        (grouped_data["group"] == group).values
-    ][pkt_counter == 0]
-
-    pri_fintm = grouped_data["mag_acq_tm_fine"][
-        (grouped_data["group"] == group).values
-    ][pkt_counter == 0]
-
-    sec_coarsetm = grouped_data["mag_acq_tm_coarse"][
-        (grouped_data["group"] == group).values
-    ][pkt_counter == 2]
-
-    sec_fintm = grouped_data["mag_acq_tm_fine"][
-        (grouped_data["group"] == group).values
-    ][pkt_counter == 2]
-
-    time_data = {
-        "pri_coarsetm": int(pri_coarsetm),
-        "pri_fintm": int(pri_fintm),
-        "sec_coarsetm": int(sec_coarsetm),
-        "sec_fintm": int(sec_fintm),
-    }
-
-    return time_data
-
-
 def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
     """
     Process SWE.
@@ -249,36 +148,48 @@ def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
 
     grouped_data = find_groups(accumulated_data)
     unique_groups = np.unique(grouped_data["group"])
-    mag_data = []
+    swe_data = []
 
     for group in unique_groups:
-        # Get status values for each group.
-        status_values = grouped_data["mag_status"][
-            (grouped_data["group"] == group).values
-        ]
-        pkt_counter = grouped_data["pkt_counter"][
-            (grouped_data["group"] == group).values
-        ]
+        # Sequence values for the group should be 0-59 with no duplicates.
+        seq_values = grouped_data["swe_seq"][(grouped_data["group"] == group).values]
 
-        if not np.array_equal(pkt_counter, np.arange(4)):
+        # Ensure no duplicates and all values from 0 to 59 are present
+        if not np.array_equal(seq_values, np.arange(60)):
             logger.warning(
                 f"Group {group} does not contain all values from 0 to "
-                f"3 without duplicates."
+                f"59 without duplicates."
             )
             continue
-
-        # Get decoded status data.
-        status_data = get_status_data(status_values, pkt_counter)
 
         # Get science values for each group.
         science_values = grouped_data["mag_data"][
             (grouped_data["group"] == group).values
         ]
-        science_data = extract_magnetic_vectors(science_values)
 
-        # Get time values for each group.
-        time_data = get_time(grouped_data, group, pkt_counter)
+        # We know we can only have 8 bit numbers input, so iterate over all
+        # possibilities once up front
+        decompression_table = np.array([decompressed_counts(i) for i in range(256)])
 
-        mag_data.append({**status_data, **science_data, **time_data})
+        # Loop through each packet individually with a list comprehension and
+        # perform the following steps:
+        # 1. Turn the binary string  of 0s and 1s to an int
+        # 2. Convert the int into a bytes object of length 1260 (10080 / 8)
+        #    Eg. "0000000011110011" --> b'\x00\xf3'
+        #    1260 = 15 seconds x 12 energy steps x 7 CEMs
+        # 3. Read that bytes data to a numpy array of uint8 through the buffer protocol
+        # 4. Reshape the data to 180 x 7
+        raw_science_array = np.array(
+            [
+                np.frombuffer(binary_string, dtype=np.uint8).reshape(
+                    180, swe_constants.N_CEMS
+                )
+                for binary_string in l0_dataset["science_data"].values
+            ]
+        )
 
-    return mag_data
+        # Decompress the raw science data using numpy broadcasting logic
+        # science_array will be the same shape as raw_science_array (npackets, 180, 7)
+        science_array = decompression_table[raw_science_array]
+
+    return swe_data
