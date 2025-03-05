@@ -11,6 +11,7 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import parse_filename_like
+from imap_processing.hi.l1a.science_direct_event import DE_CLOCK_TICK_S
 from imap_processing.hi.utils import create_dataset_variables, full_dataarray
 from imap_processing.spice.geometry import (
     SpiceFrame,
@@ -336,6 +337,80 @@ def find_second_de_packet_data(l1b_dataset: xr.Dataset) -> xr.Dataset:
     # Reduce the dataset to just the second packet entries
     data_subset = l1b_dataset.isel(epoch=second_esa_packet_idx)
     return data_subset
+
+
+def get_de_clock_ticks_for_esa_step(
+    ccsds_met: float, spin_df: pd.DataFrame
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Generate an array of clock tick MET times for an 8-spin ESA step.
+
+    Find the closest spin start time in the input spin dataframe to the packet
+    creation time (`ccsds_met`) and generate an array of clock tick MET times
+    for the period covered by the previous 8-spin group and an array of weights
+    that represent the fraction of each clock tick that occurred in the 8-spin
+    group.
+
+    Parameters
+    ----------
+    ccsds_met : float
+        The CCSDS MET of the second packet in a DE packet pair.
+    spin_df : pd.DataFrame
+        Universal spin table dataframe.
+
+    Returns
+    -------
+    clock_tick_mets : np.ndarray
+        Array of MET times that a clock tick occurred in an 8-spin group of spins
+        during which the ESA step was constant.
+    clock_tick_weights : np.ndarray
+        Array of weights to use when binning the clock tick MET times into spin-bins.
+    """
+    # Find the last spin_table entry with the start less than the CCSDS MET.
+    # The CCSDS packet gets created just AFTER the final spin in the 8-spin
+    # ESA step group so this match is the end time. The start time is
+    # 8-spins earlier.
+    spin_start_mets = spin_df.spin_start_time.to_numpy()
+    # CCSDS MET has one second resolution, add one to it to make sure it is
+    # greater than the spin start time it ended on.
+    end_time_ind = np.flatnonzero(ccsds_met + 1 >= spin_start_mets).max()
+
+    # If the minimum absolute difference is greater than 1/2 the spin-phase
+    # we have a problem.
+    if (
+        ccsds_met - spin_start_mets[end_time_ind]
+        > spin_df.iloc[end_time_ind].spin_period_sec / 2
+    ):
+        raise ValueError(
+            "The difference between ccsds_met and spin_start_met, "
+            f"{ccsds_met - spin_start_mets[end_time_ind]} seconds, "
+            f"is too large. Check the spin table loaded for this pointing."
+        )
+    # If the end time index less than 8, we don't have enough spins in the
+    # spin table to get a start time, so raise an error.
+    if end_time_ind < 8:
+        raise ValueError(
+            "Error determining start/end time for exposure time. "
+            f"The CCSDS MET time {ccsds_met} "
+            "is less than 8 spins from the loaded spin table data."
+        )
+    clock_tick_mets = np.arange(
+        spin_start_mets[end_time_ind - 8],
+        spin_start_mets[end_time_ind],
+        DE_CLOCK_TICK_S,
+        dtype=float,
+    )
+    # The final clock-tick bin has less exposure time because the next spin
+    # will trigger FSW to change ESA steps part way through that time. To
+    # account for this in exposure time calculation, assign an array of
+    # weights to use when binnig the clock-ticks to spin-bins. Weights are
+    # fractional clock ticks. All weights are 1 except for the last one in
+    # the array.
+    clock_tick_weights = np.ones_like(clock_tick_mets, dtype=float)
+    clock_tick_weights[-1] = (
+        spin_start_mets[end_time_ind] - clock_tick_mets[-1]
+    ) / DE_CLOCK_TICK_S
+    return clock_tick_mets, clock_tick_weights
 
 
 @pd.api.extensions.register_dataframe_accessor("cal_prod_config")

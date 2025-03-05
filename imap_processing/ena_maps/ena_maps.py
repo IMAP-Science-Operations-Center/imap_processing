@@ -196,6 +196,37 @@ def match_coords_to_indices(
     return flat_indices_input_grid_output_frame
 
 
+def get_binning_grid_shape(
+    projection_output_object: PointingSet | AbstractSkyMap,
+) -> tuple[int, ...]:
+    """
+    Get the shape of the grid of the projection output object, needed for binning.
+
+    Parameters
+    ----------
+    projection_output_object : PointingSet | AbstractSkyMap
+        A pointing set or sky map object for which to determine the grid shape.
+
+    Returns
+    -------
+    tuple[int, ...]
+        The shape of the grid of the projection output object.
+        For a rectangular grid, this is the shape of the 2D grid of (az, el) pixels.
+        For a Healpix grid, this is the 1D number of pixels in the Healpix tessellation.
+        For any other tiling type, returns (-1,).
+    """
+    match projection_output_object.tiling_type:
+        case SkyTilingType.RECTANGULAR:
+            return (
+                len(projection_output_object.sky_grid.az_bin_midpoints),
+                len(projection_output_object.sky_grid.el_bin_midpoints),
+            )
+        case SkyTilingType.HEALPIX:
+            return (projection_output_object.num_points,)
+        case _:
+            return (-1,)
+
+
 # Define the pointing set classes
 class PointingSet(ABC):
     """
@@ -424,38 +455,24 @@ class AbstractSkyMap(ABC):
             if value_key not in pointing_set.data.data_vars:
                 raise ValueError(f"Value key {value_key} not found in pointing set.")
 
-        match index_match_method:
-            case IndexMatchMethod.PUSH:
-                # Determine the indices of the sky map grid that correspond to
-                # each pixel in the pointing set.
-                matched_indices_push = match_coords_to_indices(
-                    input_object=pointing_set,
-                    output_object=self,
-                )
-                # Determine the shape of the grid/tessellation onto which values
-                # are projected in the binning step. Only necessary for pushing.
-                push_projection_grid_shape: tuple[int, ...]  # To appease mypy
-                if self.tiling_type is SkyTilingType.HEALPIX:
-                    # For Healpix, the projection grid shape is 1D
-                    push_projection_grid_shape = (self.num_points,)
-                elif self.tiling_type is SkyTilingType.RECTANGULAR:
-                    # For rectangular grid, the projection grid shape is 2D
-                    push_projection_grid_shape = (
-                        len(self.sky_grid.az_bin_midpoints),
-                        len(self.sky_grid.el_bin_midpoints),
-                    )
-
-            case IndexMatchMethod.PULL:
-                # Determine the indices of the pointing set grid that correspond to
-                # each pixel in the sky map.
-                matched_indices_pull = match_coords_to_indices(
-                    input_object=self,
-                    output_object=pointing_set,
-                )
-            case _:
-                raise NotImplementedError(
-                    "Only PUSH and PULL index matching methods are supported."
-                )
+        if index_match_method is IndexMatchMethod.PUSH:
+            # Determine the indices of the sky map grid that correspond to
+            # each pixel in the pointing set.
+            matched_indices_push = match_coords_to_indices(
+                input_object=pointing_set,
+                output_object=self,
+            )
+        elif index_match_method is IndexMatchMethod.PULL:
+            # Determine the indices of the pointing set grid that correspond to
+            # each pixel in the sky map.
+            matched_indices_pull = match_coords_to_indices(
+                input_object=self,
+                output_object=pointing_set,
+            )
+        else:
+            raise NotImplementedError(
+                "Only PUSH and PULL index matching methods are supported."
+            )
 
         for value_key in value_keys:
             pset_values = pointing_set.data[value_key]
@@ -474,25 +491,23 @@ class AbstractSkyMap(ABC):
                 output_shape = (*raveled_pset_data.shape[:-1], self.num_points)
                 self.data_dict[value_key] = np.zeros(output_shape)
 
-            match index_match_method:
-                case IndexMatchMethod.PUSH:
-                    # Bin the values at the matched indices. There may be multiple
-                    # pointing set pixels that correspond to the same sky map pixel.
-                    pointing_projected_values = map_utils.bin_single_array_at_indices(
-                        value_array=raveled_pset_data,
-                        projection_grid_shape=push_projection_grid_shape,
-                        projection_indices=matched_indices_push,
-                    )
-                case IndexMatchMethod.PULL:
-                    # We know that there will only be one value per sky map pixel,
-                    # so we can use the matched indices directly
-                    pointing_projected_values = raveled_pset_data[
-                        ..., matched_indices_pull
-                    ]
-                case _:
-                    raise NotImplementedError(
-                        "Only PUSH and PULL index matching methods are supported."
-                    )
+            if index_match_method is IndexMatchMethod.PUSH:
+                # Bin the values at the matched indices. There may be multiple
+                # pointing set pixels that correspond to the same sky map pixel.
+                pointing_projected_values = map_utils.bin_single_array_at_indices(
+                    value_array=raveled_pset_data,
+                    projection_grid_shape=get_binning_grid_shape(self),
+                    projection_indices=matched_indices_push,
+                )
+            elif index_match_method is IndexMatchMethod.PULL:
+                # We know that there will only be one value per sky map pixel,
+                # so we can use the matched indices directly
+                pointing_projected_values = raveled_pset_data[..., matched_indices_pull]
+            else:
+                raise NotImplementedError(
+                    "Only PUSH and PULL index matching methods are supported."
+                )
+
             self.data_dict[value_key] += pointing_projected_values
 
     def __repr__(self) -> str:

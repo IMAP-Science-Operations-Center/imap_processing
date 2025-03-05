@@ -236,6 +236,20 @@ elevation:
   LABLAXIS: elevation
   UNITS: radians
 
+phi:
+  <<: *default_float32
+  CATDESC: Ultra instrument frame event phi (azimuth with range -90 -> 90).
+  FIELDNAM: phi
+  LABLAXIS: phi
+  UNITS: degrees
+
+theta:
+  <<: *default_float32
+  CATDESC: Ultra instrument frame event theta (elevation with range -90 -> 90).
+  FIELDNAM: theta
+  LABLAXIS: theta
+  UNITS: degrees
+
 event_efficiency:
   <<: *default_float32
   CATDESC: Estimated event efficiency for this path through the instrument.

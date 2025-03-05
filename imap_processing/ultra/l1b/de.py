@@ -13,7 +13,6 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     determine_species,
     get_coincidence_positions,
     get_ctof,
-    get_de_az_el,
     get_de_energy_kev,
     get_de_velocity,
     get_energy_pulse_height,
@@ -23,6 +22,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_front_y_position,
     get_path_length,
     get_ph_tof_and_back_positions,
+    get_phi_theta,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
 )
@@ -86,6 +86,8 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
     xc = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
     d = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
     r = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
+    phi = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
+    theta = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
     tof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
     etof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
     ctof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
@@ -129,6 +131,11 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
         (xb[ph_indices], yb[ph_indices]),
         d[ph_indices],
     )
+    phi[ph_indices], theta[ph_indices] = get_phi_theta(
+        (xf[ph_indices], yf[ph_indices]),
+        (xb[ph_indices], yb[ph_indices]),
+        d[ph_indices],
+    )
     species_bin[ph_indices] = determine_species(tof[ph_indices], r[ph_indices], "PH")
     etof[ph_indices], xc[ph_indices] = get_coincidence_positions(
         de_dataset.isel(epoch=ph_indices), t2[ph_indices], f"ultra{sensor}"
@@ -148,6 +155,11 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
     )
     energy[ssd_indices] = get_energy_ssd(de_dataset, ssd_number)
     r[ssd_indices] = get_path_length(
+        (xf[ssd_indices], yf[ssd_indices]),
+        (xb[ssd_indices], yb[ssd_indices]),
+        d[ssd_indices],
+    )
+    phi[ssd_indices], theta[ssd_indices] = get_phi_theta(
         (xf[ssd_indices], yf[ssd_indices]),
         (xb[ssd_indices], yb[ssd_indices]),
         d[ssd_indices],
@@ -174,6 +186,8 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
     de_dict["velocity_magnitude"] = magnitude_v
     de_dict["front_back_distance"] = d
     de_dict["path_length"] = r
+    de_dict["phi"] = phi
+    de_dict["theta"] = theta
 
     v = get_de_velocity(
         (de_dict["x_front"], de_dict["y_front"]),
@@ -184,7 +198,6 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
     de_dict["direct_event_velocity"] = v.astype(np.float32)
 
     de_dict["tof_energy"] = get_de_energy_kev(v, species_bin)
-    de_dict["azimuth"], de_dict["elevation"] = get_de_az_el(v)
     de_dict["energy"] = energy
     de_dict["species"] = species_bin
 

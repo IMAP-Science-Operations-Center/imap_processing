@@ -176,7 +176,7 @@ class TestRectangularSkyMap:
             )
 
         # Check that the map has been updated
-        assert rectangular_map.data_dict != {}
+        assert "counts" in rectangular_map.data_dict
 
         # Check that the map has the same values as the PSETs, summed
         simple_summed_pset_counts = np.zeros_like(rectangular_map.data_dict["counts"])
@@ -252,7 +252,7 @@ class TestRectangularSkyMap:
             total_pset_counts += ultra_pset.data["counts"].values
 
         # Check that the map has been updated
-        assert rectangular_map.data_dict != {}
+        assert "counts" in rectangular_map.data_dict
 
         np.testing.assert_allclose(
             rectangular_map.data_dict["counts"],
@@ -376,7 +376,7 @@ class TestHealpixSkyMap:
         )
 
         # Check that the map has been updated
-        assert hp_map.data_dict != {}
+        assert "counts" in hp_map.data_dict
 
         # Find the maximum value in the spatial pixel dimension of the healpix map
         bright_hp_pixel_index = hp_map.data_dict["counts"][0, :].argmax()
@@ -561,11 +561,11 @@ class TestIndexMatching:
             )
 
     def test_match_coords_to_indices_map_to_map_no_et_error(self):
-        mock_rect_map = ena_maps.RectangularSkyMap(
+        mock_rect_map_1 = ena_maps.RectangularSkyMap(
             spacing_deg=2,
             spice_frame=geometry.SpiceFrame.ECLIPJ2000,
         )
-        mock_other_map = ena_maps.RectangularSkyMap(
+        mock_rect_map_2 = ena_maps.RectangularSkyMap(
             spacing_deg=4,
             spice_frame=geometry.SpiceFrame.ECLIPJ2000,
         )
@@ -573,9 +573,9 @@ class TestIndexMatching:
             ValueError,
             match="Event time must be specified if both objects are SkyMaps.",
         ):
-            ena_maps.match_coords_to_indices(mock_rect_map, mock_other_map)
+            ena_maps.match_coords_to_indices(mock_rect_map_1, mock_rect_map_2)
 
         # No error if event time is specified
         _ = ena_maps.match_coords_to_indices(
-            mock_rect_map, mock_other_map, event_time=0
+            mock_rect_map_1, mock_rect_map_2, event_time=0
         )

@@ -10,7 +10,6 @@ import xarray
 from numpy import ndarray
 from numpy.typing import NDArray
 
-from imap_processing.spice.geometry import cartesian_to_spherical
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
@@ -752,34 +751,37 @@ def determine_species(tof: np.ndarray, path_length: np.ndarray, type: str) -> ND
     return species_bin
 
 
-def get_de_az_el(v: NDArray) -> tuple[NDArray, NDArray]:
+def get_phi_theta(
+    front_position: tuple, back_position: tuple, d: np.ndarray
+) -> tuple[NDArray, NDArray]:
     """
-    Compute azimuth (phi) angles and elevation (theta).
+    Compute the instrument angles with range -90 -> 90 degrees.
+
+    Further description is available on page 18 of
+    the Ultra Algorithm Theoretical Basis Document.
 
     Parameters
     ----------
-    v : np.ndarray
-        A NumPy array with shape (n, 3) where each
-        row represents a vector
-        with x, y, z-components.
+    front_position : tuple of floats
+        Front position (xf,yf) (hundredths of a millimeter).
+    back_position : tuple of floats
+        Back position (xb,yb) (hundredths of a millimeter).
+    d : np.ndarray
+        Distance from slit to foil (hundredths of a millimeter).
 
     Returns
     -------
-    spherical_coords : np.ndarray
-        A NumPy array with shape (n, 3), where each row contains
-        the spherical coordinates (r, azimuth, elevation):
-
-        - azimuth : angle in the xy-plane
-          In radians:
-          output range=[0, 2*pi].
-        - elevation : angle from the xy-plane
-          In radians:
-          output range=[-pi/2, pi/2].
+    phi : np.array
+        Ultra instrument frame event azimuth.
+    theta : np.array
+        Ultra instrument frame event elevation.
     """
-    # Compute azimuth (phi) angles and elevation (theta)
-    spherical_coords = cartesian_to_spherical(v, degrees=False)
+    path_length = get_path_length(front_position, back_position, d)
 
-    return spherical_coords[:, 1], spherical_coords[:, 2]
+    phi = np.arctan((front_position[1] - back_position[1]) / d)
+    theta = np.arcsin((front_position[0] - back_position[0]) / path_length)
+
+    return np.degrees(phi), np.degrees(theta)
 
 
 def get_eventtimes(
