@@ -360,13 +360,13 @@ def pset_exposure(
 
         # Clock tick MET times are accumulation "edges". To get the mean spin-phase
         # for a given clock tick, add 1/2 clock tick and compute spin-phase.
-        spin_phases: np.ndarray = get_instrument_spin_phase(
+        spin_phases = get_instrument_spin_phase(
             clock_tick_mets + HALF_CLOCK_TICK_S,
             SpiceFrame[f"IMAP_HI_{sensor_number}"],
         )
 
         # Remove ticks not in good times/angles
-        good_mask = good_time_and_phase_mask(clock_tick_mets, spin_phases)
+        good_mask = good_time_and_phase_mask(clock_tick_mets, spin_phases)  # type: ignore[arg-type]
         spin_phases = spin_phases[good_mask]
         clock_tick_weights = clock_tick_weights[good_mask]
 
