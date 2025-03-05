@@ -73,7 +73,8 @@ def hit_l2(dependency: xr.Dataset, data_version: str) -> list[xr.Dataset]:
                 dataset[field].attrs = attr_mgr.get_variable_attributes(field)
                 dataset[field].assign_coords(dims)
             except KeyError:
-                print(f"Field {field} not found in attribute manager.")
+                # TODO: consider raising an error after L2 attributes are defined.
+                #  Until then, continue with processing and log warning
                 logger.warning(f"Field {field} not found in attribute manager.")
 
         # Skip schema check for epoch to prevent attr_mgr from adding the
