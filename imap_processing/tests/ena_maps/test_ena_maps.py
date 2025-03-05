@@ -264,6 +264,15 @@ class TestRectangularSkyMap:
             total_pset_counts.sum() / (downsample_ratio**2),
         )
 
+    def test_get_binning_grid_shape_rectangular_map(self):
+        rect_map = ena_maps.RectangularSkyMap(
+            spacing_deg=1,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+        )
+        np.testing.assert_array_equal(
+            ena_maps.get_binning_grid_shape(rect_map), (360, 180)
+        )
+
 
 class TestHealpixSkyMap:
     @pytest.fixture(autouse=True)
@@ -386,6 +395,16 @@ class TestHealpixSkyMap:
             bright_hp_pixel_az_el,
             np.deg2rad(input_bright_pixel_az_el_deg),
             atol=np.deg2rad(degree_tolerance),
+        )
+
+    def test_get_binning_grid_shape_healpix_map(self):
+        hp_map = ena_maps.HealpixSkyMap(
+            nside=8,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+            nested=True,
+        )
+        np.testing.assert_array_equal(
+            ena_maps.get_binning_grid_shape(hp_map), (hp_map.num_points,)
         )
 
 
