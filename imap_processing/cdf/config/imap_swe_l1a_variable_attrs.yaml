@@ -234,3 +234,17 @@ cksum:
   FIELDNAM: Checksum
   FORMAT: I5
   VALIDMAX: 65535
+
+# <=== Non Science Data Variables ===>
+non_science_attrs:
+  CATDESC: SWE data
+  DEPEND_0: epoch
+  FIELDNAM: SWE Raw Data
+  FILLVAL: -9223372036854775808
+  FORMAT: I19
+  UNITS: ' '
+  LABLAXIS: Values
+  VALIDMIN: 0
+  VALIDMAX: 9223372036854769664
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: time_series
