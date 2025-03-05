@@ -27,7 +27,7 @@ def xtce_excel_file(tmp_path):
     packets = {"packetName": ["TEST_PACKET", "TEST_PACKET2"], "apIdHex": ["0x1", "0xF"]}
 
     test_packet1 = {
-        "packetName": ["TEST_PACKET"] * 15,
+        "packetName": ["TEST_PACKET"] * 16,
         "mnemonic": [
             "PHVERNO",
             "PHTYPE",
@@ -44,8 +44,9 @@ def xtce_excel_file(tmp_path):
             "VAR_FILL",
             "VAR_FLOAT",
             "VAR_STATE",
+            "VAR_SEGMENTED",
         ],
-        "lengthInBits": [3, 1, 1, 11, 2, 14, 16, 32, 2, 4, 5, 10000, 3, 32, 1],
+        "lengthInBits": [3, 1, 1, 11, 2, 14, 16, 32, 2, 4, 5, 10000, 3, 32, 1, 8],
         "dataType": [
             "UINT",
             "UINT",
@@ -61,6 +62,7 @@ def xtce_excel_file(tmp_path):
             "BYTE",
             "FILL",
             "FLOAT",
+            "UINT",
             "UINT",
         ],
         "convertAs": [
@@ -79,8 +81,10 @@ def xtce_excel_file(tmp_path):
             "NONE",
             "NONE",
             "STATE",
+            "ANALOG",
         ],
         "units": [
+            "DN",
             "DN",
             "DN",
             "DN",
@@ -113,6 +117,7 @@ def xtce_excel_file(tmp_path):
             "Fill data",
             "Float data",
             "State data",
+            "Segmented polynomial conversion",
         ],
     }
 
@@ -178,20 +183,20 @@ def xtce_excel_file(tmp_path):
     }
 
     analog_conversions = {
-        "packetName": ["TEST_PACKET"],
-        "mnemonic": ["VAR_UINT"],
-        "convertAs": ["UNSEGMENTED_POLY"],
-        "segNumber": [1],
-        "lowValue": [0],
-        "highValue": [100],
-        "c0": [1.5],
-        "c1": [2.5],
-        "c2": [0],
-        "c3": [0],
-        "c4": [0],
-        "c5": [0],
-        "c6": [0],
-        "c7": [0],
+        "packetName": ["TEST_PACKET", "TEST_PACKET", "TEST_PACKET"],
+        "mnemonic": ["VAR_UINT", "VAR_SEGMENTED", "VAR_SEGMENTED"],
+        "convertAs": ["UNSEGMENTED_POLY", "SEGMENTED_POLY", "SEGMENTED_POLY"],
+        "segNumber": [1, 1, 2],
+        "lowValue": [0, 0, 20],
+        "highValue": [100, 19, 40],
+        "c0": [1.5, 1.1, 2.2],
+        "c1": [2.5, 3.3, 4.4],
+        "c2": [0, 0, 5.5],
+        "c3": [0] * 3,
+        "c4": [0] * 3,
+        "c5": [0] * 3,
+        "c6": [0] * 3,
+        "c7": [0] * 3,
     }
 
     states = {
@@ -228,9 +233,7 @@ def xtce_excel_file(tmp_path):
 def test_generated_xml(xtce_excel_file):
     """Make sure we are producing the expected contents within the XML file.
 
-    To produce a new expected output file the following command can be used.
-    imap_xtce imap_processing/tests/ccsds/test_data/excel_to_xtce_test_file.xlsx
-        --output imap_processing/tests/ccsds/test_data/expected_output.xml
+    To produce a new expected output file, uncomment the line mentioned below.
     """
     generator = excel_to_xtce.XTCEGenerator(xtce_excel_file)
     output_file = xtce_excel_file.parent / "output.xml"

@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="HIT">
-	<xtce:Header date="2024-03-21" version="13" author="IMAP SDC" />
+	<xtce:Header date="2024-03-21" version="13" author="IMAP SDC" source_file="TLM_HIT_v20240404-sdc_version.xls" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="VERSION" signed="false">
@@ -27,9 +27,16 @@
 			<xtce:IntegerParameterType name="HIT_HSKP.SC_TICK" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="HIT_HSKP.MODE" signed="false">
+			<xtce:EnumeratedParameterType name="HIT_HSKP.MODE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
-			</xtce:IntegerParameterType>
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="BOOT" />
+					<xtce:Enumeration value="1" label="MAINT" />
+					<xtce:Enumeration value="2" label="SAFE" />
+					<xtce:Enumeration value="3" label="SCIENCE" />
+					<xtce:Enumeration value="4" label="ACCEL_SCI" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="HIT_HSKP.FSW_VERSION_A" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
 			</xtce:IntegerParameterType>
@@ -57,30 +64,61 @@
 			<xtce:IntegerParameterType name="HIT_HSKP.LAST_BAD_SEQ_NUM" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="HIT_HSKP.FEE_RUNNING" signed="false">
+			<xtce:EnumeratedParameterType name="HIT_HSKP.FEE_RUNNING" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="HIT_HSKP.MRAM_DISABLED" signed="false">
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="RESET" />
+					<xtce:Enumeration value="1" label="RUNNING" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="HIT_HSKP.MRAM_DISABLED" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="ENABLED" />
+					<xtce:Enumeration value="1" label="DISABLED" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="HIT_HSKP.HSKP_SPARE1" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="HIT_HSKP.ENABLE_50KHZ" signed="false">
+			<xtce:EnumeratedParameterType name="HIT_HSKP.ENABLE_50KHZ" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="HIT_HSKP.ENABLE_HVPS" signed="false">
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="DISABLED" />
+					<xtce:Enumeration value="1" label="ENABLED" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="HIT_HSKP.ENABLE_HVPS" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="HIT_HSKP.TABLE_STATUS" signed="false">
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="DISABLED" />
+					<xtce:Enumeration value="1" label="ENABLED" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="HIT_HSKP.TABLE_STATUS" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="HIT_HSKP.HEATER_CONTROL" signed="false">
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="ERROR" />
+					<xtce:Enumeration value="1" label="OK" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="HIT_HSKP.HEATER_CONTROL" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="HIT_HSKP.ADC_MODE" signed="false">
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="NONE" />
+					<xtce:Enumeration value="1" label="PRIMARY" />
+					<xtce:Enumeration value="2" label="SECONDARY" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="HIT_HSKP.ADC_MODE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
-			</xtce:IntegerParameterType>
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="QUIET" />
+					<xtce:Enumeration value="1" label="NORMAL" />
+					<xtce:Enumeration value="2" label="ADC_CALIBRATION" />
+					<xtce:Enumeration value="3" label="ADC_THRESHOLD" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="HIT_HSKP.DYN_THRESH_LVL" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
 			</xtce:IntegerParameterType>
@@ -93,9 +131,55 @@
 			<xtce:IntegerParameterType name="HIT_HSKP.NUM_ERRORS" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="HIT_HSKP.LAST_ERROR_NUM" signed="false">
+			<xtce:EnumeratedParameterType name="HIT_HSKP.LAST_ERROR_NUM" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="INFO" />
+					<xtce:Enumeration value="11" label="TIME_LEN" />
+					<xtce:Enumeration value="12" label="CMD_OPCO_ARG" />
+					<xtce:Enumeration value="15" label="BUFF_OVRFLW" />
+					<xtce:Enumeration value="16" label="FILE_SIZE_16" />
+					<xtce:Enumeration value="17" label="CMD_XSUM" />
+					<xtce:Enumeration value="18" label="CMD_LEN" />
+					<xtce:Enumeration value="21" label="CMD_NUM_ARG" />
+					<xtce:Enumeration value="22" label="TABLE_CODE" />
+					<xtce:Enumeration value="23" label="MRAM_WRITE" />
+					<xtce:Enumeration value="24" label="CMD_LEN" />
+					<xtce:Enumeration value="31" label="CMD_SHORT" />
+					<xtce:Enumeration value="32" label="APID" />
+					<xtce:Enumeration value="33" label="ITF" />
+					<xtce:Enumeration value="36" label="TIME_LATE" />
+					<xtce:Enumeration value="37" label="TLM_FATAL" />
+					<xtce:Enumeration value="19" label="NO_DBL_HTR" />
+					<xtce:Enumeration value="20" label="FEE_XSUM" />
+					<xtce:Enumeration value="30" label="FEE_APID" />
+					<xtce:Enumeration value="38" label="FEE_RX" />
+					<xtce:Enumeration value="39" label="TASK_CREATE" />
+					<xtce:Enumeration value="40" label="NUM_BYTES" />
+					<xtce:Enumeration value="41" label="MEMD_ABORT" />
+					<xtce:Enumeration value="42" label="MEMD_INPROG" />
+					<xtce:Enumeration value="43" label="SEMAPHORE" />
+					<xtce:Enumeration value="44" label="MRAM_INIT" />
+					<xtce:Enumeration value="45" label="BLK_OUT_RANGE" />
+					<xtce:Enumeration value="46" label="FAT_SPACE" />
+					<xtce:Enumeration value="47" label="FILE_OPEN_47" />
+					<xtce:Enumeration value="48" label="FILE_MISSING_48" />
+					<xtce:Enumeration value="49" label="FILE_CREATE" />
+					<xtce:Enumeration value="50" label="FILE_WRITE" />
+					<xtce:Enumeration value="51" label="FILE_CHECK" />
+					<xtce:Enumeration value="52" label="MAX_VERSION" />
+					<xtce:Enumeration value="53" label="FILE_SYSTEM" />
+					<xtce:Enumeration value="54" label="FILE_MISSING_54" />
+					<xtce:Enumeration value="55" label="FILE_OPEN_55" />
+					<xtce:Enumeration value="56" label="FILE_SIZE_56" />
+					<xtce:Enumeration value="57" label="HEATER_FATAL" />
+					<xtce:Enumeration value="58" label="CHECKSUM_MISMATCH" />
+					<xtce:Enumeration value="61" label="FEE_TIMEOUT_RESET" />
+					<xtce:Enumeration value="62" label="FEE_TIMEOUT_GOSAFE" />
+					<xtce:Enumeration value="63" label="FEE_SYNC" />
+					<xtce:Enumeration value="64" label="FEE_PKT_FMT" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="HIT_HSKP.CODE_CHECKSUM" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
@@ -681,24 +765,48 @@
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="HIT_HSKP.PHASIC_STAT" signed="false">
+			<xtce:EnumeratedParameterType name="HIT_HSKP.PHASIC_STAT" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="HIT_HSKP.ACTIVE_HEATER" signed="false">
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="STATE_0" />
+					<xtce:Enumeration value="1" label="STATE_1" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="HIT_HSKP.ACTIVE_HEATER" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="HIT_HSKP.HEATER_ON" signed="false">
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="SECONDARY" />
+					<xtce:Enumeration value="1" label="PRIMARY" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="HIT_HSKP.HEATER_ON" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="HIT_HSKP.TEST_PULSER_ON" signed="false">
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="OFF" />
+					<xtce:Enumeration value="1" label="ON" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="HIT_HSKP.TEST_PULSER_ON" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="HIT_HSKP.DAC0_ENABLE" signed="false">
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="OFF" />
+					<xtce:Enumeration value="1" label="ON" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="HIT_HSKP.DAC0_ENABLE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="HIT_HSKP.DAC1_ENABLE" signed="false">
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="LO_GAIN " />
+					<xtce:Enumeration value="1" label="HI_GAIN" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="HIT_HSKP.DAC1_ENABLE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="LO_GAIN " />
+					<xtce:Enumeration value="1" label="HI_GAIN" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="HIT_HSKP.HSKP_SPARE3" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
 			</xtce:IntegerParameterType>
@@ -740,38 +848,642 @@
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="HIT_HSKP.TEMP0" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="-999.0" exponent="0" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
+					<xtce:ContextCalibratorList>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="0" parameterRef="HIT_HSKP.TEMP0" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="21" parameterRef="HIT_HSKP.TEMP0" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="-999.0" exponent="0" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="22" parameterRef="HIT_HSKP.TEMP0" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="47" parameterRef="HIT_HSKP.TEMP0" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="214.301312622578" exponent="0" />
+									<xtce:Term coefficient="-4.27140505385846" exponent="1" />
+									<xtce:Term coefficient="0.0738981426366246" exponent="2" />
+									<xtce:Term coefficient="-0.000544088461217475" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="48" parameterRef="HIT_HSKP.TEMP0" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="176" parameterRef="HIT_HSKP.TEMP0" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="164.259349538959" exponent="0" />
+									<xtce:Term coefficient="-1.20963999306445" exponent="1" />
+									<xtce:Term coefficient="0.00636022036506961" exponent="2" />
+									<xtce:Term coefficient="-1.34477902302591e-05" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="177" parameterRef="HIT_HSKP.TEMP0" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="404" parameterRef="HIT_HSKP.TEMP0" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="117.479723230354" exponent="0" />
+									<xtce:Term coefficient="-0.329596466252276" exponent="1" />
+									<xtce:Term coefficient="0.000577931659191955" exponent="2" />
+									<xtce:Term coefficient="-4.33865490072691e-07" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="405" parameterRef="HIT_HSKP.TEMP0" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="799" parameterRef="HIT_HSKP.TEMP0" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="95.1386476587068" exponent="0" />
+									<xtce:Term coefficient="-0.161075145111568" exponent="1" />
+									<xtce:Term coefficient="0.000145768982839023" exponent="2" />
+									<xtce:Term coefficient="-5.79001656643148e-08" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="800" parameterRef="HIT_HSKP.TEMP0" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="1994" parameterRef="HIT_HSKP.TEMP0" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="69.6143635891785" exponent="0" />
+									<xtce:Term coefficient="-0.066271191154442" exponent="1" />
+									<xtce:Term coefficient="2.42465520490787e-05" exponent="2" />
+									<xtce:Term coefficient="-4.27618790405798e-09" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="1995" parameterRef="HIT_HSKP.TEMP0" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="2757" parameterRef="HIT_HSKP.TEMP0" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="48.0155575424433" exponent="0" />
+									<xtce:Term coefficient="-0.0326154401263921" exponent="1" />
+									<xtce:Term coefficient="6.18245956118813e-06" exponent="2" />
+									<xtce:Term coefficient="-9.5746938936353e-10" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="2758" parameterRef="HIT_HSKP.TEMP0" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="3389" parameterRef="HIT_HSKP.TEMP0" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="153.351650953293" exponent="0" />
+									<xtce:Term coefficient="-0.143921031616628" exponent="1" />
+									<xtce:Term coefficient="4.55456280405997e-05" exponent="2" />
+									<xtce:Term coefficient="-5.61804348875317e-09" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="3390" parameterRef="HIT_HSKP.TEMP0" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="3679" parameterRef="HIT_HSKP.TEMP0" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="951.675018310547" exponent="0" />
+									<xtce:Term coefficient="-0.849987864494324" exponent="1" />
+									<xtce:Term coefficient="0.000253779857303016" exponent="2" />
+									<xtce:Term coefficient="-2.60965409282221e-08" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="3680" parameterRef="HIT_HSKP.TEMP0" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="4095" parameterRef="HIT_HSKP.TEMP0" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="999.0" exponent="0" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+					</xtce:ContextCalibratorList>
 				</xtce:IntegerDataEncoding>
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="HIT_HSKP.TEMP1" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="-999.0" exponent="0" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
+					<xtce:ContextCalibratorList>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="0" parameterRef="HIT_HSKP.TEMP1" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="21" parameterRef="HIT_HSKP.TEMP1" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="-999.0" exponent="0" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="22" parameterRef="HIT_HSKP.TEMP1" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="47" parameterRef="HIT_HSKP.TEMP1" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="214.301312622578" exponent="0" />
+									<xtce:Term coefficient="-4.27140505385846" exponent="1" />
+									<xtce:Term coefficient="0.0738981426366246" exponent="2" />
+									<xtce:Term coefficient="-0.000544088461217475" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="48" parameterRef="HIT_HSKP.TEMP1" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="176" parameterRef="HIT_HSKP.TEMP1" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="164.259349538959" exponent="0" />
+									<xtce:Term coefficient="-1.20963999306445" exponent="1" />
+									<xtce:Term coefficient="0.00636022036506961" exponent="2" />
+									<xtce:Term coefficient="-1.34477902302591e-05" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="177" parameterRef="HIT_HSKP.TEMP1" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="404" parameterRef="HIT_HSKP.TEMP1" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="117.479723230354" exponent="0" />
+									<xtce:Term coefficient="-0.329596466252276" exponent="1" />
+									<xtce:Term coefficient="0.000577931659191955" exponent="2" />
+									<xtce:Term coefficient="-4.33865490072691e-07" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="405" parameterRef="HIT_HSKP.TEMP1" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="799" parameterRef="HIT_HSKP.TEMP1" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="95.1386476587068" exponent="0" />
+									<xtce:Term coefficient="-0.161075145111568" exponent="1" />
+									<xtce:Term coefficient="0.000145768982839023" exponent="2" />
+									<xtce:Term coefficient="-5.79001656643148e-08" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="800" parameterRef="HIT_HSKP.TEMP1" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="1994" parameterRef="HIT_HSKP.TEMP1" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="69.6143635891785" exponent="0" />
+									<xtce:Term coefficient="-0.066271191154442" exponent="1" />
+									<xtce:Term coefficient="2.42465520490787e-05" exponent="2" />
+									<xtce:Term coefficient="-4.27618790405798e-09" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="1995" parameterRef="HIT_HSKP.TEMP1" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="2757" parameterRef="HIT_HSKP.TEMP1" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="48.0155575424433" exponent="0" />
+									<xtce:Term coefficient="-0.0326154401263921" exponent="1" />
+									<xtce:Term coefficient="6.18245956118813e-06" exponent="2" />
+									<xtce:Term coefficient="-9.5746938936353e-10" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="2758" parameterRef="HIT_HSKP.TEMP1" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="3389" parameterRef="HIT_HSKP.TEMP1" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="153.351650953293" exponent="0" />
+									<xtce:Term coefficient="-0.143921031616628" exponent="1" />
+									<xtce:Term coefficient="4.55456280405997e-05" exponent="2" />
+									<xtce:Term coefficient="-5.61804348875317e-09" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="3390" parameterRef="HIT_HSKP.TEMP1" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="3679" parameterRef="HIT_HSKP.TEMP1" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="951.675018310547" exponent="0" />
+									<xtce:Term coefficient="-0.849987864494324" exponent="1" />
+									<xtce:Term coefficient="0.000253779857303016" exponent="2" />
+									<xtce:Term coefficient="-2.60965409282221e-08" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="3680" parameterRef="HIT_HSKP.TEMP1" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="4095" parameterRef="HIT_HSKP.TEMP1" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="999.0" exponent="0" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+					</xtce:ContextCalibratorList>
 				</xtce:IntegerDataEncoding>
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="HIT_HSKP.TEMP2" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="-999.0" exponent="0" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
+					<xtce:ContextCalibratorList>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="0" parameterRef="HIT_HSKP.TEMP2" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="21" parameterRef="HIT_HSKP.TEMP2" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="-999.0" exponent="0" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="22" parameterRef="HIT_HSKP.TEMP2" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="47" parameterRef="HIT_HSKP.TEMP2" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="214.301312622578" exponent="0" />
+									<xtce:Term coefficient="-4.27140505385846" exponent="1" />
+									<xtce:Term coefficient="0.0738981426366246" exponent="2" />
+									<xtce:Term coefficient="-0.000544088461217475" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="48" parameterRef="HIT_HSKP.TEMP2" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="176" parameterRef="HIT_HSKP.TEMP2" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="164.259349538959" exponent="0" />
+									<xtce:Term coefficient="-1.20963999306445" exponent="1" />
+									<xtce:Term coefficient="0.00636022036506961" exponent="2" />
+									<xtce:Term coefficient="-1.34477902302591e-05" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="177" parameterRef="HIT_HSKP.TEMP2" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="404" parameterRef="HIT_HSKP.TEMP2" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="117.479723230354" exponent="0" />
+									<xtce:Term coefficient="-0.329596466252276" exponent="1" />
+									<xtce:Term coefficient="0.000577931659191955" exponent="2" />
+									<xtce:Term coefficient="-4.33865490072691e-07" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="405" parameterRef="HIT_HSKP.TEMP2" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="799" parameterRef="HIT_HSKP.TEMP2" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="95.1386476587068" exponent="0" />
+									<xtce:Term coefficient="-0.161075145111568" exponent="1" />
+									<xtce:Term coefficient="0.000145768982839023" exponent="2" />
+									<xtce:Term coefficient="-5.79001656643148e-08" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="800" parameterRef="HIT_HSKP.TEMP2" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="1994" parameterRef="HIT_HSKP.TEMP2" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="69.6143635891785" exponent="0" />
+									<xtce:Term coefficient="-0.066271191154442" exponent="1" />
+									<xtce:Term coefficient="2.42465520490787e-05" exponent="2" />
+									<xtce:Term coefficient="-4.27618790405798e-09" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="1995" parameterRef="HIT_HSKP.TEMP2" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="2757" parameterRef="HIT_HSKP.TEMP2" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="48.0155575424433" exponent="0" />
+									<xtce:Term coefficient="-0.0326154401263921" exponent="1" />
+									<xtce:Term coefficient="6.18245956118813e-06" exponent="2" />
+									<xtce:Term coefficient="-9.5746938936353e-10" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="2758" parameterRef="HIT_HSKP.TEMP2" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="3389" parameterRef="HIT_HSKP.TEMP2" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="153.351650953293" exponent="0" />
+									<xtce:Term coefficient="-0.143921031616628" exponent="1" />
+									<xtce:Term coefficient="4.55456280405997e-05" exponent="2" />
+									<xtce:Term coefficient="-5.61804348875317e-09" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="3390" parameterRef="HIT_HSKP.TEMP2" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="3679" parameterRef="HIT_HSKP.TEMP2" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="951.675018310547" exponent="0" />
+									<xtce:Term coefficient="-0.849987864494324" exponent="1" />
+									<xtce:Term coefficient="0.000253779857303016" exponent="2" />
+									<xtce:Term coefficient="-2.60965409282221e-08" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="3680" parameterRef="HIT_HSKP.TEMP2" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="4095" parameterRef="HIT_HSKP.TEMP2" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="999.0" exponent="0" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+					</xtce:ContextCalibratorList>
 				</xtce:IntegerDataEncoding>
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="HIT_HSKP.TEMP3" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="-999.0" exponent="0" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
+					<xtce:ContextCalibratorList>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="0" parameterRef="HIT_HSKP.TEMP3" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="21" parameterRef="HIT_HSKP.TEMP3" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="-999.0" exponent="0" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="22" parameterRef="HIT_HSKP.TEMP3" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="47" parameterRef="HIT_HSKP.TEMP3" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="214.301312622578" exponent="0" />
+									<xtce:Term coefficient="-4.27140505385846" exponent="1" />
+									<xtce:Term coefficient="0.0738981426366246" exponent="2" />
+									<xtce:Term coefficient="-0.000544088461217475" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="48" parameterRef="HIT_HSKP.TEMP3" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="176" parameterRef="HIT_HSKP.TEMP3" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="164.259349538959" exponent="0" />
+									<xtce:Term coefficient="-1.20963999306445" exponent="1" />
+									<xtce:Term coefficient="0.00636022036506961" exponent="2" />
+									<xtce:Term coefficient="-1.34477902302591e-05" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="177" parameterRef="HIT_HSKP.TEMP3" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="404" parameterRef="HIT_HSKP.TEMP3" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="117.479723230354" exponent="0" />
+									<xtce:Term coefficient="-0.329596466252276" exponent="1" />
+									<xtce:Term coefficient="0.000577931659191955" exponent="2" />
+									<xtce:Term coefficient="-4.33865490072691e-07" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="405" parameterRef="HIT_HSKP.TEMP3" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="799" parameterRef="HIT_HSKP.TEMP3" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="95.1386476587068" exponent="0" />
+									<xtce:Term coefficient="-0.161075145111568" exponent="1" />
+									<xtce:Term coefficient="0.000145768982839023" exponent="2" />
+									<xtce:Term coefficient="-5.79001656643148e-08" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="800" parameterRef="HIT_HSKP.TEMP3" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="1994" parameterRef="HIT_HSKP.TEMP3" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="69.6143635891785" exponent="0" />
+									<xtce:Term coefficient="-0.066271191154442" exponent="1" />
+									<xtce:Term coefficient="2.42465520490787e-05" exponent="2" />
+									<xtce:Term coefficient="-4.27618790405798e-09" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="1995" parameterRef="HIT_HSKP.TEMP3" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="2757" parameterRef="HIT_HSKP.TEMP3" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="48.0155575424433" exponent="0" />
+									<xtce:Term coefficient="-0.0326154401263921" exponent="1" />
+									<xtce:Term coefficient="6.18245956118813e-06" exponent="2" />
+									<xtce:Term coefficient="-9.5746938936353e-10" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="2758" parameterRef="HIT_HSKP.TEMP3" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="3389" parameterRef="HIT_HSKP.TEMP3" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="153.351650953293" exponent="0" />
+									<xtce:Term coefficient="-0.143921031616628" exponent="1" />
+									<xtce:Term coefficient="4.55456280405997e-05" exponent="2" />
+									<xtce:Term coefficient="-5.61804348875317e-09" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="3390" parameterRef="HIT_HSKP.TEMP3" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="3679" parameterRef="HIT_HSKP.TEMP3" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="951.675018310547" exponent="0" />
+									<xtce:Term coefficient="-0.849987864494324" exponent="1" />
+									<xtce:Term coefficient="0.000253779857303016" exponent="2" />
+									<xtce:Term coefficient="-2.60965409282221e-08" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="3680" parameterRef="HIT_HSKP.TEMP3" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="4095" parameterRef="HIT_HSKP.TEMP3" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="999.0" exponent="0" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+					</xtce:ContextCalibratorList>
 				</xtce:IntegerDataEncoding>
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="HIT_HSKP.HSKP_SPARE4" signed="false">
@@ -779,38 +1491,578 @@
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="HIT_HSKP.ANALOG_TEMP" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="-999.0" exponent="0" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
+					<xtce:ContextCalibratorList>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="0" parameterRef="HIT_HSKP.ANALOG_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="27" parameterRef="HIT_HSKP.ANALOG_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="-999.0" exponent="0" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="28" parameterRef="HIT_HSKP.ANALOG_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="76" parameterRef="HIT_HSKP.ANALOG_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="210.3542977453" exponent="0" />
+									<xtce:Term coefficient="-3.03236295345895" exponent="1" />
+									<xtce:Term coefficient="0.0354861868080605" exponent="2" />
+									<xtce:Term coefficient="-0.00017045482512752" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="77" parameterRef="HIT_HSKP.ANALOG_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="352" parameterRef="HIT_HSKP.ANALOG_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="148.183011283627" exponent="0" />
+									<xtce:Term coefficient="-0.626809431608451" exponent="1" />
+									<xtce:Term coefficient="0.00175715808764051" exponent="2" />
+									<xtce:Term coefficient="-1.96081359837674e-06" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="353" parameterRef="HIT_HSKP.ANALOG_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="805" parameterRef="HIT_HSKP.ANALOG_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="97.2317829637905" exponent="0" />
+									<xtce:Term coefficient="-0.138879389484984" exponent="1" />
+									<xtce:Term coefficient="0.000103406101062631" exponent="2" />
+									<xtce:Term coefficient="-3.33270892392568e-08" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="806" parameterRef="HIT_HSKP.ANALOG_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="1295" parameterRef="HIT_HSKP.ANALOG_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="85.0198864467675" exponent="0" />
+									<xtce:Term coefficient="-0.0931408713950077" exponent="1" />
+									<xtce:Term coefficient="4.75581760652766e-05" exponent="2" />
+									<xtce:Term coefficient="-1.11205830811284e-08" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="1296" parameterRef="HIT_HSKP.ANALOG_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="2466" parameterRef="HIT_HSKP.ANALOG_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="66.374548021704" exponent="0" />
+									<xtce:Term coefficient="-0.0495769456429116" exponent="1" />
+									<xtce:Term coefficient="1.31395507154686e-05" exponent="2" />
+									<xtce:Term coefficient="-1.93428817212536e-09" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="2467" parameterRef="HIT_HSKP.ANALOG_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="3344" parameterRef="HIT_HSKP.ANALOG_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="96.7228929698467" exponent="0" />
+									<xtce:Term coefficient="-0.0829984893789515" exponent="1" />
+									<xtce:Term coefficient="2.53357994637327e-05" exponent="2" />
+									<xtce:Term coefficient="-3.40786547939342e-09" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="3345" parameterRef="HIT_HSKP.ANALOG_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="3753" parameterRef="HIT_HSKP.ANALOG_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="1360.53009796143" exponent="0" />
+									<xtce:Term coefficient="-1.19585792720318" exponent="1" />
+									<xtce:Term coefficient="0.000352327511791373" exponent="2" />
+									<xtce:Term coefficient="-3.54703229010767e-08" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="3754" parameterRef="HIT_HSKP.ANALOG_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="4095" parameterRef="HIT_HSKP.ANALOG_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="999.0" exponent="0" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+					</xtce:ContextCalibratorList>
 				</xtce:IntegerDataEncoding>
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="HIT_HSKP.HVPS_TEMP" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="-999.0" exponent="0" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
+					<xtce:ContextCalibratorList>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="0" parameterRef="HIT_HSKP.HVPS_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="27" parameterRef="HIT_HSKP.HVPS_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="-999.0" exponent="0" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="28" parameterRef="HIT_HSKP.HVPS_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="76" parameterRef="HIT_HSKP.HVPS_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="210.3542977453" exponent="0" />
+									<xtce:Term coefficient="-3.03236295345895" exponent="1" />
+									<xtce:Term coefficient="0.0354861868080605" exponent="2" />
+									<xtce:Term coefficient="-0.00017045482512752" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="77" parameterRef="HIT_HSKP.HVPS_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="352" parameterRef="HIT_HSKP.HVPS_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="148.183011283627" exponent="0" />
+									<xtce:Term coefficient="-0.626809431608451" exponent="1" />
+									<xtce:Term coefficient="0.00175715808764051" exponent="2" />
+									<xtce:Term coefficient="-1.96081359837674e-06" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="353" parameterRef="HIT_HSKP.HVPS_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="805" parameterRef="HIT_HSKP.HVPS_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="97.2317829637905" exponent="0" />
+									<xtce:Term coefficient="-0.138879389484984" exponent="1" />
+									<xtce:Term coefficient="0.000103406101062631" exponent="2" />
+									<xtce:Term coefficient="-3.33270892392568e-08" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="806" parameterRef="HIT_HSKP.HVPS_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="1295" parameterRef="HIT_HSKP.HVPS_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="85.0198864467675" exponent="0" />
+									<xtce:Term coefficient="-0.0931408713950077" exponent="1" />
+									<xtce:Term coefficient="4.75581760652766e-05" exponent="2" />
+									<xtce:Term coefficient="-1.11205830811284e-08" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="1296" parameterRef="HIT_HSKP.HVPS_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="2466" parameterRef="HIT_HSKP.HVPS_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="66.374548021704" exponent="0" />
+									<xtce:Term coefficient="-0.0495769456429116" exponent="1" />
+									<xtce:Term coefficient="1.31395507154686e-05" exponent="2" />
+									<xtce:Term coefficient="-1.93428817212536e-09" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="2467" parameterRef="HIT_HSKP.HVPS_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="3344" parameterRef="HIT_HSKP.HVPS_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="96.7228929698467" exponent="0" />
+									<xtce:Term coefficient="-0.0829984893789515" exponent="1" />
+									<xtce:Term coefficient="2.53357994637327e-05" exponent="2" />
+									<xtce:Term coefficient="-3.40786547939342e-09" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="3345" parameterRef="HIT_HSKP.HVPS_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="3753" parameterRef="HIT_HSKP.HVPS_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="1360.53009796143" exponent="0" />
+									<xtce:Term coefficient="-1.19585792720318" exponent="1" />
+									<xtce:Term coefficient="0.000352327511791373" exponent="2" />
+									<xtce:Term coefficient="-3.54703229010767e-08" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="3754" parameterRef="HIT_HSKP.HVPS_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="4095" parameterRef="HIT_HSKP.HVPS_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="999.0" exponent="0" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+					</xtce:ContextCalibratorList>
 				</xtce:IntegerDataEncoding>
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="HIT_HSKP.IDPU_TEMP" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="-999.0" exponent="0" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
+					<xtce:ContextCalibratorList>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="0" parameterRef="HIT_HSKP.IDPU_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="27" parameterRef="HIT_HSKP.IDPU_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="-999.0" exponent="0" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="28" parameterRef="HIT_HSKP.IDPU_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="76" parameterRef="HIT_HSKP.IDPU_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="210.3542977453" exponent="0" />
+									<xtce:Term coefficient="-3.03236295345895" exponent="1" />
+									<xtce:Term coefficient="0.0354861868080605" exponent="2" />
+									<xtce:Term coefficient="-0.00017045482512752" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="77" parameterRef="HIT_HSKP.IDPU_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="352" parameterRef="HIT_HSKP.IDPU_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="148.183011283627" exponent="0" />
+									<xtce:Term coefficient="-0.626809431608451" exponent="1" />
+									<xtce:Term coefficient="0.00175715808764051" exponent="2" />
+									<xtce:Term coefficient="-1.96081359837674e-06" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="353" parameterRef="HIT_HSKP.IDPU_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="805" parameterRef="HIT_HSKP.IDPU_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="97.2317829637905" exponent="0" />
+									<xtce:Term coefficient="-0.138879389484984" exponent="1" />
+									<xtce:Term coefficient="0.000103406101062631" exponent="2" />
+									<xtce:Term coefficient="-3.33270892392568e-08" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="806" parameterRef="HIT_HSKP.IDPU_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="1295" parameterRef="HIT_HSKP.IDPU_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="85.0198864467675" exponent="0" />
+									<xtce:Term coefficient="-0.0931408713950077" exponent="1" />
+									<xtce:Term coefficient="4.75581760652766e-05" exponent="2" />
+									<xtce:Term coefficient="-1.11205830811284e-08" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="1296" parameterRef="HIT_HSKP.IDPU_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="2466" parameterRef="HIT_HSKP.IDPU_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="66.374548021704" exponent="0" />
+									<xtce:Term coefficient="-0.0495769456429116" exponent="1" />
+									<xtce:Term coefficient="1.31395507154686e-05" exponent="2" />
+									<xtce:Term coefficient="-1.93428817212536e-09" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="2467" parameterRef="HIT_HSKP.IDPU_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="3344" parameterRef="HIT_HSKP.IDPU_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="96.7228929698467" exponent="0" />
+									<xtce:Term coefficient="-0.0829984893789515" exponent="1" />
+									<xtce:Term coefficient="2.53357994637327e-05" exponent="2" />
+									<xtce:Term coefficient="-3.40786547939342e-09" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="3345" parameterRef="HIT_HSKP.IDPU_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="3753" parameterRef="HIT_HSKP.IDPU_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="1360.53009796143" exponent="0" />
+									<xtce:Term coefficient="-1.19585792720318" exponent="1" />
+									<xtce:Term coefficient="0.000352327511791373" exponent="2" />
+									<xtce:Term coefficient="-3.54703229010767e-08" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="3754" parameterRef="HIT_HSKP.IDPU_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="4095" parameterRef="HIT_HSKP.IDPU_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="999.0" exponent="0" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+					</xtce:ContextCalibratorList>
 				</xtce:IntegerDataEncoding>
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="HIT_HSKP.LVPS_TEMP" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="-999.0" exponent="0" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
+					<xtce:ContextCalibratorList>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="0" parameterRef="HIT_HSKP.LVPS_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="27" parameterRef="HIT_HSKP.LVPS_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="-999.0" exponent="0" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="28" parameterRef="HIT_HSKP.LVPS_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="76" parameterRef="HIT_HSKP.LVPS_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="210.3542977453" exponent="0" />
+									<xtce:Term coefficient="-3.03236295345895" exponent="1" />
+									<xtce:Term coefficient="0.0354861868080605" exponent="2" />
+									<xtce:Term coefficient="-0.00017045482512752" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="77" parameterRef="HIT_HSKP.LVPS_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="352" parameterRef="HIT_HSKP.LVPS_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="148.183011283627" exponent="0" />
+									<xtce:Term coefficient="-0.626809431608451" exponent="1" />
+									<xtce:Term coefficient="0.00175715808764051" exponent="2" />
+									<xtce:Term coefficient="-1.96081359837674e-06" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="353" parameterRef="HIT_HSKP.LVPS_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="805" parameterRef="HIT_HSKP.LVPS_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="97.2317829637905" exponent="0" />
+									<xtce:Term coefficient="-0.138879389484984" exponent="1" />
+									<xtce:Term coefficient="0.000103406101062631" exponent="2" />
+									<xtce:Term coefficient="-3.33270892392568e-08" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="806" parameterRef="HIT_HSKP.LVPS_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="1295" parameterRef="HIT_HSKP.LVPS_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="85.0198864467675" exponent="0" />
+									<xtce:Term coefficient="-0.0931408713950077" exponent="1" />
+									<xtce:Term coefficient="4.75581760652766e-05" exponent="2" />
+									<xtce:Term coefficient="-1.11205830811284e-08" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="1296" parameterRef="HIT_HSKP.LVPS_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="2466" parameterRef="HIT_HSKP.LVPS_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="66.374548021704" exponent="0" />
+									<xtce:Term coefficient="-0.0495769456429116" exponent="1" />
+									<xtce:Term coefficient="1.31395507154686e-05" exponent="2" />
+									<xtce:Term coefficient="-1.93428817212536e-09" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="2467" parameterRef="HIT_HSKP.LVPS_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="3344" parameterRef="HIT_HSKP.LVPS_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="96.7228929698467" exponent="0" />
+									<xtce:Term coefficient="-0.0829984893789515" exponent="1" />
+									<xtce:Term coefficient="2.53357994637327e-05" exponent="2" />
+									<xtce:Term coefficient="-3.40786547939342e-09" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="3345" parameterRef="HIT_HSKP.LVPS_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="3753" parameterRef="HIT_HSKP.LVPS_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="1360.53009796143" exponent="0" />
+									<xtce:Term coefficient="-1.19585792720318" exponent="1" />
+									<xtce:Term coefficient="0.000352327511791373" exponent="2" />
+									<xtce:Term coefficient="-3.54703229010767e-08" exponent="3" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="3754" parameterRef="HIT_HSKP.LVPS_TEMP" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="4095" parameterRef="HIT_HSKP.LVPS_TEMP" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="999.0" exponent="0" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+					</xtce:ContextCalibratorList>
 				</xtce:IntegerDataEncoding>
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="HIT_HSKP.EBOX_3D4VD" signed="false">
