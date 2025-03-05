@@ -175,7 +175,7 @@ class TestRectangularSkyMap:
             )
 
         # Check that the map has been updated
-        assert rectangular_map.data_dict != {}
+        assert "counts" in rectangular_map.data_dict
 
         # Check that the map has the same values as the PSETs, summed
         simple_summed_pset_counts = np.zeros_like(rectangular_map.data_dict["counts"])
@@ -251,7 +251,7 @@ class TestRectangularSkyMap:
             total_pset_counts += ultra_pset.data["counts"].values
 
         # Check that the map has been updated
-        assert rectangular_map.data_dict != {}
+        assert "counts" in rectangular_map.data_dict
 
         np.testing.assert_allclose(
             rectangular_map.data_dict["counts"],
