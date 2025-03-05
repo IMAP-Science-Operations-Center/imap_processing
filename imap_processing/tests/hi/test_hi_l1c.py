@@ -205,13 +205,21 @@ def test_find_second_de_packet_data():
             "epoch": xr.DataArray(
                 np.arange(esa_steps.size),
                 dims=["epoch"],
-            )
+            ),
+            "event_met": xr.DataArray(
+                np.arange(10),
+                dims=["event_met"],
+            ),
         },
         data_vars={
             "esa_step": xr.DataArray(
                 esa_steps,
                 dims=["epoch"],
-            )
+            ),
+            "coincidence_type": xr.DataArray(
+                np.ones(10),
+                dims=["event_met"],
+            ),
         },
     )
     subset = hi_l1c.find_second_de_packet_data(l1b_dataset)
