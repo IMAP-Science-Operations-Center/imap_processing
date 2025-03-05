@@ -19,10 +19,12 @@ class HIAPID(IntEnum):
     H45_APP_NHK = 754
     H45_SCI_CNT = 769
     H45_SCI_DE = 770
+    H45_DIAG_FEE = 772
 
     H90_APP_NHK = 818
     H90_SCI_CNT = 833
     H90_SCI_DE = 834
+    H90_DIAG_FEE = 836
 
     @property
     def sensor(self) -> str:

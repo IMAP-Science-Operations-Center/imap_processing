@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.hi.l1a.hi_l1a import hi_l1a
@@ -21,6 +22,35 @@ def test_sci_de_decom(hi_l0_test_data_path):
     cdf_filename = "imap_hi_l1a_90sensor-de_20241105_v001.cdf"
     cdf_filepath = write_cdf(processed_data[0])
     assert cdf_filepath.name == cdf_filename
+
+
+def test_diag_fee_decom(hi_l0_test_data_path):
+    """Test diag_fee data"""
+    bin_data_path = hi_l0_test_data_path / "H45_diag_fee_20250208.bin"
+    processed_data = hi_l1a(packet_file_path=bin_data_path, data_version="001")
+    dataset = processed_data[0]
+    cdf_filepath = write_cdf(processed_data[0], istp=False)
+    assert cdf_filepath.name == "imap_hi_l1a_45sensor-diagfee_20250208_v001.cdf"
+
+    assert np.unique(processed_data[0]["pkt_apid"].values) == HIAPID.H45_DIAG_FEE.value
+
+    validation_df = pd.read_csv(
+        hi_l0_test_data_path / "H45_diag_fee_20250208_verify.csv"
+    )
+    val_to_test_map = {
+        "PHVERNO": "version",
+        "PHTYPE": "type",
+        "PHSHF": "sec_hdr_flg",
+        "PHAPID": "pkt_apid",
+        "PHGROUPF": "seq_flgs",
+        "PHSEQCNT": "src_seq_ctr",
+        "PHDLEN": "pkt_len",
+    }
+    for col_name, series in validation_df.items():
+        if col_name == "timestamp":
+            continue
+        ds_var_name = val_to_test_map.get(col_name, col_name.lower())
+        np.testing.assert_array_equal(series.values, dataset[ds_var_name].data)
 
 
 def test_app_nhk_decom(hi_l0_test_data_path):
