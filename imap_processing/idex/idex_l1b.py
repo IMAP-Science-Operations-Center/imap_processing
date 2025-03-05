@@ -183,8 +183,6 @@ def idex_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     for var in vars_to_copy:
         l1b_dataset[var] = l1a_dataset[var].copy()
 
-    # TODO: Spice data?
-
     logger.info("IDEX L1B science data processing completed.")
 
     return l1b_dataset
@@ -216,7 +214,9 @@ def unpack_instrument_settings(
         values are the unpacked xr.DataArrays.
     """
     telemetry_data = {}
-
+    # Unpack each instrument setting only once (remove duplicated rows for segmented
+    # polynomials)
+    var_information_df = var_information_df.drop_duplicates(subset=["mnemonic"])
     for _, row in var_information_df.iterrows():
         unpacked_name = row["mnemonic"]
 

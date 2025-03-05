@@ -100,7 +100,7 @@ def test_idex_waveform_units(l1b_dataset: xr.Dataset):
     # Check instrument setting units
     for _, row in cdf_var_defs.iterrows():
         var_name = row["mnemonic"]
-        assert l1b_dataset[var_name].attrs["units"] == row["unit"]
+        assert l1b_dataset[var_name].attrs["UNITS"] == row["unit"]
 
     # Check waveform units
     waveform_var_names = [
