@@ -53,12 +53,12 @@ def test_get_energy_histogram(test_data):
     assert duration == 15
 
 
-def test_flag_attitude(use_fake_spin_data_for_time, test_aux_dataset):
+def test_flag_attitude(use_fake_spin_data_for_time, faux_aux_dataset):
     """Tests flag_attitude function."""
 
     use_fake_spin_data_for_time(0, 15 * 147)
     quality_flags, spin_rates, spin_period, spin_start_time = flag_attitude(
-        test_aux_dataset["SPINNUMBER"].values, test_aux_dataset
+        faux_aux_dataset["SPINNUMBER"].values, faux_aux_dataset
     )
 
     flag = ImapAttitudeUltraFlags(quality_flags[0])
@@ -98,13 +98,13 @@ def test_flag_spin(test_data):
     assert np.all(high_rates_flag == ImapRatesUltraFlags.HIGHRATES.value)
 
 
-def test_compare_aux_univ_spin_table(use_fake_spin_data_for_time, test_aux_dataset):
+def test_compare_aux_univ_spin_table(use_fake_spin_data_for_time, faux_aux_dataset):
     """Tests compare_aux_univ_spin_table function."""
     use_fake_spin_data_for_time(0, 15 * 147)
-    spins = test_aux_dataset["SPINNUMBER"].values
+    spins = faux_aux_dataset["SPINNUMBER"].values
     spin_df = get_spin_data()
 
-    result = compare_aux_univ_spin_table(test_aux_dataset, spins, spin_df)
+    result = compare_aux_univ_spin_table(faux_aux_dataset, spins, spin_df)
     expected = np.array([False] * 14 + [True])
 
     assert np.all(result == expected)
