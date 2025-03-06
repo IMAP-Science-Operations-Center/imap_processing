@@ -37,25 +37,22 @@ def hit_l2(dependency: xr.Dataset, data_version: str) -> list[xr.Dataset]:
     # Create the attribute manager for this data level
     attr_mgr = get_attribute_manager(data_version, "l2")
 
-    # Logical sources for the three L2 science products.
-    # TODO: add logical sources for other l2 products once processing functions
-    #  are written. "imap_hit_l2_standard-fluxes", "imap_hit_l2_sectored-fluxes"
-    logical_sources = ["imap_hit_l2_summed-fluxes"]
-
     # TODO: Write functions to create the following datasets
     #  Process sectored rates dataset
     #  Process standard rates dataset
+    #  add logical sources for other l2 products
+    #  "imap_hit_l2_standard-fluxes", "imap_hit_l2_sectored-fluxes"
 
     # Create L2 datasets
-    l2_datasets: list = []
+    l2_datasets: dict = {}
 
     if "imap_hit_l1b_summed-rates" in dependency.attrs["Logical_source"]:
         # Process science data to L2 datasets
-        l2_datasets.append(process_summed_flux_data(dependency))
+        l2_datasets["imap_hit_l2_summed-fluxes"] = process_summed_flux_data(dependency)
         logger.info("HIT L2 summed flux dataset created")
 
     # Update attributes and dimensions
-    for dataset, logical_source in zip(l2_datasets, logical_sources):
+    for logical_source, dataset in l2_datasets.items():
         dataset.attrs = attr_mgr.get_global_attributes(logical_source)
 
         # TODO: Add CDF attributes to yaml once they're defined for L2 science data
@@ -85,7 +82,7 @@ def hit_l2(dependency: xr.Dataset, data_version: str) -> list[xr.Dataset]:
 
         logger.info(f"HIT L2 dataset created for {logical_source}")
 
-    return l2_datasets
+    return list(l2_datasets.values())
 
 
 def process_summed_flux_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Dataset:
