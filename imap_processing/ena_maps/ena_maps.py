@@ -260,7 +260,7 @@ class PointingSet(ABC):
             String representation of the pointing set.
         """
         return (
-            f"{self.__class__} PointingSet"
+            f"{self.__class__.__name__} PointingSet"
             f"(spice_reference_frame={self.spice_reference_frame})"
         )
 
@@ -498,17 +498,6 @@ class AbstractSkyMap(ABC):
 
             self.data_dict[value_key] += pointing_projected_values
 
-    def __repr__(self) -> str:
-        """
-        Return a string representation of the map.
-
-        Returns
-        -------
-        str
-            String representation of the map.
-        """
-        return f"{self.__class__} Map)"
-
 
 class RectangularSkyMap(AbstractSkyMap):
     """
@@ -563,7 +552,7 @@ class RectangularSkyMap(AbstractSkyMap):
             String representation of the RectangularSkyMap.
         """
         return (
-            "RectangularSkyMap\n\t(reference_frame="
+            f"{self.__class__.__name__}\n\t(reference_frame="
             f"{self.spice_reference_frame.name} ({self.spice_reference_frame.value}), "
             f"spacing_deg={self.spacing_deg}, num_points={self.num_points})"
         )
@@ -602,3 +591,18 @@ class HealpixSkyMap(AbstractSkyMap):
         self.approx_resolution = hp.nside2resol(nside, arcmin=False)
         self.data_dict: dict[str, NDArray] = {}
         self.nested = nested
+
+    def __repr__(self) -> str:
+        """
+        Return a string representation of the HealpixSkyMap.
+
+        Returns
+        -------
+        str
+            String representation of the HealpixSkyMap.
+        """
+        return (
+            f"{self.__class__.__name__}\n\t(reference_frame="
+            f"{self.spice_reference_frame.name} ({self.spice_reference_frame.value}), "
+            f"nside={self.nside}, num_points={self.num_points})"
+        )
