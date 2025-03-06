@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from imap_processing.mag.l1c.mag_l1c import mag_l1c
+from imap_processing.mag.l1c.mag_l1c import mag_l1c, generate_timeline
 
 
 @pytest.fixture(scope="module")
@@ -38,3 +38,21 @@ def test_mag_attributes(mag_l1b_dataset):
     assert output.attrs["Logical_source"] == "imap_mag_l1c_norm-magi"
 
     assert output.attrs["Data_level"] == "L1C"
+
+
+def test_generate_timeline():
+    epoch_test = np.array([0, 0.5, 1, 1.5, 2, 5, 5.5])
+    expected_timeline = np.array([0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5])
+
+    vectors_per_second_attr = "0:2"
+    output = generate_timeline(epoch_test, vectors_per_second_attr)
+
+    print(output)
+
+    epoch_test = np.array([0, 0.5, 1, 1.5, 2, 4, 4.25, 4.5, 4.75, 5])
+    vectors_per_second_attr = "0:2,4:4"
+    expected_timeline = np.array([0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.25, 4.5, 4.75, 5])
+    output = generate_timeline(epoch_test, vectors_per_second_attr)
+
+
+

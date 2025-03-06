@@ -83,8 +83,34 @@ def process_mag_l1c(normal_mode_dataset: xr.Dataset, burst_mode_dataset: xr.Data
     return normal_mode_dataset
 
 
-def find_gaps(epoch_data):
+def generate_timeline(epoch_data: np.ndarray, vectors_per_second_attr: str = None):
+    """
+
+    Parameters
+    ----------
+    epoch_data
+    vectors_per_second_attr
+        format: {start time}:{vectors per second},{start time}:{vectors per second}
+
+    Returns
+    -------
+
+    """
     # given a dataarray of epoch values (from normal mode data) find any gaps of larger than 1 second.
+    vectors_per_second = None
+    total_timeline = []
+    if vectors_per_second_attr is not None and vectors_per_second_attr != "":
+        vecsec_segments = vectors_per_second_attr.split(",")
+        end_index = epoch_data.shape[0]
+        for vecsec_segment in reversed(vecsec_segments):
+            start_time, vecsec = vecsec_segment.split(":")
+            start_index = np.where(int(start_time) == epoch_data)[0][0]
+            gaps = find_gaps(epoch_data[start_index: end_index], int(vecsec))
+            end_index = start_index
 
 
+    return
+
+def find_gaps(timeline_data, minimum_step):
+    print(timeline_data)
     return
