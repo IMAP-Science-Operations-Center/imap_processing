@@ -1886,4 +1886,4 @@ tools = ["openpyxl", "pandas"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<4"
-content-hash = "351aa5e897be56023560e0d031ea00871248489212d79b01e4c0c0d3aac0db1f"
+content-hash = "bb92b467623308af04515aff2e92ccf717b9c3f18d5d0de3031bcd5496912f04"

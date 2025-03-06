@@ -44,14 +44,14 @@ class BaselineNoiseTime(IntEnum):
 
     Attributes
     ----------
-    STOP: int
-         Beginning of the baseline noise window.
     START: int
+         Beginning of the baseline noise window.
+    STOP: int
         End of the baseline noise window.
     """
 
-    STOP = -5
     START = -7
+    STOP = -5
 
 
 def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
