@@ -34,8 +34,8 @@ from imap_processing.spice.spin import (
 from imap_processing.spice.time import ttj2000ns_to_et
 
 N_SPIN_BINS = 3600
-SPIN_PHASE_BIN_EDGES = np.linspace(0, 360, N_SPIN_BINS + 1) / 360
-SPIN_PHASE_BIN_CENTERS = SPIN_PHASE_BIN_EDGES[:-1] + SPIN_PHASE_BIN_EDGES[1] / 2
+SPIN_PHASE_BIN_EDGES = np.linspace(0, 1, N_SPIN_BINS + 1)
+SPIN_PHASE_BIN_CENTERS = (SPIN_PHASE_BIN_EDGES[:-1] + SPIN_PHASE_BIN_EDGES[1:]) / 2
 
 logger = logging.getLogger(__name__)
 
