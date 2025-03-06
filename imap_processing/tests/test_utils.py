@@ -91,9 +91,14 @@ def test_convert_raw_to_eu(tmp_path):
     field_2_compare = np.concatenate([field_2_compare_seg_1, field_2_compare_seg_2])
     np.testing.assert_array_equal(eu_dataset["FIELD_2"].data, field_2_compare)
 
+    assert eu_dataset["FIELD_2"].attrs["UNITS"] == test_df["unit"].iloc[2]
     # Check that a ValueError is raised for unexpected conversion specified in
     # conversion table "convertAs" column
-    with pytest.raises(ValueError, match=r"Unexpected conversion type: .*"):
+    with pytest.raises(
+        ValueError,
+        match="Column 'convertAs' must all be UNSEGMENTED_POLY or "
+        "SEGMENTED_POLY for a packet name and mnemonic",
+    ):
         utils.convert_raw_to_eu(
             dn_dataset.copy(), test_csv.absolute(), "PACKET_1", comment="#"
         )
@@ -140,6 +145,48 @@ def test_segmented_poly_out_of_range(tmp_path):
     # Check that a ValueError is raised for DNs not in any ranges
     with pytest.raises(
         ValueError, match="Raw DN values found outside of the expected range"
+    ):
+        utils.convert_raw_to_eu(
+            dn_dataset.copy(), test_csv.absolute(), "PACKET_0", comment="#"
+        )
+
+
+def test_unsegmented_poly_multiple_rows(tmp_path):
+    """Test that a value error is thrown if there are multiple rows with the same
+    mnemonic and packet name and convertAs is UNSEGMENTED_POLY"""
+    # Generate a csv for testing
+    test_df = pd.DataFrame(
+        data={
+            "packetName": ["PACKET_0", "PACKET_0"],
+            "mnemonic": ["FIELD_0", "FIELD_0"],
+            "convertAs": ["UNSEGMENTED_POLY", "UNSEGMENTED_POLY"],
+            "c0": [0, 1],
+            "c1": [0, 1],
+            "c2": [0, 1],
+            "c3": [0, 1],
+            "c5": [0, 1],
+            "c6": [0, 1],
+            "c7": [0, 1],
+            "unit": ["a", "a"],
+        }
+    )
+    test_csv = tmp_path / "test_convert_table.csv"
+    with open(test_csv, "w") as f:
+        f.write("# Comment on first line of file\n")
+        test_df.to_csv(f, index=False)
+
+    # Generate a fake dataset for testing
+    field_0 = np.arange(3)
+    dn_dataset = xr.Dataset(
+        data_vars=dict(
+            FIELD_0=(["time"], field_0),
+        )
+    )
+    # Check that a ValueError is raised for DNs not in any ranges
+    with pytest.raises(
+        ValueError,
+        match="For unsegmented polynomial conversions, there should "
+        "only be one row per mnemonic and packet name",
     ):
         utils.convert_raw_to_eu(
             dn_dataset.copy(), test_csv.absolute(), "PACKET_0", comment="#"

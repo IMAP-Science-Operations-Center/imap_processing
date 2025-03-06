@@ -109,83 +109,72 @@ def convert_raw_to_eu(
     dataset : xr.Dataset
         Raw data converted to engineering unit as needed.
     """
-    # Make sure there is column called "index" with unique
-    # value such as 0, 1, 2, 3, ...
     eu_conversion_df = pd.read_csv(
         conversion_table_path,
         **read_csv_kwargs,
     )
 
-    # Look up all metadata fields for the packet name
-    packet_df = eu_conversion_df.loc[
-        eu_conversion_df["packetName"] == packet_name
-    ].reset_index(drop=True)
-    row_idx = 0
-    # for each metadata field, convert raw value to engineering unit
-    while row_idx < len(packet_df):
-        row = packet_df.iloc[row_idx]
-        row_key = row["mnemonic"]
-        # TODO: remove this check once everyone has lowercase
-        # all of CDF data variable names to match SPDF requirement.
-        # Right now, check if dataset mnemonics is lowercase of row mnemonics.
-        # If so, make them match
-        mnemonics = row_key.lower() if row_key.lower() in dataset else row_key
-        if row["convertAs"] == "UNSEGMENTED_POLY":
+    # Iterate through every variable in the dataset and check if there is an entry for
+    # That variable in the conversion table.
+    for var in dataset.variables:
+        packet_df = eu_conversion_df.loc[
+            (eu_conversion_df["packetName"] == packet_name)
+            &
+            # Filter for mnemonic case-insensitive
+            (eu_conversion_df["mnemonic"].str.lower() == var.lower())
+        ].reset_index(drop=True)
+
+        if packet_df.empty:
+            continue
+
+        if np.all(packet_df["convertAs"] == "UNSEGMENTED_POLY"):
+            if len(packet_df.index) > 1:
+                raise ValueError(
+                    "For unsegmented polynomial conversions, there should "
+                    "only be one row per mnemonic and packet name."
+                )
+            row = packet_df.iloc[0]
             # On this line, we are getting the coefficients from the
             # table and then reverse them because the np.polyval is
             # expecting coefficient in descending order
             # coeff columns must have names 'c0', 'c1', 'c2', ...
             coeff_values = row.filter(regex=r"c\d").values[::-1]
-            try:
-                # Convert the raw value to engineering unit
-                dataset[mnemonics].data = np.polyval(
-                    coeff_values, dataset[mnemonics].data
-                )
-                # Modify units attribute
-                if "unit" in row:
-                    dataset[mnemonics].attrs.update({"UNITS": row["unit"]})
-            except KeyError:
-                # TODO: Don't catch this error once packet definitions stabilize
-                logger.warning(f"Input dataset does not contain key: {row_key}")
-            row_idx += 1
+            # Convert the raw value to engineering unit
+            dataset[var].data = np.polyval(coeff_values, dataset[var].data)
 
-        elif row["convertAs"] == "SEGMENTED_POLY":
-            try:
-                data = dataset[mnemonics].data
-                # Get all the segments of the polynomial for the mnemonic
-                segments = packet_df[packet_df["mnemonic"] == mnemonics]
-                # Check if any of the raw DN values fall outside the ranges
-                bad_mask = np.logical_or(
-                    data < segments["dn_range_start"].min(),
-                    data > segments["dn_range_stop"].max(),
+        elif np.all(packet_df["convertAs"] == "SEGMENTED_POLY"):
+            data = dataset[var].data
+            # Check if any of the raw DN values fall outside the ranges
+            bad_mask = np.logical_or(
+                data < packet_df["dn_range_start"].min(),
+                data > packet_df["dn_range_stop"].max(),
+            )
+            if np.any(data[bad_mask]):
+                raise ValueError(
+                    "Raw DN values found outside of the expected range"
+                    f"for mnemonic: {var}"
                 )
-                if np.any(data[bad_mask]):
-                    raise ValueError(
-                        "Raw DN values found outside of the expected range"
-                        f"for mnemonic: {mnemonics}"
-                    )
-                # Create conditions and corresponding functions for np.piecewise
-                conditions = [
-                    (data >= row["dn_range_start"]) & (data <= row["dn_range_stop"])
-                    for _, row in segments.iterrows()
-                ]
-                functions = [
-                    lambda x, r=row: np.polyval(r.filter(regex=r"c\d").values[::-1], x)
-                    for _, row in segments.iterrows()
-                ]
-                # Convert the raw value to engineering unit
-                dataset[mnemonics].data = np.piecewise(data, conditions, functions)
-                # check if the raw DN value falls between the range for this row
-                row_idx += len(segments)
-            except KeyError:
-                # TODO: Don't catch this error once packet definitions stabilize
-                logger.warning(f"Input dataset does not contain key: {row_key}")
-                row_idx += 1
+            # Create conditions and corresponding functions for np.piecewise
+            conditions = [
+                (data >= row["dn_range_start"]) & (data <= row["dn_range_stop"])
+                for _, row in packet_df.iterrows()
+            ]
+            functions = [
+                lambda x, r=row: np.polyval(r.filter(regex=r"c\d").values[::-1], x)
+                for _, row in packet_df.iterrows()
+            ]
+            # Convert the raw value to engineering unit
+            dataset[var].data = np.piecewise(data, conditions, functions)
+
         else:
             raise ValueError(
-                f"Unexpected conversion type: {row['convertAs']} encountered in"
-                f" engineering unit conversion table: {conversion_table_path}"
+                "Column 'convertAs' must all be UNSEGMENTED_POLY or "
+                "SEGMENTED_POLY for a packet name and mnemonic"
             )
+
+        # Modify units attribute
+        if "unit" in packet_df:
+            dataset[var].attrs.update({"UNITS": packet_df.iloc[0]["unit"]})
 
     return dataset
 
