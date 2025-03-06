@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import pathlib
 from abc import ABC, abstractmethod
-from copy import deepcopy
 from enum import Enum
 
 import astropy_healpix.healpy as hp
@@ -405,17 +404,6 @@ class AbstractSkyMap(ABC):
         self.sky_grid: spatial_utils.AzElSkyGrid
         self.num_points: int
         self.data_dict: dict[str, NDArray]
-
-    def copy(self) -> AbstractSkyMap:
-        """
-        Return a deep copy of the map.
-
-        Returns
-        -------
-        AbstractSkyMap
-            A deep copy of the map.
-        """
-        return deepcopy(self)
 
     def project_pset_values_to_map(
         self,
