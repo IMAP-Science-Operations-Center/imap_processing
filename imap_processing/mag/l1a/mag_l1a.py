@@ -283,14 +283,18 @@ def generate_dataset(
         np.arange(2),
         name="compression",
         dims=["compression"],
-        attrs=attribute_manager.get_variable_attributes("compression_attrs"),
+        attrs=attribute_manager.get_variable_attributes(
+            "compression_attrs", check_schema=False
+        ),
     )
 
     direction = xr.DataArray(
         np.arange(4),
         name="direction",
         dims=["direction"],
-        attrs=attribute_manager.get_variable_attributes("direction_attrs"),
+        attrs=attribute_manager.get_variable_attributes(
+            "direction_attrs", check_schema=False
+        ),
     )
 
     # TODO: Epoch here refers to the start of the sample. Confirm that this is
