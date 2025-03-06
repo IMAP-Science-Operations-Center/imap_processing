@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
 import pytest
+import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.ialirt.l0.process_swe import process_swe, decompress_counts
+from imap_processing.ialirt.l0.process_swe import process_swe, decompress_counts, prepare_raw_counts
 from imap_processing.utils import packet_file_to_datasets
 
 
@@ -94,6 +95,41 @@ def fields_to_test():
     }
     return fields_to_test
 
+# TODO: double check this test
+@pytest.fixture()
+def grouped_data():
+    """Creates grouped data for prepare_raw_counts test."""
+    epoch = np.arange(60)
+
+    group = np.zeros(60, dtype=np.int32)
+    data_vars = {"group": ("epoch", group)}
+
+    for cem in range(1, 8):
+        for e in range(1, 5):
+            key = f"swe_cem{cem}_e{e}"
+            data_vars[key] = ("epoch", np.full(60, cem * 10 + e, dtype=np.uint8))
+
+    grouped_data = xr.Dataset(data_vars, coords={"epoch": epoch})
+
+    return grouped_data
+
+
+def test_prepare_raw_counts(grouped_data):
+    """Test that prepare_raw_counts correctly extracts data for a group into the right shape."""
+    raw_counts = prepare_raw_counts(grouped_data, group=0)
+
+    # Check shape (60, 7, 4)
+    assert raw_counts.shape == (60, 7, 4)
+
+    # Check that values match what we set in the fixture
+    for cem in range(7):
+        for e in range(4):
+            expected_value = (cem + 1) * 10 + (e + 1)
+            assert np.all(raw_counts[:, cem, e] == expected_value), (
+                f"Mismatch in CEM {cem+1} Energy {e+1}: "
+                f"expected {expected_value}, got {raw_counts[:, cem, e]}"
+            )
+
 
 def test_decom_packets(xarray_data, swe_test_data, fields_to_test):
     """This function checks that all instrument parameters are accounted for."""
@@ -113,8 +149,14 @@ def test_decom_packets(xarray_data, swe_test_data, fields_to_test):
 
 
 def test_decompress_counts():
-    """Test decompress counts."""
-    pass
+    """Test that we get correct decompressed counts from the algorithm."""
+    expected_value = 24063
+    input_count = 230
+    returned_value = decompress_counts(np.array([input_count]))
+    assert np.all(expected_value == returned_value)
+
+
+# def test_prepare_raw_counts(swe_test_data):
 
 
 def test_process_swe(swe_test_data, fields_to_test):
@@ -125,4 +167,6 @@ def test_process_swe(swe_test_data, fields_to_test):
     swe_test_data.index.name = "epoch"
     ds = swe_test_data.to_xarray()
     ds["src_seq_ctr"] = ("epoch", np.arange(len(ds["swe_shcoarse"])))
-    process_swe(ds)
+    swe_data = process_swe(ds)
+
+    assert swe_data == []

@@ -3,6 +3,7 @@
 import logging
 
 import numpy as np
+from numpy.typing import NDArray
 import xarray as xr
 
 from imap_processing.ialirt.utils.grouping import find_groups
@@ -13,7 +14,20 @@ from imap_processing.swe.l1b.swe_l1b_science import deadtime_correction
 logger = logging.getLogger(__name__)
 
 
-def decompress_counts(raw_counts) -> int:
+def decompress_counts(raw_counts: NDArray) -> NDArray:
+    """
+    Decompress raw counts using a predefined decompression table.
+
+    Parameters
+    ----------
+    raw_counts : np.ndarray
+        Array of raw compressed counts with shape (n_time, n_cem, n_energy_step).
+
+    Returns
+    -------
+    counts : np.ndarray
+        Array of decompressed counts with the same shape as raw_counts.
+    """
     decompression_table = np.array([decompressed_counts(i) for i in range(256)])
 
     # Decompress using the precomputed table
@@ -22,11 +36,30 @@ def decompress_counts(raw_counts) -> int:
     return counts
 
 
-def prepare_raw_counts(grouped_data, group):
-    # Prepare raw counts array just for this group (60 epochs, 7 CEMs, 4 energy steps)
+def prepare_raw_counts(grouped_data: xr.Dataset, group: int) -> NDArray:
+    """
+    Reformat raw counts into a 3D array.
+
+    Parameters
+    ----------
+    grouped_data : xr.Dataset
+        Dataset containing grouped i-ALiRT packet data for 1 minute.
+
+    group : int
+        Group number.
+
+    Returns
+    -------
+    raw_counts : np.ndarray
+        Array of raw counts with shape (60, 7, 4), where:
+        - 60 corresponds to the 60 seconds in the group.
+        - 7 corresponds to the 7 CEM detectors.
+        - 4 corresponds to the 4 energy steps per second.
+    """
+    # Prepare raw counts array just for this group
+    # (60 epochs, 7 CEMs, 4 energy steps)
     raw_counts = np.zeros((60, 7, 4), dtype=np.uint8)
 
-    # Extract counts for this group
     for cem in range(1, 8):
         for e in range(1, 5):
             key = f"swe_cem{cem}_e{e}"
@@ -55,6 +88,8 @@ def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
     """
     logger.info("Processing SWE.")
 
+    # Calculate time in seconds
+    # 1 second = 1,000,000 microseconds for swe_acq_sub
     time_seconds = calculate_time(
         accumulated_data["swe_acq_sec"], accumulated_data["swe_acq_sub"], 1000000
     )
@@ -76,7 +111,8 @@ def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
             )
             continue
 
-        # Prepare raw counts array just for this group (60 epochs, 7 CEMs, 4 energy steps)
+        # Prepare raw counts array just for this group
+        # (60 epochs, 7 CEMs, 4 energy steps)
         raw_counts = prepare_raw_counts(grouped_data, group)
 
         counts = decompress_counts(raw_counts)
