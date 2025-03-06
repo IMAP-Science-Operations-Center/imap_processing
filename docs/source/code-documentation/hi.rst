@@ -19,7 +19,6 @@ Level 1A Processing code.
 
     l1a.hi_l1a
     l1a.histogram
-    l1a.housekeeping
     l1a.science_direct_event
 
 Level 1B Processing code.

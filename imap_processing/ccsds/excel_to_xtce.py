@@ -352,21 +352,70 @@ class XTCEGenerator:
         conversion = analog_conversion.loc[
             (analog_conversion["mnemonic"] == row["mnemonic"])
             & (analog_conversion["packetName"] == row["packetName"])
-        ].iloc[0]
+        ]
+        name = f"{row['packetName']}.{row['mnemonic']}"
 
-        # Create the Conversion element
-        default_calibrator = Et.SubElement(encoding, "xtce:DefaultCalibrator")
-        polynomial_calibrator = Et.SubElement(
-            default_calibrator, "xtce:PolynomialCalibrator"
-        )
-        # FIXME: Use lowValue / highValue from the conversion sheet
-        # FIXME: Handle segmented polynomials (only using first segment now)
-        for i in range(8):
-            col = f"c{i}"
-            if conversion[col] != 0:
-                term = Et.SubElement(polynomial_calibrator, "xtce:Term")
-                term.attrib["coefficient"] = str(conversion[col])
-                term.attrib["exponent"] = str(i)
+        def add_poly_calibrator(segment: pd.Series, calibrator: Et.Element) -> None:
+            """
+            Add a polynomial calibrator to the input calibrator element.
+
+            Parameters
+            ----------
+            segment : pandas.Series
+                Row from the AnalogConversions sheet.
+            calibrator : Element
+                The calibrator element to add the polynomial to.
+            """
+            polynomial_calibrator = Et.SubElement(
+                calibrator, "xtce:PolynomialCalibrator"
+            )
+            for i in range(8):
+                col = f"c{i}"
+                if segment[col] != 0:
+                    term = Et.SubElement(polynomial_calibrator, "xtce:Term")
+                    term.attrib["coefficient"] = str(segment[col])
+                    term.attrib["exponent"] = str(i)
+
+        if len(conversion) == 1:
+            # Unsegmented Polynomial has a single calibrator
+            # NOTE: We don't add the low/high limits to unsegmented polynomials
+            #       because some instruments haven't defined these
+            calibrator = Et.SubElement(encoding, "xtce:DefaultCalibrator")
+            # There is only one segment, so no need to iterate here
+            segment = conversion.iloc[0]
+            add_poly_calibrator(segment, calibrator)
+        else:
+            # Segmented Polynomial has a list of calibrators
+            context_calibrator_list = Et.SubElement(
+                encoding, "xtce:ContextCalibratorList"
+            )
+            # One context calibrator for each segment
+            for _, segment in conversion.iterrows():
+                context_calibrator = Et.SubElement(
+                    context_calibrator_list, "xtce:ContextCalibrator"
+                )
+
+                # The matching criteria for this calibrator
+                # >= lowValue and <= highValue
+                context_match = Et.SubElement(context_calibrator, "xtce:ContextMatch")
+                comparison_list = Et.SubElement(context_match, "xtce:ComparisonList")
+                comparison = Et.SubElement(comparison_list, "xtce:Comparison")
+                comparison.attrib["comparisonOperator"] = ">="
+                comparison.attrib["value"] = str(int(segment["lowValue"]))
+                comparison.attrib["parameterRef"] = name
+                # This references the parameter name itself, so we use the uncalibrated
+                # value for comparison
+                comparison.attrib["useCalibratedValue"] = "false"
+                comparison = Et.SubElement(comparison_list, "xtce:Comparison")
+                comparison.attrib["comparisonOperator"] = "<="
+                comparison.attrib["value"] = str(int(segment["highValue"]))
+                comparison.attrib["parameterRef"] = name
+                comparison.attrib["useCalibratedValue"] = "false"
+
+                # The calibrator for this segment
+                # (used if the matching criteria are met)
+                calibrator = Et.SubElement(context_calibrator, "xtce:Calibrator")
+                add_poly_calibrator(segment, calibrator)
 
     def _add_state_conversion(self, row: pd.Series, parameter_type: Et.Element) -> None:
         """

@@ -7,6 +7,7 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.hi.utils import (
     HIAPID,
+    CoincidenceBitmap,
     create_dataset_variables,
     full_dataarray,
     parse_sensor_number,
@@ -100,3 +101,24 @@ def test_create_dataset_variables(var_names, shape, fill_value, lookup_str):
             assert data_array.shape == shape
         expected_fill_value = fill_value if fill_value is not None else attrs["FILLVAL"]
         np.testing.assert_array_equal(data_array, expected_fill_value)
+
+
+@pytest.mark.parametrize(
+    "sensor_hit_str, expected_val",
+    [
+        ("ABC1C2", 15),
+        ("ABC1", 14),
+        ("AB", 12),
+        ("AC1C2", 11),
+        ("AC1", 10),
+        ("A", 8),
+        ("BC1C2", 7),
+        ("BC1", 6),
+        ("B", 4),
+        ("C1C2", 3),
+        ("C1", 2),
+    ],
+)
+def test_coincidence_type_string_to_int(sensor_hit_str, expected_val):
+    """Test coverage for coincidence_type_string_to_int function"""
+    assert CoincidenceBitmap.detector_hit_str_to_int(sensor_hit_str) == expected_val
