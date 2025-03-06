@@ -31,7 +31,7 @@ mag_metadata_attrs: &metadata_default
     VAR_TYPE: metadata
 
 direction_label:
-  CATDESC: magnetic field vector data
+  CATDESC: Magnetic field vector data
   FIELDNAM: Magnetic Field Vector
   FORMAT: A3
   VAR_TYPE: metadata
