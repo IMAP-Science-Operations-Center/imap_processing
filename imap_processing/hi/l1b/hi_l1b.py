@@ -116,7 +116,7 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
     """
     l1b_dataset = l1a_dataset.copy()
     l1b_dataset.update(de_esa_energy_step(l1b_dataset))
-    l1b_dataset.update(compute_coincidence_type_and_time_deltas(l1b_dataset))
+    l1b_dataset.update(compute_coincidence_type_and_tofs(l1b_dataset))
     l1b_dataset.update(de_nominal_bin_and_spin_phase(l1b_dataset))
     l1b_dataset.update(compute_hae_coordinates(l1b_dataset))
     l1b_dataset.update(
@@ -146,14 +146,14 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
     return l1b_dataset
 
 
-def compute_coincidence_type_and_time_deltas(
+def compute_coincidence_type_and_tofs(
     dataset: xr.Dataset,
 ) -> dict[str, xr.DataArray]:
     """
-    Compute coincidence type and time deltas.
+    Compute coincidence type and time of flights.
 
-    Generates the new variables "coincidence_type", "delta_t_ab", "delta_t_ac1",
-    "delta_t_bc1", and "delta_t_c1c2" and returns a dictionary with the new
+    Generates the new variables "coincidence_type", "tof_ab", "tof_ac1",
+    "tof_bc1", and "tof_c1c2" and returns a dictionary with the new
     variables that can be added to the input dataset by calling the
     xarray.Dataset.update method.
 
@@ -170,16 +170,16 @@ def compute_coincidence_type_and_time_deltas(
     new_vars = create_dataset_variables(
         [
             "coincidence_type",
-            "delta_t_ab",
-            "delta_t_ac1",
-            "delta_t_bc1",
-            "delta_t_c1c2",
+            "tof_ab",
+            "tof_ac1",
+            "tof_bc1",
+            "tof_c1c2",
         ],
         len(dataset.event_met),
         att_manager_lookup_str="hi_de_{0}",
     )
 
-    # compute masks needed for coincidence type and delta t calculations
+    # compute masks needed for coincidence type and ToF calculations
     a_first = dataset.trigger_id.values == TriggerId.A
     b_first = dataset.trigger_id.values == TriggerId.B
     c_first = dataset.trigger_id.values == TriggerId.C
@@ -213,56 +213,56 @@ def compute_coincidence_type_and_time_deltas(
     # |      2      |      B      |  t_a - t_b  | t_c1 - t_b  | t_c2 - t_c1 |
     # |      3      |      C      |  t_a - t_c1 | t_b  - t_c1 | t_c2 - t_c1 |
 
-    # Prepare for delta_t calculations by converting TOF values to nanoseconds
+    # Prepare for L1B ToF calculations by converting L1A TOF values to nanoseconds
     tof_1_ns = (dataset.tof_1.values * HiConstants.TOF1_TICK_DUR).astype(np.int32)
     tof_2_ns = (dataset.tof_2.values * HiConstants.TOF2_TICK_DUR).astype(np.int32)
     tof_3_ns = (dataset.tof_3.values * HiConstants.TOF3_TICK_DUR).astype(np.int32)
 
-    # # ********** delta_t_ab = (t_b - t_a) **********
+    # # ********** tof_ab = (t_b - t_a) **********
     # Table: row 1, column 1
     a_and_tof1 = a_first & tof1_valid
-    new_vars["delta_t_ab"].values[a_and_tof1] = tof_1_ns[a_and_tof1]
+    new_vars["tof_ab"].values[a_and_tof1] = tof_1_ns[a_and_tof1]
     # Table: row 2, column 1
     b_and_tof1 = b_first & tof1_valid
-    new_vars["delta_t_ab"].values[b_and_tof1] = -1 * tof_1_ns[b_and_tof1]
+    new_vars["tof_ab"].values[b_and_tof1] = -1 * tof_1_ns[b_and_tof1]
     # Table: row 3, column 1 and 2
-    # delta_t_ab = (t_b - t_c1) - (t_a - t_c1) = (t_b - t_a)
+    # tof_ab = (t_b - t_c1) - (t_a - t_c1) = (t_b - t_a)
     c_and_tof1and2 = c_first & tof1and2_valid
-    new_vars["delta_t_ab"].values[c_and_tof1and2] = (
+    new_vars["tof_ab"].values[c_and_tof1and2] = (
         tof_2_ns[c_and_tof1and2] - tof_1_ns[c_and_tof1and2]
     )
 
-    # ********** delta_t_ac1 = (t_c1 - t_a) **********
+    # ********** tof_ac1 = (t_c1 - t_a) **********
     # Table: row 1, column 2
     a_and_tof2 = a_first & tof2_valid
-    new_vars["delta_t_ac1"].values[a_and_tof2] = tof_2_ns[a_and_tof2]
+    new_vars["tof_ac1"].values[a_and_tof2] = tof_2_ns[a_and_tof2]
     # Table: row 2, column 1 and 2
-    # delta_t_ac1 = (t_c1 - t_b) - (t_a - t_b) = (t_c1 - t_a)
+    # tof_ac1 = (t_c1 - t_b) - (t_a - t_b) = (t_c1 - t_a)
     b_and_tof1and2 = b_first & tof1and2_valid
-    new_vars["delta_t_ac1"].values[b_and_tof1and2] = (
+    new_vars["tof_ac1"].values[b_and_tof1and2] = (
         tof_2_ns[b_and_tof1and2] - tof_1_ns[b_and_tof1and2]
     )
     # Table: row 3, column 1
     c_and_tof1 = c_first & tof1_valid
-    new_vars["delta_t_ac1"].values[c_and_tof1] = -1 * tof_1_ns[c_and_tof1]
+    new_vars["tof_ac1"].values[c_and_tof1] = -1 * tof_1_ns[c_and_tof1]
 
-    # ********** delta_t_bc1 = (t_c1 - t_b) **********
+    # ********** tof_bc1 = (t_c1 - t_b) **********
     # Table: row 1, column 1 and 2
-    # delta_t_bc1 = (t_c1 - t_a) - (t_b - t_a) => (t_c1 - t_b)
+    # tof_bc1 = (t_c1 - t_a) - (t_b - t_a) => (t_c1 - t_b)
     a_and_tof1and2 = a_first & tof1and2_valid
-    new_vars["delta_t_bc1"].values[a_and_tof1and2] = (
+    new_vars["tof_bc1"].values[a_and_tof1and2] = (
         tof_2_ns[a_and_tof1and2] - tof_1_ns[a_and_tof1and2]
     )
     # Table: row 2, column 2
     b_and_tof2 = b_first & tof2_valid
-    new_vars["delta_t_bc1"].values[b_and_tof2] = tof_2_ns[b_and_tof2]
+    new_vars["tof_bc1"].values[b_and_tof2] = tof_2_ns[b_and_tof2]
     # Table: row 3, column 2
     c_and_tof2 = c_first & tof2_valid
-    new_vars["delta_t_bc1"].values[c_and_tof2] = -1 * tof_2_ns[c_and_tof2]
+    new_vars["tof_bc1"].values[c_and_tof2] = -1 * tof_2_ns[c_and_tof2]
 
-    # ********** delta_t_c1c2 = (t_c2 - t_c1) **********
+    # ********** tof_c1c2 = (t_c2 - t_c1) **********
     # Table: all rows, column 3
-    new_vars["delta_t_c1c2"].values[tof3_valid] = tof_3_ns[tof3_valid]
+    new_vars["tof_c1c2"].values[tof3_valid] = tof_3_ns[tof3_valid]
 
     return new_vars
 
@@ -317,8 +317,8 @@ def compute_hae_coordinates(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
     Parameters
     ----------
     dataset : xarray.Dataset
-        The partial L1B dataset that has had coincidence type, time deltas, and
-        spin phase computed and added to the L1A data.
+        The partial L1B dataset that has had coincidence type, times of flight,
+        and spin phase computed and added to the L1A data.
 
     Returns
     -------

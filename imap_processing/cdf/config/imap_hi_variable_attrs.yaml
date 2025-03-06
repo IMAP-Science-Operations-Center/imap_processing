@@ -343,34 +343,34 @@ hi_de_esa_energy_step:
   <<: *default_esa_energy_step
   LABLAXIS: Energy Step
 
-default_delta_t: &default_delta_t
+default_l1b_tof: &default_l1b_tof
   <<: *default_int32
   DEPEND_0: event_met
   FORMAT: I3
-  LABLAXIS: delta T
+  LABLAXIS: Time of Flight
   UNITS: ns
   VALIDMIN: -512
   VALIDMAX: 512
 
-hi_de_delta_t_ab:
-  <<: *default_delta_t
+hi_de_tof_ab:
+  <<: *default_l1b_tof
   CATDESC: Time difference between detector A and B events (t_B - t_A)
-  FIELDNAM: Delta T, event A to B
+  FIELDNAM: ToF, event A to B
 
-hi_de_delta_t_ac1:
-  <<: *default_delta_t
+hi_de_tof_ac1:
+  <<: *default_l1b_tof
   CATDESC: Time difference between detector A and C1 events (t_C1 - t_A)
-  FIELDNAM: Delta T, event A to C1
+  FIELDNAM: ToF, event A to C1
 
-hi_de_delta_t_bc1:
-  <<: *default_delta_t
+hi_de_tof_bc1:
+  <<: *default_l1b_tof
   CATDESC: Time difference between detector B and C1 events (t_C1 - t_B)
-  FIELDNAM: Delta T, event B to C1
+  FIELDNAM: ToF, event B to C1
 
-hi_de_delta_t_c1c2:
-  <<: *default_delta_t
+hi_de_tof_c1c2:
+  <<: *default_l1b_tof
   CATDESC: Time difference between detector C1 and C2 events (t_C2 - t_C1)
-  FIELDNAM: Delta T, event C1 to C2
+  FIELDNAM: ToF, event C1 to C2
 
 hi_de_spin_phase:
   <<: *default_float32

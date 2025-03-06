@@ -75,13 +75,13 @@ def test_full_dataarray(name, shape, fill_value, expected_shape):
 @pytest.mark.parametrize(
     "var_names, shape, fill_value, lookup_str",
     [
-        (["delta_t_ab", "delta_t_ac1"], 5, None, "hi_de_{0}"),
+        (["tof_ab", "tof_ac1"], 5, None, "hi_de_{0}"),
         (["hae_latitude"], (3, 5), 0, "hi_pset_{0}"),
     ],
 )
 def test_create_dataset_variables(var_names, shape, fill_value, lookup_str):
     """Test coverage for `imap_processing.hi.utils.create_dataset_variables`"""
-    var_names = ["delta_t_ab", "delta_t_ac1", "delta_t_bc1"]
+    var_names = ["tof_ab", "tof_ac1", "tof_bc1"]
     l1b_de_vars = create_dataset_variables(
         var_names, shape, fill_value=fill_value, att_manager_lookup_str="hi_de_{0}"
     )
