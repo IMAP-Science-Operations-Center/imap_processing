@@ -90,23 +90,32 @@ def test_create_de_dataset(mock_data_l1b_de_dict):
     np.testing.assert_array_equal(dataset["x_front"], np.zeros(3))
 
 
-def test_ultra_l1b(l1b_datasets):
+def test_ultra_l1b(l1b_de_dataset):
     """Tests that L1b data is created."""
 
-    assert len(l1b_datasets) == 4
+    assert len(l1b_de_dataset) == 1
+
+    assert (
+        l1b_de_dataset[0].attrs["Logical_source_description"]
+        == "IMAP-Ultra Instrument Level-1B Direct Event Data."
+    )
+
+
+def test_ultra_l1b_extendedspin(l1b_extendedspin_dataset):
+    """Tests that L1b data is created."""
+
+    assert len(l1b_extendedspin_dataset) == 3
 
     # Define the suffixes and prefix
     prefix = "imap_ultra_l1b_45sensor"
-    suffixes = ["de", "extendedspin", "cullingmask", "badtimes"]
+    suffixes = ["extendedspin", "cullingmask", "badtimes"]
 
     for i in range(len(suffixes)):
         expected_logical_source = f"{prefix}-{suffixes[i]}"
-        assert l1b_datasets[i].attrs["Logical_source"] == expected_logical_source
-
-    assert (
-        l1b_datasets[0].attrs["Logical_source_description"]
-        == "IMAP-Ultra Instrument Level-1B Direct Event Data."
-    )
+        assert (
+            l1b_extendedspin_dataset[i].attrs["Logical_source"]
+            == expected_logical_source
+        )
 
 
 def test_ultra_l1b_error(mock_data_l1a_rates_dict):

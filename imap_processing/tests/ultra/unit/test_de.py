@@ -17,10 +17,10 @@ def df_filt(de_dataset, events_fsw_comparison_theta_0):
     return df_filt
 
 
-def test_calculate_de(l1b_datasets, df_filt):
+def test_calculate_de(l1b_de_dataset, df_filt):
     """Tests calculate_de function."""
 
-    l1b_de_dataset = l1b_datasets[0]
+    l1b_de_dataset = l1b_de_dataset[0]
     l1b_de_dataset = l1b_de_dataset.where(
         l1b_de_dataset["start_type"] != np.iinfo(np.int64).min, drop=True
     )

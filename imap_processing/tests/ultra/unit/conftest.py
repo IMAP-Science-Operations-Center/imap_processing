@@ -233,21 +233,15 @@ def faux_aux_dataset():
 
 @pytest.fixture()
 @mock.patch("imap_processing.ultra.l1b.de.get_annotated_particle_velocity")
-def l1b_datasets(
+def l1b_de_dataset(
     mock_get_annotated_particle_velocity,
     de_dataset,
     use_fake_spin_data_for_time,
-    rates_dataset,
-    faux_aux_dataset,
 ):
     """L1B test data"""
 
     data_dict = {}
     data_dict[de_dataset.attrs["Logical_source"]] = de_dataset
-    data_dict["imap_ultra_l1a_45sensor-aux"] = faux_aux_dataset
-    # TODO: this is a placeholder for the hk dataset.
-    data_dict["imap_ultra_l1a_45sensor-hk"] = faux_aux_dataset
-    data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
     use_fake_spin_data_for_time(0, 15 * 147)
 
     # Mock get_annotated_particle_velocity to avoid needing kernels
@@ -265,6 +259,25 @@ def l1b_datasets(
         )
 
     mock_get_annotated_particle_velocity.side_effect = side_effect_func
+
+    output_datasets = ultra_l1b(data_dict, data_version="001")
+
+    return output_datasets
+
+
+@pytest.fixture()
+def l1b_extendedspin_dataset(
+    l1b_de_dataset,
+    rates_dataset,
+    faux_aux_dataset,
+):
+    """L1B de test data"""
+    data_dict = {}
+    data_dict["imap_ultra_l1b_45sensor-de"] = l1b_de_dataset[0]
+    data_dict["imap_ultra_l1a_45sensor-aux"] = faux_aux_dataset
+    # TODO: this is a placeholder for the hk dataset.
+    data_dict["imap_ultra_l1a_45sensor-hk"] = faux_aux_dataset
+    data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
 
     output_datasets = ultra_l1b(data_dict, data_version="001")
 
