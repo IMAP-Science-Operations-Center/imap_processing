@@ -467,15 +467,13 @@ def test_validate_l1b_hk_data(l1b_hk_dataset):
     Parameters
     ----------
     l1b_hk_dataset : xr.Dataset
-        Housekeeping dataset created by the L1B processing.
+        Housekeeping dataset created by L1B processing.
     """
-    # TODO: finish test. space_packet_parser doesn't handle segmented polynomials which
-    #  is needed to convert the temperature fields to engineering units.
 
     # Load the validation data
     validation_file = (
         imap_module_directory
-        / "tests/hit/validation_data/hskp_sample_eu_v2_2_20_2025_JGM.csv"
+        / "tests/hit/validation_data/hskp_sample_eu_v2_2_20_2025_JGM_sdc-modified.csv"
     )
     validation_data = pd.read_csv(validation_file)
     validation_data.columns = validation_data.columns.str.lower().str.strip()
@@ -487,7 +485,7 @@ def test_validate_l1b_hk_data(l1b_hk_dataset):
         col for col in validation_data.columns if col.startswith("leak_i_")
     ][::-1]
     validation_data["leak_i"] = validation_data[leak_columns].apply(
-        lambda row: row.values, axis=1
+        lambda row: row.values.astype(np.float64), axis=1
     )
     validation_data.drop(columns=leak_columns, inplace=True)
 
@@ -522,16 +520,36 @@ def test_validate_l1b_hk_data(l1b_hk_dataset):
         "sc_tick",
     }
 
+    # TODO: update assertions to atol=1e-2 after updated validation file is provided
+
     for field in validation_data.columns:
         if field not in ignore_validation_fields:
             assert field in l1b_hk_dataset.data_vars.keys()
-            # TODO: uncomment block after the temperature conversion is implemented
-            # for pkt in range(validation_data.shape[0]):
-            #     assert np.allclose(
-            #         l1b_hk_dataset[field][pkt].values,  # Extract NumPy array
-            #         validation_data[field][pkt],
-            #         atol=1e-8
-            #     ), f"Mismatch in {field} at frame {pkt}"
+            if field == "leak_i":
+                # Compare leak_i arrays
+                # Reshape validation_data to match the shape of l1b_hk_dataset
+                reshaped_validation_data = np.vstack(validation_data[field].values)
+                # Compare leak_i arrays
+                np.testing.assert_allclose(
+                    l1b_hk_dataset[field].values.astype(np.float64),
+                    reshaped_validation_data,
+                    atol=1e-1,
+                    err_msg=f"Mismatch in {field}",
+                )
+            elif l1b_hk_dataset[field].dtype.kind == "U":
+                np.testing.assert_array_equal(
+                    l1b_hk_dataset[field].values,
+                    validation_data[field].str.strip().values,
+                    err_msg=f"Mismatch in {field}",
+                )
+            else:
+                # Compare float values
+                np.testing.assert_allclose(
+                    l1b_hk_dataset[field].values.astype(np.float64),
+                    validation_data[field].values,
+                    atol=1e-1,
+                    err_msg=f"Mismatch in {field}",
+                )
 
 
 def test_validate_l1b_standard_rates_data(l1b_standard_rates_dataset):
