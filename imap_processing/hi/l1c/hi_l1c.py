@@ -353,6 +353,8 @@ def pset_exposure(
 
     # Loop over each of the CCSDS data rows that have been identified as the second
     # packet at an ESA step.
+    # When implementing this, the memory needed to avoid this for loop was computed
+    # and determined to be so large that the for loop is warranted.
     for _, packet_row in data_subset.groupby("epoch"):
         clock_tick_mets, clock_tick_weights = get_de_clock_ticks_for_esa_step(
             packet_row["ccsds_met"].values, spin_df
