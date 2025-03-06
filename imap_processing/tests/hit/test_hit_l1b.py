@@ -472,8 +472,7 @@ def test_validate_l1b_hk_data(l1b_hk_dataset):
 
     # Load the validation data
     validation_file = (
-        imap_module_directory
-        / "tests/hit/validation_data/hskp_sample_eu_v2_2_20_2025_JGM_sdc-modified.csv"
+        imap_module_directory / "tests/hit/validation_data/hskp_sample_eu_3_6_2025.csv"
     )
     validation_data = pd.read_csv(validation_file)
     validation_data.columns = validation_data.columns.str.lower().str.strip()
@@ -521,8 +520,6 @@ def test_validate_l1b_hk_data(l1b_hk_dataset):
         "sc_tick",
     }
 
-    # TODO: update assertions to atol=1e-2 after updated validation file is provided
-
     for field in validation_data.columns:
         if field not in ignore_validation_fields:
             assert field in l1b_hk_dataset.data_vars.keys()
@@ -534,7 +531,7 @@ def test_validate_l1b_hk_data(l1b_hk_dataset):
                 np.testing.assert_allclose(
                     l1b_hk_dataset[field].values.astype(np.float64),
                     reshaped_validation_data,
-                    atol=1e-1,
+                    atol=1e-2,
                     err_msg=f"Mismatch in {field}",
                 )
             elif l1b_hk_dataset[field].dtype.kind == "U":
@@ -548,7 +545,7 @@ def test_validate_l1b_hk_data(l1b_hk_dataset):
                 np.testing.assert_allclose(
                     l1b_hk_dataset[field].values.astype(np.float64),
                     validation_data[field].values,
-                    atol=1e-1,
+                    atol=1e-2,
                     err_msg=f"Mismatch in {field}",
                 )
 
