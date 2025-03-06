@@ -443,8 +443,8 @@ class XTCEGenerator:
         for _, state_row in state_sheet.iterrows():
             enumeration = Et.SubElement(enumeration_list, "xtce:Enumeration")
             valid_state = self._ensure_state_value_is_int(state_row)
-            enumeration.attrib["value"] = str(valid_state["value"])
-            enumeration.attrib["label"] = str(valid_state["state"])
+            enumeration.attrib["value"] = str(valid_state["value"]).strip()
+            enumeration.attrib["label"] = str(valid_state["state"]).strip()
 
     def _ensure_state_value_is_int(self, state: dict) -> dict:
         """
