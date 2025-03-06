@@ -238,15 +238,15 @@ def l1b_datasets(
     de_dataset,
     use_fake_spin_data_for_time,
     rates_dataset,
-    test_aux_dataset,
+    faux_aux_dataset,
 ):
     """L1B test data"""
 
     data_dict = {}
     data_dict[de_dataset.attrs["Logical_source"]] = de_dataset
-    data_dict["imap_ultra_l1a_45sensor-aux"] = test_aux_dataset
+    data_dict["imap_ultra_l1a_45sensor-aux"] = faux_aux_dataset
     # TODO: this is a placeholder for the hk dataset.
-    data_dict["imap_ultra_l1a_45sensor-hk"] = test_aux_dataset
+    data_dict["imap_ultra_l1a_45sensor-hk"] = faux_aux_dataset
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
     use_fake_spin_data_for_time(0, 15 * 147)
 
