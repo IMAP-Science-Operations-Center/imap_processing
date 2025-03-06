@@ -284,6 +284,7 @@ def ultra_l1a(
             apid: process_ultra_apids(grouped_data[apid], apid),
         }
         dataset = create_dataset(decom_ultra_dict)
+        # TODO: move this to use ImapCdfAttributes().add_global_attribute()
         dataset.attrs["Data_version"] = data_version
         output_datasets.append(dataset)
 
