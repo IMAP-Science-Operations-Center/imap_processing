@@ -137,6 +137,22 @@ def test_pset_geometry(mock_frame_transform, mock_geom_frame_transform, sensor_s
     )
 
 
+def test_pset_counts(hi_l1_test_data_path, hi_test_cal_prod_config_path):
+    """Test coverage for pset_counts function."""
+    l1b_de_path = hi_l1_test_data_path / "imap_hi_l1b_45sensor-de_20250415_v999.cdf"
+    l1b_dataset = load_cdf(l1b_de_path)
+    cal_config_df = hi_l1c.CalibrationProductConfig.from_csv(
+        hi_test_cal_prod_config_path
+    )
+    empty_pset = hi_l1c.empty_pset_dataset(
+        l1b_dataset.esa_energy_step.data,
+        cal_config_df.cal_prod_config.number_of_products,
+        HIAPID.H90_SCI_DE.sensor,
+    )
+    counts_var = hi_l1c.pset_counts(empty_pset.coords, cal_config_df, l1b_dataset)
+    assert "counts" in counts_var
+
+
 @mock.patch("imap_processing.hi.l1c.hi_l1c.get_spin_data", return_value=None)
 @mock.patch("imap_processing.hi.l1c.hi_l1c.get_instrument_spin_phase")
 @mock.patch("imap_processing.hi.l1c.hi_l1c.get_de_clock_ticks_for_esa_step")

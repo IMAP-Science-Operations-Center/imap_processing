@@ -118,6 +118,8 @@ def generate_pset_dataset(
     # Calculate and add despun_z, hae_latitude, and hae_longitude variables to
     # the pset_dataset
     pset_dataset.update(pset_geometry(pset_et, logical_source_parts["sensor"]))
+    # Bin the counts into the spin-bins
+    pset_dataset.update(pset_counts(pset_dataset.coords, config_df, de_dataset))
     # Calculate and add the exposure time to the pset_dataset
     pset_dataset.update(pset_exposure(pset_dataset.coords, de_dataset))
 
@@ -312,6 +314,103 @@ def pset_geometry(pset_et: float, sensor_str: str) -> dict[str, xr.DataArray]:
         np.newaxis, :
     ]
     return geometry_vars
+
+
+def pset_counts(
+    pset_coords: dict[str, xr.DataArray],
+    config_df: pd.DataFrame,
+    l1b_de_dataset: xr.Dataset,
+) -> dict[str, xr.DataArray]:
+    """
+    Bin direct events into PSET spin-bins.
+
+    Parameters
+    ----------
+    pset_coords : dict[str, xr.DataArray]
+        The PSET coordinates from the xr.Dataset.
+    config_df : pd.DataFrame
+        The calibration product configuration dataframe.
+    l1b_de_dataset : xr.Dataset
+        The L1B dataset for the pointing being processed.
+
+    Returns
+    -------
+    dict[str, xr.DataArray]
+        Dictionary containing new exposure_times DataArray to be added to the PSET
+        dataset.
+    """
+    # Generate exposure time variable filled with zeros
+    counts_var = create_dataset_variables(
+        ["counts"],
+        coords=pset_coords,
+        att_manager_lookup_str="hi_pset_{0}",
+        fill_value=0,
+    )
+
+    # Convert list of DEs to pandas dataframe for ease indexing/filtering
+    de_df = l1b_de_dataset.drop_dims("epoch").to_pandas()
+
+    # Remove DEs not in Goodtimes/angles
+    good_mask = good_time_and_phase_mask(
+        l1b_de_dataset.event_met.values, l1b_de_dataset.spin_phase.values
+    )
+    de_df = de_df[good_mask]
+
+    # Add a calibration product array that will be used to bin DEs.
+    # Only DEs that belong to a calibration product and have TOF times that
+    # are within the configuration time window will be assigned a cal_product
+    # value.
+    de_df["cal_product"] = np.full(len(de_df), np.nan, dtype=float)
+
+    # The calibration product configuration potentially has different coincidence
+    # types for each ESA and different TOF windows for each calibration product,
+    # esa energy step combination. Because of this we need to filter DEs that
+    # belong to each combo individually.
+    # Loop over the esa_energy_step values first
+    for esa_energy, esa_df in config_df.groupby(level="esa_energy_step"):
+        # Create a mask for all DEs at the current esa_energy_step
+        # esa_energy_step is recorded for each packet, so we have to use ccsds_index
+        # to get the esa_energy_step for each DE
+        esa_mask = (
+            l1b_de_dataset["esa_energy_step"].data[de_df["ccsds_index"].to_numpy()]
+            == esa_energy
+        )
+        for row in esa_df.itertuples():
+            # Filter DEs by coincidence type
+            type_mask = de_df["coincidence_type"].isin(row.coincidence_type_values)
+            filtered_de_df = de_df[(esa_mask & type_mask)]
+
+            # Generate TOF window masks for the filtered df
+            detector_pairs = ["ab", "ac1", "bc1", "c1c2"]
+            tof_in_window_mask = np.empty(
+                (len(detector_pairs), len(filtered_de_df)), dtype=bool
+            )
+            for i_pair, detector_pair in enumerate(detector_pairs):
+                low_limit = getattr(row, f"tof_{detector_pair}_low")
+                high_limit = getattr(row, f"tof_{detector_pair}_high")
+                tof_array = filtered_de_df[f"tof_{detector_pair}"].to_numpy()
+                # The TOF in window mask contains True wherever the TOF is within
+                # the configuration low/high bounds OR the FILLVAL is present. The
+                # FILLVAL indicates that the detector pair was not hit. DEs with
+                # the incorrect coincidence_type are already filtered out and this
+                # implementation simplifies combining the TOF in window mask in
+                # the next step.
+                tof_in_window_mask[i_pair] = np.logical_or(
+                    np.logical_and(low_limit <= tof_array, tof_array <= high_limit),
+                    tof_array
+                    == l1b_de_dataset[f"tof_{detector_pair}"].attrs["FILLVAL"],
+                )
+            filtered_de_df = filtered_de_df[np.all(tof_in_window_mask, axis=0)]
+
+            # Bin remaining DEs into spin-bins
+            i_esa = np.flatnonzero(pset_coords["esa_energy_step"].data == esa_energy)[0]
+            spin_bin_indices = (
+                filtered_de_df["spin_phase"].to_numpy() * N_SPIN_BINS
+            ).astype(int)
+            np.add.at(
+                counts_var["counts"].data[0, i_esa, row.Index[0]], spin_bin_indices, 1
+            )
+    return counts_var
 
 
 def pset_exposure(
@@ -592,10 +691,10 @@ class CalibrationProductConfig:
         # Add a column that consists of the coincidence type strings converted
         # to integer values
         self._obj["coincidence_type_values"] = self._obj.apply(
-            lambda row: [
+            lambda row: tuple(
                 CoincidenceBitmap.detector_hit_str_to_int(entry)
                 for entry in row["coincidence_type_list"]
-            ],
+            ),
             axis=1,
         )
 
@@ -617,7 +716,7 @@ class CalibrationProductConfig:
         df = pd.read_csv(
             path,
             index_col=cls.index_columns,
-            converters={"coincidence_type_list": lambda s: s.split("|")},
+            converters={"coincidence_type_list": lambda s: tuple(s.split("|"))},
             comment="#",
         )
         # Force the _init_ method to run by using the namespace
