@@ -52,13 +52,16 @@ def hit_l1b(dependencies: dict, data_version: str) -> list[xr.Dataset]:
         # Unpack ccsds file to xarray datasets
         packet_file = dependencies["imap_hit_l0_raw"]
         datasets_by_apid = get_datasets_by_apid(packet_file, derived=True)
-        # Process housekeeping to L1B.
-        l1b_datasets.append(
-            process_housekeeping_data(
-                datasets_by_apid[HitAPID.HIT_HSKP], attr_mgr, "imap_hit_l1b_hk"
+        # TODO: update to raise error after all APIDs are included in the same
+        #  raw files. currently science and housekeeping are in separate files.
+        if datasets_by_apid[HitAPID.HIT_HSKP]:
+            # Process housekeeping to L1B.
+            l1b_datasets.append(
+                process_housekeeping_data(
+                    datasets_by_apid[HitAPID.HIT_HSKP], attr_mgr, "imap_hit_l1b_hk"
+                )
             )
-        )
-        logger.info("HIT L1B housekeeping dataset created")
+            logger.info("HIT L1B housekeeping dataset created")
     if "imap_hit_l1a_count-rates" in dependencies:
         # Process science data to L1B datasets
         l1a_counts_dataset = dependencies["imap_hit_l1a_count-rates"]
