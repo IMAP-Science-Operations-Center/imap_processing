@@ -50,10 +50,12 @@ def mock_data_l1b_extendedspin_dict():
         [0, 1],
         dtype="int32",
     )
+    spin_start_time = np.array([0, 1, 2], dtype="uint64")
     quality = np.zeros((2, 3), dtype="uint16")
     data_dict = {
         "spin_number": spin,
         "energy_bin_geometric_mean": energy,
+        "spin_start_time": spin_start_time,
         "quality_ena_rates": quality,
     }
     return data_dict
