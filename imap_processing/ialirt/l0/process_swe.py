@@ -37,6 +37,25 @@ def decompress_counts(raw_counts: NDArray) -> NDArray:
     return counts
 
 
+def phi_to_bin(phi):
+    """
+    Phi bins to index mapping (phis wrap at 360, so they all land in 0-29 bins).
+
+    Parameters
+    ----------
+    phi : int
+        Phi for 0.5s "pass".
+
+    Returns
+    -------
+    bin : int
+        Bin for phi.
+    """
+    bin = ((phi - 12) // 12) % 30
+
+    return bin
+
+
 def prepare_raw_counts(grouped_data: xr.Dataset, group: int) -> np.ndarray:
     """
     Reformat raw counts into a 3D array binned by phi.
@@ -57,16 +76,12 @@ def prepare_raw_counts(grouped_data: xr.Dataset, group: int) -> np.ndarray:
         - 7 corresponds to the 7 CEM detectors.
         - 4 corresponds to the 4 energy steps.
     """
-
     raw_counts = np.zeros((30, 7, 4), dtype=np.uint8)
 
     group_mask = (grouped_data["group"] == group)
     group_data = grouped_data.sel(epoch=group_mask)
 
-    # Phi bins to index mapping (phis wrap at 360, so they all land in 0-29 bins)
-    def phi_to_bin(phi):
-        return ((phi - 12) // 24) % 30
-
+    # 60 values in the group, 2 values per phi
     for i in range(len(group_data["epoch"])):
         phi_0 = (12 + 24 * i) % 360  # Energy steps 0 and 1
         phi_1 = (24 + 24 * i) % 360  # Energy steps 2 and 3

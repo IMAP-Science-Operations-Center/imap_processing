@@ -6,7 +6,7 @@ import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.ialirt.l0.process_swe import process_swe, decompress_counts, prepare_raw_counts
+from imap_processing.ialirt.l0.process_swe import process_swe, decompress_counts, prepare_raw_counts, phi_to_bin
 from imap_processing.utils import packet_file_to_datasets
 
 
@@ -116,23 +116,6 @@ def grouped_data():
     return grouped_data
 
 
-def test_prepare_raw_counts(grouped_data):
-    """Test that prepare_raw_counts correctly extracts data for a group into the right shape."""
-    raw_counts = prepare_raw_counts(grouped_data, group=0)
-
-    # Check shape (60, 7, 4)
-    assert raw_counts.shape == (60, 7, 4)
-
-    # Check that values match what we set in the fixture
-    for cem in range(7):
-        for e in range(4):
-            expected_value = (cem + 1) * 10 + (e + 1)
-            assert np.all(raw_counts[:, cem, e] == expected_value), (
-                f"Mismatch in CEM {cem+1} Energy {e+1}: "
-                f"expected {expected_value}, got {raw_counts[:, cem, e]}"
-            )
-
-
 def test_decom_packets(xarray_data, swe_test_data, fields_to_test):
     """This function checks that all instrument parameters are accounted for."""
     _, index, test_index = np.intersect1d(
@@ -156,6 +139,95 @@ def test_decompress_counts():
     input_count = 230
     returned_value = decompress_counts(np.array([input_count]))
     assert np.all(expected_value == returned_value)
+
+
+def test_phi_to_bin():
+    """Test phi_to_bin function."""
+
+    # Define expected phi-to-bin mapping for one full spin
+    phis = [
+        12, 24, 36, 48, 60, 72, 84, 96, 108, 120,
+        132, 144, 156, 168, 180, 192, 204, 216,
+        228, 240, 252, 264, 276, 288, 300, 312,
+        324, 336, 348, 360
+    ]
+
+    expected_bins = np.arange(30)
+
+    for phi, expected_bin in zip(phis, expected_bins):
+        assert phi_to_bin(phi) == expected_bin
+
+
+def test_prepare_raw_counts():
+    """Test that prepare_raw_counts correctly bins counts into (30, 7, 4) array."""
+
+    # 2 rows = 4 phis (12, 24, 36, 48)
+    epochs = [0, 1]
+
+    data = {
+        "group": ("epoch", [1, 1]),  # Both rows belong to group 1
+
+        # CEM 1 (Phi 12, 24, 36, 48)
+        "swe_cem1_e1": ("epoch", [1, 9]),
+        "swe_cem1_e2": ("epoch", [2, 10]),
+        "swe_cem1_e3": ("epoch", [3, 11]),
+        "swe_cem1_e4": ("epoch", [4, 12]),
+
+        # CEM 2
+        "swe_cem2_e1": ("epoch", [5, 13]),
+        "swe_cem2_e2": ("epoch", [6, 14]),
+        "swe_cem2_e3": ("epoch", [7, 15]),
+        "swe_cem2_e4": ("epoch", [8, 16]),
+    }
+
+    grouped_data = xr.Dataset(data, coords={"epoch": epochs})
+
+    # Run the function
+    raw_counts = prepare_raw_counts(grouped_data, group=1)
+
+    # Expected shape (30, 7, 4) but only some phis are filled
+    expected = np.zeros((30, 2, 4), dtype=np.uint8)
+
+    # Fill expected values (matching phi bins for 12, 24, 36, 48)
+    phi_bin_12 = 0  # Phi 12
+    phi_bin_24 = 1  # Phi 24
+    phi_bin_36 = 2  # Phi 36
+    phi_bin_48 = 3  # Phi 48
+
+    # CEM 1, Phi 12 (E1, E2)
+    expected[phi_bin_12, 0, 0] = 1
+    expected[phi_bin_12, 0, 1] = 2
+
+    # CEM 1, Phi 24 (E3, E4)
+    expected[phi_bin_24, 0, 2] = 3
+    expected[phi_bin_24, 0, 3] = 4
+
+    # CEM 1, Phi 36 (E1, E2)
+    expected[phi_bin_36, 0, 0] = 9
+    expected[phi_bin_36, 0, 1] = 10
+
+    # CEM 1, Phi 48 (E3, E4)
+    expected[phi_bin_48, 0, 2] = 11
+    expected[phi_bin_48, 0, 3] = 12
+
+    # CEM 2, Phi 12 (E1, E2)
+    expected[phi_bin_12, 1, 0] = 5
+    expected[phi_bin_12, 1, 1] = 6
+
+    # CEM 2, Phi 24 (E3, E4)
+    expected[phi_bin_24, 1, 2] = 7
+    expected[phi_bin_24, 1, 3] = 8
+
+    # CEM 2, Phi 36 (E1, E2)
+    expected[phi_bin_36, 1, 0] = 13
+    expected[phi_bin_36, 1, 1] = 14
+
+    # CEM 2, Phi 48 (E3, E4)
+    expected[phi_bin_48, 1, 2] = 15
+    expected[phi_bin_48, 1, 3] = 16
+
+    # Compare
+    assert np.array_equal(raw_counts, expected)
 
 
 @patch(
