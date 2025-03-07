@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -156,10 +158,22 @@ def test_decompress_counts():
     assert np.all(expected_value == returned_value)
 
 
-# def test_prepare_raw_counts(swe_test_data):
-
-
-def test_process_swe(swe_test_data, fields_to_test):
+@patch(
+    "imap_processing.ialirt.l0.process_swe.read_in_flight_cal_data",
+    return_value=pd.DataFrame(
+        {
+            "met_time": [453051300, 453051900],
+            "cem1": [1, 2],
+            "cem2": [1, 2],
+            "cem3": [1, 2],
+            "cem4": [1, 2],
+            "cem5": [1, 2],
+            "cem6": [1, 2],
+            "cem7": [1, 2],
+        }
+    ),
+)
+def test_process_swe(mock_read_cal, swe_test_data, fields_to_test):
     """Test processing for swe."""
     swe_test_data = swe_test_data.rename(
         columns={v: k for k, v in fields_to_test.items()}
