@@ -242,24 +242,24 @@ def create_particle_data_arrays(
         The dataset to add the data arrays to.
 
     particle : str
-        The particle name. Valid names are:
-            hydrogen
-            helium3
-            helium4
-            helium
-            carbon
-            nitrogen
-            oxygen
-            neon
-            sodium
-            magnesium
-            aluminum
-            silicon
-            sulfur
-            argon
-            calcium
-            iron
-            nickel
+        The abbreviated particle name. Valid names are:
+            h
+            he3
+            he4
+            he
+            c
+            n
+            o
+            ne
+            na
+            mg
+            al
+            si
+            s
+            ar
+            ca
+            fe
+            ni
 
     num_energy_ranges : int
         Number of energy ranges for the particle.
@@ -379,24 +379,24 @@ def add_rates_to_dataset(
         The dataset to add the rates to.
 
     particle : str
-        The particle name. Valid names are:
-            hydrogen
-            helium3
-            helium4
-            helium
-            carbon
-            nitrogen
-            oxygen
-            neon
-            sodium
-            magnesium
-            aluminum
-            silicon
-            sulfur
-            argon
-            calcium
-            iron
-            nickel
+        The abbreviated particle name. Valid names are:
+            h
+            he3
+            he4
+            he
+            c
+            n
+            o
+            ne
+            na
+            mg
+            al
+            si
+            s
+            ar
+            ca
+            fe
+            ni
 
     index : int
         The index of the energy range.

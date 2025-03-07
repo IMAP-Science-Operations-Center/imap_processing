@@ -79,6 +79,19 @@ def convert_raw_to_eu(
         informational columns: ('packetName', 'mnemonic', 'convertAs') and
         conversion columns named 'c0', 'c1', 'c2', etc. Conversion columns
         specify the array of polynomial coefficients used for the conversion.
+        If the column 'convertAs' is 'SEGMENTED_POLY' then there must be columns
+        'dn_range_start' and 'dn_range_stop' that specifies the raw DN range and the
+        coefficients that should be used for the conversion.
+
+        E.g.:
+
+        mnemonic       convertAs …       dn_range_start   dn_range_stop  c0    c1…
+        -------------------------------------------------------------------------
+        temperature  |  SEGMENTED_POLY | 0              | 2063         | 0.1  | 0.2
+        temperature  |  SEGMENTED_POLY | 2064           | 3853         | 0    | 0.1
+        temperature  |  SEGMENTED_POLY | 3854           | 4094         | 0.6  | 0.3
+        sensor_v     |  UNSEGMENTED_POLY |              |              | 0.04 | .110
+
         Comment lines are allowed in the csv file specified by starting with
         the '#' character.
     packet_name : str
@@ -86,7 +99,8 @@ def convert_raw_to_eu(
     **read_csv_kwargs : dict
         In order to allow for some flexibility in the format of the csv
         conversion table, any additional keywords passed to this function are
-        passed in the call to `pandas.read_csv()`. See pandas documentation
+        passed in the call to `pandas.read_csv()`.
+        See pandas documentation
         for a list of keywords and their functionality:
         https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html.
 
@@ -95,46 +109,72 @@ def convert_raw_to_eu(
     dataset : xr.Dataset
         Raw data converted to engineering unit as needed.
     """
-    # Make sure there is column called "index" with unique
-    # value such as 0, 1, 2, 3, ...
     eu_conversion_df = pd.read_csv(
         conversion_table_path,
         **read_csv_kwargs,
     )
 
-    # Look up all metadata fields for the packet name
-    packet_df = eu_conversion_df.loc[eu_conversion_df["packetName"] == packet_name]
+    # Iterate through every variable in the dataset and check if there is an entry for
+    # That variable in the conversion table.
+    for var in dataset.variables:
+        packet_df = eu_conversion_df.loc[
+            (eu_conversion_df["packetName"] == packet_name)
+            &
+            # Filter for mnemonic case-insensitive
+            (eu_conversion_df["mnemonic"].str.lower() == var.lower())
+        ].reset_index(drop=True)
 
-    # for each metadata field, convert raw value to engineering unit
-    for _, row in packet_df.iterrows():
-        if row["convertAs"] == "UNSEGMENTED_POLY":
+        if packet_df.empty:
+            continue
+
+        if np.all(packet_df["convertAs"] == "UNSEGMENTED_POLY"):
+            if len(packet_df.index) > 1:
+                raise ValueError(
+                    "For unsegmented polynomial conversions, there should "
+                    "only be one row per mnemonic and packet name."
+                )
+            row = packet_df.iloc[0]
             # On this line, we are getting the coefficients from the
             # table and then reverse them because the np.polyval is
             # expecting coefficient in descending order
             # coeff columns must have names 'c0', 'c1', 'c2', ...
             coeff_values = row.filter(regex=r"c\d").values[::-1]
-            row_key = row["mnemonic"]
-            # TODO: remove this check once everyone has lowercase
-            # all of CDF data variable names to match SPDF requirement.
-            # Right now, check if dataset mnemonics is lowercase of row mnemonics.
-            # If so, make them match
-            mnemonics = row_key.lower() if row_key.lower() in dataset else row_key
-            try:
-                # Convert the raw value to engineering unit
-                dataset[mnemonics].data = np.polyval(
-                    coeff_values, dataset[mnemonics].data
+            # Convert the raw value to engineering unit
+            dataset[var].data = np.polyval(coeff_values, dataset[var].data)
+
+        elif np.all(packet_df["convertAs"] == "SEGMENTED_POLY"):
+            data = dataset[var].data
+            # Check if any of the raw DN values fall outside the ranges
+            bad_mask = np.logical_or(
+                data < packet_df["dn_range_start"].min(),
+                data > packet_df["dn_range_stop"].max(),
+            )
+            if np.any(data[bad_mask]):
+                raise ValueError(
+                    "Raw DN values found outside of the expected range"
+                    f"for mnemonic: {var}"
                 )
-                # Modify units attribute
-                if "unit" in row:
-                    dataset[mnemonics].attrs.update({"units": row["unit"]})
-            except KeyError:
-                # TODO: Don't catch this error once packet definitions stabilize
-                logger.warning(f"Input dataset does not contain key: {row_key}")
+            # Create conditions and corresponding functions for np.piecewise
+            conditions = [
+                (data >= row["dn_range_start"]) & (data <= row["dn_range_stop"])
+                for _, row in packet_df.iterrows()
+            ]
+            functions = [
+                lambda x, r=row: np.polyval(r.filter(regex=r"c\d").values[::-1], x)
+                for _, row in packet_df.iterrows()
+            ]
+            # Convert the raw value to engineering unit
+            dataset[var].data = np.piecewise(data, conditions, functions)
+
         else:
             raise ValueError(
-                f"Unexpected conversion type: {row['convertAs']} encountered in"
-                f" engineering unit conversion table: {conversion_table_path}"
+                "Column 'convertAs' must all be UNSEGMENTED_POLY or "
+                "SEGMENTED_POLY for a packet name and mnemonic"
             )
+
+        # Modify units attribute
+        if "unit" in packet_df:
+            dataset[var].attrs.update({"UNITS": packet_df.iloc[0]["unit"]})
 
     return dataset
 
@@ -339,5 +379,5 @@ def convert_to_binary_string(data: bytes) -> str:
     binary_data : str
         The binary data as a string.
     """
-    binary_str_data = f"{int.from_bytes(data, byteorder='big'):0{len(data)*8}b}"
+    binary_str_data = f"{int.from_bytes(data, byteorder='big'):0{len(data) * 8}b}"
     return binary_str_data

@@ -16,6 +16,20 @@ imap_swe_l1a_sci:
   Logical_source: imap_swe_l1a_sci
   Logical_source_description: SWE Instrument Level-1A Science Data
 
+imap_swe_l1a_hk:
+  <<: *instrument_base
+  Data_level: 1A
+  Data_type: L1A_HK>Level-1A Housekeeping data
+  Logical_source: imap_swe_l1a_hk
+  Logical_source_description: SWE Instrument Level-1A Housekeeping Data
+
+imap_swe_l1a_cem-raw:
+  <<: *instrument_base
+  Data_level: 1A
+  Data_type: L1A_CEM-RAW>Level-1A CEM Raw data
+  Logical_source: imap_swe_l1a_cem-raw
+  Logical_source_description: SWE Instrument Level-1A CEM Raw Data
+
 imap_swe_l1b_sci:
   <<: *instrument_base
   Data_level: 1A

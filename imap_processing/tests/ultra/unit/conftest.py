@@ -158,17 +158,14 @@ def de_dataset(ccsds_path_theta_0, xtce_path):
     decom_ultra_aux = process_ultra_apids(
         grouped_data[ULTRA_AUX.apid[0]], ULTRA_AUX.apid[0]
     )
-    dataset = ultra_l1a.create_dataset(
+    de_dataset = ultra_l1a.create_dataset(
         {
             ULTRA_EVENTS.apid[0]: decom_ultra_events,
             ULTRA_AUX.apid[0]: decom_ultra_aux,
         }
     )
-    # Remove start_type with fill values
-    l1a_de_dataset = dataset.where(
-        dataset["START_TYPE"] != np.iinfo(np.int64).min, drop=True
-    )
-    return l1a_de_dataset
+
+    return de_dataset
 
 
 @pytest.fixture()
@@ -215,9 +212,8 @@ def l1b_datasets(
     # TODO: this is a placeholder for the hk dataset.
     data_dict["imap_ultra_l1a_45sensor-hk"] = aux_dataset
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
-    use_fake_spin_data_for_time(
-        de_dataset["EVENTTIMES"][0], de_dataset["EVENTTIMES"][-1]
-    )
+    # Create a spin table that cover spin 0-141
+    use_fake_spin_data_for_time(0, 141 * 15)
 
     # Mock get_annotated_particle_velocity to avoid needing kernels
     def side_effect_func(event_times, position, ultra_frame, dps_frame, sc_frame):

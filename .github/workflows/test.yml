@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.10', '3.11', '3.12']
     defaults:
       run:
         shell: bash
@@ -42,7 +42,7 @@ jobs:
       - name: Testing
         id: test
         env:
-          USE_EXTERNAL_DATA: ${{ contains(matrix.os, 'ubuntu') && matrix.python-version == '3.9' }}
+          USE_EXTERNAL_DATA: ${{ contains(matrix.os, 'ubuntu') && matrix.python-version == '3.10' }}
         run: |
           # Ignore the network marks from the remote test environment
           if [ "$USE_EXTERNAL_DATA" = "true" ]; then

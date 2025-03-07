@@ -14,6 +14,8 @@ class SWEAPID(IntEnum):
     """Create ENUM for apid."""
 
     SWE_SCIENCE = 1344
+    SWE_APP_HK = 1330
+    SWE_CEM_RAW = 1334
 
 
 def read_lookup_table() -> pd.DataFrame:

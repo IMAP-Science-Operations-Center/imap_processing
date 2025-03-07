@@ -96,23 +96,26 @@ def build_solid_angle_map(
 @typing.no_type_check
 def rewrap_even_spaced_az_el_grid(
     raveled_values: NDArray,
-    shape: tuple[int] | None = None,
+    grid_shape: tuple[int] | None = None,
     order: typing.Literal["C"] | typing.Literal["F"] = "C",
 ) -> NDArray:
     """
     Take an unwrapped (raveled) 1D array and reshapes it into a 2D az/el grid.
 
+    In the input, unwrapped grid, the spatial axis is the final (-1) axis.
+    In the output, the spatial axes are the -2 (azimuth) and -1 (elevation) axes.
+
     Assumes the following must be true of the original grid:
     1. Grid was evenly spaced in angular space,
     2. Grid had the same spacing in both azimuth and elevation.
-    3. Azimuth is axis 0 (and extends a total of 360 degrees).
-    4. Elevation is axis 1 (and extends a total of 180 degrees),
+    3. Azimuth is the first spatial axis (and extends a total of 360 degrees).
+    4. Elevation is the second spatial axis (and extends a total of 180 degrees).
 
     Parameters
     ----------
     raveled_values : NDArray
         1D array of values to be reshaped into a 2D grid.
-    shape : tuple[int], optional
+    grid_shape : tuple[int], optional
         The shape of the original grid, if known, by default None.
         If None, the shape will be inferred from the size of the input array.
     order : {'C', 'F'}, optional
@@ -121,26 +124,18 @@ def rewrap_even_spaced_az_el_grid(
     Returns
     -------
     NDArray
-        The reshaped 2D grid of values.
-
-    Raises
-    ------
-    ValueError
-        If the input is not a 1D array or 2D array with an 'extra' non-spatial axis.
+        The reshaped 2D grid of values with (azimuth, elevation) as the final 2 axes.
     """
-    if raveled_values.ndim > 2:
-        raise ValueError(
-            "Input must be a 1D array or 2D array with only one spatial axis as axis 0."
-        )
-
     # We can infer the shape if its evenly spaced and 2D
-    if not shape:
-        spacing_deg = 1 / np.sqrt(raveled_values.shape[0] / (360 * 180))
-        shape = (int(360 // spacing_deg), int(180 // spacing_deg))
+    if not grid_shape:
+        spacing_deg = 1 / np.sqrt(raveled_values.shape[-1] / (360 * 180))
+        grid_shape = (int(360 // spacing_deg), int(180 // spacing_deg))
 
-    if raveled_values.ndim == 2:
-        shape = (shape[0], shape[1], raveled_values.shape[1])
-    return raveled_values.reshape(shape, order=order)
+    if raveled_values.ndim == 1:
+        array_shape = grid_shape
+    else:
+        array_shape = (*raveled_values.shape[:-1], *grid_shape)
+    return raveled_values.reshape(array_shape, order=order)
 
 
 class AzElSkyGrid:

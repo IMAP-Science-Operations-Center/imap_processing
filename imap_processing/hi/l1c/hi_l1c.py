@@ -8,16 +8,34 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import xarray as xr
+from numpy import typing as npt
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import parse_filename_like
-from imap_processing.hi.utils import create_dataset_variables, full_dataarray
+from imap_processing.hi.l1a.science_direct_event import (
+    DE_CLOCK_TICK_S,
+    HALF_CLOCK_TICK_S,
+)
+from imap_processing.hi.utils import (
+    CoincidenceBitmap,
+    create_dataset_variables,
+    full_dataarray,
+    parse_sensor_number,
+)
 from imap_processing.spice.geometry import (
     SpiceFrame,
     frame_transform,
     frame_transform_az_el,
 )
+from imap_processing.spice.spin import (
+    get_instrument_spin_phase,
+    get_spin_data,
+)
 from imap_processing.spice.time import ttj2000ns_to_et
+
+N_SPIN_BINS = 3600
+SPIN_PHASE_BIN_EDGES = np.linspace(0, 1, N_SPIN_BINS + 1)
+SPIN_PHASE_BIN_CENTERS = (SPIN_PHASE_BIN_EDGES[:-1] + SPIN_PHASE_BIN_EDGES[1:]) / 2
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +118,8 @@ def generate_pset_dataset(
     # Calculate and add despun_z, hae_latitude, and hae_longitude variables to
     # the pset_dataset
     pset_dataset.update(pset_geometry(pset_et, logical_source_parts["sensor"]))
+    # Calculate and add the exposure time to the pset_dataset
+    pset_dataset.update(pset_exposure(pset_dataset.coords, de_dataset))
 
     # TODO: The following section will go away as PSET algorithms to populate
     #    these variables are written.
@@ -108,7 +128,6 @@ def generate_pset_dataset(
     attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
     for var_name in [
         "counts",
-        "exposure_times",
         "background_rates",
         "background_rates_uncertainty",
     ]:
@@ -188,7 +207,7 @@ def empty_pset_dataset(
     ).copy()
     dtype = attrs.pop("dtype")
     coords["spin_angle_bin"] = xr.DataArray(
-        np.arange(int(360 / 0.1), dtype=dtype),
+        np.arange(N_SPIN_BINS, dtype=dtype),
         name="spin_angle_bin",
         dims=["spin_angle_bin"],
         attrs=attrs,
@@ -271,8 +290,8 @@ def pset_geometry(pset_et: float, sensor_str: str) -> dict[str, xr.DataArray]:
     el = 0 if "90" in sensor_str else -45
     dps_az_el = np.array(
         [
-            np.arange(0.05, 360, 0.1),
-            np.full(3600, el),
+            SPIN_PHASE_BIN_CENTERS * 360,
+            np.full(N_SPIN_BINS, el),
         ]
     ).T
     hae_az_el = frame_transform_az_el(
@@ -282,7 +301,7 @@ def pset_geometry(pset_et: float, sensor_str: str) -> dict[str, xr.DataArray]:
     geometry_vars.update(
         create_dataset_variables(
             ["hae_latitude", "hae_longitude"],
-            (1, 3600),
+            (1, N_SPIN_BINS),
             att_manager_lookup_str="hi_pset_{0}",
         )
     )
@@ -293,6 +312,82 @@ def pset_geometry(pset_et: float, sensor_str: str) -> dict[str, xr.DataArray]:
         np.newaxis, :
     ]
     return geometry_vars
+
+
+def pset_exposure(
+    pset_coords: dict[str, xr.DataArray], l1b_de_dataset: xr.Dataset
+) -> dict[str, xr.DataArray]:
+    """
+    Calculate PSET exposure time.
+
+    Parameters
+    ----------
+    pset_coords : dict[str, xr.DataArray]
+        The PSET coordinates from the xr.Dataset.
+    l1b_de_dataset : xr.Dataset
+        The L1B dataset for the pointing being processed.
+
+    Returns
+    -------
+    dict[str, xr.DataArray]
+        Dictionary containing new exposure_times DataArray to be added to the PSET
+        dataset.
+    """
+    # Extract the sensor number (45 or 90) for computing spin phase
+    sensor_number = parse_sensor_number(l1b_de_dataset.attrs["Logical_source"])
+
+    # Generate exposure time variable filled with zeros
+    exposure_var = create_dataset_variables(
+        ["exposure_times"],
+        coords=pset_coords,
+        att_manager_lookup_str="hi_pset_{0}",
+        fill_value=0,
+    )
+
+    # Get a subset of the l1b_de_dataset that contains only the second
+    # of each pair of packets at an ESA step.
+    data_subset = find_second_de_packet_data(l1b_de_dataset)
+
+    # Get the pandas dataframe with spin data
+    spin_df = get_spin_data()
+
+    # Loop over each of the CCSDS data rows that have been identified as the second
+    # packet at an ESA step.
+    # When implementing this, the memory needed to avoid this for loop was computed
+    # and determined to be so large that the for loop is warranted.
+    for _, packet_row in data_subset.groupby("epoch"):
+        clock_tick_mets, clock_tick_weights = get_de_clock_ticks_for_esa_step(
+            packet_row["ccsds_met"].values, spin_df
+        )
+
+        # Clock tick MET times are accumulation "edges". To get the mean spin-phase
+        # for a given clock tick, add 1/2 clock tick and compute spin-phase.
+        spin_phases = np.atleast_1d(
+            get_instrument_spin_phase(
+                clock_tick_mets + HALF_CLOCK_TICK_S,
+                SpiceFrame[f"IMAP_HI_{sensor_number}"],
+            )
+        )
+
+        # Remove ticks not in good times/angles
+        good_mask = good_time_and_phase_mask(clock_tick_mets, spin_phases)
+        spin_phases = spin_phases[good_mask]
+        clock_tick_weights = clock_tick_weights[good_mask]
+
+        # TODO: Account for flyback time. See alg doc section 2.3.5
+
+        # Bin exposure times into spin-phase bins
+        new_exposure_times, _ = np.histogram(
+            spin_phases, bins=SPIN_PHASE_BIN_EDGES, weights=clock_tick_weights
+        )
+        # Accumulate the new exposure times for current esa_step
+        i_esa = np.flatnonzero(
+            pset_coords["esa_energy_step"].values
+            == packet_row["esa_energy_step"].values
+        )[0]
+        exposure_var["exposure_times"].values[:, i_esa] += new_exposure_times
+
+    return exposure_var
 
 
 def find_second_de_packet_data(l1b_dataset: xr.Dataset) -> xr.Dataset:
@@ -309,9 +404,10 @@ def find_second_de_packet_data(l1b_dataset: xr.Dataset) -> xr.Dataset:
     reduced_dataset : xr.Dataset
         A dataset containing only the entries for the second packet at an ESA step.
     """
+    epoch_dataset = l1b_dataset.drop_dims("event_met")
     # We should get two CCSDS packets per 8-spin ESA step.
     # Get the indices of the packet before each ESA change.
-    esa_step = l1b_dataset["esa_step"].values
+    esa_step = epoch_dataset["esa_step"].values
     second_esa_packet_idx = np.append(
         np.flatnonzero(np.diff(esa_step) != 0), len(esa_step) - 1
     )
@@ -334,8 +430,104 @@ def find_second_de_packet_data(l1b_dataset: xr.Dataset) -> xr.Dataset:
         )
     second_esa_packet_idx = second_esa_packet_idx[~missing_esa_pair_mask]
     # Reduce the dataset to just the second packet entries
-    data_subset = l1b_dataset.isel(epoch=second_esa_packet_idx)
+    data_subset = epoch_dataset.isel(epoch=second_esa_packet_idx)
     return data_subset
+
+
+def get_de_clock_ticks_for_esa_step(
+    ccsds_met: float, spin_df: pd.DataFrame
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Generate an array of clock tick MET times for an 8-spin ESA step.
+
+    Find the closest spin start time in the input spin dataframe to the packet
+    creation time (`ccsds_met`) and generate an array of clock tick MET times
+    for the period covered by the previous 8-spin group and an array of weights
+    that represent the fraction of each clock tick that occurred in the 8-spin
+    group.
+
+    Parameters
+    ----------
+    ccsds_met : float
+        The CCSDS MET of the second packet in a DE packet pair.
+    spin_df : pd.DataFrame
+        Universal spin table dataframe.
+
+    Returns
+    -------
+    clock_tick_mets : np.ndarray
+        Array of MET times that a clock tick occurred in an 8-spin group of spins
+        during which the ESA step was constant.
+    clock_tick_weights : np.ndarray
+        Array of weights to use when binning the clock tick MET times into spin-bins.
+    """
+    # Find the last spin_table entry with the start less than the CCSDS MET.
+    # The CCSDS packet gets created just AFTER the final spin in the 8-spin
+    # ESA step group so this match is the end time. The start time is
+    # 8-spins earlier.
+    spin_start_mets = spin_df.spin_start_time.to_numpy()
+    # CCSDS MET has one second resolution, add one to it to make sure it is
+    # greater than the spin start time it ended on.
+    end_time_ind = np.flatnonzero(ccsds_met + 1 >= spin_start_mets).max()
+
+    # If the minimum absolute difference is greater than 1/2 the spin-phase
+    # we have a problem.
+    if (
+        ccsds_met - spin_start_mets[end_time_ind]
+        > spin_df.iloc[end_time_ind].spin_period_sec / 2
+    ):
+        raise ValueError(
+            "The difference between ccsds_met and spin_start_met, "
+            f"{ccsds_met - spin_start_mets[end_time_ind]} seconds, "
+            f"is too large. Check the spin table loaded for this pointing."
+        )
+    # If the end time index less than 8, we don't have enough spins in the
+    # spin table to get a start time, so raise an error.
+    if end_time_ind < 8:
+        raise ValueError(
+            "Error determining start/end time for exposure time. "
+            f"The CCSDS MET time {ccsds_met} "
+            "is less than 8 spins from the loaded spin table data."
+        )
+    clock_tick_mets = np.arange(
+        spin_start_mets[end_time_ind - 8],
+        spin_start_mets[end_time_ind],
+        DE_CLOCK_TICK_S,
+        dtype=float,
+    )
+    # The final clock-tick bin has less exposure time because the next spin
+    # will trigger FSW to change ESA steps part way through that time. To
+    # account for this in exposure time calculation, assign an array of
+    # weights to use when binnig the clock-ticks to spin-bins. Weights are
+    # fractional clock ticks. All weights are 1 except for the last one in
+    # the array.
+    clock_tick_weights = np.ones_like(clock_tick_mets, dtype=float)
+    clock_tick_weights[-1] = (
+        spin_start_mets[end_time_ind] - clock_tick_mets[-1]
+    ) / DE_CLOCK_TICK_S
+    return clock_tick_mets, clock_tick_weights
+
+
+def good_time_and_phase_mask(
+    tick_mets: np.ndarray, spin_phases: np.ndarray
+) -> npt.NDArray:
+    """
+    Filter out the clock tick times that are not in good times and angles.
+
+    Parameters
+    ----------
+    tick_mets : np.ndarray
+        Clock-tick MET times.
+    spin_phases : np.ndarray
+        Spin phases for each clock tick.
+
+    Returns
+    -------
+    keep_mask : np.ndarray
+        Boolean mask indicating which clock ticks are in good times/phases.
+    """
+    # TODO: Implement this once we have Goodtimes data product defined.
+    return np.full_like(tick_mets, True, dtype=bool)
 
 
 @pd.api.extensions.register_dataframe_accessor("cal_prod_config")
@@ -368,6 +560,7 @@ class CalibrationProductConfig:
     def __init__(self, pandas_obj: pd.DataFrame) -> None:
         self._validate(pandas_obj)
         self._obj = pandas_obj
+        self._add_coincidence_values_column()
 
     def _validate(self, df: pd.DataFrame) -> None:
         """
@@ -394,6 +587,18 @@ class CalibrationProductConfig:
         # TODO: Verify that the same ESA energy steps exist in all unique calibration
         #   product numbers
 
+    def _add_coincidence_values_column(self) -> None:
+        """Generate and add the coincidence_type_values column to the dataframe."""
+        # Add a column that consists of the coincidence type strings converted
+        # to integer values
+        self._obj["coincidence_type_values"] = self._obj.apply(
+            lambda row: [
+                CoincidenceBitmap.detector_hit_str_to_int(entry)
+                for entry in row["coincidence_type_list"]
+            ],
+            axis=1,
+        )
+
     @classmethod
     def from_csv(cls, path: Path) -> pd.DataFrame:
         """
@@ -409,12 +614,15 @@ class CalibrationProductConfig:
         dataframe : pandas.DataFrame
             Validated calibration product configuration data frame.
         """
-        return pd.read_csv(
+        df = pd.read_csv(
             path,
             index_col=cls.index_columns,
             converters={"coincidence_type_list": lambda s: s.split("|")},
             comment="#",
         )
+        # Force the _init_ method to run by using the namespace
+        _ = df.cal_prod_config.number_of_products
+        return df
 
     @property
     def number_of_products(self) -> int:

@@ -96,7 +96,6 @@ def test_process_housekeeping(housekeeping_dataset, attribute_manager):
     # Define the keys that should have dropped from the dataset
     dropped_keys = {
         "pkt_apid",
-        "sc_tick",
         "version",
         "type",
         "sec_hdr_flg",
@@ -111,6 +110,7 @@ def test_process_housekeeping(housekeeping_dataset, attribute_manager):
     }
     # Define the keys that should be present
     valid_keys = {
+        "sc_tick",
         "heater_on",
         "fsw_version_b",
         "ebox_m12va",

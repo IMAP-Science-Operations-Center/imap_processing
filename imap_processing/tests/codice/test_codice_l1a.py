@@ -62,7 +62,7 @@ EXPECTED_ARRAY_SHAPES = [
 EXPECTED_NUM_VARIABLES = [
     0,  # hi-ialirt  # TODO: Need to implement
     0,  # lo-ialirt  # TODO: Need to implement
-    148,  # hskp
+    139,  # hskp
     8 + len(constants.LO_COUNTERS_AGGREGATED_VARIABLE_NAMES),  # lo-counters-aggregated
     9,  # lo-counters-singles
     13,  # lo-sw-priority
@@ -211,7 +211,6 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
     # TODO: Currently only the following products can be validated, expand this
     #       to other data products as I can validate them.
     able_to_be_validated = [
-        "lo-counters-aggregated",
         "lo-counters-singles",
         "lo-sw-angular",
         "lo-nsw-angular",
@@ -220,6 +219,7 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         "lo-sw-species",
         "lo-nsw-species",
     ]
+
     if descriptor in able_to_be_validated:
         counters = getattr(
             constants, f'{descriptor.upper().replace("-","_")}_VARIABLE_NAMES'
@@ -228,16 +228,10 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         validation_dataset = load_cdf(VALIDATION_DATA[index])
 
         for counter in counters:
-            # Ensure the data array shapes are equal
-            assert (
-                processed_dataset[counter].data.shape
-                == validation_dataset[counter].data.shape
+            # Ensure the data arrays are equal
+            np.testing.assert_equal(
+                processed_dataset[counter].data, validation_dataset[counter].data
             )
-
-            # TODO: Once Joey and I figure out some small discrepancies with
-            #       some data products, we should get matching data array shapes
-            #       AND values (i.e. run assert_array_equal on the arrays,
-            #       instead of just checking shape)
 
     else:
         pytest.xfail(f"Still need to implement validation for {descriptor}")
@@ -253,34 +247,16 @@ def test_l1a_validate_hskp_data(test_l1a_data):
     # Load the validation housekeeping data
     validation_hskp_data = load_cdf(validation_hskp_filepath)
 
-    # These variables are present in the decommed test data, but not present in
-    # the validation data
-    # TODO: Ask Joey if these can be removed from the L1a housekeeping CDFs
+    # These variables are not present in the validation dataset
     exclude_variables = [
-        "spare_1",
-        "spare_2",
-        "spare_3",
-        "spare_4",
-        "spare_5",
-        "spare_6",
-        "spare_62",
-        "spare_68",
+        "version",
+        "type",
+        "sec_hdr_flg",
+        "pkt_apid",
+        "seq_flgs",
+        "src_seq_ctr",
+        "pkt_len",
     ]
-
-    # These variables are not present in the validation data
-    # TODO: Ask joey if this is expected
-    exclude_variables.extend(
-        [
-            "version",
-            "type",
-            "sec_hdr_flg",
-            "pkt_apid",
-            "seq_flgs",
-            "src_seq_ctr",
-            "pkt_len",
-            "chksum",
-        ]
-    )
 
     for variable in hskp_data:
         if variable not in exclude_variables:

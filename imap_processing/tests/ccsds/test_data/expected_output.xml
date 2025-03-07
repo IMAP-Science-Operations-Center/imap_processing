@@ -48,7 +48,7 @@
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-71" />
+							<xtce:LinearAdjustment slope="8" intercept="-79" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -67,6 +67,41 @@
 					<xtce:Enumeration value="2" label="NONE" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
+			<xtce:IntegerParameterType name="TEST_PACKET.VAR_SEGMENTED" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned">
+					<xtce:ContextCalibratorList>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="0" parameterRef="TEST_PACKET.VAR_SEGMENTED" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="19" parameterRef="TEST_PACKET.VAR_SEGMENTED" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="1.1" exponent="0" />
+									<xtce:Term coefficient="3.3" exponent="1" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="20" parameterRef="TEST_PACKET.VAR_SEGMENTED" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="40" parameterRef="TEST_PACKET.VAR_SEGMENTED" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="2.2" exponent="0" />
+									<xtce:Term coefficient="4.4" exponent="1" />
+									<xtce:Term coefficient="5.5" exponent="2" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+					</xtce:ContextCalibratorList>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="TEST_PACKET2.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
@@ -120,6 +155,9 @@
 			<xtce:Parameter name="TEST_PACKET.VAR_STATE" parameterTypeRef="TEST_PACKET.VAR_STATE">
 				<xtce:LongDescription>State data</xtce:LongDescription>
 			</xtce:Parameter>
+			<xtce:Parameter name="TEST_PACKET.VAR_SEGMENTED" parameterTypeRef="TEST_PACKET.VAR_SEGMENTED">
+				<xtce:LongDescription>Segmented polynomial conversion</xtce:LongDescription>
+			</xtce:Parameter>
 			<xtce:Parameter name="TEST_PACKET2.SHCOARSE" parameterTypeRef="TEST_PACKET2.SHCOARSE">
 				<xtce:LongDescription>Mission elapsed time</xtce:LongDescription>
 			</xtce:Parameter>
@@ -154,6 +192,7 @@
 					<xtce:ParameterRefEntry parameterRef="TEST_PACKET.VAR_FILL" />
 					<xtce:ParameterRefEntry parameterRef="TEST_PACKET.VAR_FLOAT" />
 					<xtce:ParameterRefEntry parameterRef="TEST_PACKET.VAR_STATE" />
+					<xtce:ParameterRefEntry parameterRef="TEST_PACKET.VAR_SEGMENTED" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="TEST_PACKET2">

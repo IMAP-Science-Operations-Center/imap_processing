@@ -147,10 +147,8 @@ def create_dataset(de_data_dict: dict[str, npt.ArrayLike]) -> xr.Dataset:
         attrs=event_met_attrs,
     )
 
-    de_global_attrs = attr_mgr.get_global_attributes("imap_hi_l1a_de_attrs")
     dataset = xr.Dataset(
         coords={"epoch": epoch, "event_met": event_met},
-        attrs=de_global_attrs,
     )
 
     for var_name, data in de_data_dict.items():

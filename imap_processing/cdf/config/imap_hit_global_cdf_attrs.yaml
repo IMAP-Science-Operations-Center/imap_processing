@@ -61,3 +61,26 @@ imap_hit_l1b_sectored-rates:
     Logical_source: imap_hit_l1b_sectored-rates
     Logical_source_description: IMAP Mission HIT Instrument Level-1B Sectored Rates Data.
 
+  # L2
+
+imap_hit_l2_standard-fluxes:
+    <<: *instrument_base
+    Data_level: 2
+    Data_type: L2_rates>Level-2 Standard Fluxes
+    Logical_source: imap_hit_l2_standard-fluxes
+    Logical_source_description: IMAP Mission HIT Instrument Level-2 Standard Flux Data.
+
+imap_hit_l2_summed-fluxes:
+    <<: *instrument_base
+    Data_level: 2
+    Data_type: L2_summed-rates>Level-2 Summed Fluxes
+    Logical_source: imap_hit_l2_summed-fluxes
+    Logical_source_description: IMAP Mission HIT Instrument Level-2 Summed Flux Data.
+
+imap_hit_l2_sectored-fluxes:
+    <<: *instrument_base
+    Data_level: 2
+    Data_type: L2_sectored-rates>Level-2 Sectored Fluxes
+    Logical_source: imap_hit_l2_sectored-fluxes
+    Logical_source_description: IMAP Mission HIT Instrument Level-2 Sectored Flux Data.
+

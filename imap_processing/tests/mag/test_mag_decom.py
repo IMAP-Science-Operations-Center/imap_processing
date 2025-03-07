@@ -13,7 +13,7 @@ from imap_processing.mag.l0.decom_mag import decom_packets, generate_dataset
 def cdf_attrs():
     test_attrs = ImapCdfAttributes()
     test_attrs.add_instrument_global_attrs("mag")
-    test_attrs.add_instrument_variable_attrs("mag", "l1")
+    test_attrs.add_instrument_variable_attrs("mag", "l1a")
     test_attrs.add_global_attribute("Data_version", "v001")
     return test_attrs
 

@@ -164,12 +164,19 @@ def generate_dataset(
 
     for key, value in support_data.items():
         # Time varying values
-        if key not in ["SHCOARSE", "VECTORS"]:
-            output[key] = xr.DataArray(
+        if key not in [
+            "SHCOARSE",
+            "VECTORS",
+            "PUS_SPARE1",
+            "PUS_SPARE2",
+            "SPARE1",
+            "SPARE2",
+        ]:
+            output[key.lower()] = xr.DataArray(
                 value,
                 name=key.lower(),
                 dims=["epoch"],
-                attrs=attribute_manager.get_variable_attributes(key),
+                attrs=attribute_manager.get_variable_attributes(key.lower()),
             )
 
     return output

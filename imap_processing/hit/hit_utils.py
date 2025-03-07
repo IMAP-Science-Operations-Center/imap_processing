@@ -159,7 +159,6 @@ def process_housekeeping_data(
     # Drop keys that are not CDF data variables
     drop_keys = [
         "pkt_apid",
-        "sc_tick",
         "version",
         "type",
         "sec_hdr_flg",
