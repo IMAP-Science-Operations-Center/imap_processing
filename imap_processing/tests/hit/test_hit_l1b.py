@@ -574,6 +574,28 @@ def test_validate_l1b_standard_rates_data(l1b_standard_rates_dataset):
             )
 
 
+def test_hit_l1b_missing_apid(sci_packet_filepath):
+    """Test missing housekeeping apid from packet file
+
+    Check that no L1B datasets are created when the housekeeping
+    apid is missing from the L0 file path dependency since APIDs
+    are currently in separate packet files.
+
+    In the future, all HIT APIDs will be included in the same packet file.
+
+    Parameters
+    ----------
+    sci_packet_filepath : str
+        Science CCSDS packet file path. Only contains science APID and is
+        missing the housekeeping APID.
+    """
+    # Create a dependency dictionary with a science CCSDS packet file
+    # excluding the housekeeping apid
+    dependency = {"imap_hit_l0_raw": sci_packet_filepath}
+    datasets = hit_l1b(dependency, "001")
+    assert len(datasets) == 0
+
+
 def test_hit_l1b(dependencies):
     """Test creating L1B CDF files
 

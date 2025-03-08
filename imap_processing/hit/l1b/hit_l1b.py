@@ -54,7 +54,7 @@ def hit_l1b(dependencies: dict, data_version: str) -> list[xr.Dataset]:
         datasets_by_apid = get_datasets_by_apid(packet_file, derived=True)
         # TODO: update to raise error after all APIDs are included in the same
         #  raw files. currently science and housekeeping are in separate files.
-        if datasets_by_apid[HitAPID.HIT_HSKP]:
+        if HitAPID.HIT_HSKP in datasets_by_apid:
             # Process housekeeping to L1B.
             l1b_datasets.append(
                 process_housekeeping_data(
