@@ -181,8 +181,8 @@ def match_coords_to_indices(
         # which directly returns the index on the output frame's Healpix tessellation.
         flat_indices_input_grid_output_frame = hp.ang2pix(
             nside=output_object.nside,
-            theta=np.rad2deg(input_obj_az_el_output_frame[:, 0]),  # Lon
-            phi=np.rad2deg(input_obj_az_el_output_frame[:, 1]),  # Lat
+            theta=input_obj_az_el_output_frame[:, 0],  # Lon in degrees
+            phi=input_obj_az_el_output_frame[:, 1],  # Lat in degrees
             nest=output_object.nested,
             lonlat=True,
         )
@@ -596,18 +596,16 @@ class HealpixSkyMap(AbstractSkyMap):
         self.nside = nside
         self.nested = nested
 
-        # Calculate how many pixels cover the sky and the approximate resolution (rad)
+        # Calculate how many pixels cover the sky and the approximate resolution (deg)
         self.num_points = hp.nside2npix(nside)
-        self.approx_resolution = hp.nside2resol(nside, arcmin=False)
+        self.approx_resolution = np.rad2deg(hp.nside2resol(nside, arcmin=False))
         # Define binning_grid_shape for consistency with RectangularSkyMap
         self.binning_grid_shape = (self.num_points,)
 
         # The centers of each pixel in the Healpix tessellation in azimuth (az) and
-        # elevation (el) coordinates (radians) within the map's Spice frame.
-        pixel_az, pixel_el = np.deg2rad(
-            hp.pix2ang(
-                nside=nside, ipix=np.arange(self.num_points), nest=nested, lonlat=True
-            )
+        # elevation (el) coordinates (degrees) within the map's Spice frame.
+        pixel_az, pixel_el = hp.pix2ang(
+            nside=nside, ipix=np.arange(self.num_points), nest=nested, lonlat=True
         )
         # Stack so axis 0 is different pixels, and axis 1 is (az, el) of the pixel
         self.az_el_points = np.column_stack((pixel_az, pixel_el))

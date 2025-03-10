@@ -310,10 +310,10 @@ class TestHealpixSkyMap:
         assert hp_map.az_el_points.shape == (hp_map.num_points, 2)
         # The az must be in the range [0, 360) degrees
         # and el in the range [-90, 90)
-        assert np.all(hp_map.az_el_points[:, 0] >= np.deg2rad(0))
-        assert np.all(hp_map.az_el_points[:, 0] < np.deg2rad(360))
-        assert np.all(hp_map.az_el_points[:, 1] >= -np.deg2rad(90))
-        assert np.all(hp_map.az_el_points[:, 1] < np.deg2rad(90))
+        assert np.all(hp_map.az_el_points[:, 0] >= 0)
+        assert np.all(hp_map.az_el_points[:, 0] < 360)
+        assert np.all(hp_map.az_el_points[:, 1] >= -90)
+        assert np.all(hp_map.az_el_points[:, 1] < 90)
 
         # Check that the binning grid shape is just a tuple of num_points
         np.testing.assert_equal(hp_map.binning_grid_shape, (hp_map.num_points,))
@@ -391,8 +391,8 @@ class TestHealpixSkyMap:
 
         np.testing.assert_allclose(
             bright_hp_pixel_az_el,
-            np.deg2rad(input_bright_pixel_az_el_deg),
-            atol=np.deg2rad(degree_tolerance),
+            input_bright_pixel_az_el_deg,
+            atol=degree_tolerance,
         )
 
 
@@ -508,29 +508,27 @@ class TestIndexMatching:
         # Check that the map's az/el points at the matched indices
         # are the same as the input az/el points to within degree_tolerance,
         # but we must ignore the polar regions and azimuthal wrap-around regions
-        rect_equatorial_elevations_mask = np.abs(
-            mock_pset_input_frame.az_el_points[:, 1]
-        ) < np.deg2rad(70)
+        rect_equatorial_elevations_mask = (
+            np.abs(mock_pset_input_frame.az_el_points[:, 1]) < 70
+        )
         rect_az_non_wraparound_mask = (
-            mock_pset_input_frame.az_el_points[:, 0] < np.deg2rad(350)
-        ) & (mock_pset_input_frame.az_el_points[:, 0] > np.deg2rad(10))
+            mock_pset_input_frame.az_el_points[:, 0] < 350
+        ) & (mock_pset_input_frame.az_el_points[:, 0] > 10)
         rect_good_az_el_mask = (
             rect_equatorial_elevations_mask & rect_az_non_wraparound_mask
         )
-        matched_map_az_el = np.deg2rad(
-            np.column_stack(
-                hp.pix2ang(
-                    nside=nside,
-                    ipix=healpix_indices_of_rect_pixels,
-                    nest=nested,
-                    lonlat=True,
-                )
+        matched_map_az_el = np.column_stack(
+            hp.pix2ang(
+                nside=nside,
+                ipix=healpix_indices_of_rect_pixels,
+                nest=nested,
+                lonlat=True,
             )
         )
         np.testing.assert_allclose(
             matched_map_az_el[rect_good_az_el_mask, 0],
             mock_pset_input_frame.az_el_points[rect_good_az_el_mask, 0],
-            atol=np.deg2rad(degree_tolerance),
+            atol=degree_tolerance,
         )
 
     def test_match_coords_to_indices_pset_to_invalid_map(
