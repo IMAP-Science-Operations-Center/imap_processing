@@ -143,6 +143,10 @@ class TestRectangularSkyMap:
         # Check the repr exists
         assert "RectangularSkyMap" in repr(rm)
 
+        np.testing.assert_array_equal(
+            rm.binning_grid_shape, (360 / rm.spacing_deg, 180 / rm.spacing_deg)
+        )
+
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
     @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
     def test_project_pset_values_to_map_push_method(self, mock_frame_transform_az_el):
@@ -264,15 +268,6 @@ class TestRectangularSkyMap:
             total_pset_counts.sum() / (downsample_ratio**2),
         )
 
-    def test_get_binning_grid_shape_rectangular_map(self):
-        rect_map = ena_maps.RectangularSkyMap(
-            spacing_deg=1,
-            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
-        )
-        np.testing.assert_array_equal(
-            ena_maps.get_binning_grid_shape(rect_map), (360, 180)
-        )
-
 
 class TestHealpixSkyMap:
     @pytest.fixture(autouse=True)
@@ -319,6 +314,9 @@ class TestHealpixSkyMap:
         assert np.all(hp_map.az_el_points[:, 0] < np.deg2rad(360))
         assert np.all(hp_map.az_el_points[:, 1] >= -np.deg2rad(90))
         assert np.all(hp_map.az_el_points[:, 1] < np.deg2rad(90))
+
+        # Check that the binning grid shape is just a tuple of num_points
+        np.testing.assert_equal(hp_map.binning_grid_shape, (hp_map.num_points,))
 
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
     @pytest.mark.parametrize(
@@ -395,16 +393,6 @@ class TestHealpixSkyMap:
             bright_hp_pixel_az_el,
             np.deg2rad(input_bright_pixel_az_el_deg),
             atol=np.deg2rad(degree_tolerance),
-        )
-
-    def test_get_binning_grid_shape_healpix_map(self):
-        hp_map = ena_maps.HealpixSkyMap(
-            nside=8,
-            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
-            nested=True,
-        )
-        np.testing.assert_array_equal(
-            ena_maps.get_binning_grid_shape(hp_map), (hp_map.num_points,)
         )
 
 

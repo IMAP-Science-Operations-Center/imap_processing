@@ -195,37 +195,6 @@ def match_coords_to_indices(
     return flat_indices_input_grid_output_frame
 
 
-def get_binning_grid_shape(
-    projection_output_object: PointingSet | AbstractSkyMap,
-) -> tuple[int, ...]:
-    """
-    Get the shape of the grid of the projection output object, needed for binning.
-
-    Parameters
-    ----------
-    projection_output_object : PointingSet | AbstractSkyMap
-        A pointing set or sky map object for which to determine the grid shape.
-
-    Returns
-    -------
-    tuple[int, ...]
-        The shape of the grid of the projection output object.
-        For a rectangular grid, this is the shape of the 2D grid of (az, el) pixels.
-        For a Healpix grid, this is the 1D number of pixels in the Healpix tessellation.
-        For any other tiling type, returns (-1,).
-    """
-    match projection_output_object.tiling_type:
-        case SkyTilingType.RECTANGULAR:
-            return (
-                len(projection_output_object.sky_grid.az_bin_midpoints),
-                len(projection_output_object.sky_grid.el_bin_midpoints),
-            )
-        case SkyTilingType.HEALPIX:
-            return (projection_output_object.num_points,)
-        case _:
-            return (-1,)
-
-
 # Define the pointing set classes
 class PointingSet(ABC):
     """
@@ -403,6 +372,7 @@ class AbstractSkyMap(ABC):
         self.tiling_type: SkyTilingType
         self.sky_grid: spatial_utils.AzElSkyGrid
         self.num_points: int
+        self.binning_grid_shape: tuple[int, ...]
         self.data_dict: dict[str, NDArray]
 
     def project_pset_values_to_map(
@@ -484,7 +454,7 @@ class AbstractSkyMap(ABC):
                 # pointing set pixels that correspond to the same sky map pixel.
                 pointing_projected_values = map_utils.bin_single_array_at_indices(
                     value_array=raveled_pset_data,
-                    projection_grid_shape=get_binning_grid_shape(self),
+                    projection_grid_shape=self.binning_grid_shape,
                     projection_indices=matched_indices_push,
                 )
             elif index_match_method is IndexMatchMethod.PULL:
@@ -565,6 +535,9 @@ class RectangularSkyMap(AbstractSkyMap):
         self.sky_grid = spatial_utils.AzElSkyGrid(
             spacing_deg=self.spacing_deg,
         )
+        # The shape of the map (num_az_bins, num_el_bins) is used to bin the data
+        self.binning_grid_shape = self.sky_grid.grid_shape
+
         # Unwrap the az, el grids to 1D array of points tiling the sky
         az_points = self.sky_grid.az_grid.ravel()
         el_points = self.sky_grid.el_grid.ravel()
@@ -626,6 +599,8 @@ class HealpixSkyMap(AbstractSkyMap):
         # Calculate how many pixels cover the sky and the approximate resolution (rad)
         self.num_points = hp.nside2npix(nside)
         self.approx_resolution = hp.nside2resol(nside, arcmin=False)
+        # Define binning_grid_shape for consistency with RectangularSkyMap
+        self.binning_grid_shape = (self.num_points,)
 
         # The centers of each pixel in the Healpix tessellation in azimuth (az) and
         # elevation (el) coordinates (radians) within the map's Spice frame.
