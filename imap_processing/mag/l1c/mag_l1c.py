@@ -1,13 +1,13 @@
 """MAG L1C processing module."""
-from enum import Enum
+from pathlib import Path
 
 import numpy as np
 import xarray as xr
+import yaml
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.mag.l1c.interpolation_methods import InterpolationFunction
 from imap_processing.spice.time import ttj2000ns_to_et
-
 
 
 def mag_l1c(
@@ -35,7 +35,7 @@ def mag_l1c(
     output_dataset : xr.Dataset
         L1C data set.
     """
-    process_mag_l1c(first_input_dataset, second_input_dataset)
+
 
     # TODO: L1C processing involves filling gaps with burst data.
     input_logical_source_1 = first_input_dataset.attrs["Logical_source"]
@@ -46,30 +46,40 @@ def mag_l1c(
     if isinstance(second_input_dataset.attrs["Logical_source"], list):
         input_logical_source_2 = second_input_dataset.attrs["Logical_source"][0]
 
-    if "norm" in input_logical_source_1:
-        output_dataset = first_input_dataset.copy()
-        logical_source = input_logical_source_1.replace("l1b", "l1c")
-    elif "norm" in input_logical_source_2:
-        output_dataset = second_input_dataset.copy()
-        logical_source = input_logical_source_2.replace("l1b", "l1c")
+    normal_mode_dataset = None
+    burst_mode_dataset = None
+
+    if "norm" in input_logical_source_1 and "burst" in input_logical_source_2:
+        normal_mode_dataset = first_input_dataset
+        burst_mode_dataset = second_input_dataset
+    elif "norm" in input_logical_source_2 and "burst" in input_logical_source_1:
+        normal_mode_dataset = second_input_dataset
+        burst_mode_dataset = first_input_dataset
     else:
-        raise RuntimeError("Neither input dataset is norm data")
+        raise RuntimeError("L1C requires one normal mode and one burst mode input "
+                           "file.")
+
+    with open(Path(__file__).parent.parent / "imap_mag_sdc-configuration_v001.yaml") as f:
+        configuration = yaml.safe_load(f)
+
+    interp_function = InterpolationFunction(configuration["interpolation_method"])
+    process_mag_l1c(normal_mode_dataset, burst_mode_dataset, interp_function)
 
     attribute_manager = ImapCdfAttributes()
     attribute_manager.add_instrument_global_attrs("mag")
     attribute_manager.add_global_attribute("Data_version", version)
 
-    output_dataset.attrs = attribute_manager.get_global_attributes(logical_source)
-
-    print(first_input_dataset.attrs["Logical_source"])
-    # TODO: sort first/second input into norm/burst
+    # output_dataset.attrs = attribute_manager.get_global_attributes(logical_source)
 
 
     return []
 
 
-def process_mag_l1c(normal_mode_dataset: xr.Dataset, burst_mode_dataset: xr.Dataset,
-                    interpolation_function: InterpolationFunction):
+def process_mag_l1c(
+    normal_mode_dataset: xr.Dataset,
+    burst_mode_dataset: xr.Dataset,
+    interpolation_function: InterpolationFunction,
+):
     # TODO:
     # - determine expected timeline
     # - copy NM data in
@@ -78,11 +88,6 @@ def process_mag_l1c(normal_mode_dataset: xr.Dataset, burst_mode_dataset: xr.Data
     expected_nm_vectors_per_second = []
     norm_epoch = normal_mode_dataset["epoch"].data
     vecsec_attr = normal_mode_dataset.attrs["vectors_per_second"]
-    print(ttj2000ns_to_et(normal_mode_dataset["epoch"].data[0]))
-    print(ttj2000ns_to_et(burst_mode_dataset["epoch"].data[0]))
-    print(
-        f"Difference: {normal_mode_dataset['epoch'].data[0] - burst_mode_dataset['epoch'].data[0]}"
-    )
 
     output_dataset = normal_mode_dataset.copy(deep=True)
     output_dataset["sample_interpolated"] = xr.DataArray(
@@ -93,39 +98,57 @@ def process_mag_l1c(normal_mode_dataset: xr.Dataset, burst_mode_dataset: xr.Data
 
     new_timeline = generate_timeline(norm_epoch, gaps)
     norm_filled = fill_normal_data(normal_mode_dataset, new_timeline)
-    interpolated = interpolate_gaps(burst_mode_dataset, gaps, norm_filled, interpolation_function.value)
+    interpolated = interpolate_gaps(
+        burst_mode_dataset, gaps, norm_filled, interpolation_function
+    )
 
-    return normal_mode_dataset
+    return interpolated
 
 
 def fill_normal_data(normal_dataset, new_timeline):
-    raise NotImplementedError
+    # TODO: fill with FILLVAL?
+    filled_timeline = np.zeros((len(new_timeline), 6))
+    filled_timeline[:, 0] = new_timeline
+    # Flags, will also indicate any missed timestamps
+    filled_timeline[:, 5] = -1
+
+    for index, timestamp in enumerate(normal_dataset["epoch"].data):
+        timeline_index = np.searchsorted(new_timeline, timestamp)
+        filled_timeline[timeline_index, 1:5] = normal_dataset["vectors"].data[index]
+        filled_timeline[timeline_index, 5] = 0
+
+    return filled_timeline
 
 
-def interpolate_gaps(burst_dataset, gaps, new_timeline, interpolation_function):
-    # print(interpolation_function())
-    burst_epochs = burst_dataset['epoch'].data
+def interpolate_gaps(burst_dataset, gaps, filled_norm_timeline, interpolation_function):
+    burst_epochs = burst_dataset["epoch"].data
     # Exclude range values
-    burst_vectors = burst_dataset['vectors'].data[:,:3]
-    print(burst_vectors)
-    print(gaps)
+    burst_vectors = burst_dataset["vectors"].data
 
     for gap in gaps:
-        print(f"Gap: {gap}")
         # TODO: we might need a few inputs before or after start/end
         burst_start = (np.abs(burst_epochs - gap[0])).argmin()
-        print(burst_start)
-        print(f'burst start time: {burst_epochs[burst_start]}')
         burst_end = (np.abs(burst_epochs - gap[1])).argmin()
-        print(f'burst end time: {burst_epochs[burst_start]}')
-        gap_timeline = new_timeline[np.nonzero((new_timeline > gap[0]) & (new_timeline < gap[1]))]
-        print(f"Gap timeline: {gap_timeline}")
+        gap_timeline = filled_norm_timeline[
+            np.nonzero((filled_norm_timeline > gap[0]) & (filled_norm_timeline < gap[1]))
+        ]
         # do not include range
-        gap_fill = interpolation_function(burst_vectors[burst_start:burst_end],
-                                          burst_epochs[burst_start:burst_end], gap_timeline)
-        print(f"Gap fill: {gap_fill}")
+        gap_fill = interpolation_function(
+            burst_vectors[burst_start:burst_end, :3],
+            burst_epochs[burst_start:burst_end],
+            gap_timeline,
+        )
 
-    return gap_fill
+        # gaps should not have data in timeline, still check it
+        for index, timestamp in enumerate(gap_timeline):
+            timeline_index = np.searchsorted(filled_norm_timeline[:, 0], timestamp)
+            if sum(filled_norm_timeline[timeline_index, 1:4]) == 0:
+                filled_norm_timeline[timeline_index, 1:4] = gap_fill[index]
+                # Just carry the first range value through
+                filled_norm_timeline[timeline_index, 4] = burst_vectors[burst_start, 3]
+                filled_norm_timeline[timeline_index, 5] = 1
+
+    return filled_norm_timeline
 
 
 def generate_timeline(epoch_data: np.ndarray, gaps: np.ndarray):
@@ -150,10 +173,13 @@ def generate_timeline(epoch_data: np.ndarray, gaps: np.ndarray):
         if gap_start_index.size != 1 or gap_end_index.size != 1:
             raise ValueError("Gap start or end not found in input timeline")
 
-        full_timeline = np.concatenate((full_timeline, epoch_data[
-                                                       last_gap:gap_start_index[
-                                                           0]],
-                                        generate_missing_timestamps(gap)))
+        full_timeline = np.concatenate(
+            (
+                full_timeline,
+                epoch_data[last_gap : gap_start_index[0]],
+                generate_missing_timestamps(gap),
+            )
+        )
         last_gap = gap_end_index[0]
 
     full_timeline = np.concatenate((full_timeline, epoch_data[last_gap:]))
@@ -161,9 +187,12 @@ def generate_timeline(epoch_data: np.ndarray, gaps: np.ndarray):
     return full_timeline
 
 
-def find_all_gaps(epoch_data: np.ndarray, vectors_per_second_attr: str = None) -> np.ndarray:
+def find_all_gaps(
+    epoch_data: np.ndarray, vectors_per_second_attr: str = None
+) -> np.ndarray:
     """
     Find all the gaps in the epoch data, given
+
     Parameters
     ----------
     epoch_data
@@ -181,7 +210,8 @@ def find_all_gaps(epoch_data: np.ndarray, vectors_per_second_attr: str = None) -
             start_time, vecsec = vecsec_segment.split(":")
             start_index = np.where(int(start_time) == epoch_data)[0][0]
             gaps = np.concatenate(
-                (find_gaps(epoch_data[start_index:end_index+1], int(vecsec)), gaps))
+                (find_gaps(epoch_data[start_index : end_index + 1], int(vecsec)), gaps)
+            )
             end_index = start_index
     else:
         # TODO: How to handle this case
@@ -204,13 +234,13 @@ def find_gaps(timeline_data: np.ndarray, vectors_per_second: int) -> np.ndarray:
         Array of timestamps.
     vectors_per_second : int
         Number of vectors expected per second.
+
     Returns
     -------
     numpy.ndarray
         Array of timestamps of shape (n, 2) containing n gaps with start_gap and
         end_gap. Start_gap and end_gap both correspond to points in timeline_data.
     """
-
     # Expected difference between timestamps in nanoseconds.
     expected_gap = 1 / vectors_per_second * 1e9
 
@@ -245,7 +275,7 @@ def generate_missing_timestamps(gap: np.ndarray):
 
     """
     # Generated timestamps should always be 0.5 seconds apart
-    #TODO: is this in the configuration file?
+    # TODO: is this in the configuration file?
     difference_ns = 0.5 * 1e9
 
     return np.arange(gap[0], gap[1], difference_ns)
