@@ -503,6 +503,20 @@ class RectangularSkyMap(AbstractSkyMap):
     """
     Map which tiles the sky with a 2D rectangular grid of azimuth/elevation pixels.
 
+    Parameters
+    ----------
+    spacing_deg : float
+        The spacing of the rectangular grid in degrees.
+    spice_frame : geometry.SpiceFrame
+        The reference Spice frame of the map.
+
+    Notes
+    -----
+    Internally, the map is stored as a 1D array of pixels, and all data arrays
+    are stored with the final (-1) axis as the only spatial axis, representing the
+    pixel index in the 1D array (See Figs 1-2, which demonstrate the 1D pixel index
+    corresponding to the 2D grid of coordinates).
+
     ^  |15,  75|45,  75|75,  75|105,  75|...|255,  75|285,  75|315,  75|345,  75|
     |  |15,  45|45,  45|75,  45|105,  45|...|255,  45|285,  45|315,  45|345,  45|
     |  |15,  15|45,  15|75,  15|105,  15|...|255,  15|285,  15|315,  15|345,  15|
@@ -517,9 +531,6 @@ class RectangularSkyMap(AbstractSkyMap):
     in degrees, with a spacing of 30 degrees. There will be 12 azimuth bins and 6
     elevation bins in this example, resulting in 72 pixels in the map.
 
-    NOTE: Internally, the map is stored as a 1D array of pixels, and all data arrays
-    are stored with the final (-1) axis as the only spatial axis, representing the
-    pixel index in the 1D array.
     A multidimentional value (e.g. counts, with energy levels at each pixel)
     will be stored as a 2D array with the first axis as the energy dimension and the
     second axis as the pixel index.
@@ -536,13 +547,6 @@ class RectangularSkyMap(AbstractSkyMap):
     Fig. 2: The 1D indices of the pixels in Fig. 1.
     Note that the indices are raveled from the 2D grid of (az, el) such that as one
     increases in pixel index, elevation increments first, then azimuth.
-
-    Parameters
-    ----------
-    spacing_deg : float
-        The spacing of the rectangular grid in degrees.
-    spice_frame : geometry.SpiceFrame
-        The reference Spice frame of the map.
     """
 
     def __init__(
