@@ -2,14 +2,15 @@ default: &default
   Descriptor:
     MAG>Magnetometer
   TEXT: >
-    The IMAP magnetometer (MAG consists of a pair of identical magnetometers
-    which each measure the magnetic field in three directions in the vicinity of
-    the spacecraft.
-    MAG will contribute to our understanding of the acceleration and transport
-    of charged particles in the heliosphere.
-    MAG design and assembly is led by Imperial College, London. See
-    https://imap.princeton.edu/instruments/mag for more details.
-  Instrument_type: MAG>Magnetometer
+    The IMAP magnetometer MAG consists of two vector magnetic field sensors
+    which measure the magnetic field in the vicinity of the
+    spacecraft. MAG will contribute to our understanding of the acceleration and transport
+    of charged particles in the heliosphere, the dynamics of interplanetary shocks, and provide
+    real time space weather measurements via the I-AliRT service.
+    MAG design, assembly, operations, and calibration are led by Imperial
+    College London. See
+    https://imap.princeton.edu/spacecraft/instruments/magnetometer-mag for more details.
+  Instrument_type: Magnetic Fields (space)
 
 imap_mag_l1a_norm-raw:
     <<: *default

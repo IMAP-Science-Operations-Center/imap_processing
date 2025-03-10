@@ -60,7 +60,9 @@ def load_cdf(
 
 
 def write_cdf(
-    dataset: xr.Dataset, parent_files: Optional[list] = None, **extra_cdf_kwargs: dict
+    dataset: xr.Dataset,
+    parent_files: Optional[list] = None,
+    **extra_cdf_kwargs: dict,
 ) -> Path:
     """
     Write the contents of "data" to a CDF file using cdflib.xarray_to_cdf.
@@ -135,12 +137,16 @@ def write_cdf(
         ]
 
     # Convert the xarray object to a CDF
-    xarray_to_cdf(
-        dataset,
-        str(file_path),
-        terminate_on_warning=True,
-        **extra_cdf_kwargs,
-    )  # Terminate if not ISTP compliant
+    if "l1" in data_level:
+        if "istp" not in extra_cdf_kwargs:
+            extra_cdf_kwargs["istp"] = False  # type: ignore
+    else:
+        if "terminate_on_warning" not in extra_cdf_kwargs:
+            extra_cdf_kwargs["terminate_on_warning"] = True  # type: ignore
+        if "istp" not in extra_cdf_kwargs:
+            extra_cdf_kwargs["istp"] = True  # type: ignore
+
+    xarray_to_cdf(dataset, str(file_path), **extra_cdf_kwargs)
 
     return file_path
 

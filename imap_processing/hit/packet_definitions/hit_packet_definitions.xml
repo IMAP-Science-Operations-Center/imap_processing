@@ -796,14 +796,14 @@
 			<xtce:EnumeratedParameterType name="HIT_HSKP.DAC0_ENABLE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="LO_GAIN " />
+					<xtce:Enumeration value="0" label="LO_GAIN" />
 					<xtce:Enumeration value="1" label="HI_GAIN" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="HIT_HSKP.DAC1_ENABLE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="LO_GAIN " />
+					<xtce:Enumeration value="0" label="LO_GAIN" />
 					<xtce:Enumeration value="1" label="HI_GAIN" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>

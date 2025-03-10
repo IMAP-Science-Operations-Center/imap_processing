@@ -52,13 +52,16 @@ def hit_l1b(dependencies: dict, data_version: str) -> list[xr.Dataset]:
         # Unpack ccsds file to xarray datasets
         packet_file = dependencies["imap_hit_l0_raw"]
         datasets_by_apid = get_datasets_by_apid(packet_file, derived=True)
-        # Process housekeeping to L1B.
-        l1b_datasets.append(
-            process_housekeeping_data(
-                datasets_by_apid[HitAPID.HIT_HSKP], attr_mgr, "imap_hit_l1b_hk"
+        # TODO: update to raise error after all APIDs are included in the same
+        #  raw files. currently science and housekeeping are in separate files.
+        if HitAPID.HIT_HSKP in datasets_by_apid:
+            # Process housekeeping to L1B.
+            l1b_datasets.append(
+                process_housekeeping_data(
+                    datasets_by_apid[HitAPID.HIT_HSKP], attr_mgr, "imap_hit_l1b_hk"
+                )
             )
-        )
-        logger.info("HIT L1B housekeeping dataset created")
+            logger.info("HIT L1B housekeeping dataset created")
     if "imap_hit_l1a_count-rates" in dependencies:
         # Process science data to L1B datasets
         l1a_counts_dataset = dependencies["imap_hit_l1a_count-rates"]
@@ -242,24 +245,24 @@ def create_particle_data_arrays(
         The dataset to add the data arrays to.
 
     particle : str
-        The particle name. Valid names are:
-            hydrogen
-            helium3
-            helium4
-            helium
-            carbon
-            nitrogen
-            oxygen
-            neon
-            sodium
-            magnesium
-            aluminum
-            silicon
-            sulfur
-            argon
-            calcium
-            iron
-            nickel
+        The abbreviated particle name. Valid names are:
+            h
+            he3
+            he4
+            he
+            c
+            n
+            o
+            ne
+            na
+            mg
+            al
+            si
+            s
+            ar
+            ca
+            fe
+            ni
 
     num_energy_ranges : int
         Number of energy ranges for the particle.
@@ -379,24 +382,24 @@ def add_rates_to_dataset(
         The dataset to add the rates to.
 
     particle : str
-        The particle name. Valid names are:
-            hydrogen
-            helium3
-            helium4
-            helium
-            carbon
-            nitrogen
-            oxygen
-            neon
-            sodium
-            magnesium
-            aluminum
-            silicon
-            sulfur
-            argon
-            calcium
-            iron
-            nickel
+        The abbreviated particle name. Valid names are:
+            h
+            he3
+            he4
+            he
+            c
+            n
+            o
+            ne
+            na
+            mg
+            al
+            si
+            s
+            ar
+            ca
+            fe
+            ni
 
     index : int
         The index of the energy range.

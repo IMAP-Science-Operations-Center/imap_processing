@@ -9,7 +9,7 @@ import xarray as xr
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.hi.l1a.hi_l1a import hi_l1a
 from imap_processing.hi.l1b.hi_l1b import (
-    compute_coincidence_type_and_time_deltas,
+    compute_coincidence_type_and_tofs,
     compute_hae_coordinates,
     de_esa_energy_step,
     de_nominal_bin_and_spin_phase,
@@ -112,15 +112,13 @@ def synthetic_trigger_id_and_tof_data():
 def test_compute_coincidence_type_and_time_deltas(synthetic_trigger_id_and_tof_data):
     """Test coverage for
     `imap_processing.hi.hi_l1b.compute_coincidence_type_and_time_deltas`."""
-    new_vars = compute_coincidence_type_and_time_deltas(
-        synthetic_trigger_id_and_tof_data[0]
-    )
+    new_vars = compute_coincidence_type_and_tofs(synthetic_trigger_id_and_tof_data[0])
     for var_name in [
         "coincidence_type",
-        "delta_t_ab",
-        "delta_t_ac1",
-        "delta_t_bc1",
-        "delta_t_c1c2",
+        "tof_ab",
+        "tof_ac1",
+        "tof_bc1",
+        "tof_c1c2",
     ]:
         assert var_name in new_vars
     # verify coincidence type values
@@ -130,27 +128,27 @@ def test_compute_coincidence_type_and_time_deltas(synthetic_trigger_id_and_tof_d
     np.testing.assert_array_equal(
         coincidence_hist, synthetic_trigger_id_and_tof_data[1]
     )
-    # verify delta_t values are valid in the correct locations
+    # verify tof values are valid in the correct locations
     np.testing.assert_array_equal(
-        new_vars["delta_t_ab"] != new_vars["delta_t_ab"].FILLVAL,
+        new_vars["tof_ab"] != new_vars["tof_ab"].FILLVAL,
         new_vars["coincidence_type"] >= 12,
     )
     np.testing.assert_array_equal(
-        new_vars["delta_t_ac1"] != new_vars["delta_t_ac1"].FILLVAL,
+        new_vars["tof_ac1"] != new_vars["tof_ac1"].FILLVAL,
         np.logical_and(
             np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.A.value),
             np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.C1),
         ),
     )
     np.testing.assert_array_equal(
-        new_vars["delta_t_bc1"] != new_vars["delta_t_bc1"].FILLVAL,
+        new_vars["tof_bc1"] != new_vars["tof_bc1"].FILLVAL,
         np.logical_and(
             np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.B.value),
             np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.C1),
         ),
     )
     np.testing.assert_array_equal(
-        new_vars["delta_t_c1c2"] != new_vars["delta_t_c1c2"].FILLVAL,
+        new_vars["tof_c1c2"] != new_vars["tof_c1c2"].FILLVAL,
         np.logical_and(
             np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.C1),
             np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.C2),

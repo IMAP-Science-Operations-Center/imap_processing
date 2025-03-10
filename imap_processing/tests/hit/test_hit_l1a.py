@@ -27,9 +27,7 @@ from imap_processing.tests.hit.helpers.l1_validation import (
 @pytest.fixture(scope="module")
 def hk_packet_filepath():
     """Set path to test data file"""
-    return (
-        imap_module_directory / "tests/hit/test_data/imap_hit_l0_raw_20100105_v001.pkts"
-    )
+    return imap_module_directory / "tests/hit/test_data/hskp_sample.ccsds"
 
 
 @pytest.fixture(scope="module")
@@ -151,6 +149,7 @@ def test_validate_l1a_housekeeping_data(hk_packet_filepath):
     )
     validation_data = pd.read_csv(validation_file)
     validation_data.columns = validation_data.columns.str.lower()
+    validation_data.columns = validation_data.columns.str.strip()
 
     # Get a list of leak columns in ascending order
     # (LEAK_I_00, LEAK_I_01, ..., LEAK_I_63)
@@ -166,7 +165,6 @@ def test_validate_l1a_housekeeping_data(hk_packet_filepath):
     # Define the keys that should have dropped from the housekeeping dataset
     dropped_fields = {
         "pkt_apid",
-        "sc_tick",
         "version",
         "type",
         "sec_hdr_flg",
@@ -190,7 +188,6 @@ def test_validate_l1a_housekeeping_data(hk_packet_filepath):
         "ccsds_grp_flag",
         "ccsds_seq_cnt",
         "ccsds_length",
-        "shcoarse",
     }
 
     # Check that dropped variables are not in the dataset

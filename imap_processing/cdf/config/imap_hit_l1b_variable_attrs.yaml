@@ -19,6 +19,14 @@ hk_support_attrs: &support_default
   DISPLAY_TYPE: no_plot
   VAR_TYPE: ignore_data
 
+default_uint32_attrs: &default_uint32
+  <<: *default
+  FILLVAL: 4294967295
+  FORMAT: I10
+  VALIDMIN: 0
+  VALIDMAX: 4294967295
+  dtype: uint32
+
 # <=== Coordinates ===>
 adc_channels:   # adc_channels is a dependency for leak_i data variable
   DISPLAY_TYPE: no_plot
@@ -45,6 +53,12 @@ adc_channels_label:
 
 # <=== Data Variable Attributes ===>
 #TODO is DEPEND_0 needed for no_plot variables in housekeeping?
+
+sc_tick:
+  <<: *default_uint32
+  CATDESC: CCSDS secondary header - Spacecraft Tick
+  FIELDNAM: Spacecraft Tick
+  VAR_TYPE: support_data
 
 fsw_version_a:
   <<: *support_default

@@ -4,7 +4,6 @@ import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import IntEnum
-from numbers import Number
 from typing import Optional, Union
 
 import numpy as np
@@ -102,7 +101,7 @@ def full_dataarray(
     attrs: dict,
     coords: Optional[dict[str, xr.DataArray]] = None,
     shape: Optional[Union[int, Sequence[int]]] = None,
-    fill_value: Optional[Number] = None,
+    fill_value: Optional[float] = None,
 ) -> xr.DataArray:
     """
     Generate an empty xarray.DataArray with appropriate attributes.
@@ -117,10 +116,14 @@ def full_dataarray(
         Variable name.
     attrs : dict
         CDF variable attributes. Usually retrieved from ImapCdfAttributes.
-    coords : dict
-        Coordinate variables for the Dataset.
-    shape : int or tuple
-        Shape of ndarray data array to instantiate in the xarray.DataArray.
+    coords : dict, optional
+        Coordinate variables for the Dataset. This function will extract the
+        sizes of each dimension defined by the attributes dictionary to determine
+        the size of the DataArray to be created.
+    shape : int or tuple, optional
+        Shape of ndarray data array to instantiate in the xarray.DataArray. If
+        shape is provided, the DataArray created will have this shape regardless
+        of whether coordinates are provided or not.
     fill_value : optional, float
         Override the fill value that the DataArray will be filled with. If not
         supplied, the "FILLVAL" value from `attrs` will be used.
@@ -154,9 +157,9 @@ def full_dataarray(
 
 def create_dataset_variables(
     variable_names: list[str],
-    variable_shape: Union[int, Sequence[int]],
+    variable_shape: Optional[Union[int, Sequence[int]]] = None,
     coords: Optional[dict[str, xr.DataArray]] = None,
-    fill_value: Optional[Number] = None,
+    fill_value: Optional[float] = None,
     att_manager_lookup_str: str = "{0}",
 ) -> dict[str, xr.DataArray]:
     """
@@ -168,10 +171,14 @@ def create_dataset_variables(
     ----------
     variable_names : list[str]
         List of variable names to create.
-    variable_shape : int or sequence of int
-        Shape of the new variables data ndarray.
-    coords : dict
-        Coordinate variables for the Dataset.
+    variable_shape : int or sequence of int, optional
+        Shape of the new variables data ndarray. If not provided the shape will
+        attempt to be derived from the coords dictionary.
+    coords : dict, optional
+        Coordinate variables for the Dataset. If `variable_shape` is not provided
+        the dataset variables created will use this dictionary along with variable
+        attributes from the CdfAttributeManager to determine the shapes of the
+        dataset variables created.
     fill_value : optional, number
         Value to fill the new variables data arrays with. If not supplied,
         the fill value is pulled from the CDF variable attributes "FILLVAL"

@@ -138,9 +138,13 @@ def test_swapi_algorithm(decom_test_data):
 def test_process_swapi_science(decom_test_data):
     """Test process swapi science"""
     ds_data = decom_test_data[SWAPIAPID.SWP_SCI]
-    processed_data = process_swapi_science(
-        ds_data, decom_test_data[SWAPIAPID.SWP_HK], data_version="001"
-    )
+
+    # Add duplicate epoch data to test for bad data
+    hk_ds = decom_test_data[SWAPIAPID.SWP_HK]
+    assert hk_ds["epoch"].shape == (17,)
+    hk_duplicate_ds = xr.concat([hk_ds, hk_ds], dim="epoch")
+    assert hk_duplicate_ds["epoch"].shape == (34,)
+    processed_data = process_swapi_science(ds_data, hk_duplicate_ds, data_version="001")
 
     # Test dataset dimensions
     assert processed_data.sizes == {

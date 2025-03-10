@@ -32,6 +32,38 @@ default_uint16_attrs: &default_uint16
   dtype: uint16
   DEPEND_0: sc_tick
 
+default_uint32_attrs: &default_uint32
+  <<: *default
+  FILLVAL: 4294967295
+  FORMAT: I10
+  VALIDMIN: 0
+  VALIDMAX: 4294967295
+  dtype: uint32
+
+default_int64_attrs: &default_int64
+  <<: *default
+  FILLVAL: -9223372036854775808
+  FORMAT: I20
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854775807
+  dtype: int64
+
+default_int32_attrs: &default_int32
+  <<: *default
+  FILLVAL: -2147483648
+  FORMAT: I10
+  VALIDMIN: -2147483648
+  VALIDMAX: 2147483647
+  dtype: int32
+
+default_float32_attrs: &default_float32
+  <<: *default
+  FILLVAL: .NAN
+  FORMAT: F10.2
+  VALIDMIN: -3.4028235e+38
+  VALIDMAX: 3.4028235e+38
+  dtype: float32
+
 hk_support_attrs: &support_default
   <<: *default
   DISPLAY_TYPE: no_plot
@@ -106,6 +138,13 @@ pkt_len:
   CATDESC: CCSDS packet length
   FIELDNAM: CCSDS packet length
   VAR_TYPE: support_data
+
+sc_tick:
+  <<: *default_uint32
+  CATDESC: CCSDS secondary header - Spacecraft Tick
+  FIELDNAM: Spacecraft Tick
+  VAR_TYPE: support_data
+
 
 # Housekeeping variables
 fsw_version_a:
@@ -231,7 +270,7 @@ heater_control:
 adc_mode:
   <<: *support_default
   VALIDMAX: 3
-  CATDESC: State - ADC Mode (0=quiet, 1=normal, 2=adcstim, 3=adcThreshold
+  CATDESC: State - ADC Mode (0=quiet, 1=normal, 2=adcstim, 3=adcThreshold)
   FIELDNAM: ADC Mode (0=quiet, 1=normal, 2=adcstim, 3=adcThreshold)
   LABLAXIS: ADC mode
   FORMAT: I1

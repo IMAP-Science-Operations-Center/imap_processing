@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.mag.l1b.mag_l1b import (
     calibrate_vector,
@@ -25,8 +26,16 @@ def test_mag_processing(mag_test_calibration_data):
 
     mag_l1a_dataset["vectors"].data[0, :] = np.array([1, 1, 1, 0])
     mag_l1a_dataset["vectors"].data[1, :] = np.array([7982, 48671, -68090, 0])
+    mag_attributes = ImapCdfAttributes()
+    mag_attributes.add_instrument_global_attrs("mag")
+    mag_attributes.add_instrument_variable_attrs("mag", "l1b")
+    mag_l1b = mag_l1b_processing(
+        mag_l1a_dataset,
+        mag_test_calibration_data,
+        mag_attributes,
+        "imap_mag_l1b_norm-mago",
+    )
 
-    mag_l1b = mag_l1b_processing(mag_l1a_dataset, mag_test_calibration_data)
     np.testing.assert_allclose(
         mag_l1b["vectors"][0].values, [2.2972, 2.2415, 2.2381, 0], atol=1e-4
     )
@@ -39,9 +48,12 @@ def test_mag_processing(mag_test_calibration_data):
 
     assert mag_l1b["vectors"].values.shape == mag_l1a_dataset["vectors"].values.shape
 
-    mag_l1a_dataset.attrs["Logical_source"] = ["imap_mag_l1a_norm-magi"]
-
-    mag_l1b = mag_l1b_processing(mag_l1a_dataset, mag_test_calibration_data)
+    mag_l1b = mag_l1b_processing(
+        mag_l1a_dataset,
+        mag_test_calibration_data,
+        mag_attributes,
+        "imap_mag_l1b_norm-magi",
+    )
 
     np.testing.assert_allclose(
         mag_l1b["vectors"][0].values, [2.27538, 2.23416, 2.23682, 0], atol=1e-5

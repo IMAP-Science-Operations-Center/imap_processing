@@ -240,6 +240,7 @@ class MagL1a:
     decode_fib_zig_zag()
     twos_complement()
     update_compression_array()
+    vectors_per_second_attribute()
     """
 
     is_mago: bool
@@ -285,7 +286,8 @@ class MagL1a:
         vector_sequence = packet_properties.src_seq_ctr
 
         self.vectors = np.concatenate([self.vectors, additional_vectors])
-        self.packet_definitions[self.start_time] = packet_properties
+        start_time = np.int64(met_to_ttj2000ns(packet_properties.shcoarse))
+        self.packet_definitions[start_time] = packet_properties
 
         # Every additional packet should be the next one in the sequence, if not, add
         # the missing sequence(s) to the gap data
@@ -1090,3 +1092,28 @@ class MagL1a:
         value = int((value >> 1) ^ (-(value & 1)))
 
         return value
+
+    def vectors_per_second_attribute(self) -> str:
+        """
+        Generate a string describing the vectors per second.
+
+        Format is {start time}:{vectors per second},{start time}:{vectors per second}
+        where it's only included if vectors per second changes.
+
+        Returns
+        -------
+        output_str : str
+            Output string describing the vectors per second in all the packets.
+        """
+        output_str = ""
+        last_vectors_per_second = None
+        for start_time, packet in self.packet_definitions.items():
+            vecsec = packet.vectors_per_second
+            if vecsec != last_vectors_per_second:
+                if output_str == "":
+                    output_str = f"{start_time}:{vecsec}"
+                else:
+                    output_str += f",{start_time}:{vecsec}"
+                last_vectors_per_second = vecsec
+
+        return output_str
