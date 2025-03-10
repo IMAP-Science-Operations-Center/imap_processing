@@ -339,7 +339,9 @@ class CoDICEL1aPipeline:
                 # Spin period requires the application of a conversion factor
                 # See Table B.5 in the algorithm document
                 elif variable_name == "spin_period":
-                    variable_data = self.dataset.spin_period.data * 0.00032
+                    variable_data = (
+                        self.dataset.spin_period.data * constants.SPIN_PERIOD_CONVERSION
+                    )
                     dims = ["epoch"]
                     attrs = self.cdf_attrs.get_variable_attributes("spin_period")
 
@@ -465,13 +467,16 @@ class CoDICEL1aPipeline:
             An array whose values represent the deltas of the energy bins.
         """
         data_product = self.config["dataset_name"].split("-")[-1].upper()
-        energy_table = getattr(constants, f"{data_product}_ENERGY_TABLE")
+        energy_table = getattr(constants, f"{data_product}_ENERGY_TABLE")[species]
 
         # Find the centers and deltas of the energy bins
-        centers = np.mean(
-            [energy_table[species]["min"], energy_table[species]["max"]], axis=0
+        centers = np.array(
+            [
+                (energy_table[i] + energy_table[i + 1]) / 2
+                for i in range(len(energy_table) - 1)
+            ]
         )
-        deltas = np.subtract(energy_table[species]["max"], centers)
+        deltas = energy_table[1:] - centers
 
         return centers, deltas
 
