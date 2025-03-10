@@ -365,7 +365,9 @@ def test_spherical_to_cartesian():
     )
 
     for i in range(len(colat)):
-        cartesian_coords = spherical_to_cartesian(np.array([spherical_points[i]]))
+        cartesian_coords = spherical_to_cartesian(
+            np.array([spherical_points_degrees[i]]), degrees=True
+        )
         spice_coords = spiceypy.sphrec(r, colat[i], spherical_points[i, 1])
 
         np.testing.assert_allclose(cartesian_coords[0], spice_coords, atol=1e-5)

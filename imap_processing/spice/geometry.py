@@ -457,7 +457,7 @@ def cartesian_to_spherical(
     return spherical_coords
 
 
-def spherical_to_cartesian(spherical_coords: NDArray, degrees: bool = False) -> NDArray:
+def spherical_to_cartesian(spherical_coords: NDArray, degrees: bool = True) -> NDArray:
     """
     Convert spherical coordinates to Cartesian coordinates.
 
@@ -472,7 +472,7 @@ def spherical_to_cartesian(spherical_coords: NDArray, degrees: bool = False) -> 
         - elevation : angle from the xy-plane in radians [-pi/2, pi/2].
     degrees : bool
         Set to True if input azimuth and elevation angles are in degrees.
-        Defaults to False.
+        Defaults to True.
 
     Returns
     -------
@@ -496,7 +496,7 @@ def spherical_to_cartesian(spherical_coords: NDArray, degrees: bool = False) -> 
     return cartesian_coords
 
 
-def cartesian_to_latitudinal(coords: NDArray, degrees: bool = False) -> NDArray:
+def cartesian_to_latitudinal(coords: NDArray, degrees: bool = True) -> NDArray:
     """
     Convert cartesian coordinates to latitudinal coordinates in radians.
 
@@ -511,7 +511,7 @@ def cartesian_to_latitudinal(coords: NDArray, degrees: bool = False) -> NDArray:
         with x, y, z-components.
     degrees : bool
         If True, the longitude and latitude coords are returned in degrees.
-        Defaults to False.
+        Defaults to True.
 
     Returns
     -------
@@ -532,7 +532,7 @@ def cartesian_to_latitudinal(coords: NDArray, degrees: bool = False) -> NDArray:
 
 def solar_longitude(
     et: Union[np.ndarray, float],
-    degrees: bool = False,
+    degrees: bool = True,
 ) -> Union[float, npt.NDArray]:
     """
     Compute the solar longitude of the Imap Spacecraft.
@@ -543,7 +543,7 @@ def solar_longitude(
         Ephemeris time(s) to at which to compute solar longitude.
     degrees : bool
         If True, the longitude is returned in degrees.
-        Defaults to False.
+        Defaults to True.
 
     Returns
     -------
