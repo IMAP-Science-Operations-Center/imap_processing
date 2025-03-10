@@ -26,20 +26,20 @@ def test_build_spatial_bins():
     )
 
     assert az_bin_edges[0] == 0
-    assert az_bin_edges[-1] == 2 * np.pi
+    assert az_bin_edges[-1] == 360
     assert len(az_bin_edges) == 721
 
-    assert el_bin_edges[0] == -np.pi / 2
-    assert el_bin_edges[-1] == np.pi / 2
+    assert el_bin_edges[0] == -90
+    assert el_bin_edges[-1] == 90
     assert len(el_bin_edges) == 361
 
     assert len(az_bin_midpoints) == 720
-    np.testing.assert_allclose(az_bin_midpoints[0], np.deg2rad(0.25), atol=1e-4)
-    np.testing.assert_allclose(az_bin_midpoints[-1], np.deg2rad(359.75), atol=1e-4)
+    np.testing.assert_allclose(az_bin_midpoints[0], 0.25, atol=1e-4)
+    np.testing.assert_allclose(az_bin_midpoints[-1], 359.75, atol=1e-4)
 
     assert len(el_bin_midpoints) == 360
-    np.testing.assert_allclose(el_bin_midpoints[0], np.deg2rad(-89.75), atol=1e-4)
-    np.testing.assert_allclose(el_bin_midpoints[-1], np.deg2rad(89.75), atol=1e-4)
+    np.testing.assert_allclose(el_bin_midpoints[0], -89.75, atol=1e-4)
+    np.testing.assert_allclose(el_bin_midpoints[-1], 89.75, atol=1e-4)
 
 
 @pytest.mark.parametrize("spacing", valid_spacings)
@@ -141,21 +141,17 @@ class TestAzElSkyGrid:
         )
         npt.assert_allclose(
             grid.az_bin_midpoints,
-            np.deg2rad(expected_azimuth_bin_midpoints_deg),
+            expected_azimuth_bin_midpoints_deg,
             atol=1e-11,
         )
         npt.assert_allclose(
             grid.el_bin_midpoints,
-            np.deg2rad(expected_elevation_bin_midpoints_deg),
+            expected_elevation_bin_midpoints_deg,
             atol=1e-11,
         )
 
         # Check bin edges in degrees, radians
         expected_az_bin_edges_deg = np.arange(0, 360 + spacing, spacing)
         expected_el_bin_edges_deg = np.arange(-90, 90 + spacing, spacing)
-        npt.assert_allclose(
-            grid.az_bin_edges, np.deg2rad(expected_az_bin_edges_deg), atol=1e-11
-        )
-        npt.assert_allclose(
-            grid.el_bin_edges, np.deg2rad(expected_el_bin_edges_deg), atol=1e-11
-        )
+        npt.assert_allclose(grid.az_bin_edges, expected_az_bin_edges_deg, atol=1e-11)
+        npt.assert_allclose(grid.el_bin_edges, expected_el_bin_edges_deg, atol=1e-11)

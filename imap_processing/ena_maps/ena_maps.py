@@ -146,7 +146,7 @@ def match_coords_to_indices(
         az_el=input_obj_az_el_input_frame,
         from_frame=input_object.spice_reference_frame,
         to_frame=output_object.spice_reference_frame,
-        degrees=False,
+        degrees=True,
     )
 
     # The way indices are matched depends on the tiling type of the 2nd object
@@ -311,14 +311,14 @@ class UltraPointingSet(PointingSet):
             [self.sky_grid.az_bin_midpoints, self.sky_grid.el_bin_midpoints],
         ):
             if not np.allclose(
-                sorted(np.rad2deg(constructed_bins)),
+                sorted(constructed_bins),
                 self.data[f"{dim}_bin_center"],
                 atol=1e-10,
                 rtol=0,
             ):
                 raise ValueError(
                     f"{dim} bin centers do not match."
-                    f"Constructed: {np.rad2deg(constructed_bins)}"
+                    f"Constructed: {constructed_bins}"
                     f"Dataset: {self.data[f'{dim}_bin_center']}"
                 )
 

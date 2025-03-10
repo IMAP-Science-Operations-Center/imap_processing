@@ -436,7 +436,7 @@ class TestIndexMatching:
                 [359.999999, 89.99999],
             ]
         )
-        mock_pset_input_frame.az_el_points = np.deg2rad(manual_az_el_coords)
+        mock_pset_input_frame.az_el_points = manual_az_el_coords
 
         # Manually calculate the resulting 1D pixel indices for each az/el pair
         # (num of pixels in an az row spanning 180 deg of elevation) * (current az row)
@@ -469,7 +469,7 @@ class TestIndexMatching:
         np.testing.assert_allclose(
             matched_map_az_el[:, 0],
             mock_pset_input_frame.az_el_points[:, 0],
-            atol=np.deg2rad(map_spacing_deg),
+            atol=map_spacing_deg,
         )
 
     @pytest.mark.parametrize(

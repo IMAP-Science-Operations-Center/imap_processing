@@ -15,8 +15,7 @@ def build_spatial_bins(
     """
     Build spatial bin boundaries for azimuth and elevation.
 
-    Input angles in degrees for consistency with map inputs,
-    output angles in radians for internal use.
+    Input/output angles in degrees.
 
     Parameters
     ----------
@@ -28,13 +27,13 @@ def build_spatial_bins(
     Returns
     -------
     az_bin_edges : np.ndarray
-        Array of azimuth bin boundary values in radians.
+        Array of azimuth bin boundary values in degrees.
     el_bin_edges : np.ndarray
-        Array of elevation bin boundary values in radians.
+        Array of elevation bin boundary values in degrees.
     az_bin_midpoints : np.ndarray
-        Array of azimuth bin midpoint values in radians.
+        Array of azimuth bin midpoint values in degrees.
     el_bin_midpoints : np.ndarray
-        Array of elevation bin midpoint values in radians.
+        Array of elevation bin midpoint values in degrees.
     """
     # Azimuth bins from 0 to 360 degrees.
     az_bin_edges = np.arange(0, 360 + az_spacing_deg, az_spacing_deg)
@@ -44,12 +43,11 @@ def build_spatial_bins(
     el_bin_edges = np.arange(-90, 90 + el_spacing_deg, el_spacing_deg)
     el_bin_midpoints = el_bin_edges[:-1] + el_spacing_deg / 2  # Midpoints between edges
 
-    # Convert all angles to radians and return them
     return (
-        np.deg2rad(az_bin_edges),
-        np.deg2rad(el_bin_edges),
-        np.deg2rad(az_bin_midpoints),
-        np.deg2rad(el_bin_midpoints),
+        az_bin_edges,
+        el_bin_edges,
+        az_bin_midpoints,
+        el_bin_midpoints,
     )
 
 
@@ -58,6 +56,10 @@ def build_solid_angle_map(
 ) -> NDArray:
     """
     Build a solid angle map in steradians for a given spacing in degrees.
+
+    NOTE: This function works in radians internally and returns steradians, while other
+    functions in this module work in degrees. Expressing solid angles in steradians
+    is the preferred unit for ENA Maps.
 
     Parameters
     ----------
@@ -142,9 +144,9 @@ class AzElSkyGrid:
     """
     Representation of a 2D grid of azimuth and elevation angles covering the sky.
 
-    All angles are stored internally in radians.
-    Azimuth is within the range [0, 2*pi) radians,
-    elevation is within the range [-pi/2, pi/2) radians.
+    All angles are stored internally in degrees.
+    Azimuth is within the range [0, 360) degrees,
+    elevation is within the range [-90, 90) degrees.
 
     Parameters
     ----------
@@ -152,13 +154,13 @@ class AzElSkyGrid:
         Spacing of the grid in degrees, by default 0.5.
     reversed_elevation : bool, optional
         Whether the elevation grid should be reversed, by default False.
-        If False, the elevation grid will be from -pi/2 to pi/2 radians (-90 to 90 deg).
-        If True, the elevation grid will be from pi/2 to -pi/2 radians (90 to -90 deg).
+        If False, the elevation grid will be from -90 to 90 deg.
+        If True, the elevation grid will be from 90 to -90 deg.
 
     Raises
     ------
     ValueError
-        If the spacing is not positive or does not divide evenly into pi radians.
+        If the spacing is not positive or does not divide evenly into 180 degrees.
     """
 
     def __init__(
@@ -169,25 +171,26 @@ class AzElSkyGrid:
         # Store grid properties
         self.reversed_elevation = reversed_elevation
 
-        # Internally, work in radians, regardless of desired output units
-        self.spacing = np.deg2rad(spacing_deg)
+        # Internally, work in degrees
+        self.spacing_deg = spacing_deg
 
-        # Ensure valid grid spacing (positive, divides evenly into pi radians)
-        if self.spacing <= 0:
+        # Ensure valid grid spacing (positive, divides evenly into 180 degrees)
+        if self.spacing_deg <= 0:
             raise ValueError("Spacing must be positive valued, non-zero.")
 
-        if not np.isclose((np.pi / self.spacing) % 1, 0):
-            raise ValueError("Spacing must divide evenly into pi radians.")
+        if not np.isclose((180 / self.spacing_deg) % 1, 0):
+            raise ValueError("Spacing must divide evenly into 180 degrees.")
 
         # build_spacial_bins creates the bin edges and centers for azimuth and elevation
         # E.g. for spacing=1, az_bin_edges = [0, 1, 2, ..., 359, 360] deg.
-        # However returned values are in radians.
         (
             self.az_bin_edges,
             self.el_bin_edges,
             self.az_bin_midpoints,
             self.el_bin_midpoints,
-        ) = build_spatial_bins(az_spacing_deg=spacing_deg, el_spacing_deg=spacing_deg)
+        ) = build_spatial_bins(
+            az_spacing_deg=self.spacing_deg, el_spacing_deg=self.spacing_deg
+        )
 
         # If desired, reverse the elevation range so that the grid is in the order
         # defined by the Ultra prototype code (`build_dps_grid.m`).
@@ -216,6 +219,6 @@ class AzElSkyGrid:
             A string representation of the AzElSkyGrid.
         """
         return (
-            f"AzElSkyGrid with a spacing of {self.spacing:.4e} radians. "
+            f"AzElSkyGrid with a spacing of {self.spacing_deg:.4e} degrees. "
             f"{self.grid_shape} Grid."
         )

@@ -52,7 +52,7 @@ def test_get_histogram(test_data):
     v, energy = test_data
 
     az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
-        np.rad2deg(angle_radians) for angle_radians in (build_spatial_bins())
+        build_spatial_bins()
     )
     energy_bin_edges, _ = build_energy_bins()
 
@@ -101,7 +101,7 @@ def test_get_helio_exposure_times():
 
     energy_bin_edges, energy_midpoints = build_energy_bins()
     az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
-        np.rad2deg(angle_radians) for angle_radians in (build_spatial_bins())
+        build_spatial_bins()
     )
 
     assert exposure_3d.shape == (
