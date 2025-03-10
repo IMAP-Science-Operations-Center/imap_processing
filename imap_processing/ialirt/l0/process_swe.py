@@ -3,14 +3,20 @@
 import logging
 
 import numpy as np
-from numpy.typing import NDArray
 import xarray as xr
+from numpy.typing import NDArray
 
 from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.swe.l1a.swe_science import decompressed_counts
-from imap_processing.swe.l1b.swe_l1b_science import deadtime_correction, read_in_flight_cal_data
-from imap_processing.swe.utils.swe_constants import GEOMETRIC_FACTORS, ESA_VOLTAGE_ROW_INDEX_DICT
+from imap_processing.swe.l1b.swe_l1b_science import (
+    deadtime_correction,
+    read_in_flight_cal_data,
+)
+from imap_processing.swe.utils.swe_constants import (
+    ESA_VOLTAGE_ROW_INDEX_DICT,
+    GEOMETRIC_FACTORS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -56,54 +62,85 @@ def phi_to_bin(phi):
     return bin
 
 
-def prepare_raw_counts(grouped_data: xr.Dataset, group: int) -> np.ndarray:
+def prepare_raw_counts(grouped: xr.Dataset) -> np.ndarray:
     """
     Reformat raw counts into a 3D array binned by phi.
 
     Parameters
     ----------
-    grouped_data : xr.Dataset
+    grouped : xr.Dataset
         Dataset containing grouped i-ALiRT packet data for 1 minute.
-
-    group : int
-        Group number.
 
     Returns
     -------
     raw_counts : np.ndarray
         n_energy, n_cems, n_phi
-        Array of raw counts with shape (30, 7, 4), where:
-        - 30 corresponds to the 30 phi bins.
+        Array of raw counts with shape (8, 7, 30), where:
+        - 8 corresponds to the 8 energy steps.
         - 7 corresponds to the 7 CEM detectors.
-        - 4 corresponds to the 4 energy steps.
+        - 30 corresponds to the 30 phi bins.
     """
-    raw_counts = np.zeros((4, 7, 30), dtype=np.uint8)
+    raw_counts = np.zeros((8, 7, 30), dtype=np.uint8)
 
-    group_mask = (grouped_data["group"] == group)
-    group_data = grouped_data.sel(epoch=group_mask)
-
-    # 60 values in the group, 2 values per phi
-    for i in range(len(group_data["epoch"])):
-        # TODO:
-        # There are actually 4 energies for the first 15s,
-        # 4 energies for the next 15s, and the repeated.
-
+    # 60 values in the group (60s = 1 min)
+    for i in range(len(grouped["epoch"])):
+        # The first two energy steps share a phi
+        # Phi bins are 12 to 348 in 24 degree increments
         phi_0 = (12 + 24 * i) % 360  # Energy steps 0 and 1
+        # The second two energy steps share a phi
+        # Phi bins are 24 to 360 in 24 degree increments
         phi_1 = (24 + 24 * i) % 360  # Energy steps 2 and 3
 
+        # Map phi to bin.
         phi_0_bin = phi_to_bin(phi_0)
         phi_1_bin = phi_to_bin(phi_1)
 
+        # Depending on the quarter cycle, the energy bins are different.
+        if i < 15:
+            e_bins = [1, 5, 3, 7]
+        elif i < 30:
+            e_bins = [2, 6, 0, 4]
+        elif i < 45:
+            e_bins = [3, 7, 1, 5]
+        else:
+            e_bins = [0, 4, 2, 6]
+
         for cem in range(1, 8):  # 7 CEMs
             # swe_cem#_e1 and swe_cem#_e2 -> phi_0
-            raw_counts[0, cem - 1, phi_0_bin] = group_data[f"swe_cem{cem}_e1"].values[i]
-            raw_counts[1, cem - 1, phi_0_bin] = group_data[f"swe_cem{cem}_e2"].values[i]
+            raw_counts[e_bins[0], cem - 1, phi_0_bin] = grouped[
+                f"swe_cem{cem}_e1"
+            ].values[i]
+            raw_counts[e_bins[1], cem - 1, phi_0_bin] = grouped[
+                f"swe_cem{cem}_e2"
+            ].values[i]
 
             # swe_cem#_e3 and swe_cem#_e4 -> phi_1
-            raw_counts[2, cem - 1, phi_1_bin] = group_data[f"swe_cem{cem}_e3"].values[i]
-            raw_counts[3, cem - 1, phi_1_bin] = group_data[f"swe_cem{cem}_e4"].values[i]
+            raw_counts[e_bins[2], cem - 1, phi_1_bin] = grouped[
+                f"swe_cem{cem}_e3"
+            ].values[i]
+            raw_counts[e_bins[3], cem - 1, phi_1_bin] = grouped[
+                f"swe_cem{cem}_e4"
+            ].values[i]
 
     return raw_counts
+
+
+def get_ialirt_energies():
+    """
+    Get the ESA voltages for I-ALiRT.
+
+    Returns
+    -------
+    energy : list
+        List of ESA voltage for I-ALiRT.
+
+    Notes
+    -----
+    This is a subset of the ESA_VOLTAGE_ROW_INDEX_DICT.
+    """
+    energy = [k for k, v in ESA_VOLTAGE_ROW_INDEX_DICT.items() if 11 <= v <= 18]
+
+    return energy
 
 
 def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
@@ -124,6 +161,7 @@ def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
 
     # Calculate time in seconds
     # 1 second = 1,000,000 microseconds for swe_acq_sub
+    # TODO: ask about this constant
     time_seconds = calculate_time(
         accumulated_data["swe_acq_sec"], accumulated_data["swe_acq_sub"], 1000000
     )
@@ -145,9 +183,14 @@ def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
             )
             continue
 
+        # Get energies only for I-AliRT
+        energy = get_ialirt_energies()
+
         # Prepare raw counts array just for this group
-        # (60 epochs, 7 CEMs, 4 energy steps)
-        raw_counts = prepare_raw_counts(grouped_data, group)
+        # (8 energy steps, 7 CEMs, 30 phi bins)
+        group_mask = grouped_data["group"] == group
+        grouped = grouped_data.sel(epoch=group_mask)
+        raw_counts = prepare_raw_counts(grouped)
 
         counts = decompress_counts(raw_counts)
         # acq_duration = 80 milliseconds (hardcode)
@@ -159,8 +202,6 @@ def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
 
         # Same geometric factors as in the L1B processing
         geometric_factors = GEOMETRIC_FACTORS
-        # These energies only for I-AliRT
-        energy = [k for k, v in ESA_VOLTAGE_ROW_INDEX_DICT.items() if 11 <= v <= 18]
         n_energy = len(energy)
         # 0.5 sec ~ 12 degree spin angle
         # 2 phi values / sec
@@ -180,7 +221,11 @@ def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
                     if counts[i][j][k] < 0:
                         fv[i][j][k] = 0.0
                     else:
-                        norm_counts[i][j][k] = corrected_counts[i][j][k] * latest_cal[j] / geometric_factors[j]
+                        norm_counts[i][j][k] = (
+                            corrected_counts[i][j][k]
+                            * latest_cal[j]
+                            / geometric_factors[j]
+                        )
 
         # Combine "spin_1" and "spin_2" to get the full cycle data
         # Combine "spin_3" and "spin_4" to get the full cycle data

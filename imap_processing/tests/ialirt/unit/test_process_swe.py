@@ -6,7 +6,14 @@ import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.ialirt.l0.process_swe import process_swe, decompress_counts, prepare_raw_counts, phi_to_bin
+from imap_processing.ialirt.l0.process_swe import (
+    decompress_counts,
+    get_ialirt_energies,
+    phi_to_bin,
+    prepare_raw_counts,
+    process_swe,
+)
+from imap_processing.swe.utils.swe_constants import ESA_VOLTAGE_ROW_INDEX_DICT
 from imap_processing.utils import packet_file_to_datasets
 
 
@@ -97,6 +104,7 @@ def fields_to_test():
     }
     return fields_to_test
 
+
 # TODO: double check this test
 @pytest.fixture()
 def grouped_data():
@@ -114,6 +122,57 @@ def grouped_data():
     grouped_data = xr.Dataset(data_vars, coords={"epoch": epoch})
 
     return grouped_data
+
+
+def test_get_energy():
+    """Tests get_alirt_energies function."""
+    energies = get_ialirt_energies()
+
+    for i in range(len(energies)):
+        assert i + 11 == ESA_VOLTAGE_ROW_INDEX_DICT[energies[i]]
+
+
+def test_phi_to_bin():
+    """Test phi_to_bin function."""
+
+    # Define expected phi-to-bin mapping for one full spin
+    phis = [
+        12,
+        24,
+        36,
+        48,
+        60,
+        72,
+        84,
+        96,
+        108,
+        120,
+        132,
+        144,
+        156,
+        168,
+        180,
+        192,
+        204,
+        216,
+        228,
+        240,
+        252,
+        264,
+        276,
+        288,
+        300,
+        312,
+        324,
+        336,
+        348,
+        360,
+    ]
+
+    expected_bins = np.arange(30)
+
+    for phi, expected_bin in zip(phis, expected_bins):
+        assert phi_to_bin(phi) == expected_bin
 
 
 def test_decom_packets(xarray_data, swe_test_data, fields_to_test):
@@ -141,23 +200,6 @@ def test_decompress_counts():
     assert np.all(expected_value == returned_value)
 
 
-def test_phi_to_bin():
-    """Test phi_to_bin function."""
-
-    # Define expected phi-to-bin mapping for one full spin
-    phis = [
-        12, 24, 36, 48, 60, 72, 84, 96, 108, 120,
-        132, 144, 156, 168, 180, 192, 204, 216,
-        228, 240, 252, 264, 276, 288, 300, 312,
-        324, 336, 348, 360
-    ]
-
-    expected_bins = np.arange(30)
-
-    for phi, expected_bin in zip(phis, expected_bins):
-        assert phi_to_bin(phi) == expected_bin
-
-
 def test_prepare_raw_counts():
     """Test that prepare_raw_counts correctly bins counts into (30, 7, 4) array."""
 
@@ -166,13 +208,11 @@ def test_prepare_raw_counts():
 
     data = {
         "group": ("epoch", [1, 1]),  # Both rows belong to group 1
-
         # CEM 1 (Phi 12, 24, 36, 48)
         "swe_cem1_e1": ("epoch", [1, 9]),
         "swe_cem1_e2": ("epoch", [2, 10]),
         "swe_cem1_e3": ("epoch", [3, 11]),
         "swe_cem1_e4": ("epoch", [4, 12]),
-
         # CEM 2
         "swe_cem2_e1": ("epoch", [5, 13]),
         "swe_cem2_e2": ("epoch", [6, 14]),
