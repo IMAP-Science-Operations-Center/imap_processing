@@ -7,12 +7,12 @@ import xarray as xr
 from numpy.typing import NDArray
 
 from imap_processing.ialirt.utils.grouping import find_groups
-from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.swe.l1a.swe_science import decompressed_counts
 from imap_processing.swe.l1b.swe_l1b_science import (
     deadtime_correction,
     read_in_flight_cal_data,
 )
+from imap_processing.swe.utils.swe_utils import combine_acquisition_time
 from imap_processing.swe.utils.swe_constants import (
     ESA_VOLTAGE_ROW_INDEX_DICT,
     GEOMETRIC_FACTORS,
@@ -43,26 +43,24 @@ def decompress_counts(raw_counts: NDArray) -> NDArray:
     return counts
 
 
-def phi_to_bin(phi):
+def phi_to_bin(phi_values: np.ndarray) -> np.ndarray:
     """
-    Phi bins to index mapping (phis wrap at 360, so they all land in 0-29 bins).
+    Converts phi values to corresponding bin indices.
 
     Parameters
     ----------
-    phi : int
-        Phi for 0.5s "pass".
+    phi_values : np.ndarray
+        Array of phi values.
 
     Returns
     -------
-    bin : int
-        Bin for phi.
+    np.ndarray
+        Array of bin indices.
     """
-    bin = ((phi - 12) // 12) % 30
-
-    return bin
+    return ((phi_values - 12) // 12) % 30  # Ensure it wraps correctly within 0-29 bins
 
 
-def prepare_raw_counts(grouped: xr.Dataset) -> np.ndarray:
+def prepare_raw_counts(grouped: xr.Dataset, cem_number=7) -> np.ndarray:
     """
     Reformat raw counts into a 3D array binned by phi.
 
@@ -70,6 +68,8 @@ def prepare_raw_counts(grouped: xr.Dataset) -> np.ndarray:
     ----------
     grouped : xr.Dataset
         Dataset containing grouped i-ALiRT packet data for 1 minute.
+    cem_number : int
+        Number of CEMs (default 7).
 
     Returns
     -------
@@ -80,47 +80,41 @@ def prepare_raw_counts(grouped: xr.Dataset) -> np.ndarray:
         - 7 corresponds to the 7 CEM detectors.
         - 30 corresponds to the 30 phi bins.
     """
-    raw_counts = np.zeros((8, 7, 30), dtype=np.uint8)
+    raw_counts = np.zeros((8, cem_number, 30), dtype=np.uint8)
+    n_epochs = len(grouped["epoch"])
 
-    # 60 values in the group (60s = 1 min)
-    for i in range(len(grouped["epoch"])):
-        # The first two energy steps share a phi
-        # Phi bins are 12 to 348 in 24 degree increments
-        phi_0 = (12 + 24 * i) % 360  # Energy steps 0 and 1
-        # The second two energy steps share a phi
-        # Phi bins are 24 to 360 in 24 degree increments
-        phi_1 = (24 + 24 * i) % 360  # Energy steps 2 and 3
+    # Compute phi values and their corresponding bins
+    phi_values = np.array([
+        (12 + 24 * np.arange(n_epochs)) % 360,  # Energy steps 0 and 1
+        (24 + 24 * np.arange(n_epochs)) % 360   # Energy steps 2 and 3
+    ])
+    phi_bins = phi_to_bin(phi_values)  # Get phi bin indices
 
-        # Map phi to bin.
-        phi_0_bin = phi_to_bin(phi_0)
-        phi_1_bin = phi_to_bin(phi_1)
+    # Energy bin lookup table (indexed by quarter cycle)
+    energy_bins = np.array([
+        [1, 5, 3, 7],  # 0-14 (first quarter cycle)
+        [2, 6, 0, 4],  # 15-29 (second quarter cycle)
+        [3, 7, 1, 5],  # 30-44 (third quarter cycle)
+        [0, 4, 2, 6],  # 45-59 (fourth quarter cycle)
+    ])
 
-        # Depending on the quarter cycle, the energy bins are different.
-        if i < 15:
-            e_bins = [1, 5, 3, 7]
-        elif i < 30:
-            e_bins = [2, 6, 0, 4]
-        elif i < 45:
-            e_bins = [3, 7, 1, 5]
-        else:
-            e_bins = [0, 4, 2, 6]
+    # The first 15 seconds is the first quarter cycle, etc.
+    quarter_cycles = np.floor(np.arange(n_epochs) / 15).astype(int)
+    e_bins = energy_bins[quarter_cycles]
 
-        for cem in range(1, 8):  # 7 CEMs
-            # swe_cem#_e1 and swe_cem#_e2 -> phi_0
-            raw_counts[e_bins[0], cem - 1, phi_0_bin] = grouped[
-                f"swe_cem{cem}_e1"
-            ].values[i]
-            raw_counts[e_bins[1], cem - 1, phi_0_bin] = grouped[
-                f"swe_cem{cem}_e2"
-            ].values[i]
+    # Populate raw_counts
+    for cem in range(1, cem_number+1):  # 7 CEMs
+        e1 = grouped[f"swe_cem{cem}_e1"].values
+        e2 = grouped[f"swe_cem{cem}_e2"].values
+        e3 = grouped[f"swe_cem{cem}_e3"].values
+        e4 = grouped[f"swe_cem{cem}_e4"].values
 
-            # swe_cem#_e3 and swe_cem#_e4 -> phi_1
-            raw_counts[e_bins[2], cem - 1, phi_1_bin] = grouped[
-                f"swe_cem{cem}_e3"
-            ].values[i]
-            raw_counts[e_bins[3], cem - 1, phi_1_bin] = grouped[
-                f"swe_cem{cem}_e4"
-            ].values[i]
+        # Phi bins 0, 2...(12, 36, ...)
+        raw_counts[e_bins[:, 0], cem - 1, phi_bins[0]] = e1
+        raw_counts[e_bins[:, 1], cem - 1, phi_bins[0]] = e2
+        # Phi bins 1, 3...(24, 48, ...)
+        raw_counts[e_bins[:, 2], cem - 1, phi_bins[1]] = e3
+        raw_counts[e_bins[:, 3], cem - 1, phi_bins[1]] = e4
 
     return raw_counts
 
@@ -160,11 +154,8 @@ def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
     logger.info("Processing SWE.")
 
     # Calculate time in seconds
-    # 1 second = 1,000,000 microseconds for swe_acq_sub
-    # TODO: ask about this constant
-    time_seconds = calculate_time(
-        accumulated_data["swe_acq_sec"], accumulated_data["swe_acq_sub"], 1000000
-    )
+    time_seconds = combine_acquisition_time(accumulated_data["swe_acq_sec"],
+                                            accumulated_data["swe_acq_sub"])
     accumulated_data["time_seconds"] = time_seconds
 
     grouped_data = find_groups(accumulated_data, (0, 59), "swe_seq", "time_seconds")
@@ -182,52 +173,30 @@ def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
                 f"59 without duplicates."
             )
             continue
-
-        # Get energies only for I-AliRT
-        energy = get_ialirt_energies()
-
         # Prepare raw counts array just for this group
         # (8 energy steps, 7 CEMs, 30 phi bins)
         group_mask = grouped_data["group"] == group
         grouped = grouped_data.sel(epoch=group_mask)
         raw_counts = prepare_raw_counts(grouped)
 
+        # Decompress the raw counts
         counts = decompress_counts(raw_counts)
-        # acq_duration = 80 milliseconds (hardcode)
+
+        # Apply the deadtime correction
+        # acq_duration = 80 milliseconds
         corrected_counts = deadtime_correction(counts, 80 * 10 ^ 3)
 
         # Grab the latest calibration factor
         in_flight_cal_df = read_in_flight_cal_data()
         latest_cal = in_flight_cal_df.sort_values("met_time").iloc[-1][1::]
 
-        # Same geometric factors as in the L1B processing
-        geometric_factors = GEOMETRIC_FACTORS
-        n_energy = len(energy)
-        # 0.5 sec ~ 12 degree spin angle
-        # 2 phi values / sec
-        n_phi = 30
-        # 7 sensors
-        n_cems = 7
+        # Mask negative values in counts
+        mask = counts < 0
+        norm_counts = np.zeros_like(corrected_counts, dtype=np.float64)
 
-        # initialize phase space density and norm counts
-        # Phase space density fv in units of s^3/cm^6
-        fv = np.zeros((n_energy, n_cems, n_phi))
-        norm_counts = np.zeros((n_energy, n_cems, n_phi))
-
-        # 30 phi for each cycle
-        for i in range(n_energy):
-            for j in range(n_cems):
-                for k in range(n_phi):
-                    if counts[i][j][k] < 0:
-                        fv[i][j][k] = 0.0
-                    else:
-                        norm_counts[i][j][k] = (
-                            corrected_counts[i][j][k]
-                            * latest_cal[j]
-                            / geometric_factors[j]
-                        )
-
-        # Combine "spin_1" and "spin_2" to get the full cycle data
-        # Combine "spin_3" and "spin_4" to get the full cycle data
+        # Norm counts where counts are non-negative
+        norm_counts[~mask] = (
+                corrected_counts[~mask] * latest_cal[:, np.newaxis] / GEOMETRIC_FACTORS[:, np.newaxis]
+        )
 
     return swe_data

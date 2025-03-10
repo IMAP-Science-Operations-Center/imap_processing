@@ -132,49 +132,6 @@ def test_get_energy():
         assert i + 11 == ESA_VOLTAGE_ROW_INDEX_DICT[energies[i]]
 
 
-def test_phi_to_bin():
-    """Test phi_to_bin function."""
-
-    # Define expected phi-to-bin mapping for one full spin
-    phis = [
-        12,
-        24,
-        36,
-        48,
-        60,
-        72,
-        84,
-        96,
-        108,
-        120,
-        132,
-        144,
-        156,
-        168,
-        180,
-        192,
-        204,
-        216,
-        228,
-        240,
-        252,
-        264,
-        276,
-        288,
-        300,
-        312,
-        324,
-        336,
-        348,
-        360,
-    ]
-
-    expected_bins = np.arange(30)
-
-    for phi, expected_bin in zip(phis, expected_bins):
-        assert phi_to_bin(phi) == expected_bin
-
-
 def test_decom_packets(xarray_data, swe_test_data, fields_to_test):
     """This function checks that all instrument parameters are accounted for."""
     _, index, test_index = np.intersect1d(
@@ -200,6 +157,18 @@ def test_decompress_counts():
     assert np.all(expected_value == returned_value)
 
 
+def test_phi_to_bin():
+    """Test phi_to_bin function."""
+
+    # Define expected phi-to-bin mapping for one full spin
+    phis = np.arange(12, 361, 12).tolist()
+
+    expected_bins = np.arange(30)
+
+    for phi, expected_bin in zip(phis, expected_bins):
+        assert phi_to_bin(phi) == expected_bin
+
+
 def test_prepare_raw_counts():
     """Test that prepare_raw_counts correctly bins counts into (30, 7, 4) array."""
 
@@ -221,52 +190,52 @@ def test_prepare_raw_counts():
     }
 
     grouped_data = xr.Dataset(data, coords={"epoch": epochs})
+    group_mask = grouped_data["group"] == 1
+    grouped = grouped_data.sel(epoch=group_mask)
 
-    # Run the function
-    raw_counts = prepare_raw_counts(grouped_data, group=1)
+    raw_counts = prepare_raw_counts(grouped, cem_number=2)
 
-    # Expected shape (30, 7, 4) but only some phis are filled
-    expected = np.zeros((30, 2, 4), dtype=np.uint8)
+    # Expected shape (8, 7, 30) but only some CEMs are used.
+    expected = np.zeros((8, 2, 30), dtype=np.uint8)
 
-    # Fill expected values (matching phi bins for 12, 24, 36, 48)
+    # Phi bins for 12, 24, 36, 48)
     phi_bin_12 = 0  # Phi 12
     phi_bin_24 = 1  # Phi 24
     phi_bin_36 = 2  # Phi 36
     phi_bin_48 = 3  # Phi 48
 
     # CEM 1, Phi 12 (E1, E2)
-    expected[phi_bin_12, 0, 0] = 1
-    expected[phi_bin_12, 0, 1] = 2
+    expected[1, 0, phi_bin_12] = 1
+    expected[5, 0, phi_bin_12] = 2
 
     # CEM 1, Phi 24 (E3, E4)
-    expected[phi_bin_24, 0, 2] = 3
-    expected[phi_bin_24, 0, 3] = 4
+    expected[3, 0, phi_bin_24] = 3
+    expected[7, 0, phi_bin_24] = 4
 
     # CEM 1, Phi 36 (E1, E2)
-    expected[phi_bin_36, 0, 0] = 9
-    expected[phi_bin_36, 0, 1] = 10
+    expected[1, 0, phi_bin_36] = 9
+    expected[5, 0, phi_bin_36] = 10
 
     # CEM 1, Phi 48 (E3, E4)
-    expected[phi_bin_48, 0, 2] = 11
-    expected[phi_bin_48, 0, 3] = 12
+    expected[3, 0, phi_bin_48] = 11
+    expected[7, 0, phi_bin_48] = 12
 
     # CEM 2, Phi 12 (E1, E2)
-    expected[phi_bin_12, 1, 0] = 5
-    expected[phi_bin_12, 1, 1] = 6
+    expected[1, 1, phi_bin_12] = 5
+    expected[5, 1, phi_bin_12] = 6
 
     # CEM 2, Phi 24 (E3, E4)
-    expected[phi_bin_24, 1, 2] = 7
-    expected[phi_bin_24, 1, 3] = 8
+    expected[3, 1, phi_bin_24] = 7
+    expected[7, 1, phi_bin_24] = 8
 
     # CEM 2, Phi 36 (E1, E2)
-    expected[phi_bin_36, 1, 0] = 13
-    expected[phi_bin_36, 1, 1] = 14
+    expected[1, 1, phi_bin_36] = 13
+    expected[5, 1, phi_bin_36] = 14
 
     # CEM 2, Phi 48 (E3, E4)
-    expected[phi_bin_48, 1, 2] = 15
-    expected[phi_bin_48, 1, 3] = 16
+    expected[3, 1, phi_bin_48] = 15
+    expected[7, 1, phi_bin_48] = 16
 
-    # Compare
     assert np.array_equal(raw_counts, expected)
 
 
