@@ -1,5 +1,4 @@
 # TODO: add attributes for science packets
-# TODO: update label_axis and min/max with values provided by instrument team.
 
 # <=== Defaults ===>
 # Assumed values for all variable attrs unless overwritten
@@ -18,6 +17,10 @@ hk_support_attrs: &support_default
   <<: *default
   DISPLAY_TYPE: no_plot
   VAR_TYPE: ignore_data
+
+hk_metadata_attrs: &metadata_default
+  FORMAT: A2
+  VAR_TYPE: metadata
 
 default_uint32_attrs: &default_uint32
   <<: *default
@@ -52,7 +55,6 @@ adc_channels_label:
 
 
 # <=== Data Variable Attributes ===>
-#TODO is DEPEND_0 needed for no_plot variables in housekeeping?
 
 sc_tick:
   <<: *default_uint32
@@ -62,15 +64,15 @@ sc_tick:
 
 fsw_version_a:
   <<: *support_default
-  VALIDMAX: 3
+  VALIDMAX: 63
   CATDESC: Flight Software Version Number (A.B.C bits)
   FIELDNAM: Flight Software Version Number A
   LABLAXIS: FSW A
-  FORMAT: I1
+  FORMAT: I2
 
 fsw_version_b:
   <<: *support_default
-  VALIDMAX: 15
+  VALIDMAX: 63
   CATDESC: Flight Software Version Number (A.B.C bits)
   FIELDNAM: Flight Software Version Number B
   LABLAXIS: FSW B
@@ -133,68 +135,60 @@ last_bad_seq_num:
   FORMAT: I3
 
 fee_running:
-  <<: *support_default
-  VALIDMAX: 1
+  <<: *metadata_default
   CATDESC: State - FEE Running (1) or Reset (0)
   FIELDNAM: FEE Running (1) or Reset (0)
   LABLAXIS: State
-  FORMAT: I1
+  FORMAT: A7
 
 mram_disabled:
-  <<: *support_default
-  VALIDMAX: 1
+  <<: *metadata_default
   CATDESC: State - MRAM Disabled (1) or Enabled (0)
   FIELDNAM: MRAM Disabled (1) or Enabled (0)
   LABLAXIS: State
-  FORMAT: I1
+  FORMAT: A8
 
 enable_50khz:
-  <<: *support_default
-  VALIDMAX: 1
+  <<: *metadata_default
   CATDESC: State - 50kHz Enabled (1) or Disabled (0)
   FIELDNAM: 50kHz Enabled (1) or Disabled (0)
   LABLAXIS: State
-  FORMAT: I1
+  FORMAT: A8
 
 enable_hvps:
-  <<: *support_default
-  VALIDMAX: 1
+  <<: *metadata_default
   CATDESC: State - HVPS Enabled (1) or Disabled (0)
   FIELDNAM: HVPS Enabled (1) or Disabled (0)
   LABLAXIS: State
-  FORMAT: I1
+  FORMAT: A8
 
 table_status:
-  <<: *support_default
-  VALIDMAX: 1
+  <<: *metadata_default
   CATDESC: State - Table Status OK (1) or Error (0)
   FIELDNAM: Table Status OK (1) or Error (0)
   LABLAXIS: Status
-  FORMAT: I1
+  FORMAT: A5
 
 heater_control:
-  <<: *support_default
-  VALIDMAX: 2
+  <<: *metadata_default
   CATDESC: State - Heater Control (0=None, 1=Pri, 2=Sec)
   FIELDNAM: Heater Control (0=None, 1=Pri, 2=Sec)
   LABLAXIS: State
-  FORMAT: I1
+  FORMAT: A4
 
 adc_mode:
-  <<: *support_default
-  VALIDMAX: 3
+  <<: *metadata_default
   CATDESC: State - ADC Mode (0=quiet, 1=normal, 2=adcstim, 3=adcThreshold
   FIELDNAM: ADC Mode (0=quiet, 1=normal, 2=adcstim, 3=adcThreshold)
   LABLAXIS: ADC mode
-  FORMAT: I1
+  FORMAT: A12
 
 mode:
-  <<: *support_default
-  VALIDMAX: 3
+  <<: *metadata_default
   CATDESC: State - Mode (0=Boot, 1=Maintenance, 2=Standby, 3=Science)
   FIELDNAM: Mode (0=Boot, 1=Maintenance, 2=Standby, 3=Science)
   LABLAXIS: Mode
-  FORMAT: I1
+  FORMAT: A11
 
 dyn_thresh_lvl:
   <<: *support_default
@@ -206,11 +200,11 @@ dyn_thresh_lvl:
 
 num_evnt_last_hk:
   <<: *support_default
-  VALIDMAX: 262143
+  VALIDMAX: 4294967295
   CATDESC: Number of Events Since Last HK Update
   FIELDNAM: Number of Events Since Last HK Update
   LABLAXIS: Num events
-  FORMAT: I6
+  FORMAT: I10
 
 num_errors:
   <<: *support_default
@@ -221,12 +215,11 @@ num_errors:
   FORMAT: I3
 
 last_error_num:
-  <<: *support_default
-  VALIDMAX: 255
+  <<: *metadata_default
   CATDESC: State - Last Error Number
   FIELDNAM: Last Error Number
   LABLAXIS: Error num
-  FORMAT: I3
+  FORMAT: A18
 
 code_checksum:
   <<: *support_default
@@ -262,52 +255,46 @@ leak_i:
   FORMAT: I19
 
 phasic_stat:
-  <<: *support_default
-  VALIDMAX: 1
+  <<: *metadata_default
   CATDESC: State - Phasic Status
   FIELDNAM: Phasic Status
   LABLAXIS: Status
-  FORMAT: I1
+  FORMAT: A7
 
 active_heater:
-  <<: *support_default
-  VALIDMAX: 1
+  <<: *metadata_default
   CATDESC: State - Active Heater
   FIELDNAM: Active Heater
   LABLAXIS: State
-  FORMAT: I1
+  FORMAT: A9
 
 heater_on:
-  <<: *support_default
-  VALIDMAX: 1
+  <<: *metadata_default
   CATDESC: State - Heater On/Off
   FIELDNAM: Heater On/Off
   LABLAXIS: State
-  FORMAT: I1
+  FORMAT: A3
 
 test_pulser_on:
-  <<: *support_default
-  VALIDMAX: 1
+  <<: *metadata_default
   CATDESC: State - Test Pulser On/Off
   FIELDNAM: Test Pulser On/Off
   LABLAXIS: State
-  FORMAT: I1
+  FORMAT: A3
 
 dac0_enable:
-  <<: *support_default
-  VALIDMAX: 1
+  <<: *metadata_default
   CATDESC: State - DAC 0 Enable
   FIELDNAM: DAC 0 Enable
   LABLAXIS: State
-  FORMAT: I1
+  FORMAT: A7
 
 dac1_enable:
-  <<: *support_default
-  VALIDMAX: 1
+  <<: *metadata_default
   CATDESC: State - DAC 1 Enable
   FIELDNAM: DAC 1 Enable
   LABLAXIS: State
-  FORMAT: I1
+  FORMAT: A7
 
 
 # TODO Update data formats. Should be float values. Need more info from instrument team

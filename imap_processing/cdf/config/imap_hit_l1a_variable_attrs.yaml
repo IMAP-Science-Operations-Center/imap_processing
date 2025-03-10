@@ -1,5 +1,4 @@
 # TODO: add attributes for science packets
-# TODO: update label_axis and min/max with values provided by instrument team.
 
 # <=== Defaults ===>
 # Default values for variable attrs unless overwritten
@@ -69,6 +68,11 @@ hk_support_attrs: &support_default
   DISPLAY_TYPE: no_plot
   VAR_TYPE: ignore_data
 
+hk_default_attrs: &hk_default
+  <<: *default
+  VALIDMAX: 4095
+  FORMAT: I4
+
 # <=== Coordinates ===>
 adc_channels:   # adc_channels is a dependency for leak_i data variable
   DISPLAY_TYPE: no_plot
@@ -94,7 +98,6 @@ adc_channels_label:
 
 
 # <=== Data Variable Attributes ===>
-#TODO is DEPEND_0 needed for no_plot variables in housekeeping?
 
 # CCSDS header variables
 version:
@@ -149,15 +152,15 @@ sc_tick:
 # Housekeeping variables
 fsw_version_a:
   <<: *support_default
-  VALIDMAX: 3
+  VALIDMAX: 63
   CATDESC: Flight Software Version Number (A.B.C bits)
   FIELDNAM: Flight Software Version Number A
   LABLAXIS: FSW A
-  FORMAT: I1
+  FORMAT: I2
 
 fsw_version_b:
   <<: *support_default
-  VALIDMAX: 15
+  VALIDMAX: 63
   CATDESC: Flight Software Version Number (A.B.C bits)
   FIELDNAM: Flight Software Version Number B
   LABLAXIS: FSW B
@@ -293,11 +296,11 @@ dyn_thresh_lvl:
 
 num_evnt_last_hk:
   <<: *support_default
-  VALIDMAX: 262143
+  VALIDMAX: 4294967295
   CATDESC: Number of Events Since Last HK Update
   FIELDNAM: Number of Events Since Last HK Update
   LABLAXIS: Num events
-  FORMAT: I6
+  FORMAT: I10
 
 num_errors:
   <<: *support_default
@@ -396,199 +399,147 @@ dac1_enable:
   LABLAXIS: State
   FORMAT: I1
 
-
-# TODO consider making another default entry for the following variables since they
-#  all have the same max and format. Need more info from Eric
-
 preamp_l234a:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: Preamp L234A
   FIELDNAM: Preamp L234A
   LABLAXIS: Preamp L234A
-  FORMAT: I4
 
 preamp_l1a:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: Preamp L1A
   FIELDNAM: Preamp L1A
   LABLAXIS: Preamp L1A
-  FORMAT: I4
 
 preamp_l1b:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: Preamp L1B
   FIELDNAM: Preamp L1B
   LABLAXIS: Preamp L1B
-  FORMAT: I4
 
 preamp_l234b:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: Preamp L234B
   FIELDNAM: Preamp L234B
   LABLAXIS: Preamp L234B
-  FORMAT: I4
 
 temp0:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: FEE LDO Regulator Mounted on the Board Next to the Low-dropout Regulator
   FIELDNAM: FEE LDO Regulator
   LABLAXIS: Temp0
-  FORMAT: I4
 
 temp1:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: Primary Heater Mounted on the Board Next to the Primary Heater Circuit
   FIELDNAM: Primary Heater
   LABLAXIS: Temp1
-  FORMAT: I4
 
 temp2:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: FEE FPGA Mounted on the Board Next to the FPGA
   FIELDNAM: FEE FPGA
   LABLAXIS: Temp2
-  FORMAT: I4
 
 temp3:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: Secondary Heater
   FIELDNAM: Secondary Heater
   LABLAXIS: Temp3
-  FORMAT: I4
 
 analog_temp:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: Chassis Temp Mounted on the Analog Board Close to Thermostats, Heaters, and Chassis
   FIELDNAM: Analog Temp
   LABLAXIS: Analog temp
-  FORMAT: I4
 
 hvps_temp:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: Board Temp Mounted Inside Faraday Cage in Middle of Board Near Connector Side
   FIELDNAM: Board Temp
   LABLAXIS: HVPS temp
-  FORMAT: I4
 
 idpu_temp:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: LDO Temp Mounted on Top of the Low-dropout Regulator
   FIELDNAM: LDO Temp
   LABLAXIS: IDPU temp
-  FORMAT: I4
 
 lvps_temp:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: Board Temp Mounted in the Middle of Board on Opposite Side of Hottest Component
   FIELDNAM: Board Temp
   LABLAXIS: LVPS temp
-  FORMAT: I4
 
 ebox_3d4vd:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: 3.4VD Ebox (Digital)
   FIELDNAM: 3.4VD Ebox (Digital)
   LABLAXIS: 3.4VD Ebox
-  FORMAT: I4
 
 ebox_5d1vd:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: 5.1VD Ebox (Digital)
   FIELDNAM: 5.1VD Ebox (Digital)
   LABLAXIS: 5.1VD Ebox
-  FORMAT: I4
 
 ebox_p12va:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: +12VA Ebox (Analog)
   FIELDNAM: +12VA Ebox (Analog)
   LABLAXIS: +12VA Ebox
-  FORMAT: I4
 
 ebox_m12va:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: -12VA Ebox (Analog)
   FIELDNAM: -12VA Ebox (Analog)
   LABLAXIS: -12VA Ebox
-  FORMAT: I4
 
 ebox_p5d7va:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: +5.7VA Ebox (Analog)
   FIELDNAM: +5.7VA Ebox (Analog)
   LABLAXIS: +5.7VA Ebox
-  FORMAT: I4
 
 ebox_m5d7va:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: -5.7VA Ebox (Analog)
   FIELDNAM: -5.7VA Ebox (Analog)
   LABLAXIS: -5.7VA Ebox
-  FORMAT: I4
 
 ref_p5v:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: +5V ref
   FIELDNAM: +5V ref
   LABLAXIS: +5V ref
-  FORMAT: I4
 
 l1ab_bias:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: L1A/B Bias
   FIELDNAM: L1A/B Bias
   LABLAXIS: L1A/B Bias
-  FORMAT: I4
 
 l2ab_bias:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: L2A/B Bias
   FIELDNAM: L2A/B Bias
   LABLAXIS: L2A/B Bias
-  FORMAT: I4
 
 l34a_bias:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: L3/4A Bias
   FIELDNAM: L3/4A Bias
   LABLAXIS: L3/4A Bias
-  FORMAT: I4
 
 l34b_bias:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: L3/4B Bias
   FIELDNAM: L3/4B Bias
   LABLAXIS: L3/4B Bias
-  FORMAT: I4
 
 ebox_p2d0vd:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: +2.0VD Ebox (Digital)
   FIELDNAM: +2.0VD Ebox (Digital)
   LABLAXIS: +2.0VD Ebox
-  FORMAT: I4
 
