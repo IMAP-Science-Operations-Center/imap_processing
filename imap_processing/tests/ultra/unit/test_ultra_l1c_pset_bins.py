@@ -11,9 +11,9 @@ from imap_processing.ena_maps.utils.spatial_utils import build_spatial_bins
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     get_helio_exposure_times,
-    get_spacecraft_histogram,
     get_pointing_frame_exposure_times,
     get_pointing_frame_sensitivity,
+    get_spacecraft_histogram,
 )
 
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
@@ -48,7 +48,7 @@ def test_build_energy_bins():
     np.testing.assert_allclose(energy_bin_end[-1], 341.989, atol=1e-4)
 
 
-def test_get_histogram(test_data):
+def test_get_spacecraft_histogram(test_data):
     """Tests get_histogram function."""
     v, energy = test_data
 
