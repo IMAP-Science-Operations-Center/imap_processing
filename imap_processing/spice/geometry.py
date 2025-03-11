@@ -468,10 +468,8 @@ def spherical_to_cartesian(spherical_coords: NDArray) -> NDArray:
         the spherical coordinates (r, azimuth, elevation):
 
         - r : Distance of the point from the origin.
-        - azimuth : angle in the xy-plane in degrees
-        Range is [0, 360) degrees.
-        - elevation : angle from the xy-plane in degrees
-        Range is [-90, 90) degrees.
+        - azimuth : angle in the xy-plane in degrees. Range is [0, 360) degrees.
+        - elevation : angle from the xy-plane in degrees. Range is [-90, 90) degrees.
 
     Returns
     -------
