@@ -172,7 +172,7 @@ def get_helio_exposure_times(
     # Radial distance.
     r = np.ones(el_grid.shape)
     spherical_coords = np.stack((r, az_grid, el_grid), axis=-1)
-    cartesian_coords = spherical_to_cartesian(spherical_coords, degrees=True)
+    cartesian_coords = spherical_to_cartesian(spherical_coords)
     cartesian = cartesian_coords.reshape(-1, 3, order="F").T
 
     # Spacecraft velocity in the pointing (DPS) frame wrt heliosphere.
