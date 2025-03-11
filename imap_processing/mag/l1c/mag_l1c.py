@@ -1,4 +1,5 @@
 """MAG L1C processing module."""
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -7,8 +8,8 @@ import yaml
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.mag.l1c.interpolation_methods import InterpolationFunction
-from imap_processing.spice.time import ttj2000ns_to_et
 
+logger = logging.getLogger(__name__)
 
 def mag_l1c(
     first_input_dataset: xr.Dataset, second_input_dataset: xr.Dataset, version: str
@@ -35,9 +36,11 @@ def mag_l1c(
     output_dataset : xr.Dataset
         L1C data set.
     """
+    # TODO:
+    # find missing sequences and output them
+    # calculate magnitude
+    # add missing interpolation methods
 
-
-    # TODO: L1C processing involves filling gaps with burst data.
     input_logical_source_1 = first_input_dataset.attrs["Logical_source"]
     if isinstance(first_input_dataset.attrs["Logical_source"], list):
         input_logical_source_1 = first_input_dataset.attrs["Logical_source"][0]
@@ -56,23 +59,121 @@ def mag_l1c(
         normal_mode_dataset = second_input_dataset
         burst_mode_dataset = first_input_dataset
     else:
-        raise RuntimeError("L1C requires one normal mode and one burst mode input "
-                           "file.")
+        raise RuntimeError(
+            "L1C requires one normal mode and one burst mode input " "file."
+        )
 
-    with open(Path(__file__).parent.parent / "imap_mag_sdc-configuration_v001.yaml") as f:
+    with open(
+        Path(__file__).parent.parent / "imap_mag_sdc-configuration_v001.yaml"
+    ) as f:
         configuration = yaml.safe_load(f)
 
-    interp_function = InterpolationFunction(configuration["interpolation_method"])
-    process_mag_l1c(normal_mode_dataset, burst_mode_dataset, interp_function)
+    interp_function = InterpolationFunction[configuration["L1C_interpolation_method"]]
+    completed_timeline = process_mag_l1c(normal_mode_dataset, burst_mode_dataset, interp_function)
 
     attribute_manager = ImapCdfAttributes()
     attribute_manager.add_instrument_global_attrs("mag")
     attribute_manager.add_global_attribute("Data_version", version)
+    # TODO: pull from L1C instead
+    attribute_manager.add_instrument_variable_attrs("mag", "l1b")
 
-    # output_dataset.attrs = attribute_manager.get_global_attributes(logical_source)
+    compression = xr.DataArray(
+        np.arange(2),
+        name="compression",
+        dims=["compression"],
+        attrs=attribute_manager.get_variable_attributes(
+            "compression_attrs", check_schema=False
+        ),
+    )
 
+    direction = xr.DataArray(
+        np.arange(4),
+        name="direction",
+        dims=["direction"],
+        attrs=attribute_manager.get_variable_attributes(
+            "direction_attrs", check_schema=False
+        ),
+    )
 
-    return []
+    epoch_time = xr.DataArray(
+        completed_timeline[:, 0],
+        name="epoch",
+        dims=["epoch"],
+        attrs=attribute_manager.get_variable_attributes("epoch"),
+    )
+
+    direction_label = xr.DataArray(
+        direction.values.astype(str),
+        name="direction_label",
+        dims=["direction_label"],
+        attrs=attribute_manager.get_variable_attributes(
+            "direction_label", check_schema=False
+        ),
+    )
+
+    compression_label = xr.DataArray(
+        compression.values.astype(str),
+        name="compression_label",
+        dims=["compression_label"],
+        attrs=attribute_manager.get_variable_attributes(
+            "compression_label", check_schema=False
+        ),
+    )
+
+    # TODO: update with L1C specific attributes
+    global_attributes = attribute_manager.get_global_attributes(input_logical_source_1)
+    try:
+        global_attributes["is_mago"] = normal_mode_dataset.attrs["is_mago"]
+        global_attributes["is_active"] = normal_mode_dataset.attrs["is_active"]
+        global_attributes["missing_sequences"] = normal_mode_dataset.attrs[
+            "missing_sequences"
+        ]
+    except KeyError as e:
+        logger.info(
+            f"Key error when assigning global attributes, attribute not found in "
+            f"L1A file: {e}"
+        )
+
+    global_attributes["interpolation_method"] = interp_function.name
+
+    output_dataset = xr.Dataset(
+        coords={
+            "epoch": epoch_time,
+            "direction": direction,
+            "direction_label": direction_label,
+            "compression": compression,
+            "compression_label": compression_label,
+        },
+        attrs=global_attributes,
+    )
+
+    output_dataset['vectors'] = xr.DataArray(
+        completed_timeline[:, 1:5],
+        name="vectors",
+        dims=["epoch", "direction"],
+        attrs=attribute_manager.get_variable_attributes("vector_attrs"),
+    )
+
+    output_dataset['vector_magnitude'] = xr.apply_ufunc(
+        lambda x: np.linalg.norm(x[:4]), output_dataset['vectors'], input_core_dims=[["direction"]], output_core_dims=[[]],
+        vectorize=True)
+    # output_dataset['vector_magnitude'].attrs = attribute_manager.get_variable_attributes("vector_magnitude_attrs")
+
+    output_dataset["compression_flags"] = xr.DataArray(
+        completed_timeline[:, 6:8],
+        name="compression_flags",
+        dims=["epoch", "compression"],
+        attrs=attribute_manager.get_variable_attributes("compression_flags_attrs"),
+    )
+
+    output_dataset["generated_flag"] = xr.DataArray(
+        completed_timeline[:, 5],
+        name="generated_flag",
+        dims=["epoch"],
+        # attrs=attribute_manager.get_variable_attributes("generated_flag_attrs"),
+    )
+
+    return output_dataset
 
 
 def process_mag_l1c(
@@ -80,12 +181,6 @@ def process_mag_l1c(
     burst_mode_dataset: xr.Dataset,
     interpolation_function: InterpolationFunction,
 ):
-    # TODO:
-    # - determine expected timeline
-    # - copy NM data in
-    # - write interpolation step
-    # - copy output of interpolation into output
-    expected_nm_vectors_per_second = []
     norm_epoch = normal_mode_dataset["epoch"].data
     vecsec_attr = normal_mode_dataset.attrs["vectors_per_second"]
 
@@ -107,7 +202,7 @@ def process_mag_l1c(
 
 def fill_normal_data(normal_dataset, new_timeline):
     # TODO: fill with FILLVAL?
-    filled_timeline = np.zeros((len(new_timeline), 6))
+    filled_timeline = np.zeros((len(new_timeline), 8))
     filled_timeline[:, 0] = new_timeline
     # Flags, will also indicate any missed timestamps
     filled_timeline[:, 5] = -1
@@ -116,6 +211,7 @@ def fill_normal_data(normal_dataset, new_timeline):
         timeline_index = np.searchsorted(new_timeline, timestamp)
         filled_timeline[timeline_index, 1:5] = normal_dataset["vectors"].data[index]
         filled_timeline[timeline_index, 5] = 0
+        filled_timeline[timeline_index, 6:8] = normal_dataset["compression_flags"].data[index]
 
     return filled_timeline
 
@@ -130,7 +226,9 @@ def interpolate_gaps(burst_dataset, gaps, filled_norm_timeline, interpolation_fu
         burst_start = (np.abs(burst_epochs - gap[0])).argmin()
         burst_end = (np.abs(burst_epochs - gap[1])).argmin()
         gap_timeline = filled_norm_timeline[
-            np.nonzero((filled_norm_timeline > gap[0]) & (filled_norm_timeline < gap[1]))
+            np.nonzero(
+                (filled_norm_timeline > gap[0]) & (filled_norm_timeline < gap[1])
+            )
         ]
         # do not include range
         gap_fill = interpolation_function(
@@ -144,9 +242,9 @@ def interpolate_gaps(burst_dataset, gaps, filled_norm_timeline, interpolation_fu
             timeline_index = np.searchsorted(filled_norm_timeline[:, 0], timestamp)
             if sum(filled_norm_timeline[timeline_index, 1:4]) == 0:
                 filled_norm_timeline[timeline_index, 1:4] = gap_fill[index]
-                # Just carry the first range value through
-                filled_norm_timeline[timeline_index, 4] = burst_vectors[burst_start, 3]
+                filled_norm_timeline[timeline_index, 4] = burst_vectors[burst_start+index, 3]
                 filled_norm_timeline[timeline_index, 5] = 1
+                filled_norm_timeline[timeline_index, 6:8] = burst_dataset["compression_flags"].data[burst_start+index]
 
     return filled_norm_timeline
 
