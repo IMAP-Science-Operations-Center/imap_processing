@@ -3,6 +3,7 @@
 import logging
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
 
@@ -12,18 +13,18 @@ from imap_processing.swe.l1b.swe_l1b_science import (
     deadtime_correction,
     read_in_flight_cal_data,
 )
-from imap_processing.swe.utils.swe_utils import combine_acquisition_time
 from imap_processing.swe.utils.swe_constants import (
     ESA_VOLTAGE_ROW_INDEX_DICT,
     GEOMETRIC_FACTORS,
 )
+from imap_processing.swe.utils.swe_utils import combine_acquisition_time
 
 logger = logging.getLogger(__name__)
 
 
 def decompress_counts(raw_counts: NDArray) -> NDArray:
     """
-    Decompress raw counts using a predefined decompression table.
+    Perform decompression of raw counts using a predefined decompression table.
 
     Parameters
     ----------
@@ -43,24 +44,25 @@ def decompress_counts(raw_counts: NDArray) -> NDArray:
     return counts
 
 
-def phi_to_bin(phi_values: np.ndarray) -> np.ndarray:
+def phi_to_bin(phi_values: NDArray) -> NDArray:
     """
-    Converts phi values to corresponding bin indices.
+    Convert phi values to corresponding bin indices.
 
     Parameters
     ----------
-    phi_values : np.ndarray
+    phi_values : NDArray
         Array of phi values.
 
     Returns
     -------
-    np.ndarray
+    bin_indices : NDArray
         Array of bin indices.
     """
-    return ((phi_values - 12) // 12) % 30  # Ensure it wraps correctly within 0-29 bins
+    # Ensure it wraps correctly within 0-29 bins
+    return ((phi_values - 12) // 12) % 30
 
 
-def prepare_raw_counts(grouped: xr.Dataset, cem_number=7) -> np.ndarray:
+def prepare_raw_counts(grouped: xr.Dataset, cem_number: int = 7) -> NDArray:
     """
     Reformat raw counts into a 3D array binned by phi.
 
@@ -73,9 +75,12 @@ def prepare_raw_counts(grouped: xr.Dataset, cem_number=7) -> np.ndarray:
 
     Returns
     -------
-    raw_counts : np.ndarray
-        n_energy, n_cems, n_phi
-        Array of raw counts with shape (8, 7, 30), where:
+    raw_counts : NDArray
+        Raw counts with shape (8, 7, 30).
+
+    Notes
+    -----
+    Array of raw counts with shape (8, 7, 30), where:
         - 8 corresponds to the 8 energy steps.
         - 7 corresponds to the 7 CEM detectors.
         - 30 corresponds to the 30 phi bins.
@@ -84,26 +89,30 @@ def prepare_raw_counts(grouped: xr.Dataset, cem_number=7) -> np.ndarray:
     n_epochs = len(grouped["epoch"])
 
     # Compute phi values and their corresponding bins
-    phi_values = np.array([
-        (12 + 24 * np.arange(n_epochs)) % 360,  # Energy steps 0 and 1
-        (24 + 24 * np.arange(n_epochs)) % 360   # Energy steps 2 and 3
-    ])
+    phi_values = np.array(
+        [
+            (12 + 24 * np.arange(n_epochs)) % 360,  # Energy steps 0 and 1
+            (24 + 24 * np.arange(n_epochs)) % 360,  # Energy steps 2 and 3
+        ]
+    )
     phi_bins = phi_to_bin(phi_values)  # Get phi bin indices
 
     # Energy bin lookup table (indexed by quarter cycle)
-    energy_bins = np.array([
-        [1, 5, 3, 7],  # 0-14 (first quarter cycle)
-        [2, 6, 0, 4],  # 15-29 (second quarter cycle)
-        [3, 7, 1, 5],  # 30-44 (third quarter cycle)
-        [0, 4, 2, 6],  # 45-59 (fourth quarter cycle)
-    ])
+    energy_bins = np.array(
+        [
+            [1, 5, 3, 7],  # 0-14 (first quarter cycle)
+            [2, 6, 0, 4],  # 15-29 (second quarter cycle)
+            [3, 7, 1, 5],  # 30-44 (third quarter cycle)
+            [0, 4, 2, 6],  # 45-59 (fourth quarter cycle)
+        ]
+    )
 
     # The first 15 seconds is the first quarter cycle, etc.
     quarter_cycles = np.floor(np.arange(n_epochs) / 15).astype(int)
     e_bins = energy_bins[quarter_cycles]
 
     # Populate raw_counts
-    for cem in range(1, cem_number+1):  # 7 CEMs
+    for cem in range(1, cem_number + 1):  # 7 CEMs
         e1 = grouped[f"swe_cem{cem}_e1"].values
         e2 = grouped[f"swe_cem{cem}_e2"].values
         e3 = grouped[f"swe_cem{cem}_e3"].values
@@ -119,7 +128,7 @@ def prepare_raw_counts(grouped: xr.Dataset, cem_number=7) -> np.ndarray:
     return raw_counts
 
 
-def get_ialirt_energies():
+def get_ialirt_energies() -> list:
     """
     Get the ESA voltages for I-ALiRT.
 
@@ -137,9 +146,35 @@ def get_ialirt_energies():
     return energy
 
 
+def normalize_counts(counts: NDArray, latest_cal: pd.Series) -> NDArray:
+    """
+    Normalize the counts using the latest calibration factor.
+
+    Parameters
+    ----------
+    counts : np.ndarray
+        Array of counts.
+    latest_cal : pd.Series
+        Array of latest calibration factors.
+
+    Returns
+    -------
+    norm_counts : np.ndarray
+        Array of normalized counts.
+    """
+    latest_cal = latest_cal.to_numpy()
+
+    # Norm counts where counts are non-negative
+    # TODO: confirm fv is counts with Ruth
+    norm_counts = counts * (latest_cal / GEOMETRIC_FACTORS)[:, np.newaxis]
+    norm_counts[norm_counts < 0] = 0
+
+    return norm_counts
+
+
 def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
     """
-    Process SWE.
+    Create L1 data dictionary..
 
     Parameters
     ----------
@@ -154,13 +189,14 @@ def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
     logger.info("Processing SWE.")
 
     # Calculate time in seconds
-    time_seconds = combine_acquisition_time(accumulated_data["swe_acq_sec"],
-                                            accumulated_data["swe_acq_sub"])
+    time_seconds = combine_acquisition_time(
+        accumulated_data["swe_acq_sec"], accumulated_data["swe_acq_sub"]
+    )
     accumulated_data["time_seconds"] = time_seconds
 
     grouped_data = find_groups(accumulated_data, (0, 59), "swe_seq", "time_seconds")
     unique_groups = np.unique(grouped_data["group"])
-    swe_data = []
+    swe_data: list[dict] = []
 
     for group in unique_groups:
         # Sequence values for the group should be 0-59 with no duplicates.
@@ -184,19 +220,14 @@ def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
 
         # Apply the deadtime correction
         # acq_duration = 80 milliseconds
-        corrected_counts = deadtime_correction(counts, 80 * 10 ^ 3)
+        corrected_counts = deadtime_correction(counts, 80 * 10**3)
 
         # Grab the latest calibration factor
         in_flight_cal_df = read_in_flight_cal_data()
         latest_cal = in_flight_cal_df.sort_values("met_time").iloc[-1][1::]
 
-        # Mask negative values in counts
-        mask = counts < 0
-        norm_counts = np.zeros_like(corrected_counts, dtype=np.float64)
+        normalize_counts(corrected_counts, latest_cal)
 
-        # Norm counts where counts are non-negative
-        norm_counts[~mask] = (
-                corrected_counts[~mask] * latest_cal[:, np.newaxis] / GEOMETRIC_FACTORS[:, np.newaxis]
-        )
+        # TODO: will continue here
 
     return swe_data

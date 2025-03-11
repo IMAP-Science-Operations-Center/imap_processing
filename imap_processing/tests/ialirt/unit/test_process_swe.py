@@ -9,11 +9,15 @@ from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.process_swe import (
     decompress_counts,
     get_ialirt_energies,
+    normalize_counts,
     phi_to_bin,
     prepare_raw_counts,
     process_swe,
 )
-from imap_processing.swe.utils.swe_constants import ESA_VOLTAGE_ROW_INDEX_DICT
+from imap_processing.swe.utils.swe_constants import (
+    ESA_VOLTAGE_ROW_INDEX_DICT,
+    GEOMETRIC_FACTORS,
+)
 from imap_processing.utils import packet_file_to_datasets
 
 
@@ -103,25 +107,6 @@ def fields_to_test():
         "swe_cem7_e4": "ELEC_COUNTS_SPIN_I_POL_6_E_3J",
     }
     return fields_to_test
-
-
-# TODO: double check this test
-@pytest.fixture()
-def grouped_data():
-    """Creates grouped data for prepare_raw_counts test."""
-    epoch = np.arange(60)
-
-    group = np.zeros(60, dtype=np.int32)
-    data_vars = {"group": ("epoch", group)}
-
-    for cem in range(1, 8):
-        for e in range(1, 5):
-            key = f"swe_cem{cem}_e{e}"
-            data_vars[key] = ("epoch", np.full(60, cem * 10 + e, dtype=np.uint8))
-
-    grouped_data = xr.Dataset(data_vars, coords={"epoch": epoch})
-
-    return grouped_data
 
 
 def test_get_energy():
@@ -237,6 +222,64 @@ def test_prepare_raw_counts():
     expected[7, 1, phi_bin_48] = 16
 
     assert np.array_equal(raw_counts, expected)
+
+
+def test_norm_counts():
+    """Tests normalize_counts function"""
+
+    # Shape (2, 7, 3) for a small test case
+    corrected_counts = np.array(
+        [
+            [
+                [1, 2, 3],
+                [4, 5, 6],
+                [7, 8, 9],
+                [10, 11, 12],
+                [13, 14, 15],
+                [16, 17, 18],
+                [19, 20, 21],
+            ],
+            [
+                [2, 4, 6],
+                [8, 10, 12],
+                [14, 16, 18],
+                [20, 22, 24],
+                [26, 28, 30],
+                [32, 34, 36],
+                [38, 40, 42],
+            ],
+        ],
+        dtype=np.uint8,
+    )
+
+    latest_cal = pd.Series(
+        [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0],
+        index=[
+            "cem1",
+            "cem2",
+            "cem3",
+            "cem4",
+            "cem5",
+            "cem6",
+            "cem7",
+        ],  # Simulating real data structure
+        dtype=np.float64,
+    )
+    expected = np.zeros((2, 7, 3), dtype=np.float64)
+
+    for i in range(2):
+        for j in range(7):
+            for k in range(3):
+                if corrected_counts[i][j][k] < 0:
+                    expected[i][j][k] = 0.0
+                else:
+                    expected[i][j][k] = (
+                        corrected_counts[i][j][k] * latest_cal[j] / GEOMETRIC_FACTORS[j]
+                    )
+
+    norm_counts = normalize_counts(corrected_counts, latest_cal)
+
+    assert np.allclose(norm_counts, expected, atol=1e-9)
 
 
 @patch(
