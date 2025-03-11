@@ -86,16 +86,15 @@ def prepare_raw_counts(grouped: xr.Dataset, cem_number: int = 7) -> NDArray:
         - 30 corresponds to the 30 phi bins.
     """
     raw_counts = np.zeros((8, cem_number, 30), dtype=np.uint8)
-    n_epochs = len(grouped["epoch"])
 
     # Compute phi values and their corresponding bins
     phi_values = np.array(
         [
-            (12 + 24 * np.arange(n_epochs)) % 360,  # Energy steps 0 and 1
-            (24 + 24 * np.arange(n_epochs)) % 360,  # Energy steps 2 and 3
+            (12 + 24 * grouped["swe_seq"].values) % 360,  # Energy steps 0 and 1
+            (24 + 24 * grouped["swe_seq"].values) % 360,  # Energy steps 2 and 3
         ]
     )
-    phi_bins = phi_to_bin(phi_values)  # Get phi bin indices
+    phi_bins = phi_to_bin(phi_values).astype(int)  # Get phi bin indices
 
     # Energy bin lookup table (indexed by quarter cycle)
     energy_bins = np.array(
@@ -108,7 +107,7 @@ def prepare_raw_counts(grouped: xr.Dataset, cem_number: int = 7) -> NDArray:
     )
 
     # The first 15 seconds is the first quarter cycle, etc.
-    quarter_cycles = np.floor(np.arange(n_epochs) / 15).astype(int)
+    quarter_cycles = np.floor(grouped["swe_seq"] / 15).astype(int)
     e_bins = energy_bins[quarter_cycles]
 
     # Populate raw_counts
@@ -213,20 +212,30 @@ def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
         # (8 energy steps, 7 CEMs, 30 phi bins)
         group_mask = grouped_data["group"] == group
         grouped = grouped_data.sel(epoch=group_mask)
-        raw_counts = prepare_raw_counts(grouped)
+
+        # Split into Q1 & Q2 (swe_seq 0-29) and Q3 & Q4 (swe_seq 30-59)
+        first_half = grouped.where(grouped["swe_seq"] < 30, drop=True)
+        second_half = grouped.where(grouped["swe_seq"] >= 30, drop=True)
+
+        # Prepare raw counts separately for both halves
+        raw_counts_first_half = prepare_raw_counts(first_half)
+        raw_counts_second_half = prepare_raw_counts(second_half)
 
         # Decompress the raw counts
-        counts = decompress_counts(raw_counts)
+        counts_first_half = decompress_counts(raw_counts_first_half)
+        counts_second_half = decompress_counts(raw_counts_second_half)
 
         # Apply the deadtime correction
         # acq_duration = 80 milliseconds
-        corrected_counts = deadtime_correction(counts, 80 * 10**3)
+        corrected_first_half = deadtime_correction(counts_first_half, 80 * 10**3)
+        corrected_second_half = deadtime_correction(counts_second_half, 80 * 10**3)
 
         # Grab the latest calibration factor
         in_flight_cal_df = read_in_flight_cal_data()
         latest_cal = in_flight_cal_df.sort_values("met_time").iloc[-1][1::]
 
-        normalize_counts(corrected_counts, latest_cal)
+        normalize_counts(corrected_first_half, latest_cal)
+        normalize_counts(corrected_second_half, latest_cal)
 
         # TODO: will continue here
 

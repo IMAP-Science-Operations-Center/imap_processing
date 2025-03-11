@@ -172,6 +172,7 @@ def test_prepare_raw_counts():
         "swe_cem2_e2": ("epoch", [6, 14]),
         "swe_cem2_e3": ("epoch", [7, 15]),
         "swe_cem2_e4": ("epoch", [8, 16]),
+        "swe_seq": ("epoch", [0, 1]),
     }
 
     grouped_data = xr.Dataset(data, coords={"epoch": epochs})
