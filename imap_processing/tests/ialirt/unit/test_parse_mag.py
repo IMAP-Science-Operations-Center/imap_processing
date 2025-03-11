@@ -5,7 +5,7 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.parse_mag import (
-    get_bytes,
+    extract_magnetic_vectors,
     get_pkt_counter,
     get_status_data,
     get_time,
@@ -138,27 +138,22 @@ def test_get_time(grouped_data):
     }
 
 
-def test_get_bytes():
-    """Tests the get_bytes function."""
+def test_extract_magnetic_vectors():
+    """Tests the extract_magnetic_vectors function."""
+    science_values = xr.DataArray(
+        data=np.array([15797207, 5750698, 15921110, 2342918], dtype=np.uint32)
+    )
 
-    test_cases = [
-        5797207,
-        5750698,
-        15921110,
-        2342918,
-        15797207,
-        5750697,
-        15921110,
-        2342918,
-    ]
+    vectors = extract_magnetic_vectors(science_values)
 
-    for val in test_cases:
-        extracted = get_bytes(val)
-
-        # Reassemble 24-bit integer from three individual bytes.
-        reconstructed_value = (extracted[0] << 16) | (extracted[1] << 8) | extracted[2]
-
-        assert reconstructed_value == val
+    assert vectors == {
+        "pri_x": 61707,
+        "pri_y": 55127,
+        "pri_z": 49066,
+        "sec_x": 62191,
+        "sec_y": 54819,
+        "sec_z": 49158,
+    }
 
 
 def test_parse_packet(xarray_data, mag_test_data):

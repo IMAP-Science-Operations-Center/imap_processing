@@ -106,21 +106,19 @@ def extract_magnetic_vectors(science_values: xr.DataArray) -> dict:
     vectors : dict
         Magnetic vectors.
     """
-    # Convert each 24-bit value to its three constituent bytes
-    science0 = get_bytes(int(science_values[0]))
-    science1 = get_bytes(int(science_values[1]))
-    science2 = get_bytes(int(science_values[2]))
-    science3 = get_bytes(int(science_values[3]))
-
     # Primary sensor:
-    pri_x = (science0[0] << 8) | science0[1]
-    pri_y = (science0[2] << 8) | science1[0]
-    pri_z = (science1[1] << 8) | science1[2]
+    pri_x = (int(science_values[0]) >> 8) & 0xFFFF
+    pri_y = ((int(science_values[0]) << 8) & 0xFF00) | (
+        (int(science_values[1]) >> 16) & 0xFF
+    )
+    pri_z = int(science_values[1]) & 0xFFFF
 
     # Secondary sensor:
-    sec_x = (science2[0] << 8) | science2[1]
-    sec_y = (science2[2] << 8) | science3[0]
-    sec_z = (science3[1] << 8) | science3[2]
+    sec_x = (int(science_values[2]) >> 8) & 0xFFFF
+    sec_y = ((int(science_values[2]) << 8) & 0xFF00) | (
+        (int(science_values[3]) >> 16) & 0xFF
+    )
+    sec_z = int(science_values[3]) & 0xFFFF
 
     vectors = {
         "pri_x": pri_x,
@@ -192,7 +190,10 @@ def parse_packet(accumulated_data: xr.Dataset) -> list[dict]:
     mag_data : list[dict]
         Dictionaries of the parsed data product.
     """
-    logger.info("Parsing MAG.")
+    logger.info(
+        f"Parsing MAG for time: {accumulated_data['mag_acq_tm_coarse'].min().values} - "
+        f"{accumulated_data['mag_acq_tm_coarse'].max().values}."
+    )
 
     # Note that the fine time second is split into 65535.
     time_seconds = calculate_time(
@@ -204,8 +205,7 @@ def parse_packet(accumulated_data: xr.Dataset) -> list[dict]:
     # Add required parameters.
     accumulated_data["time_seconds"] = time_seconds
     sorted_data = accumulated_data.sortby("time_seconds", ascending=True)
-    status_values = sorted_data["mag_status"]
-    pkt_counter = get_pkt_counter(status_values)
+    pkt_counter = get_pkt_counter(sorted_data["mag_status"])
     sorted_data["pkt_counter"] = pkt_counter
 
     grouped_data = find_groups(sorted_data, (0, 3), "pkt_counter", "time_seconds")

@@ -1,12 +1,16 @@
 """Common grouping functions for I-ALiRT instruments."""
 
+import logging
+
 import numpy as np
 import xarray as xr
+
+logger = logging.getLogger(__name__)
 
 
 def filter_valid_groups(grouped_data: xr.Dataset) -> xr.Dataset:
     """
-    Filter out groups where `src_seq_ctr` diff are not 1 or -16383.
+    Filter out groups where `src_seq_ctr` diff are not 1.
 
     Parameters
     ----------
@@ -25,11 +29,19 @@ def filter_valid_groups(grouped_data: xr.Dataset) -> xr.Dataset:
         src_seq_ctr = grouped_data["src_seq_ctr"][
             (grouped_data["group"] == group).values
         ]
-        src_seq_ctr_diff = np.diff(src_seq_ctr)
+        src_seq_ctr_diff = np.diff(src_seq_ctr) % 16384
+        mag_acq_tm_coarse = grouped_data["mag_acq_tm_coarse"][
+            (grouped_data["group"] == group).values
+        ]
 
-        # Accept group only if all diffs are 1 or -16383
-        if np.all(np.isin(src_seq_ctr_diff, [1, -16383])):
+        # Accept group only if all diffs are 1.
+        if np.all(src_seq_ctr_diff == 1):
             valid_groups.append(group)
+        else:
+            logger.info(
+                f"src_seq_ctr_diff != 1 for group {group} at time "
+                f"{mag_acq_tm_coarse}."
+            )
 
     filtered_data = grouped_data.where(
         xr.DataArray(np.isin(grouped_data["group"], valid_groups), dims="epoch"),
@@ -62,7 +74,15 @@ def find_groups(
     Returns
     -------
     grouped_data : xr.Dataset
-        Add "group" coordinate.
+        Filtered data with "group" coordinate.
+
+    Notes
+    -----
+    Filters data based on:
+    1. Time values between the first and last sequence_range values.
+    Take out time values before sequence_range[0] and after sequence_range[-1].
+    2. Sequence values src_seq_ctr between the first and
+    last sequence_range. These must be consecutive.
     """
     sorted_data = accumulated_data.sortby(time_name, ascending=True)
 
