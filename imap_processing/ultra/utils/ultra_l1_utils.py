@@ -1,8 +1,12 @@
 """Create dataset."""
 
+import logging
+
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+
+logger = logging.getLogger(__name__)
 
 
 def create_dataset(
@@ -36,8 +40,6 @@ def create_dataset(
         coords = {
             "spin_number": data_dict["spin_number"],
             "energy_bin_geometric_mean": data_dict["energy_bin_geometric_mean"],
-            # Start time aligns with the universal spin table
-            "epoch": data_dict["spin_start_time"],
         }
         default_dimension = "spin_number"
 
@@ -106,3 +108,47 @@ def create_dataset(
             )
 
     return dataset
+
+
+def is_ultra45(
+    str_or_dataset: str | xr.Dataset,
+) -> bool:
+    """
+    Determine if the input is a 45 sensor (return True) or 90 sensor (False) product.
+
+    Parameters
+    ----------
+    str_or_dataset : str | xr.Dataset
+        Either the string descriptor or the xarray.Dataset object
+        which contains the descriptor as an attribute "Logical_file_id".
+
+    Returns
+    -------
+    bool
+        True if the descriptor contains '45sensor', else False.
+
+    Raises
+    ------
+    ValueError
+        If the input is not a string or xarray.Dataset.
+
+    Notes
+    -----
+    Issues a logger warning if neither '45sensor' nor '90sensor'
+    is found in the descriptor string.
+    """
+    # Get the global attr which should contain the substring '45sensor' or '90sensor'
+    if isinstance(str_or_dataset, str):
+        descriptor_str = str_or_dataset
+    elif isinstance(str_or_dataset, xr.Dataset):
+        descriptor_str = str_or_dataset.attrs["Logical_file_id"]
+    else:
+        raise ValueError("Input must be a string or xarray.Dataset")
+
+    if "45sensor" in descriptor_str:
+        return True
+    elif "90sensor" not in descriptor_str:
+        logger.warning(
+            f"Found neither 45, nor 90 in descriptor string: {descriptor_str}"
+        )
+    return False
