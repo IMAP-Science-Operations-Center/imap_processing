@@ -23,6 +23,13 @@ def ultra_l1b(data_dict: dict, data_version: str) -> list[xr.Dataset]:
     -------
     output_datasets : list[xarray.Dataset]
         List of xarray.Dataset.
+
+    Notes
+    -----
+    General flow:
+    1. l1a data products are created (upstream to this code)
+    2. l1b de is created here and dropped in s3 kicking off processing again
+    3. l1b extended, culling, badtimes created here
     """
     output_datasets = []
     instrument_id = 45 if any("45" in key for key in data_dict.keys()) else 90
