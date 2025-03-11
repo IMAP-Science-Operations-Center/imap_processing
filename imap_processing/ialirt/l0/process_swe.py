@@ -234,8 +234,12 @@ def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
         in_flight_cal_df = read_in_flight_cal_data()
         latest_cal = in_flight_cal_df.sort_values("met_time").iloc[-1][1::]
 
-        normalize_counts(corrected_first_half, latest_cal)
-        normalize_counts(corrected_second_half, latest_cal)
+        normalized_first_half = normalize_counts(corrected_first_half, latest_cal)
+        normalized_second_half = normalize_counts(corrected_second_half, latest_cal)
+
+        # Sum over the 7 detectors
+        summed_first_half = np.sum(normalized_first_half, axis=1)  # noqa: F841
+        summed_second_half = np.sum(normalized_second_half, axis=1)  # noqa: F841
 
         # TODO: will continue here
 
