@@ -16,6 +16,17 @@ hskp_attrs: &hskp_default
     DEPEND_0: epoch
     VAR_TYPE: support_data
 
+hi_energies_attrs: &hi_energies_default
+    FIELDNAM: Energy Table
+    FILLVAL: -1.0e+30
+    FORMAT: F10.8
+    LABLAXIS: MeV/n
+    SCALETYP: log
+    UNITS: MeV/n
+    VALIDMIN: 0.05
+    VALIDMAX: 200.00
+    VAR_TYPE: support_data
+
 # <=== Coordinates ===>
 esa_step:
     CATDESC: Energy per charge (E/q) sweeping step
@@ -251,67 +262,183 @@ hi-omni-h:
     <<: *counters
     CATDESC: Omnidirectional H Counts
     FIELDNAM: H
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
     LABL_PTR_1: esa_step
     LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+
+hi-omni-energy_h:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for h
+    DELTA_MINUS_VAR: energy_h_delta
+    DELTA_PLUS_VAR: energy_h_delta
+
+hi-omni-energy_h_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for h
+    FIELDNAM: Delta Energy
 
 hi-omni-he3:
     <<: *counters
     CATDESC: Omnidirectional He3 Counts
     FIELDNAM: He3
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
     LABL_PTR_1: esa_step
     LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+
+hi-omni-energy_he3:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for he3
+    DELTA_MINUS_VAR: energy_he3_delta
+    DELTA_PLUS_VAR: energy_he3_delta
+
+hi-omni-energy_he3_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for he3
+    FIELDNAM: Delta Energy
 
 hi-omni-he4:
     <<: *counters
     CATDESC: Omnidirectional He4 Counts
     FIELDNAM: He4
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
     LABL_PTR_1: esa_step
     LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+
+hi-omni-energy_he4:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for he4
+    DELTA_MINUS_VAR: energy_he4_delta
+    DELTA_PLUS_VAR: energy_he4_delta
+
+hi-omni-energy_he4_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for he4
+    FIELDNAM: Delta Energy
 
 hi-omni-c:
     <<: *counters
     CATDESC: Omnidirectional C Counts
     FIELDNAM: C
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
     LABL_PTR_1: esa_step
     LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+
+hi-omni-energy_c:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for c
+    DELTA_MINUS_VAR: energy_c_delta
+    DELTA_PLUS_VAR: energy_c_delta
+
+hi-omni-energy_c_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for c
+    FIELDNAM: Delta Energy
 
 hi-omni-o:
     <<: *counters
     CATDESC: Omnidirectional O Counts
     FIELDNAM: O
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
     LABL_PTR_1: esa_step
     LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+
+hi-omni-energy_o:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for o
+    DELTA_MINUS_VAR: energy_o_delta
+    DELTA_PLUS_VAR: energy_o_delta
+
+hi-omni-energy_o_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for o
+    FIELDNAM: Delta Energy
 
 hi-omni-ne_mg_si:
     <<: *counters
     CATDESC: Omnidirectional Ne_Mg_Si Counts
     FIELDNAM: Ne_Mg_Si
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
     LABL_PTR_1: esa_step
     LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+
+hi-omni-energy_ne_mg_si:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for ne_mg_si
+    DELTA_MINUS_VAR: energy_ne_mg_si_delta
+    DELTA_PLUS_VAR: energy_ne_mg_si_delta
+
+hi-omni-energy_ne_mg_si_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for ne_mg_si
+    FIELDNAM: Delta Energy
 
 hi-omni-fe:
     <<: *counters
     CATDESC: Omnidirectional Fe Counts
     FIELDNAM: Fe
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
     LABL_PTR_1: esa_step
     LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+
+hi-omni-energy_fe:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for fe
+    DELTA_MINUS_VAR: energy_fe_delta
+    DELTA_PLUS_VAR: energy_fe_delta
+
+hi-omni-energy_fe_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for fe
+    FIELDNAM: Delta Energy
 
 hi-omni-uh:
     <<: *counters
     CATDESC: Omnidirectional UH Counts
     FIELDNAM: UH
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
     LABL_PTR_1: esa_step
     LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
 
-# hi-sectored
+hi-omni-energy_uh:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for uh
+    DELTA_MINUS_VAR: energy_uh_delta
+    DELTA_PLUS_VAR: energy_uh_delta
+
+hi-omni-energy_uh_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for uh
+    FIELDNAM: Delta Energy
+
+hi-omni-junk:
+    <<: *counters
+    CATDESC: Junk (Root 2 spacing)
+    FIELDNAM: Junk
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
+    LABL_PTR_1: esa_step
+    LABL_PTR_2: inst_az
+
+hi-omni-energy_junk:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for junk
+    DELTA_MINUS_VAR: energy_junk_delta
+    DELTA_PLUS_VAR: energy_junk_delta
+
+hi-omni-energy_junk_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for junk
+    FIELDNAM: Delta Energy
+
+#hi-sectored
 hi-sectored-h:
     <<: *counters
     CATDESC: Sectored H Counts

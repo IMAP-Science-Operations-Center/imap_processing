@@ -41,7 +41,7 @@ def test_bad_cdf_attributes(decom_test_data: xr.Dataset):
     del decom_test_data["TOF_High"].attrs["CATDESC"]
 
     with pytest.raises(ISTPError):
-        write_cdf(decom_test_data)
+        write_cdf(decom_test_data, istp=True, terminate_on_warning=True)
 
     # Add attributes back so future tests do not fail
     decom_test_data["TOF_High"].attrs["CATDESC"] = tof_catdesc
@@ -79,7 +79,7 @@ def test_bad_cdf_file_data(decom_test_data: xr.Dataset):
     decom_test_data["Bad_data"] = bad_data_xr
 
     with pytest.raises(ISTPError):
-        write_cdf(decom_test_data)
+        write_cdf(decom_test_data, istp=True, terminate_on_warning=True)
 
     del decom_test_data["Bad_data"]
 

@@ -52,7 +52,7 @@ EXPECTED_ARRAY_SHAPES = [
     (77, 19, 12, 128),  # lo-nsw-angular
     (77, 1, 6, 1),  # hi-counters-aggregated
     (77, 1, 12, 1),  # hi-counters-singles
-    (77, 15, 4, 1),  # hi-omni
+    (77, 15, 4),  # hi-omni
     (77, 8, 12, 12),  # hi-sectored
     (),  # hi-priority  # TODO: Need to implement
     (),  # lo-pha  # TODO: Need to implement

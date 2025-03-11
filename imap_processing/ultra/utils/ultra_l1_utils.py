@@ -36,6 +36,8 @@ def create_dataset(
         coords = {
             "spin_number": data_dict["spin_number"],
             "energy_bin_geometric_mean": data_dict["energy_bin_geometric_mean"],
+            # Start time aligns with the universal spin table
+            "epoch": data_dict["spin_start_time"],
         }
         default_dimension = "spin_number"
 

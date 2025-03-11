@@ -74,6 +74,8 @@ class CoDICEL1aPipeline:
         Retrieve the acquisition times via the Lo stepping table.
     get_energy_table()
         Retrieve the ESA sweep values.
+    get_hi_energy_table_data(species)
+        Retrieve energy table data for CoDICE-Hi products
     reshape_data()
         Reshape the data arrays based on the data product being made.
     set_data_product_config()
@@ -269,45 +271,86 @@ class CoDICEL1aPipeline:
             "st_bias_gain_mode",
         ]
 
-        for variable_name in self.config["support_variables"]:
-            # These variables require reading in external tables
-            if variable_name == "energy_table":
-                variable_data = self.get_energy_table()
-                dims = ["esa_step"]
-                attrs = self.cdf_attrs.get_variable_attributes("energy_table")
+        hi_energy_table_variables = [
+            "energy_h",
+            "energy_he3",
+            "energy_he4",
+            "energy_c",
+            "energy_o",
+            "energy_ne_mg_si",
+            "energy_fe",
+            "energy_uh",
+            "energy_junk",
+        ]
 
-            elif variable_name == "acquisition_time_per_step":
-                variable_data = self.get_acquisition_times()
-                dims = ["esa_step"]
-                attrs = self.cdf_attrs.get_variable_attributes(
-                    "acquisition_time_per_step"
+        for variable_name in self.config["support_variables"]:
+            # CoDICE-Hi energy tables are treated differently because values
+            # are binned and we need to record the energies _and_ their deltas
+            if variable_name in hi_energy_table_variables:
+                centers, deltas = self.get_hi_energy_table_data(
+                    variable_name.split("energy_")[-1]
                 )
 
-            elif variable_name in packet_data_variables:
-                variable_data = self.dataset[variable_name].data
-                dims = ["epoch"]
-                attrs = self.cdf_attrs.get_variable_attributes(variable_name)
+                # Add bin centers and deltas to the dataset
+                dataset[variable_name] = xr.DataArray(
+                    centers,
+                    dims=[variable_name],
+                    attrs=self.cdf_attrs.get_variable_attributes(
+                        f"{self.config['dataset_name'].split('_')[-1]}-{variable_name}"
+                    ),
+                )
+                dataset[f"{variable_name}_delta"] = xr.DataArray(
+                    deltas,
+                    dims=[f"{variable_name}_delta"],
+                    attrs=self.cdf_attrs.get_variable_attributes(
+                        f"{self.config['dataset_name'].split('_')[-1]}-{variable_name}_delta"
+                    ),
+                )
 
-            # Data quality is named differently in packet data and needs to be
-            # treated slightly differently
-            elif variable_name == "data_quality":
-                variable_data = self.dataset.suspect.data
-                dims = ["epoch"]
-                attrs = self.cdf_attrs.get_variable_attributes("data_quality")
+            # Otherwise, support variable data can be gathered from nominal
+            # lookup tables or packet data
+            else:
+                # These variables require reading in external tables
+                if variable_name == "energy_table":
+                    variable_data = self.get_energy_table()
+                    dims = ["esa_step"]
+                    attrs = self.cdf_attrs.get_variable_attributes("energy_table")
 
-            # Spin period requires the application of a conversion factor
-            # See Table B.5 in the algorithm document
-            elif variable_name == "spin_period":
-                variable_data = self.dataset.spin_period.data * 0.00032
-                dims = ["epoch"]
-                attrs = self.cdf_attrs.get_variable_attributes("spin_period")
+                elif variable_name == "acquisition_time_per_step":
+                    variable_data = self.get_acquisition_times()
+                    dims = ["esa_step"]
+                    attrs = self.cdf_attrs.get_variable_attributes(
+                        "acquisition_time_per_step"
+                    )
 
-            # Add variable to the dataset
-            dataset[variable_name] = xr.DataArray(
-                variable_data,
-                dims=dims,
-                attrs=attrs,
-            )
+                # These variables can be gathered straight from the packet data
+                elif variable_name in packet_data_variables:
+                    variable_data = self.dataset[variable_name].data
+                    dims = ["epoch"]
+                    attrs = self.cdf_attrs.get_variable_attributes(variable_name)
+
+                # Data quality is named differently in packet data and needs to be
+                # treated slightly differently
+                elif variable_name == "data_quality":
+                    variable_data = self.dataset.suspect.data
+                    dims = ["epoch"]
+                    attrs = self.cdf_attrs.get_variable_attributes("data_quality")
+
+                # Spin period requires the application of a conversion factor
+                # See Table B.5 in the algorithm document
+                elif variable_name == "spin_period":
+                    variable_data = (
+                        self.dataset.spin_period.data * constants.SPIN_PERIOD_CONVERSION
+                    )
+                    dims = ["epoch"]
+                    attrs = self.cdf_attrs.get_variable_attributes("spin_period")
+
+                # Add variable to the dataset
+                dataset[variable_name] = xr.DataArray(
+                    variable_data,
+                    dims=dims,
+                    attrs=attrs,
+                )
 
         return dataset
 
@@ -399,6 +442,43 @@ class CoDICEL1aPipeline:
         energy_table: NDArray[float] = sweep_table["esa_v"].values
 
         return energy_table
+
+    def get_hi_energy_table_data(
+        self, species: str
+    ) -> tuple[NDArray[float], NDArray[float]]:
+        """
+        Retrieve energy table data for CoDICE-Hi products.
+
+        This includes the centers and deltas of the energy bins for a given
+        species. These data eventually get included in the CoDICE-Hi CDF data
+        products.
+
+        Parameters
+        ----------
+        species : str
+            The species of interest, which determines which lookup table to
+            use (e.g. ``h``).
+
+        Returns
+        -------
+        centers : NDArray[float]
+            An array whose values represent the centers of the energy bins.
+        deltas : NDArray[float]
+            An array whose values represent the deltas of the energy bins.
+        """
+        data_product = self.config["dataset_name"].split("-")[-1].upper()
+        energy_table = getattr(constants, f"{data_product}_ENERGY_TABLE")[species]
+
+        # Find the centers and deltas of the energy bins
+        centers = np.array(
+            [
+                (energy_table[i] + energy_table[i + 1]) / 2
+                for i in range(len(energy_table) - 1)
+            ]
+        )
+        deltas = energy_table[1:] - centers
+
+        return centers, deltas
 
     def reshape_data(self) -> None:
         """

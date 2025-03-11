@@ -11,6 +11,7 @@ def test_calculate_badtimes():
 
     spin_numbers = np.array([0, 1, 2, 3])
     energy_bins = np.array([10, 20, 30, 40])
+    spin_start_time = np.array([0, 1, 2, 3])
 
     quality_attitude = np.full(
         spin_numbers.shape, ImapAttitudeUltraFlags.NONE.value, dtype=np.uint16
@@ -36,6 +37,7 @@ def test_calculate_badtimes():
                 ("energy_bin_geometric_mean", "spin_number"),
                 quality_ena_rates,
             ),
+            "spin_start_time": (("spin_number",), spin_start_time),
         },
         coords={
             "spin_number": spin_numbers,

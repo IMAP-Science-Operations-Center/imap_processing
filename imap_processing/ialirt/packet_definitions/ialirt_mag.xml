@@ -1,0 +1,115 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="ialirt">
+	<xtce:Header date="2023-08-24T07:53:00MST" version="1.0" author="IMAP SDC" />
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<!-- This file was manually created using content from:
+			I-ALiRT Packet Definitions: https://lasp.colorado.edu/galaxy/x/44nKCQ
+            -->
+			<xtce:IntegerParameterType name="uint1" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint2" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint3" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint11" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint14" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint16" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint24" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="24" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="uint32" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+				<xtce:UnitSet />
+			</xtce:IntegerParameterType>
+		</xtce:ParameterTypeSet>
+        <xtce:ParameterSet>
+
+            <!--CCSDS Header Elements-->
+			<xtce:Parameter name="VERSION" parameterTypeRef="uint3">
+				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Type Indicator (0=telemetry)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="uint1">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag (always 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="uint11">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="uint2">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="uint14">
+				<xtce:LongDescription>CCSDS Packet Sequence Count (increments with each new packet)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="uint16">
+				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<!-- MAG -->
+			<xtce:Parameter name="MAG_SHCOARSE" parameterTypeRef="uint32">
+				<xtce:LongDescription>MAG MET at End of Data Acquisition</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MAG_ACQ_TM_COARSE" parameterTypeRef="uint32">
+				<xtce:LongDescription>MAG Coarse Acquisition Time</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MAG_ACQ_TM_FINE" parameterTypeRef="uint16">
+				<xtce:LongDescription>MAG Fine Acquisition Time</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MAG_STATUS" parameterTypeRef="uint24">
+				<xtce:LongDescription>MAG Status</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="MAG_DATA" parameterTypeRef="uint24">
+				<xtce:LongDescription>MAG Data</xtce:LongDescription>
+			</xtce:Parameter>
+			<!-- MAG -->
+		</xtce:ParameterSet>
+		<!-- End metadata -->
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket" >
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
+					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="IALiRTPacket">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="1001" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<!-- MAG -->
+					<xtce:ParameterRefEntry parameterRef="MAG_SHCOARSE"/>
+					<xtce:ParameterRefEntry parameterRef="MAG_ACQ_TM_COARSE"/>
+					<xtce:ParameterRefEntry parameterRef="MAG_ACQ_TM_FINE"/>
+					<xtce:ParameterRefEntry parameterRef="MAG_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="MAG_DATA"/>
+					<!-- MAG -->
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>

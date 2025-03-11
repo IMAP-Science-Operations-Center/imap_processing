@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.ultra.l1b.ultra_l1b import ultra_l1b
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
@@ -49,10 +50,12 @@ def mock_data_l1b_extendedspin_dict():
         [0, 1],
         dtype="int32",
     )
+    spin_start_time = np.array([0, 1, 2], dtype="uint64")
     quality = np.zeros((2, 3), dtype="uint16")
     data_dict = {
         "spin_number": spin,
         "energy_bin_geometric_mean": energy,
+        "spin_start_time": spin_start_time,
         "quality_ena_rates": quality,
     }
     return data_dict
@@ -90,22 +93,47 @@ def test_create_de_dataset(mock_data_l1b_de_dict):
     np.testing.assert_array_equal(dataset["x_front"], np.zeros(3))
 
 
-def test_ultra_l1b(l1b_datasets):
+def test_ultra_l1b(l1b_de_dataset):
     """Tests that L1b data is created."""
 
-    assert len(l1b_datasets) == 4
+    assert len(l1b_de_dataset) == 1
+
+    assert (
+        l1b_de_dataset[0].attrs["Logical_source_description"]
+        == "IMAP-Ultra Instrument Level-1B Direct Event Data."
+    )
+
+
+def test_cdf_de(l1b_de_dataset):
+    """Tests that CDF file is created and contains same attributes as xarray."""
+    test_data_path = write_cdf(l1b_de_dataset[0], istp=False)
+    assert test_data_path.exists()
+    assert test_data_path.name == "imap_ultra_l1b_45sensor-de_20240207_v001.cdf"
+
+
+def test_ultra_l1b_extendedspin(l1b_extendedspin_dataset):
+    """Tests that L1b data is created."""
+
+    assert len(l1b_extendedspin_dataset) == 3
 
     # Define the suffixes and prefix
     prefix = "imap_ultra_l1b_45sensor"
-    suffixes = ["de", "extendedspin", "cullingmask", "badtimes"]
+    suffixes = ["extendedspin", "cullingmask", "badtimes"]
 
     for i in range(len(suffixes)):
         expected_logical_source = f"{prefix}-{suffixes[i]}"
-        assert l1b_datasets[i].attrs["Logical_source"] == expected_logical_source
+        assert (
+            l1b_extendedspin_dataset[i].attrs["Logical_source"]
+            == expected_logical_source
+        )
 
+
+def test_cdf_extendedspin(l1b_extendedspin_dataset):
+    """Tests that CDF file is created and contains same attributes as xarray."""
+    test_data_path = write_cdf(l1b_extendedspin_dataset[0], istp=False)
+    assert test_data_path.exists()
     assert (
-        l1b_datasets[0].attrs["Logical_source_description"]
-        == "IMAP-Ultra Instrument Level-1B Direct Event Data."
+        test_data_path.name == "imap_ultra_l1b_45sensor-extendedspin_20000101_v001.cdf"
     )
 
 

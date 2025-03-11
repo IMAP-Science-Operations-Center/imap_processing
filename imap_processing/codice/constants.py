@@ -14,6 +14,7 @@ ESA = ElectroStatic Analyzer
 
 from imap_processing.codice.utils import CODICEAPID, CoDICECompression
 
+# APID groupings
 APIDS_FOR_SCIENCE_PROCESSING = [
     CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED,
     CODICEAPID.COD_HI_INST_COUNTS_SINGLES,
@@ -28,6 +29,9 @@ APIDS_FOR_SCIENCE_PROCESSING = [
     CODICEAPID.COD_LO_SW_SPECIES_COUNTS,
     CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
 ]
+
+# Numerical constants
+SPIN_PERIOD_CONVERSION = 0.00032
 
 
 # CDF-friendly names for lo data products
@@ -74,7 +78,7 @@ LO_NSW_SPECIES_VARIABLE_NAMES = [
 # CDF-friendly names for hi data products
 HI_INST_COUNTS_AGGREGATED_VARIABLE_NAMES = ["aggregated"]
 HI_INST_COUNTS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
-HI_OMNI_SPECIES_VARIABLE_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
+HI_OMNI_VARIABLE_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
 HI_SECT_SPECIES_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
 
 # lo-counters-aggregated data product variables are dynamically determined
@@ -156,20 +160,24 @@ DATA_PRODUCT_CONFIGURATIONS = {
     },
     CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS: {
         "dataset_name": "imap_codice_l1a_hi-omni",
-        "input_dims": {
-            "esa_step": 15,
-            "inst_az": 4,
-            "spin_sector": 1,
-        },  # TODO: Double check with Joey
+        "input_dims": {"esa_step": 15, "inst_az": 4},
         "instrument": "hi",
         "num_counters": 8,
-        "output_dims": {
-            "esa_step": 15,
-            "inst_az": 4,
-            "spin_sector": 1,
-        },  # TODO: Double check with Joey
-        "support_variables": ["data_quality", "spin_period"],
-        "variable_names": HI_OMNI_SPECIES_VARIABLE_NAMES,
+        "output_dims": {"esa_step": 15, "inst_az": 4},
+        "support_variables": [
+            "data_quality",
+            "spin_period",
+            "energy_h",
+            "energy_he3",
+            "energy_he4",
+            "energy_c",
+            "energy_o",
+            "energy_ne_mg_si",
+            "energy_fe",
+            "energy_uh",
+            "energy_junk",
+        ],
+        "variable_names": HI_OMNI_VARIABLE_NAMES,
     },
     CODICEAPID.COD_HI_SECT_SPECIES_COUNTS: {
         "dataset_name": "imap_codice_l1a_hi-sectored",
@@ -968,3 +976,146 @@ LOSSY_B_TABLE = {
     254: 7864319,
     255: 4294967294,
 }
+
+OMNI_ENERGY_TABLE = {
+    "h": [
+        0.05,
+        0.070710678,
+        0.1,
+        0.141421356,
+        0.2,
+        0.282842712,
+        0.4,
+        0.565685425,
+        0.8,
+        1.13137085,
+        1.6,
+        2.2627417,
+        3.2,
+        4.5254834,
+        6.4,
+        9.050966799,
+    ],
+    "he3": [
+        0.035355339,
+        0.05,
+        0.070710678,
+        0.1,
+        0.141421356,
+        0.2,
+        0.282842712,
+        0.4,
+        0.565685425,
+        0.8,
+        1.13137085,
+        1.6,
+        2.2627417,
+        3.2,
+        4.5254834,
+        6.4,
+    ],
+    "he4": [
+        0.035355339,
+        0.05,
+        0.070710678,
+        0.1,
+        0.141421356,
+        0.2,
+        0.282842712,
+        0.4,
+        0.565685425,
+        0.8,
+        1.13137085,
+        1.6,
+        2.2627417,
+        3.2,
+        4.5254834,
+        6.4,
+    ],
+    "c": [
+        0.025,
+        0.035355339,
+        0.05,
+        0.070710678,
+        0.1,
+        0.141421356,
+        0.2,
+        0.282842712,
+        0.4,
+        0.565685425,
+        0.8,
+        1.13137085,
+        1.6,
+        2.2627417,
+        3.2,
+        4.5254834,
+        6.4,
+        9.050966799,
+        12.8,
+    ],
+    "o": [
+        0.025,
+        0.035355339,
+        0.05,
+        0.070710678,
+        0.1,
+        0.141421356,
+        0.2,
+        0.282842712,
+        0.4,
+        0.565685425,
+        0.8,
+        1.13137085,
+        1.6,
+        2.2627417,
+        3.2,
+        4.5254834,
+        6.4,
+        9.050966799,
+        12.8,
+    ],
+    "ne_mg_si": [
+        0.01767767,
+        0.025,
+        0.035355339,
+        0.05,
+        0.070710678,
+        0.1,
+        0.141421356,
+        0.2,
+        0.282842712,
+        0.4,
+        0.565685425,
+        0.8,
+        1.13137085,
+        1.6,
+        2.2627417,
+        3.2,
+    ],
+    "fe": [
+        0.01767767,
+        0.025,
+        0.035355339,
+        0.05,
+        0.070710678,
+        0.1,
+        0.141421356,
+        0.2,
+        0.282842712,
+        0.4,
+        0.565685425,
+        0.8,
+        1.13137085,
+        1.6,
+        2.2627417,
+        3.2,
+        4.5254834,
+        6.4,
+        9.050966799,
+    ],
+    "uh": [0.01767767, 0.025, 0.035355339, 0.05, 0.070710678, 0.1],
+    "junk": [0.05, 0.070710678],
+}
+
+# TODO: Add energy tables for hi-sectored, hi-counters-aggregated, and
+#       hi-counters-singles

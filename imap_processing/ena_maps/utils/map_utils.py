@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def bin_single_array_at_indices(
     value_array: NDArray,
-    projection_grid_shape: tuple[int, int],
+    projection_grid_shape: tuple[int, ...],
     projection_indices: NDArray,
     input_indices: NDArray | None = None,
 ) -> NDArray:
@@ -27,7 +27,7 @@ def bin_single_array_at_indices(
         Array of values to bin. The final axis be the one and only spatial axis.
         If other axes are present, they will be binned independently
         along the spatial axis.
-    projection_grid_shape : tuple[int]
+    projection_grid_shape : tuple[int, ...]
         The shape of the grid onto which values are projected
         (rows, columns) if the grid is rectangular,
         or just (number of bins,) if the grid is 1D.
@@ -93,7 +93,7 @@ def bin_single_array_at_indices(
 
 def bin_values_at_indices(
     input_values_to_bin: dict[str, NDArray],
-    projection_grid_shape: tuple[int, int],
+    projection_grid_shape: tuple[int, ...],
     projection_indices: NDArray,
     input_indices: NDArray | None = None,
 ) -> dict[str, NDArray]:
@@ -106,8 +106,8 @@ def bin_values_at_indices(
         Dict matching variable names to arrays of values to bin.
         The final (-1) axis of each array must be the one and only spatial axis,
         which the indices correspond to and on which the values will be binned.
-        The other axes will be binned independently along this final axis.
-    projection_grid_shape : tuple[int, int]
+        The other axes will be binned independently along this final spatial axis.
+    projection_grid_shape : tuple[int, ...]
         The shape of the grid onto which values are projected (rows, columns).
         This size of the resulting grid (rows * columns) will be the size of the
         projected values contained in the output dictionary.

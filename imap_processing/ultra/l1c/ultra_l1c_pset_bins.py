@@ -154,10 +154,10 @@ def get_helio_exposure_times(
     -----
     These calculations are performed once per pointing.
     """
-    # Get bins and midpoints, and convert from radians to degrees.
+    # Get bins and midpoints, with angles in degrees.
     _, energy_midpoints = build_energy_bins()
     az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
-        np.rad2deg(angle_radians) for angle_radians in (build_spatial_bins())
+        build_spatial_bins()
     )
 
     # Initialize the exposure grid.
@@ -171,7 +171,7 @@ def get_helio_exposure_times(
 
     # Radial distance.
     r = np.ones(el_grid.shape)
-    spherical_coords = np.stack((r, np.radians(az_grid), np.radians(el_grid)), axis=-1)
+    spherical_coords = np.stack((r, az_grid, el_grid), axis=-1)
     cartesian_coords = spherical_to_cartesian(spherical_coords)
     cartesian = cartesian_coords.reshape(-1, 3, order="F").T
 

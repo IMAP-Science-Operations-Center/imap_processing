@@ -326,9 +326,7 @@ def test_cdf_events(ccsds_path_theta_0, decom_ultra_aux, decom_test_data):
     assert test_data_path.exists()
     assert test_data_path.name == "imap_ultra_l1a_45sensor-de_20240207_v001.cdf"
 
-    dataset_events = create_dataset(
-        {ULTRA_EVENTS.apid[0]: decom_ultra_events, ULTRA_AUX.apid[0]: decom_ultra_aux}
-    )
+    dataset_events = create_dataset({ULTRA_EVENTS.apid[0]: decom_ultra_events})
     input_xarray_events = load_cdf(test_data_path)
 
     # write_cdf() injects some attributes that are not in the xarray
