@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import NamedTuple
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 from numpy import typing as npt
+from numpy._typing import NDArray
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import parse_filename_like
@@ -356,61 +358,100 @@ def pset_counts(
     )
     de_df = de_df[good_mask]
 
-    # Add a calibration product array that will be used to bin DEs.
-    # Only DEs that belong to a calibration product and have TOF times that
-    # are within the configuration time window will be assigned a cal_product
-    # value.
-    de_df["cal_product"] = np.full(len(de_df), np.nan, dtype=float)
-
     # The calibration product configuration potentially has different coincidence
     # types for each ESA and different TOF windows for each calibration product,
     # esa energy step combination. Because of this we need to filter DEs that
     # belong to each combo individually.
     # Loop over the esa_energy_step values first
     for esa_energy, esa_df in config_df.groupby(level="esa_energy_step"):
-        # Create a mask for all DEs at the current esa_energy_step
-        # esa_energy_step is recorded for each packet, so we have to use ccsds_index
-        # to get the esa_energy_step for each DE
+        # Create a mask for all DEs at the current esa_energy_step.
+        # esa_energy_step is recorded for each packet rather than for each DE,
+        # so we use ccsds_index to get the esa_energy_step for each DE
         esa_mask = (
             l1b_de_dataset["esa_energy_step"].data[de_df["ccsds_index"].to_numpy()]
             == esa_energy
         )
-        for row in esa_df.itertuples():
-            # Filter DEs by coincidence type
-            type_mask = de_df["coincidence_type"].isin(row.coincidence_type_values)
+        # Now loop over the calibration products for the current ESA energy
+        for config_row in esa_df.itertuples():
+            # Remove DEs that are not at the current ESA energy and in the list
+            # of coincidence types for the current calibration product
+            type_mask = de_df["coincidence_type"].isin(
+                config_row.coincidence_type_values
+            )
             filtered_de_df = de_df[(esa_mask & type_mask)]
 
-            # Generate TOF window masks for the filtered df
-            detector_pairs = ["ab", "ac1", "bc1", "c1c2"]
-            tof_in_window_mask = np.empty(
-                (len(detector_pairs), len(filtered_de_df)), dtype=bool
+            # Use the TOF window mask to remove DEs with TOFs outside the allowed range
+            tof_fill_vals = {
+                f"tof_{detector_pair}": l1b_de_dataset[f"tof_{detector_pair}"].attrs[
+                    "FILLVAL"
+                ]
+                for detector_pair in CalibrationProductConfig.tof_detector_pairs
+            }
+            tof_in_window_mask = get_tof_window_mask(
+                filtered_de_df, config_row, tof_fill_vals
             )
-            for i_pair, detector_pair in enumerate(detector_pairs):
-                low_limit = getattr(row, f"tof_{detector_pair}_low")
-                high_limit = getattr(row, f"tof_{detector_pair}_high")
-                tof_array = filtered_de_df[f"tof_{detector_pair}"].to_numpy()
-                # The TOF in window mask contains True wherever the TOF is within
-                # the configuration low/high bounds OR the FILLVAL is present. The
-                # FILLVAL indicates that the detector pair was not hit. DEs with
-                # the incorrect coincidence_type are already filtered out and this
-                # implementation simplifies combining the TOF in window mask in
-                # the next step.
-                tof_in_window_mask[i_pair] = np.logical_or(
-                    np.logical_and(low_limit <= tof_array, tof_array <= high_limit),
-                    tof_array
-                    == l1b_de_dataset[f"tof_{detector_pair}"].attrs["FILLVAL"],
-                )
-            filtered_de_df = filtered_de_df[np.all(tof_in_window_mask, axis=0)]
+            filtered_de_df = filtered_de_df[tof_in_window_mask]
 
             # Bin remaining DEs into spin-bins
             i_esa = np.flatnonzero(pset_coords["esa_energy_step"].data == esa_energy)[0]
+            # spin_phase is in the range [0, 1). Multiplying by N_SPIN_BINS and
+            # truncating to an integer gives the correct bin index
             spin_bin_indices = (
                 filtered_de_df["spin_phase"].to_numpy() * N_SPIN_BINS
             ).astype(int)
+            # When iterating over rows of a dataframe, the names of the multi-index
+            # are not preserved. Below, `config_row.Index[0]` gets the cal_prod_num
+            # value from the namedtuple representing the dataframe row.
             np.add.at(
-                counts_var["counts"].data[0, i_esa, row.Index[0]], spin_bin_indices, 1
+                counts_var["counts"].data[0, i_esa, config_row.Index[0]],
+                spin_bin_indices,
+                1,
             )
     return counts_var
+
+
+def get_tof_window_mask(
+    de_df: pd.DataFrame, prod_config_row: NamedTuple, fill_vals: dict
+) -> NDArray[bool]:
+    """
+    Generate a mask indicating which DEs to keep based on TOF windows.
+
+    Parameters
+    ----------
+    de_df : pd.DataFrame
+        The Direct Event dataframe for the DEs to filter based on the TOF
+        windows.
+    prod_config_row : namedtuple
+        A single row of the prod config dataframe represented as a named tuple.
+    fill_vals : dict
+        A dictionary containing the fill values used in the input DE TOF
+        dataframe values. This value should be derived from the L1B DE CDF
+        TOF variable attributes.
+
+    Returns
+    -------
+    window_mask : np.ndarray
+        A mask with one entry per DE in the input `de_df` indicating which DEs
+        contain TOF values within the windows specified by `prod_config_row`.
+        The mask is intended to directly filter the DE dataframe.
+    """
+    detector_pairs = CalibrationProductConfig.tof_detector_pairs
+    tof_in_window_mask = np.empty((len(detector_pairs), len(de_df)), dtype=bool)
+    for i_pair, detector_pair in enumerate(detector_pairs):
+        low_limit = getattr(prod_config_row, f"tof_{detector_pair}_low")
+        high_limit = getattr(prod_config_row, f"tof_{detector_pair}_high")
+        tof_array = de_df[f"tof_{detector_pair}"].to_numpy()
+        # The TOF in window mask contains True wherever the TOF is within
+        # the configuration low/high bounds OR the FILLVAL is present. The
+        # FILLVAL indicates that the detector pair was not hit. DEs with
+        # the incorrect coincidence_type are already filtered out and this
+        # implementation simplifies combining the tof_in_window_masks in
+        # the next step.
+        tof_in_window_mask[i_pair] = np.logical_or(
+            np.logical_and(low_limit <= tof_array, tof_array <= high_limit),
+            tof_array == fill_vals[f"tof_{detector_pair}"],
+        )
+    return np.all(tof_in_window_mask, axis=0)
 
 
 def pset_exposure(
@@ -644,16 +685,14 @@ class CalibrationProductConfig:
         "cal_prod_num",
         "esa_energy_step",
     )
+    tof_detector_pairs = ("ab", "ac1", "bc1", "c1c2")
     required_columns = (
         "coincidence_type_list",
-        "tof_ab_low",
-        "tof_ab_high",
-        "tof_ac1_low",
-        "tof_ac1_high",
-        "tof_bc1_low",
-        "tof_bc1_high",
-        "tof_c1c2_low",
-        "tof_c1c2_high",
+        *[
+            f"tof_{det_pair}_{limit}"
+            for det_pair in tof_detector_pairs
+            for limit in ["low", "high"]
+        ],
     )
 
     def __init__(self, pandas_obj: pd.DataFrame) -> None:
