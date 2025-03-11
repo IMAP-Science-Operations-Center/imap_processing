@@ -30,18 +30,12 @@ def filter_valid_groups(grouped_data: xr.Dataset) -> xr.Dataset:
             (grouped_data["group"] == group).values
         ]
         src_seq_ctr_diff = np.diff(src_seq_ctr) % 16384
-        mag_acq_tm_coarse = grouped_data["mag_acq_tm_coarse"][
-            (grouped_data["group"] == group).values
-        ]
 
         # Accept group only if all diffs are 1.
         if np.all(src_seq_ctr_diff == 1):
             valid_groups.append(group)
         else:
-            logger.info(
-                f"src_seq_ctr_diff != 1 for group {group} at time "
-                f"{mag_acq_tm_coarse}."
-            )
+            logger.info(f"src_seq_ctr_diff != 1 for group {group}.")
 
     filtered_data = grouped_data.where(
         xr.DataArray(np.isin(grouped_data["group"], valid_groups), dims="epoch"),
