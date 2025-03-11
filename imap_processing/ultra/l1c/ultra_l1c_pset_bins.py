@@ -99,7 +99,6 @@ def get_spacecraft_histogram(
     hpix_idx = hp.ang2pix(nside, az, el, nest=nested, lonlat=True)
 
     # Initialize histogram: (n_HEALPix pixels, n_energy_bins)
-    # TODO: float? int?
     hist = np.zeros((n_pix, len(energy_bin_edges)))
 
     # Bin data in energy & HEALPix space
