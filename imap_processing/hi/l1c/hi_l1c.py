@@ -131,7 +131,6 @@ def generate_pset_dataset(
     attr_mgr.add_instrument_global_attrs("hi")
     attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
     for var_name in [
-        "counts",
         "background_rates",
         "background_rates_uncertainty",
     ]:
