@@ -137,7 +137,7 @@ def write_cdf(
     # Convert the xarray object to a CDF
     xarray_to_cdf(
         dataset,
-        str(file_path),
+        "/Users/maha7656/Documents/code/imap/imap_processing/imap_processing/data/imap/mag/l1c/ouptput.cdf",
         terminate_on_warning=True,
         **extra_cdf_kwargs,
     )  # Terminate if not ISTP compliant

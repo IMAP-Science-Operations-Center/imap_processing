@@ -5,6 +5,7 @@ import pytest
 import xarray as xr
 import yaml
 
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.mag.l1c.interpolation_methods import InterpolationFunction
 from imap_processing.mag.l1c.mag_l1c import (
     fill_normal_data,
@@ -20,22 +21,14 @@ from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
 
 @pytest.fixture(scope="module")
 def mag_l1b_dataset():
-    epoch = xr.DataArray(
+    output_dataset = mag_l1a_dataset_generator(10)
+
+    output_dataset["epoch"] = xr.DataArray(
         np.arange(0.1, 5.1, step=0.5) * 1e9, name="epoch", dims=["epoch"]
     )
-    direction = xr.DataArray(np.arange(4), name="direction", dims=["direction"])
-    vectors = xr.DataArray(
-        np.array([[i, i, i, 2] for i in range(1, 11)]),
-        dims=["epoch", "direction"],
-        coords={"epoch": epoch, "direction": direction},
-    )
-
+    vectors = np.array([[i, i, i, 2] for i in range(1, 11)])
     vectors[0, :] = np.array([1, 1, 1, 0])
-
-    output_dataset = xr.Dataset(
-        coords={"epoch": epoch, "direction": direction},
-    )
-    output_dataset["vectors"] = vectors
+    output_dataset["vectors"].data = vectors
 
     return output_dataset
 
@@ -47,7 +40,7 @@ def norm_dataset():
     vectors_per_second_attr = "0:2,4000000000:4"
     dataset.attrs["vectors_per_second"] = vectors_per_second_attr
     dataset["epoch"] = epoch_vals
-    dataset["Logical_source"] = "imap_mag_l1b_norm-mago"
+    dataset.attrs["Logical_source"] = "imap_mag_l1b_norm-mago"
     vectors = np.array([[i, i, i, 2] for i in range(1, 11)])
     dataset["vectors"].data = vectors
 
@@ -82,7 +75,7 @@ def burst_dataset():
         * 1e9
     )
     dataset["epoch"] = epoch_vals
-    dataset.attrs["Logical_source"] = "imap_mag_l1b_burst-mago"
+    dataset.attrs["Logical_source"] = ["imap_mag_l1b_burst-mago"]
     vectors = np.array([[i, i, i, 2] for i in range(1, 18)])
     dataset["vectors"].data = vectors
     return dataset
@@ -96,11 +89,16 @@ def test_configuration_file():
     ) as f:
         configuration = yaml.safe_load(f)
 
-    assert configuration["L1C_interpolation_method"] in [e.name for e in InterpolationFunction]
+    assert configuration["L1C_interpolation_method"] in [
+        e.name for e in InterpolationFunction
+    ]
 
     # should not raise an error
-    configuration_file = InterpolationFunction[configuration["L1C_interpolation_method"]]
+    configuration_file = InterpolationFunction[
+        configuration["L1C_interpolation_method"]
+    ]
     configuration_file([1], [1], [1])
+
 
 def test_process_mag_l1c(norm_dataset, burst_dataset):
     l1c = process_mag_l1c(norm_dataset, burst_dataset, InterpolationFunction.linear)
@@ -120,7 +118,6 @@ def test_process_mag_l1c(norm_dataset, burst_dataset):
     expected_flags[10:12] = 1
     assert np.array_equal(l1c[:, 5], expected_flags)
     assert np.array_equal(l1c[:5, 1:5], norm_dataset["vectors"].data[:5, :])
-    print(l1c[5:8, :])
     for i in range(5, 8):
         e = l1c[i, 0]
         burst_vectors = burst_dataset.sel(epoch=int(e), method="nearest")[
@@ -146,39 +143,42 @@ def test_interpolate_gaps(norm_dataset, mag_l1b_dataset):
     gaps = np.array([[2, 4], [4.25, 5.5]]) * 1e9
     generated_timeline = generate_timeline(norm_dataset["epoch"].data, gaps)
     norm_timeline = fill_normal_data(norm_dataset, generated_timeline)
-
     gaps = np.array([[2, 4]]) * 1e9
     output = interpolate_gaps(
         mag_l1b_dataset, gaps, norm_timeline, InterpolationFunction.linear
     )
     expected_output = np.array(
-        [[5.8, 5.8, 5.8, 2, 1], [6.8, 6.8, 6.8, 2, 1], [7.8, 7.8, 7.8, 2, 1]]
+        [
+            [5.8, 5.8, 5.8, 2, 1, 0, 0],
+            [6.8, 6.8, 6.8, 2, 1, 0, 0],
+            [7.8, 7.8, 7.8, 2, 1, 0, 0],
+        ]
     )
 
     assert np.allclose(output[5:8, 1:], expected_output)
 
     input_norm_timeline = np.array(
         [
-            [1.50e09, 4, 4, 4, 2, 0],
-            [2.00e09, 5, 5, 5, 2, 0],
-            [2.50e09, 0, 0, 0, 0, 1],
-            [3.00e09, 0, 0, 0, 0, 1],
-            [3.50e09, 0, 0, 0, 0, 1],
-            [4.00e09, 6, 6, 6, 2, 0],
-            [4.25e09, 7, 7, 7, 2, 0],
+            [1.50e09, 4, 4, 4, 2, 0, 0, 0],
+            [2.00e09, 5, 5, 5, 2, 0, 0, 0],
+            [2.50e09, 0, 0, 0, 0, 1, 0, 0],
+            [3.00e09, 0, 0, 0, 0, 1, 0, 0],
+            [3.50e09, 0, 0, 0, 0, 1, 0, 0],
+            [4.00e09, 6, 6, 6, 2, 0, 0, 0],
+            [4.25e09, 7, 7, 7, 2, 0, 0, 0],
         ]
     )
 
-    # ouput - all timestamps with -1 should be filled with interpolated values.
+    # output - all timestamps with -1 should be filled with interpolated values.
     expected_output = np.array(
         [
-            [1.50e09, 4, 4, 4, 2, 0],
-            [2.00e09, 5, 5, 5, 2, 0],
-            [2.50e09, 5.8, 5.8, 5.8, 2, 1],
-            [3.00e09, 6.8, 6.8, 6.8, 2, 1],
-            [3.50e09, 7.8, 7.8, 7.8, 2, 1],
-            [4.00e09, 6, 6, 6, 2, 0],
-            [4.25e09, 7, 7, 7, 2, 0],
+            [1.50e09, 4, 4, 4, 2, 0, 0, 0],
+            [2.00e09, 5, 5, 5, 2, 0, 0, 0],
+            [2.50e09, 5.8, 5.8, 5.8, 2, 1, 0, 0],
+            [3.00e09, 6.8, 6.8, 6.8, 2, 1, 0, 0],
+            [3.50e09, 7.8, 7.8, 7.8, 2, 1, 0, 0],
+            [4.00e09, 6, 6, 6, 2, 0, 0, 0],
+            [4.25e09, 7, 7, 7, 2, 0, 0, 0],
         ]
     )
 
@@ -191,22 +191,25 @@ def test_interpolate_gaps(norm_dataset, mag_l1b_dataset):
 
 def test_mag_l1c(norm_dataset, burst_dataset):
     l1c = mag_l1c(burst_dataset, norm_dataset, "v001")
-    assert l1c["vector_magnitude"].shape == (len(l1c['epoch'].data),)
+    assert l1c["vector_magnitude"].shape == (len(l1c["epoch"].data),)
     assert l1c["vector_magnitude"].data[0] == np.linalg.norm(l1c["vectors"].data[0][:4])
-    assert l1c["vector_magnitude"].data[-1] == np.linalg.norm(l1c["vectors"].data[-1][:4])
+    assert l1c["vector_magnitude"].data[-1] == np.linalg.norm(
+        l1c["vectors"].data[-1][:4]
+    )
 
-    expected_vars = ["vectors", "compression_flags", "vector_magnitude", "generated_flag"]
+    expected_vars = [
+        "vectors",
+        "compression_flags",
+        "vector_magnitude",
+        "generated_flag",
+    ]
 
     for var in expected_vars:
         assert var in l1c.data_vars
-
+    print(write_cdf(l1c, istp=False))
 
 
 def test_mag_attributes(norm_dataset, burst_dataset):
-    # Fixture from test_mag_l1b.py, since L1A and L1B are very similar
-    norm_dataset.attrs["Logical_source"] = ["imap_mag_l1b_norm-mago"]
-    burst_dataset.attrs["Logical_source"] = ["imap_mag_l1b_burst-mago"]
-
     output = mag_l1c(norm_dataset, burst_dataset, "v001")
     assert output.attrs["Logical_source"] == "imap_mag_l1c_norm-mago"
     assert output.attrs["Data_level"] == "L1C"
@@ -218,19 +221,14 @@ def test_mag_attributes(norm_dataset, burst_dataset):
 
 def test_find_all_gaps():
     epoch_test = np.array([0, 0.5, 1, 1.5, 2, 5, 5.5]) * 1e9
-    expected_timeline = np.array([0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5])
 
     vectors_per_second_attr = "0:2"
     output = find_all_gaps(epoch_test, vectors_per_second_attr)
     expected_gaps = np.array([[2, 5]]) * 1e9
-    print(output)
     assert np.array_equal(output, expected_gaps)
 
     epoch_test = np.array([0, 0.5, 1, 1.5, 2, 4, 4.25, 4.5, 4.75, 5.5]) * 1e9
     vectors_per_second_attr = "0:2,4000000000:4"
-    expected_timeline = np.array(
-        [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.25, 4.5, 4.75, 5]
-    )
     expected_gaps = np.array([[2, 4], [4.75, 5.5]]) * 1e9
     output = find_all_gaps(epoch_test, vectors_per_second_attr)
     assert np.array_equal(output, expected_gaps)
@@ -262,7 +260,6 @@ def test_generate_timeline():
     gaps = np.array([[0.5, 1], [2, 3]]) * 1e9
     expected_output = np.array([0, 0.25, 0.5, 1, 1.25, 1.5, 1.75, 2, 2.5, 3]) * 1e9
     output = generate_timeline(epoch_test, gaps)
-    print(output)
     assert np.array_equal(output, expected_output)
 
     epoch_test = np.array([1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]) * 1e9
@@ -283,7 +280,7 @@ def test_fill_normal_data(mag_l1b_dataset):
     output_timeline = np.arange(0.1, 6.1, step=0.5) * 1e9
     output = fill_normal_data(mag_l1b_dataset, output_timeline)
 
-    assert output.shape == (12, 6)
+    assert output.shape == (12, 8)
     # all vectors should be nonzero
     assert np.count_nonzero(output[:-2, 1:4]) == 30
     # last two vectors should be zero
