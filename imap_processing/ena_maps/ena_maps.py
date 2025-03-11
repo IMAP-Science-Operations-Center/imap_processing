@@ -372,6 +372,7 @@ class AbstractSkyMap(ABC):
         self.tiling_type: SkyTilingType
         self.sky_grid: spatial_utils.AzElSkyGrid
         self.num_points: int
+        self.spatial_coords: dict[str, xr.DataArray | NDArray]
         self.binning_grid_shape: tuple[int, ...]
         self.data_dict: dict[str, NDArray]
 
@@ -468,6 +469,108 @@ class AbstractSkyMap(ABC):
 
             self.data_dict[value_key] += pointing_projected_values
 
+    def data_dict_value_to_dataarray(
+        self,
+        data_dict_key: str,
+        dims: list[str] | None = None,
+        **kwargs: dict,
+    ) -> xr.DataArray:
+        """
+        Convert an individual array in the data_dict to an xarray DataArray.
+
+        In the case of a rectangular grid, the data array is rewrapped to the original
+        2D grid shape before conversion to an xarray DataArray.
+
+        Parameters
+        ----------
+        data_dict_key : str
+            The key of the data array in the data_dict.
+        dims : list[str] | None, optional
+            The ordered dimensions of the data array. Default is None.
+        **kwargs : dict
+            Additional keyword arguments to pass to the xarray DataArray constructor.
+
+        Returns
+        -------
+        xr.DataArray
+            The data array converted to an xarray DataArray.
+        """
+        data = self.data_dict[data_dict_key]
+
+        # Rewrap the data to the original 2D grid shape if rectangular
+        if self.tiling_type is SkyTilingType.RECTANGULAR:
+            data = spatial_utils.rewrap_even_spaced_az_el_grid(
+                data, self.binning_grid_shape
+            )
+
+        # Add an extra dim at the start for epoch:
+        if dims is not None and dims[0] == "epoch":
+            data = np.expand_dims(data, axis=0)
+
+        return xr.DataArray(
+            data,
+            dims=dims,
+            **kwargs,
+        )
+
+    def to_xarray(
+        self,
+        non_spatial_coords: dict[str, xr.DataArray | NDArray],
+        data_variables_and_dims: dict[str, list[str]],
+    ) -> xr.Dataset:
+        """
+        Convert the data_dict to an xarray Dataset, including spatial coords.
+
+        In the case of a rectangular grid, all data arrays are rewrapped to the
+        original 2D grid shape before conversion to xarray DataArrays.
+
+        Parameters
+        ----------
+        non_spatial_coords : dict[str, xr.DataArray | NDArray],
+            Dictionary of the non-spatial coordinates to include in the dataset.
+            The keys are the names of the coordinates, and the values are either
+            numpy arrays or xarray DataArrays, the latter of which can include
+            coordinate attributes.
+
+            Example using DataArrays to give coord attributes:
+            ```
+            {
+                "epoch": xr.DataArray(
+                    [1234.5], dims=["epoch"], attrs={"units": "J2000ns"}),
+                "energy_bin_center": xr.DataArray(
+                    [1.0, 2.0, 3.0], dims=["energy_bin_center"],
+                    attrs={"units": "keV"}),
+            }
+            ```
+            Example using NDArrays:
+            ```
+            {
+                "epoch": np.array([1234.5]),
+                "energy_bin_center": np.array([1.0, 2.0, 3.0]),
+            }
+            ```.
+        data_variables_and_dims : dict[str, list[str]]
+            The dictionary of data variables (key) and their dimensions (value).
+
+        Returns
+        -------
+        xr.Dataset
+            An xarray Dataset containing the data variables and coordinates.
+        """
+        # Get full dict of coordinates
+        coords = {**non_spatial_coords, **self.spatial_coords}
+
+        return xr.Dataset(
+            data_vars={
+                key: self.data_dict_value_to_dataarray(
+                    key,
+                    dims=dims,
+                )
+                for key, dims in data_variables_and_dims.items()
+            },
+            coords=coords,
+        )
+
 
 class RectangularSkyMap(AbstractSkyMap):
     """
@@ -538,6 +641,19 @@ class RectangularSkyMap(AbstractSkyMap):
         # The shape of the map (num_az_bins, num_el_bins) is used to bin the data
         self.binning_grid_shape = self.sky_grid.grid_shape
 
+        self.spatial_coords = {
+            "azimuth_bin_center": xr.DataArray(
+                self.sky_grid.az_bin_midpoints,
+                dims=["azimuth_bin_center"],
+                attrs={"units": "degrees"},
+            ),
+            "elevation_bin_center": xr.DataArray(
+                self.sky_grid.el_bin_midpoints,
+                dims=["elevation_bin_center"],
+                attrs={"units": "degrees"},
+            ),
+        }
+
         # Unwrap the az, el grids to 1D array of points tiling the sky
         az_points = self.sky_grid.az_grid.ravel()
         el_points = self.sky_grid.el_grid.ravel()
@@ -601,6 +717,12 @@ class HealpixSkyMap(AbstractSkyMap):
         self.approx_resolution = np.rad2deg(hp.nside2resol(nside, arcmin=False))
         # Define binning_grid_shape for consistency with RectangularSkyMap
         self.binning_grid_shape = (self.num_points,)
+        self.spatial_coords = {
+            "healpix_pixel_number": xr.DataArray(
+                np.arange(self.num_points),
+                dims=["healpix_pixel_number"],
+            )
+        }
 
         # The centers of each pixel in the Healpix tessellation in azimuth (az) and
         # elevation (el) coordinates (degrees) within the map's Spice frame.
