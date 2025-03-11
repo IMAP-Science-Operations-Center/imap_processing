@@ -1,6 +1,7 @@
 "Tests pointing sets"
 
 import cdflib
+import healpy as hp
 import numpy as np
 import pytest
 from cdflib import CDF
@@ -10,7 +11,7 @@ from imap_processing.ena_maps.utils.spatial_utils import build_spatial_bins
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     get_helio_exposure_times,
-    get_histogram,
+    get_spacecraft_histogram,
     get_pointing_frame_exposure_times,
     get_pointing_frame_sensitivity,
 )
@@ -24,7 +25,7 @@ def test_data():
     vx_sc = np.array([-186.5575, 508.5697, 508.5697, 508.5697])
     vy_sc = np.array([-707.5707, -516.0282, -516.0282, -516.0282])
     vz_sc = np.array([618.0569, 892.6931, 892.6931, 892.6931])
-    energy = np.array([3.384, 3.385, 200, 200])
+    energy = np.array([3.384, 3.385, 4.138, 4.138])
     v = np.column_stack((vx_sc, vy_sc, vz_sc))
 
     return v, energy
@@ -51,18 +52,24 @@ def test_get_histogram(test_data):
     """Tests get_histogram function."""
     v, energy = test_data
 
-    az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
-        build_spatial_bins()
-    )
     energy_bin_edges, _ = build_energy_bins()
+    subset_energy_bin_edges = energy_bin_edges[:3]
 
-    hist = get_histogram(v, energy, az_bin_edges, el_bin_edges, energy_bin_edges)
+    hist = get_spacecraft_histogram(v, energy, subset_energy_bin_edges, nside=1)
+    assert hist.shape == (hp.nside2npix(1), len(subset_energy_bin_edges))
 
-    assert hist.shape == (
-        len(az_bin_edges) - 1,
-        len(el_bin_edges) - 1,
-        len(energy_bin_edges),
-    )
+    # Spot check that 2 counts are in the third energy bin
+    assert np.sum(hist[:, 2]) == 2
+
+    # Test overlapping energy bins
+    overlapping_bins = [
+        (0.0, 3.385),
+        (2.5, 4.137),
+        (3.385, 5.057),
+    ]
+    hist = get_spacecraft_histogram(v, energy, overlapping_bins, nside=1)
+    # Spot check that 3 counts are in the third energy bin
+    assert np.sum(hist[:, 2]) == 3
 
 
 def test_get_pointing_frame_exposure_times():

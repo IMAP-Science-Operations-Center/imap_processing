@@ -15,7 +15,6 @@ from imap_processing.spice.geometry import (
     spherical_to_cartesian,
 )
 from imap_processing.ultra.constants import UltraConstants
-from imap_processing.ena_maps.utils.map_utils import bin_single_array_at_indices
 
 # TODO: add species binning.
 
@@ -50,12 +49,12 @@ def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray]:
     return intervals, energy_midpoints
 
 
-def get_histogram(
+def get_spacecraft_histogram(
     vhat: tuple[np.ndarray, np.ndarray, np.ndarray],
     energy: np.ndarray,
     energy_bin_edges: list[tuple[float, float]],
     nside: int = 32,
-    nested: bool = True,
+    nested: bool = False,
 ) -> NDArray:
     """
     Compute a 3D histogram of the particle data using HEALPix binning.
@@ -68,42 +67,49 @@ def get_histogram(
         The particle energy.
     energy_bin_edges : list[tuple[float, float]]
         Array of energy bin edges.
-    nside : int
+    nside : int, optional
         The nside parameter of the Healpix tessellation.
+        Default is 32.
     nested : bool, optional
         Whether the Healpix tessellation is nested. Default is False.
 
     Returns
     -------
-    hist_total : np.ndarray
+    hist : np.ndarray
         A 3D histogram array with shape (n_pix, n_energy_bins).
+
+    Notes
+    -----
+    The histogram will work properly for overlapping energy bins, i.e.
+    the same energy value can fall into multiple bins if the intervals overlap.
+
+    azimuthal angle [0, 360], elevation angle [-90, 90]
     """
     spherical_coords = cartesian_to_spherical(vhat, degrees=True)
-    az, el = spherical_coords[..., 1], spherical_coords[..., 2]
+    az, el = (
+        spherical_coords[..., 1],
+        spherical_coords[..., 2],
+    )
 
-    # Convert elevation to HEALPix-compatible latitude
-    lat = np.degrees(90 - el)  # Ensure lat is degrees
-
-    # Compute number of HEALPix pixels
+    # Compute number of HEALPix pixels that cover the sphere
     n_pix = hp.nside2npix(nside)
 
-    # Get HEALPix pixel indices
-    hpix_idx = hp.ang2pix(nside, np.degrees(az), lat, nest=nested, lonlat=True)
+    # Get HEALPix pixel indices for each event
+    # HEALPix expects latitude in [-90, 90] so we don't need to change elevation
+    hpix_idx = hp.ang2pix(nside, az, el, nest=nested, lonlat=True)
 
     # Initialize histogram: (n_HEALPix pixels, n_energy_bins)
-    hist_total = np.zeros((n_pix, len(energy_bin_edges)), dtype=np.float64)
+    # TODO: float? int?
+    hist = np.zeros((n_pix, len(energy_bin_edges)))
 
     # Bin data in energy & HEALPix space
     for i, (e_min, e_max) in enumerate(energy_bin_edges):
         mask = (energy >= e_min) & (energy < e_max)
+        # Only count the events that fall within the energy bin
+        hist[:, i] += np.bincount(hpix_idx[mask],
+                                        minlength=n_pix).astype(np.float64)
 
-        hist_total[:, i] = bin_single_array_at_indices(
-            value_array=np.ones(mask.sum(), dtype=np.float64),  # Count occurrences
-            projection_grid_shape=(n_pix,),
-            projection_indices=hpix_idx[mask],
-        )
-
-    return hist_total
+    return hist
 
 
 def get_pointing_frame_exposure_times(
