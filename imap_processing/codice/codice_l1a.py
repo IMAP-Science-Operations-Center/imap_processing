@@ -816,7 +816,6 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
 
         # TODO: Still need to implement I-ALiRT and hi-priorities data products
         elif apid in [
-            CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES,
             CODICEAPID.COD_HI_IAL,
             CODICEAPID.COD_LO_IAL,
         ]:

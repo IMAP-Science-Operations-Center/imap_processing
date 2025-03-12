@@ -54,7 +54,7 @@ EXPECTED_ARRAY_SHAPES = [
     (77, 1, 12, 1),  # hi-counters-singles
     (77, 15, 4),  # hi-omni
     (77, 8, 12, 12),  # hi-sectored
-    (),  # hi-priority  # TODO: Need to implement
+    (77,),  # hi-priority
     (),  # lo-pha  # TODO: Need to implement
     (),  # hi-pha  # TODO: Need to implement
 ]
@@ -75,7 +75,7 @@ EXPECTED_NUM_VARIABLES = [
     3,  # hi-counters-singles
     10,  # hi-omni
     6,  # hi-sectored
-    0,  # hi-priority  # TODO: Need to implement
+    8,  # hi-priority
     0,  # lo-pha  # TODO: Need to implement
     0,  # hi-pha  # TODO: Need to implement
 ]
@@ -113,7 +113,7 @@ def test_l1a_data_array_shape(test_l1a_data, index):
 
     # Mark currently broken/unsupported datasets as expected to fail
     # TODO: Remove these once they are supported
-    if index in [0, 1, 15, 16, 17]:
+    if index in [0, 1, 16, 17]:
         pytest.xfail("Data product is currently unsupported")
 
     for variable in processed_dataset:
@@ -157,7 +157,7 @@ def test_l1a_logical_sources(test_l1a_data, index):
 
     # Mark currently broken/unsupported datasets as expected to fail
     # TODO: Remove these once they are supported
-    if index in [0, 1, 15, 16, 17]:
+    if index in [0, 1, 16, 17]:
         pytest.xfail("Data product is currently unsupported")
 
     # Write the dataset to a file to set the logical source attribute
@@ -185,7 +185,7 @@ def test_l1a_num_data_variables(test_l1a_data, index):
 
     # Mark currently broken/unsupported datasets as expected to fail
     # TODO: Remove these once they are supported
-    if index in [0, 1, 15, 16, 17]:
+    if index in [0, 1, 16, 17]:
         pytest.xfail("Data product is currently unsupported")
 
     assert len(processed_dataset) == EXPECTED_NUM_VARIABLES[index]
@@ -211,6 +211,8 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
     # TODO: Currently only the following products can be validated, expand this
     #       to other data products as I can validate them.
     able_to_be_validated = [
+        "hi-priority",
+        "hi-sectored",
         "lo-counters-singles",
         "lo-sw-angular",
         "lo-nsw-angular",
@@ -218,7 +220,6 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         "lo-nsw-priority",
         "lo-sw-species",
         "lo-nsw-species",
-        "hi-sectored",
     ]
 
     if descriptor in able_to_be_validated:

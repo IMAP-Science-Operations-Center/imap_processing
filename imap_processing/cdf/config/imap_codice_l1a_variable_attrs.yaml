@@ -27,6 +27,14 @@ hi_energies_attrs: &hi_energies_default
     VALIDMAX: 200.00
     VAR_TYPE: support_data
 
+hi_priorities_attrs: &hi_priorities_default
+    FILLVAL: -1
+    LABLAXIS: events
+    UNITS: events
+    VALIDMIN: 0
+    VALIDMAX: 16777216
+
+
 # <=== Coordinates ===>
 esa_step:
     CATDESC: Energy per charge (E/q) sweeping step
@@ -462,7 +470,38 @@ hi-omni-energy_junk_delta:
     CATDESC: Delta of energies for junk
     FIELDNAM: Delta Energy
 
-#hi-sectored
+# hi-priority
+hi-priority-Priority0:
+    <<: *hi_priorities_default
+    CATDESC: Priority 0
+    FIELDNAM: Priority 0
+
+hi-priority-Priority1:
+    <<: *hi_priorities_default
+    CATDESC: Priority 1
+    FIELDNAM: Priority 1
+
+hi-priority-Priority2:
+    <<: *hi_priorities_default
+    CATDESC: Priority 2
+    FIELDNAM: Priority 2
+
+hi-priority-Priority3:
+    <<: *hi_priorities_default
+    CATDESC: Priority 3
+    FIELDNAM: Priority 3
+
+hi-priority-Priority4:
+    <<: *hi_priorities_default
+    CATDESC: Priority 4
+    FIELDNAM: Priority 4
+
+hi-priority-Priority5:
+    <<: *hi_priorities_default
+    CATDESC: Priority 5
+    FIELDNAM: Priority 5
+
+# hi-sectored
 hi-sectored-h:
     <<: *counters
     CATDESC: Sectored H Counts

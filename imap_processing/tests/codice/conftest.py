@@ -37,7 +37,7 @@ VALIDATION_DATA = [
     TEST_DATA_PATH / "validation" / "imap_codice_l1a_hi-counters-singles_20241110193700_v0.0.0.cdf",
     TEST_DATA_PATH / "validation" / "imap_codice_l1a_hi-omni_20241110193700_v0.0.0.cdf",
     TEST_DATA_PATH / "validation" / "imap_codice_l1a_hi-sectored_20241110193700_v0.0.0.cdf",
-    TEST_DATA_PATH / "validation" / "imap_codice_l1a_hi-priority_20241110193700_v0.0.0.cdf",
+    TEST_DATA_PATH / "validation" / "imap_codice_l1a_hi-priorities_20241110193700_v0.0.0.cdf",
     TEST_DATA_PATH / "validation" / "imap_codice_l1a_lo-pha_20241110193700_v0.0.0.cdf",
     TEST_DATA_PATH / "validation" / "imap_codice_l1a_hi-pha_20241110193700_v0.0.0.cdf",
 ]  # fmt: skip

@@ -17,6 +17,7 @@ from imap_processing.codice.utils import CODICEAPID, CoDICECompression
 # APID groupings
 APIDS_FOR_SCIENCE_PROCESSING = [
     CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED,
+    CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES,
     CODICEAPID.COD_HI_INST_COUNTS_SINGLES,
     CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS,
     CODICEAPID.COD_HI_SECT_SPECIES_COUNTS,
@@ -79,6 +80,14 @@ LO_NSW_SPECIES_VARIABLE_NAMES = [
 HI_INST_COUNTS_AGGREGATED_VARIABLE_NAMES = ["aggregated"]
 HI_INST_COUNTS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
 HI_OMNI_VARIABLE_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
+HI_PRIORITY_VARIABLE_NAMES = [
+    "Priority0",
+    "Priority1",
+    "Priority2",
+    "Priority3",
+    "Priority4",
+    "Priority5",
+]
 HI_SECTORED_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
 
 # lo-counters-aggregated data product variables are dynamically determined
@@ -157,6 +166,15 @@ DATA_PRODUCT_CONFIGURATIONS = {
         },  # TODO: Double check with Joey
         "support_variables": [],  # No support variables for this one
         "variable_names": HI_INST_COUNTS_SINGLES_VARIABLE_NAMES,
+    },
+    CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES: {
+        "dataset_name": "imap_codice_l1a_hi-priority",
+        "input_dims": {},
+        "instrument": "hi",
+        "num_counters": 6,
+        "output_dims": {},
+        "support_variables": ["data_quality", "spin_period"],
+        "variable_names": HI_PRIORITY_VARIABLE_NAMES,
     },
     CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS: {
         "dataset_name": "imap_codice_l1a_hi-omni",
