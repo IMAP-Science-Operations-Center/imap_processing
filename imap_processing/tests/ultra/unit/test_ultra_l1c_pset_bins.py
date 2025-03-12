@@ -77,7 +77,7 @@ def test_get_pointing_frame_exposure_times():
 
     constant_exposure = BASE_PATH / "ultra_90_dps_exposure_compressed.cdf"
     spins_per_pointing = 5760
-    exposure = get_spacecraft_exposure_times(constant_exposure, 32)
+    exposure = get_spacecraft_exposure_times(constant_exposure, 64)
 
     assert exposure.shape == (720, 360)
     # Assert that the exposure time at the highest azimuth is
