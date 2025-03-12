@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
+import astropy_healpix.healpy as hp
 import cdflib
-import healpy as hp
 import numpy as np
 from numpy.typing import NDArray
 
@@ -105,8 +105,7 @@ def get_spacecraft_histogram(
     for i, (e_min, e_max) in enumerate(energy_bin_edges):
         mask = (energy >= e_min) & (energy < e_max)
         # Only count the events that fall within the energy bin
-        hist[:, i] += np.bincount(hpix_idx[mask],
-                                        minlength=n_pix).astype(np.float64)
+        hist[:, i] += np.bincount(hpix_idx[mask], minlength=n_pix).astype(np.float64)
 
     return hist
 
