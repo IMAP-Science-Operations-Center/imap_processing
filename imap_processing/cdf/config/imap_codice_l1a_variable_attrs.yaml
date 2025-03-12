@@ -77,6 +77,30 @@ spin_sector_pairs:
     VALIDMAX: 6
     VAR_TYPE: support_data
 
+spin_sector_index:
+    CATDESC: Spin Sector Index
+    FIELDNAM: Spin Sector Index
+    FILLVAL: -1
+    FORMAT: I2
+    LABLAXIS: " "
+    SCALETYP: linear
+    UNITS: " "
+    VALIDMIN: 0
+    VALIDMAX: 12
+    VAR_TYPE: support_data
+
+ssd_index:
+    CATDESC: SSD Index
+    FIELDNAM: SSD Index
+    FILLVAL: -1
+    FORMAT: I2
+    LABLAXIS: " "
+    SCALETYP: linear
+    UNITS: " "
+    VALIDMIN: 0
+    VALIDMAX: 12
+    VAR_TYPE: support_data
+
 # <=== Labels ===>
 spin_sector_pairs_label:
     CATDESC: Spin sector Pairs
@@ -443,33 +467,89 @@ hi-sectored-h:
     <<: *counters
     CATDESC: Sectored H Counts
     FIELDNAM: H
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
+    DEPEND_3: spin_sector
     LABL_PTR_1: esa_step
     LABL_PTR_2: inst_az
     LABL_PTR_3: spin_sector
+
+hi-sectored-energy_h:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for H
+    DELTA_MINUS_VAR: energy_h_delta
+    DELTA_PLUS_VAR: energy_h_delta
+
+hi-sectored-energy_h_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for H
+    FIELDNAM: Delta Energy
 
 hi-sectored-he3he4:
     <<: *counters
     CATDESC: Sectored He3He4 Counts
     FIELDNAM: He3He4
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
+    DEPEND_3: spin_sector
     LABL_PTR_1: esa_step
     LABL_PTR_2: inst_az
     LABL_PTR_3: spin_sector
+
+hi-sectored-energy_he3he4:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for He3He4
+    DELTA_MINUS_VAR: energy_he3he4_delta
+    DELTA_PLUS_VAR: energy_he3he4_delta
+
+hi-sectored-energy_he3he4_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for He3He4
+    FIELDNAM: Delta Energy
 
 hi-sectored-cno:
     <<: *counters
     CATDESC: Sectored CNO Counts
     FIELDNAM: CNO
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
+    DEPEND_3: spin_sector
     LABL_PTR_1: esa_step
     LABL_PTR_2: inst_az
     LABL_PTR_3: spin_sector
+
+hi-sectored-energy_cno:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for CNO
+    DELTA_MINUS_VAR: energy_cno_delta
+    DELTA_PLUS_VAR: energy_cno_delta
+
+hi-sectored-energy_cno_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for CNO
+    FIELDNAM: Delta Energy
 
 hi-sectored-fe:
     <<: *counters
     CATDESC: Sectored Fe Counts
     FIELDNAM: Fe
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
+    DEPEND_3: spin_sector
     LABL_PTR_1: esa_step
     LABL_PTR_2: inst_az
     LABL_PTR_3: spin_sector
+
+hi-sectored-energy_fe:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for Fe
+    DELTA_MINUS_VAR: energy_fe_delta
+    DELTA_PLUS_VAR: energy_fe_delta
+
+hi-sectored-energy_fe_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for Fe
+    FIELDNAM: Delta Energy
 
 # lo-counters-aggregated
 lo-counters-aggregated-TCR:

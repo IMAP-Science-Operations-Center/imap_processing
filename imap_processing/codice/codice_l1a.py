@@ -160,10 +160,21 @@ class CoDICEL1aPipeline:
         ]:
             coord_names.append("spin_sector_pairs_label")
 
+        # Define the values for the coordinates
         for name in coord_names:
             if name == "epoch":
                 values = self.calculate_epoch_values()
-            elif name in ["esa_step", "inst_az", "spin_sector", "spin_sector_pairs"]:
+            # TODO: Currently hi-sectored products us "spin_sector_index" and
+            #       "ssd_index", which are basically the same as "spin_sector"
+            #       and "inst_az". Ask Joey if these need to be different.
+            elif name in [
+                "esa_step",
+                "inst_az",
+                "spin_sector",
+                "spin_sector_pairs",
+                "spin_sector_index",
+                "ssd_index",
+            ]:
                 values = np.arange(self.config["output_dims"][name])
             elif name == "spin_sector_pairs_label":
                 values = np.array(
@@ -176,10 +187,6 @@ class CoDICEL1aPipeline:
                         "150-180 deg",
                     ]
                 )
-            else:
-                # TODO: May need to implement other types of coords for Hi
-                #       and/or event data products
-                continue
 
             coord = xr.DataArray(
                 values,
@@ -281,6 +288,8 @@ class CoDICEL1aPipeline:
             "energy_fe",
             "energy_uh",
             "energy_junk",
+            "energy_he3he4",
+            "energy_cno",
         ]
 
         for variable_name in self.config["support_variables"]:
@@ -759,18 +768,19 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
         dataset = datasets[apid]
         logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
 
-        # Housekeeping data
-        if apid == CODICEAPID.COD_NHK:
-            processed_dataset = create_hskp_dataset(dataset, data_version)
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
-
-        # Event data
-        elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
-            processed_dataset = create_event_dataset(apid, dataset, data_version)
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+        # # Housekeeping data
+        # if apid == CODICEAPID.COD_NHK:
+        #     processed_dataset = create_hskp_dataset(dataset, data_version)
+        #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+        #
+        # # Event data
+        # elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
+        #     processed_dataset = create_event_dataset(apid, dataset, data_version)
+        #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # Everything else
-        elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
+        # elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
+        if apid == CODICEAPID.COD_HI_SECT_SPECIES_COUNTS:
             # Extract the data
             science_values = [packet.data for packet in dataset.data]
 
@@ -784,17 +794,18 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
             pipeline.reshape_data()
             pipeline.define_coordinates()
             processed_dataset = pipeline.define_data_variables()
+            print(processed_dataset)
 
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
-        # TODO: Still need to implement I-ALiRT and hi-priorities data products
-        elif apid in [
-            CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES,
-            CODICEAPID.COD_HI_IAL,
-            CODICEAPID.COD_LO_IAL,
-        ]:
-            logger.info("\tStill need to properly implement")
-            processed_dataset = None
+        # # TODO: Still need to implement I-ALiRT and hi-priorities data products
+        # elif apid in [
+        #     CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES,
+        #     CODICEAPID.COD_HI_IAL,
+        #     CODICEAPID.COD_LO_IAL,
+        # ]:
+        #     logger.info("\tStill need to properly implement")
+        #     processed_dataset = None
 
         # For APIDs that don't require processing
         else:
@@ -804,3 +815,21 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
         processed_datasets.append(processed_dataset)
 
     return processed_datasets
+
+
+if __name__ == "__main__":
+    from imap_processing import imap_module_directory
+    from imap_processing.cdf.utils import write_cdf
+
+    TEST_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"
+    file_path = TEST_DATA_PATH / "imap_codice_l0_raw_20241110_v001.pkts"
+
+    processed_datasets = process_codice_l1a(file_path, "001")
+
+    for dataset in processed_datasets:
+        if dataset is not None:
+            try:
+                filename = write_cdf(dataset)
+                print(filename)
+            except:
+                print(f"{filename} already exists")

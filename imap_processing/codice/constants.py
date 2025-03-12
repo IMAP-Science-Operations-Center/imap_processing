@@ -183,17 +183,24 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "dataset_name": "imap_codice_l1a_hi-sectored",
         "input_dims": {
             "esa_step": 8,
-            "inst_az": 12,
-            "spin_sector": 12,
-        },  # TODO: Double check with Joey
+            "ssd_index": 12,
+            "spin_sector_index": 12,
+        },
         "instrument": "hi",
         "num_counters": 4,
         "output_dims": {
             "esa_step": 8,
-            "inst_az": 12,
-            "spin_sector": 12,
-        },  # TODO: Double check with Joey
-        "support_variables": ["data_quality", "spin_period"],
+            "ssd_index": 12,
+            "spin_sector_index": 12,
+        },
+        "support_variables": [
+            "data_quality",
+            "spin_period",
+            "energy_h",
+            "energy_he3he4",
+            "energy_cno",
+            "energy_fe",
+        ],
         "variable_names": HI_SECT_SPECIES_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED: {
@@ -1117,5 +1124,11 @@ OMNI_ENERGY_TABLE = {
     "junk": [0.05, 0.070710678],
 }
 
-# TODO: Add energy tables for hi-sectored, hi-counters-aggregated, and
-#       hi-counters-singles
+SECTORED_ENERGY_TABLE = {
+    "h": [0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8],
+    "he3he4": [0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4],
+    "cno": [0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4],
+    "fe": [0.0125, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2],
+}
+
+# TODO: Add energy tables for hi-counters-aggregated, and hi-counters-singles
