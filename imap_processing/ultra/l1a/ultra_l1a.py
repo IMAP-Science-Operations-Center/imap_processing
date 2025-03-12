@@ -9,7 +9,7 @@ from typing import Optional
 import numpy as np
 import xarray as xr
 
-from imap_processing import decom, imap_module_directory
+from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.ultra.l0.decom_ultra import process_ultra_apids
@@ -19,7 +19,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_RATES,
     ULTRA_TOF,
 )
-from imap_processing.utils import group_by_apid
+from imap_processing.utils import packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
 
@@ -264,8 +264,10 @@ def ultra_l1a(
         f"{imap_module_directory}/ultra/packet_definitions/" f"ULTRA_SCI_COMBINED.xml"
     )
 
-    packets = decom.decom_packets(packet_file, xtce)
-    grouped_data = group_by_apid(packets)
+    datasets_by_apid = packet_file_to_datasets(packet_file, xtce)
+    # FIXME: Laura, at this point we should have a mapping of all apids to a dataset
+    #        representing that apid. Can we save those to disk directly for l1a, or do
+    #        we need to do some additional processing like you've already got below?
 
     output_datasets = []
 
@@ -277,11 +279,11 @@ def ultra_l1a(
     if apid is not None:
         apids = [apid]
     else:
-        apids = list(grouped_data.keys())
+        apids = list(datasets_by_apid.keys())
 
     for apid in apids:
         decom_ultra_dict = {
-            apid: process_ultra_apids(grouped_data[apid], apid),
+            apid: process_ultra_apids(datasets_by_apid[apid], apid),
         }
         dataset = create_dataset(decom_ultra_dict)
         # TODO: move this to use ImapCdfAttributes().add_global_attribute()

@@ -6,6 +6,7 @@ from collections import defaultdict
 from typing import Any, Union
 
 import numpy as np
+import xarray as xr
 from space_packet_parser import packets
 
 from imap_processing.ccsds.ccsds_data import CcsdsData
@@ -22,7 +23,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_TOF,
     append_ccsds_fields,
 )
-from imap_processing.utils import convert_to_binary_string, sort_by_time
+from imap_processing.utils import convert_to_binary_string
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -122,24 +123,20 @@ def process_ultra_apids(data: list, apid: int) -> Union[dict[Any, Any], bool]:
         ULTRA_RATES.apid[0]: process_ultra_rates,
     }
 
-    sorted_packets = sort_by_time(data, "SHCOARSE")
-
     process_function = strategy_dict.get(apid, lambda *args: False)
-    decom_data = process_function(sorted_packets, defaultdict(list))
+    decom_data = process_function(data, defaultdict(list))
 
     return decom_data
 
 
-def process_ultra_tof(
-    sorted_packets: list, decom_data: collections.defaultdict
-) -> dict:
+def process_ultra_tof(ds: xr.Dataset, decom_data: collections.defaultdict) -> dict:
     """
     Unpack and decode Ultra TOF packets.
 
     Parameters
     ----------
-    sorted_packets : list
-        TOF packets sorted by time.
+    ds : xarray.Dataset
+        TOF dataset.
     decom_data : collections.defaultdict
         Empty dictionary.
 
@@ -152,14 +149,13 @@ def process_ultra_tof(
     data_dict: dict = defaultdict(list)
 
     # For TOF we need to sort by time and then SID
-    sorted_packets = sorted(
-        sorted_packets,
-        key=lambda x: (x["SHCOARSE"].raw_value, x["SID"].raw_value),
-    )
+    ds = ds.sortby(["epoch", "sid"])
+
     if isinstance(ULTRA_TOF.mantissa_bit_length, int) and isinstance(
         ULTRA_TOF.width, int
     ):
-        for packet in sorted_packets:
+        for epoch in ds["epoch"]:
+            packet = ds.sel(epoch=epoch)
             binary_data = convert_to_binary_string(packet["PACKETDATA"])
             # Decompress the image data
             decompressed_data = decompress_image(
@@ -180,8 +176,8 @@ def process_ultra_tof(
             )
 
     # Stack the data to create required dimensions
-    for key in stacked_dict.keys():
-        decom_data[key] = np.stack(stacked_dict[key])
+    for key, value in stacked_dict.items():
+        decom_data[key] = np.stack(value)
 
     return decom_data
 
