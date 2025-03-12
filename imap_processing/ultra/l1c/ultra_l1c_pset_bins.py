@@ -110,28 +110,38 @@ def get_spacecraft_histogram(
     return hist
 
 
-def get_pointing_frame_exposure_times(
-    constant_exposure: Path, n_spins: int, sensor: str
-) -> NDArray:
+def get_spacecraft_exposure_times(constant_exposure: Path, nside: int) -> NDArray:
     """
-    Compute a 2D array of the exposure.
+    Compute a HEALPix array of exposure times using Astropy's HEALPix module.
 
     Parameters
     ----------
     constant_exposure : Path
         Path to file containing constant exposure data.
-    n_spins : int
-        Number of spins per pointing.
-    sensor : str
-        Sensor (45 or 90).
+    nside : int
+        HEALPix resolution parameter (must be a power of 2).
 
     Returns
     -------
     exposure : np.ndarray
-        A 2D array with dimensions (az, el).
+        A 1D HEALPix array with exposure values indexed by HEALPix pixel number.
     """
     with cdflib.CDF(constant_exposure) as cdf_file:
-        exposure = cdf_file.varget(f"dps_grid{sensor}") * n_spins
+        # Degrees 0 to 360
+        right_ascension = cdf_file.varget("right_ascension")
+        # Degrees -90 to 90
+        declination = cdf_file.varget("declination")
+        exposure_time = cdf_file.varget("exposure_time")
+
+    # Convert right_ascension, declination to HEALPix indices
+    pix_indices = hp.ang2pix(
+        nside, declination, right_ascension, lonlat=True, nest=False
+    )
+
+    # Create HEALPix array and assign exposure times
+    npix = hp.nside2npix(nside)
+    exposure = np.zeros(npix)
+    exposure[pix_indices] = exposure_time
 
     return exposure
 

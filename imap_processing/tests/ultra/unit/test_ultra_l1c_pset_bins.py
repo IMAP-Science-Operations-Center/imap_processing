@@ -11,8 +11,8 @@ from imap_processing.ena_maps.utils.spatial_utils import build_spatial_bins
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     get_helio_exposure_times,
-    get_pointing_frame_exposure_times,
     get_pointing_frame_sensitivity,
+    get_spacecraft_exposure_times,
     get_spacecraft_histogram,
 )
 
@@ -75,11 +75,9 @@ def test_get_spacecraft_histogram(test_data):
 def test_get_pointing_frame_exposure_times():
     """Tests get_pointing_frame_exposure_times function."""
 
-    constant_exposure = BASE_PATH / "dps_grid45_compressed.cdf"
+    constant_exposure = BASE_PATH / "ultra_90_dps_exposure_compressed.cdf"
     spins_per_pointing = 5760
-    exposure = get_pointing_frame_exposure_times(
-        constant_exposure, spins_per_pointing, "45"
-    )
+    exposure = get_spacecraft_exposure_times(constant_exposure, 32)
 
     assert exposure.shape == (720, 360)
     # Assert that the exposure time at the highest azimuth is
