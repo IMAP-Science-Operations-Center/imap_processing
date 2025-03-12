@@ -751,7 +751,6 @@ class Mag(ProcessInstrument):
             input_data = [load_cdf(dep) for dep in dependencies]
             # Input datasets can be in any order
             datasets = [mag_l1c(input_data[0], input_data[1], self.version)]
-            datasets = []
 
         return datasets
 
