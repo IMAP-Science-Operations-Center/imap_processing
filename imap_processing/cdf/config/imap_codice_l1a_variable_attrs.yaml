@@ -467,12 +467,12 @@ hi-sectored-h:
     <<: *counters
     CATDESC: Sectored H Counts
     FIELDNAM: H
-    DEPEND_1: esa_step
-    DEPEND_2: inst_az
-    DEPEND_3: spin_sector
-    LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+    DEPEND_1: energy_h
+    DEPEND_2: ssd_index
+    DEPEND_3: spin_sector_index
+    LABL_PTR_1: energy_h
+    LABL_PTR_2: ssd_index
+    LABL_PTR_3: spin_sector_index
 
 hi-sectored-energy_h:
     <<: *hi_energies_default
@@ -489,12 +489,12 @@ hi-sectored-he3he4:
     <<: *counters
     CATDESC: Sectored He3He4 Counts
     FIELDNAM: He3He4
-    DEPEND_1: esa_step
-    DEPEND_2: inst_az
-    DEPEND_3: spin_sector
-    LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+    DEPEND_1: energy_he3he4
+    DEPEND_2: ssd_index
+    DEPEND_3: spin_sector_index
+    LABL_PTR_1: energy_he3he4
+    LABL_PTR_2: ssd_index
+    LABL_PTR_3: spin_sector_index
 
 hi-sectored-energy_he3he4:
     <<: *hi_energies_default
@@ -511,12 +511,12 @@ hi-sectored-cno:
     <<: *counters
     CATDESC: Sectored CNO Counts
     FIELDNAM: CNO
-    DEPEND_1: esa_step
-    DEPEND_2: inst_az
-    DEPEND_3: spin_sector
-    LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+    DEPEND_1: energy_cno
+    DEPEND_2: ssd_index
+    DEPEND_3: spin_sector_index
+    LABL_PTR_1: energy_cno
+    LABL_PTR_2: ssd_index
+    LABL_PTR_3: spin_sector_index
 
 hi-sectored-energy_cno:
     <<: *hi_energies_default
@@ -533,12 +533,12 @@ hi-sectored-fe:
     <<: *counters
     CATDESC: Sectored Fe Counts
     FIELDNAM: Fe
-    DEPEND_1: esa_step
-    DEPEND_2: inst_az
-    DEPEND_3: spin_sector
-    LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+    DEPEND_1: energy_fe
+    DEPEND_2: ssd_index
+    DEPEND_3: spin_sector_index
+    LABL_PTR_1: energy_fe
+    LABL_PTR_2: ssd_index
+    LABL_PTR_3: spin_sector_index
 
 hi-sectored-energy_fe:
     <<: *hi_energies_default
