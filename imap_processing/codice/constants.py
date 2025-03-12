@@ -79,7 +79,7 @@ LO_NSW_SPECIES_VARIABLE_NAMES = [
 HI_INST_COUNTS_AGGREGATED_VARIABLE_NAMES = ["aggregated"]
 HI_INST_COUNTS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
 HI_OMNI_VARIABLE_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
-HI_SECT_SPECIES_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
+HI_SECTORED_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
 
 # lo-counters-aggregated data product variables are dynamically determined
 # based on the number of active counters
@@ -201,7 +201,7 @@ DATA_PRODUCT_CONFIGURATIONS = {
             "energy_cno",
             "energy_fe",
         ],
-        "variable_names": HI_SECT_SPECIES_VARIABLE_NAMES,
+        "variable_names": HI_SECTORED_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED: {
         "dataset_name": "imap_codice_l1a_lo-counters-aggregated",
