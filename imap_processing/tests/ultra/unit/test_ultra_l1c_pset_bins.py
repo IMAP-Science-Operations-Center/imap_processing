@@ -1,7 +1,7 @@
 "Tests pointing sets"
 
+import astropy_healpix.healpy as hp
 import cdflib
-import healpy as hp
 import numpy as np
 import pytest
 from cdflib import CDF
