@@ -268,13 +268,85 @@ sw_bias_gain_mode:
 
 # The following are data product-specific
 # hi-counters-aggregated
-hi-counters-aggregated-aggregated:
-    <<: *counters
-    CATDESC: Aggregated Rates
-    FIELDNAM: Rates - Aggregated
-    LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+hi-counters-aggregated-DCR:
+    <<: *events
+    CATDESC: Event B - Double Coincidence Rate (DCR)
+    FIELDNAM: DCRs
+
+hi-counters-aggregated-STO:
+    <<: *events
+    CATDESC: Event C - Start Only (STO)
+    FIELDNAM: Start Only
+
+hi-counters-aggregated-SPO:
+    <<: *events
+    CATDESC: Event D - Stop Only (SPO)
+    FIELDNAM: Stop Only
+
+hi-counters-aggregated-Reserved1:
+    <<: *events
+    CATDESC: Reserved 1
+    FIELDNAM: Reserved 1
+
+hi-counters-aggregated-MST:
+    <<: *events
+    CATDESC: Event H - Multi Start (MST)
+    FIELDNAM: Multi Start
+
+hi-counters-aggregated-Reserved2:
+    <<: *events
+    CATDESC: Reserved 2
+    FIELDNAM: Reserved 2
+
+hi-counters-aggregated-Reserved3:
+    <<: *events
+    CATDESC: Reserved 3
+    FIELDNAM: Reserved 3
+
+hi-counters-aggregated-Reserved4:
+    <<: *events
+    CATDESC: Reserved 4
+    FIELDNAM: Reserved 4
+
+hi-counters-aggregated-Reserved5:
+    <<: *events
+    CATDESC: Reserved 5
+    FIELDNAM: Reserved 5
+
+hi-counters-aggregated-LowTOFCutoff:
+    <<: *events
+    CATDESC: Low TOF Cutoff
+    FIELDNAM: Low TOF Cutoff
+
+hi-counters-aggregated-Reserved6:
+    <<: *events
+    CATDESC: Reserved 6
+    FIELDNAM: Reserved 6
+
+hi-counters-aggregated-Reserved7:
+    <<: *events
+    CATDESC: Reserved 7
+    FIELDNAM: Reserved 7
+
+hi-counters-aggregated-ASIC1FlagInvalid:
+    <<: *events
+    CATDESC: ASIC 1 Flag Invalid Count
+    FIELDNAM: ASIC 1 Flag Invalid
+
+hi-counters-aggregated-ASIC2FlagInvalid:
+    <<: *events
+    CATDESC: ASIC 2 Flag Invalid Count
+    FIELDNAM: ASIC 2 Flag Invalid
+
+hi-counters-aggregated-ASIC1ChannelInvalid:
+    <<: *events
+    CATDESC: ASIC 1 Channel Invalid Count
+    FIELDNAM: ASIC 1 Channel Invalid
+
+hi-counters-aggregated-ASIC2ChannelInvalid:
+    <<: *events
+    CATDESC: ASIC 2 Channel Invalid Count
+    FIELDNAM: ASIC 2 Channel Invalid
 
 # hi-counters-singles
 hi-counters-singles-tcr:

@@ -77,7 +77,6 @@ LO_NSW_SPECIES_VARIABLE_NAMES = [
 ]
 
 # CDF-friendly names for hi data products
-HI_INST_COUNTS_AGGREGATED_VARIABLE_NAMES = ["aggregated"]
 HI_COUNTERS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
 HI_OMNI_VARIABLE_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
 HI_PRIORITY_VARIABLE_NAMES = [
@@ -90,8 +89,8 @@ HI_PRIORITY_VARIABLE_NAMES = [
 ]
 HI_SECTORED_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
 
-# lo-counters-aggregated data product variables are dynamically determined
-# based on the number of active counters
+# lo- and hi-counters-aggregated data product variables are dynamically
+# determined based on the number of active counters
 # TODO: Try to convince Joey to move to lower case variable names with
 #       underscores?
 LO_COUNTERS_AGGREGATED_ACTIVE_VARIABLES = {
@@ -129,26 +128,43 @@ LO_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
     for name, is_active in LO_COUNTERS_AGGREGATED_ACTIVE_VARIABLES.items()
     if is_active
 ]
+HI_COUNTERS_AGGREGATED_ACTIVE_VARIABLES = {
+    "DCR": True,
+    "STO": True,
+    "SPO": True,
+    "Reserved1": False,
+    "MST": True,
+    "Reserved2": False,
+    "Reserved3": False,
+    "Reserved4": False,
+    "Reserved5": False,
+    "LowTOFCutoff": False,
+    "Reserved6": False,
+    "Reserved7": False,
+    "ASIC1FlagInvalid": True,
+    "ASIC2FlagInvalid": True,
+    "ASIC1ChannelInvalid": False,
+    "ASIC2ChannelInvalid": False,
+}
+HI_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
+    name
+    for name, is_active in HI_COUNTERS_AGGREGATED_ACTIVE_VARIABLES.items()
+    if is_active
+]
 
 # TODO: Possibly move to consistent order of dimensions with other instruments
 #       TBD after discussion with Joey and at the Science Team Meeting in Feb
 DATA_PRODUCT_CONFIGURATIONS = {
     CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED: {
         "dataset_name": "imap_codice_l1a_hi-counters-aggregated",
-        "input_dims": {
-            "esa_step": 1,
-            "inst_az": 6,
-            "spin_sector": 1,
-        },  # TODO: Double check with Joey
+        "input_dims": {},
         "instrument": "hi",
-        "num_counters": 1,
-        "output_dims": {
-            "esa_step": 1,
-            "inst_az": 6,
-            "spin_sector": 1,
-        },  # TODO: Double check with Joey
-        "support_variables": [],  # TODO: Double check with Joey
-        "variable_names": HI_INST_COUNTS_AGGREGATED_VARIABLE_NAMES,
+        "num_counters": len(
+            HI_COUNTERS_AGGREGATED_VARIABLE_NAMES
+        ),  # The number of counters depends on the number of active counters
+        "output_dims": {},
+        "support_variables": ["data_quality", "spin_period"],
+        "variable_names": HI_COUNTERS_AGGREGATED_VARIABLE_NAMES,
     },
     CODICEAPID.COD_HI_INST_COUNTS_SINGLES: {
         "dataset_name": "imap_codice_l1a_hi-counters-singles",
