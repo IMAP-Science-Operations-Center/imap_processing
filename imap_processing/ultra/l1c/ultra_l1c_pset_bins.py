@@ -107,16 +107,14 @@ def get_spacecraft_histogram(
         # Only count the events that fall within the energy bin
         hist[:, i] += np.bincount(hpix_idx[mask], minlength=n_pix).astype(np.float64)
 
-    return hist, hpix_idx, az, el
+    return hist
 
 
 def get_spacecraft_exposure_times(
-    constant_exposure: Path,
-    nside: int = 32,
-    nested: bool = False
-) -> np.ndarray:
+    constant_exposure: Path, nside: int = 32, nested: bool = False
+) -> NDArray:
     """
-    Compute exposure times for the specific HEALPix pixels created by azimuth and elevation angles.
+    Compute exposure times for HEALPix pixels.
 
     Parameters
     ----------
@@ -129,20 +127,24 @@ def get_spacecraft_exposure_times(
 
     Returns
     -------
-    exposure : np.ndarray
-        An array of exposure times corresponding to the pixels created by azimuth and elevation.
+    exposure_pointing : np.ndarray
+        Exposure times corresponding to the pixels created by azimuth and elevation.
     """
     # Read the exposure data from the CDF file
     with cdflib.CDF(constant_exposure) as cdf_file:
         right_ascension = cdf_file.varget("right_ascension")  # 0 to 360 degrees
         declination = cdf_file.varget("declination")  # -90 to 90 degrees
-        exposure_time = cdf_file.varget("exposure_time")  # Exposure times for each (RA, DEC)
+        exposure_time = cdf_file.varget(
+            "exposure_time"
+        )  # Exposure times for each (RA, DEC)
 
     # Compute number of HEALPix pixels that cover the sphere
     n_pix = hp.nside2npix(nside)
 
     # Get HEALPix pixel indices for each exposure
-    cdf_pix_indices = hp.ang2pix(nside, right_ascension, declination, lonlat=True, nest=nested)
+    cdf_pix_indices = hp.ang2pix(
+        nside, right_ascension, declination, lonlat=True, nest=nested
+    )
 
     # Initialize arrays for summing exposures and counting occurrences
     exposure_sum = np.zeros(n_pix, dtype=np.float64)
@@ -159,9 +161,9 @@ def get_spacecraft_exposure_times(
 
     # TODO: use the universal spin table and
     #  universal pointing table here to determine actual number of spins
-    exposure_all_spins = exposure * 5760  # 5760 spins per pointing (for now)
+    exposure_pointing = exposure * 5760  # 5760 spins per pointing (for now)
 
-    return exposure_all_spins
+    return exposure_pointing
 
 
 def get_helio_exposure_times(

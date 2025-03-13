@@ -1,5 +1,7 @@
 "Tests pointing sets"
 
+from pathlib import Path
+
 import astropy_healpix.healpy as hp
 import cdflib
 import numpy as np
@@ -29,6 +31,52 @@ def test_data():
     v = np.column_stack((vx_sc, vy_sc, vz_sc))
 
     return v, energy
+
+
+@pytest.fixture()
+def fake_cdf_exposure_data(tmpdir):
+    """Test exposure data fixture."""
+    right_ascension = np.array([10, 10, 10, 100, 100, 200])
+    declination = np.array([0, 0, 0, 5, 5, 50])
+    exposure_time = np.array([2, 4, 1, 1, 3, 6])
+    expected_pixels = np.array([4, 4, 4, 5, 5, 2])
+
+    cdf_path = Path(tmpdir) / "fake_exposure.cdf"
+
+    var_specs = [
+        {
+            "Variable": "right_ascension",
+            "Data_Type": 21,
+            "Num_Elements": 1,
+            "Rec_Vary": True,
+            "Dim_Sizes": [],
+        },
+        {
+            "Variable": "declination",
+            "Data_Type": 21,
+            "Num_Elements": 1,
+            "Rec_Vary": True,
+            "Dim_Sizes": [],
+        },
+        {
+            "Variable": "exposure_time",
+            "Data_Type": 21,
+            "Num_Elements": 1,
+            "Rec_Vary": True,
+            "Dim_Sizes": [],
+        },
+    ]
+
+    cdf = cdflib.cdfwrite.CDF(str(cdf_path))
+
+    for var_spec, var_data in zip(
+        var_specs, [right_ascension, declination, exposure_time]
+    ):
+        cdf.write_var(var_spec, var_data=var_data)
+
+    cdf.close()
+
+    return cdf_path, right_ascension, declination, exposure_time, expected_pixels
 
 
 def test_build_energy_bins():
@@ -72,15 +120,23 @@ def test_get_spacecraft_histogram(test_data):
     assert np.sum(hist[:, 2]) == 3
 
 
-def test_get_pointing_frame_exposure_times():
-    """Tests get_pointing_frame_exposure_times function."""
+def test_get_spacecraft_exposure_times(fake_cdf_exposure_data):
+    """Test get_spacecraft_exposure_times function."""
+    cdf_path, right_ascension, declination, exposure_time, expected_pixels = (
+        fake_cdf_exposure_data
+    )
 
-    constant_exposure = BASE_PATH / "ultra_90_dps_exposure_compressed.cdf"
-    exposure_all_spins = get_spacecraft_exposure_times(constant_exposure, nside=1)
+    cdf_pix_indices = hp.ang2pix(1, right_ascension, declination, lonlat=True)
+    assert np.array_equal(cdf_pix_indices, expected_pixels)
 
-    assert exposure_all_spins.shape == 12
+    expected_exposure = np.full(12, np.nan)
+    expected_exposure[2] = exposure_time[expected_pixels == 2].mean()
+    expected_exposure[4] = exposure_time[expected_pixels == 4].mean()
+    expected_exposure[5] = exposure_time[expected_pixels == 5].mean()
 
+    exposure_all_spins = get_spacecraft_exposure_times(cdf_path, nside=1)
 
+    np.testing.assert_allclose(exposure_all_spins / 5760, expected_exposure, atol=1e-6)
 
 
 @pytest.mark.external_kernel()
