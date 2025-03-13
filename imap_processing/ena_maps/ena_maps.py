@@ -59,6 +59,20 @@ class IndexMatchMethod(Enum):
     PULL = "Pull"
 
 
+class CoordNames(Enum):
+    """Enumeration of the names of the coordinates in the L1C dataset."""
+
+    TIME = "epoch"
+    ENERGY = "energy_bin_center"
+    HEALPIX_INDEX = "healpix_pixel_index"
+
+    # The names of the az/el angular coordinates may differ between L1C and L2 data
+    AZIMUTH_L1C = "longitude_bin_center"
+    ELEVATION_L1C = "latitude_bin_center"
+    AZIMUTH_L2 = "longitude_bin_center"
+    ELEVATION_L2 = "latitude_bin_center"
+
+
 def match_coords_to_indices(
     input_object: PointingSet | AbstractSkyMap,
     output_object: PointingSet | AbstractSkyMap,
@@ -234,29 +248,27 @@ class PointingSet(ABC):
         )
 
 
-class UltraPointingSet(PointingSet):
+class RectangularPointingSet(PointingSet):
     """
-    PSET object specifically for ULTRA data, nominally at Level 1C.
+    Pointing set object for rectangularly tiled data. Currently used in testing.
 
     Parameters
     ----------
     l1c_dataset : xr.Dataset | pathlib.Path | str
         L1c xarray dataset containing the pointing set data or the path to the dataset.
-        Currently, the dataset is expected to be in a rectangular grid,
+        Currently, the dataset is expected to be tiled in a rectangular grid,
         with data_vars indexed along the coordinates:
             - 'epoch' : time value (1 value per PSET)
-            - 'azimuth_bin_center' : azimuth bin center values
-            - 'elevation_bin_center' : elevation bin center values
-        Some data_vars may additionally be indexed by energy bin;
-        however, only the spatial axes are used in this class.
+            - 'longitude_bin_center' : (number of longitude bins in L1C)
+            - 'latitude_bin_center' : (number of latitude bins in L1C)
     spice_reference_frame : geometry.SpiceFrame
         The reference Spice frame of the pointing set. Default is IMAP_DPS.
 
     Raises
     ------
     ValueError
-        If the azimuth or elevation bin centers do not match the constructed grid.
-        Or if the azimuth or elevation bin spacing is not uniform.
+        If the longitude or latitude bin centers don't match the constructed grid.
+        Or if the longitude or latitude bin spacing is not uniform.
     ValueError
         If multiple epochs are found in the dataset.
     """
@@ -280,15 +292,12 @@ class UltraPointingSet(PointingSet):
         if len(np.unique(self.epoch)) > 1:
             raise ValueError("Multiple epochs found in the dataset.")
 
-        # The rest of the constructor handles the rectangular grid
-        # aspects of the Ultra PSET.
-        # NOTE: This may be changed to Healpix tessellation in the future
         self.tiling_type = SkyTilingType.RECTANGULAR
 
         # Ensure 1D axes grids are uniformly spaced,
         # then set spacing based on data's azimuth bin spacing.
-        az_bin_delta = np.diff(self.data["azimuth_bin_center"])
-        el_bin_delta = np.diff(self.data["elevation_bin_center"])
+        az_bin_delta = np.diff(self.data[CoordNames.AZIMUTH_L1C.value])
+        el_bin_delta = np.diff(self.data[CoordNames.ELEVATION_L1C.value])
         if not np.allclose(az_bin_delta, az_bin_delta[0], atol=1e-10, rtol=0):
             raise ValueError("Azimuth bin spacing is not uniform.")
         if not np.allclose(el_bin_delta, el_bin_delta[0], atol=1e-10, rtol=0):
@@ -300,26 +309,26 @@ class UltraPointingSet(PointingSet):
             )
         self.spacing_deg = az_bin_delta[0]
 
-        # Build the azimuth and elevation grids with an AzElSkyGrid object
+        # Build the az/azimuth and el/elevation grids with an AzElSkyGrid object
         # and check that the 1D axes match the dataset's az and el.
         self.sky_grid = spatial_utils.AzElSkyGrid(
             spacing_deg=self.spacing_deg,
         )
 
         for dim, constructed_bins in zip(
-            ["azimuth", "elevation"],
+            [CoordNames.AZIMUTH_L1C.value, CoordNames.ELEVATION_L1C.value],
             [self.sky_grid.az_bin_midpoints, self.sky_grid.el_bin_midpoints],
         ):
             if not np.allclose(
                 sorted(constructed_bins),
-                self.data[f"{dim}_bin_center"],
+                self.data[dim],
                 atol=1e-10,
                 rtol=0,
             ):
                 raise ValueError(
                     f"{dim} bin centers do not match."
                     f"Constructed: {constructed_bins}"
-                    f"Dataset: {self.data[f'{dim}_bin_center']}"
+                    f"Dataset: {self.data[dim]}"
                 )
 
         # Unwrap the az, el grids to series of points tiling the sky and combine them
@@ -339,6 +348,93 @@ class UltraPointingSet(PointingSet):
         # These are 1D arrays of different lengths and cannot be stacked.
         self.az_bin_edges = self.sky_grid.az_bin_edges
         self.el_bin_edges = self.sky_grid.el_bin_edges
+
+
+class UltraPointingSet(PointingSet):
+    """
+    PSET object specifically for Healpix-tiled ULTRA data, nominally at Level 1C.
+
+    Parameters
+    ----------
+    l1c_dataset : xr.Dataset | pathlib.Path | str
+        L1c xarray dataset containing the pointing set data or the path to the dataset.
+        Currently, the dataset is expected to be tiled in a HEALPix tessellation,
+        with data_vars indexed along the coordinates:
+            - 'epoch' : time value (1 value per PSET)
+            - 'energy_bin_center' : (number of energy bins in L1C)
+            - 'healpix_pixel_index' : HEALPix pixel index
+        Only the 'healpix_pixel_index' coordinate is used in this class for projection.
+    spice_reference_frame : geometry.SpiceFrame
+        The reference Spice frame of the pointing set. Default is IMAP_DPS.
+
+    Raises
+    ------
+    ValueError
+        If the longitude/az or latitude/el bin centers don't match the constructed grid.
+        Or if the longitude or latitude bin spacing is not uniform.
+    ValueError
+        If multiple epochs are found in the dataset.
+    """
+
+    def __init__(
+        self,
+        l1c_dataset: xr.Dataset | pathlib.Path | str,
+        spice_reference_frame: geometry.SpiceFrame = geometry.SpiceFrame.IMAP_DPS,
+    ):
+        # Store the reference frame of the pointing set
+        self.spice_reference_frame = spice_reference_frame
+
+        # Read in the data and store the xarray dataset as data attr
+        if isinstance(l1c_dataset, (str, pathlib.Path)):
+            self.data = load_cdf(pathlib.Path(l1c_dataset))
+        elif isinstance(l1c_dataset, xr.Dataset):
+            self.data = l1c_dataset
+
+        # A PSET must have a single epoch
+        self.epoch = self.data["epoch"].values
+        if len(np.unique(self.epoch)) > 1:
+            raise ValueError("Multiple epochs found in the dataset.")
+
+        self.tiling_type = SkyTilingType.HEALPIX
+        self.num_points = self.data[CoordNames.HEALPIX_INDEX.value].size
+        self.nside = hp.npix_to_nside(self.num_points)
+
+        # Determine if the HEALPix tessellation is nested, default is False
+        self.nested = bool(
+            self.data[CoordNames.HEALPIX_INDEX.value].attrs.get("nested", False)
+        )
+
+        # Get the azimuth and elevation pixel centers
+        self.azimuth_pixel_center, self.elevation_pixel_center = hp.pix2ang(
+            nside=self.nside,
+            ipix=np.arange(self.num_points),
+            nest=self.nested,
+            lonlat=True,
+        )
+
+        # Verify that the azimuth and elevation of the healpix pixel centers
+        # match the data's azimuth and elevation bin centers.
+        # NOTE: They can have different names in the L1C dataset
+        # (e.g. "longitude"/"latitude" vs "azimuth"/"elevation").
+        for dim, constructed_bins in zip(
+            [CoordNames.AZIMUTH_L1C.value, CoordNames.ELEVATION_L1C.value],
+            [self.azimuth_pixel_center, self.elevation_pixel_center],
+        ):
+            if not np.allclose(
+                self.data[dim],
+                constructed_bins,
+                atol=1e-10,
+                rtol=0,
+            ):
+                raise ValueError(
+                    f"{dim} pixel centers do not match the data's {dim} bin centers."
+                    f"Constructed: {constructed_bins}"
+                    f"Dataset: {self.data[dim]}"
+                )
+
+        self.az_el_points = np.column_stack(
+            (self.azimuth_pixel_center, self.elevation_pixel_center)
+        )
 
     def __repr__(self) -> str:
         """
@@ -642,14 +738,14 @@ class RectangularSkyMap(AbstractSkyMap):
         self.binning_grid_shape = self.sky_grid.grid_shape
 
         self.spatial_coords = {
-            "azimuth_bin_center": xr.DataArray(
+            CoordNames.AZIMUTH_L1C.value: xr.DataArray(
                 self.sky_grid.az_bin_midpoints,
-                dims=["azimuth_bin_center"],
+                dims=[CoordNames.AZIMUTH_L1C.value],
                 attrs={"units": "degrees"},
             ),
-            "elevation_bin_center": xr.DataArray(
+            CoordNames.ELEVATION_L1C.value: xr.DataArray(
                 self.sky_grid.el_bin_midpoints,
-                dims=["elevation_bin_center"],
+                dims=[CoordNames.ELEVATION_L1C.value],
                 attrs={"units": "degrees"},
             ),
         }
