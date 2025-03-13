@@ -2,11 +2,8 @@
 
 import numpy as np
 import numpy.typing as npt
-import space_packet_parser
 
 from imap_processing.ultra.l0.ultra_utils import (
-    EVENT_FIELD_RANGES,
-    append_fillval,
     parse_event,
 )
 from imap_processing.utils import convert_to_binary_string
@@ -261,23 +258,13 @@ def read_image_raw_events_binary(
     binary = convert_to_binary_string(event_data)
     # 166 bits per event
     event_length = 166 if count else 0
-
-    # Uses fill value for all packets that do not contain event data.
-    if count == 0:
-        # if decom_data is empty, append fill values to all fields
-        if not decom_data:
-            for field in EVENT_FIELD_RANGES.keys():
-                decom_data[field] = []
-        append_fillval(decom_data, packet)
+    event_data_list = []
 
     # For all packets with event data, parses the binary string
-    else:
-        for i in range(count):
-            start_index = i * event_length
-            event_binary = binary[start_index : start_index + event_length]
-            event_data = parse_event(event_binary)
+    for i in range(count):
+        start_index = i * event_length
+        event_binary = binary[start_index : start_index + event_length]
+        event_data = parse_event(event_binary)
+        event_data_list.append(event_data)
 
-            for key, value in event_data.items():
-                decom_data[key].append(value)
-
-    return decom_data
+    return np.array(event_data_list)

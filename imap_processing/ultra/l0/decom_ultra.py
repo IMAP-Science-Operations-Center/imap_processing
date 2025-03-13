@@ -92,9 +92,13 @@ def append_params(decom_data: dict, packet: packets.CCSDSPacket) -> None:
     packet : space_packet_parser.packets.CCSDSPacket
         Individual packet.
     """
+    # sorted_packets[0].user_data.items()
+    # dict_items([('U45_IMG_RAW_EVENTS.SHCOARSE', 445015651), ('U45_IMG_RAW_EVENTS.SID', 0), ('U45_IMG_RAW_EVENTS.SPIN', 127), ('U45_IMG_RAW_EVENTS.ABORTFLAG', 0), ('U45_IMG_RAW_EVENTS.STARTDELAY', 1), ('U45_IMG_RAW_EVENTS.COUNT', 0), ('U45_IMG_RAW_EVENTS.EVENTDATA', b'\x00')])
     for key, value in packet.user_data.items():
         decom_data[key].append(value)
 
+    # sorted_packets[0].header
+    # {'VERSION': 0, 'PHTYPE': 0, 'SEC_HDR_FLG': 1, 'PKT_APID': 896, 'SEQ_FLGS': 3, 'SRC_SEQ_CTR': 9346, 'PKT_LEN': 9}
     ccsds_data = CcsdsData(packet.header)
     append_ccsds_fields(decom_data, ccsds_data)
 
@@ -198,18 +202,16 @@ def process_ultra_events(sorted_packets: xr.Dataset, decom_data: dict) -> dict:
     decom_data : dict
         A dictionary containing the decoded data.
     """
+
     for i in range(len(sorted_packets["epoch"])):
         # Here there are multiple images in a single packet,
         # so we need to loop through each image and decompress it.
         count = sorted_packets["count"].values[i]
-        decom_data = read_image_raw_events_binary(sorted_packets["eventdata"].values[i],
+        event_data_list = read_image_raw_events_binary(sorted_packets["eventdata"].values[i],
                                                   count, decom_data)
-        if count == 0:
-            append_params(decom_data, packet)
-        else:
-            for i in range(count):
-                logging.info(f"Appending image #{i}")
-                append_params(decom_data, packet)
+
+    # Create expected dictionary
+    print('hi')
 
     return decom_data
 

@@ -270,23 +270,6 @@ RATES_KEYS = [
 ]
 
 
-def append_fillval(decom_data: dict, packet):  # type: ignore[no-untyped-def]
-    # ToDo, need packet param type
-    """
-    Append fill values to all fields.
-
-    Parameters
-    ----------
-    decom_data : dict
-        Parsed data.
-    packet : space_packet_parser.packets.CCSDSPacket
-        Packet.
-    """
-    for key in decom_data:
-        if (key not in packet.header.keys()) and (key not in packet.user_data.keys()):
-            decom_data[key].append(np.iinfo(np.int64).min)
-
-
 def parse_event(event_binary: str) -> dict:
     """
     Parse a binary string representing a single event.
