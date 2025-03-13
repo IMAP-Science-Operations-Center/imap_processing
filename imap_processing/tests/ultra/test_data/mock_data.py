@@ -281,11 +281,11 @@ def mock_l1c_pset_product_healpix(  # noqa: PLR0913
                 ],
                 sensitivity,
             ),
-            "azimuth_pixel_center": (
+            "longitude_bin_center": (
                 ["healpix_pixel_index"],
                 lon_pix,
             ),
-            "elevation_pixel_center": (
+            "latitude_bin_center": (
                 ["healpix_pixel_index"],
                 lat_pix,
             ),
