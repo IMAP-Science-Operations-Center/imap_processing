@@ -107,43 +107,61 @@ def get_spacecraft_histogram(
         # Only count the events that fall within the energy bin
         hist[:, i] += np.bincount(hpix_idx[mask], minlength=n_pix).astype(np.float64)
 
-    return hist
+    return hist, hpix_idx, az, el
 
 
-def get_spacecraft_exposure_times(constant_exposure: Path, nside: int) -> NDArray:
+def get_spacecraft_exposure_times(
+    constant_exposure: Path,
+    nside: int = 32,
+    nested: bool = False
+) -> np.ndarray:
     """
-    Compute a HEALPix array of exposure times using Astropy's HEALPix module.
+    Compute exposure times for the specific HEALPix pixels created by azimuth and elevation angles.
 
     Parameters
     ----------
     constant_exposure : Path
-        Path to file containing constant exposure data.
+        Path to file containing constant exposure data (CDF file).
     nside : int
         HEALPix resolution parameter (must be a power of 2).
+    nested : bool, optional
+        Whether the Healpix tessellation is nested. Default is False.
 
     Returns
     -------
     exposure : np.ndarray
-        A 1D HEALPix array with exposure values indexed by HEALPix pixel number.
+        An array of exposure times corresponding to the pixels created by azimuth and elevation.
     """
+    # Read the exposure data from the CDF file
     with cdflib.CDF(constant_exposure) as cdf_file:
-        # Degrees 0 to 360
-        right_ascension = cdf_file.varget("right_ascension")
-        # Degrees -90 to 90
-        declination = cdf_file.varget("declination")
-        exposure_time = cdf_file.varget("exposure_time")
+        right_ascension = cdf_file.varget("right_ascension")  # 0 to 360 degrees
+        declination = cdf_file.varget("declination")  # -90 to 90 degrees
+        exposure_time = cdf_file.varget("exposure_time")  # Exposure times for each (RA, DEC)
 
-    # Convert right_ascension, declination to HEALPix indices
-    pix_indices = hp.ang2pix(
-        nside, declination, right_ascension, lonlat=True, nest=False
-    )
+    # Compute number of HEALPix pixels that cover the sphere
+    n_pix = hp.nside2npix(nside)
 
-    # Create HEALPix array and assign exposure times
-    npix = hp.nside2npix(nside)
-    exposure = np.zeros(npix)
-    exposure[pix_indices] = exposure_time
+    # Get HEALPix pixel indices for each exposure
+    cdf_pix_indices = hp.ang2pix(nside, right_ascension, declination, lonlat=True, nest=nested)
 
-    return exposure
+    # Initialize arrays for summing exposures and counting occurrences
+    exposure_sum = np.zeros(n_pix, dtype=np.float64)
+    exposure_count = np.zeros(n_pix, dtype=np.int64)
+
+    # Accumulate exposures and count occurrences in each pixel
+    np.add.at(exposure_sum, cdf_pix_indices, exposure_time)
+    np.add.at(exposure_count, cdf_pix_indices, 1)
+
+    # Compute the average exposure, avoiding division by zero
+    exposure = np.full(n_pix, np.nan)
+    valid_bins = exposure_count > 0
+    exposure[valid_bins] = exposure_sum[valid_bins] / exposure_count[valid_bins]
+
+    # TODO: use the universal spin table and
+    #  universal pointing table here to determine actual number of spins
+    exposure_all_spins = exposure * 5760  # 5760 spins per pointing (for now)
+
+    return exposure_all_spins
 
 
 def get_helio_exposure_times(

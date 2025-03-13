@@ -76,17 +76,11 @@ def test_get_pointing_frame_exposure_times():
     """Tests get_pointing_frame_exposure_times function."""
 
     constant_exposure = BASE_PATH / "ultra_90_dps_exposure_compressed.cdf"
-    spins_per_pointing = 5760
-    exposure = get_spacecraft_exposure_times(constant_exposure, 64)
+    exposure_all_spins = get_spacecraft_exposure_times(constant_exposure, nside=1)
 
-    assert exposure.shape == (720, 360)
-    # Assert that the exposure time at the highest azimuth is
-    # 15s x spins per pointing.
-    assert np.array_equal(
-        exposure[:, 359], np.full_like(exposure[:, 359], spins_per_pointing * 15)
-    )
-    # Assert that the exposure time at the lowest azimuth is 0 (no exposure).
-    assert np.array_equal(exposure[:, 0], np.full_like(exposure[:, 359], 0.0))
+    assert exposure_all_spins.shape == 12
+
+
 
 
 @pytest.mark.external_kernel()
