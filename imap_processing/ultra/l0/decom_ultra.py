@@ -182,13 +182,13 @@ def process_ultra_tof(ds: xr.Dataset, decom_data: collections.defaultdict) -> di
     return decom_data
 
 
-def process_ultra_events(sorted_packets: list, decom_data: dict) -> dict:
+def process_ultra_events(sorted_packets: xr.Dataset, decom_data: dict) -> dict:
     """
     Unpack and decode Ultra EVENTS packets.
 
     Parameters
     ----------
-    sorted_packets : list
+    sorted_packets : xr.Dataset
         EVENTS packets sorted by time.
     decom_data : collections.defaultdict
         Empty dictionary.
@@ -198,12 +198,12 @@ def process_ultra_events(sorted_packets: list, decom_data: dict) -> dict:
     decom_data : dict
         A dictionary containing the decoded data.
     """
-    for packet in sorted_packets:
+    for i in range(len(sorted_packets["epoch"])):
         # Here there are multiple images in a single packet,
         # so we need to loop through each image and decompress it.
-        decom_data = read_image_raw_events_binary(packet, decom_data)
-        count = packet["COUNT"]
-
+        count = sorted_packets["count"].values[i]
+        decom_data = read_image_raw_events_binary(sorted_packets["eventdata"].values[i],
+                                                  count, decom_data)
         if count == 0:
             append_params(decom_data, packet)
         else:

@@ -15,7 +15,7 @@ from imap_processing.ultra.l0.ultra_utils import (
 )
 from imap_processing.ultra.l1a import ultra_l1a
 from imap_processing.ultra.l1b.ultra_l1b import ultra_l1b
-from imap_processing.utils import group_by_apid
+from imap_processing.utils import group_by_apid, packet_file_to_datasets
 
 
 @pytest.fixture()
@@ -131,11 +131,9 @@ def decom_test_data(request, xtce_path):
         imap_module_directory / "tests" / "ultra" / "test_data" / "l0" / filename
     )
 
-    packets = decom.decom_packets(ccsds_path, xtce_path)
-    grouped_data = group_by_apid(packets)
-
-    data_packet_list = process_ultra_apids(grouped_data[apid], apid)
-    return data_packet_list, packets
+    datasets_by_apid = packet_file_to_datasets(ccsds_path, xtce_path)
+    data_packet_xarray = process_ultra_apids(datasets_by_apid[apid], apid)
+    return data_packet_xarray
 
 
 @pytest.fixture()

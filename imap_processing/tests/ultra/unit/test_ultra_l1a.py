@@ -315,7 +315,7 @@ def test_cdf_tof(ccsds_path_theta_0, decom_test_data):
     ],
     indirect=True,
 )
-def test_cdf_events(ccsds_path_theta_0, decom_ultra_aux, decom_test_data):
+def test_cdf_events(ccsds_path_theta_0, decom_test_data):
     """Tests that CDF file is created and contains same attributes as xarray."""
     decom_ultra_events, _ = decom_test_data
     test_data = ultra_l1a(
