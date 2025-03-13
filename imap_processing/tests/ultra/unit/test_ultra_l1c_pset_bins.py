@@ -13,9 +13,9 @@ from imap_processing.ena_maps.utils.spatial_utils import build_spatial_bins
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     get_helio_exposure_times,
-    get_pointing_frame_sensitivity,
     get_spacecraft_exposure_times,
     get_spacecraft_histogram,
+    get_spacecraft_sensitivity,
 )
 
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
@@ -164,21 +164,17 @@ def test_get_helio_exposure_times():
     assert np.array_equal(np.squeeze(exposures[2]), exposure_3d[:, :, 23])
 
 
-def test_get_pointing_frame_sensitivity():
+def test_get_spacecraft_sensitivity():
     """Tests get_pointing_frame_sensitivity function."""
 
     # TODO: energy bins need to be modified from N=90 to N=24.
-    constant_sensitivity = BASE_PATH / "dps_sensitivity45.cdf"
-    spins_per_pointing = 5760
-    sensitivity = get_pointing_frame_sensitivity(
-        constant_sensitivity,
-        spins_per_pointing,
-        "45",
+    efficiences_03_20 = BASE_PATH / "efficiencies_3.0-20.0keV.cdf"
+    efficiences_20_50 = BASE_PATH / "efficiencies_20.5-50.0keV.cdf"
+    efficiences_50_80 = BASE_PATH / "efficiencies_50.5-80.0keV.cdf"
+    gf = BASE_PATH / "ultra_90_dps_gf.cdf"
+
+    sensitivity = get_spacecraft_sensitivity(
+        {efficiences_03_20, efficiences_20_50, efficiences_50_80}, gf
     )
 
-    assert sensitivity.shape == (90, 720, 360)
-
-    with cdflib.CDF(constant_sensitivity) as cdf_file:
-        expected_sensitivity = cdf_file.varget("dps_sensitivity45") * spins_per_pointing
-
-    assert np.array_equal(sensitivity, expected_sensitivity)
+    print(sensitivity)

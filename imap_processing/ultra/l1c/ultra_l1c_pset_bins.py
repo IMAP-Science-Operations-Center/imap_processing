@@ -228,27 +228,44 @@ def get_helio_exposure_times(
     return exposure_3d
 
 
-def get_pointing_frame_sensitivity(
-    constant_sensitivity: Path, n_spins: int, sensor: str
+def get_spacecraft_sensitivity(
+    efficiencies: set[Path],
+    geometric_function: Path,
 ) -> NDArray:
     """
     Compute a 3D array of the sensitivity.
 
     Parameters
     ----------
-    constant_sensitivity : Path
-        Path to file containing constant sensitivity data.
-    n_spins : int
-        Number of spins per pointing.
-    sensor : str
-        Sensor (45 or 90).
+    efficiencies : set[Path]
+        Set of paths containing efficiency CDF files.
+    geometric_function : Path
+        Path to the CDF file containing the geometric function.
 
     Returns
     -------
     sensitivity : np.ndarray
         A 3D array with dimensions (az, el, energy).
     """
-    with cdflib.CDF(constant_sensitivity) as cdf_file:
-        sensitivity = cdf_file.varget(f"dps_sensitivity{sensor}") * n_spins
+    efficiency_data = []
+
+    for efficiency_cdf in efficiencies:
+        with cdflib.CDF(str(efficiency_cdf)) as cdf_file:
+            variables = cdf_file.cdf_info().zVariables
+            # Energy bins
+            efficiency_vars = [var for var in variables if "keV" in var]
+            # Data
+            efficiency_arrays = [cdf_file.varget(var) for var in efficiency_vars]
+            efficiency_data.append(
+                np.stack(efficiency_arrays, axis=-1)
+            )  # Stack along last axis (energy)
+
+    # Combine all efficiencies along the energy axis
+    eff = np.concatenate(efficiency_data, axis=-1)
+
+    with cdflib.CDF(str(geometric_function)) as cdf_file:
+        ge = cdf_file.varget("Response")
+
+    sensitivity = ge[:, np.newaxis] * eff
 
     return sensitivity
