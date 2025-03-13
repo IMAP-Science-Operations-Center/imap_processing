@@ -173,6 +173,7 @@ class CoDICEL1aPipeline:
                 "spin_sector",
                 "spin_sector_pairs",
                 "spin_sector_index",
+                "ssdid",
                 "ssd_index",
             ]:
                 values = np.arange(self.config["output_dims"][name])

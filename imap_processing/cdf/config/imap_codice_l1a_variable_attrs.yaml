@@ -109,6 +109,18 @@ ssd_index:
     VALIDMAX: 12
     VAR_TYPE: support_data
 
+ssdid:
+    CATDESC: SSD ID
+    FIELDNAM: SSD ID
+    FILLVAL: -1
+    FORMAT: I2
+    LABLAXIS: " "
+    SCALETYP: linear
+    UNITS: " "
+    VALIDMIN: 0
+    VALIDMAX: 12
+    VAR_TYPE: support_data
+
 # <=== Labels ===>
 spin_sector_pairs_label:
     CATDESC: Spin sector Pairs
@@ -267,27 +279,27 @@ hi-counters-aggregated-aggregated:
 # hi-counters-singles
 hi-counters-singles-tcr:
     <<: *counters
-    CATDESC: TCR Rates
-    FIELDNAM: Rates - Event A (TCR)
-    LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+    CATDESC: Rates - Event A (TCR)
+    FIELDNAM: Rates
+    DEPEND_1: ssdid
+    LABL_PTR_1: ssdid
+    UNITS: events
 
 hi-counters-singles-ssdo:
     <<: *counters
-    CATDESC: SSDO Rates
-    FIELDNAM: Rates - Event E (SSDO)
-    LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+    CATDESC: Rates - Event E (SSDO)
+    FIELDNAM: Rates
+    DEPEND_1: ssdid
+    LABL_PTR_1: ssdid
+    UNITS: events
 
 hi-counters-singles-stssd:
     <<: *counters
-    CATDESC: STSSD Rates
-    FIELDNAM: Rates - Event G (STSSD)
-    LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+    CATDESC: Rates - Event G (STSSD)
+    FIELDNAM: Rates
+    DEPEND_1: ssdid
+    LABL_PTR_1: ssdid
+    UNITS: events
 
 # hi-omni
 hi-omni-h:
