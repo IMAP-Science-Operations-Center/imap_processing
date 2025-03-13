@@ -53,7 +53,7 @@ def get_spacecraft_histogram(
     vhat: tuple[np.ndarray, np.ndarray, np.ndarray],
     energy: np.ndarray,
     energy_bin_edges: list[tuple[float, float]],
-    nside: int = 32,
+    nside: int = 128,
     nested: bool = False,
 ) -> NDArray:
     """
@@ -110,9 +110,7 @@ def get_spacecraft_histogram(
     return hist
 
 
-def get_spacecraft_exposure_times(
-    constant_exposure: Path, nside: int = 32, nested: bool = False
-) -> NDArray:
+def get_spacecraft_exposure_times(constant_exposure: Path) -> NDArray:
     """
     Compute exposure times for HEALPix pixels.
 
@@ -120,48 +118,23 @@ def get_spacecraft_exposure_times(
     ----------
     constant_exposure : Path
         Path to file containing constant exposure data (CDF file).
-    nside : int
-        HEALPix resolution parameter (must be a power of 2).
-    nested : bool, optional
-        Whether the Healpix tessellation is nested. Default is False.
 
     Returns
     -------
     exposure_pointing : np.ndarray
-        Exposure times corresponding to the pixels created by azimuth and elevation.
+        Exposure times corresponding to
+        elevation/latitude/declination [-90, 90]
+        and
+        azimuth/longitude/right ascension  [0, 360]
+        in the pointing (dps) frame.
     """
     # Read the exposure data from the CDF file
     with cdflib.CDF(constant_exposure) as cdf_file:
-        right_ascension = cdf_file.varget("right_ascension")  # 0 to 360 degrees
-        declination = cdf_file.varget("declination")  # -90 to 90 degrees
-        exposure_time = cdf_file.varget(
-            "exposure_time"
-        )  # Exposure times for each (RA, DEC)
-
-    # Compute number of HEALPix pixels that cover the sphere
-    n_pix = hp.nside2npix(nside)
-
-    # Get HEALPix pixel indices for each exposure
-    cdf_pix_indices = hp.ang2pix(
-        nside, right_ascension, declination, lonlat=True, nest=nested
-    )
-
-    # Initialize arrays for summing exposures and counting occurrences
-    exposure_sum = np.zeros(n_pix, dtype=np.float64)
-    exposure_count = np.zeros(n_pix, dtype=np.int64)
-
-    # Accumulate exposures and count occurrences in each pixel
-    np.add.at(exposure_sum, cdf_pix_indices, exposure_time)
-    np.add.at(exposure_count, cdf_pix_indices, 1)
-
-    # Compute the average exposure, avoiding division by zero
-    exposure = np.full(n_pix, np.nan)
-    valid_bins = exposure_count > 0
-    exposure[valid_bins] = exposure_sum[valid_bins] / exposure_count[valid_bins]
+        exposure_time = cdf_file.varget("exposure_time")
 
     # TODO: use the universal spin table and
     #  universal pointing table here to determine actual number of spins
-    exposure_pointing = exposure * 5760  # 5760 spins per pointing (for now)
+    exposure_pointing = exposure_time * 5760  # 5760 spins per pointing (for now)
 
     return exposure_pointing
 
