@@ -245,9 +245,10 @@ def get_spacecraft_sensitivity(
 
     Returns
     -------
-    sensitivity : pandas.DataFrame
+    pointing_sensitivity : pandas.DataFrame
         Sensitivity with dimensions (HEALPIX pixel_number, energy).
     """
     sensitivity = efficiencies.mul(geometric_function["Response"], axis=0)
-
-    return sensitivity
+    # TODO: use the universal spin table and
+    #  universal pointing table here to determine actual number of spins
+    return sensitivity * 5760
