@@ -53,7 +53,7 @@ def get_spacecraft_histogram(
     energy_bin_edges: list[tuple[float, float]],
     nside: int = 128,
     nested: bool = False,
-) -> NDArray:
+) -> tuple[NDArray, NDArray, NDArray, NDArray]:
     """
     Compute a 3D histogram of the particle data using HEALPix binning.
 
@@ -75,6 +75,12 @@ def get_spacecraft_histogram(
     -------
     hist : np.ndarray
         A 3D histogram array with shape (n_pix, n_energy_bins).
+    latitude : np.ndarray
+        Array of latitude values.
+    longitude : np.ndarray
+        Array of longitude values.
+    hpix_idx : np.ndarray
+        Array of HEALPix pixel indices.
 
     Notes
     -----
@@ -83,7 +89,9 @@ def get_spacecraft_histogram(
 
     azimuthal angle [0, 360], elevation angle [-90, 90]
     """
-    spherical_coords = cartesian_to_spherical(vhat, degrees=True)
+    # vhat = direction in which particle is traveling
+    # Make negative to see where it came from
+    spherical_coords = cartesian_to_spherical(-vhat, degrees=True)
     az, el = (
         spherical_coords[..., 1],
         spherical_coords[..., 2],
@@ -91,6 +99,10 @@ def get_spacecraft_histogram(
 
     # Compute number of HEALPix pixels that cover the sphere
     n_pix = hp.nside2npix(nside)
+
+    # Calculate the corresponding longitude (az) latitude (el)
+    # center coordinates
+    latitude, longitude = hp.pix2ang(nside, np.arange(n_pix), lonlat=True)
 
     # Get HEALPix pixel indices for each event
     # HEALPix expects latitude in [-90, 90] so we don't need to change elevation
@@ -105,7 +117,20 @@ def get_spacecraft_histogram(
         # Only count the events that fall within the energy bin
         hist[:, i] += np.bincount(hpix_idx[mask], minlength=n_pix).astype(np.float64)
 
-    return hist
+    return hist, latitude, longitude, hpix_idx
+
+
+def get_background_rates(nside: int = 128,):
+    """
+    Placeholder for background rates.
+
+    Returns
+    -------
+    background_rates : np.ndarray
+        Array of background rates.
+    """
+    n_pix = hp.nside2npix(nside)
+    return np.zeros(n_pix)
 
 
 def get_spacecraft_exposure_times(constant_exposure: pandas.DataFrame) -> NDArray:

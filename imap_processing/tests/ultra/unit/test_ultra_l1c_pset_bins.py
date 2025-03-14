@@ -1,5 +1,7 @@
 "Tests pointing sets"
 
+from pathlib import Path
+
 import astropy_healpix.healpy as hp
 import cdflib
 import numpy as np
@@ -11,6 +13,7 @@ from imap_processing import imap_module_directory
 from imap_processing.ena_maps.utils.spatial_utils import build_spatial_bins
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
+    get_background_rates,
     get_helio_exposure_times,
     get_spacecraft_exposure_times,
     get_spacecraft_histogram,
@@ -57,7 +60,7 @@ def test_get_spacecraft_histogram(test_data):
     energy_bin_edges, _ = build_energy_bins()
     subset_energy_bin_edges = energy_bin_edges[:3]
 
-    hist = get_spacecraft_histogram(v, energy, subset_energy_bin_edges, nside=1)
+    hist, _, _, _ = get_spacecraft_histogram(v, energy, subset_energy_bin_edges, nside=1)
     assert hist.shape == (hp.nside2npix(1), len(subset_energy_bin_edges))
 
     # Spot check that 2 counts are in the third energy bin
@@ -69,9 +72,15 @@ def test_get_spacecraft_histogram(test_data):
         (2.5, 4.137),
         (3.385, 5.057),
     ]
-    hist = get_spacecraft_histogram(v, energy, overlapping_bins, nside=1)
+    hist, _, _, _ = get_spacecraft_histogram(v, energy, overlapping_bins, nside=1)
     # Spot check that 3 counts are in the third energy bin
     assert np.sum(hist[:, 2]) == 3
+
+
+def test_get_background_rates():
+    """Tests get_background_rates function."""
+    background_rates =  get_background_rates(nside = 128)
+    assert background_rates.shape == hp.nside2npix(128)
 
 
 @pytest.mark.external_test_data()

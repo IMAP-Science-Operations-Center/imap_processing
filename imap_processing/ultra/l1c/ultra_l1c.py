@@ -41,6 +41,8 @@ def ultra_l1c(data_dict: dict, data_version: str) -> list[xr.Dataset]:
     ):
         pset_dataset = calculate_pset(
             data_dict[f"imap_ultra_l1b_{instrument_id}sensor-de"],
+            data_dict[f"imap_ultra_l1b_{instrument_id}sensor-extendedspin"],
+            data_dict[f"imap_ultra_l1b_{instrument_id}sensor-cullingmask"],
             f"imap_ultra_l1c_{instrument_id}sensor-pset",
             data_version,
         )
