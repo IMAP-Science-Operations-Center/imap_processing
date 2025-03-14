@@ -5,6 +5,7 @@ from pathlib import Path
 import astropy_healpix.healpy as hp
 import cdflib
 import numpy as np
+import pandas
 from numpy.typing import NDArray
 
 from imap_processing.ena_maps.utils.spatial_utils import build_spatial_bins
@@ -229,41 +230,24 @@ def get_helio_exposure_times(
 
 
 def get_spacecraft_sensitivity(
-    efficiencies: set[Path],
-    geometric_function: Path,
-) -> NDArray:
+    efficiencies: pandas.DataFrame,
+    geometric_function: pandas.DataFrame,
+) -> pandas.DataFrame:
     """
-    Compute a 3D array of the sensitivity.
+    Compute sensitivity.
 
     Parameters
     ----------
-    efficiencies : set[Path]
-        Set of paths containing efficiency CDF files.
-    geometric_function : Path
-        Path to the CDF file containing the geometric function.
+    efficiencies : pandas.DataFrame
+        Efficiencies at different energy levels.
+    geometric_function : pandas.DataFrame
+        Geometric function.
 
     Returns
     -------
-    sensitivity : np.ndarray
-        A 3D array with dimensions (az, el, energy).
+    sensitivity : pandas.DataFrame
+        Sensitivity with dimensions (HEALPIX pixel_number, energy).
     """
-    efficiency_data = []
+    sensitivity = efficiencies.mul(geometric_function["Response"], axis=0)
 
-    for efficiency_cdf in efficiencies:
-        with cdflib.CDF(str(efficiency_cdf)) as cdf_file:
-            variables = cdf_file.cdf_info().zVariables
-            # Energy bins
-            efficiency_vars = [var for var in variables if "keV" in var]
-            # Data
-            efficiency_arrays = [cdf_file.varget(var) for var in efficiency_vars]
-            efficiency_data.append(np.stack(efficiency_arrays, axis=-1))
-
-    # Combine all efficiencies along the energy axis
-    eff = np.concatenate(efficiency_data, axis=-1)
-
-    with cdflib.CDF(str(geometric_function)) as cdf_file:
-        ge = cdf_file.varget("Response")
-
-    sensitivity = ge[:, np.newaxis] * eff
-
-    return sensitivity, eff, ge
+    return sensitivity

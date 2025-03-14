@@ -5,6 +5,7 @@ from pathlib import Path
 import astropy_healpix.healpy as hp
 import cdflib
 import numpy as np
+import pandas as pd
 import pytest
 from cdflib import CDF
 
@@ -166,22 +167,70 @@ def test_get_helio_exposure_times():
 
 def test_get_spacecraft_sensitivity():
     """Tests get_spacecraft_sensitivity function."""
-
+    # TODO: remove below here with lookup table aux api
     efficiences_03_20 = BASE_PATH / "efficiencies_3.0-20.0keV.cdf"
     efficiences_20_50 = BASE_PATH / "efficiencies_20.5-50.0keV.cdf"
     efficiences_50_80 = BASE_PATH / "efficiencies_50.5-80.0keV.cdf"
-    gf = BASE_PATH / "ultra_90_dps_gf.cdf"
+    geometric_function = BASE_PATH / "ultra_90_dps_gf.cdf"
 
-    sensitivity, eff, ge = get_spacecraft_sensitivity(
-        {efficiences_03_20, efficiences_20_50, efficiences_50_80}, gf
+    column_names = []
+
+    with cdflib.CDF(str(efficiences_03_20)) as cdf_file:
+        variables = cdf_file.cdf_info().zVariables
+        efficiency_vars_1 = [var for var in variables if "keV" in var]
+        efficiency_arrays_1 = [cdf_file.varget(var) for var in efficiency_vars_1]
+
+        column_names.extend(efficiency_vars_1)
+
+    with cdflib.CDF(str(efficiences_20_50)) as cdf_file:
+        variables = cdf_file.cdf_info().zVariables
+        efficiency_vars_2 = [var for var in variables if "keV" in var]
+        efficiency_arrays_2 = [cdf_file.varget(var) for var in efficiency_vars_2]
+
+        column_names.extend(efficiency_vars_2)
+
+    with cdflib.CDF(str(efficiences_50_80)) as cdf_file:
+        variables = cdf_file.cdf_info().zVariables
+        efficiency_vars_3 = [var for var in variables if "keV" in var]
+        efficiency_arrays_3 = [cdf_file.varget(var) for var in efficiency_vars_3]
+
+        column_names.extend(efficiency_vars_3)
+
+    eff = np.concatenate(
+        [
+            np.stack(efficiency_arrays_1, axis=-1),
+            np.stack(efficiency_arrays_2, axis=-1),
+            np.stack(efficiency_arrays_3, axis=-1),
+        ],
+        axis=-1,
     )
 
-    import pandas as pd
+    df_efficiencies = pd.DataFrame(eff, columns=column_names)
 
-    # Define CSV path
-    csv_path = "/Users/lasa6858/imap_processing/imap_processing/ultra/lookup_tables/Ultra_90_DPS_efficiencies_all.csv"
+    with cdflib.CDF(str(geometric_function)) as cdf_file:
+        ge = cdf_file.varget("Response")
 
-    # Load CSV into DataFrame (auto-detect delimiter)
-    df = pd.read_csv(csv_path, delimiter=",", skipinitialspace=True)
+    df_geometric_function = pd.DataFrame({"Response": ge})
+    # TODO: remove above here with lookup table aux api
 
-    print(sensitivity)
+    sensitivity = get_spacecraft_sensitivity(df_efficiencies, df_geometric_function)
+
+    assert sensitivity.shape == df_efficiencies.shape
+
+    df_efficiencies_test = pd.DataFrame(
+        {"3.0keV": [1.0, 2.0], "3.5keV": [3.0, 4.0], "4.0keV": [5.0, 6.0]}
+    )
+
+    df_geometric_function_test = pd.DataFrame({"Response": [0.1, 0.2]})
+
+    df_sensitivity_test = df_efficiencies_test.mul(
+        df_geometric_function_test["Response"], axis=0
+    )
+
+    expected_sensitivity = pd.DataFrame(
+        {"3.0keV": [0.1, 0.4], "3.5keV": [0.3, 0.8], "4.0keV": [0.5, 1.2]}
+    )
+
+    assert np.allclose(
+        df_sensitivity_test.to_numpy(), expected_sensitivity.to_numpy(), atol=1e-6
+    )
