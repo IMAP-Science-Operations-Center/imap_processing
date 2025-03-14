@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from unittest import mock
 
 import astropy_healpix.healpy as hp
@@ -12,12 +13,36 @@ from imap_processing.ena_maps import ena_maps
 from imap_processing.spice import geometry
 
 
+@pytest.fixture(autouse=True, scope="module")
+def setup_all_pset_products(ultra_l1c_pset_datasets, rectangular_l1c_pset_datasets):
+    """
+    Setup fixture data once for all tests.
+
+    This is relatively computationally intensive for the high resolution PSETs,
+    so we use a module-level fixture to avoid repeating the setup code. However,
+    some tests need to modify the PSETs, so we use a function-level fixture to
+    make a deepcopy of the PSETs for each test function.
+    """
+    hp_ultra_nside = ultra_l1c_pset_datasets["nside"]
+    hp_ultra_l1c_pset_products = ultra_l1c_pset_datasets["products"]
+    rect_spacing = rectangular_l1c_pset_datasets["spacing"]
+    rect_rectangular_l1c_pset_products = rectangular_l1c_pset_datasets["products"]
+    return {
+        "hp_ultra_nside": hp_ultra_nside,
+        "hp_ultra_l1c_pset_products": hp_ultra_l1c_pset_products,
+        "rect_spacing": rect_spacing,
+        "rect_rectangular_l1c_pset_products": rect_rectangular_l1c_pset_products,
+    }
+
+
 class TestUltraPointingSet:
     @pytest.fixture(autouse=True)
-    def _setup_ultra_l1c_pset_products(self, ultra_l1c_pset_datasets):
+    def _setup_ultra_l1c_pset_products(self, setup_all_pset_products):
         """Setup fixture data as class attributes"""
-        self.nside = ultra_l1c_pset_datasets["nside"]
-        self.l1c_pset_products = ultra_l1c_pset_datasets["products"]
+        self.nside = setup_all_pset_products["hp_ultra_nside"]
+        self.l1c_pset_products = deepcopy(
+            setup_all_pset_products["hp_ultra_l1c_pset_products"]
+        )
 
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
     def test_instantiate(self):
@@ -65,10 +90,12 @@ class TestUltraPointingSet:
 
 class TestRectangularSkyMap:
     @pytest.fixture(autouse=True)
-    def _setup_ultra_l1c_pset_products(self, ultra_l1c_pset_datasets):
+    def _setup_ultra_l1c_pset_products(self, setup_all_pset_products):
         """Setup fixture data as class attributes"""
-        self.ultra_l1c_nside = ultra_l1c_pset_datasets["nside"]
-        self.ultra_l1c_pset_products = ultra_l1c_pset_datasets["products"]
+        self.ultra_l1c_nside = setup_all_pset_products["hp_ultra_nside"]
+        self.ultra_l1c_pset_products = deepcopy(
+            setup_all_pset_products["hp_ultra_l1c_pset_products"]
+        )
         self.ultra_psets = [
             ena_maps.UltraPointingSet(
                 spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
@@ -78,10 +105,12 @@ class TestRectangularSkyMap:
         ]
 
     @pytest.fixture(autouse=True)
-    def _setup_rectangular_l1c_pset_products(self, rectangular_l1c_pset_datasets):
+    def _setup_rectangular_l1c_pset_products(self, setup_all_pset_products):
         """Setup fixture data as class attributes"""
-        self.rectangular_l1c_spacing_deg = rectangular_l1c_pset_datasets["spacing"]
-        self.rectangular_l1c_pset_products = rectangular_l1c_pset_datasets["products"]
+        self.rectangular_l1c_spacing_deg = setup_all_pset_products["rect_spacing"]
+        self.rectangular_l1c_pset_products = deepcopy(
+            setup_all_pset_products["rect_rectangular_l1c_pset_products"]
+        )
         self.rectangular_psets = [
             ena_maps.RectangularPointingSet(
                 spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
@@ -296,10 +325,12 @@ class TestRectangularSkyMap:
 
 class TestHealpixSkyMap:
     @pytest.fixture(autouse=True)
-    def _setup_ultra_l1c_pset_products(self, ultra_l1c_pset_datasets):
+    def _setup_ultra_l1c_pset_products(self, setup_all_pset_products):
         """Setup fixture data as class attributes"""
-        self.ultra_l1c_nside = ultra_l1c_pset_datasets["nside"]
-        self.ultra_l1c_pset_products = ultra_l1c_pset_datasets["products"]
+        self.ultra_l1c_nside = setup_all_pset_products["hp_ultra_nside"]
+        self.ultra_l1c_pset_products = deepcopy(
+            setup_all_pset_products["hp_ultra_l1c_pset_products"]
+        )
         self.ultra_psets = [
             ena_maps.UltraPointingSet(
                 spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
@@ -309,10 +340,12 @@ class TestHealpixSkyMap:
         ]
 
     @pytest.fixture(autouse=True)
-    def _setup_rectangular_l1c_pset_products(self, rectangular_l1c_pset_datasets):
+    def _setup_rectangular_l1c_pset_products(self, setup_all_pset_products):
         """Setup fixture data as class attributes"""
-        self.rectangular_l1c_spacing_deg = rectangular_l1c_pset_datasets["spacing"]
-        self.rectangular_l1c_pset_products = rectangular_l1c_pset_datasets["products"]
+        self.rectangular_l1c_spacing_deg = setup_all_pset_products["rect_spacing"]
+        self.rectangular_l1c_pset_products = deepcopy(
+            setup_all_pset_products["rect_rectangular_l1c_pset_products"]
+        )
         self.rectangular_psets = [
             ena_maps.RectangularPointingSet(
                 spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
@@ -519,10 +552,12 @@ class TestHealpixSkyMap:
 
 class TestIndexMatching:
     @pytest.fixture(autouse=True)
-    def _setup_rectangular_l1c_pset_products(self, rectangular_l1c_pset_datasets):
+    def _setup_rectangular_l1c_pset_products(self, setup_all_pset_products):
         """Setup fixture data as class attributes"""
-        self.rectangular_l1c_spacing_deg = rectangular_l1c_pset_datasets["spacing"]
-        self.rectangular_l1c_pset_products = rectangular_l1c_pset_datasets["products"]
+        self.rectangular_l1c_spacing_deg = setup_all_pset_products["rect_spacing"]
+        self.rectangular_l1c_pset_products = deepcopy(
+            setup_all_pset_products["rect_rectangular_l1c_pset_products"]
+        )
         self.rectangular_psets = [
             ena_maps.RectangularPointingSet(
                 spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
