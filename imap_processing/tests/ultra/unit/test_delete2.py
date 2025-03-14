@@ -1,7 +1,8 @@
-import pandas as pd
-import numpy as np
-import cdflib
 from pathlib import Path
+
+import cdflib
+import numpy as np
+import pandas as pd
 
 
 def convert_gf_csv_to_cdf(csv_path, output_dir):
@@ -20,13 +21,16 @@ def convert_gf_csv_to_cdf(csv_path, output_dir):
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Read the CSV file (assuming tab or comma separation)
+    # Read the CSV file (assuming comma separation)
     df = pd.read_csv(csv_path, delimiter=",", skipinitialspace=True)
 
-    # Extract data columns
-    right_ascension = df["Right Ascension (deg)"].to_numpy()
-    declination = df["Declination (deg)"].to_numpy()
-    response = df["Response (cm2-sr)"].to_numpy()
+    # Ensure all data is float32 to prevent integer storage
+    df = df.astype(np.float32)
+
+    # Extract data columns as float32
+    right_ascension = df["Right Ascension (deg)"].astype(np.float32).to_numpy()
+    declination = df["Declination (deg)"].astype(np.float32).to_numpy()
+    response = df["Response (cm2-sr)"].astype(np.float32).to_numpy()
 
     # Define output CDF filename
     cdf_filename = output_dir / "ultra_90_dps_gf.cdf"
@@ -38,27 +42,39 @@ def convert_gf_csv_to_cdf(csv_path, output_dir):
     var_specs = [
         {
             "Variable": "Right_Ascension",
-            "Data_Type": 41,  # CDF_FLOAT (32-bit float)
+            "Data_Type": 21,  # ✅ CDF_REAL4 (float32) instead of 41
             "Num_Elements": 1,
             "Rec_Vary": True,
             "Dim_Sizes": [],
-            "Compression": {"Compression_Type": "GZIP_COMPRESSION", "Compression_Level": 9},
+            "PadValue": np.nan,  # ✅ Ensures correct float storage
+            "Compression": {
+                "Compression_Type": "GZIP_COMPRESSION",
+                "Compression_Level": 9,
+            },
         },
         {
             "Variable": "Declination",
-            "Data_Type": 41,  # CDF_FLOAT (32-bit float)
+            "Data_Type": 21,  # ✅ CDF_REAL4 (float32) instead of 41
             "Num_Elements": 1,
             "Rec_Vary": True,
             "Dim_Sizes": [],
-            "Compression": {"Compression_Type": "GZIP_COMPRESSION", "Compression_Level": 9},
+            "PadValue": np.nan,  # ✅ Ensures correct float storage
+            "Compression": {
+                "Compression_Type": "GZIP_COMPRESSION",
+                "Compression_Level": 9,
+            },
         },
         {
             "Variable": "Response",
-            "Data_Type": 41,  # CDF_FLOAT (32-bit float)
+            "Data_Type": 21,  # ✅ CDF_REAL4 (float32) instead of 41
             "Num_Elements": 1,
             "Rec_Vary": True,
             "Dim_Sizes": [],
-            "Compression": {"Compression_Type": "GZIP_COMPRESSION", "Compression_Level": 9},
+            "PadValue": np.nan,  # ✅ Ensures correct float storage
+            "Compression": {
+                "Compression_Type": "GZIP_COMPRESSION",
+                "Compression_Level": 9,
+            },
         },
     ]
 
@@ -69,7 +85,7 @@ def convert_gf_csv_to_cdf(csv_path, output_dir):
     # Close CDF file
     cdf.close()
 
-    print(f"Saved CDF: {cdf_filename}")
+    print(f"✅ Saved CDF: {cdf_filename}")
     return cdf_filename
 
 

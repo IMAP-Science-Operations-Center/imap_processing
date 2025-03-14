@@ -256,9 +256,7 @@ def get_spacecraft_sensitivity(
             efficiency_vars = [var for var in variables if "keV" in var]
             # Data
             efficiency_arrays = [cdf_file.varget(var) for var in efficiency_vars]
-            efficiency_data.append(
-                np.stack(efficiency_arrays, axis=-1)
-            )  # Stack along last axis (energy)
+            efficiency_data.append(np.stack(efficiency_arrays, axis=-1))
 
     # Combine all efficiencies along the energy axis
     eff = np.concatenate(efficiency_data, axis=-1)
@@ -268,4 +266,4 @@ def get_spacecraft_sensitivity(
 
     sensitivity = ge[:, np.newaxis] * eff
 
-    return sensitivity
+    return sensitivity, eff, ge

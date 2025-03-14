@@ -165,16 +165,23 @@ def test_get_helio_exposure_times():
 
 
 def test_get_spacecraft_sensitivity():
-    """Tests get_pointing_frame_sensitivity function."""
+    """Tests get_spacecraft_sensitivity function."""
 
-    # TODO: energy bins need to be modified from N=90 to N=24.
     efficiences_03_20 = BASE_PATH / "efficiencies_3.0-20.0keV.cdf"
     efficiences_20_50 = BASE_PATH / "efficiencies_20.5-50.0keV.cdf"
     efficiences_50_80 = BASE_PATH / "efficiencies_50.5-80.0keV.cdf"
     gf = BASE_PATH / "ultra_90_dps_gf.cdf"
 
-    sensitivity = get_spacecraft_sensitivity(
+    sensitivity, eff, ge = get_spacecraft_sensitivity(
         {efficiences_03_20, efficiences_20_50, efficiences_50_80}, gf
     )
+
+    import pandas as pd
+
+    # Define CSV path
+    csv_path = "/Users/lasa6858/imap_processing/imap_processing/ultra/lookup_tables/Ultra_90_DPS_efficiencies_all.csv"
+
+    # Load CSV into DataFrame (auto-detect delimiter)
+    df = pd.read_csv(csv_path, delimiter=",", skipinitialspace=True)
 
     print(sensitivity)
