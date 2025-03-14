@@ -41,14 +41,16 @@ def hit_l2(dependency: xr.Dataset, data_version: str) -> list[xr.Dataset]:
     #  Process sectored rates dataset
     #  Process standard rates dataset
     #  add logical sources for other l2 products
-    #  "imap_hit_l2_standard-fluxes", "imap_hit_l2_sectored-fluxes"
+    #  "imap_hit_l2_standard-intensity", "imap_hit_l2_sectored-intensity"
 
     # Create L2 datasets
     l2_datasets: dict = {}
 
     if "imap_hit_l1b_summed-rates" in dependency.attrs["Logical_source"]:
         # Process science data to L2 datasets
-        l2_datasets["imap_hit_l2_summed-fluxes"] = process_summed_flux_data(dependency)
+        l2_datasets["imap_hit_l2_summed-intensity"] = process_summed_flux_data(
+            dependency
+        )
         logger.info("HIT L2 summed flux dataset created")
 
     # Update attributes and dimensions
