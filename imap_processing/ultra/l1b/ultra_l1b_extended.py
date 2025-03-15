@@ -463,27 +463,21 @@ def get_de_velocity(
     velocities : np.ndarray
         N x 3 array of velocity components (vx, vy, vz) in km/s.
     """
+    # TODO: make velocity negative and change tests
+    tof_seconds = tof*10**-10 # convert to seconds
+
     if tof[tof < 0].any():
         logger.info("Negative tof values found.")
 
-    # distances in .1 mm
-    delta_v = np.empty((len(d), 3), dtype=np.float32)
-    delta_v[:, 0] = (front_position[0] - back_position[0]) * 0.1
-    delta_v[:, 1] = (front_position[1] - back_position[1]) * 0.1
-    delta_v[:, 2] = d * 0.1
+    # distances in mm
+    r = np.empty((len(d), 3), dtype=np.float32)
+    r[:, 0] = (front_position[0] - back_position[0]) * 0.01
+    r[:, 1] = (front_position[1] - back_position[1]) * 0.01
+    r[:, 2] = d * 0.01
 
-    # Convert from 0.1mm/0.1ns to km/s.
-    v_x = delta_v[:, 0] / tof * 1e3
-    v_y = delta_v[:, 1] / tof * 1e3
-    v_z = delta_v[:, 2] / tof * 1e3
+    v = r / tof_seconds[:, np.newaxis] * 10**-6 # mm/s -> km/s
 
-    v_x[tof < 0] = np.nan  # used as fillvals
-    v_y[tof < 0] = np.nan
-    v_z[tof < 0] = np.nan
-
-    velocities = np.vstack((v_x, v_y, v_z)).T
-
-    return velocities
+    return v
 
 
 def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.ndarray) -> NDArray[np.float64]:

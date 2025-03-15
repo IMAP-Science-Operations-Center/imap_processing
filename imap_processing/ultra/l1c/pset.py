@@ -4,6 +4,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
+from imap_processing.ultra.l1c.ultra_l1c_pset_bins import build_energy_bins, get_spacecraft_histogram, get_background_rates
 
 
 def calculate_pset(
@@ -32,23 +33,21 @@ def calculate_pset(
     """
     pset_dict = {}
 
-    # Placeholder for calculations
-    # TODO: come back and update this data structure.
+    # TODO: What to do here?
     epoch = de_dataset.coords["epoch"].values
 
-    # TODO: Add below.
-    # intervals, energy_midpoints = build_energy_bins()
-    # counts, latitude, longitude, healpix_number = get_spacecraft_histogram(
-    #     de_dataset["velocity_dps_sc"].values,
-    #     de_dataset["tof_energy"].values,
-    #     intervals,
-    #     nside=128,
-    # )
-    #
-    # background_rates = get_background_rates()
+    v_mag_dps_spacecraft = np.linalg.norm(de_dataset["velocity_dps_sc"].values, axis=1)
+    vhat_dps_spacecraft = de_dataset["velocity_dps_sc"].values / v_mag_dps_spacecraft[:, np.newaxis]
 
-    pset_dict["epoch"] = epoch
-    pset_dict["esa_step"] = np.zeros(len(epoch), dtype=np.uint8)
+    intervals, energy_midpoints = build_energy_bins()
+    counts, latitude, longitude, healpix_number = get_spacecraft_histogram(
+        vhat_dps_spacecraft,
+        de_dataset["tof_energy"].values,
+        intervals,
+        nside=128,
+    )
+
+    background_rates = get_background_rates()
 
     dataset = create_dataset(pset_dict, name, "l1c", data_version)
 

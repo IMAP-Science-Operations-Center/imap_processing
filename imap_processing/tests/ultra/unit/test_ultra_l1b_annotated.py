@@ -1,6 +1,7 @@
 """Tests coverage for ultra_l1b_annotated.py"""
 
 import numpy as np
+import pandas as pd
 import pytest
 import spiceypy
 
@@ -8,6 +9,9 @@ from imap_processing.spice.geometry import SpiceFrame
 from imap_processing.ultra.l1b.ultra_l1b_annotated import (
     get_annotated_particle_velocity,
 )
+from imap_processing import imap_module_directory
+from imap_processing.ultra.l1b.ultra_l1b_extended import get_de_velocity
+from imap_processing.spice.time import met_to_sclkticks, sct_to_et
 
 
 @pytest.fixture()
@@ -81,3 +85,40 @@ def test_get_particle_velocity(spice_test_data_path, kernels):
     assert np.array_equal(
         (helio_velocity_90 - state[0][3:6]).flatten(), sc_dps_velocity_90
     )
+
+
+@pytest.mark.external_kernel()
+def test_get_particle_velocity_test_data(kernels):
+    """Tests get_particle_velocity function with test data."""
+
+    spiceypy.furnsh(kernels)
+    test_path = imap_module_directory / "tests" / "ultra" / "test_data" / "l1" / "ultra-90_raw_event_data_shortened.csv"
+    df = pd.read_csv(test_path)
+    instrument_velocity = get_de_velocity((df["Xf"],df["Yf"]),
+                                          (df["Xb"],df["Yb"]), df["d"],
+                                          df["TOF"].values)
+
+    et = spiceypy.str2et(df["Epoch"].values)
+
+    frame_velocities = get_annotated_particle_velocity(et,
+                                                       instrument_velocity,
+                                                       SpiceFrame.IMAP_ULTRA_90,
+                                                       SpiceFrame.IMAP_DPS,
+                                                       SpiceFrame.IMAP_SPACECRAFT,)
+    particle_velocity_spacecraft = frame_velocities[0]
+    particle_velocity_dps_spacecraft = frame_velocities[1]
+    particle_velocity_heliosphere = frame_velocities[2]
+
+    v_mag_instrument = np.linalg.norm(instrument_velocity, axis=1)
+    v_mag_spacecraft = np.linalg.norm(particle_velocity_spacecraft, axis=1)
+    v_mag_dps_spacecraft = np.linalg.norm(particle_velocity_dps_spacecraft, axis=1)
+    v_mag_heliosphere = np.linalg.norm(particle_velocity_heliosphere, axis=1)
+
+    vhat_instrument = instrument_velocity / v_mag_instrument[:, np.newaxis]
+    vhat_spacecraft = particle_velocity_spacecraft / v_mag_spacecraft[:, np.newaxis]
+    vhat_dps_spacecraft = particle_velocity_dps_spacecraft / v_mag_dps_spacecraft[:, np.newaxis]
+    vhat_heliosphere = particle_velocity_heliosphere / v_mag_heliosphere[:, np.newaxis]
+
+    assert np.allclose(vhat_instrument[:, 0], -df["vhatX"].values, atol=1e-3)
+    assert np.allclose(vhat_instrument[:, 1], -df["vhatY"].values, atol=1e-3)
+    assert np.allclose(vhat_instrument[:, 2], -df["vhatZ"].values, atol=1e-3)
