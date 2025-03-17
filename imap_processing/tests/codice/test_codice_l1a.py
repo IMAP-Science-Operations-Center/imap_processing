@@ -80,6 +80,16 @@ EXPECTED_NUM_VARIABLES = [
     0,  # hi-pha  # TODO: Need to implement
 ]
 
+# CoDICE-Hi products that have support variables to test
+CODICE_HI_PRODUCTS = [
+    "hi-counters-aggregated",
+    "hi-counters-singles",
+    "hi-priority",
+    "hi-sectored",
+]
+# TODO: Add hi-omni here once I sort out the array shape discrepancy with the
+#       validation data
+
 # CoDICE-Lo products that have support variables to test
 CODICE_LO_PRODUCTS = [
     "lo-counters-aggregated",
@@ -282,8 +292,8 @@ def test_l1a_validate_hskp_data(test_l1a_data):
 
 
 @pytest.mark.parametrize("index", range(len(DESCRIPTORS)))
-def test_l1a_validate_lo_support_variables(test_l1a_data, index):
-    """Tests that the support variables for CoDICE-lo products match the
+def test_l1a_validate_support_variables(test_l1a_data, index):
+    """Tests that the support variables for the generated products match the
     validation data
 
     Parameters
@@ -297,9 +307,7 @@ def test_l1a_validate_lo_support_variables(test_l1a_data, index):
     # Hopefully I can remove this someday if Joey gives me validation data
     # with updated naming conventions
     variable_name_mapping = {
-        "acquisition_time_per_step": "AcquisitionTimePerStep",
         "data_quality": "DataQuality",
-        "energy_table": "EnergyTable",
         "nso_half_spin": "NSOHalfSpin",
         "rgfo_half_spin": "RGFOHalfSpin",
         "spin_period": "SpinPeriod",
@@ -308,19 +316,20 @@ def test_l1a_validate_lo_support_variables(test_l1a_data, index):
     }
 
     descriptor = DESCRIPTORS[index]
+    dataset = test_l1a_data[index]
+    validation_dataset = load_cdf(VALIDATION_DATA[index])
+
     if descriptor in CODICE_LO_PRODUCTS:
-        dataset = test_l1a_data[index]  # lo-sw-species
-        validation_dataset = load_cdf(VALIDATION_DATA[index])  # lo-sw-species
+        # Note that for the energy table and acquisition time, the validation
+        # data only carries three decimal places whereas the SDC-generated CDFs
+        # carry more significant figures
 
-        # Note that the validation data only carries three decimal places
-        # whereas the SDC-generated CDFs carry more significant figures
-
-        # Ensure the energy table values are equal
+        # Ensure the energy table values are (nearly) equal
         np.testing.assert_almost_equal(
             dataset.energy_table.data, validation_dataset.EnergyTable.data, decimal=3
         )
 
-        # Ensure that the acquisition times are equal
+        # Ensure that the acquisition times are (nearly) equal
         np.testing.assert_almost_equal(
             dataset.acquisition_time_per_step.data,
             validation_dataset.AcquisitionTimePerStep.data,
@@ -328,10 +337,18 @@ def test_l1a_validate_lo_support_variables(test_l1a_data, index):
         )
 
         # Ensure that the support variables derived from packet data are equal
-        np.testing.assert_equal(
-            dataset.rgfo_half_spin.data,
-            validation_dataset.RGFOHalfSpin.data,
-        )
+        for variable in variable_name_mapping:
+            np.testing.assert_equal(
+                dataset[variable].data,
+                validation_dataset[variable_name_mapping[variable]].data,
+            )
+
+    elif descriptor in CODICE_HI_PRODUCTS:
+        for variable in ["spin_period", "data_quality"]:
+            np.testing.assert_equal(
+                dataset[variable].data,
+                validation_dataset[variable_name_mapping[variable]].data,
+            )
 
 
 def test_l1a_multiple_packets():

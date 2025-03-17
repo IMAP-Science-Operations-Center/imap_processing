@@ -369,7 +369,7 @@ class CoDICEL1aPipeline:
                 elif variable_name == "spin_period":
                     variable_data = (
                         self.dataset.spin_period.data * constants.SPIN_PERIOD_CONVERSION
-                    )
+                    ).astype(np.float32)
                     dims = ["epoch"]
                     attrs = self.cdf_attrs.get_variable_attributes("spin_period")
 
@@ -404,7 +404,9 @@ class CoDICEL1aPipeline:
             (self.plan_id, self.plan_step)
         ]
 
-        acquisition_times = constants.ACQUISITION_TIMES[lo_stepping_table_id]
+        acquisition_times: list[float] = constants.ACQUISITION_TIMES[
+            lo_stepping_table_id
+        ]
 
         return acquisition_times
 
