@@ -60,20 +60,6 @@ class IndexMatchMethod(Enum):
     PULL = "Pull"
 
 
-class CoordNames(Enum):
-    """Enumeration of the names of the coordinates in the L1C and L2 datasets."""
-
-    TIME = "epoch"
-    ENERGY = "energy_bin_center"
-    HEALPIX_INDEX = "healpix_pixel_index"
-
-    # The names of the az/el angular coordinates may differ between L1C and L2 data
-    AZIMUTH_L1C = "longitude_bin_center"
-    ELEVATION_L1C = "latitude_bin_center"
-    AZIMUTH_L2 = "longitude_bin_center"
-    ELEVATION_L2 = "latitude_bin_center"
-
-
 def match_coords_to_indices(
     input_object: PointingSet | AbstractSkyMap,
     output_object: PointingSet | AbstractSkyMap,
