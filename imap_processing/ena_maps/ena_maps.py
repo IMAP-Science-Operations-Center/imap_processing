@@ -14,6 +14,9 @@ from numpy.typing import NDArray
 
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.ena_maps.utils import map_utils, spatial_utils
+
+# The coordinate names can vary between L1C and L2 data (e.g. azimuth vs longitude),
+# so we define an enum to handle the coordinate names.
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.spice import geometry
 from imap_processing.spice.time import ttj2000ns_to_et
@@ -246,15 +249,15 @@ class RectangularPointingSet(PointingSet):
         Currently, the dataset is expected to be tiled in a rectangular grid,
         with data_vars indexed along the coordinates:
             - 'epoch' : time value (1 value per PSET)
-            - 'longitude_bin_center' : (number of longitude bins in L1C)
-            - 'latitude_bin_center' : (number of latitude bins in L1C)
+            - 'longitude_bin_center' : (number of longitude/az bins in L1C)
+            - 'latitude_bin_center' : (number of latitude/el bins in L1C)
     spice_reference_frame : geometry.SpiceFrame
         The reference Spice frame of the pointing set. Default is IMAP_DPS.
 
     Raises
     ------
     ValueError
-        If the longitude or latitude bin centers don't match the constructed grid.
+        If the longitude/az or latitude/el bin centers don't match the constructed grid.
         Or if the longitude or latitude bin spacing is not uniform.
     ValueError
         If multiple epochs are found in the dataset.
@@ -339,7 +342,7 @@ class RectangularPointingSet(PointingSet):
 
 class UltraPointingSet(PointingSet):
     """
-    PSET object specifically for Healpix-tiled ULTRA data, nominally at Level 1C.
+    Pointing set object specifically for Healpix-tiled ULTRA data, nominally at Level1C.
 
     Parameters
     ----------
@@ -347,7 +350,7 @@ class UltraPointingSet(PointingSet):
         L1c xarray dataset containing the pointing set data or the path to the dataset.
         Currently, the dataset is expected to be tiled in a HEALPix tessellation,
         with data_vars indexed along the coordinates:
-            - 'epoch' : time value (1 value per PSET)
+            - 'epoch' : time value (1 value per PSET, from the mean of the PSET)
             - 'energy_bin_center' : (number of energy bins in L1C)
             - 'healpix_pixel_index' : HEALPix pixel index
         Only the 'healpix_pixel_index' coordinate is used in this class for projection.
@@ -382,6 +385,7 @@ class UltraPointingSet(PointingSet):
         if len(np.unique(self.epoch)) > 1:
             raise ValueError("Multiple epochs found in the dataset.")
 
+        # Set the tiling type and number of points
         self.tiling_type = SkyTilingType.HEALPIX
         self.num_points = self.data[CoordNames.HEALPIX_INDEX.value].size
         self.nside = hp.npix_to_nside(self.num_points)
@@ -391,7 +395,7 @@ class UltraPointingSet(PointingSet):
             self.data[CoordNames.HEALPIX_INDEX.value].attrs.get("nested", False)
         )
 
-        # Get the azimuth and elevation pixel centers
+        # Get the azimuth and elevation coordinates of the healpix pixel centers (deg)
         self.azimuth_pixel_center, self.elevation_pixel_center = hp.pix2ang(
             nside=self.nside,
             ipix=np.arange(self.num_points),
@@ -419,6 +423,9 @@ class UltraPointingSet(PointingSet):
                     f"Dataset: {self.data[dim]}"
                 )
 
+        # The coordinates of the healpix pixel centers are stored as a 2D array
+        # of shape (num_points, 2) where column 0 is the lon/az
+        # and column 1 is the lat/el.
         self.az_el_points = np.column_stack(
             (self.azimuth_pixel_center, self.elevation_pixel_center)
         )
