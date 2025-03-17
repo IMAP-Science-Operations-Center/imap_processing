@@ -18,6 +18,7 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
 )
 
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
+TEST_PATH = imap_module_directory / "tests" / "ultra" / "test_data" / "l1"
 
 
 @pytest.fixture()
@@ -76,14 +77,7 @@ def test_get_spacecraft_histogram(test_data):
 @pytest.mark.external_test_data()
 def test_get_spacecraft_exposure_times():
     """Test get_spacecraft_exposure_times function."""
-    constant_exposure = (
-        imap_module_directory
-        / "tests"
-        / "ultra"
-        / "test_data"
-        / "l1"
-        / "ultra_90_dps_exposure.csv"
-    )
+    constant_exposure = TEST_PATH / "ultra_90_dps_exposure.csv"
     df_exposure = pd.read_csv(constant_exposure)
     exposure_pointing = get_spacecraft_exposure_times(df_exposure)
     assert exposure_pointing.shape == (196608,)
@@ -147,22 +141,8 @@ def test_get_helio_exposure_times():
 def test_get_spacecraft_sensitivity():
     """Tests get_spacecraft_sensitivity function."""
     # TODO: remove below here with lookup table aux api
-    efficiences = (
-        imap_module_directory
-        / "tests"
-        / "ultra"
-        / "test_data"
-        / "l1"
-        / "Ultra_90_DPS_efficiencies_all.csv"
-    )
-    geometric_function = (
-        imap_module_directory
-        / "tests"
-        / "ultra"
-        / "test_data"
-        / "l1"
-        / "ultra_90_dps_gf.csv"
-    )
+    efficiences = TEST_PATH / "Ultra_90_DPS_efficiencies_all.csv"
+    geometric_function = TEST_PATH / "ultra_90_dps_gf.csv"
 
     df_efficiencies = pd.read_csv(efficiences)
     df_geometric_function = pd.read_csv(geometric_function)
