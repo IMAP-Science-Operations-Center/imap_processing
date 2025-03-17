@@ -122,10 +122,8 @@ def get_spacecraft_exposure_times(constant_exposure: Path) -> NDArray:
     Returns
     -------
     exposure_pointing : np.ndarray
-        Exposure times corresponding to
-        elevation/latitude/declination [-90, 90]
-        and
-        azimuth/longitude/right ascension  [0, 360]
+        Total exposure times of pixels in a
+        Healpix tessellation of the sky
         in the pointing (dps) frame.
     """
     # Read the exposure data from the CDF file
