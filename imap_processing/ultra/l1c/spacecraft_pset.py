@@ -7,7 +7,7 @@ from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import build_energy_bins, get_spacecraft_histogram, get_background_rates
 
 
-def calculate_pset(
+def calculate_spacecraft_pset(
     de_dataset: xr.Dataset, name: str, data_version: str
 ) -> xr.Dataset:
     """
@@ -33,8 +33,10 @@ def calculate_pset(
     """
     pset_dict = {}
 
-    # TODO: What to do here?
-    epoch = de_dataset.coords["epoch"].values
+    # For ISTP, epoch should be the center of the time bin.
+    pset_dict["epoch"] = np.mean(de_dataset.epoch.data[[0, -1]]).astype(
+        np.int64
+    )
 
     v_mag_dps_spacecraft = np.linalg.norm(de_dataset["velocity_dps_sc"].values, axis=1)
     vhat_dps_spacecraft = de_dataset["velocity_dps_sc"].values / v_mag_dps_spacecraft[:, np.newaxis]
@@ -42,7 +44,7 @@ def calculate_pset(
     intervals, energy_midpoints = build_energy_bins()
     counts, latitude, longitude, healpix_number = get_spacecraft_histogram(
         vhat_dps_spacecraft,
-        de_dataset["tof_energy"].values,
+        de_dataset["energy_spacecraft"].values,
         intervals,
         nside=128,
     )
