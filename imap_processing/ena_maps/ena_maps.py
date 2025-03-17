@@ -60,7 +60,7 @@ class IndexMatchMethod(Enum):
 
 
 class CoordNames(Enum):
-    """Enumeration of the names of the coordinates in the L1C dataset."""
+    """Enumeration of the names of the coordinates in the L1C and L2 datasets."""
 
     TIME = "epoch"
     ENERGY = "energy_bin_center"
