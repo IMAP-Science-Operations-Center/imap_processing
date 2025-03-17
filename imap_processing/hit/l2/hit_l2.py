@@ -245,19 +245,17 @@ def calculate_flux(l2_dataset: xr.Dataset, ancillary_data_frames: dict) -> None:
                 ) - b
 
 
-def sum_particle_rates(
+def add_summed_particle_rates(
     l2_standard_flux_dataset: xr.Dataset,
     l1b_standard_rates_dataset: xr.Dataset,
     particle_energy_range_mapping: dict,
 ) -> None:
     """
-    Sum particle rates and add them to the dataset.
+    Add summed particle rates to the dataset.
 
-    This function sums the rates from the l2fgrates, l3fgrates, and penfgrates
-    data variables in the L1B standard rates data. These variables represent rates
-    for different detector penetration ranges (Range 2, Range 3, and Range 4
-    respectively). Only the energy ranges specified in the
-    PARTICLE_ENERGY_RANGE_MAPPING dictionary are summed.
+    This function adds the summed rates from the l2fgrates, l3fgrates, and penfgrates
+    data variables in the L1B standard rates data to the L2 standard flux dataset by
+    particle type and energy range.
 
     Parameters
     ----------
@@ -384,7 +382,7 @@ def process_standard_flux_data(l1b_standard_rates_dataset: xr.Dataset) -> xr.Dat
         df.columns = df.columns.str.lower().str.strip()
         df["species"] = df["species"].str.lower()
 
-    sum_particle_rates(
+    add_summed_particle_rates(
         l2_standard_flux_dataset,
         l1b_standard_rates_dataset,
         PARTICLE_ENERGY_RANGE_MAPPING,
