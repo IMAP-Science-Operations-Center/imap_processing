@@ -79,7 +79,7 @@ def l1a_counts_dataset(sci_packet_filepath):
     """Get L1A counts dataset to test l1b processing functions"""
     l1a_datasets = hit_l1a.hit_l1a(sci_packet_filepath, "001")
     for dataset in l1a_datasets:
-        if dataset.attrs["Logical_source"] == "imap_hit_l1a_count-rates":
+        if dataset.attrs["Logical_source"] == "imap_hit_l1a_counts":
             return dataset
 
 

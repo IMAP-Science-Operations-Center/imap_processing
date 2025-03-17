@@ -25,8 +25,8 @@ def dependencies(sci_packet_filepath):
     l1a_datasets = hit_l1a.hit_l1a(sci_packet_filepath, "001")
     for l1a_dataset in l1a_datasets:
         l1a_data_dict = {}
-        if l1a_dataset.attrs["Logical_source"] == "imap_hit_l1a_count-rates":
-            l1a_data_dict["imap_hit_l1a_count-rates"] = l1a_dataset
+        if l1a_dataset.attrs["Logical_source"] == "imap_hit_l1a_counts":
+            l1a_data_dict["imap_hit_l1a_counts"] = l1a_dataset
             l1b_datasets = hit_l1b(l1a_data_dict, "001")
             for l1b_dataset in l1b_datasets:
                 data_dict[l1b_dataset.attrs["Logical_source"]] = l1b_dataset
@@ -38,7 +38,7 @@ def l1b_summed_rates_dataset(sci_packet_filepath):
     """Get L1B summed rates dataset to test l2 processing function"""
     l1a_datasets = hit_l1a.hit_l1a(sci_packet_filepath, "001")
     for dataset in l1a_datasets:
-        if dataset.attrs["Logical_source"] == "imap_hit_l1a_count-rates":
+        if dataset.attrs["Logical_source"] == "imap_hit_l1a_counts":
             # Calculate livetime from the livetime counter
             livetime = dataset["livetime_counter"] / 270
             summed_rates = process_summed_rates_data(dataset, livetime)
@@ -101,4 +101,4 @@ def test_hit_l2(dependencies):
     l1b_summed_dataset = dependencies["imap_hit_l1b_summed-rates"]
     datasets = hit_l2(l1b_summed_dataset, "001")
     assert len(datasets) == 1
-    assert datasets[0].attrs["Logical_source"] == "imap_hit_l2_summed-fluxes"
+    assert datasets[0].attrs["Logical_source"] == "imap_hit_l2_summed-intensity"
