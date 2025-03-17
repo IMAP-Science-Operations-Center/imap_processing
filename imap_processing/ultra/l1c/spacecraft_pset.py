@@ -5,7 +5,6 @@ import pandas as pd
 import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.spice.time import ttj2000ns_to_et
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     get_background_rates,
@@ -46,7 +45,7 @@ def calculate_spacecraft_pset(
     dataset : xarray.Dataset
         Dataset containing the data.
     """
-    pset_dict = {}
+    pset_dict: dict[str, np.ndarray] = {}
 
     v_mag_dps_spacecraft = np.linalg.norm(de_dataset["velocity_dps_sc"].values, axis=1)
     vhat_dps_spacecraft = (
@@ -73,9 +72,7 @@ def calculate_spacecraft_pset(
     exposure_pointing = get_spacecraft_exposure_times(df_exposure)
 
     # For ISTP, epoch should be the center of the time bin.
-    pset_dict["epoch"] = ttj2000ns_to_et(
-        np.mean(de_dataset.epoch.data[[0, -1]]).astype(np.int64)
-    )
+    pset_dict["epoch"] = np.mean(de_dataset.epoch.data[[0, -1]]).astype(np.int64)
     pset_dict["counts"] = counts
     pset_dict["latitude_bin_center"] = latitude
     pset_dict["longitude_bin_center"] = longitude
