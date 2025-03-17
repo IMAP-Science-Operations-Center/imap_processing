@@ -463,8 +463,7 @@ def get_de_velocity(
     velocities : np.ndarray
         N x 3 array of velocity components (vx, vy, vz) in km/s.
     """
-    # TODO: make velocity negative and change tests
-    tof_seconds = tof*10**-10 # convert to seconds
+    tof_seconds = tof * 10**-10  # convert to seconds
 
     if tof[tof < 0].any():
         logger.info("Negative tof values found.")
@@ -475,7 +474,7 @@ def get_de_velocity(
     r[:, 1] = (front_position[1] - back_position[1]) * 0.01
     r[:, 2] = d * 0.01
 
-    v = r / tof_seconds[:, np.newaxis] * 10**-6 # mm/s -> km/s
+    v = r / tof_seconds[:, np.newaxis] * 10**-6  # mm/s -> km/s
 
     return v
 
