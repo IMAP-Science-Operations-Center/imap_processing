@@ -1,7 +1,5 @@
 "Tests pointing sets"
 
-from pathlib import Path
-
 import astropy_healpix.healpy as hp
 import cdflib
 import numpy as np
@@ -32,33 +30,6 @@ def test_data():
     v = np.column_stack((vx_sc, vy_sc, vz_sc))
 
     return v, energy
-
-
-@pytest.fixture()
-def fake_cdf_exposure_data(tmpdir):
-    """Test exposure data fixture."""
-    exposure_time = np.array([0, 2, 4, 1, 1, 3, 6, 0, 0, 0, 0, 0])
-
-    cdf_path = Path(tmpdir) / "fake_exposure.cdf"
-
-    var_specs = [
-        {
-            "Variable": "exposure_time",
-            "Data_Type": 21,
-            "Num_Elements": 1,
-            "Rec_Vary": True,
-            "Dim_Sizes": [],
-        },
-    ]
-
-    cdf = cdflib.cdfwrite.CDF(str(cdf_path))
-
-    for var_spec, var_data in zip(var_specs, [exposure_time]):
-        cdf.write_var(var_spec, var_data=var_data)
-
-    cdf.close()
-
-    return cdf_path, exposure_time
 
 
 def test_build_energy_bins():
@@ -102,18 +73,25 @@ def test_get_spacecraft_histogram(test_data):
     assert np.sum(hist[:, 2]) == 3
 
 
-def test_get_spacecraft_exposure_times(fake_cdf_exposure_data):
+@pytest.mark.external_test_data()
+def test_get_spacecraft_exposure_times():
     """Test get_spacecraft_exposure_times function."""
-    constant_exposure = BASE_PATH / "ultra_90_dps_exposure_compressed.cdf"
-    exposure_pointing = get_spacecraft_exposure_times(constant_exposure)
+    constant_exposure = (
+        imap_module_directory
+        / "tests"
+        / "ultra"
+        / "test_data"
+        / "l1"
+        / "ultra_90_dps_exposure.csv"
+    )
+    df_exposure = pd.read_csv(constant_exposure)
+    exposure_pointing = get_spacecraft_exposure_times(df_exposure)
     assert exposure_pointing.shape == (196608,)
 
-    cdf_path, expected_exposure_time = fake_cdf_exposure_data
-
-    exposure_pointing = get_spacecraft_exposure_times(cdf_path)
-
     np.testing.assert_allclose(
-        exposure_pointing, expected_exposure_time * 5760, atol=1e-6
+        exposure_pointing.values[22684:22686],
+        np.array([1.035, 1.035]) * 5760,
+        atol=1e-6,
     )
 
 
@@ -165,17 +143,29 @@ def test_get_helio_exposure_times():
     assert np.array_equal(np.squeeze(exposures[2]), exposure_3d[:, :, 23])
 
 
+@pytest.mark.external_test_data()
 def test_get_spacecraft_sensitivity():
     """Tests get_spacecraft_sensitivity function."""
     # TODO: remove below here with lookup table aux api
-    df_efficiencies = BASE_PATH / "Ultra_90_DPS_efficiencies_all.csv"
-    geometric_function = BASE_PATH / "ultra_90_dps_gf.cdf"
+    efficiences = (
+        imap_module_directory
+        / "tests"
+        / "ultra"
+        / "test_data"
+        / "l1"
+        / "Ultra_90_DPS_efficiencies_all.csv"
+    )
+    geometric_function = (
+        imap_module_directory
+        / "tests"
+        / "ultra"
+        / "test_data"
+        / "l1"
+        / "ultra_90_dps_gf.csv"
+    )
 
-    with cdflib.CDF(str(geometric_function)) as cdf_file:
-        ge = cdf_file.varget("Response")
-
-    df_geometric_function = pd.DataFrame({"Response": ge})
-    # TODO: remove above here with lookup table aux api
+    df_efficiencies = pd.read_csv(efficiences)
+    df_geometric_function = pd.read_csv(geometric_function)
 
     sensitivity = get_spacecraft_sensitivity(df_efficiencies, df_geometric_function)
 

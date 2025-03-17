@@ -1,9 +1,6 @@
 """Module to create pointing sets."""
 
-from pathlib import Path
-
 import astropy_healpix.healpy as hp
-import cdflib
 import numpy as np
 import pandas
 from numpy.typing import NDArray
@@ -111,14 +108,14 @@ def get_spacecraft_histogram(
     return hist
 
 
-def get_spacecraft_exposure_times(constant_exposure: Path) -> NDArray:
+def get_spacecraft_exposure_times(constant_exposure: pandas.DataFrame) -> NDArray:
     """
     Compute exposure times for HEALPix pixels.
 
     Parameters
     ----------
-    constant_exposure : Path
-        Path to file containing constant exposure data (CDF file).
+    constant_exposure : pandas.DataFrame
+        Exposure data.
 
     Returns
     -------
@@ -127,13 +124,11 @@ def get_spacecraft_exposure_times(constant_exposure: Path) -> NDArray:
         Healpix tessellation of the sky
         in the pointing (dps) frame.
     """
-    # Read the exposure data from the CDF file
-    with cdflib.CDF(constant_exposure) as cdf_file:
-        exposure_time = cdf_file.varget("exposure_time")
-
     # TODO: use the universal spin table and
     #  universal pointing table here to determine actual number of spins
-    exposure_pointing = exposure_time * 5760  # 5760 spins per pointing (for now)
+    exposure_pointing = (
+        constant_exposure["Exposure Time"] * 5760
+    )  # 5760 spins per pointing (for now)
 
     return exposure_pointing
 
@@ -248,7 +243,18 @@ def get_spacecraft_sensitivity(
     pointing_sensitivity : pandas.DataFrame
         Sensitivity with dimensions (HEALPIX pixel_number, energy).
     """
-    sensitivity = efficiencies.mul(geometric_function["Response"], axis=0)
-    # TODO: use the universal spin table and
-    #  universal pointing table here to determine actual number of spins
-    return sensitivity * 5760
+    # Exclude "Right Ascension (deg)" and "Declination (deg)" from the multiplication
+    energy_columns = efficiencies.columns.difference(
+        ["Right Ascension (deg)", "Declination (deg)"]
+    )
+    sensitivity = efficiencies[energy_columns].mul(
+        geometric_function["Response (cm2-sr)"].values, axis=0
+    )
+
+    # Add "Right Ascension (deg)" and "Declination (deg)" to the result
+    sensitivity.insert(
+        0, "Right Ascension (deg)", efficiencies["Right Ascension (deg)"]
+    )
+    sensitivity.insert(1, "Declination (deg)", efficiencies["Declination (deg)"])
+
+    return sensitivity

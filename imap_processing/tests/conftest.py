@@ -147,6 +147,15 @@ def test_data_paths():
             imap_module_directory
             / "tests/ultra/test_data/l1/Ultra_90_DPS_efficiencies_all.csv",
         ),
+        (
+            "https://api.dev.imap-mission.com/download/test_data/ultra_90_dps_gf.csv",
+            imap_module_directory / "tests/ultra/test_data/l1/ultra_90_dps_gf.csv",
+        ),
+        (
+            "https://api.dev.imap-mission.com/download/test_data/ultra_90_dps_exposure.csv",
+            imap_module_directory
+            / "tests/ultra/test_data/l1/ultra_90_dps_exposure.csv",
+        ),
     ]
     return test_data_path_list
 
