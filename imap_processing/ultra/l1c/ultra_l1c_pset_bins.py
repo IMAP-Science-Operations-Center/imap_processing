@@ -17,7 +17,7 @@ from imap_processing.ultra.constants import UltraConstants
 # TODO: add species binning.
 
 
-def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray]:
+def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray, np.ndarray]:
     """
     Build energy bin boundaries.
 
@@ -27,6 +27,8 @@ def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray]:
         Energy bins.
     energy_midpoints : np.ndarray
         Array of energy bin midpoints.
+    energy_bin_geometric_means : np.ndarray
+        Array of geometric means of energy bins.
     """
     # Calculate energy step
     energy_step = (1 + UltraConstants.ALPHA / 2) / (1 - UltraConstants.ALPHA / 2)
@@ -92,7 +94,7 @@ def get_spacecraft_histogram(
     """
     # vhat = direction in which particle is traveling
     # Make negative to see where it came from
-    spherical_coords = cartesian_to_spherical(-vhat, degrees=True)
+    spherical_coords = cartesian_to_spherical(-np.array(vhat), degrees=True)
     az, el = (
         spherical_coords[..., 1],
         spherical_coords[..., 2],
@@ -121,14 +123,25 @@ def get_spacecraft_histogram(
     return hist, latitude, longitude, n_pix
 
 
-def get_background_rates(nside: int = 128,):
+def get_background_rates(
+    nside: int = 128,
+) -> NDArray:
     """
-    Placeholder for background rates.
+    Calculate background rates.
+
+    Parameters
+    ----------
+    nside : int, optional
+        The nside parameter of the Healpix tessellation (default is 128).
 
     Returns
     -------
     background_rates : np.ndarray
         Array of background rates.
+
+    Notes
+    -----
+    This is a placeholder.
     """
     n_pix = hp.nside2npix(nside)
     return np.zeros(n_pix)
@@ -183,7 +196,7 @@ def get_helio_exposure_times(
     These calculations are performed once per pointing.
     """
     # Get bins and midpoints, with angles in degrees.
-    _, energy_midpoints = build_energy_bins()
+    _, energy_midpoints, _ = build_energy_bins()
     az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
         build_spatial_bins()
     )

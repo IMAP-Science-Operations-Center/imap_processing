@@ -55,11 +55,11 @@ species_bin:
   # TODO: come back to format
   UNITS: " "
 
-exposure_times:
-  <<: *default
-  CATDESC: Exposure time for a spin.
-  FIELDNAM: exposure_times
-  LABLAXIS: exposure times
+exposure:
+  <<: *default_float32
+  CATDESC: Exposure time for a pointing.
+  FIELDNAM: exposure
+  LABLAXIS: exposure
   # TODO: come back to format
   UNITS: seconds
 

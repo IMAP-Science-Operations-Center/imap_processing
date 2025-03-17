@@ -1,7 +1,5 @@
 "Tests pointing sets"
 
-from pathlib import Path
-
 import astropy_healpix.healpy as hp
 import cdflib
 import numpy as np
@@ -38,7 +36,7 @@ def test_data():
 
 def test_build_energy_bins():
     """Tests build_energy_bins function."""
-    energy_bin_edges, energy_midpoints = build_energy_bins()
+    energy_bin_edges, energy_midpoints, _ = build_energy_bins()
     energy_bin_start = [interval[0] for interval in energy_bin_edges]
     energy_bin_end = [interval[1] for interval in energy_bin_edges]
 
@@ -57,10 +55,12 @@ def test_get_spacecraft_histogram(test_data):
     """Tests get_histogram function."""
     v, energy = test_data
 
-    energy_bin_edges, _ = build_energy_bins()
+    energy_bin_edges, _, _ = build_energy_bins()
     subset_energy_bin_edges = energy_bin_edges[:3]
 
-    hist, _, _, _ = get_spacecraft_histogram(v, energy, subset_energy_bin_edges, nside=1)
+    hist, _, _, _ = get_spacecraft_histogram(
+        v, energy, subset_energy_bin_edges, nside=1
+    )
     assert hist.shape == (hp.nside2npix(1), len(subset_energy_bin_edges))
 
     # Spot check that 2 counts are in the third energy bin
@@ -79,7 +79,7 @@ def test_get_spacecraft_histogram(test_data):
 
 def test_get_background_rates():
     """Tests get_background_rates function."""
-    background_rates =  get_background_rates(nside = 128)
+    background_rates = get_background_rates(nside=128)
     assert background_rates.shape == hp.nside2npix(128)
 
 
@@ -113,7 +113,7 @@ def test_get_helio_exposure_times():
 
     exposure_3d = get_helio_exposure_times(mid_time, sc_exposure)
 
-    energy_bin_edges, energy_midpoints = build_energy_bins()
+    energy_bin_edges, energy_midpoints, _ = build_energy_bins()
     az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
         build_spatial_bins()
     )
