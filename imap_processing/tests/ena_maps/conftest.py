@@ -39,10 +39,13 @@ def rectangular_l1c_pset_datasets():
         "products": [
             mock_l1c_pset_product_rectangular(
                 spacing_deg=l1c_spacing_deg,
-                stripe_center_lon=mid_longitude,
+                stripe_center_lat=mid_latitude,
+                width_scale=5,
+                counts_scaling_params=(50, 0.5),
+                peak_exposure=1000,
                 timestr=f"2025-09-{i + 1:02d}T12:00:00",
                 head="90",
             )
-            for i, mid_longitude in enumerate(np.arange(0, 360, 45))
+            for i, mid_latitude in enumerate(np.arange(-90, 90, 22.5))
         ],
     }
