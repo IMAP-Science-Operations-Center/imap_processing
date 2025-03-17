@@ -14,6 +14,7 @@ from numpy.typing import NDArray
 
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.ena_maps.utils import map_utils, spatial_utils
+from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.spice import geometry
 from imap_processing.spice.time import ttj2000ns_to_et
 
