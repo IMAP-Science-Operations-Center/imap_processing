@@ -168,44 +168,8 @@ def test_get_helio_exposure_times():
 def test_get_spacecraft_sensitivity():
     """Tests get_spacecraft_sensitivity function."""
     # TODO: remove below here with lookup table aux api
-    efficiences_03_20 = BASE_PATH / "efficiencies_3.0-20.0keV.cdf"
-    efficiences_20_50 = BASE_PATH / "efficiencies_20.5-50.0keV.cdf"
-    efficiences_50_80 = BASE_PATH / "efficiencies_50.5-80.0keV.cdf"
+    df_efficiencies = BASE_PATH / "Ultra_90_DPS_efficiencies_all.csv"
     geometric_function = BASE_PATH / "ultra_90_dps_gf.cdf"
-
-    column_names = []
-
-    with cdflib.CDF(str(efficiences_03_20)) as cdf_file:
-        variables = cdf_file.cdf_info().zVariables
-        efficiency_vars_1 = [var for var in variables if "keV" in var]
-        efficiency_arrays_1 = [cdf_file.varget(var) for var in efficiency_vars_1]
-
-        column_names.extend(efficiency_vars_1)
-
-    with cdflib.CDF(str(efficiences_20_50)) as cdf_file:
-        variables = cdf_file.cdf_info().zVariables
-        efficiency_vars_2 = [var for var in variables if "keV" in var]
-        efficiency_arrays_2 = [cdf_file.varget(var) for var in efficiency_vars_2]
-
-        column_names.extend(efficiency_vars_2)
-
-    with cdflib.CDF(str(efficiences_50_80)) as cdf_file:
-        variables = cdf_file.cdf_info().zVariables
-        efficiency_vars_3 = [var for var in variables if "keV" in var]
-        efficiency_arrays_3 = [cdf_file.varget(var) for var in efficiency_vars_3]
-
-        column_names.extend(efficiency_vars_3)
-
-    eff = np.concatenate(
-        [
-            np.stack(efficiency_arrays_1, axis=-1),
-            np.stack(efficiency_arrays_2, axis=-1),
-            np.stack(efficiency_arrays_3, axis=-1),
-        ],
-        axis=-1,
-    )
-
-    df_efficiencies = pd.DataFrame(eff, columns=column_names)
 
     with cdflib.CDF(str(geometric_function)) as cdf_file:
         ge = cdf_file.varget("Response")
