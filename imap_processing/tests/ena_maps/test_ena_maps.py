@@ -8,6 +8,7 @@ from unittest import mock
 import astropy_healpix.healpy as hp
 import numpy as np
 import pytest
+import xarray as xr
 
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils.coordinates import CoordNames
@@ -323,6 +324,52 @@ class TestRectangularSkyMap:
             total_pset_counts.sum() / (downsample_ratio**2),
         )
 
+    def test_data_dict_value_to_dataarray(self):
+        """Test conversion of data_dict values to xarray DataArrays"""
+        rm = ena_maps.RectangularSkyMap(
+            spacing_deg=1,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+        )
+        rm.data_dict["variable"] = np.ones((1, 10, 360 * 180))
+        da = rm.data_dict_value_to_dataarray("variable")
+        assert da.shape == (1, 10, 360, 180)
+        assert da.values.sum() == rm.data_dict["variable"].size
+
+    def test_to_xarray(self):
+        """Test conversion of RectangularSkyMap to xarray Dataset"""
+        rm = ena_maps.RectangularSkyMap(
+            spacing_deg=1,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+        )
+        num_energy_bins = 10
+        num_points = rm.num_points
+        rm.data_dict["counts"] = np.ones((num_energy_bins, num_points))
+
+        xarray_dataset = rm.to_xarray(
+            non_spatial_coords={
+                "epoch": [
+                    -1,
+                ],
+                "energy_bin_center": xr.DataArray(np.arange(num_energy_bins)),
+            },
+            data_variables_and_dims={
+                "counts": [
+                    "epoch",
+                    "energy_bin_center",
+                    CoordNames.AZIMUTH_L2,
+                    CoordNames.ELEVATION_L2,
+                ],
+            },
+        )
+        assert "counts" in xarray_dataset
+        assert xarray_dataset["counts"].shape == (
+            1,
+            num_energy_bins,
+            360 // rm.spacing_deg,
+            180 // rm.spacing_deg,
+        )
+        np.testing.assert_equal(xarray_dataset["counts"].values, 1)
+
 
 class TestHealpixSkyMap:
     @pytest.fixture(autouse=True)
@@ -549,6 +596,32 @@ class TestHealpixSkyMap:
             input_bright_pixel_az_el_deg,
             atol=degree_tolerance,
         )
+
+    def test_to_xarray(self):
+        """Test conversion of HealpixSkyMap to xarray Dataset"""
+        hp_map = ena_maps.HealpixSkyMap(
+            nside=8,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+            nested=True,
+        )
+        num_energy_bins = 10
+        num_points = hp_map.num_points
+        hp_map.data_dict["counts"] = np.ones((num_energy_bins, num_points))
+
+        xarray_dataset = hp_map.to_xarray(
+            non_spatial_coords={
+                "epoch": [
+                    -1,
+                ],
+                "energy_bin_center": xr.DataArray(np.arange(num_energy_bins)),
+            },
+            data_variables_and_dims={
+                "counts": ["epoch", "energy_bin_center", "healpix_pixel_index"],
+            },
+        )
+        assert "counts" in xarray_dataset
+        assert xarray_dataset["counts"].shape == (1, num_energy_bins, num_points)
+        np.testing.assert_equal(xarray_dataset["counts"].values, 1)
 
 
 class TestIndexMatching:
