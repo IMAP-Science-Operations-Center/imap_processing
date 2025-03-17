@@ -13,9 +13,12 @@ DEFAULT_RECT_SPACING_DEG_L1C = 0.5
 DEFAULT_HEALPIX_NSIDE_L1C = 128
 
 
-def mock_l1c_pset_product_rectangular(
+def mock_l1c_pset_product_rectangular(  # noqa: PLR0913
     spacing_deg: float = DEFAULT_RECT_SPACING_DEG_L1C,
-    stripe_center_lon: int = 0,
+    stripe_center_lat: int = 0,
+    width_scale: float = 10.0,
+    counts_scaling_params: tuple[int, float] = (100, 0.01),
+    peak_exposure: float = 1000.0,
     timestr: str = "2025-01-01T00:00:00",
     head: str = "45",
 ) -> xr.Dataset:
@@ -38,19 +41,24 @@ def mock_l1c_pset_product_rectangular(
     While not a coordinate, PSETs can also be distinguished by the 'head' attribute.
     head: Either '45' or '90'. Default is '45'.
 
-    The counts are generated along a stripe, centered at a given longitude.
-    This stripe can be thought of as a 'vertical' line if the lon/az axis is plotted
+    The counts are generated along a stripe, centered at a given latitude.
+    This stripe can be thought of as a 'horizontal' line if the lon/az axis is plotted
     as the x-axis and the lat/el axis is plotted as the y-axis. See the figure below.
 
     ^  Elevation/Latitude
     |
-    |    000000000000002468642000000000000000000000000000000
-    |    000000000000002468642000000000000000000000000000000
-    |    000000000000002468642000000000000000000000000000000
-    |    000000000000002468642000000000000000000000000000000
-    |    000000000000002468642000000000000000000000000000000
-    |    000000000000002468642000000000000000000000000000000
-    |    000000000000002468642000000000000000000000000000000
+    |    000000000000000000000000000000000000000000000000000     |
+    |    000000000000000000000000000000000000000000000000000     |
+    |    000000000000000000000000000000000000000000000000000     |
+    |    000000000000000000000000000000000000000000000000000     |
+    |    000000000000000000000000000000000000000000000000000      \
+    |    222222222222222222222222222222222222222222222222222       \
+    |    444444444444444444444444444444444444444444444444444        \
+    |    666666666666666666666666666666666666666666666666666         |
+    |    444444444444444444444444444444444444444444444444444        /
+    |    222222222222222222222222222222222222222222222222222       /
+    |    000000000000000000000000000000000000000000000000000      /
+    |    000000000000000000000000000000000000000000000000000     |
     --------------------------------------------------------->
     Azimuth/Longitude ->
 
@@ -60,8 +68,16 @@ def mock_l1c_pset_product_rectangular(
     ----------
     spacing_deg : float, optional
         The bin spacing in degrees (default is 0.5 degrees).
-    stripe_center_lon : int, optional
-        The center longitude of the stripe in degrees (default is 0).
+    stripe_center_lat : int, optional
+        The center latitude of the stripe in degrees (default is 0).
+    width_scale : float, optional
+        The width of the stripe in degrees (default is 20 degrees).
+    counts_scaling_params : tuple[int, float], optional
+        The parameters for the binomial distribution of counts (default is (100, 0.01)).
+        The 0th element is the number of trials to draw,
+        the 1st element scales the probability of success for each trial.
+    peak_exposure : float, optional
+        The peak exposure time (default is 1000.0).
     timestr : str, optional
         The time string for the epoch (default is "2025-01-01T00:00:00").
     head : str, optional
@@ -69,7 +85,7 @@ def mock_l1c_pset_product_rectangular(
     """
     num_lat_bins = int(180 / spacing_deg)
     num_lon_bins = int(360 / spacing_deg)
-    stripe_center_lon_bin = int(stripe_center_lon / spacing_deg)
+    stripe_center_lat_bin = int((stripe_center_lat + 90) / spacing_deg)
 
     _, energy_bin_midpoints = build_energy_bins()
     num_energy_bins = len(energy_bin_midpoints)
@@ -77,38 +93,39 @@ def mock_l1c_pset_product_rectangular(
     # 1 epoch x num_energy_bins x num_lon_bins x num_lat_bins
     grid_shape = (1, num_energy_bins, num_lon_bins, num_lat_bins)
 
-    def get_binomial_counts(distance_scaling, lon_bin, central_lon_bin):
+    def get_binomial_counts(distance_scaling, lat_bin, central_lat_bin):
         # Note, this is not quite correct, as it won't wrap around at 360 degrees
         # but it's all meant to provide a recognizable pattern for testing
-        distance_lon_bin = np.abs(lon_bin - central_lon_bin)
+        distance_lat_bin = np.abs(lat_bin - central_lat_bin)
 
         rng = np.random.default_rng(seed=42)
         return rng.binomial(
-            n=50,
-            p=np.maximum(1 - (distance_lon_bin / distance_scaling), 0.01),
+            n=counts_scaling_params[0],
+            p=np.maximum(
+                1 - (distance_lat_bin / distance_scaling), counts_scaling_params[1]
+            ),
         )
 
     counts = np.fromfunction(
         lambda epoch, energy_bin, lon_bin, lat_bin: get_binomial_counts(
-            distance_scaling=20,
-            lon_bin=lon_bin,
-            central_lon_bin=stripe_center_lon_bin,
+            distance_scaling=width_scale,
+            lat_bin=lat_bin,
+            central_lat_bin=stripe_center_lat_bin,
         ),
         shape=grid_shape,
     )
 
-    exposure_time = np.zeros(grid_shape[2:]) + 0.1
-    if head == "90":
-        exposure_time[
-            stripe_center_lon_bin : stripe_center_lon_bin + int(20 / spacing_deg),
-            :,
-        ] = 1
-    else:
-        exposure_time[
-            stripe_center_lon_bin : stripe_center_lon_bin + int(70 / spacing_deg),
-            : int(90 / spacing_deg),
-        ] = 1
-
+    # exposure_time should be a gaussian distribution centered on the stripe
+    # with a width of 20 degrees
+    exposure_time = np.zeros(grid_shape[2:])
+    exposure_time = np.fromfunction(
+        lambda lon_bin, lat_bin: np.exp(
+            -((lat_bin - stripe_center_lat_bin) ** 2) / (2 * width_scale**2)
+        ),
+        shape=grid_shape[2:],
+    )
+    exposure_time /= exposure_time.max()
+    exposure_time *= peak_exposure
     counts = counts.astype(int)
     sensitivity = np.ones(grid_shape)
 
@@ -174,21 +191,11 @@ def mock_l1c_pset_product_healpix(  # noqa: PLR0913
     """
     Mock the L1C PSET product with recognizable but unrealistic counts.
 
-    This is not meant to perfectly mimic the real data, but to provide a
-    recognizable structure for L2 testing purposes.
-    Function will produce an xarray.Dataset with at least the variables and shapes:
-    counts: (1 epoch, num_energy_bins, num_lon_bins, num_lat_bins)
-    exposure_time: (num_lon_bins, num_lat_bins)
-    sensitivity: (1 epoch, num_energy_bins, num_lon_bins, num_lat_bins)
-
-    and the coordinate variables:
-    the epoch (assumed to be a single time for each product).
-    energy: (determined by build_energy_bins function)
-    longitude: (num_lon_bins)
-    latitude: (num_lat_bins)
-
-    While not a coordinate, PSETs can also be distinguished by the 'head' attribute.
-    head: Either '45' or '90'. Default is '45'.
+    See the docstring for mock_l1c_pset_product_rectangular for more details about
+    the structure of the dataset.
+    The rectangular and Healpix mocked datasets are very similar in structure, though
+    the actual values at a given latitude and longitude may be different. This is only
+    meant to provide a recognizable structure for L2 testing purposes.
 
     The counts are generated along a stripe, centered at a given latitude.
     This stripe can be thought of as a 'vertical' line if the lon/az axis is plotted
@@ -196,26 +203,44 @@ def mock_l1c_pset_product_healpix(  # noqa: PLR0913
 
     ^  Elevation/Latitude
     |
-    |                   00000000000000000000
-    |               0000000000000000000000000000
-    |           0000000000000000000000000000000000000
-    |        0000000000000000000000000000000000000000000
-    |      00000000000000000000000000000000000000000000000
-    |     0000000000000000000000000000000000000000000000000
-    |    222222222222222222222222222222222222222222222222222
-    |    444444444444444444444444444444444444444444444444444
-    |    666666666666666666666666666666666666666666666666666
-    |     4444444444444444444444444444444444444444444444444
-    |      22222222222222222222222222222222222222222222222
-    |        0000000000000000000000000000000000000000000
-    |           0000000000000000000000000000000000000
-    |               0000000000000000000000000000
-    |                   00000000000000000000
+    |                   00000000000000000000                     |
+    |               0000000000000000000000000000                 |
+    |           0000000000000000000000000000000000000            |
+    |        0000000000000000000000000000000000000000000         |
+    |      00000000000000000000000000000000000000000000000       |
+    |     0000000000000000000000000000000000000000000000000       \
+    |    222222222222222222222222222222222222222222222222222       \
+    |    444444444444444444444444444444444444444444444444444        \
+    |    666666666666666666666666666666666666666666666666666         |
+    |     4444444444444444444444444444444444444444444444444         /
+    |      22222222222222222222222222222222222222222222222         /
+    |        0000000000000000000000000000000000000000000          /
+    |           0000000000000000000000000000000000000            |
+    |               0000000000000000000000000000                 |
+    |                   00000000000000000000                     |
     --------------------------------------------------------->
     Azimuth/Longitude ->
 
     Fig. 1: Example of the '90' sensor head stripe on a HEALPix grid
 
+    Parameters
+    ----------
+    nside : int, optional
+        The HEALPix nside parameter (default is 128).
+    stripe_center_lat : int, optional
+        The center latitude of the stripe in degrees (default is 0).
+    width_scale : float, optional
+        The width of the stripe in degrees (default is 10 degrees).
+    counts_scaling_params : tuple[int, float], optional
+        The parameters for the binomial distribution of counts (default is (100, 0.01)).
+        The 0th element is the number of trials to draw,
+        the 1st element scales the probability of success for each trial.
+    peak_exposure : float, optional
+        The peak exposure time (default is 1000.0).
+    timestr : str, optional
+        The time string for the epoch (default is "2025-01-01T00:00:00").
+    head : str, optional
+        The sensor head (either '45' or '90') (default is '45').
     """
     _, energy_bin_midpoints = build_energy_bins()
     num_energy_bins = len(energy_bin_midpoints)
@@ -235,7 +260,6 @@ def mock_l1c_pset_product_healpix(  # noqa: PLR0913
         -(lat_diff**2) / (2 * width_scale**2)
     )
     # Generate counts using binomial distribution
-
     rng = np.random.default_rng(seed=42)
     counts = np.array(
         [
@@ -245,7 +269,7 @@ def mock_l1c_pset_product_healpix(  # noqa: PLR0913
     )
 
     # Generate exposure times using gaussian distribution
-    exposure_time = peak_exposure * prob_scaling_factor
+    exposure_time = peak_exposure * (prob_scaling_factor / prob_scaling_factor.max())
 
     # Ensure counts are integers
     counts = counts.astype(int)
