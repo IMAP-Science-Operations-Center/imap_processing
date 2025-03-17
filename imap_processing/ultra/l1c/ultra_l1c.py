@@ -43,7 +43,7 @@ def ultra_l1c(data_dict: dict, data_version: str) -> list[xr.Dataset]:
             data_dict[f"imap_ultra_l1b_{instrument_id}sensor-de"],
             data_dict[f"imap_ultra_l1b_{instrument_id}sensor-extendedspin"],
             data_dict[f"imap_ultra_l1b_{instrument_id}sensor-cullingmask"],
-            f"imap_ultra_l1c_{instrument_id}sensor-pset",
+            f"imap_ultra_l1c_{instrument_id}sensor-spacecraftpset",
             data_version,
         )
         # TODO: add calculate_helio_pset here

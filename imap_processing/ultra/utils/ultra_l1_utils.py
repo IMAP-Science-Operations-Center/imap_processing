@@ -40,7 +40,13 @@ def create_dataset(
             "epoch": data_dict["spin_start_time"],
         }
         default_dimension = "spin_number"
-
+    elif "healpix" in data_dict:
+        coords = {
+            "healpix": data_dict["healpix"],
+            "energy_bin_geometric_mean": data_dict["energy_bin_geometric_mean"],
+            "epoch": data_dict["epoch"],
+        }
+        default_dimension = "healpix"
     else:
         epoch_time = xr.DataArray(
             data_dict["epoch"],
@@ -78,7 +84,7 @@ def create_dataset(
     }
 
     for key in data_dict.keys():
-        if key in ["epoch", "spin_number", "energy_bin_geometric_mean"]:
+        if key in ["epoch", "spin_number", "energy_bin_geometric_mean", "healpix"]:
             continue
         elif key in velocity_keys:
             dataset[key] = xr.DataArray(
@@ -96,6 +102,12 @@ def create_dataset(
             dataset[key] = xr.DataArray(
                 data_dict[key],
                 dims=["energy_bin_geometric_mean", "spin_number"],
+                attrs=cdf_manager.get_variable_attributes(key),
+            )
+        elif key == "counts":
+            dataset[key] = xr.DataArray(
+                data_dict[key].T,
+                dims=["energy_bin_geometric_mean", "healpix"],
                 attrs=cdf_manager.get_variable_attributes(key),
             )
         else:

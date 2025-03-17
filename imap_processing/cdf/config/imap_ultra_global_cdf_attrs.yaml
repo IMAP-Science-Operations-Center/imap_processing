@@ -63,13 +63,13 @@ imap_ultra_l1b_90sensor-badtimes:
     Logical_source: imap_ultra_l1b_90sensor-badtimes
     Logical_source_description: IMAP-Ultra Instrument Level-1B Badtimes Data.
 
-imap_ultra_l1c_45sensor-pset:
+imap_ultra_l1c_45sensor-spacecraftpset:
     <<: *instrument_base
     Data_type: L1C_45Sensor-PSET>Level-1C Pointing Set Grid for Ultra45
     Logical_source: imap_ultra_l1c_45sensor-pset
     Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Exposure Data.
 
-imap_ultra_l1c_90sensor-pset:
+imap_ultra_l1c_90sensor-spacecraftpset:
     <<: *instrument_base
     Data_type: L1C_90Sensor-PSET>Level-1C Pointing Set Grid for Ultra90
     Logical_source: imap_ultra_l1c_90sensor-pset

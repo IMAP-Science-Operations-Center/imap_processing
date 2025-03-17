@@ -43,8 +43,9 @@ def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray]:
         (float(energy_bin_edges[i]), float(energy_bin_edges[i + 1]))
         for i in range(len(energy_bin_edges) - 1)
     ]
+    energy_bin_geometric_means = np.sqrt(energy_bin_edges[:-1] * energy_bin_edges[1:])
 
-    return intervals, energy_midpoints
+    return intervals, energy_midpoints, energy_bin_geometric_means
 
 
 def get_spacecraft_histogram(
@@ -79,8 +80,8 @@ def get_spacecraft_histogram(
         Array of latitude values.
     longitude : np.ndarray
         Array of longitude values.
-    hpix_idx : np.ndarray
-        Array of HEALPix pixel indices.
+    n_pix : int
+        Number of healpix pixels.
 
     Notes
     -----
@@ -117,7 +118,7 @@ def get_spacecraft_histogram(
         # Only count the events that fall within the energy bin
         hist[:, i] += np.bincount(hpix_idx[mask], minlength=n_pix).astype(np.float64)
 
-    return hist, latitude, longitude, hpix_idx
+    return hist, latitude, longitude, n_pix
 
 
 def get_background_rates(nside: int = 128,):
