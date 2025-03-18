@@ -10,8 +10,8 @@ from imap_processing.hit.l1b.hit_l1b import (
 from imap_processing.hit.l2.hit_l2 import (
     STANDARD_PARTICLE_ENERGY_RANGE_MAPPING,
     hit_l2,
-    process_standard_flux_data,
-    process_summed_flux_data,
+    process_standard_intensity_data,
+    process_summed_intensity_data,
 )
 
 
@@ -49,13 +49,15 @@ def l1b_standard_rates_dataset(dependencies):
     return dependencies["imap_hit_l1b_standard-rates"]
 
 
-def test_process_summed_flux_data(l1b_summed_rates_dataset):
-    """Test the variables in the summed flux dataset"""
+def test_process_summed_intensity_data(l1b_summed_rates_dataset):
+    """Test the variables in the summed intensity dataset"""
 
-    l2_summed_flux_dataset = process_summed_flux_data(l1b_summed_rates_dataset)
+    l2_summed_intensity_dataset = process_summed_intensity_data(
+        l1b_summed_rates_dataset
+    )
 
     # Check that a xarray dataset is returned
-    assert isinstance(l2_summed_flux_dataset, xr.Dataset)
+    assert isinstance(l2_summed_intensity_dataset, xr.Dataset)
 
     valid_coords = {
         "epoch",
@@ -79,25 +81,29 @@ def test_process_summed_flux_data(l1b_summed_rates_dataset):
     }
 
     # Check that the dataset has the correct coords and variables
-    assert valid_coords == set(l2_summed_flux_dataset.coords), "Coordinates mismatch"
+    assert valid_coords == set(
+        l2_summed_intensity_dataset.coords
+    ), "Coordinates mismatch"
 
     assert "dynamic_threshold_state" in l1b_summed_rates_dataset.data_vars
 
     for particle in PARTICLE_ENERGY_RANGE_MAPPING.keys():
-        assert f"{particle}" in l2_summed_flux_dataset.data_vars
-        assert f"{particle}_delta_minus" in l2_summed_flux_dataset.data_vars
-        assert f"{particle}_delta_plus" in l2_summed_flux_dataset.data_vars
-        assert f"{particle}_energy_min" in l2_summed_flux_dataset.data_vars
-        assert f"{particle}_energy_max" in l2_summed_flux_dataset.data_vars
+        assert f"{particle}" in l2_summed_intensity_dataset.data_vars
+        assert f"{particle}_delta_minus" in l2_summed_intensity_dataset.data_vars
+        assert f"{particle}_delta_plus" in l2_summed_intensity_dataset.data_vars
+        assert f"{particle}_energy_min" in l2_summed_intensity_dataset.data_vars
+        assert f"{particle}_energy_max" in l2_summed_intensity_dataset.data_vars
 
 
-def test_process_standard_flux_data(l1b_standard_rates_dataset):
-    """Test the variables in the standard flux dataset"""
+def test_process_standard_intensity_data(l1b_standard_rates_dataset):
+    """Test the variables in the standard intensity dataset"""
 
-    l2_standard_flux_dataset = process_standard_flux_data(l1b_standard_rates_dataset)
+    l2_standard_intensity_dataset = process_standard_intensity_data(
+        l1b_standard_rates_dataset
+    )
 
     # Check that a xarray dataset is returned
-    assert isinstance(l2_standard_flux_dataset, xr.Dataset)
+    assert isinstance(l2_standard_intensity_dataset, xr.Dataset)
 
     valid_coords = {
         "epoch",
@@ -121,18 +127,24 @@ def test_process_standard_flux_data(l1b_standard_rates_dataset):
     }
 
     # Check that the dataset has the correct coords and variables
-    assert valid_coords == set(l2_standard_flux_dataset.coords), "Coordinates mismatch"
+    assert valid_coords == set(
+        l2_standard_intensity_dataset.coords
+    ), "Coordinates mismatch"
 
     assert "dynamic_threshold_state" in l1b_standard_rates_dataset.data_vars
 
     for particle in STANDARD_PARTICLE_ENERGY_RANGE_MAPPING.keys():
-        assert f"{particle}" in l2_standard_flux_dataset.data_vars
-        assert f"{particle}_delta_minus" in l2_standard_flux_dataset.data_vars
-        assert f"{particle}_delta_plus" in l2_standard_flux_dataset.data_vars
-        assert f"{particle}_sys_delta_minus" in l2_standard_flux_dataset.data_vars
-        assert f"{particle}_sys_delta_plus" in l2_standard_flux_dataset.data_vars
-        assert f"{particle}_energy_delta_minus" in l2_standard_flux_dataset.data_vars
-        assert f"{particle}_energy_delta_plus" in l2_standard_flux_dataset.data_vars
+        assert f"{particle}" in l2_standard_intensity_dataset.data_vars
+        assert f"{particle}_delta_minus" in l2_standard_intensity_dataset.data_vars
+        assert f"{particle}_delta_plus" in l2_standard_intensity_dataset.data_vars
+        assert f"{particle}_sys_delta_minus" in l2_standard_intensity_dataset.data_vars
+        assert f"{particle}_sys_delta_plus" in l2_standard_intensity_dataset.data_vars
+        assert (
+            f"{particle}_energy_delta_minus" in l2_standard_intensity_dataset.data_vars
+        )
+        assert (
+            f"{particle}_energy_delta_plus" in l2_standard_intensity_dataset.data_vars
+        )
 
 
 def test_hit_l2(dependencies):
