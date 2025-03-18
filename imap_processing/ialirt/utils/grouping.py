@@ -59,7 +59,7 @@ def find_groups(
     accumulated_data : xr.Dataset
         Packets dataset accumulated over 1 min.
     sequence_range : tuple
-        Tuple of two integers defining the range of group values.
+        Tuple of two integers defining the range of group values (inclusive endpoints).
     sequence_name : str
         Name of the sequence variable.
     time_name : str
