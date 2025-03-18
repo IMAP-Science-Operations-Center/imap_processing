@@ -46,11 +46,9 @@ def hit_l2(dependency: xr.Dataset, data_version: str) -> list[xr.Dataset]:
     # Create the attribute manager for this data level
     attr_mgr = get_attribute_manager(data_version, "l2")
 
-    # TODO: Write functions to create the following datasets
-    #  Process sectored rates dataset
-    #  add logical sources for other l2 products "imap_hit_l2_sectored-intensity"
+    # TODO: Write functions to process sectored rates dataset
+    #       with logical source: "imap_hit_l2_macropixel-intensity"
 
-    # Create L2 datasets
     l2_datasets: dict = {}
 
     # Process science data to L2 datasets
@@ -177,7 +175,11 @@ def process_summed_flux_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Dataset
 
 
 class SummedRates(NamedTuple):
-    """A namedtuple to store summed rates and uncertainties."""
+    """
+    A namedtuple to store summed rates and uncertainties.
+
+    Used in standard flux data processing.
+    """
 
     summed_rates: xr.DataArray
     summed_rates_delta_minus: xr.DataArray
@@ -327,16 +329,16 @@ def process_standard_flux_data(l1b_standard_rates_dataset: xr.Dataset) -> xr.Dat
     """
     Will process L2 standard flux data from L1B standard rates data.
 
-    This function converts the L1B standard rates to L2 standard fluxes
-    for each particle type and energy range using ancillary tables containing
-    factors needed to calculate the flux (energy bin width, geometry factor,
-    efficiency, and b).
+    This function converts L1B standard rates to L2 standard fluxes for each
+    particle type and energy range using ancillary tables containing factors
+    needed to calculate the flux (energy bin width, geometry factor, efficiency
+    and b).
 
-    First, rates from the l2fgrates, l3fgrates, and penfgrates
-    data variables in the L1B standard rates data are summed.
-    These variables represent rates for different detector penetration ranges
-    (Range 2, Range 3, and Range 4 respectively). Only the energy ranges specified
-    in the STANDARD_PARTICLE_ENERGY_RANGE_MAPPING dictionary are included in this
+    First, rates from the l2fgrates, l3fgrates, and penfgrates data variables
+    in the L1B standard rates data are summed. These variables represent rates
+    for different detector penetration ranges (Range 2, Range 3, and Range 4
+    respectively). Only the energy ranges specified in the
+    STANDARD_PARTICLE_ENERGY_RANGE_MAPPING dictionary are included in this
     product.
 
     Flux is then calculated from the summed rates using the following equation:
@@ -368,10 +370,9 @@ def process_standard_flux_data(l1b_standard_rates_dataset: xr.Dataset) -> xr.Dat
         {"epoch": l1b_standard_rates_dataset.coords["epoch"]}
     )
 
-    # Load ancillary data containing factors needed to convert rates to flux.
-    # Which ancillary file to use depends on the dynamic threshold state (0-3).
-    # Build a dictionary with ancillary data for each dynamic threshold state
-    # in the dataset.
+    # Load ancillary data. The dynamic threshold state (0-3) determines which
+    # ancillary file to use. Build a dictionary with ancillary data for each
+    # dynamic threshold state in the dataset.
     path_prefix = imap_module_directory / "hit/ancillary/imap_hit_l1b-to-l2-standard-dt"
     ancillary_data_frames = {
         int(state): pd.read_csv(f"{path_prefix}{state}-factors_20250219_v002.csv")

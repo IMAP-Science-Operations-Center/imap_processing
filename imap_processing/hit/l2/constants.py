@@ -18,7 +18,7 @@
 # R4 = Indices for Range 4 (PENFGRATES)
 # energy_units: MeV/n
 
-PARTICLE_ENERGY_RANGE_MAPPING = {
+STANDARD_PARTICLE_ENERGY_RANGE_MAPPING = {
     "h": [
         {"energy_min": 1.8, "energy_max": 2.2, "R2": [1], "R3": [], "R4": []},
         {"energy_min": 2.2, "energy_max": 2.7, "R2": [2], "R3": [], "R4": []},
