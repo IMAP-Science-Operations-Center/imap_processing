@@ -63,3 +63,23 @@ def mag_test_calibration_data():
     cal_file = imap_dir / "validation" / "imap_calibration_mag_20240229_v01.cdf"
     calibration_data = load_cdf(cal_file)
     return calibration_data
+
+
+def generate_test_epoch(end, vectors_per_second, starting_point=0, gaps=None):
+    spacing = 1 / vectors_per_second[0]
+    output = np.array([])
+    prev = starting_point
+    if gaps:
+        for index, gap in enumerate(gaps):
+            if len(vectors_per_second) != 1:
+                spacing = 1 / vectors_per_second[index]
+            output = np.concatenate(
+                (output, np.arange(prev, gap[0] + spacing, step=spacing) * 1e9)
+            )
+            prev = gap[1]
+        spacing = 1 / vectors_per_second[-1]
+    output = np.concatenate(
+        (output, np.arange(prev, end + spacing, step=spacing) * 1e9)
+    )
+
+    return output
