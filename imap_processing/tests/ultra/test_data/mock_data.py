@@ -148,11 +148,8 @@ def mock_l1c_pset_product_rectangular(  # noqa: PLR0913
                 counts,
             ),
             "exposure_time": (
-                [
-                    CoordNames.AZIMUTH_L1C.value,
-                    CoordNames.ELEVATION_L1C.value,
-                ],
-                exposure_time,
+                ["epoch", "longitude_bin_center", "latitude_bin_center"],
+                np.expand_dims(exposure_time, axis=0),
             ),
             "sensitivity": (
                 [

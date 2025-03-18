@@ -526,11 +526,15 @@ class AbstractSkyMap(ABC):
         -------
         xr.Dataset
             The SkyMap data as a formatted xarray Dataset with dims and coords.
+            If the SkyMap is empty, an empty xarray Dataset is returned.
             If the SkyMap is Rectangular, the data is rewrapped to a 2D grid of
             lon/lat (AKA az/el) coordinates.
             If the SkyMap is Healpix, the data is unchanged from the data_1d, but
             the pixel coordinate is renamed to CoordNames.HEALPIX_INDEX.value.
         """
+        if len(self.data_1d.data_vars) == 0:
+            return xr.Dataset()
+
         if self.tiling_type is SkyTilingType.HEALPIX:
             # return the data_1d as is, but with the pixel coordinate
             # renamed to CoordNames.HEALPIX_INDEX.value
@@ -631,7 +635,15 @@ class AbstractSkyMap(ABC):
             # If multiple spatial axes present
             # (i.e (az, el) for rectangular coordinate PSET),
             # flatten them in the values array to match the raveled indices
-            raveled_pset_data = pset_values.data.reshape(1, -1, pointing_set.num_points)
+            non_spatial_axes_shape = tuple(
+                size
+                for key, size in pset_values.sizes.items()
+                if key not in pointing_set.spatial_coords
+            )
+            raveled_pset_data = pset_values.data.reshape(
+                *non_spatial_axes_shape,
+                pointing_set.num_points,
+            )
 
             if value_key not in self.data_1d.data_vars:
                 # Initialize the map data array if it doesn't exist (values start at 0)

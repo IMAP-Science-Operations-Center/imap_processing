@@ -73,6 +73,20 @@ class TestUltraPointingSet:
             # Check the repr exists
             assert "UltraPointingSet" in repr(ultra_pset)
 
+            # Checks for the property methods:
+            # Check that the unwrapped_dims_dict is as expected
+            assert ultra_pset.unwrapped_dims_dict["counts"] == (
+                "epoch",
+                "energy_bin_center",
+                "pixel",
+            )
+            # Check the non_spatial_coords are as expected
+            assert tuple(ultra_pset.non_spatial_coords.keys()) == (
+                "epoch",
+                "energy_bin_center",
+            )
+
+    @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
     def test_different_spacing_raises_error(self):
         """Test that different spaced az/el from the L1C dataset raises ValueError"""
@@ -128,8 +142,9 @@ class TestRectangularSkyMap:
             spice_frame=geometry.SpiceFrame.ECLIPJ2000,
         )
 
-        # Check that the map is empty
-        assert rm.data_dict == {}
+        # Check that the map data is an empty xarray Dataset
+        assert isinstance(rm.data, xr.Dataset)
+        assert rm.data.data_vars == {}
 
         # Check that the reference frame is correctly set
         assert rm.spice_reference_frame == geometry.SpiceFrame.ECLIPJ2000
@@ -169,15 +184,15 @@ class TestRectangularSkyMap:
         )
 
         # Project each PSET's values to the map (push method)
-        for ultra_pset in self.ultra_psets:
+        for rectangular_pset in self.rectangular_psets:
             rectangular_map.project_pset_values_to_map(
-                ultra_pset,
+                rectangular_pset,
                 value_keys=["counts", "exposure_time"],
                 index_match_method=index_matching_method,
             )
 
         # Check that the map has been updated
-        assert "counts" in rectangular_map.data_dict
+        assert "counts" in rectangular_map.data_1d.data_vars
 
         # Check that the map has the same values as the PSETs, summed
         simple_summed_pset_counts = np.zeros_like(
@@ -186,7 +201,7 @@ class TestRectangularSkyMap:
         for pset in self.ultra_l1c_pset_products:
             simple_summed_pset_counts += pset["counts"].values
 
-        rm_counts_per_energy_bin = rectangular_map.data_dict["counts"].sum(axis=1)
+        rm_counts_per_energy_bin = rectangular_map.data_1d["counts"].sum(axis=1)
         summed_pset_counts_per_energy_bin = simple_summed_pset_counts.sum(axis=(0, 2))
 
         np.testing.assert_array_equal(
@@ -229,9 +244,12 @@ class TestRectangularSkyMap:
             )
 
         # Check that the map has been updated
-        assert "counts" in rectangular_map.data_dict
+        assert "counts" in rectangular_map.data.data_vars
 
         # Check that the map has the same values as the PSETs, summed
+        simple_summed_pset_counts = 0
+        for pset in self.l1c_pset_products:
+            simple_summed_pset_counts += pset["counts"].sum()
         simple_summed_pset_counts = np.zeros_like(rectangular_map.data_dict["counts"])
         for pset in self.rectangular_l1c_pset_products:
             reshaped_pset_counts = pset["counts"].squeeze("epoch")
@@ -242,7 +260,7 @@ class TestRectangularSkyMap:
             simple_summed_pset_counts += reshaped_pset_counts
 
         np.testing.assert_array_equal(
-            rectangular_map.data_dict["counts"],
+            rectangular_map.data["counts"].sum(),
             simple_summed_pset_counts,
         )
 
@@ -312,63 +330,17 @@ class TestRectangularSkyMap:
             total_pset_counts += rectangular_pset.data["counts"].values
 
         # Check that the map has been updated
-        assert "counts" in rectangular_map.data_dict
+        assert "counts" in rectangular_map.data
 
         np.testing.assert_allclose(
-            rectangular_map.data_dict["counts"],
+            rectangular_map.data["counts"],
             expected_value_every_pixel,
         )
         downsample_ratio = skymap_spacing / self.rectangular_l1c_spacing_deg
         np.testing.assert_allclose(
-            rectangular_map.data_dict["counts"].sum(),
+            rectangular_map.data["counts"].sum(),
             total_pset_counts.sum() / (downsample_ratio**2),
         )
-
-    def test_data_dict_value_to_dataarray(self):
-        """Test conversion of data_dict values to xarray DataArrays"""
-        rm = ena_maps.RectangularSkyMap(
-            spacing_deg=1,
-            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
-        )
-        rm.data_dict["variable"] = np.ones((1, 10, 360 * 180))
-        da = rm.data_dict_value_to_dataarray("variable")
-        assert da.shape == (1, 10, 360, 180)
-        assert da.values.sum() == rm.data_dict["variable"].size
-
-    def test_to_xarray(self):
-        """Test conversion of RectangularSkyMap to xarray Dataset"""
-        rm = ena_maps.RectangularSkyMap(
-            spacing_deg=1,
-            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
-        )
-        num_energy_bins = 10
-        num_points = rm.num_points
-        rm.data_dict["counts"] = np.ones((num_energy_bins, num_points))
-
-        xarray_dataset = rm.to_xarray(
-            non_spatial_coords={
-                "epoch": [
-                    -1,
-                ],
-                "energy_bin_center": xr.DataArray(np.arange(num_energy_bins)),
-            },
-            data_variables_and_dims={
-                "counts": [
-                    "epoch",
-                    "energy_bin_center",
-                    CoordNames.AZIMUTH_L2,
-                    CoordNames.ELEVATION_L2,
-                ],
-            },
-        )
-        assert "counts" in xarray_dataset
-        assert xarray_dataset["counts"].shape == (
-            1,
-            num_energy_bins,
-            360 // rm.spacing_deg,
-            180 // rm.spacing_deg,
-        )
-        np.testing.assert_equal(xarray_dataset["counts"].values, 1)
 
 
 class TestHealpixSkyMap:
@@ -415,8 +387,9 @@ class TestHealpixSkyMap:
             nested=nested,
         )
 
-        # Check that the map is empty
-        assert hp_map.data_dict == {}
+        # Check that the map data is an empty xarray Dataset
+        assert isinstance(hp_map.data, xr.Dataset)
+        assert hp_map.data.data_vars == {}
 
         # Check that the reference frame is correctly set
         assert hp_map.spice_reference_frame is geometry.SpiceFrame.ECLIPJ2000
@@ -502,10 +475,12 @@ class TestHealpixSkyMap:
         )
 
         # Check that the map has been updated
-        assert "counts" in hp_map.data_dict
+        assert "counts" in hp_map.data.data_vars
 
         # Find the maximum value in the spatial pixel dimension of the healpix map
-        bright_hp_pixel_index = hp_map.data_dict["counts"][0, :].argmax()
+        bright_hp_pixel_index = hp_map.data["counts"][0, 0].argmax(
+            dim="healpix_pixel_index"
+        )
         bright_hp_pixel_az_el = hp_map.az_el_points[bright_hp_pixel_index]
 
         np.testing.assert_allclose(
