@@ -15,7 +15,7 @@ from imap_processing.hit.hit_utils import (
     sum_particle_data,
 )
 from imap_processing.hit.l2.constants import (
-    PARTICLE_ENERGY_RANGE_MAPPING,
+    STANDARD_PARTICLE_ENERGY_RANGE_MAPPING,
 )
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ def hit_l2(dependency: xr.Dataset, data_version: str) -> list[xr.Dataset]:
     Returns
     -------
     processed_data : list[xarray.Dataset]
-        List of L2 dataset.
+        List of one L2 dataset.
     """
     logger.info("Creating HIT L2 science datasets")
     # Create the attribute manager for this data level
@@ -61,7 +61,7 @@ def hit_l2(dependency: xr.Dataset, data_version: str) -> list[xr.Dataset]:
         logger.info("HIT L2 summed intensity dataset created")
 
     if "imap_hit_l1b_standard-rates" in dependency.attrs["Logical_source"]:
-        l2_datasets["imap_hit_l2_standard-intensity"] = process_summed_flux_data(
+        l2_datasets["imap_hit_l2_standard-intensity"] = process_standard_flux_data(
             dependency
         )
         logger.info("HIT L2 standard intensity dataset created")
@@ -336,7 +336,8 @@ def process_standard_flux_data(l1b_standard_rates_dataset: xr.Dataset) -> xr.Dat
     data variables in the L1B standard rates data are summed.
     These variables represent rates for different detector penetration ranges
     (Range 2, Range 3, and Range 4 respectively). Only the energy ranges specified
-    in the PARTICLE_ENERGY_RANGE_MAPPING dictionary are included in this product.
+    in the STANDARD_PARTICLE_ENERGY_RANGE_MAPPING dictionary are included in this
+    product.
 
     Flux is then calculated from the summed rates using the following equation:
 
@@ -385,7 +386,7 @@ def process_standard_flux_data(l1b_standard_rates_dataset: xr.Dataset) -> xr.Dat
     add_summed_particle_rates(
         l2_standard_flux_dataset,
         l1b_standard_rates_dataset,
-        PARTICLE_ENERGY_RANGE_MAPPING,
+        STANDARD_PARTICLE_ENERGY_RANGE_MAPPING,
     )
     calculate_flux(l2_standard_flux_dataset, ancillary_data_frames)
     l2_standard_flux_dataset = l2_standard_flux_dataset.drop_vars(
