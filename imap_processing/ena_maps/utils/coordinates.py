@@ -6,6 +6,8 @@ from enum import Enum
 class CoordNames(Enum):
     """Enumeration of the names of the coordinates in the L1C and L2 ENA datasets."""
 
+    GENERIC_PIXEL = "pixel"
+
     TIME = "epoch"
     ENERGY = "energy"
     HEALPIX_INDEX = "healpix_index"
