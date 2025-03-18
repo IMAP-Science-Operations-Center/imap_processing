@@ -36,19 +36,26 @@ def test_data():
 
 def test_build_energy_bins():
     """Tests build_energy_bins function."""
-    energy_bin_edges, energy_midpoints, _ = build_energy_bins()
-    energy_bin_start = [interval[0] for interval in energy_bin_edges]
-    energy_bin_end = [interval[1] for interval in energy_bin_edges]
+    intervals, energy_midpoints, energy_bin_geometric_means = build_energy_bins()
+    energy_bin_start = [interval[0] for interval in intervals]
+    energy_bin_end = [interval[1] for interval in intervals]
 
     assert energy_bin_start[0] == 0
     assert energy_bin_start[1] == 3.385
-    assert len(energy_bin_edges) == 24
+    assert len(intervals) == 24
     assert energy_midpoints[0] == (energy_bin_start[0] + energy_bin_end[0]) / 2
 
     # Comparison to expected values.
     np.testing.assert_allclose(energy_bin_end[1], 4.137, atol=1e-4)
     np.testing.assert_allclose(energy_bin_start[-1], 279.810, atol=1e-4)
     np.testing.assert_allclose(energy_bin_end[-1], 341.989, atol=1e-4)
+
+    expected_geometric_means = np.sqrt(
+        np.array(energy_bin_start) * np.array(energy_bin_end)
+    )
+    np.testing.assert_allclose(
+        energy_bin_geometric_means, expected_geometric_means, atol=1e-4
+    )
 
 
 def test_get_spacecraft_histogram(test_data):
