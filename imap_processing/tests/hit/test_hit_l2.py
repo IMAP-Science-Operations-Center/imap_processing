@@ -6,9 +6,13 @@ from imap_processing.hit.l1a import hit_l1a
 from imap_processing.hit.l1b.hit_l1b import (
     PARTICLE_ENERGY_RANGE_MAPPING,
     hit_l1b,
-    process_summed_rates_data,
 )
-from imap_processing.hit.l2.hit_l2 import hit_l2, process_summed_flux_data
+from imap_processing.hit.l2.hit_l2 import (
+    STANDARD_PARTICLE_ENERGY_RANGE_MAPPING,
+    hit_l2,
+    process_standard_flux_data,
+    process_summed_flux_data,
+)
 
 
 @pytest.fixture(scope="module")
@@ -34,15 +38,15 @@ def dependencies(sci_packet_filepath):
 
 
 @pytest.fixture()
-def l1b_summed_rates_dataset(sci_packet_filepath):
+def l1b_summed_rates_dataset(dependencies):
     """Get L1B summed rates dataset to test l2 processing function"""
-    l1a_datasets = hit_l1a.hit_l1a(sci_packet_filepath, "001")
-    for dataset in l1a_datasets:
-        if dataset.attrs["Logical_source"] == "imap_hit_l1a_counts":
-            # Calculate livetime from the livetime counter
-            livetime = dataset["livetime_counter"] / 270
-            summed_rates = process_summed_rates_data(dataset, livetime)
-            return summed_rates
+    return dependencies["imap_hit_l1b_summed-rates"]
+
+
+@pytest.fixture()
+def l1b_standard_rates_dataset(dependencies):
+    """Get L1B standard rates dataset to test l2 processing function"""
+    return dependencies["imap_hit_l1b_standard-rates"]
 
 
 def test_process_summed_flux_data(l1b_summed_rates_dataset):
@@ -87,6 +91,50 @@ def test_process_summed_flux_data(l1b_summed_rates_dataset):
         assert f"{particle}_energy_max" in l2_summed_flux_dataset.data_vars
 
 
+def test_process_standard_flux_data(l1b_standard_rates_dataset):
+    """Test the variables in the standard flux dataset"""
+
+    l2_standard_flux_dataset = process_standard_flux_data(l1b_standard_rates_dataset)
+
+    # Check that a xarray dataset is returned
+    assert isinstance(l2_standard_flux_dataset, xr.Dataset)
+
+    valid_coords = {
+        "epoch",
+        "h_energy_mean",
+        "he3_energy_mean",
+        "he4_energy_mean",
+        "he_energy_mean",
+        "c_energy_mean",
+        "n_energy_mean",
+        "o_energy_mean",
+        "ne_energy_mean",
+        "na_energy_mean",
+        "mg_energy_mean",
+        "al_energy_mean",
+        "si_energy_mean",
+        "s_energy_mean",
+        "ar_energy_mean",
+        "ca_energy_mean",
+        "fe_energy_mean",
+        "ni_energy_mean",
+    }
+
+    # Check that the dataset has the correct coords and variables
+    assert valid_coords == set(l2_standard_flux_dataset.coords), "Coordinates mismatch"
+
+    assert "dynamic_threshold_state" in l1b_standard_rates_dataset.data_vars
+
+    for particle in STANDARD_PARTICLE_ENERGY_RANGE_MAPPING.keys():
+        assert f"{particle}" in l2_standard_flux_dataset.data_vars
+        assert f"{particle}_delta_minus" in l2_standard_flux_dataset.data_vars
+        assert f"{particle}_delta_plus" in l2_standard_flux_dataset.data_vars
+        assert f"{particle}_sys_delta_minus" in l2_standard_flux_dataset.data_vars
+        assert f"{particle}_sys_delta_plus" in l2_standard_flux_dataset.data_vars
+        assert f"{particle}_energy_delta_minus" in l2_standard_flux_dataset.data_vars
+        assert f"{particle}_energy_delta_plus" in l2_standard_flux_dataset.data_vars
+
+
 def test_hit_l2(dependencies):
     """Test creating L2 datasets ready for CDF output
 
@@ -98,7 +146,10 @@ def test_hit_l2(dependencies):
         Dictionary of L1B datasets
     """
     # TODO: update assertions after science data processing is completed
-    l1b_summed_dataset = dependencies["imap_hit_l1b_summed-rates"]
-    datasets = hit_l2(l1b_summed_dataset, "001")
-    assert len(datasets) == 1
-    assert datasets[0].attrs["Logical_source"] == "imap_hit_l2_summed-intensity"
+    l2_datasets = hit_l2(dependencies["imap_hit_l1b_summed-rates"], "001")
+    assert len(l2_datasets) == 1
+    assert l2_datasets[0].attrs["Logical_source"] == "imap_hit_l2_summed-intensity"
+
+    l2_datasets = hit_l2(dependencies["imap_hit_l1b_standard-rates"], "001")
+    assert len(l2_datasets) == 1
+    assert l2_datasets[0].attrs["Logical_source"] == "imap_hit_l2_standard-intensity"
