@@ -9,8 +9,12 @@ from imap_processing.cdf.utils import load_cdf
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.mag.l1a.mag_l1a_data import MagL1a, TimeTuple
 from imap_processing.mag.l1b.mag_l1b import mag_l1b
+from imap_processing.mag.l1c.mag_l1c import mag_l1c
 from imap_processing.spice.time import str_to_et, ttj2000ns_to_et
-from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
+from imap_processing.tests.mag.conftest import (
+    mag_generate_l1b_from_csv,
+    mag_l1a_dataset_generator,
+)
 
 
 @pytest.mark.parametrize(
@@ -196,8 +200,6 @@ def test_mag_l1b_validation(test_number):
         assert np.allclose(expected_time, magi_time, atol=1e-6, rtol=0)
 
     for index in expected_mago.index:
-        # TODO: come back to timestamp.
-        # Can't compare UTC, coarse/fine don't work.
         assert np.allclose(
             expected_mago["x"].iloc[index],
             mago["vectors"].data[index][0],
@@ -230,3 +232,63 @@ def test_mag_l1b_validation(test_number):
         expected_time = str_to_et(expected_mago["t"].iloc[index])
         mago_time = ttj2000ns_to_et(mago["epoch"].data[index])
         assert np.allclose(expected_time, mago_time, atol=1e-6, rtol=0)
+
+
+@pytest.mark.parametrize(("test_number"), ["013", "014", "015", "016"])
+@pytest.mark.parametrize(("sensor"), ["mago", "magi"])
+def test_mag_l1c_validation(test_number, sensor):
+    source_directory = Path(__file__).parent / "validation" / "L1c" / f"T{test_number}"
+    norm_in = source_directory / f"mag-l1b-l1c-t{test_number}-{sensor}-normal-in.csv"
+    burst_in = source_directory / f"mag-l1b-l1c-t{test_number}-{sensor}-burst-in.csv"
+
+    norm = mag_generate_l1b_from_csv(
+        pd.read_csv(norm_in), f"imap_mag_l1b_norm-{sensor}"
+    )
+    burst = mag_generate_l1b_from_csv(
+        pd.read_csv(burst_in), f"imap_mag_l1b_burst-{sensor}"
+    )
+
+    l1c = mag_l1c(norm, burst, "v000")
+
+    expected_output = pd.read_csv(
+        source_directory / f"mag-l1b-l1c-t{test_number}-{sensor}-normal-out.csv"
+    )
+
+    print(l1c["vectors"].data)
+
+    for index in expected_output.index:
+        print(f"Index: {index}")
+        if index == 576:
+            print("broken index")
+        assert np.allclose(
+            expected_output["x"].iloc[index],
+            l1c["vectors"].data[index][0],
+            atol=1e-9,
+            rtol=0,
+        )
+        assert np.allclose(
+            expected_output["y"].iloc[index],
+            l1c["vectors"].data[index][1],
+            atol=1e-9,
+            rtol=0,
+        )
+        assert np.allclose(
+            expected_output["z"].iloc[index],
+            l1c["vectors"].data[index][2],
+            atol=1e-9,
+            rtol=0,
+        )
+        assert expected_output["range"].iloc[index] == l1c["vectors"].data[index][3]
+        assert (
+            expected_output["compression"].iloc[index]
+            == l1c["compression_flags"].data[index][0]
+        )
+        if expected_output["compression"].iloc[index] != 0:
+            assert (
+                expected_output["compression_width"].iloc[index]
+                == l1c["compression_flags"].data[index][1]
+            )
+
+        expected_time = str_to_et(expected_output["t"].iloc[index])
+        l1c_time = ttj2000ns_to_et(l1c["epoch"].data[index])
+        # assert np.allclose(expected_time, l1c_time, atol=1e-3, rtol=0)

@@ -220,7 +220,10 @@ def process_mag_l1c(
         An (n, 8) shaped array containing the completed timeline.
     """
     norm_epoch = normal_mode_dataset["epoch"].data
-    vecsec_attr = normal_mode_dataset.attrs["vectors_per_second"]
+    try:
+        vecsec_attr = normal_mode_dataset.attrs["vectors_per_second"]
+    except KeyError:
+        vecsec_attr = None
 
     output_dataset = normal_mode_dataset.copy(deep=True)
     output_dataset["sample_interpolated"] = xr.DataArray(

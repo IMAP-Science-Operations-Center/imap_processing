@@ -8,6 +8,7 @@ import xarray as xr
 
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
+from imap_processing.mag.l1a.mag_l1a_data import MagL1a, TimeTuple
 
 
 @pytest.fixture()
@@ -63,3 +64,26 @@ def mag_test_calibration_data():
     cal_file = imap_dir / "validation" / "imap_calibration_mag_20240229_v01.cdf"
     calibration_data = load_cdf(cal_file)
     return calibration_data
+
+
+def mag_generate_l1b_from_csv(df, logical_source):
+    length = len(df.index)
+    dataset = mag_l1a_dataset_generator(length)
+
+    dataset["vectors"].data = np.array(df[["x", "y", "z", "range"]])
+    dataset["compression_flags"].data = np.array(
+        df[["compression", "compression_width"]]
+    )
+
+    mago_epoch = MagL1a.calculate_vector_time(
+        np.zeros((length, 4), dtype=np.int64),
+        2,
+        TimeTuple(df["coarse"][0], df["fine"][0]),
+    )[:, -1]
+
+    dataset.coords["epoch"] = xr.DataArray(mago_epoch, name="epoch", dims=["epoch"])
+
+    dataset.attrs["Logical_source"] = logical_source
+    dataset.attrs["vectors_per_second"] = f"{mago_epoch[0]}:2"
+
+    return dataset
