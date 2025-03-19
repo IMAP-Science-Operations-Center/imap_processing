@@ -106,3 +106,5 @@ MAX_FINE_TIME = np.iinfo(np.uint16).max  # maximum 16 bit unsigned int
 AXIS_COUNT = 3
 RANGE_BIT_WIDTH = 2
 MAX_COMPRESSED_VECTOR_BITS = 60
+# Possible sensor rates
+POSSIBLE_RATES = np.array([1, 2, 4, 8, 16, 32, 64, 128], dtype=np.int32)

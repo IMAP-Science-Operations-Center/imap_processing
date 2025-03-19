@@ -42,6 +42,9 @@ def mag_l1c(
     # TODO:
     # find missing sequences and output them
     # add missing interpolation methods
+    # Fix gaps at the beginning of the day by going to previous day's file
+    # Fix gaps at the end of the day
+    # Pass vecsec through to generation step
 
     input_logical_source_1 = first_input_dataset.attrs["Logical_source"]
     if isinstance(first_input_dataset.attrs["Logical_source"], list):

@@ -6,6 +6,8 @@ from enum import Enum
 import numpy as np
 from scipy.interpolate import make_interp_spline
 
+from imap_processing.mag.constants import POSSIBLE_RATES
+
 
 def linear(
     input_vectors: np.ndarray,
@@ -92,6 +94,39 @@ def cubic(
     """
     spline = make_interp_spline(input_timestamps, input_vectors, k=3)
     return spline(output_timestamps)
+
+
+def cic_filter(input_vectors, input_timestamps, output_timestamps):
+    """
+    Apply CIC filter to data before interpolating.
+
+    The filtering uses a Cascaded integrator-comb (CIC) filter which is used in FSW to
+    filter down the raw data to telemetered data.
+
+    Returns
+    -------
+
+    """
+    # Calculate the sample rate - count of samples / time range, then find nearest
+    # possible sensor rate.
+    samples_per_second = input_vectors.shape[0] / (
+        input_timestamps[-1] - input_timestamps[0]
+    )
+    input_samples_per_sec = POSSIBLE_RATES[
+        (np.abs(POSSIBLE_RATES - samples_per_second)).argmin()
+    ]
+    output_samples = output_timestamps.shape[0] / (
+        output_timestamps[-1] - output_timestamps[0]
+    )
+    output_samples_per_sec = POSSIBLE_RATES[
+        (np.abs(POSSIBLE_RATES - output_samples)).argmin()
+    ]
+
+    print(
+        f"Input samples per second: {input_samples_per_sec}, output: {output_samples_per_sec}"
+    )
+
+    decimation_factor = input_samples_per_sec / 2
 
 
 def linear_filtered(
