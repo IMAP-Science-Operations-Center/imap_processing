@@ -153,12 +153,12 @@ DATA_PRODUCT_CONFIGURATIONS = {
     CODICEAPID.COD_HI_INST_COUNTS_SINGLES: {
         "dataset_name": "imap_codice_l1a_hi-counters-singles",
         "input_dims": {
-            "ssdid": 12,
+            "ssd_index": 12,
         },
         "instrument": "hi",
         "num_counters": 3,
         "output_dims": {
-            "ssdid": 12,
+            "ssd_index": 12,
         },
         "support_variables": ["data_quality", "spin_period"],
         "variable_names": HI_COUNTERS_SINGLES_VARIABLE_NAMES,
