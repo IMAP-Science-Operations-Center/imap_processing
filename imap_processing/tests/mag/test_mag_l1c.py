@@ -5,7 +5,6 @@ import pytest
 import xarray as xr
 import yaml
 
-from imap_processing.cdf.utils import write_cdf
 from imap_processing.mag.l1c.interpolation_methods import InterpolationFunction
 from imap_processing.mag.l1c.mag_l1c import (
     fill_normal_data,
@@ -16,7 +15,10 @@ from imap_processing.mag.l1c.mag_l1c import (
     mag_l1c,
     process_mag_l1c,
 )
-from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
+from imap_processing.tests.mag.conftest import (
+    generate_test_epoch,
+    mag_l1a_dataset_generator,
+)
 
 
 @pytest.fixture(scope="module")
@@ -36,7 +38,7 @@ def mag_l1b_dataset():
 @pytest.fixture()
 def norm_dataset():
     dataset = mag_l1a_dataset_generator(10)
-    epoch_vals = np.array([0, 0.5, 1, 1.5, 2, 4, 4.25, 5.5, 5.75, 6]) * 1e9
+    epoch_vals = generate_test_epoch(6, [2, 4, 4], 0, [[2, 4], [4.25, 5.5]])
     vectors_per_second_attr = "0:2,4000000000:4"
     dataset.attrs["vectors_per_second"] = vectors_per_second_attr
     dataset["epoch"] = epoch_vals
@@ -50,30 +52,7 @@ def norm_dataset():
 @pytest.fixture()
 def burst_dataset():
     dataset = mag_l1a_dataset_generator(17)
-    epoch_vals = (
-        np.array(
-            [
-                1.9,
-                2.1,
-                2.3,
-                2.5,
-                2.7,
-                2.9,
-                3.1,
-                3.3,
-                3.5,
-                3.7,
-                3.9,
-                4.1,
-                4.3,
-                4.5,
-                4.7,
-                4.9,
-                5.1,
-            ]
-        )
-        * 1e9
-    )
+    epoch_vals = generate_test_epoch(5.1, [5], 1.9)
     dataset["epoch"] = epoch_vals
     dataset.attrs["Logical_source"] = ["imap_mag_l1b_burst-mago"]
     vectors = np.array([[i, i, i, 2] for i in range(1, 18)])
@@ -206,7 +185,6 @@ def test_mag_l1c(norm_dataset, burst_dataset):
 
     for var in expected_vars:
         assert var in l1c.data_vars
-    print(write_cdf(l1c, istp=False))
 
 
 def test_mag_attributes(norm_dataset, burst_dataset):
@@ -220,7 +198,7 @@ def test_mag_attributes(norm_dataset, burst_dataset):
 
 
 def test_find_all_gaps():
-    epoch_test = np.array([0, 0.5, 1, 1.5, 2, 5, 5.5]) * 1e9
+    epoch_test = generate_test_epoch(5.5, [2, 2], 0, [[2, 5]])
 
     vectors_per_second_attr = "0:2"
     output = find_all_gaps(epoch_test, vectors_per_second_attr)
@@ -236,19 +214,20 @@ def test_find_all_gaps():
 
 def test_find_gaps():
     # Test should be in ns
-    epoch_test = np.array([0, 0.5, 2, 3.5]) * 1e9
+    epoch_test = generate_test_epoch(3.5, [2], 0, [[0.5, 2], [2, 3.5]])
+    print(epoch_test)
     gaps = find_gaps(epoch_test, 2)
     expected_return = np.array([[0.5, 2], [2, 3.5]]) * 1e9
 
     assert np.array_equal(gaps, expected_return)
 
-    epoch_test = np.array([0, 0.5, 2, 2.5, 3, 4, 4.5, 5]) * 1e9
+    epoch_test = generate_test_epoch(5, [2], gaps=[[0.5, 2], [3, 4]])
     gaps = find_gaps(epoch_test, 2)
     expected_return = np.array([[0.5, 2], [3, 4]]) * 1e9
 
     assert np.array_equal(gaps, expected_return)
 
-    epoch_test = np.array([0, 0.25, 0.5, 1, 1.25, 1.5, 1.75, 2, 3]) * 1e9
+    epoch_test = generate_test_epoch(3, [4], gaps=[[0.5, 1], [2, 3]])
     gaps = find_gaps(epoch_test, 4)
     expected_return = np.array([[0.5, 1], [2, 3]]) * 1e9
 
@@ -256,19 +235,20 @@ def test_find_gaps():
 
 
 def test_generate_timeline():
-    epoch_test = np.array([0, 0.25, 0.5, 1, 1.25, 1.5, 1.75, 2, 3]) * 1e9
+    epoch_test = generate_test_epoch(3, [4], gaps=[[0.5, 1], [2, 3]])
+
     gaps = np.array([[0.5, 1], [2, 3]]) * 1e9
     expected_output = np.array([0, 0.25, 0.5, 1, 1.25, 1.5, 1.75, 2, 2.5, 3]) * 1e9
     output = generate_timeline(epoch_test, gaps)
     assert np.array_equal(output, expected_output)
 
-    epoch_test = np.array([1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]) * 1e9
+    epoch_test = generate_test_epoch(5, [2], starting_point=1)
     # Expected output from find_gaps if none are found
     gaps = np.zeros((0, 2))
     output = generate_timeline(epoch_test, gaps)
     assert np.array_equal(output, epoch_test)
 
-    epoch_test = np.array([1, 1.5, 2, 2.5, 3, 5]) * 1e9
+    epoch_test = generate_test_epoch(5, [2], starting_point=1, gaps=[[3, 5]])
     gaps = np.array([[3, 5]]) * 1e9
 
     expected_output = np.array([1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]) * 1e9

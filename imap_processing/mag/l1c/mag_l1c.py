@@ -137,7 +137,8 @@ def mag_l1c(
     except KeyError as e:
         logger.info(
             f"Key error when assigning global attributes, attribute not found in "
-            f"L1A file: {e}"
+            f"L1B file with logical source "
+            f"{normal_mode_dataset.attrs['Logical_source']}: {e}"
         )
 
     global_attributes["interpolation_method"] = interp_function.name
