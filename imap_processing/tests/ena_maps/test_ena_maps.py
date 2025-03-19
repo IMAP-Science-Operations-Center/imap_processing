@@ -11,6 +11,7 @@ import pytest
 import xarray as xr
 
 from imap_processing.ena_maps import ena_maps
+from imap_processing.ena_maps.utils import spatial_utils
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.spice import geometry
 
@@ -342,6 +343,34 @@ class TestRectangularSkyMap:
             total_pset_counts.sum() / (downsample_ratio**2),
         )
 
+        # Convert to xarray Dataset and check the data is as expected
+        # This is a method, which could be tested separately, but that would be
+        # innefficient, as it would require all the same, computationally intensive
+        # operations to be repeated as this test
+        rect_map_ds = rectangular_map.to_dataset()
+        assert "counts" in rect_map_ds.data_vars
+        assert rect_map_ds["counts"].shape == (
+            1,
+            ultra_pset.data["counts"].sizes[CoordNames.ENERGY.value],
+            360 / skymap_spacing,
+            180 / skymap_spacing,
+        )
+        assert rect_map_ds["counts"].dims == (
+            CoordNames.TIME.value,
+            CoordNames.ENERGY.value,
+            CoordNames.AZIMUTH_L2.value,
+            CoordNames.ELEVATION_L2.value,
+        )
+
+        # Check that the data is as expected
+        np.testing.assert_array_equal(
+            rect_map_ds["counts"].values,
+            spatial_utils.rewrap_even_spaced_az_el_grid(
+                rectangular_map.data_1d["counts"].values,
+                rectangular_map.binning_grid_shape,
+            ),
+        )
+
 
 class TestHealpixSkyMap:
     @pytest.fixture(autouse=True)
@@ -487,114 +516,19 @@ class TestHealpixSkyMap:
             atol=degree_tolerance,
         )
 
-    @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
-    @pytest.mark.parametrize(
-        "nside,degree_tolerance",
-        [
-            (8, 6),
-            (16, 3),
-            (32, 2),
-        ],
-    )
-    @pytest.mark.parametrize("nested", [True, False], ids=["nested", "ring"])
-    @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
-    def test_project_healpix_pset_values_to_map_push_method(
-        self, mock_frame_transform_az_el, nside, degree_tolerance, nested
-    ):
-        """
-        Test that PointingSet which contains bright spot pushes to correct spot in map.
-
-        Parameterized over nside (of the map, not the PSET), nested.
-        The tolerance for lower nsides must be higher because the
-        Healpix pixels are larger.
-        """
-
-        # Mock frame_transform to return the az and el unchanged
-        mock_frame_transform_az_el.side_effect = (
-            lambda et, az_el, from_frame, to_frame, degrees: az_el
+        # Convert to xarray Dataset and check the data is as expected
+        hp_map_ds = hp_map.to_dataset()
+        assert "counts" in hp_map_ds.data_vars
+        assert hp_map_ds["counts"].shape == (
+            1,
+            mock_pset_input_frame.data["counts"].sizes[CoordNames.ENERGY.value],
+            hp_map.num_points,
         )
-
-        index_matching_method = ena_maps.IndexMatchMethod.PUSH
-
-        # Create a PointingSet with a bright spot
-        mock_pset_input_frame = ena_maps.UltraPointingSet(
-            l1c_dataset=self.ultra_l1c_pset_products[0],
-            spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
+        assert hp_map_ds["counts"].dims == (
+            CoordNames.TIME.value,
+            CoordNames.ENERGY.value,
+            CoordNames.HEALPIX_INDEX.value,
         )
-        mock_pset_input_frame.data["counts"].values = np.zeros_like(
-            mock_pset_input_frame.data["counts"].values
-        )
-
-        input_bright_pixel_number = hp.ang2pix(
-            nside=mock_pset_input_frame.nside,
-            theta=180,
-            phi=0,
-            nest=mock_pset_input_frame.nested,
-            lonlat=True,
-        )
-        input_bright_pixel_az_el_deg = mock_pset_input_frame.az_el_points[
-            input_bright_pixel_number
-        ]
-        mock_pset_input_frame.data["counts"].values[
-            :,
-            :,
-            input_bright_pixel_number,
-        ] = 1
-
-        # Create a Healpix map
-        hp_map = ena_maps.HealpixSkyMap(
-            nside=nside,
-            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
-            nested=nested,
-        )
-
-        # Project the PointingSet to the Healpix map
-        hp_map.project_pset_values_to_map(
-            mock_pset_input_frame,
-            value_keys=[
-                "counts",
-            ],
-            index_match_method=index_matching_method,
-        )
-
-        # Check that the map has been updated
-        assert "counts" in hp_map.data_dict
-
-        # Find the maximum value in the spatial pixel dimension of the healpix map
-        bright_hp_pixel_index = hp_map.data_dict["counts"][0, :].argmax()
-        bright_hp_pixel_az_el = hp_map.az_el_points[bright_hp_pixel_index]
-
-        np.testing.assert_allclose(
-            bright_hp_pixel_az_el,
-            input_bright_pixel_az_el_deg,
-            atol=degree_tolerance,
-        )
-
-    def test_to_xarray(self):
-        """Test conversion of HealpixSkyMap to xarray Dataset"""
-        hp_map = ena_maps.HealpixSkyMap(
-            nside=8,
-            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
-            nested=True,
-        )
-        num_energy_bins = 10
-        num_points = hp_map.num_points
-        hp_map.data_dict["counts"] = np.ones((num_energy_bins, num_points))
-
-        xarray_dataset = hp_map.to_xarray(
-            non_spatial_coords={
-                "epoch": [
-                    -1,
-                ],
-                "energy_bin_center": xr.DataArray(np.arange(num_energy_bins)),
-            },
-            data_variables_and_dims={
-                "counts": ["epoch", "energy_bin_center", "healpix_pixel_index"],
-            },
-        )
-        assert "counts" in xarray_dataset
-        assert xarray_dataset["counts"].shape == (1, num_energy_bins, num_points)
-        np.testing.assert_equal(xarray_dataset["counts"].values, 1)
 
 
 class TestIndexMatching:
