@@ -1,3 +1,8 @@
+# TODO: There are several FILLVALs defined here that do not match standard
+#       convention (see https://imap-processing.readthedocs.io/en/latest/
+#       external-tools/cdf/cdf_requirements.html#fillval
+#       These should be updated.
+
 # <=== Defaults ===>
 default_attrs: &default
     DEPEND_0: epoch
@@ -100,18 +105,6 @@ spin_sector_index:
 ssd_index:
     CATDESC: SSD Index
     FIELDNAM: SSD Index
-    FILLVAL: -1
-    FORMAT: I2
-    LABLAXIS: " "
-    SCALETYP: linear
-    UNITS: " "
-    VALIDMIN: 0
-    VALIDMAX: 12
-    VAR_TYPE: support_data
-
-ssdid:
-    CATDESC: SSD ID
-    FIELDNAM: SSD ID
     FILLVAL: -1
     FORMAT: I2
     LABLAXIS: " "

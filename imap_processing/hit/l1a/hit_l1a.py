@@ -282,7 +282,7 @@ def process_science(
     count_rates_dataset = calculate_uncertainties(count_rates_dataset)
 
     # Logical sources for the two products.
-    logical_sources = ["imap_hit_l1a_count-rates", "imap_hit_l1a_pulse-height-events"]
+    logical_sources = ["imap_hit_l1a_counts", "imap_hit_l1a_direct-events"]
 
     datasets = []
     # Update attributes and dimensions

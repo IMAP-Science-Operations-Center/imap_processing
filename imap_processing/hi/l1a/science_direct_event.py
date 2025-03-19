@@ -31,11 +31,11 @@ def parse_direct_events(de_data: bytes) -> dict[str, npt.ArrayLike]:
     IMAP-Hi direct event data information is stored in
     48-bits as follows:
 
-    |        Read 48-bits into 2, 16, 10, 10, 10, bits. Each of these breaks
+    |        Read 48-bits into 16, 2, 10, 10, 10, bits. Each of these breaks
     |        down as:
     |
-    |            start_bitmask_data - 2 bits (tA=1, tB=2, tC1=3, META=0)
     |            de_tag - 16 bits
+    |            start_bitmask_data - 2 bits (tA=1, tB=2, tC1=3)
     |            tof_1 - 10 bit counter
     |            tof_2 - 10 bit counter
     |            tof_3 - 10 bit counter
@@ -70,16 +70,16 @@ def parse_direct_events(de_data: bytes) -> dict[str, npt.ArrayLike]:
     # direct events.
     # Considering the 6-bytes of data for each DE as 3 2-byte words,
     # each word contains the following:
-    # word_0: 2-bits of Trigger ID, upper 14-bits of de_tag
-    # word_1: lower 2-bits of de_tag, 10-bits tof_1, upper 4-bits of tof_2
+    # word_0: full 16-bits is the de_tag
+    # word_1: 2-bits of Trigger ID, 10-bits tof_1, upper 4-bits of tof_2
     # word_2: lower 6-bits of tof_2, 10-bits of tof_3
     data_uint16 = np.reshape(
         np.frombuffer(de_data, dtype=">u2"), (3, -1), order="F"
     ).astype(np.uint16)
 
     de_dict = dict()
-    de_dict["trigger_id"] = (data_uint16[0] >> 14).astype(np.uint8)
-    de_dict["de_tag"] = (data_uint16[0] << 2) + (data_uint16[1] >> 14)
+    de_dict["de_tag"] = data_uint16[0]
+    de_dict["trigger_id"] = (data_uint16[1] >> 14).astype(np.uint8)
     de_dict["tof_1"] = (data_uint16[1] & int(b"00111111_11110000", 2)) >> 4
     de_dict["tof_2"] = ((data_uint16[1] & int(b"00000000_00001111", 2)) << 6) + (
         data_uint16[2] >> 10
