@@ -1,3 +1,8 @@
+# TODO: There are several FILLVALs defined here that do not match standard
+#       convention (see https://imap-processing.readthedocs.io/en/latest/
+#       external-tools/cdf/cdf_requirements.html#fillval
+#       These should be updated.
+
 # <=== Defaults ===>
 default_attrs: &default
     DEPEND_0: epoch
