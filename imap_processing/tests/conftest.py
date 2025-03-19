@@ -592,10 +592,8 @@ def generate_repoint_data(
         {
             "repoint_start_sec": repoint_start_times.astype(int),
             "repoint_start_subsec": ((repoint_start_times % 1.0) * 1e3).astype(int),
-            "repoint_start_met": repoint_start_times,
             "repoint_end_sec": repoint_end_met.astype(int),
             "repoint_end_subsec": ((repoint_end_met % 1.0) * 1e3).astype(int),
-            "repoint_end_met": np.array(repoint_end_met),
             "repoint_id": np.arange(repoint_start_times.size, dtype=int)
             + repoint_id_start,
         }
