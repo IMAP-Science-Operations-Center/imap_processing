@@ -1,7 +1,7 @@
 """
 Perform CoDICE l1b processing.
 
-This module processes CoDICE l1a files and creates L1a data products.
+This module processes CoDICE l1a files and creates L1b data products.
 
 Notes
 -----
@@ -11,15 +11,15 @@ dataset = process_codice_l1b(l1a_file)
 """
 
 import logging
+from pathlib import Path
 
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.cdf.utils import load_cdf
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-# TODO: Fix ISTP compliance issues (revealed in SKTEditor)
 
 
 def create_hskp_dataset(
@@ -154,14 +154,14 @@ def create_science_dataset(
     return l1b_dataset
 
 
-def process_codice_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+def process_codice_l1b(file_path: Path, data_version: str) -> xr.Dataset:
     """
     Will process CoDICE l1a data to create l1b data products.
 
     Parameters
     ----------
-    l1a_dataset : xarray.Dataset
-        CoDICE L1a dataset to process.
+    file_path : pathlib.Path | str
+        Path to the CoDICE L1a file to process.
     data_version : str
         Version of the data product being created.
 
@@ -170,25 +170,59 @@ def process_codice_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset
     l1b_dataset : xarray.Dataset
         The``xarray`` dataset containing the science data and supporting metadata.
     """
-    logger.info(f"\nProcessing {l1a_dataset.attrs['Logical_source']}.")
+    print(f"\nProcessing {file_path}")
 
-    # Start constructing l1b dataset
+    # Open the l1a file
+    l1a_dataset = load_cdf(file_path)
+    print(l1a_dataset)
+
+    # Get the L1b CDF attributes
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
     cdf_attrs.add_instrument_variable_attrs("codice", "l1b")
     cdf_attrs.add_global_attribute("Data_version", data_version)
+    l1b_global_attrs = cdf_attrs.get_global_attributes("imap_codice_l1b_lo-sw-species")
 
-    dataset_name = (
-        l1a_dataset.attrs["Logical_source"].replace("-", "_").replace("l1a", "l1b")
-    )
+    # Use the dataset name as a way to distinguish between data products
+    dataset_name = l1a_dataset.attrs["Logical_source"].replace("_l1a_", "_l1b_")
 
-    if "hskp" in dataset_name:
-        l1b_dataset = create_hskp_dataset(l1a_dataset, cdf_attrs)
+    # Use the L1a data product as a starting point for L1b
+    l1b_dataset = l1a_dataset.copy()
 
-    else:
-        l1b_dataset = create_science_dataset(l1a_dataset, cdf_attrs, dataset_name)
+    # Update the global attributes
+    l1b_dataset.attrs = l1b_global_attrs
 
-    # Write the dataset to CDF
-    logger.info(f"\nFinal data product:\n{l1b_dataset}\n")
+    #
+
+    #
+    # if "hskp" in dataset_name:
+    #     l1b_dataset = create_hskp_dataset(l1a_dataset, cdf_attrs)
+    #
+    # else:
+    #     l1b_dataset = create_science_dataset(l1a_dataset, cdf_attrs, dataset_name)
+    #
+    # # Write the dataset to CDF
+    # logger.info(f"\nFinal data product:\n{l1b_dataset}\n")
 
     return l1b_dataset
+
+
+if __name__ == "__main__":
+    from imap_processing import imap_module_directory
+
+    TEST_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"
+    file_path = (
+        imap_module_directory
+        / "codice"
+        / "data"
+        / "imap"
+        / "codice"
+        / "l1a"
+        / "2024"
+        / "11"
+        / "imap_codice_l1a_lo-sw-species_20241110_v001.cdf"
+    )
+
+    dataset = process_codice_l1b(file_path, "001")
+
+    print(dataset)

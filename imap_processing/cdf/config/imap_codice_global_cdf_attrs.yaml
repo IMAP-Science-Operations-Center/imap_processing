@@ -204,7 +204,7 @@ imap_codice_l1b_lo_nsw_priority:
     Logical_source: imap_codice_l1b_lo-nsw-priority
     Logical_source_description: IMAP Mission CoDICE Lo Level-1B Non-Sunward Priority Rates Data.
 
-imap_codice_l1b_lo_sw_species:
+imap_codice_l1b_lo-sw-species:
     <<: *instrument_base
     Data_level: 1B
     Data_type: L1B_lo-sw-species->Level-1B Lo Sunward Species Rates Data
