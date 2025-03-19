@@ -529,6 +529,10 @@ class TestHealpixSkyMap:
             CoordNames.ENERGY.value,
             CoordNames.HEALPIX_INDEX.value,
         )
+        np.testing.assert_array_equal(
+            hp_map_ds["counts"].values,
+            hp_map.data_1d["counts"].values,
+        )
 
 
 class TestIndexMatching:
