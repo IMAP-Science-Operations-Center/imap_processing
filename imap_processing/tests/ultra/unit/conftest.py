@@ -83,13 +83,21 @@ def xtce_path():
 
 
 @pytest.fixture()
-def rates_test_path():
+def rates_test_paths():
     """Returns the xtce image rates test data directory."""
-    filename = (
+    filenames = (
         "ultra45_raw_sc_ultraimgrates_Ultra45_EM_SwRI_Cal_Run7_ThetaScan_"
-        "20220530T225054.csv"
+        "20220530T225054.csv",
+        "ultra45_raw_sc_ultraimgrates_20220530_00.csv",
     )
-    return imap_module_directory / "tests" / "ultra" / "test_data" / "l0" / filename
+    test_path_0 = (
+        imap_module_directory / "tests" / "ultra" / "test_data" / "l0" / filenames[0]
+    )
+    test_path_1 = (
+        imap_module_directory / "tests" / "ultra" / "test_data" / "l0" / filenames[1]
+    )
+
+    return test_path_0, test_path_1
 
 
 @pytest.fixture()
