@@ -172,6 +172,15 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "support_variables": ["data_quality", "spin_period"],
         "variable_names": HI_PRIORITY_VARIABLE_NAMES,
     },
+    CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES: {
+        "dataset_name": "imap_codice_l1a_hi-priority",
+        "input_dims": {},
+        "instrument": "hi",
+        "num_counters": 6,
+        "output_dims": {},
+        "support_variables": ["data_quality", "spin_period"],
+        "variable_names": HI_PRIORITY_VARIABLE_NAMES,
+    },
     CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS: {
         "dataset_name": "imap_codice_l1a_hi-omni",
         "input_dims": {"esa_step": 15, "inst_az": 4},
@@ -998,6 +1007,9 @@ LOSSY_B_TABLE = {
     255: 4294967294,
 }
 
+# Energy tables for CoDICE-Hi data products. These values represent the edges
+# of the bins, and are used in the CoDICE L1a pipeline to compute the centers
+# and deltas of the bins, which then get stored in the CDF files for future use.
 OMNI_ENERGY_TABLE = {
     "h": [
         0.05,
