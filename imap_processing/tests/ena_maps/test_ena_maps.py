@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 
 from imap_processing.ena_maps import ena_maps
+from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.spice import geometry
 
 
@@ -77,8 +78,8 @@ class TestUltraPointingSet:
 
         ultra_pset_ds = self.l1c_pset_products[0]
         # Modify the dataset to have different spacing
-        ultra_pset_ds["latitude_bin_center"].values = np.arange(
-            ultra_pset_ds["latitude_bin_center"].size
+        ultra_pset_ds[CoordNames.ELEVATION_L1C.value].values = np.arange(
+            ultra_pset_ds[CoordNames.ELEVATION_L1C.value].size
         )
 
         with pytest.raises(ValueError, match="do not match"):
