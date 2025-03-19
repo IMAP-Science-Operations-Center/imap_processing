@@ -106,7 +106,7 @@ def create_dataset(
             )
         elif key == "counts":
             dataset[key] = xr.DataArray(
-                data_dict[key].T,
+                data_dict[key],
                 dims=["energy_bin_geometric_mean", "healpix"],
                 attrs=cdf_manager.get_variable_attributes(key),
             )

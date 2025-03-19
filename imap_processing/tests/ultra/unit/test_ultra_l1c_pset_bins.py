@@ -19,7 +19,7 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
 )
 
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
-TEST_PATH = imap_module_directory / "tests" / "ultra" / "test_data" / "l1"
+TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
 @pytest.fixture()
@@ -65,13 +65,16 @@ def test_get_spacecraft_histogram(test_data):
     energy_bin_edges, _, _ = build_energy_bins()
     subset_energy_bin_edges = energy_bin_edges[:3]
 
-    hist, _, _, _ = get_spacecraft_histogram(
+    hist, latitude, longitude, n_pix = get_spacecraft_histogram(
         v, energy, subset_energy_bin_edges, nside=1
     )
-    assert hist.shape == (hp.nside2npix(1), len(subset_energy_bin_edges))
+    assert hist.shape == (len(subset_energy_bin_edges), hp.nside2npix(1))
+    assert n_pix == hp.nside2npix(1)
+    assert latitude.shape == (n_pix,)
+    assert longitude.shape == (n_pix,)
 
     # Spot check that 2 counts are in the third energy bin
-    assert np.sum(hist[:, 2]) == 2
+    assert np.sum(hist[2, :]) == 2
 
     # Test overlapping energy bins
     overlapping_bins = [
@@ -79,9 +82,14 @@ def test_get_spacecraft_histogram(test_data):
         (2.5, 4.137),
         (3.385, 5.057),
     ]
-    hist, _, _, _ = get_spacecraft_histogram(v, energy, overlapping_bins, nside=1)
+    hist, latitude, longitude, n_pix = get_spacecraft_histogram(
+        v, energy, overlapping_bins, nside=1
+    )
     # Spot check that 3 counts are in the third energy bin
-    assert np.sum(hist[:, 2]) == 3
+    assert np.sum(hist[2, :]) == 3
+    assert n_pix == hp.nside2npix(1)
+    assert latitude.shape == (n_pix,)
+    assert longitude.shape == (n_pix,)
 
 
 def test_get_background_rates():
@@ -137,7 +145,7 @@ def test_get_helio_exposure_times():
         ("dps_exposure_helio_45_E24.cdf", "dps_exposure_helio_45_E24"),
     ]
 
-    cdf_directory = imap_module_directory / "tests" / "ultra" / "test_data" / "l1"
+    cdf_directory = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
     exposures = []
 

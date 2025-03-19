@@ -14,7 +14,7 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 # TODO: This is a placeholder for the API lookup table directory.
-TEST_PATH = imap_module_directory / "tests" / "ultra" / "test_data" / "l1"
+TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
 def calculate_spacecraft_pset(

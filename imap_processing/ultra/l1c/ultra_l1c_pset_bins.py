@@ -105,20 +105,20 @@ def get_spacecraft_histogram(
 
     # Calculate the corresponding longitude (az) latitude (el)
     # center coordinates
-    latitude, longitude = hp.pix2ang(nside, np.arange(n_pix), lonlat=True)
+    longitude, latitude = hp.pix2ang(nside, np.arange(n_pix), lonlat=True)
 
     # Get HEALPix pixel indices for each event
     # HEALPix expects latitude in [-90, 90] so we don't need to change elevation
     hpix_idx = hp.ang2pix(nside, az, el, nest=nested, lonlat=True)
 
-    # Initialize histogram: (n_HEALPix pixels, n_energy_bins)
-    hist = np.zeros((n_pix, len(energy_bin_edges)))
+    # Initialize histogram: (n_energy_bins, n_HEALPix pixels)
+    hist = np.zeros((len(energy_bin_edges), n_pix))
 
     # Bin data in energy & HEALPix space
     for i, (e_min, e_max) in enumerate(energy_bin_edges):
         mask = (energy >= e_min) & (energy < e_max)
         # Only count the events that fall within the energy bin
-        hist[:, i] += np.bincount(hpix_idx[mask], minlength=n_pix).astype(np.float64)
+        hist[i, :] += np.bincount(hpix_idx[mask], minlength=n_pix).astype(np.float64)
 
     return hist, latitude, longitude, n_pix
 
