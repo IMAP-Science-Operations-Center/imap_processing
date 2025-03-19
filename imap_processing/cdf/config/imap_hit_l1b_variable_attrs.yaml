@@ -13,7 +13,7 @@ default_attrs: &default
   UNITS: ' '
   SCALETYP: linear
 
-hk_support_attrs: &support_default
+hk_support_attrs: &hk_support_default
   <<: *default
   DISPLAY_TYPE: no_plot
   VAR_TYPE: ignore_data
@@ -63,7 +63,7 @@ sc_tick:
   VAR_TYPE: support_data
 
 fsw_version_a:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 63
   CATDESC: Flight Software Version Number (A.B.C bits)
   FIELDNAM: Flight Software Version Number A
@@ -71,7 +71,7 @@ fsw_version_a:
   FORMAT: I2
 
 fsw_version_b:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 63
   CATDESC: Flight Software Version Number (A.B.C bits)
   FIELDNAM: Flight Software Version Number B
@@ -79,7 +79,7 @@ fsw_version_b:
   FORMAT: I2
 
 fsw_version_c:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 63
   CATDESC: Flight Software Version Number (A.B.C bits)
   FIELDNAM: Flight Software Version Number C
@@ -87,7 +87,7 @@ fsw_version_c:
   FORMAT: I2
 
 num_good_cmds:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 255
   CATDESC: Number of Good Commands
   FIELDNAM: Number of Good Commands
@@ -95,7 +95,7 @@ num_good_cmds:
   FORMAT: I3
 
 last_good_cmd:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 255
   CATDESC: Last Good Command
   FIELDNAM: Last Good Command
@@ -103,7 +103,7 @@ last_good_cmd:
   FORMAT: I3
 
 last_good_seq_num:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 255
   CATDESC: Last Good Sequence Number
   FIELDNAM: Last Good Sequence Number
@@ -111,7 +111,7 @@ last_good_seq_num:
   FORMAT: I3
 
 num_bad_cmds:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 255
   CATDESC: Number of Bad Commands
   FIELDNAM: Number of Bad Commands
@@ -119,7 +119,7 @@ num_bad_cmds:
   FORMAT: I3
 
 last_bad_cmd:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 255
   CATDESC: Last Bad Command
   FIELDNAM: Last Bad Command
@@ -127,7 +127,7 @@ last_bad_cmd:
   FORMAT: I3
 
 last_bad_seq_num:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 255
   CATDESC: Last Bad Sequence Number
   FIELDNAM: Last Bad Sequence Number
@@ -191,7 +191,7 @@ mode:
   FORMAT: A11
 
 dyn_thresh_lvl:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 3
   CATDESC: Dynamic Threshold Level (0-3)
   FIELDNAM: Dynamic Threshold Level (0-3)
@@ -199,7 +199,7 @@ dyn_thresh_lvl:
   FORMAT: I1
 
 num_evnt_last_hk:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 4294967295
   CATDESC: Number of Events Since Last HK Update
   FIELDNAM: Number of Events Since Last HK Update
@@ -207,7 +207,7 @@ num_evnt_last_hk:
   FORMAT: I10
 
 num_errors:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 255
   CATDESC: Number of Errors
   FIELDNAM: Number of Errors
@@ -222,7 +222,7 @@ last_error_num:
   FORMAT: A18
 
 code_checksum:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 65535
   CATDESC: Code Checksum
   FIELDNAM: Code Checksum
@@ -230,7 +230,7 @@ code_checksum:
   FORMAT: I5
 
 spin_period_short:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 65535
   CATDESC: Spin Period Short at T=0
   FIELDNAM: Spin Period Short at T=0
@@ -238,7 +238,7 @@ spin_period_short:
   FORMAT: I5
 
 spin_period_long:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 65535
   CATDESC: Spin Period Long at T=0
   FIELDNAM: Spin Period Long at T=0
@@ -246,7 +246,7 @@ spin_period_long:
   FORMAT: I5
 
 leak_i:
-  <<: *support_default
+  <<: *hk_support_default
   DEPEND_1: adc_channels
   CATDESC: Leakage Current [I]
   FIELDNAM: Leakage Current [I]
@@ -296,9 +296,6 @@ dac1_enable:
   LABLAXIS: State
   FORMAT: A7
 
-
-# TODO Update data formats. Should be float values. Need more info from instrument team
-
 preamp_l234a:
   <<: *default
   VALIDMAX: 10000000000
@@ -342,7 +339,7 @@ preamp_l234b:
 temp0:
   <<: *default
   VALIDMIN: -25
-  VALIDMAX: 57
+  VALIDMAX: 10000000000
   CATDESC: FEE LDO Regulator Mounted on the Board Next to the Low-dropout Regulator
   FIELDNAM: FEE LDO Regulator
   LABLAXIS: Temperature
@@ -353,7 +350,7 @@ temp0:
 temp1:
   <<: *default
   VALIDMIN: -25
-  VALIDMAX: 50
+  VALIDMAX: 10000000000
   CATDESC: Primary Heater Mounted on the Board Next to the Primary Heater Circuit
   FIELDNAM: Primary Heater
   LABLAXIS: Temperature
@@ -364,7 +361,7 @@ temp1:
 temp2:
   <<: *default
   VALIDMIN: -25
-  VALIDMAX: 50
+  VALIDMAX: 10000000000
   CATDESC: FEE FPGA Mounted on the Board Next to the FPGA
   FIELDNAM: FEE FPGA
   LABLAXIS: Temperature
@@ -375,7 +372,7 @@ temp2:
 temp3:
   <<: *default
   VALIDMIN: -25
-  VALIDMAX: 50
+  VALIDMAX: 10000000000
   CATDESC: Secondary Heater
   FIELDNAM: Secondary Heater
   LABLAXIS: Temperature
@@ -386,7 +383,7 @@ temp3:
 analog_temp:
   <<: *default
   VALIDMIN: -25
-  VALIDMAX: 50
+  VALIDMAX: 10000000000
   CATDESC: Chassis Temp Mounted on the Analog Board Close to Thermostats, Heaters, and Chassis
   FIELDNAM: Analog Temp
   LABLAXIS: Temperature
@@ -397,7 +394,7 @@ analog_temp:
 hvps_temp:
   <<: *default
   VALIDMIN: -25
-  VALIDMAX: 50
+  VALIDMAX: 10000000000
   CATDESC: Board Temp Mounted Inside Faraday Cage in Middle of Board Near Connector Side
   FIELDNAM: Board Temp
   LABLAXIS: Temperature
@@ -408,7 +405,7 @@ hvps_temp:
 idpu_temp:
   <<: *default
   VALIDMIN: -25
-  VALIDMAX: 65
+  VALIDMAX: 10000000000
   CATDESC: LDO Temp Mounted on Top of the Low-dropout Regulator
   FIELDNAM: LDO Temp
   LABLAXIS: Temperature
@@ -419,7 +416,7 @@ idpu_temp:
 lvps_temp:
   <<: *default
   VALIDMIN: -25
-  VALIDMAX: 80
+  VALIDMAX: 10000000000
   CATDESC: Board Temp Mounted in the Middle of Board on Opposite Side of Hottest Component
   FIELDNAM: Board Temp
   LABLAXIS: Temperature
@@ -429,8 +426,7 @@ lvps_temp:
 
 ebox_3d4vd:
   <<: *default
-  VALIDMIN: 3
-  VALIDMAX: 4
+  VALIDMAX: 10000000000
   CATDESC: 3.4VD Ebox (Digital)
   FIELDNAM: 3.4VD Ebox (Digital)
   LABLAXIS: Voltage
@@ -440,8 +436,7 @@ ebox_3d4vd:
 
 ebox_5d1vd:
   <<: *default
-  VALIDMIN: 4
-  VALIDMAX: 6
+  VALIDMAX: 10000000000
   CATDESC: 5.1VD Ebox (Digital)
   FIELDNAM: 5.1VD Ebox (Digital)
   LABLAXIS: Voltage
@@ -451,8 +446,7 @@ ebox_5d1vd:
 
 ebox_p12va:
   <<: *default
-  VALIDMIN: 11
-  VALIDMAX: 14
+  VALIDMAX: 10000000000
   CATDESC: +12VA Ebox (Analog)
   FIELDNAM: +12VA Ebox (Analog)
   LABLAXIS: Voltage
@@ -462,8 +456,8 @@ ebox_p12va:
 
 ebox_m12va:
   <<: *default
-  VALIDMIN: -14
-  VALIDMAX: -12
+  VALIDMIN: -12.2
+  VALIDMAX: 10000000000
   CATDESC: -12VA Ebox (Analog)
   FIELDNAM: -12VA Ebox (Analog)
   LABLAXIS: Voltage
@@ -473,10 +467,7 @@ ebox_m12va:
 
 ebox_p5d7va:
   <<: *default
-  # doc says min 5.3
-  # doc says max 6.3
-  VALIDMIN: 5
-  VALIDMAX: 7
+  VALIDMAX: 10000000000
   CATDESC: +5.7VA Ebox (Analog)
   FIELDNAM: +5.7VA Ebox (Analog)
   LABLAXIS: Voltage
@@ -486,10 +477,8 @@ ebox_p5d7va:
 
 ebox_m5d7va:
   <<: *default
-  # doc says min -6.4125
-  # doc says max -5.25
-  VALIDMIN: -7
-  VALIDMAX: -5
+  VALIDMIN: -6
+  VALIDMAX: 10000000000
   CATDESC: -5.7VA Ebox (Analog)
   FIELDNAM: -5.7VA Ebox (Analog)
   LABLAXIS: Voltage
@@ -498,8 +487,8 @@ ebox_m5d7va:
   FILLVAL: -1.0000000E+31
 
 ref_p5v:
-  #Need more info from instrument team on min and max values
   <<: *default
+  VALIDMAX: 10000000000
   CATDESC: +5V ref
   FIELDNAM: +5V ref
   LABLAXIS: Voltage
@@ -509,8 +498,7 @@ ref_p5v:
 
 l1ab_bias:
   <<: *default
-  VALIDMIN: 0
-  VALIDMAX: 15
+  VALIDMAX: 10000000000
   CATDESC: L1A/B Bias
   FIELDNAM: L1A/B Bias
   LABLAXIS: Voltage
@@ -520,8 +508,7 @@ l1ab_bias:
 
 l2ab_bias:
   <<: *default
-  VALIDMIN: 0
-  VALIDMAX: 25
+  VALIDMAX: 10000000000
   CATDESC: L2A/B Bias
   FIELDNAM: L2A/B Bias
   LABLAXIS: Voltage
@@ -531,8 +518,7 @@ l2ab_bias:
 
 l34a_bias:
   <<: *default
-  VALIDMIN: 0
-  VALIDMAX: 255
+  VALIDMAX: 10000000000
   CATDESC: L3/4A Bias
   FIELDNAM: L3/4A Bias
   LABLAXIS: Voltage
@@ -542,8 +528,7 @@ l34a_bias:
 
 l34b_bias:
   <<: *default
-  VALIDMIN: 0
-  VALIDMAX: 225
+  VALIDMAX: 10000000000
   CATDESC: L3/4B Bias
   FIELDNAM: L3/4B Bias
   LABLAXIS: Voltage
@@ -553,10 +538,7 @@ l34b_bias:
 
 ebox_p2d0vd:
   <<: *default
-  # doc says min 1.79
-  # doc says max 2.5
-  VALIDMIN: 1
-  VALIDMAX: 3
+  VALIDMAX: 10000000000
   CATDESC: +2.0VD Ebox (Digital)
   FIELDNAM: +2.0VD Ebox (Digital)
   LABLAXIS: Voltage
