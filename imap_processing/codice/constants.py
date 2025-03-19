@@ -190,10 +190,8 @@ DATA_PRODUCT_CONFIGURATIONS = {
     },
     CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS: {
         "dataset_name": "imap_codice_l1a_hi-omni",
-        "input_dims": {"esa_step": 15, "inst_az": 4},
         "instrument": "hi",
         "num_counters": 8,
-        "output_dims": {"esa_step": 15, "inst_az": 4},
         "support_variables": [
             "data_quality",
             "spin_period",

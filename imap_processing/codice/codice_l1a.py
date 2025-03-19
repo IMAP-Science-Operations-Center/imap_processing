@@ -764,18 +764,19 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
         dataset = datasets[apid]
         logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
 
-        # Housekeeping data
-        if apid == CODICEAPID.COD_NHK:
-            processed_dataset = create_hskp_dataset(dataset, data_version)
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+        # # Housekeeping data
+        # if apid == CODICEAPID.COD_NHK:
+        #     processed_dataset = create_hskp_dataset(dataset, data_version)
+        #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+        #
+        # # Event data
+        # elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
+        #     processed_dataset = create_event_dataset(apid, dataset, data_version)
+        #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
-        # Event data
-        elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
-            processed_dataset = create_event_dataset(apid, dataset, data_version)
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
-
-        # Everything else
-        elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
+        # hi-omni data
+        if apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
+            print(dataset.epoch.data.shape)
             # Extract the data
             science_values = [packet.data for packet in dataset.data]
 
@@ -786,19 +787,38 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
             pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
             pipeline.set_data_product_config(apid, dataset, data_version)
             pipeline.decompress_data(science_values)
-            pipeline.reshape_data()
-            pipeline.define_coordinates()
-            processed_dataset = pipeline.define_data_variables()
+            for i in pipeline.__dict__["raw_data"]:
+                print(len(i))
 
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
-        # TODO: Still need to implement I-ALiRT data products
-        elif apid in [
-            CODICEAPID.COD_HI_IAL,
-            CODICEAPID.COD_LO_IAL,
-        ]:
-            logger.info("\tStill need to properly implement")
-            processed_dataset = None
+        # # Everything else
+        # elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
+        #     # Extract the data
+        #     science_values = [packet.data for packet in dataset.data]
+        #
+        #     # Get the four "main" parameters for processing
+        #     table_id, plan_id, plan_step, view_id = get_params(dataset)
+        #
+        #     # Run the pipeline to create a dataset for the product
+        #     pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
+        #     pipeline.set_data_product_config(apid, dataset, data_version)
+        #     pipeline.decompress_data(science_values)
+        #     pipeline.reshape_data()
+        #     pipeline.define_coordinates()
+        #     processed_dataset = pipeline.define_data_variables()
+        #
+        #     print(processed_dataset)
+        #     print(processed_dataset.h.data.shape)
+        #
+        #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+
+        # # TODO: Still need to implement I-ALiRT data products
+        # elif apid in [
+        #     CODICEAPID.COD_HI_IAL,
+        #     CODICEAPID.COD_LO_IAL,
+        # ]:
+        #     logger.info("\tStill need to properly implement")
+        #     processed_dataset = None
 
         # For APIDs that don't require processing
         else:
@@ -808,3 +828,21 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
         processed_datasets.append(processed_dataset)
 
     return processed_datasets
+
+if __name__ == "__main__":
+
+    from imap_processing import imap_module_directory
+    from imap_processing.cdf.utils import write_cdf
+
+    TEST_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"
+    file_path = TEST_DATA_PATH / "imap_codice_l0_raw_20241110_v001.pkts"
+
+    processed_datasets = process_codice_l1a(file_path, "001")
+
+    for dataset in processed_datasets:
+        if dataset is not None:
+            try:
+                filename = write_cdf(dataset)
+                print(filename)
+            except:
+                pass
