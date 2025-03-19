@@ -143,8 +143,8 @@ class TestRectangularSkyMap:
         )
 
         # Check that the map data is an empty xarray Dataset
-        assert isinstance(rm.data, xr.Dataset)
-        assert rm.data.data_vars == {}
+        assert isinstance(rm.data_1d, xr.Dataset)
+        assert rm.data_1d.data_vars == {}
 
         # Check that the reference frame is correctly set
         assert rm.spice_reference_frame == geometry.SpiceFrame.ECLIPJ2000
@@ -244,7 +244,7 @@ class TestRectangularSkyMap:
             )
 
         # Check that the map has been updated
-        assert "counts" in rectangular_map.data.data_vars
+        assert "counts" in rectangular_map.data_1d.data_vars
 
         # Check that the map has the same values as the PSETs, summed
         simple_summed_pset_counts = 0
@@ -260,7 +260,7 @@ class TestRectangularSkyMap:
             simple_summed_pset_counts += reshaped_pset_counts
 
         np.testing.assert_array_equal(
-            rectangular_map.data["counts"].sum(),
+            rectangular_map.data_1d["counts"].sum(),
             simple_summed_pset_counts,
         )
 
@@ -330,15 +330,15 @@ class TestRectangularSkyMap:
             total_pset_counts += rectangular_pset.data["counts"].values
 
         # Check that the map has been updated
-        assert "counts" in rectangular_map.data
+        assert "counts" in rectangular_map.data_1d
 
         np.testing.assert_allclose(
-            rectangular_map.data["counts"],
+            rectangular_map.data_1d["counts"],
             expected_value_every_pixel,
         )
         downsample_ratio = skymap_spacing / self.rectangular_l1c_spacing_deg
         np.testing.assert_allclose(
-            rectangular_map.data["counts"].sum(),
+            rectangular_map.data_1d["counts"].sum(),
             total_pset_counts.sum() / (downsample_ratio**2),
         )
 
@@ -388,8 +388,8 @@ class TestHealpixSkyMap:
         )
 
         # Check that the map data is an empty xarray Dataset
-        assert isinstance(hp_map.data, xr.Dataset)
-        assert hp_map.data.data_vars == {}
+        assert isinstance(hp_map.data_1d, xr.Dataset)
+        assert hp_map.data_1d.data_vars == {}
 
         # Check that the reference frame is correctly set
         assert hp_map.spice_reference_frame is geometry.SpiceFrame.ECLIPJ2000
@@ -475,12 +475,10 @@ class TestHealpixSkyMap:
         )
 
         # Check that the map has been updated
-        assert "counts" in hp_map.data.data_vars
+        assert "counts" in hp_map.data_1d.data_vars
 
         # Find the maximum value in the spatial pixel dimension of the healpix map
-        bright_hp_pixel_index = hp_map.data["counts"][0, 0].argmax(
-            dim="healpix_pixel_index"
-        )
+        bright_hp_pixel_index = hp_map.data_1d["counts"][0, 0].argmax(dim="pixel")
         bright_hp_pixel_az_el = hp_map.az_el_points[bright_hp_pixel_index]
 
         np.testing.assert_allclose(

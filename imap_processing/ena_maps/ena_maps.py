@@ -503,8 +503,9 @@ class AbstractSkyMap(ABC):
     If the map is rectangular, this axis is the raveled 2D grid.
     If the map is Healpix, this axis is the 1D array of Healpix pixel indices.
 
-    The data can be accessed via the .data property, which rewraps the data to the
-    original 2D grid shape if the map is rectangular.
+    The data can be also accessed via the to_dataset method, which rewraps the data to
+    a 2D grid shape if the map is rectangular and formats the data as an xarray
+    Dataset with the correct dims and coords.
     """
 
     @abstractmethod
@@ -517,8 +518,7 @@ class AbstractSkyMap(ABC):
         self.binning_grid_shape: tuple[int, ...]
         self.data_1d: xr.Dataset
 
-    @property
-    def data(self) -> xr.Dataset:
+    def to_dataset(self) -> xr.Dataset:
         """
         Get the SkyMap data as a formatted xarray Dataset.
 
