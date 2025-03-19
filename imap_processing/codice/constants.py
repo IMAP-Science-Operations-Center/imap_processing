@@ -1002,6 +1002,9 @@ LOSSY_B_TABLE = {
     255: 4294967294,
 }
 
+# Energy tables for CoDICE-Hi data products. These values represent the edges
+# of the bins, and are used in the CoDICE L1a pipeline to compute the centers
+# and deltas of the bins, which then get stored in the CDF files for future use.
 OMNI_ENERGY_TABLE = {
     "h": [
         0.05,

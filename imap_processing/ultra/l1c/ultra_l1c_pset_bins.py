@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import astropy_healpix.healpy as hp
 import cdflib
 import numpy as np
 from numpy.typing import NDArray
@@ -48,15 +49,15 @@ def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray]:
     return intervals, energy_midpoints
 
 
-def get_histogram(
+def get_spacecraft_histogram(
     vhat: tuple[np.ndarray, np.ndarray, np.ndarray],
     energy: np.ndarray,
-    az_bin_edges: np.ndarray,
-    el_bin_edges: np.ndarray,
     energy_bin_edges: list[tuple[float, float]],
+    nside: int = 128,
+    nested: bool = False,
 ) -> NDArray:
     """
-    Compute a 3D histogram of the particle data.
+    Compute a 3D histogram of the particle data using HEALPix binning.
 
     Parameters
     ----------
@@ -64,71 +65,76 @@ def get_histogram(
         The x,y,z-components of the unit velocity vector.
     energy : np.ndarray
         The particle energy.
-    az_bin_edges : np.ndarray
-        Array of azimuth bin boundary values.
-    el_bin_edges : np.ndarray
-        Array of elevation bin boundary values.
     energy_bin_edges : list[tuple[float, float]]
         Array of energy bin edges.
+    nside : int, optional
+        The nside parameter of the Healpix tessellation.
+        Default is 32.
+    nested : bool, optional
+        Whether the Healpix tessellation is nested. Default is False.
 
     Returns
     -------
     hist : np.ndarray
-        A 3D histogram array.
+        A 3D histogram array with shape (n_pix, n_energy_bins).
 
     Notes
     -----
-    The histogram will now work properly for overlapping energy bins, i.e.
+    The histogram will work properly for overlapping energy bins, i.e.
     the same energy value can fall into multiple bins if the intervals overlap.
+
+    azimuthal angle [0, 360], elevation angle [-90, 90]
     """
-    spherical_coords = cartesian_to_spherical(vhat)
+    spherical_coords = cartesian_to_spherical(vhat, degrees=True)
     az, el = (
         spherical_coords[..., 1],
         spherical_coords[..., 2],
     )
 
-    # Initialize histogram
-    hist_total = np.zeros(
-        (len(az_bin_edges) - 1, len(el_bin_edges) - 1, len(energy_bin_edges))
-    )
+    # Compute number of HEALPix pixels that cover the sphere
+    n_pix = hp.nside2npix(nside)
 
+    # Get HEALPix pixel indices for each event
+    # HEALPix expects latitude in [-90, 90] so we don't need to change elevation
+    hpix_idx = hp.ang2pix(nside, az, el, nest=nested, lonlat=True)
+
+    # Initialize histogram: (n_HEALPix pixels, n_energy_bins)
+    hist = np.zeros((n_pix, len(energy_bin_edges)))
+
+    # Bin data in energy & HEALPix space
     for i, (e_min, e_max) in enumerate(energy_bin_edges):
-        # Filter data for current energy bin.
         mask = (energy >= e_min) & (energy < e_max)
-        hist, _ = np.histogramdd(
-            sample=(az[mask], el[mask], energy[mask]),
-            bins=[az_bin_edges, el_bin_edges, [e_min, e_max]],
-        )
-        # Assign 2D histogram to current energy bin.
-        hist_total[:, :, i] = hist[:, :, 0]
+        # Only count the events that fall within the energy bin
+        hist[:, i] += np.bincount(hpix_idx[mask], minlength=n_pix).astype(np.float64)
 
-    return hist_total
+    return hist
 
 
-def get_pointing_frame_exposure_times(
-    constant_exposure: Path, n_spins: int, sensor: str
-) -> NDArray:
+def get_spacecraft_exposure_times(constant_exposure: Path) -> NDArray:
     """
-    Compute a 2D array of the exposure.
+    Compute exposure times for HEALPix pixels.
 
     Parameters
     ----------
     constant_exposure : Path
-        Path to file containing constant exposure data.
-    n_spins : int
-        Number of spins per pointing.
-    sensor : str
-        Sensor (45 or 90).
+        Path to file containing constant exposure data (CDF file).
 
     Returns
     -------
-    exposure : np.ndarray
-        A 2D array with dimensions (az, el).
+    exposure_pointing : np.ndarray
+        Total exposure times of pixels in a
+        Healpix tessellation of the sky
+        in the pointing (dps) frame.
     """
+    # Read the exposure data from the CDF file
     with cdflib.CDF(constant_exposure) as cdf_file:
-        exposure = cdf_file.varget(f"dps_grid{sensor}") * n_spins
+        exposure_time = cdf_file.varget("exposure_time")
 
-    return exposure
+    # TODO: use the universal spin table and
+    #  universal pointing table here to determine actual number of spins
+    exposure_pointing = exposure_time * 5760  # 5760 spins per pointing (for now)
+
+    return exposure_pointing
 
 
 def get_helio_exposure_times(
