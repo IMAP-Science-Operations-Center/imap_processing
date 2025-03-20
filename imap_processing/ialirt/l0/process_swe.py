@@ -70,7 +70,7 @@ def prepare_raw_counts(grouped: xr.Dataset, cem_number: int = N_CEMS) -> NDArray
     Parameters
     ----------
     grouped : xr.Dataset
-        Dataset containing grouped i-ALiRT packet data for 1 minute.
+        Dataset containing grouped i-ALiRT packet data for 30 seconds.
     cem_number : int
         Number of CEMs (default 7).
 
@@ -89,6 +89,9 @@ def prepare_raw_counts(grouped: xr.Dataset, cem_number: int = N_CEMS) -> NDArray
     raw_counts = np.zeros((8, cem_number, 30), dtype=np.uint8)
 
     # Compute phi values and their corresponding bins
+    # Example: energy steps 0-1 have the same phi;
+    # energy steps 2-3 have the same phi, etc.
+    # A depiction of this is shown in Figure 7 of the SWE Algorithm Document.
     phi_values = np.array(
         [
             (12 + 24 * grouped["swe_seq"].values) % 360,  # Energy steps 0 and 1
