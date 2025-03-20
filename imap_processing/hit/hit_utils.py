@@ -285,7 +285,7 @@ def initialize_particle_data_arrays(
     )
 
     dataset.coords[f"{particle}_energy_mean"] = xr.DataArray(
-        np.arange(num_energy_ranges, dtype=np.int8),
+        np.zeros(num_energy_ranges, dtype=np.int8),
         dims=[f"{particle}_energy_mean"],
         name=f"{particle}_energy_mean",
     )
