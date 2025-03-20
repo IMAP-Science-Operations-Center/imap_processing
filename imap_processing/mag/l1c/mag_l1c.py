@@ -9,7 +9,7 @@ import xarray as xr
 import yaml
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.mag.constants import VecSec
+from imap_processing.mag.constants import ModeFlags, VecSec
 from imap_processing.mag.l1c.interpolation_methods import InterpolationFunction
 
 logger = logging.getLogger(__name__)
@@ -270,12 +270,12 @@ def fill_normal_data(
     filled_timeline: np.ndarray = np.zeros((len(new_timeline), 8))
     filled_timeline[:, 0] = new_timeline
     # Flags, will also indicate any missed timestamps
-    filled_timeline[:, 5] = -1
+    filled_timeline[:, 5] = ModeFlags.MISSING.value
 
     for index, timestamp in enumerate(normal_dataset["epoch"].data):
         timeline_index = np.searchsorted(new_timeline, timestamp)
         filled_timeline[timeline_index, 1:5] = normal_dataset["vectors"].data[index]
-        filled_timeline[timeline_index, 5] = 0
+        filled_timeline[timeline_index, 5] = ModeFlags.NORM.value
         filled_timeline[timeline_index, 6:8] = normal_dataset["compression_flags"].data[
             index
         ]
@@ -343,7 +343,7 @@ def interpolate_gaps(
                 filled_norm_timeline[timeline_index, 4] = burst_vectors[
                     burst_start + index, 3
                 ]
-                filled_norm_timeline[timeline_index, 5] = 1
+                filled_norm_timeline[timeline_index, 5] = ModeFlags.BURST.value
                 filled_norm_timeline[timeline_index, 6:8] = burst_dataset[
                     "compression_flags"
                 ].data[burst_start + index]
