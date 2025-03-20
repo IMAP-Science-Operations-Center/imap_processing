@@ -26,7 +26,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.codice import constants
 from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.decompress import decompress
-from imap_processing.codice.utils import CODICEAPID
+from imap_processing.codice.utils import CODICEAPID, CoDICECompression
 from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
@@ -559,7 +559,7 @@ class CoDICEL1aPipeline:
 
 
 def create_event_dataset(
-    apid: int, packet: xr.Dataset, data_version: str
+    apid: int, packets: xr.Dataset, data_version: str
 ) -> xr.Dataset:
     """
     Create dataset for event data.
@@ -568,8 +568,8 @@ def create_event_dataset(
     ----------
     apid : int
         The APID of the packet.
-    packet : xarray.Dataset
-        The packet to process.
+    packets : xarray.Dataset
+        The packets to process.
     data_version : str
         Version of the data product being created.
 
@@ -584,7 +584,39 @@ def create_event_dataset(
         dataset_name = "imap_codice_l1a_hi-pha"
 
     # Extract the data
-    # event_data = packet.event_data.data (Currently turned off, see TODO)
+    # Info about the data:
+    #    len(event_data) is 616 (77 epochs x 8 priorities)
+    #    num_events is 1D array of 616
+    #    all data is lzma compressed
+    #    Each epoch/priority combo has its own shcoarse, though some repeat
+    event_data = packets.event_data.data
+    raw_data = []
+    for packet_data, byte_count in zip(
+            event_data, packets.byte_count.data
+    ):
+        # Convert from numpy array to byte object
+        values = ast.literal_eval(str(packet_data))
+
+        # Only use the values up to the byte count. Bytes after this are
+        # used as padding and are not needed
+        values = values[:byte_count]
+
+        decompressed_values = decompress(values, CoDICECompression.LOSSLESS)
+        raw_data.append(decompressed_values)
+
+    for epoch, priority in enumerate(range(0, len(raw_data), 8), start=1):
+        print(f"\n\nEpoch: {epoch}")
+        data_per_epoch = raw_data[priority:priority + 8]
+        if epoch > 1:
+            break
+        for i, priority_data in enumerate(data_per_epoch):
+                # Based on validation data, i == 1 happens to be 0th priority
+                # So see if I can replicate validation data
+                # The other priorities don't seem to be in the 'right' order
+                print(f"\nPriority {i}: {priority_data}")
+                print(f"Number of events: {len(priority_data)//8}")
+
+
 
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
@@ -593,7 +625,7 @@ def create_event_dataset(
 
     # Define coordinates
     epoch = xr.DataArray(
-        packet.epoch,
+        packets.epoch,
         name="epoch",
         dims=["epoch"],
         attrs=cdf_attrs.get_variable_attributes("epoch"),
@@ -764,41 +796,41 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
         dataset = datasets[apid]
         logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
 
-        # Housekeeping data
-        if apid == CODICEAPID.COD_NHK:
-            processed_dataset = create_hskp_dataset(dataset, data_version)
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+        # # Housekeeping data
+        # if apid == CODICEAPID.COD_NHK:
+        #     processed_dataset = create_hskp_dataset(dataset, data_version)
+        #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # Event data
-        elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
+        if apid in [CODICEAPID.COD_LO_PHA]:
             processed_dataset = create_event_dataset(apid, dataset, data_version)
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+            #logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
-        # Everything else
-        elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
-            # Extract the data
-            science_values = [packet.data for packet in dataset.data]
+        # # Everything else
+        # elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
+        #     # Extract the data
+        #     science_values = [packet.data for packet in dataset.data]
+        #
+        #     # Get the four "main" parameters for processing
+        #     table_id, plan_id, plan_step, view_id = get_params(dataset)
+        #
+        #     # Run the pipeline to create a dataset for the product
+        #     pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
+        #     pipeline.set_data_product_config(apid, dataset, data_version)
+        #     pipeline.decompress_data(science_values)
+        #     pipeline.reshape_data()
+        #     pipeline.define_coordinates()
+        #     processed_dataset = pipeline.define_data_variables()
+        #
+        #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
-            # Get the four "main" parameters for processing
-            table_id, plan_id, plan_step, view_id = get_params(dataset)
-
-            # Run the pipeline to create a dataset for the product
-            pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-            pipeline.set_data_product_config(apid, dataset, data_version)
-            pipeline.decompress_data(science_values)
-            pipeline.reshape_data()
-            pipeline.define_coordinates()
-            processed_dataset = pipeline.define_data_variables()
-
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
-
-        # TODO: Still need to implement I-ALiRT data products
-        elif apid in [
-            CODICEAPID.COD_HI_IAL,
-            CODICEAPID.COD_LO_IAL,
-        ]:
-            logger.info("\tStill need to properly implement")
-            processed_dataset = None
+        # # TODO: Still need to implement I-ALiRT data products
+        # elif apid in [
+        #     CODICEAPID.COD_HI_IAL,
+        #     CODICEAPID.COD_LO_IAL,
+        # ]:
+        #     logger.info("\tStill need to properly implement")
+        #     processed_dataset = None
 
         # For APIDs that don't require processing
         else:
@@ -808,3 +840,21 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
         processed_datasets.append(processed_dataset)
 
     return processed_datasets
+
+if __name__ == "__main__":
+
+    from imap_processing import imap_module_directory
+    from imap_processing.cdf.utils import write_cdf
+
+    TEST_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"
+    file_path = TEST_DATA_PATH / "imap_codice_l0_raw_20241110_v001.pkts"
+
+    processed_datasets = process_codice_l1a(file_path, "001")
+
+    for dataset in processed_datasets:
+        if dataset is not None:
+            try:
+                filename = write_cdf(dataset)
+                print(filename)
+            except:
+                pass
