@@ -346,24 +346,24 @@ hi-counters-singles-tcr:
     <<: *counters
     CATDESC: Rates - Event A (TCR)
     FIELDNAM: Rates
-    DEPEND_1: ssdid
-    LABL_PTR_1: ssdid
+    DEPEND_1: ssd_index
+    LABL_PTR_1: ssd_index
     UNITS: events
 
 hi-counters-singles-ssdo:
     <<: *counters
     CATDESC: Rates - Event E (SSDO)
     FIELDNAM: Rates
-    DEPEND_1: ssdid
-    LABL_PTR_1: ssdid
+    DEPEND_1: ssd_index
+    LABL_PTR_1: ssd_index
     UNITS: events
 
 hi-counters-singles-stssd:
     <<: *counters
     CATDESC: Rates - Event G (STSSD)
     FIELDNAM: Rates
-    DEPEND_1: ssdid
-    LABL_PTR_1: ssdid
+    DEPEND_1: ssd_index
+    LABL_PTR_1: ssd_index
     UNITS: events
 
 # hi-omni

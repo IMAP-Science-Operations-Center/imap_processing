@@ -116,3 +116,12 @@ FRAME_SIZE = len(FLAG_PATTERN)
 # decompressing data
 MANTISSA_BITS = 12
 EXPONENT_BITS = 4
+
+# Define sectorate angles
+DECLINATION_ANGLES = np.array(
+    [11.25, 33.75, 56.25, 78.75, 101.25, 123.75, 146.25, 168.75], dtype=np.float32
+)
+AZIMUTH_ANGLES = np.array(
+    [12, 36, 60, 84, 108, 132, 156, 180, 204, 228, 252, 276, 300, 324, 348],
+    dtype=np.float32,
+)
