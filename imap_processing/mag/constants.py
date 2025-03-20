@@ -62,14 +62,14 @@ class PrimarySensor(Enum):
 class VecSec(Enum):
     """Enum for all valid vector rates (Vectors per second)."""
 
-    ONE_VECTOR_PER_S = 1
-    TWO_VECTORS_PER_S = 2
-    FOUR_VECTORS_PER_S = 4
-    EIGHT_VECTORS_PER_S = 8
-    SIXTEEN_VECTORS_PER_S = 16
-    THIRTY_TWO_VECTORS_PER_S = 32
-    SIXTY_FOUR_VECTORS_PER_S = 64
-    ONE_TWENTY_EIGHT_VECTORS_PER_S = 128
+    ONE_VEC_PER_S = 1
+    TWO_VECS_PER_S = 2
+    FOUR_VECS_PER_S = 4
+    EIGHT_VECS_PER_S = 8
+    SIXTEEN_VECS_PER_S = 16
+    THIRTY_TWO_VECS_PER_S = 32
+    SIXTY_FOUR_VECS_PER_S = 64
+    ONE_TWENTY_EIGHT_VECS_PER_S = 128
 
 
 # Possible sensor rates
