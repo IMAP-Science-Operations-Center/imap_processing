@@ -16,6 +16,7 @@ from imap_processing.swe.l1b.swe_l1b_science import (
 from imap_processing.swe.utils.swe_constants import (
     ESA_VOLTAGE_ROW_INDEX_DICT,
     GEOMETRIC_FACTORS,
+    N_CEMS,
 )
 from imap_processing.swe.utils.swe_utils import combine_acquisition_time
 
@@ -62,7 +63,7 @@ def phi_to_bin(phi_values: NDArray) -> NDArray:
     return ((phi_values - 12) // 12) % 30
 
 
-def prepare_raw_counts(grouped: xr.Dataset, cem_number: int = 7) -> NDArray:
+def prepare_raw_counts(grouped: xr.Dataset, cem_number: int = N_CEMS) -> NDArray:
     """
     Reformat raw counts into a 3D array binned by phi.
 
@@ -193,6 +194,8 @@ def process_swe(accumulated_data: xr.Dataset) -> list[dict]:
     )
     accumulated_data["time_seconds"] = time_seconds
 
+    # Get total full cycle data available for processing.
+    # There are 60 packets in a set so (0, 59) is the range.
     grouped_data = find_groups(accumulated_data, (0, 59), "swe_seq", "time_seconds")
     unique_groups = np.unique(grouped_data["group"])
     swe_data: list[dict] = []
