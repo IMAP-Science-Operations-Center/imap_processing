@@ -5,7 +5,12 @@ import pytest
 import xarray as xr
 import yaml
 
-from imap_processing.mag.l1c.interpolation_methods import InterpolationFunction
+from imap_processing.mag.constants import VecSec
+from imap_processing.mag.l1c.interpolation_methods import (
+    InterpolationFunction,
+    cic_filter,
+    estimate_rate,
+)
 from imap_processing.mag.l1c.mag_l1c import (
     fill_normal_data,
     find_all_gaps,
@@ -38,7 +43,16 @@ def mag_l1b_dataset():
 @pytest.fixture()
 def norm_dataset():
     dataset = mag_l1a_dataset_generator(10)
-    epoch_vals = generate_test_epoch(6, [2, 4, 4], 0, [[2, 4], [4.25, 5.5]])
+    epoch_vals = generate_test_epoch(
+        6,
+        [
+            VecSec.TWO_VECTORS_PER_S,
+            VecSec.FOUR_VECTORS_PER_S,
+            VecSec.FOUR_VECTORS_PER_S,
+        ],
+        0,
+        [[2, 4], [4.25, 5.5]],
+    )
     vectors_per_second_attr = "0:2,4000000000:4"
     dataset.attrs["vectors_per_second"] = vectors_per_second_attr
     dataset["epoch"] = epoch_vals
@@ -51,11 +65,11 @@ def norm_dataset():
 
 @pytest.fixture()
 def burst_dataset():
-    dataset = mag_l1a_dataset_generator(17)
-    epoch_vals = generate_test_epoch(5.1, [5], 1.9)
+    dataset = mag_l1a_dataset_generator(27)
+    epoch_vals = generate_test_epoch(5.1, [VecSec.EIGHT_VECTORS_PER_S], 1.9)
     dataset["epoch"] = epoch_vals
     dataset.attrs["Logical_source"] = ["imap_mag_l1b_burst-mago"]
-    vectors = np.array([[i, i, i, 2] for i in range(1, 18)])
+    vectors = np.array([[i, i, i, 2] for i in range(1, 28)])
     dataset["vectors"].data = vectors
     return dataset
 
@@ -76,7 +90,31 @@ def test_configuration_file():
     configuration_file = InterpolationFunction[
         configuration["L1C_interpolation_method"]
     ]
-    configuration_file([1], [1], [1])
+    configuration_file([1], [1], [1], input_rate=None)
+
+
+def test_interpolation_methods():
+    # very basic test of all methods
+    vectors = np.random.rand(100, 4)
+    input_timestamps = np.arange(0, 50, step=0.5) * 1e9
+    output_timestamps = np.arange(10, 20, step=0.5) * 1e9
+    for method in InterpolationFunction:
+        output = method(
+            vectors,
+            input_timestamps,
+            output_timestamps,
+            input_rate=VecSec.TWO_VECTORS_PER_S,
+            output_rate=VecSec.TWO_VECTORS_PER_S,
+        )
+        assert len(output) == 20
+        output = method(
+            vectors,
+            input_timestamps,
+            output_timestamps,
+            input_rate=None,
+            output_rate=None,
+        )
+        assert len(output) == 20
 
 
 def test_process_mag_l1c(norm_dataset, burst_dataset):
@@ -198,7 +236,9 @@ def test_mag_attributes(norm_dataset, burst_dataset):
 
 
 def test_find_all_gaps():
-    epoch_test = generate_test_epoch(5.5, [2, 2], 0, [[2, 5]])
+    epoch_test = generate_test_epoch(
+        5.5, [VecSec.TWO_VECTORS_PER_S, VecSec.TWO_VECTORS_PER_S], 0, [[2, 5]]
+    )
 
     vectors_per_second_attr = "0:2"
     output = find_all_gaps(epoch_test, vectors_per_second_attr)
@@ -214,20 +254,25 @@ def test_find_all_gaps():
 
 def test_find_gaps():
     # Test should be in ns
-    epoch_test = generate_test_epoch(3.5, [2], 0, [[0.5, 2], [2, 3.5]])
-    print(epoch_test)
+    epoch_test = generate_test_epoch(
+        3.5, [VecSec.TWO_VECTORS_PER_S], 0, [[0.5, 2], [2, 3.5]]
+    )
     gaps = find_gaps(epoch_test, 2)
     expected_return = np.array([[0.5, 2], [2, 3.5]]) * 1e9
 
     assert np.array_equal(gaps, expected_return)
 
-    epoch_test = generate_test_epoch(5, [2], gaps=[[0.5, 2], [3, 4]])
+    epoch_test = generate_test_epoch(
+        5, [VecSec.TWO_VECTORS_PER_S], gaps=[[0.5, 2], [3, 4]]
+    )
     gaps = find_gaps(epoch_test, 2)
     expected_return = np.array([[0.5, 2], [3, 4]]) * 1e9
 
     assert np.array_equal(gaps, expected_return)
 
-    epoch_test = generate_test_epoch(3, [4], gaps=[[0.5, 1], [2, 3]])
+    epoch_test = generate_test_epoch(
+        3, [VecSec.FOUR_VECTORS_PER_S], gaps=[[0.5, 1], [2, 3]]
+    )
     gaps = find_gaps(epoch_test, 4)
     expected_return = np.array([[0.5, 1], [2, 3]]) * 1e9
 
@@ -235,20 +280,24 @@ def test_find_gaps():
 
 
 def test_generate_timeline():
-    epoch_test = generate_test_epoch(3, [4], gaps=[[0.5, 1], [2, 3]])
+    epoch_test = generate_test_epoch(
+        3, [VecSec.FOUR_VECTORS_PER_S], gaps=[[0.5, 1], [2, 3]]
+    )
 
     gaps = np.array([[0.5, 1], [2, 3]]) * 1e9
     expected_output = np.array([0, 0.25, 0.5, 1, 1.25, 1.5, 1.75, 2, 2.5, 3]) * 1e9
     output = generate_timeline(epoch_test, gaps)
     assert np.array_equal(output, expected_output)
 
-    epoch_test = generate_test_epoch(5, [2], starting_point=1)
+    epoch_test = generate_test_epoch(5, [VecSec.TWO_VECTORS_PER_S], starting_point=1)
     # Expected output from find_gaps if none are found
     gaps = np.zeros((0, 2))
     output = generate_timeline(epoch_test, gaps)
     assert np.array_equal(output, epoch_test)
 
-    epoch_test = generate_test_epoch(5, [2], starting_point=1, gaps=[[3, 5]])
+    epoch_test = generate_test_epoch(
+        5, [VecSec.TWO_VECTORS_PER_S], starting_point=1, gaps=[[3, 5]]
+    )
     gaps = np.array([[3, 5]]) * 1e9
 
     expected_output = np.array([1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]) * 1e9
@@ -270,3 +319,41 @@ def test_fill_normal_data(mag_l1b_dataset):
     assert np.array_equal(output[0, 1:5], mag_l1b_dataset["vectors"].data[0, :])
     assert np.array_equal(output[5, 1:5], mag_l1b_dataset["vectors"].data[5, :])
     assert np.array_equal(output[9, 1:5], mag_l1b_dataset["vectors"].data[9, :])
+
+
+def test_cic_filter():
+    input_vectors = np.array(
+        [
+            [1, 1, 1],
+            [2, 2, 2],
+            [3, 3, 3],
+            [4, 4, 4],
+            [5, 5, 5],
+            [6, 6, 6],
+            [7, 7, 7],
+            [8, 8, 8],
+        ]
+    )
+    input_timestamps = generate_test_epoch(2, [VecSec.FOUR_VECTORS_PER_S], 0)
+    output_timestamps = generate_test_epoch(2, [VecSec.TWO_VECTORS_PER_S], 0)
+
+    output = cic_filter(
+        input_vectors,
+        input_timestamps,
+        output_timestamps,
+        VecSec.FOUR_VECTORS_PER_S,
+        VecSec.TWO_VECTORS_PER_S,
+    )
+    assert len(output) != 0
+    # TODO: How to test this?
+
+
+def test_estimate_rate():
+    input_timestamps = generate_test_epoch(2, [VecSec.FOUR_VECTORS_PER_S], 0)
+    output_timestamps = generate_test_epoch(2, [VecSec.TWO_VECTORS_PER_S], 0)
+
+    input = estimate_rate(input_timestamps)
+    assert input == VecSec.FOUR_VECTORS_PER_S
+
+    output = estimate_rate(output_timestamps)
+    assert output == VecSec.TWO_VECTORS_PER_S

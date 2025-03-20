@@ -59,6 +59,22 @@ class PrimarySensor(Enum):
     MAGI = 1
 
 
+class VecSec(Enum):
+    """Enum for all valid vector rates (Vectors per second)."""
+
+    ONE_VECTOR_PER_S = 1
+    TWO_VECTORS_PER_S = 2
+    FOUR_VECTORS_PER_S = 4
+    EIGHT_VECTORS_PER_S = 8
+    SIXTEEN_VECTORS_PER_S = 16
+    THIRTY_TWO_VECTORS_PER_S = 32
+    SIXTY_FOUR_VECTORS_PER_S = 64
+    ONE_TWENTY_EIGHT_VECTORS_PER_S = 128
+
+
+# Possible sensor rates
+POSSIBLE_RATES = [e.value for e in VecSec]
+
 FIBONACCI_SEQUENCE = [
     1,
     2,
@@ -106,5 +122,3 @@ MAX_FINE_TIME = np.iinfo(np.uint16).max  # maximum 16 bit unsigned int
 AXIS_COUNT = 3
 RANGE_BIT_WIDTH = 2
 MAX_COMPRESSED_VECTOR_BITS = 60
-# Possible sensor rates
-POSSIBLE_RATES = np.array([1, 2, 4, 8, 16, 32, 64, 128], dtype=np.int32)

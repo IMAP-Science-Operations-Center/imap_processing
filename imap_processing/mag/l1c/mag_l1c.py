@@ -9,6 +9,7 @@ import xarray as xr
 import yaml
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.mag.constants import VecSec
 from imap_processing.mag.l1c.interpolation_methods import InterpolationFunction
 
 logger = logging.getLogger(__name__)
@@ -330,6 +331,8 @@ def interpolate_gaps(
             burst_vectors[burst_start:burst_end, :3],
             burst_epochs[burst_start:burst_end],
             gap_timeline,
+            input_rate=VecSec.FOUR_VECTORS_PER_S,
+            output_rate=VecSec.FOUR_VECTORS_PER_S,
         )
 
         # gaps should not have data in timeline, still check it
