@@ -30,7 +30,7 @@ def decompress_counts(raw_counts: NDArray) -> NDArray:
     Parameters
     ----------
     raw_counts : np.ndarray
-        Array of raw compressed counts with shape (n_time, n_cem, n_energy_step).
+        Array of raw compressed counts with shape (n_energy, n_cem, n_phi).
 
     Returns
     -------
@@ -81,7 +81,7 @@ def prepare_raw_counts(grouped: xr.Dataset, cem_number: int = N_CEMS) -> NDArray
 
     Notes
     -----
-    Array of raw counts with shape (8, 7, 30), where:
+    Array of raw counts with shape (n_energy, n_cem, n_phi), where:
         - 8 corresponds to the 8 energy steps.
         - 7 corresponds to the 7 CEM detectors.
         - 30 corresponds to the 30 phi bins.
