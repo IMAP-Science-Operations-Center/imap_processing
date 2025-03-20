@@ -229,30 +229,32 @@ def initialize_particle_data_arrays(
     """
     Create empty data arrays for a given particle.
 
+    Valid particle names:
+        h
+        he3
+        he4
+        he
+        c
+        n
+        o
+        ne
+        na
+        mg
+        al
+        si
+        s
+        ar
+        ca
+        fe
+        ni
+
     Parameters
     ----------
     dataset : xr.Dataset
         The dataset to add the data arrays to.
 
     particle : str
-        The abbreviated particle name. Valid names are:
-            h
-            he3
-            he4
-            he
-            c
-            n
-            o
-            ne
-            na
-            mg
-            al
-            si
-            s
-            ar
-            ca
-            fe
-            ni
+        The abbreviated particle name.
 
     num_energy_ranges : int
         Number of energy ranges for the particle.
@@ -301,24 +303,26 @@ def sum_particle_data(
     dataset : xr.Dataset
         A dataset containing particle data to sum in the l2fgrates, l3fgrates,
         penfgrates data variables. If it's an L1A dataset, these variables
-        contain particle counts data. If it's an L1B dataset, these data
-        variables contain particle rates data.
+        contain particle counts. If it's an L1B dataset, these variables
+        contain particle rates.
 
     indices : dict
         A dictionary containing the indices for particle data to sum for a given
-        energy range.
-        R2=Indices for L2FGRATES, R3=Indices for L3FGRATES, R4=Indices for PENFGRATES.
+        energy range. The dictionary should have the following keys:
+            R2 = indices for l2fgrates
+            R3 = indices for l3fgrates
+            R4 = indices for penfgrates
 
     Returns
     -------
     summed_data : xr.DataArray
         The summed data for the given energy range.
 
-    summed_delta_minus : xr.DataArray
-        The summed data for delta minus uncertainty.
+    summed_uncertainty_delta_minus : xr.DataArray
+        The summed data for delta minus statistical uncertainty.
 
-    summed_delta_plus : xr.DataArray
-        The summed data for delta plus uncertainty.
+    summed_uncertainty_delta_plus : xr.DataArray
+        The summed data for delta plus statistical uncertainty.
     """
     summed_data = (
         dataset["l2fgrates"][:, indices["R2"]].sum(axis=1)
@@ -326,19 +330,19 @@ def sum_particle_data(
         + dataset["penfgrates"][:, indices["R4"]].sum(axis=1)
     )
 
-    summed_delta_minus = (
+    summed_uncertainty_delta_minus = (
         dataset["l2fgrates_delta_minus"][:, indices["R2"]].sum(axis=1)
         + dataset["l3fgrates_delta_minus"][:, indices["R3"]].sum(axis=1)
         + dataset["penfgrates_delta_minus"][:, indices["R4"]].sum(axis=1)
     )
 
-    summed_delta_plus = (
+    summed_uncertainty_delta_plus = (
         dataset["l2fgrates_delta_plus"][:, indices["R2"]].sum(axis=1)
         + dataset["l3fgrates_delta_plus"][:, indices["R3"]].sum(axis=1)
         + dataset["penfgrates_delta_plus"][:, indices["R4"]].sum(axis=1)
     )
 
-    return summed_data, summed_delta_minus, summed_delta_plus
+    return summed_data, summed_uncertainty_delta_minus, summed_uncertainty_delta_plus
 
 
 def add_energy_variables(
