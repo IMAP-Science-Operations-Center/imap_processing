@@ -543,6 +543,9 @@ def process_standard_intensity_data(
     l2_standard_intensity_dataset["dynamic_threshold_state"] = (
         l1b_standard_rates_dataset["dynamic_threshold_state"]
     )
+    l2_standard_intensity_dataset[
+        "dynamic_threshold_state"
+    ].attrs = l1b_standard_rates_dataset["dynamic_threshold_state"].attrs
 
     # Load ancillary data. The dynamic threshold state (0-3) determines which
     # ancillary file to use. Build a dictionary with ancillary data for each
