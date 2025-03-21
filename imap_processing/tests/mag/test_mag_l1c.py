@@ -19,6 +19,7 @@ from imap_processing.mag.l1c.mag_l1c import (
     interpolate_gaps,
     mag_l1c,
     process_mag_l1c,
+    vectors_per_second_from_string,
 )
 from imap_processing.tests.mag.conftest import (
     generate_test_epoch,
@@ -157,10 +158,10 @@ def test_process_mag_l1c(norm_dataset, burst_dataset):
 
 def test_interpolate_gaps(norm_dataset, mag_l1b_dataset):
     # np.array([0, 0.5, 1, 1.5, 2, 4, 4.25, 5.5, 5.75, 6]) * 1e9
-    gaps = np.array([[2, 4], [4.25, 5.5]]) * 1e9
+    gaps = np.array([[2 * 1e9, 4 * 1e9, 2], [4.25 * 1e9, 5.5 * 1e9, 2]])
     generated_timeline = generate_timeline(norm_dataset["epoch"].data, gaps)
     norm_timeline = fill_normal_data(norm_dataset, generated_timeline)
-    gaps = np.array([[2, 4]]) * 1e9
+    gaps = np.array([[2 * 1e9, 4 * 1e9, 2]])
     output = interpolate_gaps(
         mag_l1b_dataset, gaps, norm_timeline, InterpolationFunction.linear
     )
@@ -240,14 +241,15 @@ def test_find_all_gaps():
         5.5, [VecSec.TWO_VECS_PER_S, VecSec.TWO_VECS_PER_S], 0, [[2, 5]]
     )
 
-    vectors_per_second_attr = "0:2"
-    output = find_all_gaps(epoch_test, vectors_per_second_attr)
-    expected_gaps = np.array([[2, 5]]) * 1e9
+    vectors_per_second = vectors_per_second_from_string("0:2")
+
+    output = find_all_gaps(epoch_test, vectors_per_second)
+    expected_gaps = np.array([[2 * 1e9, 5 * 1e9, 2]])
     assert np.array_equal(output, expected_gaps)
 
     epoch_test = np.array([0, 0.5, 1, 1.5, 2, 4, 4.25, 4.5, 4.75, 5.5]) * 1e9
-    vectors_per_second_attr = "0:2,4000000000:4"
-    expected_gaps = np.array([[2, 4], [4.75, 5.5]]) * 1e9
+    vectors_per_second_attr = vectors_per_second_from_string("0:2,4000000000:4")
+    expected_gaps = np.array([[2 * 1e9, 4 * 1e9, 2], [4.75 * 1e9, 5.5 * 1e9, 4]])
     output = find_all_gaps(epoch_test, vectors_per_second_attr)
     assert np.array_equal(output, expected_gaps)
 
@@ -258,7 +260,7 @@ def test_find_gaps():
         3.5, [VecSec.TWO_VECS_PER_S], 0, [[0.5, 2], [2, 3.5]]
     )
     gaps = find_gaps(epoch_test, 2)
-    expected_return = np.array([[0.5, 2], [2, 3.5]]) * 1e9
+    expected_return = np.array([[0.5 * 1e9, 2 * 1e9, 2], [2 * 1e9, 3.5 * 1e9, 2]])
 
     assert np.array_equal(gaps, expected_return)
 
@@ -266,7 +268,7 @@ def test_find_gaps():
         5, [VecSec.TWO_VECS_PER_S], gaps=[[0.5, 2], [3, 4]]
     )
     gaps = find_gaps(epoch_test, 2)
-    expected_return = np.array([[0.5, 2], [3, 4]]) * 1e9
+    expected_return = np.array([[0.5 * 1e9, 2 * 1e9, 2], [3 * 1e9, 4 * 1e9, 2]])
 
     assert np.array_equal(gaps, expected_return)
 
@@ -274,7 +276,7 @@ def test_find_gaps():
         3, [VecSec.FOUR_VECS_PER_S], gaps=[[0.5, 1], [2, 3]]
     )
     gaps = find_gaps(epoch_test, 4)
-    expected_return = np.array([[0.5, 1], [2, 3]]) * 1e9
+    expected_return = np.array([[0.5 * 1e9, 1 * 1e9, 4], [2 * 1e9, 3 * 1e9, 4]])
 
     assert np.array_equal(gaps, expected_return)
 
