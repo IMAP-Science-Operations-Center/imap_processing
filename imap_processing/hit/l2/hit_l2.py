@@ -387,9 +387,15 @@ def calculate_intensity_for_all_species(
 
     # Calculate the intensity for each valid data variable
     for species_variable in valid_data_variables:
-        calculate_intensity_for_a_species(
-            species_variable, l2_dataset, ancillary_data_frames
-        )
+        if species_variable in l2_dataset.data_vars:
+            calculate_intensity_for_a_species(
+                species_variable, l2_dataset, ancillary_data_frames
+            )
+        else:
+            logger.warning(
+                f"Variable {species_variable} not found in dataset. "
+                f"Skipping intensity calculation."
+            )
 
 
 def add_systematic_uncertainties(
@@ -408,7 +414,9 @@ def add_systematic_uncertainties(
     particle : str
         The particle name.
     energy_ranges : list
-        A list of energy ranges for the particle.
+        A list of energy range dictionaries for the particle.
+        For example:
+        {'energy_min': 1.8, 'energy_max': 2.2, "R2": [1], "R3": [], "R4": []}.
     """
     dataset[f"{particle}_sys_delta_minus"] = xr.DataArray(
         data=np.zeros(len(energy_ranges), dtype=np.float32),
