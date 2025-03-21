@@ -40,9 +40,15 @@ def lo_l1b(dependencies: dict, data_version: str) -> list[Path]:
         logical_source = "imap_lo_l1b_de"
         # get the dependency dataset for l1b direct events
         l1a_de = dependencies["imap_lo_l1a_de"]
+        spin_data = dependencies["imap_lo_l1a_spin"]
 
         # Initialize the L1B DE dataset
         l1b_de = initialize_l1b_de(l1a_de, attr_mgr_l1b, logical_source)
+        # Get the start and end times for each spin epoch
+        acq_start, acq_end = convert_start_end_acq_times(spin_data)
+        # Get the average spin durations for each epoch
+        avg_spin_durations = get_avg_spin_durations(acq_start, acq_end)  # noqa: F841
+        # get spin phase for each DE
 
     return [l1b_de]
 
@@ -101,6 +107,55 @@ def initialize_l1b_de(
     )
 
     return l1b_de
+
+
+def convert_start_end_acq_times(
+    spin_data: xr.Dataset,
+) -> tuple[xr.DataArray, xr.DataArray]:
+    """
+    Convert the start and end times from the spin data.
+
+    The L1A spin data start and end acquisition times are stored in seconds and
+    subseconds (microseconds). This function converts them to a single time in seconds.
+
+    Parameters
+    ----------
+    spin_data : xarray.Dataset
+        The L1A Spin dataset containing the start and end acquisition times.
+
+    Returns
+    -------
+    tuple[xr.DataArray, xr.DataArray]
+        A tuple containing the start and end acquisition times as xarray DataArrays.
+    """
+    # Convert subseconds from microseconds to seconds
+    acq_start = spin_data["acq_start_sec"] + spin_data["acq_start_subsec"] * 1e-6
+    acq_end = spin_data["acq_end_sec"] + spin_data["acq_end_subsec"] * 1e-6
+    return (acq_start, acq_end)
+
+
+def get_avg_spin_durations(
+    acq_start: xr.DataArray, acq_end: xr.DataArray
+) -> xr.DataArray:
+    """
+    Get the average spin duration for each spin epoch.
+
+    Parameters
+    ----------
+    acq_start : xarray.DataArray
+        The start acquisition times for each spin epoch.
+    acq_end : xarray.DataArray
+        The end acquisition times for each spin epoch.
+
+    Returns
+    -------
+    avg_spin_durations : xarray.DataArray
+        The average spin duration for each spin epoch.
+    """
+    # Get the avg spin duration for each spin epoch
+    # There are 28 spins per epoch (1 aggregated science cycle)
+    avg_spin_durations = (acq_end - acq_start) / 28
+    return avg_spin_durations
 
 
 # TODO: This is going to work differently when I sample data.
