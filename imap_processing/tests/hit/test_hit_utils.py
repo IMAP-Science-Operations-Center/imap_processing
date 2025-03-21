@@ -6,11 +6,16 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.hit.hit_utils import (
     HitAPID,
+    add_energy_variables,
     concatenate_leak_variables,
     get_attribute_manager,
     get_datasets_by_apid,
+    initialize_particle_data_arrays,
     process_housekeeping_data,
+    sum_particle_data,
 )
+
+np.random.seed(42)
 
 
 @pytest.fixture(scope="module")
@@ -216,3 +221,109 @@ def test_process_housekeeping(housekeeping_dataset, attribute_manager):
     # Check that the dataset has the correct attributes, coordinates, and dimensions
     assert processed_hskp_dataset.attrs == dataset_attrs
     assert processed_hskp_dataset.coords.keys() == dataset_coords_dims
+
+
+def test_add_energy_variables():
+    dataset = xr.Dataset()
+    particle = "test_particle"
+    energy_min = np.array([1.8, 4.0, 6.0], dtype=np.float32)
+    energy_max = np.array([2.2, 6.0, 10.0], dtype=np.float32)
+    energy_mean = np.mean([energy_min, energy_max], axis=0)
+    result = add_energy_variables(dataset, particle, energy_min, energy_max)
+    assert f"{particle}_energy_delta_minus" in result.data_vars
+    assert f"{particle}_energy_delta_plus" in result.data_vars
+    assert f"{particle}_energy_mean" in result.coords
+    assert np.all(
+        result[f"{particle}_energy_delta_minus"].values
+        == np.array(energy_mean - np.array(energy_min), dtype=np.float32)
+    )
+    assert np.all(
+        result[f"{particle}_energy_delta_plus"].values
+        == np.array(energy_max - energy_mean, dtype=np.float32)
+    )
+    assert np.all(
+        result[f"{particle}_energy_mean"].values
+        == np.mean([energy_min, energy_max], axis=0)
+    )
+
+
+def test_sum_particle_data():
+    # Create a sample dataset
+    data = {
+        "l2fgrates": (("epoch", "energy"), np.random.rand(10, 5)),
+        "l3fgrates": (("epoch", "energy"), np.random.rand(10, 5)),
+        "penfgrates": (("epoch", "energy"), np.random.rand(10, 5)),
+        "l2fgrates_delta_minus": (("epoch", "energy"), np.random.rand(10, 5)),
+        "l3fgrates_delta_minus": (("epoch", "energy"), np.random.rand(10, 5)),
+        "penfgrates_delta_minus": (("epoch", "energy"), np.random.rand(10, 5)),
+        "l2fgrates_delta_plus": (("epoch", "energy"), np.random.rand(10, 5)),
+        "l3fgrates_delta_plus": (("epoch", "energy"), np.random.rand(10, 5)),
+        "penfgrates_delta_plus": (("epoch", "energy"), np.random.rand(10, 5)),
+    }
+    dataset = xr.Dataset(data)
+
+    # Define indices for summing
+    indices = {
+        "R2": [0, 1],
+        "R3": [2, 3],
+        "R4": [4],
+    }
+
+    # Call the function
+    summed_data, summed_uncertainty_delta_minus, summed_uncertainty_delta_plus = (
+        sum_particle_data(dataset, indices)
+    )
+
+    # Assertions
+    assert summed_data.shape == (10,)
+    assert summed_uncertainty_delta_minus.shape == (10,)
+    assert summed_uncertainty_delta_plus.shape == (10,)
+    assert np.all(
+        summed_data
+        == dataset["l2fgrates"][:, indices["R2"]].sum(axis=1)
+        + dataset["l3fgrates"][:, indices["R3"]].sum(axis=1)
+        + dataset["penfgrates"][:, indices["R4"]].sum(axis=1)
+    )
+    assert np.all(
+        summed_uncertainty_delta_minus
+        == dataset["l2fgrates_delta_minus"][:, indices["R2"]].sum(axis=1)
+        + dataset["l3fgrates_delta_minus"][:, indices["R3"]].sum(axis=1)
+        + dataset["penfgrates_delta_minus"][:, indices["R4"]].sum(axis=1)
+    )
+    assert np.all(
+        summed_uncertainty_delta_plus
+        == dataset["l2fgrates_delta_plus"][:, indices["R2"]].sum(axis=1)
+        + dataset["l3fgrates_delta_plus"][:, indices["R3"]].sum(axis=1)
+        + dataset["penfgrates_delta_plus"][:, indices["R4"]].sum(axis=1)
+    )
+
+
+def test_initialize_particle_data_arrays():
+    # Create an empty dataset
+    dataset = xr.Dataset()
+
+    # Define parameters
+    particle = "test_particle"
+    num_energy_ranges = 5
+    epoch_size = 10
+
+    # Call the function
+    result = initialize_particle_data_arrays(
+        dataset, particle, num_energy_ranges, epoch_size
+    )
+
+    # Assertions
+    assert f"{particle}" in result.data_vars
+    assert f"{particle}_delta_minus" in result.data_vars
+    assert f"{particle}_delta_plus" in result.data_vars
+    assert f"{particle}_energy_mean" in result.coords
+
+    assert result[f"{particle}"].shape == (epoch_size, num_energy_ranges)
+    assert result[f"{particle}_delta_minus"].shape == (epoch_size, num_energy_ranges)
+    assert result[f"{particle}_delta_plus"].shape == (epoch_size, num_energy_ranges)
+    assert result[f"{particle}_energy_mean"].shape == (num_energy_ranges,)
+
+    assert np.all(result[f"{particle}"].values == 0)
+    assert np.all(result[f"{particle}_delta_minus"].values == 0)
+    assert np.all(result[f"{particle}_delta_plus"].values == 0)
+    assert np.all(result[f"{particle}_energy_mean"].values == 0)
