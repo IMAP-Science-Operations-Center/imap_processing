@@ -1,5 +1,4 @@
 # TODO: add attributes for science packets
-# TODO: update label_axis and min/max with values provided by instrument team.
 
 # <=== Defaults ===>
 # Default values for variable attrs unless overwritten
@@ -64,10 +63,15 @@ default_float32_attrs: &default_float32
   VALIDMAX: 3.4028235e+38
   dtype: float32
 
-hk_support_attrs: &support_default
+hk_support_attrs: &hk_support_default
   <<: *default
   DISPLAY_TYPE: no_plot
   VAR_TYPE: ignore_data
+
+hk_default_attrs: &hk_default
+  <<: *default
+  VALIDMAX: 4095
+  FORMAT: I4
 
 # <=== Coordinates ===>
 adc_channels:   # adc_channels is a dependency for leak_i data variable
@@ -94,7 +98,6 @@ adc_channels_label:
 
 
 # <=== Data Variable Attributes ===>
-#TODO is DEPEND_0 needed for no_plot variables in housekeeping?
 
 # CCSDS header variables
 version:
@@ -148,23 +151,23 @@ sc_tick:
 
 # Housekeeping variables
 fsw_version_a:
-  <<: *support_default
-  VALIDMAX: 3
+  <<: *hk_support_default
+  VALIDMAX: 63
   CATDESC: Flight Software Version Number (A.B.C bits)
   FIELDNAM: Flight Software Version Number A
   LABLAXIS: FSW A
-  FORMAT: I1
+  FORMAT: I2
 
 fsw_version_b:
-  <<: *support_default
-  VALIDMAX: 15
+  <<: *hk_support_default
+  VALIDMAX: 63
   CATDESC: Flight Software Version Number (A.B.C bits)
   FIELDNAM: Flight Software Version Number B
   LABLAXIS: FSW B
   FORMAT: I2
 
 fsw_version_c:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 63
   CATDESC: Flight Software Version Number (A.B.C bits)
   FIELDNAM: Flight Software Version Number C
@@ -172,7 +175,7 @@ fsw_version_c:
   FORMAT: I2
 
 num_good_cmds:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 255
   CATDESC: Number of Good Commands
   FIELDNAM: Number of Good Commands
@@ -180,7 +183,7 @@ num_good_cmds:
   FORMAT: I3
 
 last_good_cmd:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 255
   CATDESC: Last Good Command
   FIELDNAM: Last Good Command
@@ -188,7 +191,7 @@ last_good_cmd:
   FORMAT: I3
 
 last_good_seq_num:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 255
   CATDESC: Last Good Sequence Number
   FIELDNAM: Last Good Sequence Number
@@ -196,7 +199,7 @@ last_good_seq_num:
   FORMAT: I3
 
 num_bad_cmds:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 255
   CATDESC: Number of Bad Commands
   FIELDNAM: Number of Bad Commands
@@ -204,7 +207,7 @@ num_bad_cmds:
   FORMAT: I3
 
 last_bad_cmd:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 255
   CATDESC: Last Bad Command
   FIELDNAM: Last Bad Command
@@ -212,7 +215,7 @@ last_bad_cmd:
   FORMAT: I3
 
 last_bad_seq_num:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 255
   CATDESC: Last Bad Sequence Number
   FIELDNAM: Last Bad Sequence Number
@@ -220,7 +223,7 @@ last_bad_seq_num:
   FORMAT: I3
 
 fee_running:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 1
   CATDESC: State - FEE Running (1) or Reset (0)
   FIELDNAM: FEE Running (1) or Reset (0)
@@ -228,7 +231,7 @@ fee_running:
   FORMAT: I1
 
 mram_disabled:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 1
   CATDESC: State - MRAM Disabled (1) or Enabled (0)
   FIELDNAM: MRAM Disabled (1) or Enabled (0)
@@ -236,7 +239,7 @@ mram_disabled:
   FORMAT: I1
 
 enable_50khz:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 1
   CATDESC: State - 50kHz Enabled (1) or Disabled (0)
   FIELDNAM: 50kHz Enabled (1) or Disabled (0)
@@ -244,7 +247,7 @@ enable_50khz:
   FORMAT: I1
 
 enable_hvps:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 1
   CATDESC: State - HVPS Enabled (1) or Disabled (0)
   FIELDNAM: HVPS Enabled (1) or Disabled (0)
@@ -252,7 +255,7 @@ enable_hvps:
   FORMAT: I1
 
 table_status:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 1
   CATDESC: State - Table Status OK (1) or Error (0)
   FIELDNAM: Table Status OK (1) or Error (0)
@@ -260,7 +263,7 @@ table_status:
   FORMAT: I1
 
 heater_control:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 2
   CATDESC: State - Heater Control (0=None, 1=Pri, 2=Sec)
   FIELDNAM: Heater Control (0=None, 1=Pri, 2=Sec)
@@ -268,7 +271,7 @@ heater_control:
   FORMAT: I1
 
 adc_mode:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 3
   CATDESC: State - ADC Mode (0=quiet, 1=normal, 2=adcstim, 3=adcThreshold)
   FIELDNAM: ADC Mode (0=quiet, 1=normal, 2=adcstim, 3=adcThreshold)
@@ -276,7 +279,7 @@ adc_mode:
   FORMAT: I1
 
 mode:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 3
   CATDESC: State - Mode (0=Boot, 1=Maintenance, 2=Standby, 3=Science)
   FIELDNAM: Mode (0=Boot, 1=Maintenance, 2=Standby, 3=Science)
@@ -284,7 +287,7 @@ mode:
   FORMAT: I1
 
 dyn_thresh_lvl:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 3
   CATDESC: Dynamic Threshold Level (0-3)
   FIELDNAM: Dynamic Threshold Level (0-3)
@@ -292,15 +295,15 @@ dyn_thresh_lvl:
   FORMAT: I1
 
 num_evnt_last_hk:
-  <<: *support_default
-  VALIDMAX: 262143
+  <<: *hk_support_default
+  VALIDMAX: 4294967295
   CATDESC: Number of Events Since Last HK Update
   FIELDNAM: Number of Events Since Last HK Update
   LABLAXIS: Num events
-  FORMAT: I6
+  FORMAT: I10
 
 num_errors:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 255
   CATDESC: Number of Errors
   FIELDNAM: Number of Errors
@@ -308,7 +311,7 @@ num_errors:
   FORMAT: I3
 
 last_error_num:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 255
   CATDESC: State - Last Error Number
   FIELDNAM: Last Error Number
@@ -316,7 +319,7 @@ last_error_num:
   FORMAT: I3
 
 code_checksum:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 65535
   CATDESC: Code Checksum
   FIELDNAM: Code Checksum
@@ -324,7 +327,7 @@ code_checksum:
   FORMAT: I5
 
 spin_period_short:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 65535
   CATDESC: Spin Period Short at T=0
   FIELDNAM: Spin Period Short at T=0
@@ -332,7 +335,7 @@ spin_period_short:
   FORMAT: I5
 
 spin_period_long:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 65535
   CATDESC: Spin Period Long at T=0
   FIELDNAM: Spin Period Long at T=0
@@ -340,7 +343,7 @@ spin_period_long:
   FORMAT: I5
 
 leak_i:
-  <<: *support_default
+  <<: *hk_support_default
   DEPEND_1: adc_channels
   CATDESC: Leakage Current [I]
   FIELDNAM: Leakage Current [I]
@@ -349,7 +352,7 @@ leak_i:
   FORMAT: I19
 
 phasic_stat:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 1
   CATDESC: State - Phasic Status
   FIELDNAM: Phasic Status
@@ -357,7 +360,7 @@ phasic_stat:
   FORMAT: I1
 
 active_heater:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 1
   CATDESC: State - Active Heater
   FIELDNAM: Active Heater
@@ -365,7 +368,7 @@ active_heater:
   FORMAT: I1
 
 heater_on:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 1
   CATDESC: State - Heater On/Off
   FIELDNAM: Heater On/Off
@@ -373,7 +376,7 @@ heater_on:
   FORMAT: I1
 
 test_pulser_on:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 1
   CATDESC: State - Test Pulser On/Off
   FIELDNAM: Test Pulser On/Off
@@ -381,7 +384,7 @@ test_pulser_on:
   FORMAT: I1
 
 dac0_enable:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 1
   CATDESC: State - DAC 0 Enable
   FIELDNAM: DAC 0 Enable
@@ -389,206 +392,154 @@ dac0_enable:
   FORMAT: I1
 
 dac1_enable:
-  <<: *support_default
+  <<: *hk_support_default
   VALIDMAX: 1
   CATDESC: State - DAC 1 Enable
   FIELDNAM: DAC 1 Enable
   LABLAXIS: State
   FORMAT: I1
 
-
-# TODO consider making another default entry for the following variables since they
-#  all have the same max and format. Need more info from Eric
-
 preamp_l234a:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: Preamp L234A
   FIELDNAM: Preamp L234A
   LABLAXIS: Preamp L234A
-  FORMAT: I4
 
 preamp_l1a:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: Preamp L1A
   FIELDNAM: Preamp L1A
   LABLAXIS: Preamp L1A
-  FORMAT: I4
 
 preamp_l1b:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: Preamp L1B
   FIELDNAM: Preamp L1B
   LABLAXIS: Preamp L1B
-  FORMAT: I4
 
 preamp_l234b:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: Preamp L234B
   FIELDNAM: Preamp L234B
   LABLAXIS: Preamp L234B
-  FORMAT: I4
 
 temp0:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: FEE LDO Regulator Mounted on the Board Next to the Low-dropout Regulator
   FIELDNAM: FEE LDO Regulator
   LABLAXIS: Temp0
-  FORMAT: I4
 
 temp1:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: Primary Heater Mounted on the Board Next to the Primary Heater Circuit
   FIELDNAM: Primary Heater
   LABLAXIS: Temp1
-  FORMAT: I4
 
 temp2:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: FEE FPGA Mounted on the Board Next to the FPGA
   FIELDNAM: FEE FPGA
   LABLAXIS: Temp2
-  FORMAT: I4
 
 temp3:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: Secondary Heater
   FIELDNAM: Secondary Heater
   LABLAXIS: Temp3
-  FORMAT: I4
 
 analog_temp:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: Chassis Temp Mounted on the Analog Board Close to Thermostats, Heaters, and Chassis
   FIELDNAM: Analog Temp
   LABLAXIS: Analog temp
-  FORMAT: I4
 
 hvps_temp:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: Board Temp Mounted Inside Faraday Cage in Middle of Board Near Connector Side
   FIELDNAM: Board Temp
   LABLAXIS: HVPS temp
-  FORMAT: I4
 
 idpu_temp:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: LDO Temp Mounted on Top of the Low-dropout Regulator
   FIELDNAM: LDO Temp
   LABLAXIS: IDPU temp
-  FORMAT: I4
 
 lvps_temp:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: Board Temp Mounted in the Middle of Board on Opposite Side of Hottest Component
   FIELDNAM: Board Temp
   LABLAXIS: LVPS temp
-  FORMAT: I4
 
 ebox_3d4vd:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: 3.4VD Ebox (Digital)
   FIELDNAM: 3.4VD Ebox (Digital)
   LABLAXIS: 3.4VD Ebox
-  FORMAT: I4
 
 ebox_5d1vd:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: 5.1VD Ebox (Digital)
   FIELDNAM: 5.1VD Ebox (Digital)
   LABLAXIS: 5.1VD Ebox
-  FORMAT: I4
 
 ebox_p12va:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: +12VA Ebox (Analog)
   FIELDNAM: +12VA Ebox (Analog)
   LABLAXIS: +12VA Ebox
-  FORMAT: I4
 
 ebox_m12va:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: -12VA Ebox (Analog)
   FIELDNAM: -12VA Ebox (Analog)
   LABLAXIS: -12VA Ebox
-  FORMAT: I4
 
 ebox_p5d7va:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: +5.7VA Ebox (Analog)
   FIELDNAM: +5.7VA Ebox (Analog)
   LABLAXIS: +5.7VA Ebox
-  FORMAT: I4
 
 ebox_m5d7va:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: -5.7VA Ebox (Analog)
   FIELDNAM: -5.7VA Ebox (Analog)
   LABLAXIS: -5.7VA Ebox
-  FORMAT: I4
 
 ref_p5v:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: +5V ref
   FIELDNAM: +5V ref
   LABLAXIS: +5V ref
-  FORMAT: I4
 
 l1ab_bias:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: L1A/B Bias
   FIELDNAM: L1A/B Bias
   LABLAXIS: L1A/B Bias
-  FORMAT: I4
 
 l2ab_bias:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: L2A/B Bias
   FIELDNAM: L2A/B Bias
   LABLAXIS: L2A/B Bias
-  FORMAT: I4
 
 l34a_bias:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: L3/4A Bias
   FIELDNAM: L3/4A Bias
   LABLAXIS: L3/4A Bias
-  FORMAT: I4
 
 l34b_bias:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: L3/4B Bias
   FIELDNAM: L3/4B Bias
   LABLAXIS: L3/4B Bias
-  FORMAT: I4
 
 ebox_p2d0vd:
-  <<: *default
-  VALIDMAX: 4095
+  <<: *hk_default
   CATDESC: +2.0VD Ebox (Digital)
   FIELDNAM: +2.0VD Ebox (Digital)
   LABLAXIS: +2.0VD Ebox
-  FORMAT: I4
 

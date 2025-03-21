@@ -130,14 +130,15 @@ def decompress_binary(
     current_position = 0
     decompressed_values: list = []
 
-    while current_position < len(binary):
+    while current_position < len(binary) and len(decompressed_values) < array_length:
         # Read the width of the block
         width, current_position = read_and_advance(binary, width_bit, current_position)
-        # If width is 0 or None, we don't have enough bits left
-        if width is None or len(decompressed_values) >= array_length:
-            break
+        # If width is 0, add 'block' number of zeroes and continue
+        if width == 0:
+            decompressed_values.extend([0] * block)
+            continue
 
-        # For each block, read 16 values of the given width
+        # For each block, read 'block' values of the given width
         for _ in range(block):
             # Ensure there are enough bits left to read the width
             if len(binary) - current_position < width:

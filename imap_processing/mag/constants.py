@@ -59,6 +59,14 @@ class PrimarySensor(Enum):
     MAGI = 1
 
 
+class ModeFlags(Enum):
+    """Enum for MAG mode flags: burst and normal (BURST + NORM)."""
+
+    NORM = 0
+    BURST = 1
+    MISSING = -1
+
+
 FIBONACCI_SEQUENCE = [
     1,
     2,

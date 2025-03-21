@@ -51,7 +51,7 @@ EXPECTED_ARRAY_SHAPES = [
     (77, 5, 12, 128),  # lo-sw-angular
     (77, 19, 12, 128),  # lo-nsw-angular
     (77, 1, 6, 1),  # hi-counters-aggregated
-    (77, 1, 12, 1),  # hi-counters-singles
+    (77, 12),  # hi-counters-singles
     (77, 15, 4),  # hi-omni
     (77, 8, 12, 12),  # hi-sectored
     (77,),  # hi-priority
@@ -72,7 +72,7 @@ EXPECTED_NUM_VARIABLES = [
     12,  # lo-sw-angular
     9,  # lo-nsw-angular
     1,  # hi-counters-aggregated
-    3,  # hi-counters-singles
+    5,  # hi-counters-singles
     10,  # hi-omni
     6,  # hi-sectored
     8,  # hi-priority
@@ -211,6 +211,7 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
     # TODO: Currently only the following products can be validated, expand this
     #       to other data products as I can validate them.
     able_to_be_validated = [
+        "hi-counters-singles",
         "hi-priority",
         "hi-sectored",
         "lo-counters-singles",

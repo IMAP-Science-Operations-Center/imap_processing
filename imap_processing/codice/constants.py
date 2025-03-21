@@ -78,7 +78,7 @@ LO_NSW_SPECIES_VARIABLE_NAMES = [
 
 # CDF-friendly names for hi data products
 HI_INST_COUNTS_AGGREGATED_VARIABLE_NAMES = ["aggregated"]
-HI_INST_COUNTS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
+HI_COUNTERS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
 HI_OMNI_VARIABLE_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
 HI_PRIORITY_VARIABLE_NAMES = [
     "Priority0",
@@ -153,19 +153,24 @@ DATA_PRODUCT_CONFIGURATIONS = {
     CODICEAPID.COD_HI_INST_COUNTS_SINGLES: {
         "dataset_name": "imap_codice_l1a_hi-counters-singles",
         "input_dims": {
-            "esa_step": 1,
-            "inst_az": 12,
-            "spin_sector": 1,
-        },  # TODO: Double check with Joey
+            "ssd_index": 12,
+        },
         "instrument": "hi",
         "num_counters": 3,
         "output_dims": {
-            "esa_step": 1,
-            "inst_az": 12,
-            "spin_sector": 1,
-        },  # TODO: Double check with Joey
-        "support_variables": [],  # No support variables for this one
-        "variable_names": HI_INST_COUNTS_SINGLES_VARIABLE_NAMES,
+            "ssd_index": 12,
+        },
+        "support_variables": ["data_quality", "spin_period"],
+        "variable_names": HI_COUNTERS_SINGLES_VARIABLE_NAMES,
+    },
+    CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES: {
+        "dataset_name": "imap_codice_l1a_hi-priority",
+        "input_dims": {},
+        "instrument": "hi",
+        "num_counters": 6,
+        "output_dims": {},
+        "support_variables": ["data_quality", "spin_period"],
+        "variable_names": HI_PRIORITY_VARIABLE_NAMES,
     },
     CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES: {
         "dataset_name": "imap_codice_l1a_hi-priority",

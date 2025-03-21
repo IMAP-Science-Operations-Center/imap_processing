@@ -272,27 +272,27 @@ hi-counters-aggregated-aggregated:
 # hi-counters-singles
 hi-counters-singles-tcr:
     <<: *counters
-    CATDESC: TCR Rates
-    FIELDNAM: Rates - Event A (TCR)
-    LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+    CATDESC: Rates - Event A (TCR)
+    FIELDNAM: Rates
+    DEPEND_1: ssd_index
+    LABL_PTR_1: ssd_index
+    UNITS: events
 
 hi-counters-singles-ssdo:
     <<: *counters
-    CATDESC: SSDO Rates
-    FIELDNAM: Rates - Event E (SSDO)
-    LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+    CATDESC: Rates - Event E (SSDO)
+    FIELDNAM: Rates
+    DEPEND_1: ssd_index
+    LABL_PTR_1: ssd_index
+    UNITS: events
 
 hi-counters-singles-stssd:
     <<: *counters
-    CATDESC: STSSD Rates
-    FIELDNAM: Rates - Event G (STSSD)
-    LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+    CATDESC: Rates - Event G (STSSD)
+    FIELDNAM: Rates
+    DEPEND_1: ssd_index
+    LABL_PTR_1: ssd_index
+    UNITS: events
 
 # hi-omni
 hi-omni-h:

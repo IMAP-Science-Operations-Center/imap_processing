@@ -1,0 +1,6 @@
+# This file describes configuration changes that are not expected to change often,
+# but may change.
+
+# interpolation method used in L1C processing
+L1C_interpolation_method: "linear"
+
