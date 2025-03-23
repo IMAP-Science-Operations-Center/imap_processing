@@ -1,0 +1,40 @@
+# ------- Default attributes section -------
+default_attrs: &default
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FORMAT: I12
+  UNITS: " "
+  VAR_TYPE: data
+  SCALE_TYPE: linear
+
+default_float32_attrs: &default_float32_attrs
+  <<: *default
+  FILLVAL: .NAN
+  FORMAT: F7.6
+  VALIDMIN: -1
+  VALIDMAX: 1
+  dtype: float32
+
+quat_x:
+  <<: *default_float32_attrs
+  CATDESC: Quaternion X component
+  FIELDNAM: Quaternion X
+  LABLAXIS: QX
+
+quat_y:
+  <<: *default_float32_attrs
+  CATDESC: Quaternion Y component
+  FIELDNAM: Quaternion Y
+  LABLAXIS: QY
+
+quat_z:
+  <<: *default_float32_attrs
+  CATDESC: Quaternion Z component
+  FIELDNAM: Quaternion Z
+  LABLAXIS: QZ
+
+quat_s:
+  <<: *default_float32_attrs
+  CATDESC: Quaternion S component
+  FIELDNAM: Quaternion S
+  LABLAXIS: QS
