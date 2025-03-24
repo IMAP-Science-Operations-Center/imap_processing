@@ -9,10 +9,10 @@ from imap_processing.lo.l1b.lo_l1b import create_datasets, lo_l1b
 def test_lo_l1b():
     # Arrange
     de_file = (
-        imap_module_directory / "tests/lo/test_cdfs/imap_lo_l1a_de_20100101_v001.cdf"
+        imap_module_directory / "tests/lo/test_cdfs/imap_lo_l1a_de_20241022_v002.cdf"
     )
     spin_file = (
-        imap_module_directory / "tests/lo/test_cdfs/imap_lo_l1a_spin_20100101_v001.cdf"
+        imap_module_directory / "tests/lo/test_cdfs/imap_lo_l1a_spin_20241022_v002.cdf"
     )
     data = {}
     for file in [de_file, spin_file]:
@@ -24,7 +24,7 @@ def test_lo_l1b():
     output_file = lo_l1b(data, "001")
 
     # Assert
-    assert expected_logical_source == output_file.attrs["Logical_source"]
+    assert expected_logical_source == output_file[0].attrs["Logical_source"]
 
 
 def test_create_datasets():

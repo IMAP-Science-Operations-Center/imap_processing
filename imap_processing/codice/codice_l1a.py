@@ -164,16 +164,12 @@ class CoDICEL1aPipeline:
         for name in coord_names:
             if name == "epoch":
                 values = self.calculate_epoch_values()
-            # TODO: Currently hi-sectored products us "spin_sector_index" and
-            #       "ssd_index", which are basically the same as "spin_sector"
-            #       and "inst_az". Ask Joey if these need to be different.
             elif name in [
                 "esa_step",
                 "inst_az",
                 "spin_sector",
                 "spin_sector_pairs",
                 "spin_sector_index",
-                "ssdid",
                 "ssd_index",
             ]:
                 values = np.arange(self.config["output_dims"][name])

@@ -269,10 +269,9 @@ def test_hit_l1a(hk_packet_filepath, sci_packet_filepath):
         else:
             assert len(processed_datasets) == 2
             assert (
-                processed_datasets[0].attrs["Logical_source"]
-                == "imap_hit_l1a_count-rates"
+                processed_datasets[0].attrs["Logical_source"] == "imap_hit_l1a_counts"
             )
             assert (
                 processed_datasets[1].attrs["Logical_source"]
-                == "imap_hit_l1a_pulse-height-events"
+                == "imap_hit_l1a_direct-events"
             )

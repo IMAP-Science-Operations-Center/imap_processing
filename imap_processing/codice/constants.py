@@ -169,12 +169,12 @@ DATA_PRODUCT_CONFIGURATIONS = {
     CODICEAPID.COD_HI_INST_COUNTS_SINGLES: {
         "dataset_name": "imap_codice_l1a_hi-counters-singles",
         "input_dims": {
-            "ssdid": 12,
+            "ssd_index": 12,
         },
         "instrument": "hi",
         "num_counters": 3,
         "output_dims": {
-            "ssdid": 12,
+            "ssd_index": 12,
         },
         "support_variables": ["data_quality", "spin_period"],
         "variable_names": HI_COUNTERS_SINGLES_VARIABLE_NAMES,
@@ -1537,6 +1537,9 @@ ACQUISITION_TIMES = {
     ],
 }
 
+# Energy tables for CoDICE-Hi data products. These values represent the edges
+# of the bins, and are used in the CoDICE L1a pipeline to compute the centers
+# and deltas of the bins, which then get stored in the CDF files for future use.
 OMNI_ENERGY_TABLE = {
     "h": [
         0.05,
@@ -1683,5 +1686,3 @@ SECTORED_ENERGY_TABLE = {
     "cno": [0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4],
     "fe": [0.0125, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2],
 }
-
-# TODO: Add energy tables for hi-counters-aggregated, and hi-counters-singles

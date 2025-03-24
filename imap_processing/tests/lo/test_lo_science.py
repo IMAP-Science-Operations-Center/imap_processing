@@ -261,6 +261,7 @@ def test_combine_segmented_packets(segmented_pkts_fake_data):
         ),
     )
     np.testing.assert_array_equal(dataset["epoch"].values, np.array([0, 10, 30]))
+    np.testing.assert_array_equal(dataset["met"].values, np.array([0, 10, 30]))
 
 
 def test_validate_parse_events(sample_data, attr_mgr):
