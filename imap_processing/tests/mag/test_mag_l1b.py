@@ -75,7 +75,7 @@ def test_mag_attributes():
     output = mag_l1b(mag_l1a_dataset, "v001")
     assert output.attrs["Logical_source"] == "imap_mag_l1b_burst-magi"
 
-    assert output.attrs["Data_level"] == "L1B"
+    assert output.attrs["Data_level"] == "1B"
 
 
 def test_cdf_output():
