@@ -201,20 +201,19 @@ def process_ultra_events(sorted_packets: xr.Dataset, decom_data: dict) -> xr.Dat
     """
     all_events = []
     all_indices = []
+    EMPTY_EVENT = {field: np.iinfo(np.int64).min for field in EVENT_FIELD_RANGES}
+    counts = sorted_packets["count"].values
+    eventdata_array = sorted_packets["eventdata"].values
 
-    for i in range(len(sorted_packets["epoch"])):
-        count = sorted_packets["count"].values[i]
+    for i, count in enumerate(counts):
         if count == 0:
-            event_data_list = [
-                {field: np.iinfo(np.int64).min for field in EVENT_FIELD_RANGES}
-            ]
-            all_events.extend(event_data_list)
+            all_events.append(EMPTY_EVENT)
             all_indices.append(i)
         else:
             # Here there are multiple images in a single packet,
             # so we need to loop through each image and decompress it.
             event_data_list = read_image_raw_events_binary(
-                sorted_packets["eventdata"].values[i], count, decom_data
+                eventdata_array[i], count, decom_data
             )
             all_events.extend(event_data_list)
             all_indices.extend([i] * count)
