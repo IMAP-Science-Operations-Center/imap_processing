@@ -258,7 +258,7 @@ class PointingSet(ABC):
         -------
         non_spatial_coords : dict[str, xr.DataArray]
             Dictionary of coordinate names and their data arrays.
-            E.g.: {"epoch": [12345,], "energy_bin_center": [100, 200, 300]} .
+            E.g.: {"epoch": [12345,], "energy": [100, 200, 300]} .
         """
         non_spatial_coords = {}
         for coord_name in self.data.coords:
@@ -292,8 +292,8 @@ class RectangularPointingSet(PointingSet):
         Currently, the dataset is expected to be tiled in a rectangular grid,
         with data_vars indexed along the coordinates:
             - 'epoch' : time value (1 value per PSET)
-            - 'longitude_bin_center' : (number of longitude/az bins in L1C)
-            - 'latitude_bin_center' : (number of latitude/el bins in L1C)
+            - 'longitude' : (number of longitude/az bins in L1C)
+            - 'latitude' : (number of latitude/el bins in L1C)
     spice_reference_frame : geometry.SpiceFrame
         The reference Spice frame of the pointing set. Default is IMAP_DPS.
 
@@ -398,9 +398,9 @@ class UltraPointingSet(PointingSet):
         Currently, the dataset is expected to be tiled in a HEALPix tessellation,
         with data_vars indexed along the coordinates:
             - 'epoch' : time value (1 value per PSET, from the mean of the PSET)
-            - 'energy_bin_center' : (number of energy bins in L1C)
-            - 'healpix_pixel_index' : HEALPix pixel index
-        Only the 'healpix_pixel_index' coordinate is used in this class for projection.
+            - 'energy' : (number of energy bins in L1C)
+            - 'healpix_index' : HEALPix pixel index
+        Only the 'healpix_index' coordinate is used in this class for projection.
     spice_reference_frame : geometry.SpiceFrame
         The reference Spice frame of the pointing set. Default is IMAP_DPS.
 
@@ -534,7 +534,12 @@ class AbstractSkyMap(ABC):
             the pixel coordinate is renamed to CoordNames.HEALPIX_INDEX.value.
         """
         if len(self.data_1d.data_vars) == 0:
-            return xr.Dataset()
+            # If the map is empty, return an empty xarray Dataset,
+            # with the unaltered spatial coords of the map
+            return xr.Dataset(
+                {},
+                coords={**self.spatial_coords},
+            )
 
         if self.tiling_type is SkyTilingType.HEALPIX:
             # return the data_1d as is, but with the pixel coordinate
@@ -834,9 +839,9 @@ class HealpixSkyMap(AbstractSkyMap):
         # Define binning_grid_shape for consistency with RectangularSkyMap
         self.binning_grid_shape = (self.num_points,)
         self.spatial_coords = {
-            "healpix_pixel_number": xr.DataArray(
+            CoordNames.HEALPIX_INDEX.value: xr.DataArray(
                 np.arange(self.num_points),
-                dims=["healpix_pixel_number"],
+                dims=[CoordNames.HEALPIX_INDEX.value],
             )
         }
 
