@@ -16,6 +16,7 @@ from imap_processing.ultra.l0.decom_tools import (
     read_image_raw_events_binary,
 )
 from imap_processing.ultra.l0.ultra_utils import (
+    EVENT_FIELD_RANGES,
     RATES_KEYS,
     ULTRA_AUX,
     ULTRA_EVENTS,
@@ -92,13 +93,9 @@ def append_params(decom_data: dict, packet: packets.CCSDSPacket) -> None:
     packet : space_packet_parser.packets.CCSDSPacket
         Individual packet.
     """
-    # sorted_packets[0].user_data.items()
-    # dict_items([('U45_IMG_RAW_EVENTS.SHCOARSE', 445015651), ('U45_IMG_RAW_EVENTS.SID', 0), ('U45_IMG_RAW_EVENTS.SPIN', 127), ('U45_IMG_RAW_EVENTS.ABORTFLAG', 0), ('U45_IMG_RAW_EVENTS.STARTDELAY', 1), ('U45_IMG_RAW_EVENTS.COUNT', 0), ('U45_IMG_RAW_EVENTS.EVENTDATA', b'\x00')])
     for key, value in packet.user_data.items():
         decom_data[key].append(value)
 
-    # sorted_packets[0].header
-    # {'VERSION': 0, 'PHTYPE': 0, 'SEC_HDR_FLG': 1, 'PKT_APID': 896, 'SEQ_FLGS': 3, 'SRC_SEQ_CTR': 9346, 'PKT_LEN': 9}
     ccsds_data = CcsdsData(packet.header)
     append_ccsds_fields(decom_data, ccsds_data)
 
@@ -186,7 +183,7 @@ def process_ultra_tof(ds: xr.Dataset, decom_data: collections.defaultdict) -> di
     return decom_data
 
 
-def process_ultra_events(sorted_packets: xr.Dataset, decom_data: dict) -> dict:
+def process_ultra_events(sorted_packets: xr.Dataset, decom_data: dict) -> xr.Dataset:
     """
     Unpack and decode Ultra EVENTS packets.
 
@@ -199,21 +196,53 @@ def process_ultra_events(sorted_packets: xr.Dataset, decom_data: dict) -> dict:
 
     Returns
     -------
-    decom_data : dict
-        A dictionary containing the decoded data.
+    event_dataset : xr.Dataset
+        EVENTS packets containing the decoded data.
     """
+    all_events = []
+    all_indices = []
 
     for i in range(len(sorted_packets["epoch"])):
-        # Here there are multiple images in a single packet,
-        # so we need to loop through each image and decompress it.
         count = sorted_packets["count"].values[i]
-        event_data_list = read_image_raw_events_binary(sorted_packets["eventdata"].values[i],
-                                                  count, decom_data)
+        if count == 0:
+            event_data_list = [
+                {field: np.iinfo(np.int64).min for field in EVENT_FIELD_RANGES}
+            ]
+            all_events.extend(event_data_list)
+            all_indices.append(i)
+        else:
+            # Here there are multiple images in a single packet,
+            # so we need to loop through each image and decompress it.
+            event_data_list = read_image_raw_events_binary(
+                sorted_packets["eventdata"].values[i], count, decom_data
+            )
+            all_events.extend(event_data_list)
+            all_indices.extend([i] * count)
 
-    # Create expected dictionary
-    print('hi')
+    event_fields = all_events[0].keys()
+    event_data = {
+        field: np.array([ev[field] for ev in all_events]) for field in event_fields
+    }
 
-    return decom_data
+    idx = np.array(all_indices)
+
+    metadata = {
+        var: (["event"], sorted_packets[var].values[idx])
+        for var in sorted_packets.data_vars
+        if var != "eventdata"
+    }
+
+    coords = {
+        coord: (["event"], sorted_packets[coord].values[idx])
+        for coord in sorted_packets.coords
+    }
+
+    event_dataset = xr.Dataset(
+        data_vars={**metadata, **{k: ("event", v) for k, v in event_data.items()}},
+        coords={"event": np.arange(len(idx)), **coords},
+    )
+
+    return event_dataset
 
 
 def process_ultra_aux(sorted_packets: list, decom_data: dict) -> dict:
@@ -238,21 +267,21 @@ def process_ultra_aux(sorted_packets: list, decom_data: dict) -> dict:
     return decom_data
 
 
-def process_ultra_rates(sorted_packets: list, decom_data: dict) -> dict:
+def process_ultra_rates(sorted_packets: xr.Dataset, decom_data: dict) -> xr.Dataset:
     """
     Unpack and decode Ultra RATES packets.
 
     Parameters
     ----------
-    sorted_packets : list
+    sorted_packets : xr.Dataset
         RATES packets sorted by time.
     decom_data : collections.defaultdict
         Empty dictionary.
 
     Returns
     -------
-    decom_data : dict
-        A dictionary containing the decoded data.
+    sorted_packets : xr.Dataset
+        RATES packets containing the decoded data.
     """
     if (
         isinstance(ULTRA_RATES.mantissa_bit_length, int)
@@ -260,8 +289,8 @@ def process_ultra_rates(sorted_packets: list, decom_data: dict) -> dict:
         and isinstance(ULTRA_RATES.block, int)
         and isinstance(ULTRA_RATES.width, int)
     ):
-        for packet in sorted_packets:
-            raw_binary_string = convert_to_binary_string(packet["FASTDATA_00"])
+        for fastdata in sorted_packets["fastdata_00"]:
+            raw_binary_string = convert_to_binary_string(fastdata.item())
             decompressed_data = decompress_binary(
                 raw_binary_string,
                 ULTRA_RATES.width,
@@ -271,8 +300,9 @@ def process_ultra_rates(sorted_packets: list, decom_data: dict) -> dict:
             )
 
             for index in range(ULTRA_RATES.len_array):
-                decom_data[RATES_KEYS[index]].append(decompressed_data[index])
+                decom_data[RATES_KEYS[index].lower()].append(decompressed_data[index])
 
-            append_params(decom_data, packet)
+        for key, values in decom_data.items():
+            sorted_packets[key] = xr.DataArray(np.array(values), dims=["epoch"])
 
-    return decom_data
+    return sorted_packets
