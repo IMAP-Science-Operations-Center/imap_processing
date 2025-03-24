@@ -251,7 +251,7 @@ def mock_l1c_pset_product_healpix(  # noqa: PLR0913
     head : str, optional
         The sensor head (either '45' or '90') (default is '45').
     """
-    _, energy_bin_midpoints = build_energy_bins()
+    _, energy_bin_midpoints, _ = build_energy_bins()
     num_energy_bins = len(energy_bin_midpoints)
     npix = hp.nside2npix(nside)
     counts = np.zeros(npix)
