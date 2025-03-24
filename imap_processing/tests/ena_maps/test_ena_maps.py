@@ -78,13 +78,13 @@ class TestUltraPointingSet:
             # Check that the unwrapped_dims_dict is as expected
             assert ultra_pset.unwrapped_dims_dict["counts"] == (
                 "epoch",
-                "energy_bin_center",
+                "energy",
                 "pixel",
             )
             # Check the non_spatial_coords are as expected
             assert tuple(ultra_pset.non_spatial_coords.keys()) == (
                 "epoch",
-                "energy_bin_center",
+                "energy",
             )
 
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
@@ -185,9 +185,9 @@ class TestRectangularSkyMap:
         )
 
         # Project each PSET's values to the map (push method)
-        for rectangular_pset in self.rectangular_psets:
+        for ultra_pset in self.ultra_psets:
             rectangular_map.project_pset_values_to_map(
-                rectangular_pset,
+                ultra_pset,
                 value_keys=["counts", "exposure_time"],
                 index_match_method=index_matching_method,
             )
@@ -196,18 +196,29 @@ class TestRectangularSkyMap:
         assert "counts" in rectangular_map.data_1d.data_vars
 
         # Check that the map has the same values as the PSETs, summed
-        simple_summed_pset_counts = np.zeros_like(
-            self.ultra_l1c_pset_products[0]["counts"]
+        simple_summed_pset_counts_by_energy = np.zeros(
+            shape=(
+                self.ultra_l1c_pset_products[0]["counts"].sizes[
+                    CoordNames.ENERGY.value
+                ],
+            )
         )
         for pset in self.ultra_l1c_pset_products:
-            simple_summed_pset_counts += pset["counts"].values
+            simple_summed_pset_counts_by_energy += pset["counts"].sum(
+                dim=[d for d in pset["counts"].dims if d != CoordNames.ENERGY.value]
+            )
 
-        rm_counts_per_energy_bin = rectangular_map.data_1d["counts"].sum(axis=1)
-        summed_pset_counts_per_energy_bin = simple_summed_pset_counts.sum(axis=(0, 2))
+        rmap_counts_per_energy_bin = rectangular_map.data_1d["counts"].sum(
+            dim=[
+                d
+                for d in rectangular_map.data_1d["counts"].dims
+                if d != CoordNames.ENERGY.value
+            ]
+        )
 
         np.testing.assert_array_equal(
-            rm_counts_per_energy_bin,
-            summed_pset_counts_per_energy_bin,
+            rmap_counts_per_energy_bin,
+            simple_summed_pset_counts_by_energy,
         )
 
     @pytest.mark.usefixtures("_setup_rectangular_l1c_pset_products")
@@ -248,21 +259,29 @@ class TestRectangularSkyMap:
         assert "counts" in rectangular_map.data_1d.data_vars
 
         # Check that the map has the same values as the PSETs, summed
-        simple_summed_pset_counts = 0
-        for pset in self.l1c_pset_products:
-            simple_summed_pset_counts += pset["counts"].sum()
-        simple_summed_pset_counts = np.zeros_like(rectangular_map.data_dict["counts"])
-        for pset in self.rectangular_l1c_pset_products:
-            reshaped_pset_counts = pset["counts"].squeeze("epoch")
-            # Reshape to the map's counts shape
-            reshaped_pset_counts = reshaped_pset_counts.data.reshape(
-                rectangular_map.data_dict["counts"].shape
+        simple_summed_pset_counts_by_energy = np.zeros(
+            shape=(
+                self.rectangular_l1c_pset_products[0]["counts"].sizes[
+                    CoordNames.ENERGY.value
+                ],
             )
-            simple_summed_pset_counts += reshaped_pset_counts
+        )
+        for pset in self.rectangular_l1c_pset_products:
+            simple_summed_pset_counts_by_energy += pset["counts"].sum(
+                dim=[d for d in pset["counts"].dims if d != CoordNames.ENERGY.value]
+            )
+
+        rmap_counts_per_energy_bin = rectangular_map.data_1d["counts"].sum(
+            dim=[
+                d
+                for d in rectangular_map.data_1d["counts"].dims
+                if d != CoordNames.ENERGY.value
+            ]
+        )
 
         np.testing.assert_array_equal(
-            rectangular_map.data_1d["counts"].sum(),
-            simple_summed_pset_counts,
+            rmap_counts_per_energy_bin,
+            simple_summed_pset_counts_by_energy,
         )
 
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
@@ -283,7 +302,9 @@ class TestRectangularSkyMap:
 
     @pytest.mark.usefixtures("_setup_rectangular_l1c_pset_products")
     @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
-    def test_project_pset_values_to_map_pull_method(self, mock_frame_transform_az_el):
+    def test_project_rect_pset_values_to_map_pull_method(
+        self, mock_frame_transform_az_el
+    ):
         """
         Test projection Rect PSET to Rect. Map with "pull" index matching method.
 
@@ -351,7 +372,7 @@ class TestRectangularSkyMap:
         assert "counts" in rect_map_ds.data_vars
         assert rect_map_ds["counts"].shape == (
             1,
-            ultra_pset.data["counts"].sizes[CoordNames.ENERGY.value],
+            rectangular_pset.data["counts"].sizes[CoordNames.ENERGY.value],
             360 / skymap_spacing,
             180 / skymap_spacing,
         )

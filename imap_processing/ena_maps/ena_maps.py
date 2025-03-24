@@ -434,6 +434,7 @@ class UltraPointingSet(PointingSet):
 
         # Set the tiling type and number of points
         self.tiling_type = SkyTilingType.HEALPIX
+        self.spatial_coords = (CoordNames.HEALPIX_INDEX.value,)
         self.num_points = self.data[CoordNames.HEALPIX_INDEX.value].size
         self.nside = hp.npix_to_nside(self.num_points)
 
