@@ -3,8 +3,6 @@
 from dataclasses import fields
 from typing import NamedTuple, Union
 
-import numpy as np
-
 
 class PacketProperties(NamedTuple):
     """Class that represents properties of the ULTRA packet type."""
@@ -67,89 +65,88 @@ ULTRA_EVENTS = PacketProperties(
 
 
 # Module-level constant for event field ranges
-# Module-level constant for event field ranges
 EVENT_FIELD_RANGES = {
     # Coincidence Type
-    "COIN_TYPE": (0, 2),
+    "coin_type": (0, 2),
     # Start Type
-    "START_TYPE": (2, 4),
+    "start_type": (2, 4),
     # Stop Type
-    "STOP_TYPE": (4, 8),
+    "stop_type": (4, 8),
     # Start Position Time to Digital Converter
-    "START_POS_TDC": (8, 19),
+    "start_pos_tdc": (8, 19),
     # Stop North Time to Digital Converter
-    "STOP_NORTH_TDC": (19, 30),
+    "stop_north_tdc": (19, 30),
     # Stop East Time to Digital Converter
-    "STOP_EAST_TDC": (30, 41),
+    "stop_east_tdc": (30, 41),
     # Stop South Time to Digital Converter
-    "STOP_SOUTH_TDC": (41, 52),
+    "stop_south_tdc": (41, 52),
     # Stop West Time to Digital Converter
-    "STOP_WEST_TDC": (52, 63),
+    "stop_west_tdc": (52, 63),
     # Coincidence North Time to Digital Converter
-    "COIN_NORTH_TDC": (63, 74),
+    "coin_north_tdc": (63, 74),
     # Coincidence South Time to Digital Converter
-    "COIN_SOUTH_TDC": (74, 85),
+    "coin_south_tdc": (74, 85),
     # Coincidence Discrete Time to Digital Converter
-    "COIN_DISCRETE_TDC": (85, 96),
+    "coin_discrete_tdc": (85, 96),
     # Energy/Pulse Height
-    "ENERGY_PH": (96, 108),
+    "energy_ph": (96, 108),
     # Pulse Width
-    "PULSE_WIDTH": (108, 119),
+    "pulse_width": (108, 119),
     # Event Flag Count
-    "EVENT_FLAG_CNT": (119, 120),
+    "event_flag_cnt": (119, 120),
     # Event Flag PHCmpSL
-    "EVENT_FLAG_PHCMPSL": (120, 121),
+    "event_flag_phcmpsl": (120, 121),
     # Event Flag PHCmpSR
-    "EVENT_FLAG_PHCMPSR": (121, 122),
+    "event_flag_phcmpsr": (121, 122),
     # Event Flag PHCmpCD
-    "EVENT_FLAG_PHCMPCD": (122, 123),
+    "event_flag_phcmpcd": (122, 123),
     # Solid State Detector Flags
-    "SSD_FLAG_7": (123, 124),
-    "SSD_FLAG_6": (124, 125),
-    "SSD_FLAG_5": (125, 126),
-    "SSD_FLAG_4": (126, 127),
-    "SSD_FLAG_3": (127, 128),
-    "SSD_FLAG_2": (128, 129),
-    "SSD_FLAG_1": (129, 130),
-    "SSD_FLAG_0": (130, 131),
+    "ssd_flag_7": (123, 124),
+    "ssd_flag_6": (124, 125),
+    "ssd_flag_5": (125, 126),
+    "ssd_flag_4": (126, 127),
+    "ssd_flag_3": (127, 128),
+    "ssd_flag_2": (128, 129),
+    "ssd_flag_1": (129, 130),
+    "ssd_flag_0": (130, 131),
     # Constant Fraction Discriminator Flag Coincidence Top North
-    "CFD_FLAG_COINTN": (131, 132),
+    "cfd_flag_cointn": (131, 132),
     # Constant Fraction Discriminator Flag Coincidence Bottom North
-    "CFD_FLAG_COINBN": (132, 133),
+    "cfd_flag_coinbn": (132, 133),
     # Constant Fraction Discriminator Flag Coincidence Top South
-    "CFD_FLAG_COINTS": (133, 134),
+    "cfd_flag_coints": (133, 134),
     # Constant Fraction Discriminator Flag Coincidence Bottom South
-    "CFD_FLAG_COINBS": (134, 135),
+    "cfd_flag_coinbs": (134, 135),
     # Constant Fraction Discriminator Flag Coincidence Discrete
-    "CFD_FLAG_COIND": (135, 136),
+    "cfd_flag_coind": (135, 136),
     # Constant Fraction Discriminator Flag Start Right Full
-    "CFD_FLAG_STARTRF": (136, 137),
+    "cfd_flag_startrf": (136, 137),
     # Constant Fraction Discriminator Flag Start Left Full
-    "CFD_FLAG_STARTLF": (137, 138),
+    "cfd_flag_startlf": (137, 138),
     # Constant Fraction Discriminator Flag Start Position Right
-    "CFD_FLAG_STARTRP": (138, 139),
+    "cfd_flag_startrp": (138, 139),
     # Constant Fraction Discriminator Flag Start Position Left
-    "CFD_FLAG_STARTLP": (139, 140),
+    "cfd_flag_startlp": (139, 140),
     # Constant Fraction Discriminator Flag Stop Top North
-    "CFD_FLAG_STOPTN": (140, 141),
+    "cfd_flag_stoptn": (140, 141),
     # Constant Fraction Discriminator Flag Stop Bottom North
-    "CFD_FLAG_STOPBN": (141, 142),
+    "cfd_flag_stopbn": (141, 142),
     # Constant Fraction Discriminator Flag Stop Top East
-    "CFD_FLAG_STOPTE": (142, 143),
+    "cfd_flag_stopte": (142, 143),
     # Constant Fraction Discriminator Flag Stop Bottom East
-    "CFD_FLAG_STOPBE": (143, 144),
+    "cfd_flag_stopbe": (143, 144),
     # Constant Fraction Discriminator Flag Stop Top South
-    "CFD_FLAG_STOPTS": (144, 145),
+    "cfd_flag_stopts": (144, 145),
     # Constant Fraction Discriminator Flag Stop Bottom South
-    "CFD_FLAG_STOPBS": (145, 146),
+    "cfd_flag_stopbs": (145, 146),
     # Constant Fraction Discriminator Flag Stop Top West
-    "CFD_FLAG_STOPTW": (146, 147),
+    "cfd_flag_stoptw": (146, 147),
     # Constant Fraction Discriminator Flag Stop Bottom West
-    "CFD_FLAG_STOPBW": (147, 148),
+    "cfd_flag_stopbw": (147, 148),
     # Bin
-    "BIN": (148, 156),
+    "bin": (148, 156),
     # Phase Angle
-    "PHASE_ANGLE": (156, 166),
+    "phase_angle": (156, 166),
 }
 
 
