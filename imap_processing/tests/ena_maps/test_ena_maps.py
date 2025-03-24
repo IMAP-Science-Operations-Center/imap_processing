@@ -460,6 +460,89 @@ class TestHealpixSkyMap:
         # Check that the binning grid shape is just a tuple of num_points
         np.testing.assert_equal(hp_map.binning_grid_shape, (hp_map.num_points,))
 
+    @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
+    @pytest.mark.parametrize(
+        "nside,degree_tolerance",
+        [
+            (8, 6),
+            (16, 3),
+            (32, 2),
+        ],
+    )
+    @pytest.mark.parametrize("nested", [True, False], ids=["nested", "ring"])
+    @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
+    def test_project_healpix_pset_values_to_map_push_method(
+        self, mock_frame_transform_az_el, nside, degree_tolerance, nested
+    ):
+        """
+        Test that PointingSet which contains bright spot pushes to correct spot in map.
+
+        Parameterized over nside (of the map, not the PSET), nested.
+        The tolerance for lower nsides must be higher because the
+        Healpix pixels are larger.
+        """
+
+        # Mock frame_transform to return the az and el unchanged
+        mock_frame_transform_az_el.side_effect = (
+            lambda et, az_el, from_frame, to_frame, degrees: az_el
+        )
+
+        index_matching_method = ena_maps.IndexMatchMethod.PUSH
+
+        # Create a PointingSet with a bright spot
+        mock_pset_input_frame = ena_maps.UltraPointingSet(
+            l1c_dataset=self.ultra_l1c_pset_products[0],
+            spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
+        )
+        mock_pset_input_frame.data["counts"].values = np.zeros_like(
+            mock_pset_input_frame.data["counts"].values
+        )
+
+        input_bright_pixel_number = hp.ang2pix(
+            nside=mock_pset_input_frame.nside,
+            theta=180,
+            phi=0,
+            nest=mock_pset_input_frame.nested,
+            lonlat=True,
+        )
+        input_bright_pixel_az_el_deg = mock_pset_input_frame.az_el_points[
+            input_bright_pixel_number
+        ]
+        mock_pset_input_frame.data["counts"].values[
+            :,
+            :,
+            input_bright_pixel_number,
+        ] = 1
+
+        # Create a Healpix map
+        hp_map = ena_maps.HealpixSkyMap(
+            nside=nside,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+            nested=nested,
+        )
+
+        # Project the PointingSet to the Healpix map
+        hp_map.project_pset_values_to_map(
+            mock_pset_input_frame,
+            value_keys=[
+                "counts",
+            ],
+            index_match_method=index_matching_method,
+        )
+
+        # Check that the map has been updated
+        assert "counts" in hp_map.data_1d.data_vars
+
+        # Find the maximum value in the spatial pixel dimension of the healpix map
+        bright_hp_pixel_index = hp_map.data_1d["counts"][0, :].argmax()
+        bright_hp_pixel_az_el = hp_map.az_el_points[bright_hp_pixel_index]
+
+        np.testing.assert_allclose(
+            bright_hp_pixel_az_el,
+            input_bright_pixel_az_el_deg,
+            atol=degree_tolerance,
+        )
+
     @pytest.mark.usefixtures("_setup_rectangular_l1c_pset_products")
     @pytest.mark.parametrize(
         "nside,degree_tolerance",
