@@ -18,7 +18,6 @@ from imap_processing.ultra.l0.decom_tools import (
 from imap_processing.ultra.l0.ultra_utils import (
     EVENT_FIELD_RANGES,
     RATES_KEYS,
-    ULTRA_AUX,
     ULTRA_EVENTS,
     ULTRA_RATES,
     ULTRA_TOF,
@@ -81,25 +80,6 @@ def append_tof_params(
             data_dict[key].clear()
 
 
-def append_params(decom_data: dict, packet: packets.CCSDSPacket) -> None:
-    # Todo Update what packet type is.
-    """
-    Append parsed items to a dictionary, including decompressed data if available.
-
-    Parameters
-    ----------
-    decom_data : dict
-        Dictionary to which the data is appended.
-    packet : space_packet_parser.packets.CCSDSPacket
-        Individual packet.
-    """
-    for key, value in packet.user_data.items():
-        decom_data[key].append(value)
-
-    ccsds_data = CcsdsData(packet.header)
-    append_ccsds_fields(decom_data, ccsds_data)
-
-
 def process_ultra_apids(data: list, apid: int) -> Union[dict[Any, Any], bool]:
     """
     Unpack and decode Ultra packets using CCSDS format and XTCE packet definitions.
@@ -120,7 +100,6 @@ def process_ultra_apids(data: list, apid: int) -> Union[dict[Any, Any], bool]:
     strategy_dict = {
         ULTRA_TOF.apid[0]: process_ultra_tof,
         ULTRA_EVENTS.apid[0]: process_ultra_events,
-        ULTRA_AUX.apid[0]: process_ultra_aux,
         ULTRA_RATES.apid[0]: process_ultra_rates,
     }
 
@@ -201,13 +180,13 @@ def process_ultra_events(sorted_packets: xr.Dataset, decom_data: dict) -> xr.Dat
     """
     all_events = []
     all_indices = []
-    EMPTY_EVENT = {field: np.iinfo(np.int64).min for field in EVENT_FIELD_RANGES}
+    empty_event = {field: np.iinfo(np.int64).min for field in EVENT_FIELD_RANGES}
     counts = sorted_packets["count"].values
     eventdata_array = sorted_packets["eventdata"].values
 
     for i, count in enumerate(counts):
         if count == 0:
-            all_events.append(EMPTY_EVENT)
+            all_events.append(empty_event)
             all_indices.append(i)
         else:
             # Here there are multiple images in a single packet,
@@ -242,28 +221,6 @@ def process_ultra_events(sorted_packets: xr.Dataset, decom_data: dict) -> xr.Dat
     )
 
     return event_dataset
-
-
-def process_ultra_aux(sorted_packets: list, decom_data: dict) -> dict:
-    """
-    Unpack and decode Ultra AUX packets.
-
-    Parameters
-    ----------
-    sorted_packets : list
-        AUX packets sorted by time.
-    decom_data : collections.defaultdict
-        Empty dictionary.
-
-    Returns
-    -------
-    decom_data : dict
-        A dictionary containing the decoded data.
-    """
-    for packet in sorted_packets:
-        append_params(decom_data, packet)
-
-    return decom_data
 
 
 def process_ultra_rates(sorted_packets: xr.Dataset, decom_data: dict) -> xr.Dataset:
