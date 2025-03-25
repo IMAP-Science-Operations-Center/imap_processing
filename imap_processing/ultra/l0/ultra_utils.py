@@ -1,6 +1,5 @@
 """Contains data classes to support Ultra L0 processing."""
 
-from dataclasses import fields
 from typing import NamedTuple, Union
 
 
@@ -286,21 +285,3 @@ def parse_event(event_binary: str) -> dict:
         field_value = int(event_binary[start:end], 2)
         fields_dict[field] = field_value
     return fields_dict
-
-
-def append_ccsds_fields(decom_data: dict, ccsds_data_object: object) -> None:
-    """
-    Append CCSDS fields to event_data.
-
-    Parameters
-    ----------
-    decom_data : dict
-        Parsed data.
-    ccsds_data_object : DataclassInstance
-        CCSDS data object.
-    """
-    for field in fields(ccsds_data_object.__class__):  # type: ignore[arg-type]
-        ccsds_key = field.name
-        if ccsds_key not in decom_data:
-            decom_data[ccsds_key] = []
-        decom_data[ccsds_key].append(getattr(ccsds_data_object, ccsds_key))
