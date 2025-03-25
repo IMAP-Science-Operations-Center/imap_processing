@@ -281,13 +281,17 @@ def ultra_l1a(
     else:
         apids = list(datasets_by_apid.keys())
 
+    compressed_apids = set(ULTRA_EVENTS.apid + ULTRA_TOF.apid + ULTRA_RATES.apid)
     for apid in apids:
-        decom_ultra_dict = {
-            apid: process_ultra_apids(datasets_by_apid[apid], apid),
-        }
-        dataset = create_dataset(decom_ultra_dict)
+        if apid not in compressed_apids:
+            decom_ultra_dataset = datasets_by_apid[apid]
+        else:
+            decom_ultra_dataset = {
+                apid: process_ultra_apids(datasets_by_apid[apid], apid),
+            }
+        #dataset = create_dataset(decom_ultra_dict)
         # TODO: move this to use ImapCdfAttributes().add_global_attribute()
-        dataset.attrs["Data_version"] = data_version
-        output_datasets.append(dataset)
+        #dataset.attrs["Data_version"] = data_version
+        output_datasets.append(decom_ultra_dataset)
 
     return output_datasets
