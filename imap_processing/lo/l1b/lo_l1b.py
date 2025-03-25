@@ -184,7 +184,7 @@ def get_spin_phase(l1a_de_data: xr.Dataset) -> Union[np.ndarray[np.float64], Any
     for asc_de_times in de_time_asc_groups:
         # DE Time is 12 bit DN. The max possible value is 4096
         spin_phase.extend(asc_de_times / 4096 * 360)
-    return np.array(spin_phase).astype(np.float64)
+    return np.array(spin_phase, dtype=np.float64)
 
 
 def set_spin_bin(l1b_de: xr.Dataset, spin_phase: np.ndarray) -> xr.Dataset:
