@@ -2,6 +2,7 @@
 
 from dataclasses import Field
 from pathlib import Path
+from typing import Any, Union
 
 import numpy as np
 import xarray as xr
@@ -49,6 +50,11 @@ def lo_l1b(dependencies: dict, data_version: str) -> list[Path]:
         # Get the average spin durations for each epoch
         avg_spin_durations = get_avg_spin_durations(acq_start, acq_end)  # noqa: F841
         # get spin phase for each DE
+        # get spin phase for each DE
+        spin_phase = get_spin_phase(l1a_de)
+        # calculate and set the spin bin based on the spin phase
+        # spin bins are 0 - 60 bins
+        l1b_de = set_spin_bin(l1b_de, spin_phase)
 
     return [l1b_de]
 
@@ -156,6 +162,56 @@ def get_avg_spin_durations(
     # There are 28 spins per epoch (1 aggregated science cycle)
     avg_spin_durations = (acq_end - acq_start) / 28
     return avg_spin_durations
+
+
+def get_spin_phase(l1a_de_data: xr.Dataset) -> Union[np.ndarray[np.float64], Any]:
+    """
+    Get the spin phase (0 - 360 degrees) for each DE.
+
+    Parameters
+    ----------
+    l1a_de_data : xarray.Dataset
+        The L1A DE dataset.
+
+    Returns
+    -------
+    spin_phase : np.ndarray
+        The spin phase for each DE.
+    """
+    counts = l1a_de_data["de_count"].values
+    de_time_asc_groups = np.split(l1a_de_data["de_time"].values, np.cumsum(counts)[:-1])
+    spin_phase: list[float] = []
+    for asc_de_times in de_time_asc_groups:
+        # DE Time is 12 bit DN. The max possible value is 4096
+        spin_phase.extend(asc_de_times / 4096 * 360)
+    return np.array(spin_phase).astype(np.float64)
+
+
+def set_spin_bin(l1b_de: xr.Dataset, spin_phase: np.ndarray) -> xr.Dataset:
+    """
+    Set the spin bin (0 - 60 bins) for each DE.
+
+    Parameters
+    ----------
+    l1b_de : xarray.Dataset
+        The L1B Direct Event dataset.
+    spin_phase : np.ndarray
+        The spin phase (0-360 degrees) for each Direct Event.
+
+    Returns
+    -------
+    l1b_de : xarray.Dataset
+        The L1B DE dataset with the spin bin added.
+    """
+    # Get the spin bin for each DE
+    spin_bin = (spin_phase // 6).astype(int)
+    l1b_de["spin_bin"] = xr.DataArray(
+        spin_bin,
+        dims=["direct_event"],
+        # TODO: Add spin phase to YAML file
+        # attrs=attr_mgr.get_variable_attributes("spin_bin"),
+    )
+    return l1b_de
 
 
 # TODO: This is going to work differently when I sample data.
