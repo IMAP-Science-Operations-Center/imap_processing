@@ -109,7 +109,7 @@ def process_ultra_apids(data: list, apid: int) -> Union[dict[Any, Any], bool]:
     return decom_data
 
 
-def process_ultra_tof(ds: xr.Dataset, decom_data: collections.defaultdict) -> dict:
+def process_ultra_tof(ds: xr.Dataset, decom_data: collections.defaultdict) -> xr.Dataset:
     """
     Unpack and decode Ultra TOF packets.
 
@@ -122,27 +122,61 @@ def process_ultra_tof(ds: xr.Dataset, decom_data: collections.defaultdict) -> di
 
     Returns
     -------
-    decom_data : dict
-        A dictionary containing the decoded data.
+    decompressed_ds : xarray.Dataset
+        A dataset containing the decoded and decompressed data.
     """
-    stacked_dict: dict = defaultdict(list)
-    data_dict: dict = defaultdict(list)
+    scalar_keys = ["spin", "abortflag", "startdelay", "p00", "version"]
 
-    if isinstance(ULTRA_TOF.mantissa_bit_length, int) and isinstance(
-        ULTRA_TOF.width, int
-    ):
-        for i in range(len(ds["packetdata"])):
-            binary_data = convert_to_binary_string(ds["packetdata"].values[i])
-            # Decompress the image data
-            decompressed_data = decompress_image(
-                ds["p00"].values[i],
-                binary_data,
-                ULTRA_TOF.width,
-                ULTRA_TOF.mantissa_bit_length,
-            )
-            print('stopped here')
+    decom_data = {key: [] for key in scalar_keys}
+    decom_data["packetdata"] = []
+    valid_shcoarse = []
 
-    return decom_data
+    for shc_val, group in ds.groupby("shcoarse"):
+        if set(group["sid"].values) >= set(range(8)):
+            group = group.sortby("sid")
+            valid_shcoarse.append(np.uint64(shc_val))  # Ensure uint64
+
+            for key in scalar_keys:
+                decom_data[key].append(group[key].values)  # shape (8,)
+
+            image = []
+            for i in range(8):
+                binary = convert_to_binary_string(group['packetdata'].values[i])
+                decompressed = decompress_image(
+                    group['p00'].values[i],
+                    binary,
+                    ULTRA_TOF.width,
+                    ULTRA_TOF.mantissa_bit_length,
+                )
+                image.append(decompressed)
+
+            decom_data["packetdata"].append(np.stack(image))
+
+    for key in scalar_keys:
+        decom_data[key] = np.stack(decom_data[key])
+
+    decom_data["packetdata"] = np.stack(decom_data["packetdata"])
+
+    coords = {
+        "epoch": np.array(valid_shcoarse, dtype=np.uint64),
+        "sid": np.arange(8),
+        "row": xr.DataArray(np.arange(54), dims=["row"], name="row"),
+        "column": xr.DataArray(np.arange(180), dims=["column"], name="column"),
+    }
+
+    decompressed_ds = xr.Dataset(
+        {
+            key.upper(): (["epoch", "sid"], decom_data[key])
+            for key in scalar_keys
+        } | {
+            "PACKETDATA": (["epoch", "sid", "row", "column"], decom_data["packetdata"])
+        },
+        coords=coords,
+    )
+
+    return decompressed_ds
+
+
 
 
 def process_ultra_events(sorted_packets: xr.Dataset, decom_data: dict) -> xr.Dataset:
