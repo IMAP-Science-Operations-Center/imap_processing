@@ -189,7 +189,7 @@ def get_spin_phase(l1a_de_data: xr.Dataset) -> Union[np.ndarray[np.float64], Any
 
 def set_spin_bin(l1b_de: xr.Dataset, spin_phase: np.ndarray) -> xr.Dataset:
     """
-    Set the spin bin (0 - 60 bins) for each DE.
+    Set the spin bin (0 - 60 bins) for each Direct Event.
 
     Parameters
     ----------
@@ -207,7 +207,7 @@ def set_spin_bin(l1b_de: xr.Dataset, spin_phase: np.ndarray) -> xr.Dataset:
     spin_bin = (spin_phase // 6).astype(int)
     l1b_de["spin_bin"] = xr.DataArray(
         spin_bin,
-        dims=["direct_event"],
+        dims=["epoch"],
         # TODO: Add spin phase to YAML file
         # attrs=attr_mgr.get_variable_attributes("spin_bin"),
     )
