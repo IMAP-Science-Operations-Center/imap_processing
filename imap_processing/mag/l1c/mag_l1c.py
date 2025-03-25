@@ -42,10 +42,12 @@ def mag_l1c(
     """
     # TODO:
     # find missing sequences and output them
-    # add missing interpolation methods
     # Fix gaps at the beginning of the day by going to previous day's file
     # Fix gaps at the end of the day
-    # Pass vecsec through to generation step
+    # Allow for one input to be missing
+    # Missing burst file - just pass through norm file
+    # Missing norm file - go back to previous L1C file to find timestamps, then
+    # interpolate the entire day from burst
 
     input_logical_source_1 = first_input_dataset.attrs["Logical_source"]
     if isinstance(first_input_dataset.attrs["Logical_source"], list):
