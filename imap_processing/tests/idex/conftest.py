@@ -9,6 +9,7 @@ TEST_DATA_PATH = imap_module_directory / "tests" / "idex" / "test_data"
 
 TEST_L0_FILE = TEST_DATA_PATH / "imap_idex_l0_raw_20231218_v001.pkts"
 L1A_EXAMPLE_FILE = TEST_DATA_PATH / "idex_l1a_validation_file.h5"
+L1B_EXAMPLE_FILE = TEST_DATA_PATH / "idex_l1b_validation_file.h5"
 
 pytestmark = pytest.mark.external_test_data
 
@@ -49,6 +50,19 @@ def l1a_example_data(_download_test_data):
       A dictionary containing the 6 waveform and telemetry arrays
     """
     return load_hdf_file(L1A_EXAMPLE_FILE)
+
+
+@pytest.fixture(scope="session")
+def l1b_example_data(_download_test_data):
+    """
+    Pytest fixture to load example L1B data (produced by the IDEX team) for testing.
+
+    Returns
+    -------
+    dict
+      A dictionary containing the 6 waveform and telemetry arrays
+    """
+    return load_hdf_file(L1B_EXAMPLE_FILE)
 
 
 def get_spice_data_side_effect_func(l1a_ds, idex_attrs):
@@ -95,7 +109,7 @@ def load_hdf_file(path: str) -> xr.Dataset:
         ds = tree.to_dataset()
         # Sort dimensions by shape. The high sampling time dimension is always less
         # than the low sampling time.
-        dims = [k for k, v in sorted(ds.dims.items(), key=lambda item: item[1])]
+        dims = [k for k, v in sorted(ds.sizes.items(), key=lambda item: item[1])]
         ds = ds.rename({dims[0]: "time_low", dims[1]: "time_high"}).expand_dims(
             {"event": [event_num]}
         )

@@ -176,7 +176,7 @@ def test_get_trigger_settings_success(decom_test_data):
     expected_modes = np.full(n_epochs, "HGThreshold")
     expected_modes[0] = "MGThreshold"
     expected_levels = np.full(n_epochs, 0.16762)
-    expected_levels[0] = 1023.0
+    expected_levels[0] = 1023.0 * 1.13e-2
 
     assert (trigger_settings["triggermode"].data == expected_modes).all(), (
         f"The dict entry 'triggermode' values did not match the expected values: "
@@ -185,7 +185,7 @@ def test_get_trigger_settings_success(decom_test_data):
 
     assert (trigger_settings["triggerlevel"].data == expected_levels).all(), (
         f"The dict entry 'triggerlevel' values did not match the expected values: "
-        f"{expected_levels}. Found: {trigger_settings['triggerlevels'].data}"
+        f"{expected_levels}. Found: {trigger_settings['triggerlevel'].data}"
     )
 
 
@@ -246,3 +246,86 @@ def test_get_spice_data(
     for array in conftest.SPICE_ARRAYS:
         assert array in spice_data
         assert len(spice_data[array]) == len(decom_test_data["epoch"])
+
+
+def test_validate_l1b_idex_data_variables(
+    l1b_dataset: xr.Dataset, l1b_example_data: xr.Dataset
+):
+    """
+    Verify that each of the 6 waveform and telemetry arrays are equal to the
+    corresponding array produced by the IDEX team using the same l0 file.
+
+    The comparison is limited to `num_events` because the L1B example contains fewer
+    events (due to file size requirements) than the SCD dataset.
+
+
+    Parameters
+    ----------
+    l1b_dataset : xarray.Dataset
+        The dataset to test with
+    l1b_example_data: xr.Dataset
+        A dataset containing the 6 waveform and telemetry arrays
+    """
+    # Lookup table to match the SDC array names to the Idex Team array names
+
+    match_variables = {
+        "TOF L": "TOF_Low",
+        "TOF H": "TOF_High",
+        "TOF M": "TOF_Mid",
+        "Target H": "Target_High",
+        "Target L": "Target_Low",
+        "Ion Grid": "Ion_Grid",
+        "Time (high sampling)": "time_high_sample_rate",
+        "Time (low sampling)": "time_low_sample_rate",
+        "current_2V5_bus": "current_2p5v_bus",
+        "current_3V3_bus": "current_3p3v_bus",
+        "current_neg2V5_bus": "current_neg2p5v_bus",
+        "voltage_3V3_op_ref": "voltage_3p3_op_ref",
+        "voltage_3V3_ref": "voltage_3p3_ref",
+        "voltage_pos3V3_bus": "voltage_pos3p3v_bus",
+    }
+
+    # The Engineering data is converting to UTC, and the SDC is converting to J2000,
+    # for 'epoch' and 'Timestamp' so this test is using the raw time value 'SCHOARSE' to
+    # validate time
+    # TODO remove schoarse and list
+    arrays_to_skip = [
+        "Timestamp",
+        "Epoch",
+        "Pitch",
+        "Roll",
+        "Yaw",
+        "Declination",
+        "PositionX",
+        "PositionY",
+        "PositionZ",
+        "VelocityX",
+        "VelocityY",
+        "VelocityZ",
+        "RightAscension",
+    ]
+    # Compare each corresponding variable
+    for var in l1b_example_data.data_vars:
+        if var not in arrays_to_skip:
+            # Find the corresponding array name
+            if var in match_variables.keys():
+                cdf_var = match_variables[var]
+            else:
+                cdf_var = var.lower().replace(".", "p")
+
+            warning = (
+                f"The array '{cdf_var}' does not equal the expected example array "
+            )
+            f"'{var}' produced by the IDEX team"
+
+            if l1b_dataset[cdf_var].dtype == object:
+                assert (
+                    l1b_dataset[cdf_var].data == l1b_example_data[var]
+                ).all(), warning
+
+            else:
+                assert np.allclose(
+                    l1b_dataset[cdf_var].data,
+                    l1b_example_data[var],
+                    rtol=1e-04,
+                ), warning
