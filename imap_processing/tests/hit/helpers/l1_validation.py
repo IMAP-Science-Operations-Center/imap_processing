@@ -48,16 +48,16 @@ RENAME_COLUMNS = {
 }
 
 MOD_VALUE_TO_SPECIES_ENERGY_MAP = {
-    0: {"species": "H", "energy_bin": 0},
-    1: {"species": "H", "energy_bin": 1},
-    2: {"species": "H", "energy_bin": 2},
-    3: {"species": "He4", "energy_bin": 0},
-    4: {"species": "He4", "energy_bin": 1},
-    5: {"species": "CNO", "energy_bin": 0},
-    6: {"species": "CNO", "energy_bin": 1},
-    7: {"species": "NeMgSi", "energy_bin": 0},
-    8: {"species": "NeMgSi", "energy_bin": 1},
-    9: {"species": "Fe", "energy_bin": 0},
+    0: {"species": "h", "energy_bin": 0},
+    1: {"species": "h", "energy_bin": 1},
+    2: {"species": "h", "energy_bin": 2},
+    3: {"species": "he4", "energy_bin": 0},
+    4: {"species": "he4", "energy_bin": 1},
+    5: {"species": "cno", "energy_bin": 0},
+    6: {"species": "cno", "energy_bin": 1},
+    7: {"species": "nemgsi", "energy_bin": 0},
+    8: {"species": "nemgsi", "energy_bin": 1},
+    9: {"species": "fe", "energy_bin": 0},
 }
 
 
@@ -304,7 +304,7 @@ def add_species_energy(data: pd.DataFrame) -> pd.DataFrame:
         )
     )
     data["species"] = data["mod_10"].apply(
-        lambda row: MOD_VALUE_TO_SPECIES_ENERGY_MAP[row]["species"].lower()
+        lambda row: MOD_VALUE_TO_SPECIES_ENERGY_MAP[row]["species"]
         if row is not None
         else None
     )
