@@ -49,7 +49,7 @@ def lo_l1b(dependencies: dict, data_version: str) -> list[Path]:
         acq_start, acq_end = convert_start_end_acq_times(spin_data)
         # Get the average spin durations for each epoch
         avg_spin_durations = get_avg_spin_durations(acq_start, acq_end)  # noqa: F841
-        # get spin phase for each DE
+        # get spin phase (0 - 360 degrees) for each DE
         spin_phase = get_spin_phase(l1a_de)
         # calculate and set the spin bin based on the spin phase
         # spin bins are 0 - 60 bins
