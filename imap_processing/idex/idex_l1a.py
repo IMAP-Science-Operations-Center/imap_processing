@@ -110,28 +110,36 @@ class PacketParser:
             np.arange(len(self.data["time_low_sample_rate"][0])),
             name="time_low_sample_rate_index",
             dims=["time_low_sample_rate_index"],
-            attrs=idex_attrs.get_variable_attributes("time_low_sample_rate_index"),
+            attrs=idex_attrs.get_variable_attributes(
+                "time_low_sample_rate_index", check_schema=False
+            ),
         )
 
         self.data["time_high_sample_rate_index"] = xr.DataArray(
             np.arange(len(self.data["time_high_sample_rate"][0])),
             name="time_high_sample_rate_index",
             dims=["time_high_sample_rate_index"],
-            attrs=idex_attrs.get_variable_attributes("time_high_sample_rate_index"),
+            attrs=idex_attrs.get_variable_attributes(
+                "time_high_sample_rate_index", check_schema=False
+            ),
         )
         # NOTE: LABL_PTR_1 should be CDF_CHAR.
         self.data["time_low_sample_rate_label"] = xr.DataArray(
             self.data.time_low_sample_rate_index.values.astype(str),
             name="time_low_sample_rate_label",
             dims=["time_low_sample_rate_index"],
-            attrs=idex_attrs.get_variable_attributes("time_low_sample_rate_label"),
+            attrs=idex_attrs.get_variable_attributes(
+                "time_low_sample_rate_label", check_schema=False
+            ),
         )
 
         self.data["time_high_sample_rate_label"] = xr.DataArray(
             self.data.time_high_sample_rate_index.values.astype(str),
             name="time_high_sample_rate_label",
             dims=["time_high_sample_rate_index"],
-            attrs=idex_attrs.get_variable_attributes("time_high_sample_rate_label"),
+            attrs=idex_attrs.get_variable_attributes(
+                "time_high_sample_rate_label", check_schema=False
+            ),
         )
 
         logger.info("IDEX L1A science data processing completed.")
@@ -450,7 +458,7 @@ class RawDustEvent:
             ints = ints[:-3]
         else:
             ints = _read_waveform_bits(waveform_raw, high_sample=True)
-        return ints
+        return ints  # type: ignore
 
     def _parse_low_sample_waveform(self, waveform_raw: str) -> list[int]:
         """
@@ -474,7 +482,7 @@ class RawDustEvent:
             ints = rice_decode(waveform_raw, nbit10=False, sample_count=samples)
         else:
             ints = _read_waveform_bits(waveform_raw, high_sample=False)
-        return ints
+        return ints  # type: ignore
 
     def _calc_low_sample_resolution(self, num_samples: int) -> npt.NDArray:
         """
@@ -615,7 +623,7 @@ class RawDustEvent:
             name="epoch",
             data=[self.impact_time],
             dims=("epoch"),
-            attrs=idex_attrs.get_variable_attributes("epoch"),
+            attrs=idex_attrs.get_variable_attributes("epoch", check_schema=False),
         )
 
         time_low_sample_rate = xr.DataArray(

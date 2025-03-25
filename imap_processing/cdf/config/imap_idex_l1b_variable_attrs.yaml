@@ -31,12 +31,12 @@ l1b_data_base: &l1b_data_base
 
 l1b_tof_base: &l1b_tof_base
   <<: *l1b_data_base
-  DEPEND_1: time_high_sample_rate
+  DEPEND_1: time_high_sample_rate_index
   LABL_PTR_1: time_high_sample_rate_label
 
 l1b_target_base: &l1b_target_base
   <<: *l1b_data_base
-  DEPEND_1: time_low_sample_rate
+  DEPEND_1: time_low_sample_rate_index
   LABL_PTR_1: time_low_sample_rate_label
 
 trigger_base: &trigger_base
