@@ -128,36 +128,19 @@ def process_ultra_tof(ds: xr.Dataset, decom_data: collections.defaultdict) -> di
     stacked_dict: dict = defaultdict(list)
     data_dict: dict = defaultdict(list)
 
-    # For TOF we need to sort by time and then SID
-    ds = ds.sortby(["epoch", "sid"])
-
     if isinstance(ULTRA_TOF.mantissa_bit_length, int) and isinstance(
         ULTRA_TOF.width, int
     ):
-        for epoch in ds["epoch"]:
-            packet = ds.sel(epoch=epoch)
-            binary_data = convert_to_binary_string(packet["PACKETDATA"])
+        for i in range(len(ds["packetdata"])):
+            binary_data = convert_to_binary_string(ds["packetdata"].values[i])
             # Decompress the image data
             decompressed_data = decompress_image(
-                packet["P00"],
+                ds["p00"].values[i],
                 binary_data,
                 ULTRA_TOF.width,
                 ULTRA_TOF.mantissa_bit_length,
             )
-
-            # Append the decompressed data and other derived data
-            # to the dictionary
-            append_tof_params(
-                decom_data,
-                packet,
-                decompressed_data=decompressed_data,
-                data_dict=data_dict,
-                stacked_dict=stacked_dict,
-            )
-
-    # Stack the data to create required dimensions
-    for key, value in stacked_dict.items():
-        decom_data[key] = np.stack(value)
+            print('stopped here')
 
     return decom_data
 
