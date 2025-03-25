@@ -19,7 +19,6 @@ from imap_processing._version import __version__, __version_tuple__  # noqa: F40
 # Eg. imap_module_directory = /usr/local/lib/python3.11/site-packages/imap_processing
 imap_module_directory = Path(__file__).parent
 
-# TODO: should we move this to imap-data-access?
 PROCESSING_LEVELS = {
     "codice": ["l1a", "l1b", "l2"],
     "glows": ["l1a", "l1b", "l2"],
