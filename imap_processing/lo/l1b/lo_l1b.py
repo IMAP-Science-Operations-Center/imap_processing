@@ -163,13 +163,13 @@ def get_avg_spin_durations(
     return avg_spin_durations
 
 
-def get_spin_phase(l1a_de_data: xr.Dataset) -> Union[np.ndarray[np.float64], Any]:
+def get_spin_phase(l1a_de: xr.Dataset) -> Union[np.ndarray[np.float64], Any]:
     """
     Get the spin phase (0 - 360 degrees) for each DE.
 
     Parameters
     ----------
-    l1a_de_data : xarray.Dataset
+    l1a_de : xarray.Dataset
         The L1A DE dataset.
 
     Returns
@@ -177,7 +177,7 @@ def get_spin_phase(l1a_de_data: xr.Dataset) -> Union[np.ndarray[np.float64], Any
     spin_phase : np.ndarray
         The spin phase for each DE.
     """
-    de_times = l1a_de_data["de_time"].values
+    de_times = l1a_de["de_time"].values
     # DE Time is 12 bit DN. The max possible value is 4096
     spin_phase = np.array(de_times / 4096 * 360, dtype=np.float64)
     return spin_phase
