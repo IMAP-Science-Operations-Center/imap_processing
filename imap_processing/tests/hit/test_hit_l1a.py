@@ -75,13 +75,13 @@ def test_subcom_sectorates(sci_packet_filepath):
 
         # Check the shape of the new data variables
         if species == "h":
-            assert sci_dataset[f"{species}_counts_sectored"].shape == (frames, 3, 8, 15)
+            assert sci_dataset[f"{species}_counts_sectored"].shape == (frames, 3, 15, 8)
             assert sci_dataset[f"{species}_energy_min"].shape == (3,)
-        elif species in ("4he", "cno", "nemgsi"):
-            assert sci_dataset[f"{species}_counts_sectored"].shape == (frames, 2, 8, 15)
+        elif species in ("he4", "cno", "nemgsi"):
+            assert sci_dataset[f"{species}_counts_sectored"].shape == (frames, 2, 15, 8)
             assert sci_dataset[f"{species}_energy_min"].shape == (2,)
         elif species == "fe":
-            assert sci_dataset[f"{species}_counts_sectored"].shape == (frames, 1, 8, 15)
+            assert sci_dataset[f"{species}_counts_sectored"].shape == (frames, 1, 15, 8)
             assert sci_dataset[f"{species}_energy_min"].shape == (1,)
         assert (
             sci_dataset[f"{species}_energy_max"].shape

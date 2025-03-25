@@ -215,13 +215,13 @@ def consolidate_sectorates(data: pd.DataFrame) -> pd.DataFrame:
     ).columns
 
     data["sectorates"] = data[sectorates_three_digits].apply(
-        lambda row: row.values.reshape(8, 15), axis=1
+        lambda row: row.values.reshape(15, 8), axis=1
     )
     data["sectorates_delta_plus"] = data[sectorates_delta_plus_three_digits].apply(
-        lambda row: row.values.reshape(8, 15), axis=1
+        lambda row: row.values.reshape(15, 8), axis=1
     )
     data["sectorates_delta_minus"] = data[sectorates_delta_minus_three_digits].apply(
-        lambda row: row.values.reshape(8, 15), axis=1
+        lambda row: row.values.reshape(15, 8), axis=1
     )
 
     sectorates_four_digits = data.filter(regex=r"^SECTORATES_\d{3}_\d{1}$").columns
@@ -348,7 +348,7 @@ def compare_data(
                     # which are only present in the validation data. In the actual
                     # data, sector rates are organized by species in 4D arrays.
                     #    i.e. h_counts_sectored has shape
-                    #         (epoch, h_energy_index, declination, azimuth).
+                    #         (epoch, h_energy_index, azimuth, declination).
                     # species and energy index are used to find the correct
                     # array of sector rate data from the actual data for comparison.
                     species = expected_data[field][frame]

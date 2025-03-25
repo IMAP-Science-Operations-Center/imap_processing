@@ -92,9 +92,9 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
         # Get dims for data variables (yaml file not created yet)
         if len(field_meta.shape) > 1:
             if "sectorates" in field:
-                # Reshape data to 8x15 for declination and azimuth look directions
+                # Reshape data to 15x8 for azimuth and declination look directions
                 parsed_data = np.array(parsed_data).reshape((-1, *field_meta.shape))
-                dims = ["epoch", "declination", "azimuth"]
+                dims = ["epoch", "azimuth", "declination"]
                 # Add angle values to coordinates
                 sci_dataset.coords["declination"] = xr.DataArray(
                     data=DECLINATION_ANGLES,

@@ -6,16 +6,16 @@ import numpy as np
 
 # energy_units: MeV/n
 MOD_10_MAPPING = {
-    0: {"species": "H", "energy_min": 1.8, "energy_max": 3.6},
-    1: {"species": "H", "energy_min": 4, "energy_max": 6},
-    2: {"species": "H", "energy_min": 6, "energy_max": 10},
-    3: {"species": "He4", "energy_min": 4, "energy_max": 6},
-    4: {"species": "He4", "energy_min": 6, "energy_max": 12},
-    5: {"species": "CNO", "energy_min": 4, "energy_max": 6},
-    6: {"species": "CNO", "energy_min": 6, "energy_max": 12},
-    7: {"species": "NeMgSi", "energy_min": 4, "energy_max": 6},
-    8: {"species": "NeMgSi", "energy_min": 6, "energy_max": 12},
-    9: {"species": "Fe", "energy_min": 4, "energy_max": 12},
+    0: {"species": "h", "energy_min": 1.8, "energy_max": 3.6},
+    1: {"species": "h", "energy_min": 4, "energy_max": 6},
+    2: {"species": "h", "energy_min": 6, "energy_max": 10},
+    3: {"species": "he4", "energy_min": 4, "energy_max": 6},
+    4: {"species": "he4", "energy_min": 6, "energy_max": 12},
+    5: {"species": "cno", "energy_min": 4, "energy_max": 6},
+    6: {"species": "cno", "energy_min": 6, "energy_max": 12},
+    7: {"species": "nemgsi", "energy_min": 4, "energy_max": 6},
+    8: {"species": "nemgsi", "energy_min": 6, "energy_max": 12},
+    9: {"species": "fe", "energy_min": 4, "energy_max": 12},
 }
 
 # Structure to hold binary details for a
@@ -100,7 +100,7 @@ COUNTS_DATA_STRUCTURE = {
     "penfgrates": HITPacking(16, 528, (33,)),  # range 4 foreground rates
     "penbgrates": HITPacking(16, 240, (15,)),  # range 4 background rates
     "ialirtrates": HITPacking(16, 320, (20,)),  # ialirt rates
-    "sectorates": HITPacking(16, 1920, (8, 15)),  # sectored rates
+    "sectorates": HITPacking(16, 1920, (15, 8)),  # sectored rates
     "l4fgrates": HITPacking(16, 768, (48,)),  # all range foreground rates
     "l4bgrates": HITPacking(16, 384, (24,)),  # all range foreground rates
 }

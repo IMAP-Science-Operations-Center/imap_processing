@@ -75,16 +75,16 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
     values to species and energy ranges is provided in constants.py.
 
     MOD_10_MAPPING = {
-        0: {"species": "H", "energy_min": 1.8, "energy_max": 3.6},
-        1: {"species": "H", "energy_min": 4, "energy_max": 6},
-        2: {"species": "H", "energy_min": 6, "energy_max": 10},
-        3: {"species": "4He", "energy_min": 4, "energy_max": 6},
+        0: {"species": "h", "energy_min": 1.8, "energy_max": 3.6},
+        1: {"species": "h", "energy_min": 4, "energy_max": 6},
+        2: {"species": "h", "energy_min": 6, "energy_max": 10},
+        3: {"species": "he4", "energy_min": 4, "energy_max": 6},
         ...
-        9: {"species": "Fe", "energy_min": 4, "energy_max": 12}}
+        9: {"species": "fe", "energy_min": 4, "energy_max": 12}}
 
     The data is added to the dataset as new data fields named
     according to their species. They have 4 dimensions: epoch
-    energy index, declination, and azimuth. The energy index
+    energy index, azimuth, and declination. The energy index
     dimension is used to distinguish between the different energy
     ranges the data belongs to. The energy min and max values for
     each species are also added to the dataset as new data fields.
@@ -98,13 +98,13 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
     hdr_min_count_mod_10 = sci_dataset.hdr_minute_cnt.values % 10
 
     # Reference mod 10 mapping to initialize data structure for species and
-    # energy ranges and add 8x15 arrays with fill values for each science frame.
+    # energy ranges and add 15x8 arrays with fill values for each science frame.
     num_frames = len(hdr_min_count_mod_10)
     # TODO: add more specific dtype for rates (ex. int16) once this is defined by HIT
     data_by_species_and_energy_range = {
         key: {
             **value,
-            "rates": np.full((num_frames, 8, 15), fill_value=fillval, dtype=int),
+            "rates": np.full((num_frames, 15, 8), fill_value=fillval, dtype=int),
         }
         for key, value in MOD_10_MAPPING.items()
     }
@@ -130,16 +130,15 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
         data_by_species[species]["energy_max"].append(value["energy_max"])
 
     # Add sector rates by species to the dataset
-    for species_type, data in data_by_species.items():
-        # Rates data has shape: energy_index, epoch, declination, azimuth
+    for species, data in data_by_species.items():
+        # Rates data has shape: energy_index, epoch, azimuth, declination
         # Convert rates to numpy array and transpose axes to get
-        # shape: epoch, energy_index, declination, azimuth
+        # shape: epoch, energy_index, azimuth, declination
         rates_data = np.transpose(np.array(data["rates"]), axes=(1, 0, 2, 3))
 
-        species = species_type.lower()
         sci_dataset[f"{species}_counts_sectored"] = xr.DataArray(
             data=rates_data,
-            dims=["epoch", f"{species}_energy_index", "declination", "azimuth"],
+            dims=["epoch", f"{species}_energy_index", "azimuth", "declination"],
             name=f"{species}_counts_sectored",
         )
         sci_dataset[f"{species}_energy_min"] = xr.DataArray(
