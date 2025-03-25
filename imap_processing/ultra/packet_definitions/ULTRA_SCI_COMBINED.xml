@@ -4664,12 +4664,18 @@
 			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_ANG.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_ANG.P00" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="U45_IMG_ENA_PHXTOF_HI_ANG.PACKETDATA">
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-24" />
+							<!--Equation: (PKT_LEN+7)*8-120 -->
+             				<!--7: packet header + 1 -->
+             				<!--120: start bit -->
+							<xtce:LinearAdjustment slope="8" intercept="-64" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -9793,12 +9799,18 @@
 			<xtce:IntegerParameterType name="U90_IMG_ENA_PHXTOF_HI_ANG.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="U90_IMG_ENA_PHXTOF_HI_ANG.P00" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="U90_IMG_ENA_PHXTOF_HI_ANG.PACKETDATA">
 				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-24" />
+							<!--Equation: (PKT_LEN+7)*8-120 -->
+             				<!--7: packet header + 1 -->
+             				<!--120: start bit -->
+							<xtce:LinearAdjustment slope="8" intercept="-64" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -11601,6 +11613,9 @@
 			</xtce:Parameter>
 			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_ANG.SHCOARSE" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_ANG.SHCOARSE" shortDescription="CCSDS Packet  2nd Header Coarse Time">
 				<xtce:LongDescription>CCSDS Packet 2nd Header Coarse Time</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_ANG.P00" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_ANG.P00" shortDescription="Starting Pixel">
+				<xtce:LongDescription>Starting pixel</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="U45_IMG_ENA_PHXTOF_HI_ANG.PACKETDATA" parameterTypeRef="U45_IMG_ENA_PHXTOF_HI_ANG.PACKETDATA" shortDescription="Image Packet Data">
 				<xtce:LongDescription>Image Packet Data</xtce:LongDescription>
@@ -13525,6 +13540,9 @@
 			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_ANG.SHCOARSE" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_ANG.SHCOARSE" shortDescription="CCSDS Packet  2nd Header Coarse Time">
 				<xtce:LongDescription>CCSDS Packet 2nd Header Coarse Time</xtce:LongDescription>
 			</xtce:Parameter>
+			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_ANG.P00" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_ANG.P00" shortDescription="Starting Pixel">
+				<xtce:LongDescription>Starting pixel</xtce:LongDescription>
+			</xtce:Parameter>
 			<xtce:Parameter name="U90_IMG_ENA_PHXTOF_HI_ANG.PACKETDATA" parameterTypeRef="U90_IMG_ENA_PHXTOF_HI_ANG.PACKETDATA" shortDescription="Image Packet Data">
 				<xtce:LongDescription>Image Packet Data</xtce:LongDescription>
 			</xtce:Parameter>
@@ -14376,6 +14394,7 @@
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_ANG.SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_ANG.P00" />
 					<xtce:ParameterRefEntry parameterRef="U45_IMG_ENA_PHXTOF_HI_ANG.PACKETDATA" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
@@ -15290,6 +15309,7 @@
 				</xtce:BaseContainer>
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_ANG.SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_ANG.P00" />
 					<xtce:ParameterRefEntry parameterRef="U90_IMG_ENA_PHXTOF_HI_ANG.PACKETDATA" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
