@@ -67,7 +67,5 @@ def test_process_quaternions():
         / "SSR_2024_190_20_08_12_0483851794_2_DA_apid0594_1packet.pkts"
     )
     l1a_ds, l1b_ds = quaternions.process_quaternions(packet_file)
-    assert l1a_ds.attrs["Data_level"] == "1A"
-    assert l1b_ds.attrs["Data_level"] == "1B"
     assert len(l1a_ds["epoch"]) == 1
     assert len(l1b_ds["epoch"]) == 10

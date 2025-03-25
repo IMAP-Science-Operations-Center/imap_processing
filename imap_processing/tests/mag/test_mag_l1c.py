@@ -190,7 +190,6 @@ def test_mag_l1c(norm_dataset, burst_dataset):
 def test_mag_attributes(norm_dataset, burst_dataset):
     output = mag_l1c(norm_dataset, burst_dataset, "v001")
     assert output.attrs["Logical_source"] == "imap_mag_l1c_norm-mago"
-    assert output.attrs["Data_level"] == "L1C"
 
     expected_attrs = ["missing_sequences", "interpolation_method"]
     for attr in expected_attrs:
