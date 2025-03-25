@@ -189,7 +189,7 @@ def get_spin_phase(l1a_de_data: xr.Dataset) -> Union[np.ndarray[np.float64], Any
 
 def set_spin_bin(l1b_de: xr.Dataset, spin_phase: np.ndarray) -> xr.Dataset:
     """
-    Set the spin bin (0 - 60 bins) for each Direct Event.
+    Set the spin bin (0 - 60 bins) for each Direct Event where each bin is 6 degrees.
 
     Parameters
     ----------
@@ -204,6 +204,7 @@ def set_spin_bin(l1b_de: xr.Dataset, spin_phase: np.ndarray) -> xr.Dataset:
         The L1B DE dataset with the spin bin added.
     """
     # Get the spin bin for each DE
+    # Spin bins are 0 - 60 where each bin is 6 degrees
     spin_bin = (spin_phase // 6).astype(int)
     l1b_de["spin_bin"] = xr.DataArray(
         spin_bin,
