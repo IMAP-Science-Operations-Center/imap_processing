@@ -7,9 +7,7 @@ from typing import Any, Union
 
 import numpy as np
 import xarray as xr
-from space_packet_parser import packets
 
-from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.ultra.l0.decom_tools import (
     decompress_binary,
     decompress_image,
@@ -21,63 +19,11 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_EVENTS,
     ULTRA_RATES,
     ULTRA_TOF,
-    append_ccsds_fields,
 )
 from imap_processing.utils import convert_to_binary_string
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-
-def append_tof_params(
-    decom_data: dict,
-    packet: packets.CCSDSPacket,
-    decompressed_data: np.ndarray,
-    data_dict: dict,
-    stacked_dict: dict,
-) -> None:
-    """
-    Append parsed items to a dictionary, including decompressed data if available.
-
-    Parameters
-    ----------
-    decom_data : dict
-        Dictionary to which the data is appended.
-    packet : space_packet_parser.packets.CCSDSPacket
-        Individual packet.
-    decompressed_data : list
-        Data that has been decompressed.
-    data_dict : dict
-        Dictionary used for stacking in SID dimension.
-    stacked_dict : dict
-        Dictionary used for stacking in time dimension.
-    """
-    # TODO: add error handling to make certain every timestamp has 8 SID values
-
-    for key in packet.user_data.keys():
-        # Keep appending packet data until SID = 7
-        if key == "PACKETDATA":
-            data_dict[key].append(decompressed_data)
-        # Keep appending all other data until SID = 7
-        else:
-            data_dict[key].append(packet[key])
-
-    # Append CCSDS fields to the dictionary
-    ccsds_data = CcsdsData(packet.header)
-    append_ccsds_fields(data_dict, ccsds_data)
-
-    # Once "SID" reaches 7, we have all the images and data for the single timestamp
-    if packet["SID"] == 7:
-        decom_data["SHCOARSE"].extend(list(set(data_dict["SHCOARSE"])))
-        data_dict["SHCOARSE"].clear()
-
-        for key in packet.user_data.keys():
-            if key != "SHCOARSE":
-                stacked_dict[key].append(np.stack(data_dict[key]))
-                data_dict[key].clear()
-        for key in packet.header.keys():
-            stacked_dict[key].append(np.stack(data_dict[key]))
-            data_dict[key].clear()
 
 
 def process_ultra_apids(data: list, apid: int) -> Union[dict[Any, Any], bool]:
@@ -101,6 +47,9 @@ def process_ultra_apids(data: list, apid: int) -> Union[dict[Any, Any], bool]:
         ULTRA_TOF.apid[0]: process_ultra_tof,
         ULTRA_EVENTS.apid[0]: process_ultra_events,
         ULTRA_RATES.apid[0]: process_ultra_rates,
+        ULTRA_TOF.apid[1]: process_ultra_tof,
+        ULTRA_EVENTS.apid[1]: process_ultra_events,
+        ULTRA_RATES.apid[1]: process_ultra_rates,
     }
 
     process_function = strategy_dict.get(apid, lambda *args: False)
@@ -125,7 +74,7 @@ def process_ultra_tof(ds: xr.Dataset, decom_data: collections.defaultdict) -> xr
     decompressed_ds : xarray.Dataset
         A dataset containing the decoded and decompressed data.
     """
-    scalar_keys = ["spin", "abortflag", "startdelay", "p00", "version"]
+    scalar_keys = [key for key in ds.data_vars if key != "packetdata"]
 
     decom_data = {key: [] for key in scalar_keys}
     decom_data["packetdata"] = []
@@ -175,8 +124,6 @@ def process_ultra_tof(ds: xr.Dataset, decom_data: collections.defaultdict) -> xr
     )
 
     return decompressed_ds
-
-
 
 
 def process_ultra_events(sorted_packets: xr.Dataset, decom_data: dict) -> xr.Dataset:
@@ -273,7 +220,7 @@ def process_ultra_rates(sorted_packets: xr.Dataset, decom_data: dict) -> xr.Data
             )
 
             for index in range(ULTRA_RATES.len_array):
-                decom_data[RATES_KEYS[index].lower()].append(decompressed_data[index])
+                decom_data[RATES_KEYS[index]].append(decompressed_data[index])
 
         for key, values in decom_data.items():
             sorted_packets[key] = xr.DataArray(np.array(values), dims=["epoch"])
