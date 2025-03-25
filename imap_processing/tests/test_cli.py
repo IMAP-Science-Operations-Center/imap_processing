@@ -62,8 +62,8 @@ def test_main(mock_instrument):
 @pytest.mark.parametrize(
     "instrument, data_level, raises_value_error",
     [
-        ("mag", "l0", ""),
-        ("foo", "l0", "foo is not in the supported .*"),
+        ("mag", "l1a", ""),
+        ("foo", "l1a", "foo is not in the supported .*"),
         ("codice", "l1z", "l1z is not a supported .*"),
     ],
 )
