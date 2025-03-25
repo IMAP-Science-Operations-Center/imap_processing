@@ -43,8 +43,8 @@ ULTRA_RATES = PacketProperties(
 ULTRA_TOF = PacketProperties(
     apid=[883, 947],
     logical_source=[
-        "imap_ultra_l1a_45sensor-histogram",
-        "imap_ultra_l1a_90sensor-histogram",
+        "imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-ang",
+        "imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-ang",
     ],
     addition_to_logical_desc="Time of Flight Images",
     width=4,
