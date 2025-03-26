@@ -1,9 +1,6 @@
 """Contains data classes to support Ultra L0 processing."""
 
-from dataclasses import fields
 from typing import NamedTuple, Union
-
-import numpy as np
 
 
 class PacketProperties(NamedTuple):
@@ -46,8 +43,8 @@ ULTRA_RATES = PacketProperties(
 ULTRA_TOF = PacketProperties(
     apid=[883, 947],
     logical_source=[
-        "imap_ultra_l1a_45sensor-histogram",
-        "imap_ultra_l1a_90sensor-histogram",
+        "imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-ang",
+        "imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-ang",
     ],
     addition_to_logical_desc="Time of Flight Images",
     width=4,
@@ -67,224 +64,206 @@ ULTRA_EVENTS = PacketProperties(
 
 
 # Module-level constant for event field ranges
-# Module-level constant for event field ranges
 EVENT_FIELD_RANGES = {
     # Coincidence Type
-    "COIN_TYPE": (0, 2),
+    "coin_type": (0, 2),
     # Start Type
-    "START_TYPE": (2, 4),
+    "start_type": (2, 4),
     # Stop Type
-    "STOP_TYPE": (4, 8),
+    "stop_type": (4, 8),
     # Start Position Time to Digital Converter
-    "START_POS_TDC": (8, 19),
+    "start_pos_tdc": (8, 19),
     # Stop North Time to Digital Converter
-    "STOP_NORTH_TDC": (19, 30),
+    "stop_north_tdc": (19, 30),
     # Stop East Time to Digital Converter
-    "STOP_EAST_TDC": (30, 41),
+    "stop_east_tdc": (30, 41),
     # Stop South Time to Digital Converter
-    "STOP_SOUTH_TDC": (41, 52),
+    "stop_south_tdc": (41, 52),
     # Stop West Time to Digital Converter
-    "STOP_WEST_TDC": (52, 63),
+    "stop_west_tdc": (52, 63),
     # Coincidence North Time to Digital Converter
-    "COIN_NORTH_TDC": (63, 74),
+    "coin_north_tdc": (63, 74),
     # Coincidence South Time to Digital Converter
-    "COIN_SOUTH_TDC": (74, 85),
+    "coin_south_tdc": (74, 85),
     # Coincidence Discrete Time to Digital Converter
-    "COIN_DISCRETE_TDC": (85, 96),
+    "coin_discrete_tdc": (85, 96),
     # Energy/Pulse Height
-    "ENERGY_PH": (96, 108),
+    "energy_ph": (96, 108),
     # Pulse Width
-    "PULSE_WIDTH": (108, 119),
+    "pulse_width": (108, 119),
     # Event Flag Count
-    "EVENT_FLAG_CNT": (119, 120),
+    "event_flag_cnt": (119, 120),
     # Event Flag PHCmpSL
-    "EVENT_FLAG_PHCMPSL": (120, 121),
+    "event_flag_phcmpsl": (120, 121),
     # Event Flag PHCmpSR
-    "EVENT_FLAG_PHCMPSR": (121, 122),
+    "event_flag_phcmpsr": (121, 122),
     # Event Flag PHCmpCD
-    "EVENT_FLAG_PHCMPCD": (122, 123),
+    "event_flag_phcmpcd": (122, 123),
     # Solid State Detector Flags
-    "SSD_FLAG_7": (123, 124),
-    "SSD_FLAG_6": (124, 125),
-    "SSD_FLAG_5": (125, 126),
-    "SSD_FLAG_4": (126, 127),
-    "SSD_FLAG_3": (127, 128),
-    "SSD_FLAG_2": (128, 129),
-    "SSD_FLAG_1": (129, 130),
-    "SSD_FLAG_0": (130, 131),
+    "ssd_flag_7": (123, 124),
+    "ssd_flag_6": (124, 125),
+    "ssd_flag_5": (125, 126),
+    "ssd_flag_4": (126, 127),
+    "ssd_flag_3": (127, 128),
+    "ssd_flag_2": (128, 129),
+    "ssd_flag_1": (129, 130),
+    "ssd_flag_0": (130, 131),
     # Constant Fraction Discriminator Flag Coincidence Top North
-    "CFD_FLAG_COINTN": (131, 132),
+    "cfd_flag_cointn": (131, 132),
     # Constant Fraction Discriminator Flag Coincidence Bottom North
-    "CFD_FLAG_COINBN": (132, 133),
+    "cfd_flag_coinbn": (132, 133),
     # Constant Fraction Discriminator Flag Coincidence Top South
-    "CFD_FLAG_COINTS": (133, 134),
+    "cfd_flag_coints": (133, 134),
     # Constant Fraction Discriminator Flag Coincidence Bottom South
-    "CFD_FLAG_COINBS": (134, 135),
+    "cfd_flag_coinbs": (134, 135),
     # Constant Fraction Discriminator Flag Coincidence Discrete
-    "CFD_FLAG_COIND": (135, 136),
+    "cfd_flag_coind": (135, 136),
     # Constant Fraction Discriminator Flag Start Right Full
-    "CFD_FLAG_STARTRF": (136, 137),
+    "cfd_flag_startrf": (136, 137),
     # Constant Fraction Discriminator Flag Start Left Full
-    "CFD_FLAG_STARTLF": (137, 138),
+    "cfd_flag_startlf": (137, 138),
     # Constant Fraction Discriminator Flag Start Position Right
-    "CFD_FLAG_STARTRP": (138, 139),
+    "cfd_flag_startrp": (138, 139),
     # Constant Fraction Discriminator Flag Start Position Left
-    "CFD_FLAG_STARTLP": (139, 140),
+    "cfd_flag_startlp": (139, 140),
     # Constant Fraction Discriminator Flag Stop Top North
-    "CFD_FLAG_STOPTN": (140, 141),
+    "cfd_flag_stoptn": (140, 141),
     # Constant Fraction Discriminator Flag Stop Bottom North
-    "CFD_FLAG_STOPBN": (141, 142),
+    "cfd_flag_stopbn": (141, 142),
     # Constant Fraction Discriminator Flag Stop Top East
-    "CFD_FLAG_STOPTE": (142, 143),
+    "cfd_flag_stopte": (142, 143),
     # Constant Fraction Discriminator Flag Stop Bottom East
-    "CFD_FLAG_STOPBE": (143, 144),
+    "cfd_flag_stopbe": (143, 144),
     # Constant Fraction Discriminator Flag Stop Top South
-    "CFD_FLAG_STOPTS": (144, 145),
+    "cfd_flag_stopts": (144, 145),
     # Constant Fraction Discriminator Flag Stop Bottom South
-    "CFD_FLAG_STOPBS": (145, 146),
+    "cfd_flag_stopbs": (145, 146),
     # Constant Fraction Discriminator Flag Stop Top West
-    "CFD_FLAG_STOPTW": (146, 147),
+    "cfd_flag_stoptw": (146, 147),
     # Constant Fraction Discriminator Flag Stop Bottom West
-    "CFD_FLAG_STOPBW": (147, 148),
+    "cfd_flag_stopbw": (147, 148),
     # Bin
-    "BIN": (148, 156),
+    "bin": (148, 156),
     # Phase Angle
-    "PHASE_ANGLE": (156, 166),
+    "phase_angle": (156, 166),
 }
 
 
 RATES_KEYS = [
     # Start Right Full Constant Fraction Discriminator (CFD) Pulses
-    "START_RF",
+    "start_rf",
     # Start Left Full Constant Fraction Discriminator (CFD) Pulses
-    "START_LF",
+    "start_lf",
     # Start Position Right Full Constant Fraction Discriminator (CFD) Pulses
-    "START_RP",
+    "start_rp",
     # Start Position Left Constant Fraction Discriminator (CFD) Pulses
-    "START_LP",
+    "start_lp",
     # Stop Top North Constant Fraction Discriminator (CFD) Pulses
-    "STOP_TN",
+    "stop_tn",
     # Stop Bottom North Constant Fraction Discriminator (CFD) Pulses
-    "STOP_BN",
+    "stop_bn",
     # Stop Top East Constant Fraction Discriminator (CFD) Pulses
-    "STOP_TE",
+    "stop_te",
     # Stop Bottom East Constant Fraction Discriminator (CFD) Pulses
-    "STOP_BE",
+    "stop_be",
     # Stop Top South Constant Fraction Discriminator (CFD) Pulses
-    "STOP_TS",
+    "stop_ts",
     # Stop Bottom South Constant Fraction Discriminator (CFD) Pulses
-    "STOP_BS",
+    "stop_bs",
     # Stop Top West Constant Fraction Discriminator (CFD) Pulses
-    "STOP_TW",
+    "stop_tw",
     # Stop Bottom West Constant Fraction Discriminator (CFD) Pulses
-    "STOP_BW",
+    "stop_bw",
     # Coincidence Top North Constant Fraction Discriminator (CFD) Pulses
-    "COIN_TN",
+    "coin_tn",
     # Coincidence Bottom North Constant Fraction Discriminator (CFD) Pulses
-    "COIN_BN",
+    "coin_bn",
     # Coincidence Top South Constant Fraction Discriminator (CFD) Pulses
-    "COIN_TS",
+    "coin_ts",
     # Coincidence Bottom South Constant Fraction Discriminator (CFD) Pulses
-    "COIN_BS",
+    "coin_bs",
     # Coincidence Discrete Constant Fraction Discriminator (CFD) Pulses
-    "COIN_D",
+    "coin_d",
     # Solid State Detector (SSD) Energy Pulses
-    "SSD0",
-    "SSD1",
-    "SSD2",
-    "SSD3",
-    "SSD4",
-    "SSD5",
-    "SSD6",
-    "SSD7",
+    "ssd0",
+    "ssd1",
+    "ssd2",
+    "ssd3",
+    "ssd4",
+    "ssd5",
+    "ssd6",
+    "ssd7",
     # Start Position Time to Digital Converter (TDC) Chip VE Pulses
-    "START_POS",
+    "start_pos",
     # Stop North TDC-chip VE Pulses
-    "STOP_N",
+    "stop_n",
     # Stop East TDC-chip VE Pulses
-    "STOP_E",
+    "stop_e",
     # Stop South TDC-chip VE Pulses
-    "STOP_S",
+    "stop_s",
     # Stop West TDC-chip VE Pulses
-    "STOP_W",
+    "stop_w",
     # Coincidence North TDC-chip VE Pulses
-    "COIN_N_TDC",
+    "coin_n_tdc",
     # Coincidence Discrete TDC-chip VE Pulses
-    "COIN_D_TDC",
+    "coin_d_tdc",
     # Coincidence South TDC-chip VE Pulses
-    "COIN_S_TDC",
+    "coin_s_tdc",
     # Stop Top North Valid Pulse Height Flag
-    "STOP_TOP_N",
+    "stop_top_n",
     # Stop Bottom North Valid Pulse Height Flag
-    "STOP_BOT_N",
+    "stop_bot_n",
     # Start-Right/Stop Single Coincidence.
     # Stop can be either Top or Bottom.
     # Coincidence is allowed, but not required.
     # No SSD.
-    "START_RIGHT_STOP_COIN_SINGLE",
+    "start_right_stop_coin_single",
     # Start-Left/Stop Single Coincidence.
     # Stop can be either Top or Bottom.
     # Coincidence is allowed, but not required.
     # No SSD.
-    "START_LEFT_STOP_COIN_SINGLE",
+    "start_left_stop_coin_single",
     # Start-Right/Stop/Coin Coincidence.
     # Double Coincidence.
     # Stop/Coin can be either Top or Bottom. No SSD.
-    "START_RIGHT_STOP_COIN_DOUBLE",
+    "start_right_stop_coin_double",
     # Start-Left/Stop/Coin Coincidence.
     # Double Coincidence.
     # Stop/Coin can be either Top or Bottom. No SSD.
-    "START_LEFT_STOP_COIN_DOUBLE",
+    "start_left_stop_coin_double",
     # Start/Stop/Coin Coincidence +
     # Position Match.
     # Double Coincidence + Fine Position Match
     # between Stop and Coin measurements.
     # No SSD.
-    "START_STOP_COIN_POS",
+    "start_stop_coin_pos",
     # Start-Right/SSD/Coin-D Coincidence.
     # Energy Coincidence.
-    "START_RIGHT_SSD_COIN_D",
+    "start_right_ssd_coin_d",
     # Start-Left/SSD/Coin-D Coincidence.
     # Energy Coincidence.
-    "START_LEFT_SSD_COIN_D",
+    "start_left_ssd_coin_d",
     # Event Analysis Activity Time.
-    "EVENT_ACTIVE_TIME",
+    "event_active_time",
     # Events that would have been written to the FIFO.
     # (attempted to write).
-    "FIFO_VALID_EVENTS",
+    "fifo_valid_events",
     # Events generated by the pulser.
-    "PULSER_EVENTS",
+    "pulser_events",
     # Coincidence (windowed) between the Stop/Coin top.
-    "WINDOW_STOP_COIN",
+    "window_stop_coin",
     # Coincidence between Start Left and Window-Stop/Coin.
-    "START_LEFT_WINDOW_STOP_COIN",
+    "start_left_window_stop_coin",
     # Coincidence between Start Right and Window-Stop/Coin.
-    "START_RIGHT_WINDOW_STOP_COIN",
+    "start_right_window_stop_coin",
     # TODO: Below will be added later. It is not in the current data.
     # Processed events generated by the pulser.
-    # "PROCESSED_PULSER_EVENTS",
+    # "processed_pulser_events",
     # Processed events.
-    # "PROCESSED_EVENTS",
+    # "processed_events",
     # Discarded events.
-    # "DISCARDED_EVENTS"
+    # "discarded_events"
 ]
-
-
-def append_fillval(decom_data: dict, packet):  # type: ignore[no-untyped-def]
-    # ToDo, need packet param type
-    """
-    Append fill values to all fields.
-
-    Parameters
-    ----------
-    decom_data : dict
-        Parsed data.
-    packet : space_packet_parser.packets.CCSDSPacket
-        Packet.
-    """
-    for key in decom_data:
-        if (key not in packet.header.keys()) and (key not in packet.user_data.keys()):
-            decom_data[key].append(np.iinfo(np.int64).min)
 
 
 def parse_event(event_binary: str) -> dict:
@@ -306,21 +285,3 @@ def parse_event(event_binary: str) -> dict:
         field_value = int(event_binary[start:end], 2)
         fields_dict[field] = field_value
     return fields_dict
-
-
-def append_ccsds_fields(decom_data: dict, ccsds_data_object: object) -> None:
-    """
-    Append CCSDS fields to event_data.
-
-    Parameters
-    ----------
-    decom_data : dict
-        Parsed data.
-    ccsds_data_object : DataclassInstance
-        CCSDS data object.
-    """
-    for field in fields(ccsds_data_object.__class__):  # type: ignore[arg-type]
-        ccsds_key = field.name
-        if ccsds_key not in decom_data:
-            decom_data[ccsds_key] = []
-        decom_data[ccsds_key].append(getattr(ccsds_data_object, ccsds_key))

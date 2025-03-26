@@ -34,14 +34,14 @@ def test_fixture(de_dataset, events_fsw_comparison_theta_0):
     """Fixture to compute and return yf and related data."""
     # Remove start_type with fill values
     de_dataset = de_dataset.where(
-        de_dataset["START_TYPE"] != np.iinfo(np.int64).min, drop=True
+        de_dataset["start_type"] != np.iinfo(np.int64).min, drop=True
     )
 
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[df["StartType"] != -1]
 
     d, yf = get_front_y_position(
-        de_dataset["START_TYPE"].data, df_filt.Yb.values.astype("float")
+        de_dataset["start_type"].data, df_filt.Yb.values.astype("float")
     )
 
     return df_filt, d, yf, de_dataset
@@ -55,8 +55,8 @@ def test_get_front_x_position(
     df_filt, _, _, de_dataset = test_fixture
 
     xf = get_front_x_position(
-        de_dataset["START_TYPE"].data,
-        de_dataset["START_POS_TDC"].data,
+        de_dataset["start_type"].data,
+        de_dataset["start_pos_tdc"].data,
     )
 
     assert xf == pytest.approx(df_filt["Xf"].astype("float"), 1e-5)
@@ -96,7 +96,7 @@ def test_get_ph_tof_and_back_positions(
     )
 
     ph_indices = np.nonzero(
-        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
+        np.isin(de_dataset["stop_type"], [StopType.Top.value, StopType.Bottom.value])
     )[0]
 
     selected_rows = df_filt.iloc[ph_indices]
@@ -159,7 +159,7 @@ def test_get_coincidence_positions(test_fixture):
 
     # Filter for stop type.
     indices = np.nonzero(
-        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
+        np.isin(de_dataset["stop_type"], [StopType.Top.value, StopType.Bottom.value])
     )[0]
     de_filtered = de_dataset.isel(epoch=indices)
     rows = df_filt.iloc[indices]
@@ -182,17 +182,17 @@ def test_calculate_etof_xc(test_fixture):
     )
     # Filter based on STOP_TYPE.
     indices = np.nonzero(
-        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
+        np.isin(de_dataset["stop_type"], [StopType.Top.value, StopType.Bottom.value])
     )[0]
     de_filtered = de_dataset.isel(epoch=indices)
     df_filtered = df_filt.iloc[indices]
 
     # Filter for COIN_TYPE Top and Bottom.
-    index_top = np.nonzero(np.isin(de_filtered["COIN_TYPE"], CoinType.Top.value))[0]
+    index_top = np.nonzero(np.isin(de_filtered["coin_type"], CoinType.Top.value))[0]
     de_top = de_filtered.isel(epoch=index_top)
     df_top = df_filtered.iloc[index_top]
 
-    index_bottom = np.nonzero(np.isin(de_filtered["COIN_TYPE"], CoinType.Bottom.value))[
+    index_bottom = np.nonzero(np.isin(de_filtered["coin_type"], CoinType.Bottom.value))[
         0
     ]
     de_bottom = de_filtered.isel(epoch=index_bottom)
@@ -320,14 +320,14 @@ def test_get_energy_pulse_height(test_fixture):
     df_filt, _, _, de_dataset = test_fixture
     df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
     ph_indices = np.nonzero(
-        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
+        np.isin(de_dataset["stop_type"], [StopType.Top.value, StopType.Bottom.value])
     )[0]
 
     test_xb = df_filt["Xb"].astype("float").values
     test_yb = df_filt["Yb"].astype("float").values
 
     energy = get_energy_pulse_height(
-        de_dataset["STOP_TYPE"].data, de_dataset["ENERGY_PH"].data, test_xb, test_yb
+        de_dataset["stop_type"].data, de_dataset["energy_ph"].data, test_xb, test_yb
     )
     test_energy = df_ph["Energy"].astype("float")
 
@@ -427,12 +427,12 @@ def test_get_eventtimes(test_fixture, use_fake_spin_data_for_time):
     use_fake_spin_data_for_time(0, 141 * 15)
 
     event_times, spin_starts, spin_period_sec = get_eventtimes(
-        de_dataset["SPIN"].values, de_dataset["PHASE_ANGLE"].values
+        de_dataset["spin"].values, de_dataset["phase_angle"].values
     )
 
     spin_df = get_spin_data()
-    expected_min_df = spin_df[spin_df["spin_number"] == de_dataset["SPIN"].values.min()]
-    expected_max_df = spin_df[spin_df["spin_number"] == de_dataset["SPIN"].values.max()]
+    expected_min_df = spin_df[spin_df["spin_number"] == de_dataset["spin"].values.min()]
+    expected_max_df = spin_df[spin_df["spin_number"] == de_dataset["spin"].values.max()]
     spin_period_sec_min = expected_min_df["spin_period_sec"].values[0]
     spin_period_sec_max = expected_max_df["spin_period_sec"].values[0]
 
@@ -447,10 +447,10 @@ def test_get_eventtimes(test_fixture, use_fake_spin_data_for_time):
     assert spin_start_max.values[0] == spin_starts.max()
 
     event_times_min = spin_start_min.values[0] + spin_period_sec_min * (
-        de_dataset["PHASE_ANGLE"][0] / 720
+        de_dataset["phase_angle"][0] / 720
     )
     event_times_max = spin_start_max.values[0] + spin_period_sec_max * (
-        de_dataset["PHASE_ANGLE"][-1] / 720
+        de_dataset["phase_angle"][-1] / 720
     )
 
     assert event_times_min == event_times.min()
