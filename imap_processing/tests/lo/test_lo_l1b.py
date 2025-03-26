@@ -228,7 +228,12 @@ def test_spin_cycle():
         },
         coords={"epoch": [0, 1], "direct_event": [1, 2, 3, 4, 5]},
     )
-    spin_cycle_expected = np.array([7, 9, 39, 30, 53])
+
+    # spin_cycle = spin_start + 7 + (esa_step - 1) * 2
+    # where spin start is the spin number for the first spin
+    # in an Aggregated Science Cycle (first spin number of an epoch)
+    # and esa_step is the esa_step for a direct event
+    spin_cycle_expected = np.array([7, 9, 39, 41, 43])
     spin_cycle_data = xr.Dataset()
 
     # Act
