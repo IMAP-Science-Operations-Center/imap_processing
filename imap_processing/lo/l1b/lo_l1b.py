@@ -235,12 +235,15 @@ def set_spin_cycle(l1a_de: xr.Dataset, l1b_de: xr.Dataset) -> xr.Dataset:
         The L1B DE dataset with the spin cycle added for each direct event.
     """
     counts = l1a_de["de_count"].values
+    # split the esa_steps into ASC groups
     de_asc_groups = np.split(l1a_de["esa_step"].values, np.cumsum(counts)[:-1])
     spin_cycle = []
     for i, esa_asc_group in enumerate(de_asc_groups):
         # TODO: Spin Number does not reset for each pointing. Need to figure out
         #  how to retain this information across days
+        # increment the spin_start by 28 after each aggregated science cycle
         spin_start = i * 28
+        # calculate the spin cycle for each DE in the ASC group
         spin_cycle.extend(spin_start + 7 + (esa_asc_group - 1) * 2)
 
     l1b_de["spin_cycle"] = xr.DataArray(
