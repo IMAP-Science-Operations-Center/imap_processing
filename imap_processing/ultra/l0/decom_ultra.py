@@ -87,7 +87,7 @@ def process_ultra_tof(ds: xr.Dataset) -> xr.Dataset:
         )
 
     # Add PACKETDATA (4D: epoch x sid x row x column)
-    dataset["PACKETDATA"] = xr.DataArray(
+    dataset["packetdata"] = xr.DataArray(
         decom_data["packetdata"],
         dims=["epoch", "sid", "row", "column"],
     )
