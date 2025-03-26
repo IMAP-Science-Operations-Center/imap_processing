@@ -1,6 +1,7 @@
 # mypy: ignore-errors
 """Module containing interpolation methods for MAG L1C."""
 
+import logging
 from enum import Enum
 from typing import Optional
 
@@ -9,6 +10,8 @@ from scipy.interpolate import make_interp_spline
 from scipy.signal import lfilter
 
 from imap_processing.mag.constants import POSSIBLE_RATES, VecSec
+
+logger = logging.getLogger(__name__)
 
 
 def linear(
@@ -191,6 +194,13 @@ def cic_filter(
     # TODO what if decimation factor is 1
     cic1 = np.ones(decimation_factor)
     cic1 = cic1 / decimation_factor
+    print(input_rate)
+    print(output_rate)
+    print(input_rate.value / output_rate.value)
+    print(cic1)
+    if decimation_factor == 0:
+        logger.error("Decimation factor is 0")
+        return input_timestamps, input_vectors
     cic2 = np.convolve(cic1, cic1)
     delay = (len(cic2) - 1) // 2
     input_filtered = input_timestamps

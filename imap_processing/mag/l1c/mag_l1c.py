@@ -345,7 +345,7 @@ def interpolate_gaps(
             )
             - 1
         )
-        burst_rate = list(burst_vecsec_dict.values())[burst_vecsec_index]
+        burst_rate = VecSec(list(burst_vecsec_dict.values())[burst_vecsec_index])
 
         gap_timeline = filled_norm_timeline[
             np.nonzero(

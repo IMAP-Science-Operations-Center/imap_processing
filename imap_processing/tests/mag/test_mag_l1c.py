@@ -91,7 +91,7 @@ def test_configuration_file():
     configuration_file = InterpolationFunction[
         configuration["L1C_interpolation_method"]
     ]
-    configuration_file([1], [1], [1], input_rate=None)
+    configuration_file(np.array([1]), np.array([1]), np.array([1]), input_rate=None)
 
 
 def test_interpolation_methods():
