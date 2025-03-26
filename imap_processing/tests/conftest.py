@@ -55,7 +55,8 @@ def _download_external_kernels(spice_test_data_path):
     kernel_urls = [
         "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp",
         "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc",
-        "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/earth_1962_240827_2124_combined.bpc",
+        "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/"
+        "earth_1962_240827_2124_combined.bpc",
     ]
 
     for kernel_url in kernel_urls:
@@ -92,7 +93,11 @@ def _download_external_kernels(spice_test_data_path):
 
 
 @pytest.fixture(scope="session")
-def _download_test_data(test_data_paths):
+def _download_test_data():
+    _download_external_data(test_data_paths())
+
+
+def _download_external_data(test_data_path_list):
     """This fixture downloads externally-located test data files into a specific
     location. The list of files and their storage locations are specified in
     the `test_data_paths` parameter, which is a list of tuples; the zeroth
@@ -100,11 +105,10 @@ def _download_test_data(test_data_paths):
     first element being the location in which to store the downloaded file."""
 
     logger = logging.getLogger(__name__)
-
-    for test_data_path in test_data_paths:
-        source = test_data_path[0]
+    download_url = "https://api.dev.imap-mission.com/download/test_data/"
+    for test_data_path in test_data_path_list:
+        source = download_url + test_data_path[0]
         destination = test_data_path[1]
-
         # Download the test data if necessary and write it to the appropriate
         # directory
         if not destination.exists():
@@ -119,13 +123,13 @@ def _download_test_data(test_data_paths):
             logger.info(f"File already exists: {destination}")
 
 
-@pytest.fixture(scope="session")
+# @pytest.fixture(scope="session")
 def test_data_paths():
     """Defines a list of test data files to download from the AWS S3 bucket
     and the corresponding location in which to store the downloaded file"""
     test_data_path_list = [
         (
-            "https://api.dev.imap-mission.com/download/test_data/imap_codice_l0_raw_20241110_v001.pkts",
+            "imap_codice_l0_raw_20241110_v001.pkts",
             imap_module_directory
             / "tests"
             / "codice"
@@ -133,33 +137,68 @@ def test_data_paths():
             / "imap_codice_l0_raw_20241110_v001.pkts",
         ),
         (
-            "https://api.dev.imap-mission.com/download/test_data/imap_hi_l1a_45sensor-de_20250415_v999.cdf",
+            "imap_hi_l1a_45sensor-de_20250415_v999.cdf",
             imap_module_directory
-            / "tests/hi/data/l1/imap_hi_l1a_45sensor-de_20250415_v999.cdf",
+            / "tests"
+            / "hi"
+            / "data"
+            / "l1"
+            / "imap_hi_l1a_45sensor-de_20250415_v999.cdf",
         ),
         (
-            "https://api.dev.imap-mission.com/download/test_data/imap_hi_l1b_45sensor-de_20250415_v999.cdf",
+            "imap_hi_l1b_45sensor-de_20250415_v999.cdf",
             imap_module_directory
-            / "tests/hi/data/l1/imap_hi_l1b_45sensor-de_20250415_v999.cdf",
+            / "tests"
+            / "hi"
+            / "data"
+            / "l1"
+            / "imap_hi_l1b_45sensor-de_20250415_v999.cdf",
         ),
         (
-            "https://api.dev.imap-mission.com/download/test_data/idex_l1a_validation_file.h5",
-            imap_module_directory / "tests/idex/test_data/idex_l1a_validation_file.h5",
-        ),
-        (
-            "https://api.dev.imap-mission.com/download/test_data/Ultra_90_DPS_efficiencies_all.csv",
+            "idex_l1a_validation_file.h5",
             imap_module_directory
-            / "tests/ultra/test_data/l1/Ultra_90_DPS_efficiencies_all.csv",
+            / "tests"
+            / "idex"
+            / "test_data"
+            / "idex_l1a_validation_file.h5",
         ),
         (
-            "https://api.dev.imap-mission.com/download/test_data/ultra_90_dps_gf.csv",
-            imap_module_directory / "tests/ultra/test_data/l1/ultra_90_dps_gf.csv",
-        ),
-        (
-            "https://api.dev.imap-mission.com/download/test_data/ultra_90_dps_exposure.csv",
+            "Ultra_90_DPS_efficiencies_all.csv",
             imap_module_directory
-            / "tests/ultra/test_data/l1/ultra_90_dps_exposure.csv",
+            / "tests"
+            / "ultra"
+            / "test_data"
+            / "l1"
+            / "Ultra_90_DPS_efficiencies_all.csv",
         ),
+        (
+            "ultra_90_dps_gf.csv",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "test_data"
+            / "l1"
+            / "ultra_90_dps_gf.csv",
+        ),
+        (
+            "ultra_90_dps_exposure.csv",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "test_data"
+            / "l1"
+            / "ultra_90_dps_exposure.csv",
+        ),
+        # ("mag-l1b-l1c-t013-magi-burst-in.csv",
+        #  mag_dir / "L1c" / "T013" / "mag-l1b-l1c-t013-magi-burst-in.csv"),
+        # ("mag-l1b-l1c-t014-mago-burst-in.csv",
+        #  mag_dir / "L1c" / "T014" / "mag-l1b-l1c-t014-mago-burst-in.csv"),
+        # ("mag-l1b-l1c-t014-magi-burst-in.csv",
+        #  mag_dir / "L1c" / "T014" / "mag-l1b-l1c-t014-magi-burst-in.csv"),
+        # ("mag-l1b-l1c-t015-mago-burst-in.csv",
+        #  mag_dir / "L1c" / "T015" / "mag-l1b-l1c-t015-mago-burst-in.csv"),
+        # ("mag-l1b-l1c-t016-mago-burst-in.csv",
+        #  mag_dir / "L1c" / "T016" / "mag-l1b-l1c-t016-mago-burst-in.csv"),
     ]
     return test_data_path_list
 
@@ -182,7 +221,8 @@ def pytest_collection_modifyitems(items):
     -----
     See the following link for details about this function, also known as a
     pytest hook:
-    https://docs.pytest.org/en/stable/reference/reference.html#pytest.hookspec.pytest_collection_modifyitems
+    https://docs.pytest.org/en/stable/reference/reference.html#
+    pytest.hookspec.pytest_collection_modifyitems
     """
     markers_to_fixtures = {
         "external_kernel": "_download_external_kernels",

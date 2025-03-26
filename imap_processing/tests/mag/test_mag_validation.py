@@ -5,17 +5,55 @@ import pandas as pd
 import pytest
 import xarray as xr
 
+from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.mag.l1a.mag_l1a_data import MagL1a, TimeTuple
 from imap_processing.mag.l1b.mag_l1b import mag_l1b
 from imap_processing.mag.l1c.mag_l1c import mag_l1c
-from imap_processing.spice.time import str_to_et, ttj2000ns_to_et, et_to_utc, \
-    TTJ2000_EPOCH
+from imap_processing.spice.time import (
+    TTJ2000_EPOCH,
+    str_to_et,
+    ttj2000ns_to_et,
+)
+from imap_processing.tests.conftest import _download_external_data
 from imap_processing.tests.mag.conftest import (
     mag_generate_l1b_from_csv,
     mag_l1a_dataset_generator,
 )
+
+
+@pytest.fixture(scope="module")
+def _mag_download_data():
+    _download_external_data(mag_remote_test_data_paths())
+
+
+def mag_remote_test_data_paths():
+    mag_dir = imap_module_directory / "tests" / "mag" / "validation"
+    test_paths = [
+        (
+            "mag-l1b-l1c-t013-magi-burst-in.csv",
+            mag_dir / "L1c" / "T013" / "mag-l1b-l1c-t013-magi-burst-in.csv",
+        ),
+        (
+            "mag-l1b-l1c-t014-mago-burst-in.csv",
+            mag_dir / "L1c" / "T014" / "mag-l1b-l1c-t014-mago-burst-in.csv",
+        ),
+        (
+            "mag-l1b-l1c-t014-magi-burst-in.csv",
+            mag_dir / "L1c" / "T014" / "mag-l1b-l1c-t014-magi-burst-in.csv",
+        ),
+        (
+            "mag-l1b-l1c-t015-mago-burst-in.csv",
+            mag_dir / "L1c" / "T015" / "mag-l1b-l1c-t015-mago-burst-in.csv",
+        ),
+        (
+            "mag-l1b-l1c-t016-mago-burst-in.csv",
+            mag_dir / "L1c" / "T016" / "mag-l1b-l1c-t016-mago-burst-in.csv",
+        ),
+    ]
+
+    return test_paths
 
 
 @pytest.mark.parametrize(
@@ -237,6 +275,7 @@ def test_mag_l1b_validation(test_number):
 
 @pytest.mark.parametrize(("test_number"), ["013", "014", "015", "016"])
 @pytest.mark.parametrize(("sensor"), ["mago", "magi"])
+@pytest.mark.usefixtures("_mag_download_data")
 def test_mag_l1c_validation(test_number, sensor):
     source_directory = Path(__file__).parent / "validation" / "L1c" / f"T{test_number}"
     norm_in = source_directory / f"mag-l1b-l1c-t{test_number}-{sensor}-normal-in.csv"
@@ -260,10 +299,8 @@ def test_mag_l1c_validation(test_number, sensor):
         source_directory / f"mag-l1b-l1c-t{test_number}-{sensor}-normal-out.csv"
     )
 
-
     for index in expected_output.index:
         print(index)
-        print(f"Timestamp: {TTJ2000_EPOCH + l1c['epoch'].data[index].astype('timedelta64[ns]')}")
         print(f"All vectors: {l1c['vectors'].data[index]}")
         assert np.allclose(
             expected_output["x"].iloc[index],
@@ -294,6 +331,6 @@ def test_mag_l1c_validation(test_number, sensor):
         #         == l1c["compression_flags"].data[index][1]
         #     )
 
-        expected_time = str_to_et(expected_output["t"].iloc[index])
-        l1c_time = ttj2000ns_to_et(l1c["epoch"].data[index])
-        # assert np.allclose(expected_time, l1c_time, atol=1e-3, rtol=0)
+        expected_time = np.datetime64(expected_output["t"].iloc[index])
+        l1c_time = TTJ2000_EPOCH + l1c["epoch"].data[index].astype("timedelta64[ns]")
+        assert expected_time - l1c_time < np.timedelta64(500, "ms")
