@@ -189,7 +189,7 @@ def test_get_spin_angle():
             "de_count": ("epoch", [2, 3]),
             "de_time": ("direct_event", [0000, 1000, 2000, 3000, 4000]),
         },
-        coords={"epoch": [0, 1], "direct_event": [0, 1, 2, 3, 4, 5]},
+        coords={"epoch": [0, 1], "direct_event": [0, 1, 2, 3, 4]},
     )
     spin_angle_expected = np.array([0, 87.89, 175.78, 263.67, 351.56])
 
