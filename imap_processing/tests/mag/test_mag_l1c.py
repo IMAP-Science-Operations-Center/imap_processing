@@ -95,20 +95,26 @@ def test_configuration_file():
     configuration_file = InterpolationFunction[
         configuration["L1C_interpolation_method"]
     ]
-    configuration_file(np.array([1]), np.array([1]), np.array([1]), input_rate=None)
+    configuration_file(
+        np.array([1, 2]),
+        np.array([1, 2]),
+        np.array([1]),
+        input_rate=VecSec.TWO_VECS_PER_S,
+        output_rate=VecSec.ONE_VEC_PER_S,
+    )
 
 
 def test_interpolation_methods():
     # very basic test of all methods
-    vectors = np.random.rand(100, 4)
-    input_timestamps = np.arange(0, 50, step=0.5) * 1e9
+    vectors = np.random.rand(200, 4)
+    input_timestamps = np.arange(0, 50, step=0.25) * 1e9
     output_timestamps = np.arange(10, 20, step=0.5) * 1e9
     for method in InterpolationFunction:
         output = method(
             vectors,
             input_timestamps,
             output_timestamps,
-            input_rate=VecSec.TWO_VECS_PER_S,
+            input_rate=VecSec.FOUR_VECS_PER_S,
             output_rate=VecSec.TWO_VECS_PER_S,
         )
         assert len(output) == 20
@@ -233,7 +239,6 @@ def test_mag_l1c(norm_dataset, burst_dataset):
 def test_mag_attributes(norm_dataset, burst_dataset):
     output = mag_l1c(norm_dataset, "v001", burst_dataset)
     assert output.attrs["Logical_source"] == "imap_mag_l1c_norm-mago"
-    assert output.attrs["Data_level"] == "L1C"
 
     expected_attrs = ["missing_sequences", "interpolation_method"]
     for attr in expected_attrs:

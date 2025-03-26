@@ -52,6 +52,9 @@ def mag_l1c(
     # interpolate the entire day from burst
 
     input_logical_source_1 = first_input_dataset.attrs["Logical_source"]
+    if isinstance(first_input_dataset.attrs["Logical_source"], list):
+        input_logical_source_1 = first_input_dataset.attrs["Logical_source"][0]
+
     sensor = input_logical_source_1[-1:]
     output_logical_source = f"imap_mag_l1c_norm-mag{sensor}"
 
@@ -206,7 +209,7 @@ def select_datasets(
     Returns
     -------
     tuple
-        tuple containing norm_mode_dataset, burst_mode_dataset
+        Tuple containing norm_mode_dataset, burst_mode_dataset.
     """
     normal_mode_dataset = None
     burst_mode_dataset = None
@@ -221,11 +224,6 @@ def select_datasets(
 
     if "burst" in input_logical_source_1:
         burst_mode_dataset = first_input_dataset
-
-    # retrieve sensor from logical source
-    # should be either i or o
-    sensor = input_logical_source_1[-1:]
-    output_logical_source = f"imap_mag_l1c_norm-mag{sensor}"
 
     if second_input_dataset is None:
         logger.info(
@@ -250,6 +248,7 @@ def select_datasets(
             )
 
     return normal_mode_dataset, burst_mode_dataset
+
 
 def process_mag_l1c(
     normal_mode_dataset: xr.Dataset,
@@ -510,7 +509,7 @@ def find_all_gaps(
     """
     gaps: np.ndarray = np.zeros((0, 3))
     if vecsec_dict is None:
-        # TODO: when we go back to the previous file, also retreive expected
+        # TODO: when we go back to the previous file, also retrieve expected
         #  vectors per second
         # If no vecsec is provided, assume 2 vectors per second
         vecsec_dict = {0: VecSec.TWO_VECS_PER_S.value}
