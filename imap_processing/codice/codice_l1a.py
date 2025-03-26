@@ -501,18 +501,30 @@ class CoDICEL1aPipeline:
         self.data = []
 
         # First reshape the data based on how it is written to the data array of
-        # the packet data. The number of counters is the first dimension / axis.
-        reshape_dims = (
-            self.config["num_counters"],
-            *self.config["input_dims"].values(),
-        )
+        # the packet data. The number of counters is the first dimension / axis,
+        # with the exception of lo-counters-aggregated which is treated slightly
+        # differently
+        if self.config["dataset_name"] != "imap_codice_l1a_lo-counters-aggregated":
+            reshape_dims = (
+                self.config["num_counters"],
+                *self.config["input_dims"].values(),
+            )
+        else:
+            reshape_dims = (
+                *self.config["input_dims"].values(),
+                self.config["num_counters"],
+            )
 
         # Then, transpose the data based on how the dimensions should be written
         # to the CDF file. Since this is specific to each data product, we need
         # to determine this dynamically based on the "output_dims" config.
+        # Again, lo-counters-aggregated is treated slightly differently
         input_keys = ["num_counters", *self.config["input_dims"].keys()]
         output_keys = ["num_counters", *self.config["output_dims"].keys()]
-        transpose_axes = [input_keys.index(dim) for dim in output_keys]
+        if self.config["dataset_name"] != "imap_codice_l1a_lo-counters-aggregated":
+            transpose_axes = [input_keys.index(dim) for dim in output_keys]
+        else:
+            transpose_axes = [1, 2, 0]  # [esa_step, spin_sector_pairs, num_counters]
 
         for packet_data in self.raw_data:
             reshaped_packet_data = np.array(packet_data, dtype=np.uint32).reshape(
