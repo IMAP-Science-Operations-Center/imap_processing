@@ -245,6 +245,8 @@ def set_spin_cycle(l1a_de: xr.Dataset, l1b_de: xr.Dataset) -> xr.Dataset:
         # increment the spin_start by 28 after each aggregated science cycle
         spin_start = i * 28
         # calculate the spin cycle for each DE in the ASC group
+        # TODO: Add equation number in algorithm document when new version is
+        # available. Add to docstring as well
         spin_cycle.extend(spin_start + 7 + (esa_asc_group - 1) * 2)
 
     l1b_de["spin_cycle"] = xr.DataArray(
