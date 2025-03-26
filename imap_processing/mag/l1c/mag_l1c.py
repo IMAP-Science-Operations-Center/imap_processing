@@ -30,12 +30,12 @@ def mag_l1c(
     first_input_dataset : xr.Dataset
         The first input dataset to process. This can be either burst or norm data, for
         mago or magi.
-    second_input_dataset : xr.Dataset
+    version : str
+        The version of the output data.
+    second_input_dataset : xr.Dataset, optional
         The second input dataset to process. This should be burst if first_input_dataset
         was norm, or norm if first_input_dataset was burst. It should match the
         instrument - both inputs should be mago or magi.
-    version : str
-        The version of the output data.
 
     Returns
     -------
@@ -55,46 +55,9 @@ def mag_l1c(
     sensor = input_logical_source_1[-1:]
     output_logical_source = f"imap_mag_l1c_norm-mag{sensor}"
 
-    both_inputs = False
-    normal_mode_dataset = None
-    burst_mode_dataset = None
-
-    if isinstance(first_input_dataset.attrs["Logical_source"], list):
-        input_logical_source_1 = first_input_dataset.attrs["Logical_source"][0]
-
-    if "norm" in input_logical_source_1:
-        normal_mode_dataset = first_input_dataset
-
-    if "burst" in input_logical_source_1:
-        burst_mode_dataset = first_input_dataset
-
-    # retrieve sensor from logical source
-    # should be either i or o
-    sensor = input_logical_source_1[-1:]
-    output_logical_source = f"imap_mag_l1c_norm-mag{sensor}"
-
-    if second_input_dataset is None:
-        logger.info(
-            f"Only one input dataset provided with logical source "
-            f"{input_logical_source_1}"
-        )
-    else:
-        input_logical_source_2 = second_input_dataset.attrs["Logical_source"]
-        if isinstance(second_input_dataset.attrs["Logical_source"], list):
-            input_logical_source_2 = second_input_dataset.attrs["Logical_source"][0]
-
-        if "burst" in input_logical_source_2:
-            burst_mode_dataset = second_input_dataset
-
-        elif "norm" in input_logical_source_2:
-            normal_mode_dataset = second_input_dataset
-
-        # If there are two inputs, one should be norm and one should be burst
-        if normal_mode_dataset is None or burst_mode_dataset is None:
-            raise RuntimeError(
-                "L1C requires one normal mode and one burst mode input file."
-            )
-        both_inputs = True
+    normal_mode_dataset, burst_mode_dataset = select_datasets(
+        first_input_dataset, second_input_dataset
+    )
 
     with open(
         Path(__file__).parent.parent / "imap_mag_sdc-configuration_v001.yaml"
@@ -102,7 +65,7 @@ def mag_l1c(
         configuration = yaml.safe_load(f)
 
     interp_function = InterpolationFunction[configuration["L1C_interpolation_method"]]
-    if both_inputs:
+    if normal_mode_dataset and burst_mode_dataset:
         completed_timeline = process_mag_l1c(
             normal_mode_dataset, burst_mode_dataset, interp_function
         )
@@ -225,7 +188,7 @@ def mag_l1c(
 
 
 def select_datasets(
-    input_dataset_1: xr.Dataset, input_dataset_2: Optional[xr.Dataset] = None
+    first_input_dataset: xr.Dataset, second_input_dataset: Optional[xr.Dataset] = None
 ) -> tuple[xr.Dataset, xr.Dataset]:
     """
     Given one or two datasets, assign one to norm and one to burst.
@@ -235,16 +198,58 @@ def select_datasets(
 
     Parameters
     ----------
-    input_dataset_1 : xr.Dataset
+    first_input_dataset : xr.Dataset
         The first input dataset.
-    input_dataset_2 : xr.Dataset, optional
+    second_input_dataset : xr.Dataset, optional
         The second input dataset.
 
     Returns
     -------
-
+    tuple
+        tuple containing norm_mode_dataset, burst_mode_dataset
     """
+    normal_mode_dataset = None
+    burst_mode_dataset = None
 
+    input_logical_source_1 = first_input_dataset.attrs["Logical_source"]
+
+    if isinstance(first_input_dataset.attrs["Logical_source"], list):
+        input_logical_source_1 = first_input_dataset.attrs["Logical_source"][0]
+
+    if "norm" in input_logical_source_1:
+        normal_mode_dataset = first_input_dataset
+
+    if "burst" in input_logical_source_1:
+        burst_mode_dataset = first_input_dataset
+
+    # retrieve sensor from logical source
+    # should be either i or o
+    sensor = input_logical_source_1[-1:]
+    output_logical_source = f"imap_mag_l1c_norm-mag{sensor}"
+
+    if second_input_dataset is None:
+        logger.info(
+            f"Only one input dataset provided with logical source "
+            f"{input_logical_source_1}"
+        )
+    else:
+        input_logical_source_2 = second_input_dataset.attrs["Logical_source"]
+        if isinstance(second_input_dataset.attrs["Logical_source"], list):
+            input_logical_source_2 = second_input_dataset.attrs["Logical_source"][0]
+
+        if "burst" in input_logical_source_2:
+            burst_mode_dataset = second_input_dataset
+
+        elif "norm" in input_logical_source_2:
+            normal_mode_dataset = second_input_dataset
+
+        # If there are two inputs, one should be norm and one should be burst
+        if normal_mode_dataset is None or burst_mode_dataset is None:
+            raise RuntimeError(
+                "L1C requires one normal mode and one burst mode input file."
+            )
+
+    return normal_mode_dataset, burst_mode_dataset
 
 def process_mag_l1c(
     normal_mode_dataset: xr.Dataset,
