@@ -2,6 +2,7 @@
 
 import numpy as np
 import numpy.typing as npt
+from numpy.typing import NDArray
 
 from imap_processing.ultra.l0.ultra_utils import (
     parse_event,
@@ -236,8 +237,9 @@ def decompress_image(
 
 
 def read_image_raw_events_binary(
-    event_data: bytes, count: int, decom_data: dict
-) -> dict:
+    event_data: bytes,
+    count: int,
+) -> NDArray:
     """
     Convert contents of binary string 'EVENTDATA' into values.
 
@@ -247,13 +249,11 @@ def read_image_raw_events_binary(
         Event data.
     count : int
         Number of events.
-    decom_data : dict
-        Parsed data.
 
     Returns
     -------
-    decom_data : dict
-        Each for loop appends to the existing dictionary.
+    event_data : NDArray
+        Event data.
     """
     binary = convert_to_binary_string(event_data)
     # 166 bits per event

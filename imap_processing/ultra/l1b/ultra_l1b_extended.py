@@ -183,7 +183,7 @@ def get_ph_tof_and_back_positions(
         Back positions in y direction (hundredths of a millimeter).
     """
     indices = np.nonzero(
-        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
+        np.isin(de_dataset["stop_type"], [StopType.Top.value, StopType.Bottom.value])
     )[0]
     de_filtered = de_dataset.isel(epoch=indices)
 
@@ -191,10 +191,10 @@ def get_ph_tof_and_back_positions(
 
     # There are mismatches between the stop TDCs, i.e., SpN, SpS, SpE, and SpW.
     # This normalizes the TDCs
-    sp_n_norm = get_norm(de_filtered["STOP_NORTH_TDC"].data, "SpN", sensor)
-    sp_s_norm = get_norm(de_filtered["STOP_SOUTH_TDC"].data, "SpS", sensor)
-    sp_e_norm = get_norm(de_filtered["STOP_EAST_TDC"].data, "SpE", sensor)
-    sp_w_norm = get_norm(de_filtered["STOP_WEST_TDC"].data, "SpW", sensor)
+    sp_n_norm = get_norm(de_filtered["stop_north_tdc"].data, "SpN", sensor)
+    sp_s_norm = get_norm(de_filtered["stop_south_tdc"].data, "SpS", sensor)
+    sp_e_norm = get_norm(de_filtered["stop_east_tdc"].data, "SpE", sensor)
+    sp_w_norm = get_norm(de_filtered["stop_west_tdc"].data, "SpW", sensor)
 
     # Convert normalized TDC values into units of hundredths of a
     # millimeter using lookup tables.
@@ -220,7 +220,7 @@ def get_ph_tof_and_back_positions(
     # Stop Type: 1=Top, 2=Bottom
     # Convert converts normalized TDC values into units of
     # hundredths of a millimeter using lookup tables.
-    stop_type_top = de_filtered["STOP_TYPE"].data == StopType.Top.value
+    stop_type_top = de_filtered["stop_type"].data == StopType.Top.value
     xb[stop_type_top] = get_back_position(xb_index[stop_type_top], "XBkTp", sensor)
     yb[stop_type_top] = get_back_position(yb_index[stop_type_top], "YBkTp", sensor)
 
@@ -233,7 +233,7 @@ def get_ph_tof_and_back_positions(
         stop_type_top
     ] / 10 * get_image_params("XFTTOF")
 
-    stop_type_bottom = de_filtered["STOP_TYPE"].data == StopType.Bottom.value
+    stop_type_bottom = de_filtered["stop_type"].data == StopType.Bottom.value
     xb[stop_type_bottom] = get_back_position(
         xb_index[stop_type_bottom], "XBkBt", sensor
     )
@@ -307,7 +307,7 @@ def get_ssd_back_position_and_tof_offset(
     -----
     The X back position (xb) is assumed to be 0 for SSD.
     """
-    indices = np.nonzero(np.isin(de_dataset["STOP_TYPE"], StopType.SSD.value))[0]
+    indices = np.nonzero(np.isin(de_dataset["stop_type"], StopType.SSD.value))[0]
     de_filtered = de_dataset.isel(epoch=indices)
 
     yb = np.zeros(len(indices), dtype=np.float64)
@@ -315,17 +315,17 @@ def get_ssd_back_position_and_tof_offset(
     tof_offset = np.zeros(len(indices), dtype=np.float64)
 
     for i in range(8):
-        ssd_flag_mask = de_filtered[f"SSD_FLAG_{i}"].data == 1
+        ssd_flag_mask = de_filtered[f"ssd_flag_{i}"].data == 1
 
         # Multiply ybs times 100 to convert to hundredths of a millimeter.
         yb[ssd_flag_mask] = get_image_params(f"YBKSSD{i}") * 100
         ssd_number[ssd_flag_mask] = i
 
         tof_offset[
-            (de_filtered["START_TYPE"] == StartType.Left.value) & ssd_flag_mask
+            (de_filtered["start_type"] == StartType.Left.value) & ssd_flag_mask
         ] = get_image_params(f"TOFSSDLTOFF{i}")
         tof_offset[
-            (de_filtered["START_TYPE"] == StartType.Right.value) & ssd_flag_mask
+            (de_filtered["start_type"] == StartType.Right.value) & ssd_flag_mask
         ] = get_image_params(f"TOFSSDRTOFF{i}")
 
     return yb, tof_offset, ssd_number
@@ -357,9 +357,9 @@ def calculate_etof_xc(
         X coincidence position (millimeters).
     """
     # CoinNNorm
-    coin_n_norm = get_norm(de_subset["COIN_NORTH_TDC"], "CoinN", sensor)
+    coin_n_norm = get_norm(de_subset["coin_north_tdc"], "CoinN", sensor)
     # CoinSNorm
-    coin_s_norm = get_norm(de_subset["COIN_SOUTH_TDC"], "CoinS", sensor)
+    coin_s_norm = get_norm(de_subset["coin_south_tdc"], "CoinS", sensor)
     xc = get_image_params(f"XCOIN{location}SC") * (
         coin_s_norm - coin_n_norm
     ) + get_image_params(f"XCOIN{location}OFF")  # millimeter
@@ -410,16 +410,16 @@ def get_coincidence_positions(
     xc : np.ndarray
         X coincidence position (hundredths of a millimeter).
     """
-    index_top = np.nonzero(np.isin(de_dataset["COIN_TYPE"], CoinType.Top.value))[0]
+    index_top = np.nonzero(np.isin(de_dataset["coin_type"], CoinType.Top.value))[0]
     de_top = de_dataset.isel(epoch=index_top)
 
-    index_bottom = np.nonzero(np.isin(de_dataset["COIN_TYPE"], CoinType.Bottom.value))[
+    index_bottom = np.nonzero(np.isin(de_dataset["coin_type"], CoinType.Bottom.value))[
         0
     ]
     de_bottom = de_dataset.isel(epoch=index_bottom)
 
-    etof = np.zeros(len(de_dataset["COIN_TYPE"]), dtype=np.float64)
-    xc_array = np.zeros(len(de_dataset["COIN_TYPE"]), dtype=np.float64)
+    etof = np.zeros(len(de_dataset["coin_type"]), dtype=np.float64)
+    xc_array = np.zeros(len(de_dataset["coin_type"]), dtype=np.float64)
 
     # Normalized TDCs
     # For the stop anode, there are mismatches between the coincidence TDCs,
@@ -517,9 +517,9 @@ def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.ndarray) -> NDArray[np.float6
         Time of flight (tenths of a nanosecond).
     """
     _, tof_offset, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset)
-    indices = np.nonzero(np.isin(de_dataset["STOP_TYPE"], [StopType.SSD.value]))[0]
+    indices = np.nonzero(np.isin(de_dataset["stop_type"], [StopType.SSD.value]))[0]
 
-    de_discrete = de_dataset.isel(epoch=indices)["COIN_DISCRETE_TDC"]
+    de_discrete = de_dataset.isel(epoch=indices)["coin_discrete_tdc"]
 
     time = get_image_params("TOFSSDSC") * de_discrete.values + tof_offset
 
@@ -649,14 +649,14 @@ def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.ndarray) -> NDArray[np.fl
     energy_norm : np.ndarray
         Energy measured using the SSD.
     """
-    ssd_indices = np.where(de_dataset["STOP_TYPE"].data >= 8)[0]
-    energy = de_dataset["ENERGY_PH"].data[ssd_indices]
+    ssd_indices = np.where(de_dataset["stop_type"].data >= 8)[0]
+    energy = de_dataset["energy_ph"].data[ssd_indices]
 
     composite_energy = np.empty(len(energy), dtype=np.float64)
 
     composite_energy[energy >= UltraConstants.COMPOSITE_ENERGY_THRESHOLD] = (
         UltraConstants.COMPOSITE_ENERGY_THRESHOLD
-        + de_dataset["PULSE_WIDTH"].data[ssd_indices][
+        + de_dataset["pulse_width"].data[ssd_indices][
             energy >= UltraConstants.COMPOSITE_ENERGY_THRESHOLD
         ]
     )

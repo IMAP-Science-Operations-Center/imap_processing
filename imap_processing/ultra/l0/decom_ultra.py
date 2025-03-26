@@ -1,12 +1,11 @@
 """Decommutates Ultra CCSDS packets."""
 
-import collections
 import logging
 from collections import defaultdict
-from typing import Any, Union
 
 import numpy as np
 import xarray as xr
+from numpy.typing import NDArray
 
 from imap_processing.ultra.l0.decom_tools import (
     decompress_binary,
@@ -16,7 +15,6 @@ from imap_processing.ultra.l0.decom_tools import (
 from imap_processing.ultra.l0.ultra_utils import (
     EVENT_FIELD_RANGES,
     RATES_KEYS,
-    ULTRA_EVENTS,
     ULTRA_RATES,
     ULTRA_TOF,
 )
@@ -26,39 +24,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def process_ultra_apids(data: list, apid: int) -> Union[dict[Any, Any], bool]:
-    """
-    Unpack and decode Ultra packets using CCSDS format and XTCE packet definitions.
-
-    Parameters
-    ----------
-    data : list
-        Grouped data.
-    apid : int
-        The APID to process.
-
-    Returns
-    -------
-    decom_data : dict
-        A dictionary containing the decoded data.
-    """
-    # Strategy dict maps APIDs to their respective processing functions
-    strategy_dict = {
-        ULTRA_TOF.apid[0]: process_ultra_tof,
-        ULTRA_EVENTS.apid[0]: process_ultra_events,
-        ULTRA_RATES.apid[0]: process_ultra_rates,
-        ULTRA_TOF.apid[1]: process_ultra_tof,
-        ULTRA_EVENTS.apid[1]: process_ultra_events,
-        ULTRA_RATES.apid[1]: process_ultra_rates,
-    }
-
-    process_function = strategy_dict.get(apid, lambda *args: False)
-    decom_data = process_function(data, defaultdict(list))
-
-    return decom_data
-
-
-def process_ultra_tof(ds: xr.Dataset, decom_data: collections.defaultdict) -> xr.Dataset:
+def process_ultra_tof(ds: xr.Dataset) -> xr.Dataset:
     """
     Unpack and decode Ultra TOF packets.
 
@@ -66,8 +32,6 @@ def process_ultra_tof(ds: xr.Dataset, decom_data: collections.defaultdict) -> xr
     ----------
     ds : xarray.Dataset
         TOF dataset.
-    decom_data : collections.defaultdict
-        Empty dictionary.
 
     Returns
     -------
@@ -76,23 +40,23 @@ def process_ultra_tof(ds: xr.Dataset, decom_data: collections.defaultdict) -> xr
     """
     scalar_keys = [key for key in ds.data_vars if key != "packetdata"]
 
-    decom_data = {key: [] for key in scalar_keys}
+    decom_data: defaultdict[str, list[np.ndarray]] = defaultdict(list)
     decom_data["packetdata"] = []
-    valid_shcoarse = []
+    valid_epoch = []
 
-    for shc_val, group in ds.groupby("shcoarse"):
+    for shc_val, group in ds.groupby("epoch"):
         if set(group["sid"].values) >= set(range(8)):
-            group = group.sortby("sid")
-            valid_shcoarse.append(np.uint64(shc_val))  # Ensure uint64
+            valid_epoch.append(shc_val)
+            group.sortby("sid")
 
             for key in scalar_keys:
-                decom_data[key].append(group[key].values)  # shape (8,)
+                decom_data[key].append(group[key].values)
 
             image = []
             for i in range(8):
-                binary = convert_to_binary_string(group['packetdata'].values[i])
+                binary = convert_to_binary_string(group["packetdata"].values[i])
                 decompressed = decompress_image(
-                    group['p00'].values[i],
+                    group["p00"].values[i],
                     binary,
                     ULTRA_TOF.width,
                     ULTRA_TOF.mantissa_bit_length,
@@ -107,26 +71,68 @@ def process_ultra_tof(ds: xr.Dataset, decom_data: collections.defaultdict) -> xr
     decom_data["packetdata"] = np.stack(decom_data["packetdata"])
 
     coords = {
-        "epoch": np.array(valid_shcoarse, dtype=np.uint64),
+        "epoch": np.array(valid_epoch, dtype=np.uint64),
         "sid": np.arange(8),
         "row": xr.DataArray(np.arange(54), dims=["row"], name="row"),
         "column": xr.DataArray(np.arange(180), dims=["column"], name="column"),
     }
 
-    decompressed_ds = xr.Dataset(
-        {
-            key.upper(): (["epoch", "sid"], decom_data[key])
-            for key in scalar_keys
-        } | {
-            "PACKETDATA": (["epoch", "sid", "row", "column"], decom_data["packetdata"])
-        },
-        coords=coords,
+    dataset = xr.Dataset(coords=coords)
+
+    # Add scalar keys (2D: epoch x sid)
+    for key in scalar_keys:
+        dataset[key.upper()] = xr.DataArray(
+            decom_data[key],
+            dims=["epoch", "sid"],
+        )
+
+    # Add PACKETDATA (4D: epoch x sid x row x column)
+    dataset["PACKETDATA"] = xr.DataArray(
+        decom_data["packetdata"],
+        dims=["epoch", "sid", "row", "column"],
     )
 
-    return decompressed_ds
+    return dataset
 
 
-def process_ultra_events(sorted_packets: xr.Dataset, decom_data: dict) -> xr.Dataset:
+def get_event_id(shcoarse: NDArray) -> NDArray:
+    """
+    Get unique event IDs using data from events packets.
+
+    Parameters
+    ----------
+    shcoarse : NDArray
+        SHCOARSE (MET).
+
+    Returns
+    -------
+    event_ids : NDArray
+        Ultra events data with calculated unique event IDs as 64-bit integers.
+    """
+    event_ids = []
+    packet_counters = {}
+
+    for met in shcoarse:
+        # Initialize the counter for a new packet (MET value)
+        if met not in packet_counters:
+            packet_counters[met] = 0
+        else:
+            packet_counters[met] += 1
+
+        # Left shift SHCOARSE (u32) by 31 bits, to make room for our event counters
+        # (31 rather than 32 to keep it positive in the int64 representation)
+        # Append the current number of events in this packet to the right-most bits
+        # This makes each event a unique value including the MET and event number
+        # in the packet
+        # NOTE: CDF does not allow for uint64 values,
+        # so we use int64 representation here
+        event_id = (np.int64(met) << np.int64(31)) | np.int64(packet_counters[met])
+        event_ids.append(event_id)
+
+    return np.array(event_ids, dtype=np.int64)
+
+
+def process_ultra_events(sorted_packets: xr.Dataset) -> xr.Dataset:
     """
     Unpack and decode Ultra EVENTS packets.
 
@@ -134,8 +140,6 @@ def process_ultra_events(sorted_packets: xr.Dataset, decom_data: dict) -> xr.Dat
     ----------
     sorted_packets : xr.Dataset
         EVENTS packets sorted by time.
-    decom_data : collections.defaultdict
-        Empty dictionary.
 
     Returns
     -------
@@ -155,39 +159,45 @@ def process_ultra_events(sorted_packets: xr.Dataset, decom_data: dict) -> xr.Dat
         else:
             # Here there are multiple images in a single packet,
             # so we need to loop through each image and decompress it.
-            event_data_list = read_image_raw_events_binary(
-                eventdata_array[i], count, decom_data
-            )
+            event_data_list = read_image_raw_events_binary(eventdata_array[i], count)
             all_events.extend(event_data_list)
+            # Keep track of how many times does the event occurred at this epoch.
             all_indices.extend([i] * count)
 
-    event_fields = all_events[0].keys()
-    event_data = {
-        field: np.array([ev[field] for ev in all_events]) for field in event_fields
-    }
-
+    # Now we have the event data, we need to create the xarray dataset.
+    # We cannot append to the existing dataset (sorted_packets)
+    # because there are multiple events for each epoch.
     idx = np.array(all_indices)
 
-    metadata = {
-        var: (["event"], sorted_packets[var].values[idx])
+    # Expand the existing dataset so that it is the same length as the event data.
+    expanded_data = {
+        var: sorted_packets[var].values[idx]
         for var in sorted_packets.data_vars
         if var != "eventdata"
     }
 
+    # Add the event data to the expanded dataset.
+    for key in event_data_list[0]:
+        expanded_data[key] = np.array([event[key] for event in all_events])
+
+    event_ids = get_event_id(expanded_data["shcoarse"])
+
     coords = {
-        coord: (["event"], sorted_packets[coord].values[idx])
-        for coord in sorted_packets.coords
+        "epoch": sorted_packets["epoch"].values[idx],
+        "event_id": ("epoch", event_ids),
     }
 
-    event_dataset = xr.Dataset(
-        data_vars={**metadata, **{k: ("event", v) for k, v in event_data.items()}},
-        coords={"event": np.arange(len(idx)), **coords},
-    )
+    dataset = xr.Dataset(coords=coords)
+    for key, data in expanded_data.items():
+        dataset[key] = xr.DataArray(
+            data,
+            dims=["epoch"],
+        )
 
-    return event_dataset
+    return dataset
 
 
-def process_ultra_rates(sorted_packets: xr.Dataset, decom_data: dict) -> xr.Dataset:
+def process_ultra_rates(sorted_packets: xr.Dataset) -> xr.Dataset:
     """
     Unpack and decode Ultra RATES packets.
 
@@ -195,14 +205,13 @@ def process_ultra_rates(sorted_packets: xr.Dataset, decom_data: dict) -> xr.Data
     ----------
     sorted_packets : xr.Dataset
         RATES packets sorted by time.
-    decom_data : collections.defaultdict
-        Empty dictionary.
 
     Returns
     -------
     sorted_packets : xr.Dataset
         RATES packets containing the decoded data.
     """
+    decom_data = defaultdict(list)
     if (
         isinstance(ULTRA_RATES.mantissa_bit_length, int)
         and isinstance(ULTRA_RATES.len_array, int)
