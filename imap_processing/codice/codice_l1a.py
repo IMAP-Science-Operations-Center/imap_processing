@@ -547,7 +547,7 @@ class CoDICEL1aPipeline:
         if self.config["dataset_name"] != "imap_codice_l1a_lo-counters-aggregated":
             transpose_axes = [input_keys.index(dim) for dim in output_keys]
         else:
-            transpose_axes = [1, 2, 0]
+            transpose_axes = [1, 2, 0]  # [esa_step, spin_sector_pairs, num_counters]
 
         for packet_data in self.raw_data:
             reshaped_packet_data = np.array(packet_data, dtype=np.uint32).reshape(
