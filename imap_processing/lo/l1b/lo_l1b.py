@@ -49,11 +49,11 @@ def lo_l1b(dependencies: dict, data_version: str) -> list[Path]:
         acq_start, acq_end = convert_start_end_acq_times(spin_data)
         # Get the average spin durations for each epoch
         avg_spin_durations = get_avg_spin_durations(acq_start, acq_end)  # noqa: F841
-        # get spin phase (0 - 360 degrees) for each DE
-        spin_phase = get_spin_phase(l1a_de)
-        # calculate and set the spin bin based on the spin phase
+        # get spin angle (0 - 360 degrees) for each DE
+        spin_angle = get_spin_angle(l1a_de)
+        # calculate and set the spin bin based on the spin angle
         # spin bins are 0 - 60 bins
-        l1b_de = set_spin_bin(l1b_de, spin_phase)
+        l1b_de = set_spin_bin(l1b_de, spin_angle)
 
     return [l1b_de]
 
@@ -163,9 +163,9 @@ def get_avg_spin_durations(
     return avg_spin_durations
 
 
-def get_spin_phase(l1a_de: xr.Dataset) -> Union[np.ndarray[np.float64], Any]:
+def get_spin_angle(l1a_de: xr.Dataset) -> Union[np.ndarray[np.float64], Any]:
     """
-    Get the spin phase (0 - 360 degrees) for each DE.
+    Get the spin angle (0 - 360 degrees) for each DE.
 
     Parameters
     ----------
@@ -174,16 +174,16 @@ def get_spin_phase(l1a_de: xr.Dataset) -> Union[np.ndarray[np.float64], Any]:
 
     Returns
     -------
-    spin_phase : np.ndarray
-        The spin phase for each DE.
+    spin_angle : np.ndarray
+        The spin angle for each DE.
     """
     de_times = l1a_de["de_time"].values
     # DE Time is 12 bit DN. The max possible value is 4096
-    spin_phase = np.array(de_times / 4096 * 360, dtype=np.float64)
-    return spin_phase
+    spin_angle = np.array(de_times / 4096 * 360, dtype=np.float64)
+    return spin_angle
 
 
-def set_spin_bin(l1b_de: xr.Dataset, spin_phase: np.ndarray) -> xr.Dataset:
+def set_spin_bin(l1b_de: xr.Dataset, spin_angle: np.ndarray) -> xr.Dataset:
     """
     Set the spin bin (0 - 60 bins) for each Direct Event where each bin is 6 degrees.
 
@@ -191,8 +191,8 @@ def set_spin_bin(l1b_de: xr.Dataset, spin_phase: np.ndarray) -> xr.Dataset:
     ----------
     l1b_de : xarray.Dataset
         The L1B Direct Event dataset.
-    spin_phase : np.ndarray
-        The spin phase (0-360 degrees) for each Direct Event.
+    spin_angle : np.ndarray
+        The spin angle (0-360 degrees) for each Direct Event.
 
     Returns
     -------
@@ -201,11 +201,11 @@ def set_spin_bin(l1b_de: xr.Dataset, spin_phase: np.ndarray) -> xr.Dataset:
     """
     # Get the spin bin for each DE
     # Spin bins are 0 - 60 where each bin is 6 degrees
-    spin_bin = (spin_phase // 6).astype(int)
+    spin_bin = (spin_angle // 6).astype(int)
     l1b_de["spin_bin"] = xr.DataArray(
         spin_bin,
         dims=["epoch"],
-        # TODO: Add spin phase to YAML file
+        # TODO: Add spin angle to YAML file
         # attrs=attr_mgr.get_variable_attributes("spin_bin"),
     )
     return l1b_de
