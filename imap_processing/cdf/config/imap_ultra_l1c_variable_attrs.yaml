@@ -17,18 +17,18 @@ default_float32_attrs: &default_float32
   VALIDMAX: 3.4028235e+38
   dtype: float32
 
-latitude_bin_center:
+latitude:
   <<: *default_float32
-  CATDESC: Latitude corresponding to healpix index with range [-90, 90].
-  FIELDNAM: latitude_bin_center
-  LABLAXIS: latitude bin center
+  CATDESC: Latitude bin center corresponding to healpix index with range [-90, 90].
+  FIELDNAM: latitude
+  LABLAXIS: latitude
   UNITS: degrees
 
-longitude_bin_center:
+longitude:
   <<: *default_float32
-  CATDESC: Longitude corresponding to healpix index with range [0, 360].
-  FIELDNAM: longitude_bin_center
-  LABLAXIS: longitude bin center
+  CATDESC: Longitude bin center corresponding to healpix index with range [0, 360].
+  FIELDNAM: longitude
+  LABLAXIS: longitude
   UNITS: degrees
 
 spin_angle:
@@ -55,11 +55,11 @@ species_bin:
   # TODO: come back to format
   UNITS: " "
 
-exposure:
+exposure_factor:
   <<: *default_float32
   CATDESC: Exposure time for a pointing.
-  FIELDNAM: exposure
-  LABLAXIS: exposure
+  FIELDNAM: exposure_factor
+  LABLAXIS: exposure factor
   # TODO: come back to format
   UNITS: seconds
 
