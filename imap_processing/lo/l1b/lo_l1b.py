@@ -181,7 +181,7 @@ def get_spin_angle(l1a_de: xr.Dataset) -> Union[np.ndarray[np.float64], Any]:
     """
     de_times = l1a_de["de_time"].values
     # DE Time is 12 bit DN. The max possible value is 4096
-    spin_angle = np.mod(de_times / 4096 * 360, 360).astype(np.float64)
+    spin_angle = np.array(de_times / 4096 * 360, dtype=np.float64)
     return spin_angle
 
 
