@@ -365,7 +365,7 @@ class CoDICEL1aPipeline:
                 elif variable_name == "spin_period":
                     variable_data = (
                         self.dataset.spin_period.data * constants.SPIN_PERIOD_CONVERSION
-                    )
+                    ).astype(np.float32)
                     dims = ["epoch"]
                     attrs = self.cdf_attrs.get_variable_attributes("spin_period")
 
@@ -382,12 +382,11 @@ class CoDICEL1aPipeline:
         """
         Retrieve the acquisition times via the Lo stepping table.
 
-        Get the acquisition times from the data file based on the values of
+        Get the acquisition times from the lookup table based on the values of
         ``plan_id`` and ``plan_step``
 
         The Lo stepping table defines how many voltage steps and which steps are
         used during each spacecraft spin. A full cycle takes 16 spins. The table
-        provides the timing for a given energy step, and most importantly
         provides the "acquisition time", which is the acquisition time, in
         milliseconds, for the energy step.
 
@@ -396,36 +395,14 @@ class CoDICEL1aPipeline:
         acquisition_times : list[float]
             The list of acquisition times from the Lo stepping table.
         """
-        # Read in the Lo stepping data table
-        lo_stepping_data_file = Path(
-            f"{imap_module_directory}/codice/data/lo_stepping_values.csv"
-        )
-        lo_stepping_data = pd.read_csv(lo_stepping_data_file)
-
         # Determine which Lo stepping table is needed
         lo_stepping_table_id = constants.LO_STEPPING_TABLE_ID_LOOKUP[
             (self.plan_id, self.plan_step)
         ]
 
-        # Get the appropriate values
-        lo_stepping_values = lo_stepping_data[
-            lo_stepping_data["table_num"] == lo_stepping_table_id
+        acquisition_times: list[float] = constants.ACQUISITION_TIMES[
+            lo_stepping_table_id
         ]
-
-        # Create a list for the acquisition times
-        acquisition_times = []
-
-        # Only need the energy columns from the table
-        energy_steps = lo_stepping_values[
-            ["e1", "e2", "e3", "e4", "e5", "e6", "e7", "e8"]
-        ].astype(str)  # convert to string to avoid confusion with table index value
-
-        # For each energy step (0-127), scan the energy columns and find the row
-        # number, which corresponds to a specific acquisition time, then append
-        # it to the list
-        for step_number in range(128):
-            row_number = np.argmax(energy_steps == str(step_number), axis=1).argmax()
-            acquisition_times.append(lo_stepping_values.acq_time[row_number])
 
         return acquisition_times
 

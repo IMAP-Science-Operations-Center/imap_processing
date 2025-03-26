@@ -52,7 +52,7 @@ def validation_data():
 def test_subcom_sectorates(sci_packet_filepath):
     """Test the subcom_sectorates function.
 
-    This function organizes the sector rates data
+    This function organizes the sectored rates data
     by species and adds the data as new variables
     to the dataset.
     """
@@ -67,26 +67,26 @@ def test_subcom_sectorates(sci_packet_filepath):
     # Number of science frames in the dataset
     frames = sci_dataset["epoch"].shape[0]
 
-    # Check if the dataset has the expected new variables
-    for species in ["h", "he4", "cno", "nemgsi", "fe"]:
-        assert f"{species}_counts_sectored" in sci_dataset
-        assert f"{species}_energy_min" in sci_dataset
-        assert f"{species}_energy_max" in sci_dataset
+    # Shape of the new data variables
+    expected_shapes = {
+        "h": (3, 15, 8),
+        "he4": (2, 15, 8),
+        "cno": (2, 15, 8),
+        "nemgsi": (2, 15, 8),
+        "fe": (1, 15, 8),
+    }
 
+    for species, shape in expected_shapes.items():
+        # Check if the dataset has the new  data variables
+        assert f"{species}_sectored_counts" in sci_dataset
+        assert f"{species}_energy_mean" in sci_dataset
+        assert f"{species}_energy_delta_minus" in sci_dataset
+        assert f"{species}_energy_delta_plus" in sci_dataset
         # Check the shape of the new data variables
-        if species == "h":
-            assert sci_dataset[f"{species}_counts_sectored"].shape == (frames, 3, 8, 15)
-            assert sci_dataset[f"{species}_energy_min"].shape == (3,)
-        elif species in ("4he", "cno", "nemgsi"):
-            assert sci_dataset[f"{species}_counts_sectored"].shape == (frames, 2, 8, 15)
-            assert sci_dataset[f"{species}_energy_min"].shape == (2,)
-        elif species == "fe":
-            assert sci_dataset[f"{species}_counts_sectored"].shape == (frames, 1, 8, 15)
-            assert sci_dataset[f"{species}_energy_min"].shape == (1,)
-        assert (
-            sci_dataset[f"{species}_energy_max"].shape
-            == sci_dataset[f"{species}_energy_min"].shape
-        )
+        assert sci_dataset[f"{species}_sectored_counts"].shape == (frames, *shape)
+        assert sci_dataset[f"{species}_energy_mean"].shape == (shape[0],)
+        assert sci_dataset[f"{species}_energy_delta_minus"].shape == (shape[0],)
+        assert sci_dataset[f"{species}_energy_delta_plus"].shape == (shape[0],)
 
 
 def test_calculate_uncertainties():
@@ -240,7 +240,7 @@ def test_validate_l1a_counts_data(sci_packet_filepath, validation_data):
         "seq_flgs",
         "src_seq_ctr",
         "pkt_len",
-        "energy_idx",
+        "energy_bin",
     ]
 
     # Compare processed data to validation data

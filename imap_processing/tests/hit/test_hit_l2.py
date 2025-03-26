@@ -14,8 +14,8 @@ from imap_processing.hit.l2.hit_l2 import (
     IntensityFactors,
     add_systematic_uncertainties,
     calculate_intensities,
-    calculate_intensity_for_a_species,
-    calculate_intensity_for_all_species,
+    calculate_intensities_for_a_species,
+    calculate_intensities_for_all_species,
     get_intensity_factors,
     get_species_ancillary_data,
     hit_l2,
@@ -140,8 +140,8 @@ def test_get_species_ancillary_data():
     pd.testing.assert_frame_equal(output, expected_output)
 
 
-def test_calculate_intensity_for_all_species():
-    """Test the calculate_intensity_for_all_species function."""
+def test_calculate_intensities_for_all_species():
+    """Test the calculate_intensities_for_all_species function."""
     # Sample input data
     l2_dataset = xr.Dataset(
         {
@@ -214,7 +214,7 @@ def test_calculate_intensity_for_all_species():
     )
 
     # Call the function
-    calculate_intensity_for_all_species(l2_dataset, ancillary_data_frames)
+    calculate_intensities_for_all_species(l2_dataset, ancillary_data_frames)
 
     # Assertions
     assert np.allclose(
@@ -225,8 +225,8 @@ def test_calculate_intensity_for_all_species():
     ), "Intensities mismatch for He"
 
 
-def test_calculate_intensity_for_a_species():
-    """Test the calculate_intensity_for_a_species function."""
+def test_calculate_intensities_for_a_species():
+    """Test the calculate_intensities_for_a_species function."""
     # Sample input data
     species_variable = "h"
     l2_dataset = xr.Dataset(
@@ -278,7 +278,7 @@ def test_calculate_intensity_for_a_species():
     )
 
     # Call the function
-    calculate_intensity_for_a_species(
+    calculate_intensities_for_a_species(
         species_variable, l2_dataset, ancillary_data_frames
     )
 
@@ -325,7 +325,7 @@ def test_add_systematic_uncertainties():
     dataset = xr.Dataset()
 
     # Call the function
-    add_systematic_uncertainties(dataset, particle, energy_ranges)
+    add_systematic_uncertainties(dataset, particle, len(energy_ranges))
 
     # Assertions
     assert f"{particle}_sys_delta_minus" in dataset.data_vars
@@ -348,23 +348,23 @@ def test_process_summed_intensity_data(l1b_summed_rates_dataset):
 
     valid_coords = {
         "epoch",
-        "h_energy_index",
-        "he3_energy_index",
-        "he4_energy_index",
-        "he_energy_index",
-        "c_energy_index",
-        "o_energy_index",
-        "fe_energy_index",
-        "n_energy_index",
-        "si_energy_index",
-        "mg_energy_index",
-        "s_energy_index",
-        "ar_energy_index",
-        "ca_energy_index",
-        "na_energy_index",
-        "al_energy_index",
-        "ne_energy_index",
-        "ni_energy_index",
+        "h_energy_mean",
+        "he3_energy_mean",
+        "he4_energy_mean",
+        "he_energy_mean",
+        "c_energy_mean",
+        "o_energy_mean",
+        "fe_energy_mean",
+        "n_energy_mean",
+        "si_energy_mean",
+        "mg_energy_mean",
+        "s_energy_mean",
+        "ar_energy_mean",
+        "ca_energy_mean",
+        "na_energy_mean",
+        "al_energy_mean",
+        "ne_energy_mean",
+        "ni_energy_mean",
     }
 
     # Check that the dataset has the correct coords and variables
@@ -378,8 +378,8 @@ def test_process_summed_intensity_data(l1b_summed_rates_dataset):
         assert f"{particle}" in l2_summed_intensity_dataset.data_vars
         assert f"{particle}_delta_minus" in l2_summed_intensity_dataset.data_vars
         assert f"{particle}_delta_plus" in l2_summed_intensity_dataset.data_vars
-        assert f"{particle}_energy_min" in l2_summed_intensity_dataset.data_vars
-        assert f"{particle}_energy_max" in l2_summed_intensity_dataset.data_vars
+        assert f"{particle}_sys_delta_minus" in l2_summed_intensity_dataset.data_vars
+        assert f"{particle}_sys_delta_plus" in l2_summed_intensity_dataset.data_vars
 
 
 def test_process_standard_intensity_data(l1b_standard_rates_dataset):

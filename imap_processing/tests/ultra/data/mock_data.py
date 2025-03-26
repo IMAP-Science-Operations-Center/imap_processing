@@ -5,6 +5,7 @@ import numpy as np
 import spiceypy as spice
 import xarray as xr
 
+from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.spice.kernels import ensure_spice
 from imap_processing.spice.time import str_to_et
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import build_energy_bins
@@ -87,7 +88,7 @@ def mock_l1c_pset_product_rectangular(  # noqa: PLR0913
     num_lon_bins = int(360 / spacing_deg)
     stripe_center_lat_bin = int((stripe_center_lat + 90) / spacing_deg)
 
-    _, energy_bin_midpoints = build_energy_bins()
+    _, energy_bin_midpoints, _ = build_energy_bins()
     num_energy_bins = len(energy_bin_midpoints)
 
     # 1 epoch x num_energy_bins x num_lon_bins x num_lat_bins
@@ -139,34 +140,42 @@ def mock_l1c_pset_product_rectangular(  # noqa: PLR0913
         {
             "counts": (
                 [
-                    "epoch",
-                    "energy_bin_center",
-                    "longitude_bin_center",
-                    "latitude_bin_center",
+                    CoordNames.TIME.value,
+                    CoordNames.ENERGY.value,
+                    CoordNames.AZIMUTH_L1C.value,
+                    CoordNames.ELEVATION_L1C.value,
                 ],
                 counts,
             ),
             "exposure_time": (
-                ["longitude_bin_center", "latitude_bin_center"],
-                exposure_time,
+                [
+                    CoordNames.TIME.value,
+                    CoordNames.AZIMUTH_L1C.value,
+                    CoordNames.ELEVATION_L1C.value,
+                ],
+                np.expand_dims(exposure_time, axis=0),
             ),
             "sensitivity": (
                 [
-                    "epoch",
-                    "energy_bin_center",
-                    "longitude_bin_center",
-                    "latitude_bin_center",
+                    CoordNames.TIME.value,
+                    CoordNames.ENERGY.value,
+                    CoordNames.AZIMUTH_L1C.value,
+                    CoordNames.ELEVATION_L1C.value,
                 ],
                 sensitivity,
             ),
         },
         coords={
-            "epoch": [
+            CoordNames.TIME.value: [
                 tt_j2000ns,
             ],
-            "energy_bin_center": energy_bin_midpoints,
-            "longitude_bin_center": np.arange(0 + spacing_deg / 2, 360, spacing_deg),
-            "latitude_bin_center": np.arange(-90 + spacing_deg / 2, 90, spacing_deg),
+            CoordNames.ENERGY.value: energy_bin_midpoints,
+            CoordNames.AZIMUTH_L1C.value: np.arange(
+                0 + spacing_deg / 2, 360, spacing_deg
+            ),
+            CoordNames.ELEVATION_L1C.value: np.arange(
+                -90 + spacing_deg / 2, 90, spacing_deg
+            ),
         },
         attrs={
             "Logical_file_id": (
@@ -242,7 +251,7 @@ def mock_l1c_pset_product_healpix(  # noqa: PLR0913
     head : str, optional
         The sensor head (either '45' or '90') (default is '45').
     """
-    _, energy_bin_midpoints = build_energy_bins()
+    _, energy_bin_midpoints, _ = build_energy_bins()
     num_energy_bins = len(energy_bin_midpoints)
     npix = hp.nside2npix(nside)
     counts = np.zeros(npix)
@@ -287,39 +296,39 @@ def mock_l1c_pset_product_healpix(  # noqa: PLR0913
         {
             "counts": (
                 [
-                    "epoch",
-                    "energy_bin_center",
-                    "healpix_pixel_index",
+                    CoordNames.TIME.value,
+                    CoordNames.ENERGY.value,
+                    CoordNames.HEALPIX_INDEX.value,
                 ],
                 counts,
             ),
             "exposure_time": (
-                ["healpix_pixel_index"],
+                [CoordNames.HEALPIX_INDEX.value],
                 exposure_time,
             ),
             "sensitivity": (
                 [
-                    "epoch",
-                    "energy_bin_center",
-                    "healpix_pixel_index",
+                    CoordNames.TIME.value,
+                    CoordNames.ENERGY.value,
+                    CoordNames.HEALPIX_INDEX.value,
                 ],
                 sensitivity,
             ),
-            "longitude_bin_center": (
-                ["healpix_pixel_index"],
+            CoordNames.AZIMUTH_L1C.value: (
+                [CoordNames.HEALPIX_INDEX.value],
                 lon_pix,
             ),
-            "latitude_bin_center": (
-                ["healpix_pixel_index"],
+            CoordNames.ELEVATION_L1C.value: (
+                [CoordNames.HEALPIX_INDEX.value],
                 lat_pix,
             ),
         },
         coords={
-            "epoch": [
+            CoordNames.TIME.value: [
                 tt_j2000ns,
             ],
-            "energy_bin_center": energy_bin_midpoints,
-            "healpix_pixel_index": pix_indices,
+            CoordNames.ENERGY.value: energy_bin_midpoints,
+            CoordNames.HEALPIX_INDEX.value: pix_indices,
         },
         attrs={
             "Logical_file_id": (

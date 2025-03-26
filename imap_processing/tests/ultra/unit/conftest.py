@@ -25,7 +25,7 @@ def ccsds_path():
         imap_module_directory
         / "tests"
         / "ultra"
-        / "test_data"
+        / "data"
         / "l0"
         / "Ultra45_EM_SwRI_Cal_Run7_ThetaScan_20220530T225054.CCSDS"
     )
@@ -38,7 +38,7 @@ def ccsds_path_events():
         imap_module_directory
         / "tests"
         / "ultra"
-        / "test_data"
+        / "data"
         / "l0"
         / "FM45_7P_Phi0.0_BeamCal_LinearScan_phi0.04_theta-0.01_20230821T121304.CCSDS"
     )
@@ -51,7 +51,7 @@ def ccsds_path_theta_0():
         imap_module_directory
         / "tests"
         / "ultra"
-        / "test_data"
+        / "data"
         / "l0"
         / "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50_theta-0.00"
         "_20240207T102740.CCSDS"
@@ -65,7 +65,7 @@ def ccsds_path_tof():
         imap_module_directory
         / "tests"
         / "ultra"
-        / "test_data"
+        / "data"
         / "l0"
         / "FM45_TV_Cycle6_Hot_Ops_Front212_20240124T063837.CCSDS"
     )
@@ -89,7 +89,7 @@ def rates_test_path():
         "ultra45_raw_sc_ultraimgrates_Ultra45_EM_SwRI_Cal_Run7_ThetaScan_"
         "20220530T225054.csv"
     )
-    return imap_module_directory / "tests" / "ultra" / "test_data" / "l0" / filename
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
 
 @pytest.fixture()
@@ -99,7 +99,7 @@ def aux_test_path():
         "ultra45_raw_sc_auxdata_Ultra45_EM_SwRI_Cal_Run7_ThetaScan_"
         "20220530T225054.csv"
     )
-    return imap_module_directory / "tests" / "ultra" / "test_data" / "l0" / filename
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
 
 @pytest.fixture()
@@ -109,7 +109,7 @@ def events_test_path():
         "ultra45_raw_sc_ultrarawimgevent_FM45_7P_Phi00_BeamCal_"
         "LinearScan_phi004_theta-001_20230821T121304.csv"
     )
-    return imap_module_directory / "tests" / "ultra" / "test_data" / "l0" / filename
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
 
 @pytest.fixture()
@@ -119,7 +119,7 @@ def tof_test_path():
         "ultra45_raw_sc_enaphxtofhangimg_FM45_TV_Cycle6_Hot_Ops_"
         "Front212_20240124T063837.csv"
     )
-    return imap_module_directory / "tests" / "ultra" / "test_data" / "l0" / filename
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
 
 @pytest.fixture()
@@ -127,9 +127,7 @@ def decom_test_data(request, xtce_path):
     """Read test data from file"""
     apid = request.param["apid"]
     filename = request.param["filename"]
-    ccsds_path = (
-        imap_module_directory / "tests" / "ultra" / "test_data" / "l0" / filename
-    )
+    ccsds_path = imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
     packets = decom.decom_packets(ccsds_path, xtce_path)
     grouped_data = group_by_apid(packets)
@@ -145,7 +143,7 @@ def events_fsw_comparison_theta_0():
         "ultra45_raw_sc_ultrarawimg_withFSWcalcs_FM45_40P_Phi28p5_"
         "BeamCal_LinearScan_phi2850_theta-000_20240207T102740.csv"
     )
-    return imap_module_directory / "tests" / "ultra" / "test_data" / "l0" / filename
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
 
 @pytest.fixture()

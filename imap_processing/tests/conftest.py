@@ -147,18 +147,26 @@ def test_data_paths():
             imap_module_directory / "tests/idex/test_data/idex_l1a_validation_file.h5",
         ),
         (
+            "https://api.dev.imap-mission.com/download/test_data/ultra-90_raw_event_data_shortened.csv",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "data"
+            / "l1"
+            / "ultra-90_raw_event_data_shortened.csv",
+        ),
+        (
             "https://api.dev.imap-mission.com/download/test_data/Ultra_90_DPS_efficiencies_all.csv",
             imap_module_directory
-            / "tests/ultra/test_data/l1/Ultra_90_DPS_efficiencies_all.csv",
+            / "tests/ultra/data/l1/Ultra_90_DPS_efficiencies_all.csv",
         ),
         (
             "https://api.dev.imap-mission.com/download/test_data/ultra_90_dps_gf.csv",
-            imap_module_directory / "tests/ultra/test_data/l1/ultra_90_dps_gf.csv",
+            imap_module_directory / "tests/ultra/data/l1/ultra_90_dps_gf.csv",
         ),
         (
             "https://api.dev.imap-mission.com/download/test_data/ultra_90_dps_exposure.csv",
-            imap_module_directory
-            / "tests/ultra/test_data/l1/ultra_90_dps_exposure.csv",
+            imap_module_directory / "tests/ultra/data/l1/ultra_90_dps_exposure.csv",
         ),
     ]
     return test_data_path_list

@@ -222,6 +222,49 @@ class PointingSet(ABC):
         self.num_points = 0
         self.az_el_points = np.zeros((self.num_points, 2))
         self.data = xr.Dataset()
+        self.spatial_coords: tuple[str, ...] = ()
+
+    @property
+    def unwrapped_dims_dict(self) -> dict[str, tuple[str, ...]]:
+        """
+        Get dimensions of each variable in the pointing set, with only 1 spatial dim.
+
+        Returns
+        -------
+        unwrapped_dims_dict : dict[str, tuple[str, ...]]
+            Dictionary of variable names and their dimensions, with only 1 spatial dim.
+            The generic pixel dimension is always included.
+            E.g.: {"counts": ("epoch", "energy_bin_center", "pixel")} .
+        """
+        variable_dims = {}
+        for var_name in self.data.data_vars:
+            pset_dims = self.data[var_name].dims
+            non_spatial_dims = tuple(
+                dim for dim in pset_dims if dim not in self.spatial_coords
+            )
+
+            variable_dims[var_name] = (
+                *non_spatial_dims,
+                CoordNames.GENERIC_PIXEL.value,
+            )
+        return variable_dims
+
+    @property
+    def non_spatial_coords(self) -> dict[str, xr.DataArray]:
+        """
+        Get the non-spatial coordinates of the pointing set.
+
+        Returns
+        -------
+        non_spatial_coords : dict[str, xr.DataArray]
+            Dictionary of coordinate names and their data arrays.
+            E.g.: {"epoch": [12345,], "energy": [100, 200, 300]} .
+        """
+        non_spatial_coords = {}
+        for coord_name in self.data.coords:
+            if coord_name not in self.spatial_coords:
+                non_spatial_coords[coord_name] = self.data[coord_name]
+        return non_spatial_coords
 
     def __repr__(self) -> str:
         """
@@ -249,8 +292,8 @@ class RectangularPointingSet(PointingSet):
         Currently, the dataset is expected to be tiled in a rectangular grid,
         with data_vars indexed along the coordinates:
             - 'epoch' : time value (1 value per PSET)
-            - 'longitude_bin_center' : (number of longitude/az bins in L1C)
-            - 'latitude_bin_center' : (number of latitude/el bins in L1C)
+            - 'longitude' : (number of longitude/az bins in L1C)
+            - 'latitude' : (number of latitude/el bins in L1C)
     spice_reference_frame : geometry.SpiceFrame
         The reference Spice frame of the pointing set. Default is IMAP_DPS.
 
@@ -283,6 +326,10 @@ class RectangularPointingSet(PointingSet):
             raise ValueError("Multiple epochs found in the dataset.")
 
         self.tiling_type = SkyTilingType.RECTANGULAR
+        self.spatial_coords = (
+            CoordNames.AZIMUTH_L1C.value,
+            CoordNames.ELEVATION_L1C.value,
+        )
 
         # Ensure 1D axes grids are uniformly spaced,
         # then set spacing based on data's azimuth bin spacing.
@@ -351,9 +398,9 @@ class UltraPointingSet(PointingSet):
         Currently, the dataset is expected to be tiled in a HEALPix tessellation,
         with data_vars indexed along the coordinates:
             - 'epoch' : time value (1 value per PSET, from the mean of the PSET)
-            - 'energy_bin_center' : (number of energy bins in L1C)
-            - 'healpix_pixel_index' : HEALPix pixel index
-        Only the 'healpix_pixel_index' coordinate is used in this class for projection.
+            - 'energy' : (number of energy bins in L1C)
+            - 'healpix_index' : HEALPix pixel index
+        Only the 'healpix_index' coordinate is used in this class for projection.
     spice_reference_frame : geometry.SpiceFrame
         The reference Spice frame of the pointing set. Default is IMAP_DPS.
 
@@ -387,6 +434,7 @@ class UltraPointingSet(PointingSet):
 
         # Set the tiling type and number of points
         self.tiling_type = SkyTilingType.HEALPIX
+        self.spatial_coords = (CoordNames.HEALPIX_INDEX.value,)
         self.num_points = self.data[CoordNames.HEALPIX_INDEX.value].size
         self.nside = hp.npix_to_nside(self.num_points)
 
@@ -451,10 +499,14 @@ class AbstractSkyMap(ABC):
     """
     Abstract base class to contain map data in the context of ENA sky maps.
 
-    Data values are stored in a dictionary, where the final (-1) axis
-    is the only spatial dimension. If the map is rectangular,
-    this axis is the raveled 2D grid.
+    Data values are stored internally in an xarray Dataset, in the .data_1d attribute.
+    where the final (-1) axis is the only spatial dimension.
+    If the map is rectangular, this axis is the raveled 2D grid.
     If the map is Healpix, this axis is the 1D array of Healpix pixel indices.
+
+    The data can be also accessed via the to_dataset method, which rewraps the data to
+    a 2D grid shape if the map is rectangular and formats the data as an xarray
+    Dataset with the correct dims and coords.
     """
 
     @abstractmethod
@@ -462,8 +514,69 @@ class AbstractSkyMap(ABC):
         self.tiling_type: SkyTilingType
         self.sky_grid: spatial_utils.AzElSkyGrid
         self.num_points: int
+        self.non_spatial_coords: dict[str, xr.DataArray | NDArray]
+        self.spatial_coords: dict[str, xr.DataArray | NDArray]
         self.binning_grid_shape: tuple[int, ...]
-        self.data_dict: dict[str, NDArray]
+        self.data_1d: xr.Dataset
+
+    def to_dataset(self) -> xr.Dataset:
+        """
+        Get the SkyMap data as a formatted xarray Dataset.
+
+        Returns
+        -------
+        xr.Dataset
+            The SkyMap data as a formatted xarray Dataset with dims and coords.
+            If the SkyMap is empty, an empty xarray Dataset is returned.
+            If the SkyMap is Rectangular, the data is rewrapped to a 2D grid of
+            lon/lat (AKA az/el) coordinates.
+            If the SkyMap is Healpix, the data is unchanged from the data_1d, but
+            the pixel coordinate is renamed to CoordNames.HEALPIX_INDEX.value.
+        """
+        if len(self.data_1d.data_vars) == 0:
+            # If the map is empty, return an empty xarray Dataset,
+            # with the unaltered spatial coords of the map
+            return xr.Dataset(
+                {},
+                coords={**self.spatial_coords},
+            )
+
+        if self.tiling_type is SkyTilingType.HEALPIX:
+            # return the data_1d as is, but with the pixel coordinate
+            # renamed to CoordNames.HEALPIX_INDEX.value
+            return self.data_1d.rename(
+                {CoordNames.GENERIC_PIXEL.value: CoordNames.HEALPIX_INDEX.value}
+            )
+        elif self.tiling_type is SkyTilingType.RECTANGULAR:
+            # Rewrap each data array in the data_1d to the original 2D grid shape
+            rewrapped_data = {}
+            for key in self.data_1d.data_vars:
+                # drop pixel dim from the end, and add the spatial coords as dims
+                rewrapped_dims = [
+                    dim
+                    for dim in self.data_1d[key].dims
+                    if dim != CoordNames.GENERIC_PIXEL.value
+                ]
+                rewrapped_dims.extend(self.spatial_coords.keys())
+                rewrapped_data[key] = xr.DataArray(
+                    spatial_utils.rewrap_even_spaced_az_el_grid(
+                        self.data_1d[key].values,
+                        self.binning_grid_shape,
+                    ),
+                    dims=rewrapped_dims,
+                )
+            # Add the output coordinates to the rewrapped data, excluding the pixel
+            self.non_spatial_coords.update(
+                {
+                    key: self.data_1d[key].coords[key]
+                    for key in self.data_1d[key].coords
+                    if key != CoordNames.GENERIC_PIXEL.value
+                }
+            )
+            return xr.Dataset(
+                rewrapped_data,
+                coords={**self.non_spatial_coords, **self.spatial_coords},
+            )
 
     def project_pset_values_to_map(
         self,
@@ -525,19 +638,35 @@ class AbstractSkyMap(ABC):
         for value_key in value_keys:
             pset_values = pointing_set.data[value_key]
 
-            # If there is an epoch dim with size 1, flatten it out
-            if "epoch" in pset_values.dims and pset_values["epoch"].size == 1:
-                pset_values = pset_values.squeeze("epoch")
-
             # If multiple spatial axes present
             # (i.e (az, el) for rectangular coordinate PSET),
             # flatten them in the values array to match the raveled indices
-            raveled_pset_data = pset_values.data.reshape(-1, pointing_set.num_points)
+            non_spatial_axes_shape = tuple(
+                size
+                for key, size in pset_values.sizes.items()
+                if key not in pointing_set.spatial_coords
+            )
+            raveled_pset_data = pset_values.data.reshape(
+                *non_spatial_axes_shape,
+                pointing_set.num_points,
+            )
 
-            if value_key not in self.data_dict:
+            if value_key not in self.data_1d.data_vars:
                 # Initialize the map data array if it doesn't exist (values start at 0)
                 output_shape = (*raveled_pset_data.shape[:-1], self.num_points)
-                self.data_dict[value_key] = np.zeros(output_shape)
+                self.data_1d[value_key] = xr.DataArray(
+                    np.zeros(output_shape),
+                    dims=pointing_set.unwrapped_dims_dict[value_key],
+                )
+
+                # Make coordinates for the map data array if they don't exist
+                self.data_1d.coords.update(
+                    {
+                        dim: pointing_set.data[dim]
+                        for dim in self.data_1d[value_key].dims
+                        if dim not in self.data_1d.coords
+                    }
+                )
 
             if index_match_method is IndexMatchMethod.PUSH:
                 # Bin the values at the matched indices. There may be multiple
@@ -556,7 +685,7 @@ class AbstractSkyMap(ABC):
                     "Only PUSH and PULL index matching methods are supported."
                 )
 
-            self.data_dict[value_key] += pointing_projected_values
+            self.data_1d[value_key] += pointing_projected_values
 
 
 class RectangularSkyMap(AbstractSkyMap):
@@ -628,6 +757,20 @@ class RectangularSkyMap(AbstractSkyMap):
         # The shape of the map (num_az_bins, num_el_bins) is used to bin the data
         self.binning_grid_shape = self.sky_grid.grid_shape
 
+        self.non_spatial_coords = {}
+        self.spatial_coords = {
+            CoordNames.AZIMUTH_L1C.value: xr.DataArray(
+                self.sky_grid.az_bin_midpoints,
+                dims=[CoordNames.AZIMUTH_L1C.value],
+                attrs={"units": "degrees"},
+            ),
+            CoordNames.ELEVATION_L1C.value: xr.DataArray(
+                self.sky_grid.el_bin_midpoints,
+                dims=[CoordNames.ELEVATION_L1C.value],
+                attrs={"units": "degrees"},
+            ),
+        }
+
         # Unwrap the az, el grids to 1D array of points tiling the sky
         az_points = self.sky_grid.az_grid.ravel()
         el_points = self.sky_grid.el_grid.ravel()
@@ -642,8 +785,12 @@ class RectangularSkyMap(AbstractSkyMap):
         )
         self.solid_angle_points = self.solid_angle_grid.ravel()
 
-        # Initialize empty data dictionary to store map data
-        self.data_dict: dict[str, NDArray] = {}
+        # Initialize xarray Dataset to store map data projected from pointing sets
+        self.data_1d: xr.Dataset = xr.Dataset(
+            coords={
+                CoordNames.GENERIC_PIXEL.value: np.arange(self.num_points),
+            }
+        )
 
     def __repr__(self) -> str:
         """
@@ -691,6 +838,12 @@ class HealpixSkyMap(AbstractSkyMap):
         self.approx_resolution = np.rad2deg(hp.nside2resol(nside, arcmin=False))
         # Define binning_grid_shape for consistency with RectangularSkyMap
         self.binning_grid_shape = (self.num_points,)
+        self.spatial_coords = {
+            CoordNames.HEALPIX_INDEX.value: xr.DataArray(
+                np.arange(self.num_points),
+                dims=[CoordNames.HEALPIX_INDEX.value],
+            )
+        }
 
         # The centers of each pixel in the Healpix tessellation in azimuth (az) and
         # elevation (el) coordinates (degrees) within the map's Spice frame.
@@ -707,8 +860,12 @@ class HealpixSkyMap(AbstractSkyMap):
         # solid_angle_points to be consistent with RectangularSkyMap
         self.solid_angle_points = np.full(self.num_points, self.solid_angle)
 
-        # Initialize the data dictionary to store map data projected from pointing sets
-        self.data_dict: dict[str, NDArray] = {}
+        # Initialize xarray Dataset to store map data projected from pointing sets
+        self.data_1d: xr.Dataset = xr.Dataset(
+            coords={
+                CoordNames.GENERIC_PIXEL.value: np.arange(self.num_points),
+            }
+        )
 
     def __repr__(self) -> str:
         """

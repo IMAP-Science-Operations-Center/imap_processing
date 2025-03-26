@@ -80,6 +80,28 @@ EXPECTED_NUM_VARIABLES = [
     0,  # hi-pha  # TODO: Need to implement
 ]
 
+# CoDICE-Hi products that have support variables to test
+CODICE_HI_PRODUCTS = [
+    "hi-counters-aggregated",
+    "hi-counters-singles",
+    "hi-priority",
+    "hi-sectored",
+]
+# TODO: Add hi-omni here once I sort out the array shape discrepancy with the
+#       validation data
+
+# CoDICE-Lo products that have support variables to test
+CODICE_LO_PRODUCTS = [
+    "lo-counters-aggregated",
+    "lo-counters-singles",
+    "lo-sw-priority",
+    "lo-nsw-priority",
+    "lo-sw-species",
+    "lo-nsw-species",
+    "lo-sw-angular",
+    "lo-nsw-angular",
+]
+
 
 @pytest.fixture(scope="session")
 def test_l1a_data() -> xr.Dataset:
@@ -267,6 +289,66 @@ def test_l1a_validate_hskp_data(test_l1a_data):
         if variable not in exclude_variables:
             np.testing.assert_array_equal(
                 hskp_data[variable], validation_hskp_data[variable.upper()]
+            )
+
+
+@pytest.mark.parametrize("index", range(len(DESCRIPTORS)))
+def test_l1a_validate_support_variables(test_l1a_data, index):
+    """Tests that the support variables for the generated products match the
+    validation data
+
+    Parameters
+    ----------
+    test_l1a_data : list[xarray.Dataset]
+        A list of ``xarray`` datasets containing the test data
+    index : int
+        The index of the list to test
+    """
+
+    # Hopefully I can remove this someday if Joey gives me validation data
+    # with updated naming conventions
+    variable_name_mapping = {
+        "data_quality": "DataQuality",
+        "nso_half_spin": "NSOHalfSpin",
+        "rgfo_half_spin": "RGFOHalfSpin",
+        "spin_period": "SpinPeriod",
+        "st_bias_gain_mode": "STBiasGainMode",
+        "sw_bias_gain_mode": "SWBiasGainMode",
+    }
+
+    descriptor = DESCRIPTORS[index]
+    dataset = test_l1a_data[index]
+    validation_dataset = load_cdf(VALIDATION_DATA[index])
+
+    if descriptor in CODICE_LO_PRODUCTS:
+        # Note that for the energy table and acquisition time, the validation
+        # data only carries three decimal places whereas the SDC-generated CDFs
+        # carry more significant figures
+
+        # Ensure the energy table values are (nearly) equal
+        np.testing.assert_almost_equal(
+            dataset.energy_table.data, validation_dataset.EnergyTable.data, decimal=3
+        )
+
+        # Ensure that the acquisition times are (nearly) equal
+        np.testing.assert_almost_equal(
+            dataset.acquisition_time_per_step.data,
+            validation_dataset.AcquisitionTimePerStep.data,
+            decimal=3,
+        )
+
+        # Ensure that the support variables derived from packet data are equal
+        for variable in variable_name_mapping:
+            np.testing.assert_equal(
+                dataset[variable].data,
+                validation_dataset[variable_name_mapping[variable]].data,
+            )
+
+    elif descriptor in CODICE_HI_PRODUCTS:
+        for variable in ["spin_period", "data_quality"]:
+            np.testing.assert_equal(
+                dataset[variable].data,
+                validation_dataset[variable_name_mapping[variable]].data,
             )
 
 

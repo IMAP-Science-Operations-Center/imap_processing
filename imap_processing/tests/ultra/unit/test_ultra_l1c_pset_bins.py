@@ -11,6 +11,7 @@ from imap_processing import imap_module_directory
 from imap_processing.ena_maps.utils.spatial_utils import build_spatial_bins
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
+    get_background_rates,
     get_helio_exposure_times,
     get_spacecraft_exposure_times,
     get_spacecraft_histogram,
@@ -18,7 +19,7 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
 )
 
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
-TEST_PATH = imap_module_directory / "tests" / "ultra" / "test_data" / "l1"
+TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
 @pytest.fixture()
@@ -35,13 +36,13 @@ def test_data():
 
 def test_build_energy_bins():
     """Tests build_energy_bins function."""
-    energy_bin_edges, energy_midpoints = build_energy_bins()
-    energy_bin_start = [interval[0] for interval in energy_bin_edges]
-    energy_bin_end = [interval[1] for interval in energy_bin_edges]
+    intervals, energy_midpoints, energy_bin_geometric_means = build_energy_bins()
+    energy_bin_start = [interval[0] for interval in intervals]
+    energy_bin_end = [interval[1] for interval in intervals]
 
     assert energy_bin_start[0] == 0
     assert energy_bin_start[1] == 3.385
-    assert len(energy_bin_edges) == 24
+    assert len(intervals) == 24
     assert energy_midpoints[0] == (energy_bin_start[0] + energy_bin_end[0]) / 2
 
     # Comparison to expected values.
@@ -49,19 +50,31 @@ def test_build_energy_bins():
     np.testing.assert_allclose(energy_bin_start[-1], 279.810, atol=1e-4)
     np.testing.assert_allclose(energy_bin_end[-1], 341.989, atol=1e-4)
 
+    expected_geometric_means = np.sqrt(
+        np.array(energy_bin_start) * np.array(energy_bin_end)
+    )
+    np.testing.assert_allclose(
+        energy_bin_geometric_means, expected_geometric_means, atol=1e-4
+    )
+
 
 def test_get_spacecraft_histogram(test_data):
     """Tests get_histogram function."""
     v, energy = test_data
 
-    energy_bin_edges, _ = build_energy_bins()
+    energy_bin_edges, _, _ = build_energy_bins()
     subset_energy_bin_edges = energy_bin_edges[:3]
 
-    hist = get_spacecraft_histogram(v, energy, subset_energy_bin_edges, nside=1)
-    assert hist.shape == (hp.nside2npix(1), len(subset_energy_bin_edges))
+    hist, latitude, longitude, n_pix = get_spacecraft_histogram(
+        v, energy, subset_energy_bin_edges, nside=1
+    )
+    assert hist.shape == (len(subset_energy_bin_edges), hp.nside2npix(1))
+    assert n_pix == hp.nside2npix(1)
+    assert latitude.shape == (n_pix,)
+    assert longitude.shape == (n_pix,)
 
     # Spot check that 2 counts are in the third energy bin
-    assert np.sum(hist[:, 2]) == 2
+    assert np.sum(hist[2, :]) == 2
 
     # Test overlapping energy bins
     overlapping_bins = [
@@ -69,9 +82,20 @@ def test_get_spacecraft_histogram(test_data):
         (2.5, 4.137),
         (3.385, 5.057),
     ]
-    hist = get_spacecraft_histogram(v, energy, overlapping_bins, nside=1)
+    hist, latitude, longitude, n_pix = get_spacecraft_histogram(
+        v, energy, overlapping_bins, nside=1
+    )
     # Spot check that 3 counts are in the third energy bin
-    assert np.sum(hist[:, 2]) == 3
+    assert np.sum(hist[2, :]) == 3
+    assert n_pix == hp.nside2npix(1)
+    assert latitude.shape == (n_pix,)
+    assert longitude.shape == (n_pix,)
+
+
+def test_get_background_rates():
+    """Tests get_background_rates function."""
+    background_rates = get_background_rates(nside=128)
+    assert background_rates.shape == hp.nside2npix(128)
 
 
 @pytest.mark.external_test_data()
@@ -104,7 +128,7 @@ def test_get_helio_exposure_times():
 
     exposure_3d = get_helio_exposure_times(mid_time, sc_exposure)
 
-    energy_bin_edges, energy_midpoints = build_energy_bins()
+    energy_bin_edges, energy_midpoints, _ = build_energy_bins()
     az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
         build_spatial_bins()
     )
@@ -121,7 +145,7 @@ def test_get_helio_exposure_times():
         ("dps_exposure_helio_45_E24.cdf", "dps_exposure_helio_45_E24"),
     ]
 
-    cdf_directory = imap_module_directory / "tests" / "ultra" / "test_data" / "l1"
+    cdf_directory = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
     exposures = []
 

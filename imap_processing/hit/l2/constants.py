@@ -1,5 +1,14 @@
 """HIT L2 constants."""
 
+from imap_processing import imap_module_directory
+
+L2_STANDARD_ANCILLARY_PATH_PREFIX = (
+    imap_module_directory / "hit/ancillary/imap_hit_l1b-to-l2-standard-dt"
+)
+L2_SUMMED_ANCILLARY_PATH_PREFIX = (
+    imap_module_directory / "hit/ancillary/imap_hit_l1b-to-l2-summed-dt"
+)
+
 # Particle energy range mapping for HIT L2 standard intensity product.
 # The standard intensity calculation requires the L1B foreground rates to
 # be summed by particle type, energy range, and detector penetration range

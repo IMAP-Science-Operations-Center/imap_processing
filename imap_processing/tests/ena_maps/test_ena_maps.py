@@ -8,8 +8,11 @@ from unittest import mock
 import astropy_healpix.healpy as hp
 import numpy as np
 import pytest
+import xarray as xr
 
 from imap_processing.ena_maps import ena_maps
+from imap_processing.ena_maps.utils import spatial_utils
+from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.spice import geometry
 
 
@@ -71,14 +74,28 @@ class TestUltraPointingSet:
             # Check the repr exists
             assert "UltraPointingSet" in repr(ultra_pset)
 
+            # Checks for the property methods:
+            # Check that the unwrapped_dims_dict is as expected
+            assert ultra_pset.unwrapped_dims_dict["counts"] == (
+                "epoch",
+                "energy",
+                "pixel",
+            )
+            # Check the non_spatial_coords are as expected
+            assert tuple(ultra_pset.non_spatial_coords.keys()) == (
+                "epoch",
+                "energy",
+            )
+
+    @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
     def test_different_spacing_raises_error(self):
         """Test that different spaced az/el from the L1C dataset raises ValueError"""
 
         ultra_pset_ds = self.l1c_pset_products[0]
         # Modify the dataset to have different spacing
-        ultra_pset_ds["latitude_bin_center"].values = np.arange(
-            ultra_pset_ds["latitude_bin_center"].size
+        ultra_pset_ds[CoordNames.ELEVATION_L1C.value].values = np.arange(
+            ultra_pset_ds[CoordNames.ELEVATION_L1C.value].size
         )
 
         with pytest.raises(ValueError, match="do not match"):
@@ -126,8 +143,9 @@ class TestRectangularSkyMap:
             spice_frame=geometry.SpiceFrame.ECLIPJ2000,
         )
 
-        # Check that the map is empty
-        assert rm.data_dict == {}
+        # Check that the map data is an empty xarray Dataset
+        assert isinstance(rm.data_1d, xr.Dataset)
+        assert rm.data_1d.data_vars == {}
 
         # Check that the reference frame is correctly set
         assert rm.spice_reference_frame == geometry.SpiceFrame.ECLIPJ2000
@@ -175,21 +193,32 @@ class TestRectangularSkyMap:
             )
 
         # Check that the map has been updated
-        assert "counts" in rectangular_map.data_dict
+        assert "counts" in rectangular_map.data_1d.data_vars
 
         # Check that the map has the same values as the PSETs, summed
-        simple_summed_pset_counts = np.zeros_like(
-            self.ultra_l1c_pset_products[0]["counts"]
+        simple_summed_pset_counts_by_energy = np.zeros(
+            shape=(
+                self.ultra_l1c_pset_products[0]["counts"].sizes[
+                    CoordNames.ENERGY.value
+                ],
+            )
         )
         for pset in self.ultra_l1c_pset_products:
-            simple_summed_pset_counts += pset["counts"].values
+            simple_summed_pset_counts_by_energy += pset["counts"].sum(
+                dim=[d for d in pset["counts"].dims if d != CoordNames.ENERGY.value]
+            )
 
-        rm_counts_per_energy_bin = rectangular_map.data_dict["counts"].sum(axis=1)
-        summed_pset_counts_per_energy_bin = simple_summed_pset_counts.sum(axis=(0, 2))
+        rmap_counts_per_energy_bin = rectangular_map.data_1d["counts"].sum(
+            dim=[
+                d
+                for d in rectangular_map.data_1d["counts"].dims
+                if d != CoordNames.ENERGY.value
+            ]
+        )
 
         np.testing.assert_array_equal(
-            rm_counts_per_energy_bin,
-            summed_pset_counts_per_energy_bin,
+            rmap_counts_per_energy_bin,
+            simple_summed_pset_counts_by_energy,
         )
 
     @pytest.mark.usefixtures("_setup_rectangular_l1c_pset_products")
@@ -227,21 +256,32 @@ class TestRectangularSkyMap:
             )
 
         # Check that the map has been updated
-        assert "counts" in rectangular_map.data_dict
+        assert "counts" in rectangular_map.data_1d.data_vars
 
         # Check that the map has the same values as the PSETs, summed
-        simple_summed_pset_counts = np.zeros_like(rectangular_map.data_dict["counts"])
-        for pset in self.rectangular_l1c_pset_products:
-            reshaped_pset_counts = pset["counts"].squeeze("epoch")
-            # Reshape to the map's counts shape
-            reshaped_pset_counts = reshaped_pset_counts.data.reshape(
-                rectangular_map.data_dict["counts"].shape
+        simple_summed_pset_counts_by_energy = np.zeros(
+            shape=(
+                self.rectangular_l1c_pset_products[0]["counts"].sizes[
+                    CoordNames.ENERGY.value
+                ],
             )
-            simple_summed_pset_counts += reshaped_pset_counts
+        )
+        for pset in self.rectangular_l1c_pset_products:
+            simple_summed_pset_counts_by_energy += pset["counts"].sum(
+                dim=[d for d in pset["counts"].dims if d != CoordNames.ENERGY.value]
+            )
+
+        rmap_counts_per_energy_bin = rectangular_map.data_1d["counts"].sum(
+            dim=[
+                d
+                for d in rectangular_map.data_1d["counts"].dims
+                if d != CoordNames.ENERGY.value
+            ]
+        )
 
         np.testing.assert_array_equal(
-            rectangular_map.data_dict["counts"],
-            simple_summed_pset_counts,
+            rmap_counts_per_energy_bin,
+            simple_summed_pset_counts_by_energy,
         )
 
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
@@ -262,7 +302,9 @@ class TestRectangularSkyMap:
 
     @pytest.mark.usefixtures("_setup_rectangular_l1c_pset_products")
     @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
-    def test_project_pset_values_to_map_pull_method(self, mock_frame_transform_az_el):
+    def test_project_rect_pset_values_to_map_pull_method(
+        self, mock_frame_transform_az_el
+    ):
         """
         Test projection Rect PSET to Rect. Map with "pull" index matching method.
 
@@ -310,16 +352,44 @@ class TestRectangularSkyMap:
             total_pset_counts += rectangular_pset.data["counts"].values
 
         # Check that the map has been updated
-        assert "counts" in rectangular_map.data_dict
+        assert "counts" in rectangular_map.data_1d
 
         np.testing.assert_allclose(
-            rectangular_map.data_dict["counts"],
+            rectangular_map.data_1d["counts"],
             expected_value_every_pixel,
         )
         downsample_ratio = skymap_spacing / self.rectangular_l1c_spacing_deg
         np.testing.assert_allclose(
-            rectangular_map.data_dict["counts"].sum(),
+            rectangular_map.data_1d["counts"].sum(),
             total_pset_counts.sum() / (downsample_ratio**2),
+        )
+
+        # Convert to xarray Dataset and check the data is as expected
+        # This is a method, which could be tested separately, but that would be
+        # innefficient, as it would require all the same, computationally intensive
+        # operations to be repeated as this test
+        rect_map_ds = rectangular_map.to_dataset()
+        assert "counts" in rect_map_ds.data_vars
+        assert rect_map_ds["counts"].shape == (
+            1,
+            rectangular_pset.data["counts"].sizes[CoordNames.ENERGY.value],
+            360 / skymap_spacing,
+            180 / skymap_spacing,
+        )
+        assert rect_map_ds["counts"].dims == (
+            CoordNames.TIME.value,
+            CoordNames.ENERGY.value,
+            CoordNames.AZIMUTH_L2.value,
+            CoordNames.ELEVATION_L2.value,
+        )
+
+        # Check that the data is as expected
+        np.testing.assert_array_equal(
+            rect_map_ds["counts"].values,
+            spatial_utils.rewrap_even_spaced_az_el_grid(
+                rectangular_map.data_1d["counts"].values,
+                rectangular_map.binning_grid_shape,
+            ),
         )
 
 
@@ -367,8 +437,9 @@ class TestHealpixSkyMap:
             nested=nested,
         )
 
-        # Check that the map is empty
-        assert hp_map.data_dict == {}
+        # Check that the map data is an empty xarray Dataset
+        assert isinstance(hp_map.data_1d, xr.Dataset)
+        assert hp_map.data_1d.data_vars == {}
 
         # Check that the reference frame is correctly set
         assert hp_map.spice_reference_frame is geometry.SpiceFrame.ECLIPJ2000
@@ -388,83 +459,6 @@ class TestHealpixSkyMap:
 
         # Check that the binning grid shape is just a tuple of num_points
         np.testing.assert_equal(hp_map.binning_grid_shape, (hp_map.num_points,))
-
-    @pytest.mark.usefixtures("_setup_rectangular_l1c_pset_products")
-    @pytest.mark.parametrize(
-        "nside,degree_tolerance",
-        [
-            (8, 6),
-            (16, 3),
-            (32, 2),
-        ],
-    )
-    @pytest.mark.parametrize("nested", [True, False], ids=["nested", "ring"])
-    @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
-    def test_project_rect_pset_values_to_map_push_method(
-        self, mock_frame_transform_az_el, nside, degree_tolerance, nested
-    ):
-        """
-        Test that PointingSet which contains bright spot pushes to correct spot in map.
-
-        Parameterized over nside, nested. The tolerance for lower nsides must be higher
-        because the Healpix pixels are larger.
-        """
-
-        # Mock frame_transform to return the az and el unchanged
-        mock_frame_transform_az_el.side_effect = (
-            lambda et, az_el, from_frame, to_frame, degrees: az_el
-        )
-
-        index_matching_method = ena_maps.IndexMatchMethod.PUSH
-
-        # Create a PointingSet with a bright spot
-        mock_pset_input_frame = ena_maps.RectangularPointingSet(
-            l1c_dataset=self.rectangular_l1c_pset_products[0],
-            spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
-        )
-        mock_pset_input_frame.data["counts"].values = np.zeros_like(
-            mock_pset_input_frame.data["counts"].values
-        )
-
-        input_bright_pixel_az_el_deg = (110, 55)
-        mock_pset_input_frame.data["counts"].values[
-            :,
-            :,
-            int(input_bright_pixel_az_el_deg[0] // mock_pset_input_frame.spacing_deg),
-            int(
-                (90 + input_bright_pixel_az_el_deg[1])
-                // mock_pset_input_frame.spacing_deg
-            ),
-        ] = 1
-
-        # Create a Healpix map
-        hp_map = ena_maps.HealpixSkyMap(
-            nside=nside,
-            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
-            nested=nested,
-        )
-
-        # Project the PointingSet to the Healpix map
-        hp_map.project_pset_values_to_map(
-            mock_pset_input_frame,
-            value_keys=[
-                "counts",
-            ],
-            index_match_method=index_matching_method,
-        )
-
-        # Check that the map has been updated
-        assert "counts" in hp_map.data_dict
-
-        # Find the maximum value in the spatial pixel dimension of the healpix map
-        bright_hp_pixel_index = hp_map.data_dict["counts"][0, :].argmax()
-        bright_hp_pixel_az_el = hp_map.az_el_points[bright_hp_pixel_index]
-
-        np.testing.assert_allclose(
-            bright_hp_pixel_az_el,
-            input_bright_pixel_az_el_deg,
-            atol=degree_tolerance,
-        )
 
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
     @pytest.mark.parametrize(
@@ -537,16 +531,111 @@ class TestHealpixSkyMap:
         )
 
         # Check that the map has been updated
-        assert "counts" in hp_map.data_dict
+        assert "counts" in hp_map.data_1d.data_vars
 
         # Find the maximum value in the spatial pixel dimension of the healpix map
-        bright_hp_pixel_index = hp_map.data_dict["counts"][0, :].argmax()
+        bright_hp_pixel_index = hp_map.data_1d["counts"][0, :].argmax()
         bright_hp_pixel_az_el = hp_map.az_el_points[bright_hp_pixel_index]
 
         np.testing.assert_allclose(
             bright_hp_pixel_az_el,
             input_bright_pixel_az_el_deg,
             atol=degree_tolerance,
+        )
+
+    @pytest.mark.usefixtures("_setup_rectangular_l1c_pset_products")
+    @pytest.mark.parametrize(
+        "nside,degree_tolerance",
+        [
+            (8, 6),
+            (16, 3),
+            (32, 2),
+        ],
+    )
+    @pytest.mark.parametrize("nested", [True, False], ids=["nested", "ring"])
+    @mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
+    def test_project_rect_pset_values_to_map_push_method(
+        self, mock_frame_transform_az_el, nside, degree_tolerance, nested
+    ):
+        """
+        Test that PointingSet which contains bright spot pushes to correct spot in map.
+
+        Parameterized over nside, nested. The tolerance for lower nsides must be higher
+        because the Healpix pixels are larger.
+        """
+
+        # Mock frame_transform to return the az and el unchanged
+        mock_frame_transform_az_el.side_effect = (
+            lambda et, az_el, from_frame, to_frame, degrees: az_el
+        )
+
+        index_matching_method = ena_maps.IndexMatchMethod.PUSH
+
+        # Create a PointingSet with a bright spot
+        mock_pset_input_frame = ena_maps.RectangularPointingSet(
+            l1c_dataset=self.rectangular_l1c_pset_products[0],
+            spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
+        )
+        mock_pset_input_frame.data["counts"].values = np.zeros_like(
+            mock_pset_input_frame.data["counts"].values
+        )
+
+        input_bright_pixel_az_el_deg = (110, 55)
+        mock_pset_input_frame.data["counts"].values[
+            :,
+            :,
+            int(input_bright_pixel_az_el_deg[0] // mock_pset_input_frame.spacing_deg),
+            int(
+                (90 + input_bright_pixel_az_el_deg[1])
+                // mock_pset_input_frame.spacing_deg
+            ),
+        ] = 1
+
+        # Create a Healpix map
+        hp_map = ena_maps.HealpixSkyMap(
+            nside=nside,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+            nested=nested,
+        )
+
+        # Project the PointingSet to the Healpix map
+        hp_map.project_pset_values_to_map(
+            mock_pset_input_frame,
+            value_keys=[
+                "counts",
+            ],
+            index_match_method=index_matching_method,
+        )
+
+        # Check that the map has been updated
+        assert "counts" in hp_map.data_1d.data_vars
+
+        # Find the maximum value in the spatial pixel dimension of the healpix map
+        bright_hp_pixel_index = hp_map.data_1d["counts"][0, 0].argmax(dim="pixel")
+        bright_hp_pixel_az_el = hp_map.az_el_points[bright_hp_pixel_index]
+
+        np.testing.assert_allclose(
+            bright_hp_pixel_az_el,
+            input_bright_pixel_az_el_deg,
+            atol=degree_tolerance,
+        )
+
+        # Convert to xarray Dataset and check the data is as expected
+        hp_map_ds = hp_map.to_dataset()
+        assert "counts" in hp_map_ds.data_vars
+        assert hp_map_ds["counts"].shape == (
+            1,
+            mock_pset_input_frame.data["counts"].sizes[CoordNames.ENERGY.value],
+            hp_map.num_points,
+        )
+        assert hp_map_ds["counts"].dims == (
+            CoordNames.TIME.value,
+            CoordNames.ENERGY.value,
+            CoordNames.HEALPIX_INDEX.value,
+        )
+        np.testing.assert_array_equal(
+            hp_map_ds["counts"].values,
+            hp_map.data_1d["counts"].values,
         )
 
 
