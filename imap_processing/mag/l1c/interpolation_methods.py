@@ -187,7 +187,7 @@ def cic_filter(
         estimate_rate(output_timestamps) if output_rate is None else output_rate
     )
 
-    if input_rate.value < output_rate.value:
+    if input_rate.value <= output_rate.value:
         raise ValueError(
             f"Burst mode input rate {input_rate} should never be less than "
             f"the normal mode output rate {output_rate}. "
@@ -195,7 +195,6 @@ def cic_filter(
         )
 
     decimation_factor = int(input_rate.value / output_rate.value)
-    # TODO what if decimation factor is 1
     cic1 = np.ones(decimation_factor)
     cic1 = cic1 / decimation_factor
     cic2 = np.convolve(cic1, cic1)

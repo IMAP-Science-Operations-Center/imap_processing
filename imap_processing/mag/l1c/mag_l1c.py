@@ -505,6 +505,8 @@ def find_all_gaps(
     """
     gaps: np.ndarray = np.zeros((0, 3))
     if vecsec_dict is None:
+        # TODO: when we go back to the previous file, also retreive expected
+        #  vectors per second
         # If no vecsec is provided, assume 2 vectors per second
         vecsec_dict = {0: VecSec.TWO_VECS_PER_S.value}
 
