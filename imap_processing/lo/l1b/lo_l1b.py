@@ -56,6 +56,12 @@ def lo_l1b(dependencies: dict, data_version: str) -> list[Path]:
         l1b_de = set_spin_bin(l1b_de, spin_angle)
         # set the spin cycle for each direct event
         l1b_de = set_spin_cycle(l1a_de, l1b_de)
+        # get the absolute met for each event
+        l1b_de = set_absolute_event_time(
+            l1a_de, l1b_de, spin_data, avg_spin_durations, closest_spin_idx
+        )
+        # set the epoch for each event
+        l1b_de = set_each_event_epoch(l1b_de)
 
     return [l1b_de]
 
@@ -258,6 +264,83 @@ def set_spin_cycle(l1a_de: xr.Dataset, l1b_de: xr.Dataset) -> xr.Dataset:
 
     return l1b_de
 
+def set_eu_event_time(
+    l1a_de: xr.Dataset,
+    l1b_de: xr.Dataset,
+    spin_data: xr.Dataset,
+    avg_spin_durations: xr.DataArray,
+    acq_end: xr.DataArray,
+) -> np.array:
+    """
+    Convert the direct event time from a DN to an EU time in seconds.
+
+    de_eu_time de_dn_time / 4096 * avg_spin_duration
+    where de_time is the direct event time Data Number (DN) and avg_spin_duration
+    is the average spin duration for the ASC that the event was measured in.
+
+    Parameters
+    ----------
+    l1a_de : xr.Dataset
+        The L1A DE dataset.
+    l1b_de : xr.Dataset
+        The L1B DE dataset.
+    spin_data : xr.Dataset
+        The L1A Spin dataset.
+    avg_spin_durations : xr.DataArray
+        The average spin duration for each epoch.
+    acq_end : xr.DataArray
+        The end acquisition times for each spin ASC.
+
+    Returns
+    -------
+    l1b_de : xr.Dataset
+        The L1B DE dataset with the EU event time added.
+
+    """
+    shcoarse = l1a_de["shcoarse"].values
+    # Find the closest stop_acq for each shcoarse
+    closest_stop_acq_indices = np.abs(shcoarse[:, None] - acq_end.values).argmin(axis=1)
+    # There are 28 spins per epoch (1 aggregated science cycle)
+    # Set the spin_cycle_num to the spin number relative to the
+    # start of the ASC
+    spin_cycle_num = l1b_de["spin_cycle"] % 28
+    # Get the seconds portion of the start time for each spin
+    start_sec_spins = np.take(
+        spin_data["start_sec_spin"][closest_stop_acq_indices].values, spin_cycle_num.values
+    )
+    # Get the subseconds portion of the spin start time and convert from
+    # microseconds to seconds
+    start_subsec_spins = (
+        np.take(
+            spin_data["start_subsec_spin"][closest_stop_acq_indices].values,
+            spin_cycle_num.values,
+        )
+        * 1e-6
+    )
+    # Combine the seconds and subseconds to get the start time for each spin
+    spin_start_time = start_sec_spins + start_subsec_spins
+    counts = l1a_de["de_count"].values
+    de_time_asc_groups = np.split(l1a_de["de_time"].values, np.cumsum(counts)[:-1])
+    de_times_eu = []
+    for i, de_time_asc in enumerate(de_time_asc_groups):
+        # DE Time is 12 bit DN. The max possible value is 4095
+        # divide by 4096 to get fraction of a spin duration
+        de_times_eu.extend(de_time_asc / 4096 * avg_spin_durations[i].values)
+
+    l1b_de["event_met"] = xr.DataArray(
+        spin_start_time + de_times_eu,
+        dims=["epoch"],
+        # attrs=attr_mgr.get_variable_attributes("epoch")
+    )
+    return l1b_de
+
+def set_each_event_epoch(l1b_de: xr.Dataset) -> xr.Dataset:
+    l1b_de["epoch"] = xr.DataArray(
+        met_to_ttj2000ns(l1b_de["event_met"].values),
+        dims=["epoch"],
+        # attrs=attr_mgr.get_variable_attributes("epoch")
+    )
+    return l1b_de
 
 # TODO: This is going to work differently when I sample data.
 #  The data_fields input is temporary.
