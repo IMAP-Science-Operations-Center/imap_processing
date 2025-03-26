@@ -95,20 +95,20 @@ def test_configuration_file():
     configuration_file = InterpolationFunction[
         configuration["L1C_interpolation_method"]
     ]
-    configuration_file(np.array([1]), np.array([1]), np.array([1]), input_rate=None)
+    configuration_file(np.array([1, 2]), np.array([1, 2]), np.array([1]), input_rate=VecSec.TWO_VECS_PER_S, output_rate=VecSec.ONE_VEC_PER_S)
 
 
 def test_interpolation_methods():
     # very basic test of all methods
-    vectors = np.random.rand(100, 4)
-    input_timestamps = np.arange(0, 50, step=0.5) * 1e9
+    vectors = np.random.rand(200, 4)
+    input_timestamps = np.arange(0, 50, step=0.25) * 1e9
     output_timestamps = np.arange(10, 20, step=0.5) * 1e9
     for method in InterpolationFunction:
         output = method(
             vectors,
             input_timestamps,
             output_timestamps,
-            input_rate=VecSec.TWO_VECS_PER_S,
+            input_rate=VecSec.FOUR_VECS_PER_S,
             output_rate=VecSec.TWO_VECS_PER_S,
         )
         assert len(output) == 20
@@ -384,3 +384,16 @@ def test_estimate_rate():
 
     output = estimate_rate(output_timestamps)
     assert output == VecSec.TWO_VECS_PER_S
+
+
+def test_fill_normal_data(norm_dataset):
+    test_timeline = [0.00e+00, 5.00e+08, 1.00e+09, 1.50e+09, 2.00e+09, 2.5e+09, 3.0e+09,
+                     3.5e+09, 4.00e+09, 4.25e+09, 4.5e+09, 4.75e+09, 5e+09, 5.25e+09,
+                     5.50e+09, 5.75e+09, 6.00e+09]
+
+    output = fill_normal_data(norm_dataset, test_timeline)
+    print(norm_dataset['epoch'].data)
+    print(test_timeline)
+
+    print(output)
+

@@ -11,6 +11,7 @@ import yaml
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.mag.constants import ModeFlags, VecSec
 from imap_processing.mag.l1c.interpolation_methods import InterpolationFunction
+from imap_processing.spice.time import TTJ2000_EPOCH
 
 logger = logging.getLogger(__name__)
 
@@ -390,6 +391,8 @@ def interpolate_gaps(
         burst_start = (np.abs(burst_epochs - gap[0])).argmin()
         burst_end = (np.abs(burst_epochs - gap[1])).argmin()
 
+        # for the CIC filter, we need 2x normal mode cadence seconds
+
         norm_rate = VecSec(int(gap[2]))
 
         # Input rate
@@ -401,6 +404,12 @@ def interpolate_gaps(
             - 1
         )
         burst_rate = VecSec(list(burst_vecsec_dict.values())[burst_vecsec_index])
+
+        required_seconds = (1 / norm_rate.value) * 2
+        burst_buffer = int(required_seconds * burst_rate.value)
+
+        burst_start = max(0, burst_start - burst_buffer)
+        burst_end = min(len(burst_epochs), burst_end + burst_buffer)
 
         gap_timeline = filled_norm_timeline[
             np.nonzero(

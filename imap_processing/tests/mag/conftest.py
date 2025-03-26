@@ -10,6 +10,7 @@ from imap_processing.cdf.utils import load_cdf
 from imap_processing.mag.constants import VecSec
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.mag.l1a.mag_l1a_data import MagL1a, TimeTuple
+from imap_processing.spice.time import TTJ2000_EPOCH
 
 
 @pytest.fixture()
@@ -76,16 +77,12 @@ def mag_generate_l1b_from_csv(df, logical_source):
         df[["compression", "compression_width"]]
     )
 
-    mago_epoch = MagL1a.calculate_vector_time(
-        np.zeros((length, 4), dtype=np.int64),
-        2,
-        TimeTuple(df["coarse"][0], df["fine"][0]),
-    )[:, -1]
-
-    dataset.coords["epoch"] = xr.DataArray(mago_epoch, name="epoch", dims=["epoch"])
+    epoch = [np.datetime64(t) - np.datetime64(TTJ2000_EPOCH) for t in df['t']]
+    epoch_ns = [(e / np.timedelta64(1, "ns")).astype(np.int64) for e in epoch]
+    dataset.coords["epoch"] = xr.DataArray(epoch_ns, name="epoch", dims=["epoch"])
 
     dataset.attrs["Logical_source"] = logical_source
-    dataset.attrs["vectors_per_second"] = f"{mago_epoch[0]}:2"
+    dataset.attrs["vectors_per_second"] = f"{epoch_ns[0]}:2"
 
     return dataset
 

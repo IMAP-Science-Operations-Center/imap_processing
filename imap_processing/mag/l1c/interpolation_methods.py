@@ -194,7 +194,7 @@ def cic_filter(
             f"Both rates are required"
         )
 
-    decimation_factor = int(input_rate.value / output_rate.value)
+    decimation_factor = int(input_rate.value / 2)
     cic1 = np.ones(decimation_factor)
     cic1 = cic1 / decimation_factor
     cic2 = np.convolve(cic1, cic1)
@@ -204,7 +204,6 @@ def cic_filter(
         input_filtered = input_timestamps[:-delay]
 
     vectors_filtered = lfilter(cic2, 1, input_vectors, axis=0)[delay:]
-
     return input_filtered, vectors_filtered
 
 
