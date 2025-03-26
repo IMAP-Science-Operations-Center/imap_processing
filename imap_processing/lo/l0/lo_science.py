@@ -410,6 +410,12 @@ def combine_segmented_packets(dataset: xr.Dataset) -> xr.Dataset:
     dataset.coords["epoch"] = dataset["epoch"].values[seg_starts]
     # drop any group of segmented epochs that aren't sequential
     dataset.coords["epoch"] = dataset["epoch"].values[valid_groups]
+    # Set met to the first segment start times for the valid groups.
+    # shcoarse will be retained as a per packet coordinate and met
+    # is used as the mission elapsed time for each segment
+    dataset["met"] = xr.DataArray(
+        dataset["shcoarse"].values[seg_starts][valid_groups], dims="epoch"
+    )
 
     return dataset
 

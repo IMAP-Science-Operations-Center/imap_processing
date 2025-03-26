@@ -57,7 +57,7 @@ sample_rate_base: &sample_rate_base
   FORMAT: F64.5
   LABLAXIS: Time
   UNITS: microseconds
-  VAR_TYPE: support_data # Not in attrs file
+  VAR_TYPE: support_data
   VAR_NOTES:  The number of microseconds since the event.
               0 is the start of data collection, negative
               numbers represent data collected prior to a dust event

@@ -62,9 +62,9 @@ def hit_l1b(dependencies: dict, data_version: str) -> list[xr.Dataset]:
                 )
             )
             logger.info("HIT L1B housekeeping dataset created")
-    if "imap_hit_l1a_count-rates" in dependencies:
+    if "imap_hit_l1a_counts" in dependencies:
         # Process science data to L1B datasets
-        l1a_counts_dataset = dependencies["imap_hit_l1a_count-rates"]
+        l1a_counts_dataset = dependencies["imap_hit_l1a_counts"]
         l1b_datasets.extend(process_science_data(l1a_counts_dataset, attr_mgr))
         logger.info("HIT L1B science datasets created")
 

@@ -1,3 +1,8 @@
+# TODO: There are several FILLVALs defined here that do not match standard
+#       convention (see https://imap-processing.readthedocs.io/en/latest/
+#       external-tools/cdf/cdf_requirements.html#fillval
+#       These should be updated.
+
 # <=== Defaults ===>
 default_attrs: &default
     DEPEND_0: epoch
@@ -26,6 +31,14 @@ hi_energies_attrs: &hi_energies_default
     VALIDMIN: 0.05
     VALIDMAX: 200.00
     VAR_TYPE: support_data
+
+hi_priorities_attrs: &hi_priorities_default
+    FILLVAL: -1
+    LABLAXIS: events
+    UNITS: events
+    VALIDMIN: 0
+    VALIDMAX: 16777216
+
 
 # <=== Coordinates ===>
 esa_step:
@@ -75,6 +88,30 @@ spin_sector_pairs:
     UNITS: " "
     VALIDMIN: 0
     VALIDMAX: 6
+    VAR_TYPE: support_data
+
+spin_sector_index:
+    CATDESC: Spin Sector Index
+    FIELDNAM: Spin Sector Index
+    FILLVAL: -1
+    FORMAT: I2
+    LABLAXIS: " "
+    SCALETYP: linear
+    UNITS: " "
+    VALIDMIN: 0
+    VALIDMAX: 12
+    VAR_TYPE: support_data
+
+ssd_index:
+    CATDESC: SSD Index
+    FIELDNAM: SSD Index
+    FILLVAL: -1
+    FORMAT: I2
+    LABLAXIS: " "
+    SCALETYP: linear
+    UNITS: " "
+    VALIDMIN: 0
+    VALIDMAX: 12
     VAR_TYPE: support_data
 
 # <=== Labels ===>
@@ -224,38 +261,110 @@ sw_bias_gain_mode:
 
 # The following are data product-specific
 # hi-counters-aggregated
-hi-counters-aggregated-aggregated:
-    <<: *counters
-    CATDESC: Aggregated Rates
-    FIELDNAM: Rates - Aggregated
-    LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+hi-counters-aggregated-DCR:
+    <<: *events
+    CATDESC: Event B - Double Coincidence Rate (DCR)
+    FIELDNAM: DCRs
+
+hi-counters-aggregated-STO:
+    <<: *events
+    CATDESC: Event C - Start Only (STO)
+    FIELDNAM: Start Only
+
+hi-counters-aggregated-SPO:
+    <<: *events
+    CATDESC: Event D - Stop Only (SPO)
+    FIELDNAM: Stop Only
+
+hi-counters-aggregated-Reserved1:
+    <<: *events
+    CATDESC: Reserved 1
+    FIELDNAM: Reserved 1
+
+hi-counters-aggregated-MST:
+    <<: *events
+    CATDESC: Event H - Multi Start (MST)
+    FIELDNAM: Multi Start
+
+hi-counters-aggregated-Reserved2:
+    <<: *events
+    CATDESC: Reserved 2
+    FIELDNAM: Reserved 2
+
+hi-counters-aggregated-Reserved3:
+    <<: *events
+    CATDESC: Reserved 3
+    FIELDNAM: Reserved 3
+
+hi-counters-aggregated-Reserved4:
+    <<: *events
+    CATDESC: Reserved 4
+    FIELDNAM: Reserved 4
+
+hi-counters-aggregated-Reserved5:
+    <<: *events
+    CATDESC: Reserved 5
+    FIELDNAM: Reserved 5
+
+hi-counters-aggregated-LowTOFCutoff:
+    <<: *events
+    CATDESC: Low TOF Cutoff
+    FIELDNAM: Low TOF Cutoff
+
+hi-counters-aggregated-Reserved6:
+    <<: *events
+    CATDESC: Reserved 6
+    FIELDNAM: Reserved 6
+
+hi-counters-aggregated-Reserved7:
+    <<: *events
+    CATDESC: Reserved 7
+    FIELDNAM: Reserved 7
+
+hi-counters-aggregated-ASIC1FlagInvalid:
+    <<: *events
+    CATDESC: ASIC 1 Flag Invalid Count
+    FIELDNAM: ASIC 1 Flag Invalid
+
+hi-counters-aggregated-ASIC2FlagInvalid:
+    <<: *events
+    CATDESC: ASIC 2 Flag Invalid Count
+    FIELDNAM: ASIC 2 Flag Invalid
+
+hi-counters-aggregated-ASIC1ChannelInvalid:
+    <<: *events
+    CATDESC: ASIC 1 Channel Invalid Count
+    FIELDNAM: ASIC 1 Channel Invalid
+
+hi-counters-aggregated-ASIC2ChannelInvalid:
+    <<: *events
+    CATDESC: ASIC 2 Channel Invalid Count
+    FIELDNAM: ASIC 2 Channel Invalid
 
 # hi-counters-singles
 hi-counters-singles-tcr:
     <<: *counters
-    CATDESC: TCR Rates
-    FIELDNAM: Rates - Event A (TCR)
-    LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+    CATDESC: Rates - Event A (TCR)
+    FIELDNAM: Rates
+    DEPEND_1: ssd_index
+    LABL_PTR_1: ssd_index
+    UNITS: events
 
 hi-counters-singles-ssdo:
     <<: *counters
-    CATDESC: SSDO Rates
-    FIELDNAM: Rates - Event E (SSDO)
-    LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+    CATDESC: Rates - Event E (SSDO)
+    FIELDNAM: Rates
+    DEPEND_1: ssd_index
+    LABL_PTR_1: ssd_index
+    UNITS: events
 
 hi-counters-singles-stssd:
     <<: *counters
-    CATDESC: STSSD Rates
-    FIELDNAM: Rates - Event G (STSSD)
-    LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+    CATDESC: Rates - Event G (STSSD)
+    FIELDNAM: Rates
+    DEPEND_1: ssd_index
+    LABL_PTR_1: ssd_index
+    UNITS: events
 
 # hi-omni
 hi-omni-h:
@@ -438,38 +547,125 @@ hi-omni-energy_junk_delta:
     CATDESC: Delta of energies for junk
     FIELDNAM: Delta Energy
 
-#hi-sectored
+# hi-priority
+hi-priority-Priority0:
+    <<: *hi_priorities_default
+    CATDESC: Priority 0
+    FIELDNAM: Priority 0
+
+hi-priority-Priority1:
+    <<: *hi_priorities_default
+    CATDESC: Priority 1
+    FIELDNAM: Priority 1
+
+hi-priority-Priority2:
+    <<: *hi_priorities_default
+    CATDESC: Priority 2
+    FIELDNAM: Priority 2
+
+hi-priority-Priority3:
+    <<: *hi_priorities_default
+    CATDESC: Priority 3
+    FIELDNAM: Priority 3
+
+hi-priority-Priority4:
+    <<: *hi_priorities_default
+    CATDESC: Priority 4
+    FIELDNAM: Priority 4
+
+hi-priority-Priority5:
+    <<: *hi_priorities_default
+    CATDESC: Priority 5
+    FIELDNAM: Priority 5
+
+# hi-sectored
 hi-sectored-h:
     <<: *counters
     CATDESC: Sectored H Counts
     FIELDNAM: H
-    LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+    DEPEND_1: energy_h
+    DEPEND_2: ssd_index
+    DEPEND_3: spin_sector_index
+    LABL_PTR_1: energy_h
+    LABL_PTR_2: ssd_index
+    LABL_PTR_3: spin_sector_index
+
+hi-sectored-energy_h:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for H
+    DELTA_MINUS_VAR: energy_h_delta
+    DELTA_PLUS_VAR: energy_h_delta
+
+hi-sectored-energy_h_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for H
+    FIELDNAM: Delta Energy
 
 hi-sectored-he3he4:
     <<: *counters
     CATDESC: Sectored He3He4 Counts
     FIELDNAM: He3He4
-    LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+    DEPEND_1: energy_he3he4
+    DEPEND_2: ssd_index
+    DEPEND_3: spin_sector_index
+    LABL_PTR_1: energy_he3he4
+    LABL_PTR_2: ssd_index
+    LABL_PTR_3: spin_sector_index
+
+hi-sectored-energy_he3he4:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for He3He4
+    DELTA_MINUS_VAR: energy_he3he4_delta
+    DELTA_PLUS_VAR: energy_he3he4_delta
+
+hi-sectored-energy_he3he4_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for He3He4
+    FIELDNAM: Delta Energy
 
 hi-sectored-cno:
     <<: *counters
     CATDESC: Sectored CNO Counts
     FIELDNAM: CNO
-    LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+    DEPEND_1: energy_cno
+    DEPEND_2: ssd_index
+    DEPEND_3: spin_sector_index
+    LABL_PTR_1: energy_cno
+    LABL_PTR_2: ssd_index
+    LABL_PTR_3: spin_sector_index
+
+hi-sectored-energy_cno:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for CNO
+    DELTA_MINUS_VAR: energy_cno_delta
+    DELTA_PLUS_VAR: energy_cno_delta
+
+hi-sectored-energy_cno_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for CNO
+    FIELDNAM: Delta Energy
 
 hi-sectored-fe:
     <<: *counters
     CATDESC: Sectored Fe Counts
     FIELDNAM: Fe
-    LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
-    LABL_PTR_3: spin_sector
+    DEPEND_1: energy_fe
+    DEPEND_2: ssd_index
+    DEPEND_3: spin_sector_index
+    LABL_PTR_1: energy_fe
+    LABL_PTR_2: ssd_index
+    LABL_PTR_3: spin_sector_index
+
+hi-sectored-energy_fe:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for Fe
+    DELTA_MINUS_VAR: energy_fe_delta
+    DELTA_PLUS_VAR: energy_fe_delta
+
+hi-sectored-energy_fe_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for Fe
+    FIELDNAM: Delta Energy
 
 # lo-counters-aggregated
 lo-counters-aggregated-TCR:
