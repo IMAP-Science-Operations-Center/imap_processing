@@ -18,18 +18,18 @@ imap_hit_l1a_hk:
     Logical_source: imap_hit_l1a_hk
     Logical_source_description: IMAP Mission HIT Instrument Level-1A Housekeeping Data.
 
-imap_hit_l1a_count-rates:
+imap_hit_l1a_counts:
     <<: *instrument_base
     Data_level: 1A
-    Data_type: L1A_counts>Level-1A Count Rates
-    Logical_source: imap_hit_l1a_count-rates
+    Data_type: L1A_counts>Level-1A Counts
+    Logical_source: imap_hit_l1a_counts
     Logical_source_description: IMAP Mission HIT Instrument Level-1A Count Rates Data.
 
-imap_hit_l1a_pulse-height-events:
+imap_hit_l1a_direct-events:
     <<: *instrument_base
     Data_level: 1A
-    Data_type: L1A_pha>Level-1A Pulse Height Events
-    Logical_source: imap_hit_l1a_pulse-height-events
+    Data_type: L1A_pha>Level-1A Direct Events
+    Logical_source: imap_hit_l1a_direct-events
     Logical_source_description: IMAP Mission HIT Instrument Level-1A Pulse Height Events Data.
 
   # L1b
@@ -63,24 +63,24 @@ imap_hit_l1b_sectored-rates:
 
   # L2
 
-imap_hit_l2_standard-fluxes:
+imap_hit_l2_standard-intensity:
     <<: *instrument_base
     Data_level: 2
-    Data_type: L2_rates>Level-2 Standard Fluxes
-    Logical_source: imap_hit_l2_standard-fluxes
-    Logical_source_description: IMAP Mission HIT Instrument Level-2 Standard Flux Data.
+    Data_type: L2_rates>Level-2 Standard Intensity
+    Logical_source: imap_hit_l2_standard-intensity
+    Logical_source_description: IMAP Mission HIT Instrument Level-2 Standard Intensity Data.
 
-imap_hit_l2_summed-fluxes:
+imap_hit_l2_summed-intensity:
     <<: *instrument_base
     Data_level: 2
-    Data_type: L2_summed-rates>Level-2 Summed Fluxes
-    Logical_source: imap_hit_l2_summed-fluxes
-    Logical_source_description: IMAP Mission HIT Instrument Level-2 Summed Flux Data.
+    Data_type: L2_summed-rates>Level-2 Summed Intensity
+    Logical_source: imap_hit_l2_summed-intensity
+    Logical_source_description: IMAP Mission HIT Instrument Level-2 Summed Intensity Data.
 
-imap_hit_l2_sectored-fluxes:
+imap_hit_l2_sectored-intensity:
     <<: *instrument_base
     Data_level: 2
-    Data_type: L2_sectored-rates>Level-2 Sectored Fluxes
-    Logical_source: imap_hit_l2_sectored-fluxes
-    Logical_source_description: IMAP Mission HIT Instrument Level-2 Sectored Flux Data.
+    Data_type: L2_sectored-rates>Level-2 Macro Pixel Intensity
+    Logical_source: imap_hit_l2_macropixel-intensity
+    Logical_source_description: IMAP Mission HIT Instrument Level-2 Macro Pixel Intensity Data.
 

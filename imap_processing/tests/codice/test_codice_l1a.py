@@ -50,11 +50,11 @@ EXPECTED_ARRAY_SHAPES = [
     (77, 1, 128),  # lo-nsw-species
     (77, 5, 12, 128),  # lo-sw-angular
     (77, 19, 12, 128),  # lo-nsw-angular
-    (77, 1, 6, 1),  # hi-counters-aggregated
-    (77, 1, 12, 1),  # hi-counters-singles
+    (77,),  # hi-counters-aggregated
+    (77, 12),  # hi-counters-singles
     (77, 15, 4),  # hi-omni
     (77, 8, 12, 12),  # hi-sectored
-    (),  # hi-priority  # TODO: Need to implement
+    (77,),  # hi-priority
     (),  # lo-pha  # TODO: Need to implement
     (),  # hi-pha  # TODO: Need to implement
 ]
@@ -71,13 +71,35 @@ EXPECTED_NUM_VARIABLES = [
     16,  # lo-nsw-species
     12,  # lo-sw-angular
     9,  # lo-nsw-angular
-    1,  # hi-counters-aggregated
-    3,  # hi-counters-singles
+    2 + len(constants.HI_COUNTERS_AGGREGATED_VARIABLE_NAMES),  # hi-counters-aggregated
+    5,  # hi-counters-singles
     10,  # hi-omni
     6,  # hi-sectored
-    0,  # hi-priority  # TODO: Need to implement
+    8,  # hi-priority
     0,  # lo-pha  # TODO: Need to implement
     0,  # hi-pha  # TODO: Need to implement
+]
+
+# CoDICE-Hi products that have support variables to test
+CODICE_HI_PRODUCTS = [
+    "hi-counters-aggregated",
+    "hi-counters-singles",
+    "hi-priority",
+    "hi-sectored",
+]
+# TODO: Add hi-omni here once I sort out the array shape discrepancy with the
+#       validation data
+
+# CoDICE-Lo products that have support variables to test
+CODICE_LO_PRODUCTS = [
+    "lo-counters-aggregated",
+    "lo-counters-singles",
+    "lo-sw-priority",
+    "lo-nsw-priority",
+    "lo-sw-species",
+    "lo-nsw-species",
+    "lo-sw-angular",
+    "lo-nsw-angular",
 ]
 
 
@@ -113,7 +135,7 @@ def test_l1a_data_array_shape(test_l1a_data, index):
 
     # Mark currently broken/unsupported datasets as expected to fail
     # TODO: Remove these once they are supported
-    if index in [0, 1, 15, 16, 17]:
+    if index in [0, 1, 16, 17]:
         pytest.xfail("Data product is currently unsupported")
 
     for variable in processed_dataset:
@@ -157,7 +179,7 @@ def test_l1a_logical_sources(test_l1a_data, index):
 
     # Mark currently broken/unsupported datasets as expected to fail
     # TODO: Remove these once they are supported
-    if index in [0, 1, 15, 16, 17]:
+    if index in [0, 1, 16, 17]:
         pytest.xfail("Data product is currently unsupported")
 
     # Write the dataset to a file to set the logical source attribute
@@ -185,7 +207,7 @@ def test_l1a_num_data_variables(test_l1a_data, index):
 
     # Mark currently broken/unsupported datasets as expected to fail
     # TODO: Remove these once they are supported
-    if index in [0, 1, 15, 16, 17]:
+    if index in [0, 1, 16, 17]:
         pytest.xfail("Data product is currently unsupported")
 
     assert len(processed_dataset) == EXPECTED_NUM_VARIABLES[index]
@@ -211,6 +233,10 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
     # TODO: Currently only the following products can be validated, expand this
     #       to other data products as I can validate them.
     able_to_be_validated = [
+        "hi-counters-aggregated",
+        "hi-counters-singles",
+        "hi-priority",
+        "hi-sectored",
         "lo-counters-singles",
         "lo-sw-angular",
         "lo-nsw-angular",
@@ -218,6 +244,7 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         "lo-nsw-priority",
         "lo-sw-species",
         "lo-nsw-species",
+        "hi-sectored",
     ]
 
     if descriptor in able_to_be_validated:
@@ -262,6 +289,66 @@ def test_l1a_validate_hskp_data(test_l1a_data):
         if variable not in exclude_variables:
             np.testing.assert_array_equal(
                 hskp_data[variable], validation_hskp_data[variable.upper()]
+            )
+
+
+@pytest.mark.parametrize("index", range(len(DESCRIPTORS)))
+def test_l1a_validate_support_variables(test_l1a_data, index):
+    """Tests that the support variables for the generated products match the
+    validation data
+
+    Parameters
+    ----------
+    test_l1a_data : list[xarray.Dataset]
+        A list of ``xarray`` datasets containing the test data
+    index : int
+        The index of the list to test
+    """
+
+    # Hopefully I can remove this someday if Joey gives me validation data
+    # with updated naming conventions
+    variable_name_mapping = {
+        "data_quality": "DataQuality",
+        "nso_half_spin": "NSOHalfSpin",
+        "rgfo_half_spin": "RGFOHalfSpin",
+        "spin_period": "SpinPeriod",
+        "st_bias_gain_mode": "STBiasGainMode",
+        "sw_bias_gain_mode": "SWBiasGainMode",
+    }
+
+    descriptor = DESCRIPTORS[index]
+    dataset = test_l1a_data[index]
+    validation_dataset = load_cdf(VALIDATION_DATA[index])
+
+    if descriptor in CODICE_LO_PRODUCTS:
+        # Note that for the energy table and acquisition time, the validation
+        # data only carries three decimal places whereas the SDC-generated CDFs
+        # carry more significant figures
+
+        # Ensure the energy table values are (nearly) equal
+        np.testing.assert_almost_equal(
+            dataset.energy_table.data, validation_dataset.EnergyTable.data, decimal=3
+        )
+
+        # Ensure that the acquisition times are (nearly) equal
+        np.testing.assert_almost_equal(
+            dataset.acquisition_time_per_step.data,
+            validation_dataset.AcquisitionTimePerStep.data,
+            decimal=3,
+        )
+
+        # Ensure that the support variables derived from packet data are equal
+        for variable in variable_name_mapping:
+            np.testing.assert_equal(
+                dataset[variable].data,
+                validation_dataset[variable_name_mapping[variable]].data,
+            )
+
+    elif descriptor in CODICE_HI_PRODUCTS:
+        for variable in ["spin_period", "data_quality"]:
+            np.testing.assert_equal(
+                dataset[variable].data,
+                validation_dataset[variable_name_mapping[variable]].data,
             )
 
 

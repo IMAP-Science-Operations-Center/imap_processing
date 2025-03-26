@@ -7,6 +7,7 @@ from imap_processing import imap_module_directory
 from imap_processing.hit.hit_utils import (
     HitAPID,
 )
+from imap_processing.hit.l0.constants import AZIMUTH_ANGLES, DECLINATION_ANGLES
 from imap_processing.hit.l0.decom_hit import (
     assemble_science_frames,
     decom_hit,
@@ -121,6 +122,9 @@ def test_parse_count_rates(sci_dataset):
     ]
     if count_rate_vars in list(sci_dataset.keys()):
         assert True
+
+    assert np.allclose(sci_dataset["declination"].values, DECLINATION_ANGLES)
+    assert np.allclose(sci_dataset["azimuth"].values, AZIMUTH_ANGLES)
 
 
 def test_is_sequential():

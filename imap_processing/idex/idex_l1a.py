@@ -162,10 +162,10 @@ def _read_waveform_bits(waveform_raw: str, high_sample: bool = True) -> list[int
 
     Returns
     -------
-    ints : list
+    ints : list[int]
         List of the waveform.
     """
-    ints = []
+    ints: list[int] = []
     if high_sample:
         for i in range(0, len(waveform_raw), 32):
             # 32-bit chunks, divided up into 2, 10, 10, 10
@@ -413,7 +413,6 @@ class RawDustEvent:
         #   the last 4 bits.
         num_low_sample_pretrigger_blocks = (n_blocks >> 6) & 0b111111
         num_high_sample_pretrigger_blocks = (n_blocks >> 16) & 0b1111
-
         # Calculate the low and high sample trigger times based on the high gain delay
         # and the number of high sample/low sample pretrigger blocks
         self.low_sample_trigger_time = (
@@ -442,7 +441,7 @@ class RawDustEvent:
 
         Returns
         -------
-        ints : list
+        ints : list[int]
             List of the high sample waveform.
         """
         samples = self.MAX_HIGH_BLOCKS * self.NUMBER_SAMPLES_PER_HIGH_SAMPLE_BLOCK
@@ -467,7 +466,7 @@ class RawDustEvent:
 
         Returns
         -------
-        ints : list
+        ints : list[int]
             List of processed low sample waveform.
         """
         samples = self.MAX_LOW_BLOCKS * self.NUMBER_SAMPLES_PER_LOW_SAMPLE_BLOCK

@@ -1,11 +1,12 @@
 """
 Contains constants variables to support CoDICE processing.
 
+Notes
+-----
 The ``plan_id``, ``plan_step``, and ``view_id`` mentioned in this module are
 derived from the packet data.
 
-Notes
------
+Some notable acronyms:
 SW = SunWard
 NSW = Non-SunWard
 PUI = PickUp Ion
@@ -14,9 +15,10 @@ ESA = ElectroStatic Analyzer
 
 from imap_processing.codice.utils import CODICEAPID, CoDICECompression
 
-# APID groupings
+# Grouping of APIDs used to signify similar L1a processing
 APIDS_FOR_SCIENCE_PROCESSING = [
     CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED,
+    CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES,
     CODICEAPID.COD_HI_INST_COUNTS_SINGLES,
     CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS,
     CODICEAPID.COD_HI_SECT_SPECIES_COUNTS,
@@ -33,8 +35,7 @@ APIDS_FOR_SCIENCE_PROCESSING = [
 # Numerical constants
 SPIN_PERIOD_CONVERSION = 0.00032
 
-
-# CDF-friendly names for lo data products
+# CDF variable names used for lo data products
 LO_COUNTERS_SINGLES_VARIABLE_NAMES = ["apd_singles"]
 LO_SW_ANGULAR_VARIABLE_NAMES = ["hplus", "heplusplus", "oplus6", "fe_loq"]
 LO_NSW_ANGULAR_VARIABLE_NAMES = ["heplusplus"]
@@ -75,14 +76,21 @@ LO_NSW_SPECIES_VARIABLE_NAMES = [
     "cnoplus",
 ]
 
-# CDF-friendly names for hi data products
-HI_INST_COUNTS_AGGREGATED_VARIABLE_NAMES = ["aggregated"]
-HI_INST_COUNTS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
+# CDF variable names used for hi data products
+HI_COUNTERS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
 HI_OMNI_VARIABLE_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
-HI_SECT_SPECIES_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
+HI_PRIORITY_VARIABLE_NAMES = [
+    "Priority0",
+    "Priority1",
+    "Priority2",
+    "Priority3",
+    "Priority4",
+    "Priority5",
+]
+HI_SECTORED_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
 
-# lo-counters-aggregated data product variables are dynamically determined
-# based on the number of active counters
+# lo- and hi-counters-aggregated data product variables are dynamically
+# determined based on the number of active counters
 # TODO: Try to convince Joey to move to lower case variable names with
 #       underscores?
 LO_COUNTERS_AGGREGATED_ACTIVE_VARIABLES = {
@@ -120,43 +128,68 @@ LO_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
     for name, is_active in LO_COUNTERS_AGGREGATED_ACTIVE_VARIABLES.items()
     if is_active
 ]
+HI_COUNTERS_AGGREGATED_ACTIVE_VARIABLES = {
+    "DCR": True,
+    "STO": True,
+    "SPO": True,
+    "Reserved1": False,
+    "MST": True,
+    "Reserved2": False,
+    "Reserved3": False,
+    "Reserved4": False,
+    "Reserved5": False,
+    "LowTOFCutoff": False,
+    "Reserved6": False,
+    "Reserved7": False,
+    "ASIC1FlagInvalid": True,
+    "ASIC2FlagInvalid": True,
+    "ASIC1ChannelInvalid": False,
+    "ASIC2ChannelInvalid": False,
+}
+HI_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
+    name
+    for name, is_active in HI_COUNTERS_AGGREGATED_ACTIVE_VARIABLES.items()
+    if is_active
+]
 
 # TODO: Possibly move to consistent order of dimensions with other instruments
 #       TBD after discussion with Joey and at the Science Team Meeting in Feb
+# Various configurations to support processing of individual data products
+# Much of these are described in the algorithm document in chapter 10 ("Data
+# Level 1A")
 DATA_PRODUCT_CONFIGURATIONS = {
     CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED: {
         "dataset_name": "imap_codice_l1a_hi-counters-aggregated",
-        "input_dims": {
-            "esa_step": 1,
-            "inst_az": 6,
-            "spin_sector": 1,
-        },  # TODO: Double check with Joey
+        "input_dims": {},
         "instrument": "hi",
-        "num_counters": 1,
-        "output_dims": {
-            "esa_step": 1,
-            "inst_az": 6,
-            "spin_sector": 1,
-        },  # TODO: Double check with Joey
-        "support_variables": [],  # TODO: Double check with Joey
-        "variable_names": HI_INST_COUNTS_AGGREGATED_VARIABLE_NAMES,
+        "num_counters": len(
+            HI_COUNTERS_AGGREGATED_VARIABLE_NAMES
+        ),  # The number of counters depends on the number of active counters
+        "output_dims": {},
+        "support_variables": ["data_quality", "spin_period"],
+        "variable_names": HI_COUNTERS_AGGREGATED_VARIABLE_NAMES,
     },
     CODICEAPID.COD_HI_INST_COUNTS_SINGLES: {
         "dataset_name": "imap_codice_l1a_hi-counters-singles",
         "input_dims": {
-            "esa_step": 1,
-            "inst_az": 12,
-            "spin_sector": 1,
-        },  # TODO: Double check with Joey
+            "ssd_index": 12,
+        },
         "instrument": "hi",
         "num_counters": 3,
         "output_dims": {
-            "esa_step": 1,
-            "inst_az": 12,
-            "spin_sector": 1,
-        },  # TODO: Double check with Joey
-        "support_variables": [],  # No support variables for this one
-        "variable_names": HI_INST_COUNTS_SINGLES_VARIABLE_NAMES,
+            "ssd_index": 12,
+        },
+        "support_variables": ["data_quality", "spin_period"],
+        "variable_names": HI_COUNTERS_SINGLES_VARIABLE_NAMES,
+    },
+    CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES: {
+        "dataset_name": "imap_codice_l1a_hi-priority",
+        "input_dims": {},
+        "instrument": "hi",
+        "num_counters": 6,
+        "output_dims": {},
+        "support_variables": ["data_quality", "spin_period"],
+        "variable_names": HI_PRIORITY_VARIABLE_NAMES,
     },
     CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS: {
         "dataset_name": "imap_codice_l1a_hi-omni",
@@ -183,18 +216,25 @@ DATA_PRODUCT_CONFIGURATIONS = {
         "dataset_name": "imap_codice_l1a_hi-sectored",
         "input_dims": {
             "esa_step": 8,
-            "inst_az": 12,
-            "spin_sector": 12,
-        },  # TODO: Double check with Joey
+            "ssd_index": 12,
+            "spin_sector_index": 12,
+        },
         "instrument": "hi",
         "num_counters": 4,
         "output_dims": {
             "esa_step": 8,
-            "inst_az": 12,
-            "spin_sector": 12,
-        },  # TODO: Double check with Joey
-        "support_variables": ["data_quality", "spin_period"],
-        "variable_names": HI_SECT_SPECIES_VARIABLE_NAMES,
+            "ssd_index": 12,
+            "spin_sector_index": 12,
+        },
+        "support_variables": [
+            "data_quality",
+            "spin_period",
+            "energy_h",
+            "energy_he3he4",
+            "energy_cno",
+            "energy_fe",
+        ],
+        "variable_names": HI_SECTORED_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED: {
         "dataset_name": "imap_codice_l1a_lo-counters-aggregated",
@@ -344,9 +384,11 @@ DATA_PRODUCT_CONFIGURATIONS = {
     },
 }
 
-# Compression ID lookup table for Lo data products
+# Compression ID lookup tables
 # The key is the view_id and the value is the ID for the compression algorithm
 # (see utils.CoDICECompression to see how the values correspond)
+# These are defined in the "Views" tab of the "*-SCI-LUT-*.xml" spreadsheet that
+# largely defines CoDICE processing.
 LO_COMPRESSION_ID_LOOKUP = {
     0: CoDICECompression.LOSSY_A_LOSSLESS,
     1: CoDICECompression.LOSSY_B_LOSSLESS,
@@ -358,10 +400,6 @@ LO_COMPRESSION_ID_LOOKUP = {
     7: CoDICECompression.LOSSY_A_LOSSLESS,
     8: CoDICECompression.LOSSY_A_LOSSLESS,
 }
-
-# Compression ID lookup table for Hi data products
-# The key is the view_id and the value is the ID for the compression algorithm
-# (see utils.CoDICECompression to see how the values correspond)
 HI_COMPRESSION_ID_LOOKUP = {
     0: CoDICECompression.LOSSY_A,
     1: CoDICECompression.LOSSY_A,
@@ -378,8 +416,8 @@ HI_COMPRESSION_ID_LOOKUP = {
 # ESA Sweep table ID lookup table
 # The combination of plan_id and plan_step determine the ESA sweep Table to use
 # Currently, ESA sweep table 0 is used for every plan_id/plan_step combination,
-# but may change in the future. These values are provided in the SCI-LUT excel
-# spreadsheet
+# but may change in the future. These are defined in the "ESA Sweep" tab of the
+# "*-SCI-LUT-*.xml" spreadsheet that largely defines CoDICE processing.
 ESA_SWEEP_TABLE_ID_LOOKUP = {
     (0, 0): 0,
     (0, 1): 0,
@@ -418,8 +456,9 @@ ESA_SWEEP_TABLE_ID_LOOKUP = {
 # Lo Stepping table ID lookup table
 # The combination of plan_id and plan_step determine the Lo Stepping Table to
 # use. Currently, LO Stepping table 0 is used for every plan_id/plan_step
-# combination, but may change in the future. These values are provided in the
-# SCI-LUT excel spreadsheet
+# combination, but may change in the future. These are defined in the "Lo
+# Stepping" tab of the "*-SCI-LUT-*.xml" spreadsheet that largely defines CoDICE
+# processing.
 LO_STEPPING_TABLE_ID_LOOKUP = {
     (0, 0): 0,
     (0, 1): 0,
@@ -977,6 +1016,538 @@ LOSSY_B_TABLE = {
     255: 4294967294,
 }
 
+# Derived acquisition times that get stored in CDF data variables in L1a
+# processing. These are taken from the "Acq Time" column in the "Lo Stepping"
+# tab of the "*-SCI-LUT-*.xml" spreadsheet that largely defines CoDICE
+# processing.
+ACQUISITION_TIMES = {
+    0: [
+        578.7083,
+        578.7083,
+        578.7083,
+        578.7083,
+        289.35416,
+        289.35416,
+        289.35416,
+        289.35416,
+        289.35416,
+        289.35416,
+        289.35416,
+        289.35416,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+    ],
+    1: [
+        578.7083,
+        578.7083,
+        578.7083,
+        578.7083,
+        289.35416,
+        289.35416,
+        289.35416,
+        289.35416,
+        289.35416,
+        289.35416,
+        289.35416,
+        289.35416,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+    ],
+    2: [
+        578.7083,
+        578.7083,
+        578.7083,
+        578.7083,
+        289.35416,
+        289.35416,
+        289.35416,
+        289.35416,
+        289.35416,
+        289.35416,
+        289.35416,
+        289.35416,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+    ],
+    3: [
+        578.7083,
+        578.7083,
+        578.7083,
+        578.7083,
+        289.35416,
+        289.35416,
+        289.35416,
+        289.35416,
+        289.35416,
+        289.35416,
+        289.35416,
+        289.35416,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        192.90277,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        144.67708,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        115.74167,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+        95.69444,
+    ],
+}
+
+# Energy tables for CoDICE-Hi data products. These values represent the edges
+# of the bins, and are used in the CoDICE L1a pipeline to compute the centers
+# and deltas of the bins, which then get stored in the CDF files for future use.
+# These are defined in the "Data Products - Hi" tab of the "*-SCI-LUT-*.xml"
+# spreadsheet that largely defines CoDICE processing.
 OMNI_ENERGY_TABLE = {
     "h": [
         0.05,
@@ -1117,5 +1688,9 @@ OMNI_ENERGY_TABLE = {
     "junk": [0.05, 0.070710678],
 }
 
-# TODO: Add energy tables for hi-sectored, hi-counters-aggregated, and
-#       hi-counters-singles
+SECTORED_ENERGY_TABLE = {
+    "h": [0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8],
+    "he3he4": [0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4],
+    "cno": [0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4],
+    "fe": [0.0125, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2],
+}

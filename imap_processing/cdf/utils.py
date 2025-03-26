@@ -138,8 +138,8 @@ def write_cdf(
 
     # Convert the xarray object to a CDF
     if "l1" in data_level:
-        if "istp" not in extra_cdf_kwargs:
-            extra_cdf_kwargs["istp"] = False  # type: ignore
+        if "terminate_on_warning" not in extra_cdf_kwargs:
+            extra_cdf_kwargs["terminate_on_warning"] = False  # type: ignore
     else:
         if "terminate_on_warning" not in extra_cdf_kwargs:
             extra_cdf_kwargs["terminate_on_warning"] = True  # type: ignore

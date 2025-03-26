@@ -1,0 +1,538 @@
+<?xml version='1.0' encoding='utf-8'?>
+<xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="Spacecraft">
+	<xtce:Header date="nan" version="nan" author="IMAP SDC" source_file="scid_x252.xlsx" />
+	<xtce:TelemetryMetaData>
+		<xtce:ParameterTypeSet>
+			<xtce:IntegerParameterType name="VERSION" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="TYPE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SEC_HDR_FLG" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="PKT_APID" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="11" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SEQ_FLGS" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SRC_SEQ_CTR" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="PKT_LEN" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SCID_X252.OUT_SCIENCEDATA1HZ_TPSH_MET_SEC" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SCID_X252.SCIENCEDATA1HZ_TPSH_MET_SUBSEC" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SCID_X252.SCIENCEDATA1HZ_TPSH_SBC_PHYS_ID" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SCID_X252.FILL6" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="6" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:FloatParameterType name="SCID_X252.SCIENCEDATA1HZ_QUAT_10_HZ_TIME">
+				<xtce:FloatDataEncoding sizeInBits="64" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.GCC_OUT_SCIENCEDATA1HZ_SCLK">
+				<xtce:FloatDataEncoding sizeInBits="64" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_0">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_1">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_2">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_3">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_4">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_5">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_6">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_7">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_8">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_9">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_10">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_11">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_12">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_13">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_14">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_15">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_16">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_17">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_18">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_19">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_20">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_21">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_22">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_23">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_24">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_25">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_26">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_27">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_28">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_29">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_30">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_31">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_32">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_33">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_34">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_35">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_36">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_37">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_38">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:FloatParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_39">
+				<xtce:FloatDataEncoding sizeInBits="32" encoding="IEEE-754" />
+			</xtce:FloatParameterType>
+			<xtce:IntegerParameterType name="SCID_X252.SCIENCEDATA1HZ_QUAT_10_HZ_VALID" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SCID_X252.FSW_ACS_QUAT_10_HZ_QUAT_SRC" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SCID_X252.SCIENCEDATA1HZ_PADDING_BYTES_0" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SCID_X252.SCIENCEDATA1HZ_PADDING_BYTES_1" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SCID_X252.SCIENCEDATA1HZ_PADDING_BYTES_2" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SCID_X252.SCIENCEDATA1HZ_PADDING_BYTES_3" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+		</xtce:ParameterTypeSet>
+		<xtce:ParameterSet>
+			<xtce:Parameter name="VERSION" parameterTypeRef="VERSION">
+				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="TYPE" parameterTypeRef="TYPE">
+				<xtce:LongDescription>CCSDS Packet Type Indicator (0=telemetry)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="SEC_HDR_FLG">
+				<xtce:LongDescription>CCSDS Packet Secondary Header Flag (always 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_APID" parameterTypeRef="PKT_APID">
+				<xtce:LongDescription>CCSDS Packet Application Process ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SEQ_FLGS" parameterTypeRef="SEQ_FLGS">
+				<xtce:LongDescription>CCSDS Packet Grouping Flags (3=not part of group)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SRC_SEQ_CTR" parameterTypeRef="SRC_SEQ_CTR">
+				<xtce:LongDescription>CCSDS Packet Sequence Count (increments with each new packet)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="PKT_LEN" parameterTypeRef="PKT_LEN">
+				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.OUT_SCIENCEDATA1HZ_TPSH_MET_SEC" parameterTypeRef="SCID_X252.OUT_SCIENCEDATA1HZ_TPSH_MET_SEC" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.TPSH.MET_SEC">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.TPSH.MET_SEC
+PROTOCOLS:MET_SEC
+TODO: Add description for MET_SEC</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.SCIENCEDATA1HZ_TPSH_MET_SUBSEC" parameterTypeRef="SCID_X252.SCIENCEDATA1HZ_TPSH_MET_SUBSEC" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.TPSH.MET_SUBSEC">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.TPSH.MET_SUBSEC
+PROTOCOLS:MET_SUBSEC
+TODO: Add description for MET_SUBSEC</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.SCIENCEDATA1HZ_TPSH_SBC_PHYS_ID" parameterTypeRef="SCID_X252.SCIENCEDATA1HZ_TPSH_SBC_PHYS_ID" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.TPSH.SBC_PHYS_ID">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.TPSH.SBC_PHYS_ID
+PROTOCOLS:SBC_PHYS_ID
+TODO: Add description for SBC_PHYS_ID</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FILL6" parameterTypeRef="SCID_X252.FILL6" />
+			<xtce:Parameter name="SCID_X252.SCIENCEDATA1HZ_QUAT_10_HZ_TIME" parameterTypeRef="SCID_X252.SCIENCEDATA1HZ_QUAT_10_HZ_TIME" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_TIME">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_TIME
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_TIME
+ACS time of first attitude meassage in the buttered 10Hz quaternion</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.GCC_OUT_SCIENCEDATA1HZ_SCLK" parameterTypeRef="SCID_X252.GCC_OUT_SCIENCEDATA1HZ_SCLK" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.SCLK">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.SCLK
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:SCLK
+Current spacecraft clock value in seconds</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_0" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_0" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[0]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[0]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_1" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_1" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[1]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[1]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_2" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_2" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[2]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[2]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_3" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_3" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[3]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[3]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_4" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_4" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[4]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[4]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_5" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_5" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[5]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[5]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_6" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_6" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[6]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[6]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_7" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_7" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[7]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[7]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_8" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_8" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[8]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[8]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_9" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_9" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[9]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[9]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_10" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_10" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[10]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[10]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_11" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_11" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[11]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[11]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_12" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_12" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[12]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[12]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_13" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_13" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[13]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[13]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_14" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_14" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[14]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[14]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_15" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_15" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[15]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[15]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_16" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_16" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[16]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[16]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_17" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_17" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[17]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[17]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_18" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_18" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[18]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[18]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_19" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_19" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[19]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[19]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_20" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_20" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[20]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[20]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_21" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_21" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[21]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[21]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_22" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_22" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[22]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[22]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_23" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_23" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[23]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[23]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_24" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_24" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[24]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[24]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_25" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_25" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[25]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[25]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_26" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_26" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[26]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[26]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_27" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_27" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[27]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[27]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_28" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_28" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[28]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[28]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_29" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_29" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[29]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[29]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_30" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_30" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[30]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[30]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_31" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_31" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[31]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[31]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_32" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_32" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[32]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[32]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_33" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_33" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[33]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[33]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_34" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_34" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[34]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[34]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_35" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_35" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[35]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[35]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_36" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_36" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[36]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[36]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_37" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_37" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[37]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[37]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_38" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_38" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[38]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[38]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_39" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_39" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[39]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_BUFFERED[39]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_BUFFERED
+Quaternion I-to-B 10Hz, Buffered to 1Hz</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.SCIENCEDATA1HZ_QUAT_10_HZ_VALID" parameterTypeRef="SCID_X252.SCIENCEDATA1HZ_QUAT_10_HZ_VALID" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_VALID">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_VALID
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_VALID
+Validity bits for the 10 buffered attitude samples</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.FSW_ACS_QUAT_10_HZ_QUAT_SRC" parameterTypeRef="SCID_X252.FSW_ACS_QUAT_10_HZ_QUAT_SRC" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_QUAT_SRC">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.QUAT_10_HZ_QUAT_SRC
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:QUAT_10_HZ_QUAT_SRC
+Quaternion Source: 1=EKF;2=ST raw/fused;3=ST raw/OH1;4=ST raw/OH2</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.SCIENCEDATA1HZ_PADDING_BYTES_0" parameterTypeRef="SCID_X252.SCIENCEDATA1HZ_PADDING_BYTES_0" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.PADDING_BYTES[0]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.PADDING_BYTES[0]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:PADDING_BYTES
+Byte boundary padding</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.SCIENCEDATA1HZ_PADDING_BYTES_1" parameterTypeRef="SCID_X252.SCIENCEDATA1HZ_PADDING_BYTES_1" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.PADDING_BYTES[1]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.PADDING_BYTES[1]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:PADDING_BYTES
+Byte boundary padding</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.SCIENCEDATA1HZ_PADDING_BYTES_2" parameterTypeRef="SCID_X252.SCIENCEDATA1HZ_PADDING_BYTES_2" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.PADDING_BYTES[2]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.PADDING_BYTES[2]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:PADDING_BYTES
+Byte boundary padding</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SCID_X252.SCIENCEDATA1HZ_PADDING_BYTES_3" parameterTypeRef="SCID_X252.SCIENCEDATA1HZ_PADDING_BYTES_3" shortDescription="FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.PADDING_BYTES[3]">
+				<xtce:LongDescription>FSW_ACS.GCC.OUT.SCIENCEDATA1HZ.PADDING_BYTES[3]
+BUSOBJ_GCC_OUT_SCIENCEDATA_1HZ:PADDING_BYTES
+Byte boundary padding</xtce:LongDescription>
+			</xtce:Parameter>
+		</xtce:ParameterSet>
+		<xtce:ContainerSet>
+			<xtce:SequenceContainer name="CCSDSPacket" abstract="true">
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="VERSION" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
+					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
+					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
+					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
+					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
+					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="SCID_X252">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="594" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.OUT_SCIENCEDATA1HZ_TPSH_MET_SEC" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.SCIENCEDATA1HZ_TPSH_MET_SUBSEC" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.SCIENCEDATA1HZ_TPSH_SBC_PHYS_ID" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FILL6" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.SCIENCEDATA1HZ_QUAT_10_HZ_TIME" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.GCC_OUT_SCIENCEDATA1HZ_SCLK" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_0" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_1" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_2" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_3" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_4" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_5" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_6" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_7" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_8" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_9" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_10" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_11" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_12" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_13" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_14" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_15" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_16" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_17" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_18" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_19" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_20" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_21" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_22" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_23" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_24" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_25" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_26" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_27" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_28" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_29" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_30" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_31" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_32" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_33" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_34" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_35" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_36" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_37" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_38" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_BUFFERED_39" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.SCIENCEDATA1HZ_QUAT_10_HZ_VALID" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.FSW_ACS_QUAT_10_HZ_QUAT_SRC" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.SCIENCEDATA1HZ_PADDING_BYTES_0" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.SCIENCEDATA1HZ_PADDING_BYTES_1" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.SCIENCEDATA1HZ_PADDING_BYTES_2" />
+					<xtce:ParameterRefEntry parameterRef="SCID_X252.SCIENCEDATA1HZ_PADDING_BYTES_3" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+		</xtce:ContainerSet>
+	</xtce:TelemetryMetaData>
+</xtce:SpaceSystem>
