@@ -16,7 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 def mag_l1c(
-    first_input_dataset: xr.Dataset, second_input_dataset: xr.Dataset, version: str
+    first_input_dataset: xr.Dataset,
+    version: str,
+    second_input_dataset: xr.Dataset = None,
 ) -> xr.Dataset:
     """
     Will process MAG L1C data from L1A data.
@@ -42,32 +44,57 @@ def mag_l1c(
     """
     # TODO:
     # find missing sequences and output them
-    # add missing interpolation methods
     # Fix gaps at the beginning of the day by going to previous day's file
     # Fix gaps at the end of the day
-    # Pass vecsec through to generation step
+    # Allow for one input to be missing
+    # Missing burst file - just pass through norm file
+    # Missing norm file - go back to previous L1C file to find timestamps, then
+    # interpolate the entire day from burst
 
     input_logical_source_1 = first_input_dataset.attrs["Logical_source"]
+    sensor = input_logical_source_1[-1:]
+    output_logical_source = f"imap_mag_l1c_norm-mag{sensor}"
+
+    both_inputs = False
+    normal_mode_dataset = None
+    burst_mode_dataset = None
+
     if isinstance(first_input_dataset.attrs["Logical_source"], list):
         input_logical_source_1 = first_input_dataset.attrs["Logical_source"][0]
 
-    input_logical_source_2 = second_input_dataset.attrs["Logical_source"]
-    if isinstance(second_input_dataset.attrs["Logical_source"], list):
-        input_logical_source_2 = second_input_dataset.attrs["Logical_source"][0]
-
-    if "norm" in input_logical_source_1 and "burst" in input_logical_source_2:
+    if "norm" in input_logical_source_1:
         normal_mode_dataset = first_input_dataset
-        burst_mode_dataset = second_input_dataset
-        output_logical_source = input_logical_source_1.replace("l1b", "l1c")
-    elif "norm" in input_logical_source_2 and "burst" in input_logical_source_1:
-        normal_mode_dataset = second_input_dataset
-        burst_mode_dataset = first_input_dataset
-        output_logical_source = input_logical_source_2.replace("l1b", "l1c")
 
-    else:
-        raise RuntimeError(
-            "L1C requires one normal mode and one burst mode input " "file."
+    if "burst" in input_logical_source_1:
+        burst_mode_dataset = first_input_dataset
+
+    # retrieve sensor from logical source
+    # should be either i or o
+    sensor = input_logical_source_1[-1:]
+    output_logical_source = f"imap_mag_l1c_norm-mag{sensor}"
+
+    if second_input_dataset is None:
+        logger.info(
+            f"Only one input dataset provided with logical source "
+            f"{input_logical_source_1}"
         )
+    else:
+        input_logical_source_2 = second_input_dataset.attrs["Logical_source"]
+        if isinstance(second_input_dataset.attrs["Logical_source"], list):
+            input_logical_source_2 = second_input_dataset.attrs["Logical_source"][0]
+
+        if "burst" in input_logical_source_2:
+            burst_mode_dataset = second_input_dataset
+
+        elif "norm" in input_logical_source_2:
+            normal_mode_dataset = second_input_dataset
+
+        # If there are two inputs, one should be norm and one should be burst
+        if normal_mode_dataset is None or burst_mode_dataset is None:
+            raise RuntimeError(
+                "L1C requires one normal mode and one burst mode input file."
+            )
+        both_inputs = True
 
     with open(
         Path(__file__).parent.parent / "imap_mag_sdc-configuration_v001.yaml"
@@ -75,9 +102,17 @@ def mag_l1c(
         configuration = yaml.safe_load(f)
 
     interp_function = InterpolationFunction[configuration["L1C_interpolation_method"]]
-    completed_timeline = process_mag_l1c(
-        normal_mode_dataset, burst_mode_dataset, interp_function
-    )
+    if both_inputs:
+        completed_timeline = process_mag_l1c(
+            normal_mode_dataset, burst_mode_dataset, interp_function
+        )
+    elif normal_mode_dataset is not None:
+        completed_timeline = fill_normal_data(
+            normal_mode_dataset, normal_mode_dataset["epoch"].data
+        )
+    else:
+        # TODO: With only burst data, downsample by retrieving the timeline
+        raise NotImplementedError
 
     attribute_manager = ImapCdfAttributes()
     attribute_manager.add_instrument_global_attrs("mag")
@@ -187,6 +222,28 @@ def mag_l1c(
     )
 
     return output_dataset
+
+
+def select_datasets(
+    input_dataset_1: xr.Dataset, input_dataset_2: Optional[xr.Dataset] = None
+) -> tuple[xr.Dataset, xr.Dataset]:
+    """
+    Given one or two datasets, assign one to norm and one to burst.
+
+    If only one dataset is provided, the other will be marked as None. If two are
+    provided, they will be validated to ensure one is norm and one is burst.
+
+    Parameters
+    ----------
+    input_dataset_1 : xr.Dataset
+        The first input dataset.
+    input_dataset_2 : xr.Dataset, optional
+        The second input dataset.
+
+    Returns
+    -------
+
+    """
 
 
 def process_mag_l1c(
@@ -343,7 +400,7 @@ def interpolate_gaps(
             )
             - 1
         )
-        burst_rate = list(burst_vecsec_dict.values())[burst_vecsec_index]
+        burst_rate = VecSec(list(burst_vecsec_dict.values())[burst_vecsec_index])
 
         gap_timeline = filled_norm_timeline[
             np.nonzero(
@@ -448,6 +505,8 @@ def find_all_gaps(
     """
     gaps: np.ndarray = np.zeros((0, 3))
     if vecsec_dict is None:
+        # TODO: when we go back to the previous file, also retreive expected
+        #  vectors per second
         # If no vecsec is provided, assume 2 vectors per second
         vecsec_dict = {0: VecSec.TWO_VECS_PER_S.value}
 

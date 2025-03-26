@@ -1,6 +1,7 @@
 # mypy: ignore-errors
 """Module containing interpolation methods for MAG L1C."""
 
+import logging
 from enum import Enum
 from typing import Optional
 
@@ -9,6 +10,8 @@ from scipy.interpolate import make_interp_spline
 from scipy.signal import lfilter
 
 from imap_processing.mag.constants import POSSIBLE_RATES, VecSec
+
+logger = logging.getLogger(__name__)
 
 
 def linear(
@@ -178,17 +181,20 @@ def cic_filter(
     numpy.ndarray
         Filtered something something.
     """
-    # Calculate the sample rate - count of samples / time range, then find nearest
-    # possible sensor rate.
+    # output rate should always be higher
     input_rate = estimate_rate(input_timestamps) if input_rate is None else input_rate
     output_rate = (
         estimate_rate(output_timestamps) if output_rate is None else output_rate
     )
 
+    if input_rate.value <= output_rate.value:
+        raise ValueError(
+            f"Burst mode input rate {input_rate} should never be less than "
+            f"the normal mode output rate {output_rate}. "
+            f"Both rates are required"
+        )
+
     decimation_factor = int(input_rate.value / output_rate.value)
-    # TODO: what if decimation_factor is not an integer (for example if input rate <
-    #  output rate)
-    # TODO what if decimation factor is 1
     cic1 = np.ones(decimation_factor)
     cic1 = cic1 / decimation_factor
     cic2 = np.convolve(cic1, cic1)

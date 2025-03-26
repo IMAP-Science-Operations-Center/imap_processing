@@ -72,6 +72,10 @@ def burst_dataset():
     dataset.attrs["Logical_source"] = ["imap_mag_l1b_burst-mago"]
     vectors = np.array([[i, i, i, 2] for i in range(1, 28)])
     dataset["vectors"].data = vectors
+
+    vectors_per_second_attr = "0:8"
+    dataset.attrs["vectors_per_second"] = vectors_per_second_attr
+
     return dataset
 
 
@@ -91,7 +95,7 @@ def test_configuration_file():
     configuration_file = InterpolationFunction[
         configuration["L1C_interpolation_method"]
     ]
-    configuration_file([1], [1], [1], input_rate=None)
+    configuration_file(np.array([1]), np.array([1]), np.array([1]), input_rate=None)
 
 
 def test_interpolation_methods():
@@ -208,7 +212,7 @@ def test_interpolate_gaps(norm_dataset, mag_l1b_dataset):
 
 
 def test_mag_l1c(norm_dataset, burst_dataset):
-    l1c = mag_l1c(burst_dataset, norm_dataset, "v001")
+    l1c = mag_l1c(burst_dataset, "v001", norm_dataset)
     assert l1c["vector_magnitude"].shape == (len(l1c["epoch"].data),)
     assert l1c["vector_magnitude"].data[0] == np.linalg.norm(l1c["vectors"].data[0][:4])
     assert l1c["vector_magnitude"].data[-1] == np.linalg.norm(
@@ -227,13 +231,34 @@ def test_mag_l1c(norm_dataset, burst_dataset):
 
 
 def test_mag_attributes(norm_dataset, burst_dataset):
-    output = mag_l1c(norm_dataset, burst_dataset, "v001")
+    output = mag_l1c(norm_dataset, "v001", burst_dataset)
     assert output.attrs["Logical_source"] == "imap_mag_l1c_norm-mago"
     assert output.attrs["Data_level"] == "L1C"
 
     expected_attrs = ["missing_sequences", "interpolation_method"]
     for attr in expected_attrs:
         assert attr in output.attrs
+
+
+def test_missing_burst_file(norm_dataset, burst_dataset):
+    # Should run with only normal mode data or only burst mode data.
+    output = mag_l1c(norm_dataset, "v001", None)
+    assert output.attrs["Logical_source"] == "imap_mag_l1c_norm-mago"
+
+    # Should pass through normal mode data only
+    assert np.array_equal(output["vectors"].data, norm_dataset["vectors"].data)
+    assert np.array_equal(output["epoch"].data, norm_dataset["epoch"].data)
+
+
+@pytest.mark.xfail(reason="Burst mode only not implemented yet")
+def test_missing_norm_file(norm_dataset, burst_dataset):
+    # Should run with only normal mode data or only burst mode data.
+    burst_dataset.attrs["Logical_source"] = "imap_mag_l1b_burst-magi"
+    output = mag_l1c(burst_dataset, "v001", None)
+
+    assert output.attrs["Logical_source"] == "imap_mag_l1c_norm-magi"
+    # TODO: test that the output is downsampled
+    # TODO: How to test against previous day's file?
 
 
 def test_find_all_gaps():
