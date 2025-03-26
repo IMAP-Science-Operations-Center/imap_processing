@@ -54,6 +54,8 @@ def lo_l1b(dependencies: dict, data_version: str) -> list[Path]:
         # calculate and set the spin bin based on the spin phase
         # spin bins are 0 - 60 bins
         l1b_de = set_spin_bin(l1b_de, spin_phase)
+        # set the spin cycle for each direct event
+        l1b_de = set_spin_cycle(l1a_de, l1b_de)
 
     return [l1b_de]
 
@@ -208,6 +210,26 @@ def set_spin_bin(l1b_de: xr.Dataset, spin_phase: np.ndarray) -> xr.Dataset:
         # TODO: Add spin phase to YAML file
         # attrs=attr_mgr.get_variable_attributes("spin_bin"),
     )
+    return l1b_de
+
+
+def set_spin_cycle(l1a_de: xr.Dataset, l1b_de: xr.Dataset) -> xr.Dataset:
+    counts = l1a_de["de_count"].values
+    de_asc_groups = np.split(l1a_de["esa_step"].values, np.cumsum(counts)[:-1])
+    spin_cycle = []
+    for i, esa_asc_group in enumerate(de_asc_groups):
+        # TODO: Spin Number does not reset for each pointing. Need to figure out
+        #  how to retain this information across days
+        spin_start = i * 28
+        spin_cycle.extend(spin_start + 7 + (esa_asc_group - 1) * 2)
+
+    l1b_de["spin_cycle"] = xr.DataArray(
+        spin_cycle,
+        dims=["epoch"],
+        # TODO: Add spin cycle to YAML file
+        # attrs=attr_mgr.get_variable_attributes("spin_cycle"),
+    )
+
     return l1b_de
 
 
