@@ -35,8 +35,8 @@ def process_ultra_tof(ds: xr.Dataset) -> xr.Dataset:
 
     Returns
     -------
-    decompressed_ds : xarray.Dataset
-        A dataset containing the decoded and decompressed data.
+    dataset : xarray.Dataset
+        Dataset containing the decoded and decompressed data.
     """
     scalar_keys = [key for key in ds.data_vars if key != "packetdata"]
 
@@ -44,9 +44,9 @@ def process_ultra_tof(ds: xr.Dataset) -> xr.Dataset:
     decom_data["packetdata"] = []
     valid_epoch = []
 
-    for shc_val, group in ds.groupby("epoch"):
+    for val, group in ds.groupby("epoch"):
         if set(group["sid"].values) >= set(range(8)):
-            valid_epoch.append(shc_val)
+            valid_epoch.append(val)
             group.sortby("sid")
 
             for key in scalar_keys:
@@ -132,25 +132,25 @@ def get_event_id(shcoarse: NDArray) -> NDArray:
     return np.array(event_ids, dtype=np.int64)
 
 
-def process_ultra_events(sorted_packets: xr.Dataset) -> xr.Dataset:
+def process_ultra_events(ds: xr.Dataset) -> xr.Dataset:
     """
     Unpack and decode Ultra EVENTS packets.
 
     Parameters
     ----------
-    sorted_packets : xr.Dataset
-        EVENTS packets sorted by time.
+    ds : xarray.Dataset
+        Events dataset.
 
     Returns
     -------
-    event_dataset : xr.Dataset
-        EVENTS packets containing the decoded data.
+    dataset : xr.Dataset
+        Dataset containing the decoded and decompressed data.
     """
     all_events = []
     all_indices = []
     empty_event = {field: np.iinfo(np.int64).min for field in EVENT_FIELD_RANGES}
-    counts = sorted_packets["count"].values
-    eventdata_array = sorted_packets["eventdata"].values
+    counts = ds["count"].values
+    eventdata_array = ds["eventdata"].values
 
     for i, count in enumerate(counts):
         if count == 0:
@@ -171,9 +171,7 @@ def process_ultra_events(sorted_packets: xr.Dataset) -> xr.Dataset:
 
     # Expand the existing dataset so that it is the same length as the event data.
     expanded_data = {
-        var: sorted_packets[var].values[idx]
-        for var in sorted_packets.data_vars
-        if var != "eventdata"
+        var: ds[var].values[idx] for var in ds.data_vars if var != "eventdata"
     }
 
     # Add the event data to the expanded dataset.
@@ -183,7 +181,7 @@ def process_ultra_events(sorted_packets: xr.Dataset) -> xr.Dataset:
     event_ids = get_event_id(expanded_data["shcoarse"])
 
     coords = {
-        "epoch": sorted_packets["epoch"].values[idx],
+        "epoch": ds["epoch"].values[idx],
         "event_id": ("epoch", event_ids),
     }
 
@@ -197,19 +195,19 @@ def process_ultra_events(sorted_packets: xr.Dataset) -> xr.Dataset:
     return dataset
 
 
-def process_ultra_rates(sorted_packets: xr.Dataset) -> xr.Dataset:
+def process_ultra_rates(ds: xr.Dataset) -> xr.Dataset:
     """
     Unpack and decode Ultra RATES packets.
 
     Parameters
     ----------
-    sorted_packets : xr.Dataset
-        RATES packets sorted by time.
+    ds : xr.Dataset
+       Rates dataset.
 
     Returns
     -------
-    sorted_packets : xr.Dataset
-        RATES packets containing the decoded data.
+    dataset : xr.Dataset
+        Dataset containing the decoded and decompressed data.
     """
     decom_data = defaultdict(list)
     if (
@@ -218,7 +216,7 @@ def process_ultra_rates(sorted_packets: xr.Dataset) -> xr.Dataset:
         and isinstance(ULTRA_RATES.block, int)
         and isinstance(ULTRA_RATES.width, int)
     ):
-        for fastdata in sorted_packets["fastdata_00"]:
+        for fastdata in ds["fastdata_00"]:
             raw_binary_string = convert_to_binary_string(fastdata.item())
             decompressed_data = decompress_binary(
                 raw_binary_string,
@@ -232,6 +230,6 @@ def process_ultra_rates(sorted_packets: xr.Dataset) -> xr.Dataset:
                 decom_data[RATES_KEYS[index]].append(decompressed_data[index])
 
         for key, values in decom_data.items():
-            sorted_packets[key] = xr.DataArray(np.array(values), dims=["epoch"])
+            ds[key] = xr.DataArray(np.array(values), dims=["epoch"])
 
-    return sorted_packets
+    return ds
