@@ -218,10 +218,10 @@ def process_ultra_rates(ds: xr.Dataset) -> xr.Dataset:
         raw_binary_string = convert_to_binary_string(fastdata.item())
         decompressed_data = decompress_binary(
             raw_binary_string,
-            ULTRA_RATES.width,
-            ULTRA_RATES.block,
-            ULTRA_RATES.len_array,
-            ULTRA_RATES.mantissa_bit_length,
+            cast(int, ULTRA_RATES.width),
+            cast(int, ULTRA_RATES.block),
+            cast(int, ULTRA_RATES.len_array),
+            cast(int, ULTRA_RATES.mantissa_bit_length),
         )
 
         for index in range(ULTRA_RATES.len_array):
