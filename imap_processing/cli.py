@@ -870,14 +870,11 @@ class Ultra(ProcessInstrument):
         datasets: list[xr.Dataset] = []
 
         if self.data_level == "l1a":
-            # File path is expected output file path
-            if len(dependencies) > 1:
-                raise ValueError(
-                    f"Unexpected dependencies found for ULTRA L1A:"
-                    f"{dependencies}. Expected only one dependency."
-                )
-
-            datasets = ultra_l1a.ultra_l1a(dependencies[0], self.version)
+            data_dict = {}
+            for dependency in dependencies:
+                dataset = load_cdf(dependency)
+                data_dict[dataset.attrs["Logical_source"]] = dataset
+            datasets = ultra_l1a.ultra_l1a(data_dict, self.version)
 
         elif self.data_level == "l1b":
             data_dict = {}

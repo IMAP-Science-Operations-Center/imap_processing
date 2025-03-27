@@ -241,15 +241,15 @@ def create_dataset(decom_ultra_dict: dict) -> xr.Dataset:
 
 
 def ultra_l1a(
-    packet_file: str, data_version: str, apid: Optional[int] = None
+    data_dict: dict, data_version: str, apid: Optional[int] = None
 ) -> list[xr.Dataset]:
     """
     Will process ULTRA L0 data into L1A CDF files at output_filepath.
 
     Parameters
     ----------
-    packet_file : str
-        Path to the CCSDS data packet file.
+    data_dict : dict
+        The data itself and its dependent data.
     data_version : str
         Version of the data product being created.
     apid : Optional[int]
