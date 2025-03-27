@@ -104,12 +104,12 @@ def get_event_id(shcoarse: NDArray) -> NDArray:
 
     Parameters
     ----------
-    shcoarse : NDArray
+    shcoarse : numpy.typing.NDArray
         SHCOARSE (MET).
 
     Returns
     -------
-    event_ids : NDArray
+    event_ids : numpy.typing.NDArray
         Ultra events data with calculated unique event IDs as 64-bit integers.
     """
     event_ids = []
@@ -146,7 +146,7 @@ def process_ultra_events(ds: xr.Dataset) -> xr.Dataset:
 
     Returns
     -------
-    dataset : xr.Dataset
+    ds : xarray.Dataset
         Dataset containing the decoded and decompressed data.
     """
     all_events = []
@@ -204,12 +204,12 @@ def process_ultra_rates(ds: xr.Dataset) -> xr.Dataset:
 
     Parameters
     ----------
-    ds : xr.Dataset
+    ds : xarray.Dataset
        Rates dataset.
 
     Returns
     -------
-    dataset : xr.Dataset
+    dataset : xarray.Dataset
         Dataset containing the decoded and decompressed data.
     """
     decom_data = defaultdict(list)
