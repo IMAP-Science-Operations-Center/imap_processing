@@ -116,8 +116,8 @@ def test_interpolate_repoint_data_with_use_fake_fixture(use_fake_repoint_data_fo
     )
 
 
-def test_combine_deps_per_repointing(fake_repoint_data):
-    """Tests combine_deps_per_repointing."""
+def test_combine_repointings(fake_repoint_data):
+    """Tests test_combine_repointings."""
 
     ds1 = xr.Dataset(
         data_vars={
