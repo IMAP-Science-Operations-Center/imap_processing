@@ -48,7 +48,7 @@ def lo_l1b(dependencies: dict, data_version: str) -> list[Path]:
         # Get the start and end times for each spin epoch
         acq_start, acq_end = convert_start_end_acq_times(spin_data)
         # Get the average spin durations for each epoch
-        avg_spin_durations = get_avg_spin_durations(acq_start, acq_end)  # noqa: F841
+        avg_spin_durations = get_avg_spin_durations(acq_start, acq_end)
         # get spin angle (0 - 360 degrees) for each DE
         spin_angle = get_spin_angle(l1a_de)
         # calculate and set the spin bin based on the spin angle
@@ -57,9 +57,7 @@ def lo_l1b(dependencies: dict, data_version: str) -> list[Path]:
         # set the spin cycle for each direct event
         l1b_de = set_spin_cycle(l1a_de, l1b_de)
         # get the absolute met for each event
-        l1b_de = set_absolute_event_time(
-            l1a_de, l1b_de, spin_data, avg_spin_durations, closest_spin_idx
-        )
+        l1b_de = set_event_met(l1a_de, l1b_de, spin_data, avg_spin_durations, acq_end)
         # set the epoch for each event
         l1b_de = set_each_event_epoch(l1b_de)
 
@@ -264,7 +262,8 @@ def set_spin_cycle(l1a_de: xr.Dataset, l1b_de: xr.Dataset) -> xr.Dataset:
 
     return l1b_de
 
-def set_eu_event_time(
+
+def set_event_met(
     l1a_de: xr.Dataset,
     l1b_de: xr.Dataset,
     spin_data: xr.Dataset,
@@ -272,11 +271,16 @@ def set_eu_event_time(
     acq_end: xr.DataArray,
 ) -> np.array:
     """
-    Convert the direct event time from a DN to an EU time in seconds.
+    Get the event MET for each direct event.
 
+    Each direct event is converted from a data number to engineering unit in seconds.
     de_eu_time de_dn_time / 4096 * avg_spin_duration
     where de_time is the direct event time Data Number (DN) and avg_spin_duration
     is the average spin duration for the ASC that the event was measured in.
+
+    The direct event time is the time of direct event relative to the start of the spin.
+    The event MET is the sum of the start time of the spin and the
+    direct event EU time.
 
     Parameters
     ----------
@@ -294,8 +298,7 @@ def set_eu_event_time(
     Returns
     -------
     l1b_de : xr.Dataset
-        The L1B DE dataset with the EU event time added.
-
+        The L1B DE dataset with the event MET.
     """
     shcoarse = l1a_de["shcoarse"].values
     # Find the closest stop_acq for each shcoarse
@@ -306,7 +309,8 @@ def set_eu_event_time(
     spin_cycle_num = l1b_de["spin_cycle"] % 28
     # Get the seconds portion of the start time for each spin
     start_sec_spins = np.take(
-        spin_data["start_sec_spin"][closest_stop_acq_indices].values, spin_cycle_num.values
+        spin_data["start_sec_spin"][closest_stop_acq_indices].values,
+        spin_cycle_num.values,
     )
     # Get the subseconds portion of the spin start time and convert from
     # microseconds to seconds
@@ -335,6 +339,20 @@ def set_eu_event_time(
     return l1b_de
 
 def set_each_event_epoch(l1b_de: xr.Dataset) -> xr.Dataset:
+    """
+    Set the epoch for each direct event.
+
+    Parameters
+    ----------
+    l1b_de : xr.Dataset
+        The L1B DE dataset.
+
+    Returns
+    -------
+    l1b_de : xr.Dataset
+        The L1B DE dataset with the epoch set for each event.
+
+    """
     l1b_de["epoch"] = xr.DataArray(
         met_to_ttj2000ns(l1b_de["event_met"].values),
         dims=["epoch"],
