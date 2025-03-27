@@ -350,7 +350,7 @@ def add_energy_variables(
     particle: str,
     energy_min_values: np.ndarray,
     energy_max_values: np.ndarray,
-) -> xr.Dataset:
+) -> None:
     """
     Add energy min and max variables to the dataset.
 
@@ -364,11 +364,6 @@ def add_energy_variables(
         The minimum energy values for each energy range.
     energy_max_values : np.ndarray
         The maximum energy values for each energy range.
-
-    Returns
-    -------
-    xr.Dataset
-        The dataset with the added energy variables.
     """
     energy_mean = np.mean(
         np.array([energy_min_values, energy_max_values]), axis=0
@@ -389,8 +384,6 @@ def add_energy_variables(
         dims=[f"{particle}_energy_mean"],
         name=f"{particle}_energy_delta_plus",
     )
-
-    return dataset
 
 
 def add_summed_particle_data_to_dataset(
@@ -453,6 +446,4 @@ def add_summed_particle_data_to_dataset(
         energy_min[i] = energy_range_dict["energy_min"]
         energy_max[i] = energy_range_dict["energy_max"]
 
-    dataset_to_update = add_energy_variables(
-        dataset_to_update, particle, energy_min, energy_max
-    )
+    add_energy_variables(dataset_to_update, particle, energy_min, energy_max)

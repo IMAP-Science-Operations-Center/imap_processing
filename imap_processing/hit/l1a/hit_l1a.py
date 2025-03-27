@@ -143,7 +143,7 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
         )
 
         # Add energy mean and deltas for each species
-        sci_dataset = add_energy_variables(
+        add_energy_variables(
             sci_dataset,
             species,
             np.array(data["energy_min"]),

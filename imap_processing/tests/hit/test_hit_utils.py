@@ -241,27 +241,32 @@ def test_process_housekeeping(housekeeping_dataset, attribute_manager):
 
 
 def test_add_energy_variables():
+    """Test adding energy variables to a dataset"""
+    # Create an empty dataset
     dataset = xr.Dataset()
+
+    # Create sample data
     particle = "test_particle"
     energy_min = np.array([1.8, 4.0, 6.0], dtype=np.float32)
     energy_max = np.array([2.2, 6.0, 10.0], dtype=np.float32)
     energy_mean = np.mean([energy_min, energy_max], axis=0)
-    result = add_energy_variables(dataset, particle, energy_min, energy_max)
-    assert f"{particle}_energy_delta_minus" in result.data_vars
-    assert f"{particle}_energy_delta_plus" in result.data_vars
-    assert f"{particle}_energy_mean" in result.coords
+
+    # Call the function
+    add_energy_variables(dataset, particle, energy_min, energy_max)
+
+    # Assertions
+    assert f"{particle}_energy_delta_minus" in dataset.data_vars
+    assert f"{particle}_energy_delta_plus" in dataset.data_vars
+    assert f"{particle}_energy_mean" in dataset.coords
     assert np.all(
-        result[f"{particle}_energy_delta_minus"].values
+        dataset[f"{particle}_energy_delta_minus"].values
         == np.array(energy_mean - np.array(energy_min), dtype=np.float32)
     )
     assert np.all(
-        result[f"{particle}_energy_delta_plus"].values
+        dataset[f"{particle}_energy_delta_plus"].values
         == np.array(energy_max - energy_mean, dtype=np.float32)
     )
-    assert np.all(
-        result[f"{particle}_energy_mean"].values
-        == np.mean([energy_min, energy_max], axis=0)
-    )
+    assert np.all(dataset[f"{particle}_energy_mean"].values == energy_mean)
 
 
 def test_sum_particle_data(sample_dataset):
