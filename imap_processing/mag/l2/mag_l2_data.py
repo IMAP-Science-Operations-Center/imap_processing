@@ -1,9 +1,22 @@
+"""Data structures for MAG L2 and L1D processing."""
+
 from dataclasses import dataclass, field
+from enum import Enum
 
 import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.mag.constants import DataMode
+
+
+class ValidFrames(Enum):
+    """SPICE reference frames for output."""
+
+    dsrf = "dsrf"
+    srf = "srf"
+    rtn = "rtn"
+    gse = "gse"
 
 
 @dataclass
@@ -41,14 +54,18 @@ class MagL2:
     global_attributes: dict
     quality_flags: np.ndarray
     quality_bitmask: np.ndarray
+    data_mode: DataMode
     magnitude: np.ndarray = field(init=False)
     is_l1d: bool = False
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
+        """Calculate the magnitude of the vectors after initialization."""
         self.magnitude = self.calculate_magnitude(self.vectors)
 
     @staticmethod
-    def calculate_magnitude(vectors: np.ndarray) -> np.ndarray:
+    def calculate_magnitude(
+        vectors: np.ndarray,
+    ) -> np.ndarray:
         """
         Given a list of vectors (x, y, z), calculate the magnitude of each vector.
 
@@ -57,22 +74,34 @@ class MagL2:
 
         Parameters
         ----------
-        vectors
+        vectors : np.ndarray
+            Array of vectors to calculate the magnitude of.
 
         Returns
         -------
+        np.ndarray
+            Array of magnitudes of the input vectors.
         """
-        return np.zeros(vectors.shape[0])
+        return np.zeros(vectors.shape[0])  # type: ignore
 
-    def truncate_to_24h(self, timestamp: str):
+    def truncate_to_24h(self, timestamp: str) -> None:
         """
         Truncate all data to a 24 hour period.
 
         24 hours is given by timestamp in the format YYYYmmdd.
+
+        Parameters
+        ----------
+        timestamp : str
+            Timestamp in the format YYYYMMDD.
         """
         pass
 
-    def generate_dataset(self, attribute_manager: ImapCdfAttributes):
+    def generate_dataset(
+        self,
+        attribute_manager: ImapCdfAttributes,
+        frame: ValidFrames = ValidFrames.dsrf,
+    ) -> xr.Dataset:
         """
         Generate an xarray dataset from the dataclass.
 
@@ -83,12 +112,15 @@ class MagL2:
         ----------
         attribute_manager : ImapCdfAttributes
             CDF attributes object for the correct level.
+        frame : ValidFrames
+            SPICE reference frame to rotate the data into.
 
         Returns
         -------
         xr.Dataset
-        Complete dataset ready to write to CDF file.
+            Complete dataset ready to write to CDF file.
         """
+        logical_source_id = f"imap_mag_l2_{self.data_mode.value.lower()}-{frame.name}"
         direction = xr.DataArray(
             np.arange(3),
             name="direction",
@@ -118,21 +150,21 @@ class MagL2:
             self.vectors,
             name="vectors",
             dims=["epoch", "direction"],
-            attrs=attribute_manager.get_variable_attributes("vectors"),
+            attrs=attribute_manager.get_variable_attributes("vector_attrs"),
         )
 
         quality_flags = xr.DataArray(
             self.quality_flags,
             name="quality_flags",
             dims=["epoch"],
-            attrs=attribute_manager.get_variable_attributes("mag_flag_attrs"),
+            attrs=attribute_manager.get_variable_attributes("compression"),
         )
 
         quality_bitmask = xr.DataArray(
             self.quality_flags,
             name="quality_flags",
             dims=["epoch"],
-            attrs=attribute_manager.get_variable_attributes("mag_flag_attrs"),
+            attrs=attribute_manager.get_variable_attributes("compression"),
         )
 
         rng = xr.DataArray(
@@ -151,7 +183,8 @@ class MagL2:
         )
 
         global_attributes = (
-            attribute_manager.get_global_attributes() | self.global_attributes
+            attribute_manager.get_global_attributes(logical_source_id)
+            | self.global_attributes
         )
 
         output = xr.Dataset(

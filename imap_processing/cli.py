@@ -53,6 +53,7 @@ from imap_processing.lo.l1c import lo_l1c
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.mag.l1b.mag_l1b import mag_l1b
 from imap_processing.mag.l1c.mag_l1c import mag_l1c
+from imap_processing.mag.l2.mag_l2 import mag_l2
 from imap_processing.swapi.l1.swapi_l1 import swapi_l1
 from imap_processing.swapi.l2.swapi_l2 import swapi_l2
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
@@ -751,6 +752,24 @@ class Mag(ProcessInstrument):
             input_data = [load_cdf(dep) for dep in dependencies]
             # Input datasets can be in any order
             datasets = [mag_l1c(input_data[0], input_data[1], self.version)]
+
+        if self.data_level == "l2":
+            # TODO: Overwrite dependencies with versions from offsets file
+            input_data = load_cdf(dependencies[0])
+            # TODO: use ancillary from input
+            calibration_dataset = load_cdf(
+                Path(__file__).parent
+                / "tests"
+                / "mag"
+                / "validation"
+                / "calibration"
+                / "imap_mag_l1b-calibration_20240229_v001.cdf"
+            )
+            # TODO: Test data missing
+            offset_dataset = xr.Dataset()
+            datasets = [
+                mag_l2(calibration_dataset, offset_dataset, input_data, self.version)
+            ]
 
         return datasets
 
