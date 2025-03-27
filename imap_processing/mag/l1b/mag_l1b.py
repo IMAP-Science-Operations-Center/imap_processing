@@ -386,6 +386,6 @@ def timeshift_vectors_per_second(
     new_vecsec = ""
     for time, rate in vecsec.items():
         new_time = time + time_shift_ns
-        new_vecsec += f"{new_time}:{rate},"
+        new_vecsec += f"{new_time.astype(np.int64)}:{rate},"
 
     return new_vecsec[:-1]
