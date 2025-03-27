@@ -53,7 +53,7 @@ def get_front_x_position(start_type: ndarray, start_position_tdc: ndarray) -> nd
     Converts Start Position Time to Digital Converter (TDC)
     values into units of hundredths of a millimeter using a scale factor and offsets.
     Further description is available on pages 30 of
-    IMAP-Ultra Flight Software Specification document (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
@@ -158,8 +158,7 @@ def get_ph_tof_and_back_positions(
     The Time Of Flight (tof) and the position of the particle at the
     back of the sensor are measured using the timing of the pulses.
     Further description is available on pages 32-33 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
@@ -389,8 +388,7 @@ def get_coincidence_positions(
     back to the coincidence anode.
 
     Further description is available on pages 34-35 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
@@ -501,8 +499,7 @@ def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.ndarray) -> NDArray[np.float6
     A scale factor and offsets, and a multiplier convert xf to a tof offset.
 
     Further description is available on pages 36 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
@@ -576,8 +573,7 @@ def get_energy_pulse_height(
     pulse height from the stop anode.
     Lookup tables (lut) are used for corrections.
     Further description is available on pages 40-41 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
@@ -634,8 +630,7 @@ def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.ndarray) -> NDArray[np.fl
     SSD energy and SSD energy pulse width.
     The result is then normalized per SSD via a lookup table.
     Further description is available on pages 41 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
@@ -679,8 +674,7 @@ def get_ctof(
     to a fixed distance dmin between the front and back detectors.
     The normalized TOF is termed the corrected TOF (ctof).
     Further description is available on pages 42-44 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
@@ -720,8 +714,7 @@ def determine_species(tof: np.ndarray, path_length: np.ndarray, type: str) -> ND
     Particle species are determined from ctof using thresholds.
 
     Further description is available on pages 42-44 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
