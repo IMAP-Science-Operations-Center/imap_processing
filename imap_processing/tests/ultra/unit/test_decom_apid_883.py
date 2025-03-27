@@ -6,8 +6,6 @@ import pytest
 
 from imap_processing.ultra.l0.ultra_utils import ULTRA_TOF
 
-# TODO: discuss with instrument team incomplete set of SIDs
-
 
 @pytest.mark.parametrize(
     "decom_test_data",
@@ -42,7 +40,7 @@ def test_tof_decom(decom_test_data, tof_test_path):
             0
         ]
         rows, cols = np.where(decom_ultra["SRC_SEQ_CTR"] == count)
-        decom_data = decom_ultra["PACKETDATA"][rows[0]][cols[0]]
+        decom_data = decom_ultra["packetdata"][rows[0]][cols[0]]
         df_data_array = np.array(json.loads(df_data)[0])
 
         np.testing.assert_array_equal(df_data_array, decom_data)

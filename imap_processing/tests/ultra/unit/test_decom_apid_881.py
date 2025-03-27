@@ -75,15 +75,15 @@ def test_image_rate_decom_zero_width(decom_test_data):
         / "ultra45_raw_sc_ultraimgrates_20220530_00.csv"
     )
 
-    decom_ultra, _ = decom_test_data
+    decom_ultra = decom_test_data
 
     df = pd.read_csv(test_path, index_col="MET")
     total_packets = 163
 
-    np.testing.assert_array_equal(df.SID, decom_ultra["SID"])
-    np.testing.assert_array_equal(df.Spin, decom_ultra["SPIN"])
-    np.testing.assert_array_equal(df.AbortFlag, decom_ultra["ABORTFLAG"])
-    np.testing.assert_array_equal(df.StartDelay, decom_ultra["STARTDELAY"])
+    np.testing.assert_array_equal(df.SID, decom_ultra["sid"])
+    np.testing.assert_array_equal(df.Spin, decom_ultra["spin"])
+    np.testing.assert_array_equal(df.AbortFlag, decom_ultra["abortflag"])
+    np.testing.assert_array_equal(df.StartDelay, decom_ultra["startdelay"])
 
     for i in range(total_packets):
         t = int(df["SequenceCount"].iloc[i])  # Ensure we get an integer value
