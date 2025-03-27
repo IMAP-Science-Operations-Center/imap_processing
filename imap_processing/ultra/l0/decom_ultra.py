@@ -224,7 +224,7 @@ def process_ultra_rates(ds: xr.Dataset) -> xr.Dataset:
             cast(int, ULTRA_RATES.mantissa_bit_length),
         )
 
-        for index in range(ULTRA_RATES.len_array):
+        for index in range(cast(int, ULTRA_RATES.len_array)):
             decom_data[RATES_KEYS[index]].append(decompressed_data[index])
 
     for key, values in decom_data.items():
