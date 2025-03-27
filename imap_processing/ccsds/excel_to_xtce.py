@@ -22,7 +22,7 @@ _CCSDS_PARAMETERS = [
         "description": "CCSDS Packet Version Number (always 0)",
     },
     {
-        "name": "PHTYPE",
+        "name": "TYPE",
         "lengthInBits": 1,
         "description": "CCSDS Packet Type Indicator (0=telemetry)",
     },
