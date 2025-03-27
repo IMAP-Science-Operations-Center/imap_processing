@@ -114,3 +114,29 @@ MAX_FINE_TIME = np.iinfo(np.uint16).max  # maximum 16 bit unsigned int
 AXIS_COUNT = 3
 RANGE_BIT_WIDTH = 2
 MAX_COMPRESSED_VECTOR_BITS = 60
+
+
+def vectors_per_second_from_string(vecsec_string: str) -> dict:
+    """
+    Extract the vectors per second from a string into a dictionary.
+
+    Dictionary format: {start_time: vecsec, start_time: vecsec}.
+
+    Parameters
+    ----------
+    vecsec_string : str
+        A string of the form "start:vecsec,start:vecsec" where start is the time in
+        nanoseconds and vecsec is the number of vectors per second.
+
+    Returns
+    -------
+    dict
+        A dictionary of the form {start_time: vecsec, start_time: vecsec}.
+    """
+    vecsec_dict = {}
+    vecsec_segments = vecsec_string.split(",")
+    for vecsec_segment in vecsec_segments:
+        start_time, vecsec = vecsec_segment.split(":")
+        vecsec_dict[int(start_time)] = int(vecsec)
+
+    return vecsec_dict
