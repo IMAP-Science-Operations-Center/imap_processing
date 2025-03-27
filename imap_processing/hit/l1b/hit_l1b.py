@@ -315,7 +315,6 @@ def process_summed_rates_data(
         "hdr_dynamic_threshold_state"
     ].attrs
 
-    # Calculate summed rates for each particle and add them to the dataset
     for particle, energy_ranges in SUMMED_PARTICLE_ENERGY_RANGE_MAPPING.items():
         # Sum counts for each energy range and add to dataset
         add_summed_particle_data_to_dataset(
