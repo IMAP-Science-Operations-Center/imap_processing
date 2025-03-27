@@ -19,7 +19,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_RATES,
     ULTRA_TOF,
 )
-from imap_processing.utils import group_by_apid, packet_file_to_datasets
+from imap_processing.utils import group_by_apid
 
 logger = logging.getLogger(__name__)
 
@@ -241,15 +241,15 @@ def create_dataset(decom_ultra_dict: dict) -> xr.Dataset:
 
 
 def ultra_l1a(
-    data_dict: dict, data_version: str, apid: Optional[int] = None
+    packet_file: str, data_version: str, apid: Optional[int] = None
 ) -> list[xr.Dataset]:
     """
     Will process ULTRA L0 data into L1A CDF files at output_filepath.
 
     Parameters
     ----------
-    data_dict : dict
-        The data itself and its dependent data.
+    packet_file : str
+        Path to the CCSDS data packet file.
     data_version : str
         Version of the data product being created.
     apid : Optional[int]
@@ -263,7 +263,7 @@ def ultra_l1a(
     xtce = str(
         f"{imap_module_directory}/ultra/packet_definitions/" f"ULTRA_SCI_COMBINED.xml"
     )
-    group_pointings(packet_file_to_datasets(data_dict, xtce))
+
     packets = decom.decom_packets(packet_file, xtce)
     grouped_data = group_by_apid(packets)
 
