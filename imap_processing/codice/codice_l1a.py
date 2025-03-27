@@ -584,11 +584,6 @@ def create_event_dataset(
         dataset_name = "imap_codice_l1a_hi-pha"
 
     # Extract the data
-    # Info about the data:
-    #    len(event_data) is 616 (77 epochs x 8 priorities)
-    #    num_events is 1D array of 616
-    #    all data is lzma compressed
-    #    Each epoch/priority combo has its own shcoarse, though some repeat
     event_data = packets.event_data.data
     raw_data = []
     for packet_data, byte_count in zip(
@@ -604,17 +599,76 @@ def create_event_dataset(
         decompressed_values = decompress(values, CoDICECompression.LOSSLESS)
         raw_data.append(decompressed_values)
 
-    for epoch, priority in enumerate(range(0, len(raw_data), 8), start=1):
-        print(f"\n\nEpoch: {epoch}")
-        data_per_epoch = raw_data[priority:priority + 8]
-        if epoch > 1:
-            break
-        for i, priority_data in enumerate(data_per_epoch):
-                # Based on validation data, i == 1 happens to be 0th priority
-                # So see if I can replicate validation data
-                # The other priorities don't seem to be in the 'right' order
-                print(f"\nPriority {i}: {priority_data}")
-                print(f"Number of events: {len(priority_data)//8}")
+    # Dictionary to define the bit structure of each event
+    LO_DE_BIT_STRUCTURE = {
+        'APDGain': 1,
+        'APD_ID': 5,
+        'Position': 5,
+        'APDEnergy': 9,
+        'TOF': 10,
+        'MultiFlag': 1,
+        'PHAType': 2,
+        'SpinAngle': 5,
+        'EnergyStep': 7,
+        'Priority': 3,
+        'Spare': 16
+    }
+
+    # Dictionary to hold all the (soon to be restructured) event data
+    all_data = {}
+
+    # Create blank arrays for each field to store the data
+    for i in range(8):
+        for field in LO_DE_BIT_STRUCTURE:
+            if field not in ["Priority", "Spare"]:
+                all_data[f"P{i}_{field}"] = []
+
+    # raw_data is one large list of values of length (<number of epochs> * <8 priorities>)
+    # Chunk the data into each epoch/priority combination
+    for epoch_num, chunk in enumerate(range(0, len(raw_data), 8), start=1):
+        epoch_data = raw_data[chunk:chunk + 8]
+
+        # The order of the priorities is unique to each epoch and can be
+        # gathered from the packet data
+        priority_order = packets.priority[chunk:chunk + 8].data
+
+        # Create dict to hold the final data per epoch
+        data_per_epoch = {}
+
+        # For each epoch/priority combo, iterate over each event
+        for i, priority_num in enumerate(priority_order):
+            priority_data = epoch_data[i]
+            num_events = len(priority_data) // 8
+
+            # Stores data for each epoch
+            for field in LO_DE_BIT_STRUCTURE:
+                data_per_epoch[f"P{priority_num}_{field}"] = []
+
+            for event in [priority_data[i * 8: (i + 1) * 8] for i in range(num_events)]:
+
+                # Separate out each individual field from the bit string
+                bit_string = ''.join(f'{byte:08b}' for byte in event)
+                index = 0
+                for field_name, bit_length in reversed(LO_DE_BIT_STRUCTURE.items()):
+                    data_per_epoch[f"P{priority_num}_{field_name}"].append(int(bit_string[index:index + bit_length], 2))
+                    index += bit_length
+                print(len(data_per_epoch))
+
+        # Append the epoch data to the final, restructured list of data
+        for i in range(7):
+            for field in LO_DE_BIT_STRUCTURE:
+                if field not in ["Priority", "Spare"]:
+                    all_data[f"P{i}_{field}"].append(data_per_epoch[f"P{i}_{field}"])
+
+    # for key in all_data:
+    #     print("\n\n")
+    #     print(key)
+    #     print("\n")
+    #     print(len(all_data[key]))
+
+    # TODO: Add padding
+    # TODO: Add num_events and data quality
+    # TODO: Convert to numpy arrays
 
 
 
