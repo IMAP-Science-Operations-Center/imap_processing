@@ -106,7 +106,7 @@ def _download_external_data(test_data_path_list):
 
     logger = logging.getLogger(__name__)
 
-    for test_data_path in test_data_paths:
+    for test_data_path in test_data_path_list:
         source = test_data_path[0]
         destination = test_data_path[1]
 

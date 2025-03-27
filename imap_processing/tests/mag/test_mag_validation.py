@@ -30,25 +30,30 @@ def _mag_download_data():
 
 def mag_remote_test_data_paths():
     mag_dir = imap_module_directory / "tests" / "mag" / "validation"
+    api_path = "https://api.dev.imap-mission.com/download/test_data/"
     test_paths = [
         (
-            "mag-l1b-l1c-t013-magi-burst-in.csv",
+            api_path + "mag-l1b-l1c-t013-magi-burst-in.csv",
             mag_dir / "L1c" / "T013" / "mag-l1b-l1c-t013-magi-burst-in.csv",
         ),
         (
-            "mag-l1b-l1c-t014-mago-burst-in.csv",
+            api_path + "mag-l1b-l1c-t013-mago-burst-in.csv",
+            mag_dir / "L1c" / "T013" / "mag-l1b-l1c-t013-mago-burst-in.csv",
+        ),
+        (
+            api_path + "mag-l1b-l1c-t014-mago-burst-in.csv",
             mag_dir / "L1c" / "T014" / "mag-l1b-l1c-t014-mago-burst-in.csv",
         ),
         (
-            "mag-l1b-l1c-t014-magi-burst-in.csv",
+            api_path + "mag-l1b-l1c-t014-magi-burst-in.csv",
             mag_dir / "L1c" / "T014" / "mag-l1b-l1c-t014-magi-burst-in.csv",
         ),
         (
-            "mag-l1b-l1c-t015-mago-burst-in.csv",
+            api_path + "mag-l1b-l1c-t015-mago-burst-in.csv",
             mag_dir / "L1c" / "T015" / "mag-l1b-l1c-t015-mago-burst-in.csv",
         ),
         (
-            "mag-l1b-l1c-t016-mago-burst-in.csv",
+            api_path + "mag-l1b-l1c-t016-mago-burst-in.csv",
             mag_dir / "L1c" / "T016" / "mag-l1b-l1c-t016-mago-burst-in.csv",
         ),
     ]
