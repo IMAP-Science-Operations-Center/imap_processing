@@ -103,10 +103,10 @@ def prepare_raw_counts(grouped: xr.Dataset, cem_number: int = N_CEMS) -> NDArray
     # Energy bin lookup table (indexed by quarter cycle)
     energy_bins = np.array(
         [
-            [1, 5, 3, 7],  # 0-14 (first quarter cycle)
-            [2, 6, 0, 4],  # 15-29 (second quarter cycle)
-            [3, 7, 1, 5],  # 30-44 (third quarter cycle)
-            [0, 4, 2, 6],  # 45-59 (fourth quarter cycle)
+            [1, 5, 7, 3],  # 0-14 (first quarter cycle)
+            [2, 6, 4, 0],  # 15-29 (second quarter cycle)
+            [3, 7, 5, 1],  # 30-44 (third quarter cycle)
+            [0, 4, 6, 2],  # 45-59 (fourth quarter cycle)
         ]
     )
 
