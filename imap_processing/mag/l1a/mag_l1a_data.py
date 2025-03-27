@@ -1111,7 +1111,7 @@ class MagL1a:
         last_vectors_per_second = None
         for _, packet in self.packet_definitions.items():
             vecsec = packet.vectors_per_second
-            time = packet.start_time.to_j2000ns()
+            time: np.int64 = packet.start_time.to_j2000ns().astype(np.int64)
             if vecsec != last_vectors_per_second:
                 if output_str == "":
                     output_str = f"{time}:{vecsec}"
