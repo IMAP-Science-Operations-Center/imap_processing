@@ -182,7 +182,7 @@ def decompress_image(
     Notes
     -----
     This process is described starting on page 168 in IMAP-Ultra Flight
-    Software Specification document (7523-9009_Rev_-.pdf).
+    Software Specification document.
     """
     rows = 54
     cols = 180

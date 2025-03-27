@@ -32,7 +32,7 @@ def get_y_adjust(dy_lut: np.ndarray) -> npt.NDArray:
 
     Instead of using trigonometry, this function utilizes a 256-element lookup table
     to find the Y adjustment. For more details, refer to pages 37-38 of the
-    IMAP-Ultra Flight Software Specification document (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
@@ -56,7 +56,7 @@ def get_norm(dn: xr.DataArray, key: str, file_label: str) -> npt.NDArray:
     using lookup tables.
 
     Further description is available on pages 31-32 of the IMAP-Ultra Flight Software
-    Specification document (7523-9009_Rev_-.pdf). This will work for both Tp{key}Norm,
+    Specification document. This will work for both Tp{key}Norm,
     Bt{key}Norm. This is for getStopNorm and getCoinNorm.
 
     Parameters
@@ -92,7 +92,7 @@ def get_back_position(back_index: np.ndarray, key: str, file_label: str) -> npt.
     instead of linear equations is necessary. The computation will use different
     tables to accommodate variations between the top and bottom anodes.
     Further description is available on page 32 of the
-    IMAP-Ultra Flight Software Specification document (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
@@ -122,8 +122,8 @@ def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray) -> npt.NDArra
     Normalize composite energy per SSD using a lookup table.
 
     Further description is available on page 41 of the
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf). Note : There are 8 SSDs containing
+    IMAP-Ultra Flight Software Specification document.
+    Note : There are 8 SSDs containing
     4096 composite energies each.
 
     Parameters
@@ -149,7 +149,7 @@ def get_image_params(image: str) -> np.float64:
 
     Further description is available starting on
     page 30 of the IMAP-Ultra Flight Software
-    Specification document (7523-9009_Rev_-.pdf).
+    Specification document.
 
     Parameters
     ----------
