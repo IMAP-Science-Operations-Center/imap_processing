@@ -70,7 +70,7 @@ def test_image_rate_decom_zero_width(decom_test_data):
         imap_module_directory
         / "tests"
         / "ultra"
-        / "test_data"
+        / "data"
         / "l0"
         / "ultra45_raw_sc_ultraimgrates_20220530_00.csv"
     )

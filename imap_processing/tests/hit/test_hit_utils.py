@@ -178,7 +178,6 @@ def test_process_housekeeping(housekeeping_dataset, attribute_manager):
         "Acknowledgement": "Please acknowledge the IMAP Mission Principal "
         "Investigator, Prof. David J. McComas of Princeton "
         "University.\n",
-        "Data_level": "1A",
         "Data_type": "L1A_HK>Level-1A Housekeeping",
         "Data_version": "001",
         "Descriptor": "HIT>IMAP High-energy Ion Telescope",

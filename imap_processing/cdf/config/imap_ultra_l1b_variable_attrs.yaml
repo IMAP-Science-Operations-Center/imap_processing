@@ -193,7 +193,21 @@ energy:
 
 tof_energy:
   <<: *default_float32
-  CATDESC: Energy measured using kinetic energy equation.
+  CATDESC: Energy measured using kinetic energy equation in the instrument frame.
+  FIELDNAM: energy
+  LABLAXIS: energy
+  UNITS: keV
+
+energy_spacecraft:
+  <<: *default_float32
+  CATDESC: Energy measured using kinetic energy equation in the despun spacecraft frame.
+  FIELDNAM: energy
+  LABLAXIS: energy
+  UNITS: keV
+
+energy_heliosphere:
+  <<: *default_float32
+  CATDESC: Energy measured using kinetic energy equation in the despun heliosphere frame.
   FIELDNAM: energy
   LABLAXIS: energy
   UNITS: keV

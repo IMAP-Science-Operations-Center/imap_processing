@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from imap_processing.tests.ultra.test_data.mock_data import (
+from imap_processing.tests.ultra.data.mock_data import (
     mock_l1c_pset_product_healpix,
     mock_l1c_pset_product_rectangular,
 )

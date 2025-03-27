@@ -11,8 +11,10 @@ from imap_processing.lo.l1b.lo_l1b import (
     convert_start_end_acq_times,
     create_datasets,
     get_avg_spin_durations,
+    get_spin_angle,
     initialize_l1b_de,
     lo_l1b,
+    set_spin_bin,
 )
 
 
@@ -178,3 +180,39 @@ def test_get_avg_spin_durations():
 
     # Assert
     np.testing.assert_array_equal(avg_spin_durations, expected_avg_spin_durations)
+
+
+def test_get_spin_angle():
+    # Arrange
+    de = xr.Dataset(
+        {
+            "de_count": ("epoch", [2, 3]),
+            "de_time": ("direct_event", [0000, 1000, 2000, 3000, 4000]),
+        },
+        coords={"epoch": [0, 1], "direct_event": [0, 1, 2, 3, 4]},
+    )
+    spin_angle_expected = np.array([0, 87.89, 175.78, 263.67, 351.56])
+
+    # Act
+    spin_angle = get_spin_angle(de)
+
+    # Assert
+    np.testing.assert_allclose(
+        spin_angle,
+        spin_angle_expected,
+        atol=1e-2,
+        err_msg=f"Spin angle: {spin_angle} vs {spin_angle_expected}",
+    )
+
+
+def test_spin_bin():
+    # Arrange
+    l1b_de = xr.Dataset()
+    spin_angle = np.array([0, 50, 150, 250, 365])
+    expected_spin_bins = np.array([0, 8, 25, 41, 60])
+
+    # Act
+    l1b_de = set_spin_bin(l1b_de, spin_angle)
+
+    # Assert
+    np.testing.assert_array_equal(l1b_de["spin_bin"], expected_spin_bins)

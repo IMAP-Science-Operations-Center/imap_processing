@@ -62,7 +62,6 @@ def swapi_l2(l1_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     # Update L2 specific attributes
     l2_dataset.attrs["Data_version"] = data_version
     l2_global_attrs = cdf_manager.get_global_attributes("imap_swapi_l2_sci")
-    l2_dataset.attrs["Data_level"] = l2_global_attrs["Data_level"]
     l2_dataset.attrs["Data_type"] = l2_global_attrs["Data_type"]
     l2_dataset.attrs["Logical_source"] = l2_global_attrs["Logical_source"]
     l2_dataset.attrs["Logical_source_description"] = l2_global_attrs[

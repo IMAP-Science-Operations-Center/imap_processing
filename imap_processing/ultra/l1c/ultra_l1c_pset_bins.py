@@ -17,7 +17,7 @@ from imap_processing.ultra.constants import UltraConstants
 # TODO: add species binning.
 
 
-def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray]:
+def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray, np.ndarray]:
     """
     Build energy bin boundaries.
 
@@ -27,6 +27,8 @@ def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray]:
         Energy bins.
     energy_midpoints : np.ndarray
         Array of energy bin midpoints.
+    energy_bin_geometric_means : np.ndarray
+        Array of geometric means of energy bins.
     """
     # Calculate energy step
     energy_step = (1 + UltraConstants.ALPHA / 2) / (1 - UltraConstants.ALPHA / 2)
@@ -43,8 +45,9 @@ def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray]:
         (float(energy_bin_edges[i]), float(energy_bin_edges[i + 1]))
         for i in range(len(energy_bin_edges) - 1)
     ]
+    energy_bin_geometric_means = np.sqrt(energy_bin_edges[:-1] * energy_bin_edges[1:])
 
-    return intervals, energy_midpoints
+    return intervals, energy_midpoints, energy_bin_geometric_means
 
 
 def get_spacecraft_histogram(
@@ -53,7 +56,7 @@ def get_spacecraft_histogram(
     energy_bin_edges: list[tuple[float, float]],
     nside: int = 128,
     nested: bool = False,
-) -> NDArray:
+) -> tuple[NDArray, NDArray, NDArray, NDArray]:
     """
     Compute a 3D histogram of the particle data using HEALPix binning.
 
@@ -75,6 +78,12 @@ def get_spacecraft_histogram(
     -------
     hist : np.ndarray
         A 3D histogram array with shape (n_pix, n_energy_bins).
+    latitude : np.ndarray
+        Array of latitude values.
+    longitude : np.ndarray
+        Array of longitude values.
+    n_pix : int
+        Number of healpix pixels.
 
     Notes
     -----
@@ -83,7 +92,9 @@ def get_spacecraft_histogram(
 
     azimuthal angle [0, 360], elevation angle [-90, 90]
     """
-    spherical_coords = cartesian_to_spherical(vhat, degrees=True)
+    # vhat = direction in which particle is traveling
+    # Make negative to see where it came from
+    spherical_coords = cartesian_to_spherical(-np.array(vhat), degrees=True)
     az, el = (
         spherical_coords[..., 1],
         spherical_coords[..., 2],
@@ -92,20 +103,48 @@ def get_spacecraft_histogram(
     # Compute number of HEALPix pixels that cover the sphere
     n_pix = hp.nside2npix(nside)
 
+    # Calculate the corresponding longitude (az) latitude (el)
+    # center coordinates
+    longitude, latitude = hp.pix2ang(nside, np.arange(n_pix), lonlat=True)
+
     # Get HEALPix pixel indices for each event
     # HEALPix expects latitude in [-90, 90] so we don't need to change elevation
     hpix_idx = hp.ang2pix(nside, az, el, nest=nested, lonlat=True)
 
-    # Initialize histogram: (n_HEALPix pixels, n_energy_bins)
-    hist = np.zeros((n_pix, len(energy_bin_edges)))
+    # Initialize histogram: (n_energy_bins, n_HEALPix pixels)
+    hist = np.zeros((len(energy_bin_edges), n_pix))
 
     # Bin data in energy & HEALPix space
     for i, (e_min, e_max) in enumerate(energy_bin_edges):
         mask = (energy >= e_min) & (energy < e_max)
         # Only count the events that fall within the energy bin
-        hist[:, i] += np.bincount(hpix_idx[mask], minlength=n_pix).astype(np.float64)
+        hist[i, :] += np.bincount(hpix_idx[mask], minlength=n_pix).astype(np.float64)
 
-    return hist
+    return hist, latitude, longitude, n_pix
+
+
+def get_background_rates(
+    nside: int = 128,
+) -> NDArray:
+    """
+    Calculate background rates.
+
+    Parameters
+    ----------
+    nside : int, optional
+        The nside parameter of the Healpix tessellation (default is 128).
+
+    Returns
+    -------
+    background_rates : np.ndarray
+        Array of background rates.
+
+    Notes
+    -----
+    This is a placeholder.
+    """
+    n_pix = hp.nside2npix(nside)
+    return np.zeros(n_pix)
 
 
 def get_spacecraft_exposure_times(constant_exposure: pandas.DataFrame) -> NDArray:
@@ -157,7 +196,7 @@ def get_helio_exposure_times(
     These calculations are performed once per pointing.
     """
     # Get bins and midpoints, with angles in degrees.
-    _, energy_midpoints = build_energy_bins()
+    _, energy_midpoints, _ = build_energy_bins()
     az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
         build_spatial_bins()
     )

@@ -2,6 +2,7 @@
 
 from dataclasses import Field
 from pathlib import Path
+from typing import Any, Union
 
 import numpy as np
 import xarray as xr
@@ -48,7 +49,11 @@ def lo_l1b(dependencies: dict, data_version: str) -> list[Path]:
         acq_start, acq_end = convert_start_end_acq_times(spin_data)
         # Get the average spin durations for each epoch
         avg_spin_durations = get_avg_spin_durations(acq_start, acq_end)  # noqa: F841
-        # get spin phase for each DE
+        # get spin angle (0 - 360 degrees) for each DE
+        spin_angle = get_spin_angle(l1a_de)
+        # calculate and set the spin bin based on the spin angle
+        # spin bins are 0 - 60 bins
+        l1b_de = set_spin_bin(l1b_de, spin_angle)
 
     return [l1b_de]
 
@@ -156,6 +161,54 @@ def get_avg_spin_durations(
     # There are 28 spins per epoch (1 aggregated science cycle)
     avg_spin_durations = (acq_end - acq_start) / 28
     return avg_spin_durations
+
+
+def get_spin_angle(l1a_de: xr.Dataset) -> Union[np.ndarray[np.float64], Any]:
+    """
+    Get the spin angle (0 - 360 degrees) for each DE.
+
+    Parameters
+    ----------
+    l1a_de : xarray.Dataset
+        The L1A DE dataset.
+
+    Returns
+    -------
+    spin_angle : np.ndarray
+        The spin angle for each DE.
+    """
+    de_times = l1a_de["de_time"].values
+    # DE Time is 12 bit DN. The max possible value is 4096
+    spin_angle = np.array(de_times / 4096 * 360, dtype=np.float64)
+    return spin_angle
+
+
+def set_spin_bin(l1b_de: xr.Dataset, spin_angle: np.ndarray) -> xr.Dataset:
+    """
+    Set the spin bin (0 - 60 bins) for each Direct Event where each bin is 6 degrees.
+
+    Parameters
+    ----------
+    l1b_de : xarray.Dataset
+        The L1B Direct Event dataset.
+    spin_angle : np.ndarray
+        The spin angle (0-360 degrees) for each Direct Event.
+
+    Returns
+    -------
+    l1b_de : xarray.Dataset
+        The L1B DE dataset with the spin bin added.
+    """
+    # Get the spin bin for each DE
+    # Spin bins are 0 - 60 where each bin is 6 degrees
+    spin_bin = (spin_angle // 6).astype(int)
+    l1b_de["spin_bin"] = xr.DataArray(
+        spin_bin,
+        dims=["epoch"],
+        # TODO: Add spin angle to YAML file
+        # attrs=attr_mgr.get_variable_attributes("spin_bin"),
+    )
+    return l1b_de
 
 
 # TODO: This is going to work differently when I sample data.
