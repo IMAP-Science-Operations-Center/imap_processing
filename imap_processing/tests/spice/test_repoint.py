@@ -6,7 +6,7 @@ import pytest
 import xarray as xr
 
 from imap_processing.spice.repoint import (
-    combine_repointings,
+    combine_pointings,
     get_repoint_data,
     interpolate_repoint_data,
 )
@@ -116,8 +116,8 @@ def test_interpolate_repoint_data_with_use_fake_fixture(use_fake_repoint_data_fo
     )
 
 
-def test_combine_repointings(fake_repoint_data):
-    """Tests test_combine_repointings."""
+def test_combine_pointings(fake_repoint_data):
+    """Tests test_combine_pointings."""
 
     ds1 = xr.Dataset(
         data_vars={
@@ -140,7 +140,7 @@ def test_combine_repointings(fake_repoint_data):
     repoint_start = 107
     repoint_end = 111
 
-    dict_ds = combine_repointings(pointing_sets, repoint_start, repoint_end)
+    dict_ds = combine_pointings(pointing_sets, repoint_start, repoint_end)
 
     assert dict_ds[896]["shcoarse"].min() >= repoint_start
     assert dict_ds[896]["shcoarse"].max() <= repoint_end

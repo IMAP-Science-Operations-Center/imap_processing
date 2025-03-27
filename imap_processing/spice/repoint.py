@@ -122,7 +122,7 @@ def interpolate_repoint_data(
     return out_df
 
 
-def combine_repointings(
+def combine_pointings(
     pointing_sets: list[dict[int, xr.Dataset]], repoint_start: int, repoint_end: int
 ) -> dict[int, xr.Dataset]:
     """
