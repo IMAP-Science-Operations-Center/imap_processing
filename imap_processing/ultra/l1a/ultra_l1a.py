@@ -85,8 +85,7 @@ def ultra_l1a(
             decom_ultra_dataset.coords["event_id"].attrs.update(attrs)
         else:
             logger.error(f"APID {apid} not recognized.")
-            # TODO: here we can put the same as what we have for the aux packet
-            # gattr_key = ULTRA_AUX.logical_source[ULTRA_AUX.apid.index(apid)]
+            # TODO: here we can put other apids
             continue
 
         decom_ultra_dataset.attrs.update(attr_mgr.get_global_attributes(gattr_key))
