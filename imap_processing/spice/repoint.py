@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from numpy import typing as npt
-from numpy.typing import NDArray
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +124,7 @@ def interpolate_repoint_data(
 
 def combine_repointings(
     pointing_sets: list[dict[int, xr.Dataset]], repoint_start: int, repoint_end: int
-) -> dict[NDArray, NDArray]:
+) -> dict[int, xr.Dataset]:
     """
     Combine pointing sets into a repointing by apid.
 
