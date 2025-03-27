@@ -1,55 +1,974 @@
-#  <=== Coordinates ===>
-# TODO: revisit this whole file
-ultra_metadata_attrs:
-  CATDESC: metadata # TODO: revisit this
-  FIELDNAM: metadata # TODO: revisit this
-  FILLVAL: -9223370000000000000
-  FORMAT: I19
-  LABLAXIS: Metadata
-  SCALE_TYP: linear
-  UNITS: " "
+# TODO: add depends information here.
+default_attrs: &default
+  # Assumed values for all variable attrs unless overwritten
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: -9223372036854775808
+  FORMAT: I12
   VALIDMIN: -9223372036854775808
   VALIDMAX: 9223372036854775807
-  VAR_TYPE: support_data
-  DISPLAY_TYPE: time_series
-
-ultra_support_attrs:
-  CATDESC: Metadata for Ultra data
-  FIELDNAM: metadata
-  FILLVAL: -9223370000000000000
-  FORMAT: I19
-  LABLAXIS: "none"
-  SCALE_TYP: linear
-  UNITS: " "
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854775807
-  VAR_TYPE: support_data
-  DISPLAY_TYPE: time_series
-  DEPEND_0: epoch
-
-string_base_attrs:
-  CATDESC: string metadata
-  FIELDNAM: string_metadata
-  FORMAT: A80
-  LABLAXIS: "none"
-  VAR_TYPE: support_data
-  DISPLAY_TYPE: no_plot
-  DEPEND_0: epoch
+  VAR_TYPE: data
   UNITS: " "
 
-packet_data_attrs:
-  CATDESC: packet data
-  FIELDNAM: packet_data
-  FILLVAL: -9223370000000000000
-  FORMAT: I19
-  LABLAXIS: "none"
-  SCALE_TYP: linear
+default_uint8_attrs: &default_uint8
+  <<: *default
+  FILLVAL: 255
+  FORMAT: I3
+  VALIDMIN: 0
+  VALIDMAX: 255
+  dtype: uint8
+
+default_uint16_attrs: &default_uint16
+  <<: *default
+  FILLVAL: 65535
+  FORMAT: I5
+  VALIDMIN: 0
+  VALIDMAX: 65535
+  dtype: uint16
+
+default_uint32_attrs: &default_uint32
+  <<: *default
+  FILLVAL: 4294967295
+  FORMAT: I10
+  VALIDMIN: 0
+  VALIDMAX: 4294967295
+  dtype: uint32
+
+default_int64_attrs: &default_int64
+  <<: *default
+  FILLVAL: -9223372036854775808
+  FORMAT: I20
   VALIDMIN: -9223372036854775808
   VALIDMAX: 9223372036854775807
+  dtype: int64
+
+default_int32_attrs: &default_int32
+  <<: *default
+  FILLVAL: -2147483648
+  FORMAT: I10
+  VALIDMIN: -2147483648
+  VALIDMAX: 2147483647
+  dtype: int32
+
+default_float32_attrs: &default_float32
+  <<: *default
+  FILLVAL: .NAN
+  FORMAT: F10.2
+  VALIDMIN: -3.4028235e+38
+  VALIDMAX: 3.4028235e+38
+  dtype: float32
+
+default_float64_attrs: &default_float64
+  <<: *default
+  FILLVAL: .NAN
+  FORMAT: F10.2
+  VALIDMIN: -1.7976931348623157e+308
+  VALIDMAX: 1.7976931348623157e+308
+  dtype: float64
+
+shcoarse:
+  <<: *default_uint32
+  CATDESC: CCSDS mission elapsed time (SHCOARSE=MET). 32-bit integer value that represents the MET in seconds.
+  FIELDNAM: Mission Elapsed Time(MET)
+  LABLAXIS: CCSDS MET
+  UNITS: sec
   VAR_TYPE: support_data
-  DISPLAY_TYPE: time_series
-  DEPEND_0: epoch
-  DEPEND_1: sid
-  DEPEND_2: row
-  DEPEND_3: column
-  UNITS: pixels
+
+sid:
+  <<: *default_uint8
+  CATDESC: Science ID (always totals 8).
+  FIELDNAM: SID
+  LABLAXIS: SID
+  UNITS: " "
+
+spin:
+  <<: *default_uint32
+  CATDESC: Spin number.
+  FIELDNAM: spin_number
+  LABLAXIS: spin number
+  UNITS: " "
+
+abortflag:
+  <<: *default_uint8
+  CATDESC: Flag for integration aborted.
+  FIELDNAM: abortflag
+  LABLAXIS: abortflag
+  UNITS: " "
+
+startdelay:
+  <<: *default_uint8
+  CATDESC: Integration start delay.
+  FIELDNAM: startdelay
+  LABLAXIS: startdelay
+  UNITS: "ms"
+
+count:
+  <<: *default
+  CATDESC: Counts for a spin.
+  FIELDNAM: counts
+  LABLAXIS: counts
+  # TODO: come back to format
+  UNITS: counts
+
+version:
+  <<: *default_uint8
+  CATDESC: CCSDS packet version number
+  FIELDNAM: CCSDS version
+  VAR_TYPE: support_data
+
+type:
+  <<: *default_uint8
+  CATDESC: CCSDS packet type
+  FIELDNAM: CCSDS type
+  VAR_TYPE: support_data
+
+sec_hdr_flg:
+  <<: *default_uint8
+  CATDESC: CCSDS secondary header flag
+  FIELDNAM: CCSDS secondary header flag
+  VAR_TYPE: support_data
+
+pkt_apid:
+  <<: *default_uint16
+  CATDESC: CCSDS application process ID
+  FIELDNAM: CCSDS APID
+  VAR_TYPE: support_data
+
+seq_flgs:
+  <<: *default_uint8
+  CATDESC: CCSDS sequence flags
+  FIELDNAM: CCSDS sequence flags
+  VAR_TYPE: support_data
+
+src_seq_ctr:
+  <<: *default_uint16
+  CATDESC: CCSDS source sequence counter
+  FIELDNAM: CCSDS sequence counter
+  VAR_TYPE: support_data
+
+pkt_len:
+  <<: *default_uint16
+  CATDESC: CCSDS packet length
+  FIELDNAM: CCSDS packet length
+  VAR_TYPE: support_data
+
+coin_type:
+  <<: *default_uint8
+  CATDESC: Coincidence Type
+  FIELDNAM: Coin Type
+  LABLAXIS: coin_type
+  UNITS: " "
+
+start_type:
+  <<: *default_uint8
+  CATDESC: Start Type
+  FIELDNAM: Start Type
+  LABLAXIS: start_type
+  UNITS: " "
+
+stop_type:
+  <<: *default_uint8
+  CATDESC: Stop Type
+  FIELDNAM: Stop Type
+  LABLAXIS: stop_type
+  UNITS: " "
+
+start_pos_tdc:
+  <<: *default_uint32
+  CATDESC: Start Position Time to Digital Converter
+  FIELDNAM: StartPosTDC
+  LABLAXIS: start_pos_tdc
+  UNITS: " "
+
+stop_north_tdc:
+  <<: *default_uint32
+  CATDESC: Stop North Time to Digital Converter
+  FIELDNAM: StopNorthTDC
+  LABLAXIS: stop_north_tdc
+  UNITS: " "
+
+stop_east_tdc:
+  <<: *default_uint32
+  CATDESC: Stop East Time to Digital Converter
+  FIELDNAM: StopEastTDC
+  LABLAXIS: stop_east_tdc
+  UNITS: " "
+
+stop_south_tdc:
+  <<: *default_uint32
+  CATDESC: Stop South Time to Digital Converter
+  FIELDNAM: StopSouthTDC
+  LABLAXIS: stop_south_tdc
+  UNITS: " "
+
+stop_west_tdc:
+  <<: *default_uint32
+  CATDESC: Stop West Time to Digital Converter
+  FIELDNAM: StopWestTDC
+  LABLAXIS: stop_west_tdc
+  UNITS: " "
+
+coin_north_tdc:
+  <<: *default_uint32
+  CATDESC: Coincidence North Time to Digital Converter
+  FIELDNAM: CoinNorthTDC
+  LABLAXIS: coin_north_tdc
+  UNITS: " "
+
+coin_south_tdc:
+  <<: *default_uint32
+  CATDESC: Coincidence South Time to Digital Converter
+  FIELDNAM: CoinSouthTDC
+  LABLAXIS: coin_south_tdc
+  UNITS: " "
+
+coin_discrete_tdc:
+  <<: *default_uint32
+  CATDESC: Coincidence Discrete Time to Digital Converter
+  FIELDNAM: CoinDiscreteTDC
+  LABLAXIS: coin_discrete_tdc
+  UNITS: " "
+
+energy_ph:
+  <<: *default_uint32
+  CATDESC: Energy or Pulse Height
+  FIELDNAM: EnergyOrPH
+  LABLAXIS: energy_ph
+  UNITS: " "
+
+pulse_width:
+  <<: *default_uint32
+  CATDESC: Pulse Width
+  FIELDNAM: PulseWidth
+  LABLAXIS: pulse_width
+  UNITS: " "
+
+event_flag_cnt:
+  <<: *default_uint8
+  CATDESC: Event Flag Count
+  FIELDNAM: CnT
+  LABLAXIS: event_flag_cnt
+  UNITS: " "
+
+event_flag_phcmpsl:
+  <<: *default_uint8
+  CATDESC: Event Flag PHCmpSL
+  FIELDNAM: PHCmpSL
+  LABLAXIS: event_flag_phcmpsl
+  UNITS: " "
+
+event_flag_phcmpsr:
+  <<: *default_uint8
+  CATDESC: Event Flag PHCmpSR
+  FIELDNAM: PHCmpSR
+  LABLAXIS: event_flag_phcmpsr
+  UNITS: " "
+
+event_flag_phcmpcd:
+  <<: *default_uint8
+  CATDESC: Event Flag PHCmpCD
+  FIELDNAM: PHCmpCD
+  LABLAXIS: event_flag_phcmpcd
+  UNITS: " "
+
+ssd_flag_7:
+  <<: *default_uint8
+  CATDESC: SSD Flag 7
+  FIELDNAM: SSDS7
+  LABLAXIS: ssd_flag_7
+  UNITS: " "
+
+ssd_flag_6:
+  <<: *default_uint8
+  CATDESC: SSD Flag 6
+  FIELDNAM: SSDS6
+  LABLAXIS: ssd_flag_6
+  UNITS: " "
+
+ssd_flag_5:
+  <<: *default_uint8
+  CATDESC: SSD Flag 5
+  FIELDNAM: SSDS5
+  LABLAXIS: ssd_flag_5
+  UNITS: " "
+
+ssd_flag_4:
+  <<: *default_uint8
+  CATDESC: SSD Flag 4
+  FIELDNAM: SSDS4
+  LABLAXIS: ssd_flag_4
+  UNITS: " "
+
+ssd_flag_3:
+  <<: *default_uint8
+  CATDESC: SSD Flag 3
+  FIELDNAM: SSDS3
+  LABLAXIS: ssd_flag_3
+  UNITS: " "
+
+ssd_flag_2:
+  <<: *default_uint8
+  CATDESC: SSD Flag 2
+  FIELDNAM: SSDS2
+  LABLAXIS: ssd_flag_2
+  UNITS: " "
+
+ssd_flag_1:
+  <<: *default_uint8
+  CATDESC: SSD Flag 1
+  FIELDNAM: SSDS1
+  LABLAXIS: ssd_flag_1
+  UNITS: " "
+
+ssd_flag_0:
+  <<: *default_uint8
+  CATDESC: SSD Flag 0
+  FIELDNAM: SSDS0
+  LABLAXIS: ssd_flag_0
+  UNITS: " "
+
+cfd_flag_cointn:
+  <<: *default_uint8
+  CATDESC: CFD Coincidence Flag Top North
+  FIELDNAM: CFDCoinTN
+  LABLAXIS: cfd_flag_cointn
+  UNITS: " "
+
+cfd_flag_coinbn:
+  <<: *default_uint8
+  CATDESC: CFD Coincidence Flag Bottom North
+  FIELDNAM: CFDCoinBN
+  LABLAXIS: cfd_flag_coinbn
+  UNITS: " "
+
+cfd_flag_coints:
+  <<: *default_uint8
+  CATDESC: CFD Coincidence Flag Top South
+  FIELDNAM: CFDCoinTS
+  LABLAXIS: cfd_flag_coints
+  UNITS: " "
+
+cfd_flag_coinbs:
+  <<: *default_uint8
+  CATDESC: CFD Coincidence Flag Bottom South
+  FIELDNAM: CFDCoinBS
+  LABLAXIS: cfd_flag_coinbs
+  UNITS: " "
+
+cfd_flag_coind:
+  <<: *default_uint8
+  CATDESC: CFD Coincidence Flag Discrete
+  FIELDNAM: CFDCoinD
+  LABLAXIS: cfd_flag_coind
+  UNITS: " "
+
+cfd_flag_startrf:
+  <<: *default_uint8
+  CATDESC: CFD Start Right Full Flag
+  FIELDNAM: CFDStartRF
+  LABLAXIS: cfd_flag_startrf
+  UNITS: " "
+
+cfd_flag_startlf:
+  <<: *default_uint8
+  CATDESC: CFD Start Left Full Flag
+  FIELDNAM: CFDStartLF
+  LABLAXIS: cfd_flag_startlf
+  UNITS: " "
+
+cfd_flag_startrp:
+  <<: *default_uint8
+  CATDESC: CFD Start Position Right Flag
+  FIELDNAM: CFDStartRP
+  LABLAXIS: cfd_flag_startrp
+  UNITS: " "
+
+cfd_flag_startlp:
+  <<: *default_uint8
+  CATDESC: CFD Start Position Left Flag
+  FIELDNAM: CFDStartLP
+  LABLAXIS: cfd_flag_startlp
+  UNITS: " "
+
+cfd_flag_stoptn:
+  <<: *default_uint8
+  CATDESC: CFD Stop Top North Flag
+  FIELDNAM: CFDStopTN
+  LABLAXIS: cfd_flag_stoptn
+  UNITS: " "
+
+cfd_flag_stopbn:
+  <<: *default_uint8
+  CATDESC: CFD Stop Bottom North Flag
+  FIELDNAM: CFDStopBN
+  LABLAXIS: cfd_flag_stopbn
+  UNITS: " "
+
+cfd_flag_stopte:
+  <<: *default_uint8
+  CATDESC: CFD Stop Top East Flag
+  FIELDNAM: CFDStopTE
+  LABLAXIS: cfd_flag_stopte
+  UNITS: " "
+
+cfd_flag_stopbe:
+  <<: *default_uint8
+  CATDESC: CFD Stop Bottom East Flag
+  FIELDNAM: CFDStopBE
+  LABLAXIS: cfd_flag_stopbe
+  UNITS: " "
+
+cfd_flag_stopts:
+  <<: *default_uint8
+  CATDESC: CFD Stop Top South Flag
+  FIELDNAM: CFDStopTS
+  LABLAXIS: cfd_flag_stopts
+  UNITS: " "
+
+cfd_flag_stopbs:
+  <<: *default_uint8
+  CATDESC: CFD Stop Bottom South Flag
+  FIELDNAM: CFDStopBS
+  LABLAXIS: cfd_flag_stopbs
+  UNITS: " "
+
+cfd_flag_stoptw:
+  <<: *default_uint8
+  CATDESC: CFD Stop Top West Flag
+  FIELDNAM: CFDStopTW
+  LABLAXIS: cfd_flag_stoptw
+  UNITS: " "
+
+cfd_flag_stopbw:
+  <<: *default_uint8
+  CATDESC: CFD Stop Bottom West Flag
+  FIELDNAM: CFDStopBW
+  LABLAXIS: cfd_flag_stopbw
+  UNITS: " "
+
+bin:
+  <<: *default_uint32
+  CATDESC: Event bin index
+  FIELDNAM: Bin
+  LABLAXIS: bin
+  UNITS: " "
+
+phase_angle:
+  <<: *default_uint32
+  CATDESC: Phase angle
+  FIELDNAM: PhaseAngle
+  LABLAXIS: phase_angle
+  UNITS: degrees
+
+p00:
+  <<: *default_uint32
+  CATDESC: Starting pixel
+  FIELDNAM: Starting pixel
+  LABLAXIS: p00
+  UNITS: " "
+
+packetdata:
+  <<: *default_uint32
+  CATDESC: Image Packet Data
+  FIELDNAM: Image Packet Data
+  LABLAXIS: packetdata
+  UNITS: " "
+
+fastdata_00:
+  <<: *default_uint32
+  CATDESC: Fast-compressed rate data
+  FIELDNAM: Fast-compressed rate data
+  LABLAXIS: fastdata_00
+  UNITS: " "
+
+start_rf:
+  <<: *default_uint32
+  CATDESC: Start Right Full CFD Pulses
+  FIELDNAM: StartRF
+  LABLAXIS: start_rf
+  UNITS: " "
+
+start_lf:
+  <<: *default_uint32
+  CATDESC: Start Left Full CFD Pulses
+  FIELDNAM: StartLF
+  LABLAXIS: start_lf
+  UNITS: " "
+
+start_rp:
+  <<: *default_uint32
+  CATDESC: Start Position Right CFD Pulses
+  FIELDNAM: StartRP
+  LABLAXIS: start_rp
+  UNITS: " "
+
+start_lp:
+  <<: *default_uint32
+  CATDESC: Start Position Left CFD Pulses
+  FIELDNAM: StartLP
+  LABLAXIS: start_lp
+  UNITS: " "
+
+stop_tn:
+  <<: *default_uint32
+  CATDESC: Stop Top North CFD Pulses
+  FIELDNAM: StopTN
+  LABLAXIS: stop_tn
+  UNITS: " "
+
+stop_bn:
+  <<: *default_uint32
+  CATDESC: Stop Bottom North CFD Pulses
+  FIELDNAM: StopBN
+  LABLAXIS: stop_bn
+  UNITS: " "
+
+stop_te:
+  <<: *default_uint32
+  CATDESC: Stop Top East CFD Pulses
+  FIELDNAM: StopTE
+  LABLAXIS: stop_te
+  UNITS: " "
+
+stop_be:
+  <<: *default_uint32
+  CATDESC: Stop Bottom East CFD Pulses
+  FIELDNAM: StopBE
+  LABLAXIS: stop_be
+  UNITS: " "
+
+stop_ts:
+  <<: *default_uint32
+  CATDESC: Stop Top South CFD Pulses
+  FIELDNAM: StopTS
+  LABLAXIS: stop_ts
+  UNITS: " "
+
+stop_bs:
+  <<: *default_uint32
+  CATDESC: Stop Bottom South CFD Pulses
+  FIELDNAM: StopBS
+  LABLAXIS: stop_bs
+  UNITS: " "
+
+stop_tw:
+  <<: *default_uint32
+  CATDESC: Stop Top West CFD Pulses
+  FIELDNAM: StopTW
+  LABLAXIS: stop_tw
+  UNITS: " "
+
+stop_bw:
+  <<: *default_uint32
+  CATDESC: Stop Bottom West CFD Pulses
+  FIELDNAM: StopBW
+  LABLAXIS: stop_bw
+  UNITS: " "
+
+coin_tn:
+  <<: *default_uint32
+  CATDESC: Coincidence Top North CFD Pulses
+  FIELDNAM: CoinTN
+  LABLAXIS: coin_tn
+  UNITS: " "
+
+coin_bn:
+  <<: *default_uint32
+  CATDESC: Coincidence Bottom North CFD Pulses
+  FIELDNAM: CoinBN
+  LABLAXIS: coin_bn
+  UNITS: " "
+
+coin_ts:
+  <<: *default_uint32
+  CATDESC: Coincidence Top South CFD Pulses
+  FIELDNAM: CoinTS
+  LABLAXIS: coin_ts
+  UNITS: " "
+
+coin_bs:
+  <<: *default_uint32
+  CATDESC: Coincidence Bottom South CFD Pulses
+  FIELDNAM: CoinBS
+  LABLAXIS: coin_bs
+  UNITS: " "
+
+coin_d:
+  <<: *default_uint32
+  CATDESC: Coincidence Discrete CFD Pulses
+  FIELDNAM: CoinD
+  LABLAXIS: coin_d
+  UNITS: " "
+
+ssd0:
+  <<: *default_uint32
+  CATDESC: SSD Energy Pulses 0
+  FIELDNAM: SSD0
+  LABLAXIS: ssd0
+  UNITS: " "
+
+ssd1:
+  <<: *default_uint32
+  CATDESC: SSD Energy Pulses 1
+  FIELDNAM: SSD1
+  LABLAXIS: ssd1
+  UNITS: " "
+
+ssd2:
+  <<: *default_uint32
+  CATDESC: SSD Energy Pulses 2
+  FIELDNAM: SSD2
+  LABLAXIS: ssd2
+  UNITS: " "
+
+ssd3:
+  <<: *default_uint32
+  CATDESC: SSD Energy Pulses 3
+  FIELDNAM: SSD3
+  LABLAXIS: ssd3
+  UNITS: " "
+
+ssd4:
+  <<: *default_uint32
+  CATDESC: SSD Energy Pulses 4
+  FIELDNAM: SSD4
+  LABLAXIS: ssd4
+  UNITS: " "
+
+ssd5:
+  <<: *default_uint32
+  CATDESC: SSD Energy Pulses 5
+  FIELDNAM: SSD5
+  LABLAXIS: ssd5
+  UNITS: " "
+
+ssd6:
+  <<: *default_uint32
+  CATDESC: SSD Energy Pulses 6
+  FIELDNAM: SSD6
+  LABLAXIS: ssd6
+  UNITS: " "
+
+ssd7:
+  <<: *default_uint32
+  CATDESC: SSD Energy Pulses 7
+  FIELDNAM: SSD7
+  LABLAXIS: ssd7
+  UNITS: " "
+
+start_pos:
+  <<: *default_uint32
+  CATDESC: Start Position TDC VE Pulses
+  FIELDNAM: StartPos
+  LABLAXIS: start_pos
+  UNITS: " "
+
+stop_n:
+  <<: *default_uint32
+  CATDESC: Stop North TDC VE Pulses
+  FIELDNAM: StopN
+  LABLAXIS: stop_n
+  UNITS: " "
+
+stop_e:
+  <<: *default_uint32
+  CATDESC: Stop East TDC VE Pulses
+  FIELDNAM: StopE
+  LABLAXIS: stop_e
+  UNITS: " "
+
+stop_s:
+  <<: *default_uint32
+  CATDESC: Stop South TDC VE Pulses
+  FIELDNAM: StopS
+  LABLAXIS: stop_s
+  UNITS: " "
+
+stop_w:
+  <<: *default_uint32
+  CATDESC: Stop West TDC VE Pulses
+  FIELDNAM: StopW
+  LABLAXIS: stop_w
+  UNITS: " "
+
+coin_n_tdc:
+  <<: *default_uint32
+  CATDESC: Coincidence North TDC VE Pulses
+  FIELDNAM: CoinNTDC
+  LABLAXIS: coin_n_tdc
+  UNITS: " "
+
+coin_d_tdc:
+  <<: *default_uint32
+  CATDESC: Coincidence Discrete TDC VE Pulses
+  FIELDNAM: CoinDTDC
+  LABLAXIS: coin_d_tdc
+  UNITS: " "
+
+coin_s_tdc:
+  <<: *default_uint32
+  CATDESC: Coincidence South TDC VE Pulses
+  FIELDNAM: CoinSTDC
+  LABLAXIS: coin_s_tdc
+  UNITS: " "
+
+stop_top_n:
+  <<: *default_uint32
+  CATDESC: Stop Top North Valid PH Flag
+  FIELDNAM: StopTopN
+  LABLAXIS: stop_top_n
+  UNITS: " "
+
+stop_bot_n:
+  <<: *default_uint32
+  CATDESC: Stop Bottom North Valid PH Flag
+  FIELDNAM: StopBotN
+  LABLAXIS: stop_bot_n
+  UNITS: " "
+
+start_right_stop_coin_single:
+  <<: *default_uint32
+  CATDESC: Start-Right/Stop Single Coincidence
+  FIELDNAM: StartRightStopCoinSingle
+  LABLAXIS: start_right_stop_coin_single
+  UNITS: " "
+
+start_left_stop_coin_single:
+  <<: *default_uint32
+  CATDESC: Start-Left/Stop Single Coincidence
+  FIELDNAM: StartLeftStopCoinSingle
+  LABLAXIS: start_left_stop_coin_single
+  UNITS: " "
+
+start_right_stop_coin_double:
+  <<: *default_uint32
+  CATDESC: Start-Right/Stop/Coin Double Coincidence
+  FIELDNAM: StartRightStopCoinDouble
+  LABLAXIS: start_right_stop_coin_double
+  UNITS: " "
+
+start_left_stop_coin_double:
+  <<: *default_uint32
+  CATDESC: Start-Left/Stop/Coin Double Coincidence
+  FIELDNAM: StartLeftStopCoinDouble
+  LABLAXIS: start_left_stop_coin_double
+  UNITS: " "
+
+start_stop_coin_pos:
+  <<: *default_uint32
+  CATDESC: Start/Stop/Coin Position Match
+  FIELDNAM: StartStopCoinPos
+  LABLAXIS: start_stop_coin_pos
+  UNITS: " "
+
+start_right_ssd_coin_d:
+  <<: *default_uint32
+  CATDESC: Start-Right/SSD/Coin-D Coincidence
+  FIELDNAM: StartRightSSDCoinD
+  LABLAXIS: start_right_ssd_coin_d
+  UNITS: " "
+
+start_left_ssd_coin_d:
+  <<: *default_uint32
+  CATDESC: Start-Left/SSD/Coin-D Coincidence
+  FIELDNAM: StartLeftSSDCoinD
+  LABLAXIS: start_left_ssd_coin_d
+  UNITS: " "
+
+event_active_time:
+  <<: *default_uint32
+  CATDESC: Event Analysis Activity Time
+  FIELDNAM: EventActiveTime
+  LABLAXIS: event_active_time
+  UNITS: " "
+
+fifo_valid_events:
+  <<: *default_uint32
+  CATDESC: FIFO Valid Events
+  FIELDNAM: FIFOValidEvents
+  LABLAXIS: fifo_valid_events
+  UNITS: " "
+
+pulser_events:
+  <<: *default_uint32
+  CATDESC: Pulser Events
+  FIELDNAM: PulserEvents
+  LABLAXIS: pulser_events
+  UNITS: " "
+
+window_stop_coin:
+  <<: *default_uint32
+  CATDESC: Windowed Stop/Coin Coincidence
+  FIELDNAM: WindowStopCoin
+  LABLAXIS: window_stop_coin
+  UNITS: " "
+
+start_left_window_stop_coin:
+  <<: *default_uint32
+  CATDESC: Start Left + Window Stop/Coin Coincidence
+  FIELDNAM: StartLeftWindowStopCoin
+  LABLAXIS: start_left_window_stop_coin
+  UNITS: " "
+
+start_right_window_stop_coin:
+  <<: *default_uint32
+  CATDESC: Start Right + Window Stop/Coin Coincidence
+  FIELDNAM: StartRightWindowStopCoin
+  LABLAXIS: start_right_window_stop_coin
+  UNITS: " "
+
+timespinstart:
+  <<: *default_uint32
+  CATDESC: Spin start time (comparable to the Universal Spin Table).
+  FIELDNAM: spin_start_time
+  LABLAXIS: spin start time
+  UNITS: s
+
+timespinstartsub:
+  <<: *default_uint32
+  CATDESC: Spin start time subseconds (comparable to the Universal Spin Table).
+  FIELDNAM: spin_start_time_subseconds
+  LABLAXIS: spin start time subseconds
+  UNITS: ms
+
+duration:
+  <<: *default
+  CATDESC: Spin duration.
+  FIELDNAM: duration
+  LABLAXIS: duration
+  UNITS: s
+
+spinnumber:
+  <<: *default_uint32
+  CATDESC: Spin number.
+  FIELDNAM: spin_number
+  LABLAXIS: spin number
+  UNITS: " "
+
+timespindata:
+    <<: *default_uint32
+    # TODO: get more information about this variable
+    CATDESC: Spin data time.
+    FIELDNAM: spin_data_time
+    LABLAXIS: spin data time
+    UNITS: " "
+
+spinperiod:
+    <<: *default_uint32
+    CATDESC: Spin period (equivalent to the Universal Spin Table).
+    FIELDNAM: spin_period
+    LABLAXIS: spin_period
+    UNITS: s
+
+spinphase:
+  <<: *default_uint32
+  CATDESC: Spin Phase
+  FIELDNAM: spin_phase
+  LABLAXIS: spinphase
+  UNITS: degrees
+
+spinperiodvalid:
+  <<: *default_uint8
+  CATDESC: Spin period valid bit
+  FIELDNAM: spin_period_valid
+  LABLAXIS: spinperiodvalid
+  UNITS: " "
+
+spinphasevalid:
+  <<: *default_uint8
+  CATDESC: Spin phase valid bit
+  FIELDNAM: spin_phase_valid
+  LABLAXIS: spinphasevalid
+  UNITS: " "
+
+spinperiodsource:
+  <<: *default_uint8
+  CATDESC: Spin period source bit
+  FIELDNAM: spin_period_source
+  LABLAXIS: spinperiodsource
+  UNITS: " "
+
+catbedheaterflag:
+  <<: *default_uint8
+  CATDESC: Catbead heater flag
+  FIELDNAM: catbedheaterflag
+  LABLAXIS: catbedheaterflag
+  UNITS: " "
+
+spare1:
+  <<: *default_uint8
+  CATDESC: Spare
+  FIELDNAM: spare1
+  LABLAXIS: spare1
+  UNITS: " "
+
+ints:
+  <<: *default_uint8
+  CATDESC: Spins
+  FIELDNAM: ints
+  LABLAXIS: ints
+  UNITS: " "
+
+intn1:
+  <<: *default_uint8
+  CATDESC: Integration Multiplier 1
+  FIELDNAM: intn1
+  LABLAXIS: intn1
+  UNITS: " "
+
+intn2:
+  <<: *default_uint8
+  CATDESC: Integration Multiplier 2
+  FIELDNAM: intn2
+  LABLAXIS: intn2
+  UNITS: " "
+
+spare2:
+  <<: *default_uint8
+  CATDESC: Reserved
+  FIELDNAM: spare2
+  LABLAXIS: spare2
+  UNITS: " "
+
+hwmode:
+  <<: *default_uint8
+  CATDESC: Hardware mode
+  FIELDNAM: hwmode
+  LABLAXIS: hwmode
+  UNITS: " "
+
+imcenb:
+  <<: *default_uint8
+  CATDESC: IMCENB mode
+  FIELDNAM: imcenb
+  LABLAXIS: imcenb
+  UNITS: " "
+
+leftdeflectioncharge:
+  <<: *default_uint8
+  CATDESC: LEFTDEFLECTIONCHARGE mode
+  FIELDNAM: leftdeflectioncharge
+  LABLAXIS: leftdeflectioncharge
+  UNITS: " "
+
+rightdeflectioncharge:
+  <<: *default_uint8
+  CATDESC: RIGHTDEFLECTIONCHARGE mode
+  FIELDNAM: rightdeflectioncharge
+  LABLAXIS: rightdeflectioncharge
+  UNITS: " "
+
+spare3:
+  <<: *default_uint8
+  CATDESC: Spare
+  FIELDNAM: spare3
+  LABLAXIS: spare3
+  UNITS: " "
+
+event_id:
+  <<: *default_int64
+  CATDESC: Calculated unique event IDs as 64-bit integers.
+  FIELDNAM: event id
+  LABLAXIS: event_id
+  UNITS: " "
+

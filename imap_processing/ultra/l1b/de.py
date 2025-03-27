@@ -52,7 +52,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
 
     # Define epoch and spin.
     de_dict["epoch"] = de_dataset["epoch"].data
-    de_dict["spin"] = de_dataset["SPIN"].data
+    de_dict["spin"] = de_dataset["spin"].data
 
     # Add already populated fields.
     keys = [
@@ -64,23 +64,23 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
         "spin",
     ]
     dataset_keys = [
-        "COIN_TYPE",
-        "START_TYPE",
-        "STOP_TYPE",
-        "SHCOARSE",
-        "PHASE_ANGLE",
-        "SPIN",
+        "coin_type",
+        "start_type",
+        "stop_type",
+        "shcoarse",
+        "phase_angle",
+        "spin",
     ]
 
     de_dict.update(
         {key: de_dataset[dataset_key] for key, dataset_key in zip(keys, dataset_keys)}
     )
 
-    valid_mask = de_dataset["START_TYPE"].data != np.iinfo(np.int64).min
+    valid_mask = de_dataset["start_type"].data != np.iinfo(np.int64).min
     ph_mask = np.isin(
-        de_dataset["STOP_TYPE"].data, [StopType.Top.value, StopType.Bottom.value]
+        de_dataset["stop_type"].data, [StopType.Top.value, StopType.Bottom.value]
     )
-    ssd_mask = np.isin(de_dataset["STOP_TYPE"].data, [StopType.SSD.value])
+    ssd_mask = np.isin(de_dataset["stop_type"].data, [StopType.SSD.value])
 
     valid_indices = np.nonzero(valid_mask)[0]
     ph_indices = np.nonzero(valid_mask & ph_mask)[0]
@@ -108,8 +108,8 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
     spin_period_sec = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
 
     xf[valid_indices] = get_front_x_position(
-        de_dataset["START_TYPE"].data[valid_indices],
-        de_dataset["START_POS_TDC"].data[valid_indices],
+        de_dataset["start_type"].data[valid_indices],
+        de_dataset["start_pos_tdc"].data[valid_indices],
     )
 
     (
@@ -117,8 +117,8 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
         spin_starts[valid_indices],
         spin_period_sec[valid_indices],
     ) = get_eventtimes(
-        de_dataset["SPIN"].data[valid_indices],
-        de_dataset["PHASE_ANGLE"].data[valid_indices],
+        de_dataset["spin"].data[valid_indices],
+        de_dataset["phase_angle"].data[valid_indices],
     )
 
     # Pulse height
@@ -126,11 +126,11 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
         get_ph_tof_and_back_positions(de_dataset, xf, f"ultra{sensor}")
     )
     d[ph_indices], yf[ph_indices] = get_front_y_position(
-        de_dataset["START_TYPE"].data[ph_indices], yb[ph_indices]
+        de_dataset["start_type"].data[ph_indices], yb[ph_indices]
     )
     energy[ph_indices] = get_energy_pulse_height(
-        de_dataset["STOP_TYPE"].data[ph_indices],
-        de_dataset["ENERGY_PH"].data[ph_indices],
+        de_dataset["stop_type"].data[ph_indices],
+        de_dataset["energy_ph"].data[ph_indices],
         xb[ph_indices],
         yb[ph_indices],
     )
@@ -159,7 +159,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
     xb[ssd_indices] = np.zeros(len(ssd_indices))
     etof[ssd_indices] = np.zeros(len(ssd_indices))
     d[ssd_indices], yf[ssd_indices] = get_front_y_position(
-        de_dataset["START_TYPE"].data[ssd_indices], yb[ssd_indices]
+        de_dataset["start_type"].data[ssd_indices], yb[ssd_indices]
     )
     energy[ssd_indices] = get_energy_ssd(de_dataset, ssd_number)
     r[ssd_indices] = get_path_length(
