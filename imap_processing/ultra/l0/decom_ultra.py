@@ -84,7 +84,7 @@ def process_ultra_tof(ds: xr.Dataset) -> xr.Dataset:
 
     # Add scalar keys (2D: epoch x sid)
     for key in scalar_keys:
-        dataset[key.upper()] = xr.DataArray(
+        dataset[key] = xr.DataArray(
             decom_data[key],
             dims=["epoch", "sid"],
         )
@@ -213,26 +213,21 @@ def process_ultra_rates(ds: xr.Dataset) -> xr.Dataset:
         Dataset containing the decoded and decompressed data.
     """
     decom_data = defaultdict(list)
-    if (
-        isinstance(ULTRA_RATES.mantissa_bit_length, int)
-        and isinstance(ULTRA_RATES.len_array, int)
-        and isinstance(ULTRA_RATES.block, int)
-        and isinstance(ULTRA_RATES.width, int)
-    ):
-        for fastdata in ds["fastdata_00"]:
-            raw_binary_string = convert_to_binary_string(fastdata.item())
-            decompressed_data = decompress_binary(
-                raw_binary_string,
-                ULTRA_RATES.width,
-                ULTRA_RATES.block,
-                ULTRA_RATES.len_array,
-                ULTRA_RATES.mantissa_bit_length,
-            )
 
-            for index in range(ULTRA_RATES.len_array):
-                decom_data[RATES_KEYS[index]].append(decompressed_data[index])
+    for fastdata in ds["fastdata_00"]:
+        raw_binary_string = convert_to_binary_string(fastdata.item())
+        decompressed_data = decompress_binary(
+            raw_binary_string,
+            ULTRA_RATES.width,
+            ULTRA_RATES.block,
+            ULTRA_RATES.len_array,
+            ULTRA_RATES.mantissa_bit_length,
+        )
 
-        for key, values in decom_data.items():
-            ds[key] = xr.DataArray(np.array(values), dims=["epoch"])
+        for index in range(ULTRA_RATES.len_array):
+            decom_data[RATES_KEYS[index]].append(decompressed_data[index])
+
+    for key, values in decom_data.items():
+        ds[key] = xr.DataArray(np.array(values), dims=["epoch"])
 
     return ds
