@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 from numpy import typing as npt
 
+from imap_processing.utils import packet_file_to_datasets
+
 logger = logging.getLogger(__name__)
 
 
@@ -118,3 +120,15 @@ def interpolate_repoint_data(
     out_df["repoint_in_progress"] = query_met_times < out_df["repoint_end_time"].values
 
     return out_df
+
+
+def group_pointings(data_dict, xtce):
+    datasets_by_apid = packet_file_to_datasets(data_dict, xtce)
+
+    repoint_df = get_repoint_data()
+    repoint_grouped = repoint_df.groupby("repoint_id").agg(
+        repoint_start_time=("repoint_start_time", "first"),
+        repoint_end_time=("repoint_end_time", "last"),
+    )
+
+    return repoint_grouped

@@ -19,7 +19,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_RATES,
     ULTRA_TOF,
 )
-from imap_processing.utils import group_by_apid
+from imap_processing.utils import group_by_apid, packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
 
@@ -263,7 +263,7 @@ def ultra_l1a(
     xtce = str(
         f"{imap_module_directory}/ultra/packet_definitions/" f"ULTRA_SCI_COMBINED.xml"
     )
-
+    group_pointings(packet_file_to_datasets(data_dict, xtce))
     packets = decom.decom_packets(packet_file, xtce)
     grouped_data = group_by_apid(packets)
 

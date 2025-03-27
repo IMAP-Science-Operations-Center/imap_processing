@@ -4,7 +4,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing.spice.repoint import get_repoint_data, interpolate_repoint_data
+from imap_processing.spice.repoint import (
+    get_repoint_data,
+    group_pointings,
+    interpolate_repoint_data,
+)
 
 
 @pytest.fixture()
@@ -109,3 +113,10 @@ def test_interpolate_repoint_data_with_use_fake_fixture(use_fake_repoint_data_fo
             ]
         ),
     )
+
+
+def test_group_pointings():
+    test_data = ultra_l1a(
+        ccsds_path_theta_0, data_version="001", apid=ULTRA_AUX.apid[0]
+    )
+    out_df = group_pointings(query_met_times, repoint_df)
