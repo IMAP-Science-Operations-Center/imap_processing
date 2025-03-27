@@ -236,7 +236,7 @@ def set_spin_cycle(l1a_de: xr.Dataset, l1b_de: xr.Dataset) -> xr.Dataset:
         The L1B DE dataset with the spin cycle added for each direct event.
     """
     counts = l1a_de["de_count"].values
-    # split the esa_steps into ASC groups
+    # split the esa_steps into Aggregated Science Cycle groups
     de_asc_groups = np.split(l1a_de["esa_step"].values, np.cumsum(counts)[:-1])
     spin_cycle = []
     for i, esa_asc_group in enumerate(de_asc_groups):
