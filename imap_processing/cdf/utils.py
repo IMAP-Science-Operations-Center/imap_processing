@@ -147,7 +147,7 @@ def write_cdf(
             extra_cdf_kwargs["istp"] = True  # type: ignore
 
     xarray_to_cdf(dataset, str(file_path), **extra_cdf_kwargs)
-
+    print(file_path)
     return file_path
 
 
