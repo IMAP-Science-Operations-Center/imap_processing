@@ -39,7 +39,7 @@ def process_ultra_tof(ds: xr.Dataset) -> xr.Dataset:
     dataset : xarray.Dataset
         Dataset containing the decoded and decompressed data.
     """
-    scalar_keys = [key for key in ds.data_vars if key != "packetdata"]
+    scalar_keys = [key for key in ds.data_vars if key not in ("packetdata", "sid")]
 
     decom_data: defaultdict[str, list[np.ndarray]] = defaultdict(list)
     decom_data["packetdata"] = []
@@ -75,7 +75,7 @@ def process_ultra_tof(ds: xr.Dataset) -> xr.Dataset:
 
     coords = {
         "epoch": np.array(valid_epoch, dtype=np.uint64),
-        "sid": np.arange(8),
+        "sid": xr.DataArray(np.arange(8), dims=["sid"], name="sid"),
         "row": xr.DataArray(np.arange(54), dims=["row"], name="row"),
         "column": xr.DataArray(np.arange(180), dims=["column"], name="column"),
     }

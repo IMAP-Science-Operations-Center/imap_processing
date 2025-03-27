@@ -26,20 +26,20 @@ def test_tof_decom(decom_test_data, tof_test_path):
     decom_ultra = decom_test_data
     df = pd.read_csv(tof_test_path, index_col="SequenceCount")
 
-    np.testing.assert_array_equal(df.Spin, decom_ultra["SPIN"].values.flatten())
+    np.testing.assert_array_equal(df.Spin, decom_ultra["spin"].values.flatten())
     np.testing.assert_array_equal(
-        df.AbortFlag, decom_ultra["ABORTFLAG"].values.flatten()
+        df.AbortFlag, decom_ultra["abortflag"].values.flatten()
     )
     np.testing.assert_array_equal(
-        df.StartDelay, decom_ultra["STARTDELAY"].values.flatten()
+        df.StartDelay, decom_ultra["startdelay"].values.flatten()
     )
-    assert json.loads(df["P00s"].values[0])[0] == decom_ultra["P00"][0][0]
+    assert json.loads(df["P00s"].values[0])[0] == decom_ultra["p00"][0][0]
 
     for count in df.index.get_level_values("SequenceCount").values:
         df_data = df[df.index.get_level_values("SequenceCount") == count].Images.values[
             0
         ]
-        rows, cols = np.where(decom_ultra["SRC_SEQ_CTR"] == count)
+        rows, cols = np.where(decom_ultra["src_seq_ctr"] == count)
         decom_data = decom_ultra["packetdata"][rows[0]][cols[0]]
         df_data_array = np.array(json.loads(df_data)[0])
 
