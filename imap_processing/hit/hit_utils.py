@@ -225,7 +225,7 @@ def initialize_particle_data_arrays(
     particle: str,
     num_energy_ranges: int,
     epoch_size: int,
-) -> xr.Dataset:
+) -> None:
     """
     Create empty data arrays for a given particle.
 
@@ -262,11 +262,6 @@ def initialize_particle_data_arrays(
 
     epoch_size : int
         Used to define the shape of the data arrays.
-
-    Returns
-    -------
-    dataset : xr.Dataset
-        The dataset with the added empty data arrays.
     """
     dataset[f"{particle}"] = xr.DataArray(
         data=np.zeros((epoch_size, num_energy_ranges), dtype=np.float32),
@@ -289,7 +284,6 @@ def initialize_particle_data_arrays(
         dims=[f"{particle}_energy_mean"],
         name=f"{particle}_energy_mean",
     )
-    return dataset
 
 
 def sum_particle_data(
@@ -416,7 +410,7 @@ def add_summed_particle_data_to_dataset(
         {'energy_min': 1.8, 'energy_max': 2.2, "R2": [1], "R3": [], "R4": []}.
     """
     # Initialize arrays to store summed data and statistical uncertainties
-    dataset_to_update = initialize_particle_data_arrays(
+    initialize_particle_data_arrays(
         dataset_to_update,
         particle,
         len(energy_ranges),

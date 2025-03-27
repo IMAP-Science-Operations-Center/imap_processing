@@ -367,22 +367,20 @@ def test_initialize_particle_data_arrays():
     epoch_size = 10
 
     # Call the function
-    result = initialize_particle_data_arrays(
-        dataset, particle, num_energy_ranges, epoch_size
-    )
+    initialize_particle_data_arrays(dataset, particle, num_energy_ranges, epoch_size)
 
     # Assertions
-    assert f"{particle}" in result.data_vars
-    assert f"{particle}_delta_minus" in result.data_vars
-    assert f"{particle}_delta_plus" in result.data_vars
-    assert f"{particle}_energy_mean" in result.coords
+    assert f"{particle}" in dataset.data_vars
+    assert f"{particle}_delta_minus" in dataset.data_vars
+    assert f"{particle}_delta_plus" in dataset.data_vars
+    assert f"{particle}_energy_mean" in dataset.coords
 
-    assert result[f"{particle}"].shape == (epoch_size, num_energy_ranges)
-    assert result[f"{particle}_delta_minus"].shape == (epoch_size, num_energy_ranges)
-    assert result[f"{particle}_delta_plus"].shape == (epoch_size, num_energy_ranges)
-    assert result[f"{particle}_energy_mean"].shape == (num_energy_ranges,)
+    assert dataset[f"{particle}"].shape == (epoch_size, num_energy_ranges)
+    assert dataset[f"{particle}_delta_minus"].shape == (epoch_size, num_energy_ranges)
+    assert dataset[f"{particle}_delta_plus"].shape == (epoch_size, num_energy_ranges)
+    assert dataset[f"{particle}_energy_mean"].shape == (num_energy_ranges,)
 
-    assert np.all(result[f"{particle}"].values == 0)
-    assert np.all(result[f"{particle}_delta_minus"].values == 0)
-    assert np.all(result[f"{particle}_delta_plus"].values == 0)
-    assert np.all(result[f"{particle}_energy_mean"].values == 0)
+    assert np.all(dataset[f"{particle}"].values == 0)
+    assert np.all(dataset[f"{particle}_delta_minus"].values == 0)
+    assert np.all(dataset[f"{particle}_delta_plus"].values == 0)
+    assert np.all(dataset[f"{particle}_energy_mean"].values == 0)
