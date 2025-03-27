@@ -48,9 +48,9 @@ def test_xarray_tof(ccsds_path_theta_0):
 
     # Spot check metadata data and attributes
     specific_epoch_data = test_data[0].sel(epoch=test_data[0].epoch[0], sid=0)[
-        "PACKETDATA"
+        "packetdata"
     ]
-    assert (specific_epoch_data == test_data[0]["PACKETDATA"][0][0]).all()
+    assert (specific_epoch_data == test_data[0]["packetdata"][0][0]).all()
 
 
 def test_xarray_events(ccsds_path_theta_0):
