@@ -104,12 +104,12 @@ def get_event_id(shcoarse: NDArray) -> NDArray:
 
     Parameters
     ----------
-    shcoarse : numpy.typing.NDArray
+    shcoarse : numpy.ndarray
         SHCOARSE (MET).
 
     Returns
     -------
-    event_ids : numpy.typing.NDArray
+    event_ids : numpy.ndarray
         Ultra events data with calculated unique event IDs as 64-bit integers.
     """
     event_ids = []
