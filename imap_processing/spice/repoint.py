@@ -2,14 +2,15 @@
 
 import logging
 import os
+from collections import defaultdict
 from pathlib import Path
 from typing import Union
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 from numpy import typing as npt
-
-from imap_processing.utils import packet_file_to_datasets
+from numpy.typing import NDArray
 
 logger = logging.getLogger(__name__)
 
@@ -122,13 +123,44 @@ def interpolate_repoint_data(
     return out_df
 
 
-def group_pointings(data_dict, xtce):
-    datasets_by_apid = packet_file_to_datasets(data_dict, xtce)
+def combine_repointings(
+    pointing_sets: list[dict[int, xr.Dataset]], repoint_start: int, repoint_end: int
+) -> dict[NDArray, NDArray]:
+    """
+    Combine pointing sets into a repointing by apid.
 
-    repoint_df = get_repoint_data()
-    repoint_grouped = repoint_df.groupby("repoint_id").agg(
-        repoint_start_time=("repoint_start_time", "first"),
-        repoint_end_time=("repoint_end_time", "last"),
-    )
+    Parameters
+    ----------
+    pointing_sets : list[dict[int, xr.Dataset]]
+        List xarrays in a pointing set.
+    repoint_start : int
+        Start time of the repointing window.
+    repoint_end : int
+        End time of the repointing window.
 
-    return repoint_grouped
+    Returns
+    -------
+    pointings_by_apid : dict[int, xr.Dataset]
+        Combined pointing sets for each apid.
+    """
+    grouped_by_apid: dict[int, list[xr.Dataset]] = defaultdict(list)
+
+    for file_datasets in pointing_sets:
+        for apid, ds in file_datasets.items():
+            grouped_by_apid[apid].append(ds)
+
+    # Combine datasets by APID and filter by time
+    pointings_by_apid: dict[int, xr.Dataset] = {}
+
+    for apid, ds_list in grouped_by_apid.items():
+        combined = xr.concat(ds_list, dim="epoch").sortby("epoch")
+        # Filter to repointing window
+        filtered = combined.where(
+            (combined["shcoarse"] >= repoint_start)
+            & (combined["shcoarse"] <= repoint_end),
+            drop=True,
+        )
+
+        pointings_by_apid[apid] = filtered
+
+    return pointings_by_apid

@@ -3,10 +3,11 @@
 import numpy as np
 import pandas as pd
 import pytest
+import xarray as xr
 
 from imap_processing.spice.repoint import (
+    combine_repointings,
     get_repoint_data,
-    group_pointings,
     interpolate_repoint_data,
 )
 
@@ -75,7 +76,7 @@ def test_interpolate_repoint_data_exceptions(query_times, match_str, fake_repoin
 
 
 def test_interpolate_repoint_data_with_use_fake_fixture(use_fake_repoint_data_for_time):
-    """Test coverage for using use_fake_repoint_data_for_time fixutre."""
+    """Test coverage for using use_fake_repoint_data_for_time fixture."""
     repoint_period = 24 * 60 * 60
     repoint_start_times = np.arange(1000, 1000 + 10 * repoint_period, repoint_period)
     _ = use_fake_repoint_data_for_time(repoint_start_times, repoint_id_start=10)
@@ -115,8 +116,32 @@ def test_interpolate_repoint_data_with_use_fake_fixture(use_fake_repoint_data_fo
     )
 
 
-def test_group_pointings():
-    test_data = ultra_l1a(
-        ccsds_path_theta_0, data_version="001", apid=ULTRA_AUX.apid[0]
+def test_combine_deps_per_repointing(fake_repoint_data):
+    """Tests combine_deps_per_repointing."""
+
+    ds1 = xr.Dataset(
+        data_vars={
+            "shcoarse": ("epoch", np.arange(100, 108)),
+        },
+        coords={"epoch": np.arange(8)},
     )
-    out_df = group_pointings(query_met_times, repoint_df)
+
+    ds2 = xr.Dataset(
+        data_vars={
+            "shcoarse": ("epoch", np.arange(108, 114)),
+        },
+        coords={"epoch": np.arange(6)},
+    )
+
+    pointing_sets = [
+        {896: ds1},
+        {896: ds2},
+    ]
+    repoint_start = 107
+    repoint_end = 111
+
+    dict_ds = combine_repointings(pointing_sets, repoint_start, repoint_end)
+
+    assert dict_ds[896]["shcoarse"].min() >= repoint_start
+    assert dict_ds[896]["shcoarse"].max() <= repoint_end
+    assert len(dict_ds[896]["shcoarse"]) == 5
