@@ -195,32 +195,32 @@ def test_prepare_raw_counts():
     expected[5, 0, phi_bin_12] = 2
 
     # CEM 1, Phi 24 (E3, E4)
-    expected[3, 0, phi_bin_24] = 3
-    expected[7, 0, phi_bin_24] = 4
+    expected[7, 0, phi_bin_24] = 3
+    expected[3, 0, phi_bin_24] = 4
 
     # CEM 1, Phi 36 (E1, E2)
     expected[1, 0, phi_bin_36] = 9
     expected[5, 0, phi_bin_36] = 10
 
     # CEM 1, Phi 48 (E3, E4)
-    expected[3, 0, phi_bin_48] = 11
-    expected[7, 0, phi_bin_48] = 12
+    expected[7, 0, phi_bin_48] = 11
+    expected[3, 0, phi_bin_48] = 12
 
     # CEM 2, Phi 12 (E1, E2)
     expected[1, 1, phi_bin_12] = 5
     expected[5, 1, phi_bin_12] = 6
 
     # CEM 2, Phi 24 (E3, E4)
-    expected[3, 1, phi_bin_24] = 7
-    expected[7, 1, phi_bin_24] = 8
+    expected[7, 1, phi_bin_24] = 7
+    expected[3, 1, phi_bin_24] = 8
 
     # CEM 2, Phi 36 (E1, E2)
     expected[1, 1, phi_bin_36] = 13
     expected[5, 1, phi_bin_36] = 14
 
     # CEM 2, Phi 48 (E3, E4)
-    expected[3, 1, phi_bin_48] = 15
-    expected[7, 1, phi_bin_48] = 16
+    expected[7, 1, phi_bin_48] = 15
+    expected[3, 1, phi_bin_48] = 16
 
     assert np.array_equal(raw_counts, expected)
 
