@@ -15,9 +15,7 @@ Level 0 Processing Code:
     :template: autosummary.rst
     :recursive:
 
-    l0.decom_tools
     l0.decom_ultra
-    l0.ultra_utils
 
 Level 1A Processing Code:
 
@@ -35,15 +33,11 @@ Level 1B Processing Code:
     :template: autosummary.rst
     :recursive:
 
+    l1b.ultra_l1b
     l1b.badtimes
     l1b.cullingmask
     l1b.de
     l1b.extendedspin
-    l1b.lookup_utils
-    l1b.ultra_l1b
-    l1b.ultra_l1b_annotated
-    l1b.ultra_l1b_culling
-    l1b.ultra_l1b_extended
 
 Level 1C Processing Code:
 
@@ -52,7 +46,6 @@ Level 1C Processing Code:
     :template: autosummary.rst
     :recursive:
 
+    l1c.ultra_l1c
     l1c.histogram
     l1c.spacecraft_pset
-    l1c.ultra_l1c
-    l1c.ultra_l1c_pset_bins
