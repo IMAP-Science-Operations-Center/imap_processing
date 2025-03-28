@@ -412,7 +412,7 @@ def interpolate_gaps(
         burst_buffer = int(required_seconds * burst_rate.value)
 
         burst_start = max(0, burst_start - burst_buffer)
-        burst_end = min(len(burst_epochs), burst_end + burst_buffer)
+        burst_end = min(len(burst_epochs) - 1, burst_end + burst_buffer) + 1
 
         gap_timeline = filled_norm_timeline[
             np.nonzero(
