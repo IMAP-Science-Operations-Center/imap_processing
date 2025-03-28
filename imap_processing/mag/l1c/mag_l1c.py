@@ -421,6 +421,17 @@ def interpolate_gaps(
                 (filled_norm_timeline > gap[0]) & (filled_norm_timeline < gap[1])
             )
         ]
+        print(gap_timeline)
+
+        # Limit timestamps to only include the areas with burst data
+        gap_timeline = gap_timeline[
+            np.nonzero(
+                (gap_timeline >= burst_epochs[burst_start])
+                & (gap_timeline <= burst_epochs[burst_gap_end])
+            )
+        ]
+        print(f"Epoch timeline: {burst_epochs}")
+        print(gap_timeline)
         # do not include range
         gap_fill = interpolation_function(
             burst_vectors[burst_start:burst_end, :3],

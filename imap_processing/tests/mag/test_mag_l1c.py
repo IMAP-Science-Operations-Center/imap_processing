@@ -135,15 +135,18 @@ def test_process_mag_l1c(norm_dataset, burst_dataset):
         * 1e9
     )
     assert np.array_equal(l1c[:, 0], expected_output_timeline)
-    # Every new timestamp should have data
+    # Last new timestamp is missing data because burst mode only goes to 5.15
+    # Don't generate data if there's no burst data to interpolate
     assert (
         np.count_nonzero([np.sum(l1c[i, 1:4]) for i in range(l1c.shape[0])])
-        == l1c.shape[0]
+        == l1c.shape[0] - 1
     )
     expected_flags = np.zeros(15)
     # filled sections should have 1 as a flag
     expected_flags[5:8] = 1
-    expected_flags[10:12] = 1
+    expected_flags[10:11] = 1
+    # last datapoint in the gap is missing a value
+    expected_flags[11] = -1
     assert np.array_equal(l1c[:, 5], expected_flags)
     assert np.array_equal(l1c[:5, 1:5], norm_dataset["vectors"].data[:5, :])
     for i in range(5, 8):
@@ -156,7 +159,7 @@ def test_process_mag_l1c(norm_dataset, burst_dataset):
         assert np.allclose(l1c[i, 1:5], burst_vectors, rtol=0, atol=1)
 
     assert np.array_equal(l1c[8:10, 1:5], norm_dataset["vectors"].data[5:7, :])
-    for i in range(10, 12):
+    for i in range(10, 11):
         e = l1c[i, 0]
         burst_vectors = burst_dataset.sel(epoch=int(e), method="nearest")[
             "vectors"
@@ -164,6 +167,8 @@ def test_process_mag_l1c(norm_dataset, burst_dataset):
         # We're just finding the closest burst values to the array, so they won't be
         # identical.
         assert np.allclose(l1c[i, 1:5], burst_vectors, rtol=0, atol=1)
+
+    assert np.array_equal(l1c[11, 1:5], [0, 0, 0, 0])
 
 
 def test_interpolate_gaps(norm_dataset, mag_l1b_dataset):
