@@ -391,8 +391,8 @@ def interpolate_gaps(
 
     for gap in gaps:
         # TODO: we might need a few inputs before or after start/end
-        burst_start = (np.abs(burst_epochs - gap[0])).argmin()
-        burst_end = (np.abs(burst_epochs - gap[1])).argmin()
+        burst_gap_start = (np.abs(burst_epochs - gap[0])).argmin()
+        burst_gap_end = (np.abs(burst_epochs - gap[1])).argmin()
 
         # for the CIC filter, we need 2x normal mode cadence seconds
 
@@ -402,7 +402,9 @@ def interpolate_gaps(
         # Find where burst_start is after the start of the timeline
         burst_vecsec_index = (
             np.searchsorted(
-                list(burst_vecsec_dict.keys()), burst_epochs[burst_start], side="right"
+                list(burst_vecsec_dict.keys()),
+                burst_epochs[burst_gap_start],
+                side="right",
             )
             - 1
         )
@@ -411,8 +413,8 @@ def interpolate_gaps(
         required_seconds = (1 / norm_rate.value) * 2
         burst_buffer = int(required_seconds * burst_rate.value)
 
-        burst_start = max(0, burst_start - burst_buffer)
-        burst_end = min(len(burst_epochs) - 1, burst_end + burst_buffer) + 1
+        burst_start = max(0, burst_gap_start - burst_buffer)
+        burst_end = min(len(burst_epochs) - 1, burst_gap_end + burst_buffer)
 
         gap_timeline = filled_norm_timeline[
             np.nonzero(
@@ -431,15 +433,18 @@ def interpolate_gaps(
         # gaps should not have data in timeline, still check it
         for index, timestamp in enumerate(gap_timeline):
             timeline_index = np.searchsorted(filled_norm_timeline[:, 0], timestamp)
-            if sum(filled_norm_timeline[timeline_index, 1:4]) == 0:
+            if sum(
+                filled_norm_timeline[timeline_index, 1:4]
+            ) == 0 and burst_gap_start + index < len(burst_vectors):
                 filled_norm_timeline[timeline_index, 1:4] = gap_fill[index]
+
                 filled_norm_timeline[timeline_index, 4] = burst_vectors[
-                    burst_start + index, 3
+                    burst_gap_start + index, 3
                 ]
                 filled_norm_timeline[timeline_index, 5] = ModeFlags.BURST.value
                 filled_norm_timeline[timeline_index, 6:8] = burst_dataset[
                     "compression_flags"
-                ].data[burst_start + index]
+                ].data[burst_gap_start + index]
 
     return filled_norm_timeline
 
