@@ -69,16 +69,18 @@ def mag_l1c(
 
     interp_function = InterpolationFunction[configuration["L1C_interpolation_method"]]
     if normal_mode_dataset and burst_mode_dataset:
-        completed_timeline = process_mag_l1c(
+        full_interpolated_timeline = process_mag_l1c(
             normal_mode_dataset, burst_mode_dataset, interp_function
         )
     elif normal_mode_dataset is not None:
-        completed_timeline = fill_normal_data(
+        full_interpolated_timeline = fill_normal_data(
             normal_mode_dataset, normal_mode_dataset["epoch"].data
         )
     else:
         # TODO: With only burst data, downsample by retrieving the timeline
         raise NotImplementedError
+
+    completed_timeline = remove_missing_data(full_interpolated_timeline)
 
     attribute_manager = ImapCdfAttributes()
     attribute_manager.add_instrument_global_attrs("mag")
@@ -417,21 +419,24 @@ def interpolate_gaps(
         burst_end = min(len(burst_epochs) - 1, burst_gap_end + burst_buffer)
 
         gap_timeline = filled_norm_timeline[
-            np.nonzero(
-                (filled_norm_timeline > gap[0]) & (filled_norm_timeline < gap[1])
-            )
+            (filled_norm_timeline > gap[0]) & (filled_norm_timeline < gap[1])
         ]
-        print(gap_timeline)
-
+        print(
+            f"difference between gap start and burst start: "
+            f"{gap_timeline[0] - burst_epochs[burst_start]}"
+        )
+        short = (gap_timeline >= burst_epochs[burst_start]) & (
+            gap_timeline <= burst_epochs[burst_gap_end]
+        )
+        if len(gap_timeline) != (short).sum():
+            print(f"Chopping timeline from {len(gap_timeline)} to {short.sum()}")
         # Limit timestamps to only include the areas with burst data
         gap_timeline = gap_timeline[
-            np.nonzero(
+            (
                 (gap_timeline >= burst_epochs[burst_start])
                 & (gap_timeline <= burst_epochs[burst_gap_end])
             )
         ]
-        print(f"Epoch timeline: {burst_epochs}")
-        print(gap_timeline)
         # do not include range
         gap_fill = interpolation_function(
             burst_vectors[burst_start:burst_end, :3],
@@ -645,3 +650,24 @@ def vectors_per_second_from_string(vecsec_string: str) -> dict:
         vecsec_dict[int(start_time)] = int(vecsec)
 
     return vecsec_dict
+
+
+def remove_missing_data(filled_timeline: np.ndarray) -> np.ndarray:
+    """
+    Remove timestamps with no data from the filled timeline.
+
+    Anywhere that the generated flag is equal to -1, the data will be removed.
+
+    Parameters
+    ----------
+    filled_timeline : np.ndarray
+        An (n, 8) shaped array containing the filled timeline.
+        Indices: 0 - epoch, 1-4 - vector x, y, z, and range, 5 - generated flag,
+        6-7 - compression flags.
+
+    Returns
+    -------
+    np.ndarray
+        The filled timeline with missing data removed.
+    """
+    return filled_timeline[filled_timeline[:, 5] != -1]
