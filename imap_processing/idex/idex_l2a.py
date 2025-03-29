@@ -31,7 +31,6 @@ from scipy.stats import exponnorm
 
 from imap_processing import imap_module_directory
 from imap_processing.idex import idex_constants
-from imap_processing.idex.idex_constants import ConversionFactors
 from imap_processing.idex.idex_l1a import get_idex_attrs
 
 logger = logging.getLogger(__name__)
@@ -127,13 +126,11 @@ def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
     l2a_dataset = l1b_dataset.copy()
 
     for waveform in ["Target_Low", "Target_High", "Ion_Grid"]:
-        # Convert back to raw DNs for more accurate fits
-        waveform_dn = l1b_dataset[waveform] / ConversionFactors[waveform]
         # Get the dust mass estimates and fit results
         fit_results = xr.apply_ufunc(
             estimate_dust_mass,
             ls_time,
-            waveform_dn,
+            l1b_dataset[waveform],
             input_core_dims=[
                 ["time_low_sample_rate_index"],
                 ["time_low_sample_rate_index"],
