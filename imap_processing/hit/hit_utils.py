@@ -390,71 +390,7 @@ def add_energy_variables(
         dims=[f"{particle}_energy_mean"],
         name=f"{particle}_energy_delta_plus",
     )
-
     return updated_ds
-
-
-# def add_summed_particle_data_to_dataset(
-#     dataset_to_update: xr.Dataset,
-#     source_dataset: xr.Dataset,
-#     particle: str,
-#     energy_ranges: list,
-# ) -> None:
-#     """
-#     Add summed particle data to the dataset.
-#
-#     This function performs the following steps:
-#       1) sum data (raw counts or rates, including statistical uncertainties),
-#          from the l2fgrates, l3fgrates, and penfgrates data variables in the source
-#          dataset (i.e. l1a counts dataset or l1b standard rates dataset).
-#       2) add the summed data to the dataset to update (i.e. L1B summed rates dataset
-#          or L2 standard intensity dataset) by particle type and energy range.
-#
-#     Parameters
-#     ----------
-#     dataset_to_update : xr.Dataset
-#         The dataset to add the rates to.
-#     source_dataset : xr.Dataset
-#         The dataset containing data to sum (counts or rates).
-#     particle : str
-#         The particle name.
-#     energy_ranges : list
-#         A list of energy range dictionaries for the particle.
-#         For example:
-#         {'energy_min': 1.8, 'energy_max': 2.2, "R2": [1], "R3": [], "R4": []}.
-#     """
-#     # Initialize arrays to store summed data and statistical uncertainties
-#     initialize_particle_data_arrays(
-#         dataset_to_update,
-#         particle,
-#         len(energy_ranges),
-#         source_dataset.sizes["epoch"],
-#     )
-#
-#     # initialize arrays to store energy min and max values
-#     energy_min = np.zeros(len(energy_ranges), dtype=np.float32)
-#     energy_max = np.zeros(len(energy_ranges), dtype=np.float32)
-#
-#     # Sum particle data and statistical uncertainties for each energy range
-#     # and add them to the dataset
-#     for i, energy_range_dict in enumerate(energy_ranges):
-#         summed_data, summed_data_delta_minus, summed_data_delta_plus = (
-#             sum_particle_data(source_dataset, energy_range_dict)
-#         )
-#
-#         dataset_to_update[f"{particle}"][:, i] = summed_data.astype(np.float32)
-#         dataset_to_update[f"{particle}_delta_minus"][:, i] = (
-#             summed_data_delta_minus.astype(np.float32)
-#         )
-#         dataset_to_update[f"{particle}_delta_plus"][:, i] = (
-#             summed_data_delta_plus.astype(np.float32)
-#         )
-#
-#         # Fill energy min and max values for each energy range
-#         energy_min[i] = energy_range_dict["energy_min"]
-#         energy_max[i] = energy_range_dict["energy_max"]
-#
-#     add_energy_variables(dataset_to_update, particle, energy_min, energy_max)
 
 
 def add_summed_particle_data_to_dataset(
@@ -511,4 +447,4 @@ def add_summed_particle_data_to_dataset(
     # Add energy variables
     ds = add_energy_variables(ds, particle, energy_min, energy_max)
 
-    return ds  # Return the fully updated dataset
+    return ds

@@ -14,6 +14,7 @@ from imap_processing.hit.hit_utils import (
     process_housekeeping_data,
 )
 from imap_processing.hit.l1b.constants import (
+    FILLVAL,
     LIVESTIM_PULSES,
     SUMMED_PARTICLE_ENERGY_RANGE_MAPPING,
 )
@@ -299,7 +300,7 @@ def process_summed_rates_data(
     xr.Dataset
         The processed L1B summed rates dataset.
     """
-    # Create a new dataset to store the L1B standard rates
+    # Create a new dataset to store the L1B summed rates
     l1b_summed_rates_dataset = xr.Dataset()
 
     # Assign the epoch coordinate from the L1A dataset
@@ -329,3 +330,119 @@ def process_summed_rates_data(
         )
 
     return l1b_summed_rates_dataset
+
+
+def process_sectored_rates_data(
+    l1a_counts_dataset: xr.Dataset, livetime: xr.DataArray
+) -> xr.Dataset:
+    """
+    Will process L1B sectored rates data from L1A raw counts data.
+
+    To calculate sectored rates, the sectored counts from 10 species and energy
+    ranges need to be divided by livetime.
+
+    A complete set of sectored counts is taken over 10 science frames (10 minutes)
+    where each science frame contains counts for one species and energy range.
+
+    Species and energy ranges are as follows:
+
+        H      1.8 - 3.6 MeV, 4.0 - 6.0 MeV, 6.0 - 10 MeV
+        4He    4.0 - 6.0 MeV, 6.0 - 12.0 MeV
+        CNO    4.0 - 6.0 MeV, 6.0 - 12.0 MeV
+        NeMgSi 4.0 - 6.0 MeV, 6.0 - 12.0 MeV
+        Fe     4.0 - 12.0 MeV
+
+    The counts from 10 science frames need to be divided by the sum of livetime values
+    from the previous 10 science frames. The reason for using the previous 10 livetime
+    values is because the sectored counts data is transmitted 10 minutes after they are
+    collected, so the corresponding livetime values are in the previous 10 minutes.
+
+    Parameters
+    ----------
+    l1a_counts_dataset : xr.Dataset
+        The L1A counts dataset.
+
+    livetime : xr.DataArray
+        1D array of livetime values calculated from the livetime counter.
+        Shape equals the number of epochs in the dataset.
+
+    Returns
+    -------
+    xr.Dataset
+        The processed L1B sectored rates dataset.
+    """
+    # TODO
+    #  -test data doesn't start at hydrogen. It starts are he4, energy index 1.
+    #  validation data has zeros for all the sector rates so validation won't be useful
+    #  Request new test and sample data and update this function accordingly.
+    #  -Rename variables to match the CDF definitions (declination, azimuth, etc.)
+    #  -Add grouping of major frames
+    #     -drop incomplete frames
+    #     -keep frames with epoch values that are in the day being processed
+    #  -Select livetime staggered by 10 minutes
+
+    # Create a new dataset to store the L1B sectored rates
+    l1b_sectored_rates_dataset = xr.Dataset()
+
+    # Assign relevant coordinates from the l1A raw counts dataset
+    coords = [
+        "epoch",
+        "declination",
+        "azimuth",
+        "h_energy_mean",
+        "he4_energy_mean",
+        "cno_energy_mean",
+        "nemgsi_energy_mean",
+        "fe_energy_mean",
+    ]
+    l1b_sectored_rates_dataset = l1b_sectored_rates_dataset.assign_coords(
+        {coord: l1a_counts_dataset.coords[coord] for coord in coords}
+    )
+
+    # Add relevant data variables from the L1A raw counts dataset
+    data_vars = [
+        "h_energy_delta_plus",
+        "h_energy_delta_minus",
+        "he4_energy_delta_plus",
+        "he4_energy_delta_minus",
+        "cno_energy_delta_plus",
+        "cno_energy_delta_minus",
+        "nemgsi_energy_delta_plus",
+        "nemgsi_energy_delta_minus",
+        "fe_energy_delta_plus",
+        "fe_energy_delta_minus",
+    ] + [var for var in l1a_counts_dataset.data_vars if "sectored_counts" in var]
+
+    l1b_sectored_rates_dataset = l1b_sectored_rates_dataset.assign(
+        {var: l1a_counts_dataset[var] for var in data_vars}
+    )
+
+    # Add and rename dynamic threshold variable from L1A raw counts dataset
+    l1b_sectored_rates_dataset["dynamic_threshold_state"] = l1a_counts_dataset[
+        "hdr_dynamic_threshold_state"
+    ]
+    l1b_sectored_rates_dataset["dynamic_threshold_state"].attrs = l1a_counts_dataset[
+        "hdr_dynamic_threshold_state"
+    ].attrs
+
+    # Sum the livetime values in chunks of 10 to get livetime over 10 minutes.
+    # These will be used to calculate the sectored rates.
+    livetime_10min = xr.DataArray(
+        data=[
+            livetime[i : i + 10].sum().item() for i in range(0, len(livetime) - 9, 10)
+        ],
+        name="livetime_10",
+    )
+
+    # Divide the counts by livetime_10min by grouping the data into bins of size 10
+    # based on the "epoch" coordinate and apply a lambda function to each group
+    # that divides the counts by livetime_10min while skipping fill values.
+    for var in l1b_sectored_rates_dataset.data_vars:
+        if "sectored_counts" in var:
+            l1b_sectored_rates_dataset[var] = (
+                l1b_sectored_rates_dataset[var]
+                .groupby_bins("epoch", bins=len(livetime_10min))
+                .map(lambda x: (x / livetime_10min).where(x != FILLVAL).fillna(FILLVAL))
+            )
+
+    return l1b_sectored_rates_dataset

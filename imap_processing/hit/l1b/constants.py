@@ -4,6 +4,9 @@
 # This is used to calculate the fractional livetime
 LIVESTIM_PULSES = 270
 
+# Fill value for missing data (float32)
+FILLVAL = -1.00e31
+
 # For the L1B summed rates product, counts are summed by particle type,
 # energy range, and detector penetration range (Range 2, Range 3, and Range 4).
 # See section 6.2 of the algorithm document for more details.
