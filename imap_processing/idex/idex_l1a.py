@@ -110,36 +110,28 @@ class PacketParser:
             np.arange(len(self.data["time_low_sample_rate"][0])),
             name="time_low_sample_rate_index",
             dims=["time_low_sample_rate_index"],
-            attrs=idex_attrs.get_variable_attributes(
-                "time_low_sample_rate_index", check_schema=False
-            ),
+            attrs=idex_attrs.get_variable_attributes("time_low_sample_rate_index"),
         )
 
         self.data["time_high_sample_rate_index"] = xr.DataArray(
             np.arange(len(self.data["time_high_sample_rate"][0])),
             name="time_high_sample_rate_index",
             dims=["time_high_sample_rate_index"],
-            attrs=idex_attrs.get_variable_attributes(
-                "time_high_sample_rate_index", check_schema=False
-            ),
+            attrs=idex_attrs.get_variable_attributes("time_high_sample_rate_index"),
         )
         # NOTE: LABL_PTR_1 should be CDF_CHAR.
         self.data["time_low_sample_rate_label"] = xr.DataArray(
             self.data.time_low_sample_rate_index.values.astype(str),
             name="time_low_sample_rate_label",
             dims=["time_low_sample_rate_index"],
-            attrs=idex_attrs.get_variable_attributes(
-                "time_low_sample_rate_label", check_schema=False
-            ),
+            attrs=idex_attrs.get_variable_attributes("time_low_sample_rate_label"),
         )
 
         self.data["time_high_sample_rate_label"] = xr.DataArray(
             self.data.time_high_sample_rate_index.values.astype(str),
             name="time_high_sample_rate_label",
             dims=["time_high_sample_rate_index"],
-            attrs=idex_attrs.get_variable_attributes(
-                "time_high_sample_rate_label", check_schema=False
-            ),
+            attrs=idex_attrs.get_variable_attributes("time_high_sample_rate_label"),
         )
 
         logger.info("IDEX L1A science data processing completed.")
@@ -623,7 +615,7 @@ class RawDustEvent:
             name="epoch",
             data=[self.impact_time],
             dims=("epoch"),
-            attrs=idex_attrs.get_variable_attributes("epoch", check_schema=False),
+            attrs=idex_attrs.get_variable_attributes("epoch"),
         )
 
         time_low_sample_rate = xr.DataArray(
