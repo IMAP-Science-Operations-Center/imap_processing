@@ -14,8 +14,8 @@ from imap_processing.hit.hit_utils import (
     process_housekeeping_data,
 )
 from imap_processing.hit.l1b.constants import (
+    LIVESTIM_PULSES,
     SUMMED_PARTICLE_ENERGY_RANGE_MAPPING,
-    livestim_pulses,
 )
 
 logger = logging.getLogger(__name__)
@@ -107,7 +107,7 @@ def process_science_data(
     #  Process sectored rates dataset
 
     # Calculate fractional livetime from the livetime counter
-    livetime = l1a_counts_dataset["livetime_counter"] / livestim_pulses
+    livetime = l1a_counts_dataset["livetime_counter"] / LIVESTIM_PULSES
 
     # Create a standard rates dataset
     standard_rates_dataset = process_standard_rates_data(l1a_counts_dataset, livetime)
