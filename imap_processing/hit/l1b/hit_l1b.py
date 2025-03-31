@@ -317,7 +317,7 @@ def process_summed_rates_data(
 
     for particle, energy_ranges in SUMMED_PARTICLE_ENERGY_RANGE_MAPPING.items():
         # Sum counts for each energy range and add to dataset
-        add_summed_particle_data_to_dataset(
+        l1b_summed_rates_dataset = add_summed_particle_data_to_dataset(
             l1b_summed_rates_dataset,
             l1a_counts_dataset,
             particle,

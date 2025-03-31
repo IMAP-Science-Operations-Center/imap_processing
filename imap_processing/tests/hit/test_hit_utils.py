@@ -252,7 +252,7 @@ def test_add_energy_variables():
     energy_mean = np.mean([energy_min, energy_max], axis=0)
 
     # Call the function
-    add_energy_variables(dataset, particle, energy_min, energy_max)
+    dataset = add_energy_variables(dataset, particle, energy_min, energy_max)
 
     # Assertions
     assert f"{particle}_energy_delta_minus" in dataset.data_vars
@@ -325,7 +325,7 @@ def test_add_summed_particle_data_to_dataset(sample_dataset):
     ]
 
     # Call the function
-    add_summed_particle_data_to_dataset(
+    dataset_to_update = add_summed_particle_data_to_dataset(
         dataset_to_update, source_dataset, particle, energy_ranges
     )
 
@@ -367,7 +367,9 @@ def test_initialize_particle_data_arrays():
     epoch_size = 10
 
     # Call the function
-    initialize_particle_data_arrays(dataset, particle, num_energy_ranges, epoch_size)
+    dataset = initialize_particle_data_arrays(
+        dataset, particle, num_energy_ranges, epoch_size
+    )
 
     # Assertions
     assert f"{particle}" in dataset.data_vars

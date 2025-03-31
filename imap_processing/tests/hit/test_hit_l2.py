@@ -212,7 +212,9 @@ def test_calculate_intensities_for_all_species():
     )
 
     # Call the function
-    calculate_intensities_for_all_species(l2_dataset, ancillary_data_frames)
+    l2_dataset = calculate_intensities_for_all_species(
+        l2_dataset, ancillary_data_frames
+    )
 
     # Assertions
     assert np.allclose(
@@ -276,7 +278,7 @@ def test_calculate_intensities_for_a_species():
     )
 
     # Call the function
-    calculate_intensities_for_a_species(
+    l2_dataset = calculate_intensities_for_a_species(
         species_variable, l2_dataset, ancillary_data_frames
     )
 
@@ -323,7 +325,7 @@ def test_add_systematic_uncertainties():
     dataset = xr.Dataset()
 
     # Call the function
-    add_systematic_uncertainties(dataset, particle, len(energy_ranges))
+    dataset = add_systematic_uncertainties(dataset, particle, len(energy_ranges))
 
     # Assertions
     assert f"{particle}_sys_delta_minus" in dataset.data_vars
