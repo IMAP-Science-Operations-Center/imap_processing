@@ -168,7 +168,7 @@ def test_data_paths():
             imap_module_directory
             / "tests"
             / "idex"
-            / "test_data "
+            / "test_data"
             / "idex_l1b_validation_file.h5",
         ),
         (
