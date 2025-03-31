@@ -254,10 +254,6 @@ def test_validate_l1b_idex_data_variables(
     Verify that each of the 6 waveform and telemetry arrays are equal to the
     corresponding array produced by the IDEX team using the same l0 file.
 
-    The comparison is limited to `num_events` because the L1B example contains fewer
-    events (due to file size requirements) than the SCD dataset.
-
-
     Parameters
     ----------
     l1b_dataset : xarray.Dataset
@@ -287,7 +283,7 @@ def test_validate_l1b_idex_data_variables(
     # The Engineering data is converting to UTC, and the SDC is converting to J2000,
     # for 'epoch' and 'Timestamp' so this test is using the raw time value 'SCHOARSE' to
     # validate time
-    # TODO remove schoarse and list
+    # SPICE data is mocked.
     arrays_to_skip = [
         "Timestamp",
         "Epoch",
@@ -306,11 +302,8 @@ def test_validate_l1b_idex_data_variables(
     # Compare each corresponding variable
     for var in l1b_example_data.data_vars:
         if var not in arrays_to_skip:
-            # Find the corresponding array name
-            if var in match_variables.keys():
-                cdf_var = match_variables[var]
-            else:
-                cdf_var = var.lower().replace(".", "p")
+            # Get the corresponding array name
+            cdf_var = match_variables.get(var, var.lower().replace(".", "p"))
 
             warning = (
                 f"The array '{cdf_var}' does not equal the expected example array "
@@ -323,8 +316,11 @@ def test_validate_l1b_idex_data_variables(
                 ).all(), warning
 
             else:
-                assert np.allclose(
-                    l1b_dataset[cdf_var].data,
-                    l1b_example_data[var],
-                    rtol=1e-04,
-                ), warning
+                (
+                    np.testing.assert_array_almost_equal(
+                        l1b_dataset[cdf_var].data,
+                        l1b_example_data[var],
+                        decimal=1e-04,
+                    ),
+                    warning,
+                )
