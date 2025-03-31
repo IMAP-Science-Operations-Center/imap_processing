@@ -16,6 +16,11 @@ def get_repoint_data() -> pd.DataFrame:
     """
     Read repointing file using environment variable and return as dataframe.
 
+    Pointing and repointing nomenclature can be confusing. In this case,
+    repoint is taken to mean a repoint maneuver. Thus, repoint_start and repoint_end
+    are the times that bound when the spacecraft is performing a repointing maneuver.
+    This is different from a pointing which is the time between repointing maneuvers.
+
     REPOINT_DATA_FILEPATH environment variable should point to a local
     file where the repointing csv file is located.
 
@@ -26,10 +31,12 @@ def get_repoint_data() -> pd.DataFrame:
         contain the following columns:
             - `repoint_start_sec`: Starting MET seconds of repoint maneuver.
             - `repoint_start_subsec`: Starting MET milliseconds of repoint maneuver.
-            - `repoint_start_met`: Starting MET time of repoint maneuver.
+            - `repoint_start_met`: Floating point MET of repoint maneuver start time.
+            Derived by combining `repoint_start_sec` and `repoint_start_subsec`.
             - `repoint_end_sec`: Ending MET seconds of repoint maneuver.
             - `repoint_end_subsec`: Ending MET milliseconds of repoint maneuver.
-            - `repoint_end_met`: Ending MET time of repoint maneuver.
+            - `repoint_end_met`: Floating point MET of repoint maneuver end time.
+            Derived by combining `repoint_end_sec` and `repoint_end_subsec`.
             - `repoint_id`: Unique ID number of each repoint maneuver.
     """
     repoint_data_filepath = os.getenv("REPOINT_DATA_FILEPATH")
