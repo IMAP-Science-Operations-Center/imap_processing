@@ -1,0 +1,143 @@
+"""
+Perform IDEX L2b Processing.
+
+Examples
+--------
+.. code-block:: python
+
+    from imap_processing.idex.idex_l1a import PacketParser
+    from imap_processing.idex.idex_l1b import idex_l1b
+    from imap_processing.idex.idex_l1b import idex_l2a
+    from imap_processing.idex.idex_l1b import idex_l2b
+
+    l0_file = "imap_processing/tests/idex/imap_idex_l0_sci_20231214_v001.pkts"
+    l1a_data = PacketParser(l0_file, data_version)
+    l1b_data = idex_l1b(l1a_data, data_version)
+    l1a_data = idex_l2a(l1b_data, data_version)
+    l2b_data = idex_l2b(l2a_data, data_version)
+    write_cdf(l2b_data)
+"""
+
+import logging
+from datetime import datetime
+
+import numpy as np
+import xarray as xr
+
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.spice.time import et_to_utc, ttj2000ns_to_et
+
+logger = logging.getLogger(__name__)
+
+
+def idex_l2b(l2a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+    """
+    Will process IDEX l2a data to create l2b data products.
+
+    Parameters
+    ----------
+    l2a_dataset : xarray.Dataset
+        IDEX L2a dataset to process.
+    data_version : str
+        Version of the data product being created.
+
+    Returns
+    -------
+    l2b_dataset : xarray.Dataset
+        The``xarray`` dataset containing the science data and supporting metadata.
+    """
+    logger.info(
+        f"Running IDEX L1B processing on dataset: {l2a_dataset.attrs['Logical_source']}"
+    )
+
+    # create the attribute manager for this data level
+    idex_attrs = ImapCdfAttributes()
+    idex_attrs.add_instrument_global_attrs(instrument="idex")
+    idex_attrs.add_global_attribute("Data_version", data_version)
+
+    epoch_da = xr.DataArray(
+        l2a_dataset["epoch"],
+        name="epoch",
+        dims=["epoch"],
+        attrs=idex_attrs.get_variable_attributes("epoch"),
+    )
+
+    target_waveforms = ["target_high", "target_low", "ion_grid"]
+    arrays_to_copy = []
+    for waveform in target_waveforms:
+        arrays_to_copy.append(f"{waveform}_fit_impact_mass_estimate")
+        arrays_to_copy.append(f"{waveform}_fit_impact_charge")
+
+    # Create l2b Dataset
+    l2b_dataset = xr.Dataset(
+        coords={"epoch": epoch_da},
+        attrs=idex_attrs.get_global_attributes("imap_idex_l2b_sci"),
+    )
+    # Copy arrays to l2b dataset
+    for array in arrays_to_copy:
+        l2b_dataset[array] = l2a_dataset[array].copy(deep=True)
+
+    spin_phase_quadrants = round_spin_phases(l2a_dataset["spin_phase"])
+    # TODO add variable attributes
+    l2b_dataset["spin_phase_quadrants"] = spin_phase_quadrants
+
+    # Get the time of impact array (in day of year)
+    impact_day_of_year = epoch_to_doy(epoch_da)
+    l2b_dataset["impact_day_of_year"] = xr.DataArray(
+        name="impact_day_of_year",
+        data=impact_day_of_year,
+        dims="epoch",
+        # attrs=idex_attrs.get_variable_attributes("impact_day_of_year"),
+    )
+
+    logger.info("IDEX L2B science data processing completed.")
+
+    return l2b_dataset
+
+
+def round_spin_phases(spin_phases: xr.DataArray) -> xr.DataArray:
+    """
+    Round spin phase angles to the nearest quadrant (0, 90, 180, 270).
+
+    Parameters
+    ----------
+    spin_phases : xr.DataArray
+        Spacecraft spin phase angles. Expected to be integers in the range [0, 360).
+
+    Returns
+    -------
+    xr.DataArray
+        Spin phases rounded to the nearest quadrant.
+    """
+    if np.any(spin_phases < 0) or np.any(spin_phases >= 360):
+        logger.warning(
+            f"Spin phase angles, {spin_phases.data} are outside of the expected spin "
+            f"phase angle range, [0, 360)."
+        )
+    quadrant_size = 90
+    # Calculate nearest quadrant value.
+    # Use mod to wrap values > 315 to 0.
+    return (quadrant_size * np.round(spin_phases / quadrant_size)) % 360
+
+
+def epoch_to_doy(epoch: xr.DataArray) -> np.ndarray:
+    """
+    Convert epoch times to day of year (1-365/366).
+
+    Parameters
+    ----------
+    epoch : xr.DataArray
+        Time, number of nanoseconds since J2000 with leap seconds included.
+
+    Returns
+    -------
+    day_of_year : numpy.ndarray
+        Day of year (1-365/366) for each epoch value.
+    """
+    et = ttj2000ns_to_et(epoch.data)
+    # Get UTC time strings in ISO calendar format
+    time_strings = et_to_utc(et, "ISOC")
+    # Extract DOY from datetime
+    return np.ndarray(
+        [datetime.fromisoformat(date).timetuple().tm_yday for date in time_strings]
+    )

@@ -26,3 +26,10 @@ imap_idex_l2a_sci:
   Data_type: L2A_SCI>Level-2A Science Data
   Logical_source: imap_idex_l2a_sci-1week
   Logical_source_description: IMAP Mission IDEX Instrument Level-2A Data
+
+imap_idex_l2b_sci:
+  <<: *instrument_base
+  Data_level: 2B
+  Data_type: L2B_SCI>Level-2B Science Data
+  Logical_source: imap_idex_l2b_sci # TODO how often?
+  Logical_source_description: IMAP Mission IDEX Instrument Level-2B Data

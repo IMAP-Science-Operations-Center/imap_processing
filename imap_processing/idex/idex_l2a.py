@@ -152,9 +152,9 @@ def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         waveform_name = waveform.lower()
         # Add variables
         l2a_dataset[f"{waveform_name}_fit_parameters"] = fit_results[0]
-        l2a_dataset[f"{waveform_name}_fit_imapct_charge"] = fit_results[1]
+        l2a_dataset[f"{waveform_name}_fit_impact_charge"] = fit_results[1]
         # TODO: convert charge to mass
-        l2a_dataset[f"{waveform_name}_fit_imapct_mass_estimate"] = fit_results[1]
+        l2a_dataset[f"{waveform_name}_fit_impact_mass_estimate"] = fit_results[1]
         l2a_dataset[f"{waveform_name}_chi_squared"] = fit_results[2]
         l2a_dataset[f"{waveform_name}_reduced_chi_squared"] = fit_results[3]
         l2a_dataset[f"{waveform_name}_fit_results"] = fit_results[4]
