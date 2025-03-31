@@ -23,6 +23,7 @@ from datetime import datetime
 
 import numpy as np
 import xarray as xr
+from numpy._typing import NDArray
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.spice.time import et_to_utc, ttj2000ns_to_et
@@ -120,7 +121,7 @@ def round_spin_phases(spin_phases: xr.DataArray) -> xr.DataArray:
     return (quadrant_size * np.round(spin_phases / quadrant_size)) % 360
 
 
-def epoch_to_doy(epoch: xr.DataArray) -> np.ndarray:
+def epoch_to_doy(epoch: xr.DataArray) -> NDArray:
     """
     Convert epoch times to day of year (1-365/366).
 
@@ -138,6 +139,6 @@ def epoch_to_doy(epoch: xr.DataArray) -> np.ndarray:
     # Get UTC time strings in ISO calendar format
     time_strings = et_to_utc(et, "ISOC")
     # Extract DOY from datetime
-    return np.ndarray(
+    return np.array(
         [datetime.fromisoformat(date).timetuple().tm_yday for date in time_strings]
     )
