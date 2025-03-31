@@ -101,12 +101,12 @@ def round_spin_phases(spin_phases: xr.DataArray) -> xr.DataArray:
 
     Parameters
     ----------
-    spin_phases : xr.DataArray
+    spin_phases : xarray.DataArray
         Spacecraft spin phase angles. Expected to be integers in the range [0, 360).
 
     Returns
     -------
-    xr.DataArray
+    xarray.DataArray
         Spin phases rounded to the nearest quadrant.
     """
     if np.any(spin_phases < 0) or np.any(spin_phases >= 360):
@@ -126,7 +126,7 @@ def epoch_to_doy(epoch: xr.DataArray) -> np.ndarray:
 
     Parameters
     ----------
-    epoch : xr.DataArray
+    epoch : xarray.DataArray
         Time, number of nanoseconds since J2000 with leap seconds included.
 
     Returns
