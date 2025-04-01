@@ -24,6 +24,12 @@ _BACK_POS_DF_ULTRA90 = pd.read_csv(
 )
 _ENERGY_NORM_DF = pd.read_csv(BASE_PATH / "EgyNorm.mem.csv")
 _IMAGE_PARAMS_DF = pd.read_csv(BASE_PATH / "FM45_Startup1_ULTRA_IMGPARAMS_20240719.csv")
+_LOOKUP_TABLES = {
+    ("left", "ultra45"): pd.read_csv(BASE_PATH / "Angular_Profiles_FM45_LeftSlit.csv"),
+    ("right", "ultra45"): pd.read_csv(BASE_PATH / "Angular_Profiles_FM45_RightSlit.csv"),
+    ("left", "ultra90"): pd.read_csv(BASE_PATH / "Angular_Profiles_FM90_LeftSlit.csv"),
+    ("right", "ultra90"): pd.read_csv(BASE_PATH / "Angular_Profiles_FM90_RightSlit.csv"),
+}
 
 
 def get_y_adjust(dy_lut: np.ndarray) -> npt.NDArray:
@@ -163,3 +169,10 @@ def get_image_params(image: str) -> np.float64:
     """
     value: np.float64 = _IMAGE_PARAMS_DF[image].values[0]
     return value
+
+
+def get_angular_profiles(slit_side: str, sensor: str):
+
+    lookup_table = _LOOKUP_TABLES[(slit_side.lower(), sensor)]
+
+    return lookup_table

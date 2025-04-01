@@ -13,12 +13,14 @@ from numpy.typing import NDArray
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
+    get_angular_profiles,
     get_back_position,
     get_energy_norm,
     get_image_params,
     get_norm,
     get_y_adjust,
 )
+from scipy.interpolate import LinearNDInterpolator
 
 logger = logging.getLogger(__name__)
 
@@ -701,7 +703,7 @@ def get_ctof(
     dmin_ctof = getattr(UltraConstants, f"DMIN_{type}_CTOF")
 
     # Multiply times 100 to convert to hundredths of a millimeter.
-    ctof = tof * dmin_ctof * 100 / path_length
+    ctof = np.abs(tof * dmin_ctof * 100 / path_length)
 
     # Convert from mm/0.1ns to km/s.
     magnitude_v = dmin_ctof / ctof * 1e4
@@ -824,3 +826,27 @@ def get_eventtimes(
     event_times = spin_starts + spin_period_sec * (phase_angle / 720)
 
     return event_times, spin_starts, spin_period_sec
+
+
+def get_efficiency(start_type: str, sensor: str, energy, phi_inst: np.ndarray, theta_inst: np.ndarray):
+
+    energy_lt = energy[start_type == StartType.Left.value]
+    phi_inst_lt = phi_inst[start_type == StartType.Left.value]
+    theta_inst_lt = theta_inst[start_type == StartType.Left.value]
+
+    lookup_table_lt = get_angular_profiles("left", sensor)
+
+    # Build a 2D interpolator for phi_fwhm using only Energy and phi_degrees.
+    points_phi = lookup_table_lt[['Energy', 'phi_degrees']].values
+    phi_fwhm_lt = lookup_table_lt['phi_fwhm'].values
+    interp_phi_lt = LinearNDInterpolator(points_phi, phi_fwhm_lt)
+
+    # Build a 2D interpolator for theta_fwhm using only Energy and theta_degrees.
+    points_theta = lookup_table_lt[['Energy', 'theta_degrees']].values
+    theta_fwhm_lt = lookup_table_lt['theta_fwhm'].values
+    interp_theta_lt = LinearNDInterpolator(points_theta, theta_fwhm_lt)
+
+    phi_interp_lt = interp_phi_lt((energy_lt, phi_inst_lt))
+    theta_interp_lt = interp_theta_lt((energy_lt, theta_inst_lt))
+
+    return phi_interp_lt, theta_interp_lt

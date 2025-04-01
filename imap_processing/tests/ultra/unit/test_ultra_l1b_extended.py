@@ -16,6 +16,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_ctof,
     get_de_energy_kev,
     get_de_velocity,
+    get_efficiency,
     get_energy_pulse_height,
     get_energy_ssd,
     get_eventtimes,
@@ -27,6 +28,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
 )
+from imap_processing.ultra.l1b.lookup_utils import get_angular_profiles
 
 
 @pytest.fixture()
@@ -455,3 +457,22 @@ def test_get_eventtimes(test_fixture, use_fake_spin_data_for_time):
 
     assert event_times_min == event_times.min()
     assert event_times_max == event_times.max()
+
+
+def test_get_efficiency():
+    """Tests get_efficiency function by plotting a 2D FWHM map."""
+
+    test_phi = np.linspace(1, 53, 40)
+    test_theta = np.linspace(-44, 43, 40)
+
+    test_energy = np.full(test_theta.shape, 10)
+    test_start_type = np.full(test_theta.shape, 1)
+
+    phi_interp, theta_interp = get_efficiency(test_start_type, "ultra45", test_energy, test_phi, test_theta)
+
+    lookup_table_lt = get_angular_profiles("left", "ultra45")
+    lookup_table_lt_test = lookup_table_lt[lookup_table_lt.Energy == 10]
+    lookup_table_lt_test = lookup_table_lt_test.sort_values("phi_degrees")
+    phi_fwhm_expected = np.interp(test_phi, lookup_table_lt_test.phi_degrees, lookup_table_lt_test.phi_fwhm)
+
+    np.testing.assert_allclose(phi_fwhm_expected, phi_interp, atol=1e-03, rtol=0)
