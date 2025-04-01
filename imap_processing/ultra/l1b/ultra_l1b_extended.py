@@ -6,6 +6,7 @@ from enum import Enum
 from typing import ClassVar
 
 import numpy as np
+import pandas
 import xarray
 from numpy import ndarray
 from numpy.typing import NDArray
@@ -828,7 +829,12 @@ def get_eventtimes(
     return event_times, spin_starts, spin_period_sec
 
 
-def interpolate_fwhm(lookup_table, energy, phi_inst, theta_inst):
+def interpolate_fwhm(
+    lookup_table: pandas.DataFrame,
+    energy: NDArray,
+    phi_inst: NDArray,
+    theta_inst: NDArray,
+) -> tuple[NDArray, NDArray]:
     """
     Interpolate phi and theta FWHM values using lookup tables.
 
@@ -836,18 +842,18 @@ def interpolate_fwhm(lookup_table, energy, phi_inst, theta_inst):
     ----------
     lookup_table : DataFrame
         Angular profile lookup table for a given side and sensor.
-    energy : np.ndarray
+    energy : NDArray
         Energy values.
-    phi_inst : np.ndarray
+    phi_inst : NDArray
         Instrument-frame azimuth angles.
-    theta_inst : np.ndarray
+    theta_inst : NDArray
         Instrument-frame elevation angles.
 
     Returns
     -------
-    phi_interp : np.ndarray
+    phi_interp : NDArray
         Interpolated phi FWHM.
-    theta_interp : np.ndarray
+    theta_interp : NDArray
         Interpolated theta FWHM.
     """
     interp_phi = LinearNDInterpolator(
@@ -859,40 +865,41 @@ def interpolate_fwhm(lookup_table, energy, phi_inst, theta_inst):
         lookup_table["theta_fwhm"].values,
     )
 
+    # Note: will return nan for those out-of-bounds inputs.
     phi_interp = interp_phi((energy, phi_inst))
     theta_interp = interp_theta((energy, theta_inst))
 
     return phi_interp, theta_interp
 
 
-def get_efficiency(
-    start_type: np.ndarray,
+def get_fwhm(
+    start_type: NDArray,
     sensor: str,
-    energy: np.ndarray,
-    phi_inst: np.ndarray,
-    theta_inst: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray]:
+    energy: NDArray,
+    phi_inst: NDArray,
+    theta_inst: NDArray,
+) -> tuple[NDArray, NDArray]:
     """
     Interpolate phi and theta FWHM efficiency values for each event based on start type.
 
     Parameters
     ----------
-    start_type : np.ndarray
+    start_type : NDArray
         Start Type: 1=Left, 2=Right.
     sensor : str
         Sensor name.
-    energy : np.ndarray
+    energy : NDArray
         Energy values for each event.
-    phi_inst : np.ndarray
+    phi_inst : NDArray
         Instrument-frame azimuth angle for each event.
-    theta_inst : np.ndarray
+    theta_inst : NDArray
         Instrument-frame elevation angle for each event.
 
     Returns
     -------
-    phi_interp : np.ndarray
+    phi_interp : NDArray
         Interpolated phi FWHM values.
-    theta_interp : np.ndarray
+    theta_interp : NDArray
         Interpolated theta FWHM values.
     """
     phi_interp = np.full_like(phi_inst, np.nan, dtype=np.float64)

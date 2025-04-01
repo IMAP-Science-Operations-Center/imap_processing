@@ -17,12 +17,12 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_ctof,
     get_de_energy_kev,
     get_de_velocity,
-    get_efficiency,
     get_energy_pulse_height,
     get_energy_ssd,
     get_eventtimes,
     get_front_x_position,
     get_front_y_position,
+    get_fwhm,
     get_path_length,
     get_ph_tof_and_back_positions,
     get_phi_theta,
@@ -490,15 +490,17 @@ def test_interpolate_fwhm():
     assert theta_interp.size == 0
 
 
-def test_get_efficiency():
-    """Tests get_efficiency function."""
+def test_get_fwhm():
+    """Tests get_fwhm function."""
 
     test_phi = np.linspace(1, 53, 40)
     test_theta = np.linspace(-44, 43, 40)
     test_energy = np.full(test_phi.shape, 10)
-    test_start_type = np.full(test_theta.shape, 1)
+    test_start_type = np.empty(test_theta.shape, dtype=int)
+    test_start_type[:20] = 1  # First half -> Left
+    test_start_type[20:] = 2  # Second half -> Right
 
-    phi_interp, theta_interp = get_efficiency(
+    phi_interp, theta_interp = get_fwhm(
         start_type=test_start_type,
         sensor="ultra45",
         energy=test_energy,
@@ -510,8 +512,8 @@ def test_get_efficiency():
     test_phi_left = test_phi[idx_left]
 
     lt_table = get_angular_profiles("left", "ultra45")
-    lt_table_E10 = lt_table[lt_table.Energy == 10]
-    lt_table_sorted = lt_table_E10.sort_values("phi_degrees")
+    lt_table_e10 = lt_table[lt_table.Energy == 10]
+    lt_table_sorted = lt_table_e10.sort_values("phi_degrees")
 
     phi_expected_left = np.interp(
         test_phi_left,
