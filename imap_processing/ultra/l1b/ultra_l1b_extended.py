@@ -9,6 +9,7 @@ import numpy as np
 import xarray
 from numpy import ndarray
 from numpy.typing import NDArray
+from scipy.interpolate import LinearNDInterpolator
 
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
@@ -20,7 +21,6 @@ from imap_processing.ultra.l1b.lookup_utils import (
     get_norm,
     get_y_adjust,
 )
-from scipy.interpolate import LinearNDInterpolator
 
 logger = logging.getLogger(__name__)
 
@@ -828,25 +828,88 @@ def get_eventtimes(
     return event_times, spin_starts, spin_period_sec
 
 
-def get_efficiency(start_type: str, sensor: str, energy, phi_inst: np.ndarray, theta_inst: np.ndarray):
+def interpolate_fwhm(lookup_table, energy, phi_inst, theta_inst):
+    """
+    Interpolate phi and theta FWHM values using lookup tables.
 
-    energy_lt = energy[start_type == StartType.Left.value]
-    phi_inst_lt = phi_inst[start_type == StartType.Left.value]
-    theta_inst_lt = theta_inst[start_type == StartType.Left.value]
+    Parameters
+    ----------
+    lookup_table : DataFrame
+        Angular profile lookup table for a given side and sensor.
+    energy : np.ndarray
+        Energy values.
+    phi_inst : np.ndarray
+        Instrument-frame azimuth angles.
+    theta_inst : np.ndarray
+        Instrument-frame elevation angles.
 
-    lookup_table_lt = get_angular_profiles("left", sensor)
+    Returns
+    -------
+    phi_interp : np.ndarray
+        Interpolated phi FWHM.
+    theta_interp : np.ndarray
+        Interpolated theta FWHM.
+    """
+    interp_phi = LinearNDInterpolator(
+        lookup_table[["Energy", "phi_degrees"]].values, lookup_table["phi_fwhm"].values
+    )
 
-    # Build a 2D interpolator for phi_fwhm using only Energy and phi_degrees.
-    points_phi = lookup_table_lt[['Energy', 'phi_degrees']].values
-    phi_fwhm_lt = lookup_table_lt['phi_fwhm'].values
-    interp_phi_lt = LinearNDInterpolator(points_phi, phi_fwhm_lt)
+    interp_theta = LinearNDInterpolator(
+        lookup_table[["Energy", "theta_degrees"]].values,
+        lookup_table["theta_fwhm"].values,
+    )
 
-    # Build a 2D interpolator for theta_fwhm using only Energy and theta_degrees.
-    points_theta = lookup_table_lt[['Energy', 'theta_degrees']].values
-    theta_fwhm_lt = lookup_table_lt['theta_fwhm'].values
-    interp_theta_lt = LinearNDInterpolator(points_theta, theta_fwhm_lt)
+    phi_interp = interp_phi((energy, phi_inst))
+    theta_interp = interp_theta((energy, theta_inst))
 
-    phi_interp_lt = interp_phi_lt((energy_lt, phi_inst_lt))
-    theta_interp_lt = interp_theta_lt((energy_lt, theta_inst_lt))
+    return phi_interp, theta_interp
 
-    return phi_interp_lt, theta_interp_lt
+
+def get_efficiency(
+    start_type: np.ndarray,
+    sensor: str,
+    energy: np.ndarray,
+    phi_inst: np.ndarray,
+    theta_inst: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Interpolate phi and theta FWHM efficiency values for each event based on start type.
+
+    Parameters
+    ----------
+    start_type : np.ndarray
+        Start Type: 1=Left, 2=Right.
+    sensor : str
+        Sensor name.
+    energy : np.ndarray
+        Energy values for each event.
+    phi_inst : np.ndarray
+        Instrument-frame azimuth angle for each event.
+    theta_inst : np.ndarray
+        Instrument-frame elevation angle for each event.
+
+    Returns
+    -------
+    phi_interp : np.ndarray
+        Interpolated phi FWHM values.
+    theta_interp : np.ndarray
+        Interpolated theta FWHM values.
+    """
+    phi_interp = np.full_like(phi_inst, np.nan, dtype=np.float64)
+    theta_interp = np.full_like(theta_inst, np.nan, dtype=np.float64)
+    lt_table = get_angular_profiles("left", sensor)
+    rt_table = get_angular_profiles("right", sensor)
+
+    # Left start type
+    idx_left = start_type == StartType.Left.value
+    phi_interp[idx_left], theta_interp[idx_left] = interpolate_fwhm(
+        lt_table, energy[idx_left], phi_inst[idx_left], theta_inst[idx_left]
+    )
+
+    # Right start type
+    idx_right = start_type == StartType.Right.value
+    phi_interp[idx_right], theta_interp[idx_right] = interpolate_fwhm(
+        rt_table, energy[idx_right], phi_inst[idx_right], theta_inst[idx_right]
+    )
+
+    return phi_interp, theta_interp
