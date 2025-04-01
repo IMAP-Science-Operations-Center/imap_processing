@@ -24,11 +24,21 @@ _BACK_POS_DF_ULTRA90 = pd.read_csv(
 )
 _ENERGY_NORM_DF = pd.read_csv(BASE_PATH / "EgyNorm.mem.csv")
 _IMAGE_PARAMS_DF = pd.read_csv(BASE_PATH / "FM45_Startup1_ULTRA_IMGPARAMS_20240719.csv")
-_LOOKUP_TABLES = {
+_FWHM_TABLES = {
     ("left", "ultra45"): pd.read_csv(BASE_PATH / "Angular_Profiles_FM45_LeftSlit.csv"),
-    ("right", "ultra45"): pd.read_csv(BASE_PATH / "Angular_Profiles_FM45_RightSlit.csv"),
+    ("right", "ultra45"): pd.read_csv(
+        BASE_PATH / "Angular_Profiles_FM45_RightSlit.csv"
+    ),
     ("left", "ultra90"): pd.read_csv(BASE_PATH / "Angular_Profiles_FM90_LeftSlit.csv"),
-    ("right", "ultra90"): pd.read_csv(BASE_PATH / "Angular_Profiles_FM90_RightSlit.csv"),
+    ("right", "ultra90"): pd.read_csv(
+        BASE_PATH / "Angular_Profiles_FM90_RightSlit.csv"
+    ),
+}
+_EFFICIENCIES_DF = {
+    "ultra45": pd.read_csv(
+        BASE_PATH / "Ultra_efficiencies_45_combined_logistic_interpolation.csv"
+    ),
+    # TODO: ultra90 efficiencies
 }
 
 
@@ -171,8 +181,47 @@ def get_image_params(image: str) -> np.float64:
     return value
 
 
-def get_angular_profiles(slit_side: str, sensor: str):
+def get_angular_profiles(start_type: str, sensor: str) -> pd.DataFrame:
+    """
+    Lookup table for FWHM for theta and phi.
 
-    lookup_table = _LOOKUP_TABLES[(slit_side.lower(), sensor)]
+    Further description is available starting on
+    page 18 of the Algorithm Document.
+
+    Parameters
+    ----------
+    start_type : str
+       Start Type: 1=Left, 2=Right.
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
+
+    Returns
+    -------
+    lookup_table : DataFrame
+        Angular profile lookup table for a given start_type and sensor.
+    """
+    lookup_table = _FWHM_TABLES[(start_type.lower(), sensor)]
+
+    return lookup_table
+
+
+def get_energy_efficiencies(sensor: str) -> pd.DataFrame:
+    """
+    Lookup table for efficiencies for theta and phi.
+
+    Further description is available starting on
+    page 18 of the Algorithm Document.
+
+    Parameters
+    ----------
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
+
+    Returns
+    -------
+    lookup_table : DataFrame
+        Efficiencies lookup table for a given sensor.
+    """
+    lookup_table = _EFFICIENCIES_DF[sensor]
 
     return lookup_table

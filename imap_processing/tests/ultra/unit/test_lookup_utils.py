@@ -5,6 +5,7 @@ from imap_processing import imap_module_directory
 from imap_processing.ultra.l1b.lookup_utils import (
     get_angular_profiles,
     get_back_position,
+    get_energy_efficiencies,
     get_energy_norm,
     get_image_params,
     get_norm,
@@ -77,3 +78,11 @@ def test_get_angular_profiles():
 
     assert u45_left.shape == (525, 7)
     assert u45_right.shape == (525, 7)
+
+
+def test_get_energy_efficiencies():
+    """Tests function get_get_energy_efficiencies."""
+
+    u45_efficiencies = get_energy_efficiencies("ultra45")
+
+    assert u45_efficiencies.shape == (58081, 157)
