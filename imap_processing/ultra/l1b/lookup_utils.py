@@ -8,7 +8,6 @@ import xarray as xr
 from imap_processing import imap_module_directory
 
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
-TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 _YADJUST_DF = pd.read_csv(BASE_PATH / "yadjust.csv").set_index("dYLUT")
 _TDC_NORM_DF_ULTRA45 = pd.read_csv(
@@ -34,12 +33,6 @@ _FWHM_TABLES = {
     ("right", "ultra90"): pd.read_csv(
         BASE_PATH / "Angular_Profiles_FM90_RightSlit.csv"
     ),
-}
-_EFFICIENCIES_DF = {
-    "ultra45": pd.read_csv(
-        TEST_PATH / "Ultra_efficiencies_45_combined_logistic_interpolation.csv"
-    ),
-    # TODO: ultra90 efficiencies
 }
 
 
@@ -206,23 +199,23 @@ def get_angular_profiles(start_type: str, sensor: str) -> pd.DataFrame:
     return lookup_table
 
 
-def get_energy_efficiencies(sensor: str) -> pd.DataFrame:
+def get_energy_efficiencies() -> pd.DataFrame:
     """
     Lookup table for efficiencies for theta and phi.
 
     Further description is available starting on
     page 18 of the Algorithm Document.
 
-    Parameters
-    ----------
-    sensor : str
-        Sensor name: "ultra45" or "ultra90".
-
     Returns
     -------
     lookup_table : DataFrame
         Efficiencies lookup table for a given sensor.
     """
-    lookup_table = _EFFICIENCIES_DF[sensor]
+    # TODO: Move this out of tests directory once we have the aux api
+    # TODO: ultra90 efficiencies
+    path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
+    lookup_table = pd.read_csv(
+        path / "Ultra_efficiencies_45_combined_logistic_interpolation.csv"
+    )
 
     return lookup_table

@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from imap_processing import imap_module_directory
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import get_angular_profiles
@@ -31,6 +32,8 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_ssd_tof,
     interpolate_fwhm,
 )
+
+TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
 @pytest.fixture()
@@ -539,7 +542,7 @@ def test_get_efficiency():
     phi = np.array([-60, 60, -60, -50])
     energy = np.array([3, 80, 39.75, 7])
 
-    efficiency = get_efficiency(energy, phi, theta, "ultra45")
+    efficiency = get_efficiency(energy, phi, theta)
     expected_efficiency = np.array([0.0593281, 0.21803386, 0.0593281, 0.0628940])
 
     np.testing.assert_allclose(efficiency, expected_efficiency, atol=1e-03, rtol=0)

@@ -927,7 +927,6 @@ def get_efficiency(
     energy: NDArray,
     phi_inst: NDArray,
     theta_inst: NDArray,
-    sensor: str = "ultra45",
 ) -> NDArray:
     """
     Interpolate efficiency values for each event.
@@ -940,15 +939,13 @@ def get_efficiency(
         Instrument-frame azimuth angle for each event.
     theta_inst : NDArray
         Instrument-frame elevation angle for each event.
-    sensor : str
-        Sensor name: "ultra45" or "ultra90".
 
     Returns
     -------
     efficiency : NDArray
         Interpolated efficiency values.
     """
-    lookup_table = get_energy_efficiencies(sensor)
+    lookup_table = get_energy_efficiencies()
 
     theta_vals = np.sort(lookup_table["theta (deg)"].unique())
     phi_vals = np.sort(lookup_table["phi (deg)"].unique())
