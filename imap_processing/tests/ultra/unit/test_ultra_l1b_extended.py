@@ -17,6 +17,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_ctof,
     get_de_energy_kev,
     get_de_velocity,
+    get_efficiency,
     get_energy_pulse_height,
     get_energy_ssd,
     get_eventtimes,
@@ -527,3 +528,17 @@ def test_get_fwhm():
 
     assert phi_interp.shape == test_phi.shape
     assert theta_interp.shape == test_theta.shape
+
+
+def test_get_efficiency():
+    """Tests get_efficiency function."""
+
+    # spot check
+    theta = np.array([-52.7, 52.7, -52.7, -52.7])
+    phi = np.array([-60, 60, -60, -50])
+    energy = np.array([3, 80, 39.75, 7])
+
+    efficiency = get_efficiency(energy, phi, theta, "ultra45")
+    expected_efficiency = np.array([0.0593281, 0.21803386, 0.0593281, 0.0628940])
+
+    np.testing.assert_allclose(efficiency, expected_efficiency, atol=1e-03, rtol=0)

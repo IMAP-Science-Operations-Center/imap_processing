@@ -10,13 +10,14 @@ import pandas
 import xarray
 from numpy import ndarray
 from numpy.typing import NDArray
-from scipy.interpolate import LinearNDInterpolator
+from scipy.interpolate import LinearNDInterpolator, RegularGridInterpolator
 
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
     get_angular_profiles,
     get_back_position,
+    get_energy_efficiencies,
     get_energy_norm,
     get_image_params,
     get_norm,
@@ -880,14 +881,14 @@ def get_fwhm(
     theta_inst: NDArray,
 ) -> tuple[NDArray, NDArray]:
     """
-    Interpolate phi and theta FWHM efficiency values for each event based on start type.
+    Interpolate phi and theta FWHM values for each event based on start type.
 
     Parameters
     ----------
     start_type : NDArray
         Start Type: 1=Left, 2=Right.
     sensor : str
-        Sensor name.
+        Sensor name: "ultra45" or "ultra90".
     energy : NDArray
         Energy values for each event.
     phi_inst : NDArray
@@ -920,3 +921,50 @@ def get_fwhm(
     )
 
     return phi_interp, theta_interp
+
+
+def get_efficiency(
+    energy: NDArray,
+    phi_inst: NDArray,
+    theta_inst: NDArray,
+    sensor: str = "ultra45",
+) -> NDArray:
+    """
+    Interpolate efficiency values for each event.
+
+    Parameters
+    ----------
+    energy : NDArray
+        Energy values for each event.
+    phi_inst : NDArray
+        Instrument-frame azimuth angle for each event.
+    theta_inst : NDArray
+        Instrument-frame elevation angle for each event.
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
+
+    Returns
+    -------
+    efficiency : NDArray
+        Interpolated efficiency values.
+    """
+    lookup_table = get_energy_efficiencies(sensor)
+
+    theta_vals = np.sort(lookup_table["theta (deg)"].unique())
+    phi_vals = np.sort(lookup_table["phi (deg)"].unique())
+    energy_column_names = lookup_table.columns[2:].tolist()
+    energy_vals = [float(col.replace("keV", "")) for col in energy_column_names]
+    efficiency_2d = lookup_table[energy_column_names].values
+
+    efficiency_grid = efficiency_2d.reshape(
+        (len(theta_vals), len(phi_vals), len(energy_vals))
+    )
+
+    interpolator = RegularGridInterpolator(
+        (theta_vals, phi_vals, energy_vals),
+        efficiency_grid,
+        bounds_error=False,
+        fill_value=np.nan,
+    )
+
+    return interpolator((theta_inst, phi_inst, energy))
