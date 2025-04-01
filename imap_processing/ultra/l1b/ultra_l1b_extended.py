@@ -705,10 +705,10 @@ def get_ctof(
     dmin_ctof = getattr(UltraConstants, f"DMIN_{type}_CTOF")
 
     # Multiply times 100 to convert to hundredths of a millimeter.
-    ctof = np.abs(tof * dmin_ctof * 100 / path_length)
+    ctof = tof * dmin_ctof * 100 / path_length
 
     # Convert from mm/0.1ns to km/s.
-    magnitude_v = dmin_ctof / ctof * 1e4
+    magnitude_v = dmin_ctof / np.abs(ctof) * 1e4
 
     return ctof, magnitude_v
 
