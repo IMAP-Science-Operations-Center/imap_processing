@@ -8,6 +8,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
+TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 _YADJUST_DF = pd.read_csv(BASE_PATH / "yadjust.csv").set_index("dYLUT")
 _TDC_NORM_DF_ULTRA45 = pd.read_csv(
@@ -36,7 +37,7 @@ _FWHM_TABLES = {
 }
 _EFFICIENCIES_DF = {
     "ultra45": pd.read_csv(
-        BASE_PATH / "Ultra_efficiencies_45_combined_logistic_interpolation.csv"
+        TEST_PATH / "Ultra_efficiencies_45_combined_logistic_interpolation.csv"
     ),
     # TODO: ultra90 efficiencies
 }
