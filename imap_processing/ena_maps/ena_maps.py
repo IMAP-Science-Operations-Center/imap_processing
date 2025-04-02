@@ -234,7 +234,7 @@ class PointingSet(ABC):
         unwrapped_dims_dict : dict[str, tuple[str, ...]]
             Dictionary of variable names and their dimensions, with only 1 spatial dim.
             The generic pixel dimension is always included.
-            E.g.: {"counts": ("epoch", "energy_bin_center", "pixel")} .
+            E.g.: {"counts": ("epoch", "energy", "pixel")} .
         """
         variable_dims = {}
         for var_name in self.data.data_vars:
