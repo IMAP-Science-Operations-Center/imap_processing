@@ -56,7 +56,7 @@ def mock_spice_functions():
         yield mock_state, mock_pointing, mock_lon
 
 
-def test_l1b_cdf_filenames(l1b_dataset: xr.Dataset):
+def test_l1b_logical_source(l1b_dataset: xr.Dataset):
     """Tests that the ``idex_l1b`` function generates datasets
     with the expected logical source.
 

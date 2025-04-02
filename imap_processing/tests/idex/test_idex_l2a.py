@@ -31,7 +31,7 @@ def mock_microphonics_noise(time: np.ndarray) -> np.ndarray:
     return combined_sig
 
 
-def test_l2a_cdf_filenames(l2a_dataset: xr.Dataset):
+def test_l2a_logical_source(l2a_dataset: xr.Dataset):
     """Tests that the ``idex_l2a`` function generates datasets
     with the expected logical source.
 

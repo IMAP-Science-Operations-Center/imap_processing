@@ -22,7 +22,7 @@ def l2b_dataset(l2a_dataset: xr.Dataset) -> xr.Dataset:
     return dataset
 
 
-def test_l2b_cdf_filenames(l2b_dataset: xr.Dataset):
+def test_l2b_logical_source(l2b_dataset: xr.Dataset):
     """Tests that the ``idex_l2b`` function generates datasets
     with the expected logical source.
 
