@@ -262,6 +262,55 @@ def set_spin_cycle(l1a_de: xr.Dataset, l1b_de: xr.Dataset) -> xr.Dataset:
 
     return l1b_de
 
+def get_spin_start_times(l1a_de: xr.Dataset, l1b_de: xr.Dataset, spin_data: xr.Dataset, acq_end: xr.DataArray) -> np.ndarray:
+    """
+    Get the start time for the spin that each direct event is in.
+
+    The resulting array of spin start times will be equal to the length of the direct
+    events. If two direct events occurred in the same spin, then there will be repeating
+    spin start times.
+
+    Parameters
+    ----------
+    l1a_de : xr.Dataset
+        The L1A DE dataset.
+    l1b_de : xr.Dataset
+        The L1B DE dataset.
+    spin_data : xr.Dataset
+        The L1A Spin dataset.
+    acq_end : xr.DataArray
+        The end acquisition times for each spin ASC.
+
+    Returns
+    -------
+    spin_start_time : np.ndarray
+        The start time for the spin that each direct event is in.
+
+    """
+    shcoarse = l1a_de["shcoarse"].values
+    # Find the closest stop_acq for each shcoarse
+    closest_stop_acq_indices = np.abs(shcoarse[:, None] - acq_end.values).argmin(axis=1)
+    # There are 28 spins per epoch (1 aggregated science cycle)
+    # Set the spin_cycle_num to the spin number relative to the
+    # start of the ASC
+    spin_cycle_num = l1b_de["spin_cycle"] % 28
+    # Get the seconds portion of the start time for each spin
+    start_sec_spins = np.take(
+        spin_data["start_sec_spin"][closest_stop_acq_indices].values,
+        spin_cycle_num.values,
+    )
+    # Get the subseconds portion of the spin start time and convert from
+    # microseconds to seconds
+    start_subsec_spins = (
+            np.take(
+                spin_data["start_subsec_spin"][closest_stop_acq_indices].values,
+                spin_cycle_num.values,
+            )
+            * 1e-6
+    )
+    # Combine the seconds and subseconds to get the start time for each spin
+    spin_start_time = start_sec_spins + start_subsec_spins
+    return spin_start_time
 
 def set_event_met(
     l1a_de: xr.Dataset,
@@ -300,29 +349,7 @@ def set_event_met(
     l1b_de : xr.Dataset
         The L1B DE dataset with the event MET.
     """
-    shcoarse = l1a_de["shcoarse"].values
-    # Find the closest stop_acq for each shcoarse
-    closest_stop_acq_indices = np.abs(shcoarse[:, None] - acq_end.values).argmin(axis=1)
-    # There are 28 spins per epoch (1 aggregated science cycle)
-    # Set the spin_cycle_num to the spin number relative to the
-    # start of the ASC
-    spin_cycle_num = l1b_de["spin_cycle"] % 28
-    # Get the seconds portion of the start time for each spin
-    start_sec_spins = np.take(
-        spin_data["start_sec_spin"][closest_stop_acq_indices].values,
-        spin_cycle_num.values,
-    )
-    # Get the subseconds portion of the spin start time and convert from
-    # microseconds to seconds
-    start_subsec_spins = (
-        np.take(
-            spin_data["start_subsec_spin"][closest_stop_acq_indices].values,
-            spin_cycle_num.values,
-        )
-        * 1e-6
-    )
-    # Combine the seconds and subseconds to get the start time for each spin
-    spin_start_time = start_sec_spins + start_subsec_spins
+
     counts = l1a_de["de_count"].values
     de_time_asc_groups = np.split(l1a_de["de_time"].values, np.cumsum(counts)[:-1])
     de_times_eu = []
