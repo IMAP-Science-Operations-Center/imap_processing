@@ -578,10 +578,12 @@ class Hi(ProcessInstrument):
             science_files = dependencies.get_file_paths(source="hi")
             datasets = hi_l1a.hi_l1a(science_files[0], self.version)
         elif self.data_level == "l1b":
-            # TODO: check this and update with new features
-            science_files = dependencies.get_file_paths(source="hi")
-            hi_dependencies = [load_cdf(file) for file in science_files]
-            datasets = [hi_l1b.hi_l1b(hi_dependencies[0], self.version)]
+            l0_files = dependencies.get_file_paths(source="hi", descriptor="raw")
+            if l0_files:
+                datasets = hi_l1b.hi_l1b(l0_files[0], self.version)
+            else:
+                l1a_files = dependencies.get_file_paths(source="hi")
+                datasets = hi_l1b.hi_l1b(load_cdf(l1a_files[0]), self.version)
         elif self.data_level == "l1c":
             # TODO: Add PSET calibration product config file dependency and remove
             #    below injected dependency
