@@ -82,10 +82,10 @@ def hi_packet_file_to_datasets(
 
     Parameters
     ----------
-    packet_file_path : str or Path
+    packet_file_path : str
         L0 packet file path.
-    use_derived_value : bool default False
-        Whether to use the derived value from the XTCE definition.
+    use_derived_value : bool
+        Whether to use the derived value from the XTCE definition. Default is False.
 
     Returns
     -------

@@ -53,7 +53,7 @@ def hi_l1b(
 
     Parameters
     ----------
-    dependency : str or Path or xr.Dataset
+    dependency : str or xarray.Dataset
         Path to L0 file or L1A dataset to process.
     data_version : str
         Version of the data product being created.
@@ -103,12 +103,12 @@ def housekeeping(packet_file_path: Union[str, Path]) -> list[xr.Dataset]:
 
     Parameters
     ----------
-    packet_file_path : str or Path
+    packet_file_path : str
         Packet file path.
 
     Returns
     -------
-    processed_data : list[xr.Dataset]
+    processed_data : list[xarray.Dataset]
         Housekeeping datasets with engineering units.
     """
     packet_def_file = (
