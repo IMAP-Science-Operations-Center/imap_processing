@@ -14,7 +14,6 @@ class SWAPIAPID(IntEnum):
     SWP_HK = 1184
     SWP_SCI = 1188
     SWP_AUT = 1192
-    SWP_IALIRT = 1187
 
 
 class SWAPIMODE(IntEnum):
