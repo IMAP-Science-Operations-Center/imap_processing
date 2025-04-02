@@ -86,7 +86,7 @@ def test_round_spin_phases_warning(caplog):
 
     assert (
         f"Spin phase angles, {spin_phase_angles.data} "
-        f"are outside of the expected spin phase angle range, [0, 360)."
+        f"are outside of the expected spin phase angle range: [0, 360)."
     ) in caplog.text
 
 
