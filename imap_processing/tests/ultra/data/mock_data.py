@@ -136,6 +136,11 @@ def mock_l1c_pset_product_rectangular(  # noqa: PLR0913
         ensure_spice(spice.unitim, time_kernels_only=True)(tdb_et, "ET", "TT") * 1e9
     )
 
+    logical_source = f"imap_ultra_l1c_{head}sensor-spacecraftpset"
+    logical_file_id = (
+        f"{logical_source}_{timestr[:4]}{timestr[5:7]}{timestr[8:10]}-repointNNNNN_vNNN"
+    )
+
     pset_product = xr.Dataset(
         {
             "counts": (
@@ -178,10 +183,9 @@ def mock_l1c_pset_product_rectangular(  # noqa: PLR0913
             ),
         },
         attrs={
-            "Logical_file_id": (
-                f"imap_ultra_l1c_{head}sensor-pset_{timestr[:4]}"
-                f"{timestr[5:7]}{timestr[8:10]}-repointNNNNN_vNNN"
-            )
+            "Logical_file_id": logical_file_id,
+            "Logical_source": logical_source,
+            "Data_version": "001",
         },
     )
 
@@ -251,7 +255,8 @@ def mock_l1c_pset_product_healpix(  # noqa: PLR0913
     head : str, optional
         The sensor head (either '45' or '90') (default is '45').
     """
-    _, energy_bin_midpoints, _ = build_energy_bins()
+    energy_intervals, energy_bin_midpoints, _ = build_energy_bins()
+    energy_bin_delta = np.diff(energy_intervals, axis=1).squeeze()
     num_energy_bins = len(energy_bin_midpoints)
     npix = hp.nside2npix(nside)
     counts = np.zeros(npix)
@@ -292,6 +297,11 @@ def mock_l1c_pset_product_healpix(  # noqa: PLR0913
         ensure_spice(spice.unitim, time_kernels_only=True)(tdb_et, "ET", "TT") * 1e9
     )
 
+    logical_source = f"imap_ultra_l1c_{head}sensor-spacecraftpset"
+    logical_file_id = (
+        f"{logical_source}_{timestr[:4]}{timestr[5:7]}{timestr[8:10]}-repointNNNNN_vNNN"
+    )
+
     pset_product = xr.Dataset(
         {
             "counts": (
@@ -301,6 +311,14 @@ def mock_l1c_pset_product_healpix(  # noqa: PLR0913
                     CoordNames.HEALPIX_INDEX.value,
                 ],
                 counts,
+            ),
+            "background_rates": (
+                [
+                    CoordNames.TIME.value,
+                    CoordNames.ENERGY.value,
+                    CoordNames.HEALPIX_INDEX.value,
+                ],
+                np.zeros_like(counts),
             ),
             "exposure_time": (
                 [CoordNames.HEALPIX_INDEX.value],
@@ -322,19 +340,24 @@ def mock_l1c_pset_product_healpix(  # noqa: PLR0913
                 [CoordNames.HEALPIX_INDEX.value],
                 lat_pix,
             ),
+            "energy_bin_delta": (
+                [CoordNames.ENERGY.value],
+                energy_bin_delta,
+            ),
         },
         coords={
             CoordNames.TIME.value: [
                 tt_j2000ns,
             ],
-            CoordNames.ENERGY.value: energy_bin_midpoints,
+            CoordNames.ENERGY.value: xr.DataArray(
+                energy_bin_midpoints, dims=(CoordNames.ENERGY.value,)
+            ),
             CoordNames.HEALPIX_INDEX.value: pix_indices,
         },
         attrs={
-            "Logical_file_id": (
-                f"imap_ultra_l1c_{head}sensor-pset_{timestr[:4]}"
-                f"{timestr[5:7]}{timestr[8:10]}-repointNNNNN_vNNN"
-            )
+            "Logical_file_id": logical_file_id,
+            "Logical_source": logical_source,
+            "Data_version": "001",
         },
     )
 
