@@ -578,6 +578,7 @@ def create_event_dataset(
     dataset : xarray.Dataset
         Xarray dataset containing the event data.
     """
+
     if apid == CODICEAPID.COD_LO_PHA:
         dataset_name = "imap_codice_l1a_lo-pha"
     elif apid == CODICEAPID.COD_HI_PHA:
@@ -618,19 +619,23 @@ def create_event_dataset(
     all_data = {}
 
     # Create blank arrays for each field to store the data
+    # We also need arrays to hold number of events and data quality
     for i in range(8):
         for field in LO_DE_BIT_STRUCTURE:
             if field not in ["Priority", "Spare"]:
                 all_data[f"P{i}_{field}"] = []
+        all_data[f"P{i}_NumEvents"] = []
+        all_data[f"P{i}_DataQuality"] = []
 
     # raw_data is one large list of values of length (<number of epochs> * <8 priorities>)
     # Chunk the data into each epoch/priority combination
     for epoch_num, chunk in enumerate(range(0, len(raw_data), 8), start=1):
         epoch_data = raw_data[chunk:chunk + 8]
 
-        # The order of the priorities is unique to each epoch and can be
-        # gathered from the packet data
+        # The order of the priorities and data quality flags are unique to each
+        # epoch and can be gathered from the packet data
         priority_order = packets.priority[chunk:chunk + 8].data
+        data_quality = packets.suspect[chunk:chunk + 8].data
 
         # Create dict to hold the final data per epoch
         data_per_epoch = {}
@@ -638,12 +643,18 @@ def create_event_dataset(
         # For each epoch/priority combo, iterate over each event
         for i, priority_num in enumerate(priority_order):
             priority_data = epoch_data[i]
-            num_events = len(priority_data) // 8
 
-            # Stores data for each epoch
+            # Number of events and data quality can be determined at this stage
+            num_events = len(priority_data) // 8
+            data_per_epoch[f"P{priority_num}_NumEvents"] = num_events
+            data_per_epoch[f"P{priority_num}_DataQuality"] = data_quality[i]
+
+            # Create blank array to store data for each epoch/priority/field
+            # combination
             for field in LO_DE_BIT_STRUCTURE:
                 data_per_epoch[f"P{priority_num}_{field}"] = []
 
+            # Iterate over each event
             for event in [priority_data[i * 8: (i + 1) * 8] for i in range(num_events)]:
 
                 # Separate out each individual field from the bit string
@@ -652,46 +663,77 @@ def create_event_dataset(
                 for field_name, bit_length in reversed(LO_DE_BIT_STRUCTURE.items()):
                     data_per_epoch[f"P{priority_num}_{field_name}"].append(int(bit_string[index:index + bit_length], 2))
                     index += bit_length
-                print(len(data_per_epoch))
 
         # Append the epoch data to the final, restructured list of data
-        for i in range(7):
+        for i in range(8):
             for field in LO_DE_BIT_STRUCTURE:
                 if field not in ["Priority", "Spare"]:
-                    all_data[f"P{i}_{field}"].append(data_per_epoch[f"P{i}_{field}"])
+                    event_data = np.array(data_per_epoch[f"P{i}_{field}"], dtype=np.uint16)
+                    padding_size = 10000 - event_data.size
+                    padded_event_data = np.pad(event_data, (0, padding_size), mode="constant", constant_values=0)
+                    all_data[f"P{i}_{field}"].append(padded_event_data)
+            all_data[f"P{i}_NumEvents"].append(np.array(data_per_epoch[f"P{i}_NumEvents"]))
+            all_data[f"P{i}_DataQuality"].append(np.array(data_per_epoch[f"P{i}_DataQuality"]))
 
-    # for key in all_data:
-    #     print("\n\n")
-    #     print(key)
-    #     print("\n")
-    #     print(len(all_data[key]))
+    # TODO: Specific np.dtype per field
 
-    # TODO: Add padding
-    # TODO: Add num_events and data quality
-    # TODO: Convert to numpy arrays
+    # # These should be ready to store in CDF data variables now
+    # for i in range(8):
+    #     for key in ["NumEvents", "DataQuality", "APDGain", "APD_ID", "APDEnergy", "TOF", "MultiFlag", "PHAType", "SpinAngle", "EnergyStep"]:
+    #         index = f"P{i}_{key}"
+    #         print("\n\n")
+    #         print(index)
+    #         print("\n")
+    #         print(np.array(all_data[index]))
 
 
-
+    # Gather the CDF attributes
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
     cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
     cdf_attrs.add_global_attribute("Data_version", data_version)
 
+    # TODO: Figure out how to properly define epoch for this
+
     # Define coordinates
     epoch = xr.DataArray(
-        packets.epoch,
+        packets.epoch[::8],
         name="epoch",
         dims=["epoch"],
         attrs=cdf_attrs.get_variable_attributes("epoch"),
+    )
+    event_num = xr.DataArray(
+        np.arange(10000),
+        name="event_num",
+        dims=["event_num"],
+        attrs=cdf_attrs.get_variable_attributes("event_num"),
     )
 
     # Create the dataset to hold the data variables
     dataset = xr.Dataset(
         coords={
             "epoch": epoch,
+            "event_num": event_num
         },
         attrs=cdf_attrs.get_global_attributes(dataset_name),
     )
+
+    # Create the CDF data variables for each Priority and Field
+    for i in range(8):
+        for field in ["NumEvents", "DataQuality", "APDGain", "APD_ID", "APDEnergy", "TOF", "MultiFlag", "PHAType",
+                    "SpinAngle", "EnergyStep"]:
+            variable_name = f"P{i}_{field}"
+            attrs = cdf_attrs.get_variable_attributes(variable_name)
+            if field in ["NumEvents", "DataQuality"]:
+                dims = ["epoch"]
+            else:
+                dims = ["epoch", "event_num"]
+            dataset[variable_name] = xr.DataArray(
+                np.array(all_data[variable_name]),
+                name=variable_name,
+                dims=dims,
+                attrs=attrs,
+            )
 
     return dataset
 
