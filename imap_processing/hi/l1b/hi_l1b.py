@@ -101,6 +101,10 @@ def housekeeping(packet_file_path: Union[str, Path]) -> list[xr.Dataset]:
     """
     Will process IMAP raw data to l1b housekeeping dataset.
 
+    In order to use `space_packet_parser` and the xtce which contains the
+    DN to EU conversion factors, the L0 packet file is used to go straight to
+    L1B.
+
     Parameters
     ----------
     packet_file_path : str
@@ -114,21 +118,23 @@ def housekeeping(packet_file_path: Union[str, Path]) -> list[xr.Dataset]:
     packet_def_file = (
         imap_module_directory / "hi/packet_definitions/TLM_HI_COMBINED_SCI.xml"
     )
-    # TODO: It irks me that this decom is done twice. Once in L1A and
-    #    again here with use_derived_value=True
+    # TODO: If raw and derived values can be gotten from one call to
+    #    packet_file_to_datasets, the L1A and L1B could be generated
+    #    in a single L1A/B function.
     datasets_by_apid = packet_file_to_datasets(
         packet_file=packet_file_path,
         xtce_packet_definition=packet_def_file,
         use_derived_value=True,
     )
 
-    # Extract only the HK datasets and update their gattrs
+    # Extract only the HK datasets
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs("hi")
     datasets = list()
     for apid in [HIAPID.H45_APP_NHK, HIAPID.H90_APP_NHK]:
         if apid in datasets_by_apid:
             datasets.append(datasets_by_apid[apid])
+            # Update the dataset global attributes
             datasets[-1].attrs.update(
                 ATTR_MGR.get_global_attributes("imap_hi_l1b_hk_attrs")
             )
