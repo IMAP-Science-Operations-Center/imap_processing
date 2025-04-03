@@ -438,6 +438,9 @@ class UltraPointingSet(PointingSet):
         self.num_points = self.data[CoordNames.HEALPIX_INDEX.value].size
         self.nside = hp.npix_to_nside(self.num_points)
 
+        # Tracks Per-Pixel Solid Angle in steradians.
+        self.solid_angle = hp.nside2pixarea(self.nside, degrees=False)
+
         # Determine if the HEALPix tessellation is nested, default is False
         self.nested = bool(
             self.data[CoordNames.HEALPIX_INDEX.value].attrs.get("nested", False)
