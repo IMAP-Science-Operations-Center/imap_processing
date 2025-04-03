@@ -246,9 +246,51 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
         normalized_second_half = normalize_counts(corrected_second_half, latest_cal)
 
         # Sum over the 7 detectors
-        summed_first_half = np.sum(normalized_first_half, axis=1)  # noqa: F841
-        summed_second_half = np.sum(normalized_second_half, axis=1)  # noqa: F841
+        summed_first_half = np.sum(normalized_first_half, axis=1)
+        summed_second_half = np.sum(normalized_second_half, axis=1)
 
-        # TODO: will continue here
+        # Find maximum counts at each energy level
+        peak_counts_first_half = np.max(summed_first_half, axis=1)
+        peak_counts_second_half = np.max(summed_second_half, axis=1)
+
+        # Find the azimuth angle that corresponds to the maximum counts at each energy
+        peak_az_bin_first_half = np.argmax(summed_first_half, axis=1)
+        peak_az_bin_second_half = np.argmax(summed_second_half, axis=1)
+
+        azimuth = np.arange(12, 361, 12)
+
+        # +90
+        bin_pos_90_first_half_0 = (peak_az_bin_first_half + 6) % 30
+        c90_pos_90_first_half_0 = summed_first_half[
+            np.arange(len(bin_pos_90_first_half_0)), bin_pos_90_first_half_0
+        ]
+        bin_pos_90_first_half_1 = (peak_az_bin_first_half + 8) % 30
+        c90_pos_90_first_half_1 = summed_first_half[
+            np.arange(len(bin_pos_90_first_half_1)), bin_pos_90_first_half_1
+        ]
+        c90_post_90_first_half = (c90_pos_90_first_half_0 + c90_pos_90_first_half_1) / 2
+        mid_vals = (bin_pos_90_first_half_0 + bin_pos_90_first_half_1) / 2
+        azimuth_90_first_half = azimuth[mid_vals.astype(int)]
+
+        # +180
+        bin_180_first_half_0 = (peak_az_bin_first_half + 14) % 30
+        bin_180_first_half_1 = (peak_az_bin_first_half + 16) % 30
+        azimuth_180_first_half = azimuth[
+            (bin_180_first_half_0 + bin_180_first_half_1) / 2
+        ]
+
+        # -90
+        bin_neg_90_first_half_0 = (peak_az_bin_first_half - 6) % 30
+        bin_neg_90_first_half_1 = (peak_az_bin_first_half - 8) % 30
+        azimuth_neg_90_first_half = azimuth[
+            (bin_neg_90_first_half_0 + bin_neg_90_first_half_1) / 2
+        ]
+
+        azimuth = np.arange(12, 361, 12)
+
+        print("hi")
+        # Each bin is 12 degrees.
+        # azimuth_90_first_half
+        # azimuth_180_first_half
 
     return swe_data
