@@ -78,13 +78,13 @@ class TestUltraPointingSet:
             # Check that the unwrapped_dims_dict is as expected
             assert ultra_pset.unwrapped_dims_dict["counts"] == (
                 "epoch",
-                "energy",
+                "energy_bin_geometric_mean",
                 "pixel",
             )
             # Check the non_spatial_coords are as expected
             assert tuple(ultra_pset.non_spatial_coords.keys()) == (
                 "epoch",
-                "energy",
+                "energy_bin_geometric_mean",
             )
 
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")

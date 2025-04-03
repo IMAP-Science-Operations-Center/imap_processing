@@ -152,7 +152,7 @@ def mock_l1c_pset_product_rectangular(  # noqa: PLR0913
                 ],
                 counts,
             ),
-            "exposure_time": (
+            "exposure_factor": (
                 [
                     CoordNames.TIME.value,
                     CoordNames.AZIMUTH_L1C.value,
@@ -282,8 +282,15 @@ def mock_l1c_pset_product_healpix(  # noqa: PLR0913
         ]
     )
 
-    # Generate exposure times using gaussian distribution
-    exposure_time = peak_exposure * (prob_scaling_factor / prob_scaling_factor.max())
+    # Generate exposure times using gaussian distribution, but wider
+    prob_scaling_factor_exptime = counts_scaling_params[1] * np.exp(
+        -(lat_diff**2) / (2 * (3 * width_scale) ** 2)
+    )
+    exposure_time = peak_exposure * (
+        prob_scaling_factor_exptime / prob_scaling_factor_exptime.max()
+    )
+    # Add a tiny exposure time to avoid nans
+    exposure_time += 1e-10
 
     # Ensure counts are integers
     counts = counts.astype(int)
@@ -318,9 +325,9 @@ def mock_l1c_pset_product_healpix(  # noqa: PLR0913
                     CoordNames.ENERGY.value,
                     CoordNames.HEALPIX_INDEX.value,
                 ],
-                np.zeros_like(counts),
+                np.full_like(counts, 0.05, dtype=float),
             ),
-            "exposure_time": (
+            "exposure_factor": (
                 [CoordNames.HEALPIX_INDEX.value],
                 exposure_time,
             ),
