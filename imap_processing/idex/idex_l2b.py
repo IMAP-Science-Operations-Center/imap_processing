@@ -62,21 +62,23 @@ def idex_l2b(l2a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         dims=["epoch"],
         attrs=idex_attrs.get_variable_attributes("epoch"),
     )
-
-    target_waveforms = ["target_high", "target_low", "ion_grid"]
-    arrays_to_copy = []
-    for waveform in target_waveforms:
-        arrays_to_copy.append(f"{waveform}_fit_impact_mass_estimate")
-        arrays_to_copy.append(f"{waveform}_fit_impact_charge")
-
     # Create l2b Dataset
     l2b_dataset = xr.Dataset(
         coords={"epoch": epoch_da},
         attrs=idex_attrs.get_global_attributes("imap_idex_l2b_sci"),
     )
+
+    target_waveforms = ["target_high", "target_low", "ion_grid"]
+    mass_name = "_fit_impact_mass_estimate"
+    charge_name = "_fit_impact_charge"
     # Copy arrays to l2b dataset
-    for array in arrays_to_copy:
-        l2b_dataset[array] = l2a_dataset[array].copy(deep=True)
+    for waveform in target_waveforms:
+        l2b_dataset[waveform + charge_name] = l2a_dataset[waveform + charge_name].copy(
+            deep=True
+        )
+        l2b_dataset[waveform + mass_name] = l2a_dataset[waveform + mass_name].copy(
+            deep=True
+        )
 
     spin_phase_quadrants = round_spin_phases(l2a_dataset["spin_phase"])
     # TODO add variable attributes
