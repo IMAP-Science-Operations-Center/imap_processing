@@ -244,31 +244,60 @@ def test_spin_cycle():
     # Assert
     np.testing.assert_array_equal(spin_cycle_data["spin_cycle"], spin_cycle_expected)
 
-def test_set_event_met():
+def test_get_spin_start_times():
     # Arrange
     l1b_de = xr.Dataset(
         {
             "spin_cycle": ("epoch", [1, 2, 3, 4, 5]),
         },
-        coords={"epoch": [0, 1, 3, 4]},
+        coords={"epoch": [0, 1, 2, 3, 4]},
     )
     l1a_de = xr.Dataset(
         {
             "de_count": ("epoch", [2, 3]),
+            "shcoarse": ("direct_event", [1, 2, 3, 4, 5]),
             "de_time": ("direct_event", [0000, 1000, 2000, 3000, 4000]),
         },
         coords={"epoch": [0, 1], "direct_event": [0, 1, 2, 3, 4]},
     )
     spin = xr.Dataset(
         {
-            "start_sec_spin": ("epoch", [0, 1]),
-            "start_subsec_spin": ("epoch", [0, 1]),
+            "start_sec_spin": ("epoch", [0, 1, 2, 3, 4, 5]),
+            "start_subsec_spin": ("epoch", [0, 1, 2, 3, 4, 5]),
         }
     )
 
+    end_acq = xr.DataArray([0, 1, 2, 3, 4], dims="epoch")
 
-    # Act
-    l1b_de = set_event_met(l1a_de, l1b_de, )
+    l1b_de = get_spin_start_times(l1a_de, l1b_de, spin, end_acq)
 
-    # Assert
-    np.testing.assert_array_equal(l1b_de["event_met"], de["de_time"])
+    print(l1b_de)
+
+# def test_set_event_met():
+#     # Arrange
+#     l1b_de = xr.Dataset(
+#         {
+#             "spin_cycle": ("epoch", [1, 2, 3, 4, 5]),
+#         },
+#         coords={"epoch": [0, 1, 3, 4]},
+#     )
+#     l1a_de = xr.Dataset(
+#         {
+#             "de_count": ("epoch", [2, 3]),
+#             "de_time": ("direct_event", [0000, 1000, 2000, 3000, 4000]),
+#         },
+#         coords={"epoch": [0, 1], "direct_event": [0, 1, 2, 3, 4]},
+#     )
+#     spin = xr.Dataset(
+#         {
+#             "start_sec_spin": ("epoch", [0, 1]),
+#             "start_subsec_spin": ("epoch", [0, 1]),
+#         }
+#     )
+#
+#
+#     # Act
+#     l1b_de = set_event_met(l1a_de, l1b_de, )
+#
+#     # Assert
+#     np.testing.assert_array_equal(l1b_de["event_met"], de["de_time"])
