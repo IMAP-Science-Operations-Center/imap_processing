@@ -7,6 +7,29 @@ default_attrs: &default
   VALIDMIN: -9223372036854775808
   VALIDMAX: 9223372036854775807
   VAR_TYPE: data
+  UNITS: " "
+
+default_float32_attrs: &default_float32
+  <<: *default
+  FILLVAL: .NAN
+  FORMAT: F12.6
+  VALIDMIN: -3.4028235e+38
+  VALIDMAX: 3.4028235e+38
+  dtype: float32
+
+latitude:
+  <<: *default_float32
+  CATDESC: Latitude bin center corresponding to healpix index with range [-90, 90].
+  FIELDNAM: latitude
+  LABLAXIS: latitude
+  UNITS: degrees
+
+longitude:
+  <<: *default_float32
+  CATDESC: Longitude bin center corresponding to healpix index with range [0, 360].
+  FIELDNAM: longitude
+  LABLAXIS: longitude
+  UNITS: degrees
 
 spin_angle:
   <<: *default
@@ -15,14 +38,6 @@ spin_angle:
   LABLAXIS: spin angle
   # TODO: come back to format
   UNITS: degrees
-
-esa_step:
-  <<: *default
-  CATDESC: ESA step (0-10), nominally 9, but possibly 8 or 10, 0 is likely a background test. Energy bin.
-  FIELDNAM: esa_step
-  LABLAXIS: esa step
-  # TODO: come back to format
-  UNITS: " "
 
 time_bin:
   <<: *default
@@ -40,11 +55,11 @@ species_bin:
   # TODO: come back to format
   UNITS: " "
 
-exposure_times:
-  <<: *default
-  CATDESC: Exposure time for a spin.
-  FIELDNAM: exposure_times
-  LABLAXIS: exposure times
+exposure_factor:
+  <<: *default_float32
+  CATDESC: Exposure time for a pointing.
+  FIELDNAM: exposure_factor
+  LABLAXIS: exposure factor
   # TODO: come back to format
   UNITS: seconds
 
@@ -65,7 +80,7 @@ counts:
   UNITS: counts
 
 background_rates:
-  <<: *default
+  <<: *default_float32
   CATDESC: Background rates. Background dominated by accidentals caused by a combination of UV light and misregistered low energy ENA events.
   FIELDNAM: background_rates
   LABLAXIS: background rates

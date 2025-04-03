@@ -88,7 +88,7 @@ def mock_l1c_pset_product_rectangular(  # noqa: PLR0913
     num_lon_bins = int(360 / spacing_deg)
     stripe_center_lat_bin = int((stripe_center_lat + 90) / spacing_deg)
 
-    _, energy_bin_midpoints = build_energy_bins()
+    _, energy_bin_midpoints, _ = build_energy_bins()
     num_energy_bins = len(energy_bin_midpoints)
 
     # 1 epoch x num_energy_bins x num_lon_bins x num_lat_bins
@@ -251,7 +251,7 @@ def mock_l1c_pset_product_healpix(  # noqa: PLR0913
     head : str, optional
         The sensor head (either '45' or '90') (default is '45').
     """
-    _, energy_bin_midpoints = build_energy_bins()
+    _, energy_bin_midpoints, _ = build_energy_bins()
     num_energy_bins = len(energy_bin_midpoints)
     npix = hp.nside2npix(nside)
     counts = np.zeros(npix)

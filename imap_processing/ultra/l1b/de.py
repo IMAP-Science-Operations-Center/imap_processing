@@ -223,6 +223,9 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
     de_dict["velocity_dps_sc"] = sc_dps_velocity
     de_dict["velocity_dps_helio"] = helio_velocity
 
+    de_dict["energy_spacecraft"] = get_de_energy_kev(sc_dps_velocity, species_bin)
+    de_dict["energy_heliosphere"] = get_de_energy_kev(helio_velocity, species_bin)
+
     # TODO: TBD.
     de_dict["event_efficiency"] = np.full(
         len(de_dataset["epoch"]), np.nan, dtype=np.float32

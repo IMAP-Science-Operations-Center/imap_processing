@@ -11,8 +11,11 @@ from imap_processing.lo.l1b.lo_l1b import (
     convert_start_end_acq_times,
     create_datasets,
     get_avg_spin_durations,
+    get_spin_angle,
     initialize_l1b_de,
     lo_l1b,
+    set_spin_bin,
+    set_spin_cycle,
 )
 
 
@@ -178,3 +181,63 @@ def test_get_avg_spin_durations():
 
     # Assert
     np.testing.assert_array_equal(avg_spin_durations, expected_avg_spin_durations)
+
+
+def test_get_spin_angle():
+    # Arrange
+    de = xr.Dataset(
+        {
+            "de_count": ("epoch", [2, 3]),
+            "de_time": ("direct_event", [0000, 1000, 2000, 3000, 4000]),
+        },
+        coords={"epoch": [0, 1], "direct_event": [0, 1, 2, 3, 4]},
+    )
+    spin_angle_expected = np.array([0, 87.89, 175.78, 263.67, 351.56])
+
+    # Act
+    spin_angle = get_spin_angle(de)
+
+    # Assert
+    np.testing.assert_allclose(
+        spin_angle,
+        spin_angle_expected,
+        atol=1e-2,
+        err_msg=f"Spin angle: {spin_angle} vs {spin_angle_expected}",
+    )
+
+
+def test_spin_bin():
+    # Arrange
+    l1b_de = xr.Dataset()
+    spin_angle = np.array([0, 50, 150, 250, 365])
+    expected_spin_bins = np.array([0, 8, 25, 41, 60])
+
+    # Act
+    l1b_de = set_spin_bin(l1b_de, spin_angle)
+
+    # Assert
+    np.testing.assert_array_equal(l1b_de["spin_bin"], expected_spin_bins)
+
+
+def test_spin_cycle():
+    # Arrange
+    de = xr.Dataset(
+        {
+            "de_count": ("epoch", [2, 3]),
+            "esa_step": ("direct_event", [1, 2, 3, 4, 5]),
+        },
+        coords={"epoch": [0, 1], "direct_event": [1, 2, 3, 4, 5]},
+    )
+
+    # spin_cycle = spin_start + 7 + (esa_step - 1) * 2
+    # where spin start is the spin number for the first spin
+    # in an Aggregated Science Cycle (first spin number of an epoch)
+    # and esa_step is the esa_step for a direct event
+    spin_cycle_expected = np.array([7, 9, 39, 41, 43])
+    spin_cycle_data = xr.Dataset()
+
+    # Act
+    spin_cycle_data = set_spin_cycle(de, spin_cycle_data)
+
+    # Assert
+    np.testing.assert_array_equal(spin_cycle_data["spin_cycle"], spin_cycle_expected)

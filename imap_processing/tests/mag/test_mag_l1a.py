@@ -910,6 +910,15 @@ def test_mag_l1a():
         == output_data[-1]["compression_flags"].data.shape[0]
     )
 
+    assert (
+        str(output_data[-1]["epoch"].data[0])
+        in output_data[-1].attrs["vectors_per_second"]
+    )
+    assert (
+        str(output_data[-2]["epoch"].data[0])
+        in output_data[-2].attrs["vectors_per_second"]
+    )
+
 
 def test_mag_packet_properties():
     # equal to 01001011
