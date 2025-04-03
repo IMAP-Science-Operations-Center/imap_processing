@@ -164,6 +164,14 @@ def test_data_paths():
             / "idex_l1a_validation_file.h5",
         ),
         (
+            "idex_l1b_validation_file.h5",
+            imap_module_directory
+            / "tests"
+            / "idex"
+            / "test_data"
+            / "idex_l1b_validation_file.h5",
+        ),
+        (
             "ultra-90_raw_event_data_shortened.csv",
             imap_module_directory
             / "tests"
@@ -200,6 +208,7 @@ def test_data_paths():
             / "ultra_90_dps_exposure.csv",
         ),
     ]
+
     return test_data_path_list
 
 
