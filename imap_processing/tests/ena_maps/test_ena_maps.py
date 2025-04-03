@@ -188,7 +188,7 @@ class TestRectangularSkyMap:
         for ultra_pset in self.ultra_psets:
             rectangular_map.project_pset_values_to_map(
                 ultra_pset,
-                value_keys=["counts", "exposure_time"],
+                value_keys=["counts", "exposure_factor"],
                 index_match_method=index_matching_method,
             )
 
@@ -251,7 +251,7 @@ class TestRectangularSkyMap:
         for rectangular_pset in self.rectangular_psets:
             rectangular_map.project_pset_values_to_map(
                 rectangular_pset,
-                value_keys=["counts", "exposure_time"],
+                value_keys=["counts", "exposure_factor"],
                 index_match_method=index_matching_method,
             )
 
@@ -344,7 +344,7 @@ class TestRectangularSkyMap:
 
             rectangular_map.project_pset_values_to_map(
                 rectangular_pset,
-                value_keys=["counts", "exposure_time"],
+                value_keys=["counts", "exposure_factor"],
                 index_match_method=index_matching_method,
             )
             expected_value_every_pixel += pset_num
