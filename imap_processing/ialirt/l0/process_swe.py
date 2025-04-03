@@ -175,6 +175,60 @@ def normalize_counts(counts: NDArray, latest_cal: pd.Series) -> NDArray:
     return norm_counts
 
 
+def average_values_and_azimuth(peak_bins, data, azimuth, offset1, offset2):
+    bin_0 = (peak_bins + offset1) % data.shape[1]
+    bin_1 = (peak_bins + offset2) % data.shape[1]
+
+    val_0 = data[np.arange(len(peak_bins)), bin_0]
+    val_1 = data[np.arange(len(peak_bins)), bin_1]
+
+    avg_val = (val_0 + val_1) / 2
+    mid_idx = ((bin_0 + bin_1) / 2).astype(int)
+    mid_az = azimuth[mid_idx]
+
+    return avg_val[:, np.newaxis], mid_az[:, np.newaxis]
+
+
+def find_min(summed_first_half):
+    # Find the maximum counts for each energy level
+    cpeak = np.max(summed_first_half, axis=1)
+
+    # Find the azimuth angle that corresponds to the maximum counts at each energy
+    peak_az_bin = np.argmax(summed_first_half, axis=1)
+
+    azimuth = np.arange(12, 361, 12)
+
+    # +90
+    c_90_pos, azimuth_90_pos = average_values_and_azimuth(
+        peak_az_bin, summed_first_half, azimuth, 6, 8
+    )
+
+    # +180
+    c_180, azimuth_180 = average_values_and_azimuth(
+        peak_az_bin, summed_first_half, azimuth, 14, 16
+    )
+
+    # -90
+    c_90_neg, azimuth_90_neg = average_values_and_azimuth(
+        peak_az_bin, summed_first_half, azimuth, -6, -8
+    )
+
+    stacked = np.hstack([c_90_pos, c_180, c_90_neg])
+
+    # Find the minimum value for each energy level (row)
+    cmin = np.min(stacked, axis=1)
+
+    return cpeak, cmin, c_180, azimuth_180
+
+
+def determine_streaming(cpeak, cmin, c_180):
+    # birectional_streaming = 1 for each energy level if cpeak/cmin > 1.75 and  c_180/cmin > 1.75
+    bidirectional_streaming = (
+        (cpeak / cmin > 1.75) & ((c_180[:, 0]) / cmin > 1.75)
+    ).astype(int)
+    return bidirectional_streaming
+
+
 def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list[dict]:
     """
     Create L1 data dictionary..
@@ -249,44 +303,10 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
         summed_first_half = np.sum(normalized_first_half, axis=1)
         summed_second_half = np.sum(normalized_second_half, axis=1)
 
-        # Find maximum counts at each energy level
-        peak_counts_first_half = np.max(summed_first_half, axis=1)
-        peak_counts_second_half = np.max(summed_second_half, axis=1)
+        cpeak, cmin, c_180, azimuth_180 = find_min(summed_first_half)
 
-        # Find the azimuth angle that corresponds to the maximum counts at each energy
-        peak_az_bin_first_half = np.argmax(summed_first_half, axis=1)
-        peak_az_bin_second_half = np.argmax(summed_second_half, axis=1)
-
-        azimuth = np.arange(12, 361, 12)
-
-        # +90
-        bin_pos_90_first_half_0 = (peak_az_bin_first_half + 6) % 30
-        c90_pos_90_first_half_0 = summed_first_half[
-            np.arange(len(bin_pos_90_first_half_0)), bin_pos_90_first_half_0
-        ]
-        bin_pos_90_first_half_1 = (peak_az_bin_first_half + 8) % 30
-        c90_pos_90_first_half_1 = summed_first_half[
-            np.arange(len(bin_pos_90_first_half_1)), bin_pos_90_first_half_1
-        ]
-        c90_post_90_first_half = (c90_pos_90_first_half_0 + c90_pos_90_first_half_1) / 2
-        mid_vals = (bin_pos_90_first_half_0 + bin_pos_90_first_half_1) / 2
-        azimuth_90_first_half = azimuth[mid_vals.astype(int)]
-
-        # +180
-        bin_180_first_half_0 = (peak_az_bin_first_half + 14) % 30
-        bin_180_first_half_1 = (peak_az_bin_first_half + 16) % 30
-        azimuth_180_first_half = azimuth[
-            (bin_180_first_half_0 + bin_180_first_half_1) / 2
-        ]
-
-        # -90
-        bin_neg_90_first_half_0 = (peak_az_bin_first_half - 6) % 30
-        bin_neg_90_first_half_1 = (peak_az_bin_first_half - 8) % 30
-        azimuth_neg_90_first_half = azimuth[
-            (bin_neg_90_first_half_0 + bin_neg_90_first_half_1) / 2
-        ]
-
-        azimuth = np.arange(12, 361, 12)
+        # first search
+        streaming = determine_streaming(cpeak, cmin, c_180)
 
         print("hi")
         # Each bin is 12 degrees.
