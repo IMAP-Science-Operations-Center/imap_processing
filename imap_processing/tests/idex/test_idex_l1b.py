@@ -247,6 +247,7 @@ def test_get_spice_data(
         assert len(spice_data[array]) == len(decom_test_data["epoch"])
 
 
+@pytest.mark.external_test_data()
 def test_validate_l1b_idex_data_variables(
     l1b_dataset: xr.Dataset, l1b_example_data: xr.Dataset
 ):
