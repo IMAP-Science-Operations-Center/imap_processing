@@ -797,6 +797,7 @@ class Mag(ProcessInstrument):
         datasets: list[xr.Dataset] = []
 
         dependency_list = dependencies.processing_input
+        science_files = dependencies.get_file_paths(source="mag")
         if self.data_level == "l1a":
             # File path is expected output file path
             if len(dependency_list) > 1:
@@ -805,7 +806,7 @@ class Mag(ProcessInstrument):
                     f"{dependency_list}. Expected only one dependency."
                 )
             # TODO: Update this type
-            science_files = dependencies.get_file_paths(source="mag")
+
             datasets = mag_l1a(science_files[0], self.version)
 
         if self.data_level == "l1b":
@@ -814,12 +815,11 @@ class Mag(ProcessInstrument):
                     f"Unexpected dependencies found for MAG L1B:"
                     f"{dependency_list}. Expected only one dependency."
                 )
-            science_files = dependencies.get_file_paths(source="mag")
             input_data = load_cdf(science_files[0])
             datasets = [mag_l1b(input_data, self.version)]
 
         if self.data_level == "l1c":
-            input_data = [load_cdf(dep) for dep in dependencies]
+            input_data = [load_cdf(dep) for dep in science_files]
             # Input datasets can be in any order, and are validated within mag_l1c
             if len(input_data) == 1:
                 datasets = [mag_l1c(input_data[0], self.version)]
@@ -833,7 +833,7 @@ class Mag(ProcessInstrument):
 
         if self.data_level == "l2":
             # TODO: Overwrite dependencies with versions from offsets file
-            input_data = load_cdf(dependencies[0])
+            input_data = load_cdf(science_files[0])
             # TODO: use ancillary from input
             calibration_dataset = load_cdf(
                 Path(__file__).parent
@@ -845,9 +845,9 @@ class Mag(ProcessInstrument):
             )
             # TODO: Test data missing
             offset_dataset = xr.Dataset()
-            datasets = [
-                mag_l2(calibration_dataset, offset_dataset, input_data, self.version)
-            ]
+            datasets = mag_l2(
+                calibration_dataset, offset_dataset, input_data, self.version
+            )
 
         return datasets
 
