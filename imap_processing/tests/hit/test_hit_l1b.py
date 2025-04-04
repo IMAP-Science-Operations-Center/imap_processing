@@ -306,8 +306,7 @@ def test_process_sectored_rates_data(l1a_counts_dataset, livetime):
         "fe_energy_mean",
     }
 
-    # Check that the dataset has the correct coords and
-    # variables
+    # Check that the dataset has the correct coords and variables
     assert valid_coords == set(
         l1b_sectored_rates_dataset.coords
     ), "Coordinates mismatch"
