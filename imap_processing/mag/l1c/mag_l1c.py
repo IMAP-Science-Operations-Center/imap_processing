@@ -660,14 +660,15 @@ def remove_missing_data(filled_timeline: np.ndarray) -> np.ndarray:
 
     Parameters
     ----------
-    filled_timeline : np.ndarray
+    filled_timeline : numpy.ndarray
         An (n, 8) shaped array containing the filled timeline.
         Indices: 0 - epoch, 1-4 - vector x, y, z, and range, 5 - generated flag,
         6-7 - compression flags.
 
     Returns
     -------
-    np.ndarray
+    cleaned_array : numpy.ndarray
         The filled timeline with missing data removed.
     """
-    return filled_timeline[filled_timeline[:, 5] != -1]
+    cleaned_array: np.ndarray = filled_timeline[filled_timeline[:, 5] != -1]
+    return cleaned_array
