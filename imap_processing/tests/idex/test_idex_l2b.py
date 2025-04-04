@@ -1,4 +1,4 @@
-"""Tests the L2a processing for IDEX data"""
+"""Tests the L2b processing for IDEX data"""
 
 import numpy as np
 import pytest

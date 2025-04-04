@@ -48,7 +48,7 @@ def idex_l2b(l2a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         The``xarray`` dataset containing the science data and supporting metadata.
     """
     logger.info(
-        f"Running IDEX L1B processing on dataset: {l2a_dataset.attrs['Logical_source']}"
+        f"Running IDEX L2B processing on dataset: {l2a_dataset.attrs['Logical_source']}"
     )
 
     # create the attribute manager for this data level
