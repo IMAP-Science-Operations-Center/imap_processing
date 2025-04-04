@@ -55,6 +55,7 @@ from imap_processing.lo.l1c import lo_l1c
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.mag.l1b.mag_l1b import mag_l1b
 from imap_processing.mag.l1c.mag_l1c import mag_l1c
+from imap_processing.mag.l2.mag_l2 import mag_l2
 from imap_processing.spacecraft import quaternions
 from imap_processing.swapi.l1.swapi_l1 import swapi_l1
 from imap_processing.swapi.l2.swapi_l2 import swapi_l2
@@ -579,10 +580,12 @@ class Hi(ProcessInstrument):
             science_files = dependencies.get_file_paths(source="hi")
             datasets = hi_l1a.hi_l1a(science_files[0], self.version)
         elif self.data_level == "l1b":
-            # TODO: check this and update with new features
-            science_files = dependencies.get_file_paths(source="hi")
-            hi_dependencies = [load_cdf(file) for file in science_files]
-            datasets = [hi_l1b.hi_l1b(hi_dependencies[0], self.version)]
+            l0_files = dependencies.get_file_paths(source="hi", descriptor="raw")
+            if l0_files:
+                datasets = hi_l1b.hi_l1b(l0_files[0], self.version)
+            else:
+                l1a_files = dependencies.get_file_paths(source="hi")
+                datasets = hi_l1b.hi_l1b(load_cdf(l1a_files[0]), self.version)
         elif self.data_level == "l1c":
             # TODO: Add PSET calibration product config file dependency and remove
             #    below injected dependency
@@ -817,17 +820,35 @@ class Mag(ProcessInstrument):
             datasets = [mag_l1b(input_data, self.version)]
 
         if self.data_level == "l1c":
-            # L1C depends on matching norm/burst files: eg burst-magi and norm-magi or
-            # burst-mago and norm-mago
-            if len(dependency_list) != 2:
+            input_data = [load_cdf(dep) for dep in dependencies]
+            # Input datasets can be in any order, and are validated within mag_l1c
+            if len(input_data) == 1:
+                datasets = [mag_l1c(input_data[0], self.version)]
+            elif len(input_data) == 2:
+                datasets = [mag_l1c(input_data[0], self.version, input_data[1])]
+            else:
                 raise ValueError(
                     f"Invalid dependencies found for MAG L1C:"
-                    f"{dependency_list}. Expected two dependencies."
+                    f"{dependencies}. Expected one or two dependencies."
                 )
 
-            input_data = [load_cdf(dep.imap_file_paths[0]) for dep in dependency_list]
-            # Input datasets can be in any order
-            datasets = [mag_l1c(input_data[0], input_data[1], self.version)]
+        if self.data_level == "l2":
+            # TODO: Overwrite dependencies with versions from offsets file
+            input_data = load_cdf(dependencies[0])
+            # TODO: use ancillary from input
+            calibration_dataset = load_cdf(
+                Path(__file__).parent
+                / "tests"
+                / "mag"
+                / "validation"
+                / "calibration"
+                / "imap_mag_l1b-calibration_20240229_v001.cdf"
+            )
+            # TODO: Test data missing
+            offset_dataset = xr.Dataset()
+            datasets = [
+                mag_l2(calibration_dataset, offset_dataset, input_data, self.version)
+            ]
 
         return datasets
 
@@ -908,9 +929,19 @@ class Swapi(ProcessInstrument):
                     f"Unexpected dependencies found for SWAPI L1 housekeeping:"
                     f"{dependency_list}. Expected only one dependency."
                 )
+
+            dependent_files = []
+            l0_files = dependencies.get_file_paths(descriptor="raw")
+            # TODO: handle multiples files as needed in the future
+            dependent_files.append(l0_files[0])
+
+            if self.descriptor == "sci":
+                # TODO: handle multiples files as needed in the future
+                hk_files = dependencies.get_file_paths(descriptor="hk")
+                dependent_files.append(hk_files[0])
+
             # process science or housekeeping data
-            # TODO: fix this in upcoming PR
-            datasets = swapi_l1(dependencies, self.version)
+            datasets = swapi_l1(dependent_files, self.version)
         elif self.data_level == "l2":
             if len(dependency_list) > 1:
                 raise ValueError(

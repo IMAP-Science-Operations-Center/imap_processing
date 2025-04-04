@@ -236,20 +236,6 @@ path_length:
   LABLAXIS: path_length
   UNITS: mm / 100
 
-azimuth:
-  <<: *default_float32
-  CATDESC: Azimuth.
-  FIELDNAM: azimuth
-  LABLAXIS: azimuth
-  UNITS: radians
-
-elevation:
-  <<: *default_float32
-  CATDESC: Elevation.
-  FIELDNAM: elevation
-  LABLAXIS: elevation
-  UNITS: radians
-
 phi:
   <<: *default_float32
   CATDESC: Ultra instrument frame event phi (azimuth with range -90 -> 90).

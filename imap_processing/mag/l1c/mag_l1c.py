@@ -9,14 +9,16 @@ import xarray as xr
 import yaml
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.mag.constants import ModeFlags
+from imap_processing.mag.constants import ModeFlags, VecSec
 from imap_processing.mag.l1c.interpolation_methods import InterpolationFunction
 
 logger = logging.getLogger(__name__)
 
 
 def mag_l1c(
-    first_input_dataset: xr.Dataset, second_input_dataset: xr.Dataset, version: str
+    first_input_dataset: xr.Dataset,
+    version: str,
+    second_input_dataset: xr.Dataset = None,
 ) -> xr.Dataset:
     """
     Will process MAG L1C data from L1A data.
@@ -28,12 +30,12 @@ def mag_l1c(
     first_input_dataset : xr.Dataset
         The first input dataset to process. This can be either burst or norm data, for
         mago or magi.
-    second_input_dataset : xr.Dataset
+    version : str
+        The version of the output data.
+    second_input_dataset : xr.Dataset, optional
         The second input dataset to process. This should be burst if first_input_dataset
         was norm, or norm if first_input_dataset was burst. It should match the
         instrument - both inputs should be mago or magi.
-    version : str
-        The version of the output data.
 
     Returns
     -------
@@ -42,29 +44,23 @@ def mag_l1c(
     """
     # TODO:
     # find missing sequences and output them
-    # add missing interpolation methods
+    # Fix gaps at the beginning of the day by going to previous day's file
+    # Fix gaps at the end of the day
+    # Allow for one input to be missing
+    # Missing burst file - just pass through norm file
+    # Missing norm file - go back to previous L1C file to find timestamps, then
+    # interpolate the entire day from burst
 
     input_logical_source_1 = first_input_dataset.attrs["Logical_source"]
     if isinstance(first_input_dataset.attrs["Logical_source"], list):
         input_logical_source_1 = first_input_dataset.attrs["Logical_source"][0]
 
-    input_logical_source_2 = second_input_dataset.attrs["Logical_source"]
-    if isinstance(second_input_dataset.attrs["Logical_source"], list):
-        input_logical_source_2 = second_input_dataset.attrs["Logical_source"][0]
+    sensor = input_logical_source_1[-1:]
+    output_logical_source = f"imap_mag_l1c_norm-mag{sensor}"
 
-    if "norm" in input_logical_source_1 and "burst" in input_logical_source_2:
-        normal_mode_dataset = first_input_dataset
-        burst_mode_dataset = second_input_dataset
-        output_logical_source = input_logical_source_1.replace("l1b", "l1c")
-    elif "norm" in input_logical_source_2 and "burst" in input_logical_source_1:
-        normal_mode_dataset = second_input_dataset
-        burst_mode_dataset = first_input_dataset
-        output_logical_source = input_logical_source_2.replace("l1b", "l1c")
-
-    else:
-        raise RuntimeError(
-            "L1C requires one normal mode and one burst mode input " "file."
-        )
+    normal_mode_dataset, burst_mode_dataset = select_datasets(
+        first_input_dataset, second_input_dataset
+    )
 
     with open(
         Path(__file__).parent.parent / "imap_mag_sdc-configuration_v001.yaml"
@@ -72,9 +68,17 @@ def mag_l1c(
         configuration = yaml.safe_load(f)
 
     interp_function = InterpolationFunction[configuration["L1C_interpolation_method"]]
-    completed_timeline = process_mag_l1c(
-        normal_mode_dataset, burst_mode_dataset, interp_function
-    )
+    if normal_mode_dataset and burst_mode_dataset:
+        completed_timeline = process_mag_l1c(
+            normal_mode_dataset, burst_mode_dataset, interp_function
+        )
+    elif normal_mode_dataset is not None:
+        completed_timeline = fill_normal_data(
+            normal_mode_dataset, normal_mode_dataset["epoch"].data
+        )
+    else:
+        # TODO: With only burst data, downsample by retrieving the timeline
+        raise NotImplementedError
 
     attribute_manager = ImapCdfAttributes()
     attribute_manager.add_instrument_global_attrs("mag")
@@ -186,6 +190,66 @@ def mag_l1c(
     return output_dataset
 
 
+def select_datasets(
+    first_input_dataset: xr.Dataset, second_input_dataset: Optional[xr.Dataset] = None
+) -> tuple[xr.Dataset, xr.Dataset]:
+    """
+    Given one or two datasets, assign one to norm and one to burst.
+
+    If only one dataset is provided, the other will be marked as None. If two are
+    provided, they will be validated to ensure one is norm and one is burst.
+
+    Parameters
+    ----------
+    first_input_dataset : xr.Dataset
+        The first input dataset.
+    second_input_dataset : xr.Dataset, optional
+        The second input dataset.
+
+    Returns
+    -------
+    tuple
+        Tuple containing norm_mode_dataset, burst_mode_dataset.
+    """
+    normal_mode_dataset = None
+    burst_mode_dataset = None
+
+    input_logical_source_1 = first_input_dataset.attrs["Logical_source"]
+
+    if isinstance(first_input_dataset.attrs["Logical_source"], list):
+        input_logical_source_1 = first_input_dataset.attrs["Logical_source"][0]
+
+    if "norm" in input_logical_source_1:
+        normal_mode_dataset = first_input_dataset
+
+    if "burst" in input_logical_source_1:
+        burst_mode_dataset = first_input_dataset
+
+    if second_input_dataset is None:
+        logger.info(
+            f"Only one input dataset provided with logical source "
+            f"{input_logical_source_1}"
+        )
+    else:
+        input_logical_source_2 = second_input_dataset.attrs["Logical_source"]
+        if isinstance(second_input_dataset.attrs["Logical_source"], list):
+            input_logical_source_2 = second_input_dataset.attrs["Logical_source"][0]
+
+        if "burst" in input_logical_source_2:
+            burst_mode_dataset = second_input_dataset
+
+        elif "norm" in input_logical_source_2:
+            normal_mode_dataset = second_input_dataset
+
+        # If there are two inputs, one should be norm and one should be burst
+        if normal_mode_dataset is None or burst_mode_dataset is None:
+            raise RuntimeError(
+                "L1C requires one normal mode and one burst mode input file."
+            )
+
+    return normal_mode_dataset, burst_mode_dataset
+
+
 def process_mag_l1c(
     normal_mode_dataset: xr.Dataset,
     burst_mode_dataset: xr.Dataset,
@@ -222,14 +286,19 @@ def process_mag_l1c(
         An (n, 8) shaped array containing the completed timeline.
     """
     norm_epoch = normal_mode_dataset["epoch"].data
-    vecsec_attr = normal_mode_dataset.attrs["vectors_per_second"]
+    if "vectors_per_second" in normal_mode_dataset.attrs:
+        normal_vecsec_dict = vectors_per_second_from_string(
+            normal_mode_dataset.attrs["vectors_per_second"]
+        )
+    else:
+        normal_vecsec_dict = None
 
     output_dataset = normal_mode_dataset.copy(deep=True)
     output_dataset["sample_interpolated"] = xr.DataArray(
         np.zeros(len(normal_mode_dataset))
     )
 
-    gaps = find_all_gaps(norm_epoch, vecsec_attr)
+    gaps = find_all_gaps(norm_epoch, normal_vecsec_dict)
 
     new_timeline = generate_timeline(norm_epoch, gaps)
     norm_filled = fill_normal_data(normal_mode_dataset, new_timeline)
@@ -313,11 +382,30 @@ def interpolate_gaps(
     burst_epochs = burst_dataset["epoch"].data
     # Exclude range values
     burst_vectors = burst_dataset["vectors"].data
+    # Default to two vectors per second
+    burst_vecsec_dict = {0: VecSec.TWO_VECS_PER_S.value}
+    if "vectors_per_second" in burst_dataset.attrs:
+        burst_vecsec_dict = vectors_per_second_from_string(
+            burst_dataset.attrs["vectors_per_second"]
+        )
 
     for gap in gaps:
         # TODO: we might need a few inputs before or after start/end
         burst_start = (np.abs(burst_epochs - gap[0])).argmin()
         burst_end = (np.abs(burst_epochs - gap[1])).argmin()
+
+        norm_rate = VecSec(int(gap[2]))
+
+        # Input rate
+        # Find where burst_start is after the start of the timeline
+        burst_vecsec_index = (
+            np.searchsorted(
+                list(burst_vecsec_dict.keys()), burst_epochs[burst_start], side="right"
+            )
+            - 1
+        )
+        burst_rate = VecSec(list(burst_vecsec_dict.values())[burst_vecsec_index])
+
         gap_timeline = filled_norm_timeline[
             np.nonzero(
                 (filled_norm_timeline > gap[0]) & (filled_norm_timeline < gap[1])
@@ -328,6 +416,8 @@ def interpolate_gaps(
             burst_vectors[burst_start:burst_end, :3],
             burst_epochs[burst_start:burst_end],
             gap_timeline,
+            input_rate=burst_rate,
+            output_rate=norm_rate,
         )
 
         # gaps should not have data in timeline, still check it
@@ -392,7 +482,7 @@ def generate_timeline(epoch_data: np.ndarray, gaps: np.ndarray) -> np.ndarray:
 
 
 def find_all_gaps(
-    epoch_data: np.ndarray, vectors_per_second_attr: Optional[str] = None
+    epoch_data: np.ndarray, vecsec_dict: Optional[dict] = None
 ) -> np.ndarray:
     """
     Find all the gaps in the epoch data.
@@ -405,32 +495,37 @@ def find_all_gaps(
     ----------
     epoch_data : numpy.ndarray
         The epoch data to find gaps in.
-    vectors_per_second_attr : str, optional
-        A string of the form "start:vecsec,start:vecsec" where start is the time in
-        seconds and vecsec is the number of vectors per second. This will be used to
-        find the gaps. If not provided, a 1/2 second gap is assumed.
+    vecsec_dict : dict, optional
+        A dictionary of the form {start: vecsec, start: vecsec} where start is the time
+        in nanoseconds and vecsec is the number of vectors per second. This will be
+        used to find the gaps. If not provided, a 1/2 second gap is assumed.
 
     Returns
     -------
     numpy.ndarray
-        An array of gaps with shape (n, 2) where n is the number of gaps. The gaps are
-        specified as (start, end) where start and end both exist in the timeline.
+        An array of gaps with shape (n, 3) where n is the number of gaps. The gaps are
+        specified as (start, end, vector_rate) where start and end both exist in the
+        timeline.
     """
-    gaps: np.ndarray = np.zeros((0, 2))
-    if vectors_per_second_attr is not None and vectors_per_second_attr != "":
-        vecsec_segments = vectors_per_second_attr.split(",")
-        end_index = epoch_data.shape[0]
-        for vecsec_segment in reversed(vecsec_segments):
-            start_time, vecsec = vecsec_segment.split(":")
-            start_index = np.where(int(start_time) == epoch_data)[0][0]
-            gaps = np.concatenate(
-                (find_gaps(epoch_data[start_index : end_index + 1], int(vecsec)), gaps)
+    gaps: np.ndarray = np.zeros((0, 3))
+    if vecsec_dict is None:
+        # TODO: when we go back to the previous file, also retrieve expected
+        #  vectors per second
+        # If no vecsec is provided, assume 2 vectors per second
+        vecsec_dict = {0: VecSec.TWO_VECS_PER_S.value}
+
+    end_index = epoch_data.shape[0]
+    for start_time in reversed(sorted(vecsec_dict.keys())):
+        start_index = np.where(start_time == epoch_data)[0][0]
+        gaps = np.concatenate(
+            (
+                find_gaps(
+                    epoch_data[start_index : end_index + 1], vecsec_dict[start_time]
+                ),
+                gaps,
             )
-            end_index = start_index
-    else:
-        # TODO: How to handle this case
-        gaps = find_gaps(epoch_data, 2)  # Assume half second gaps
-        # alternatively, I could try and find the average time between vectors
+        )
+        end_index = start_index
 
     return gaps
 
@@ -439,8 +534,8 @@ def find_gaps(timeline_data: np.ndarray, vectors_per_second: int) -> np.ndarray:
     """
     Find gaps in timeline_data that are larger than 1/vectors_per_second.
 
-    Returns timestamps (start_gap, end_gap) where startgap and endgap both
-    exist in timeline data.
+    Returns timestamps (start_gap, end_gap, vectors_per_second) where startgap and
+    endgap both exist in timeline data.
 
     Parameters
     ----------
@@ -452,18 +547,25 @@ def find_gaps(timeline_data: np.ndarray, vectors_per_second: int) -> np.ndarray:
     Returns
     -------
     numpy.ndarray
-        Array of timestamps of shape (n, 2) containing n gaps with start_gap and
-        end_gap. Start_gap and end_gap both correspond to points in timeline_data.
+        Array of timestamps of shape (n, 3) containing n gaps with start_gap and
+        end_gap, as well as vectors_per_second. Start_gap and end_gap both correspond
+        to points in timeline_data.
     """
     # Expected difference between timestamps in nanoseconds.
     expected_gap = 1 / vectors_per_second * 1e9
 
-    diffs = abs(timeline_data[:-1] - np.roll(timeline_data, -1)[:-1])
-    gap_index = np.where(diffs != expected_gap)[0]
-    output: np.ndarray = np.zeros((len(gap_index), 2))
+    # TODO: timestamps can vary by a few ms. Per Alastair, this can be around 7.5% of
+    #  cadence without counting as a "gap".
+    diffs = abs(np.diff(timeline_data))
+    gap_index = np.asarray(diffs != expected_gap).nonzero()[0]
+    output: np.ndarray = np.zeros((len(gap_index), 3))
 
     for index, gap in enumerate(gap_index):
-        output[index, :] = [timeline_data[gap], timeline_data[gap + 1]]
+        output[index, :] = [
+            timeline_data[gap],
+            timeline_data[gap + 1],
+            vectors_per_second,
+        ]
 
     # TODO: How should I handle/find gaps at the end?
     return output
@@ -493,3 +595,29 @@ def generate_missing_timestamps(gap: np.ndarray) -> np.ndarray:
 
     output: np.ndarray = np.arange(gap[0], gap[1], difference_ns)
     return output
+
+
+def vectors_per_second_from_string(vecsec_string: str) -> dict:
+    """
+    Extract the vectors per second from a string into a dictionary.
+
+    Dictionary format: {start_time: vecsec, start_time: vecsec}.
+
+    Parameters
+    ----------
+    vecsec_string : str
+        A string of the form "start:vecsec,start:vecsec" where start is the time in
+        nanoseconds and vecsec is the number of vectors per second.
+
+    Returns
+    -------
+    dict
+        A dictionary of the form {start_time: vecsec, start_time: vecsec}.
+    """
+    vecsec_dict = {}
+    vecsec_segments = vecsec_string.split(",")
+    for vecsec_segment in vecsec_segments:
+        start_time, vecsec = vecsec_segment.split(":")
+        vecsec_dict[int(start_time)] = int(vecsec)
+
+    return vecsec_dict
