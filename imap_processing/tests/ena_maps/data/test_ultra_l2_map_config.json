@@ -1,0 +1,16 @@
+{
+    "sky_tiling_type": "HEALPIX",
+    "spice_reference_frame": "ECLIPJ2000",
+    "projection_method_and_values": {
+        "PUSH": [
+            "counts",
+            "exposure_factor",
+            "sensitivity",
+            "background_rates"
+        ],
+        "PULL": []
+    },
+    "nside": 32,
+    "nested": false,
+    "spacing_deg": 2.0
+}
