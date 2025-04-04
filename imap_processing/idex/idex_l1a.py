@@ -445,11 +445,12 @@ class RawDustEvent:
             List of the high sample waveform.
         """
         samples = self.MAX_HIGH_BLOCKS * self.NUMBER_SAMPLES_PER_HIGH_SAMPLE_BLOCK
+        ints: list[int] = []
         if self.compressed.raw_value == 1:
-            ints = rice_decode(waveform_raw, nbit10=True, sample_count=samples)
+            ints.extend(rice_decode(waveform_raw, nbit10=True, sample_count=samples))
             ints = ints[:-3]
         else:
-            ints = _read_waveform_bits(waveform_raw, high_sample=True)
+            ints.extend(_read_waveform_bits(waveform_raw, high_sample=True))
         return ints
 
     def _parse_low_sample_waveform(self, waveform_raw: str) -> list[int]:
@@ -470,10 +471,11 @@ class RawDustEvent:
             List of processed low sample waveform.
         """
         samples = self.MAX_LOW_BLOCKS * self.NUMBER_SAMPLES_PER_LOW_SAMPLE_BLOCK
+        ints: list[int] = []
         if self.compressed.raw_value == 1:
-            ints = rice_decode(waveform_raw, nbit10=False, sample_count=samples)
+            ints.extend(rice_decode(waveform_raw, nbit10=False, sample_count=samples))
         else:
-            ints = _read_waveform_bits(waveform_raw, high_sample=False)
+            ints.extend(_read_waveform_bits(waveform_raw, high_sample=False))
         return ints
 
     def _calc_low_sample_resolution(self, num_samples: int) -> npt.NDArray:

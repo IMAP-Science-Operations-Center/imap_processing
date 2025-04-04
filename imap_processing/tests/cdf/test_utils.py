@@ -103,9 +103,20 @@ def test_parents_injection(test_dataset):
     test_dataset : xarray.Dataset
         An ``xarray`` dataset object to test with
     """
+    # Deep copy the dataset to ensure that the original is not modified
+    test_ds1 = test_dataset.copy(deep=True)
+    test_ds1.attrs["Data_version"] = "v001"
     parent_paths = ["test_parent1.cdf", "test_parent2.cdf"]
-    new_dataset = load_cdf(write_cdf(test_dataset, parent_files=parent_paths))
+    new_dataset = load_cdf(write_cdf(test_ds1, parent_files=parent_paths))
     assert new_dataset.attrs["Parents"] == parent_paths
+
+    # Second write (with different version to force different filename)
+    test_ds2 = test_dataset.copy(deep=True)
+    test_ds2.attrs["Data_version"] = "v002"
+    one_parent_path = ["test_parent1.cdf"]
+    second_ds = load_cdf(write_cdf(test_ds2, parent_files=one_parent_path))
+    # cdflib returns str if one parent file
+    assert second_ds.attrs["Parents"] == "test_parent1.cdf"
 
 
 @pytest.mark.parametrize(

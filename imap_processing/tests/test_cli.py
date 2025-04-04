@@ -131,14 +131,22 @@ def test_codice(mock_codice_l1a, mock_instrument_dependencies):
     assert mocks["mock_upload"].call_count == 1
 
 
-@pytest.mark.parametrize("data_level, n_prods", [("l1a", 2), ("l1b", 1), ("l1c", 1)])
-def test_hi_l1(mock_instrument_dependencies, data_level, n_prods):
+@pytest.mark.parametrize(
+    "data_level, science_input, n_prods",
+    [
+        ("l1a", ["imap_hi_l0_raw_20231212_v001.pkts"], 2),
+        ("l1b", ["imap_hi_l1a_90sensor-de_20241105_v001.cdf"], 1),
+        ("l1b", ["imap_hi_l0_raw_20231212_v001.pkts"], 2),
+        ("l1c", ["imap_hi_l1b_45sensor-de_20250415_v001.cdf"], 1),
+    ],
+)
+def test_hi_l1(mock_instrument_dependencies, data_level, science_input, n_prods):
     """Test coverage for cli.Hi class"""
     mocks = mock_instrument_dependencies
     mocks["mock_write_cdf"].side_effect = ["/path/to/file0"] * n_prods
     mocks["mock_load_cdf"].return_value = xr.Dataset()
     input_collection = ProcessingInputCollection(
-        ScienceInput("imap_hi_l0_raw_20231212_v001.pkts")
+        *[ScienceInput(file) for file in science_input]
     )
     mocks["mock_pre_processing"].return_value = input_collection
 
