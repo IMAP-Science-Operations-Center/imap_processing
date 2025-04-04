@@ -581,6 +581,8 @@ def find_gaps(timeline_data: np.ndarray, vectors_per_second: int) -> np.ndarray:
     # TODO: timestamps can vary by a few ms. Per Alastair, this can be around 7.5% of
     #  cadence without counting as a "gap".
     diffs = abs(np.diff(timeline_data))
+    # 3.5e7 == 7.5% of 0.5s in nanoseconds, a common gap. In the future, this number
+    # will be calculated from the expected gap.
     gap_index = np.asarray(diffs - expected_gap > 3.5e7).nonzero()[0]
     output: np.ndarray = np.zeros((len(gap_index), 3))
 
