@@ -297,8 +297,6 @@ def generate_dataset(
         ),
     )
 
-    # TODO: Epoch here refers to the start of the sample. Confirm that this is
-    # what mag is expecting, and if it is, CATDESC needs to be updated.
     epoch_time = xr.DataArray(
         time_data,
         name="epoch",
@@ -338,7 +336,6 @@ def generate_dataset(
         ),
     )
     global_attributes = attribute_manager.get_global_attributes(logical_file_id)
-    # TODO: this method won't work because these values are not in the schema.
     global_attributes["is_mago"] = str(bool(single_file_l1a.is_mago))
     global_attributes["is_active"] = str(bool(single_file_l1a.is_active))
     global_attributes["vectors_per_second"] = (

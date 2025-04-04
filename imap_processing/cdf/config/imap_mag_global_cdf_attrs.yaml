@@ -83,3 +83,18 @@ imap_mag_l1c_norm-magi:
     Data_type: L1C_norm-magi>Level 1C MAGi normal rate
     Logical_source: imap_mag_l1c_norm-magi
     Logical_source_description: IMAP Mission MAGi Normal Rate Instrument Level-1C Data.
+
+imap_mag_l2_norm-dsrf:
+  <<: *default
+  Data_type: L2_norm-dsrf>Level 2 normal rate data in DSRF
+  Logical_source: imap_mag_l2_norm-dsrf
+  Logical_source_description: IMAP Mission Normal Rate Instrument Level-2 Data in
+    Despun Spacecraft Reference Frame.
+
+
+imap_mag_l2_burst-dsrf:
+  <<: *default
+  Data_type: L2_burst-dsrf>Level 2 burst rate data in DSRF
+  Logical_source: imap_mag_l2_burst-dsrf
+  Logical_source_description: IMAP Mission Burst Rate Instrument Level-2 Data in
+    Despun Spacecraft Reference Frame.

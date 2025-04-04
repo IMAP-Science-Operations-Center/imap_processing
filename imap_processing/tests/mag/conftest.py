@@ -9,7 +9,6 @@ import xarray as xr
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.mag.constants import VecSec
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
-from imap_processing.mag.l1a.mag_l1a_data import MagL1a, TimeTuple
 from imap_processing.spice.time import TTJ2000_EPOCH
 
 
@@ -61,9 +60,14 @@ def mag_l1a_dataset_generator(length):
 
 
 @pytest.fixture()
-def mag_test_calibration_data():
+def mag_test_l1b_calibration_data():
     imap_dir = Path(__file__).parent
-    cal_file = imap_dir / "validation" / "imap_calibration_mag_20240229_v01.cdf"
+    cal_file = (
+        imap_dir
+        / "validation"
+        / "calibration"
+        / "imap_mag_l1b-calibration_20240229_v001.cdf"
+    )
     calibration_data = load_cdf(cal_file)
     return calibration_data
 
@@ -77,7 +81,7 @@ def mag_generate_l1b_from_csv(df, logical_source):
         df[["compression", "compression_width"]]
     )
 
-    epoch = [np.datetime64(t) - np.datetime64(TTJ2000_EPOCH) for t in df['t']]
+    epoch = [np.datetime64(t) - np.datetime64(TTJ2000_EPOCH) for t in df["t"]]
     epoch_ns = [(e / np.timedelta64(1, "ns")).astype(np.int64) for e in epoch]
     dataset.coords["epoch"] = xr.DataArray(epoch_ns, name="epoch", dims=["epoch"])
 

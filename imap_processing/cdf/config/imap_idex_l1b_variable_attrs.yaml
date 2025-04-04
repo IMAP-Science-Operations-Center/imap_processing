@@ -31,12 +31,12 @@ l1b_data_base: &l1b_data_base
 
 l1b_tof_base: &l1b_tof_base
   <<: *l1b_data_base
-  DEPEND_1: time_high_sample_rate
+  DEPEND_1: time_high_sample_rate_index
   LABL_PTR_1: time_high_sample_rate_label
 
 l1b_target_base: &l1b_target_base
   <<: *l1b_data_base
-  DEPEND_1: time_low_sample_rate
+  DEPEND_1: time_low_sample_rate_index
   LABL_PTR_1: time_low_sample_rate_label
 
 trigger_base: &trigger_base
@@ -286,7 +286,7 @@ voltage_pos5v_bus:
   LABLAXIS: Voltage
   UNITS: V
 
-current_3p3_bus:
+current_3p3v_bus:
   <<: *trigger_base
   FIELDNAM: P3.3_IMON
   CATDESC: Positive current reading on +3.3V bus on LVPS Board (ADC 1 channel 0)
