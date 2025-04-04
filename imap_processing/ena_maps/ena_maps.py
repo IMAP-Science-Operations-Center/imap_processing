@@ -688,6 +688,10 @@ class AbstractSkyMap(ABC):
                     "Only PUSH and PULL index matching methods are supported."
                 )
 
+            # TODO: we may need to allow for unweighted/weighted means here by
+            # dividing pointing_projected_values by some binned weights.
+            # For unweighted means, we could use the number of pointing set pixels
+            # that correspond to each map pixel as the weights.
             self.data_1d[value_key] += pointing_projected_values
 
 
