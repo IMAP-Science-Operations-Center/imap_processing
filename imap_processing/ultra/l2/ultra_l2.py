@@ -89,6 +89,8 @@ def read_into_pointing_set(
         )
     # OR paths to CDF files (preferable for projecting many PointingSets)
     elif isinstance(input_data, str | Path):
+        if isinstance(input_data, str):
+            input_data = Path(input_data)
         ultra_pointing_set = ena_maps.UltraPointingSet(
             l1c_dataset=load_cdf(input_data), spice_reference_frame=PSET_SPICE_FRAME
         )
