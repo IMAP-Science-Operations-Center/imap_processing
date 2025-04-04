@@ -5,6 +5,10 @@ from unittest import mock
 
 import pytest
 import xarray as xr
+from imap_data_access.processing_input import (
+    ProcessingInputCollection,
+    ScienceInput,
+)
 
 from imap_processing.cli import Codice, Hi, Hit, Swe, Ultra, _validate_args, main
 
@@ -17,6 +21,9 @@ def mock_instrument_dependencies():
         mock.patch("imap_processing.cli.imap_data_access.upload") as mock_upload,
         mock.patch("imap_processing.cli.write_cdf") as mock_write_cdf,
         mock.patch("imap_processing.cli.load_cdf") as mock_load_cdf,
+        mock.patch(
+            "imap_processing.cli.ProcessInstrument.pre_processing"
+        ) as mock_pre_processing,
     ):
         mocks = {
             "mock_query": mock_query,
@@ -24,6 +31,7 @@ def mock_instrument_dependencies():
             "mock_upload": mock_upload,
             "mock_write_cdf": mock_write_cdf,
             "mock_load_cdf": mock_load_cdf,
+            "mock_pre_processing": mock_pre_processing,
         }
         yield mocks
 
@@ -37,11 +45,21 @@ def test_main(mock_instrument):
         "mag",
         "--dependency",
         (
-            '[{"instrument": "mag", '
-            '"data_level": "l0", '
-            '"descriptor": "sci", '
-            '"version": "v001", '
-            '"start_date": "20240430"}]'
+            "["
+            "{"
+            '"type": "ancillary",'
+            '"files": ['
+            '"imap_mag_l1b-cal_20250101_v001.cdf",'
+            '"imap_mag_l1b-cal_20250103-20250104_v002.cdf"'
+            "]"
+            "},"
+            "{"
+            '"type": "science",'
+            '"files": ['
+            '"imap_mag_l0_raw_20240430_v001.cdf",'
+            "]"
+            "}"
+            "]"
         ),
         "--data-level",
         "l1a",
@@ -85,28 +103,30 @@ def test_codice(mock_codice_l1a, mock_instrument_dependencies):
     """Test coverage for cli.CoDICE class"""
 
     test_dataset = xr.Dataset({}, attrs={"cdf_filename": "file0"})
-
+    input_collection = ProcessingInputCollection(
+        ScienceInput("imap_codice_l0_raw_20230822_v001.pkts")
+    )
     mocks = mock_instrument_dependencies
     mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
     mocks["mock_download"].return_value = "file0"
-    mock_codice_l1a.return_value = test_dataset
+    mock_codice_l1a.return_value = [test_dataset]
     mocks["mock_write_cdf"].side_effect = ["/path/to/file0"]
+    mocks["mock_pre_processing"].return_value = input_collection
 
     dependency_str = (
         "[{"
-        "'instrument': 'codice',"
-        "'data_level': 'l0',"
-        "'descriptor': 'hskp',"
-        "'version': 'v001',"
-        "'start_date': '20230822'"
+        '"type": "science",'
+        '"files": ['
+        '"imap_codice_l0_raw_20230822_v001.pkts"'
+        "]"
         "}]"
     )
+
     instrument = Codice(
         "l1a", "hskp", dependency_str, "20230822", "20230822", "v001", True
     )
+
     instrument.process()
-    assert mocks["mock_query"].call_count == 1
-    assert mocks["mock_download"].call_count == 1
     assert mock_codice_l1a.call_count == 1
     assert mocks["mock_upload"].call_count == 1
 
@@ -115,10 +135,12 @@ def test_codice(mock_codice_l1a, mock_instrument_dependencies):
 def test_hi_l1(mock_instrument_dependencies, data_level, n_prods):
     """Test coverage for cli.Hi class"""
     mocks = mock_instrument_dependencies
-    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
-    mocks["mock_download"].return_value = "file0"
-    mocks["mock_write_cdf"].side_effect = ["/path/to/file0", "/path/to/file1"]
+    mocks["mock_write_cdf"].side_effect = ["/path/to/file0"] * n_prods
     mocks["mock_load_cdf"].return_value = xr.Dataset()
+    input_collection = ProcessingInputCollection(
+        ScienceInput("imap_hi_l0_raw_20231212_v001.pkts")
+    )
+    mocks["mock_pre_processing"].return_value = input_collection
 
     # patch autospec=True makes this test confirm that the function call in cli.py
     # matches the mocked function signature.
@@ -128,19 +150,17 @@ def test_hi_l1(mock_instrument_dependencies, data_level, n_prods):
         mock_hi.return_value = [f"{data_level}_file{n}" for n in range(n_prods)]
         dependency_str = (
             "[{"
-            "'instrument': 'lo',"
-            "'data_level': 'l0',"
-            "'descriptor': 'sci',"
-            "'version': 'v00-01',"
-            "'start_date': '20231212'"
+            '"type": "science",'
+            '"files": ['
+            '"imap_hi_l0_raw_20231212_v001.pkts"'
+            "]"
             "}]"
         )
         instrument = Hi(
             data_level, "sci", dependency_str, "20231212", "20231213", "v005", True
         )
+
         instrument.process()
-        assert mocks["mock_query"].call_count == 1
-        assert mocks["mock_download"].call_count == 1
         assert mock_hi.call_count == 1
         assert mocks["mock_upload"].call_count == n_prods
 
@@ -149,26 +169,26 @@ def test_hi_l1(mock_instrument_dependencies, data_level, n_prods):
 def test_ultra_l1a(mock_ultra_l1a, mock_instrument_dependencies):
     """Test coverage for cli.Ultra class with l1a data level"""
     mocks = mock_instrument_dependencies
-    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
-    mocks["mock_download"].return_value = "dependency0"
     mock_ultra_l1a.return_value = ["l1a_dataset0", "l1a_dataset1"]
     mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
+    input_collection = ProcessingInputCollection(
+        ScienceInput("imap_ultra_l0_raw_20240207_v001.pkts")
+    )
+    mocks["mock_pre_processing"].return_value = input_collection
 
     dependency_str = (
         "[{"
-        "'instrument': 'ultra',"
-        "'data_level': 'l0',"
-        "'descriptor': 'raw',"
-        "'version': 'v001',"
-        "'start_date': '20240207'"
+        '"type": "science",'
+        '"files": ['
+        '"imap_ultra_l0_raw_20240207_v001.pkts"'
+        "]"
         "}]"
     )
     instrument = Ultra(
         "l1a", "raw", dependency_str, "20240207", "20240208", "v001", True
     )
+
     instrument.process()
-    assert mocks["mock_query"].call_count == 1
-    assert mocks["mock_download"].call_count == 1
     assert mock_ultra_l1a.call_count == 1
     assert mocks["mock_upload"].call_count == 2
 
@@ -177,14 +197,17 @@ def test_ultra_l1a(mock_ultra_l1a, mock_instrument_dependencies):
 def test_ultra_l1b(mock_ultra_l1b, mock_instrument_dependencies):
     """Test coverage for cli.Ultra class with l1b data level"""
     mocks = mock_instrument_dependencies
-    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
     mocks["mock_download"].return_value = "dependency0"
     mock_ultra_l1b.return_value = ["l1b_dataset0", "l1b_dataset1"]
     mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
+    input_collection = ProcessingInputCollection(
+        ScienceInput("imap_ultra_l1a_de_20240207_v001.cdf")
+    )
+    mocks["mock_pre_processing"].return_value = input_collection
 
     instrument = Ultra("l1b", "de", "[]", "20240207", "20240208", "v001", True)
+
     instrument.process()
-    assert mocks["mock_query"].call_count == 0
     assert mocks["mock_download"].call_count == 0
     assert mock_ultra_l1b.call_count == 1
     assert mocks["mock_upload"].call_count == 2
@@ -194,15 +217,16 @@ def test_ultra_l1b(mock_ultra_l1b, mock_instrument_dependencies):
 def test_ultra_l1c(mock_ultra_l1c, mock_instrument_dependencies):
     """Test coverage for cli.Ultra class with l1c data level"""
     mocks = mock_instrument_dependencies
-    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
-    mocks["mock_download"].return_value = "dependency0"
     mock_ultra_l1c.return_value = ["l1c_dataset0", "l1c_dataset1"]
     mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
+    input_collection = ProcessingInputCollection(
+        ScienceInput("imap_ultra_l1b_de_20240207_v001.cdf")
+    )
+    mocks["mock_pre_processing"].return_value = input_collection
 
     instrument = Ultra("l1c", "pset", "[]", "20240207", "20240208", "v001", True)
+
     instrument.process()
-    assert mocks["mock_query"].call_count == 0
-    assert mocks["mock_download"].call_count == 0
     assert mock_ultra_l1c.call_count == 1
     assert mocks["mock_upload"].call_count == 2
 
@@ -211,24 +235,24 @@ def test_ultra_l1c(mock_ultra_l1c, mock_instrument_dependencies):
 def test_hit_l1a(mock_hit_l1a, mock_instrument_dependencies):
     """Test coverage for cli.Hit class with l1a data level"""
     mocks = mock_instrument_dependencies
-    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
-    mocks["mock_download"].return_value = "dependency0"
     mock_hit_l1a.return_value = ["l1a_dataset0", "l1a_dataset1"]
     mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
+    input_collection = ProcessingInputCollection(
+        ScienceInput("imap_hit_l0_raw_20100105_v001.pkts")
+    )
+    mocks["mock_pre_processing"].return_value = input_collection
 
     dependency_str = (
         "[{"
-        "'instrument': 'hit',"
-        "'data_level': 'l0',"
-        "'descriptor': 'raw',"
-        "'version': 'v001',"
-        "'start_date': '20100105'"
+        '"type": "science",'
+        '"files": ['
+        '"imap_hit_l0_raw_20100105_v001.pkts"'
+        "]"
         "}]"
     )
     instrument = Hit("l1a", "raw", dependency_str, "20100105", "20100101", "v001", True)
+
     instrument.process()
-    assert mocks["mock_query"].call_count == 1
-    assert mocks["mock_download"].call_count == 1
     assert mock_hit_l1a.call_count == 1
     assert mocks["mock_upload"].call_count == 2
 
@@ -237,18 +261,20 @@ def test_hit_l1a(mock_hit_l1a, mock_instrument_dependencies):
 def test_post_processing(mock_swe_l1a, mock_instrument_dependencies):
     """Test coverage for post processing"""
     mocks = mock_instrument_dependencies
-    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
     mocks["mock_download"].return_value = "dependency0"
     # Return empty list to simulate no data to write
     mock_swe_l1a.return_value = []
+    input_collection = ProcessingInputCollection(
+        ScienceInput("imap_swe_l0_raw_20100105_v001.pkts")
+    )
+    mocks["mock_pre_processing"].return_value = input_collection
 
     dependency_str = (
         "[{"
-        "'instrument': 'hit',"
-        "'data_level': 'l0',"
-        "'descriptor': 'raw',"
-        "'version': 'v001',"
-        "'start_date': '20100105'"
+        '"type": "science",'
+        '"files": ['
+        '"imap_swe_l0_raw_20100105_v001.pkts"'
+        "]"
         "}]"
     )
     instrument = Swe("l1a", "raw", dependency_str, "20100105", "20100101", "v001", True)

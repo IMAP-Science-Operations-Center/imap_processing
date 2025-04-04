@@ -26,8 +26,8 @@ def load_cdf(
 
     Parameters
     ----------
-    file_path : Path
-        The path to the CDF file.
+    file_path : Path or ImapFilePath
+        The path to the CDF file or ImapFilePath object.
     remove_xarray_attrs : bool
         Whether to remove the xarray attributes that get injected by the
         cdf_to_xarray function from the output xarray.Dataset. Default is True.
@@ -39,6 +39,9 @@ def load_cdf(
     dataset : xarray.Dataset
         The ``xarray`` dataset for the CDF file.
     """
+    if isinstance(file_path, imap_data_access.ImapFilePath):
+        file_path = file_path.construct_path()
+
     dataset = cdf_to_xarray(file_path, kwargs)
 
     # cdf_to_xarray converts single-value attributes to lists
@@ -78,7 +81,7 @@ def write_cdf(
     ----------
     dataset : xarray.Dataset
         The dataset object to convert to a CDF.
-    parent_files : list of Path, optional
+    parent_files : List of filenames, optional
         List of parent files that were used to make this file. These get added to
         the ``Parents`` global attribute:
         https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html.
@@ -132,9 +135,8 @@ def write_cdf(
     if parent_files:
         # Include the current files if there are any and include just the filename
         # [file1.txt, file2.cdf, ...]
-        dataset.attrs["Parents"] = dataset.attrs.get("Parents", []) + [
-            parent_file.name for parent_file in parent_files
-        ]
+        dataset.attrs["Parents"] = dataset.attrs.get("Parents", [])
+        dataset.attrs["Parents"].extend(parent_files)
 
     # Convert the xarray object to a CDF
     if "l1" in data_level:

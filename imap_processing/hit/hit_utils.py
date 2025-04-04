@@ -227,7 +227,7 @@ def initialize_particle_data_arrays(
     epoch_size: int,
 ) -> xr.Dataset:
     """
-    Create empty data arrays for a given particle.
+    Add empty data arrays for a given particle.
 
     Valid particle names:
         h
@@ -252,44 +252,43 @@ def initialize_particle_data_arrays(
     ----------
     dataset : xr.Dataset
         The dataset to add the data arrays to.
-
     particle : str
         The abbreviated particle name.
-
     num_energy_ranges : int
         Number of energy ranges for the particle.
         Used to define the shape of the data arrays.
-
     epoch_size : int
         Used to define the shape of the data arrays.
 
     Returns
     -------
-    dataset : xr.Dataset
-        The dataset with the added empty data arrays.
+    updated_ds : xr.Dataset
+        The updated dataset with the particle data arrays added.
     """
-    dataset[f"{particle}"] = xr.DataArray(
+    updated_ds = dataset.copy()
+
+    updated_ds[f"{particle}"] = xr.DataArray(
         data=np.zeros((epoch_size, num_energy_ranges), dtype=np.float32),
         dims=["epoch", f"{particle}_energy_mean"],
         name=f"{particle}",
     )
-    dataset[f"{particle}_delta_minus"] = xr.DataArray(
+    updated_ds[f"{particle}_delta_minus"] = xr.DataArray(
         data=np.zeros((epoch_size, num_energy_ranges), dtype=np.float32),
         dims=["epoch", f"{particle}_energy_mean"],
         name=f"{particle}_delta_minus",
     )
-    dataset[f"{particle}_delta_plus"] = xr.DataArray(
+    updated_ds[f"{particle}_delta_plus"] = xr.DataArray(
         data=np.zeros((epoch_size, num_energy_ranges), dtype=np.float32),
         dims=["epoch", f"{particle}_energy_mean"],
         name=f"{particle}_delta_plus",
     )
-
-    dataset.coords[f"{particle}_energy_mean"] = xr.DataArray(
+    updated_ds.coords[f"{particle}_energy_mean"] = xr.DataArray(
         np.zeros(num_energy_ranges, dtype=np.int8),
         dims=[f"{particle}_energy_mean"],
         name=f"{particle}_energy_mean",
     )
-    return dataset
+
+    return updated_ds
 
 
 def sum_particle_data(
@@ -367,27 +366,149 @@ def add_energy_variables(
 
     Returns
     -------
-    xr.Dataset
-        The dataset with the added energy variables.
+    updated_ds : xr.Dataset
+        The updated dataset with the energy variables added.
     """
+    updated_ds = dataset.copy()
+
     energy_mean = np.mean(
         np.array([energy_min_values, energy_max_values]), axis=0
     ).astype(np.float32)
 
-    dataset[f"{particle}_energy_mean"] = xr.DataArray(
+    updated_ds[f"{particle}_energy_mean"] = xr.DataArray(
         data=energy_mean,
         dims=[f"{particle}_energy_mean"],
         name=f"{particle}_energy_mean",
     )
-    dataset[f"{particle}_energy_delta_minus"] = xr.DataArray(
+    updated_ds[f"{particle}_energy_delta_minus"] = xr.DataArray(
         data=np.array(energy_mean - np.array(energy_min_values), dtype=np.float32),
         dims=[f"{particle}_energy_mean"],
         name=f"{particle}_energy_delta_minus",
     )
-    dataset[f"{particle}_energy_delta_plus"] = xr.DataArray(
+    updated_ds[f"{particle}_energy_delta_plus"] = xr.DataArray(
         data=np.array(energy_max_values - energy_mean, dtype=np.float32),
         dims=[f"{particle}_energy_mean"],
         name=f"{particle}_energy_delta_plus",
     )
 
-    return dataset
+    return updated_ds
+
+
+# def add_summed_particle_data_to_dataset(
+#     dataset_to_update: xr.Dataset,
+#     source_dataset: xr.Dataset,
+#     particle: str,
+#     energy_ranges: list,
+# ) -> None:
+#     """
+#     Add summed particle data to the dataset.
+#
+#     This function performs the following steps:
+#       1) sum data (raw counts or rates, including statistical uncertainties),
+#          from the l2fgrates, l3fgrates, and penfgrates data variables in the source
+#          dataset (i.e. l1a counts dataset or l1b standard rates dataset).
+#       2) add the summed data to the dataset to update (i.e. L1B summed rates dataset
+#          or L2 standard intensity dataset) by particle type and energy range.
+#
+#     Parameters
+#     ----------
+#     dataset_to_update : xr.Dataset
+#         The dataset to add the rates to.
+#     source_dataset : xr.Dataset
+#         The dataset containing data to sum (counts or rates).
+#     particle : str
+#         The particle name.
+#     energy_ranges : list
+#         A list of energy range dictionaries for the particle.
+#         For example:
+#         {'energy_min': 1.8, 'energy_max': 2.2, "R2": [1], "R3": [], "R4": []}.
+#     """
+#     # Initialize arrays to store summed data and statistical uncertainties
+#     initialize_particle_data_arrays(
+#         dataset_to_update,
+#         particle,
+#         len(energy_ranges),
+#         source_dataset.sizes["epoch"],
+#     )
+#
+#     # initialize arrays to store energy min and max values
+#     energy_min = np.zeros(len(energy_ranges), dtype=np.float32)
+#     energy_max = np.zeros(len(energy_ranges), dtype=np.float32)
+#
+#     # Sum particle data and statistical uncertainties for each energy range
+#     # and add them to the dataset
+#     for i, energy_range_dict in enumerate(energy_ranges):
+#         summed_data, summed_data_delta_minus, summed_data_delta_plus = (
+#             sum_particle_data(source_dataset, energy_range_dict)
+#         )
+#
+#         dataset_to_update[f"{particle}"][:, i] = summed_data.astype(np.float32)
+#         dataset_to_update[f"{particle}_delta_minus"][:, i] = (
+#             summed_data_delta_minus.astype(np.float32)
+#         )
+#         dataset_to_update[f"{particle}_delta_plus"][:, i] = (
+#             summed_data_delta_plus.astype(np.float32)
+#         )
+#
+#         # Fill energy min and max values for each energy range
+#         energy_min[i] = energy_range_dict["energy_min"]
+#         energy_max[i] = energy_range_dict["energy_max"]
+#
+#     add_energy_variables(dataset_to_update, particle, energy_min, energy_max)
+
+
+def add_summed_particle_data_to_dataset(
+    dataset: xr.Dataset,
+    source_dataset: xr.Dataset,
+    particle: str,
+    energy_ranges: list,
+) -> xr.Dataset:
+    """
+    Add summed particle data to the dataset.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        The dataset to add the rates to (not modified in-place).
+    source_dataset : xr.Dataset
+        The dataset containing data to sum (counts or rates).
+    particle : str
+        The particle name.
+    energy_ranges : list
+        A list of energy range dictionaries for the particle.
+
+    Returns
+    -------
+    xr.Dataset
+        A new dataset with summed particle data added.
+    """
+    # Make a copy of the dataset to update
+    ds = dataset.copy()
+
+    # Initialize particle data arrays
+    ds = initialize_particle_data_arrays(
+        ds, particle, len(energy_ranges), source_dataset.sizes["epoch"]
+    )
+
+    # Initialize arrays for energy values
+    energy_min = np.zeros(len(energy_ranges), dtype=np.float32)
+    energy_max = np.zeros(len(energy_ranges), dtype=np.float32)
+
+    # Compute summed data and update the dataset
+    for i, energy_range_dict in enumerate(energy_ranges):
+        summed_data, summed_data_delta_minus, summed_data_delta_plus = (
+            sum_particle_data(source_dataset, energy_range_dict)
+        )
+
+        ds[f"{particle}"][:, i] = summed_data.astype(np.float32)
+        ds[f"{particle}_delta_minus"][:, i] = summed_data_delta_minus.astype(np.float32)
+        ds[f"{particle}_delta_plus"][:, i] = summed_data_delta_plus.astype(np.float32)
+
+        # Store energy range values
+        energy_min[i] = energy_range_dict["energy_min"]
+        energy_max[i] = energy_range_dict["energy_max"]
+
+    # Add energy variables
+    ds = add_energy_variables(ds, particle, energy_min, energy_max)
+
+    return ds  # Return the fully updated dataset

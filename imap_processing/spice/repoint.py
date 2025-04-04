@@ -16,6 +16,11 @@ def get_repoint_data() -> pd.DataFrame:
     """
     Read repointing file using environment variable and return as dataframe.
 
+    Pointing and repointing nomenclature can be confusing. In this case,
+    repoint is taken to mean a repoint maneuver. Thus, repoint_start and repoint_end
+    are the times that bound when the spacecraft is performing a repointing maneuver.
+    This is different from a pointing which is the time between repointing maneuvers.
+
     REPOINT_DATA_FILEPATH environment variable should point to a local
     file where the repointing csv file is located.
 
@@ -24,8 +29,14 @@ def get_repoint_data() -> pd.DataFrame:
     repoint_df : pd.DataFrame
         The repointing csv loaded into a pandas dataframe. The dataframe will
         contain the following columns:
-            - `repoint_start_time`: Starting MET time of each repoint maneuver.
-            - `repoint_end_time`: Ending MET time of each repoint maneuver.
+            - `repoint_start_sec`: Starting MET seconds of repoint maneuver.
+            - `repoint_start_subsec`: Starting MET milliseconds of repoint maneuver.
+            - `repoint_start_met`: Floating point MET of repoint maneuver start time.
+            Derived by combining `repoint_start_sec` and `repoint_start_subsec`.
+            - `repoint_end_sec`: Ending MET seconds of repoint maneuver.
+            - `repoint_end_subsec`: Ending MET milliseconds of repoint maneuver.
+            - `repoint_end_met`: Floating point MET of repoint maneuver end time.
+            Derived by combining `repoint_end_sec` and `repoint_end_subsec`.
             - `repoint_id`: Unique ID number of each repoint maneuver.
     """
     repoint_data_filepath = os.getenv("REPOINT_DATA_FILEPATH")
@@ -37,6 +48,14 @@ def get_repoint_data() -> pd.DataFrame:
 
     logger.info(f"Reading repointing data from {path_to_spin_file}")
     repoint_df = pd.read_csv(path_to_spin_file, comment="#")
+
+    # Compute times by combining seconds and subseconds fields
+    repoint_df["repoint_start_met"] = (
+        repoint_df["repoint_start_sec"] + repoint_df["repoint_start_subsec"] / 1e3
+    )
+    repoint_df["repoint_end_met"] = (
+        repoint_df["repoint_end_sec"] + repoint_df["repoint_end_subsec"] / 1e3
+    )
 
     return repoint_df
 
@@ -68,8 +87,12 @@ def interpolate_repoint_data(
     repoint_df : pandas.DataFrame
         Repoint table data interpolated such that there is one row
         for each of the queried MET times. Output columns are:
-            - `repoint_start_time`
-            - `repoint_end_time`
+            - `repoint_start_sec`
+            - `repoint_start_subsec`
+            - `repoint_start_met`
+            - `repoint_end_sec`
+            - `repoint_end_subsec`
+            - `repoint_end_met`
             - `repoint_id`
             - `repoint_in_progress`
 
@@ -84,29 +107,29 @@ def interpolate_repoint_data(
     query_met_times = np.atleast_1d(query_met_times)
 
     # Make sure no query times are before the first repoint in the dataframe.
-    repoint_df_start_time = repoint_df["repoint_start_time"].values[0]
-    if np.any(query_met_times < repoint_df_start_time):
-        bad_times = query_met_times[query_met_times < repoint_df_start_time]
+    repoint_df_start_met = repoint_df["repoint_start_met"].values[0]
+    if np.any(query_met_times < repoint_df_start_met):
+        bad_times = query_met_times[query_met_times < repoint_df_start_met]
         raise ValueError(
             f"{bad_times.size} query times are before the first repoint start "
-            f" time in the repoint table. {bad_times=}, {repoint_df_start_time=}"
+            f" time in the repoint table. {bad_times=}, {repoint_df_start_met=}"
         )
     # Make sure that no query times are after the valid range of the dataframe.
     # We approximate the end time of the table by adding 24 hours to the last
     # known repoint start time.
-    repoint_df_end_time = repoint_df["repoint_start_time"].values[-1] + 24 * 60 * 60
-    if np.any(query_met_times >= repoint_df_end_time):
-        bad_times = query_met_times[query_met_times >= repoint_df_end_time]
+    repoint_df_end_met = repoint_df["repoint_start_met"].values[-1] + 24 * 60 * 60
+    if np.any(query_met_times >= repoint_df_end_met):
+        bad_times = query_met_times[query_met_times >= repoint_df_end_met]
         raise ValueError(
             f"{bad_times.size} query times are after the valid time of the "
             f"pointing table. The valid end time is 24-hours after the last "
-            f"repoint_start_time. {bad_times=}, {repoint_df_end_time=}"
+            f"repoint_start_time. {bad_times=}, {repoint_df_end_met=}"
         )
 
     # Find the row index for each queried MET time such that:
     # repoint_start_time[i] <= MET < repoint_start_time[i+1]
     row_indices = (
-        np.searchsorted(repoint_df["repoint_start_time"], query_met_times, side="right")
+        np.searchsorted(repoint_df["repoint_start_met"], query_met_times, side="right")
         - 1
     )
     out_df = repoint_df.iloc[row_indices]
@@ -115,6 +138,6 @@ def interpolate_repoint_data(
     # The table already has the correct row for each query time, so we
     # only need to check if the query time is less than the repoint end time to
     # get the same result as `repoint_start_time <= query_met_times < repoint_end_time`.
-    out_df["repoint_in_progress"] = query_met_times < out_df["repoint_end_time"].values
+    out_df["repoint_in_progress"] = query_met_times < out_df["repoint_end_met"].values
 
     return out_df
