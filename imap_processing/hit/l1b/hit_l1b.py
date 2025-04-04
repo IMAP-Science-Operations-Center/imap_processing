@@ -450,9 +450,9 @@ def process_sectored_rates_data(
 
     # Extract relevant data variables that start with a particle name
     data_vars = [
-        var
+        str(var)
         for var in l1a_counts_dataset.data_vars
-        if any(var.startswith(f"{p}_") for p in particles)
+        if any(str(var).startswith(f"{p}_") for p in particles)
     ]
 
     # Subset data for complete sets of sectored counts and corresponding livetime values
@@ -491,6 +491,9 @@ def process_sectored_rates_data(
             l1b_sectored_rates_dataset[var] = rates
             if new_var:
                 rename_map[var] = new_var
+        else:
+            # Add other data variables to the dataset
+            l1b_sectored_rates_dataset[var] = l1a_counts_dataset[var]
 
     # Rename variables for L1B dataset
     if rename_map:
