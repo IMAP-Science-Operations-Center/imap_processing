@@ -100,29 +100,27 @@ def process_science_data(
     """
     logger.info("Creating HIT L1B science datasets")
 
-    # Logical sources for the three L1B science products.
-    # TODO: add logical sources for other l1b products once processing functions
-    #  are written. ""imap_hit_l1b_sectored-rates"
-    logical_sources = ["imap_hit_l1b_standard-rates", "imap_hit_l1b_summed-rates"]
-
     # TODO: Write functions to create the following datasets
     #  Process sectored rates dataset
 
     # Calculate fractional livetime from the livetime counter
     livetime = l1a_counts_dataset["livetime_counter"] / LIVESTIM_PULSES
-    livetime.rename({"livetime_counter": "livetime"})
+    livetime = livetime.rename("livetime")
 
-    # Create a standard rates dataset
-    standard_rates_dataset = process_standard_rates_data(l1a_counts_dataset, livetime)
+    # Process counts data to L1B datasets
+    l1b_datasets: dict = {}
+    l1b_datasets["imap_hit_l1b_standard-rates"] = process_standard_rates_data(
+        l1a_counts_dataset, livetime
+    )
+    l1b_datasets["imap_hit_l1b_summed-rates"] = process_summed_rates_data(
+        l1a_counts_dataset, livetime
+    )
+    l1b_datasets["imap_hit_l1b_sectored-rates"] = process_sectored_rates_data(
+        l1a_counts_dataset, livetime
+    )
 
-    # Create a summed rates dataset
-    summed_rates_dataset = process_summed_rates_data(l1a_counts_dataset, livetime)
-
-    l1b_science_datasets = []
     # Update attributes and dimensions
-    for dataset, logical_source in zip(
-        [standard_rates_dataset, summed_rates_dataset], logical_sources
-    ):
+    for logical_source, dataset in l1b_datasets.items():
         dataset.attrs = attr_mgr.get_global_attributes(logical_source)
 
         # TODO: Add CDF attributes to yaml once they're defined for L1B science data
@@ -148,11 +146,9 @@ def process_science_data(
             "epoch", check_schema=False
         )
 
-        l1b_science_datasets.append(dataset)
-
         logger.info(f"HIT L1B dataset created for {logical_source}")
 
-    return l1b_science_datasets
+    return list(l1b_datasets.values())
 
 
 def process_standard_rates_data(
@@ -412,10 +408,6 @@ def process_sectored_rates_data(
     """
     Will process L1B sectored rates data from L1A raw counts data.
 
-    Sectored counts need to be divided by livetime to compute sectored rates.
-    Each 10-minute sectored count block corresponds to the previous 10-minute
-    livetime sum.
-
     A complete set of sectored counts is taken over 10 science frames (10 minutes)
     where each science frame contains counts for one species and energy range.
 
@@ -427,10 +419,9 @@ def process_sectored_rates_data(
         NeMgSi 4.0 - 6.0 MeV, 6.0 - 12.0 MeV
         Fe     4.0 - 12.0 MeV
 
-    The counts from 10 science frames need to be divided by the sum of livetime values
-    from the previous 10 science frames. The reason for using the previous 10 livetime
-    values is because the sectored counts data is transmitted 10 minutes after they are
-    collected, so the corresponding livetime values are in the previous 10 minutes.
+    Sectored counts data is transmitted 10 minutes after they are collected.
+    To calculate rates, the sectored counts over 10 minutes need to be divided by
+    the sum of livetime values from the previous 10 minutes.
 
     Parameters
     ----------
@@ -448,7 +439,7 @@ def process_sectored_rates_data(
     """
     # TODO
     #  -filter by epoch values in day being processed
-    #  -get middle epoch or get mod 5 values (6th frame)?
+    #  -get middle epoch (or get mod 5 value for 6th frame)
     #  -consider refactoring calculate_rates function to handle sectored rates
 
     # Create a dataset to store the L1B sectored rates
