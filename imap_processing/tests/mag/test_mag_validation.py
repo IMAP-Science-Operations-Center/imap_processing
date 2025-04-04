@@ -284,10 +284,10 @@ def test_mag_l1b_validation(test_number):
 @pytest.mark.usefixtures("_mag_download_data")
 def test_mag_l1c_validation(test_number, sensor):
     # We expect tests 013 and 014 to pass. 015 and 016 are not yet complete.
-    timestamp = (
-        (np.datetime64("2025-03-11T12:22:50.706034") - np.datetime64(TTJ2000_EPOCH))
-        / np.timedelta64(1, "ns")
-    ).astype(np.int64)
+    # timestamp = (
+    #     (np.datetime64("2025-03-11T12:22:50.706034") - np.datetime64(TTJ2000_EPOCH))
+    #     / np.timedelta64(1, "ns")
+    # ).astype(np.int64)
     # print(f"Time stamp shift: {timestamp }")
 
     source_directory = Path(__file__).parent / "validation" / "L1c" / f"T{test_number}"
@@ -301,9 +301,6 @@ def test_mag_l1c_validation(test_number, sensor):
         pd.read_csv(burst_in), f"imap_mag_l1b_burst-{sensor}"
     )
 
-    print(
-        f"Nearest norm timestamp: {norm['epoch'].data[np.abs(norm['epoch'].data - timestamp).argmin()]}"
-    )
     # out = np.int64(794968123760272000)
     # print(f"expected out {TTJ2000_EPOCH + out.astype('timedelta64[ns]')}")
     # For mago test 013: norm 2, burst 64
