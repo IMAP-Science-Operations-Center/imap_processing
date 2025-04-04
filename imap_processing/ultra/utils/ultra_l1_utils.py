@@ -96,7 +96,7 @@ def create_dataset(
                 dims=["epoch", "component"],
                 attrs=cdf_manager.get_variable_attributes(key),
             )
-        elif key == "ena_rates_threshold":
+        elif key in ("ena_rates_threshold", "energy_bin_delta"):
             dataset[key] = xr.DataArray(
                 data_dict[key],
                 dims=["energy_bin_geometric_mean"],

@@ -134,3 +134,11 @@ packetdata:
   LABLAXIS: packet data
   # TODO: come back to format
   UNITS: " "
+
+energy_bin_delta:
+  <<: *default_float32
+  CATDESC: Difference between the energy bin edges.
+  DEPEND_0: energy_bin_geometric_mean
+  FIELDNAM: energy_bin_delta
+  LABLAXIS: energy bin delta
+  UNITS: keV
