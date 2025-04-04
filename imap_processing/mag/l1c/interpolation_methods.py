@@ -161,6 +161,10 @@ def cic_filter(
     the output_timestamps rate. Neither input_timestamps nor output_timestamps should
     have significant gaps.
 
+    After the CIC filter is applied, the timestamps at the beginning and end of the
+    output are invalid. Therefore, we must pass in extra values and remove them after
+    applying the filter. This needs about double the input values to work.
+
     Parameters
     ----------
     input_vectors : numpy.ndarray
@@ -178,8 +182,8 @@ def cic_filter(
 
     Returns
     -------
-    numpy.ndarray
-        Filtered something something.
+    input_filtered, vectors_filtered : tuple[numpy.ndarray]
+        Filtered input timestamps and filtered input vectors.
     """
     # output rate should always be higher
     input_rate = estimate_rate(input_timestamps) if input_rate is None else input_rate
