@@ -421,15 +421,10 @@ def interpolate_gaps(
         gap_timeline = filled_norm_timeline[
             (filled_norm_timeline > gap[0]) & (filled_norm_timeline < gap[1])
         ]
-        print(
+        logger.info(
             f"difference between gap start and burst start: "
             f"{gap_timeline[0] - burst_epochs[burst_start]}"
         )
-        short = (gap_timeline >= burst_epochs[burst_start]) & (
-            gap_timeline <= burst_epochs[burst_gap_end]
-        )
-        if len(gap_timeline) != (short).sum():
-            print(f"Chopping timeline from {len(gap_timeline)} to {short.sum()}")
         # Limit timestamps to only include the areas with burst data
         gap_timeline = gap_timeline[
             (

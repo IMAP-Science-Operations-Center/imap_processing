@@ -16,8 +16,7 @@ from imap_processing.mag.constants import (
     MAX_FINE_TIME,
     RANGE_BIT_WIDTH,
 )
-from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et, et_to_utc, \
-    TTJ2000_EPOCH
+from imap_processing.spice.time import met_to_ttj2000ns
 
 
 @dataclass
@@ -353,7 +352,6 @@ class MagL1a:
         """
         timedelta = np.timedelta64(int(1 / vectors_per_sec * 1e9), "ns")
         start_time_ns = start_time.to_j2000ns()
-        print(start_time)
         # Calculate time skips for each vector in ns
         times = np.reshape(
             np.arange(
