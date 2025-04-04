@@ -9,8 +9,11 @@ from imap_processing.hit.l1b.hit_l1b import (
     SUMMED_PARTICLE_ENERGY_RANGE_MAPPING,
     calculate_rates,
     hit_l1b,
+    process_sectored_rates_data,
     process_standard_rates_data,
     process_summed_rates_data,
+    subset_data_for_sectored_counts,
+    sum_livetime_10min,
 )
 from imap_processing.tests.hit.helpers.l1_validation import (
     prepare_standard_rates_validation_data,
@@ -79,9 +82,9 @@ def l1a_counts_dataset(sci_packet_filepath):
 
 
 @pytest.fixture()
-def livetime(l1a_counts_dataset):
+def livetime(l1a_counts_dataset: xr.Dataset) -> xr.DataArray:
     """Calculate livetime for L1A counts dataset"""
-    return l1a_counts_dataset["livetime_counter"] / 270
+    return xr.DataArray(l1a_counts_dataset["livetime_counter"] / 270)
 
 
 def test_calculate_rates():
@@ -114,6 +117,54 @@ def test_calculate_rates():
     np.testing.assert_allclose(
         result["counts_delta_plus"].values, expected_counts_delta_plus
     )
+
+
+def test_sum_livetime_10min():
+    """Test the sum_livetime_10min function."""
+    # Create a sample livetime DataArray
+    livetime_values = np.arange(1, 31)  # 30 epochs with values 1 to 30
+    livetime = xr.DataArray(
+        livetime_values, dims=["epoch"], coords={"epoch": np.arange(30)}
+    )
+
+    # Expected result: sum of every 10 values repeated 10 times
+    expected_values = np.repeat(
+        [sum(livetime_values[i : i + 10]) for i in range(0, 30, 10)], 10
+    )
+    expected_livetime = xr.DataArray(
+        expected_values, dims=["epoch"], coords={"epoch": np.arange(30)}
+    )
+
+    # Call the function
+    result = sum_livetime_10min(livetime)
+
+    # Assert the result is as expected
+    xr.testing.assert_equal(result, expected_livetime)
+
+
+def test_subset_data_for_sectored_counts():
+    """Test the subset_data_for_sectored_counts function."""
+    # Create a sample L1A counts dataset
+    l1a_counts_dataset = xr.Dataset(
+        {
+            "hdr_minute_cnt": ("epoch", np.arange(105, 135)),
+            "h_sectored_counts": ("epoch", np.arange(0, 30)),
+            "he4_sectored_counts": ("epoch", np.arange(0, 30)),
+        },
+    )
+
+    # Create a sample livetime data array
+    livetime = xr.DataArray(np.arange(1.0, 31.0, dtype=np.float32), dims=["epoch"])
+
+    # Call the function
+    subset_dataset, subset_livetime = subset_data_for_sectored_counts(
+        l1a_counts_dataset, livetime
+    )
+
+    # Check the results
+    assert subset_dataset.dims["epoch"] == 10
+    assert len(subset_livetime["epoch"]) == 10
+    assert np.all(subset_dataset["hdr_minute_cnt"].values % 10 == np.arange(10))
 
 
 def test_process_summed_rates_data(l1a_counts_dataset, livetime):
@@ -232,6 +283,49 @@ def test_process_standard_rates_data(l1a_counts_dataset, livetime):
     assert valid_coords == list(
         l1b_standard_rates_dataset.coords
     ), "Coordinates mismatch"
+
+
+def test_process_sectored_rates_data(l1a_counts_dataset, livetime):
+    """Test the variables in the sectored rates dataset"""
+
+    l1b_sectored_rates_dataset = process_sectored_rates_data(
+        l1a_counts_dataset, livetime
+    )
+
+    # Check that a xarray dataset is returned
+    assert isinstance(l1b_sectored_rates_dataset, xr.Dataset)
+
+    valid_coords = {
+        "epoch",
+        "declination",
+        "azimuth",
+        "h_energy_mean",
+        "he4_energy_mean",
+        "cno_energy_mean",
+        "nemgsi_energy_mean",
+        "fe_energy_mean",
+    }
+
+    # Check that the dataset has the correct coords and
+    # variables
+    assert valid_coords == set(
+        l1b_sectored_rates_dataset.coords
+    ), "Coordinates mismatch"
+
+    assert "dynamic_threshold_state" in l1b_sectored_rates_dataset.data_vars
+
+    particles = ["h", "he4", "cno", "nemgsi", "fe"]
+    for particle in particles:
+        assert f"{particle}" in l1b_sectored_rates_dataset.data_vars
+        assert (
+            f"{particle}_stat_uncert_delta_minus"
+            in l1b_sectored_rates_dataset.data_vars
+        )
+        assert (
+            f"{particle}_stat_uncert_delta_plus" in l1b_sectored_rates_dataset.data_vars
+        )
+        assert f"{particle}_energy_delta_minus" in l1b_sectored_rates_dataset.data_vars
+        assert f"{particle}_energy_delta_plus" in l1b_sectored_rates_dataset.data_vars
 
 
 def test_hit_l1b_hk_dataset_variables(l1b_hk_dataset):
@@ -466,12 +560,12 @@ def test_hit_l1b(dependencies):
     dependencies : dict
         Dictionary of L1A datasets and CCSDS packet file path
     """
-    # TODO: update assertions after science data processing is completed
     datasets = hit_l1b(dependencies, "001")
 
-    assert len(datasets) == 3
+    assert len(datasets) == 4
     for dataset in datasets:
         assert isinstance(dataset, xr.Dataset)
     assert datasets[0].attrs["Logical_source"] == "imap_hit_l1b_hk"
     assert datasets[1].attrs["Logical_source"] == "imap_hit_l1b_standard-rates"
     assert datasets[2].attrs["Logical_source"] == "imap_hit_l1b_summed-rates"
+    assert datasets[3].attrs["Logical_source"] == "imap_hit_l1b_sectored-rates"
