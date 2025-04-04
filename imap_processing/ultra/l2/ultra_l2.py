@@ -49,6 +49,7 @@ VARIABLES_TO_DROP_AFTER_FLUX_CALCULATION = [
     "background_rates",
     "pointing_set_exposure_times_solid_angle",
     "num_pointing_set_pixel_members",
+    "corrected_count_rate",
 ]
 
 
@@ -203,7 +204,9 @@ def generate_ultra_healpix_skymap(
 
         skymap.project_pset_values_to_map(
             pointing_set=pointing_set,
-            value_keys=set(output_map_properties.values_to_push_project),
+            value_keys=set(
+                output_map_properties.values_to_push_project + REQUIRED_L1C_VARIABLES
+            ),
             index_match_method=ena_maps.IndexMatchMethod.PUSH,
         )
 
@@ -234,12 +237,12 @@ def generate_ultra_healpix_skymap(
 
     # Core calculations of flux and flux uncertainty for L2
     # Get corrected count rate with background subtraction applied
-    corrected_count_rate = (
+    skymap.data_1d["corrected_count_rate"] = (
         skymap.data_1d["counts"] / skymap.data_1d["exposure_factor"]
     ) - skymap.data_1d["background_rates"]
 
     # Calculate flux as corrected_counts / (sensitivity * solid_angle * delta_energy)
-    skymap.data_1d["flux"] = corrected_count_rate / (
+    skymap.data_1d["flux"] = skymap.data_1d["corrected_count_rate"] / (
         skymap.data_1d["sensitivity"] * skymap.solid_angle * delta_energy
     )
 
@@ -263,7 +266,7 @@ def ultra_l2(
     data_dict: dict[str, xr.Dataset | str],
     data_version: str,
     output_map_properties: MapProperties = DEFAULT_L2_MAP_PROPERTIES,
-) -> tuple[list[xr.Dataset], list[ena_maps.HealpixSkyMap]]:
+) -> list[xr.Dataset]:
     """
     Generate and format Ultra L2 ENA Map Product from L1C Products.
 
@@ -295,13 +298,13 @@ def ultra_l2(
         output_map_properties=output_map_properties,
     )
 
-    # Output formatting for HEALPIX
+    # Output formatting for HEALPIX tiling
     if output_map_properties.sky_tiling_type is ena_maps.SkyTilingType.HEALPIX:
         map_dataset = healpix_skymap.to_dataset()
         # Add attributes related to the map
         map_attrs = {
-            "Healpix_nside": output_map_properties.nside,
-            "Healpix_nest": output_map_properties.nested,
+            "HEALPix_nside": output_map_properties.nside,
+            "HEALPix_nest": output_map_properties.nested,
             "Data_version": data_version,
         }
 
@@ -315,8 +318,4 @@ def ultra_l2(
 
     # Add the defined attributes to the map's global attrs
     map_dataset.attrs.update(map_attrs)
-    return [
-        map_dataset,
-    ], [  # TODO: Drop the second element of this tuple after testing
-        healpix_skymap,
-    ]
+    return [map_dataset]
