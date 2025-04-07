@@ -749,7 +749,7 @@ class Lo(ProcessInstrument):
         elif self.data_level == "l1b":
             data_dict = {}
             # TODO: Check this and update with new features as needed.
-            for input_type in dependencies:
+            for input_type in dependencies.processing_input:
                 science_files = dependencies.get_file_paths(
                     source="lo", descriptor=input_type.descriptor
                 )
