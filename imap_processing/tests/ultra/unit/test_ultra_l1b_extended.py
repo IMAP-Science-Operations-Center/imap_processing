@@ -36,7 +36,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_fixture(de_dataset, events_fsw_comparison_theta_0):
     """Fixture to compute and return yf and related data."""
     # Remove start_type with fill values

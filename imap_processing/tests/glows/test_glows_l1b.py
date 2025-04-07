@@ -15,7 +15,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def hist_dataset():
     variables = {
         "flight_software_version": np.zeros((20,)),
@@ -70,7 +70,7 @@ def hist_dataset():
     return ds
 
 
-@pytest.fixture()
+@pytest.fixture
 def de_dataset():
     variables = {
         "seq_count_in_pkts_file": np.zeros((20,)),
@@ -145,7 +145,7 @@ def de_dataset():
     return ds
 
 
-@pytest.fixture()
+@pytest.fixture
 def ancillary_dict():
     dictionary = {
         "description": "Table for conversion/decoding ancillary parameters collected "

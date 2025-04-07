@@ -42,7 +42,7 @@ def swapi_test_data():
     return data
 
 
-@pytest.fixture()
+@pytest.fixture
 def xarray_data(binary_packet_path, xtce_swapi_path):
     """Create SWAPI xarray dataset for testing."""
 

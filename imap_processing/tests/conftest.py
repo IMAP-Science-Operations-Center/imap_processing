@@ -259,7 +259,7 @@ def spice_test_data_path(imap_tests_path):
     return imap_tests_path / "spice/test_data"
 
 
-@pytest.fixture()
+@pytest.fixture
 def furnish_time_kernels(spice_test_data_path):
     """Furnishes (temporarily) the testing LSK and SCLK"""
     spiceypy.kclear()
@@ -271,7 +271,7 @@ def furnish_time_kernels(spice_test_data_path):
     spiceypy.kclear()
 
 
-@pytest.fixture()
+@pytest.fixture
 def furnish_sclk(spice_test_data_path):
     """Furnishes (temporarily) the SCLK for JPSS stored in the package data directory"""
     test_sclk = spice_test_data_path / "imap_sclk_0000.tsc"
@@ -280,7 +280,7 @@ def furnish_sclk(spice_test_data_path):
     spiceypy.kclear()
 
 
-@pytest.fixture()
+@pytest.fixture
 def furnish_kernels(spice_test_data_path):
     """Return a function that will furnish an arbitrary list of kernels."""
 
@@ -382,7 +382,7 @@ def session_test_metakernel(monkeypatch_session, tmpdir_factory, spice_test_data
     spiceypy.kclear()
 
 
-@pytest.fixture()
+@pytest.fixture
 def use_test_metakernel(
     request, monkeypatch, spice_test_data_path, session_test_metakernel
 ):
@@ -432,14 +432,14 @@ def use_test_metakernel(
     spiceypy.kclear()
 
 
-@pytest.fixture()
+@pytest.fixture
 def _unset_metakernel_path(monkeypatch):
     """Temporarily unsets the SPICE_METAKERNEL environment variable"""
     if os.getenv("SPICE_METAKERNEL", None) is not None:
         monkeypatch.delenv("SPICE_METAKERNEL")
 
 
-@pytest.fixture()
+@pytest.fixture
 def use_test_spin_data_csv(monkeypatch):
     """Sets the SPIN_DATA_FILEPATH environment variable to input path."""
 
@@ -449,7 +449,7 @@ def use_test_spin_data_csv(monkeypatch):
     return wrapped_set_spin_data_filepath
 
 
-@pytest.fixture()
+@pytest.fixture
 def use_fake_spin_data_for_time(
     request, use_test_spin_data_csv, tmpdir, generate_spin_data
 ):
@@ -486,7 +486,7 @@ def use_fake_spin_data_for_time(
     return wrapped_set_spin_data_filepath
 
 
-@pytest.fixture()
+@pytest.fixture
 def generate_spin_data():
     def make_data(start_met: float, end_met: Optional[float] = None) -> pd.DataFrame:
         """
@@ -568,7 +568,7 @@ def generate_spin_data():
     return make_data
 
 
-@pytest.fixture()
+@pytest.fixture
 def use_test_repoint_data_csv(monkeypatch):
     """Sets the REPOINT_DATA_FILEPATH environment variable to input path."""
 
@@ -619,7 +619,7 @@ def generate_repoint_data(
     return repoint_df
 
 
-@pytest.fixture()
+@pytest.fixture
 def use_fake_repoint_data_for_time(use_test_repoint_data_csv, tmpdir):
     """
     Generate and use fake spin data for testing.

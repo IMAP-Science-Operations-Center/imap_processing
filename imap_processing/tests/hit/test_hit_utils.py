@@ -44,7 +44,7 @@ def housekeeping_dataset(packet_filepath):
     return datasets_by_apid[HitAPID.HIT_HSKP]
 
 
-@pytest.fixture()
+@pytest.fixture
 def sample_dataset():
     """Create a sample dataset for summing particle data"""
     data = {

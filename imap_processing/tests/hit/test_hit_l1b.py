@@ -37,7 +37,7 @@ def sci_packet_filepath():
     return imap_module_directory / "tests/hit/test_data/sci_sample.ccsds"
 
 
-@pytest.fixture()
+@pytest.fixture
 def dependencies(packet_filepath, sci_packet_filepath):
     """Get dependencies for L1B processing"""
     # Create dictionary of dependencies and add CCSDS packet file
@@ -51,7 +51,7 @@ def dependencies(packet_filepath, sci_packet_filepath):
     return data_dict
 
 
-@pytest.fixture()
+@pytest.fixture
 def l1b_hk_dataset(dependencies):
     """Get the housekeeping dataset"""
     datasets = hit_l1b(dependencies, "001")
@@ -60,7 +60,7 @@ def l1b_hk_dataset(dependencies):
             return dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def l1b_standard_rates_dataset(dependencies):
     """Get the standard rates dataset"""
     datasets = hit_l1b(dependencies, "001")
@@ -69,7 +69,7 @@ def l1b_standard_rates_dataset(dependencies):
             return dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def l1a_counts_dataset(sci_packet_filepath):
     """Get L1A counts dataset to test l1b processing functions"""
     l1a_datasets = hit_l1a.hit_l1a(sci_packet_filepath, "001")
@@ -78,7 +78,7 @@ def l1a_counts_dataset(sci_packet_filepath):
             return dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def livetime(l1a_counts_dataset):
     """Calculate livetime for L1A counts dataset"""
     return l1a_counts_dataset["livetime_counter"] / 270
@@ -226,12 +226,12 @@ def test_process_standard_rates_data(l1a_counts_dataset, livetime):
     ]
 
     # Check that the dataset has the correct variables
-    assert valid_data_vars == set(
-        l1b_standard_rates_dataset.data_vars.keys()
-    ), "Data variables mismatch"
-    assert valid_coords == list(
-        l1b_standard_rates_dataset.coords
-    ), "Coordinates mismatch"
+    assert valid_data_vars == set(l1b_standard_rates_dataset.data_vars.keys()), (
+        "Data variables mismatch"
+    )
+    assert valid_coords == list(l1b_standard_rates_dataset.coords), (
+        "Coordinates mismatch"
+    )
 
 
 def test_hit_l1b_hk_dataset_variables(l1b_hk_dataset):
@@ -421,9 +421,9 @@ def test_validate_l1b_standard_rates_data(l1b_standard_rates_dataset):
     validation_data = prepare_standard_rates_validation_data(validation_data)
 
     for field in validation_data.columns:
-        assert (
-            field in l1b_standard_rates_dataset.data_vars.keys()
-        ), f"Field {field} not found in actual data variables"
+        assert field in l1b_standard_rates_dataset.data_vars.keys(), (
+            f"Field {field} not found in actual data variables"
+        )
         for frame in range(validation_data.shape[0]):
             np.testing.assert_allclose(
                 l1b_standard_rates_dataset[field][frame].data,

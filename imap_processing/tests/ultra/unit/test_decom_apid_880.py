@@ -6,7 +6,7 @@ from imap_processing.ultra.l0.ultra_utils import ULTRA_AUX
 from imap_processing.utils import packet_file_to_datasets
 
 
-@pytest.fixture()
+@pytest.fixture
 def decom_ultra_aux_data(ccsds_path, xtce_path):
     """Data for decom_ultra_aux"""
 

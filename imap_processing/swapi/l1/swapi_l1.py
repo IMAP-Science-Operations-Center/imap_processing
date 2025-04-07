@@ -72,8 +72,7 @@ def filter_good_data(full_sweep_sci: xr.Dataset) -> npt.NDArray:
         f"{full_sweep_sci['sweep_table'].data[bad_cycle_indices]}"
     )
     logger.debug(
-        "Plan ID should be same: "
-        f"{full_sweep_sci['plan_id'].data[bad_cycle_indices]}"
+        f"Plan ID should be same: {full_sweep_sci['plan_id'].data[bad_cycle_indices]}"
     )
     logger.debug(
         f"Mode Id should be 3(HVSCI): {full_sweep_sci['mode'].data[bad_cycle_indices]}"

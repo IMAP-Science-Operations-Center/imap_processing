@@ -7,7 +7,7 @@ from imap_processing.ultra.l1b.ultra_l1b import ultra_l1b
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_data_l1a_rates_dict():
     # Create sample data for the xarray Dataset
     epoch = np.arange(
@@ -30,7 +30,7 @@ def mock_data_l1a_rates_dict():
     return data_dict
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_data_l1b_de_dict():
     epoch = np.array(
         [760591786368000000, 760591787368000000, 760591788368000000],
@@ -40,7 +40,7 @@ def mock_data_l1b_de_dict():
     return data_dict
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_data_l1b_extendedspin_dict():
     spin = np.array(
         [0, 1, 2],

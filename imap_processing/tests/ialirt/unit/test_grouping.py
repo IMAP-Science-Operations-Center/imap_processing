@@ -7,7 +7,7 @@ import xarray as xr
 from imap_processing.ialirt.utils.grouping import filter_valid_groups, find_groups
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_data():
     """Creates grouped data for filter_valid_groups test."""
     epoch = np.arange(12)
@@ -39,7 +39,7 @@ def test_data():
     return test_data
 
 
-@pytest.fixture()
+@pytest.fixture
 def grouped_data():
     """Creates grouped data for filter_valid_groups test."""
     epoch = np.arange(12)

@@ -103,7 +103,7 @@ def test_idex_tof_high_data_from_cdf(decom_test_data: xr.Dataset):
     assert (l1_data["TOF_High"][13].data == data).all()
 
 
-@pytest.mark.external_test_data()
+@pytest.mark.external_test_data
 def test_validate_l1a_idex_data_variables(
     decom_test_data: xr.Dataset, l1a_example_data: xr.Dataset
 ):

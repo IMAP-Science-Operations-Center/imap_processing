@@ -41,7 +41,7 @@ def mag_l1b_dataset():
     return output_dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def norm_dataset():
     dataset = mag_l1a_dataset_generator(10)
     epoch_vals = generate_test_epoch(
@@ -64,7 +64,7 @@ def norm_dataset():
     return dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def burst_dataset():
     dataset = mag_l1a_dataset_generator(27)
     epoch_vals = generate_test_epoch(5.1, [VecSec.EIGHT_VECS_PER_S], 1.9)

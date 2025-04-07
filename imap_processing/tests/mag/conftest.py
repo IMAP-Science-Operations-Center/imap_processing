@@ -12,7 +12,7 @@ from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.spice.time import TTJ2000_EPOCH
 
 
-@pytest.fixture()
+@pytest.fixture
 def validation_l1a():
     current_directory = Path(__file__).parent
     test_file = current_directory / "validation" / "mag_l1_test_data.pkts"
@@ -59,7 +59,7 @@ def mag_l1a_dataset_generator(length):
     return output_dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def mag_test_l1b_calibration_data():
     imap_dir = Path(__file__).parent
     cal_file = (

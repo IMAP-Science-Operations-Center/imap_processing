@@ -437,9 +437,7 @@ def analyze_peaks(
             fit_params[idx] = np.array([mu, sigma, lam])
             area_under_emg[idx] = area
         else:
-            logger.warning(
-                f"Unable to find a slot for mass: {mass}. Discarding " f"value."
-            )
+            logger.warning(f"Unable to find a slot for mass: {mass}. Discarding value.")
 
     return fit_params, area_under_emg
 

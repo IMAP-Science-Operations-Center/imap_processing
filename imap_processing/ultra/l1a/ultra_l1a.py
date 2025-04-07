@@ -44,7 +44,7 @@ def ultra_l1a(
         List of xarray.Dataset.
     """
     xtce = str(
-        f"{imap_module_directory}/ultra/packet_definitions/" f"ULTRA_SCI_COMBINED.xml"
+        f"{imap_module_directory}/ultra/packet_definitions/ULTRA_SCI_COMBINED.xml"
     )
 
     datasets_by_apid = packet_file_to_datasets(packet_file, xtce)
