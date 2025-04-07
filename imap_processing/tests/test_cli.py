@@ -10,7 +10,16 @@ from imap_data_access.processing_input import (
     ScienceInput,
 )
 
-from imap_processing.cli import Codice, Hi, Hit, Swe, Ultra, _validate_args, main
+from imap_processing.cli import (
+    Codice,
+    Hi,
+    Hit,
+    Spacecraft,
+    Swe,
+    Ultra,
+    _validate_args,
+    main,
+)
 
 
 @pytest.fixture()
@@ -171,6 +180,39 @@ def test_hi_l1(mock_instrument_dependencies, data_level, science_input, n_prods)
         instrument.process()
         assert mock_hi.call_count == 1
         assert mocks["mock_upload"].call_count == n_prods
+
+
+@mock.patch("imap_processing.cli.quaternions.process_quaternions", autospec=True)
+def test_spacecraft(mock_spacecraft_l1a, mock_instrument_dependencies):
+    """Test coverage for cli.Spacecraft class"""
+
+    test_dataset = xr.Dataset({}, attrs={"cdf_filename": "file0"})
+    input_collection = ProcessingInputCollection(
+        ScienceInput("imap_spacecraft_l0_raw_20230822_v001.pkts")
+    )
+    mocks = mock_instrument_dependencies
+    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
+    mocks["mock_download"].return_value = "file0"
+    mock_spacecraft_l1a.return_value = [test_dataset]
+    mocks["mock_write_cdf"].side_effect = ["/path/to/file0"]
+    mocks["mock_pre_processing"].return_value = input_collection
+
+    dependency_str = (
+        "[{"
+        '"type": "science",'
+        '"files": ['
+        '"imap_spacecraft_l0_raw_20230822_v001.pkts"'
+        "]"
+        "}]"
+    )
+
+    instrument = Spacecraft(
+        "l1a", "quaternions", dependency_str, "20230822", "20230822", "v001", True
+    )
+
+    instrument.process()
+    assert mock_spacecraft_l1a.call_count == 1
+    assert mocks["mock_upload"].call_count == 1
 
 
 @mock.patch("imap_processing.cli.ultra_l1a.ultra_l1a")

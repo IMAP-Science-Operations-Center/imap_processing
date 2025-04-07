@@ -56,6 +56,7 @@ from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.mag.l1b.mag_l1b import mag_l1b
 from imap_processing.mag.l1c.mag_l1c import mag_l1c
 from imap_processing.mag.l2.mag_l2 import mag_l2
+from imap_processing.spacecraft import quaternions
 from imap_processing.swapi.l1.swapi_l1 import swapi_l1
 from imap_processing.swapi.l2.swapi_l2 import swapi_l2
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
@@ -848,6 +849,46 @@ class Mag(ProcessInstrument):
             datasets = mag_l2(
                 calibration_dataset, offset_dataset, input_data, self.version
             )
+
+        return datasets
+
+
+class Spacecraft(ProcessInstrument):
+    """Process Spacecraft data."""
+
+    def do_processing(
+        self, dependencies: ProcessingInputCollection
+    ) -> list[xr.Dataset]:
+        """
+        Perform Spacecraft specific processing.
+
+        Parameters
+        ----------
+        dependencies : ProcessingInputCollection
+            Object containing dependencies to process.
+
+        Returns
+        -------
+        datasets : xr.Dataset
+            Xr.Dataset of products.
+        """
+        print(f"Processing Spacecraft {self.data_level}")
+
+        if self.data_level != "l1a":
+            raise NotImplementedError(
+                f"Spacecraft processing not implemented for level {self.data_level}"
+            )
+
+        # File path is expected output file path
+        input_files = dependencies.get_file_paths(source="spacecraft")
+        if len(input_files) > 1:
+            raise ValueError(
+                f"Unexpected dependencies found for Spacecraft L1A: "
+                f"{input_files}. Expected only one dependency."
+            )
+        datasets = list(quaternions.process_quaternions(input_files[0]))
+        for ds in datasets:
+            ds.attrs["Data_version"] = self.version
 
         return datasets
 

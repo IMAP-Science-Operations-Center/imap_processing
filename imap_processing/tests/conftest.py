@@ -207,6 +207,15 @@ def test_data_paths():
             / "l1"
             / "ultra_90_dps_exposure.csv",
         ),
+        (
+            "Ultra_efficiencies_45_combined_logistic_interpolation.csv",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "data"
+            / "l1"
+            / "Ultra_efficiencies_45_combined_logistic_interpolation.csv",
+        ),
     ]
 
     return test_data_path_list

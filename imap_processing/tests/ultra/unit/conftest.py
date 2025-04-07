@@ -6,16 +6,21 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from imap_processing import decom, imap_module_directory
-from imap_processing.ultra.l0.decom_ultra import process_ultra_apids
+from imap_processing import imap_module_directory
+from imap_processing.ultra.l0.decom_ultra import (
+    process_ultra_events,
+    process_ultra_rates,
+    process_ultra_tof,
+)
 from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_AUX,
     ULTRA_EVENTS,
     ULTRA_RATES,
+    ULTRA_TOF,
 )
-from imap_processing.ultra.l1a import ultra_l1a
+from imap_processing.ultra.l1a.ultra_l1a import ultra_l1a
 from imap_processing.ultra.l1b.ultra_l1b import ultra_l1b
-from imap_processing.utils import group_by_apid
+from imap_processing.utils import packet_file_to_datasets
 
 
 @pytest.fixture()
@@ -129,11 +134,21 @@ def decom_test_data(request, xtce_path):
     filename = request.param["filename"]
     ccsds_path = imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
-    packets = decom.decom_packets(ccsds_path, xtce_path)
-    grouped_data = group_by_apid(packets)
+    datasets_by_apid = packet_file_to_datasets(ccsds_path, xtce_path)
 
-    data_packet_list = process_ultra_apids(grouped_data[apid], apid)
-    return data_packet_list, packets
+    strategy_dict = {
+        ULTRA_TOF.apid[0]: process_ultra_tof,
+        ULTRA_EVENTS.apid[0]: process_ultra_events,
+        ULTRA_RATES.apid[0]: process_ultra_rates,
+        ULTRA_TOF.apid[1]: process_ultra_tof,
+        ULTRA_EVENTS.apid[1]: process_ultra_events,
+        ULTRA_RATES.apid[1]: process_ultra_rates,
+    }
+
+    process_function = strategy_dict.get(apid, lambda *args: False)
+    data_packet_xarray = process_function(datasets_by_apid[apid])
+
+    return data_packet_xarray
 
 
 @pytest.fixture()
@@ -149,54 +164,28 @@ def events_fsw_comparison_theta_0():
 @pytest.fixture()
 def de_dataset(ccsds_path_theta_0, xtce_path):
     """L1A test data"""
-    packets = decom.decom_packets(ccsds_path_theta_0, xtce_path)
-    grouped_data = group_by_apid(packets)
-    decom_ultra_events = process_ultra_apids(
-        grouped_data[ULTRA_EVENTS.apid[0]], ULTRA_EVENTS.apid[0]
+    test_data = ultra_l1a(
+        ccsds_path_theta_0, data_version="001", apid=ULTRA_EVENTS.apid[0]
     )
-    decom_ultra_aux = process_ultra_apids(
-        grouped_data[ULTRA_AUX.apid[0]], ULTRA_AUX.apid[0]
-    )
-    de_dataset = ultra_l1a.create_dataset(
-        {
-            ULTRA_EVENTS.apid[0]: decom_ultra_events,
-            ULTRA_AUX.apid[0]: decom_ultra_aux,
-        }
-    )
-
-    return de_dataset
+    return test_data[0]
 
 
 @pytest.fixture()
-def rates_dataset(ccsds_path_theta_0, xtce_path):
+def rates_dataset(ccsds_path_theta_0):
     """L1A test data"""
-    packets = decom.decom_packets(ccsds_path_theta_0, xtce_path)
-    grouped_data = group_by_apid(packets)
-    decom_ultra_rates = process_ultra_apids(
-        grouped_data[ULTRA_RATES.apid[0]], ULTRA_RATES.apid[0]
+    test_data = ultra_l1a(
+        ccsds_path_theta_0, data_version="001", apid=ULTRA_RATES.apid[0]
     )
-    l1a_rates_dataset = ultra_l1a.create_dataset(
-        {
-            ULTRA_RATES.apid[0]: decom_ultra_rates,
-        }
-    )
-    return l1a_rates_dataset
+    return test_data[0]
 
 
 @pytest.fixture()
-def aux_dataset(ccsds_path_theta_0, xtce_path):
+def aux_dataset(ccsds_path_theta_0):
     """L1A test data"""
-    packets = decom.decom_packets(ccsds_path_theta_0, xtce_path)
-    grouped_data = group_by_apid(packets)
-    decom_ultra_aux = process_ultra_apids(
-        grouped_data[ULTRA_AUX.apid[0]], ULTRA_AUX.apid[0]
+    test_data = ultra_l1a(
+        ccsds_path_theta_0, data_version="001", apid=ULTRA_AUX.apid[0]
     )
-    l1a_aux_dataset = ultra_l1a.create_dataset(
-        {
-            ULTRA_AUX.apid[0]: decom_ultra_aux,
-        }
-    )
-    return l1a_aux_dataset
+    return test_data[0]
 
 
 @pytest.fixture()

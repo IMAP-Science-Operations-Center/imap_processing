@@ -1,9 +1,12 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.ultra.l1b.lookup_utils import (
+    get_angular_profiles,
     get_back_position,
+    get_energy_efficiencies,
     get_energy_norm,
     get_image_params,
     get_norm,
@@ -66,3 +69,22 @@ def test_get_image_params():
     image_params = get_image_params("XFTLTOFF")
 
     assert image_params == 49.3
+
+
+def test_get_angular_profiles():
+    """Tests function get_image_params."""
+
+    u45_left = get_angular_profiles("left", "ultra45")
+    u45_right = get_angular_profiles("right", "ultra45")
+
+    assert u45_left.shape == (525, 7)
+    assert u45_right.shape == (525, 7)
+
+
+@pytest.mark.external_test_data()
+def test_get_energy_efficiencies():
+    """Tests function get_get_energy_efficiencies."""
+
+    u45_efficiencies = get_energy_efficiencies()
+
+    assert u45_efficiencies.shape == (58081, 157)

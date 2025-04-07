@@ -24,6 +24,16 @@ _BACK_POS_DF_ULTRA90 = pd.read_csv(
 )
 _ENERGY_NORM_DF = pd.read_csv(BASE_PATH / "EgyNorm.mem.csv")
 _IMAGE_PARAMS_DF = pd.read_csv(BASE_PATH / "FM45_Startup1_ULTRA_IMGPARAMS_20240719.csv")
+_FWHM_TABLES = {
+    ("left", "ultra45"): pd.read_csv(BASE_PATH / "Angular_Profiles_FM45_LeftSlit.csv"),
+    ("right", "ultra45"): pd.read_csv(
+        BASE_PATH / "Angular_Profiles_FM45_RightSlit.csv"
+    ),
+    ("left", "ultra90"): pd.read_csv(BASE_PATH / "Angular_Profiles_FM90_LeftSlit.csv"),
+    ("right", "ultra90"): pd.read_csv(
+        BASE_PATH / "Angular_Profiles_FM90_RightSlit.csv"
+    ),
+}
 
 
 def get_y_adjust(dy_lut: np.ndarray) -> npt.NDArray:
@@ -32,7 +42,7 @@ def get_y_adjust(dy_lut: np.ndarray) -> npt.NDArray:
 
     Instead of using trigonometry, this function utilizes a 256-element lookup table
     to find the Y adjustment. For more details, refer to pages 37-38 of the
-    IMAP-Ultra Flight Software Specification document (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
@@ -56,7 +66,7 @@ def get_norm(dn: xr.DataArray, key: str, file_label: str) -> npt.NDArray:
     using lookup tables.
 
     Further description is available on pages 31-32 of the IMAP-Ultra Flight Software
-    Specification document (7523-9009_Rev_-.pdf). This will work for both Tp{key}Norm,
+    Specification document. This will work for both Tp{key}Norm,
     Bt{key}Norm. This is for getStopNorm and getCoinNorm.
 
     Parameters
@@ -92,7 +102,7 @@ def get_back_position(back_index: np.ndarray, key: str, file_label: str) -> npt.
     instead of linear equations is necessary. The computation will use different
     tables to accommodate variations between the top and bottom anodes.
     Further description is available on page 32 of the
-    IMAP-Ultra Flight Software Specification document (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
@@ -122,8 +132,8 @@ def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray) -> npt.NDArra
     Normalize composite energy per SSD using a lookup table.
 
     Further description is available on page 41 of the
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf). Note : There are 8 SSDs containing
+    IMAP-Ultra Flight Software Specification document.
+    Note : There are 8 SSDs containing
     4096 composite energies each.
 
     Parameters
@@ -149,7 +159,7 @@ def get_image_params(image: str) -> np.float64:
 
     Further description is available starting on
     page 30 of the IMAP-Ultra Flight Software
-    Specification document (7523-9009_Rev_-.pdf).
+    Specification document.
 
     Parameters
     ----------
@@ -163,3 +173,49 @@ def get_image_params(image: str) -> np.float64:
     """
     value: np.float64 = _IMAGE_PARAMS_DF[image].values[0]
     return value
+
+
+def get_angular_profiles(start_type: str, sensor: str) -> pd.DataFrame:
+    """
+    Lookup table for FWHM for theta and phi.
+
+    Further description is available starting on
+    page 18 of the Algorithm Document.
+
+    Parameters
+    ----------
+    start_type : str
+       Start Type: Left, Right.
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
+
+    Returns
+    -------
+    lookup_table : DataFrame
+        Angular profile lookup table for a given start_type and sensor.
+    """
+    lookup_table = _FWHM_TABLES[(start_type.lower(), sensor)]
+
+    return lookup_table
+
+
+def get_energy_efficiencies() -> pd.DataFrame:
+    """
+    Lookup table for efficiencies for theta and phi.
+
+    Further description is available starting on
+    page 18 of the Algorithm Document.
+
+    Returns
+    -------
+    lookup_table : DataFrame
+        Efficiencies lookup table for a given sensor.
+    """
+    # TODO: Move this out of tests directory once we have the aux api
+    # TODO: ultra90 efficiencies
+    path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
+    lookup_table = pd.read_csv(
+        path / "Ultra_efficiencies_45_combined_logistic_interpolation.csv"
+    )
+
+    return lookup_table
