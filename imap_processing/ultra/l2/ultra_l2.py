@@ -321,6 +321,14 @@ def ultra_l2(
         }
         pass
 
+    # Always add the following attributes to the map
+    map_attrs.update(
+        {
+            "Sky_tiling_type": output_map_properties.sky_tiling_type.value,
+            "Spice_reference_frame": output_map_properties.spice_reference_frame,
+        }
+    )
+
     # Add the defined attributes to the map's global attrs
     map_dataset.attrs.update(map_attrs)
     return [map_dataset]
