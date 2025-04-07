@@ -151,6 +151,36 @@ def process_science_data(
     return list(l1b_datasets.values())
 
 
+def initialize_l1b_dataset(l1a_counts_dataset: xr.Dataset, coords: list) -> xr.Dataset:
+    """
+    Initialize the L1B dataset.
+
+    Create a dataset and add coordinates and dynamic threshold state
+    from the L1A counts dataset.
+
+    Parameters
+    ----------
+    l1a_counts_dataset : xr.Dataset
+        The L1A counts dataset.
+    coords : list
+        A list of coordinates to assign to the L1B dataset.
+
+    Returns
+    -------
+    l1b_dataset : xr.Dataset
+        An L1B dataset with coordinates and dynamic threshold state.
+    """
+    # Create a new dataset to store the L1B standard rates
+    l1b_dataset = xr.Dataset()
+    l1b_dataset = l1b_dataset.assign_coords(
+        {coord: l1a_counts_dataset.coords[coord] for coord in coords}
+    )
+    l1b_dataset["dynamic_threshold_state"] = l1a_counts_dataset[
+        "hdr_dynamic_threshold_state"
+    ]
+    return l1b_dataset
+
+
 def process_standard_rates_data(
     l1a_counts_dataset: xr.Dataset, livetime: xr.DataArray
 ) -> xr.Dataset:
@@ -171,35 +201,24 @@ def process_standard_rates_data(
     xr.Dataset
         The processed L1B standard rates dataset.
     """
-    # Create a new dataset to store the L1B standard rates
-    l1b_standard_rates_dataset = xr.Dataset()
-
-    # Add required coordinates from the l1A counts dataset
-    coords = [
-        "epoch",
-        "gain",
-        "sngrates_index",
-        "coinrates_index",
-        "pbufrates_index",
-        "l2fgrates_index",
-        "l2bgrates_index",
-        "l3fgrates_index",
-        "l3bgrates_index",
-        "penfgrates_index",
-        "penbgrates_index",
-        "ialirtrates_index",
-    ]
-    l1b_standard_rates_dataset = l1b_standard_rates_dataset.assign_coords(
-        {coord: l1a_counts_dataset.coords[coord] for coord in coords}
+    # Initialize the L1B standard rates dataset with coordinates from the L1A dataset
+    l1b_standard_rates_dataset = initialize_l1b_dataset(
+        l1a_counts_dataset,
+        coords=[
+            "epoch",
+            "gain",
+            "sngrates_index",
+            "coinrates_index",
+            "pbufrates_index",
+            "l2fgrates_index",
+            "l2bgrates_index",
+            "l3fgrates_index",
+            "l3bgrates_index",
+            "penfgrates_index",
+            "penbgrates_index",
+            "ialirtrates_index",
+        ],
     )
-
-    # Add dynamic threshold state from the L1A counts dataset
-    l1b_standard_rates_dataset["dynamic_threshold_state"] = l1a_counts_dataset[
-        "hdr_dynamic_threshold_state"
-    ]
-    l1b_standard_rates_dataset["dynamic_threshold_state"].attrs = l1a_counts_dataset[
-        "hdr_dynamic_threshold_state"
-    ].attrs
 
     # Define fields from the L1A counts dataset to calculate standard rates from
     standard_rate_fields = [
@@ -321,21 +340,10 @@ def process_summed_rates_data(
     xr.Dataset
         The processed L1B summed rates dataset.
     """
-    # Create a new dataset to store the L1B summed rates
-    l1b_summed_rates_dataset = xr.Dataset()
-
-    # Assign the epoch coordinate from the L1A dataset
-    l1b_summed_rates_dataset = l1b_summed_rates_dataset.assign_coords(
-        {"epoch": l1a_counts_dataset.coords["epoch"]}
+    # Initialize the L1B summed rates dataset with coordinates from the L1A dataset
+    l1b_summed_rates_dataset = initialize_l1b_dataset(
+        l1a_counts_dataset, coords=["epoch"]
     )
-
-    # Add dynamic threshold state from L1A raw counts dataset
-    l1b_summed_rates_dataset["dynamic_threshold_state"] = l1a_counts_dataset[
-        "hdr_dynamic_threshold_state"
-    ]
-    l1b_summed_rates_dataset["dynamic_threshold_state"].attrs = l1a_counts_dataset[
-        "hdr_dynamic_threshold_state"
-    ].attrs
 
     for particle, energy_ranges in SUMMED_PARTICLE_ENERGY_RANGE_MAPPING.items():
         # Sum counts for each energy range and add to dataset
@@ -442,13 +450,10 @@ def process_sectored_rates_data(
     #  -get middle epoch (or get mod 5 value for 6th frame)
     #  -consider refactoring calculate_rates function to handle sectored rates
 
-    # Create a dataset to store the L1B sectored rates
-    l1b_sectored_rates_dataset = xr.Dataset()
-
     # Define particles and coordinates
     particles = ["h", "he4", "cno", "nemgsi", "fe"]
 
-    # Extract relevant data variables that start with a particle name
+    # Extract relevant data variable names that start with a particle name
     data_vars = [
         str(var)
         for var in l1a_counts_dataset.data_vars
@@ -463,10 +468,25 @@ def process_sectored_rates_data(
     # Sum livetime over 10 minute intervals
     livetime_10min = sum_livetime_10min(livetime)
 
-    # Dictionary to store variable renaming mappings for L1B dataset
+    # Initialize the L1B dataset with coordinates from the subset L1A dataset
+    l1b_sectored_rates_dataset = initialize_l1b_dataset(
+        l1a_counts_dataset,
+        coords=[
+            "epoch",
+            "declination",
+            "azimuth",
+            "h_energy_mean",
+            "he4_energy_mean",
+            "cno_energy_mean",
+            "nemgsi_energy_mean",
+            "fe_energy_mean",
+        ],
+    )
+
+    # Dictionary to store variable rename mappings for L1B dataset
     rename_map = {}
 
-    # Compute rates
+    # Compute rates and add to the L1B dataset
     for var in data_vars:
         if "sectored_counts" in var:
             counts = l1a_counts_dataset[var]
@@ -495,29 +515,8 @@ def process_sectored_rates_data(
             # Add other data variables to the dataset
             l1b_sectored_rates_dataset[var] = l1a_counts_dataset[var]
 
-    # Rename variables for L1B dataset
+    # Rename variables in L1B dataset
     if rename_map:
         l1b_sectored_rates_dataset = l1b_sectored_rates_dataset.rename(rename_map)
-
-    coords = [
-        "epoch",
-        "declination",
-        "azimuth",
-        "h_energy_mean",
-        "he4_energy_mean",
-        "cno_energy_mean",
-        "nemgsi_energy_mean",
-        "fe_energy_mean",
-    ]
-
-    # Add selected coordinates from L1A raw counts dataset
-    l1b_sectored_rates_dataset = l1b_sectored_rates_dataset.assign_coords(
-        {coord: l1a_counts_dataset.coords.get(coord) for coord in coords}
-    )
-
-    # Add dynamic threshold data
-    l1b_sectored_rates_dataset["dynamic_threshold_state"] = l1a_counts_dataset[
-        "hdr_dynamic_threshold_state"
-    ]
 
     return l1b_sectored_rates_dataset
