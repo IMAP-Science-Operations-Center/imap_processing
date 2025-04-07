@@ -5,8 +5,7 @@ import pytest
 import xarray as xr
 from numpy.testing import assert_array_equal
 
-from imap_processing.idex.idex_l2b import epoch_to_doy, idex_l2b, round_spin_phases
-from imap_processing.spice.time import et_to_utc
+from imap_processing.idex.idex_l2b import idex_l2b, round_spin_phases
 
 
 @pytest.fixture(scope="module")
@@ -75,6 +74,10 @@ def test_round_spin_phases():
     unique_quadrants = np.unique(spin_quadrants)
     assert set(unique_quadrants) == {0, 90, 180, 270}
 
+    # Test values that are exactly halfway between quadrants
+    spin_quadrants = round_spin_phases(np.array([45, 135, 225, 315]))
+    assert_array_equal(spin_quadrants, [90, 180, 270, 0])
+
 
 def test_round_spin_phases_warning(caplog):
     """Tests that round_spin_phases() logs expected out of range warning."""
@@ -88,13 +91,3 @@ def test_round_spin_phases_warning(caplog):
         f"Spin phase angles, {spin_phase_angles.data} "
         f"are outside of the expected spin phase angle range, [0, 360)."
     ) in caplog.text
-
-
-def test_epoch_to_doy():
-    """Tests that epoch_to_doy() produces expected doys."""
-
-    epoch = 756196488384840064
-    expected_doy = int(et_to_utc(epoch * 1e-9, "D").split("//")[0].split("-")[1])
-    example_epoch = np.full(10, epoch)
-    doy = epoch_to_doy(example_epoch)
-    assert np.all(doy == expected_doy)

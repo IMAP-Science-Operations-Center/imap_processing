@@ -19,14 +19,12 @@ Examples
 """
 
 import logging
-from datetime import datetime
 
 import numpy as np
 import xarray as xr
-from numpy._typing import NDArray
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.spice.time import et_to_utc, ttj2000ns_to_et
+from imap_processing.spice.time import epoch_to_doy
 
 logger = logging.getLogger(__name__)
 
@@ -85,12 +83,11 @@ def idex_l2b(l2a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     l2b_dataset["spin_phase_quadrants"] = spin_phase_quadrants
 
     # Get the time of impact array (in day of year)
-    impact_day_of_year = epoch_to_doy(epoch_da)
+    impact_day_of_year = epoch_to_doy(epoch_da.data)
     l2b_dataset["impact_day_of_year"] = xr.DataArray(
         name="impact_day_of_year",
         data=impact_day_of_year,
         dims="epoch",
-        # attrs=idex_attrs.get_variable_attributes("impact_day_of_year"),
     )
 
     logger.info("IDEX L2B science data processing completed.")
@@ -118,29 +115,9 @@ def round_spin_phases(spin_phases: xr.DataArray) -> xr.DataArray:
             f"phase angle range, [0, 360)."
         )
     quadrant_size = 90
+    # Shift spin phases so any value exactly between two quadrants gets shifted to the
+    # Higher quadrant
+    shifted_spin_phases = spin_phases + quadrant_size / 2
     # Calculate nearest quadrant value.
     # Use mod to wrap values > 315 to 0.
-    return (quadrant_size * np.round(spin_phases / quadrant_size)) % 360
-
-
-def epoch_to_doy(epoch: xr.DataArray) -> NDArray:
-    """
-    Convert epoch times to day of year (1-365/366).
-
-    Parameters
-    ----------
-    epoch : xarray.DataArray
-        Time, number of nanoseconds since J2000 with leap seconds included.
-
-    Returns
-    -------
-    day_of_year : numpy.ndarray
-        Day of year (1-365/366) for each epoch value.
-    """
-    et = ttj2000ns_to_et(epoch.data)
-    # Get UTC time strings in ISO calendar format
-    time_strings = et_to_utc(et, "ISOC")
-    # Extract DOY from datetime
-    return np.array(
-        [datetime.fromisoformat(date).timetuple().tm_yday for date in time_strings]
-    )
+    return (quadrant_size * (shifted_spin_phases / quadrant_size).astype(int)) % 360
