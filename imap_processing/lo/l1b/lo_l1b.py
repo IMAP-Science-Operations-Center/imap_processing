@@ -56,8 +56,10 @@ def lo_l1b(dependencies: dict, data_version: str) -> list[Path]:
         l1b_de = set_spin_bin(l1b_de, spin_angle)
         # set the spin cycle for each direct event
         l1b_de = set_spin_cycle(l1a_de, l1b_de)
+        # get spin start times for each event
+        spin_start_time = get_spin_start_times(l1a_de, l1b_de, spin_data, acq_end)
         # get the absolute met for each event
-        l1b_de = set_event_met(l1a_de, l1b_de, spin_data, avg_spin_durations, acq_end)
+        l1b_de = set_event_met(l1a_de, l1b_de, spin_start_time, avg_spin_durations)
         # set the epoch for each event
         l1b_de = set_each_event_epoch(l1b_de)
 
@@ -287,9 +289,9 @@ def get_spin_start_times(l1a_de: xr.Dataset, l1b_de: xr.Dataset, spin_data: xr.D
         The start time for the spin that each direct event is in.
 
     """
-    shcoarse = l1a_de["shcoarse"].values
+    met = l1a_de["met"].values
     # Find the closest stop_acq for each shcoarse
-    closest_stop_acq_indices = np.abs(shcoarse[:, None] - acq_end.values).argmin(axis=1)
+    closest_stop_acq_indices = np.abs(met[:, None] - acq_end.values).argmin(axis=1)
     # There are 28 spins per epoch (1 aggregated science cycle)
     # Set the spin_cycle_num to the spin number relative to the
     # start of the ASC
@@ -315,9 +317,8 @@ def get_spin_start_times(l1a_de: xr.Dataset, l1b_de: xr.Dataset, spin_data: xr.D
 def set_event_met(
     l1a_de: xr.Dataset,
     l1b_de: xr.Dataset,
-    spin_data: xr.Dataset,
+    spin_start_time: xr.Dataset,
     avg_spin_durations: xr.DataArray,
-    acq_end: xr.DataArray,
 ) -> np.array:
     """
     Get the event MET for each direct event.

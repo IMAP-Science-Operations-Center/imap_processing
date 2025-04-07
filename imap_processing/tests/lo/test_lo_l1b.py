@@ -248,26 +248,26 @@ def test_get_spin_start_times():
     # Arrange
     l1b_de = xr.Dataset(
         {
-            "spin_cycle": ("epoch", [1, 2, 3, 4, 5]),
+            "spin_cycle": ("epoch", [0, 1, 2, 3, 4]),
         },
-        coords={"epoch": [0, 1, 2, 3, 4]},
+        coords={"epoch": [0, 1]},
     )
     l1a_de = xr.Dataset(
         {
             "de_count": ("epoch", [2, 3]),
-            "shcoarse": ("direct_event", [1, 2, 3, 4, 5]),
+            "met": ("direct_event", [0, 1]),
             "de_time": ("direct_event", [0000, 1000, 2000, 3000, 4000]),
         },
         coords={"epoch": [0, 1], "direct_event": [0, 1, 2, 3, 4]},
     )
     spin = xr.Dataset(
         {
-            "start_sec_spin": ("epoch", [0, 1, 2, 3, 4, 5]),
-            "start_subsec_spin": ("epoch", [0, 1, 2, 3, 4, 5]),
+            "start_sec_spin": (["epoch", "spin"], [[0, 1, 2, 3, 4], [3, 4, 5, 6, 7]]),
+            "start_subsec_spin": (["epoch", "spin"], [[0, 1, 2, 3, 4], [3, 4, 5, 6, 7]]),
         }
     )
 
-    end_acq = xr.DataArray([0, 1, 2, 3, 4], dims="epoch")
+    end_acq = xr.DataArray([0, 1], dims="epoch")
 
     l1b_de = get_spin_start_times(l1a_de, l1b_de, spin, end_acq)
 
