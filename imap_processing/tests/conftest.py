@@ -494,8 +494,9 @@ def generate_spin_data():
         Spin table contains the following fields:
             (
             spin_number,
-            spin_start_sec,
-            spin_start_subsec,
+            spin_start_sec_sclk,
+            spin_start_subsec_sclk,
+            spin_start_utc,
             spin_period_sec,
             spin_period_valid,
             spin_phase_valid,
@@ -523,18 +524,25 @@ def generate_spin_data():
             end_met = start_met + 86400
 
         # Create spin start second data of 15 seconds increment
-        spin_start_sec = np.arange(np.floor(start_met), end_met + 1, 15)
+        spin_start_met = np.arange(start_met, end_met + 1, 15)
+        spin_start_sec = np.floor(spin_start_met).astype(int)
         spin_start_subsec = int((start_met - spin_start_sec[0]) * 1000)
+
+        # Calculate UTC times without spice (accepting ~5 second inaccuracy)
+        spin_start_dt64 = TTJ2000_EPOCH + (spin_start_met * 1e9).astype(
+            "timedelta64[ns]"
+        )
 
         nspins = len(spin_start_sec)
 
         spin_df = pd.DataFrame.from_dict(
             {
                 "spin_number": np.arange(nspins, dtype=np.uint32),
-                "spin_start_sec": spin_start_sec,
-                "spin_start_subsec": np.full(
+                "spin_start_sec_sclk": spin_start_sec,
+                "spin_start_subsec_sclk": np.full(
                     nspins, spin_start_subsec, dtype=np.uint32
                 ),
+                "spin_start_utc": np.datetime_as_string(spin_start_dt64, unit="us"),
                 "spin_period_sec": np.full(nspins, 15.0, dtype=np.float32),
                 "spin_period_valid": np.ones(nspins, dtype=np.uint8),
                 "spin_phase_valid": np.ones(nspins, dtype=np.uint8),

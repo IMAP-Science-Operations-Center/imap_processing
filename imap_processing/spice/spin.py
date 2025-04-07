@@ -24,8 +24,9 @@ def get_spin_data() -> pd.DataFrame:
 
     Spin data should contain the following fields:
         * spin_number
-        * spin_start_sec
-        * spin_start_subsec
+        * spin_start_sec_sclk
+        * spin_start_subsec_sclk
+        * spin_start_utc
         * spin_period_sec
         * spin_period_valid
         * spin_phase_valid
@@ -44,11 +45,24 @@ def get_spin_data() -> pd.DataFrame:
         # Handle the case where the environment variable is not set
         raise ValueError("SPIN_DATA_FILEPATH environment variable is not set.")
 
-    spin_df = pd.read_csv(path_to_spin_file, comment="#")
-    # Combine spin_start_sec and spin_start_subsec to get the spin start
+    spin_df = pd.read_csv(
+        path_to_spin_file,
+        comment="#",
+        dtype={
+            "spin_number": int,
+            "spin_start_sec_sclk": int,
+            "spin_start_subsec_sclk": int,
+            "spin_start_utc": str,
+            "spin_period_sec": float,
+            "spin_period_valid": bool,
+            "spin_period_source": int,
+            "thruster_firing": bool,
+        },
+    )
+    # Combine spin_start_sec_sclk and spin_start_subsec_sclk to get the spin start
     # time in seconds. The spin start subseconds are in milliseconds.
     spin_df["spin_start_time"] = (
-        spin_df["spin_start_sec"] + spin_df["spin_start_subsec"] / 1e3
+        spin_df["spin_start_sec_sclk"] + spin_df["spin_start_subsec_sclk"] / 1e3
     )
 
     return spin_df
@@ -74,8 +88,8 @@ def interpolate_spin_data(query_met_times: Union[float, npt.NDArray]) -> pd.Data
         Spin table data with the spin-phase column added and one row
         interpolated for each queried MET time. Output columns are:
         * spin_number
-        * spin_start_sec
-        * spin_start_subsec
+        * spin_start_sec_sclk
+        * spin_start_subsec_sclk
         * spin_period_sec
         * spin_period_valid
         * spin_phase_valid
