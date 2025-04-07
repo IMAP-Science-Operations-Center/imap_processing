@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -5,7 +7,10 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.process_swe import (
+    average_values_and_azimuth,
     decompress_counts,
+    find_bin_offsets,
+    find_min_counts,
     get_ialirt_energies,
     normalize_counts,
     phi_to_bin,
@@ -105,6 +110,25 @@ def fields_to_test():
         "swe_cem7_e4": "ELEC_COUNTS_SPIN_I_POL_6_E_3J",
     }
     return fields_to_test
+
+
+@pytest.fixture()
+def summed_half_cycle():
+    """Create test set with known peaks"""
+
+    summed_half_cycle = np.zeros((8, 30))
+
+    for i in range(8):
+        peak = i + 5
+        summed_half_cycle[i, peak] = 100
+        summed_half_cycle[i, (peak + 6) % 30] = 60  # +90 offset
+        summed_half_cycle[i, (peak + 8) % 30] = 80  # +90 offset
+        summed_half_cycle[i, (peak + 14) % 30] = 20  # +180 offset
+        summed_half_cycle[i, (peak + 16) % 30] = 40  # +180 offset
+        summed_half_cycle[i, (peak - 6) % 30] = 10  # -90 offset
+        summed_half_cycle[i, (peak - 8) % 30] = 30  # -90 offset
+
+    return summed_half_cycle
 
 
 def test_get_energy():
@@ -282,6 +306,64 @@ def test_norm_counts():
 
 
 def test_process_swe(swe_test_data, fields_to_test):
+def test_find_bin_offsets():
+    """Tests find_bin_offsets function"""
+
+    peak_bins = np.array([5, 6, 29])
+    bins = find_bin_offsets(peak_bins, (2, 3))
+    np.testing.assert_array_equal(bins, np.array([[7, 8, 1], [8, 9, 2]]))
+
+
+def test_average_values_and_azimuth(summed_half_cycle):
+    """Tests average_values_and_azimuth function"""
+    azimuth = np.arange(12, 361, 12)
+
+    # Find the azimuth angle that corresponds to the maximum counts at each energy
+    peak_az_bin = np.argmax(summed_half_cycle, axis=1)
+
+    # Bins +6 and +8 correspond to +90 degrees.
+    counts_90, azimuth_90 = average_values_and_azimuth(
+        peak_az_bin, summed_half_cycle, azimuth, (6, 8)
+    )
+
+    assert np.allclose(counts_90, np.full(8, 70), atol=1e-9)
+    assert np.allclose(
+        azimuth_90, np.array([156, 168, 180, 192, 204, 216, 228, 240]), atol=1e-9
+    )
+
+
+def test_find_min_counts(summed_half_cycle):
+    """Tests find_min function"""
+
+    cpeak, cmin, counts, azimuth, azimuth_peak, azimuth_cmin = find_min_counts(
+        summed_half_cycle
+    )
+    np.testing.assert_array_equal(cpeak, np.full(8, 100))
+    np.testing.assert_array_equal(cmin, counts[0])
+
+    azimuth_array = np.arange(12, 361, 12)
+    expected_azimuth_peak = azimuth_array[[5, 6, 7, 8, 9, 10, 11, 12]]
+
+    np.testing.assert_array_equal(azimuth_peak, expected_azimuth_peak)
+    np.testing.assert_array_equal(azimuth_cmin, azimuth[0])
+
+
+@patch(
+    "imap_processing.ialirt.l0.process_swe.read_in_flight_cal_data",
+    return_value=pd.DataFrame(
+        {
+            "met_time": [453051300, 453051900],
+            "cem1": [1, 2],
+            "cem2": [1, 2],
+            "cem3": [1, 2],
+            "cem4": [1, 2],
+            "cem5": [1, 2],
+            "cem6": [1, 2],
+            "cem7": [1, 2],
+        }
+    ),
+)
+def test_process_swe(mock_read_cal, swe_test_data, fields_to_test):
     """Test processing for swe."""
     swe_test_data = swe_test_data.rename(
         columns={v: k for k, v in fields_to_test.items()}

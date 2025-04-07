@@ -168,57 +168,92 @@ def normalize_counts(counts: NDArray, latest_cal: pd.Series) -> NDArray:
     latest_cal = latest_cal.to_numpy()
 
     # Norm counts where counts are non-negative
-    # TODO: confirm fv is counts with Ruth
     norm_counts = counts * (latest_cal / GEOMETRIC_FACTORS)[:, np.newaxis]
     norm_counts[norm_counts < 0] = 0
 
     return norm_counts
 
 
-def average_values_and_azimuth(peak_bins, data, azimuth, offset1, offset2):
-    bin_0 = (peak_bins + offset1) % data.shape[1]
-    bin_1 = (peak_bins + offset2) % data.shape[1]
+def find_bin_offsets(peak_bins, offsets):
+    """Find the bins with offsets from the peak bins."""
+    # Azimuth has 30 values.
+    bin_0, bin_1 = (peak_bins + offsets[0]) % 30, (peak_bins + offsets[1]) % 30
 
-    val_0 = data[np.arange(len(peak_bins)), bin_0]
-    val_1 = data[np.arange(len(peak_bins)), bin_1]
-
-    avg_val = (val_0 + val_1) / 2
-    mid_idx = ((bin_0 + bin_1) / 2).astype(int)
-    mid_az = azimuth[mid_idx]
-
-    return avg_val[:, np.newaxis], mid_az[:, np.newaxis]
+    return bin_0, bin_1
 
 
-def find_min(summed_first_half):
+def average_values_and_azimuth(peak_bins, summed_half_cycle, azimuth, offsets):
+    """Find the counts and azimuth values from the offset bins."""
+    # Find the bins with offsets from the peak bins.
+    bin_0, bin_1 = find_bin_offsets(peak_bins, offsets)
+
+    # Get the counts value for the offset bins at each energy level and average them.
+    row_idx = np.arange(len(peak_bins))
+    avg_counts = (
+        summed_half_cycle[row_idx, bin_0] + summed_half_cycle[row_idx, bin_1]
+    ) / 2
+    avg_azimuth = (azimuth[bin_0] + azimuth[bin_1]) / 2
+
+    return avg_counts, avg_azimuth
+
+
+def find_min_counts(summed_half_cycle):
     # Find the maximum counts for each energy level
-    cpeak = np.max(summed_first_half, axis=1)
+    cpeak = np.max(summed_half_cycle, axis=1)
 
-    # Find the azimuth angle that corresponds to the maximum counts at each energy
-    peak_az_bin = np.argmax(summed_first_half, axis=1)
+    # Find the bin that corresponds to the maximum counts at each energy
+    peak_az_bin = np.argmax(summed_half_cycle, axis=1)
 
+    # Azimuth is always 12 degrees apart.
     azimuth = np.arange(12, 361, 12)
+    azimuth_peak = azimuth[peak_az_bin]
 
-    # +90
-    c_90_pos, azimuth_90_pos = average_values_and_azimuth(
-        peak_az_bin, summed_first_half, azimuth, 6, 8
+    # Find the counts and azimuth values from the offset bins.
+    # Bins +6 and +8 correspond to +90 degrees.
+    counts_90, azimuth_90 = average_values_and_azimuth(
+        peak_az_bin, summed_half_cycle, azimuth, (6, 8)
     )
 
-    # +180
-    c_180, azimuth_180 = average_values_and_azimuth(
-        peak_az_bin, summed_first_half, azimuth, 14, 16
+    # Find the counts and azimuth values from the offset bins.
+    # Bins +14 and +16 correspond to 180 degrees.
+    counts_180, azimuth_180 = average_values_and_azimuth(
+        peak_az_bin, summed_half_cycle, azimuth, (14, 16)
     )
 
-    # -90
-    c_90_neg, azimuth_90_neg = average_values_and_azimuth(
-        peak_az_bin, summed_first_half, azimuth, -6, -8
+    # Find the counts and azimuth values from the offset bins.
+    # Bins +6 and +8 correspond to -90 degrees.
+    counts_neg_90, azimuth_neg_90 = average_values_and_azimuth(
+        peak_az_bin, summed_half_cycle, azimuth, (-6, -8)
     )
 
-    stacked = np.hstack([c_90_pos, c_180, c_90_neg])
+    counts_stacked = np.hstack(
+        [
+            counts_90[:, np.newaxis],
+            counts_180[:, np.newaxis],
+            counts_neg_90[:, np.newaxis],
+        ]
+    )
+    azimuths_stacked = np.hstack(
+        [
+            azimuth_90[:, np.newaxis],
+            azimuth_180[:, np.newaxis],
+            azimuth_neg_90[:, np.newaxis],
+        ]
+    )
 
-    # Find the minimum value for each energy level (row)
-    cmin = np.min(stacked, axis=1)
+    # Find the minimum value for each energy level
+    min_indices = np.argmin(counts_stacked, axis=1)
+    azimuth_cmin = azimuths_stacked[np.arange(len(min_indices)), min_indices]
+    cmin = np.min(counts_stacked, axis=1)
 
-    return cpeak, cmin, c_180, azimuth_180
+    return (
+        cpeak,
+        cmin,
+        (counts_neg_90, counts_90, counts_180),
+        (azimuth_neg_90, azimuth_90, azimuth_180),
+        azimuth_peak,
+        azimuth_cmin,
+    )
 
 
 def determine_streaming(cpeak, cmin, c_180):
@@ -303,10 +338,28 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
         summed_first_half = np.sum(normalized_first_half, axis=1)
         summed_second_half = np.sum(normalized_second_half, axis=1)
 
-        cpeak, cmin, c_180, azimuth_180 = find_min(summed_first_half)
+        # Find peaks, counts (-90, 90, 180), and azimuth (-90, 90, 180) values
+        (
+            cpeak_first_half,
+            cmin_first_half,
+            counts_first_half,
+            azimuth_first_half,
+            azimuth_peak,
+            azimuth_cmin,
+        ) = find_min_counts(summed_first_half)
+        (
+            cpeak_second_half,
+            cmin_second_half,
+            counts_second_half,
+            azimuth_second_half,
+            azimuth_peak,
+            azimuth_cmin,
+        ) = find_min_counts(summed_second_half)
 
         # first search
-        streaming = determine_streaming(cpeak, cmin, c_180)
+        streaming_first_half = determine_streaming(
+            cpeak_first_half, cmin_first_half, counts_first_half[1]
+        )
 
         print("hi")
         # Each bin is 12 degrees.
