@@ -2,6 +2,7 @@
 
 import logging
 
+import numpy as np
 import xarray as xr
 from xarray import DataArray
 
@@ -32,6 +33,20 @@ def process_swapi_ialirt(unpacked_data: xr.Dataset) -> dict[str, DataArray]:
     sci_dataset = unpacked_data.sortby("epoch", ascending=True)
 
     grouped_dataset = find_groups(sci_dataset, (0, 11), "swapi_seq_number", "swapi_acq")
+
+    for group in np.unique(grouped_dataset["group"]):
+        # Sequence values for the group should be 0-11 with no duplicates.
+        seq_values = grouped_dataset["swapi_seq_number"][
+            (grouped_dataset["group"] == group)
+        ]
+
+        # Ensure no duplicates and all values from 0 to 11 are present
+        if not np.array_equal(seq_values.astype(int), np.arange(12)):
+            logger.info(
+                f"SWAPI group {group} does not contain all sequence values from 0 to "
+                f"11 without duplicates."
+            )
+            continue
 
     total_packets = len(grouped_dataset["swapi_seq_number"].data)
 
