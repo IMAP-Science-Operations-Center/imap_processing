@@ -17,7 +17,7 @@ import requests
 import spiceypy
 
 from imap_processing import imap_module_directory
-from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns
 
 
 @pytest.fixture(autouse=True)
@@ -606,12 +606,23 @@ def generate_repoint_data(
     repoint_start_times = np.array(repoint_start_met)
     if repoint_end_met is None:
         repoint_end_met = repoint_start_times + 15 * 60
+    # Calculate UTC times without spice (accepting ~5 second inaccuracy)
+    repoint_start_dt64 = TTJ2000_EPOCH + (repoint_start_times * 1e9).astype(
+        "timedelta64[ns]"
+    )
+    repoint_end_dt64 = TTJ2000_EPOCH + (repoint_end_met * 1e9).astype("timedelta64[ns]")
     repoint_df = pd.DataFrame.from_dict(
         {
-            "repoint_start_sec": repoint_start_times.astype(int),
-            "repoint_start_subsec": ((repoint_start_times % 1.0) * 1e3).astype(int),
-            "repoint_end_sec": repoint_end_met.astype(int),
-            "repoint_end_subsec": ((repoint_end_met % 1.0) * 1e3).astype(int),
+            "repoint_start_sec_sclk": repoint_start_times.astype(int),
+            "repoint_start_subsec_sclk": ((repoint_start_times % 1.0) * 1e3).astype(
+                int
+            ),
+            "repoint_start_time_utc": np.datetime_as_string(
+                repoint_start_dt64, unit="us"
+            ),
+            "repoint_end_sec_sclk": repoint_end_met.astype(int),
+            "repoint_end_subsec_sclk": ((repoint_end_met % 1.0) * 1e3).astype(int),
+            "repoint_end_time_utc": np.datetime_as_string(repoint_end_dt64, unit="us"),
             "repoint_id": np.arange(repoint_start_times.size, dtype=int)
             + repoint_id_start,
         }
