@@ -997,7 +997,7 @@ class MagL1a:
         """
         if np.any(vector_data > 1):
             raise ValueError(
-                "unpack_one_vector method is expecting an array of bits asinput."
+                "unpack_one_vector method is expecting an array of bits as input."
             )
 
         if len(vector_data) != width * AXIS_COUNT + RANGE_BIT_WIDTH * has_range:
