@@ -77,6 +77,7 @@ def l2a_dataset(decom_test_data: xr.Dataset) -> xr.Dataset:
         )
     return dataset
 
+
 @pytest.fixture(scope="session")
 def l1b_example_data(_download_test_data):
     """
