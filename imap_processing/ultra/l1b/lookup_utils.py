@@ -185,7 +185,7 @@ def get_angular_profiles(start_type: str, sensor: str) -> pd.DataFrame:
     Parameters
     ----------
     start_type : str
-       Start Type: 1=Left, 2=Right.
+       Start Type: Left, Right.
     sensor : str
         Sensor name: "ultra45" or "ultra90".
 
