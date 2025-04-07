@@ -206,8 +206,11 @@ def generate_ultra_healpix_skymap(
 
         skymap.project_pset_values_to_map(
             pointing_set=pointing_set,
-            value_keys=set(
-                output_map_properties.values_to_push_project + REQUIRED_L1C_VARIABLES
+            value_keys=list(
+                set(
+                    output_map_properties.values_to_push_project
+                    + REQUIRED_L1C_VARIABLES
+                )
             ),
             index_match_method=ena_maps.IndexMatchMethod.PUSH,
         )
@@ -311,7 +314,7 @@ def ultra_l2(
         }
 
     # TODO: Implement conversion to Rectangular map
-    elif output_map_properties.sky_tiling_type is ena_maps.RectangularSkyMap:
+    elif output_map_properties.sky_tiling_type is ena_maps.SkyTilingType.RECTANGULAR:
         map_attrs = {
             "Spacing_degrees": output_map_properties.spacing_deg,
             "Data_version": data_version,
