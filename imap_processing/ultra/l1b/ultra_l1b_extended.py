@@ -3,7 +3,6 @@
 # TODO: Come back and add in FSW logic.
 import logging
 from enum import Enum
-from typing import ClassVar
 
 import numpy as np
 import pandas
@@ -39,8 +38,8 @@ class StopType(Enum):
 
     Top = 1
     Bottom = 2
-    PH: ClassVar[list[int]] = [1, 2]
-    SSD: ClassVar[list[int]] = [8, 9, 10, 11, 12, 13, 14, 15]
+    PH = [1, 2]  # noqa RUF012 mutable class attribute
+    SSD = [8, 9, 10, 11, 12, 13, 14, 15]  # noqa RUF012 mutable class attribute
 
 
 class CoinType(Enum):

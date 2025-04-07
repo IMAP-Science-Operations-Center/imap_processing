@@ -557,7 +557,7 @@ class CoDICEL1aPipeline:
         self.dataset = dataset
 
         # Set various configurations of the data product
-        self.config: dict[str, Any] = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)  # type: ignore
+        self.config: dict[str, Any] = constants.DATA_PRODUCT_CONFIGURATIONS[apid]
 
         # Gather and set the CDF attributes
         self.cdf_attrs = ImapCdfAttributes()
@@ -730,9 +730,9 @@ def log_dataset_info(datasets: dict[int, xr.Dataset]) -> None:
     """
     launch_time = np.datetime64("2010-01-01T00:01:06.184", "ns")
     logger.info("\nThis input file contains the following APIDs:\n")
-    for apid in datasets:
-        num_packets = len(datasets[apid].epoch.data)
-        time_deltas = [np.timedelta64(item, "ns") for item in datasets[apid].epoch.data]
+    for apid, ds in datasets.items():
+        num_packets = len(ds.epoch.data)
+        time_deltas = [np.timedelta64(item, "ns") for item in ds.epoch.data]
         times = [launch_time + delta for delta in time_deltas]
         start = np.datetime_as_string(times[0])
         end = np.datetime_as_string(times[-1])

@@ -86,37 +86,37 @@ def create_dataset(
         "quality_ena_rates",
     }
 
-    for key in data_dict.keys():
+    for key, data in data_dict.items():
         # Skip keys that are coordinates.
         if key in ["epoch", "spin_number", "energy_bin_geometric_mean", "healpix"]:
             continue
         elif key in velocity_keys:
             dataset[key] = xr.DataArray(
-                data_dict[key],
+                data,
                 dims=["epoch", "component"],
                 attrs=cdf_manager.get_variable_attributes(key),
             )
         elif key in ("ena_rates_threshold", "energy_bin_delta"):
             dataset[key] = xr.DataArray(
-                data_dict[key],
+                data,
                 dims=["energy_bin_geometric_mean"],
                 attrs=cdf_manager.get_variable_attributes(key),
             )
         elif key in rates_keys:
             dataset[key] = xr.DataArray(
-                data_dict[key],
+                data,
                 dims=["energy_bin_geometric_mean", "spin_number"],
                 attrs=cdf_manager.get_variable_attributes(key),
             )
         elif key == "counts":
             dataset[key] = xr.DataArray(
-                data_dict[key],
+                data,
                 dims=["energy_bin_geometric_mean", "healpix"],
                 attrs=cdf_manager.get_variable_attributes(key),
             )
         else:
             dataset[key] = xr.DataArray(
-                data_dict[key],
+                data,
                 dims=[default_dimension],
                 attrs=cdf_manager.get_variable_attributes(key),
             )

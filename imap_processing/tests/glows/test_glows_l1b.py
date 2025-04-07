@@ -64,8 +64,8 @@ def hist_dataset():
         coords={"epoch": epoch, "bins": bins},
     )
 
-    for var in variables:
-        ds[var] = xr.DataArray(variables[var], dims=["epoch"], coords={"epoch": epoch})
+    for var, data in variables.items():
+        ds[var] = xr.DataArray(data, dims=["epoch"], coords={"epoch": epoch})
 
     return ds
 
@@ -139,8 +139,8 @@ def de_dataset():
         },
     )
 
-    for var in variables:
-        ds[var] = xr.DataArray(variables[var], dims=["epoch"], coords={"epoch": epoch})
+    for var, data in variables.items():
+        ds[var] = xr.DataArray(data, dims=["epoch"], coords={"epoch": epoch})
 
     return ds
 
