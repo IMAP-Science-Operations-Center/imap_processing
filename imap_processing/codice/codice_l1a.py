@@ -798,13 +798,13 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
             for i in pipeline.__dict__["raw_data"]:
                 print(len(i))
 
-        # TODO: Still need to implement I-ALiRT data products
-        elif apid in [
-            CODICEAPID.COD_HI_IAL,
-            CODICEAPID.COD_LO_IAL,
-        ]:
-            logger.info("\tStill need to properly implement")
-            processed_dataset = None
+        # # TODO: Still need to implement I-ALiRT data products
+        # elif apid in [
+        #     CODICEAPID.COD_HI_IAL,
+        #     CODICEAPID.COD_LO_IAL,
+        # ]:
+        #     logger.info("\tStill need to properly implement")
+        #     processed_dataset = None
 
         # For APIDs that don't require processing
         else:
