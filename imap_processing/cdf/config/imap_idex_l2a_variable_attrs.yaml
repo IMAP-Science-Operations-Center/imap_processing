@@ -1,0 +1,286 @@
+int_fillval: &int_fillval -9223372036854775808
+
+max_uint16: &max_uint16 65535
+
+data_min: &data_min 0
+data_max: &data_max 4095
+
+# <=== Base Attributes ===>
+string_base_attrs: &string_base
+  CATDESC: " "
+  FIELDNAM: ""
+  FORMAT: A3
+  LABLAXIS: "none"
+  VAR_TYPE: metadata
+  DISPLAY_TYPE: no_plot
+  DEPEND_0: epoch
+  UNITS: " "
+
+fit_parameter_base: &fit_parameter_base
+  UNITS: " "
+  VAR_TYPE: data
+  DEPEND_0: epoch
+  DEPEND_1: fit_parameters
+  VALIDMIN: 0
+  VALIDMAX: *data_max
+  LABLAXIS: "Fit Parameters"
+  FORMAT: F10.6
+
+impact_charge_base: &impact_charge_base
+  UNITS: C
+  VALIDMIN: 0.0
+  VALIDMAX: # TODO
+  VAR_TYPE: data
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FORMAT: E12.5
+
+mass_estimate_base: &mass_estimate_base
+  UNITS: kg
+  VALIDMIN: 0.0
+  VALIDMAX: 1.0e-15
+  VAR_TYPE: data
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FORMAT: E12.5
+
+chi_square_base: &chi_square_base
+  UNITS: " "
+  VALIDMIN: 0.0
+  VALIDMAX: &data_max
+  VAR_TYPE: data
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FORMAT: E12.5
+
+fit_results_base: &fit_results_base
+  UNITS: pC
+  VALIDMIN: -32768
+  VALIDMAX: 32767
+  VAR_TYPE: data
+  DEPEND_0: epoch
+  DEPEND_1: time_low_sample_rate_index
+  DISPLAY_TYPE: time_series
+  FORMAT: F8.2
+
+peak_fit_parameters:
+  CATDESC: "TOF peak EMG fit parameters."
+  FIELDNAM: "Peak Fit Parameters"
+  UNITS: " "
+  VAR_TYPE: data
+  DISPLAY_TYPE: no_plot
+  LABLAXIS: "EMG Fit Parameters"
+  FORMAT: F12.4
+
+fit_parameters:
+  CATDESC: "Impact signal fit parameters."
+  FIELDNAM: "Fit Parameters"
+  UNITS: " "
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: no_plot
+  LABLAXIS: "Parameter Name"
+  FORMAT: A16
+
+# <=== LABL_PTR_i Attributes ===>
+# TODO add labels for labl prt
+#time_high_sample_rate_label:
+#  CATDESC: High sample rate time steps for a dust event.
+#  FIELDNAM: High Sample Rate Time
+#  FORMAT: A5
+#  VAR_TYPE: metadata
+#
+#time_low_sample_rate_label:
+#  CATDESC: Low sample rate time steps for a dust event.
+#  FIELDNAM: Low Sample Rate Time
+#  FORMAT: A5
+#  VAR_TYPE: metadata
+
+tof_snr:
+  CATDESC: "TOF High signal to noise ratio."
+  FIELDNAM: "TOF Signal to Noise Ratio"
+  UNITS: pC
+  VALIDMIN: 0.0
+  VALIDMAX: *data_max
+  VAR_TYPE: data
+  DEPEND_0: epoch
+  DEPEND_1: time_high_sample_rate_index
+  DISPLAY_TYPE: time_series
+  FORMAT: F10.3
+
+tof_peak_kappa:
+  CATDESC: "TOF High spectrum with x-axis converted from time to mass."
+  FIELDNAM: "Mass Scale"
+  UNITS: amu
+  VALIDMIN: 0.0
+  VALIDMAX: 1.0
+  VAR_TYPE: data
+  DEPEND_0: epoch
+  DEPEND_1: time_high_sample_rate_index
+  DISPLAY_TYPE: time_series
+  FORMAT: F10.3
+
+tof_peak_fit_parameters:
+  CATDESC: "EMG fit parameters (mu, sigma, lambda) for TOF High peaks."
+  FIELDNAM: "TOF Peak Fit Parameters"
+  UNITS: " "
+  VAR_TYPE: data
+  DEPEND_0: epoch
+  DEPEND_1: mass
+  DEPEND_2: peak_fit_parameter_index
+  LABL_PTR_1: mass_labels
+  LABL_PTR_2: peak_fit_parameter_labels
+  VALIDMIN: 0
+  VALIDMAX: *data_max
+  LABLAXIS: "Fit Parameters"
+  FORMAT: F10.6
+
+tof_peak_area_under_fit:
+  CATDESC: "Area under the EMG curve for each mass peak."
+  FIELDNAM: "TOF Peak Area"
+  UNITS: " "
+  VAR_TYPE: data
+  DEPEND_0: epoch
+  DEPEND_1: mass
+  VALIDMIN: 0
+  VALIDMAX: *data_max
+  LABLAXIS: "Peak Area"
+  FORMAT: F10.6
+
+peak_fit_parameter_index:
+  CATDESC: "Peak fit parameter index"
+  FIELDNAM: "Peak Fit Parameter Index"
+  UNITS: I2
+  VAR_TYPE: support_data
+  VALIDMIN: 0
+  VALIDMAX: 2
+  FILLVAL: *int_fillval
+  DISPLAY_TYPE: no_plot
+
+peak_fit_parameter_labels:
+  CATDESC: "Labels for EMG fit parameters (mu, sigma, lambda)"
+  DEPEND_0: epoch
+  FIELDNAM: "EMG Parameter Labels"
+  VAR_TYPE: metadata
+  FORMAT: A8
+
+mass_labels:
+  CATDESC: "Labels for mass index values"
+  FIELDNAM: "Mass Labels"
+  DEPEND_0: epoch
+  VAR_TYPE: metadata
+  FORMAT: A8
+
+mass:
+  CATDESC: "Mass index values from 1 to 500"
+  FIELDNAM: "Mass Index"
+  UNITS: amu
+  FORMAT: 14
+  VAR_TYPE: support_data
+  VALIDMIN: 1
+  VALIDMAX: 500
+  FILLVAL: *int_fillval
+  DISPLAY_TYPE: no_plot
+
+mass_scale:
+  CATDESC: "TOF High spectrum with x-axis converted from time to mass."
+  FIELDNAM: "Mass Scale"
+  UNITS: amu
+  VALIDMIN: 0.0
+  VALIDMAX: 500.0 # TODO what is max? Could be over 500
+  VAR_TYPE: data
+  DEPEND_0: epoch
+  DEPEND_1: time_high_sample_rate_index
+  DISPLAY_TYPE: time_series
+  FORMAT: F10.3
+
+target_low_fit_parameters:
+  <<: *fit_parameter_base
+  CATDESC: "Fitted parameters (time of impact, constant offset, amplitude, rise time, discharge time) for Target Low impact signal."
+  FIELDNAM: "Target Low Fit Parameters"
+
+target_low_impact_charge:
+  <<: *impact_charge_base
+  CATDESC: "Total charge from the dust impact on Target Low channel derived from the fitted curve."
+  FIELDNAM: "Target Low Impact Charge"
+
+target_low_dust_mass_estimate:
+  <<: *mass_estimate_base
+  CATDESC: "Estimated dust mass from Target Low signal based on impact charge."
+  FIELDNAM: "Estimated Dust Mass (Target Low)"
+
+target_low_chi_squared:
+  <<: *chi_square_base
+  CATDESC: "Chi squared value for the Target Low signal fit."
+  FIELDNAM: "Chi Square (Target Low)"
+
+target_low_reduced_chi_squared:
+  <<: *chi_square_base
+  CATDESC: "Reduced chi squared value for the Target Low signal fit."
+  FIELDNAM: "Reduced Chi Square (Target Low)"
+
+target_low_fit_results:
+  <<: *fit_results_base
+  CATDESC: "Values of Target Low signal fit evaluated at each time point."
+  FIELDNAM: "Fit results (Target Low)"
+
+target_high_fit_parameters:
+  <<: *fit_parameter_base
+  CATDESC: "Fitted parameters (time of impact, constant offset, amplitude, rise time, discharge time) for Target High impact signal."
+  FIELDNAM: "Target High Fit Parameters"
+
+target_high_impact_charge:
+  <<: *impact_charge_base
+  CATDESC: "Total charge from the dust impact on Target High channel derived from the fitted curve."
+  FIELDNAM: "Target High Impact Charge"
+
+target_high_dust_mass_estimate:
+  <<: *mass_estimate_base
+  CATDESC: "Estimated dust mass from Target High signal based on impact charge."
+  FIELDNAM: "Estimated Dust Mass (Target High)"
+
+target_high_chi_squared:
+  <<: *chi_square_base
+  CATDESC: "Reduced chi squared value for the Target High signal fit."
+  FIELDNAM: "Chi Square (Target High)"
+
+target_high_reduced_chi_squared:
+  <<: *chi_square_base
+  CATDESC: "Reduced chi squared value for the Target Low signal fit."
+  FIELDNAM: "Reduced Chi Square (Target High)"
+
+target_high_fit_results:
+  <<: *fit_results_base
+  CATDESC: "Values of Target High signal fit evaluated at each time point."
+  FIELDNAM: "Fit results (Target High)"
+
+ion_grid_fit_parameters:
+  <<: *fit_parameter_base
+  CATDESC: "Fitted parameters (time of impact, constant offset, amplitude, rise time, discharge time) for Ion Grid impact signal."
+  FIELDNAM: "Ion Grid Fit Parameters"
+
+ion_grid_impact_charge:
+  <<: *impact_charge_base
+  CATDESC: "Total charge from the dust impact on Ion Grid channel derived from the fitted curve."
+  FIELDNAM: "Ion Grid Impact Charge"
+
+ion_grid_dust_mass_estimate:
+  <<: *mass_estimate_base
+  CATDESC: "Estimated dust mass from Ion Grid signal based on impact charge."
+  FIELDNAM: "Estimated Dust Mass (Ion Grid)"
+
+ion_grid_chi_squared:
+  <<: *chi_square_base
+  CATDESC: "Chi squared value for the Ion Grid signal fit."
+  FIELDNAM: "Chi Square (Ion Grid)"
+
+ion_grid_reduced_chi_squared:
+  <<: *chi_square_base
+  CATDESC: "Reduced chi squared value for the Ion Grid signal fit."
+  FIELDNAM: "Reduced Chi Square (Ion Grid)"
+
+ion_grid_fit_results:
+  <<: *fit_results_base
+  CATDESC: "Values of Ion Grid signal fit evaluated at each time point."
+  FIELDNAM: "Fit results (Ion Grid)"
+
+

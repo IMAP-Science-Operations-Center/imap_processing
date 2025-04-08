@@ -12,7 +12,7 @@ sample_rate_max: &sample_rate_max 130
 
 int_maxval: &int_maxval 9223372036854775807
 
-# <=== Base Attributes ===>
+# <=== Base Attributes ====
 string_base_attrs: &string_base
   CATDESC: " "
   FIELDNAM: " "
@@ -75,12 +75,14 @@ trigger_base: &trigger_base
 time_high_sample_rate_label:
   CATDESC: High sample rate time steps for a dust event.
   FIELDNAM: High Sample Rate Time
+  DEPEND_0: epoch
   FORMAT: A5
   VAR_TYPE: metadata
 
 time_low_sample_rate_label:
   CATDESC: Low sample rate time steps for a dust event.
   FIELDNAM: Low Sample Rate Time
+  DEPEND_0: epoch
   FORMAT: A5
   VAR_TYPE: metadata
 
@@ -106,8 +108,9 @@ high_sample_rate_attrs:
 time_low_sample_rate_index:
   CATDESC: Low sampling rate time index
   FIELDNAM: Low sample rate
+  DEPEND_0: epoch
   FILLVAL: *int_fillval
-  FORMAT: I3
+  FORMAT: I5
   LABLAXIS: Sample Rate
   SCALE_TYP: linear
   UNITS: " "
@@ -118,8 +121,9 @@ time_low_sample_rate_index:
 time_high_sample_rate_index:
   CATDESC: High sampling rate time index
   FIELDNAM: High sample rate
+  DEPEND_0: epoch
   FILLVAL: *int_fillval
-  FORMAT: I3
+  FORMAT: I5
   LABLAXIS: Sample Rate
   SCALE_TYP: linear
   UNITS: " "

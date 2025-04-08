@@ -1,5 +1,5 @@
 int_fillval: &int_fillval -9223372036854775808
-
+double_fillval: &double_fillval -1.0E31
 max_uint16: &max_uint16 65535
 
 data_min: &data_min 0
@@ -21,12 +21,12 @@ l1b_data_base: &l1b_data_base
   VALIDMAX: *data_max
   DISPLAY_TYPE: spectrogram
   DEPEND_0: epoch
-  FORMAT: I12
+  FORMAT: F12.6
   UNITS: pC
   VAR_TYPE: data
   CATDESC: ""
   FIELDNAM: ""
-  FILLVAL: *max_uint16
+  FILLVAL: *double_fillval
   LABLAXIS: ""
 
 l1b_tof_base: &l1b_tof_base
@@ -59,7 +59,7 @@ trigger_mode:
   CATDESC: Channel and mode that triggered the event
 
 trigger_level:
-  <<: *string_base
+  <<: *trigger_base
   FIELDNAM: Trigger Level
   CATDESC: Threshold signal level that triggered the event
 
@@ -176,6 +176,7 @@ current_1p9v_pol:
 
 temperature_1:
   <<: *trigger_base
+  FORMAT: I4
   FIELDNAM: ProcBd Temp1
   CATDESC: Temperature reading near high speed ADCs on Processor Board (ADC channel 2)
   LABLAXIS: Temperature
@@ -183,6 +184,7 @@ temperature_1:
 
 temperature_2:
   <<: *trigger_base
+  FORMAT: I4
   FIELDNAM: ProcBd Temp2
   CATDESC: Temperature reading near center of Processor Board (ADC channel 3)
   LABLAXIS: Temperature
