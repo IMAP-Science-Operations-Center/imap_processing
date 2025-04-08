@@ -125,10 +125,6 @@ def read_in_flight_cal_data() -> pd.DataFrame:
     File will be in CSV format. Processing won't be kicked off until there
     is in-flight calibration data that covers science data.
 
-    TODO: decide filename convention given this information. This function
-    is a placeholder for reading in the calibration data until we decide on
-    how to read calibration data through dependencies list.
-
     Returns
     -------
     in_flight_cal_df : pandas.DataFrame
@@ -252,7 +248,9 @@ def apply_in_flight_calibration(
 
 
 def populate_full_cycle_data(
-    l1a_data: xr.Dataset, packet_index: int, esa_table_num: int
+    l1a_data: xr.Dataset,
+    packet_index: int,
+    esa_table_num: int,
 ) -> npt.NDArray:
     """
     Populate full cycle data array using esa lookup table and l1a_data.

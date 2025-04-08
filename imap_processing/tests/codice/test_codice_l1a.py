@@ -237,6 +237,7 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         "hi-counters-singles",
         "hi-priority",
         "hi-sectored",
+        "lo-counters-aggregated",
         "lo-counters-singles",
         "lo-sw-angular",
         "lo-nsw-angular",
@@ -244,6 +245,7 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         "lo-nsw-priority",
         "lo-sw-species",
         "lo-nsw-species",
+        "hi-sectored",
     ]
 
     if descriptor in able_to_be_validated:

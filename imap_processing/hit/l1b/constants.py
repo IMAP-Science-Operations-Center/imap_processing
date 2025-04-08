@@ -20,7 +20,7 @@ livestim_pulses = 270
 # R4 = Indices for Range 4 (PENFGRATES)
 # energy_units: MeV/n
 
-PARTICLE_ENERGY_RANGE_MAPPING = {
+SUMMED_PARTICLE_ENERGY_RANGE_MAPPING = {
     "h": [
         {
             "energy_min": 1.8,

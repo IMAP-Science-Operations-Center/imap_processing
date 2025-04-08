@@ -164,16 +164,12 @@ class CoDICEL1aPipeline:
         for name in coord_names:
             if name == "epoch":
                 values = self.calculate_epoch_values()
-            # TODO: Currently hi-sectored products us "spin_sector_index" and
-            #       "ssd_index", which are basically the same as "spin_sector"
-            #       and "inst_az". Ask Joey if these need to be different.
             elif name in [
                 "esa_step",
                 "inst_az",
                 "spin_sector",
                 "spin_sector_pairs",
                 "spin_sector_index",
-                "ssdid",
                 "ssd_index",
             ]:
                 values = np.arange(self.config["output_dims"][name])
@@ -505,18 +501,30 @@ class CoDICEL1aPipeline:
         self.data = []
 
         # First reshape the data based on how it is written to the data array of
-        # the packet data. The number of counters is the first dimension / axis.
-        reshape_dims = (
-            self.config["num_counters"],
-            *self.config["input_dims"].values(),
-        )
+        # the packet data. The number of counters is the first dimension / axis,
+        # with the exception of lo-counters-aggregated which is treated slightly
+        # differently
+        if self.config["dataset_name"] != "imap_codice_l1a_lo-counters-aggregated":
+            reshape_dims = (
+                self.config["num_counters"],
+                *self.config["input_dims"].values(),
+            )
+        else:
+            reshape_dims = (
+                *self.config["input_dims"].values(),
+                self.config["num_counters"],
+            )
 
         # Then, transpose the data based on how the dimensions should be written
         # to the CDF file. Since this is specific to each data product, we need
         # to determine this dynamically based on the "output_dims" config.
+        # Again, lo-counters-aggregated is treated slightly differently
         input_keys = ["num_counters", *self.config["input_dims"].keys()]
         output_keys = ["num_counters", *self.config["output_dims"].keys()]
-        transpose_axes = [input_keys.index(dim) for dim in output_keys]
+        if self.config["dataset_name"] != "imap_codice_l1a_lo-counters-aggregated":
+            transpose_axes = [input_keys.index(dim) for dim in output_keys]
+        else:
+            transpose_axes = [1, 2, 0]  # [esa_step, spin_sector_pairs, num_counters]
 
         for packet_data in self.raw_data:
             reshaped_packet_data = np.array(packet_data, dtype=np.uint32).reshape(
@@ -790,35 +798,13 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
             for i in pipeline.__dict__["raw_data"]:
                 print(len(i))
 
-
-        # # Everything else
-        # elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
-        #     # Extract the data
-        #     science_values = [packet.data for packet in dataset.data]
-        #
-        #     # Get the four "main" parameters for processing
-        #     table_id, plan_id, plan_step, view_id = get_params(dataset)
-        #
-        #     # Run the pipeline to create a dataset for the product
-        #     pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-        #     pipeline.set_data_product_config(apid, dataset, data_version)
-        #     pipeline.decompress_data(science_values)
-        #     pipeline.reshape_data()
-        #     pipeline.define_coordinates()
-        #     processed_dataset = pipeline.define_data_variables()
-        #
-        #     print(processed_dataset)
-        #     print(processed_dataset.h.data.shape)
-        #
-        #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
-
-        # # TODO: Still need to implement I-ALiRT data products
-        # elif apid in [
-        #     CODICEAPID.COD_HI_IAL,
-        #     CODICEAPID.COD_LO_IAL,
-        # ]:
-        #     logger.info("\tStill need to properly implement")
-        #     processed_dataset = None
+        # TODO: Still need to implement I-ALiRT data products
+        elif apid in [
+            CODICEAPID.COD_HI_IAL,
+            CODICEAPID.COD_LO_IAL,
+        ]:
+            logger.info("\tStill need to properly implement")
+            processed_dataset = None
 
         # For APIDs that don't require processing
         else:
@@ -829,8 +815,8 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
 
     return processed_datasets
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     from imap_processing import imap_module_directory
     from imap_processing.cdf.utils import write_cdf
 

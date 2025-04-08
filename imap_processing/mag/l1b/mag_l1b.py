@@ -9,6 +9,7 @@ from xarray import Dataset
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
+from imap_processing.mag.constants import vectors_per_second_from_string
 
 logger = logging.getLogger(__name__)
 
@@ -129,6 +130,7 @@ def mag_l1b_processing(
     )
 
     epoch_time = shift_time(input_dataset["epoch"], time_shift)
+    # TODO SHIFT VECSEC ATTR TIME TOO
     epoch_time.attrs = mag_attributes.get_variable_attributes("epoch")
 
     direction = xr.DataArray(
@@ -171,9 +173,9 @@ def mag_l1b_processing(
     try:
         global_attributes["is_mago"] = input_dataset.attrs["is_mago"]
         global_attributes["is_active"] = input_dataset.attrs["is_active"]
-        global_attributes["vectors_per_second"] = input_dataset.attrs[
-            "vectors_per_second"
-        ]
+        global_attributes["vectors_per_second"] = timeshift_vectors_per_second(
+            input_dataset.attrs["vectors_per_second"], time_shift
+        )
         global_attributes["missing_sequences"] = input_dataset.attrs[
             "missing_sequences"
         ]
@@ -353,3 +355,37 @@ def shift_time(epoch_times: xr.DataArray, time_shift: xr.DataArray) -> xr.DataAr
     time_shift_ns = time_shift.data * 1e9
 
     return epoch_times + time_shift_ns
+
+
+def timeshift_vectors_per_second(
+    vectors_per_second: str, time_shift: xr.DataArray
+) -> str:
+    """
+    Shift the vectors per second attribute by the time shift value.
+
+    This ensures that the vectors per second attribute is aligned with the epoch values
+    if the time is shifted.
+
+    Parameters
+    ----------
+    vectors_per_second : str
+        The vectors per second attribute from the input dataset, in the format
+         "timestamp:rate,timestamp:rate".
+    time_shift : xr.DataArray
+        The time shift to apply for the given sensor. This should be one value and is
+        in seconds.
+
+    Returns
+    -------
+    str
+        The updated vectors per second attribute.
+    """
+    time_shift_ns = time_shift.data * 1e9
+
+    vecsec = vectors_per_second_from_string(vectors_per_second)
+    new_vecsec = ""
+    for time, rate in vecsec.items():
+        new_time = time + time_shift_ns
+        new_vecsec += f"{new_time.astype(np.int64)}:{rate},"
+
+    return new_vecsec[:-1]

@@ -5,12 +5,60 @@ import pandas as pd
 import pytest
 import xarray as xr
 
+from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.mag.l1a.mag_l1a_data import MagL1a, TimeTuple
 from imap_processing.mag.l1b.mag_l1b import mag_l1b
-from imap_processing.spice.time import str_to_et, ttj2000ns_to_et
-from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
+from imap_processing.mag.l1c.mag_l1c import mag_l1c
+from imap_processing.spice.time import (
+    TTJ2000_EPOCH,
+    str_to_et,
+    ttj2000ns_to_et,
+)
+from imap_processing.tests.conftest import _download_external_data
+from imap_processing.tests.mag.conftest import (
+    mag_generate_l1b_from_csv,
+    mag_l1a_dataset_generator,
+)
+
+
+@pytest.fixture(scope="module")
+def _mag_download_data():
+    _download_external_data(mag_remote_test_data_paths())
+
+
+def mag_remote_test_data_paths():
+    mag_dir = imap_module_directory / "tests" / "mag" / "validation"
+    api_path = "https://api.dev.imap-mission.com/download/test_data/"
+    test_paths = [
+        (
+            api_path + "mag-l1b-l1c-t013-magi-burst-in.csv",
+            mag_dir / "L1c" / "T013" / "mag-l1b-l1c-t013-magi-burst-in.csv",
+        ),
+        (
+            api_path + "mag-l1b-l1c-t013-mago-burst-in.csv",
+            mag_dir / "L1c" / "T013" / "mag-l1b-l1c-t013-mago-burst-in.csv",
+        ),
+        (
+            api_path + "mag-l1b-l1c-t014-mago-burst-in.csv",
+            mag_dir / "L1c" / "T014" / "mag-l1b-l1c-t014-mago-burst-in.csv",
+        ),
+        (
+            api_path + "mag-l1b-l1c-t014-magi-burst-in.csv",
+            mag_dir / "L1c" / "T014" / "mag-l1b-l1c-t014-magi-burst-in.csv",
+        ),
+        (
+            api_path + "mag-l1b-l1c-t015-mago-burst-in.csv",
+            mag_dir / "L1c" / "T015" / "mag-l1b-l1c-t015-mago-burst-in.csv",
+        ),
+        (
+            api_path + "mag-l1b-l1c-t016-mago-burst-in.csv",
+            mag_dir / "L1c" / "T016" / "mag-l1b-l1c-t016-mago-burst-in.csv",
+        ),
+    ]
+
+    return test_paths
 
 
 @pytest.mark.parametrize(
@@ -196,8 +244,6 @@ def test_mag_l1b_validation(test_number):
         assert np.allclose(expected_time, magi_time, atol=1e-6, rtol=0)
 
     for index in expected_mago.index:
-        # TODO: come back to timestamp.
-        # Can't compare UTC, coarse/fine don't work.
         assert np.allclose(
             expected_mago["x"].iloc[index],
             mago["vectors"].data[index][0],
@@ -230,3 +276,94 @@ def test_mag_l1b_validation(test_number):
         expected_time = str_to_et(expected_mago["t"].iloc[index])
         mago_time = ttj2000ns_to_et(mago["epoch"].data[index])
         assert np.allclose(expected_time, mago_time, atol=1e-6, rtol=0)
+
+
+@pytest.mark.xfail(reason="All L1C edge cases are not yet complete")
+@pytest.mark.parametrize(("test_number"), ["013", "014", "015", "016"])
+@pytest.mark.parametrize(("sensor"), ["mago", "magi"])
+@pytest.mark.usefixtures("_mag_download_data")
+def test_mag_l1c_validation(test_number, sensor):
+    # We expect tests 013 and 014 to pass. 015 and 016 are not yet complete.
+    # timestamp = (
+    #     (np.datetime64("2025-03-11T12:22:50.706034") - np.datetime64(TTJ2000_EPOCH))
+    #     / np.timedelta64(1, "ns")
+    # ).astype(np.int64)
+    # print(f"Time stamp shift: {timestamp }")
+
+    source_directory = Path(__file__).parent / "validation" / "L1c" / f"T{test_number}"
+    norm_in = source_directory / f"mag-l1b-l1c-t{test_number}-{sensor}-normal-in.csv"
+    burst_in = source_directory / f"mag-l1b-l1c-t{test_number}-{sensor}-burst-in.csv"
+
+    norm = mag_generate_l1b_from_csv(
+        pd.read_csv(norm_in), f"imap_mag_l1b_norm-{sensor}"
+    )
+    burst = mag_generate_l1b_from_csv(
+        pd.read_csv(burst_in), f"imap_mag_l1b_burst-{sensor}"
+    )
+
+    # out = np.int64(794968123760272000)
+    # print(f"expected out {TTJ2000_EPOCH + out.astype('timedelta64[ns]')}")
+    # For mago test 013: norm 2, burst 64
+    norm.attrs["vectors_per_second"] = get_vecsec(test_number, sensor, "norm")
+
+    burst.attrs["vectors_per_second"] = get_vecsec(test_number, sensor, "burst")
+
+    l1c = mag_l1c(norm, "v000", burst)
+    expected_output = pd.read_csv(
+        source_directory / f"mag-l1b-l1c-t{test_number}-{sensor}-normal-out.csv"
+    )
+
+    for index in expected_output.index:
+        assert np.allclose(
+            expected_output["x"].iloc[index],
+            l1c["vectors"].data[index][0],
+            atol=1e-4,
+            rtol=0,
+        )
+        assert np.allclose(
+            expected_output["y"].iloc[index],
+            l1c["vectors"].data[index][1],
+            atol=1e-4,
+            rtol=0,
+        )
+        assert np.allclose(
+            expected_output["z"].iloc[index],
+            l1c["vectors"].data[index][2],
+            atol=1e-4,
+            rtol=0,
+        )
+
+        expected_time = np.datetime64(expected_output["t"].iloc[index])
+        l1c_time = TTJ2000_EPOCH + l1c["epoch"].data[index].astype("timedelta64[ns]")
+        assert expected_time - l1c_time < np.timedelta64(500, "ms")
+
+
+def get_vecsec(test_number, sensor, mode):
+    # Manually pulled from MAG validation test PDF, which describes the input
+    # sensor rates for each test.
+
+    # values are equal to start_time:vector rate for test data files.
+    # in production this will be passed up from L1B.
+    # TODO: fill in from PDF file
+    vecsec = {
+        "013": {
+            "mago": {"norm": "794966559703707008:2", "burst": "794966835183206016:64"},
+            "magi": {"norm": "794966559703691008:2", "burst": "794966835198801024:8"},
+        },
+        "014": {
+            "mago": {"norm": "795154763219339008:2", "burst": "795155024191415040:128"},
+            "magi": {"norm": "795154763219369984:2", "burst": "795155024191446016:128"},
+        },
+        "015": {
+            "mago": {
+                "norm": "794967514703783040:2,794968123760272000:4",
+                "burst": "794966835183206016:64",
+            },
+            "magi": {
+                "norm": "794967514703768064:2,794968123760256000:1",
+                "burst": "794967834198914944:64",
+            },
+        },
+        "016": {"mago": {"norm": "", "burst": ""}, "magi": {"norm": "", "burst": ""}},
+    }
+    return vecsec[test_number][sensor][mode]

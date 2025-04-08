@@ -32,12 +32,7 @@ def hi_l1a(packet_file_path: Union[str, Path], data_version: str) -> list[xr.Dat
     processed_data : list[xarray.Dataset]
         List of processed xarray dataset.
     """
-    packet_def_file = (
-        imap_module_directory / "hi/packet_definitions/TLM_HI_COMBINED_SCI.xml"
-    )
-    datasets_by_apid = packet_file_to_datasets(
-        packet_file=packet_file_path, xtce_packet_definition=packet_def_file
-    )
+    datasets_by_apid = hi_packet_file_to_datasets(packet_file_path)
 
     # Process science to l1a.
     processed_data = []
@@ -77,3 +72,32 @@ def hi_l1a(packet_file_path: Union[str, Path], data_version: str) -> list[xr.Dat
         )
         processed_data.append(data)
     return processed_data
+
+
+def hi_packet_file_to_datasets(
+    packet_file_path: Union[str, Path], use_derived_value: bool = False
+) -> dict[int, xr.Dataset]:
+    """
+    Extract hi datasets from packet file.
+
+    Parameters
+    ----------
+    packet_file_path : str
+        L0 packet file path.
+    use_derived_value : bool
+        Whether to use the derived value from the XTCE definition. Default is False.
+
+    Returns
+    -------
+    datasets : dict[int, xarray.Dataset]
+        Dictionary of xarray datasets keyed by APID.
+    """
+    packet_def_file = (
+        imap_module_directory / "hi/packet_definitions/TLM_HI_COMBINED_SCI.xml"
+    )
+    datasets_by_apid = packet_file_to_datasets(
+        packet_file=packet_file_path,
+        xtce_packet_definition=packet_def_file,
+        use_derived_value=use_derived_value,
+    )
+    return datasets_by_apid
