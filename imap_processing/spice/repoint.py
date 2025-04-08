@@ -35,12 +35,12 @@ def get_repoint_data() -> pd.DataFrame:
               maneuver.
             * `repoint_start_met`: Floating point MET of repoint maneuver start time.
               Derived from `repoint_start_sec_sclk` and `repoint_start_subsec_sclk`.
-            * `repoint_start_time_utc`: UTC time of repoint maneuver start time.
+            * `repoint_start_utc`: UTC time of repoint maneuver start time.
             * `repoint_end_sec_sclk`: Ending MET seconds of repoint maneuver.
             * `repoint_end_subsec_sclk`: Ending MET microseconds of repoint maneuver.
             * `repoint_end_met`: Floating point MET of repoint maneuver end time.
               Derived from `repoint_end_sec_sclk` and `repoint_end_subsec_sclk`.
-            * `repoint_end_time_utc`: UTC time of repoint maneuver end time.
+            * `repoint_end_utc`: UTC time of repoint maneuver end time.
             * `repoint_id`: Unique ID number of each repoint maneuver.
     """
     repoint_data_filepath = os.getenv("REPOINT_DATA_FILEPATH")
