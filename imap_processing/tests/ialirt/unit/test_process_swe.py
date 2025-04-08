@@ -15,10 +15,12 @@ from imap_processing.ialirt.l0.process_swe import (
     find_min_counts,
     first_check_counterstreaming,
     get_ialirt_energies,
+    get_normalized_counts_by_time,
     normalize_counts,
     phi_to_bin,
     prepare_raw_counts,
     process_swe,
+    second_check_counterstreaming,
 )
 from imap_processing.swe.utils.swe_constants import (
     ESA_VOLTAGE_ROW_INDEX_DICT,
@@ -128,8 +130,8 @@ def summed_half_cycle():
         summed_half_cycle[i, (peak + 8) % 30] = 80  # +90 offset
         summed_half_cycle[i, (peak + 14) % 30] = 20  # +180 offset
         summed_half_cycle[i, (peak + 16) % 30] = 40  # +180 offset
-        summed_half_cycle[i, (peak - 6) % 30] = 10  # -90 offset
-        summed_half_cycle[i, (peak - 8) % 30] = 30  # -90 offset
+        summed_half_cycle[i, (peak - 6) % 30] = 5  # -90 offset
+        summed_half_cycle[i, (peak - 8) % 30] = 15  # -90 offset
 
     return summed_half_cycle
 
@@ -345,7 +347,7 @@ def test_determine_streaming_summed_cems():
     cmin = np.array([20, 70, 40, 60])
     counts_180 = np.array([40, 60, 90, 110])
     assert np.array_equal(
-        determine_streaming(cpeak, cmin, counts_180), np.array([1, 0, 0, 0])
+        determine_streaming(cpeak, counts_180, cmin), np.array([1, 0, 0, 0])
     )
 
 
@@ -364,12 +366,38 @@ def test_compute_bde():
 def test_first_check_counterstreaming(summed_half_cycle):
     """Tests first_check_counterstreaming function."""
 
-    normalized_first_half = np.stack([summed_half_cycle] * 7, axis=1)
-    normalized_second_half = np.stack([summed_half_cycle] * 7, axis=1)
-
-    bde = first_check_counterstreaming(normalized_first_half, normalized_second_half)
+    bde = first_check_counterstreaming(summed_half_cycle, summed_half_cycle)
 
     assert bde == 1
+
+
+def test_second_check_counterstreaming():
+    """Tests second_check_counterstreaming function."""
+
+    # cem0 (cem1) and cem6 (cem7) have high values
+    # cem2, cem3, cem4 (cem3 to cem5) are low and used for cmin
+    row = np.array([100, 20, 5, 5, 5, 20, 100])
+    summed_half = np.tile(row, (8, 1))
+
+    bde = second_check_counterstreaming(summed_half, summed_half)
+
+    assert bde == 1
+
+
+def test_get_normalized_counts_by_time():
+    """Tests get_normalized_counts_by_time function."""
+
+    summed_first = np.arange(8)
+    summed_second = np.arange(8, 16)
+
+    counts, times = get_normalized_counts_by_time(
+        summed_first, summed_second, np.array([1, 2, 3, 4])
+    )
+
+    assert np.array_equal(
+        counts, np.array([1, 3, 7, 5, 2, 0, 4, 6, 9, 11, 15, 13, 10, 8, 12, 14])
+    )
+    assert np.array_equal(times, np.repeat([1.0, 2.0, 3.0, 4.0], 4))
 
 
 @patch(
@@ -401,4 +429,7 @@ def test_process_swe(mock_read_cal, swe_test_data, fields_to_test):
     )
     swe_data = process_swe(ds, [in_flight_cal_file])
 
-    assert swe_data == []
+    # TODO: add tests with test data here.
+
+    # Check that all groups in the data are accounted for.
+    assert len(swe_data) == 912 // 60
