@@ -256,12 +256,26 @@ def find_min_counts(summed_half_cycle):
     )
 
 
-def determine_streaming(cpeak, cmin, c_180):
-    # birectional_streaming = 1 for each energy level if cpeak/cmin > 1.75 and  c_180/cmin > 1.75
-    bidirectional_streaming = (
-        (cpeak / cmin > 1.75) & ((c_180[:, 0]) / cmin > 1.75)
-    ).astype(int)
-    return bidirectional_streaming
+def determine_streaming_summed_cems(cpeak, cmin, counts_180, threshold=1.75):
+    """
+    Returns True if any energy level satisfies the bidirectional streaming condition:
+    (cpeak / cmin > threshold) and (counts_180 / cmin > threshold)
+    """
+    cpeak_ratio = cpeak / cmin
+    counts_180_ratio = counts_180 / cmin
+
+    return ((cpeak_ratio > threshold) & (counts_180_ratio > threshold)).astype(int)
+
+
+def determine_streaming_summed_azimuths(counts_cem1, counts_cem7, cmin, threshold=1.75):
+    """
+    Returns True if any energy level satisfies the bidirectional streaming condition:
+    (counts_cem1 / cmin > threshold) and (counts_cem7 / cmin > threshold)
+    """
+    counts_cem1_ratio = counts_cem1 / cmin
+    counts_cem7_ratio = counts_cem7 / cmin
+
+    return ((counts_cem1_ratio > threshold) & (counts_cem7_ratio > threshold)).astype(int)
 
 
 def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list[dict]:
@@ -300,7 +314,7 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
 
         # Ensure no duplicates and all values from 0 to 59 are present
         if not np.array_equal(seq_values, np.arange(60)):
-            logger.warning(
+            logger.info(
                 f"Group {group} does not contain all values from 0 to "
                 f"59 without duplicates."
             )
@@ -356,9 +370,31 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
             azimuth_cmin,
         ) = find_min_counts(summed_second_half)
 
-        # first search
-        streaming_first_half = determine_streaming(
-            cpeak_first_half, cmin_first_half, counts_first_half[1]
+        # Combine half-cycle data
+        cpeak = np.concatenate([cpeak_first_half, cpeak_second_half])
+        cmin = np.concatenate([cmin_first_half, cmin_second_half])
+        counts_180 = np.concatenate([counts_first_half[2], counts_second_half[2]])
+
+        # First search for counter-streaming
+        streaming_summed_cems = determine_streaming_summed_cems(
+            cpeak, cmin, counts_180
+        )
+
+        # Sum over azimuth.
+        az_first_half = np.sum(normalized_first_half, axis=2)
+        az_second_half = np.sum(normalized_second_half, axis=2)
+
+        # Cmin is the average of the counts in CEMs 3, 4, and 5
+        cmin_first_half = az_first_half[:, 2:5].mean(axis=1)
+        cmin_second_half = az_second_half[:, 2:5].mean(axis=1)
+
+        # TODO: confirm with Ruth if both half cycles need to "see" bidirectionality or only one is needed
+        # TODO: confirm with Ruth that the 3/5 energy step rule applies to both streaming checks.
+        streaming_summed_azimuths_first_half = determine_streaming_summed_azimuths(
+            az_first_half[:, 0], az_second_half[:, 6], cmin_first_half
+        )
+        streaming_summed_azimuths_second_half = determine_streaming_summed_azimuths(
+            az_second_half[:, 0], az_second_half[:, 6], cmin_second_half
         )
 
         print("hi")

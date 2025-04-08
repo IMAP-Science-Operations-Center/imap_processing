@@ -9,6 +9,7 @@ from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.process_swe import (
     average_values_and_azimuth,
     decompress_counts,
+    determine_streaming_summed_cems,
     find_bin_offsets,
     find_min_counts,
     get_ialirt_energies,
@@ -333,7 +334,7 @@ def test_average_values_and_azimuth(summed_half_cycle):
 
 
 def test_find_min_counts(summed_half_cycle):
-    """Tests find_min function"""
+    """Tests find_min_counts function"""
 
     cpeak, cmin, counts, azimuth, azimuth_peak, azimuth_cmin = find_min_counts(
         summed_half_cycle
@@ -346,6 +347,17 @@ def test_find_min_counts(summed_half_cycle):
 
     np.testing.assert_array_equal(azimuth_peak, expected_azimuth_peak)
     np.testing.assert_array_equal(azimuth_cmin, azimuth[0])
+
+
+def test_determine_streaming_summed_cems():
+    """Tests determine_streaming_summed_cems function."""
+
+    # Case where streaming should be True
+    cpeak = np.array([100, 80, 50, 60])
+    cmin = np.array([20, 70, 40, 60])
+    counts_180 = np.array([40, 60, 90, 110])
+    assert np.array_equal(determine_streaming_summed_cems(cpeak, cmin, counts_180),
+                          np.array([1, 0, 0, 0]))
 
 
 @patch(
