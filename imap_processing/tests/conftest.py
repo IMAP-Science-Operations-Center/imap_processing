@@ -622,14 +622,14 @@ def generate_repoint_data(
     repoint_df = pd.DataFrame.from_dict(
         {
             "repoint_start_sec_sclk": repoint_start_times.astype(int),
-            "repoint_start_subsec_sclk": ((repoint_start_times % 1.0) * 1e3).astype(
+            "repoint_start_subsec_sclk": ((repoint_start_times % 1.0) * 1e6).astype(
                 int
             ),
             "repoint_start_time_utc": np.datetime_as_string(
                 repoint_start_dt64, unit="us"
             ),
             "repoint_end_sec_sclk": repoint_end_met.astype(int),
-            "repoint_end_subsec_sclk": ((repoint_end_met % 1.0) * 1e3).astype(int),
+            "repoint_end_subsec_sclk": ((repoint_end_met % 1.0) * 1e6).astype(int),
             "repoint_end_time_utc": np.datetime_as_string(repoint_end_dt64, unit="us"),
             "repoint_id": np.arange(repoint_start_times.size, dtype=int)
             + repoint_id_start,

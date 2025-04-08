@@ -45,10 +45,10 @@ def test_interpolate_repoint_data(fake_repoint_data):
     query_times = np.array([0.1, 6, 32])
     expected_vals = {
         "repoint_start_sec_sclk": np.array([0, 0, 25]),
-        "repoint_start_subsec_sclk": np.array([100, 100, 300]),
+        "repoint_start_subsec_sclk": np.array([100000, 100000, 300000]),
         "repoint_start_met": np.array([0.1, 0.1, 25.3]),
         "repoint_end_sec_sclk": np.array([5, 5, 30]),
-        "repoint_end_subsec_sclk": np.array([100, 100, 300]),
+        "repoint_end_subsec_sclk": np.array([100000, 100000, 300000]),
         "repoint_end_met": np.array([5.1, 5.1, 30.3]),
         "repoint_id": np.array([0, 0, 2]),
         "repoint_in_progress": np.array([True, False, False]),
