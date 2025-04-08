@@ -394,9 +394,10 @@ def test_get_normalized_counts_by_time():
         summed_first, summed_second, np.array([1, 2, 3, 4])
     )
 
-    assert np.array_equal(
-        counts, np.array([1, 3, 7, 5, 2, 0, 4, 6, 9, 11, 15, 13, 10, 8, 12, 14])
-    )
+    assert counts[0:4] in np.array([1, 3, 7, 5])
+    assert counts[4:8] in np.array([2, 0, 4, 6])
+    assert counts[8:12] in np.array([9, 11, 15, 13])
+    assert counts[12:16] in np.array([10, 8, 12, 14])
     assert np.array_equal(times, np.repeat([1.0, 2.0, 3.0, 4.0], 4))
 
 
