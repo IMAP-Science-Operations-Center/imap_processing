@@ -578,6 +578,9 @@ def create_event_dataset(
     dataset : xarray.Dataset
         Xarray dataset containing the event data.
     """
+    print(len(packets.event_data.data))  # 633 for hi-pha
+    for group_code, byte_count in zip(packets.seq_flgs.data, packets.byte_count.data):
+        print(f"Group code: {group_code}; byte count: {byte_count}")
 
     if apid == CODICEAPID.COD_LO_PHA:
         dataset_name = "imap_codice_l1a_lo-pha"
@@ -585,157 +588,210 @@ def create_event_dataset(
         dataset_name = "imap_codice_l1a_hi-pha"
 
     # Extract the data
-    event_data = packets.event_data.data
-    raw_data = []
-    for packet_data, byte_count in zip(
-            event_data, packets.byte_count.data
+    decompressed_data = []  # Holds the decompressed data to be properly shaped
+    current_group = bytearray()  # Temporary storage for current group
+
+    i = 0
+    for packet_data, group_code, byte_count in zip(
+        packets.event_data.data, packets.seq_flgs.data, packets.byte_count.data
     ):
+        print(f"iteration: {i}")
+        print(f"group code: {group_code}")
+        print(f"byte_count: {byte_count}")
+
         # Convert from numpy array to byte object
-        values = ast.literal_eval(str(packet_data))
+        compressed_packet_values = ast.literal_eval(str(packet_data))
 
         # Only use the values up to the byte count. Bytes after this are
         # used as padding and are not needed
-        values = values[:byte_count]
+        compressed_packet_values = compressed_packet_values[
+            :byte_count
+        ]  # TODO: Ask Joey -- do we do this here?
 
-        decompressed_values = decompress(values, CoDICECompression.LOSSLESS)
-        raw_data.append(decompressed_values)
+        # If the group code is 3, this means the data is not part of a group
+        # and can be decompressed as-is
+        if group_code == 3:
+            decompressed_values = decompress(
+                compressed_packet_values, CoDICECompression.LOSSLESS
+            )
+            decompressed_data.append(decompressed_values)
+
+        # If the group code is 1, this means the data is the first data in a
+        # group
+        elif group_code == 1:
+            current_group = compressed_packet_values
+            print(f"Appending {len(compressed_packet_values)}")
+            print(f"New Group length: {len(current_group)}")
+
+        # If the group code is 0, this means the data is part of the middle of
+        # the group
+        elif group_code == 0:
+            current_group += compressed_packet_values
+            print(f"Appending {len(compressed_packet_values)}")
+            print(f"New Group length: {len(current_group)}")
+
+        # If the group code is 2, this means the data is the last data in the
+        # group
+        elif group_code == 2:
+            current_group += compressed_packet_values
+            print(f"Appending {len(compressed_packet_values)}")
+            print(f"New Group length: {len(current_group)}")
+            decompressed_values = decompress(current_group, CoDICECompression.LOSSLESS)
+            decompressed_data.append(decompressed_values)
+            current_group = bytearray()
+
+        else:
+            raise ValueError(f"Unexpected group code: {group_code}")
+
+        i += 1
+
+    #
+    #
+    #     # Decompress the data
+    #     decompressed_values = decompress(data_to_decompress, CoDICECompression.LOSSLESS)
+    #
+    #     # Add the grouped data to the list of raw data
+    #     raw_data.append(decompressed_data)
+    #
+    # print(raw_data)
 
     # Dictionary to define the bit structure of each event
     LO_DE_BIT_STRUCTURE = {
-        'APDGain': 1,
-        'APD_ID': 5,
-        'Position': 5,
-        'APDEnergy': 9,
-        'TOF': 10,
-        'MultiFlag': 1,
-        'PHAType': 2,
-        'SpinAngle': 5,
-        'EnergyStep': 7,
-        'Priority': 3,
-        'Spare': 16
+        "APDGain": 1,
+        "APD_ID": 5,
+        "Position": 5,
+        "APDEnergy": 9,
+        "TOF": 10,
+        "MultiFlag": 1,
+        "PHAType": 2,
+        "SpinAngle": 5,
+        "EnergyStep": 7,
+        "Priority": 3,
+        "Spare": 16,
     }
 
-    # Dictionary to hold all the (soon to be restructured) event data
-    all_data = {}
-
-    # Create blank arrays for each field to store the data
-    # We also need arrays to hold number of events and data quality
-    for i in range(8):
-        for field in LO_DE_BIT_STRUCTURE:
-            if field not in ["Priority", "Spare"]:
-                all_data[f"P{i}_{field}"] = []
-        all_data[f"P{i}_NumEvents"] = []
-        all_data[f"P{i}_DataQuality"] = []
-
-    # raw_data is one large list of values of length (<number of epochs> * <8 priorities>)
-    # Chunk the data into each epoch/priority combination
-    for epoch_num, chunk in enumerate(range(0, len(raw_data), 8), start=1):
-        epoch_data = raw_data[chunk:chunk + 8]
-
-        # The order of the priorities and data quality flags are unique to each
-        # epoch and can be gathered from the packet data
-        priority_order = packets.priority[chunk:chunk + 8].data
-        data_quality = packets.suspect[chunk:chunk + 8].data
-
-        # Create dict to hold the final data per epoch
-        data_per_epoch = {}
-
-        # For each epoch/priority combo, iterate over each event
-        for i, priority_num in enumerate(priority_order):
-            priority_data = epoch_data[i]
-
-            # Number of events and data quality can be determined at this stage
-            num_events = len(priority_data) // 8
-            data_per_epoch[f"P{priority_num}_NumEvents"] = num_events
-            data_per_epoch[f"P{priority_num}_DataQuality"] = data_quality[i]
-
-            # Create blank array to store data for each epoch/priority/field
-            # combination
-            for field in LO_DE_BIT_STRUCTURE:
-                data_per_epoch[f"P{priority_num}_{field}"] = []
-
-            # Iterate over each event
-            for event in [priority_data[i * 8: (i + 1) * 8] for i in range(num_events)]:
-
-                # Separate out each individual field from the bit string
-                bit_string = ''.join(f'{byte:08b}' for byte in event)
-                index = 0
-                for field_name, bit_length in reversed(LO_DE_BIT_STRUCTURE.items()):
-                    data_per_epoch[f"P{priority_num}_{field_name}"].append(int(bit_string[index:index + bit_length], 2))
-                    index += bit_length
-
-        # Append the epoch data to the final, restructured list of data
-        for i in range(8):
-            for field in LO_DE_BIT_STRUCTURE:
-                if field not in ["Priority", "Spare"]:
-                    event_data = np.array(data_per_epoch[f"P{i}_{field}"], dtype=np.uint16)
-                    padding_size = 10000 - event_data.size
-                    padded_event_data = np.pad(event_data, (0, padding_size), mode="constant", constant_values=0)
-                    all_data[f"P{i}_{field}"].append(padded_event_data)
-            all_data[f"P{i}_NumEvents"].append(np.array(data_per_epoch[f"P{i}_NumEvents"]))
-            all_data[f"P{i}_DataQuality"].append(np.array(data_per_epoch[f"P{i}_DataQuality"]))
-
-    # TODO: Specific np.dtype per field
-
-    # # These should be ready to store in CDF data variables now
+    # # Dictionary to hold all the (soon to be restructured) event data
+    # all_data = {}
+    #
+    # # Create blank arrays for each field to store the data
+    # # We also need arrays to hold number of events and data quality
     # for i in range(8):
-    #     for key in ["NumEvents", "DataQuality", "APDGain", "APD_ID", "APDEnergy", "TOF", "MultiFlag", "PHAType", "SpinAngle", "EnergyStep"]:
-    #         index = f"P{i}_{key}"
-    #         print("\n\n")
-    #         print(index)
-    #         print("\n")
-    #         print(np.array(all_data[index]))
+    #     for field in LO_DE_BIT_STRUCTURE:
+    #         if field not in ["Priority", "Spare"]:
+    #             all_data[f"P{i}_{field}"] = []
+    #     all_data[f"P{i}_NumEvents"] = []
+    #     all_data[f"P{i}_DataQuality"] = []
+    #
+    # # raw_data is one large list of values of length (<number of epochs> * <8 priorities>)
+    # # Chunk the data into each epoch/priority combination
+    # for epoch_num, chunk in enumerate(range(0, len(raw_data), 8), start=1):
+    #     epoch_data = raw_data[chunk:chunk + 8]
+    #
+    #     # The order of the priorities and data quality flags are unique to each
+    #     # epoch and can be gathered from the packet data
+    #     priority_order = packets.priority[chunk:chunk + 8].data
+    #     data_quality = packets.suspect[chunk:chunk + 8].data
+    #
+    #     # Create dict to hold the final data per epoch
+    #     data_per_epoch = {}
+    #
+    #     # For each epoch/priority combo, iterate over each event
+    #     for i, priority_num in enumerate(priority_order):
+    #         priority_data = epoch_data[i]
+    #
+    #         # Number of events and data quality can be determined at this stage
+    #         num_events = len(priority_data) // 8
+    #         data_per_epoch[f"P{priority_num}_NumEvents"] = num_events
+    #         data_per_epoch[f"P{priority_num}_DataQuality"] = data_quality[i]
+    #
+    #         # Create blank array to store data for each epoch/priority/field
+    #         # combination
+    #         for field in LO_DE_BIT_STRUCTURE:
+    #             data_per_epoch[f"P{priority_num}_{field}"] = []
+    #
+    #         # Iterate over each event
+    #         for event in [priority_data[i * 8: (i + 1) * 8] for i in range(num_events)]:
+    #
+    #             # Separate out each individual field from the bit string
+    #             bit_string = ''.join(f'{byte:08b}' for byte in event)
+    #             index = 0
+    #             for field_name, bit_length in reversed(LO_DE_BIT_STRUCTURE.items()):
+    #                 data_per_epoch[f"P{priority_num}_{field_name}"].append(int(bit_string[index:index + bit_length], 2))
+    #                 index += bit_length
+    #
+    #     # Append the epoch data to the final, restructured list of data
+    #     for i in range(8):
+    #         for field in LO_DE_BIT_STRUCTURE:
+    #             if field not in ["Priority", "Spare"]:
+    #                 event_data = np.array(data_per_epoch[f"P{i}_{field}"], dtype=np.uint16)
+    #                 padding_size = 10000 - event_data.size
+    #                 padded_event_data = np.pad(event_data, (0, padding_size), mode="constant", constant_values=0)
+    #                 all_data[f"P{i}_{field}"].append(padded_event_data)
+    #         all_data[f"P{i}_NumEvents"].append(np.array(data_per_epoch[f"P{i}_NumEvents"]))
+    #         all_data[f"P{i}_DataQuality"].append(np.array(data_per_epoch[f"P{i}_DataQuality"]))
+    #
+    # # TODO: Specific np.dtype per field
+    #
+    # # # These should be ready to store in CDF data variables now
+    # # for i in range(8):
+    # #     for key in ["NumEvents", "DataQuality", "APDGain", "APD_ID", "APDEnergy", "TOF", "MultiFlag", "PHAType", "SpinAngle", "EnergyStep"]:
+    # #         index = f"P{i}_{key}"
+    # #         print("\n\n")
+    # #         print(index)
+    # #         print("\n")
+    # #         print(np.array(all_data[index]))
+    #
+    #
+    # # Gather the CDF attributes
+    # cdf_attrs = ImapCdfAttributes()
+    # cdf_attrs.add_instrument_global_attrs("codice")
+    # cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
+    # cdf_attrs.add_global_attribute("Data_version", data_version)
+    #
+    # # TODO: Figure out how to properly define epoch for this
+    #
+    # # Define coordinates
+    # epoch = xr.DataArray(
+    #     packets.epoch[::8],
+    #     name="epoch",
+    #     dims=["epoch"],
+    #     attrs=cdf_attrs.get_variable_attributes("epoch"),
+    # )
+    # event_num = xr.DataArray(
+    #     np.arange(10000),
+    #     name="event_num",
+    #     dims=["event_num"],
+    #     attrs=cdf_attrs.get_variable_attributes("event_num"),
+    # )
+    #
+    # # Create the dataset to hold the data variables
+    # dataset = xr.Dataset(
+    #     coords={
+    #         "epoch": epoch,
+    #         "event_num": event_num
+    #     },
+    #     attrs=cdf_attrs.get_global_attributes(dataset_name),
+    # )
+    #
+    # # Create the CDF data variables for each Priority and Field
+    # for i in range(8):
+    #     for field in ["NumEvents", "DataQuality", "APDGain", "APD_ID", "APDEnergy", "TOF", "MultiFlag", "PHAType",
+    #                 "SpinAngle", "EnergyStep"]:
+    #         variable_name = f"P{i}_{field}"
+    #         attrs = cdf_attrs.get_variable_attributes(variable_name)
+    #         if field in ["NumEvents", "DataQuality"]:
+    #             dims = ["epoch"]
+    #         else:
+    #             dims = ["epoch", "event_num"]
+    #         dataset[variable_name] = xr.DataArray(
+    #             np.array(all_data[variable_name]),
+    #             name=variable_name,
+    #             dims=dims,
+    #             attrs=attrs,
+    #         )
 
-
-    # Gather the CDF attributes
-    cdf_attrs = ImapCdfAttributes()
-    cdf_attrs.add_instrument_global_attrs("codice")
-    cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
-    cdf_attrs.add_global_attribute("Data_version", data_version)
-
-    # TODO: Figure out how to properly define epoch for this
-
-    # Define coordinates
-    epoch = xr.DataArray(
-        packets.epoch[::8],
-        name="epoch",
-        dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch"),
-    )
-    event_num = xr.DataArray(
-        np.arange(10000),
-        name="event_num",
-        dims=["event_num"],
-        attrs=cdf_attrs.get_variable_attributes("event_num"),
-    )
-
-    # Create the dataset to hold the data variables
-    dataset = xr.Dataset(
-        coords={
-            "epoch": epoch,
-            "event_num": event_num
-        },
-        attrs=cdf_attrs.get_global_attributes(dataset_name),
-    )
-
-    # Create the CDF data variables for each Priority and Field
-    for i in range(8):
-        for field in ["NumEvents", "DataQuality", "APDGain", "APD_ID", "APDEnergy", "TOF", "MultiFlag", "PHAType",
-                    "SpinAngle", "EnergyStep"]:
-            variable_name = f"P{i}_{field}"
-            attrs = cdf_attrs.get_variable_attributes(variable_name)
-            if field in ["NumEvents", "DataQuality"]:
-                dims = ["epoch"]
-            else:
-                dims = ["epoch", "event_num"]
-            dataset[variable_name] = xr.DataArray(
-                np.array(all_data[variable_name]),
-                name=variable_name,
-                dims=dims,
-                attrs=attrs,
-            )
-
-    return dataset
+    return None
+    # return dataset
 
 
 def create_hskp_dataset(
@@ -898,9 +954,9 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
         #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # Event data
-        if apid in [CODICEAPID.COD_LO_PHA]:
+        if apid in [CODICEAPID.COD_HI_PHA]:
             processed_dataset = create_event_dataset(apid, dataset, data_version)
-            #logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # # Everything else
         # elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
@@ -919,7 +975,7 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
         #     processed_dataset = pipeline.define_data_variables()
         #
         #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
-
+        #
         # # TODO: Still need to implement I-ALiRT data products
         # elif apid in [
         #     CODICEAPID.COD_HI_IAL,
@@ -937,8 +993,8 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
 
     return processed_datasets
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     from imap_processing import imap_module_directory
     from imap_processing.cdf.utils import write_cdf
 
