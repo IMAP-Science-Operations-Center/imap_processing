@@ -22,21 +22,20 @@ def get_spin_data() -> pd.DataFrame:
     It could be s3 filepath that can be used to download the data
     through API or it could be path EFS or Batch volume mount path.
 
-    Spin data should contain the following fields:
-        * spin_number
-        * spin_start_sec_sclk
-        * spin_start_subsec_sclk
-        * spin_start_utc
-        * spin_period_sec
-        * spin_period_valid
-        * spin_phase_valid
-        * spin_period_source
-        * thruster_firing
-
     Returns
     -------
     spin_data : pandas.DataFrame
-        Spin data.
+        Spin data. The DataFrame will have the following columns:
+
+            * `spin_number`: Unique integer spin number.
+            * `spin_start_sec_sclk`: MET seconds of spin start time.
+            * `spin_start_subsec_sclk`: MET microseconds of spin start time.
+            * `spin_start_utc`: UTC string of spin start time.
+            * `spin_period_sec`: Floating point spin period in seconds.
+            * `spin_period_valid`: Boolean indicating whether spin period is valid.
+            * `spin_phase_valid`: Boolean indicating whether spin phase is valid.
+            * `spin_period_source`: Source used for determining spin period.
+            * `thruster_firing`: Boolean indicating whether thruster is firing.
     """
     spin_data_filepath = os.getenv("SPIN_DATA_FILEPATH")
     if spin_data_filepath is not None:
@@ -60,9 +59,9 @@ def get_spin_data() -> pd.DataFrame:
         },
     )
     # Combine spin_start_sec_sclk and spin_start_subsec_sclk to get the spin start
-    # time in seconds. The spin start subseconds are in milliseconds.
+    # time in seconds. The spin start subseconds are in microseconds.
     spin_df["spin_start_time"] = (
-        spin_df["spin_start_sec_sclk"] + spin_df["spin_start_subsec_sclk"] / 1e3
+        spin_df["spin_start_sec_sclk"] + spin_df["spin_start_subsec_sclk"] / 1e6
     )
 
     return spin_df
@@ -85,18 +84,9 @@ def interpolate_spin_data(query_met_times: Union[float, npt.NDArray]) -> pd.Data
     Returns
     -------
     spin_df : pandas.DataFrame
-        Spin table data with the spin-phase column added and one row
-        interpolated for each queried MET time. Output columns are:
-        * spin_number
-        * spin_start_sec_sclk
-        * spin_start_subsec_sclk
-        * spin_period_sec
-        * spin_period_valid
-        * spin_phase_valid
-        * spin_period_source
-        * thruster_firing
-        * spin_start_met
-        * sc_spin_phase
+        Spin table data interpolated for each queried MET time. In addition to
+        the columns output from :py:func:`get_spin_data`, the `sc_spin_phase`
+        column is added and is uniquely computed for each queried MET time.
     """
     spin_df = get_spin_data()
 
