@@ -354,7 +354,7 @@ def get_normalized_counts_by_time(
     cycle_times: NDArray,
 ) -> tuple[NDArray, NDArray]:
     """
-    Check if counterstreaming is observed in azimuthal angle direction.
+    Get data product normalized counts as a function of time.
 
     Parameters
     ----------
