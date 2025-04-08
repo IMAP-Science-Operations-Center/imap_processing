@@ -256,26 +256,110 @@ def find_min_counts(summed_half_cycle):
     )
 
 
-def determine_streaming_summed_cems(cpeak, cmin, counts_180, threshold=1.75):
+def determine_streaming(numerator_1, numerator_2, denominator, threshold=1.75):
     """
     Returns True if any energy level satisfies the bidirectional streaming condition:
-    (cpeak / cmin > threshold) and (counts_180 / cmin > threshold)
+    (numerator_1 / denominator > threshold) and (numerator_2 / denominator > threshold)
     """
-    cpeak_ratio = cpeak / cmin
-    counts_180_ratio = counts_180 / cmin
+    ratio_1 = numerator_1 / denominator
+    ratio_2 = numerator_2 / denominator
 
-    return ((cpeak_ratio > threshold) & (counts_180_ratio > threshold)).astype(int)
+    return ((ratio_1 > threshold) & (ratio_2 > threshold)).astype(int)
 
 
-def determine_streaming_summed_azimuths(counts_cem1, counts_cem7, cmin, threshold=1.75):
+def compute_bde(streaming_first_half, streaming_second_half, min_esa_steps=3):
     """
-    Returns True if any energy level satisfies the bidirectional streaming condition:
-    (counts_cem1 / cmin > threshold) and (counts_cem7 / cmin > threshold)
+    Compute the Bidirectional Electron parameter (BDE).
     """
-    counts_cem1_ratio = counts_cem1 / cmin
-    counts_cem7_ratio = counts_cem7 / cmin
+    count_first = np.sum(streaming_first_half)
+    count_second = np.sum(streaming_second_half)
 
-    return ((counts_cem1_ratio > threshold) & (counts_cem7_ratio > threshold)).astype(int)
+    return int((count_first >= min_esa_steps) or (count_second >= min_esa_steps))
+
+
+def get_normalized_counts(normalized_first_half, normalized_second_half, time_quarter_cycle_1, time_quarter_cycle_2, time_quarter_cycle_3, time_quarter_cycle_4):
+
+    # Normalized counts as a function of time
+    # Sum over CEMs (axis=1) and azimuths (axis=2)
+    summed_first = normalized_first_half.sum(axis=(1, 2))  # shape: (8,)
+    summed_second = normalized_second_half.sum(axis=(1, 2))
+    summed_counts = np.concatenate([summed_first, summed_second])
+
+    times_first = np.full(8, np.nan)
+    times_second = np.full(8, np.nan)
+
+    # Assign values at specified indices
+    times_first[[1, 5, 7, 3]] = time_quarter_cycle_1
+    times_first[[2, 6, 4, 0]] = time_quarter_cycle_2
+    times_second[[3, 7, 5, 1]] = time_quarter_cycle_3
+    times_second[[0, 4, 6, 2]] = time_quarter_cycle_4
+    summed_times = np.concatenate([times_first, times_second])
+
+    return summed_counts, summed_times
+
+
+def first_check_counterstreaming(normalized_first_half, normalized_second_half):
+    # Sum over the 7 detectors
+    summed_first_half = np.sum(normalized_first_half, axis=1)
+    summed_second_half = np.sum(normalized_second_half, axis=1)
+
+    # Find peaks, counts (-90, 90, 180), and azimuth (-90, 90, 180) values
+    (
+        cpeak_first_half,
+        cmin_first_half,
+        counts_first_half,
+        azimuth_first_half,
+        azimuth_peak,
+        azimuth_cmin,
+    ) = find_min_counts(summed_first_half)
+    (
+        cpeak_second_half,
+        cmin_second_half,
+        counts_second_half,
+        azimuth_second_half,
+        azimuth_peak,
+        azimuth_cmin,
+    ) = find_min_counts(summed_second_half)
+
+    # First search for counter-streaming: determine_streaming_summed_cems
+    streaming_summed_cems_first_half = determine_streaming(
+        cpeak_first_half, counts_first_half[2], cmin_first_half
+    )
+    streaming_summed_cems_second_half = determine_streaming(
+        cpeak_second_half, counts_second_half[2], cmin_second_half
+    )
+
+    # If either of the half cycles has bidirectional streaming for 3/5 energies then bde = 1
+    bde_first_search = compute_bde(
+        streaming_summed_cems_first_half, streaming_summed_cems_second_half
+    )
+
+    return bde_first_search
+
+
+def second_check_counterstreaming(normalized_first_half, normalized_second_half):
+
+    # Sum over azimuth.
+    az_first_half = np.sum(normalized_first_half, axis=2)
+    az_second_half = np.sum(normalized_second_half, axis=2)
+
+    # Cmin is the average of the counts in CEMs 3, 4, and 5
+    cmin_first_half = az_first_half[:, 2:5].mean(axis=1)
+    cmin_second_half = az_second_half[:, 2:5].mean(axis=1)
+
+    # determine_streaming_summed_azimuths
+    streaming_summed_azimuths_first_half = determine_streaming(
+        az_first_half[:, 0], az_second_half[:, 6], cmin_first_half
+    )
+    streaming_summed_azimuths_second_half = determine_streaming(
+        az_second_half[:, 0], az_second_half[:, 6], cmin_second_half
+    )
+
+    bde_second_search = compute_bde(
+        streaming_summed_azimuths_first_half, streaming_summed_azimuths_second_half
+    )
+
+    return bde_second_search
 
 
 def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list[dict]:
@@ -348,58 +432,31 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
         normalized_first_half = normalize_counts(corrected_first_half, latest_cal)
         normalized_second_half = normalize_counts(corrected_second_half, latest_cal)
 
-        # Sum over the 7 detectors
-        summed_first_half = np.sum(normalized_first_half, axis=1)
-        summed_second_half = np.sum(normalized_second_half, axis=1)
-
-        # Find peaks, counts (-90, 90, 180), and azimuth (-90, 90, 180) values
-        (
-            cpeak_first_half,
-            cmin_first_half,
-            counts_first_half,
-            azimuth_first_half,
-            azimuth_peak,
-            azimuth_cmin,
-        ) = find_min_counts(summed_first_half)
-        (
-            cpeak_second_half,
-            cmin_second_half,
-            counts_second_half,
-            azimuth_second_half,
-            azimuth_peak,
-            azimuth_cmin,
-        ) = find_min_counts(summed_second_half)
-
-        # Combine half-cycle data
-        cpeak = np.concatenate([cpeak_first_half, cpeak_second_half])
-        cmin = np.concatenate([cmin_first_half, cmin_second_half])
-        counts_180 = np.concatenate([counts_first_half[2], counts_second_half[2]])
-
-        # First search for counter-streaming
-        streaming_summed_cems = determine_streaming_summed_cems(
-            cpeak, cmin, counts_180
+        bde_first_search = first_check_counterstreaming(
+            normalized_first_half, normalized_second_half
+        )
+        bde_second_search = second_check_counterstreaming(
+            normalized_first_half, normalized_second_half
         )
 
-        # Sum over azimuth.
-        az_first_half = np.sum(normalized_first_half, axis=2)
-        az_second_half = np.sum(normalized_second_half, axis=2)
+        # BDE value
+        bde = max(bde_first_search, bde_second_search)
 
-        # Cmin is the average of the counts in CEMs 3, 4, and 5
-        cmin_first_half = az_first_half[:, 2:5].mean(axis=1)
-        cmin_second_half = az_second_half[:, 2:5].mean(axis=1)
-
-        # TODO: confirm with Ruth if both half cycles need to "see" bidirectionality or only one is needed
-        # TODO: confirm with Ruth that the 3/5 energy step rule applies to both streaming checks.
-        streaming_summed_azimuths_first_half = determine_streaming_summed_azimuths(
-            az_first_half[:, 0], az_second_half[:, 6], cmin_first_half
-        )
-        streaming_summed_azimuths_second_half = determine_streaming_summed_azimuths(
-            az_second_half[:, 0], az_second_half[:, 6], cmin_second_half
+        summed_counts, summed_times = get_normalized_counts(
+            normalized_first_half,
+            normalized_second_half,
+            first_half["time_seconds"].min(),
+            first_half["time_seconds"].max(),
+            second_half["time_seconds"].min(),
+            second_half["time_seconds"].max(),
         )
 
-        print("hi")
-        # Each bin is 12 degrees.
-        # azimuth_90_first_half
-        # azimuth_180_first_half
+        swe_data.append(
+            {
+                "met": summed_times,
+                "normalized_counts": summed_counts,
+                "bde": bde,
+            }
+        )
 
     return swe_data

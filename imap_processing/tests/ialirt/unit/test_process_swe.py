@@ -9,7 +9,8 @@ from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.process_swe import (
     average_values_and_azimuth,
     decompress_counts,
-    determine_streaming_summed_cems,
+    compute_bde,
+    determine_streaming,
     find_bin_offsets,
     find_min_counts,
     get_ialirt_energies,
@@ -358,6 +359,19 @@ def test_determine_streaming_summed_cems():
     counts_180 = np.array([40, 60, 90, 110])
     assert np.array_equal(determine_streaming_summed_cems(cpeak, cmin, counts_180),
                           np.array([1, 0, 0, 0]))
+
+
+def test_determine_bidirectionality():
+    """Tests compute_bde for different combinations of bidirectional ESA steps."""
+
+    first_half = np.array([1, 0, 0, 0, 1, 0, 0, 0])
+    second_half = np.array([1, 0, 0, 0, 1, 0, 0, 0])
+    assert compute_bde(first_half, second_half) == 0
+
+    first_half = np.array([1, 1, 1, 0, 0, 0, 0, 0])
+    second_half = np.array([0, 0, 0, 0, 0, 0, 0, 0])
+    assert compute_bde(first_half, second_half) == 1
+
 
 
 @patch(
