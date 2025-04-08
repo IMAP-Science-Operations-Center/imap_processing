@@ -1,4 +1,5 @@
 # TODO: add attributes for L2 variables
+# TODO: figure out how to handle duplicate names between products (i.e. h is used in all 3)
 
 # <=== Defaults ===>
 # Assumed values for all variable attrs unless overwritten
@@ -12,3 +13,128 @@ default_attrs: &default
   VAR_TYPE: data
   UNITS: ' '
   SCALETYP: linear
+
+default_standard_var_attrs: &default_standard
+  <<: *default
+  VAR_TYPE: data
+  DISPLAY_TYPE: spectrogram
+  FILLVAL: -1.00E+31
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FORMAT: F9.3
+  UNITS: '1/(cm^2 s MeV/nuc sr)'
+
+default_energy_mean_attrs: &default_energy_mean
+  <<: *default
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: no_plot
+  LABLAXIS: Energy
+  FILLVAL: -1.00E+31
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FORMAT: F5.1
+  UNITS: 'MeV'
+
+# <=== Coordinates ===>
+
+# Standard intensity coordinates
+h_energy_mean:
+  <<: *default_energy_mean
+  CATDESC: Geometric mean energy for H Standard
+  FIELDNAM: H Energy
+
+he3_energy_mean:
+  <<: *default_energy_mean
+  CATDESC: Geometric mean energy for He3 Standard
+  FIELDNAM: He3 Energy
+
+he4_energy_mean:
+  <<: *default_energy_mean
+  CATDESC: Geometric mean energy for He4 Standard
+  FIELDNAM: He4 Energy
+
+he_energy_mean:
+  <<: *default_energy_mean
+  CATDESC: Geometric mean energy for He Standard
+  FIELDNAM: He Energy
+
+c_energy_mean:
+  <<: *default_energy_mean
+  CATDESC: Geometric mean energy for C Standard
+  FIELDNAM: C Energy
+
+n_energy_mean:
+  <<: *default_energy_mean
+  CATDESC: Geometric mean energy for N Standard
+  FIELDNAM: N Energy
+
+o_energy_mean:
+  <<: *default_energy_mean
+  CATDESC: Geometric mean energy for O Standard
+  FIELDNAM: O Energy
+
+ne_energy_mean:
+  <<: *default_energy_mean
+  CATDESC: Geometric mean energy for Ne Standard
+  FIELDNAM: Ne Energy
+
+na_energy_mean:
+  <<: *default_energy_mean
+  CATDESC: Geometric mean energy for Na Standard
+  FIELDNAM: Na Energy
+
+mg_energy_mean:
+  <<: *default_energy_mean
+  CATDESC: Geometric mean energy for Mg Standard
+  FIELDNAM: Mg Energy
+
+si_energy_mean:
+  <<: *default_energy_mean
+  CATDESC: Geometric mean energy for Si Standard
+  FIELDNAM: Si Energy
+
+s_energy_mean:
+  <<: *default_energy_mean
+  CATDESC: Geometric mean energy for S Standard
+  FIELDNAM: S Energy
+
+al_energy_mean:
+  <<: *default_energy_mean
+  CATDESC: Geometric mean energy for Al Standard
+  FIELDNAM: Al Energy
+
+ar_energy_mean:
+  <<: *default_energy_mean
+  CATDESC: Geometric mean energy for Ar Standard
+  FIELDNAM: Ar Energy
+
+ca_energy_mean:
+  <<: *default_energy_mean
+  CATDESC: Geometric mean energy for Ca Standard
+  FIELDNAM: Ca Energy
+
+fe_energy_mean:
+  <<: *default_energy_mean
+  CATDESC: Geometric mean energy for Fe Standard
+  FIELDNAM: Fe Energy
+
+ni_energy_mean:
+  <<: *default_energy_mean
+  CATDESC: Geometric mean energy for Ni Standard
+  FIELDNAM: Ni Energy
+
+
+# <=== Label Attributes ===>
+
+# <=== Data Variable Attributes ===>
+
+# Standard intensity data variables
+h:
+  <<: *default_standard
+  CATDESC: H Standard intensity
+  DEPEND_0: epoch
+  DEPEND_1: h_energy_mean
+  LABL_PTR_1: h_energy_label
+  FIELDNAM: H Standard Intensity
+  LABLAXIS: 'H Intensity'   #TODO is lablaxis needed?
+
