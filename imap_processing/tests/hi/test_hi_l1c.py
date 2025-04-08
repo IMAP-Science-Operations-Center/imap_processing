@@ -296,7 +296,7 @@ def fake_spin_df():
     # Generate some spin periods that vary by a random fraction of a second
     spin_period = np.full(10, 15) + np.random.randn(10) / 10
     d = {
-        "spin_start_time": np.add.accumulate(spin_period),
+        "spin_start_met": np.add.accumulate(spin_period),
         "spin_period_sec": spin_period,
     }
     spin_df = pd.DataFrame.from_dict(d)
@@ -310,8 +310,8 @@ def test_get_de_clock_ticks_for_esa_step(fake_spin_df):
     # the end spin in the table + 1/2 spin period
     for _, spin_row in fake_spin_df.iloc[8:].iterrows():
         for ccsds_met in np.linspace(
-            spin_row.spin_start_time,
-            spin_row.spin_start_time + np.floor(spin_row.spin_period_sec / 2),
+            spin_row.spin_start_met,
+            spin_row.spin_start_met + np.floor(spin_row.spin_period_sec / 2),
             10,
         ):
             clock_tick_mets, clock_tick_weights = (
@@ -321,7 +321,7 @@ def test_get_de_clock_ticks_for_esa_step(fake_spin_df):
             # Verify last weight entry
             exp_final_weight = (
                 np.absolute(
-                    fake_spin_df.spin_start_time.to_numpy() - clock_tick_mets[-1]
+                    fake_spin_df.spin_start_met.to_numpy() - clock_tick_mets[-1]
                 ).min()
                 / DE_CLOCK_TICK_S
             )
@@ -333,7 +333,7 @@ def test_get_de_clock_ticks_for_esa_step_exceptions(fake_spin_df):
     """Test the exception logic in the get_de_clock_ticks_for_esa_step function."""
     # Test the ccsds_met being > 1/2 spin period past the spin start
     bad_ccsds_met = (
-        fake_spin_df.iloc[8].spin_start_time
+        fake_spin_df.iloc[8].spin_start_met
         + fake_spin_df.iloc[8].spin_period_sec / 2
         + 0.1
     )
@@ -343,7 +343,7 @@ def test_get_de_clock_ticks_for_esa_step_exceptions(fake_spin_df):
         hi_l1c.get_de_clock_ticks_for_esa_step(bad_ccsds_met, fake_spin_df)
 
     # Test the ccsds_met being too close to the start of the spin table
-    bad_ccsds_met = fake_spin_df.iloc[7].spin_start_time
+    bad_ccsds_met = fake_spin_df.iloc[7].spin_start_met
     with pytest.raises(
         ValueError, match="Error determining start/end time for exposure time"
     ):
