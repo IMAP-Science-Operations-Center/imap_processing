@@ -7,12 +7,13 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.process_swe import (
-    average_values_and_azimuth,
-    decompress_counts,
+    average_counts,
     compute_bde,
+    decompress_counts,
     determine_streaming,
     find_bin_offsets,
     find_min_counts,
+    first_check_counterstreaming,
     get_ialirt_energies,
     normalize_counts,
     phi_to_bin,
@@ -249,7 +250,7 @@ def test_prepare_raw_counts():
     assert np.array_equal(raw_counts, expected)
 
 
-def test_norm_counts():
+def test_normalize_counts():
     """Tests normalize_counts function"""
 
     # Shape (2, 7, 3) for a small test case
@@ -316,38 +317,24 @@ def test_find_bin_offsets():
     np.testing.assert_array_equal(bins, np.array([[7, 8, 1], [8, 9, 2]]))
 
 
-def test_average_values_and_azimuth(summed_half_cycle):
+def test_average_counts(summed_half_cycle):
     """Tests average_values_and_azimuth function"""
-    azimuth = np.arange(12, 361, 12)
 
     # Find the azimuth angle that corresponds to the maximum counts at each energy
     peak_az_bin = np.argmax(summed_half_cycle, axis=1)
 
     # Bins +6 and +8 correspond to +90 degrees.
-    counts_90, azimuth_90 = average_values_and_azimuth(
-        peak_az_bin, summed_half_cycle, azimuth, (6, 8)
-    )
+    counts_90 = average_counts(peak_az_bin, summed_half_cycle, (6, 8))
 
     assert np.allclose(counts_90, np.full(8, 70), atol=1e-9)
-    assert np.allclose(
-        azimuth_90, np.array([156, 168, 180, 192, 204, 216, 228, 240]), atol=1e-9
-    )
 
 
 def test_find_min_counts(summed_half_cycle):
     """Tests find_min_counts function"""
 
-    cpeak, cmin, counts, azimuth, azimuth_peak, azimuth_cmin = find_min_counts(
-        summed_half_cycle
-    )
+    cpeak, cmin, counts = find_min_counts(summed_half_cycle)
     np.testing.assert_array_equal(cpeak, np.full(8, 100))
     np.testing.assert_array_equal(cmin, counts[0])
-
-    azimuth_array = np.arange(12, 361, 12)
-    expected_azimuth_peak = azimuth_array[[5, 6, 7, 8, 9, 10, 11, 12]]
-
-    np.testing.assert_array_equal(azimuth_peak, expected_azimuth_peak)
-    np.testing.assert_array_equal(azimuth_cmin, azimuth[0])
 
 
 def test_determine_streaming_summed_cems():
@@ -357,12 +344,13 @@ def test_determine_streaming_summed_cems():
     cpeak = np.array([100, 80, 50, 60])
     cmin = np.array([20, 70, 40, 60])
     counts_180 = np.array([40, 60, 90, 110])
-    assert np.array_equal(determine_streaming_summed_cems(cpeak, cmin, counts_180),
-                          np.array([1, 0, 0, 0]))
+    assert np.array_equal(
+        determine_streaming(cpeak, cmin, counts_180), np.array([1, 0, 0, 0])
+    )
 
 
-def test_determine_bidirectionality():
-    """Tests compute_bde for different combinations of bidirectional ESA steps."""
+def test_compute_bde():
+    """Tests compute_bde function."""
 
     first_half = np.array([1, 0, 0, 0, 1, 0, 0, 0])
     second_half = np.array([1, 0, 0, 0, 1, 0, 0, 0])
@@ -372,6 +360,16 @@ def test_determine_bidirectionality():
     second_half = np.array([0, 0, 0, 0, 0, 0, 0, 0])
     assert compute_bde(first_half, second_half) == 1
 
+
+def test_first_check_counterstreaming(summed_half_cycle):
+    """Tests first_check_counterstreaming function."""
+
+    normalized_first_half = np.stack([summed_half_cycle] * 7, axis=1)
+    normalized_second_half = np.stack([summed_half_cycle] * 7, axis=1)
+
+    bde = first_check_counterstreaming(normalized_first_half, normalized_second_half)
+
+    assert bde == 1
 
 
 @patch(

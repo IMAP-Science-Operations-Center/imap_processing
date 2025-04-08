@@ -174,16 +174,54 @@ def normalize_counts(counts: NDArray, latest_cal: pd.Series) -> NDArray:
     return norm_counts
 
 
-def find_bin_offsets(peak_bins, offsets):
-    """Find the bins with offsets from the peak bins."""
+def find_bin_offsets(
+    peak_bins: NDArray, offsets: tuple[int, int]
+) -> tuple[NDArray, NDArray]:
+    """
+    Find the bins with offsets from the peak bins.
+
+    Parameters
+    ----------
+    peak_bins : np.ndarray
+        Bins that corresponds to the maximum counts at each energy.
+    offsets : tuple[int, int]
+        Offset values for the bins.
+
+    Returns
+    -------
+    bin_0 : np.ndarray
+        First bin used for the average.
+    bin_1 : np.ndarray
+        Second bin used for the average.
+    """
     # Azimuth has 30 values.
+    # Therefore, anything greater than 30 should be wrapped around.
     bin_0, bin_1 = (peak_bins + offsets[0]) % 30, (peak_bins + offsets[1]) % 30
 
     return bin_0, bin_1
 
 
-def average_values_and_azimuth(peak_bins, summed_half_cycle, azimuth, offsets):
-    """Find the counts and azimuth values from the offset bins."""
+def average_counts(peak_bins, summed_half_cycle, offsets):
+    """
+    Get the counts value for the offset bins at each energy level and average them.
+
+    Parameters
+    ----------
+    peak_bins : np.ndarray
+        Bins that corresponds to the maximum counts at each energy.
+    summed_half_cycle : np.ndarray
+        Counts summed over the 7 CEM detectors.
+    offsets : tuple
+        Offset values for the bins.
+        Offsets +6 and +8 correspond to +90 degrees.
+        Offsets +14 and +16 correspond to 180 degrees.
+        Offsets -6 and -8 correspond to -90 degrees.
+
+    Returns
+    -------
+    avg_counts : np.ndarray
+        Average counts of offset bin.
+    """
     # Find the bins with offsets from the peak bins.
     bin_0, bin_1 = find_bin_offsets(peak_bins, offsets)
 
@@ -192,39 +230,47 @@ def average_values_and_azimuth(peak_bins, summed_half_cycle, azimuth, offsets):
     avg_counts = (
         summed_half_cycle[row_idx, bin_0] + summed_half_cycle[row_idx, bin_1]
     ) / 2
-    avg_azimuth = (azimuth[bin_0] + azimuth[bin_1]) / 2
 
-    return avg_counts, avg_azimuth
+    return avg_counts
 
 
-def find_min_counts(summed_half_cycle):
+def find_min_counts(
+    summed_half_cycle: NDArray,
+) -> tuple[NDArray, NDArray, tuple[NDArray, NDArray, NDArray]]:
+    """
+    Find min counts (Cmin), defined as the minimum of C180 and C90.
+
+    Parameters
+    ----------
+    summed_half_cycle : np.ndarray
+        Counts summed over the 7 CEM detectors.
+
+    Returns
+    -------
+    cpeak : np.ndarray
+        Maximum counts for each energy level.
+    cmin : np.ndarray
+        Minimum of counts_neg_90, counts_90, counts_180
+    (counts_neg_90, counts_90, counts_180) : tuple[np.ndarray, np.ndarray, np.ndarray]
+        Counts at +/- 90 and 180 degrees from peak.
+    """
     # Find the maximum counts for each energy level
     cpeak = np.max(summed_half_cycle, axis=1)
 
     # Find the bin that corresponds to the maximum counts at each energy
-    peak_az_bin = np.argmax(summed_half_cycle, axis=1)
+    peak_bin = np.argmax(summed_half_cycle, axis=1)
 
-    # Azimuth is always 12 degrees apart.
-    azimuth = np.arange(12, 361, 12)
-    azimuth_peak = azimuth[peak_az_bin]
+    # Find the counts in each offset bins.
+    # Offsets +6 and +8 correspond to +90 degrees.
+    counts_90 = average_counts(peak_bin, summed_half_cycle, (6, 8))
 
-    # Find the counts and azimuth values from the offset bins.
-    # Bins +6 and +8 correspond to +90 degrees.
-    counts_90, azimuth_90 = average_values_and_azimuth(
-        peak_az_bin, summed_half_cycle, azimuth, (6, 8)
-    )
+    # Find the counts in each offset bins.
+    # Offsets +14 and +16 correspond to 180 degrees.
+    counts_180 = average_counts(peak_bin, summed_half_cycle, (14, 16))
 
-    # Find the counts and azimuth values from the offset bins.
-    # Bins +14 and +16 correspond to 180 degrees.
-    counts_180, azimuth_180 = average_values_and_azimuth(
-        peak_az_bin, summed_half_cycle, azimuth, (14, 16)
-    )
-
-    # Find the counts and azimuth values from the offset bins.
-    # Bins +6 and +8 correspond to -90 degrees.
-    counts_neg_90, azimuth_neg_90 = average_values_and_azimuth(
-        peak_az_bin, summed_half_cycle, azimuth, (-6, -8)
-    )
+    # Find the counts in each offset bins.
+    # Offsets +6 and +8 correspond to -90 degrees.
+    counts_neg_90 = average_counts(peak_bin, summed_half_cycle, (-6, -8))
 
     counts_stacked = np.hstack(
         [
@@ -233,27 +279,11 @@ def find_min_counts(summed_half_cycle):
             counts_neg_90[:, np.newaxis],
         ]
     )
-    azimuths_stacked = np.hstack(
-        [
-            azimuth_90[:, np.newaxis],
-            azimuth_180[:, np.newaxis],
-            azimuth_neg_90[:, np.newaxis],
-        ]
-    )
 
     # Find the minimum value for each energy level
-    min_indices = np.argmin(counts_stacked, axis=1)
-    azimuth_cmin = azimuths_stacked[np.arange(len(min_indices)), min_indices]
     cmin = np.min(counts_stacked, axis=1)
 
-    return (
-        cpeak,
-        cmin,
-        (counts_neg_90, counts_90, counts_180),
-        (azimuth_neg_90, azimuth_90, azimuth_180),
-        azimuth_peak,
-        azimuth_cmin,
-    )
+    return cpeak, cmin, (counts_neg_90, counts_90, counts_180)
 
 
 def determine_streaming(numerator_1, numerator_2, denominator, threshold=1.75):
@@ -277,8 +307,14 @@ def compute_bde(streaming_first_half, streaming_second_half, min_esa_steps=3):
     return int((count_first >= min_esa_steps) or (count_second >= min_esa_steps))
 
 
-def get_normalized_counts(normalized_first_half, normalized_second_half, time_quarter_cycle_1, time_quarter_cycle_2, time_quarter_cycle_3, time_quarter_cycle_4):
-
+def get_normalized_counts(
+    normalized_first_half,
+    normalized_second_half,
+    time_quarter_cycle_1,
+    time_quarter_cycle_2,
+    time_quarter_cycle_3,
+    time_quarter_cycle_4,
+):
     # Normalized counts as a function of time
     # Sum over CEMs (axis=1) and azimuths (axis=2)
     summed_first = normalized_first_half.sum(axis=(1, 2))  # shape: (8,)
@@ -298,30 +334,37 @@ def get_normalized_counts(normalized_first_half, normalized_second_half, time_qu
     return summed_counts, summed_times
 
 
-def first_check_counterstreaming(normalized_first_half, normalized_second_half):
+def first_check_counterstreaming(
+    normalized_first_half: NDArray, normalized_second_half: NDArray
+) -> int:
+    """
+    Check if counterstreaming is observed in azimuthal angle direction.
+
+    Parameters
+    ----------
+    normalized_first_half : np.ndarray
+        Array of normalized counts for first half-cycle.
+    normalized_second_half : np.ndarray
+        Array of normalized counts for second half-cycle.
+
+    Returns
+    -------
+    bde_first_search : int
+        Indicator for counter-streaming.
+    """
     # Sum over the 7 detectors
     summed_first_half = np.sum(normalized_first_half, axis=1)
     summed_second_half = np.sum(normalized_second_half, axis=1)
 
-    # Find peaks, counts (-90, 90, 180), and azimuth (-90, 90, 180) values
-    (
-        cpeak_first_half,
-        cmin_first_half,
-        counts_first_half,
-        azimuth_first_half,
-        azimuth_peak,
-        azimuth_cmin,
-    ) = find_min_counts(summed_first_half)
-    (
-        cpeak_second_half,
-        cmin_second_half,
-        counts_second_half,
-        azimuth_second_half,
-        azimuth_peak,
-        azimuth_cmin,
-    ) = find_min_counts(summed_second_half)
+    # Find peaks, cmin, counts (-90, 90, 180)
+    cpeak_first_half, cmin_first_half, counts_first_half = find_min_counts(
+        summed_first_half
+    )
+    cpeak_second_half, cmin_second_half, counts_second_half = find_min_counts(
+        summed_second_half
+    )
 
-    # First search for counter-streaming: determine_streaming_summed_cems
+    # First search for counter-streaming
     streaming_summed_cems_first_half = determine_streaming(
         cpeak_first_half, counts_first_half[2], cmin_first_half
     )
@@ -338,7 +381,6 @@ def first_check_counterstreaming(normalized_first_half, normalized_second_half):
 
 
 def second_check_counterstreaming(normalized_first_half, normalized_second_half):
-
     # Sum over azimuth.
     az_first_half = np.sum(normalized_first_half, axis=2)
     az_second_half = np.sum(normalized_second_half, axis=2)
@@ -355,6 +397,7 @@ def second_check_counterstreaming(normalized_first_half, normalized_second_half)
         az_second_half[:, 0], az_second_half[:, 6], cmin_second_half
     )
 
+    # If either of the half cycles has bidirectional streaming for 3/5 energies then bde = 1
     bde_second_search = compute_bde(
         streaming_summed_azimuths_first_half, streaming_summed_azimuths_second_half
     )
@@ -364,7 +407,7 @@ def second_check_counterstreaming(normalized_first_half, normalized_second_half)
 
 def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list[dict]:
     """
-    Create L1 data dictionary..
+    Create L1 data dictionary.
 
     Parameters
     ----------
