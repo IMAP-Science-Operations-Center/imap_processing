@@ -170,10 +170,8 @@ def initialize_l1b_dataset(l1a_counts_dataset: xr.Dataset, coords: list) -> xr.D
     l1b_dataset : xr.Dataset
         An L1B dataset with coordinates and dynamic threshold state.
     """
-    # Create a new dataset to store the L1B standard rates
-    l1b_dataset = xr.Dataset()
-    l1b_dataset = l1b_dataset.assign_coords(
-        {coord: l1a_counts_dataset.coords[coord] for coord in coords}
+    l1b_dataset = xr.Dataset(
+        coords={coord: l1a_counts_dataset.coords[coord] for coord in coords}
     )
     l1b_dataset["dynamic_threshold_state"] = l1a_counts_dataset[
         "hdr_dynamic_threshold_state"
