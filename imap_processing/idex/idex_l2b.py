@@ -65,8 +65,8 @@ def idex_l2b(l2a_dataset: xr.Dataset) -> xr.Dataset:
     )
 
     target_waveforms = ["target_high", "target_low", "ion_grid"]
-    mass_name = "_fit_impact_mass_estimate"
-    charge_name = "_fit_impact_charge"
+    mass_name = "_dust_mass_estimate"
+    charge_name = "_impact_charge"
     # Copy arrays to l2b dataset
     for waveform in target_waveforms:
         l2b_dataset[waveform + charge_name] = l2a_dataset[waveform + charge_name].copy(

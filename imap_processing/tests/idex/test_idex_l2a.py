@@ -58,7 +58,7 @@ def test_l2a_cdf_variables(l2a_dataset: xr.Dataset):
     expected_vars = [
         "tof_snr",
         "tof_peak_kappa",
-        "mass",
+        "mass_scale",
         "target_low_fit_parameters",
         "target_low_impact_charge",
         "target_low_dust_mass_estimate",

@@ -47,12 +47,12 @@ def test_l2a_cdf_variables(l2b_dataset: xr.Dataset):
         "epoch",
         "impact_day_of_year",
         "spin_phase_quadrants",
-        "target_low_fit_impact_charge",
-        "target_low_fit_impact_mass_estimate",
-        "target_high_fit_impact_charge",
-        "target_high_fit_impact_mass_estimate",
-        "ion_grid_fit_impact_charge",
-        "ion_grid_fit_impact_mass_estimate",
+        "target_low_impact_charge",
+        "target_low_dust_mass_estimate",
+        "target_high_impact_charge",
+        "target_high_dust_mass_estimate",
+        "ion_grid_impact_charge",
+        "ion_grid_dust_mass_estimate",
     ]
 
     cdf_vars = l2b_dataset.variables
