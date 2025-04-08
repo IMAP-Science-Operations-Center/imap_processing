@@ -155,7 +155,7 @@ def initialize_l1b_dataset(l1a_counts_dataset: xr.Dataset, coords: list) -> xr.D
     """
     Initialize the L1B dataset.
 
-    Create a dataset and add coordinates and dynamic threshold state
+    Create a dataset and add coordinates and the dynamic threshold state data array
     from the L1A counts dataset.
 
     Parameters
