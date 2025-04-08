@@ -30,6 +30,7 @@ def get_spin_data() -> pd.DataFrame:
             * `spin_number`: Unique integer spin number.
             * `spin_start_sec_sclk`: MET seconds of spin start time.
             * `spin_start_subsec_sclk`: MET microseconds of spin start time.
+            * `spin_start_met`: Floating point MET seconds of spin start.
             * `spin_start_utc`: UTC string of spin start time.
             * `spin_period_sec`: Floating point spin period in seconds.
             * `spin_period_valid`: Boolean indicating whether spin period is valid.
@@ -60,7 +61,7 @@ def get_spin_data() -> pd.DataFrame:
     )
     # Combine spin_start_sec_sclk and spin_start_subsec_sclk to get the spin start
     # time in seconds. The spin start subseconds are in microseconds.
-    spin_df["spin_start_time"] = (
+    spin_df["spin_start_met"] = (
         spin_df["spin_start_sec_sclk"] + spin_df["spin_start_subsec_sclk"] / 1e6
     )
 
@@ -99,9 +100,9 @@ def interpolate_spin_data(query_met_times: Union[float, npt.NDArray]) -> pd.Data
         query_met_times = np.atleast_1d(query_met_times)
 
     # Make sure input times are within the bounds of spin data
-    spin_df_start_time = spin_df["spin_start_time"].values[0]
+    spin_df_start_time = spin_df["spin_start_met"].values[0]
     spin_df_end_time = (
-        spin_df["spin_start_time"].values[-1] + spin_df["spin_period_sec"].values[-1]
+        spin_df["spin_start_met"].values[-1] + spin_df["spin_period_sec"].values[-1]
     )
     input_start_time = query_met_times.min()
     input_end_time = query_met_times.max()
@@ -119,13 +120,13 @@ def interpolate_spin_data(query_met_times: Union[float, npt.NDArray]) -> pd.Data
     # >>> np.searchsorted(df['a'], [0, 13, 15, 32, 70], side='right')
     # array([1, 1, 2, 3, 5])
     last_spin_indices = (
-        np.searchsorted(spin_df["spin_start_time"], query_met_times, side="right") - 1
+        np.searchsorted(spin_df["spin_start_met"], query_met_times, side="right") - 1
     )
     # Generate a dataframe with one row per query time
     out_df = spin_df.iloc[last_spin_indices]
 
     # Calculate spin phase
-    spin_phases = (query_met_times - out_df["spin_start_time"].values) / out_df[
+    spin_phases = (query_met_times - out_df["spin_start_met"].values) / out_df[
         "spin_period_sec"
     ].values
 
@@ -189,7 +190,7 @@ def get_spacecraft_spin_phase(
     Get the spacecraft spin phase for the input query times.
 
     Formula to calculate spin phase:
-        spin_phase = (query_met_times - spin_start_time) / spin_period_sec
+        spin_phase = (query_met_times - spin_start_met) / spin_period_sec
 
     Parameters
     ----------

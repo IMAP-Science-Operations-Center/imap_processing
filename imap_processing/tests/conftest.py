@@ -526,7 +526,7 @@ def generate_spin_data():
         # Create spin start second data of 15 seconds increment
         spin_start_met = np.arange(start_met, end_met + 1, 15)
         spin_start_sec = np.floor(spin_start_met).astype(int)
-        spin_start_subsec = int((start_met - spin_start_sec[0]) * 1000)
+        spin_start_subsec = int((start_met - spin_start_sec[0]) * 1e6)
 
         # Calculate UTC times without spice (accepting ~5 second inaccuracy)
         spin_start_dt64 = TTJ2000_EPOCH + (spin_start_met * 1e9).astype(
@@ -552,7 +552,7 @@ def generate_spin_data():
         )
 
         # Convert spin_start_sec to datetime to set repointing times flags
-        spin_start_dates = met_to_ttj2000ns(spin_start_sec + spin_start_subsec / 1000)
+        spin_start_dates = met_to_ttj2000ns(spin_start_sec + spin_start_subsec / 1e6)
         spin_start_dates = cdflib.cdfepoch.to_datetime(spin_start_dates)
 
         # Convert DatetimeIndex to Series for using .dt accessor

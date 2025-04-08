@@ -604,7 +604,7 @@ def get_de_clock_ticks_for_esa_step(
     # The CCSDS packet gets created just AFTER the final spin in the 8-spin
     # ESA step group so this match is the end time. The start time is
     # 8-spins earlier.
-    spin_start_mets = spin_df.spin_start_time.to_numpy()
+    spin_start_mets = spin_df.spin_start_met.to_numpy()
     # CCSDS MET has one second resolution, add one to it to make sure it is
     # greater than the spin start time it ended on.
     end_time_ind = np.flatnonzero(ccsds_met + 1 >= spin_start_mets).max()
