@@ -9,7 +9,7 @@ from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l0.decom_mag import decom_packets, generate_dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def cdf_attrs():
     test_attrs = ImapCdfAttributes()
     test_attrs.add_instrument_global_attrs("mag")

@@ -263,8 +263,8 @@ def generate_de_dataset(
         support_data["number_of_de_packets"].append(int(de.l0.LEN))
         # support_data["missing_packet_sequences"].append(str(de.missing_seq))
 
-        for key in data_every_second.keys():
-            data_every_second[key].append(de.status_data.__getattribute__(key))
+        for key, val in data_every_second.items():
+            val.append(de.status_data.__getattribute__(key))
 
     # Convert arrays and dictionaries into xarray 'DataArray' objects
     epoch_time = xr.DataArray(
@@ -407,12 +407,12 @@ def generate_histogram_dataset(
         )
 
         # Add support_data keys to the support_data dictionary
-        for key in support_data.keys():
+        for key, support_val in support_data.items():
             if key not in ["flags_set_onboard", "is_generated_on_ground"]:
-                support_data[key].append(hist.__getattribute__(key))
+                support_val.append(hist.__getattribute__(key))
         # For the time varying data, convert to seconds and then append
-        for key in time_metadata.keys():
-            time_metadata[key].append(hist.__getattribute__(key).to_seconds())
+        for key, time_metadata_val in time_metadata.items():
+            time_metadata_val.append(hist.__getattribute__(key).to_seconds())
         time_data[index] = epoch_time
 
     epoch_time = xr.DataArray(

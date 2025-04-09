@@ -66,7 +66,7 @@ def assemble_quaternions(ds: xr.Dataset) -> xr.Dataset:
     base_name = "FSW_ACS_QUAT_10_HZ_BUFFERED".lower()
     for quat_i, label in enumerate(["x", "y", "z", "s"]):
         # 0, 1, 2, .. 9 // 10, 11, 12, .. 19 // 20, 21, 22, .. 29 // 30, 31, 32, .. 39
-        names = [f"{base_name}_{i + quat_i*10}" for i in range(10)]
+        names = [f"{base_name}_{i + quat_i * 10}" for i in range(10)]
         quat = np.stack([ds[name] for name in names], axis=1).ravel()
         output_ds[f"quat_{label}"] = ("epoch", quat)
     return output_ds

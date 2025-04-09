@@ -9,10 +9,8 @@ import pandas as pd
 import xarray as xr
 
 from imap_processing.hit.hit_utils import (
-    add_energy_variables,
+    add_summed_particle_data_to_dataset,
     get_attribute_manager,
-    initialize_particle_data_arrays,
-    sum_particle_data,
 )
 from imap_processing.hit.l2.constants import (
     L2_STANDARD_ANCILLARY_PATH_PREFIX,
@@ -25,6 +23,7 @@ logger = logging.getLogger(__name__)
 # TODO:
 #  - review logging levels to use (debug vs. info)
 #  - determine where to pull ancillary data. Storing it locally for now
+#  - add function to calculate combined uncertainty and add this to L2 datasets
 
 
 def hit_l2(dependency: xr.Dataset, data_version: str) -> list[xr.Dataset]:
@@ -187,7 +186,7 @@ def calculate_intensities(
 
 def calculate_intensities_for_a_species(
     species_variable: str, l2_dataset: xr.Dataset, ancillary_data_frames: dict
-) -> None:
+) -> xr.Dataset:
     """
     Calculate the intensity for a given species in the dataset.
 
@@ -202,15 +201,21 @@ def calculate_intensities_for_a_species(
         Dictionary containing ancillary data for each dynamic threshold state where
         the key is the dynamic threshold state and the value is a pandas DataFrame
         containing the ancillary data.
+
+    Returns
+    -------
+    updated_ds : xr.Dataset
+        The updated dataset with the intensity calculated for the given species.
     """
+    updated_ds = l2_dataset.copy()
     species = (
         species_variable.split("_")[0]
         if "_delta_" in species_variable
         else species_variable
     )
     energy_min = (
-        l2_dataset[f"{species}_energy_mean"].values
-        - l2_dataset[f"{species}_energy_delta_minus"].values
+        updated_ds[f"{species}_energy_mean"].values
+        - updated_ds[f"{species}_energy_delta_minus"].values
     )
     # TODO: Add check for energy max after ancillary file is updated
     #  to fix errors
@@ -218,10 +223,10 @@ def calculate_intensities_for_a_species(
     # Calculate the intensity for each epoch and energy bin since the
     # dynamic threshold state can vary by epoch and that determines the
     # ancillary data to use.
-    for epoch in range(l2_dataset[species_variable].shape[0]):
+    for epoch in range(updated_ds[species_variable].shape[0]):
         # Get ancillary data using the dynamic threshold state for this epoch
         species_ancillary_data = get_species_ancillary_data(
-            int(l2_dataset["dynamic_threshold_state"][epoch].values),
+            int(updated_ds["dynamic_threshold_state"][epoch].values),
             ancillary_data_frames,
             species,
         )
@@ -231,9 +236,9 @@ def calculate_intensities_for_a_species(
         factors: IntensityFactors = get_intensity_factors(
             energy_min, species_ancillary_data
         )
-        rates: xr.DataArray = l2_dataset[species_variable][epoch]
+        rates: xr.DataArray = updated_ds[species_variable][epoch]
 
-        l2_dataset[species_variable][epoch] = calculate_intensities(
+        updated_ds[species_variable][epoch] = calculate_intensities(
             rates,
             factors.delta_e_factor,
             factors.geometry_factor,
@@ -241,10 +246,12 @@ def calculate_intensities_for_a_species(
             factors.b,
         )
 
+    return updated_ds
+
 
 def calculate_intensities_for_all_species(
     l2_dataset: xr.Dataset, ancillary_data_frames: dict
-) -> None:
+) -> xr.Dataset:
     """
     Calculate the intensity for each species in the dataset.
 
@@ -256,8 +263,14 @@ def calculate_intensities_for_all_species(
         Dictionary containing ancillary data for each dynamic threshold state
         where the key is the dynamic threshold state and the value is a pandas
         DataFrame containing the ancillary data.
+
+    Returns
+    -------
+    updated_ds : xr.Dataset
+        The updated dataset with the intensity calculated for each species.
     """
     # TODO: update to also calculate intensity for sectorates?
+    updated_ds = l2_dataset.copy()
     # List of valid species data variables to calculate intensity for
     valid_data_variables = [
         "h",
@@ -286,9 +299,9 @@ def calculate_intensities_for_all_species(
 
     # Calculate the intensity for each valid data variable
     for species_variable in valid_data_variables:
-        if species_variable in l2_dataset.data_vars:
-            calculate_intensities_for_a_species(
-                species_variable, l2_dataset, ancillary_data_frames
+        if species_variable in updated_ds.data_vars:
+            updated_ds = calculate_intensities_for_a_species(
+                species_variable, updated_ds, ancillary_data_frames
             )
         else:
             logger.warning(
@@ -296,10 +309,12 @@ def calculate_intensities_for_all_species(
                 f"Skipping intensity calculation."
             )
 
+    return updated_ds
+
 
 def add_systematic_uncertainties(
     dataset: xr.Dataset, particle: str, energy_bins: int
-) -> None:
+) -> xr.Dataset:
     """
     Add systematic uncertainties to the dataset.
 
@@ -314,84 +329,26 @@ def add_systematic_uncertainties(
         The particle name.
     energy_bins : int
         Number of energy bins for the particle.
+
+    Returns
+    -------
+    updated_ds : xr.Dataset
+        The dataset with the systematic uncertainties added.
     """
-    dataset[f"{particle}_sys_delta_minus"] = xr.DataArray(
+    updated_ds = dataset.copy()
+
+    updated_ds[f"{particle}_sys_delta_minus"] = xr.DataArray(
         data=np.zeros(energy_bins, dtype=np.float32),
         dims=[f"{particle}_energy_mean"],
         name=f"{particle}_sys_delta_minus",
     )
-    dataset[f"{particle}_sys_delta_plus"] = xr.DataArray(
+    updated_ds[f"{particle}_sys_delta_plus"] = xr.DataArray(
         data=np.zeros(energy_bins, dtype=np.float32),
         dims=[f"{particle}_energy_mean"],
         name=f"{particle}_sys_delta_plus",
     )
 
-
-def add_standard_particle_rates_to_dataset(
-    l2_standard_intensity_dataset: xr.Dataset,
-    l1b_standard_rates_dataset: xr.Dataset,
-    particle: str,
-    energy_ranges: list,
-) -> None:
-    """
-    Add summed standard particle rates to the dataset.
-
-    This function performs the following steps:
-      1) sum the standard rates, including statistical uncertainties,
-         from the l2fgrates, l3fgrates, and penfgrates data variables in the L1B
-         standard rates data.
-      2) add the summed rates to the L2 standard intensity dataset by particle type
-         and energy range.
-
-    Parameters
-    ----------
-    l2_standard_intensity_dataset : xr.Dataset
-        The L2 standard intensity dataset to add the rates to.
-    l1b_standard_rates_dataset : xr.Dataset
-        The L1B standard rates dataset containing rates to sum.
-    particle : str
-        The particle name.
-    energy_ranges : list
-        A list of energy range dictionaries for the particle.
-        For example:
-        {'energy_min': 1.8, 'energy_max': 2.2, "R2": [1], "R3": [], "R4": []}.
-    """
-    # Initialize arrays to store summed rates and statistical uncertainties
-    l2_standard_intensity_dataset = initialize_particle_data_arrays(
-        l2_standard_intensity_dataset,
-        particle,
-        len(energy_ranges),
-        l1b_standard_rates_dataset.sizes["epoch"],
-    )
-
-    # initialize arrays to store energy min and max values
-    energy_min = np.zeros(len(energy_ranges), dtype=np.float32)
-    energy_max = np.zeros(len(energy_ranges), dtype=np.float32)
-
-    # Sum particle rates and statistical uncertainties for each energy range
-    # and add them to the dataset
-    for i, energy_range_dict in enumerate(energy_ranges):
-        summed_rates, summed_rates_delta_minus, summed_rates_delta_plus = (
-            sum_particle_data(l1b_standard_rates_dataset, energy_range_dict)
-        )
-
-        l2_standard_intensity_dataset[f"{particle}"][:, i] = summed_rates.astype(
-            np.float32
-        )
-        l2_standard_intensity_dataset[f"{particle}_delta_minus"][:, i] = (
-            summed_rates_delta_minus.astype(np.float32)
-        )
-        l2_standard_intensity_dataset[f"{particle}_delta_plus"][:, i] = (
-            summed_rates_delta_plus.astype(np.float32)
-        )
-
-        # Fill energy min and max values for each energy range
-        energy_min[i] = energy_range_dict["energy_min"]
-        energy_max[i] = energy_range_dict["energy_max"]
-
-    l2_standard_intensity_dataset = add_energy_variables(
-        l2_standard_intensity_dataset, particle, energy_min, energy_max
-    )
+    return updated_ds
 
 
 def get_species_ancillary_data(
@@ -488,48 +445,17 @@ def process_summed_intensity_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Da
         L2_SUMMED_ANCILLARY_PATH_PREFIX,
     )
 
-    # Add systematic uncertainties and energy variables to the dataset
+    # Add systematic uncertainties to the dataset. These will not
+    # have the intensity calculation applied to them
     for var in l2_summed_intensity_dataset.data_vars:
         if "_" not in var:
             particle = str(var)
-            # Add systematic uncertainties to the dataset. These will not have the
-            # intensity calculation applied to them and values will be zeros
-            add_systematic_uncertainties(
+            l2_summed_intensity_dataset = add_systematic_uncertainties(
                 l2_summed_intensity_dataset,
                 particle,
                 l2_summed_intensity_dataset[var].shape[1],
             )
-
-            # TODO: remove this code after L1B is updated to have energy mean and deltas
-            #       instead of energy index, min, and max
-            # Add energy variables to the dataset (energy mean and deltas)
-            l2_summed_intensity_dataset = add_energy_variables(
-                l2_summed_intensity_dataset,
-                particle,
-                l2_summed_intensity_dataset[f"{particle}_energy_min"].values,
-                l2_summed_intensity_dataset[f"{particle}_energy_max"].values,
-            )
-
-            # Replace energy index with energy mean as a coordinate
-            l2_summed_intensity_dataset = l2_summed_intensity_dataset.assign_coords(
-                {
-                    f"{particle}_energy_mean": (
-                        f"{particle}_energy_index",
-                        l2_summed_intensity_dataset[f"{particle}_energy_mean"].values,
-                    )
-                }
-            ).swap_dims({f"{particle}_energy_index": f"{particle}_energy_mean"})
-
-            # Drop energy min, max, and index variables
-            l2_summed_intensity_dataset = l2_summed_intensity_dataset.drop_vars(
-                [
-                    f"{particle}_energy_min",
-                    f"{particle}_energy_max",
-                    f"{particle}_energy_index",
-                ]
-            )
-
-    calculate_intensities_for_all_species(
+    l2_summed_intensity_dataset = calculate_intensities_for_all_species(
         l2_summed_intensity_dataset, ancillary_data_frames
     )
 
@@ -597,11 +523,11 @@ def process_standard_intensity_data(
     for particle, energy_ranges in STANDARD_PARTICLE_ENERGY_RANGE_MAPPING.items():
         # Add systematic uncertainties to the dataset. These will not have the intensity
         # calculation applied to them and values will be zeros
-        add_systematic_uncertainties(
+        l2_standard_intensity_dataset = add_systematic_uncertainties(
             l2_standard_intensity_dataset, particle, len(energy_ranges)
         )
         # Add standard particle rates and statistical uncertainties to the dataset
-        add_standard_particle_rates_to_dataset(
+        l2_standard_intensity_dataset = add_summed_particle_data_to_dataset(
             l2_standard_intensity_dataset,
             l1b_standard_rates_dataset,
             particle,

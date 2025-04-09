@@ -15,7 +15,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def hist_dataset():
     variables = {
         "flight_software_version": np.zeros((20,)),
@@ -64,13 +64,13 @@ def hist_dataset():
         coords={"epoch": epoch, "bins": bins},
     )
 
-    for var in variables:
-        ds[var] = xr.DataArray(variables[var], dims=["epoch"], coords={"epoch": epoch})
+    for var, data in variables.items():
+        ds[var] = xr.DataArray(data, dims=["epoch"], coords={"epoch": epoch})
 
     return ds
 
 
-@pytest.fixture()
+@pytest.fixture
 def de_dataset():
     variables = {
         "seq_count_in_pkts_file": np.zeros((20,)),
@@ -139,13 +139,13 @@ def de_dataset():
         },
     )
 
-    for var in variables:
-        ds[var] = xr.DataArray(variables[var], dims=["epoch"], coords={"epoch": epoch})
+    for var, data in variables.items():
+        ds[var] = xr.DataArray(data, dims=["epoch"], coords={"epoch": epoch})
 
     return ds
 
 
-@pytest.fixture()
+@pytest.fixture
 def ancillary_dict():
     dictionary = {
         "description": "Table for conversion/decoding ancillary parameters collected "

@@ -2,5 +2,5 @@
 # but may change.
 
 # interpolation method used in L1C processing
-L1C_interpolation_method: "linear"
+L1C_interpolation_method: "linear_filtered"
 

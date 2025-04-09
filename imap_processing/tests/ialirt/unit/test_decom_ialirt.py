@@ -13,7 +13,7 @@ def xtce_ialirt_path():
     return imap_module_directory / "ialirt" / "packet_definitions" / "ialirt.xml"
 
 
-@pytest.fixture()
+@pytest.fixture
 def binary_packet_path(tmp_path):
     """
     Creates a binary file from the text packet data, which is more representative
@@ -45,7 +45,7 @@ def binary_packet_path(tmp_path):
     return binary_file_path
 
 
-@pytest.fixture()
+@pytest.fixture
 def decom_packets_data(binary_packet_path, xtce_ialirt_path):
     """Read packet data from file using decom_packets"""
     data_packet_list = decom_packets(binary_packet_path, xtce_ialirt_path)

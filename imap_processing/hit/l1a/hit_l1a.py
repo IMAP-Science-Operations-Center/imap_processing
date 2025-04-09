@@ -63,7 +63,7 @@ def hit_l1a(packet_file: str, data_version: str) -> list[xr.Dataset]:
     return l1a_datasets
 
 
-def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
+def subcom_sectorates(sci_dataset: xr.Dataset) -> xr.Dataset:
     """
     Subcommutate sectorates data.
 
@@ -94,9 +94,16 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
     ----------
     sci_dataset : xarray.Dataset
         Xarray dataset containing parsed HIT science data.
+
+    Returns
+    -------
+    sci_dataset : xarray.Dataset
+        Xarray dataset with sectored rates data organized by species.
     """
+    updated_dataset = sci_dataset.copy()
+
     # Calculate mod 10 values
-    hdr_min_count_mod_10 = sci_dataset.hdr_minute_cnt.values % 10
+    hdr_min_count_mod_10 = updated_dataset.hdr_minute_cnt.values % 10
 
     # Reference mod 10 mapping to initialize data structure for species and
     # energy ranges and add 15x8 arrays with fill values for each science frame.
@@ -111,7 +118,7 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
 
     # Update counts for science frames where data is available
     for i, mod_10 in enumerate(hdr_min_count_mod_10):
-        data_by_species_and_energy_range[mod_10]["counts"][i] = sci_dataset[
+        data_by_species_and_energy_range[mod_10]["counts"][i] = updated_dataset[
             "sectorates"
         ].values[i]
 
@@ -136,19 +143,21 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
         # shape: epoch, energy_mean, azimuth, declination
         rates_data = np.transpose(np.array(data["counts"]), axes=(1, 0, 2, 3))
 
-        sci_dataset[f"{species}_sectored_counts"] = xr.DataArray(
+        updated_dataset[f"{species}_sectored_counts"] = xr.DataArray(
             data=rates_data,
             dims=["epoch", f"{species}_energy_mean", "azimuth", "declination"],
             name=f"{species}_counts_sectored",
         )
 
         # Add energy mean and deltas for each species
-        sci_dataset = add_energy_variables(
-            sci_dataset,
+        updated_dataset = add_energy_variables(
+            updated_dataset,
             species,
             np.array(data["energy_min"]),
             np.array(data["energy_max"]),
         )
+
+    return updated_dataset
 
 
 def calculate_uncertainties(dataset: xr.Dataset) -> xr.Dataset:
@@ -261,7 +270,7 @@ def process_science(
     sci_dataset = decom_hit(dataset)
 
     # Organize sectored rates by species type
-    subcom_sectorates(sci_dataset)
+    sci_dataset = subcom_sectorates(sci_dataset)
 
     # Split the science data into count rates and event datasets
     pha_raw_dataset = xr.Dataset(
@@ -277,14 +286,14 @@ def process_science(
 
     datasets = []
     # Update attributes and dimensions
-    for dataset, logical_source in zip(
+    for ds, logical_source in zip(
         [count_rates_dataset, pha_raw_dataset], logical_sources
     ):
-        dataset.attrs = attr_mgr.get_global_attributes(logical_source)
+        ds.attrs = attr_mgr.get_global_attributes(logical_source)
 
         # TODO: Add CDF attributes to yaml once they're defined for L1A science data
         # Assign attributes and dimensions to each data array in the Dataset
-        for field in dataset.data_vars.keys():
+        for field in ds.data_vars.keys():
             try:
                 # Create a dict of dimensions using the DEPEND_I keys in the
                 # attributes
@@ -293,19 +302,17 @@ def process_science(
                     for key, value in attr_mgr.get_variable_attributes(field).items()
                     if "DEPEND" in key
                 }
-                dataset[field].attrs = attr_mgr.get_variable_attributes(field)
-                dataset[field].assign_coords(dims)
+                ds[field].attrs = attr_mgr.get_variable_attributes(field)
+                ds[field].assign_coords(dims)
             except KeyError:
                 print(f"Field {field} not found in attribute manager.")
                 logger.warning(f"Field {field} not found in attribute manager.")
 
         # Skip schema check for epoch to prevent attr_mgr from adding the
         # DEPEND_0 attribute which isn't required for epoch
-        dataset.epoch.attrs = attr_mgr.get_variable_attributes(
-            "epoch", check_schema=False
-        )
+        ds.epoch.attrs = attr_mgr.get_variable_attributes("epoch", check_schema=False)
 
-        datasets.append(dataset)
+        datasets.append(ds)
 
         logger.info(f"HIT L1A dataset created for {logical_source}")
 

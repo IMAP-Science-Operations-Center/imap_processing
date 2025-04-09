@@ -122,7 +122,7 @@ def test_calculate_phase_space_density(patch_get_particle_energy):
     np.testing.assert_array_equal(
         phase_space_density_ds["phase_space_density"][1].data, expected_density
     )
-    assert type(phase_space_density_ds) == xr.Dataset
+    assert isinstance(phase_space_density_ds, xr.Dataset)
 
 
 def test_calculate_flux():
@@ -163,7 +163,7 @@ def test_calculate_flux():
         swe_constants.N_ANGLE_SECTORS,
         swe_constants.N_CEMS,
     )
-    assert type(flux) == np.ndarray
+    assert isinstance(flux, np.ndarray)
 
 
 def test_find_angle_bin_indices():
@@ -326,7 +326,7 @@ def test_swe_l2(mock_read_in_flight_cal_data, use_fake_spin_data_for_time):
     l1b_dataset = swe_l1b(l1a_datasets[0], "002")
     l2_dataset = swe_l2(l1b_dataset[0], "002")
 
-    assert type(l2_dataset) == xr.Dataset
+    assert isinstance(l2_dataset, xr.Dataset)
     assert l2_dataset["phase_space_density_spin_sector"].shape == (
         6,
         swe_constants.N_ESA_STEPS,

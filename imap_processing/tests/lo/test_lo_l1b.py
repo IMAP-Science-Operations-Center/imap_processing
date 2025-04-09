@@ -23,7 +23,7 @@ from imap_processing.lo.l1b.lo_l1b import (
 from imap_processing.spice.time import met_to_ttj2000ns
 
 
-@pytest.fixture()
+@pytest.fixture
 def dependencies():
     return {
         "imap_lo_l1a_de": load_cdf(
@@ -37,7 +37,7 @@ def dependencies():
     }
 
 
-@pytest.fixture()
+@pytest.fixture
 def attr_mgr_l1b():
     attr_mgr_l1b = ImapCdfAttributes()
     attr_mgr_l1b.add_instrument_global_attrs(instrument="lo")

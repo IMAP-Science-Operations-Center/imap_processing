@@ -270,7 +270,7 @@ def create_l2_dataset(
 
         elif key != "daily_lightcurve":
             val = value
-            if type(value) != np.ndarray:
+            if type(value) is not np.ndarray:
                 val = np.array([value])
             output[key] = xr.DataArray(
                 val,

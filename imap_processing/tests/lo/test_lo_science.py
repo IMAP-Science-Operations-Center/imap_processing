@@ -17,7 +17,7 @@ from imap_processing.lo.l0.lo_science import (
 from imap_processing.utils import convert_to_binary_string, packet_file_to_datasets
 
 
-@pytest.fixture()
+@pytest.fixture
 def fake_de_dataset():
     # binary packet fields
     count = "0000000000000010"  # 2
@@ -72,7 +72,7 @@ def fake_de_dataset():
     return dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def sample_data():
     xtce_file = imap_module_directory / "lo/packet_definitions/lo_xtce.xml"
     dependency = (
@@ -86,7 +86,7 @@ def sample_data():
     return datasets_by_apid
 
 
-@pytest.fixture()
+@pytest.fixture
 def segmented_pkts_fake_data():
     dataset = xr.Dataset(
         data_vars=dict(
@@ -116,7 +116,7 @@ def segmented_pkts_fake_data():
     return dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def fake_spin_data():
     dataset = xr.Dataset(
         data_vars=dict(
@@ -148,7 +148,7 @@ def fake_spin_data():
     return dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def attr_mgr():
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs(instrument="lo")
@@ -157,7 +157,7 @@ def attr_mgr():
     return attr_mgr
 
 
-@pytest.fixture()
+@pytest.fixture
 def initialized_dataset(fake_de_dataset, attr_mgr):
     fake_de_dataset.attrs["bit_pos"] = 0
     de_fields = [

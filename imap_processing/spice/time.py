@@ -2,6 +2,7 @@
 
 import typing
 from collections.abc import Collection, Iterable
+from datetime import datetime
 from typing import Union
 
 import numpy as np
@@ -297,3 +298,26 @@ def et_to_utc(
         UTC time(s).
     """
     return spiceypy.et2utc(et, format_str, precision, utclen)
+
+
+def epoch_to_doy(epoch: np.ndarray) -> npt.NDArray:
+    """
+    Convert epoch times to day of year (1-365/366).
+
+    Parameters
+    ----------
+    epoch : xarray.DataArray
+        Time, number of nanoseconds since J2000 with leap seconds included.
+
+    Returns
+    -------
+    day_of_year : numpy.ndarray
+        Day of year (1-365/366) for each epoch value.
+    """
+    et = ttj2000ns_to_et(epoch.data)
+    # Get UTC time strings in ISO calendar format
+    time_strings = et_to_utc(et, "ISOC")
+    # Extract DOY from datetime
+    return np.array(
+        [datetime.fromisoformat(date).timetuple().tm_yday for date in time_strings]
+    )

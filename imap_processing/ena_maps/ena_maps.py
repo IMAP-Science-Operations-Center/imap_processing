@@ -720,7 +720,7 @@ class RectangularSkyMap(AbstractSkyMap):
     in degrees, with a spacing of 30 degrees. There will be 12 azimuth bins and 6
     elevation bins in this example, resulting in 72 pixels in the map.
 
-    A multidimentional value (e.g. counts, with energy levels at each pixel)
+    A multidimensional value (e.g. counts, with energy levels at each pixel)
     will be stored as a 2D array with the first axis as the energy dimension and the
     second axis as the pixel index.
 
