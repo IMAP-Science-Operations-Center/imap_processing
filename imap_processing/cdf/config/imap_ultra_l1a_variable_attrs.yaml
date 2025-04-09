@@ -116,7 +116,7 @@ version:
   FIELDNAM: CCSDS version
   VAR_TYPE: support_data
 
-type:
+phtype:
   <<: *default_uint8
   CATDESC: CCSDS packet type
   FIELDNAM: CCSDS type
@@ -972,3 +972,318 @@ event_id:
   LABLAXIS: event_id
   UNITS: " "
 
+# Housekeeping variables
+id:
+  <<: *default_float32
+  CATDESC: Id
+  FIELDNAM: id
+  LABLAXIS: id
+  UNITS: " "
+
+type:
+  <<: *default_float32
+  CATDESC: Type
+  FIELDNAM: type
+  LABLAXIS: type
+  UNITS: " "
+
+value:
+  <<: *default_float32
+  CATDESC: Value
+  FIELDNAM: value
+  LABLAXIS: value
+  UNITS: " "
+
+aux:
+  <<: *default_float32
+  CATDESC: Aux
+  FIELDNAM: aux
+  LABLAXIS: aux
+  UNITS: " "
+
+address:
+  <<: *default_float32
+  CATDESC: Address
+  FIELDNAM: address
+  LABLAXIS: address
+  UNITS: " "
+
+memlength:
+  <<: *default_float32
+  CATDESC: Memlength
+  FIELDNAM: memlength
+  LABLAXIS: memlength
+  UNITS: " "
+
+crc_value:
+  <<: *default_float32
+  CATDESC: Crc value
+  FIELDNAM: crc_value
+  LABLAXIS: crc_value
+  UNITS: " "
+
+dumplength:
+  <<: *default_float32
+  CATDESC: Dumplength
+  FIELDNAM: dumplength
+  LABLAXIS: dumplength
+  UNITS: " "
+
+unused:
+  <<: *default_float32
+  CATDESC: Unused
+  FIELDNAM: unused
+  LABLAXIS: unused
+  UNITS: " "
+
+dumpdata:
+  <<: *default_float32
+  CATDESC: Dumpdata
+  FIELDNAM: dumpdata
+  LABLAXIS: dumpdata
+  UNITS: " "
+
+hvovercurrentstatus_spare:
+  <<: *default_float32
+  CATDESC: Hvovercurrentstatus spare
+  FIELDNAM: hvovercurrentstatus_spare
+  LABLAXIS: hvovercurrentstatus_spare
+  UNITS: " "
+
+frontmcphvtrip:
+  <<: *default_float32
+  CATDESC: Frontmcphvtrip
+  FIELDNAM: frontmcphvtrip
+  LABLAXIS: frontmcphvtrip
+  UNITS: " "
+
+topmcphvtrip:
+  <<: *default_float32
+  CATDESC: Topmcphvtrip
+  FIELDNAM: topmcphvtrip
+  LABLAXIS: topmcphvtrip
+  UNITS: " "
+
+statusint:
+  <<: *default_float32
+  CATDESC: Statusint
+  FIELDNAM: statusint
+  LABLAXIS: statusint
+  UNITS: " "
+
+tlmvolume:
+  <<: *default_float32
+  CATDESC: Tlmvolume
+  FIELDNAM: tlmvolume
+  LABLAXIS: tlmvolume
+  UNITS: " "
+
+watchaddr:
+  <<: *default_float32
+  CATDESC: Watchaddr
+  FIELDNAM: watchaddr
+  LABLAXIS: watchaddr
+  UNITS: " "
+
+macroid:
+  <<: *default_float32
+  CATDESC: Macroid
+  FIELDNAM: macroid
+  LABLAXIS: macroid
+  UNITS: " "
+
+blockno:
+  <<: *default_float32
+  CATDESC: Blockno
+  FIELDNAM: blockno
+  LABLAXIS: blockno
+  UNITS: " "
+
+macrodata:
+  <<: *default_float32
+  CATDESC: Macrodata
+  FIELDNAM: macrodata
+  LABLAXIS: macrodata
+  UNITS: " "
+
+lvpsp1p5v_v_lo:
+  <<: *default_float32
+  CATDESC: Lvpsp1p5v v lo
+  FIELDNAM: lvpsp1p5v_v_lo
+  LABLAXIS: lvpsp1p5v_v_lo
+  UNITS: " "
+
+lvpsp1p5v_v_hi:
+  <<: *default_float32
+  CATDESC: Lvpsp1p5v v hi
+  FIELDNAM: lvpsp1p5v_v_hi
+  LABLAXIS: lvpsp1p5v_v_hi
+  UNITS: " "
+
+hvclock:
+  <<: *default_float32
+  CATDESC: Hvclock
+  FIELDNAM: hvclock
+  LABLAXIS: hvclock
+  UNITS: " "
+
+mcphvrampuprate:
+  <<: *default_float32
+  CATDESC: Mcphvrampuprate
+  FIELDNAM: mcphvrampuprate
+  LABLAXIS: mcphvrampuprate
+  UNITS: " "
+
+mcphvrampdownrate:
+  <<: *default_float32
+  CATDESC: Mcphvrampdownrate
+  FIELDNAM: mcphvrampdownrate
+  LABLAXIS: mcphvrampdownrate
+  UNITS: " "
+
+textlength:
+  <<: *default_float32
+  CATDESC: Textlength
+  FIELDNAM: textlength
+  LABLAXIS: textlength
+  UNITS: " "
+
+text:
+  <<: *default_float32
+  CATDESC: Text
+  FIELDNAM: text
+  LABLAXIS: text
+  UNITS: " "
+
+powerrequest:
+  <<: *default_float32
+  CATDESC: Powerrequest
+  FIELDNAM: powerrequest
+  LABLAXIS: powerrequest
+  UNITS: " "
+
+xftsc:
+  <<: *default_float32
+  CATDESC: Xftsc
+  FIELDNAM: xftsc
+  LABLAXIS: xftsc
+  UNITS: " "
+
+xftltoff:
+  <<: *default_float32
+  CATDESC: Xftltoff
+  FIELDNAM: xftltoff
+  LABLAXIS: xftltoff
+  UNITS: " "
+
+xftrtoff:
+  <<: *default_float32
+  CATDESC: Xftrtoff
+  FIELDNAM: xftrtoff
+  LABLAXIS: xftrtoff
+  UNITS: " "
+
+tofsc:
+  <<: *default_float32
+  CATDESC: Tofsc
+  FIELDNAM: tofsc
+  LABLAXIS: tofsc
+  UNITS: " "
+
+toftpoff:
+  <<: *default_float32
+  CATDESC: Toftpoff
+  FIELDNAM: toftpoff
+  LABLAXIS: toftpoff
+  UNITS: " "
+
+tofbtoff:
+  <<: *default_float32
+  CATDESC: Tofbtoff
+  FIELDNAM: tofbtoff
+  LABLAXIS: tofbtoff
+  UNITS: " "
+
+xfttof:
+  <<: *default_float32
+  CATDESC: Xfttof
+  FIELDNAM: xfttof
+  LABLAXIS: xfttof
+  UNITS: " "
+
+xcointpsc:
+  <<: *default_float32
+  CATDESC: Xcointpsc
+  FIELDNAM: xcointpsc
+  LABLAXIS: xcointpsc
+  UNITS: " "
+
+xcointpoff:
+  <<: *default_float32
+  CATDESC: Xcointpoff
+  FIELDNAM: xcointpoff
+  LABLAXIS: xcointpoff
+  UNITS: " "
+
+xcoinbtsc:
+  <<: *default_float32
+  CATDESC: Xcoinbtsc
+  FIELDNAM: xcoinbtsc
+  LABLAXIS: xcoinbtsc
+  UNITS: " "
+
+xcoinbtoff:
+  <<: *default_float32
+  CATDESC: Xcoinbtoff
+  FIELDNAM: xcoinbtoff
+  LABLAXIS: xcoinbtoff
+  UNITS: " "
+
+etofsc:
+  <<: *default_float32
+  CATDESC: Etofsc
+  FIELDNAM: etofsc
+  LABLAXIS: etofsc
+  UNITS: " "
+
+etoftpoff:
+  <<: *default_float32
+  CATDESC: Etoftpoff
+  FIELDNAM: etoftpoff
+  LABLAXIS: etoftpoff
+  UNITS: " "
+
+etofbtoff:
+  <<: *default_float32
+  CATDESC: Etofbtoff
+  FIELDNAM: etofbtoff
+  LABLAXIS: etofbtoff
+  UNITS: " "
+
+tofdifftpmin:
+  <<: *default_float32
+  CATDESC: Tofdifftpmin
+  FIELDNAM: tofdifftpmin
+  LABLAXIS: tofdifftpmin
+  UNITS: " "
+
+tofdifftpmax:
+  <<: *default_float32
+  CATDESC: Tofdifftpmax
+  FIELDNAM: tofdifftpmax
+  LABLAXIS: tofdifftpmax
+  UNITS: " "
+
+tofdiffbtmin:
+  <<: *default_float32
+  CATDESC: Tofdiffbtmin
+  FIELDNAM: tofdiffbtmin
+  LABLAXIS: tofdiffbtmin
+  UNITS: " "
+
+tofdiffbtmax:
+  <<: *default_float32
+  CATDESC: Tofdiffbtmax
+  FIELDNAM: tofdiffbtmax
+  LABLAXIS: tofdiffbtmax
+  UNITS: " "

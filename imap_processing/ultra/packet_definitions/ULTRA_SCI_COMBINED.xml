@@ -4684,7 +4684,7 @@
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-24" />
+							<xtce:LinearAdjustment slope="8" intercept="-64" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -4712,7 +4712,7 @@
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-24" />
+							<xtce:LinearAdjustment slope="8" intercept="-64" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -4740,7 +4740,7 @@
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-24" />
+							<xtce:LinearAdjustment slope="8" intercept="-64" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -4768,7 +4768,7 @@
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-24" />
+							<xtce:LinearAdjustment slope="8" intercept="-64" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -4796,7 +4796,7 @@
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-24" />
+							<xtce:LinearAdjustment slope="8" intercept="-64" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -4824,7 +4824,7 @@
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-24" />
+							<xtce:LinearAdjustment slope="8" intercept="-64" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -9903,7 +9903,7 @@
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-24" />
+							<xtce:LinearAdjustment slope="8" intercept="-64" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -9931,7 +9931,7 @@
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-24" />
+							<xtce:LinearAdjustment slope="8" intercept="-64" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -9959,7 +9959,7 @@
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-24" />
+							<xtce:LinearAdjustment slope="8" intercept="-64" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -9987,7 +9987,7 @@
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-24" />
+							<xtce:LinearAdjustment slope="8" intercept="-64" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -10015,7 +10015,7 @@
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-24" />
+							<xtce:LinearAdjustment slope="8" intercept="-64" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -10043,7 +10043,7 @@
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-24" />
+							<xtce:LinearAdjustment slope="8" intercept="-64" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
