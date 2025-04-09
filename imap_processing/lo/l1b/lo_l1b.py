@@ -226,8 +226,8 @@ def set_spin_cycle(l1a_de: xr.Dataset, l1b_de: xr.Dataset) -> xr.Dataset:
     spin_cycle = spin_start + 7 + (esa_step - 1) * 2
 
     where spin_start is the spin number for the first spin
-    in an Aggregated Science Cycle (first spin number of an epoch
-    in the L1A spin dataset) and esa_step is the esa_step for a direct event
+    in an Aggregated Science Cycle (ASC) and esa_step is the esa_step for a direct event
+     The 28 spins in a spin epoch spans one ASC.
 
     Parameters
     ----------
