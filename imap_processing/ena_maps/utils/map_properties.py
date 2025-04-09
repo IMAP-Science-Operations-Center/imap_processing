@@ -18,10 +18,12 @@ class MapProperties:
         The dictionary should contain the following keys:
             - sky_tiling_type: str
                 Type of sky tiling (HEALPIX or RECTANGULAR).
-            - spice_reference_frame: int | str
-                Reference frame for the map (e.g., ECLIPJ2000).
-            - projection_method_and_values: dict
-                Dictionary with keys "PUSH" and/or "PULL" containing lists of values.
+            - spice_reference_frame: str
+                Reference frame for the map (e.g., "ECLIPJ2000").
+            - values_to_push_project: optional, list[str]
+                List of values to push project.
+            - values_to_pull_project: optional, list[str]
+                List of values to pull project.
             - If sky_tiling_type is HEALPIX:
                 - nside: int
                     Nside parameter for HEALPIX maps.
@@ -44,14 +46,10 @@ class MapProperties:
         self.sky_tiling_type = ena_maps.SkyTilingType[properties["sky_tiling_type"]]
         spice_reference_frame = properties["spice_reference_frame"]
 
-        if isinstance(spice_reference_frame, int):
-            self.spice_reference_frame = geometry.SpiceFrame(spice_reference_frame)
-        else:
-            self.spice_reference_frame = geometry.SpiceFrame[spice_reference_frame]
+        self.spice_reference_frame = geometry.SpiceFrame[spice_reference_frame]
 
-        projection_method_and_values = properties["projection_method_and_values"]
-        self.values_to_push_project = projection_method_and_values.get("PUSH", [])
-        self.values_to_pull_project = projection_method_and_values.get("PULL", [])
+        self.values_to_push_project = properties.get("values_to_push_project", [])
+        self.values_to_pull_project = properties.get("values_to_pull_project", [])
 
         if self.sky_tiling_type is ena_maps.SkyTilingType.HEALPIX:
             self.nside = properties["nside"]
@@ -93,15 +91,12 @@ DEFAULT_ULTRA_L2_MAP_PROPERTIES = MapProperties(
     {
         "sky_tiling_type": "HEALPIX",
         "spice_reference_frame": "ECLIPJ2000",
-        "projection_method_and_values": {
-            "PUSH": [
-                "counts",
-                "exposure_factor",
-                "sensitivity",
-                "background_rates",
-            ],
-            "PULL": [],
-        },
+        "values_to_push_project": [
+            "counts",
+            "exposure_factor",
+            "sensitivity",
+            "background_rates",
+        ],
         "nside": 32,
         "nested": False,
     }

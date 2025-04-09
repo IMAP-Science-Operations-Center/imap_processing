@@ -15,13 +15,11 @@ from imap_processing.ena_maps.utils.map_properties import (
     DEFAULT_ULTRA_L2_MAP_PROPERTIES,
     MapProperties,
 )
-from imap_processing.spice import geometry
 
 logger = logging.getLogger(__name__)
 logger.info("Importing ultra_l2 module")
 
 # Set some default values for the map properties
-PSET_SPICE_FRAME = geometry.SpiceFrame.IMAP_DPS
 DEFAULT_L2_HEALPIX_NSIDE = 32
 DEFAULT_L2_HEALPIX_NESTED = False
 DEFAULT_L2_MAP_PROPERTIES = DEFAULT_ULTRA_L2_MAP_PROPERTIES
@@ -54,7 +52,7 @@ VARIABLES_TO_DROP_AFTER_FLUX_CALCULATION = [
 
 
 def read_into_pointing_set(
-    input_data: xr.Dataset | str | Path, inplace: bool = False
+    input_data: xr.Dataset | str | Path,
 ) -> ena_maps.UltraPointingSet:
     """
     Read a path or Dataset into an UltraPointingSet.
@@ -63,10 +61,7 @@ def read_into_pointing_set(
     ----------
     input_data : xr.Dataset | str | Path
         Path to the CDF file or xarray Dataset containing the L1C dataset.
-    inplace : bool
-        If True and if input_data is a Dataset, modify input_data in place.
-        Default is False, in which case a copy is made.
-        Does not affect str or Path type input_data.
+        If a dataset is provided, it will be copied to avoid modifying the original.
 
     Returns
     -------
@@ -82,18 +77,14 @@ def read_into_pointing_set(
     """
     # Allow for passing in EITHER xarray Datasets (preferable for testing)
     if isinstance(input_data, xr.Dataset):
-        if not inplace:
-            input_data = input_data.copy(deep=True)
-        ultra_pointing_set = ena_maps.UltraPointingSet(
-            l1c_dataset=input_data, spice_reference_frame=PSET_SPICE_FRAME
-        )
+        # Copy to avoid modifying the original dataset in place
+        input_data = input_data.copy(deep=True)
+        ultra_pointing_set = ena_maps.UltraPointingSet(l1c_dataset=input_data)
     # OR paths to CDF files (preferable for projecting many PointingSets)
     elif isinstance(input_data, str | Path):
         if isinstance(input_data, str):
             input_data = Path(input_data)
-        ultra_pointing_set = ena_maps.UltraPointingSet(
-            l1c_dataset=load_cdf(input_data), spice_reference_frame=PSET_SPICE_FRAME
-        )
+        ultra_pointing_set = ena_maps.UltraPointingSet(l1c_dataset=load_cdf(input_data))
     else:
         raise ValueError(
             f"Input data must be either an xarray Dataset or a path to a CDF file "
@@ -118,7 +109,7 @@ def generate_ultra_healpix_skymap(
     Generate a Healpix skymap from ULTRA L1C pointing sets.
 
     This function combines IMAP Ultra L1C pointing sets into a single L2 HealpixSkyMap.
-    It handles the projection of values from pointing sets to the map,applies necessary
+    It handles the projection of values from pointing sets to the map, applies necessary
     weighting and background subtraction, and calculates flux and flux uncertainty.
 
     Parameters
@@ -195,14 +186,9 @@ def generate_ultra_healpix_skymap(
 
         # Initial processing for weighted quantities at PSET level
         # Weight the values by exposure and solid angle
-        # (in that order to avoid double weighting by solid angle)
-        for (
-            quantity_to_weight
-        ) in VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE:
-            pointing_set.data[quantity_to_weight] = (
-                pointing_set.data[quantity_to_weight]
-                * pointing_set.data["pointing_set_exposure_times_solid_angle"]
-            )
+        pointing_set.data[
+            VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE
+        ] *= pointing_set.data["pointing_set_exposure_times_solid_angle"]
 
         skymap.project_pset_values_to_map(
             pointing_set=pointing_set,
@@ -261,7 +247,6 @@ def generate_ultra_healpix_skymap(
     # Drop the variables that are no longer needed
     skymap.data_1d = skymap.data_1d.drop_vars(
         VARIABLES_TO_DROP_AFTER_FLUX_CALCULATION,
-        errors="ignore",
     )
 
     return skymap
@@ -290,6 +275,12 @@ def ultra_l2(
     list[xarray.Dataset,]
         L2 output dataset containing map of the counts on the sky.
         Wrapped in a list for consistency with other product levels.
+
+    Raises
+    ------
+    NotImplementedError
+        If asked to project to a rectangular map.
+        # TODO: This is coming shortly
     """
     l1c_products = data_dict.values()
     num_l1c_products = len(l1c_products)
@@ -319,7 +310,7 @@ def ultra_l2(
             "Spacing_degrees": output_map_properties.spacing_deg,
             "Data_version": data_version,
         }
-        pass
+        raise NotImplementedError
 
     # Always add the following attributes to the map
     map_attrs.update(

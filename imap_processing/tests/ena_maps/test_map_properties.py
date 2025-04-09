@@ -16,10 +16,8 @@ class TestMapProperties:
         props_dict_healpix = {
             "sky_tiling_type": "HEALPIX",
             "spice_reference_frame": "ECLIPJ2000",
-            "projection_method_and_values": {
-                "PUSH": ["density", "flux"],
-                "PULL": ["foo", "bar"],
-            },
+            "values_to_push_project": ["density", "flux"],
+            "values_to_pull_project": ["foo", "bar"],
             "nested": True,
         }
 
@@ -45,10 +43,8 @@ class TestMapProperties:
         props_dict_rect = {
             "sky_tiling_type": "RECTANGULAR",
             "spice_reference_frame": "ECLIPJ2000",
-            "projection_method_and_values": {
-                "PUSH": ["density", "flux"],
-                "PULL": ["foo", "bar"],
-            },
+            "values_to_push_project": ["density", "flux"],
+            "values_to_pull_project": ["foo", "bar"],
         }
 
         with pytest.raises(KeyError):

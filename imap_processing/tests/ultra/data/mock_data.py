@@ -289,8 +289,6 @@ def mock_l1c_pset_product_healpix(  # noqa: PLR0913
     exposure_time = peak_exposure * (
         prob_scaling_factor_exptime / prob_scaling_factor_exptime.max()
     )
-    # Add a tiny exposure time to avoid nans
-    exposure_time += 1e-10
 
     # Ensure counts are integers
     counts = counts.astype(int)
