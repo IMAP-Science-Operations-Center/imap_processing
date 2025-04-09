@@ -25,6 +25,9 @@ from imap_processing.spice.time import ttj2000ns_to_et
 
 logger = logging.getLogger(__name__)
 
+# Set the maximum recursion depth for the conversion from Healpix to rectangular SkyMap.
+MAX_RECURSION_DEPTH = 8
+
 
 class SkyTilingType(Enum):
     """Enumeration of the types of tiling used in the ENA maps."""
@@ -1081,6 +1084,267 @@ class HealpixSkyMap(AbstractSkyMap):
                 CoordNames.GENERIC_PIXEL.value: np.arange(self.num_points),
             }
         )
+
+    def calculate_rect_pixel_value_from_healpix_map_n_subdivisions(
+        self,
+        rect_pix_center_lon_lat: np.typing.NDArray | tuple[float, float],
+        rect_pix_spacing_deg: float,
+        value_key: str,
+        num_subdivisions: int,
+    ) -> np.typing.NDArray:
+        """
+        Interpolate the value of a rectangular pixel from a healpix map w/ subdivisions.
+
+        This function splits a rectangular pixel into smaller subpixels
+        and calculates the mean value of the healpix map at those subpixel centers.
+
+        Parameters
+        ----------
+        rect_pix_center_lon_lat : np.typing.NDArray | tuple[float, float]
+            The center longitude and latitude of the rectangular pixel.
+        rect_pix_spacing_deg : float
+            The spacing of the rectangular pixel in degrees.
+        value_key : str
+            The name of the value to interpolate from the healpix map.
+        num_subdivisions : int
+            The number of subdivisions to create for the rectangular pixel.
+            The more subdivisions, the more accurate the interpolation, but also
+            the more computationally expensive it is.
+
+        Returns
+        -------
+        np.typing.NDArray
+            The mean value of the healpix map at the subpixel centers.
+            If the array associated with the key value_key has a single value
+            at each pixel, the output will be a single value,
+            but if there are other dimensions, (e.g., if
+            self.data_1d['flux'].sizes = {"epoch": 1, "energy": 24, "pixel": 16200}),
+            the output will be an array with the same dims except the pixel dimension
+            (e.g., (1, 24)).
+        """
+        # Assumes that you already checked the pixel doesn't fall entirely in an HP pix
+        # TODO: Add this here? It shouldn't really be necessary, as the next function
+        # get_pixel_value_recursive_subdivs will finish at 1 subdivision
+
+        # Ensure input contains lon in the first column and lat in the second column
+        rect_pix_center_lon_lat = np.array(rect_pix_center_lon_lat).reshape(-1, 2)
+
+        # Calculate the number of subdivisions and the spacing of the subpixels
+        # Then calculate the subpixel centers
+        n_subpix_side = 2**num_subdivisions
+        subpix_spacing = rect_pix_spacing_deg / n_subpix_side
+        left_edge_lon = rect_pix_center_lon_lat[:, 0] - rect_pix_spacing_deg / 2
+        bottom_edge_lat = rect_pix_center_lon_lat[:, 1] - rect_pix_spacing_deg / 2
+
+        rect_subpix_lon_ctrs = (
+            left_edge_lon
+            + subpix_spacing * np.arange(n_subpix_side)
+            + subpix_spacing / 2
+        )
+        rect_subpix_lat_ctrs = (
+            bottom_edge_lat
+            + subpix_spacing * np.arange(n_subpix_side)
+            + subpix_spacing / 2
+        )
+
+        # We must weight by solid angle, which is not exactly equal for all subpixels
+        # Calculate the solid angle of the full rectangular pixel (sterad)
+        full_rect_pixel_solid_angle = np.deg2rad(rect_pix_spacing_deg) * (
+            np.sin(np.deg2rad(bottom_edge_lat + rect_pix_spacing_deg))
+            - np.sin(np.deg2rad(bottom_edge_lat))
+        )
+
+        # Calculate solid angle of each subpix from the rect_subpix_lat_ctrs (sterad)
+        all_edges_lat = bottom_edge_lat + np.arange(n_subpix_side + 1) * subpix_spacing
+        sine_all_edges_lat = np.sin(np.deg2rad(all_edges_lat))
+        rect_subpix_solid_angle_by_lat = np.diff(sine_all_edges_lat) * np.deg2rad(
+            subpix_spacing
+        )
+        rect_subpix_solid_angle_by_lat = np.repeat(
+            rect_subpix_solid_angle_by_lat[np.newaxis, :], n_subpix_side, axis=0
+        ).reshape(-1)
+
+        rect_subpix_ctrs = (
+            np.array(
+                np.meshgrid(rect_subpix_lon_ctrs, rect_subpix_lat_ctrs, indexing="ij")
+            )
+            .reshape(2, -1)
+            .T
+        )
+
+        # Get the healpix pixel indices at the rectangular subpixel centers
+        hp_pix_at_rect_subpix_ctrs = hp.ang2pix(
+            nside=self.nside,
+            nest=self.nested,
+            theta=rect_subpix_ctrs[:, 0],
+            phi=rect_subpix_ctrs[:, 1],
+            lonlat=True,
+        )
+        # Get the healpix values at the rectangular subpixel centers
+        hp_vals_at_rect_pix_ctrs = self.data_1d[value_key].values[
+            ..., hp_pix_at_rect_subpix_ctrs
+        ]
+
+        # Weighted mean (weighted by solid angle) of these values over the pixel axis,
+        # which is the last axis of this array
+        weighted_hp_vals_at_rect_pix_ctrs = (
+            hp_vals_at_rect_pix_ctrs * rect_subpix_solid_angle_by_lat
+        )
+        mean_pixel_value = (
+            weighted_hp_vals_at_rect_pix_ctrs.sum(axis=(-1))
+            / full_rect_pixel_solid_angle
+        )
+        return mean_pixel_value
+
+    def get_pixel_value_recursive_subdivs(
+        self,
+        rect_pix_center_lon_lat: np.typing.NDArray | tuple[float, float],
+        rect_pix_spacing_deg: float,
+        value_key: str,
+        tolerances: tuple[float, float] = (1e-3, 1e-12),
+    ) -> tuple[list[np.typing.NDArray], int]:
+        """
+        Recursively subdivide a rectangular pixel to get a mean value within tolerances.
+
+        Recursively subdivide a rectangular pixel into smaller subpixels until the
+        difference between the mean values of two consecutive subdivisions is within the
+        specified tolerances. The function returns the mean value at the final level
+        of subdivision and the depth of recursion.
+
+        Parameters
+        ----------
+        rect_pix_center_lon_lat : np.typing.NDArray | tuple[float, float]
+            The center longitude and latitude of the rectangular pixel.
+        rect_pix_spacing_deg : float
+            The spacing of the rectangular pixel in degrees.
+        value_key : str
+            The name of the value to interpolate from the healpix map.
+        tolerances : tuple[float, float], optional
+            The relative and absolute tolerances for convergence,
+            by default (1e-3, 1e-12).
+
+        Returns
+        -------
+        tuple[list[float], int]
+            The mean value at the final level of subdivision and the depth of recursion.
+        """
+        relative_tolerance, absolute_tolerance = tolerances
+
+        # Calculate mean value at the 0th level of recursion (no subdivision of the pix)
+        # TODO: I think we can put this in the 0th level of recursion and
+        # skip calculating the delta and comparing it to the tolerance
+        depth = 0
+        rect_pix_center_lon_lat = np.reshape(rect_pix_center_lon_lat, (-1, 2))
+        hp_pix_at_rect_subpix_ctr = hp.ang2pix(
+            nside=self.nside,
+            nest=self.nested,
+            theta=rect_pix_center_lon_lat[:, 0],
+            phi=rect_pix_center_lon_lat[:, 1],
+            lonlat=True,
+        )
+        hp_vals_at_rect_pix_ctrs = self.data_1d[value_key].values[
+            ..., hp_pix_at_rect_subpix_ctr
+        ]
+        mean_pixel_value_at_level = [
+            hp_vals_at_rect_pix_ctrs.mean(axis=(-1)),
+        ]
+
+        # Recursively subdivide a pixel and calculate its mean value until either the
+        # difference between consecutive levels is within the specified tolerances
+        # or the maximum recursion depth is reached
+        while depth < MAX_RECURSION_DEPTH:
+            depth += 1
+            mean_pixel_value = (
+                self.calculate_rect_pixel_value_from_healpix_map_n_subdivisions(
+                    rect_pix_center_lon_lat=rect_pix_center_lon_lat,
+                    rect_pix_spacing_deg=rect_pix_spacing_deg,
+                    value_key=value_key,
+                    num_subdivisions=depth,
+                )
+            )
+            mean_pixel_value_at_level.append(mean_pixel_value)
+
+            # Determine if tolerance is met
+            abs_delta = np.abs(
+                mean_pixel_value_at_level[-1].mean()
+                - mean_pixel_value_at_level[-2].mean()
+            )
+            total_abs_tolerance = (
+                relative_tolerance * np.abs(mean_pixel_value_at_level[-1].mean())
+                + absolute_tolerance
+            )
+            if abs_delta < total_abs_tolerance:
+                break
+
+        # Only keep the last (best) mean pixel value
+        return mean_pixel_value_at_level[-1], depth
+
+    # Define methods for converting a Healpix map to a Rectangular map
+    def to_rectangular_skymap_with_recusive_subdivision(
+        self,
+        rect_spacing_deg: float,
+        value_keys: list[str],
+    ) -> tuple[RectangularSkyMap, dict[str, np.typing.NDArray]]:
+        """
+        Interpolate a healpix map to a rectangular map using recursive subdivision.
+
+        Parameters
+        ----------
+        rect_spacing_deg : float
+            The spacing of the rectangular map in degrees.
+        value_keys : list[str]
+            The names of the values to interpolate from the healpix map.
+
+        Returns
+        -------
+        tuple[RectangularSkyMap, dict[str, np.typing.NDArray]]
+            A RectangularSkyMap containing the interpolated values, and a dictionary of
+            each value and its corresponding subdivision depth by pixel.
+        """
+        # Begin by defining the rectangular map we want to create, which must be
+        # in the same spice reference frame as the healpix map
+        rect_map = RectangularSkyMap(
+            spacing_deg=rect_spacing_deg,
+            spice_frame=self.spice_reference_frame,
+        )
+
+        # Dict to hold the subdivision depth by pixel for each value key
+        subdiv_depth_dict = {}
+        for value_key in value_keys:
+            self.data_1d[value_key]
+
+            healpix_values_array = self.data_1d[value_key]
+
+            best_value_and_recursion_depth_by_pixel = [
+                self.get_pixel_value_recursive_subdivs(
+                    rect_pix_center_lon_lat=lon_lat,
+                    rect_pix_spacing_deg=rect_map.spacing_deg,
+                    value_key=value_key,
+                )
+                for lon_lat in rect_map.az_el_points
+            ]
+
+            rect_map.data_1d[value_key] = xr.DataArray(
+                np.moveaxis(
+                    [r[0] for r in best_value_and_recursion_depth_by_pixel], 0, -1
+                ),
+                dims=(*healpix_values_array.dims[:-1], CoordNames.GENERIC_PIXEL.value),
+            )
+            # Update the coordinates of the rectangular map with any new coordinates
+            # except the pixel coord, which will be different between
+            for coord in healpix_values_array.coords:
+                if coord not in (
+                    CoordNames.GENERIC_PIXEL.value,
+                    CoordNames.HEALPIX_INDEX.value,
+                ):
+                    rect_map.data_1d.coords[coord] = healpix_values_array.coords[coord]
+
+            # Add the subdivision depth by pixel of this value_key to the dictionary
+            subdiv_depth_dict[value_key] = np.array(
+                [r[1] for r in best_value_and_recursion_depth_by_pixel]
+            )
+
+        return rect_map, subdiv_depth_dict
 
     def __repr__(self) -> str:
         """
