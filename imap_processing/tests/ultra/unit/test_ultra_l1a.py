@@ -1,4 +1,4 @@
-"""Generate ULTRA L1a CDFs."""
+"""Test ULTRA L1a CDFs."""
 
 import numpy as np
 import xarray as xr
