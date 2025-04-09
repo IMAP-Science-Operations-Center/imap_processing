@@ -286,14 +286,14 @@ def process_science(
 
     datasets = []
     # Update attributes and dimensions
-    for dataset, logical_source in zip(
+    for ds, logical_source in zip(
         [count_rates_dataset, pha_raw_dataset], logical_sources
     ):
-        dataset.attrs = attr_mgr.get_global_attributes(logical_source)
+        ds.attrs = attr_mgr.get_global_attributes(logical_source)
 
         # TODO: Add CDF attributes to yaml once they're defined for L1A science data
         # Assign attributes and dimensions to each data array in the Dataset
-        for field in dataset.data_vars.keys():
+        for field in ds.data_vars.keys():
             try:
                 # Create a dict of dimensions using the DEPEND_I keys in the
                 # attributes
@@ -302,19 +302,17 @@ def process_science(
                     for key, value in attr_mgr.get_variable_attributes(field).items()
                     if "DEPEND" in key
                 }
-                dataset[field].attrs = attr_mgr.get_variable_attributes(field)
-                dataset[field].assign_coords(dims)
+                ds[field].attrs = attr_mgr.get_variable_attributes(field)
+                ds[field].assign_coords(dims)
             except KeyError:
                 print(f"Field {field} not found in attribute manager.")
                 logger.warning(f"Field {field} not found in attribute manager.")
 
         # Skip schema check for epoch to prevent attr_mgr from adding the
         # DEPEND_0 attribute which isn't required for epoch
-        dataset.epoch.attrs = attr_mgr.get_variable_attributes(
-            "epoch", check_schema=False
-        )
+        ds.epoch.attrs = attr_mgr.get_variable_attributes("epoch", check_schema=False)
 
-        datasets.append(dataset)
+        datasets.append(ds)
 
         logger.info(f"HIT L1A dataset created for {logical_source}")
 

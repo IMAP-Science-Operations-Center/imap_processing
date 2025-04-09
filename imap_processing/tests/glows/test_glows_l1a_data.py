@@ -18,14 +18,14 @@ from imap_processing.glows.utils.constants import DirectEvent, GlowsConstants, T
 from imap_processing.spice.time import met_to_ttj2000ns
 
 
-@pytest.fixture()
+@pytest.fixture
 def histogram_test_data(decom_test_data):
     histl0 = decom_test_data[0][0]
     hist = HistogramL1A(histl0)
     return hist
 
 
-@pytest.fixture()
+@pytest.fixture
 def de_test_data(decom_test_data):
     del0 = decom_test_data[1][0]
     de = DirectEventL1A(del0)

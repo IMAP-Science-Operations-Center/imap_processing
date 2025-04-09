@@ -56,6 +56,7 @@ from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.mag.l1b.mag_l1b import mag_l1b
 from imap_processing.mag.l1c.mag_l1c import mag_l1c
 from imap_processing.mag.l2.mag_l2 import mag_l2
+from imap_processing.spacecraft import quaternions
 from imap_processing.swapi.l1.swapi_l1 import swapi_l1
 from imap_processing.swapi.l2.swapi_l2 import swapi_l2
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
@@ -752,7 +753,7 @@ class Lo(ProcessInstrument):
         elif self.data_level == "l1b":
             data_dict = {}
             # TODO: Check this and update with new features as needed.
-            for input_type in dependencies:
+            for input_type in dependencies.processing_input:
                 science_files = dependencies.get_file_paths(
                     source="lo", descriptor=input_type.descriptor
                 )
@@ -797,6 +798,7 @@ class Mag(ProcessInstrument):
         datasets: list[xr.Dataset] = []
 
         dependency_list = dependencies.processing_input
+        science_files = dependencies.get_file_paths(source="mag")
         if self.data_level == "l1a":
             # File path is expected output file path
             if len(dependency_list) > 1:
@@ -805,7 +807,7 @@ class Mag(ProcessInstrument):
                     f"{dependency_list}. Expected only one dependency."
                 )
             # TODO: Update this type
-            science_files = dependencies.get_file_paths(source="mag")
+
             datasets = mag_l1a(science_files[0], self.version)
 
         if self.data_level == "l1b":
@@ -814,12 +816,11 @@ class Mag(ProcessInstrument):
                     f"Unexpected dependencies found for MAG L1B:"
                     f"{dependency_list}. Expected only one dependency."
                 )
-            science_files = dependencies.get_file_paths(source="mag")
             input_data = load_cdf(science_files[0])
             datasets = [mag_l1b(input_data, self.version)]
 
         if self.data_level == "l1c":
-            input_data = [load_cdf(dep) for dep in dependencies]
+            input_data = [load_cdf(dep) for dep in science_files]
             # Input datasets can be in any order, and are validated within mag_l1c
             if len(input_data) == 1:
                 datasets = [mag_l1c(input_data[0], self.version)]
@@ -833,7 +834,7 @@ class Mag(ProcessInstrument):
 
         if self.data_level == "l2":
             # TODO: Overwrite dependencies with versions from offsets file
-            input_data = load_cdf(dependencies[0])
+            input_data = load_cdf(science_files[0])
             # TODO: use ancillary from input
             calibration_dataset = load_cdf(
                 Path(__file__).parent
@@ -845,9 +846,49 @@ class Mag(ProcessInstrument):
             )
             # TODO: Test data missing
             offset_dataset = xr.Dataset()
-            datasets = [
-                mag_l2(calibration_dataset, offset_dataset, input_data, self.version)
-            ]
+            datasets = mag_l2(
+                calibration_dataset, offset_dataset, input_data, self.version
+            )
+
+        return datasets
+
+
+class Spacecraft(ProcessInstrument):
+    """Process Spacecraft data."""
+
+    def do_processing(
+        self, dependencies: ProcessingInputCollection
+    ) -> list[xr.Dataset]:
+        """
+        Perform Spacecraft specific processing.
+
+        Parameters
+        ----------
+        dependencies : ProcessingInputCollection
+            Object containing dependencies to process.
+
+        Returns
+        -------
+        datasets : xr.Dataset
+            Xr.Dataset of products.
+        """
+        print(f"Processing Spacecraft {self.data_level}")
+
+        if self.data_level != "l1a":
+            raise NotImplementedError(
+                f"Spacecraft processing not implemented for level {self.data_level}"
+            )
+
+        # File path is expected output file path
+        input_files = dependencies.get_file_paths(source="spacecraft")
+        if len(input_files) > 1:
+            raise ValueError(
+                f"Unexpected dependencies found for Spacecraft L1A: "
+                f"{input_files}. Expected only one dependency."
+            )
+        datasets = list(quaternions.process_quaternions(input_files[0]))
+        for ds in datasets:
+            ds.attrs["Data_version"] = self.version
 
         return datasets
 

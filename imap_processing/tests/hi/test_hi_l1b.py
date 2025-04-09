@@ -30,8 +30,8 @@ def test_hi_l1b_hk(hi_l0_test_data_path):
     assert l1b_datasets[0].attrs["Logical_source"] == "imap_hi_l1b_90sensor-hk"
 
 
-@pytest.mark.external_test_data()
-@pytest.mark.external_kernel()
+@pytest.mark.external_test_data
+@pytest.mark.external_kernel
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_hi_l1b_de(
     hi_l1_test_data_path, spice_test_data_path, use_fake_spin_data_for_time
@@ -53,7 +53,7 @@ def test_hi_l1b_de(
     assert len(l1b_datasets[0].data_vars) == 15
 
 
-@pytest.fixture()
+@pytest.fixture
 def synthetic_trigger_id_and_tof_data():
     """Create synthetic minimum dataset for testing the
     coincidence_type_and_time_deltas algorithm."""

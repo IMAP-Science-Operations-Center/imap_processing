@@ -15,7 +15,7 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_data(use_fake_spin_data_for_time):
     """Fixture to compute and return test data."""
 

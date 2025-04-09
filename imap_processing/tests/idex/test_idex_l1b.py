@@ -36,7 +36,7 @@ def l1b_dataset(mock_get_spice_data, decom_test_data: xr.Dataset) -> xr.Dataset:
     return dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_spice_functions():
     """Mock spice functions to avoid loading kernels."""
     with (
@@ -55,7 +55,7 @@ def mock_spice_functions():
         yield mock_state, mock_pointing, mock_lon
 
 
-def test_l1b_cdf_filenames(l1b_dataset: xr.Dataset):
+def test_l1b_logical_source(l1b_dataset: xr.Dataset):
     """Tests that the ``idex_l1b`` function generates datasets
     with the expected logical source.
 
@@ -247,7 +247,7 @@ def test_get_spice_data(
         assert len(spice_data[array]) == len(decom_test_data["epoch"])
 
 
-@pytest.mark.external_test_data()
+@pytest.mark.external_test_data
 def test_validate_l1b_idex_data_variables(
     l1b_dataset: xr.Dataset, l1b_example_data: xr.Dataset
 ):
@@ -312,9 +312,9 @@ def test_validate_l1b_idex_data_variables(
             f"'{var}' produced by the IDEX team"
 
             if l1b_dataset[cdf_var].dtype == object:
-                assert (
-                    l1b_dataset[cdf_var].data == l1b_example_data[var]
-                ).all(), warning
+                assert (l1b_dataset[cdf_var].data == l1b_example_data[var]).all(), (
+                    warning
+                )
 
             else:
                 (

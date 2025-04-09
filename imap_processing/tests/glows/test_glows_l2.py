@@ -10,7 +10,7 @@ from imap_processing.glows.l2.glows_l2 import (
 from imap_processing.glows.l2.glows_l2_data import DailyLightcurve
 
 
-@pytest.fixture()
+@pytest.fixture
 def l1b_hists():
     epoch = xr.DataArray(np.arange(4), name="epoch", dims=["epoch"])
     bins = xr.DataArray(np.arange(5), name="bins", dims=["bins"])

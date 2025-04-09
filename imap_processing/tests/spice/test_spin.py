@@ -14,7 +14,7 @@ from imap_processing.spice.spin import (
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def fake_spin_data(monkeypatch, spice_test_data_path):
     """Generate fake spin dataframe for testing"""
     fake_spin_path = spice_test_data_path / "fake_spin_data.csv"

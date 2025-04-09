@@ -7,7 +7,7 @@ import pytest
 from imap_processing.spice.repoint import get_repoint_data, interpolate_repoint_data
 
 
-@pytest.fixture()
+@pytest.fixture
 def fake_repoint_data(monkeypatch, spice_test_data_path):
     """Generate fake spin dataframe for testing"""
     fake_repoint_path = spice_test_data_path / "fake_repoint_data.csv"

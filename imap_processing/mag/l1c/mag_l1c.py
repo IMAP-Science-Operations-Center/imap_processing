@@ -69,16 +69,18 @@ def mag_l1c(
 
     interp_function = InterpolationFunction[configuration["L1C_interpolation_method"]]
     if normal_mode_dataset and burst_mode_dataset:
-        completed_timeline = process_mag_l1c(
+        full_interpolated_timeline = process_mag_l1c(
             normal_mode_dataset, burst_mode_dataset, interp_function
         )
     elif normal_mode_dataset is not None:
-        completed_timeline = fill_normal_data(
+        full_interpolated_timeline = fill_normal_data(
             normal_mode_dataset, normal_mode_dataset["epoch"].data
         )
     else:
         # TODO: With only burst data, downsample by retrieving the timeline
         raise NotImplementedError
+
+    completed_timeline = remove_missing_data(full_interpolated_timeline)
 
     attribute_manager = ImapCdfAttributes()
     attribute_manager.add_instrument_global_attrs("mag")
@@ -391,8 +393,10 @@ def interpolate_gaps(
 
     for gap in gaps:
         # TODO: we might need a few inputs before or after start/end
-        burst_start = (np.abs(burst_epochs - gap[0])).argmin()
-        burst_end = (np.abs(burst_epochs - gap[1])).argmin()
+        burst_gap_start = (np.abs(burst_epochs - gap[0])).argmin()
+        burst_gap_end = (np.abs(burst_epochs - gap[1])).argmin()
+
+        # for the CIC filter, we need 2x normal mode cadence seconds
 
         norm_rate = VecSec(int(gap[2]))
 
@@ -400,15 +404,32 @@ def interpolate_gaps(
         # Find where burst_start is after the start of the timeline
         burst_vecsec_index = (
             np.searchsorted(
-                list(burst_vecsec_dict.keys()), burst_epochs[burst_start], side="right"
+                list(burst_vecsec_dict.keys()),
+                burst_epochs[burst_gap_start],
+                side="right",
             )
             - 1
         )
         burst_rate = VecSec(list(burst_vecsec_dict.values())[burst_vecsec_index])
 
+        required_seconds = (1 / norm_rate.value) * 2
+        burst_buffer = int(required_seconds * burst_rate.value)
+
+        burst_start = max(0, burst_gap_start - burst_buffer)
+        burst_end = min(len(burst_epochs) - 1, burst_gap_end + burst_buffer)
+
         gap_timeline = filled_norm_timeline[
-            np.nonzero(
-                (filled_norm_timeline > gap[0]) & (filled_norm_timeline < gap[1])
+            (filled_norm_timeline > gap[0]) & (filled_norm_timeline < gap[1])
+        ]
+        logger.info(
+            f"difference between gap start and burst start: "
+            f"{gap_timeline[0] - burst_epochs[burst_start]}"
+        )
+        # Limit timestamps to only include the areas with burst data
+        gap_timeline = gap_timeline[
+            (
+                (gap_timeline >= burst_epochs[burst_start])
+                & (gap_timeline <= burst_epochs[burst_gap_end])
             )
         ]
         # do not include range
@@ -423,15 +444,18 @@ def interpolate_gaps(
         # gaps should not have data in timeline, still check it
         for index, timestamp in enumerate(gap_timeline):
             timeline_index = np.searchsorted(filled_norm_timeline[:, 0], timestamp)
-            if sum(filled_norm_timeline[timeline_index, 1:4]) == 0:
+            if sum(
+                filled_norm_timeline[timeline_index, 1:4]
+            ) == 0 and burst_gap_start + index < len(burst_vectors):
                 filled_norm_timeline[timeline_index, 1:4] = gap_fill[index]
+
                 filled_norm_timeline[timeline_index, 4] = burst_vectors[
-                    burst_start + index, 3
+                    burst_gap_start + index, 3
                 ]
                 filled_norm_timeline[timeline_index, 5] = ModeFlags.BURST.value
                 filled_norm_timeline[timeline_index, 6:8] = burst_dataset[
                     "compression_flags"
-                ].data[burst_start + index]
+                ].data[burst_gap_start + index]
 
     return filled_norm_timeline
 
@@ -557,7 +581,9 @@ def find_gaps(timeline_data: np.ndarray, vectors_per_second: int) -> np.ndarray:
     # TODO: timestamps can vary by a few ms. Per Alastair, this can be around 7.5% of
     #  cadence without counting as a "gap".
     diffs = abs(np.diff(timeline_data))
-    gap_index = np.asarray(diffs != expected_gap).nonzero()[0]
+    # 3.5e7 == 7.5% of 0.5s in nanoseconds, a common gap. In the future, this number
+    # will be calculated from the expected gap.
+    gap_index = np.asarray(diffs - expected_gap > 3.5e7).nonzero()[0]
     output: np.ndarray = np.zeros((len(gap_index), 3))
 
     for index, gap in enumerate(gap_index):
@@ -621,3 +647,25 @@ def vectors_per_second_from_string(vecsec_string: str) -> dict:
         vecsec_dict[int(start_time)] = int(vecsec)
 
     return vecsec_dict
+
+
+def remove_missing_data(filled_timeline: np.ndarray) -> np.ndarray:
+    """
+    Remove timestamps with no data from the filled timeline.
+
+    Anywhere that the generated flag is equal to -1, the data will be removed.
+
+    Parameters
+    ----------
+    filled_timeline : numpy.ndarray
+        An (n, 8) shaped array containing the filled timeline.
+        Indices: 0 - epoch, 1-4 - vector x, y, z, and range, 5 - generated flag,
+        6-7 - compression flags.
+
+    Returns
+    -------
+    cleaned_array : numpy.ndarray
+        The filled timeline with missing data removed.
+    """
+    cleaned_array: np.ndarray = filled_timeline[filled_timeline[:, 5] != -1]
+    return cleaned_array

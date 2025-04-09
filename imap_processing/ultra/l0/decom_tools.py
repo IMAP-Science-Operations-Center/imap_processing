@@ -1,12 +1,9 @@
 """Ultra Decompression Tools."""
 
 import numpy as np
-import numpy.typing as npt
-import space_packet_parser
+from numpy.typing import NDArray
 
 from imap_processing.ultra.l0.ultra_utils import (
-    EVENT_FIELD_RANGES,
-    append_fillval,
     parse_event,
 )
 from imap_processing.utils import convert_to_binary_string
@@ -157,7 +154,7 @@ def decompress_image(
     binary_data: str,
     width_bit: int,
     mantissa_bit_length: int,
-) -> npt.NDArray:
+) -> NDArray:
     """
     Will decompress a binary string representing an image into a matrix of pixel values.
 
@@ -178,14 +175,14 @@ def decompress_image(
 
     Returns
     -------
-    p_decom : numpy.ndarray
+    p_decom : NDArray
         A 2D numpy array representing pixel values.
         Each pixel is stored as an unsigned 16-bit integer (uint16).
 
     Notes
     -----
     This process is described starting on page 168 in IMAP-Ultra Flight
-    Software Specification document (7523-9009_Rev_-.pdf).
+    Software Specification document.
     """
     rows = 54
     cols = 180
@@ -240,44 +237,34 @@ def decompress_image(
 
 
 def read_image_raw_events_binary(
-    packet: space_packet_parser.packets.CCSDSPacket, decom_data: dict
-) -> dict:
+    event_data: bytes,
+    count: int,
+) -> NDArray:
     """
     Convert contents of binary string 'EVENTDATA' into values.
 
     Parameters
     ----------
-    packet : space_packet_parser.packets.CCSDSPacket
-        Packet.
-    decom_data : dict
-        Parsed data.
+    event_data : bytes
+        Event data.
+    count : int
+        Number of events.
 
     Returns
     -------
-    decom_data : dict
-        Each for loop appends to the existing dictionary.
+    event_data : NDArray
+        Event data.
     """
-    binary = convert_to_binary_string(packet["EVENTDATA"])
-    count = packet["COUNT"]
+    binary = convert_to_binary_string(event_data)
     # 166 bits per event
     event_length = 166 if count else 0
-
-    # Uses fill value for all packets that do not contain event data.
-    if count == 0:
-        # if decom_data is empty, append fill values to all fields
-        if not decom_data:
-            for field in EVENT_FIELD_RANGES.keys():
-                decom_data[field] = []
-        append_fillval(decom_data, packet)
+    event_data_list = []
 
     # For all packets with event data, parses the binary string
-    else:
-        for i in range(count):
-            start_index = i * event_length
-            event_binary = binary[start_index : start_index + event_length]
-            event_data = parse_event(event_binary)
+    for i in range(count):
+        start_index = i * event_length
+        event_binary = binary[start_index : start_index + event_length]
+        parsed_event = parse_event(event_binary)
+        event_data_list.append(parsed_event)
 
-            for key, value in event_data.items():
-                decom_data[key].append(value)
-
-    return decom_data
+    return np.array(event_data_list)

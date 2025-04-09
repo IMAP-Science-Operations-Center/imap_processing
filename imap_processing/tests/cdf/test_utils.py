@@ -14,7 +14,7 @@ from imap_processing.cdf.utils import (
 from imap_processing.spice.time import met_to_ttj2000ns
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_dataset():
     """Create a simple ``xarray`` dataset to be used in testing
 

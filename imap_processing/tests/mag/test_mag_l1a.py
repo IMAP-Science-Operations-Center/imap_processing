@@ -15,7 +15,7 @@ from imap_processing.mag.l1a.mag_l1a_data import (
 from imap_processing.spice.time import met_to_ttj2000ns
 
 
-@pytest.fixture()
+@pytest.fixture
 def uncompressed_vector_bytearray():
     input_data = np.array(
         [
@@ -225,7 +225,7 @@ def uncompressed_vector_bytearray():
     return input_data
 
 
-@pytest.fixture()
+@pytest.fixture
 def expected_vectors():
     primary_expected = np.array(
         [
@@ -272,7 +272,7 @@ def expected_vectors():
     return (primary_expected, secondary_expected)
 
 
-@pytest.fixture()
+@pytest.fixture
 def raw_compressed_vectors():
     # compressed vectors, without the first starting uncompressed vector.
     # 15 primary vectors and 15 secondary vectors, corresponding to most of

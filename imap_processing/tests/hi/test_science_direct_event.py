@@ -30,8 +30,8 @@ def test_parse_direct_events():
     bytes_obj = bytes([int(bin_str[i : i + 8], 2) for i in range(0, len(bin_str), 8)])
     # Parse the fake events and check values
     de_dict = parse_direct_events(bytes_obj)
-    for key in exp_dict.keys():
-        np.testing.assert_array_equal(de_dict[key], exp_dict[key])
+    for key, expected_val in exp_dict.items():
+        np.testing.assert_array_equal(de_dict[key], expected_val)
 
 
 def test_create_dataset():

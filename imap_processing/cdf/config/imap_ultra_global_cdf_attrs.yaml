@@ -8,12 +8,53 @@ instrument_base: &instrument_base
     the magnetic field. See https://imap.princeton.edu/instruments/ultra for more details.
   Instrument_type: "Particles (space)"
 
-# TODO: revisit this to be more specific
-imap_ultra_l1a_sci:
+imap_ultra_l1a_45sensor-aux:
     <<: *instrument_base
-    Data_type: L1A_SCI>Level-1A Science data
-    Logical_source: imap_ultra_l1a_sci
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Science Data.
+    Data_type: L1A_DE>Level-1A Auxiliary
+    Logical_source: imap_ultra_l1a_45sensor-aux
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Auxilliary Data.
+
+imap_ultra_l1a_90sensor-aux:
+    <<: *instrument_base
+    Data_type: L1A_DE>Level-1A Auxiliary
+    Logical_source: imap_ultra_l1a_90sensor-aux
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Auxilliary Data.
+
+imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-ang:
+    <<: *instrument_base
+    Data_type: L1A_DE>Level-1A TOF
+    Logical_source: imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-ang
+    Logical_source_description: IMAP-Ultra Instrument Level-1A PHxTOF Hi Angular Data.
+
+imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-ang:
+    <<: *instrument_base
+    Data_type: L1A_DE>Level-1A TOF
+    Logical_source: imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-ang
+    Logical_source_description: IMAP-Ultra Instrument Level-1A PHxTOF Hi Angular Data.
+
+imap_ultra_l1a_45sensor-rates:
+    <<: *instrument_base
+    Data_type: L1A_DE>Level-1A Rates
+    Logical_source: imap_ultra_l1a_45sensor-rates
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Rates Data.
+
+imap_ultra_l1a_90sensor-rates:
+    <<: *instrument_base
+    Data_type: L1A_DE>Level-1A Rates
+    Logical_source: imap_ultra_l1a_90sensor-rates
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Rates Data.
+
+imap_ultra_l1a_45sensor-de:
+    <<: *instrument_base
+    Data_type: L1A_DE>Level-1A Direct Event
+    Logical_source: imap_ultra_l1a_45sensor-de
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Direct Event Data.
+
+imap_ultra_l1a_90sensor-de:
+    <<: *instrument_base
+    Data_type: L1A_DE>Level-1A Direct Event
+    Logical_source: imap_ultra_l1a_90sensor-de
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Direct Event Data.
 
 imap_ultra_l1b_45sensor-de:
     <<: *instrument_base

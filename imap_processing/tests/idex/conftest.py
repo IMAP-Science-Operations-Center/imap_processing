@@ -1,9 +1,13 @@
+from unittest import mock
+
 import numpy as np
 import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.idex.idex_l1a import PacketParser
+from imap_processing.idex.idex_l1b import idex_l1b
+from imap_processing.idex.idex_l2a import idex_l2a
 
 TEST_DATA_PATH = imap_module_directory / "tests" / "idex" / "test_data"
 
@@ -50,6 +54,28 @@ def l1a_example_data(_download_test_data):
       A dictionary containing the 6 waveform and telemetry arrays
     """
     return load_hdf_file(L1A_EXAMPLE_FILE)
+
+
+@pytest.fixture(scope="module")
+def l2a_dataset(decom_test_data: xr.Dataset) -> xr.Dataset:
+    """Return a ``xarray`` dataset containing test data.
+
+    Returns
+    -------
+    dataset : xr.Dataset
+        A ``xarray`` dataset containing the test data
+    """
+    spin_phase_angles = xr.DataArray(
+        np.random.randint(0, 360, len(decom_test_data.epoch))
+    )
+    with mock.patch(
+        "imap_processing.idex.idex_l1b.get_spice_data",
+        return_value={"spin_phase": spin_phase_angles},
+    ):
+        dataset = idex_l2a(
+            idex_l1b(decom_test_data, data_version="001"), data_version="001"
+        )
+    return dataset
 
 
 @pytest.fixture(scope="session")
