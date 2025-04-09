@@ -68,7 +68,7 @@ def ultra_l1a(
     attr_mgr.add_global_attribute("Data_version", data_version)
     attr_mgr.add_instrument_variable_attrs("ultra", "l1a")
 
-    for apid in apids:  # noqa PLR1704 redefined apid variable from outer scope
+    for apid in apids:
         if apid in ULTRA_AUX.apid:
             decom_ultra_dataset = datasets_by_apid[apid]
             gattr_key = ULTRA_AUX.logical_source[ULTRA_AUX.apid.index(apid)]

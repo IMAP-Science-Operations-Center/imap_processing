@@ -1,4 +1,4 @@
-"""Pytest plugin module for test data paths"""
+"""Pytest plugin module for test data paths."""
 
 from unittest import mock
 
