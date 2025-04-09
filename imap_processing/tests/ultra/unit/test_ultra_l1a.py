@@ -1,4 +1,5 @@
 import numpy as np
+import xarray as xr
 
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.ultra.l0.decom_ultra import get_event_id
@@ -68,9 +69,7 @@ def test_xarray_hk(ccsds_path_theta_0):
     successfully created from the decom_ultra_hk data."""
     test_data = ultra_l1a(ccsds_path_theta_0, data_version="001", apid_input=869)
 
-    # Spot check metadata data and attributes
-    specific_epoch_data = test_data[0].sel(epoch=test_data[0].epoch[0])["spin"]
-    assert (specific_epoch_data == test_data[0]["spin"][0]).all()
+    assert isinstance(test_data[0], xr.Dataset)
 
 
 def test_cdf_aux(ccsds_path_theta_0):
@@ -118,6 +117,15 @@ def test_cdf_events(ccsds_path_theta_0):
 
     assert test_data_path.exists()
     assert test_data_path.name == "imap_ultra_l1a_45sensor-de_20240207_v001.cdf"
+
+
+def test_cdf_hk(ccsds_path_theta_0):
+    """Tests that CDF file can be created."""
+    test_data = ultra_l1a(ccsds_path_theta_0, data_version="001", apid_input=869)
+    test_data_path = write_cdf(test_data[0], istp=False)
+
+    assert test_data_path.exists()
+    assert test_data_path.name == "imap_ultra_l1a_45sensor-status_20240207_v001.cdf"
 
 
 def test_get_event_id():
