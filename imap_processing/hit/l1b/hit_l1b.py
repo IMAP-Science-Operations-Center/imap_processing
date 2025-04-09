@@ -445,7 +445,7 @@ def process_sectored_rates_data(
     """
     # TODO
     #  -filter by epoch values in day being processed
-    #  -get middle epoch (or get mod 5 value for 6th frame)
+    #  -get middle epoch (or mod 5 value for 6th frame)
     #  -consider refactoring calculate_rates function to handle sectored rates
 
     # Define particles and coordinates
@@ -484,31 +484,33 @@ def process_sectored_rates_data(
     # Dictionary to store variable rename mappings for L1B dataset
     rename_map = {}
 
-    # Compute rates and add to the L1B dataset
+    # # Compute rates, skipping fill values, and add to the L1B dataset
     for var in data_vars:
         if "sectored_counts" in var:
-            counts = l1a_counts_dataset[var]
-
-            # Compute rates, skipping fill values
-            livetime_10min_aligned = livetime_10min.broadcast_like(counts)
-            rates = (
-                (counts / livetime_10min_aligned)
-                .where(counts != FILLVAL_INT64, FILLVAL_FLOAT32)
-                .astype(np.float32)
-            )
-
-            # Determine the new variable name
+            # Determine the new variable name for the L1B dataset
             if "_sectored_counts_delta_" in var:
                 new_var = var.replace("sectored_counts", "stat_uncert")
             elif "_sectored_counts" in var:
                 new_var = var.replace("_sectored_counts", "")
             else:
                 new_var = None
-
-            # Add rates to dataset
-            l1b_sectored_rates_dataset[var] = rates
             if new_var:
                 rename_map[var] = new_var
+
+            # Since epoch times don't align, convert xarray data arrays to numpy arrays
+            # to avoid rates being calculated along the epoch dimension.
+            # Reshape livetime to match 4D shape of counts.
+            counts = l1a_counts_dataset[var].values
+            livetime_10min_reshaped = livetime_10min.values[:, None, None, None]
+            rates = xr.DataArray(
+                np.where(
+                    counts != FILLVAL_INT64,
+                    (counts / livetime_10min_reshaped).astype(np.float32),
+                    FILLVAL_FLOAT32,
+                ),
+                dims=l1a_counts_dataset[var].dims,
+            )
+            l1b_sectored_rates_dataset[var] = rates
         else:
             # Add other data variables to the dataset
             l1b_sectored_rates_dataset[var] = l1a_counts_dataset[var]
