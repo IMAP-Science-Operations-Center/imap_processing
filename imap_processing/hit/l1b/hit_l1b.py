@@ -444,8 +444,8 @@ def process_sectored_rates_data(
         The processed L1B sectored rates dataset.
     """
     # TODO
-    #  -filter by epoch values in day being processed
-    #  -get middle epoch (or mod 5 value for 6th frame)
+    #  -filter by epoch values in day being processed.
+    #   middle epoch (or mod 5 value for 6th frame)
     #  -consider refactoring calculate_rates function to handle sectored rates
 
     # Define particles and coordinates
