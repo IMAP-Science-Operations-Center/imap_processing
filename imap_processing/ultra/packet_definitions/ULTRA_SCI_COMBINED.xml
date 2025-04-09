@@ -6,7 +6,7 @@
 			<xtce:IntegerParameterType name="VERSION" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="PHTYPE" signed="false">
+			<xtce:IntegerParameterType name="TYPE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SEC_HDR_FLG" signed="false">
@@ -223,7 +223,7 @@
 					<xtce:Enumeration value="224" label="Right_defl_dischg_dur_high" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
-			<xtce:EnumeratedParameterType name="U45_ALARM.TYPE" signed="false">
+			<xtce:EnumeratedParameterType name="U45_ALARM.ALARMTYPE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
 				<xtce:EnumerationList>
 					<xtce:Enumeration value="0" label="Persistent" />
@@ -5221,7 +5221,7 @@
 					<xtce:Enumeration value="224" label="Right_defl_dischg_dur_high" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
-			<xtce:EnumeratedParameterType name="U90_ALARM.TYPE" signed="false">
+			<xtce:EnumeratedParameterType name="U90_ALARM.ALARMTYPE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
 				<xtce:EnumerationList>
 					<xtce:Enumeration value="0" label="Persistent" />
@@ -10246,7 +10246,7 @@
 			<xtce:Parameter name="VERSION" parameterTypeRef="VERSION">
 				<xtce:LongDescription>CCSDS Packet Version Number (always 0)</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="PHTYPE" parameterTypeRef="PHTYPE">
+			<xtce:Parameter name="TYPE" parameterTypeRef="TYPE">
 				<xtce:LongDescription>CCSDS Packet Type Indicator (0=telemetry)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SEC_HDR_FLG" parameterTypeRef="SEC_HDR_FLG">
@@ -10285,7 +10285,7 @@
 			<xtce:Parameter name="U45_ALARM.ID" parameterTypeRef="U45_ALARM.ID" shortDescription="Alarm Id">
 				<xtce:LongDescription>Alarm Id</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="U45_ALARM.TYPE" parameterTypeRef="U45_ALARM.TYPE" shortDescription="Alarm Type">
+			<xtce:Parameter name="U45_ALARM.ALARMTYPE" parameterTypeRef="U45_ALARM.ALARMTYPE" shortDescription="Alarm Type">
 				<xtce:LongDescription>Alarm Type</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="U45_ALARM.VALUE" parameterTypeRef="U45_ALARM.VALUE" shortDescription="Alarm Value">
@@ -12070,7 +12070,7 @@
 			<xtce:Parameter name="U90_ALARM.ID" parameterTypeRef="U90_ALARM.ID" shortDescription="Alarm Id">
 				<xtce:LongDescription>Alarm Id</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="U90_ALARM.TYPE" parameterTypeRef="U90_ALARM.TYPE" shortDescription="Alarm Type">
+			<xtce:Parameter name="U90_ALARM.ALARMTYPE" parameterTypeRef="U90_ALARM.ALARMTYPE" shortDescription="Alarm Type">
 				<xtce:LongDescription>Alarm Type</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="U90_ALARM.VALUE" parameterTypeRef="U90_ALARM.VALUE" shortDescription="Alarm Value">
@@ -14067,7 +14067,7 @@
 			<xtce:SequenceContainer name="CCSDSPacket" abstract="true">
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="VERSION" />
-					<xtce:ParameterRefEntry parameterRef="PHTYPE" />
+					<xtce:ParameterRefEntry parameterRef="TYPE" />
 					<xtce:ParameterRefEntry parameterRef="SEC_HDR_FLG" />
 					<xtce:ParameterRefEntry parameterRef="PKT_APID" />
 					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
@@ -14098,7 +14098,7 @@
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="U45_ALARM.SHCOARSE" />
 					<xtce:ParameterRefEntry parameterRef="U45_ALARM.ID" />
-					<xtce:ParameterRefEntry parameterRef="U45_ALARM.TYPE" />
+					<xtce:ParameterRefEntry parameterRef="U45_ALARM.ALARMTYPE" />
 					<xtce:ParameterRefEntry parameterRef="U45_ALARM.VALUE" />
 					<xtce:ParameterRefEntry parameterRef="U45_ALARM.AUX" />
 				</xtce:EntryList>
@@ -14966,7 +14966,7 @@
 				<xtce:EntryList>
 					<xtce:ParameterRefEntry parameterRef="U90_ALARM.SHCOARSE" />
 					<xtce:ParameterRefEntry parameterRef="U90_ALARM.ID" />
-					<xtce:ParameterRefEntry parameterRef="U90_ALARM.TYPE" />
+					<xtce:ParameterRefEntry parameterRef="U90_ALARM.ALARMTYPE" />
 					<xtce:ParameterRefEntry parameterRef="U90_ALARM.VALUE" />
 					<xtce:ParameterRefEntry parameterRef="U90_ALARM.AUX" />
 				</xtce:EntryList>

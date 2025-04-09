@@ -116,11 +116,17 @@ version:
   FIELDNAM: CCSDS version
   VAR_TYPE: support_data
 
-phtype:
+type:
   <<: *default_uint8
   CATDESC: CCSDS packet type
   FIELDNAM: CCSDS type
   VAR_TYPE: support_data
+
+alarmtype:
+  <<: *default_uint8
+  CATDESC: Alarm type
+  FIELDNAM: alarm type
+  VAR_TYPE: alarm_type
 
 sec_hdr_flg:
   <<: *default_uint8
@@ -993,18 +999,6 @@ alarmid:
   LABLAXIS: alarmid
   UNITS: ' '
 
-alarmtype:
-  '<<': '*default_float32'
-  CATDESC: Alarmtype
-  FIELDNAM: alarmtype
-  LABLAXIS: alarmtype
-  UNITS: ' '
-args:
-  '<<': '*default_float32'
-  CATDESC: Args
-  FIELDNAM: args
-  LABLAXIS: args
-  UNITS: ' '
 aux:
   '<<': '*default_float32'
   CATDESC: Aux
@@ -3948,12 +3942,6 @@ topmcphvv:
   CATDESC: Topmcphvv
   FIELDNAM: topmcphvv
   LABLAXIS: topmcphvv
-  UNITS: ' '
-type:
-  '<<': '*default_float32'
-  CATDESC: Type
-  FIELDNAM: type
-  LABLAXIS: type
   UNITS: ' '
 unused:
   '<<': '*default_float32'
