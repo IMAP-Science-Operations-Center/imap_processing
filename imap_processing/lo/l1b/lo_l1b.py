@@ -62,6 +62,11 @@ def lo_l1b(dependencies: dict, data_version: str) -> list[Path]:
         l1b_de = set_event_met(l1a_de, l1b_de, spin_start_time, avg_spin_durations)
         # set the epoch for each event
         l1b_de = set_each_event_epoch(l1b_de)
+        # calculate the TOF1 for golden triples
+        # store in the l1a dataset to use in l1b calculations
+        l1a_de = calculate_tof1_for_golden_triples(l1a_de)
+        # set the coincidence type string for each direct event
+        l1b_de = set_coincidence_type(l1a_de, l1b_de, attr_mgr_l1a)
 
     return [l1b_de]
 
@@ -384,6 +389,100 @@ def set_each_event_epoch(l1b_de: xr.Dataset) -> xr.Dataset:
         dims=["epoch"],
         # attrs=attr_mgr.get_variable_attributes("epoch")
     )
+    return l1b_de
+
+
+def calculate_tof1_for_golden_triples(l1a_de: xr.Dataset) -> xr.Dataset:
+    """
+    Calculate the TOF1 for golden triples.
+
+    TOF1 is not transmitted for golden triples, but is recovered on the
+    ground using the TOF0, TOF2, TOF3, and CKSUM values. The equation is:
+    TOF1 = (TOF0 + TOF3 - TOF2 - CKSUM - left_cksm_bound) << 1
+
+    where left_cksm_bound is the left checksum boundary value. This is a
+    constant value that is not transmitted in the telemetry.
+
+    Parameters
+    ----------
+    l1a_de : xr.Dataset
+        The L1A DE dataset.
+
+    Returns
+    -------
+    l1a_de : xr.Dataset
+        The L1A DE dataset with the TOF1 calculated for golden triples.
+    """
+    for idx, coin_type in enumerate(l1a_de["coincidence_type"].values):
+        if coin_type == 0 and l1a_de["mode"][idx] == 0:
+            # Calculate TOF1
+            # TOF1 equation requires values to be right bit shifted. These values were
+            # originally right bit shifted when packed in the telemetry packet, but were
+            # left bit shifted for the L1A product. Need to right bit shift them again
+            # to apply the TOF1 equation
+            tof0 = l1a_de["tof0"][idx] >> 1
+            tof2 = l1a_de["tof2"][idx] >> 1
+            tof3 = l1a_de["tof3"][idx] >> 1
+            cksm = l1a_de["cksm"][idx] >> 1
+            # TODO: will get left checksum boundary from LUT table when available
+            left_cksm_bound = -21
+            # Calculate TOF1, then left bit shift it to store it with the rest of the
+            # left shifted L1A dataset data.
+            l1a_de["tof1"][idx] = (tof0 + tof3 - tof2 - cksm - left_cksm_bound) << 1
+    return l1a_de
+
+
+def set_coincidence_type(
+    l1a_de: xr.Dataset,
+    l1b_de: xr.Dataset,
+    attr_mgr_l1a: ImapCdfAttributes,
+) -> xr.Dataset:
+    """
+    Set the coincidence type for each direct event.
+
+    The coincidence type is a string that indicates the type of coincidence
+    for each direct event. The string is a combination of the following depending
+    on whether the TOF or CKSM value is present (1) or absent (0) and the value
+    of the mode for each direct event:
+    "<TOF0><TOF1><TOF2><TOF3><CKSM><Mode>"
+
+    Parameters
+    ----------
+    l1a_de : xarray.Dataset
+        The L1A DE dataset.
+    l1b_de : xarray.Dataset
+        The L1B DE dataset.
+    attr_mgr_l1a : ImapCdfAttributes
+        Attribute manager used to get the fill values for the L1A DE dataset.
+
+    Returns
+    -------
+    l1b_de : xarray.Dataset
+        The L1B DE dataset with the coincidence type added.
+    """
+    tof0_fill = attr_mgr_l1a.get_variable_attributes("tof0")["FILLVAL"]
+    tof0_mask = l1a_de["tof0"].values != tof0_fill
+    tof1_fill = attr_mgr_l1a.get_variable_attributes("tof1")["FILLVAL"]
+    tof1_mask = l1a_de["tof1"].values != tof1_fill
+    tof2_fill = attr_mgr_l1a.get_variable_attributes("tof2")["FILLVAL"]
+    tof2_mask = l1a_de["tof2"].values != tof2_fill
+    tof3_fill = attr_mgr_l1a.get_variable_attributes("tof3")["FILLVAL"]
+    tof3_mask = l1a_de["tof3"].values != tof3_fill
+    cksm_fill = attr_mgr_l1a.get_variable_attributes("cksm")["FILLVAL"]
+    cksm_mask = l1a_de["cksm"].values != cksm_fill
+
+    coincidence_type = [
+        f"{int(tof0_mask[i])}{int(tof1_mask[i])}{int(tof2_mask[i])}{int(tof3_mask[i])}{int(cksm_mask[i])}{l1a_de['mode'].values[i]}"
+        for i in range(l1a_de["de_count"].values.sum())
+    ]
+
+    l1b_de["coincidence_type"] = xr.DataArray(
+        coincidence_type,
+        dims=["epoch"],
+        # TODO: Add coincidence_type to YAML file
+        # attrs=attr_mgr.get_variable_attributes("spin_cycle"),
+    )
+
     return l1b_de
 
 

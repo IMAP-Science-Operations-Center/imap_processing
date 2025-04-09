@@ -8,6 +8,7 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.lo.l1b.lo_l1b import (
+    calculate_tof1_for_golden_triples,
     convert_start_end_acq_times,
     create_datasets,
     get_avg_spin_durations,
@@ -15,6 +16,7 @@ from imap_processing.lo.l1b.lo_l1b import (
     get_spin_start_times,
     initialize_l1b_de,
     lo_l1b,
+    set_coincidence_type,
     set_each_event_epoch,
     set_event_met,
     set_spin_bin,
@@ -44,6 +46,14 @@ def attr_mgr_l1b():
     attr_mgr_l1b.add_instrument_variable_attrs(instrument="lo", level="l1b")
     attr_mgr_l1b.add_global_attribute("Data_version", "000")
     return attr_mgr_l1b
+
+
+@pytest.fixture
+def attr_mgr_l1a():
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs(instrument="lo")
+    attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1a")
+    return attr_mgr
 
 
 def test_lo_l1b():
@@ -352,3 +362,68 @@ def test_set_event_met():
             err_msg=f"Epoch: {l1b_de['epoch'].values} vs\
              expected Epoch {epoch_expected}",
         )
+
+
+def test_calculate_tof1_for_golden_triples():
+    # Arrange
+    l1a_de = xr.Dataset(
+        {
+            "coincidence_type": ("epoch", [0, 0, 0]),
+            "mode": ("epoch", [0, 0, 1]),
+            "tof0": ("epoch", [2, 4, 2]),
+            "tof1": ("epoch", [0, 0, 0]),
+            "tof2": ("epoch", [2, 6, 2]),
+            "tof3": ("epoch", [2, 8, 2]),
+            "cksm": ("epoch", [2, 12, 2]),
+        }
+    )
+
+    l1a_de_expected = xr.Dataset(
+        {
+            "coincidence_type": ("epoch", [0, 0, 0]),
+            "mode": ("epoch", [0, 0, 1]),
+            "tof0": ("epoch", [2, 4, 2]),
+            "tof1": ("epoch", [42, 36, 0]),
+            "tof2": ("epoch", [2, 6, 2]),
+            "tof3": ("epoch", [2, 8, 2]),
+            "cksm": ("epoch", [2, 12, 2]),
+        }
+    )
+
+    # Act
+    l1a_de = calculate_tof1_for_golden_triples(l1a_de)
+
+    # Assert
+    assert l1a_de_expected.equals(l1a_de)
+
+
+def test_set_coincidence_type(attr_mgr_l1a):
+    # Arrange
+    l1b_de = xr.Dataset()
+    tof_fill = attr_mgr_l1a.get_variable_attributes("tof0")["FILLVAL"]
+    ckm_fill = attr_mgr_l1a.get_variable_attributes("cksm")["FILLVAL"]
+    l1a_de = xr.Dataset(
+        {
+            "de_count": ("epoch", [3]),
+            "coincidence_type": ("direct_event", [0, 0, 4]),
+            "mode": ("direct_event", [1, 0, 1]),
+            "tof0": ("direct_event", [5, 2, 10]),
+            "tof1": ("direct_event", [10, 4, tof_fill]),
+            "tof2": ("direct_event", [15, 6, 20]),
+            "tof3": ("direct_event", [20, 8, 30]),
+            "cksm": ("direct_event", [25, ckm_fill, ckm_fill]),
+        }
+    )
+
+    coincidence_type_expected = np.array(["111111", "111100", "101101"])
+
+    # Act
+    l1b_de = set_coincidence_type(l1a_de, l1b_de, attr_mgr_l1a)
+
+    # Assert
+    np.testing.assert_array_equal(
+        l1b_de["coincidence_type"].values,
+        coincidence_type_expected,
+        err_msg=f"Coincidence type: {l1b_de['coincidence_type'].values} vs\
+         expected Coincidence type {coincidence_type_expected}",
+    )
