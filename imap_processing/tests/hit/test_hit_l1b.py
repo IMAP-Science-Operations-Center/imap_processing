@@ -81,7 +81,7 @@ def l1a_counts_dataset(sci_packet_filepath):
             return dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def livetime(l1a_counts_dataset: xr.Dataset) -> xr.DataArray:
     """Calculate livetime for L1A counts dataset"""
     return xr.DataArray(l1a_counts_dataset["livetime_counter"] / 270)
@@ -307,9 +307,9 @@ def test_process_sectored_rates_data(l1a_counts_dataset, livetime):
     }
 
     # Check that the dataset has the correct coords and variables
-    assert valid_coords == set(
-        l1b_sectored_rates_dataset.coords
-    ), "Coordinates mismatch"
+    assert valid_coords == set(l1b_sectored_rates_dataset.coords), (
+        "Coordinates mismatch"
+    )
 
     assert "dynamic_threshold_state" in l1b_sectored_rates_dataset.data_vars
 
