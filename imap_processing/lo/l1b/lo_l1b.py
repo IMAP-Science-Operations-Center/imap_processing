@@ -264,7 +264,10 @@ def set_spin_cycle(l1a_de: xr.Dataset, l1b_de: xr.Dataset) -> xr.Dataset:
 
     return l1b_de
 
-def get_spin_start_times(l1a_de: xr.Dataset, l1b_de: xr.Dataset, spin_data: xr.Dataset, acq_end: xr.DataArray) -> np.ndarray:
+
+def get_spin_start_times(
+    l1a_de: xr.Dataset, l1b_de: xr.Dataset, spin_data: xr.Dataset, acq_end: xr.DataArray
+) -> xr.DataArray:
     """
     Get the start time for the spin that each direct event is in.
 
@@ -285,9 +288,8 @@ def get_spin_start_times(l1a_de: xr.Dataset, l1b_de: xr.Dataset, spin_data: xr.D
 
     Returns
     -------
-    spin_start_time : np.ndarray
+    spin_start_time : xr.DataArray
         The start time for the spin that each direct event is in.
-
     """
     met = l1a_de["met"].values
     # Find the closest stop_acq for each shcoarse
@@ -297,29 +299,27 @@ def get_spin_start_times(l1a_de: xr.Dataset, l1b_de: xr.Dataset, spin_data: xr.D
     # start of the ASC
     spin_cycle_num = l1b_de["spin_cycle"] % 28
     # Get the seconds portion of the start time for each spin
-    start_sec_spins = np.take(
-        spin_data["start_sec_spin"][closest_stop_acq_indices].values,
-        spin_cycle_num.values,
-    )
+    start_sec_spins = spin_data["start_sec_spin"].values[
+        closest_stop_acq_indices, spin_cycle_num
+    ]
     # Get the subseconds portion of the spin start time and convert from
     # microseconds to seconds
     start_subsec_spins = (
-            np.take(
-                spin_data["start_subsec_spin"][closest_stop_acq_indices].values,
-                spin_cycle_num.values,
-            )
-            * 1e-6
+        spin_data["start_subsec_spin"].values[closest_stop_acq_indices, spin_cycle_num]
+        * 1e-6
     )
+
     # Combine the seconds and subseconds to get the start time for each spin
     spin_start_time = start_sec_spins + start_subsec_spins
-    return spin_start_time
+    return xr.DataArray(spin_start_time)
+
 
 def set_event_met(
     l1a_de: xr.Dataset,
     l1b_de: xr.Dataset,
-    spin_start_time: xr.Dataset,
+    spin_start_time: xr.DataArray,
     avg_spin_durations: xr.DataArray,
-) -> np.array:
+) -> xr.Dataset:
     """
     Get the event MET for each direct event.
 
@@ -338,19 +338,16 @@ def set_event_met(
         The L1A DE dataset.
     l1b_de : xr.Dataset
         The L1B DE dataset.
-    spin_data : xr.Dataset
-        The L1A Spin dataset.
+    spin_start_time : np.ndarray
+        The start time for the spin that each direct event is in.
     avg_spin_durations : xr.DataArray
         The average spin duration for each epoch.
-    acq_end : xr.DataArray
-        The end acquisition times for each spin ASC.
 
     Returns
     -------
     l1b_de : xr.Dataset
         The L1B DE dataset with the event MET.
     """
-
     counts = l1a_de["de_count"].values
     de_time_asc_groups = np.split(l1a_de["de_time"].values, np.cumsum(counts)[:-1])
     de_times_eu = []
@@ -366,6 +363,7 @@ def set_event_met(
     )
     return l1b_de
 
+
 def set_each_event_epoch(l1b_de: xr.Dataset) -> xr.Dataset:
     """
     Set the epoch for each direct event.
@@ -379,7 +377,6 @@ def set_each_event_epoch(l1b_de: xr.Dataset) -> xr.Dataset:
     -------
     l1b_de : xr.Dataset
         The L1B DE dataset with the epoch set for each event.
-
     """
     l1b_de["epoch"] = xr.DataArray(
         met_to_ttj2000ns(l1b_de["event_met"].values),
@@ -387,6 +384,7 @@ def set_each_event_epoch(l1b_de: xr.Dataset) -> xr.Dataset:
         # attrs=attr_mgr.get_variable_attributes("epoch")
     )
     return l1b_de
+
 
 # TODO: This is going to work differently when I sample data.
 #  The data_fields input is temporary.
