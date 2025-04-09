@@ -80,6 +80,7 @@ def calculate_spacecraft_pset(
     pset_dict["background_rates"] = background_rates
     pset_dict["exposure_factor"] = exposure_pointing
     pset_dict["healpix"] = healpix
+    pset_dict["energy_bin_delta"] = np.diff(intervals, axis=1).squeeze()
 
     dataset = create_dataset(pset_dict, name, "l1c", data_version)
 

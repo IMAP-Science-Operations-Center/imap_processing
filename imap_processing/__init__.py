@@ -27,6 +27,7 @@ PROCESSING_LEVELS = {
     "idex": ["l1a", "l1b", "l2a", "l2b"],
     "lo": ["l1a", "l1b", "l1c", "l2"],
     "mag": ["l1a", "l1b", "l1c", "l1d", "l2"],
+    "spacecraft": ["l1a"],
     "swapi": ["l1", "l2", "l3a", "l3b"],
     "swe": ["l1a", "l1b", "l2"],
     "ultra": ["l1a", "l1b", "l1c", "l2"],

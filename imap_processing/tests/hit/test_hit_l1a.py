@@ -62,7 +62,7 @@ def test_subcom_sectorates(sci_packet_filepath):
     sci_dataset = decom_hit(sci_dataset)
 
     # Call the function to be tested
-    subcom_sectorates(sci_dataset)
+    sci_dataset = subcom_sectorates(sci_dataset)
 
     # Number of science frames in the dataset
     frames = sci_dataset["epoch"].shape[0]
@@ -79,7 +79,7 @@ def test_subcom_sectorates(sci_packet_filepath):
     for species, shape in expected_shapes.items():
         # Check if the dataset has the new  data variables
         assert f"{species}_sectored_counts" in sci_dataset
-        assert f"{species}_energy_mean" in sci_dataset
+        assert f"{species}_energy_mean" in sci_dataset.coords
         assert f"{species}_energy_delta_minus" in sci_dataset
         assert f"{species}_energy_delta_plus" in sci_dataset
         # Check the shape of the new data variables

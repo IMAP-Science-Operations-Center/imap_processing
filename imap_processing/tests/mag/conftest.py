@@ -7,6 +7,7 @@ import pytest
 import xarray as xr
 
 from imap_processing.cdf.utils import load_cdf
+from imap_processing.mag.constants import VecSec
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 
 
@@ -70,19 +71,21 @@ def mag_test_l1b_calibration_data():
     return calibration_data
 
 
-def generate_test_epoch(end, vectors_per_second, starting_point=0, gaps=None):
-    spacing = 1 / vectors_per_second[0]
+def generate_test_epoch(
+    end, vectors_per_second: list[VecSec], starting_point=0, gaps=None
+):
+    spacing = 1 / vectors_per_second[0].value
     output = np.array([])
     prev = starting_point
     if gaps:
         for index, gap in enumerate(gaps):
             if len(vectors_per_second) != 1:
-                spacing = 1 / vectors_per_second[index]
+                spacing = 1 / vectors_per_second[index].value
             output = np.concatenate(
                 (output, np.arange(prev, gap[0] + spacing, step=spacing) * 1e9)
             )
             prev = gap[1]
-        spacing = 1 / vectors_per_second[-1]
+        spacing = 1 / vectors_per_second[-1].value
     output = np.concatenate(
         (output, np.arange(prev, end + spacing, step=spacing) * 1e9)
     )

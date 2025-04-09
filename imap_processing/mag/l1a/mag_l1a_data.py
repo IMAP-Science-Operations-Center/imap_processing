@@ -1107,13 +1107,14 @@ class MagL1a:
         """
         output_str = ""
         last_vectors_per_second = None
-        for start_time, packet in self.packet_definitions.items():
+        for _, packet in self.packet_definitions.items():
             vecsec = packet.vectors_per_second
+            time: np.int64 = packet.start_time.to_j2000ns().astype(np.int64)
             if vecsec != last_vectors_per_second:
                 if output_str == "":
-                    output_str = f"{start_time}:{vecsec}"
+                    output_str = f"{time}:{vecsec}"
                 else:
-                    output_str += f",{start_time}:{vecsec}"
+                    output_str += f",{time}:{vecsec}"
                 last_vectors_per_second = vecsec
 
         return output_str

@@ -38,12 +38,12 @@ l1a_data_base: &l1a_data_base
 
 l1a_tof_base: &l1a_tof_base
   <<: *l1a_data_base
-  DEPEND_1: time_high_sample_rate
+  DEPEND_1: time_high_sample_rate_index
   LABL_PTR_1: time_high_sample_rate_label
 
 l1a_target_base: &l1a_target_base
   <<: *l1a_data_base
-  DEPEND_1: time_low_sample_rate
+  DEPEND_1: time_low_sample_rate_index
   LABL_PTR_1: time_low_sample_rate_label
 
 sample_rate_base: &sample_rate_base
@@ -57,7 +57,7 @@ sample_rate_base: &sample_rate_base
   FORMAT: F64.5
   LABLAXIS: Time
   UNITS: microseconds
-  VAR_TYPE: support_data
+  VAR_TYPE: data
   VAR_NOTES:  The number of microseconds since the event.
               0 is the start of data collection, negative
               numbers represent data collected prior to a dust event
@@ -96,6 +96,7 @@ low_sample_rate_attrs:
   VAR_NOTES: The low sample rate in microseconds. Steps are approximately 1/4.025
              microseconds in duration. Used by the Ion_Grid, Target_Low, and
              Target_High variables.
+  DEPEND_1: time_low_sample_rate_index
 
 high_sample_rate_attrs:
   <<:  *sample_rate_base
@@ -104,6 +105,7 @@ high_sample_rate_attrs:
   VAR_NOTES: The high sample rate in microseconds. Steps are approximately 1/260
     microseconds in duration. Used by the TOF_High, TOF_Mid, and
     TOF_Low variables.
+  DEPEND_1: time_high_sample_rate_index
 
 time_low_sample_rate_index:
   CATDESC: Low sampling rate time index
@@ -119,7 +121,7 @@ time_low_sample_rate_index:
 
 time_high_sample_rate_index:
   CATDESC: High sampling rate time index
-  FIELDNAM: Low sample rate
+  FIELDNAM: High sample rate
   FILLVAL: *int_fillval
   FORMAT: I3
   LABLAXIS: Sample Rate

@@ -15,6 +15,7 @@ from imap_processing.lo.l1b.lo_l1b import (
     initialize_l1b_de,
     lo_l1b,
     set_spin_bin,
+    set_spin_cycle,
 )
 
 
@@ -216,3 +217,27 @@ def test_spin_bin():
 
     # Assert
     np.testing.assert_array_equal(l1b_de["spin_bin"], expected_spin_bins)
+
+
+def test_spin_cycle():
+    # Arrange
+    de = xr.Dataset(
+        {
+            "de_count": ("epoch", [2, 3]),
+            "esa_step": ("direct_event", [1, 2, 3, 4, 5]),
+        },
+        coords={"epoch": [0, 1], "direct_event": [1, 2, 3, 4, 5]},
+    )
+
+    # spin_cycle = spin_start + 7 + (esa_step - 1) * 2
+    # where spin start is the spin number for the first spin
+    # in an Aggregated Science Cycle (first spin number of an epoch)
+    # and esa_step is the esa_step for a direct event
+    spin_cycle_expected = np.array([7, 9, 39, 41, 43])
+    spin_cycle_data = xr.Dataset()
+
+    # Act
+    spin_cycle_data = set_spin_cycle(de, spin_cycle_data)
+
+    # Assert
+    np.testing.assert_array_equal(spin_cycle_data["spin_cycle"], spin_cycle_expected)
