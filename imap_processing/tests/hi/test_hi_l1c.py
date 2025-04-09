@@ -30,7 +30,7 @@ def test_hi_l1c(mock_generate_pset_dataset, hi_test_cal_prod_config_path):
     mock_generate_pset_dataset.return_value = xr.Dataset(attrs={"Data_version": None})
     pset = hi_l1c.hi_l1c(
         [xr.Dataset(), hi_test_cal_prod_config_path], data_version="99"
-    )
+    )[0]
     assert pset.attrs["Data_version"] == "99"
 
 

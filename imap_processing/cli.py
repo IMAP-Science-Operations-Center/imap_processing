@@ -19,7 +19,6 @@ from pathlib import Path
 from typing import final
 
 import imap_data_access
-import numpy as np
 import xarray as xr
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
@@ -432,16 +431,16 @@ class ProcessInstrument(ABC):
 
         logger.info("Writing products to local storage")
 
-        list_of_files = [
-            dep_obj.filename_list for dep_obj in dependencies.processing_input
-        ]
-        list_of_files = np.array(list_of_files).flatten()
-        logger.info("Parent files: %s", list_of_files)
+        # Parent files used to create these datasets
+        # https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html.
+        parent_files = [p.name for p in dependencies.get_file_paths()]
+        logger.info("Parent files: %s", parent_files)
 
-        products = [
-            write_cdf(dataset, parent_files=list_of_files.tolist())  # type: ignore[attr-defined]
-            for dataset in datasets
-        ]
+        products = []
+        for ds in datasets:
+            ds.attrs["Parents"] = parent_files
+            products.append(write_cdf(ds))
+
         self.upload_products(products)
 
 
@@ -596,7 +595,7 @@ class Hi(ProcessInstrument):
                 / "imap_his_pset-calibration-prod-config_20240101_v001.csv"
             )
             hi_dependencies[0] = load_cdf(hi_dependencies[0])
-            datasets = [hi_l1c.hi_l1c(hi_dependencies, self.version)]
+            datasets = hi_l1c.hi_l1c(hi_dependencies, self.version)
         else:
             raise NotImplementedError(
                 f"Hi processing not implemented for level {self.data_level}"

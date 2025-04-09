@@ -138,6 +138,7 @@ disable_error_code = ['import-not-found', # Unable to locate module or package s
                 'no-untyped-call', # Function calls are only made to functions that are fully typed
                 'type-arg', # Requires type arguments to be specified in list[] and dict[]
                 'union-attr', # Item "float" of "float | Any" has no attribute "reshape"
+                'no-any-return', # Returning Any from a function
               ]
 strict = true
 explicit_package_bases = true

@@ -3,7 +3,6 @@
 import logging
 import re
 from pathlib import Path
-from typing import Optional
 
 import imap_data_access
 import numpy as np
@@ -64,7 +63,6 @@ def load_cdf(
 
 def write_cdf(
     dataset: xr.Dataset,
-    parent_files: Optional[list] = None,
     **extra_cdf_kwargs: dict,
 ) -> Path:
     """
@@ -81,10 +79,6 @@ def write_cdf(
     ----------
     dataset : xarray.Dataset
         The dataset object to convert to a CDF.
-    parent_files : List of filenames, optional
-        List of parent files that were used to make this file. These get added to
-        the ``Parents`` global attribute:
-        https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html.
     **extra_cdf_kwargs : dict
         Additional keyword arguments to pass to the ``xarray_to_cdf`` function.
 
@@ -131,11 +125,6 @@ def write_cdf(
     dataset.attrs["Logical_file_id"] = file_path.stem
     # Add the processing version to the dataset attributes
     dataset.attrs["ground_software_version"] = imap_processing._version.__version__
-    # Add any parent files to the dataset attributes
-    if parent_files:
-        # Include the current files if there are any and include just the filename
-        # [file1.txt, file2.cdf, ...]
-        dataset.attrs["Parents"] = parent_files
 
     # Convert the xarray object to a CDF
     if "l1" in data_level:

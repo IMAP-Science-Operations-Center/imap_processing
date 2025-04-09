@@ -42,7 +42,7 @@ SPIN_PHASE_BIN_CENTERS = (SPIN_PHASE_BIN_EDGES[:-1] + SPIN_PHASE_BIN_EDGES[1:]) 
 logger = logging.getLogger(__name__)
 
 
-def hi_l1c(dependencies: list, data_version: str) -> xr.Dataset:
+def hi_l1c(dependencies: list, data_version: str) -> list[xr.Dataset]:
     """
     High level IMAP-Hi l1c processing function.
 
@@ -78,7 +78,7 @@ def hi_l1c(dependencies: list, data_version: str) -> xr.Dataset:
 
     # TODO: revisit this
     l1c_dataset.attrs["Data_version"] = data_version
-    return l1c_dataset
+    return [l1c_dataset]
 
 
 def generate_pset_dataset(
