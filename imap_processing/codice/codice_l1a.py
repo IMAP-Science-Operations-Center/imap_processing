@@ -598,6 +598,7 @@ def create_event_dataset(
         print(f"iteration: {i}")
         print(f"group code: {group_code}")
         print(f"byte_count: {byte_count}")
+        print('\n')
 
         # Convert from numpy array to byte object
         compressed_packet_values = ast.literal_eval(str(packet_data))
