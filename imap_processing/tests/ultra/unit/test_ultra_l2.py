@@ -62,7 +62,7 @@ class TestUltraL2:
         return {pset.attrs["Logical_file_id"]: pset for pset in self.ultra_psets}
 
     @pytest.mark.usefixtures("_mock_single_pset")
-    def test_read_into_pointing_set(self, tmp_path):
+    def test_read_into_pointing_set(self):
         cdf_filepath = write_cdf(self.ultra_pset, istp=False)
 
         ultra_pset_from_dataset = ultra_l2.read_into_pointing_set(self.ultra_pset)
