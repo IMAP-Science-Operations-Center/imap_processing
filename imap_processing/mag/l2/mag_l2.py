@@ -40,6 +40,7 @@ def mag_l2(
         input_data["vectors"].data[:, :3],  # level 2 vectors don't include range
         input_data["epoch"].data,
         input_data["vectors"].data[:, 3],
+        {},
         np.zeros(len(input_data["epoch"].data)),
         np.zeros(len(input_data["epoch"].data)),
         DataMode.NORM,
