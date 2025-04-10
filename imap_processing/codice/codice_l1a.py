@@ -808,7 +808,7 @@ def group_data(packets: xr.Dataset) -> list[bytes]:
 
     Parameters
     ----------
-    packets : xr.Dataset
+    packets : xarray.Dataset
         Dataset containing the packets to group.
 
     Returns
@@ -888,7 +888,7 @@ def reshape_de_data(
 
     Parameters
     ----------
-    packets : xr.Dataset
+    packets : xarray.Dataset
         Dataset containing the packets, needed to determine priority order
         and data quality.
     decompressed_data : list[list[int]]
