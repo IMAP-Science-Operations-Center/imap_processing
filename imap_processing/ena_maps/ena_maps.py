@@ -1203,7 +1203,7 @@ class HealpixSkyMap(AbstractSkyMap):
 
     # Allow for 5 arguments, and self to be passed.
     # ruff: noqa: PLR0913
-    def get_pixel_value_recursive_subdivs(
+    def get_rect_pixel_value_recursive_subdivs(
         self,
         rect_pix_center_lon_lat: np.typing.NDArray | tuple[float, float],
         rect_pix_spacing_deg: float,
@@ -1339,7 +1339,7 @@ class HealpixSkyMap(AbstractSkyMap):
             # for each value key.
             healpix_values_array = self.data_1d[value_key]
             best_value_and_recursion_depth_by_pixel = [
-                self.get_pixel_value_recursive_subdivs(
+                self.get_rect_pixel_value_recursive_subdivs(
                     rect_pix_center_lon_lat=lon_lat,
                     rect_pix_spacing_deg=rect_map.spacing_deg,
                     value_key=value_key,
