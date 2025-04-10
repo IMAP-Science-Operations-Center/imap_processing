@@ -100,10 +100,10 @@ def write_cdf(
     version = dataset.attrs.get("Data_version", None)
     if version is None:
         warnings.warn(
-            "No Data_version attribute found in dataset. Using default v001.",
+            "No Data_version attribute found in dataset. Using default v999.",
             stacklevel=2,
         )
-        version = "v001"
+        version = "v999"
     elif not re.match(r"v\d{3}", version):
         raise ValueError(
             f"The Data_version attribute {version} does not match expected format vXXX."

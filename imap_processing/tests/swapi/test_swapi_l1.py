@@ -170,7 +170,7 @@ def test_process_swapi_science(decom_test_data):
     }
 
     # Test CDF File
-    cdf_filename = "imap_swapi_l1_sci_20240924_v001.cdf"
+    cdf_filename = "imap_swapi_l1_sci_20240924_v999.cdf"
     cdf_path = write_cdf(processed_data)
     assert cdf_path.name == cdf_filename
 
@@ -180,7 +180,7 @@ def test_swapi_l1_cdf(swapi_l0_test_data_path):
     test_packet_file = swapi_l0_test_data_path / "imap_swapi_l0_raw_20240924_v001.pkts"
     processed_data = swapi_l1([test_packet_file])
     # hk cdf file
-    hk_cdf_filename = "imap_swapi_l1_hk_20240924_v001.cdf"
+    hk_cdf_filename = "imap_swapi_l1_hk_20240924_v999.cdf"
     # TODO: how to add ignore ISTP checks for HK data to cli.py
     hk_cdf_path = write_cdf(processed_data[0])
     assert hk_cdf_path.name == hk_cdf_filename
@@ -190,6 +190,6 @@ def test_swapi_l1_cdf(swapi_l0_test_data_path):
     assert processed_data[0].attrs["Apid"] == f"{SWAPIAPID.SWP_SCI}"
 
     # Test CDF File
-    cdf_filename = "imap_swapi_l1_sci_20240924_v001.cdf"
+    cdf_filename = "imap_swapi_l1_sci_20240924_v999.cdf"
     cdf_path = write_cdf(processed_data[0])
     assert cdf_path.name == cdf_filename

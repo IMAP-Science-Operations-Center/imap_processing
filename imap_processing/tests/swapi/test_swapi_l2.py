@@ -10,20 +10,20 @@ def test_swapi_l2_cdf(swapi_l0_test_data_path):
     test_packet_file = swapi_l0_test_data_path / "imap_swapi_l0_raw_20240924_v001.pkts"
     # Create HK CDF File
     processed_hk_data = swapi_l1([test_packet_file])
-    hk_cdf_filename = "imap_swapi_l1_hk_20240924_v001.cdf"
+    hk_cdf_filename = "imap_swapi_l1_hk_20240924_v999.cdf"
     hk_cdf_path = write_cdf(processed_hk_data[0])
     assert hk_cdf_path.name == hk_cdf_filename
 
     # Create L1 CDF File
     processed_sci_data = swapi_l1([test_packet_file, hk_cdf_path])
-    cdf_filename = "imap_swapi_l1_sci_20240924_v001.cdf"
+    cdf_filename = "imap_swapi_l1_sci_20240924_v999.cdf"
     cdf_path = write_cdf(processed_sci_data[0])
     assert cdf_path.name == cdf_filename
 
     l1_dataset = processed_sci_data[0]
     l2_dataset = swapi_l2(l1_dataset)
     l2_cdf = write_cdf(l2_dataset)
-    assert l2_cdf.name == "imap_swapi_l2_sci_20240924_v001.cdf"
+    assert l2_cdf.name == "imap_swapi_l2_sci_20240924_v999.cdf"
 
     # Test uncertainty variables are as expected
     np.testing.assert_array_equal(

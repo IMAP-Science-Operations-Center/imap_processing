@@ -62,7 +62,7 @@ def test_cdf_aux(ccsds_path_theta_0):
     test_data_path = write_cdf(test_data[0])
 
     assert test_data_path.exists()
-    assert test_data_path.name == "imap_ultra_l1a_45sensor-aux_20240207_v001.cdf"
+    assert test_data_path.name == "imap_ultra_l1a_45sensor-aux_20240207_v999.cdf"
 
 
 def test_cdf_rates(ccsds_path_theta_0):
@@ -71,7 +71,7 @@ def test_cdf_rates(ccsds_path_theta_0):
     test_data_path = write_cdf(test_data[0], istp=False)
 
     assert test_data_path.exists()
-    assert test_data_path.name == "imap_ultra_l1a_45sensor-rates_20240207_v001.cdf"
+    assert test_data_path.name == "imap_ultra_l1a_45sensor-rates_20240207_v999.cdf"
 
 
 def test_cdf_tof(ccsds_path_theta_0):
@@ -81,7 +81,7 @@ def test_cdf_tof(ccsds_path_theta_0):
     assert test_data_path.exists()
     assert (
         test_data_path.name
-        == "imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-ang_20240207_v001.cdf"
+        == "imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-ang_20240207_v999.cdf"
     )
 
 
@@ -91,7 +91,7 @@ def test_cdf_events(ccsds_path_theta_0):
     test_data_path = write_cdf(test_data[0], istp=False)
 
     assert test_data_path.exists()
-    assert test_data_path.name == "imap_ultra_l1a_45sensor-de_20240207_v001.cdf"
+    assert test_data_path.name == "imap_ultra_l1a_45sensor-de_20240207_v999.cdf"
 
 
 def test_get_event_id():
