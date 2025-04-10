@@ -26,7 +26,7 @@ from imap_processing.spice.time import ttj2000ns_to_et
 logger = logging.getLogger(__name__)
 
 # Set the maximum recursion depth for the conversion from Healpix to rectangular SkyMap.
-MAX_RECURSION_DEPTH = 8
+MAX_SUBDIV_RECURSION_DEPTH = 8
 
 
 class SkyTilingType(Enum):
@@ -1085,7 +1085,7 @@ class HealpixSkyMap(AbstractSkyMap):
             }
         )
 
-    # Define methods for converting a Healpix map to a Rectangular map:
+    # Define several methods for converting a Healpix map to a Rectangular map:
     def calculate_rect_pixel_value_from_healpix_map_n_subdivisions(
         self,
         rect_pix_center_lon_lat: np.typing.NDArray | tuple[float, float],
@@ -1094,7 +1094,7 @@ class HealpixSkyMap(AbstractSkyMap):
         num_subdivisions: int,
     ) -> np.typing.NDArray:
         """
-        Interpolate the value of 1 rectangular pixel from a healpix map w/ subdivisions.
+        Interpolate the value of a rectangular pixel from a healpix map w/ subdivisions.
 
         This function splits a single rectangular pixel into smaller subpixels
         and calculates the solid angle weighted mean value of
@@ -1127,7 +1127,8 @@ class HealpixSkyMap(AbstractSkyMap):
             (e.g., (1, 24)).
         """
         # Assumes that you already checked the pixel doesn't fall entirely in an HP pix
-        # TODO: Add this here? It shouldn't really be necessary, as the next function
+        # TODO: Ask Nick if we need to add this here to mimic his code.
+        # It shouldn't really be necessary, as the next function
         # get_pixel_value_recursive_subdivs will finish at 1 subdivision
 
         # Ensure input contains lon in the first column and lat in the second column
@@ -1200,18 +1201,23 @@ class HealpixSkyMap(AbstractSkyMap):
         )
         return mean_pixel_value
 
+    # Allow for 5 arguments, and self to be passed.
+    # ruff: noqa: PLR0913
     def get_pixel_value_recursive_subdivs(
         self,
         rect_pix_center_lon_lat: np.typing.NDArray | tuple[float, float],
         rect_pix_spacing_deg: float,
         value_key: str,
         tolerances: tuple[float, float] = (1e-3, 1e-12),
+        max_subdivision_depth: int = MAX_SUBDIV_RECURSION_DEPTH,
     ) -> tuple[list[np.typing.NDArray], int]:
         """
         Recursively subdivide a rectangular pixel to get a mean value within tolerances.
 
-        Recursively subdivide a rectangular pixel into smaller subpixels until the
-        difference between the mean values of two consecutive subdivisions is within the
+        Takes a rectangular pixel, and recursively breaks it up into
+        smaller and smaller subpixels, then calculates the solid-angle weighted mean
+        of the healpix map's value at this pixel, until the difference
+        between the mean values of two consecutive subdivisions is within the
         specified tolerances. The function returns the mean value at the final level
         of subdivision and the depth of recursion.
 
@@ -1226,6 +1232,12 @@ class HealpixSkyMap(AbstractSkyMap):
         tolerances : tuple[float, float], optional
             The relative and absolute tolerances for convergence,
             by default (1e-3, 1e-12).
+        max_subdivision_depth : int, optional
+            The maximum depth of recursion for subdivision,
+            by default MAX_SUBDIV_RECURSION_DEPTH.
+            Computation grows exponentially with depth, but only where the value
+            has a significant gradient between adjacent healpix pixels.
+            If the value is smooth, the recursion depth will be low.
 
         Returns
         -------
@@ -1239,7 +1251,7 @@ class HealpixSkyMap(AbstractSkyMap):
         # or the maximum recursion depth is reached
         depth = 0
         mean_pixel_value_at_level = []
-        while depth < MAX_RECURSION_DEPTH:
+        while depth < max_subdivision_depth:
             mean_pixel_value = (
                 self.calculate_rect_pixel_value_from_healpix_map_n_subdivisions(
                     rect_pix_center_lon_lat=rect_pix_center_lon_lat,
@@ -1251,6 +1263,7 @@ class HealpixSkyMap(AbstractSkyMap):
             mean_pixel_value_at_level.append(mean_pixel_value)
 
             # Determine if tolerance is met
+            # (skip on the 0th iteration, as there's no delta)
             if depth > 0:
                 abs_delta = np.abs(
                     mean_pixel_value_at_level[-1].mean()
@@ -1281,6 +1294,8 @@ class HealpixSkyMap(AbstractSkyMap):
             The spacing of the rectangular map in degrees.
         value_keys : list[str]
             The names of the values to interpolate from the healpix map.
+            Each must be independently interpolated because the subdivision depth
+            depends on the gradient of the value between adjacent healpix pixels.
 
         Returns
         -------
@@ -1295,13 +1310,30 @@ class HealpixSkyMap(AbstractSkyMap):
             spice_frame=self.spice_reference_frame,
         )
 
+        # Depending on the maximum recursion depth, the number of pixels in the
+        # RectangularSkyMap, and the number of value keys, and especially on the
+        # gradients of the values, the number of operations can be very large, so
+        # log key information about the expected number of operations.
+        approx_max_operations = (
+            (4**MAX_SUBDIV_RECURSION_DEPTH) * self.num_points * len(value_keys)
+        )
+        logger.info(
+            f"Converting from a HealpixSkyMap(nside={self.nside}) to a "
+            f"RectangularSkyMap(spacing_deg={rect_spacing_deg}) with recursive "
+            "subdivision.\n The maximum recursion depth is "
+            f"{MAX_SUBDIV_RECURSION_DEPTH}, yielding a maximum number of healpix calls"
+            f" of {approx_max_operations:.3e}."
+        )
+
         # Dict to hold the subdivision depth by pixel for each value key
         subdiv_depth_dict = {}
         for value_key in value_keys:
             self.data_1d[value_key]
 
+            # For each of the values, calculate each pixel's value with
+            # recursive subdivision. Unfortunately, this must be done independently
+            # for each value key.
             healpix_values_array = self.data_1d[value_key]
-
             best_value_and_recursion_depth_by_pixel = [
                 self.get_pixel_value_recursive_subdivs(
                     rect_pix_center_lon_lat=lon_lat,
@@ -1311,14 +1343,18 @@ class HealpixSkyMap(AbstractSkyMap):
                 for lon_lat in rect_map.az_el_points
             ]
 
+            # Store the best value(s) of each pixel in the rectangular map with the
+            # leading coordinates of the healpix map, and the pixel coordinate last
             rect_map.data_1d[value_key] = xr.DataArray(
                 np.moveaxis(
                     [r[0] for r in best_value_and_recursion_depth_by_pixel], 0, -1
                 ),
                 dims=(*healpix_values_array.dims[:-1], CoordNames.GENERIC_PIXEL.value),
             )
+
             # Update the coordinates of the rectangular map with any new coordinates
-            # except the pixel coord, which will be different between
+            # from the healpix map except the pixel coord,
+            # which will be different in the rectangular map.
             for coord in healpix_values_array.coords:
                 if coord not in (
                     CoordNames.GENERIC_PIXEL.value,
@@ -1327,6 +1363,7 @@ class HealpixSkyMap(AbstractSkyMap):
                     rect_map.data_1d.coords[coord] = healpix_values_array.coords[coord]
 
             # Add the subdivision depth by pixel of this value_key to the dictionary
+            # This may be necessary for uncertainty estimation
             subdiv_depth_dict[value_key] = np.array(
                 [r[1] for r in best_value_and_recursion_depth_by_pixel]
             )
