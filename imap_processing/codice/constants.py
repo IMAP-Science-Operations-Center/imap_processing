@@ -381,6 +381,21 @@ DATA_PRODUCT_CONFIGURATIONS = {
     },
 }
 
+# Dictionary to define the bit structure of CoDICE-Lo direct events
+LO_DE_BIT_STRUCTURE = {
+    "APDGain": 1,
+    "APD_ID": 5,
+    "Position": 5,
+    "APDEnergy": 9,
+    "TOF": 10,
+    "MultiFlag": 1,
+    "PHAType": 2,
+    "SpinAngle": 5,
+    "EnergyStep": 7,
+    "Priority": 3,
+    "Spare": 16,
+}
+
 # Compression ID lookup table for Lo data products
 # The key is the view_id and the value is the ID for the compression algorithm
 # (see utils.CoDICECompression to see how the values correspond)

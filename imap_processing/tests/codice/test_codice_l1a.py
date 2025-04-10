@@ -1,6 +1,7 @@
 """Tests the L1a processing for decommutated CoDICE data"""
 
 import logging
+import re
 
 import numpy as np
 import pytest
@@ -55,7 +56,7 @@ EXPECTED_ARRAY_SHAPES = [
     (77, 15, 4),  # hi-omni
     (77, 8, 12, 12),  # hi-sectored
     (77,),  # hi-priority
-    (77,),  # lo-pha
+    (77, 10000),  # lo-pha
     (),  # hi-pha  # TODO: Need to implement
 ]
 
@@ -138,6 +139,7 @@ def test_l1a_data_array_shape(test_l1a_data, index):
     if index in [0, 1, 17]:
         pytest.xfail("Data product is currently unsupported")
 
+    # There are exceptions for some variables
     for variable in processed_dataset:
         # For variables with energy dimensions
         if variable in ["energy_table", "acquisition_time_per_step"]:
@@ -154,7 +156,10 @@ def test_l1a_data_array_shape(test_l1a_data, index):
             assert processed_dataset[variable].data.shape == (
                 len(processed_dataset["epoch"].data),
             )
-        # For counter variables
+        # For some direct event variables:
+        elif re.match(r"P[0-7]_(NumEvents|DataQuality)", variable):
+            assert processed_dataset[variable].data.shape == (77,)
+        # For nominal variables
         else:
             assert processed_dataset[variable].data.shape == expected_shape
 
@@ -244,6 +249,7 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         "lo-nsw-priority",
         "lo-sw-species",
         "lo-nsw-species",
+        "lo_pha",
     ]
 
     if descriptor in able_to_be_validated:
