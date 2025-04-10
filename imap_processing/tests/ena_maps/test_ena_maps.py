@@ -697,6 +697,151 @@ class TestHealpixSkyMap:
             hp_map.data_1d["counts"].values,
         )
 
+    @mock.patch("astropy_healpix.healpy.ang2pix")
+    def test_calculate_rect_pixel_value_from_healpix_map_n_subdivisions(
+        self,
+        mock_ang2pix,
+    ):
+        """Test getting rectangular pixel values from HealpixSkyMap via subdivision."""
+
+        # Mock ang2pix to return fixed values based on a dict
+        pixel_dict = {
+            # 0 subdiv - just 1 pixel
+            (180, 0): 0,
+            # 1 subdiv - all subpix have same solid angle because centered on equator
+            (179, -1): 1,
+            (179, 1): 2,
+            (181, -1): 3,
+            (181, 1): 4,
+            # 2 subdiv - 'Inner' subpix have larger solid angle than 'outer' subpix
+            (178.5, -1.5): 5,
+            (178.5, -0.5): 6,
+            (178.5, 0.5): 7,
+            (178.5, 1.5): 8,
+            (179.5, -1.5): 9,
+            (179.5, -0.5): 10,
+            (179.5, 0.5): 11,
+            (179.5, 1.5): 12,
+            (180.5, -1.5): 12,
+            (180.5, -0.5): 14,
+            (180.5, 0.5): 15,
+            (180.5, 1.5): 16,
+            (181.5, -1.5): 17,
+            (181.5, -0.5): 18,
+            (181.5, 0.5): 19,
+            (181.5, 1.5): 20,
+        }
+        expected_mean_0_subdivisions = 0
+        expected_mean_1_subdivisions = 2.5
+        expected_mean_2_subdivisions = 12.5
+
+        def mock_ang2pix_fn(nside, theta, phi, nest=True, lonlat=False):
+            vals = []
+            for pix_num in range(len(theta)):
+                key = (theta[pix_num], phi[pix_num])
+                vals.append(pixel_dict.get(key, 0))
+            return np.array(vals)
+
+        hp_map = ena_maps.HealpixSkyMap(
+            nside=16,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+            nested=True,
+        )
+        hp_map.data_1d["counts"] = xr.DataArray(
+            data=[
+                np.arange(hp_map.num_points),
+            ],
+            dims=["epoch", "pixel"],
+        )
+
+        for num_subdiv, (expected_value, atol) in enumerate(
+            [
+                # The first subdivs have all the same solid angle
+                (expected_mean_0_subdivisions, 1e-9),
+                (expected_mean_1_subdivisions, 1e-9),
+                # Slight difference from not taking into account asym solid angle
+                (expected_mean_2_subdivisions, 0.1),
+            ]
+        ):
+            mock_ang2pix.reset_mock()
+            mock_ang2pix.side_effect = mock_ang2pix_fn
+            mean_value = (
+                hp_map.calculate_rect_pixel_value_from_healpix_map_n_subdivisions(
+                    rect_pix_center_lon_lat=(180, 0),
+                    rect_pix_spacing_deg=4,
+                    value_key="counts",
+                    num_subdivisions=num_subdiv,
+                )
+            )
+            np.testing.assert_allclose(
+                mean_value,
+                expected_value,
+                atol=atol,
+                err_msg=f"Failed for num_subdivisions: {num_subdiv}",
+            )
+        hp_map.calculate_rect_pixel_value_from_healpix_map_n_subdivisions(
+            rect_pix_center_lon_lat=(180, 0),
+            rect_pix_spacing_deg=2,
+            value_key="counts",
+            num_subdivisions=0,
+        )
+
+    @mock.patch(
+        "imap_processing.ena_maps.ena_maps.HealpixSkyMap.calculate_rect_pixel_value_from_healpix_map_n_subdivisions"
+    )
+    def test_get_pixel_value_recursive_subdivs(
+        self,
+        mock_calculate_rect_pixel_value_from_healpix_map_n_subdivisions,
+    ):
+        """Test that the recursive subdivision works as expected with different rtol."""
+
+        # Mock the function to return a fixed value for a number of subdivisions
+        value_by_subdivisions = {
+            0: 100.0,
+            1: 110.0,  # 10/110 = 0.09090909 change
+            2: 105.0,  # 5/105 = 0.04761905 change
+            3: 107.0,  # 2/107 = 0.01869159 change
+            4: 107.5,  # 0.5/107.5 = 0.00465116 change
+            5: 107.51,  # 0.01/107.51 = 0.00009301 change
+            6: 107.5099,  # 0.0001/107.5099 = 0.00000093 change
+        }
+        required_rtols = [
+            0.1,
+            0.05,
+            0.02,
+            0.005,
+            0.0001,
+            0.000001,
+        ]
+
+        mock_calculate_rect_pixel_value_from_healpix_map_n_subdivisions.side_effect = (
+            lambda *args, **kwargs: np.array(
+                [
+                    value_by_subdivisions[kwargs["num_subdivisions"]],
+                ]
+            )
+        )
+        hp_map = ena_maps.HealpixSkyMap(
+            nside=16,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+        )
+
+        # Test the recursive subdivision by setting different tolerances to get the
+        # expected number of subdivisions and resultant mean value.
+        for expected_subdiv_level in range(1, len(required_rtols)):
+            mean, depth = hp_map.get_pixel_value_recursive_subdivs(
+                rect_pix_center_lon_lat=(180, 0),
+                rect_pix_spacing_deg=4,
+                value_key="counts",
+                tolerances=(required_rtols[expected_subdiv_level - 1], 0),
+            )
+            assert depth == expected_subdiv_level
+            np.testing.assert_equal(
+                mean,
+                value_by_subdivisions[expected_subdiv_level],
+                err_msg=f"Failed for expected_subdiv_level: {expected_subdiv_level}",
+            )
+
 
 class TestIndexMatching:
     @pytest.fixture(autouse=True)
