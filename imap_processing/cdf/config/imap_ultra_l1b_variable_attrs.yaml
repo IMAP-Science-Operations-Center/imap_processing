@@ -291,14 +291,6 @@ de_event_met:
   VAR_TYPE: support_data
   SCALE_TYP: linear
 
-spin_start_time:
-  <<: *default
-  CATDESC: Spin start time from Universal Spin Table.
-  FIELDNAM: spin_start_time
-  LABLAXIS: spin start time
-  # TODO: come back to format
-  UNITS: s
-
 spin_period:
   <<: *default
   CATDESC: Spin period from Universal Spin Table.

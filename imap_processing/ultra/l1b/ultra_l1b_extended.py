@@ -49,7 +49,9 @@ class CoinType(Enum):
     Bottom = 2
 
 
-def get_front_x_position(start_type: ndarray, start_position_tdc: ndarray) -> ndarray:
+def get_front_x_position(
+    start_type: ndarray, start_position_tdc: ndarray, sensor: str
+) -> ndarray:
     """
     Calculate the front xf position.
 
@@ -64,6 +66,8 @@ def get_front_x_position(start_type: ndarray, start_position_tdc: ndarray) -> nd
         Start Type: 1=Left, 2=Right.
     start_position_tdc : ndarray
         Start Position Time to Digital Converter (TDC).
+    sensor : str
+        Sensor name.
 
     Returns
     -------
@@ -73,9 +77,9 @@ def get_front_x_position(start_type: ndarray, start_position_tdc: ndarray) -> nd
     # Left and right start types.
     indices = np.nonzero((start_type == 1) | (start_type == 2))
 
-    xftsc = get_image_params("XFTSC")
-    xft_lt_off = get_image_params("XFTLTOFF")
-    xft_rt_off = get_image_params("XFTRTOFF")
+    xftsc = get_image_params("XFTSC", sensor)
+    xft_lt_off = get_image_params("XFTLTOFF", sensor)
+    xft_rt_off = get_image_params("XFTRTOFF", sensor)
     xft_off = np.where(start_type[indices] == 1, xft_lt_off, xft_rt_off)
 
     # Calculate xf and convert to hundredths of a millimeter
@@ -227,13 +231,13 @@ def get_ph_tof_and_back_positions(
     yb[stop_type_top] = get_back_position(yb_index[stop_type_top], "YBkTp", sensor)
 
     # Correction for the propagation delay of the start anode and other effects.
-    t2[stop_type_top] = get_image_params("TOFSC") * t1[
+    t2[stop_type_top] = get_image_params("TOFSC", sensor) * t1[
         stop_type_top
-    ] + get_image_params("TOFTPOFF")
+    ] + get_image_params("TOFTPOFF", sensor)
     # Variable xf_ph divided by 10 to convert to mm.
     tof[stop_type_top] = t2[stop_type_top] + xf_ph[
         stop_type_top
-    ] / 10 * get_image_params("XFTTOF")
+    ] / 10 * get_image_params("XFTTOF", sensor)
 
     stop_type_bottom = de_filtered["stop_type"].data == StopType.Bottom.value
     xb[stop_type_bottom] = get_back_position(
@@ -244,14 +248,14 @@ def get_ph_tof_and_back_positions(
     )
 
     # Correction for the propagation delay of the start anode and other effects.
-    t2[stop_type_bottom] = get_image_params("TOFSC") * t1[
+    t2[stop_type_bottom] = get_image_params("TOFSC", sensor) * t1[
         stop_type_bottom
-    ] + get_image_params("TOFBTOFF")  # 10*ns
+    ] + get_image_params("TOFBTOFF", sensor)  # 10*ns
 
     # Variable xf_ph divided by 10 to convert to mm.
     tof[stop_type_bottom] = t2[stop_type_bottom] + xf_ph[
         stop_type_bottom
-    ] / 10 * get_image_params("XFTTOF")
+    ] / 10 * get_image_params("XFTTOF", sensor)
 
     return tof, t2, xb, yb
 
@@ -286,7 +290,7 @@ def get_path_length(
 
 
 def get_ssd_back_position_and_tof_offset(
-    de_dataset: xarray.Dataset,
+    de_dataset: xarray.Dataset, sensor: str
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Lookup the Y SSD positions (yb), TOF Offset, and SSD number.
@@ -295,6 +299,8 @@ def get_ssd_back_position_and_tof_offset(
     ----------
     de_dataset : xarray.Dataset
         The input dataset containing STOP_TYPE and SSD_FLAG data.
+    sensor : str
+        Sensor name.
 
     Returns
     -------
@@ -320,15 +326,15 @@ def get_ssd_back_position_and_tof_offset(
         ssd_flag_mask = de_filtered[f"ssd_flag_{i}"].data == 1
 
         # Multiply ybs times 100 to convert to hundredths of a millimeter.
-        yb[ssd_flag_mask] = get_image_params(f"YBKSSD{i}") * 100
+        yb[ssd_flag_mask] = get_image_params(f"YBKSSD{i}", sensor) * 100
         ssd_number[ssd_flag_mask] = i
 
         tof_offset[
             (de_filtered["start_type"] == StartType.Left.value) & ssd_flag_mask
-        ] = get_image_params(f"TOFSSDLTOFF{i}")
+        ] = get_image_params(f"TOFSSDLTOFF{i}", sensor)
         tof_offset[
             (de_filtered["start_type"] == StartType.Right.value) & ssd_flag_mask
-        ] = get_image_params(f"TOFSSDRTOFF{i}")
+        ] = get_image_params(f"TOFSSDRTOFF{i}", sensor)
 
     return yb, tof_offset, ssd_number
 
@@ -362,14 +368,14 @@ def calculate_etof_xc(
     coin_n_norm = get_norm(de_subset["coin_north_tdc"], "CoinN", sensor)
     # CoinSNorm
     coin_s_norm = get_norm(de_subset["coin_south_tdc"], "CoinS", sensor)
-    xc = get_image_params(f"XCOIN{location}SC") * (
+    xc = get_image_params(f"XCOIN{location}SC", sensor) * (
         coin_s_norm - coin_n_norm
-    ) + get_image_params(f"XCOIN{location}OFF")  # millimeter
+    ) + get_image_params(f"XCOIN{location}OFF", sensor)  # millimeter
 
     # Time for the electrons to travel back to coincidence anode.
-    t2 = get_image_params("ETOFSC") * (coin_n_norm + coin_s_norm) + get_image_params(
-        f"ETOF{location}OFF"
-    )
+    t2 = get_image_params("ETOFSC", sensor) * (
+        coin_n_norm + coin_s_norm
+    ) + get_image_params(f"ETOF{location}OFF", sensor)
 
     # Multiply by 10 to convert to tenths of a nanosecond.
     etof = t2 * 10 - particle_tof
@@ -444,7 +450,7 @@ def get_de_velocity(
     back_position: tuple[NDArray, NDArray],
     d: np.ndarray,
     tof: np.ndarray,
-) -> NDArray:
+) -> tuple[NDArray, NDArray, NDArray]:
     """
     Determine the direct event velocity.
 
@@ -463,6 +469,10 @@ def get_de_velocity(
     -------
     velocities : np.ndarray
         N x 3 array of velocity components (vx, vy, vz) in km/s.
+    v_hat : np.ndarray
+        Unit vector in the direction of the velocity.
+    r_hat : np.ndarray
+        Position vector.
     """
     if tof[tof < 0].any():
         logger.info("Negative tof values found.")
@@ -484,10 +494,15 @@ def get_de_velocity(
 
     velocities = np.vstack((v_x, v_y, v_z)).T
 
-    return velocities
+    v_hat = velocities / np.linalg.norm(velocities, axis=1)[:, None]
+    r_hat = -v_hat
+
+    return velocities, v_hat, r_hat
 
 
-def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.ndarray) -> NDArray[np.float64]:
+def get_ssd_tof(
+    de_dataset: xarray.Dataset, xf: np.ndarray, sensor: str
+) -> NDArray[np.float64]:
     """
     Calculate back xb, yb position for the SSDs.
 
@@ -510,25 +525,27 @@ def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.ndarray) -> NDArray[np.float6
         Data in xarray format.
     xf : np.array
         Front x position (hundredths of a millimeter).
+    sensor : str
+        Sensor name.
 
     Returns
     -------
     tof : np.ndarray
         Time of flight (tenths of a nanosecond).
     """
-    _, tof_offset, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset)
+    _, tof_offset, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset, sensor)
     indices = np.nonzero(np.isin(de_dataset["stop_type"], [StopType.SSD.value]))[0]
 
     de_discrete = de_dataset.isel(epoch=indices)["coin_discrete_tdc"]
 
-    time = get_image_params("TOFSSDSC") * de_discrete.values + tof_offset
+    time = get_image_params("TOFSSDSC", sensor) * de_discrete.values + tof_offset
 
     # The scale factor and offsets, and a multiplier to convert xf to a tof offset.
     # Convert xf to mm by dividing by 100.
     tof = (
         time
-        + get_image_params("TOFSSDTOTOFF")
-        + xf[indices] / 100 * get_image_params("XFTTOF")
+        + get_image_params("TOFSSDTOTOFF", sensor)
+        + xf[indices] / 100 * get_image_params("XFTTOF", sensor)
     ) * 10
 
     # Convert TOF to tenths of a nanosecond.
@@ -567,7 +584,11 @@ def get_de_energy_kev(v: np.ndarray, species: np.ndarray) -> NDArray:
 
 
 def get_energy_pulse_height(
-    stop_type: np.ndarray, energy: np.ndarray, xb: np.ndarray, yb: np.ndarray
+    stop_type: np.ndarray,
+    energy: np.ndarray,
+    xb: np.ndarray,
+    yb: np.ndarray,
+    sensor: str,
 ) -> NDArray[np.float64]:
     """
     Calculate the pulse-height energy.
@@ -588,6 +609,8 @@ def get_energy_pulse_height(
         X back position (hundredths of a millimeter).
     yb : np.ndarray
         Y back position (hundredths of a millimeter).
+    sensor : str
+        Sensor name.
 
     Returns
     -------
@@ -611,12 +634,12 @@ def get_energy_pulse_height(
 
     # TODO: waiting on these lookup tables: SpTpPHCorr, SpBtPHCorr
     energy_ph[indices_top] = energy[indices_top] - get_image_params(
-        "SPTPPHOFF"
+        "SPTPPHOFF", sensor
     )  # * SpTpPHCorr[
     # xlut[indices_top], ylut[indices_top]] / 1024
 
     energy_ph[indices_bottom] = energy[indices_bottom] - get_image_params(
-        "SPBTPHOFF"
+        "SPBTPHOFF", sensor
     )  # * SpBtPHCorr[
     # xlut[indices_bottom], ylut[indices_bottom]] / 1024
 

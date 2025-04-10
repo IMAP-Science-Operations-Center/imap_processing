@@ -10,6 +10,7 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     get_background_rates,
     get_spacecraft_exposure_times,
     get_spacecraft_histogram,
+    grid_sensitivity,
 )
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
@@ -49,7 +50,7 @@ def calculate_spacecraft_pset(
         de_dataset["velocity_dps_sc"].values / v_mag_dps_spacecraft[:, np.newaxis]
     )
 
-    intervals, _, energy_bin_geometric_means = build_energy_bins()
+    intervals, energy_midpoints, energy_bin_geometric_means = build_energy_bins()
     counts, latitude, longitude, n_pix = get_spacecraft_histogram(
         vhat_dps_spacecraft,
         de_dataset["energy_spacecraft"].values,
@@ -62,6 +63,15 @@ def calculate_spacecraft_pset(
     background_rates = get_background_rates()
 
     # TODO: calculate sensitivity and interpolate based on energy.
+    # TODO: remove below here with lookup table aux api
+    efficiences = TEST_PATH / "Ultra_90_DPS_efficiencies_all.csv"
+    geometric_function = TEST_PATH / "ultra_90_dps_gf.csv"
+
+    df_efficiencies = pd.read_csv(efficiences)
+    df_geometric_function = pd.read_csv(geometric_function)
+    sensitivity = grid_sensitivity(
+        df_efficiencies, df_geometric_function, energy_midpoints
+    )
 
     # Calculate exposure
     constant_exposure = TEST_PATH / "ultra_90_dps_exposure.csv"
@@ -78,6 +88,7 @@ def calculate_spacecraft_pset(
     pset_dict["exposure_factor"] = exposure_pointing
     pset_dict["healpix"] = healpix
     pset_dict["energy_bin_delta"] = np.diff(intervals, axis=1).squeeze()
+    pset_dict["sensitivity"] = sensitivity
 
     dataset = create_dataset(pset_dict, name, "l1c")
 
