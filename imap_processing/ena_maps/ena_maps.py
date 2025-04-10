@@ -1210,7 +1210,7 @@ class HealpixSkyMap(AbstractSkyMap):
         value_key: str,
         tolerances: tuple[float, float] = (1e-3, 1e-12),
         max_subdivision_depth: int = MAX_SUBDIV_RECURSION_DEPTH,
-    ) -> tuple[list[np.typing.NDArray], int]:
+    ) -> tuple[np.typing.NDArray, int]:
         """
         Recursively subdivide a rectangular pixel to get a mean value within tolerances.
 
