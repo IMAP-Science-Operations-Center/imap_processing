@@ -1085,6 +1085,7 @@ class HealpixSkyMap(AbstractSkyMap):
             }
         )
 
+    # Define methods for converting a Healpix map to a Rectangular map:
     def calculate_rect_pixel_value_from_healpix_map_n_subdivisions(
         self,
         rect_pix_center_lon_lat: np.typing.NDArray | tuple[float, float],
@@ -1093,10 +1094,11 @@ class HealpixSkyMap(AbstractSkyMap):
         num_subdivisions: int,
     ) -> np.typing.NDArray:
         """
-        Interpolate the value of a rectangular pixel from a healpix map w/ subdivisions.
+        Interpolate the value of 1 rectangular pixel from a healpix map w/ subdivisions.
 
-        This function splits a rectangular pixel into smaller subpixels
-        and calculates the mean value of the healpix map at those subpixel centers.
+        This function splits a single rectangular pixel into smaller subpixels
+        and calculates the solid angle weighted mean value of
+        the healpix map at all of the subpixel centers.
 
         Parameters
         ----------
@@ -1115,10 +1117,12 @@ class HealpixSkyMap(AbstractSkyMap):
         -------
         np.typing.NDArray
             The mean value of the healpix map at the subpixel centers.
+
             If the array associated with the key value_key has a single value
             at each pixel, the output will be a single value,
-            but if there are other dimensions, (e.g., if
-            self.data_1d['flux'].sizes = {"epoch": 1, "energy": 24, "pixel": 16200}),
+            but if there are other dimensions,
+            (e.g., if self.data_1d['flux'].sizes =
+            {"epoch": 1, "energy": 24, "pixel": 16200}),
             the output will be an array with the same dims except the pixel dimension
             (e.g., (1, 24)).
         """
@@ -1230,30 +1234,12 @@ class HealpixSkyMap(AbstractSkyMap):
         """
         relative_tolerance, absolute_tolerance = tolerances
 
-        # Calculate mean value at the 0th level of recursion (no subdivision of the pix)
-        # TODO: I think we can put this in the 0th level of recursion and
-        # skip calculating the delta and comparing it to the tolerance
-        depth = 0
-        rect_pix_center_lon_lat = np.reshape(rect_pix_center_lon_lat, (-1, 2))
-        hp_pix_at_rect_subpix_ctr = hp.ang2pix(
-            nside=self.nside,
-            nest=self.nested,
-            theta=rect_pix_center_lon_lat[:, 0],
-            phi=rect_pix_center_lon_lat[:, 1],
-            lonlat=True,
-        )
-        hp_vals_at_rect_pix_ctrs = self.data_1d[value_key].values[
-            ..., hp_pix_at_rect_subpix_ctr
-        ]
-        mean_pixel_value_at_level = [
-            hp_vals_at_rect_pix_ctrs.mean(axis=(-1)),
-        ]
-
         # Recursively subdivide a pixel and calculate its mean value until either the
         # difference between consecutive levels is within the specified tolerances
         # or the maximum recursion depth is reached
+        depth = 0
+        mean_pixel_value_at_level = []
         while depth < MAX_RECURSION_DEPTH:
-            depth += 1
             mean_pixel_value = (
                 self.calculate_rect_pixel_value_from_healpix_map_n_subdivisions(
                     rect_pix_center_lon_lat=rect_pix_center_lon_lat,
@@ -1265,21 +1251,22 @@ class HealpixSkyMap(AbstractSkyMap):
             mean_pixel_value_at_level.append(mean_pixel_value)
 
             # Determine if tolerance is met
-            abs_delta = np.abs(
-                mean_pixel_value_at_level[-1].mean()
-                - mean_pixel_value_at_level[-2].mean()
-            )
-            total_abs_tolerance = (
-                relative_tolerance * np.abs(mean_pixel_value_at_level[-1].mean())
-                + absolute_tolerance
-            )
-            if abs_delta < total_abs_tolerance:
-                break
+            if depth > 0:
+                abs_delta = np.abs(
+                    mean_pixel_value_at_level[-1].mean()
+                    - mean_pixel_value_at_level[-2].mean()
+                )
+                total_abs_tolerance = (
+                    relative_tolerance * np.abs(mean_pixel_value_at_level[-1].mean())
+                    + absolute_tolerance
+                )
+                if abs_delta < total_abs_tolerance:
+                    break
+            depth += 1
 
         # Only keep the last (best) mean pixel value
         return mean_pixel_value_at_level[-1], depth
 
-    # Define methods for converting a Healpix map to a Rectangular map
     def to_rectangular_skymap_with_recusive_subdivision(
         self,
         rect_spacing_deg: float,
