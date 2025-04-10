@@ -4,6 +4,7 @@ import numpy as np
 import xarray as xr
 from scipy.stats import exponnorm
 
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.idex import idex_constants
 from imap_processing.idex.idex_l2a import (
     BaselineNoiseTime,
@@ -44,6 +45,21 @@ def test_l2a_logical_source(l2a_dataset: xr.Dataset):
     """
     expected_src = "imap_idex_l2a_sci-1week"
     assert l2a_dataset.attrs["Logical_source"] == expected_src
+
+
+def test_idex_cdf_file(l2a_dataset: xr.Dataset):
+    """Verify the CDF file can be created with no errors.
+
+    Parameters
+    ----------
+    l2a_dataset : xarray.Dataset
+        The dataset to test with
+    """
+
+    file_name = write_cdf(l2a_dataset)
+
+    assert file_name.exists()
+    assert file_name.name == "imap_idex_l2a_sci-1week_20231218_v001.cdf"
 
 
 def test_l2a_cdf_variables(l2a_dataset: xr.Dataset):

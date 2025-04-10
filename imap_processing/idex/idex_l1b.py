@@ -24,6 +24,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.idex.idex_constants import ConversionFactors
+from imap_processing.idex.idex_utils import get_idex_attrs, setup_dataset
 from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
@@ -96,9 +97,8 @@ def idex_l1b(l1a_dataset: xr.Dataset) -> xr.Dataset:
     )
 
     # create the attribute manager for this data level
-    idex_attrs = ImapCdfAttributes()
-    idex_attrs.add_instrument_global_attrs(instrument="idex")
-    idex_attrs.add_instrument_variable_attrs(instrument="idex", level="l1b")
+    # Get attributes
+    idex_attrs = get_idex_attrs("l1b")
 
     var_information_path = (
         f"{imap_module_directory}/idex/idex_variable_unpacking_and_eu_conversion.csv"
@@ -132,26 +132,17 @@ def idex_l1b(l1a_dataset: xr.Dataset) -> xr.Dataset:
         )
 
     # Create l1b Dataset
-    l1b_dataset = xr.Dataset(
-        coords={"epoch": epoch_da},
-        data_vars=processed_vars | waveforms_converted | trigger_settings | spice_data,
-        attrs=idex_attrs.get_global_attributes("imap_idex_l1b_sci"),
-    )
+    prefixes = ["shcoarse", "shfine", "time_high_sample", "time_low_sample"]
+    data_vars = processed_vars | waveforms_converted | trigger_settings | spice_data
+    l1b_dataset = setup_dataset(l1a_dataset, prefixes, idex_attrs, data_vars)
+    l1b_dataset.attrs = idex_attrs.get_global_attributes("imap_idex_l1b_sci")
+
     # Convert variables
     l1b_dataset = convert_raw_to_eu(
         l1b_dataset,
         conversion_table_path=var_information_path,
         packet_name="IDEX_SCI",
     )
-    prefixes = ["shcoarse", "shfine", "time_high_sample", "time_low_sample"]
-    vars_to_copy = [
-        var
-        for var in l1a_dataset.variables
-        if any(prefix in var for prefix in prefixes)
-    ]
-    # Copy arrays from the l1a_dataset that do not need l1b processing
-    for var in vars_to_copy:
-        l1b_dataset[var] = l1a_dataset[var].copy()
 
     logger.info("IDEX L1B science data processing completed.")
 

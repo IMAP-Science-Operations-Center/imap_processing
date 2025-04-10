@@ -8,6 +8,7 @@ from imap_processing import imap_module_directory
 from imap_processing.idex.idex_l1a import PacketParser
 from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.idex.idex_l2a import idex_l2a
+from imap_processing.idex.idex_utils import get_idex_attrs
 
 TEST_DATA_PATH = imap_module_directory / "tests" / "idex" / "test_data"
 
@@ -92,8 +93,11 @@ def l2a_dataset(decom_test_data_sci: xr.Dataset) -> xr.Dataset:
     dataset : xr.Dataset
         A ``xarray`` dataset containing the test data
     """
+    idex_attrs = get_idex_attrs("v001", "l1b")
     spin_phase_angles = xr.DataArray(
-        np.random.randint(0, 360, len(decom_test_data_sci.epoch))
+        np.random.randint(0, 360, len(decom_test_data_sci.epoch)),
+        dims="epoch",
+        attrs=idex_attrs.get_variable_attributes("spin_phase"),
     )
     with mock.patch(
         "imap_processing.idex.idex_l1b.get_spice_data",

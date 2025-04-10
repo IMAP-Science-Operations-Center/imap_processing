@@ -25,10 +25,10 @@ import space_packet_parser
 import xarray as xr
 from xarray import Dataset
 
-from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.idex.decode import rice_decode
 from imap_processing.idex.idex_constants import IDEXAPID
 from imap_processing.idex.idex_l0 import decom_packets
+from imap_processing.idex.idex_utils import get_idex_attrs
 from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.utils import convert_to_binary_string
 
@@ -714,18 +714,3 @@ class RawDustEvent:
             coords=coords,
         )
         return dataset
-
-
-def get_idex_attrs() -> ImapCdfAttributes:
-    """
-    Load in CDF attributes for IDEX instrument.
-
-    Returns
-    -------
-    idex_attrs : ImapCdfAttributes
-        The IDEX L1a CDF attributes.
-    """
-    idex_attrs = ImapCdfAttributes()
-    idex_attrs.add_instrument_global_attrs("idex")
-    idex_attrs.add_instrument_variable_attrs("idex", "l1a")
-    return idex_attrs
