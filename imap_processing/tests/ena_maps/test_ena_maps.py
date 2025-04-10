@@ -804,6 +804,7 @@ class TestHealpixSkyMap:
             4: 107.5,  # 0.5/107.5 = 0.00465116 change
             5: 107.51,  # 0.01/107.51 = 0.00009301 change
             6: 107.5099,  # 0.0001/107.5099 = 0.00000093 change
+            7: 120,  # Big change - but will stop because of MAX SUBDIVS
         }
         required_rtols = [
             0.1,
@@ -812,6 +813,7 @@ class TestHealpixSkyMap:
             0.005,
             0.0001,
             0.000001,
+            1e-12,
         ]
 
         mock_calculate_rect_pixel_value_from_healpix_map_n_subdivisions.side_effect = (
@@ -834,12 +836,71 @@ class TestHealpixSkyMap:
                 rect_pix_spacing_deg=4,
                 value_key="counts",
                 tolerances=(required_rtols[expected_subdiv_level - 1], 0),
+                max_subdivision_depth=7,
             )
             assert depth == expected_subdiv_level
             np.testing.assert_equal(
                 mean,
                 value_by_subdivisions[expected_subdiv_level],
                 err_msg=f"Failed for expected_subdiv_level: {expected_subdiv_level}",
+            )
+
+    def test_to_rectangular_skymap_with_recusive_subdivision(
+        self,
+    ):
+        hp_map = ena_maps.HealpixSkyMap(
+            nside=64,
+            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
+        )
+
+        hp_map.data_1d["counts"] = xr.DataArray(
+            data=np.fromfunction(
+                lambda time, energy, pixel: 1000 + pixel * (10 * (energy + 1)),
+                shape=(1, 10, hp_map.num_points),
+                dtype=np.float32,
+            ),
+            dims=["epoch", "energy", "pixel"],
+        )
+        hp_map.data_1d["exposure_factor"] = xr.DataArray(
+            data=np.ones((10, hp_map.num_points)),
+            dims=["energy", "pixel"],
+        )
+
+        rect_map, subdiv_depth_dict = (
+            hp_map.to_rectangular_skymap_with_recusive_subdivision(
+                rect_spacing_deg=2,
+                value_keys=["counts", "exposure_factor"],
+            )
+        )
+
+        for value_key, subdiv_depth in subdiv_depth_dict.items():
+            # subdiv depth should always be between 1 and
+            # ena_maps.MAX_SUBDIV_RECURSION_DEPTH
+            np.testing.assert_array_less(
+                0,
+                subdiv_depth,
+                err_msg=f"subdiv <1 for: {value_key}",
+            )
+            np.testing.assert_array_less(
+                subdiv_depth,
+                ena_maps.MAX_SUBDIV_RECURSION_DEPTH + 1,
+                err_msg=f"subdiv >MAX for: {value_key}",
+            )
+
+            # The min and max values of the rect and healpix maps should be close
+            # The min will have a larger relative tolerance because the variation
+            # in the test data is larger in comparison to the min value than to the max
+            np.testing.assert_allclose(
+                rect_map.data_1d[value_key].min(),
+                hp_map.data_1d[value_key].min(),
+                rtol=5e-2,
+                err_msg=f"Min values of {value_key} do not match",
+            )
+            np.testing.assert_allclose(
+                rect_map.data_1d[value_key].max(),
+                hp_map.data_1d[value_key].max(),
+                rtol=1e-3,
+                err_msg=f"Max values of {value_key} do not match",
             )
 
 
