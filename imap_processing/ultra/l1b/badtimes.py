@@ -37,4 +37,8 @@ def calculate_badtimes(
 
     badtimes_dataset = create_dataset(filtered_dataset, name, "l1b")
 
+    # Inherents coordinates from the filtered dataset if empty.
+    if badtimes_dataset.dims["spin_number"] == 0:
+        badtimes_dataset = badtimes_dataset.assign_coords(filtered_dataset.coords)
+
     return badtimes_dataset
