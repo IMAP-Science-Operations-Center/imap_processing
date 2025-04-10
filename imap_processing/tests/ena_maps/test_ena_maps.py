@@ -789,7 +789,7 @@ class TestHealpixSkyMap:
     @mock.patch(
         "imap_processing.ena_maps.ena_maps.HealpixSkyMap.calculate_rect_pixel_value_from_healpix_map_n_subdivisions"
     )
-    def test_get_pixel_value_recursive_subdivs(
+    def test_get_rect_pixel_value_recursive_subdivs(
         self,
         mock_calculate_rect_pixel_value_from_healpix_map_n_subdivisions,
     ):
@@ -831,7 +831,7 @@ class TestHealpixSkyMap:
         # Test the recursive subdivision by setting different tolerances to get the
         # expected number of subdivisions and resultant mean value.
         for expected_subdiv_level in range(1, len(required_rtols)):
-            mean, depth = hp_map.get_pixel_value_recursive_subdivs(
+            mean, depth = hp_map.get_rect_pixel_value_recursive_subdivs(
                 rect_pix_center_lon_lat=(180, 0),
                 rect_pix_spacing_deg=4,
                 value_key="counts",
@@ -845,7 +845,7 @@ class TestHealpixSkyMap:
                 err_msg=f"Failed for expected_subdiv_level: {expected_subdiv_level}",
             )
 
-    def test_to_rectangular_skymap_with_recusive_subdivision(
+    def test_to_rectangular_skymap(
         self,
     ):
         hp_map = ena_maps.HealpixSkyMap(
@@ -866,11 +866,9 @@ class TestHealpixSkyMap:
             dims=["energy", "pixel"],
         )
 
-        rect_map, subdiv_depth_dict = (
-            hp_map.to_rectangular_skymap_with_recusive_subdivision(
-                rect_spacing_deg=2,
-                value_keys=["counts", "exposure_factor"],
-            )
+        rect_map, subdiv_depth_dict = hp_map.to_rectangular_skymap(
+            rect_spacing_deg=2,
+            value_keys=["counts", "exposure_factor"],
         )
 
         for value_key, subdiv_depth in subdiv_depth_dict.items():
@@ -901,6 +899,13 @@ class TestHealpixSkyMap:
                 hp_map.data_1d[value_key].max(),
                 rtol=1e-3,
                 err_msg=f"Max values of {value_key} do not match",
+            )
+
+            # The dims of the rect map should be the same as the healpix map,
+            # except for the final pixel dimension
+            assert (
+                rect_map.data_1d[value_key].dims[:-1]
+                == hp_map.data_1d[value_key].dims[:-1]
             )
 
 
