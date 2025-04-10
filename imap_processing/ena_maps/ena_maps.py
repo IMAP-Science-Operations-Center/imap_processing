@@ -1280,10 +1280,11 @@ class HealpixSkyMap(AbstractSkyMap):
         # Only keep the last (best) mean pixel value
         return mean_pixel_value_at_level[-1], depth
 
-    def to_rectangular_skymap_with_recusive_subdivision(
+    def to_rectangular_skymap(
         self,
         rect_spacing_deg: float,
         value_keys: list[str],
+        max_subdivision_depth: int = MAX_SUBDIV_RECURSION_DEPTH,
     ) -> tuple[RectangularSkyMap, dict[str, np.typing.NDArray]]:
         """
         Interpolate a healpix map to a rectangular map using recursive subdivision.
@@ -1296,6 +1297,9 @@ class HealpixSkyMap(AbstractSkyMap):
             The names of the values to interpolate from the healpix map.
             Each must be independently interpolated because the subdivision depth
             depends on the gradient of the value between adjacent healpix pixels.
+        max_subdivision_depth : int, optional
+            The maximum depth of recursion for subdivision,
+            by default MAX_SUBDIV_RECURSION_DEPTH.
 
         Returns
         -------
@@ -1315,13 +1319,13 @@ class HealpixSkyMap(AbstractSkyMap):
         # gradients of the values, the number of operations can be very large, so
         # log key information about the expected number of operations.
         approx_max_operations = (
-            (4**MAX_SUBDIV_RECURSION_DEPTH) * self.num_points * len(value_keys)
+            (4**max_subdivision_depth) * self.num_points * len(value_keys)
         )
         logger.info(
             f"Converting from a HealpixSkyMap(nside={self.nside}) to a "
             f"RectangularSkyMap(spacing_deg={rect_spacing_deg}) with recursive "
             "subdivision.\n The maximum recursion depth is "
-            f"{MAX_SUBDIV_RECURSION_DEPTH}, yielding a maximum number of healpix calls"
+            f"{max_subdivision_depth}, yielding a maximum number of healpix calls"
             f" of {approx_max_operations:.3e}."
         )
 
@@ -1339,6 +1343,7 @@ class HealpixSkyMap(AbstractSkyMap):
                     rect_pix_center_lon_lat=lon_lat,
                     rect_pix_spacing_deg=rect_map.spacing_deg,
                     value_key=value_key,
+                    max_subdivision_depth=max_subdivision_depth,
                 )
                 for lon_lat in rect_map.az_el_points
             ]
