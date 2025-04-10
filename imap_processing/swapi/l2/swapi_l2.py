@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 TIME_PER_BIN = 0.167  # seconds
 
 
-def swapi_l2(l1_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+def swapi_l2(l1_dataset: xr.Dataset) -> xr.Dataset:
     """
     Produce science data to L2.
 
@@ -32,8 +32,6 @@ def swapi_l2(l1_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     ----------
     l1_dataset : xarray.Dataset
         The L1 data input.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -60,7 +58,6 @@ def swapi_l2(l1_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     l2_dataset = l1_dataset[l1_data_keys]
 
     # Update L2 specific attributes
-    l2_dataset.attrs["Data_version"] = data_version
     l2_global_attrs = cdf_manager.get_global_attributes("imap_swapi_l2_sci")
     l2_dataset.attrs["Data_type"] = l2_global_attrs["Data_type"]
     l2_dataset.attrs["Logical_source"] = l2_global_attrs["Logical_source"]

@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 def mag_l1c(
     first_input_dataset: xr.Dataset,
-    version: str,
     second_input_dataset: xr.Dataset = None,
 ) -> xr.Dataset:
     """
@@ -30,8 +29,6 @@ def mag_l1c(
     first_input_dataset : xr.Dataset
         The first input dataset to process. This can be either burst or norm data, for
         mago or magi.
-    version : str
-        The version of the output data.
     second_input_dataset : xr.Dataset, optional
         The second input dataset to process. This should be burst if first_input_dataset
         was norm, or norm if first_input_dataset was burst. It should match the
@@ -84,7 +81,6 @@ def mag_l1c(
 
     attribute_manager = ImapCdfAttributes()
     attribute_manager.add_instrument_global_attrs("mag")
-    attribute_manager.add_global_attribute("Data_version", version)
     attribute_manager.add_instrument_variable_attrs("mag", "l1c")
     compression = xr.DataArray(
         np.arange(2),

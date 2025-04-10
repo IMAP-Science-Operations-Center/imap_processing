@@ -66,14 +66,12 @@ def get_datasets_by_apid(
     return datasets_by_apid
 
 
-def get_attribute_manager(data_version: str, level: str) -> ImapCdfAttributes:
+def get_attribute_manager(level: str) -> ImapCdfAttributes:
     """
     Create an attribute manager for the HIT data products.
 
     Parameters
     ----------
-    data_version : str
-        Version of the data product being created.
     level : str
         Data level of the product being created.
 
@@ -86,7 +84,6 @@ def get_attribute_manager(data_version: str, level: str) -> ImapCdfAttributes:
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs(instrument="hit")
     attr_mgr.add_instrument_variable_attrs(instrument="hit", level=level)
-    attr_mgr.add_global_attribute("Data_version", data_version)
     return attr_mgr
 
 

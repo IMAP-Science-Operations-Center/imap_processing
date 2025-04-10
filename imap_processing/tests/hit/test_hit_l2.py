@@ -35,12 +35,12 @@ def dependencies(sci_packet_filepath):
     """Get dependencies for L2 processing"""
     # Create dictionary of dependencies
     data_dict = {}
-    l1a_datasets = hit_l1a.hit_l1a(sci_packet_filepath, "001")
+    l1a_datasets = hit_l1a.hit_l1a(sci_packet_filepath)
     for l1a_dataset in l1a_datasets:
         l1a_data_dict = {}
         if l1a_dataset.attrs["Logical_source"] == "imap_hit_l1a_counts":
             l1a_data_dict["imap_hit_l1a_counts"] = l1a_dataset
-            l1b_datasets = hit_l1b(l1a_data_dict, "001")
+            l1b_datasets = hit_l1b(l1a_data_dict)
             for l1b_dataset in l1b_datasets:
                 data_dict[l1b_dataset.attrs["Logical_source"]] = l1b_dataset
     return data_dict
@@ -447,10 +447,10 @@ def test_hit_l2(dependencies):
         Dictionary of L1B datasets
     """
     # TODO: update assertions after science data processing is completed
-    l2_datasets = hit_l2(dependencies["imap_hit_l1b_summed-rates"], "001")
+    l2_datasets = hit_l2(dependencies["imap_hit_l1b_summed-rates"])
     assert len(l2_datasets) == 1
     assert l2_datasets[0].attrs["Logical_source"] == "imap_hit_l2_summed-intensity"
 
-    l2_datasets = hit_l2(dependencies["imap_hit_l1b_standard-rates"], "001")
+    l2_datasets = hit_l2(dependencies["imap_hit_l1b_standard-rates"])
     assert len(l2_datasets) == 1
     assert l2_datasets[0].attrs["Logical_source"] == "imap_hit_l2_standard-intensity"

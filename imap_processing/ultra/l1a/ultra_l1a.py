@@ -23,9 +23,7 @@ from imap_processing.utils import packet_file_to_datasets
 logger = logging.getLogger(__name__)
 
 
-def ultra_l1a(
-    packet_file: str, data_version: str, apid: Optional[int] = None
-) -> list[xr.Dataset]:
+def ultra_l1a(packet_file: str, apid: Optional[int] = None) -> list[xr.Dataset]:
     """
     Will process ULTRA L0 data into L1A CDF files at output_filepath.
 
@@ -33,8 +31,6 @@ def ultra_l1a(
     ----------
     packet_file : str
         Path to the CCSDS data packet file.
-    data_version : str
-        Version of the data product being created.
     apid : Optional[int]
         Optional apid.
 
@@ -64,7 +60,6 @@ def ultra_l1a(
     # Update dataset global attributes
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs("ultra")
-    attr_mgr.add_global_attribute("Data_version", data_version)
     attr_mgr.add_instrument_variable_attrs("ultra", "l1a")
 
     for apid in apids:  # noqa PLR1704 redefined apid variable from outer scope

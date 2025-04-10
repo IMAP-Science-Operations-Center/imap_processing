@@ -15,7 +15,7 @@ from imap_processing.swe.utils import swe_constants
 @pytest.fixture(scope="session")
 def l1a_test_data(decom_test_data):
     """Read test data from file and process to l1a"""
-    processed_data = swe_science(decom_test_data, "001")
+    processed_data = swe_science(decom_test_data)
     return processed_data
 
 

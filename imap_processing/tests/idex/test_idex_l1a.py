@@ -158,8 +158,8 @@ def test_compressed_packet():
     compressed = Path(f"{test_data_dir}/compressed_2023_102_14_24_55.pkts")
     non_compressed = Path(f"{test_data_dir}/non_compressed_2023_102_14_22_26.pkts")
 
-    decompressed = PacketParser(compressed, "001").data
-    expected = PacketParser(non_compressed, "001").data
+    decompressed = PacketParser(compressed).data
+    expected = PacketParser(non_compressed).data
 
     waveforms = [
         "TOF_High",

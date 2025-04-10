@@ -29,7 +29,7 @@ def l1b_hists():
 
 
 def test_glows_l2(l1b_hist_dataset):
-    l2 = glows_l2(l1b_hist_dataset, "v001")[0]
+    l2 = glows_l2(l1b_hist_dataset)[0]
     assert l2.attrs["Logical_source"] == "imap_glows_l2_hist"
 
     assert np.allclose(l2["filter_temperature_average"].values, [57.6], rtol=0.1)

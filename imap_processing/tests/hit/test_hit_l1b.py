@@ -46,9 +46,9 @@ def dependencies(packet_filepath, sci_packet_filepath):
     # Create dictionary of dependencies and add CCSDS packet file
     data_dict = {"imap_hit_l0_raw": packet_filepath}
     # Add L1A datasets
-    l1a_datasets = hit_l1a.hit_l1a(packet_filepath, "001")
+    l1a_datasets = hit_l1a.hit_l1a(packet_filepath)
     # TODO: Remove this when HIT provides a packet file with all apids.
-    l1a_datasets.extend(hit_l1a.hit_l1a(sci_packet_filepath, "001"))
+    l1a_datasets.extend(hit_l1a.hit_l1a(sci_packet_filepath))
     for dataset in l1a_datasets:
         data_dict[dataset.attrs["Logical_source"]] = dataset
     return data_dict
@@ -57,7 +57,7 @@ def dependencies(packet_filepath, sci_packet_filepath):
 @pytest.fixture
 def l1b_hk_dataset(dependencies):
     """Get the housekeeping dataset"""
-    datasets = hit_l1b(dependencies, "001")
+    datasets = hit_l1b(dependencies)
     for dataset in datasets:
         if dataset.attrs["Logical_source"] == "imap_hit_l1b_hk":
             return dataset
@@ -66,7 +66,7 @@ def l1b_hk_dataset(dependencies):
 @pytest.fixture
 def l1b_standard_rates_dataset(dependencies):
     """Get the standard rates dataset"""
-    datasets = hit_l1b(dependencies, "001")
+    datasets = hit_l1b(dependencies)
     for dataset in datasets:
         if dataset.attrs["Logical_source"] == "imap_hit_l1b_standard-rates":
             return dataset
@@ -75,7 +75,7 @@ def l1b_standard_rates_dataset(dependencies):
 @pytest.fixture
 def l1a_counts_dataset(sci_packet_filepath):
     """Get L1A counts dataset to test l1b processing functions"""
-    l1a_datasets = hit_l1a.hit_l1a(sci_packet_filepath, "001")
+    l1a_datasets = hit_l1a.hit_l1a(sci_packet_filepath)
     for dataset in l1a_datasets:
         if dataset.attrs["Logical_source"] == "imap_hit_l1a_counts":
             return dataset
@@ -545,7 +545,7 @@ def test_hit_l1b_missing_apid(sci_packet_filepath):
     # Create a dependency dictionary with a science CCSDS packet file
     # excluding the housekeeping apid
     dependency = {"imap_hit_l0_raw": sci_packet_filepath}
-    datasets = hit_l1b(dependency, "001")
+    datasets = hit_l1b(dependency)
     assert len(datasets) == 0
 
 
@@ -559,7 +559,8 @@ def test_hit_l1b(dependencies):
     dependencies : dict
         Dictionary of L1A datasets and CCSDS packet file path
     """
-    datasets = hit_l1b(dependencies, "001")
+    # TODO: update assertions after science data processing is completed
+    datasets = hit_l1b(dependencies)
 
     assert len(datasets) == 4
     for dataset in datasets:

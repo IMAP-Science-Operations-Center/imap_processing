@@ -27,17 +27,16 @@ def hi_test_cal_prod_config_path(hi_l1_test_data_path):
 @mock.patch("imap_processing.hi.l1c.hi_l1c.generate_pset_dataset")
 def test_hi_l1c(mock_generate_pset_dataset, hi_test_cal_prod_config_path):
     """Test coverage for hi_l1c function"""
-    mock_generate_pset_dataset.return_value = xr.Dataset(attrs={"Data_version": None})
-    pset = hi_l1c.hi_l1c(
-        [xr.Dataset(), hi_test_cal_prod_config_path], data_version="99"
-    )[0]
-    assert pset.attrs["Data_version"] == "99"
+    mock_generate_pset_dataset.return_value = xr.Dataset()
+    pset = hi_l1c.hi_l1c([xr.Dataset(), hi_test_cal_prod_config_path])[0]
+    # Empty attributes, global values get added in post-processing
+    assert pset.attrs == {}
 
 
 def test_hi_l1c_not_implemented():
     """Test coverage for hi_l1c function with unrecognized dependencies"""
     with pytest.raises(NotImplementedError):
-        hi_l1c.hi_l1c([None, None], "0")
+        hi_l1c.hi_l1c([None, None])
 
 
 @pytest.mark.external_test_data
@@ -70,7 +69,6 @@ def test_generate_pset_dataset(
         np.testing.assert_array_equal(l1c_dataset[var].data.shape, (1, 9, 2, 3600))
 
     # Test ISTP compliance by writing CDF
-    l1c_dataset.attrs["Data_version"] = 1
     write_cdf(l1c_dataset)
 
 

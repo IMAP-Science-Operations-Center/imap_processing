@@ -26,7 +26,7 @@ def test_dataset():
     # Load the CDF attrs
     swe_attrs = ImapCdfAttributes()
     swe_attrs.add_instrument_global_attrs("swe")
-    swe_attrs.add_global_attribute("Data_version", "001")
+    swe_attrs.add_global_attribute("Data_version", "v001")
 
     dataset = xr.Dataset(
         {
@@ -116,7 +116,7 @@ def test_written_and_loaded_dataset(test_dataset):
                 "data_level": "l1a",
                 "descriptor": "hist",
                 "start_date": "20250415",
-                "version": "001",
+                "version": "v001",
             },
         ),
         (
@@ -129,7 +129,7 @@ def test_written_and_loaded_dataset(test_dataset):
                 "descriptor": "pset",
                 "start_date": "20250415",
                 "repointing": "12345",
-                "version": "001",
+                "version": "v001",
                 "extension": "cdf",
             },
         ),

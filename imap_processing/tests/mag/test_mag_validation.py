@@ -70,7 +70,7 @@ def test_mag_l1a_validation(test_number):
     input_file = source_directory / f"mag-l0-l1a-t{test_number}-in.bin"
     expected_output_file = source_directory / f"mag-l0-l1a-t{test_number}-out.csv"
 
-    mag_l1a_out = mag_l1a(input_file, "v000")
+    mag_l1a_out = mag_l1a(input_file)
     expected_output = pd.read_csv(expected_output_file)
 
     raw = mag_l1a_out[0]
@@ -198,8 +198,8 @@ def test_mag_l1b_validation(test_number):
     mag_l1a_mago["compression_flags"].data = compression_flags
     mag_l1a_magi["compression_flags"].data = compression_flags
 
-    mago = mag_l1b(mag_l1a_mago, "v000", calibration_input)
-    magi = mag_l1b(mag_l1a_magi, "v000", calibration_input)
+    mago = mag_l1b(mag_l1a_mago, calibration_input)
+    magi = mag_l1b(mag_l1a_magi, calibration_input)
 
     expected_mago = pd.read_csv(
         source_directory / f"mag-l1a-l1b-t{test_number}-mago-out.csv"
@@ -308,7 +308,7 @@ def test_mag_l1c_validation(test_number, sensor):
 
     burst.attrs["vectors_per_second"] = get_vecsec(test_number, sensor, "burst")
 
-    l1c = mag_l1c(norm, "v000", burst)
+    l1c = mag_l1c(norm, burst)
     expected_output = pd.read_csv(
         source_directory / f"mag-l1b-l1c-t{test_number}-{sensor}-normal-out.csv"
     )

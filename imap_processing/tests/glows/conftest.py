@@ -41,14 +41,14 @@ def l1a_test_data(decom_test_data):
 
 @pytest.fixture
 def l1a_dataset(packet_path):
-    return glows_l1a(packet_path, "v001")
+    return glows_l1a(packet_path)
 
 
 @pytest.fixture
 def l1b_hist_dataset(l1a_dataset):
-    return glows_l1b(l1a_dataset[1], "v001")
+    return glows_l1b(l1a_dataset[1])
 
 
 @pytest.fixture
 def l2_hist_dataset(l1b_datasets):
-    return glows_l2(l1b_datasets, "v001")
+    return glows_l2(l1b_datasets)

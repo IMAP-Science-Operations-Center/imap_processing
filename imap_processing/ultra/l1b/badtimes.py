@@ -11,7 +11,6 @@ def calculate_badtimes(
     extendedspin_dataset: xr.Dataset,
     cullingmask_spins: NDArray,
     name: str,
-    data_version: str,
 ) -> xr.Dataset:
     """
     Create dataset with defined datatypes for Badtimes Data.
@@ -24,8 +23,6 @@ def calculate_badtimes(
         Dataset containing the culled data.
     name : str
         Name of the dataset.
-    data_version : str
-        Version of the data.
 
     Returns
     -------
@@ -38,6 +35,6 @@ def calculate_badtimes(
 
     filtered_dataset = extendedspin_dataset.sel(spin_number=culled_spins)
 
-    badtimes_dataset = create_dataset(filtered_dataset, name, "l1b", data_version)
+    badtimes_dataset = create_dataset(filtered_dataset, name, "l1b")
 
     return badtimes_dataset

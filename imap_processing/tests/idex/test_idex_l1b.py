@@ -32,7 +32,7 @@ def l1b_dataset(mock_get_spice_data, decom_test_data: xr.Dataset) -> xr.Dataset:
     """
 
     mock_get_spice_data.side_effect = get_spice_data_side_effect_func
-    dataset = idex_l1b(decom_test_data, data_version="001")
+    dataset = idex_l1b(decom_test_data)
     return dataset
 
 

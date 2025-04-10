@@ -67,7 +67,6 @@ def test_create_extendedspin_dataset(mock_data_l1b_extendedspin_dict):
         mock_data_l1b_extendedspin_dict,
         "imap_ultra_l1b_45sensor-extendedspin",
         "l1b",
-        "001",
     )
 
     assert "spin_number" in dataset.coords
@@ -82,9 +81,7 @@ def test_create_extendedspin_dataset(mock_data_l1b_extendedspin_dict):
 
 def test_create_de_dataset(mock_data_l1b_de_dict):
     """Tests that dataset is created as expected."""
-    dataset = create_dataset(
-        mock_data_l1b_de_dict, "imap_ultra_l1b_45sensor-de", "l1b", "001"
-    )
+    dataset = create_dataset(mock_data_l1b_de_dict, "imap_ultra_l1b_45sensor-de", "l1b")
 
     assert "epoch" in dataset.coords
     assert dataset.coords["epoch"].dtype == "datetime64[ns]"
@@ -145,4 +142,4 @@ def test_ultra_l1b_error(mock_data_l1a_rates_dict):
     with pytest.raises(
         ValueError, match="Data dictionary does not contain the expected keys."
     ):
-        ultra_l1b(mock_data_l1a_rates_dict, data_version="001")
+        ultra_l1b(mock_data_l1a_rates_dict)

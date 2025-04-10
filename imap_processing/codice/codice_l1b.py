@@ -154,7 +154,7 @@ def create_science_dataset(
     return l1b_dataset
 
 
-def process_codice_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+def process_codice_l1b(l1a_dataset: xr.Dataset) -> xr.Dataset:
     """
     Will process CoDICE l1a data to create l1b data products.
 
@@ -162,8 +162,6 @@ def process_codice_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset
     ----------
     l1a_dataset : xarray.Dataset
         CoDICE L1a dataset to process.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -176,7 +174,6 @@ def process_codice_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
     cdf_attrs.add_instrument_variable_attrs("codice", "l1b")
-    cdf_attrs.add_global_attribute("Data_version", data_version)
 
     dataset_name = (
         l1a_dataset.attrs["Logical_source"].replace("-", "_").replace("l1a", "l1b")

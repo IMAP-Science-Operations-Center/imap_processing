@@ -2,6 +2,7 @@
 
 import logging
 import re
+import warnings
 from pathlib import Path
 
 import imap_data_access
@@ -96,15 +97,18 @@ def write_cdf(
     dt64 = TTJ2000_EPOCH + dataset["epoch"].values[0].astype("timedelta64[ns]")
     start_time = np.datetime_as_string(dt64, unit="D").replace("-", "")
 
-    # Will now accept vXXX or XXX formats, as batch starter sends versions as vXXX.
-    r = re.compile(r"v\d{3}")
-    if (
-        not isinstance(dataset.attrs["Data_version"], str)
-        or r.match(dataset.attrs["Data_version"]) is None
-    ):
-        version = f"v{int(dataset.attrs['Data_version']):03d}"  # vXXX
-    else:
-        version = dataset.attrs["Data_version"]
+    version = dataset.attrs.get("Data_version", None)
+    if version is None:
+        warnings.warn(
+            "No Data_version attribute found in dataset. Using default v001.",
+            stacklevel=2,
+        )
+        version = "v001"
+    elif not re.match(r"v\d{3}", version):
+        raise ValueError(
+            f"The Data_version attribute {version} does not match expected format vXXX."
+        )
+
     repointing = dataset.attrs.get("Repointing", None)
     science_file = imap_data_access.ScienceFilePath.generate_from_inputs(
         instrument=instrument,
@@ -174,7 +178,7 @@ def parse_filename_like(filename_like: str) -> re.Match:
         r"(?P<descriptor>[^_]+)"  # Required descriptor
         r"(_(?P<start_date>\d{8}))?"  # Optional start date
         r"(-repoint(?P<repointing>\d{5}))?"  # Optional repointing field
-        r"(?:_v(?P<version>\d{3}))?"  # Optional version
+        r"(?:_(?P<version>v\d{3}))?"  # Optional version
         r"(?:\.(?P<extension>cdf|pkts))?$"  # Optional extension
     )
     match = re.match(regex_str, filename_like)

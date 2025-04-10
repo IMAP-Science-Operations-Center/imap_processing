@@ -71,7 +71,6 @@ def test_pset():
         test_l1b_de_dataset,  # placeholder for extendedspin_dataset
         test_l1b_de_dataset,  # placeholder for cullingmask_dataset
         "imap_ultra_l1c_45sensor-spacecraftpset",
-        "001",
     )
     assert "healpix" in spacecraft_pset.coords
     assert "epoch" in spacecraft_pset.coords

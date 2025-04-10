@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 # TODO review logging levels to use (debug vs. info)
 
 
-def hit_l1b(dependencies: dict, data_version: str) -> list[xr.Dataset]:
+def hit_l1b(dependencies: dict) -> list[xr.Dataset]:
     """
     Will process HIT data to L1B.
 
@@ -37,8 +37,6 @@ def hit_l1b(dependencies: dict, data_version: str) -> list[xr.Dataset]:
         Dictionary of dependencies that are L1A xarray datasets
         for science data and a file path string to an L0 file
         for housekeeping data.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -46,7 +44,7 @@ def hit_l1b(dependencies: dict, data_version: str) -> list[xr.Dataset]:
         List of four L1B datasets.
     """
     # Create the attribute manager for this data level
-    attr_mgr = get_attribute_manager(data_version, "l1b")
+    attr_mgr = get_attribute_manager("l1b")
 
     # Create L1B datasets
     l1b_datasets: list = []

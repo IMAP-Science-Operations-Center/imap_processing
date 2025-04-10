@@ -17,7 +17,7 @@ def l2b_dataset(l2a_dataset: xr.Dataset) -> xr.Dataset:
     dataset : xr.Dataset
         A ``xarray`` dataset containing the test data
     """
-    dataset = idex_l2b(l2a_dataset, data_version="001")
+    dataset = idex_l2b(l2a_dataset)
     return dataset
 
 

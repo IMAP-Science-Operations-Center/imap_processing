@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def mag_l1b(
-    input_dataset: xr.Dataset, version: str, calibration_dataset: xr.Dataset = None
+    input_dataset: xr.Dataset, calibration_dataset: xr.Dataset = None
 ) -> Dataset:
     """
     Will process MAG L1B data from L1A data.
@@ -24,8 +24,6 @@ def mag_l1b(
     ----------
     input_dataset : xr.Dataset
         The input dataset to process.
-    version : str
-        The version of the output data.
     calibration_dataset : xr.Dataset
         The calibration dataset containing calibration matrices and timeshift values for
         mago and magi.
@@ -57,7 +55,6 @@ def mag_l1b(
     mag_attributes = ImapCdfAttributes()
     mag_attributes.add_instrument_global_attrs("mag")
     mag_attributes.add_instrument_variable_attrs("mag", "l1b")
-    mag_attributes.add_global_attribute("Data_version", version)
     source = source.replace("l1a", "l1b")
 
     output_dataset = mag_l1b_processing(

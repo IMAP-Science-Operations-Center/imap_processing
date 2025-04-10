@@ -17,7 +17,7 @@ def validation_l1a():
     current_directory = Path(__file__).parent
     test_file = current_directory / "validation" / "mag_l1_test_data.pkts"
     # Test file contains only normal packets
-    l1a = mag_l1a(test_file, "v000")
+    l1a = mag_l1a(test_file)
     return l1a
 
 

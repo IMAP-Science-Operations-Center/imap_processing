@@ -16,9 +16,7 @@ from imap_processing.ultra.l1a.ultra_l1a import (
 def test_xarray_aux(ccsds_path_theta_0):
     """This function checks that a xarray was
     successfully created from the decom_ultra_aux data."""
-    test_data = ultra_l1a(
-        ccsds_path_theta_0, data_version="001", apid=ULTRA_AUX.apid[0]
-    )
+    test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_AUX.apid[0])
 
     # Spot check metadata data and attributes
     specific_epoch_data = test_data[0].sel(epoch=test_data[0].epoch[0])[
@@ -31,9 +29,7 @@ def test_xarray_aux(ccsds_path_theta_0):
 def test_xarray_rates(ccsds_path_theta_0):
     """This function checks that a xarray was
     successfully created from the decom_ultra_rates data."""
-    test_data = ultra_l1a(
-        ccsds_path_theta_0, data_version="001", apid=ULTRA_RATES.apid[0]
-    )
+    test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_RATES.apid[0])
     # Spot check metadata data and attributes
     specific_epoch_data = test_data[0].sel(epoch=test_data[0].epoch[0])["start_rf"]
     assert (specific_epoch_data == test_data[0]["start_rf"][0]).all()
@@ -42,9 +38,7 @@ def test_xarray_rates(ccsds_path_theta_0):
 def test_xarray_tof(ccsds_path_theta_0):
     """This function checks that a xarray was
     successfully created from the decom_ultra_tof data."""
-    test_data = ultra_l1a(
-        ccsds_path_theta_0, data_version="001", apid=ULTRA_TOF.apid[0]
-    )
+    test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_TOF.apid[0])
 
     # Spot check metadata data and attributes
     specific_epoch_data = test_data[0].sel(epoch=test_data[0].epoch[0], sid=0)[
@@ -56,9 +50,7 @@ def test_xarray_tof(ccsds_path_theta_0):
 def test_xarray_events(ccsds_path_theta_0):
     """This function checks that a xarray was
     successfully created from the decom_ultra_events data."""
-    test_data = ultra_l1a(
-        ccsds_path_theta_0, data_version="001", apid=ULTRA_EVENTS.apid[0]
-    )
+    test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_EVENTS.apid[0])
     specific_epoch_data = test_data[0].sel(epoch=test_data[0].epoch[0])["coin_type"]
     assert (specific_epoch_data == test_data[0]["coin_type"][0]).all()
 
@@ -66,9 +58,7 @@ def test_xarray_events(ccsds_path_theta_0):
 def test_cdf_aux(ccsds_path_theta_0):
     """Tests that CDF file can be created."""
 
-    test_data = ultra_l1a(
-        ccsds_path_theta_0, data_version="001", apid=ULTRA_AUX.apid[0]
-    )
+    test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_AUX.apid[0])
     test_data_path = write_cdf(test_data[0])
 
     assert test_data_path.exists()
@@ -77,9 +67,7 @@ def test_cdf_aux(ccsds_path_theta_0):
 
 def test_cdf_rates(ccsds_path_theta_0):
     """Tests that CDF file can be created."""
-    test_data = ultra_l1a(
-        ccsds_path_theta_0, data_version="001", apid=ULTRA_RATES.apid[0]
-    )
+    test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_RATES.apid[0])
     test_data_path = write_cdf(test_data[0], istp=False)
 
     assert test_data_path.exists()
@@ -88,9 +76,7 @@ def test_cdf_rates(ccsds_path_theta_0):
 
 def test_cdf_tof(ccsds_path_theta_0):
     """Tests that CDF file can be created."""
-    test_data = ultra_l1a(
-        ccsds_path_theta_0, data_version="001", apid=ULTRA_TOF.apid[0]
-    )
+    test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_TOF.apid[0])
     test_data_path = write_cdf(test_data[0])
     assert test_data_path.exists()
     assert (
@@ -101,9 +87,7 @@ def test_cdf_tof(ccsds_path_theta_0):
 
 def test_cdf_events(ccsds_path_theta_0):
     """Tests that CDF file can be created."""
-    test_data = ultra_l1a(
-        ccsds_path_theta_0, data_version="001", apid=ULTRA_EVENTS.apid[0]
-    )
+    test_data = ultra_l1a(ccsds_path_theta_0, apid=ULTRA_EVENTS.apid[0])
     test_data_path = write_cdf(test_data[0], istp=False)
 
     assert test_data_path.exists()

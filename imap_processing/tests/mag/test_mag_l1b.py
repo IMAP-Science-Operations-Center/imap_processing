@@ -67,12 +67,12 @@ def test_mag_attributes():
 
     mag_l1a_dataset.attrs["Logical_source"] = ["imap_mag_l1a_norm-mago"]
 
-    output = mag_l1b(mag_l1a_dataset, "v001")
+    output = mag_l1b(mag_l1a_dataset)
     assert output.attrs["Logical_source"] == "imap_mag_l1b_norm-mago"
 
     mag_l1a_dataset.attrs["Logical_source"] = ["imap_mag_l1a_burst-magi"]
 
-    output = mag_l1b(mag_l1a_dataset, "v001")
+    output = mag_l1b(mag_l1a_dataset)
     assert output.attrs["Logical_source"] == "imap_mag_l1b_burst-magi"
 
 
@@ -82,7 +82,7 @@ def test_cdf_output():
         / "validation"
         / "imap_mag_l1a_norm-magi_20251017_v001.cdf"
     )
-    l1b_dataset = mag_l1b(l1a_cdf, "v001")
+    l1b_dataset = mag_l1b(l1a_cdf)
 
     output_path = write_cdf(l1b_dataset)
 
@@ -110,7 +110,7 @@ def test_mag_compression_scale():
     mag_l1a_dataset["compression_flags"][3, :] = np.array([1, 14], dtype=np.int8)
 
     mag_l1a_dataset.attrs["Logical_source"] = ["imap_mag_l1a_norm-mago"]
-    output = mag_l1b(mag_l1a_dataset, "v001")
+    output = mag_l1b(mag_l1a_dataset)
 
     calibrated_vectors = np.matmul(test_calibration, np.array([1, 1, 1]))
     # 16 bit width is the standard
@@ -187,9 +187,9 @@ def test_calibrate_vector():
 def test_l1a_to_l1b(validation_l1a):
     # Convert l1a input validation packet file to l1b
     with pytest.raises(ValueError, match="Raw L1A"):
-        mag_l1b(validation_l1a[0], "v000")
+        mag_l1b(validation_l1a[0])
 
-    l1b = [mag_l1b(i, "v000") for i in validation_l1a[1:]]
+    l1b = [mag_l1b(i) for i in validation_l1a[1:]]
 
     assert len(l1b) == len(validation_l1a) - 1
 

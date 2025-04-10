@@ -38,7 +38,6 @@ def attr_mgr_l1b():
     attr_mgr_l1b = ImapCdfAttributes()
     attr_mgr_l1b.add_instrument_global_attrs(instrument="lo")
     attr_mgr_l1b.add_instrument_variable_attrs(instrument="lo", level="l1b")
-    attr_mgr_l1b.add_global_attribute("Data_version", "000")
     return attr_mgr_l1b
 
 
@@ -57,7 +56,7 @@ def test_lo_l1b():
 
     expected_logical_source = "imap_lo_l1b_de"
     # Act
-    output_file = lo_l1b(data, "001")
+    output_file = lo_l1b(data)
 
     # Assert
     assert expected_logical_source == output_file[0].attrs["Logical_source"]

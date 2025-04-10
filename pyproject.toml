@@ -76,6 +76,8 @@ addopts = "-ra"
 filterwarnings = [
     "ignore:Converting non-nanosecond:UserWarning:cdflib",
     "ignore:datetime.datetime.utcfromtimestamp:DeprecationWarning:cdflib",
+    # Ignore Data_version warnings during tests because we default to v001
+    "ignore:No Data_version attribute found:UserWarning:imap_processing",
 ]
 markers = [
     "external_kernel: marks tests as requiring external SPICE kernels (deselect with '-m \"not external_kernel\"')",

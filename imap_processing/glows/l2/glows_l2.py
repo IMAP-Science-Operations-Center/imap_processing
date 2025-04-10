@@ -12,7 +12,7 @@ from imap_processing.glows.l1b.glows_l1b_data import HistogramL1B
 from imap_processing.glows.l2.glows_l2_data import DailyLightcurve, HistogramL2
 
 
-def glows_l2(input_dataset: xr.Dataset, data_version: str) -> list[xr.Dataset]:
+def glows_l2(input_dataset: xr.Dataset) -> list[xr.Dataset]:
     """
     Will process GLoWS L2 data from L1 data.
 
@@ -20,8 +20,6 @@ def glows_l2(input_dataset: xr.Dataset, data_version: str) -> list[xr.Dataset]:
     ----------
     input_dataset : xarray.Dataset
         Input L1B dataset.
-    data_version : str
-        Version for output.
 
     Returns
     -------
@@ -31,7 +29,6 @@ def glows_l2(input_dataset: xr.Dataset, data_version: str) -> list[xr.Dataset]:
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("glows")
     cdf_attrs.add_instrument_variable_attrs("glows", "l2")
-    cdf_attrs.add_global_attribute("Data_version", data_version)
 
     split_data = split_data_by_observational_day(input_dataset)
     l2_output = []
