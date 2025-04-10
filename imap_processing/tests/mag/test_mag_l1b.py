@@ -17,7 +17,7 @@ from imap_processing.tests.mag.conftest import (
 )
 
 
-def test_mag_processing(mag_test_calibration_data):
+def test_mag_processing(mag_test_l1b_calibration_data):
     # All specific test values come from MAG team to accommodate various cases.
     # Each vector is multiplied by the matrix in the calibration data for the given
     # range to get the calibrated vector.
@@ -31,7 +31,7 @@ def test_mag_processing(mag_test_calibration_data):
     mag_attributes.add_instrument_variable_attrs("mag", "l1b")
     mag_l1b = mag_l1b_processing(
         mag_l1a_dataset,
-        mag_test_calibration_data,
+        mag_test_l1b_calibration_data,
         mag_attributes,
         "imap_mag_l1b_norm-mago",
     )
@@ -50,7 +50,7 @@ def test_mag_processing(mag_test_calibration_data):
 
     mag_l1b = mag_l1b_processing(
         mag_l1a_dataset,
-        mag_test_calibration_data,
+        mag_test_l1b_calibration_data,
         mag_attributes,
         "imap_mag_l1b_norm-magi",
     )
@@ -74,8 +74,6 @@ def test_mag_attributes():
 
     output = mag_l1b(mag_l1a_dataset, "v001")
     assert output.attrs["Logical_source"] == "imap_mag_l1b_burst-magi"
-
-    assert output.attrs["Data_level"] == "L1B"
 
 
 def test_cdf_output():

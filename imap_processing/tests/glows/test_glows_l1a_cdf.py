@@ -15,7 +15,7 @@ from imap_processing.glows.l1a.glows_l1a_data import HistogramL1A
 from imap_processing.glows.utils.constants import TimeTuple
 
 
-@pytest.fixture()
+@pytest.fixture
 def l1a_data(packet_path):
     """Read test data from file"""
 

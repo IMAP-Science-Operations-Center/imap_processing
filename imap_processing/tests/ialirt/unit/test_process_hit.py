@@ -47,7 +47,7 @@ def hit_test_data():
     return data
 
 
-@pytest.fixture()
+@pytest.fixture
 def xarray_data(binary_packet_path, xtce_hit_path):
     """Create xarray data"""
     apid = 1253

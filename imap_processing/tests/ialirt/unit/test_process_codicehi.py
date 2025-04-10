@@ -48,7 +48,7 @@ def codicehi_validation_data():
     return data
 
 
-@pytest.fixture()
+@pytest.fixture
 def codicehi_test_data(binary_packet_path, xtce_codicehi_path):
     """Create xarray data"""
     apid = 1168

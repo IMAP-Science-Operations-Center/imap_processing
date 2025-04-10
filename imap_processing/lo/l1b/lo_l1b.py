@@ -1,8 +1,8 @@
 """IMAP-Lo L1B Data Processing."""
 
-from collections import namedtuple
 from dataclasses import Field
 from pathlib import Path
+from typing import Any, Union
 
 import numpy as np
 import xarray as xr
@@ -28,35 +28,236 @@ def lo_l1b(dependencies: dict, data_version: str) -> list[Path]:
         Location of created CDF files.
     """
     # create the attribute manager for this data level
-    attr_mgr = ImapCdfAttributes()
-    attr_mgr.add_instrument_global_attrs(instrument="lo")
-    attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1b")
-    attr_mgr.add_global_attribute("Data_version", data_version)
+    attr_mgr_l1b = ImapCdfAttributes()
+    attr_mgr_l1b.add_instrument_global_attrs(instrument="lo")
+    attr_mgr_l1b.add_instrument_variable_attrs(instrument="lo", level="l1b")
+    attr_mgr_l1b.add_global_attribute("Data_version", data_version)
+    # create the attribute manager to access L1A fillval attributes
+    attr_mgr_l1a = ImapCdfAttributes()
+    attr_mgr_l1a.add_instrument_variable_attrs(instrument="lo", level="l1a")
 
     # if the dependencies are used to create Annotated Direct Events
-
     if "imap_lo_l1a_de" in dependencies and "imap_lo_l1a_spin" in dependencies:
         logical_source = "imap_lo_l1b_de"
-        # TODO: TEMPORARY. Need to update to use the L1B data class once that exists
-        #  and I have sample data.
-        data_field_tup = namedtuple("data_field_tup", ["name"])
-        data_fields = [
-            data_field_tup("ESA_STEP"),
-            data_field_tup("MODE"),
-            data_field_tup("TOF0"),
-            data_field_tup("TOF1"),
-            data_field_tup("TOF2"),
-            data_field_tup("TOF3"),
-            data_field_tup("COINCIDENCE_TYPE"),
-            data_field_tup("POS"),
-            data_field_tup("COINCIDENCE"),
-            data_field_tup("BADTIME"),
-            data_field_tup("DIRECTION"),
-        ]
+        # get the dependency dataset for l1b direct events
+        l1a_de = dependencies["imap_lo_l1a_de"]
+        spin_data = dependencies["imap_lo_l1a_spin"]
 
-    dataset: list[Path] = create_datasets(attr_mgr, logical_source, data_fields)  # type: ignore[arg-type]
-    # TODO Remove once data_fields is removed from create_datasets
-    return dataset
+        # Initialize the L1B DE dataset
+        l1b_de = initialize_l1b_de(l1a_de, attr_mgr_l1b, logical_source)
+        # Get the start and end times for each spin epoch
+        acq_start, acq_end = convert_start_end_acq_times(spin_data)
+        # Get the average spin durations for each epoch
+        avg_spin_durations = get_avg_spin_durations(acq_start, acq_end)  # noqa: F841
+        # get spin angle (0 - 360 degrees) for each DE
+        spin_angle = get_spin_angle(l1a_de)
+        # calculate and set the spin bin based on the spin angle
+        # spin bins are 0 - 60 bins
+        l1b_de = set_spin_bin(l1b_de, spin_angle)
+        # set the spin cycle for each direct event
+        l1b_de = set_spin_cycle(l1a_de, l1b_de)
+
+    return [l1b_de]
+
+
+def initialize_l1b_de(
+    l1a_de: xr.Dataset, attr_mgr_l1b: ImapCdfAttributes, logical_source: str
+) -> xr.Dataset:
+    """
+    Initialize the L1B DE dataset.
+
+    Create an empty L1B DE dataset and copy over fields from the L1A DE that will
+    not change during L1B processing.
+
+    Parameters
+    ----------
+    l1a_de : xarray.Dataset
+        The L1A DE dataset.
+    attr_mgr_l1b : ImapCdfAttributes
+        Attribute manager used to get the global attributes for the L1B DE dataset.
+    logical_source : str
+        The logical source of the direct event product.
+
+    Returns
+    -------
+    l1b_de : xarray.Dataset
+        The initialized L1B DE dataset.
+    """
+    l1b_de = xr.Dataset(
+        attrs=attr_mgr_l1b.get_global_attributes(logical_source),
+    )
+
+    # Copy over fields from L1A DE that will not change in L1B processing
+    l1b_de["pos"] = xr.DataArray(
+        l1a_de["pos"].values,
+        dims=["epoch"],
+        # TODO: Add pos to YAML file
+        # attrs=attr_mgr.get_variable_attributes("pos"),
+    )
+    l1b_de["mode"] = xr.DataArray(
+        l1a_de["mode"].values,
+        dims=["epoch"],
+        # TODO: Add mode to YAML file
+        # attrs=attr_mgr.get_variable_attributes("mode"),
+    )
+    l1b_de["absent"] = xr.DataArray(
+        l1a_de["coincidence_type"].values,
+        dims=["epoch"],
+        # TODO: Add absent to YAML file
+        # attrs=attr_mgr.get_variable_attributes("absent"),
+    )
+    l1b_de["esa_step"] = xr.DataArray(
+        l1a_de["esa_step"].values,
+        dims=["epoch"],
+        # TODO: Add esa_step to YAML file
+        # attrs=attr_mgr.get_variable_attributes("esa_step"),
+    )
+
+    return l1b_de
+
+
+def convert_start_end_acq_times(
+    spin_data: xr.Dataset,
+) -> tuple[xr.DataArray, xr.DataArray]:
+    """
+    Convert the start and end times from the spin data.
+
+    The L1A spin data start and end acquisition times are stored in seconds and
+    subseconds (microseconds). This function converts them to a single time in seconds.
+
+    Parameters
+    ----------
+    spin_data : xarray.Dataset
+        The L1A Spin dataset containing the start and end acquisition times.
+
+    Returns
+    -------
+    tuple[xr.DataArray, xr.DataArray]
+        A tuple containing the start and end acquisition times as xarray DataArrays.
+    """
+    # Convert subseconds from microseconds to seconds
+    acq_start = spin_data["acq_start_sec"] + spin_data["acq_start_subsec"] * 1e-6
+    acq_end = spin_data["acq_end_sec"] + spin_data["acq_end_subsec"] * 1e-6
+    return (acq_start, acq_end)
+
+
+def get_avg_spin_durations(
+    acq_start: xr.DataArray, acq_end: xr.DataArray
+) -> xr.DataArray:
+    """
+    Get the average spin duration for each spin epoch.
+
+    Parameters
+    ----------
+    acq_start : xarray.DataArray
+        The start acquisition times for each spin epoch.
+    acq_end : xarray.DataArray
+        The end acquisition times for each spin epoch.
+
+    Returns
+    -------
+    avg_spin_durations : xarray.DataArray
+        The average spin duration for each spin epoch.
+    """
+    # Get the avg spin duration for each spin epoch
+    # There are 28 spins per epoch (1 aggregated science cycle)
+    avg_spin_durations = (acq_end - acq_start) / 28
+    return avg_spin_durations
+
+
+def get_spin_angle(l1a_de: xr.Dataset) -> Union[np.ndarray[np.float64], Any]:
+    """
+    Get the spin angle (0 - 360 degrees) for each DE.
+
+    Parameters
+    ----------
+    l1a_de : xarray.Dataset
+        The L1A DE dataset.
+
+    Returns
+    -------
+    spin_angle : np.ndarray
+        The spin angle for each DE.
+    """
+    de_times = l1a_de["de_time"].values
+    # DE Time is 12 bit DN. The max possible value is 4096
+    spin_angle = np.array(de_times / 4096 * 360, dtype=np.float64)
+    return spin_angle
+
+
+def set_spin_bin(l1b_de: xr.Dataset, spin_angle: np.ndarray) -> xr.Dataset:
+    """
+    Set the spin bin (0 - 60 bins) for each Direct Event where each bin is 6 degrees.
+
+    Parameters
+    ----------
+    l1b_de : xarray.Dataset
+        The L1B Direct Event dataset.
+    spin_angle : np.ndarray
+        The spin angle (0-360 degrees) for each Direct Event.
+
+    Returns
+    -------
+    l1b_de : xarray.Dataset
+        The L1B DE dataset with the spin bin added.
+    """
+    # Get the spin bin for each DE
+    # Spin bins are 0 - 60 where each bin is 6 degrees
+    spin_bin = (spin_angle // 6).astype(int)
+    l1b_de["spin_bin"] = xr.DataArray(
+        spin_bin,
+        dims=["epoch"],
+        # TODO: Add spin angle to YAML file
+        # attrs=attr_mgr.get_variable_attributes("spin_bin"),
+    )
+    return l1b_de
+
+
+def set_spin_cycle(l1a_de: xr.Dataset, l1b_de: xr.Dataset) -> xr.Dataset:
+    """
+    Set the spin cycle for each direct event.
+
+    spin_cycle = spin_start + 7 + (esa_step - 1) * 2
+
+    where spin_start is the spin number for the first spin
+    in an Aggregated Science Cycle (ASC) and esa_step is the esa_step for a direct event
+
+    The 28 spins in a spin epoch spans one ASC.
+
+    Parameters
+    ----------
+    l1a_de : xarray.Dataset
+        The L1A DE dataset.
+    l1b_de : xarray.Dataset
+        The L1B DE dataset.
+
+    Returns
+    -------
+    l1b_de : xarray.Dataset
+        The L1B DE dataset with the spin cycle added for each direct event.
+    """
+    counts = l1a_de["de_count"].values
+    # split the esa_steps into ASC groups
+    de_asc_groups = np.split(l1a_de["esa_step"].values, np.cumsum(counts)[:-1])
+    spin_cycle = []
+    for i, esa_asc_group in enumerate(de_asc_groups):
+        # TODO: Spin Number does not reset for each pointing. Need to figure out
+        #  how to retain this information across days
+        # increment the spin_start by 28 after each ASC
+        spin_start = i * 28
+        # calculate the spin cycle for each DE in the ASC group
+        # TODO: Add equation number in algorithm document when new version is
+        # available. Add to docstring as well
+        spin_cycle.extend(spin_start + 7 + (esa_asc_group - 1) * 2)
+
+    l1b_de["spin_cycle"] = xr.DataArray(
+        spin_cycle,
+        dims=["epoch"],
+        # TODO: Add spin cycle to YAML file
+        # attrs=attr_mgr.get_variable_attributes("spin_cycle"),
+    )
+
+    return l1b_de
 
 
 # TODO: This is going to work differently when I sample data.

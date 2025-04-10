@@ -1,14 +1,10 @@
 """Tests the L2a processing for IDEX data"""
 
-from unittest import mock
-
 import numpy as np
-import pytest
 import xarray as xr
 from scipy.stats import exponnorm
 
 from imap_processing.idex import idex_constants
-from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.idex.idex_l2a import (
     BaselineNoiseTime,
     analyze_peaks,
@@ -17,7 +13,6 @@ from imap_processing.idex.idex_l2a import (
     calculate_snr,
     estimate_dust_mass,
     fit_impact,
-    idex_l2a,
     remove_signal_noise,
     time_to_mass,
 )
@@ -36,23 +31,7 @@ def mock_microphonics_noise(time: np.ndarray) -> np.ndarray:
     return combined_sig
 
 
-@pytest.fixture(scope="module")
-def l2a_dataset(decom_test_data: xr.Dataset) -> xr.Dataset:
-    """Return a ``xarray`` dataset containing test data.
-
-    Returns
-    -------
-    dataset : xr.Dataset
-        A ``xarray`` dataset containing the test data
-    """
-    with mock.patch("imap_processing.idex.idex_l1b.get_spice_data", return_value={}):
-        dataset = idex_l2a(
-            idex_l1b(decom_test_data, data_version="001"), data_version="001"
-        )
-    return dataset
-
-
-def test_l2a_cdf_filenames(l2a_dataset: xr.Dataset):
+def test_l2a_logical_source(l2a_dataset: xr.Dataset):
     """Tests that the ``idex_l2a`` function generates datasets
     with the expected logical source.
 
@@ -77,20 +56,20 @@ def test_l2a_cdf_variables(l2a_dataset: xr.Dataset):
     expected_vars = [
         "mass",
         "target_low_fit_parameters",
-        "target_low_fit_imapct_charge",
-        "target_low_fit_imapct_mass_estimate",
+        "target_low_fit_impact_charge",
+        "target_low_fit_impact_mass_estimate",
         "target_low_chi_squared",
         "target_low_reduced_chi_squared",
         "target_low_fit_results",
         "target_high_fit_parameters",
-        "target_high_fit_imapct_charge",
-        "target_high_fit_imapct_mass_estimate",
+        "target_high_fit_impact_charge",
+        "target_high_fit_impact_mass_estimate",
         "target_high_chi_squared",
         "target_high_reduced_chi_squared",
         "target_high_fit_results",
         "ion_grid_fit_parameters",
-        "ion_grid_fit_imapct_charge",
-        "ion_grid_fit_imapct_mass_estimate",
+        "ion_grid_fit_impact_charge",
+        "ion_grid_fit_impact_mass_estimate",
         "ion_grid_chi_squared",
         "ion_grid_reduced_chi_squared",
         "ion_grid_fit_results",

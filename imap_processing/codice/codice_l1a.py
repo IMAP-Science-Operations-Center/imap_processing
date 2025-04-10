@@ -164,16 +164,12 @@ class CoDICEL1aPipeline:
         for name in coord_names:
             if name == "epoch":
                 values = self.calculate_epoch_values()
-            # TODO: Currently hi-sectored products us "spin_sector_index" and
-            #       "ssd_index", which are basically the same as "spin_sector"
-            #       and "inst_az". Ask Joey if these need to be different.
             elif name in [
                 "esa_step",
                 "inst_az",
                 "spin_sector",
                 "spin_sector_pairs",
                 "spin_sector_index",
-                "ssdid",
                 "ssd_index",
             ]:
                 values = np.arange(self.config["output_dims"][name])
@@ -505,18 +501,30 @@ class CoDICEL1aPipeline:
         self.data = []
 
         # First reshape the data based on how it is written to the data array of
-        # the packet data. The number of counters is the first dimension / axis.
-        reshape_dims = (
-            self.config["num_counters"],
-            *self.config["input_dims"].values(),
-        )
+        # the packet data. The number of counters is the first dimension / axis,
+        # with the exception of lo-counters-aggregated which is treated slightly
+        # differently
+        if self.config["dataset_name"] != "imap_codice_l1a_lo-counters-aggregated":
+            reshape_dims = (
+                self.config["num_counters"],
+                *self.config["input_dims"].values(),
+            )
+        else:
+            reshape_dims = (
+                *self.config["input_dims"].values(),
+                self.config["num_counters"],
+            )
 
         # Then, transpose the data based on how the dimensions should be written
         # to the CDF file. Since this is specific to each data product, we need
         # to determine this dynamically based on the "output_dims" config.
+        # Again, lo-counters-aggregated is treated slightly differently
         input_keys = ["num_counters", *self.config["input_dims"].keys()]
         output_keys = ["num_counters", *self.config["output_dims"].keys()]
-        transpose_axes = [input_keys.index(dim) for dim in output_keys]
+        if self.config["dataset_name"] != "imap_codice_l1a_lo-counters-aggregated":
+            transpose_axes = [input_keys.index(dim) for dim in output_keys]
+        else:
+            transpose_axes = [1, 2, 0]  # [esa_step, spin_sector_pairs, num_counters]
 
         for packet_data in self.raw_data:
             reshaped_packet_data = np.array(packet_data, dtype=np.uint32).reshape(
@@ -549,7 +557,7 @@ class CoDICEL1aPipeline:
         self.dataset = dataset
 
         # Set various configurations of the data product
-        self.config: dict[str, Any] = constants.DATA_PRODUCT_CONFIGURATIONS.get(apid)  # type: ignore
+        self.config: dict[str, Any] = constants.DATA_PRODUCT_CONFIGURATIONS[apid]
 
         # Gather and set the CDF attributes
         self.cdf_attrs = ImapCdfAttributes()
@@ -613,7 +621,7 @@ def create_direct_event_dataset(
         cdf_fields = [
             "NumEvents",
             "DataQuality",
-            "SSDEnergy0," "TOF",
+            "SSDEnergy0,TOF",
             "SSD_ID",
             "ERGE",
             "MultiFlag",
@@ -861,9 +869,9 @@ def log_dataset_info(datasets: dict[int, xr.Dataset]) -> None:
     """
     launch_time = np.datetime64("2010-01-01T00:01:06.184", "ns")
     logger.info("\nThis input file contains the following APIDs:\n")
-    for apid in datasets:
-        num_packets = len(datasets[apid].epoch.data)
-        time_deltas = [np.timedelta64(item, "ns") for item in datasets[apid].epoch.data]
+    for apid, ds in datasets.items():
+        num_packets = len(ds.epoch.data)
+        time_deltas = [np.timedelta64(item, "ns") for item in ds.epoch.data]
         times = [launch_time + delta for delta in time_deltas]
         start = np.datetime_as_string(times[0])
         end = np.datetime_as_string(times[-1])

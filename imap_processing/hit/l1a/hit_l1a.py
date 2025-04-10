@@ -8,6 +8,7 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.hit.hit_utils import (
     HitAPID,
+    add_energy_variables,
     get_attribute_manager,
     get_datasets_by_apid,
     process_housekeeping_data,
@@ -62,102 +63,101 @@ def hit_l1a(packet_file: str, data_version: str) -> list[xr.Dataset]:
     return l1a_datasets
 
 
-def subcom_sectorates(sci_dataset: xr.Dataset) -> None:
+def subcom_sectorates(sci_dataset: xr.Dataset) -> xr.Dataset:
     """
     Subcommutate sectorates data.
 
-    Sector rates data contains rates for 5 species and 10
-    energy ranges. This function subcommutates the sector
-    rates data by organizing the rates by species. Which
+    Sectored rates data contains raw counts for 5 species and 10
+    energy ranges. This function subcommutates the sectored
+    rates data by organizing the counts by species. Which
     species and energy range the data belongs to is determined
     by taking the mod 10 value of the corresponding header
     minute count value in the dataset. A mapping of mod 10
     values to species and energy ranges is provided in constants.py.
 
     MOD_10_MAPPING = {
-        0: {"species": "H", "energy_min": 1.8, "energy_max": 3.6},
-        1: {"species": "H", "energy_min": 4, "energy_max": 6},
-        2: {"species": "H", "energy_min": 6, "energy_max": 10},
-        3: {"species": "4He", "energy_min": 4, "energy_max": 6},
+        0: {"species": "h", "energy_min": 1.8, "energy_max": 3.6},
+        1: {"species": "h", "energy_min": 4, "energy_max": 6},
+        2: {"species": "h", "energy_min": 6, "energy_max": 10},
+        3: {"species": "he4", "energy_min": 4, "energy_max": 6},
         ...
-        9: {"species": "Fe", "energy_min": 4, "energy_max": 12}}
+        9: {"species": "fe", "energy_min": 4, "energy_max": 12}}
 
     The data is added to the dataset as new data fields named
     according to their species. They have 4 dimensions: epoch
-    energy index, declination, and azimuth. The energy index
+    energy mean, azimuth, and declination. The energy mean
     dimension is used to distinguish between the different energy
-    ranges the data belongs to. The energy min and max values for
-    each species are also added to the dataset as new data fields.
+    ranges the data belongs to. The energy deltas for each species
+    are also added to the dataset as new data fields.
 
     Parameters
     ----------
     sci_dataset : xarray.Dataset
         Xarray dataset containing parsed HIT science data.
+
+    Returns
+    -------
+    sci_dataset : xarray.Dataset
+        Xarray dataset with sectored rates data organized by species.
     """
+    updated_dataset = sci_dataset.copy()
+
     # Calculate mod 10 values
-    hdr_min_count_mod_10 = sci_dataset.hdr_minute_cnt.values % 10
+    hdr_min_count_mod_10 = updated_dataset.hdr_minute_cnt.values % 10
 
     # Reference mod 10 mapping to initialize data structure for species and
-    # energy ranges and add 8x15 arrays with fill values for each science frame.
+    # energy ranges and add 15x8 arrays with fill values for each science frame.
     num_frames = len(hdr_min_count_mod_10)
-    # TODO: add more specific dtype for rates (ex. int16) once this is defined by HIT
     data_by_species_and_energy_range = {
         key: {
             **value,
-            "rates": np.full((num_frames, 8, 15), fill_value=fillval, dtype=int),
+            "counts": np.full((num_frames, 15, 8), fill_value=fillval, dtype=np.int64),
         }
         for key, value in MOD_10_MAPPING.items()
     }
 
-    # Update rates for science frames where data is available
+    # Update counts for science frames where data is available
     for i, mod_10 in enumerate(hdr_min_count_mod_10):
-        data_by_species_and_energy_range[mod_10]["rates"][i] = sci_dataset[
+        data_by_species_and_energy_range[mod_10]["counts"][i] = updated_dataset[
             "sectorates"
         ].values[i]
 
     # H has 3 energy ranges, 4He, CNO, NeMgSi have 2, and Fe has 1.
-    # Aggregate sector rates and energy min/max values for each species.
+    # Aggregate sectored rates and energy min/max values for each species.
     # First, initialize dictionaries to store rates and min/max energy values by species
     data_by_species: dict = {
-        value["species"]: {"rates": [], "energy_min": [], "energy_max": []}
+        value["species"]: {"counts": [], "energy_min": [], "energy_max": []}
         for value in data_by_species_and_energy_range.values()
     }
 
     for value in data_by_species_and_energy_range.values():
         species = value["species"]
-        data_by_species[species]["rates"].append(value["rates"])
+        data_by_species[species]["counts"].append(value["counts"])
         data_by_species[species]["energy_min"].append(value["energy_min"])
         data_by_species[species]["energy_max"].append(value["energy_max"])
 
-    # Add sector rates by species to the dataset
-    for species_type, data in data_by_species.items():
-        # Rates data has shape: energy_index, epoch, declination, azimuth
+    # Add sectored rates by species to the dataset
+    for species, data in data_by_species.items():
+        # Rates data has shape: energy_mean, epoch, azimuth, declination
         # Convert rates to numpy array and transpose axes to get
-        # shape: epoch, energy_index, declination, azimuth
-        rates_data = np.transpose(np.array(data["rates"]), axes=(1, 0, 2, 3))
+        # shape: epoch, energy_mean, azimuth, declination
+        rates_data = np.transpose(np.array(data["counts"]), axes=(1, 0, 2, 3))
 
-        species = species_type.lower()
-        sci_dataset[f"{species}_counts_sectored"] = xr.DataArray(
+        updated_dataset[f"{species}_sectored_counts"] = xr.DataArray(
             data=rates_data,
-            dims=["epoch", f"{species}_energy_index", "declination", "azimuth"],
+            dims=["epoch", f"{species}_energy_mean", "azimuth", "declination"],
             name=f"{species}_counts_sectored",
         )
-        sci_dataset[f"{species}_energy_min"] = xr.DataArray(
-            data=np.array(data["energy_min"], dtype=np.int8),
-            dims=[f"{species}_energy_index"],
-            name=f"{species}_energy_min",
+
+        # Add energy mean and deltas for each species
+        updated_dataset = add_energy_variables(
+            updated_dataset,
+            species,
+            np.array(data["energy_min"]),
+            np.array(data["energy_max"]),
         )
-        sci_dataset[f"{species}_energy_max"] = xr.DataArray(
-            data=np.array(data["energy_max"], dtype=np.int8),
-            dims=[f"{species}_energy_index"],
-            name=f"{species}_energy_max",
-        )
-        # add energy index coordinate to the dataset
-        sci_dataset.coords[f"{species}_energy_index"] = xr.DataArray(
-            np.arange(sci_dataset.sizes[f"{species}_energy_index"], dtype=np.int8),
-            dims=[f"{species}_energy_index"],
-            name=f"{species}_energy_index",
-        )
+
+    return updated_dataset
 
 
 def calculate_uncertainties(dataset: xr.Dataset) -> xr.Dataset:
@@ -202,16 +202,16 @@ def calculate_uncertainties(dataset: xr.Dataset) -> xr.Dataset:
         "hdr_code_ok",
         "hdr_minute_cnt",
         "livetime_counter",
-        "h_energy_min",
-        "h_energy_max",
-        "he4_energy_min",
-        "he4_energy_max",
-        "cno_energy_min",
-        "cno_energy_max",
-        "nemgsi_energy_min",
-        "nemgsi_energy_max",
-        "fe_energy_min",
-        "fe_energy_max",
+        "h_energy_delta_minus",
+        "h_energy_delta_plus",
+        "he4_energy_delta_minus",
+        "he4_energy_delta_plus",
+        "cno_energy_delta_minus",
+        "cno_energy_delta_plus",
+        "nemgsi_energy_delta_minus",
+        "nemgsi_energy_delta_plus",
+        "fe_energy_delta_minus",
+        "fe_energy_delta_plus",
     ]
 
     # Counts data that need uncertainties calculated
@@ -269,8 +269,8 @@ def process_science(
     # Decommutate and decompress the science data
     sci_dataset = decom_hit(dataset)
 
-    # Organize sector rates by species type
-    subcom_sectorates(sci_dataset)
+    # Organize sectored rates by species type
+    sci_dataset = subcom_sectorates(sci_dataset)
 
     # Split the science data into count rates and event datasets
     pha_raw_dataset = xr.Dataset(
@@ -282,18 +282,18 @@ def process_science(
     count_rates_dataset = calculate_uncertainties(count_rates_dataset)
 
     # Logical sources for the two products.
-    logical_sources = ["imap_hit_l1a_count-rates", "imap_hit_l1a_pulse-height-events"]
+    logical_sources = ["imap_hit_l1a_counts", "imap_hit_l1a_direct-events"]
 
     datasets = []
     # Update attributes and dimensions
-    for dataset, logical_source in zip(
+    for ds, logical_source in zip(
         [count_rates_dataset, pha_raw_dataset], logical_sources
     ):
-        dataset.attrs = attr_mgr.get_global_attributes(logical_source)
+        ds.attrs = attr_mgr.get_global_attributes(logical_source)
 
         # TODO: Add CDF attributes to yaml once they're defined for L1A science data
         # Assign attributes and dimensions to each data array in the Dataset
-        for field in dataset.data_vars.keys():
+        for field in ds.data_vars.keys():
             try:
                 # Create a dict of dimensions using the DEPEND_I keys in the
                 # attributes
@@ -302,19 +302,17 @@ def process_science(
                     for key, value in attr_mgr.get_variable_attributes(field).items()
                     if "DEPEND" in key
                 }
-                dataset[field].attrs = attr_mgr.get_variable_attributes(field)
-                dataset[field].assign_coords(dims)
+                ds[field].attrs = attr_mgr.get_variable_attributes(field)
+                ds[field].assign_coords(dims)
             except KeyError:
                 print(f"Field {field} not found in attribute manager.")
                 logger.warning(f"Field {field} not found in attribute manager.")
 
         # Skip schema check for epoch to prevent attr_mgr from adding the
         # DEPEND_0 attribute which isn't required for epoch
-        dataset.epoch.attrs = attr_mgr.get_variable_attributes(
-            "epoch", check_schema=False
-        )
+        ds.epoch.attrs = attr_mgr.get_variable_attributes("epoch", check_schema=False)
 
-        datasets.append(dataset)
+        datasets.append(ds)
 
         logger.info(f"HIT L1A dataset created for {logical_source}")
 

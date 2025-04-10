@@ -44,8 +44,7 @@ _CCSDS_PARAMETERS = [
     {
         "name": "SRC_SEQ_CTR",
         "lengthInBits": 14,
-        "description": "CCSDS Packet Sequence Count "
-        "(increments with each new packet)",
+        "description": "CCSDS Packet Sequence Count (increments with each new packet)",
     },
     {
         "name": "PKT_LEN",

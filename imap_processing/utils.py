@@ -352,7 +352,7 @@ def packet_file_to_datasets(
         # to the packet_name being a part of the variable name in the XTCE definition
         ds = ds.rename(
             {
-                # partition splits the string into 3 parts: before ".", ".", after "."
+                # partition splits the string into 3 parts: before ".", after "."
                 # if there was no ".", the second part is an empty string, so we use
                 # the original key in that case
                 key: key.partition(".")[2] or key

@@ -16,7 +16,6 @@ CDF files are composed of these main components: Global Attributes, Data Variabl
 Required Global Attributes
 ==========================
 
-* Data_level
 * Data_type
 * Data_version
 * Descriptor

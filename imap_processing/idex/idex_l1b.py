@@ -295,10 +295,14 @@ def get_trigger_mode_and_level(
         # Bit-shift right 22 places and use a 10-bit mask to extract the level value.
         threshold_level = float((trigger_controls >> 22) & mask)
 
-        # If it is the high gain channel multiply the level by the conversion factor.
-        # TODO: determine why the idex team is only doing this for the high gain channel
+        # multiply the threshold level by the conversion factor.
         if gain_channel == "hg":
             threshold_level *= ConversionFactors["TOF_High"]
+        elif gain_channel == "mg":
+            threshold_level *= ConversionFactors["TOF_Mid"]
+        elif gain_channel == "lg":
+            threshold_level *= ConversionFactors["TOF_Low"]
+
         return mode_label, threshold_level
 
     for channel in channels:

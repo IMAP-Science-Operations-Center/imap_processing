@@ -174,7 +174,7 @@ def rice_decode(compressed_data: str, nbit10: bool, sample_count: int) -> list[i
 
     Returns
     -------
-    list
+    list[int]
         Decompressed data as a list of integers.
     """
     # Constants:
@@ -186,7 +186,7 @@ def rice_decode(compressed_data: str, nbit10: bool, sample_count: int) -> list[i
     sub_frame_per_frame = frame_size / SUB_FRAME_SIZE
 
     bits = compressed_data
-    out_data = []
+    out_data: list[int] = []
     sub_frame_count = 0
     bp = 0
     # Decode all subframes

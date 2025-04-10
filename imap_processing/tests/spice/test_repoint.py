@@ -7,7 +7,7 @@ import pytest
 from imap_processing.spice.repoint import get_repoint_data, interpolate_repoint_data
 
 
-@pytest.fixture()
+@pytest.fixture
 def fake_repoint_data(monkeypatch, spice_test_data_path):
     """Generate fake spin dataframe for testing"""
     fake_repoint_path = spice_test_data_path / "fake_repoint_data.csv"
@@ -16,12 +16,18 @@ def fake_repoint_data(monkeypatch, spice_test_data_path):
 
 
 def test_get_repoint_data(fake_repoint_data):
-    """Test coverarge for get_repoint_data function."""
+    """Test coverage for get_repoint_data function."""
     repoint_df = get_repoint_data()
     assert isinstance(repoint_df, pd.DataFrame)
     assert set(repoint_df.columns) == {
-        "repoint_start_time",
-        "repoint_end_time",
+        "repoint_start_sec_sclk",
+        "repoint_start_subsec_sclk",
+        "repoint_start_met",
+        "repoint_start_utc",
+        "repoint_end_sec_sclk",
+        "repoint_end_subsec_sclk",
+        "repoint_end_met",
+        "repoint_end_utc",
         "repoint_id",
     }
 
@@ -36,10 +42,14 @@ def test_spin_data_no_table():
 
 def test_interpolate_repoint_data(fake_repoint_data):
     """Test coverage for get_repoint_data function."""
-    query_times = np.array([0, 6, 32])
+    query_times = np.array([0.1, 6, 32])
     expected_vals = {
-        "repoint_start_time": np.array([0, 0, 25]),
-        "repoint_end_time": np.array([5, 5, 30]),
+        "repoint_start_sec_sclk": np.array([0, 0, 25]),
+        "repoint_start_subsec_sclk": np.array([100000, 100000, 300000]),
+        "repoint_start_met": np.array([0.1, 0.1, 25.3]),
+        "repoint_end_sec_sclk": np.array([5, 5, 30]),
+        "repoint_end_subsec_sclk": np.array([100000, 100000, 300000]),
+        "repoint_end_met": np.array([5.1, 5.1, 30.3]),
         "repoint_id": np.array([0, 0, 2]),
         "repoint_in_progress": np.array([True, False, False]),
     }
@@ -57,7 +67,7 @@ def test_interpolate_repoint_data(fake_repoint_data):
             "1 query times are before",
         ),  # Query times before start of table
         (
-            np.array([0, 24 * 60 * 60 + 26]),
+            np.array([1, 24 * 60 * 60 + 26]),
             "1 query times are after",
         ),  # Query times after end of valid range
     ],
@@ -81,12 +91,12 @@ def test_interpolate_repoint_data_with_use_fake_fixture(use_fake_repoint_data_fo
 
     # Expected repoint_start_times are the seeded start times array repeated twice
     np.testing.assert_array_equal(
-        repoint_df["repoint_start_time"].values,
+        repoint_df["repoint_start_met"].values,
         np.concat([repoint_start_times, repoint_start_times]),
     )
     # Expected repoint_end_times are the seeded start times + 15 minutes
     np.testing.assert_array_equal(
-        repoint_df["repoint_end_time"].values,
+        repoint_df["repoint_end_met"].values,
         np.concat([repoint_start_times + 15 * 60, repoint_start_times + 15 * 60]),
     )
     # Expected repoint_id

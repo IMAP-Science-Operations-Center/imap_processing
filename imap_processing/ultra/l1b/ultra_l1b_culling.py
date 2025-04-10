@@ -89,7 +89,7 @@ def flag_attitude(
     spin_df = get_spin_data()  # Load spin data
 
     spin_period = spin_df.loc[spin_df.spin_number.isin(spins), "spin_period_sec"]
-    spin_starttime = spin_df.loc[spin_df.spin_number.isin(spins), "spin_start_time"]
+    spin_starttime = spin_df.loc[spin_df.spin_number.isin(spins), "spin_start_met"]
     spin_rates = 60 / spin_period  # 60 seconds in a minute
     bad_spin_rate_indices = (spin_rates < UltraConstants.CULLING_RPM_MIN) | (
         spin_rates > UltraConstants.CULLING_RPM_MAX
@@ -210,10 +210,10 @@ def compare_aux_univ_spin_table(
     mismatch_indices = np.zeros(len(spins), dtype=bool)
 
     fields_to_compare = [
-        ("TIMESPINSTART", "spin_start_sec"),
-        ("TIMESPINSTARTSUB", "spin_start_subsec"),
+        ("TIMESPINSTART", "spin_start_sec_sclk"),
+        ("TIMESPINSTARTSUB", "spin_start_subsec_sclk"),
         ("DURATION", "spin_period_sec"),
-        ("TIMESPINDATA", "spin_start_time"),
+        ("TIMESPINDATA", "spin_start_met"),
         ("SPINPERIOD", "spin_period_sec"),
     ]
 

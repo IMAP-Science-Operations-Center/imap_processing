@@ -2,6 +2,8 @@
 
 import logging
 from enum import IntEnum
+from pathlib import Path
+from typing import Union
 
 import numpy as np
 import xarray as xr
@@ -26,7 +28,7 @@ from imap_processing.spice.spin import (
     get_spacecraft_spin_phase,
 )
 from imap_processing.spice.time import met_to_sclkticks, sct_to_et
-from imap_processing.utils import convert_raw_to_eu
+from imap_processing.utils import packet_file_to_datasets
 
 
 class TriggerId(IntEnum):
@@ -43,61 +45,103 @@ ATTR_MGR.add_instrument_global_attrs("hi")
 ATTR_MGR.add_instrument_variable_attrs(instrument="hi", level=None)
 
 
-def hi_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+def hi_l1b(
+    dependency: Union[str, Path, xr.Dataset], data_version: str
+) -> list[xr.Dataset]:
     """
     High level IMAP-HI L1B processing function.
 
     Parameters
     ----------
-    l1a_dataset : xarray.Dataset
-        L1A dataset to process.
+    dependency : str or xarray.Dataset
+        Path to L0 file or L1A dataset to process.
     data_version : str
         Version of the data product being created.
 
     Returns
     -------
-    l1b_dataset : xarray.Dataset
-        Processed xarray dataset.
+    l1b_dataset : list[xarray.Dataset]
+        Processed xarray datasets.
     """
-    logger.info(
-        f"Running Hi L1B processing on dataset: {l1a_dataset.attrs['Logical_source']}"
-    )
-    logical_source_parts = parse_filename_like(l1a_dataset.attrs["Logical_source"])
-    # TODO: apid is not currently stored in all L1A data but should be.
-    #    Use apid to determine what L1B processing function to call
-
     # Housekeeping processing
-    if logical_source_parts["descriptor"].endswith("hk"):
-        # if packet_enum in (HIAPID.H45_APP_NHK, HIAPID.H90_APP_NHK):
-        packet_enum = HIAPID(l1a_dataset["pkt_apid"].data[0])
-        conversion_table_path = str(
-            imap_module_directory / "hi" / "l1b" / "hi_eng_unit_convert_table.csv"
-        )
-        l1b_dataset = convert_raw_to_eu(
-            l1a_dataset,
-            conversion_table_path=conversion_table_path,
-            packet_name=packet_enum.name,
-            comment="#",  # type: ignore[arg-type]
-            # Todo error, Argument "comment" to "convert_raw_to_eu" has incompatible
-            # type "str"; expected "dict[Any, Any]"
-            converters={"mnemonic": str.lower},
-        )
-
-        l1b_dataset.attrs.update(ATTR_MGR.get_global_attributes("imap_hi_l1b_hk_attrs"))
-    elif logical_source_parts["descriptor"].endswith("de"):
-        l1b_dataset = annotate_direct_events(l1a_dataset)
-    else:
-        raise NotImplementedError(
-            f"No Hi L1B processing defined for file type: "
+    if isinstance(dependency, (Path, str)):
+        logger.info(f"Running Hi L1B processing on file: {dependency}")
+        l1b_datasets = housekeeping(dependency)
+    elif isinstance(dependency, xr.Dataset):
+        l1a_dataset = dependency
+        logger.info(
+            f"Running Hi L1B processing on dataset: "
             f"{l1a_dataset.attrs['Logical_source']}"
         )
+        logical_source_parts = parse_filename_like(l1a_dataset.attrs["Logical_source"])
+        # TODO: apid is not currently stored in all L1A data but should be.
+        #    Use apid to determine what L1B processing function to call
+
+        # DE processing
+        if logical_source_parts["descriptor"].endswith("de"):
+            l1b_datasets = [annotate_direct_events(l1a_dataset)]
+            l1b_datasets[0].attrs["Logical_source"] = (
+                l1b_datasets[0]
+                .attrs["Logical_source"]
+                .format(sensor=logical_source_parts["sensor"])
+            )
+        else:
+            raise NotImplementedError(
+                f"No Hi L1B processing defined for file type: "
+                f"{l1a_dataset.attrs['Logical_source']}"
+            )
+
     # Update global attributes
-    l1b_dataset.attrs["Logical_source"] = l1b_dataset.attrs["Logical_source"].format(
-        sensor=logical_source_parts["sensor"]
+    for dataset in l1b_datasets:
+        dataset.attrs["Data_version"] = data_version
+    return l1b_datasets
+
+
+def housekeeping(packet_file_path: Union[str, Path]) -> list[xr.Dataset]:
+    """
+    Will process IMAP raw data to l1b housekeeping dataset.
+
+    In order to use `space_packet_parser` and the xtce which contains the
+    DN to EU conversion factors, the L0 packet file is used to go straight to
+    L1B.
+
+    Parameters
+    ----------
+    packet_file_path : str
+        Packet file path.
+
+    Returns
+    -------
+    processed_data : list[xarray.Dataset]
+        Housekeeping datasets with engineering units.
+    """
+    packet_def_file = (
+        imap_module_directory / "hi/packet_definitions/TLM_HI_COMBINED_SCI.xml"
     )
-    # TODO: revisit this
-    l1b_dataset.attrs["Data_version"] = data_version
-    return l1b_dataset
+    # TODO: If raw and derived values can be gotten from one call to
+    #    packet_file_to_datasets, the L1A and L1B could be generated
+    #    in a single L1A/B function.
+    datasets_by_apid = packet_file_to_datasets(
+        packet_file=packet_file_path,
+        xtce_packet_definition=packet_def_file,
+        use_derived_value=True,
+    )
+
+    # Extract only the HK datasets
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs("hi")
+    datasets = list()
+    for apid in [HIAPID.H45_APP_NHK, HIAPID.H90_APP_NHK]:
+        if apid in datasets_by_apid:
+            datasets.append(datasets_by_apid[apid])
+            # Update the dataset global attributes
+            datasets[-1].attrs.update(
+                ATTR_MGR.get_global_attributes("imap_hi_l1b_hk_attrs")
+            )
+            datasets[-1].attrs["Logical_source"] = (
+                datasets[-1].attrs["Logical_source"].format(sensor=apid.sensor)
+            )
+    return datasets
 
 
 def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:

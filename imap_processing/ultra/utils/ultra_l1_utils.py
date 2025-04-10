@@ -32,6 +32,7 @@ def create_dataset(
     cdf_manager.add_instrument_variable_attrs("ultra", level)
     cdf_manager.add_global_attribute("Data_version", data_version)
 
+    # L1b extended spin, badtimes, and cullingmask data products
     if "spin_number" in data_dict.keys():
         coords = {
             "spin_number": data_dict["spin_number"],
@@ -40,7 +41,15 @@ def create_dataset(
             "epoch": data_dict["spin_start_time"],
         }
         default_dimension = "spin_number"
-
+    # L1c pset data products
+    elif "healpix" in data_dict:
+        coords = {
+            "healpix": data_dict["healpix"],
+            "energy_bin_geometric_mean": data_dict["energy_bin_geometric_mean"],
+            "epoch": data_dict["epoch"],
+        }
+        default_dimension = "healpix"
+    # L1b de data product
     else:
         epoch_time = xr.DataArray(
             data_dict["epoch"],
@@ -77,30 +86,37 @@ def create_dataset(
         "quality_ena_rates",
     }
 
-    for key in data_dict.keys():
-        if key in ["epoch", "spin_number", "energy_bin_geometric_mean"]:
+    for key, data in data_dict.items():
+        # Skip keys that are coordinates.
+        if key in ["epoch", "spin_number", "energy_bin_geometric_mean", "healpix"]:
             continue
         elif key in velocity_keys:
             dataset[key] = xr.DataArray(
-                data_dict[key],
+                data,
                 dims=["epoch", "component"],
                 attrs=cdf_manager.get_variable_attributes(key),
             )
-        elif key == "ena_rates_threshold":
+        elif key in ("ena_rates_threshold", "energy_bin_delta"):
             dataset[key] = xr.DataArray(
-                data_dict[key],
+                data,
                 dims=["energy_bin_geometric_mean"],
                 attrs=cdf_manager.get_variable_attributes(key),
             )
         elif key in rates_keys:
             dataset[key] = xr.DataArray(
-                data_dict[key],
+                data,
                 dims=["energy_bin_geometric_mean", "spin_number"],
+                attrs=cdf_manager.get_variable_attributes(key),
+            )
+        elif key == "counts":
+            dataset[key] = xr.DataArray(
+                data,
+                dims=["energy_bin_geometric_mean", "healpix"],
                 attrs=cdf_manager.get_variable_attributes(key),
             )
         else:
             dataset[key] = xr.DataArray(
-                data_dict[key],
+                data,
                 dims=[default_dimension],
                 attrs=cdf_manager.get_variable_attributes(key),
             )

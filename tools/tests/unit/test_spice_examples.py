@@ -15,14 +15,14 @@ from tools.spice.spice_utils import (
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def kernel_directory():
     """Kernel directory."""
     kernel_directory = Path(__file__).parents[1] / "test_data" / "spice"
     return kernel_directory
 
 
-@pytest.fixture()
+@pytest.fixture
 def kernels(kernel_directory):
     """Loads all kernels."""
     # TODO: ALl kernels able to be downloaded from NAIF are not available
@@ -39,7 +39,7 @@ def kernels(kernel_directory):
     return kernels
 
 
-@pytest.fixture()
+@pytest.fixture
 def direct_events():
     """Loads direct events test data.
 

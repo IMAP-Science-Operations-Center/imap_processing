@@ -286,7 +286,6 @@ def add_dataset_attrs(
                 "seq_flgs",
                 "src_seq_ctr",
                 "pkt_len",
-                "shcoarse",
                 "data",
                 "events",
             ]

@@ -73,8 +73,7 @@ class AncillaryParameters:
 
         except KeyError as e:
             raise KeyError(
-                "GLOWS L1B Ancillary input_table does not conform to "
-                "expected format."
+                "GLOWS L1B Ancillary input_table does not conform to expected format."
             ) from e
 
     def decode(self, param_key: str, encoded_value: np.double) -> np.double:
