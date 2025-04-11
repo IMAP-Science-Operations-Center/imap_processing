@@ -146,7 +146,7 @@ def mock_l1c_pset_product_rectangular(  # noqa: PLR0913
             "counts": (
                 [
                     CoordNames.TIME.value,
-                    CoordNames.ENERGY.value,
+                    CoordNames.ENERGY_ULTRA.value,
                     CoordNames.AZIMUTH_L1C.value,
                     CoordNames.ELEVATION_L1C.value,
                 ],
@@ -163,7 +163,7 @@ def mock_l1c_pset_product_rectangular(  # noqa: PLR0913
             "sensitivity": (
                 [
                     CoordNames.TIME.value,
-                    CoordNames.ENERGY.value,
+                    CoordNames.ENERGY_ULTRA.value,
                     CoordNames.AZIMUTH_L1C.value,
                     CoordNames.ELEVATION_L1C.value,
                 ],
@@ -174,7 +174,7 @@ def mock_l1c_pset_product_rectangular(  # noqa: PLR0913
             CoordNames.TIME.value: [
                 tt_j2000ns,
             ],
-            CoordNames.ENERGY.value: energy_bin_midpoints,
+            CoordNames.ENERGY_ULTRA.value: energy_bin_midpoints,
             CoordNames.AZIMUTH_L1C.value: np.arange(
                 0 + spacing_deg / 2, 360, spacing_deg
             ),
@@ -312,7 +312,7 @@ def mock_l1c_pset_product_healpix(  # noqa: PLR0913
             "counts": (
                 [
                     CoordNames.TIME.value,
-                    CoordNames.ENERGY.value,
+                    CoordNames.ENERGY_ULTRA.value,
                     CoordNames.HEALPIX_INDEX.value,
                 ],
                 counts,
@@ -320,7 +320,7 @@ def mock_l1c_pset_product_healpix(  # noqa: PLR0913
             "background_rates": (
                 [
                     CoordNames.TIME.value,
-                    CoordNames.ENERGY.value,
+                    CoordNames.ENERGY_ULTRA.value,
                     CoordNames.HEALPIX_INDEX.value,
                 ],
                 np.full_like(counts, 0.05, dtype=float),
@@ -332,7 +332,7 @@ def mock_l1c_pset_product_healpix(  # noqa: PLR0913
             "sensitivity": (
                 [
                     CoordNames.TIME.value,
-                    CoordNames.ENERGY.value,
+                    CoordNames.ENERGY_ULTRA.value,
                     CoordNames.HEALPIX_INDEX.value,
                 ],
                 sensitivity,
@@ -346,7 +346,7 @@ def mock_l1c_pset_product_healpix(  # noqa: PLR0913
                 lat_pix,
             ),
             "energy_bin_delta": (
-                [CoordNames.ENERGY.value],
+                [CoordNames.ENERGY_ULTRA.value],
                 energy_bin_delta,
             ),
         },
@@ -354,15 +354,15 @@ def mock_l1c_pset_product_healpix(  # noqa: PLR0913
             CoordNames.TIME.value: [
                 tt_j2000ns,
             ],
-            CoordNames.ENERGY.value: xr.DataArray(
-                energy_bin_midpoints, dims=(CoordNames.ENERGY.value,)
+            CoordNames.ENERGY_ULTRA.value: xr.DataArray(
+                energy_bin_midpoints, dims=(CoordNames.ENERGY_ULTRA.value,)
             ),
             CoordNames.HEALPIX_INDEX.value: pix_indices,
         },
         attrs={
             "Logical_file_id": logical_file_id,
             "Logical_source": logical_source,
-            "Data_version": "001",
+            "Data_version": "v001",
         },
     )
 
