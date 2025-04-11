@@ -10154,7 +10154,7 @@
               </xtce:BaseContainer>
             </xtce:SequenceContainer>
 			<xtce:SequenceContainer name="IDX_EVT">
-				<xtce:BaseContainer containerRef="CCSDSPacket">
+				<xtce:BaseContainer containerRef="CCSDSTelemetryPacket">
 					<xtce:RestrictionCriteria>
 						<xtce:Comparison parameterRef="PKT_APID" value="1418" useCalibratedValue="false" />
 					</xtce:RestrictionCriteria>
@@ -10175,7 +10175,7 @@
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="IDX_CATLST">
-				<xtce:BaseContainer containerRef="CCSDSPacket">
+				<xtce:BaseContainer containerRef="CCSDSTelemetryPacket">
 					<xtce:RestrictionCriteria>
 						<xtce:Comparison parameterRef="PKT_APID" value="1419" useCalibratedValue="false" />
 					</xtce:RestrictionCriteria>
