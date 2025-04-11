@@ -1,6 +1,6 @@
 # Creating an Ultra packet definition file
 
-The packet definition is made by combining the U45 and U90 telemetry definition files.
+The packet definition is made by combining the U45 and U90 telemetry definition. Galaxy page containing packet definitions: https://lasp.colorado.edu/galaxy/x/Y4AzDw).
 
 ## Modifying the Excel spreadsheets
 
