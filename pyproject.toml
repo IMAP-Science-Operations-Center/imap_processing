@@ -49,6 +49,7 @@ pre-commit = {version="^3.3.3", optional=true}
 pydata-sphinx-theme = {version="*", optional=true}
 pytest = {version=">=6.2.5", optional=true}
 pytest-cov = {version="^4.0.0", optional=true}
+pytest-xdist = {version="^3.2", optional=true}
 ruff = {version="==0.2.1", optional=true}
 sphinx = {version="*", optional=true}
 sphinxcontrib-openapi = {version="^0.8.3", optional=true}
@@ -60,7 +61,7 @@ netcdf4 = {version ="^1.7.2",  optional = true}
 [tool.poetry.extras]
 dev = ["pre-commit", "ruff", "mypy"]
 doc = ["numpydoc", "pydata-sphinx-theme", "sphinx", "sphinxcontrib-openapi"]
-test = ["openpyxl", "pytest", "pytest-cov", "requests", "netcdf4"]
+test = ["openpyxl", "pytest", "pytest-cov", "pytest-xdist", "requests", "netcdf4"]
 tools = ["openpyxl", "pandas"]
 map_visualization = ["healpy"]
 

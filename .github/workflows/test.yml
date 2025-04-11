@@ -46,9 +46,9 @@ jobs:
         run: |
           # Ignore the network marks from the remote test environment
           if [ "$USE_EXTERNAL_DATA" = "true" ]; then
-            poetry run pytest --color=yes --cov --cov-report=xml
+            poetry run pytest -n auto --color=yes --cov --cov-report=xml
           else
-            poetry run pytest --color=yes --cov --cov-report=xml -m "not external_kernel and not external_test_data"
+            poetry run pytest -n auto --color=yes --cov --cov-report=xml -m "not external_kernel and not external_test_data"
           fi
 
       - name: Upload coverage reports to Codecov
