@@ -85,7 +85,9 @@ def build_solid_angle_map(
     if not np.isclose(proposed_number_of_lat_bins, number_of_lat_bins):
         raise ValueError("Spacing must divide evenly into pi radians.")
 
-    latitudes = np.linspace(-np.pi / 2, np.pi / 2, num=number_of_lat_bins+1, endpoint=True)
+    latitudes = np.linspace(
+        -np.pi / 2, np.pi / 2, num=number_of_lat_bins + 1, endpoint=True
+    )
     sine_latitudes = np.sin(latitudes)
     delta_sine_latitudes = np.diff(sine_latitudes)
     solid_angle_by_latitude = np.abs(spacing * delta_sine_latitudes)
