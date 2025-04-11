@@ -1,10 +1,8 @@
-from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
 import pytest
 
-from imap_processing.cdf.utils import write_cdf
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.ena_maps.utils.map_properties import (
@@ -15,7 +13,7 @@ from imap_processing.ultra.l2 import ultra_l2
 
 
 class TestUltraL2:
-    @pytest.fixture()
+    @pytest.fixture
     def _setup_spice_kernels_list(self, spice_test_data_path, furnish_kernels):
         self.required_kernel_names = [
             "imap_science_0001.tf",
@@ -24,14 +22,14 @@ class TestUltraL2:
             "sim_1yr_imap_pointing_frame.bc",
         ]
 
-    @pytest.fixture()
+    @pytest.fixture
     def _mock_single_pset(self, _setup_spice_kernels_list, furnish_kernels):
         with furnish_kernels(self.required_kernel_names):
             self.ultra_pset = mock_l1c_pset_product_healpix(
                 nside=128, stripe_center_lat=0, timestr="2025-05-15T12:00:00"
             )
 
-    @pytest.fixture()
+    @pytest.fixture
     def _mock_multiple_psets(self, _setup_spice_kernels_list, furnish_kernels):
         with furnish_kernels(self.required_kernel_names):
             self.ultra_psets = [
@@ -57,48 +55,9 @@ class TestUltraL2:
             [pset["counts"].values.sum() for pset in self.ultra_psets]
         )
 
-    @pytest.fixture()
+    @pytest.fixture
     def mock_data_dict(self, _mock_multiple_psets):
         return {pset.attrs["Logical_file_id"]: pset for pset in self.ultra_psets}
-
-    @pytest.mark.usefixtures("_mock_single_pset")
-    def test_read_into_pointing_set(self):
-        cdf_filepath = write_cdf(self.ultra_pset, istp=False)
-
-        ultra_pset_from_dataset = ultra_l2.read_into_pointing_set(self.ultra_pset)
-        ultra_pset_from_dataset_copy = ultra_l2.read_into_pointing_set(self.ultra_pset)
-
-        ultra_pset_from_str = ultra_l2.read_into_pointing_set(cdf_filepath)
-        ultra_pset_from_path = ultra_l2.read_into_pointing_set(Path(cdf_filepath))
-
-        np.testing.assert_allclose(
-            ultra_pset_from_dataset.data["counts"].values,
-            ultra_pset_from_str.data["counts"].values,
-            rtol=1e-6,
-        )
-
-        np.testing.assert_allclose(
-            ultra_pset_from_dataset.data["counts"].values,
-            ultra_pset_from_path.data["counts"].values,
-            rtol=1e-6,
-        )
-
-        # delete cdf_filepath once we're done with it
-        Path(cdf_filepath).unlink()
-
-        # The two datasets should should start as equal, but not the same object
-        # So if we modify one, the other should not change
-        np.testing.assert_allclose(
-            ultra_pset_from_dataset.data["counts"].values,
-            ultra_pset_from_dataset_copy.data["counts"].values,
-            rtol=1e-6,
-        )
-        ultra_pset_from_dataset.data["counts"].values[0] += int(1e8)
-        assert not np.allclose(
-            ultra_pset_from_dataset.data["counts"].values,
-            ultra_pset_from_dataset_copy.data["counts"].values,
-            rtol=1e-6,
-        )
 
     @pytest.mark.parametrize(
         ["map_frame", "rtol"],
@@ -240,7 +199,7 @@ class TestUltraL2:
         # Check the dims of the key variables
         counts_dims = (
             CoordNames.TIME.value,
-            CoordNames.ENERGY.value,
+            CoordNames.ENERGY_ULTRA.value,
             CoordNames.GENERIC_PIXEL.value,
         )
         assert hp_skymap.data_1d["counts"].dims == counts_dims

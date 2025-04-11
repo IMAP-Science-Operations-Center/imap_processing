@@ -481,6 +481,48 @@ class UltraPointingSet(PointingSet):
             (self.azimuth_pixel_center, self.elevation_pixel_center)
         )
 
+    @classmethod
+    def from_path_or_dataset(
+        cls,
+        input_data: xr.Dataset | str | pathlib.Path,
+    ) -> UltraPointingSet:
+        """
+        Read a path or Dataset into an UltraPointingSet.
+
+        Parameters
+        ----------
+        input_data : xr.Dataset | str | pathlib.Path
+            Path to the CDF file or xarray Dataset containing the L1C dataset.
+            If a dataset is provided, it will be copied to avoid modifying the original.
+
+        Returns
+        -------
+        UltraPointingSet
+            An UltraPointingSet object containing the L1C dataset.
+
+        Raises
+        ------
+        ValueError
+            If input_data is neither an xarray Dataset nor a path to a CDF file.
+        """
+        # Allow for passing in EITHER xarray Datasets (preferable for testing)
+        if isinstance(input_data, xr.Dataset):
+            # Copy to avoid modifying the original dataset in place
+            input_data = input_data.copy(deep=True)
+            ultra_pointing_set = UltraPointingSet(l1c_dataset=input_data)
+        # OR paths to CDF files (preferable for projecting many PointingSets)
+        elif isinstance(input_data, str | pathlib.Path):
+            if isinstance(input_data, str):
+                input_data = pathlib.Path(input_data)
+            ultra_pointing_set = UltraPointingSet(l1c_dataset=load_cdf(input_data))
+        else:
+            raise ValueError(
+                f"Input data must be either an xarray Dataset or a path to a CDF file "
+                "containing the L1C dataset.\n"
+                f"Found {type(input_data)} instead."
+            )
+        return ultra_pointing_set
+
     def __repr__(self) -> str:
         """
         Return a string representation of the UltraPointingSet.

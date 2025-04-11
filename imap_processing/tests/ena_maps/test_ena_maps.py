@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from pathlib import Path
 from unittest import mock
 
 import astropy_healpix.healpy as hp
@@ -10,6 +11,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils import spatial_utils
 from imap_processing.ena_maps.utils.coordinates import CoordNames
@@ -86,6 +88,57 @@ class TestUltraPointingSet:
                 "epoch",
                 "energy_bin_geometric_mean",
             )
+
+    @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
+    def test_from_path_or_dataset(
+        self,
+    ):
+        ultra_pset = self.l1c_pset_products[0]
+
+        cdf_filepath = write_cdf(ultra_pset, istp=False)
+
+        ultra_pset_from_dataset = ena_maps.UltraPointingSet.from_path_or_dataset(
+            ultra_pset
+        )
+        ultra_pset_from_dataset_copy = ena_maps.UltraPointingSet.from_path_or_dataset(
+            ultra_pset
+        )
+
+        ultra_pset_from_str = ena_maps.UltraPointingSet.from_path_or_dataset(
+            cdf_filepath
+        )
+        ultra_pset_from_path = ena_maps.UltraPointingSet.from_path_or_dataset(
+            Path(cdf_filepath)
+        )
+
+        np.testing.assert_allclose(
+            ultra_pset_from_dataset.data["counts"].values,
+            ultra_pset_from_str.data["counts"].values,
+            rtol=1e-6,
+        )
+
+        np.testing.assert_allclose(
+            ultra_pset_from_dataset.data["counts"].values,
+            ultra_pset_from_path.data["counts"].values,
+            rtol=1e-6,
+        )
+
+        # delete cdf_filepath once we're done with it
+        Path(cdf_filepath).unlink()
+
+        # The two datasets should should start as equal, but not the same object
+        # So if we modify one, the other should not change
+        np.testing.assert_allclose(
+            ultra_pset_from_dataset.data["counts"].values,
+            ultra_pset_from_dataset_copy.data["counts"].values,
+            rtol=1e-6,
+        )
+        ultra_pset_from_dataset.data["counts"].values[0] += int(1e8)
+        assert not np.allclose(
+            ultra_pset_from_dataset.data["counts"].values,
+            ultra_pset_from_dataset_copy.data["counts"].values,
+            rtol=1e-6,
+        )
 
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
@@ -199,20 +252,22 @@ class TestRectangularSkyMap:
         simple_summed_pset_counts_by_energy = np.zeros(
             shape=(
                 self.ultra_l1c_pset_products[0]["counts"].sizes[
-                    CoordNames.ENERGY.value
+                    CoordNames.ENERGY_ULTRA.value
                 ],
             )
         )
         for pset in self.ultra_l1c_pset_products:
             simple_summed_pset_counts_by_energy += pset["counts"].sum(
-                dim=[d for d in pset["counts"].dims if d != CoordNames.ENERGY.value]
+                dim=[
+                    d for d in pset["counts"].dims if d != CoordNames.ENERGY_ULTRA.value
+                ]
             )
 
         rmap_counts_per_energy_bin = rectangular_map.data_1d["counts"].sum(
             dim=[
                 d
                 for d in rectangular_map.data_1d["counts"].dims
-                if d != CoordNames.ENERGY.value
+                if d != CoordNames.ENERGY_ULTRA.value
             ]
         )
 
@@ -262,20 +317,22 @@ class TestRectangularSkyMap:
         simple_summed_pset_counts_by_energy = np.zeros(
             shape=(
                 self.rectangular_l1c_pset_products[0]["counts"].sizes[
-                    CoordNames.ENERGY.value
+                    CoordNames.ENERGY_ULTRA.value
                 ],
             )
         )
         for pset in self.rectangular_l1c_pset_products:
             simple_summed_pset_counts_by_energy += pset["counts"].sum(
-                dim=[d for d in pset["counts"].dims if d != CoordNames.ENERGY.value]
+                dim=[
+                    d for d in pset["counts"].dims if d != CoordNames.ENERGY_ULTRA.value
+                ]
             )
 
         rmap_counts_per_energy_bin = rectangular_map.data_1d["counts"].sum(
             dim=[
                 d
                 for d in rectangular_map.data_1d["counts"].dims
-                if d != CoordNames.ENERGY.value
+                if d != CoordNames.ENERGY_ULTRA.value
             ]
         )
 
@@ -372,13 +429,13 @@ class TestRectangularSkyMap:
         assert "counts" in rect_map_ds.data_vars
         assert rect_map_ds["counts"].shape == (
             1,
-            rectangular_pset.data["counts"].sizes[CoordNames.ENERGY.value],
+            rectangular_pset.data["counts"].sizes[CoordNames.ENERGY_ULTRA.value],
             360 / skymap_spacing,
             180 / skymap_spacing,
         )
         assert rect_map_ds["counts"].dims == (
             CoordNames.TIME.value,
-            CoordNames.ENERGY.value,
+            CoordNames.ENERGY_ULTRA.value,
             CoordNames.AZIMUTH_L2.value,
             CoordNames.ELEVATION_L2.value,
         )
@@ -625,12 +682,12 @@ class TestHealpixSkyMap:
         assert "counts" in hp_map_ds.data_vars
         assert hp_map_ds["counts"].shape == (
             1,
-            mock_pset_input_frame.data["counts"].sizes[CoordNames.ENERGY.value],
+            mock_pset_input_frame.data["counts"].sizes[CoordNames.ENERGY_ULTRA.value],
             hp_map.num_points,
         )
         assert hp_map_ds["counts"].dims == (
             CoordNames.TIME.value,
-            CoordNames.ENERGY.value,
+            CoordNames.ENERGY_ULTRA.value,
             CoordNames.HEALPIX_INDEX.value,
         )
         np.testing.assert_array_equal(

@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 import numpy as np
 import xarray as xr
 
-from imap_processing.cdf.utils import load_cdf
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.ena_maps.utils.map_properties import (
@@ -49,56 +47,6 @@ VARIABLES_TO_DROP_AFTER_FLUX_CALCULATION = [
     "num_pointing_set_pixel_members",
     "corrected_count_rate",
 ]
-
-
-def read_into_pointing_set(
-    input_data: xr.Dataset | str | Path,
-) -> ena_maps.UltraPointingSet:
-    """
-    Read a path or Dataset into an UltraPointingSet.
-
-    Parameters
-    ----------
-    input_data : xr.Dataset | str | Path
-        Path to the CDF file or xarray Dataset containing the L1C dataset.
-        If a dataset is provided, it will be copied to avoid modifying the original.
-
-    Returns
-    -------
-    ena_maps.UltraPointingSet
-        An UltraPointingSet object containing the L1C dataset.
-
-    Raises
-    ------
-    ValueError
-        If input_data is neither an xarray Dataset nor a path to a CDF file.
-    KeyError
-        If any of the required variables are missing from the input data.
-    """
-    # Allow for passing in EITHER xarray Datasets (preferable for testing)
-    if isinstance(input_data, xr.Dataset):
-        # Copy to avoid modifying the original dataset in place
-        input_data = input_data.copy(deep=True)
-        ultra_pointing_set = ena_maps.UltraPointingSet(l1c_dataset=input_data)
-    # OR paths to CDF files (preferable for projecting many PointingSets)
-    elif isinstance(input_data, str | Path):
-        if isinstance(input_data, str):
-            input_data = Path(input_data)
-        ultra_pointing_set = ena_maps.UltraPointingSet(l1c_dataset=load_cdf(input_data))
-    else:
-        raise ValueError(
-            f"Input data must be either an xarray Dataset or a path to a CDF file "
-            "containing the L1C dataset.\n"
-            f"Found {type(input_data)} instead."
-        )
-    # Check that the required variables are present in the dataset
-    for var in REQUIRED_L1C_VARIABLES:
-        if var not in ultra_pointing_set.data.data_vars:
-            raise KeyError(
-                f"Missing required variable '{var}' in input data. "
-                "Please ensure the dataset contains all required variables."
-            )
-    return ultra_pointing_set
 
 
 def generate_ultra_healpix_skymap(
@@ -166,9 +114,19 @@ def generate_ultra_healpix_skymap(
         ]
     )
 
+    # Get full list of variables to push to the map: all requested variables plus
+    # any which are required for L2 processing
+    value_keys_to_push_project = list(
+        set(output_map_properties.values_to_push_project + REQUIRED_L1C_VARIABLES)
+    )
+
     for ultra_l1c_pset in ultra_l1c_psets:
-        pointing_set = read_into_pointing_set(ultra_l1c_pset)
-        logger.info(f"PSET epoch: {pointing_set.epoch}")
+        pointing_set = ena_maps.UltraPointingSet.from_path_or_dataset(ultra_l1c_pset)
+        logger.info(
+            f"Projecting a PointingSet with {pointing_set.num_points} pixels "
+            f"at epoch:{pointing_set.epoch}\n"
+            f"These values will be projected: {value_keys_to_push_project}"
+        )
 
         pointing_set.data["num_pointing_set_pixel_members"] = xr.DataArray(
             np.ones(pointing_set.num_points, dtype=int),
@@ -192,12 +150,7 @@ def generate_ultra_healpix_skymap(
 
         skymap.project_pset_values_to_map(
             pointing_set=pointing_set,
-            value_keys=list(
-                set(
-                    output_map_properties.values_to_push_project
-                    + REQUIRED_L1C_VARIABLES
-                )
-            ),
+            value_keys=value_keys_to_push_project,
             index_match_method=ena_maps.IndexMatchMethod.PUSH,
         )
 
@@ -227,22 +180,27 @@ def generate_ultra_healpix_skymap(
     delta_energy = pointing_set.data["energy_bin_delta"]
 
     # Core calculations of flux and flux uncertainty for L2
-    # Get corrected count rate with background subtraction applied
-    skymap.data_1d["corrected_count_rate"] = (
-        skymap.data_1d["counts"] / skymap.data_1d["exposure_factor"]
-    ) - skymap.data_1d["background_rates"]
+    # Exposure time may contain 0s, producing NaNs in the corrected count rate and flux.
+    # These NaNs are not incorrect, so we temporarily ignore numpy div by 0 warnings.
+    with np.errstate(divide="ignore"):
+        # Get corrected count rate with background subtraction applied
+        skymap.data_1d["corrected_count_rate"] = (
+            skymap.data_1d["counts"].astype(float) / skymap.data_1d["exposure_factor"]
+        ) - skymap.data_1d["background_rates"]
 
-    # Calculate flux as corrected_counts / (sensitivity * solid_angle * delta_energy)
-    skymap.data_1d["flux"] = skymap.data_1d["corrected_count_rate"] / (
-        skymap.data_1d["sensitivity"] * skymap.solid_angle * delta_energy
-    )
+        # Calculate flux = corrected_counts / (sensitivity * solid_angle * delta_energy)
+        skymap.data_1d["flux"] = skymap.data_1d["corrected_count_rate"] / (
+            skymap.data_1d["sensitivity"] * skymap.solid_angle * delta_energy
+        )
 
-    skymap.data_1d["flux_uncertainty"] = (skymap.data_1d["counts"] ** 0.5) / (
-        skymap.data_1d["exposure_factor"]
-        * skymap.data_1d["sensitivity"]
-        * skymap.solid_angle
-        * delta_energy
-    )
+        skymap.data_1d["flux_uncertainty"] = (
+            skymap.data_1d["counts"].astype(float) ** 0.5
+        ) / (
+            skymap.data_1d["exposure_factor"]
+            * skymap.data_1d["sensitivity"]
+            * skymap.solid_angle
+            * delta_energy
+        )
 
     # Drop the variables that are no longer needed
     skymap.data_1d = skymap.data_1d.drop_vars(
