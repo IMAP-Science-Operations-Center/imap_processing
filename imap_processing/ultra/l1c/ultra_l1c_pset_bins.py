@@ -285,9 +285,9 @@ def get_spacecraft_sensitivity(
     energy_vals : NDArray
         Energy values of dataframe.
     right_ascension : NDArray
-        Right ascension values of dataframe.
+        Right ascension values of dataframe (0 - 360 degrees).
     declination : NDArray
-        Declination values of dataframe.
+        Declination values of dataframe (-90 to 90 degrees).
     """
     # Exclude "Right Ascension (deg)" and "Declination (deg)" from the multiplication
     energy_columns = [
@@ -310,7 +310,7 @@ def get_spacecraft_sensitivity(
 def grid_sensitivity(
     efficiencies: pandas.DataFrame,
     geometric_function: pandas.DataFrame,
-    energy_midpoints: NDArray,
+    energy: int,
     nside: int = 128,
     nested: bool = False,
 ) -> NDArray:
@@ -325,8 +325,8 @@ def grid_sensitivity(
         Geometric function.
         energy : np.ndarray
         The particle energy.
-    energy_midpoints : np.ndarray
-        Array of energy bin midpoints.
+    energy : int
+        Energy to which we are interpolating.
     nside : int, optional
         The nside parameter of the Healpix tessellation.
         Default is 32.
@@ -337,12 +337,6 @@ def grid_sensitivity(
     -------
     pointing_sensitivity : pandas.DataFrame
         Sensitivity with dimensions (HEALPIX pixel_number, energy).
-    energy_vals : NDArray
-        Energy values of dataframe.
-    right_ascension : NDArray
-        Right ascension values of dataframe (0 - 360 degrees).
-    declination : NDArray
-        Declination values of dataframe (-90 to 90 degrees).
     """
     sensitivity, energy_vals, right_ascension, declination = get_spacecraft_sensitivity(
         efficiencies, geometric_function
@@ -357,5 +351,7 @@ def grid_sensitivity(
         bounds_error=False,
         fill_value=np.nan,
     )
+    # TODO: what are we interpolating to here?
+    # The energy_midpoint of the bin or the energy_bin_geometric_mean?
 
-    return interpolator((hpix_idx, energy_midpoints))
+    return interpolator((hpix_idx, energy))

@@ -200,12 +200,23 @@ def test_get_spacecraft_sensitivity():
 
 @pytest.mark.external_test_data
 def test_grid_sensitivity():
+    """Tests grid_sensitivity function."""
     efficiences = TEST_PATH / "Ultra_90_DPS_efficiencies_all.csv"
     geometric_function = TEST_PATH / "ultra_90_dps_gf.csv"
 
     df_efficiencies = pd.read_csv(efficiences)
     df_geometric_function = pd.read_csv(geometric_function)
 
-    _, energy_midpoints, _ = build_energy_bins()
+    sensitivity, energy_vals, right_ascension, declination = get_spacecraft_sensitivity(
+        df_efficiencies, df_geometric_function
+    )
+    # First non-zero index for 3 keV
+    index = sensitivity[sensitivity["3.0keV"] != 0].index[0]
+    expected_result = sensitivity.loc[index]["3.0keV"]
+    result = grid_sensitivity(df_efficiencies, df_geometric_function, 3)
 
-    grid_sensitivity(df_efficiencies, df_geometric_function, energy_midpoints)
+    assert np.allclose(result[index], expected_result)
+
+    # Check out of bounds values are nans
+    result = grid_sensitivity(df_efficiencies, df_geometric_function, 2.5)
+    assert np.isnan(result).all()
