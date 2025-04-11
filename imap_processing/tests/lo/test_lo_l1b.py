@@ -206,7 +206,6 @@ def test_get_spin_angle():
         spin_angle,
         spin_angle_expected,
         atol=1e-2,
-        err_msg=f"Spin angle: {spin_angle} vs {spin_angle_expected}",
     )
 
 
@@ -288,13 +287,7 @@ def test_get_spin_start_times():
     spin_start_times_expected = np.array([20.002, 50.0015, 55.002, 60.003, 65.004])
     spin_start_times = get_spin_start_times(l1a_de, l1b_de, spin, end_acq)
 
-    np.testing.assert_allclose(
-        spin_start_times,
-        spin_start_times_expected,
-        atol=1e-4,
-        err_msg=f"Spin start times: {spin_start_times} vs\
-         expected spin start times {spin_start_times_expected}",
-    )
+    np.testing.assert_allclose(spin_start_times, spin_start_times_expected, atol=1e-4)
 
 
 def test_set_event_met():
@@ -328,8 +321,6 @@ def test_set_event_met():
         l1b_de["event_met"].values,
         expected_event_met,
         atol=1e-4,
-        err_msg=f"Event MET: {l1b_de['event_met'].values} vs\
-         expected Event MET {expected_event_met}",
     )
 
     def test_set_each_event_epoch():
@@ -349,6 +340,4 @@ def test_set_event_met():
             l1b_de["epoch"].values,
             epoch_expected,
             atol=1e-4,
-            err_msg=f"Epoch: {l1b_de['epoch'].values} vs\
-             expected Epoch {epoch_expected}",
         )

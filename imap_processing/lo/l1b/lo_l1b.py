@@ -325,9 +325,10 @@ def set_event_met(
     Get the event MET for each direct event.
 
     Each direct event is converted from a data number to engineering unit in seconds.
-    de_eu_time de_dn_time / 4096 * avg_spin_duration
-    where de_time is the direct event time Data Number (DN) and avg_spin_duration
-    is the average spin duration for the ASC that the event was measured in.
+    de_eu_time = de_dn_time / 4096 * avg_spin_duration
+    where de_dn_time is the direct event time Data Number (DN) and avg_spin_duration
+    is the average spin duration for the Aggregated Science Cycle (ASC) that the
+    event was measured in.
 
     The direct event time is the time of direct event relative to the start of the spin.
     The event MET is the sum of the start time of the spin and the
