@@ -335,7 +335,7 @@ def test_get_de_energy_kev(test_fixture):
         for col in ["Xf", "Yf", "Xb", "Yb", "d", "TOF"]
     )
 
-    v = get_de_velocity(
+    v, v_hat, r_hat = get_de_velocity(
         (test_xf, test_yf),
         (test_xb, test_yb),
         test_d,
