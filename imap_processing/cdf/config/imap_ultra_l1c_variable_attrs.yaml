@@ -71,6 +71,14 @@ background_rates:
   # TODO: come back to format
   UNITS: counts/second
 
+sid:
+  <<: *default
+  CATDESC: Science ID (always totals 8).
+  FIELDNAM: sid
+  LABLAXIS: sid
+  # TODO: come back to format
+  UNITS: " "
+
 shcoarse:
   <<: *default
   CATDESC: CCSDS packet timestamp.
