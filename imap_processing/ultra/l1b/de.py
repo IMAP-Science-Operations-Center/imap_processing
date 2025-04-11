@@ -233,12 +233,6 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     de_dict["energy_spacecraft"] = get_de_energy_kev(sc_dps_velocity, species_bin)
     de_dict["energy_heliosphere"] = get_de_energy_kev(helio_velocity, species_bin)
 
-    # Commenting this out for now due to need for lookup table download.
-    # de_dict["event_efficiency"] = get_efficiency(
-    #     de_dict["tof_energy"],
-    #     de_dict["phi"],
-    #     de_dict["theta"],
-    # )
     de_dict["phi_fwhm"], de_dict["theta_fwhm"] = get_fwhm(
         start_type,
         f"ultra{sensor}",
