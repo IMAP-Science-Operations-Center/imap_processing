@@ -49,7 +49,7 @@ def calculate_spacecraft_pset(
         de_dataset["velocity_dps_sc"].values / v_mag_dps_spacecraft[:, np.newaxis]
     )
 
-    intervals, energy_midpoints, energy_bin_geometric_means = build_energy_bins()
+    intervals, _, energy_bin_geometric_means = build_energy_bins()
     counts, latitude, longitude, n_pix = get_spacecraft_histogram(
         vhat_dps_spacecraft,
         de_dataset["energy_spacecraft"].values,
