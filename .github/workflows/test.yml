@@ -48,7 +48,7 @@ jobs:
           if [ "$USE_EXTERNAL_DATA" = "true" ]; then
             # Running across multiple processes causes errors due to large downloads not
             # finishing before the tests get hit in test_codice_l1a
-            poetry run pytest -n auto --dist loadscope --color=yes --cov --cov-report=xml
+            poetry run pytest -n auto --color=yes --cov --cov-report=xml
           else
             poetry run pytest -n auto --color=yes --cov --cov-report=xml -m "not external_kernel and not external_test_data"
           fi
