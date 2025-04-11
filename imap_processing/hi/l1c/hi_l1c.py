@@ -520,6 +520,9 @@ def pset_exposure(
         )[0]
         exposure_var["exposure_times"].values[:, i_esa] += new_exposure_times
 
+    # Convert exposure clock ticks to seconds
+    exposure_var["exposure_times"].values *= DE_CLOCK_TICK_S
+
     return exposure_var
 
 

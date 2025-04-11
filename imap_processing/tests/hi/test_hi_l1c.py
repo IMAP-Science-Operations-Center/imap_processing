@@ -243,7 +243,7 @@ def test_pset_exposure(
     # All the setup is done, call the pset_exposure function
     exposure_dict = hi_l1c.pset_exposure(empty_pset.coords, l1b_dataset)
 
-    # Based on the spin phase and clock_tick mocks, the expected output is:
+    # Based on the spin phase and clock_tick mocks, the expected clock ticks are:
     # - Repeated values of 3, 1 for the first half of the spin bins
     # - Repeated values of 3, 2 for the second half of the spin bins
     expected_values = np.stack(
@@ -251,8 +251,14 @@ def test_pset_exposure(
             np.tile([3, 1], hi_l1c.N_SPIN_BINS // 2),
             np.tile([6, 2], hi_l1c.N_SPIN_BINS // 2),
         ]
-    )[None, :, :]
-    np.testing.assert_array_equal(exposure_dict["exposure_times"].data, expected_values)
+    ).astype(float)[None, :, :]
+    # Convert expected clock ticks to seconds
+    expected_values *= DE_CLOCK_TICK_S
+    np.testing.assert_allclose(
+        exposure_dict["exposure_times"].data,
+        expected_values,
+        atol=DE_CLOCK_TICK_S / 100,
+    )
 
 
 def test_find_second_de_packet_data():
