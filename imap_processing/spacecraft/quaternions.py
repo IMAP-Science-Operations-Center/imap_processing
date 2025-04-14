@@ -100,8 +100,6 @@ def process_quaternions(packet_file: Path | str) -> tuple[xr.Dataset, xr.Dataset
     # Update dataset global attributes
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs("spacecraft")
-    # TODO: Allow version to be passed in
-    attr_mgr.add_global_attribute("Data_version", 1)
     attr_mgr.add_instrument_variable_attrs(instrument="spacecraft", level=None)
 
     l1a_ds.attrs.update(

@@ -6,7 +6,7 @@ from imap_processing.ultra.l1c.histogram import calculate_histogram
 from imap_processing.ultra.l1c.spacecraft_pset import calculate_spacecraft_pset
 
 
-def ultra_l1c(data_dict: dict, data_version: str) -> list[xr.Dataset]:
+def ultra_l1c(data_dict: dict) -> list[xr.Dataset]:
     """
     Will process ULTRA L1A and L1B data into L1C CDF files at output_filepath.
 
@@ -14,8 +14,6 @@ def ultra_l1c(data_dict: dict, data_version: str) -> list[xr.Dataset]:
     ----------
     data_dict : dict
         The data itself and its dependent data.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -31,7 +29,6 @@ def ultra_l1c(data_dict: dict, data_version: str) -> list[xr.Dataset]:
         histogram_dataset = calculate_histogram(
             data_dict[f"imap_ultra_l1a_{instrument_id}sensor-histogram"],
             f"imap_ultra_l1c_{instrument_id}sensor-histogram",
-            data_version,
         )
         output_datasets = [histogram_dataset]
     elif (
@@ -44,7 +41,6 @@ def ultra_l1c(data_dict: dict, data_version: str) -> list[xr.Dataset]:
             data_dict[f"imap_ultra_l1b_{instrument_id}sensor-extendedspin"],
             data_dict[f"imap_ultra_l1b_{instrument_id}sensor-cullingmask"],
             f"imap_ultra_l1c_{instrument_id}sensor-spacecraftpset",
-            data_version,
         )
         # TODO: add calculate_helio_pset here
         output_datasets = [spacecraft_pset]

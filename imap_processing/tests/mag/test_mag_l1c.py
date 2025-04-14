@@ -223,7 +223,7 @@ def test_interpolate_gaps(norm_dataset, mag_l1b_dataset):
 
 
 def test_mag_l1c(norm_dataset, burst_dataset):
-    l1c = mag_l1c(burst_dataset, "v001", norm_dataset)
+    l1c = mag_l1c(burst_dataset, norm_dataset)
     assert l1c["vector_magnitude"].shape == (len(l1c["epoch"].data),)
     assert l1c["vector_magnitude"].data[0] == np.linalg.norm(l1c["vectors"].data[0][:4])
     assert l1c["vector_magnitude"].data[-1] == np.linalg.norm(
@@ -242,7 +242,7 @@ def test_mag_l1c(norm_dataset, burst_dataset):
 
 
 def test_mag_attributes(norm_dataset, burst_dataset):
-    output = mag_l1c(norm_dataset, "v001", burst_dataset)
+    output = mag_l1c(norm_dataset, burst_dataset)
     assert output.attrs["Logical_source"] == "imap_mag_l1c_norm-mago"
 
     expected_attrs = ["missing_sequences", "interpolation_method"]
@@ -252,7 +252,7 @@ def test_mag_attributes(norm_dataset, burst_dataset):
 
 def test_missing_burst_file(norm_dataset, burst_dataset):
     # Should run with only normal mode data or only burst mode data.
-    output = mag_l1c(norm_dataset, "v001", None)
+    output = mag_l1c(norm_dataset, None)
     assert output.attrs["Logical_source"] == "imap_mag_l1c_norm-mago"
 
     # Should pass through normal mode data only
@@ -264,7 +264,7 @@ def test_missing_burst_file(norm_dataset, burst_dataset):
 def test_missing_norm_file(norm_dataset, burst_dataset):
     # Should run with only normal mode data or only burst mode data.
     burst_dataset.attrs["Logical_source"] = "imap_mag_l1b_burst-magi"
-    output = mag_l1c(burst_dataset, "v001", None)
+    output = mag_l1c(burst_dataset, None)
 
     assert output.attrs["Logical_source"] == "imap_mag_l1c_norm-magi"
     # TODO: test that the output is downsampled

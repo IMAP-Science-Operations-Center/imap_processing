@@ -122,6 +122,12 @@ type:
   FIELDNAM: CCSDS type
   VAR_TYPE: support_data
 
+alarmtype:
+  <<: *default_uint8
+  CATDESC: Alarm type
+  FIELDNAM: alarm type
+  VAR_TYPE: alarm_type
+
 sec_hdr_flg:
   <<: *default_uint8
   CATDESC: CCSDS secondary header flag
@@ -972,3 +978,3100 @@ event_id:
   LABLAXIS: event_id
   UNITS: " "
 
+address:
+  '<<': '*default_float32'
+  CATDESC: Address
+  FIELDNAM: address
+  LABLAXIS: address
+  UNITS: ' '
+
+alarmcount:
+  '<<': '*default_float32'
+  CATDESC: Alarmcount
+  FIELDNAM: alarmcount
+  LABLAXIS: alarmcount
+  UNITS: ' '
+
+alarmid:
+  '<<': '*default_float32'
+  CATDESC: Alarmid
+  FIELDNAM: alarmid
+  LABLAXIS: alarmid
+  UNITS: ' '
+
+aux:
+  '<<': '*default_float32'
+  CATDESC: Aux
+  FIELDNAM: aux
+  LABLAXIS: aux
+  UNITS: ' '
+
+baselinechannel:
+  '<<': '*default_float32'
+  CATDESC: Baselinechannel
+  FIELDNAM: baselinechannel
+  LABLAXIS: baselinechannel
+  UNITS: ' '
+
+baselinesample:
+  '<<': '*default_float32'
+  CATDESC: Baselinesample
+  FIELDNAM: baselinesample
+  LABLAXIS: baselinesample
+  UNITS: ' '
+
+baselinestate:
+  '<<': '*default_float32'
+  CATDESC: Baselinestate
+  FIELDNAM: baselinestate
+  LABLAXIS: baselinestate
+  UNITS: ' '
+
+blockno:
+  '<<': '*default_float32'
+  CATDESC: Blockno
+  FIELDNAM: blockno
+  LABLAXIS: blockno
+  UNITS: ' '
+
+bottommcp_i:
+  '<<': '*default_float32'
+  CATDESC: Bottommcp i
+  FIELDNAM: bottommcp_i
+  LABLAXIS: bottommcp_i
+  UNITS: ' '
+
+bottommcp_i_hi:
+  '<<': '*default_float32'
+  CATDESC: Bottommcp i hi
+  FIELDNAM: bottommcp_i_hi
+  LABLAXIS: bottommcp_i_hi
+  UNITS: ' '
+
+bottommcp_i_lo:
+  '<<': '*default_float32'
+  CATDESC: Bottommcp i lo
+  FIELDNAM: bottommcp_i_lo
+  LABLAXIS: bottommcp_i_lo
+  UNITS: ' '
+
+bottommcp_v:
+  '<<': '*default_float32'
+  CATDESC: Bottommcp v
+  FIELDNAM: bottommcp_v
+  LABLAXIS: bottommcp_v
+  UNITS: ' '
+
+bottommcp_v_hi:
+  '<<': '*default_float32'
+  CATDESC: Bottommcp v hi
+  FIELDNAM: bottommcp_v_hi
+  LABLAXIS: bottommcp_v_hi
+  UNITS: ' '
+
+bottommcp_v_lo:
+  '<<': '*default_float32'
+  CATDESC: Bottommcp v lo
+  FIELDNAM: bottommcp_v_lo
+  LABLAXIS: bottommcp_v_lo
+  UNITS: ' '
+
+bottommcphvfault:
+  '<<': '*default_float32'
+  CATDESC: Bottommcphvfault
+  FIELDNAM: bottommcphvfault
+  LABLAXIS: bottommcphvfault
+  UNITS: ' '
+
+bottommcphvgoal:
+  '<<': '*default_float32'
+  CATDESC: Bottommcphvgoal
+  FIELDNAM: bottommcphvgoal
+  LABLAXIS: bottommcphvgoal
+  UNITS: ' '
+
+bottommcphvilim:
+  '<<': '*default_float32'
+  CATDESC: Bottommcphvilim
+  FIELDNAM: bottommcphvilim
+  LABLAXIS: bottommcphvilim
+  UNITS: ' '
+
+bottommcphvlim:
+  '<<': '*default_float32'
+  CATDESC: Bottommcphvlim
+  FIELDNAM: bottommcphvlim
+  LABLAXIS: bottommcphvlim
+  UNITS: ' '
+
+bottommcphvmonitor:
+  '<<': '*default_float32'
+  CATDESC: Bottommcphvmonitor
+  FIELDNAM: bottommcphvmonitor
+  LABLAXIS: bottommcphvmonitor
+  UNITS: ' '
+
+bottommcphvtrip:
+  '<<': '*default_float32'
+  CATDESC: Bottommcphvtrip
+  FIELDNAM: bottommcphvtrip
+  LABLAXIS: bottommcphvtrip
+  UNITS: ' '
+
+bottommcphvv:
+  '<<': '*default_float32'
+  CATDESC: Bottommcphvv
+  FIELDNAM: bottommcphvv
+  LABLAXIS: bottommcphvv
+  UNITS: ' '
+
+cause:
+  '<<': '*default_float32'
+  CATDESC: Cause
+  FIELDNAM: cause
+  LABLAXIS: cause
+  UNITS: ' '
+
+checksums:
+  '<<': '*default_float32'
+  CATDESC: Checksums
+  FIELDNAM: checksums
+  LABLAXIS: checksums
+  UNITS: ' '
+
+cmdexec:
+  '<<': '*default_float32'
+  CATDESC: Cmdexec
+  FIELDNAM: cmdexec
+  LABLAXIS: cmdexec
+  UNITS: ' '
+
+cmdreject:
+  '<<': '*default_float32'
+  CATDESC: Cmdreject
+  FIELDNAM: cmdreject
+  LABLAXIS: cmdreject
+  UNITS: ' '
+
+coderam:
+  '<<': '*default_float32'
+  CATDESC: Coderam
+  FIELDNAM: coderam
+  LABLAXIS: coderam
+  UNITS: ' '
+
+coinbnautozero:
+  '<<': '*default_float32'
+  CATDESC: Coinbnautozero
+  FIELDNAM: coinbnautozero
+  LABLAXIS: coinbnautozero
+  UNITS: ' '
+
+coinbncfdthresh:
+  '<<': '*default_float32'
+  CATDESC: Coinbncfdthresh
+  FIELDNAM: coinbncfdthresh
+  LABLAXIS: coinbncfdthresh
+  UNITS: ' '
+
+coinbsautozero:
+  '<<': '*default_float32'
+  CATDESC: Coinbsautozero
+  FIELDNAM: coinbsautozero
+  LABLAXIS: coinbsautozero
+  UNITS: ' '
+
+coinbscfdthresh:
+  '<<': '*default_float32'
+  CATDESC: Coinbscfdthresh
+  FIELDNAM: coinbscfdthresh
+  LABLAXIS: coinbscfdthresh
+  UNITS: ' '
+
+coindautozero:
+  '<<': '*default_float32'
+  CATDESC: Coindautozero
+  FIELDNAM: coindautozero
+  LABLAXIS: coindautozero
+  UNITS: ' '
+
+coindcfdthresh:
+  '<<': '*default_float32'
+  CATDESC: Coindcfdthresh
+  FIELDNAM: coindcfdthresh
+  LABLAXIS: coindcfdthresh
+  UNITS: ' '
+
+coindphthresh:
+  '<<': '*default_float32'
+  CATDESC: Coindphthresh
+  FIELDNAM: coindphthresh
+  LABLAXIS: coindphthresh
+  UNITS: ' '
+
+coindpulsedelay:
+  '<<': '*default_float32'
+  CATDESC: Coindpulsedelay
+  FIELDNAM: coindpulsedelay
+  LABLAXIS: coindpulsedelay
+  UNITS: ' '
+
+coindpulsestate:
+  '<<': '*default_float32'
+  CATDESC: Coindpulsestate
+  FIELDNAM: coindpulsestate
+  LABLAXIS: coindpulsestate
+  UNITS: ' '
+
+coinratehighthresh:
+  '<<': '*default_float32'
+  CATDESC: Coinratehighthresh
+  FIELDNAM: coinratehighthresh
+  LABLAXIS: coinratehighthresh
+  UNITS: ' '
+
+cointnautozero:
+  '<<': '*default_float32'
+  CATDESC: Cointnautozero
+  FIELDNAM: cointnautozero
+  LABLAXIS: cointnautozero
+  UNITS: ' '
+
+cointncfdthresh:
+  '<<': '*default_float32'
+  CATDESC: Cointncfdthresh
+  FIELDNAM: cointncfdthresh
+  LABLAXIS: cointncfdthresh
+  UNITS: ' '
+
+cointsautozero:
+  '<<': '*default_float32'
+  CATDESC: Cointsautozero
+  FIELDNAM: cointsautozero
+  LABLAXIS: cointsautozero
+  UNITS: ' '
+
+cointscfdthresh:
+  '<<': '*default_float32'
+  CATDESC: Cointscfdthresh
+  FIELDNAM: cointscfdthresh
+  LABLAXIS: cointscfdthresh
+  UNITS: ' '
+
+compdata:
+  '<<': '*default_float32'
+  CATDESC: Compdata
+  FIELDNAM: compdata
+  LABLAXIS: compdata
+  UNITS: ' '
+
+crc_value:
+  '<<': '*default_float32'
+  CATDESC: Crc value
+  FIELDNAM: crc_value
+  LABLAXIS: crc_value
+  UNITS: ' '
+
+deflhvdiscthresh:
+  '<<': '*default_float32'
+  CATDESC: Deflhvdiscthresh
+  FIELDNAM: deflhvdiscthresh
+  LABLAXIS: deflhvdiscthresh
+  UNITS: ' '
+
+deflhvrampdownrate:
+  '<<': '*default_float32'
+  CATDESC: Deflhvrampdownrate
+  FIELDNAM: deflhvrampdownrate
+  LABLAXIS: deflhvrampdownrate
+  UNITS: ' '
+
+deflhvrampuprate:
+  '<<': '*default_float32'
+  CATDESC: Deflhvrampuprate
+  FIELDNAM: deflhvrampuprate
+  LABLAXIS: deflhvrampuprate
+  UNITS: ' '
+
+deflhvsafelim:
+  '<<': '*default_float32'
+  CATDESC: Deflhvsafelim
+  FIELDNAM: deflhvsafelim
+  LABLAXIS: deflhvsafelim
+  UNITS: ' '
+
+diagnosticmode:
+  '<<': '*default_float32'
+  CATDESC: Diagnosticmode
+  FIELDNAM: diagnosticmode
+  LABLAXIS: diagnosticmode
+  UNITS: ' '
+
+dumpdata:
+  '<<': '*default_float32'
+  CATDESC: Dumpdata
+  FIELDNAM: dumpdata
+  LABLAXIS: dumpdata
+  UNITS: ' '
+
+dumplength:
+  '<<': '*default_float32'
+  CATDESC: Dumplength
+  FIELDNAM: dumplength
+  LABLAXIS: dumplength
+  UNITS: ' '
+
+enaextofhighangcadence:
+  '<<': '*default_float32'
+  CATDESC: Enaextofhighangcadence
+  FIELDNAM: enaextofhighangcadence
+  LABLAXIS: enaextofhighangcadence
+  UNITS: ' '
+
+enaextofhighangstate:
+  '<<': '*default_float32'
+  CATDESC: Enaextofhighangstate
+  FIELDNAM: enaextofhighangstate
+  LABLAXIS: enaextofhighangstate
+  UNITS: ' '
+
+enaphxtofhighangcadence:
+  '<<': '*default_float32'
+  CATDESC: Enaphxtofhighangcadence
+  FIELDNAM: enaphxtofhighangcadence
+  LABLAXIS: enaphxtofhighangcadence
+  UNITS: ' '
+
+enaphxtofhighangstate:
+  '<<': '*default_float32'
+  CATDESC: Enaphxtofhighangstate
+  FIELDNAM: enaphxtofhighangstate
+  LABLAXIS: enaphxtofhighangstate
+  UNITS: ' '
+
+enaphxtofhighegycadence:
+  '<<': '*default_float32'
+  CATDESC: Enaphxtofhighegycadence
+  FIELDNAM: enaphxtofhighegycadence
+  LABLAXIS: enaphxtofhighegycadence
+  UNITS: ' '
+
+enaphxtofhighegystate:
+  '<<': '*default_float32'
+  CATDESC: Enaphxtofhighegystate
+  FIELDNAM: enaphxtofhighegystate
+  LABLAXIS: enaphxtofhighegystate
+  UNITS: ' '
+
+enaphxtofhightimecadence:
+  '<<': '*default_float32'
+  CATDESC: Enaphxtofhightimecadence
+  FIELDNAM: enaphxtofhightimecadence
+  LABLAXIS: enaphxtofhightimecadence
+  UNITS: ' '
+
+enaphxtofhightimestate:
+  '<<': '*default_float32'
+  CATDESC: Enaphxtofhightimestate
+  FIELDNAM: enaphxtofhightimestate
+  LABLAXIS: enaphxtofhightimestate
+  UNITS: ' '
+
+energymodeegystate:
+  '<<': '*default_float32'
+  CATDESC: Energymodeegystate
+  FIELDNAM: energymodeegystate
+  LABLAXIS: energymodeegystate
+  UNITS: ' '
+
+energymodeegytrg:
+  '<<': '*default_float32'
+  CATDESC: Energymodeegytrg
+  FIELDNAM: energymodeegytrg
+  LABLAXIS: energymodeegytrg
+  UNITS: ' '
+
+energymodephstate:
+  '<<': '*default_float32'
+  CATDESC: Energymodephstate
+  FIELDNAM: energymodephstate
+  LABLAXIS: energymodephstate
+  UNITS: ' '
+
+energymodephtrg:
+  '<<': '*default_float32'
+  CATDESC: Energymodephtrg
+  FIELDNAM: energymodephtrg
+  LABLAXIS: energymodephtrg
+  UNITS: ' '
+
+energyratescadence:
+  '<<': '*default_float32'
+  CATDESC: Energyratescadence
+  FIELDNAM: energyratescadence
+  LABLAXIS: energyratescadence
+  UNITS: ' '
+
+energyratesstate:
+  '<<': '*default_float32'
+  CATDESC: Energyratesstate
+  FIELDNAM: energyratesstate
+  LABLAXIS: energyratesstate
+  UNITS: ' '
+
+energyrawevents:
+  '<<': '*default_float32'
+  CATDESC: Energyrawevents
+  FIELDNAM: energyrawevents
+  LABLAXIS: energyrawevents
+  UNITS: ' '
+
+energyspectracadence:
+  '<<': '*default_float32'
+  CATDESC: Energyspectracadence
+  FIELDNAM: energyspectracadence
+  LABLAXIS: energyspectracadence
+  UNITS: ' '
+
+energyspectrastate:
+  '<<': '*default_float32'
+  CATDESC: Energyspectrastate
+  FIELDNAM: energyspectrastate
+  LABLAXIS: energyspectrastate
+  UNITS: ' '
+
+etofbtoff:
+  '<<': '*default_float32'
+  CATDESC: Etofbtoff
+  FIELDNAM: etofbtoff
+  LABLAXIS: etofbtoff
+  UNITS: ' '
+
+etofmax:
+  '<<': '*default_float32'
+  CATDESC: Etofmax
+  FIELDNAM: etofmax
+  LABLAXIS: etofmax
+  UNITS: ' '
+
+etofmin:
+  '<<': '*default_float32'
+  CATDESC: Etofmin
+  FIELDNAM: etofmin
+  LABLAXIS: etofmin
+  UNITS: ' '
+
+etofoff1:
+  '<<': '*default_float32'
+  CATDESC: Etofoff1
+  FIELDNAM: etofoff1
+  LABLAXIS: etofoff1
+  UNITS: ' '
+
+etofoff2:
+  '<<': '*default_float32'
+  CATDESC: Etofoff2
+  FIELDNAM: etofoff2
+  LABLAXIS: etofoff2
+  UNITS: ' '
+
+etofsc:
+  '<<': '*default_float32'
+  CATDESC: Etofsc
+  FIELDNAM: etofsc
+  LABLAXIS: etofsc
+  UNITS: ' '
+
+etofslope1:
+  '<<': '*default_float32'
+  CATDESC: Etofslope1
+  FIELDNAM: etofslope1
+  LABLAXIS: etofslope1
+  UNITS: ' '
+
+etofslope2:
+  '<<': '*default_float32'
+  CATDESC: Etofslope2
+  FIELDNAM: etofslope2
+  LABLAXIS: etofslope2
+  UNITS: ' '
+
+etoftpoff:
+  '<<': '*default_float32'
+  CATDESC: Etoftpoff
+  FIELDNAM: etoftpoff
+  LABLAXIS: etoftpoff
+  UNITS: ' '
+
+eventcontrol_spare:
+  '<<': '*default_float32'
+  CATDESC: Eventcontrol spare
+  FIELDNAM: eventcontrol_spare
+  LABLAXIS: eventcontrol_spare
+  UNITS: ' '
+
+eventdata:
+  '<<': '*default_float32'
+  CATDESC: Eventdata
+  FIELDNAM: eventdata
+  LABLAXIS: eventdata
+  UNITS: ' '
+
+firstmacro:
+  '<<': '*default_float32'
+  CATDESC: Firstmacro
+  FIELDNAM: firstmacro
+  LABLAXIS: firstmacro
+  UNITS: ' '
+
+front2kv_v:
+  '<<': '*default_float32'
+  CATDESC: Front2kv v
+  FIELDNAM: front2kv_v
+  LABLAXIS: front2kv_v
+  UNITS: ' '
+
+front2kv_v_hi:
+  '<<': '*default_float32'
+  CATDESC: Front2kv v hi
+  FIELDNAM: front2kv_v_hi
+  LABLAXIS: front2kv_v_hi
+  UNITS: ' '
+
+front2kv_v_lo:
+  '<<': '*default_float32'
+  CATDESC: Front2kv v lo
+  FIELDNAM: front2kv_v_lo
+  LABLAXIS: front2kv_v_lo
+  UNITS: ' '
+
+frontmcp_i:
+  '<<': '*default_float32'
+  CATDESC: Frontmcp i
+  FIELDNAM: frontmcp_i
+  LABLAXIS: frontmcp_i
+  UNITS: ' '
+
+frontmcp_i_hi:
+  '<<': '*default_float32'
+  CATDESC: Frontmcp i hi
+  FIELDNAM: frontmcp_i_hi
+  LABLAXIS: frontmcp_i_hi
+  UNITS: ' '
+
+frontmcp_i_lo:
+  '<<': '*default_float32'
+  CATDESC: Frontmcp i lo
+  FIELDNAM: frontmcp_i_lo
+  LABLAXIS: frontmcp_i_lo
+  UNITS: ' '
+
+frontmcp_t:
+  '<<': '*default_float32'
+  CATDESC: Frontmcp t
+  FIELDNAM: frontmcp_t
+  LABLAXIS: frontmcp_t
+  UNITS: ' '
+
+frontmcp_t_hi:
+  '<<': '*default_float32'
+  CATDESC: Frontmcp t hi
+  FIELDNAM: frontmcp_t_hi
+  LABLAXIS: frontmcp_t_hi
+  UNITS: ' '
+
+frontmcp_t_lo:
+  '<<': '*default_float32'
+  CATDESC: Frontmcp t lo
+  FIELDNAM: frontmcp_t_lo
+  LABLAXIS: frontmcp_t_lo
+  UNITS: ' '
+
+frontmcp_v:
+  '<<': '*default_float32'
+  CATDESC: Frontmcp v
+  FIELDNAM: frontmcp_v
+  LABLAXIS: frontmcp_v
+  UNITS: ' '
+
+frontmcp_v_hi:
+  '<<': '*default_float32'
+  CATDESC: Frontmcp v hi
+  FIELDNAM: frontmcp_v_hi
+  LABLAXIS: frontmcp_v_hi
+  UNITS: ' '
+
+frontmcp_v_lo:
+  '<<': '*default_float32'
+  CATDESC: Frontmcp v lo
+  FIELDNAM: frontmcp_v_lo
+  LABLAXIS: frontmcp_v_lo
+  UNITS: ' '
+
+frontmcphvfault:
+  '<<': '*default_float32'
+  CATDESC: Frontmcphvfault
+  FIELDNAM: frontmcphvfault
+  LABLAXIS: frontmcphvfault
+  UNITS: ' '
+
+frontmcphvgoal:
+  '<<': '*default_float32'
+  CATDESC: Frontmcphvgoal
+  FIELDNAM: frontmcphvgoal
+  LABLAXIS: frontmcphvgoal
+  UNITS: ' '
+
+frontmcphvilim:
+  '<<': '*default_float32'
+  CATDESC: Frontmcphvilim
+  FIELDNAM: frontmcphvilim
+  LABLAXIS: frontmcphvilim
+  UNITS: ' '
+
+frontmcphvlim:
+  '<<': '*default_float32'
+  CATDESC: Frontmcphvlim
+  FIELDNAM: frontmcphvlim
+  LABLAXIS: frontmcphvlim
+  UNITS: ' '
+
+frontmcphvmonitor:
+  '<<': '*default_float32'
+  CATDESC: Frontmcphvmonitor
+  FIELDNAM: frontmcphvmonitor
+  LABLAXIS: frontmcphvmonitor
+  UNITS: ' '
+
+frontmcphvsafemult:
+  '<<': '*default_float32'
+  CATDESC: Frontmcphvsafemult
+  FIELDNAM: frontmcphvsafemult
+  LABLAXIS: frontmcphvsafemult
+  UNITS: ' '
+
+frontmcphvtrip:
+  '<<': '*default_float32'
+  CATDESC: Frontmcphvtrip
+  FIELDNAM: frontmcphvtrip
+  LABLAXIS: frontmcphvtrip
+  UNITS: ' '
+
+frontmcphvv:
+  '<<': '*default_float32'
+  CATDESC: Frontmcphvv
+  FIELDNAM: frontmcphvv
+  LABLAXIS: frontmcphvv
+  UNITS: ' '
+
+hvclock:
+  '<<': '*default_float32'
+  CATDESC: Hvclock
+  FIELDNAM: hvclock
+  LABLAXIS: hvclock
+  UNITS: ' '
+
+hvfullstate:
+  '<<': '*default_float32'
+  CATDESC: Hvfullstate
+  FIELDNAM: hvfullstate
+  LABLAXIS: hvfullstate
+  UNITS: ' '
+
+hvovercurrentcontrol_spare:
+  '<<': '*default_float32'
+  CATDESC: Hvovercurrentcontrol spare
+  FIELDNAM: hvovercurrentcontrol_spare
+  LABLAXIS: hvovercurrentcontrol_spare
+  UNITS: ' '
+
+hvovercurrentstatus_spare:
+  '<<': '*default_float32'
+  CATDESC: Hvovercurrentstatus spare
+  FIELDNAM: hvovercurrentstatus_spare
+  LABLAXIS: hvovercurrentstatus_spare
+  UNITS: ' '
+
+hvplugstate:
+  '<<': '*default_float32'
+  CATDESC: Hvplugstate
+  FIELDNAM: hvplugstate
+  LABLAXIS: hvplugstate
+  UNITS: ' '
+
+hvpsp15v_v:
+  '<<': '*default_float32'
+  CATDESC: Hvpsp15v v
+  FIELDNAM: hvpsp15v_v
+  LABLAXIS: hvpsp15v_v
+  UNITS: ' '
+
+hvpsp15v_v_hi:
+  '<<': '*default_float32'
+  CATDESC: Hvpsp15v v hi
+  FIELDNAM: hvpsp15v_v_hi
+  LABLAXIS: hvpsp15v_v_hi
+  UNITS: ' '
+
+hvpsp15v_v_lo:
+  '<<': '*default_float32'
+  CATDESC: Hvpsp15v v lo
+  FIELDNAM: hvpsp15v_v_lo
+  LABLAXIS: hvpsp15v_v_lo
+  UNITS: ' '
+
+hvpsp3p3v_v:
+  '<<': '*default_float32'
+  CATDESC: Hvpsp3p3v v
+  FIELDNAM: hvpsp3p3v_v
+  LABLAXIS: hvpsp3p3v_v
+  UNITS: ' '
+
+hvpsp3p3v_v_hi:
+  '<<': '*default_float32'
+  CATDESC: Hvpsp3p3v v hi
+  FIELDNAM: hvpsp3p3v_v_hi
+  LABLAXIS: hvpsp3p3v_v_hi
+  UNITS: ' '
+
+hvpsp3p3v_v_lo:
+  '<<': '*default_float32'
+  CATDESC: Hvpsp3p3v v lo
+  FIELDNAM: hvpsp3p3v_v_lo
+  LABLAXIS: hvpsp3p3v_v_lo
+  UNITS: ' '
+
+hvstate:
+  '<<': '*default_float32'
+  CATDESC: Hvstate
+  FIELDNAM: hvstate
+  LABLAXIS: hvstate
+  UNITS: ' '
+
+id:
+  '<<': '*default_float32'
+  CATDESC: Id
+  FIELDNAM: id
+  LABLAXIS: id
+  UNITS: ' '
+
+identity:
+  '<<': '*default_float32'
+  CATDESC: Identity
+  FIELDNAM: identity
+  LABLAXIS: identity
+  UNITS: ' '
+
+imagemodedblreq:
+  '<<': '*default_float32'
+  CATDESC: Imagemodedblreq
+  FIELDNAM: imagemodedblreq
+  LABLAXIS: imagemodedblreq
+  UNITS: ' '
+
+imagemodedblstate:
+  '<<': '*default_float32'
+  CATDESC: Imagemodedblstate
+  FIELDNAM: imagemodedblstate
+  LABLAXIS: imagemodedblstate
+  UNITS: ' '
+
+imagemodemulrej:
+  '<<': '*default_float32'
+  CATDESC: Imagemodemulrej
+  FIELDNAM: imagemodemulrej
+  LABLAXIS: imagemodemulrej
+  UNITS: ' '
+
+imagemodephreq:
+  '<<': '*default_float32'
+  CATDESC: Imagemodephreq
+  FIELDNAM: imagemodephreq
+  LABLAXIS: imagemodephreq
+  UNITS: ' '
+
+imagemodepwrej:
+  '<<': '*default_float32'
+  CATDESC: Imagemodepwrej
+  FIELDNAM: imagemodepwrej
+  LABLAXIS: imagemodepwrej
+  UNITS: ' '
+
+imagemodestartlfpwthresh:
+  '<<': '*default_float32'
+  CATDESC: Imagemodestartlfpwthresh
+  FIELDNAM: imagemodestartlfpwthresh
+  LABLAXIS: imagemodestartlfpwthresh
+  UNITS: ' '
+
+imagemodestartrfpwthresh:
+  '<<': '*default_float32'
+  CATDESC: Imagemodestartrfpwthresh
+  FIELDNAM: imagemodestartrfpwthresh
+  LABLAXIS: imagemodestartrfpwthresh
+  UNITS: ' '
+
+imagemodetimreq:
+  '<<': '*default_float32'
+  CATDESC: Imagemodetimreq
+  FIELDNAM: imagemodetimreq
+  LABLAXIS: imagemodetimreq
+  UNITS: ' '
+
+imagemodetimstate:
+  '<<': '*default_float32'
+  CATDESC: Imagemodetimstate
+  FIELDNAM: imagemodetimstate
+  LABLAXIS: imagemodetimstate
+  UNITS: ' '
+
+imagepriority1events:
+  '<<': '*default_float32'
+  CATDESC: Imagepriority1events
+  FIELDNAM: imagepriority1events
+  LABLAXIS: imagepriority1events
+  UNITS: ' '
+
+imagepriority2events:
+  '<<': '*default_float32'
+  CATDESC: Imagepriority2events
+  FIELDNAM: imagepriority2events
+  LABLAXIS: imagepriority2events
+  UNITS: ' '
+
+imagepriority3events:
+  '<<': '*default_float32'
+  CATDESC: Imagepriority3events
+  FIELDNAM: imagepriority3events
+  LABLAXIS: imagepriority3events
+  UNITS: ' '
+
+imagepriority4events:
+  '<<': '*default_float32'
+  CATDESC: Imagepriority4events
+  FIELDNAM: imagepriority4events
+  LABLAXIS: imagepriority4events
+  UNITS: ' '
+
+imageratescadence:
+  '<<': '*default_float32'
+  CATDESC: Imageratescadence
+  FIELDNAM: imageratescadence
+  LABLAXIS: imageratescadence
+  UNITS: ' '
+
+imageratesstate:
+  '<<': '*default_float32'
+  CATDESC: Imageratesstate
+  FIELDNAM: imageratesstate
+  LABLAXIS: imageratesstate
+  UNITS: ' '
+
+imagerawevents:
+  '<<': '*default_float32'
+  CATDESC: Imagerawevents
+  FIELDNAM: imagerawevents
+  LABLAXIS: imagerawevents
+  UNITS: ' '
+
+imcstate:
+  '<<': '*default_float32'
+  CATDESC: Imcstate
+  FIELDNAM: imcstate
+  LABLAXIS: imcstate
+  UNITS: ' '
+
+instrumentcontrol_spare:
+  '<<': '*default_float32'
+  CATDESC: Instrumentcontrol spare
+  FIELDNAM: instrumentcontrol_spare
+  LABLAXIS: instrumentcontrol_spare
+  UNITS: ' '
+
+instrumentstatus_spare:
+  '<<': '*default_float32'
+  CATDESC: Instrumentstatus spare
+  FIELDNAM: instrumentstatus_spare
+  LABLAXIS: instrumentstatus_spare
+  UNITS: ' '
+
+intmultipliern1:
+  '<<': '*default_float32'
+  CATDESC: Intmultipliern1
+  FIELDNAM: intmultipliern1
+  LABLAXIS: intmultipliern1
+  UNITS: ' '
+
+intmultipliern2:
+  '<<': '*default_float32'
+  CATDESC: Intmultipliern2
+  FIELDNAM: intmultipliern2
+  LABLAXIS: intmultipliern2
+  UNITS: ' '
+
+ionextofhighegycadence:
+  '<<': '*default_float32'
+  CATDESC: Ionextofhighegycadence
+  FIELDNAM: ionextofhighegycadence
+  LABLAXIS: ionextofhighegycadence
+  UNITS: ' '
+ionextofhighegystate:
+  '<<': '*default_float32'
+  CATDESC: Ionextofhighegystate
+  FIELDNAM: ionextofhighegystate
+  LABLAXIS: ionextofhighegystate
+  UNITS: ' '
+ionextofhightimecadence:
+  '<<': '*default_float32'
+  CATDESC: Ionextofhightimecadence
+  FIELDNAM: ionextofhightimecadence
+  LABLAXIS: ionextofhightimecadence
+  UNITS: ' '
+ionextofhightimestate:
+  '<<': '*default_float32'
+  CATDESC: Ionextofhightimestate
+  FIELDNAM: ionextofhightimestate
+  LABLAXIS: ionextofhightimestate
+  UNITS: ' '
+lastmacro:
+  '<<': '*default_float32'
+  CATDESC: Lastmacro
+  FIELDNAM: lastmacro
+  LABLAXIS: lastmacro
+  UNITS: ' '
+leftdeflection_v:
+  '<<': '*default_float32'
+  CATDESC: Leftdeflection v
+  FIELDNAM: leftdeflection_v
+  LABLAXIS: leftdeflection_v
+  UNITS: ' '
+leftdeflection_v_hi:
+  '<<': '*default_float32'
+  CATDESC: Leftdeflection v hi
+  FIELDNAM: leftdeflection_v_hi
+  LABLAXIS: leftdeflection_v_hi
+  UNITS: ' '
+leftdeflection_v_lo:
+  '<<': '*default_float32'
+  CATDESC: Leftdeflection v lo
+  FIELDNAM: leftdeflection_v_lo
+  LABLAXIS: leftdeflection_v_lo
+  UNITS: ' '
+leftdeflectionsupply_p:
+  '<<': '*default_float32'
+  CATDESC: Leftdeflectionsupply p
+  FIELDNAM: leftdeflectionsupply_p
+  LABLAXIS: leftdeflectionsupply_p
+  UNITS: ' '
+leftdeflectionsupply_p_hi:
+  '<<': '*default_float32'
+  CATDESC: Leftdeflectionsupply p hi
+  FIELDNAM: leftdeflectionsupply_p_hi
+  LABLAXIS: leftdeflectionsupply_p_hi
+  UNITS: ' '
+leftdeflectionsupply_p_lo:
+  '<<': '*default_float32'
+  CATDESC: Leftdeflectionsupply p lo
+  FIELDNAM: leftdeflectionsupply_p_lo
+  LABLAXIS: leftdeflectionsupply_p_lo
+  UNITS: ' '
+leftdfldischrate:
+  '<<': '*default_float32'
+  CATDESC: Leftdfldischrate
+  FIELDNAM: leftdfldischrate
+  LABLAXIS: leftdfldischrate
+  UNITS: ' '
+leftdfldischrate_hi:
+  '<<': '*default_float32'
+  CATDESC: Leftdfldischrate hi
+  FIELDNAM: leftdfldischrate_hi
+  LABLAXIS: leftdfldischrate_hi
+  UNITS: ' '
+leftdfldischrate_lo:
+  '<<': '*default_float32'
+  CATDESC: Leftdfldischrate lo
+  FIELDNAM: leftdfldischrate_lo
+  LABLAXIS: leftdfldischrate_lo
+  UNITS: ' '
+leftdfldischratelim:
+  '<<': '*default_float32'
+  CATDESC: Leftdfldischratelim
+  FIELDNAM: leftdfldischratelim
+  LABLAXIS: leftdfldischratelim
+  UNITS: ' '
+leftdflhvgoal:
+  '<<': '*default_float32'
+  CATDESC: Leftdflhvgoal
+  FIELDNAM: leftdflhvgoal
+  LABLAXIS: leftdflhvgoal
+  UNITS: ' '
+leftdflhvlim:
+  '<<': '*default_float32'
+  CATDESC: Leftdflhvlim
+  FIELDNAM: leftdflhvlim
+  LABLAXIS: leftdflhvlim
+  UNITS: ' '
+leftdflhvv:
+  '<<': '*default_float32'
+  CATDESC: Leftdflhvv
+  FIELDNAM: leftdflhvv
+  LABLAXIS: leftdflhvv
+  UNITS: ' '
+leftshutter_t:
+  '<<': '*default_float32'
+  CATDESC: Leftshutter t
+  FIELDNAM: leftshutter_t
+  LABLAXIS: leftshutter_t
+  UNITS: ' '
+leftshutter_t_hi:
+  '<<': '*default_float32'
+  CATDESC: Leftshutter t hi
+  FIELDNAM: leftshutter_t_hi
+  LABLAXIS: leftshutter_t_hi
+  UNITS: ' '
+leftshutter_t_lo:
+  '<<': '*default_float32'
+  CATDESC: Leftshutter t lo
+  FIELDNAM: leftshutter_t_lo
+  LABLAXIS: leftshutter_t_lo
+  UNITS: ' '
+leftshutterhomesteps:
+  '<<': '*default_float32'
+  CATDESC: Leftshutterhomesteps
+  FIELDNAM: leftshutterhomesteps
+  LABLAXIS: leftshutterhomesteps
+  UNITS: ' '
+leftshutterstep:
+  '<<': '*default_float32'
+  CATDESC: Leftshutterstep
+  FIELDNAM: leftshutterstep
+  LABLAXIS: leftshutterstep
+  UNITS: ' '
+leftshuttertt:
+  '<<': '*default_float32'
+  CATDESC: Leftshuttertt
+  FIELDNAM: leftshuttertt
+  LABLAXIS: leftshuttertt
+  UNITS: ' '
+looback0delay:
+  '<<': '*default_float32'
+  CATDESC: Looback0delay
+  FIELDNAM: looback0delay
+  LABLAXIS: looback0delay
+  UNITS: ' '
+looback1delay:
+  '<<': '*default_float32'
+  CATDESC: Looback1delay
+  FIELDNAM: looback1delay
+  LABLAXIS: looback1delay
+  UNITS: ' '
+looback2delay:
+  '<<': '*default_float32'
+  CATDESC: Looback2delay
+  FIELDNAM: looback2delay
+  LABLAXIS: looback2delay
+  UNITS: ' '
+lvpdsdigitalout_spare:
+  '<<': '*default_float32'
+  CATDESC: Lvpdsdigitalout spare
+  FIELDNAM: lvpdsdigitalout_spare
+  LABLAXIS: lvpdsdigitalout_spare
+  UNITS: ' '
+lvps_t:
+  '<<': '*default_float32'
+  CATDESC: Lvps t
+  FIELDNAM: lvps_t
+  LABLAXIS: lvps_t
+  UNITS: ' '
+lvps_t_hi:
+  '<<': '*default_float32'
+  CATDESC: Lvps t hi
+  FIELDNAM: lvps_t_hi
+  LABLAXIS: lvps_t_hi
+  UNITS: ' '
+lvps_t_lo:
+  '<<': '*default_float32'
+  CATDESC: Lvps t lo
+  FIELDNAM: lvps_t_lo
+  LABLAXIS: lvps_t_lo
+  UNITS: ' '
+lvpsp15v_i:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp15v i
+  FIELDNAM: lvpsp15v_i
+  LABLAXIS: lvpsp15v_i
+  UNITS: ' '
+lvpsp15v_i_hi:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp15v i hi
+  FIELDNAM: lvpsp15v_i_hi
+  LABLAXIS: lvpsp15v_i_hi
+  UNITS: ' '
+lvpsp15v_i_lo:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp15v i lo
+  FIELDNAM: lvpsp15v_i_lo
+  LABLAXIS: lvpsp15v_i_lo
+  UNITS: ' '
+lvpsp15v_v:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp15v v
+  FIELDNAM: lvpsp15v_v
+  LABLAXIS: lvpsp15v_v
+  UNITS: ' '
+lvpsp15v_v_hi:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp15v v hi
+  FIELDNAM: lvpsp15v_v_hi
+  LABLAXIS: lvpsp15v_v_hi
+  UNITS: ' '
+lvpsp15v_v_lo:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp15v v lo
+  FIELDNAM: lvpsp15v_v_lo
+  LABLAXIS: lvpsp15v_v_lo
+  UNITS: ' '
+lvpsp1p5v_i:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp1p5v i
+  FIELDNAM: lvpsp1p5v_i
+  LABLAXIS: lvpsp1p5v_i
+  UNITS: ' '
+lvpsp1p5v_i_hi:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp1p5v i hi
+  FIELDNAM: lvpsp1p5v_i_hi
+  LABLAXIS: lvpsp1p5v_i_hi
+  UNITS: ' '
+lvpsp1p5v_i_lo:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp1p5v i lo
+  FIELDNAM: lvpsp1p5v_i_lo
+  LABLAXIS: lvpsp1p5v_i_lo
+  UNITS: ' '
+lvpsp1p5v_v:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp1p5v v
+  FIELDNAM: lvpsp1p5v_v
+  LABLAXIS: lvpsp1p5v_v
+  UNITS: ' '
+lvpsp1p5v_v_hi:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp1p5v v hi
+  FIELDNAM: lvpsp1p5v_v_hi
+  LABLAXIS: lvpsp1p5v_v_hi
+  UNITS: ' '
+lvpsp1p5v_v_lo:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp1p5v v lo
+  FIELDNAM: lvpsp1p5v_v_lo
+  LABLAXIS: lvpsp1p5v_v_lo
+  UNITS: ' '
+lvpsp3p3v_i:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp3p3v i
+  FIELDNAM: lvpsp3p3v_i
+  LABLAXIS: lvpsp3p3v_i
+  UNITS: ' '
+lvpsp3p3v_i_hi:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp3p3v i hi
+  FIELDNAM: lvpsp3p3v_i_hi
+  LABLAXIS: lvpsp3p3v_i_hi
+  UNITS: ' '
+lvpsp3p3v_i_lo:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp3p3v i lo
+  FIELDNAM: lvpsp3p3v_i_lo
+  LABLAXIS: lvpsp3p3v_i_lo
+  UNITS: ' '
+lvpsp3p3v_v:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp3p3v v
+  FIELDNAM: lvpsp3p3v_v
+  LABLAXIS: lvpsp3p3v_v
+  UNITS: ' '
+lvpsp3p3v_v_hi:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp3p3v v hi
+  FIELDNAM: lvpsp3p3v_v_hi
+  LABLAXIS: lvpsp3p3v_v_hi
+  UNITS: ' '
+lvpsp3p3v_v_lo:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp3p3v v lo
+  FIELDNAM: lvpsp3p3v_v_lo
+  LABLAXIS: lvpsp3p3v_v_lo
+  UNITS: ' '
+lvpsp3p5v_v:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp3p5v v
+  FIELDNAM: lvpsp3p5v_v
+  LABLAXIS: lvpsp3p5v_v
+  UNITS: ' '
+lvpsp3p5v_v_hi:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp3p5v v hi
+  FIELDNAM: lvpsp3p5v_v_hi
+  LABLAXIS: lvpsp3p5v_v_hi
+  UNITS: ' '
+lvpsp3p5v_v_lo:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp3p5v v lo
+  FIELDNAM: lvpsp3p5v_v_lo
+  LABLAXIS: lvpsp3p5v_v_lo
+  UNITS: ' '
+lvpsp5v_i:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp5v i
+  FIELDNAM: lvpsp5v_i
+  LABLAXIS: lvpsp5v_i
+  UNITS: ' '
+lvpsp5v_i_hi:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp5v i hi
+  FIELDNAM: lvpsp5v_i_hi
+  LABLAXIS: lvpsp5v_i_hi
+  UNITS: ' '
+lvpsp5v_i_lo:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp5v i lo
+  FIELDNAM: lvpsp5v_i_lo
+  LABLAXIS: lvpsp5v_i_lo
+  UNITS: ' '
+lvpsp5v_v:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp5v v
+  FIELDNAM: lvpsp5v_v
+  LABLAXIS: lvpsp5v_v
+  UNITS: ' '
+lvpsp5v_v_hi:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp5v v hi
+  FIELDNAM: lvpsp5v_v_hi
+  LABLAXIS: lvpsp5v_v_hi
+  UNITS: ' '
+lvpsp5v_v_lo:
+  '<<': '*default_float32'
+  CATDESC: Lvpsp5v v lo
+  FIELDNAM: lvpsp5v_v_lo
+  LABLAXIS: lvpsp5v_v_lo
+  UNITS: ' '
+lvpsprimary_i:
+  '<<': '*default_float32'
+  CATDESC: Lvpsprimary i
+  FIELDNAM: lvpsprimary_i
+  LABLAXIS: lvpsprimary_i
+  UNITS: ' '
+lvpsprimary_i_hi:
+  '<<': '*default_float32'
+  CATDESC: Lvpsprimary i hi
+  FIELDNAM: lvpsprimary_i_hi
+  LABLAXIS: lvpsprimary_i_hi
+  UNITS: ' '
+lvpsprimary_i_lo:
+  '<<': '*default_float32'
+  CATDESC: Lvpsprimary i lo
+  FIELDNAM: lvpsprimary_i_lo
+  LABLAXIS: lvpsprimary_i_lo
+  UNITS: ' '
+maccmdexec:
+  '<<': '*default_float32'
+  CATDESC: Maccmdexec
+  FIELDNAM: maccmdexec
+  LABLAXIS: maccmdexec
+  UNITS: ' '
+maccmdreject:
+  '<<': '*default_float32'
+  CATDESC: Maccmdreject
+  FIELDNAM: maccmdreject
+  LABLAXIS: maccmdreject
+  UNITS: ' '
+macid:
+  '<<': '*default_float32'
+  CATDESC: Macid
+  FIELDNAM: macid
+  LABLAXIS: macid
+  UNITS: ' '
+maclearn:
+  '<<': '*default_float32'
+  CATDESC: Maclearn
+  FIELDNAM: maclearn
+  LABLAXIS: maclearn
+  UNITS: ' '
+macro:
+  '<<': '*default_float32'
+  CATDESC: Macro
+  FIELDNAM: macro
+  LABLAXIS: macro
+  UNITS: ' '
+macroblocks:
+  '<<': '*default_float32'
+  CATDESC: Macroblocks
+  FIELDNAM: macroblocks
+  LABLAXIS: macroblocks
+  UNITS: ' '
+macrodata:
+  '<<': '*default_float32'
+  CATDESC: Macrodata
+  FIELDNAM: macrodata
+  LABLAXIS: macrodata
+  UNITS: ' '
+macroid:
+  '<<': '*default_float32'
+  CATDESC: Macroid
+  FIELDNAM: macroid
+  LABLAXIS: macroid
+  UNITS: ' '
+maxenergyselect:
+  '<<': '*default_float32'
+  CATDESC: Maxenergyselect
+  FIELDNAM: maxenergyselect
+  LABLAXIS: maxenergyselect
+  UNITS: ' '
+mcphvrampdownrate:
+  '<<': '*default_float32'
+  CATDESC: Mcphvrampdownrate
+  FIELDNAM: mcphvrampdownrate
+  LABLAXIS: mcphvrampdownrate
+  UNITS: ' '
+mcphvrampuprate:
+  '<<': '*default_float32'
+  CATDESC: Mcphvrampuprate
+  FIELDNAM: mcphvrampuprate
+  LABLAXIS: mcphvrampuprate
+  UNITS: ' '
+mcphvsafegap:
+  '<<': '*default_float32'
+  CATDESC: Mcphvsafegap
+  FIELDNAM: mcphvsafegap
+  LABLAXIS: mcphvsafegap
+  UNITS: ' '
+mcphvsafelim:
+  '<<': '*default_float32'
+  CATDESC: Mcphvsafelim
+  FIELDNAM: mcphvsafelim
+  LABLAXIS: mcphvsafelim
+  UNITS: ' '
+mcppreamppower:
+  '<<': '*default_float32'
+  CATDESC: Mcppreamppower
+  FIELDNAM: mcppreamppower
+  LABLAXIS: mcppreamppower
+  UNITS: ' '
+mcppulseamplitude:
+  '<<': '*default_float32'
+  CATDESC: Mcppulseamplitude
+  FIELDNAM: mcppulseamplitude
+  LABLAXIS: mcppulseamplitude
+  UNITS: ' '
+mcpsupply_p:
+  '<<': '*default_float32'
+  CATDESC: Mcpsupply p
+  FIELDNAM: mcpsupply_p
+  LABLAXIS: mcpsupply_p
+  UNITS: ' '
+mcpsupply_p_hi:
+  '<<': '*default_float32'
+  CATDESC: Mcpsupply p hi
+  FIELDNAM: mcpsupply_p_hi
+  LABLAXIS: mcpsupply_p_hi
+  UNITS: ' '
+mcpsupply_p_lo:
+  '<<': '*default_float32'
+  CATDESC: Mcpsupply p lo
+  FIELDNAM: mcpsupply_p_lo
+  LABLAXIS: mcpsupply_p_lo
+  UNITS: ' '
+memlength:
+  '<<': '*default_float32'
+  CATDESC: Memlength
+  FIELDNAM: memlength
+  LABLAXIS: memlength
+  UNITS: ' '
+memwrite:
+  '<<': '*default_float32'
+  CATDESC: Memwrite
+  FIELDNAM: memwrite
+  LABLAXIS: memwrite
+  UNITS: ' '
+monitorresponse:
+  '<<': '*default_float32'
+  CATDESC: Monitorresponse
+  FIELDNAM: monitorresponse
+  LABLAXIS: monitorresponse
+  UNITS: ' '
+nvmemstate:
+  '<<': '*default_float32'
+  CATDESC: Nvmemstate
+  FIELDNAM: nvmemstate
+  LABLAXIS: nvmemstate
+  UNITS: ' '
+opampbias_v:
+  '<<': '*default_float32'
+  CATDESC: Opampbias v
+  FIELDNAM: opampbias_v
+  LABLAXIS: opampbias_v
+  UNITS: ' '
+opampbias_v_hi:
+  '<<': '*default_float32'
+  CATDESC: Opampbias v hi
+  FIELDNAM: opampbias_v_hi
+  LABLAXIS: opampbias_v_hi
+  UNITS: ' '
+opampbias_v_lo:
+  '<<': '*default_float32'
+  CATDESC: Opampbias v lo
+  FIELDNAM: opampbias_v_lo
+  LABLAXIS: opampbias_v_lo
+  UNITS: ' '
+opcode:
+  '<<': '*default_float32'
+  CATDESC: Opcode
+  FIELDNAM: opcode
+  LABLAXIS: opcode
+  UNITS: ' '
+pathmediumthresh:
+  '<<': '*default_float32'
+  CATDESC: Pathmediumthresh
+  FIELDNAM: pathmediumthresh
+  LABLAXIS: pathmediumthresh
+  UNITS: ' '
+pathsteepthresh:
+  '<<': '*default_float32'
+  CATDESC: Pathsteepthresh
+  FIELDNAM: pathsteepthresh
+  LABLAXIS: pathsteepthresh
+  UNITS: ' '
+phreference:
+  '<<': '*default_float32'
+  CATDESC: Phreference
+  FIELDNAM: phreference
+  LABLAXIS: phreference
+  UNITS: ' '
+powerreg_spare:
+  '<<': '*default_float32'
+  CATDESC: Powerreg spare
+  FIELDNAM: powerreg_spare
+  LABLAXIS: powerreg_spare
+  UNITS: ' '
+powerrequest:
+  '<<': '*default_float32'
+  CATDESC: Powerrequest
+  FIELDNAM: powerrequest
+  LABLAXIS: powerrequest
+  UNITS: ' '
+pulserate:
+  '<<': '*default_float32'
+  CATDESC: Pulserate
+  FIELDNAM: pulserate
+  LABLAXIS: pulserate
+  UNITS: ' '
+ratedata:
+  '<<': '*default_float32'
+  CATDESC: Ratedata
+  FIELDNAM: ratedata
+  LABLAXIS: ratedata
+  UNITS: ' '
+raterecoverytime:
+  '<<': '*default_float32'
+  CATDESC: Raterecoverytime
+  FIELDNAM: raterecoverytime
+  LABLAXIS: raterecoverytime
+  UNITS: ' '
+ratestoohigh:
+  '<<': '*default_float32'
+  CATDESC: Ratestoohigh
+  FIELDNAM: ratestoohigh
+  LABLAXIS: ratestoohigh
+  UNITS: ' '
+result:
+  '<<': '*default_float32'
+  CATDESC: Result
+  FIELDNAM: result
+  LABLAXIS: result
+  UNITS: ' '
+rightdeflection_v:
+  '<<': '*default_float32'
+  CATDESC: Rightdeflection v
+  FIELDNAM: rightdeflection_v
+  LABLAXIS: rightdeflection_v
+  UNITS: ' '
+rightdeflection_v_hi:
+  '<<': '*default_float32'
+  CATDESC: Rightdeflection v hi
+  FIELDNAM: rightdeflection_v_hi
+  LABLAXIS: rightdeflection_v_hi
+  UNITS: ' '
+rightdeflection_v_lo:
+  '<<': '*default_float32'
+  CATDESC: Rightdeflection v lo
+  FIELDNAM: rightdeflection_v_lo
+  LABLAXIS: rightdeflection_v_lo
+  UNITS: ' '
+rightdeflectionsupply_p:
+  '<<': '*default_float32'
+  CATDESC: Rightdeflectionsupply p
+  FIELDNAM: rightdeflectionsupply_p
+  LABLAXIS: rightdeflectionsupply_p
+  UNITS: ' '
+rightdeflectionsupply_p_hi:
+  '<<': '*default_float32'
+  CATDESC: Rightdeflectionsupply p hi
+  FIELDNAM: rightdeflectionsupply_p_hi
+  LABLAXIS: rightdeflectionsupply_p_hi
+  UNITS: ' '
+rightdeflectionsupply_p_lo:
+  '<<': '*default_float32'
+  CATDESC: Rightdeflectionsupply p lo
+  FIELDNAM: rightdeflectionsupply_p_lo
+  LABLAXIS: rightdeflectionsupply_p_lo
+  UNITS: ' '
+rightdfldischrate:
+  '<<': '*default_float32'
+  CATDESC: Rightdfldischrate
+  FIELDNAM: rightdfldischrate
+  LABLAXIS: rightdfldischrate
+  UNITS: ' '
+rightdfldischrate_hi:
+  '<<': '*default_float32'
+  CATDESC: Rightdfldischrate hi
+  FIELDNAM: rightdfldischrate_hi
+  LABLAXIS: rightdfldischrate_hi
+  UNITS: ' '
+rightdfldischrate_lo:
+  '<<': '*default_float32'
+  CATDESC: Rightdfldischrate lo
+  FIELDNAM: rightdfldischrate_lo
+  LABLAXIS: rightdfldischrate_lo
+  UNITS: ' '
+rightdfldischratelim:
+  '<<': '*default_float32'
+  CATDESC: Rightdfldischratelim
+  FIELDNAM: rightdfldischratelim
+  LABLAXIS: rightdfldischratelim
+  UNITS: ' '
+rightdflhvgoal:
+  '<<': '*default_float32'
+  CATDESC: Rightdflhvgoal
+  FIELDNAM: rightdflhvgoal
+  LABLAXIS: rightdflhvgoal
+  UNITS: ' '
+rightdflhvlim:
+  '<<': '*default_float32'
+  CATDESC: Rightdflhvlim
+  FIELDNAM: rightdflhvlim
+  LABLAXIS: rightdflhvlim
+  UNITS: ' '
+rightdflhvv:
+  '<<': '*default_float32'
+  CATDESC: Rightdflhvv
+  FIELDNAM: rightdflhvv
+  LABLAXIS: rightdflhvv
+  UNITS: ' '
+rightshutter_t:
+  '<<': '*default_float32'
+  CATDESC: Rightshutter t
+  FIELDNAM: rightshutter_t
+  LABLAXIS: rightshutter_t
+  UNITS: ' '
+rightshutter_t_hi:
+  '<<': '*default_float32'
+  CATDESC: Rightshutter t hi
+  FIELDNAM: rightshutter_t_hi
+  LABLAXIS: rightshutter_t_hi
+  UNITS: ' '
+rightshutter_t_lo:
+  '<<': '*default_float32'
+  CATDESC: Rightshutter t lo
+  FIELDNAM: rightshutter_t_lo
+  LABLAXIS: rightshutter_t_lo
+  UNITS: ' '
+rightshutterhomesteps:
+  '<<': '*default_float32'
+  CATDESC: Rightshutterhomesteps
+  FIELDNAM: rightshutterhomesteps
+  LABLAXIS: rightshutterhomesteps
+  UNITS: ' '
+rightshutterstep:
+  '<<': '*default_float32'
+  CATDESC: Rightshutterstep
+  FIELDNAM: rightshutterstep
+  LABLAXIS: rightshutterstep
+  UNITS: ' '
+rightshuttertt:
+  '<<': '*default_float32'
+  CATDESC: Rightshuttertt
+  FIELDNAM: rightshuttertt
+  LABLAXIS: rightshuttertt
+  UNITS: ' '
+safingtime:
+  '<<': '*default_float32'
+  CATDESC: Safingtime
+  FIELDNAM: safingtime
+  LABLAXIS: safingtime
+  UNITS: ' '
+shutteractuator:
+  '<<': '*default_float32'
+  CATDESC: Shutteractuator
+  FIELDNAM: shutteractuator
+  LABLAXIS: shutteractuator
+  UNITS: ' '
+shutteractuatorselect:
+  '<<': '*default_float32'
+  CATDESC: Shutteractuatorselect
+  FIELDNAM: shutteractuatorselect
+  LABLAXIS: shutteractuatorselect
+  UNITS: ' '
+shutterheattime:
+  '<<': '*default_float32'
+  CATDESC: Shutterheattime
+  FIELDNAM: shutterheattime
+  LABLAXIS: shutterheattime
+  UNITS: ' '
+shuttermotorduty:
+  '<<': '*default_float32'
+  CATDESC: Shuttermotorduty
+  FIELDNAM: shuttermotorduty
+  LABLAXIS: shuttermotorduty
+  UNITS: ' '
+shuttermotorfreq:
+  '<<': '*default_float32'
+  CATDESC: Shuttermotorfreq
+  FIELDNAM: shuttermotorfreq
+  LABLAXIS: shuttermotorfreq
+  UNITS: ' '
+shutterp15v_i_adjust:
+  '<<': '*default_float32'
+  CATDESC: Shutterp15v i adjust
+  FIELDNAM: shutterp15v_i_adjust
+  LABLAXIS: shutterp15v_i_adjust
+  UNITS: ' '
+shutterphase:
+  '<<': '*default_float32'
+  CATDESC: Shutterphase
+  FIELDNAM: shutterphase
+  LABLAXIS: shutterphase
+  UNITS: ' '
+shutterplugstate:
+  '<<': '*default_float32'
+  CATDESC: Shutterplugstate
+  FIELDNAM: shutterplugstate
+  LABLAXIS: shutterplugstate
+  UNITS: ' '
+shutterprimary_i_adjust:
+  '<<': '*default_float32'
+  CATDESC: Shutterprimary i adjust
+  FIELDNAM: shutterprimary_i_adjust
+  LABLAXIS: shutterprimary_i_adjust
+  UNITS: ' '
+shutterselect:
+  '<<': '*default_float32'
+  CATDESC: Shutterselect
+  FIELDNAM: shutterselect
+  LABLAXIS: shutterselect
+  UNITS: ' '
+spare10:
+  '<<': '*default_float32'
+  CATDESC: Spare10
+  FIELDNAM: spare10
+  LABLAXIS: spare10
+  UNITS: ' '
+spare4:
+  '<<': '*default_float32'
+  CATDESC: Spare4
+  FIELDNAM: spare4
+  LABLAXIS: spare4
+  UNITS: ' '
+spare5:
+  '<<': '*default_float32'
+  CATDESC: Spare5
+  FIELDNAM: spare5
+  LABLAXIS: spare5
+  UNITS: ' '
+spare6:
+  '<<': '*default_float32'
+  CATDESC: Spare6
+  FIELDNAM: spare6
+  LABLAXIS: spare6
+  UNITS: ' '
+spare7:
+  '<<': '*default_float32'
+  CATDESC: Spare7
+  FIELDNAM: spare7
+  LABLAXIS: spare7
+  UNITS: ' '
+spare8:
+  '<<': '*default_float32'
+  CATDESC: Spare8
+  FIELDNAM: spare8
+  LABLAXIS: spare8
+  UNITS: ' '
+spare9:
+  '<<': '*default_float32'
+  CATDESC: Spare9
+  FIELDNAM: spare9
+  LABLAXIS: spare9
+  UNITS: ' '
+spbtphoff:
+  '<<': '*default_float32'
+  CATDESC: Spbtphoff
+  FIELDNAM: spbtphoff
+  LABLAXIS: spbtphoff
+  UNITS: ' '
+sptpphoff:
+  '<<': '*default_float32'
+  CATDESC: Sptpphoff
+  FIELDNAM: sptpphoff
+  LABLAXIS: sptpphoff
+  UNITS: ' '
+ssd0energystate:
+  '<<': '*default_float32'
+  CATDESC: Ssd0energystate
+  FIELDNAM: ssd0energystate
+  LABLAXIS: ssd0energystate
+  UNITS: ' '
+ssd0energythresh:
+  '<<': '*default_float32'
+  CATDESC: Ssd0energythresh
+  FIELDNAM: ssd0energythresh
+  LABLAXIS: ssd0energythresh
+  UNITS: ' '
+ssd0pixenergybaseline:
+  '<<': '*default_float32'
+  CATDESC: Ssd0pixenergybaseline
+  FIELDNAM: ssd0pixenergybaseline
+  LABLAXIS: ssd0pixenergybaseline
+  UNITS: ' '
+ssd1energystate:
+  '<<': '*default_float32'
+  CATDESC: Ssd1energystate
+  FIELDNAM: ssd1energystate
+  LABLAXIS: ssd1energystate
+  UNITS: ' '
+ssd1energythresh:
+  '<<': '*default_float32'
+  CATDESC: Ssd1energythresh
+  FIELDNAM: ssd1energythresh
+  LABLAXIS: ssd1energythresh
+  UNITS: ' '
+ssd1pixenergybaseline:
+  '<<': '*default_float32'
+  CATDESC: Ssd1pixenergybaseline
+  FIELDNAM: ssd1pixenergybaseline
+  LABLAXIS: ssd1pixenergybaseline
+  UNITS: ' '
+ssd2energystate:
+  '<<': '*default_float32'
+  CATDESC: Ssd2energystate
+  FIELDNAM: ssd2energystate
+  LABLAXIS: ssd2energystate
+  UNITS: ' '
+ssd2energythresh:
+  '<<': '*default_float32'
+  CATDESC: Ssd2energythresh
+  FIELDNAM: ssd2energythresh
+  LABLAXIS: ssd2energythresh
+  UNITS: ' '
+ssd2pixenergybaseline:
+  '<<': '*default_float32'
+  CATDESC: Ssd2pixenergybaseline
+  FIELDNAM: ssd2pixenergybaseline
+  LABLAXIS: ssd2pixenergybaseline
+  UNITS: ' '
+ssd3energystate:
+  '<<': '*default_float32'
+  CATDESC: Ssd3energystate
+  FIELDNAM: ssd3energystate
+  LABLAXIS: ssd3energystate
+  UNITS: ' '
+ssd3energythresh:
+  '<<': '*default_float32'
+  CATDESC: Ssd3energythresh
+  FIELDNAM: ssd3energythresh
+  LABLAXIS: ssd3energythresh
+  UNITS: ' '
+ssd3pixenergybaseline:
+  '<<': '*default_float32'
+  CATDESC: Ssd3pixenergybaseline
+  FIELDNAM: ssd3pixenergybaseline
+  LABLAXIS: ssd3pixenergybaseline
+  UNITS: ' '
+ssd4energystate:
+  '<<': '*default_float32'
+  CATDESC: Ssd4energystate
+  FIELDNAM: ssd4energystate
+  LABLAXIS: ssd4energystate
+  UNITS: ' '
+ssd4energythresh:
+  '<<': '*default_float32'
+  CATDESC: Ssd4energythresh
+  FIELDNAM: ssd4energythresh
+  LABLAXIS: ssd4energythresh
+  UNITS: ' '
+ssd4pixenergybaseline:
+  '<<': '*default_float32'
+  CATDESC: Ssd4pixenergybaseline
+  FIELDNAM: ssd4pixenergybaseline
+  LABLAXIS: ssd4pixenergybaseline
+  UNITS: ' '
+ssd5energystate:
+  '<<': '*default_float32'
+  CATDESC: Ssd5energystate
+  FIELDNAM: ssd5energystate
+  LABLAXIS: ssd5energystate
+  UNITS: ' '
+ssd5energythresh:
+  '<<': '*default_float32'
+  CATDESC: Ssd5energythresh
+  FIELDNAM: ssd5energythresh
+  LABLAXIS: ssd5energythresh
+  UNITS: ' '
+ssd5pixenergybaseline:
+  '<<': '*default_float32'
+  CATDESC: Ssd5pixenergybaseline
+  FIELDNAM: ssd5pixenergybaseline
+  LABLAXIS: ssd5pixenergybaseline
+  UNITS: ' '
+ssd6energystate:
+  '<<': '*default_float32'
+  CATDESC: Ssd6energystate
+  FIELDNAM: ssd6energystate
+  LABLAXIS: ssd6energystate
+  UNITS: ' '
+ssd6energythresh:
+  '<<': '*default_float32'
+  CATDESC: Ssd6energythresh
+  FIELDNAM: ssd6energythresh
+  LABLAXIS: ssd6energythresh
+  UNITS: ' '
+ssd6pixenergybaseline:
+  '<<': '*default_float32'
+  CATDESC: Ssd6pixenergybaseline
+  FIELDNAM: ssd6pixenergybaseline
+  LABLAXIS: ssd6pixenergybaseline
+  UNITS: ' '
+ssd7energystate:
+  '<<': '*default_float32'
+  CATDESC: Ssd7energystate
+  FIELDNAM: ssd7energystate
+  LABLAXIS: ssd7energystate
+  UNITS: ' '
+ssd7energythresh:
+  '<<': '*default_float32'
+  CATDESC: Ssd7energythresh
+  FIELDNAM: ssd7energythresh
+  LABLAXIS: ssd7energythresh
+  UNITS: ' '
+ssd7pixenergybaseline:
+  '<<': '*default_float32'
+  CATDESC: Ssd7pixenergybaseline
+  FIELDNAM: ssd7pixenergybaseline
+  LABLAXIS: ssd7pixenergybaseline
+  UNITS: ' '
+ssdbv_i:
+  '<<': '*default_float32'
+  CATDESC: Ssdbv i
+  FIELDNAM: ssdbv_i
+  LABLAXIS: ssdbv_i
+  UNITS: ' '
+ssdbv_i_hi:
+  '<<': '*default_float32'
+  CATDESC: Ssdbv i hi
+  FIELDNAM: ssdbv_i_hi
+  LABLAXIS: ssdbv_i_hi
+  UNITS: ' '
+ssdbv_i_lo:
+  '<<': '*default_float32'
+  CATDESC: Ssdbv i lo
+  FIELDNAM: ssdbv_i_lo
+  LABLAXIS: ssdbv_i_lo
+  UNITS: ' '
+ssdbv_v:
+  '<<': '*default_float32'
+  CATDESC: Ssdbv v
+  FIELDNAM: ssdbv_v
+  LABLAXIS: ssdbv_v
+  UNITS: ' '
+ssdbv_v_hi:
+  '<<': '*default_float32'
+  CATDESC: Ssdbv v hi
+  FIELDNAM: ssdbv_v_hi
+  LABLAXIS: ssdbv_v_hi
+  UNITS: ' '
+ssdbv_v_lo:
+  '<<': '*default_float32'
+  CATDESC: Ssdbv v lo
+  FIELDNAM: ssdbv_v_lo
+  LABLAXIS: ssdbv_v_lo
+  UNITS: ' '
+ssdbvgoal:
+  '<<': '*default_float32'
+  CATDESC: Ssdbvgoal
+  FIELDNAM: ssdbvgoal
+  LABLAXIS: ssdbvgoal
+  UNITS: ' '
+ssdbvlim:
+  '<<': '*default_float32'
+  CATDESC: Ssdbvlim
+  FIELDNAM: ssdbvlim
+  LABLAXIS: ssdbvlim
+  UNITS: ' '
+ssdbvrampdownrate:
+  '<<': '*default_float32'
+  CATDESC: Ssdbvrampdownrate
+  FIELDNAM: ssdbvrampdownrate
+  LABLAXIS: ssdbvrampdownrate
+  UNITS: ' '
+ssdbvrampuprate:
+  '<<': '*default_float32'
+  CATDESC: Ssdbvrampuprate
+  FIELDNAM: ssdbvrampuprate
+  LABLAXIS: ssdbvrampuprate
+  UNITS: ' '
+ssdbvv:
+  '<<': '*default_float32'
+  CATDESC: Ssdbvv
+  FIELDNAM: ssdbvv
+  LABLAXIS: ssdbvv
+  UNITS: ' '
+ssdpreamppower:
+  '<<': '*default_float32'
+  CATDESC: Ssdpreamppower
+  FIELDNAM: ssdpreamppower
+  LABLAXIS: ssdpreamppower
+  UNITS: ' '
+ssdpulseamplitude:
+  '<<': '*default_float32'
+  CATDESC: Ssdpulseamplitude
+  FIELDNAM: ssdpulseamplitude
+  LABLAXIS: ssdpulseamplitude
+  UNITS: ' '
+ssdpulsedelay:
+  '<<': '*default_float32'
+  CATDESC: Ssdpulsedelay
+  FIELDNAM: ssdpulsedelay
+  LABLAXIS: ssdpulsedelay
+  UNITS: ' '
+ssdpulsestate:
+  '<<': '*default_float32'
+  CATDESC: Ssdpulsestate
+  FIELDNAM: ssdpulsestate
+  LABLAXIS: ssdpulsestate
+  UNITS: ' '
+ssdreference:
+  '<<': '*default_float32'
+  CATDESC: Ssdreference
+  FIELDNAM: ssdreference
+  LABLAXIS: ssdreference
+  UNITS: ' '
+startfullpulsestate:
+  '<<': '*default_float32'
+  CATDESC: Startfullpulsestate
+  FIELDNAM: startfullpulsestate
+  LABLAXIS: startfullpulsestate
+  UNITS: ' '
+startlfautozero:
+  '<<': '*default_float32'
+  CATDESC: Startlfautozero
+  FIELDNAM: startlfautozero
+  LABLAXIS: startlfautozero
+  UNITS: ' '
+startlfcfdthresh:
+  '<<': '*default_float32'
+  CATDESC: Startlfcfdthresh
+  FIELDNAM: startlfcfdthresh
+  LABLAXIS: startlfcfdthresh
+  UNITS: ' '
+startlfphthresh:
+  '<<': '*default_float32'
+  CATDESC: Startlfphthresh
+  FIELDNAM: startlfphthresh
+  LABLAXIS: startlfphthresh
+  UNITS: ' '
+startlpautozero:
+  '<<': '*default_float32'
+  CATDESC: Startlpautozero
+  FIELDNAM: startlpautozero
+  LABLAXIS: startlpautozero
+  UNITS: ' '
+startlpcfdthresh:
+  '<<': '*default_float32'
+  CATDESC: Startlpcfdthresh
+  FIELDNAM: startlpcfdthresh
+  LABLAXIS: startlpcfdthresh
+  UNITS: ' '
+startposdelay:
+  '<<': '*default_float32'
+  CATDESC: Startposdelay
+  FIELDNAM: startposdelay
+  LABLAXIS: startposdelay
+  UNITS: ' '
+startratehighthresh:
+  '<<': '*default_float32'
+  CATDESC: Startratehighthresh
+  FIELDNAM: startratehighthresh
+  LABLAXIS: startratehighthresh
+  UNITS: ' '
+startrfautozero:
+  '<<': '*default_float32'
+  CATDESC: Startrfautozero
+  FIELDNAM: startrfautozero
+  LABLAXIS: startrfautozero
+  UNITS: ' '
+startrfcfdthresh:
+  '<<': '*default_float32'
+  CATDESC: Startrfcfdthresh
+  FIELDNAM: startrfcfdthresh
+  LABLAXIS: startrfcfdthresh
+  UNITS: ' '
+startrfphthresh:
+  '<<': '*default_float32'
+  CATDESC: Startrfphthresh
+  FIELDNAM: startrfphthresh
+  LABLAXIS: startrfphthresh
+  UNITS: ' '
+startrpautozero:
+  '<<': '*default_float32'
+  CATDESC: Startrpautozero
+  FIELDNAM: startrpautozero
+  LABLAXIS: startrpautozero
+  UNITS: ' '
+startrpcfdthresh:
+  '<<': '*default_float32'
+  CATDESC: Startrpcfdthresh
+  FIELDNAM: startrpcfdthresh
+  LABLAXIS: startrpcfdthresh
+  UNITS: ' '
+statusint:
+  '<<': '*default_float32'
+  CATDESC: Statusint
+  FIELDNAM: statusint
+  LABLAXIS: statusint
+  UNITS: ' '
+stopbeautozero:
+  '<<': '*default_float32'
+  CATDESC: Stopbeautozero
+  FIELDNAM: stopbeautozero
+  LABLAXIS: stopbeautozero
+  UNITS: ' '
+stopbecfdthresh:
+  '<<': '*default_float32'
+  CATDESC: Stopbecfdthresh
+  FIELDNAM: stopbecfdthresh
+  LABLAXIS: stopbecfdthresh
+  UNITS: ' '
+stopbnautozero:
+  '<<': '*default_float32'
+  CATDESC: Stopbnautozero
+  FIELDNAM: stopbnautozero
+  LABLAXIS: stopbnautozero
+  UNITS: ' '
+stopbncfdthresh:
+  '<<': '*default_float32'
+  CATDESC: Stopbncfdthresh
+  FIELDNAM: stopbncfdthresh
+  LABLAXIS: stopbncfdthresh
+  UNITS: ' '
+stopbnphthresh:
+  '<<': '*default_float32'
+  CATDESC: Stopbnphthresh
+  FIELDNAM: stopbnphthresh
+  LABLAXIS: stopbnphthresh
+  UNITS: ' '
+stopbsautozero:
+  '<<': '*default_float32'
+  CATDESC: Stopbsautozero
+  FIELDNAM: stopbsautozero
+  LABLAXIS: stopbsautozero
+  UNITS: ' '
+stopbscfdthresh:
+  '<<': '*default_float32'
+  CATDESC: Stopbscfdthresh
+  FIELDNAM: stopbscfdthresh
+  LABLAXIS: stopbscfdthresh
+  UNITS: ' '
+stopbwautozero:
+  '<<': '*default_float32'
+  CATDESC: Stopbwautozero
+  FIELDNAM: stopbwautozero
+  LABLAXIS: stopbwautozero
+  UNITS: ' '
+stopbwcfdthresh:
+  '<<': '*default_float32'
+  CATDESC: Stopbwcfdthresh
+  FIELDNAM: stopbwcfdthresh
+  LABLAXIS: stopbwcfdthresh
+  UNITS: ' '
+stopcoinnorthpulsedelay:
+  '<<': '*default_float32'
+  CATDESC: Stopcoinnorthpulsedelay
+  FIELDNAM: stopcoinnorthpulsedelay
+  LABLAXIS: stopcoinnorthpulsedelay
+  UNITS: ' '
+stopcoinnorthpulsestate:
+  '<<': '*default_float32'
+  CATDESC: Stopcoinnorthpulsestate
+  FIELDNAM: stopcoinnorthpulsestate
+  LABLAXIS: stopcoinnorthpulsestate
+  UNITS: ' '
+stopcoinsouthpulsedelay:
+  '<<': '*default_float32'
+  CATDESC: Stopcoinsouthpulsedelay
+  FIELDNAM: stopcoinsouthpulsedelay
+  LABLAXIS: stopcoinsouthpulsedelay
+  UNITS: ' '
+stopcoinsouthpulsestate:
+  '<<': '*default_float32'
+  CATDESC: Stopcoinsouthpulsestate
+  FIELDNAM: stopcoinsouthpulsestate
+  LABLAXIS: stopcoinsouthpulsestate
+  UNITS: ' '
+stopeastpulsedelay:
+  '<<': '*default_float32'
+  CATDESC: Stopeastpulsedelay
+  FIELDNAM: stopeastpulsedelay
+  LABLAXIS: stopeastpulsedelay
+  UNITS: ' '
+stopeastpulsestate:
+  '<<': '*default_float32'
+  CATDESC: Stopeastpulsestate
+  FIELDNAM: stopeastpulsestate
+  LABLAXIS: stopeastpulsestate
+  UNITS: ' '
+stopratehighthresh:
+  '<<': '*default_float32'
+  CATDESC: Stopratehighthresh
+  FIELDNAM: stopratehighthresh
+  LABLAXIS: stopratehighthresh
+  UNITS: ' '
+stopteautozero:
+  '<<': '*default_float32'
+  CATDESC: Stopteautozero
+  FIELDNAM: stopteautozero
+  LABLAXIS: stopteautozero
+  UNITS: ' '
+stoptecfdthresh:
+  '<<': '*default_float32'
+  CATDESC: Stoptecfdthresh
+  FIELDNAM: stoptecfdthresh
+  LABLAXIS: stoptecfdthresh
+  UNITS: ' '
+stoptnautozero:
+  '<<': '*default_float32'
+  CATDESC: Stoptnautozero
+  FIELDNAM: stoptnautozero
+  LABLAXIS: stoptnautozero
+  UNITS: ' '
+stoptncfdthresh:
+  '<<': '*default_float32'
+  CATDESC: Stoptncfdthresh
+  FIELDNAM: stoptncfdthresh
+  LABLAXIS: stoptncfdthresh
+  UNITS: ' '
+stoptnphthresh:
+  '<<': '*default_float32'
+  CATDESC: Stoptnphthresh
+  FIELDNAM: stoptnphthresh
+  LABLAXIS: stoptnphthresh
+  UNITS: ' '
+stoptsautozero:
+  '<<': '*default_float32'
+  CATDESC: Stoptsautozero
+  FIELDNAM: stoptsautozero
+  LABLAXIS: stoptsautozero
+  UNITS: ' '
+stoptscfdthresh:
+  '<<': '*default_float32'
+  CATDESC: Stoptscfdthresh
+  FIELDNAM: stoptscfdthresh
+  LABLAXIS: stoptscfdthresh
+  UNITS: ' '
+stoptwautozero:
+  '<<': '*default_float32'
+  CATDESC: Stoptwautozero
+  FIELDNAM: stoptwautozero
+  LABLAXIS: stoptwautozero
+  UNITS: ' '
+stoptwcfdthresh:
+  '<<': '*default_float32'
+  CATDESC: Stoptwcfdthresh
+  FIELDNAM: stoptwcfdthresh
+  LABLAXIS: stoptwcfdthresh
+  UNITS: ' '
+stopwestpulsedelay:
+  '<<': '*default_float32'
+  CATDESC: Stopwestpulsedelay
+  FIELDNAM: stopwestpulsedelay
+  LABLAXIS: stopwestpulsedelay
+  UNITS: ' '
+stopwestpulsestate:
+  '<<': '*default_float32'
+  CATDESC: Stopwestpulsestate
+  FIELDNAM: stopwestpulsestate
+  LABLAXIS: stopwestpulsestate
+  UNITS: ' '
+swtime:
+  '<<': '*default_float32'
+  CATDESC: Swtime
+  FIELDNAM: swtime
+  LABLAXIS: swtime
+  UNITS: ' '
+swversion:
+  '<<': '*default_float32'
+  CATDESC: Swversion
+  FIELDNAM: swversion
+  LABLAXIS: swversion
+  UNITS: ' '
+test1:
+  '<<': '*default_float32'
+  CATDESC: Test1
+  FIELDNAM: test1
+  LABLAXIS: test1
+  UNITS: ' '
+test2:
+  '<<': '*default_float32'
+  CATDESC: Test2
+  FIELDNAM: test2
+  LABLAXIS: test2
+  UNITS: ' '
+text:
+  '<<': '*default_float32'
+  CATDESC: Text
+  FIELDNAM: text
+  LABLAXIS: text
+  UNITS: ' '
+text_0:
+  '<<': '*default_float32'
+  CATDESC: Text 0
+  FIELDNAM: text_0
+  LABLAXIS: text_0
+  UNITS: ' '
+text_1:
+  '<<': '*default_float32'
+  CATDESC: Text 1
+  FIELDNAM: text_1
+  LABLAXIS: text_1
+  UNITS: ' '
+text_10:
+  '<<': '*default_float32'
+  CATDESC: Text 10
+  FIELDNAM: text_10
+  LABLAXIS: text_10
+  UNITS: ' '
+text_11:
+  '<<': '*default_float32'
+  CATDESC: Text 11
+  FIELDNAM: text_11
+  LABLAXIS: text_11
+  UNITS: ' '
+text_12:
+  '<<': '*default_float32'
+  CATDESC: Text 12
+  FIELDNAM: text_12
+  LABLAXIS: text_12
+  UNITS: ' '
+text_13:
+  '<<': '*default_float32'
+  CATDESC: Text 13
+  FIELDNAM: text_13
+  LABLAXIS: text_13
+  UNITS: ' '
+text_14:
+  '<<': '*default_float32'
+  CATDESC: Text 14
+  FIELDNAM: text_14
+  LABLAXIS: text_14
+  UNITS: ' '
+text_15:
+  '<<': '*default_float32'
+  CATDESC: Text 15
+  FIELDNAM: text_15
+  LABLAXIS: text_15
+  UNITS: ' '
+text_16:
+  '<<': '*default_float32'
+  CATDESC: Text 16
+  FIELDNAM: text_16
+  LABLAXIS: text_16
+  UNITS: ' '
+text_17:
+  '<<': '*default_float32'
+  CATDESC: Text 17
+  FIELDNAM: text_17
+  LABLAXIS: text_17
+  UNITS: ' '
+text_18:
+  '<<': '*default_float32'
+  CATDESC: Text 18
+  FIELDNAM: text_18
+  LABLAXIS: text_18
+  UNITS: ' '
+text_19:
+  '<<': '*default_float32'
+  CATDESC: Text 19
+  FIELDNAM: text_19
+  LABLAXIS: text_19
+  UNITS: ' '
+text_2:
+  '<<': '*default_float32'
+  CATDESC: Text 2
+  FIELDNAM: text_2
+  LABLAXIS: text_2
+  UNITS: ' '
+text_20:
+  '<<': '*default_float32'
+  CATDESC: Text 20
+  FIELDNAM: text_20
+  LABLAXIS: text_20
+  UNITS: ' '
+text_21:
+  '<<': '*default_float32'
+  CATDESC: Text 21
+  FIELDNAM: text_21
+  LABLAXIS: text_21
+  UNITS: ' '
+text_22:
+  '<<': '*default_float32'
+  CATDESC: Text 22
+  FIELDNAM: text_22
+  LABLAXIS: text_22
+  UNITS: ' '
+text_23:
+  '<<': '*default_float32'
+  CATDESC: Text 23
+  FIELDNAM: text_23
+  LABLAXIS: text_23
+  UNITS: ' '
+text_24:
+  '<<': '*default_float32'
+  CATDESC: Text 24
+  FIELDNAM: text_24
+  LABLAXIS: text_24
+  UNITS: ' '
+text_25:
+  '<<': '*default_float32'
+  CATDESC: Text 25
+  FIELDNAM: text_25
+  LABLAXIS: text_25
+  UNITS: ' '
+text_26:
+  '<<': '*default_float32'
+  CATDESC: Text 26
+  FIELDNAM: text_26
+  LABLAXIS: text_26
+  UNITS: ' '
+text_27:
+  '<<': '*default_float32'
+  CATDESC: Text 27
+  FIELDNAM: text_27
+  LABLAXIS: text_27
+  UNITS: ' '
+text_28:
+  '<<': '*default_float32'
+  CATDESC: Text 28
+  FIELDNAM: text_28
+  LABLAXIS: text_28
+  UNITS: ' '
+text_29:
+  '<<': '*default_float32'
+  CATDESC: Text 29
+  FIELDNAM: text_29
+  LABLAXIS: text_29
+  UNITS: ' '
+text_3:
+  '<<': '*default_float32'
+  CATDESC: Text 3
+  FIELDNAM: text_3
+  LABLAXIS: text_3
+  UNITS: ' '
+text_30:
+  '<<': '*default_float32'
+  CATDESC: Text 30
+  FIELDNAM: text_30
+  LABLAXIS: text_30
+  UNITS: ' '
+text_31:
+  '<<': '*default_float32'
+  CATDESC: Text 31
+  FIELDNAM: text_31
+  LABLAXIS: text_31
+  UNITS: ' '
+text_32:
+  '<<': '*default_float32'
+  CATDESC: Text 32
+  FIELDNAM: text_32
+  LABLAXIS: text_32
+  UNITS: ' '
+text_33:
+  '<<': '*default_float32'
+  CATDESC: Text 33
+  FIELDNAM: text_33
+  LABLAXIS: text_33
+  UNITS: ' '
+text_34:
+  '<<': '*default_float32'
+  CATDESC: Text 34
+  FIELDNAM: text_34
+  LABLAXIS: text_34
+  UNITS: ' '
+text_35:
+  '<<': '*default_float32'
+  CATDESC: Text 35
+  FIELDNAM: text_35
+  LABLAXIS: text_35
+  UNITS: ' '
+text_36:
+  '<<': '*default_float32'
+  CATDESC: Text 36
+  FIELDNAM: text_36
+  LABLAXIS: text_36
+  UNITS: ' '
+text_37:
+  '<<': '*default_float32'
+  CATDESC: Text 37
+  FIELDNAM: text_37
+  LABLAXIS: text_37
+  UNITS: ' '
+text_38:
+  '<<': '*default_float32'
+  CATDESC: Text 38
+  FIELDNAM: text_38
+  LABLAXIS: text_38
+  UNITS: ' '
+text_39:
+  '<<': '*default_float32'
+  CATDESC: Text 39
+  FIELDNAM: text_39
+  LABLAXIS: text_39
+  UNITS: ' '
+text_4:
+  '<<': '*default_float32'
+  CATDESC: Text 4
+  FIELDNAM: text_4
+  LABLAXIS: text_4
+  UNITS: ' '
+text_40:
+  '<<': '*default_float32'
+  CATDESC: Text 40
+  FIELDNAM: text_40
+  LABLAXIS: text_40
+  UNITS: ' '
+text_41:
+  '<<': '*default_float32'
+  CATDESC: Text 41
+  FIELDNAM: text_41
+  LABLAXIS: text_41
+  UNITS: ' '
+text_42:
+  '<<': '*default_float32'
+  CATDESC: Text 42
+  FIELDNAM: text_42
+  LABLAXIS: text_42
+  UNITS: ' '
+text_43:
+  '<<': '*default_float32'
+  CATDESC: Text 43
+  FIELDNAM: text_43
+  LABLAXIS: text_43
+  UNITS: ' '
+text_44:
+  '<<': '*default_float32'
+  CATDESC: Text 44
+  FIELDNAM: text_44
+  LABLAXIS: text_44
+  UNITS: ' '
+text_45:
+  '<<': '*default_float32'
+  CATDESC: Text 45
+  FIELDNAM: text_45
+  LABLAXIS: text_45
+  UNITS: ' '
+text_46:
+  '<<': '*default_float32'
+  CATDESC: Text 46
+  FIELDNAM: text_46
+  LABLAXIS: text_46
+  UNITS: ' '
+text_47:
+  '<<': '*default_float32'
+  CATDESC: Text 47
+  FIELDNAM: text_47
+  LABLAXIS: text_47
+  UNITS: ' '
+text_48:
+  '<<': '*default_float32'
+  CATDESC: Text 48
+  FIELDNAM: text_48
+  LABLAXIS: text_48
+  UNITS: ' '
+text_49:
+  '<<': '*default_float32'
+  CATDESC: Text 49
+  FIELDNAM: text_49
+  LABLAXIS: text_49
+  UNITS: ' '
+text_5:
+  '<<': '*default_float32'
+  CATDESC: Text 5
+  FIELDNAM: text_5
+  LABLAXIS: text_5
+  UNITS: ' '
+text_50:
+  '<<': '*default_float32'
+  CATDESC: Text 50
+  FIELDNAM: text_50
+  LABLAXIS: text_50
+  UNITS: ' '
+text_51:
+  '<<': '*default_float32'
+  CATDESC: Text 51
+  FIELDNAM: text_51
+  LABLAXIS: text_51
+  UNITS: ' '
+text_52:
+  '<<': '*default_float32'
+  CATDESC: Text 52
+  FIELDNAM: text_52
+  LABLAXIS: text_52
+  UNITS: ' '
+text_53:
+  '<<': '*default_float32'
+  CATDESC: Text 53
+  FIELDNAM: text_53
+  LABLAXIS: text_53
+  UNITS: ' '
+text_54:
+  '<<': '*default_float32'
+  CATDESC: Text 54
+  FIELDNAM: text_54
+  LABLAXIS: text_54
+  UNITS: ' '
+text_55:
+  '<<': '*default_float32'
+  CATDESC: Text 55
+  FIELDNAM: text_55
+  LABLAXIS: text_55
+  UNITS: ' '
+text_56:
+  '<<': '*default_float32'
+  CATDESC: Text 56
+  FIELDNAM: text_56
+  LABLAXIS: text_56
+  UNITS: ' '
+text_57:
+  '<<': '*default_float32'
+  CATDESC: Text 57
+  FIELDNAM: text_57
+  LABLAXIS: text_57
+  UNITS: ' '
+text_58:
+  '<<': '*default_float32'
+  CATDESC: Text 58
+  FIELDNAM: text_58
+  LABLAXIS: text_58
+  UNITS: ' '
+text_59:
+  '<<': '*default_float32'
+  CATDESC: Text 59
+  FIELDNAM: text_59
+  LABLAXIS: text_59
+  UNITS: ' '
+text_6:
+  '<<': '*default_float32'
+  CATDESC: Text 6
+  FIELDNAM: text_6
+  LABLAXIS: text_6
+  UNITS: ' '
+text_60:
+  '<<': '*default_float32'
+  CATDESC: Text 60
+  FIELDNAM: text_60
+  LABLAXIS: text_60
+  UNITS: ' '
+text_61:
+  '<<': '*default_float32'
+  CATDESC: Text 61
+  FIELDNAM: text_61
+  LABLAXIS: text_61
+  UNITS: ' '
+text_62:
+  '<<': '*default_float32'
+  CATDESC: Text 62
+  FIELDNAM: text_62
+  LABLAXIS: text_62
+  UNITS: ' '
+text_63:
+  '<<': '*default_float32'
+  CATDESC: Text 63
+  FIELDNAM: text_63
+  LABLAXIS: text_63
+  UNITS: ' '
+text_64:
+  '<<': '*default_float32'
+  CATDESC: Text 64
+  FIELDNAM: text_64
+  LABLAXIS: text_64
+  UNITS: ' '
+text_65:
+  '<<': '*default_float32'
+  CATDESC: Text 65
+  FIELDNAM: text_65
+  LABLAXIS: text_65
+  UNITS: ' '
+text_66:
+  '<<': '*default_float32'
+  CATDESC: Text 66
+  FIELDNAM: text_66
+  LABLAXIS: text_66
+  UNITS: ' '
+text_67:
+  '<<': '*default_float32'
+  CATDESC: Text 67
+  FIELDNAM: text_67
+  LABLAXIS: text_67
+  UNITS: ' '
+text_68:
+  '<<': '*default_float32'
+  CATDESC: Text 68
+  FIELDNAM: text_68
+  LABLAXIS: text_68
+  UNITS: ' '
+text_69:
+  '<<': '*default_float32'
+  CATDESC: Text 69
+  FIELDNAM: text_69
+  LABLAXIS: text_69
+  UNITS: ' '
+text_7:
+  '<<': '*default_float32'
+  CATDESC: Text 7
+  FIELDNAM: text_7
+  LABLAXIS: text_7
+  UNITS: ' '
+text_70:
+  '<<': '*default_float32'
+  CATDESC: Text 70
+  FIELDNAM: text_70
+  LABLAXIS: text_70
+  UNITS: ' '
+text_71:
+  '<<': '*default_float32'
+  CATDESC: Text 71
+  FIELDNAM: text_71
+  LABLAXIS: text_71
+  UNITS: ' '
+text_72:
+  '<<': '*default_float32'
+  CATDESC: Text 72
+  FIELDNAM: text_72
+  LABLAXIS: text_72
+  UNITS: ' '
+text_73:
+  '<<': '*default_float32'
+  CATDESC: Text 73
+  FIELDNAM: text_73
+  LABLAXIS: text_73
+  UNITS: ' '
+text_74:
+  '<<': '*default_float32'
+  CATDESC: Text 74
+  FIELDNAM: text_74
+  LABLAXIS: text_74
+  UNITS: ' '
+text_75:
+  '<<': '*default_float32'
+  CATDESC: Text 75
+  FIELDNAM: text_75
+  LABLAXIS: text_75
+  UNITS: ' '
+text_76:
+  '<<': '*default_float32'
+  CATDESC: Text 76
+  FIELDNAM: text_76
+  LABLAXIS: text_76
+  UNITS: ' '
+text_8:
+  '<<': '*default_float32'
+  CATDESC: Text 8
+  FIELDNAM: text_8
+  LABLAXIS: text_8
+  UNITS: ' '
+text_9:
+  '<<': '*default_float32'
+  CATDESC: Text 9
+  FIELDNAM: text_9
+  LABLAXIS: text_9
+  UNITS: ' '
+textlength:
+  '<<': '*default_float32'
+  CATDESC: Textlength
+  FIELDNAM: textlength
+  LABLAXIS: textlength
+  UNITS: ' '
+tlmvolume:
+  '<<': '*default_float32'
+  CATDESC: Tlmvolume
+  FIELDNAM: tlmvolume
+  LABLAXIS: tlmvolume
+  UNITS: ' '
+tofbtoff:
+  '<<': '*default_float32'
+  CATDESC: Tofbtoff
+  FIELDNAM: tofbtoff
+  LABLAXIS: tofbtoff
+  UNITS: ' '
+tofdiffbtmax:
+  '<<': '*default_float32'
+  CATDESC: Tofdiffbtmax
+  FIELDNAM: tofdiffbtmax
+  LABLAXIS: tofdiffbtmax
+  UNITS: ' '
+tofdiffbtmin:
+  '<<': '*default_float32'
+  CATDESC: Tofdiffbtmin
+  FIELDNAM: tofdiffbtmin
+  LABLAXIS: tofdiffbtmin
+  UNITS: ' '
+tofdifftpmax:
+  '<<': '*default_float32'
+  CATDESC: Tofdifftpmax
+  FIELDNAM: tofdifftpmax
+  LABLAXIS: tofdifftpmax
+  UNITS: ' '
+tofdifftpmin:
+  '<<': '*default_float32'
+  CATDESC: Tofdifftpmin
+  FIELDNAM: tofdifftpmin
+  LABLAXIS: tofdifftpmin
+  UNITS: ' '
+tofsc:
+  '<<': '*default_float32'
+  CATDESC: Tofsc
+  FIELDNAM: tofsc
+  LABLAXIS: tofsc
+  UNITS: ' '
+tofssdltoff0:
+  '<<': '*default_float32'
+  CATDESC: Tofssdltoff0
+  FIELDNAM: tofssdltoff0
+  LABLAXIS: tofssdltoff0
+  UNITS: ' '
+tofssdltoff1:
+  '<<': '*default_float32'
+  CATDESC: Tofssdltoff1
+  FIELDNAM: tofssdltoff1
+  LABLAXIS: tofssdltoff1
+  UNITS: ' '
+tofssdltoff2:
+  '<<': '*default_float32'
+  CATDESC: Tofssdltoff2
+  FIELDNAM: tofssdltoff2
+  LABLAXIS: tofssdltoff2
+  UNITS: ' '
+tofssdltoff3:
+  '<<': '*default_float32'
+  CATDESC: Tofssdltoff3
+  FIELDNAM: tofssdltoff3
+  LABLAXIS: tofssdltoff3
+  UNITS: ' '
+tofssdltoff4:
+  '<<': '*default_float32'
+  CATDESC: Tofssdltoff4
+  FIELDNAM: tofssdltoff4
+  LABLAXIS: tofssdltoff4
+  UNITS: ' '
+tofssdltoff5:
+  '<<': '*default_float32'
+  CATDESC: Tofssdltoff5
+  FIELDNAM: tofssdltoff5
+  LABLAXIS: tofssdltoff5
+  UNITS: ' '
+tofssdltoff6:
+  '<<': '*default_float32'
+  CATDESC: Tofssdltoff6
+  FIELDNAM: tofssdltoff6
+  LABLAXIS: tofssdltoff6
+  UNITS: ' '
+tofssdltoff7:
+  '<<': '*default_float32'
+  CATDESC: Tofssdltoff7
+  FIELDNAM: tofssdltoff7
+  LABLAXIS: tofssdltoff7
+  UNITS: ' '
+tofssdrtoff0:
+  '<<': '*default_float32'
+  CATDESC: Tofssdrtoff0
+  FIELDNAM: tofssdrtoff0
+  LABLAXIS: tofssdrtoff0
+  UNITS: ' '
+tofssdrtoff1:
+  '<<': '*default_float32'
+  CATDESC: Tofssdrtoff1
+  FIELDNAM: tofssdrtoff1
+  LABLAXIS: tofssdrtoff1
+  UNITS: ' '
+tofssdrtoff2:
+  '<<': '*default_float32'
+  CATDESC: Tofssdrtoff2
+  FIELDNAM: tofssdrtoff2
+  LABLAXIS: tofssdrtoff2
+  UNITS: ' '
+tofssdrtoff3:
+  '<<': '*default_float32'
+  CATDESC: Tofssdrtoff3
+  FIELDNAM: tofssdrtoff3
+  LABLAXIS: tofssdrtoff3
+  UNITS: ' '
+tofssdrtoff4:
+  '<<': '*default_float32'
+  CATDESC: Tofssdrtoff4
+  FIELDNAM: tofssdrtoff4
+  LABLAXIS: tofssdrtoff4
+  UNITS: ' '
+tofssdrtoff5:
+  '<<': '*default_float32'
+  CATDESC: Tofssdrtoff5
+  FIELDNAM: tofssdrtoff5
+  LABLAXIS: tofssdrtoff5
+  UNITS: ' '
+tofssdrtoff6:
+  '<<': '*default_float32'
+  CATDESC: Tofssdrtoff6
+  FIELDNAM: tofssdrtoff6
+  LABLAXIS: tofssdrtoff6
+  UNITS: ' '
+tofssdrtoff7:
+  '<<': '*default_float32'
+  CATDESC: Tofssdrtoff7
+  FIELDNAM: tofssdrtoff7
+  LABLAXIS: tofssdrtoff7
+  UNITS: ' '
+tofssdsc:
+  '<<': '*default_float32'
+  CATDESC: Tofssdsc
+  FIELDNAM: tofssdsc
+  LABLAXIS: tofssdsc
+  UNITS: ' '
+tofssdtotoff:
+  '<<': '*default_float32'
+  CATDESC: Tofssdtotoff
+  FIELDNAM: tofssdtotoff
+  LABLAXIS: tofssdtotoff
+  UNITS: ' '
+toftpoff:
+  '<<': '*default_float32'
+  CATDESC: Toftpoff
+  FIELDNAM: toftpoff
+  LABLAXIS: toftpoff
+  UNITS: ' '
+topmcp_i:
+  '<<': '*default_float32'
+  CATDESC: Topmcp i
+  FIELDNAM: topmcp_i
+  LABLAXIS: topmcp_i
+  UNITS: ' '
+topmcp_i_hi:
+  '<<': '*default_float32'
+  CATDESC: Topmcp i hi
+  FIELDNAM: topmcp_i_hi
+  LABLAXIS: topmcp_i_hi
+  UNITS: ' '
+topmcp_i_lo:
+  '<<': '*default_float32'
+  CATDESC: Topmcp i lo
+  FIELDNAM: topmcp_i_lo
+  LABLAXIS: topmcp_i_lo
+  UNITS: ' '
+topmcp_v:
+  '<<': '*default_float32'
+  CATDESC: Topmcp v
+  FIELDNAM: topmcp_v
+  LABLAXIS: topmcp_v
+  UNITS: ' '
+topmcp_v_hi:
+  '<<': '*default_float32'
+  CATDESC: Topmcp v hi
+  FIELDNAM: topmcp_v_hi
+  LABLAXIS: topmcp_v_hi
+  UNITS: ' '
+topmcp_v_lo:
+  '<<': '*default_float32'
+  CATDESC: Topmcp v lo
+  FIELDNAM: topmcp_v_lo
+  LABLAXIS: topmcp_v_lo
+  UNITS: ' '
+topmcphvfault:
+  '<<': '*default_float32'
+  CATDESC: Topmcphvfault
+  FIELDNAM: topmcphvfault
+  LABLAXIS: topmcphvfault
+  UNITS: ' '
+topmcphvgoal:
+  '<<': '*default_float32'
+  CATDESC: Topmcphvgoal
+  FIELDNAM: topmcphvgoal
+  LABLAXIS: topmcphvgoal
+  UNITS: ' '
+topmcphvilim:
+  '<<': '*default_float32'
+  CATDESC: Topmcphvilim
+  FIELDNAM: topmcphvilim
+  LABLAXIS: topmcphvilim
+  UNITS: ' '
+topmcphvlim:
+  '<<': '*default_float32'
+  CATDESC: Topmcphvlim
+  FIELDNAM: topmcphvlim
+  LABLAXIS: topmcphvlim
+  UNITS: ' '
+topmcphvmonitor:
+  '<<': '*default_float32'
+  CATDESC: Topmcphvmonitor
+  FIELDNAM: topmcphvmonitor
+  LABLAXIS: topmcphvmonitor
+  UNITS: ' '
+topmcphvtrip:
+  '<<': '*default_float32'
+  CATDESC: Topmcphvtrip
+  FIELDNAM: topmcphvtrip
+  LABLAXIS: topmcphvtrip
+  UNITS: ' '
+topmcphvv:
+  '<<': '*default_float32'
+  CATDESC: Topmcphvv
+  FIELDNAM: topmcphvv
+  LABLAXIS: topmcphvv
+  UNITS: ' '
+unused:
+  '<<': '*default_float32'
+  CATDESC: Unused
+  FIELDNAM: unused
+  LABLAXIS: unused
+  UNITS: ' '
+value:
+  '<<': '*default_float32'
+  CATDESC: Value
+  FIELDNAM: value
+  LABLAXIS: value
+  UNITS: ' '
+watchaddr:
+  '<<': '*default_float32'
+  CATDESC: Watchaddr
+  FIELDNAM: watchaddr
+  LABLAXIS: watchaddr
+  UNITS: ' '
+watchdata_0:
+  '<<': '*default_float32'
+  CATDESC: Watchdata 0
+  FIELDNAM: watchdata_0
+  LABLAXIS: watchdata_0
+  UNITS: ' '
+watchdata_1:
+  '<<': '*default_float32'
+  CATDESC: Watchdata 1
+  FIELDNAM: watchdata_1
+  LABLAXIS: watchdata_1
+  UNITS: ' '
+watchmemid:
+  '<<': '*default_float32'
+  CATDESC: Watchmemid
+  FIELDNAM: watchmemid
+  LABLAXIS: watchmemid
+  UNITS: ' '
+xcoinbtoff:
+  '<<': '*default_float32'
+  CATDESC: Xcoinbtoff
+  FIELDNAM: xcoinbtoff
+  LABLAXIS: xcoinbtoff
+  UNITS: ' '
+xcoinbtsc:
+  '<<': '*default_float32'
+  CATDESC: Xcoinbtsc
+  FIELDNAM: xcoinbtsc
+  LABLAXIS: xcoinbtsc
+  UNITS: ' '
+xcointpoff:
+  '<<': '*default_float32'
+  CATDESC: Xcointpoff
+  FIELDNAM: xcointpoff
+  LABLAXIS: xcointpoff
+  UNITS: ' '
+xcointpsc:
+  '<<': '*default_float32'
+  CATDESC: Xcointpsc
+  FIELDNAM: xcointpsc
+  LABLAXIS: xcointpsc
+  UNITS: ' '
+xftltoff:
+  '<<': '*default_float32'
+  CATDESC: Xftltoff
+  FIELDNAM: xftltoff
+  LABLAXIS: xftltoff
+  UNITS: ' '
+xftrtoff:
+  '<<': '*default_float32'
+  CATDESC: Xftrtoff
+  FIELDNAM: xftrtoff
+  LABLAXIS: xftrtoff
+  UNITS: ' '
+xftsc:
+  '<<': '*default_float32'
+  CATDESC: Xftsc
+  FIELDNAM: xftsc
+  LABLAXIS: xftsc
+  UNITS: ' '
+xfttof:
+  '<<': '*default_float32'
+  CATDESC: Xfttof
+  FIELDNAM: xfttof
+  LABLAXIS: xfttof
+  UNITS: ' '
+ybkssd0:
+  '<<': '*default_float32'
+  CATDESC: Ybkssd0
+  FIELDNAM: ybkssd0
+  LABLAXIS: ybkssd0
+  UNITS: ' '
+ybkssd1:
+  '<<': '*default_float32'
+  CATDESC: Ybkssd1
+  FIELDNAM: ybkssd1
+  LABLAXIS: ybkssd1
+  UNITS: ' '
+ybkssd2:
+  '<<': '*default_float32'
+  CATDESC: Ybkssd2
+  FIELDNAM: ybkssd2
+  LABLAXIS: ybkssd2
+  UNITS: ' '
+ybkssd3:
+  '<<': '*default_float32'
+  CATDESC: Ybkssd3
+  FIELDNAM: ybkssd3
+  LABLAXIS: ybkssd3
+  UNITS: ' '
+ybkssd4:
+  '<<': '*default_float32'
+  CATDESC: Ybkssd4
+  FIELDNAM: ybkssd4
+  LABLAXIS: ybkssd4
+  UNITS: ' '
+ybkssd5:
+  '<<': '*default_float32'
+  CATDESC: Ybkssd5
+  FIELDNAM: ybkssd5
+  LABLAXIS: ybkssd5
+  UNITS: ' '
+ybkssd6:
+  '<<': '*default_float32'
+  CATDESC: Ybkssd6
+  FIELDNAM: ybkssd6
+  LABLAXIS: ybkssd6
+  UNITS: ' '
+ybkssd7:
+  '<<': '*default_float32'
+  CATDESC: Ybkssd7
+  FIELDNAM: ybkssd7
+  LABLAXIS: ybkssd7
+  UNITS: ' '

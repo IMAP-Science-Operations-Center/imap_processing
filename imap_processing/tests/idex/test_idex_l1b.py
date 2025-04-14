@@ -32,7 +32,7 @@ def l1b_dataset(mock_get_spice_data, decom_test_data: xr.Dataset) -> xr.Dataset:
     """
 
     mock_get_spice_data.side_effect = get_spice_data_side_effect_func
-    dataset = idex_l1b(decom_test_data, data_version="001")
+    dataset = idex_l1b(decom_test_data)
     return dataset
 
 
@@ -80,7 +80,7 @@ def test_idex_cdf_file(l1b_dataset: xr.Dataset):
     file_name = write_cdf(l1b_dataset)
 
     assert file_name.exists()
-    assert file_name.name == "imap_idex_l1b_sci-1week_20231218_v001.cdf"
+    assert file_name.name == "imap_idex_l1b_sci-1week_20231218_v999.cdf"
 
 
 def test_idex_waveform_units(l1b_dataset: xr.Dataset):

@@ -11,7 +11,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.spice.time import met_to_ttj2000ns
 
 
-def lo_l1b(dependencies: dict, data_version: str) -> list[Path]:
+def lo_l1b(dependencies: dict) -> list[Path]:
     """
     Will process IMAP-Lo L1A data into L1B CDF data products.
 
@@ -19,8 +19,6 @@ def lo_l1b(dependencies: dict, data_version: str) -> list[Path]:
     ----------
     dependencies : dict
         Dictionary of datasets needed for L1B data product creation in xarray Datasets.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -31,7 +29,6 @@ def lo_l1b(dependencies: dict, data_version: str) -> list[Path]:
     attr_mgr_l1b = ImapCdfAttributes()
     attr_mgr_l1b.add_instrument_global_attrs(instrument="lo")
     attr_mgr_l1b.add_instrument_variable_attrs(instrument="lo", level="l1b")
-    attr_mgr_l1b.add_global_attribute("Data_version", data_version)
     # create the attribute manager to access L1A fillval attributes
     attr_mgr_l1a = ImapCdfAttributes()
     attr_mgr_l1a.add_instrument_variable_attrs(instrument="lo", level="l1a")

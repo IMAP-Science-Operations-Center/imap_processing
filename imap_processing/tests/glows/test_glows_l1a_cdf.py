@@ -33,7 +33,7 @@ def l1a_data(packet_path):
 
 def test_generate_histogram_dataset(l1a_data):
     histogram_l1a, _ = l1a_data
-    glows_attrs = create_glows_attr_obj("v001")
+    glows_attrs = create_glows_attr_obj()
     dataset = generate_histogram_dataset(histogram_l1a, glows_attrs)
 
     assert (dataset["histogram"].data[0] == histogram_l1a[0].histogram).all()
@@ -64,7 +64,7 @@ def test_generate_histogram_dataset(l1a_data):
 
 def test_generate_de_dataset(l1a_data):
     _, de_l1a = l1a_data
-    glows_attrs = create_glows_attr_obj("v001")
+    glows_attrs = create_glows_attr_obj()
     dataset = generate_de_dataset(de_l1a, glows_attrs)
     assert len(dataset["epoch"].values) == len(de_l1a)
 

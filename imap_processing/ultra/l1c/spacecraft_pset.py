@@ -22,7 +22,6 @@ def calculate_spacecraft_pset(
     extendedspin_dataset: xr.Dataset,
     cullingmask_dataset: xr.Dataset,
     name: str,
-    data_version: str,
 ) -> xr.Dataset:
     """
     Create dictionary with defined datatype for Pointing Set Grid Data.
@@ -37,8 +36,6 @@ def calculate_spacecraft_pset(
         Dataset containing cullingmask data.
     name : str
         Name of the dataset.
-    data_version : str
-        Version of the data.
 
     Returns
     -------
@@ -82,6 +79,6 @@ def calculate_spacecraft_pset(
     pset_dict["healpix"] = healpix
     pset_dict["energy_bin_delta"] = np.diff(intervals, axis=1).squeeze()
 
-    dataset = create_dataset(pset_dict, name, "l1c", data_version)
+    dataset = create_dataset(pset_dict, name, "l1c")
 
     return dataset

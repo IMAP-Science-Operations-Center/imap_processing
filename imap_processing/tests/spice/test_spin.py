@@ -27,13 +27,51 @@ def fake_spin_data(monkeypatch, spice_test_data_path):
     [
         (
             15,
-            [[1, 15, 0, 15.0, 1, 1, 0, 0, 15.0, 0.0]],
+            [
+                [
+                    1,
+                    15,
+                    0,
+                    "2024-04-11 00:00:15.000000",
+                    15.0,
+                    True,
+                    1,
+                    0,
+                    False,
+                    15.0,
+                    0.0,
+                ]
+            ],
         ),  # Scalar test at spin start time
         (
             np.array([15.1, 30.2]),
             [
-                [1, 15, 0, 15.0, 1, 1, 0, 0, 15.0, 0.1 / 15],
-                [2, 30, 0, 15.0, 1, 1, 0, 0, 30.0, 0.2 / 15],
+                [
+                    1,
+                    15,
+                    0,
+                    "2024-04-11 00:00:15.000000",
+                    15.0,
+                    True,
+                    1,
+                    0,
+                    False,
+                    15.0,
+                    0.1 / 15,
+                ],
+                [
+                    2,
+                    30,
+                    0,
+                    "2024-04-11 00:00:30.000000",
+                    15.0,
+                    True,
+                    1,
+                    0,
+                    False,
+                    30.0,
+                    0.2 / 15,
+                ],
             ],
         ),  # Array test
     ],
@@ -45,7 +83,9 @@ def test_interpolate_spin_data(query_met_times, expected, fake_spin_data):
 
     # Test the value
     for i_row, row in enumerate(expected):
-        np.testing.assert_array_almost_equal(spin_df.iloc[i_row].tolist(), row)
+        pd.testing.assert_series_equal(
+            spin_df.iloc[i_row], pd.Series(row), check_index=False, check_names=False
+        )
 
 
 @pytest.mark.parametrize(
@@ -144,14 +184,15 @@ def test_get_spin_data(use_fake_spin_data_for_time):
 
     assert set(spin_data.columns) == {
         "spin_number",
-        "spin_start_sec",
-        "spin_start_subsec",
+        "spin_start_sec_sclk",
+        "spin_start_subsec_sclk",
+        "spin_start_utc",
         "spin_period_sec",
         "spin_period_valid",
         "spin_phase_valid",
         "spin_period_source",
         "thruster_firing",
-        "spin_start_time",
+        "spin_start_met",
     }, "Spin data must have the specified fields."
 
 

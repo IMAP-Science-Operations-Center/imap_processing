@@ -42,7 +42,7 @@ SPIN_PHASE_BIN_CENTERS = (SPIN_PHASE_BIN_EDGES[:-1] + SPIN_PHASE_BIN_EDGES[1:]) 
 logger = logging.getLogger(__name__)
 
 
-def hi_l1c(dependencies: list, data_version: str) -> xr.Dataset:
+def hi_l1c(dependencies: list) -> list[xr.Dataset]:
     """
     High level IMAP-Hi l1c processing function.
 
@@ -55,10 +55,6 @@ def hi_l1c(dependencies: list, data_version: str) -> xr.Dataset:
     ----------
     dependencies : list
         Input dependencies needed for l1c processing.
-
-    data_version : str
-        Data version to write to CDF files and the Data_version CDF attribute.
-        Should be in the format Vxxx.
 
     Returns
     -------
@@ -76,9 +72,7 @@ def hi_l1c(dependencies: list, data_version: str) -> xr.Dataset:
             "Input dependencies not recognized for l1c pset processing."
         )
 
-    # TODO: revisit this
-    l1c_dataset.attrs["Data_version"] = data_version
-    return l1c_dataset
+    return [l1c_dataset]
 
 
 def generate_pset_dataset(
@@ -526,6 +520,9 @@ def pset_exposure(
         )[0]
         exposure_var["exposure_times"].values[:, i_esa] += new_exposure_times
 
+    # Convert exposure clock ticks to seconds
+    exposure_var["exposure_times"].values *= DE_CLOCK_TICK_S
+
     return exposure_var
 
 
@@ -604,7 +601,7 @@ def get_de_clock_ticks_for_esa_step(
     # The CCSDS packet gets created just AFTER the final spin in the 8-spin
     # ESA step group so this match is the end time. The start time is
     # 8-spins earlier.
-    spin_start_mets = spin_df.spin_start_time.to_numpy()
+    spin_start_mets = spin_df.spin_start_met.to_numpy()
     # CCSDS MET has one second resolution, add one to it to make sure it is
     # greater than the spin start time it ended on.
     end_time_ind = np.flatnonzero(ccsds_met + 1 >= spin_start_mets).max()

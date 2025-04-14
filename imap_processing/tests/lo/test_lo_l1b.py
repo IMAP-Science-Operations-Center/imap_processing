@@ -44,7 +44,6 @@ def attr_mgr_l1b():
     attr_mgr_l1b = ImapCdfAttributes()
     attr_mgr_l1b.add_instrument_global_attrs(instrument="lo")
     attr_mgr_l1b.add_instrument_variable_attrs(instrument="lo", level="l1b")
-    attr_mgr_l1b.add_global_attribute("Data_version", "000")
     return attr_mgr_l1b
 
 
@@ -71,7 +70,7 @@ def test_lo_l1b():
 
     expected_logical_source = "imap_lo_l1b_de"
     # Act
-    output_file = lo_l1b(data, "001")
+    output_file = lo_l1b(data)
 
     # Assert
     assert expected_logical_source == output_file[0].attrs["Logical_source"]
@@ -216,7 +215,6 @@ def test_get_spin_angle():
         spin_angle,
         spin_angle_expected,
         atol=1e-2,
-        err_msg=f"Spin angle: {spin_angle} vs {spin_angle_expected}",
     )
 
 
@@ -302,8 +300,6 @@ def test_get_spin_start_times():
         spin_start_times,
         spin_start_times_expected,
         atol=1e-4,
-        err_msg=f"Spin start times: {spin_start_times} vs\
-         expected spin start times {spin_start_times_expected}",
     )
 
 
@@ -338,8 +334,6 @@ def test_set_event_met():
         l1b_de["event_met"].values,
         expected_event_met,
         atol=1e-4,
-        err_msg=f"Event MET: {l1b_de['event_met'].values} vs\
-         expected Event MET {expected_event_met}",
     )
 
     def test_set_each_event_epoch():
@@ -359,8 +353,6 @@ def test_set_event_met():
             l1b_de["epoch"].values,
             epoch_expected,
             atol=1e-4,
-            err_msg=f"Epoch: {l1b_de['epoch'].values} vs\
-             expected Epoch {epoch_expected}",
         )
 
 
@@ -424,6 +416,4 @@ def test_set_coincidence_type(attr_mgr_l1a):
     np.testing.assert_array_equal(
         l1b_de["coincidence_type"].values,
         coincidence_type_expected,
-        err_msg=f"Coincidence type: {l1b_de['coincidence_type'].values} vs\
-         expected Coincidence type {coincidence_type_expected}",
     )

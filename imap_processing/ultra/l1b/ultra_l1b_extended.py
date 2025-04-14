@@ -805,14 +805,14 @@ def get_eventtimes(
     Notes
     -----
     Equation for event time:
-    t = t_(spin start) + t_(spin start sub)/1000 +
+    t = t_(spin start) + t_(spin start sub)/1e6 +
     t_spin_period_sec * phase_angle/720
     """
     spin_df = get_spin_data()
     index = np.searchsorted(spin_df["spin_number"].values, spin)
     spin_starts = (
-        spin_df["spin_start_sec"].values[index]
-        + spin_df["spin_start_subsec"].values[index] / 1000
+        spin_df["spin_start_sec_sclk"].values[index]
+        + spin_df["spin_start_subsec_sclk"].values[index] / 1e6
     )
 
     spin_period_sec = spin_df["spin_period_sec"].values[index]

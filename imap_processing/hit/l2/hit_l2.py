@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 #  - add function to calculate combined uncertainty and add this to L2 datasets
 
 
-def hit_l2(dependency: xr.Dataset, data_version: str) -> list[xr.Dataset]:
+def hit_l2(dependency: xr.Dataset) -> list[xr.Dataset]:
     """
     Will process HIT data to L2.
 
@@ -37,8 +37,6 @@ def hit_l2(dependency: xr.Dataset, data_version: str) -> list[xr.Dataset]:
     dependency : xr.Dataset
         L1B xarray science dataset that is either summed rates
         standard rates or sector rates.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -47,7 +45,7 @@ def hit_l2(dependency: xr.Dataset, data_version: str) -> list[xr.Dataset]:
     """
     logger.info("Creating HIT L2 science datasets")
     # Create the attribute manager for this data level
-    attr_mgr = get_attribute_manager(data_version, "l2")
+    attr_mgr = get_attribute_manager("l2")
 
     # TODO: Write functions to process sectored rates dataset
     #       with logical source: "imap_hit_l2_macropixel-intensity"

@@ -321,10 +321,10 @@ def test_swe_l2(mock_read_in_flight_cal_data, use_fake_spin_data_for_time):
     use_fake_spin_data_for_time(data_start_time, data_end_time)
 
     test_data_path = "tests/swe/l0_data/2024051010_SWE_SCIENCE_packet.bin"
-    l1a_datasets = swe_l1a(imap_module_directory / test_data_path, "002")
+    l1a_datasets = swe_l1a(imap_module_directory / test_data_path)
 
-    l1b_dataset = swe_l1b(l1a_datasets[0], "002")
-    l2_dataset = swe_l2(l1b_dataset[0], "002")
+    l1b_dataset = swe_l1b(l1a_datasets[0])
+    l2_dataset = swe_l2(l1b_dataset[0])
 
     assert isinstance(l2_dataset, xr.Dataset)
     assert l2_dataset["phase_space_density_spin_sector"].shape == (
@@ -346,5 +346,6 @@ def test_swe_l2(mock_read_in_flight_cal_data, use_fake_spin_data_for_time):
     )
 
     # Write L2 to CDF
+    l2_dataset.attrs["Data_version"] = "v002"
     l2_cdf_filepath = write_cdf(l2_dataset)
     assert l2_cdf_filepath.name == "imap_swe_l2_sci_20240510_v002.cdf"

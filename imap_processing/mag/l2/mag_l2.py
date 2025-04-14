@@ -12,7 +12,6 @@ def mag_l2(
     calibration_dataset: xr.Dataset,
     offset_dataset: xr.Dataset,
     input_data: xr.Dataset,
-    data_version: str,
 ) -> list[xr.Dataset]:
     """
     Complete MAG L2 processing.
@@ -28,8 +27,6 @@ def mag_l2(
         Offset ancillary file input.
     input_data : xr.Dataset
         Input data from MAG L1C or L1B.
-    data_version : str
-        Version of output file.
 
     Returns
     -------
@@ -43,7 +40,7 @@ def mag_l2(
         input_data["vectors"].data[:, :3],  # level 2 vectors don't include range
         input_data["epoch"].data,
         input_data["vectors"].data[:, 3],
-        {"Data_version": data_version},
+        {},
         np.zeros(len(input_data["epoch"].data)),
         np.zeros(len(input_data["epoch"].data)),
         DataMode.NORM,

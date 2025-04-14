@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def lo_l1a(dependency: Path, data_version: str) -> list[xr.Dataset]:
+def lo_l1a(dependency: Path) -> list[xr.Dataset]:
     """
     Will process IMAP-Lo L0 data into L1A CDF data products.
 
@@ -30,8 +30,6 @@ def lo_l1a(dependency: Path, data_version: str) -> list[xr.Dataset]:
     dependency : Path
         Dependency file needed for data product creation.
         Should always be only one for L1A.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -51,7 +49,6 @@ def lo_l1a(dependency: Path, data_version: str) -> list[xr.Dataset]:
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs(instrument="lo")
     attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1a")
-    attr_mgr.add_global_attribute("Data_version", data_version)
 
     if LoAPID.ILO_SPIN in datasets_by_apid:
         logger.info(

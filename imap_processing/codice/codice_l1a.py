@@ -537,9 +537,7 @@ class CoDICEL1aPipeline:
         # No longer need to keep the raw data around
         del self.raw_data
 
-    def set_data_product_config(
-        self, apid: int, dataset: xr.Dataset, data_version: str
-    ) -> None:
+    def set_data_product_config(self, apid: int, dataset: xr.Dataset) -> None:
         """
         Set the various settings for defining the data products.
 
@@ -549,8 +547,6 @@ class CoDICEL1aPipeline:
             The APID of interest.
         dataset : xarray.Dataset
             The dataset for the APID of interest.
-        data_version : str
-            Version of the data product being created.
         """
         # Set the packet dataset so that it can be easily called from various
         # methods
@@ -563,12 +559,9 @@ class CoDICEL1aPipeline:
         self.cdf_attrs = ImapCdfAttributes()
         self.cdf_attrs.add_instrument_global_attrs("codice")
         self.cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
-        self.cdf_attrs.add_global_attribute("Data_version", data_version)
 
 
-def create_event_dataset(
-    apid: int, packet: xr.Dataset, data_version: str
-) -> xr.Dataset:
+def create_event_dataset(apid: int, packet: xr.Dataset) -> xr.Dataset:
     """
     Create dataset for event data.
 
@@ -578,8 +571,6 @@ def create_event_dataset(
         The APID of the packet.
     packet : xarray.Dataset
         The packet to process.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -597,7 +588,6 @@ def create_event_dataset(
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
     cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
-    cdf_attrs.add_global_attribute("Data_version", data_version)
 
     # Define coordinates
     epoch = xr.DataArray(
@@ -618,10 +608,7 @@ def create_event_dataset(
     return dataset
 
 
-def create_hskp_dataset(
-    packet: xr.Dataset,
-    data_version: str,
-) -> xr.Dataset:
+def create_hskp_dataset(packet: xr.Dataset) -> xr.Dataset:
     """
     Create dataset for each metadata field for housekeeping data.
 
@@ -629,8 +616,6 @@ def create_hskp_dataset(
     ----------
     packet : xarray.Dataset
         The packet to process.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -640,7 +625,6 @@ def create_hskp_dataset(
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
     cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
-    cdf_attrs.add_global_attribute("Data_version", data_version)
 
     epoch = xr.DataArray(
         packet.epoch,
@@ -741,7 +725,7 @@ def log_dataset_info(datasets: dict[int, xr.Dataset]) -> None:
         )
 
 
-def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
+def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
     """
     Will process CoDICE l0 data to create l1a data products.
 
@@ -749,8 +733,6 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
     ----------
     file_path : pathlib.Path | str
         Path to the CoDICE L0 file to process.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -774,12 +756,12 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
 
         # Housekeeping data
         if apid == CODICEAPID.COD_NHK:
-            processed_dataset = create_hskp_dataset(dataset, data_version)
+            processed_dataset = create_hskp_dataset(dataset)
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # Event data
         elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
-            processed_dataset = create_event_dataset(apid, dataset, data_version)
+            processed_dataset = create_event_dataset(apid, dataset)
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # Everything else
@@ -792,7 +774,7 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
 
             # Run the pipeline to create a dataset for the product
             pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-            pipeline.set_data_product_config(apid, dataset, data_version)
+            pipeline.set_data_product_config(apid, dataset)
             pipeline.decompress_data(science_values)
             pipeline.reshape_data()
             pipeline.define_coordinates()

@@ -303,7 +303,7 @@ def find_angle_bin_indices(
     return spin_angle_bins_indices
 
 
-def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+def swe_l2(l1b_dataset: xr.Dataset) -> xr.Dataset:
     """
     Will process data to L2.
 
@@ -311,8 +311,6 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     ----------
     l1b_dataset : xarray.Dataset
         The L1B dataset to process.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -322,7 +320,6 @@ def swe_l2(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     cdf_attributes = ImapCdfAttributes()
     cdf_attributes.add_instrument_global_attrs("swe")
     cdf_attributes.add_instrument_variable_attrs("swe", "l2")
-    cdf_attributes.add_global_attribute("Data_version", data_version)
 
     # Energy values in eV.
     energy_xr = xr.DataArray(

@@ -444,10 +444,12 @@ def test_get_eventtimes(test_fixture, use_fake_spin_data_for_time):
     spin_period_sec_max = expected_max_df["spin_period_sec"].values[0]
 
     spin_start_min = (
-        expected_min_df["spin_start_sec"] + expected_min_df["spin_start_subsec"] / 1000
+        expected_min_df["spin_start_sec_sclk"]
+        + expected_min_df["spin_start_subsec_sclk"] / 1e6
     )
     spin_start_max = (
-        expected_max_df["spin_start_sec"] + expected_max_df["spin_start_subsec"] / 1000
+        expected_max_df["spin_start_sec_sclk"]
+        + expected_max_df["spin_start_subsec_sclk"] / 1e6
     )
 
     assert spin_start_min.values[0] == spin_starts.min()

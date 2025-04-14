@@ -17,7 +17,7 @@ import requests
 import spiceypy
 
 from imap_processing import imap_module_directory
-from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns
 
 
 @pytest.fixture(autouse=True)
@@ -494,8 +494,9 @@ def generate_spin_data():
         Spin table contains the following fields:
             (
             spin_number,
-            spin_start_sec,
-            spin_start_subsec,
+            spin_start_sec_sclk,
+            spin_start_subsec_sclk,
+            spin_start_utc,
             spin_period_sec,
             spin_period_valid,
             spin_phase_valid,
@@ -523,18 +524,25 @@ def generate_spin_data():
             end_met = start_met + 86400
 
         # Create spin start second data of 15 seconds increment
-        spin_start_sec = np.arange(np.floor(start_met), end_met + 1, 15)
-        spin_start_subsec = int((start_met - spin_start_sec[0]) * 1000)
+        spin_start_met = np.arange(start_met, end_met + 1, 15)
+        spin_start_sec = np.floor(spin_start_met).astype(int)
+        spin_start_subsec = int((start_met - spin_start_sec[0]) * 1e6)
+
+        # Calculate UTC times without spice (accepting ~5 second inaccuracy)
+        spin_start_dt64 = TTJ2000_EPOCH + (spin_start_met * 1e9).astype(
+            "timedelta64[ns]"
+        )
 
         nspins = len(spin_start_sec)
 
         spin_df = pd.DataFrame.from_dict(
             {
                 "spin_number": np.arange(nspins, dtype=np.uint32),
-                "spin_start_sec": spin_start_sec,
-                "spin_start_subsec": np.full(
+                "spin_start_sec_sclk": spin_start_sec,
+                "spin_start_subsec_sclk": np.full(
                     nspins, spin_start_subsec, dtype=np.uint32
                 ),
+                "spin_start_utc": np.datetime_as_string(spin_start_dt64, unit="us"),
                 "spin_period_sec": np.full(nspins, 15.0, dtype=np.float32),
                 "spin_period_valid": np.ones(nspins, dtype=np.uint8),
                 "spin_phase_valid": np.ones(nspins, dtype=np.uint8),
@@ -544,7 +552,7 @@ def generate_spin_data():
         )
 
         # Convert spin_start_sec to datetime to set repointing times flags
-        spin_start_dates = met_to_ttj2000ns(spin_start_sec + spin_start_subsec / 1000)
+        spin_start_dates = met_to_ttj2000ns(spin_start_sec + spin_start_subsec / 1e6)
         spin_start_dates = cdflib.cdfepoch.to_datetime(spin_start_dates)
 
         # Convert DatetimeIndex to Series for using .dt accessor
@@ -606,12 +614,21 @@ def generate_repoint_data(
     repoint_start_times = np.array(repoint_start_met)
     if repoint_end_met is None:
         repoint_end_met = repoint_start_times + 15 * 60
+    # Calculate UTC times without spice (accepting ~5 second inaccuracy)
+    repoint_start_dt64 = TTJ2000_EPOCH + (repoint_start_times * 1e9).astype(
+        "timedelta64[ns]"
+    )
+    repoint_end_dt64 = TTJ2000_EPOCH + (repoint_end_met * 1e9).astype("timedelta64[ns]")
     repoint_df = pd.DataFrame.from_dict(
         {
-            "repoint_start_sec": repoint_start_times.astype(int),
-            "repoint_start_subsec": ((repoint_start_times % 1.0) * 1e3).astype(int),
-            "repoint_end_sec": repoint_end_met.astype(int),
-            "repoint_end_subsec": ((repoint_end_met % 1.0) * 1e3).astype(int),
+            "repoint_start_sec_sclk": repoint_start_times.astype(int),
+            "repoint_start_subsec_sclk": ((repoint_start_times % 1.0) * 1e6).astype(
+                int
+            ),
+            "repoint_start_utc": np.datetime_as_string(repoint_start_dt64, unit="us"),
+            "repoint_end_sec_sclk": repoint_end_met.astype(int),
+            "repoint_end_subsec_sclk": ((repoint_end_met % 1.0) * 1e6).astype(int),
+            "repoint_end_utc": np.datetime_as_string(repoint_end_dt64, unit="us"),
             "repoint_id": np.arange(repoint_start_times.size, dtype=int)
             + repoint_id_start,
         }

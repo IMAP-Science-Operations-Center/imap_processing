@@ -41,7 +41,7 @@ def test_histogram_list(histogram_test_data, decom_test_data):
 
 
 def test_histogram_obs_day(packet_path):
-    l1a = glows_l1a(packet_path, "v001")
+    l1a = glows_l1a(packet_path)
 
     assert len(l1a) == 3
 

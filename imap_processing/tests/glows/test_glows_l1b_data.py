@@ -80,7 +80,7 @@ def test_glows_l1b_de():
 
 
 def test_validation_data_histogram(l1a_dataset):
-    l1b = [glows_l1b(l1a_dataset[0], "v001"), glows_l1b(l1a_dataset[1], "v001")]
+    l1b = [glows_l1b(l1a_dataset[0]), glows_l1b(l1a_dataset[1])]
     end_time = l1b[0]["epoch"].data[-1]
 
     validation_data = (
@@ -149,7 +149,7 @@ def test_validation_data_histogram(l1a_dataset):
 def test_validation_data_de(l1a_dataset):
     de_data = l1a_dataset[2]
 
-    l1b = glows_l1b(de_data, "v001")
+    l1b = glows_l1b(de_data)
     validation_data = (
         Path(__file__).parent / "validation_data" / "imap_glows_l1b_de_output.json"
     )

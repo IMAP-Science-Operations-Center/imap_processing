@@ -425,7 +425,7 @@ def process_sweep_data(full_sweep_sci: xr.Dataset, cem_prefix: str) -> xr.Datase
 
 
 def process_swapi_science(
-    sci_dataset: xr.Dataset, hk_dataset: xr.Dataset, data_version: str
+    sci_dataset: xr.Dataset, hk_dataset: xr.Dataset
 ) -> xr.Dataset:
     """
     Will process SWAPI science data and create CDF file.
@@ -436,8 +436,6 @@ def process_swapi_science(
         L0 data.
     hk_dataset : xarray.Dataset
         Housekeeping data.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -585,8 +583,6 @@ def process_swapi_science(
     )
 
     # Add other global attributes
-    # TODO: add others like below once add_global_attribute is fixed
-    cdf_manager.add_global_attribute("Data_version", data_version)
     l1_global_attrs = cdf_manager.get_global_attributes("imap_swapi_l1_sci")
     l1_global_attrs["Apid"] = f"{sci_dataset['pkt_apid'].data[0]}"
 
@@ -631,6 +627,18 @@ def process_swapi_science(
         dims=["epoch"],
         attrs=cdf_manager.get_variable_attributes("plan_id"),
     )
+    # Add ESA_LVL5 for L2 and L3 purposes.
+    # We need to store ESA_LVL5 at SEQ_NUMBER==11
+    # which is 71 energy step's ESA_LVL5 value. ESA_LVL5 gets
+    # updated every 6th step. This is used in L2 to calculate last 9 fine
+    # energy steps.
+    dataset["esa_lvl5"] = xr.DataArray(
+        good_sweep_sci["esa_lvl5"].data.reshape(total_full_sweeps, 12)[:, 11],
+        name="esa_lvl5",
+        dims=["epoch"],
+        attrs=cdf_manager.get_variable_attributes("esa_lvl5"),
+    )
+
     # Add these additional housekeeping support data
     #   SWP_HK.LUT_CHOICE - Which LUT is in use
     #   SWP_HK.FPGA_TYPE - Type number of the FPGA
@@ -702,7 +710,7 @@ def process_swapi_science(
     return dataset
 
 
-def swapi_l1(dependencies: list, data_version: str) -> xr.Dataset:
+def swapi_l1(dependencies: list) -> xr.Dataset:
     """
     Will process SWAPI level 0 data to level 1.
 
@@ -710,8 +718,6 @@ def swapi_l1(dependencies: list, data_version: str) -> xr.Dataset:
     ----------
     dependencies : list
         Input dependencies needed for L1 processing.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -743,7 +749,7 @@ def swapi_l1(dependencies: list, data_version: str) -> xr.Dataset:
     ):
         # process science data
         sci_dataset = process_swapi_science(
-            l0_unpacked_dict[SWAPIAPID.SWP_SCI], l1_hk_ds, data_version
+            l0_unpacked_dict[SWAPIAPID.SWP_SCI], l1_hk_ds
         )
         processed_data.append(sci_dataset)
 
@@ -752,7 +758,6 @@ def swapi_l1(dependencies: list, data_version: str) -> xr.Dataset:
         # Add HK datalevel attrs
         imap_attrs = ImapCdfAttributes()
         imap_attrs.add_instrument_global_attrs("swapi")
-        imap_attrs.add_global_attribute("Data_version", data_version)
         imap_attrs.add_instrument_variable_attrs(instrument="swapi", level=None)
         hk_ds.attrs.update(imap_attrs.get_global_attributes("imap_swapi_l1_hk"))
         hk_common_attrs = imap_attrs.get_variable_attributes("hk_attrs")

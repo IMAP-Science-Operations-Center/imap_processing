@@ -18,14 +18,9 @@ from imap_processing.spice.time import (
 )
 
 
-def create_glows_attr_obj(data_version: str) -> ImapCdfAttributes:
+def create_glows_attr_obj() -> ImapCdfAttributes:
     """
     Load in 1la CDF attributes for GLOWS instrument.
-
-    Parameters
-    ----------
-    data_version : str
-        Data version for CDF filename, in the format "vXXX".
 
     Returns
     -------
@@ -37,11 +32,10 @@ def create_glows_attr_obj(data_version: str) -> ImapCdfAttributes:
     # Load in files
     glows_attrs.add_instrument_global_attrs("glows")
     glows_attrs.add_instrument_variable_attrs("glows", "l1a")
-    glows_attrs.add_global_attribute("Data_version", data_version)
     return glows_attrs
 
 
-def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
+def glows_l1a(packet_filepath: Path) -> list[xr.Dataset]:
     """
     Will process packets into GLOWS L1A CDF files.
 
@@ -52,8 +46,6 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     ----------
     packet_filepath : pathlib.Path
         Path to packet file for processing.
-    data_version : str
-        Data version for CDF filename, in the format "vXXX".
 
     Returns
     -------
@@ -61,9 +53,7 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
         List of the L1A datasets.
     """
     # Create ImapCdfAttributes object for cdf attributes management
-    glows_attrs = create_glows_attr_obj(data_version)
-
-    # TODO: Data version inside file as well?
+    glows_attrs = create_glows_attr_obj()
 
     # Decompose packet file into histogram, and direct event data.
     hist_l0, de_l0 = decom_packets(packet_filepath)

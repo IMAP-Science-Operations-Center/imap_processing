@@ -153,7 +153,6 @@ def attr_mgr():
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs(instrument="lo")
     attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1a")
-    attr_mgr.add_global_attribute("Data_version", "v000")
     return attr_mgr
 
 

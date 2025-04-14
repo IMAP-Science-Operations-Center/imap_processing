@@ -40,7 +40,7 @@ def decom_test_data() -> xr.Dataset:
     dataset : xarray.Dataset
         A ``xarray`` dataset containing the test data
     """
-    return PacketParser(TEST_L0_FILE, "001").data
+    return PacketParser(TEST_L0_FILE).data
 
 
 @pytest.fixture(scope="session")
@@ -72,9 +72,7 @@ def l2a_dataset(decom_test_data: xr.Dataset) -> xr.Dataset:
         "imap_processing.idex.idex_l1b.get_spice_data",
         return_value={"spin_phase": spin_phase_angles},
     ):
-        dataset = idex_l2a(
-            idex_l1b(decom_test_data, data_version="001"), data_version="001"
-        )
+        dataset = idex_l2a(idex_l1b(decom_test_data))
     return dataset
 
 
