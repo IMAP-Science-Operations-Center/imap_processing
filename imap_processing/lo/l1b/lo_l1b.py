@@ -534,14 +534,13 @@ def convert_tofs_to_eu(
         fillval_1b = attr_mgr_l1b.get_variable_attributes(tof)["FILLVAL"]
         # Create a mask for the TOF
         mask = l1a_de[tof] != fillval_1a
-        # convert the DE TOF to engineering units
+        # Convert the DE TOF to engineering units and add the EU TOF to the dataset.
+        # If the TOF is not present, set it to the fill value for the L1B TOF data.
         tof_eu = np.where(
             mask,
             conv.C0 + conv.C1 * l1a_de[tof],
             fillval_1b,
         )
-        # Add the EU TOF to the dataset. If the TOF is not present, set it to the fill
-        # value for the L1B TOF data.
         l1b_de[tof] = xr.DataArray(
             tof_eu,
             dims=["epoch"],
