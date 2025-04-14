@@ -534,7 +534,7 @@ def convert_tofs_to_eu(
         fillval_1b = attr_mgr_l1b.get_variable_attributes(tof)["FILLVAL"]
         # Create a mask for the TOF
         mask = l1a_de[tof] != fillval_1a
-        # Convert the DE TOF to engineering units and add the EU TOF to the dataset.
+        # Convert the DN TOF to EU and add the EU TOF to the dataset.
         # If the TOF is not present, set it to the fill value for the L1B TOF data.
         tof_eu = np.where(
             mask,
