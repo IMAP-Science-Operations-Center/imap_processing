@@ -85,11 +85,11 @@ def build_solid_angle_map(
     if not np.isclose(proposed_number_of_lat_bins, number_of_lat_bins):
         raise ValueError("Spacing must divide evenly into pi radians.")
 
-    latitudes = np.linspace(
+    latitude_edges = np.linspace(
         -np.pi / 2, np.pi / 2, num=number_of_lat_bins + 1, endpoint=True
     )
-    sine_latitudes = np.sin(latitudes)
-    delta_sine_latitudes = np.diff(sine_latitudes)
+    sine_latitude_edges = np.sin(latitude_edges)
+    delta_sine_latitudes = np.diff(sine_latitude_edges)
     solid_angle_by_latitude = np.abs(spacing * delta_sine_latitudes)
 
     # Order ensures agreement with build_az_el_grid's order of tiling az/el grid.
