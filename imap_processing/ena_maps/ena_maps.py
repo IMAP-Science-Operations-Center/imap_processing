@@ -784,7 +784,7 @@ class AbstractSkyMap(ABC):
         sky_tiling_type = SkyTilingType[properties["sky_tiling_type"]]
         spice_reference_frame = geometry.SpiceFrame[properties["spice_reference_frame"]]
 
-        skymap: RectangularSkyMap | HealpixSkyMap
+        skymap: RectangularSkyMap | HealpixSkyMap  # Mypy gets confused by if/elif types
         if sky_tiling_type is SkyTilingType.HEALPIX:
             skymap = HealpixSkyMap(
                 nside=properties["nside"],
