@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import pathlib
 from abc import ABC, abstractmethod
 from enum import Enum
+from pathlib import Path
 
 import astropy_healpix.healpy as hp
 import numpy as np
@@ -564,6 +566,10 @@ class AbstractSkyMap(ABC):
         self.binning_grid_shape: tuple[int, ...]
         self.data_1d: xr.Dataset
 
+        # Initialize values to be used by the instrument code to push/pull
+        self.values_to_push_project: list[str] = []
+        self.values_to_pull_project: list[str] = []
+
     def to_dataset(self) -> xr.Dataset:
         """
         Get the SkyMap data as a formatted xarray Dataset.
@@ -735,6 +741,112 @@ class AbstractSkyMap(ABC):
             # For unweighted means, we could use the number of pointing set pixels
             # that correspond to each map pixel as the weights.
             self.data_1d[value_key] += pointing_projected_values
+
+    @classmethod
+    def from_json(cls, json_path: str | Path) -> RectangularSkyMap | HealpixSkyMap:
+        """
+        Create a SkyMap object from a JSON configuration file.
+
+        Parameters
+        ----------
+        json_path : str | Path
+            Path to the JSON configuration file.
+
+        Returns
+        -------
+        RectangularSkyMap | HealpixSkyMap
+            An instance of a SkyMap object with the specified properties.
+        """
+        with open(json_path) as f:
+            properties = json.load(f)
+        return cls.from_dict(properties)
+
+    @classmethod
+    def from_dict(cls, properties: dict) -> RectangularSkyMap | HealpixSkyMap:
+        """
+        Create a SkyMap object from a dictionary of properties.
+
+        Parameters
+        ----------
+        properties : dict
+            Dictionary containing the map properties.
+
+        Returns
+        -------
+        RectangularSkyMap | HealpixSkyMap
+            An instance of a SkyMap object with the specified properties.
+
+        Raises
+        ------
+        ValueError
+            If the sky tiling type is not recognized.
+        """
+        sky_tiling_type = SkyTilingType[properties["sky_tiling_type"]]
+        spice_reference_frame = geometry.SpiceFrame[properties["spice_reference_frame"]]
+
+        skymap: RectangularSkyMap | HealpixSkyMap
+        if sky_tiling_type is SkyTilingType.HEALPIX:
+            skymap = HealpixSkyMap(
+                nside=properties["nside"],
+                nested=properties["nested"],
+                spice_frame=spice_reference_frame,
+            )
+        elif sky_tiling_type is SkyTilingType.RECTANGULAR:
+            skymap = RectangularSkyMap(
+                spacing_deg=properties["spacing_deg"],
+                spice_frame=spice_reference_frame,
+            )
+        else:
+            raise ValueError(f"Unknown sky tiling type: {sky_tiling_type}")
+
+        # Store requested variables to push/pull, which will be done by the instrument
+        # code which creates and uses the SkyMap object.
+        skymap.values_to_push_project = properties.get("values_to_push_project", [])
+        skymap.values_to_pull_project = properties.get("values_to_pull_project", [])
+        return skymap
+
+    def to_dict(self) -> dict:
+        """
+        Convert the SkyMap object to a dictionary of properties.
+
+        Returns
+        -------
+        dict
+            Dictionary containing the map properties.
+        """
+        if isinstance(self, HealpixSkyMap):
+            map_properties_dict = {
+                "sky_tiling_type": "HEALPIX",
+                "spice_reference_frame": self.spice_reference_frame.name,
+                "nside": self.nside,
+                "nested": self.nested,
+            }
+        elif isinstance(self, RectangularSkyMap):
+            map_properties_dict = {
+                "sky_tiling_type": "RECTANGULAR",
+                "spice_reference_frame": self.spice_reference_frame.name,
+                "spacing_deg": self.spacing_deg,
+            }
+        else:
+            raise ValueError("Unknown SkyMap type.")
+
+        if self.values_to_push_project:
+            map_properties_dict["values_to_push_project"] = self.values_to_push_project
+        if self.values_to_pull_project:
+            map_properties_dict["values_to_pull_project"] = self.values_to_pull_project
+        return map_properties_dict
+
+    def to_json(self, json_path: str | Path) -> None:
+        """
+        Save the SkyMap object to a JSON configuration file.
+
+        Parameters
+        ----------
+        json_path : str | Path
+            Path to the JSON file where the properties will be saved.
+        """
+        with open(json_path, "w") as f:
+            json.dump(self.to_dict(), f, indent=4)
 
 
 class RectangularSkyMap(AbstractSkyMap):
