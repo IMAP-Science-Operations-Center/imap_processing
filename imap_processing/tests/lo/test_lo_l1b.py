@@ -427,7 +427,7 @@ def test_set_coincidence_type(attr_mgr_l1a):
 def test_convert_tofs_to_eu(attr_mgr_l1b, attr_mgr_l1a):
     l1b_de = xr.Dataset()
     tof_fill_l1a = attr_mgr_l1a.get_variable_attributes("tof0")["FILLVAL"]
-    tof_fill_1lb = attr_mgr_l1b.get_variable_attributes("tof1")["FILLVAL"]
+    tof_fill_l1b = attr_mgr_l1b.get_variable_attributes("tof1")["FILLVAL"]
     l1a_de = xr.Dataset(
         {
             "de_count": ("epoch", [2]),
@@ -445,7 +445,7 @@ def test_convert_tofs_to_eu(attr_mgr_l1b, attr_mgr_l1a):
     )
 
     tof0_expected = np.array([1.394394, 0.889272])
-    tof1_expected = np.array([0.931059, tof_fill_1lb])
+    tof1_expected = np.array([0.931059, tof_fill_l1b])
     tof2_expected = np.array([2.870557, 1.372876])
     tof3_expected = np.array([3.88245, 1.818162])
 
