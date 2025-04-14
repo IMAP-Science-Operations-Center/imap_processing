@@ -527,6 +527,7 @@ def convert_tofs_to_eu(
     tof_fields = ["tof0", "tof1", "tof2", "tof3"]
     tof_conversions = [TOF0_CONV, TOF1_CONV, TOF2_CONV, TOF3_CONV]
 
+    # Loop through the TOF fields and convert them to engineering units
     for tof, conv in zip(tof_fields, tof_conversions):
         # Get the fill value for the L1A and L1B TOF
         fillval_1a = attr_mgr_l1a.get_variable_attributes(tof)["FILLVAL"]
