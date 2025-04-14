@@ -9,18 +9,32 @@ import xarray as xr
 
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils.coordinates import CoordNames
-from imap_processing.ena_maps.utils.map_properties import (
-    DEFAULT_ULTRA_L2_MAP_PROPERTIES,
-    MapProperties,
-)
 
 logger = logging.getLogger(__name__)
 logger.info("Importing ultra_l2 module")
 
-# Set some default values for the map properties
+# Default properties for the Ultra L2 map
+DEFAULT_ULTRA_L2_MAP_STRUCTURE = ena_maps.AbstractSkyMap.from_dict(
+    {
+        "sky_tiling_type": "HEALPIX",
+        "spice_reference_frame": "ECLIPJ2000",
+        "values_to_push_project": [
+            "counts",
+            "exposure_factor",
+            "sensitivity",
+            "background_rates",
+        ],
+        "nside": 32,
+        "nested": False,
+    }
+)
+
+# Set some default Healpix parameters - these must be defined, even if also
+# present in the DEFAULT_ULTRA_L2_MAP_STRUCTURE, because we always make a Healpix map
+# regardless of the output map type
 DEFAULT_L2_HEALPIX_NSIDE = 32
 DEFAULT_L2_HEALPIX_NESTED = False
-DEFAULT_L2_MAP_PROPERTIES = DEFAULT_ULTRA_L2_MAP_PROPERTIES
+
 
 # These variables must always be present in each L1C dataset
 REQUIRED_L1C_VARIABLES = [
@@ -51,7 +65,7 @@ VARIABLES_TO_DROP_AFTER_FLUX_CALCULATION = [
 
 def generate_ultra_healpix_skymap(
     ultra_l1c_psets: list[str | xr.Dataset],
-    output_map_properties: MapProperties = DEFAULT_L2_MAP_PROPERTIES,
+    output_map_structure: ena_maps.AbstractSkyMap = DEFAULT_ULTRA_L2_MAP_STRUCTURE,
 ) -> ena_maps.HealpixSkyMap:
     """
     Generate a Healpix skymap from ULTRA L1C pointing sets.
@@ -65,9 +79,9 @@ def generate_ultra_healpix_skymap(
     ultra_l1c_psets : list[str | xr.Dataset]
         List of paths to ULTRA L1C pointing set files or xarray Datasets containing
         pointing set data.
-    output_map_properties : MapProperties, optional
-        Properties defining the output map configuration. If not provided, default L2
-        map properties will be used.
+    output_map_structure : ena_maps.AbstractSkyMap, optional
+        Empty SkyMap structure providing the properties of the map to be generated.
+        Defaults to DEFAULT_ULTRA_L2_MAP_STRUCTURE defined in this module.
 
     Returns
     -------
@@ -90,10 +104,10 @@ def generate_ultra_healpix_skymap(
     7. Calculate flux and flux uncertainty.
     8. Drop unnecessary variables from the map.
     """
-    if output_map_properties.sky_tiling_type is ena_maps.SkyTilingType.HEALPIX:
+    if output_map_structure.tiling_type is ena_maps.SkyTilingType.HEALPIX:
         map_nside, map_nested = (
-            output_map_properties.nside,
-            output_map_properties.nested,
+            output_map_structure.nside,
+            output_map_structure.nested,
         )
     else:
         map_nside, map_nested = (DEFAULT_L2_HEALPIX_NSIDE, DEFAULT_L2_HEALPIX_NESTED)
@@ -102,11 +116,11 @@ def generate_ultra_healpix_skymap(
     skymap = ena_maps.HealpixSkyMap(
         nside=map_nside,
         nested=map_nested,
-        spice_frame=output_map_properties.spice_reference_frame,
+        spice_frame=output_map_structure.spice_reference_frame,
     )
 
     # Add additional data variables to the map
-    output_map_properties.values_to_push_project.extend(
+    output_map_structure.values_to_push_project.extend(
         [
             "observation_time",
             "pointing_set_exposure_times_solid_angle",
@@ -117,7 +131,7 @@ def generate_ultra_healpix_skymap(
     # Get full list of variables to push to the map: all requested variables plus
     # any which are required for L2 processing
     value_keys_to_push_project = list(
-        set(output_map_properties.values_to_push_project + REQUIRED_L1C_VARIABLES)
+        set(output_map_structure.values_to_push_project + REQUIRED_L1C_VARIABLES)
     )
 
     for ultra_l1c_pset in ultra_l1c_psets:
@@ -213,7 +227,7 @@ def generate_ultra_healpix_skymap(
 def ultra_l2(
     data_dict: dict[str, xr.Dataset | str],
     data_version: str,
-    output_map_properties: MapProperties = DEFAULT_L2_MAP_PROPERTIES,
+    output_map_structure: ena_maps.AbstractSkyMap = DEFAULT_ULTRA_L2_MAP_STRUCTURE,
 ) -> list[xr.Dataset]:
     """
     Generate and format Ultra L2 ENA Map Product from L1C Products.
@@ -224,9 +238,9 @@ def ultra_l2(
         Dict mapping l1c product identifiers to paths/Datasets containing l1c psets.
     data_version : str
         Version of the data product being created.
-    output_map_properties : MapProperties, optional
-        Properties of the map to be generated.
-        Default is defined in `map_properties.py`.
+    output_map_structure : ena_maps.AbstractSkyMap, optional
+        Empty SkyMap structure providing the properties of the map to be generated.
+        Defaults to DEFAULT_ULTRA_L2_MAP_STRUCTURE defined in this module.
 
     Returns
     -------
@@ -249,23 +263,23 @@ def ultra_l2(
     # a Healpix map, we can go directly to map with desired nside, nested params
     healpix_skymap = generate_ultra_healpix_skymap(
         ultra_l1c_psets=list(l1c_products),
-        output_map_properties=output_map_properties,
+        output_map_structure=output_map_structure,
     )
 
     # Output formatting for HEALPIX tiling
-    if output_map_properties.sky_tiling_type is ena_maps.SkyTilingType.HEALPIX:
+    if output_map_structure.tiling_type is ena_maps.SkyTilingType.HEALPIX:
         map_dataset = healpix_skymap.to_dataset()
         # Add attributes related to the map
         map_attrs = {
-            "HEALPix_nside": output_map_properties.nside,
-            "HEALPix_nest": output_map_properties.nested,
+            "HEALPix_nside": output_map_structure.nside,
+            "HEALPix_nest": output_map_structure.nested,
             "Data_version": data_version,
         }
 
     # TODO: Implement conversion to Rectangular map
-    elif output_map_properties.sky_tiling_type is ena_maps.SkyTilingType.RECTANGULAR:
+    elif output_map_structure.tiling_type is ena_maps.SkyTilingType.RECTANGULAR:
         map_attrs = {
-            "Spacing_degrees": output_map_properties.spacing_deg,
+            "Spacing_degrees": output_map_structure.spacing_deg,
             "Data_version": data_version,
         }
         raise NotImplementedError
@@ -273,8 +287,8 @@ def ultra_l2(
     # Always add the following attributes to the map
     map_attrs.update(
         {
-            "Sky_tiling_type": output_map_properties.sky_tiling_type.value,
-            "Spice_reference_frame": output_map_properties.spice_reference_frame,
+            "Sky_tiling_type": output_map_structure.tiling_type.value,
+            "Spice_reference_frame": output_map_structure.spice_reference_frame,
         }
     )
 

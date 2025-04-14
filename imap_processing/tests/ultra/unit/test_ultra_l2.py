@@ -5,9 +5,6 @@ import pytest
 
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils.coordinates import CoordNames
-from imap_processing.ena_maps.utils.map_properties import (
-    MapProperties,
-)
 from imap_processing.tests.ultra.data.mock_data import mock_l1c_pset_product_healpix
 from imap_processing.ultra.l2 import ultra_l2
 
@@ -91,7 +88,7 @@ class TestUltraL2:
                 ultra_l1c_psets=[
                     pset,
                 ],
-                output_map_properties=MapProperties(
+                output_map_structure=ena_maps.AbstractSkyMap.from_dict(
                     {
                         "sky_tiling_type": "HEALPIX",
                         "spice_reference_frame": map_frame,
@@ -159,7 +156,7 @@ class TestUltraL2:
             with furnish_kernels(self.required_kernel_names):
                 hp_skymap = ultra_l2.generate_ultra_healpix_skymap(
                     ultra_l1c_psets=self.ultra_psets,
-                    output_map_properties=MapProperties(
+                    output_map_structure=ena_maps.AbstractSkyMap.from_dict(
                         {
                             "sky_tiling_type": "RECTANGULAR",
                             "spice_reference_frame": "ECLIPJ2000",
@@ -209,7 +206,7 @@ class TestUltraL2:
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
     def test_ultra_l2_output_unbinned_healpix(self, mock_data_dict, furnish_kernels):
-        props = MapProperties(
+        map_structure = ena_maps.AbstractSkyMap.from_dict(
             {
                 "sky_tiling_type": "HEALPIX",
                 "spice_reference_frame": "ECLIPJ2000",
@@ -226,8 +223,8 @@ class TestUltraL2:
             ] = ultra_l2.ultra_l2(
                 data_dict=mock_data_dict,
                 data_version="001",
-                output_map_properties=props,
+                output_map_structure=map_structure,
             )
 
-        assert map_dataset.attrs["HEALPix_nside"] == props.nside
-        assert map_dataset.attrs["HEALPix_nest"] == props.nested
+        assert map_dataset.attrs["HEALPix_nside"] == map_structure.nside
+        assert map_dataset.attrs["HEALPix_nest"] == map_structure.nested
