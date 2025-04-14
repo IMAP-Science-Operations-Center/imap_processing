@@ -21,8 +21,8 @@ from imap_processing.ultra.l1c.spacecraft_pset import calculate_spacecraft_pset
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
-@pytest.mark.external_test_data()
-@pytest.mark.external_kernel()
+@pytest.mark.external_test_data
+@pytest.mark.external_kernel
 @ensure_spice
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_pset():
@@ -71,7 +71,6 @@ def test_pset():
         test_l1b_de_dataset,  # placeholder for extendedspin_dataset
         test_l1b_de_dataset,  # placeholder for cullingmask_dataset
         "imap_ultra_l1c_45sensor-spacecraftpset",
-        "001",
     )
     assert "healpix" in spacecraft_pset.coords
     assert "epoch" in spacecraft_pset.coords

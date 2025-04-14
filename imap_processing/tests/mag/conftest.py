@@ -9,14 +9,15 @@ import xarray as xr
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.mag.constants import VecSec
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
+from imap_processing.spice.time import TTJ2000_EPOCH
 
 
-@pytest.fixture()
+@pytest.fixture
 def validation_l1a():
     current_directory = Path(__file__).parent
     test_file = current_directory / "validation" / "mag_l1_test_data.pkts"
     # Test file contains only normal packets
-    l1a = mag_l1a(test_file, "v000")
+    l1a = mag_l1a(test_file)
     return l1a
 
 
@@ -70,6 +71,7 @@ def mag_test_l1b_calibration_data():
     calibration_data = load_cdf(cal_file)
     return calibration_data
 
+
 @pytest.fixture
 def mag_test_l2_data():
     imap_dir = Path(__file__).parent
@@ -89,6 +91,26 @@ def mag_test_l2_data():
     )
 
     return calibration_data, offsets_data
+
+
+def mag_generate_l1b_from_csv(df, logical_source):
+    length = len(df.index)
+    dataset = mag_l1a_dataset_generator(length)
+
+    dataset["vectors"].data = np.array(df[["x", "y", "z", "range"]])
+    dataset["compression_flags"].data = np.array(
+        df[["compression", "compression_width"]]
+    )
+
+    epoch = [np.datetime64(t) - np.datetime64(TTJ2000_EPOCH) for t in df["t"]]
+    epoch_ns = [(e / np.timedelta64(1, "ns")).astype(np.int64) for e in epoch]
+    dataset.coords["epoch"] = xr.DataArray(epoch_ns, name="epoch", dims=["epoch"])
+
+    dataset.attrs["Logical_source"] = logical_source
+    dataset.attrs["vectors_per_second"] = f"{epoch_ns[0]}:2"
+
+    return dataset
+
 
 def generate_test_epoch(
     end, vectors_per_second: list[VecSec], starting_point=0, gaps=None

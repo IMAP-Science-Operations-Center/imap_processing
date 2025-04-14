@@ -12,7 +12,7 @@ from imap_processing.utils import convert_raw_to_eu
 logger = logging.getLogger(__name__)
 
 
-def swe_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+def swe_l1b(l1a_dataset: xr.Dataset) -> xr.Dataset:
     """
     Will process data to L1B.
 
@@ -20,8 +20,6 @@ def swe_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     ----------
     l1a_dataset : xarray.Dataset
         The l1a data input.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -43,7 +41,7 @@ def swe_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         conversion_table_path=conversion_table_path,
         packet_name=packet_name.name,
     )
-    data = swe_l1b_science(eu_data, data_version)
+    data = swe_l1b_science(eu_data)
     if data is None:
         logger.info("No data to write to CDF")
         return []

@@ -7,7 +7,7 @@ import pytest
 from imap_processing.ena_maps.utils import spatial_utils
 
 # Parameterize with spacings (degrees here):
-valid_spacings = [0.25, 0.5, 1, 5, 10, 20]
+valid_spacings = [0.25, 0.5, 1, 5, 6, 6.666666666666667, 10, 20]
 invalid_spacings = [0, -1, 11]
 invalid_spacings_match_str = [
     "Spacing must be positive valued, non-zero.",

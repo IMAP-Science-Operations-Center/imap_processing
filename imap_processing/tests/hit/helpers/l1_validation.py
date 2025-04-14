@@ -338,9 +338,9 @@ def compare_data(
             "species",
             "energy_bin",
         ]:
-            assert (
-                field in actual_data.data_vars.keys()
-            ), f"Field {field} not found in actual data variables"
+            assert field in actual_data.data_vars.keys(), (
+                f"Field {field} not found in actual data variables"
+            )
         if field not in skip:
             for frame in range(expected_data.shape[0]):
                 if field == "species":

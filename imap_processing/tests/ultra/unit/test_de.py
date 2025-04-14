@@ -7,7 +7,7 @@ import pytest
 from imap_processing.ultra.constants import UltraConstants
 
 
-@pytest.fixture()
+@pytest.fixture
 def df_filt(de_dataset, events_fsw_comparison_theta_0):
     """Fixture to import test dataset."""
     df = pd.read_csv(events_fsw_comparison_theta_0)

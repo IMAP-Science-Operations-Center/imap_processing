@@ -113,7 +113,7 @@ def test_l1a_data() -> xr.Dataset:
         A list of ``xarray`` datasets containing the test data
     """
 
-    processed_datasets = process_codice_l1a(file_path=TEST_L0_FILE, data_version="001")
+    processed_datasets = process_codice_l1a(file_path=TEST_L0_FILE)
 
     return processed_datasets
 
@@ -250,7 +250,7 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
 
     if descriptor in able_to_be_validated:
         counters = getattr(
-            constants, f'{descriptor.upper().replace("-","_")}_VARIABLE_NAMES'
+            constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
         )
         processed_dataset = test_l1a_data[index]
         validation_dataset = load_cdf(VALIDATION_DATA[index])
@@ -356,7 +356,7 @@ def test_l1a_validate_support_variables(test_l1a_data, index):
 def test_l1a_multiple_packets():
     """Tests that an input L0 file containing multiple APIDs can be processed."""
 
-    processed_datasets = process_codice_l1a(file_path=TEST_L0_FILE, data_version="001")
+    processed_datasets = process_codice_l1a(file_path=TEST_L0_FILE)
 
     # TODO: Could add some more checks here?
     assert len(processed_datasets) == 18

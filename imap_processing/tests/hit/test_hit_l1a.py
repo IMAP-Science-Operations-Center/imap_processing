@@ -137,7 +137,7 @@ def test_validate_l1a_housekeeping_data(hk_packet_filepath):
     hk_packet_filepath : str
         File path to housekeeping ccsds file
     """
-    datasets = hit_l1a(hk_packet_filepath, "001")
+    datasets = hit_l1a(hk_packet_filepath)
     hk_dataset = None
     for dataset in datasets:
         if dataset.attrs["Logical_source"] == "imap_hit_l1a_hk":
@@ -223,7 +223,7 @@ def test_validate_l1a_counts_data(sci_packet_filepath, validation_data):
     """
 
     # Process the sample data
-    processed_datasets = hit_l1a(sci_packet_filepath, "001")
+    processed_datasets = hit_l1a(sci_packet_filepath)
     l1a_counts_data = processed_datasets[0]
 
     # Prepare validation data for comparison with processed data
@@ -260,7 +260,7 @@ def test_hit_l1a(hk_packet_filepath, sci_packet_filepath):
         Path to ccsds file for science data
     """
     for packet_filepath in [hk_packet_filepath, sci_packet_filepath]:
-        processed_datasets = hit_l1a(packet_filepath, "001")
+        processed_datasets = hit_l1a(packet_filepath)
         assert isinstance(processed_datasets, list)
         assert all(isinstance(ds, xr.Dataset) for ds in processed_datasets)
         if packet_filepath == hk_packet_filepath:

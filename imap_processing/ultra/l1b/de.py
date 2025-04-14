@@ -29,7 +29,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 
-def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dataset:
+def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     """
     Create dataset with defined datatypes for Direct Event Data.
 
@@ -39,8 +39,6 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
         L1a dataset containing direct event data.
     name : str
         Name of the l1a dataset.
-    data_version : str
-        Version of the data.
 
     Returns
     -------
@@ -231,6 +229,6 @@ def calculate_de(de_dataset: xr.Dataset, name: str, data_version: str) -> xr.Dat
         len(de_dataset["epoch"]), np.nan, dtype=np.float32
     )
 
-    dataset = create_dataset(de_dict, name, "l1b", data_version)
+    dataset = create_dataset(de_dict, name, "l1b")
 
     return dataset

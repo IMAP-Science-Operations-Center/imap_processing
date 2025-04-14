@@ -15,7 +15,7 @@ def test_lo_l1a():
         "imap_lo_l1a_histogram",
         "imap_lo_l1a_de",
     ]
-    output_dataset = lo_l1a(dependency, "001")
+    output_dataset = lo_l1a(dependency)
 
     # Assert
     for dataset, logical_source in zip(output_dataset, expected_logical_source):
@@ -56,7 +56,7 @@ def test_lo_l1a_dataset():
     hist_fields_lower = [field.lower() for field in histogram_fields]
 
     # Act
-    output_datasets = lo_l1a(dependency, "001")
+    output_datasets = lo_l1a(dependency)
 
     # Assert
     np.testing.assert_array_equal(hist_fields_lower, output_datasets[1].data_vars)
@@ -108,7 +108,7 @@ def test_validate_spin_data():
             validation_data = validation_data.drop(matching_columns, axis=1)
 
     # Act
-    output_dataset = lo_l1a(dependency, "001")
+    output_dataset = lo_l1a(dependency)
 
     # Assert
     for field in spin_fields:

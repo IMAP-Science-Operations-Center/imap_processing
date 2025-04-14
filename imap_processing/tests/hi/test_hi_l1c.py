@@ -27,21 +27,20 @@ def hi_test_cal_prod_config_path(hi_l1_test_data_path):
 @mock.patch("imap_processing.hi.l1c.hi_l1c.generate_pset_dataset")
 def test_hi_l1c(mock_generate_pset_dataset, hi_test_cal_prod_config_path):
     """Test coverage for hi_l1c function"""
-    mock_generate_pset_dataset.return_value = xr.Dataset(attrs={"Data_version": None})
-    pset = hi_l1c.hi_l1c(
-        [xr.Dataset(), hi_test_cal_prod_config_path], data_version="99"
-    )
-    assert pset.attrs["Data_version"] == "99"
+    mock_generate_pset_dataset.return_value = xr.Dataset()
+    pset = hi_l1c.hi_l1c([xr.Dataset(), hi_test_cal_prod_config_path])[0]
+    # Empty attributes, global values get added in post-processing
+    assert pset.attrs == {}
 
 
 def test_hi_l1c_not_implemented():
     """Test coverage for hi_l1c function with unrecognized dependencies"""
     with pytest.raises(NotImplementedError):
-        hi_l1c.hi_l1c([None, None], "0")
+        hi_l1c.hi_l1c([None, None])
 
 
-@pytest.mark.external_test_data()
-@pytest.mark.external_kernel()
+@pytest.mark.external_test_data
+@pytest.mark.external_kernel
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_generate_pset_dataset(
     hi_l1_test_data_path, hi_test_cal_prod_config_path, use_fake_spin_data_for_time
@@ -70,7 +69,6 @@ def test_generate_pset_dataset(
         np.testing.assert_array_equal(l1c_dataset[var].data.shape, (1, 9, 2, 3600))
 
     # Test ISTP compliance by writing CDF
-    l1c_dataset.attrs["Data_version"] = 1
     write_cdf(l1c_dataset)
 
 
@@ -138,7 +136,7 @@ def test_pset_geometry(mock_frame_transform, mock_geom_frame_transform, sensor_s
     )
 
 
-@pytest.mark.external_test_data()
+@pytest.mark.external_test_data
 def test_pset_counts(hi_l1_test_data_path, hi_test_cal_prod_config_path):
     """Test coverage for pset_counts function."""
     l1b_de_path = hi_l1_test_data_path / "imap_hi_l1b_45sensor-de_20250415_v999.cdf"
@@ -245,7 +243,7 @@ def test_pset_exposure(
     # All the setup is done, call the pset_exposure function
     exposure_dict = hi_l1c.pset_exposure(empty_pset.coords, l1b_dataset)
 
-    # Based on the spin phase and clock_tick mocks, the expected output is:
+    # Based on the spin phase and clock_tick mocks, the expected clock ticks are:
     # - Repeated values of 3, 1 for the first half of the spin bins
     # - Repeated values of 3, 2 for the second half of the spin bins
     expected_values = np.stack(
@@ -253,8 +251,14 @@ def test_pset_exposure(
             np.tile([3, 1], hi_l1c.N_SPIN_BINS // 2),
             np.tile([6, 2], hi_l1c.N_SPIN_BINS // 2),
         ]
-    )[None, :, :]
-    np.testing.assert_array_equal(exposure_dict["exposure_times"].data, expected_values)
+    ).astype(float)[None, :, :]
+    # Convert expected clock ticks to seconds
+    expected_values *= DE_CLOCK_TICK_S
+    np.testing.assert_allclose(
+        exposure_dict["exposure_times"].data,
+        expected_values,
+        atol=DE_CLOCK_TICK_S / 100,
+    )
 
 
 def test_find_second_de_packet_data():
@@ -296,7 +300,7 @@ def fake_spin_df():
     # Generate some spin periods that vary by a random fraction of a second
     spin_period = np.full(10, 15) + np.random.randn(10) / 10
     d = {
-        "spin_start_time": np.add.accumulate(spin_period),
+        "spin_start_met": np.add.accumulate(spin_period),
         "spin_period_sec": spin_period,
     }
     spin_df = pd.DataFrame.from_dict(d)
@@ -310,8 +314,8 @@ def test_get_de_clock_ticks_for_esa_step(fake_spin_df):
     # the end spin in the table + 1/2 spin period
     for _, spin_row in fake_spin_df.iloc[8:].iterrows():
         for ccsds_met in np.linspace(
-            spin_row.spin_start_time,
-            spin_row.spin_start_time + np.floor(spin_row.spin_period_sec / 2),
+            spin_row.spin_start_met,
+            spin_row.spin_start_met + np.floor(spin_row.spin_period_sec / 2),
             10,
         ):
             clock_tick_mets, clock_tick_weights = (
@@ -321,7 +325,7 @@ def test_get_de_clock_ticks_for_esa_step(fake_spin_df):
             # Verify last weight entry
             exp_final_weight = (
                 np.absolute(
-                    fake_spin_df.spin_start_time.to_numpy() - clock_tick_mets[-1]
+                    fake_spin_df.spin_start_met.to_numpy() - clock_tick_mets[-1]
                 ).min()
                 / DE_CLOCK_TICK_S
             )
@@ -333,7 +337,7 @@ def test_get_de_clock_ticks_for_esa_step_exceptions(fake_spin_df):
     """Test the exception logic in the get_de_clock_ticks_for_esa_step function."""
     # Test the ccsds_met being > 1/2 spin period past the spin start
     bad_ccsds_met = (
-        fake_spin_df.iloc[8].spin_start_time
+        fake_spin_df.iloc[8].spin_start_met
         + fake_spin_df.iloc[8].spin_period_sec / 2
         + 0.1
     )
@@ -343,7 +347,7 @@ def test_get_de_clock_ticks_for_esa_step_exceptions(fake_spin_df):
         hi_l1c.get_de_clock_ticks_for_esa_step(bad_ccsds_met, fake_spin_df)
 
     # Test the ccsds_met being too close to the start of the spin table
-    bad_ccsds_met = fake_spin_df.iloc[7].spin_start_time
+    bad_ccsds_met = fake_spin_df.iloc[7].spin_start_met
     with pytest.raises(
         ValueError, match="Error determining start/end time for exposure time"
     ):

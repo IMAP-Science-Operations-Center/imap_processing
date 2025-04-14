@@ -14,6 +14,32 @@ from imap_processing.mag.constants import POSSIBLE_RATES, VecSec
 logger = logging.getLogger(__name__)
 
 
+def remove_invalid_output_timestamps(
+    input_timestamps: np.ndarray, output_timestamps: np.ndarray
+) -> np.ndarray:
+    """
+    Remove output timestamps where we don't have input timestamps to interpolate.
+
+    I.E. We should never create science data outside of the timeline of burst data.
+
+    Parameters
+    ----------
+    input_timestamps : numpy.ndarray
+        List of input timestamps (from burst data).
+    output_timestamps : numpy.ndarray
+        List of output timestamps (from norm data) to downsample/interpolate to.
+
+    Returns
+    -------
+    numpy.ndarray
+        All valid output timestamps where there exists input data.
+    """
+    if input_timestamps[0] > output_timestamps[0]:
+        # Chop data where we don't have input timestamps to interpolate
+        output_timestamps = output_timestamps[output_timestamps >= input_timestamps[0]]
+    return output_timestamps
+
+
 def linear(
     input_vectors: np.ndarray,
     input_timestamps: np.ndarray,
@@ -45,6 +71,7 @@ def linear(
         Interpolated vectors of shape (m, 3) where m is equal to the number of output
         timestamps. Contains x, y, z components of the vector.
     """
+    # TODO: Remove invalid timestamps using remove_invalid_output_timestamps
     spline = make_interp_spline(input_timestamps, input_vectors, k=1)
     return spline(output_timestamps)
 
@@ -208,7 +235,6 @@ def cic_filter(
         input_filtered = input_timestamps[:-delay]
 
     vectors_filtered = lfilter(cic2, 1, input_vectors, axis=0)[delay:]
-
     return input_filtered, vectors_filtered
 
 

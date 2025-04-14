@@ -30,29 +30,29 @@ def sci_packet_filepath():
     return imap_module_directory / "tests/hit/test_data/sci_sample.ccsds"
 
 
-@pytest.fixture()
+@pytest.fixture
 def dependencies(sci_packet_filepath):
     """Get dependencies for L2 processing"""
     # Create dictionary of dependencies
     data_dict = {}
-    l1a_datasets = hit_l1a.hit_l1a(sci_packet_filepath, "001")
+    l1a_datasets = hit_l1a.hit_l1a(sci_packet_filepath)
     for l1a_dataset in l1a_datasets:
         l1a_data_dict = {}
         if l1a_dataset.attrs["Logical_source"] == "imap_hit_l1a_counts":
             l1a_data_dict["imap_hit_l1a_counts"] = l1a_dataset
-            l1b_datasets = hit_l1b(l1a_data_dict, "001")
+            l1b_datasets = hit_l1b(l1a_data_dict)
             for l1b_dataset in l1b_datasets:
                 data_dict[l1b_dataset.attrs["Logical_source"]] = l1b_dataset
     return data_dict
 
 
-@pytest.fixture()
+@pytest.fixture
 def l1b_summed_rates_dataset(dependencies):
     """Get L1B summed rates dataset to test l2 processing function"""
     return dependencies["imap_hit_l1b_summed-rates"]
 
 
-@pytest.fixture()
+@pytest.fixture
 def l1b_standard_rates_dataset(dependencies):
     """Get L1B standard rates dataset to test l2 processing function"""
     return dependencies["imap_hit_l1b_standard-rates"]
@@ -84,15 +84,15 @@ def test_get_intensity_factors():
     factors = get_intensity_factors(energy_min, species_ancillary_data)
 
     # Assertions
-    assert np.array_equal(
-        factors.delta_e_factor, expected_factors.delta_e_factor
-    ), "Delta E factors mismatch"
-    assert np.array_equal(
-        factors.geometry_factor, expected_factors.geometry_factor
-    ), "Geometry factors mismatch"
-    assert np.array_equal(
-        factors.efficiency, expected_factors.efficiency
-    ), "Efficiency factors mismatch"
+    assert np.array_equal(factors.delta_e_factor, expected_factors.delta_e_factor), (
+        "Delta E factors mismatch"
+    )
+    assert np.array_equal(factors.geometry_factor, expected_factors.geometry_factor), (
+        "Geometry factors mismatch"
+    )
+    assert np.array_equal(factors.efficiency, expected_factors.efficiency), (
+        "Efficiency factors mismatch"
+    )
     assert np.array_equal(factors.b, expected_factors.b), "B factors mismatch"
 
 
@@ -217,12 +217,12 @@ def test_calculate_intensities_for_all_species():
     )
 
     # Assertions
-    assert np.allclose(
-        l2_dataset["h"].values, expected_intensities_h.values
-    ), "Intensities mismatch for H"
-    assert np.allclose(
-        l2_dataset["ni"].values, expected_intensities_ni.values
-    ), "Intensities mismatch for He"
+    assert np.allclose(l2_dataset["h"].values, expected_intensities_h.values), (
+        "Intensities mismatch for H"
+    )
+    assert np.allclose(l2_dataset["ni"].values, expected_intensities_ni.values), (
+        "Intensities mismatch for He"
+    )
 
 
 def test_calculate_intensities_for_a_species():
@@ -283,9 +283,9 @@ def test_calculate_intensities_for_a_species():
     )
 
     # Assertions
-    assert np.allclose(
-        l2_dataset["h"].values, expected_intensities.values
-    ), "Intensities mismatch"
+    assert np.allclose(l2_dataset["h"].values, expected_intensities.values), (
+        "Intensities mismatch"
+    )
 
 
 def test_calculate_intensities():
@@ -308,9 +308,9 @@ def test_calculate_intensities():
     )
 
     # Assertions
-    assert np.allclose(
-        intensities.values, expected_intensities.values
-    ), "Intensities mismatch"
+    assert np.allclose(intensities.values, expected_intensities.values), (
+        "Intensities mismatch"
+    )
 
 
 def test_add_systematic_uncertainties():
@@ -368,9 +368,9 @@ def test_process_summed_intensity_data(l1b_summed_rates_dataset):
     }
 
     # Check that the dataset has the correct coords and variables
-    assert valid_coords == set(
-        l2_summed_intensity_dataset.coords
-    ), "Coordinates mismatch"
+    assert valid_coords == set(l2_summed_intensity_dataset.coords), (
+        "Coordinates mismatch"
+    )
 
     assert "dynamic_threshold_state" in l1b_summed_rates_dataset.data_vars
 
@@ -416,9 +416,9 @@ def test_process_standard_intensity_data(l1b_standard_rates_dataset):
     }
 
     # Check that the dataset has the correct coords and variables
-    assert valid_coords == set(
-        l2_standard_intensity_dataset.coords
-    ), "Coordinates mismatch"
+    assert valid_coords == set(l2_standard_intensity_dataset.coords), (
+        "Coordinates mismatch"
+    )
 
     assert "dynamic_threshold_state" in l1b_standard_rates_dataset.data_vars
 
@@ -447,10 +447,10 @@ def test_hit_l2(dependencies):
         Dictionary of L1B datasets
     """
     # TODO: update assertions after science data processing is completed
-    l2_datasets = hit_l2(dependencies["imap_hit_l1b_summed-rates"], "001")
+    l2_datasets = hit_l2(dependencies["imap_hit_l1b_summed-rates"])
     assert len(l2_datasets) == 1
     assert l2_datasets[0].attrs["Logical_source"] == "imap_hit_l2_summed-intensity"
 
-    l2_datasets = hit_l2(dependencies["imap_hit_l1b_standard-rates"], "001")
+    l2_datasets = hit_l2(dependencies["imap_hit_l1b_standard-rates"])
     assert len(l2_datasets) == 1
     assert l2_datasets[0].attrs["Logical_source"] == "imap_hit_l2_standard-intensity"

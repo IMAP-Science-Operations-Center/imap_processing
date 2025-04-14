@@ -7,6 +7,7 @@ import spiceypy
 from imap_processing.spice import IMAP_SC_ID
 from imap_processing.spice.time import (
     TICK_DURATION,
+    epoch_to_doy,
     et_to_utc,
     met_to_datetime64,
     met_to_sclkticks,
@@ -202,3 +203,16 @@ def test_et_to_utc(furnish_time_kernels):
     )
     actual_utc_array = et_to_utc(array_of_et)
     assert np.array_equal(expected_utc_array, actual_utc_array)
+
+
+def test_epoch_to_doy():
+    """Tests that epoch_to_doy() produces expected doys."""
+    epoch = 756196488384840064
+    et = epoch * 1e-9
+    # Extract DOY from output date string
+    expected_doy = int(et_to_utc(et, "D").split("//")[0].split("-")[1])
+    example_epoch = np.full(10, epoch)
+    doy = epoch_to_doy(example_epoch)
+
+    # Assert that every calculated DOY is equal to the DOY extracted from the string.
+    assert np.all(doy == expected_doy)

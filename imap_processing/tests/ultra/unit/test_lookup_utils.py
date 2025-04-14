@@ -81,7 +81,7 @@ def test_get_angular_profiles():
     assert u45_right.shape == (525, 7)
 
 
-@pytest.mark.external_test_data()
+@pytest.mark.external_test_data
 def test_get_energy_efficiencies():
     """Tests function get_get_energy_efficiencies."""
 

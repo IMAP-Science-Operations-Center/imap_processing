@@ -15,7 +15,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def hist_dataset():
     variables = {
         "flight_software_version": np.zeros((20,)),
@@ -64,13 +64,13 @@ def hist_dataset():
         coords={"epoch": epoch, "bins": bins},
     )
 
-    for var in variables:
-        ds[var] = xr.DataArray(variables[var], dims=["epoch"], coords={"epoch": epoch})
+    for var, data in variables.items():
+        ds[var] = xr.DataArray(data, dims=["epoch"], coords={"epoch": epoch})
 
     return ds
 
 
-@pytest.fixture()
+@pytest.fixture
 def de_dataset():
     variables = {
         "seq_count_in_pkts_file": np.zeros((20,)),
@@ -139,13 +139,13 @@ def de_dataset():
         },
     )
 
-    for var in variables:
-        ds[var] = xr.DataArray(variables[var], dims=["epoch"], coords={"epoch": epoch})
+    for var, data in variables.items():
+        ds[var] = xr.DataArray(data, dims=["epoch"], coords={"epoch": epoch})
 
     return ds
 
 
-@pytest.fixture()
+@pytest.fixture
 def ancillary_dict():
     dictionary = {
         "description": "Table for conversion/decoding ancillary parameters collected "
@@ -289,7 +289,7 @@ def test_process_de(de_dataset, ancillary_dict):
 
 
 def test_glows_l1b(de_dataset, hist_dataset):
-    hist_output = glows_l1b(hist_dataset, "V001")
+    hist_output = glows_l1b(hist_dataset)
 
     assert hist_output["histogram"].dims == ("epoch", "bins")
     assert hist_output["histogram"].shape == (20, 3600)
@@ -341,7 +341,7 @@ def test_glows_l1b(de_dataset, hist_dataset):
     for key in expected_hist_data:
         assert key in hist_output
 
-    de_output = glows_l1b(de_dataset, "V001")
+    de_output = glows_l1b(de_dataset)
 
     # From table 15 in the algorithm document
     expected_de_data = [
@@ -364,14 +364,14 @@ def test_glows_l1b(de_dataset, hist_dataset):
 
 
 def test_generate_histogram_dataset(hist_dataset):
-    l1b_data = glows_l1b(hist_dataset, "v001")
+    l1b_data = glows_l1b(hist_dataset)
     output_path = write_cdf(l1b_data)
 
     assert Path.exists(output_path)
 
 
 def test_generate_de_dataset(de_dataset):
-    l1b_data = glows_l1b(de_dataset, "v001")
+    l1b_data = glows_l1b(de_dataset)
 
     output_path = write_cdf(l1b_data)
 

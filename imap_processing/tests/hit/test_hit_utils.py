@@ -30,9 +30,8 @@ def packet_filepath():
 @pytest.fixture(scope="module")
 def attribute_manager():
     """Create the attribute manager"""
-    data_version = "001"
     level = "l1a"
-    attr_mgr = get_attribute_manager(data_version, level)
+    attr_mgr = get_attribute_manager(level)
     return attr_mgr
 
 
@@ -44,7 +43,7 @@ def housekeeping_dataset(packet_filepath):
     return datasets_by_apid[HitAPID.HIT_HSKP]
 
 
-@pytest.fixture()
+@pytest.fixture
 def sample_dataset():
     """Create a sample dataset for summing particle data"""
     data = {
@@ -70,9 +69,8 @@ def test_get_datasets_by_apid(packet_filepath):
 
 
 def test_get_attribute_manager():
-    data_version = "001"
     level = "l1a"
-    attr_mgr = get_attribute_manager(data_version, level)
+    attr_mgr = get_attribute_manager(level)
 
     assert isinstance(attr_mgr, ImapCdfAttributes)
 
@@ -197,7 +195,7 @@ def test_process_housekeeping(housekeeping_dataset, attribute_manager):
         "Investigator, Prof. David J. McComas of Princeton "
         "University.\n",
         "Data_type": "L1A_HK>Level-1A Housekeeping",
-        "Data_version": "001",
+        "Data_version": None,
         "Descriptor": "HIT>IMAP High-energy Ion Telescope",
         "Discipline": "Solar Physics>Heliospheric Physics",
         "File_naming_convention": "source_descriptor_datatype_yyyyMMdd_vNNN",

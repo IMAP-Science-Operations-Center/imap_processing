@@ -1,4 +1,4 @@
-"""Pytest plugin module for test data paths"""
+"""Pytest plugin module for test data paths."""
 
 from unittest import mock
 
@@ -23,7 +23,7 @@ from imap_processing.ultra.l1b.ultra_l1b import ultra_l1b
 from imap_processing.utils import packet_file_to_datasets
 
 
-@pytest.fixture()
+@pytest.fixture
 def ccsds_path():
     """Returns the ccsds directory."""
     return (
@@ -36,7 +36,7 @@ def ccsds_path():
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def ccsds_path_events():
     """Returns the ccsds directory."""
     return (
@@ -49,7 +49,7 @@ def ccsds_path_events():
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def ccsds_path_theta_0():
     """Returns the ccsds directory."""
     return (
@@ -63,7 +63,7 @@ def ccsds_path_theta_0():
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def ccsds_path_tof():
     """Returns the ccsds directory."""
     return (
@@ -76,7 +76,7 @@ def ccsds_path_tof():
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def xtce_path():
     """Returns the xtce image rates directory."""
     return (
@@ -87,7 +87,7 @@ def xtce_path():
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def rates_test_path():
     """Returns the xtce image rates test data directory."""
     filename = (
@@ -97,17 +97,16 @@ def rates_test_path():
     return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
 
-@pytest.fixture()
+@pytest.fixture
 def aux_test_path():
     """Returns the xtce auxiliary test data directory."""
     filename = (
-        "ultra45_raw_sc_auxdata_Ultra45_EM_SwRI_Cal_Run7_ThetaScan_"
-        "20220530T225054.csv"
+        "ultra45_raw_sc_auxdata_Ultra45_EM_SwRI_Cal_Run7_ThetaScan_20220530T225054.csv"
     )
     return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
 
-@pytest.fixture()
+@pytest.fixture
 def events_test_path():
     """Returns the xtce auxiliary test data directory."""
     filename = (
@@ -117,7 +116,7 @@ def events_test_path():
     return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
 
-@pytest.fixture()
+@pytest.fixture
 def tof_test_path():
     """Returns the xtce auxiliary test data directory."""
     filename = (
@@ -127,7 +126,7 @@ def tof_test_path():
     return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
 
-@pytest.fixture()
+@pytest.fixture
 def decom_test_data(request, xtce_path):
     """Read test data from file"""
     apid = request.param["apid"]
@@ -151,7 +150,7 @@ def decom_test_data(request, xtce_path):
     return data_packet_xarray
 
 
-@pytest.fixture()
+@pytest.fixture
 def events_fsw_comparison_theta_0():
     """FSW test data."""
     filename = (
@@ -161,34 +160,28 @@ def events_fsw_comparison_theta_0():
     return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
 
-@pytest.fixture()
+@pytest.fixture
 def de_dataset(ccsds_path_theta_0, xtce_path):
     """L1A test data"""
-    test_data = ultra_l1a(
-        ccsds_path_theta_0, data_version="001", apid=ULTRA_EVENTS.apid[0]
-    )
+    test_data = ultra_l1a(ccsds_path_theta_0, apid_input=ULTRA_EVENTS.apid[0])
     return test_data[0]
 
 
-@pytest.fixture()
+@pytest.fixture
 def rates_dataset(ccsds_path_theta_0):
     """L1A test data"""
-    test_data = ultra_l1a(
-        ccsds_path_theta_0, data_version="001", apid=ULTRA_RATES.apid[0]
-    )
+    test_data = ultra_l1a(ccsds_path_theta_0, apid_input=ULTRA_RATES.apid[0])
     return test_data[0]
 
 
-@pytest.fixture()
+@pytest.fixture
 def aux_dataset(ccsds_path_theta_0):
     """L1A test data"""
-    test_data = ultra_l1a(
-        ccsds_path_theta_0, data_version="001", apid=ULTRA_AUX.apid[0]
-    )
+    test_data = ultra_l1a(ccsds_path_theta_0, apid_input=ULTRA_AUX.apid[0])
     return test_data[0]
 
 
-@pytest.fixture()
+@pytest.fixture
 def faux_aux_dataset():
     """Fixture to compute and return aux test data."""
 
@@ -218,7 +211,7 @@ def faux_aux_dataset():
     return test_aux_dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 @mock.patch("imap_processing.ultra.l1b.de.get_annotated_particle_velocity")
 def l1b_de_dataset(
     mock_get_annotated_particle_velocity,
@@ -248,12 +241,12 @@ def l1b_de_dataset(
 
     mock_get_annotated_particle_velocity.side_effect = side_effect_func
 
-    output_datasets = ultra_l1b(data_dict, data_version="001")
+    output_datasets = ultra_l1b(data_dict)
 
     return output_datasets
 
 
-@pytest.fixture()
+@pytest.fixture
 def l1b_extendedspin_dataset(
     l1b_de_dataset,
     rates_dataset,
@@ -267,6 +260,6 @@ def l1b_extendedspin_dataset(
     data_dict["imap_ultra_l1a_45sensor-hk"] = faux_aux_dataset
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
 
-    output_datasets = ultra_l1b(data_dict, data_version="001")
+    output_datasets = ultra_l1b(data_dict)
 
     return output_datasets

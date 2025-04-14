@@ -35,7 +35,7 @@ def test_l1b_data(request) -> xr.Dataset:
         A ``xarray`` dataset containing the test data
     """
     input_dataset = load_cdf(request.param)
-    dataset = process_codice_l1b(input_dataset, data_version="001")
+    dataset = process_codice_l1b(input_dataset)
     return dataset
 
 

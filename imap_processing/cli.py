@@ -13,13 +13,13 @@ Examples
 
 import argparse
 import logging
+import re
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import final
 
 import imap_data_access
-import numpy as np
 import xarray as xr
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
@@ -59,6 +59,7 @@ from imap_processing.mag.l2.mag_l2 import mag_l2
 from imap_processing.spacecraft import quaternions
 from imap_processing.swapi.l1.swapi_l1 import swapi_l1
 from imap_processing.swapi.l2.swapi_l2 import swapi_l2
+from imap_processing.swapi.swapi_utils import read_swapi_lut_table
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
 from imap_processing.ultra.l1a import ultra_l1a
@@ -432,16 +433,24 @@ class ProcessInstrument(ABC):
 
         logger.info("Writing products to local storage")
 
-        list_of_files = [
-            dep_obj.filename_list for dep_obj in dependencies.processing_input
-        ]
-        list_of_files = np.array(list_of_files).flatten()
-        logger.info("Parent files: %s", list_of_files)
+        logger.info("Dataset version: %s", self.version)
+        # Parent files used to create these datasets
+        # https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html.
+        parent_files = [p.name for p in dependencies.get_file_paths()]
+        logger.info("Parent files: %s", parent_files)
 
-        products = [
-            write_cdf(dataset, parent_files=list_of_files.tolist())  # type: ignore[attr-defined]
-            for dataset in datasets
-        ]
+        # Format version to vXXX if not already in that format. Eg.
+        # If version is passed in as 1 or 001, it will be converted to v001.
+        r = re.compile(r"v\d{3}")
+        if not isinstance(self.version, str) or r.match(self.version) is None:
+            self.version = f"v{int(self.version):03d}"  # vXXX
+
+        products = []
+        for ds in datasets:
+            ds.attrs["Data_version"] = self.version
+            ds.attrs["Parents"] = parent_files
+            products.append(write_cdf(ds))
+
         self.upload_products(products)
 
 
@@ -476,7 +485,7 @@ class Codice(ProcessInstrument):
                 )
             # process data
             science_files = dependencies.get_file_paths(source="codice")
-            datasets = codice_l1a.process_codice_l1a(science_files[0], self.version)
+            datasets = codice_l1a.process_codice_l1a(science_files[0])
 
         if self.data_level == "l1b":
             if len(dependency_list) > 1:
@@ -487,7 +496,7 @@ class Codice(ProcessInstrument):
             # process data
             science_files = dependencies.get_file_paths(source="codice")
             dependency = load_cdf(science_files[0])
-            datasets = [codice_l1b.process_codice_l1b(dependency, self.version)]
+            datasets = [codice_l1b.process_codice_l1b(dependency)]
 
         return datasets
 
@@ -522,7 +531,7 @@ class Glows(ProcessInstrument):
                     f"{dependency_list}. Expected only one input dependency."
                 )
             science_files = dependencies.get_file_paths(source="glows")
-            datasets = glows_l1a(science_files[0], self.version)
+            datasets = glows_l1a(science_files[0])
 
         if self.data_level == "l1b":
             if len(dependency_list) > 1:
@@ -532,7 +541,7 @@ class Glows(ProcessInstrument):
                 )
             science_files = dependencies.get_file_paths(source="glows")
             input_dataset = load_cdf(science_files[0])
-            datasets = [glows_l1b(input_dataset, self.version)]
+            datasets = [glows_l1b(input_dataset)]
 
         if self.data_level == "l2":
             if len(dependency_list) > 1:
@@ -542,7 +551,7 @@ class Glows(ProcessInstrument):
                 )
             science_files = dependencies.get_file_paths(source="glows")
             input_dataset = load_cdf(science_files[0])
-            datasets = glows_l2(input_dataset, self.version)
+            datasets = glows_l2(input_dataset)
 
         return datasets
 
@@ -578,14 +587,14 @@ class Hi(ProcessInstrument):
                     f"{dependency_list}. Expected only one dependency."
                 )
             science_files = dependencies.get_file_paths(source="hi")
-            datasets = hi_l1a.hi_l1a(science_files[0], self.version)
+            datasets = hi_l1a.hi_l1a(science_files[0])
         elif self.data_level == "l1b":
             l0_files = dependencies.get_file_paths(source="hi", descriptor="raw")
             if l0_files:
-                datasets = hi_l1b.hi_l1b(l0_files[0], self.version)
+                datasets = hi_l1b.hi_l1b(l0_files[0])
             else:
                 l1a_files = dependencies.get_file_paths(source="hi")
-                datasets = hi_l1b.hi_l1b(load_cdf(l1a_files[0]), self.version)
+                datasets = hi_l1b.hi_l1b(load_cdf(l1a_files[0]))
         elif self.data_level == "l1c":
             # TODO: Add PSET calibration product config file dependency and remove
             #    below injected dependency
@@ -596,7 +605,7 @@ class Hi(ProcessInstrument):
                 / "imap_his_pset-calibration-prod-config_20240101_v001.csv"
             )
             hi_dependencies[0] = load_cdf(hi_dependencies[0])
-            datasets = [hi_l1c.hi_l1c(hi_dependencies, self.version)]
+            datasets = hi_l1c.hi_l1c(hi_dependencies)
         else:
             raise NotImplementedError(
                 f"Hi processing not implemented for level {self.data_level}"
@@ -635,7 +644,7 @@ class Hit(ProcessInstrument):
                 )
             # process data to L1A products
             science_files = dependencies.get_file_paths(source="hit")
-            datasets = hit_l1a(science_files[0], self.version)
+            datasets = hit_l1a(science_files[0])
 
         elif self.data_level == "l1b":
             if len(dependency_list) > 1:
@@ -655,7 +664,7 @@ class Hit(ProcessInstrument):
                 l1a_dataset = load_cdf(l1a_files[0])
                 data_dict[l1a_dataset.attrs["Logical_source"]] = l1a_dataset
             # process data to L1B products
-            datasets = hit_l1b(data_dict, self.version)
+            datasets = hit_l1b(data_dict)
         elif self.data_level == "l2":
             if len(dependency_list) > 1:
                 raise ValueError(
@@ -666,7 +675,7 @@ class Hit(ProcessInstrument):
             science_files = dependencies.get_file_paths(source="hit")
             l1b_dataset = load_cdf(science_files[0])
             # process data to L2 products
-            datasets = hit_l2(l1b_dataset, self.version)
+            datasets = hit_l2(l1b_dataset)
 
         return datasets
 
@@ -702,7 +711,7 @@ class Idex(ProcessInstrument):
                 )
             # get l0 file
             science_files = dependencies.get_file_paths(source="idex")
-            datasets = [PacketParser(science_files[0], self.version).data]
+            datasets = [PacketParser(science_files[0]).data]
         elif self.data_level == "l1b":
             if len(dependency_list) > 1:
                 raise ValueError(
@@ -713,7 +722,7 @@ class Idex(ProcessInstrument):
             science_files = dependencies.get_file_paths(source="idex")
             # process data
             dependency = load_cdf(science_files[0])
-            datasets = [idex_l1b(dependency, self.version)]
+            datasets = [idex_l1b(dependency)]
         return datasets
 
 
@@ -748,18 +757,18 @@ class Lo(ProcessInstrument):
                     f"{dependency_list}. Expected only one dependency."
                 )
             science_files = dependencies.get_file_paths(source="lo")
-            datasets = lo_l1a.lo_l1a(science_files[0], self.version)
+            datasets = lo_l1a.lo_l1a(science_files[0])
 
         elif self.data_level == "l1b":
             data_dict = {}
             # TODO: Check this and update with new features as needed.
-            for input_type in dependencies:
+            for input_type in dependencies.processing_input:
                 science_files = dependencies.get_file_paths(
                     source="lo", descriptor=input_type.descriptor
                 )
                 dataset = load_cdf(science_files[0])
                 data_dict[dataset.attrs["Logical_source"]] = dataset
-            datasets = lo_l1b.lo_l1b(data_dict, self.version)
+            datasets = lo_l1b.lo_l1b(data_dict)
 
         elif self.data_level == "l1c":
             data_dict = {}
@@ -770,7 +779,7 @@ class Lo(ProcessInstrument):
                 dataset = load_cdf(science_files[0])
                 data_dict[dataset.attrs["Logical_source"]] = dataset
             # TODO: This is returning the wrong type
-            datasets = lo_l1c.lo_l1c(data_dict, self.version)
+            datasets = lo_l1c.lo_l1c(data_dict)
 
         return datasets
 
@@ -808,7 +817,7 @@ class Mag(ProcessInstrument):
                 )
             # TODO: Update this type
 
-            datasets = mag_l1a(science_files[0], self.version)
+            datasets = mag_l1a(science_files[0])
 
         if self.data_level == "l1b":
             if len(dependency_list) > 1:
@@ -817,15 +826,15 @@ class Mag(ProcessInstrument):
                     f"{dependency_list}. Expected only one dependency."
                 )
             input_data = load_cdf(science_files[0])
-            datasets = [mag_l1b(input_data, self.version)]
+            datasets = [mag_l1b(input_data)]
 
         if self.data_level == "l1c":
             input_data = [load_cdf(dep) for dep in science_files]
             # Input datasets can be in any order, and are validated within mag_l1c
             if len(input_data) == 1:
-                datasets = [mag_l1c(input_data[0], self.version)]
+                datasets = [mag_l1c(input_data[0])]
             elif len(input_data) == 2:
-                datasets = [mag_l1c(input_data[0], self.version, input_data[1])]
+                datasets = [mag_l1c(input_data[0], input_data[1])]
             else:
                 raise ValueError(
                     f"Invalid dependencies found for MAG L1C:"
@@ -855,9 +864,7 @@ class Mag(ProcessInstrument):
             )
             # TODO: Test data missing
             offset_dataset = xr.Dataset()
-            datasets = mag_l2(
-                calibration_dataset, offset_dataset, input_data, self.version
-            )
+            datasets = mag_l2(calibration_dataset, offset_dataset, input_data)
 
         return datasets
 
@@ -896,27 +903,6 @@ class Spacecraft(ProcessInstrument):
                 f"{input_files}. Expected only one dependency."
             )
         datasets = list(quaternions.process_quaternions(input_files[0]))
-        for ds in datasets:
-            ds.attrs["Data_version"] = self.version
-
-        if self.data_level == "l2":
-            # TODO: Overwrite dependencies with versions from offsets file
-            input_data = load_cdf(dependencies[0])
-            # TODO: use ancillary from input
-            calibration_dataset = load_cdf(
-                Path(__file__).parent
-                / "tests"
-                / "mag"
-                / "validation"
-                / "calibration"
-                / "imap_mag_l1b-calibration_20240229_v001.cdf"
-            )
-            # TODO: Test data missing
-            offset_dataset = xr.Dataset()
-            datasets = [
-                mag_l2(calibration_dataset, offset_dataset, input_data, self.version)
-            ]
-
         return datasets
 
 
@@ -968,17 +954,27 @@ class Swapi(ProcessInstrument):
                 dependent_files.append(hk_files[0])
 
             # process science or housekeeping data
-            datasets = swapi_l1(dependent_files, self.version)
+            datasets = swapi_l1(dependent_files)
         elif self.data_level == "l2":
-            if len(dependency_list) > 1:
+            if len(dependency_list) != 3:
                 raise ValueError(
                     f"Unexpected dependencies found for SWAPI L2:"
-                    f"{dependency_list}. Expected only one dependency."
+                    f"{dependency_list}. Expected 3 dependencies."
                 )
             # process data
-            science_files = dependencies.get_file_paths(source="swapi")
+            science_files = dependencies.get_file_paths(
+                source="swapi", descriptor="sci"
+            )
+            esa_table_files = dependencies.get_file_paths(
+                source="swapi", descriptor="esa-unit-conversion"
+            )
+            lut_notes_files = dependencies.get_file_paths(
+                source="swapi", descriptor="lut-notes"
+            )
+            esa_table_df = read_swapi_lut_table(esa_table_files[0])
+            lut_notes_df = read_swapi_lut_table(lut_notes_files[0])
             l1_dataset = load_cdf(science_files[0])
-            datasets = [swapi_l2(l1_dataset, self.version)]
+            datasets = [swapi_l2(l1_dataset, esa_table_df, lut_notes_df)]
 
         return datasets
 
@@ -1013,7 +1009,7 @@ class Swe(ProcessInstrument):
                     f"{dependency_list}. Expected only one dependency."
                 )
             science_files = dependencies.get_file_paths(source="swe")
-            datasets = swe_l1a(str(science_files[0]), data_version=self.version)
+            datasets = swe_l1a(str(science_files[0]))
             # Right now, we only process science data. Therefore,
             # we expect only one dataset to be returned.
 
@@ -1038,7 +1034,7 @@ class Swe(ProcessInstrument):
             #     "swe", "l1b-in-flight-cal"
             # )[0]
             # TODO: read lookup table and in-flight calibration data here.
-            datasets = swe_l1b(l1a_dataset, self.version)
+            datasets = swe_l1b(l1a_dataset)
         else:
             print("Did not recognize data level. No processing done.")
 
@@ -1076,21 +1072,21 @@ class Ultra(ProcessInstrument):
                     f"{dependency_list}. Expected only one dependency."
                 )
             science_files = dependencies.get_file_paths(source="ultra")
-            datasets = ultra_l1a.ultra_l1a(science_files[0], self.version)
+            datasets = ultra_l1a.ultra_l1a(science_files[0])
 
         elif self.data_level == "l1b":
             data_dict = {}
             for dep in dependency_list:
                 dataset = load_cdf(dep.imap_file_paths[0])
                 data_dict[dataset.attrs["Logical_source"]] = dataset
-            datasets = ultra_l1b.ultra_l1b(data_dict, self.version)
+            datasets = ultra_l1b.ultra_l1b(data_dict)
 
         elif self.data_level == "l1c":
             data_dict = {}
             for dep in dependency_list:
                 dataset = load_cdf(dep.imap_file_paths[0])
                 data_dict[dataset.attrs["Logical_source"]] = dataset
-            datasets = ultra_l1c.ultra_l1c(data_dict, self.version)
+            datasets = ultra_l1c.ultra_l1c(data_dict)
 
         return datasets
 

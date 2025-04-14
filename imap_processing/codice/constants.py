@@ -157,7 +157,7 @@ HI_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
 # Various configurations to support processing of individual data products
 # Much of these are described in the algorithm document in chapter 10 ("Data
 # Level 1A")
-DATA_PRODUCT_CONFIGURATIONS = {
+DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED: {
         "dataset_name": "imap_codice_l1a_hi-counters-aggregated",
         "input_dims": {},

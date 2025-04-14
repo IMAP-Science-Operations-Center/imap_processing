@@ -16,7 +16,7 @@ from imap_processing.utils import packet_file_to_datasets
 logger = logging.getLogger(__name__)
 
 
-def hi_l1a(packet_file_path: Union[str, Path], data_version: str) -> list[xr.Dataset]:
+def hi_l1a(packet_file_path: Union[str, Path]) -> list[xr.Dataset]:
     """
     Will process IMAP raw data to l1a.
 
@@ -24,8 +24,6 @@ def hi_l1a(packet_file_path: Union[str, Path], data_version: str) -> list[xr.Dat
     ----------
     packet_file_path : str
         Data packet file path.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -61,9 +59,6 @@ def hi_l1a(packet_file_path: Union[str, Path], data_version: str) -> list[xr.Dat
         attr_mgr = ImapCdfAttributes()
         attr_mgr.add_instrument_global_attrs("hi")
         data.attrs.update(attr_mgr.get_global_attributes(gattr_key))
-
-        # TODO: revisit this
-        data.attrs["Data_version"] = data_version
 
         # set the sensor string in Logical_source
         sensor_str = apid_enum.sensor

@@ -10,9 +10,9 @@ Examples
     from imap_processing.idex.idex_l2a import idex_l2a
 
     l0_file = "imap_processing/tests/idex/imap_idex_l0_sci_20231214_v001.pkts"
-    l1a_data = PacketParser(l0_file, data_version)
-    l1b_data = idex_l1b(l1a_data, data_version)
-    l2a_data = idex_l2a(l1b_data, data_version)
+    l1a_data = PacketParser(l0_file)
+    l1b_data = idex_l1b(l1a_data)
+    l2a_data = idex_l2a(l1b_data)
     write_cdf(l2a_data)
 """
 
@@ -54,7 +54,7 @@ class BaselineNoiseTime(IntEnum):
     STOP = -5
 
 
-def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
     """
     Will process IDEX l1b data to create l2a data products.
 
@@ -70,8 +70,6 @@ def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     ----------
     l1b_dataset : xarray.Dataset
         IDEX L1a dataset to process.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -152,9 +150,9 @@ def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         waveform_name = waveform.lower()
         # Add variables
         l2a_dataset[f"{waveform_name}_fit_parameters"] = fit_results[0]
-        l2a_dataset[f"{waveform_name}_fit_imapct_charge"] = fit_results[1]
+        l2a_dataset[f"{waveform_name}_fit_impact_charge"] = fit_results[1]
         # TODO: convert charge to mass
-        l2a_dataset[f"{waveform_name}_fit_imapct_mass_estimate"] = fit_results[1]
+        l2a_dataset[f"{waveform_name}_fit_impact_mass_estimate"] = fit_results[1]
         l2a_dataset[f"{waveform_name}_chi_squared"] = fit_results[2]
         l2a_dataset[f"{waveform_name}_reduced_chi_squared"] = fit_results[3]
         l2a_dataset[f"{waveform_name}_fit_results"] = fit_results[4]
@@ -165,7 +163,7 @@ def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     l2a_dataset["tof_snr"] = xr.DataArray(snr, dims=["epoch"])
     l2a_dataset["mass"] = mass_scales_da
     # Update global attributes
-    idex_attrs = get_idex_attrs(data_version)
+    idex_attrs = get_idex_attrs()
     l2a_dataset.attrs = idex_attrs.get_global_attributes("imap_idex_l2a_sci")
 
     logger.info("IDEX L2A science data processing completed.")
@@ -437,9 +435,7 @@ def analyze_peaks(
             fit_params[idx] = np.array([mu, sigma, lam])
             area_under_emg[idx] = area
         else:
-            logger.warning(
-                f"Unable to find a slot for mass: {mass}. Discarding " f"value."
-            )
+            logger.warning(f"Unable to find a slot for mass: {mass}. Discarding value.")
 
     return fit_params, area_under_emg
 

@@ -36,7 +36,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_fixture(de_dataset, events_fsw_comparison_theta_0):
     """Fixture to compute and return yf and related data."""
     # Remove start_type with fill values
@@ -444,10 +444,12 @@ def test_get_eventtimes(test_fixture, use_fake_spin_data_for_time):
     spin_period_sec_max = expected_max_df["spin_period_sec"].values[0]
 
     spin_start_min = (
-        expected_min_df["spin_start_sec"] + expected_min_df["spin_start_subsec"] / 1000
+        expected_min_df["spin_start_sec_sclk"]
+        + expected_min_df["spin_start_subsec_sclk"] / 1e6
     )
     spin_start_max = (
-        expected_max_df["spin_start_sec"] + expected_max_df["spin_start_subsec"] / 1000
+        expected_max_df["spin_start_sec_sclk"]
+        + expected_max_df["spin_start_subsec_sclk"] / 1e6
     )
 
     assert spin_start_min.values[0] == spin_starts.min()
@@ -533,7 +535,7 @@ def test_get_fwhm():
     assert theta_interp.shape == test_theta.shape
 
 
-@pytest.mark.external_test_data()
+@pytest.mark.external_test_data
 def test_get_efficiency():
     """Tests get_efficiency function."""
 

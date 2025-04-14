@@ -21,7 +21,8 @@ table data.
     :template: autosummary.rst
     :recursive:
 
-    kernels
     geometry
+    kernels
+    repoint
     spin
     time

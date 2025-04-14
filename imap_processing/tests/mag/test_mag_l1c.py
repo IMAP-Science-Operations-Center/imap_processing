@@ -41,7 +41,7 @@ def mag_l1b_dataset():
     return output_dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def norm_dataset():
     dataset = mag_l1a_dataset_generator(10)
     epoch_vals = generate_test_epoch(
@@ -64,7 +64,7 @@ def norm_dataset():
     return dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def burst_dataset():
     dataset = mag_l1a_dataset_generator(27)
     epoch_vals = generate_test_epoch(5.1, [VecSec.EIGHT_VECS_PER_S], 1.9)
@@ -135,15 +135,18 @@ def test_process_mag_l1c(norm_dataset, burst_dataset):
         * 1e9
     )
     assert np.array_equal(l1c[:, 0], expected_output_timeline)
-    # Every new timestamp should have data
+    # Last new timestamp is missing data because burst mode only goes to 5.15
+    # Don't generate data if there's no burst data to interpolate
     assert (
         np.count_nonzero([np.sum(l1c[i, 1:4]) for i in range(l1c.shape[0])])
-        == l1c.shape[0]
+        == l1c.shape[0] - 1
     )
     expected_flags = np.zeros(15)
     # filled sections should have 1 as a flag
     expected_flags[5:8] = 1
-    expected_flags[10:12] = 1
+    expected_flags[10:11] = 1
+    # last datapoint in the gap is missing a value
+    expected_flags[11] = -1
     assert np.array_equal(l1c[:, 5], expected_flags)
     assert np.array_equal(l1c[:5, 1:5], norm_dataset["vectors"].data[:5, :])
     for i in range(5, 8):
@@ -156,7 +159,7 @@ def test_process_mag_l1c(norm_dataset, burst_dataset):
         assert np.allclose(l1c[i, 1:5], burst_vectors, rtol=0, atol=1)
 
     assert np.array_equal(l1c[8:10, 1:5], norm_dataset["vectors"].data[5:7, :])
-    for i in range(10, 12):
+    for i in range(10, 11):
         e = l1c[i, 0]
         burst_vectors = burst_dataset.sel(epoch=int(e), method="nearest")[
             "vectors"
@@ -164,6 +167,8 @@ def test_process_mag_l1c(norm_dataset, burst_dataset):
         # We're just finding the closest burst values to the array, so they won't be
         # identical.
         assert np.allclose(l1c[i, 1:5], burst_vectors, rtol=0, atol=1)
+
+    assert np.array_equal(l1c[11, 1:5], [0, 0, 0, 0])
 
 
 def test_interpolate_gaps(norm_dataset, mag_l1b_dataset):
@@ -218,7 +223,7 @@ def test_interpolate_gaps(norm_dataset, mag_l1b_dataset):
 
 
 def test_mag_l1c(norm_dataset, burst_dataset):
-    l1c = mag_l1c(burst_dataset, "v001", norm_dataset)
+    l1c = mag_l1c(burst_dataset, norm_dataset)
     assert l1c["vector_magnitude"].shape == (len(l1c["epoch"].data),)
     assert l1c["vector_magnitude"].data[0] == np.linalg.norm(l1c["vectors"].data[0][:4])
     assert l1c["vector_magnitude"].data[-1] == np.linalg.norm(
@@ -237,7 +242,7 @@ def test_mag_l1c(norm_dataset, burst_dataset):
 
 
 def test_mag_attributes(norm_dataset, burst_dataset):
-    output = mag_l1c(norm_dataset, "v001", burst_dataset)
+    output = mag_l1c(norm_dataset, burst_dataset)
     assert output.attrs["Logical_source"] == "imap_mag_l1c_norm-mago"
 
     expected_attrs = ["missing_sequences", "interpolation_method"]
@@ -247,7 +252,7 @@ def test_mag_attributes(norm_dataset, burst_dataset):
 
 def test_missing_burst_file(norm_dataset, burst_dataset):
     # Should run with only normal mode data or only burst mode data.
-    output = mag_l1c(norm_dataset, "v001", None)
+    output = mag_l1c(norm_dataset, None)
     assert output.attrs["Logical_source"] == "imap_mag_l1c_norm-mago"
 
     # Should pass through normal mode data only
@@ -259,7 +264,7 @@ def test_missing_burst_file(norm_dataset, burst_dataset):
 def test_missing_norm_file(norm_dataset, burst_dataset):
     # Should run with only normal mode data or only burst mode data.
     burst_dataset.attrs["Logical_source"] = "imap_mag_l1b_burst-magi"
-    output = mag_l1c(burst_dataset, "v001", None)
+    output = mag_l1c(burst_dataset, None)
 
     assert output.attrs["Logical_source"] == "imap_mag_l1c_norm-magi"
     # TODO: test that the output is downsampled

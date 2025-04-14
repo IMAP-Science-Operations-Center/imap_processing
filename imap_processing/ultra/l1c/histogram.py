@@ -6,9 +6,7 @@ import xarray as xr
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 
-def calculate_histogram(
-    histogram_dataset: xr.Dataset, name: str, data_version: str
-) -> xr.Dataset:
+def calculate_histogram(histogram_dataset: xr.Dataset, name: str) -> xr.Dataset:
     """
     Create dictionary with defined datatype for Histogram Data.
 
@@ -18,8 +16,6 @@ def calculate_histogram(
         Dataset containing histogram data.
     name : str
         Name of dataset.
-    data_version : str
-        Version of the data.
 
     Returns
     -------
@@ -35,6 +31,6 @@ def calculate_histogram(
     histogram_dict["epoch"] = epoch
     histogram_dict["sid"] = np.zeros(len(epoch), dtype=np.uint8)
 
-    dataset = create_dataset(histogram_dict, name, "l1c", data_version)
+    dataset = create_dataset(histogram_dict, name, "l1c")
 
     return dataset

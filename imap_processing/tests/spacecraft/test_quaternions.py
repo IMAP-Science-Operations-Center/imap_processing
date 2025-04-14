@@ -7,7 +7,7 @@ import xarray as xr
 from imap_processing.spacecraft import quaternions
 
 
-@pytest.fixture()
+@pytest.fixture
 def l1a_quaternion_ds():
     time = np.arange(100)
     data = np.linspace(-0.1, 0.1, 100)

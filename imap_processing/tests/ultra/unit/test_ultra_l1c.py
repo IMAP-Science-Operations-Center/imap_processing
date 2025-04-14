@@ -6,7 +6,7 @@ from imap_processing.ultra.l1c.ultra_l1c import ultra_l1c
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_data_l1b_dict():
     # Create sample data for the xarray Dataset
     epoch = np.arange(
@@ -55,7 +55,7 @@ def mock_data_l1b_dict():
     return data_dict
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_data_l1c_dict():
     epoch = np.array(
         [760591786368000000, 760591787368000000, 760591788368000000],
@@ -68,7 +68,7 @@ def mock_data_l1c_dict():
 def test_create_dataset(mock_data_l1c_dict):
     """Tests that dataset is created as expected."""
     dataset = create_dataset(
-        mock_data_l1c_dict, "imap_ultra_l1c_45sensor-histogram", "l1c", "001"
+        mock_data_l1c_dict, "imap_ultra_l1c_45sensor-histogram", "l1c"
     )
 
     assert "epoch" in dataset.coords
@@ -80,7 +80,7 @@ def test_create_dataset(mock_data_l1c_dict):
 
 def test_ultra_l1c(mock_data_l1b_dict):
     """Tests that L1c data is created."""
-    output_datasets = ultra_l1c(mock_data_l1b_dict, data_version="001")
+    output_datasets = ultra_l1c(mock_data_l1b_dict)
 
     assert len(output_datasets) == 1
     assert (
@@ -101,4 +101,4 @@ def test_ultra_l1c_error(mock_data_l1b_dict):
     with pytest.raises(
         ValueError, match="Data dictionary does not contain the expected keys."
     ):
-        ultra_l1c(mock_data_l1b_dict, data_version="001")
+        ultra_l1c(mock_data_l1b_dict)
