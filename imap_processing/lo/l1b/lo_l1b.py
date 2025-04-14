@@ -621,6 +621,8 @@ def set_bad_times(l1b_de: xr.Dataset) -> xr.Dataset:
         The L1B DE dataset with the bad times added.
     """
     # Initialize all times as not bad for now
+    # TODO: Update to set badtimes based on criteria that
+    #  will be defined in the algorithm document
     # 1 = badtime, 0 = not badtime
     l1b_de["badtimes"] = xr.DataArray(
         np.zeros(len(l1b_de["epoch"]), dtype=int),

@@ -474,11 +474,11 @@ def test_identify_species(attr_mgr_l1b):
     fill_val = attr_mgr_l1b.get_variable_attributes("tof2")["FILLVAL"]
     l1b_de = xr.Dataset(
         {
-            "tof2": ("epoch", [14, 80, 500, fill_val]),
+            "tof2": ("epoch", [1, 14, 50, 80, 500, fill_val]),
         }
     )
 
-    expected_species = np.array(["H", "O", "U", "U"])
+    expected_species = np.array(["U", "H", "U", "O", "U", "U"])
 
     # Act
     l1b_de = identify_species(l1b_de)
