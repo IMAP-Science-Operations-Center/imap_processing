@@ -1,15 +1,12 @@
-from pathlib import Path
-
 import numpy as np
 import pytest
-import xarray as xr
 
-from imap_processing.cdf.utils import load_cdf
-from imap_processing.mag.l2.mag_l2 import apply_calibration_matrix, mag_l2, apply_offset_file
+from imap_processing.mag.l2.mag_l2 import mag_l2
+from imap_processing.mag.l2.mag_l2_data import MagL2
 from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
 
 
-@pytest.fixture()
+@pytest.fixture
 def norm_dataset(mag_test_l2_data):
     offsets = mag_test_l2_data[1]
     dataset = mag_l1a_dataset_generator(3504)
@@ -28,7 +25,7 @@ def test_mag_l2(norm_dataset, mag_test_l2_data):
     calibration_dataset = mag_test_l2_data[0]
 
     offset_dataset = mag_test_l2_data[1]
-    l2 = mag_l2(calibration_dataset, offset_dataset, norm_dataset, "v001")
+    l2 = mag_l2(calibration_dataset, offset_dataset, norm_dataset)
     assert "vectors" in l2[0].data_vars
 
 
@@ -37,81 +34,76 @@ def test_failure_on_mismatch_files():
     pass
 
 
-def test_apply_calibration(norm_dataset, mag_test_l2_data):
-    # Test matrix application
-    output = apply_calibration_matrix(
-        np.array([[1, 1, 1, 0]], dtype=np.float64), mag_test_l2_data[0], True
-    )
-
-    expected_vector = np.array([1, 1, 1, 0])
-
-    assert np.allclose(output, expected_vector, atol=1e-9)
-
-    vectors = np.array([[1, 1, 1, 0] for i in range(1, 21)], dtype=np.float64)
-    expected_output = np.array([[1, 1, 1, 0] for i in range(1, 21)])
-    output = apply_calibration_matrix(vectors, mag_test_l2_data[0], True)
-
-    assert np.allclose(output, expected_output, atol=1e-9)
-
-
 def test_offset_application(norm_dataset, mag_test_l2_data):
     # Test against zeros
     offsets = mag_test_l2_data[1]
     output = MagL2(
-        norm_dataset['vectors'].data[:, :3],
-        norm_dataset['epoch'].data,
-        norm_dataset['vectors'].data[:, 3],
+        norm_dataset["vectors"].data[:, :3],
+        norm_dataset["epoch"].data,
+        norm_dataset["vectors"].data[:, 3],
         {},
         None,
         None,
         None,
-        offsets = offsets['offsets'].data,
-        timedelta = offsets['timedeltas'].data,
+        offsets=offsets["offsets"].data,
+        timedelta=offsets["timedeltas"].data,
     )
 
-    expcted_vectors = norm_dataset["vectors"].data[:, :3]
-    assert np.allclose(output.vectors, expcted_vectors, atol=1e-9)
-    assert np.allclose(output.epoch, norm_dataset['epoch'], atol=1e-9)
+    expected_vectors = norm_dataset["vectors"].data[:, :3]
+    assert np.allclose(output.vectors, expected_vectors, atol=1e-9)
+    assert np.allclose(output.epoch, norm_dataset["epoch"], atol=1e-9)
 
-    new_offsets = np.zeros((len(norm_dataset['epoch']), 3))
+    new_offsets = np.zeros((len(norm_dataset["epoch"]), 3))
     new_offsets[0] = [1, 1, 1]
     new_offsets[1] = [-1, -1, -1]
     new_offsets[-1] = [1, 0, -1]
-    offsets['offsets'].data = new_offsets
 
-    new_timeshift = np.zeros(len(norm_dataset['epoch']))
+    new_timeshift = np.zeros(len(norm_dataset["epoch"]))
     new_timeshift[0] = 0.00001
     new_timeshift[1] = -0.00001
     new_timeshift[2] = 1e-9
 
-    expected_timeshift = norm_dataset['epoch'].data
+    expected_timeshift = norm_dataset["epoch"].data
     # Timeshift is provided in seconds, epoch is in nanoseconds
     expected_timeshift[0] = expected_timeshift[0] + 10000
     expected_timeshift[1] = expected_timeshift[1] - 10000
     expected_timeshift[2] = expected_timeshift[2] + 1
 
-    output = apply_offset_file(norm_dataset['vectors'].data, norm_dataset['epoch'], offsets)
+    output = MagL2(
+        norm_dataset["vectors"].data[:, :3],
+        norm_dataset["epoch"].data,
+        norm_dataset["vectors"].data[:, 3],
+        {},
+        None,
+        None,
+        None,
+        offsets=new_offsets,
+        timedelta=new_timeshift,
+    )
+
     expected_vectors = norm_dataset["vectors"].data[:, :3]
     expected_vectors[0] = [2, 2, 2]
     expected_vectors[1] = [1, 1, 1]
     expected_vectors[-1] = [3505, 3504, 3503]
 
-    assert np.allclose(output['vectors'], expected_vectors, atol=1e-9)
-    assert np.allclose(output['epoch'], expected_timeshift, atol=1e-9)
+    assert np.allclose(output.vectors, expected_vectors, atol=1e-9)
+    assert np.allclose(output.epoch, expected_timeshift, atol=1e-9)
 
-    with pytest.raises(ValueError):
-        bad_timestamps = norm_dataset['epoch'].data[1:]
-        output = apply_offset_file(norm_dataset['vectors'].data, bad_timestamps, offsets)
 
-    with pytest.raises(ValueError):
-        bad_timestamps = norm_dataset['epoch'].data + 1
-        output = apply_offset_file(norm_dataset['vectors'].data, bad_timestamps, offsets)
+def test_error_raises(norm_dataset, mag_test_l2_data):
+    bad_timestamps = norm_dataset["epoch"].data[1:]
+    norm_dataset["epoch"].data = bad_timestamps
+    with pytest.raises(ValueError, match="same timestamps"):
+        mag_l2(mag_test_l2_data[0], mag_test_l2_data[1], norm_dataset)
+
+    bad_timestamps = norm_dataset["epoch"].data + 1
+    norm_dataset["epoch"].data = bad_timestamps
+    with pytest.raises(ValueError, match="same timestamps"):
+        mag_l2(mag_test_l2_data[0], mag_test_l2_data[1], norm_dataset)
 
 
 def test_full_calculation(norm_dataset, mag_test_l2_data):
     # test matrix + offsets calculation
-
-
     pass
 
 

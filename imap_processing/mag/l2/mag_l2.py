@@ -1,7 +1,10 @@
 """Module to run MAG L2 processing."""
 
+from pathlib import Path
+
 import numpy as np
 import xarray as xr
+import yaml
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.mag.constants import DataMode
@@ -10,8 +13,8 @@ from imap_processing.mag.l2.mag_l2_data import MagL2
 
 
 def mag_l2(
-    calibration_dataset: xr.Dataset,
-    offset_dataset: xr.Dataset,
+    calibration_datasets: list[xr.Dataset],
+    offsets_dataset: xr.Dataset,
     input_data: xr.Dataset,
 ) -> list[xr.Dataset]:
     """
@@ -26,9 +29,9 @@ def mag_l2(
 
     Parameters
     ----------
-    calibration_dataset : xr.Dataset
-        Calibration ancillary file input.
-    offset_dataset : xr.Dataset
+    calibration_datasets : list[xr.Dataset]
+        Calibration ancillary file inputs.
+    offsets_dataset : xr.Dataset
         Offset ancillary file input.
     input_data : xr.Dataset
         Input data from MAG L1C or L1B.
@@ -41,13 +44,24 @@ def mag_l2(
     """
     # TODO we may need to combine multiple calibration datasets into one timeline.
 
-    # TODO set from offsets file
-    always_output_mago = True
+    with open(
+        Path(__file__).parent.parent / "imap_mag_sdc-configuration_v001.yaml"
+    ) as f:
+        configuration = yaml.safe_load(f)
 
-    vectors = apply_calibration_matrix(
-        input_data["vectors"].data, calibration_dataset, always_output_mago
+    always_output_mago = bool(configuration["always_output_mago"])
+
+    # TODO Check that the input file matches the offsets file
+    if not np.array_equal(input_data["epoch"].data, offsets_dataset["epoch"].data):
+        raise ValueError("Input file and offsets file must have the same timestamps.")
+
+    calibration_matrix = retrieve_matrix_from_l2_calibration(
+        calibration_datasets, always_output_mago
     )
-    # TODO time shift from L1B
+
+    vectors = np.apply_along_axis(
+        calibrate_vector, 1, input_data["vectors"].data, calibration_matrix
+    )
 
     basic_test_data = MagL2(
         vectors[:, :3],  # level 2 vectors don't include range
@@ -57,6 +71,8 @@ def mag_l2(
         np.zeros(len(input_data["epoch"].data)),
         np.zeros(len(input_data["epoch"].data)),
         DataMode.NORM,
+        offsets=offsets_dataset["offsets"].data,
+        timedelta=offsets_dataset["timedeltas"].data,
     )
     attributes = ImapCdfAttributes()
     attributes.add_instrument_global_attrs("mag")
@@ -65,36 +81,36 @@ def mag_l2(
     return [basic_test_data.generate_dataset(attributes)]
 
 
-def apply_calibration_matrix(
-    vectors: np.ndarray, calibration_dataset: xr.Dataset, use_mago: bool = True
-) -> np.ndarray:
+def retrieve_matrix_from_l2_calibration(
+    calibration_datasets: list[xr.Dataset], use_mago: bool = True
+) -> xr.DataArray:
     """
-    Apply the calibration file to the vectors to rotate them in space.
+    Get the calibration matrix for the file.
 
     Parameters
     ----------
-    vectors : np.ndarray
-        (n, 4) array of vectors to rotate and timeshift.
-    calibration_dataset : xr.Dataset
-        Ancillary file input for calibration.
+    calibration_datasets : list[xr.Dataset]
+        Ancillary file inputs for calibration.
     use_mago : bool
         Use the MAGo calibration matrix. Default is True.
 
     Returns
     -------
     np.ndarray
-        Rotated and timeshifted vectors.
+        Calibration matrix in the shape (3, 3, 4) to rotate vectors.
     """
-    if use_mago:
-        # TODO these variable names will change but the structure is the same
-        calibration_data = calibration_dataset["MFOTOURFO"]
+    # TODO: allow for multiple inputs
+    if isinstance(calibration_datasets, list):
+        calibration_dataset = calibration_datasets[0]
     else:
-        calibration_data = calibration_dataset["MFITOURFI"]
+        calibration_dataset = calibration_datasets
+
+    if use_mago:
+        calibration_data = calibration_dataset["URFTOORFO"]
+    else:
+        calibration_data = calibration_dataset["URFTOORFI"]
 
     # TODO will need to combine multiple files here
     # TODO: Check validity of the calibration file?
-    output_vectors: np.ndarray = np.apply_along_axis(
-        calibrate_vector, 1, vectors, calibration_data
-    )
 
-    return output_vectors
+    return calibration_data

@@ -863,7 +863,6 @@ class Mag(ProcessInstrument):
                 / "imap_mag_l2-calibration-matrices_20251017_v003.cdf"
             )
             # TODO: Test data missing
-            offset_dataset = xr.Dataset()
             datasets = mag_l2(calibration_dataset, offset_dataset, input_data)
 
         return datasets
