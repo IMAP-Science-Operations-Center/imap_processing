@@ -87,7 +87,7 @@ def mag_test_l2_data():
         imap_dir
         / "validation"
         / "calibration"
-        / "imap_mag_l2_offsets_20251017_v001.cdf"
+        / "imap_mag_l2-offsets-norm_20251017_20251017_v001.cdf"
     )
 
     return calibration_data, offsets_data

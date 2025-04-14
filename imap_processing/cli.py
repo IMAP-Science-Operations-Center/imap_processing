@@ -851,7 +851,7 @@ class Mag(ProcessInstrument):
                 / "mag"
                 / "validation"
                 / "calibration"
-                / "imap_mag_l2-calibration-matrices_20251017_v003.cdf"
+                / "imap_mag_l2-calibration-matrices_20251017_v004.cdf"
             )
 
             offset_dataset = load_cdf(
@@ -860,7 +860,7 @@ class Mag(ProcessInstrument):
                 / "mag"
                 / "validation"
                 / "calibration"
-                / "imap_mag_l2-calibration-matrices_20251017_v003.cdf"
+                / "imap_mag_l2-offsets-norm_20251017_20251017_v001.cdf"
             )
             # TODO: Test data missing
             datasets = mag_l2(calibration_dataset, offset_dataset, input_data)

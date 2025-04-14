@@ -90,16 +90,14 @@ def test_offset_application(norm_dataset, mag_test_l2_data):
     assert np.allclose(output.epoch, expected_timeshift, atol=1e-9)
 
 
-def test_error_raises(norm_dataset, mag_test_l2_data):
-    bad_timestamps = norm_dataset["epoch"].data[1:]
-    norm_dataset["epoch"].data = bad_timestamps
+def test_error_raises(mag_test_l2_data):
+    dataset = mag_l1a_dataset_generator(3504)
     with pytest.raises(ValueError, match="same timestamps"):
-        mag_l2(mag_test_l2_data[0], mag_test_l2_data[1], norm_dataset)
+        mag_l2(mag_test_l2_data[0], mag_test_l2_data[1], dataset)
 
-    bad_timestamps = norm_dataset["epoch"].data + 1
-    norm_dataset["epoch"].data = bad_timestamps
+    dataset = mag_l1a_dataset_generator(3505)
     with pytest.raises(ValueError, match="same timestamps"):
-        mag_l2(mag_test_l2_data[0], mag_test_l2_data[1], norm_dataset)
+        mag_l2(mag_test_l2_data[0], mag_test_l2_data[1], dataset)
 
 
 def test_full_calculation(norm_dataset, mag_test_l2_data):
