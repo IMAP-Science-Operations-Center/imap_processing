@@ -14,19 +14,21 @@ logger = logging.getLogger(__name__)
 logger.info("Importing ultra_l2 module")
 
 # Default properties for the Ultra L2 map
-DEFAULT_ULTRA_L2_MAP_STRUCTURE = ena_maps.AbstractSkyMap.from_dict(
-    {
-        "sky_tiling_type": "HEALPIX",
-        "spice_reference_frame": "ECLIPJ2000",
-        "values_to_push_project": [
-            "counts",
-            "exposure_factor",
-            "sensitivity",
-            "background_rates",
-        ],
-        "nside": 32,
-        "nested": False,
-    }
+DEFAULT_ULTRA_L2_MAP_STRUCTURE: ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap = (
+    ena_maps.AbstractSkyMap.from_dict(
+        {
+            "sky_tiling_type": "HEALPIX",
+            "spice_reference_frame": "ECLIPJ2000",
+            "values_to_push_project": [
+                "counts",
+                "exposure_factor",
+                "sensitivity",
+                "background_rates",
+            ],
+            "nside": 32,
+            "nested": False,
+        }
+    )
 )
 
 # Set some default Healpix parameters - these must be defined, even if also
@@ -65,7 +67,9 @@ VARIABLES_TO_DROP_AFTER_FLUX_CALCULATION = [
 
 def generate_ultra_healpix_skymap(
     ultra_l1c_psets: list[str | xr.Dataset],
-    output_map_structure: ena_maps.AbstractSkyMap = DEFAULT_ULTRA_L2_MAP_STRUCTURE,
+    output_map_structure: (
+        ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap
+    ) = DEFAULT_ULTRA_L2_MAP_STRUCTURE,
 ) -> ena_maps.HealpixSkyMap:
     """
     Generate a Healpix skymap from ULTRA L1C pointing sets.
@@ -79,7 +83,7 @@ def generate_ultra_healpix_skymap(
     ultra_l1c_psets : list[str | xr.Dataset]
         List of paths to ULTRA L1C pointing set files or xarray Datasets containing
         pointing set data.
-    output_map_structure : ena_maps.AbstractSkyMap, optional
+    output_map_structure : ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap, optional
         Empty SkyMap structure providing the properties of the map to be generated.
         Defaults to DEFAULT_ULTRA_L2_MAP_STRUCTURE defined in this module.
 
@@ -227,7 +231,9 @@ def generate_ultra_healpix_skymap(
 def ultra_l2(
     data_dict: dict[str, xr.Dataset | str],
     data_version: str,
-    output_map_structure: ena_maps.AbstractSkyMap = DEFAULT_ULTRA_L2_MAP_STRUCTURE,
+    output_map_structure: (
+        ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap
+    ) = DEFAULT_ULTRA_L2_MAP_STRUCTURE,
 ) -> list[xr.Dataset]:
     """
     Generate and format Ultra L2 ENA Map Product from L1C Products.
@@ -238,7 +244,7 @@ def ultra_l2(
         Dict mapping l1c product identifiers to paths/Datasets containing l1c psets.
     data_version : str
         Version of the data product being created.
-    output_map_structure : ena_maps.AbstractSkyMap, optional
+    output_map_structure : ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap, optional
         Empty SkyMap structure providing the properties of the map to be generated.
         Defaults to DEFAULT_ULTRA_L2_MAP_STRUCTURE defined in this module.
 
