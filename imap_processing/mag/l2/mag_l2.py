@@ -50,6 +50,7 @@ def mag_l2(
     vectors = apply_calibration_matrix(
         input_data["vectors"].data, calibration_dataset, always_output_mago
     )
+    # TODO time shift from L1B
 
     basic_test_data = MagL2(
         vectors[:, :3],  # level 2 vectors don't include range
