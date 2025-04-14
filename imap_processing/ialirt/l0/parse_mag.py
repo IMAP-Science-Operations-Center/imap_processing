@@ -1,10 +1,12 @@
 """Functions to support I-ALiRT MAG packet parsing."""
 
 import logging
+from pathlib import Path
 
 import numpy as np
 import xarray as xr
 
+from imap_processing.cdf.utils import load_cdf
 from imap_processing.ialirt.l0.mag_l0_ialirt_data import (
     Packet0,
     Packet1,
@@ -13,6 +15,9 @@ from imap_processing.ialirt.l0.mag_l0_ialirt_data import (
 )
 from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.ialirt.utils.time import calculate_time
+from imap_processing.mag.l1a.mag_l1a_data import TimeTuple
+from imap_processing.mag.l1b.mag_l1b import calibrate_vector, shift_time
+from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +137,13 @@ def extract_magnetic_vectors(science_values: xr.DataArray) -> dict:
     return vectors
 
 
-def get_time(grouped_data: xr.Dataset, group: int, pkt_counter: xr.DataArray) -> dict:
+def get_time(
+    grouped_data: xr.Dataset,
+    group: int,
+    pkt_counter: xr.DataArray,
+    time_shift_mago: int,
+    time_shift_magi: int,
+) -> dict:
     """
     Get the time for the grouped data.
 
@@ -144,6 +155,10 @@ def get_time(grouped_data: xr.Dataset, group: int, pkt_counter: xr.DataArray) ->
         Group number.
     pkt_counter : xr.DataArray
         Packet counter.
+    time_shift_mago : int
+        Time shift value mago.
+    time_shift_magi : int
+        Time shift value magi.
 
     Returns
     -------
@@ -173,10 +188,67 @@ def get_time(grouped_data: xr.Dataset, group: int, pkt_counter: xr.DataArray) ->
         "sec_fintm": int(sec_fintm),
     }
 
+    primary_time = TimeTuple(time_data["pri_coarsetm"], time_data["pri_fintm"])
+    secondary_time = TimeTuple(time_data["sec_coarsetm"], time_data["sec_fintm"])
+    time_data["pri_met"] = primary_time.to_seconds()
+    time_data["primary_ttj2000ns"] = met_to_ttj2000ns(time_data["pri_met"])
+    # TODO: is this ok?
+    time_data["primary_epoch"] = shift_time(
+        time_data["primary_ttj2000ns"], time_shift_mago
+    )
+    time_data["sec_met"] = secondary_time.to_seconds()
+    time_data["secondary_ttj2000ns"] = met_to_ttj2000ns(time_data["sec_met"])
+    time_data["secondary_epoch"] = shift_time(
+        time_data["secondary_ttj2000ns"], time_shift_magi
+    )
+
     return time_data
 
 
-def parse_packet(accumulated_data: xr.Dataset) -> list[dict]:
+def calculate_l1b(
+    grouped_data,
+    group: int,
+    pkt_counter: xr.DataArray,
+    science_data: dict,
+    status_data: dict,
+):
+    # Get calibration data
+    (
+        calibration_matrix_mago,
+        time_shift_mago,
+        calibration_matrix_magi,
+        time_shift_magi,
+    ) = get_calibration()
+
+    # Get time values for each group.
+    time_data = get_time(
+        grouped_data, group, pkt_counter, time_shift_mago, time_shift_magi
+    )
+
+    input_vector_mago = np.array(
+        [
+            science_data["pri_x"],
+            science_data["pri_y"],
+            science_data["pri_z"],
+            status_data["fob_range"],
+        ]
+    )
+    input_vector_magi = np.array(
+        [
+            science_data["sec_x"],
+            science_data["sec_y"],
+            science_data["sec_z"],
+            status_data["fib_range"],
+        ]
+    )
+
+    updated_vector_mago = calibrate_vector(input_vector_mago, calibration_matrix_mago)
+    updated_vector_magi = calibrate_vector(input_vector_magi, calibration_matrix_magi)
+
+    return updated_vector_mago, updated_vector_magi, time_data
+
+
+def process_packet(accumulated_data: xr.Dataset) -> list[dict]:
     """
     Parse the MAG packets.
 
@@ -237,10 +309,43 @@ def parse_packet(accumulated_data: xr.Dataset) -> list[dict]:
             (grouped_data["group"] == group).values
         ]
         science_data = extract_magnetic_vectors(science_values)
+        updated_vector_mago, updated_vector_magi, time_data = calculate_l1b(
+            grouped_data, group, pkt_counter, science_data, status_data
+        )
 
-        # Get time values for each group.
-        time_data = get_time(grouped_data, group, pkt_counter)
+        # TODO: do I need to add the range values to the science data?
+        # TODO: how do we know if it is mago or magi?
+        science_data.update(
+            {
+                "calibrated_pri_x": updated_vector_mago[0],
+                "calibrated_pri_y": updated_vector_mago[1],
+                "calibrated_pri_z": updated_vector_mago[2],
+            }
+        )
 
         mag_data.append({**status_data, **science_data, **time_data})
 
     return mag_data
+
+
+def get_calibration():
+    # TODO: This should definitely be loaded from AWS
+    calibration_dataset = load_cdf(
+        Path(__file__).resolve().parents[2]
+        / "mag"
+        / "l1b"
+        / "imap_calibration_mag_20240229_v01.cdf"
+    )
+    logger.info("Using default test calibration file.")
+
+    calibration_matrix_mago = calibration_dataset["MFOTOURFO"]
+    time_shift_mago = calibration_dataset["OTS"]
+    calibration_matrix_magi = calibration_dataset["MFITOURFI"]
+    time_shift_magi = calibration_dataset["ITS"]
+
+    return (
+        calibration_matrix_mago,
+        time_shift_mago,
+        calibration_matrix_magi,
+        time_shift_magi,
+    )

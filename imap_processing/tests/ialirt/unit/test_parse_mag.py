@@ -9,7 +9,7 @@ from imap_processing.ialirt.l0.parse_mag import (
     get_pkt_counter,
     get_status_data,
     get_time,
-    parse_packet,
+    process_packet,
 )
 from imap_processing.utils import packet_file_to_datasets
 
@@ -156,9 +156,9 @@ def test_extract_magnetic_vectors():
     }
 
 
-def test_parse_packet(xarray_data, mag_test_data):
+def test_process_packet(xarray_data, mag_test_data):
     """Tests the parse_packet function."""
-    parsed_packets = parse_packet(xarray_data)
+    parsed_packets = process_packet(xarray_data)
 
     for packet in parsed_packets:
         index = packet["pri_coarsetm"] == mag_test_data["PRI_COARSETM"]

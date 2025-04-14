@@ -369,7 +369,7 @@ def shift_time(epoch_times: xr.DataArray, time_shift: xr.DataArray) -> xr.DataAr
     Parameters
     ----------
     epoch_times : xr.DataArray
-        The input epoch times, in J2000 ns.
+        The input epoch times, in TT J2000 ns.
     time_shift : xr.DataArray
         The time shift to apply for the given sensor. This should be one value and is
         in seconds.
