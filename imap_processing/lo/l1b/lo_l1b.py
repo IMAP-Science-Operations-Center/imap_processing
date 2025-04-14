@@ -8,6 +8,12 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.lo.l1b.tof_conversions import (
+    TOF0_CONV,
+    TOF1_CONV,
+    TOF2_CONV,
+    TOF3_CONV,
+)
 from imap_processing.spice.time import met_to_ttj2000ns
 
 
@@ -64,6 +70,8 @@ def lo_l1b(dependencies: dict) -> list[Path]:
         l1a_de = calculate_tof1_for_golden_triples(l1a_de)
         # set the coincidence type string for each direct event
         l1b_de = set_coincidence_type(l1a_de, l1b_de, attr_mgr_l1a)
+        # convert the TOFs to engineering units
+        l1b_de = convert_tofs_to_eu(l1a_de, l1b_de, attr_mgr_l1a, attr_mgr_l1b)
 
     return [l1b_de]
 
@@ -458,19 +466,19 @@ def set_coincidence_type(
         The L1B DE dataset with the coincidence type added.
     """
     tof0_fill = attr_mgr_l1a.get_variable_attributes("tof0")["FILLVAL"]
-    tof0_mask = l1a_de["tof0"].values != tof0_fill
+    tof0_mask = (l1a_de["tof0"].values != tof0_fill).astype(int)
     tof1_fill = attr_mgr_l1a.get_variable_attributes("tof1")["FILLVAL"]
-    tof1_mask = l1a_de["tof1"].values != tof1_fill
+    tof1_mask = (l1a_de["tof1"].values != tof1_fill).astype(int)
     tof2_fill = attr_mgr_l1a.get_variable_attributes("tof2")["FILLVAL"]
-    tof2_mask = l1a_de["tof2"].values != tof2_fill
+    tof2_mask = (l1a_de["tof2"].values != tof2_fill).astype(int)
     tof3_fill = attr_mgr_l1a.get_variable_attributes("tof3")["FILLVAL"]
-    tof3_mask = l1a_de["tof3"].values != tof3_fill
+    tof3_mask = (l1a_de["tof3"].values != tof3_fill).astype(int)
     cksm_fill = attr_mgr_l1a.get_variable_attributes("cksm")["FILLVAL"]
-    cksm_mask = l1a_de["cksm"].values != cksm_fill
+    cksm_mask = (l1a_de["cksm"].values != cksm_fill).astype(int)
 
     coincidence_type = [
-        f"{int(tof0_mask[i])}{int(tof1_mask[i])}{int(tof2_mask[i])}{int(tof3_mask[i])}{int(cksm_mask[i])}{l1a_de['mode'].values[i]}"
-        for i in range(l1a_de["de_count"].values.sum())
+        f"{tof0_mask[i]}{tof1_mask[i]}{tof2_mask[i]}{tof3_mask[i]}{cksm_mask[i]}{l1a_de['mode'].values[i]}"
+        for i in range(len(l1a_de["direct_events"]))
     ]
 
     l1b_de["coincidence_type"] = xr.DataArray(
@@ -479,6 +487,65 @@ def set_coincidence_type(
         # TODO: Add coincidence_type to YAML file
         # attrs=attr_mgr.get_variable_attributes("spin_cycle"),
     )
+
+    return l1b_de
+
+
+def convert_tofs_to_eu(
+    l1a_de: xr.Dataset,
+    l1b_de: xr.Dataset,
+    attr_mgr_l1a: ImapCdfAttributes,
+    attr_mgr_l1b: ImapCdfAttributes,
+) -> xr.Dataset:
+    """
+    Convert the TOFs to engineering units.
+
+    The TOFs are converted from data numbers (DN) to engineering units (EU) using the
+    following equation:
+    TOF_EU = C0 + C1 * TOF_DN
+
+    where C0 and C1 are the conversion coefficients for each TOF.
+
+    This equation is applied to all four TOFs (TOF0, TOF1, TOF2, TOF3).
+
+    Parameters
+    ----------
+    l1a_de : xarray.Dataset
+        The L1A DE dataset.
+    l1b_de : xarray.Dataset
+        The L1B DE dataset.
+    attr_mgr_l1a : ImapCdfAttributes
+        Attribute manager used to get the fill values for the L1A DE dataset.
+    attr_mgr_l1b : ImapCdfAttributes
+        Attribute manager used to get the fill values for the L1B DE dataset.
+
+    Returns
+    -------
+    l1b_de : xarray.Dataset
+        The L1B DE dataset with the TOFs converted to engineering units.
+    """
+    tof_fields = ["tof0", "tof1", "tof2", "tof3"]
+    tof_conversions = [TOF0_CONV, TOF1_CONV, TOF2_CONV, TOF3_CONV]
+
+    for tof, conv in zip(tof_fields, tof_conversions):
+        # Get the fill value for the L1A and L1B TOF
+        fillval_1a = attr_mgr_l1a.get_variable_attributes(tof)["FILLVAL"]
+        fillval_1b = attr_mgr_l1b.get_variable_attributes(tof)["FILLVAL"]
+        # Create a mask for the TOF
+        mask = l1a_de[tof] != fillval_1a
+        # convert the DE TOF to engineering units
+        tof_eu = np.where(
+            mask,
+            conv.C0 + conv.C1 * l1a_de[tof],
+            fillval_1b,
+        )
+        # Add the EU TOF to the dataset. If the TOF is not present, set it to the fill
+        # value for the L1B TOF data.
+        l1b_de[tof] = xr.DataArray(
+            tof_eu,
+            dims=["epoch"],
+            attrs=attr_mgr_l1b.get_variable_attributes(tof),
+        )
 
     return l1b_de
 

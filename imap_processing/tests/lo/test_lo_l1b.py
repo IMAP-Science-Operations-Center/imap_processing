@@ -10,6 +10,7 @@ from imap_processing.cdf.utils import load_cdf
 from imap_processing.lo.l1b.lo_l1b import (
     calculate_tof1_for_golden_triples,
     convert_start_end_acq_times,
+    convert_tofs_to_eu,
     create_datasets,
     get_avg_spin_durations,
     get_spin_angle,
@@ -397,14 +398,18 @@ def test_set_coincidence_type(attr_mgr_l1a):
     l1a_de = xr.Dataset(
         {
             "de_count": ("epoch", [3]),
-            "coincidence_type": ("direct_event", [0, 0, 4]),
-            "mode": ("direct_event", [1, 0, 1]),
-            "tof0": ("direct_event", [5, 2, 10]),
-            "tof1": ("direct_event", [10, 4, tof_fill]),
-            "tof2": ("direct_event", [15, 6, 20]),
-            "tof3": ("direct_event", [20, 8, 30]),
-            "cksm": ("direct_event", [25, ckm_fill, ckm_fill]),
-        }
+            "coincidence_type": ("direct_events", [0, 0, 4]),
+            "mode": ("direct_events", [1, 0, 1]),
+            "tof0": ("direct_events", [5, 2, 10]),
+            "tof1": ("direct_events", [10, 4, tof_fill]),
+            "tof2": ("direct_events", [15, 6, 20]),
+            "tof3": ("direct_events", [20, 8, 30]),
+            "cksm": ("direct_events", [25, ckm_fill, ckm_fill]),
+        },
+        coords={
+            "epoch": [0],
+            "direct_events": [0, 1, 2],
+        },
     )
 
     coincidence_type_expected = np.array(["111111", "111100", "101101"])
@@ -417,3 +422,46 @@ def test_set_coincidence_type(attr_mgr_l1a):
         l1b_de["coincidence_type"].values,
         coincidence_type_expected,
     )
+
+
+def test_convert_tofs_to_eu(attr_mgr_l1b, attr_mgr_l1a):
+    l1b_de = xr.Dataset()
+    tof_fill_l1a = attr_mgr_l1a.get_variable_attributes("tof0")["FILLVAL"]
+    tof_fill_1lb = attr_mgr_l1b.get_variable_attributes("tof1")["FILLVAL"]
+    l1a_de = xr.Dataset(
+        {
+            "de_count": ("epoch", [2]),
+            "coincidence_type": ("direct_events", [0, 4]),
+            "mode": ("direct_events", [1, 0]),
+            "tof0": ("direct_events", [5, 2]),
+            "tof1": ("direct_events", [10, tof_fill_l1a]),
+            "tof2": ("direct_events", [15, 6]),
+            "tof3": ("direct_events", [20, 8]),
+        },
+        coords={
+            "epoch": [0],
+            "direct_events": [0, 1],
+        },
+    )
+
+    tof0_expected = np.array([1.394394, 0.889272])
+    tof1_expected = np.array([0.931059, tof_fill_1lb])
+    tof2_expected = np.array([2.870557, 1.372876])
+    tof3_expected = np.array([3.88245, 1.818162])
+
+    # Act
+    l1b_de = convert_tofs_to_eu(l1a_de, l1b_de, attr_mgr_l1a, attr_mgr_l1b)
+
+    tof_checks = [
+        ("tof0", tof0_expected),
+        ("tof1", tof1_expected),
+        ("tof2", tof2_expected),
+        ("tof3", tof3_expected),
+    ]
+    # Assert
+    for tof, expected_tof in tof_checks:
+        np.testing.assert_allclose(
+            l1b_de[tof].values,
+            expected_tof,
+            atol=1e-6,
+        )
