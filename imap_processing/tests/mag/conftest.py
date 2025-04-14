@@ -58,7 +58,7 @@ def mag_l1a_dataset_generator(length):
     return output_dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def mag_test_l1b_calibration_data():
     imap_dir = Path(__file__).parent
     cal_file = (
@@ -70,6 +70,25 @@ def mag_test_l1b_calibration_data():
     calibration_data = load_cdf(cal_file)
     return calibration_data
 
+@pytest.fixture
+def mag_test_l2_data():
+    imap_dir = Path(__file__).parent
+    cal_file = (
+        imap_dir
+        / "validation"
+        / "calibration"
+        / "imap_mag_l2-calibration-matrices_20251017_v004.cdf"
+    )
+    calibration_data = load_cdf(cal_file)
+
+    offsets_data = load_cdf(
+        imap_dir
+        / "validation"
+        / "calibration"
+        / "imap_mag_l2_offsets_20251017_v001.cdf"
+    )
+
+    return calibration_data, offsets_data
 
 def generate_test_epoch(
     end, vectors_per_second: list[VecSec], starting_point=0, gaps=None

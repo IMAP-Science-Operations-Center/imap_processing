@@ -842,7 +842,16 @@ class Mag(ProcessInstrument):
                 / "mag"
                 / "validation"
                 / "calibration"
-                / "imap_mag_l1b-calibration_20240229_v001.cdf"
+                / "imap_mag_l2-calibration-matrices_20251017_v003.cdf"
+            )
+
+            offset_dataset = load_cdf(
+                Path(__file__).parent
+                / "tests"
+                / "mag"
+                / "validation"
+                / "calibration"
+                / "imap_mag_l2-calibration-matrices_20251017_v003.cdf"
             )
             # TODO: Test data missing
             offset_dataset = xr.Dataset()
