@@ -865,10 +865,14 @@ class TestHealpixSkyMap:
             data=np.ones((10, hp_map.num_points)),
             dims=["energy", "pixel"],
         )
+        hp_map.data_1d["observation_date"] = xr.DataArray(
+            data=np.ones(hp_map.num_points),
+            dims=["pixel"],
+        )
 
         rect_map, subdiv_depth_dict = hp_map.to_rectangular_skymap(
             rect_spacing_deg=2,
-            value_keys=["counts", "exposure_factor"],
+            value_keys=["counts", "exposure_factor", "observation_date"],
         )
 
         for value_key, subdiv_depth in subdiv_depth_dict.items():
