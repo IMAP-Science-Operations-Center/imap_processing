@@ -18,14 +18,9 @@ from imap_processing.spice.time import (
 )
 
 
-def create_glows_attr_obj(data_version: str) -> ImapCdfAttributes:
+def create_glows_attr_obj() -> ImapCdfAttributes:
     """
     Load in 1la CDF attributes for GLOWS instrument.
-
-    Parameters
-    ----------
-    data_version : str
-        Data version for CDF filename, in the format "vXXX".
 
     Returns
     -------
@@ -37,11 +32,10 @@ def create_glows_attr_obj(data_version: str) -> ImapCdfAttributes:
     # Load in files
     glows_attrs.add_instrument_global_attrs("glows")
     glows_attrs.add_instrument_variable_attrs("glows", "l1a")
-    glows_attrs.add_global_attribute("Data_version", data_version)
     return glows_attrs
 
 
-def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
+def glows_l1a(packet_filepath: Path) -> list[xr.Dataset]:
     """
     Will process packets into GLOWS L1A CDF files.
 
@@ -52,8 +46,6 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     ----------
     packet_filepath : pathlib.Path
         Path to packet file for processing.
-    data_version : str
-        Data version for CDF filename, in the format "vXXX".
 
     Returns
     -------
@@ -61,9 +53,7 @@ def glows_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
         List of the L1A datasets.
     """
     # Create ImapCdfAttributes object for cdf attributes management
-    glows_attrs = create_glows_attr_obj(data_version)
-
-    # TODO: Data version inside file as well?
+    glows_attrs = create_glows_attr_obj()
 
     # Decompose packet file into histogram, and direct event data.
     hist_l0, de_l0 = decom_packets(packet_filepath)
@@ -263,8 +253,8 @@ def generate_de_dataset(
         support_data["number_of_de_packets"].append(int(de.l0.LEN))
         # support_data["missing_packet_sequences"].append(str(de.missing_seq))
 
-        for key in data_every_second.keys():
-            data_every_second[key].append(de.status_data.__getattribute__(key))
+        for key, val in data_every_second.items():
+            val.append(de.status_data.__getattribute__(key))
 
     # Convert arrays and dictionaries into xarray 'DataArray' objects
     epoch_time = xr.DataArray(
@@ -407,12 +397,12 @@ def generate_histogram_dataset(
         )
 
         # Add support_data keys to the support_data dictionary
-        for key in support_data.keys():
+        for key, support_val in support_data.items():
             if key not in ["flags_set_onboard", "is_generated_on_ground"]:
-                support_data[key].append(hist.__getattribute__(key))
+                support_val.append(hist.__getattribute__(key))
         # For the time varying data, convert to seconds and then append
-        for key in time_metadata.keys():
-            time_metadata[key].append(hist.__getattribute__(key).to_seconds())
+        for key, time_metadata_val in time_metadata.items():
+            time_metadata_val.append(hist.__getattribute__(key).to_seconds())
         time_data[index] = epoch_time
 
     epoch_time = xr.DataArray(

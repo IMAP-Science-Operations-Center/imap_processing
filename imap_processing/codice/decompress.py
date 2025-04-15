@@ -50,9 +50,7 @@ def _apply_lossy_a(compressed_bytes: bytes) -> list[int]:
         The 24- or 32-bit decompressed values.
     """
     compressed_values = list(compressed_bytes)
-    decompressed_values = [
-        LOSSY_A_TABLE[item - 1] if item > 0 else 0 for item in compressed_values
-    ]
+    decompressed_values = [LOSSY_A_TABLE[item] for item in compressed_values]
     return decompressed_values
 
 
@@ -73,9 +71,7 @@ def _apply_lossy_b(compressed_bytes: bytes) -> list[int]:
         The 24- or 32-bit decompressed values.
     """
     compressed_values = list(compressed_bytes)
-    decompressed_values = [
-        LOSSY_B_TABLE[item - 1] if item > 0 else 0 for item in compressed_values
-    ]
+    decompressed_values = [LOSSY_B_TABLE[item] for item in compressed_values]
     return decompressed_values
 
 

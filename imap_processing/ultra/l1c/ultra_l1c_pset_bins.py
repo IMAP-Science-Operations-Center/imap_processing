@@ -1,9 +1,8 @@
 """Module to create pointing sets."""
 
-from pathlib import Path
-
-import cdflib
+import astropy_healpix.healpy as hp
 import numpy as np
+import pandas
 from numpy.typing import NDArray
 
 from imap_processing.ena_maps.utils.spatial_utils import build_spatial_bins
@@ -18,7 +17,7 @@ from imap_processing.ultra.constants import UltraConstants
 # TODO: add species binning.
 
 
-def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray]:
+def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray, np.ndarray]:
     """
     Build energy bin boundaries.
 
@@ -28,6 +27,8 @@ def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray]:
         Energy bins.
     energy_midpoints : np.ndarray
         Array of energy bin midpoints.
+    energy_bin_geometric_means : np.ndarray
+        Array of geometric means of energy bins.
     """
     # Calculate energy step
     energy_step = (1 + UltraConstants.ALPHA / 2) / (1 - UltraConstants.ALPHA / 2)
@@ -44,19 +45,20 @@ def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray]:
         (float(energy_bin_edges[i]), float(energy_bin_edges[i + 1]))
         for i in range(len(energy_bin_edges) - 1)
     ]
+    energy_bin_geometric_means = np.sqrt(energy_bin_edges[:-1] * energy_bin_edges[1:])
 
-    return intervals, energy_midpoints
+    return intervals, energy_midpoints, energy_bin_geometric_means
 
 
-def get_histogram(
+def get_spacecraft_histogram(
     vhat: tuple[np.ndarray, np.ndarray, np.ndarray],
     energy: np.ndarray,
-    az_bin_edges: np.ndarray,
-    el_bin_edges: np.ndarray,
     energy_bin_edges: list[tuple[float, float]],
-) -> NDArray:
+    nside: int = 128,
+    nested: bool = False,
+) -> tuple[NDArray, NDArray, NDArray, NDArray]:
     """
-    Compute a 3D histogram of the particle data.
+    Compute a 3D histogram of the particle data using HEALPix binning.
 
     Parameters
     ----------
@@ -64,71 +66,110 @@ def get_histogram(
         The x,y,z-components of the unit velocity vector.
     energy : np.ndarray
         The particle energy.
-    az_bin_edges : np.ndarray
-        Array of azimuth bin boundary values.
-    el_bin_edges : np.ndarray
-        Array of elevation bin boundary values.
     energy_bin_edges : list[tuple[float, float]]
         Array of energy bin edges.
+    nside : int, optional
+        The nside parameter of the Healpix tessellation.
+        Default is 32.
+    nested : bool, optional
+        Whether the Healpix tessellation is nested. Default is False.
 
     Returns
     -------
     hist : np.ndarray
-        A 3D histogram array.
+        A 3D histogram array with shape (n_pix, n_energy_bins).
+    latitude : np.ndarray
+        Array of latitude values.
+    longitude : np.ndarray
+        Array of longitude values.
+    n_pix : int
+        Number of healpix pixels.
 
     Notes
     -----
-    The histogram will now work properly for overlapping energy bins, i.e.
+    The histogram will work properly for overlapping energy bins, i.e.
     the same energy value can fall into multiple bins if the intervals overlap.
+
+    azimuthal angle [0, 360], elevation angle [-90, 90]
     """
-    spherical_coords = cartesian_to_spherical(vhat)
+    # vhat = direction in which particle is traveling
+    # Make negative to see where it came from
+    spherical_coords = cartesian_to_spherical(-np.array(vhat), degrees=True)
     az, el = (
         spherical_coords[..., 1],
         spherical_coords[..., 2],
     )
 
-    # Initialize histogram
-    hist_total = np.zeros(
-        (len(az_bin_edges) - 1, len(el_bin_edges) - 1, len(energy_bin_edges))
-    )
+    # Compute number of HEALPix pixels that cover the sphere
+    n_pix = hp.nside2npix(nside)
 
+    # Calculate the corresponding longitude (az) latitude (el)
+    # center coordinates
+    longitude, latitude = hp.pix2ang(nside, np.arange(n_pix), lonlat=True)
+
+    # Get HEALPix pixel indices for each event
+    # HEALPix expects latitude in [-90, 90] so we don't need to change elevation
+    hpix_idx = hp.ang2pix(nside, az, el, nest=nested, lonlat=True)
+
+    # Initialize histogram: (n_energy_bins, n_HEALPix pixels)
+    hist = np.zeros((len(energy_bin_edges), n_pix))
+
+    # Bin data in energy & HEALPix space
     for i, (e_min, e_max) in enumerate(energy_bin_edges):
-        # Filter data for current energy bin.
         mask = (energy >= e_min) & (energy < e_max)
-        hist, _ = np.histogramdd(
-            sample=(az[mask], el[mask], energy[mask]),
-            bins=[az_bin_edges, el_bin_edges, [e_min, e_max]],
-        )
-        # Assign 2D histogram to current energy bin.
-        hist_total[:, :, i] = hist[:, :, 0]
+        # Only count the events that fall within the energy bin
+        hist[i, :] += np.bincount(hpix_idx[mask], minlength=n_pix).astype(np.float64)
 
-    return hist_total
+    return hist, latitude, longitude, n_pix
 
 
-def get_pointing_frame_exposure_times(
-    constant_exposure: Path, n_spins: int, sensor: str
+def get_background_rates(
+    nside: int = 128,
 ) -> NDArray:
     """
-    Compute a 2D array of the exposure.
+    Calculate background rates.
 
     Parameters
     ----------
-    constant_exposure : Path
-        Path to file containing constant exposure data.
-    n_spins : int
-        Number of spins per pointing.
-    sensor : str
-        Sensor (45 or 90).
+    nside : int, optional
+        The nside parameter of the Healpix tessellation (default is 128).
 
     Returns
     -------
-    exposure : np.ndarray
-        A 2D array with dimensions (az, el).
-    """
-    with cdflib.CDF(constant_exposure) as cdf_file:
-        exposure = cdf_file.varget(f"dps_grid{sensor}") * n_spins
+    background_rates : np.ndarray
+        Array of background rates.
 
-    return exposure
+    Notes
+    -----
+    This is a placeholder.
+    """
+    n_pix = hp.nside2npix(nside)
+    return np.zeros(n_pix)
+
+
+def get_spacecraft_exposure_times(constant_exposure: pandas.DataFrame) -> NDArray:
+    """
+    Compute exposure times for HEALPix pixels.
+
+    Parameters
+    ----------
+    constant_exposure : pandas.DataFrame
+        Exposure data.
+
+    Returns
+    -------
+    exposure_pointing : np.ndarray
+        Total exposure times of pixels in a
+        Healpix tessellation of the sky
+        in the pointing (dps) frame.
+    """
+    # TODO: use the universal spin table and
+    #  universal pointing table here to determine actual number of spins
+    exposure_pointing = (
+        constant_exposure["Exposure Time"] * 5760
+    )  # 5760 spins per pointing (for now)
+
+    return exposure_pointing
 
 
 def get_helio_exposure_times(
@@ -154,10 +195,10 @@ def get_helio_exposure_times(
     -----
     These calculations are performed once per pointing.
     """
-    # Get bins and midpoints, and convert from radians to degrees.
-    _, energy_midpoints = build_energy_bins()
+    # Get bins and midpoints, with angles in degrees.
+    _, energy_midpoints, _ = build_energy_bins()
     az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
-        np.rad2deg(angle_radians) for angle_radians in (build_spatial_bins())
+        build_spatial_bins()
     )
 
     # Initialize the exposure grid.
@@ -171,7 +212,7 @@ def get_helio_exposure_times(
 
     # Radial distance.
     r = np.ones(el_grid.shape)
-    spherical_coords = np.stack((r, np.radians(az_grid), np.radians(el_grid)), axis=-1)
+    spherical_coords = np.stack((r, az_grid, el_grid), axis=-1)
     cartesian_coords = spherical_to_cartesian(spherical_coords)
     cartesian = cartesian_coords.reshape(-1, 3, order="F").T
 
@@ -222,27 +263,37 @@ def get_helio_exposure_times(
     return exposure_3d
 
 
-def get_pointing_frame_sensitivity(
-    constant_sensitivity: Path, n_spins: int, sensor: str
-) -> NDArray:
+def get_spacecraft_sensitivity(
+    efficiencies: pandas.DataFrame,
+    geometric_function: pandas.DataFrame,
+) -> pandas.DataFrame:
     """
-    Compute a 3D array of the sensitivity.
+    Compute sensitivity.
 
     Parameters
     ----------
-    constant_sensitivity : Path
-        Path to file containing constant sensitivity data.
-    n_spins : int
-        Number of spins per pointing.
-    sensor : str
-        Sensor (45 or 90).
+    efficiencies : pandas.DataFrame
+        Efficiencies at different energy levels.
+    geometric_function : pandas.DataFrame
+        Geometric function.
 
     Returns
     -------
-    sensitivity : np.ndarray
-        A 3D array with dimensions (az, el, energy).
+    pointing_sensitivity : pandas.DataFrame
+        Sensitivity with dimensions (HEALPIX pixel_number, energy).
     """
-    with cdflib.CDF(constant_sensitivity) as cdf_file:
-        sensitivity = cdf_file.varget(f"dps_sensitivity{sensor}") * n_spins
+    # Exclude "Right Ascension (deg)" and "Declination (deg)" from the multiplication
+    energy_columns = efficiencies.columns.difference(
+        ["Right Ascension (deg)", "Declination (deg)"]
+    )
+    sensitivity = efficiencies[energy_columns].mul(
+        geometric_function["Response (cm2-sr)"].values, axis=0
+    )
+
+    # Add "Right Ascension (deg)" and "Declination (deg)" to the result
+    sensitivity.insert(
+        0, "Right Ascension (deg)", efficiencies["Right Ascension (deg)"]
+    )
+    sensitivity.insert(1, "Declination (deg)", efficiencies["Declination (deg)"])
 
     return sensitivity

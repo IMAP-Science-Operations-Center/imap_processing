@@ -80,4 +80,4 @@ class UltraConstants:
     CULLING_RPM_MAX = 6.0
 
     # Thresholds for culling based on counts.
-    CULLING_ENERGY_BIN_EDGES: ClassVar[list] = [-1e5, 0, 10, 20, 1e5]
+    CULLING_ENERGY_BIN_EDGES: ClassVar[list] = [0, 10, 20, 1e5]

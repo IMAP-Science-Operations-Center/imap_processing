@@ -1,0 +1,14 @@
+# TODO: add attributes for L2 variables
+
+# <=== Defaults ===>
+# Assumed values for all variable attrs unless overwritten
+default_attrs: &default
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: -9223372036854775808
+  FORMAT: I12
+  VALIDMIN: 0
+  VALIDMAX: 9223372036854775807
+  VAR_TYPE: data
+  UNITS: ' '
+  SCALETYP: linear

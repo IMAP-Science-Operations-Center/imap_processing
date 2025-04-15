@@ -6,6 +6,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.swe.utils import swe_constants
 from imap_processing.swe.utils.swe_utils import SWEAPID
 
 logger = logging.getLogger(__name__)
@@ -63,7 +64,7 @@ def decompressed_counts(cem_count: int) -> int:
     )
 
 
-def swe_science(l0_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+def swe_science(l0_dataset: xr.Dataset) -> xr.Dataset:
     """
     SWE L1a science processing.
 
@@ -96,10 +97,6 @@ def swe_science(l0_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     l0_dataset : xarray.Dataset
         Raw packet data from SWE stored as an xarray dataset.
 
-    data_version : str
-        Data version for the 'Data_version' CDF attribute. This is the version of the
-        output file.
-
     Returns
     -------
     dataset : xarray.Dataset
@@ -119,7 +116,9 @@ def swe_science(l0_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     # 4. Reshape the data to 180 x 7
     raw_science_array = np.array(
         [
-            np.frombuffer(binary_string, dtype=np.uint8).reshape(180, 7)
+            np.frombuffer(binary_string, dtype=np.uint8).reshape(
+                180, swe_constants.N_CEMS
+            )
             for binary_string in l0_dataset["science_data"].values
         ]
     )
@@ -132,7 +131,6 @@ def swe_science(l0_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("swe")
     cdf_attrs.add_instrument_variable_attrs("swe", "l1a")
-    cdf_attrs.add_global_attribute("Data_version", data_version)
 
     epoch_time = xr.DataArray(
         l0_dataset["epoch"],
@@ -157,7 +155,7 @@ def swe_science(l0_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     )
 
     cem_id = xr.DataArray(
-        np.arange(7),
+        np.arange(swe_constants.N_CEMS),
         name="cem_id",
         dims=["cem_id"],
         attrs=cdf_attrs.get_variable_attributes("cem_id"),

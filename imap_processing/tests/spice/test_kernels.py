@@ -14,7 +14,7 @@ from imap_processing.spice.kernels import (
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def pointing_frame_kernels(spice_test_data_path):
     """List SPICE kernels."""
     required_kernels = [
@@ -28,7 +28,7 @@ def pointing_frame_kernels(spice_test_data_path):
     return kernels
 
 
-@pytest.fixture()
+@pytest.fixture
 def multiple_pointing_kernels(spice_test_data_path):
     """List SPICE kernels."""
     required_kernels = [
@@ -42,7 +42,7 @@ def multiple_pointing_kernels(spice_test_data_path):
     return kernels
 
 
-@pytest.fixture()
+@pytest.fixture
 def et_times(pointing_frame_kernels):
     """Tests get_et_times function."""
     spiceypy.furnsh(pointing_frame_kernels)

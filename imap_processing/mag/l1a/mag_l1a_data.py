@@ -240,6 +240,7 @@ class MagL1a:
     decode_fib_zig_zag()
     twos_complement()
     update_compression_array()
+    vectors_per_second_attribute()
     """
 
     is_mago: bool
@@ -285,7 +286,8 @@ class MagL1a:
         vector_sequence = packet_properties.src_seq_ctr
 
         self.vectors = np.concatenate([self.vectors, additional_vectors])
-        self.packet_definitions[self.start_time] = packet_properties
+        start_time = np.int64(met_to_ttj2000ns(packet_properties.shcoarse))
+        self.packet_definitions[start_time] = packet_properties
 
         # Every additional packet should be the next one in the sequence, if not, add
         # the missing sequence(s) to the gap data
@@ -349,9 +351,7 @@ class MagL1a:
             cdf.utils.met_to_j2000ns.
         """
         timedelta = np.timedelta64(int(1 / vectors_per_sec * 1e9), "ns")
-        # TODO: From finetime and coarsetime, depends per packet
         start_time_ns = start_time.to_j2000ns()
-
         # Calculate time skips for each vector in ns
         times = np.reshape(
             np.arange(
@@ -368,7 +368,7 @@ class MagL1a:
 
     @staticmethod
     def process_vector_data(
-        vector_data: np.ndarray,
+        vector_data: np.ndarray | bytes,
         primary_count: int,
         secondary_count: int,
         compression: int,
@@ -679,10 +679,9 @@ class MagL1a:
                             primary_boundaries[-1] - primary_boundaries[-4]
                             > MAX_COMPRESSED_VECTOR_BITS
                         )
-                        or (
-                            vector_count == 2
-                            and primary_boundaries[-1] > MAX_COMPRESSED_VECTOR_BITS
-                        )
+                    ) or (
+                        vector_count == 2
+                        and primary_boundaries[-1] > MAX_COMPRESSED_VECTOR_BITS
                     ):
                         # Since we know how long each uncompressed vector is,
                         # we can determine the end of the primary vectors.
@@ -998,7 +997,7 @@ class MagL1a:
         """
         if np.any(vector_data > 1):
             raise ValueError(
-                "unpack_one_vector method is expecting an array of bits as" "input."
+                "unpack_one_vector method is expecting an array of bits as input."
             )
 
         if len(vector_data) != width * AXIS_COUNT + RANGE_BIT_WIDTH * has_range:
@@ -1092,3 +1091,29 @@ class MagL1a:
         value = int((value >> 1) ^ (-(value & 1)))
 
         return value
+
+    def vectors_per_second_attribute(self) -> str:
+        """
+        Generate a string describing the vectors per second.
+
+        Format is {start time}:{vectors per second},{start time}:{vectors per second}
+        where it's only included if vectors per second changes.
+
+        Returns
+        -------
+        output_str : str
+            Output string describing the vectors per second in all the packets.
+        """
+        output_str = ""
+        last_vectors_per_second = None
+        for _, packet in self.packet_definitions.items():
+            vecsec = packet.vectors_per_second
+            time: np.int64 = packet.start_time.to_j2000ns().astype(np.int64)
+            if vecsec != last_vectors_per_second:
+                if output_str == "":
+                    output_str = f"{time}:{vecsec}"
+                else:
+                    output_str += f",{time}:{vecsec}"
+                last_vectors_per_second = vecsec
+
+        return output_str

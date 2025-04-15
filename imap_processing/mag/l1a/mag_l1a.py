@@ -24,7 +24,7 @@ from imap_processing.spice.time import (
 logger = logging.getLogger(__name__)
 
 
-def mag_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
+def mag_l1a(packet_filepath: Path) -> list[xr.Dataset]:
     """
     Will process MAG L0 data into L1A CDF files at cdf_filepath.
 
@@ -32,8 +32,6 @@ def mag_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     ----------
     packet_filepath : pathlib.Path
         Packet files for processing.
-    data_version : str
-        Data version to write to CDF files.
 
     Returns
     -------
@@ -50,9 +48,7 @@ def mag_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     # Create attribute manager and add MAG L1A attributes and global variables
     attribute_manager = ImapCdfAttributes()
     attribute_manager.add_instrument_global_attrs("mag")
-    attribute_manager.add_instrument_variable_attrs("mag", "l1")
-
-    attribute_manager.add_global_attribute("Data_version", data_version)
+    attribute_manager.add_instrument_variable_attrs("mag", "l1a")
     attribute_manager.add_global_attribute("Input_files", str(input_files))
     attribute_manager.add_global_attribute(
         "Generation_date",
@@ -179,7 +175,7 @@ def process_packets(
         # each sensor, we can calculate how much data is in this packet and where the
         # byte boundaries are.
         primary_vectors, secondary_vectors = MagL1a.process_vector_data(
-            mag_l0.VECTORS,  # type: ignore
+            mag_l0.VECTORS,
             primary_packet_properties.total_vectors,
             secondary_packet_data.total_vectors,
             mag_l0.COMPRESSION,
@@ -276,11 +272,6 @@ def generate_dataset(
     dataset : xarray.Dataset
         One xarray dataset with proper CDF attributes and shape containing MAG L1A data.
     """
-    # TODO: add:
-    # gaps_in_data global attr
-    # magl1avectordefinition data
-
-    # TODO: Just leave time in datetime64 type with vector as dtype object to avoid this
     # Get the timestamp from the end of the vector
     time_data = single_file_l1a.vectors[:, 4]
 
@@ -288,18 +279,20 @@ def generate_dataset(
         np.arange(2),
         name="compression",
         dims=["compression"],
-        attrs=attribute_manager.get_variable_attributes("compression_attrs"),
+        attrs=attribute_manager.get_variable_attributes(
+            "compression_attrs", check_schema=False
+        ),
     )
 
     direction = xr.DataArray(
         np.arange(4),
         name="direction",
         dims=["direction"],
-        attrs=attribute_manager.get_variable_attributes("direction_attrs"),
+        attrs=attribute_manager.get_variable_attributes(
+            "direction_attrs", check_schema=False
+        ),
     )
 
-    # TODO: Epoch here refers to the start of the sample. Confirm that this is
-    # what mag is expecting, and if it is, CATDESC needs to be updated.
     epoch_time = xr.DataArray(
         time_data,
         name="epoch",
@@ -338,6 +331,18 @@ def generate_dataset(
             "compression_label", check_schema=False
         ),
     )
+    global_attributes = attribute_manager.get_global_attributes(logical_file_id)
+    global_attributes["is_mago"] = str(bool(single_file_l1a.is_mago))
+    global_attributes["is_active"] = str(bool(single_file_l1a.is_active))
+    global_attributes["vectors_per_second"] = (
+        single_file_l1a.vectors_per_second_attribute()
+    )
+    # empty arrays are removed in cdflib
+    global_attributes["missing_sequences"] = (
+        single_file_l1a.missing_sequences
+        if single_file_l1a.missing_sequences
+        else "None"
+    )
 
     output = xr.Dataset(
         coords={
@@ -345,13 +350,12 @@ def generate_dataset(
             "direction": direction,
             "compression": compression,
         },
-        attrs=attribute_manager.get_global_attributes(logical_file_id),
+        attrs=global_attributes,
     )
+
     output["direction_label"] = direction_label
     output["compression_label"] = compression_label
     output["vectors"] = vectors
     output["compression_flags"] = compression_flags
-
-    # TODO: Put is_mago and active in the header
 
     return output

@@ -19,7 +19,7 @@ def test_lo_l1c():
 
     expected_logical_source = "imap_lo_l1c_pset"
     # Act
-    output_dataset = lo_l1c(data, "001")
+    output_dataset = lo_l1c(data)
 
     # Assert
     assert expected_logical_source == output_dataset.attrs["Logical_source"]

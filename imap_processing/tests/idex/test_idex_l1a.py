@@ -22,11 +22,10 @@ def test_idex_cdf_file(decom_test_data: xr.Dataset):
     decom_test_data : xarray.Dataset
         The dataset to test with
     """
-
     file_name = write_cdf(decom_test_data)
 
     assert file_name.exists()
-    assert file_name.name == "imap_idex_l1a_sci_20231214_v001.cdf"
+    assert file_name.name == "imap_idex_l1a_sci-1week_20231218_v999.cdf"
 
 
 def test_bad_cdf_attributes(decom_test_data: xr.Dataset):
@@ -41,7 +40,7 @@ def test_bad_cdf_attributes(decom_test_data: xr.Dataset):
     del decom_test_data["TOF_High"].attrs["CATDESC"]
 
     with pytest.raises(ISTPError):
-        write_cdf(decom_test_data)
+        write_cdf(decom_test_data, istp=True, terminate_on_warning=True)
 
     # Add attributes back so future tests do not fail
     decom_test_data["TOF_High"].attrs["CATDESC"] = tof_catdesc
@@ -79,7 +78,7 @@ def test_bad_cdf_file_data(decom_test_data: xr.Dataset):
     decom_test_data["Bad_data"] = bad_data_xr
 
     with pytest.raises(ISTPError):
-        write_cdf(decom_test_data)
+        write_cdf(decom_test_data, istp=True, terminate_on_warning=True)
 
     del decom_test_data["Bad_data"]
 
@@ -104,6 +103,52 @@ def test_idex_tof_high_data_from_cdf(decom_test_data: xr.Dataset):
     assert (l1_data["TOF_High"][13].data == data).all()
 
 
+@pytest.mark.external_test_data
+def test_validate_l1a_idex_data_variables(
+    decom_test_data: xr.Dataset, l1a_example_data: xr.Dataset
+):
+    """
+    Verify that each of the 6 waveform and telemetry arrays are equal to the
+    corresponding array produced by the IDEX team using the same l0 file.
+
+
+    Parameters
+    ----------
+    decom_test_data : xarray.Dataset
+        The dataset to test with
+    l1a_example_data: xarray.Dataset
+        A dataset containing the 6 waveform and telemetry arrays
+    """
+    # Lookup table to match the SDS array names to the Idex Team array names
+    match_variables = {
+        "TOF L": "TOF_Low",
+        "TOF H": "TOF_High",
+        "TOF M": "TOF_Mid",
+        "Target H": "Target_High",
+        "Target L": "Target_Low",
+        "Ion Grid": "Ion_Grid",
+        "Time (high sampling)": "time_high_sample_rate",
+        "Time (low sampling)": "time_low_sample_rate",
+    }
+    # The Engineering data is converting to UTC, and the SDC is converting to J2000,
+    # for 'epoch' and 'Timestamp' so this test is using the raw time value 'SCHOARSE' to
+    # validate time
+    arrays_to_skip = ["Timestamp", "Epoch", "event"]
+
+    # loop through all keys from the l1a example dict
+    for var in l1a_example_data.variables:
+        if var not in arrays_to_skip:
+            # Find the corresponding array name
+            cdf_var = match_variables.get(var, var.lower())
+
+            np.testing.assert_array_equal(
+                decom_test_data[cdf_var],
+                l1a_example_data[var],
+                f"The array '{cdf_var}' does not equal the expected example "
+                f"array '{var}' produced by the IDEX team",
+            )
+
+
 def test_compressed_packet():
     """
     Test compressed data decompression against known non-compressed data.
@@ -113,8 +158,8 @@ def test_compressed_packet():
     compressed = Path(f"{test_data_dir}/compressed_2023_102_14_24_55.pkts")
     non_compressed = Path(f"{test_data_dir}/non_compressed_2023_102_14_22_26.pkts")
 
-    decompressed = PacketParser(compressed, "001").data
-    expected = PacketParser(non_compressed, "001").data
+    decompressed = PacketParser(compressed).data
+    expected = PacketParser(non_compressed).data
 
     waveforms = [
         "TOF_High",

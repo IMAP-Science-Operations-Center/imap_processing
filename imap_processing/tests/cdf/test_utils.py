@@ -1,7 +1,5 @@
 """Tests for the ``cdf.utils`` module."""
 
-from pathlib import Path
-
 import imap_data_access
 import numpy as np
 import pytest
@@ -16,7 +14,7 @@ from imap_processing.cdf.utils import (
 from imap_processing.spice.time import met_to_ttj2000ns
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_dataset():
     """Create a simple ``xarray`` dataset to be used in testing
 
@@ -28,7 +26,7 @@ def test_dataset():
     # Load the CDF attrs
     swe_attrs = ImapCdfAttributes()
     swe_attrs.add_instrument_global_attrs("swe")
-    swe_attrs.add_global_attribute("Data_version", "001")
+    swe_attrs.add_global_attribute("Data_version", "v001")
 
     dataset = xr.Dataset(
         {
@@ -97,19 +95,6 @@ def test_written_and_loaded_dataset(test_dataset):
     assert str(test_dataset) == str(new_dataset)
 
 
-def test_parents_injection(test_dataset):
-    """Tests the ``write_cdf`` function for Parents attribute injection.
-
-    Parameters
-    ----------
-    test_dataset : xarray.Dataset
-        An ``xarray`` dataset object to test with
-    """
-    parent_paths = [Path("test_parent1.cdf"), Path("/abc/test_parent2.cdf")]
-    new_dataset = load_cdf(write_cdf(test_dataset, parent_files=parent_paths))
-    assert new_dataset.attrs["Parents"] == [p.name for p in parent_paths]
-
-
 @pytest.mark.parametrize(
     "test_str, compare_dict",
     [
@@ -131,7 +116,7 @@ def test_parents_injection(test_dataset):
                 "data_level": "l1a",
                 "descriptor": "hist",
                 "start_date": "20250415",
-                "version": "001",
+                "version": "v001",
             },
         ),
         (
@@ -144,7 +129,7 @@ def test_parents_injection(test_dataset):
                 "descriptor": "pset",
                 "start_date": "20250415",
                 "repointing": "12345",
-                "version": "001",
+                "version": "v001",
                 "extension": "cdf",
             },
         ),

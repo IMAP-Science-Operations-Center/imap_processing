@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.mag.l1b.mag_l1b import (
     calibrate_vector,
@@ -11,55 +12,30 @@ from imap_processing.mag.l1b.mag_l1b import (
     mag_l1b_processing,
     rescale_vector,
 )
+from imap_processing.tests.mag.conftest import (
+    mag_l1a_dataset_generator,
+)
 
 
-@pytest.fixture(scope="module")
-def mag_l1a_dataset():
-    epoch = xr.DataArray(np.arange(20), name="epoch", dims=["epoch"])
-    direction = xr.DataArray(np.arange(4), name="direction", dims=["direction"])
-    compression = xr.DataArray(np.arange(2), name="compression", dims=["compression"])
+def test_mag_processing(mag_test_l1b_calibration_data):
+    # All specific test values come from MAG team to accommodate various cases.
+    # Each vector is multiplied by the matrix in the calibration data for the given
+    # range to get the calibrated vector.
+    mag_l1a_dataset = mag_l1a_dataset_generator(20)
+    mag_l1a_dataset["compression_flags"].data[1, :] = np.array([1, 18], dtype=np.int8)
 
-    direction_label = xr.DataArray(
-        direction.values.astype(str),
-        name="direction_label",
-        dims=["direction_label"],
+    mag_l1a_dataset["vectors"].data[0, :] = np.array([1, 1, 1, 0])
+    mag_l1a_dataset["vectors"].data[1, :] = np.array([7982, 48671, -68090, 0])
+    mag_attributes = ImapCdfAttributes()
+    mag_attributes.add_instrument_global_attrs("mag")
+    mag_attributes.add_instrument_variable_attrs("mag", "l1b")
+    mag_l1b = mag_l1b_processing(
+        mag_l1a_dataset,
+        mag_test_l1b_calibration_data,
+        mag_attributes,
+        "imap_mag_l1b_norm-mago",
     )
 
-    compression_label = xr.DataArray(
-        compression.values.astype(str),
-        name="compression_label",
-        dims=["compression_label"],
-    )
-
-    vectors = xr.DataArray(
-        np.zeros((20, 4)),
-        dims=["epoch", "direction"],
-        coords={"epoch": epoch, "direction": direction},
-    )
-    compression_flags = xr.DataArray(
-        np.zeros((20, 2), dtype=np.int8), dims=["epoch", "compression"]
-    )
-    compression_flags[1, :] = np.array([1, 18], dtype=np.int8)
-
-    vectors[0, :] = np.array([1, 1, 1, 0])
-    vectors[1, :] = np.array([7982, 48671, -68090, 0])
-
-    output_dataset = xr.Dataset(
-        coords={"epoch": epoch, "direction": direction, "compression": compression},
-    )
-    output_dataset["vectors"] = vectors
-    output_dataset["compression_flags"] = compression_flags
-    output_dataset["direction_label"] = direction_label
-    output_dataset["compression_label"] = compression_label
-    output_dataset.attrs["Logical_source"] = ["imap_mag_l1a_norm-mago"]
-
-    return output_dataset
-
-
-def test_mag_processing(mag_l1a_dataset):
-    mag_l1a_dataset.attrs["Logical_source"] = ["imap_mag_l1a_norm-mago"]
-
-    mag_l1b = mag_l1b_processing(mag_l1a_dataset)
     np.testing.assert_allclose(
         mag_l1b["vectors"][0].values, [2.2972, 2.2415, 2.2381, 0], atol=1e-4
     )
@@ -68,13 +44,16 @@ def test_mag_processing(mag_l1a_dataset):
         [4584.1029091, 27238.73161294, -38405.22240195, 0.0],
     )
 
-    # np.testing.assert_allclose(mag_l1b["vectors"][1].values, [0, 0, 0, 0])
+    np.testing.assert_allclose(mag_l1b["vectors"][2].values, [0, 0, 0, 0])
 
     assert mag_l1b["vectors"].values.shape == mag_l1a_dataset["vectors"].values.shape
 
-    mag_l1a_dataset.attrs["Logical_source"] = ["imap_mag_l1a_norm-magi"]
-
-    mag_l1b = mag_l1b_processing(mag_l1a_dataset)
+    mag_l1b = mag_l1b_processing(
+        mag_l1a_dataset,
+        mag_test_l1b_calibration_data,
+        mag_attributes,
+        "imap_mag_l1b_norm-magi",
+    )
 
     np.testing.assert_allclose(
         mag_l1b["vectors"][0].values, [2.27538, 2.23416, 2.23682, 0], atol=1e-5
@@ -83,18 +62,18 @@ def test_mag_processing(mag_l1a_dataset):
     assert mag_l1b["vectors"].values.shape == mag_l1a_dataset["vectors"].values.shape
 
 
-def test_mag_attributes(mag_l1a_dataset):
+def test_mag_attributes():
+    mag_l1a_dataset = mag_l1a_dataset_generator(20)
+
     mag_l1a_dataset.attrs["Logical_source"] = ["imap_mag_l1a_norm-mago"]
 
-    output = mag_l1b(mag_l1a_dataset, "v001")
+    output = mag_l1b(mag_l1a_dataset)
     assert output.attrs["Logical_source"] == "imap_mag_l1b_norm-mago"
 
     mag_l1a_dataset.attrs["Logical_source"] = ["imap_mag_l1a_burst-magi"]
 
-    output = mag_l1b(mag_l1a_dataset, "v001")
+    output = mag_l1b(mag_l1a_dataset)
     assert output.attrs["Logical_source"] == "imap_mag_l1b_burst-magi"
-
-    assert output.attrs["Data_level"] == "L1B"
 
 
 def test_cdf_output():
@@ -103,14 +82,16 @@ def test_cdf_output():
         / "validation"
         / "imap_mag_l1a_norm-magi_20251017_v001.cdf"
     )
-    l1b_dataset = mag_l1b(l1a_cdf, "v001")
+    l1b_dataset = mag_l1b(l1a_cdf)
 
     output_path = write_cdf(l1b_dataset)
 
     assert Path.exists(output_path)
 
 
-def test_mag_compression_scale(mag_l1a_dataset):
+def test_mag_compression_scale():
+    mag_l1a_dataset = mag_l1a_dataset_generator(20)
+
     test_calibration = np.array(
         [
             [2.2972202, 0.0, 0.0],
@@ -129,7 +110,7 @@ def test_mag_compression_scale(mag_l1a_dataset):
     mag_l1a_dataset["compression_flags"][3, :] = np.array([1, 14], dtype=np.int8)
 
     mag_l1a_dataset.attrs["Logical_source"] = ["imap_mag_l1a_norm-mago"]
-    output = mag_l1b(mag_l1a_dataset, "v001")
+    output = mag_l1b(mag_l1a_dataset)
 
     calibrated_vectors = np.matmul(test_calibration, np.array([1, 1, 1]))
     # 16 bit width is the standard
@@ -206,9 +187,9 @@ def test_calibrate_vector():
 def test_l1a_to_l1b(validation_l1a):
     # Convert l1a input validation packet file to l1b
     with pytest.raises(ValueError, match="Raw L1A"):
-        mag_l1b(validation_l1a[0], "v000")
+        mag_l1b(validation_l1a[0])
 
-    l1b = [mag_l1b(i, "v000") for i in validation_l1a[1:]]
+    l1b = [mag_l1b(i) for i in validation_l1a[1:]]
 
     assert len(l1b) == len(validation_l1a) - 1
 

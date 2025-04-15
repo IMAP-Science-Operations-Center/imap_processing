@@ -7,16 +7,14 @@ import pytest
 import xarray as xr
 
 from imap_processing.cdf.utils import load_cdf
-from imap_processing.hi.l1a.hi_l1a import hi_l1a
 from imap_processing.hi.l1b.hi_l1b import (
-    CoincidenceBitmap,
-    compute_coincidence_type_and_time_deltas,
+    compute_coincidence_type_and_tofs,
     compute_hae_coordinates,
     de_esa_energy_step,
     de_nominal_bin_and_spin_phase,
     hi_l1b,
 )
-from imap_processing.hi.utils import HiConstants
+from imap_processing.hi.utils import CoincidenceBitmap, HiConstants
 from imap_processing.spice.geometry import SpiceFrame
 
 
@@ -25,14 +23,14 @@ def test_hi_l1b_hk(hi_l0_test_data_path):
     housekeeping L1A as input"""
     # TODO: once things are more stable, check in an L1A HK file as test data
     bin_data_path = hi_l0_test_data_path / "H90_NHK_20241104.bin"
-    data_version = "001"
-    processed_data = hi_l1a(packet_file_path=bin_data_path, data_version=data_version)
 
-    l1b_dataset = hi_l1b(processed_data[0], data_version=data_version)
-    assert l1b_dataset.attrs["Logical_source"] == "imap_hi_l1b_90sensor-hk"
+    l1b_datasets = hi_l1b(bin_data_path)
+    assert len(l1b_datasets) == 1
+    assert l1b_datasets[0].attrs["Logical_source"] == "imap_hi_l1b_90sensor-hk"
 
 
-@pytest.mark.external_kernel()
+@pytest.mark.external_test_data
+@pytest.mark.external_kernel
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_hi_l1b_de(
     hi_l1_test_data_path, spice_test_data_path, use_fake_spin_data_for_time
@@ -45,15 +43,15 @@ def test_hi_l1b_de(
         hi_l1_test_data_path / "imap_hi_l1a_45sensor-de_20250415_v999.cdf"
     )
     # Process using test data
-    data_version = "001"
     l1a_dataset = load_cdf(l1a_test_file_path)
 
-    l1b_dataset = hi_l1b(l1a_dataset, data_version=data_version)
-    assert l1b_dataset.attrs["Logical_source"] == "imap_hi_l1b_45sensor-de"
-    assert len(l1b_dataset.data_vars) == 15
+    l1b_datasets = hi_l1b(l1a_dataset)
+    assert len(l1b_datasets) == 1
+    assert l1b_datasets[0].attrs["Logical_source"] == "imap_hi_l1b_45sensor-de"
+    assert len(l1b_datasets[0].data_vars) == 15
 
 
-@pytest.fixture()
+@pytest.fixture
 def synthetic_trigger_id_and_tof_data():
     """Create synthetic minimum dataset for testing the
     coincidence_type_and_time_deltas algorithm."""
@@ -112,15 +110,13 @@ def synthetic_trigger_id_and_tof_data():
 def test_compute_coincidence_type_and_time_deltas(synthetic_trigger_id_and_tof_data):
     """Test coverage for
     `imap_processing.hi.hi_l1b.compute_coincidence_type_and_time_deltas`."""
-    new_vars = compute_coincidence_type_and_time_deltas(
-        synthetic_trigger_id_and_tof_data[0]
-    )
+    new_vars = compute_coincidence_type_and_tofs(synthetic_trigger_id_and_tof_data[0])
     for var_name in [
         "coincidence_type",
-        "delta_t_ab",
-        "delta_t_ac1",
-        "delta_t_bc1",
-        "delta_t_c1c2",
+        "tof_ab",
+        "tof_ac1",
+        "tof_bc1",
+        "tof_c1c2",
     ]:
         assert var_name in new_vars
     # verify coincidence type values
@@ -130,27 +126,27 @@ def test_compute_coincidence_type_and_time_deltas(synthetic_trigger_id_and_tof_d
     np.testing.assert_array_equal(
         coincidence_hist, synthetic_trigger_id_and_tof_data[1]
     )
-    # verify delta_t values are valid in the correct locations
+    # verify tof values are valid in the correct locations
     np.testing.assert_array_equal(
-        new_vars["delta_t_ab"] != new_vars["delta_t_ab"].FILLVAL,
+        new_vars["tof_ab"] != new_vars["tof_ab"].FILLVAL,
         new_vars["coincidence_type"] >= 12,
     )
     np.testing.assert_array_equal(
-        new_vars["delta_t_ac1"] != new_vars["delta_t_ac1"].FILLVAL,
+        new_vars["tof_ac1"] != new_vars["tof_ac1"].FILLVAL,
         np.logical_and(
             np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.A.value),
             np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.C1),
         ),
     )
     np.testing.assert_array_equal(
-        new_vars["delta_t_bc1"] != new_vars["delta_t_bc1"].FILLVAL,
+        new_vars["tof_bc1"] != new_vars["tof_bc1"].FILLVAL,
         np.logical_and(
             np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.B.value),
             np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.C1),
         ),
     )
     np.testing.assert_array_equal(
-        new_vars["delta_t_c1c2"] != new_vars["delta_t_c1c2"].FILLVAL,
+        new_vars["tof_c1c2"] != new_vars["tof_c1c2"].FILLVAL,
         np.logical_and(
             np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.C1),
             np.bitwise_and(new_vars["coincidence_type"], CoincidenceBitmap.C2),

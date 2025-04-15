@@ -40,7 +40,7 @@ def test_imap_state(et, use_test_metakernel):
         assert state.shape == (6,)
 
 
-@pytest.mark.external_kernel()
+@pytest.mark.external_kernel
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_imap_state_ecliptic():
     """Tests retrieving IMAP state in the ECLIPJ2000 frame"""
@@ -208,8 +208,7 @@ def test_frame_transform_exceptions():
         SpiceFrame.ECLIPJ2000,
     ],
 )
-@pytest.mark.parametrize("degrees_bool", [True, False])
-def test_frame_transform_az_el_same_frame(spice_frame, degrees_bool):
+def test_frame_transform_az_el_same_frame(spice_frame):
     """Test that frame_transform returns az/el when input/output frames are same."""
     az_el_points = np.array(
         [
@@ -231,10 +230,8 @@ def test_frame_transform_az_el_same_frame(spice_frame, degrees_bool):
             [360, 90],
         ]
     )
-    if not degrees_bool:
-        az_el_points = np.deg2rad(az_el_points)
     result = frame_transform_az_el(
-        0, az_el_points, spice_frame, spice_frame, degrees=degrees_bool
+        0, az_el_points, spice_frame, spice_frame, degrees=True
     )
     np.testing.assert_allclose(result, az_el_points)
 
@@ -290,7 +287,7 @@ def test_instrument_pointing(furnish_kernels):
         assert ins_pointing.shape == (3, 3)
 
 
-@pytest.mark.external_kernel()
+@pytest.mark.external_kernel
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_basis_vectors():
     """Test coverage for basis_vectors()."""
@@ -360,12 +357,12 @@ def test_spherical_to_cartesian():
     # Convert elevation to colatitude for SPICE
     colat = np.pi / 2 - spherical_points[:, 2]
 
-    cartesian_from_degrees = spherical_to_cartesian(
-        spherical_points_degrees, degrees=True
-    )
+    cartesian_from_degrees = spherical_to_cartesian(spherical_points_degrees)
 
     for i in range(len(colat)):
-        cartesian_coords = spherical_to_cartesian(np.array([spherical_points[i]]))
+        cartesian_coords = spherical_to_cartesian(
+            np.array([spherical_points_degrees[i]])
+        )
         spice_coords = spiceypy.sphrec(r, colat[i], spherical_points[i, 1])
 
         np.testing.assert_allclose(cartesian_coords[0], spice_coords, atol=1e-5)

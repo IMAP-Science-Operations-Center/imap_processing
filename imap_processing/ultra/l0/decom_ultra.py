@@ -1,280 +1,233 @@
 """Decommutates Ultra CCSDS packets."""
 
-import collections
 import logging
 from collections import defaultdict
-from typing import Any, Union
+from typing import cast
 
 import numpy as np
-from space_packet_parser import packets
+import xarray as xr
+from numpy.typing import NDArray
 
-from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.ultra.l0.decom_tools import (
     decompress_binary,
     decompress_image,
     read_image_raw_events_binary,
 )
 from imap_processing.ultra.l0.ultra_utils import (
+    EVENT_FIELD_RANGES,
     RATES_KEYS,
-    ULTRA_AUX,
-    ULTRA_EVENTS,
     ULTRA_RATES,
     ULTRA_TOF,
-    append_ccsds_fields,
 )
-from imap_processing.utils import convert_to_binary_string, sort_by_time
+from imap_processing.utils import convert_to_binary_string
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def append_tof_params(
-    decom_data: dict,
-    packet: packets.CCSDSPacket,
-    decompressed_data: np.ndarray,
-    data_dict: dict,
-    stacked_dict: dict,
-) -> None:
-    """
-    Append parsed items to a dictionary, including decompressed data if available.
-
-    Parameters
-    ----------
-    decom_data : dict
-        Dictionary to which the data is appended.
-    packet : space_packet_parser.packets.CCSDSPacket
-        Individual packet.
-    decompressed_data : list
-        Data that has been decompressed.
-    data_dict : dict
-        Dictionary used for stacking in SID dimension.
-    stacked_dict : dict
-        Dictionary used for stacking in time dimension.
-    """
-    # TODO: add error handling to make certain every timestamp has 8 SID values
-
-    for key in packet.user_data.keys():
-        # Keep appending packet data until SID = 7
-        if key == "PACKETDATA":
-            data_dict[key].append(decompressed_data)
-        # Keep appending all other data until SID = 7
-        else:
-            data_dict[key].append(packet[key])
-
-    # Append CCSDS fields to the dictionary
-    ccsds_data = CcsdsData(packet.header)
-    append_ccsds_fields(data_dict, ccsds_data)
-
-    # Once "SID" reaches 7, we have all the images and data for the single timestamp
-    if packet["SID"] == 7:
-        decom_data["SHCOARSE"].extend(list(set(data_dict["SHCOARSE"])))
-        data_dict["SHCOARSE"].clear()
-
-        for key in packet.user_data.keys():
-            if key != "SHCOARSE":
-                stacked_dict[key].append(np.stack(data_dict[key]))
-                data_dict[key].clear()
-        for key in packet.header.keys():
-            stacked_dict[key].append(np.stack(data_dict[key]))
-            data_dict[key].clear()
-
-
-def append_params(decom_data: dict, packet: packets.CCSDSPacket) -> None:
-    # Todo Update what packet type is.
-    """
-    Append parsed items to a dictionary, including decompressed data if available.
-
-    Parameters
-    ----------
-    decom_data : dict
-        Dictionary to which the data is appended.
-    packet : space_packet_parser.packets.CCSDSPacket
-        Individual packet.
-    """
-    for key, value in packet.user_data.items():
-        decom_data[key].append(value)
-
-    ccsds_data = CcsdsData(packet.header)
-    append_ccsds_fields(decom_data, ccsds_data)
-
-
-def process_ultra_apids(data: list, apid: int) -> Union[dict[Any, Any], bool]:
-    """
-    Unpack and decode Ultra packets using CCSDS format and XTCE packet definitions.
-
-    Parameters
-    ----------
-    data : list
-        Grouped data.
-    apid : int
-        The APID to process.
-
-    Returns
-    -------
-    decom_data : dict
-        A dictionary containing the decoded data.
-    """
-    # Strategy dict maps APIDs to their respective processing functions
-    strategy_dict = {
-        ULTRA_TOF.apid[0]: process_ultra_tof,
-        ULTRA_EVENTS.apid[0]: process_ultra_events,
-        ULTRA_AUX.apid[0]: process_ultra_aux,
-        ULTRA_RATES.apid[0]: process_ultra_rates,
-    }
-
-    sorted_packets = sort_by_time(data, "SHCOARSE")
-
-    process_function = strategy_dict.get(apid, lambda *args: False)
-    decom_data = process_function(sorted_packets, defaultdict(list))
-
-    return decom_data
-
-
-def process_ultra_tof(
-    sorted_packets: list, decom_data: collections.defaultdict
-) -> dict:
+def process_ultra_tof(ds: xr.Dataset) -> xr.Dataset:
     """
     Unpack and decode Ultra TOF packets.
 
     Parameters
     ----------
-    sorted_packets : list
-        TOF packets sorted by time.
-    decom_data : collections.defaultdict
-        Empty dictionary.
+    ds : xarray.Dataset
+        TOF dataset.
 
     Returns
     -------
-    decom_data : dict
-        A dictionary containing the decoded data.
+    dataset : xarray.Dataset
+        Dataset containing the decoded and decompressed data.
     """
-    stacked_dict: dict = defaultdict(list)
-    data_dict: dict = defaultdict(list)
+    scalar_keys = [key for key in ds.data_vars if key not in ("packetdata", "sid")]
 
-    # For TOF we need to sort by time and then SID
-    sorted_packets = sorted(
-        sorted_packets,
-        key=lambda x: (x["SHCOARSE"].raw_value, x["SID"].raw_value),
+    decom_data: defaultdict[str, list[np.ndarray]] = defaultdict(list)
+    decom_data["packetdata"] = []
+    valid_epoch = []
+    width = cast(int, ULTRA_TOF.width)
+    mantissa_bit_length = cast(int, ULTRA_TOF.mantissa_bit_length)
+
+    for val, group in ds.groupby("epoch"):
+        if set(group["sid"].values) >= set(range(8)):
+            valid_epoch.append(val)
+            group.sortby("sid")
+
+            for key in scalar_keys:
+                decom_data[key].append(group[key].values)
+
+            image = []
+            for i in range(8):
+                binary = convert_to_binary_string(group["packetdata"].values[i])
+                decompressed = decompress_image(
+                    group["p00"].values[i],
+                    binary,
+                    width,
+                    mantissa_bit_length,
+                )
+                image.append(decompressed)
+
+            decom_data["packetdata"].append(np.stack(image))
+
+    for key in scalar_keys:
+        decom_data[key] = np.stack(decom_data[key])
+
+    decom_data["packetdata"] = np.stack(decom_data["packetdata"])
+
+    coords = {
+        "epoch": np.array(valid_epoch, dtype=np.uint64),
+        "sid": xr.DataArray(np.arange(8), dims=["sid"], name="sid"),
+        "row": xr.DataArray(np.arange(54), dims=["row"], name="row"),
+        "column": xr.DataArray(np.arange(180), dims=["column"], name="column"),
+    }
+
+    dataset = xr.Dataset(coords=coords)
+
+    # Add scalar keys (2D: epoch x sid)
+    for key in scalar_keys:
+        dataset[key] = xr.DataArray(
+            decom_data[key],
+            dims=["epoch", "sid"],
+        )
+
+    # Add PACKETDATA (4D: epoch x sid x row x column)
+    dataset["packetdata"] = xr.DataArray(
+        decom_data["packetdata"],
+        dims=["epoch", "sid", "row", "column"],
     )
-    if isinstance(ULTRA_TOF.mantissa_bit_length, int) and isinstance(
-        ULTRA_TOF.width, int
-    ):
-        for packet in sorted_packets:
-            binary_data = convert_to_binary_string(packet["PACKETDATA"])
-            # Decompress the image data
-            decompressed_data = decompress_image(
-                packet["P00"],
-                binary_data,
-                ULTRA_TOF.width,
-                ULTRA_TOF.mantissa_bit_length,
-            )
 
-            # Append the decompressed data and other derived data
-            # to the dictionary
-            append_tof_params(
-                decom_data,
-                packet,
-                decompressed_data=decompressed_data,
-                data_dict=data_dict,
-                stacked_dict=stacked_dict,
-            )
-
-    # Stack the data to create required dimensions
-    for key in stacked_dict.keys():
-        decom_data[key] = np.stack(stacked_dict[key])
-
-    return decom_data
+    return dataset
 
 
-def process_ultra_events(sorted_packets: list, decom_data: dict) -> dict:
+def get_event_id(shcoarse: NDArray) -> NDArray:
+    """
+    Get unique event IDs using data from events packets.
+
+    Parameters
+    ----------
+    shcoarse : numpy.ndarray
+        SHCOARSE (MET).
+
+    Returns
+    -------
+    event_ids : numpy.ndarray
+        Ultra events data with calculated unique event IDs as 64-bit integers.
+    """
+    event_ids = []
+    packet_counters = {}
+
+    for met in shcoarse:
+        # Initialize the counter for a new packet (MET value)
+        if met not in packet_counters:
+            packet_counters[met] = 0
+        else:
+            packet_counters[met] += 1
+
+        # Left shift SHCOARSE (u32) by 31 bits, to make room for our event counters
+        # (31 rather than 32 to keep it positive in the int64 representation)
+        # Append the current number of events in this packet to the right-most bits
+        # This makes each event a unique value including the MET and event number
+        # in the packet
+        # NOTE: CDF does not allow for uint64 values,
+        # so we use int64 representation here
+        event_id = (np.int64(met) << np.int64(31)) | np.int64(packet_counters[met])
+        event_ids.append(event_id)
+
+    return np.array(event_ids, dtype=np.int64)
+
+
+def process_ultra_events(ds: xr.Dataset) -> xr.Dataset:
     """
     Unpack and decode Ultra EVENTS packets.
 
     Parameters
     ----------
-    sorted_packets : list
-        EVENTS packets sorted by time.
-    decom_data : collections.defaultdict
-        Empty dictionary.
+    ds : xarray.Dataset
+        Events dataset.
 
     Returns
     -------
-    decom_data : dict
-        A dictionary containing the decoded data.
+    ds : xarray.Dataset
+        Dataset containing the decoded and decompressed data.
     """
-    for packet in sorted_packets:
-        # Here there are multiple images in a single packet,
-        # so we need to loop through each image and decompress it.
-        decom_data = read_image_raw_events_binary(packet, decom_data)
-        count = packet["COUNT"]
+    all_events = []
+    all_indices = []
+    empty_event = {field: np.iinfo(np.int64).min for field in EVENT_FIELD_RANGES}
+    counts = ds["count"].values
+    eventdata_array = ds["eventdata"].values
 
+    for i, count in enumerate(counts):
         if count == 0:
-            append_params(decom_data, packet)
+            all_events.append(empty_event)
+            all_indices.append(i)
         else:
-            for i in range(count):
-                logging.info(f"Appending image #{i}")
-                append_params(decom_data, packet)
+            # Here there are multiple images in a single packet,
+            # so we need to loop through each image and decompress it.
+            event_data_list = read_image_raw_events_binary(eventdata_array[i], count)
+            all_events.extend(event_data_list)
+            # Keep track of how many times does the event occurred at this epoch.
+            all_indices.extend([i] * count)
 
-    return decom_data
+    # Now we have the event data, we need to create the xarray dataset.
+    # We cannot append to the existing dataset (sorted_packets)
+    # because there are multiple events for each epoch.
+    idx = np.array(all_indices)
+
+    # Expand the existing dataset so that it is the same length as the event data.
+    expanded_data = {
+        var: ds[var].values[idx] for var in ds.data_vars if var != "eventdata"
+    }
+
+    # Add the event data to the expanded dataset.
+    for key in event_data_list[0]:
+        expanded_data[key] = np.array([event[key] for event in all_events])
+
+    event_ids = get_event_id(expanded_data["shcoarse"])
+
+    coords = {
+        "epoch": ds["epoch"].values[idx],
+        "event_id": ("epoch", event_ids),
+    }
+
+    dataset = xr.Dataset(coords=coords)
+    for key, data in expanded_data.items():
+        dataset[key] = xr.DataArray(
+            data,
+            dims=["epoch"],
+        )
+
+    return dataset
 
 
-def process_ultra_aux(sorted_packets: list, decom_data: dict) -> dict:
-    """
-    Unpack and decode Ultra AUX packets.
-
-    Parameters
-    ----------
-    sorted_packets : list
-        AUX packets sorted by time.
-    decom_data : collections.defaultdict
-        Empty dictionary.
-
-    Returns
-    -------
-    decom_data : dict
-        A dictionary containing the decoded data.
-    """
-    for packet in sorted_packets:
-        append_params(decom_data, packet)
-
-    return decom_data
-
-
-def process_ultra_rates(sorted_packets: list, decom_data: dict) -> dict:
+def process_ultra_rates(ds: xr.Dataset) -> xr.Dataset:
     """
     Unpack and decode Ultra RATES packets.
 
     Parameters
     ----------
-    sorted_packets : list
-        RATES packets sorted by time.
-    decom_data : collections.defaultdict
-        Empty dictionary.
+    ds : xarray.Dataset
+       Rates dataset.
 
     Returns
     -------
-    decom_data : dict
-        A dictionary containing the decoded data.
+    dataset : xarray.Dataset
+        Dataset containing the decoded and decompressed data.
     """
-    if (
-        isinstance(ULTRA_RATES.mantissa_bit_length, int)
-        and isinstance(ULTRA_RATES.len_array, int)
-        and isinstance(ULTRA_RATES.block, int)
-        and isinstance(ULTRA_RATES.width, int)
-    ):
-        for packet in sorted_packets:
-            raw_binary_string = convert_to_binary_string(packet["FASTDATA_00"])
-            decompressed_data = decompress_binary(
-                raw_binary_string,
-                ULTRA_RATES.width,
-                ULTRA_RATES.block,
-                ULTRA_RATES.len_array,
-                ULTRA_RATES.mantissa_bit_length,
-            )
+    decom_data = defaultdict(list)
 
-            for index in range(ULTRA_RATES.len_array):
-                decom_data[RATES_KEYS[index]].append(decompressed_data[index])
+    for fastdata in ds["fastdata_00"]:
+        raw_binary_string = convert_to_binary_string(fastdata.item())
+        decompressed_data = decompress_binary(
+            raw_binary_string,
+            cast(int, ULTRA_RATES.width),
+            cast(int, ULTRA_RATES.block),
+            cast(int, ULTRA_RATES.len_array),
+            cast(int, ULTRA_RATES.mantissa_bit_length),
+        )
 
-            append_params(decom_data, packet)
+        for index in range(cast(int, ULTRA_RATES.len_array)):
+            decom_data[RATES_KEYS[index]].append(decompressed_data[index])
 
-    return decom_data
+    for key, values in decom_data.items():
+        ds[key] = xr.DataArray(np.array(values), dims=["epoch"])
+
+    return ds

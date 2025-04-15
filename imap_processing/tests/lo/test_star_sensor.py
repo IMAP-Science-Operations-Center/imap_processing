@@ -6,7 +6,7 @@ from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.lo.l0.data_classes.star_sensor import StarSensor
 
 
-@pytest.fixture()
+@pytest.fixture
 def star_sensor():
     fake_data_field = namedtuple("fake_packet", ["raw_value", "derived_value"])
     star_sensor = StarSensor.__new__(StarSensor)

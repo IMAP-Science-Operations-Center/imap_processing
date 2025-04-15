@@ -3,17 +3,20 @@
 # TODO: Come back and add in FSW logic.
 import logging
 from enum import Enum
-from typing import ClassVar
 
 import numpy as np
+import pandas
 import xarray
 from numpy import ndarray
 from numpy.typing import NDArray
+from scipy.interpolate import LinearNDInterpolator, RegularGridInterpolator
 
-from imap_processing.spice.geometry import cartesian_to_spherical
+from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
+    get_angular_profiles,
     get_back_position,
+    get_energy_efficiencies,
     get_energy_norm,
     get_image_params,
     get_norm,
@@ -35,8 +38,8 @@ class StopType(Enum):
 
     Top = 1
     Bottom = 2
-    PH: ClassVar[list[int]] = [1, 2]
-    SSD: ClassVar[list[int]] = [8, 9, 10, 11, 12, 13, 14, 15]
+    PH = [1, 2]  # noqa RUF012 mutable class attribute
+    SSD = [8, 9, 10, 11, 12, 13, 14, 15]  # noqa RUF012 mutable class attribute
 
 
 class CoinType(Enum):
@@ -53,7 +56,7 @@ def get_front_x_position(start_type: ndarray, start_position_tdc: ndarray) -> nd
     Converts Start Position Time to Digital Converter (TDC)
     values into units of hundredths of a millimeter using a scale factor and offsets.
     Further description is available on pages 30 of
-    IMAP-Ultra Flight Software Specification document (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
@@ -158,8 +161,7 @@ def get_ph_tof_and_back_positions(
     The Time Of Flight (tof) and the position of the particle at the
     back of the sensor are measured using the timing of the pulses.
     Further description is available on pages 32-33 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
@@ -183,7 +185,7 @@ def get_ph_tof_and_back_positions(
         Back positions in y direction (hundredths of a millimeter).
     """
     indices = np.nonzero(
-        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
+        np.isin(de_dataset["stop_type"], [StopType.Top.value, StopType.Bottom.value])
     )[0]
     de_filtered = de_dataset.isel(epoch=indices)
 
@@ -191,10 +193,10 @@ def get_ph_tof_and_back_positions(
 
     # There are mismatches between the stop TDCs, i.e., SpN, SpS, SpE, and SpW.
     # This normalizes the TDCs
-    sp_n_norm = get_norm(de_filtered["STOP_NORTH_TDC"].data, "SpN", sensor)
-    sp_s_norm = get_norm(de_filtered["STOP_SOUTH_TDC"].data, "SpS", sensor)
-    sp_e_norm = get_norm(de_filtered["STOP_EAST_TDC"].data, "SpE", sensor)
-    sp_w_norm = get_norm(de_filtered["STOP_WEST_TDC"].data, "SpW", sensor)
+    sp_n_norm = get_norm(de_filtered["stop_north_tdc"].data, "SpN", sensor)
+    sp_s_norm = get_norm(de_filtered["stop_south_tdc"].data, "SpS", sensor)
+    sp_e_norm = get_norm(de_filtered["stop_east_tdc"].data, "SpE", sensor)
+    sp_w_norm = get_norm(de_filtered["stop_west_tdc"].data, "SpW", sensor)
 
     # Convert normalized TDC values into units of hundredths of a
     # millimeter using lookup tables.
@@ -220,7 +222,7 @@ def get_ph_tof_and_back_positions(
     # Stop Type: 1=Top, 2=Bottom
     # Convert converts normalized TDC values into units of
     # hundredths of a millimeter using lookup tables.
-    stop_type_top = de_filtered["STOP_TYPE"].data == StopType.Top.value
+    stop_type_top = de_filtered["stop_type"].data == StopType.Top.value
     xb[stop_type_top] = get_back_position(xb_index[stop_type_top], "XBkTp", sensor)
     yb[stop_type_top] = get_back_position(yb_index[stop_type_top], "YBkTp", sensor)
 
@@ -233,7 +235,7 @@ def get_ph_tof_and_back_positions(
         stop_type_top
     ] / 10 * get_image_params("XFTTOF")
 
-    stop_type_bottom = de_filtered["STOP_TYPE"].data == StopType.Bottom.value
+    stop_type_bottom = de_filtered["stop_type"].data == StopType.Bottom.value
     xb[stop_type_bottom] = get_back_position(
         xb_index[stop_type_bottom], "XBkBt", sensor
     )
@@ -307,7 +309,7 @@ def get_ssd_back_position_and_tof_offset(
     -----
     The X back position (xb) is assumed to be 0 for SSD.
     """
-    indices = np.nonzero(np.isin(de_dataset["STOP_TYPE"], StopType.SSD.value))[0]
+    indices = np.nonzero(np.isin(de_dataset["stop_type"], StopType.SSD.value))[0]
     de_filtered = de_dataset.isel(epoch=indices)
 
     yb = np.zeros(len(indices), dtype=np.float64)
@@ -315,17 +317,17 @@ def get_ssd_back_position_and_tof_offset(
     tof_offset = np.zeros(len(indices), dtype=np.float64)
 
     for i in range(8):
-        ssd_flag_mask = de_filtered[f"SSD_FLAG_{i}"].data == 1
+        ssd_flag_mask = de_filtered[f"ssd_flag_{i}"].data == 1
 
         # Multiply ybs times 100 to convert to hundredths of a millimeter.
         yb[ssd_flag_mask] = get_image_params(f"YBKSSD{i}") * 100
         ssd_number[ssd_flag_mask] = i
 
         tof_offset[
-            (de_filtered["START_TYPE"] == StartType.Left.value) & ssd_flag_mask
+            (de_filtered["start_type"] == StartType.Left.value) & ssd_flag_mask
         ] = get_image_params(f"TOFSSDLTOFF{i}")
         tof_offset[
-            (de_filtered["START_TYPE"] == StartType.Right.value) & ssd_flag_mask
+            (de_filtered["start_type"] == StartType.Right.value) & ssd_flag_mask
         ] = get_image_params(f"TOFSSDRTOFF{i}")
 
     return yb, tof_offset, ssd_number
@@ -357,9 +359,9 @@ def calculate_etof_xc(
         X coincidence position (millimeters).
     """
     # CoinNNorm
-    coin_n_norm = get_norm(de_subset["COIN_NORTH_TDC"], "CoinN", sensor)
+    coin_n_norm = get_norm(de_subset["coin_north_tdc"], "CoinN", sensor)
     # CoinSNorm
-    coin_s_norm = get_norm(de_subset["COIN_SOUTH_TDC"], "CoinS", sensor)
+    coin_s_norm = get_norm(de_subset["coin_south_tdc"], "CoinS", sensor)
     xc = get_image_params(f"XCOIN{location}SC") * (
         coin_s_norm - coin_n_norm
     ) + get_image_params(f"XCOIN{location}OFF")  # millimeter
@@ -389,8 +391,7 @@ def get_coincidence_positions(
     back to the coincidence anode.
 
     Further description is available on pages 34-35 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
@@ -410,16 +411,16 @@ def get_coincidence_positions(
     xc : np.ndarray
         X coincidence position (hundredths of a millimeter).
     """
-    index_top = np.nonzero(np.isin(de_dataset["COIN_TYPE"], CoinType.Top.value))[0]
+    index_top = np.nonzero(np.isin(de_dataset["coin_type"], CoinType.Top.value))[0]
     de_top = de_dataset.isel(epoch=index_top)
 
-    index_bottom = np.nonzero(np.isin(de_dataset["COIN_TYPE"], CoinType.Bottom.value))[
+    index_bottom = np.nonzero(np.isin(de_dataset["coin_type"], CoinType.Bottom.value))[
         0
     ]
     de_bottom = de_dataset.isel(epoch=index_bottom)
 
-    etof = np.zeros(len(de_dataset["COIN_TYPE"]), dtype=np.float64)
-    xc_array = np.zeros(len(de_dataset["COIN_TYPE"]), dtype=np.float64)
+    etof = np.zeros(len(de_dataset["coin_type"]), dtype=np.float64)
+    xc_array = np.zeros(len(de_dataset["coin_type"]), dtype=np.float64)
 
     # Normalized TDCs
     # For the stop anode, there are mismatches between the coincidence TDCs,
@@ -501,8 +502,7 @@ def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.ndarray) -> NDArray[np.float6
     A scale factor and offsets, and a multiplier convert xf to a tof offset.
 
     Further description is available on pages 36 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
@@ -517,9 +517,9 @@ def get_ssd_tof(de_dataset: xarray.Dataset, xf: np.ndarray) -> NDArray[np.float6
         Time of flight (tenths of a nanosecond).
     """
     _, tof_offset, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset)
-    indices = np.nonzero(np.isin(de_dataset["STOP_TYPE"], [StopType.SSD.value]))[0]
+    indices = np.nonzero(np.isin(de_dataset["stop_type"], [StopType.SSD.value]))[0]
 
-    de_discrete = de_dataset.isel(epoch=indices)["COIN_DISCRETE_TDC"]
+    de_discrete = de_dataset.isel(epoch=indices)["coin_discrete_tdc"]
 
     time = get_image_params("TOFSSDSC") * de_discrete.values + tof_offset
 
@@ -576,8 +576,7 @@ def get_energy_pulse_height(
     pulse height from the stop anode.
     Lookup tables (lut) are used for corrections.
     Further description is available on pages 40-41 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
@@ -634,8 +633,7 @@ def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.ndarray) -> NDArray[np.fl
     SSD energy and SSD energy pulse width.
     The result is then normalized per SSD via a lookup table.
     Further description is available on pages 41 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
@@ -649,14 +647,14 @@ def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.ndarray) -> NDArray[np.fl
     energy_norm : np.ndarray
         Energy measured using the SSD.
     """
-    ssd_indices = np.where(de_dataset["STOP_TYPE"].data >= 8)[0]
-    energy = de_dataset["ENERGY_PH"].data[ssd_indices]
+    ssd_indices = np.where(de_dataset["stop_type"].data >= 8)[0]
+    energy = de_dataset["energy_ph"].data[ssd_indices]
 
     composite_energy = np.empty(len(energy), dtype=np.float64)
 
     composite_energy[energy >= UltraConstants.COMPOSITE_ENERGY_THRESHOLD] = (
         UltraConstants.COMPOSITE_ENERGY_THRESHOLD
-        + de_dataset["PULSE_WIDTH"].data[ssd_indices][
+        + de_dataset["pulse_width"].data[ssd_indices][
             energy >= UltraConstants.COMPOSITE_ENERGY_THRESHOLD
         ]
     )
@@ -679,8 +677,7 @@ def get_ctof(
     to a fixed distance dmin between the front and back detectors.
     The normalized TOF is termed the corrected TOF (ctof).
     Further description is available on pages 42-44 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
@@ -704,7 +701,7 @@ def get_ctof(
     ctof = tof * dmin_ctof * 100 / path_length
 
     # Convert from mm/0.1ns to km/s.
-    magnitude_v = dmin_ctof / ctof * 1e4
+    magnitude_v = dmin_ctof / np.abs(ctof) * 1e4
 
     return ctof, magnitude_v
 
@@ -720,8 +717,7 @@ def determine_species(tof: np.ndarray, path_length: np.ndarray, type: str) -> ND
     Particle species are determined from ctof using thresholds.
 
     Further description is available on pages 42-44 of
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
@@ -751,31 +747,213 @@ def determine_species(tof: np.ndarray, path_length: np.ndarray, type: str) -> ND
     return species_bin
 
 
-def get_de_az_el(v: NDArray) -> tuple[NDArray, NDArray]:
+def get_phi_theta(
+    front_position: tuple, back_position: tuple, d: np.ndarray
+) -> tuple[NDArray, NDArray]:
     """
-    Compute azimuth (phi) angles and elevation (theta).
+    Compute the instrument angles with range -90 -> 90 degrees.
+
+    Further description is available on page 18 of
+    the Ultra Algorithm Theoretical Basis Document.
 
     Parameters
     ----------
-    v : np.ndarray
-        A NumPy array with shape (n, 3) where each
-        row represents a vector
-        with x, y, z-components.
+    front_position : tuple of floats
+        Front position (xf,yf) (hundredths of a millimeter).
+    back_position : tuple of floats
+        Back position (xb,yb) (hundredths of a millimeter).
+    d : np.ndarray
+        Distance from slit to foil (hundredths of a millimeter).
 
     Returns
     -------
-    spherical_coords : np.ndarray
-        A NumPy array with shape (n, 3), where each row contains
-        the spherical coordinates (r, azimuth, elevation):
-
-        - azimuth : angle in the xy-plane
-          In radians:
-          output range=[0, 2*pi].
-        - elevation : angle from the xy-plane
-          In radians:
-          output range=[-pi/2, pi/2].
+    phi : np.array
+        Ultra instrument frame event azimuth.
+    theta : np.array
+        Ultra instrument frame event elevation.
     """
-    # Compute azimuth (phi) angles and elevation (theta)
-    spherical_coords = cartesian_to_spherical(v, degrees=False)
+    path_length = get_path_length(front_position, back_position, d)
 
-    return spherical_coords[:, 1], spherical_coords[:, 2]
+    phi = np.arctan((front_position[1] - back_position[1]) / d)
+    theta = np.arcsin((front_position[0] - back_position[0]) / path_length)
+
+    return np.degrees(phi), np.degrees(theta)
+
+
+def get_eventtimes(
+    spin: NDArray, phase_angle: NDArray
+) -> tuple[NDArray, NDArray, NDArray]:
+    """
+    Get the event times.
+
+    Parameters
+    ----------
+    spin : np.ndarray
+        Spin number.
+    phase_angle : np.ndarray
+        Phase angle.
+
+    Returns
+    -------
+    event_times : np.ndarray
+        Event times.
+    spin_starts : np.ndarray
+        Spin start times.
+    spin_period_sec : np.ndarray
+        Spin period in seconds.
+
+    Notes
+    -----
+    Equation for event time:
+    t = t_(spin start) + t_(spin start sub)/1e6 +
+    t_spin_period_sec * phase_angle/720
+    """
+    spin_df = get_spin_data()
+    index = np.searchsorted(spin_df["spin_number"].values, spin)
+    spin_starts = (
+        spin_df["spin_start_sec_sclk"].values[index]
+        + spin_df["spin_start_subsec_sclk"].values[index] / 1e6
+    )
+
+    spin_period_sec = spin_df["spin_period_sec"].values[index]
+
+    event_times = spin_starts + spin_period_sec * (phase_angle / 720)
+
+    return event_times, spin_starts, spin_period_sec
+
+
+def interpolate_fwhm(
+    lookup_table: pandas.DataFrame,
+    energy: NDArray,
+    phi_inst: NDArray,
+    theta_inst: NDArray,
+) -> tuple[NDArray, NDArray]:
+    """
+    Interpolate phi and theta FWHM values using lookup tables.
+
+    Parameters
+    ----------
+    lookup_table : DataFrame
+        Angular profile lookup table for a given side and sensor.
+    energy : NDArray
+        Energy values.
+    phi_inst : NDArray
+        Instrument-frame azimuth angles.
+    theta_inst : NDArray
+        Instrument-frame elevation angles.
+
+    Returns
+    -------
+    phi_interp : NDArray
+        Interpolated phi FWHM.
+    theta_interp : NDArray
+        Interpolated theta FWHM.
+    """
+    interp_phi = LinearNDInterpolator(
+        lookup_table[["Energy", "phi_degrees"]].values, lookup_table["phi_fwhm"].values
+    )
+
+    interp_theta = LinearNDInterpolator(
+        lookup_table[["Energy", "theta_degrees"]].values,
+        lookup_table["theta_fwhm"].values,
+    )
+
+    # Note: will return nan for those out-of-bounds inputs.
+    phi_interp = interp_phi((energy, phi_inst))
+    theta_interp = interp_theta((energy, theta_inst))
+
+    return phi_interp, theta_interp
+
+
+def get_fwhm(
+    start_type: NDArray,
+    sensor: str,
+    energy: NDArray,
+    phi_inst: NDArray,
+    theta_inst: NDArray,
+) -> tuple[NDArray, NDArray]:
+    """
+    Interpolate phi and theta FWHM values for each event based on start type.
+
+    Parameters
+    ----------
+    start_type : NDArray
+        Start Type: 1=Left, 2=Right.
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
+    energy : NDArray
+        Energy values for each event.
+    phi_inst : NDArray
+        Instrument-frame azimuth angle for each event.
+    theta_inst : NDArray
+        Instrument-frame elevation angle for each event.
+
+    Returns
+    -------
+    phi_interp : NDArray
+        Interpolated phi FWHM values.
+    theta_interp : NDArray
+        Interpolated theta FWHM values.
+    """
+    phi_interp = np.full_like(phi_inst, np.nan, dtype=np.float64)
+    theta_interp = np.full_like(theta_inst, np.nan, dtype=np.float64)
+    lt_table = get_angular_profiles("left", sensor)
+    rt_table = get_angular_profiles("right", sensor)
+
+    # Left start type
+    idx_left = start_type == StartType.Left.value
+    phi_interp[idx_left], theta_interp[idx_left] = interpolate_fwhm(
+        lt_table, energy[idx_left], phi_inst[idx_left], theta_inst[idx_left]
+    )
+
+    # Right start type
+    idx_right = start_type == StartType.Right.value
+    phi_interp[idx_right], theta_interp[idx_right] = interpolate_fwhm(
+        rt_table, energy[idx_right], phi_inst[idx_right], theta_inst[idx_right]
+    )
+
+    return phi_interp, theta_interp
+
+
+def get_efficiency(
+    energy: NDArray,
+    phi_inst: NDArray,
+    theta_inst: NDArray,
+) -> NDArray:
+    """
+    Interpolate efficiency values for each event.
+
+    Parameters
+    ----------
+    energy : NDArray
+        Energy values for each event.
+    phi_inst : NDArray
+        Instrument-frame azimuth angle for each event.
+    theta_inst : NDArray
+        Instrument-frame elevation angle for each event.
+
+    Returns
+    -------
+    efficiency : NDArray
+        Interpolated efficiency values.
+    """
+    lookup_table = get_energy_efficiencies()
+
+    theta_vals = np.sort(lookup_table["theta (deg)"].unique())
+    phi_vals = np.sort(lookup_table["phi (deg)"].unique())
+    energy_column_names = lookup_table.columns[2:].tolist()
+    energy_vals = [float(col.replace("keV", "")) for col in energy_column_names]
+    efficiency_2d = lookup_table[energy_column_names].values
+
+    efficiency_grid = efficiency_2d.reshape(
+        (len(theta_vals), len(phi_vals), len(energy_vals))
+    )
+
+    interpolator = RegularGridInterpolator(
+        (theta_vals, phi_vals, energy_vals),
+        efficiency_grid,
+        bounds_error=False,
+        fill_value=np.nan,
+    )
+
+    return interpolator((theta_inst, phi_inst, energy))

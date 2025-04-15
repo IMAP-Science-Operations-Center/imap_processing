@@ -21,8 +21,8 @@ def test_parse_direct_events():
     # Encode the random events data into a bit-string
     bin_str = ""
     for i in range(n_events):
-        bin_str += f"{exp_dict['trigger_id'][i]:02b}"  # 2-bits for trigger_id
         bin_str += f"{exp_dict['de_tag'][i]:016b}"  # 16-bits for de_tag
+        bin_str += f"{exp_dict['trigger_id'][i]:02b}"  # 2-bits for trigger_id
         bin_str += f"{exp_dict['tof_1'][i]:010b}"  # 10-bits for tof_1
         bin_str += f"{exp_dict['tof_2'][i]:010b}"  # 10-bits for tof_2
         bin_str += f"{exp_dict['tof_3'][i]:010b}"  # 10-bits for tof_3
@@ -30,8 +30,8 @@ def test_parse_direct_events():
     bytes_obj = bytes([int(bin_str[i : i + 8], 2) for i in range(0, len(bin_str), 8)])
     # Parse the fake events and check values
     de_dict = parse_direct_events(bytes_obj)
-    for key in exp_dict.keys():
-        np.testing.assert_array_equal(de_dict[key], exp_dict[key])
+    for key, expected_val in exp_dict.items():
+        np.testing.assert_array_equal(de_dict[key], expected_val)
 
 
 def test_create_dataset():

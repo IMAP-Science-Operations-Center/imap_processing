@@ -9,11 +9,12 @@ from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l0.decom_mag import decom_packets, generate_dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def cdf_attrs():
     test_attrs = ImapCdfAttributes()
     test_attrs.add_instrument_global_attrs("mag")
-    test_attrs.add_instrument_variable_attrs("mag", "l1")
+    test_attrs.add_instrument_variable_attrs("mag", "l1a")
+    # Default v001 expected when writing to file and re-loading
     test_attrs.add_global_attribute("Data_version", "v001")
     return test_attrs
 
@@ -75,7 +76,7 @@ def test_mag_raw_xarray(cdf_attrs):
         [
             item is not None
             for key, item in norm_data.attrs.items()
-            if key != "Logical_file_id"
+            if key not in ("Logical_file_id", "Data_version")
         ]
     )
 
@@ -83,7 +84,7 @@ def test_mag_raw_xarray(cdf_attrs):
         [
             item is not None
             for key, item in burst_data.attrs.items()
-            if key != "Logical_file_id"
+            if key not in ("Logical_file_id", "Data_version")
         ]
     )
 
