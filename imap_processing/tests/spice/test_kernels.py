@@ -12,6 +12,7 @@ from imap_processing.spice.kernels import (
     create_pointing_frame,
     ensure_spice,
 )
+from imap_processing.spice.repoint import get_repoint_data
 
 
 @pytest.fixture
@@ -53,6 +54,14 @@ def et_times(pointing_frame_kernels):
     et_times = _get_et_times(et_start, et_end)
 
     return et_times
+
+
+@pytest.fixture
+def fake_repoint_data(monkeypatch, spice_test_data_path):
+    """Generate fake spin dataframe for testing"""
+    fake_repoint_path = spice_test_data_path / "fake_repoint_data.csv"
+    monkeypatch.setenv("REPOINT_DATA_FILEPATH", str(fake_repoint_path))
+    return fake_repoint_path
 
 
 @ensure_spice
@@ -148,14 +157,16 @@ def test_create_rotation_matrix(et_times, pointing_frame_kernels):
 
 
 def test_create_pointing_frame(
-    spice_test_data_path, pointing_frame_kernels, tmp_path, et_times
+    spice_test_data_path, pointing_frame_kernels, tmp_path, et_times, fake_repoint_data
 ):
     """Tests create_pointing_frame function."""
+    repoint_df = get_repoint_data()
     spiceypy.kclear()
     spiceypy.furnsh(pointing_frame_kernels)
     create_pointing_frame(
-        pointing_frame_path=tmp_path / "imap_dps.bc",
-        ck_path=spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc",
+        tmp_path / "imap_dps.bc",
+        spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc",
+        repoint_df,
     )
 
     # After imap_dps.bc has been created.

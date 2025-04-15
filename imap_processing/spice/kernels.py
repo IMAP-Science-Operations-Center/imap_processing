@@ -9,11 +9,13 @@ from pathlib import Path
 from typing import Any, Callable, Optional, Union, overload
 
 import numpy as np
+import pandas as pd
 import spiceypy
 from numpy.typing import NDArray
 from spiceypy.utils.exceptions import SpiceyError
 
 from imap_processing import imap_module_directory
+from imap_processing.spice.time import met_to_sclkticks, sct_to_et
 
 logger = logging.getLogger(__name__)
 
@@ -210,7 +212,9 @@ def open_spice_ck_file(pointing_frame_path: Path) -> Generator[int, None, None]:
 
 
 @ensure_spice
-def create_pointing_frame(pointing_frame_path: Path, ck_path: Path) -> None:
+def create_pointing_frame(
+    pointing_frame_path: Path, ck_path: Path, repoint_df: pd.DataFrame
+) -> None:
     """
     Create the pointing frame.
 
@@ -220,6 +224,8 @@ def create_pointing_frame(pointing_frame_path: Path, ck_path: Path) -> None:
         Location of pointing frame kernel.
     ck_path : pathlib.Path
         Location of the CK kernel.
+    repoint_df : pd.DataFrame
+        DataFrame containing repointing data.
 
     Notes
     -----
@@ -255,16 +261,16 @@ def create_pointing_frame(pointing_frame_path: Path, ck_path: Path) -> None:
     if count != 1 or str(ck_path) != loaded_ck_kernel:
         raise ValueError(f"Error: Expected CK kernel {ck_path}")
 
-    # If the pointing frame kernel already exists, find the last time.
-    if pointing_frame_path.exists():
-        # Get the last time in the pointing frame kernel.
-        pointing_cover = spiceypy.ckcov(
-            str(pointing_frame_path), int(id_imap_dps), True, "SEGMENT", 0, "TDB"
-        )
-        num_segments = spiceypy.wncard(pointing_cover)
-        _, et_end_pointing_frame = spiceypy.wnfetd(pointing_cover, num_segments - 1)
-    else:
-        et_end_pointing_frame = None
+    # # If the pointing frame kernel already exists, find the last time.
+    # if pointing_frame_path.exists():
+    #     # Get the last time in the pointing frame kernel.
+    #     pointing_cover = spiceypy.ckcov(
+    #         str(pointing_frame_path), int(id_imap_dps), True, "SEGMENT", 0, "TDB"
+    #     )
+    #     num_segments = spiceypy.wncard(pointing_cover)
+    #     _, et_end_pointing_frame = spiceypy.wnfetd(pointing_cover, num_segments - 1)
+    # else:
+    #     et_end_pointing_frame = None
 
     # TODO: Query for .csv file to get the pointing start and end times.
     # TODO: Remove next four lines once query is added.
@@ -272,14 +278,17 @@ def create_pointing_frame(pointing_frame_path: Path, ck_path: Path) -> None:
     ck_cover = spiceypy.ckcov(
         str(ck_path), int(id_imap_spacecraft), True, "INTERVAL", 0, "TDB"
     )
-    num_intervals = spiceypy.wncard(ck_cover)
 
     with open_spice_ck_file(pointing_frame_path) as handle:
         # TODO: this will change to the number of pointings.
-        for i in range(num_intervals):
+        for i in range(len(repoint_df)):
             # Get the coverage window
             # TODO: this will change to pointing start and end time.
-            et_start, et_end = spiceypy.wnfetd(ck_cover, i)
+            sclk_ticks_start = met_to_sclkticks(repoint_df["repoint_start_met"].values)
+            et_start = sct_to_et(sclk_ticks_start)
+            sclk_ticks_end = met_to_sclkticks(repoint_df["repoint_end_met"].values)
+            et_end = sct_to_et(sclk_ticks_end)
+
             et_times = _get_et_times(et_start, et_end)
 
             # TODO: remove after query is added.
