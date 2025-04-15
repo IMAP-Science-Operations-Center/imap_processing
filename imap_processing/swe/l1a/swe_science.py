@@ -64,7 +64,7 @@ def decompressed_counts(cem_count: int) -> int:
     )
 
 
-def swe_science(l0_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+def swe_science(l0_dataset: xr.Dataset) -> xr.Dataset:
     """
     SWE L1a science processing.
 
@@ -96,10 +96,6 @@ def swe_science(l0_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     ----------
     l0_dataset : xarray.Dataset
         Raw packet data from SWE stored as an xarray dataset.
-
-    data_version : str
-        Data version for the 'Data_version' CDF attribute. This is the version of the
-        output file.
 
     Returns
     -------
@@ -135,7 +131,6 @@ def swe_science(l0_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("swe")
     cdf_attrs.add_instrument_variable_attrs("swe", "l1a")
-    cdf_attrs.add_global_attribute("Data_version", data_version)
 
     epoch_time = xr.DataArray(
         l0_dataset["epoch"],

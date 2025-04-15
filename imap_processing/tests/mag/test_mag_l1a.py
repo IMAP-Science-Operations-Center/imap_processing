@@ -883,7 +883,7 @@ def test_mag_l1a():
     current_directory = Path(__file__).parent
     test_file = current_directory / "validation" / "mag_l1_test_data.pkts"
 
-    output_data = mag_l1a(test_file, "v001")
+    output_data = mag_l1a(test_file)
 
     # Test data is one day's worth of NORM data, so it should return one raw, one MAGO
     # and one MAGI dataset
@@ -896,9 +896,6 @@ def test_mag_l1a():
 
     for data_type in [data.attrs["Logical_source"] for data in output_data]:
         assert data_type in expected_logical_source
-
-    for data in output_data:
-        assert data.attrs["Data_version"] == "v001"
 
     assert "vectors" in output_data[-1].variables.keys()
     assert "compression_flags" in output_data[-1].variables.keys()

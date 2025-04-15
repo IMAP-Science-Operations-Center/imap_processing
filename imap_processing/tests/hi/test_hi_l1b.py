@@ -23,9 +23,8 @@ def test_hi_l1b_hk(hi_l0_test_data_path):
     housekeeping L1A as input"""
     # TODO: once things are more stable, check in an L1A HK file as test data
     bin_data_path = hi_l0_test_data_path / "H90_NHK_20241104.bin"
-    data_version = "001"
 
-    l1b_datasets = hi_l1b(bin_data_path, data_version=data_version)
+    l1b_datasets = hi_l1b(bin_data_path)
     assert len(l1b_datasets) == 1
     assert l1b_datasets[0].attrs["Logical_source"] == "imap_hi_l1b_90sensor-hk"
 
@@ -44,10 +43,9 @@ def test_hi_l1b_de(
         hi_l1_test_data_path / "imap_hi_l1a_45sensor-de_20250415_v999.cdf"
     )
     # Process using test data
-    data_version = "001"
     l1a_dataset = load_cdf(l1a_test_file_path)
 
-    l1b_datasets = hi_l1b(l1a_dataset, data_version=data_version)
+    l1b_datasets = hi_l1b(l1a_dataset)
     assert len(l1b_datasets) == 1
     assert l1b_datasets[0].attrs["Logical_source"] == "imap_hi_l1b_45sensor-de"
     assert len(l1b_datasets[0].data_vars) == 15

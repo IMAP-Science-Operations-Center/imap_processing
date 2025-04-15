@@ -45,14 +45,11 @@ def test_calculate_badtimes():
         },
     )
 
-    culling_ds = calculate_cullingmask(
-        ds, name="imap_ultra_l1b_45sensor-badtimes", data_version="v1"
-    )
+    culling_ds = calculate_cullingmask(ds, name="imap_ultra_l1b_45sensor-badtimes")
     badtimes_ds = calculate_badtimes(
         ds,
         culling_ds["spin_number"].values,
         name="imap_ultra_l1b_45sensor-badtimes",
-        data_version="v1",
     )
 
     assert not np.any(

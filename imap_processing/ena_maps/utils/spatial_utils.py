@@ -79,17 +79,22 @@ def build_solid_angle_map(
     if spacing <= 0:
         raise ValueError("Spacing must be positive valued, non-zero.")
 
-    if not np.isclose((np.pi / spacing) % 1, 0):
+    proposed_number_of_lat_bins = 180 / spacing_deg
+    number_of_lat_bins = round(180 / spacing_deg)
+    number_of_lon_bins = 2 * number_of_lat_bins
+    if not np.isclose(proposed_number_of_lat_bins, number_of_lat_bins):
         raise ValueError("Spacing must divide evenly into pi radians.")
 
-    latitudes = np.arange(-np.pi / 2, np.pi / 2 + spacing, step=spacing)
-    sine_latitudes = np.sin(latitudes)
-    delta_sine_latitudes = np.diff(sine_latitudes)
+    latitude_edges = np.linspace(
+        -np.pi / 2, np.pi / 2, num=number_of_lat_bins + 1, endpoint=True
+    )
+    sine_latitude_edges = np.sin(latitude_edges)
+    delta_sine_latitudes = np.diff(sine_latitude_edges)
     solid_angle_by_latitude = np.abs(spacing * delta_sine_latitudes)
 
     # Order ensures agreement with build_az_el_grid's order of tiling az/el grid.
     solid_angle_grid = np.repeat(
-        solid_angle_by_latitude[np.newaxis, :], (2 * np.pi) / spacing, axis=0
+        solid_angle_by_latitude[np.newaxis, :], number_of_lon_bins, axis=0
     )
 
     return solid_angle_grid

@@ -42,7 +42,7 @@ SPIN_PHASE_BIN_CENTERS = (SPIN_PHASE_BIN_EDGES[:-1] + SPIN_PHASE_BIN_EDGES[1:]) 
 logger = logging.getLogger(__name__)
 
 
-def hi_l1c(dependencies: list, data_version: str) -> xr.Dataset:
+def hi_l1c(dependencies: list) -> list[xr.Dataset]:
     """
     High level IMAP-Hi l1c processing function.
 
@@ -55,10 +55,6 @@ def hi_l1c(dependencies: list, data_version: str) -> xr.Dataset:
     ----------
     dependencies : list
         Input dependencies needed for l1c processing.
-
-    data_version : str
-        Data version to write to CDF files and the Data_version CDF attribute.
-        Should be in the format Vxxx.
 
     Returns
     -------
@@ -76,9 +72,7 @@ def hi_l1c(dependencies: list, data_version: str) -> xr.Dataset:
             "Input dependencies not recognized for l1c pset processing."
         )
 
-    # TODO: revisit this
-    l1c_dataset.attrs["Data_version"] = data_version
-    return l1c_dataset
+    return [l1c_dataset]
 
 
 def generate_pset_dataset(
@@ -525,6 +519,9 @@ def pset_exposure(
             == packet_row["esa_energy_step"].values
         )[0]
         exposure_var["exposure_times"].values[:, i_esa] += new_exposure_times
+
+    # Convert exposure clock ticks to seconds
+    exposure_var["exposure_times"].values *= DE_CLOCK_TICK_S
 
     return exposure_var
 

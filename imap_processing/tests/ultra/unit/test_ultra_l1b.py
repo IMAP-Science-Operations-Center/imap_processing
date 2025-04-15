@@ -67,7 +67,6 @@ def test_create_extendedspin_dataset(mock_data_l1b_extendedspin_dict):
         mock_data_l1b_extendedspin_dict,
         "imap_ultra_l1b_45sensor-extendedspin",
         "l1b",
-        "001",
     )
 
     assert "spin_number" in dataset.coords
@@ -82,9 +81,7 @@ def test_create_extendedspin_dataset(mock_data_l1b_extendedspin_dict):
 
 def test_create_de_dataset(mock_data_l1b_de_dict):
     """Tests that dataset is created as expected."""
-    dataset = create_dataset(
-        mock_data_l1b_de_dict, "imap_ultra_l1b_45sensor-de", "l1b", "001"
-    )
+    dataset = create_dataset(mock_data_l1b_de_dict, "imap_ultra_l1b_45sensor-de", "l1b")
 
     assert "epoch" in dataset.coords
     assert dataset.coords["epoch"].dtype == "datetime64[ns]"
@@ -108,7 +105,7 @@ def test_cdf_de(l1b_de_dataset):
     """Tests that CDF file is created and contains same attributes as xarray."""
     test_data_path = write_cdf(l1b_de_dataset[0], istp=False)
     assert test_data_path.exists()
-    assert test_data_path.name == "imap_ultra_l1b_45sensor-de_20240207_v001.cdf"
+    assert test_data_path.name == "imap_ultra_l1b_45sensor-de_20240207_v999.cdf"
 
 
 def test_ultra_l1b_extendedspin(l1b_extendedspin_dataset):
@@ -133,7 +130,7 @@ def test_cdf_extendedspin(l1b_extendedspin_dataset):
     test_data_path = write_cdf(l1b_extendedspin_dataset[0], istp=False)
     assert test_data_path.exists()
     assert (
-        test_data_path.name == "imap_ultra_l1b_45sensor-extendedspin_20000101_v001.cdf"
+        test_data_path.name == "imap_ultra_l1b_45sensor-extendedspin_20000101_v999.cdf"
     )
 
 
@@ -145,4 +142,4 @@ def test_ultra_l1b_error(mock_data_l1a_rates_dict):
     with pytest.raises(
         ValueError, match="Data dictionary does not contain the expected keys."
     ):
-        ultra_l1b(mock_data_l1a_rates_dict, data_version="001")
+        ultra_l1b(mock_data_l1a_rates_dict)

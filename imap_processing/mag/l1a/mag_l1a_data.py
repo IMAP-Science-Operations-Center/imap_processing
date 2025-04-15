@@ -368,7 +368,7 @@ class MagL1a:
 
     @staticmethod
     def process_vector_data(
-        vector_data: np.ndarray,
+        vector_data: np.ndarray | bytes,
         primary_count: int,
         secondary_count: int,
         compression: int,

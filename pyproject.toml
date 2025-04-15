@@ -76,6 +76,8 @@ addopts = "-ra"
 filterwarnings = [
     "ignore:Converting non-nanosecond:UserWarning:cdflib",
     "ignore:datetime.datetime.utcfromtimestamp:DeprecationWarning:cdflib",
+    # Ignore Data_version warnings during tests because we default to v001
+    "ignore:No Data_version attribute found:UserWarning:imap_processing",
 ]
 markers = [
     "external_kernel: marks tests as requiring external SPICE kernels (deselect with '-m \"not external_kernel\"')",
@@ -138,6 +140,7 @@ disable_error_code = ['import-not-found', # Unable to locate module or package s
                 'no-untyped-call', # Function calls are only made to functions that are fully typed
                 'type-arg', # Requires type arguments to be specified in list[] and dict[]
                 'union-attr', # Item "float" of "float | Any" has no attribute "reshape"
+                'no-any-return', # Returning Any from a function
               ]
 strict = true
 explicit_package_bases = true

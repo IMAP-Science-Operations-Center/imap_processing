@@ -10,37 +10,37 @@ instrument_base: &instrument_base
 
 imap_ultra_l1a_45sensor-aux:
     <<: *instrument_base
-    Data_type: L1A_DE>Level-1A Auxiliary
+    Data_type: L1A_AUX>Level-1A Auxiliary
     Logical_source: imap_ultra_l1a_45sensor-aux
     Logical_source_description: IMAP-Ultra Instrument Level-1A Auxilliary Data.
 
 imap_ultra_l1a_90sensor-aux:
     <<: *instrument_base
-    Data_type: L1A_DE>Level-1A Auxiliary
+    Data_type: L1A_AUX>Level-1A Auxiliary
     Logical_source: imap_ultra_l1a_90sensor-aux
     Logical_source_description: IMAP-Ultra Instrument Level-1A Auxilliary Data.
 
 imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-ang:
     <<: *instrument_base
-    Data_type: L1A_DE>Level-1A TOF
+    Data_type: L1A_Histogram>Level-1A TOF
     Logical_source: imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-ang
     Logical_source_description: IMAP-Ultra Instrument Level-1A PHxTOF Hi Angular Data.
 
 imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-ang:
     <<: *instrument_base
-    Data_type: L1A_DE>Level-1A TOF
+    Data_type: L1A_Histogram>Level-1A TOF
     Logical_source: imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-ang
     Logical_source_description: IMAP-Ultra Instrument Level-1A PHxTOF Hi Angular Data.
 
 imap_ultra_l1a_45sensor-rates:
     <<: *instrument_base
-    Data_type: L1A_DE>Level-1A Rates
+    Data_type: L1A_Rates>Level-1A Rates
     Logical_source: imap_ultra_l1a_45sensor-rates
     Logical_source_description: IMAP-Ultra Instrument Level-1A Rates Data.
 
 imap_ultra_l1a_90sensor-rates:
     <<: *instrument_base
-    Data_type: L1A_DE>Level-1A Rates
+    Data_type: L1A_Rates>Level-1A Rates
     Logical_source: imap_ultra_l1a_90sensor-rates
     Logical_source_description: IMAP-Ultra Instrument Level-1A Rates Data.
 
@@ -127,3 +127,135 @@ imap_ultra_l1c_90sensor-histogram:
     Data_type: L1C_45Sensor-Histogram>Level-1C Histogram for Ultra90
     Logical_source: imap_ultra_l1c_90sensor-histogram
     Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Histogram Data.
+
+imap_ultra_l1a_45sensor-alarm:
+    <<: *instrument_base
+    Data_type: L1A_45Sensor-Alarm>Level-1A Alarm for Ultra45
+    Logical_source: imap_ultra_l1a_45sensor-alarm
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Alarm Data for Ultra45.
+
+imap_ultra_l1a_90sensor-alarm:
+    <<: *instrument_base
+    Data_type: L1A_90Sensor-Alarm>Level-1A Alarm for Ultra90
+    Logical_source: imap_ultra_l1a_90sensor-alarm
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Alarm Data for Ultra90.
+
+imap_ultra_l1a_45sensor-memchecksum:
+    <<: *instrument_base
+    Data_type: L1A_45Sensor-MemChecksum>Level-1A Memory Checksum for Ultra45
+    Logical_source: imap_ultra_l1a_45sensor-memchecksum
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Memory Checksum Data for Ultra45.
+
+imap_ultra_l1a_90sensor-memchecksum:
+    <<: *instrument_base
+    Data_type: L1A_90Sensor-MemChecksum>Level-1A Memory Checksum for Ultra90
+    Logical_source: imap_ultra_l1a_90sensor-memchecksum
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Memory Checksum Data for Ultra90.
+
+imap_ultra_l1a_45sensor-memdump:
+    <<: *instrument_base
+    Data_type: L1A_45Sensor-MemDump>Level-1A Memory Dump for Ultra45
+    Logical_source: imap_ultra_l1a_45sensor-memdump
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Memory Dump Data for Ultra45.
+
+imap_ultra_l1a_90sensor-memdump:
+    <<: *instrument_base
+    Data_type: L1A_90Sensor-MemDump>Level-1A Memory Dump for Ultra90
+    Logical_source: imap_ultra_l1a_90sensor-memdump
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Memory Dump Data for Ultra90.
+
+imap_ultra_l1a_45sensor-status:
+    <<: *instrument_base
+    Data_type: L1A_45Sensor-Status>Level-1A Status for Ultra45
+    Logical_source: imap_ultra_l1a_45sensor-status
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Status Data for Ultra45.
+
+imap_ultra_l1a_90sensor-status:
+    <<: *instrument_base
+    Data_type: L1A_90Sensor-Status>Level-1A Status for Ultra90
+    Logical_source: imap_ultra_l1a_90sensor-status
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Status Data for Ultra90.
+
+imap_ultra_l1a_45sensor-bootstatus:
+    <<: *instrument_base
+    Data_type: L1A_45Sensor-BootStatus>Level-1A Boot Status for Ultra45
+    Logical_source: imap_ultra_l1a_45sensor-bootstatus
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Boot Status Data for Ultra45.
+
+imap_ultra_l1a_90sensor-bootstatus:
+    <<: *instrument_base
+    Data_type: L1A_90Sensor-BootStatus>Level-1A Boot Status for Ultra90
+    Logical_source: imap_ultra_l1a_90sensor-bootstatus
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Boot Status Data for Ultra90.
+
+imap_ultra_l1a_45sensor-macrodump:
+    <<: *instrument_base
+    Data_type: L1A_45Sensor-MacroDump>Level-1A Macro Dump for Ultra45
+    Logical_source: imap_ultra_l1a_45sensor-macrodump
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Macro Dump Data for Ultra45.
+
+imap_ultra_l1a_90sensor-macrodump:
+    <<: *instrument_base
+    Data_type: L1A_90Sensor-MacroDump>Level-1A Macro Dump for Ultra90
+    Logical_source: imap_ultra_l1a_90sensor-macrodump
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Macro Dump Data for Ultra90.
+
+imap_ultra_l1a_45sensor-monitorlimits:
+    <<: *instrument_base
+    Data_type: L1A_45Sensor-MonitorLimits>Level-1A Monitor Limits for Ultra45
+    Logical_source: imap_ultra_l1a_45sensor-monitorlimits
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Monitor Limits Data for Ultra45.
+
+imap_ultra_l1a_90sensor-monitorlimits:
+    <<: *instrument_base
+    Data_type: L1A_90Sensor-MonitorLimits>Level-1A Monitor Limits for Ultra90
+    Logical_source: imap_ultra_l1a_90sensor-monitorlimits
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Monitor Limits Data for Ultra90.
+
+imap_ultra_l1a_45sensor-params:
+    <<: *instrument_base
+    Data_type: L1A_45Sensor-Params>Level-1A Parameters for Ultra45
+    Logical_source: imap_ultra_l1a_45sensor-params
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Parameters Data for Ultra45.
+
+imap_ultra_l1a_90sensor-params:
+    <<: *instrument_base
+    Data_type: L1A_90Sensor-Params>Level-1A Parameters for Ultra90
+    Logical_source: imap_ultra_l1a_90sensor-params
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Parameters Data for Ultra90.
+
+imap_ultra_l1a_45sensor-cmdtext:
+    <<: *instrument_base
+    Data_type: L1A_45Sensor-CmdText>Level-1A Command Text for Ultra45
+    Logical_source: imap_ultra_l1a_45sensor-cmdtext
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Command Text Data for Ultra45.
+
+imap_ultra_l1a_90sensor-cmdtext:
+    <<: *instrument_base
+    Data_type: L1A_90Sensor-CmdText>Level-1A Command Text for Ultra90
+    Logical_source: imap_ultra_l1a_90sensor-cmdtext
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Command Text Data for Ultra90.
+
+imap_ultra_l1a_45sensor-scauto:
+    <<: *instrument_base
+    Data_type: L1A_45Sensor-SCAuto>Level-1A SCAuto for Ultra45
+    Logical_source: imap_ultra_l1a_45sensor-scauto
+    Logical_source_description: IMAP-Ultra Instrument Level-1A SCAuto Data for Ultra45.
+
+imap_ultra_l1a_90sensor-scauto:
+    <<: *instrument_base
+    Data_type: L1A_90Sensor-SCAuto>Level-1A SCAuto for Ultra90
+    Logical_source: imap_ultra_l1a_90sensor-scauto
+    Logical_source_description: IMAP-Ultra Instrument Level-1A SCAuto Data for Ultra90.
+
+imap_ultra_l1a_45sensor-imgparams:
+    <<: *instrument_base
+    Data_type: L1A_45Sensor-ImgParams>Level-1A Image Parameters for Ultra45
+    Logical_source: imap_ultra_l1a_45sensor-imgparams
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Image Parameters Data for Ultra45.
+
+imap_ultra_l1a_90sensor-imgparams:
+    <<: *instrument_base
+    Data_type: L1A_90Sensor-ImgParams>Level-1A Image Parameters for Ultra90
+    Logical_source: imap_ultra_l1a_90sensor-imgparams
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Image Parameters Data for Ultra90.

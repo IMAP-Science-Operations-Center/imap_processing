@@ -38,9 +38,7 @@ def test_calculate_cullingmask_attitude():
         },
     )
 
-    result_ds = calculate_cullingmask(
-        ds, name="imap_ultra_l1b_45sensor-cullingmask", data_version="v1"
-    )
+    result_ds = calculate_cullingmask(ds, name="imap_ultra_l1b_45sensor-cullingmask")
 
     np.testing.assert_array_equal(result_ds["spin_number"].values, np.array([0]))
 
@@ -83,9 +81,7 @@ def test_calculate_cullingmask_rates():
         },
     )
 
-    result_ds = calculate_cullingmask(
-        ds, name="imap_ultra_l1b_45sensor-cullingmask", data_version="v1"
-    )
+    result_ds = calculate_cullingmask(ds, name="imap_ultra_l1b_45sensor-cullingmask")
 
     expected_spins = np.array([0, 1])
     np.testing.assert_array_equal(result_ds["spin_number"].values, expected_spins)

@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 fillval = -9223372036854775808
 
 
-def hit_l1a(packet_file: str, data_version: str) -> list[xr.Dataset]:
+def hit_l1a(packet_file: str) -> list[xr.Dataset]:
     """
     Will process HIT L0 data into L1A data products.
 
@@ -32,8 +32,6 @@ def hit_l1a(packet_file: str, data_version: str) -> list[xr.Dataset]:
     ----------
     packet_file : str
         Path to the CCSDS data packet file.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -44,7 +42,7 @@ def hit_l1a(packet_file: str, data_version: str) -> list[xr.Dataset]:
     datasets_by_apid = get_datasets_by_apid(packet_file)
 
     # Create the attribute manager for this data level
-    attr_mgr = get_attribute_manager(data_version, "l1a")
+    attr_mgr = get_attribute_manager("l1a")
 
     l1a_datasets = []
 

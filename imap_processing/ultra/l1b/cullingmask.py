@@ -6,9 +6,7 @@ from imap_processing.quality_flags import ImapAttitudeUltraFlags, ImapRatesUltra
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 
-def calculate_cullingmask(
-    extendedspin_dataset: xr.Dataset, name: str, data_version: str
-) -> xr.Dataset:
+def calculate_cullingmask(extendedspin_dataset: xr.Dataset, name: str) -> xr.Dataset:
     """
     Create dataset with defined datatype for Culling Mask Data.
 
@@ -18,8 +16,6 @@ def calculate_cullingmask(
         Dataset containing the data.
     name : str
         Name of the dataset.
-    data_version : str
-        Version of the data.
 
     Returns
     -------
@@ -47,6 +43,6 @@ def calculate_cullingmask(
         spin_number=extendedspin_dataset["spin_number"][good_mask]
     )
 
-    cullingmask_dataset = create_dataset(filtered_dataset, name, "l1b", data_version)
+    cullingmask_dataset = create_dataset(filtered_dataset, name, "l1b")
 
     return cullingmask_dataset
