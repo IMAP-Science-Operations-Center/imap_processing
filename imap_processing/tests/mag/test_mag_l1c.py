@@ -1,10 +1,8 @@
-from pathlib import Path
-
 import numpy as np
 import pytest
 import xarray as xr
-import yaml
 
+from imap_processing.mag import imap_mag_sdc_configuration_v001 as configuration
 from imap_processing.mag.constants import VecSec
 from imap_processing.mag.l1c.interpolation_methods import (
     InterpolationFunction,
@@ -80,21 +78,12 @@ def burst_dataset():
 
 
 def test_configuration_file():
-    with open(
-        Path(__file__).parent.parent.parent
-        / "mag"
-        / "imap_mag_sdc-configuration_v001.yaml"
-    ) as f:
-        configuration = yaml.safe_load(f)
-
-    assert configuration["L1C_interpolation_method"] in [
+    assert configuration.L1C_INTERPOLATION_METHOD in [
         e.name for e in InterpolationFunction
     ]
 
     # should not raise an error
-    configuration_file = InterpolationFunction[
-        configuration["L1C_interpolation_method"]
-    ]
+    configuration_file = InterpolationFunction[configuration.L1C_INTERPOLATION_METHOD]
     configuration_file(
         np.array([1, 2]),
         np.array([1, 2]),

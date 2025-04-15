@@ -1,12 +1,10 @@
 """Module to run MAG L2 processing."""
 
-from pathlib import Path
-
 import numpy as np
 import xarray as xr
-import yaml
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.mag import imap_mag_sdc_configuration_v001 as configuration
 from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l1b.mag_l1b import calibrate_vector
 from imap_processing.mag.l2.mag_l2_data import MagL2
@@ -70,12 +68,7 @@ def mag_l2(
     """
     # TODO we may need to combine multiple calibration datasets into one timeline.
 
-    with open(
-        Path(__file__).parent.parent / "imap_mag_sdc-configuration_v001.yaml"
-    ) as f:
-        configuration = yaml.safe_load(f)
-
-    always_output_mago = bool(configuration["always_output_mago"])
+    always_output_mago = configuration.ALWAYS_OUTPUT_MAGO
 
     # TODO Check that the input file matches the offsets file
     if not np.array_equal(input_data["epoch"].data, offsets_dataset["epoch"].data):
@@ -86,7 +79,10 @@ def mag_l2(
     )
 
     vectors = np.apply_along_axis(
-        calibrate_vector, 1, input_data["vectors"].data, calibration_matrix
+        func1d=calibrate_vector,
+        axis=1,
+        arr=input_data["vectors"].data,
+        calibration_matrix=calibration_matrix,
     )
 
     basic_test_data = MagL2(
@@ -128,6 +124,8 @@ def retrieve_matrix_from_l2_calibration(
     # TODO: allow for multiple inputs
     if isinstance(calibration_datasets, list):
         calibration_dataset = calibration_datasets[0]
+        if len(calibration_datasets) > 1:
+            raise NotImplementedError
     else:
         calibration_dataset = calibration_datasets
 

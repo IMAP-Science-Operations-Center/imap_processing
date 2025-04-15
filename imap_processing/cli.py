@@ -843,6 +843,7 @@ class Mag(ProcessInstrument):
 
         if self.data_level == "l2":
             # TODO: Overwrite dependencies with versions from offsets file
+            # TODO: Ensure that parent_files attribute works with that
             input_data = load_cdf(science_files[0])
             # TODO: use ancillary from input
             calibration_dataset = load_cdf(
