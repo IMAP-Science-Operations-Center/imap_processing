@@ -41,7 +41,9 @@ def open_spice_ck_file(pointing_frame_path: Path) -> Generator[int, None, None]:
 
 
 @ensure_spice
-def create_pointing_frame(pointing_frame_path: Path, ck_path: Path) -> None:
+def create_pointing_frame(
+    pointing_frame_path: Path, ck_path: Path, repoint_df: pd.DataFrame
+) -> None:
     """
     Create the pointing frame.
 
@@ -51,6 +53,8 @@ def create_pointing_frame(pointing_frame_path: Path, ck_path: Path) -> None:
         Location of pointing frame kernel.
     ck_path : pathlib.Path
         Location of the CK kernel.
+    repoint_df : pd.DataFrame
+        DataFrame containing repointing data.
 
     Notes
     -----
@@ -65,7 +69,7 @@ def create_pointing_frame(pointing_frame_path: Path, ck_path: Path) -> None:
     Assumptions:
     - The MOC has removed timeframe in which nutation/procession are present.
     TODO: We may come back and have a check for this.
-    - We will continue to append to the pointing frame kernel.
+    - We will not continue to append to the pointing frame kernel.
     TODO: Figure out how we want to handle the file size becoming too large.
     - For now we can only furnish a single ck kernel.
     TODO: This will not be the case once we add the ability to query the .csv.
@@ -86,17 +90,6 @@ def create_pointing_frame(pointing_frame_path: Path, ck_path: Path) -> None:
     if count != 1 or str(ck_path) != loaded_ck_kernel:
         raise ValueError(f"Error: Expected CK kernel {ck_path}")
 
-    # If the pointing frame kernel already exists, find the last time.
-    if pointing_frame_path.exists():
-        # Get the last time in the pointing frame kernel.
-        pointing_cover = spiceypy.ckcov(
-            str(pointing_frame_path), int(id_imap_dps), True, "SEGMENT", 0, "TDB"
-        )
-        num_segments = spiceypy.wncard(pointing_cover)
-        _, et_end_pointing_frame = spiceypy.wnfetd(pointing_cover, num_segments - 1)
-    else:
-        et_end_pointing_frame = None
-
     # TODO: Query for .csv file to get the pointing start and end times.
     # TODO: Remove next four lines once query is added.
     id_imap_spacecraft = spiceypy.gipool("FRAME_IMAP_SPACECRAFT", 0, 1)
@@ -112,13 +105,6 @@ def create_pointing_frame(pointing_frame_path: Path, ck_path: Path) -> None:
             # TODO: this will change to pointing start and end time.
             et_start, et_end = spiceypy.wnfetd(ck_cover, i)
             et_times = _get_et_times(et_start, et_end)
-
-            # TODO: remove after query is added.
-            if (
-                et_end_pointing_frame is not None
-                and et_times[0] < et_end_pointing_frame
-            ):
-                break
 
             # Create a rotation matrix
             rotation_matrix = _create_rotation_matrix(et_times)
@@ -138,9 +124,9 @@ def create_pointing_frame(pointing_frame_path: Path, ck_path: Path) -> None:
                 # Handle of an open CK file.
                 handle,
                 # Start time of the segment.
-                sclk_begtim,
+                24321600149999.992,
                 # End time of the segment.
-                sclk_endtim,
+                24321960050000.14,
                 # Pointing frame ID.
                 int(id_imap_dps),
                 # Reference frame.
@@ -151,10 +137,10 @@ def create_pointing_frame(pointing_frame_path: Path, ck_path: Path) -> None:
                 1,
                 # Start times of individual pointing records within segment.
                 # Since there is only a single record this is equal to sclk_begtim.
-                np.array([sclk_begtim]),
+                np.array([24321600149999.992]),
                 # End times of individual pointing records within segment.
                 # Since there is only a single record this is equal to sclk_endtim.
-                np.array([sclk_endtim]),  # Single stop time
+                np.array([24321960050000.14]),  # Single stop time
                 # Average quaternion.
                 q_avg,
                 # 0.0 Angular rotation terms.
