@@ -128,6 +128,7 @@ Data Directory
 ^^^^^^^^^^^^^^
 
 The folder structure for data files within the IMAP SDC is rigidly defined, so the data access api will mimic that structure to make sure all data is stored in the same hierarchical structure as the SDC. This will enable seamless transition between a user's local system and the SDC. This is only used for downloads.
+
 A user's root data location can be specified as an environment variable ``IMAP_DATA_DIR`` or through a configuration dictionary within the package itself (``imap_data_access.config["DATA_DIR"]``). If the ``IMAP_DATA_DIR`` variable is not set, the program defaults to the user's current working directory + ``data/``.
 The following is the directory structure the IMAP SDC uses.
 
@@ -161,7 +162,7 @@ To change the default URL that the package accesses, you can set the environment
 File Validation
 ---------------
 
-This package validates filenames and paths to check they follow our standards, as defined by the `filename conventions <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html>`_. There is also a class available for use by other packages to create filepaths and filenames that follow the IMAP SDC conventions.
+This package validates filenames and paths to check they follow our standards, as defined by the :ref:`naming conventions <naming-conventions>`. There is also a class available for use by other packages to create filepaths and filenames that follow the IMAP SDC conventions.
 To use this class, use ``imap_data_access.ScienceFilePath``.
 
 Usage:
