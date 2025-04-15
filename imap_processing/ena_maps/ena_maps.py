@@ -1348,12 +1348,20 @@ class HealpixSkyMap(AbstractSkyMap):
                 for lon_lat in rect_map.az_el_points
             ]
 
+            interpolated_data_by_rect_pixel = np.moveaxis(
+                [r[0] for r in best_value_and_recursion_depth_by_pixel], 0, -1
+            )
+            # This can introduce an extra dim as the last dim of the array
+            # to values with only one dimension
+            if len(healpix_values_array.dims) == 1:
+                interpolated_data_by_rect_pixel = np.squeeze(
+                    interpolated_data_by_rect_pixel,
+                )
+
             # Store the best value(s) of each pixel in the rectangular map with the
             # leading coordinates of the healpix map, and the pixel coordinate last
             rect_map.data_1d[value_key] = xr.DataArray(
-                np.moveaxis(
-                    [r[0] for r in best_value_and_recursion_depth_by_pixel], 0, -1
-                ),
+                data=interpolated_data_by_rect_pixel,
                 dims=(*healpix_values_array.dims[:-1], CoordNames.GENERIC_PIXEL.value),
             )
 
