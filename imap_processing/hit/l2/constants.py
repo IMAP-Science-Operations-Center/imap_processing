@@ -19,6 +19,30 @@ SECONDS_PER_10_MIN = 600  # seconds per 10 minutes
 # Fill values for missing data
 FILLVAL_FLOAT32 = -1.00e31
 
+# Valid species for HIT L2 standard and summed intensity products
+VALID_SPECIES = [
+    "h",
+    "he3",
+    "he4",
+    "he",
+    "c",
+    "n",
+    "o",
+    "ne",
+    "na",
+    "mg",
+    "al",
+    "si",
+    "s",
+    "ar",
+    "ca",
+    "fe",
+    "ni",
+]
+
+# Valid species for HIT L2 sectored intensity product
+VALID_SECTORED_SPECIES = ["h", "he4", "cno", "nemgsi", "fe"]
+
 # Particle energy range mapping for HIT L2 standard intensity product.
 # The standard intensity calculation requires the L1B foreground rates to
 # be summed by particle type, energy range, and detector penetration range

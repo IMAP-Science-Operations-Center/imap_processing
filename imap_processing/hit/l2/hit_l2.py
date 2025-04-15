@@ -20,6 +20,8 @@ from imap_processing.hit.l2.constants import (
     SECONDS_PER_10_MIN,
     SECONDS_PER_MIN,
     STANDARD_PARTICLE_ENERGY_RANGE_MAPPING,
+    VALID_SECTORED_SPECIES,
+    VALID_SPECIES,
 )
 
 logger = logging.getLogger(__name__)
@@ -315,7 +317,7 @@ def calculate_intensities_for_a_species(
 
 
 def calculate_intensities_for_all_species(
-    l2_dataset: xr.Dataset, ancillary_data_frames: dict
+    l2_dataset: xr.Dataset, ancillary_data_frames: dict, valid_data_variables: list
 ) -> xr.Dataset:
     """
     Calculate the intensity for each species in the dataset.
@@ -328,6 +330,8 @@ def calculate_intensities_for_all_species(
         Dictionary containing ancillary data for each dynamic threshold state
         where the key is the dynamic threshold state and the value is a pandas
         DataFrame containing the ancillary data.
+    valid_data_variables : list
+        A list of valid data variables to calculate intensity for.
 
     Returns
     -------
@@ -335,28 +339,6 @@ def calculate_intensities_for_all_species(
         The updated dataset with the intensity calculated for each species.
     """
     updated_ds = l2_dataset.copy()
-    # TODO: consider moving valid_data_variables to constants file
-    #  and pass in only what is needed
-    # List of valid species data variables to calculate intensity for
-    valid_data_variables = [
-        "h",
-        "he3",
-        "he4",
-        "he",
-        "c",
-        "n",
-        "o",
-        "ne",
-        "na",
-        "mg",
-        "al",
-        "si",
-        "s",
-        "ar",
-        "ca",
-        "fe",
-        "ni",
-    ]
 
     # Add statistical uncertainty variables to the list of valid variables
     valid_data_variables += [
@@ -519,15 +501,14 @@ def process_summed_intensity_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Da
     # Add systematic uncertainties to the dataset. These will not
     # have the intensity calculation applied to them
     for var in l2_summed_intensity_dataset.data_vars:
-        if "_" not in var:
-            particle = str(var)
+        if var in VALID_SPECIES:
             l2_summed_intensity_dataset = add_systematic_uncertainties(
                 l2_summed_intensity_dataset,
-                particle,
+                str(var),
                 l2_summed_intensity_dataset[var].shape[1],
             )
     l2_summed_intensity_dataset = calculate_intensities_for_all_species(
-        l2_summed_intensity_dataset, ancillary_data_frames
+        l2_summed_intensity_dataset, ancillary_data_frames, VALID_SPECIES
     )
 
     return l2_summed_intensity_dataset
@@ -602,7 +583,7 @@ def process_standard_intensity_data(
             energy_ranges,
         )
     l2_standard_intensity_dataset = calculate_intensities_for_all_species(
-        l2_standard_intensity_dataset, ancillary_data_frames
+        l2_standard_intensity_dataset, ancillary_data_frames, VALID_SPECIES
     )
 
     return l2_standard_intensity_dataset
@@ -644,19 +625,17 @@ def process_sectored_intensity_data(
         L2_SECTORED_ANCILLARY_PATH_PREFIX,
     )
 
-    sector_particles = ["h", "he4", "cno", "nemgsi", "fe"]
-
     # Add systematic uncertainties to the dataset. These will not
     # have the intensity calculation applied to them
     for var in l2_sectored_intensity_dataset.data_vars:
-        if var in sector_particles:
+        if var in VALID_SECTORED_SPECIES:
             l2_sectored_intensity_dataset = add_systematic_uncertainties(
                 l2_sectored_intensity_dataset,
                 str(var),
                 l2_sectored_intensity_dataset[var].shape[1],
             )
     l2_sectored_intensity_dataset = calculate_intensities_for_all_species(
-        l2_sectored_intensity_dataset, ancillary_data_frames
+        l2_sectored_intensity_dataset, ancillary_data_frames, VALID_SECTORED_SPECIES
     )
 
     return l2_sectored_intensity_dataset

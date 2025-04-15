@@ -214,7 +214,7 @@ def test_calculate_intensities_for_all_species():
 
     # Call the function
     l2_dataset = calculate_intensities_for_all_species(
-        l2_dataset, ancillary_data_frames
+        l2_dataset, ancillary_data_frames, valid_data_variables=["h", "ni"]
     )
 
     # Assertions
