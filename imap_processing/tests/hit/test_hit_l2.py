@@ -548,6 +548,6 @@ def test_hit_l2(dependencies):
     assert len(l2_datasets) == 1
     assert l2_datasets[0].attrs["Logical_source"] == "imap_hit_l2_standard-intensity"
 
-    l2_datasets = hit_l2(dependencies["imap_hit_l1b_sectored-rates"], "001")
+    l2_datasets = hit_l2(dependencies["imap_hit_l1b_sectored-rates"])
     assert len(l2_datasets) == 1
     assert l2_datasets[0].attrs["Logical_source"] == "imap_hit_l2_macropixel-intensity"
