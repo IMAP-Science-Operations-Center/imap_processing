@@ -48,11 +48,9 @@ def hit_l2(dependency: xr.Dataset) -> list[xr.Dataset]:
         List of one L2 dataset.
     """
     logger.info("Creating HIT L2 science datasets")
+
     # Create the attribute manager for this data level
     attr_mgr = get_attribute_manager("l2")
-
-    # TODO: Write functions to process sectored rates dataset
-    #       with logical source: "imap_hit_l2_macropixel-intensity"
 
     l2_datasets: dict = {}
 
@@ -68,6 +66,12 @@ def hit_l2(dependency: xr.Dataset) -> list[xr.Dataset]:
             dependency
         )
         logger.info("HIT L2 standard intensity dataset created")
+
+    if "imap_hit_l1b_sectored-rates" in dependency.attrs["Logical_source"]:
+        l2_datasets["imap_hit_l2_macropixel-intensity"] = (
+            process_sectored_intensity_data(dependency)
+        )
+        logger.info("HIT L2 macropixel intensity dataset created")
 
     # Update attributes and dimensions
     for logical_source, dataset in l2_datasets.items():

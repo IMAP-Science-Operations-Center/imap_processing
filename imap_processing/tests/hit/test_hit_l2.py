@@ -74,17 +74,18 @@ def test_get_intensity_factors():
 
     # Expected output
     expected_factors = IntensityFactors(
-        delta_e_factor=np.array([0.4, 0.5, 0.6]),
+        delta_e=np.array([0.4, 0.5, 0.6]),
         geometry_factor=np.array([1.0, 1.1, 1.2]),
         efficiency=np.array([0.9, 0.8, 0.7]),
         b=np.array([0.1, 0.2, 0.3]),
+        seconds=60,
     )
 
     # Call the function
     factors = get_intensity_factors(energy_min, species_ancillary_data)
 
     # Assertions
-    assert np.array_equal(factors.delta_e_factor, expected_factors.delta_e_factor), (
+    assert np.array_equal(factors.delta_e, expected_factors.delta_e), (
         "Delta E factors mismatch"
     )
     assert np.array_equal(factors.geometry_factor, expected_factors.geometry_factor), (
@@ -296,20 +297,51 @@ def test_calculate_intensities():
     geometry_factor = np.array([1.0, 1.0, 1.0])
     efficiency = np.array([1.0, 1.0, 1.0])
     b = np.array([0.0, 0.0, 0.0])
+    seconds = 60
 
-    # Expected output
-    expected_intensities = xr.DataArray(
+    # Expected output for seconds = 60
+    expected_intensities_60 = xr.DataArray(
         [1.66666667, 3.33333333, 5.0], dims=["energy_bin"]
     )
 
-    # Call the function
-    intensities = calculate_intensities(
-        rate, delta_e_factor, geometry_factor, efficiency, b
+    factors_60 = IntensityFactors(
+        delta_e=delta_e_factor,
+        geometry_factor=geometry_factor,
+        efficiency=efficiency,
+        b=b,
+        seconds=seconds,
     )
 
-    # Assertions
-    assert np.allclose(intensities.values, expected_intensities.values), (
-        "Intensities mismatch"
+    # Call the function for seconds = 60
+    intensities_60 = calculate_intensities(rate, factors_60)
+
+    # Assertions for seconds = 60
+    assert np.allclose(intensities_60.values, expected_intensities_60.values), (
+        "Intensities mismatch for seconds = 60"
+    )
+
+    # Test with seconds = 600
+    seconds = 600
+
+    # Expected output for seconds = 600
+    expected_intensities_600 = xr.DataArray(
+        [0.16666667, 0.33333333, 0.5], dims=["energy_bin"]
+    )
+
+    factors_600 = IntensityFactors(
+        delta_e=delta_e_factor,
+        geometry_factor=geometry_factor,
+        efficiency=efficiency,
+        b=b,
+        seconds=seconds,
+    )
+
+    # Call the function for seconds = 600
+    intensities_600 = calculate_intensities(rate, factors_600)
+
+    # Assertions for seconds = 600
+    assert np.allclose(intensities_600.values, expected_intensities_600.values), (
+        "Intensities mismatch for seconds = 600"
     )
 
 
@@ -328,12 +360,12 @@ def test_add_systematic_uncertainties():
     dataset = add_systematic_uncertainties(dataset, particle, len(energy_ranges))
 
     # Assertions
-    assert f"{particle}_sys_delta_minus" in dataset.data_vars
-    assert f"{particle}_sys_delta_plus" in dataset.data_vars
-    assert np.all(dataset[f"{particle}_sys_delta_minus"].values == 0)
-    assert np.all(dataset[f"{particle}_sys_delta_plus"].values == 0)
-    assert dataset[f"{particle}_sys_delta_minus"].shape == (len(energy_ranges),)
-    assert dataset[f"{particle}_sys_delta_plus"].shape == (len(energy_ranges),)
+    assert f"{particle}_sys_err_minus" in dataset.data_vars
+    assert f"{particle}_sys_err_plus" in dataset.data_vars
+    assert np.all(dataset[f"{particle}_sys_err_minus"].values == 0)
+    assert np.all(dataset[f"{particle}_sys_err_plus"].values == 0)
+    assert dataset[f"{particle}_sys_err_minus"].shape == (len(energy_ranges),)
+    assert dataset[f"{particle}_sys_err_plus"].shape == (len(energy_ranges),)
 
 
 def test_process_summed_intensity_data(l1b_summed_rates_dataset):
@@ -378,8 +410,8 @@ def test_process_summed_intensity_data(l1b_summed_rates_dataset):
         assert f"{particle}" in l2_summed_intensity_dataset.data_vars
         assert f"{particle}_delta_minus" in l2_summed_intensity_dataset.data_vars
         assert f"{particle}_delta_plus" in l2_summed_intensity_dataset.data_vars
-        assert f"{particle}_sys_delta_minus" in l2_summed_intensity_dataset.data_vars
-        assert f"{particle}_sys_delta_plus" in l2_summed_intensity_dataset.data_vars
+        assert f"{particle}_sys_err_minus" in l2_summed_intensity_dataset.data_vars
+        assert f"{particle}_sys_err_plus" in l2_summed_intensity_dataset.data_vars
         assert f"{particle}_energy_delta_minus" in l2_summed_intensity_dataset.data_vars
         assert f"{particle}_energy_delta_plus" in l2_summed_intensity_dataset.data_vars
 
@@ -426,8 +458,8 @@ def test_process_standard_intensity_data(l1b_standard_rates_dataset):
         assert f"{particle}" in l2_standard_intensity_dataset.data_vars
         assert f"{particle}_delta_minus" in l2_standard_intensity_dataset.data_vars
         assert f"{particle}_delta_plus" in l2_standard_intensity_dataset.data_vars
-        assert f"{particle}_sys_delta_minus" in l2_standard_intensity_dataset.data_vars
-        assert f"{particle}_sys_delta_plus" in l2_standard_intensity_dataset.data_vars
+        assert f"{particle}_sys_err_minus" in l2_standard_intensity_dataset.data_vars
+        assert f"{particle}_sys_err_plus" in l2_standard_intensity_dataset.data_vars
         assert (
             f"{particle}_energy_delta_minus" in l2_standard_intensity_dataset.data_vars
         )
@@ -454,3 +486,7 @@ def test_hit_l2(dependencies):
     l2_datasets = hit_l2(dependencies["imap_hit_l1b_standard-rates"])
     assert len(l2_datasets) == 1
     assert l2_datasets[0].attrs["Logical_source"] == "imap_hit_l2_standard-intensity"
+
+    l2_datasets = hit_l2(dependencies["imap_hit_l1b_sectored-rates"], "001")
+    assert len(l2_datasets) == 1
+    assert l2_datasets[0].attrs["Logical_source"] == "imap_hit_l2_macropixel-intensity"
