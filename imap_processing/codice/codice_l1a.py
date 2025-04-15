@@ -891,11 +891,11 @@ def reshape_de_data(
     for priority_num in range(num_priorities):
         for field in constants.LO_DE_BIT_STRUCTURE:
             if field not in ["Priority", "Spare"]:
-                data[f"P{priority_num}_{field}"] = np.zeros(
-                    (num_epochs, 10000), dtype=np.uint16
+                data[f"P{priority_num}_{field}"] = np.full(
+                    (num_epochs, 10000), 255, dtype=np.uint16
                 )
-        data[f"P{priority_num}_NumEvents"] = np.zeros(num_epochs, dtype=np.uint16)
-        data[f"P{priority_num}_DataQuality"] = np.zeros(num_epochs, dtype=np.uint16)
+        data[f"P{priority_num}_NumEvents"] = np.full(num_epochs, 255, dtype=np.uint16)
+        data[f"P{priority_num}_DataQuality"] = np.full(num_epochs, 255, dtype=np.uint16)
 
     # decompressed_data is one large list of values of length
     # (<number of epochs> * <8 priorities>)
