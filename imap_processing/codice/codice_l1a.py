@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
@@ -636,6 +637,7 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
 
     # Define coordinates
+    # For epoch, we take the first epoch from each priority set
     epoch = xr.DataArray(
         packets.epoch[::num_priorities],
         name="epoch",
@@ -807,37 +809,31 @@ def group_data(packets: xr.Dataset) -> list[bytes]:
     for packet_data, group_code, byte_count in zip(
         packets.event_data.data, packets.seq_flgs.data, packets.byte_count.data
     ):
-        # Convert from numpy array to byte object
-        compressed_packet_values = ast.literal_eval(str(packet_data))
-
         # If the group code is 3, this means the data is not part of a group
         # and can be decompressed as-is
         if group_code == 3:
-            values_to_decompress = compressed_packet_values[:byte_count]
+            values_to_decompress = packet_data[:byte_count]
             grouped_data.append(values_to_decompress)
 
         # If the group code is 1, this means the data is the first data in a
         # group. Also, set the byte count for the group
         elif group_code == 1:
             group_byte_count = byte_count
-            current_group = compressed_packet_values
+            current_group = packet_data
 
         # If the group code is 0, this means the data is part of the middle of
         # the group
         elif group_code == 0:
-            current_group += compressed_packet_values
+            current_group += packet_data
 
         # If the group code is 2, this means the data is the last data in the
         # group
         elif group_code == 2:
-            current_group += compressed_packet_values
+            current_group += packet_data
             values_to_decompress = current_group[:group_byte_count]
             grouped_data.append(values_to_decompress)
             current_group = bytearray()
             group_byte_count = None
-
-        else:
-            raise ValueError(f"Unexpected group code: {group_code}")
 
     return grouped_data
 
@@ -866,7 +862,7 @@ def log_dataset_info(datasets: dict[int, xr.Dataset]) -> None:
 
 def reshape_de_data(
     packets: xr.Dataset, decompressed_data: list[list[int]], num_priorities: int
-) -> dict[str, list[np.ndarray]]:
+) -> dict[str, npt.NDArray[np.uint16]]:
     """
     Reshape the decompressed direct event data into CDF-ready arrays.
 
@@ -883,35 +879,43 @@ def reshape_de_data(
 
     Returns
     -------
-    data : dict[str, list[np.ndarray]]
+    data : dict[str, npt.NDArray[np.uint16]]
         The reshaped, CDF-ready arrays. The keys of the dictionary represent the
         CDF variable names, and the values represent the data.
     """
     # Dictionary to hold all the (soon to be restructured) direct event data
-    data: dict[str, list[np.ndarray]] = {}
+    data: dict[str, npt.NDArray[np.uint16]] = {}
 
-    # Create blank arrays for each priority and field to store the data
+    # Determine the number of epochs to help with data array initialization
+    # There is one epoch per set of priorities
+    num_epochs = len(packets.epoch.data) // num_priorities
+
+    # Initialize data arrays for each priority and field to store the data
     # We also need arrays to hold number of events and data quality
-    for i in range(num_priorities):
+    for priority_num in range(num_priorities):
         for field in constants.LO_DE_BIT_STRUCTURE:
             if field not in ["Priority", "Spare"]:
-                data[f"P{i}_{field}"] = []
-        data[f"P{i}_NumEvents"] = []
-        data[f"P{i}_DataQuality"] = []
+                data[f"P{priority_num}_{field}"] = np.zeros(
+                    (num_epochs, 10000), dtype=np.uint16
+                )
+        data[f"P{priority_num}_NumEvents"] = np.zeros(num_epochs, dtype=np.uint16)
+        data[f"P{priority_num}_DataQuality"] = np.zeros(num_epochs, dtype=np.uint16)
 
     # decompressed_data is one large list of values of length
     # (<number of epochs> * <8 priorities>)
-    # Chunk the data into each epoch/priority combination
-    for chunk in range(0, len(decompressed_data), num_priorities):
-        epoch_data = decompressed_data[chunk : chunk + num_priorities]
+    # Chunk the data into each epoch
+    for epoch_index in range(num_epochs):
+        # Determine the starting and ending indices of the epoch
+        epoch_start = epoch_index * num_priorities
+        epoch_end = epoch_start + num_priorities
+
+        # Extract the data for the epoch
+        epoch_data = decompressed_data[epoch_start:epoch_end]
 
         # The order of the priorities and data quality flags are unique to each
         # epoch and can be gathered from the packet data
-        priority_order = packets.priority[chunk : chunk + num_priorities].data
-        data_quality = packets.suspect[chunk : chunk + num_priorities].data
-
-        # dict to hold the final data per epoch
-        data_per_epoch: dict[str, int | list[int | np.ndarray]] = {}
+        priority_order = packets.priority[epoch_start:epoch_end].data
+        data_quality = packets.suspect[epoch_start:epoch_end].data
 
         # For each epoch/priority combo, iterate over each event
         for i, priority_num in enumerate(priority_order):
@@ -919,54 +923,30 @@ def reshape_de_data(
 
             # Number of events and data quality can be determined at this stage
             num_events = len(priority_data) // num_priorities
-            data_per_epoch[f"P{priority_num}_NumEvents"] = num_events
-            data_per_epoch[f"P{priority_num}_DataQuality"] = data_quality[i]
-
-            # Create blank array to store data for each epoch/priority/field
-            # combination
-            for field in constants.LO_DE_BIT_STRUCTURE:
-                data_per_epoch[f"P{priority_num}_{field}"] = []
+            data[f"P{priority_num}_NumEvents"][epoch_index] = num_events
+            data[f"P{priority_num}_DataQuality"][epoch_index] = data_quality[i]
 
             # Iterate over each event
-            for event in [
-                priority_data[i * num_priorities : (i + 1) * num_priorities]
-                for i in range(num_events)
-            ]:
+            for event_index in range(num_events):
+                event_start = event_index * num_priorities
+                event_end = (event_index + 1) * num_priorities
+                event = priority_data[event_start:event_end]
                 # Separate out each individual field from the bit string
                 # The fields are packed into the bit string in reverse order, so
                 # we need to back them out in reverse order
                 bit_string = "".join(f"{byte:08b}" for byte in event)
-                index = 0
+                bit_position = 0
                 for field_name, bit_length in reversed(
                     constants.LO_DE_BIT_STRUCTURE.items()
                 ):
-                    data_per_epoch[f"P{priority_num}_{field_name}"].append(
-                        int(bit_string[index : index + bit_length], 2)
+                    if field_name in ["Priority", "Spare"]:
+                        bit_position += bit_length
+                        continue
+                    value = int(bit_string[bit_position : bit_position + bit_length], 2)
+                    data[f"P{priority_num}_{field_name}"][epoch_index, event_index] = (
+                        value
                     )
-                    index += bit_length
-
-        # Append the epoch data to the final, restructured list of data
-        # For any data with less than 10000 events, pad the data array up to
-        # 10000
-        # TODO: Is this padding consistent with other instruments?
-        for i in range(num_priorities):
-            for field in constants.LO_DE_BIT_STRUCTURE:
-                if field not in ["Priority", "Spare"]:
-                    event_data = np.array(
-                        data_per_epoch[f"P{i}_{field}"], dtype=np.uint16
-                    )
-                    padding_size = 10000 - event_data.size
-                    padded_event_data = np.pad(
-                        event_data,
-                        (0, padding_size),
-                        mode="constant",
-                        constant_values=0,
-                    )
-                    data[f"P{i}_{field}"].append(padded_event_data)
-            data[f"P{i}_NumEvents"].append(np.array(data_per_epoch[f"P{i}_NumEvents"]))
-            data[f"P{i}_DataQuality"].append(
-                np.array(data_per_epoch[f"P{i}_DataQuality"])
-            )
+                    bit_position += bit_length
 
     # TODO: Implement specific np.dtype per field?
 
