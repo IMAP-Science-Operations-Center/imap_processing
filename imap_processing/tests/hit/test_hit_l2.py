@@ -298,7 +298,12 @@ def test_calculate_intensities_for_a_species():
 
 
 def test_calculate_intensities():
-    """Test the calculate_intensities function."""
+    """Test the calculate_intensities function.
+
+    This tests the function with different values of seconds.
+    60 seconds is used for calculating standard and summed
+    intensities and 600 is used for sectored intensities.
+    """
     # Sample input data
     rate = xr.DataArray([100, 200, 300], dims=["energy_bin"])
     delta_e_factor = np.array([1.0, 1.0, 1.0])
