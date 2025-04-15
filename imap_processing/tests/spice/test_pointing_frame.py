@@ -41,6 +41,14 @@ def et_times(pointing_frame_kernels):
     return et_times
 
 
+@pytest.fixture
+def fake_repoint_data(monkeypatch, spice_test_data_path):
+    """Generate fake spin dataframe for testing"""
+    fake_repoint_path = spice_test_data_path / "fake_repoint_data.csv"
+    monkeypatch.setenv("REPOINT_DATA_FILEPATH", str(fake_repoint_path))
+    return fake_repoint_path
+
+
 def test_average_quaternions(et_times, pointing_frame_kernels):
     """Tests average_quaternions function."""
     spiceypy.furnsh(pointing_frame_kernels)
@@ -68,16 +76,14 @@ def test_create_rotation_matrix(et_times, pointing_frame_kernels):
 
 
 def test_create_pointing_frame(
-    spice_test_data_path, pointing_frame_kernels, tmp_path, et_times, fake_repoint_data
+    spice_test_data_path, pointing_frame_kernels, tmp_path, et_times
 ):
     """Tests create_pointing_frame function."""
-    repoint_df = get_repoint_data()
     spiceypy.kclear()
     spiceypy.furnsh(pointing_frame_kernels)
     create_pointing_frame(
-        tmp_path / "imap_dps.bc",
-        spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc",
-        repoint_df,
+        pointing_frame_path=tmp_path / "imap_dps.bc",
+        ck_path=spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc",
     )
 
     # After imap_dps.bc has been created.
