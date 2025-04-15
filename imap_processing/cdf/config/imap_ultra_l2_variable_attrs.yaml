@@ -1,0 +1,155 @@
+default_attrs: &default
+  # Assumed values for all variable attrs unless overwritten
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: -9223372036854775808
+  FORMAT: I12
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854775807
+  VAR_TYPE: data
+  UNITS: " "
+
+default_float32_attrs: &default_float32
+  <<: *default
+  FILLVAL: .NAN
+  FORMAT: F12.6
+  VALIDMIN: -3.4028235e+38
+  VALIDMAX: 3.4028235e+38
+  dtype: float32
+
+# Define Healpix Tiled Map values
+
+healpix_index:
+  <<: *default
+  CATDESC: Healpix index corresponding to the bin center.
+  FIELDNAM: healpix_index
+  LABLAXIS: healpix index
+  UNITS: " "
+
+longitude:
+  <<: *default_float32
+  CATDESC: Longitude bin center corresponding to healpix index with range [0, 360].
+  FIELDNAM: longitude
+  LABLAXIS: longitude
+  UNITS: degrees
+
+latitude:
+  <<: *default_float32
+  CATDESC: Latitude bin center corresponding to healpix index with range [-90, 90].
+  FIELDNAM: latitude
+  LABLAXIS: latitude
+  UNITS: degrees
+
+exposure_factor:
+  <<: *default_float32
+  CATDESC: Exposure time calculated from multiple pointing sets.
+  FIELDNAM: exposure_times
+  LABLAXIS: exposure times
+  # TODO: come back to format
+  UNITS: seconds
+
+flux:
+  <<: *default_float32
+  CATDESC: Flux calculated from multiple pointing sets.
+  FIELDNAM: flux
+  LABLAXIS: flux
+  # TODO: come back to format
+  UNITS: counts/(s * cm^3 * Sr * KeV)
+  DEPEND_1: energy_bin_geometric_mean
+  DEPEND_2: healpix_index
+
+flux_uncertainty:
+  <<: *default_float32
+  CATDESC: Statistical uncertainty on flux.
+  FIELDNAM: flux uncertainty
+  LABLAXIS: flux uncertainty
+  # TODO: come back to format
+  UNITS: counts/(s * cm^3 * Sr * KeV)
+  DEPEND_1: energy_bin_geometric_mean
+  DEPEND_2: healpix_index
+
+sensitivity:
+  <<: *default_float32
+  CATDESC: Calibration/sensitivity factor calculated from multiple pointing sets.
+  FIELDNAM: sensitivity
+  LABLAXIS: sensitivity
+  # TODO: come back to format
+  UNITS: cm^-3
+  DEPEND_1: energy_bin_geometric_mean
+  DEPEND_2: healpix_index
+
+observation_time:
+  <<: *default
+  CATDESC: Exposure time weighted mean of L1C pointing epochs.
+  FIELDNAM: observation_time
+  LABLAXIS: observation time
+  # TODO: come back to format
+  UNITS: " "
+  DEPEND_1: healpix_index
+
+# Define Rectangularly Tiled Map values
+
+longitude_rect:
+  <<: *default_float32
+  CATDESC: Longitude bin center with range [0, 360].
+  FIELDNAM: longitude
+  LABLAXIS: longitude
+  UNITS: degrees
+
+latitude_rect:
+  <<: *default_float32
+  CATDESC: Latitude bin center with range [-90, 90].
+  FIELDNAM: latitude
+  LABLAXIS: latitude
+  UNITS: degrees
+
+exposure_factor_rect:
+  <<: *default_float32
+  CATDESC: Exposure time calculated from multiple pointing sets.
+  FIELDNAM: exposure_times
+  LABLAXIS: exposure times
+  # TODO: come back to format
+  UNITS: seconds
+
+flux_rect:
+  <<: *default_float32
+  CATDESC: Flux calculated from multiple pointing sets.
+  FIELDNAM: flux
+  LABLAXIS: flux
+  # TODO: come back to format
+  UNITS: counts/(s * cm^3 * Sr * KeV)
+  DEPEND_1: energy_bin_geometric_mean
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+
+flux_uncertainty_rect:
+  <<: *default_float32
+  CATDESC: Statistical uncertainty on flux.
+  FIELDNAM: flux uncertainty
+  LABLAXIS: flux uncertainty
+  # TODO: come back to format
+  UNITS: counts/(s * cm^3 * Sr * KeV)
+  DEPEND_1: energy_bin_geometric_mean
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+
+sensitivity_rect:
+  <<: *default_float32
+  CATDESC: Calibration/sensitivity factor calculated from multiple pointing sets.
+  FIELDNAM: sensitivity
+  LABLAXIS: sensitivity
+  # TODO: come back to format
+  UNITS: cm^-3
+  DEPEND_1: energy_bin_geometric_mean
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+
+observation_time_rect:
+  <<: *default
+  CATDESC: Exposure time weighted mean of L1C pointing epochs.
+  FIELDNAM: observation_time
+  LABLAXIS: observation time
+  # TODO: come back to format
+  UNITS: " "
+  DEPEND_1: longitude
+  DEPEND_2: latitude

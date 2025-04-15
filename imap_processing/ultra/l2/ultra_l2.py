@@ -7,6 +7,7 @@ import logging
 import numpy as np
 import xarray as xr
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 
@@ -63,6 +64,11 @@ VARIABLES_TO_DROP_AFTER_FLUX_CALCULATION = [
     "num_pointing_set_pixel_members",
     "corrected_count_rate",
 ]
+
+# Object which holds CDF attributes for the map
+cdf_attrs = ImapCdfAttributes()
+cdf_attrs.add_instrument_variable_attrs(instrument="ultra", level="l2")
+cdf_attrs.add_instrument_global_attrs(instrument="ultra")
 
 
 def generate_ultra_healpix_skymap(
@@ -260,6 +266,10 @@ def ultra_l2(
     num_l1c_products = len(l1c_products)
     logger.info(f"Running ultra_l2 processing on {num_l1c_products} L1C products")
 
+    ultra_sensor_number = 45 if "45sensor" in next(iter(data_dict.keys())) else 90
+    logger.info(f"Assuming all products are from sensor {ultra_sensor_number}")
+    global_attrs_key_base = f"imap_ultra_l2_{ultra_sensor_number}sensor-enafluxmap"
+
     # Regardless of the output sky tiling type, we will directly
     # project the PSET values into a healpix map. However, if we are outputting
     # a Healpix map, we can go directly to map with desired nside, nested params
@@ -277,6 +287,7 @@ def ultra_l2(
             "HEALPix_nest": output_map_structure.nested,
             "Data_version": data_version,
         }
+        global_attrs_key = f"{global_attrs_key_base}healpix"
 
     # TODO: Implement conversion to Rectangular map
     elif output_map_structure.tiling_type is ena_maps.SkyTilingType.RECTANGULAR:
@@ -285,6 +296,10 @@ def ultra_l2(
             "Data_version": data_version,
         }
         raise NotImplementedError
+
+    # Get the global attributes for the map with the key specific to sensor number and
+    # tiling type. E.g. 'imap_ultra_l2_90sensor-enafluxmaphealpix'
+    map_attrs.update(cdf_attrs.get_global_attributes(global_attrs_key))
 
     # Always add the following attributes to the map
     map_attrs.update(
@@ -296,4 +311,12 @@ def ultra_l2(
 
     # Add the defined attributes to the map's global attrs
     map_dataset.attrs.update(map_attrs)
+
+    # Add variable specific attributes to the map's data_vars
+    for variable in map_dataset.data_vars:
+        map_dataset[variable].attrs.update(
+            cdf_attrs.get_variable_attributes(
+                variable_name=variable,
+            )
+        )
     return [map_dataset]
