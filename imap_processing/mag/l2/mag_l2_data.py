@@ -109,6 +109,10 @@ class MagL2:
         """
         Apply the offsets to the vectors by adding them together.
 
+        These offsets are used to shift the vectors in the x, y, and z directions.
+        They can either be provided through a custom offsets datafile, or calculated
+        using a gradiometry algorithm.
+
         Parameters
         ----------
         vectors : np.ndarray

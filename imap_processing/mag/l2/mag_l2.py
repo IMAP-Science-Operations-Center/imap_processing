@@ -20,9 +20,35 @@ def mag_l2(
     """
     Complete MAG L2 processing.
 
+    Processing uses 4 data input sources:
+    1. Calibration dataset
+        These calibration files are ancillary files and may require multiple files to
+        cover the entire timespan. They are not expected to change often. They are used
+        to provide rotation matrices to correct the frame of the vectors. The same
+        file(s) are used for both burst and norm calculations.
+    2. Offsets dataset
+        This is one, hand-created file which must correspond exactly to an L1B
+        (for burst) or L1C (for norm) data file. For each vector, this file includes
+        offsets, timedelta, and quality flags. The offsets are added to the vectors,
+        the timedelta is used to correct the epoch time, and the quality flags are
+        directly passed into the output file.
+    3. Input data
+        This is the L1B or L1C data file. It is used to provide the vectors and epoch
+        time. It should always be MAGo in the nominal case, but it is possible that we
+        will switch permanently to using MAGi (in the case of sensor failure, for
+        example.) The offsets dataset and the input
+        data are tightly related, so the input data filename is actually retrieved from
+        the offset dataset to ensure they always match.
+    4. sdc-configuration.yaml
+        This is a local configuration file for changes we never expect to make in
+        flight. This is in the IMAP local repo because changes to these settings will
+        require other code updates to validate the changes. In L2, the only setting used
+        is "always_output_mago", which indicates whether we should always output MAGo.
+        Note that if this ever is set to False, we will need to update the dependency
+        system to set MAGi files as an upstream dependency.
+
     Input data can be burst or normal mode, but MUST match the file in offset_dataset.
     TODO: retrieve the file from offset_dataset in cli.py.
-    Offset dataset will be split by norm/burst but will include all other data.
     Calibration dataset is the same for all runs.
 
     MAGi data is not used unless we indicate it.
