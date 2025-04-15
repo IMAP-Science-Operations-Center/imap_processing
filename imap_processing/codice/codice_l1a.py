@@ -972,7 +972,7 @@ def reshape_de_data(
 
     return data
 
-  
+
 def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
     """
     Will process CoDICE l0 data to create l1a data products.
