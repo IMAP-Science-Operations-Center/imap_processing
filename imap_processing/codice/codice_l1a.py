@@ -32,9 +32,6 @@ from imap_processing.spice.time import met_to_ttj2000ns
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# TODO: Determine what should go in event data CDF and how it should be
-#       structured.
-
 
 class CoDICEL1aPipeline:
     """
