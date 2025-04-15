@@ -22,7 +22,7 @@ from imap_processing.tests.idex.conftest import get_spice_data_side_effect_func
 
 @pytest.fixture(scope="module")
 @mock.patch("imap_processing.idex.idex_l1b.get_spice_data")
-def l1b_dataset(mock_get_spice_data, decom_test_data: xr.Dataset) -> xr.Dataset:
+def l1b_dataset(mock_get_spice_data, decom_test_data_sci: xr.Dataset) -> xr.Dataset:
     """Return a ``xarray`` dataset containing test data.
 
     Returns
@@ -32,7 +32,7 @@ def l1b_dataset(mock_get_spice_data, decom_test_data: xr.Dataset) -> xr.Dataset:
     """
 
     mock_get_spice_data.side_effect = get_spice_data_side_effect_func
-    dataset = idex_l1b(decom_test_data)
+    dataset = idex_l1b(decom_test_data_sci)
     return dataset
 
 
@@ -155,22 +155,22 @@ def test_unpack_instrument_settings():
     assert np.all(unpacked_dict["test_var1"] == 4)
 
 
-def test_get_trigger_settings_success(decom_test_data):
+def test_get_trigger_settings_success(decom_test_data_sci):
     """
     Check that the output to 'get_trigger_mode_and_level' matches expected arrays.
 
     Parameters
     ----------
-    decom_test_data : xarray.Dataset
+    decom_test_data_sci : xarray.Dataset
         L1a dataset
     """
     # Change the trigger mode and level for the first event to check that output is
     # correct when the modes and levels vary from event to event
-    decom_test_data["idx__txhdrmgtrigmode"][0] = 1
-    decom_test_data["idx__txhdrhgtrigmode"][0] = 0
+    decom_test_data_sci["idx__txhdrmgtrigmode"][0] = 1
+    decom_test_data_sci["idx__txhdrhgtrigmode"][0] = 0
 
-    n_epochs = len(decom_test_data["epoch"])
-    trigger_settings = get_trigger_mode_and_level(decom_test_data)
+    n_epochs = len(decom_test_data_sci["epoch"])
+    trigger_settings = get_trigger_mode_and_level(decom_test_data_sci)
 
     expected_modes = np.full(n_epochs, "HGThreshold")
     expected_modes[0] = "MGThreshold"
@@ -188,7 +188,7 @@ def test_get_trigger_settings_success(decom_test_data):
     )
 
 
-def test_get_trigger_settings_failure(decom_test_data):
+def test_get_trigger_settings_failure(decom_test_data_sci):
     """
     Check that an error is thrown when there are more than one valid trigger for an
     event
@@ -198,8 +198,8 @@ def test_get_trigger_settings_failure(decom_test_data):
     decom_test_data : xarray.Dataset
         L1a dataset
     """
-    decom_test_data["idx__txhdrhgtrigmode"][0] = 1
-    decom_test_data["idx__txhdrmgtrigmode"][0] = 2
+    decom_test_data_sci["idx__txhdrhgtrigmode"][0] = 1
+    decom_test_data_sci["idx__txhdrmgtrigmode"][0] = 2
 
     error_ms = (
         "Only one channel can trigger a dust event. Please make sure there is "
@@ -209,14 +209,14 @@ def test_get_trigger_settings_failure(decom_test_data):
     )
 
     with pytest.raises(ValueError, match=error_ms):
-        get_trigger_mode_and_level(decom_test_data)
+        get_trigger_mode_and_level(decom_test_data_sci)
 
 
 @pytest.mark.usefixtures("use_fake_spin_data_for_time")
 def test_get_spice_data(
     mock_spice_functions,
     use_fake_spin_data_for_time,
-    decom_test_data,
+    decom_test_data_sci,
     furnish_kernels,
 ):
     """
@@ -224,11 +224,11 @@ def test_get_spice_data(
 
     Parameters
     ----------
-    decom_test_data : xarray.Dataset
+    decom_test_data_sci : xarray.Dataset
         L1a dataset
     """
     kernels = ["naif0012.tls"]
-    times = decom_test_data["shcoarse"].data
+    times = decom_test_data_sci["shcoarse"].data
     use_fake_spin_data_for_time(np.min(times), np.max(times))
 
     # Mock attribute manager variable attrs
@@ -240,11 +240,11 @@ def test_get_spice_data(
     ):
         mock_attrs.return_value = {"CATDESC": "Test var"}
 
-        spice_data = get_spice_data(decom_test_data, idex_attrs)
+        spice_data = get_spice_data(decom_test_data_sci, idex_attrs)
 
     for array in conftest.SPICE_ARRAYS:
         assert array in spice_data
-        assert len(spice_data[array]) == len(decom_test_data["epoch"])
+        assert len(spice_data[array]) == len(decom_test_data_sci["epoch"])
 
 
 @pytest.mark.external_test_data

@@ -706,7 +706,7 @@ class Idex(ProcessInstrument):
             if len(dependency_list) > 1:
                 raise ValueError(
                     f"Unexpected dependencies found for IDEX L1A:"
-                    f"{dependency_list}. Expected only one science dependency."
+                    f"{dependency_list}. Expected only one dependency."
                 )
             # get l0 file
             science_files = dependencies.get_file_paths(source="idex")

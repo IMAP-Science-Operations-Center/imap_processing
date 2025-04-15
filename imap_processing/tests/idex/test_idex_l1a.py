@@ -14,44 +14,44 @@ from imap_processing.idex.decode import _decode_sub_frame, read_bits, rice_decod
 from imap_processing.idex.idex_l1a import PacketParser
 
 
-def test_idex_cdf_file(decom_test_data: xr.Dataset):
+def test_idex_cdf_file(decom_test_data_sci: xr.Dataset):
     """Verify the CDF file can be created with no errors.
 
     Parameters
     ----------
-    decom_test_data : xarray.Dataset
+    decom_test_data_sci : xarray.Dataset
         The dataset to test with
     """
-    file_name = write_cdf(decom_test_data)
+    file_name = write_cdf(decom_test_data_sci)
 
     assert file_name.exists()
     assert file_name.name == "imap_idex_l1a_sci-1week_20231218_v999.cdf"
 
 
-def test_bad_cdf_attributes(decom_test_data: xr.Dataset):
+def test_bad_cdf_attributes(decom_test_data_sci: xr.Dataset):
     """Ensure an ``ISTPError`` is raised when using bad CDF attributes.
 
     Parameters
     ----------
-    decom_test_data : xarray.Dataset
+    decom_test_data_sci : xarray.Dataset
         The dataset to test with
     """
-    tof_catdesc = decom_test_data["TOF_High"].attrs["CATDESC"]
-    del decom_test_data["TOF_High"].attrs["CATDESC"]
+    tof_catdesc = decom_test_data_sci["TOF_High"].attrs["CATDESC"]
+    del decom_test_data_sci["TOF_High"].attrs["CATDESC"]
 
     with pytest.raises(ISTPError):
-        write_cdf(decom_test_data, istp=True, terminate_on_warning=True)
+        write_cdf(decom_test_data_sci, istp=True, terminate_on_warning=True)
 
     # Add attributes back so future tests do not fail
-    decom_test_data["TOF_High"].attrs["CATDESC"] = tof_catdesc
+    decom_test_data_sci["TOF_High"].attrs["CATDESC"] = tof_catdesc
 
 
-def test_bad_cdf_file_data(decom_test_data: xr.Dataset):
+def test_bad_cdf_file_data(decom_test_data_sci: xr.Dataset):
     """Ensure an ``ISTPError`` is raised when using bad data.
 
     Parameters
     ----------
-    decom_test_data : xarray.Dataset
+    decom_test_data_sci : xarray.Dataset
         The dataset to test with
     """
     bad_data_attrs = {
@@ -75,22 +75,22 @@ def test_bad_cdf_file_data(decom_test_data: xr.Dataset):
         dims=("bad_data"),
         attrs=bad_data_attrs,
     )
-    decom_test_data["Bad_data"] = bad_data_xr
+    decom_test_data_sci["Bad_data"] = bad_data_xr
 
     with pytest.raises(ISTPError):
-        write_cdf(decom_test_data, istp=True, terminate_on_warning=True)
+        write_cdf(decom_test_data_sci, istp=True, terminate_on_warning=True)
 
-    del decom_test_data["Bad_data"]
+    del decom_test_data_sci["Bad_data"]
 
 
-def test_idex_tof_high_data_from_cdf(decom_test_data: xr.Dataset):
+def test_idex_tof_high_data_from_cdf(decom_test_data_sci: xr.Dataset):
     """Verify that a sample of the data is correct inside the CDF file.
 
     ``impact_14_tof_high_data.txt`` has been verified correct by the IDEX team
 
     Parameters
     ----------
-    decom_test_data : xarray.Dataset
+    decom_test_data_sci : xarray.Dataset
         The dataset to test with
     """
     with open(
@@ -98,14 +98,14 @@ def test_idex_tof_high_data_from_cdf(decom_test_data: xr.Dataset):
     ) as f:
         data = np.array([int(line.rstrip()) for line in f])
 
-    file_name = write_cdf(decom_test_data)
+    file_name = write_cdf(decom_test_data_sci)
     l1_data = load_cdf(file_name)
     assert (l1_data["TOF_High"][13].data == data).all()
 
 
 @pytest.mark.external_test_data
 def test_validate_l1a_idex_data_variables(
-    decom_test_data: xr.Dataset, l1a_example_data: xr.Dataset
+    decom_test_data_sci: xr.Dataset, l1a_example_data: xr.Dataset
 ):
     """
     Verify that each of the 6 waveform and telemetry arrays are equal to the
@@ -114,7 +114,7 @@ def test_validate_l1a_idex_data_variables(
 
     Parameters
     ----------
-    decom_test_data : xarray.Dataset
+    decom_test_data_sci : xarray.Dataset
         The dataset to test with
     l1a_example_data: xarray.Dataset
         A dataset containing the 6 waveform and telemetry arrays
@@ -142,7 +142,7 @@ def test_validate_l1a_idex_data_variables(
             cdf_var = match_variables.get(var, var.lower())
 
             np.testing.assert_array_equal(
-                decom_test_data[cdf_var],
+                decom_test_data_sci[cdf_var],
                 l1a_example_data[var],
                 f"The array '{cdf_var}' does not equal the expected example "
                 f"array '{var}' produced by the IDEX team",
@@ -290,3 +290,28 @@ def test_decode_sub_frame_psel_3():
     bstring = warmup1 + warmup2 + residual_1 + residual_2 + residual_3
     ints, bp = _decode_sub_frame(bstring, bp=0, psel=psel, k=k, n_bits=10)
     assert ints == [1, 2, 4, 1, 5]
+
+
+def test_cdf_creation_evt(decom_test_data_evt: xr.Dataset):
+    """Verify that a sample of the data can be written to a cdf without errors.
+
+    Parameters
+    ----------
+    decom_test_data_evt : xarray.Dataset
+        The dataset to test with
+    """
+    filename = write_cdf(decom_test_data_evt)
+    assert filename.name == "imap_idex_l1a_evt-1week_20250108_v001.cdf"
+
+
+def test_cdf_creation_catlst(decom_test_data_catlst: xr.Dataset):
+    """Verify that a sample of the data can be written to a cdf without errors.
+
+    Parameters
+    ----------
+    decom_test_data_catlst : xarray.Dataset
+        The dataset to test with
+    """
+    filename = write_cdf(decom_test_data_catlst)
+
+    assert filename.name == "imap_idex_l1a_catlst-1week_20241206_v001.cdf"
