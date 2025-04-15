@@ -38,7 +38,6 @@ to these conventions.
     python-docstrings
     poetry-environment
     security
-    naming-conventions
     tools-and-library-recommendations
     versioning
     checklist-for-pull-requests

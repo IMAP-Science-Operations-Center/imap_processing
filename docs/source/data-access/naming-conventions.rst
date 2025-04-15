@@ -1,10 +1,10 @@
 .. _naming-conventions:
 
-Naming Conventions
-------------------
+Science File Naming Conventions
+-------------------------------
 
-Data Product File Naming Conventions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Data Product Science File Naming Conventions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The following describes the filename conventions for IMAP data products. These conventions follow the `recommendations
 provided by the SPDF <https://spdf.gsfc.nasa.gov/guidelines/filenaming_recommendations.html>`_.
@@ -19,13 +19,13 @@ The general filename convention is as follows::
 * ``<datalevel>`` is the data level for the data product.  Acceptable values depend on the instrument:
 
   * CoDICE: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3``
-  * GLOWS: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3a``, ``l3b``, ``l3c``, ``l3d``
+  * GLOWS: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3a``, ``l3b``, ``l3c``, ``l3d``, ``l3e``
   * HIT: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3``
   * IDEX: ``l0``, ``l1a``, ``l1b``, ``l2a``, ``l2b``, ``l3``
   * IMAP-Hi: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2``, ``l3``
   * IMAP-Lo: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2``
   * IMAP-Ultra: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2``, ``l3``
-  * MAG: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l2pre``, ``l2``
+  * MAG: ``l0``, ``l1a``, ``l1b``, ``l1c``, ``l1d``, ``l2``
   * SWAPI: ``l0``, ``l1``, ``l2``, ``l3a``, ``l3b``
   * SWE: ``l0``, ``l1a``, ``l1b``, ``l2``, ``l3``
 
@@ -38,19 +38,21 @@ The general filename convention is as follows::
     ``hi-counters-singles``, ``hi-priorities``, ``lo-sw-priority``, ``lo-nsw-priority``, ``lo-sw-angular``,
     ``lo-nsw-angular``, ``lo-pha``, ``hi-pha``, ``lo-sw-species``, ``lo-nsw-species``, ``hi-omni``, ``hi-sectored``,
     ``lo-ialirt``, ``hi-ialirt``
-  * GLOWS: ``histogram``, ``de``
+  * GLOWS: ``hist``, ``de``, ``lightcurve``, ``ionization-rate``, ``survival-probabilities``
   * HIT: TBD
   * IDEX: ``sci``
   * IMAP-Hi: ``45sensor-counts``, ``90sensor-counts``, ``45sensor-flux-map-3month`` (more TBD)
   * IMAP-Lo: TBD
   * IMAP-Ultra: ``45sensor-counts``, ``90sensor-counts`` (more TBD)
-  * MAG: ``normal``, ``burst``
+  * MAG: ``norm-mago``, ``burst-mago``, ``norm-magi``, ``burst-magi``, ``norm-dsrf``, ``burst-dsrf``,
+    ``norm-srf``, ``burst-srf``, ``norm-rtn``, ``burst-rtn``, ``norm-gse``, ``burst-gse``
   * SWAPI: ``sci-1min``, ``hk``
   * SWE: ``sci``
 
 * ``<startdate>`` is the date of the 'earliest' data within the data product, in the format of ``YYYYMMDD``.
 * ``<repointing>`` is an optional component that describes the repointing number, in the format of ``repoint<num>``,
-  where ``<num>`` is a 5 digit integer (e.g. ``repoint00001``).
+  where ``<num>`` is a 5 digit integer (e.g. ``repoint00001``). If repointing is provided, that will be the primary
+  way to identify the time range of the file, rather than the startdate.
 * ``<version>`` stores the version of the data product in the format is ``v<num>``, where ``<num>`` is a 3 digit
   integer (e.g. ``v001``).  See the versioning conventions described in the
   :ref:`data product versioning <Data Product Versioning>` documentation for further details.
@@ -76,12 +78,3 @@ Here are a few examples of acceptable filenames:
 
   A version ``001`` ULTRA L2 flux map for the 45 sensor head for data taken over a 3 month span starting on ``20261206``
 
-
-Repository Naming Conventions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The repository shall adhere to specific naming conventions to allow for more consistency:
-
-* Repositories shall have branches named ``main`` and ``dev``, instead of ``master`` and ``development``
-* Repositories shall be named with underscores instead of hyphens (e.g. ``imap_processing`` instead of
-  ``imap-processing``)
