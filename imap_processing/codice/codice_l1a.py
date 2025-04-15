@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
@@ -862,7 +861,7 @@ def log_dataset_info(datasets: dict[int, xr.Dataset]) -> None:
 
 def reshape_de_data(
     packets: xr.Dataset, decompressed_data: list[list[int]], num_priorities: int
-) -> dict[str, npt.NDArray[np.uint16]]:
+) -> dict[str, np.ndarray]:
     """
     Reshape the decompressed direct event data into CDF-ready arrays.
 
@@ -879,12 +878,12 @@ def reshape_de_data(
 
     Returns
     -------
-    data : dict[str, npt.NDArray[np.uint16]]
+    data : dict[str, numpy.ndarray]
         The reshaped, CDF-ready arrays. The keys of the dictionary represent the
         CDF variable names, and the values represent the data.
     """
     # Dictionary to hold all the (soon to be restructured) direct event data
-    data: dict[str, npt.NDArray[np.uint16]] = {}
+    data: dict[str, np.ndarray] = {}
 
     # Determine the number of epochs to help with data array initialization
     # There is one epoch per set of priorities
