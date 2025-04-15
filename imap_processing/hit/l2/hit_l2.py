@@ -341,12 +341,14 @@ def calculate_intensities_for_all_species(
     updated_ds = l2_dataset.copy()
 
     # Add statistical uncertainty variables to the list of valid variables
-    valid_data_variables += [
-        f"{var}_stat_uncert_delta_minus" for var in valid_data_variables
-    ] + [f"{var}_stat_uncert_delta_plus" for var in valid_data_variables]
+    data_variables = (
+        valid_data_variables
+        + [f"{var}_stat_uncert_delta_minus" for var in valid_data_variables]
+        + [f"{var}_stat_uncert_delta_plus" for var in valid_data_variables]
+    )
 
     # Calculate the intensity for each valid data variable
-    for species_variable in valid_data_variables:
+    for species_variable in data_variables:
         if species_variable in updated_ds.data_vars:
             updated_ds = calculate_intensities_for_a_species(
                 species_variable, updated_ds, ancillary_data_frames

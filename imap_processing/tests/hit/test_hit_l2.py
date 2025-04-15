@@ -11,6 +11,7 @@ from imap_processing.hit.l1b.hit_l1b import (
 )
 from imap_processing.hit.l2.hit_l2 import (
     STANDARD_PARTICLE_ENERGY_RANGE_MAPPING,
+    VALID_SECTORED_SPECIES,
     IntensityFactors,
     add_systematic_uncertainties,
     calculate_intensities,
@@ -19,6 +20,7 @@ from imap_processing.hit.l2.hit_l2 import (
     get_intensity_factors,
     get_species_ancillary_data,
     hit_l2,
+    process_sectored_intensity_data,
     process_standard_intensity_data,
     process_summed_intensity_data,
 )
@@ -56,6 +58,12 @@ def l1b_summed_rates_dataset(dependencies):
 def l1b_standard_rates_dataset(dependencies):
     """Get L1B standard rates dataset to test l2 processing function"""
     return dependencies["imap_hit_l1b_standard-rates"]
+
+
+@pytest.fixture
+def l1b_sectored_rates_dataset(dependencies):
+    """Get L1B standard rates dataset to test l2 processing function"""
+    return dependencies["imap_hit_l1b_sectored-rates"]
 
 
 def test_get_intensity_factors():
@@ -366,6 +374,54 @@ def test_add_systematic_uncertainties():
     assert np.all(dataset[f"{particle}_sys_err_plus"].values == 0)
     assert dataset[f"{particle}_sys_err_minus"].shape == (len(energy_ranges),)
     assert dataset[f"{particle}_sys_err_plus"].shape == (len(energy_ranges),)
+
+
+def test_process_sectored_intensity_data(l1b_sectored_rates_dataset):
+    """Test the variables in the sectored intensity dataset"""
+
+    l2_sectored_intensity_dataset = process_sectored_intensity_data(
+        l1b_sectored_rates_dataset
+    )
+
+    # Check that a xarray dataset is returned
+    assert isinstance(l2_sectored_intensity_dataset, xr.Dataset)
+
+    valid_coords = {
+        "epoch",
+        "azimuth",
+        "declination",
+        "h_energy_mean",
+        "he4_energy_mean",
+        "cno_energy_mean",
+        "nemgsi_energy_mean",
+        "fe_energy_mean",
+    }
+
+    # Check that the dataset has the correct coords and variables
+    assert valid_coords == set(l2_sectored_intensity_dataset.coords), (
+        "Coordinates mismatch"
+    )
+
+    assert "dynamic_threshold_state" in l2_sectored_intensity_dataset.data_vars
+
+    for particle in VALID_SECTORED_SPECIES:
+        assert f"{particle}" in l2_sectored_intensity_dataset.data_vars
+        assert (
+            f"{particle}_stat_uncert_delta_minus"
+            in l2_sectored_intensity_dataset.data_vars
+        )
+        assert (
+            f"{particle}_stat_uncert_delta_plus"
+            in l2_sectored_intensity_dataset.data_vars
+        )
+        assert f"{particle}_sys_err_minus" in l2_sectored_intensity_dataset.data_vars
+        assert f"{particle}_sys_err_plus" in l2_sectored_intensity_dataset.data_vars
+        assert (
+            f"{particle}_energy_delta_minus" in l2_sectored_intensity_dataset.data_vars
+        )
+        assert (
+            f"{particle}_energy_delta_plus" in l2_sectored_intensity_dataset.data_vars
+        )
 
 
 def test_process_summed_intensity_data(l1b_summed_rates_dataset):
