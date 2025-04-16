@@ -42,7 +42,8 @@ def open_spice_ck_file(pointing_frame_path: Path) -> Generator[int, None, None]:
 
 @ensure_spice
 def create_pointing_frame(
-    pointing_frame_path: Path, ck_path: Path, repoint_df: pd.DataFrame
+        pointing_frame_path: Path, ck_path: Path,
+        repoint_start_met: NDArray, repoint_end_met: NDArray
 ) -> None:
     """
     Create the pointing frame.
@@ -53,8 +54,10 @@ def create_pointing_frame(
         Location of pointing frame kernel.
     ck_path : pathlib.Path
         Location of the CK kernel.
-    repoint_df : pd.DataFrame
-        DataFrame containing repointing data.
+    repoint_start_met : numpy.ndarray
+        Start time of the repointing in MET.
+    repoint_end_met : numpy.ndarray
+        End time of the repointing in MET.
 
     Notes
     -----
@@ -90,20 +93,20 @@ def create_pointing_frame(
     if count != 1 or str(ck_path) != loaded_ck_kernel:
         raise ValueError(f"Error: Expected CK kernel {ck_path}")
 
-    # TODO: Query for .csv file to get the pointing start and end times.
-    # TODO: Remove next four lines once query is added.
     id_imap_spacecraft = spiceypy.gipool("FRAME_IMAP_SPACECRAFT", 0, 1)
     ck_cover = spiceypy.ckcov(
         str(ck_path), int(id_imap_spacecraft), True, "INTERVAL", 0, "TDB"
     )
-    num_intervals = spiceypy.wncard(ck_cover)
 
     with open_spice_ck_file(pointing_frame_path) as handle:
-        # TODO: this will change to the number of pointings.
-        for i in range(num_intervals):
+        for i in range(len(repoint_start_met)):
             # Get the coverage window
-            # TODO: this will change to pointing start and end time.
             et_start, et_end = spiceypy.wnfetd(ck_cover, i)
+            sclk_ticks_start = met_to_sclkticks(repoint_start_met[i])
+            et_start = sct_to_et(sclk_ticks_start)
+            sclk_ticks_end = met_to_sclkticks(repoint_end_met[i])
+            et_end = sct_to_et(sclk_ticks_end)
+
             et_times = _get_et_times(et_start, et_end)
 
             # Create a rotation matrix
@@ -124,9 +127,9 @@ def create_pointing_frame(
                 # Handle of an open CK file.
                 handle,
                 # Start time of the segment.
-                24321600149999.992,
+                sclk_begtim,
                 # End time of the segment.
-                24321960050000.14,
+                sclk_endtim,
                 # Pointing frame ID.
                 int(id_imap_dps),
                 # Reference frame.
@@ -137,10 +140,10 @@ def create_pointing_frame(
                 1,
                 # Start times of individual pointing records within segment.
                 # Since there is only a single record this is equal to sclk_begtim.
-                np.array([24321600149999.992]),
+                np.array([sclk_begtim]),
                 # End times of individual pointing records within segment.
                 # Since there is only a single record this is equal to sclk_endtim.
-                np.array([24321960050000.14]),  # Single stop time
+                np.array([sclk_endtim]),  # Single stop time
                 # Average quaternion.
                 q_avg,
                 # 0.0 Angular rotation terms.
