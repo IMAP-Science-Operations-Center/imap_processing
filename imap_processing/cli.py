@@ -710,7 +710,7 @@ class Idex(ProcessInstrument):
                 )
             # get l0 file
             science_files = dependencies.get_file_paths(source="idex")
-            datasets = [PacketParser(science_files[0]).data]
+            datasets = PacketParser(science_files[0]).data
         elif self.data_level == "l1b":
             if len(dependency_list) > 1:
                 raise ValueError(

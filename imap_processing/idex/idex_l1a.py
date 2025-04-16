@@ -73,6 +73,7 @@ class PacketParser:
         -----
             Currently assumes one L0 file will generate exactly one L1a file.
         """
+        self.data = []
         self.idex_attrs = get_idex_attrs()
         epoch_attrs = self.idex_attrs.get_variable_attributes(
             "epoch", check_schema=False
@@ -82,24 +83,23 @@ class PacketParser:
 
         if science_packets:
             logger.info("Processing IDEX L1A Science data.")
-            self.data = self._create_science_dataset(science_packets)
+            self.data = [self._create_science_dataset(science_packets)]
 
         elif IDEXAPID.IDEX_EVT in datset_by_apid:
             logger.info("Processing IDEX L1A Event Message data.")
-            self.data = datset_by_apid[IDEXAPID.IDEX_EVT]
-            self.data.attrs = self.idex_attrs.get_global_attributes("imap_idex_l1a_evt")
-            self.data["epoch"].attrs = epoch_attrs
+            data = datset_by_apid[IDEXAPID.IDEX_EVT]
+            data.attrs = self.idex_attrs.get_global_attributes("imap_idex_l1a_evt")
+            data["epoch"].attrs = epoch_attrs
+            self.data.append(data)
 
         elif IDEXAPID.IDEX_CATLST in datset_by_apid:
             logger.info("Processing IDEX L1A Catalog List Summary data.")
-            self.data = datset_by_apid[IDEXAPID.IDEX_CATLST]
-            self.data.attrs = self.idex_attrs.get_global_attributes(
-                "imap_idex_l1a_catlst"
-            )
-            self.data["epoch"].attrs = epoch_attrs
+            data = datset_by_apid[IDEXAPID.IDEX_CATLST]
+            data.attrs = self.idex_attrs.get_global_attributes("imap_idex_l1a_catlst")
+            data["epoch"].attrs = epoch_attrs
+            self.data.append(data)
         else:
             logger.info("Data contains unknown APID.")
-            self.data = None
 
         logger.info("IDEX L1A data processing completed.")
 
