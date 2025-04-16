@@ -79,14 +79,20 @@ def test_create_pointing_frame(
     spice_test_data_path, pointing_frame_kernels, tmp_path, et_times, fake_repoint_data
 ):
     """Tests create_pointing_frame function."""
-    #repoint_df = get_repoint_data()
+
+    # This is how the repoint data is generated.
+    # We will use fake data for now to match the coverage of the attitude kernel.
+    # repoint_df = get_repoint_data()
+    # repoint_start_met = repoint_df["repoint_start_met"].values
+    # repoint_end_met = repoint_df["repoint_end_met"].values
+
     spiceypy.kclear()
     spiceypy.furnsh(pointing_frame_kernels)
     create_pointing_frame(
         tmp_path / "imap_dps.bc",
         spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc",
-        repoint_df["repoint_start_met"],
-        repoint_end_met
+        np.array([802008069.184905]), # repoint_df["repoint_start_met"].values
+        np.array([802015267.184906]) # repoint_df["repoint_end_met"].values
     )
 
     # After imap_dps.bc has been created.

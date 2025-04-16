@@ -94,20 +94,28 @@ def create_pointing_frame(
         raise ValueError(f"Error: Expected CK kernel {ck_path}")
 
     id_imap_spacecraft = spiceypy.gipool("FRAME_IMAP_SPACECRAFT", 0, 1)
+
+    # Select only the pointings within the attitude coverage.
     ck_cover = spiceypy.ckcov(
         str(ck_path), int(id_imap_spacecraft), True, "INTERVAL", 0, "TDB"
     )
+    num_intervals = spiceypy.wncard(ck_cover)
+    et_start, _ = spiceypy.wnfetd(ck_cover, 0)
+    _, et_end = spiceypy.wnfetd(ck_cover, num_intervals - 1)
+
+    valid_mask = (repoint_start_met >= et_start) & (repoint_end_met <= et_end)
+    repoint_start_met = repoint_start_met[valid_mask]
+    repoint_end_met = repoint_end_met[valid_mask]
+
+    sclk_ticks_start = met_to_sclkticks(repoint_start_met)
+    et_start = sct_to_et(sclk_ticks_start)
+    sclk_ticks_end = met_to_sclkticks(repoint_end_met)
+    et_end = sct_to_et(sclk_ticks_end)
 
     with open_spice_ck_file(pointing_frame_path) as handle:
         for i in range(len(repoint_start_met)):
-            # Get the coverage window
-            et_start, et_end = spiceypy.wnfetd(ck_cover, i)
-            sclk_ticks_start = met_to_sclkticks(repoint_start_met[i])
-            et_start = sct_to_et(sclk_ticks_start)
-            sclk_ticks_end = met_to_sclkticks(repoint_end_met[i])
-            et_end = sct_to_et(sclk_ticks_end)
 
-            et_times = _get_et_times(et_start, et_end)
+            et_times = _get_et_times(et_start[i], et_end[i])
 
             # Create a rotation matrix
             rotation_matrix = _create_rotation_matrix(et_times)
@@ -170,9 +178,6 @@ def _get_et_times(et_start: float, et_end: float) -> NDArray[np.float64]:
     et_times : numpy.ndarray
         Array of times between et_start and et_end.
     """
-    # TODO: Queried pointing start and stop times here.
-    # TODO removing the @ensure_spice decorator when using the repointing table.
-
     # 1 spin/15 seconds; 10 quaternions / spin.
     num_samples = (et_end - et_start) / 15 * 10
     # There were rounding errors when using spiceypy.pxform so np.ceil and np.floor
