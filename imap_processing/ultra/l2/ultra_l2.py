@@ -173,13 +173,9 @@ def generate_ultra_healpix_skymap(
         )
 
     # Subsequent processing for weighted quantities at SkyMap level
-    for (
-        quantity_to_weight
-    ) in VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE:
-        skymap.data_1d[quantity_to_weight] = (
-            skymap.data_1d[quantity_to_weight]
-            / skymap.data_1d["pointing_set_exposure_times_solid_angle"]
-        )
+    skymap.data_1d[VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE] /= (
+        skymap.data_1d["pointing_set_exposure_times_solid_angle"]
+    )
 
     # TODO: Ask Ultra team about this - I think this is a decent
     # but imperfect approximation for meaning the exposure:

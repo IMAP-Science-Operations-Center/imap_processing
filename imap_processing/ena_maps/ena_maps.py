@@ -769,7 +769,30 @@ class AbstractSkyMap(ABC):
         Parameters
         ----------
         properties : dict
-            Dictionary containing the map properties.
+            Dictionary containing the map properties. The required keys are:
+            - "spice_reference_frame" : str
+                The reference Spice frame of the map as a string. The available
+                options are defined in the spice geometry module:
+                `imap_processing.geometry.spice.SpiceFrame`. Example: "ECLIPJ2000".
+            - "sky_tiling_type" : str
+                The type of sky tiling, either "HEALPIX" or "RECTANGULAR".
+            - if "HEALPIX":
+                - "nside" : int
+                    The nside parameter for the Healpix tessellation.
+                - "nested" : bool
+                    Whether the Healpix tessellation is nested or not.
+            - if "RECTANGULAR":
+                - "spacing_deg" : float
+                    The spacing of the rectangular grid in degrees.
+            - "values_to_push_project" : list[str], optional
+                The names of the variables to project to the map with the PUSH method.
+                NOTE: The projection is done by the instrument code, so this value can
+                only be used to inform that code. No values are projected automatically.
+            - "values_to_pull_project" : list[str], optional
+                The names of the variables to project to the map with the PULL method.
+                See the above note for more details.
+
+            See example dictionary in notes section.
 
         Returns
         -------
@@ -780,8 +803,23 @@ class AbstractSkyMap(ABC):
         ------
         ValueError
             If the sky tiling type is not recognized.
+
+        Notes
+        -----
+        Example dictionary:
+
+        ```python
+        properties = {
+            "spice_reference_frame": "ECLIPJ2000",
+            "sky_tiling_type": "HEALPIX",
+            "nside": 32,
+            "nested": False,
+            "values_to_push_project": ['counts', 'flux'],
+            "values_to_pull_project": []
+        }
+        ```
         """
-        sky_tiling_type = SkyTilingType[properties["sky_tiling_type"]]
+        sky_tiling_type = SkyTilingType[properties["sky_tiling_type"].upper()]
         spice_reference_frame = geometry.SpiceFrame[properties["spice_reference_frame"]]
 
         skymap: RectangularSkyMap | HealpixSkyMap  # Mypy gets confused by if/elif types
@@ -797,7 +835,10 @@ class AbstractSkyMap(ABC):
                 spice_frame=spice_reference_frame,
             )
         else:
-            raise ValueError(f"Unknown sky tiling type: {sky_tiling_type}")
+            raise ValueError(
+                f"Unknown sky tiling type: {sky_tiling_type}. "
+                f"Must be one of: {SkyTilingType.__members__.keys()}"
+            )
 
         # Store requested variables to push/pull, which will be done by the instrument
         # code which creates and uses the SkyMap object.
@@ -828,12 +869,17 @@ class AbstractSkyMap(ABC):
                 "spacing_deg": self.spacing_deg,
             }
         else:
-            raise ValueError("Unknown SkyMap type.")
+            raise ValueError(
+                f"Unknown SkyMap type: {self.__class__.__name__}. "
+                f"Must be one of: {AbstractSkyMap.__subclasses__()}"
+            )
 
-        if self.values_to_push_project:
-            map_properties_dict["values_to_push_project"] = self.values_to_push_project
-        if self.values_to_pull_project:
-            map_properties_dict["values_to_pull_project"] = self.values_to_pull_project
+        map_properties_dict["values_to_push_project"] = (
+            self.values_to_push_project if self.values_to_push_project else []
+        )
+        map_properties_dict["values_to_pull_project"] = (
+            self.values_to_pull_project if self.values_to_pull_project else []
+        )
         return map_properties_dict
 
     def to_json(self, json_path: str | Path) -> None:
@@ -909,6 +955,10 @@ class RectangularSkyMap(AbstractSkyMap):
 
         # The reference Spice frame of the map, in which angles are defined
         self.spice_reference_frame = spice_frame
+
+        # Initialize values to be used by the instrument code to push/pull
+        self.values_to_push_project: list[str] = []
+        self.values_to_pull_project: list[str] = []
 
         # Angular spacing of the map grid (degrees) defines the number, size of pixels.
         self.spacing_deg = spacing_deg
@@ -989,6 +1039,10 @@ class HealpixSkyMap(AbstractSkyMap):
         # Define the core properties of the map:
         self.tiling_type = SkyTilingType.HEALPIX
         self.spice_reference_frame = spice_frame
+
+        # Initialize values to be used by the instrument code to push/pull
+        self.values_to_push_project: list[str] = []
+        self.values_to_pull_project: list[str] = []
 
         # Tile the sky with a Healpix tessellation. Defined by nside, nested parameters.
         self.nside = nside

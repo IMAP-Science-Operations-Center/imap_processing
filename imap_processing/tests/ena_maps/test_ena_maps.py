@@ -969,7 +969,17 @@ class TestAbstractSkyMap:
             if key in skymap_props_dict:
                 assert dict_from_skymap[key] == skymap_props_dict[key]
 
-        # Check that the dict from the SkyMap matches the original dict
+        # Check that the dict from the SkyMap matches the original dict ONLY after
+        # adding automatically added "values_to_push_project"/"values_to_pull_project"
+        # key to the original dict
+        assert dict_from_skymap != skymap_props_dict
+
+        # In the dicts passed in above, the HEALPIX one is missing the pull key
+        # and the RECTANGULAR one is missing the push key
+        if skymap_props_dict["sky_tiling_type"] == "HEALPIX":
+            skymap_props_dict["values_to_pull_project"] = []
+        elif skymap_props_dict["sky_tiling_type"] == "RECTANGULAR":
+            skymap_props_dict["values_to_push_project"] = []
         assert dict_from_skymap == skymap_props_dict
 
         # Change a value in the new dict and check that it is not equal to the original
@@ -1018,9 +1028,15 @@ class TestAbstractSkyMap:
         with pytest.raises(AttributeError):
             _ = skymap_from_json.spacing_deg
 
-        # Check that the json output is the same as the original input
+        # Check that the json output is the same as the original input ONLY
+        # after adding automatically added
+        # "values_to_push_project"/"values_to_pull_project" key to the original dict
         with open(temp_file_path_input) as f:
             original_json = json.load(f)
         with open(temp_file_path_output) as f:
             output_json = json.load(f)
+        # The output json will have added an empty list for values_to_pull_project
+        assert original_json != output_json
+        # add the values_to_pull_project key to the original json
+        original_json["values_to_pull_project"] = []
         assert original_json == output_json
