@@ -160,7 +160,7 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> xr.Dataset:
 
 def calculate_uncertainties(dataset: xr.Dataset) -> xr.Dataset:
     """
-    Calculate uncertainties for each counts data variable in the dataset.
+    Calculate statistical uncertainties.
 
     Calculate the upper and lower uncertainties. The uncertainty for
     the raw Lev1A HIT data will be calculated as asymmetric Poisson
@@ -168,10 +168,10 @@ def calculate_uncertainties(dataset: xr.Dataset) -> xr.Dataset:
     See section 5.5 in the algorithm document for details.
 
     The upper uncertainty will be calculated as
-        DELTA_PLUS = sqrt(counts + 1) + 1
+        uncert_plus = sqrt(counts + 1) + 1
 
     The lower uncertainty will be calculated as
-        DELTA_MINUS = sqrt(counts)
+        uncert_minus = sqrt(counts)
 
     Parameters
     ----------
@@ -224,13 +224,13 @@ def calculate_uncertainties(dataset: xr.Dataset) -> xr.Dataset:
         safe_values_plus = np.maximum(dataset[var] + 1, 0).astype(np.float32)
         safe_values_minus = np.maximum(dataset[var], 0).astype(np.float32)
 
-        dataset[f"{var}_delta_plus"] = xr.DataArray(
+        dataset[f"{var}_stat_uncert_plus"] = xr.DataArray(
             np.where(
                 mask, np.sqrt(safe_values_plus) + 1, dataset[var].astype(np.float32)
             ),
             dims=dataset[var].dims,
         )
-        dataset[f"{var}_delta_minus"] = xr.DataArray(
+        dataset[f"{var}_stat_uncert_minus"] = xr.DataArray(
             np.where(mask, np.sqrt(safe_values_minus), dataset[var].astype(np.float32)),
             dims=dataset[var].dims,
         )

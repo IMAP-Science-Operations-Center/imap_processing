@@ -117,13 +117,13 @@ def test_calculate_uncertainties():
 
     # Assertions
     np.testing.assert_array_almost_equal(
-        result["counts_delta_plus"].values, expected_delta_plus
+        result["counts_stat_uncert_plus"].values, expected_delta_plus
     )
     np.testing.assert_array_almost_equal(
-        result["counts_delta_minus"].values, expected_delta_minus
+        result["counts_stat_uncert_minus"].values, expected_delta_minus
     )
-    assert "version_delta_plus" not in result
-    assert "version_delta_minus" not in result
+    assert "version_stat_uncert_plus" not in result
+    assert "version_stat_uncert_minus" not in result
 
 
 def test_validate_l1a_housekeeping_data(hk_packet_filepath):

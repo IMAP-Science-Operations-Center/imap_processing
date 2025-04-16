@@ -124,8 +124,8 @@ def consolidate_rate_columns(
 
     The validation data has each value in a separate column. This
     function aggregates related data into arrays to match processed
-    data. Each rate column has a corresponding delta plus and delta
-    minus column for uncertainty values.
+    data. Each rate column has corresponding plus and minus columns
+    for uncertainty values.
 
     Parameters
     ----------
@@ -142,16 +142,16 @@ def consolidate_rate_columns(
     """
     for new_col, prefix in rate_columns.items():
         pattern_rates = re.compile(rf"^{prefix}\d+$")
-        pattern_delta_plus = re.compile(rf"^{prefix}\d+_DELTA_PLUS$")
-        pattern_delta_minus = re.compile(rf"^{prefix}\d+_DELTA_MINUS$")
+        pattern_uncert_plus = re.compile(rf"^{prefix}\d+_STAT_UNCERT_PLUS$")
+        pattern_uncert_minus = re.compile(rf"^{prefix}\d+_STAT_UNCERT_MINUS$")
         data[new_col] = data.filter(regex=pattern_rates.pattern).apply(
             lambda row: row.values, axis=1
         )
-        data[f"{new_col}_delta_plus"] = data.filter(
-            regex=pattern_delta_plus.pattern
+        data[f"{new_col}_stat_uncert_plus"] = data.filter(
+            regex=pattern_uncert_plus.pattern
         ).apply(lambda row: row.values, axis=1)
-        data[f"{new_col}_delta_minus"] = data.filter(
-            regex=pattern_delta_minus.pattern
+        data[f"{new_col}_stat_uncert_minus"] = data.filter(
+            regex=pattern_uncert_minus.pattern
         ).apply(lambda row: row.values, axis=1)
         if new_col == "sectorates":
             data = consolidate_sectorates(data)
@@ -159,10 +159,11 @@ def consolidate_rate_columns(
             columns=data.filter(regex=pattern_rates.pattern).columns, inplace=True
         )
         data.drop(
-            columns=data.filter(regex=pattern_delta_plus.pattern).columns, inplace=True
+            columns=data.filter(regex=pattern_uncert_plus.pattern).columns, inplace=True
         )
         data.drop(
-            columns=data.filter(regex=pattern_delta_minus.pattern).columns, inplace=True
+            columns=data.filter(regex=pattern_uncert_minus.pattern).columns,
+            inplace=True,
         )
     return data
 
@@ -207,22 +208,22 @@ def consolidate_sectorates(data: pd.DataFrame) -> pd.DataFrame:
         Validation data with sectorate columns consolidated into arrays
     """
     sectorates_three_digits = data.filter(regex=r"^SECTORATES_\d{3}$").columns
-    sectorates_delta_plus_three_digits = data.filter(
-        regex=r"^SECTORATES_\d{3}_DELTA_PLUS$"
+    sectorates_uncert_plus_three_digits = data.filter(
+        regex=r"^SECTORATES_\d{3}_STAT_UNCERT_PLUS$"
     ).columns
-    sectorates_delta_minus_three_digits = data.filter(
-        regex=r"^SECTORATES_\d{3}_DELTA_MINUS$"
+    sectorates_uncert_minus_three_digits = data.filter(
+        regex=r"^SECTORATES_\d{3}_STAT_UNCERT_MINUS$"
     ).columns
 
     data["sectorates"] = data[sectorates_three_digits].apply(
         lambda row: row.values.reshape(15, 8), axis=1
     )
-    data["sectorates_delta_plus"] = data[sectorates_delta_plus_three_digits].apply(
-        lambda row: row.values.reshape(15, 8), axis=1
-    )
-    data["sectorates_delta_minus"] = data[sectorates_delta_minus_three_digits].apply(
-        lambda row: row.values.reshape(15, 8), axis=1
-    )
+    data["sectorates_stat_uncert_plus"] = data[
+        sectorates_uncert_plus_three_digits
+    ].apply(lambda row: row.values.reshape(15, 8), axis=1)
+    data["sectorates_stat_uncert_minus"] = data[
+        sectorates_uncert_minus_three_digits
+    ].apply(lambda row: row.values.reshape(15, 8), axis=1)
 
     sectorates_four_digits = data.filter(regex=r"^SECTORATES_\d{3}_\d{1}$").columns
     data["sectorates_by_mod_val"] = data[sectorates_four_digits].apply(
@@ -250,15 +251,15 @@ def process_single_rates(data: pd.DataFrame) -> pd.DataFrame:
     data["sngrates"] = data.apply(
         lambda row: np.array([row["sngrates_hg"], row["sngrates_lg"]]), axis=1
     )
-    data["sngrates_delta_plus"] = data.apply(
+    data["sngrates_stat_uncert_plus"] = data.apply(
         lambda row: np.array(
-            [row["sngrates_hg_delta_plus"], row["sngrates_lg_delta_plus"]]
+            [row["sngrates_hg_stat_uncert_plus"], row["sngrates_lg_stat_uncert_plus"]]
         ),
         axis=1,
     )
-    data["sngrates_delta_minus"] = data.apply(
+    data["sngrates_stat_uncert_minus"] = data.apply(
         lambda row: np.array(
-            [row["sngrates_hg_delta_minus"], row["sngrates_lg_delta_minus"]]
+            [row["sngrates_hg_stat_uncert_minus"], row["sngrates_lg_stat_uncert_minus"]]
         ),
         axis=1,
     )
@@ -266,10 +267,10 @@ def process_single_rates(data: pd.DataFrame) -> pd.DataFrame:
         columns=[
             "sngrates_hg",
             "sngrates_lg",
-            "sngrates_hg_delta_plus",
-            "sngrates_lg_delta_plus",
-            "sngrates_hg_delta_minus",
-            "sngrates_lg_delta_minus",
+            "sngrates_hg_stat_uncert_plus",
+            "sngrates_lg_stat_uncert_plus",
+            "sngrates_hg_stat_uncert_minus",
+            "sngrates_lg_stat_uncert_minus",
         ],
         inplace=True,
     )
@@ -353,27 +354,27 @@ def compare_data(
                     # array of sectored rate data from the actual data for comparison.
                     species = expected_data[field][frame]
                     energy_bin = expected_data["energy_bin"][frame]
-                    if "sectorates_delta_plus" in expected_data.columns:
+                    if "sectorates_stat_uncert_plus" in expected_data.columns:
                         np.testing.assert_allclose(
-                            actual_data[f"{species}_sectored_counts_delta_plus"][frame][
-                                energy_bin
-                            ].data,
-                            expected_data["sectorates_delta_plus"][frame],
-                            rtol=1e-7,  # relative tolerance
-                            atol=1e-8,  # absolute tolerance
-                            err_msg=f"Mismatch in {species}_sectored_counts_delta_"
-                            f"plus at frame {frame}, energy_bin {energy_bin}",
-                        )
-                    if "sectorates_delta_minus" in expected_data.columns:
-                        np.testing.assert_allclose(
-                            actual_data[f"{species}_sectored_counts_delta_minus"][
+                            actual_data[f"{species}_sectored_counts_stat_uncert_plus"][
                                 frame
                             ][energy_bin].data,
-                            expected_data["sectorates_delta_minus"][frame],
+                            expected_data["sectorates_stat_uncert_plus"][frame],
+                            rtol=1e-7,  # relative tolerance
+                            atol=1e-8,  # absolute tolerance
+                            err_msg=f"Mismatch in {species}_sectored_counts_stat_uncert"
+                            f"_plus at frame {frame}, energy_bin {energy_bin}",
+                        )
+                    if "sectorates_stat_uncert_minus" in expected_data.columns:
+                        np.testing.assert_allclose(
+                            actual_data[f"{species}_sectored_counts_stat_uncert_minus"][
+                                frame
+                            ][energy_bin].data,
+                            expected_data["sectorates_stat_uncert_minus"][frame],
                             rtol=1e-7,
                             atol=1e-8,
-                            err_msg=f"Mismatch in {species}_sectored_counts_delta_"
-                            f"minus at frame {frame}, energy_bin {energy_bin}",
+                            err_msg=f"Mismatch in {species}_sectored_counts_stat_uncert"
+                            f"_minus at frame {frame}, energy_bin {energy_bin}",
                         )
                     else:
                         np.testing.assert_allclose(

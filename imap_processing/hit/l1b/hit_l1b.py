@@ -235,11 +235,11 @@ def process_standard_rates_data(
     for var in standard_rate_fields:
         # Add counts and uncertainty data to the dataset
         l1b_standard_rates_dataset[var] = l1a_counts_dataset[var]
-        l1b_standard_rates_dataset[f"{var}_delta_minus"] = l1a_counts_dataset[
-            f"{var}_delta_minus"
+        l1b_standard_rates_dataset[f"{var}_stat_uncert_minus"] = l1a_counts_dataset[
+            f"{var}_stat_uncert_minus"
         ]
-        l1b_standard_rates_dataset[f"{var}_delta_plus"] = l1a_counts_dataset[
-            f"{var}_delta_plus"
+        l1b_standard_rates_dataset[f"{var}_stat_uncert_plus"] = l1a_counts_dataset[
+            f"{var}_stat_uncert_plus"
         ]
         # Calculate rates using livetime
         l1b_standard_rates_dataset = calculate_rates(
@@ -273,12 +273,12 @@ def calculate_rates(
         The dataset with rates.
     """
     dataset[f"{var}"] = (dataset[f"{var}"] / livetime).astype(np.float32)
-    dataset[f"{var}_delta_minus"] = (dataset[f"{var}_delta_minus"] / livetime).astype(
-        np.float32
-    )
-    dataset[f"{var}_delta_plus"] = (dataset[f"{var}_delta_plus"] / livetime).astype(
-        np.float32
-    )
+    dataset[f"{var}_stat_uncert_minus"] = (
+        dataset[f"{var}_stat_uncert_minus"] / livetime
+    ).astype(np.float32)
+    dataset[f"{var}_stat_uncert_plus"] = (
+        dataset[f"{var}_stat_uncert_plus"] / livetime
+    ).astype(np.float32)
 
     return dataset
 
@@ -486,9 +486,7 @@ def process_sectored_rates_data(
     for var in data_vars:
         if "sectored_counts" in var:
             # Determine the new variable name for the L1B dataset
-            if "_sectored_counts_delta_" in var:
-                new_var = var.replace("sectored_counts", "stat_uncert")
-            elif "_sectored_counts" in var:
+            if "_sectored_counts" in var:
                 new_var = var.replace("_sectored_counts", "")
             else:
                 new_var = None

@@ -93,8 +93,14 @@ def test_calculate_rates():
     # Create a sample dataset
     data = {
         "counts": (("epoch",), np.array([100, 200, 300], dtype=np.float32)),
-        "counts_delta_minus": (("epoch",), np.array([10, 20, 30], dtype=np.float32)),
-        "counts_delta_plus": (("epoch",), np.array([15, 25, 35], dtype=np.float32)),
+        "counts_stat_uncert_minus": (
+            ("epoch",),
+            np.array([10, 20, 30], dtype=np.float32),
+        ),
+        "counts_stat_uncert_plus": (
+            ("epoch",),
+            np.array([15, 25, 35], dtype=np.float32),
+        ),
     }
     coords = {"epoch": np.array([0, 1, 2], dtype=np.float32)}
     dataset = xr.Dataset(data, coords=coords)
@@ -107,15 +113,15 @@ def test_calculate_rates():
 
     # Check the results
     expected_counts = np.array([10, 10, 10], dtype=np.float32)
-    expected_counts_delta_minus = np.array([1, 1, 1], dtype=np.float32)
-    expected_counts_delta_plus = np.array([1.5, 1.25, 1.1666666], dtype=np.float32)
+    expected_counts_uncert_minus = np.array([1, 1, 1], dtype=np.float32)
+    expected_counts_uncert_plus = np.array([1.5, 1.25, 1.1666666], dtype=np.float32)
 
     np.testing.assert_allclose(result["counts"].values, expected_counts)
     np.testing.assert_allclose(
-        result["counts_delta_minus"].values, expected_counts_delta_minus
+        result["counts_stat_uncert_minus"].values, expected_counts_uncert_minus
     )
     np.testing.assert_allclose(
-        result["counts_delta_plus"].values, expected_counts_delta_plus
+        result["counts_stat_uncert_plus"].values, expected_counts_uncert_plus
     )
 
 
@@ -203,8 +209,8 @@ def test_process_summed_rates_data(l1a_counts_dataset, livetime):
 
     for particle in SUMMED_PARTICLE_ENERGY_RANGE_MAPPING.keys():
         assert f"{particle}" in l1b_summed_rates_dataset.data_vars
-        assert f"{particle}_delta_minus" in l1b_summed_rates_dataset.data_vars
-        assert f"{particle}_delta_plus" in l1b_summed_rates_dataset.data_vars
+        assert f"{particle}_stat_uncert_minus" in l1b_summed_rates_dataset.data_vars
+        assert f"{particle}_stat_uncert_plus" in l1b_summed_rates_dataset.data_vars
         assert f"{particle}_energy_delta_minus" in l1b_summed_rates_dataset.data_vars
         assert f"{particle}_energy_delta_plus" in l1b_summed_rates_dataset.data_vars
 
@@ -232,30 +238,30 @@ def test_process_standard_rates_data(l1a_counts_dataset, livetime):
         "ialirtrates",
         "l4fgrates",
         "l4bgrates",
-        "sngrates_delta_plus",
-        "coinrates_delta_plus",
-        "pbufrates_delta_plus",
-        "l2fgrates_delta_plus",
-        "l2bgrates_delta_plus",
-        "l3fgrates_delta_plus",
-        "l3bgrates_delta_plus",
-        "penfgrates_delta_plus",
-        "penbgrates_delta_plus",
-        "ialirtrates_delta_plus",
-        "l4fgrates_delta_plus",
-        "l4bgrates_delta_plus",
-        "sngrates_delta_minus",
-        "coinrates_delta_minus",
-        "pbufrates_delta_minus",
-        "l2fgrates_delta_minus",
-        "l2bgrates_delta_minus",
-        "l3fgrates_delta_minus",
-        "l3bgrates_delta_minus",
-        "penfgrates_delta_minus",
-        "penbgrates_delta_minus",
-        "ialirtrates_delta_minus",
-        "l4fgrates_delta_minus",
-        "l4bgrates_delta_minus",
+        "sngrates_stat_uncert_plus",
+        "coinrates_stat_uncert_plus",
+        "pbufrates_stat_uncert_plus",
+        "l2fgrates_stat_uncert_plus",
+        "l2bgrates_stat_uncert_plus",
+        "l3fgrates_stat_uncert_plus",
+        "l3bgrates_stat_uncert_plus",
+        "penfgrates_stat_uncert_plus",
+        "penbgrates_stat_uncert_plus",
+        "ialirtrates_stat_uncert_plus",
+        "l4fgrates_stat_uncert_plus",
+        "l4bgrates_stat_uncert_plus",
+        "sngrates_stat_uncert_minus",
+        "coinrates_stat_uncert_minus",
+        "pbufrates_stat_uncert_minus",
+        "l2fgrates_stat_uncert_minus",
+        "l2bgrates_stat_uncert_minus",
+        "l3fgrates_stat_uncert_minus",
+        "l3bgrates_stat_uncert_minus",
+        "penfgrates_stat_uncert_minus",
+        "penbgrates_stat_uncert_minus",
+        "ialirtrates_stat_uncert_minus",
+        "l4fgrates_stat_uncert_minus",
+        "l4bgrates_stat_uncert_minus",
         "dynamic_threshold_state",
     }
 
@@ -316,13 +322,8 @@ def test_process_sectored_rates_data(l1a_counts_dataset, livetime):
     particles = ["h", "he4", "cno", "nemgsi", "fe"]
     for particle in particles:
         assert f"{particle}" in l1b_sectored_rates_dataset.data_vars
-        assert (
-            f"{particle}_stat_uncert_delta_minus"
-            in l1b_sectored_rates_dataset.data_vars
-        )
-        assert (
-            f"{particle}_stat_uncert_delta_plus" in l1b_sectored_rates_dataset.data_vars
-        )
+        assert f"{particle}_stat_uncert_minus" in l1b_sectored_rates_dataset.data_vars
+        assert f"{particle}_stat_uncert_plus" in l1b_sectored_rates_dataset.data_vars
         assert f"{particle}_energy_delta_minus" in l1b_sectored_rates_dataset.data_vars
         assert f"{particle}_energy_delta_plus" in l1b_sectored_rates_dataset.data_vars
 

@@ -269,15 +269,15 @@ def initialize_particle_data_arrays(
         dims=["epoch", f"{particle}_energy_mean"],
         name=f"{particle}",
     )
-    updated_ds[f"{particle}_delta_minus"] = xr.DataArray(
+    updated_ds[f"{particle}_stat_uncert_minus"] = xr.DataArray(
         data=np.zeros((epoch_size, num_energy_ranges), dtype=np.float32),
         dims=["epoch", f"{particle}_energy_mean"],
-        name=f"{particle}_delta_minus",
+        name=f"{particle}_stat_uncert_minus",
     )
-    updated_ds[f"{particle}_delta_plus"] = xr.DataArray(
+    updated_ds[f"{particle}_stat_uncert_plus"] = xr.DataArray(
         data=np.zeros((epoch_size, num_energy_ranges), dtype=np.float32),
         dims=["epoch", f"{particle}_energy_mean"],
-        name=f"{particle}_delta_plus",
+        name=f"{particle}_stat_uncert_plus",
     )
     updated_ds.coords[f"{particle}_energy_mean"] = xr.DataArray(
         np.zeros(num_energy_ranges, dtype=np.int8),
@@ -314,10 +314,10 @@ def sum_particle_data(
     summed_data : xr.DataArray
         The summed data for the given energy range.
 
-    summed_uncertainty_delta_minus : xr.DataArray
+    summed_uncertainty_minus : xr.DataArray
         The summed data for delta minus statistical uncertainty.
 
-    summed_uncertainty_delta_plus : xr.DataArray
+    summed_uncertainty_plus : xr.DataArray
         The summed data for delta plus statistical uncertainty.
     """
     summed_data = (
@@ -326,19 +326,19 @@ def sum_particle_data(
         + dataset["penfgrates"][:, indices["R4"]].sum(axis=1)
     )
 
-    summed_uncertainty_delta_minus = (
-        dataset["l2fgrates_delta_minus"][:, indices["R2"]].sum(axis=1)
-        + dataset["l3fgrates_delta_minus"][:, indices["R3"]].sum(axis=1)
-        + dataset["penfgrates_delta_minus"][:, indices["R4"]].sum(axis=1)
+    summed_uncertainty_minus = (
+        dataset["l2fgrates_stat_uncert_minus"][:, indices["R2"]].sum(axis=1)
+        + dataset["l3fgrates_stat_uncert_minus"][:, indices["R3"]].sum(axis=1)
+        + dataset["penfgrates_stat_uncert_minus"][:, indices["R4"]].sum(axis=1)
     )
 
-    summed_uncertainty_delta_plus = (
-        dataset["l2fgrates_delta_plus"][:, indices["R2"]].sum(axis=1)
-        + dataset["l3fgrates_delta_plus"][:, indices["R3"]].sum(axis=1)
-        + dataset["penfgrates_delta_plus"][:, indices["R4"]].sum(axis=1)
+    summed_uncertainty_plus = (
+        dataset["l2fgrates_stat_uncert_plus"][:, indices["R2"]].sum(axis=1)
+        + dataset["l3fgrates_stat_uncert_plus"][:, indices["R3"]].sum(axis=1)
+        + dataset["penfgrates_stat_uncert_plus"][:, indices["R4"]].sum(axis=1)
     )
 
-    return summed_data, summed_uncertainty_delta_minus, summed_uncertainty_delta_plus
+    return summed_data, summed_uncertainty_minus, summed_uncertainty_plus
 
 
 def add_energy_variables(
@@ -429,13 +429,17 @@ def add_summed_particle_data_to_dataset(
 
     # Compute summed data and update the dataset
     for i, energy_range_dict in enumerate(energy_ranges):
-        summed_data, summed_data_delta_minus, summed_data_delta_plus = (
+        summed_data, summed_data_uncert_minus, summed_data_uncert_plus = (
             sum_particle_data(source_dataset, energy_range_dict)
         )
 
         ds[f"{particle}"][:, i] = summed_data.astype(np.float32)
-        ds[f"{particle}_delta_minus"][:, i] = summed_data_delta_minus.astype(np.float32)
-        ds[f"{particle}_delta_plus"][:, i] = summed_data_delta_plus.astype(np.float32)
+        ds[f"{particle}_stat_uncert_minus"][:, i] = summed_data_uncert_minus.astype(
+            np.float32
+        )
+        ds[f"{particle}_stat_uncert_plus"][:, i] = summed_data_uncert_plus.astype(
+            np.float32
+        )
 
         # Store energy range values
         energy_min[i] = energy_range_dict["energy_min"]
