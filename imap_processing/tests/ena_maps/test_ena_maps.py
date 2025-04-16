@@ -835,7 +835,7 @@ class TestHealpixSkyMap:
                 rect_pix_center_lon_lat=(180, 0),
                 rect_pix_spacing_deg=4,
                 value_key="counts",
-                tolerances=(required_rtols[expected_subdiv_level - 1], 0),
+                rtol=required_rtols[expected_subdiv_level - 1],
                 max_subdivision_depth=7,
             )
             assert depth == expected_subdiv_level
