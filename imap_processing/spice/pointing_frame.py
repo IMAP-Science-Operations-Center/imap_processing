@@ -78,10 +78,6 @@ def create_pointing_frame(
     TODO: We may come back and have a check for this.
     - The pointing frame kernel is made based on the most recent ck kernel.
     In other words 1:1 ratio.
-
-    References
-    ----------
-    https://numpydoc.readthedocs.io/en/latest/format.html#references
     """
     # Get IDs.
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool
