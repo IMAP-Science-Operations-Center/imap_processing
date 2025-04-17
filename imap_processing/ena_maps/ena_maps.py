@@ -1201,12 +1201,15 @@ class HealpixSkyMap(AbstractSkyMap):
         )
         return mean_pixel_value
 
-    def get_rect_pixel_value_recursive_subdivs(
+    def get_rect_pixel_value_recursive_subdivs(  # noqa: PLR0913
         self,
         rect_pix_center_lon_lat: np.typing.NDArray | tuple[float, float],
         rect_pix_spacing_deg: float,
         value_key: str,
-        **kwargs: float | int,
+        *,
+        rtol: float = 1e-3,
+        atol: float = 1e-12,
+        max_subdivision_depth: int = MAX_SUBDIV_RECURSION_DEPTH,
     ) -> tuple[np.typing.NDArray, int]:
         """
         Recursively subdivide a rectangular pixel to get a mean value within tolerances.
@@ -1226,31 +1229,22 @@ class HealpixSkyMap(AbstractSkyMap):
             The spacing of the rectangular pixel in degrees.
         value_key : str
             The name of the value to interpolate from the healpix map.
-        **kwargs
-            Overrides to the default values for the following
-            rtol : float, optional
-                The relative tolerance for convergence, by default 1e-3.
-            atol : float, optional
-                The absolute tolerance for convergence, by default 1e-12.
-            max_subdivision_depth : int, optional
-                The maximum depth of recursion for subdivision,
-                by default MAX_SUBDIV_RECURSION_DEPTH.
-                Computation grows exponentially with depth, but only where the value
-                has a significant gradient between adjacent healpix pixels.
-                If the value is smooth, the recursion depth will be low.
+        rtol : float, optional
+            The relative tolerance for convergence, by default 1e-3.
+        atol : float, optional
+            The absolute tolerance for convergence, by default 1e-12.
+        max_subdivision_depth : int, optional
+            The maximum depth of recursion for subdivision,
+            by default MAX_SUBDIV_RECURSION_DEPTH.
+            Computation grows exponentially with depth, but only where the value
+            has a significant gradient between adjacent healpix pixels.
+            If the value is smooth, the recursion depth will be low.
 
         Returns
         -------
         tuple[list[float], int]
             The mean value at the final level of subdivision and the depth of recursion.
         """
-        # Get relative/absolute tolerances and max depth from kwargs, or use defaults
-        relative_tolerance = kwargs.get("rtol", 1e-3)
-        absolute_tolerance = kwargs.get("atol", 1e-12)
-        max_subdivision_depth = kwargs.get(
-            "max_subdivision_depth", MAX_SUBDIV_RECURSION_DEPTH
-        )
-
         # Recursively subdivide a pixel and calculate its mean value until either the
         # difference between consecutive levels is within the specified tolerances
         # or the maximum recursion depth is reached
@@ -1272,8 +1266,8 @@ class HealpixSkyMap(AbstractSkyMap):
                 if np.isclose(
                     mean_pixel_value.mean(),
                     previous_mean_pixel_value.mean(),
-                    rtol=relative_tolerance,
-                    atol=absolute_tolerance,
+                    rtol=rtol,
+                    atol=atol,
                 ):
                     break
             depth += 1
