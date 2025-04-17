@@ -1339,6 +1339,8 @@ class HealpixSkyMap(AbstractSkyMap):
             # For each of the values, calculate each pixel's value with
             # recursive subdivision. Unfortunately, this must be done independently
             # for each value key.
+
+            # Yields a list of tuple (mean_value, depth) for each pixel in the map
             healpix_values_array = self.data_1d[value_key]
             best_value_and_recursion_depth_by_pixel = [
                 self.get_rect_pixel_value_recursive_subdivs(
@@ -1350,9 +1352,17 @@ class HealpixSkyMap(AbstractSkyMap):
                 for lon_lat in rect_map.az_el_points
             ]
 
-            interpolated_data_by_rect_pixel = np.moveaxis(
-                [r[0] for r in best_value_and_recursion_depth_by_pixel], 0, -1
+            # Separate the best value and the recursion depth for each pixel
+            # into two lists, then convert both to numpy arrays
+            # and move the pixel dim to the last dim of values
+            interpolated_data_by_rect_pixel, subdiv_depth_of_value_by_pixel = zip(
+                *best_value_and_recursion_depth_by_pixel
             )
+            interpolated_data_by_rect_pixel = np.moveaxis(
+                np.array(interpolated_data_by_rect_pixel), 0, -1
+            )
+            subdiv_depth_of_value_by_pixel = np.array(subdiv_depth_of_value_by_pixel)
+
             # This can introduce an extra dim as the last dim of the array
             # to values with only one dimension
             if len(healpix_values_array.dims) == 1:
@@ -1379,9 +1389,6 @@ class HealpixSkyMap(AbstractSkyMap):
 
             # Add the subdivision depth by pixel of this value_key to the dictionary
             # This may be necessary for uncertainty estimation
-            subdiv_depth_of_value_by_pixel = np.array(
-                [r[1] for r in best_value_and_recursion_depth_by_pixel]
-            )
             subdiv_depth_dict[value_key] = subdiv_depth_of_value_by_pixel
             logger.info(
                 f"Summary of subdivision depth for {value_key}:\n"
