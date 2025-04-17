@@ -73,6 +73,7 @@ shcoarse:
   UNITS: sec
   VAR_TYPE: support_data
   DEPEND_0: epoch
+
 sid:
   <<: *default_uint8
   CATDESC: Science ID (always totals 8).
@@ -80,6 +81,7 @@ sid:
   LABLAXIS: SID
   UNITS: " "
   DEPEND_0: epoch
+
 spin:
   <<: *default_uint32
   CATDESC: Spin number.
@@ -87,6 +89,7 @@ spin:
   LABLAXIS: spin number
   UNITS: " "
   DEPEND_0: epoch
+
 abortflag:
   <<: *default_uint8
   CATDESC: Flag for integration aborted.
@@ -94,6 +97,7 @@ abortflag:
   LABLAXIS: abortflag
   UNITS: " "
   DEPEND_0: epoch
+
 startdelay:
   <<: *default_uint8
   CATDESC: Integration start delay.
@@ -101,6 +105,7 @@ startdelay:
   LABLAXIS: startdelay
   UNITS: "ms"
   DEPEND_0: epoch
+
 count:
   <<: *default
   CATDESC: Counts for a spin.
@@ -109,54 +114,63 @@ count:
   # TODO: come back to format
   UNITS: counts
   DEPEND_0: epoch
+
 version:
   <<: *default_uint8
   CATDESC: CCSDS packet version number
   FIELDNAM: CCSDS version
   VAR_TYPE: support_data
   DEPEND_0: epoch
+
 type:
   <<: *default_uint8
   CATDESC: CCSDS packet type
   FIELDNAM: CCSDS type
   VAR_TYPE: support_data
   DEPEND_0: epoch
+
 alarmtype:
   <<: *default_uint8
   CATDESC: Alarm type
   FIELDNAM: alarm type
   VAR_TYPE: alarm_type
   DEPEND_0: epoch
+
 sec_hdr_flg:
   <<: *default_uint8
   CATDESC: CCSDS secondary header flag
   FIELDNAM: CCSDS secondary header flag
   VAR_TYPE: support_data
   DEPEND_0: epoch
+
 pkt_apid:
   <<: *default_uint16
   CATDESC: CCSDS application process ID
   FIELDNAM: CCSDS APID
   VAR_TYPE: support_data
   DEPEND_0: epoch
+
 seq_flgs:
   <<: *default_uint8
   CATDESC: CCSDS sequence flags
   FIELDNAM: CCSDS sequence flags
   VAR_TYPE: support_data
   DEPEND_0: epoch
+
 src_seq_ctr:
   <<: *default_uint16
   CATDESC: CCSDS source sequence counter
   FIELDNAM: CCSDS sequence counter
   VAR_TYPE: support_data
   DEPEND_0: epoch
+
 pkt_len:
   <<: *default_uint16
   CATDESC: CCSDS packet length
   FIELDNAM: CCSDS packet length
   VAR_TYPE: support_data
   DEPEND_0: epoch
+
 coin_type:
   <<: *default_uint8
   CATDESC: Coincidence Type
@@ -164,6 +178,7 @@ coin_type:
   LABLAXIS: coin_type
   UNITS: " "
   DEPEND_0: epoch
+
 start_type:
   <<: *default_uint8
   CATDESC: Start Type
@@ -171,6 +186,7 @@ start_type:
   LABLAXIS: start_type
   UNITS: " "
   DEPEND_0: epoch
+
 stop_type:
   <<: *default_uint8
   CATDESC: Stop Type
@@ -178,6 +194,7 @@ stop_type:
   LABLAXIS: stop_type
   UNITS: " "
   DEPEND_0: epoch
+
 start_pos_tdc:
   <<: *default_uint32
   CATDESC: Start Position Time to Digital Converter
@@ -185,6 +202,7 @@ start_pos_tdc:
   LABLAXIS: start_pos_tdc
   UNITS: " "
   DEPEND_0: epoch
+
 stop_north_tdc:
   <<: *default_uint32
   CATDESC: Stop North Time to Digital Converter
@@ -192,6 +210,7 @@ stop_north_tdc:
   LABLAXIS: stop_north_tdc
   UNITS: " "
   DEPEND_0: epoch
+
 stop_east_tdc:
   <<: *default_uint32
   CATDESC: Stop East Time to Digital Converter
@@ -199,6 +218,7 @@ stop_east_tdc:
   LABLAXIS: stop_east_tdc
   UNITS: " "
   DEPEND_0: epoch
+
 stop_south_tdc:
   <<: *default_uint32
   CATDESC: Stop South Time to Digital Converter
@@ -206,6 +226,7 @@ stop_south_tdc:
   LABLAXIS: stop_south_tdc
   UNITS: " "
   DEPEND_0: epoch
+
 stop_west_tdc:
   <<: *default_uint32
   CATDESC: Stop West Time to Digital Converter
@@ -213,6 +234,7 @@ stop_west_tdc:
   LABLAXIS: stop_west_tdc
   UNITS: " "
   DEPEND_0: epoch
+
 coin_north_tdc:
   <<: *default_uint32
   CATDESC: Coincidence North Time to Digital Converter
@@ -220,6 +242,7 @@ coin_north_tdc:
   LABLAXIS: coin_north_tdc
   UNITS: " "
   DEPEND_0: epoch
+
 coin_south_tdc:
   <<: *default_uint32
   CATDESC: Coincidence South Time to Digital Converter
@@ -227,6 +250,7 @@ coin_south_tdc:
   LABLAXIS: coin_south_tdc
   UNITS: " "
   DEPEND_0: epoch
+
 coin_discrete_tdc:
   <<: *default_uint32
   CATDESC: Coincidence Discrete Time to Digital Converter
@@ -234,6 +258,7 @@ coin_discrete_tdc:
   LABLAXIS: coin_discrete_tdc
   UNITS: " "
   DEPEND_0: epoch
+
 energy_ph:
   <<: *default_uint32
   CATDESC: Energy or Pulse Height
@@ -241,6 +266,7 @@ energy_ph:
   LABLAXIS: energy_ph
   UNITS: " "
   DEPEND_0: epoch
+
 pulse_width:
   <<: *default_uint32
   CATDESC: Pulse Width
@@ -248,6 +274,7 @@ pulse_width:
   LABLAXIS: pulse_width
   UNITS: " "
   DEPEND_0: epoch
+
 event_flag_cnt:
   <<: *default_uint8
   CATDESC: Event Flag Count
@@ -255,6 +282,7 @@ event_flag_cnt:
   LABLAXIS: event_flag_cnt
   UNITS: " "
   DEPEND_0: epoch
+
 event_flag_phcmpsl:
   <<: *default_uint8
   CATDESC: Event Flag PHCmpSL
@@ -262,6 +290,7 @@ event_flag_phcmpsl:
   LABLAXIS: event_flag_phcmpsl
   UNITS: " "
   DEPEND_0: epoch
+
 event_flag_phcmpsr:
   <<: *default_uint8
   CATDESC: Event Flag PHCmpSR
@@ -269,6 +298,7 @@ event_flag_phcmpsr:
   LABLAXIS: event_flag_phcmpsr
   UNITS: " "
   DEPEND_0: epoch
+
 event_flag_phcmpcd:
   <<: *default_uint8
   CATDESC: Event Flag PHCmpCD
@@ -276,6 +306,7 @@ event_flag_phcmpcd:
   LABLAXIS: event_flag_phcmpcd
   UNITS: " "
   DEPEND_0: epoch
+
 ssd_flag_7:
   <<: *default_uint8
   CATDESC: SSD Flag 7
@@ -283,6 +314,7 @@ ssd_flag_7:
   LABLAXIS: ssd_flag_7
   UNITS: " "
   DEPEND_0: epoch
+
 ssd_flag_6:
   <<: *default_uint8
   CATDESC: SSD Flag 6
@@ -290,6 +322,7 @@ ssd_flag_6:
   LABLAXIS: ssd_flag_6
   UNITS: " "
   DEPEND_0: epoch
+
 ssd_flag_5:
   <<: *default_uint8
   CATDESC: SSD Flag 5
@@ -297,6 +330,7 @@ ssd_flag_5:
   LABLAXIS: ssd_flag_5
   UNITS: " "
   DEPEND_0: epoch
+
 ssd_flag_4:
   <<: *default_uint8
   CATDESC: SSD Flag 4
@@ -304,6 +338,7 @@ ssd_flag_4:
   LABLAXIS: ssd_flag_4
   UNITS: " "
   DEPEND_0: epoch
+
 ssd_flag_3:
   <<: *default_uint8
   CATDESC: SSD Flag 3
@@ -311,6 +346,7 @@ ssd_flag_3:
   LABLAXIS: ssd_flag_3
   UNITS: " "
   DEPEND_0: epoch
+
 ssd_flag_2:
   <<: *default_uint8
   CATDESC: SSD Flag 2
@@ -318,6 +354,7 @@ ssd_flag_2:
   LABLAXIS: ssd_flag_2
   UNITS: " "
   DEPEND_0: epoch
+
 ssd_flag_1:
   <<: *default_uint8
   CATDESC: SSD Flag 1
@@ -325,6 +362,7 @@ ssd_flag_1:
   LABLAXIS: ssd_flag_1
   UNITS: " "
   DEPEND_0: epoch
+
 ssd_flag_0:
   <<: *default_uint8
   CATDESC: SSD Flag 0
@@ -332,6 +370,7 @@ ssd_flag_0:
   LABLAXIS: ssd_flag_0
   UNITS: " "
   DEPEND_0: epoch
+
 cfd_flag_cointn:
   <<: *default_uint8
   CATDESC: CFD Coincidence Flag Top North
@@ -339,6 +378,7 @@ cfd_flag_cointn:
   LABLAXIS: cfd_flag_cointn
   UNITS: " "
   DEPEND_0: epoch
+
 cfd_flag_coinbn:
   <<: *default_uint8
   CATDESC: CFD Coincidence Flag Bottom North
@@ -346,6 +386,7 @@ cfd_flag_coinbn:
   LABLAXIS: cfd_flag_coinbn
   UNITS: " "
   DEPEND_0: epoch
+
 cfd_flag_coints:
   <<: *default_uint8
   CATDESC: CFD Coincidence Flag Top South
@@ -353,6 +394,7 @@ cfd_flag_coints:
   LABLAXIS: cfd_flag_coints
   UNITS: " "
   DEPEND_0: epoch
+
 cfd_flag_coinbs:
   <<: *default_uint8
   CATDESC: CFD Coincidence Flag Bottom South
@@ -360,6 +402,7 @@ cfd_flag_coinbs:
   LABLAXIS: cfd_flag_coinbs
   UNITS: " "
   DEPEND_0: epoch
+
 cfd_flag_coind:
   <<: *default_uint8
   CATDESC: CFD Coincidence Flag Discrete
@@ -367,6 +410,7 @@ cfd_flag_coind:
   LABLAXIS: cfd_flag_coind
   UNITS: " "
   DEPEND_0: epoch
+
 cfd_flag_startrf:
   <<: *default_uint8
   CATDESC: CFD Start Right Full Flag
@@ -374,6 +418,7 @@ cfd_flag_startrf:
   LABLAXIS: cfd_flag_startrf
   UNITS: " "
   DEPEND_0: epoch
+
 cfd_flag_startlf:
   <<: *default_uint8
   CATDESC: CFD Start Left Full Flag
@@ -381,6 +426,7 @@ cfd_flag_startlf:
   LABLAXIS: cfd_flag_startlf
   UNITS: " "
   DEPEND_0: epoch
+
 cfd_flag_startrp:
   <<: *default_uint8
   CATDESC: CFD Start Position Right Flag
@@ -388,6 +434,7 @@ cfd_flag_startrp:
   LABLAXIS: cfd_flag_startrp
   UNITS: " "
   DEPEND_0: epoch
+
 cfd_flag_startlp:
   <<: *default_uint8
   CATDESC: CFD Start Position Left Flag
@@ -395,6 +442,7 @@ cfd_flag_startlp:
   LABLAXIS: cfd_flag_startlp
   UNITS: " "
   DEPEND_0: epoch
+
 cfd_flag_stoptn:
   <<: *default_uint8
   CATDESC: CFD Stop Top North Flag
@@ -402,6 +450,7 @@ cfd_flag_stoptn:
   LABLAXIS: cfd_flag_stoptn
   UNITS: " "
   DEPEND_0: epoch
+
 cfd_flag_stopbn:
   <<: *default_uint8
   CATDESC: CFD Stop Bottom North Flag
@@ -409,6 +458,7 @@ cfd_flag_stopbn:
   LABLAXIS: cfd_flag_stopbn
   UNITS: " "
   DEPEND_0: epoch
+
 cfd_flag_stopte:
   <<: *default_uint8
   CATDESC: CFD Stop Top East Flag
@@ -416,6 +466,7 @@ cfd_flag_stopte:
   LABLAXIS: cfd_flag_stopte
   UNITS: " "
   DEPEND_0: epoch
+
 cfd_flag_stopbe:
   <<: *default_uint8
   CATDESC: CFD Stop Bottom East Flag
@@ -423,6 +474,7 @@ cfd_flag_stopbe:
   LABLAXIS: cfd_flag_stopbe
   UNITS: " "
   DEPEND_0: epoch
+
 cfd_flag_stopts:
   <<: *default_uint8
   CATDESC: CFD Stop Top South Flag
@@ -430,6 +482,7 @@ cfd_flag_stopts:
   LABLAXIS: cfd_flag_stopts
   UNITS: " "
   DEPEND_0: epoch
+
 cfd_flag_stopbs:
   <<: *default_uint8
   CATDESC: CFD Stop Bottom South Flag
@@ -437,6 +490,7 @@ cfd_flag_stopbs:
   LABLAXIS: cfd_flag_stopbs
   UNITS: " "
   DEPEND_0: epoch
+
 cfd_flag_stoptw:
   <<: *default_uint8
   CATDESC: CFD Stop Top West Flag
@@ -444,6 +498,7 @@ cfd_flag_stoptw:
   LABLAXIS: cfd_flag_stoptw
   UNITS: " "
   DEPEND_0: epoch
+
 cfd_flag_stopbw:
   <<: *default_uint8
   CATDESC: CFD Stop Bottom West Flag
@@ -451,6 +506,7 @@ cfd_flag_stopbw:
   LABLAXIS: cfd_flag_stopbw
   UNITS: " "
   DEPEND_0: epoch
+
 bin:
   <<: *default_uint32
   CATDESC: Event bin index
@@ -458,6 +514,7 @@ bin:
   LABLAXIS: bin
   UNITS: " "
   DEPEND_0: epoch
+
 phase_angle:
   <<: *default_uint32
   CATDESC: Phase angle
@@ -465,6 +522,7 @@ phase_angle:
   LABLAXIS: phase_angle
   UNITS: degrees
   DEPEND_0: epoch
+
 p00:
   <<: *default_uint32
   CATDESC: Starting pixel
@@ -472,6 +530,7 @@ p00:
   LABLAXIS: p00
   UNITS: " "
   DEPEND_0: epoch
+
 packetdata:
   <<: *default_uint32
   CATDESC: Image Packet Data
@@ -479,6 +538,7 @@ packetdata:
   LABLAXIS: packetdata
   UNITS: " "
   DEPEND_0: epoch
+
 fastdata_00:
   <<: *default_uint32
   CATDESC: Fast-compressed rate data
@@ -486,6 +546,7 @@ fastdata_00:
   LABLAXIS: fastdata_00
   UNITS: " "
   DEPEND_0: epoch
+
 start_rf:
   <<: *default_uint32
   CATDESC: Start Right Full CFD Pulses
@@ -493,6 +554,7 @@ start_rf:
   LABLAXIS: start_rf
   UNITS: " "
   DEPEND_0: epoch
+
 start_lf:
   <<: *default_uint32
   CATDESC: Start Left Full CFD Pulses
@@ -500,6 +562,7 @@ start_lf:
   LABLAXIS: start_lf
   UNITS: " "
   DEPEND_0: epoch
+
 start_rp:
   <<: *default_uint32
   CATDESC: Start Position Right CFD Pulses
@@ -507,6 +570,7 @@ start_rp:
   LABLAXIS: start_rp
   UNITS: " "
   DEPEND_0: epoch
+
 start_lp:
   <<: *default_uint32
   CATDESC: Start Position Left CFD Pulses
@@ -514,6 +578,7 @@ start_lp:
   LABLAXIS: start_lp
   UNITS: " "
   DEPEND_0: epoch
+
 stop_tn:
   <<: *default_uint32
   CATDESC: Stop Top North CFD Pulses
@@ -521,6 +586,7 @@ stop_tn:
   LABLAXIS: stop_tn
   UNITS: " "
   DEPEND_0: epoch
+
 stop_bn:
   <<: *default_uint32
   CATDESC: Stop Bottom North CFD Pulses
@@ -528,6 +594,7 @@ stop_bn:
   LABLAXIS: stop_bn
   UNITS: " "
   DEPEND_0: epoch
+
 stop_te:
   <<: *default_uint32
   CATDESC: Stop Top East CFD Pulses
@@ -535,6 +602,7 @@ stop_te:
   LABLAXIS: stop_te
   UNITS: " "
   DEPEND_0: epoch
+
 stop_be:
   <<: *default_uint32
   CATDESC: Stop Bottom East CFD Pulses
@@ -542,6 +610,7 @@ stop_be:
   LABLAXIS: stop_be
   UNITS: " "
   DEPEND_0: epoch
+
 stop_ts:
   <<: *default_uint32
   CATDESC: Stop Top South CFD Pulses
@@ -549,6 +618,7 @@ stop_ts:
   LABLAXIS: stop_ts
   UNITS: " "
   DEPEND_0: epoch
+
 stop_bs:
   <<: *default_uint32
   CATDESC: Stop Bottom South CFD Pulses
@@ -556,6 +626,7 @@ stop_bs:
   LABLAXIS: stop_bs
   UNITS: " "
   DEPEND_0: epoch
+
 stop_tw:
   <<: *default_uint32
   CATDESC: Stop Top West CFD Pulses
@@ -563,6 +634,7 @@ stop_tw:
   LABLAXIS: stop_tw
   UNITS: " "
   DEPEND_0: epoch
+
 stop_bw:
   <<: *default_uint32
   CATDESC: Stop Bottom West CFD Pulses
@@ -570,6 +642,7 @@ stop_bw:
   LABLAXIS: stop_bw
   UNITS: " "
   DEPEND_0: epoch
+
 coin_tn:
   <<: *default_uint32
   CATDESC: Coincidence Top North CFD Pulses
@@ -577,6 +650,7 @@ coin_tn:
   LABLAXIS: coin_tn
   UNITS: " "
   DEPEND_0: epoch
+
 coin_bn:
   <<: *default_uint32
   CATDESC: Coincidence Bottom North CFD Pulses
@@ -584,6 +658,7 @@ coin_bn:
   LABLAXIS: coin_bn
   UNITS: " "
   DEPEND_0: epoch
+
 coin_ts:
   <<: *default_uint32
   CATDESC: Coincidence Top South CFD Pulses
@@ -591,6 +666,7 @@ coin_ts:
   LABLAXIS: coin_ts
   UNITS: " "
   DEPEND_0: epoch
+
 coin_bs:
   <<: *default_uint32
   CATDESC: Coincidence Bottom South CFD Pulses
@@ -598,6 +674,7 @@ coin_bs:
   LABLAXIS: coin_bs
   UNITS: " "
   DEPEND_0: epoch
+
 coin_d:
   <<: *default_uint32
   CATDESC: Coincidence Discrete CFD Pulses
@@ -605,6 +682,7 @@ coin_d:
   LABLAXIS: coin_d
   UNITS: " "
   DEPEND_0: epoch
+
 ssd0:
   <<: *default_uint32
   CATDESC: SSD Energy Pulses 0
@@ -612,6 +690,7 @@ ssd0:
   LABLAXIS: ssd0
   UNITS: " "
   DEPEND_0: epoch
+
 ssd1:
   <<: *default_uint32
   CATDESC: SSD Energy Pulses 1
@@ -619,6 +698,7 @@ ssd1:
   LABLAXIS: ssd1
   UNITS: " "
   DEPEND_0: epoch
+
 ssd2:
   <<: *default_uint32
   CATDESC: SSD Energy Pulses 2
@@ -626,6 +706,7 @@ ssd2:
   LABLAXIS: ssd2
   UNITS: " "
   DEPEND_0: epoch
+
 ssd3:
   <<: *default_uint32
   CATDESC: SSD Energy Pulses 3
@@ -633,6 +714,7 @@ ssd3:
   LABLAXIS: ssd3
   UNITS: " "
   DEPEND_0: epoch
+
 ssd4:
   <<: *default_uint32
   CATDESC: SSD Energy Pulses 4
@@ -640,6 +722,7 @@ ssd4:
   LABLAXIS: ssd4
   UNITS: " "
   DEPEND_0: epoch
+
 ssd5:
   <<: *default_uint32
   CATDESC: SSD Energy Pulses 5
@@ -647,6 +730,7 @@ ssd5:
   LABLAXIS: ssd5
   UNITS: " "
   DEPEND_0: epoch
+
 ssd6:
   <<: *default_uint32
   CATDESC: SSD Energy Pulses 6
@@ -654,6 +738,7 @@ ssd6:
   LABLAXIS: ssd6
   UNITS: " "
   DEPEND_0: epoch
+
 ssd7:
   <<: *default_uint32
   CATDESC: SSD Energy Pulses 7
@@ -661,6 +746,7 @@ ssd7:
   LABLAXIS: ssd7
   UNITS: " "
   DEPEND_0: epoch
+
 start_pos:
   <<: *default_uint32
   CATDESC: Start Position TDC VE Pulses
@@ -668,6 +754,7 @@ start_pos:
   LABLAXIS: start_pos
   UNITS: " "
   DEPEND_0: epoch
+
 stop_n:
   <<: *default_uint32
   CATDESC: Stop North TDC VE Pulses
@@ -675,6 +762,7 @@ stop_n:
   LABLAXIS: stop_n
   UNITS: " "
   DEPEND_0: epoch
+
 stop_e:
   <<: *default_uint32
   CATDESC: Stop East TDC VE Pulses
@@ -682,6 +770,7 @@ stop_e:
   LABLAXIS: stop_e
   UNITS: " "
   DEPEND_0: epoch
+
 stop_s:
   <<: *default_uint32
   CATDESC: Stop South TDC VE Pulses
@@ -689,6 +778,7 @@ stop_s:
   LABLAXIS: stop_s
   UNITS: " "
   DEPEND_0: epoch
+
 stop_w:
   <<: *default_uint32
   CATDESC: Stop West TDC VE Pulses
@@ -696,6 +786,7 @@ stop_w:
   LABLAXIS: stop_w
   UNITS: " "
   DEPEND_0: epoch
+
 coin_n_tdc:
   <<: *default_uint32
   CATDESC: Coincidence North TDC VE Pulses
@@ -703,6 +794,7 @@ coin_n_tdc:
   LABLAXIS: coin_n_tdc
   UNITS: " "
   DEPEND_0: epoch
+
 coin_d_tdc:
   <<: *default_uint32
   CATDESC: Coincidence Discrete TDC VE Pulses
@@ -710,6 +802,7 @@ coin_d_tdc:
   LABLAXIS: coin_d_tdc
   UNITS: " "
   DEPEND_0: epoch
+
 coin_s_tdc:
   <<: *default_uint32
   CATDESC: Coincidence South TDC VE Pulses
@@ -717,6 +810,7 @@ coin_s_tdc:
   LABLAXIS: coin_s_tdc
   UNITS: " "
   DEPEND_0: epoch
+
 stop_top_n:
   <<: *default_uint32
   CATDESC: Stop Top North Valid PH Flag
@@ -724,6 +818,7 @@ stop_top_n:
   LABLAXIS: stop_top_n
   UNITS: " "
   DEPEND_0: epoch
+
 stop_bot_n:
   <<: *default_uint32
   CATDESC: Stop Bottom North Valid PH Flag
@@ -731,6 +826,7 @@ stop_bot_n:
   LABLAXIS: stop_bot_n
   UNITS: " "
   DEPEND_0: epoch
+
 start_right_stop_coin_single:
   <<: *default_uint32
   CATDESC: Start-Right/Stop Single Coincidence
@@ -738,6 +834,7 @@ start_right_stop_coin_single:
   LABLAXIS: start_right_stop_coin_single
   UNITS: " "
   DEPEND_0: epoch
+
 start_left_stop_coin_single:
   <<: *default_uint32
   CATDESC: Start-Left/Stop Single Coincidence
@@ -745,6 +842,7 @@ start_left_stop_coin_single:
   LABLAXIS: start_left_stop_coin_single
   UNITS: " "
   DEPEND_0: epoch
+
 start_right_stop_coin_double:
   <<: *default_uint32
   CATDESC: Start-Right/Stop/Coin Double Coincidence
@@ -752,6 +850,7 @@ start_right_stop_coin_double:
   LABLAXIS: start_right_stop_coin_double
   UNITS: " "
   DEPEND_0: epoch
+
 start_left_stop_coin_double:
   <<: *default_uint32
   CATDESC: Start-Left/Stop/Coin Double Coincidence
@@ -759,6 +858,7 @@ start_left_stop_coin_double:
   LABLAXIS: start_left_stop_coin_double
   UNITS: " "
   DEPEND_0: epoch
+
 start_stop_coin_pos:
   <<: *default_uint32
   CATDESC: Start/Stop/Coin Position Match
@@ -766,6 +866,7 @@ start_stop_coin_pos:
   LABLAXIS: start_stop_coin_pos
   UNITS: " "
   DEPEND_0: epoch
+
 start_right_ssd_coin_d:
   <<: *default_uint32
   CATDESC: Start-Right/SSD/Coin-D Coincidence
@@ -773,6 +874,7 @@ start_right_ssd_coin_d:
   LABLAXIS: start_right_ssd_coin_d
   UNITS: " "
   DEPEND_0: epoch
+
 start_left_ssd_coin_d:
   <<: *default_uint32
   CATDESC: Start-Left/SSD/Coin-D Coincidence
@@ -780,6 +882,7 @@ start_left_ssd_coin_d:
   LABLAXIS: start_left_ssd_coin_d
   UNITS: " "
   DEPEND_0: epoch
+
 event_active_time:
   <<: *default_uint32
   CATDESC: Event Analysis Activity Time
@@ -787,6 +890,7 @@ event_active_time:
   LABLAXIS: event_active_time
   UNITS: " "
   DEPEND_0: epoch
+
 fifo_valid_events:
   <<: *default_uint32
   CATDESC: FIFO Valid Events
@@ -794,6 +898,7 @@ fifo_valid_events:
   LABLAXIS: fifo_valid_events
   UNITS: " "
   DEPEND_0: epoch
+
 pulser_events:
   <<: *default_uint32
   CATDESC: Pulser Events
@@ -801,6 +906,7 @@ pulser_events:
   LABLAXIS: pulser_events
   UNITS: " "
   DEPEND_0: epoch
+
 window_stop_coin:
   <<: *default_uint32
   CATDESC: Windowed Stop/Coin Coincidence
@@ -808,6 +914,7 @@ window_stop_coin:
   LABLAXIS: window_stop_coin
   UNITS: " "
   DEPEND_0: epoch
+
 start_left_window_stop_coin:
   <<: *default_uint32
   CATDESC: Start Left + Window Stop/Coin Coincidence
@@ -815,6 +922,7 @@ start_left_window_stop_coin:
   LABLAXIS: start_left_window_stop_coin
   UNITS: " "
   DEPEND_0: epoch
+
 start_right_window_stop_coin:
   <<: *default_uint32
   CATDESC: Start Right + Window Stop/Coin Coincidence
@@ -822,6 +930,7 @@ start_right_window_stop_coin:
   LABLAXIS: start_right_window_stop_coin
   UNITS: " "
   DEPEND_0: epoch
+
 timespinstart:
   <<: *default_uint32
   CATDESC: Spin start time (comparable to the Universal Spin Table).
@@ -829,6 +938,7 @@ timespinstart:
   LABLAXIS: spin start time
   UNITS: s
   DEPEND_0: epoch
+
 timespinstartsub:
   <<: *default_uint32
   CATDESC: Spin start time subseconds (comparable to the Universal Spin Table).
@@ -836,6 +946,7 @@ timespinstartsub:
   LABLAXIS: spin start time subseconds
   UNITS: ms
   DEPEND_0: epoch
+
 duration:
   <<: *default
   CATDESC: Spin duration.
@@ -843,6 +954,7 @@ duration:
   LABLAXIS: duration
   UNITS: s
   DEPEND_0: epoch
+
 spinnumber:
   <<: *default_uint32
   CATDESC: Spin number.
@@ -850,6 +962,7 @@ spinnumber:
   LABLAXIS: spin number
   UNITS: " "
   DEPEND_0: epoch
+
 timespindata:
     <<: *default_uint32
     # TODO: get more information about this variable
@@ -858,6 +971,7 @@ timespindata:
     LABLAXIS: spin data time
     UNITS: " "
     DEPEND_0: epoch
+
 spinperiod:
     <<: *default_uint32
     CATDESC: Spin period (equivalent to the Universal Spin Table).
@@ -865,6 +979,7 @@ spinperiod:
     LABLAXIS: spin_period
     UNITS: s
     DEPEND_0: epoch
+
 spinphase:
   <<: *default_uint32
   CATDESC: Spin Phase
@@ -872,6 +987,7 @@ spinphase:
   LABLAXIS: spinphase
   UNITS: degrees
   DEPEND_0: epoch
+
 spinperiodvalid:
   <<: *default_uint8
   CATDESC: Spin period valid bit
@@ -879,6 +995,7 @@ spinperiodvalid:
   LABLAXIS: spinperiodvalid
   UNITS: " "
   DEPEND_0: epoch
+
 spinphasevalid:
   <<: *default_uint8
   CATDESC: Spin phase valid bit
@@ -886,6 +1003,7 @@ spinphasevalid:
   LABLAXIS: spinphasevalid
   UNITS: " "
   DEPEND_0: epoch
+
 spinperiodsource:
   <<: *default_uint8
   CATDESC: Spin period source bit
@@ -893,6 +1011,7 @@ spinperiodsource:
   LABLAXIS: spinperiodsource
   UNITS: " "
   DEPEND_0: epoch
+
 catbedheaterflag:
   <<: *default_uint8
   CATDESC: Catbead heater flag
@@ -900,6 +1019,7 @@ catbedheaterflag:
   LABLAXIS: catbedheaterflag
   UNITS: " "
   DEPEND_0: epoch
+
 spare1:
   <<: *default_uint8
   CATDESC: Spare
@@ -907,6 +1027,7 @@ spare1:
   LABLAXIS: spare1
   UNITS: " "
   DEPEND_0: epoch
+
 ints:
   <<: *default_uint8
   CATDESC: Spins
@@ -914,6 +1035,7 @@ ints:
   LABLAXIS: ints
   UNITS: " "
   DEPEND_0: epoch
+
 intn1:
   <<: *default_uint8
   CATDESC: Integration Multiplier 1
@@ -921,6 +1043,7 @@ intn1:
   LABLAXIS: intn1
   UNITS: " "
   DEPEND_0: epoch
+
 intn2:
   <<: *default_uint8
   CATDESC: Integration Multiplier 2
@@ -928,6 +1051,7 @@ intn2:
   LABLAXIS: intn2
   UNITS: " "
   DEPEND_0: epoch
+
 spare2:
   <<: *default_uint8
   CATDESC: Reserved
@@ -935,6 +1059,7 @@ spare2:
   LABLAXIS: spare2
   UNITS: " "
   DEPEND_0: epoch
+
 hwmode:
   <<: *default_uint8
   CATDESC: Hardware mode
@@ -942,6 +1067,7 @@ hwmode:
   LABLAXIS: hwmode
   UNITS: " "
   DEPEND_0: epoch
+
 imcenb:
   <<: *default_uint8
   CATDESC: IMCENB mode
@@ -949,6 +1075,7 @@ imcenb:
   LABLAXIS: imcenb
   UNITS: " "
   DEPEND_0: epoch
+
 leftdeflectioncharge:
   <<: *default_uint8
   CATDESC: LEFTDEFLECTIONCHARGE mode
@@ -956,6 +1083,7 @@ leftdeflectioncharge:
   LABLAXIS: leftdeflectioncharge
   UNITS: " "
   DEPEND_0: epoch
+
 rightdeflectioncharge:
   <<: *default_uint8
   CATDESC: RIGHTDEFLECTIONCHARGE mode
@@ -963,6 +1091,7 @@ rightdeflectioncharge:
   LABLAXIS: rightdeflectioncharge
   UNITS: " "
   DEPEND_0: epoch
+
 spare3:
   <<: *default_uint8
   CATDESC: Spare
@@ -970,6 +1099,7 @@ spare3:
   LABLAXIS: spare3
   UNITS: " "
   DEPEND_0: epoch
+
 event_id:
   <<: *default_int64
   CATDESC: Calculated unique event IDs as 64-bit integers.
@@ -977,6 +1107,7 @@ event_id:
   LABLAXIS: event_id
   UNITS: " "
   DEPEND_0: epoch
+
 address:
   '<<': '*default_float32'
   CATDESC: Address
