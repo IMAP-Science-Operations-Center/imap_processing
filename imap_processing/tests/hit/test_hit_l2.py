@@ -226,11 +226,17 @@ def test_calculate_intensities_for_all_species():
     )
 
     # Assertions
-    assert np.allclose(l2_dataset["h"].values, expected_intensities_h.values), (
-        "Intensities mismatch for H"
+    (
+        np.testing.assert_allclose(
+            l2_dataset["h"].values, expected_intensities_h.values
+        ),
+        ("Intensities mismatch for H"),
     )
-    assert np.allclose(l2_dataset["ni"].values, expected_intensities_ni.values), (
-        "Intensities mismatch for He"
+    (
+        np.testing.assert_allclose(
+            l2_dataset["ni"].values, expected_intensities_ni.values
+        ),
+        ("Intensities mismatch for He"),
     )
 
 
@@ -292,8 +298,9 @@ def test_calculate_intensities_for_a_species():
     )
 
     # Assertions
-    assert np.allclose(l2_dataset["h"].values, expected_intensities.values), (
-        "Intensities mismatch"
+    (
+        np.testing.assert_allclose(l2_dataset["h"].values, expected_intensities.values),
+        ("Intensities mismatch"),
     )
 
 
@@ -329,8 +336,9 @@ def test_calculate_intensities():
     intensities_60 = calculate_intensities(rate, factors_60)
 
     # Assertions for 60 seconds
-    assert np.allclose(intensities_60.values, expected_intensities_60.values), (
-        "Intensities mismatch for integration_time = 60 seconds"
+    (
+        np.testing.assert_allclose(intensities_60, expected_intensities_60),
+        ("Intensities mismatch for integration_time = 60 seconds"),
     )
 
     # Test with 600 seconds
@@ -353,8 +361,11 @@ def test_calculate_intensities():
     intensities_600 = calculate_intensities(rate, factors_600)
 
     # Assertions for 600 seconds
-    assert np.allclose(intensities_600.values, expected_intensities_600.values), (
-        "Intensities mismatch for integration_time = 600 seconds"
+    (
+        np.testing.assert_allclose(
+            intensities_600.values, expected_intensities_600.values
+        ),
+        ("Intensities mismatch for integration_time = 600 seconds"),
     )
 
 
@@ -375,8 +386,8 @@ def test_add_systematic_uncertainties():
     # Assertions
     assert f"{particle}_sys_err_minus" in dataset.data_vars
     assert f"{particle}_sys_err_plus" in dataset.data_vars
-    assert np.all(dataset[f"{particle}_sys_err_minus"].values == 0)
-    assert np.all(dataset[f"{particle}_sys_err_plus"].values == 0)
+    np.testing.assert_array_equal(dataset[f"{particle}_sys_err_minus"].values, 0)
+    np.testing.assert_array_equal(dataset[f"{particle}_sys_err_plus"].values, 0)
     assert dataset[f"{particle}_sys_err_minus"].shape == (len(energy_ranges),)
     assert dataset[f"{particle}_sys_err_plus"].shape == (len(energy_ranges),)
 
