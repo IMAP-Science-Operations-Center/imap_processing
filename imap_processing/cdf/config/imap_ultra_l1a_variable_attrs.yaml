@@ -1105,8 +1105,6 @@ event_id:
   CATDESC: Calculated unique event IDs as 64-bit integers.
   FIELDNAM: event id
   LABLAXIS: event_id
-  UNITS: " "
-  DEPEND_0: epoch
 
 address:
   '<<': '*default_float32'
@@ -1115,6 +1113,7 @@ address:
   LABLAXIS: address
   UNITS: ' '
   DEPEND_0: epoch
+
 alarmcount:
   '<<': '*default_float32'
   CATDESC: Alarmcount
@@ -1122,6 +1121,7 @@ alarmcount:
   LABLAXIS: alarmcount
   UNITS: ' '
   DEPEND_0: epoch
+
 alarmid:
   '<<': '*default_float32'
   CATDESC: Alarmid
@@ -1129,6 +1129,7 @@ alarmid:
   LABLAXIS: alarmid
   UNITS: ' '
   DEPEND_0: epoch
+
 aux:
   '<<': '*default_float32'
   CATDESC: Aux
@@ -1136,6 +1137,7 @@ aux:
   LABLAXIS: aux
   UNITS: ' '
   DEPEND_0: epoch
+
 baselinechannel:
   '<<': '*default_float32'
   CATDESC: Baselinechannel
@@ -1143,6 +1145,7 @@ baselinechannel:
   LABLAXIS: baselinechannel
   UNITS: ' '
   DEPEND_0: epoch
+
 baselinesample:
   '<<': '*default_float32'
   CATDESC: Baselinesample
@@ -1150,6 +1153,7 @@ baselinesample:
   LABLAXIS: baselinesample
   UNITS: ' '
   DEPEND_0: epoch
+
 baselinestate:
   '<<': '*default_float32'
   CATDESC: Baselinestate
@@ -1157,6 +1161,7 @@ baselinestate:
   LABLAXIS: baselinestate
   UNITS: ' '
   DEPEND_0: epoch
+
 blockno:
   '<<': '*default_float32'
   CATDESC: Blockno
@@ -1164,6 +1169,7 @@ blockno:
   LABLAXIS: blockno
   UNITS: ' '
   DEPEND_0: epoch
+
 bottommcp_i:
   '<<': '*default_float32'
   CATDESC: Bottommcp i
@@ -1171,6 +1177,7 @@ bottommcp_i:
   LABLAXIS: bottommcp_i
   UNITS: ' '
   DEPEND_0: epoch
+
 bottommcp_i_hi:
   '<<': '*default_float32'
   CATDESC: Bottommcp i hi
@@ -1178,6 +1185,7 @@ bottommcp_i_hi:
   LABLAXIS: bottommcp_i_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 bottommcp_i_lo:
   '<<': '*default_float32'
   CATDESC: Bottommcp i lo
@@ -1185,6 +1193,7 @@ bottommcp_i_lo:
   LABLAXIS: bottommcp_i_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 bottommcp_v:
   '<<': '*default_float32'
   CATDESC: Bottommcp v
@@ -1192,6 +1201,7 @@ bottommcp_v:
   LABLAXIS: bottommcp_v
   UNITS: ' '
   DEPEND_0: epoch
+
 bottommcp_v_hi:
   '<<': '*default_float32'
   CATDESC: Bottommcp v hi
@@ -1199,6 +1209,7 @@ bottommcp_v_hi:
   LABLAXIS: bottommcp_v_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 bottommcp_v_lo:
   '<<': '*default_float32'
   CATDESC: Bottommcp v lo
@@ -1206,6 +1217,7 @@ bottommcp_v_lo:
   LABLAXIS: bottommcp_v_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 bottommcphvfault:
   '<<': '*default_float32'
   CATDESC: Bottommcphvfault
@@ -1213,6 +1225,7 @@ bottommcphvfault:
   LABLAXIS: bottommcphvfault
   UNITS: ' '
   DEPEND_0: epoch
+
 bottommcphvgoal:
   '<<': '*default_float32'
   CATDESC: Bottommcphvgoal
@@ -1220,6 +1233,7 @@ bottommcphvgoal:
   LABLAXIS: bottommcphvgoal
   UNITS: ' '
   DEPEND_0: epoch
+
 bottommcphvilim:
   '<<': '*default_float32'
   CATDESC: Bottommcphvilim
@@ -1227,6 +1241,7 @@ bottommcphvilim:
   LABLAXIS: bottommcphvilim
   UNITS: ' '
   DEPEND_0: epoch
+
 bottommcphvlim:
   '<<': '*default_float32'
   CATDESC: Bottommcphvlim
@@ -1234,6 +1249,7 @@ bottommcphvlim:
   LABLAXIS: bottommcphvlim
   UNITS: ' '
   DEPEND_0: epoch
+
 bottommcphvmonitor:
   '<<': '*default_float32'
   CATDESC: Bottommcphvmonitor
@@ -1241,6 +1257,7 @@ bottommcphvmonitor:
   LABLAXIS: bottommcphvmonitor
   UNITS: ' '
   DEPEND_0: epoch
+
 bottommcphvtrip:
   '<<': '*default_float32'
   CATDESC: Bottommcphvtrip
@@ -1248,6 +1265,7 @@ bottommcphvtrip:
   LABLAXIS: bottommcphvtrip
   UNITS: ' '
   DEPEND_0: epoch
+
 bottommcphvv:
   '<<': '*default_float32'
   CATDESC: Bottommcphvv
@@ -1255,6 +1273,7 @@ bottommcphvv:
   LABLAXIS: bottommcphvv
   UNITS: ' '
   DEPEND_0: epoch
+
 cause:
   '<<': '*default_float32'
   CATDESC: Cause
@@ -1262,6 +1281,7 @@ cause:
   LABLAXIS: cause
   UNITS: ' '
   DEPEND_0: epoch
+
 checksums:
   '<<': '*default_float32'
   CATDESC: Checksums
@@ -1269,6 +1289,7 @@ checksums:
   LABLAXIS: checksums
   UNITS: ' '
   DEPEND_0: epoch
+
 cmdexec:
   '<<': '*default_float32'
   CATDESC: Cmdexec
@@ -1276,6 +1297,7 @@ cmdexec:
   LABLAXIS: cmdexec
   UNITS: ' '
   DEPEND_0: epoch
+
 cmdreject:
   '<<': '*default_float32'
   CATDESC: Cmdreject
@@ -1283,6 +1305,7 @@ cmdreject:
   LABLAXIS: cmdreject
   UNITS: ' '
   DEPEND_0: epoch
+
 coderam:
   '<<': '*default_float32'
   CATDESC: Coderam
@@ -1290,6 +1313,7 @@ coderam:
   LABLAXIS: coderam
   UNITS: ' '
   DEPEND_0: epoch
+
 coinbnautozero:
   '<<': '*default_float32'
   CATDESC: Coinbnautozero
@@ -1297,6 +1321,7 @@ coinbnautozero:
   LABLAXIS: coinbnautozero
   UNITS: ' '
   DEPEND_0: epoch
+
 coinbncfdthresh:
   '<<': '*default_float32'
   CATDESC: Coinbncfdthresh
@@ -1304,6 +1329,7 @@ coinbncfdthresh:
   LABLAXIS: coinbncfdthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 coinbsautozero:
   '<<': '*default_float32'
   CATDESC: Coinbsautozero
@@ -1311,6 +1337,7 @@ coinbsautozero:
   LABLAXIS: coinbsautozero
   UNITS: ' '
   DEPEND_0: epoch
+
 coinbscfdthresh:
   '<<': '*default_float32'
   CATDESC: Coinbscfdthresh
@@ -1318,6 +1345,7 @@ coinbscfdthresh:
   LABLAXIS: coinbscfdthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 coindautozero:
   '<<': '*default_float32'
   CATDESC: Coindautozero
@@ -1325,6 +1353,7 @@ coindautozero:
   LABLAXIS: coindautozero
   UNITS: ' '
   DEPEND_0: epoch
+
 coindcfdthresh:
   '<<': '*default_float32'
   CATDESC: Coindcfdthresh
@@ -1332,6 +1361,7 @@ coindcfdthresh:
   LABLAXIS: coindcfdthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 coindphthresh:
   '<<': '*default_float32'
   CATDESC: Coindphthresh
@@ -1339,6 +1369,7 @@ coindphthresh:
   LABLAXIS: coindphthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 coindpulsedelay:
   '<<': '*default_float32'
   CATDESC: Coindpulsedelay
@@ -1346,6 +1377,7 @@ coindpulsedelay:
   LABLAXIS: coindpulsedelay
   UNITS: ' '
   DEPEND_0: epoch
+
 coindpulsestate:
   '<<': '*default_float32'
   CATDESC: Coindpulsestate
@@ -1353,6 +1385,7 @@ coindpulsestate:
   LABLAXIS: coindpulsestate
   UNITS: ' '
   DEPEND_0: epoch
+
 coinratehighthresh:
   '<<': '*default_float32'
   CATDESC: Coinratehighthresh
@@ -1360,6 +1393,7 @@ coinratehighthresh:
   LABLAXIS: coinratehighthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 cointnautozero:
   '<<': '*default_float32'
   CATDESC: Cointnautozero
@@ -1367,6 +1401,7 @@ cointnautozero:
   LABLAXIS: cointnautozero
   UNITS: ' '
   DEPEND_0: epoch
+
 cointncfdthresh:
   '<<': '*default_float32'
   CATDESC: Cointncfdthresh
@@ -1374,6 +1409,7 @@ cointncfdthresh:
   LABLAXIS: cointncfdthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 cointsautozero:
   '<<': '*default_float32'
   CATDESC: Cointsautozero
@@ -1381,6 +1417,7 @@ cointsautozero:
   LABLAXIS: cointsautozero
   UNITS: ' '
   DEPEND_0: epoch
+
 cointscfdthresh:
   '<<': '*default_float32'
   CATDESC: Cointscfdthresh
@@ -1388,6 +1425,7 @@ cointscfdthresh:
   LABLAXIS: cointscfdthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 compdata:
   '<<': '*default_float32'
   CATDESC: Compdata
@@ -1395,6 +1433,7 @@ compdata:
   LABLAXIS: compdata
   UNITS: ' '
   DEPEND_0: epoch
+
 crc_value:
   '<<': '*default_float32'
   CATDESC: Crc value
@@ -1402,6 +1441,7 @@ crc_value:
   LABLAXIS: crc_value
   UNITS: ' '
   DEPEND_0: epoch
+
 deflhvdiscthresh:
   '<<': '*default_float32'
   CATDESC: Deflhvdiscthresh
@@ -1409,6 +1449,7 @@ deflhvdiscthresh:
   LABLAXIS: deflhvdiscthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 deflhvrampdownrate:
   '<<': '*default_float32'
   CATDESC: Deflhvrampdownrate
@@ -1416,6 +1457,7 @@ deflhvrampdownrate:
   LABLAXIS: deflhvrampdownrate
   UNITS: ' '
   DEPEND_0: epoch
+
 deflhvrampuprate:
   '<<': '*default_float32'
   CATDESC: Deflhvrampuprate
@@ -1423,6 +1465,7 @@ deflhvrampuprate:
   LABLAXIS: deflhvrampuprate
   UNITS: ' '
   DEPEND_0: epoch
+
 deflhvsafelim:
   '<<': '*default_float32'
   CATDESC: Deflhvsafelim
@@ -1430,6 +1473,7 @@ deflhvsafelim:
   LABLAXIS: deflhvsafelim
   UNITS: ' '
   DEPEND_0: epoch
+
 diagnosticmode:
   '<<': '*default_float32'
   CATDESC: Diagnosticmode
@@ -1437,6 +1481,7 @@ diagnosticmode:
   LABLAXIS: diagnosticmode
   UNITS: ' '
   DEPEND_0: epoch
+
 dumpdata:
   '<<': '*default_float32'
   CATDESC: Dumpdata
@@ -1444,6 +1489,7 @@ dumpdata:
   LABLAXIS: dumpdata
   UNITS: ' '
   DEPEND_0: epoch
+
 dumplength:
   '<<': '*default_float32'
   CATDESC: Dumplength
@@ -1451,6 +1497,7 @@ dumplength:
   LABLAXIS: dumplength
   UNITS: ' '
   DEPEND_0: epoch
+
 enaextofhighangcadence:
   '<<': '*default_float32'
   CATDESC: Enaextofhighangcadence
@@ -1458,6 +1505,7 @@ enaextofhighangcadence:
   LABLAXIS: enaextofhighangcadence
   UNITS: ' '
   DEPEND_0: epoch
+
 enaextofhighangstate:
   '<<': '*default_float32'
   CATDESC: Enaextofhighangstate
@@ -1465,6 +1513,7 @@ enaextofhighangstate:
   LABLAXIS: enaextofhighangstate
   UNITS: ' '
   DEPEND_0: epoch
+
 enaphxtofhighangcadence:
   '<<': '*default_float32'
   CATDESC: Enaphxtofhighangcadence
@@ -1472,6 +1521,7 @@ enaphxtofhighangcadence:
   LABLAXIS: enaphxtofhighangcadence
   UNITS: ' '
   DEPEND_0: epoch
+
 enaphxtofhighangstate:
   '<<': '*default_float32'
   CATDESC: Enaphxtofhighangstate
@@ -1479,6 +1529,7 @@ enaphxtofhighangstate:
   LABLAXIS: enaphxtofhighangstate
   UNITS: ' '
   DEPEND_0: epoch
+
 enaphxtofhighegycadence:
   '<<': '*default_float32'
   CATDESC: Enaphxtofhighegycadence
@@ -1486,6 +1537,7 @@ enaphxtofhighegycadence:
   LABLAXIS: enaphxtofhighegycadence
   UNITS: ' '
   DEPEND_0: epoch
+
 enaphxtofhighegystate:
   '<<': '*default_float32'
   CATDESC: Enaphxtofhighegystate
@@ -1493,6 +1545,7 @@ enaphxtofhighegystate:
   LABLAXIS: enaphxtofhighegystate
   UNITS: ' '
   DEPEND_0: epoch
+
 enaphxtofhightimecadence:
   '<<': '*default_float32'
   CATDESC: Enaphxtofhightimecadence
@@ -1500,6 +1553,7 @@ enaphxtofhightimecadence:
   LABLAXIS: enaphxtofhightimecadence
   UNITS: ' '
   DEPEND_0: epoch
+
 enaphxtofhightimestate:
   '<<': '*default_float32'
   CATDESC: Enaphxtofhightimestate
@@ -1507,6 +1561,7 @@ enaphxtofhightimestate:
   LABLAXIS: enaphxtofhightimestate
   UNITS: ' '
   DEPEND_0: epoch
+
 energymodeegystate:
   '<<': '*default_float32'
   CATDESC: Energymodeegystate
@@ -1514,6 +1569,7 @@ energymodeegystate:
   LABLAXIS: energymodeegystate
   UNITS: ' '
   DEPEND_0: epoch
+
 energymodeegytrg:
   '<<': '*default_float32'
   CATDESC: Energymodeegytrg
@@ -1521,6 +1577,7 @@ energymodeegytrg:
   LABLAXIS: energymodeegytrg
   UNITS: ' '
   DEPEND_0: epoch
+
 energymodephstate:
   '<<': '*default_float32'
   CATDESC: Energymodephstate
@@ -1528,6 +1585,7 @@ energymodephstate:
   LABLAXIS: energymodephstate
   UNITS: ' '
   DEPEND_0: epoch
+
 energymodephtrg:
   '<<': '*default_float32'
   CATDESC: Energymodephtrg
@@ -1535,6 +1593,7 @@ energymodephtrg:
   LABLAXIS: energymodephtrg
   UNITS: ' '
   DEPEND_0: epoch
+
 energyratescadence:
   '<<': '*default_float32'
   CATDESC: Energyratescadence
@@ -1542,6 +1601,7 @@ energyratescadence:
   LABLAXIS: energyratescadence
   UNITS: ' '
   DEPEND_0: epoch
+
 energyratesstate:
   '<<': '*default_float32'
   CATDESC: Energyratesstate
@@ -1549,6 +1609,7 @@ energyratesstate:
   LABLAXIS: energyratesstate
   UNITS: ' '
   DEPEND_0: epoch
+
 energyrawevents:
   '<<': '*default_float32'
   CATDESC: Energyrawevents
@@ -1556,6 +1617,7 @@ energyrawevents:
   LABLAXIS: energyrawevents
   UNITS: ' '
   DEPEND_0: epoch
+
 energyspectracadence:
   '<<': '*default_float32'
   CATDESC: Energyspectracadence
@@ -1563,6 +1625,7 @@ energyspectracadence:
   LABLAXIS: energyspectracadence
   UNITS: ' '
   DEPEND_0: epoch
+
 energyspectrastate:
   '<<': '*default_float32'
   CATDESC: Energyspectrastate
@@ -1570,6 +1633,7 @@ energyspectrastate:
   LABLAXIS: energyspectrastate
   UNITS: ' '
   DEPEND_0: epoch
+
 etofbtoff:
   '<<': '*default_float32'
   CATDESC: Etofbtoff
@@ -1577,6 +1641,7 @@ etofbtoff:
   LABLAXIS: etofbtoff
   UNITS: ' '
   DEPEND_0: epoch
+
 etofmax:
   '<<': '*default_float32'
   CATDESC: Etofmax
@@ -1584,6 +1649,7 @@ etofmax:
   LABLAXIS: etofmax
   UNITS: ' '
   DEPEND_0: epoch
+
 etofmin:
   '<<': '*default_float32'
   CATDESC: Etofmin
@@ -1591,6 +1657,7 @@ etofmin:
   LABLAXIS: etofmin
   UNITS: ' '
   DEPEND_0: epoch
+
 etofoff1:
   '<<': '*default_float32'
   CATDESC: Etofoff1
@@ -1598,6 +1665,7 @@ etofoff1:
   LABLAXIS: etofoff1
   UNITS: ' '
   DEPEND_0: epoch
+
 etofoff2:
   '<<': '*default_float32'
   CATDESC: Etofoff2
@@ -1605,6 +1673,7 @@ etofoff2:
   LABLAXIS: etofoff2
   UNITS: ' '
   DEPEND_0: epoch
+
 etofsc:
   '<<': '*default_float32'
   CATDESC: Etofsc
@@ -1612,6 +1681,7 @@ etofsc:
   LABLAXIS: etofsc
   UNITS: ' '
   DEPEND_0: epoch
+
 etofslope1:
   '<<': '*default_float32'
   CATDESC: Etofslope1
@@ -1619,6 +1689,7 @@ etofslope1:
   LABLAXIS: etofslope1
   UNITS: ' '
   DEPEND_0: epoch
+
 etofslope2:
   '<<': '*default_float32'
   CATDESC: Etofslope2
@@ -1626,6 +1697,7 @@ etofslope2:
   LABLAXIS: etofslope2
   UNITS: ' '
   DEPEND_0: epoch
+
 etoftpoff:
   '<<': '*default_float32'
   CATDESC: Etoftpoff
@@ -1633,6 +1705,7 @@ etoftpoff:
   LABLAXIS: etoftpoff
   UNITS: ' '
   DEPEND_0: epoch
+
 eventcontrol_spare:
   '<<': '*default_float32'
   CATDESC: Eventcontrol spare
@@ -1640,6 +1713,7 @@ eventcontrol_spare:
   LABLAXIS: eventcontrol_spare
   UNITS: ' '
   DEPEND_0: epoch
+
 eventdata:
   '<<': '*default_float32'
   CATDESC: Eventdata
@@ -1647,6 +1721,7 @@ eventdata:
   LABLAXIS: eventdata
   UNITS: ' '
   DEPEND_0: epoch
+
 firstmacro:
   '<<': '*default_float32'
   CATDESC: Firstmacro
@@ -1654,6 +1729,7 @@ firstmacro:
   LABLAXIS: firstmacro
   UNITS: ' '
   DEPEND_0: epoch
+
 front2kv_v:
   '<<': '*default_float32'
   CATDESC: Front2kv v
@@ -1661,6 +1737,7 @@ front2kv_v:
   LABLAXIS: front2kv_v
   UNITS: ' '
   DEPEND_0: epoch
+
 front2kv_v_hi:
   '<<': '*default_float32'
   CATDESC: Front2kv v hi
@@ -1668,6 +1745,7 @@ front2kv_v_hi:
   LABLAXIS: front2kv_v_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 front2kv_v_lo:
   '<<': '*default_float32'
   CATDESC: Front2kv v lo
@@ -1675,6 +1753,7 @@ front2kv_v_lo:
   LABLAXIS: front2kv_v_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 frontmcp_i:
   '<<': '*default_float32'
   CATDESC: Frontmcp i
@@ -1682,6 +1761,7 @@ frontmcp_i:
   LABLAXIS: frontmcp_i
   UNITS: ' '
   DEPEND_0: epoch
+
 frontmcp_i_hi:
   '<<': '*default_float32'
   CATDESC: Frontmcp i hi
@@ -1689,6 +1769,7 @@ frontmcp_i_hi:
   LABLAXIS: frontmcp_i_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 frontmcp_i_lo:
   '<<': '*default_float32'
   CATDESC: Frontmcp i lo
@@ -1696,6 +1777,7 @@ frontmcp_i_lo:
   LABLAXIS: frontmcp_i_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 frontmcp_t:
   '<<': '*default_float32'
   CATDESC: Frontmcp t
@@ -1703,6 +1785,7 @@ frontmcp_t:
   LABLAXIS: frontmcp_t
   UNITS: ' '
   DEPEND_0: epoch
+
 frontmcp_t_hi:
   '<<': '*default_float32'
   CATDESC: Frontmcp t hi
@@ -1710,6 +1793,7 @@ frontmcp_t_hi:
   LABLAXIS: frontmcp_t_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 frontmcp_t_lo:
   '<<': '*default_float32'
   CATDESC: Frontmcp t lo
@@ -1717,6 +1801,7 @@ frontmcp_t_lo:
   LABLAXIS: frontmcp_t_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 frontmcp_v:
   '<<': '*default_float32'
   CATDESC: Frontmcp v
@@ -1724,6 +1809,7 @@ frontmcp_v:
   LABLAXIS: frontmcp_v
   UNITS: ' '
   DEPEND_0: epoch
+
 frontmcp_v_hi:
   '<<': '*default_float32'
   CATDESC: Frontmcp v hi
@@ -1731,6 +1817,7 @@ frontmcp_v_hi:
   LABLAXIS: frontmcp_v_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 frontmcp_v_lo:
   '<<': '*default_float32'
   CATDESC: Frontmcp v lo
@@ -1738,6 +1825,7 @@ frontmcp_v_lo:
   LABLAXIS: frontmcp_v_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 frontmcphvfault:
   '<<': '*default_float32'
   CATDESC: Frontmcphvfault
@@ -1745,6 +1833,7 @@ frontmcphvfault:
   LABLAXIS: frontmcphvfault
   UNITS: ' '
   DEPEND_0: epoch
+
 frontmcphvgoal:
   '<<': '*default_float32'
   CATDESC: Frontmcphvgoal
@@ -1752,6 +1841,7 @@ frontmcphvgoal:
   LABLAXIS: frontmcphvgoal
   UNITS: ' '
   DEPEND_0: epoch
+
 frontmcphvilim:
   '<<': '*default_float32'
   CATDESC: Frontmcphvilim
@@ -1759,6 +1849,7 @@ frontmcphvilim:
   LABLAXIS: frontmcphvilim
   UNITS: ' '
   DEPEND_0: epoch
+
 frontmcphvlim:
   '<<': '*default_float32'
   CATDESC: Frontmcphvlim
@@ -1766,6 +1857,7 @@ frontmcphvlim:
   LABLAXIS: frontmcphvlim
   UNITS: ' '
   DEPEND_0: epoch
+
 frontmcphvmonitor:
   '<<': '*default_float32'
   CATDESC: Frontmcphvmonitor
@@ -1773,6 +1865,7 @@ frontmcphvmonitor:
   LABLAXIS: frontmcphvmonitor
   UNITS: ' '
   DEPEND_0: epoch
+
 frontmcphvsafemult:
   '<<': '*default_float32'
   CATDESC: Frontmcphvsafemult
@@ -1780,6 +1873,7 @@ frontmcphvsafemult:
   LABLAXIS: frontmcphvsafemult
   UNITS: ' '
   DEPEND_0: epoch
+
 frontmcphvtrip:
   '<<': '*default_float32'
   CATDESC: Frontmcphvtrip
@@ -1787,6 +1881,7 @@ frontmcphvtrip:
   LABLAXIS: frontmcphvtrip
   UNITS: ' '
   DEPEND_0: epoch
+
 frontmcphvv:
   '<<': '*default_float32'
   CATDESC: Frontmcphvv
@@ -1794,6 +1889,7 @@ frontmcphvv:
   LABLAXIS: frontmcphvv
   UNITS: ' '
   DEPEND_0: epoch
+
 hvclock:
   '<<': '*default_float32'
   CATDESC: Hvclock
@@ -1801,6 +1897,7 @@ hvclock:
   LABLAXIS: hvclock
   UNITS: ' '
   DEPEND_0: epoch
+
 hvfullstate:
   '<<': '*default_float32'
   CATDESC: Hvfullstate
@@ -1808,6 +1905,7 @@ hvfullstate:
   LABLAXIS: hvfullstate
   UNITS: ' '
   DEPEND_0: epoch
+
 hvovercurrentcontrol_spare:
   '<<': '*default_float32'
   CATDESC: Hvovercurrentcontrol spare
@@ -1815,6 +1913,7 @@ hvovercurrentcontrol_spare:
   LABLAXIS: hvovercurrentcontrol_spare
   UNITS: ' '
   DEPEND_0: epoch
+
 hvovercurrentstatus_spare:
   '<<': '*default_float32'
   CATDESC: Hvovercurrentstatus spare
@@ -1822,6 +1921,7 @@ hvovercurrentstatus_spare:
   LABLAXIS: hvovercurrentstatus_spare
   UNITS: ' '
   DEPEND_0: epoch
+
 hvplugstate:
   '<<': '*default_float32'
   CATDESC: Hvplugstate
@@ -1829,6 +1929,7 @@ hvplugstate:
   LABLAXIS: hvplugstate
   UNITS: ' '
   DEPEND_0: epoch
+
 hvpsp15v_v:
   '<<': '*default_float32'
   CATDESC: Hvpsp15v v
@@ -1836,6 +1937,7 @@ hvpsp15v_v:
   LABLAXIS: hvpsp15v_v
   UNITS: ' '
   DEPEND_0: epoch
+
 hvpsp15v_v_hi:
   '<<': '*default_float32'
   CATDESC: Hvpsp15v v hi
@@ -1843,6 +1945,7 @@ hvpsp15v_v_hi:
   LABLAXIS: hvpsp15v_v_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 hvpsp15v_v_lo:
   '<<': '*default_float32'
   CATDESC: Hvpsp15v v lo
@@ -1850,6 +1953,7 @@ hvpsp15v_v_lo:
   LABLAXIS: hvpsp15v_v_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 hvpsp3p3v_v:
   '<<': '*default_float32'
   CATDESC: Hvpsp3p3v v
@@ -1857,6 +1961,7 @@ hvpsp3p3v_v:
   LABLAXIS: hvpsp3p3v_v
   UNITS: ' '
   DEPEND_0: epoch
+
 hvpsp3p3v_v_hi:
   '<<': '*default_float32'
   CATDESC: Hvpsp3p3v v hi
@@ -1864,6 +1969,7 @@ hvpsp3p3v_v_hi:
   LABLAXIS: hvpsp3p3v_v_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 hvpsp3p3v_v_lo:
   '<<': '*default_float32'
   CATDESC: Hvpsp3p3v v lo
@@ -1871,6 +1977,7 @@ hvpsp3p3v_v_lo:
   LABLAXIS: hvpsp3p3v_v_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 hvstate:
   '<<': '*default_float32'
   CATDESC: Hvstate
@@ -1878,6 +1985,7 @@ hvstate:
   LABLAXIS: hvstate
   UNITS: ' '
   DEPEND_0: epoch
+
 id:
   '<<': '*default_float32'
   CATDESC: Id
@@ -1885,6 +1993,7 @@ id:
   LABLAXIS: id
   UNITS: ' '
   DEPEND_0: epoch
+
 identity:
   '<<': '*default_float32'
   CATDESC: Identity
@@ -1892,6 +2001,7 @@ identity:
   LABLAXIS: identity
   UNITS: ' '
   DEPEND_0: epoch
+
 imagemodedblreq:
   '<<': '*default_float32'
   CATDESC: Imagemodedblreq
@@ -1899,6 +2009,7 @@ imagemodedblreq:
   LABLAXIS: imagemodedblreq
   UNITS: ' '
   DEPEND_0: epoch
+
 imagemodedblstate:
   '<<': '*default_float32'
   CATDESC: Imagemodedblstate
@@ -1906,6 +2017,7 @@ imagemodedblstate:
   LABLAXIS: imagemodedblstate
   UNITS: ' '
   DEPEND_0: epoch
+
 imagemodemulrej:
   '<<': '*default_float32'
   CATDESC: Imagemodemulrej
@@ -1913,6 +2025,7 @@ imagemodemulrej:
   LABLAXIS: imagemodemulrej
   UNITS: ' '
   DEPEND_0: epoch
+
 imagemodephreq:
   '<<': '*default_float32'
   CATDESC: Imagemodephreq
@@ -1920,6 +2033,7 @@ imagemodephreq:
   LABLAXIS: imagemodephreq
   UNITS: ' '
   DEPEND_0: epoch
+
 imagemodepwrej:
   '<<': '*default_float32'
   CATDESC: Imagemodepwrej
@@ -1927,6 +2041,7 @@ imagemodepwrej:
   LABLAXIS: imagemodepwrej
   UNITS: ' '
   DEPEND_0: epoch
+
 imagemodestartlfpwthresh:
   '<<': '*default_float32'
   CATDESC: Imagemodestartlfpwthresh
@@ -1934,6 +2049,7 @@ imagemodestartlfpwthresh:
   LABLAXIS: imagemodestartlfpwthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 imagemodestartrfpwthresh:
   '<<': '*default_float32'
   CATDESC: Imagemodestartrfpwthresh
@@ -1941,6 +2057,7 @@ imagemodestartrfpwthresh:
   LABLAXIS: imagemodestartrfpwthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 imagemodetimreq:
   '<<': '*default_float32'
   CATDESC: Imagemodetimreq
@@ -1948,6 +2065,7 @@ imagemodetimreq:
   LABLAXIS: imagemodetimreq
   UNITS: ' '
   DEPEND_0: epoch
+
 imagemodetimstate:
   '<<': '*default_float32'
   CATDESC: Imagemodetimstate
@@ -1955,6 +2073,7 @@ imagemodetimstate:
   LABLAXIS: imagemodetimstate
   UNITS: ' '
   DEPEND_0: epoch
+
 imagepriority1events:
   '<<': '*default_float32'
   CATDESC: Imagepriority1events
@@ -1962,6 +2081,7 @@ imagepriority1events:
   LABLAXIS: imagepriority1events
   UNITS: ' '
   DEPEND_0: epoch
+
 imagepriority2events:
   '<<': '*default_float32'
   CATDESC: Imagepriority2events
@@ -1969,6 +2089,7 @@ imagepriority2events:
   LABLAXIS: imagepriority2events
   UNITS: ' '
   DEPEND_0: epoch
+
 imagepriority3events:
   '<<': '*default_float32'
   CATDESC: Imagepriority3events
@@ -1976,6 +2097,7 @@ imagepriority3events:
   LABLAXIS: imagepriority3events
   UNITS: ' '
   DEPEND_0: epoch
+
 imagepriority4events:
   '<<': '*default_float32'
   CATDESC: Imagepriority4events
@@ -1983,6 +2105,7 @@ imagepriority4events:
   LABLAXIS: imagepriority4events
   UNITS: ' '
   DEPEND_0: epoch
+
 imageratescadence:
   '<<': '*default_float32'
   CATDESC: Imageratescadence
@@ -1990,6 +2113,7 @@ imageratescadence:
   LABLAXIS: imageratescadence
   UNITS: ' '
   DEPEND_0: epoch
+
 imageratesstate:
   '<<': '*default_float32'
   CATDESC: Imageratesstate
@@ -1997,6 +2121,7 @@ imageratesstate:
   LABLAXIS: imageratesstate
   UNITS: ' '
   DEPEND_0: epoch
+
 imagerawevents:
   '<<': '*default_float32'
   CATDESC: Imagerawevents
@@ -2004,6 +2129,7 @@ imagerawevents:
   LABLAXIS: imagerawevents
   UNITS: ' '
   DEPEND_0: epoch
+
 imcstate:
   '<<': '*default_float32'
   CATDESC: Imcstate
@@ -2011,6 +2137,7 @@ imcstate:
   LABLAXIS: imcstate
   UNITS: ' '
   DEPEND_0: epoch
+
 instrumentcontrol_spare:
   '<<': '*default_float32'
   CATDESC: Instrumentcontrol spare
@@ -2018,6 +2145,7 @@ instrumentcontrol_spare:
   LABLAXIS: instrumentcontrol_spare
   UNITS: ' '
   DEPEND_0: epoch
+
 instrumentstatus_spare:
   '<<': '*default_float32'
   CATDESC: Instrumentstatus spare
@@ -2025,6 +2153,7 @@ instrumentstatus_spare:
   LABLAXIS: instrumentstatus_spare
   UNITS: ' '
   DEPEND_0: epoch
+
 intmultipliern1:
   '<<': '*default_float32'
   CATDESC: Intmultipliern1
@@ -2032,6 +2161,7 @@ intmultipliern1:
   LABLAXIS: intmultipliern1
   UNITS: ' '
   DEPEND_0: epoch
+
 intmultipliern2:
   '<<': '*default_float32'
   CATDESC: Intmultipliern2
@@ -2039,6 +2169,7 @@ intmultipliern2:
   LABLAXIS: intmultipliern2
   UNITS: ' '
   DEPEND_0: epoch
+
 ionextofhighegycadence:
   '<<': '*default_float32'
   CATDESC: Ionextofhighegycadence
@@ -2046,6 +2177,7 @@ ionextofhighegycadence:
   LABLAXIS: ionextofhighegycadence
   UNITS: ' '
   DEPEND_0: epoch
+
 ionextofhighegystate:
   '<<': '*default_float32'
   CATDESC: Ionextofhighegystate
@@ -2053,6 +2185,7 @@ ionextofhighegystate:
   LABLAXIS: ionextofhighegystate
   UNITS: ' '
   DEPEND_0: epoch
+
 ionextofhightimecadence:
   '<<': '*default_float32'
   CATDESC: Ionextofhightimecadence
@@ -2060,6 +2193,7 @@ ionextofhightimecadence:
   LABLAXIS: ionextofhightimecadence
   UNITS: ' '
   DEPEND_0: epoch
+
 ionextofhightimestate:
   '<<': '*default_float32'
   CATDESC: Ionextofhightimestate
@@ -2067,6 +2201,7 @@ ionextofhightimestate:
   LABLAXIS: ionextofhightimestate
   UNITS: ' '
   DEPEND_0: epoch
+
 lastmacro:
   '<<': '*default_float32'
   CATDESC: Lastmacro
@@ -2074,6 +2209,7 @@ lastmacro:
   LABLAXIS: lastmacro
   UNITS: ' '
   DEPEND_0: epoch
+
 leftdeflection_v:
   '<<': '*default_float32'
   CATDESC: Leftdeflection v
@@ -2081,6 +2217,7 @@ leftdeflection_v:
   LABLAXIS: leftdeflection_v
   UNITS: ' '
   DEPEND_0: epoch
+
 leftdeflection_v_hi:
   '<<': '*default_float32'
   CATDESC: Leftdeflection v hi
@@ -2088,6 +2225,7 @@ leftdeflection_v_hi:
   LABLAXIS: leftdeflection_v_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 leftdeflection_v_lo:
   '<<': '*default_float32'
   CATDESC: Leftdeflection v lo
@@ -2095,6 +2233,7 @@ leftdeflection_v_lo:
   LABLAXIS: leftdeflection_v_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 leftdeflectionsupply_p:
   '<<': '*default_float32'
   CATDESC: Leftdeflectionsupply p
@@ -2102,6 +2241,7 @@ leftdeflectionsupply_p:
   LABLAXIS: leftdeflectionsupply_p
   UNITS: ' '
   DEPEND_0: epoch
+
 leftdeflectionsupply_p_hi:
   '<<': '*default_float32'
   CATDESC: Leftdeflectionsupply p hi
@@ -2109,6 +2249,7 @@ leftdeflectionsupply_p_hi:
   LABLAXIS: leftdeflectionsupply_p_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 leftdeflectionsupply_p_lo:
   '<<': '*default_float32'
   CATDESC: Leftdeflectionsupply p lo
@@ -2116,6 +2257,7 @@ leftdeflectionsupply_p_lo:
   LABLAXIS: leftdeflectionsupply_p_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 leftdfldischrate:
   '<<': '*default_float32'
   CATDESC: Leftdfldischrate
@@ -2123,6 +2265,7 @@ leftdfldischrate:
   LABLAXIS: leftdfldischrate
   UNITS: ' '
   DEPEND_0: epoch
+
 leftdfldischrate_hi:
   '<<': '*default_float32'
   CATDESC: Leftdfldischrate hi
@@ -2130,6 +2273,7 @@ leftdfldischrate_hi:
   LABLAXIS: leftdfldischrate_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 leftdfldischrate_lo:
   '<<': '*default_float32'
   CATDESC: Leftdfldischrate lo
@@ -2137,6 +2281,7 @@ leftdfldischrate_lo:
   LABLAXIS: leftdfldischrate_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 leftdfldischratelim:
   '<<': '*default_float32'
   CATDESC: Leftdfldischratelim
@@ -2144,6 +2289,7 @@ leftdfldischratelim:
   LABLAXIS: leftdfldischratelim
   UNITS: ' '
   DEPEND_0: epoch
+
 leftdflhvgoal:
   '<<': '*default_float32'
   CATDESC: Leftdflhvgoal
@@ -2151,6 +2297,7 @@ leftdflhvgoal:
   LABLAXIS: leftdflhvgoal
   UNITS: ' '
   DEPEND_0: epoch
+
 leftdflhvlim:
   '<<': '*default_float32'
   CATDESC: Leftdflhvlim
@@ -2158,6 +2305,7 @@ leftdflhvlim:
   LABLAXIS: leftdflhvlim
   UNITS: ' '
   DEPEND_0: epoch
+
 leftdflhvv:
   '<<': '*default_float32'
   CATDESC: Leftdflhvv
@@ -2165,6 +2313,7 @@ leftdflhvv:
   LABLAXIS: leftdflhvv
   UNITS: ' '
   DEPEND_0: epoch
+
 leftshutter_t:
   '<<': '*default_float32'
   CATDESC: Leftshutter t
@@ -2172,6 +2321,7 @@ leftshutter_t:
   LABLAXIS: leftshutter_t
   UNITS: ' '
   DEPEND_0: epoch
+
 leftshutter_t_hi:
   '<<': '*default_float32'
   CATDESC: Leftshutter t hi
@@ -2179,6 +2329,7 @@ leftshutter_t_hi:
   LABLAXIS: leftshutter_t_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 leftshutter_t_lo:
   '<<': '*default_float32'
   CATDESC: Leftshutter t lo
@@ -2186,6 +2337,7 @@ leftshutter_t_lo:
   LABLAXIS: leftshutter_t_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 leftshutterhomesteps:
   '<<': '*default_float32'
   CATDESC: Leftshutterhomesteps
@@ -2193,6 +2345,7 @@ leftshutterhomesteps:
   LABLAXIS: leftshutterhomesteps
   UNITS: ' '
   DEPEND_0: epoch
+
 leftshutterstep:
   '<<': '*default_float32'
   CATDESC: Leftshutterstep
@@ -2200,6 +2353,7 @@ leftshutterstep:
   LABLAXIS: leftshutterstep
   UNITS: ' '
   DEPEND_0: epoch
+
 leftshuttertt:
   '<<': '*default_float32'
   CATDESC: Leftshuttertt
@@ -2207,6 +2361,7 @@ leftshuttertt:
   LABLAXIS: leftshuttertt
   UNITS: ' '
   DEPEND_0: epoch
+
 looback0delay:
   '<<': '*default_float32'
   CATDESC: Looback0delay
@@ -2214,6 +2369,7 @@ looback0delay:
   LABLAXIS: looback0delay
   UNITS: ' '
   DEPEND_0: epoch
+
 looback1delay:
   '<<': '*default_float32'
   CATDESC: Looback1delay
@@ -2221,6 +2377,7 @@ looback1delay:
   LABLAXIS: looback1delay
   UNITS: ' '
   DEPEND_0: epoch
+
 looback2delay:
   '<<': '*default_float32'
   CATDESC: Looback2delay
@@ -2228,6 +2385,7 @@ looback2delay:
   LABLAXIS: looback2delay
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpdsdigitalout_spare:
   '<<': '*default_float32'
   CATDESC: Lvpdsdigitalout spare
@@ -2235,6 +2393,7 @@ lvpdsdigitalout_spare:
   LABLAXIS: lvpdsdigitalout_spare
   UNITS: ' '
   DEPEND_0: epoch
+
 lvps_t:
   '<<': '*default_float32'
   CATDESC: Lvps t
@@ -2242,6 +2401,7 @@ lvps_t:
   LABLAXIS: lvps_t
   UNITS: ' '
   DEPEND_0: epoch
+
 lvps_t_hi:
   '<<': '*default_float32'
   CATDESC: Lvps t hi
@@ -2249,6 +2409,7 @@ lvps_t_hi:
   LABLAXIS: lvps_t_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 lvps_t_lo:
   '<<': '*default_float32'
   CATDESC: Lvps t lo
@@ -2256,6 +2417,7 @@ lvps_t_lo:
   LABLAXIS: lvps_t_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp15v_i:
   '<<': '*default_float32'
   CATDESC: Lvpsp15v i
@@ -2263,6 +2425,7 @@ lvpsp15v_i:
   LABLAXIS: lvpsp15v_i
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp15v_i_hi:
   '<<': '*default_float32'
   CATDESC: Lvpsp15v i hi
@@ -2270,6 +2433,7 @@ lvpsp15v_i_hi:
   LABLAXIS: lvpsp15v_i_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp15v_i_lo:
   '<<': '*default_float32'
   CATDESC: Lvpsp15v i lo
@@ -2277,6 +2441,7 @@ lvpsp15v_i_lo:
   LABLAXIS: lvpsp15v_i_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp15v_v:
   '<<': '*default_float32'
   CATDESC: Lvpsp15v v
@@ -2284,6 +2449,7 @@ lvpsp15v_v:
   LABLAXIS: lvpsp15v_v
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp15v_v_hi:
   '<<': '*default_float32'
   CATDESC: Lvpsp15v v hi
@@ -2291,6 +2457,7 @@ lvpsp15v_v_hi:
   LABLAXIS: lvpsp15v_v_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp15v_v_lo:
   '<<': '*default_float32'
   CATDESC: Lvpsp15v v lo
@@ -2298,6 +2465,7 @@ lvpsp15v_v_lo:
   LABLAXIS: lvpsp15v_v_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp1p5v_i:
   '<<': '*default_float32'
   CATDESC: Lvpsp1p5v i
@@ -2305,6 +2473,7 @@ lvpsp1p5v_i:
   LABLAXIS: lvpsp1p5v_i
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp1p5v_i_hi:
   '<<': '*default_float32'
   CATDESC: Lvpsp1p5v i hi
@@ -2312,6 +2481,7 @@ lvpsp1p5v_i_hi:
   LABLAXIS: lvpsp1p5v_i_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp1p5v_i_lo:
   '<<': '*default_float32'
   CATDESC: Lvpsp1p5v i lo
@@ -2319,6 +2489,7 @@ lvpsp1p5v_i_lo:
   LABLAXIS: lvpsp1p5v_i_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp1p5v_v:
   '<<': '*default_float32'
   CATDESC: Lvpsp1p5v v
@@ -2326,6 +2497,7 @@ lvpsp1p5v_v:
   LABLAXIS: lvpsp1p5v_v
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp1p5v_v_hi:
   '<<': '*default_float32'
   CATDESC: Lvpsp1p5v v hi
@@ -2333,6 +2505,7 @@ lvpsp1p5v_v_hi:
   LABLAXIS: lvpsp1p5v_v_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp1p5v_v_lo:
   '<<': '*default_float32'
   CATDESC: Lvpsp1p5v v lo
@@ -2340,6 +2513,7 @@ lvpsp1p5v_v_lo:
   LABLAXIS: lvpsp1p5v_v_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp3p3v_i:
   '<<': '*default_float32'
   CATDESC: Lvpsp3p3v i
@@ -2347,6 +2521,7 @@ lvpsp3p3v_i:
   LABLAXIS: lvpsp3p3v_i
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp3p3v_i_hi:
   '<<': '*default_float32'
   CATDESC: Lvpsp3p3v i hi
@@ -2354,6 +2529,7 @@ lvpsp3p3v_i_hi:
   LABLAXIS: lvpsp3p3v_i_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp3p3v_i_lo:
   '<<': '*default_float32'
   CATDESC: Lvpsp3p3v i lo
@@ -2361,6 +2537,7 @@ lvpsp3p3v_i_lo:
   LABLAXIS: lvpsp3p3v_i_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp3p3v_v:
   '<<': '*default_float32'
   CATDESC: Lvpsp3p3v v
@@ -2368,6 +2545,7 @@ lvpsp3p3v_v:
   LABLAXIS: lvpsp3p3v_v
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp3p3v_v_hi:
   '<<': '*default_float32'
   CATDESC: Lvpsp3p3v v hi
@@ -2375,6 +2553,7 @@ lvpsp3p3v_v_hi:
   LABLAXIS: lvpsp3p3v_v_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp3p3v_v_lo:
   '<<': '*default_float32'
   CATDESC: Lvpsp3p3v v lo
@@ -2382,6 +2561,7 @@ lvpsp3p3v_v_lo:
   LABLAXIS: lvpsp3p3v_v_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp3p5v_v:
   '<<': '*default_float32'
   CATDESC: Lvpsp3p5v v
@@ -2389,6 +2569,7 @@ lvpsp3p5v_v:
   LABLAXIS: lvpsp3p5v_v
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp3p5v_v_hi:
   '<<': '*default_float32'
   CATDESC: Lvpsp3p5v v hi
@@ -2396,6 +2577,7 @@ lvpsp3p5v_v_hi:
   LABLAXIS: lvpsp3p5v_v_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp3p5v_v_lo:
   '<<': '*default_float32'
   CATDESC: Lvpsp3p5v v lo
@@ -2403,6 +2585,7 @@ lvpsp3p5v_v_lo:
   LABLAXIS: lvpsp3p5v_v_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp5v_i:
   '<<': '*default_float32'
   CATDESC: Lvpsp5v i
@@ -2410,6 +2593,7 @@ lvpsp5v_i:
   LABLAXIS: lvpsp5v_i
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp5v_i_hi:
   '<<': '*default_float32'
   CATDESC: Lvpsp5v i hi
@@ -2417,6 +2601,7 @@ lvpsp5v_i_hi:
   LABLAXIS: lvpsp5v_i_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp5v_i_lo:
   '<<': '*default_float32'
   CATDESC: Lvpsp5v i lo
@@ -2424,6 +2609,7 @@ lvpsp5v_i_lo:
   LABLAXIS: lvpsp5v_i_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp5v_v:
   '<<': '*default_float32'
   CATDESC: Lvpsp5v v
@@ -2431,6 +2617,7 @@ lvpsp5v_v:
   LABLAXIS: lvpsp5v_v
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp5v_v_hi:
   '<<': '*default_float32'
   CATDESC: Lvpsp5v v hi
@@ -2438,6 +2625,7 @@ lvpsp5v_v_hi:
   LABLAXIS: lvpsp5v_v_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsp5v_v_lo:
   '<<': '*default_float32'
   CATDESC: Lvpsp5v v lo
@@ -2445,6 +2633,7 @@ lvpsp5v_v_lo:
   LABLAXIS: lvpsp5v_v_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsprimary_i:
   '<<': '*default_float32'
   CATDESC: Lvpsprimary i
@@ -2452,6 +2641,7 @@ lvpsprimary_i:
   LABLAXIS: lvpsprimary_i
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsprimary_i_hi:
   '<<': '*default_float32'
   CATDESC: Lvpsprimary i hi
@@ -2459,6 +2649,7 @@ lvpsprimary_i_hi:
   LABLAXIS: lvpsprimary_i_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 lvpsprimary_i_lo:
   '<<': '*default_float32'
   CATDESC: Lvpsprimary i lo
@@ -2466,6 +2657,7 @@ lvpsprimary_i_lo:
   LABLAXIS: lvpsprimary_i_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 maccmdexec:
   '<<': '*default_float32'
   CATDESC: Maccmdexec
@@ -2473,6 +2665,7 @@ maccmdexec:
   LABLAXIS: maccmdexec
   UNITS: ' '
   DEPEND_0: epoch
+
 maccmdreject:
   '<<': '*default_float32'
   CATDESC: Maccmdreject
@@ -2480,6 +2673,7 @@ maccmdreject:
   LABLAXIS: maccmdreject
   UNITS: ' '
   DEPEND_0: epoch
+
 macid:
   '<<': '*default_float32'
   CATDESC: Macid
@@ -2487,6 +2681,7 @@ macid:
   LABLAXIS: macid
   UNITS: ' '
   DEPEND_0: epoch
+
 maclearn:
   '<<': '*default_float32'
   CATDESC: Maclearn
@@ -2494,6 +2689,7 @@ maclearn:
   LABLAXIS: maclearn
   UNITS: ' '
   DEPEND_0: epoch
+
 macro:
   '<<': '*default_float32'
   CATDESC: Macro
@@ -2501,6 +2697,7 @@ macro:
   LABLAXIS: macro
   UNITS: ' '
   DEPEND_0: epoch
+
 macroblocks:
   '<<': '*default_float32'
   CATDESC: Macroblocks
@@ -2508,6 +2705,7 @@ macroblocks:
   LABLAXIS: macroblocks
   UNITS: ' '
   DEPEND_0: epoch
+
 macrodata:
   '<<': '*default_float32'
   CATDESC: Macrodata
@@ -2515,6 +2713,7 @@ macrodata:
   LABLAXIS: macrodata
   UNITS: ' '
   DEPEND_0: epoch
+
 macroid:
   '<<': '*default_float32'
   CATDESC: Macroid
@@ -2522,6 +2721,7 @@ macroid:
   LABLAXIS: macroid
   UNITS: ' '
   DEPEND_0: epoch
+
 maxenergyselect:
   '<<': '*default_float32'
   CATDESC: Maxenergyselect
@@ -2529,6 +2729,7 @@ maxenergyselect:
   LABLAXIS: maxenergyselect
   UNITS: ' '
   DEPEND_0: epoch
+
 mcphvrampdownrate:
   '<<': '*default_float32'
   CATDESC: Mcphvrampdownrate
@@ -2536,6 +2737,7 @@ mcphvrampdownrate:
   LABLAXIS: mcphvrampdownrate
   UNITS: ' '
   DEPEND_0: epoch
+
 mcphvrampuprate:
   '<<': '*default_float32'
   CATDESC: Mcphvrampuprate
@@ -2543,6 +2745,7 @@ mcphvrampuprate:
   LABLAXIS: mcphvrampuprate
   UNITS: ' '
   DEPEND_0: epoch
+
 mcphvsafegap:
   '<<': '*default_float32'
   CATDESC: Mcphvsafegap
@@ -2550,6 +2753,7 @@ mcphvsafegap:
   LABLAXIS: mcphvsafegap
   UNITS: ' '
   DEPEND_0: epoch
+
 mcphvsafelim:
   '<<': '*default_float32'
   CATDESC: Mcphvsafelim
@@ -2557,6 +2761,7 @@ mcphvsafelim:
   LABLAXIS: mcphvsafelim
   UNITS: ' '
   DEPEND_0: epoch
+
 mcppreamppower:
   '<<': '*default_float32'
   CATDESC: Mcppreamppower
@@ -2564,6 +2769,7 @@ mcppreamppower:
   LABLAXIS: mcppreamppower
   UNITS: ' '
   DEPEND_0: epoch
+
 mcppulseamplitude:
   '<<': '*default_float32'
   CATDESC: Mcppulseamplitude
@@ -2571,6 +2777,7 @@ mcppulseamplitude:
   LABLAXIS: mcppulseamplitude
   UNITS: ' '
   DEPEND_0: epoch
+
 mcpsupply_p:
   '<<': '*default_float32'
   CATDESC: Mcpsupply p
@@ -2578,6 +2785,7 @@ mcpsupply_p:
   LABLAXIS: mcpsupply_p
   UNITS: ' '
   DEPEND_0: epoch
+
 mcpsupply_p_hi:
   '<<': '*default_float32'
   CATDESC: Mcpsupply p hi
@@ -2585,6 +2793,7 @@ mcpsupply_p_hi:
   LABLAXIS: mcpsupply_p_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 mcpsupply_p_lo:
   '<<': '*default_float32'
   CATDESC: Mcpsupply p lo
@@ -2592,6 +2801,7 @@ mcpsupply_p_lo:
   LABLAXIS: mcpsupply_p_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 memlength:
   '<<': '*default_float32'
   CATDESC: Memlength
@@ -2599,6 +2809,7 @@ memlength:
   LABLAXIS: memlength
   UNITS: ' '
   DEPEND_0: epoch
+
 memwrite:
   '<<': '*default_float32'
   CATDESC: Memwrite
@@ -2606,6 +2817,7 @@ memwrite:
   LABLAXIS: memwrite
   UNITS: ' '
   DEPEND_0: epoch
+
 monitorresponse:
   '<<': '*default_float32'
   CATDESC: Monitorresponse
@@ -2613,6 +2825,7 @@ monitorresponse:
   LABLAXIS: monitorresponse
   UNITS: ' '
   DEPEND_0: epoch
+
 nvmemstate:
   '<<': '*default_float32'
   CATDESC: Nvmemstate
@@ -2620,6 +2833,7 @@ nvmemstate:
   LABLAXIS: nvmemstate
   UNITS: ' '
   DEPEND_0: epoch
+
 opampbias_v:
   '<<': '*default_float32'
   CATDESC: Opampbias v
@@ -2627,6 +2841,7 @@ opampbias_v:
   LABLAXIS: opampbias_v
   UNITS: ' '
   DEPEND_0: epoch
+
 opampbias_v_hi:
   '<<': '*default_float32'
   CATDESC: Opampbias v hi
@@ -2634,6 +2849,7 @@ opampbias_v_hi:
   LABLAXIS: opampbias_v_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 opampbias_v_lo:
   '<<': '*default_float32'
   CATDESC: Opampbias v lo
@@ -2641,6 +2857,7 @@ opampbias_v_lo:
   LABLAXIS: opampbias_v_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 opcode:
   '<<': '*default_float32'
   CATDESC: Opcode
@@ -2648,6 +2865,7 @@ opcode:
   LABLAXIS: opcode
   UNITS: ' '
   DEPEND_0: epoch
+
 pathmediumthresh:
   '<<': '*default_float32'
   CATDESC: Pathmediumthresh
@@ -2655,6 +2873,7 @@ pathmediumthresh:
   LABLAXIS: pathmediumthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 pathsteepthresh:
   '<<': '*default_float32'
   CATDESC: Pathsteepthresh
@@ -2662,6 +2881,7 @@ pathsteepthresh:
   LABLAXIS: pathsteepthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 phreference:
   '<<': '*default_float32'
   CATDESC: Phreference
@@ -2669,6 +2889,7 @@ phreference:
   LABLAXIS: phreference
   UNITS: ' '
   DEPEND_0: epoch
+
 powerreg_spare:
   '<<': '*default_float32'
   CATDESC: Powerreg spare
@@ -2676,6 +2897,7 @@ powerreg_spare:
   LABLAXIS: powerreg_spare
   UNITS: ' '
   DEPEND_0: epoch
+
 powerrequest:
   '<<': '*default_float32'
   CATDESC: Powerrequest
@@ -2683,6 +2905,7 @@ powerrequest:
   LABLAXIS: powerrequest
   UNITS: ' '
   DEPEND_0: epoch
+
 pulserate:
   '<<': '*default_float32'
   CATDESC: Pulserate
@@ -2690,6 +2913,7 @@ pulserate:
   LABLAXIS: pulserate
   UNITS: ' '
   DEPEND_0: epoch
+
 ratedata:
   '<<': '*default_float32'
   CATDESC: Ratedata
@@ -2697,6 +2921,7 @@ ratedata:
   LABLAXIS: ratedata
   UNITS: ' '
   DEPEND_0: epoch
+
 raterecoverytime:
   '<<': '*default_float32'
   CATDESC: Raterecoverytime
@@ -2704,6 +2929,7 @@ raterecoverytime:
   LABLAXIS: raterecoverytime
   UNITS: ' '
   DEPEND_0: epoch
+
 ratestoohigh:
   '<<': '*default_float32'
   CATDESC: Ratestoohigh
@@ -2711,6 +2937,7 @@ ratestoohigh:
   LABLAXIS: ratestoohigh
   UNITS: ' '
   DEPEND_0: epoch
+
 result:
   '<<': '*default_float32'
   CATDESC: Result
@@ -2718,6 +2945,7 @@ result:
   LABLAXIS: result
   UNITS: ' '
   DEPEND_0: epoch
+
 rightdeflection_v:
   '<<': '*default_float32'
   CATDESC: Rightdeflection v
@@ -2725,6 +2953,7 @@ rightdeflection_v:
   LABLAXIS: rightdeflection_v
   UNITS: ' '
   DEPEND_0: epoch
+
 rightdeflection_v_hi:
   '<<': '*default_float32'
   CATDESC: Rightdeflection v hi
@@ -2732,6 +2961,7 @@ rightdeflection_v_hi:
   LABLAXIS: rightdeflection_v_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 rightdeflection_v_lo:
   '<<': '*default_float32'
   CATDESC: Rightdeflection v lo
@@ -2739,6 +2969,7 @@ rightdeflection_v_lo:
   LABLAXIS: rightdeflection_v_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 rightdeflectionsupply_p:
   '<<': '*default_float32'
   CATDESC: Rightdeflectionsupply p
@@ -2746,6 +2977,7 @@ rightdeflectionsupply_p:
   LABLAXIS: rightdeflectionsupply_p
   UNITS: ' '
   DEPEND_0: epoch
+
 rightdeflectionsupply_p_hi:
   '<<': '*default_float32'
   CATDESC: Rightdeflectionsupply p hi
@@ -2753,6 +2985,7 @@ rightdeflectionsupply_p_hi:
   LABLAXIS: rightdeflectionsupply_p_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 rightdeflectionsupply_p_lo:
   '<<': '*default_float32'
   CATDESC: Rightdeflectionsupply p lo
@@ -2760,6 +2993,7 @@ rightdeflectionsupply_p_lo:
   LABLAXIS: rightdeflectionsupply_p_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 rightdfldischrate:
   '<<': '*default_float32'
   CATDESC: Rightdfldischrate
@@ -2767,6 +3001,7 @@ rightdfldischrate:
   LABLAXIS: rightdfldischrate
   UNITS: ' '
   DEPEND_0: epoch
+
 rightdfldischrate_hi:
   '<<': '*default_float32'
   CATDESC: Rightdfldischrate hi
@@ -2774,6 +3009,7 @@ rightdfldischrate_hi:
   LABLAXIS: rightdfldischrate_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 rightdfldischrate_lo:
   '<<': '*default_float32'
   CATDESC: Rightdfldischrate lo
@@ -2781,6 +3017,7 @@ rightdfldischrate_lo:
   LABLAXIS: rightdfldischrate_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 rightdfldischratelim:
   '<<': '*default_float32'
   CATDESC: Rightdfldischratelim
@@ -2788,6 +3025,7 @@ rightdfldischratelim:
   LABLAXIS: rightdfldischratelim
   UNITS: ' '
   DEPEND_0: epoch
+
 rightdflhvgoal:
   '<<': '*default_float32'
   CATDESC: Rightdflhvgoal
@@ -2795,6 +3033,7 @@ rightdflhvgoal:
   LABLAXIS: rightdflhvgoal
   UNITS: ' '
   DEPEND_0: epoch
+
 rightdflhvlim:
   '<<': '*default_float32'
   CATDESC: Rightdflhvlim
@@ -2802,6 +3041,7 @@ rightdflhvlim:
   LABLAXIS: rightdflhvlim
   UNITS: ' '
   DEPEND_0: epoch
+
 rightdflhvv:
   '<<': '*default_float32'
   CATDESC: Rightdflhvv
@@ -2809,6 +3049,7 @@ rightdflhvv:
   LABLAXIS: rightdflhvv
   UNITS: ' '
   DEPEND_0: epoch
+
 rightshutter_t:
   '<<': '*default_float32'
   CATDESC: Rightshutter t
@@ -2816,6 +3057,7 @@ rightshutter_t:
   LABLAXIS: rightshutter_t
   UNITS: ' '
   DEPEND_0: epoch
+
 rightshutter_t_hi:
   '<<': '*default_float32'
   CATDESC: Rightshutter t hi
@@ -2823,6 +3065,7 @@ rightshutter_t_hi:
   LABLAXIS: rightshutter_t_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 rightshutter_t_lo:
   '<<': '*default_float32'
   CATDESC: Rightshutter t lo
@@ -2830,6 +3073,7 @@ rightshutter_t_lo:
   LABLAXIS: rightshutter_t_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 rightshutterhomesteps:
   '<<': '*default_float32'
   CATDESC: Rightshutterhomesteps
@@ -2837,6 +3081,7 @@ rightshutterhomesteps:
   LABLAXIS: rightshutterhomesteps
   UNITS: ' '
   DEPEND_0: epoch
+
 rightshutterstep:
   '<<': '*default_float32'
   CATDESC: Rightshutterstep
@@ -2844,6 +3089,7 @@ rightshutterstep:
   LABLAXIS: rightshutterstep
   UNITS: ' '
   DEPEND_0: epoch
+
 rightshuttertt:
   '<<': '*default_float32'
   CATDESC: Rightshuttertt
@@ -2851,6 +3097,7 @@ rightshuttertt:
   LABLAXIS: rightshuttertt
   UNITS: ' '
   DEPEND_0: epoch
+
 safingtime:
   '<<': '*default_float32'
   CATDESC: Safingtime
@@ -2858,6 +3105,7 @@ safingtime:
   LABLAXIS: safingtime
   UNITS: ' '
   DEPEND_0: epoch
+
 shutteractuator:
   '<<': '*default_float32'
   CATDESC: Shutteractuator
@@ -2865,6 +3113,7 @@ shutteractuator:
   LABLAXIS: shutteractuator
   UNITS: ' '
   DEPEND_0: epoch
+
 shutteractuatorselect:
   '<<': '*default_float32'
   CATDESC: Shutteractuatorselect
@@ -2872,6 +3121,7 @@ shutteractuatorselect:
   LABLAXIS: shutteractuatorselect
   UNITS: ' '
   DEPEND_0: epoch
+
 shutterheattime:
   '<<': '*default_float32'
   CATDESC: Shutterheattime
@@ -2879,6 +3129,7 @@ shutterheattime:
   LABLAXIS: shutterheattime
   UNITS: ' '
   DEPEND_0: epoch
+
 shuttermotorduty:
   '<<': '*default_float32'
   CATDESC: Shuttermotorduty
@@ -2886,6 +3137,7 @@ shuttermotorduty:
   LABLAXIS: shuttermotorduty
   UNITS: ' '
   DEPEND_0: epoch
+
 shuttermotorfreq:
   '<<': '*default_float32'
   CATDESC: Shuttermotorfreq
@@ -2893,6 +3145,7 @@ shuttermotorfreq:
   LABLAXIS: shuttermotorfreq
   UNITS: ' '
   DEPEND_0: epoch
+
 shutterp15v_i_adjust:
   '<<': '*default_float32'
   CATDESC: Shutterp15v i adjust
@@ -2900,6 +3153,7 @@ shutterp15v_i_adjust:
   LABLAXIS: shutterp15v_i_adjust
   UNITS: ' '
   DEPEND_0: epoch
+
 shutterphase:
   '<<': '*default_float32'
   CATDESC: Shutterphase
@@ -2907,6 +3161,7 @@ shutterphase:
   LABLAXIS: shutterphase
   UNITS: ' '
   DEPEND_0: epoch
+
 shutterplugstate:
   '<<': '*default_float32'
   CATDESC: Shutterplugstate
@@ -2914,6 +3169,7 @@ shutterplugstate:
   LABLAXIS: shutterplugstate
   UNITS: ' '
   DEPEND_0: epoch
+
 shutterprimary_i_adjust:
   '<<': '*default_float32'
   CATDESC: Shutterprimary i adjust
@@ -2921,6 +3177,7 @@ shutterprimary_i_adjust:
   LABLAXIS: shutterprimary_i_adjust
   UNITS: ' '
   DEPEND_0: epoch
+
 shutterselect:
   '<<': '*default_float32'
   CATDESC: Shutterselect
@@ -2928,6 +3185,7 @@ shutterselect:
   LABLAXIS: shutterselect
   UNITS: ' '
   DEPEND_0: epoch
+
 spare10:
   '<<': '*default_float32'
   CATDESC: Spare10
@@ -2935,6 +3193,7 @@ spare10:
   LABLAXIS: spare10
   UNITS: ' '
   DEPEND_0: epoch
+
 spare4:
   '<<': '*default_float32'
   CATDESC: Spare4
@@ -2942,6 +3201,7 @@ spare4:
   LABLAXIS: spare4
   UNITS: ' '
   DEPEND_0: epoch
+
 spare5:
   '<<': '*default_float32'
   CATDESC: Spare5
@@ -2949,6 +3209,7 @@ spare5:
   LABLAXIS: spare5
   UNITS: ' '
   DEPEND_0: epoch
+
 spare6:
   '<<': '*default_float32'
   CATDESC: Spare6
@@ -2956,6 +3217,7 @@ spare6:
   LABLAXIS: spare6
   UNITS: ' '
   DEPEND_0: epoch
+
 spare7:
   '<<': '*default_float32'
   CATDESC: Spare7
@@ -2963,6 +3225,7 @@ spare7:
   LABLAXIS: spare7
   UNITS: ' '
   DEPEND_0: epoch
+
 spare8:
   '<<': '*default_float32'
   CATDESC: Spare8
@@ -2970,6 +3233,7 @@ spare8:
   LABLAXIS: spare8
   UNITS: ' '
   DEPEND_0: epoch
+
 spare9:
   '<<': '*default_float32'
   CATDESC: Spare9
@@ -2977,6 +3241,7 @@ spare9:
   LABLAXIS: spare9
   UNITS: ' '
   DEPEND_0: epoch
+
 spbtphoff:
   '<<': '*default_float32'
   CATDESC: Spbtphoff
@@ -2984,6 +3249,7 @@ spbtphoff:
   LABLAXIS: spbtphoff
   UNITS: ' '
   DEPEND_0: epoch
+
 sptpphoff:
   '<<': '*default_float32'
   CATDESC: Sptpphoff
@@ -2991,6 +3257,7 @@ sptpphoff:
   LABLAXIS: sptpphoff
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd0energystate:
   '<<': '*default_float32'
   CATDESC: Ssd0energystate
@@ -2998,6 +3265,7 @@ ssd0energystate:
   LABLAXIS: ssd0energystate
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd0energythresh:
   '<<': '*default_float32'
   CATDESC: Ssd0energythresh
@@ -3005,6 +3273,7 @@ ssd0energythresh:
   LABLAXIS: ssd0energythresh
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd0pixenergybaseline:
   '<<': '*default_float32'
   CATDESC: Ssd0pixenergybaseline
@@ -3012,6 +3281,7 @@ ssd0pixenergybaseline:
   LABLAXIS: ssd0pixenergybaseline
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd1energystate:
   '<<': '*default_float32'
   CATDESC: Ssd1energystate
@@ -3019,6 +3289,7 @@ ssd1energystate:
   LABLAXIS: ssd1energystate
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd1energythresh:
   '<<': '*default_float32'
   CATDESC: Ssd1energythresh
@@ -3026,6 +3297,7 @@ ssd1energythresh:
   LABLAXIS: ssd1energythresh
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd1pixenergybaseline:
   '<<': '*default_float32'
   CATDESC: Ssd1pixenergybaseline
@@ -3033,6 +3305,7 @@ ssd1pixenergybaseline:
   LABLAXIS: ssd1pixenergybaseline
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd2energystate:
   '<<': '*default_float32'
   CATDESC: Ssd2energystate
@@ -3040,6 +3313,7 @@ ssd2energystate:
   LABLAXIS: ssd2energystate
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd2energythresh:
   '<<': '*default_float32'
   CATDESC: Ssd2energythresh
@@ -3047,6 +3321,7 @@ ssd2energythresh:
   LABLAXIS: ssd2energythresh
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd2pixenergybaseline:
   '<<': '*default_float32'
   CATDESC: Ssd2pixenergybaseline
@@ -3054,6 +3329,7 @@ ssd2pixenergybaseline:
   LABLAXIS: ssd2pixenergybaseline
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd3energystate:
   '<<': '*default_float32'
   CATDESC: Ssd3energystate
@@ -3061,6 +3337,7 @@ ssd3energystate:
   LABLAXIS: ssd3energystate
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd3energythresh:
   '<<': '*default_float32'
   CATDESC: Ssd3energythresh
@@ -3068,6 +3345,7 @@ ssd3energythresh:
   LABLAXIS: ssd3energythresh
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd3pixenergybaseline:
   '<<': '*default_float32'
   CATDESC: Ssd3pixenergybaseline
@@ -3075,6 +3353,7 @@ ssd3pixenergybaseline:
   LABLAXIS: ssd3pixenergybaseline
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd4energystate:
   '<<': '*default_float32'
   CATDESC: Ssd4energystate
@@ -3082,6 +3361,7 @@ ssd4energystate:
   LABLAXIS: ssd4energystate
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd4energythresh:
   '<<': '*default_float32'
   CATDESC: Ssd4energythresh
@@ -3089,6 +3369,7 @@ ssd4energythresh:
   LABLAXIS: ssd4energythresh
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd4pixenergybaseline:
   '<<': '*default_float32'
   CATDESC: Ssd4pixenergybaseline
@@ -3096,6 +3377,7 @@ ssd4pixenergybaseline:
   LABLAXIS: ssd4pixenergybaseline
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd5energystate:
   '<<': '*default_float32'
   CATDESC: Ssd5energystate
@@ -3103,6 +3385,7 @@ ssd5energystate:
   LABLAXIS: ssd5energystate
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd5energythresh:
   '<<': '*default_float32'
   CATDESC: Ssd5energythresh
@@ -3110,6 +3393,7 @@ ssd5energythresh:
   LABLAXIS: ssd5energythresh
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd5pixenergybaseline:
   '<<': '*default_float32'
   CATDESC: Ssd5pixenergybaseline
@@ -3117,6 +3401,7 @@ ssd5pixenergybaseline:
   LABLAXIS: ssd5pixenergybaseline
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd6energystate:
   '<<': '*default_float32'
   CATDESC: Ssd6energystate
@@ -3124,6 +3409,7 @@ ssd6energystate:
   LABLAXIS: ssd6energystate
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd6energythresh:
   '<<': '*default_float32'
   CATDESC: Ssd6energythresh
@@ -3131,6 +3417,7 @@ ssd6energythresh:
   LABLAXIS: ssd6energythresh
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd6pixenergybaseline:
   '<<': '*default_float32'
   CATDESC: Ssd6pixenergybaseline
@@ -3138,6 +3425,7 @@ ssd6pixenergybaseline:
   LABLAXIS: ssd6pixenergybaseline
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd7energystate:
   '<<': '*default_float32'
   CATDESC: Ssd7energystate
@@ -3145,6 +3433,7 @@ ssd7energystate:
   LABLAXIS: ssd7energystate
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd7energythresh:
   '<<': '*default_float32'
   CATDESC: Ssd7energythresh
@@ -3152,6 +3441,7 @@ ssd7energythresh:
   LABLAXIS: ssd7energythresh
   UNITS: ' '
   DEPEND_0: epoch
+
 ssd7pixenergybaseline:
   '<<': '*default_float32'
   CATDESC: Ssd7pixenergybaseline
@@ -3159,6 +3449,7 @@ ssd7pixenergybaseline:
   LABLAXIS: ssd7pixenergybaseline
   UNITS: ' '
   DEPEND_0: epoch
+
 ssdbv_i:
   '<<': '*default_float32'
   CATDESC: Ssdbv i
@@ -3166,6 +3457,7 @@ ssdbv_i:
   LABLAXIS: ssdbv_i
   UNITS: ' '
   DEPEND_0: epoch
+
 ssdbv_i_hi:
   '<<': '*default_float32'
   CATDESC: Ssdbv i hi
@@ -3173,6 +3465,7 @@ ssdbv_i_hi:
   LABLAXIS: ssdbv_i_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 ssdbv_i_lo:
   '<<': '*default_float32'
   CATDESC: Ssdbv i lo
@@ -3180,6 +3473,7 @@ ssdbv_i_lo:
   LABLAXIS: ssdbv_i_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 ssdbv_v:
   '<<': '*default_float32'
   CATDESC: Ssdbv v
@@ -3187,6 +3481,7 @@ ssdbv_v:
   LABLAXIS: ssdbv_v
   UNITS: ' '
   DEPEND_0: epoch
+
 ssdbv_v_hi:
   '<<': '*default_float32'
   CATDESC: Ssdbv v hi
@@ -3194,6 +3489,7 @@ ssdbv_v_hi:
   LABLAXIS: ssdbv_v_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 ssdbv_v_lo:
   '<<': '*default_float32'
   CATDESC: Ssdbv v lo
@@ -3201,6 +3497,7 @@ ssdbv_v_lo:
   LABLAXIS: ssdbv_v_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 ssdbvgoal:
   '<<': '*default_float32'
   CATDESC: Ssdbvgoal
@@ -3208,6 +3505,7 @@ ssdbvgoal:
   LABLAXIS: ssdbvgoal
   UNITS: ' '
   DEPEND_0: epoch
+
 ssdbvlim:
   '<<': '*default_float32'
   CATDESC: Ssdbvlim
@@ -3215,6 +3513,7 @@ ssdbvlim:
   LABLAXIS: ssdbvlim
   UNITS: ' '
   DEPEND_0: epoch
+
 ssdbvrampdownrate:
   '<<': '*default_float32'
   CATDESC: Ssdbvrampdownrate
@@ -3222,6 +3521,7 @@ ssdbvrampdownrate:
   LABLAXIS: ssdbvrampdownrate
   UNITS: ' '
   DEPEND_0: epoch
+
 ssdbvrampuprate:
   '<<': '*default_float32'
   CATDESC: Ssdbvrampuprate
@@ -3229,6 +3529,7 @@ ssdbvrampuprate:
   LABLAXIS: ssdbvrampuprate
   UNITS: ' '
   DEPEND_0: epoch
+
 ssdbvv:
   '<<': '*default_float32'
   CATDESC: Ssdbvv
@@ -3236,6 +3537,7 @@ ssdbvv:
   LABLAXIS: ssdbvv
   UNITS: ' '
   DEPEND_0: epoch
+
 ssdpreamppower:
   '<<': '*default_float32'
   CATDESC: Ssdpreamppower
@@ -3243,6 +3545,7 @@ ssdpreamppower:
   LABLAXIS: ssdpreamppower
   UNITS: ' '
   DEPEND_0: epoch
+
 ssdpulseamplitude:
   '<<': '*default_float32'
   CATDESC: Ssdpulseamplitude
@@ -3250,6 +3553,7 @@ ssdpulseamplitude:
   LABLAXIS: ssdpulseamplitude
   UNITS: ' '
   DEPEND_0: epoch
+
 ssdpulsedelay:
   '<<': '*default_float32'
   CATDESC: Ssdpulsedelay
@@ -3257,6 +3561,7 @@ ssdpulsedelay:
   LABLAXIS: ssdpulsedelay
   UNITS: ' '
   DEPEND_0: epoch
+
 ssdpulsestate:
   '<<': '*default_float32'
   CATDESC: Ssdpulsestate
@@ -3264,6 +3569,7 @@ ssdpulsestate:
   LABLAXIS: ssdpulsestate
   UNITS: ' '
   DEPEND_0: epoch
+
 ssdreference:
   '<<': '*default_float32'
   CATDESC: Ssdreference
@@ -3271,6 +3577,7 @@ ssdreference:
   LABLAXIS: ssdreference
   UNITS: ' '
   DEPEND_0: epoch
+
 startfullpulsestate:
   '<<': '*default_float32'
   CATDESC: Startfullpulsestate
@@ -3278,6 +3585,7 @@ startfullpulsestate:
   LABLAXIS: startfullpulsestate
   UNITS: ' '
   DEPEND_0: epoch
+
 startlfautozero:
   '<<': '*default_float32'
   CATDESC: Startlfautozero
@@ -3285,6 +3593,7 @@ startlfautozero:
   LABLAXIS: startlfautozero
   UNITS: ' '
   DEPEND_0: epoch
+
 startlfcfdthresh:
   '<<': '*default_float32'
   CATDESC: Startlfcfdthresh
@@ -3292,6 +3601,7 @@ startlfcfdthresh:
   LABLAXIS: startlfcfdthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 startlfphthresh:
   '<<': '*default_float32'
   CATDESC: Startlfphthresh
@@ -3299,6 +3609,7 @@ startlfphthresh:
   LABLAXIS: startlfphthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 startlpautozero:
   '<<': '*default_float32'
   CATDESC: Startlpautozero
@@ -3306,6 +3617,7 @@ startlpautozero:
   LABLAXIS: startlpautozero
   UNITS: ' '
   DEPEND_0: epoch
+
 startlpcfdthresh:
   '<<': '*default_float32'
   CATDESC: Startlpcfdthresh
@@ -3313,6 +3625,7 @@ startlpcfdthresh:
   LABLAXIS: startlpcfdthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 startposdelay:
   '<<': '*default_float32'
   CATDESC: Startposdelay
@@ -3320,6 +3633,7 @@ startposdelay:
   LABLAXIS: startposdelay
   UNITS: ' '
   DEPEND_0: epoch
+
 startratehighthresh:
   '<<': '*default_float32'
   CATDESC: Startratehighthresh
@@ -3327,6 +3641,7 @@ startratehighthresh:
   LABLAXIS: startratehighthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 startrfautozero:
   '<<': '*default_float32'
   CATDESC: Startrfautozero
@@ -3334,6 +3649,7 @@ startrfautozero:
   LABLAXIS: startrfautozero
   UNITS: ' '
   DEPEND_0: epoch
+
 startrfcfdthresh:
   '<<': '*default_float32'
   CATDESC: Startrfcfdthresh
@@ -3341,6 +3657,7 @@ startrfcfdthresh:
   LABLAXIS: startrfcfdthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 startrfphthresh:
   '<<': '*default_float32'
   CATDESC: Startrfphthresh
@@ -3348,6 +3665,7 @@ startrfphthresh:
   LABLAXIS: startrfphthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 startrpautozero:
   '<<': '*default_float32'
   CATDESC: Startrpautozero
@@ -3355,6 +3673,7 @@ startrpautozero:
   LABLAXIS: startrpautozero
   UNITS: ' '
   DEPEND_0: epoch
+
 startrpcfdthresh:
   '<<': '*default_float32'
   CATDESC: Startrpcfdthresh
@@ -3362,6 +3681,7 @@ startrpcfdthresh:
   LABLAXIS: startrpcfdthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 statusint:
   '<<': '*default_float32'
   CATDESC: Statusint
@@ -3369,6 +3689,7 @@ statusint:
   LABLAXIS: statusint
   UNITS: ' '
   DEPEND_0: epoch
+
 stopbeautozero:
   '<<': '*default_float32'
   CATDESC: Stopbeautozero
@@ -3376,6 +3697,7 @@ stopbeautozero:
   LABLAXIS: stopbeautozero
   UNITS: ' '
   DEPEND_0: epoch
+
 stopbecfdthresh:
   '<<': '*default_float32'
   CATDESC: Stopbecfdthresh
@@ -3383,6 +3705,7 @@ stopbecfdthresh:
   LABLAXIS: stopbecfdthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 stopbnautozero:
   '<<': '*default_float32'
   CATDESC: Stopbnautozero
@@ -3390,6 +3713,7 @@ stopbnautozero:
   LABLAXIS: stopbnautozero
   UNITS: ' '
   DEPEND_0: epoch
+
 stopbncfdthresh:
   '<<': '*default_float32'
   CATDESC: Stopbncfdthresh
@@ -3397,6 +3721,7 @@ stopbncfdthresh:
   LABLAXIS: stopbncfdthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 stopbnphthresh:
   '<<': '*default_float32'
   CATDESC: Stopbnphthresh
@@ -3404,6 +3729,7 @@ stopbnphthresh:
   LABLAXIS: stopbnphthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 stopbsautozero:
   '<<': '*default_float32'
   CATDESC: Stopbsautozero
@@ -3411,6 +3737,7 @@ stopbsautozero:
   LABLAXIS: stopbsautozero
   UNITS: ' '
   DEPEND_0: epoch
+
 stopbscfdthresh:
   '<<': '*default_float32'
   CATDESC: Stopbscfdthresh
@@ -3418,6 +3745,7 @@ stopbscfdthresh:
   LABLAXIS: stopbscfdthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 stopbwautozero:
   '<<': '*default_float32'
   CATDESC: Stopbwautozero
@@ -3425,6 +3753,7 @@ stopbwautozero:
   LABLAXIS: stopbwautozero
   UNITS: ' '
   DEPEND_0: epoch
+
 stopbwcfdthresh:
   '<<': '*default_float32'
   CATDESC: Stopbwcfdthresh
@@ -3432,6 +3761,7 @@ stopbwcfdthresh:
   LABLAXIS: stopbwcfdthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 stopcoinnorthpulsedelay:
   '<<': '*default_float32'
   CATDESC: Stopcoinnorthpulsedelay
@@ -3439,6 +3769,7 @@ stopcoinnorthpulsedelay:
   LABLAXIS: stopcoinnorthpulsedelay
   UNITS: ' '
   DEPEND_0: epoch
+
 stopcoinnorthpulsestate:
   '<<': '*default_float32'
   CATDESC: Stopcoinnorthpulsestate
@@ -3446,6 +3777,7 @@ stopcoinnorthpulsestate:
   LABLAXIS: stopcoinnorthpulsestate
   UNITS: ' '
   DEPEND_0: epoch
+
 stopcoinsouthpulsedelay:
   '<<': '*default_float32'
   CATDESC: Stopcoinsouthpulsedelay
@@ -3453,6 +3785,7 @@ stopcoinsouthpulsedelay:
   LABLAXIS: stopcoinsouthpulsedelay
   UNITS: ' '
   DEPEND_0: epoch
+
 stopcoinsouthpulsestate:
   '<<': '*default_float32'
   CATDESC: Stopcoinsouthpulsestate
@@ -3460,6 +3793,7 @@ stopcoinsouthpulsestate:
   LABLAXIS: stopcoinsouthpulsestate
   UNITS: ' '
   DEPEND_0: epoch
+
 stopeastpulsedelay:
   '<<': '*default_float32'
   CATDESC: Stopeastpulsedelay
@@ -3467,6 +3801,7 @@ stopeastpulsedelay:
   LABLAXIS: stopeastpulsedelay
   UNITS: ' '
   DEPEND_0: epoch
+
 stopeastpulsestate:
   '<<': '*default_float32'
   CATDESC: Stopeastpulsestate
@@ -3474,6 +3809,7 @@ stopeastpulsestate:
   LABLAXIS: stopeastpulsestate
   UNITS: ' '
   DEPEND_0: epoch
+
 stopratehighthresh:
   '<<': '*default_float32'
   CATDESC: Stopratehighthresh
@@ -3481,6 +3817,7 @@ stopratehighthresh:
   LABLAXIS: stopratehighthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 stopteautozero:
   '<<': '*default_float32'
   CATDESC: Stopteautozero
@@ -3488,6 +3825,7 @@ stopteautozero:
   LABLAXIS: stopteautozero
   UNITS: ' '
   DEPEND_0: epoch
+
 stoptecfdthresh:
   '<<': '*default_float32'
   CATDESC: Stoptecfdthresh
@@ -3495,6 +3833,7 @@ stoptecfdthresh:
   LABLAXIS: stoptecfdthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 stoptnautozero:
   '<<': '*default_float32'
   CATDESC: Stoptnautozero
@@ -3502,6 +3841,7 @@ stoptnautozero:
   LABLAXIS: stoptnautozero
   UNITS: ' '
   DEPEND_0: epoch
+
 stoptncfdthresh:
   '<<': '*default_float32'
   CATDESC: Stoptncfdthresh
@@ -3509,6 +3849,7 @@ stoptncfdthresh:
   LABLAXIS: stoptncfdthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 stoptnphthresh:
   '<<': '*default_float32'
   CATDESC: Stoptnphthresh
@@ -3516,6 +3857,7 @@ stoptnphthresh:
   LABLAXIS: stoptnphthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 stoptsautozero:
   '<<': '*default_float32'
   CATDESC: Stoptsautozero
@@ -3523,6 +3865,7 @@ stoptsautozero:
   LABLAXIS: stoptsautozero
   UNITS: ' '
   DEPEND_0: epoch
+
 stoptscfdthresh:
   '<<': '*default_float32'
   CATDESC: Stoptscfdthresh
@@ -3530,6 +3873,7 @@ stoptscfdthresh:
   LABLAXIS: stoptscfdthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 stoptwautozero:
   '<<': '*default_float32'
   CATDESC: Stoptwautozero
@@ -3537,6 +3881,7 @@ stoptwautozero:
   LABLAXIS: stoptwautozero
   UNITS: ' '
   DEPEND_0: epoch
+
 stoptwcfdthresh:
   '<<': '*default_float32'
   CATDESC: Stoptwcfdthresh
@@ -3544,6 +3889,7 @@ stoptwcfdthresh:
   LABLAXIS: stoptwcfdthresh
   UNITS: ' '
   DEPEND_0: epoch
+
 stopwestpulsedelay:
   '<<': '*default_float32'
   CATDESC: Stopwestpulsedelay
@@ -3551,6 +3897,7 @@ stopwestpulsedelay:
   LABLAXIS: stopwestpulsedelay
   UNITS: ' '
   DEPEND_0: epoch
+
 stopwestpulsestate:
   '<<': '*default_float32'
   CATDESC: Stopwestpulsestate
@@ -3558,6 +3905,7 @@ stopwestpulsestate:
   LABLAXIS: stopwestpulsestate
   UNITS: ' '
   DEPEND_0: epoch
+
 swtime:
   '<<': '*default_float32'
   CATDESC: Swtime
@@ -3565,6 +3913,7 @@ swtime:
   LABLAXIS: swtime
   UNITS: ' '
   DEPEND_0: epoch
+
 swversion:
   '<<': '*default_float32'
   CATDESC: Swversion
@@ -3572,6 +3921,7 @@ swversion:
   LABLAXIS: swversion
   UNITS: ' '
   DEPEND_0: epoch
+
 test1:
   '<<': '*default_float32'
   CATDESC: Test1
@@ -3579,6 +3929,7 @@ test1:
   LABLAXIS: test1
   UNITS: ' '
   DEPEND_0: epoch
+
 test2:
   '<<': '*default_float32'
   CATDESC: Test2
@@ -3586,6 +3937,7 @@ test2:
   LABLAXIS: test2
   UNITS: ' '
   DEPEND_0: epoch
+
 text:
   '<<': '*default_float32'
   CATDESC: Text
@@ -3593,6 +3945,7 @@ text:
   LABLAXIS: text
   UNITS: ' '
   DEPEND_0: epoch
+
 text_0:
   '<<': '*default_float32'
   CATDESC: Text 0
@@ -3600,6 +3953,7 @@ text_0:
   LABLAXIS: text_0
   UNITS: ' '
   DEPEND_0: epoch
+
 text_1:
   '<<': '*default_float32'
   CATDESC: Text 1
@@ -3607,6 +3961,7 @@ text_1:
   LABLAXIS: text_1
   UNITS: ' '
   DEPEND_0: epoch
+
 text_10:
   '<<': '*default_float32'
   CATDESC: Text 10
@@ -3614,6 +3969,7 @@ text_10:
   LABLAXIS: text_10
   UNITS: ' '
   DEPEND_0: epoch
+
 text_11:
   '<<': '*default_float32'
   CATDESC: Text 11
@@ -3621,6 +3977,7 @@ text_11:
   LABLAXIS: text_11
   UNITS: ' '
   DEPEND_0: epoch
+
 text_12:
   '<<': '*default_float32'
   CATDESC: Text 12
@@ -3628,6 +3985,7 @@ text_12:
   LABLAXIS: text_12
   UNITS: ' '
   DEPEND_0: epoch
+
 text_13:
   '<<': '*default_float32'
   CATDESC: Text 13
@@ -3635,6 +3993,7 @@ text_13:
   LABLAXIS: text_13
   UNITS: ' '
   DEPEND_0: epoch
+
 text_14:
   '<<': '*default_float32'
   CATDESC: Text 14
@@ -3642,6 +4001,7 @@ text_14:
   LABLAXIS: text_14
   UNITS: ' '
   DEPEND_0: epoch
+
 text_15:
   '<<': '*default_float32'
   CATDESC: Text 15
@@ -3649,6 +4009,7 @@ text_15:
   LABLAXIS: text_15
   UNITS: ' '
   DEPEND_0: epoch
+
 text_16:
   '<<': '*default_float32'
   CATDESC: Text 16
@@ -3656,6 +4017,7 @@ text_16:
   LABLAXIS: text_16
   UNITS: ' '
   DEPEND_0: epoch
+
 text_17:
   '<<': '*default_float32'
   CATDESC: Text 17
@@ -3663,6 +4025,7 @@ text_17:
   LABLAXIS: text_17
   UNITS: ' '
   DEPEND_0: epoch
+
 text_18:
   '<<': '*default_float32'
   CATDESC: Text 18
@@ -3670,6 +4033,7 @@ text_18:
   LABLAXIS: text_18
   UNITS: ' '
   DEPEND_0: epoch
+
 text_19:
   '<<': '*default_float32'
   CATDESC: Text 19
@@ -3677,6 +4041,7 @@ text_19:
   LABLAXIS: text_19
   UNITS: ' '
   DEPEND_0: epoch
+
 text_2:
   '<<': '*default_float32'
   CATDESC: Text 2
@@ -3684,6 +4049,7 @@ text_2:
   LABLAXIS: text_2
   UNITS: ' '
   DEPEND_0: epoch
+
 text_20:
   '<<': '*default_float32'
   CATDESC: Text 20
@@ -3691,6 +4057,7 @@ text_20:
   LABLAXIS: text_20
   UNITS: ' '
   DEPEND_0: epoch
+
 text_21:
   '<<': '*default_float32'
   CATDESC: Text 21
@@ -3698,6 +4065,7 @@ text_21:
   LABLAXIS: text_21
   UNITS: ' '
   DEPEND_0: epoch
+
 text_22:
   '<<': '*default_float32'
   CATDESC: Text 22
@@ -3705,6 +4073,7 @@ text_22:
   LABLAXIS: text_22
   UNITS: ' '
   DEPEND_0: epoch
+
 text_23:
   '<<': '*default_float32'
   CATDESC: Text 23
@@ -3712,6 +4081,7 @@ text_23:
   LABLAXIS: text_23
   UNITS: ' '
   DEPEND_0: epoch
+
 text_24:
   '<<': '*default_float32'
   CATDESC: Text 24
@@ -3719,6 +4089,7 @@ text_24:
   LABLAXIS: text_24
   UNITS: ' '
   DEPEND_0: epoch
+
 text_25:
   '<<': '*default_float32'
   CATDESC: Text 25
@@ -3726,6 +4097,7 @@ text_25:
   LABLAXIS: text_25
   UNITS: ' '
   DEPEND_0: epoch
+
 text_26:
   '<<': '*default_float32'
   CATDESC: Text 26
@@ -3733,6 +4105,7 @@ text_26:
   LABLAXIS: text_26
   UNITS: ' '
   DEPEND_0: epoch
+
 text_27:
   '<<': '*default_float32'
   CATDESC: Text 27
@@ -3740,6 +4113,7 @@ text_27:
   LABLAXIS: text_27
   UNITS: ' '
   DEPEND_0: epoch
+
 text_28:
   '<<': '*default_float32'
   CATDESC: Text 28
@@ -3747,6 +4121,7 @@ text_28:
   LABLAXIS: text_28
   UNITS: ' '
   DEPEND_0: epoch
+
 text_29:
   '<<': '*default_float32'
   CATDESC: Text 29
@@ -3754,6 +4129,7 @@ text_29:
   LABLAXIS: text_29
   UNITS: ' '
   DEPEND_0: epoch
+
 text_3:
   '<<': '*default_float32'
   CATDESC: Text 3
@@ -3761,6 +4137,7 @@ text_3:
   LABLAXIS: text_3
   UNITS: ' '
   DEPEND_0: epoch
+
 text_30:
   '<<': '*default_float32'
   CATDESC: Text 30
@@ -3768,6 +4145,7 @@ text_30:
   LABLAXIS: text_30
   UNITS: ' '
   DEPEND_0: epoch
+
 text_31:
   '<<': '*default_float32'
   CATDESC: Text 31
@@ -3775,6 +4153,7 @@ text_31:
   LABLAXIS: text_31
   UNITS: ' '
   DEPEND_0: epoch
+
 text_32:
   '<<': '*default_float32'
   CATDESC: Text 32
@@ -3782,6 +4161,7 @@ text_32:
   LABLAXIS: text_32
   UNITS: ' '
   DEPEND_0: epoch
+
 text_33:
   '<<': '*default_float32'
   CATDESC: Text 33
@@ -3789,6 +4169,7 @@ text_33:
   LABLAXIS: text_33
   UNITS: ' '
   DEPEND_0: epoch
+
 text_34:
   '<<': '*default_float32'
   CATDESC: Text 34
@@ -3796,6 +4177,7 @@ text_34:
   LABLAXIS: text_34
   UNITS: ' '
   DEPEND_0: epoch
+
 text_35:
   '<<': '*default_float32'
   CATDESC: Text 35
@@ -3803,6 +4185,7 @@ text_35:
   LABLAXIS: text_35
   UNITS: ' '
   DEPEND_0: epoch
+
 text_36:
   '<<': '*default_float32'
   CATDESC: Text 36
@@ -3810,6 +4193,7 @@ text_36:
   LABLAXIS: text_36
   UNITS: ' '
   DEPEND_0: epoch
+
 text_37:
   '<<': '*default_float32'
   CATDESC: Text 37
@@ -3817,6 +4201,7 @@ text_37:
   LABLAXIS: text_37
   UNITS: ' '
   DEPEND_0: epoch
+
 text_38:
   '<<': '*default_float32'
   CATDESC: Text 38
@@ -3824,6 +4209,7 @@ text_38:
   LABLAXIS: text_38
   UNITS: ' '
   DEPEND_0: epoch
+
 text_39:
   '<<': '*default_float32'
   CATDESC: Text 39
@@ -3831,6 +4217,7 @@ text_39:
   LABLAXIS: text_39
   UNITS: ' '
   DEPEND_0: epoch
+
 text_4:
   '<<': '*default_float32'
   CATDESC: Text 4
@@ -3838,6 +4225,7 @@ text_4:
   LABLAXIS: text_4
   UNITS: ' '
   DEPEND_0: epoch
+
 text_40:
   '<<': '*default_float32'
   CATDESC: Text 40
@@ -3845,6 +4233,7 @@ text_40:
   LABLAXIS: text_40
   UNITS: ' '
   DEPEND_0: epoch
+
 text_41:
   '<<': '*default_float32'
   CATDESC: Text 41
@@ -3852,6 +4241,7 @@ text_41:
   LABLAXIS: text_41
   UNITS: ' '
   DEPEND_0: epoch
+
 text_42:
   '<<': '*default_float32'
   CATDESC: Text 42
@@ -3859,6 +4249,7 @@ text_42:
   LABLAXIS: text_42
   UNITS: ' '
   DEPEND_0: epoch
+
 text_43:
   '<<': '*default_float32'
   CATDESC: Text 43
@@ -3866,6 +4257,7 @@ text_43:
   LABLAXIS: text_43
   UNITS: ' '
   DEPEND_0: epoch
+
 text_44:
   '<<': '*default_float32'
   CATDESC: Text 44
@@ -3873,6 +4265,7 @@ text_44:
   LABLAXIS: text_44
   UNITS: ' '
   DEPEND_0: epoch
+
 text_45:
   '<<': '*default_float32'
   CATDESC: Text 45
@@ -3880,6 +4273,7 @@ text_45:
   LABLAXIS: text_45
   UNITS: ' '
   DEPEND_0: epoch
+
 text_46:
   '<<': '*default_float32'
   CATDESC: Text 46
@@ -3887,6 +4281,7 @@ text_46:
   LABLAXIS: text_46
   UNITS: ' '
   DEPEND_0: epoch
+
 text_47:
   '<<': '*default_float32'
   CATDESC: Text 47
@@ -3894,6 +4289,7 @@ text_47:
   LABLAXIS: text_47
   UNITS: ' '
   DEPEND_0: epoch
+
 text_48:
   '<<': '*default_float32'
   CATDESC: Text 48
@@ -3901,6 +4297,7 @@ text_48:
   LABLAXIS: text_48
   UNITS: ' '
   DEPEND_0: epoch
+
 text_49:
   '<<': '*default_float32'
   CATDESC: Text 49
@@ -3908,6 +4305,7 @@ text_49:
   LABLAXIS: text_49
   UNITS: ' '
   DEPEND_0: epoch
+
 text_5:
   '<<': '*default_float32'
   CATDESC: Text 5
@@ -3915,6 +4313,7 @@ text_5:
   LABLAXIS: text_5
   UNITS: ' '
   DEPEND_0: epoch
+
 text_50:
   '<<': '*default_float32'
   CATDESC: Text 50
@@ -3922,6 +4321,7 @@ text_50:
   LABLAXIS: text_50
   UNITS: ' '
   DEPEND_0: epoch
+
 text_51:
   '<<': '*default_float32'
   CATDESC: Text 51
@@ -3929,6 +4329,7 @@ text_51:
   LABLAXIS: text_51
   UNITS: ' '
   DEPEND_0: epoch
+
 text_52:
   '<<': '*default_float32'
   CATDESC: Text 52
@@ -3936,6 +4337,7 @@ text_52:
   LABLAXIS: text_52
   UNITS: ' '
   DEPEND_0: epoch
+
 text_53:
   '<<': '*default_float32'
   CATDESC: Text 53
@@ -3943,6 +4345,7 @@ text_53:
   LABLAXIS: text_53
   UNITS: ' '
   DEPEND_0: epoch
+
 text_54:
   '<<': '*default_float32'
   CATDESC: Text 54
@@ -3950,6 +4353,7 @@ text_54:
   LABLAXIS: text_54
   UNITS: ' '
   DEPEND_0: epoch
+
 text_55:
   '<<': '*default_float32'
   CATDESC: Text 55
@@ -3957,6 +4361,7 @@ text_55:
   LABLAXIS: text_55
   UNITS: ' '
   DEPEND_0: epoch
+
 text_56:
   '<<': '*default_float32'
   CATDESC: Text 56
@@ -3964,6 +4369,7 @@ text_56:
   LABLAXIS: text_56
   UNITS: ' '
   DEPEND_0: epoch
+
 text_57:
   '<<': '*default_float32'
   CATDESC: Text 57
@@ -3971,6 +4377,7 @@ text_57:
   LABLAXIS: text_57
   UNITS: ' '
   DEPEND_0: epoch
+
 text_58:
   '<<': '*default_float32'
   CATDESC: Text 58
@@ -3978,6 +4385,7 @@ text_58:
   LABLAXIS: text_58
   UNITS: ' '
   DEPEND_0: epoch
+
 text_59:
   '<<': '*default_float32'
   CATDESC: Text 59
@@ -3985,6 +4393,7 @@ text_59:
   LABLAXIS: text_59
   UNITS: ' '
   DEPEND_0: epoch
+
 text_6:
   '<<': '*default_float32'
   CATDESC: Text 6
@@ -3992,6 +4401,7 @@ text_6:
   LABLAXIS: text_6
   UNITS: ' '
   DEPEND_0: epoch
+
 text_60:
   '<<': '*default_float32'
   CATDESC: Text 60
@@ -3999,6 +4409,7 @@ text_60:
   LABLAXIS: text_60
   UNITS: ' '
   DEPEND_0: epoch
+
 text_61:
   '<<': '*default_float32'
   CATDESC: Text 61
@@ -4006,6 +4417,7 @@ text_61:
   LABLAXIS: text_61
   UNITS: ' '
   DEPEND_0: epoch
+
 text_62:
   '<<': '*default_float32'
   CATDESC: Text 62
@@ -4013,6 +4425,7 @@ text_62:
   LABLAXIS: text_62
   UNITS: ' '
   DEPEND_0: epoch
+
 text_63:
   '<<': '*default_float32'
   CATDESC: Text 63
@@ -4020,6 +4433,7 @@ text_63:
   LABLAXIS: text_63
   UNITS: ' '
   DEPEND_0: epoch
+
 text_64:
   '<<': '*default_float32'
   CATDESC: Text 64
@@ -4027,6 +4441,7 @@ text_64:
   LABLAXIS: text_64
   UNITS: ' '
   DEPEND_0: epoch
+
 text_65:
   '<<': '*default_float32'
   CATDESC: Text 65
@@ -4034,6 +4449,7 @@ text_65:
   LABLAXIS: text_65
   UNITS: ' '
   DEPEND_0: epoch
+
 text_66:
   '<<': '*default_float32'
   CATDESC: Text 66
@@ -4041,6 +4457,7 @@ text_66:
   LABLAXIS: text_66
   UNITS: ' '
   DEPEND_0: epoch
+
 text_67:
   '<<': '*default_float32'
   CATDESC: Text 67
@@ -4048,6 +4465,7 @@ text_67:
   LABLAXIS: text_67
   UNITS: ' '
   DEPEND_0: epoch
+
 text_68:
   '<<': '*default_float32'
   CATDESC: Text 68
@@ -4055,6 +4473,7 @@ text_68:
   LABLAXIS: text_68
   UNITS: ' '
   DEPEND_0: epoch
+
 text_69:
   '<<': '*default_float32'
   CATDESC: Text 69
@@ -4062,6 +4481,7 @@ text_69:
   LABLAXIS: text_69
   UNITS: ' '
   DEPEND_0: epoch
+
 text_7:
   '<<': '*default_float32'
   CATDESC: Text 7
@@ -4069,6 +4489,7 @@ text_7:
   LABLAXIS: text_7
   UNITS: ' '
   DEPEND_0: epoch
+
 text_70:
   '<<': '*default_float32'
   CATDESC: Text 70
@@ -4076,6 +4497,7 @@ text_70:
   LABLAXIS: text_70
   UNITS: ' '
   DEPEND_0: epoch
+
 text_71:
   '<<': '*default_float32'
   CATDESC: Text 71
@@ -4083,6 +4505,7 @@ text_71:
   LABLAXIS: text_71
   UNITS: ' '
   DEPEND_0: epoch
+
 text_72:
   '<<': '*default_float32'
   CATDESC: Text 72
@@ -4090,6 +4513,7 @@ text_72:
   LABLAXIS: text_72
   UNITS: ' '
   DEPEND_0: epoch
+
 text_73:
   '<<': '*default_float32'
   CATDESC: Text 73
@@ -4097,6 +4521,7 @@ text_73:
   LABLAXIS: text_73
   UNITS: ' '
   DEPEND_0: epoch
+
 text_74:
   '<<': '*default_float32'
   CATDESC: Text 74
@@ -4104,6 +4529,7 @@ text_74:
   LABLAXIS: text_74
   UNITS: ' '
   DEPEND_0: epoch
+
 text_75:
   '<<': '*default_float32'
   CATDESC: Text 75
@@ -4111,6 +4537,7 @@ text_75:
   LABLAXIS: text_75
   UNITS: ' '
   DEPEND_0: epoch
+
 text_76:
   '<<': '*default_float32'
   CATDESC: Text 76
@@ -4118,6 +4545,7 @@ text_76:
   LABLAXIS: text_76
   UNITS: ' '
   DEPEND_0: epoch
+
 text_8:
   '<<': '*default_float32'
   CATDESC: Text 8
@@ -4125,6 +4553,7 @@ text_8:
   LABLAXIS: text_8
   UNITS: ' '
   DEPEND_0: epoch
+
 text_9:
   '<<': '*default_float32'
   CATDESC: Text 9
@@ -4132,6 +4561,7 @@ text_9:
   LABLAXIS: text_9
   UNITS: ' '
   DEPEND_0: epoch
+
 textlength:
   '<<': '*default_float32'
   CATDESC: Textlength
@@ -4139,6 +4569,7 @@ textlength:
   LABLAXIS: textlength
   UNITS: ' '
   DEPEND_0: epoch
+
 tlmvolume:
   '<<': '*default_float32'
   CATDESC: Tlmvolume
@@ -4146,6 +4577,7 @@ tlmvolume:
   LABLAXIS: tlmvolume
   UNITS: ' '
   DEPEND_0: epoch
+
 tofbtoff:
   '<<': '*default_float32'
   CATDESC: Tofbtoff
@@ -4153,6 +4585,7 @@ tofbtoff:
   LABLAXIS: tofbtoff
   UNITS: ' '
   DEPEND_0: epoch
+
 tofdiffbtmax:
   '<<': '*default_float32'
   CATDESC: Tofdiffbtmax
@@ -4160,6 +4593,7 @@ tofdiffbtmax:
   LABLAXIS: tofdiffbtmax
   UNITS: ' '
   DEPEND_0: epoch
+
 tofdiffbtmin:
   '<<': '*default_float32'
   CATDESC: Tofdiffbtmin
@@ -4167,6 +4601,7 @@ tofdiffbtmin:
   LABLAXIS: tofdiffbtmin
   UNITS: ' '
   DEPEND_0: epoch
+
 tofdifftpmax:
   '<<': '*default_float32'
   CATDESC: Tofdifftpmax
@@ -4174,6 +4609,7 @@ tofdifftpmax:
   LABLAXIS: tofdifftpmax
   UNITS: ' '
   DEPEND_0: epoch
+
 tofdifftpmin:
   '<<': '*default_float32'
   CATDESC: Tofdifftpmin
@@ -4181,6 +4617,7 @@ tofdifftpmin:
   LABLAXIS: tofdifftpmin
   UNITS: ' '
   DEPEND_0: epoch
+
 tofsc:
   '<<': '*default_float32'
   CATDESC: Tofsc
@@ -4188,6 +4625,7 @@ tofsc:
   LABLAXIS: tofsc
   UNITS: ' '
   DEPEND_0: epoch
+
 tofssdltoff0:
   '<<': '*default_float32'
   CATDESC: Tofssdltoff0
@@ -4195,6 +4633,7 @@ tofssdltoff0:
   LABLAXIS: tofssdltoff0
   UNITS: ' '
   DEPEND_0: epoch
+
 tofssdltoff1:
   '<<': '*default_float32'
   CATDESC: Tofssdltoff1
@@ -4202,6 +4641,7 @@ tofssdltoff1:
   LABLAXIS: tofssdltoff1
   UNITS: ' '
   DEPEND_0: epoch
+
 tofssdltoff2:
   '<<': '*default_float32'
   CATDESC: Tofssdltoff2
@@ -4209,6 +4649,7 @@ tofssdltoff2:
   LABLAXIS: tofssdltoff2
   UNITS: ' '
   DEPEND_0: epoch
+
 tofssdltoff3:
   '<<': '*default_float32'
   CATDESC: Tofssdltoff3
@@ -4216,6 +4657,7 @@ tofssdltoff3:
   LABLAXIS: tofssdltoff3
   UNITS: ' '
   DEPEND_0: epoch
+
 tofssdltoff4:
   '<<': '*default_float32'
   CATDESC: Tofssdltoff4
@@ -4223,6 +4665,7 @@ tofssdltoff4:
   LABLAXIS: tofssdltoff4
   UNITS: ' '
   DEPEND_0: epoch
+
 tofssdltoff5:
   '<<': '*default_float32'
   CATDESC: Tofssdltoff5
@@ -4230,6 +4673,7 @@ tofssdltoff5:
   LABLAXIS: tofssdltoff5
   UNITS: ' '
   DEPEND_0: epoch
+
 tofssdltoff6:
   '<<': '*default_float32'
   CATDESC: Tofssdltoff6
@@ -4237,6 +4681,7 @@ tofssdltoff6:
   LABLAXIS: tofssdltoff6
   UNITS: ' '
   DEPEND_0: epoch
+
 tofssdltoff7:
   '<<': '*default_float32'
   CATDESC: Tofssdltoff7
@@ -4244,6 +4689,7 @@ tofssdltoff7:
   LABLAXIS: tofssdltoff7
   UNITS: ' '
   DEPEND_0: epoch
+
 tofssdrtoff0:
   '<<': '*default_float32'
   CATDESC: Tofssdrtoff0
@@ -4251,6 +4697,7 @@ tofssdrtoff0:
   LABLAXIS: tofssdrtoff0
   UNITS: ' '
   DEPEND_0: epoch
+
 tofssdrtoff1:
   '<<': '*default_float32'
   CATDESC: Tofssdrtoff1
@@ -4258,6 +4705,7 @@ tofssdrtoff1:
   LABLAXIS: tofssdrtoff1
   UNITS: ' '
   DEPEND_0: epoch
+
 tofssdrtoff2:
   '<<': '*default_float32'
   CATDESC: Tofssdrtoff2
@@ -4265,6 +4713,7 @@ tofssdrtoff2:
   LABLAXIS: tofssdrtoff2
   UNITS: ' '
   DEPEND_0: epoch
+
 tofssdrtoff3:
   '<<': '*default_float32'
   CATDESC: Tofssdrtoff3
@@ -4272,6 +4721,7 @@ tofssdrtoff3:
   LABLAXIS: tofssdrtoff3
   UNITS: ' '
   DEPEND_0: epoch
+
 tofssdrtoff4:
   '<<': '*default_float32'
   CATDESC: Tofssdrtoff4
@@ -4279,6 +4729,7 @@ tofssdrtoff4:
   LABLAXIS: tofssdrtoff4
   UNITS: ' '
   DEPEND_0: epoch
+
 tofssdrtoff5:
   '<<': '*default_float32'
   CATDESC: Tofssdrtoff5
@@ -4286,6 +4737,7 @@ tofssdrtoff5:
   LABLAXIS: tofssdrtoff5
   UNITS: ' '
   DEPEND_0: epoch
+
 tofssdrtoff6:
   '<<': '*default_float32'
   CATDESC: Tofssdrtoff6
@@ -4293,6 +4745,7 @@ tofssdrtoff6:
   LABLAXIS: tofssdrtoff6
   UNITS: ' '
   DEPEND_0: epoch
+
 tofssdrtoff7:
   '<<': '*default_float32'
   CATDESC: Tofssdrtoff7
@@ -4300,6 +4753,7 @@ tofssdrtoff7:
   LABLAXIS: tofssdrtoff7
   UNITS: ' '
   DEPEND_0: epoch
+
 tofssdsc:
   '<<': '*default_float32'
   CATDESC: Tofssdsc
@@ -4307,6 +4761,7 @@ tofssdsc:
   LABLAXIS: tofssdsc
   UNITS: ' '
   DEPEND_0: epoch
+
 tofssdtotoff:
   '<<': '*default_float32'
   CATDESC: Tofssdtotoff
@@ -4314,6 +4769,7 @@ tofssdtotoff:
   LABLAXIS: tofssdtotoff
   UNITS: ' '
   DEPEND_0: epoch
+
 toftpoff:
   '<<': '*default_float32'
   CATDESC: Toftpoff
@@ -4321,6 +4777,7 @@ toftpoff:
   LABLAXIS: toftpoff
   UNITS: ' '
   DEPEND_0: epoch
+
 topmcp_i:
   '<<': '*default_float32'
   CATDESC: Topmcp i
@@ -4328,6 +4785,7 @@ topmcp_i:
   LABLAXIS: topmcp_i
   UNITS: ' '
   DEPEND_0: epoch
+
 topmcp_i_hi:
   '<<': '*default_float32'
   CATDESC: Topmcp i hi
@@ -4335,6 +4793,7 @@ topmcp_i_hi:
   LABLAXIS: topmcp_i_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 topmcp_i_lo:
   '<<': '*default_float32'
   CATDESC: Topmcp i lo
@@ -4342,6 +4801,7 @@ topmcp_i_lo:
   LABLAXIS: topmcp_i_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 topmcp_v:
   '<<': '*default_float32'
   CATDESC: Topmcp v
@@ -4349,6 +4809,7 @@ topmcp_v:
   LABLAXIS: topmcp_v
   UNITS: ' '
   DEPEND_0: epoch
+
 topmcp_v_hi:
   '<<': '*default_float32'
   CATDESC: Topmcp v hi
@@ -4356,6 +4817,7 @@ topmcp_v_hi:
   LABLAXIS: topmcp_v_hi
   UNITS: ' '
   DEPEND_0: epoch
+
 topmcp_v_lo:
   '<<': '*default_float32'
   CATDESC: Topmcp v lo
@@ -4363,6 +4825,7 @@ topmcp_v_lo:
   LABLAXIS: topmcp_v_lo
   UNITS: ' '
   DEPEND_0: epoch
+
 topmcphvfault:
   '<<': '*default_float32'
   CATDESC: Topmcphvfault
@@ -4370,6 +4833,7 @@ topmcphvfault:
   LABLAXIS: topmcphvfault
   UNITS: ' '
   DEPEND_0: epoch
+
 topmcphvgoal:
   '<<': '*default_float32'
   CATDESC: Topmcphvgoal
@@ -4377,6 +4841,7 @@ topmcphvgoal:
   LABLAXIS: topmcphvgoal
   UNITS: ' '
   DEPEND_0: epoch
+
 topmcphvilim:
   '<<': '*default_float32'
   CATDESC: Topmcphvilim
@@ -4384,6 +4849,7 @@ topmcphvilim:
   LABLAXIS: topmcphvilim
   UNITS: ' '
   DEPEND_0: epoch
+
 topmcphvlim:
   '<<': '*default_float32'
   CATDESC: Topmcphvlim
@@ -4391,6 +4857,7 @@ topmcphvlim:
   LABLAXIS: topmcphvlim
   UNITS: ' '
   DEPEND_0: epoch
+
 topmcphvmonitor:
   '<<': '*default_float32'
   CATDESC: Topmcphvmonitor
@@ -4398,6 +4865,7 @@ topmcphvmonitor:
   LABLAXIS: topmcphvmonitor
   UNITS: ' '
   DEPEND_0: epoch
+
 topmcphvtrip:
   '<<': '*default_float32'
   CATDESC: Topmcphvtrip
@@ -4405,6 +4873,7 @@ topmcphvtrip:
   LABLAXIS: topmcphvtrip
   UNITS: ' '
   DEPEND_0: epoch
+
 topmcphvv:
   '<<': '*default_float32'
   CATDESC: Topmcphvv
@@ -4412,6 +4881,7 @@ topmcphvv:
   LABLAXIS: topmcphvv
   UNITS: ' '
   DEPEND_0: epoch
+
 unused:
   '<<': '*default_float32'
   CATDESC: Unused
@@ -4419,6 +4889,7 @@ unused:
   LABLAXIS: unused
   UNITS: ' '
   DEPEND_0: epoch
+
 value:
   '<<': '*default_float32'
   CATDESC: Value
@@ -4426,6 +4897,7 @@ value:
   LABLAXIS: value
   UNITS: ' '
   DEPEND_0: epoch
+
 watchaddr:
   '<<': '*default_float32'
   CATDESC: Watchaddr
@@ -4433,6 +4905,7 @@ watchaddr:
   LABLAXIS: watchaddr
   UNITS: ' '
   DEPEND_0: epoch
+
 watchdata_0:
   '<<': '*default_float32'
   CATDESC: Watchdata 0
@@ -4440,6 +4913,7 @@ watchdata_0:
   LABLAXIS: watchdata_0
   UNITS: ' '
   DEPEND_0: epoch
+
 watchdata_1:
   '<<': '*default_float32'
   CATDESC: Watchdata 1
@@ -4447,6 +4921,7 @@ watchdata_1:
   LABLAXIS: watchdata_1
   UNITS: ' '
   DEPEND_0: epoch
+
 watchmemid:
   '<<': '*default_float32'
   CATDESC: Watchmemid
@@ -4454,6 +4929,7 @@ watchmemid:
   LABLAXIS: watchmemid
   UNITS: ' '
   DEPEND_0: epoch
+
 xcoinbtoff:
   '<<': '*default_float32'
   CATDESC: Xcoinbtoff
@@ -4461,6 +4937,7 @@ xcoinbtoff:
   LABLAXIS: xcoinbtoff
   UNITS: ' '
   DEPEND_0: epoch
+
 xcoinbtsc:
   '<<': '*default_float32'
   CATDESC: Xcoinbtsc
@@ -4468,6 +4945,7 @@ xcoinbtsc:
   LABLAXIS: xcoinbtsc
   UNITS: ' '
   DEPEND_0: epoch
+
 xcointpoff:
   '<<': '*default_float32'
   CATDESC: Xcointpoff
@@ -4475,6 +4953,7 @@ xcointpoff:
   LABLAXIS: xcointpoff
   UNITS: ' '
   DEPEND_0: epoch
+
 xcointpsc:
   '<<': '*default_float32'
   CATDESC: Xcointpsc
@@ -4482,6 +4961,7 @@ xcointpsc:
   LABLAXIS: xcointpsc
   UNITS: ' '
   DEPEND_0: epoch
+
 xftltoff:
   '<<': '*default_float32'
   CATDESC: Xftltoff
@@ -4489,6 +4969,7 @@ xftltoff:
   LABLAXIS: xftltoff
   UNITS: ' '
   DEPEND_0: epoch
+
 xftrtoff:
   '<<': '*default_float32'
   CATDESC: Xftrtoff
@@ -4496,6 +4977,7 @@ xftrtoff:
   LABLAXIS: xftrtoff
   UNITS: ' '
   DEPEND_0: epoch
+
 xftsc:
   '<<': '*default_float32'
   CATDESC: Xftsc
@@ -4503,6 +4985,7 @@ xftsc:
   LABLAXIS: xftsc
   UNITS: ' '
   DEPEND_0: epoch
+
 xfttof:
   '<<': '*default_float32'
   CATDESC: Xfttof
@@ -4510,6 +4993,7 @@ xfttof:
   LABLAXIS: xfttof
   UNITS: ' '
   DEPEND_0: epoch
+
 ybkssd0:
   '<<': '*default_float32'
   CATDESC: Ybkssd0
@@ -4517,6 +5001,7 @@ ybkssd0:
   LABLAXIS: ybkssd0
   UNITS: ' '
   DEPEND_0: epoch
+
 ybkssd1:
   '<<': '*default_float32'
   CATDESC: Ybkssd1
@@ -4524,6 +5009,7 @@ ybkssd1:
   LABLAXIS: ybkssd1
   UNITS: ' '
   DEPEND_0: epoch
+
 ybkssd2:
   '<<': '*default_float32'
   CATDESC: Ybkssd2
@@ -4531,6 +5017,7 @@ ybkssd2:
   LABLAXIS: ybkssd2
   UNITS: ' '
   DEPEND_0: epoch
+
 ybkssd3:
   '<<': '*default_float32'
   CATDESC: Ybkssd3
@@ -4538,6 +5025,7 @@ ybkssd3:
   LABLAXIS: ybkssd3
   UNITS: ' '
   DEPEND_0: epoch
+
 ybkssd4:
   '<<': '*default_float32'
   CATDESC: Ybkssd4
@@ -4545,6 +5033,7 @@ ybkssd4:
   LABLAXIS: ybkssd4
   UNITS: ' '
   DEPEND_0: epoch
+
 ybkssd5:
   '<<': '*default_float32'
   CATDESC: Ybkssd5
@@ -4552,6 +5041,7 @@ ybkssd5:
   LABLAXIS: ybkssd5
   UNITS: ' '
   DEPEND_0: epoch
+
 ybkssd6:
   '<<': '*default_float32'
   CATDESC: Ybkssd6
@@ -4559,6 +5049,7 @@ ybkssd6:
   LABLAXIS: ybkssd6
   UNITS: ' '
   DEPEND_0: epoch
+
 ybkssd7:
   '<<': '*default_float32'
   CATDESC: Ybkssd7
