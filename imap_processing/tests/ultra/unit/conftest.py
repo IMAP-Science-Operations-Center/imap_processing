@@ -259,6 +259,7 @@ def l1b_extendedspin_dataset(
     # TODO: this is a placeholder for the hk dataset.
     data_dict["imap_ultra_l1a_45sensor-hk"] = faux_aux_dataset
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
+    data_dict["imap_ultra_l1a_45sensor-params"] = l1b_de_dataset[0]
 
     output_datasets = ultra_l1b(data_dict)
 

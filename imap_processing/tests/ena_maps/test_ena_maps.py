@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
+import tempfile
 from copy import deepcopy
+from pathlib import Path
 from unittest import mock
 
 import astropy_healpix.healpy as hp
@@ -10,6 +13,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils import spatial_utils
 from imap_processing.ena_maps.utils.coordinates import CoordNames
@@ -78,14 +82,65 @@ class TestUltraPointingSet:
             # Check that the unwrapped_dims_dict is as expected
             assert ultra_pset.unwrapped_dims_dict["counts"] == (
                 "epoch",
-                "energy",
+                "energy_bin_geometric_mean",
                 "pixel",
             )
             # Check the non_spatial_coords are as expected
             assert tuple(ultra_pset.non_spatial_coords.keys()) == (
                 "epoch",
-                "energy",
+                "energy_bin_geometric_mean",
             )
+
+    @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
+    def test_from_path_or_dataset(
+        self,
+    ):
+        ultra_pset = self.l1c_pset_products[0]
+
+        cdf_filepath = write_cdf(ultra_pset, istp=False)
+
+        ultra_pset_from_dataset = ena_maps.UltraPointingSet.from_path_or_dataset(
+            ultra_pset
+        )
+        ultra_pset_from_dataset_copy = ena_maps.UltraPointingSet.from_path_or_dataset(
+            ultra_pset
+        )
+
+        ultra_pset_from_str = ena_maps.UltraPointingSet.from_path_or_dataset(
+            cdf_filepath
+        )
+        ultra_pset_from_path = ena_maps.UltraPointingSet.from_path_or_dataset(
+            Path(cdf_filepath)
+        )
+
+        np.testing.assert_allclose(
+            ultra_pset_from_dataset.data["counts"].values,
+            ultra_pset_from_str.data["counts"].values,
+            rtol=1e-6,
+        )
+
+        np.testing.assert_allclose(
+            ultra_pset_from_dataset.data["counts"].values,
+            ultra_pset_from_path.data["counts"].values,
+            rtol=1e-6,
+        )
+
+        # delete cdf_filepath once we're done with it
+        Path(cdf_filepath).unlink()
+
+        # The two datasets should should start as equal, but not the same object
+        # So if we modify one, the other should not change
+        np.testing.assert_allclose(
+            ultra_pset_from_dataset.data["counts"].values,
+            ultra_pset_from_dataset_copy.data["counts"].values,
+            rtol=1e-6,
+        )
+        ultra_pset_from_dataset.data["counts"].values[0] += int(1e8)
+        assert not np.allclose(
+            ultra_pset_from_dataset.data["counts"].values,
+            ultra_pset_from_dataset_copy.data["counts"].values,
+            rtol=1e-6,
+        )
 
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
@@ -188,7 +243,7 @@ class TestRectangularSkyMap:
         for ultra_pset in self.ultra_psets:
             rectangular_map.project_pset_values_to_map(
                 ultra_pset,
-                value_keys=["counts", "exposure_time"],
+                value_keys=["counts", "exposure_factor"],
                 index_match_method=index_matching_method,
             )
 
@@ -199,20 +254,22 @@ class TestRectangularSkyMap:
         simple_summed_pset_counts_by_energy = np.zeros(
             shape=(
                 self.ultra_l1c_pset_products[0]["counts"].sizes[
-                    CoordNames.ENERGY.value
+                    CoordNames.ENERGY_ULTRA.value
                 ],
             )
         )
         for pset in self.ultra_l1c_pset_products:
             simple_summed_pset_counts_by_energy += pset["counts"].sum(
-                dim=[d for d in pset["counts"].dims if d != CoordNames.ENERGY.value]
+                dim=[
+                    d for d in pset["counts"].dims if d != CoordNames.ENERGY_ULTRA.value
+                ]
             )
 
         rmap_counts_per_energy_bin = rectangular_map.data_1d["counts"].sum(
             dim=[
                 d
                 for d in rectangular_map.data_1d["counts"].dims
-                if d != CoordNames.ENERGY.value
+                if d != CoordNames.ENERGY_ULTRA.value
             ]
         )
 
@@ -251,7 +308,7 @@ class TestRectangularSkyMap:
         for rectangular_pset in self.rectangular_psets:
             rectangular_map.project_pset_values_to_map(
                 rectangular_pset,
-                value_keys=["counts", "exposure_time"],
+                value_keys=["counts", "exposure_factor"],
                 index_match_method=index_matching_method,
             )
 
@@ -262,20 +319,22 @@ class TestRectangularSkyMap:
         simple_summed_pset_counts_by_energy = np.zeros(
             shape=(
                 self.rectangular_l1c_pset_products[0]["counts"].sizes[
-                    CoordNames.ENERGY.value
+                    CoordNames.ENERGY_ULTRA.value
                 ],
             )
         )
         for pset in self.rectangular_l1c_pset_products:
             simple_summed_pset_counts_by_energy += pset["counts"].sum(
-                dim=[d for d in pset["counts"].dims if d != CoordNames.ENERGY.value]
+                dim=[
+                    d for d in pset["counts"].dims if d != CoordNames.ENERGY_ULTRA.value
+                ]
             )
 
         rmap_counts_per_energy_bin = rectangular_map.data_1d["counts"].sum(
             dim=[
                 d
                 for d in rectangular_map.data_1d["counts"].dims
-                if d != CoordNames.ENERGY.value
+                if d != CoordNames.ENERGY_ULTRA.value
             ]
         )
 
@@ -344,7 +403,7 @@ class TestRectangularSkyMap:
 
             rectangular_map.project_pset_values_to_map(
                 rectangular_pset,
-                value_keys=["counts", "exposure_time"],
+                value_keys=["counts", "exposure_factor"],
                 index_match_method=index_matching_method,
             )
             expected_value_every_pixel += pset_num
@@ -372,13 +431,13 @@ class TestRectangularSkyMap:
         assert "counts" in rect_map_ds.data_vars
         assert rect_map_ds["counts"].shape == (
             1,
-            rectangular_pset.data["counts"].sizes[CoordNames.ENERGY.value],
+            rectangular_pset.data["counts"].sizes[CoordNames.ENERGY_ULTRA.value],
             360 / skymap_spacing,
             180 / skymap_spacing,
         )
         assert rect_map_ds["counts"].dims == (
             CoordNames.TIME.value,
-            CoordNames.ENERGY.value,
+            CoordNames.ENERGY_ULTRA.value,
             CoordNames.AZIMUTH_L2.value,
             CoordNames.ELEVATION_L2.value,
         )
@@ -534,7 +593,7 @@ class TestHealpixSkyMap:
         assert "counts" in hp_map.data_1d.data_vars
 
         # Find the maximum value in the spatial pixel dimension of the healpix map
-        bright_hp_pixel_index = hp_map.data_1d["counts"][0, :].argmax()
+        bright_hp_pixel_index = hp_map.data_1d["counts"][0, :].values.argmax()
         bright_hp_pixel_az_el = hp_map.az_el_points[bright_hp_pixel_index]
 
         np.testing.assert_allclose(
@@ -625,12 +684,12 @@ class TestHealpixSkyMap:
         assert "counts" in hp_map_ds.data_vars
         assert hp_map_ds["counts"].shape == (
             1,
-            mock_pset_input_frame.data["counts"].sizes[CoordNames.ENERGY.value],
+            mock_pset_input_frame.data["counts"].sizes[CoordNames.ENERGY_ULTRA.value],
             hp_map.num_points,
         )
         assert hp_map_ds["counts"].dims == (
             CoordNames.TIME.value,
-            CoordNames.ENERGY.value,
+            CoordNames.ENERGY_ULTRA.value,
             CoordNames.HEALPIX_INDEX.value,
         )
         np.testing.assert_array_equal(
@@ -836,3 +895,148 @@ class TestIndexMatching:
         _ = ena_maps.match_coords_to_indices(
             mock_rect_map_1, mock_rect_map_2, event_et=0
         )
+
+
+class TestAbstractSkyMap:
+    @pytest.mark.parametrize(
+        "skymap_props_dict",
+        [
+            pytest.param(
+                # HealpixSkyMap properties
+                {
+                    "sky_tiling_type": "HEALPIX",
+                    "nside": 32,
+                    "nested": True,
+                    "spice_reference_frame": geometry.SpiceFrame.ECLIPJ2000.name,
+                    "values_to_push_project": ["foo", "bar"],
+                },
+                id="healpix-skymap",
+            ),
+            pytest.param(
+                {
+                    "sky_tiling_type": "RECTANGULAR",
+                    "spacing_deg": 2,
+                    "spice_reference_frame": geometry.SpiceFrame.ECLIPJ2000.name,
+                    "values_to_pull_project": ["potato", "po-tah-to"],
+                },
+                id="rectangular-skymap",
+            ),
+        ],
+    )
+    def test_to_dict_and_from_dict(self, skymap_props_dict):
+        """Test serialization to and from dictionary"""
+        # Make a SkyMap from the original properties dict
+        skymap_from_dict = ena_maps.AbstractSkyMap.from_dict(skymap_props_dict)
+
+        # Use the SkyMap to create a new properties dict
+        dict_from_skymap = skymap_from_dict.to_dict()
+
+        assert (
+            skymap_from_dict.spice_reference_frame
+            == geometry.SpiceFrame[skymap_props_dict["spice_reference_frame"]]
+        )
+
+        if skymap_props_dict["sky_tiling_type"] == "HEALPIX":
+            assert isinstance(skymap_from_dict, ena_maps.HealpixSkyMap), (
+                "from_dict should return a HealpixSkyMap object"
+            )
+            assert skymap_from_dict.nside == skymap_props_dict["nside"]
+            assert skymap_from_dict.nested == skymap_props_dict["nested"]
+            assert (
+                skymap_from_dict.values_to_push_project
+                == skymap_props_dict["values_to_push_project"]
+            )
+            assert skymap_from_dict.values_to_pull_project == []
+
+        elif skymap_props_dict["sky_tiling_type"] == "RECTANGULAR":
+            assert isinstance(skymap_from_dict, ena_maps.RectangularSkyMap), (
+                "from_dict should return a RectangularSkyMap object"
+            )
+            assert skymap_from_dict.spacing_deg == skymap_props_dict["spacing_deg"]
+            assert skymap_from_dict.values_to_push_project == []
+            assert (
+                skymap_from_dict.values_to_pull_project
+                == skymap_props_dict["values_to_pull_project"]
+            )
+
+        for key in [
+            "sky_tiling_type",
+            "spice_reference_frame",
+            "nside",
+            "nested",
+            "spacing_deg",
+        ]:
+            if key in skymap_props_dict:
+                assert dict_from_skymap[key] == skymap_props_dict[key]
+
+        # Check that the dict from the SkyMap matches the original dict ONLY after
+        # adding automatically added "values_to_push_project"/"values_to_pull_project"
+        # key to the original dict
+        assert dict_from_skymap != skymap_props_dict
+
+        # In the dicts passed in above, the HEALPIX one is missing the pull key
+        # and the RECTANGULAR one is missing the push key
+        if skymap_props_dict["sky_tiling_type"] == "HEALPIX":
+            skymap_props_dict["values_to_pull_project"] = []
+        elif skymap_props_dict["sky_tiling_type"] == "RECTANGULAR":
+            skymap_props_dict["values_to_push_project"] = []
+        assert dict_from_skymap == skymap_props_dict
+
+        # Change a value in the new dict and check that it is not equal to the original
+        dict_from_skymap["spice_reference_frame"] = "SPACE!"
+        assert (
+            dict_from_skymap["spice_reference_frame"]
+            != skymap_props_dict["spice_reference_frame"]
+        )
+
+    def test_to_json_and_from_json(self):
+        """Test serialization to and from JSON"""
+        # Make a SkyMap from the original properties dict
+        skymap_props_dict = {
+            "sky_tiling_type": "HEALPIX",
+            "nside": 32,
+            "nested": True,
+            "spice_reference_frame": geometry.SpiceFrame.ECLIPJ2000.name,
+            "values_to_push_project": ["foo", "bar"],
+        }
+
+        # Write a temporary json file with the properties dict
+
+        with tempfile.NamedTemporaryFile(
+            delete=False, suffix=".json", mode="w"
+        ) as temp_file:
+            json.dump(skymap_props_dict, temp_file)
+            temp_file_path_input = temp_file.name
+
+        # Read the json file and create a new SkyMap from it
+        skymap_from_json = ena_maps.AbstractSkyMap.from_json(temp_file_path_input)
+
+        # Create json output from the SkyMap at a separate temporary file path
+        temp_file_path_output = tempfile.NamedTemporaryFile(
+            delete=False, suffix=".json", mode="w"
+        ).name
+        skymap_from_json.to_json(json_path=temp_file_path_output)
+
+        assert skymap_from_json.spice_reference_frame == geometry.SpiceFrame.ECLIPJ2000
+        assert skymap_from_json.tiling_type is ena_maps.SkyTilingType.HEALPIX
+        assert skymap_from_json.nside == 32
+        assert skymap_from_json.nested is True
+        assert skymap_from_json.values_to_push_project == ["foo", "bar"]
+        assert skymap_from_json.values_to_pull_project == []
+
+        # Expect there to be a AttributeError when accessing a non-existent key
+        with pytest.raises(AttributeError):
+            _ = skymap_from_json.spacing_deg
+
+        # Check that the json output is the same as the original input ONLY
+        # after adding automatically added
+        # "values_to_push_project"/"values_to_pull_project" key to the original dict
+        with open(temp_file_path_input) as f:
+            original_json = json.load(f)
+        with open(temp_file_path_output) as f:
+            output_json = json.load(f)
+        # The output json will have added an empty list for values_to_pull_project
+        assert original_json != output_json
+        # add the values_to_pull_project key to the original json
+        original_json["values_to_pull_project"] = []
+        assert original_json == output_json

@@ -40,12 +40,13 @@ def ultra_l1b(data_dict: dict) -> list[xr.Dataset]:
         )
         output_datasets.append(de_dataset)
     # L1b extended data will be created if L1a hk, rates,
-    # aux and l1b de data are available
+    # aux, params, and l1b de data are available
     elif (
         f"imap_ultra_l1a_{instrument_id}sensor-hk" in data_dict
         and f"imap_ultra_l1b_{instrument_id}sensor-de" in data_dict
         and f"imap_ultra_l1a_{instrument_id}sensor-rates" in data_dict
         and f"imap_ultra_l1a_{instrument_id}sensor-aux" in data_dict
+        and f"imap_ultra_l1a_{instrument_id}sensor-params" in data_dict
     ):
         extendedspin_dataset = calculate_extendedspin(
             {

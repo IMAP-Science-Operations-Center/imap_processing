@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import pathlib
 from abc import ABC, abstractmethod
 from enum import Enum
+from pathlib import Path
 
 import astropy_healpix.healpy as hp
 import numpy as np
@@ -234,7 +236,7 @@ class PointingSet(ABC):
         unwrapped_dims_dict : dict[str, tuple[str, ...]]
             Dictionary of variable names and their dimensions, with only 1 spatial dim.
             The generic pixel dimension is always included.
-            E.g.: {"counts": ("epoch", "energy_bin_center", "pixel")} .
+            E.g.: {"counts": ("epoch", "energy", "pixel")} .
         """
         variable_dims = {}
         for var_name in self.data.data_vars:
@@ -438,6 +440,9 @@ class UltraPointingSet(PointingSet):
         self.num_points = self.data[CoordNames.HEALPIX_INDEX.value].size
         self.nside = hp.npix_to_nside(self.num_points)
 
+        # Tracks Per-Pixel Solid Angle in steradians.
+        self.solid_angle = hp.nside2pixarea(self.nside, degrees=False)
+
         # Determine if the HEALPix tessellation is nested, default is False
         self.nested = bool(
             self.data[CoordNames.HEALPIX_INDEX.value].attrs.get("nested", False)
@@ -477,6 +482,48 @@ class UltraPointingSet(PointingSet):
         self.az_el_points = np.column_stack(
             (self.azimuth_pixel_center, self.elevation_pixel_center)
         )
+
+    @classmethod
+    def from_path_or_dataset(
+        cls,
+        input_data: xr.Dataset | str | pathlib.Path,
+    ) -> UltraPointingSet:
+        """
+        Read a path or Dataset into an UltraPointingSet.
+
+        Parameters
+        ----------
+        input_data : xr.Dataset | str | pathlib.Path
+            Path to the CDF file or xarray Dataset containing the L1C dataset.
+            If a dataset is provided, it will be copied to avoid modifying the original.
+
+        Returns
+        -------
+        UltraPointingSet
+            An UltraPointingSet object containing the L1C dataset.
+
+        Raises
+        ------
+        ValueError
+            If input_data is neither an xarray Dataset nor a path to a CDF file.
+        """
+        # Allow for passing in EITHER xarray Datasets (preferable for testing)
+        if isinstance(input_data, xr.Dataset):
+            # Copy to avoid modifying the original dataset in place
+            input_data = input_data.copy(deep=True)
+            ultra_pointing_set = UltraPointingSet(l1c_dataset=input_data)
+        # OR paths to CDF files (preferable for projecting many PointingSets)
+        elif isinstance(input_data, str | pathlib.Path):
+            if isinstance(input_data, str):
+                input_data = pathlib.Path(input_data)
+            ultra_pointing_set = UltraPointingSet(l1c_dataset=load_cdf(input_data))
+        else:
+            raise ValueError(
+                f"Input data must be either an xarray Dataset or a path to a CDF file "
+                "containing the L1C dataset.\n"
+                f"Found {type(input_data)} instead."
+            )
+        return ultra_pointing_set
 
     def __repr__(self) -> str:
         """
@@ -518,6 +565,10 @@ class AbstractSkyMap(ABC):
         self.spatial_coords: dict[str, xr.DataArray | NDArray]
         self.binning_grid_shape: tuple[int, ...]
         self.data_1d: xr.Dataset
+
+        # Initialize values to be used by the instrument code to push/pull
+        self.values_to_push_project: list[str] = []
+        self.values_to_pull_project: list[str] = []
 
     def to_dataset(self) -> xr.Dataset:
         """
@@ -685,7 +736,163 @@ class AbstractSkyMap(ABC):
                     "Only PUSH and PULL index matching methods are supported."
                 )
 
+            # TODO: we may need to allow for unweighted/weighted means here by
+            # dividing pointing_projected_values by some binned weights.
+            # For unweighted means, we could use the number of pointing set pixels
+            # that correspond to each map pixel as the weights.
             self.data_1d[value_key] += pointing_projected_values
+
+    @classmethod
+    def from_json(cls, json_path: str | Path) -> RectangularSkyMap | HealpixSkyMap:
+        """
+        Create a SkyMap object from a JSON configuration file.
+
+        Parameters
+        ----------
+        json_path : str | Path
+            Path to the JSON configuration file.
+
+        Returns
+        -------
+        RectangularSkyMap | HealpixSkyMap
+            An instance of a SkyMap object with the specified properties.
+        """
+        with open(json_path) as f:
+            properties = json.load(f)
+        return cls.from_dict(properties)
+
+    @classmethod
+    def from_dict(cls, properties: dict) -> RectangularSkyMap | HealpixSkyMap:
+        """
+        Create a SkyMap object from a dictionary of properties.
+
+        Parameters
+        ----------
+        properties : dict
+            Dictionary containing the map properties. The required keys are:
+            - "spice_reference_frame" : str
+                The reference Spice frame of the map as a string. The available
+                options are defined in the spice geometry module:
+                `imap_processing.geometry.spice.SpiceFrame`. Example: "ECLIPJ2000".
+            - "sky_tiling_type" : str
+                The type of sky tiling, either "HEALPIX" or "RECTANGULAR".
+            - if "HEALPIX":
+                - "nside" : int
+                    The nside parameter for the Healpix tessellation.
+                - "nested" : bool
+                    Whether the Healpix tessellation is nested or not.
+            - if "RECTANGULAR":
+                - "spacing_deg" : float
+                    The spacing of the rectangular grid in degrees.
+            - "values_to_push_project" : list[str], optional
+                The names of the variables to project to the map with the PUSH method.
+                NOTE: The projection is done by the instrument code, so this value can
+                only be used to inform that code. No values are projected automatically.
+            - "values_to_pull_project" : list[str], optional
+                The names of the variables to project to the map with the PULL method.
+                See the above note for more details.
+
+            See example dictionary in notes section.
+
+        Returns
+        -------
+        RectangularSkyMap | HealpixSkyMap
+            An instance of a SkyMap object with the specified properties.
+
+        Raises
+        ------
+        ValueError
+            If the sky tiling type is not recognized.
+
+        Notes
+        -----
+        Example dictionary:
+
+        ```python
+        properties = {
+            "spice_reference_frame": "ECLIPJ2000",
+            "sky_tiling_type": "HEALPIX",
+            "nside": 32,
+            "nested": False,
+            "values_to_push_project": ['counts', 'flux'],
+            "values_to_pull_project": []
+        }
+        ```
+        """
+        sky_tiling_type = SkyTilingType[properties["sky_tiling_type"].upper()]
+        spice_reference_frame = geometry.SpiceFrame[properties["spice_reference_frame"]]
+
+        skymap: RectangularSkyMap | HealpixSkyMap  # Mypy gets confused by if/elif types
+        if sky_tiling_type is SkyTilingType.HEALPIX:
+            skymap = HealpixSkyMap(
+                nside=properties["nside"],
+                nested=properties["nested"],
+                spice_frame=spice_reference_frame,
+            )
+        elif sky_tiling_type is SkyTilingType.RECTANGULAR:
+            skymap = RectangularSkyMap(
+                spacing_deg=properties["spacing_deg"],
+                spice_frame=spice_reference_frame,
+            )
+        else:
+            raise ValueError(
+                f"Unknown sky tiling type: {sky_tiling_type}. "
+                f"Must be one of: {SkyTilingType.__members__.keys()}"
+            )
+
+        # Store requested variables to push/pull, which will be done by the instrument
+        # code which creates and uses the SkyMap object.
+        skymap.values_to_push_project = properties.get("values_to_push_project", [])
+        skymap.values_to_pull_project = properties.get("values_to_pull_project", [])
+        return skymap
+
+    def to_dict(self) -> dict:
+        """
+        Convert the SkyMap object to a dictionary of properties.
+
+        Returns
+        -------
+        dict
+            Dictionary containing the map properties.
+        """
+        if isinstance(self, HealpixSkyMap):
+            map_properties_dict = {
+                "sky_tiling_type": "HEALPIX",
+                "spice_reference_frame": self.spice_reference_frame.name,
+                "nside": self.nside,
+                "nested": self.nested,
+            }
+        elif isinstance(self, RectangularSkyMap):
+            map_properties_dict = {
+                "sky_tiling_type": "RECTANGULAR",
+                "spice_reference_frame": self.spice_reference_frame.name,
+                "spacing_deg": self.spacing_deg,
+            }
+        else:
+            raise ValueError(
+                f"Unknown SkyMap type: {self.__class__.__name__}. "
+                f"Must be one of: {AbstractSkyMap.__subclasses__()}"
+            )
+
+        map_properties_dict["values_to_push_project"] = (
+            self.values_to_push_project if self.values_to_push_project else []
+        )
+        map_properties_dict["values_to_pull_project"] = (
+            self.values_to_pull_project if self.values_to_pull_project else []
+        )
+        return map_properties_dict
+
+    def to_json(self, json_path: str | Path) -> None:
+        """
+        Save the SkyMap object to a JSON configuration file.
+
+        Parameters
+        ----------
+        json_path : str | Path
+            Path to the JSON file where the properties will be saved.
+        """
+        with open(json_path, "w") as f:
+            json.dump(self.to_dict(), f, indent=4)
 
 
 class RectangularSkyMap(AbstractSkyMap):
@@ -748,6 +955,10 @@ class RectangularSkyMap(AbstractSkyMap):
 
         # The reference Spice frame of the map, in which angles are defined
         self.spice_reference_frame = spice_frame
+
+        # Initialize values to be used by the instrument code to push/pull
+        self.values_to_push_project: list[str] = []
+        self.values_to_pull_project: list[str] = []
 
         # Angular spacing of the map grid (degrees) defines the number, size of pixels.
         self.spacing_deg = spacing_deg
@@ -828,6 +1039,10 @@ class HealpixSkyMap(AbstractSkyMap):
         # Define the core properties of the map:
         self.tiling_type = SkyTilingType.HEALPIX
         self.spice_reference_frame = spice_frame
+
+        # Initialize values to be used by the instrument code to push/pull
+        self.values_to_push_project: list[str] = []
+        self.values_to_pull_project: list[str] = []
 
         # Tile the sky with a Healpix tessellation. Defined by nside, nested parameters.
         self.nside = nside

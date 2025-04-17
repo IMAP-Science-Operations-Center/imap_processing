@@ -9,6 +9,7 @@ import xarray as xr
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.codice import constants
 from imap_processing.codice.codice_l1a import process_codice_l1a
+from imap_processing.tests.conftest import _download_external_data, _test_data_paths
 
 from .conftest import TEST_L0_FILE, VALIDATION_DATA
 
@@ -112,7 +113,10 @@ def test_l1a_data() -> xr.Dataset:
     processed_datasets : list[xarray.Dataset]
         A list of ``xarray`` datasets containing the test data
     """
-
+    # Make sure we have the data available here. This test collection gets
+    # skipped at the module level if the mark isn't present. We can't decorate
+    # a fixture, so add the needed call directly here instead.
+    _download_external_data(_test_data_paths())
     processed_datasets = process_codice_l1a(file_path=TEST_L0_FILE)
 
     return processed_datasets

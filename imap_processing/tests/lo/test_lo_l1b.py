@@ -15,8 +15,10 @@ from imap_processing.lo.l1b.lo_l1b import (
     get_avg_spin_durations,
     get_spin_angle,
     get_spin_start_times,
+    identify_species,
     initialize_l1b_de,
     lo_l1b,
+    set_bad_times,
     set_coincidence_type,
     set_each_event_epoch,
     set_event_met,
@@ -465,3 +467,39 @@ def test_convert_tofs_to_eu(attr_mgr_l1b, attr_mgr_l1a):
             expected_tof,
             atol=1e-6,
         )
+
+
+def test_identify_species(attr_mgr_l1b):
+    # Arrange
+    fill_val = attr_mgr_l1b.get_variable_attributes("tof2")["FILLVAL"]
+    l1b_de = xr.Dataset(
+        {
+            "tof2": ("epoch", [1, 14, 50, 80, 500, fill_val]),
+        }
+    )
+
+    expected_species = np.array(["U", "H", "U", "O", "U", "U"])
+
+    # Act
+    l1b_de = identify_species(l1b_de)
+
+    # Assert
+    np.testing.assert_array_equal(l1b_de["species"], expected_species)
+
+
+def test_set_bad_times():
+    # Arrange
+    l1b_de = xr.Dataset(
+        {},
+        coords={
+            "epoch": [0, 1, 2],
+        },
+    )
+
+    expected_bad_times = np.array([0, 0, 0])
+
+    # Act
+    l1b_de = set_bad_times(l1b_de)
+
+    # Assert
+    np.testing.assert_array_equal(l1b_de["badtimes"], expected_bad_times)

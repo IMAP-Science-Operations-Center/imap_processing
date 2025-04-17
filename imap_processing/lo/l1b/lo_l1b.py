@@ -72,6 +72,11 @@ def lo_l1b(dependencies: dict) -> list[Path]:
         l1b_de = set_coincidence_type(l1a_de, l1b_de, attr_mgr_l1a)
         # convert the TOFs to engineering units
         l1b_de = convert_tofs_to_eu(l1a_de, l1b_de, attr_mgr_l1a, attr_mgr_l1b)
+        # set the species for each direct event
+        l1b_de = identify_species(l1b_de)
+        # set the badtimes
+        l1b_de = set_bad_times(l1b_de)
+        # TODO: set the direction for each direct event
 
     return [l1b_de]
 
@@ -546,6 +551,85 @@ def convert_tofs_to_eu(
             dims=["epoch"],
             attrs=attr_mgr_l1b.get_variable_attributes(tof),
         )
+
+    return l1b_de
+
+
+def identify_species(l1b_de: xr.Dataset) -> xr.Dataset:
+    """
+    Identify the species for each direct event.
+
+    The species are determined using the U_PAC 7-13kV range table with the TOF2 value.
+    Each event is set to "H" for Hydrogen, "O" for Oxygen, or "U" for Unknown.
+
+    See the species identification section in the Lo algorithm document for more
+    information on the ranges used to identify the species.
+
+    Parameters
+    ----------
+    l1b_de : xarray.Dataset
+        The L1B DE dataset.
+
+    Returns
+    -------
+    l1b_de : xarray.Dataset
+        The L1B DE dataset with the species identified.
+    """
+    # Define upper and lower ranges for Hydrogen and Oxygen
+    # Table defined in 9.3.4.4 of the Lo algorithm document
+    # UNH-IMAP-Lo-27850-6002-Data-Product-Algorithms-v9_&_IMAP-LoMappingAlgorithm
+    # The ranges are used for U_PAC voltages 7-12kV. Lo does not expect to use
+    # voltages outside of that range.
+    range_hydrogen = (13, 40)
+    range_oxygen = (75, 200)
+
+    # Initialize the species array with U for Unknown
+    species = np.full(len(l1b_de["epoch"]), "U")
+
+    tof2 = l1b_de["tof2"]
+    # Check for range Hydrogen using the TOF2 value
+    mask_h = (tof2 >= range_hydrogen[0]) & (tof2 <= range_hydrogen[1])
+    species[mask_h] = "H"
+
+    # Check for range Oxygen using the TOF2 value
+    mask_oxygen = (tof2 >= range_oxygen[0]) & (tof2 <= range_oxygen[1])
+    species[mask_oxygen] = "O"
+
+    # Add species to the dataset
+    l1b_de["species"] = xr.DataArray(
+        species,
+        dims=["epoch"],
+        # TODO: Add to yaml
+        # attrs=attr_mgr.get_variable_attributes("species"),
+    )
+
+    return l1b_de
+
+
+def set_bad_times(l1b_de: xr.Dataset) -> xr.Dataset:
+    """
+    Set the bad times for each direct event.
+
+    Parameters
+    ----------
+    l1b_de : xarray.Dataset
+        The L1B DE dataset.
+
+    Returns
+    -------
+    l1b_de : xarray.Dataset
+        The L1B DE dataset with the bad times added.
+    """
+    # Initialize all times as not bad for now
+    # TODO: Update to set badtimes based on criteria that
+    #  will be defined in the algorithm document
+    # 1 = badtime, 0 = not badtime
+    l1b_de["badtimes"] = xr.DataArray(
+        np.zeros(len(l1b_de["epoch"]), dtype=int),
+        dims=["epoch"],
+        # TODO: Add to yaml
+        # attrs=attr_mgr.get_variable_attributes("bad_times"),
+    )
 
     return l1b_de
 
