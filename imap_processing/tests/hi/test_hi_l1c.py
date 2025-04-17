@@ -77,7 +77,7 @@ def test_empty_pset_dataset():
     n_calibration_prods = 5
     sensor_str = HIAPID.H90_SCI_DE.sensor
     dataset = hi_l1c.empty_pset_dataset(
-        l1b_esa_energy_steps, n_calibration_prods, sensor_str
+        100, l1b_esa_energy_steps, n_calibration_prods, sensor_str
     )
 
     assert dataset.epoch.size == 1
@@ -143,6 +143,7 @@ def test_pset_counts(hi_l1_test_data_path, hi_test_cal_prod_config_path):
         hi_test_cal_prod_config_path
     )
     empty_pset = hi_l1c.empty_pset_dataset(
+        100,
         l1b_dataset.esa_energy_step.data,
         cal_config_df.cal_prod_config.number_of_products,
         HIAPID.H90_SCI_DE.sensor,
@@ -209,7 +210,7 @@ def test_pset_exposure(
 ):
     """Test coverage for pset_exposure function"""
     empty_pset = hi_l1c.empty_pset_dataset(
-        np.arange(2) + 1, 2, HIAPID.H90_SCI_DE.sensor
+        100, np.arange(2) + 1, 2, HIAPID.H90_SCI_DE.sensor
     )
     # Set the mock of find_second_de_packet_data to return a xr.Dataset
     # with some dummy data. ESA 1 will get binned data once, ESA 2 will get
