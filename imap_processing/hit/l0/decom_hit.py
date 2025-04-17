@@ -113,7 +113,9 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
         else:
             dims = ["epoch"]
 
-        sci_dataset[field] = xr.DataArray(parsed_data, dims=dims, name=field)
+        sci_dataset[field] = xr.DataArray(
+            np.array(parsed_data, dtype=np.int64), dims=dims, name=field
+        )
         # Add dimensions to coordinates
         for dim in dims:
             if dim not in sci_dataset.coords:
