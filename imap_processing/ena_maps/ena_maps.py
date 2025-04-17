@@ -1090,7 +1090,7 @@ class HealpixSkyMap(AbstractSkyMap):
         self,
         rect_pix_center_lon_lat: np.typing.NDArray | tuple[float, float],
         rect_pix_spacing_deg: float,
-        value_key: str,
+        value_array: xr.DataArray,
         num_subdivisions: int,
     ) -> np.typing.NDArray:
         """
@@ -1106,8 +1106,8 @@ class HealpixSkyMap(AbstractSkyMap):
             The center longitude and latitude of the rectangular pixel.
         rect_pix_spacing_deg : float
             The spacing of the rectangular pixel in degrees.
-        value_key : str
-            The name of the value to interpolate from the healpix map.
+        value_array : xr.DataArray
+            The data array containing the healpix map values.
         num_subdivisions : int
             The number of subdivisions to create for the rectangular pixel.
             The more subdivisions, the more accurate the interpolation, but also
@@ -1118,9 +1118,8 @@ class HealpixSkyMap(AbstractSkyMap):
         np.typing.NDArray
             The mean value of the healpix map at the subpixel centers.
 
-            If the array associated with the key value_key has a single value
-            at each pixel, the output will be a single value,
-            but if there are other dimensions,
+            If value_array has a single value at each pixel, the output
+            will be a single value, but if there are other dimensions,
             (e.g., if self.data_1d['flux'].sizes =
             {"epoch": 1, "energy": 24, "pixel": 16200}),
             the output will be an array with the same dims except the pixel dimension
@@ -1186,9 +1185,7 @@ class HealpixSkyMap(AbstractSkyMap):
             lonlat=True,
         )
         # Get the healpix values at the rectangular subpixel centers
-        hp_vals_at_rect_pix_ctrs = self.data_1d[value_key].values[
-            ..., hp_pix_at_rect_subpix_ctrs
-        ]
+        hp_vals_at_rect_pix_ctrs = value_array.values[..., hp_pix_at_rect_subpix_ctrs]
 
         # Weighted mean (weighted by solid angle) of these values over the pixel axis,
         # which is the last axis of this array
@@ -1196,8 +1193,7 @@ class HealpixSkyMap(AbstractSkyMap):
             hp_vals_at_rect_pix_ctrs * rect_subpix_solid_angle_by_lat
         )
         mean_pixel_value = (
-            weighted_hp_vals_at_rect_pix_ctrs.sum(axis=(-1))
-            / full_rect_pixel_solid_angle
+            weighted_hp_vals_at_rect_pix_ctrs.sum(axis=-1) / full_rect_pixel_solid_angle
         )
         return mean_pixel_value
 
@@ -1205,7 +1201,7 @@ class HealpixSkyMap(AbstractSkyMap):
         self,
         rect_pix_center_lon_lat: np.typing.NDArray | tuple[float, float],
         rect_pix_spacing_deg: float,
-        value_key: str,
+        value_array: xr.DataArray,
         *,
         rtol: float = 1e-3,
         atol: float = 1e-12,
@@ -1227,8 +1223,8 @@ class HealpixSkyMap(AbstractSkyMap):
             The center longitude and latitude of the rectangular pixel.
         rect_pix_spacing_deg : float
             The spacing of the rectangular pixel in degrees.
-        value_key : str
-            The name of the value to interpolate from the healpix map.
+        value_array : xr.DataArray
+            The data array containing the healpix map values to interpolate from.
         rtol : float, optional
             The relative tolerance for convergence, by default 1e-3.
         atol : float, optional
@@ -1255,7 +1251,7 @@ class HealpixSkyMap(AbstractSkyMap):
                 self.calculate_rect_pixel_value_from_healpix_map_n_subdivisions(
                     rect_pix_center_lon_lat=rect_pix_center_lon_lat,
                     rect_pix_spacing_deg=rect_pix_spacing_deg,
-                    value_key=value_key,
+                    value_array=value_array,
                     num_subdivisions=depth,
                 )
             )
@@ -1263,6 +1259,8 @@ class HealpixSkyMap(AbstractSkyMap):
             # Determine if tolerance is met
             # (skip on the 0th iteration, as there's no delta)
             if depth > 0:
+                # TODO: Ask Nick/Ultra Instrument team if we need to compare each value
+                # in the pixel's array, or just the mean value.
                 if np.isclose(
                     mean_pixel_value.mean(),
                     previous_mean_pixel_value.mean(),
@@ -1328,8 +1326,6 @@ class HealpixSkyMap(AbstractSkyMap):
         # Dict to hold the subdivision depth by pixel for each value key
         subdiv_depth_dict = {}
         for value_key in value_keys:
-            self.data_1d[value_key]
-
             # For each of the values, calculate each pixel's value with
             # recursive subdivision. Unfortunately, this must be done independently
             # for each value key.
@@ -1338,7 +1334,7 @@ class HealpixSkyMap(AbstractSkyMap):
                 self.get_rect_pixel_value_recursive_subdivs(
                     rect_pix_center_lon_lat=lon_lat,
                     rect_pix_spacing_deg=rect_map.spacing_deg,
-                    value_key=value_key,
+                    value_array=healpix_values_array,
                     max_subdivision_depth=max_subdivision_depth,
                 )
                 for lon_lat in rect_map.az_el_points

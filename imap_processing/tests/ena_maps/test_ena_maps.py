@@ -769,7 +769,7 @@ class TestHealpixSkyMap:
                 hp_map.calculate_rect_pixel_value_from_healpix_map_n_subdivisions(
                     rect_pix_center_lon_lat=(180, 0),
                     rect_pix_spacing_deg=4,
-                    value_key="counts",
+                    value_array=hp_map.data_1d["counts"],
                     num_subdivisions=num_subdiv,
                 )
             )
@@ -782,7 +782,7 @@ class TestHealpixSkyMap:
         hp_map.calculate_rect_pixel_value_from_healpix_map_n_subdivisions(
             rect_pix_center_lon_lat=(180, 0),
             rect_pix_spacing_deg=2,
-            value_key="counts",
+            value_array=hp_map.data_1d["counts"],
             num_subdivisions=0,
         )
 
@@ -834,7 +834,7 @@ class TestHealpixSkyMap:
             mean, depth = hp_map.get_rect_pixel_value_recursive_subdivs(
                 rect_pix_center_lon_lat=(180, 0),
                 rect_pix_spacing_deg=4,
-                value_key="counts",
+                value_array=[],
                 rtol=required_rtols[expected_subdiv_level - 1],
                 max_subdivision_depth=7,
             )
