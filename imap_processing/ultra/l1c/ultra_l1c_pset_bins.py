@@ -4,7 +4,6 @@ import astropy_healpix.healpy as hp
 import numpy as np
 import pandas
 from numpy.typing import NDArray
-from scipy.interpolate import RegularGridInterpolator
 
 from imap_processing.ena_maps.utils.spatial_utils import build_spatial_bins
 from imap_processing.spice.geometry import (
@@ -269,7 +268,7 @@ def get_spacecraft_sensitivity(
     geometric_function: pandas.DataFrame,
 ) -> tuple[pandas.DataFrame, NDArray, NDArray, NDArray]:
     """
-    Compute sensitivity.
+    Compute sensitivity as efficiency * geometric factor.
 
     Parameters
     ----------
@@ -285,9 +284,9 @@ def get_spacecraft_sensitivity(
     energy_vals : NDArray
         Energy values of dataframe.
     right_ascension : NDArray
-        Right ascension values of dataframe (0 - 360 degrees).
+        Right ascension (longitude/azimuth) values of dataframe (0 - 360 degrees).
     declination : NDArray
-        Declination values of dataframe (-90 to 90 degrees).
+        Declination (latitude/elevation) values of dataframe (-90 to 90 degrees).
     """
     # Exclude "Right Ascension (deg)" and "Declination (deg)" from the multiplication
     energy_columns = [
@@ -310,12 +309,12 @@ def get_spacecraft_sensitivity(
 def grid_sensitivity(
     efficiencies: pandas.DataFrame,
     geometric_function: pandas.DataFrame,
-    energy: int,
+    energy: float,
     nside: int = 128,
     nested: bool = False,
 ) -> NDArray:
     """
-    Grid the sensitivity.
+    Grid the sensitivity at a given energy.
 
     Parameters
     ----------
@@ -323,35 +322,36 @@ def grid_sensitivity(
         Efficiencies at different energy levels.
     geometric_function : pandas.DataFrame
         Geometric function.
-        energy : np.ndarray
-        The particle energy.
-    energy : int
-        Energy to which we are interpolating.
+    energy : float
+        Energy (keV) to interpolate to.
     nside : int, optional
         The nside parameter of the Healpix tessellation.
-        Default is 32.
     nested : bool, optional
-        Whether the Healpix tessellation is nested. Default is False.
+        Whether the Healpix tessellation is nested.
 
     Returns
     -------
-    pointing_sensitivity : pandas.DataFrame
-        Sensitivity with dimensions (HEALPIX pixel_number, energy).
+    pointing_sensitivity : np.ndarray
+        Interpolated sensitivity per HEALPix pixel at the given energy.
+        Shape is (npix,) where npix = 12 * nside^2
     """
-    sensitivity, energy_vals, right_ascension, declination = get_spacecraft_sensitivity(
+    import healpy as hp
+
+    sensitivity, energy_vals, ra, dec = get_spacecraft_sensitivity(
         efficiencies, geometric_function
     )
 
-    # Get HEALPix pixel indices
-    hpix_idx = hp.ang2pix(nside, right_ascension, declination, nest=nested, lonlat=True)
+    hpix_idx = hp.ang2pix(nside, ra, dec, nest=nested, lonlat=True)
+    npix = hp.nside2npix(nside)
 
-    interpolator = RegularGridInterpolator(
-        (hpix_idx, energy_vals),
-        sensitivity.values,
-        bounds_error=False,
-        fill_value=np.nan,
+    # Interpolate sensitivity for each row (1D interp over energy_vals)
+    interpolated = np.array(
+        [np.interp(energy, energy_vals, s_row) for s_row in sensitivity],
+        dtype=np.float32,
     )
-    # TODO: what are we interpolating to here?
-    # The energy_midpoint of the bin or the energy_bin_geometric_mean?
 
-    return interpolator((hpix_idx, energy))
+    # Store in HEALPix array
+    pointing_sensitivity = np.full(npix, np.nan, dtype=np.float32)
+    pointing_sensitivity[hpix_idx] = interpolated
+
+    return pointing_sensitivity
