@@ -86,7 +86,7 @@ def test_get_intensity_factors():
         geometry_factor=np.array([1.0, 1.1, 1.2]),
         efficiency=np.array([0.9, 0.8, 0.7]),
         b=np.array([0.1, 0.2, 0.3]),
-        seconds=60,
+        integration_time=60,
     )
 
     # Call the function
@@ -300,7 +300,7 @@ def test_calculate_intensities_for_a_species():
 def test_calculate_intensities():
     """Test the calculate_intensities function.
 
-    This tests the function with different values of seconds.
+    This tests the function with different values for time.
     60 seconds is used for calculating standard and summed
     intensities and 600 is used for sectored intensities.
     """
@@ -310,9 +310,9 @@ def test_calculate_intensities():
     geometry_factor = np.array([1.0, 1.0, 1.0])
     efficiency = np.array([1.0, 1.0, 1.0])
     b = np.array([0.0, 0.0, 0.0])
-    seconds = 60
+    integration_time = 60
 
-    # Expected output for seconds = 60
+    # Expected output for 60 seconds
     expected_intensities_60 = xr.DataArray(
         [1.66666667, 3.33333333, 5.0], dims=["energy_bin"]
     )
@@ -322,21 +322,21 @@ def test_calculate_intensities():
         geometry_factor=geometry_factor,
         efficiency=efficiency,
         b=b,
-        seconds=seconds,
+        integration_time=integration_time,
     )
 
-    # Call the function for seconds = 60
+    # Call the function for 60 seconds
     intensities_60 = calculate_intensities(rate, factors_60)
 
-    # Assertions for seconds = 60
+    # Assertions for 60 seconds
     assert np.allclose(intensities_60.values, expected_intensities_60.values), (
-        "Intensities mismatch for seconds = 60"
+        "Intensities mismatch for integration_time = 60 seconds"
     )
 
-    # Test with seconds = 600
-    seconds = 600
+    # Test with 600 seconds
+    integration_time = 600
 
-    # Expected output for seconds = 600
+    # Expected output for 600 seconds
     expected_intensities_600 = xr.DataArray(
         [0.16666667, 0.33333333, 0.5], dims=["energy_bin"]
     )
@@ -346,15 +346,15 @@ def test_calculate_intensities():
         geometry_factor=geometry_factor,
         efficiency=efficiency,
         b=b,
-        seconds=seconds,
+        integration_time=integration_time,
     )
 
-    # Call the function for seconds = 600
+    # Call the function for 600 seconds
     intensities_600 = calculate_intensities(rate, factors_600)
 
-    # Assertions for seconds = 600
+    # Assertions for 600 seconds
     assert np.allclose(intensities_600.values, expected_intensities_600.values), (
-        "Intensities mismatch for seconds = 600"
+        "Intensities mismatch for integration_time = 600 seconds"
     )
 
 

@@ -17,6 +17,7 @@ from imap_processing.hit.l2.constants import (
     L2_SECTORED_ANCILLARY_PATH_PREFIX,
     L2_STANDARD_ANCILLARY_PATH_PREFIX,
     L2_SUMMED_ANCILLARY_PATH_PREFIX,
+    N_DECLINATION,
     SECONDS_PER_10_MIN,
     SECONDS_PER_MIN,
     STANDARD_PARTICLE_ENERGY_RANGE_MAPPING,
@@ -116,7 +117,7 @@ class IntensityFactors(NamedTuple):
     geometry_factor: np.ndarray
     efficiency: np.ndarray
     b: np.ndarray
-    seconds: int
+    integration_time: int  # number of seconds
 
 
 def get_intensity_factors(
@@ -152,7 +153,7 @@ def get_intensity_factors(
         geometry_factor=intensity_factors["geometry factor (cm2 sr)"].values,
         efficiency=intensity_factors["efficiency"].values,
         b=intensity_factors["b"].values,
-        seconds=SECONDS_PER_MIN,
+        integration_time=SECONDS_PER_MIN,
     )
 
 
@@ -167,7 +168,7 @@ def calculate_intensities(
     for all epochs.
 
         This function uses equation 9 and 12 from the HIT algorithm document:
-        ((Summed L1B Rates) / (Seconds * Delta E * Geometry Factor * Efficiency)) - b
+        ((Summed L1B Rates) / (Delta Time * Delta E * Geometry Factor * Efficiency)) - b
 
     Parameters
     ----------
@@ -179,8 +180,8 @@ def calculate_intensities(
         - geometry_factor: np.ndarray of geometry factors
         - efficiency: np.ndarray of efficiency factors
         - b: np.ndarray of b values
-        - seconds: integer of seconds to convert counts per integration time to counts
-                per second. This is either:
+        - integration_time: integer of seconds to convert counts per integration time
+                to counts per second. This is either:
                 60 for standard and summed intensities
                 600 for sectored intensities since integration time is over 10 minutes.
 
@@ -194,13 +195,13 @@ def calculate_intensities(
     geometry_factor = factors.geometry_factor
     efficiency = factors.efficiency
     b = factors.b
-    seconds = factors.seconds
+    delta_time = factors.integration_time
 
     # Calculate the intensities, skipping fill values, for all epochs
     return xr.DataArray(
         np.where(
             rates != FILLVAL_FLOAT32,
-            (rates / (seconds * delta_e * geometry_factor * efficiency)) - b,
+            (rates / (delta_time * delta_e * geometry_factor * efficiency)) - b,
             FILLVAL_FLOAT32,
         ),
         dims=rates.dims,
@@ -214,10 +215,10 @@ def calculate_intensities_for_a_species(
     Calculate the intensity for a given species in the dataset.
 
     This function calculates the intensity for a given species in the dataset
-    using ancillary data determined by the dynamic threshold state.
+    using ancillary data determined by the dynamic threshold state (0-3).
 
     The intensity is calculated using the equation:
-        (L1B Rates) / (Seconds * Delta E * Geometry Factor * Efficiency) - b
+        (L1B Rates) / (Delta Time * Delta E * Geometry Factor * Efficiency) - b
 
         where the factors are retrieved from the ancillary data for the given species
         and dynamic threshold state.
@@ -256,9 +257,9 @@ def calculate_intensities_for_a_species(
     #  fixing errors
 
     # Get the dynamic threshold state for all epochs (one per epoch)
-    dynamic_threshold_states = updated_ds["dynamic_threshold_state"].values.astype(int)
+    dynamic_threshold_states = updated_ds["dynamic_threshold_state"].values
 
-    # Subset ancillary data by the species and map to dynamic threshold states (0-3)
+    # Subset ancillary data by the species and map to dynamic threshold states
     species_ancillary_data_by_state = {
         state: get_species_ancillary_data(state, ancillary_data_frames, species)
         for state in np.unique(dynamic_threshold_states)
@@ -280,24 +281,26 @@ def calculate_intensities_for_a_species(
     )
     efficiencies = np.stack([factor.efficiency for factor in factors_per_epoch])
     b = np.stack([factor.b for factor in factors_per_epoch])
-    seconds = SECONDS_PER_MIN
+    time = SECONDS_PER_MIN
 
     # Handle sectored rates which are multidimensional
     # (epoch, energy, azimuth, declination)
     if "declination" in updated_ds[species_variable].dims:
-        # The factors are 1D arrays containing values for each declination (8) and each
-        # energy bin. Reshape factors to match the dimensions of the sectored rates
-        delta_e = delta_e.reshape((delta_e.shape[0], len(species_energy_bins), 8))[
-            :, :, np.newaxis, :
-        ]
+        # The factors are 1D arrays containing values for each declination angle (8)
+        # and each energy bin. Reshape factors to match dimensions of sectored rates
+        delta_e = delta_e.reshape(
+            (delta_e.shape[0], len(species_energy_bins), N_DECLINATION)
+        )[:, :, np.newaxis, :]
         geometry_factors = geometry_factors.reshape(
-            (geometry_factors.shape[0], len(species_energy_bins), 8)
+            (geometry_factors.shape[0], len(species_energy_bins), N_DECLINATION)
         )[:, :, np.newaxis, :]
         efficiencies = efficiencies.reshape(
-            (efficiencies.shape[0], len(species_energy_bins), 8)
+            (efficiencies.shape[0], len(species_energy_bins), N_DECLINATION)
         )[:, :, np.newaxis, :]
-        b = b.reshape((b.shape[0], len(species_energy_bins), 8))[:, :, np.newaxis, :]
-        seconds = SECONDS_PER_10_MIN
+        b = b.reshape((b.shape[0], len(species_energy_bins), N_DECLINATION))[
+            :, :, np.newaxis, :
+        ]
+        time = SECONDS_PER_10_MIN
 
     # Store the factor arrays in a named tuple
     factors = IntensityFactors(
@@ -305,7 +308,7 @@ def calculate_intensities_for_a_species(
         geometry_factor=geometry_factors,
         efficiency=efficiencies,
         b=b,
-        seconds=seconds,
+        integration_time=time,
     )
 
     # Calculate intensities using vectorized operations
