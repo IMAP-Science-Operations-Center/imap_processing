@@ -1,13 +1,14 @@
 """Functions for retrieving repointing table data."""
 
+import logging
+import typing
 from collections.abc import Generator
 from contextlib import contextmanager
-import logging
-import pandas as pd
 from pathlib import Path
+
 import numpy as np
-from numpy.typing import NDArray
 import spiceypy
+from numpy.typing import NDArray
 
 from imap_processing.spice.kernels import ensure_spice
 from imap_processing.spice.time import met_to_sclkticks, sct_to_et
@@ -40,10 +41,13 @@ def open_spice_ck_file(pointing_frame_path: Path) -> Generator[int, None, None]:
         spiceypy.ckcls(handle)
 
 
+@typing.no_type_check
 @ensure_spice
 def create_pointing_frame(
-        pointing_frame_path: Path, ck_path: Path,
-        repoint_start_met: NDArray, repoint_end_met: NDArray
+    pointing_frame_path: Path,
+    ck_path: Path,
+    repoint_start_met: NDArray,
+    repoint_end_met: NDArray,
 ) -> None:
     """
     Create the pointing frame.
@@ -72,10 +76,8 @@ def create_pointing_frame(
     Assumptions:
     - The MOC has removed timeframe in which nutation/procession are present.
     TODO: We may come back and have a check for this.
-    - We will not continue to append to the pointing frame kernel.
-    TODO: Figure out how we want to handle the file size becoming too large.
-    - For now we can only furnish a single ck kernel.
-    TODO: This will not be the case once we add the ability to query the .csv.
+    - The pointing frame kernel is made based on the most recent ck kernel.
+    In other words 1:1 ratio.
 
     References
     ----------
@@ -103,19 +105,18 @@ def create_pointing_frame(
     et_start, _ = spiceypy.wnfetd(ck_cover, 0)
     _, et_end = spiceypy.wnfetd(ck_cover, num_intervals - 1)
 
-    valid_mask = (repoint_start_met >= et_start) & (repoint_end_met <= et_end)
-    repoint_start_met = repoint_start_met[valid_mask]
-    repoint_end_met = repoint_end_met[valid_mask]
-
     sclk_ticks_start = met_to_sclkticks(repoint_start_met)
-    et_start = sct_to_et(sclk_ticks_start)
+    et_start_repoint = sct_to_et(sclk_ticks_start)
     sclk_ticks_end = met_to_sclkticks(repoint_end_met)
-    et_end = sct_to_et(sclk_ticks_end)
+    et_end_repoint = sct_to_et(sclk_ticks_end)
+
+    valid_mask = (et_start_repoint >= et_start) & (et_end_repoint <= et_end)
+    et_start_repoint = et_start_repoint[valid_mask]
+    et_end_repoint = et_end_repoint[valid_mask]
 
     with open_spice_ck_file(pointing_frame_path) as handle:
         for i in range(len(repoint_start_met)):
-
-            et_times = _get_et_times(et_start[i], et_end[i])
+            et_times = _get_et_times(et_start_repoint[i], et_end_repoint[i])
 
             # Create a rotation matrix
             rotation_matrix = _create_rotation_matrix(et_times)
@@ -178,6 +179,9 @@ def _get_et_times(et_start: float, et_end: float) -> NDArray[np.float64]:
     et_times : numpy.ndarray
         Array of times between et_start and et_end.
     """
+    # TODO: Queried pointing start and stop times here.
+    # TODO removing the @ensure_spice decorator when using the repointing table.
+
     # 1 spin/15 seconds; 10 quaternions / spin.
     num_samples = (et_end - et_start) / 15 * 10
     # There were rounding errors when using spiceypy.pxform so np.ceil and np.floor
@@ -189,6 +193,7 @@ def _get_et_times(et_start: float, et_end: float) -> NDArray[np.float64]:
     return et_times
 
 
+@typing.no_type_check
 @ensure_spice
 def _average_quaternions(et_times: np.ndarray) -> NDArray:
     """

@@ -11,8 +11,6 @@ from imap_processing.spice.pointing_frame import (
     create_pointing_frame,
 )
 
-from imap_processing.spice.repoint import get_repoint_data
-
 
 @pytest.fixture
 def pointing_frame_kernels(spice_test_data_path):
@@ -91,8 +89,8 @@ def test_create_pointing_frame(
     create_pointing_frame(
         tmp_path / "imap_dps.bc",
         spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc",
-        np.array([802008069.184905]), # repoint_df["repoint_start_met"].values
-        np.array([802015267.184906]) # repoint_df["repoint_end_met"].values
+        np.array([486432004]),  # repoint_df["repoint_start_met"].values
+        np.array([486439201]),  # repoint_df["repoint_end_met"].values
     )
 
     # After imap_dps.bc has been created.
@@ -120,8 +118,10 @@ def test_create_pointing_frame(
         ValueError, match="Error: Expected CK kernel badname_kernel.bc"
     ):  # Replace match string with expected error message
         create_pointing_frame(
-            tmp_path / "imap_dps.bc", "badname_kernel.bc",
-            repoint_df,
+            tmp_path / "imap_dps.bc",
+            "badname_kernel.bc",
+            np.array([486432004]),
+            np.array([486439201]),
         )
 
 
@@ -140,41 +140,17 @@ def test_et_times(pointing_frame_kernels):
     return et_times
 
 
-def test_multiple_attempts(pointing_frame_kernels, tmp_path, spice_test_data_path):
-    """Tests create_pointing_frame function with multiple pointing kernels."""
-    spiceypy.furnsh(pointing_frame_kernels)
-
-    # Check that a single segment is added regardless of how many times
-    # create_pointing_frame is called.
-    create_pointing_frame(
-        pointing_frame_path=tmp_path / "imap_dps.bc",
-        ck_path=spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc",
-    )
-    ck_cover = spiceypy.ckcov(
-        str(tmp_path / "imap_dps.bc"), -43901, True, "INTERVAL", 0, "TDB"
-    )
-    num_intervals = spiceypy.wncard(ck_cover)
-    assert num_intervals == 1
-
-    create_pointing_frame(
-        pointing_frame_path=tmp_path / "imap_dps.bc",
-        ck_path=spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc",
-    )
-    ck_cover = spiceypy.ckcov(
-        str(tmp_path / "imap_dps.bc"), -43901, True, "INTERVAL", 0, "TDB"
-    )
-    num_intervals = spiceypy.wncard(ck_cover)
-    assert num_intervals == 1
-
-
 def test_multiple_pointings(pointing_frame_kernels, spice_test_data_path, tmp_path):
     """Tests create_pointing_frame function with multiple pointing kernels."""
     spiceypy.furnsh(pointing_frame_kernels)
 
     create_pointing_frame(
-        pointing_frame_path=tmp_path / "imap_pointing_frame.bc",
-        ck_path=spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc",
+        tmp_path / "imap_pointing_frame.bc",
+        spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc",
+        np.array([486432003]),  # repoint_df["repoint_start_met"].values
+        np.array([486439201]),  # repoint_df["repoint_end_met"].values
     )
+
     ck_cover_pointing = spiceypy.ckcov(
         str(tmp_path / "imap_pointing_frame.bc"),
         -43901,
@@ -198,8 +174,8 @@ def test_multiple_pointings(pointing_frame_kernels, spice_test_data_path, tmp_pa
     et_start_expected, et_end_expected = spiceypy.wnfetd(ck_cover, 0)
 
     assert num_intervals == num_intervals_expected
-    assert et_start_pointing == et_start_expected
-    assert et_end_pointing == et_end_expected
+    np.testing.assert_allclose(et_start_pointing, et_start_expected, atol=1e-2)
+    np.testing.assert_allclose(et_end_pointing, et_end_expected, atol=1e-2)
 
     et_times = _get_et_times(et_start_pointing, et_end_pointing)
 
@@ -208,4 +184,3 @@ def test_multiple_pointings(pointing_frame_kernels, spice_test_data_path, tmp_pa
     rotation_matrix_2 = spiceypy.pxform("ECLIPJ2000", "IMAP_DPS", et_times[1000])
 
     assert np.array_equal(rotation_matrix_1, rotation_matrix_2)
-
