@@ -7,7 +7,6 @@ import spiceypy
 from imap_processing.spice.pointing_frame import (
     _average_quaternions,
     _create_rotation_matrix,
-    _get_et_times,
     create_pointing_frame,
 )
 
@@ -34,7 +33,14 @@ def et_times(pointing_frame_kernels):
     ck_kernel, _, _, _ = spiceypy.kdata(0, "ck")
     ck_cover = spiceypy.ckcov(ck_kernel, -43000, True, "INTERVAL", 0, "TDB")
     et_start, et_end = spiceypy.wnfetd(ck_cover, 0)
-    et_times = _get_et_times(et_start, et_end)
+
+    # 1 spin/15 seconds; 10 quaternions / spin.
+    num_samples = (et_end - et_start) / 15 * 10
+    # There were rounding errors when using spiceypy.pxform so np.ceil and np.floor
+    # were used to ensure the start and end times were within the ck range.
+    et_times = np.linspace(
+        np.ceil(et_start * 1e6) / 1e6, np.floor(et_end * 1e6) / 1e6, int(num_samples)
+    )
 
     return et_times
 
@@ -125,21 +131,6 @@ def test_create_pointing_frame(
         )
 
 
-def test_et_times(pointing_frame_kernels):
-    """Tests get_et_times function."""
-    spiceypy.furnsh(pointing_frame_kernels)
-
-    ck_kernel, _, _, _ = spiceypy.kdata(0, "ck")
-    ck_cover = spiceypy.ckcov(ck_kernel, -43000, True, "INTERVAL", 0, "TDB")
-    et_start, et_end = spiceypy.wnfetd(ck_cover, 0)
-    et_times = _get_et_times(et_start, et_end)
-
-    assert et_times[0] == et_start
-    assert et_times[-1] == et_end
-
-    return et_times
-
-
 def test_multiple_pointings(pointing_frame_kernels, spice_test_data_path, tmp_path):
     """Tests create_pointing_frame function with multiple pointing kernels."""
     spiceypy.furnsh(pointing_frame_kernels)
@@ -177,7 +168,15 @@ def test_multiple_pointings(pointing_frame_kernels, spice_test_data_path, tmp_pa
     np.testing.assert_allclose(et_start_pointing, et_start_expected, atol=1e-2)
     np.testing.assert_allclose(et_end_pointing, et_end_expected, atol=1e-2)
 
-    et_times = _get_et_times(et_start_pointing, et_end_pointing)
+    # 1 spin/15 seconds; 10 quaternions / spin.
+    num_samples = (et_end_pointing - et_start_pointing) / 15 * 10
+    # There were rounding errors when using spiceypy.pxform so np.ceil and np.floor
+    # were used to ensure the start and end times were within the ck range.
+    et_times = np.linspace(
+        np.ceil(et_start_pointing * 1e6) / 1e6,
+        np.floor(et_end_pointing * 1e6) / 1e6,
+        int(num_samples),
+    )
 
     spiceypy.furnsh(str(tmp_path / "imap_pointing_frame.bc"))
     rotation_matrix_1 = spiceypy.pxform("ECLIPJ2000", "IMAP_DPS", et_times[100])

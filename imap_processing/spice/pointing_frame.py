@@ -116,7 +116,16 @@ def create_pointing_frame(
 
     with open_spice_ck_file(pointing_frame_path) as handle:
         for i in range(len(repoint_start_met)):
-            et_times = _get_et_times(et_start_repoint[i], et_end_repoint[i])
+            # 1 spin/15 seconds; 10 quaternions / spin.
+            num_samples = (et_end_repoint[i] - et_start_repoint[i]) / 15 * 10
+            # There were rounding errors when using spiceypy.pxform
+            # so np.ceil and np.floor were used to ensure the start
+            # and end times were within the ck range.
+            et_times = np.linspace(
+                np.ceil(et_start_repoint[i] * 1e6) / 1e6,
+                np.floor(et_end_repoint[i] * 1e6) / 1e6,
+                int(num_samples),
+            )
 
             # Create a rotation matrix
             rotation_matrix = _create_rotation_matrix(et_times)
@@ -161,36 +170,6 @@ def create_pointing_frame(
                 # angular velocity change.
                 np.array([1.0]),
             )
-
-
-def _get_et_times(et_start: float, et_end: float) -> NDArray[np.float64]:
-    """
-    Get times for pointing start and stop.
-
-    Parameters
-    ----------
-    et_start : float
-        Pointing start time.
-    et_end : float
-        Pointing end time.
-
-    Returns
-    -------
-    et_times : numpy.ndarray
-        Array of times between et_start and et_end.
-    """
-    # TODO: Queried pointing start and stop times here.
-    # TODO removing the @ensure_spice decorator when using the repointing table.
-
-    # 1 spin/15 seconds; 10 quaternions / spin.
-    num_samples = (et_end - et_start) / 15 * 10
-    # There were rounding errors when using spiceypy.pxform so np.ceil and np.floor
-    # were used to ensure the start and end times were included in the array.
-    et_times = np.linspace(
-        np.ceil(et_start * 1e6) / 1e6, np.floor(et_end * 1e6) / 1e6, int(num_samples)
-    )
-
-    return et_times
 
 
 @typing.no_type_check
