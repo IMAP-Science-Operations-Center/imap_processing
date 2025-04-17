@@ -90,12 +90,15 @@ markers = [
 [tool.ruff]
 target-version = "py39"
 lint.select = ["B", "D", "E", "F", "I", "N", "S", "W", "PL", "PT", "UP", "RUF"]
-# D104: Missing docstring in public package
-# PLR2004: Magic value in comparison
-# RUF200: pyproject missing field (poetry doesn't follow the spec)
-# PLR0915: too-many-statements error
-# RUF002: `−` (MINUS SIGN). Did you mean `-` (HYPHEN-MINUS) error
-lint.ignore = ["D104", "PLR2004", "RUF200", "S311", "PLR0915", "RUF002"]
+lint.ignore = [
+  "D104",  # Missing docstring in public package
+  "PLR0913",  # too-many-args error
+  "PLR0915",  # too-many-statements error
+  "PLR2004",  # Magic value in comparison
+  "RUF002",  # `−` (MINUS SIGN). Did you mean `-` (HYPHEN-MINUS) error
+  "RUF200",  # pyproject missing field (poetry doesn't follow the spec)
+  "S311",  # suspicious-non-cryptographic-random-usage
+]
 
 [tool.ruff.lint.per-file-ignores]
 # S603 unchecked input in subprocess call is fine in our tests

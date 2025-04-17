@@ -16,7 +16,6 @@ Examples
     write_cdf(l2a_data)
 """
 
-# ruff: noqa: PLR0913
 import logging
 from enum import IntEnum
 

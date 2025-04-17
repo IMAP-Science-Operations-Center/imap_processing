@@ -791,7 +791,7 @@ class MagL1a:
         return primary_vectors, secondary_vectors
 
     @staticmethod
-    def _process_vector_section(  # noqa: PLR0913
+    def _process_vector_section(
         vector_bits: np.ndarray,
         split_bits: list,
         last_index: int,

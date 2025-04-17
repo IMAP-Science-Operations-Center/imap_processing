@@ -14,7 +14,7 @@ DEFAULT_RECT_SPACING_DEG_L1C = 0.5
 DEFAULT_HEALPIX_NSIDE_L1C = 128
 
 
-def mock_l1c_pset_product_rectangular(  # noqa: PLR0913
+def mock_l1c_pset_product_rectangular(
     spacing_deg: float = DEFAULT_RECT_SPACING_DEG_L1C,
     stripe_center_lat: int = 0,
     width_scale: float = 10.0,
@@ -192,7 +192,7 @@ def mock_l1c_pset_product_rectangular(  # noqa: PLR0913
     return pset_product
 
 
-def mock_l1c_pset_product_healpix(  # noqa: PLR0913
+def mock_l1c_pset_product_healpix(
     nside: int = DEFAULT_HEALPIX_NSIDE_L1C,
     stripe_center_lat: int = 0,
     width_scale: float = 10.0,
