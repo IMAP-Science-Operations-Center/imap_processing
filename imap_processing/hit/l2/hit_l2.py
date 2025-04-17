@@ -509,7 +509,7 @@ def process_summed_intensity_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Da
         if var in VALID_SPECIES:
             l2_summed_intensity_dataset = add_systematic_uncertainties(
                 l2_summed_intensity_dataset,
-                str(var),
+                var,
                 l2_summed_intensity_dataset[var].shape[1],
             )
     l2_summed_intensity_dataset = calculate_intensities_for_all_species(
@@ -636,7 +636,7 @@ def process_sectored_intensity_data(
         if var in VALID_SECTORED_SPECIES:
             l2_sectored_intensity_dataset = add_systematic_uncertainties(
                 l2_sectored_intensity_dataset,
-                str(var),
+                var,
                 l2_sectored_intensity_dataset[var].shape[1],
             )
     l2_sectored_intensity_dataset = calculate_intensities_for_all_species(
