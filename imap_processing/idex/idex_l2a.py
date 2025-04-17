@@ -113,7 +113,6 @@ def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
             ["time_high_sample_rate_index"],
             [],
         ],
-        # TODO: Determine dimension name
         output_core_dims=[
             ["mass", "peak_fit_parameters"],
             ["mass"],

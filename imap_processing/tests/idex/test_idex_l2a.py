@@ -233,8 +233,8 @@ def test_analyze_peaks_warning(caplog):
     assert np.all(fit_params == 0)
     assert np.all(area_under_curve == 0)
     # chi-square and reduced chi-square values should all be np.nan
-    assert np.all(np.isnan(chisqr))
-    assert np.all(np.isnan(redchi))
+    np.testing.assert_array_equal(chisqr, np.nan)
+    np.testing.assert_array_equal(chisqr, np.nan)
 
 
 def test_analyze_peaks_perfect_fits():
