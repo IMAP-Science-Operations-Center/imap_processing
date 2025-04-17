@@ -1195,6 +1195,11 @@ class HealpixSkyMap(AbstractSkyMap):
         mean_pixel_value = (
             weighted_hp_vals_at_rect_pix_ctrs.sum(axis=-1) / full_rect_pixel_solid_angle
         )
+        # Log the mean pixel value and the number of subdivisions for debugging
+        logger.debug(
+            f"    Mean pixel value at Number of subdivisions: {num_subdivisions}: "
+            f"array of shape {mean_pixel_value.shape}: {mean_pixel_value}"
+        )
         return mean_pixel_value
 
     def get_rect_pixel_value_recursive_subdivs(  # noqa: PLR0913
@@ -1271,6 +1276,11 @@ class HealpixSkyMap(AbstractSkyMap):
             depth += 1
             previous_mean_pixel_value = mean_pixel_value
 
+        logger.debug(
+            f"Pixel at ({rect_pix_center_lon_lat} deg size={rect_pix_spacing_deg} deg,)"
+            f" converged to {mean_pixel_value.mean()} in {depth} subdivisions."
+            f" Previous mean was {previous_mean_pixel_value.mean()}."
+        )
         # Only keep the last (best) mean pixel value
         return mean_pixel_value, depth
 
@@ -1369,8 +1379,20 @@ class HealpixSkyMap(AbstractSkyMap):
 
             # Add the subdivision depth by pixel of this value_key to the dictionary
             # This may be necessary for uncertainty estimation
-            subdiv_depth_dict[value_key] = np.array(
+            subdiv_depth_of_value_by_pixel = np.array(
                 [r[1] for r in best_value_and_recursion_depth_by_pixel]
+            )
+            subdiv_depth_dict[value_key] = subdiv_depth_of_value_by_pixel
+            logger.info(
+                f"Summary of subdivision depth for {value_key}:\n"
+                "Mean +/- std number of subdivisions for the "
+                f"{rect_map.num_points} pixels of {value_key} is:\n"
+                f"    {np.mean(subdiv_depth_of_value_by_pixel):.6f}."
+                f" +/- {np.std(subdiv_depth_of_value_by_pixel):.6f}.\n"
+                "Min / Max number of subdivisions: \n"
+                f"    {np.min(subdiv_depth_of_value_by_pixel):.6f} / "
+                f"{np.max(subdiv_depth_of_value_by_pixel):.6f}.\n"
+                f"The maximum allowed depth is {max_subdivision_depth}."
             )
 
         return rect_map, subdiv_depth_dict
