@@ -53,9 +53,7 @@ def test_generate_pset_dataset(
         l1b_dataset, hi_test_cal_prod_config_path
     )
 
-    assert l1c_dataset.epoch.data[0] == np.mean(l1b_dataset.epoch.data[[0, -1]]).astype(
-        np.int64
-    )
+    assert l1c_dataset.epoch.data[0] == l1b_dataset.epoch.data[0].astype(np.int64)
 
     np.testing.assert_array_equal(l1c_dataset.despun_z.data.shape, (1, 3))
     np.testing.assert_array_equal(l1c_dataset.hae_latitude.data.shape, (1, 3600))
