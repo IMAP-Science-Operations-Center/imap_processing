@@ -11,9 +11,11 @@ from imap_processing.idex.idex_l2a import (
     butter_lowpass_filter,
     calculate_kappa,
     calculate_snr,
+    chi_square,
     estimate_dust_mass,
     fit_impact,
     remove_signal_noise,
+    sine_fit,
     time_to_mass,
 )
 
@@ -24,7 +26,7 @@ def mock_microphonics_noise(time: np.ndarray) -> np.ndarray:
     phase_shift = 45
     amp = 10
     # Create a sine wave signal
-    sine_signal = amp * np.sin(2 * np.pi * noise_frequency * time + phase_shift)
+    sine_signal = sine_fit(time, amp, noise_frequency, phase_shift)
     # Combine the sine wave signals with a linear signal to create noise
     combined_sig = sine_signal + (time * 5)
 
@@ -54,7 +56,6 @@ def test_l2a_cdf_variables(l2a_dataset: xr.Dataset):
         A ``xarray`` dataset containing the test data
     """
     expected_vars = [
-        "mass",
         "target_low_fit_parameters",
         "target_low_fit_impact_charge",
         "target_low_fit_impact_mass_estimate",
@@ -73,6 +74,13 @@ def test_l2a_cdf_variables(l2a_dataset: xr.Dataset):
         "ion_grid_chi_squared",
         "ion_grid_reduced_chi_squared",
         "ion_grid_fit_results",
+        "tof_peak_fit_parameters",
+        "tof_peak_area_under_fit",
+        "tof_peak_chi_square",
+        "tof_peak_reduced_chi_square",
+        "tof_peak_kappa",
+        "tof_snr",
+        "mass",
     ]
 
     cdf_vars = l2a_dataset.variables
@@ -214,7 +222,9 @@ def test_analyze_peaks_warning(caplog):
     tof = np.ones_like(time)
     mass_scale = np.ones_like(time)
     with caplog.at_level("WARNING"):
-        fit_params, area_under_curve = analyze_peaks(tof, time, mass_scale, 0, peaks)
+        fit_params, area_under_curve, chisqr, redchi = analyze_peaks(
+            tof, time, mass_scale, 0, peaks
+        )
     assert any(
         "Failed to fit EMG curve" in message for message in caplog.text.splitlines()
     )
@@ -222,6 +232,9 @@ def test_analyze_peaks_warning(caplog):
     # The fit_params and area_under_curve arrays should be zero
     assert np.all(fit_params == 0)
     assert np.all(area_under_curve == 0)
+    # chi-square and reduced chi-square values should all be np.nan
+    np.testing.assert_array_equal(chisqr, np.nan)
+    np.testing.assert_array_equal(chisqr, np.nan)
 
 
 def test_analyze_peaks_perfect_fits():
@@ -248,7 +261,9 @@ def test_analyze_peaks_perfect_fits():
         gauss = exponnorm.pdf(time.data, k, mu, sigma)
         tof[peak - 5 : peak + 6] = gauss[peak - 5 : peak + 6]
 
-    fit_params, area_under_curve = analyze_peaks(tof, time, mass_scale, event, peaks)
+    fit_params, area_under_curve, chisqr, redchi = analyze_peaks(
+        tof, time, mass_scale, event, peaks
+    )
 
     for peak in peaks[event]:
         mu = peak - 0.4
@@ -257,6 +272,9 @@ def test_analyze_peaks_perfect_fits():
         assert np.allclose(fit_params[mass], np.asarray([mu, sigma, lam]), rtol=1e-12)
         # Test that there is a value greater than zero at this index
         assert area_under_curve[mass] > 0
+        # Test the goodness of fit
+        assert chisqr < 1e-20
+        assert redchi < 1e-20
 
 
 def test_estimate_dust_mass_no_noise_removal():
@@ -360,3 +378,22 @@ def test_remove_signal_noise_no_sine_wave(caplog):
     filtered_sig = remove_signal_noise(time, signal, mask)
     # Test that the filtered signal is close to zero
     assert np.allclose(filtered_sig, np.zeros_like(filtered_sig), rtol=1e-24)
+
+
+def test_chi_square():
+    """
+    Test that chi_square() function calculates the expected values for an array of given
+    residuals.
+    """
+    residual = 3
+    nparams = 2
+    exp = np.array([16, 18, 16, 14, 12, 12])
+    obs = exp + residual
+
+    expected_chi_square = np.square(residual) * len(exp)
+    expected_red_chi_square = expected_chi_square / (len(exp) - nparams)
+
+    chisqr, redchi = chi_square(obs, exp, nparams)
+
+    assert chisqr == expected_chi_square
+    assert redchi == expected_red_chi_square

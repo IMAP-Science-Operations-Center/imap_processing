@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# ruff: noqa: PLR0913
 """
 Run the processing for a specific instrument & data level.
 
