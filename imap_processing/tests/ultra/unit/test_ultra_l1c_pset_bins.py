@@ -199,24 +199,24 @@ def test_get_spacecraft_sensitivity():
 
 
 @pytest.mark.external_test_data
+@pytest.mark.external_test_data
 def test_grid_sensitivity():
     """Tests grid_sensitivity function."""
-    efficiences = TEST_PATH / "Ultra_90_DPS_efficiencies_all.csv"
-    geometric_function = TEST_PATH / "ultra_90_dps_gf.csv"
+    efficiencies_path = TEST_PATH / "Ultra_90_DPS_efficiencies_all.csv"
+    geometric_function_path = TEST_PATH / "ultra_90_dps_gf.csv"
 
-    df_efficiencies = pd.read_csv(efficiences)
-    df_geometric_function = pd.read_csv(geometric_function)
+    df_efficiencies = pd.read_csv(efficiencies_path)
+    df_geometric_function = pd.read_csv(geometric_function_path)
 
-    sensitivity, energy_vals, right_ascension, declination = get_spacecraft_sensitivity(
+    sensitivity, energy_vals, ra, dec = get_spacecraft_sensitivity(
         df_efficiencies, df_geometric_function
     )
-    # First non-zero index for 3 keV
-    index = sensitivity[sensitivity["3.0keV"] != 0].index[0]
-    expected_result = sensitivity.loc[index]["3.0keV"]
-    result = grid_sensitivity(df_efficiencies, df_geometric_function, 3)
 
-    assert np.allclose(result[index], expected_result)
+    expected_result = sensitivity["3.0keV"].values
+    result = grid_sensitivity(df_efficiencies, df_geometric_function, 3.0)
 
-    # Check out of bounds values are nans
+    assert np.allclose(result, expected_result, atol=1e-5)
+
+    # Check that out-of-bounds energy returns all NaNs
     result = grid_sensitivity(df_efficiencies, df_geometric_function, 2.5)
     assert np.isnan(result).all()

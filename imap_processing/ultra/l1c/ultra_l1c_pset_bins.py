@@ -4,6 +4,7 @@ import astropy_healpix.healpy as hp
 import numpy as np
 import pandas
 from numpy.typing import NDArray
+from scipy.interpolate import interp1d
 
 from imap_processing.ena_maps.utils.spatial_utils import build_spatial_bins
 from imap_processing.spice.geometry import (
@@ -310,11 +311,9 @@ def grid_sensitivity(
     efficiencies: pandas.DataFrame,
     geometric_function: pandas.DataFrame,
     energy: float,
-    nside: int = 128,
-    nested: bool = False,
 ) -> NDArray:
     """
-    Grid the sensitivity at a given energy.
+    Grid the sensitivity.
 
     Parameters
     ----------
@@ -322,36 +321,30 @@ def grid_sensitivity(
         Efficiencies at different energy levels.
     geometric_function : pandas.DataFrame
         Geometric function.
+        energy : np.ndarray
+        The particle energy.
     energy : float
-        Energy (keV) to interpolate to.
-    nside : int, optional
-        The nside parameter of the Healpix tessellation.
-    nested : bool, optional
-        Whether the Healpix tessellation is nested.
+        Energy to which we are interpolating.
 
     Returns
     -------
-    pointing_sensitivity : np.ndarray
-        Interpolated sensitivity per HEALPix pixel at the given energy.
-        Shape is (npix,) where npix = 12 * nside^2
+    interpolated_sensitivity : np.ndarray
+        Sensitivity with dimensions (HEALPIX pixel_number, 1).
     """
-    import healpy as hp
-
-    sensitivity, energy_vals, ra, dec = get_spacecraft_sensitivity(
+    sensitivity, energy_vals, right_ascension, declination = get_spacecraft_sensitivity(
         efficiencies, geometric_function
     )
 
-    hpix_idx = hp.ang2pix(nside, ra, dec, nest=nested, lonlat=True)
-    npix = hp.nside2npix(nside)
-
-    # Interpolate sensitivity for each row (1D interp over energy_vals)
-    interpolated = np.array(
-        [np.interp(energy, energy_vals, s_row) for s_row in sensitivity],
-        dtype=np.float32,
+    # Create interpolator over energy dimension for each pixel (axis=1)
+    interp_func = interp1d(
+        energy_vals,
+        sensitivity.values,
+        axis=1,
+        bounds_error=False,
+        fill_value=np.nan,
     )
 
-    # Store in HEALPix array
-    pointing_sensitivity = np.full(npix, np.nan, dtype=np.float32)
-    pointing_sensitivity[hpix_idx] = interpolated
+    # Interpolate to energy
+    interpolated = interp_func(energy)
 
-    return pointing_sensitivity
+    return interpolated
