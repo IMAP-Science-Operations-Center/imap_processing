@@ -260,6 +260,7 @@ imap_ultra_l1a_90sensor-imgparams:
     Logical_source: imap_ultra_l1a_90sensor-imgparams
     Logical_source_description: IMAP-Ultra Instrument Level-1A Image Parameters Data for Ultra90.
 
+# Ultra L2 Global attributes for different sensors and sky tiling types
 imap_ultra_l2_45sensor-enafluxmaphealpix:
     <<: *instrument_base
     Data_type: L2_45Sensor-EnaFluxMapHealpix>Level-2 ENA Flux Map for Ultra45 on HEALPix tiling

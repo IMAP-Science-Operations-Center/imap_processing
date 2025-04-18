@@ -32,6 +32,8 @@ DEFAULT_ULTRA_L2_MAP_STRUCTURE: ena_maps.RectangularSkyMap | ena_maps.HealpixSky
     )
 )
 
+DEBUG_MODE = True
+
 # Set some default Healpix parameters - these must be defined, even if also
 # present in the DEFAULT_ULTRA_L2_MAP_STRUCTURE, because we always make a Healpix map
 # regardless of the output map type
@@ -157,8 +159,8 @@ def generate_ultra_healpix_skymap(
             dims=(CoordNames.HEALPIX_INDEX.value),
         )
         pointing_set.data["observation_time"] = xr.DataArray(
-            np.full(pointing_set.num_points, pointing_set.epoch),
-            dims=(CoordNames.HEALPIX_INDEX.value),
+            np.full((1, pointing_set.num_points), pointing_set.epoch),
+            dims=(CoordNames.TIME.value, CoordNames.HEALPIX_INDEX.value),
         )
         # Add solid_angle * exposure of pointing set as data_var
         # so this quantity is projected to map pixels for use in weighted averaging
@@ -232,7 +234,6 @@ def generate_ultra_healpix_skymap(
 
 def ultra_l2(
     data_dict: dict[str, xr.Dataset | str],
-    data_version: str,
     output_map_structure: (
         ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap
     ) = DEFAULT_ULTRA_L2_MAP_STRUCTURE,
@@ -244,8 +245,6 @@ def ultra_l2(
     ----------
     data_dict : dict[str, xr.Dataset]
         Dict mapping l1c product identifiers to paths/Datasets containing l1c psets.
-    data_version : str
-        Version of the data product being created.
     output_map_structure : ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap, optional
         Empty SkyMap structure providing the properties of the map to be generated.
         Defaults to DEFAULT_ULTRA_L2_MAP_STRUCTURE defined in this module.
@@ -285,17 +284,32 @@ def ultra_l2(
         map_attrs = {
             "HEALPix_nside": output_map_structure.nside,
             "HEALPix_nest": output_map_structure.nested,
-            "Data_version": data_version,
         }
         global_attrs_key = f"{global_attrs_key_base}healpix"
 
-    # TODO: Implement conversion to Rectangular map
     elif output_map_structure.tiling_type is ena_maps.SkyTilingType.RECTANGULAR:
+        rectangular_skymap, subdiv_depth_dict = healpix_skymap.to_rectangular_skymap(
+            rect_spacing_deg=output_map_structure.spacing_deg,
+            value_keys=healpix_skymap.data_1d.data_vars,
+        )
+
+        # Add the subdiv_depth_by_pixel of each key to the map dataset if requested
+        if DEBUG_MODE:
+            for key, depth_by_pixel in subdiv_depth_dict.items():
+                rectangular_skymap.data_1d[f"{key}_subdivision_depth"] = xr.DataArray(
+                    data=depth_by_pixel,
+                    dims=(CoordNames.GENERIC_PIXEL.value,),
+                    attrs={
+                        "long_name": f"Subdiv_depth of {key}",
+                    },
+                )
+
+        map_dataset = rectangular_skymap.to_dataset()
+
         map_attrs = {
             "Spacing_degrees": output_map_structure.spacing_deg,
-            "Data_version": data_version,
         }
-        raise NotImplementedError
+        global_attrs_key = f"{global_attrs_key_base}rectangular"
 
     # Get the global attributes for the map with the key specific to sensor number and
     # tiling type. E.g. 'imap_ultra_l2_90sensor-enafluxmaphealpix'
@@ -312,11 +326,35 @@ def ultra_l2(
     # Add the defined attributes to the map's global attrs
     map_dataset.attrs.update(map_attrs)
 
-    # Add variable specific attributes to the map's data_vars
+    # Add the "label" coordinates to the map dataset
+    for coord_var, coord_data in map_dataset.coords.items():
+        if coord_var != "epoch":
+            map_dataset.coords[f"{coord_var}_label"] = xr.DataArray(
+                coord_data.values.astype(str),
+                dims=[
+                    f"{coord_var}_label",
+                ],
+                name=f"{coord_var}_label",
+            )
+
+    # Add variable specific attributes to the map's data_vars and coords
     for variable in map_dataset.data_vars:
+        # Skip the subdivision depth variables, as these will only be
+        # present for debugging purposes
+        if "subdivision_depth" in variable:
+            continue
+
         map_dataset[variable].attrs.update(
             cdf_attrs.get_variable_attributes(
                 variable_name=variable,
             )
         )
+    for coord_variable in map_dataset.coords:
+        map_dataset[coord_variable].attrs.update(
+            cdf_attrs.get_variable_attributes(
+                variable_name=coord_variable,
+                check_schema=False,
+            )
+        )
+
     return [map_dataset]

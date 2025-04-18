@@ -286,9 +286,10 @@ def mock_l1c_pset_product_healpix(
     prob_scaling_factor_exptime = counts_scaling_params[1] * np.exp(
         -(lat_diff**2) / (2 * (3 * width_scale) ** 2)
     )
-    exposure_time = peak_exposure * (
-        prob_scaling_factor_exptime / prob_scaling_factor_exptime.max()
-    )
+    exposure_time = (
+        peak_exposure
+        * (prob_scaling_factor_exptime / prob_scaling_factor_exptime.max())
+    )[np.newaxis, :]
 
     # Ensure counts are integers
     counts = counts.astype(int)
@@ -326,7 +327,7 @@ def mock_l1c_pset_product_healpix(
                 np.full_like(counts, 0.05, dtype=float),
             ),
             "exposure_factor": (
-                [CoordNames.HEALPIX_INDEX.value],
+                [CoordNames.TIME.value, CoordNames.HEALPIX_INDEX.value],
                 exposure_time,
             ),
             "sensitivity": (
