@@ -1202,7 +1202,7 @@ class HealpixSkyMap(AbstractSkyMap):
         )
         return mean_pixel_value
 
-    def get_rect_pixel_value_recursive_subdivs(  # noqa: PLR0913
+    def get_rect_pixel_value_recursive_subdivs(
         self,
         rect_pix_center_lon_lat: np.typing.NDArray | tuple[float, float],
         rect_pix_spacing_deg: float,
