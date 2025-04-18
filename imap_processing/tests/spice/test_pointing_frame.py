@@ -87,8 +87,8 @@ def test_create_pointing_frame(
     # This is how the repoint data is generated.
     # We will use fake data for now to match the coverage of the attitude kernel.
     # repoint_df = get_repoint_data()
-    # repoint_start_met = repoint_df["repoint_start_met"].values
-    # repoint_end_met = repoint_df["repoint_end_met"].values
+    # repoint_start = repoint_df["repoint_end_met"].values[:-1]
+    # repoint_end_met = repoint_df["repoint_start_met"].values[1:]
 
     spiceypy.kclear()
     spiceypy.furnsh(pointing_frame_kernels)
