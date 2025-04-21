@@ -440,9 +440,6 @@ def generate_histogram_dataset(
     )
 
     attrs = glows_cdf_attributes.get_global_attributes("imap_glows_l1a_hist")
-    if obs_day:
-        # this needs to be 5 digits, so truncate it from the temporary obs day
-        attrs["Repointing"] = int(str(obs_day)[-5:])
 
     output = xr.Dataset(
         coords={"epoch": epoch_time, "bins": bins, "bins_label": bin_label},

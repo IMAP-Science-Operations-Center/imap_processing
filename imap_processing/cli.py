@@ -196,7 +196,7 @@ def _parse_args() -> argparse.Namespace:
         "--start-date",
         type=str,
         required=True,
-        help="Start time for the output data. Format: YYYYMMDD",
+        help="Start time for the output data. Format: YYYYMMDD or repoint#####",
     )
 
     parser.add_argument(
@@ -206,7 +206,6 @@ def _parse_args() -> argparse.Namespace:
         help="End time for the output data. If not provided, start_time will be used "
         "for end_time. Format: YYYYMMDD",
     )
-    # TODO: Will need to add some way of including pointing numbers
 
     parser.add_argument(
         "--version",
@@ -419,6 +418,9 @@ class ProcessInstrument(ABC):
         Child classes can override this method to customize the
         post-processing actions.
 
+        If start_date is used to generate the output file name by default, and can
+        either be a date in the form YYYYMMDD or a repointing in the form repoint#####.
+
         Parameters
         ----------
         datasets : list[xarray.Dataset]
@@ -444,11 +446,24 @@ class ProcessInstrument(ABC):
         if not isinstance(self.version, str) or r.match(self.version) is None:
             self.version = f"v{int(self.version):03d}"  # vXXX
 
+        # Start date is either the start date or the repointing.
+        # if it is the repointing, default to using the first epoch in the file as
+        # start_date.
+        # If it is start_date, skip repointing in the output filename.
+
+        start_date = None
+        if imap_data_access.ScienceFilePath.is_valid_date(self.start_date):
+            start_date = self.start_date
+
+        repointing = None
+        if imap_data_access.ScienceFilePath.is_valid_repointing(self.start_date):
+            repointing = self.start_date
+
         products = []
         for ds in datasets:
             ds.attrs["Data_version"] = self.version
             ds.attrs["Parents"] = parent_files
-            products.append(write_cdf(ds))
+            products.append(write_cdf(ds, start_date=start_date, repointing=repointing))
 
         self.upload_products(products)
 
