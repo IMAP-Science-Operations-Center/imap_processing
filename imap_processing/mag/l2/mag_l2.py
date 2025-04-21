@@ -37,7 +37,7 @@ def mag_l2(
         example.) The offsets dataset and the input
         data are tightly related, so the input data filename is actually retrieved from
         the offset dataset to ensure they always match.
-    4. sdc-configuration.yaml
+    4. sdc-configuration
         This is a local configuration file for changes we never expect to make in
         flight. This is in the IMAP local repo because changes to these settings will
         require other code updates to validate the changes. In L2, the only setting used
