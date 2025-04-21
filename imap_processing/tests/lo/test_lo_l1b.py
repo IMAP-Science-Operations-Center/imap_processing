@@ -1,4 +1,5 @@
 from collections import namedtuple
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -60,7 +61,10 @@ def attr_mgr_l1a():
     return attr_mgr
 
 
-def test_lo_l1b():
+@patch("imap_processing.lo.l1b.lo_l1b.instrument_pointing")
+@pytest.mark.external_kernel
+@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
+def test_lo_l1b(mock_instrument_pointing):
     # Arrange
     de_file = (
         imap_module_directory / "tests/lo/test_cdfs/imap_lo_l1a_de_20241022_v002.cdf"
@@ -74,6 +78,7 @@ def test_lo_l1b():
         data[dataset.attrs["Logical_source"]] = dataset
 
     expected_logical_source = "imap_lo_l1b_de"
+    mock_instrument_pointing.return_value = np.zeros((2000, 2))
     # Act
     output_file = lo_l1b(data)
 

@@ -661,7 +661,6 @@ def set_pointing_direction(l1b_de: xr.Dataset) -> xr.Dataset:
     et = ttj2000ns_to_et(l1b_de["epoch"])
 
     direction = instrument_pointing(et, SpiceFrame.IMAP_LO_BASE, SpiceFrame.IMAP_DPS)
-
     # TODO: Need to ask Lo what to do if a latitude is outside of the
     # +/-2 degree range. Is that possible?
     l1b_de["direction_lon"] = xr.DataArray(
