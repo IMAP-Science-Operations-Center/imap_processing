@@ -22,6 +22,8 @@ from imap_processing.lo.l1b.lo_l1b import (
     set_coincidence_type,
     set_each_event_epoch,
     set_event_met,
+    set_pointing_bin,
+    set_pointing_direction,
     set_spin_bin,
     set_spin_cycle,
 )
@@ -79,6 +81,8 @@ def test_lo_l1b():
     assert expected_logical_source == output_file[0].attrs["Logical_source"]
 
 
+# @pytest.mark.external_kernel
+# @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_create_datasets():
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs(instrument="lo")
@@ -503,3 +507,67 @@ def test_set_bad_times():
 
     # Assert
     np.testing.assert_array_equal(l1b_de["badtimes"], expected_bad_times)
+
+
+@pytest.mark.external_kernel
+@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
+def test_set_direction():
+    # Arrange
+    l1b_de = xr.Dataset(
+        {},
+        coords={
+            "epoch": [
+                7.9794907049e17,
+                7.9794907153e17,
+                7.9794907254e17,
+            ],
+        },
+    )
+    # Need to better verify these values. Latitudes are likely to
+    # be 0, but not sure what values to expect from Longitudes.
+    # The expected values are based on what I'm getting from the
+    # SPICE tools.
+    expected_direction_lat = np.array([0, 0, 0])
+    expected_direction_lon = np.array([91.3, 116.3, 140.5])
+
+    # Act
+    l1b_de = set_pointing_direction(l1b_de)
+
+    # Assert
+    np.testing.assert_allclose(
+        l1b_de["direction_lat"].values,
+        expected_direction_lat,
+        atol=1e-1,
+    )
+    np.testing.assert_allclose(
+        l1b_de["direction_lon"].values,
+        expected_direction_lon,
+        atol=1e-1,
+    )
+
+
+def test_pointing_bins():
+    # Arrange
+    l1b_de = xr.Dataset(
+        {
+            "direction_lat": ("epoch", [0, 0, 0]),
+            "direction_lon": ("epoch", [91.3, 116.3, 140.5]),
+        },
+        coords={
+            "epoch": [
+                7.9794907049e17,
+                7.9794907153e17,
+                7.9794907254e17,
+            ],
+        },
+    )
+
+    expected_pointing_lats = np.array([20, 20, 20])
+    expected_pointing_lons = np.array([2712, 2962, 3205])
+
+    # Act
+    l1b_de = set_pointing_bin(l1b_de)
+
+    # Assert
+    np.testing.assert_array_equal(l1b_de["pointing_bin_lat"], expected_pointing_lats)
+    np.testing.assert_array_equal(l1b_de["pointing_bin_lon"], expected_pointing_lons)
