@@ -295,8 +295,14 @@ def ultra_l2(
 
         # Add the subdiv_depth_by_pixel of each key to the map dataset if requested
         if DEBUG_MODE:
+            logger.info(
+                "For debugging purposes, adding the subdivision depth "
+                "required to calculate each rectangular pixel value to the map dataset."
+            )
             for key, depth_by_pixel in subdiv_depth_dict.items():
-                rectangular_skymap.data_1d[f"{key}_subdivision_depth"] = xr.DataArray(
+                subdiv_depth_key = f"{key}_subdivision_depth"
+                logger.info(f"Adding {subdiv_depth_key} to the map dataset.")
+                rectangular_skymap.data_1d[subdiv_depth_key] = xr.DataArray(
                     data=depth_by_pixel,
                     dims=(CoordNames.GENERIC_PIXEL.value,),
                     attrs={
@@ -332,7 +338,7 @@ def ultra_l2(
             map_dataset.coords[f"{coord_var}_label"] = xr.DataArray(
                 coord_data.values.astype(str),
                 dims=[
-                    f"{coord_var}_label",
+                    coord_var,
                 ],
                 name=f"{coord_var}_label",
             )

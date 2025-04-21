@@ -202,7 +202,10 @@ class TestUltraL2:
         assert hp_skymap.data_1d["counts"].dims == counts_dims
         assert hp_skymap.data_1d["flux"].dims == counts_dims
         assert hp_skymap.data_1d["flux_uncertainty"].dims == counts_dims
-        assert hp_skymap.data_1d["exposure_factor"].dims == counts_dims[-1:]
+        assert hp_skymap.data_1d["exposure_factor"].dims == (
+            CoordNames.TIME.value,
+            CoordNames.GENERIC_PIXEL.value,
+        )
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
     def test_ultra_l2_output_unbinned_healpix(self, mock_data_dict, furnish_kernels):
@@ -222,7 +225,6 @@ class TestUltraL2:
                 map_dataset,
             ] = ultra_l2.ultra_l2(
                 data_dict=mock_data_dict,
-                data_version="001",
                 output_map_structure=map_structure,
             )
 
