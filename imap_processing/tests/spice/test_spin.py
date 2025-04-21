@@ -199,7 +199,7 @@ def test_get_spin_data(use_fake_spin_data_for_time):
 @pytest.mark.parametrize(
     "instrument",
     [
-        SpiceFrame.IMAP_LO,
+        SpiceFrame.IMAP_LO_BASE,
         SpiceFrame.IMAP_HI_45,
         SpiceFrame.IMAP_HI_90,
         SpiceFrame.IMAP_ULTRA_45,
