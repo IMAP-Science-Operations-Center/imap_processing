@@ -1,3 +1,5 @@
+"""Tests to support I-ALiRT SWE packet parsing."""
+
 from unittest.mock import patch
 
 import numpy as np
@@ -116,7 +118,7 @@ def fields_to_test():
     return fields_to_test
 
 
-@pytest.fixture()
+@pytest.fixture
 def summed_half_cycle():
     """Create test set with known peaks"""
 

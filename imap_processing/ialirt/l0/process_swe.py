@@ -1,4 +1,4 @@
-"""Functions to support I-ALiRT SWE packet parsing."""
+"""Functions to support I-ALiRT SWE processing."""
 
 import logging
 
