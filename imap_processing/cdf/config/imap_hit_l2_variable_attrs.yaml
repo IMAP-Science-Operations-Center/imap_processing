@@ -550,215 +550,718 @@ ni_energy_delta_minus:
 
 # <=== Uncertainty Variable Attributes ===>
 
-# Statistical uncertainty variables
 h_stat_uncert_plus:
   <<: *default_uncertainty
   DEPEND_1: h_energy_mean
   CATDESC: Plus statistical uncertainty for H Standard
-  FIELDNAM: H Plus Statistical Uncertinty
+  FIELDNAM: H Plus Statistical uncertainty
   LABLAXIS: H Flux
 
 h_stat_uncert_minus:
   <<: *default_uncertainty
   DEPEND_1: h_energy_mean
   CATDESC: Minus statistical uncertainty for H Standard
-  FIELDNAM: H Minus Statistical Uncertinty
+  FIELDNAM: H Minus Statistical uncertainty
+  LABLAXIS: H Flux
+
+h_sys_err_plus:
+  <<: *default_uncertainty
+  DEPEND_1: h_energy_mean
+  CATDESC: Plus systematic uncertainty for H Standard
+  FIELDNAM: H Plus Systematic uncertainty
+  LABLAXIS: H Flux
+
+h_sys_err_minus:
+  <<: *default_uncertainty
+  DEPEND_1: h_energy_mean
+  CATDESC: Minus systematic uncertainty for H Standard
+  FIELDNAM: H Minus Systematic uncertainty
+  LABLAXIS: H Flux
+
+h_total_uncert_plus:
+  <<: *default_uncertainty
+  DEPEND_1: h_energy_mean
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for H Standard
+  FIELDNAM: H Total Uncertainty
+  LABLAXIS: H Flux
+
+h_total_uncert_minus:
+  <<: *default_uncertainty
+  DEPEND_1: h_energy_mean
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for H Standard
+  FIELDNAM: H Total Uncertainty
   LABLAXIS: H Flux
 
 he3_stat_uncert_plus:
   <<: *default_uncertainty
   DEPEND_1: he3_energy_mean
   CATDESC: Plus statistical uncertainty for He3 Standard
-  FIELDNAM: He3 Plus Statistical Uncertinty
+  FIELDNAM: He3 Plus Statistical uncertainty
   LABLAXIS: He3 Flux
 
 he3_stat_uncert_minus:
-    <<: *default_uncertainty
-    DEPEND_1: he3_energy_mean
-    CATDESC: Minus statistical uncertainty for He3 Standard
-    FIELDNAM: He3 Minus Statistical Uncertinty
-    LABLAXIS: He3 Flux
+  <<: *default_uncertainty
+  DEPEND_1: he3_energy_mean
+  CATDESC: Minus statistical uncertainty for He3 Standard
+  FIELDNAM: He3 Minus Statistical uncertainty
+  LABLAXIS: He3 Flux
+
+he3_sys_err_plus:
+  <<: *default_uncertainty
+  DEPEND_1: he3_energy_mean
+  CATDESC: Plus systematic uncertainty for He3 Standard
+  FIELDNAM: He3 Plus Systematic uncertainty
+  LABLAXIS: He3 Flux
+
+he3_sys_err_minus:
+  <<: *default_uncertainty
+  DEPEND_1: he3_energy_mean
+  CATDESC: Minus systematic uncertainty for He3 Standard
+  FIELDNAM: He3 Minus Systematic uncertainty
+  LABLAXIS: He3 Flux
+
+he3_total_uncert_plus:
+  <<: *default_uncertainty
+  DEPEND_1: he3_energy_mean
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for He3 Standard
+  FIELDNAM: He3 Total Uncertainty
+  LABLAXIS: He3 Flux
+
+he3_total_uncert_minus:
+  <<: *default_uncertainty
+  DEPEND_1: he3_energy_mean
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for He3 Standard
+  FIELDNAM: He3 Total Uncertainty
+  LABLAXIS: He3 Flux
 
 he4_stat_uncert_plus:
-    <<: *default_uncertainty
-    DEPEND_1: he4_energy_mean
-    CATDESC: Plus statistical uncertainty for He4 Standard
-    FIELDNAM: He4 Plus Statistical Uncertinty
-    LABLAXIS: He4 Flux
+  <<: *default_uncertainty
+  DEPEND_1: he4_energy_mean
+  CATDESC: Plus statistical uncertainty for He4 Standard
+  FIELDNAM: He4 Plus Statistical uncertainty
+  LABLAXIS: He4 Flux
 
 he4_stat_uncert_minus:
-    <<: *default_uncertainty
-    DEPEND_1: he4_energy_mean
-    CATDESC: Minus statistical uncertainty for He4 Standard
-    FIELDNAM: He4 Minus Statistical Uncertinty
-    LABLAXIS: He4 Flux
+  <<: *default_uncertainty
+  DEPEND_1: he4_energy_mean
+  CATDESC: Minus statistical uncertainty for He4 Standard
+  FIELDNAM: He4 Minus Statistical uncertainty
+  LABLAXIS: He4 Flux
+
+he4_sys_err_plus:
+  <<: *default_uncertainty
+  DEPEND_1: he4_energy_mean
+  CATDESC: Plus systematic uncertainty for He4 Standard
+  FIELDNAM: He4 Plus Systematic uncertainty
+  LABLAXIS: He4 Flux
+
+he4_sys_err_minus:
+  <<: *default_uncertainty
+  DEPEND_1: he4_energy_mean
+  CATDESC: Minus systematic uncertainty for He4 Standard
+  FIELDNAM: He4 Minus Systematic uncertainty
+  LABLAXIS: He4 Flux
+
+he4_total_uncert_plus:
+  <<: *default_uncertainty
+  DEPEND_1: he4_energy_mean
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for He4 Standard
+  FIELDNAM: He4 Total Uncertainty
+  LABLAXIS: He4 Flux
+
+he4_total_uncert_minus:
+  <<: *default_uncertainty
+  DEPEND_1: he4_energy_mean
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for He4 Standard
+  FIELDNAM: He4 Total Uncertainty
+  LABLAXIS: He4 Flux
 
 he_stat_uncert_plus:
-    <<: *default_uncertainty
-    DEPEND_1: he_energy_mean
-    CATDESC: Plus statistical uncertainty for He Standard
-    FIELDNAM: He Plus Statistical Uncertinty
-    LABLAXIS: He Flux
+  <<: *default_uncertainty
+  DEPEND_1: he_energy_mean
+  CATDESC: Plus statistical uncertainty for He Standard
+  FIELDNAM: He Plus Statistical uncertainty
+  LABLAXIS: He Flux
 
 he_stat_uncert_minus:
-    <<: *default_uncertainty
-    DEPEND_1: he_energy_mean
-    CATDESC: Minus statistical uncertainty for He Standard
-    FIELDNAM: He Minus Statistical Uncertinty
-    LABLAXIS: He Flux
+  <<: *default_uncertainty
+  DEPEND_1: he_energy_mean
+  CATDESC: Minus statistical uncertainty for He Standard
+  FIELDNAM: He Minus Statistical uncertainty
+  LABLAXIS: He Flux
+
+he_sys_err_plus:
+  <<: *default_uncertainty
+  DEPEND_1: he_energy_mean
+  CATDESC: Plus systematic uncertainty for He Standard
+  FIELDNAM: He Plus Systematic uncertainty
+  LABLAXIS: He Flux
+
+he_sys_err_minus:
+  <<: *default_uncertainty
+  DEPEND_1: he_energy_mean
+  CATDESC: Minus systematic uncertainty for He Standard
+  FIELDNAM: He Minus Systematic uncertainty
+  LABLAXIS: He Flux
+
+he_total_uncert_plus:
+  <<: *default_uncertainty
+  DEPEND_1: he_energy_mean
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for He Standard
+  FIELDNAM: He Total Uncertainty
+  LABLAXIS: He Flux
+
+he_total_uncert_minus:
+  <<: *default_uncertainty
+  DEPEND_1: he_energy_mean
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for He Standard
+  FIELDNAM: He Total Uncertainty
+  LABLAXIS: He Flux
 
 c_stat_uncert_plus:
-    <<: *default_uncertainty
-    DEPEND_1: c_energy_mean
-    CATDESC: Plus statistical uncertainty for C Standard
-    FIELDNAM: C Plus Statistical Uncertinty
-    LABLAXIS: C Flux
+  <<: *default_uncertainty
+  DEPEND_1: c_energy_mean
+  CATDESC: Plus statistical uncertainty for C Standard
+  FIELDNAM: C Plus Statistical uncertainty
+  LABLAXIS: C Flux
 
 c_stat_uncert_minus:
-    <<: *default_uncertainty
-    DEPEND_1: c_energy_mean
-    CATDESC: Minus statistical uncertainty for C Standard
-    FIELDNAM: C Minus Statistical Uncertinty
-    LABLAXIS: C Flux
+  <<: *default_uncertainty
+  DEPEND_1: c_energy_mean
+  CATDESC: Minus statistical uncertainty for C Standard
+  FIELDNAM: C Minus Statistical uncertainty
+  LABLAXIS: C Flux
+
+c_sys_err_plus:
+  <<: *default_uncertainty
+  DEPEND_1: c_energy_mean
+  CATDESC: Plus systematic uncertainty for C Standard
+  FIELDNAM: C Plus Systematic uncertainty
+  LABLAXIS: C Flux
+
+c_sys_err_minus:
+  <<: *default_uncertainty
+  DEPEND_1: c_energy_mean
+  CATDESC: Minus systematic uncertainty for C Standard
+  FIELDNAM: C Minus Systematic uncertainty
+  LABLAXIS: C Flux
+
+c_total_uncert_plus:
+  <<: *default_uncertainty
+  DEPEND_1: c_energy_mean
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for C Standard
+  FIELDNAM: C Total Uncertainty
+  LABLAXIS: C Flux
+
+c_total_uncert_minus:
+  <<: *default_uncertainty
+  DEPEND_1: c_energy_mean
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for C Standard
+  FIELDNAM: C Total Uncertainty
+  LABLAXIS: C Flux
+
+o_stat_uncert_plus:
+  <<: *default_uncertainty
+  DEPEND_1: o_energy_mean
+  CATDESC: Plus statistical uncertainty for O Standard
+  FIELDNAM: O Plus Statistical uncertainty
+  LABLAXIS: O Flux
+
+o_stat_uncert_minus:
+  <<: *default_uncertainty
+  DEPEND_1: o_energy_mean
+  CATDESC: Minus statistical uncertainty for O Standard
+  FIELDNAM: O Minus Statistical uncertainty
+  LABLAXIS: O Flux
+
+o_sys_err_plus:
+  <<: *default_uncertainty
+  DEPEND_1: o_energy_mean
+  CATDESC: Plus systematic uncertainty for O Standard
+  FIELDNAM: O Plus Systematic uncertainty
+  LABLAXIS: O Flux
+
+o_sys_err_minus:
+  <<: *default_uncertainty
+  DEPEND_1: o_energy_mean
+  CATDESC: Minus systematic uncertainty for O Standard
+  FIELDNAM: O Minus Systematic uncertainty
+  LABLAXIS: O Flux
+
+o_total_uncert_plus:
+  <<: *default_uncertainty
+  DEPEND_1: o_energy_mean
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for O Standard
+  FIELDNAM: O Total Uncertainty
+  LABLAXIS: O Flux
+
+o_total_uncert_minus:
+  <<: *default_uncertainty
+  DEPEND_1: o_energy_mean
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for O Standard
+  FIELDNAM: O Total Uncertainty
+  LABLAXIS: O Flux
 
 n_stat_uncert_plus:
-    <<: *default_uncertainty
-    DEPEND_1: n_energy_mean
-    CATDESC: Plus statistical uncertainty for N Standard
-    FIELDNAM: N Plus Statistical Uncertinty
-    LABLAXIS: N Flux
+  <<: *default_uncertainty
+  DEPEND_1: n_energy_mean
+  CATDESC: Plus statistical uncertainty for N Standard
+  FIELDNAM: N Plus Statistical uncertainty
+  LABLAXIS: N Flux
 
 n_stat_uncert_minus:
-    <<: *default_uncertainty
-    DEPEND_1: n_energy_mean
-    CATDESC: Minus statistical uncertainty for N Standard
-    FIELDNAM: N Minus Statistical Uncertinty
-    LABLAXIS: N Flux
+  <<: *default_uncertainty
+  DEPEND_1: n_energy_mean
+  CATDESC: Minus statistical uncertainty for N Standard
+  FIELDNAM: N Minus Statistical uncertainty
+  LABLAXIS: N Flux
+
+n_sys_err_plus:
+  <<: *default_uncertainty
+  DEPEND_1: n_energy_mean
+  CATDESC: Plus systematic uncertainty for N Standard
+  FIELDNAM: N Plus Systematic uncertainty
+  LABLAXIS: N Flux
+
+n_sys_err_minus:
+  <<: *default_uncertainty
+  DEPEND_1: n_energy_mean
+  CATDESC: Minus systematic uncertainty for N Standard
+  FIELDNAM: N Minus Systematic uncertainty
+  LABLAXIS: N Flux
+
+n_total_uncert_plus:
+  <<: *default_uncertainty
+  DEPEND_1: n_energy_mean
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for N Standard
+  FIELDNAM: N Total Uncertainty
+  LABLAXIS: N Flux
+
+n_total_uncert_minus:
+  <<: *default_uncertainty
+  DEPEND_1: n_energy_mean
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for N Standard
+  FIELDNAM: N Total Uncertainty
+  LABLAXIS: N Flux
 
 ne_stat_uncert_plus:
-    <<: *default_uncertainty
-    DEPEND_1: ne_energy_mean
-    CATDESC: Plus statistical uncertainty for Ne Standard
-    FIELDNAM: Ne Plus Statistical Uncertinty
-    LABLAXIS: Ne Flux
+  <<: *default_uncertainty
+  DEPEND_1: ne_energy_mean
+  CATDESC: Plus statistical uncertainty for Ne Standard
+  FIELDNAM: Ne Plus Statistical uncertainty
+  LABLAXIS: Ne Flux
 
 ne_stat_uncert_minus:
-    <<: *default_uncertainty
-    DEPEND_1: ne_energy_mean
-    CATDESC: Minus statistical uncertainty for Ne Standard
-    FIELDNAM: Ne Minus Statistical Uncertinty
-    LABLAXIS: Ne Flux
+  <<: *default_uncertainty
+  DEPEND_1: ne_energy_mean
+  CATDESC: Minus statistical uncertainty for Ne Standard
+  FIELDNAM: Ne Minus Statistical uncertainty
+  LABLAXIS: Ne Flux
+
+ne_sys_err_plus:
+  <<: *default_uncertainty
+  DEPEND_1: ne_energy_mean
+  CATDESC: Plus systematic uncertainty for Ne Standard
+  FIELDNAM: Ne Plus Systematic uncertainty
+  LABLAXIS: Ne Flux
+
+ne_sys_err_minus:
+  <<: *default_uncertainty
+  DEPEND_1: ne_energy_mean
+  CATDESC: Minus systematic uncertainty for Ne Standard
+  FIELDNAM: Ne Minus Systematic uncertainty
+  LABLAXIS: Ne Flux
+
+ne_total_uncert_plus:
+  <<: *default_uncertainty
+  DEPEND_1: ne_energy_mean
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Ne Standard
+  FIELDNAM: Ne Total Uncertainty
+  LABLAXIS: Ne Flux
+
+ne_total_uncert_minus:
+  <<: *default_uncertainty
+  DEPEND_1: ne_energy_mean
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Ne Standard
+  FIELDNAM: Ne Total Uncertainty
+  LABLAXIS: Ne Flux
 
 na_stat_uncert_plus:
-    <<: *default_uncertainty
-    DEPEND_1: na_energy_mean
-    CATDESC: Plus statistical uncertainty for Na Standard
-    FIELDNAM: Na Plus Statistical Uncertinty
-    LABLAXIS: Na Flux
+  <<: *default_uncertainty
+  DEPEND_1: na_energy_mean
+  CATDESC: Plus statistical uncertainty for Na Standard
+  FIELDNAM: Na Plus Statistical uncertainty
+  LABLAXIS: Na Flux
 
 na_stat_uncert_minus:
-    <<: *default_uncertainty
-    DEPEND_1: na_energy_mean
-    CATDESC: Minus statistical uncertainty for Na Standard
-    FIELDNAM: Na Minus Statistical Uncertinty
-    LABLAXIS: Na Flux
+  <<: *default_uncertainty
+  DEPEND_1: na_energy_mean
+  CATDESC: Minus statistical uncertainty for Na Standard
+  FIELDNAM: Na Minus Statistical uncertainty
+  LABLAXIS: Na Flux
+
+na_sys_err_plus:
+  <<: *default_uncertainty
+  DEPEND_1: na_energy_mean
+  CATDESC: Plus systematic uncertainty for Na Standard
+  FIELDNAM: Na Plus Systematic uncertainty
+  LABLAXIS: Na Flux
+
+na_sys_err_minus:
+  <<: *default_uncertainty
+  DEPEND_1: na_energy_mean
+  CATDESC: Minus systematic uncertainty for Na Standard
+  FIELDNAM: Na Minus Systematic uncertainty
+  LABLAXIS: Na Flux
+
+na_total_uncert_plus:
+  <<: *default_uncertainty
+  DEPEND_1: na_energy_mean
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Na Standard
+  FIELDNAM: Na Total Uncertainty
+  LABLAXIS: Na Flux
+
+na_total_uncert_minus:
+  <<: *default_uncertainty
+  DEPEND_1: na_energy_mean
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Na Standard
+  FIELDNAM: Na Total Uncertainty
+  LABLAXIS: Na Flux
 
 mg_stat_uncert_plus:
-    <<: *default_uncertainty
-    DEPEND_1: mg_energy_mean
-    CATDESC: Plus statistical uncertainty for Mg Standard
-    FIELDNAM: Mg Plus Statistical Uncertinty
-    LABLAXIS: Mg Flux
+  <<: *default_uncertainty
+  DEPEND_1: mg_energy_mean
+  CATDESC: Plus statistical uncertainty for Mg Standard
+  FIELDNAM: Mg Plus Statistical uncertainty
+  LABLAXIS: Mg Flux
 
 mg_stat_uncert_minus:
-    <<: *default_uncertainty
-    DEPEND_1: mg_energy_mean
-    CATDESC: Minus statistical uncertainty for Mg Standard
-    FIELDNAM: Mg Minus Statistical Uncertinty
-    LABLAXIS: Mg Flux
+  <<: *default_uncertainty
+  DEPEND_1: mg_energy_mean
+  CATDESC: Minus statistical uncertainty for Mg Standard
+  FIELDNAM: Mg Minus Statistical uncertainty
+  LABLAXIS: Mg Flux
+
+mg_sys_err_plus:
+  <<: *default_uncertainty
+  DEPEND_1: mg_energy_mean
+  CATDESC: Plus systematic uncertainty for Mg Standard
+  FIELDNAM: Mg Plus Systematic uncertainty
+  LABLAXIS: Mg Flux
+
+mg_sys_err_minus:
+  <<: *default_uncertainty
+  DEPEND_1: mg_energy_mean
+  CATDESC: Minus systematic uncertainty for Mg Standard
+  FIELDNAM: Mg Minus Systematic uncertainty
+  LABLAXIS: Mg Flux
+
+mg_total_uncert_plus:
+  <<: *default_uncertainty
+  DEPEND_1: mg_energy_mean
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Mg Standard
+  FIELDNAM: Mg Total Uncertainty
+  LABLAXIS: Mg Flux
+
+mg_total_uncert_minus:
+  <<: *default_uncertainty
+  DEPEND_1: mg_energy_mean
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Mg Standard
+  FIELDNAM: Mg Total Uncertainty
+  LABLAXIS: Mg Flux
+
+al_stat_uncert_plus:
+  <<: *default_uncertainty
+  DEPEND_1: al_energy_mean
+  CATDESC: Plus statistical uncertainty for Al Standard
+  FIELDNAM: Al Plus Statistical uncertainty
+  LABLAXIS: Al Flux
+
+al_stat_uncert_minus:
+  <<: *default_uncertainty
+  DEPEND_1: al_energy_mean
+  CATDESC: Minus statistical uncertainty for Al Standard
+  FIELDNAM: Al Minus Statistical uncertainty
+  LABLAXIS: Al Flux
+
+al_sys_err_plus:
+  <<: *default_uncertainty
+  DEPEND_1: al_energy_mean
+  CATDESC: Plus systematic uncertainty for Al Standard
+  FIELDNAM: Al Plus Systematic uncertainty
+  LABLAXIS: Al Flux
+
+al_sys_err_minus:
+  <<: *default_uncertainty
+  DEPEND_1: al_energy_mean
+  CATDESC: Minus systematic uncertainty for Al Standard
+  FIELDNAM: Al Minus Systematic uncertainty
+  LABLAXIS: Al Flux
+
+al_total_uncert_plus:
+  <<: *default_uncertainty
+  DEPEND_1: al_energy_mean
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Al Standard
+  FIELDNAM: Al Total Uncertainty
+  LABLAXIS: Al Flux
+
+al_total_uncert_minus:
+  <<: *default_uncertainty
+  DEPEND_1: al_energy_mean
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Al Standard
+  FIELDNAM: Al Total Uncertainty
+  LABLAXIS: Al Flux
 
 si_stat_uncert_plus:
     <<: *default_uncertainty
     DEPEND_1: si_energy_mean
     CATDESC: Plus statistical uncertainty for Si Standard
-    FIELDNAM: Si Plus Statistical Uncertinty
+    FIELDNAM: Si Plus Statistical uncertainty
     LABLAXIS: Si Flux
 
 si_stat_uncert_minus:
     <<: *default_uncertainty
     DEPEND_1: si_energy_mean
     CATDESC: Minus statistical uncertainty for Si Standard
-    FIELDNAM: Si Minus Statistical Uncertinty
+    FIELDNAM: Si Minus Statistical uncertainty
     LABLAXIS: Si Flux
 
+si_sys_err_plus:
+  <<: *default_uncertainty
+  DEPEND_1: si_energy_mean
+  CATDESC: Plus systematic uncertainty for Si Standard
+  FIELDNAM: Si Plus Systematic uncertainty
+  LABLAXIS: Si Flux
+
+si_sys_err_minus:
+  <<: *default_uncertainty
+  DEPEND_1: si_energy_mean
+  CATDESC: Minus systematic uncertainty for Si Standard
+  FIELDNAM: Si Minus Systematic uncertainty
+  LABLAXIS: Si Flux
+
+si_total_uncert_plus:
+  <<: *default_uncertainty
+  DEPEND_1: si_energy_mean
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Si Standard
+  FIELDNAM: Si Total Uncertainty
+  LABLAXIS: Si Flux
+
+si_total_uncert_minus:
+  <<: *default_uncertainty
+  DEPEND_1: si_energy_mean
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Si Standard
+  FIELDNAM: Si Total Uncertainty
+  LABLAXIS: Si Flux
+
 s_stat_uncert_plus:
-    <<: *default_uncertainty
-    DEPEND_1: s_energy_mean
-    CATDESC: Plus statistical uncertainty for S Standard
-    FIELDNAM: S Plus Statistical Uncertinty
-    LABLAXIS: S Flux
+  <<: *default_uncertainty
+  DEPEND_1: s_energy_mean
+  CATDESC: Plus statistical uncertainty for S Standard
+  FIELDNAM: S Plus Statistical uncertainty
+  LABLAXIS: S Flux
 
 s_stat_uncert_minus:
-    <<: *default_uncertainty
-    DEPEND_1: s_energy_mean
-    CATDESC: Minus statistical uncertainty for S Standard
-    FIELDNAM: S Minus Statistical Uncertinty
-    LABLAXIS: S Flux
+  <<: *default_uncertainty
+  DEPEND_1: s_energy_mean
+  CATDESC: Minus statistical uncertainty for S Standard
+  FIELDNAM: S Minus Statistical uncertainty
+  LABLAXIS: S Flux
+
+s_sys_err_plus:
+  <<: *default_uncertainty
+  DEPEND_1: s_energy_mean
+  CATDESC: Plus systematic uncertainty for S Standard
+  FIELDNAM: S Plus Systematic uncertainty
+  LABLAXIS: S Flux
+
+s_sys_err_minus:
+  <<: *default_uncertainty
+  DEPEND_1: s_energy_mean
+  CATDESC: Minus systematic uncertainty for S Standard
+  FIELDNAM: S Minus Systematic uncertainty
+  LABLAXIS: S Flux
+
+s_total_uncert_plus:
+  <<: *default_uncertainty
+  DEPEND_1: s_energy_mean
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for S Standard
+  FIELDNAM: S Total Uncertainty
+  LABLAXIS: S Flux
+
+s_total_uncert_minus:
+  <<: *default_uncertainty
+  DEPEND_1: s_energy_mean
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for S Standard
+  FIELDNAM: S Total Uncertainty
+  LABLAXIS: S Flux
 
 ar_stat_uncert_plus:
-    <<: *default_uncertainty
-    DEPEND_1: ar_energy_mean
-    CATDESC: Plus statistical uncertainty for Ar Standard
-    FIELDNAM: Ar Plus Statistical Uncertinty
-    LABLAXIS: Ar Flux
+  <<: *default_uncertainty
+  DEPEND_1: ar_energy_mean
+  CATDESC: Plus statistical uncertainty for Ar Standard
+  FIELDNAM: Ar Plus Statistical uncertainty
+  LABLAXIS: Ar Flux
 
 ar_stat_uncert_minus:
-    <<: *default_uncertainty
-    DEPEND_1: ar_energy_mean
-    CATDESC: Minus statistical uncertainty for Ar Standard
-    FIELDNAM: Ar Minus Statistical Uncertinty
-    LABLAXIS: Ar Flux
+  <<: *default_uncertainty
+  DEPEND_1: ar_energy_mean
+  CATDESC: Minus statistical uncertainty for Ar Standard
+  FIELDNAM: Ar Minus Statistical uncertainty
+  LABLAXIS: Ar Flux
+
+ar_sys_err_plus:
+  <<: *default_uncertainty
+  DEPEND_1: ar_energy_mean
+  CATDESC: Plus systematic uncertainty for Ar Standard
+  FIELDNAM: Ar Plus Systematic uncertainty
+  LABLAXIS: Ar Flux
+
+ar_sys_err_minus:
+  <<: *default_uncertainty
+  DEPEND_1: ar_energy_mean
+  CATDESC: Minus systematic uncertainty for Ar Standard
+  FIELDNAM: Ar Minus Systematic uncertainty
+  LABLAXIS: Ar Flux
+
+ar_total_uncert_plus:
+  <<: *default_uncertainty
+  DEPEND_1: ar_energy_mean
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Ar Standard
+  FIELDNAM: Ar Total Uncertainty
+  LABLAXIS: Ar Flux
+
+ar_total_uncert_minus:
+  <<: *default_uncertainty
+  DEPEND_1: ar_energy_mean
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Ar Standard
+  FIELDNAM: Ar Total Uncertainty
+  LABLAXIS: Ar Flux
 
 ca_stat_uncert_plus:
-    <<: *default_uncertainty
-    DEPEND_1: ca_energy_mean
-    CATDESC: Plus statistical uncertainty for Ca Standard
-    FIELDNAM: Ca Plus Statistical Uncertinty
-    LABLAXIS: Ca Flux
+  <<: *default_uncertainty
+  DEPEND_1: ca_energy_mean
+  CATDESC: Plus statistical uncertainty for Ca Standard
+  FIELDNAM: Ca Plus Statistical uncertainty
+  LABLAXIS: Ca Flux
 
 ca_stat_uncert_minus:
-    <<: *default_uncertainty
-    DEPEND_1: ca_energy_mean
-    CATDESC: Minus statistical uncertainty for Ca Standard
-    FIELDNAM: Ca Minus Statistical Uncertinty
-    LABLAXIS: Ca Flux
+  <<: *default_uncertainty
+  DEPEND_1: ca_energy_mean
+  CATDESC: Minus statistical uncertainty for Ca Standard
+  FIELDNAM: Ca Minus Statistical uncertainty
+  LABLAXIS: Ca Flux
+
+ca_sys_err_plus:
+  <<: *default_uncertainty
+  DEPEND_1: ca_energy_mean
+  CATDESC: Plus systematic uncertainty for Ca Standard
+  FIELDNAM: Ca Plus Systematic uncertainty
+  LABLAXIS: Ca Flux
+
+ca_sys_err_minus:
+  <<: *default_uncertainty
+  DEPEND_1: ca_energy_mean
+  CATDESC: Minus systematic uncertainty for Ca Standard
+  FIELDNAM: Ca Minus Systematic uncertainty
+  LABLAXIS: Ca Flux
+
+ca_total_uncert_plus:
+  <<: *default_uncertainty
+  DEPEND_1: ca_energy_mean
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Ca Standard
+  FIELDNAM: Ca Total Uncertainty
+  LABLAXIS: Ca Flux
+
+ca_total_uncert_minus:
+  <<: *default_uncertainty
+  DEPEND_1: ca_energy_mean
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Ca Standard
+  FIELDNAM: Ca Total Uncertainty
+  LABLAXIS: Ca Flux
 
 fe_stat_uncert_plus:
-    <<: *default_uncertainty
-    DEPEND_1: fe_energy_mean
-    CATDESC: Plus statistical uncertainty for Fe Standard
-    FIELDNAM: Fe Plus Statistical Uncertinty
-    LABLAXIS: Fe Flux
+  <<: *default_uncertainty
+  DEPEND_1: fe_energy_mean
+  CATDESC: Plus statistical uncertainty for Fe Standard
+  FIELDNAM: Fe Plus Statistical uncertainty
+  LABLAXIS: Fe Flux
 
 fe_stat_uncert_minus:
-    <<: *default_uncertainty
-    DEPEND_1: fe_energy_mean
-    CATDESC: Minus statistical uncertainty for Fe Standard
-    FIELDNAM: Fe Minus Statistical Uncertinty
-    LABLAXIS: Fe Flux
+  <<: *default_uncertainty
+  DEPEND_1: fe_energy_mean
+  CATDESC: Minus statistical uncertainty for Fe Standard
+  FIELDNAM: Fe Minus Statistical uncertainty
+  LABLAXIS: Fe Flux
+
+fe_sys_err_plus:
+  <<: *default_uncertainty
+  DEPEND_1: fe_energy_mean
+  CATDESC: Plus systematic uncertainty for Fe Standard
+  FIELDNAM: Fe Plus Systematic uncertainty
+  LABLAXIS: Fe Flux
+
+fe_sys_err_minus:
+  <<: *default_uncertainty
+  DEPEND_1: fe_energy_mean
+  CATDESC: Minus systematic uncertainty for Fe Standard
+  FIELDNAM: Fe Minus Systematic uncertainty
+  LABLAXIS: Fe Flux
+
+fe_total_uncert_plus:
+  <<: *default_uncertainty
+  DEPEND_1: fe_energy_mean
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Fe Standard
+  FIELDNAM: Fe Total Uncertainty
+  LABLAXIS: Fe Flux
+
+fe_total_uncert_minus:
+  <<: *default_uncertainty
+  DEPEND_1: fe_energy_mean
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Fe Standard
+  FIELDNAM: Fe Total Uncertainty
+  LABLAXIS: Fe Flux
 
 ni_stat_uncert_plus:
-    <<: *default_uncertainty
-    DEPEND_1: ni_energy_mean
-    CATDESC: Plus statistical uncertainty for Ni Standard
-    FIELDNAM: Ni Plus Statistical Uncertinty
-    LABLAXIS: Ni Flux
+  <<: *default_uncertainty
+  DEPEND_1: ni_energy_mean
+  CATDESC: Plus statistical uncertainty for Ni Standard
+  FIELDNAM: Ni Plus Statistical uncertainty
+  LABLAXIS: Ni Flux
 
 ni_stat_uncert_minus:
-    <<: *default_uncertainty
-    DEPEND_1: ni_energy_mean
-    CATDESC: Minus statistical uncertainty for Ni Standard
-    FIELDNAM: Ni Minus Statistical Uncertinty
-    LABLAXIS: Ni Flux
+  <<: *default_uncertainty
+  DEPEND_1: ni_energy_mean
+  CATDESC: Minus statistical uncertainty for Ni Standard
+  FIELDNAM: Ni Minus Statistical uncertainty
+  LABLAXIS: Ni Flux
 
-# Systematic Uncertainty Variable Attributes
+ni_sys_err_plus:
+  <<: *default_uncertainty
+  DEPEND_1: ni_energy_mean
+  CATDESC: Plus systematic uncertainty for Ni Standard
+  FIELDNAM: Ni Plus Systematic uncertainty
+  LABLAXIS: Ni Flux
+
+ni_sys_err_minus:
+  <<: *default_uncertainty
+  DEPEND_1: ni_energy_mean
+  CATDESC: Minus systematic uncertainty for Ni Standard
+  FIELDNAM: Ni Minus Systematic uncertainty
+  LABLAXIS: Ni Flux
+
+ni_total_uncert_plus:
+  <<: *default_uncertainty
+  DEPEND_1: ni_energy_mean
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Ni Standard
+  FIELDNAM: Ni Total Uncertainty
+  LABLAXIS: Ni Flux
+
+ni_total_uncert_minus:
+  <<: *default_uncertainty
+  DEPEND_1: ni_energy_mean
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Ni Standard
+  FIELDNAM: Ni Total Uncertainty
+  LABLAXIS: Ni Flux
+
+
