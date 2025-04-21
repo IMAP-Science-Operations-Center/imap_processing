@@ -356,11 +356,11 @@ def test_compute_bde():
 
     first_half = np.array([1, 0, 0, 0, 1, 0, 0, 0])
     second_half = np.array([1, 0, 0, 0, 1, 0, 0, 0])
-    assert compute_bde(first_half, second_half) == 0
+    assert compute_bde(first_half, second_half) == (0, 0)
 
     first_half = np.array([1, 1, 1, 0, 0, 0, 0, 0])
     second_half = np.array([0, 0, 0, 0, 0, 0, 0, 0])
-    assert compute_bde(first_half, second_half) == 1
+    assert compute_bde(first_half, second_half) == (1, 0)
 
 
 def test_first_check_counterstreaming(summed_half_cycle):

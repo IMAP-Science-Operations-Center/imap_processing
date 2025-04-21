@@ -324,7 +324,7 @@ def compute_bde(
     streaming_first_half: NDArray,
     streaming_second_half: NDArray,
     min_esa_steps: int = 3,
-) -> int:
+) -> tuple[int, int]:
     """
     Compute the Bidirectional Electron parameter (BDE).
 
@@ -339,13 +339,13 @@ def compute_bde(
 
     Returns
     -------
-    bde : int
+    bde : tuple
         Indicator for counter-streaming.
     """
     count_first: int = int(np.sum(streaming_first_half))
     count_second: int = int(np.sum(streaming_second_half))
 
-    return int((count_first >= min_esa_steps) or (count_second >= min_esa_steps))
+    return int(count_first >= min_esa_steps), int(count_second >= min_esa_steps)
 
 
 def get_normalized_counts_by_time(
@@ -398,7 +398,7 @@ def get_normalized_counts_by_time(
 
 def first_check_counterstreaming(
     summed_first_half: NDArray, summed_second_half: NDArray
-) -> int:
+) -> tuple[int, int]:
     """
     Check if counterstreaming is observed in azimuthal angle direction.
 
@@ -411,7 +411,7 @@ def first_check_counterstreaming(
 
     Returns
     -------
-    bde_first_search : int
+    bde : tuple
         Indicator for counter-streaming.
     """
     # Find peaks, cmin, counts (-90, 90, 180)
@@ -431,7 +431,7 @@ def first_check_counterstreaming(
     )
 
     # If either of the half cycles has bidirectional streaming
-    # for 3/5 energies then bde = 1
+    # for 3/8 energies then bde = 1
     bde_first_search = compute_bde(streaming_first_half, streaming_second_half)
 
     return bde_first_search
@@ -439,7 +439,7 @@ def first_check_counterstreaming(
 
 def second_check_counterstreaming(
     summed_first_half: NDArray, summed_second_half: NDArray
-) -> int:
+) -> tuple[int, int]:
     """
     Check if counterstreaming is observed in the polar angle direction.
 
@@ -452,7 +452,7 @@ def second_check_counterstreaming(
 
     Returns
     -------
-    bde_first_search : int
+    bde : tuple
         Indicator for counter-streaming.
     """
     # Cmin is the average of the counts in CEMs 3, 4, and 5
@@ -470,7 +470,7 @@ def second_check_counterstreaming(
     )
 
     # If either of the half cycles has bidirectional streaming
-    # for 3/5 energies then bde = 1
+    # for 3/8 energies then bde = 1
     bde_second_search = compute_bde(streaming_first_half, streaming_second_half)
 
     return bde_second_search
@@ -560,7 +560,8 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
         )
 
         # BDE value
-        bde = max(bde_first_search, bde_second_search)
+        bde_first_half = max(bde_first_search[0], bde_second_search[0])
+        bde_second_half = max(bde_first_search[1], bde_second_search[1])
 
         # For normalized counts each ESA step is summed
         # over both azimuthal and polar angles
@@ -578,8 +579,10 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
         swe_data.append(
             {
                 "met": times,
-                "normalized_counts": counts,
-                "bde": np.full(times.shape, bde),
+                "normalized_counts_first_half_cycle": counts,
+                "normalized_counts_second_half_cycle": counts,
+                "bde_first_half_cycle": np.full(times.shape, bde_first_half),
+                "bde_second_half_cycle": np.full(times.shape, bde_second_half),
             }
         )
 
