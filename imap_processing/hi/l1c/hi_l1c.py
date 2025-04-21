@@ -143,7 +143,7 @@ def empty_pset_dataset(
     Parameters
     ----------
     epoch_val : int
-        The starting epoch for data in the PSET.
+        The starting epoch in J2000 TT nanoseconds for data in the PSET.
     l1b_energy_steps : np.ndarray
         The array of esa_energy_step data from the L1B DE product.
     n_cal_prods : int
