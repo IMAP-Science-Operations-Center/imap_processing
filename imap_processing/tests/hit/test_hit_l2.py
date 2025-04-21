@@ -70,7 +70,7 @@ def l1b_sectored_rates_dataset(dependencies):
     return dependencies["imap_hit_l1b_sectored-rates"]
 
 
-def _check_ancillary_dataset(  # noqa: PLR0913
+def _check_ancillary_dataset(
     ancillary_ds,
     species_array,
     delta_e,
