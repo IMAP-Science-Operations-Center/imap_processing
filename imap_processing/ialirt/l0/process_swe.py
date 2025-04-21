@@ -348,54 +348,6 @@ def compute_bde(
     return int(count_first >= min_esa_steps), int(count_second >= min_esa_steps)
 
 
-def get_normalized_counts_by_time(
-    summed_first: NDArray,
-    summed_second: NDArray,
-    cycle_times: NDArray,
-) -> tuple[NDArray, NDArray]:
-    """
-    Get data product normalized counts as a function of time.
-
-    Parameters
-    ----------
-    summed_first : np.ndarray
-        Normalized counts each ESA step summed over both
-        azimuthal and polar angles for first half-cycle.
-    summed_second : np.ndarray
-        Normalized counts each ESA step summed over both
-        azimuthal and polar angles for second half-cycle.
-    cycle_times : np.ndarray
-        Times for each quarter (sorted).
-
-    Returns
-    -------
-    counts : np.ndarray
-        First and second half-cycle counts.
-    times : np.ndarray
-        First and second half-cycle times.
-    """
-    # First and second half-cycle counts
-    counts = np.concatenate([summed_first, summed_second])
-
-    # First and second half-cycle times
-    times_first = np.full(len(summed_first), np.nan)
-    times_first[ENERGY_BINS[0]] = cycle_times[0]
-    times_first[ENERGY_BINS[1]] = cycle_times[1]
-
-    times_second = np.full(len(summed_second), np.nan)
-    times_second[ENERGY_BINS[2]] = cycle_times[2]
-    times_second[ENERGY_BINS[3]] = cycle_times[3]
-
-    times = np.concatenate([times_first, times_second])
-
-    # sort by time
-    sorted_indices = np.argsort(times)
-    counts = counts[sorted_indices]
-    times = times[sorted_indices]
-
-    return counts, times
-
-
 def first_check_counterstreaming(
     summed_first_half: NDArray, summed_second_half: NDArray
 ) -> tuple[int, int]:
@@ -569,20 +521,16 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
         summed_first = normalized_first_half.sum(axis=(1, 2))
         summed_second = normalized_second_half.sum(axis=(1, 2))
         times = np.unique(grouped["time_seconds"].values)
-        counts, times = get_normalized_counts_by_time(
-            summed_first,
-            summed_second,
-            times,
-        )
 
-        # TODO: make certain this structure is ok with Ruth.
         swe_data.append(
             {
-                "met": times,
-                "normalized_counts_first_half_cycle": counts,
-                "normalized_counts_second_half_cycle": counts,
-                "bde_first_half_cycle": np.full(times.shape, bde_first_half),
-                "bde_second_half_cycle": np.full(times.shape, bde_second_half),
+                # Select times corresponding to energy level.
+                "met_first_half_cycle": times[[1, 0] * 4],
+                "met_second_half_cycle": times[[3, 2] * 4],
+                "normalized_counts_first_half_cycle": summed_first,
+                "normalized_counts_second_half_cycle": summed_second,
+                "bde_first_half_cycle": np.full(summed_first.shape, bde_first_half),
+                "bde_second_half_cycle": np.full(summed_second.shape, bde_second_half),
             }
         )
 

@@ -15,7 +15,6 @@ from imap_processing.ialirt.l0.process_swe import (
     find_min_counts,
     first_check_counterstreaming,
     get_ialirt_energies,
-    get_normalized_counts_by_time,
     normalize_counts,
     phi_to_bin,
     prepare_raw_counts,
@@ -368,7 +367,7 @@ def test_first_check_counterstreaming(summed_half_cycle):
 
     bde = first_check_counterstreaming(summed_half_cycle, summed_half_cycle)
 
-    assert bde == 1
+    assert bde == (1, 1)
 
 
 def test_second_check_counterstreaming():
@@ -381,24 +380,7 @@ def test_second_check_counterstreaming():
 
     bde = second_check_counterstreaming(summed_half, summed_half)
 
-    assert bde == 1
-
-
-def test_get_normalized_counts_by_time():
-    """Tests get_normalized_counts_by_time function."""
-
-    summed_first = np.arange(8)
-    summed_second = np.arange(8, 16)
-
-    counts, times = get_normalized_counts_by_time(
-        summed_first, summed_second, np.array([1, 2, 3, 4])
-    )
-
-    assert counts[0:4] in np.array([1, 3, 7, 5])
-    assert counts[4:8] in np.array([2, 0, 4, 6])
-    assert counts[8:12] in np.array([9, 11, 15, 13])
-    assert counts[12:16] in np.array([10, 8, 12, 14])
-    assert np.array_equal(times, np.repeat([1.0, 2.0, 3.0, 4.0], 4))
+    assert bde == (1, 1)
 
 
 @patch(
