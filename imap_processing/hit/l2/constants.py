@@ -19,8 +19,8 @@ SECONDS_PER_10_MIN = 600  # seconds per 10 minutes
 # Fill values for missing data
 FILLVAL_FLOAT32 = -1.00e31
 
-# Number of declination angles
-N_DECLINATION = 8
+# Number of azimuth angles
+N_AZIMUTH = 15
 
 # Valid species for HIT L2 standard and summed intensity products
 VALID_SPECIES = [

@@ -10,14 +10,13 @@ from imap_processing.hit.l1b.hit_l1b import (
     hit_l1b,
 )
 from imap_processing.hit.l2.hit_l2 import (
+    FILLVAL_FLOAT32,
     STANDARD_PARTICLE_ENERGY_RANGE_MAPPING,
     VALID_SECTORED_SPECIES,
-    IntensityFactors,
     add_systematic_uncertainties,
     calculate_intensities,
     calculate_intensities_for_a_species,
     calculate_intensities_for_all_species,
-    get_intensity_factors,
     get_species_ancillary_data,
     hit_l2,
     process_sectored_intensity_data,
@@ -66,85 +65,54 @@ def l1b_sectored_rates_dataset(dependencies):
     return dependencies["imap_hit_l1b_sectored-rates"]
 
 
-def test_get_intensity_factors():
-    """Test the get_intensity_factors function."""
-    # Sample input data
-    energy_min = np.array([1.8, 2.2, 2.7], dtype=np.float32)
-    species_ancillary_data = pd.DataFrame(
-        {
-            "lower energy (mev)": [1.8, 2.2, 2.7],
-            "delta e (mev)": [0.4, 0.5, 0.6],
-            "geometry factor (cm2 sr)": [1.0, 1.1, 1.2],
-            "efficiency": [0.9, 0.8, 0.7],
-            "b": [0.1, 0.2, 0.3],
-        }
-    )
-
-    # Expected output
-    expected_factors = IntensityFactors(
-        delta_e=np.array([0.4, 0.5, 0.6]),
-        geometry_factor=np.array([1.0, 1.1, 1.2]),
-        efficiency=np.array([0.9, 0.8, 0.7]),
-        b=np.array([0.1, 0.2, 0.3]),
-        integration_time=60,
-    )
-
-    # Call the function
-    factors = get_intensity_factors(energy_min, species_ancillary_data)
-
-    # Assertions
-    assert np.array_equal(factors.delta_e, expected_factors.delta_e), (
-        "Delta E factors mismatch"
-    )
-    assert np.array_equal(factors.geometry_factor, expected_factors.geometry_factor), (
-        "Geometry factors mismatch"
-    )
-    assert np.array_equal(factors.efficiency, expected_factors.efficiency), (
-        "Efficiency factors mismatch"
-    )
-    assert np.array_equal(factors.b, expected_factors.b), "B factors mismatch"
-
-
 def test_get_species_ancillary_data():
     """Test the get_species_ancillary_data function."""
-    # Sample input data
-    dynamic_threshold_state = 1
+
+    # Mock ancillary data for dynamic threshold states 0 and 1
     ancillary_data_frames = {
         0: pd.DataFrame(
             {
-                "species": ["h", "he", "c"],
-                "lower energy (mev)": [1.0, 2.0, 3.0],
-                "delta e (mev)": [0.1, 0.2, 0.3],
-                "geometry factor (cm2 sr)": [1.0, 1.1, 1.2],
-                "efficiency": [0.9, 0.8, 0.7],
-                "b": [0.01, 0.02, 0.03],
+                "species": ["h", "h", "he", "he"],
+                "lower energy (mev)": [1, 2, 1, 2],
+                "delta e (mev)": [0.1, 0.2, 0.3, 0.4],
+                "geometry factor (cm2 sr)": [10, 20, 30, 40],
+                "efficiency": [0.9, 0.8, 0.7, 0.6],
+                "b": [0.01, 0.02, 0.03, 0.04],
             }
         ),
         1: pd.DataFrame(
             {
-                "species": ["h", "he", "c"],
-                "lower energy (mev)": [1.0, 2.0, 3.0],
-                "delta e (mev)": [0.15, 0.25, 0.35],
-                "geometry factor (cm2 sr)": [1.05, 1.15, 1.25],
-                "efficiency": [0.85, 0.75, 0.65],
-                "b": [0.015, 0.025, 0.035],
+                "species": ["h", "h", "he", "he"],
+                "lower energy (mev)": [1, 2, 1, 2],
+                "delta e (mev)": [0.15, 0.25, 0.35, 0.45],
+                "geometry factor (cm2 sr)": [15, 25, 35, 45],
+                "efficiency": [0.85, 0.75, 0.65, 0.55],
+                "b": [0.015, 0.025, 0.035, 0.045],
             }
         ),
     }
-    species = "h"
 
-    # Expected output
-    expected_output = ancillary_data_frames[dynamic_threshold_state][
-        ancillary_data_frames[dynamic_threshold_state]["species"] == species
-    ]
+    # Test for dynamic threshold state 0 and species "h"
+    result = get_species_ancillary_data(0, ancillary_data_frames, "h")
+    expected = {
+        "delta_e": np.array([[0.1], [0.2]]),
+        "geometry_factor": np.array([[10], [20]]),
+        "efficiency": np.array([[0.9], [0.8]]),
+        "b": np.array([[0.01], [0.02]]),
+    }
+    for key in expected.items():
+        np.testing.assert_array_equal(result[key], expected[key])
 
-    # Call the function
-    output = get_species_ancillary_data(
-        dynamic_threshold_state, ancillary_data_frames, species
-    )
-
-    # Assertions
-    pd.testing.assert_frame_equal(output, expected_output)
+    # Test for dynamic threshold state 1 and species "he"
+    result = get_species_ancillary_data(1, ancillary_data_frames, "he")
+    expected = {
+        "delta_e": np.array([[0.35], [0.45]]),
+        "geometry_factor": np.array([[35], [45]]),
+        "efficiency": np.array([[0.65], [0.55]]),
+        "b": np.array([[0.035], [0.045]]),
+    }
+    for key in expected:
+        np.testing.assert_array_equal(result[key], expected[key])
 
 
 def test_calculate_intensities_for_all_species():
@@ -305,68 +273,35 @@ def test_calculate_intensities_for_a_species():
 
 
 def test_calculate_intensities():
-    """Test the calculate_intensities function.
-
-    This tests the function with different values for time.
-    60 seconds is used for calculating standard and summed
-    intensities and 600 is used for sectored intensities.
-    """
-    # Sample input data
-    rate = xr.DataArray([100, 200, 300], dims=["energy_bin"])
-    delta_e_factor = np.array([1.0, 1.0, 1.0])
-    geometry_factor = np.array([1.0, 1.0, 1.0])
-    efficiency = np.array([1.0, 1.0, 1.0])
-    b = np.array([0.0, 0.0, 0.0])
-    integration_time = 60
-
-    # Expected output for 60 seconds
-    expected_intensities_60 = xr.DataArray(
-        [1.66666667, 3.33333333, 5.0], dims=["energy_bin"]
+    """Test the calculate_intensities function."""
+    # Create sample function inputs
+    rates = xr.DataArray(
+        data=[10.0, 20.0, FILLVAL_FLOAT32, 40.0],
+        dims=["epoch"],
+        coords={"epoch": [0, 1, 2, 3]},
+    )
+    factors = xr.Dataset(
+        {
+            "delta_time": ("epoch", [60.0, 60.0, 60.0, 60.0]),
+            "delta_e": ("epoch", [1.0, 1.0, 1.0, 1.0]),
+            "geometry_factor": ("epoch", [2.0, 2.0, 2.0, 2.0]),
+            "efficiency": ("epoch", [0.5, 0.5, 0.5, 0.5]),
+            "b": ("epoch", [0.0, 0, 0, 0]),
+        }
     )
 
-    factors_60 = IntensityFactors(
-        delta_e=delta_e_factor,
-        geometry_factor=geometry_factor,
-        efficiency=efficiency,
-        b=b,
-        integration_time=integration_time,
+    # Expected output
+    expected_intensity = xr.DataArray(
+        data=[0.1666667, 0.3333333, FILLVAL_FLOAT32, 0.6666667],
+        dims=["epoch"],
+        coords={"epoch": [0, 1, 2, 3]},
     )
 
-    # Call the function for 60 seconds
-    intensities_60 = calculate_intensities(rate, factors_60)
+    # Call the function
+    result = calculate_intensities(rates, factors)
 
-    # Assertions for 60 seconds
-    (
-        np.testing.assert_allclose(intensities_60, expected_intensities_60),
-        ("Intensities mismatch for integration_time = 60 seconds"),
-    )
-
-    # Test with 600 seconds
-    integration_time = 600
-
-    # Expected output for 600 seconds
-    expected_intensities_600 = xr.DataArray(
-        [0.16666667, 0.33333333, 0.5], dims=["energy_bin"]
-    )
-
-    factors_600 = IntensityFactors(
-        delta_e=delta_e_factor,
-        geometry_factor=geometry_factor,
-        efficiency=efficiency,
-        b=b,
-        integration_time=integration_time,
-    )
-
-    # Call the function for 600 seconds
-    intensities_600 = calculate_intensities(rate, factors_600)
-
-    # Assertions for 600 seconds
-    (
-        np.testing.assert_allclose(
-            intensities_600.values, expected_intensities_600.values
-        ),
-        ("Intensities mismatch for integration_time = 600 seconds"),
-    )
+    # Assertions
+    xr.testing.assert_allclose(result, expected_intensity)
 
 
 def test_add_systematic_uncertainties():

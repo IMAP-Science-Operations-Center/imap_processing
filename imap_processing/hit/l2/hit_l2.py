@@ -2,7 +2,6 @@
 
 import logging
 from pathlib import Path
-from typing import NamedTuple
 
 import numpy as np
 import pandas as pd
@@ -17,7 +16,7 @@ from imap_processing.hit.l2.constants import (
     L2_SECTORED_ANCILLARY_PATH_PREFIX,
     L2_STANDARD_ANCILLARY_PATH_PREFIX,
     L2_SUMMED_ANCILLARY_PATH_PREFIX,
-    N_DECLINATION,
+    N_AZIMUTH,
     SECONDS_PER_10_MIN,
     SECONDS_PER_MIN,
     STANDARD_PARTICLE_ENERGY_RANGE_MAPPING,
@@ -110,59 +109,12 @@ def hit_l2(dependency: xr.Dataset) -> list[xr.Dataset]:
     return list(l2_datasets.values())
 
 
-class IntensityFactors(NamedTuple):
-    """A namedtuple to store factors for the intensity equation."""
-
-    delta_e: np.ndarray
-    geometry_factor: np.ndarray
-    efficiency: np.ndarray
-    b: np.ndarray
-    integration_time: int  # number of seconds
-
-
-def get_intensity_factors(
-    energy_min: np.ndarray, species_ancillary_data: pd.DataFrame
-) -> IntensityFactors:
-    """
-    Get the intensity factors for all energy bins of the given species ancillary data.
-
-    This function gets the factors needed for the equation to convert rates to
-    intensities for all energy bins for the given species.
-
-    Parameters
-    ----------
-    energy_min : np.ndarray
-        All energy min values for the species.
-    species_ancillary_data : pd.DataFrame
-        The subset of ancillary data for the given species.
-
-    Returns
-    -------
-    IntensityFactors
-        The factors needed to convert rates to intensities for all energy bins
-        for the given species.
-    """
-    # Get factors needed to convert rates to intensities for
-    # all energy bins for the given species ancillary data
-    intensity_factors = species_ancillary_data.set_index(
-        species_ancillary_data["lower energy (mev)"].astype(np.float32)
-    ).loc[energy_min]
-
-    return IntensityFactors(
-        delta_e=intensity_factors["delta e (mev)"].values,
-        geometry_factor=intensity_factors["geometry factor (cm2 sr)"].values,
-        efficiency=intensity_factors["efficiency"].values,
-        b=intensity_factors["b"].values,
-        integration_time=SECONDS_PER_MIN,
-    )
-
-
 def calculate_intensities(
     rates: xr.DataArray,
-    factors: IntensityFactors,
+    factors: xr.Dataset,
 ) -> xr.DataArray:
     """
-    Calculate the intensities for given arrays of rates and equation factors.
+    Calculate the intensities for given rates and equation factors.
 
     Uses vectorization to calculate the intensities for an array of rates
     for all epochs.
@@ -174,38 +126,119 @@ def calculate_intensities(
     ----------
     rates : xr.DataArray
         The L1B rates to be converted to intensities.
-    factors : IntensityFactors
-        This is a named tuple containing the following fields:
-        - delta_e: np.ndarray of energy bin widths
-        - geometry_factor: np.ndarray of geometry factors
-        - efficiency: np.ndarray of efficiency factors
-        - b: np.ndarray of b values
-        - integration_time: integer of seconds to convert counts per integration time
-                to counts per second. This is either:
-                60 for standard and summed intensities
-                600 for sectored intensities since integration time is over 10 minutes.
+    factors : xr.Dataset
+        The ancillary data factors needed to calculate the intensity.
+        This includes delta_e, geometry_factor, efficiency, and b.
 
     Returns
     -------
     xr.DataArray
         The calculated intensities for all epochs.
     """
-    # Unpack the factors
-    delta_e = factors.delta_e
-    geometry_factor = factors.geometry_factor
-    efficiency = factors.efficiency
-    b = factors.b
-    delta_time = factors.integration_time
+    # Calculate the intensity using vectorized operations
+    intensity = (
+        rates
+        / (
+            factors.delta_time
+            * factors.delta_e
+            * factors.geometry_factor
+            * factors.efficiency
+        )
+    ) - factors.b
 
-    # Calculate the intensities, skipping fill values, for all epochs
-    return xr.DataArray(
-        np.where(
-            rates != FILLVAL_FLOAT32,
-            (rates / (delta_time * delta_e * geometry_factor * efficiency)) - b,
-            FILLVAL_FLOAT32,
-        ),
-        dims=rates.dims,
+    # Apply fill value where rates are invalid
+    intensity = xr.where(rates == FILLVAL_FLOAT32, FILLVAL_FLOAT32, intensity)
+
+    return intensity
+
+
+def reshape_for_sectored(arr: np.ndarray) -> np.ndarray:
+    """
+    Reshape the ancillary data for sectored rates.
+
+    Reshape the 3D arrays (epoch, energy, declination) to 4D arrays
+    (epoch, energy, azimuth, declination) by repeating the data
+    along the azimuth dimension. This is done to match the dimensions
+    of the sectored rates data to allow for proper calculation of
+    intensities.
+
+    Parameters
+    ----------
+    arr : np.ndarray
+        The ancillary data array to reshape.
+
+    Returns
+    -------
+    np.ndarray
+        The reshaped array.
+    """
+    return np.repeat(
+        arr.reshape((arr.shape[0], arr.shape[1], arr.shape[2]))[:, :, np.newaxis, :],
+        N_AZIMUTH,
+        axis=2,
     )
+
+
+def build_ancillary_dataset(
+    delta_e: np.ndarray,
+    geometry_factors: np.ndarray,
+    efficiencies: np.ndarray,
+    b: np.ndarray,
+    species_array: xr.DataArray,
+) -> xr.Dataset:
+    """
+    Build a xarray Dataset containing ancillary data for calculating intensity.
+
+    This function builds a dataset containing the factors needed for calculating
+    intensity for a given species. The dataset is built based on the dimensions
+    and coordinates of the species data to align data along the epoch dimension.
+
+    Parameters
+    ----------
+    delta_e : np.ndarray
+        Delta E values which are energy bin widths.
+    geometry_factors : np.ndarray
+        Geometry factor values.
+    efficiencies : np.ndarray
+        Efficiency values.
+    b : np.ndarray
+        Background intensity values.
+    species_array : xr.Dataset
+        Data array for the species to extract coordinates from.
+
+    Returns
+    -------
+    ancillary_ds : xr.Dataset
+        A dataset containing all ancillary data variables and coordinates that
+        align with the L2 dataset.
+    """
+    data_vars = {}
+
+    # Check if this is sectored data (i.e., has azimuth and declination dims)
+    is_sectored = (
+        "declination" in species_array.dims or "declination" in species_array.coords
+    )
+
+    # Build variables
+    data_vars["delta_e"] = (species_array.dims, delta_e)
+    data_vars["geometry_factor"] = (
+        species_array.dims,
+        geometry_factors,
+    )
+    data_vars["efficiency"] = (
+        species_array.dims,
+        efficiencies,
+    )
+    data_vars["b"] = (species_array.dims, b)
+    data_vars["delta_time"] = (
+        ["epoch"],
+        np.full(
+            len(species_array.epoch),
+            SECONDS_PER_10_MIN if is_sectored else SECONDS_PER_MIN,
+        ),
+    )
+
+    return xr.Dataset(data_vars, coords=species_array.coords)
 
 
 def calculate_intensities_for_a_species(
@@ -214,22 +247,24 @@ def calculate_intensities_for_a_species(
     """
     Calculate the intensity for a given species in the dataset.
 
-    This function calculates the intensity for a given species in the dataset
-    using ancillary data determined by the dynamic threshold state (0-3).
+    This function orchestrates calculating the intensity for a given species
+    in the L2 dataset using ancillary data determined by the dynamic threshold
+    state (0-3).
 
     The intensity is calculated using the equation:
         (L1B Rates) / (Delta Time * Delta E * Geometry Factor * Efficiency) - b
 
-        where the factors are retrieved from the ancillary data for the given species
-        and dynamic threshold state.
+        where the equation factors are retrieved from the ancillary data for
+        the given species and dynamic threshold states.
 
     Parameters
     ----------
     species_variable : str
-        The species variable to calculate the intensity for which is either the species
-        or a statistical uncertainty. (i.e. "h", "h_delta_minus", or "h_delta_plus").
+        The species variable to calculate the intensity for, which is either the species
+        or a statistical uncertainty.
+        (i.e. "h", "h_stat_uncert_minus", or "h_stat_uncert_plus").
     l2_dataset : xr.Dataset
-        The L2 dataset containing the L1B rates to calculate the intensity.
+        The L2 dataset containing the L1B rates needed to calculate the intensity.
     ancillary_data_frames : dict
         Dictionary containing ancillary data for each dynamic threshold state where
         the key is the dynamic threshold state and the value is a pandas DataFrame
@@ -241,79 +276,66 @@ def calculate_intensities_for_a_species(
         The updated dataset with intensities calculated for the given species.
     """
     updated_ds = l2_dataset.copy()
-
-    # Get the species name
-    species = (
+    dynamic_threshold_states = updated_ds["dynamic_threshold_state"].values
+    unique_states = np.unique(dynamic_threshold_states)
+    species_name = (
         species_variable.split("_")[0]
         if "_delta_" in species_variable
         else species_variable
     )
-    # Get the energy bins for the species
-    species_energy_bins = (
-        updated_ds[f"{species}_energy_mean"].values
-        - updated_ds[f"{species}_energy_delta_minus"].values
-    )
-    # TODO: Add check for energy max after ancillary file is updated
-    #  fixing errors
 
-    # Get the dynamic threshold state for all epochs (one per epoch)
-    dynamic_threshold_states = updated_ds["dynamic_threshold_state"].values
-
-    # Subset ancillary data by the species and map to dynamic threshold states
-    species_ancillary_data_by_state = {
-        state: get_species_ancillary_data(state, ancillary_data_frames, species)
-        for state in np.unique(dynamic_threshold_states)
+    # Subset ancillary data for this species
+    species_ancillary_by_state = {
+        state: get_species_ancillary_data(state, ancillary_data_frames, species_name)
+        for state in unique_states
     }
 
-    # Retrieve intensity calculation factors from ancillary data for all epochs and
-    # energy bins. This will be a list of IntensityFactors named tuples for each epoch
-    factors_per_epoch = [
-        get_intensity_factors(
-            species_energy_bins, species_ancillary_data_by_state[state]
-        )
-        for state in dynamic_threshold_states
-    ]
-
-    # Stack factors into arrays for vectorized computation
-    delta_e = np.stack([factor.delta_e for factor in factors_per_epoch])
-    geometry_factors = np.stack(
-        [factor.geometry_factor for factor in factors_per_epoch]
-    )
-    efficiencies = np.stack([factor.efficiency for factor in factors_per_epoch])
-    b = np.stack([factor.b for factor in factors_per_epoch])
-    time = SECONDS_PER_MIN
-
-    # Handle sectored rates which are multidimensional
-    # (epoch, energy, azimuth, declination)
-    if "declination" in updated_ds[species_variable].dims:
-        # The factors are 1D arrays containing values for each declination angle (8)
-        # and each energy bin. Reshape factors to match dimensions of sectored rates
-        delta_e = delta_e.reshape(
-            (delta_e.shape[0], len(species_energy_bins), N_DECLINATION)
-        )[:, :, np.newaxis, :]
-        geometry_factors = geometry_factors.reshape(
-            (geometry_factors.shape[0], len(species_energy_bins), N_DECLINATION)
-        )[:, :, np.newaxis, :]
-        efficiencies = efficiencies.reshape(
-            (efficiencies.shape[0], len(species_energy_bins), N_DECLINATION)
-        )[:, :, np.newaxis, :]
-        b = b.reshape((b.shape[0], len(species_energy_bins), N_DECLINATION))[
-            :, :, np.newaxis, :
+    # Extract parameters - 3D arrays (num_states, energy bins, values)
+    delta_e = np.stack(
+        [
+            species_ancillary_by_state[state]["delta_e"]
+            for state in dynamic_threshold_states
         ]
-        time = SECONDS_PER_10_MIN
-
-    # Store the factor arrays in a named tuple
-    factors = IntensityFactors(
-        delta_e=delta_e,
-        geometry_factor=geometry_factors,
-        efficiency=efficiencies,
-        b=b,
-        integration_time=time,
+    )
+    geometry_factors = np.stack(
+        [
+            species_ancillary_by_state[state]["geometry_factor"]
+            for state in dynamic_threshold_states
+        ]
+    )
+    efficiencies = np.stack(
+        [
+            species_ancillary_by_state[state]["efficiency"]
+            for state in dynamic_threshold_states
+        ]
+    )
+    b = np.stack(
+        [species_ancillary_by_state[state]["b"] for state in dynamic_threshold_states]
     )
 
-    # Calculate intensities using vectorized operations
+    # Reshape parameters for sectored rates to 4D arrays
+    if "declination" in updated_ds[species_variable].dims:
+        delta_e = reshape_for_sectored(delta_e)
+        geometry_factors = reshape_for_sectored(geometry_factors)
+        efficiencies = reshape_for_sectored(efficiencies)
+        b = reshape_for_sectored(b)
+
+    # Reshape parameters for summed and standard rates to 2D arrays
+    # by removing last dimension of size one, (n, n, 1)
+    else:
+        delta_e = np.squeeze(delta_e, axis=-1)
+        geometry_factors = np.squeeze(geometry_factors, axis=-1)
+        efficiencies = np.squeeze(efficiencies, axis=-1)
+        b = np.squeeze(b, axis=-1)
+
+    # Build ancillary xarray dataset
+    ancillary_ds = build_ancillary_dataset(
+        delta_e, geometry_factors, efficiencies, b, l2_dataset[species_name]
+    )
+
+    # Calculate intensities
     updated_ds[species_variable] = calculate_intensities(
-        updated_ds[species_variable], factors
+        updated_ds[species_variable], ancillary_ds
     )
 
     return updated_ds
@@ -406,7 +428,7 @@ def add_systematic_uncertainties(
 
 def get_species_ancillary_data(
     dynamic_threshold_state: int, ancillary_data_frames: dict, species: str
-) -> pd.DataFrame:
+) -> dict:
     """
     Get the ancillary data for a given species and dynamic threshold state.
 
@@ -423,19 +445,25 @@ def get_species_ancillary_data(
 
     Returns
     -------
-    pd.DataFrame
+    dict
         The ancillary data for the species and dynamic threshold state.
     """
-    ancillary_data = ancillary_data_frames[dynamic_threshold_state]
+    ancillary_df = ancillary_data_frames[dynamic_threshold_state]
 
-    # Remove possible trailing spaces from all values in the DataFrame
-    ancillary_data = ancillary_data.map(
-        lambda x: x.strip() if isinstance(x, str) else x
-    )
+    # Remove any trailing spaces from all values in the DataFrame
+    ancillary_df = ancillary_df.map(lambda x: x.strip() if isinstance(x, str) else x)
 
-    # Get the ancillary data for the species
-    species_ancillary_data = ancillary_data[ancillary_data["species"] == species]
-    return species_ancillary_data
+    # Get the ancillary data for the species and group by lower energy
+    species_ancillary_df = ancillary_df[ancillary_df["species"] == species]
+    grouped = species_ancillary_df.groupby("lower energy (mev)")
+    return {
+        "delta_e": np.array(grouped["delta e (mev)"].apply(list).tolist()),
+        "geometry_factor": np.array(
+            grouped["geometry factor (cm2 sr)"].apply(list).tolist()
+        ),
+        "efficiency": np.array(grouped["efficiency"].apply(list).tolist()),
+        "b": np.array(grouped["b"].apply(list).tolist()),
+    }
 
 
 def load_ancillary_data(dynamic_threshold_states: set, path_prefix: Path) -> dict:
@@ -618,9 +646,6 @@ def process_sectored_intensity_data(
     xr.Dataset
         The processed L2 sectored intensity dataset.
     """
-    # TODO:
-    #  - consider setting valid particles list in constants file or at top of this file
-
     # Create a new dataset to store the L2 sectored intensity data
     l2_sectored_intensity_dataset = l1b_sectored_rates_dataset.copy(deep=True)
 
