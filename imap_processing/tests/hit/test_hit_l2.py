@@ -11,9 +11,13 @@ from imap_processing.hit.l1b.hit_l1b import (
 )
 from imap_processing.hit.l2.hit_l2 import (
     FILLVAL_FLOAT32,
+    N_AZIMUTH,
+    SECONDS_PER_10_MIN,
+    SECONDS_PER_MIN,
     STANDARD_PARTICLE_ENERGY_RANGE_MAPPING,
     VALID_SECTORED_SPECIES,
     add_systematic_uncertainties,
+    build_ancillary_dataset,
     calculate_intensities,
     calculate_intensities_for_a_species,
     calculate_intensities_for_all_species,
@@ -22,6 +26,7 @@ from imap_processing.hit.l2.hit_l2 import (
     process_sectored_intensity_data,
     process_standard_intensity_data,
     process_summed_intensity_data,
+    reshape_for_sectored,
 )
 
 
@@ -65,6 +70,130 @@ def l1b_sectored_rates_dataset(dependencies):
     return dependencies["imap_hit_l1b_sectored-rates"]
 
 
+def _check_ancillary_dataset(  # noqa: PLR0913
+    ancillary_ds,
+    species_array,
+    delta_e,
+    geometry_factors,
+    efficiencies,
+    b,
+    expected_delta_time,
+):
+    # Helper function - not a test
+
+    shape = species_array.shape
+
+    # Assert that all expected variables are present
+    assert set(ancillary_ds.data_vars) == {
+        "delta_e",
+        "geometry_factor",
+        "efficiency",
+        "b",
+        "delta_time",
+    }
+
+    # Check that shapes match
+    assert ancillary_ds["delta_e"].shape == shape
+    assert ancillary_ds["delta_time"].shape == (len(species_array.coords["epoch"]),)
+
+    # Check values
+    np.testing.assert_array_equal(ancillary_ds["delta_e"].values, delta_e)
+    np.testing.assert_array_equal(
+        ancillary_ds["geometry_factor"].values, geometry_factors
+    )
+    np.testing.assert_array_equal(ancillary_ds["efficiency"].values, efficiencies)
+    np.testing.assert_array_equal(ancillary_ds["b"].values, b)
+    np.testing.assert_array_equal(
+        ancillary_ds["delta_time"].values,
+        np.full(len(species_array.epoch), expected_delta_time),
+    )
+
+    # Check coordinates match
+    for coord in species_array.coords:
+        assert coord in ancillary_ds.coords
+        np.testing.assert_array_equal(
+            species_array.coords[coord], ancillary_ds.coords[coord]
+        )
+
+
+def test_build_ancillary_dataset_sectored():
+    """
+    Test the build_ancillary_dataset function for sectored data
+    """
+    epoch = np.array(["2025-01-01T00:00", "2025-01-01T00:01"], dtype="datetime64[m]")
+    energy_mean = [1.8, 4, 6]
+    declination = np.arange(8)
+    azimuth = np.arange(15)
+
+    species_array = xr.DataArray(
+        data=np.random.rand(2, 3, 15, 8),  # (epoch, energy_mean, azimuth, declination)
+        dims=("epoch", "energy_mean", "azimuth", "declination"),
+        coords={
+            "epoch": epoch,
+            "energy_mean": energy_mean,
+            "declination": declination,
+            "azimuth": azimuth,
+        },
+        name="h",
+    )
+
+    shape = species_array.shape
+    delta_e = np.full(shape, 1.0)
+    geometry_factors = np.full(shape, 2.0)
+    efficiencies = np.full(shape, 0.5)
+    b = np.full(shape, 0.1)
+
+    ancillary_ds = build_ancillary_dataset(
+        delta_e, geometry_factors, efficiencies, b, species_array
+    )
+    _check_ancillary_dataset(
+        ancillary_ds,
+        species_array,
+        delta_e,
+        geometry_factors,
+        efficiencies,
+        b,
+        SECONDS_PER_10_MIN,
+    )
+
+
+def test_build_ancillary_dataset_nonsectored():
+    """
+    Test the build_ancillary_dataset function for non-sectored data.
+
+    Non-sectored datasets are either L2 standard or L2 summed datasets
+    They both have the same shape (epoch, energy_mean).
+    """
+    epoch = np.array(["2025-01-01T00:00", "2025-01-01T00:01"], dtype="datetime64[m]")
+    energy_mean = [1.8, 4, 6]
+
+    species_array = xr.DataArray(
+        data=np.random.rand(2, 3),  # (epoch, energy_mean)
+        dims=("epoch", "energy_mean"),
+        coords={"epoch": epoch, "energy_mean": energy_mean},
+        name="h",
+    )
+
+    shape = species_array.shape
+    delta_e = np.full(shape, 1.0)
+    geometry_factors = np.full(shape, 2.0)
+    efficiencies = np.full(shape, 0.5)
+    b = np.full(shape, 0.1)
+
+    ancillary_ds = build_ancillary_dataset(
+        delta_e, geometry_factors, efficiencies, b, species_array
+    )
+    _check_ancillary_dataset(
+        ancillary_ds,
+        species_array,
+        delta_e,
+        geometry_factors,
+        efficiencies,
+        b,
+        SECONDS_PER_MIN,
+    )
+
+
 def test_get_species_ancillary_data():
     """Test the get_species_ancillary_data function."""
 
@@ -100,8 +229,8 @@ def test_get_species_ancillary_data():
         "efficiency": np.array([[0.9], [0.8]]),
         "b": np.array([[0.01], [0.02]]),
     }
-    for key in expected.items():
-        np.testing.assert_array_equal(result[key], expected[key])
+    for key, value in expected.items():
+        np.testing.assert_array_equal(result[key], value)
 
     # Test for dynamic threshold state 1 and species "he"
     result = get_species_ancillary_data(1, ancillary_data_frames, "he")
@@ -113,6 +242,30 @@ def test_get_species_ancillary_data():
     }
     for key in expected:
         np.testing.assert_array_equal(result[key], expected[key])
+
+
+def test_reshape_for_sectored():
+    """
+    Test the reshape_for_sectored function.
+    """
+    # Mock input data: 3D array (epoch, energy, declination)
+    epoch, energy, declination = 2, 3, 8
+    input_array = np.random.rand(epoch, energy, declination)
+
+    # Expected output shape: 4D array (epoch, energy, azimuth, declination)
+    expected_shape = (epoch, energy, N_AZIMUTH, declination)
+
+    # Call the function
+    reshaped_array = reshape_for_sectored(input_array)
+
+    # Assertions
+    assert reshaped_array.shape == expected_shape, "Output shape mismatch"
+    for azimuth in range(N_AZIMUTH):
+        np.testing.assert_array_equal(
+            reshaped_array[:, :, azimuth, :],
+            input_array,
+            err_msg=f"Mismatch in azimuth dimension {azimuth}",
+        )
 
 
 def test_calculate_intensities_for_all_species():
