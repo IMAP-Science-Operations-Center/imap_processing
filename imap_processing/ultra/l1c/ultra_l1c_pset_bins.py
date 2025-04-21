@@ -175,7 +175,9 @@ def get_spacecraft_exposure_times(constant_exposure: pandas.DataFrame) -> NDArra
 
 def get_helio_exposure_times(
     time: np.ndarray,
-    sc_exposure: np.ndarray,
+    df_exposure: np.ndarray,
+    nside: int = 128,
+    nested: bool = False,
 ) -> NDArray:
     """
     Compute a 3D array of the exposure in the helio frame.
@@ -198,22 +200,14 @@ def get_helio_exposure_times(
     """
     # Get bins and midpoints, with angles in degrees.
     _, energy_midpoints, _ = build_energy_bins()
-    az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
-        build_spatial_bins()
-    )
-
-    # Initialize the exposure grid.
-    exposure_3d = np.zeros(
-        (len(el_bin_midpoints), len(az_bin_midpoints), len(energy_midpoints))
-    )
-
-    # Create a 3D Cartesian grid from spherical coordinates
-    # using azimuth and elevation midpoints.
-    az_grid, el_grid = np.meshgrid(az_bin_midpoints, el_bin_midpoints[::-1])
+    # Get direction unit vectors from (RA, Dec)
+    ra = df_exposure["Right Ascension (deg)"].values
+    dec = df_exposure["Declination (deg)"].values
+    exposure_2d = np.squeeze(df_exposure["Exposure Time"].values)  # shape: (720, 360)
+    exposure_flat = exposure_2d.T.flatten(order="F")  # shape: (360 * 720,)
 
     # Radial distance.
-    r = np.ones(el_grid.shape)
-    spherical_coords = np.stack((r, az_grid, el_grid), axis=-1)
+    spherical_coords = np.stack([np.ones_like(ra), ra, dec], axis=-1)
     cartesian_coords = spherical_to_cartesian(spherical_coords)
     cartesian = cartesian_coords.reshape(-1, 3, order="F").T
 
@@ -222,6 +216,9 @@ def get_helio_exposure_times(
 
     # Extract the velocity part of the state vector
     spacecraft_velocity = state[3:6]
+
+    n_pix = hp.nside2npix(nside)
+    exposure_3d = np.zeros((n_pix, len(energy_midpoints)))
 
     for i, energy_midpoint in enumerate(energy_midpoints):
         # Convert the midpoint energy to a velocity (km/s).
@@ -243,23 +240,12 @@ def get_helio_exposure_times(
         )
         # Converts vectors from Cartesian coordinates (x, y, z)
         # into spherical coordinates.
-        spherical_coords = cartesian_to_spherical(helio_normalized)
-        az, el = spherical_coords[..., 1], spherical_coords[..., 2]
+        spherical = cartesian_to_spherical(helio_normalized, degrees=True)
+        az, el = spherical[:, 1], spherical[:, 2]
+        hpix_idx = hp.ang2pix(nside, az, el, nest=nested, lonlat=True)
 
-        # Assign values from sc_exposure directly to bins.
-        az_idx = np.digitize(az, az_bin_edges) - 1
-        el_idx = np.digitize(el, el_bin_edges[::-1]) - 1
-
-        # Ensure az_idx and el_idx are within bounds.
-        az_idx = np.clip(az_idx, 0, len(az_bin_edges) - 2)
-        el_idx = np.clip(el_idx, 0, len(el_bin_edges) - 2)
-
-        # A 1D array of linear indices used to track the bin_id.
-        idx = el_idx + az_idx * az_grid.shape[0]
-        # Bins the transposed sc_exposure array.
-        binned_exposure = sc_exposure.T.flatten(order="F")[idx]
-        # Reshape the binned exposure.
-        exposure_3d[:, :, i] = binned_exposure.reshape(az_grid.shape, order="F")
+        # Bin exposure by pixel
+        np.add.at(exposure_3d[:, i], hpix_idx, exposure_flat)
 
     return exposure_3d
 

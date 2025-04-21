@@ -119,24 +119,40 @@ def test_get_spacecraft_exposure_times():
 def test_get_helio_exposure_times():
     """Tests get_helio_exposure_times function."""
 
-    constant_exposure = BASE_PATH / "dps_grid45_compressed.cdf"
     start_time = 829485054.185627
     end_time = 829567884.185627
     mid_time = np.average([start_time, end_time])
 
-    with cdflib.CDF(constant_exposure) as cdf_file:
-        sc_exposure = cdf_file.varget("dps_grid45")
+    constant_exposure = TEST_PATH / "ultra_90_dps_exposure.csv"
+    df_exposure = pd.read_csv(constant_exposure)
 
-    exposure_3d = get_helio_exposure_times(mid_time, sc_exposure)
+    exposure_3d = get_helio_exposure_times(mid_time, df_exposure)
+
+    # import matplotlib
+    # matplotlib.use("TkAgg")
+    #
+    # import matplotlib.pyplot as plt
+    # import healpy as hp
+    # import numpy as np
+    #
+    # # Pick one energy bin (e.g., the first)
+    # example_data = exposure_3d[:, 0]  # 1D array with 196608 pixels
+    #
+    # hp.mollview(
+    #     example_data,
+    #     title="HEALPix Exposure – Energy Bin 0",
+    #     unit="Exposure Time",
+    #     norm="hist",
+    #     cmap="viridis",
+    #     coord="G"
+    # )
+    #
+    # plt.show()
 
     energy_bin_edges, energy_midpoints, _ = build_energy_bins()
-    az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
-        build_spatial_bins()
-    )
 
     assert exposure_3d.shape == (
-        len(el_bin_midpoints),
-        len(az_bin_midpoints),
+        len(df_exposure),
         len(energy_midpoints),
     )
 
