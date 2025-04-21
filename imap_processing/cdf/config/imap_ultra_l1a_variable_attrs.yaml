@@ -1107,7 +1107,7 @@ event_id:
   LABLAXIS: event_id
 
 address:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Address
   FIELDNAM: address
   LABLAXIS: address
@@ -1115,7 +1115,7 @@ address:
   DEPEND_0: epoch
 
 alarmcount:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Alarmcount
   FIELDNAM: alarmcount
   LABLAXIS: alarmcount
@@ -1123,7 +1123,7 @@ alarmcount:
   DEPEND_0: epoch
 
 alarmid:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Alarmid
   FIELDNAM: alarmid
   LABLAXIS: alarmid
@@ -1131,7 +1131,7 @@ alarmid:
   DEPEND_0: epoch
 
 aux:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Aux
   FIELDNAM: aux
   LABLAXIS: aux
@@ -1139,7 +1139,7 @@ aux:
   DEPEND_0: epoch
 
 baselinechannel:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Baselinechannel
   FIELDNAM: baselinechannel
   LABLAXIS: baselinechannel
@@ -1147,7 +1147,7 @@ baselinechannel:
   DEPEND_0: epoch
 
 baselinesample:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Baselinesample
   FIELDNAM: baselinesample
   LABLAXIS: baselinesample
@@ -1155,7 +1155,7 @@ baselinesample:
   DEPEND_0: epoch
 
 baselinestate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Baselinestate
   FIELDNAM: baselinestate
   LABLAXIS: baselinestate
@@ -1163,7 +1163,7 @@ baselinestate:
   DEPEND_0: epoch
 
 blockno:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Blockno
   FIELDNAM: blockno
   LABLAXIS: blockno
@@ -1171,7 +1171,7 @@ blockno:
   DEPEND_0: epoch
 
 bottommcp_i:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Bottommcp i
   FIELDNAM: bottommcp_i
   LABLAXIS: bottommcp_i
@@ -1179,7 +1179,7 @@ bottommcp_i:
   DEPEND_0: epoch
 
 bottommcp_i_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Bottommcp i hi
   FIELDNAM: bottommcp_i_hi
   LABLAXIS: bottommcp_i_hi
@@ -1187,7 +1187,7 @@ bottommcp_i_hi:
   DEPEND_0: epoch
 
 bottommcp_i_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Bottommcp i lo
   FIELDNAM: bottommcp_i_lo
   LABLAXIS: bottommcp_i_lo
@@ -1195,7 +1195,7 @@ bottommcp_i_lo:
   DEPEND_0: epoch
 
 bottommcp_v:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Bottommcp v
   FIELDNAM: bottommcp_v
   LABLAXIS: bottommcp_v
@@ -1203,7 +1203,7 @@ bottommcp_v:
   DEPEND_0: epoch
 
 bottommcp_v_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Bottommcp v hi
   FIELDNAM: bottommcp_v_hi
   LABLAXIS: bottommcp_v_hi
@@ -1211,7 +1211,7 @@ bottommcp_v_hi:
   DEPEND_0: epoch
 
 bottommcp_v_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Bottommcp v lo
   FIELDNAM: bottommcp_v_lo
   LABLAXIS: bottommcp_v_lo
@@ -1219,7 +1219,7 @@ bottommcp_v_lo:
   DEPEND_0: epoch
 
 bottommcphvfault:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Bottommcphvfault
   FIELDNAM: bottommcphvfault
   LABLAXIS: bottommcphvfault
@@ -1227,7 +1227,7 @@ bottommcphvfault:
   DEPEND_0: epoch
 
 bottommcphvgoal:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Bottommcphvgoal
   FIELDNAM: bottommcphvgoal
   LABLAXIS: bottommcphvgoal
@@ -1235,7 +1235,7 @@ bottommcphvgoal:
   DEPEND_0: epoch
 
 bottommcphvilim:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Bottommcphvilim
   FIELDNAM: bottommcphvilim
   LABLAXIS: bottommcphvilim
@@ -1243,7 +1243,7 @@ bottommcphvilim:
   DEPEND_0: epoch
 
 bottommcphvlim:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Bottommcphvlim
   FIELDNAM: bottommcphvlim
   LABLAXIS: bottommcphvlim
@@ -1251,7 +1251,7 @@ bottommcphvlim:
   DEPEND_0: epoch
 
 bottommcphvmonitor:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Bottommcphvmonitor
   FIELDNAM: bottommcphvmonitor
   LABLAXIS: bottommcphvmonitor
@@ -1259,7 +1259,7 @@ bottommcphvmonitor:
   DEPEND_0: epoch
 
 bottommcphvtrip:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Bottommcphvtrip
   FIELDNAM: bottommcphvtrip
   LABLAXIS: bottommcphvtrip
@@ -1267,7 +1267,7 @@ bottommcphvtrip:
   DEPEND_0: epoch
 
 bottommcphvv:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Bottommcphvv
   FIELDNAM: bottommcphvv
   LABLAXIS: bottommcphvv
@@ -1275,7 +1275,7 @@ bottommcphvv:
   DEPEND_0: epoch
 
 cause:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Cause
   FIELDNAM: cause
   LABLAXIS: cause
@@ -1283,7 +1283,7 @@ cause:
   DEPEND_0: epoch
 
 checksums:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Checksums
   FIELDNAM: checksums
   LABLAXIS: checksums
@@ -1291,7 +1291,7 @@ checksums:
   DEPEND_0: epoch
 
 cmdexec:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Cmdexec
   FIELDNAM: cmdexec
   LABLAXIS: cmdexec
@@ -1299,7 +1299,7 @@ cmdexec:
   DEPEND_0: epoch
 
 cmdreject:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Cmdreject
   FIELDNAM: cmdreject
   LABLAXIS: cmdreject
@@ -1307,7 +1307,7 @@ cmdreject:
   DEPEND_0: epoch
 
 coderam:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Coderam
   FIELDNAM: coderam
   LABLAXIS: coderam
@@ -1315,7 +1315,7 @@ coderam:
   DEPEND_0: epoch
 
 coinbnautozero:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Coinbnautozero
   FIELDNAM: coinbnautozero
   LABLAXIS: coinbnautozero
@@ -1323,7 +1323,7 @@ coinbnautozero:
   DEPEND_0: epoch
 
 coinbncfdthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Coinbncfdthresh
   FIELDNAM: coinbncfdthresh
   LABLAXIS: coinbncfdthresh
@@ -1331,7 +1331,7 @@ coinbncfdthresh:
   DEPEND_0: epoch
 
 coinbsautozero:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Coinbsautozero
   FIELDNAM: coinbsautozero
   LABLAXIS: coinbsautozero
@@ -1339,7 +1339,7 @@ coinbsautozero:
   DEPEND_0: epoch
 
 coinbscfdthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Coinbscfdthresh
   FIELDNAM: coinbscfdthresh
   LABLAXIS: coinbscfdthresh
@@ -1347,7 +1347,7 @@ coinbscfdthresh:
   DEPEND_0: epoch
 
 coindautozero:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Coindautozero
   FIELDNAM: coindautozero
   LABLAXIS: coindautozero
@@ -1355,7 +1355,7 @@ coindautozero:
   DEPEND_0: epoch
 
 coindcfdthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Coindcfdthresh
   FIELDNAM: coindcfdthresh
   LABLAXIS: coindcfdthresh
@@ -1363,7 +1363,7 @@ coindcfdthresh:
   DEPEND_0: epoch
 
 coindphthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Coindphthresh
   FIELDNAM: coindphthresh
   LABLAXIS: coindphthresh
@@ -1371,7 +1371,7 @@ coindphthresh:
   DEPEND_0: epoch
 
 coindpulsedelay:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Coindpulsedelay
   FIELDNAM: coindpulsedelay
   LABLAXIS: coindpulsedelay
@@ -1379,7 +1379,7 @@ coindpulsedelay:
   DEPEND_0: epoch
 
 coindpulsestate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Coindpulsestate
   FIELDNAM: coindpulsestate
   LABLAXIS: coindpulsestate
@@ -1387,7 +1387,7 @@ coindpulsestate:
   DEPEND_0: epoch
 
 coinratehighthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Coinratehighthresh
   FIELDNAM: coinratehighthresh
   LABLAXIS: coinratehighthresh
@@ -1395,7 +1395,7 @@ coinratehighthresh:
   DEPEND_0: epoch
 
 cointnautozero:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Cointnautozero
   FIELDNAM: cointnautozero
   LABLAXIS: cointnautozero
@@ -1403,7 +1403,7 @@ cointnautozero:
   DEPEND_0: epoch
 
 cointncfdthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Cointncfdthresh
   FIELDNAM: cointncfdthresh
   LABLAXIS: cointncfdthresh
@@ -1411,7 +1411,7 @@ cointncfdthresh:
   DEPEND_0: epoch
 
 cointsautozero:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Cointsautozero
   FIELDNAM: cointsautozero
   LABLAXIS: cointsautozero
@@ -1419,7 +1419,7 @@ cointsautozero:
   DEPEND_0: epoch
 
 cointscfdthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Cointscfdthresh
   FIELDNAM: cointscfdthresh
   LABLAXIS: cointscfdthresh
@@ -1427,7 +1427,7 @@ cointscfdthresh:
   DEPEND_0: epoch
 
 compdata:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Compdata
   FIELDNAM: compdata
   LABLAXIS: compdata
@@ -1435,7 +1435,7 @@ compdata:
   DEPEND_0: epoch
 
 crc_value:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Crc value
   FIELDNAM: crc_value
   LABLAXIS: crc_value
@@ -1443,7 +1443,7 @@ crc_value:
   DEPEND_0: epoch
 
 deflhvdiscthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Deflhvdiscthresh
   FIELDNAM: deflhvdiscthresh
   LABLAXIS: deflhvdiscthresh
@@ -1451,7 +1451,7 @@ deflhvdiscthresh:
   DEPEND_0: epoch
 
 deflhvrampdownrate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Deflhvrampdownrate
   FIELDNAM: deflhvrampdownrate
   LABLAXIS: deflhvrampdownrate
@@ -1459,7 +1459,7 @@ deflhvrampdownrate:
   DEPEND_0: epoch
 
 deflhvrampuprate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Deflhvrampuprate
   FIELDNAM: deflhvrampuprate
   LABLAXIS: deflhvrampuprate
@@ -1467,7 +1467,7 @@ deflhvrampuprate:
   DEPEND_0: epoch
 
 deflhvsafelim:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Deflhvsafelim
   FIELDNAM: deflhvsafelim
   LABLAXIS: deflhvsafelim
@@ -1475,7 +1475,7 @@ deflhvsafelim:
   DEPEND_0: epoch
 
 diagnosticmode:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Diagnosticmode
   FIELDNAM: diagnosticmode
   LABLAXIS: diagnosticmode
@@ -1483,7 +1483,7 @@ diagnosticmode:
   DEPEND_0: epoch
 
 dumpdata:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Dumpdata
   FIELDNAM: dumpdata
   LABLAXIS: dumpdata
@@ -1491,7 +1491,7 @@ dumpdata:
   DEPEND_0: epoch
 
 dumplength:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Dumplength
   FIELDNAM: dumplength
   LABLAXIS: dumplength
@@ -1499,7 +1499,7 @@ dumplength:
   DEPEND_0: epoch
 
 enaextofhighangcadence:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Enaextofhighangcadence
   FIELDNAM: enaextofhighangcadence
   LABLAXIS: enaextofhighangcadence
@@ -1507,7 +1507,7 @@ enaextofhighangcadence:
   DEPEND_0: epoch
 
 enaextofhighangstate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Enaextofhighangstate
   FIELDNAM: enaextofhighangstate
   LABLAXIS: enaextofhighangstate
@@ -1515,7 +1515,7 @@ enaextofhighangstate:
   DEPEND_0: epoch
 
 enaphxtofhighangcadence:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Enaphxtofhighangcadence
   FIELDNAM: enaphxtofhighangcadence
   LABLAXIS: enaphxtofhighangcadence
@@ -1523,7 +1523,7 @@ enaphxtofhighangcadence:
   DEPEND_0: epoch
 
 enaphxtofhighangstate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Enaphxtofhighangstate
   FIELDNAM: enaphxtofhighangstate
   LABLAXIS: enaphxtofhighangstate
@@ -1531,7 +1531,7 @@ enaphxtofhighangstate:
   DEPEND_0: epoch
 
 enaphxtofhighegycadence:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Enaphxtofhighegycadence
   FIELDNAM: enaphxtofhighegycadence
   LABLAXIS: enaphxtofhighegycadence
@@ -1539,7 +1539,7 @@ enaphxtofhighegycadence:
   DEPEND_0: epoch
 
 enaphxtofhighegystate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Enaphxtofhighegystate
   FIELDNAM: enaphxtofhighegystate
   LABLAXIS: enaphxtofhighegystate
@@ -1547,7 +1547,7 @@ enaphxtofhighegystate:
   DEPEND_0: epoch
 
 enaphxtofhightimecadence:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Enaphxtofhightimecadence
   FIELDNAM: enaphxtofhightimecadence
   LABLAXIS: enaphxtofhightimecadence
@@ -1555,7 +1555,7 @@ enaphxtofhightimecadence:
   DEPEND_0: epoch
 
 enaphxtofhightimestate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Enaphxtofhightimestate
   FIELDNAM: enaphxtofhightimestate
   LABLAXIS: enaphxtofhightimestate
@@ -1563,7 +1563,7 @@ enaphxtofhightimestate:
   DEPEND_0: epoch
 
 energymodeegystate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Energymodeegystate
   FIELDNAM: energymodeegystate
   LABLAXIS: energymodeegystate
@@ -1571,7 +1571,7 @@ energymodeegystate:
   DEPEND_0: epoch
 
 energymodeegytrg:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Energymodeegytrg
   FIELDNAM: energymodeegytrg
   LABLAXIS: energymodeegytrg
@@ -1579,7 +1579,7 @@ energymodeegytrg:
   DEPEND_0: epoch
 
 energymodephstate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Energymodephstate
   FIELDNAM: energymodephstate
   LABLAXIS: energymodephstate
@@ -1587,7 +1587,7 @@ energymodephstate:
   DEPEND_0: epoch
 
 energymodephtrg:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Energymodephtrg
   FIELDNAM: energymodephtrg
   LABLAXIS: energymodephtrg
@@ -1595,7 +1595,7 @@ energymodephtrg:
   DEPEND_0: epoch
 
 energyratescadence:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Energyratescadence
   FIELDNAM: energyratescadence
   LABLAXIS: energyratescadence
@@ -1603,7 +1603,7 @@ energyratescadence:
   DEPEND_0: epoch
 
 energyratesstate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Energyratesstate
   FIELDNAM: energyratesstate
   LABLAXIS: energyratesstate
@@ -1611,7 +1611,7 @@ energyratesstate:
   DEPEND_0: epoch
 
 energyrawevents:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Energyrawevents
   FIELDNAM: energyrawevents
   LABLAXIS: energyrawevents
@@ -1619,7 +1619,7 @@ energyrawevents:
   DEPEND_0: epoch
 
 energyspectracadence:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Energyspectracadence
   FIELDNAM: energyspectracadence
   LABLAXIS: energyspectracadence
@@ -1627,7 +1627,7 @@ energyspectracadence:
   DEPEND_0: epoch
 
 energyspectrastate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Energyspectrastate
   FIELDNAM: energyspectrastate
   LABLAXIS: energyspectrastate
@@ -1635,7 +1635,7 @@ energyspectrastate:
   DEPEND_0: epoch
 
 etofbtoff:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Etofbtoff
   FIELDNAM: etofbtoff
   LABLAXIS: etofbtoff
@@ -1643,7 +1643,7 @@ etofbtoff:
   DEPEND_0: epoch
 
 etofmax:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Etofmax
   FIELDNAM: etofmax
   LABLAXIS: etofmax
@@ -1651,7 +1651,7 @@ etofmax:
   DEPEND_0: epoch
 
 etofmin:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Etofmin
   FIELDNAM: etofmin
   LABLAXIS: etofmin
@@ -1659,7 +1659,7 @@ etofmin:
   DEPEND_0: epoch
 
 etofoff1:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Etofoff1
   FIELDNAM: etofoff1
   LABLAXIS: etofoff1
@@ -1667,7 +1667,7 @@ etofoff1:
   DEPEND_0: epoch
 
 etofoff2:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Etofoff2
   FIELDNAM: etofoff2
   LABLAXIS: etofoff2
@@ -1675,7 +1675,7 @@ etofoff2:
   DEPEND_0: epoch
 
 etofsc:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Etofsc
   FIELDNAM: etofsc
   LABLAXIS: etofsc
@@ -1683,7 +1683,7 @@ etofsc:
   DEPEND_0: epoch
 
 etofslope1:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Etofslope1
   FIELDNAM: etofslope1
   LABLAXIS: etofslope1
@@ -1691,7 +1691,7 @@ etofslope1:
   DEPEND_0: epoch
 
 etofslope2:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Etofslope2
   FIELDNAM: etofslope2
   LABLAXIS: etofslope2
@@ -1699,7 +1699,7 @@ etofslope2:
   DEPEND_0: epoch
 
 etoftpoff:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Etoftpoff
   FIELDNAM: etoftpoff
   LABLAXIS: etoftpoff
@@ -1707,7 +1707,7 @@ etoftpoff:
   DEPEND_0: epoch
 
 eventcontrol_spare:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Eventcontrol spare
   FIELDNAM: eventcontrol_spare
   LABLAXIS: eventcontrol_spare
@@ -1715,7 +1715,7 @@ eventcontrol_spare:
   DEPEND_0: epoch
 
 eventdata:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Eventdata
   FIELDNAM: eventdata
   LABLAXIS: eventdata
@@ -1723,7 +1723,7 @@ eventdata:
   DEPEND_0: epoch
 
 firstmacro:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Firstmacro
   FIELDNAM: firstmacro
   LABLAXIS: firstmacro
@@ -1731,7 +1731,7 @@ firstmacro:
   DEPEND_0: epoch
 
 front2kv_v:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Front2kv v
   FIELDNAM: front2kv_v
   LABLAXIS: front2kv_v
@@ -1739,7 +1739,7 @@ front2kv_v:
   DEPEND_0: epoch
 
 front2kv_v_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Front2kv v hi
   FIELDNAM: front2kv_v_hi
   LABLAXIS: front2kv_v_hi
@@ -1747,7 +1747,7 @@ front2kv_v_hi:
   DEPEND_0: epoch
 
 front2kv_v_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Front2kv v lo
   FIELDNAM: front2kv_v_lo
   LABLAXIS: front2kv_v_lo
@@ -1755,7 +1755,7 @@ front2kv_v_lo:
   DEPEND_0: epoch
 
 frontmcp_i:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Frontmcp i
   FIELDNAM: frontmcp_i
   LABLAXIS: frontmcp_i
@@ -1763,7 +1763,7 @@ frontmcp_i:
   DEPEND_0: epoch
 
 frontmcp_i_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Frontmcp i hi
   FIELDNAM: frontmcp_i_hi
   LABLAXIS: frontmcp_i_hi
@@ -1771,7 +1771,7 @@ frontmcp_i_hi:
   DEPEND_0: epoch
 
 frontmcp_i_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Frontmcp i lo
   FIELDNAM: frontmcp_i_lo
   LABLAXIS: frontmcp_i_lo
@@ -1779,7 +1779,7 @@ frontmcp_i_lo:
   DEPEND_0: epoch
 
 frontmcp_t:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Frontmcp t
   FIELDNAM: frontmcp_t
   LABLAXIS: frontmcp_t
@@ -1787,7 +1787,7 @@ frontmcp_t:
   DEPEND_0: epoch
 
 frontmcp_t_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Frontmcp t hi
   FIELDNAM: frontmcp_t_hi
   LABLAXIS: frontmcp_t_hi
@@ -1795,7 +1795,7 @@ frontmcp_t_hi:
   DEPEND_0: epoch
 
 frontmcp_t_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Frontmcp t lo
   FIELDNAM: frontmcp_t_lo
   LABLAXIS: frontmcp_t_lo
@@ -1803,7 +1803,7 @@ frontmcp_t_lo:
   DEPEND_0: epoch
 
 frontmcp_v:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Frontmcp v
   FIELDNAM: frontmcp_v
   LABLAXIS: frontmcp_v
@@ -1811,7 +1811,7 @@ frontmcp_v:
   DEPEND_0: epoch
 
 frontmcp_v_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Frontmcp v hi
   FIELDNAM: frontmcp_v_hi
   LABLAXIS: frontmcp_v_hi
@@ -1819,7 +1819,7 @@ frontmcp_v_hi:
   DEPEND_0: epoch
 
 frontmcp_v_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Frontmcp v lo
   FIELDNAM: frontmcp_v_lo
   LABLAXIS: frontmcp_v_lo
@@ -1827,7 +1827,7 @@ frontmcp_v_lo:
   DEPEND_0: epoch
 
 frontmcphvfault:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Frontmcphvfault
   FIELDNAM: frontmcphvfault
   LABLAXIS: frontmcphvfault
@@ -1835,7 +1835,7 @@ frontmcphvfault:
   DEPEND_0: epoch
 
 frontmcphvgoal:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Frontmcphvgoal
   FIELDNAM: frontmcphvgoal
   LABLAXIS: frontmcphvgoal
@@ -1843,7 +1843,7 @@ frontmcphvgoal:
   DEPEND_0: epoch
 
 frontmcphvilim:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Frontmcphvilim
   FIELDNAM: frontmcphvilim
   LABLAXIS: frontmcphvilim
@@ -1851,7 +1851,7 @@ frontmcphvilim:
   DEPEND_0: epoch
 
 frontmcphvlim:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Frontmcphvlim
   FIELDNAM: frontmcphvlim
   LABLAXIS: frontmcphvlim
@@ -1859,7 +1859,7 @@ frontmcphvlim:
   DEPEND_0: epoch
 
 frontmcphvmonitor:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Frontmcphvmonitor
   FIELDNAM: frontmcphvmonitor
   LABLAXIS: frontmcphvmonitor
@@ -1867,7 +1867,7 @@ frontmcphvmonitor:
   DEPEND_0: epoch
 
 frontmcphvsafemult:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Frontmcphvsafemult
   FIELDNAM: frontmcphvsafemult
   LABLAXIS: frontmcphvsafemult
@@ -1875,7 +1875,7 @@ frontmcphvsafemult:
   DEPEND_0: epoch
 
 frontmcphvtrip:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Frontmcphvtrip
   FIELDNAM: frontmcphvtrip
   LABLAXIS: frontmcphvtrip
@@ -1883,7 +1883,7 @@ frontmcphvtrip:
   DEPEND_0: epoch
 
 frontmcphvv:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Frontmcphvv
   FIELDNAM: frontmcphvv
   LABLAXIS: frontmcphvv
@@ -1891,7 +1891,7 @@ frontmcphvv:
   DEPEND_0: epoch
 
 hvclock:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Hvclock
   FIELDNAM: hvclock
   LABLAXIS: hvclock
@@ -1899,7 +1899,7 @@ hvclock:
   DEPEND_0: epoch
 
 hvfullstate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Hvfullstate
   FIELDNAM: hvfullstate
   LABLAXIS: hvfullstate
@@ -1907,7 +1907,7 @@ hvfullstate:
   DEPEND_0: epoch
 
 hvovercurrentcontrol_spare:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Hvovercurrentcontrol spare
   FIELDNAM: hvovercurrentcontrol_spare
   LABLAXIS: hvovercurrentcontrol_spare
@@ -1915,15 +1915,14 @@ hvovercurrentcontrol_spare:
   DEPEND_0: epoch
 
 hvovercurrentstatus_spare:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Hvovercurrentstatus spare
   FIELDNAM: hvovercurrentstatus_spare
   LABLAXIS: hvovercurrentstatus_spare
   UNITS: ' '
-  DEPEND_0: epoch
 
 hvplugstate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Hvplugstate
   FIELDNAM: hvplugstate
   LABLAXIS: hvplugstate
@@ -1931,7 +1930,7 @@ hvplugstate:
   DEPEND_0: epoch
 
 hvpsp15v_v:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Hvpsp15v v
   FIELDNAM: hvpsp15v_v
   LABLAXIS: hvpsp15v_v
@@ -1939,7 +1938,7 @@ hvpsp15v_v:
   DEPEND_0: epoch
 
 hvpsp15v_v_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Hvpsp15v v hi
   FIELDNAM: hvpsp15v_v_hi
   LABLAXIS: hvpsp15v_v_hi
@@ -1947,7 +1946,7 @@ hvpsp15v_v_hi:
   DEPEND_0: epoch
 
 hvpsp15v_v_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Hvpsp15v v lo
   FIELDNAM: hvpsp15v_v_lo
   LABLAXIS: hvpsp15v_v_lo
@@ -1955,7 +1954,7 @@ hvpsp15v_v_lo:
   DEPEND_0: epoch
 
 hvpsp3p3v_v:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Hvpsp3p3v v
   FIELDNAM: hvpsp3p3v_v
   LABLAXIS: hvpsp3p3v_v
@@ -1963,7 +1962,7 @@ hvpsp3p3v_v:
   DEPEND_0: epoch
 
 hvpsp3p3v_v_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Hvpsp3p3v v hi
   FIELDNAM: hvpsp3p3v_v_hi
   LABLAXIS: hvpsp3p3v_v_hi
@@ -1971,7 +1970,7 @@ hvpsp3p3v_v_hi:
   DEPEND_0: epoch
 
 hvpsp3p3v_v_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Hvpsp3p3v v lo
   FIELDNAM: hvpsp3p3v_v_lo
   LABLAXIS: hvpsp3p3v_v_lo
@@ -1979,7 +1978,7 @@ hvpsp3p3v_v_lo:
   DEPEND_0: epoch
 
 hvstate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Hvstate
   FIELDNAM: hvstate
   LABLAXIS: hvstate
@@ -1987,7 +1986,7 @@ hvstate:
   DEPEND_0: epoch
 
 id:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Id
   FIELDNAM: id
   LABLAXIS: id
@@ -1995,7 +1994,7 @@ id:
   DEPEND_0: epoch
 
 identity:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Identity
   FIELDNAM: identity
   LABLAXIS: identity
@@ -2003,7 +2002,7 @@ identity:
   DEPEND_0: epoch
 
 imagemodedblreq:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Imagemodedblreq
   FIELDNAM: imagemodedblreq
   LABLAXIS: imagemodedblreq
@@ -2011,7 +2010,7 @@ imagemodedblreq:
   DEPEND_0: epoch
 
 imagemodedblstate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Imagemodedblstate
   FIELDNAM: imagemodedblstate
   LABLAXIS: imagemodedblstate
@@ -2019,7 +2018,7 @@ imagemodedblstate:
   DEPEND_0: epoch
 
 imagemodemulrej:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Imagemodemulrej
   FIELDNAM: imagemodemulrej
   LABLAXIS: imagemodemulrej
@@ -2027,7 +2026,7 @@ imagemodemulrej:
   DEPEND_0: epoch
 
 imagemodephreq:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Imagemodephreq
   FIELDNAM: imagemodephreq
   LABLAXIS: imagemodephreq
@@ -2035,7 +2034,7 @@ imagemodephreq:
   DEPEND_0: epoch
 
 imagemodepwrej:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Imagemodepwrej
   FIELDNAM: imagemodepwrej
   LABLAXIS: imagemodepwrej
@@ -2043,7 +2042,7 @@ imagemodepwrej:
   DEPEND_0: epoch
 
 imagemodestartlfpwthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Imagemodestartlfpwthresh
   FIELDNAM: imagemodestartlfpwthresh
   LABLAXIS: imagemodestartlfpwthresh
@@ -2051,7 +2050,7 @@ imagemodestartlfpwthresh:
   DEPEND_0: epoch
 
 imagemodestartrfpwthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Imagemodestartrfpwthresh
   FIELDNAM: imagemodestartrfpwthresh
   LABLAXIS: imagemodestartrfpwthresh
@@ -2059,7 +2058,7 @@ imagemodestartrfpwthresh:
   DEPEND_0: epoch
 
 imagemodetimreq:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Imagemodetimreq
   FIELDNAM: imagemodetimreq
   LABLAXIS: imagemodetimreq
@@ -2067,7 +2066,7 @@ imagemodetimreq:
   DEPEND_0: epoch
 
 imagemodetimstate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Imagemodetimstate
   FIELDNAM: imagemodetimstate
   LABLAXIS: imagemodetimstate
@@ -2075,7 +2074,7 @@ imagemodetimstate:
   DEPEND_0: epoch
 
 imagepriority1events:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Imagepriority1events
   FIELDNAM: imagepriority1events
   LABLAXIS: imagepriority1events
@@ -2083,7 +2082,7 @@ imagepriority1events:
   DEPEND_0: epoch
 
 imagepriority2events:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Imagepriority2events
   FIELDNAM: imagepriority2events
   LABLAXIS: imagepriority2events
@@ -2091,7 +2090,7 @@ imagepriority2events:
   DEPEND_0: epoch
 
 imagepriority3events:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Imagepriority3events
   FIELDNAM: imagepriority3events
   LABLAXIS: imagepriority3events
@@ -2099,7 +2098,7 @@ imagepriority3events:
   DEPEND_0: epoch
 
 imagepriority4events:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Imagepriority4events
   FIELDNAM: imagepriority4events
   LABLAXIS: imagepriority4events
@@ -2107,7 +2106,7 @@ imagepriority4events:
   DEPEND_0: epoch
 
 imageratescadence:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Imageratescadence
   FIELDNAM: imageratescadence
   LABLAXIS: imageratescadence
@@ -2115,7 +2114,7 @@ imageratescadence:
   DEPEND_0: epoch
 
 imageratesstate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Imageratesstate
   FIELDNAM: imageratesstate
   LABLAXIS: imageratesstate
@@ -2123,7 +2122,7 @@ imageratesstate:
   DEPEND_0: epoch
 
 imagerawevents:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Imagerawevents
   FIELDNAM: imagerawevents
   LABLAXIS: imagerawevents
@@ -2131,7 +2130,7 @@ imagerawevents:
   DEPEND_0: epoch
 
 imcstate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Imcstate
   FIELDNAM: imcstate
   LABLAXIS: imcstate
@@ -2139,7 +2138,7 @@ imcstate:
   DEPEND_0: epoch
 
 instrumentcontrol_spare:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Instrumentcontrol spare
   FIELDNAM: instrumentcontrol_spare
   LABLAXIS: instrumentcontrol_spare
@@ -2147,7 +2146,7 @@ instrumentcontrol_spare:
   DEPEND_0: epoch
 
 instrumentstatus_spare:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Instrumentstatus spare
   FIELDNAM: instrumentstatus_spare
   LABLAXIS: instrumentstatus_spare
@@ -2155,7 +2154,7 @@ instrumentstatus_spare:
   DEPEND_0: epoch
 
 intmultipliern1:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Intmultipliern1
   FIELDNAM: intmultipliern1
   LABLAXIS: intmultipliern1
@@ -2163,7 +2162,7 @@ intmultipliern1:
   DEPEND_0: epoch
 
 intmultipliern2:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Intmultipliern2
   FIELDNAM: intmultipliern2
   LABLAXIS: intmultipliern2
@@ -2171,7 +2170,7 @@ intmultipliern2:
   DEPEND_0: epoch
 
 ionextofhighegycadence:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ionextofhighegycadence
   FIELDNAM: ionextofhighegycadence
   LABLAXIS: ionextofhighegycadence
@@ -2179,7 +2178,7 @@ ionextofhighegycadence:
   DEPEND_0: epoch
 
 ionextofhighegystate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ionextofhighegystate
   FIELDNAM: ionextofhighegystate
   LABLAXIS: ionextofhighegystate
@@ -2187,7 +2186,7 @@ ionextofhighegystate:
   DEPEND_0: epoch
 
 ionextofhightimecadence:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ionextofhightimecadence
   FIELDNAM: ionextofhightimecadence
   LABLAXIS: ionextofhightimecadence
@@ -2195,7 +2194,7 @@ ionextofhightimecadence:
   DEPEND_0: epoch
 
 ionextofhightimestate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ionextofhightimestate
   FIELDNAM: ionextofhightimestate
   LABLAXIS: ionextofhightimestate
@@ -2203,7 +2202,7 @@ ionextofhightimestate:
   DEPEND_0: epoch
 
 lastmacro:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lastmacro
   FIELDNAM: lastmacro
   LABLAXIS: lastmacro
@@ -2211,7 +2210,7 @@ lastmacro:
   DEPEND_0: epoch
 
 leftdeflection_v:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Leftdeflection v
   FIELDNAM: leftdeflection_v
   LABLAXIS: leftdeflection_v
@@ -2219,7 +2218,7 @@ leftdeflection_v:
   DEPEND_0: epoch
 
 leftdeflection_v_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Leftdeflection v hi
   FIELDNAM: leftdeflection_v_hi
   LABLAXIS: leftdeflection_v_hi
@@ -2227,7 +2226,7 @@ leftdeflection_v_hi:
   DEPEND_0: epoch
 
 leftdeflection_v_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Leftdeflection v lo
   FIELDNAM: leftdeflection_v_lo
   LABLAXIS: leftdeflection_v_lo
@@ -2235,7 +2234,7 @@ leftdeflection_v_lo:
   DEPEND_0: epoch
 
 leftdeflectionsupply_p:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Leftdeflectionsupply p
   FIELDNAM: leftdeflectionsupply_p
   LABLAXIS: leftdeflectionsupply_p
@@ -2243,7 +2242,7 @@ leftdeflectionsupply_p:
   DEPEND_0: epoch
 
 leftdeflectionsupply_p_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Leftdeflectionsupply p hi
   FIELDNAM: leftdeflectionsupply_p_hi
   LABLAXIS: leftdeflectionsupply_p_hi
@@ -2251,7 +2250,7 @@ leftdeflectionsupply_p_hi:
   DEPEND_0: epoch
 
 leftdeflectionsupply_p_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Leftdeflectionsupply p lo
   FIELDNAM: leftdeflectionsupply_p_lo
   LABLAXIS: leftdeflectionsupply_p_lo
@@ -2259,7 +2258,7 @@ leftdeflectionsupply_p_lo:
   DEPEND_0: epoch
 
 leftdfldischrate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Leftdfldischrate
   FIELDNAM: leftdfldischrate
   LABLAXIS: leftdfldischrate
@@ -2267,7 +2266,7 @@ leftdfldischrate:
   DEPEND_0: epoch
 
 leftdfldischrate_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Leftdfldischrate hi
   FIELDNAM: leftdfldischrate_hi
   LABLAXIS: leftdfldischrate_hi
@@ -2275,7 +2274,7 @@ leftdfldischrate_hi:
   DEPEND_0: epoch
 
 leftdfldischrate_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Leftdfldischrate lo
   FIELDNAM: leftdfldischrate_lo
   LABLAXIS: leftdfldischrate_lo
@@ -2283,7 +2282,7 @@ leftdfldischrate_lo:
   DEPEND_0: epoch
 
 leftdfldischratelim:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Leftdfldischratelim
   FIELDNAM: leftdfldischratelim
   LABLAXIS: leftdfldischratelim
@@ -2291,7 +2290,7 @@ leftdfldischratelim:
   DEPEND_0: epoch
 
 leftdflhvgoal:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Leftdflhvgoal
   FIELDNAM: leftdflhvgoal
   LABLAXIS: leftdflhvgoal
@@ -2299,7 +2298,7 @@ leftdflhvgoal:
   DEPEND_0: epoch
 
 leftdflhvlim:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Leftdflhvlim
   FIELDNAM: leftdflhvlim
   LABLAXIS: leftdflhvlim
@@ -2307,7 +2306,7 @@ leftdflhvlim:
   DEPEND_0: epoch
 
 leftdflhvv:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Leftdflhvv
   FIELDNAM: leftdflhvv
   LABLAXIS: leftdflhvv
@@ -2315,7 +2314,7 @@ leftdflhvv:
   DEPEND_0: epoch
 
 leftshutter_t:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Leftshutter t
   FIELDNAM: leftshutter_t
   LABLAXIS: leftshutter_t
@@ -2323,7 +2322,7 @@ leftshutter_t:
   DEPEND_0: epoch
 
 leftshutter_t_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Leftshutter t hi
   FIELDNAM: leftshutter_t_hi
   LABLAXIS: leftshutter_t_hi
@@ -2331,7 +2330,7 @@ leftshutter_t_hi:
   DEPEND_0: epoch
 
 leftshutter_t_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Leftshutter t lo
   FIELDNAM: leftshutter_t_lo
   LABLAXIS: leftshutter_t_lo
@@ -2339,7 +2338,7 @@ leftshutter_t_lo:
   DEPEND_0: epoch
 
 leftshutterhomesteps:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Leftshutterhomesteps
   FIELDNAM: leftshutterhomesteps
   LABLAXIS: leftshutterhomesteps
@@ -2347,7 +2346,7 @@ leftshutterhomesteps:
   DEPEND_0: epoch
 
 leftshutterstep:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Leftshutterstep
   FIELDNAM: leftshutterstep
   LABLAXIS: leftshutterstep
@@ -2355,7 +2354,7 @@ leftshutterstep:
   DEPEND_0: epoch
 
 leftshuttertt:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Leftshuttertt
   FIELDNAM: leftshuttertt
   LABLAXIS: leftshuttertt
@@ -2363,7 +2362,7 @@ leftshuttertt:
   DEPEND_0: epoch
 
 looback0delay:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Looback0delay
   FIELDNAM: looback0delay
   LABLAXIS: looback0delay
@@ -2371,7 +2370,7 @@ looback0delay:
   DEPEND_0: epoch
 
 looback1delay:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Looback1delay
   FIELDNAM: looback1delay
   LABLAXIS: looback1delay
@@ -2379,7 +2378,7 @@ looback1delay:
   DEPEND_0: epoch
 
 looback2delay:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Looback2delay
   FIELDNAM: looback2delay
   LABLAXIS: looback2delay
@@ -2387,7 +2386,7 @@ looback2delay:
   DEPEND_0: epoch
 
 lvpdsdigitalout_spare:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpdsdigitalout spare
   FIELDNAM: lvpdsdigitalout_spare
   LABLAXIS: lvpdsdigitalout_spare
@@ -2395,7 +2394,7 @@ lvpdsdigitalout_spare:
   DEPEND_0: epoch
 
 lvps_t:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvps t
   FIELDNAM: lvps_t
   LABLAXIS: lvps_t
@@ -2403,7 +2402,7 @@ lvps_t:
   DEPEND_0: epoch
 
 lvps_t_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvps t hi
   FIELDNAM: lvps_t_hi
   LABLAXIS: lvps_t_hi
@@ -2411,7 +2410,7 @@ lvps_t_hi:
   DEPEND_0: epoch
 
 lvps_t_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvps t lo
   FIELDNAM: lvps_t_lo
   LABLAXIS: lvps_t_lo
@@ -2419,7 +2418,7 @@ lvps_t_lo:
   DEPEND_0: epoch
 
 lvpsp15v_i:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp15v i
   FIELDNAM: lvpsp15v_i
   LABLAXIS: lvpsp15v_i
@@ -2427,7 +2426,7 @@ lvpsp15v_i:
   DEPEND_0: epoch
 
 lvpsp15v_i_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp15v i hi
   FIELDNAM: lvpsp15v_i_hi
   LABLAXIS: lvpsp15v_i_hi
@@ -2435,7 +2434,7 @@ lvpsp15v_i_hi:
   DEPEND_0: epoch
 
 lvpsp15v_i_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp15v i lo
   FIELDNAM: lvpsp15v_i_lo
   LABLAXIS: lvpsp15v_i_lo
@@ -2443,7 +2442,7 @@ lvpsp15v_i_lo:
   DEPEND_0: epoch
 
 lvpsp15v_v:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp15v v
   FIELDNAM: lvpsp15v_v
   LABLAXIS: lvpsp15v_v
@@ -2451,7 +2450,7 @@ lvpsp15v_v:
   DEPEND_0: epoch
 
 lvpsp15v_v_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp15v v hi
   FIELDNAM: lvpsp15v_v_hi
   LABLAXIS: lvpsp15v_v_hi
@@ -2459,7 +2458,7 @@ lvpsp15v_v_hi:
   DEPEND_0: epoch
 
 lvpsp15v_v_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp15v v lo
   FIELDNAM: lvpsp15v_v_lo
   LABLAXIS: lvpsp15v_v_lo
@@ -2467,7 +2466,7 @@ lvpsp15v_v_lo:
   DEPEND_0: epoch
 
 lvpsp1p5v_i:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp1p5v i
   FIELDNAM: lvpsp1p5v_i
   LABLAXIS: lvpsp1p5v_i
@@ -2475,7 +2474,7 @@ lvpsp1p5v_i:
   DEPEND_0: epoch
 
 lvpsp1p5v_i_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp1p5v i hi
   FIELDNAM: lvpsp1p5v_i_hi
   LABLAXIS: lvpsp1p5v_i_hi
@@ -2483,7 +2482,7 @@ lvpsp1p5v_i_hi:
   DEPEND_0: epoch
 
 lvpsp1p5v_i_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp1p5v i lo
   FIELDNAM: lvpsp1p5v_i_lo
   LABLAXIS: lvpsp1p5v_i_lo
@@ -2491,7 +2490,7 @@ lvpsp1p5v_i_lo:
   DEPEND_0: epoch
 
 lvpsp1p5v_v:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp1p5v v
   FIELDNAM: lvpsp1p5v_v
   LABLAXIS: lvpsp1p5v_v
@@ -2499,7 +2498,7 @@ lvpsp1p5v_v:
   DEPEND_0: epoch
 
 lvpsp1p5v_v_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp1p5v v hi
   FIELDNAM: lvpsp1p5v_v_hi
   LABLAXIS: lvpsp1p5v_v_hi
@@ -2507,7 +2506,7 @@ lvpsp1p5v_v_hi:
   DEPEND_0: epoch
 
 lvpsp1p5v_v_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp1p5v v lo
   FIELDNAM: lvpsp1p5v_v_lo
   LABLAXIS: lvpsp1p5v_v_lo
@@ -2515,7 +2514,7 @@ lvpsp1p5v_v_lo:
   DEPEND_0: epoch
 
 lvpsp3p3v_i:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp3p3v i
   FIELDNAM: lvpsp3p3v_i
   LABLAXIS: lvpsp3p3v_i
@@ -2523,7 +2522,7 @@ lvpsp3p3v_i:
   DEPEND_0: epoch
 
 lvpsp3p3v_i_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp3p3v i hi
   FIELDNAM: lvpsp3p3v_i_hi
   LABLAXIS: lvpsp3p3v_i_hi
@@ -2531,7 +2530,7 @@ lvpsp3p3v_i_hi:
   DEPEND_0: epoch
 
 lvpsp3p3v_i_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp3p3v i lo
   FIELDNAM: lvpsp3p3v_i_lo
   LABLAXIS: lvpsp3p3v_i_lo
@@ -2539,7 +2538,7 @@ lvpsp3p3v_i_lo:
   DEPEND_0: epoch
 
 lvpsp3p3v_v:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp3p3v v
   FIELDNAM: lvpsp3p3v_v
   LABLAXIS: lvpsp3p3v_v
@@ -2547,7 +2546,7 @@ lvpsp3p3v_v:
   DEPEND_0: epoch
 
 lvpsp3p3v_v_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp3p3v v hi
   FIELDNAM: lvpsp3p3v_v_hi
   LABLAXIS: lvpsp3p3v_v_hi
@@ -2555,7 +2554,7 @@ lvpsp3p3v_v_hi:
   DEPEND_0: epoch
 
 lvpsp3p3v_v_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp3p3v v lo
   FIELDNAM: lvpsp3p3v_v_lo
   LABLAXIS: lvpsp3p3v_v_lo
@@ -2563,7 +2562,7 @@ lvpsp3p3v_v_lo:
   DEPEND_0: epoch
 
 lvpsp3p5v_v:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp3p5v v
   FIELDNAM: lvpsp3p5v_v
   LABLAXIS: lvpsp3p5v_v
@@ -2571,7 +2570,7 @@ lvpsp3p5v_v:
   DEPEND_0: epoch
 
 lvpsp3p5v_v_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp3p5v v hi
   FIELDNAM: lvpsp3p5v_v_hi
   LABLAXIS: lvpsp3p5v_v_hi
@@ -2579,7 +2578,7 @@ lvpsp3p5v_v_hi:
   DEPEND_0: epoch
 
 lvpsp3p5v_v_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp3p5v v lo
   FIELDNAM: lvpsp3p5v_v_lo
   LABLAXIS: lvpsp3p5v_v_lo
@@ -2587,7 +2586,7 @@ lvpsp3p5v_v_lo:
   DEPEND_0: epoch
 
 lvpsp5v_i:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp5v i
   FIELDNAM: lvpsp5v_i
   LABLAXIS: lvpsp5v_i
@@ -2595,7 +2594,7 @@ lvpsp5v_i:
   DEPEND_0: epoch
 
 lvpsp5v_i_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp5v i hi
   FIELDNAM: lvpsp5v_i_hi
   LABLAXIS: lvpsp5v_i_hi
@@ -2603,7 +2602,7 @@ lvpsp5v_i_hi:
   DEPEND_0: epoch
 
 lvpsp5v_i_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp5v i lo
   FIELDNAM: lvpsp5v_i_lo
   LABLAXIS: lvpsp5v_i_lo
@@ -2611,7 +2610,7 @@ lvpsp5v_i_lo:
   DEPEND_0: epoch
 
 lvpsp5v_v:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp5v v
   FIELDNAM: lvpsp5v_v
   LABLAXIS: lvpsp5v_v
@@ -2619,7 +2618,7 @@ lvpsp5v_v:
   DEPEND_0: epoch
 
 lvpsp5v_v_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp5v v hi
   FIELDNAM: lvpsp5v_v_hi
   LABLAXIS: lvpsp5v_v_hi
@@ -2627,7 +2626,7 @@ lvpsp5v_v_hi:
   DEPEND_0: epoch
 
 lvpsp5v_v_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsp5v v lo
   FIELDNAM: lvpsp5v_v_lo
   LABLAXIS: lvpsp5v_v_lo
@@ -2635,7 +2634,7 @@ lvpsp5v_v_lo:
   DEPEND_0: epoch
 
 lvpsprimary_i:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsprimary i
   FIELDNAM: lvpsprimary_i
   LABLAXIS: lvpsprimary_i
@@ -2643,7 +2642,7 @@ lvpsprimary_i:
   DEPEND_0: epoch
 
 lvpsprimary_i_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsprimary i hi
   FIELDNAM: lvpsprimary_i_hi
   LABLAXIS: lvpsprimary_i_hi
@@ -2651,7 +2650,7 @@ lvpsprimary_i_hi:
   DEPEND_0: epoch
 
 lvpsprimary_i_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Lvpsprimary i lo
   FIELDNAM: lvpsprimary_i_lo
   LABLAXIS: lvpsprimary_i_lo
@@ -2659,7 +2658,7 @@ lvpsprimary_i_lo:
   DEPEND_0: epoch
 
 maccmdexec:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Maccmdexec
   FIELDNAM: maccmdexec
   LABLAXIS: maccmdexec
@@ -2667,7 +2666,7 @@ maccmdexec:
   DEPEND_0: epoch
 
 maccmdreject:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Maccmdreject
   FIELDNAM: maccmdreject
   LABLAXIS: maccmdreject
@@ -2675,7 +2674,7 @@ maccmdreject:
   DEPEND_0: epoch
 
 macid:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Macid
   FIELDNAM: macid
   LABLAXIS: macid
@@ -2683,7 +2682,7 @@ macid:
   DEPEND_0: epoch
 
 maclearn:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Maclearn
   FIELDNAM: maclearn
   LABLAXIS: maclearn
@@ -2691,7 +2690,7 @@ maclearn:
   DEPEND_0: epoch
 
 macro:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Macro
   FIELDNAM: macro
   LABLAXIS: macro
@@ -2699,7 +2698,7 @@ macro:
   DEPEND_0: epoch
 
 macroblocks:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Macroblocks
   FIELDNAM: macroblocks
   LABLAXIS: macroblocks
@@ -2707,7 +2706,7 @@ macroblocks:
   DEPEND_0: epoch
 
 macrodata:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Macrodata
   FIELDNAM: macrodata
   LABLAXIS: macrodata
@@ -2715,7 +2714,7 @@ macrodata:
   DEPEND_0: epoch
 
 macroid:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Macroid
   FIELDNAM: macroid
   LABLAXIS: macroid
@@ -2723,7 +2722,7 @@ macroid:
   DEPEND_0: epoch
 
 maxenergyselect:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Maxenergyselect
   FIELDNAM: maxenergyselect
   LABLAXIS: maxenergyselect
@@ -2731,7 +2730,7 @@ maxenergyselect:
   DEPEND_0: epoch
 
 mcphvrampdownrate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Mcphvrampdownrate
   FIELDNAM: mcphvrampdownrate
   LABLAXIS: mcphvrampdownrate
@@ -2739,7 +2738,7 @@ mcphvrampdownrate:
   DEPEND_0: epoch
 
 mcphvrampuprate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Mcphvrampuprate
   FIELDNAM: mcphvrampuprate
   LABLAXIS: mcphvrampuprate
@@ -2747,7 +2746,7 @@ mcphvrampuprate:
   DEPEND_0: epoch
 
 mcphvsafegap:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Mcphvsafegap
   FIELDNAM: mcphvsafegap
   LABLAXIS: mcphvsafegap
@@ -2755,7 +2754,7 @@ mcphvsafegap:
   DEPEND_0: epoch
 
 mcphvsafelim:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Mcphvsafelim
   FIELDNAM: mcphvsafelim
   LABLAXIS: mcphvsafelim
@@ -2763,7 +2762,7 @@ mcphvsafelim:
   DEPEND_0: epoch
 
 mcppreamppower:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Mcppreamppower
   FIELDNAM: mcppreamppower
   LABLAXIS: mcppreamppower
@@ -2771,7 +2770,7 @@ mcppreamppower:
   DEPEND_0: epoch
 
 mcppulseamplitude:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Mcppulseamplitude
   FIELDNAM: mcppulseamplitude
   LABLAXIS: mcppulseamplitude
@@ -2779,7 +2778,7 @@ mcppulseamplitude:
   DEPEND_0: epoch
 
 mcpsupply_p:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Mcpsupply p
   FIELDNAM: mcpsupply_p
   LABLAXIS: mcpsupply_p
@@ -2787,7 +2786,7 @@ mcpsupply_p:
   DEPEND_0: epoch
 
 mcpsupply_p_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Mcpsupply p hi
   FIELDNAM: mcpsupply_p_hi
   LABLAXIS: mcpsupply_p_hi
@@ -2795,7 +2794,7 @@ mcpsupply_p_hi:
   DEPEND_0: epoch
 
 mcpsupply_p_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Mcpsupply p lo
   FIELDNAM: mcpsupply_p_lo
   LABLAXIS: mcpsupply_p_lo
@@ -2803,7 +2802,7 @@ mcpsupply_p_lo:
   DEPEND_0: epoch
 
 memlength:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Memlength
   FIELDNAM: memlength
   LABLAXIS: memlength
@@ -2811,7 +2810,7 @@ memlength:
   DEPEND_0: epoch
 
 memwrite:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Memwrite
   FIELDNAM: memwrite
   LABLAXIS: memwrite
@@ -2819,7 +2818,7 @@ memwrite:
   DEPEND_0: epoch
 
 monitorresponse:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Monitorresponse
   FIELDNAM: monitorresponse
   LABLAXIS: monitorresponse
@@ -2827,7 +2826,7 @@ monitorresponse:
   DEPEND_0: epoch
 
 nvmemstate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Nvmemstate
   FIELDNAM: nvmemstate
   LABLAXIS: nvmemstate
@@ -2835,7 +2834,7 @@ nvmemstate:
   DEPEND_0: epoch
 
 opampbias_v:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Opampbias v
   FIELDNAM: opampbias_v
   LABLAXIS: opampbias_v
@@ -2843,7 +2842,7 @@ opampbias_v:
   DEPEND_0: epoch
 
 opampbias_v_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Opampbias v hi
   FIELDNAM: opampbias_v_hi
   LABLAXIS: opampbias_v_hi
@@ -2851,7 +2850,7 @@ opampbias_v_hi:
   DEPEND_0: epoch
 
 opampbias_v_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Opampbias v lo
   FIELDNAM: opampbias_v_lo
   LABLAXIS: opampbias_v_lo
@@ -2859,7 +2858,7 @@ opampbias_v_lo:
   DEPEND_0: epoch
 
 opcode:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Opcode
   FIELDNAM: opcode
   LABLAXIS: opcode
@@ -2867,7 +2866,7 @@ opcode:
   DEPEND_0: epoch
 
 pathmediumthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Pathmediumthresh
   FIELDNAM: pathmediumthresh
   LABLAXIS: pathmediumthresh
@@ -2875,7 +2874,7 @@ pathmediumthresh:
   DEPEND_0: epoch
 
 pathsteepthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Pathsteepthresh
   FIELDNAM: pathsteepthresh
   LABLAXIS: pathsteepthresh
@@ -2883,7 +2882,7 @@ pathsteepthresh:
   DEPEND_0: epoch
 
 phreference:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Phreference
   FIELDNAM: phreference
   LABLAXIS: phreference
@@ -2891,7 +2890,7 @@ phreference:
   DEPEND_0: epoch
 
 powerreg_spare:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Powerreg spare
   FIELDNAM: powerreg_spare
   LABLAXIS: powerreg_spare
@@ -2899,7 +2898,7 @@ powerreg_spare:
   DEPEND_0: epoch
 
 powerrequest:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Powerrequest
   FIELDNAM: powerrequest
   LABLAXIS: powerrequest
@@ -2907,7 +2906,7 @@ powerrequest:
   DEPEND_0: epoch
 
 pulserate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Pulserate
   FIELDNAM: pulserate
   LABLAXIS: pulserate
@@ -2915,7 +2914,7 @@ pulserate:
   DEPEND_0: epoch
 
 ratedata:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ratedata
   FIELDNAM: ratedata
   LABLAXIS: ratedata
@@ -2923,7 +2922,7 @@ ratedata:
   DEPEND_0: epoch
 
 raterecoverytime:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Raterecoverytime
   FIELDNAM: raterecoverytime
   LABLAXIS: raterecoverytime
@@ -2931,7 +2930,7 @@ raterecoverytime:
   DEPEND_0: epoch
 
 ratestoohigh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ratestoohigh
   FIELDNAM: ratestoohigh
   LABLAXIS: ratestoohigh
@@ -2939,7 +2938,7 @@ ratestoohigh:
   DEPEND_0: epoch
 
 result:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Result
   FIELDNAM: result
   LABLAXIS: result
@@ -2947,7 +2946,7 @@ result:
   DEPEND_0: epoch
 
 rightdeflection_v:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Rightdeflection v
   FIELDNAM: rightdeflection_v
   LABLAXIS: rightdeflection_v
@@ -2955,7 +2954,7 @@ rightdeflection_v:
   DEPEND_0: epoch
 
 rightdeflection_v_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Rightdeflection v hi
   FIELDNAM: rightdeflection_v_hi
   LABLAXIS: rightdeflection_v_hi
@@ -2963,7 +2962,7 @@ rightdeflection_v_hi:
   DEPEND_0: epoch
 
 rightdeflection_v_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Rightdeflection v lo
   FIELDNAM: rightdeflection_v_lo
   LABLAXIS: rightdeflection_v_lo
@@ -2971,7 +2970,7 @@ rightdeflection_v_lo:
   DEPEND_0: epoch
 
 rightdeflectionsupply_p:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Rightdeflectionsupply p
   FIELDNAM: rightdeflectionsupply_p
   LABLAXIS: rightdeflectionsupply_p
@@ -2979,7 +2978,7 @@ rightdeflectionsupply_p:
   DEPEND_0: epoch
 
 rightdeflectionsupply_p_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Rightdeflectionsupply p hi
   FIELDNAM: rightdeflectionsupply_p_hi
   LABLAXIS: rightdeflectionsupply_p_hi
@@ -2987,7 +2986,7 @@ rightdeflectionsupply_p_hi:
   DEPEND_0: epoch
 
 rightdeflectionsupply_p_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Rightdeflectionsupply p lo
   FIELDNAM: rightdeflectionsupply_p_lo
   LABLAXIS: rightdeflectionsupply_p_lo
@@ -2995,7 +2994,7 @@ rightdeflectionsupply_p_lo:
   DEPEND_0: epoch
 
 rightdfldischrate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Rightdfldischrate
   FIELDNAM: rightdfldischrate
   LABLAXIS: rightdfldischrate
@@ -3003,7 +3002,7 @@ rightdfldischrate:
   DEPEND_0: epoch
 
 rightdfldischrate_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Rightdfldischrate hi
   FIELDNAM: rightdfldischrate_hi
   LABLAXIS: rightdfldischrate_hi
@@ -3011,7 +3010,7 @@ rightdfldischrate_hi:
   DEPEND_0: epoch
 
 rightdfldischrate_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Rightdfldischrate lo
   FIELDNAM: rightdfldischrate_lo
   LABLAXIS: rightdfldischrate_lo
@@ -3019,7 +3018,7 @@ rightdfldischrate_lo:
   DEPEND_0: epoch
 
 rightdfldischratelim:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Rightdfldischratelim
   FIELDNAM: rightdfldischratelim
   LABLAXIS: rightdfldischratelim
@@ -3027,7 +3026,7 @@ rightdfldischratelim:
   DEPEND_0: epoch
 
 rightdflhvgoal:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Rightdflhvgoal
   FIELDNAM: rightdflhvgoal
   LABLAXIS: rightdflhvgoal
@@ -3035,7 +3034,7 @@ rightdflhvgoal:
   DEPEND_0: epoch
 
 rightdflhvlim:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Rightdflhvlim
   FIELDNAM: rightdflhvlim
   LABLAXIS: rightdflhvlim
@@ -3043,7 +3042,7 @@ rightdflhvlim:
   DEPEND_0: epoch
 
 rightdflhvv:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Rightdflhvv
   FIELDNAM: rightdflhvv
   LABLAXIS: rightdflhvv
@@ -3051,7 +3050,7 @@ rightdflhvv:
   DEPEND_0: epoch
 
 rightshutter_t:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Rightshutter t
   FIELDNAM: rightshutter_t
   LABLAXIS: rightshutter_t
@@ -3059,7 +3058,7 @@ rightshutter_t:
   DEPEND_0: epoch
 
 rightshutter_t_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Rightshutter t hi
   FIELDNAM: rightshutter_t_hi
   LABLAXIS: rightshutter_t_hi
@@ -3067,7 +3066,7 @@ rightshutter_t_hi:
   DEPEND_0: epoch
 
 rightshutter_t_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Rightshutter t lo
   FIELDNAM: rightshutter_t_lo
   LABLAXIS: rightshutter_t_lo
@@ -3075,7 +3074,7 @@ rightshutter_t_lo:
   DEPEND_0: epoch
 
 rightshutterhomesteps:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Rightshutterhomesteps
   FIELDNAM: rightshutterhomesteps
   LABLAXIS: rightshutterhomesteps
@@ -3083,7 +3082,7 @@ rightshutterhomesteps:
   DEPEND_0: epoch
 
 rightshutterstep:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Rightshutterstep
   FIELDNAM: rightshutterstep
   LABLAXIS: rightshutterstep
@@ -3091,7 +3090,7 @@ rightshutterstep:
   DEPEND_0: epoch
 
 rightshuttertt:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Rightshuttertt
   FIELDNAM: rightshuttertt
   LABLAXIS: rightshuttertt
@@ -3099,7 +3098,7 @@ rightshuttertt:
   DEPEND_0: epoch
 
 safingtime:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Safingtime
   FIELDNAM: safingtime
   LABLAXIS: safingtime
@@ -3107,7 +3106,7 @@ safingtime:
   DEPEND_0: epoch
 
 shutteractuator:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Shutteractuator
   FIELDNAM: shutteractuator
   LABLAXIS: shutteractuator
@@ -3115,7 +3114,7 @@ shutteractuator:
   DEPEND_0: epoch
 
 shutteractuatorselect:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Shutteractuatorselect
   FIELDNAM: shutteractuatorselect
   LABLAXIS: shutteractuatorselect
@@ -3123,7 +3122,7 @@ shutteractuatorselect:
   DEPEND_0: epoch
 
 shutterheattime:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Shutterheattime
   FIELDNAM: shutterheattime
   LABLAXIS: shutterheattime
@@ -3131,7 +3130,7 @@ shutterheattime:
   DEPEND_0: epoch
 
 shuttermotorduty:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Shuttermotorduty
   FIELDNAM: shuttermotorduty
   LABLAXIS: shuttermotorduty
@@ -3139,7 +3138,7 @@ shuttermotorduty:
   DEPEND_0: epoch
 
 shuttermotorfreq:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Shuttermotorfreq
   FIELDNAM: shuttermotorfreq
   LABLAXIS: shuttermotorfreq
@@ -3147,7 +3146,7 @@ shuttermotorfreq:
   DEPEND_0: epoch
 
 shutterp15v_i_adjust:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Shutterp15v i adjust
   FIELDNAM: shutterp15v_i_adjust
   LABLAXIS: shutterp15v_i_adjust
@@ -3155,7 +3154,7 @@ shutterp15v_i_adjust:
   DEPEND_0: epoch
 
 shutterphase:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Shutterphase
   FIELDNAM: shutterphase
   LABLAXIS: shutterphase
@@ -3163,7 +3162,7 @@ shutterphase:
   DEPEND_0: epoch
 
 shutterplugstate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Shutterplugstate
   FIELDNAM: shutterplugstate
   LABLAXIS: shutterplugstate
@@ -3171,7 +3170,7 @@ shutterplugstate:
   DEPEND_0: epoch
 
 shutterprimary_i_adjust:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Shutterprimary i adjust
   FIELDNAM: shutterprimary_i_adjust
   LABLAXIS: shutterprimary_i_adjust
@@ -3179,7 +3178,7 @@ shutterprimary_i_adjust:
   DEPEND_0: epoch
 
 shutterselect:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Shutterselect
   FIELDNAM: shutterselect
   LABLAXIS: shutterselect
@@ -3187,7 +3186,7 @@ shutterselect:
   DEPEND_0: epoch
 
 spare10:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Spare10
   FIELDNAM: spare10
   LABLAXIS: spare10
@@ -3195,7 +3194,7 @@ spare10:
   DEPEND_0: epoch
 
 spare4:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Spare4
   FIELDNAM: spare4
   LABLAXIS: spare4
@@ -3203,7 +3202,7 @@ spare4:
   DEPEND_0: epoch
 
 spare5:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Spare5
   FIELDNAM: spare5
   LABLAXIS: spare5
@@ -3211,7 +3210,7 @@ spare5:
   DEPEND_0: epoch
 
 spare6:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Spare6
   FIELDNAM: spare6
   LABLAXIS: spare6
@@ -3219,7 +3218,7 @@ spare6:
   DEPEND_0: epoch
 
 spare7:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Spare7
   FIELDNAM: spare7
   LABLAXIS: spare7
@@ -3227,7 +3226,7 @@ spare7:
   DEPEND_0: epoch
 
 spare8:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Spare8
   FIELDNAM: spare8
   LABLAXIS: spare8
@@ -3235,7 +3234,7 @@ spare8:
   DEPEND_0: epoch
 
 spare9:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Spare9
   FIELDNAM: spare9
   LABLAXIS: spare9
@@ -3243,7 +3242,7 @@ spare9:
   DEPEND_0: epoch
 
 spbtphoff:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Spbtphoff
   FIELDNAM: spbtphoff
   LABLAXIS: spbtphoff
@@ -3251,7 +3250,7 @@ spbtphoff:
   DEPEND_0: epoch
 
 sptpphoff:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Sptpphoff
   FIELDNAM: sptpphoff
   LABLAXIS: sptpphoff
@@ -3259,7 +3258,7 @@ sptpphoff:
   DEPEND_0: epoch
 
 ssd0energystate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd0energystate
   FIELDNAM: ssd0energystate
   LABLAXIS: ssd0energystate
@@ -3267,7 +3266,7 @@ ssd0energystate:
   DEPEND_0: epoch
 
 ssd0energythresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd0energythresh
   FIELDNAM: ssd0energythresh
   LABLAXIS: ssd0energythresh
@@ -3275,7 +3274,7 @@ ssd0energythresh:
   DEPEND_0: epoch
 
 ssd0pixenergybaseline:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd0pixenergybaseline
   FIELDNAM: ssd0pixenergybaseline
   LABLAXIS: ssd0pixenergybaseline
@@ -3283,7 +3282,7 @@ ssd0pixenergybaseline:
   DEPEND_0: epoch
 
 ssd1energystate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd1energystate
   FIELDNAM: ssd1energystate
   LABLAXIS: ssd1energystate
@@ -3291,7 +3290,7 @@ ssd1energystate:
   DEPEND_0: epoch
 
 ssd1energythresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd1energythresh
   FIELDNAM: ssd1energythresh
   LABLAXIS: ssd1energythresh
@@ -3299,7 +3298,7 @@ ssd1energythresh:
   DEPEND_0: epoch
 
 ssd1pixenergybaseline:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd1pixenergybaseline
   FIELDNAM: ssd1pixenergybaseline
   LABLAXIS: ssd1pixenergybaseline
@@ -3307,7 +3306,7 @@ ssd1pixenergybaseline:
   DEPEND_0: epoch
 
 ssd2energystate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd2energystate
   FIELDNAM: ssd2energystate
   LABLAXIS: ssd2energystate
@@ -3315,7 +3314,7 @@ ssd2energystate:
   DEPEND_0: epoch
 
 ssd2energythresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd2energythresh
   FIELDNAM: ssd2energythresh
   LABLAXIS: ssd2energythresh
@@ -3323,7 +3322,7 @@ ssd2energythresh:
   DEPEND_0: epoch
 
 ssd2pixenergybaseline:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd2pixenergybaseline
   FIELDNAM: ssd2pixenergybaseline
   LABLAXIS: ssd2pixenergybaseline
@@ -3331,7 +3330,7 @@ ssd2pixenergybaseline:
   DEPEND_0: epoch
 
 ssd3energystate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd3energystate
   FIELDNAM: ssd3energystate
   LABLAXIS: ssd3energystate
@@ -3339,7 +3338,7 @@ ssd3energystate:
   DEPEND_0: epoch
 
 ssd3energythresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd3energythresh
   FIELDNAM: ssd3energythresh
   LABLAXIS: ssd3energythresh
@@ -3347,7 +3346,7 @@ ssd3energythresh:
   DEPEND_0: epoch
 
 ssd3pixenergybaseline:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd3pixenergybaseline
   FIELDNAM: ssd3pixenergybaseline
   LABLAXIS: ssd3pixenergybaseline
@@ -3355,7 +3354,7 @@ ssd3pixenergybaseline:
   DEPEND_0: epoch
 
 ssd4energystate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd4energystate
   FIELDNAM: ssd4energystate
   LABLAXIS: ssd4energystate
@@ -3363,7 +3362,7 @@ ssd4energystate:
   DEPEND_0: epoch
 
 ssd4energythresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd4energythresh
   FIELDNAM: ssd4energythresh
   LABLAXIS: ssd4energythresh
@@ -3371,7 +3370,7 @@ ssd4energythresh:
   DEPEND_0: epoch
 
 ssd4pixenergybaseline:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd4pixenergybaseline
   FIELDNAM: ssd4pixenergybaseline
   LABLAXIS: ssd4pixenergybaseline
@@ -3379,7 +3378,7 @@ ssd4pixenergybaseline:
   DEPEND_0: epoch
 
 ssd5energystate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd5energystate
   FIELDNAM: ssd5energystate
   LABLAXIS: ssd5energystate
@@ -3387,7 +3386,7 @@ ssd5energystate:
   DEPEND_0: epoch
 
 ssd5energythresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd5energythresh
   FIELDNAM: ssd5energythresh
   LABLAXIS: ssd5energythresh
@@ -3395,7 +3394,7 @@ ssd5energythresh:
   DEPEND_0: epoch
 
 ssd5pixenergybaseline:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd5pixenergybaseline
   FIELDNAM: ssd5pixenergybaseline
   LABLAXIS: ssd5pixenergybaseline
@@ -3403,7 +3402,7 @@ ssd5pixenergybaseline:
   DEPEND_0: epoch
 
 ssd6energystate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd6energystate
   FIELDNAM: ssd6energystate
   LABLAXIS: ssd6energystate
@@ -3411,7 +3410,7 @@ ssd6energystate:
   DEPEND_0: epoch
 
 ssd6energythresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd6energythresh
   FIELDNAM: ssd6energythresh
   LABLAXIS: ssd6energythresh
@@ -3419,7 +3418,7 @@ ssd6energythresh:
   DEPEND_0: epoch
 
 ssd6pixenergybaseline:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd6pixenergybaseline
   FIELDNAM: ssd6pixenergybaseline
   LABLAXIS: ssd6pixenergybaseline
@@ -3427,7 +3426,7 @@ ssd6pixenergybaseline:
   DEPEND_0: epoch
 
 ssd7energystate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd7energystate
   FIELDNAM: ssd7energystate
   LABLAXIS: ssd7energystate
@@ -3435,7 +3434,7 @@ ssd7energystate:
   DEPEND_0: epoch
 
 ssd7energythresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd7energythresh
   FIELDNAM: ssd7energythresh
   LABLAXIS: ssd7energythresh
@@ -3443,7 +3442,7 @@ ssd7energythresh:
   DEPEND_0: epoch
 
 ssd7pixenergybaseline:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssd7pixenergybaseline
   FIELDNAM: ssd7pixenergybaseline
   LABLAXIS: ssd7pixenergybaseline
@@ -3451,7 +3450,7 @@ ssd7pixenergybaseline:
   DEPEND_0: epoch
 
 ssdbv_i:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssdbv i
   FIELDNAM: ssdbv_i
   LABLAXIS: ssdbv_i
@@ -3459,7 +3458,7 @@ ssdbv_i:
   DEPEND_0: epoch
 
 ssdbv_i_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssdbv i hi
   FIELDNAM: ssdbv_i_hi
   LABLAXIS: ssdbv_i_hi
@@ -3467,7 +3466,7 @@ ssdbv_i_hi:
   DEPEND_0: epoch
 
 ssdbv_i_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssdbv i lo
   FIELDNAM: ssdbv_i_lo
   LABLAXIS: ssdbv_i_lo
@@ -3475,7 +3474,7 @@ ssdbv_i_lo:
   DEPEND_0: epoch
 
 ssdbv_v:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssdbv v
   FIELDNAM: ssdbv_v
   LABLAXIS: ssdbv_v
@@ -3483,7 +3482,7 @@ ssdbv_v:
   DEPEND_0: epoch
 
 ssdbv_v_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssdbv v hi
   FIELDNAM: ssdbv_v_hi
   LABLAXIS: ssdbv_v_hi
@@ -3491,7 +3490,7 @@ ssdbv_v_hi:
   DEPEND_0: epoch
 
 ssdbv_v_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssdbv v lo
   FIELDNAM: ssdbv_v_lo
   LABLAXIS: ssdbv_v_lo
@@ -3499,7 +3498,7 @@ ssdbv_v_lo:
   DEPEND_0: epoch
 
 ssdbvgoal:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssdbvgoal
   FIELDNAM: ssdbvgoal
   LABLAXIS: ssdbvgoal
@@ -3507,7 +3506,7 @@ ssdbvgoal:
   DEPEND_0: epoch
 
 ssdbvlim:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssdbvlim
   FIELDNAM: ssdbvlim
   LABLAXIS: ssdbvlim
@@ -3515,7 +3514,7 @@ ssdbvlim:
   DEPEND_0: epoch
 
 ssdbvrampdownrate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssdbvrampdownrate
   FIELDNAM: ssdbvrampdownrate
   LABLAXIS: ssdbvrampdownrate
@@ -3523,7 +3522,7 @@ ssdbvrampdownrate:
   DEPEND_0: epoch
 
 ssdbvrampuprate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssdbvrampuprate
   FIELDNAM: ssdbvrampuprate
   LABLAXIS: ssdbvrampuprate
@@ -3531,7 +3530,7 @@ ssdbvrampuprate:
   DEPEND_0: epoch
 
 ssdbvv:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssdbvv
   FIELDNAM: ssdbvv
   LABLAXIS: ssdbvv
@@ -3539,7 +3538,7 @@ ssdbvv:
   DEPEND_0: epoch
 
 ssdpreamppower:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssdpreamppower
   FIELDNAM: ssdpreamppower
   LABLAXIS: ssdpreamppower
@@ -3547,7 +3546,7 @@ ssdpreamppower:
   DEPEND_0: epoch
 
 ssdpulseamplitude:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssdpulseamplitude
   FIELDNAM: ssdpulseamplitude
   LABLAXIS: ssdpulseamplitude
@@ -3555,7 +3554,7 @@ ssdpulseamplitude:
   DEPEND_0: epoch
 
 ssdpulsedelay:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssdpulsedelay
   FIELDNAM: ssdpulsedelay
   LABLAXIS: ssdpulsedelay
@@ -3563,7 +3562,7 @@ ssdpulsedelay:
   DEPEND_0: epoch
 
 ssdpulsestate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssdpulsestate
   FIELDNAM: ssdpulsestate
   LABLAXIS: ssdpulsestate
@@ -3571,7 +3570,7 @@ ssdpulsestate:
   DEPEND_0: epoch
 
 ssdreference:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ssdreference
   FIELDNAM: ssdreference
   LABLAXIS: ssdreference
@@ -3579,7 +3578,7 @@ ssdreference:
   DEPEND_0: epoch
 
 startfullpulsestate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Startfullpulsestate
   FIELDNAM: startfullpulsestate
   LABLAXIS: startfullpulsestate
@@ -3587,7 +3586,7 @@ startfullpulsestate:
   DEPEND_0: epoch
 
 startlfautozero:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Startlfautozero
   FIELDNAM: startlfautozero
   LABLAXIS: startlfautozero
@@ -3595,7 +3594,7 @@ startlfautozero:
   DEPEND_0: epoch
 
 startlfcfdthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Startlfcfdthresh
   FIELDNAM: startlfcfdthresh
   LABLAXIS: startlfcfdthresh
@@ -3603,7 +3602,7 @@ startlfcfdthresh:
   DEPEND_0: epoch
 
 startlfphthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Startlfphthresh
   FIELDNAM: startlfphthresh
   LABLAXIS: startlfphthresh
@@ -3611,7 +3610,7 @@ startlfphthresh:
   DEPEND_0: epoch
 
 startlpautozero:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Startlpautozero
   FIELDNAM: startlpautozero
   LABLAXIS: startlpautozero
@@ -3619,7 +3618,7 @@ startlpautozero:
   DEPEND_0: epoch
 
 startlpcfdthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Startlpcfdthresh
   FIELDNAM: startlpcfdthresh
   LABLAXIS: startlpcfdthresh
@@ -3627,7 +3626,7 @@ startlpcfdthresh:
   DEPEND_0: epoch
 
 startposdelay:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Startposdelay
   FIELDNAM: startposdelay
   LABLAXIS: startposdelay
@@ -3635,7 +3634,7 @@ startposdelay:
   DEPEND_0: epoch
 
 startratehighthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Startratehighthresh
   FIELDNAM: startratehighthresh
   LABLAXIS: startratehighthresh
@@ -3643,7 +3642,7 @@ startratehighthresh:
   DEPEND_0: epoch
 
 startrfautozero:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Startrfautozero
   FIELDNAM: startrfautozero
   LABLAXIS: startrfautozero
@@ -3651,7 +3650,7 @@ startrfautozero:
   DEPEND_0: epoch
 
 startrfcfdthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Startrfcfdthresh
   FIELDNAM: startrfcfdthresh
   LABLAXIS: startrfcfdthresh
@@ -3659,7 +3658,7 @@ startrfcfdthresh:
   DEPEND_0: epoch
 
 startrfphthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Startrfphthresh
   FIELDNAM: startrfphthresh
   LABLAXIS: startrfphthresh
@@ -3667,7 +3666,7 @@ startrfphthresh:
   DEPEND_0: epoch
 
 startrpautozero:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Startrpautozero
   FIELDNAM: startrpautozero
   LABLAXIS: startrpautozero
@@ -3675,7 +3674,7 @@ startrpautozero:
   DEPEND_0: epoch
 
 startrpcfdthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Startrpcfdthresh
   FIELDNAM: startrpcfdthresh
   LABLAXIS: startrpcfdthresh
@@ -3683,7 +3682,7 @@ startrpcfdthresh:
   DEPEND_0: epoch
 
 statusint:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Statusint
   FIELDNAM: statusint
   LABLAXIS: statusint
@@ -3691,7 +3690,7 @@ statusint:
   DEPEND_0: epoch
 
 stopbeautozero:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stopbeautozero
   FIELDNAM: stopbeautozero
   LABLAXIS: stopbeautozero
@@ -3699,7 +3698,7 @@ stopbeautozero:
   DEPEND_0: epoch
 
 stopbecfdthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stopbecfdthresh
   FIELDNAM: stopbecfdthresh
   LABLAXIS: stopbecfdthresh
@@ -3707,7 +3706,7 @@ stopbecfdthresh:
   DEPEND_0: epoch
 
 stopbnautozero:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stopbnautozero
   FIELDNAM: stopbnautozero
   LABLAXIS: stopbnautozero
@@ -3715,7 +3714,7 @@ stopbnautozero:
   DEPEND_0: epoch
 
 stopbncfdthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stopbncfdthresh
   FIELDNAM: stopbncfdthresh
   LABLAXIS: stopbncfdthresh
@@ -3723,7 +3722,7 @@ stopbncfdthresh:
   DEPEND_0: epoch
 
 stopbnphthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stopbnphthresh
   FIELDNAM: stopbnphthresh
   LABLAXIS: stopbnphthresh
@@ -3731,7 +3730,7 @@ stopbnphthresh:
   DEPEND_0: epoch
 
 stopbsautozero:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stopbsautozero
   FIELDNAM: stopbsautozero
   LABLAXIS: stopbsautozero
@@ -3739,7 +3738,7 @@ stopbsautozero:
   DEPEND_0: epoch
 
 stopbscfdthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stopbscfdthresh
   FIELDNAM: stopbscfdthresh
   LABLAXIS: stopbscfdthresh
@@ -3747,7 +3746,7 @@ stopbscfdthresh:
   DEPEND_0: epoch
 
 stopbwautozero:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stopbwautozero
   FIELDNAM: stopbwautozero
   LABLAXIS: stopbwautozero
@@ -3755,7 +3754,7 @@ stopbwautozero:
   DEPEND_0: epoch
 
 stopbwcfdthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stopbwcfdthresh
   FIELDNAM: stopbwcfdthresh
   LABLAXIS: stopbwcfdthresh
@@ -3763,7 +3762,7 @@ stopbwcfdthresh:
   DEPEND_0: epoch
 
 stopcoinnorthpulsedelay:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stopcoinnorthpulsedelay
   FIELDNAM: stopcoinnorthpulsedelay
   LABLAXIS: stopcoinnorthpulsedelay
@@ -3771,7 +3770,7 @@ stopcoinnorthpulsedelay:
   DEPEND_0: epoch
 
 stopcoinnorthpulsestate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stopcoinnorthpulsestate
   FIELDNAM: stopcoinnorthpulsestate
   LABLAXIS: stopcoinnorthpulsestate
@@ -3779,7 +3778,7 @@ stopcoinnorthpulsestate:
   DEPEND_0: epoch
 
 stopcoinsouthpulsedelay:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stopcoinsouthpulsedelay
   FIELDNAM: stopcoinsouthpulsedelay
   LABLAXIS: stopcoinsouthpulsedelay
@@ -3787,7 +3786,7 @@ stopcoinsouthpulsedelay:
   DEPEND_0: epoch
 
 stopcoinsouthpulsestate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stopcoinsouthpulsestate
   FIELDNAM: stopcoinsouthpulsestate
   LABLAXIS: stopcoinsouthpulsestate
@@ -3795,7 +3794,7 @@ stopcoinsouthpulsestate:
   DEPEND_0: epoch
 
 stopeastpulsedelay:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stopeastpulsedelay
   FIELDNAM: stopeastpulsedelay
   LABLAXIS: stopeastpulsedelay
@@ -3803,7 +3802,7 @@ stopeastpulsedelay:
   DEPEND_0: epoch
 
 stopeastpulsestate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stopeastpulsestate
   FIELDNAM: stopeastpulsestate
   LABLAXIS: stopeastpulsestate
@@ -3811,7 +3810,7 @@ stopeastpulsestate:
   DEPEND_0: epoch
 
 stopratehighthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stopratehighthresh
   FIELDNAM: stopratehighthresh
   LABLAXIS: stopratehighthresh
@@ -3819,7 +3818,7 @@ stopratehighthresh:
   DEPEND_0: epoch
 
 stopteautozero:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stopteautozero
   FIELDNAM: stopteautozero
   LABLAXIS: stopteautozero
@@ -3827,7 +3826,7 @@ stopteautozero:
   DEPEND_0: epoch
 
 stoptecfdthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stoptecfdthresh
   FIELDNAM: stoptecfdthresh
   LABLAXIS: stoptecfdthresh
@@ -3835,7 +3834,7 @@ stoptecfdthresh:
   DEPEND_0: epoch
 
 stoptnautozero:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stoptnautozero
   FIELDNAM: stoptnautozero
   LABLAXIS: stoptnautozero
@@ -3843,7 +3842,7 @@ stoptnautozero:
   DEPEND_0: epoch
 
 stoptncfdthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stoptncfdthresh
   FIELDNAM: stoptncfdthresh
   LABLAXIS: stoptncfdthresh
@@ -3851,7 +3850,7 @@ stoptncfdthresh:
   DEPEND_0: epoch
 
 stoptnphthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stoptnphthresh
   FIELDNAM: stoptnphthresh
   LABLAXIS: stoptnphthresh
@@ -3859,7 +3858,7 @@ stoptnphthresh:
   DEPEND_0: epoch
 
 stoptsautozero:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stoptsautozero
   FIELDNAM: stoptsautozero
   LABLAXIS: stoptsautozero
@@ -3867,7 +3866,7 @@ stoptsautozero:
   DEPEND_0: epoch
 
 stoptscfdthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stoptscfdthresh
   FIELDNAM: stoptscfdthresh
   LABLAXIS: stoptscfdthresh
@@ -3875,7 +3874,7 @@ stoptscfdthresh:
   DEPEND_0: epoch
 
 stoptwautozero:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stoptwautozero
   FIELDNAM: stoptwautozero
   LABLAXIS: stoptwautozero
@@ -3883,7 +3882,7 @@ stoptwautozero:
   DEPEND_0: epoch
 
 stoptwcfdthresh:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stoptwcfdthresh
   FIELDNAM: stoptwcfdthresh
   LABLAXIS: stoptwcfdthresh
@@ -3891,7 +3890,7 @@ stoptwcfdthresh:
   DEPEND_0: epoch
 
 stopwestpulsedelay:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stopwestpulsedelay
   FIELDNAM: stopwestpulsedelay
   LABLAXIS: stopwestpulsedelay
@@ -3899,7 +3898,7 @@ stopwestpulsedelay:
   DEPEND_0: epoch
 
 stopwestpulsestate:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Stopwestpulsestate
   FIELDNAM: stopwestpulsestate
   LABLAXIS: stopwestpulsestate
@@ -3907,7 +3906,7 @@ stopwestpulsestate:
   DEPEND_0: epoch
 
 swtime:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Swtime
   FIELDNAM: swtime
   LABLAXIS: swtime
@@ -3915,7 +3914,7 @@ swtime:
   DEPEND_0: epoch
 
 swversion:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Swversion
   FIELDNAM: swversion
   LABLAXIS: swversion
@@ -3923,7 +3922,7 @@ swversion:
   DEPEND_0: epoch
 
 test1:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Test1
   FIELDNAM: test1
   LABLAXIS: test1
@@ -3931,7 +3930,7 @@ test1:
   DEPEND_0: epoch
 
 test2:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Test2
   FIELDNAM: test2
   LABLAXIS: test2
@@ -3939,7 +3938,7 @@ test2:
   DEPEND_0: epoch
 
 text:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text
   FIELDNAM: text
   LABLAXIS: text
@@ -3947,7 +3946,7 @@ text:
   DEPEND_0: epoch
 
 text_0:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 0
   FIELDNAM: text_0
   LABLAXIS: text_0
@@ -3955,7 +3954,7 @@ text_0:
   DEPEND_0: epoch
 
 text_1:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 1
   FIELDNAM: text_1
   LABLAXIS: text_1
@@ -3963,7 +3962,7 @@ text_1:
   DEPEND_0: epoch
 
 text_10:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 10
   FIELDNAM: text_10
   LABLAXIS: text_10
@@ -3971,7 +3970,7 @@ text_10:
   DEPEND_0: epoch
 
 text_11:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 11
   FIELDNAM: text_11
   LABLAXIS: text_11
@@ -3979,7 +3978,7 @@ text_11:
   DEPEND_0: epoch
 
 text_12:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 12
   FIELDNAM: text_12
   LABLAXIS: text_12
@@ -3987,7 +3986,7 @@ text_12:
   DEPEND_0: epoch
 
 text_13:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 13
   FIELDNAM: text_13
   LABLAXIS: text_13
@@ -3995,7 +3994,7 @@ text_13:
   DEPEND_0: epoch
 
 text_14:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 14
   FIELDNAM: text_14
   LABLAXIS: text_14
@@ -4003,7 +4002,7 @@ text_14:
   DEPEND_0: epoch
 
 text_15:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 15
   FIELDNAM: text_15
   LABLAXIS: text_15
@@ -4011,7 +4010,7 @@ text_15:
   DEPEND_0: epoch
 
 text_16:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 16
   FIELDNAM: text_16
   LABLAXIS: text_16
@@ -4019,7 +4018,7 @@ text_16:
   DEPEND_0: epoch
 
 text_17:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 17
   FIELDNAM: text_17
   LABLAXIS: text_17
@@ -4027,7 +4026,7 @@ text_17:
   DEPEND_0: epoch
 
 text_18:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 18
   FIELDNAM: text_18
   LABLAXIS: text_18
@@ -4035,7 +4034,7 @@ text_18:
   DEPEND_0: epoch
 
 text_19:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 19
   FIELDNAM: text_19
   LABLAXIS: text_19
@@ -4043,7 +4042,7 @@ text_19:
   DEPEND_0: epoch
 
 text_2:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 2
   FIELDNAM: text_2
   LABLAXIS: text_2
@@ -4051,7 +4050,7 @@ text_2:
   DEPEND_0: epoch
 
 text_20:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 20
   FIELDNAM: text_20
   LABLAXIS: text_20
@@ -4059,7 +4058,7 @@ text_20:
   DEPEND_0: epoch
 
 text_21:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 21
   FIELDNAM: text_21
   LABLAXIS: text_21
@@ -4067,7 +4066,7 @@ text_21:
   DEPEND_0: epoch
 
 text_22:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 22
   FIELDNAM: text_22
   LABLAXIS: text_22
@@ -4075,7 +4074,7 @@ text_22:
   DEPEND_0: epoch
 
 text_23:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 23
   FIELDNAM: text_23
   LABLAXIS: text_23
@@ -4083,7 +4082,7 @@ text_23:
   DEPEND_0: epoch
 
 text_24:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 24
   FIELDNAM: text_24
   LABLAXIS: text_24
@@ -4091,7 +4090,7 @@ text_24:
   DEPEND_0: epoch
 
 text_25:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 25
   FIELDNAM: text_25
   LABLAXIS: text_25
@@ -4099,7 +4098,7 @@ text_25:
   DEPEND_0: epoch
 
 text_26:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 26
   FIELDNAM: text_26
   LABLAXIS: text_26
@@ -4107,7 +4106,7 @@ text_26:
   DEPEND_0: epoch
 
 text_27:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 27
   FIELDNAM: text_27
   LABLAXIS: text_27
@@ -4115,7 +4114,7 @@ text_27:
   DEPEND_0: epoch
 
 text_28:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 28
   FIELDNAM: text_28
   LABLAXIS: text_28
@@ -4123,7 +4122,7 @@ text_28:
   DEPEND_0: epoch
 
 text_29:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 29
   FIELDNAM: text_29
   LABLAXIS: text_29
@@ -4131,7 +4130,7 @@ text_29:
   DEPEND_0: epoch
 
 text_3:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 3
   FIELDNAM: text_3
   LABLAXIS: text_3
@@ -4139,7 +4138,7 @@ text_3:
   DEPEND_0: epoch
 
 text_30:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 30
   FIELDNAM: text_30
   LABLAXIS: text_30
@@ -4147,7 +4146,7 @@ text_30:
   DEPEND_0: epoch
 
 text_31:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 31
   FIELDNAM: text_31
   LABLAXIS: text_31
@@ -4155,7 +4154,7 @@ text_31:
   DEPEND_0: epoch
 
 text_32:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 32
   FIELDNAM: text_32
   LABLAXIS: text_32
@@ -4163,7 +4162,7 @@ text_32:
   DEPEND_0: epoch
 
 text_33:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 33
   FIELDNAM: text_33
   LABLAXIS: text_33
@@ -4171,7 +4170,7 @@ text_33:
   DEPEND_0: epoch
 
 text_34:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 34
   FIELDNAM: text_34
   LABLAXIS: text_34
@@ -4179,7 +4178,7 @@ text_34:
   DEPEND_0: epoch
 
 text_35:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 35
   FIELDNAM: text_35
   LABLAXIS: text_35
@@ -4187,7 +4186,7 @@ text_35:
   DEPEND_0: epoch
 
 text_36:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 36
   FIELDNAM: text_36
   LABLAXIS: text_36
@@ -4195,7 +4194,7 @@ text_36:
   DEPEND_0: epoch
 
 text_37:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 37
   FIELDNAM: text_37
   LABLAXIS: text_37
@@ -4203,7 +4202,7 @@ text_37:
   DEPEND_0: epoch
 
 text_38:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 38
   FIELDNAM: text_38
   LABLAXIS: text_38
@@ -4211,7 +4210,7 @@ text_38:
   DEPEND_0: epoch
 
 text_39:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 39
   FIELDNAM: text_39
   LABLAXIS: text_39
@@ -4219,7 +4218,7 @@ text_39:
   DEPEND_0: epoch
 
 text_4:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 4
   FIELDNAM: text_4
   LABLAXIS: text_4
@@ -4227,7 +4226,7 @@ text_4:
   DEPEND_0: epoch
 
 text_40:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 40
   FIELDNAM: text_40
   LABLAXIS: text_40
@@ -4235,7 +4234,7 @@ text_40:
   DEPEND_0: epoch
 
 text_41:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 41
   FIELDNAM: text_41
   LABLAXIS: text_41
@@ -4243,7 +4242,7 @@ text_41:
   DEPEND_0: epoch
 
 text_42:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 42
   FIELDNAM: text_42
   LABLAXIS: text_42
@@ -4251,7 +4250,7 @@ text_42:
   DEPEND_0: epoch
 
 text_43:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 43
   FIELDNAM: text_43
   LABLAXIS: text_43
@@ -4259,7 +4258,7 @@ text_43:
   DEPEND_0: epoch
 
 text_44:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 44
   FIELDNAM: text_44
   LABLAXIS: text_44
@@ -4267,7 +4266,7 @@ text_44:
   DEPEND_0: epoch
 
 text_45:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 45
   FIELDNAM: text_45
   LABLAXIS: text_45
@@ -4275,7 +4274,7 @@ text_45:
   DEPEND_0: epoch
 
 text_46:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 46
   FIELDNAM: text_46
   LABLAXIS: text_46
@@ -4283,7 +4282,7 @@ text_46:
   DEPEND_0: epoch
 
 text_47:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 47
   FIELDNAM: text_47
   LABLAXIS: text_47
@@ -4291,7 +4290,7 @@ text_47:
   DEPEND_0: epoch
 
 text_48:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 48
   FIELDNAM: text_48
   LABLAXIS: text_48
@@ -4299,7 +4298,7 @@ text_48:
   DEPEND_0: epoch
 
 text_49:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 49
   FIELDNAM: text_49
   LABLAXIS: text_49
@@ -4307,7 +4306,7 @@ text_49:
   DEPEND_0: epoch
 
 text_5:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 5
   FIELDNAM: text_5
   LABLAXIS: text_5
@@ -4315,7 +4314,7 @@ text_5:
   DEPEND_0: epoch
 
 text_50:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 50
   FIELDNAM: text_50
   LABLAXIS: text_50
@@ -4323,7 +4322,7 @@ text_50:
   DEPEND_0: epoch
 
 text_51:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 51
   FIELDNAM: text_51
   LABLAXIS: text_51
@@ -4331,7 +4330,7 @@ text_51:
   DEPEND_0: epoch
 
 text_52:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 52
   FIELDNAM: text_52
   LABLAXIS: text_52
@@ -4339,7 +4338,7 @@ text_52:
   DEPEND_0: epoch
 
 text_53:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 53
   FIELDNAM: text_53
   LABLAXIS: text_53
@@ -4347,7 +4346,7 @@ text_53:
   DEPEND_0: epoch
 
 text_54:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 54
   FIELDNAM: text_54
   LABLAXIS: text_54
@@ -4355,7 +4354,7 @@ text_54:
   DEPEND_0: epoch
 
 text_55:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 55
   FIELDNAM: text_55
   LABLAXIS: text_55
@@ -4363,7 +4362,7 @@ text_55:
   DEPEND_0: epoch
 
 text_56:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 56
   FIELDNAM: text_56
   LABLAXIS: text_56
@@ -4371,7 +4370,7 @@ text_56:
   DEPEND_0: epoch
 
 text_57:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 57
   FIELDNAM: text_57
   LABLAXIS: text_57
@@ -4379,7 +4378,7 @@ text_57:
   DEPEND_0: epoch
 
 text_58:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 58
   FIELDNAM: text_58
   LABLAXIS: text_58
@@ -4387,7 +4386,7 @@ text_58:
   DEPEND_0: epoch
 
 text_59:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 59
   FIELDNAM: text_59
   LABLAXIS: text_59
@@ -4395,7 +4394,7 @@ text_59:
   DEPEND_0: epoch
 
 text_6:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 6
   FIELDNAM: text_6
   LABLAXIS: text_6
@@ -4403,7 +4402,7 @@ text_6:
   DEPEND_0: epoch
 
 text_60:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 60
   FIELDNAM: text_60
   LABLAXIS: text_60
@@ -4411,7 +4410,7 @@ text_60:
   DEPEND_0: epoch
 
 text_61:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 61
   FIELDNAM: text_61
   LABLAXIS: text_61
@@ -4419,7 +4418,7 @@ text_61:
   DEPEND_0: epoch
 
 text_62:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 62
   FIELDNAM: text_62
   LABLAXIS: text_62
@@ -4427,7 +4426,7 @@ text_62:
   DEPEND_0: epoch
 
 text_63:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 63
   FIELDNAM: text_63
   LABLAXIS: text_63
@@ -4435,7 +4434,7 @@ text_63:
   DEPEND_0: epoch
 
 text_64:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 64
   FIELDNAM: text_64
   LABLAXIS: text_64
@@ -4443,7 +4442,7 @@ text_64:
   DEPEND_0: epoch
 
 text_65:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 65
   FIELDNAM: text_65
   LABLAXIS: text_65
@@ -4451,7 +4450,7 @@ text_65:
   DEPEND_0: epoch
 
 text_66:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 66
   FIELDNAM: text_66
   LABLAXIS: text_66
@@ -4459,7 +4458,7 @@ text_66:
   DEPEND_0: epoch
 
 text_67:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 67
   FIELDNAM: text_67
   LABLAXIS: text_67
@@ -4467,7 +4466,7 @@ text_67:
   DEPEND_0: epoch
 
 text_68:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 68
   FIELDNAM: text_68
   LABLAXIS: text_68
@@ -4475,7 +4474,7 @@ text_68:
   DEPEND_0: epoch
 
 text_69:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 69
   FIELDNAM: text_69
   LABLAXIS: text_69
@@ -4483,7 +4482,7 @@ text_69:
   DEPEND_0: epoch
 
 text_7:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 7
   FIELDNAM: text_7
   LABLAXIS: text_7
@@ -4491,7 +4490,7 @@ text_7:
   DEPEND_0: epoch
 
 text_70:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 70
   FIELDNAM: text_70
   LABLAXIS: text_70
@@ -4499,7 +4498,7 @@ text_70:
   DEPEND_0: epoch
 
 text_71:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 71
   FIELDNAM: text_71
   LABLAXIS: text_71
@@ -4507,7 +4506,7 @@ text_71:
   DEPEND_0: epoch
 
 text_72:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 72
   FIELDNAM: text_72
   LABLAXIS: text_72
@@ -4515,7 +4514,7 @@ text_72:
   DEPEND_0: epoch
 
 text_73:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 73
   FIELDNAM: text_73
   LABLAXIS: text_73
@@ -4523,7 +4522,7 @@ text_73:
   DEPEND_0: epoch
 
 text_74:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 74
   FIELDNAM: text_74
   LABLAXIS: text_74
@@ -4531,7 +4530,7 @@ text_74:
   DEPEND_0: epoch
 
 text_75:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 75
   FIELDNAM: text_75
   LABLAXIS: text_75
@@ -4539,7 +4538,7 @@ text_75:
   DEPEND_0: epoch
 
 text_76:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 76
   FIELDNAM: text_76
   LABLAXIS: text_76
@@ -4547,7 +4546,7 @@ text_76:
   DEPEND_0: epoch
 
 text_8:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 8
   FIELDNAM: text_8
   LABLAXIS: text_8
@@ -4555,7 +4554,7 @@ text_8:
   DEPEND_0: epoch
 
 text_9:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Text 9
   FIELDNAM: text_9
   LABLAXIS: text_9
@@ -4563,7 +4562,7 @@ text_9:
   DEPEND_0: epoch
 
 textlength:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Textlength
   FIELDNAM: textlength
   LABLAXIS: textlength
@@ -4571,7 +4570,7 @@ textlength:
   DEPEND_0: epoch
 
 tlmvolume:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tlmvolume
   FIELDNAM: tlmvolume
   LABLAXIS: tlmvolume
@@ -4579,7 +4578,7 @@ tlmvolume:
   DEPEND_0: epoch
 
 tofbtoff:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofbtoff
   FIELDNAM: tofbtoff
   LABLAXIS: tofbtoff
@@ -4587,7 +4586,7 @@ tofbtoff:
   DEPEND_0: epoch
 
 tofdiffbtmax:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofdiffbtmax
   FIELDNAM: tofdiffbtmax
   LABLAXIS: tofdiffbtmax
@@ -4595,7 +4594,7 @@ tofdiffbtmax:
   DEPEND_0: epoch
 
 tofdiffbtmin:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofdiffbtmin
   FIELDNAM: tofdiffbtmin
   LABLAXIS: tofdiffbtmin
@@ -4603,7 +4602,7 @@ tofdiffbtmin:
   DEPEND_0: epoch
 
 tofdifftpmax:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofdifftpmax
   FIELDNAM: tofdifftpmax
   LABLAXIS: tofdifftpmax
@@ -4611,7 +4610,7 @@ tofdifftpmax:
   DEPEND_0: epoch
 
 tofdifftpmin:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofdifftpmin
   FIELDNAM: tofdifftpmin
   LABLAXIS: tofdifftpmin
@@ -4619,7 +4618,7 @@ tofdifftpmin:
   DEPEND_0: epoch
 
 tofsc:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofsc
   FIELDNAM: tofsc
   LABLAXIS: tofsc
@@ -4627,7 +4626,7 @@ tofsc:
   DEPEND_0: epoch
 
 tofssdltoff0:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofssdltoff0
   FIELDNAM: tofssdltoff0
   LABLAXIS: tofssdltoff0
@@ -4635,7 +4634,7 @@ tofssdltoff0:
   DEPEND_0: epoch
 
 tofssdltoff1:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofssdltoff1
   FIELDNAM: tofssdltoff1
   LABLAXIS: tofssdltoff1
@@ -4643,7 +4642,7 @@ tofssdltoff1:
   DEPEND_0: epoch
 
 tofssdltoff2:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofssdltoff2
   FIELDNAM: tofssdltoff2
   LABLAXIS: tofssdltoff2
@@ -4651,7 +4650,7 @@ tofssdltoff2:
   DEPEND_0: epoch
 
 tofssdltoff3:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofssdltoff3
   FIELDNAM: tofssdltoff3
   LABLAXIS: tofssdltoff3
@@ -4659,7 +4658,7 @@ tofssdltoff3:
   DEPEND_0: epoch
 
 tofssdltoff4:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofssdltoff4
   FIELDNAM: tofssdltoff4
   LABLAXIS: tofssdltoff4
@@ -4667,7 +4666,7 @@ tofssdltoff4:
   DEPEND_0: epoch
 
 tofssdltoff5:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofssdltoff5
   FIELDNAM: tofssdltoff5
   LABLAXIS: tofssdltoff5
@@ -4675,7 +4674,7 @@ tofssdltoff5:
   DEPEND_0: epoch
 
 tofssdltoff6:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofssdltoff6
   FIELDNAM: tofssdltoff6
   LABLAXIS: tofssdltoff6
@@ -4683,7 +4682,7 @@ tofssdltoff6:
   DEPEND_0: epoch
 
 tofssdltoff7:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofssdltoff7
   FIELDNAM: tofssdltoff7
   LABLAXIS: tofssdltoff7
@@ -4691,7 +4690,7 @@ tofssdltoff7:
   DEPEND_0: epoch
 
 tofssdrtoff0:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofssdrtoff0
   FIELDNAM: tofssdrtoff0
   LABLAXIS: tofssdrtoff0
@@ -4699,7 +4698,7 @@ tofssdrtoff0:
   DEPEND_0: epoch
 
 tofssdrtoff1:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofssdrtoff1
   FIELDNAM: tofssdrtoff1
   LABLAXIS: tofssdrtoff1
@@ -4707,7 +4706,7 @@ tofssdrtoff1:
   DEPEND_0: epoch
 
 tofssdrtoff2:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofssdrtoff2
   FIELDNAM: tofssdrtoff2
   LABLAXIS: tofssdrtoff2
@@ -4715,7 +4714,7 @@ tofssdrtoff2:
   DEPEND_0: epoch
 
 tofssdrtoff3:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofssdrtoff3
   FIELDNAM: tofssdrtoff3
   LABLAXIS: tofssdrtoff3
@@ -4723,7 +4722,7 @@ tofssdrtoff3:
   DEPEND_0: epoch
 
 tofssdrtoff4:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofssdrtoff4
   FIELDNAM: tofssdrtoff4
   LABLAXIS: tofssdrtoff4
@@ -4731,7 +4730,7 @@ tofssdrtoff4:
   DEPEND_0: epoch
 
 tofssdrtoff5:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofssdrtoff5
   FIELDNAM: tofssdrtoff5
   LABLAXIS: tofssdrtoff5
@@ -4739,7 +4738,7 @@ tofssdrtoff5:
   DEPEND_0: epoch
 
 tofssdrtoff6:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofssdrtoff6
   FIELDNAM: tofssdrtoff6
   LABLAXIS: tofssdrtoff6
@@ -4747,7 +4746,7 @@ tofssdrtoff6:
   DEPEND_0: epoch
 
 tofssdrtoff7:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofssdrtoff7
   FIELDNAM: tofssdrtoff7
   LABLAXIS: tofssdrtoff7
@@ -4755,7 +4754,7 @@ tofssdrtoff7:
   DEPEND_0: epoch
 
 tofssdsc:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofssdsc
   FIELDNAM: tofssdsc
   LABLAXIS: tofssdsc
@@ -4763,7 +4762,7 @@ tofssdsc:
   DEPEND_0: epoch
 
 tofssdtotoff:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Tofssdtotoff
   FIELDNAM: tofssdtotoff
   LABLAXIS: tofssdtotoff
@@ -4771,7 +4770,7 @@ tofssdtotoff:
   DEPEND_0: epoch
 
 toftpoff:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Toftpoff
   FIELDNAM: toftpoff
   LABLAXIS: toftpoff
@@ -4779,7 +4778,7 @@ toftpoff:
   DEPEND_0: epoch
 
 topmcp_i:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Topmcp i
   FIELDNAM: topmcp_i
   LABLAXIS: topmcp_i
@@ -4787,7 +4786,7 @@ topmcp_i:
   DEPEND_0: epoch
 
 topmcp_i_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Topmcp i hi
   FIELDNAM: topmcp_i_hi
   LABLAXIS: topmcp_i_hi
@@ -4795,7 +4794,7 @@ topmcp_i_hi:
   DEPEND_0: epoch
 
 topmcp_i_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Topmcp i lo
   FIELDNAM: topmcp_i_lo
   LABLAXIS: topmcp_i_lo
@@ -4803,7 +4802,7 @@ topmcp_i_lo:
   DEPEND_0: epoch
 
 topmcp_v:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Topmcp v
   FIELDNAM: topmcp_v
   LABLAXIS: topmcp_v
@@ -4811,7 +4810,7 @@ topmcp_v:
   DEPEND_0: epoch
 
 topmcp_v_hi:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Topmcp v hi
   FIELDNAM: topmcp_v_hi
   LABLAXIS: topmcp_v_hi
@@ -4819,7 +4818,7 @@ topmcp_v_hi:
   DEPEND_0: epoch
 
 topmcp_v_lo:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Topmcp v lo
   FIELDNAM: topmcp_v_lo
   LABLAXIS: topmcp_v_lo
@@ -4827,7 +4826,7 @@ topmcp_v_lo:
   DEPEND_0: epoch
 
 topmcphvfault:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Topmcphvfault
   FIELDNAM: topmcphvfault
   LABLAXIS: topmcphvfault
@@ -4835,7 +4834,7 @@ topmcphvfault:
   DEPEND_0: epoch
 
 topmcphvgoal:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Topmcphvgoal
   FIELDNAM: topmcphvgoal
   LABLAXIS: topmcphvgoal
@@ -4843,7 +4842,7 @@ topmcphvgoal:
   DEPEND_0: epoch
 
 topmcphvilim:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Topmcphvilim
   FIELDNAM: topmcphvilim
   LABLAXIS: topmcphvilim
@@ -4851,7 +4850,7 @@ topmcphvilim:
   DEPEND_0: epoch
 
 topmcphvlim:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Topmcphvlim
   FIELDNAM: topmcphvlim
   LABLAXIS: topmcphvlim
@@ -4859,7 +4858,7 @@ topmcphvlim:
   DEPEND_0: epoch
 
 topmcphvmonitor:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Topmcphvmonitor
   FIELDNAM: topmcphvmonitor
   LABLAXIS: topmcphvmonitor
@@ -4867,7 +4866,7 @@ topmcphvmonitor:
   DEPEND_0: epoch
 
 topmcphvtrip:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Topmcphvtrip
   FIELDNAM: topmcphvtrip
   LABLAXIS: topmcphvtrip
@@ -4875,7 +4874,7 @@ topmcphvtrip:
   DEPEND_0: epoch
 
 topmcphvv:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Topmcphvv
   FIELDNAM: topmcphvv
   LABLAXIS: topmcphvv
@@ -4883,7 +4882,7 @@ topmcphvv:
   DEPEND_0: epoch
 
 unused:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Unused
   FIELDNAM: unused
   LABLAXIS: unused
@@ -4891,7 +4890,7 @@ unused:
   DEPEND_0: epoch
 
 value:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Value
   FIELDNAM: value
   LABLAXIS: value
@@ -4899,7 +4898,7 @@ value:
   DEPEND_0: epoch
 
 watchaddr:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Watchaddr
   FIELDNAM: watchaddr
   LABLAXIS: watchaddr
@@ -4907,7 +4906,7 @@ watchaddr:
   DEPEND_0: epoch
 
 watchdata_0:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Watchdata 0
   FIELDNAM: watchdata_0
   LABLAXIS: watchdata_0
@@ -4915,7 +4914,7 @@ watchdata_0:
   DEPEND_0: epoch
 
 watchdata_1:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Watchdata 1
   FIELDNAM: watchdata_1
   LABLAXIS: watchdata_1
@@ -4923,7 +4922,7 @@ watchdata_1:
   DEPEND_0: epoch
 
 watchmemid:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Watchmemid
   FIELDNAM: watchmemid
   LABLAXIS: watchmemid
@@ -4931,7 +4930,7 @@ watchmemid:
   DEPEND_0: epoch
 
 xcoinbtoff:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Xcoinbtoff
   FIELDNAM: xcoinbtoff
   LABLAXIS: xcoinbtoff
@@ -4939,7 +4938,7 @@ xcoinbtoff:
   DEPEND_0: epoch
 
 xcoinbtsc:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Xcoinbtsc
   FIELDNAM: xcoinbtsc
   LABLAXIS: xcoinbtsc
@@ -4947,7 +4946,7 @@ xcoinbtsc:
   DEPEND_0: epoch
 
 xcointpoff:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Xcointpoff
   FIELDNAM: xcointpoff
   LABLAXIS: xcointpoff
@@ -4955,7 +4954,7 @@ xcointpoff:
   DEPEND_0: epoch
 
 xcointpsc:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Xcointpsc
   FIELDNAM: xcointpsc
   LABLAXIS: xcointpsc
@@ -4963,7 +4962,7 @@ xcointpsc:
   DEPEND_0: epoch
 
 xftltoff:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Xftltoff
   FIELDNAM: xftltoff
   LABLAXIS: xftltoff
@@ -4971,7 +4970,7 @@ xftltoff:
   DEPEND_0: epoch
 
 xftrtoff:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Xftrtoff
   FIELDNAM: xftrtoff
   LABLAXIS: xftrtoff
@@ -4979,7 +4978,7 @@ xftrtoff:
   DEPEND_0: epoch
 
 xftsc:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Xftsc
   FIELDNAM: xftsc
   LABLAXIS: xftsc
@@ -4987,7 +4986,7 @@ xftsc:
   DEPEND_0: epoch
 
 xfttof:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Xfttof
   FIELDNAM: xfttof
   LABLAXIS: xfttof
@@ -4995,7 +4994,7 @@ xfttof:
   DEPEND_0: epoch
 
 ybkssd0:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ybkssd0
   FIELDNAM: ybkssd0
   LABLAXIS: ybkssd0
@@ -5003,7 +5002,7 @@ ybkssd0:
   DEPEND_0: epoch
 
 ybkssd1:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ybkssd1
   FIELDNAM: ybkssd1
   LABLAXIS: ybkssd1
@@ -5011,7 +5010,7 @@ ybkssd1:
   DEPEND_0: epoch
 
 ybkssd2:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ybkssd2
   FIELDNAM: ybkssd2
   LABLAXIS: ybkssd2
@@ -5019,7 +5018,7 @@ ybkssd2:
   DEPEND_0: epoch
 
 ybkssd3:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ybkssd3
   FIELDNAM: ybkssd3
   LABLAXIS: ybkssd3
@@ -5027,7 +5026,7 @@ ybkssd3:
   DEPEND_0: epoch
 
 ybkssd4:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ybkssd4
   FIELDNAM: ybkssd4
   LABLAXIS: ybkssd4
@@ -5035,7 +5034,7 @@ ybkssd4:
   DEPEND_0: epoch
 
 ybkssd5:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ybkssd5
   FIELDNAM: ybkssd5
   LABLAXIS: ybkssd5
@@ -5043,7 +5042,7 @@ ybkssd5:
   DEPEND_0: epoch
 
 ybkssd6:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ybkssd6
   FIELDNAM: ybkssd6
   LABLAXIS: ybkssd6
@@ -5051,7 +5050,7 @@ ybkssd6:
   DEPEND_0: epoch
 
 ybkssd7:
-  '<<': '*default_float32'
+  <<: *default_float32
   CATDESC: Ybkssd7
   FIELDNAM: ybkssd7
   LABLAXIS: ybkssd7
