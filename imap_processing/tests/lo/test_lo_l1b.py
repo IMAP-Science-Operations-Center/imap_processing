@@ -522,18 +522,23 @@ def test_set_direction():
         {},
         coords={
             "epoch": [
-                7.9794907049e17,
-                7.9794907153e17,
                 7.9794907254e17,
+                # + 1 second. Should be 24deg diff from
+                # previous epoch
+                7.9794907254e17 + 1e9,
+                # + 7.5 seconds. Should be 180deg diff from
+                # first epoch
+                7.9794907254e17 + 7.5e9,
+                # + 15 seconds. Should be 360deg diff from
+                # previous epoch
+                7.9794907254e17 + 15e9,
             ],
         },
     )
-    # Need to better verify these values. Latitudes are likely to
-    # be 0, but not sure what values to expect from Longitudes.
-    # The expected values are based on what I'm getting from the
-    # SPICE tools.
-    expected_direction_lat = np.array([0, 0, 0])
-    expected_direction_lon = np.array([91.3, 116.3, 140.5])
+    # latitudes are -90 to 90
+    expected_direction_lat = np.array([0, 0, 0, 0])
+    # longitude are -180 to 180
+    expected_direction_lon = np.array([140.5, 164.5, -39.5, 140.5])
 
     # Act
     l1b_de = set_pointing_direction(l1b_de)
@@ -555,20 +560,22 @@ def test_pointing_bins():
     # Arrange
     l1b_de = xr.Dataset(
         {
-            "direction_lat": ("epoch", [0, 0, 0]),
-            "direction_lon": ("epoch", [91.3, 116.3, 140.5]),
+            "direction_lat": ("epoch", [0, 0, 0, 0, 0]),
+            "direction_lon": ("epoch", [-180, 91.3, 116.3, 140.5, 180]),
         },
         coords={
             "epoch": [
                 7.9794907049e17,
                 7.9794907153e17,
                 7.9794907254e17,
+                7.9794907354e17,
+                7.9794907454e17,
             ],
         },
     )
 
-    expected_pointing_lats = np.array([20, 20, 20])
-    expected_pointing_lons = np.array([2712, 2962, 3205])
+    expected_pointing_lats = np.array([20, 20, 20, 20, 20])
+    expected_pointing_lons = np.array([0, 2712, 2962, 3205, 3600])
 
     # Act
     l1b_de = set_pointing_bin(l1b_de)
