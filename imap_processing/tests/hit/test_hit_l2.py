@@ -511,13 +511,9 @@ def test_process_sectored_intensity_data(l1b_sectored_rates_dataset):
     for particle in VALID_SECTORED_SPECIES:
         assert f"{particle}" in l2_sectored_intensity_dataset.data_vars
         assert (
-            f"{particle}_stat_uncert_delta_minus"
-            in l2_sectored_intensity_dataset.data_vars
+            f"{particle}_stat_uncert_minus" in l2_sectored_intensity_dataset.data_vars
         )
-        assert (
-            f"{particle}_stat_uncert_delta_plus"
-            in l2_sectored_intensity_dataset.data_vars
-        )
+        assert f"{particle}_stat_uncert_plus" in l2_sectored_intensity_dataset.data_vars
         assert f"{particle}_sys_err_minus" in l2_sectored_intensity_dataset.data_vars
         assert f"{particle}_sys_err_plus" in l2_sectored_intensity_dataset.data_vars
         assert (
@@ -568,8 +564,8 @@ def test_process_summed_intensity_data(l1b_summed_rates_dataset):
 
     for particle in SUMMED_PARTICLE_ENERGY_RANGE_MAPPING.keys():
         assert f"{particle}" in l2_summed_intensity_dataset.data_vars
-        assert f"{particle}_delta_minus" in l2_summed_intensity_dataset.data_vars
-        assert f"{particle}_delta_plus" in l2_summed_intensity_dataset.data_vars
+        assert f"{particle}_stat_uncert_minus" in l2_summed_intensity_dataset.data_vars
+        assert f"{particle}_stat_uncert_plus" in l2_summed_intensity_dataset.data_vars
         assert f"{particle}_sys_err_minus" in l2_summed_intensity_dataset.data_vars
         assert f"{particle}_sys_err_plus" in l2_summed_intensity_dataset.data_vars
         assert f"{particle}_energy_delta_minus" in l2_summed_intensity_dataset.data_vars
@@ -616,8 +612,10 @@ def test_process_standard_intensity_data(l1b_standard_rates_dataset):
 
     for particle in STANDARD_PARTICLE_ENERGY_RANGE_MAPPING.keys():
         assert f"{particle}" in l2_standard_intensity_dataset.data_vars
-        assert f"{particle}_delta_minus" in l2_standard_intensity_dataset.data_vars
-        assert f"{particle}_delta_plus" in l2_standard_intensity_dataset.data_vars
+        assert (
+            f"{particle}_stat_uncert_minus" in l2_standard_intensity_dataset.data_vars
+        )
+        assert f"{particle}_stat_uncert_plus" in l2_standard_intensity_dataset.data_vars
         assert f"{particle}_sys_err_minus" in l2_standard_intensity_dataset.data_vars
         assert f"{particle}_sys_err_plus" in l2_standard_intensity_dataset.data_vars
         assert (

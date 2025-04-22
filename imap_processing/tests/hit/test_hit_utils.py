@@ -50,12 +50,12 @@ def sample_dataset():
         "l2fgrates": (("epoch", "energy"), np.random.rand(10, 5)),
         "l3fgrates": (("epoch", "energy"), np.random.rand(10, 5)),
         "penfgrates": (("epoch", "energy"), np.random.rand(10, 5)),
-        "l2fgrates_delta_minus": (("epoch", "energy"), np.random.rand(10, 5)),
-        "l3fgrates_delta_minus": (("epoch", "energy"), np.random.rand(10, 5)),
-        "penfgrates_delta_minus": (("epoch", "energy"), np.random.rand(10, 5)),
-        "l2fgrates_delta_plus": (("epoch", "energy"), np.random.rand(10, 5)),
-        "l3fgrates_delta_plus": (("epoch", "energy"), np.random.rand(10, 5)),
-        "penfgrates_delta_plus": (("epoch", "energy"), np.random.rand(10, 5)),
+        "l2fgrates_stat_uncert_minus": (("epoch", "energy"), np.random.rand(10, 5)),
+        "l3fgrates_stat_uncert_minus": (("epoch", "energy"), np.random.rand(10, 5)),
+        "penfgrates_stat_uncert_minus": (("epoch", "energy"), np.random.rand(10, 5)),
+        "l2fgrates_stat_uncert_plus": (("epoch", "energy"), np.random.rand(10, 5)),
+        "l3fgrates_stat_uncert_plus": (("epoch", "energy"), np.random.rand(10, 5)),
+        "penfgrates_stat_uncert_plus": (("epoch", "energy"), np.random.rand(10, 5)),
     }
     return xr.Dataset(data)
 
@@ -279,14 +279,14 @@ def test_sum_particle_data(sample_dataset):
     }
 
     # Call the function
-    summed_data, summed_uncertainty_delta_minus, summed_uncertainty_delta_plus = (
-        sum_particle_data(dataset, indices)
+    summed_data, summed_uncertainty_minus, summed_uncertainty_plus = sum_particle_data(
+        dataset, indices
     )
 
     # Assertions
     assert summed_data.shape == (10,)
-    assert summed_uncertainty_delta_minus.shape == (10,)
-    assert summed_uncertainty_delta_plus.shape == (10,)
+    assert summed_uncertainty_minus.shape == (10,)
+    assert summed_uncertainty_plus.shape == (10,)
     assert np.all(
         summed_data
         == dataset["l2fgrates"][:, indices["R2"]].sum(axis=1)
@@ -294,16 +294,16 @@ def test_sum_particle_data(sample_dataset):
         + dataset["penfgrates"][:, indices["R4"]].sum(axis=1)
     )
     assert np.all(
-        summed_uncertainty_delta_minus
-        == dataset["l2fgrates_delta_minus"][:, indices["R2"]].sum(axis=1)
-        + dataset["l3fgrates_delta_minus"][:, indices["R3"]].sum(axis=1)
-        + dataset["penfgrates_delta_minus"][:, indices["R4"]].sum(axis=1)
+        summed_uncertainty_minus
+        == dataset["l2fgrates_stat_uncert_minus"][:, indices["R2"]].sum(axis=1)
+        + dataset["l3fgrates_stat_uncert_minus"][:, indices["R3"]].sum(axis=1)
+        + dataset["penfgrates_stat_uncert_minus"][:, indices["R4"]].sum(axis=1)
     )
     assert np.all(
-        summed_uncertainty_delta_plus
-        == dataset["l2fgrates_delta_plus"][:, indices["R2"]].sum(axis=1)
-        + dataset["l3fgrates_delta_plus"][:, indices["R3"]].sum(axis=1)
-        + dataset["penfgrates_delta_plus"][:, indices["R4"]].sum(axis=1)
+        summed_uncertainty_plus
+        == dataset["l2fgrates_stat_uncert_plus"][:, indices["R2"]].sum(axis=1)
+        + dataset["l3fgrates_stat_uncert_plus"][:, indices["R3"]].sum(axis=1)
+        + dataset["penfgrates_stat_uncert_plus"][:, indices["R4"]].sum(axis=1)
     )
 
 
@@ -329,18 +329,21 @@ def test_add_summed_particle_data_to_dataset(sample_dataset):
 
     # Assertions
     assert f"{particle}" in dataset_to_update.data_vars
-    assert f"{particle}_delta_minus" in dataset_to_update.data_vars
-    assert f"{particle}_delta_plus" in dataset_to_update.data_vars
+    assert f"{particle}_stat_uncert_minus" in dataset_to_update.data_vars
+    assert f"{particle}_stat_uncert_plus" in dataset_to_update.data_vars
     assert f"{particle}_energy_delta_minus" in dataset_to_update.data_vars
     assert f"{particle}_energy_delta_plus" in dataset_to_update.data_vars
     assert f"{particle}_energy_mean" in dataset_to_update.coords
 
     assert dataset_to_update[f"{particle}"].shape == (10, len(energy_ranges))
-    assert dataset_to_update[f"{particle}_delta_minus"].shape == (
+    assert dataset_to_update[f"{particle}_stat_uncert_minus"].shape == (
         10,
         len(energy_ranges),
     )
-    assert dataset_to_update[f"{particle}_delta_plus"].shape == (10, len(energy_ranges))
+    assert dataset_to_update[f"{particle}_stat_uncert_plus"].shape == (
+        10,
+        len(energy_ranges),
+    )
     assert dataset_to_update[f"{particle}_energy_mean"].shape == (len(energy_ranges),)
     assert dataset_to_update[f"{particle}_energy_delta_minus"].shape == (
         len(energy_ranges),
@@ -371,16 +374,22 @@ def test_initialize_particle_data_arrays():
 
     # Assertions
     assert f"{particle}" in dataset.data_vars
-    assert f"{particle}_delta_minus" in dataset.data_vars
-    assert f"{particle}_delta_plus" in dataset.data_vars
+    assert f"{particle}_stat_uncert_minus" in dataset.data_vars
+    assert f"{particle}_stat_uncert_plus" in dataset.data_vars
     assert f"{particle}_energy_mean" in dataset.coords
 
     assert dataset[f"{particle}"].shape == (epoch_size, num_energy_ranges)
-    assert dataset[f"{particle}_delta_minus"].shape == (epoch_size, num_energy_ranges)
-    assert dataset[f"{particle}_delta_plus"].shape == (epoch_size, num_energy_ranges)
+    assert dataset[f"{particle}_stat_uncert_minus"].shape == (
+        epoch_size,
+        num_energy_ranges,
+    )
+    assert dataset[f"{particle}_stat_uncert_plus"].shape == (
+        epoch_size,
+        num_energy_ranges,
+    )
     assert dataset[f"{particle}_energy_mean"].shape == (num_energy_ranges,)
 
     assert np.all(dataset[f"{particle}"].values == 0)
-    assert np.all(dataset[f"{particle}_delta_minus"].values == 0)
-    assert np.all(dataset[f"{particle}_delta_plus"].values == 0)
+    assert np.all(dataset[f"{particle}_stat_uncert_minus"].values == 0)
+    assert np.all(dataset[f"{particle}_stat_uncert_plus"].values == 0)
     assert np.all(dataset[f"{particle}_energy_mean"].values == 0)

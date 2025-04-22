@@ -280,7 +280,7 @@ def calculate_intensities_for_a_species(
     unique_states = np.unique(dynamic_threshold_states)
     species_name = (
         species_variable.split("_")[0]
-        if "_delta_" in species_variable
+        if "_uncert_" in species_variable
         else species_variable
     )
 
@@ -368,8 +368,8 @@ def calculate_intensities_for_all_species(
     # Add statistical uncertainty variables to the list of valid variables
     data_variables = (
         valid_data_variables
-        + [f"{var}_stat_uncert_delta_minus" for var in valid_data_variables]
-        + [f"{var}_stat_uncert_delta_plus" for var in valid_data_variables]
+        + [f"{var}_stat_uncert_minus" for var in valid_data_variables]
+        + [f"{var}_stat_uncert_plus" for var in valid_data_variables]
     )
 
     # Calculate the intensity for each valid data variable
