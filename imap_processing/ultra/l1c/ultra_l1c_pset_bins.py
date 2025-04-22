@@ -6,8 +6,12 @@ import pandas
 from numpy.typing import NDArray
 from scipy.interpolate import interp1d
 
+from imap_processing.ena_maps.utils.spatial_utils import build_spatial_bins
 from imap_processing.spice.geometry import (
+    SpiceFrame,
     cartesian_to_spherical,
+    imap_state,
+    spherical_to_cartesian,
 )
 from imap_processing.ultra.constants import UltraConstants
 
@@ -201,6 +205,17 @@ def get_helio_exposure_times(
     dec = df_exposure["Declination (deg)"].values
     exposure_flat = df_exposure["Exposure Time"].values
 
+    # The Cartesian state vector representing the position and velocity of the
+    # IMAP spacecraft.
+    state = imap_state(time, ref_frame=SpiceFrame.IMAP_DPS)
+
+    # Extract the velocity part of the state vector
+    spacecraft_velocity = state[3:6]
+    unit_dirs = hp.ang2vec(ra, dec, lonlat=True).T
+
+    npix = hp.nside2npix(nside)
+    exposure_3d = np.zeros((npix, len(energy_midpoints)))
+
     for i, energy_midpoint in enumerate(energy_midpoints):
         # Convert the midpoint energy to a velocity (km/s).
         # Based on kinetic energy equation: E = 1/2 * m * v^2.
@@ -213,18 +228,20 @@ def get_helio_exposure_times(
         # to the velocity wrt heliosphere.
         # energy_velocity * cartesian -> apply the magnitude of the velocity
         # to every position on the grid in the despun grid.
-        helio_velocity = spacecraft_velocity.reshape(3, 1) + energy_velocity * cartesian
+        helio_velocity = spacecraft_velocity.reshape(1, 3) + energy_velocity * unit_dirs
 
         # Normalized vectors representing the direction of the heliocentric velocity.
-        helio_normalized = helio_velocity.T / np.linalg.norm(
-            helio_velocity.T, axis=1, keepdims=True
-        )
-        # A 1D array of linear indices used to track the bin_id.
-        idx = len(sc_exposure)
-        # Bins the transposed sc_exposure array.
-        binned_exposure = sc_exposure.T.flatten(order="F")[idx]
-        # Reshape the binned exposure.
-        exposure_3d[:, i] = exposure_flat
+        # helio_normalized = helio_velocity.T / np.linalg.norm(
+        #     helio_velocity.T, axis=1, keepdims=True
+        # )
+        helio_normalized = helio_velocity / np.linalg.norm(helio_velocity, axis=1, keepdims=True)
+
+        helio_spherical = cartesian_to_spherical(helio_normalized)
+        az, el = helio_spherical[:, 1], helio_spherical[:, 2]  # in degrees
+
+        hpix_idx = hp.ang2pix(nside, az, el, nest=nested, lonlat=True)
+
+        exposure_3d[hpix_idx, i] = exposure_flat
 
     return exposure_3d
 

@@ -139,8 +139,8 @@ def test_get_helio_exposure_times():
     # Pick one energy bin (e.g., the first)
     example_data = exposure_3d[:, 0]  # 1D array with 196608 pixels
     hp.mollview(
-        df_exposure["Exposure Time"],
-        # example_data
+        #df_exposure["Exposure Time"],
+        example_data
     )
 
     plt.show()
