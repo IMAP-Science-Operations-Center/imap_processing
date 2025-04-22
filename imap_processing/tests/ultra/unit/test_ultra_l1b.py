@@ -134,6 +134,22 @@ def test_cdf_extendedspin(l1b_extendedspin_dataset):
     )
 
 
+def test_cdf_cullingmask(l1b_extendedspin_dataset):
+    """Tests that CDF file is created and contains same attributes as xarray."""
+    test_data_path = write_cdf(l1b_extendedspin_dataset[1], istp=True)
+    assert test_data_path.exists()
+    assert (
+        test_data_path.name == "imap_ultra_l1b_45sensor-cullingmask_20240207_v999.cdf"
+    )
+
+
+def test_cdf_badtimes(l1b_extendedspin_dataset):
+    """Tests that CDF file is created and contains same attributes as xarray."""
+    test_data_path = write_cdf(l1b_extendedspin_dataset[2], istp=True)
+    assert test_data_path.exists()
+    assert test_data_path.name == "imap_ultra_l1b_45sensor-badtimes_20240207_v999.cdf"
+
+
 def test_ultra_l1b_error(mock_data_l1a_rates_dict):
     """Tests that L1a data throws an error."""
     mock_data_l1a_rates_dict["bad_key"] = mock_data_l1a_rates_dict.pop(
