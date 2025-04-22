@@ -9,6 +9,7 @@ from cdflib import CDF
 
 from imap_processing import imap_module_directory
 from imap_processing.ena_maps.utils.spatial_utils import build_spatial_bins
+from imap_processing.tests.conftest import _download_external_data, _test_data_paths
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     get_background_rates,
@@ -33,6 +34,16 @@ def test_data():
     v = np.column_stack((vx_sc, vy_sc, vz_sc))
 
     return v, energy
+
+
+@pytest.fixture(scope="session")
+def test_l1c_data():
+    """Ensure external test data is downloaded before tests run."""
+
+    # Make sure we have the data available here. This test collection gets
+    # skipped at the module level if the mark isn't present. We can't decorate
+    # a fixture, so add the needed call directly here instead.
+    _download_external_data(_test_data_paths())
 
 
 def test_build_energy_bins():
@@ -99,8 +110,7 @@ def test_get_background_rates():
     assert background_rates.shape == hp.nside2npix(128)
 
 
-@pytest.mark.external_test_data
-def test_get_spacecraft_exposure_times():
+def test_get_spacecraft_exposure_times(test_l1c_data):
     """Test get_spacecraft_exposure_times function."""
     constant_exposure = TEST_PATH / "ultra_90_dps_exposure.csv"
     df_exposure = pd.read_csv(constant_exposure)
@@ -114,7 +124,6 @@ def test_get_spacecraft_exposure_times():
     )
 
 
-@pytest.mark.external_kernel
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_get_helio_exposure_times():
     """Tests get_helio_exposure_times function."""
@@ -162,8 +171,7 @@ def test_get_helio_exposure_times():
     assert np.array_equal(np.squeeze(exposures[2]), exposure_3d[:, :, 23])
 
 
-@pytest.mark.external_test_data
-def test_get_spacecraft_sensitivity():
+def test_get_spacecraft_sensitivity(test_l1c_data):
     """Tests get_spacecraft_sensitivity function."""
     # TODO: remove below here with lookup table aux api
     efficiences = TEST_PATH / "Ultra_90_DPS_efficiencies_all.csv"
@@ -198,8 +206,7 @@ def test_get_spacecraft_sensitivity():
     )
 
 
-@pytest.mark.external_test_data
-def test_grid_sensitivity():
+def test_grid_sensitivity(test_l1c_data):
     """Tests grid_sensitivity function."""
     efficiencies_path = TEST_PATH / "Ultra_90_DPS_efficiencies_all.csv"
     geometric_function_path = TEST_PATH / "ultra_90_dps_gf.csv"
