@@ -341,7 +341,7 @@ def test_get_de_energy_kev(test_fixture):
     )
 
     energy = get_de_energy_kev(v, species_bin_ph)
-    index_hydrogen = np.where(species_bin_ph == "H")
+    index_hydrogen = np.where(species_bin_ph == 1)
     actual_energy = energy[index_hydrogen[0]]
     expected_energy = df_ph["energy_revised"].astype("float")
 
@@ -434,13 +434,13 @@ def test_determine_species(test_fixture):
         "SSD",
     )
 
-    h_indices_ph = np.where(species_bin_ph == "H")[0]
+    h_indices_ph = np.where(species_bin_ph == 1)[0]
     ctof_indices_ph = np.where(
         (df_ph["cTOF"].astype("float") > UltraConstants.CTOF_SPECIES_MIN)
         & (df_ph["cTOF"].astype("float") < UltraConstants.CTOF_SPECIES_MAX)
     )[0]
 
-    h_indices_ssd = np.where(species_bin_ssd == "H")[0]
+    h_indices_ssd = np.where(species_bin_ssd == 1)[0]
     ctof_indices_ssd = np.where(
         (df_ssd["cTOF"].astype("float") > UltraConstants.CTOF_SPECIES_MIN)
         & (df_ssd["cTOF"].astype("float") < UltraConstants.CTOF_SPECIES_MAX)

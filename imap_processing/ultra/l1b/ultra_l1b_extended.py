@@ -761,13 +761,13 @@ def determine_species(tof: np.ndarray, path_length: np.ndarray, type: str) -> ND
     # Event TOF normalization to Z axis
     ctof, _ = get_ctof(tof, path_length, type)
     # Initialize bin array
-    species_bin = np.full(len(ctof), "UNKNOWN", dtype="U10")
+    species_bin = np.full(len(ctof), 255, dtype=np.uint8)
 
-    # Assign "H" to bins where cTOF is within the specified range
+    # Assign Species 1 ("H") to bins where cTOF is within the specified range
     species_bin[
         (ctof > UltraConstants.CTOF_SPECIES_MIN)
         & (ctof < UltraConstants.CTOF_SPECIES_MAX)
-    ] = "H"
+    ] = 1
 
     return species_bin
 

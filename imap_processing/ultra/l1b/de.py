@@ -101,7 +101,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     ctof = np.full(len(de_dataset["epoch"]), -1.0e31, dtype=np.float32)
     magnitude_v = np.full(len(de_dataset["epoch"]), -1.0e31, dtype=np.float32)
     energy = np.full(len(de_dataset["epoch"]), -1.0e31, dtype=np.float32)
-    species_bin = np.full(len(de_dataset["epoch"]), "UNKNOWN", dtype="U10")
+    species_bin = np.full(len(de_dataset["epoch"]), 255, dtype=np.uint8)
     t2 = np.full(len(de_dataset["epoch"]), -1.0e31, dtype=np.float32)
     event_times = np.full(len(de_dataset["epoch"]), -1.0e31, dtype=np.float64)
     spin_starts = np.full(len(de_dataset["epoch"]), -1.0e31, dtype=np.float64)

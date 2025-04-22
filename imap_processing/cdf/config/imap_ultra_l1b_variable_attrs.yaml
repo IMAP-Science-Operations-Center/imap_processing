@@ -213,13 +213,11 @@ energy_heliosphere:
   UNITS: keV
 
 species:
-  <<: *default
+  <<: *default_uint8
   DISPLAY_TYPE: no_plot
   CATDESC: Label species type.
   FIELDNAM: Label species type.
-  FILLVAL: "UNKNOWN"
-  FORMAT: A8
-  dtype: str
+  LABLAXIS: species
   UNITS: " "
 
 front_back_distance:

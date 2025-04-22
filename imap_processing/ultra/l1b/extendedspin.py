@@ -1,5 +1,6 @@
 """Calculate Extended Spin."""
 
+import numpy as np
 import xarray as xr
 
 from imap_processing.ultra.l1b.ultra_l1b_culling import (
@@ -46,8 +47,14 @@ def calculate_extendedspin(
     attitude_qf, spin_rates, spin_period, spin_starttime = flag_attitude(
         de_dataset["spin"].values, aux_dataset
     )
+    # Get the first epoch for each spin.
+    mask = xr.DataArray(np.isin(de_dataset["spin"], spin), dims="epoch")
+    filtered_dataset = de_dataset.where(mask, drop=True)
+    _, first_indices = np.unique(filtered_dataset["spin"].values, return_index=True)
+    first_epochs = filtered_dataset["epoch"].values[first_indices]
 
     # These will be the coordinates.
+    extendedspin_dict["epoch"] = first_epochs
     extendedspin_dict["spin_number"] = spin
     extendedspin_dict["energy_bin_geometric_mean"] = energy_midpoints
 
