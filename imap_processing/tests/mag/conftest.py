@@ -72,6 +72,27 @@ def mag_test_l1b_calibration_data():
     return calibration_data
 
 
+@pytest.fixture
+def mag_test_l2_data():
+    imap_dir = Path(__file__).parent
+    cal_file = (
+        imap_dir
+        / "validation"
+        / "calibration"
+        / "imap_mag_l2-calibration-matrices_20251017_v004.cdf"
+    )
+    calibration_data = load_cdf(cal_file)
+
+    offsets_data = load_cdf(
+        imap_dir
+        / "validation"
+        / "calibration"
+        / "imap_mag_l2-offsets-norm_20251017_20251017_v001.cdf"
+    )
+
+    return calibration_data, offsets_data
+
+
 def mag_generate_l1b_from_csv(df, logical_source):
     length = len(df.index)
     dataset = mag_l1a_dataset_generator(length)

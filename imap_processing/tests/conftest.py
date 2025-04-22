@@ -94,7 +94,7 @@ def _download_external_kernels(spice_test_data_path):
 
 @pytest.fixture(scope="session")
 def _download_test_data():
-    _download_external_data(test_data_paths())
+    _download_external_data(_test_data_paths())
 
 
 def _download_external_data(test_data_path_list):
@@ -125,7 +125,7 @@ def _download_external_data(test_data_path_list):
             logger.info(f"File already exists: {destination}")
 
 
-def test_data_paths():
+def _test_data_paths():
     """Defines a list of test data files to download from the AWS S3 bucket
     and the corresponding location in which to store the downloaded file"""
     test_data_path_list = [

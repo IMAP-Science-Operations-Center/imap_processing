@@ -9,7 +9,7 @@ class CoordNames(Enum):
     GENERIC_PIXEL = "pixel"
 
     TIME = "epoch"
-    ENERGY = "energy"
+    ENERGY_ULTRA = "energy_bin_geometric_mean"
     HEALPIX_INDEX = "healpix_index"
 
     # The names of the az/el angular coordinates may differ between L1C and L2 data

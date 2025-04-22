@@ -78,6 +78,8 @@ def create_dataset(
         "velocity_sc",
         "velocity_dps_sc",
         "velocity_dps_helio",
+        "direct_event_unit_velocity",
+        "direct_event_unit_position",
     }
     rates_keys = {
         "ena_rates",

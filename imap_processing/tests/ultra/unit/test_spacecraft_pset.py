@@ -30,7 +30,7 @@ def test_pset():
     # This is just setting up the data so that it is in the format of l1b_de_dataset.
     test_path = TEST_PATH / "ultra-90_raw_event_data_shortened.csv"
     df = pd.read_csv(test_path)
-    instrument_velocity = get_de_velocity(
+    instrument_velocity, _, _ = get_de_velocity(
         (df["Xf"], df["Yf"]), (df["Xb"], df["Yb"]), df["d"], df["TOF"].values
     )
 

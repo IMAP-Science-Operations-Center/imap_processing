@@ -1,14 +1,13 @@
 """MAG L1C processing module."""
 
 import logging
-from pathlib import Path
 from typing import Optional
 
 import numpy as np
 import xarray as xr
-import yaml
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.mag import imap_mag_sdc_configuration_v001 as configuration
 from imap_processing.mag.constants import ModeFlags, VecSec
 from imap_processing.mag.l1c.interpolation_methods import InterpolationFunction
 
@@ -59,12 +58,7 @@ def mag_l1c(
         first_input_dataset, second_input_dataset
     )
 
-    with open(
-        Path(__file__).parent.parent / "imap_mag_sdc-configuration_v001.yaml"
-    ) as f:
-        configuration = yaml.safe_load(f)
-
-    interp_function = InterpolationFunction[configuration["L1C_interpolation_method"]]
+    interp_function = InterpolationFunction[configuration.L1C_INTERPOLATION_METHOD]
     if normal_mode_dataset and burst_mode_dataset:
         full_interpolated_timeline = process_mag_l1c(
             normal_mode_dataset, burst_mode_dataset, interp_function

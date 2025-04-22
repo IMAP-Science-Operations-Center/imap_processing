@@ -143,6 +143,18 @@ paths:
           schema:
             type: string
         - in: query
+          name: ingestion_start_date
+          description: Search for all files with an ingestion start date on or after this time, in the format ``YYYYMMDD``.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: ingestion_end_date
+          description: Search for all files with an ingestion start date on or before this time, in the format ``YYYYMMDD``.
+          required: false
+          schema:
+            type: string
+        - in: query
           name: version
           description: The version of data product in the format ``vNNN`` (e.g. ``v001``). You can also choose to
             query ``--version latest`` in order to receive the most recent version of a file.

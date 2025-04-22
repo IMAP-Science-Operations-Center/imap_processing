@@ -31,22 +31,6 @@ longitude:
   LABLAXIS: longitude
   UNITS: degrees
 
-spin_angle:
-  <<: *default
-  CATDESC: Angular bin defined by central location of the bin
-  FIELDNAM: spin_angle
-  LABLAXIS: spin angle
-  # TODO: come back to format
-  UNITS: degrees
-
-time_bin:
-  <<: *default
-  CATDESC: Time bin defined by central location of the bin.
-  FIELDNAM: time_bin
-  LABLAXIS: time bin
-  # TODO: come back to format
-  UNITS: seconds
-
 species_bin:
   <<: *default
   CATDESC: Species bin defined by central location.
@@ -95,30 +79,6 @@ sid:
   # TODO: come back to format
   UNITS: " "
 
-row:
-  <<: *default
-  CATDESC: Row number.
-  FIELDNAM: row
-  LABLAXIS: row
-  # TODO: come back to format
-  UNITS: " "
-
-column:
-  <<: *default
-  CATDESC: Column number.
-  FIELDNAM: column
-  LABLAXIS: column
-  # TODO: come back to format
-  UNITS: " "
-
-spin:
-  <<: *default
-  CATDESC: Spin number at integration start.
-  FIELDNAM: spin
-  LABLAXIS: spin
-  # TODO: come back to format
-  UNITS: " "
-
 shcoarse:
   <<: *default
   CATDESC: CCSDS packet timestamp.
@@ -126,14 +86,6 @@ shcoarse:
   LABLAXIS: shcoarse
   # TODO: come back to format
   UNITS: seconds
-
-packetdata:
-  <<: *default
-  CATDESC: A 2D numpy array representing pixel values. Each pixel is stored as an unsigned 16-bit integer.
-  FIELDNAM: packetdata
-  LABLAXIS: packet data
-  # TODO: come back to format
-  UNITS: " "
 
 energy_bin_delta:
   <<: *default_float32

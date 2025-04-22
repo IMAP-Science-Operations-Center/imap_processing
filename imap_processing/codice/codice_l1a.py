@@ -925,12 +925,14 @@ def reshape_de_data(
             # Iterate over each event
             for event_index in range(num_events):
                 event_start = event_index * num_priorities
-                event_end = (event_index + 1) * num_priorities
+                event_end = event_start + num_priorities
                 event = priority_data[event_start:event_end]
                 # Separate out each individual field from the bit string
                 # The fields are packed into the bit string in reverse order, so
                 # we need to back them out in reverse order
-                bit_string = "".join(f"{byte:08b}" for byte in event)
+                bit_string = (
+                    f"{int.from_bytes(event, byteorder='big'):0{len(event) * 8}b}"
+                )
                 bit_position = 0
                 for field_name, bit_length in reversed(
                     constants.LO_DE_BIT_STRUCTURE.items()
@@ -944,7 +946,7 @@ def reshape_de_data(
                     )
                     bit_position += bit_length
 
-    # TODO: Implement specific np.dtype per field?
+    # TODO: Implement specific np.dtype and fill_val per field
 
     return data
 

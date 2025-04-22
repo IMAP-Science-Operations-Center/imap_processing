@@ -1,4 +1,3 @@
-# ruff: noqa: PLR0913
 """Module for GLOWS L1B data products."""
 
 import dataclasses
