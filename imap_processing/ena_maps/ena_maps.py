@@ -675,14 +675,14 @@ class AbstractSkyMap(ABC):
                     ),
                     dims=rewrapped_dims,
                 )
-            # Add the output coordinates to the rewrapped data, excluding the pixel
-            self.non_spatial_coords.update(
-                {
-                    key: self.data_1d[key].coords[key]
-                    for key in self.data_1d[key].coords
-                    if key != CoordNames.GENERIC_PIXEL.value
-                }
-            )
+                # Add the output coordinates to the rewrapped data, excluding the pixel
+                self.non_spatial_coords.update(
+                    {
+                        coord: self.data_1d[key].coords[coord]
+                        for coord in self.data_1d[key].coords
+                        if coord != CoordNames.GENERIC_PIXEL.value
+                    }
+                )
             return xr.Dataset(
                 rewrapped_data,
                 coords={**self.non_spatial_coords, **self.spatial_coords},
