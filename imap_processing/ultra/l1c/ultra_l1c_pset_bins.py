@@ -6,12 +6,8 @@ import pandas
 from numpy.typing import NDArray
 from scipy.interpolate import interp1d
 
-from imap_processing.ena_maps.utils.spatial_utils import build_spatial_bins
 from imap_processing.spice.geometry import (
-    SpiceFrame,
     cartesian_to_spherical,
-    imap_state,
-    spherical_to_cartesian,
 )
 from imap_processing.ultra.constants import UltraConstants
 
@@ -203,21 +199,7 @@ def get_helio_exposure_times(
     # Get direction unit vectors from (RA, Dec)
     ra = df_exposure["Right Ascension (deg)"].values
     dec = df_exposure["Declination (deg)"].values
-    exposure_flat = df_exposure["Exposure Time"].values  # Already in the correct 1D order
-
-    # Radial distance.
-    spherical_coords = np.stack([np.ones_like(ra), ra, dec], axis=-1)
-    cartesian_coords = spherical_to_cartesian(spherical_coords)
-    cartesian = cartesian_coords.reshape(-1, 3, order="F").T
-
-    # Spacecraft velocity in the pointing (DPS) frame wrt heliosphere.
-    state = imap_state(time, ref_frame=SpiceFrame.IMAP_DPS)
-
-    # Extract the velocity part of the state vector
-    spacecraft_velocity = state[3:6]
-
-    n_pix = hp.nside2npix(nside)
-    exposure_3d = np.zeros((n_pix, len(energy_midpoints)))
+    exposure_flat = df_exposure["Exposure Time"].values
 
     for i, energy_midpoint in enumerate(energy_midpoints):
         # Convert the midpoint energy to a velocity (km/s).
@@ -237,14 +219,12 @@ def get_helio_exposure_times(
         helio_normalized = helio_velocity.T / np.linalg.norm(
             helio_velocity.T, axis=1, keepdims=True
         )
-        # Converts vectors from Cartesian coordinates (x, y, z)
-        # into spherical coordinates.
-        spherical = cartesian_to_spherical(helio_normalized, degrees=True)
-        az, el = spherical[:, 1], spherical[:, 2]
-        hpix_idx = hp.ang2pix(nside, az, el, nest=nested, lonlat=True)
-
-        # Bin exposure by pixel
-        np.add.at(exposure_3d[:, i], hpix_idx, exposure_flat)
+        # A 1D array of linear indices used to track the bin_id.
+        idx = len(sc_exposure)
+        # Bins the transposed sc_exposure array.
+        binned_exposure = sc_exposure.T.flatten(order="F")[idx]
+        # Reshape the binned exposure.
+        exposure_3d[:, i] = exposure_flat
 
     return exposure_3d
 
