@@ -3,15 +3,14 @@
 import astropy_healpix.healpy as hp
 import numpy as np
 import pandas
+import pandas as pd
 from numpy.typing import NDArray
 from scipy.interpolate import interp1d
 
-from imap_processing.ena_maps.utils.spatial_utils import build_spatial_bins
 from imap_processing.spice.geometry import (
     SpiceFrame,
     cartesian_to_spherical,
     imap_state,
-    spherical_to_cartesian,
 )
 from imap_processing.ultra.constants import UltraConstants
 
@@ -175,24 +174,28 @@ def get_spacecraft_exposure_times(constant_exposure: pandas.DataFrame) -> NDArra
 
 def get_helio_exposure_times(
     time: np.ndarray,
-    df_exposure: np.ndarray,
+    df_exposure: pd.DataFrame,
     nside: int = 128,
     nested: bool = False,
 ) -> NDArray:
     """
-    Compute a 3D array of the exposure in the helio frame.
+    Compute a 2D array of the exposure in the helio frame.
 
     Parameters
     ----------
     time : np.ndarray
-        Median time of pointing in J2000 seconds.
-    sc_exposure : np.ndarray
-        Spacecraft exposure.
+        Median time of pointing in et.
+    df_exposure : pd.DataFrame
+        Spacecraft exposure in healpix coordinates.
+    nside : int, optional
+        The nside parameter of the Healpix tessellation (default is 128).
+    nested : bool, optional
+        Whether the Healpix tessellation is nested (default is False).
 
     Returns
     -------
-    exposure_3d : np.ndarray
-        A 3D array with dimensions (az, el, energy).
+    helio_exposure : np.ndarray
+        A 2D array of shape (npix, n_energy_bins).
 
     Notes
     -----
@@ -214,7 +217,7 @@ def get_helio_exposure_times(
     unit_dirs = hp.ang2vec(ra, dec, lonlat=True).T
 
     npix = hp.nside2npix(nside)
-    exposure_3d = np.zeros((npix, len(energy_midpoints)))
+    helio_exposure = np.zeros((npix, len(energy_midpoints)))
 
     for i, energy_midpoint in enumerate(energy_midpoints):
         # Convert the midpoint energy to a velocity (km/s).
@@ -234,16 +237,18 @@ def get_helio_exposure_times(
         # helio_normalized = helio_velocity.T / np.linalg.norm(
         #     helio_velocity.T, axis=1, keepdims=True
         # )
-        helio_normalized = helio_velocity / np.linalg.norm(helio_velocity, axis=1, keepdims=True)
+        helio_normalized = helio_velocity / np.linalg.norm(
+            helio_velocity, axis=1, keepdims=True
+        )
 
         helio_spherical = cartesian_to_spherical(helio_normalized)
         az, el = helio_spherical[:, 1], helio_spherical[:, 2]  # in degrees
 
         hpix_idx = hp.ang2pix(nside, az, el, nest=nested, lonlat=True)
 
-        exposure_3d[hpix_idx, i] = exposure_flat
+        helio_exposure[hpix_idx, i] = exposure_flat
 
-    return exposure_3d
+    return helio_exposure
 
 
 def get_spacecraft_sensitivity(
