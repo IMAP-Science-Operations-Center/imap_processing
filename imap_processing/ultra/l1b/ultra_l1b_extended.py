@@ -572,7 +572,7 @@ def get_de_energy_kev(v: np.ndarray, species: np.ndarray) -> NDArray:
     # Compute the sum of squares.
     v2 = np.sum(vv**2, axis=1)
 
-    index_hydrogen = np.where(species == "H")
+    index_hydrogen = np.where(species == 1)
     energy = np.full_like(v2, np.nan)
 
     # 1/2 mv^2 in Joules, convert to keV
