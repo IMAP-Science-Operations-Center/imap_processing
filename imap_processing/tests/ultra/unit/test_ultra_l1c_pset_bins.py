@@ -199,7 +199,6 @@ def test_get_spacecraft_sensitivity():
 
 
 @pytest.mark.external_test_data
-@pytest.mark.external_test_data
 def test_grid_sensitivity():
     """Tests grid_sensitivity function."""
     efficiencies_path = TEST_PATH / "Ultra_90_DPS_efficiencies_all.csv"
