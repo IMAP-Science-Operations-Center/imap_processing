@@ -62,8 +62,6 @@ def attr_mgr_l1a():
 
 
 @patch("imap_processing.lo.l1b.lo_l1b.instrument_pointing")
-@pytest.mark.external_kernel
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_lo_l1b(mock_instrument_pointing):
     # Arrange
     de_file = (
