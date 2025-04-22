@@ -722,9 +722,11 @@ def get_ctof(
 
     # Multiply times 100 to convert to hundredths of a millimeter.
     ctof = tof * dmin_ctof * 100 / path_length
+    magnitude_v = np.full(len(ctof), -1.0e31, dtype=np.float32)
 
-    # Convert from mm/0.1ns to km/s.
-    magnitude_v = dmin_ctof / np.abs(ctof) * 1e4
+    # Convert from mm/0.1ns to km/s for valid ctof values
+    valid_mask = ctof >= 0
+    magnitude_v[valid_mask] = dmin_ctof / ctof[valid_mask] * 1e4
 
     return ctof, magnitude_v
 
