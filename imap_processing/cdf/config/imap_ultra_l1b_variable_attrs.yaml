@@ -250,11 +250,41 @@ theta:
   LABLAXIS: theta
   UNITS: degrees
 
+phi_fwhm:
+  <<: *default_float32
+  CATDESC: FWHM of the phi distribution.
+  FIELDNAM: phi_fwhm
+  LABLAXIS: phi fwhm
+  UNITS: degrees
+
+theta_fwhm:
+  <<: *default_float32
+  CATDESC: FWHM of the theta distribution.
+  FIELDNAM: phi_fwhm
+  LABLAXIS: phi fwhm
+  UNITS: degrees
+
 event_efficiency:
   <<: *default_float32
   CATDESC: Estimated event efficiency for this path through the instrument.
   FIELDNAM: event_efficiency
   LABLAXIS: event efficiency
+  UNITS: " "
+
+direct_event_unit_velocity:
+  <<: *default_float32
+  CATDESC: Unit vector of the direct event velocity in the instrument frame.
+  DEPEND_1: component
+  FIELDNAM: direct_event_unit_velocity
+  LABLAXIS: direct event unit velocity
+  UNITS: " "
+
+direct_event_unit_position:
+  <<: *default_float32
+  CATDESC: Unit vector of the direct event position in the instrument frame.
+  DEPEND_1: component
+  FIELDNAM: direct_event_unit_position
+  LABLAXIS: direct event unit position
   UNITS: " "
 
 velocity_sc:

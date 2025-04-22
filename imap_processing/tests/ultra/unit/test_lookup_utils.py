@@ -66,7 +66,7 @@ def test_get_egy_norm():
 def test_get_image_params():
     """Tests function get_image_params."""
 
-    image_params = get_image_params("XFTLTOFF")
+    image_params = get_image_params("XFTLTOFF", "ultra45")
 
     assert image_params == 49.3
 

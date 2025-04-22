@@ -102,13 +102,10 @@ def generate_pset_dataset(
     config_df = CalibrationProductConfig.from_csv(calibration_prod_config_path)
 
     pset_dataset = empty_pset_dataset(
+        de_dataset.epoch.data[0],
         de_dataset.esa_energy_step.data,
         config_df.cal_prod_config.number_of_products,
         logical_source_parts["sensor"],
-    )
-    # For ISTP, epoch should be the center of the time bin.
-    pset_dataset.epoch.data[0] = np.mean(de_dataset.epoch.data[[0, -1]]).astype(
-        np.int64
     )
     pset_et = ttj2000ns_to_et(pset_dataset.epoch.data[0])
     # Calculate and add despun_z, hae_latitude, and hae_longitude variables to
@@ -138,13 +135,15 @@ def generate_pset_dataset(
 
 
 def empty_pset_dataset(
-    l1b_energy_steps: np.ndarray, n_cal_prods: int, sensor_str: str
+    epoch_val: int, l1b_energy_steps: np.ndarray, n_cal_prods: int, sensor_str: str
 ) -> xr.Dataset:
     """
     Allocate an empty xarray.Dataset with appropriate pset coordinates.
 
     Parameters
     ----------
+    epoch_val : int
+        The starting epoch in J2000 TT nanoseconds for data in the PSET.
     l1b_energy_steps : np.ndarray
         The array of esa_energy_step data from the L1B DE product.
     n_cal_prods : int
@@ -164,12 +163,12 @@ def empty_pset_dataset(
     # preallocate coordinates xr.DataArrays
     coords = dict()
     # epoch coordinate has only 1 entry for pointing set
-    epoch_attrs = attr_mgr.get_variable_attributes("epoch")
+    epoch_attrs = attr_mgr.get_variable_attributes("epoch", check_schema=False)
     epoch_attrs.update(
         attr_mgr.get_variable_attributes("hi_pset_epoch", check_schema=False)
     )
     coords["epoch"] = xr.DataArray(
-        np.empty(1, dtype=np.int64),  # TODO: get dtype from cdf attrs?
+        np.array([epoch_val], dtype=np.int64),  # TODO: get dtype from cdf attrs?
         name="epoch",
         dims=["epoch"],
         attrs=epoch_attrs,

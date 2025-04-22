@@ -842,6 +842,7 @@ class Mag(ProcessInstrument):
 
         if self.data_level == "l2":
             # TODO: Overwrite dependencies with versions from offsets file
+            # TODO: Ensure that parent_files attribute works with that
             input_data = load_cdf(science_files[0])
             # TODO: use ancillary from input
             calibration_dataset = load_cdf(
@@ -850,10 +851,18 @@ class Mag(ProcessInstrument):
                 / "mag"
                 / "validation"
                 / "calibration"
-                / "imap_mag_l1b-calibration_20240229_v001.cdf"
+                / "imap_mag_l2-calibration-matrices_20251017_v004.cdf"
+            )
+
+            offset_dataset = load_cdf(
+                Path(__file__).parent
+                / "tests"
+                / "mag"
+                / "validation"
+                / "calibration"
+                / "imap_mag_l2-offsets-norm_20251017_20251017_v001.cdf"
             )
             # TODO: Test data missing
-            offset_dataset = xr.Dataset()
             datasets = mag_l2(calibration_dataset, offset_dataset, input_data)
 
         return datasets

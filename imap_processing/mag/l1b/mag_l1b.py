@@ -334,13 +334,14 @@ def calibrate_vector(
     updated_vector : numpy.ndarray
         Calibrated vector.
     """
-    updated_vector: np.ndarray = input_vector.copy()
+    updated_vector: np.ndarray = input_vector.copy().astype(np.float64)
     if input_vector[3] % 1 != 0:
         raise ValueError("Range must be an integer.")
 
     range = int(input_vector[3])
-    x_y_z = input_vector[:3]
+    x_y_z = updated_vector[:3]
     updated_vector[:3] = np.dot(calibration_matrix.values[:, :, range], x_y_z)
+
     return updated_vector
 
 

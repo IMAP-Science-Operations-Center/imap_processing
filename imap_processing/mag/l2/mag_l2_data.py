@@ -1,6 +1,6 @@
 """Data structures for MAG L2 and L1D processing."""
 
-from dataclasses import dataclass, field
+from dataclasses import InitVar, dataclass, field
 from enum import Enum
 
 import numpy as np
@@ -25,6 +25,8 @@ class MagL2:
     Dataclass for MAG L2 data.
 
     Since L2 and L1D should have the same structure, this can be used for either level.
+
+    Some of the methods are also static, so they can be used in i-ALiRT processing.
 
     Attributes
     ----------
@@ -57,9 +59,27 @@ class MagL2:
     data_mode: DataMode
     magnitude: np.ndarray = field(init=False)
     is_l1d: bool = False
+    offsets: InitVar[np.ndarray] = None
+    timedelta: InitVar[np.ndarray] = None
 
-    def __post_init__(self) -> None:
-        """Calculate the magnitude of the vectors after initialization."""
+    def __post_init__(self, offsets: np.ndarray, timedelta: np.ndarray) -> None:
+        """
+        Calculate the magnitude of the vectors after initialization.
+
+        Parameters
+        ----------
+        offsets : np.ndarray
+            Offsets to apply to the vectors. Should be of shape (n, 3) where n is the
+            number of vectors.
+        timedelta : np.ndarray
+            Time deltas to shift the timestamps by. Should be of length n.
+            Given in seconds.
+        """
+        if offsets is not None:
+            self.vectors = self.apply_offsets(self.vectors, offsets)
+        if timedelta is not None:
+            self.epoch = self.shift_timestamps(self.epoch, timedelta)
+
         self.magnitude = self.calculate_magnitude(self.vectors)
 
     @staticmethod
@@ -83,6 +103,69 @@ class MagL2:
             Array of magnitudes of the input vectors.
         """
         return np.zeros(vectors.shape[0])  # type: ignore
+
+    @staticmethod
+    def apply_offsets(vectors: np.ndarray, offsets: np.ndarray) -> np.ndarray:
+        """
+        Apply the offsets to the vectors by adding them together.
+
+        These offsets are used to shift the vectors in the x, y, and z directions.
+        They can either be provided through a custom offsets datafile, or calculated
+        using a gradiometry algorithm.
+
+        Parameters
+        ----------
+        vectors : np.ndarray
+            Array of vectors to apply the offsets to. Should be of shape (n, 3) where n
+            is the number of vectors.
+        offsets : np.ndarray
+            Array of offsets to apply to the vectors. Should be of shape (n, 3) where n
+            is the number of vectors.
+
+        Returns
+        -------
+        np.ndarray
+            Array of vectors with offsets applied. Should be of shape (n, 3).
+        """
+        if vectors.shape[0] != offsets.shape[0]:
+            raise ValueError("Vectors and offsets must have the same length.")
+
+        offset_vectors: np.ndarray = vectors[:, :3] + offsets
+
+        # TODO: CDF files don't have NaNs. Emailed MAG to ask what this will look like.
+        # Any values where offsets is nan must also be nan
+        offset_vectors[np.isnan(offsets).any(axis=1)] = np.nan
+
+        return offset_vectors
+
+    @staticmethod
+    def shift_timestamps(epoch: np.ndarray, timedelta: np.ndarray) -> np.ndarray:
+        """
+        Shift the timestamps by the given timedelta.
+
+        If timedelta is positive, the epochs are shifted forward in time.
+
+        Parameters
+        ----------
+        epoch : np.ndarray
+            Array of timestamps to shift. Should be of length n.
+        timedelta : np.ndarray
+            Array of time deltas to shift the timestamps by. Should be the same length
+            as epoch. Given in seconds.
+
+        Returns
+        -------
+        np.ndarray
+            Shifted timestamps.
+        """
+        if epoch.shape[0] != timedelta.shape[0]:
+            raise ValueError(
+                "Input Epoch and offsets timedeltas must be the same length."
+            )
+
+        timedelta_ns = timedelta * 1e9
+        shifted_timestamps = epoch + timedelta_ns
+        return shifted_timestamps
 
     def truncate_to_24h(self, timestamp: str) -> None:
         """

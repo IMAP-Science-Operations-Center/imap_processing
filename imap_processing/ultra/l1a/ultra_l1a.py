@@ -95,7 +95,7 @@ def ultra_l1a(packet_file: str, apid_input: Optional[int] = None) -> list[xr.Dat
             decom_ultra_dataset.data_vars[key].attrs.update(attrs)
 
         # Add coordinate attributes
-        attrs = attr_mgr.get_variable_attributes("epoch")
+        attrs = attr_mgr.get_variable_attributes("epoch", check_schema=False)
         decom_ultra_dataset.coords["epoch"].attrs.update(attrs)
 
         output_datasets.append(decom_ultra_dataset)

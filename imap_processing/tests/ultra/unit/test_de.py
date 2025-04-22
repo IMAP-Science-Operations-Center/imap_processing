@@ -113,10 +113,3 @@ def test_calculate_de(l1b_de_dataset, df_filt):
         len(l1b_de_dataset["epoch"]),
         3,
     )
-
-    # Event efficiency
-    assert np.allclose(
-        l1b_de_dataset["event_efficiency"],
-        np.full(len(l1b_de_dataset["epoch"]), np.nan),
-        equal_nan=True,
-    )

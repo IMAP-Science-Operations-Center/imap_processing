@@ -20,6 +20,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_eventtimes,
     get_front_x_position,
     get_front_y_position,
+    get_fwhm,
     get_path_length,
     get_ph_tof_and_back_positions,
     get_phi_theta,
@@ -104,11 +105,14 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     event_times = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
     spin_starts = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
     spin_period_sec = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
+    start_type = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.uint8)
 
     xf[valid_indices] = get_front_x_position(
         de_dataset["start_type"].data[valid_indices],
         de_dataset["start_pos_tdc"].data[valid_indices],
+        f"ultra{sensor}",
     )
+    start_type[valid_indices] = de_dataset["start_type"].data[valid_indices]
 
     (
         event_times[valid_indices],
@@ -131,6 +135,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
         de_dataset["energy_ph"].data[ph_indices],
         xb[ph_indices],
         yb[ph_indices],
+        f"ultra{sensor}",
     )
     r[ph_indices] = get_path_length(
         (xf[ph_indices], yf[ph_indices]),
@@ -151,8 +156,10 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     )
 
     # SSD
-    tof[ssd_indices] = get_ssd_tof(de_dataset, xf)
-    yb[ssd_indices], _, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset)
+    tof[ssd_indices] = get_ssd_tof(de_dataset, xf, f"ultra{sensor}")
+    yb[ssd_indices], _, ssd_number = get_ssd_back_position_and_tof_offset(
+        de_dataset, f"ultra{sensor}"
+    )
     xc[ssd_indices] = np.zeros(len(ssd_indices))
     xb[ssd_indices] = np.zeros(len(ssd_indices))
     etof[ssd_indices] = np.zeros(len(ssd_indices))
@@ -195,13 +202,15 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     de_dict["phi"] = phi
     de_dict["theta"] = theta
 
-    v = get_de_velocity(
+    v, vhat, r = get_de_velocity(
         (de_dict["x_front"], de_dict["y_front"]),
         (de_dict["x_back"], de_dict["y_back"]),
         de_dict["front_back_distance"],
         de_dict["tof_start_stop"],
     )
     de_dict["direct_event_velocity"] = v.astype(np.float32)
+    de_dict["direct_event_unit_velocity"] = vhat.astype(np.float32)
+    de_dict["direct_event_unit_position"] = r.astype(np.float32)
 
     de_dict["tof_energy"] = get_de_energy_kev(v, species_bin)
     de_dict["energy"] = energy
@@ -224,9 +233,12 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     de_dict["energy_spacecraft"] = get_de_energy_kev(sc_dps_velocity, species_bin)
     de_dict["energy_heliosphere"] = get_de_energy_kev(helio_velocity, species_bin)
 
-    # TODO: TBD.
-    de_dict["event_efficiency"] = np.full(
-        len(de_dataset["epoch"]), np.nan, dtype=np.float32
+    de_dict["phi_fwhm"], de_dict["theta_fwhm"] = get_fwhm(
+        start_type,
+        f"ultra{sensor}",
+        de_dict["tof_energy"],
+        de_dict["phi"],
+        de_dict["theta"],
     )
 
     dataset = create_dataset(de_dict, name, "l1b")
