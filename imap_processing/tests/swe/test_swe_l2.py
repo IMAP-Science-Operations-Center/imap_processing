@@ -345,6 +345,13 @@ def test_swe_l2(mock_read_in_flight_cal_data, use_fake_spin_data_for_time):
         swe_constants.N_ANGLE_SECTORS,
     )
 
+    rate = l1b_dataset[0].science_data.to_numpy()
+    psd = l2_dataset.phase_space_density_spin_sector.to_numpy()
+    rate = rate[2, :, :, 3]  # nonzero counts at all energy & spin
+    psd = psd[2, :, :, 3]
+    cal_factor = psd / rate  # same CEM, should be constant at a given energy
+    assert np.allclose(cal_factor, cal_factor[:, 0:1], rtol=1e-9, atol=0)
+
     # Write L2 to CDF
     l2_dataset.attrs["Data_version"] = "v002"
     l2_cdf_filepath = write_cdf(l2_dataset)
