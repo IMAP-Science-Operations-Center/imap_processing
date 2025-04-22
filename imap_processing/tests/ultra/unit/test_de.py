@@ -63,7 +63,7 @@ def test_calculate_de(l1b_de_dataset, df_filt):
             & (l1b_de_dataset["tof_corrected"] < UltraConstants.CTOF_SPECIES_MAX)
         )[0]
     ]
-    assert np.all(species_array == "H")
+    assert np.all(species_array == 1)
 
     # Velocities in various frames
     test_tof = l1b_de_dataset["tof_start_stop"]

@@ -42,6 +42,10 @@ def mock_data_l1b_de_dict():
 
 @pytest.fixture
 def mock_data_l1b_extendedspin_dict():
+    epoch = np.array(
+        [760591786368000000, 760591787368000000, 760591788368000000],
+        dtype="datetime64[ns]",
+    )
     spin = np.array(
         [0, 1, 2],
         dtype="uint32",
@@ -53,6 +57,7 @@ def mock_data_l1b_extendedspin_dict():
     spin_start_time = np.array([0, 1, 2], dtype="uint64")
     quality = np.zeros((2, 3), dtype="uint16")
     data_dict = {
+        "epoch": epoch,
         "spin_number": spin,
         "energy_bin_geometric_mean": energy,
         "spin_start_time": spin_start_time,
