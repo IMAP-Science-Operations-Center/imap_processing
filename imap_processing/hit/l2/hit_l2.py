@@ -146,7 +146,7 @@ def calculate_intensities(
         )
     ) - factors.b
 
-    # Apply fill value where rates are invalid
+    # Apply intensity where rates are not equal to the fill value
     intensity = xr.where(rates == FILLVAL_FLOAT32, FILLVAL_FLOAT32, intensity)
 
     return intensity
