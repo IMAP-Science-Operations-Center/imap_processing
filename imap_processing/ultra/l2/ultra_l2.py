@@ -32,8 +32,6 @@ DEFAULT_ULTRA_L2_MAP_STRUCTURE: ena_maps.RectangularSkyMap | ena_maps.HealpixSky
     )
 )
 
-DEBUG_MODE = True
-
 # Set some default Healpix parameters - these must be defined, even if also
 # present in the DEFAULT_ULTRA_L2_MAP_STRUCTURE, because we always make a Healpix map
 # regardless of the output map type
@@ -69,7 +67,6 @@ VARIABLES_TO_DROP_AFTER_FLUX_CALCULATION = [
 
 # Object which holds CDF attributes for the map
 cdf_attrs = ImapCdfAttributes()
-cdf_attrs.add_instrument_variable_attrs(instrument="ultra", level="l2")
 cdf_attrs.add_instrument_global_attrs(instrument="ultra")
 
 
@@ -237,6 +234,8 @@ def ultra_l2(
     output_map_structure: (
         ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap
     ) = DEFAULT_ULTRA_L2_MAP_STRUCTURE,
+    *,
+    store_subdivision_depth: bool = False,
 ) -> list[xr.Dataset]:
     """
     Generate and format Ultra L2 ENA Map Product from L1C Products.
@@ -248,18 +247,17 @@ def ultra_l2(
     output_map_structure : ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap, optional
         Empty SkyMap structure providing the properties of the map to be generated.
         Defaults to DEFAULT_ULTRA_L2_MAP_STRUCTURE defined in this module.
+    store_subdivision_depth : bool, optional
+        If True, the subdivision depth required to calculate each rectangular pixel
+        value will be added to the map dataset.
+        E.g. a "flux_subdivision_depth" DataArray will be added to the map dataset.
+        Defaults to False.
 
     Returns
     -------
     list[xarray.Dataset,]
         L2 output dataset containing map of the counts on the sky.
         Wrapped in a list for consistency with other product levels.
-
-    Raises
-    ------
-    NotImplementedError
-        If asked to project to a rectangular map.
-        # TODO: This is coming shortly
     """
     l1c_products = data_dict.values()
     num_l1c_products = len(l1c_products)
@@ -267,7 +265,9 @@ def ultra_l2(
 
     ultra_sensor_number = 45 if "45sensor" in next(iter(data_dict.keys())) else 90
     logger.info(f"Assuming all products are from sensor {ultra_sensor_number}")
-    global_attrs_key_base = f"imap_ultra_l2_{ultra_sensor_number}sensor-enafluxmap"
+
+    # Global attributes handling - this key will be different for sensor and tiling type
+    global_attrs_key_base = f"imap_ultra_l2_{ultra_sensor_number}sensor-enamap"
 
     # Regardless of the output sky tiling type, we will directly
     # project the PSET values into a healpix map. However, if we are outputting
@@ -279,6 +279,17 @@ def ultra_l2(
 
     # Output formatting for HEALPIX tiling
     if output_map_structure.tiling_type is ena_maps.SkyTilingType.HEALPIX:
+        cdf_attrs.add_instrument_variable_attrs(instrument="ultra", level="l2-healpix")
+
+        # Add the longitude and latitude coordinate-like data_vars to the map dataset
+        # These are not xarray coordinates, but the lon/lat corresponding to the
+        # Healpix pixel centers.
+        for i, angle_name in enumerate(["longitude", "latitude"]):
+            healpix_skymap.data_1d[angle_name] = xr.DataArray(
+                data=healpix_skymap.az_el_points[:, i],
+                dims=(CoordNames.GENERIC_PIXEL.value,),
+            )
+
         map_dataset = healpix_skymap.to_dataset()
         # Add attributes related to the map
         map_attrs = {
@@ -288,13 +299,16 @@ def ultra_l2(
         global_attrs_key = f"{global_attrs_key_base}healpix"
 
     elif output_map_structure.tiling_type is ena_maps.SkyTilingType.RECTANGULAR:
+        cdf_attrs.add_instrument_variable_attrs(
+            instrument="ultra", level="l2-rectangular"
+        )
         rectangular_skymap, subdiv_depth_dict = healpix_skymap.to_rectangular_skymap(
             rect_spacing_deg=output_map_structure.spacing_deg,
             value_keys=healpix_skymap.data_1d.data_vars,
         )
 
         # Add the subdiv_depth_by_pixel of each key to the map dataset if requested
-        if DEBUG_MODE:
+        if store_subdivision_depth:
             logger.info(
                 "For debugging purposes, adding the subdivision depth "
                 "required to calculate each rectangular pixel value to the map dataset."
@@ -318,7 +332,7 @@ def ultra_l2(
         global_attrs_key = f"{global_attrs_key_base}rectangular"
 
     # Get the global attributes for the map with the key specific to sensor number and
-    # tiling type. E.g. 'imap_ultra_l2_90sensor-enafluxmaphealpix'
+    # tiling type. E.g. 'imap_ultra_l2_90sensor-enamaphealpix'
     map_attrs.update(cdf_attrs.get_global_attributes(global_attrs_key))
 
     # Always add the following attributes to the map
@@ -350,9 +364,14 @@ def ultra_l2(
         if "subdivision_depth" in variable:
             continue
 
+        # The longitude and latitude variables will be present only in Healpix tiled
+        # map, and, as support_data, should not have schema validation
         map_dataset[variable].attrs.update(
             cdf_attrs.get_variable_attributes(
                 variable_name=variable,
+                check_schema=(
+                    True if variable not in ["longitude", "latitude"] else False
+                ),
             )
         )
     for coord_variable in map_dataset.coords:
