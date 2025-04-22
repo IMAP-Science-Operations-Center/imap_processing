@@ -40,9 +40,7 @@ TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 def test_fixture(de_dataset, events_fsw_comparison_theta_0):
     """Fixture to compute and return yf and related data."""
     # Remove start_type with fill values
-    de_dataset = de_dataset.where(
-        de_dataset["start_type"] != np.iinfo(np.int64).min, drop=True
-    )
+    de_dataset = de_dataset.where(de_dataset["start_type"] != 255, drop=True)
 
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[df["StartType"] != -1]

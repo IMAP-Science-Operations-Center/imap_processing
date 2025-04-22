@@ -1,3 +1,4 @@
+# Source: https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html#FILLVAL
 default_attrs: &default
   # Assumed values for all variable attrs unless overwritten
   DEPEND_0: epoch
@@ -51,7 +52,7 @@ default_int32_attrs: &default_int32
 
 default_float32_attrs: &default_float32
   <<: *default
-  FILLVAL: .NAN
+  FILLVAL: -1.0e31
   FORMAT: F10.2
   VALIDMIN: -3.4028235e+38
   VALIDMAX: 3.4028235e+38
@@ -59,7 +60,7 @@ default_float32_attrs: &default_float32
 
 default_float64_attrs: &default_float64
   <<: *default
-  FILLVAL: .NAN
+  FILLVAL: -1.0e31
   FORMAT: F10.2
   VALIDMIN: -1.7976931348623157e+308
   VALIDMAX: 1.7976931348623157e+308

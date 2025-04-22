@@ -22,7 +22,7 @@ def test_calculate_de(l1b_de_dataset, df_filt):
 
     l1b_de_dataset = l1b_de_dataset[0]
     l1b_de_dataset = l1b_de_dataset.where(
-        l1b_de_dataset["start_type"] != np.iinfo(np.int64).min, drop=True
+        l1b_de_dataset["start_type"] != 255, drop=True
     )
     # Front and back positions
     assert np.allclose(l1b_de_dataset["x_front"].data, df_filt["Xf"].astype("float"))
