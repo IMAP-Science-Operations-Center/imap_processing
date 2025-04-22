@@ -96,9 +96,12 @@ def calculate_phase_space_density(l1b_dataset: xr.Dataset) -> xr.Dataset:
             for val in esa_table_nums
         ]
     )
+    # All sectors have same energy. Would be more rigorous to use the known sweep pattern
+    particle_energy_data.sort(axis=-1)
     particle_energy_data = particle_energy_data.reshape(
         -1, swe_constants.N_ESA_STEPS, swe_constants.N_ANGLE_SECTORS
     )
+    #assert not np.diff(particle_energy_data, axis=-1).any()
 
     # Calculate phase space density using formula:
     #   2 * (C/tau) / (G * 1.237e31 * eV^2)
