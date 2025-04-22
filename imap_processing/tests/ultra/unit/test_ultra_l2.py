@@ -230,3 +230,95 @@ class TestUltraL2:
 
         assert map_dataset.attrs["HEALPix_nside"] == map_structure.nside
         assert map_dataset.attrs["HEALPix_nest"] == map_structure.nested
+
+    @pytest.mark.usefixtures("_setup_spice_kernels_list")
+    def test_ultra_l2_rectangular(self, mock_data_dict, furnish_kernels):
+        rect_map_structure = ena_maps.AbstractSkyMap.from_dict(
+            {
+                "sky_tiling_type": "RECTANGULAR",
+                "spice_reference_frame": "ECLIPJ2000",
+                "projection_method_and_values": {
+                    "PUSH": ["counts", "exposure_factor", "sensitivity"],
+                },
+                "spacing_deg": 10,  # Larger spacing for faster test
+            }
+        )
+        hp_map_structure = ena_maps.AbstractSkyMap.from_dict(
+            {
+                "sky_tiling_type": "HEALPIX",
+                "spice_reference_frame": "ECLIPJ2000",
+                "projection_method_and_values": {
+                    "PUSH": ["counts", "exposure_factor", "sensitivity"],
+                },
+                "nside": 16,
+                "nested": True,
+            }
+        )
+        # Create both a rectangular map and a healpix map
+        with furnish_kernels(self.required_kernel_names):
+            [
+                rect_map_dataset,
+            ] = ultra_l2.ultra_l2(
+                data_dict=mock_data_dict,
+                output_map_structure=rect_map_structure,
+                store_subdivision_depth=False,
+            )
+            [
+                hp_map_dataset,
+            ] = ultra_l2.ultra_l2(
+                data_dict=mock_data_dict,
+                output_map_structure=hp_map_structure,
+            )
+
+        assert (
+            rect_map_dataset.attrs["Spacing_degrees"] == rect_map_structure.spacing_deg
+        )
+        assert (
+            rect_map_dataset.attrs["Spice_reference_frame"]
+            == rect_map_structure.spice_reference_frame.value
+        )
+
+        # Check the dims of the key variables
+        expected_flux_dims = (
+            CoordNames.TIME.value,
+            CoordNames.ENERGY_ULTRA.value,
+            CoordNames.AZIMUTH_L2.value,
+            CoordNames.ELEVATION_L2.value,
+        )
+        assert rect_map_dataset["flux"].dims == expected_flux_dims
+        assert rect_map_dataset["flux_uncertainty"].dims == expected_flux_dims
+        assert rect_map_dataset["exposure_factor"].dims == (
+            CoordNames.TIME.value,
+            CoordNames.AZIMUTH_L2.value,
+            CoordNames.ELEVATION_L2.value,
+        )
+
+        # Check that '_label' coordinates were added for all coordinates except 'epoch'
+        for coord_var in expected_flux_dims[1:]:
+            assert f"{coord_var}_label" in rect_map_dataset.coords
+
+        # Check that '_subdivision_depth' variables were not added because the
+        # store_subdivision_depth flag was set to False
+        assert "flux_subdivision_depth" not in rect_map_dataset.data_vars
+
+        # The mean flux should be close between the healpix and rectangular maps
+        # Test they agree to within 1% of one another
+        np.testing.assert_allclose(
+            rect_map_dataset["flux"].mean(),
+            hp_map_dataset["flux"].mean(),
+            rtol=1e-2,
+            atol=1e-12,
+        )
+
+        # Variable Metadata spot checks
+        flux_attrs = rect_map_dataset["flux"].attrs
+        assert flux_attrs["VAR_TYPE"] == "data"
+        for depend_num, depend in enumerate(expected_flux_dims):
+            assert flux_attrs[f"DEPEND_{depend_num}"] == depend
+            if depend_num > 0:
+                assert flux_attrs[f"LABL_PTR_{depend_num}"] == f"{depend}_label"
+        assert flux_attrs["UNITS"] == "counts/(s * cm^3 * Sr * KeV)"
+
+        exposure_attrs = rect_map_dataset["exposure_factor"].attrs
+        assert exposure_attrs["VAR_TYPE"] == "data"
+        assert exposure_attrs["UNITS"] == "seconds"
