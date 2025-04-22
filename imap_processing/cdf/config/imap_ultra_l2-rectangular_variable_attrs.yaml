@@ -1,0 +1,150 @@
+default_coords_int: &default_coords_int
+  # Assumed values for all int coordinate attrs unless overwritten
+  FILLVAL: -9223372036854775808
+  FORMAT: I19
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854769664
+  VAR_TYPE: support_data
+
+default_coords_float32: &default_coords_float32
+  # Assumed values for all float coordinate attrs unless overwritten
+  FILLVAL: .NAN
+  FORMAT: F12.6
+  VALIDMIN: -3.4028235e+38
+  VALIDMAX: 3.4028235e+38
+  dtype: float32
+  VAR_TYPE: support_data
+
+default_attrs: &default
+  # Assumed values for all variable attrs unless overwritten
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: -9223372036854775808
+  FORMAT: I12
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854775807
+  VAR_TYPE: data
+  UNITS: " "
+
+default_float32_attrs: &default_float32
+  <<: *default
+  FILLVAL: .NAN
+  FORMAT: F12.6
+  VALIDMIN: -3.4028235e+38
+  VALIDMAX: 3.4028235e+38
+  dtype: float32
+
+# Define Rectangularly Tiled Map values
+
+# Define Coordinates
+longitude:
+  <<: *default_coords_float32
+  CATDESC: Longitude in range [0, 360] corresponding to center of pixel.
+  FIELDNAM: longitude
+  LABLAXIS: longitude
+  UNITS: degrees
+  VAR_TYPE: support_data
+
+longitude_label:
+  VAR_TYPE: metadata
+  CATDESC: Longitude in range [0, 360] corresponding to center of pixel.
+  FIELDNAM: longitude
+  FORMAT: A8
+  DEPEND_1: longitude
+
+latitude:
+  <<: *default_coords_float32
+  CATDESC: Latitude in range [-90, 90] corresponding to center of pixel.
+  FIELDNAM: latitude
+  LABLAXIS: latitude
+  UNITS: degrees
+  VAR_TYPE: support_data
+
+latitude_label:
+  VAR_TYPE: metadata
+  CATDESC: Latitude in range [-90, 90] corresponding to center of pixel.
+  FIELDNAM: latitude
+  FORMAT: A8
+  DEPEND_1: latitude
+
+energy_bin_geometric_mean:
+  <<: *default_coords_float32
+  CATDESC: Geometric mean of energy bin.
+  FIELDNAM: energy_bin_geometric_mean
+  LABLAXIS: energy bin geometric mean
+  UNITS: KeV
+  VAR_TYPE: support_data
+
+energy_bin_geometric_mean_label:
+  VAR_TYPE: metadata
+  CATDESC: Geometric mean of energy bin.
+  FIELDNAM: energy_bin_geometric_mean
+  FORMAT: A10
+  DEPEND_1: energy_bin_geometric_mean
+
+# Define Data variables
+exposure_factor:
+  <<: *default_float32
+  CATDESC: Exposure time calculated from multiple pointing sets.
+  FIELDNAM: exposure_times
+  DEPEND_0: epoch
+  DEPEND_1: longitude
+  DEPEND_2: latitude
+  UNITS: seconds
+  VAR_TYPE: data
+  LABL_PTR_1: longitude_label
+  LABL_PTR_2: latitude_label
+
+flux:
+  <<: *default_float32
+  CATDESC: Flux calculated from multiple pointing sets.
+  FIELDNAM: flux
+  UNITS: counts/(s * cm^3 * Sr * KeV)
+  DEPEND_0: epoch
+  DEPEND_1: energy_bin_geometric_mean
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  VAR_TYPE: data
+  LABL_PTR_1: energy_bin_geometric_mean_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+flux_uncertainty:
+  <<: *default_float32
+  CATDESC: Statistical uncertainty on flux.
+  FIELDNAM: flux uncertainty
+  UNITS: counts/(s * cm^3 * Sr * KeV)
+  DEPEND_0: epoch
+  DEPEND_1: energy_bin_geometric_mean
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  VAR_TYPE: data
+  LABL_PTR_1: energy_bin_geometric_mean_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+sensitivity:
+  <<: *default_float32
+  CATDESC: Calibration/sensitivity factor calculated from multiple pointing sets.
+  FIELDNAM: sensitivity
+  UNITS: cm^-3
+  DEPEND_0: epoch
+  DEPEND_1: energy_bin_geometric_mean
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  VAR_TYPE: data
+  LABL_PTR_1: energy_bin_geometric_mean_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+observation_time:
+  <<: *default
+  CATDESC: Exposure time weighted mean of L1C pointing epochs.
+  FIELDNAM: observation_time
+  UNITS: " "
+  DEPEND_0: epoch
+  DEPEND_1: longitude
+  DEPEND_2: latitude
+  VAR_TYPE: data
+  LABL_PTR_1: longitude_label
+  LABL_PTR_2: latitude_label
