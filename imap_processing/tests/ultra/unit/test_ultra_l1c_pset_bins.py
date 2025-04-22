@@ -121,6 +121,7 @@ def test_get_helio_exposure_times():
 
     start_time = 829485054.185627
     end_time = 829567884.185627
+    import numpy as np
     mid_time = np.average([start_time, end_time])
 
     constant_exposure = TEST_PATH / "ultra_90_dps_exposure.csv"
@@ -128,26 +129,26 @@ def test_get_helio_exposure_times():
 
     exposure_3d = get_helio_exposure_times(mid_time, df_exposure)
 
-    # import matplotlib
-    # matplotlib.use("TkAgg")
-    #
-    # import matplotlib.pyplot as plt
-    # import healpy as hp
-    # import numpy as np
-    #
-    # # Pick one energy bin (e.g., the first)
-    # example_data = exposure_3d[:, 0]  # 1D array with 196608 pixels
-    #
-    # hp.mollview(
-    #     example_data,
-    #     title="HEALPix Exposure – Energy Bin 0",
-    #     unit="Exposure Time",
-    #     norm="hist",
-    #     cmap="viridis",
-    #     coord="G"
-    # )
-    #
-    # plt.show()
+    import matplotlib
+    matplotlib.use("TkAgg")
+
+    import matplotlib.pyplot as plt
+    import healpy as hp
+    import numpy as np
+
+    # Pick one energy bin (e.g., the first)
+    example_data = exposure_3d[:, 0]  # 1D array with 196608 pixels
+    smoothed_exposure = hp.smoothing(exposure_3d[:, 0], fwhm=np.radians(2.0), verbose=False)
+    hp.mollview(
+        smoothed_exposure,
+        title="HEALPix Exposure – Energy Bin 0",
+        unit="Exposure Time",
+        norm="hist",
+        cmap="viridis",
+        coord="G"
+    )
+
+    plt.show()
 
     energy_bin_edges, energy_midpoints, _ = build_energy_bins()
 

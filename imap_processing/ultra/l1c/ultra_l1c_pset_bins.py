@@ -203,8 +203,7 @@ def get_helio_exposure_times(
     # Get direction unit vectors from (RA, Dec)
     ra = df_exposure["Right Ascension (deg)"].values
     dec = df_exposure["Declination (deg)"].values
-    exposure_2d = np.squeeze(df_exposure["Exposure Time"].values)  # shape: (720, 360)
-    exposure_flat = exposure_2d.T.flatten(order="F")  # shape: (360 * 720,)
+    exposure_flat = df_exposure["Exposure Time"].values  # Already in the correct 1D order
 
     # Radial distance.
     spherical_coords = np.stack([np.ones_like(ra), ra, dec], axis=-1)
