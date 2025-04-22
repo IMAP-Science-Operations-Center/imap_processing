@@ -670,7 +670,7 @@ def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.ndarray) -> NDArray[np.fl
     energy_norm : np.ndarray
         Energy measured using the SSD.
     """
-    ssd_indices = np.where(de_dataset["stop_type"].data >= 8)[0]
+    ssd_indices = np.nonzero(np.isin(de_dataset["stop_type"], StopType.SSD.value))[0]
     energy = de_dataset["energy_ph"].data[ssd_indices]
 
     composite_energy = np.empty(len(energy), dtype=np.float64)
