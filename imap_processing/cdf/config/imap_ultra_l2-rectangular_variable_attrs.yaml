@@ -113,7 +113,7 @@ flux_uncertainty:
   <<: *default_float32
   CATDESC: Statistical uncertainty on flux.
   FIELDNAM: flux uncertainty
-  UNITS: counts/(s * cm^3 * Sr * KeV)
+  UNITS: counts/(s * cm^2 * Sr * KeV)
   DEPEND_0: epoch
   DEPEND_1: energy_bin_geometric_mean
   DEPEND_2: longitude
