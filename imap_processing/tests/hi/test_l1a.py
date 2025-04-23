@@ -11,15 +11,14 @@ def test_sci_de_decom(hi_l0_test_data_path):
     """Test science direct event data"""
 
     bin_data_path = hi_l0_test_data_path / "H90_sci_de_20241104.bin"
-    processed_data = hi_l1a(bin_data_path, data_version="001")
+    processed_data = hi_l1a(bin_data_path)
 
     assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_90sensor-de"
-    assert processed_data[0].attrs["Data_version"] == "001"
 
     # TODO: Verify correct unpacking of sample data. Issue: #1186
 
     # Write to CDF
-    cdf_filename = "imap_hi_l1a_90sensor-de_20241105_v001.cdf"
+    cdf_filename = "imap_hi_l1a_90sensor-de_20241105_v999.cdf"
     cdf_filepath = write_cdf(processed_data[0])
     assert cdf_filepath.name == cdf_filename
 
@@ -27,10 +26,10 @@ def test_sci_de_decom(hi_l0_test_data_path):
 def test_diag_fee_decom(hi_l0_test_data_path):
     """Test diag_fee data"""
     bin_data_path = hi_l0_test_data_path / "H45_diag_fee_20250208.bin"
-    processed_data = hi_l1a(packet_file_path=bin_data_path, data_version="001")
+    processed_data = hi_l1a(packet_file_path=bin_data_path)
     dataset = processed_data[0]
     cdf_filepath = write_cdf(processed_data[0], istp=False)
-    assert cdf_filepath.name == "imap_hi_l1a_45sensor-diagfee_20250208_v001.cdf"
+    assert cdf_filepath.name == "imap_hi_l1a_45sensor-diagfee_20250208_v999.cdf"
 
     assert np.unique(processed_data[0]["pkt_apid"].values) == HIAPID.H45_DIAG_FEE.value
 
@@ -58,11 +57,10 @@ def test_app_nhk_decom(hi_l0_test_data_path):
 
     # Unpack housekeeping data
     bin_data_path = hi_l0_test_data_path / "H90_NHK_20241104.bin"
-    processed_data = hi_l1a(packet_file_path=bin_data_path, data_version="001")
+    processed_data = hi_l1a(packet_file_path=bin_data_path)
 
     assert np.unique(processed_data[0]["pkt_apid"].values) == HIAPID.H90_APP_NHK.value
     assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_90sensor-hk"
-    assert processed_data[0].attrs["Data_version"] == "001"
     # TODO: compare with validation data once we have it. Issue: #1184
 
     # Write CDF
@@ -70,13 +68,13 @@ def test_app_nhk_decom(hi_l0_test_data_path):
 
     # TODO: ask Vivek about this date mismatch between the file name
     # and the data. May get resolved when we have good sample data.
-    assert cem_raw_cdf_filepath.name == "imap_hi_l1a_90sensor-hk_20241105_v001.cdf"
+    assert cem_raw_cdf_filepath.name == "imap_hi_l1a_90sensor-hk_20241105_v999.cdf"
 
 
 def test_app_hist_decom(hi_l0_test_data_path):
     """Test histogram (SCI_CNT) data"""
     bin_data_path = hi_l0_test_data_path / "H90_sci_cnt_20241104.bin"
-    processed_data = hi_l1a(packet_file_path=bin_data_path, data_version="001")
+    processed_data = hi_l1a(packet_file_path=bin_data_path)
 
     assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_90sensor-hist"
     # TODO: compare with validation data once we have it. Issue: #1185

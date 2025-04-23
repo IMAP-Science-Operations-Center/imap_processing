@@ -23,7 +23,11 @@ _BACK_POS_DF_ULTRA90 = pd.read_csv(
     BASE_PATH / "ultra90_back-pos-luts.csv", index_col="Index_offset"
 )
 _ENERGY_NORM_DF = pd.read_csv(BASE_PATH / "EgyNorm.mem.csv")
-_IMAGE_PARAMS_DF = pd.read_csv(BASE_PATH / "FM45_Startup1_ULTRA_IMGPARAMS_20240719.csv")
+_IMAGE_PARAMS_DF = {
+    "ultra45": pd.read_csv(BASE_PATH / "FM45_Startup1_ULTRA_IMGPARAMS_20240719.csv"),
+    "ultra90": pd.read_csv(BASE_PATH / "FM90_Startup1_ULTRA_IMGPARAMS_20240719.csv"),
+}
+
 _FWHM_TABLES = {
     ("left", "ultra45"): pd.read_csv(BASE_PATH / "Angular_Profiles_FM45_LeftSlit.csv"),
     ("right", "ultra45"): pd.read_csv(
@@ -153,7 +157,7 @@ def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray) -> npt.NDArra
     return _ENERGY_NORM_DF["NormEnergy"].iloc[row_number]
 
 
-def get_image_params(image: str) -> np.float64:
+def get_image_params(image: str, sensor: str) -> np.float64:
     """
     Lookup table for image parameters.
 
@@ -165,13 +169,16 @@ def get_image_params(image: str) -> np.float64:
     ----------
     image : str
         The column name to lookup in the CSV file, e.g., 'XFTLTOFF' or 'XFTRTOFF'.
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
 
     Returns
     -------
     value : np.float64
         Image parameter value from the CSV file.
     """
-    value: np.float64 = _IMAGE_PARAMS_DF[image].values[0]
+    lookup_table = _IMAGE_PARAMS_DF[sensor]
+    value: np.float64 = lookup_table[image].values[0]
     return value
 
 

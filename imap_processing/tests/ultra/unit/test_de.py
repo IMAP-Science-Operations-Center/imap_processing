@@ -7,7 +7,7 @@ import pytest
 from imap_processing.ultra.constants import UltraConstants
 
 
-@pytest.fixture()
+@pytest.fixture
 def df_filt(de_dataset, events_fsw_comparison_theta_0):
     """Fixture to import test dataset."""
     df = pd.read_csv(events_fsw_comparison_theta_0)
@@ -112,11 +112,4 @@ def test_calculate_de(l1b_de_dataset, df_filt):
     assert l1b_de_dataset["velocity_dps_helio"].shape == (
         len(l1b_de_dataset["epoch"]),
         3,
-    )
-
-    # Event efficiency
-    assert np.allclose(
-        l1b_de_dataset["event_efficiency"],
-        np.full(len(l1b_de_dataset["epoch"]), np.nan),
-        equal_nan=True,
     )

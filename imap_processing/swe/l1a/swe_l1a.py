@@ -15,7 +15,7 @@ from imap_processing.utils import packet_file_to_datasets
 logger = logging.getLogger(__name__)
 
 
-def swe_l1a(packet_file: str, data_version: str) -> xr.Dataset:
+def swe_l1a(packet_file: str) -> xr.Dataset:
     """
     Will process SWE l0 data into l1a data.
 
@@ -27,9 +27,6 @@ def swe_l1a(packet_file: str, data_version: str) -> xr.Dataset:
     ----------
     packet_file : str
         Path where the raw packet file is stored.
-    data_version : str
-        Data version to write to CDF files and the Data_version CDF attribute.
-        Should be in the format Vxxx.
 
     Returns
     -------
@@ -48,17 +45,13 @@ def swe_l1a(packet_file: str, data_version: str) -> xr.Dataset:
     if SWEAPID.SWE_SCIENCE in datasets_by_apid:
         logger.info("Processing SWE science data.")
         processed_data.append(
-            swe_science(
-                l0_dataset=datasets_by_apid[SWEAPID.SWE_SCIENCE],
-                data_version=data_version,
-            )
+            swe_science(l0_dataset=datasets_by_apid[SWEAPID.SWE_SCIENCE])
         )
 
     # Process non-science data
     # Define minimal CDF attrs for the non science dataset
     imap_attrs = ImapCdfAttributes()
     imap_attrs.add_instrument_global_attrs("swe")
-    imap_attrs.add_global_attribute("Data_version", data_version)
     imap_attrs.add_instrument_variable_attrs("swe", "l1a")
     non_science_attrs = imap_attrs.get_variable_attributes("non_science_attrs")
     epoch_attrs = imap_attrs.get_variable_attributes("epoch", check_schema=False)

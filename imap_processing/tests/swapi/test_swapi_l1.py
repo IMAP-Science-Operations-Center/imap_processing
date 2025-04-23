@@ -144,7 +144,7 @@ def test_process_swapi_science(decom_test_data):
     assert hk_ds["epoch"].shape == (17,)
     hk_duplicate_ds = xr.concat([hk_ds, hk_ds], dim="epoch")
     assert hk_duplicate_ds["epoch"].shape == (34,)
-    processed_data = process_swapi_science(ds_data, hk_duplicate_ds, data_version="001")
+    processed_data = process_swapi_science(ds_data, hk_duplicate_ds)
 
     # Test dataset dimensions
     assert processed_data.sizes == {
@@ -162,9 +162,7 @@ def test_process_swapi_science(decom_test_data):
 
     # make PLAN_ID data incorrect. Now processed data should have less sweeps
     ds_data["plan_id"].data[:24] = np.arange(24)
-    processed_data = process_swapi_science(
-        ds_data, decom_test_data[SWAPIAPID.SWP_HK], data_version="001"
-    )
+    processed_data = process_swapi_science(ds_data, decom_test_data[SWAPIAPID.SWP_HK])
     assert processed_data.sizes == {
         "epoch": 10,
         "energy": 72,
@@ -172,7 +170,7 @@ def test_process_swapi_science(decom_test_data):
     }
 
     # Test CDF File
-    cdf_filename = "imap_swapi_l1_sci_20240924_v001.cdf"
+    cdf_filename = "imap_swapi_l1_sci_20240924_v999.cdf"
     cdf_path = write_cdf(processed_data)
     assert cdf_path.name == cdf_filename
 
@@ -180,18 +178,18 @@ def test_process_swapi_science(decom_test_data):
 def test_swapi_l1_cdf(swapi_l0_test_data_path):
     """Test housekeeping processing and CDF file creation"""
     test_packet_file = swapi_l0_test_data_path / "imap_swapi_l0_raw_20240924_v001.pkts"
-    processed_data = swapi_l1([test_packet_file], data_version="v001")
+    processed_data = swapi_l1([test_packet_file])
     # hk cdf file
-    hk_cdf_filename = "imap_swapi_l1_hk_20240924_v001.cdf"
+    hk_cdf_filename = "imap_swapi_l1_hk_20240924_v999.cdf"
     # TODO: how to add ignore ISTP checks for HK data to cli.py
     hk_cdf_path = write_cdf(processed_data[0])
     assert hk_cdf_path.name == hk_cdf_filename
 
-    processed_data = swapi_l1([test_packet_file, hk_cdf_path], data_version="v001")
+    processed_data = swapi_l1([test_packet_file, hk_cdf_path])
 
     assert processed_data[0].attrs["Apid"] == f"{SWAPIAPID.SWP_SCI}"
 
     # Test CDF File
-    cdf_filename = "imap_swapi_l1_sci_20240924_v001.cdf"
+    cdf_filename = "imap_swapi_l1_sci_20240924_v999.cdf"
     cdf_path = write_cdf(processed_data[0])
     assert cdf_path.name == cdf_filename

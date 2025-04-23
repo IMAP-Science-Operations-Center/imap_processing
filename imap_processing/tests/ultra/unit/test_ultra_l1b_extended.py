@@ -36,7 +36,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_fixture(de_dataset, events_fsw_comparison_theta_0):
     """Fixture to compute and return yf and related data."""
     # Remove start_type with fill values
@@ -64,6 +64,7 @@ def test_get_front_x_position(
     xf = get_front_x_position(
         de_dataset["start_type"].data,
         de_dataset["start_pos_tdc"].data,
+        "ultra45",
     )
 
     assert xf == pytest.approx(df_filt["Xf"].astype("float"), 1e-5)
@@ -121,7 +122,9 @@ def test_get_ssd_back_position_and_tof_offset(
 ):
     """Tests get_ssd_back_position function."""
     _, _, _, de_dataset = test_fixture
-    yb, tof_offset, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset)
+    yb, tof_offset, ssd_number = get_ssd_back_position_and_tof_offset(
+        de_dataset, "ultra45"
+    )
 
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[(df["StartType"] != -1) & (df["StopType"] >= 8)]
@@ -238,7 +241,7 @@ def test_get_de_velocity(test_fixture):
         for col in ["Xf", "Yf", "Xb", "Yb", "d", "TOF"]
     )
 
-    v = get_de_velocity(
+    v, vhat, r = get_de_velocity(
         (test_xf, test_yf),
         (test_xb, test_yb),
         test_d,
@@ -265,6 +268,42 @@ def test_get_de_velocity(test_fixture):
         atol=1e-01,
         rtol=0,
     )
+    np.testing.assert_allclose(
+        vhat[test_tof > 0][:, 0],
+        df_ph["vhatX"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
+    )
+    np.testing.assert_allclose(
+        vhat[test_tof > 0][:, 1],
+        df_ph["vhatY"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
+    )
+    np.testing.assert_allclose(
+        vhat[test_tof > 0][:, 2],
+        df_ph["vhatZ"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
+    )
+    np.testing.assert_allclose(
+        r[test_tof > 0][:, 0],
+        -df_ph["vhatX"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
+    )
+    np.testing.assert_allclose(
+        r[test_tof > 0][:, 1],
+        -df_ph["vhatY"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
+    )
+    np.testing.assert_allclose(
+        r[test_tof > 0][:, 2],
+        -df_ph["vhatZ"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
+    )
 
 
 def test_get_ssd_tof(test_fixture):
@@ -273,7 +312,7 @@ def test_get_ssd_tof(test_fixture):
     df_ssd = df_filt[np.isin(df_filt["StopType"], [StopType.SSD.value])]
     test_xf = df_filt["Xf"].astype("float").values
 
-    ssd_tof = get_ssd_tof(de_dataset, test_xf)
+    ssd_tof = get_ssd_tof(de_dataset, test_xf, "ultra45")
 
     np.testing.assert_allclose(
         ssd_tof, df_ssd["TOF"].astype("float"), atol=1e-05, rtol=0
@@ -296,7 +335,7 @@ def test_get_de_energy_kev(test_fixture):
         for col in ["Xf", "Yf", "Xb", "Yb", "d", "TOF"]
     )
 
-    v = get_de_velocity(
+    v, v_hat, r_hat = get_de_velocity(
         (test_xf, test_yf),
         (test_xb, test_yb),
         test_d,
@@ -315,7 +354,7 @@ def test_get_energy_ssd(test_fixture):
     """Tests get_energy_ssd function."""
     df_filt, _, _, de_dataset = test_fixture
     df_ssd = df_filt[np.isin(df_filt["StopType"], [StopType.SSD.value])]
-    _, _, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset)
+    _, _, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset, "ultra45")
     energy = get_energy_ssd(de_dataset, ssd_number)
     test_energy = df_ssd["Energy"].astype("float")
 
@@ -334,7 +373,11 @@ def test_get_energy_pulse_height(test_fixture):
     test_yb = df_filt["Yb"].astype("float").values
 
     energy = get_energy_pulse_height(
-        de_dataset["stop_type"].data, de_dataset["energy_ph"].data, test_xb, test_yb
+        de_dataset["stop_type"].data,
+        de_dataset["energy_ph"].data,
+        test_xb,
+        test_yb,
+        "ultra45",
     )
     test_energy = df_ph["Energy"].astype("float")
 
@@ -444,10 +487,12 @@ def test_get_eventtimes(test_fixture, use_fake_spin_data_for_time):
     spin_period_sec_max = expected_max_df["spin_period_sec"].values[0]
 
     spin_start_min = (
-        expected_min_df["spin_start_sec"] + expected_min_df["spin_start_subsec"] / 1000
+        expected_min_df["spin_start_sec_sclk"]
+        + expected_min_df["spin_start_subsec_sclk"] / 1e6
     )
     spin_start_max = (
-        expected_max_df["spin_start_sec"] + expected_max_df["spin_start_subsec"] / 1000
+        expected_max_df["spin_start_sec_sclk"]
+        + expected_max_df["spin_start_subsec_sclk"] / 1e6
     )
 
     assert spin_start_min.values[0] == spin_starts.min()
@@ -533,7 +578,7 @@ def test_get_fwhm():
     assert theta_interp.shape == test_theta.shape
 
 
-@pytest.mark.external_test_data()
+@pytest.mark.external_test_data
 def test_get_efficiency():
     """Tests get_efficiency function."""
 

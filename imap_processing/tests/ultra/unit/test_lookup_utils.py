@@ -66,7 +66,7 @@ def test_get_egy_norm():
 def test_get_image_params():
     """Tests function get_image_params."""
 
-    image_params = get_image_params("XFTLTOFF")
+    image_params = get_image_params("XFTLTOFF", "ultra45")
 
     assert image_params == 49.3
 
@@ -81,7 +81,7 @@ def test_get_angular_profiles():
     assert u45_right.shape == (525, 7)
 
 
-@pytest.mark.external_test_data()
+@pytest.mark.external_test_data
 def test_get_energy_efficiencies():
     """Tests function get_get_energy_efficiencies."""
 

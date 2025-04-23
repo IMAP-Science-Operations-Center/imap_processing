@@ -10,7 +10,7 @@ from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.l1b.glows_l1b_data import DirectEventL1B, HistogramL1B
 
 
-def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+def glows_l1b(input_dataset: xr.Dataset) -> xr.Dataset:
     """
     Will process the GLOWS L1B data and format the output datasets.
 
@@ -18,8 +18,6 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     ----------
     input_dataset : xr.Dataset
         Dataset of input values.
-    data_version : str
-        Data version.
 
     Returns
     -------
@@ -29,7 +27,6 @@ def glows_l1b(input_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("glows")
     cdf_attrs.add_instrument_variable_attrs("glows", "l1b")
-    cdf_attrs.add_global_attribute("Data_version", data_version)
 
     data_epoch = xr.DataArray(
         input_dataset["epoch"],

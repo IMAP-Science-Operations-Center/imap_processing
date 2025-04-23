@@ -45,14 +45,14 @@ def test_glows_hist_data(decom_test_data):
         "ELVAR": 0,
         "EVENTS": 95978,
     }
-    for key in expected_data.keys():
-        assert getattr(decom_test_data[0][0], key) == expected_data[key]
+    for key, expected_val in expected_data.items():
+        assert getattr(decom_test_data[0][0], key) == expected_val
 
 
 def test_glows_de_data(decom_test_data):
     expected_data = {"MET": 54233694, "SEC": 54232338, "LEN": 1, "SEQ": 0}
-    for key in expected_data.keys():
-        assert getattr(decom_test_data[1][0], key) == expected_data[key]
+    for key, expected_val in expected_data.items():
+        assert getattr(decom_test_data[1][0], key) == expected_val
 
 
 def test_bad_header():

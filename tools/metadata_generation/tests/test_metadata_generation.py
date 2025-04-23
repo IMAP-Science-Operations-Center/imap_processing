@@ -9,7 +9,7 @@ from ..metadata_generator import (
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def metadata_spreadsheet(tmp_path):
     """Create an excel file for testing."""
     # Create a pandas DataFrame for global attributes

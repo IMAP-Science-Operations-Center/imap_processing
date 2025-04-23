@@ -63,7 +63,7 @@ class SpiceFrame(IntEnum):
 
 
 BORESIGHT_LOOKUP = {
-    SpiceFrame.IMAP_LO: np.array([0, -1, 0]),
+    SpiceFrame.IMAP_LO_BASE: np.array([0, -1, 0]),
     SpiceFrame.IMAP_HI_45: np.array([0, 1, 0]),
     SpiceFrame.IMAP_HI_90: np.array([0, 1, 0]),
     SpiceFrame.IMAP_ULTRA_45: np.array([0, 0, 1]),
@@ -136,7 +136,7 @@ def get_spacecraft_to_instrument_spin_phase_offset(instrument: SpiceFrame) -> fl
     """
     # TODO: Implement retrieval from SPICE?
     offset_lookup = {
-        SpiceFrame.IMAP_LO: 330 / 360,
+        SpiceFrame.IMAP_LO_BASE: 330 / 360,
         SpiceFrame.IMAP_HI_45: 255 / 360,
         SpiceFrame.IMAP_HI_90: 285 / 360,
         SpiceFrame.IMAP_ULTRA_45: 33 / 360,
@@ -325,7 +325,7 @@ def instrument_pointing(
     """
     Compute the instrument pointing at the specified times.
 
-    By default, the coordinates returned are Latitude/Longitude coordinates in
+    By default, the coordinates returned are (Longitude, Latitude) coordinates in
     the reference frame `to_frame`. Cartesian coordinates can be returned if
     desired by setting `cartesian=True`.
 

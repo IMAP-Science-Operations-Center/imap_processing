@@ -16,13 +16,14 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     get_spacecraft_exposure_times,
     get_spacecraft_histogram,
     get_spacecraft_sensitivity,
+    grid_sensitivity,
 )
 
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_data():
     """Test data fixture."""
     vx_sc = np.array([-186.5575, 508.5697, 508.5697, 508.5697])
@@ -98,7 +99,7 @@ def test_get_background_rates():
     assert background_rates.shape == hp.nside2npix(128)
 
 
-@pytest.mark.external_test_data()
+@pytest.mark.external_test_data
 def test_get_spacecraft_exposure_times():
     """Test get_spacecraft_exposure_times function."""
     constant_exposure = TEST_PATH / "ultra_90_dps_exposure.csv"
@@ -113,7 +114,7 @@ def test_get_spacecraft_exposure_times():
     )
 
 
-@pytest.mark.external_kernel()
+@pytest.mark.external_kernel
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_get_helio_exposure_times():
     """Tests get_helio_exposure_times function."""
@@ -161,7 +162,7 @@ def test_get_helio_exposure_times():
     assert np.array_equal(np.squeeze(exposures[2]), exposure_3d[:, :, 23])
 
 
-@pytest.mark.external_test_data()
+@pytest.mark.external_test_data
 def test_get_spacecraft_sensitivity():
     """Tests get_spacecraft_sensitivity function."""
     # TODO: remove below here with lookup table aux api
@@ -171,9 +172,12 @@ def test_get_spacecraft_sensitivity():
     df_efficiencies = pd.read_csv(efficiences)
     df_geometric_function = pd.read_csv(geometric_function)
 
-    sensitivity = get_spacecraft_sensitivity(df_efficiencies, df_geometric_function)
+    sensitivity, energy_vals, right_ascension, declination = get_spacecraft_sensitivity(
+        df_efficiencies, df_geometric_function
+    )
 
-    assert sensitivity.shape == df_efficiencies.shape
+    assert sensitivity.shape == (df_efficiencies.shape[0], df_efficiencies.shape[1] - 2)
+    assert np.array_equal(energy_vals, np.arange(3.0, 80.5, 0.5))
 
     df_efficiencies_test = pd.DataFrame(
         {"3.0keV": [1.0, 2.0], "3.5keV": [3.0, 4.0], "4.0keV": [5.0, 6.0]}
@@ -192,3 +196,26 @@ def test_get_spacecraft_sensitivity():
     assert np.allclose(
         df_sensitivity_test.to_numpy(), expected_sensitivity.to_numpy(), atol=1e-6
     )
+
+
+@pytest.mark.external_test_data
+def test_grid_sensitivity():
+    """Tests grid_sensitivity function."""
+    efficiencies_path = TEST_PATH / "Ultra_90_DPS_efficiencies_all.csv"
+    geometric_function_path = TEST_PATH / "ultra_90_dps_gf.csv"
+
+    df_efficiencies = pd.read_csv(efficiencies_path)
+    df_geometric_function = pd.read_csv(geometric_function_path)
+
+    sensitivity, energy_vals, ra, dec = get_spacecraft_sensitivity(
+        df_efficiencies, df_geometric_function
+    )
+
+    expected_result = sensitivity["3.0keV"].values
+    result = grid_sensitivity(df_efficiencies, df_geometric_function, 3.0)
+
+    assert np.allclose(result, expected_result, atol=1e-5)
+
+    # Check that out-of-bounds energy returns all NaNs
+    result = grid_sensitivity(df_efficiencies, df_geometric_function, 2.5)
+    assert np.isnan(result).all()

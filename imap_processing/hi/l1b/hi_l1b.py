@@ -45,9 +45,7 @@ ATTR_MGR.add_instrument_global_attrs("hi")
 ATTR_MGR.add_instrument_variable_attrs(instrument="hi", level=None)
 
 
-def hi_l1b(
-    dependency: Union[str, Path, xr.Dataset], data_version: str
-) -> list[xr.Dataset]:
+def hi_l1b(dependency: Union[str, Path, xr.Dataset]) -> list[xr.Dataset]:
     """
     High level IMAP-HI L1B processing function.
 
@@ -55,8 +53,6 @@ def hi_l1b(
     ----------
     dependency : str or xarray.Dataset
         Path to L0 file or L1A dataset to process.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -91,9 +87,6 @@ def hi_l1b(
                 f"{l1a_dataset.attrs['Logical_source']}"
             )
 
-    # Update global attributes
-    for dataset in l1b_datasets:
-        dataset.attrs["Data_version"] = data_version
     return l1b_datasets
 
 

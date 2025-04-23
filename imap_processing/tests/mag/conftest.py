@@ -12,12 +12,12 @@ from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.spice.time import TTJ2000_EPOCH
 
 
-@pytest.fixture()
+@pytest.fixture
 def validation_l1a():
     current_directory = Path(__file__).parent
     test_file = current_directory / "validation" / "mag_l1_test_data.pkts"
     # Test file contains only normal packets
-    l1a = mag_l1a(test_file, "v000")
+    l1a = mag_l1a(test_file)
     return l1a
 
 
@@ -59,7 +59,7 @@ def mag_l1a_dataset_generator(length):
     return output_dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def mag_test_l1b_calibration_data():
     imap_dir = Path(__file__).parent
     cal_file = (
@@ -70,6 +70,27 @@ def mag_test_l1b_calibration_data():
     )
     calibration_data = load_cdf(cal_file)
     return calibration_data
+
+
+@pytest.fixture
+def mag_test_l2_data():
+    imap_dir = Path(__file__).parent
+    cal_file = (
+        imap_dir
+        / "validation"
+        / "calibration"
+        / "imap_mag_l2-calibration-matrices_20251017_v004.cdf"
+    )
+    calibration_data = load_cdf(cal_file)
+
+    offsets_data = load_cdf(
+        imap_dir
+        / "validation"
+        / "calibration"
+        / "imap_mag_l2-offsets-norm_20251017_20251017_v001.cdf"
+    )
+
+    return calibration_data, offsets_data
 
 
 def mag_generate_l1b_from_csv(df, logical_source):

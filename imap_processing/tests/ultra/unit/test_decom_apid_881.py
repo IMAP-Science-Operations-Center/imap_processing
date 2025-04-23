@@ -14,8 +14,7 @@ from imap_processing.ultra.l0.ultra_utils import RATES_KEYS, ULTRA_RATES
         pytest.param(
             {
                 "apid": ULTRA_RATES.apid[0],
-                "filename": "Ultra45_EM_SwRI_Cal_Run7_"
-                "ThetaScan_20220530T225054.CCSDS",
+                "filename": "Ultra45_EM_SwRI_Cal_Run7_ThetaScan_20220530T225054.CCSDS",
             }
         )
     ],

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def mag_l1b(
-    input_dataset: xr.Dataset, version: str, calibration_dataset: xr.Dataset = None
+    input_dataset: xr.Dataset, calibration_dataset: xr.Dataset = None
 ) -> Dataset:
     """
     Will process MAG L1B data from L1A data.
@@ -24,8 +24,6 @@ def mag_l1b(
     ----------
     input_dataset : xr.Dataset
         The input dataset to process.
-    version : str
-        The version of the output data.
     calibration_dataset : xr.Dataset
         The calibration dataset containing calibration matrices and timeshift values for
         mago and magi.
@@ -57,7 +55,6 @@ def mag_l1b(
     mag_attributes = ImapCdfAttributes()
     mag_attributes.add_instrument_global_attrs("mag")
     mag_attributes.add_instrument_variable_attrs("mag", "l1b")
-    mag_attributes.add_global_attribute("Data_version", version)
     source = source.replace("l1a", "l1b")
 
     output_dataset = mag_l1b_processing(
@@ -101,15 +98,10 @@ def mag_l1b_processing(
     output_dataset : xr.Dataset
         L1b dataset.
     """
-    dims = [["direction"], ["compression"]]
-    new_dims = [["direction"], ["compression"]]
-
     if "mago" in logical_source:
-        calibration_matrix = calibration_dataset["MFOTOURFO"]
-        time_shift = calibration_dataset["OTS"]
+        is_mago = True
     elif "magi" in logical_source:
-        calibration_matrix = calibration_dataset["MFITOURFI"]
-        time_shift = calibration_dataset["ITS"]
+        is_mago = False
     else:
         raise ValueError(
             f"Calibration matrix not found, invalid logical source "
@@ -117,6 +109,12 @@ def mag_l1b_processing(
         )
 
     # TODO: Check validity of time range for calibration
+    calibration_matrix, time_shift = retrieve_matrix_from_l1b_calibration(
+        calibration_dataset, is_mago
+    )
+
+    dims = [["direction"], ["compression"]]
+    new_dims = [["direction"], ["compression"]]
 
     l1b_fields = xr.apply_ufunc(
         update_vector,
@@ -130,7 +128,8 @@ def mag_l1b_processing(
     )
 
     epoch_time = shift_time(input_dataset["epoch"], time_shift)
-    # TODO SHIFT VECSEC ATTR TIME TOO
+
+    # Update attributes and assemble dataset
     epoch_time.attrs = mag_attributes.get_variable_attributes("epoch")
 
     direction = xr.DataArray(
@@ -210,6 +209,37 @@ def mag_l1b_processing(
         attrs=mag_attributes.get_variable_attributes("compression_flags_attrs"),
     )
     return output_dataset
+
+
+def retrieve_matrix_from_l1b_calibration(
+    calibration_dataset: xr.Dataset, is_mago: bool = True
+) -> tuple[xr.DataArray, xr.DataArray]:
+    """
+    Retrieve the calibration matrix and time shift from the calibration dataset.
+
+    Parameters
+    ----------
+    calibration_dataset : xarray.Dataset
+        The calibration dataset containing the calibration matrices and time shift.
+    is_mago : bool
+        Whether the calibration is for mago or magi. If True, it retrieves the mago
+        calibration matrix and time shift. If False, it retrieves the magi calibration
+        matrix and time shift.
+
+    Returns
+    -------
+    tuple[xr.DataArray, xr.DataArray]
+        The calibration matrix and time shift. These can be passed directly into
+        update_vector, calibrate_vector, and shift_time.
+    """
+    if is_mago:
+        calibration_matrix = calibration_dataset["MFOTOURFO"]
+        time_shift = calibration_dataset["OTS"]
+    else:
+        calibration_matrix = calibration_dataset["MFITOURFI"]
+        time_shift = calibration_dataset["ITS"]
+
+    return calibration_matrix, time_shift
 
 
 def update_vector(
@@ -304,13 +334,14 @@ def calibrate_vector(
     updated_vector : numpy.ndarray
         Calibrated vector.
     """
-    updated_vector: np.ndarray = input_vector.copy()
+    updated_vector: np.ndarray = input_vector.copy().astype(np.float64)
     if input_vector[3] % 1 != 0:
         raise ValueError("Range must be an integer.")
 
     range = int(input_vector[3])
-    x_y_z = input_vector[:3]
+    x_y_z = updated_vector[:3]
     updated_vector[:3] = np.dot(calibration_matrix.values[:, :, range], x_y_z)
+
     return updated_vector
 
 

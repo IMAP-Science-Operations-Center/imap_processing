@@ -13,7 +13,7 @@ from imap_processing.ultra.l0.ultra_utils import ULTRA_TOF
         pytest.param(
             {
                 "apid": ULTRA_TOF.apid[0],
-                "filename": "FM45_TV_Cycle6_Hot_Ops_" "Front212_20240124T063837.CCSDS",
+                "filename": "FM45_TV_Cycle6_Hot_Ops_Front212_20240124T063837.CCSDS",
             }
         )
     ],

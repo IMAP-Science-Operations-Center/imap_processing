@@ -9,8 +9,8 @@ Examples
     from imap_processing.idex.idex_l1b import idex_l1b
 
     l0_file = "imap_processing/tests/idex/imap_idex_l0_sci_20231214_v001.pkts"
-    l1a_data = PacketParser(l0_file, data_version)
-    l1b_data = idex_l1b(l1a_data, data_version)
+    l1a_data = PacketParser(l0_file)
+    l1b_data = idex_l1b(l1a_data)
     write_cdf(l1b_data)
 """
 
@@ -77,7 +77,7 @@ class TriggerMode(Enum):
         return f"{channel.upper()}{TriggerMode(mode).name}"
 
 
-def idex_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+def idex_l1b(l1a_dataset: xr.Dataset) -> xr.Dataset:
     """
     Will process IDEX l1a data to create l1b data products.
 
@@ -85,8 +85,6 @@ def idex_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     ----------
     l1a_dataset : xarray.Dataset
         IDEX L1a dataset to process.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -101,7 +99,6 @@ def idex_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     idex_attrs = ImapCdfAttributes()
     idex_attrs.add_instrument_global_attrs(instrument="idex")
     idex_attrs.add_instrument_variable_attrs(instrument="idex", level="l1b")
-    idex_attrs.add_global_attribute("Data_version", data_version)
 
     var_information_path = (
         f"{imap_module_directory}/idex/idex_variable_unpacking_and_eu_conversion.csv"

@@ -157,7 +157,7 @@ HI_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
 # Various configurations to support processing of individual data products
 # Much of these are described in the algorithm document in chapter 10 ("Data
 # Level 1A")
-DATA_PRODUCT_CONFIGURATIONS = {
+DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED: {
         "dataset_name": "imap_codice_l1a_hi-counters-aggregated",
         "input_dims": {},
@@ -380,6 +380,21 @@ DATA_PRODUCT_CONFIGURATIONS = {
         ],
         "variable_names": LO_NSW_SPECIES_VARIABLE_NAMES,
     },
+}
+
+# Dictionary to define the bit structure of CoDICE-Lo direct events
+LO_DE_BIT_STRUCTURE = {
+    "APDGain": 1,
+    "APD_ID": 5,
+    "Position": 5,
+    "APDEnergy": 9,
+    "TOF": 10,
+    "MultiFlag": 1,
+    "PHAType": 2,
+    "SpinAngle": 5,
+    "EnergyStep": 7,
+    "Priority": 3,
+    "Spare": 16,
 }
 
 # Compression ID lookup tables

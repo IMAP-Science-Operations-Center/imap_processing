@@ -40,7 +40,7 @@ def test_imap_state(et, use_test_metakernel):
         assert state.shape == (6,)
 
 
-@pytest.mark.external_kernel()
+@pytest.mark.external_kernel
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_imap_state_ecliptic():
     """Tests retrieving IMAP state in the ECLIPJ2000 frame"""
@@ -51,7 +51,7 @@ def test_imap_state_ecliptic():
 @pytest.mark.parametrize(
     "instrument, expected_offset",
     [
-        (SpiceFrame.IMAP_LO, 330 / 360),
+        (SpiceFrame.IMAP_LO_BASE, 330 / 360),
         (SpiceFrame.IMAP_HI_45, 255 / 360),
         (SpiceFrame.IMAP_HI_90, 285 / 360),
         (SpiceFrame.IMAP_ULTRA_45, 33 / 360),
@@ -287,7 +287,7 @@ def test_instrument_pointing(furnish_kernels):
         assert ins_pointing.shape == (3, 3)
 
 
-@pytest.mark.external_kernel()
+@pytest.mark.external_kernel
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_basis_vectors():
     """Test coverage for basis_vectors()."""

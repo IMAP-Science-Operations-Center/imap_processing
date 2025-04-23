@@ -22,7 +22,7 @@ from imap_processing.cli import (
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_instrument_dependencies():
     with (
         mock.patch("imap_processing.cli.imap_data_access.query") as mock_query,
@@ -123,12 +123,7 @@ def test_codice(mock_codice_l1a, mock_instrument_dependencies):
     mocks["mock_pre_processing"].return_value = input_collection
 
     dependency_str = (
-        "[{"
-        '"type": "science",'
-        '"files": ['
-        '"imap_codice_l0_raw_20230822_v001.pkts"'
-        "]"
-        "}]"
+        '[{"type": "science","files": ["imap_codice_l0_raw_20230822_v001.pkts"]}]'
     )
 
     instrument = Codice(
@@ -164,14 +159,9 @@ def test_hi_l1(mock_instrument_dependencies, data_level, science_input, n_prods)
     with mock.patch(
         f"imap_processing.cli.hi_{data_level}.hi_{data_level}", autospec=True
     ) as mock_hi:
-        mock_hi.return_value = [f"{data_level}_file{n}" for n in range(n_prods)]
+        mock_hi.return_value = [xr.Dataset()] * n_prods
         dependency_str = (
-            "[{"
-            '"type": "science",'
-            '"files": ['
-            '"imap_hi_l0_raw_20231212_v001.pkts"'
-            "]"
-            "}]"
+            '[{"type": "science","files": ["imap_hi_l0_raw_20231212_v001.pkts"]}]'
         )
         instrument = Hi(
             data_level, "sci", dependency_str, "20231212", "20231213", "v005", True
@@ -198,12 +188,7 @@ def test_spacecraft(mock_spacecraft_l1a, mock_instrument_dependencies):
     mocks["mock_pre_processing"].return_value = input_collection
 
     dependency_str = (
-        "[{"
-        '"type": "science",'
-        '"files": ['
-        '"imap_spacecraft_l0_raw_20230822_v001.pkts"'
-        "]"
-        "}]"
+        '[{"type": "science","files": ["imap_spacecraft_l0_raw_20230822_v001.pkts"]}]'
     )
 
     instrument = Spacecraft(
@@ -219,7 +204,7 @@ def test_spacecraft(mock_spacecraft_l1a, mock_instrument_dependencies):
 def test_ultra_l1a(mock_ultra_l1a, mock_instrument_dependencies):
     """Test coverage for cli.Ultra class with l1a data level"""
     mocks = mock_instrument_dependencies
-    mock_ultra_l1a.return_value = ["l1a_dataset0", "l1a_dataset1"]
+    mock_ultra_l1a.return_value = [xr.Dataset(), xr.Dataset()]
     mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
     input_collection = ProcessingInputCollection(
         ScienceInput("imap_ultra_l0_raw_20240207_v001.pkts")
@@ -227,12 +212,7 @@ def test_ultra_l1a(mock_ultra_l1a, mock_instrument_dependencies):
     mocks["mock_pre_processing"].return_value = input_collection
 
     dependency_str = (
-        "[{"
-        '"type": "science",'
-        '"files": ['
-        '"imap_ultra_l0_raw_20240207_v001.pkts"'
-        "]"
-        "}]"
+        '[{"type": "science","files": ["imap_ultra_l0_raw_20240207_v001.pkts"]}]'
     )
     instrument = Ultra(
         "l1a", "raw", dependency_str, "20240207", "20240208", "v001", True
@@ -248,7 +228,7 @@ def test_ultra_l1b(mock_ultra_l1b, mock_instrument_dependencies):
     """Test coverage for cli.Ultra class with l1b data level"""
     mocks = mock_instrument_dependencies
     mocks["mock_download"].return_value = "dependency0"
-    mock_ultra_l1b.return_value = ["l1b_dataset0", "l1b_dataset1"]
+    mock_ultra_l1b.return_value = [xr.Dataset(), xr.Dataset()]
     mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
     input_collection = ProcessingInputCollection(
         ScienceInput("imap_ultra_l1a_de_20240207_v001.cdf")
@@ -267,7 +247,7 @@ def test_ultra_l1b(mock_ultra_l1b, mock_instrument_dependencies):
 def test_ultra_l1c(mock_ultra_l1c, mock_instrument_dependencies):
     """Test coverage for cli.Ultra class with l1c data level"""
     mocks = mock_instrument_dependencies
-    mock_ultra_l1c.return_value = ["l1c_dataset0", "l1c_dataset1"]
+    mock_ultra_l1c.return_value = [xr.Dataset(), xr.Dataset()]
     mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
     input_collection = ProcessingInputCollection(
         ScienceInput("imap_ultra_l1b_de_20240207_v001.cdf")
@@ -285,7 +265,7 @@ def test_ultra_l1c(mock_ultra_l1c, mock_instrument_dependencies):
 def test_hit_l1a(mock_hit_l1a, mock_instrument_dependencies):
     """Test coverage for cli.Hit class with l1a data level"""
     mocks = mock_instrument_dependencies
-    mock_hit_l1a.return_value = ["l1a_dataset0", "l1a_dataset1"]
+    mock_hit_l1a.return_value = [xr.Dataset(), xr.Dataset()]
     mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
     input_collection = ProcessingInputCollection(
         ScienceInput("imap_hit_l0_raw_20100105_v001.pkts")
@@ -293,12 +273,7 @@ def test_hit_l1a(mock_hit_l1a, mock_instrument_dependencies):
     mocks["mock_pre_processing"].return_value = input_collection
 
     dependency_str = (
-        "[{"
-        '"type": "science",'
-        '"files": ['
-        '"imap_hit_l0_raw_20100105_v001.pkts"'
-        "]"
-        "}]"
+        '[{"type": "science","files": ["imap_hit_l0_raw_20100105_v001.pkts"]}]'
     )
     instrument = Hit("l1a", "raw", dependency_str, "20100105", "20100101", "v001", True)
 
@@ -312,20 +287,15 @@ def test_post_processing(mock_swe_l1a, mock_instrument_dependencies):
     """Test coverage for post processing"""
     mocks = mock_instrument_dependencies
     mocks["mock_download"].return_value = "dependency0"
-    # Return empty list to simulate no data to write
-    mock_swe_l1a.return_value = []
+    test_ds = xr.Dataset()
+    mock_swe_l1a.return_value = [test_ds]
     input_collection = ProcessingInputCollection(
         ScienceInput("imap_swe_l0_raw_20100105_v001.pkts")
     )
     mocks["mock_pre_processing"].return_value = input_collection
 
     dependency_str = (
-        "[{"
-        '"type": "science",'
-        '"files": ['
-        '"imap_swe_l0_raw_20100105_v001.pkts"'
-        "]"
-        "}]"
+        '[{"type": "science","files": ["imap_swe_l0_raw_20100105_v001.pkts"]}]'
     )
     instrument = Swe("l1a", "raw", dependency_str, "20100105", "20100101", "v001", True)
 
@@ -333,5 +303,8 @@ def test_post_processing(mock_swe_l1a, mock_instrument_dependencies):
     # instrument.post_processing()
     instrument.process()
     assert mock_swe_l1a.call_count == 1
-    # This test is testing that no upload happened
-    assert mocks["mock_upload"].call_count == 0
+    # This test is testing that one file was uploaded
+    assert mocks["mock_upload"].call_count == 1
+
+    # Test parent injection
+    assert test_ds.attrs["Parents"] == ["imap_swe_l0_raw_20100105_v001.pkts"]

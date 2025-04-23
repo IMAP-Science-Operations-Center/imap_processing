@@ -56,7 +56,7 @@ def swe_test_data():
     return data
 
 
-@pytest.fixture()
+@pytest.fixture
 def xarray_data(binary_packet_path, xtce_swe_path):
     """Create xarray data"""
     apid = 1360
@@ -67,7 +67,7 @@ def xarray_data(binary_packet_path, xtce_swe_path):
     return xarray_data
 
 
-@pytest.fixture()
+@pytest.fixture
 def fields_to_test():
     """Create a dictionary to convert names"""
     fields_to_test = {

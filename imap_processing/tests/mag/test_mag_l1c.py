@@ -1,10 +1,8 @@
-from pathlib import Path
-
 import numpy as np
 import pytest
 import xarray as xr
-import yaml
 
+from imap_processing.mag import imap_mag_sdc_configuration_v001 as configuration
 from imap_processing.mag.constants import VecSec
 from imap_processing.mag.l1c.interpolation_methods import (
     InterpolationFunction,
@@ -41,7 +39,7 @@ def mag_l1b_dataset():
     return output_dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def norm_dataset():
     dataset = mag_l1a_dataset_generator(10)
     epoch_vals = generate_test_epoch(
@@ -64,7 +62,7 @@ def norm_dataset():
     return dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def burst_dataset():
     dataset = mag_l1a_dataset_generator(27)
     epoch_vals = generate_test_epoch(5.1, [VecSec.EIGHT_VECS_PER_S], 1.9)
@@ -80,28 +78,9 @@ def burst_dataset():
 
 
 def test_configuration_file():
-    with open(
-        Path(__file__).parent.parent.parent
-        / "mag"
-        / "imap_mag_sdc-configuration_v001.yaml"
-    ) as f:
-        configuration = yaml.safe_load(f)
-
-    assert configuration["L1C_interpolation_method"] in [
+    assert configuration.L1C_INTERPOLATION_METHOD in [
         e.name for e in InterpolationFunction
     ]
-
-    # should not raise an error
-    configuration_file = InterpolationFunction[
-        configuration["L1C_interpolation_method"]
-    ]
-    configuration_file(
-        np.array([1, 2]),
-        np.array([1, 2]),
-        np.array([1]),
-        input_rate=VecSec.TWO_VECS_PER_S,
-        output_rate=VecSec.ONE_VEC_PER_S,
-    )
 
 
 def test_interpolation_methods():
@@ -223,7 +202,7 @@ def test_interpolate_gaps(norm_dataset, mag_l1b_dataset):
 
 
 def test_mag_l1c(norm_dataset, burst_dataset):
-    l1c = mag_l1c(burst_dataset, "v001", norm_dataset)
+    l1c = mag_l1c(burst_dataset, norm_dataset)
     assert l1c["vector_magnitude"].shape == (len(l1c["epoch"].data),)
     assert l1c["vector_magnitude"].data[0] == np.linalg.norm(l1c["vectors"].data[0][:4])
     assert l1c["vector_magnitude"].data[-1] == np.linalg.norm(
@@ -242,7 +221,7 @@ def test_mag_l1c(norm_dataset, burst_dataset):
 
 
 def test_mag_attributes(norm_dataset, burst_dataset):
-    output = mag_l1c(norm_dataset, "v001", burst_dataset)
+    output = mag_l1c(norm_dataset, burst_dataset)
     assert output.attrs["Logical_source"] == "imap_mag_l1c_norm-mago"
 
     expected_attrs = ["missing_sequences", "interpolation_method"]
@@ -252,7 +231,7 @@ def test_mag_attributes(norm_dataset, burst_dataset):
 
 def test_missing_burst_file(norm_dataset, burst_dataset):
     # Should run with only normal mode data or only burst mode data.
-    output = mag_l1c(norm_dataset, "v001", None)
+    output = mag_l1c(norm_dataset, None)
     assert output.attrs["Logical_source"] == "imap_mag_l1c_norm-mago"
 
     # Should pass through normal mode data only
@@ -264,7 +243,7 @@ def test_missing_burst_file(norm_dataset, burst_dataset):
 def test_missing_norm_file(norm_dataset, burst_dataset):
     # Should run with only normal mode data or only burst mode data.
     burst_dataset.attrs["Logical_source"] = "imap_mag_l1b_burst-magi"
-    output = mag_l1c(burst_dataset, "v001", None)
+    output = mag_l1c(burst_dataset, None)
 
     assert output.attrs["Logical_source"] == "imap_mag_l1c_norm-magi"
     # TODO: test that the output is downsampled

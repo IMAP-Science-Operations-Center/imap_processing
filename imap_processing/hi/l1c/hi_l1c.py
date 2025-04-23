@@ -42,7 +42,7 @@ SPIN_PHASE_BIN_CENTERS = (SPIN_PHASE_BIN_EDGES[:-1] + SPIN_PHASE_BIN_EDGES[1:]) 
 logger = logging.getLogger(__name__)
 
 
-def hi_l1c(dependencies: list, data_version: str) -> xr.Dataset:
+def hi_l1c(dependencies: list) -> list[xr.Dataset]:
     """
     High level IMAP-Hi l1c processing function.
 
@@ -55,10 +55,6 @@ def hi_l1c(dependencies: list, data_version: str) -> xr.Dataset:
     ----------
     dependencies : list
         Input dependencies needed for l1c processing.
-
-    data_version : str
-        Data version to write to CDF files and the Data_version CDF attribute.
-        Should be in the format Vxxx.
 
     Returns
     -------
@@ -76,9 +72,7 @@ def hi_l1c(dependencies: list, data_version: str) -> xr.Dataset:
             "Input dependencies not recognized for l1c pset processing."
         )
 
-    # TODO: revisit this
-    l1c_dataset.attrs["Data_version"] = data_version
-    return l1c_dataset
+    return [l1c_dataset]
 
 
 def generate_pset_dataset(
@@ -108,13 +102,10 @@ def generate_pset_dataset(
     config_df = CalibrationProductConfig.from_csv(calibration_prod_config_path)
 
     pset_dataset = empty_pset_dataset(
+        de_dataset.epoch.data[0],
         de_dataset.esa_energy_step.data,
         config_df.cal_prod_config.number_of_products,
         logical_source_parts["sensor"],
-    )
-    # For ISTP, epoch should be the center of the time bin.
-    pset_dataset.epoch.data[0] = np.mean(de_dataset.epoch.data[[0, -1]]).astype(
-        np.int64
     )
     pset_et = ttj2000ns_to_et(pset_dataset.epoch.data[0])
     # Calculate and add despun_z, hae_latitude, and hae_longitude variables to
@@ -144,13 +135,15 @@ def generate_pset_dataset(
 
 
 def empty_pset_dataset(
-    l1b_energy_steps: np.ndarray, n_cal_prods: int, sensor_str: str
+    epoch_val: int, l1b_energy_steps: np.ndarray, n_cal_prods: int, sensor_str: str
 ) -> xr.Dataset:
     """
     Allocate an empty xarray.Dataset with appropriate pset coordinates.
 
     Parameters
     ----------
+    epoch_val : int
+        The starting epoch in J2000 TT nanoseconds for data in the PSET.
     l1b_energy_steps : np.ndarray
         The array of esa_energy_step data from the L1B DE product.
     n_cal_prods : int
@@ -170,12 +163,12 @@ def empty_pset_dataset(
     # preallocate coordinates xr.DataArrays
     coords = dict()
     # epoch coordinate has only 1 entry for pointing set
-    epoch_attrs = attr_mgr.get_variable_attributes("epoch")
+    epoch_attrs = attr_mgr.get_variable_attributes("epoch", check_schema=False)
     epoch_attrs.update(
         attr_mgr.get_variable_attributes("hi_pset_epoch", check_schema=False)
     )
     coords["epoch"] = xr.DataArray(
-        np.empty(1, dtype=np.int64),  # TODO: get dtype from cdf attrs?
+        np.array([epoch_val], dtype=np.int64),  # TODO: get dtype from cdf attrs?
         name="epoch",
         dims=["epoch"],
         attrs=epoch_attrs,
@@ -526,6 +519,9 @@ def pset_exposure(
         )[0]
         exposure_var["exposure_times"].values[:, i_esa] += new_exposure_times
 
+    # Convert exposure clock ticks to seconds
+    exposure_var["exposure_times"].values *= DE_CLOCK_TICK_S
+
     return exposure_var
 
 
@@ -604,7 +600,7 @@ def get_de_clock_ticks_for_esa_step(
     # The CCSDS packet gets created just AFTER the final spin in the 8-spin
     # ESA step group so this match is the end time. The start time is
     # 8-spins earlier.
-    spin_start_mets = spin_df.spin_start_time.to_numpy()
+    spin_start_mets = spin_df.spin_start_met.to_numpy()
     # CCSDS MET has one second resolution, add one to it to make sure it is
     # greater than the spin start time it ended on.
     end_time_ind = np.flatnonzero(ccsds_met + 1 >= spin_start_mets).max()

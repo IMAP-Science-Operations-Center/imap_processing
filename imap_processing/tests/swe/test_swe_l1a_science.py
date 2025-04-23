@@ -75,7 +75,7 @@ def test_data_order(decom_test_data):
     )
 
     # Get unpacked science data
-    processed_data = swe_science(decom_test_data, "001")
+    processed_data = swe_science(decom_test_data)
 
     quarter_cycle = processed_data["quarter_cycle"].isel(epoch=slice(0, 4))
     np.testing.assert_array_equal(quarter_cycle, [0, 1, 2, 3])
@@ -84,7 +84,7 @@ def test_data_order(decom_test_data):
 def test_swe_science_algorithm(decom_test_data):
     """Test general shape of return dataset from swe_science."""
     # Get unpacked science data
-    processed_data = swe_science(decom_test_data, "001")
+    processed_data = swe_science(decom_test_data)
 
     # science data should have this shape, 15x12x7.
     science_data = processed_data["science_data"].data[0]
@@ -101,7 +101,7 @@ def test_decompress_counts(decom_test_data, l1a_validation_df):
     raw_counts = l1a_validation_df.iloc[:, 1:8]
     decompressed_counts = l1a_validation_df.iloc[:, 8:15]
 
-    l1a_dataset = swe_science(decom_test_data, "001")
+    l1a_dataset = swe_science(decom_test_data)
 
     # compare raw counts
     assert np.all(

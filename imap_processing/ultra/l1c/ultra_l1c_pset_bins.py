@@ -4,6 +4,7 @@ import astropy_healpix.healpy as hp
 import numpy as np
 import pandas
 from numpy.typing import NDArray
+from scipy.interpolate import interp1d
 
 from imap_processing.ena_maps.utils.spatial_utils import build_spatial_bins
 from imap_processing.spice.geometry import (
@@ -266,9 +267,9 @@ def get_helio_exposure_times(
 def get_spacecraft_sensitivity(
     efficiencies: pandas.DataFrame,
     geometric_function: pandas.DataFrame,
-) -> pandas.DataFrame:
+) -> tuple[pandas.DataFrame, NDArray, NDArray, NDArray]:
     """
-    Compute sensitivity.
+    Compute sensitivity as efficiency * geometric factor.
 
     Parameters
     ----------
@@ -281,19 +282,69 @@ def get_spacecraft_sensitivity(
     -------
     pointing_sensitivity : pandas.DataFrame
         Sensitivity with dimensions (HEALPIX pixel_number, energy).
+    energy_vals : NDArray
+        Energy values of dataframe.
+    right_ascension : NDArray
+        Right ascension (longitude/azimuth) values of dataframe (0 - 360 degrees).
+    declination : NDArray
+        Declination (latitude/elevation) values of dataframe (-90 to 90 degrees).
     """
     # Exclude "Right Ascension (deg)" and "Declination (deg)" from the multiplication
-    energy_columns = efficiencies.columns.difference(
-        ["Right Ascension (deg)", "Declination (deg)"]
-    )
+    energy_columns = [
+        col
+        for col in efficiencies.columns
+        if col not in ["Right Ascension (deg)", "Declination (deg)"]
+    ]
     sensitivity = efficiencies[energy_columns].mul(
         geometric_function["Response (cm2-sr)"].values, axis=0
     )
 
-    # Add "Right Ascension (deg)" and "Declination (deg)" to the result
-    sensitivity.insert(
-        0, "Right Ascension (deg)", efficiencies["Right Ascension (deg)"]
-    )
-    sensitivity.insert(1, "Declination (deg)", efficiencies["Declination (deg)"])
+    right_ascension = efficiencies["Right Ascension (deg)"]
+    declination = efficiencies["Declination (deg)"]
 
-    return sensitivity
+    energy_vals = np.array([float(col.replace("keV", "")) for col in energy_columns])
+
+    return sensitivity, energy_vals, right_ascension, declination
+
+
+def grid_sensitivity(
+    efficiencies: pandas.DataFrame,
+    geometric_function: pandas.DataFrame,
+    energy: float,
+) -> NDArray:
+    """
+    Grid the sensitivity.
+
+    Parameters
+    ----------
+    efficiencies : pandas.DataFrame
+        Efficiencies at different energy levels.
+    geometric_function : pandas.DataFrame
+        Geometric function.
+        energy : np.ndarray
+        The particle energy.
+    energy : float
+        Energy to which we are interpolating.
+
+    Returns
+    -------
+    interpolated_sensitivity : np.ndarray
+        Sensitivity with dimensions (HEALPIX pixel_number, 1).
+    """
+    sensitivity, energy_vals, right_ascension, declination = get_spacecraft_sensitivity(
+        efficiencies, geometric_function
+    )
+
+    # Create interpolator over energy dimension for each pixel (axis=1)
+    interp_func = interp1d(
+        energy_vals,
+        sensitivity.values,
+        axis=1,
+        bounds_error=False,
+        fill_value=np.nan,
+    )
+
+    # Interpolate to energy
+    interpolated = interp_func(energy)
+
+    return interpolated

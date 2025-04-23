@@ -8,6 +8,43 @@ L2_STANDARD_ANCILLARY_PATH_PREFIX = (
 L2_SUMMED_ANCILLARY_PATH_PREFIX = (
     imap_module_directory / "hit/ancillary/imap_hit_l1b-to-l2-summed-dt"
 )
+L2_SECTORED_ANCILLARY_PATH_PREFIX = (
+    imap_module_directory / "hit/ancillary/imap_hit_l1b-to-l2-sector-dt"
+)
+
+# Constants for HIT L2 intensity calculation
+SECONDS_PER_MIN = 60  # seconds per minute
+SECONDS_PER_10_MIN = 600  # seconds per 10 minutes
+
+# Fill values for missing data
+FILLVAL_FLOAT32 = -1.00e31
+
+# Number of azimuth angles
+N_AZIMUTH = 15
+
+# Valid species for HIT L2 standard and summed intensity products
+VALID_SPECIES = [
+    "h",
+    "he3",
+    "he4",
+    "he",
+    "c",
+    "n",
+    "o",
+    "ne",
+    "na",
+    "mg",
+    "al",
+    "si",
+    "s",
+    "ar",
+    "ca",
+    "fe",
+    "ni",
+]
+
+# Valid species for HIT L2 sectored intensity product
+VALID_SECTORED_SPECIES = ["h", "he4", "cno", "nemgsi", "fe"]
 
 # Particle energy range mapping for HIT L2 standard intensity product.
 # The standard intensity calculation requires the L1B foreground rates to

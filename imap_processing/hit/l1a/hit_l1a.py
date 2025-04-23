@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 fillval = -9223372036854775808
 
 
-def hit_l1a(packet_file: str, data_version: str) -> list[xr.Dataset]:
+def hit_l1a(packet_file: str) -> list[xr.Dataset]:
     """
     Will process HIT L0 data into L1A data products.
 
@@ -32,8 +32,6 @@ def hit_l1a(packet_file: str, data_version: str) -> list[xr.Dataset]:
     ----------
     packet_file : str
         Path to the CCSDS data packet file.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -44,7 +42,7 @@ def hit_l1a(packet_file: str, data_version: str) -> list[xr.Dataset]:
     datasets_by_apid = get_datasets_by_apid(packet_file)
 
     # Create the attribute manager for this data level
-    attr_mgr = get_attribute_manager(data_version, "l1a")
+    attr_mgr = get_attribute_manager("l1a")
 
     l1a_datasets = []
 
@@ -162,7 +160,7 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> xr.Dataset:
 
 def calculate_uncertainties(dataset: xr.Dataset) -> xr.Dataset:
     """
-    Calculate uncertainties for each counts data variable in the dataset.
+    Calculate statistical uncertainties.
 
     Calculate the upper and lower uncertainties. The uncertainty for
     the raw Lev1A HIT data will be calculated as asymmetric Poisson
@@ -170,10 +168,10 @@ def calculate_uncertainties(dataset: xr.Dataset) -> xr.Dataset:
     See section 5.5 in the algorithm document for details.
 
     The upper uncertainty will be calculated as
-        DELTA_PLUS = sqrt(counts + 1) + 1
+        uncert_plus = sqrt(counts + 1) + 1
 
     The lower uncertainty will be calculated as
-        DELTA_MINUS = sqrt(counts)
+        uncert_minus = sqrt(counts)
 
     Parameters
     ----------
@@ -226,13 +224,13 @@ def calculate_uncertainties(dataset: xr.Dataset) -> xr.Dataset:
         safe_values_plus = np.maximum(dataset[var] + 1, 0).astype(np.float32)
         safe_values_minus = np.maximum(dataset[var], 0).astype(np.float32)
 
-        dataset[f"{var}_delta_plus"] = xr.DataArray(
+        dataset[f"{var}_stat_uncert_plus"] = xr.DataArray(
             np.where(
                 mask, np.sqrt(safe_values_plus) + 1, dataset[var].astype(np.float32)
             ),
             dims=dataset[var].dims,
         )
-        dataset[f"{var}_delta_minus"] = xr.DataArray(
+        dataset[f"{var}_stat_uncert_minus"] = xr.DataArray(
             np.where(mask, np.sqrt(safe_values_minus), dataset[var].astype(np.float32)),
             dims=dataset[var].dims,
         )
@@ -286,14 +284,14 @@ def process_science(
 
     datasets = []
     # Update attributes and dimensions
-    for dataset, logical_source in zip(
+    for ds, logical_source in zip(
         [count_rates_dataset, pha_raw_dataset], logical_sources
     ):
-        dataset.attrs = attr_mgr.get_global_attributes(logical_source)
+        ds.attrs = attr_mgr.get_global_attributes(logical_source)
 
         # TODO: Add CDF attributes to yaml once they're defined for L1A science data
         # Assign attributes and dimensions to each data array in the Dataset
-        for field in dataset.data_vars.keys():
+        for field in ds.data_vars.keys():
             try:
                 # Create a dict of dimensions using the DEPEND_I keys in the
                 # attributes
@@ -302,19 +300,17 @@ def process_science(
                     for key, value in attr_mgr.get_variable_attributes(field).items()
                     if "DEPEND" in key
                 }
-                dataset[field].attrs = attr_mgr.get_variable_attributes(field)
-                dataset[field].assign_coords(dims)
+                ds[field].attrs = attr_mgr.get_variable_attributes(field)
+                ds[field].assign_coords(dims)
             except KeyError:
                 print(f"Field {field} not found in attribute manager.")
                 logger.warning(f"Field {field} not found in attribute manager.")
 
         # Skip schema check for epoch to prevent attr_mgr from adding the
         # DEPEND_0 attribute which isn't required for epoch
-        dataset.epoch.attrs = attr_mgr.get_variable_attributes(
-            "epoch", check_schema=False
-        )
+        ds.epoch.attrs = attr_mgr.get_variable_attributes("epoch", check_schema=False)
 
-        datasets.append(dataset)
+        datasets.append(ds)
 
         logger.info(f"HIT L1A dataset created for {logical_source}")
 

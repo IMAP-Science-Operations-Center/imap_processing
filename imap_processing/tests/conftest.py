@@ -17,7 +17,7 @@ import requests
 import spiceypy
 
 from imap_processing import imap_module_directory
-from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns
 
 
 @pytest.fixture(autouse=True)
@@ -94,7 +94,7 @@ def _download_external_kernels(spice_test_data_path):
 
 @pytest.fixture(scope="session")
 def _download_test_data():
-    _download_external_data(test_data_paths())
+    _download_external_data(_test_data_paths())
 
 
 def _download_external_data(test_data_path_list):
@@ -125,7 +125,7 @@ def _download_external_data(test_data_path_list):
             logger.info(f"File already exists: {destination}")
 
 
-def test_data_paths():
+def _test_data_paths():
     """Defines a list of test data files to download from the AWS S3 bucket
     and the corresponding location in which to store the downloaded file"""
     test_data_path_list = [
@@ -259,7 +259,7 @@ def spice_test_data_path(imap_tests_path):
     return imap_tests_path / "spice/test_data"
 
 
-@pytest.fixture()
+@pytest.fixture
 def furnish_time_kernels(spice_test_data_path):
     """Furnishes (temporarily) the testing LSK and SCLK"""
     spiceypy.kclear()
@@ -271,7 +271,7 @@ def furnish_time_kernels(spice_test_data_path):
     spiceypy.kclear()
 
 
-@pytest.fixture()
+@pytest.fixture
 def furnish_sclk(spice_test_data_path):
     """Furnishes (temporarily) the SCLK for JPSS stored in the package data directory"""
     test_sclk = spice_test_data_path / "imap_sclk_0000.tsc"
@@ -280,7 +280,7 @@ def furnish_sclk(spice_test_data_path):
     spiceypy.kclear()
 
 
-@pytest.fixture()
+@pytest.fixture
 def furnish_kernels(spice_test_data_path):
     """Return a function that will furnish an arbitrary list of kernels."""
 
@@ -382,7 +382,7 @@ def session_test_metakernel(monkeypatch_session, tmpdir_factory, spice_test_data
     spiceypy.kclear()
 
 
-@pytest.fixture()
+@pytest.fixture
 def use_test_metakernel(
     request, monkeypatch, spice_test_data_path, session_test_metakernel
 ):
@@ -432,14 +432,14 @@ def use_test_metakernel(
     spiceypy.kclear()
 
 
-@pytest.fixture()
+@pytest.fixture
 def _unset_metakernel_path(monkeypatch):
     """Temporarily unsets the SPICE_METAKERNEL environment variable"""
     if os.getenv("SPICE_METAKERNEL", None) is not None:
         monkeypatch.delenv("SPICE_METAKERNEL")
 
 
-@pytest.fixture()
+@pytest.fixture
 def use_test_spin_data_csv(monkeypatch):
     """Sets the SPIN_DATA_FILEPATH environment variable to input path."""
 
@@ -449,7 +449,7 @@ def use_test_spin_data_csv(monkeypatch):
     return wrapped_set_spin_data_filepath
 
 
-@pytest.fixture()
+@pytest.fixture
 def use_fake_spin_data_for_time(
     request, use_test_spin_data_csv, tmpdir, generate_spin_data
 ):
@@ -486,7 +486,7 @@ def use_fake_spin_data_for_time(
     return wrapped_set_spin_data_filepath
 
 
-@pytest.fixture()
+@pytest.fixture
 def generate_spin_data():
     def make_data(start_met: float, end_met: Optional[float] = None) -> pd.DataFrame:
         """
@@ -494,8 +494,9 @@ def generate_spin_data():
         Spin table contains the following fields:
             (
             spin_number,
-            spin_start_sec,
-            spin_start_subsec,
+            spin_start_sec_sclk,
+            spin_start_subsec_sclk,
+            spin_start_utc,
             spin_period_sec,
             spin_period_valid,
             spin_phase_valid,
@@ -523,18 +524,25 @@ def generate_spin_data():
             end_met = start_met + 86400
 
         # Create spin start second data of 15 seconds increment
-        spin_start_sec = np.arange(np.floor(start_met), end_met + 1, 15)
-        spin_start_subsec = int((start_met - spin_start_sec[0]) * 1000)
+        spin_start_met = np.arange(start_met, end_met + 1, 15)
+        spin_start_sec = np.floor(spin_start_met).astype(int)
+        spin_start_subsec = int((start_met - spin_start_sec[0]) * 1e6)
+
+        # Calculate UTC times without spice (accepting ~5 second inaccuracy)
+        spin_start_dt64 = TTJ2000_EPOCH + (spin_start_met * 1e9).astype(
+            "timedelta64[ns]"
+        )
 
         nspins = len(spin_start_sec)
 
         spin_df = pd.DataFrame.from_dict(
             {
                 "spin_number": np.arange(nspins, dtype=np.uint32),
-                "spin_start_sec": spin_start_sec,
-                "spin_start_subsec": np.full(
+                "spin_start_sec_sclk": spin_start_sec,
+                "spin_start_subsec_sclk": np.full(
                     nspins, spin_start_subsec, dtype=np.uint32
                 ),
+                "spin_start_utc": np.datetime_as_string(spin_start_dt64, unit="us"),
                 "spin_period_sec": np.full(nspins, 15.0, dtype=np.float32),
                 "spin_period_valid": np.ones(nspins, dtype=np.uint8),
                 "spin_phase_valid": np.ones(nspins, dtype=np.uint8),
@@ -544,7 +552,7 @@ def generate_spin_data():
         )
 
         # Convert spin_start_sec to datetime to set repointing times flags
-        spin_start_dates = met_to_ttj2000ns(spin_start_sec + spin_start_subsec / 1000)
+        spin_start_dates = met_to_ttj2000ns(spin_start_sec + spin_start_subsec / 1e6)
         spin_start_dates = cdflib.cdfepoch.to_datetime(spin_start_dates)
 
         # Convert DatetimeIndex to Series for using .dt accessor
@@ -568,7 +576,7 @@ def generate_spin_data():
     return make_data
 
 
-@pytest.fixture()
+@pytest.fixture
 def use_test_repoint_data_csv(monkeypatch):
     """Sets the REPOINT_DATA_FILEPATH environment variable to input path."""
 
@@ -606,12 +614,21 @@ def generate_repoint_data(
     repoint_start_times = np.array(repoint_start_met)
     if repoint_end_met is None:
         repoint_end_met = repoint_start_times + 15 * 60
+    # Calculate UTC times without spice (accepting ~5 second inaccuracy)
+    repoint_start_dt64 = TTJ2000_EPOCH + (repoint_start_times * 1e9).astype(
+        "timedelta64[ns]"
+    )
+    repoint_end_dt64 = TTJ2000_EPOCH + (repoint_end_met * 1e9).astype("timedelta64[ns]")
     repoint_df = pd.DataFrame.from_dict(
         {
-            "repoint_start_sec": repoint_start_times.astype(int),
-            "repoint_start_subsec": ((repoint_start_times % 1.0) * 1e3).astype(int),
-            "repoint_end_sec": repoint_end_met.astype(int),
-            "repoint_end_subsec": ((repoint_end_met % 1.0) * 1e3).astype(int),
+            "repoint_start_sec_sclk": repoint_start_times.astype(int),
+            "repoint_start_subsec_sclk": ((repoint_start_times % 1.0) * 1e6).astype(
+                int
+            ),
+            "repoint_start_utc": np.datetime_as_string(repoint_start_dt64, unit="us"),
+            "repoint_end_sec_sclk": repoint_end_met.astype(int),
+            "repoint_end_subsec_sclk": ((repoint_end_met % 1.0) * 1e6).astype(int),
+            "repoint_end_utc": np.datetime_as_string(repoint_end_dt64, unit="us"),
             "repoint_id": np.arange(repoint_start_times.size, dtype=int)
             + repoint_id_start,
         }
@@ -619,7 +636,7 @@ def generate_repoint_data(
     return repoint_df
 
 
-@pytest.fixture()
+@pytest.fixture
 def use_fake_repoint_data_for_time(use_test_repoint_data_csv, tmpdir):
     """
     Generate and use fake spin data for testing.

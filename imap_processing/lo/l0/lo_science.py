@@ -83,8 +83,7 @@ def parse_histogram(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Data
     # initialize the starting bit for the sections of data
     section_start = 0
     # for each field type in the histogram data
-    for field in HIST_DATA_META:
-        data_meta = HIST_DATA_META[field]
+    for field, data_meta in HIST_DATA_META.items():
         # for each histogram binary string decompress
         # the data
         decompressed_data = [

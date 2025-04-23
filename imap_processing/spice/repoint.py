@@ -26,18 +26,22 @@ def get_repoint_data() -> pd.DataFrame:
 
     Returns
     -------
-    repoint_df : pd.DataFrame
+    repoint_df : pandas.DataFrame
         The repointing csv loaded into a pandas dataframe. The dataframe will
         contain the following columns:
-            - `repoint_start_sec`: Starting MET seconds of repoint maneuver.
-            - `repoint_start_subsec`: Starting MET milliseconds of repoint maneuver.
-            - `repoint_start_met`: Floating point MET of repoint maneuver start time.
-            Derived by combining `repoint_start_sec` and `repoint_start_subsec`.
-            - `repoint_end_sec`: Ending MET seconds of repoint maneuver.
-            - `repoint_end_subsec`: Ending MET milliseconds of repoint maneuver.
-            - `repoint_end_met`: Floating point MET of repoint maneuver end time.
-            Derived by combining `repoint_end_sec` and `repoint_end_subsec`.
-            - `repoint_id`: Unique ID number of each repoint maneuver.
+
+            * `repoint_start_sec_sclk`: Starting MET seconds of repoint maneuver.
+            * `repoint_start_subsec_sclk`: Starting MET microseconds of repoint
+              maneuver.
+            * `repoint_start_met`: Floating point MET of repoint maneuver start time.
+              Derived from `repoint_start_sec_sclk` and `repoint_start_subsec_sclk`.
+            * `repoint_start_utc`: UTC time of repoint maneuver start time.
+            * `repoint_end_sec_sclk`: Ending MET seconds of repoint maneuver.
+            * `repoint_end_subsec_sclk`: Ending MET microseconds of repoint maneuver.
+            * `repoint_end_met`: Floating point MET of repoint maneuver end time.
+              Derived from `repoint_end_sec_sclk` and `repoint_end_subsec_sclk`.
+            * `repoint_end_utc`: UTC time of repoint maneuver end time.
+            * `repoint_id`: Unique ID number of each repoint maneuver.
     """
     repoint_data_filepath = os.getenv("REPOINT_DATA_FILEPATH")
     if repoint_data_filepath is not None:
@@ -51,10 +55,11 @@ def get_repoint_data() -> pd.DataFrame:
 
     # Compute times by combining seconds and subseconds fields
     repoint_df["repoint_start_met"] = (
-        repoint_df["repoint_start_sec"] + repoint_df["repoint_start_subsec"] / 1e3
+        repoint_df["repoint_start_sec_sclk"]
+        + repoint_df["repoint_start_subsec_sclk"] / 1e6
     )
     repoint_df["repoint_end_met"] = (
-        repoint_df["repoint_end_sec"] + repoint_df["repoint_end_subsec"] / 1e3
+        repoint_df["repoint_end_sec_sclk"] + repoint_df["repoint_end_subsec_sclk"] / 1e6
     )
 
     return repoint_df
@@ -87,19 +92,20 @@ def interpolate_repoint_data(
     repoint_df : pandas.DataFrame
         Repoint table data interpolated such that there is one row
         for each of the queried MET times. Output columns are:
-            - `repoint_start_sec`
-            - `repoint_start_subsec`
-            - `repoint_start_met`
-            - `repoint_end_sec`
-            - `repoint_end_subsec`
-            - `repoint_end_met`
-            - `repoint_id`
-            - `repoint_in_progress`
+
+            * `repoint_start_sec_sclk`
+            * `repoint_start_subsec_sclk`
+            * `repoint_start_met`
+            * `repoint_end_sec_sclk`
+            * `repoint_end_subsec_sclk`
+            * `repoint_end_met`
+            * `repoint_id`
+            * `repoint_in_progress`
 
     Raises
     ------
     ValueError : If any of the query_met_times are before the first repoint
-    start time or after the last repoint start time plus 24-hours.
+        start time or after the last repoint start time plus 24-hours.
     """
     repoint_df = get_repoint_data()
 

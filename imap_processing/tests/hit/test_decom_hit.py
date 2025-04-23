@@ -21,7 +21,7 @@ from imap_processing.hit.l0.decom_hit import (
 from imap_processing.utils import packet_file_to_datasets
 
 
-@pytest.fixture()
+@pytest.fixture
 def sci_dataset():
     """Create a xarray dataset for testing from sample data."""
     packet_definition = (

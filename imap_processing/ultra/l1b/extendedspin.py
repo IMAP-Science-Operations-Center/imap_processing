@@ -13,7 +13,6 @@ from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 def calculate_extendedspin(
     dict_datasets: dict[str, xr.Dataset],
     name: str,
-    data_version: str,
     instrument_id: int,
 ) -> xr.Dataset:
     """
@@ -25,8 +24,6 @@ def calculate_extendedspin(
         Dictionary containing all the datasets.
     name : str
         Name of the dataset.
-    data_version : str
-        Version of the data.
     instrument_id : int
         Instrument ID.
 
@@ -62,6 +59,6 @@ def calculate_extendedspin(
     extendedspin_dict["quality_attitude"] = attitude_qf
     extendedspin_dict["quality_ena_rates"] = rates_qf
 
-    extendedspin_dataset = create_dataset(extendedspin_dict, name, "l1b", data_version)
+    extendedspin_dataset = create_dataset(extendedspin_dict, name, "l1b")
 
     return extendedspin_dataset

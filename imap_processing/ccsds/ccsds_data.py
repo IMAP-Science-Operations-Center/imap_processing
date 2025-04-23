@@ -47,6 +47,5 @@ class CcsdsData:
                 setattr(self, key, value)
             else:
                 raise KeyError(
-                    f"Did not find matching attribute in Histogram data class for "
-                    f"{key}"
+                    f"Did not find matching attribute in Histogram data class for {key}"
                 )

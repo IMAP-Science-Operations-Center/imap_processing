@@ -2,7 +2,6 @@
 
 import logging
 from pathlib import Path
-from typing import NamedTuple
 
 import numpy as np
 import pandas as pd
@@ -13,9 +12,16 @@ from imap_processing.hit.hit_utils import (
     get_attribute_manager,
 )
 from imap_processing.hit.l2.constants import (
+    FILLVAL_FLOAT32,
+    L2_SECTORED_ANCILLARY_PATH_PREFIX,
     L2_STANDARD_ANCILLARY_PATH_PREFIX,
     L2_SUMMED_ANCILLARY_PATH_PREFIX,
+    N_AZIMUTH,
+    SECONDS_PER_10_MIN,
+    SECONDS_PER_MIN,
     STANDARD_PARTICLE_ENERGY_RANGE_MAPPING,
+    VALID_SECTORED_SPECIES,
+    VALID_SPECIES,
 )
 
 logger = logging.getLogger(__name__)
@@ -26,7 +32,7 @@ logger = logging.getLogger(__name__)
 #  - add function to calculate combined uncertainty and add this to L2 datasets
 
 
-def hit_l2(dependency: xr.Dataset, data_version: str) -> list[xr.Dataset]:
+def hit_l2(dependency: xr.Dataset) -> list[xr.Dataset]:
     """
     Will process HIT data to L2.
 
@@ -37,8 +43,6 @@ def hit_l2(dependency: xr.Dataset, data_version: str) -> list[xr.Dataset]:
     dependency : xr.Dataset
         L1B xarray science dataset that is either summed rates
         standard rates or sector rates.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -46,11 +50,9 @@ def hit_l2(dependency: xr.Dataset, data_version: str) -> list[xr.Dataset]:
         List of one L2 dataset.
     """
     logger.info("Creating HIT L2 science datasets")
-    # Create the attribute manager for this data level
-    attr_mgr = get_attribute_manager(data_version, "l2")
 
-    # TODO: Write functions to process sectored rates dataset
-    #       with logical source: "imap_hit_l2_macropixel-intensity"
+    # Create the attribute manager for this data level
+    attr_mgr = get_attribute_manager("l2")
 
     l2_datasets: dict = {}
 
@@ -66,6 +68,12 @@ def hit_l2(dependency: xr.Dataset, data_version: str) -> list[xr.Dataset]:
             dependency
         )
         logger.info("HIT L2 standard intensity dataset created")
+
+    if "imap_hit_l1b_sectored-rates" in dependency.attrs["Logical_source"]:
+        l2_datasets["imap_hit_l2_macropixel-intensity"] = (
+            process_sectored_intensity_data(dependency)
+        )
+        logger.info("HIT L2 macropixel intensity dataset created")
 
     # Update attributes and dimensions
     for logical_source, dataset in l2_datasets.items():
@@ -101,87 +109,136 @@ def hit_l2(dependency: xr.Dataset, data_version: str) -> list[xr.Dataset]:
     return list(l2_datasets.values())
 
 
-class IntensityFactors(NamedTuple):
-    """A namedtuple to store factors for the intensity equation."""
-
-    delta_e_factor: np.ndarray
-    geometry_factor: np.ndarray
-    efficiency: np.ndarray
-    b: np.ndarray
-
-
-def get_intensity_factors(
-    energy_min: np.ndarray, species_ancillary_data: pd.DataFrame
-) -> IntensityFactors:
-    """
-    Get the intensity factors for all energy bins of the given species ancillary data.
-
-    This function gets the factors needed for the equation to convert rates to
-    intensities for all energy bins for the given species.
-
-    Parameters
-    ----------
-    energy_min : np.ndarray
-        All energy min values for the species.
-    species_ancillary_data : pd.DataFrame
-        The subset of ancillary data for the given species.
-
-    Returns
-    -------
-    IntensityFactors
-        The factors needed to convert rates to intensities for all energy bins
-        for the given species.
-    """
-    # Get factors needed to convert rates to intensities for
-    # all energy bins for the given species ancillary data
-    intensity_factors = species_ancillary_data.set_index(
-        species_ancillary_data["lower energy (mev)"].astype(np.float32)
-    ).loc[energy_min]
-
-    return IntensityFactors(
-        delta_e_factor=intensity_factors["delta e (mev)"].values,
-        geometry_factor=intensity_factors["geometry factor (cm2 sr)"].values,
-        efficiency=intensity_factors["efficiency"].values,
-        b=intensity_factors["b"].values,
-    )
-
-
 def calculate_intensities(
-    rate: xr.DataArray,
-    delta_e_factor: np.ndarray,
-    geometry_factor: np.ndarray,
-    efficiency: np.ndarray,
-    b: np.ndarray,
+    rates: xr.DataArray,
+    factors: xr.Dataset,
 ) -> xr.DataArray:
     """
-    Calculate the intensities for given arrays of rates and ancillary factors.
+    Calculate the intensities for given rates and equation factors.
 
     Uses vectorization to calculate the intensities for an array of rates
-    at an epoch.
+    for all epochs.
 
-        This function uses equation 9 and 11 from the HIT algorithm document:
-        (Summed L1B Rates) / (60 * Delta E * Geometry Factor * Efficiency) - b
+        This function uses equation 9 and 12 from the HIT algorithm document:
+        ((Summed L1B Rates) / (Delta Time * Delta E * Geometry Factor * Efficiency)) - b
 
     Parameters
     ----------
-    rate : xr.DataArray
-        The L1B rates to be converted to intensities for an epoch.
-    delta_e_factor : np.ndarray
-        The energy bin width factors for an epoch.
-    geometry_factor : np.ndarray
-        The geometry factors for an epoch.
-    efficiency : np.ndarray
-        The efficiency factors for an epoch.
-    b : np.ndarray
-        The b factors for an epoch.
+    rates : xr.DataArray
+        The L1B rates to be converted to intensities.
+    factors : xr.Dataset
+        The ancillary data factors needed to calculate the intensity.
+        This includes delta_e, geometry_factor, efficiency, and b.
 
     Returns
     -------
     xr.DataArray
-        The calculated intensities for an epoch.
+        The calculated intensities for all epochs.
     """
-    # Calculate the intensities for this energy bin using vectorization
-    return (rate / (60 * delta_e_factor * geometry_factor * efficiency)) - b
+    # Calculate the intensity using vectorized operations
+    intensity = (
+        rates
+        / (
+            factors.delta_time
+            * factors.delta_e
+            * factors.geometry_factor
+            * factors.efficiency
+        )
+    ) - factors.b
+
+    # Apply intensity where rates are not equal to the fill value
+    intensity = xr.where(rates == FILLVAL_FLOAT32, FILLVAL_FLOAT32, intensity)
+
+    return intensity
+
+
+def reshape_for_sectored(arr: np.ndarray) -> np.ndarray:
+    """
+    Reshape the ancillary data for sectored rates.
+
+    Reshape the 3D arrays (epoch, energy, declination) to 4D arrays
+    (epoch, energy, azimuth, declination) by repeating the data
+    along the azimuth dimension. This is done to match the dimensions
+    of the sectored rates data to allow for proper calculation of
+    intensities.
+
+    Parameters
+    ----------
+    arr : np.ndarray
+        The ancillary data array to reshape.
+
+    Returns
+    -------
+    np.ndarray
+        The reshaped array.
+    """
+    return np.repeat(
+        arr.reshape((arr.shape[0], arr.shape[1], arr.shape[2]))[:, :, np.newaxis, :],
+        N_AZIMUTH,
+        axis=2,
+    )
+
+
+def build_ancillary_dataset(
+    delta_e: np.ndarray,
+    geometry_factors: np.ndarray,
+    efficiencies: np.ndarray,
+    b: np.ndarray,
+    species_array: xr.DataArray,
+) -> xr.Dataset:
+    """
+    Build a xarray Dataset containing ancillary data for calculating intensity.
+
+    This function builds a dataset containing the factors needed for calculating
+    intensity for a given species. The dataset is built based on the dimensions
+    and coordinates of the species data to align data along the epoch dimension.
+
+    Parameters
+    ----------
+    delta_e : np.ndarray
+        Delta E values which are energy bin widths.
+    geometry_factors : np.ndarray
+        Geometry factor values.
+    efficiencies : np.ndarray
+        Efficiency values.
+    b : np.ndarray
+        Background intensity values.
+    species_array : xr.Dataset
+        Data array for the species to extract coordinates from.
+
+    Returns
+    -------
+    ancillary_ds : xr.Dataset
+        A dataset containing all ancillary data variables and coordinates that
+        align with the L2 dataset.
+    """
+    data_vars = {}
+
+    # Check if this is sectored data (i.e., has azimuth and declination dims)
+    is_sectored = (
+        "declination" in species_array.dims or "declination" in species_array.coords
+    )
+
+    # Build variables
+    data_vars["delta_e"] = (species_array.dims, delta_e)
+    data_vars["geometry_factor"] = (
+        species_array.dims,
+        geometry_factors,
+    )
+    data_vars["efficiency"] = (
+        species_array.dims,
+        efficiencies,
+    )
+    data_vars["b"] = (species_array.dims, b)
+    data_vars["delta_time"] = (
+        ["epoch"],
+        np.full(
+            len(species_array.epoch),
+            SECONDS_PER_10_MIN if is_sectored else SECONDS_PER_MIN,
+        ),
+    )
+
+    return xr.Dataset(data_vars, coords=species_array.coords)
 
 
 def calculate_intensities_for_a_species(
@@ -190,67 +247,102 @@ def calculate_intensities_for_a_species(
     """
     Calculate the intensity for a given species in the dataset.
 
+    This function orchestrates calculating the intensity for a given species
+    in the L2 dataset using ancillary data determined by the dynamic threshold
+    state (0-3).
+
+    The intensity is calculated using the equation:
+        (L1B Rates) / (Delta Time * Delta E * Geometry Factor * Efficiency) - b
+
+        where the equation factors are retrieved from the ancillary data for
+        the given species and dynamic threshold states.
+
     Parameters
     ----------
     species_variable : str
-        The species variable to calculate the intensity for which is either the species
-        or a statistical uncertainty. (i.e. "h", "h_delta_minus", or "h_delta_plus").
+        The species variable to calculate the intensity for, which is either the species
+        or a statistical uncertainty.
+        (i.e. "h", "h_stat_uncert_minus", or "h_stat_uncert_plus").
     l2_dataset : xr.Dataset
-        The L2 dataset containing the summed L1B rates to calculate the intensity.
+        The L2 dataset containing the L1B rates needed to calculate the intensity.
     ancillary_data_frames : dict
         Dictionary containing ancillary data for each dynamic threshold state where
         the key is the dynamic threshold state and the value is a pandas DataFrame
-        containing the ancillary data.
+        containing the ancillary data for all species.
 
     Returns
     -------
     updated_ds : xr.Dataset
-        The updated dataset with the intensity calculated for the given species.
+        The updated dataset with intensities calculated for the given species.
     """
     updated_ds = l2_dataset.copy()
-    species = (
+    dynamic_threshold_states = updated_ds["dynamic_threshold_state"].values
+    unique_states = np.unique(dynamic_threshold_states)
+    species_name = (
         species_variable.split("_")[0]
-        if "_delta_" in species_variable
+        if "_uncert_" in species_variable
         else species_variable
     )
-    energy_min = (
-        updated_ds[f"{species}_energy_mean"].values
-        - updated_ds[f"{species}_energy_delta_minus"].values
+
+    # Subset ancillary data for this species
+    species_ancillary_by_state = {
+        state: get_species_ancillary_data(state, ancillary_data_frames, species_name)
+        for state in unique_states
+    }
+
+    # Extract parameters - 3D arrays (num_states, energy bins, values)
+    delta_e = np.stack(
+        [
+            species_ancillary_by_state[state]["delta_e"]
+            for state in dynamic_threshold_states
+        ]
     )
-    # TODO: Add check for energy max after ancillary file is updated
-    #  to fix errors
+    geometry_factors = np.stack(
+        [
+            species_ancillary_by_state[state]["geometry_factor"]
+            for state in dynamic_threshold_states
+        ]
+    )
+    efficiencies = np.stack(
+        [
+            species_ancillary_by_state[state]["efficiency"]
+            for state in dynamic_threshold_states
+        ]
+    )
+    b = np.stack(
+        [species_ancillary_by_state[state]["b"] for state in dynamic_threshold_states]
+    )
 
-    # Calculate the intensity for each epoch and energy bin since the
-    # dynamic threshold state can vary by epoch and that determines the
-    # ancillary data to use.
-    for epoch in range(updated_ds[species_variable].shape[0]):
-        # Get ancillary data using the dynamic threshold state for this epoch
-        species_ancillary_data = get_species_ancillary_data(
-            int(updated_ds["dynamic_threshold_state"][epoch].values),
-            ancillary_data_frames,
-            species,
-        )
+    # Reshape parameters for sectored rates to 4D arrays
+    if "declination" in updated_ds[species_variable].dims:
+        delta_e = reshape_for_sectored(delta_e)
+        geometry_factors = reshape_for_sectored(geometry_factors)
+        efficiencies = reshape_for_sectored(efficiencies)
+        b = reshape_for_sectored(b)
 
-        # Calculate the intensity for this energy bin using vectorization
-        # and replace rates with intensities in the dataset
-        factors: IntensityFactors = get_intensity_factors(
-            energy_min, species_ancillary_data
-        )
-        rates: xr.DataArray = updated_ds[species_variable][epoch]
+    # Reshape parameters for summed and standard rates to 2D arrays
+    # by removing last dimension of size one, (n, n, 1)
+    else:
+        delta_e = np.squeeze(delta_e, axis=-1)
+        geometry_factors = np.squeeze(geometry_factors, axis=-1)
+        efficiencies = np.squeeze(efficiencies, axis=-1)
+        b = np.squeeze(b, axis=-1)
 
-        updated_ds[species_variable][epoch] = calculate_intensities(
-            rates,
-            factors.delta_e_factor,
-            factors.geometry_factor,
-            factors.efficiency,
-            factors.b,
-        )
+    # Build ancillary xarray dataset
+    ancillary_ds = build_ancillary_dataset(
+        delta_e, geometry_factors, efficiencies, b, l2_dataset[species_name]
+    )
+
+    # Calculate intensities
+    updated_ds[species_variable] = calculate_intensities(
+        updated_ds[species_variable], ancillary_ds
+    )
 
     return updated_ds
 
 
 def calculate_intensities_for_all_species(
-    l2_dataset: xr.Dataset, ancillary_data_frames: dict
+    l2_dataset: xr.Dataset, ancillary_data_frames: dict, valid_data_variables: list
 ) -> xr.Dataset:
     """
     Calculate the intensity for each species in the dataset.
@@ -263,42 +355,25 @@ def calculate_intensities_for_all_species(
         Dictionary containing ancillary data for each dynamic threshold state
         where the key is the dynamic threshold state and the value is a pandas
         DataFrame containing the ancillary data.
+    valid_data_variables : list
+        A list of valid data variables to calculate intensity for.
 
     Returns
     -------
     updated_ds : xr.Dataset
         The updated dataset with the intensity calculated for each species.
     """
-    # TODO: update to also calculate intensity for sectorates?
     updated_ds = l2_dataset.copy()
-    # List of valid species data variables to calculate intensity for
-    valid_data_variables = [
-        "h",
-        "he3",
-        "he4",
-        "he",
-        "c",
-        "n",
-        "o",
-        "ne",
-        "na",
-        "mg",
-        "al",
-        "si",
-        "s",
-        "ar",
-        "ca",
-        "fe",
-        "ni",
-    ]
 
     # Add statistical uncertainty variables to the list of valid variables
-    valid_data_variables += [f"{var}_delta_minus" for var in valid_data_variables] + [
-        f"{var}_delta_plus" for var in valid_data_variables
-    ]
+    data_variables = (
+        valid_data_variables
+        + [f"{var}_stat_uncert_minus" for var in valid_data_variables]
+        + [f"{var}_stat_uncert_plus" for var in valid_data_variables]
+    )
 
     # Calculate the intensity for each valid data variable
-    for species_variable in valid_data_variables:
+    for species_variable in data_variables:
         if species_variable in updated_ds.data_vars:
             updated_ds = calculate_intensities_for_a_species(
                 species_variable, updated_ds, ancillary_data_frames
@@ -337,15 +412,15 @@ def add_systematic_uncertainties(
     """
     updated_ds = dataset.copy()
 
-    updated_ds[f"{particle}_sys_delta_minus"] = xr.DataArray(
+    updated_ds[f"{particle}_sys_err_minus"] = xr.DataArray(
         data=np.zeros(energy_bins, dtype=np.float32),
         dims=[f"{particle}_energy_mean"],
-        name=f"{particle}_sys_delta_minus",
+        name=f"{particle}_sys_err_minus",
     )
-    updated_ds[f"{particle}_sys_delta_plus"] = xr.DataArray(
+    updated_ds[f"{particle}_sys_err_plus"] = xr.DataArray(
         data=np.zeros(energy_bins, dtype=np.float32),
         dims=[f"{particle}_energy_mean"],
-        name=f"{particle}_sys_delta_plus",
+        name=f"{particle}_sys_err_plus",
     )
 
     return updated_ds
@@ -353,7 +428,7 @@ def add_systematic_uncertainties(
 
 def get_species_ancillary_data(
     dynamic_threshold_state: int, ancillary_data_frames: dict, species: str
-) -> pd.DataFrame:
+) -> dict:
     """
     Get the ancillary data for a given species and dynamic threshold state.
 
@@ -370,14 +445,25 @@ def get_species_ancillary_data(
 
     Returns
     -------
-    pd.DataFrame
+    dict
         The ancillary data for the species and dynamic threshold state.
     """
-    ancillary_data = ancillary_data_frames[dynamic_threshold_state]
+    ancillary_df = ancillary_data_frames[dynamic_threshold_state]
 
-    # Get the ancillary data for the species
-    species_ancillary_data = ancillary_data[ancillary_data["species"] == species]
-    return species_ancillary_data
+    # Remove any trailing spaces from all values in the DataFrame
+    ancillary_df = ancillary_df.map(lambda x: x.strip() if isinstance(x, str) else x)
+
+    # Get the ancillary data for the species and group by lower energy
+    species_ancillary_df = ancillary_df[ancillary_df["species"] == species]
+    grouped = species_ancillary_df.groupby("lower energy (mev)")
+    return {
+        "delta_e": np.array(grouped["delta e (mev)"].apply(list).tolist()),
+        "geometry_factor": np.array(
+            grouped["geometry factor (cm2 sr)"].apply(list).tolist()
+        ),
+        "efficiency": np.array(grouped["efficiency"].apply(list).tolist()),
+        "b": np.array(grouped["b"].apply(list).tolist()),
+    }
 
 
 def load_ancillary_data(dynamic_threshold_states: set, path_prefix: Path) -> dict:
@@ -448,15 +534,14 @@ def process_summed_intensity_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Da
     # Add systematic uncertainties to the dataset. These will not
     # have the intensity calculation applied to them
     for var in l2_summed_intensity_dataset.data_vars:
-        if "_" not in var:
-            particle = str(var)
+        if var in VALID_SPECIES:
             l2_summed_intensity_dataset = add_systematic_uncertainties(
                 l2_summed_intensity_dataset,
-                particle,
+                var,
                 l2_summed_intensity_dataset[var].shape[1],
             )
     l2_summed_intensity_dataset = calculate_intensities_for_all_species(
-        l2_summed_intensity_dataset, ancillary_data_frames
+        l2_summed_intensity_dataset, ancillary_data_frames, VALID_SPECIES
     )
 
     return l2_summed_intensity_dataset
@@ -480,9 +565,9 @@ def process_standard_intensity_data(
     STANDARD_PARTICLE_ENERGY_RANGE_MAPPING dictionary are included in this
     product.
 
-    Intensity is then calculated from the summed rates using the following equation:
+    Intensity is then calculated from the summed standard rates:
 
-        Equation 10 from the HIT algorithm document:
+        Equation 9 from the HIT algorithm document:
         Standard Intensity = (Summed L1B Standard Rates) /
                              (60 * Delta E * Geometry Factor * Efficiency) - b
 
@@ -508,9 +593,6 @@ def process_standard_intensity_data(
     l2_standard_intensity_dataset["dynamic_threshold_state"] = (
         l1b_standard_rates_dataset["dynamic_threshold_state"]
     )
-    l2_standard_intensity_dataset[
-        "dynamic_threshold_state"
-    ].attrs = l1b_standard_rates_dataset["dynamic_threshold_state"].attrs
 
     # Load ancillary data for each dynamic threshold state into a dictionary
     ancillary_data_frames = load_ancillary_data(
@@ -533,8 +615,57 @@ def process_standard_intensity_data(
             particle,
             energy_ranges,
         )
-    calculate_intensities_for_all_species(
-        l2_standard_intensity_dataset, ancillary_data_frames
+    l2_standard_intensity_dataset = calculate_intensities_for_all_species(
+        l2_standard_intensity_dataset, ancillary_data_frames, VALID_SPECIES
     )
 
     return l2_standard_intensity_dataset
+
+
+def process_sectored_intensity_data(
+    l1b_sectored_rates_dataset: xr.Dataset,
+) -> xr.Dataset:
+    """
+    Will process L2 HIT sectored intensity data from L1B sectored rates data.
+
+    This function converts the L1B sectored rates to L2 sectored intensities
+    using ancillary tables containing factors needed to calculate the
+    intensity (energy bin width, geometry factor, efficiency, and b).
+
+    Equation 12 from the HIT algorithm document:
+    Sectored Intensity = (Summed L1B Sectored Rates) /
+                       (600 * Delta E * Geometry Factor * Efficiency) - b
+
+    Parameters
+    ----------
+    l1b_sectored_rates_dataset : xr.Dataset
+        The L1B sectored rates dataset.
+
+    Returns
+    -------
+    xr.Dataset
+        The processed L2 sectored intensity dataset.
+    """
+    # Create a new dataset to store the L2 sectored intensity data
+    l2_sectored_intensity_dataset = l1b_sectored_rates_dataset.copy(deep=True)
+
+    # Load ancillary data for each dynamic threshold state into a dictionary
+    ancillary_data_frames = load_ancillary_data(
+        set(l2_sectored_intensity_dataset["dynamic_threshold_state"].values),
+        L2_SECTORED_ANCILLARY_PATH_PREFIX,
+    )
+
+    # Add systematic uncertainties to the dataset. These will not
+    # have the intensity calculation applied to them
+    for var in l2_sectored_intensity_dataset.data_vars:
+        if var in VALID_SECTORED_SPECIES:
+            l2_sectored_intensity_dataset = add_systematic_uncertainties(
+                l2_sectored_intensity_dataset,
+                var,
+                l2_sectored_intensity_dataset[var].shape[1],
+            )
+    l2_sectored_intensity_dataset = calculate_intensities_for_all_species(
+        l2_sectored_intensity_dataset, ancillary_data_frames, VALID_SECTORED_SPECIES
+    )
+
+    return l2_sectored_intensity_dataset
