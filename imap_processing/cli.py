@@ -10,6 +10,8 @@ Examples
     imap_cli --instrument <instrument> --level <data_level>
 """
 
+from __future__ import annotations
+
 import argparse
 import logging
 import re
@@ -280,7 +282,7 @@ def _validate_args(args: argparse.Namespace) -> None:
             f"{args.repointing} is not a valid repointing, use format repoint#####."
         )
 
-    if args.end_date is not None:
+    if getattr(args, "end_date", None) is not None:
         logger.warning(
             "The end_date argument is deprecated and will be ignored. Do not use."
         )
@@ -344,8 +346,8 @@ class ProcessInstrument(ABC):
         data_level: str,
         data_descriptor: str,
         dependency_str: str,
-        start_date: str,
-        repointing: str,
+        start_date: str | None,
+        repointing: str | None,
         version: str,
         upload_to_sdc: bool,
     ) -> None:
@@ -449,8 +451,9 @@ class ProcessInstrument(ABC):
         Child classes can override this method to customize the
         post-processing actions.
 
-        If start_date is used to generate the output file name by default, and can
-        either be a date in the form YYYYMMDD or a repointing in the form repoint#####.
+        The values from start_date and/or repointing are used to generate the output
+        file name if supplied. All other filename fields are derived from the
+        dataset attributes.
 
         Parameters
         ----------

@@ -12,6 +12,7 @@ from imap_data_access.processing_input import (
 
 from imap_processing.cli import (
     Codice,
+    Glows,
     Hi,
     Hit,
     Spacecraft,
@@ -74,8 +75,8 @@ def test_main(mock_instrument):
         "l1a",
         "--start-date",
         "20240430",
-        "--end-date",
-        "20240501",
+        "--repointing",
+        "repoint12345",
         "--version",
         "v001",
         "--upload-to-sdc",
@@ -87,18 +88,25 @@ def test_main(mock_instrument):
 
 
 @pytest.mark.parametrize(
-    "instrument, data_level, raises_value_error",
+    "instrument, data_level, start_date, repointing, raises_value_error",
     [
-        ("mag", "l1a", ""),
-        ("foo", "l1a", "foo is not in the supported .*"),
-        ("codice", "l1z", "l1z is not a supported .*"),
+        ("mag", "l1a", "20250101", None, ""),
+        ("foo", "l1a", None, None, "foo is not in the supported .*"),
+        ("codice", "l1z", None, None, "l1z is not a supported .*"),
+        ("glows", "l1a", None, "repoint12345", ""),
+        ("glows", "l1a", None, "12345", ".* not a valid repointing.*"),
+        ("glows", "l1a", "2000001", None, ".* not a valid date.*"),
     ],
 )
-def test_validate_args(instrument, data_level, raises_value_error):
+def test_validate_args(
+    instrument, data_level, start_date, repointing, raises_value_error
+):
     """Test coverage for imap_processing.cli._validate_args()"""
     args = mock.Mock
     args.instrument = instrument
     args.data_level = data_level
+    args.start_date = start_date
+    args.repointing = repointing
 
     if raises_value_error:
         with pytest.raises(ValueError, match=raises_value_error):
@@ -126,13 +134,41 @@ def test_codice(mock_codice_l1a, mock_instrument_dependencies):
         '[{"type": "science","files": ["imap_codice_l0_raw_20230822_v001.pkts"]}]'
     )
 
-    instrument = Codice(
-        "l1a", "hskp", dependency_str, "20230822", "20230822", "v001", True
-    )
+    instrument = Codice("l1a", "hskp", dependency_str, "20230822", None, "v001", True)
 
     instrument.process()
     assert mock_codice_l1a.call_count == 1
     assert mocks["mock_upload"].call_count == 1
+
+
+def test_repointing_file_creation(mock_instrument_dependencies):
+    test_datasets = [xr.Dataset({}, attrs={"cdf_filename": "file0"})]
+    input_collection = ProcessingInputCollection(
+        ScienceInput("imap_glows_l0_raw_20230822-repoint00001_v001.pkts")
+    )
+    dependency_str = (
+        '[{"type": "science","files": '
+        '["imap_glows_l0_raw_20230822-repoint00001_v001.pkts"]}]'
+    )
+    instrument = Glows(
+        "l1a", "hist", dependency_str, None, "repoint00002", "v001", False
+    )
+
+    mock_instrument_dependencies["mock_write_cdf"].side_effect = ["/path/to/file0"]
+
+    # Call the method that uses write_cdf
+    instrument.post_processing(test_datasets, input_collection)
+
+    # Assert that write_cdf was called with the expected arguments
+    assert mock_instrument_dependencies["mock_write_cdf"].call_count == 1
+    assert (
+        mock_instrument_dependencies["mock_write_cdf"].call_args[1]["repointing"]
+        == "repoint00002"
+    )
+    assert (
+        mock_instrument_dependencies["mock_write_cdf"].call_args[1]["start_date"]
+        is None
+    )
 
 
 @pytest.mark.parametrize(
@@ -297,7 +333,7 @@ def test_post_processing(mock_swe_l1a, mock_instrument_dependencies):
     dependency_str = (
         '[{"type": "science","files": ["imap_swe_l0_raw_20100105_v001.pkts"]}]'
     )
-    instrument = Swe("l1a", "raw", dependency_str, "20100105", "20100101", "v001", True)
+    instrument = Swe("l1a", "raw", dependency_str, "20100105", None, "v001", True)
 
     # This function calls both the instrument.do_processing() and
     # instrument.post_processing()
