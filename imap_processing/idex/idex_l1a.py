@@ -83,9 +83,7 @@ class PacketParser:
 
         if science_packets:
             logger.info("Processing IDEX L1A Science data.")
-            self.data.append(
-                self._create_science_dataset(science_packets)
-            )
+            self.data.append(self._create_science_dataset(science_packets))
 
         elif IDEXAPID.IDEX_CATLST in datset_by_apid:
             logger.info("Processing IDEX L1A Catalog List Summary data.")
@@ -98,8 +96,7 @@ class PacketParser:
 
         logger.info("IDEX L1A data processing completed.")
 
-    def _create_science_dataset(
-        self, science_decom_packet_list: list) -> xr.Dataset:
+    def _create_science_dataset(self, science_decom_packet_list: list) -> xr.Dataset:
         """
         Process IDEX science packets into an xarray Dataset.
 
