@@ -369,9 +369,7 @@ def ultra_l2(
         map_dataset[variable].attrs.update(
             cdf_attrs.get_variable_attributes(
                 variable_name=variable,
-                check_schema=(
-                    True if variable not in ["longitude", "latitude"] else False
-                ),
+                check_schema=variable not in ["longitude", "latitude"],
             )
         )
     for coord_variable in map_dataset.coords:
