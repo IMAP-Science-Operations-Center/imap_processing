@@ -302,4 +302,4 @@ def test_cdf_creation_catlst(decom_test_data_catlst: xr.Dataset):
     """
     filename = write_cdf(decom_test_data_catlst)
 
-    assert filename.name == "imap_idex_l1a_catlst-1week_20241206_v001.cdf"
+    assert filename.name == "imap_idex_l1a_catlst-1week_20241206_v999.cdf"
