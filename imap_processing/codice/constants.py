@@ -384,7 +384,19 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     },
 }
 
-# Dictionary to define the bit structure of CoDICE-Lo direct events
+# Dictionary to define the bit structure of direct events
+HI_DE_BIT_STRUCTURE = {
+    "SSDEnergy": 11,
+    "TOF": 10,
+    "SSD_ID": 4,
+    "ERGE": 2,
+    "MultiFlag": 1,
+    "Type": 2,
+    "SpinAngle": 5,
+    "SpinNumber": 4,
+    "Priority": 3,
+    "Spare": 6,  # TODO: Ask Joey about this
+}
 LO_DE_BIT_STRUCTURE = {
     "APDGain": 1,
     "APD_ID": 5,
