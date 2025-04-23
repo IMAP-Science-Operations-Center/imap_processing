@@ -185,15 +185,10 @@ def get_time(
         (grouped_data["group"] == group).values
     ][pkt_counter == 2]
 
-    time_data = {
-        "pri_coarsetm": int(pri_coarsetm),
-        "pri_fintm": int(pri_fintm),
-        "sec_coarsetm": int(sec_coarsetm),
-        "sec_fintm": int(sec_fintm),
-    }
+    time_data = {}
 
-    primary_time = TimeTuple(time_data["pri_coarsetm"], time_data["pri_fintm"])
-    secondary_time = TimeTuple(time_data["sec_coarsetm"], time_data["sec_fintm"])
+    primary_time = TimeTuple(int(pri_coarsetm), int(pri_fintm))
+    secondary_time = TimeTuple(int(sec_coarsetm), int(sec_fintm))
     time_data["pri_met"] = primary_time.to_seconds()
     time_data["primary_ttj2000ns"] = met_to_ttj2000ns(time_data["pri_met"])
     # TODO: is this ok?
@@ -216,6 +211,31 @@ def calculate_l1b(
     science_data: dict,
     status_data: dict,
 ):
+    """
+    Calculate equivalent of l1b data product.
+
+    Parameters
+    ----------
+    grouped_data : xr.Dataset
+        Grouped data.
+    group : int
+        Group number.
+    pkt_counter : xr.DataArray
+        Packet counter.
+    science_data : dict
+        Science data.
+    status_data : dict
+        Status data.
+
+    Returns
+    -------
+    updated_vector_mago : numpy.ndarray
+        Calibrated mago vector.
+    updated_vector_magi : numpy.ndarray
+        Calibrated magi vector.
+    time_data : dict
+        Time data.
+    """
     # Get calibration data
     calibration_dataset = load_cdf(
         Path(__file__).resolve().parents[2]
