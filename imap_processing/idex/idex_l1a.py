@@ -85,6 +85,13 @@ class PacketParser:
             logger.info("Processing IDEX L1A Science data.")
             self.data.append(self._create_science_dataset(science_packets))
 
+        elif IDEXAPID.IDEX_EVT in datset_by_apid:
+            logger.info("Processing IDEX L1A Event Message data.")
+            data = datset_by_apid[IDEXAPID.IDEX_EVT]
+            data.attrs = self.idex_attrs.get_global_attributes("imap_idex_l1a_evt")
+            data["epoch"].attrs = epoch_attrs
+            self.data.append(data)
+
         elif IDEXAPID.IDEX_CATLST in datset_by_apid:
             logger.info("Processing IDEX L1A Catalog List Summary data.")
             data = datset_by_apid[IDEXAPID.IDEX_CATLST]

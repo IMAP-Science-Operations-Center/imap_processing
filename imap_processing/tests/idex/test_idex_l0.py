@@ -51,11 +51,20 @@ def test_idex_tof_high_data(decom_test_data_sci: xr.Dataset):
 def test_catlst_event_num(decom_test_data_catlst: xr.Dataset):
     """Verify that a sample of the data is correct.
 
-    ``impact_14_tof_high_data.txt`` has been verified correct by the IDEX team
-
     Parameters
     ----------
     decom_test_data_catlst : xarray.Dataset
         The dataset to test with
     """
     assert len(decom_test_data_catlst["epoch"]) == 1
+
+
+def test_evt_event_num(decom_test_data_evt: xr.Dataset):
+    """Verify that a sample of the data is correct.
+
+    Parameters
+    ----------
+    decom_test_data_evt : xarray.Dataset
+        The dataset to test with
+    """
+    assert len(decom_test_data_evt["epoch"]) == 28

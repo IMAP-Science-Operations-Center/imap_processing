@@ -9,6 +9,7 @@ class IDEXAPID(IntEnum):
 
     IDEX_SCIENCE = 1424
     IDEX_CATLST = 1419
+    IDEX_EVT = 1418
 
 
 @dataclass

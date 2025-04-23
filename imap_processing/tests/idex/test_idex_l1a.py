@@ -302,4 +302,17 @@ def test_cdf_creation_catlst(decom_test_data_catlst: xr.Dataset):
     """
     filename = write_cdf(decom_test_data_catlst)
 
-    assert filename.name == "imap_idex_l1a_catlst-1week_20241206_v999.cdf"
+    assert filename.name == "imap_idex_l1a_catlst_20241206_v999.cdf"
+
+
+def test_cdf_creation_evt(decom_test_data_evt: xr.Dataset):
+    """Verify that a sample of the data can be written to a cdf without errors.
+
+    Parameters
+    ----------
+    decom_test_data_evt : xarray.Dataset
+        The dataset to test with
+    """
+    filename = write_cdf(decom_test_data_evt)
+
+    assert filename.name == "imap_idex_l1a_evt_20250108_v999.cdf"
