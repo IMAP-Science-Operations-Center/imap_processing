@@ -40,9 +40,6 @@ def test_data():
 def test_l1c_data():
     """Ensure external test data is downloaded before tests run."""
 
-    # Make sure we have the data available here. This test collection gets
-    # skipped at the module level if the mark isn't present. We can't decorate
-    # a fixture, so add the needed call directly here instead.
     _download_external_data(_test_data_paths())
 
 
@@ -110,6 +107,7 @@ def test_get_background_rates():
     assert background_rates.shape == hp.nside2npix(128)
 
 
+@pytest.mark.external_test_data
 def test_get_spacecraft_exposure_times(test_l1c_data):
     """Test get_spacecraft_exposure_times function."""
     constant_exposure = TEST_PATH / "ultra_90_dps_exposure.csv"
@@ -124,8 +122,9 @@ def test_get_spacecraft_exposure_times(test_l1c_data):
     )
 
 
+@pytest.mark.external_kernel
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_get_helio_exposure_times():
+def test_get_helio_exposure_times(test_l1c_data):
     """Tests get_helio_exposure_times function."""
 
     constant_exposure = BASE_PATH / "dps_grid45_compressed.cdf"
@@ -171,6 +170,7 @@ def test_get_helio_exposure_times():
     assert np.array_equal(np.squeeze(exposures[2]), exposure_3d[:, :, 23])
 
 
+@pytest.mark.external_test_data
 def test_get_spacecraft_sensitivity(test_l1c_data):
     """Tests get_spacecraft_sensitivity function."""
     # TODO: remove below here with lookup table aux api
@@ -206,6 +206,7 @@ def test_get_spacecraft_sensitivity(test_l1c_data):
     )
 
 
+@pytest.mark.external_test_data
 def test_grid_sensitivity(test_l1c_data):
     """Tests grid_sensitivity function."""
     efficiencies_path = TEST_PATH / "Ultra_90_DPS_efficiencies_all.csv"
