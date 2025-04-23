@@ -9,7 +9,6 @@ from cdflib import CDF
 
 from imap_processing import imap_module_directory
 from imap_processing.ena_maps.utils.spatial_utils import build_spatial_bins
-from imap_processing.tests.conftest import _download_external_data, _test_data_paths
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     get_background_rates,
@@ -34,13 +33,6 @@ def test_data():
     v = np.column_stack((vx_sc, vy_sc, vz_sc))
 
     return v, energy
-
-
-@pytest.fixture(scope="session", autouse=True)
-def test_l1c_data():
-    """Ensure external test data is downloaded before tests run."""
-
-    _download_external_data(_test_data_paths())
 
 
 def test_build_energy_bins():
@@ -121,7 +113,6 @@ def test_get_spacecraft_exposure_times():
     )
 
 
-@pytest.mark.external_kernel
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_get_helio_exposure_times():
     """Tests get_helio_exposure_times function."""

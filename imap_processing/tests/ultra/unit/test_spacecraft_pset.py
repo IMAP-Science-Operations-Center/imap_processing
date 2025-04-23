@@ -21,7 +21,6 @@ from imap_processing.ultra.l1c.spacecraft_pset import calculate_spacecraft_pset
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
-@pytest.mark.external_test_data
 @pytest.mark.external_kernel
 @ensure_spice
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")

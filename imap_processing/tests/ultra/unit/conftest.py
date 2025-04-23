@@ -7,6 +7,7 @@ import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
+from imap_processing.tests.conftest import _download_external_data, _test_data_paths
 from imap_processing.ultra.l0.decom_ultra import (
     process_ultra_events,
     process_ultra_rates,
@@ -264,3 +265,10 @@ def l1b_extendedspin_dataset(
     output_datasets = ultra_l1b(data_dict)
 
     return output_datasets
+
+
+@pytest.fixture(scope="session", autouse=True)
+def ultra_autodownload_fixture():
+    """Ensure external test data is downloaded before tests run."""
+
+    _download_external_data(_test_data_paths())
