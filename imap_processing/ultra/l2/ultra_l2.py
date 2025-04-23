@@ -52,7 +52,7 @@ REQUIRED_L1C_VARIABLES = [
 VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE = [
     "sensitivity",
     "background_rates",
-    "observation_time",
+    "obs_date",
 ]
 
 # These variables are dropped after they are used to
@@ -65,10 +65,6 @@ VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION = [
     "num_pointing_set_pixel_members",
     "corrected_count_rate",
 ]
-
-# Object which holds CDF attributes for the map
-cdf_attrs = ImapCdfAttributes()
-cdf_attrs.add_instrument_global_attrs(instrument="ultra")
 
 
 def generate_ultra_healpix_skymap(
@@ -133,7 +129,7 @@ def generate_ultra_healpix_skymap(
     # Add additional data variables to the map
     output_map_structure.values_to_push_project.extend(
         [
-            "observation_time",
+            "obs_date",
             "pointing_set_exposure_times_solid_angle",
             "num_pointing_set_pixel_members",
         ]
@@ -157,7 +153,7 @@ def generate_ultra_healpix_skymap(
             np.ones(pointing_set.num_points, dtype=int),
             dims=(CoordNames.HEALPIX_INDEX.value),
         )
-        pointing_set.data["observation_time"] = xr.DataArray(
+        pointing_set.data["obs_date"] = xr.DataArray(
             np.full((1, pointing_set.num_points), pointing_set.epoch),
             dims=(CoordNames.TIME.value, CoordNames.HEALPIX_INDEX.value),
         )
@@ -264,6 +260,10 @@ def ultra_l2(
         L2 output dataset containing map of the counts on the sky.
         Wrapped in a list for consistency with other product levels.
     """
+    # Object which holds CDF attributes for the map
+    cdf_attrs = ImapCdfAttributes()
+    cdf_attrs.add_instrument_global_attrs(instrument="ultra")
+
     l1c_products = data_dict.values()
     num_l1c_products = len(l1c_products)
     logger.info(f"Running ultra_l2 processing on {num_l1c_products} L1C products")
@@ -331,6 +331,10 @@ def ultra_l2(
 
         map_dataset = rectangular_skymap.to_dataset()
 
+        # Add longitude_delta, latitude_delta to the map dataset
+        map_dataset["longitude_delta"] = rectangular_skymap.spacing_deg / 2
+        map_dataset["latitude_delta"] = rectangular_skymap.spacing_deg / 2
+
         map_attrs = {
             "Spacing_degrees": output_map_structure.spacing_deg,
         }
@@ -347,6 +351,11 @@ def ultra_l2(
             "Spice_reference_frame": output_map_structure.spice_reference_frame,
         }
     )
+
+    # Rename any variables as necessary for L2 Map schema compliance
+    # Energy at L1C is named "energy_bin_geometric_mean", but at L2 it is standardized
+    # to "energy" for all instruments.
+    map_dataset = map_dataset.rename({"energy_bin_geometric_mean": "energy"})
 
     # Add the defined attributes to the map's global attrs
     map_dataset.attrs.update(map_attrs)
@@ -374,7 +383,8 @@ def ultra_l2(
         map_dataset[variable].attrs.update(
             cdf_attrs.get_variable_attributes(
                 variable_name=variable,
-                check_schema=variable not in ["longitude", "latitude"],
+                check_schema=variable
+                not in ["longitude", "latitude", "longitude_delta", "latitude_delta"],
             )
         )
     for coord_variable in map_dataset.coords:

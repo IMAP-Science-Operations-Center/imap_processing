@@ -115,7 +115,7 @@ class TestUltraL2:
             "ena_intensity",
             "ena_intensity_stat_unc",
             "exposure_factor",
-            "observation_time",
+            "obs_date",
         ]
         for var in expected_vars:
             assert var in hp_skymap.data_1d.data_vars
@@ -197,7 +197,7 @@ class TestUltraL2:
         # Check the dims of the key variables
         counts_dims = (
             CoordNames.TIME.value,
-            CoordNames.ENERGY_ULTRA.value,
+            CoordNames.ENERGY_ULTRA_L1C.value,
             CoordNames.GENERIC_PIXEL.value,
         )
         assert hp_skymap.data_1d["counts"].dims == counts_dims
@@ -282,7 +282,7 @@ class TestUltraL2:
         # Check the dims of the key variables
         expected_ena_intensity_dims = (
             CoordNames.TIME.value,
-            CoordNames.ENERGY_ULTRA.value,
+            CoordNames.ENERGY_L2.value,
             CoordNames.AZIMUTH_L2.value,
             CoordNames.ELEVATION_L2.value,
         )
@@ -323,8 +323,8 @@ class TestUltraL2:
                 assert (
                     ena_intensity_attrs[f"LABL_PTR_{depend_num}"] == f"{depend}_label"
                 )
-        assert ena_intensity_attrs["UNITS"] == "counts/(s * cm^3 * Sr * KeV)"
+        assert ena_intensity_attrs["UNITS"] == "counts/(s * cm^2 * Sr * KeV)"
 
         exposure_attrs = rect_map_dataset["exposure_factor"].attrs
         assert exposure_attrs["VAR_TYPE"] == "data"
-        assert exposure_attrs["UNITS"] == "seconds"
+        assert exposure_attrs["UNITS"] == "s"

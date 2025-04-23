@@ -115,6 +115,8 @@ ena_intensity:
   CATDESC: Mono-energetic ENA intensity.
   FIELDNAM: Intensity
   UNITS: counts/(s * cm^2 * Sr * KeV)
+  DELTA_MINUS_VAR: ena_intensity_stat_unc
+  DELTA_PLUS_VAR: ena_intensity_stat_unc
   DEPEND_0: epoch
   DEPEND_1: energy
   DEPEND_2: pixel_index
