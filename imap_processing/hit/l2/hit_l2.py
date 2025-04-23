@@ -721,38 +721,3 @@ def process_sectored_intensity_data(
             )
 
     return l2_sectored_intensity_dataset
-
-
-if __name__ == "__main__":
-    from imap_processing import imap_module_directory
-    from imap_processing.hit.l1a.hit_l1a import hit_l1a
-    from imap_processing.hit.l1b.hit_l1b import (
-        process_sectored_rates_data,
-    )
-
-    # L0 file path
-    packet_file = imap_module_directory / "tests/hit/test_data/sci_sample.ccsds"
-
-    datasets = hit_l1a(packet_file)
-    counts = datasets[0]
-
-    # Calculate livetime from the livetime counter
-    livetime = counts["livetime_counter"] / 270
-
-    # Process L2 Sectored
-    sectored_rates = process_sectored_rates_data(counts, livetime)
-    l2_sectored_intensity_dataset = process_sectored_intensity_data(sectored_rates)
-    print(l2_sectored_intensity_dataset)
-    print(l2_sectored_intensity_dataset["h"][0])
-
-    # # Process L2 Standard
-    # standard_rates = process_standard_rates_data(counts, livetime)
-    # l2_standard_flux_dataset = process_standard_intensity_data(standard_rates)
-    # print(l2_standard_flux_dataset["h"][1])
-    # print(l2_standard_flux_dataset.data_vars)
-
-    # # Process L2 Summed
-    # summed_rates = process_summed_rates_data(counts, livetime)
-    # l2_summed_intensity_dataset = process_summed_intensity_data(summed_rates)
-    # print(l2_summed_intensity_dataset)
-    # print(l2_summed_intensity_dataset["h"][0])
