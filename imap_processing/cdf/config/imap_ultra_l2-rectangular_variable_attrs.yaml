@@ -39,58 +39,86 @@ default_float32_attrs: &default_float32
 # Define Coordinates
 longitude:
   <<: *default_coords_float32
-  CATDESC: Longitude in range [0, 360] corresponding to center of pixel.
+  CATDESC: Pixel center longitude.
   FIELDNAM: longitude
   LABLAXIS: longitude
   UNITS: degrees
+  DELTA_MINUS_VAR: longitude_delta
+  DELTA_PLUS_VAR: longitude_delta
   VAR_TYPE: support_data
+  VALIDMIN: 0
+  VALIDMAX: 360
+  SCALE_TYP: linear
 
 longitude_label:
   VAR_TYPE: metadata
-  CATDESC: Longitude in range [0, 360] corresponding to center of pixel.
-  FIELDNAM: longitude
+  CATDESC: Label variable for longitude.
+  FIELDNAM: longitude label
   FORMAT: A8
   DEPEND_1: longitude
 
+longitude_delta:
+  VAR_TYPE: metadata
+  dtype: float32
+  CATDESC: Half-width of longitude pixel
+  FORMAT: I3
+  UNITS: degrees
+  FIELDNAM: longitude delta
+
 latitude:
   <<: *default_coords_float32
-  CATDESC: Latitude in range [-90, 90] corresponding to center of pixel.
+  CATDESC: Pixel center latitude.
   FIELDNAM: latitude
   LABLAXIS: latitude
   UNITS: degrees
+  DELTA_MINUS_VAR: latitude_delta
+  DELTA_PLUS_VAR: latitude_delta
   VAR_TYPE: support_data
+  VALIDMIN: -90
+  VALIDMAX: 90
+  SCALE_TYP: linear
 
 latitude_label:
   VAR_TYPE: metadata
-  CATDESC: Latitude in range [-90, 90] corresponding to center of pixel.
-  FIELDNAM: latitude
+  CATDESC: Label variable for latitude.
+  FIELDNAM: latitude label
   FORMAT: A8
   DEPEND_1: latitude
 
-energy_bin_geometric_mean:
+latitude_delta:
+  VAR_TYPE: metadata
+  dtype: float32
+  CATDESC: Half-width of latitude pixel
+  FORMAT: I3
+  UNITS: degrees
+  FIELDNAM: latitude delta
+
+energy:
   <<: *default_coords_float32
   CATDESC: Geometric mean of energy bin.
   FIELDNAM: energy_bin_geometric_mean
-  LABLAXIS: energy bin geometric mean
+  LABLAXIS: Energy bin geometric mean
+  FORMAT: I2
   UNITS: KeV
   VAR_TYPE: support_data
+  SCALE_TYP: linear
 
-energy_bin_geometric_mean_label:
+energy_label:
   VAR_TYPE: metadata
   CATDESC: Geometric mean of energy bin.
   FIELDNAM: energy_bin_geometric_mean
-  FORMAT: A10
-  DEPEND_1: energy_bin_geometric_mean
+  FORMAT: A16
+  DEPEND_1: energy
 
 # Define Data variables
 exposure_factor:
   <<: *default_float32
-  CATDESC: Exposure time calculated from multiple pointing sets.
-  FIELDNAM: exposure_times
+  CATDESC: Exact or approximate exposure time over which counts in a pixel are accumulated.  Used as a weighting factor for combining data quantities sensibly.
+  FIELDNAM: Exposure Times
   DEPEND_0: epoch
   DEPEND_1: longitude
   DEPEND_2: latitude
-  UNITS: seconds
+  UNITS: s
   VAR_TYPE: data
   LABL_PTR_1: longitude_label
   LABL_PTR_2: latitude_label
@@ -98,31 +126,37 @@ exposure_factor:
 
 ena_intensity:
   <<: *default_float32
-  CATDESC: Ena_intensity calculated from multiple pointing sets.
-  FIELDNAM: ena_intensity
-  UNITS: counts/(s * cm^3 * Sr * KeV)
+  CATDESC: Mono-energetic ENA intensity.
+  FIELDNAM: Intensity
+  UNITS: counts/(s * cm^2 * Sr * KeV)
+  DELTA_MINUS_VAR: ena_intensity_stat_unc
+  DELTA_PLUS_VAR: ena_intensity_stat_unc
   DEPEND_0: epoch
-  DEPEND_1: energy_bin_geometric_mean
+  DEPEND_1: energy
   DEPEND_2: longitude
   DEPEND_3: latitude
   VAR_TYPE: data
-  LABL_PTR_1: energy_bin_geometric_mean_label
+  LABLAXIS: Intensity
+  LABL_PTR_1: energy_label
   LABL_PTR_2: longitude_label
   LABL_PTR_3: latitude_label
+  DISPLAY_TYPE: image
 
 ena_intensity_stat_unc:
   <<: *default_float32
-  CATDESC: Statistical uncertainty on ena_intensity.
-  FIELDNAM: ena_intensity_stat_unc
+  CATDESC: ENA intensity statistical uncertainty.
+  FIELDNAM: Intensity stat unc
   UNITS: counts/(s * cm^2 * Sr * KeV)
   DEPEND_0: epoch
-  DEPEND_1: energy_bin_geometric_mean
+  DEPEND_1: energy
   DEPEND_2: longitude
   DEPEND_3: latitude
   VAR_TYPE: data
-  LABL_PTR_1: energy_bin_geometric_mean_label
+  LABLAXIS: Statistical Unc.
+  LABL_PTR_1: energy_label
   LABL_PTR_2: longitude_label
   LABL_PTR_3: latitude_label
+  DISPLAY_TYPE: image
 
 sensitivity:
   <<: *default_float32
@@ -130,22 +164,26 @@ sensitivity:
   FIELDNAM: sensitivity
   UNITS: cm^-3
   DEPEND_0: epoch
-  DEPEND_1: energy_bin_geometric_mean
+  DEPEND_1: energy
   DEPEND_2: longitude
   DEPEND_3: latitude
   VAR_TYPE: data
-  LABL_PTR_1: energy_bin_geometric_mean_label
+  LABLAXIS: sensitivity
+  LABL_PTR_1: energy_label
   LABL_PTR_2: longitude_label
   LABL_PTR_3: latitude_label
+  DISPLAY_TYPE: image
 
-observation_time:
+obs_date:
   <<: *default
-  CATDESC: Exposure time weighted mean of L1C pointing epochs.
-  FIELDNAM: observation_time
-  UNITS: " "
+  CATDESC: Exposure time weighted mean collection date of data in a pixel.
+  FIELDNAM: J2000 Nanoseconds
+  UNITS: ns
   DEPEND_0: epoch
   DEPEND_1: longitude
   DEPEND_2: latitude
   VAR_TYPE: data
+  LABLAXIS: epoch
   LABL_PTR_1: longitude_label
   LABL_PTR_2: latitude_label
+  DISPLAY_TYPE: image
