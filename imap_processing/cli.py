@@ -108,6 +108,7 @@ def _parse_args() -> argparse.Namespace:
         '--data-level "l1a" '
         '--descriptor "all" '
         ' --start-date "20231212" '
+        '--repointing "repoint12345" '
         '--version "v001" '
         '--dependency "['
         "    {"
@@ -195,16 +196,24 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--start-date",
         type=str,
-        required=True,
-        help="Start time for the output data. Format: YYYYMMDD or repoint#####",
+        required=False,
+        help="Start time for the output data. Format: YYYYMMDD",
     )
 
     parser.add_argument(
         "--end-date",
         type=str,
         required=False,
-        help="End time for the output data. If not provided, start_time will be used "
+        help="DEPRECATED: Do not use this."
+        "End time for the output data. If not provided, start_time will be used "
         "for end_time. Format: YYYYMMDD",
+    )
+    parser.add_argument(
+        "--repointing",
+        type=str,
+        required=False,
+        help="Repointing time for output data. Replaces start_time if both are "
+        "provided. Format: repoint#####",
     )
 
     parser.add_argument(
@@ -250,6 +259,30 @@ def _validate_args(args: argparse.Namespace) -> None:
             f"{args.data_level} is not a supported data level for the {args.instrument}"
             " instrument, valid levels are: "
             f"{imap_processing.PROCESSING_LEVELS[args.instrument]}"
+        )
+    if args.start_date is None and args.repointing is None:
+        raise ValueError(
+            "Either start_date or repointing must be provided. "
+            "Run 'imap_cli -h' for more information."
+        )
+
+    if (
+        args.start_date is not None
+        and not imap_data_access.ScienceFilePath.is_valid_date(args.start_date)
+    ):
+        raise ValueError(f"{args.start_date} is not a valid date, use format YYYYMMDD.")
+
+    if (
+        args.repointing is not None
+        and not imap_data_access.ScienceFilePath.is_valid_repointing(args.repointing)
+    ):
+        raise ValueError(
+            f"{args.repointing} is not a valid repointing, use format repoint#####."
+        )
+
+    if args.end_date is not None:
+        logger.warning(
+            "The end_date argument is deprecated and will be ignored. Do not use."
         )
 
 
@@ -298,8 +331,8 @@ class ProcessInstrument(ABC):
         This is what ProcessingInputCollection.serialize() outputs.
     start_date : str
         The start date for the output data in YYYYMMDD format.
-    end_date : str
-        The end date for the output data in YYYYMMDD format.
+    repointing : str
+        The repointing for the output data in the format 'repoint#####'.
     version : str
         The version of the data in vXXX format.
     upload_to_sdc : bool
@@ -312,7 +345,7 @@ class ProcessInstrument(ABC):
         data_descriptor: str,
         dependency_str: str,
         start_date: str,
-        end_date: str,
+        repointing: str,
         version: str,
         upload_to_sdc: bool,
     ) -> None:
@@ -322,9 +355,7 @@ class ProcessInstrument(ABC):
         self.dependency_str = dependency_str
 
         self.start_date = start_date
-        self.end_date = end_date
-        if not end_date:
-            self.end_date = start_date
+        self.repointing = repointing
 
         self.version = version
         self.upload_to_sdc = upload_to_sdc
@@ -451,19 +482,13 @@ class ProcessInstrument(ABC):
         # start_date.
         # If it is start_date, skip repointing in the output filename.
 
-        start_date = None
-        if imap_data_access.ScienceFilePath.is_valid_date(self.start_date):
-            start_date = self.start_date
-
-        repointing = None
-        if imap_data_access.ScienceFilePath.is_valid_repointing(self.start_date):
-            repointing = self.start_date
-
         products = []
         for ds in datasets:
             ds.attrs["Data_version"] = self.version
             ds.attrs["Parents"] = parent_files
-            products.append(write_cdf(ds, start_date=start_date, repointing=repointing))
+            products.append(
+                write_cdf(ds, start_date=self.start_date, repointing=self.repointing)
+            )
 
         self.upload_products(products)
 
@@ -1123,7 +1148,7 @@ def main() -> None:
         args.descriptor,
         args.dependency,
         args.start_date,
-        args.end_date,
+        args.repointing,
         args.version,
         args.upload_to_sdc,
     )
