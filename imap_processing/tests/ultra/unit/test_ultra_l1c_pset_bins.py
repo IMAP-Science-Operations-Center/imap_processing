@@ -9,6 +9,7 @@ from cdflib import CDF
 
 from imap_processing import imap_module_directory
 from imap_processing.ena_maps.utils.spatial_utils import build_spatial_bins
+from imap_processing.spice.kernels import ensure_spice
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     get_background_rates,
@@ -113,6 +114,8 @@ def test_get_spacecraft_exposure_times():
     )
 
 
+@pytest.mark.external_kernel
+@ensure_spice
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_get_helio_exposure_times():
     """Tests get_helio_exposure_times function."""
