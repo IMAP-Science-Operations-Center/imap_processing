@@ -166,10 +166,10 @@ def test_get_helio_exposure_times():
 def test_get_spacecraft_sensitivity():
     """Tests get_spacecraft_sensitivity function."""
     # TODO: remove below here with lookup table aux api
-    efficiences = TEST_PATH / "Ultra_90_DPS_efficiencies_all.csv"
+    efficiencies = TEST_PATH / "Ultra_90_DPS_efficiencies_all.csv"
     geometric_function = TEST_PATH / "ultra_90_dps_gf.csv"
 
-    df_efficiencies = pd.read_csv(efficiences)
+    df_efficiencies = pd.read_csv(efficiencies)
     df_geometric_function = pd.read_csv(geometric_function)
 
     sensitivity, energy_vals, right_ascension, declination = get_spacecraft_sensitivity(
@@ -195,20 +195,6 @@ def test_get_spacecraft_sensitivity():
 
     assert np.allclose(
         df_sensitivity_test.to_numpy(), expected_sensitivity.to_numpy(), atol=1e-6
-    )
-
-
-@pytest.mark.skip(reason="Waiting to fix CDF attrs")
-def test_grid_sensitivity():
-    """Tests grid_sensitivity function."""
-    efficiencies_path = TEST_PATH / "Ultra_90_DPS_efficiencies_all.csv"
-    geometric_function_path = TEST_PATH / "ultra_90_dps_gf.csv"
-
-    df_efficiencies = pd.read_csv(efficiencies_path)
-    df_geometric_function = pd.read_csv(geometric_function_path)
-
-    sensitivity, energy_vals, ra, dec = get_spacecraft_sensitivity(
-        df_efficiencies, df_geometric_function
     )
 
     expected_result = sensitivity["3.0keV"].values
