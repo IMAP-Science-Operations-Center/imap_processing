@@ -67,8 +67,8 @@ energy_bin_geometric_mean_label:
   FORMAT: A10
   DEPEND_1: energy_bin_geometric_mean
 
-# Define Coordinate-like variables
-# (longitude, latitude are not technically coordinates for healpix tiling)
+# Define Non-dimension Coordinates
+# (longitude, latitude are not dimension coordinates for healpix tiling)
 longitude:
   <<: *default_coords_float32
   DEPEND_1: healpix_index
@@ -78,6 +78,7 @@ longitude:
   UNITS: degrees
   VAR_TYPE: support_data
   LABL_PTR_1: healpix_index_label
+  DISPLAY_TYPE: no_plot
 
 latitude:
   <<: *default_coords_float32
@@ -88,6 +89,7 @@ latitude:
   UNITS: degrees
   VAR_TYPE: support_data
   LABL_PTR_1: healpix_index_label
+  DISPLAY_TYPE: no_plot
 
 # Define Data variables
 exposure_factor:
@@ -99,11 +101,12 @@ exposure_factor:
   UNITS: seconds
   VAR_TYPE: data
   LABL_PTR_1: healpix_index_label
+  DISPLAY_TYPE: no_plot
 
-flux:
+ena_intensity:
   <<: *default_float32
-  CATDESC: Flux calculated from multiple pointing sets.
-  FIELDNAM: flux
+  CATDESC: Ena_intensity calculated from multiple pointing sets.
+  FIELDNAM: ena_intensity
   UNITS: counts/(s * cm^3 * Sr * KeV)
   DEPEND_0: epoch
   DEPEND_1: energy_bin_geometric_mean
@@ -111,11 +114,12 @@ flux:
   VAR_TYPE: data
   LABL_PTR_1: energy_bin_geometric_mean_label
   LABL_PTR_2: healpix_index_label
+  DISPLAY_TYPE: image
 
-flux_uncertainty:
+ena_intensity_stat_unc:
   <<: *default_float32
-  CATDESC: Statistical uncertainty on flux.
-  FIELDNAM: flux uncertainty
+  CATDESC: Statistical uncertainty on ena_intensity.
+  FIELDNAM: ena_intensity_stat_unc
   UNITS: counts/(s * cm^3 * Sr * KeV)
   DEPEND_0: epoch
   DEPEND_1: energy_bin_geometric_mean
@@ -123,6 +127,7 @@ flux_uncertainty:
   VAR_TYPE: data
   LABL_PTR_1: energy_bin_geometric_mean_label
   LABL_PTR_2: healpix_index_label
+  DISPLAY_TYPE: image
 
 sensitivity:
   <<: *default_float32
@@ -135,6 +140,7 @@ sensitivity:
   VAR_TYPE: data
   LABL_PTR_1: energy_bin_geometric_mean_label
   LABL_PTR_2: healpix_index_label
+  DISPLAY_TYPE: image
 
 observation_time:
   <<: *default
@@ -145,3 +151,4 @@ observation_time:
   DEPEND_1: healpix_index
   VAR_TYPE: data
   LABL_PTR_1: healpix_index_label
+  DISPLAY_TYPE: image

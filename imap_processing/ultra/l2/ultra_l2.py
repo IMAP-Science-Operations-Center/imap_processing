@@ -55,9 +55,10 @@ VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE = [
     "observation_time",
 ]
 
-# These variables are dropped after they are used to calculate flux and flux uncertainty
+# These variables are dropped after they are used to
+# calculate ena_intensity and its statistical uncertainty
 # They will not be present in the final map
-VARIABLES_TO_DROP_AFTER_FLUX_CALCULATION = [
+VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION = [
     "counts",
     "background_rates",
     "pointing_set_exposure_times_solid_angle",
@@ -81,7 +82,8 @@ def generate_ultra_healpix_skymap(
 
     This function combines IMAP Ultra L1C pointing sets into a single L2 HealpixSkyMap.
     It handles the projection of values from pointing sets to the map, applies necessary
-    weighting and background subtraction, and calculates flux and flux uncertainty.
+    weighting and background subtraction, and calculates ena_intensity
+    and ena_intensity_stat_unc.
 
     Parameters
     ----------
@@ -96,7 +98,7 @@ def generate_ultra_healpix_skymap(
     -------
     ena_maps.HealpixSkyMap
         HealpixSkyMap object containing the combined data from all pointing sets,
-        with calculated flux and flux uncertainty values.
+        with calculated ena_intensity and its statistical uncertainty values.
 
     Notes
     -----
@@ -110,7 +112,7 @@ def generate_ultra_healpix_skymap(
     (e.g., divide weighted quantities by their summed weights to
     get their weighted mean)
     6. Calculate corrected count rate with background subtraction applied.
-    7. Calculate flux and flux uncertainty.
+    7. Calculate ena_intensity and its statistical uncertainty.
     8. Drop unnecessary variables from the map.
     """
     if output_map_structure.tiling_type is ena_maps.SkyTilingType.HEALPIX:
@@ -198,8 +200,9 @@ def generate_ultra_healpix_skymap(
     # Get the energy bin widths from a PointingSet (they will all be the same)
     delta_energy = pointing_set.data["energy_bin_delta"]
 
-    # Core calculations of flux and flux uncertainty for L2
-    # Exposure time may contain 0s, producing NaNs in the corrected count rate and flux.
+    # Core calculations of ena_intensity and its statistical uncertainty for L2
+    # Exposure time may contain 0s, producing NaNs in the corrected count rate
+    # and ena_intensity.
     # These NaNs are not incorrect, so we temporarily ignore numpy div by 0 warnings.
     with np.errstate(divide="ignore"):
         # Get corrected count rate with background subtraction applied
@@ -207,12 +210,13 @@ def generate_ultra_healpix_skymap(
             skymap.data_1d["counts"].astype(float) / skymap.data_1d["exposure_factor"]
         ) - skymap.data_1d["background_rates"]
 
-        # Calculate flux = corrected_counts / (sensitivity * solid_angle * delta_energy)
-        skymap.data_1d["flux"] = skymap.data_1d["corrected_count_rate"] / (
+        # Calculate ena_intensity = corrected_counts / (
+        # sensitivity * solid_angle * delta_energy)
+        skymap.data_1d["ena_intensity"] = skymap.data_1d["corrected_count_rate"] / (
             skymap.data_1d["sensitivity"] * skymap.solid_angle * delta_energy
         )
 
-        skymap.data_1d["flux_uncertainty"] = (
+        skymap.data_1d["ena_intensity_stat_unc"] = (
             skymap.data_1d["counts"].astype(float) ** 0.5
         ) / (
             skymap.data_1d["exposure_factor"]
@@ -223,7 +227,7 @@ def generate_ultra_healpix_skymap(
 
     # Drop the variables that are no longer needed
     skymap.data_1d = skymap.data_1d.drop_vars(
-        VARIABLES_TO_DROP_AFTER_FLUX_CALCULATION,
+        VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION,
     )
 
     return skymap
@@ -250,7 +254,8 @@ def ultra_l2(
     store_subdivision_depth : bool, optional
         If True, the subdivision depth required to calculate each rectangular pixel
         value will be added to the map dataset.
-        E.g. a "flux_subdivision_depth" DataArray will be added to the map dataset.
+        E.g. a "ena_intensity_subdivision_depth" DataArray will be
+        added to the map dataset.
         Defaults to False.
 
     Returns

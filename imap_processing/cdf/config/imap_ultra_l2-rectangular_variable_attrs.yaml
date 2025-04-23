@@ -94,11 +94,12 @@ exposure_factor:
   VAR_TYPE: data
   LABL_PTR_1: longitude_label
   LABL_PTR_2: latitude_label
+  DISPLAY_TYPE: no_plot
 
-flux:
+ena_intensity:
   <<: *default_float32
-  CATDESC: Flux calculated from multiple pointing sets.
-  FIELDNAM: flux
+  CATDESC: Ena_intensity calculated from multiple pointing sets.
+  FIELDNAM: ena_intensity
   UNITS: counts/(s * cm^3 * Sr * KeV)
   DEPEND_0: epoch
   DEPEND_1: energy_bin_geometric_mean
@@ -109,10 +110,10 @@ flux:
   LABL_PTR_2: longitude_label
   LABL_PTR_3: latitude_label
 
-flux_uncertainty:
+ena_intensity_stat_unc:
   <<: *default_float32
-  CATDESC: Statistical uncertainty on flux.
-  FIELDNAM: flux uncertainty
+  CATDESC: Statistical uncertainty on ena_intensity.
+  FIELDNAM: ena_intensity_stat_unc
   UNITS: counts/(s * cm^2 * Sr * KeV)
   DEPEND_0: epoch
   DEPEND_1: energy_bin_geometric_mean
