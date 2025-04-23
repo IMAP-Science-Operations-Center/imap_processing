@@ -1040,7 +1040,7 @@ if __name__ == "__main__":
     TEST_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"
     file_path = TEST_DATA_PATH / "imap_codice_l0_raw_20241110_v001.pkts"
 
-    processed_datasets = process_codice_l1a(file_path, "001")
+    processed_datasets = process_codice_l1a(file_path)
 
     for dataset in processed_datasets:
         if dataset is not None:
