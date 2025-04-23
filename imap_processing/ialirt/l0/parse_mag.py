@@ -19,6 +19,7 @@ from imap_processing.mag.l1a.mag_l1a_data import TimeTuple
 from imap_processing.mag.l1b.mag_l1b import (
     calibrate_vector,
     retrieve_matrix_from_l1b_calibration,
+    shift_time,
 )
 from imap_processing.spice.time import met_to_ttj2000ns
 
@@ -324,38 +325,18 @@ def process_packet(accumulated_data: xr.Dataset) -> list[dict]:
         )
 
         # TODO: do I need to add the range values to the science data?
-        # TODO: how do we know if it is mago or magi?
+        # Note: primary = MAGo, secondary = MAGi unless there is a disaster.
         science_data.update(
             {
                 "calibrated_pri_x": updated_vector_mago[0],
                 "calibrated_pri_y": updated_vector_mago[1],
                 "calibrated_pri_z": updated_vector_mago[2],
+                "calibrated_sec_x": updated_vector_mago[0],
+                "calibrated_sec_y": updated_vector_mago[1],
+                "calibrated_sec_z": updated_vector_mago[2],
             }
         )
 
         mag_data.append({**status_data, **science_data, **time_data})
 
     return mag_data
-
-
-def get_calibration():
-    # TODO: This should definitely be loaded from AWS
-    calibration_dataset = load_cdf(
-        Path(__file__).resolve().parents[2]
-        / "mag"
-        / "l1b"
-        / "imap_calibration_mag_20240229_v01.cdf"
-    )
-    logger.info("Using default test calibration file.")
-
-    calibration_matrix_mago = calibration_dataset["MFOTOURFO"]
-    time_shift_mago = calibration_dataset["OTS"]
-    calibration_matrix_magi = calibration_dataset["MFITOURFI"]
-    time_shift_magi = calibration_dataset["ITS"]
-
-    return (
-        calibration_matrix_mago,
-        time_shift_mago,
-        calibration_matrix_magi,
-        time_shift_magi,
-    )
