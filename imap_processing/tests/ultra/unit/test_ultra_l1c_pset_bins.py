@@ -36,7 +36,7 @@ def test_data():
     return v, energy
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def test_l1c_data():
     """Ensure external test data is downloaded before tests run."""
 
