@@ -384,31 +384,64 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     },
 }
 
-# Dictionary to define the bit structure of direct events
-HI_DE_BIT_STRUCTURE = {
-    "SSDEnergy": 11,
-    "TOF": 10,
-    "SSD_ID": 4,
-    "ERGE": 2,
-    "MultiFlag": 1,
-    "Type": 2,
-    "SpinAngle": 5,
-    "SpinNumber": 4,
-    "Priority": 3,
-    "Spare": 6,  # TODO: Ask Joey about this
-}
-LO_DE_BIT_STRUCTURE = {
-    "APDGain": 1,
-    "APD_ID": 5,
-    "Position": 5,
-    "APDEnergy": 9,
-    "TOF": 10,
-    "MultiFlag": 1,
-    "PHAType": 2,
-    "SpinAngle": 5,
-    "EnergyStep": 7,
-    "Priority": 3,
-    "Spare": 16,
+# Various configurations to support processing of direct events data products
+# These are described in the algorithm document in chapter 10 ("Data Level 1A")
+DE_DATA_PRODUCT_CONFIGURATIONS = {
+    CODICEAPID.COD_HI_PHA: {
+        "num_priorities": 6,
+        "bit_structure": {
+            "SSDEnergy": 11,
+            "TOF": 10,
+            "SSD_ID": 4,
+            "ERGE": 2,
+            "MultiFlag": 1,
+            "Type": 2,
+            "SpinAngle": 5,
+            "SpinNumber": 4,
+            "Priority": 3,
+            "Spare": 6,  # TODO: Ask Joey about this
+        },
+        "cdf_fields": [
+            "NumEvents",
+            "DataQuality",
+            "SSDEnergy",
+            "TOF",
+            "SSD_ID",
+            "ERGE",
+            "MultiFlag",
+            "Type",
+            "SpinAngle",
+            "SpinNumber",
+        ],
+    },
+    CODICEAPID.COD_LO_PHA: {
+        "num_priorities": 8,
+        "bit_structure": {
+            "APDGain": 1,
+            "APD_ID": 5,
+            "Position": 5,
+            "APDEnergy": 9,
+            "TOF": 10,
+            "MultiFlag": 1,
+            "PHAType": 2,
+            "SpinAngle": 5,
+            "EnergyStep": 7,
+            "Priority": 3,
+            "Spare": 16,
+        },
+        "cdf_fields": [
+            "NumEvents",
+            "DataQuality",
+            "APDGain",
+            "APD_ID",
+            "APDEnergy",
+            "TOF",
+            "MultiFlag",
+            "PHAType",
+            "SpinAngle",
+            "EnergyStep",
+        ],
+    },
 }
 
 # Compression ID lookup tables
