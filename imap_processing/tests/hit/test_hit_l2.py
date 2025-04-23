@@ -17,6 +17,7 @@ from imap_processing.hit.l2.hit_l2 import (
     STANDARD_PARTICLE_ENERGY_RANGE_MAPPING,
     VALID_SECTORED_SPECIES,
     add_systematic_uncertainties,
+    add_total_uncertainties,
     build_ancillary_dataset,
     calculate_intensities,
     calculate_intensities_for_a_species,
@@ -28,6 +29,8 @@ from imap_processing.hit.l2.hit_l2 import (
     process_summed_intensity_data,
     reshape_for_sectored,
 )
+
+np.random.seed(42)  # Set a random seed for reproducibility
 
 
 @pytest.fixture(scope="module")
@@ -459,25 +462,86 @@ def test_calculate_intensities():
 
 def test_add_systematic_uncertainties():
     """Test the add_systematic_uncertainties function."""
+
     # Create sample function inputs
     particle = "h"
-    energy_ranges = [
-        {"energy_min": 1.8, "energy_max": 2.2, "R2": [1], "R3": [], "R4": []},
-        {"energy_min": 2.2, "energy_max": 2.7, "R2": [2], "R3": [], "R4": []},
-        {"energy_min": 2.7, "energy_max": 3.2, "R2": [3], "R3": [], "R4": []},
+    datasets = [
+        xr.Dataset(
+            {"h": (("epoch", "h_energy_mean"), np.random.rand(2, 3).astype("float32"))}
+        ),
+        xr.Dataset(
+            {
+                "h": (
+                    ("epoch", "h_energy_mean", "azimuth", "declination"),
+                    np.random.rand(2, 3, 15, 8).astype("float32"),
+                )
+            }
+        ),
     ]
-    dataset = xr.Dataset()
+
+    for dataset in datasets:
+        # Call the function
+        updated_dataset = add_systematic_uncertainties(dataset, particle)
+        # Assertions
+        assert f"{particle}_sys_err_minus" in updated_dataset.data_vars
+        assert f"{particle}_sys_err_plus" in updated_dataset.data_vars
+        assert (
+            updated_dataset[f"{particle}_sys_err_minus"].shape
+            == dataset[particle].shape
+        )
+        assert (
+            updated_dataset[f"{particle}_sys_err_plus"].shape == dataset[particle].shape
+        )
+        np.testing.assert_array_equal(
+            updated_dataset[f"{particle}_sys_err_minus"].values, 0
+        )
+        np.testing.assert_array_equal(
+            updated_dataset[f"{particle}_sys_err_plus"].values, 0
+        )
+
+
+def test_add_total_uncertainties():
+    # Create a sample dataset
+    data = np.random.rand(10, 5).astype(np.float32)
+    stat_uncert_minus = np.random.rand(10, 5).astype(np.float32)
+    stat_uncert_plus = np.random.rand(10, 5).astype(np.float32)
+    sys_err_minus = np.zeros(
+        (10, 5), dtype=np.float32
+    )  # zeros, unless changed during mission
+    sys_err_plus = np.zeros(
+        (10, 5), dtype=np.float32
+    )  # zeros, unless changed during mission
+
+    dataset = xr.Dataset(
+        {
+            "particle": (("dim_0", "dim_1"), data),
+            "particle_stat_uncert_minus": (("dim_0", "dim_1"), stat_uncert_minus),
+            "particle_stat_uncert_plus": (("dim_0", "dim_1"), stat_uncert_plus),
+            "particle_sys_err_minus": (("dim_0", "dim_1"), sys_err_minus),
+            "particle_sys_err_plus": (("dim_0", "dim_1"), sys_err_plus),
+        }
+    )
 
     # Call the function
-    dataset = add_systematic_uncertainties(dataset, particle, len(energy_ranges))
+    updated_dataset = add_total_uncertainties(dataset, "particle")
 
     # Assertions
-    assert f"{particle}_sys_err_minus" in dataset.data_vars
-    assert f"{particle}_sys_err_plus" in dataset.data_vars
-    np.testing.assert_array_equal(dataset[f"{particle}_sys_err_minus"].values, 0)
-    np.testing.assert_array_equal(dataset[f"{particle}_sys_err_plus"].values, 0)
-    assert dataset[f"{particle}_sys_err_minus"].shape == (len(energy_ranges),)
-    assert dataset[f"{particle}_sys_err_plus"].shape == (len(energy_ranges),)
+    np.testing.assert_array_almost_equal(
+        updated_dataset["particle_total_uncert_minus"].values,
+        np.sqrt(np.square(stat_uncert_minus) + np.square(sys_err_minus)),
+    )
+    np.testing.assert_array_almost_equal(
+        updated_dataset["particle_total_uncert_plus"].values,
+        np.sqrt(np.square(stat_uncert_plus) + np.square(sys_err_plus)),
+    )
+
+    # Check that the dimensions and attributes are preserved
+    assert (
+        updated_dataset["particle_total_uncert_minus"].dims == dataset["particle"].dims
+    )
+    assert (
+        updated_dataset["particle_total_uncert_plus"].dims == dataset["particle"].dims
+    )
 
 
 def test_process_sectored_intensity_data(l1b_sectored_rates_dataset):

@@ -29,7 +29,6 @@ logger = logging.getLogger(__name__)
 # TODO:
 #  - review logging levels to use (debug vs. info)
 #  - determine where to pull ancillary data. Storing it locally for now
-#  - add function to calculate combined uncertainty and add this to L2 datasets
 
 
 def hit_l2(dependency: xr.Dataset) -> list[xr.Dataset]:
@@ -576,16 +575,20 @@ def process_summed_intensity_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Da
         L2_SUMMED_ANCILLARY_PATH_PREFIX,
     )
 
-    # Add systematic uncertainties to the dataset. These will not
-    # have the intensity calculation applied to them
+    # Calculate the intensity for each species
+    l2_summed_intensity_dataset = calculate_intensities_for_all_species(
+        l2_summed_intensity_dataset, ancillary_data_frames, VALID_SPECIES
+    )
+
+    # Add total and systematic uncertainties to the dataset
     for var in l2_summed_intensity_dataset.data_vars:
         if var in VALID_SPECIES:
             l2_summed_intensity_dataset = add_systematic_uncertainties(
                 l2_summed_intensity_dataset, var
             )
-    l2_summed_intensity_dataset = calculate_intensities_for_all_species(
-        l2_summed_intensity_dataset, ancillary_data_frames, VALID_SPECIES
-    )
+            l2_summed_intensity_dataset = add_total_uncertainties(
+                l2_summed_intensity_dataset, var
+            )
 
     return l2_summed_intensity_dataset
 
@@ -652,18 +655,16 @@ def process_standard_intensity_data(
             particle,
             energy_ranges,
         )
-        # Add systematic uncertainties to the dataset. These will not have the intensity
-        # calculation applied to them and values will be zeros
-        l2_standard_intensity_dataset = add_systematic_uncertainties(
-            l2_standard_intensity_dataset, particle
-        )
 
     l2_standard_intensity_dataset = calculate_intensities_for_all_species(
         l2_standard_intensity_dataset, ancillary_data_frames, VALID_SPECIES
     )
 
-    # Add total uncertainties to the dataset
+    # Add total and systematic uncertainties to the dataset
     for particle in STANDARD_PARTICLE_ENERGY_RANGE_MAPPING.keys():
+        l2_standard_intensity_dataset = add_systematic_uncertainties(
+            l2_standard_intensity_dataset, particle
+        )
         l2_standard_intensity_dataset = add_total_uncertainties(
             l2_standard_intensity_dataset, particle
         )
@@ -704,16 +705,20 @@ def process_sectored_intensity_data(
         L2_SECTORED_ANCILLARY_PATH_PREFIX,
     )
 
-    # Add systematic uncertainties to the dataset. These will not
-    # have the intensity calculation applied to them
+    # Calculate the intensity for each species
+    l2_sectored_intensity_dataset = calculate_intensities_for_all_species(
+        l2_sectored_intensity_dataset, ancillary_data_frames, VALID_SECTORED_SPECIES
+    )
+
+    # Add total and systematic uncertainties to the dataset
     for var in l2_sectored_intensity_dataset.data_vars:
         if var in VALID_SECTORED_SPECIES:
             l2_sectored_intensity_dataset = add_systematic_uncertainties(
                 l2_sectored_intensity_dataset, var
             )
-    l2_sectored_intensity_dataset = calculate_intensities_for_all_species(
-        l2_sectored_intensity_dataset, ancillary_data_frames, VALID_SECTORED_SPECIES
-    )
+            l2_sectored_intensity_dataset = add_total_uncertainties(
+                l2_sectored_intensity_dataset, var
+            )
 
     return l2_sectored_intensity_dataset
 
@@ -722,7 +727,7 @@ if __name__ == "__main__":
     from imap_processing import imap_module_directory
     from imap_processing.hit.l1a.hit_l1a import hit_l1a
     from imap_processing.hit.l1b.hit_l1b import (
-        process_standard_rates_data,
+        process_sectored_rates_data,
     )
 
     # L0 file path
@@ -734,17 +739,17 @@ if __name__ == "__main__":
     # Calculate livetime from the livetime counter
     livetime = counts["livetime_counter"] / 270
 
-    # # Process L2 Sectored
-    # sectored_rates = process_sectored_rates_data(counts, livetime)
-    # l2_sectored_intensity_dataset = process_sectored_intensity_data(sectored_rates)
-    # print(l2_sectored_intensity_dataset)
-    # print(l2_sectored_intensity_dataset["h"][0])
+    # Process L2 Sectored
+    sectored_rates = process_sectored_rates_data(counts, livetime)
+    l2_sectored_intensity_dataset = process_sectored_intensity_data(sectored_rates)
+    print(l2_sectored_intensity_dataset)
+    print(l2_sectored_intensity_dataset["h"][0])
 
-    # Process L2 Standard
-    standard_rates = process_standard_rates_data(counts, livetime)
-    l2_standard_flux_dataset = process_standard_intensity_data(standard_rates)
-    print(l2_standard_flux_dataset["h"][1])
-    print(l2_standard_flux_dataset.data_vars)
+    # # Process L2 Standard
+    # standard_rates = process_standard_rates_data(counts, livetime)
+    # l2_standard_flux_dataset = process_standard_intensity_data(standard_rates)
+    # print(l2_standard_flux_dataset["h"][1])
+    # print(l2_standard_flux_dataset.data_vars)
 
     # # Process L2 Summed
     # summed_rates = process_summed_rates_data(counts, livetime)
