@@ -212,7 +212,7 @@ def get_helio_exposure_times(
     # IMAP spacecraft.
     state = imap_state(time, ref_frame=SpiceFrame.IMAP_DPS)
 
-    # Extract the velocity part of the state vector.
+    # Extract the velocity part of the state vector
     spacecraft_velocity = state[3:6]
     # Convert (RA, Dec) angles into 3D unit vectors.
     # Each unit vector represents a direction in the sky where the spacecraft observed
