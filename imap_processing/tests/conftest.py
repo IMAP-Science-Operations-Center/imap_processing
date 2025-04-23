@@ -678,3 +678,10 @@ def use_fake_repoint_data_for_time(use_test_repoint_data_csv, tmpdir):
         use_test_repoint_data_csv(repoint_csv_file_path)
 
     return wrapped_repoint_data_filepath
+
+
+@pytest.fixture(scope="session", autouse=True)
+def autodownload_fixture():
+    """Ensure external test data is downloaded before tests run."""
+
+    _download_external_data(_test_data_paths())
