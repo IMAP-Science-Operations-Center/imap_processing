@@ -4,7 +4,6 @@ import astropy_healpix.healpy as hp
 import numpy as np
 import pandas as pd
 import pytest
-from cdflib import CDF
 
 from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
@@ -119,59 +118,24 @@ def test_get_helio_exposure_times():
 
     start_time = 829485054.185627
     end_time = 829567884.185627
-    import numpy as np
 
     mid_time = np.average([start_time, end_time])
 
     constant_exposure = TEST_PATH / "ultra_90_dps_exposure.csv"
     df_exposure = pd.read_csv(constant_exposure)
 
-    exposure_3d = get_helio_exposure_times(mid_time, df_exposure)
+    helio_exposure = get_helio_exposure_times(mid_time, df_exposure)
 
-    import matplotlib
+    _, energy_midpoints, _ = build_energy_bins()
 
-    matplotlib.use("TkAgg")
+    nside = 128
+    npix = hp.nside2npix(nside)
+    assert helio_exposure.shape == (npix, len(energy_midpoints))
 
-    import healpy as hp
-    import matplotlib.pyplot as plt
-    import numpy as np
+    total_input = np.sum(df_exposure["Exposure Time"].values)
+    total_output = np.sum(helio_exposure[:, 23])
 
-    # Pick one energy bin (e.g., the first)
-    example_data = exposure_3d[:, 0]  # 1D array with 196608 pixels
-    hp.mollview(
-        #df_exposure["Exposure Time"],
-        example_data
-    )
-
-    plt.show()
-
-    energy_bin_edges, energy_midpoints, _ = build_energy_bins()
-
-    assert exposure_3d.shape == (
-        len(df_exposure),
-        len(energy_midpoints),
-    )
-
-    cdf_files = [
-        ("dps_exposure_helio_45_E1.cdf", "dps_exposure_helio_45_E1"),
-        ("dps_exposure_helio_45_E12.cdf", "dps_exposure_helio_45_E12"),
-        ("dps_exposure_helio_45_E24.cdf", "dps_exposure_helio_45_E24"),
-    ]
-
-    cdf_directory = imap_module_directory / "tests" / "ultra" / "data" / "l1"
-
-    exposures = []
-
-    for file_name, var_name in cdf_files:
-        file_path = cdf_directory / file_name
-        with CDF(file_path) as cdf_file:
-            exposure_data = cdf_file.varget(var_name)
-            transposed_exposure = np.transpose(exposure_data, (2, 1, 0))
-            exposures.append(transposed_exposure)
-
-    assert np.array_equal(np.squeeze(exposures[0]), exposure_3d[:, :, 0])
-    assert np.array_equal(np.squeeze(exposures[1]), exposure_3d[:, :, 11])
-    assert np.array_equal(np.squeeze(exposures[2]), exposure_3d[:, :, 23])
+    assert np.allclose(total_input, total_output, atol=1e-6)
 
 
 @pytest.mark.external_test_data
