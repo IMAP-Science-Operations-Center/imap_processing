@@ -158,8 +158,8 @@ def test_compressed_packet():
     compressed = Path(f"{test_data_dir}/compressed_2023_102_14_24_55.pkts")
     non_compressed = Path(f"{test_data_dir}/non_compressed_2023_102_14_22_26.pkts")
 
-    decompressed = PacketParser(compressed).data
-    expected = PacketParser(non_compressed).data
+    decompressed = PacketParser(compressed).data[0]
+    expected = PacketParser(non_compressed).data[0]
 
     waveforms = [
         "TOF_High",
@@ -290,18 +290,6 @@ def test_decode_sub_frame_psel_3():
     bstring = warmup1 + warmup2 + residual_1 + residual_2 + residual_3
     ints, bp = _decode_sub_frame(bstring, bp=0, psel=psel, k=k, n_bits=10)
     assert ints == [1, 2, 4, 1, 5]
-
-
-def test_cdf_creation_evt(decom_test_data_evt: xr.Dataset):
-    """Verify that a sample of the data can be written to a cdf without errors.
-
-    Parameters
-    ----------
-    decom_test_data_evt : xarray.Dataset
-        The dataset to test with
-    """
-    filename = write_cdf(decom_test_data_evt)
-    assert filename.name == "imap_idex_l1a_evt-1week_20250108_v001.cdf"
 
 
 def test_cdf_creation_catlst(decom_test_data_catlst: xr.Dataset):

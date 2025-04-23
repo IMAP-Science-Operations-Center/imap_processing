@@ -8,7 +8,6 @@ class IDEXAPID(IntEnum):
     """Create ENUM for apid."""
 
     IDEX_SCIENCE = 1424
-    IDEX_EVT = 1418
     IDEX_CATLST = 1419
 
 

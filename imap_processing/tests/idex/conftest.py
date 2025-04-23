@@ -42,8 +42,7 @@ def decom_test_data_sci() -> xr.Dataset:
     dataset : xarray.Dataset
         A ``xarray`` dataset containing the science test data
     """
-    return PacketParser(TEST_L0_FILE_SCI, "001").data
-
+    return PacketParser(TEST_L0_FILE_SCI).data[0]
 
 
 @pytest.fixture(scope="module")
@@ -55,7 +54,7 @@ def decom_test_data_catlst() -> xr.Dataset:
     dataset : xarray.Dataset
         A ``xarray`` dataset containing the catalog list summary data.
     """
-    return PacketParser(TEST_L0_FILE_CATLST).data
+    return PacketParser(TEST_L0_FILE_CATLST).data[0]
 
 
 @pytest.fixture(scope="session")
