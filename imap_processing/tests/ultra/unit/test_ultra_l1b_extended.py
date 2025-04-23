@@ -578,6 +578,7 @@ def test_get_fwhm():
     assert theta_interp.shape == test_theta.shape
 
 
+@pytest.mark.external_test_data
 def test_get_efficiency():
     """Tests get_efficiency function."""
 

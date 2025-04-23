@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.ultra.l1b.lookup_utils import (
@@ -80,6 +81,7 @@ def test_get_angular_profiles():
     assert u45_right.shape == (525, 7)
 
 
+@pytest.mark.external_test_data
 def test_get_energy_efficiencies():
     """Tests function get_get_energy_efficiencies."""
 
