@@ -16,7 +16,10 @@ from imap_processing.ialirt.l0.mag_l0_ialirt_data import (
 from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.mag.l1a.mag_l1a_data import TimeTuple
-from imap_processing.mag.l1b.mag_l1b import calibrate_vector, shift_time
+from imap_processing.mag.l1b.mag_l1b import (
+    calibrate_vector,
+    retrieve_matrix_from_l1b_calibration,
+)
 from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
@@ -213,12 +216,19 @@ def calculate_l1b(
     status_data: dict,
 ):
     # Get calibration data
-    (
-        calibration_matrix_mago,
-        time_shift_mago,
-        calibration_matrix_magi,
-        time_shift_magi,
-    ) = get_calibration()
+    calibration_dataset = load_cdf(
+        Path(__file__).resolve().parents[2]
+        / "mag"
+        / "l1b"
+        / "imap_calibration_mag_20240229_v01.cdf"
+    )
+
+    calibration_matrix_mago, time_shift_mago = retrieve_matrix_from_l1b_calibration(
+        calibration_dataset, is_mago=True
+    )
+    calibration_matrix_magi, time_shift_magi = retrieve_matrix_from_l1b_calibration(
+        calibration_dataset, is_mago=False
+    )
 
     # Get time values for each group.
     time_data = get_time(
