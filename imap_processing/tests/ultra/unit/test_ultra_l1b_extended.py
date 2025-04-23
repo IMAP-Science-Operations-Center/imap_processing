@@ -35,6 +35,8 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
 
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
+pytestmark = pytest.mark.external_test_data
+
 
 @pytest.fixture
 def test_fixture(de_dataset, events_fsw_comparison_theta_0):
@@ -578,7 +580,6 @@ def test_get_fwhm():
     assert theta_interp.shape == test_theta.shape
 
 
-@pytest.mark.external_test_data
 def test_get_efficiency():
     """Tests get_efficiency function."""
 
