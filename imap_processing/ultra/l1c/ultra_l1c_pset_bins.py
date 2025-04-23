@@ -201,9 +201,9 @@ def get_helio_exposure_times(
     -----
     These calculations are performed once per pointing.
     """
-    # Get bins and midpoints, with angles in degrees.
+    # Get energy midpoints.
     _, energy_midpoints, _ = build_energy_bins()
-    # Get direction unit vectors from (RA, Dec)
+    # Extract (RA/Dec) and exposure from the spacecraft frame.
     ra = df_exposure["Right Ascension (deg)"].values
     dec = df_exposure["Declination (deg)"].values
     exposure_flat = df_exposure["Exposure Time"].values
@@ -214,11 +214,17 @@ def get_helio_exposure_times(
 
     # Extract the velocity part of the state vector
     spacecraft_velocity = state[3:6]
-    unit_dirs = hp.ang2vec(ra, dec, lonlat=True).T
+    # Convert (RA, Dec) angles into 3D unit vectors.
+    # Each unit vector represents a direction in the sky where the spacecraft observed
+    # and accumulated exposure time.
+    unit_dirs = hp.ang2vec(ra, dec, lonlat=True).T  # Shape (N, 3)
 
+    # Initialize output array.
+    # Each row corresponds to a HEALPix pixel, and each column to an energy bin.
     npix = hp.nside2npix(nside)
     helio_exposure = np.zeros((npix, len(energy_midpoints)))
 
+    # Loop through energy bins and compute transformed exposure.
     for i, energy_midpoint in enumerate(energy_midpoints):
         # Convert the midpoint energy to a velocity (km/s).
         # Based on kinetic energy equation: E = 1/2 * m * v^2.
@@ -234,18 +240,19 @@ def get_helio_exposure_times(
         helio_velocity = spacecraft_velocity.reshape(1, 3) + energy_velocity * unit_dirs
 
         # Normalized vectors representing the direction of the heliocentric velocity.
-        # helio_normalized = helio_velocity.T / np.linalg.norm(
-        #     helio_velocity.T, axis=1, keepdims=True
-        # )
         helio_normalized = helio_velocity / np.linalg.norm(
             helio_velocity, axis=1, keepdims=True
         )
 
+        # Convert Cartesian heliocentric vectors into spherical coordinates.
+        # Result: azimuth (longitude) and elevation (latitude) in degrees.
         helio_spherical = cartesian_to_spherical(helio_normalized)
-        az, el = helio_spherical[:, 1], helio_spherical[:, 2]  # in degrees
+        az, el = helio_spherical[:, 1], helio_spherical[:, 2]
 
+        # Convert azimuth/elevation directions to HEALPix pixel indices.
         hpix_idx = hp.ang2pix(nside, az, el, nest=nested, lonlat=True)
 
+        # Accumulate exposure values into HEALPix pixels for this energy bin.
         helio_exposure[hpix_idx, i] = exposure_flat
 
     return helio_exposure
