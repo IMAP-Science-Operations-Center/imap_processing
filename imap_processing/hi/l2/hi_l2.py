@@ -34,10 +34,10 @@ class HiPointingSet(PointingSet):
                 np.squeeze(self.data["hae_latitude"]),
             )
         )
-        self.spatial_coords = "spin_angle_bin"
+        self.spatial_coords = ("spin_angle_bin",)
 
     @classmethod
-    def from_cdf(cls, cdf_path: str | Path) -> HiPointingSet:
+    def from_cdf(cls, cdf_path: Path) -> HiPointingSet:
         """
         Generate a HiPointingSet object from a CDF file.
 
