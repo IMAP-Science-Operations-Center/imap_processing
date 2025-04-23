@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from imap_processing.cdf.utils import load_cdf
+from imap_processing.ena_maps import ena_maps
 from imap_processing.hi.l2.hi_l2 import HiPointingSet
 from imap_processing.spice.geometry import SpiceFrame
 
@@ -30,3 +31,12 @@ class TestHiPointingSet:
         """Test coverage for from_cdf method."""
         hi_pset = HiPointingSet.from_cdf(pset_path)
         assert isinstance(hi_pset, HiPointingSet)
+
+    def test_plays_nice_with_rectangular_sky_map(self, pset_path):
+        """Test that HiPointingSet works with RectangularSkyMap"""
+        hi_pset = HiPointingSet.from_cdf(pset_path)
+        rect_map = ena_maps.RectangularSkyMap(
+            spacing_deg=2, spice_frame=SpiceFrame.ECLIPJ2000
+        )
+        rect_map.project_pset_values_to_map(hi_pset, ["counts", "exposure_times"])
+        assert rect_map.data_1d["counts"].max() > 0
