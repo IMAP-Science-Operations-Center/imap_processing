@@ -32,6 +32,28 @@ APIDS_FOR_SCIENCE_PROCESSING = [
     CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
 ]
 
+# Mapping between descriptors and APID
+CODICEAPID_MAPPING = {
+    "hskp": CODICEAPID.COD_NHK,
+    "lo-ialirt": CODICEAPID.COD_LO_IAL,
+    "lo-pha": CODICEAPID.COD_LO_PHA,
+    "lo-sw-priority": CODICEAPID.COD_LO_SW_PRIORITY_COUNTS,
+    "lo-sw-species": CODICEAPID.COD_LO_SW_SPECIES_COUNTS,
+    "lo-nsw-species": CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
+    "lo-sw-angular": CODICEAPID.COD_LO_SW_ANGULAR_COUNTS,
+    "lo-nsw-angular": CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS,
+    "lo-nsw-priority": CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS,
+    "lo-counters-aggregated": CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED,
+    "lo-counters-singles": CODICEAPID.COD_LO_INST_COUNTS_SINGLES,
+    "hi-ialirt": CODICEAPID.COD_HI_IAL,
+    "hi-pha": CODICEAPID.COD_HI_PHA,
+    "hi-counters-aggregated": CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED,
+    "hi-counters-singles": CODICEAPID.COD_HI_INST_COUNTS_SINGLES,
+    "hi-omni": CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS,
+    "hi-sectored": CODICEAPID.COD_HI_SECT_SPECIES_COUNTS,
+    "hi-priority": CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES,
+}
+
 # Numerical constants
 SPIN_PERIOD_CONVERSION = 0.00032
 
