@@ -156,6 +156,11 @@ def test_extract_magnetic_vectors():
     }
 
 
+#def test_get_time():
+#def calculate_l1b():
+
+
+
 def test_process_packet(xarray_data, mag_test_data):
     """Tests the parse_packet function."""
     parsed_packets = process_packet(xarray_data)

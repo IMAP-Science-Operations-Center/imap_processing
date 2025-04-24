@@ -191,7 +191,6 @@ def get_time(
     secondary_time = TimeTuple(int(sec_coarsetm), int(sec_fintm))
     time_data["pri_met"] = primary_time.to_seconds()
     time_data["primary_ttj2000ns"] = met_to_ttj2000ns(time_data["pri_met"])
-    # TODO: is this ok?
     time_data["primary_epoch"] = shift_time(
         time_data["primary_ttj2000ns"], time_shift_mago
     )
@@ -210,7 +209,7 @@ def calculate_l1b(
     pkt_counter: xr.DataArray,
     science_data: dict,
     status_data: dict,
-):
+) -> tuple[np.ndarray, np.ndarray, dict]:
     """
     Calculate equivalent of l1b data product.
 
@@ -344,7 +343,6 @@ def process_packet(accumulated_data: xr.Dataset) -> list[dict]:
             grouped_data, group, pkt_counter, science_data, status_data
         )
 
-        # TODO: do I need to add the range values to the science data?
         # Note: primary = MAGo, secondary = MAGi unless there is a disaster.
         science_data.update(
             {
