@@ -195,7 +195,7 @@ def test_get_trigger_settings_failure(decom_test_data_sci):
 
     Parameters
     ----------
-    decom_test_data : xarray.Dataset
+    decom_test_data_sci : xarray.Dataset
         L1a dataset
     """
     decom_test_data_sci["idx__txhdrhgtrigmode"][0] = 1
