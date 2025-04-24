@@ -30,8 +30,6 @@ from imap_processing.hit.l2.hit_l2 import (
     reshape_for_sectored,
 )
 
-np.random.seed(42)  # Set a random seed for reproducibility
-
 
 @pytest.fixture(scope="module")
 def sci_packet_filepath():
@@ -123,6 +121,7 @@ def test_build_ancillary_dataset_sectored():
     """
     Test the build_ancillary_dataset function for sectored data
     """
+    np.random.seed(42)  # Set a random seed for reproducibility
     epoch = np.array(["2025-01-01T00:00", "2025-01-01T00:01"], dtype="datetime64[m]")
     energy_mean = [1.8, 4, 6]
     declination = np.arange(8)
@@ -167,6 +166,7 @@ def test_build_ancillary_dataset_nonsectored():
     Non-sectored datasets are either L2 standard or L2 summed datasets
     They both have the same shape (epoch, energy_mean).
     """
+    np.random.seed(42)  # Set a random seed for reproducibility
     epoch = np.array(["2025-01-01T00:00", "2025-01-01T00:01"], dtype="datetime64[m]")
     energy_mean = [1.8, 4, 6]
 
@@ -252,6 +252,7 @@ def test_reshape_for_sectored():
     Test the reshape_for_sectored function.
     """
     # Mock input data: 3D array (epoch, energy, declination)
+    np.random.seed(42)  # Set a random seed for reproducibility
     epoch, energy, declination = 2, 3, 8
     input_array = np.random.rand(epoch, energy, declination)
 
@@ -462,8 +463,8 @@ def test_calculate_intensities():
 
 def test_add_systematic_uncertainties():
     """Test the add_systematic_uncertainties function."""
-
     # Create sample function inputs
+    np.random.seed(42)  # Set a random seed for reproducibility
     particle = "h"
     datasets = [
         xr.Dataset(
@@ -502,6 +503,7 @@ def test_add_systematic_uncertainties():
 
 def test_add_total_uncertainties():
     # Create a sample dataset
+    np.random.seed(42)  # Set a random seed for reproducibility
     data = np.random.rand(10, 5).astype(np.float32)
     stat_uncert_minus = np.random.rand(10, 5).astype(np.float32)
     stat_uncert_plus = np.random.rand(10, 5).astype(np.float32)
