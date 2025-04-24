@@ -326,7 +326,7 @@ class DirectEventL1A:
 
     Methods
     -------
-    append
+    merge_de_packets
         Add another Level0 instance.
     """
 
