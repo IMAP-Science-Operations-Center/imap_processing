@@ -678,3 +678,9 @@ def use_fake_repoint_data_for_time(use_test_repoint_data_csv, tmpdir):
         use_test_repoint_data_csv(repoint_csv_file_path)
 
     return wrapped_repoint_data_filepath
+
+
+if __name__ == "__main__":
+    # This is to enable downloading files easier by letting us
+    # run this file directly
+    _download_external_data(_test_data_paths())

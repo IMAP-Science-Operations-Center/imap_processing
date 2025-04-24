@@ -40,6 +40,19 @@ jobs:
           poetry self add "poetry-dynamic-versioning[plugin]"
           poetry install --extras "test"
 
+      - name: Cache data directories
+        uses: actions/cache@v4
+        # We only download data on this runner, so only cache data from this run
+        # so we don't get an empty cache on other runners overriding that data
+        if: ${{ contains(matrix.os, 'ubuntu') && matrix.python-version == '3.10' }}
+        with:
+          path: |
+            **/data/
+            **/test_data/
+          key: cdf-data-${{ hashFiles('**/data/*', '**/test_data/*') }}
+          restore-keys: |
+            cdf-data-
+
       - name: Testing
         id: test
         env:
@@ -47,6 +60,9 @@ jobs:
         run: |
           # Ignore the network marks from the remote test environment
           if [ "$USE_EXTERNAL_DATA" = "true" ]; then
+            # Download external data before we run our tests so that
+            # we don't try to download them in parallel
+            poetry run python imap_processing/tests/conftest.py
             poetry run pytest -n auto --color=yes --cov --cov-report=xml
           else
             poetry run pytest -n auto --color=yes --cov --cov-report=xml -m "not external_kernel and not external_test_data"
