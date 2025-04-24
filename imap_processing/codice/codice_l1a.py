@@ -992,7 +992,52 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
 
         # hi-omni data
         if apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
-            print(dataset.epoch.data.shape)
+
+            # Extract the data
+            science_values = [packet.data for packet in dataset.data]
+
+            # Get the four "main" parameters for processing
+            table_id, plan_id, plan_step, view_id = get_params(dataset)
+
+            # Run the pipeline to create a dataset for the product
+            pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
+            pipeline.set_data_product_config(apid, dataset)
+            pipeline.decompress_data(science_values)
+
+            foo = np.array(pipeline.__dict__["raw_data"][1], dtype=np.uint32)  # 77 * 480
+
+            # Chunk into species
+            chunks = np.split(foo, 8)
+            for species in chunks:
+                reshaped_species = species.reshape(-1, 4).sum(axis=1)
+                print(reshaped_species)
+                print(reshaped_species.shape)
+
+            # num_epochs = len(pipeline.__dict__["raw_data"])
+            #
+            # # This will contain the reshaped data for all counters
+            # pipeline.data = []
+            #
+            # # hi-omni data products are shaped differently than all others
+            # # The first dimension is the <num_epochs> * <4 inst_az>
+            # reshape_dims = (8, 15, num_epochs*4)
+            #
+            # data = np.array(foo, dtype=np.uint32).reshape(reshape_dims)
+            # print(data.shape)
+            # data = np.transpose(data, axes=[2, 1, 0])
+            # print(data.shape)
+            # h = data[:,:,0]
+            # print(h.shape)
+            # print(h)
+            # print(np.sum(h.data))
+
+            # raw_data = 77 x 480, which is 77 * 4 * 15 * 8
+            # need to get to 308 * 15 * 8, which is 77*4 * 15 * 8
+
+
+
+            processed_dataset = None
+
 
         # # TODO: Still need to implement
         # elif apid == CODICEAPID.COD_HI_PHA:
@@ -1008,13 +1053,15 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
         #     # Get the four "main" parameters for processing
         #     table_id, plan_id, plan_step, view_id = get_params(dataset)
         #
-        #     # Run the pipeline to create a dataset for the product
-        #     pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-        #     pipeline.set_data_product_config(apid, dataset)
-        #     pipeline.decompress_data(science_values)
-        #     for i in pipeline.__dict__["raw_data"]:
-        #         print(len(i))
+            # # Run the pipeline to create a dataset for the product
+            # pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
+            # pipeline.set_data_product_config(apid, dataset)
+            # pipeline.decompress_data(science_values)
+            # pipeline.reshape_data()
+            # pipeline.define_coordinates()
+            # processed_dataset = pipeline.define_data_variables()
 
+        # logger.info(f"\nFinal data product:\n{processed_dataset}\n")
         # # TODO: Still need to implement I-ALiRT data products
         # elif apid in [
         #     CODICEAPID.COD_HI_IAL,
