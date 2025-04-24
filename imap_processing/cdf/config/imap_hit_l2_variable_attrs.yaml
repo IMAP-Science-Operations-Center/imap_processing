@@ -172,7 +172,7 @@ h:
   DEPEND_1: h_energy_mean
   LABL_PTR_1: h_energy_label
   FIELDNAM: H Standard Intensity
-  LABLAXIS: 'H Intensity'
+  LABLAXIS: H Intensity
   DELTA_MINUS: h_total_uncert_plus
   DELTA_PLUS: h_total_uncert_minus
 
