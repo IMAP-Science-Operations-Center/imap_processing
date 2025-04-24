@@ -70,7 +70,7 @@ def get_spacecraft_histogram(
         Array of energy bin edges.
     nside : int, optional
         The nside parameter of the Healpix tessellation.
-        Default is 32.
+        Default is 128.
     nested : bool, optional
         Whether the Healpix tessellation is nested. Default is False.
 
@@ -179,7 +179,7 @@ def get_helio_exposure_times(
     nested: bool = False,
 ) -> NDArray:
     """
-    Compute a 2D array of the exposure in the helio frame.
+    Compute a 2D (Healpix index, energy) array of exposure in the helio frame.
 
     Parameters
     ----------
@@ -253,7 +253,9 @@ def get_helio_exposure_times(
         hpix_idx = hp.ang2pix(nside, az, el, nest=nested, lonlat=True)
 
         # Accumulate exposure values into HEALPix pixels for this energy bin.
-        helio_exposure[hpix_idx, i] = exposure_flat
+        helio_exposure[:, i] = np.bincount(
+            hpix_idx, weights=exposure_flat, minlength=npix
+        )
 
     return helio_exposure
 
