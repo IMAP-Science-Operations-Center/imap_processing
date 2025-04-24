@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import logging
-import pathlib
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
@@ -220,14 +219,40 @@ class PointingSet(ABC):
         The reference Spice frame of the pointing set.
     """
 
+    # Attributes that are set in the ABC __init__ method
+    data: xr.Dataset
+    spice_reference_frame: geometry.SpiceFrame
+    # Attributes required to be set in a subclass
+    az_el_points: np.ndarray
+    num_points: int
+    spatial_coords: tuple[str, ...]
+
     @abstractmethod
-    def __init__(self, dataset: xr.Dataset, spice_reference_frame: geometry.SpiceFrame):
+    def __init__(
+        self,
+        dataset: xr.Dataset,
+        spice_reference_frame: geometry.SpiceFrame = geometry.SpiceFrame.IMAP_DPS,
+    ):
         """Abstract method to initialize the pointing set object."""
         self.spice_reference_frame = spice_reference_frame
-        self.num_points = 0
-        self.az_el_points = np.zeros((self.num_points, 2))
-        self.data = xr.Dataset()
-        self.spatial_coords: tuple[str, ...] = ()
+        self.data = dataset
+
+    @classmethod
+    def from_cdf(cls, cdf_path: Path) -> PointingSet:
+        """
+        Generate a PointingSet object from a CDF file.
+
+        Parameters
+        ----------
+        cdf_path : str | Path
+            Location of Pointing Set CDF file.
+
+        Returns
+        -------
+        pointing_set : PointingSet
+            Input CDF file data loaded into PointingSet.
+        """
+        return cls(load_cdf(cdf_path))
 
     @property
     def unwrapped_dims_dict(self) -> dict[str, tuple[str, ...]]:
@@ -292,8 +317,8 @@ class RectangularPointingSet(PointingSet):
 
     Parameters
     ----------
-    l1c_dataset : xr.Dataset | pathlib.Path | str
-        L1c xarray dataset containing the pointing set data or the path to the dataset.
+    dataset : xr.Dataset
+        L1c xarray dataset containing the pointing set data.
         Currently, the dataset is expected to be tiled in a rectangular grid,
         with data_vars indexed along the coordinates:
             - 'epoch' : time value (1 value per PSET)
@@ -313,17 +338,10 @@ class RectangularPointingSet(PointingSet):
 
     def __init__(
         self,
-        l1c_dataset: xr.Dataset | pathlib.Path | str,
+        dataset: xr.Dataset,
         spice_reference_frame: geometry.SpiceFrame = geometry.SpiceFrame.IMAP_DPS,
     ):
-        # Store the reference frame of the pointing set
-        self.spice_reference_frame = spice_reference_frame
-
-        # Read in the data and store the xarray dataset as data attr
-        if isinstance(l1c_dataset, (str, pathlib.Path)):
-            self.data = load_cdf(pathlib.Path(l1c_dataset))
-        elif isinstance(l1c_dataset, xr.Dataset):
-            self.data = l1c_dataset
+        super().__init__(dataset, spice_reference_frame)
 
         # A PSET must have a single epoch
         self.epoch = self.data["epoch"].values
@@ -398,8 +416,8 @@ class UltraPointingSet(PointingSet):
 
     Parameters
     ----------
-    l1c_dataset : xr.Dataset | pathlib.Path | str
-        L1c xarray dataset containing the pointing set data or the path to the dataset.
+    dataset : xr.Dataset
+        L1c xarray dataset containing the pointing set data.
         Currently, the dataset is expected to be tiled in a HEALPix tessellation,
         with data_vars indexed along the coordinates:
             - 'epoch' : time value (1 value per PSET, from the mean of the PSET)
@@ -420,17 +438,10 @@ class UltraPointingSet(PointingSet):
 
     def __init__(
         self,
-        l1c_dataset: xr.Dataset | pathlib.Path | str,
+        dataset: xr.Dataset,
         spice_reference_frame: geometry.SpiceFrame = geometry.SpiceFrame.IMAP_DPS,
     ):
-        # Store the reference frame of the pointing set
-        self.spice_reference_frame = spice_reference_frame
-
-        # Read in the data and store the xarray dataset as data attr
-        if isinstance(l1c_dataset, (str, pathlib.Path)):
-            self.data = load_cdf(pathlib.Path(l1c_dataset))
-        elif isinstance(l1c_dataset, xr.Dataset):
-            self.data = l1c_dataset
+        super().__init__(dataset, spice_reference_frame)
 
         # A PSET must have a single epoch
         self.epoch = self.data["epoch"].values
@@ -485,48 +496,6 @@ class UltraPointingSet(PointingSet):
         self.az_el_points = np.column_stack(
             (self.azimuth_pixel_center, self.elevation_pixel_center)
         )
-
-    @classmethod
-    def from_path_or_dataset(
-        cls,
-        input_data: xr.Dataset | str | pathlib.Path,
-    ) -> UltraPointingSet:
-        """
-        Read a path or Dataset into an UltraPointingSet.
-
-        Parameters
-        ----------
-        input_data : xr.Dataset | str | pathlib.Path
-            Path to the CDF file or xarray Dataset containing the L1C dataset.
-            If a dataset is provided, it will be copied to avoid modifying the original.
-
-        Returns
-        -------
-        UltraPointingSet
-            An UltraPointingSet object containing the L1C dataset.
-
-        Raises
-        ------
-        ValueError
-            If input_data is neither an xarray Dataset nor a path to a CDF file.
-        """
-        # Allow for passing in EITHER xarray Datasets (preferable for testing)
-        if isinstance(input_data, xr.Dataset):
-            # Copy to avoid modifying the original dataset in place
-            input_data = input_data.copy(deep=True)
-            ultra_pointing_set = UltraPointingSet(l1c_dataset=input_data)
-        # OR paths to CDF files (preferable for projecting many PointingSets)
-        elif isinstance(input_data, str | pathlib.Path):
-            if isinstance(input_data, str):
-                input_data = pathlib.Path(input_data)
-            ultra_pointing_set = UltraPointingSet(l1c_dataset=load_cdf(input_data))
-        else:
-            raise ValueError(
-                f"Input data must be either an xarray Dataset or a path to a CDF file "
-                "containing the L1C dataset.\n"
-                f"Found {type(input_data)} instead."
-            )
-        return ultra_pointing_set
 
     def __repr__(self) -> str:
         """

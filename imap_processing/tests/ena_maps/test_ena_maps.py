@@ -56,8 +56,8 @@ class TestUltraPointingSet:
         """Test instantiation of UltraPointingSet"""
         ultra_psets = [
             ena_maps.UltraPointingSet(
+                l1c_product,
                 spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
-                l1c_dataset=l1c_product,
             )
             for l1c_product in self.l1c_pset_products
         ]
@@ -92,26 +92,18 @@ class TestUltraPointingSet:
             )
 
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
-    def test_from_path_or_dataset(
+    def test_from_cdf(
         self,
     ):
         ultra_pset = self.l1c_pset_products[0]
 
         cdf_filepath = write_cdf(ultra_pset, istp=False)
 
-        ultra_pset_from_dataset = ena_maps.UltraPointingSet.from_path_or_dataset(
-            ultra_pset
-        )
-        ultra_pset_from_dataset_copy = ena_maps.UltraPointingSet.from_path_or_dataset(
-            ultra_pset
-        )
+        ultra_pset_from_dataset = ena_maps.UltraPointingSet.from_cdf(ultra_pset)
+        ultra_pset_from_dataset_copy = ena_maps.UltraPointingSet.from_cdf(ultra_pset)
 
-        ultra_pset_from_str = ena_maps.UltraPointingSet.from_path_or_dataset(
-            cdf_filepath
-        )
-        ultra_pset_from_path = ena_maps.UltraPointingSet.from_path_or_dataset(
-            Path(cdf_filepath)
-        )
+        ultra_pset_from_str = ena_maps.UltraPointingSet.from_cdf(cdf_filepath)
+        ultra_pset_from_path = ena_maps.UltraPointingSet.from_cdf(Path(cdf_filepath))
 
         np.testing.assert_allclose(
             ultra_pset_from_dataset.data["counts"].values,
@@ -155,8 +147,8 @@ class TestUltraPointingSet:
 
         with pytest.raises(ValueError, match="do not match"):
             ena_maps.UltraPointingSet(
+                ultra_pset_ds,
                 spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
-                l1c_dataset=ultra_pset_ds,
             )
 
 
@@ -170,8 +162,8 @@ class TestRectangularSkyMap:
         )
         self.ultra_psets = [
             ena_maps.UltraPointingSet(
+                l1c_product,
                 spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
-                l1c_dataset=l1c_product,
             )
             for l1c_product in self.ultra_l1c_pset_products
         ]
@@ -185,8 +177,8 @@ class TestRectangularSkyMap:
         )
         self.rectangular_psets = [
             ena_maps.RectangularPointingSet(
+                l1c_product,
                 spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
-                l1c_dataset=l1c_product,
             )
             for l1c_product in self.rectangular_l1c_pset_products
         ]
@@ -462,8 +454,8 @@ class TestHealpixSkyMap:
         )
         self.ultra_psets = [
             ena_maps.UltraPointingSet(
+                l1c_product,
                 spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
-                l1c_dataset=l1c_product,
             )
             for l1c_product in self.ultra_l1c_pset_products
         ]
@@ -477,8 +469,8 @@ class TestHealpixSkyMap:
         )
         self.rectangular_psets = [
             ena_maps.RectangularPointingSet(
+                l1c_product,
                 spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
-                l1c_dataset=l1c_product,
             )
             for l1c_product in self.rectangular_l1c_pset_products
         ]
@@ -550,7 +542,7 @@ class TestHealpixSkyMap:
 
         # Create a PointingSet with a bright spot
         mock_pset_input_frame = ena_maps.UltraPointingSet(
-            l1c_dataset=self.ultra_l1c_pset_products[0],
+            self.ultra_l1c_pset_products[0],
             spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
         )
         mock_pset_input_frame.data["counts"].values = np.zeros_like(
@@ -632,7 +624,7 @@ class TestHealpixSkyMap:
 
         # Create a PointingSet with a bright spot
         mock_pset_input_frame = ena_maps.RectangularPointingSet(
-            l1c_dataset=self.rectangular_l1c_pset_products[0],
+            self.rectangular_l1c_pset_products[0],
             spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
         )
         mock_pset_input_frame.data["counts"].values = np.zeros_like(
@@ -923,8 +915,8 @@ class TestIndexMatching:
         )
         self.rectangular_psets = [
             ena_maps.RectangularPointingSet(
+                l1c_product,
                 spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
-                l1c_dataset=l1c_product,
             )
             for l1c_product in self.rectangular_l1c_pset_products
         ]
@@ -944,7 +936,7 @@ class TestIndexMatching:
 
         # Mock a PSET, overriding the az/el points
         mock_pset_input_frame = ena_maps.RectangularPointingSet(
-            l1c_dataset=self.rectangular_l1c_pset_products[0],
+            self.rectangular_l1c_pset_products[0],
             spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
         )
         manual_az_el_coords = np.array(
@@ -1022,7 +1014,7 @@ class TestIndexMatching:
 
         # Make a PointingSet
         mock_pset_input_frame = ena_maps.RectangularPointingSet(
-            l1c_dataset=self.rectangular_l1c_pset_products[0],
+            self.rectangular_l1c_pset_products[0],
             spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
         )
 
@@ -1061,7 +1053,7 @@ class TestIndexMatching:
         self,
     ):
         mock_pset_input_frame = ena_maps.RectangularPointingSet(
-            l1c_dataset=self.rectangular_l1c_pset_products[0],
+            self.rectangular_l1c_pset_products[0],
             spice_reference_frame=geometry.SpiceFrame.ECLIPJ2000,
         )
         # Until implemented, just change the tiling on a RectangularSkyMap
@@ -1077,11 +1069,11 @@ class TestIndexMatching:
 
     def test_match_coords_to_indices_pset_to_pset_error(self):
         mock_pset_input_frame = ena_maps.RectangularPointingSet(
-            l1c_dataset=self.rectangular_l1c_pset_products[0],
+            self.rectangular_l1c_pset_products[0],
             spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
         )
         mock_pset_output_frame = ena_maps.RectangularPointingSet(
-            l1c_dataset=self.rectangular_l1c_pset_products[1],
+            self.rectangular_l1c_pset_products[1],
             spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
         )
         with pytest.raises(
