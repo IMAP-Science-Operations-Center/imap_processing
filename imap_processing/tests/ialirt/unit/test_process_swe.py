@@ -311,7 +311,6 @@ def test_normalize_counts():
     assert np.allclose(norm_counts, expected, atol=1e-9)
 
 
-def test_process_swe(swe_test_data, fields_to_test):
 def test_find_bin_offsets():
     """Tests find_bin_offsets function"""
 
