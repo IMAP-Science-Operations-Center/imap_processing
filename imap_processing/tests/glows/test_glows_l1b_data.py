@@ -147,7 +147,7 @@ def test_validation_data_histogram(l1a_dataset):
 
 
 def test_validation_data_de(l1a_dataset):
-    de_data = l1a_dataset[2]
+    de_data = l1a_dataset[1]
 
     l1b = glows_l1b(de_data)
     validation_data = (

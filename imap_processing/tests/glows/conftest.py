@@ -1,4 +1,3 @@
-from functools import reduce
 from pathlib import Path
 
 import pytest
@@ -31,10 +30,7 @@ def l1a_test_data(decom_test_data):
     for hist in decom_test_data[0]:
         hist_l1a.append(HistogramL1A(hist))
 
-    de_l1a_dict = process_de_l0(decom_test_data[1])
-
-    # Flatten the dictionary to one list of DE values
-    de_l1a = reduce(list.__add__, [value for value in de_l1a_dict.values()])
+    de_l1a = process_de_l0(decom_test_data[1])
 
     return hist_l1a, de_l1a
 
@@ -46,7 +42,7 @@ def l1a_dataset(packet_path):
 
 @pytest.fixture
 def l1b_hist_dataset(l1a_dataset):
-    return glows_l1b(l1a_dataset[1])
+    return glows_l1b(l1a_dataset[0])
 
 
 @pytest.fixture
