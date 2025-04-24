@@ -129,11 +129,11 @@ def write_cdf(
             f"The Data_version attribute {version} does not match expected format vXXX."
         )
 
-    if "repointing" in dataset.attrs:
-        # If provided, assume that we want to override the passed-in value
-        repointing = dataset.attrs["repointing"]
+    if repointing is None and "Repointing" in dataset.attrs:
+        # If nothing is provided, attempt to retrieve from the dataset attrs
+        repointing = dataset.attrs["Repointing"]
     elif repointing is not None:
-        dataset.attrs["repointing"] = repointing
+        dataset.attrs["Repointing"] = repointing
 
     repointing_int = int(repointing[-5:]) if repointing else None
     science_file = imap_data_access.ScienceFilePath.generate_from_inputs(
