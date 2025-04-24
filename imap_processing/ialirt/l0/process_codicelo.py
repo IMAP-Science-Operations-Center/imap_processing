@@ -48,7 +48,7 @@ def find_groups(data: xr.Dataset) -> xr.Dataset:
         & (data["counter"] >= subcom_range[0])
         & (data["counter"] <= subcom_range[-1]),
         drop=True,
-    )
+    ).astype(np.uint32)
 
     # Assign labels based on the cod_lo_acq times.
     group_labels = np.searchsorted(
@@ -83,14 +83,14 @@ def append_cod_lo_data(dataset: xr.Dataset) -> xr.Dataset:
     cod_lo_data = np.stack(
         [dataset[f"data_{i:02}"].values for i in range(num_cod_lo_rows)], axis=1
     )
-    print(cod_lo_data.shape)  # (233, 15)
+    # print(cod_lo_data.shape)  # (233, 15)
 
     repeated_data = {
         var: np.repeat(dataset[var].values, num_cod_lo_rows)
         for var in dataset.data_vars
         if not var.startswith("data_")
     }
-    print(repeated_data)  # All of the other CCSDS fields except data_xx
+    # print(repeated_data)  # All of the other CCSDS fields except data_xx
 
     repeated_data["data"] = cod_lo_data.flatten()  # (3495,)
     repeated_epoch = np.repeat(dataset["epoch"].values, num_cod_lo_rows)
@@ -132,9 +132,9 @@ def process_codicelo(xarray_data: xr.Dataset) -> list[dict]:
     codicelo_data: list[dict[str, Any]] = []
 
     for group in unique_groups:
-        print("\n")
-        print(f"Group: {group}")
-        print("\n")
+        # print("\n")
+        # print(f"Group: {group}")
+        # print("\n")
         # counter values for the group should be 0-232 with no duplicates.
         subcom_values = grouped_data["counter"][(grouped_data["group"] == group).values]
         # print(subcom_values)  # List of [0. - 232.] (in float)
