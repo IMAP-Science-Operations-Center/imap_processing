@@ -22,6 +22,7 @@ from imap_processing.swe.utils.swe_utils import combine_acquisition_time
 
 logger = logging.getLogger(__name__)
 
+# Energy bin lookup table (indexed by quarter cycle)
 ENERGY_BINS = np.array(
     [
         [1, 5, 7, 3],  # 0 to 14 (Q1)
@@ -45,6 +46,10 @@ def decompress_counts(raw_counts: NDArray) -> NDArray:
     -------
     counts : np.ndarray
         Array of decompressed counts with the same shape as raw_counts.
+
+    Notes
+    -----
+    CEM is channel electron multiplier.
     """
     decompression_table = np.array([decompressed_counts(i) for i in range(256)])
 
@@ -182,7 +187,7 @@ def find_bin_offsets(
     Parameters
     ----------
     peak_bins : np.ndarray
-        Bins that corresponds to the maximum counts at each energy.
+        Bins that correspond to the maximum counts at each energy.
     offsets : tuple[int, int]
         Offset values for the bins.
 
@@ -270,7 +275,7 @@ def find_min_counts(
     counts_180 = average_counts(peak_bin, summed_half_cycle, (14, 16))
 
     # Find the counts in each offset bins.
-    # Offsets +6 and +8 correspond to -90 degrees.
+    # Offsets -6 and -8 correspond to -90 degrees.
     counts_neg_90 = average_counts(peak_bin, summed_half_cycle, (-6, -8))
 
     counts_stacked = np.hstack(
@@ -320,7 +325,7 @@ def determine_streaming(
     return ((ratio_1 > threshold) & (ratio_2 > threshold)).astype(int)
 
 
-def compute_bde(
+def compute_bidirectional(
     streaming_first_half: NDArray,
     streaming_second_half: NDArray,
     min_esa_steps: int = 3,
@@ -334,8 +339,10 @@ def compute_bde(
         Array of 1s and 0s indicating bidirectional streaming for first half-cycle.
     streaming_second_half : np.ndarray
         Array of 1s and 0s indicating bidirectional streaming for second half-cycle.
-    min_esa_steps : int
+    min_esa_steps : int (optional)
         Minimum number of ESA steps for bidirectional streaming.
+        If either of the half cycles has bidirectional streaming for
+        3/8 energies then bde = 1.
 
     Returns
     -------
@@ -348,7 +355,7 @@ def compute_bde(
     return int(count_first >= min_esa_steps), int(count_second >= min_esa_steps)
 
 
-def first_check_counterstreaming(
+def azimuthal_check_counterstreaming(
     summed_first_half: NDArray, summed_second_half: NDArray
 ) -> tuple[int, int]:
     """
@@ -384,12 +391,14 @@ def first_check_counterstreaming(
 
     # If either of the half cycles has bidirectional streaming
     # for 3/8 energies then bde = 1
-    bde_first_search = compute_bde(streaming_first_half, streaming_second_half)
+    bde_first_search = compute_bidirectional(
+        streaming_first_half, streaming_second_half
+    )
 
     return bde_first_search
 
 
-def second_check_counterstreaming(
+def polar_check_counterstreaming(
     summed_first_half: NDArray, summed_second_half: NDArray
 ) -> tuple[int, int]:
     """
@@ -423,7 +432,9 @@ def second_check_counterstreaming(
 
     # If either of the half cycles has bidirectional streaming
     # for 3/8 energies then bde = 1
-    bde_second_search = compute_bde(streaming_first_half, streaming_second_half)
+    bde_second_search = compute_bidirectional(
+        streaming_first_half, streaming_second_half
+    )
 
     return bde_second_search
 
@@ -501,13 +512,13 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
         # Sum over the 7 detectors
         summed_first_half_cem = np.sum(normalized_first_half, axis=1)
         summed_second_half_cem = np.sum(normalized_second_half, axis=1)
-        bde_first_search = first_check_counterstreaming(
+        bde_first_search = azimuthal_check_counterstreaming(
             summed_first_half_cem, summed_second_half_cem
         )
         # Sum over azimuth.
         summed_first_half_az = np.sum(normalized_first_half, axis=2)
         summed_second_half_az = np.sum(normalized_second_half, axis=2)
-        bde_second_search = second_check_counterstreaming(
+        bde_second_search = polar_check_counterstreaming(
             summed_first_half_az, summed_second_half_az
         )
 

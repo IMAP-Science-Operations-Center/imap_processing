@@ -10,18 +10,18 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.process_swe import (
     average_counts,
-    compute_bde,
+    azimuthal_check_counterstreaming,
+    compute_bidirectional,
     decompress_counts,
     determine_streaming,
     find_bin_offsets,
     find_min_counts,
-    first_check_counterstreaming,
     get_ialirt_energies,
     normalize_counts,
     phi_to_bin,
+    polar_check_counterstreaming,
     prepare_raw_counts,
     process_swe,
-    second_check_counterstreaming,
 )
 from imap_processing.swe.utils.swe_constants import (
     ESA_VOLTAGE_ROW_INDEX_DICT,
@@ -352,35 +352,35 @@ def test_determine_streaming_summed_cems():
     )
 
 
-def test_compute_bde():
-    """Tests compute_bde function."""
+def test_compute_bidirectional():
+    """Tests compute_bidirectional function."""
 
     first_half = np.array([1, 0, 0, 0, 1, 0, 0, 0])
     second_half = np.array([1, 0, 0, 0, 1, 0, 0, 0])
-    assert compute_bde(first_half, second_half) == (0, 0)
+    assert compute_bidirectional(first_half, second_half) == (0, 0)
 
     first_half = np.array([1, 1, 1, 0, 0, 0, 0, 0])
     second_half = np.array([0, 0, 0, 0, 0, 0, 0, 0])
-    assert compute_bde(first_half, second_half) == (1, 0)
+    assert compute_bidirectional(first_half, second_half) == (1, 0)
 
 
-def test_first_check_counterstreaming(summed_half_cycle):
-    """Tests first_check_counterstreaming function."""
+def test_azimuthal_check_counterstreaming(summed_half_cycle):
+    """Tests azimuthal_check_counterstreaming function."""
 
-    bde = first_check_counterstreaming(summed_half_cycle, summed_half_cycle)
+    bde = azimuthal_check_counterstreaming(summed_half_cycle, summed_half_cycle)
 
     assert bde == (1, 1)
 
 
-def test_second_check_counterstreaming():
-    """Tests second_check_counterstreaming function."""
+def test_polar_check_counterstreaming():
+    """Tests polar_check_counterstreaming function."""
 
     # cem0 (cem1) and cem6 (cem7) have high values
     # cem2, cem3, cem4 (cem3 to cem5) are low and used for cmin
     row = np.array([100, 20, 5, 5, 5, 20, 100])
     summed_half = np.tile(row, (8, 1))
 
-    bde = second_check_counterstreaming(summed_half, summed_half)
+    bde = polar_check_counterstreaming(summed_half, summed_half)
 
     assert bde == (1, 1)
 
