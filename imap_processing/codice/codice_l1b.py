@@ -11,7 +11,6 @@ dataset = process_codice_l1b(l1a_file)
 """
 
 import logging
-from pathlib import Path
 
 import xarray as xr
 
@@ -154,7 +153,7 @@ def create_science_dataset(
     return l1b_dataset
 
 
-def process_codice_l1b(file_path: Path, data_version: str) -> xr.Dataset:
+def process_codice_l1b(file_path: str) -> xr.Dataset:
     """
     Will process CoDICE l1a data to create l1b data products.
 
@@ -162,8 +161,6 @@ def process_codice_l1b(file_path: Path, data_version: str) -> xr.Dataset:
     ----------
     file_path : pathlib.Path | str
         Path to the CoDICE L1a file to process.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -180,19 +177,16 @@ def process_codice_l1b(file_path: Path, data_version: str) -> xr.Dataset:
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
     cdf_attrs.add_instrument_variable_attrs("codice", "l1b")
-    cdf_attrs.add_global_attribute("Data_version", data_version)
     l1b_global_attrs = cdf_attrs.get_global_attributes("imap_codice_l1b_lo-sw-species")
 
     # Use the dataset name as a way to distinguish between data products
-    dataset_name = l1a_dataset.attrs["Logical_source"].replace("_l1a_", "_l1b_")
+    # dataset_name = l1a_dataset.attrs["Logical_source"].replace("_l1a_", "_l1b_")
 
     # Use the L1a data product as a starting point for L1b
     l1b_dataset = l1a_dataset.copy()
 
     # Update the global attributes
     l1b_dataset.attrs = l1b_global_attrs
-
-    #
 
     #
     # if "hskp" in dataset_name:
@@ -223,6 +217,6 @@ if __name__ == "__main__":
         / "imap_codice_l1a_lo-sw-species_20241110_v001.cdf"
     )
 
-    dataset = process_codice_l1b(file_path, "001")
+    dataset = process_codice_l1b(file_path)
 
     print(dataset)

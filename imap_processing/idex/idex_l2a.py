@@ -10,16 +10,14 @@ Examples
     from imap_processing.idex.idex_l2a import idex_l2a
 
     l0_file = "imap_processing/tests/idex/imap_idex_l0_sci_20231214_v001.pkts"
-    l1a_data = PacketParser(l0_file, data_version)
-    l1b_data = idex_l1b(l1a_data, data_version)
-    l2a_data = idex_l2a(l1b_data, data_version)
+    l1a_data = PacketParser(l0_file)
+    l1b_data = idex_l1b(l1a_data)
+    l2a_data = idex_l2a(l1b_data)
     write_cdf(l2a_data)
 """
 
-# ruff: noqa: PLR0913
 import logging
 from enum import IntEnum
-from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -32,7 +30,6 @@ from scipy.stats import exponnorm
 
 from imap_processing import imap_module_directory
 from imap_processing.idex import idex_constants
-from imap_processing.idex.idex_constants import ConversionFactors
 from imap_processing.idex.idex_l1a import get_idex_attrs
 
 logger = logging.getLogger(__name__)
@@ -54,7 +51,7 @@ class BaselineNoiseTime(IntEnum):
     STOP = -5
 
 
-def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
     """
     Will process IDEX l1b data to create l2a data products.
 
@@ -70,8 +67,6 @@ def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     ----------
     l1b_dataset : xarray.Dataset
         IDEX L1a dataset to process.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -104,7 +99,7 @@ def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     kappa = calculate_kappa(mass_scales, peaks_2d)
 
     # Analyze peaks for estimating dust composition
-    peak_fits, area_under_fits = xr.apply_ufunc(
+    peak_fits_params, area_under_fits, fit_chisqr, fit_redchi = xr.apply_ufunc(
         analyze_peaks,
         tof_high,
         hs_time,
@@ -117,10 +112,11 @@ def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
             ["time_high_sample_rate_index"],
             [],
         ],
-        # TODO: Determine dimension name
         output_core_dims=[
-            ["time_of_flight", "peak_fit_parameters"],
-            ["time_of_flight"],
+            ["mass", "peak_fit_parameters"],
+            ["mass"],
+            [],
+            [],
         ],
         vectorize=True,
     )
@@ -128,13 +124,11 @@ def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     l2a_dataset = l1b_dataset.copy()
 
     for waveform in ["Target_Low", "Target_High", "Ion_Grid"]:
-        # Convert back to raw DNs for more accurate fits
-        waveform_dn = l1b_dataset[waveform] / ConversionFactors[waveform]
         # Get the dust mass estimates and fit results
         fit_results = xr.apply_ufunc(
             estimate_dust_mass,
             ls_time,
-            waveform_dn,
+            l1b_dataset[waveform],
             input_core_dims=[
                 ["time_low_sample_rate_index"],
                 ["time_low_sample_rate_index"],
@@ -152,20 +146,23 @@ def idex_l2a(l1b_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         waveform_name = waveform.lower()
         # Add variables
         l2a_dataset[f"{waveform_name}_fit_parameters"] = fit_results[0]
-        l2a_dataset[f"{waveform_name}_fit_imapct_charge"] = fit_results[1]
+        l2a_dataset[f"{waveform_name}_fit_impact_charge"] = fit_results[1]
         # TODO: convert charge to mass
-        l2a_dataset[f"{waveform_name}_fit_imapct_mass_estimate"] = fit_results[1]
+        l2a_dataset[f"{waveform_name}_fit_impact_mass_estimate"] = fit_results[1]
         l2a_dataset[f"{waveform_name}_chi_squared"] = fit_results[2]
         l2a_dataset[f"{waveform_name}_reduced_chi_squared"] = fit_results[3]
         l2a_dataset[f"{waveform_name}_fit_results"] = fit_results[4]
 
-    l2a_dataset["tof_peak_fit_parameters"] = peak_fits
+    l2a_dataset["tof_peak_fit_parameters"] = peak_fits_params
     l2a_dataset["tof_peak_area_under_fit"] = area_under_fits
+    l2a_dataset["tof_peak_chi_square"] = fit_chisqr
+    l2a_dataset["tof_peak_reduced_chi_square"] = fit_redchi
+
     l2a_dataset["tof_peak_kappa"] = xr.DataArray(kappa, dims=["epoch"])
     l2a_dataset["tof_snr"] = xr.DataArray(snr, dims=["epoch"])
     l2a_dataset["mass"] = mass_scales_da
     # Update global attributes
-    idex_attrs = get_idex_attrs(data_version)
+    idex_attrs = get_idex_attrs()
     l2a_dataset.attrs = idex_attrs.get_global_attributes("imap_idex_l2a_sci")
 
     logger.info("IDEX L2A science data processing completed.")
@@ -361,7 +358,7 @@ def analyze_peaks(
     mass_scale: xr.DataArray,
     event_num: int,
     peaks_2d: np.ndarray,
-) -> tuple[NDArray, NDArray]:
+) -> tuple[NDArray, NDArray, float, float]:
     """
     Fit an EMG curve to the Time of Flight data around each peak.
 
@@ -404,8 +401,8 @@ def analyze_peaks(
         time_slice = high_sampling_time[start:end]
         tof_slice = tof_high[start:end]
 
-        param = fit_emg(time_slice, tof_slice, event_num)
-        if param is None:
+        param, chisqr, redchi = fit_emg(time_slice, tof_slice, event_num)
+        if np.all(np.isnan(param)):
             continue
 
         area = calculate_area_under_emg(time_slice, param)
@@ -427,7 +424,6 @@ def analyze_peaks(
         mass = max(0, round(mass))
         # Find the first index with non-zero fit parameters, starting from current mass
         non_zero_idxs = np.nonzero(np.all(fit_params[mass:] != 0, axis=-1))[0]
-
         # Determine index to use
         # If no non-zero parameters found, use current mass index
         # Otherwise, use the current mass plus offset to first non-zero index
@@ -437,16 +433,14 @@ def analyze_peaks(
             fit_params[idx] = np.array([mu, sigma, lam])
             area_under_emg[idx] = area
         else:
-            logger.warning(
-                f"Unable to find a slot for mass: {mass}. Discarding " f"value."
-            )
+            logger.warning(f"Unable to find a slot for mass: {mass}. Discarding value.")
 
-    return fit_params, area_under_emg
+    return fit_params, area_under_emg, chisqr, redchi
 
 
 def fit_emg(
     peak_time: np.ndarray, peak_signal: np.ndarray, event_num: int
-) -> Union[NDArray, None]:
+) -> tuple[NDArray, float, float]:
     """
     Fit an exponentially modified gaussian function to the peak signal.
 
@@ -465,9 +459,13 @@ def fit_emg(
 
     Returns
     -------
-    param : numpy.ndarray or None
+    param : numpy.ndarray
         Fitted EMG optimal values for the parameters (popt) [k (shape parameter), mu,
-        sigma] if fit successful, None otherwise.
+        sigma] if fit is successful, array of np.nans otherwise.
+    chisqr : float
+        Chi-square value if fit is successful, np.nan otherwise.
+    redchi : float
+        Reduced chi-square value if fit is successful, np.nan otherwise.
     """
     # Initial Guess for the parameters of the emg fit:
     # center of gaussian
@@ -490,11 +488,14 @@ def fit_emg(
             f"Time range: {peak_time[0]:.2f} to {peak_time[-1]:.2f}\n"
             f"Signal range: {min(peak_signal):.2f} to {max(peak_signal):.2f}\n"
             f"Event number: {event_num}\n"
-            "Returning None."
+            "Returning np.nan values."
         )
-        return None
+        return np.full(len(p0), np.nan), np.nan, np.nan
 
-    return param
+    emg_fit = exponnorm.pdf(peak_time, *param)
+    chisqr, redchi = chi_square(peak_signal, emg_fit, len(p0))
+
+    return param, chisqr, redchi
 
 
 def calculate_area_under_emg(time_slice: np.ndarray, param: np.ndarray) -> float:
@@ -555,8 +556,6 @@ def estimate_dust_mass(
     result : numpy.ndarray
         The model values evaluated at each time point.
     """
-    # TODO: The IDEX team is iterating on this Function and will provide more
-    #         information soon.
     signal = np.array(target_signal.data)
     time = np.array(low_sampling_time.data)
     good_mask = np.logical_and(
@@ -615,11 +614,7 @@ def estimate_dust_mass(
     impact_fit = fit_impact(time, *param)
     # Calculate the resulting signal amplitude after removing baseline noise
     sig_amp = max(impact_fit) - np.mean(signal_baseline)
-
-    # Calculate chi square and reduced chi square
-    chisqr = float(np.sum((signal - impact_fit) ** 2))
-    # To get reduced chi square divide by dof (number of points - number of params)
-    redchi = chisqr / (len(signal) - len(p0))
+    chisqr, redchi = chi_square(signal, impact_fit, len(p0))
 
     return param, float(sig_amp), chisqr, redchi, impact_fit
 
@@ -729,7 +724,7 @@ def remove_signal_noise(
 
 def sine_fit(time: np.ndarray, a: float, f: float, p: float) -> NDArray:
     """
-    Generate a sine wave with given amplitude, frequency, and phase.
+    Generate a sine wave with given amplitude, angular frequency, and phase.
 
     Parameters
     ----------
@@ -738,7 +733,7 @@ def sine_fit(time: np.ndarray, a: float, f: float, p: float) -> NDArray:
     a : float
         Amplitude of the sine wave.
     f : float
-        Frequency of the sine wave in Hz.
+        Angular frequency of the sine wave.
     p : float
         Phase shift of the sine wave in radians.
 
@@ -747,7 +742,7 @@ def sine_fit(time: np.ndarray, a: float, f: float, p: float) -> NDArray:
     numpy.ndarray
         Sine wave values calculated at the input time points.
     """
-    return a * np.sin(2 * np.pi * f * time + p)
+    return a * np.sin(f * time + p)
 
 
 def butter_lowpass_filter(
@@ -772,7 +767,6 @@ def butter_lowpass_filter(
     numpy.ndarray
         Filtered signal.
     """
-    # TODO: The IDEX team might be switching this function out for a different filter.
     sample_period = time[1] - time[0]
     # sampling frequency
     fs = (time[-1] - time[0]) / sample_period  # Hz
@@ -787,3 +781,43 @@ def butter_lowpass_filter(
     b, a = butter(order, normal_cutoff, btype="low", analog=False)
     y = filtfilt(b, a, signal)
     return y
+
+
+def chi_square(
+    observed: np.ndarray, expected: np.ndarray, num_params: int
+) -> tuple[float, float]:
+    """
+    Calculate the chi-square and reduced chi-square statistics.
+
+    This implementation follows the approach used in lmfit.minimize()'s
+    _calculate_statistics() method, which calculates chi-square as the sum of squared
+    residuals:
+
+        chisqr = (residual**2).sum()
+
+    And reduced chi-square as the chi-square divided by degrees of freedom:
+
+        ndata = len(residual)
+        nfree = ndata - number_of_parameters
+        redchi = chisqr / max(1, nfree)
+
+    Parameters
+    ----------
+    observed : numpy.ndarray
+       The observed signal.
+    expected : numpy.ndarray
+       The expected signal calculated with the fit parameters.
+    num_params : int
+       The number of parameters used in the fit.
+
+    Returns
+    -------
+    chisqr : float
+        The chi-square value.
+    redchi : float
+        The reduced chi-square value.
+    """
+    residuals = observed - expected
+    chisqr = float(np.sum(residuals**2))
+    redchi = chisqr / max(1, (len(observed) - num_params))
+    return chisqr, redchi

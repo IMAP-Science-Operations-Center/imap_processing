@@ -124,6 +124,8 @@ nitpick_ignore_regex = [
     (r"py:.*", r".*.spice.geometry.SpiceFrame.*"),
     (r"py:class", r"numpy._typing.*"),
     (r"py:class", r"^numpy\.(u?int(?:8|16|32|64))$"),
+    (r"py:.*", r".*ProcessingInputCollection"),
+    (r"py:.*", r"imap_data_access.*"),
 ]
 
 # Ignore the inherited members from the <instrument>APID IntEnum class

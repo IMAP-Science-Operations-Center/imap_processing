@@ -54,7 +54,7 @@ def mag_test_data():
     return data
 
 
-@pytest.fixture()
+@pytest.fixture
 def xarray_data(binary_packet_path, xtce_mag_path):
     """Create xarray data for multiple packets."""
     apid = 1001
@@ -68,7 +68,7 @@ def xarray_data(binary_packet_path, xtce_mag_path):
     return merged_xarray_data
 
 
-@pytest.fixture()
+@pytest.fixture
 def grouped_data():
     """Creates grouped data for tests."""
     epoch = np.arange(12)

@@ -7,7 +7,7 @@ from imap_processing.ialirt import process_ephemeris
 from imap_processing.spice.time import str_to_et
 
 
-@pytest.mark.external_kernel()
+@pytest.mark.external_kernel
 def test_calculate_doppler(furnish_kernels):
     """
     Test the calculate_doppler() function.
@@ -43,7 +43,7 @@ def test_calculate_doppler(furnish_kernels):
     assert doppler_result is not None
 
 
-@pytest.mark.external_kernel()
+@pytest.mark.external_kernel
 def test_latitude_longitude_to_ecef(furnish_kernels):
     """
     Test the latitude_longitude_to_ecef() function.
@@ -63,7 +63,7 @@ def test_latitude_longitude_to_ecef(furnish_kernels):
     )
 
 
-@pytest.mark.external_kernel()
+@pytest.mark.external_kernel
 def test_calculate_azimuth_and_elevation(furnish_kernels):
     """
     Test the calculate_azimuth_and_elevation() function.
@@ -101,7 +101,7 @@ def test_calculate_azimuth_and_elevation(furnish_kernels):
     assert len(azimuth_result) == len(observation_time)
 
 
-@pytest.mark.external_kernel()
+@pytest.mark.external_kernel
 def test_build_output(furnish_kernels):
     """
     Test the build_output() function.

@@ -144,6 +144,22 @@ acq_duration:
   UNITS: microseconds
   VAR_TYPE: support_data
 
+esa_energy:
+  CATDESC: ESA electron energy
+  DEPEND_0: epoch
+  DEPEND_1: esa_step
+  DEPEND_2: spin_sector
+  LABL_PTR_1: esa_step_label
+  LABL_PTR_2: spin_sector_label
+  DISPLAY_TYPE: time_series
+  FIELDNAM: ESA Energies
+  FORMAT: E14.7
+  FILLVAL: -9223372036854775808
+  UNITS: eV
+  VALIDMAX: 65535
+  VALIDMIN: 0.000015514
+  VAR_TYPE: support_data
+
 shcoarse:
   <<: *default
   CATDESC: Mission elapsed time

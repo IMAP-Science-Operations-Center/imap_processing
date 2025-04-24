@@ -193,7 +193,21 @@ energy:
 
 tof_energy:
   <<: *default_float32
-  CATDESC: Energy measured using kinetic energy equation.
+  CATDESC: Energy measured using kinetic energy equation in the instrument frame.
+  FIELDNAM: energy
+  LABLAXIS: energy
+  UNITS: keV
+
+energy_spacecraft:
+  <<: *default_float32
+  CATDESC: Energy measured using kinetic energy equation in the despun spacecraft frame.
+  FIELDNAM: energy
+  LABLAXIS: energy
+  UNITS: keV
+
+energy_heliosphere:
+  <<: *default_float32
+  CATDESC: Energy measured using kinetic energy equation in the despun heliosphere frame.
   FIELDNAM: energy
   LABLAXIS: energy
   UNITS: keV
@@ -222,20 +236,6 @@ path_length:
   LABLAXIS: path_length
   UNITS: mm / 100
 
-azimuth:
-  <<: *default_float32
-  CATDESC: Azimuth.
-  FIELDNAM: azimuth
-  LABLAXIS: azimuth
-  UNITS: radians
-
-elevation:
-  <<: *default_float32
-  CATDESC: Elevation.
-  FIELDNAM: elevation
-  LABLAXIS: elevation
-  UNITS: radians
-
 phi:
   <<: *default_float32
   CATDESC: Ultra instrument frame event phi (azimuth with range -90 -> 90).
@@ -250,11 +250,41 @@ theta:
   LABLAXIS: theta
   UNITS: degrees
 
+phi_fwhm:
+  <<: *default_float32
+  CATDESC: FWHM of the phi distribution.
+  FIELDNAM: phi_fwhm
+  LABLAXIS: phi fwhm
+  UNITS: degrees
+
+theta_fwhm:
+  <<: *default_float32
+  CATDESC: FWHM of the theta distribution.
+  FIELDNAM: phi_fwhm
+  LABLAXIS: phi fwhm
+  UNITS: degrees
+
 event_efficiency:
   <<: *default_float32
   CATDESC: Estimated event efficiency for this path through the instrument.
   FIELDNAM: event_efficiency
   LABLAXIS: event efficiency
+  UNITS: " "
+
+direct_event_unit_velocity:
+  <<: *default_float32
+  CATDESC: Unit vector of the direct event velocity in the instrument frame.
+  DEPEND_1: component
+  FIELDNAM: direct_event_unit_velocity
+  LABLAXIS: direct event unit velocity
+  UNITS: " "
+
+direct_event_unit_position:
+  <<: *default_float32
+  CATDESC: Unit vector of the direct event position in the instrument frame.
+  DEPEND_1: component
+  FIELDNAM: direct_event_unit_position
+  LABLAXIS: direct event unit position
   UNITS: " "
 
 velocity_sc:

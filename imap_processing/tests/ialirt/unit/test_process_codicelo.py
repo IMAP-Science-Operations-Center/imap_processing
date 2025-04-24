@@ -48,7 +48,7 @@ def codicelo_validation_data():
     return data
 
 
-@pytest.fixture()
+@pytest.fixture
 def codicelo_test_data(binary_packet_path, xtce_codicelo_path):
     """Create xarray data"""
     apid = 1152

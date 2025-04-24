@@ -15,7 +15,7 @@ from imap_processing.mag.l1a.mag_l1a_data import (
 from imap_processing.spice.time import met_to_ttj2000ns
 
 
-@pytest.fixture()
+@pytest.fixture
 def uncompressed_vector_bytearray():
     input_data = np.array(
         [
@@ -225,7 +225,7 @@ def uncompressed_vector_bytearray():
     return input_data
 
 
-@pytest.fixture()
+@pytest.fixture
 def expected_vectors():
     primary_expected = np.array(
         [
@@ -272,7 +272,7 @@ def expected_vectors():
     return (primary_expected, secondary_expected)
 
 
-@pytest.fixture()
+@pytest.fixture
 def raw_compressed_vectors():
     # compressed vectors, without the first starting uncompressed vector.
     # 15 primary vectors and 15 secondary vectors, corresponding to most of
@@ -883,7 +883,7 @@ def test_mag_l1a():
     current_directory = Path(__file__).parent
     test_file = current_directory / "validation" / "mag_l1_test_data.pkts"
 
-    output_data = mag_l1a(test_file, "v001")
+    output_data = mag_l1a(test_file)
 
     # Test data is one day's worth of NORM data, so it should return one raw, one MAGO
     # and one MAGI dataset
@@ -897,9 +897,6 @@ def test_mag_l1a():
     for data_type in [data.attrs["Logical_source"] for data in output_data]:
         assert data_type in expected_logical_source
 
-    for data in output_data:
-        assert data.attrs["Data_version"] == "v001"
-
     assert "vectors" in output_data[-1].variables.keys()
     assert "compression_flags" in output_data[-1].variables.keys()
 
@@ -908,6 +905,15 @@ def test_mag_l1a():
     assert (
         output_data[-1]["vectors"].data.shape[0]
         == output_data[-1]["compression_flags"].data.shape[0]
+    )
+
+    assert (
+        str(output_data[-1]["epoch"].data[0])
+        in output_data[-1].attrs["vectors_per_second"]
+    )
+    assert (
+        str(output_data[-2]["epoch"].data[0])
+        in output_data[-2].attrs["vectors_per_second"]
     )
 
 

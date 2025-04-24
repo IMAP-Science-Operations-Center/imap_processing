@@ -24,7 +24,7 @@ from imap_processing.spice.time import (
 logger = logging.getLogger(__name__)
 
 
-def mag_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
+def mag_l1a(packet_filepath: Path) -> list[xr.Dataset]:
     """
     Will process MAG L0 data into L1A CDF files at cdf_filepath.
 
@@ -32,8 +32,6 @@ def mag_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     ----------
     packet_filepath : pathlib.Path
         Packet files for processing.
-    data_version : str
-        Data version to write to CDF files.
 
     Returns
     -------
@@ -51,8 +49,6 @@ def mag_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     attribute_manager = ImapCdfAttributes()
     attribute_manager.add_instrument_global_attrs("mag")
     attribute_manager.add_instrument_variable_attrs("mag", "l1a")
-
-    attribute_manager.add_global_attribute("Data_version", data_version)
     attribute_manager.add_global_attribute("Input_files", str(input_files))
     attribute_manager.add_global_attribute(
         "Generation_date",
@@ -179,7 +175,7 @@ def process_packets(
         # each sensor, we can calculate how much data is in this packet and where the
         # byte boundaries are.
         primary_vectors, secondary_vectors = MagL1a.process_vector_data(
-            mag_l0.VECTORS,  # type: ignore
+            mag_l0.VECTORS,
             primary_packet_properties.total_vectors,
             secondary_packet_data.total_vectors,
             mag_l0.COMPRESSION,
@@ -297,8 +293,6 @@ def generate_dataset(
         ),
     )
 
-    # TODO: Epoch here refers to the start of the sample. Confirm that this is
-    # what mag is expecting, and if it is, CATDESC needs to be updated.
     epoch_time = xr.DataArray(
         time_data,
         name="epoch",
@@ -338,7 +332,6 @@ def generate_dataset(
         ),
     )
     global_attributes = attribute_manager.get_global_attributes(logical_file_id)
-    # TODO: this method won't work because these values are not in the schema.
     global_attributes["is_mago"] = str(bool(single_file_l1a.is_mago))
     global_attributes["is_active"] = str(bool(single_file_l1a.is_active))
     global_attributes["vectors_per_second"] = (

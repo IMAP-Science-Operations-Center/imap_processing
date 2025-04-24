@@ -12,7 +12,7 @@ from imap_processing.ccsds import excel_to_xtce
 pytest.importorskip("openpyxl")
 
 
-@pytest.fixture()
+@pytest.fixture
 def xtce_excel_file(tmp_path):
     """Create an excel file for testing.
 

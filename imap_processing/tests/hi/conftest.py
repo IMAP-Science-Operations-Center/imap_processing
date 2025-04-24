@@ -48,7 +48,7 @@ def check_sum(bits_size):
     return f"{0:0{bits_size}b}"
 
 
-@pytest.fixture()
+@pytest.fixture
 def create_de_data(tmp_path):
     """Fixture to create fake direct event data. Note that there has been no
     effort to make simulate this data meaning that packets are not self

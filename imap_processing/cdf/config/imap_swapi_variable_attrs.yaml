@@ -82,6 +82,22 @@ rate_default: &rate_default
   VAR_TYPE: data
   SCALETYP: linear
 
+esa_energy:
+  CATDESC: ESA Energy.
+  FIELDNAM: ESA Energy
+  LABLAXIS: Energy(eV)
+  DEPEND_0: epoch
+  DEPEND_1: energy
+  DISPLAY_TYPE: spectrogram
+  LABL_PTR_1: energy_label
+  FILLVAL: 4294967295
+  FORMAT: I5
+  UNITS: eV
+  VALIDMIN: 0
+  VALIDMAX: 65535
+  VAR_TYPE: support_data
+  SCALETYP: linear
+
 metadata_default: &metadata_default
   DEPEND_0: epoch
   DISPLAY_TYPE: time_series
@@ -191,3 +207,9 @@ fpga_rev:
   CATDESC: Revision number of the FPGA.
   FIELDNAM: FPGA Revision
   LABLAXIS: fpga_rev
+
+esa_lvl5:
+  <<: *metadata_default
+  CATDESC: ESA LVL5 ID.
+  FIELDNAM: ESA LVL5
+  LABLAXIS: ID

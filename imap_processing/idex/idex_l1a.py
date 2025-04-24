@@ -10,7 +10,7 @@ Examples
     from imap_processing.idex.idex_l1a import PacketParser
 
     l0_file = "imap_processing/tests/idex/imap_idex_l0_sci_20231214_v001.pkts"
-    l1a_data = PacketParser(l0_file, data_version)
+    l1a_data = PacketParser(l0_file)
     l1a_data.write_l1a_cdf()
 """
 
@@ -57,11 +57,9 @@ class PacketParser:
     ----------
     packet_file : str
         The path and filename to the L0 file to read.
-    data_version : str
-        The version of the data product being created.
     """
 
-    def __init__(self, packet_file: Union[str, Path], data_version: str) -> None:
+    def __init__(self, packet_file: Union[str, Path]) -> None:
         """
         Read a L0 pkts file and perform all of the decom work.
 
@@ -69,8 +67,6 @@ class PacketParser:
         ----------
         packet_file : pathlib.Path | str
           The path and filename to the L0 file to read.
-        data_version : str
-            The version of the data product being created.
 
         Notes
         -----
@@ -85,7 +81,7 @@ class PacketParser:
                 if scitype == Scitype.FIRST_PACKET:
                     # Initial packet for new dust event
                     # Further packets will fill in data
-                    dust_events[event_number] = RawDustEvent(packet, data_version)
+                    dust_events[event_number] = RawDustEvent(packet)
                 elif event_number not in dust_events:
                     raise KeyError(
                         f"Have not receive header information from event number\
@@ -102,7 +98,7 @@ class PacketParser:
         ]
 
         self.data = xr.concat(processed_dust_impact_list, dim="epoch")
-        idex_attrs = get_idex_attrs(data_version)
+        idex_attrs = get_idex_attrs()
         self.data.attrs = idex_attrs.get_global_attributes("imap_idex_l1a_sci")
 
         # Add high and low sample rate coords
@@ -162,10 +158,10 @@ def _read_waveform_bits(waveform_raw: str, high_sample: bool = True) -> list[int
 
     Returns
     -------
-    ints : list
+    ints : list[int]
         List of the waveform.
     """
-    ints = []
+    ints: list[int] = []
     if high_sample:
         for i in range(0, len(waveform_raw), 32):
             # 32-bit chunks, divided up into 2, 10, 10, 10
@@ -198,8 +194,6 @@ class RawDustEvent:
     ----------
     header_packet : space_packet_parser.packets.CCSDSPacket
         The FPGA metadata event header.
-    data_version : str
-        The version of the data product being created.
 
     Attributes
     ----------
@@ -252,9 +246,7 @@ class RawDustEvent:
     MAX_HIGH_BLOCKS = 16
     MAX_LOW_BLOCKS = 64
 
-    def __init__(
-        self, header_packet: space_packet_parser.packets.CCSDSPacket, data_version: str
-    ) -> None:
+    def __init__(self, header_packet: space_packet_parser.packets.CCSDSPacket) -> None:
         """
         Initialize a raw dust event, with an FPGA Header Packet from IDEX.
 
@@ -268,8 +260,6 @@ class RawDustEvent:
         ----------
         header_packet : space_packet_parser.packets.CCSDSPacket
             The FPGA metadata event header.
-        data_version : str
-            Data version for CDF filename, in the format ``vXXX``.
         """
         # Calculate the impact time in seconds since epoch
         self.impact_time = 0
@@ -301,7 +291,7 @@ class RawDustEvent:
         self.Ion_Grid_bits = ""
 
         self.compressed = self.telemetry_items["idx__sci0comp"]
-        self.cdf_attrs = get_idex_attrs(data_version)
+        self.cdf_attrs = get_idex_attrs()
 
     def _append_raw_data(self, scitype: Scitype, bits: str) -> None:
         """
@@ -413,7 +403,6 @@ class RawDustEvent:
         #   the last 4 bits.
         num_low_sample_pretrigger_blocks = (n_blocks >> 6) & 0b111111
         num_high_sample_pretrigger_blocks = (n_blocks >> 16) & 0b1111
-
         # Calculate the low and high sample trigger times based on the high gain delay
         # and the number of high sample/low sample pretrigger blocks
         self.low_sample_trigger_time = (
@@ -442,15 +431,16 @@ class RawDustEvent:
 
         Returns
         -------
-        ints : list
+        ints : list[int]
             List of the high sample waveform.
         """
         samples = self.MAX_HIGH_BLOCKS * self.NUMBER_SAMPLES_PER_HIGH_SAMPLE_BLOCK
+        ints: list[int] = []
         if self.compressed.raw_value == 1:
-            ints = rice_decode(waveform_raw, nbit10=True, sample_count=samples)
+            ints.extend(rice_decode(waveform_raw, nbit10=True, sample_count=samples))
             ints = ints[:-3]
         else:
-            ints = _read_waveform_bits(waveform_raw, high_sample=True)
+            ints.extend(_read_waveform_bits(waveform_raw, high_sample=True))
         return ints
 
     def _parse_low_sample_waveform(self, waveform_raw: str) -> list[int]:
@@ -467,14 +457,15 @@ class RawDustEvent:
 
         Returns
         -------
-        ints : list
+        ints : list[int]
             List of processed low sample waveform.
         """
         samples = self.MAX_LOW_BLOCKS * self.NUMBER_SAMPLES_PER_LOW_SAMPLE_BLOCK
+        ints: list[int] = []
         if self.compressed.raw_value == 1:
-            ints = rice_decode(waveform_raw, nbit10=False, sample_count=samples)
+            ints.extend(rice_decode(waveform_raw, nbit10=False, sample_count=samples))
         else:
-            ints = _read_waveform_bits(waveform_raw, high_sample=False)
+            ints.extend(_read_waveform_bits(waveform_raw, high_sample=False))
         return ints
 
     def _calc_low_sample_resolution(self, num_samples: int) -> npt.NDArray:
@@ -652,14 +643,9 @@ class RawDustEvent:
         return dataset
 
 
-def get_idex_attrs(data_version: str) -> ImapCdfAttributes:
+def get_idex_attrs() -> ImapCdfAttributes:
     """
     Load in CDF attributes for IDEX instrument.
-
-    Parameters
-    ----------
-    data_version : str
-        Data version for CDF filename, in the format "vXXX".
 
     Returns
     -------
@@ -669,5 +655,4 @@ def get_idex_attrs(data_version: str) -> ImapCdfAttributes:
     idex_attrs = ImapCdfAttributes()
     idex_attrs.add_instrument_global_attrs("idex")
     idex_attrs.add_instrument_variable_attrs("idex", "l1a")
-    idex_attrs.add_global_attribute("Data_version", data_version)
     return idex_attrs

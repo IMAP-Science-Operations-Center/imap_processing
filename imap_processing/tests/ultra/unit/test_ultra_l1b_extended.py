@@ -4,8 +4,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from imap_processing import imap_module_directory
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
+from imap_processing.ultra.l1b.lookup_utils import get_angular_profiles
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     CoinType,
     StartType,
@@ -16,32 +18,37 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_ctof,
     get_de_energy_kev,
     get_de_velocity,
+    get_efficiency,
     get_energy_pulse_height,
     get_energy_ssd,
     get_eventtimes,
     get_front_x_position,
     get_front_y_position,
+    get_fwhm,
     get_path_length,
     get_ph_tof_and_back_positions,
     get_phi_theta,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
+    interpolate_fwhm,
 )
 
+TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
-@pytest.fixture()
+
+@pytest.fixture
 def test_fixture(de_dataset, events_fsw_comparison_theta_0):
     """Fixture to compute and return yf and related data."""
     # Remove start_type with fill values
     de_dataset = de_dataset.where(
-        de_dataset["START_TYPE"] != np.iinfo(np.int64).min, drop=True
+        de_dataset["start_type"] != np.iinfo(np.int64).min, drop=True
     )
 
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[df["StartType"] != -1]
 
     d, yf = get_front_y_position(
-        de_dataset["START_TYPE"].data, df_filt.Yb.values.astype("float")
+        de_dataset["start_type"].data, df_filt.Yb.values.astype("float")
     )
 
     return df_filt, d, yf, de_dataset
@@ -55,8 +62,9 @@ def test_get_front_x_position(
     df_filt, _, _, de_dataset = test_fixture
 
     xf = get_front_x_position(
-        de_dataset["START_TYPE"].data,
-        de_dataset["START_POS_TDC"].data,
+        de_dataset["start_type"].data,
+        de_dataset["start_pos_tdc"].data,
+        "ultra45",
     )
 
     assert xf == pytest.approx(df_filt["Xf"].astype("float"), 1e-5)
@@ -96,7 +104,7 @@ def test_get_ph_tof_and_back_positions(
     )
 
     ph_indices = np.nonzero(
-        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
+        np.isin(de_dataset["stop_type"], [StopType.Top.value, StopType.Bottom.value])
     )[0]
 
     selected_rows = df_filt.iloc[ph_indices]
@@ -114,7 +122,9 @@ def test_get_ssd_back_position_and_tof_offset(
 ):
     """Tests get_ssd_back_position function."""
     _, _, _, de_dataset = test_fixture
-    yb, tof_offset, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset)
+    yb, tof_offset, ssd_number = get_ssd_back_position_and_tof_offset(
+        de_dataset, "ultra45"
+    )
 
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[(df["StartType"] != -1) & (df["StopType"] >= 8)]
@@ -159,7 +169,7 @@ def test_get_coincidence_positions(test_fixture):
 
     # Filter for stop type.
     indices = np.nonzero(
-        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
+        np.isin(de_dataset["stop_type"], [StopType.Top.value, StopType.Bottom.value])
     )[0]
     de_filtered = de_dataset.isel(epoch=indices)
     rows = df_filt.iloc[indices]
@@ -182,17 +192,17 @@ def test_calculate_etof_xc(test_fixture):
     )
     # Filter based on STOP_TYPE.
     indices = np.nonzero(
-        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
+        np.isin(de_dataset["stop_type"], [StopType.Top.value, StopType.Bottom.value])
     )[0]
     de_filtered = de_dataset.isel(epoch=indices)
     df_filtered = df_filt.iloc[indices]
 
     # Filter for COIN_TYPE Top and Bottom.
-    index_top = np.nonzero(np.isin(de_filtered["COIN_TYPE"], CoinType.Top.value))[0]
+    index_top = np.nonzero(np.isin(de_filtered["coin_type"], CoinType.Top.value))[0]
     de_top = de_filtered.isel(epoch=index_top)
     df_top = df_filtered.iloc[index_top]
 
-    index_bottom = np.nonzero(np.isin(de_filtered["COIN_TYPE"], CoinType.Bottom.value))[
+    index_bottom = np.nonzero(np.isin(de_filtered["coin_type"], CoinType.Bottom.value))[
         0
     ]
     de_bottom = de_filtered.isel(epoch=index_bottom)
@@ -231,7 +241,7 @@ def test_get_de_velocity(test_fixture):
         for col in ["Xf", "Yf", "Xb", "Yb", "d", "TOF"]
     )
 
-    v = get_de_velocity(
+    v, vhat, r = get_de_velocity(
         (test_xf, test_yf),
         (test_xb, test_yb),
         test_d,
@@ -258,6 +268,42 @@ def test_get_de_velocity(test_fixture):
         atol=1e-01,
         rtol=0,
     )
+    np.testing.assert_allclose(
+        vhat[test_tof > 0][:, 0],
+        df_ph["vhatX"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
+    )
+    np.testing.assert_allclose(
+        vhat[test_tof > 0][:, 1],
+        df_ph["vhatY"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
+    )
+    np.testing.assert_allclose(
+        vhat[test_tof > 0][:, 2],
+        df_ph["vhatZ"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
+    )
+    np.testing.assert_allclose(
+        r[test_tof > 0][:, 0],
+        -df_ph["vhatX"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
+    )
+    np.testing.assert_allclose(
+        r[test_tof > 0][:, 1],
+        -df_ph["vhatY"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
+    )
+    np.testing.assert_allclose(
+        r[test_tof > 0][:, 2],
+        -df_ph["vhatZ"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
+    )
 
 
 def test_get_ssd_tof(test_fixture):
@@ -266,7 +312,7 @@ def test_get_ssd_tof(test_fixture):
     df_ssd = df_filt[np.isin(df_filt["StopType"], [StopType.SSD.value])]
     test_xf = df_filt["Xf"].astype("float").values
 
-    ssd_tof = get_ssd_tof(de_dataset, test_xf)
+    ssd_tof = get_ssd_tof(de_dataset, test_xf, "ultra45")
 
     np.testing.assert_allclose(
         ssd_tof, df_ssd["TOF"].astype("float"), atol=1e-05, rtol=0
@@ -289,7 +335,7 @@ def test_get_de_energy_kev(test_fixture):
         for col in ["Xf", "Yf", "Xb", "Yb", "d", "TOF"]
     )
 
-    v = get_de_velocity(
+    v, v_hat, r_hat = get_de_velocity(
         (test_xf, test_yf),
         (test_xb, test_yb),
         test_d,
@@ -308,7 +354,7 @@ def test_get_energy_ssd(test_fixture):
     """Tests get_energy_ssd function."""
     df_filt, _, _, de_dataset = test_fixture
     df_ssd = df_filt[np.isin(df_filt["StopType"], [StopType.SSD.value])]
-    _, _, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset)
+    _, _, ssd_number = get_ssd_back_position_and_tof_offset(de_dataset, "ultra45")
     energy = get_energy_ssd(de_dataset, ssd_number)
     test_energy = df_ssd["Energy"].astype("float")
 
@@ -320,14 +366,18 @@ def test_get_energy_pulse_height(test_fixture):
     df_filt, _, _, de_dataset = test_fixture
     df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
     ph_indices = np.nonzero(
-        np.isin(de_dataset["STOP_TYPE"], [StopType.Top.value, StopType.Bottom.value])
+        np.isin(de_dataset["stop_type"], [StopType.Top.value, StopType.Bottom.value])
     )[0]
 
     test_xb = df_filt["Xb"].astype("float").values
     test_yb = df_filt["Yb"].astype("float").values
 
     energy = get_energy_pulse_height(
-        de_dataset["STOP_TYPE"].data, de_dataset["ENERGY_PH"].data, test_xb, test_yb
+        de_dataset["stop_type"].data,
+        de_dataset["energy_ph"].data,
+        test_xb,
+        test_yb,
+        "ultra45",
     )
     test_energy = df_ph["Energy"].astype("float")
 
@@ -427,31 +477,117 @@ def test_get_eventtimes(test_fixture, use_fake_spin_data_for_time):
     use_fake_spin_data_for_time(0, 141 * 15)
 
     event_times, spin_starts, spin_period_sec = get_eventtimes(
-        de_dataset["SPIN"].values, de_dataset["PHASE_ANGLE"].values
+        de_dataset["spin"].values, de_dataset["phase_angle"].values
     )
 
     spin_df = get_spin_data()
-    expected_min_df = spin_df[spin_df["spin_number"] == de_dataset["SPIN"].values.min()]
-    expected_max_df = spin_df[spin_df["spin_number"] == de_dataset["SPIN"].values.max()]
+    expected_min_df = spin_df[spin_df["spin_number"] == de_dataset["spin"].values.min()]
+    expected_max_df = spin_df[spin_df["spin_number"] == de_dataset["spin"].values.max()]
     spin_period_sec_min = expected_min_df["spin_period_sec"].values[0]
     spin_period_sec_max = expected_max_df["spin_period_sec"].values[0]
 
     spin_start_min = (
-        expected_min_df["spin_start_sec"] + expected_min_df["spin_start_subsec"] / 1000
+        expected_min_df["spin_start_sec_sclk"]
+        + expected_min_df["spin_start_subsec_sclk"] / 1e6
     )
     spin_start_max = (
-        expected_max_df["spin_start_sec"] + expected_max_df["spin_start_subsec"] / 1000
+        expected_max_df["spin_start_sec_sclk"]
+        + expected_max_df["spin_start_subsec_sclk"] / 1e6
     )
 
     assert spin_start_min.values[0] == spin_starts.min()
     assert spin_start_max.values[0] == spin_starts.max()
 
     event_times_min = spin_start_min.values[0] + spin_period_sec_min * (
-        de_dataset["PHASE_ANGLE"][0] / 720
+        de_dataset["phase_angle"][0] / 720
     )
     event_times_max = spin_start_max.values[0] + spin_period_sec_max * (
-        de_dataset["PHASE_ANGLE"][-1] / 720
+        de_dataset["phase_angle"][-1] / 720
     )
 
     assert event_times_min == event_times.min()
     assert event_times_max == event_times.max()
+
+
+def test_interpolate_fwhm():
+    """Tests interpolate_fwhm function."""
+
+    # Test interpolation of FWHM values
+    test_phi = np.linspace(1, 53, 40)
+    test_theta = np.linspace(-44, 43, 40)
+    test_energy = np.full(test_theta.shape, 10)
+    lt_table = get_angular_profiles("left", "ultra45")
+
+    phi_interp, theta_interp = interpolate_fwhm(
+        lt_table, test_energy, test_phi, test_theta
+    )
+
+    lt_table_e10 = lt_table[lt_table.Energy == 10]
+    lt_table_test = lt_table_e10.sort_values("phi_degrees")
+    phi_fwhm_expected = np.interp(
+        test_phi, lt_table_test.phi_degrees, lt_table_test.phi_fwhm
+    )
+
+    np.testing.assert_allclose(phi_fwhm_expected, phi_interp, atol=1e-03, rtol=0)
+
+    # Test empty input
+    phi_interp, theta_interp = interpolate_fwhm(
+        lt_table, np.array([]), np.array([]), np.array([])
+    )
+
+    assert phi_interp.size == 0
+    assert theta_interp.size == 0
+
+
+def test_get_fwhm():
+    """Tests get_fwhm function."""
+
+    test_phi = np.linspace(1, 53, 40)
+    test_theta = np.linspace(-44, 43, 40)
+    test_energy = np.full(test_phi.shape, 10)
+    test_start_type = np.empty(test_theta.shape, dtype=int)
+    test_start_type[:20] = 1  # First half -> Left
+    test_start_type[20:] = 2  # Second half -> Right
+
+    phi_interp, theta_interp = get_fwhm(
+        start_type=test_start_type,
+        sensor="ultra45",
+        energy=test_energy,
+        phi_inst=test_phi,
+        theta_inst=test_theta,
+    )
+
+    idx_left = test_start_type == StartType.Left.value
+    test_phi_left = test_phi[idx_left]
+
+    lt_table = get_angular_profiles("left", "ultra45")
+    lt_table_e10 = lt_table[lt_table.Energy == 10]
+    lt_table_sorted = lt_table_e10.sort_values("phi_degrees")
+
+    phi_expected_left = np.interp(
+        test_phi_left,
+        lt_table_sorted.phi_degrees.values,
+        lt_table_sorted.phi_fwhm.values,
+    )
+
+    np.testing.assert_allclose(
+        phi_interp[idx_left], phi_expected_left, atol=1e-3, rtol=0
+    )
+
+    assert phi_interp.shape == test_phi.shape
+    assert theta_interp.shape == test_theta.shape
+
+
+@pytest.mark.external_test_data
+def test_get_efficiency():
+    """Tests get_efficiency function."""
+
+    # spot check
+    theta = np.array([-52.7, 52.7, -52.7, -52.7])
+    phi = np.array([-60, 60, -60, -50])
+    energy = np.array([3, 80, 39.75, 7])
+
+    efficiency = get_efficiency(energy, phi, theta)
+    expected_efficiency = np.array([0.0593281, 0.21803386, 0.0593281, 0.0628940])
+
+    np.testing.assert_allclose(efficiency, expected_efficiency, atol=1e-03, rtol=0)

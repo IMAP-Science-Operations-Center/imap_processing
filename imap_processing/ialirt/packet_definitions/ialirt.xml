@@ -442,37 +442,44 @@
 			</xtce:Parameter>
 			<!-- MAG -->
 			<!-- SWAPI -->
+			<xtce:Parameter name="SWAPI_SHCOARSE" parameterTypeRef="uint32">
+				<xtce:LongDescription>SWAPI MET at End of Data Acquisition</xtce:LongDescription>
+			</xtce:Parameter>
 			<xtce:Parameter name="SWAPI_ACQ" parameterTypeRef="uint32">
 				<xtce:LongDescription>SWAPI Acquisition Time</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWAPI_FLAG" parameterTypeRef="swapi_validity_enum">
-				<xtce:LongDescription>1 = valid, 0 = invalid</xtce:LongDescription>
+				<xtce:LongDescription>
+                    Valid bit:
+                    '1' -- valid,
+                    '0' -- invalid
+                </xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWAPI_RESERVED" parameterTypeRef="uint15">
 				<xtce:LongDescription>SWAPI Instrument Reserved</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_SEQ" parameterTypeRef="uint4">
+			<xtce:Parameter name="SWAPI_SEQ_NUMBER" parameterTypeRef="uint4">
 				<xtce:LongDescription>Sequence Number in Table</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWAPI_VERSION" parameterTypeRef="uint4">
 				<xtce:LongDescription>Sweep Table Version Number</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_COIN_1" parameterTypeRef="uint16">
+			<xtce:Parameter name="SWAPI_COIN_CNT0" parameterTypeRef="uint16">
 				<xtce:LongDescription>Coincidence Counts During the First 1/6 Sec</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_COIN_2" parameterTypeRef="uint16">
+			<xtce:Parameter name="SWAPI_COIN_CNT1" parameterTypeRef="uint16">
 				<xtce:LongDescription>Coincidence Counts During the Second 1/6 Sec</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_COIN_3" parameterTypeRef="uint16">
+			<xtce:Parameter name="SWAPI_COIN_CNT2" parameterTypeRef="uint16">
 				<xtce:LongDescription>Coincidence Counts During the Third 1/6 Sec</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_COIN_4" parameterTypeRef="uint16">
+			<xtce:Parameter name="SWAPI_COIN_CNT3" parameterTypeRef="uint16">
 				<xtce:LongDescription>Coincidence Counts During the Fourth 1/6 Sec</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_COIN_5" parameterTypeRef="uint16">
+			<xtce:Parameter name="SWAPI_COIN_CNT4" parameterTypeRef="uint16">
 				<xtce:LongDescription>Coincidence Counts During the Fifth 1/6 Sec</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_COIN_6" parameterTypeRef="uint16">
+			<xtce:Parameter name="SWAPI_COIN_CNT5" parameterTypeRef="uint16">
 				<xtce:LongDescription>Coincidence Counts During the Sixth 1/6 Sec</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWAPI_SPARE" parameterTypeRef="uint8">
@@ -683,17 +690,18 @@
 					<xtce:ParameterRefEntry parameterRef="MAG_DATA"/>
 					<!-- MAG -->
 					<!-- SWAPI -->
+					<xtce:ParameterRefEntry parameterRef="SWAPI_SHCOARSE"/>
 					<xtce:ParameterRefEntry parameterRef="SWAPI_ACQ"/>
 					<xtce:ParameterRefEntry parameterRef="SWAPI_FLAG"/>
 					<xtce:ParameterRefEntry parameterRef="SWAPI_RESERVED"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_SEQ"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_SEQ_NUMBER"/>
 					<xtce:ParameterRefEntry parameterRef="SWAPI_VERSION"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_1"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_2"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_3"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_4"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_5"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_6"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_CNT0"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_CNT1"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_CNT2"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_CNT3"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_CNT4"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_CNT5"/>
 					<xtce:ParameterRefEntry parameterRef="SWAPI_SPARE"/>
 					<!-- SWAPI -->
 					<!-- CoDICE HI -->

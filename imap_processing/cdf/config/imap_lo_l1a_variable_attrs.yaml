@@ -110,7 +110,7 @@ esa_step_coord:
 shcoarse:
   <<: *default_uint32
   CATDESC: Mission Elapsed Time
-  DEPEND_0: epoch
+  DEPEND_1: shcoarse
   FIELDNAM: Spacecraft Time
   Units: 'ns'
   VAR_TYPE: support_data

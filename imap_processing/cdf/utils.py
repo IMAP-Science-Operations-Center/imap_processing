@@ -1,9 +1,11 @@
 """Various utility functions to support creation of CDF files."""
 
+from __future__ import annotations
+
 import logging
 import re
+import warnings
 from pathlib import Path
-from typing import Optional
 
 import imap_data_access
 import numpy as np
@@ -26,8 +28,8 @@ def load_cdf(
 
     Parameters
     ----------
-    file_path : Path
-        The path to the CDF file.
+    file_path : Path or ImapFilePath
+        The path to the CDF file or ImapFilePath object.
     remove_xarray_attrs : bool
         Whether to remove the xarray attributes that get injected by the
         cdf_to_xarray function from the output xarray.Dataset. Default is True.
@@ -39,6 +41,9 @@ def load_cdf(
     dataset : xarray.Dataset
         The ``xarray`` dataset for the CDF file.
     """
+    if isinstance(file_path, imap_data_access.ImapFilePath):
+        file_path = file_path.construct_path()
+
     dataset = cdf_to_xarray(file_path, kwargs)
 
     # cdf_to_xarray converts single-value attributes to lists
@@ -61,7 +66,9 @@ def load_cdf(
 
 def write_cdf(
     dataset: xr.Dataset,
-    parent_files: Optional[list] = None,
+    *,
+    start_date: str | None = None,
+    repointing: str | None = None,
     **extra_cdf_kwargs: dict,
 ) -> Path:
     """
@@ -71,17 +78,25 @@ def write_cdf(
     fills in the final attributes, and converts the whole dataset to a CDF.
     The date in the file name is determined by the time of the first epoch in the
     xarray Dataset.  The first 3 file name fields (mission, instrument, level) are
-    determined by the "Logical_source" attribute.  The version is determiend from
+    determined by the "Logical_source" attribute.  The version is determined from
     "Data_version".
+
+    The start_date and repointing parameters are used to override the computed values.
+    If these are not included, start_date is generated from the first epoch in the
+    dataset and repointing is retrieved from the dataset attributes (or not included if
+    the attribute is not present).
 
     Parameters
     ----------
     dataset : xarray.Dataset
         The dataset object to convert to a CDF.
-    parent_files : list of Path, optional
-        List of parent files that were used to make this file. These get added to
-        the ``Parents`` global attribute:
-        https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html.
+    start_date : str
+        In the output filename, this is the start_date. If not provided or None,
+        the first epoch in the dataset is used.
+    repointing : str
+        The repointing number to use in the output filename. If not provided or None,
+        the repointing number is retrieved from the dataset attributes. If none are
+        provided, it is excluded from the filename.
     **extra_cdf_kwargs : dict
         Additional keyword arguments to pass to the ``xarray_to_cdf`` function.
 
@@ -96,26 +111,35 @@ def write_cdf(
     # Convert J2000 epoch referenced data to datetime64
     # TODO: This implementation of epoch to time string results in an error of
     #       5 seconds due to 5 leap-second occurrences since the J2000 epoch.
-    dt64 = TTJ2000_EPOCH + dataset["epoch"].values[0].astype("timedelta64[ns]")
-    start_time = np.datetime_as_string(dt64, unit="D").replace("-", "")
+    # TODO: Create a ttj2000_to_datetime function to handle this conversion
+    if start_date is None:
+        # If no start time is included, then use the first epoch in the dataset
+        dt64 = TTJ2000_EPOCH + dataset["epoch"].values[0].astype("timedelta64[ns]")
+        start_date = np.datetime_as_string(dt64, unit="D").replace("-", "")
 
-    # Will now accept vXXX or XXX formats, as batch starter sends versions as vXXX.
-    r = re.compile(r"v\d{3}")
-    if (
-        not isinstance(dataset.attrs["Data_version"], str)
-        or r.match(dataset.attrs["Data_version"]) is None
-    ):
-        version = f"v{int(dataset.attrs['Data_version']):03d}"  # vXXX
-    else:
-        version = dataset.attrs["Data_version"]
-    repointing = dataset.attrs.get("Repointing", None)
+    version = dataset.attrs.get("Data_version", None)
+    if version is None:
+        warnings.warn(
+            "No Data_version attribute found in dataset. Using default v999.",
+            stacklevel=2,
+        )
+        version = "v999"
+    elif not re.match(r"v\d{3}", version):
+        raise ValueError(
+            f"The Data_version attribute {version} does not match expected format vXXX."
+        )
+
+    # TODO: Do we need to retrieve this from the dataset?
+    if repointing is None:
+        repointing = dataset.attrs.get("Repointing", None)
+    repointing_int = int(repointing[-5:]) if repointing else None
     science_file = imap_data_access.ScienceFilePath.generate_from_inputs(
         instrument=instrument,
         data_level=data_level,
         descriptor=descriptor,
-        start_time=start_time,
+        start_time=start_date,
         version=version,
-        repointing=repointing,
+        repointing=repointing_int,
     )
     file_path = Path(science_file.construct_path())
     if not file_path.parent.exists():
@@ -128,18 +152,11 @@ def write_cdf(
     dataset.attrs["Logical_file_id"] = file_path.stem
     # Add the processing version to the dataset attributes
     dataset.attrs["ground_software_version"] = imap_processing._version.__version__
-    # Add any parent files to the dataset attributes
-    if parent_files:
-        # Include the current files if there are any and include just the filename
-        # [file1.txt, file2.cdf, ...]
-        dataset.attrs["Parents"] = dataset.attrs.get("Parents", []) + [
-            parent_file.name for parent_file in parent_files
-        ]
 
     # Convert the xarray object to a CDF
     if "l1" in data_level:
-        if "istp" not in extra_cdf_kwargs:
-            extra_cdf_kwargs["istp"] = False  # type: ignore
+        if "terminate_on_warning" not in extra_cdf_kwargs:
+            extra_cdf_kwargs["terminate_on_warning"] = False  # type: ignore
     else:
         if "terminate_on_warning" not in extra_cdf_kwargs:
             extra_cdf_kwargs["terminate_on_warning"] = True  # type: ignore
@@ -147,7 +164,6 @@ def write_cdf(
             extra_cdf_kwargs["istp"] = True  # type: ignore
 
     xarray_to_cdf(dataset, str(file_path), **extra_cdf_kwargs)
-
     return file_path
 
 
@@ -185,7 +201,7 @@ def parse_filename_like(filename_like: str) -> re.Match:
         r"(?P<descriptor>[^_]+)"  # Required descriptor
         r"(_(?P<start_date>\d{8}))?"  # Optional start date
         r"(-repoint(?P<repointing>\d{5}))?"  # Optional repointing field
-        r"(?:_v(?P<version>\d{3}))?"  # Optional version
+        r"(?:_(?P<version>v\d{3}))?"  # Optional version
         r"(?:\.(?P<extension>cdf|pkts))?$"  # Optional extension
     )
     match = re.match(regex_str, filename_like)
