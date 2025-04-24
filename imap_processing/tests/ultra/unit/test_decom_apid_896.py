@@ -27,6 +27,8 @@ def test_image_raw_events_decom(
 
     df = pd.read_csv(events_test_path, index_col="MET")
 
+    # # Check all values of each column are as expected,
+    # except for those set to fill value
     np.testing.assert_array_equal(
         df["SID"].values[df["SID"].values != -1],
         decom_ultra["sid"].values[df["SID"].values != -1],
@@ -126,6 +128,8 @@ def test_image_raw_events_decom_flags(decom_test_data, events_test_path):
     """This function reads validation data and checks that decom data
     matches validation data for image rate packet"""
 
+    # # Check all values of each column are as expected,
+    # except for those set to fill value
     decom_ultra = decom_test_data
     df = pd.read_csv(events_test_path, index_col="MET")
 
