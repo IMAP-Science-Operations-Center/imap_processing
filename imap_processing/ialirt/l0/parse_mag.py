@@ -2,6 +2,7 @@
 
 import logging
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import xarray as xr
@@ -192,14 +193,14 @@ def get_time(
     ][pkt_counter == 2]
 
     time_data = {
-        "pri_coarsetm": int(pri_coarsetm.item()),
-        "pri_fintm": int(pri_fintm.item()),
-        "sec_coarsetm": int(sec_coarsetm.item()),
-        "sec_fintm": int(sec_fintm.item()),
+        "pri_coarsetm": cast(int, pri_coarsetm.item()),
+        "pri_fintm": cast(int, pri_fintm.item()),
+        "sec_coarsetm": cast(int, sec_coarsetm.item()),
+        "sec_fintm": cast(int, sec_fintm.item()),
     }
 
-    primary_time = TimeTuple(int(pri_coarsetm), int(pri_fintm))
-    secondary_time = TimeTuple(int(sec_coarsetm), int(sec_fintm))
+    primary_time = TimeTuple(time_data["pri_coarsetm"], time_data["pri_fintm"])
+    secondary_time = TimeTuple(time_data["sec_coarsetm"], time_data["sec_fintm"])
     time_data["pri_met"] = primary_time.to_seconds()
     time_data["primary_ttj2000ns"] = met_to_ttj2000ns(time_data["pri_met"])
     time_data["primary_epoch"] = shift_time(
