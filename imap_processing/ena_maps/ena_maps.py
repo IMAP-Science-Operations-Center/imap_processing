@@ -219,6 +219,9 @@ class PointingSet(ABC):
         The reference Spice frame of the pointing set.
     """
 
+    # The minimum set of class attributes for any PointingSet to function with
+    # a SkyMap using only the PUSH method of projecting are defined here.
+
     # Attributes that are set in the ABC __init__ method
     data: xr.Dataset
     spice_reference_frame: geometry.SpiceFrame
@@ -336,6 +339,12 @@ class RectangularPointingSet(PointingSet):
         If multiple epochs are found in the dataset.
     """
 
+    # In addition to the required attributes defined in the base PointingSet
+    # class, the following attributes are required for a RectangularPointingSet
+    # to be projected using the PULL method.
+    tiling_type: SkyTilingType = SkyTilingType.RECTANGULAR
+    sky_grid: spatial_utils.AzElSkyGrid
+
     def __init__(
         self,
         dataset: xr.Dataset,
@@ -348,7 +357,6 @@ class RectangularPointingSet(PointingSet):
         if len(np.unique(self.epoch)) > 1:
             raise ValueError("Multiple epochs found in the dataset.")
 
-        self.tiling_type = SkyTilingType.RECTANGULAR
         self.spatial_coords = (
             CoordNames.AZIMUTH_L1C.value,
             CoordNames.ELEVATION_L1C.value,
@@ -367,12 +375,12 @@ class RectangularPointingSet(PointingSet):
                 "Azimuth and elevation bin spacing do not match: "
                 f"az {az_bin_delta[0]} != el {el_bin_delta[0]}."
             )
-        self.spacing_deg = az_bin_delta[0]
+        spacing_deg = az_bin_delta[0]
 
         # Build the az/azimuth and el/elevation grids with an AzElSkyGrid object
         # and check that the 1D axes match the dataset's az and el.
         self.sky_grid = spatial_utils.AzElSkyGrid(
-            spacing_deg=self.spacing_deg,
+            spacing_deg=spacing_deg,
         )
 
         for dim, constructed_bins in zip(
@@ -403,12 +411,6 @@ class RectangularPointingSet(PointingSet):
         )
         self.num_points = self.az_el_points.shape[0]
 
-        # Also store the bin edges for the pointing set to allow for "pull" method
-        # of index matching (not yet implemented).
-        # These are 1D arrays of different lengths and cannot be stacked.
-        self.az_bin_edges = self.sky_grid.az_bin_edges
-        self.el_bin_edges = self.sky_grid.el_bin_edges
-
 
 class UltraPointingSet(PointingSet):
     """
@@ -436,6 +438,13 @@ class UltraPointingSet(PointingSet):
         If multiple epochs are found in the dataset.
     """
 
+    # In addition to the required attributes defined in the base PointingSet
+    # class, the following attributes are required for a UltraPointingSet
+    # to be projected using the PULL method.
+    tiling_type: SkyTilingType = SkyTilingType.HEALPIX
+    nside: int
+    nested: bool
+
     def __init__(
         self,
         dataset: xr.Dataset,
@@ -448,8 +457,7 @@ class UltraPointingSet(PointingSet):
         if len(np.unique(self.epoch)) > 1:
             raise ValueError("Multiple epochs found in the dataset.")
 
-        # Set the tiling type and number of points
-        self.tiling_type = SkyTilingType.HEALPIX
+        # Set the spatial coordinates and number of points
         self.spatial_coords = (CoordNames.HEALPIX_INDEX.value,)
         self.num_points = self.data[CoordNames.HEALPIX_INDEX.value].size
         self.nside = hp.npix_to_nside(self.num_points)
@@ -463,7 +471,7 @@ class UltraPointingSet(PointingSet):
         )
 
         # Get the azimuth and elevation coordinates of the healpix pixel centers (deg)
-        self.azimuth_pixel_center, self.elevation_pixel_center = hp.pix2ang(
+        azimuth_pixel_center, elevation_pixel_center = hp.pix2ang(
             nside=self.nside,
             ipix=np.arange(self.num_points),
             nest=self.nested,
@@ -476,7 +484,7 @@ class UltraPointingSet(PointingSet):
         # (e.g. "longitude"/"latitude" vs "azimuth"/"elevation").
         for dim, constructed_bins in zip(
             [CoordNames.AZIMUTH_L1C.value, CoordNames.ELEVATION_L1C.value],
-            [self.azimuth_pixel_center, self.elevation_pixel_center],
+            [azimuth_pixel_center, elevation_pixel_center],
         ):
             if not np.allclose(
                 self.data[dim],
@@ -494,7 +502,7 @@ class UltraPointingSet(PointingSet):
         # of shape (num_points, 2) where column 0 is the lon/az
         # and column 1 is the lat/el.
         self.az_el_points = np.column_stack(
-            (self.azimuth_pixel_center, self.elevation_pixel_center)
+            (azimuth_pixel_center, elevation_pixel_center)
         )
 
     def __repr__(self) -> str:

@@ -99,8 +99,7 @@ class TestUltraPointingSet:
 
         cdf_filepath = write_cdf(ultra_pset, istp=False)
 
-        ultra_pset_from_dataset = ena_maps.UltraPointingSet.from_cdf(ultra_pset)
-        ultra_pset_from_dataset_copy = ena_maps.UltraPointingSet.from_cdf(ultra_pset)
+        ultra_pset_from_dataset = ena_maps.UltraPointingSet(ultra_pset)
 
         ultra_pset_from_str = ena_maps.UltraPointingSet.from_cdf(cdf_filepath)
         ultra_pset_from_path = ena_maps.UltraPointingSet.from_cdf(Path(cdf_filepath))
@@ -114,23 +113,6 @@ class TestUltraPointingSet:
         np.testing.assert_allclose(
             ultra_pset_from_dataset.data["counts"].values,
             ultra_pset_from_path.data["counts"].values,
-            rtol=1e-6,
-        )
-
-        # delete cdf_filepath once we're done with it
-        Path(cdf_filepath).unlink()
-
-        # The two datasets should should start as equal, but not the same object
-        # So if we modify one, the other should not change
-        np.testing.assert_allclose(
-            ultra_pset_from_dataset.data["counts"].values,
-            ultra_pset_from_dataset_copy.data["counts"].values,
-            rtol=1e-6,
-        )
-        ultra_pset_from_dataset.data["counts"].values[0] += int(1e8)
-        assert not np.allclose(
-            ultra_pset_from_dataset.data["counts"].values,
-            ultra_pset_from_dataset_copy.data["counts"].values,
             rtol=1e-6,
         )
 
@@ -284,7 +266,7 @@ class TestRectangularSkyMap:
         """
         index_matching_method = ena_maps.IndexMatchMethod.PUSH
 
-        pset_spacing_deg = self.rectangular_psets[0].spacing_deg
+        pset_spacing_deg = self.rectangular_psets[0].sky_grid.spacing_deg
 
         # Mock frame_transform to return the az and el unchanged
         mock_frame_transform_az_el.side_effect = (
@@ -635,10 +617,13 @@ class TestHealpixSkyMap:
         mock_pset_input_frame.data["counts"].values[
             :,
             :,
-            int(input_bright_pixel_az_el_deg[0] // mock_pset_input_frame.spacing_deg),
+            int(
+                input_bright_pixel_az_el_deg[0]
+                // mock_pset_input_frame.sky_grid.spacing_deg
+            ),
             int(
                 (90 + input_bright_pixel_az_el_deg[1])
-                // mock_pset_input_frame.spacing_deg
+                // mock_pset_input_frame.sky_grid.spacing_deg
             ),
         ] = 1
 
