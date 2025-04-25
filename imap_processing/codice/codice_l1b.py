@@ -10,6 +10,7 @@ dataset = process_codice_l1b(l1a_filenanme)
 """
 
 import logging
+from pathlib import Path
 
 import xarray as xr
 
@@ -21,13 +22,13 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def process_codice_l1b(file_path: str) -> xr.Dataset:
+def process_codice_l1b(file_path: Path) -> xr.Dataset:
     """
     Will process CoDICE l1a data to create l1b data products.
 
     Parameters
     ----------
-    file_path : pathlib.Path | str
+    file_path : pathlib.Path
         Path to the CoDICE L1a file to process.
 
     Returns
