@@ -1,3 +1,5 @@
+"""Tests to support I-ALiRT MAG packet parsing."""
+
 import numpy as np
 import pandas as pd
 import pytest

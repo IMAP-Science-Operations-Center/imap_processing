@@ -354,15 +354,15 @@ def process_packet(accumulated_data: xr.Dataset) -> list[dict]:
             grouped_data, group, pkt_counter, science_data, status_data
         )
 
-        # Note: primary = MAGo, secondary = MAGi unless there is a disaster.
+        # Note: primary = MAGo, secondary = MAGi.
         science_data.update(
             {
                 "calibrated_pri_x": updated_vector_mago[0],
                 "calibrated_pri_y": updated_vector_mago[1],
                 "calibrated_pri_z": updated_vector_mago[2],
-                "calibrated_sec_x": updated_vector_mago[0],
-                "calibrated_sec_y": updated_vector_mago[1],
-                "calibrated_sec_z": updated_vector_mago[2],
+                "calibrated_sec_x": updated_vector_magi[0],
+                "calibrated_sec_y": updated_vector_magi[1],
+                "calibrated_sec_z": updated_vector_magi[2],
             }
         )
 
