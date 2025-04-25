@@ -19,14 +19,14 @@ logger = logging.getLogger(__name__)
 
 
 def load_cdf(
-    file_path: Path, remove_xarray_attrs: bool = True, **kwargs: dict
+    file_path: Path | str, remove_xarray_attrs: bool = True, **kwargs: dict
 ) -> xr.Dataset:
     """
     Load the contents of a CDF file into an ``xarray`` dataset.
 
     Parameters
     ----------
-    file_path : Path or ImapFilePath
+    file_path : Path or ImapFilePath or str
         The path to the CDF file or ImapFilePath object.
     remove_xarray_attrs : bool
         Whether to remove the xarray attributes that get injected by the
