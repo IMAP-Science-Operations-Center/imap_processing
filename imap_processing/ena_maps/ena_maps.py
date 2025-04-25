@@ -7,6 +7,7 @@ import logging
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
+from typing import TypeVar
 
 import astropy_healpix.healpy as hp
 import numpy as np
@@ -203,6 +204,11 @@ def match_coords_to_indices(
     return flat_indices_input_grid_output_frame
 
 
+# Define a TypeVar type to dynamically hint the return type of the base PointingSet
+# class classmethod
+T = TypeVar("T", bound="PointingSet")
+
+
 # Define the pointing set classes
 class PointingSet(ABC):
     """
@@ -241,7 +247,7 @@ class PointingSet(ABC):
         self.data = dataset
 
     @classmethod
-    def from_cdf(cls, cdf_path: Path) -> PointingSet:
+    def from_cdf(cls: type[T], cdf_path: Path) -> T:
         """
         Generate a PointingSet object from a CDF file.
 
