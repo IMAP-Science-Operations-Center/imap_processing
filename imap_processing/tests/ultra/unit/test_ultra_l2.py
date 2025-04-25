@@ -276,7 +276,7 @@ class TestUltraL2:
         )
         assert (
             rect_map_dataset.attrs["Spice_reference_frame"]
-            == rect_map_structure.spice_reference_frame.value
+            == rect_map_structure.spice_reference_frame.name
         )
 
         # Check the dims of the key variables

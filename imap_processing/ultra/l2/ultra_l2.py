@@ -343,7 +343,7 @@ def ultra_l2(
     # Get the global attributes, and then fill the sensor, tiling, etc. in the
     # format-able strings.
 
-    map_attrs.update(cdf_attrs.get_global_attributes("imap_ultra_l2_enamap"))
+    map_attrs.update(cdf_attrs.get_global_attributes("imap_ultra_l2_enamap-hf"))
     for key in ["Data_type", "Logical_source", "Logical_source_description"]:
         map_attrs[key] = map_attrs[key].format(
             sensor=ultra_sensor_number,
