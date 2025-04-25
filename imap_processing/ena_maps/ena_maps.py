@@ -138,9 +138,9 @@ def match_coords_to_indices(
     # which must be converted to ephemeris time (ET) for SPICE.
     if event_et is None:
         if isinstance(input_object, PointingSet):
-            event_et = ttj2000ns_to_et(input_object.data["epoch"].values)
+            event_et = ttj2000ns_to_et(input_object.epoch)
         elif isinstance(output_object, PointingSet):
-            event_et = ttj2000ns_to_et(output_object.data["epoch"].values)
+            event_et = ttj2000ns_to_et(output_object.epoch)
         else:
             raise ValueError(
                 "Event time must be specified if both objects are SkyMaps."
@@ -219,8 +219,8 @@ class PointingSet(ABC):
 
     Parameters
     ----------
-    dataset : xr.Dataset
-        Dataset containing the pointing set data.
+    dataset : xr.Dataset | str | Path
+        Dataset or path to CDF file containing the pointing set data.
     spice_reference_frame : geometry.SpiceFrame
         The reference Spice frame of the pointing set.
     """
@@ -230,6 +230,7 @@ class PointingSet(ABC):
 
     # Attributes that are set in the ABC __init__ method
     data: xr.Dataset
+    epoch: np.ndarray
     spice_reference_frame: geometry.SpiceFrame
     # Attributes required to be set in a subclass
     az_el_points: np.ndarray
@@ -239,29 +240,20 @@ class PointingSet(ABC):
     @abstractmethod
     def __init__(
         self,
-        dataset: xr.Dataset,
+        dataset: xr.Dataset | str | Path,
         spice_reference_frame: geometry.SpiceFrame = geometry.SpiceFrame.IMAP_DPS,
     ):
         """Abstract method to initialize the pointing set object."""
         self.spice_reference_frame = spice_reference_frame
+
+        if isinstance(dataset, (str, Path)):
+            dataset = load_cdf(dataset)
         self.data = dataset
 
-    @classmethod
-    def from_cdf(cls: type[T], cdf_path: Path) -> T:
-        """
-        Generate a PointingSet object from a CDF file.
-
-        Parameters
-        ----------
-        cdf_path : str | Path
-            Location of Pointing Set CDF file.
-
-        Returns
-        -------
-        pointing_set : PointingSet
-            Input CDF file data loaded into PointingSet.
-        """
-        return cls(load_cdf(cdf_path))
+        # A PSET must have a single epoch
+        if len(np.unique(self.data["epoch"].values)) > 1:
+            raise ValueError("Multiple epochs found in the dataset.")
+        self.epoch = self.data["epoch"].values[0]
 
     @property
     def unwrapped_dims_dict(self) -> dict[str, tuple[str, ...]]:
@@ -326,8 +318,8 @@ class RectangularPointingSet(PointingSet):
 
     Parameters
     ----------
-    dataset : xr.Dataset
-        L1c xarray dataset containing the pointing set data.
+    dataset : xr.Dataset | str | Path
+        Dataset or path to CDF file containing the pointing set data.
         Currently, the dataset is expected to be tiled in a rectangular grid,
         with data_vars indexed along the coordinates:
             - 'epoch' : time value (1 value per PSET)
@@ -353,15 +345,10 @@ class RectangularPointingSet(PointingSet):
 
     def __init__(
         self,
-        dataset: xr.Dataset,
+        dataset: xr.Dataset | str | Path,
         spice_reference_frame: geometry.SpiceFrame = geometry.SpiceFrame.IMAP_DPS,
     ):
         super().__init__(dataset, spice_reference_frame)
-
-        # A PSET must have a single epoch
-        self.epoch = self.data["epoch"].values
-        if len(np.unique(self.epoch)) > 1:
-            raise ValueError("Multiple epochs found in the dataset.")
 
         self.spatial_coords = (
             CoordNames.AZIMUTH_L1C.value,
@@ -424,8 +411,8 @@ class UltraPointingSet(PointingSet):
 
     Parameters
     ----------
-    dataset : xr.Dataset
-        L1c xarray dataset containing the pointing set data.
+    dataset : xr.Dataset | str | Path
+        Dataset or path to CDF file containing the pointing set data.
         Currently, the dataset is expected to be tiled in a HEALPix tessellation,
         with data_vars indexed along the coordinates:
             - 'epoch' : time value (1 value per PSET, from the mean of the PSET)
@@ -453,15 +440,10 @@ class UltraPointingSet(PointingSet):
 
     def __init__(
         self,
-        dataset: xr.Dataset,
+        dataset: xr.Dataset | str | Path,
         spice_reference_frame: geometry.SpiceFrame = geometry.SpiceFrame.IMAP_DPS,
     ):
         super().__init__(dataset, spice_reference_frame)
-
-        # A PSET must have a single epoch
-        self.epoch = self.data["epoch"].values
-        if len(np.unique(self.epoch)) > 1:
-            raise ValueError("Multiple epochs found in the dataset.")
 
         # Set the spatial coordinates and number of points
         self.spatial_coords = (CoordNames.HEALPIX_INDEX.value,)

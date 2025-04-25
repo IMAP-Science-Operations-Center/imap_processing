@@ -92,7 +92,7 @@ class TestUltraPointingSet:
             )
 
     @pytest.mark.usefixtures("_setup_ultra_l1c_pset_products")
-    def test_from_cdf(
+    def test_init_cdf(
         self,
     ):
         ultra_pset = self.l1c_pset_products[0]
@@ -101,8 +101,8 @@ class TestUltraPointingSet:
 
         ultra_pset_from_dataset = ena_maps.UltraPointingSet(ultra_pset)
 
-        ultra_pset_from_str = ena_maps.UltraPointingSet.from_cdf(cdf_filepath)
-        ultra_pset_from_path = ena_maps.UltraPointingSet.from_cdf(Path(cdf_filepath))
+        ultra_pset_from_str = ena_maps.UltraPointingSet(cdf_filepath)
+        ultra_pset_from_path = ena_maps.UltraPointingSet(Path(cdf_filepath))
 
         np.testing.assert_allclose(
             ultra_pset_from_dataset.data["counts"].values,

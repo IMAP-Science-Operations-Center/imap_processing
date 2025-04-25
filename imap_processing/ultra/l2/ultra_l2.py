@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 import numpy as np
 import xarray as xr
@@ -140,10 +139,7 @@ def generate_ultra_healpix_skymap(
     )
 
     for ultra_l1c_pset in ultra_l1c_psets:
-        if isinstance(ultra_l1c_pset, str):
-            pointing_set = ena_maps.UltraPointingSet.from_cdf(Path(ultra_l1c_pset))
-        else:
-            pointing_set = ena_maps.UltraPointingSet(ultra_l1c_pset)
+        pointing_set = ena_maps.UltraPointingSet(ultra_l1c_pset)
         logger.info(
             f"Projecting a PointingSet with {pointing_set.num_points} pixels "
             f"at epoch:{pointing_set.epoch}\n"
