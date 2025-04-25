@@ -1,11 +1,14 @@
 """Tests to support I-ALiRT MAG packet parsing."""
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
+from imap_processing.cdf.utils import load_cdf
 from imap_processing.ialirt.l0.parse_mag import (
     calculate_l1b,
     extract_magnetic_vectors,
@@ -13,6 +16,9 @@ from imap_processing.ialirt.l0.parse_mag import (
     get_status_data,
     get_time,
     process_packet,
+)
+from imap_processing.mag.l1b.mag_l1b import (
+    retrieve_matrix_from_l1b_calibration,
 )
 from imap_processing.utils import packet_file_to_datasets
 
@@ -132,13 +138,29 @@ def test_get_status_data(xarray_data, mag_test_data):
 
 def test_get_time(grouped_data):
     """Tests the get_time function."""
-    time_data = get_time(grouped_data, 1, np.array([0, 1, 2, 3]))
-    assert time_data == {
-        "pri_coarsetm": 461971386,
-        "pri_fintm": 1500,
-        "sec_coarsetm": 461971386,
-        "sec_fintm": 1503,
-    }
+    # Get calibration data
+    calibration_dataset = load_cdf(
+        Path(__file__).resolve().parents[3]
+        / "mag"
+        / "l1b"
+        / "imap_calibration_mag_20240229_v01.cdf"
+    )
+
+    calibration_matrix_mago, time_shift_mago = retrieve_matrix_from_l1b_calibration(
+        calibration_dataset, is_mago=True
+    )
+    calibration_matrix_magi, time_shift_magi = retrieve_matrix_from_l1b_calibration(
+        calibration_dataset, is_mago=False
+    )
+
+    time_data = get_time(
+        grouped_data, 1, np.array([0, 1, 2, 3]), time_shift_mago, time_shift_magi
+    )
+
+    assert time_data["pri_coarsetm"] == 461971386
+    assert time_data["pri_fintm"] == 1500
+    assert time_data["sec_coarsetm"] == 461971386
+    assert time_data["sec_fintm"] == 1503
 
 
 def test_extract_magnetic_vectors():

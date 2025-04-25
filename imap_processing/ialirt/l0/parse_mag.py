@@ -145,8 +145,8 @@ def get_time(
     grouped_data: xr.Dataset,
     group: int,
     pkt_counter: xr.DataArray,
-    time_shift_mago: int,
-    time_shift_magi: int,
+    time_shift_mago: xr.DataArray,
+    time_shift_magi: xr.DataArray,
 ) -> dict:
     """
     Get the time for the grouped data.
@@ -159,9 +159,9 @@ def get_time(
         Group number.
     pkt_counter : xr.DataArray
         Packet counter.
-    time_shift_mago : int
+    time_shift_mago : xr.DataArray
         Time shift value mago.
-    time_shift_magi : int
+    time_shift_magi : xr.DataArray
         Time shift value magi.
 
     Returns
