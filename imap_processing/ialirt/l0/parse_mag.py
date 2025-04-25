@@ -191,7 +191,12 @@ def get_time(
         (grouped_data["group"] == group).values
     ][pkt_counter == 2]
 
-    time_data = {}
+    time_data = {
+        "pri_coarsetm": int(pri_coarsetm),
+        "pri_fintm": int(pri_fintm),
+        "sec_coarsetm": int(sec_coarsetm),
+        "sec_fintm": int(sec_fintm),
+    }
 
     primary_time = TimeTuple(int(pri_coarsetm), int(pri_fintm))
     secondary_time = TimeTuple(int(sec_coarsetm), int(sec_fintm))

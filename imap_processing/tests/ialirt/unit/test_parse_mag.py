@@ -199,4 +199,5 @@ def test_process_packet(xarray_data, mag_test_data):
         matching_rows = mag_test_data[index]
 
         for key in packet.keys():
-            assert packet[key] == matching_rows[key.upper()].values[0]
+            if key.upper() in matching_rows.keys():
+                assert packet[key] == matching_rows[key.upper()].values[0]
