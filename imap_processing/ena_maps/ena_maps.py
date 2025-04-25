@@ -254,13 +254,13 @@ class PointingSet(ABC):
             raise ValueError("Multiple epochs found in the dataset.")
 
     @property
-    def epoch(self) -> float:
+    def epoch(self) -> int:
         """
         The singular epoch value from the xarray.Dataset.
 
         Returns
         -------
-        epoch: float
+        epoch: int
             The epoch value [J2000 TT ns] of the pointing set.
         """
         return self.data["epoch"].values[0]
