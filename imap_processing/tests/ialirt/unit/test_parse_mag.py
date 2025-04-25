@@ -5,6 +5,7 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.parse_mag import (
+    calculate_l1b,
     extract_magnetic_vectors,
     get_pkt_counter,
     get_status_data,
@@ -156,9 +157,37 @@ def test_extract_magnetic_vectors():
     }
 
 
-#def test_get_time():
-#def calculate_l1b():
+def test_calculate_l1b(grouped_data, xarray_data):
+    """Tests the calculate_l1b function."""
 
+    pkt_counter = np.array([0.0, 1.0, 2.0, 3.0])
+
+    science_data = {
+        "pri_x": 1.0,
+        "pri_y": 2.0,
+        "pri_z": 3.0,
+        "sec_x": 4.0,
+        "sec_y": 5.0,
+        "sec_z": 6.0,
+    }
+
+    status_data = {
+        "fob_range": 1,
+        "fib_range": 1,
+    }
+
+    vec_mago, vec_magi, time_data = calculate_l1b(
+        grouped_data,
+        0,
+        pkt_counter,
+        science_data,
+        status_data,
+    )
+
+    assert vec_mago.shape == (4,)
+    assert vec_magi.shape == (4,)
+    assert "pri_met" in time_data
+    assert "sec_met" in time_data
 
 
 def test_process_packet(xarray_data, mag_test_data):

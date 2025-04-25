@@ -168,7 +168,13 @@ def get_time(
     -------
     time_data : dict
         Coarse and fine time for Primary and Secondary Sensors.
+
+    Notes
+    -----
+    Packet id 0 is course and fine time for the primary sensor PRI.
+    Packet id 2 is the course time for the secondary sensor SEC.
     """
+    # Get the coarse and fine time for the primary and secondary sensors.
     pri_coarsetm = grouped_data["mag_acq_tm_coarse"][
         (grouped_data["group"] == group).values
     ][pkt_counter == 0]
@@ -204,7 +210,7 @@ def get_time(
 
 
 def calculate_l1b(
-    grouped_data,
+    grouped_data: xr.Dataset,
     group: int,
     pkt_counter: xr.DataArray,
     science_data: dict,
