@@ -376,7 +376,7 @@ hi-counters-singles-stssd:
 # hi-omni
 hi-omni-h:
     <<: *counters
-    CATDESC: Omnidirectional H Counts
+    CATDESC: Omnidirectional H Rates
     FIELDNAM: H
     DEPEND_1: esa_step
     DEPEND_2: inst_az
@@ -396,7 +396,7 @@ hi-omni-energy_h_delta:
 
 hi-omni-he3:
     <<: *counters
-    CATDESC: Omnidirectional He3 Counts
+    CATDESC: Omnidirectional He3 Rates
     FIELDNAM: He3
     DEPEND_1: esa_step
     DEPEND_2: inst_az
@@ -416,7 +416,7 @@ hi-omni-energy_he3_delta:
 
 hi-omni-he4:
     <<: *counters
-    CATDESC: Omnidirectional He4 Counts
+    CATDESC: Omnidirectional He4 Rates
     FIELDNAM: He4
     DEPEND_1: esa_step
     DEPEND_2: inst_az
@@ -436,7 +436,7 @@ hi-omni-energy_he4_delta:
 
 hi-omni-c:
     <<: *counters
-    CATDESC: Omnidirectional C Counts
+    CATDESC: Omnidirectional C Rates
     FIELDNAM: C
     DEPEND_1: esa_step
     DEPEND_2: inst_az
@@ -456,7 +456,7 @@ hi-omni-energy_c_delta:
 
 hi-omni-o:
     <<: *counters
-    CATDESC: Omnidirectional O Counts
+    CATDESC: Omnidirectional O Rates
     FIELDNAM: O
     DEPEND_1: esa_step
     DEPEND_2: inst_az
@@ -476,7 +476,7 @@ hi-omni-energy_o_delta:
 
 hi-omni-ne_mg_si:
     <<: *counters
-    CATDESC: Omnidirectional Ne_Mg_Si Counts
+    CATDESC: Omnidirectional Ne_Mg_Si Rates
     FIELDNAM: Ne_Mg_Si
     DEPEND_1: esa_step
     DEPEND_2: inst_az
@@ -496,7 +496,7 @@ hi-omni-energy_ne_mg_si_delta:
 
 hi-omni-fe:
     <<: *counters
-    CATDESC: Omnidirectional Fe Counts
+    CATDESC: Omnidirectional Fe Rates
     FIELDNAM: Fe
     DEPEND_1: esa_step
     DEPEND_2: inst_az
@@ -516,7 +516,7 @@ hi-omni-energy_fe_delta:
 
 hi-omni-uh:
     <<: *counters
-    CATDESC: Omnidirectional UH Counts
+    CATDESC: Omnidirectional UH Rates
     FIELDNAM: UH
     DEPEND_1: esa_step
     DEPEND_2: inst_az
@@ -588,7 +588,7 @@ hi-priority-Priority5:
 # hi-sectored
 hi-sectored-h:
     <<: *counters
-    CATDESC: Sectored H Counts
+    CATDESC: Sectored H Rates
     FIELDNAM: H
     DEPEND_1: energy_h
     DEPEND_2: ssd_index
@@ -610,7 +610,7 @@ hi-sectored-energy_h_delta:
 
 hi-sectored-he3he4:
     <<: *counters
-    CATDESC: Sectored He3He4 Counts
+    CATDESC: Sectored He3He4 Rates
     FIELDNAM: He3He4
     DEPEND_1: energy_he3he4
     DEPEND_2: ssd_index
@@ -632,7 +632,7 @@ hi-sectored-energy_he3he4_delta:
 
 hi-sectored-cno:
     <<: *counters
-    CATDESC: Sectored CNO Counts
+    CATDESC: Sectored CNO Rates
     FIELDNAM: CNO
     DEPEND_1: energy_cno
     DEPEND_2: ssd_index
@@ -654,7 +654,7 @@ hi-sectored-energy_cno_delta:
 
 hi-sectored-fe:
     <<: *counters
-    CATDESC: Sectored Fe Counts
+    CATDESC: Sectored Fe Rates
     FIELDNAM: Fe
     DEPEND_1: energy_fe
     DEPEND_2: ssd_index
