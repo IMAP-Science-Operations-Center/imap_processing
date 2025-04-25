@@ -192,10 +192,10 @@ def get_time(
     ][pkt_counter == 2]
 
     time_data = {
-        "pri_coarsetm": int(pri_coarsetm),
-        "pri_fintm": int(pri_fintm),
-        "sec_coarsetm": int(sec_coarsetm),
-        "sec_fintm": int(sec_fintm),
+        "pri_coarsetm": int(pri_coarsetm.item()),
+        "pri_fintm": int(pri_fintm.item()),
+        "sec_coarsetm": int(sec_coarsetm.item()),
+        "sec_fintm": int(sec_fintm.item()),
     }
 
     primary_time = TimeTuple(int(pri_coarsetm), int(pri_fintm))
