@@ -230,7 +230,6 @@ class PointingSet(ABC):
 
     # Attributes that are set in the ABC __init__ method
     data: xr.Dataset
-    epoch: np.ndarray
     spice_reference_frame: geometry.SpiceFrame
     # Attributes required to be set in a subclass
     az_el_points: np.ndarray
@@ -253,7 +252,18 @@ class PointingSet(ABC):
         # A PSET must have a single epoch
         if len(np.unique(self.data["epoch"].values)) > 1:
             raise ValueError("Multiple epochs found in the dataset.")
-        self.epoch = self.data["epoch"].values[0]
+
+    @property
+    def epoch(self) -> float:
+        """
+        The singular epoch value from the xarray.Dataset.
+
+        Returns
+        -------
+        epoch: float
+            The epoch value [J2000 TT ns] of the pointing set.
+        """
+        return self.data["epoch"].values[0]
 
     @property
     def unwrapped_dims_dict(self) -> dict[str, tuple[str, ...]]:
