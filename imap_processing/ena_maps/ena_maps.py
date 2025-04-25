@@ -21,6 +21,7 @@ from imap_processing.ena_maps.utils import map_utils, spatial_utils
 # The coordinate names can vary between L1C and L2 data (e.g. azimuth vs longitude),
 # so we define an enum to handle the coordinate names.
 from imap_processing.ena_maps.utils.coordinates import CoordNames
+from imap_processing.idex.idex_constants import IDEX_HEALPIX_NESTED, IDEX_HEALPIX_NSIDE
 from imap_processing.spice import geometry
 from imap_processing.spice.time import ttj2000ns_to_et
 
@@ -619,6 +620,59 @@ class HiPointingSet(PointingSet):
         )
         self.spatial_coords = ("spin_angle_bin",)
 
+
+class IDEXPointingSet(PointingSet):
+    """
+    Pointing set object specifically for IDEX data.
+
+    Parameters
+    ----------
+    l2b_dataset : xr.Dataset | pathlib.Path | str
+        L2b xarray dataset containing the pointing set data or the path to the dataset.
+        Currently, the dataset is expected to be tiled in a HEALPix tessellation,
+        with data_vars indexed along the coordinates:
+            - 'epoch' : time value (1 value per PSET, from the mean of the PSET)
+            - 'healpix_index' : HEALPix pixel index
+        Only the 'healpix_index' coordinate is used in this class for projection.
+    spice_reference_frame : geometry.SpiceFrame
+        The reference Spice frame of the pointing set. Default is ECLIPJ2000.
+
+    Raises
+    ------
+    ValueError
+        If the longitude/az or latitude/el bin centers don't match the constructed grid.
+        Or if the longitude or latitude bin spacing is not uniform.
+    ValueError
+        If multiple epochs are found in the dataset.
+    """
+
+    def __init__(
+        self,
+        l2b_dataset: xr.Dataset | pathlib.Path | str,
+        spice_reference_frame: geometry.SpiceFrame = geometry.SpiceFrame.ECLIPJ2000,
+    ):
+        self.nside = IDEX_HEALPIX_NSIDE
+        self.nested = IDEX_HEALPIX_NESTED
+        # Store the reference frame of the pointing set
+        self.spice_reference_frame = spice_reference_frame
+        self.spatial_coords = (CoordNames.HEALPIX_INDEX.value,)
+        # Read in the data and store the xarray dataset as data attr
+        if isinstance(l2b_dataset, xr.Dataset):
+            self.data = l2b_dataset
+
+        self.num_points = self.data[CoordNames.HEALPIX_INDEX.value].size
+        # A PSET must have a single epoch
+        self.epoch = self.data["epoch"].values
+        if len(np.unique(self.epoch)) > 1:
+            raise ValueError("Multiple epochs found in the dataset.")
+
+        # The coordinates of the healpix pixel centers are stored as a 2D array
+        # of shape (num_points, 2) where column 0 is the lon/az
+        # and column 1 is the lat/el.
+        lon, lat = hp.pix2ang(
+            self.nside, self.data[CoordNames.HEALPIX_INDEX.value], lonlat=True
+        )
+        self.az_el_points = np.column_stack([lon, lat])
 
 # Define the Map classes
 class AbstractSkyMap(ABC):

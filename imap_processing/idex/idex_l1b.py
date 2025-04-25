@@ -25,6 +25,10 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.idex.idex_constants import ConversionFactors
 from imap_processing.idex.idex_utils import get_idex_attrs, setup_dataset
+from imap_processing.idex.idex_constants import (
+    IDEX_POINTING_REFERENCE_FRAME,
+    ConversionFactors,
+)
 from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
@@ -350,15 +354,15 @@ def get_spice_data(
     # Get spacecraft spin phase in degrees
     spin_phase = get_spacecraft_spin_phase(query_met_times=met)
     imap_spin_phase = get_spin_angle(spin_phase, degrees=True)
-    # Get position and velocity of IMAP in ecliptic frame
+    # Get the position and velocity of IMAP in ecliptic frame
     ephemeris = imap_state(et, observer=SpiceBody.SUN)
-    # Get Idex pointing in the j2000 equatorial frame
+    # Get Idex pointing in the defined frame
     idex_pointing = instrument_pointing(
-        et, SpiceFrame.IMAP_IDEX, SpiceFrame.J2000, cartesian=True
+        et, SpiceFrame.IMAP_IDEX, IDEX_POINTING_REFERENCE_FRAME, cartesian=True
     )
     solar_lon = solar_longitude(et, degrees=True)
-
-    range_ra_and_dec = cartesian_to_spherical(idex_pointing)
+    # longitude and latitude
+    lon_and_lat = cartesian_to_spherical(idex_pointing)
 
     spice_data = {
         "ephemeris_position_x": ephemeris[:, 0],
@@ -367,8 +371,8 @@ def get_spice_data(
         "ephemeris_velocity_x": ephemeris[:, 3],
         "ephemeris_velocity_y": ephemeris[:, 4],
         "ephemeris_velocity_z": ephemeris[:, 5],
-        "right_ascension": range_ra_and_dec[:, 1],
-        "declination": range_ra_and_dec[:, 2],
+        "longitude": lon_and_lat[:, 1],
+        "latitude": lon_and_lat[:, 2],
         "spin_phase": imap_spin_phase,
         "solar_longitude": solar_lon,
     }

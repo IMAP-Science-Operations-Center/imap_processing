@@ -11,6 +11,8 @@ class IDEXAPID(IntEnum):
     IDEX_CATLST = 1419
     IDEX_EVT = 1418
 
+from imap_processing.spice.geometry import SpiceFrame
+
 
 @dataclass
 class IdexConstants:
@@ -59,7 +61,6 @@ class ConversionFactors(float, Enum):
     Target_High = 1.63e-1
     Ion_Grid = 7.46e-4
 
-
 SPICE_ARRAYS = [
     "ephemeris_position_x",
     "ephemeris_position_y",
@@ -72,3 +73,13 @@ SPICE_ARRAYS = [
     "solar_longitude",
     "spin_phase",
 ]
+
+# Default IDEX Healpix parameters
+# Used in ena_maps.IDEXPointingSet and IDEX l2c processing
+# IDEX maps and psets should use the same healpix parameters
+IDEX_HEALPIX_NSIDE = 8
+IDEX_HEALPIX_NESTED = False
+
+
+# Define the pointing reference frame for IDEX
+IDEX_POINTING_REFERENCE_FRAME = SpiceFrame.ECLIPJ2000
