@@ -199,8 +199,8 @@ def get_time(
         "sec_fintm": int(sec_fintm.item()),
     }
 
-    primary_time = TimeTuple(time_data["pri_coarsetm"], time_data["pri_fintm"])
-    secondary_time = TimeTuple(time_data["sec_coarsetm"], time_data["sec_fintm"])
+    primary_time = TimeTuple(int(pri_coarsetm.item()), int(pri_fintm.item()))
+    secondary_time = TimeTuple(int(sec_coarsetm.item()), int(sec_fintm.item()))
     time_data["pri_met"] = primary_time.to_seconds()
     time_data["primary_ttj2000ns"] = met_to_ttj2000ns(time_data["pri_met"])
     time_data["primary_epoch"] = shift_time(
