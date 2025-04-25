@@ -1,7 +1,6 @@
 """Tests Culling for ULTRA L1b."""
 
 import numpy as np
-import pandas as pd
 import pytest
 
 from imap_processing import imap_module_directory
@@ -112,50 +111,3 @@ def test_compare_aux_univ_spin_table(use_fake_spin_data_for_time, faux_aux_datas
     expected = np.array([False] * 14 + [True])
 
     assert np.all(result == expected)
-
-
-def test_with_data():
-    import re
-
-    data = TEST_PATH / "IMAP-Ultra90_20.65_mod.txt"
-
-    with open(data) as f:
-        lines = f.readlines()
-
-    # Remove lines starting with ###
-    lines = [line for line in lines if not line.strip().startswith("###")]
-
-    # Replace multiple spaces/tabs with a single comma
-    lines = [re.sub(r"[\t ]+", ",", line.strip()) for line in lines]
-
-    # Now read it as a CSV from the cleaned lines
-    from io import StringIO
-
-    clean_text = "\n".join(lines)
-    df = pd.read_csv(StringIO(clean_text), header=None)
-
-    # Set your correct column names
-    df.columns = [
-        "tdb",
-        "StartX",
-        "PosYSlit",
-        "StopX",
-        "StopY",
-        "Energy",
-        "Type",
-        "PH",
-        "SpinPhase",
-        "TOF",
-    ]
-    import matplotlib
-
-    matplotlib.use("TkAgg")  # Or 'QtAgg' if you have PyQt installed
-    import matplotlib.pyplot as plt
-
-    plt.plot(df["tdb"])
-    plt.xlabel("Index")  # X-axis label (just the row number for now)
-    plt.ylabel("tdb")  # Y-axis label
-    plt.title("TDB Values")
-    plt.grid(True)
-    plt.show()
-    print("hi")
