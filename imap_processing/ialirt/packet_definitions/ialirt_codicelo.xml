@@ -174,7 +174,7 @@
 				<xtce:LongDescription>CODICE LO MET at End of Data Acquisition</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="COD_LO_ACQ" parameterTypeRef="uint32">
-				<xtce:LongDescription>CODICE LO MET at End of Data Acquisition</xtce:LongDescription>
+				<xtce:LongDescription>CODICE LO Acquisition Time</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="COD_LO_STATUS" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE LO Status</xtce:LongDescription>

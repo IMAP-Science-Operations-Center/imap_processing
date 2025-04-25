@@ -130,6 +130,10 @@ def _test_data_paths():
     and the corresponding location in which to store the downloaded file"""
     test_data_path_list = [
         (
+            "apid_478.bin",
+            imap_module_directory / "tests" / "ialirt" / "data" / "l0" / "apid_478.bin",
+        ),
+        (
             "imap_codice_l0_raw_20241110_v001.pkts",
             imap_module_directory
             / "tests"
