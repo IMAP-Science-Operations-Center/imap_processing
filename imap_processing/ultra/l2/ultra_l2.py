@@ -271,9 +271,6 @@ def ultra_l2(
     ultra_sensor_number = 45 if "45sensor" in next(iter(data_dict.keys())) else 90
     logger.info(f"Assuming all products are from sensor {ultra_sensor_number}")
 
-    # Global attributes handling - this key will be different for sensor and tiling type
-    global_attrs_key_base = f"imap_ultra_l2_{ultra_sensor_number}sensor-enamap"
-
     # Regardless of the output sky tiling type, we will directly
     # project the PSET values into a healpix map. However, if we are outputting
     # a Healpix map, we can go directly to map with desired nside, nested params
@@ -303,7 +300,6 @@ def ultra_l2(
             "HEALPix_nside": output_map_structure.nside,
             "HEALPix_nest": output_map_structure.nested,
         }
-        global_attrs_key = f"{global_attrs_key_base}healpix"
 
     elif output_map_structure.tiling_type is ena_maps.SkyTilingType.RECTANGULAR:
         cdf_attrs.add_instrument_variable_attrs(
@@ -340,17 +336,26 @@ def ultra_l2(
         map_attrs = {
             "Spacing_degrees": output_map_structure.spacing_deg,
         }
-        global_attrs_key = f"{global_attrs_key_base}rectangular"
 
-    # Get the global attributes for the map with the key specific to sensor number and
-    # tiling type. E.g. 'imap_ultra_l2_90sensor-enamaphealpix'
-    map_attrs.update(cdf_attrs.get_global_attributes(global_attrs_key))
+    # TODO: keep track of the map duration correctly
+    map_duration = "99mo"
+
+    # Get the global attributes, and then fill the sensor, tiling, etc. in the
+    # format-able strings.
+
+    map_attrs.update(cdf_attrs.get_global_attributes("imap_ultra_l2_enamap"))
+    for key in ["Data_type", "Logical_source", "Logical_source_description"]:
+        map_attrs[key] = map_attrs[key].format(
+            sensor=ultra_sensor_number,
+            tiling=output_map_structure.tiling_type.value,
+            duration=map_duration,
+        )
 
     # Always add the following attributes to the map
     map_attrs.update(
         {
             "Sky_tiling_type": output_map_structure.tiling_type.value,
-            "Spice_reference_frame": output_map_structure.spice_reference_frame,
+            "Spice_reference_frame": output_map_structure.spice_reference_frame.name,
         }
     )
 

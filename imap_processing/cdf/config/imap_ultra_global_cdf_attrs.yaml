@@ -260,27 +260,9 @@ imap_ultra_l1a_90sensor-imgparams:
     Logical_source: imap_ultra_l1a_90sensor-imgparams
     Logical_source_description: IMAP-Ultra Instrument Level-1A Image Parameters Data for Ultra90.
 
-# Ultra L2 Global attributes for different sensors and sky tiling types
-imap_ultra_l2_45sensor-enamaphealpix:
+# Ultra L2 Global attributes for different sensors and sky tiling types and durations
+imap_ultra_l2_enamap:
     <<: *instrument_base
-    Data_type: L2_45Sensor-enamapHealpix>Level-2 ENA Flux Map for Ultra45 on HEALPix tiling
-    Logical_source: imap_ultra_l2_45sensor-enamaphealpix
-    Logical_source_description: IMAP-Ultra Instrument Level-2 ENA Flux Map Data for Ultra45.
-
-imap_ultra_l2_90sensor-enamaphealpix:
-    <<: *instrument_base
-    Data_type: L2_90Sensor-enamapHealpix>Level-2 ENA Flux Map for Ultra90 on HEALPix tiling
-    Logical_source: imap_ultra_l2_90sensor-enamaphealpix
-    Logical_source_description: IMAP-Ultra Instrument Level-2 ENA Flux Map Data for Ultra90 on HEALPix tiling.
-
-imap_ultra_l2_45sensor-enamaprectangular:
-    <<: *instrument_base
-    Data_type: L2_45Sensor-enamapRectangular>Level-2 ENA Flux Map for Ultra45 on Rectangular tiling
-    Logical_source: imap_ultra_l2_45sensor-enamaprectangular
-    Logical_source_description: IMAP-Ultra Instrument Level-2 ENA Flux Map Data for Ultra45 on Rectangular tiling.
-
-imap_ultra_l2_90sensor-enamaprectangular:
-    <<: *instrument_base
-    Data_type: L2_90Sensor-enamapRectangular>Level-2 ENA Flux Map for Ultra90 on Rectangular tiling
-    Logical_source: imap_ultra_l2_90sensor-enamaprectangular
-    Logical_source_description: IMAP-Ultra Instrument Level-2 ENA Flux Map Data for Ultra90 on Rectangular tiling.
+    Data_type: L2_{sensor}Sensor-enamap{tiling}>Level-2 ENA Flux Map for Ultra{sensor}
+    Logical_source: imap_ultra_l2_{sensor}sensor-enamap{tiling}-{duration}
+    Logical_source_description: IMAP-Ultra Instrument Level-2 ENA Flux Map Data for Ultra{sensor} on {tiling} tiling over {duration} duration.
