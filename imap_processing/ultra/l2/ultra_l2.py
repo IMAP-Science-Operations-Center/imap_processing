@@ -284,7 +284,9 @@ def ultra_l2(
 
     # Output formatting for HEALPIX tiling
     if output_map_structure.tiling_type is ena_maps.SkyTilingType.HEALPIX:
-        cdf_attrs.add_instrument_variable_attrs(instrument="ultra", level="l2-healpix")
+        cdf_attrs.add_instrument_variable_attrs(
+            instrument="enamaps", level="l2-healpix"
+        )
 
         # Add the longitude and latitude coordinate-like data_vars to the map dataset
         # These are not xarray coordinates, but the lon/lat corresponding to the
@@ -305,7 +307,7 @@ def ultra_l2(
 
     elif output_map_structure.tiling_type is ena_maps.SkyTilingType.RECTANGULAR:
         cdf_attrs.add_instrument_variable_attrs(
-            instrument="ultra", level="l2-rectangular"
+            instrument="enamaps", level="l2-rectangular"
         )
         rectangular_skymap, subdiv_depth_dict = healpix_skymap.to_rectangular_skymap(
             rect_spacing_deg=output_map_structure.spacing_deg,
