@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import cast
+from typing import Union
 
 import numpy as np
 import xarray as xr
@@ -192,11 +192,11 @@ def get_time(
         (grouped_data["group"] == group).values
     ][pkt_counter == 2]
 
-    time_data = {
-        "pri_coarsetm": cast(int, pri_coarsetm.item()),
-        "pri_fintm": cast(int, pri_fintm.item()),
-        "sec_coarsetm": cast(int, sec_coarsetm.item()),
-        "sec_fintm": cast(int, sec_fintm.item()),
+    time_data: dict[str, Union[int, float]] = {
+        "pri_coarsetm": int(pri_coarsetm.item()),
+        "pri_fintm": int(pri_fintm.item()),
+        "sec_coarsetm": int(sec_coarsetm.item()),
+        "sec_fintm": int(sec_fintm.item()),
     }
 
     primary_time = TimeTuple(time_data["pri_coarsetm"], time_data["pri_fintm"])
