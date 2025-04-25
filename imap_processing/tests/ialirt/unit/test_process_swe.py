@@ -43,7 +43,7 @@ def binary_packet_path():
         imap_module_directory
         / "tests"
         / "ialirt"
-        / "test_data"
+        / "data"
         / "l0"
         / "20240827095047_SWE_IALIRT_packet.bin"
     )
@@ -56,7 +56,7 @@ def swe_test_data():
         imap_module_directory
         / "tests"
         / "ialirt"
-        / "test_data"
+        / "data"
         / "l0"
         / "idle_export_eu.SWE_IALIRT_20240827_093852.csv"
     )
