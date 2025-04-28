@@ -10,6 +10,5 @@ def test_generate_binary():
     packet_files = imap_module_directory / test_file
     packet_definition = imap_module_directory / "ialirt/packet_definitions/ialirt.xml"
     ingest_data = generate_binary(packet_files, packet_definition)
-    print("h")
     assert len(ingest_data) == 44429
     assert ingest_data[0]["met"] == 482934903 + 62976
