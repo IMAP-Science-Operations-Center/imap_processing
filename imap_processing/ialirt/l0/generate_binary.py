@@ -24,10 +24,10 @@ def generate_binary(
     -------
     binary_blob_data : list
         Binary blob data for each packet.
-    time_data : list
+    met_data : list
         SCLK time in seconds.
     """
-    time_data = []
+    met_data = []
     binary_blob_data = []
 
     # Set up the parser from the input packet definition
@@ -40,11 +40,11 @@ def generate_binary(
             binary_blob = packet.raw_data
             # Subsecond time conversion specified in 7516-9054 GSW-FSW ICD.
             # Value of SCLK subseconds, unsigned, (LSB = 1/256 sec)
-            time = (
+            met = (
                 packet.user_data["SC_SCLK_SEC"]
                 + packet.user_data["SC_SCLK_SUB_SEC"] * 256
             )
             binary_blob_data.append(binary_blob)
-            time_data.append(time)
+            met_data.append(met)
 
-    return binary_blob_data, time_data
+    return binary_blob_data, met_data
