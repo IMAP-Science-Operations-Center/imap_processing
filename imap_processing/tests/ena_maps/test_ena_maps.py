@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from imap_processing.cdf.utils import write_cdf
+from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils import spatial_utils
 from imap_processing.ena_maps.utils.coordinates import CoordNames
@@ -132,6 +132,39 @@ class TestUltraPointingSet:
                 ultra_pset_ds,
                 spice_reference_frame=geometry.SpiceFrame.IMAP_DPS,
             )
+
+
+@pytest.fixture(scope="module")
+def hi_pset_cdf_path(imap_tests_path):
+    return imap_tests_path / "hi/data/l1/imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
+
+
+@pytest.mark.external_test_data
+class TestHiPointingSet:
+    """Test suite for HiPointingSet class."""
+
+    def test_init(self, hi_pset_cdf_path):
+        """Test coverage for __init__ method."""
+        pset_ds = load_cdf(hi_pset_cdf_path)
+        hi_pset = ena_maps.HiPointingSet(pset_ds)
+        assert isinstance(hi_pset, ena_maps.HiPointingSet)
+        assert hi_pset.spice_reference_frame == geometry.SpiceFrame.ECLIPJ2000
+        assert hi_pset.num_points == 3600
+        np.testing.assert_array_equal(hi_pset.az_el_points.shape, (3600, 2))
+
+    def test_from_cdf(self, hi_pset_cdf_path):
+        """Test coverage for from_cdf method."""
+        hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path)
+        assert isinstance(hi_pset, ena_maps.HiPointingSet)
+
+    def test_plays_nice_with_rectangular_sky_map(self, hi_pset_cdf_path):
+        """Test that HiPointingSet works with RectangularSkyMap"""
+        hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path)
+        rect_map = ena_maps.RectangularSkyMap(
+            spacing_deg=2, spice_frame=geometry.SpiceFrame.ECLIPJ2000
+        )
+        rect_map.project_pset_values_to_map(hi_pset, ["counts", "exposure_times"])
+        assert rect_map.data_1d["counts"].max() > 0
 
 
 class TestRectangularSkyMap:
