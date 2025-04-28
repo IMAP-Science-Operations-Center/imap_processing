@@ -9,7 +9,7 @@ def test_generate_binary():
     test_file = "tests/ialirt/data/l0/apid_478.bin"
     packet_files = imap_module_directory / test_file
     packet_definition = imap_module_directory / "ialirt/packet_definitions/ialirt.xml"
-    binary_blob_data, time_data = generate_binary(packet_files, packet_definition)
-    assert len(binary_blob_data) == 44429
-    assert len(time_data) == 44429
-    assert time_data[0] == 482934903 + 62976
+    ingest_data = generate_binary(packet_files, packet_definition)
+    print("h")
+    assert len(ingest_data) == 44429
+    assert ingest_data[0]["met"] == 482934903 + 62976
