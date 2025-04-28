@@ -1,7 +1,3 @@
-# TODO: figure out how to handle duplicate names between products (i.e. h is used in all 3)
-# TODO: remove lablaxis where lablptr is used?
-# TODO: add attributes for labels
-
 # <=== Defaults ===>
 default_particle_attrs: &default_particle
   DEPEND_0: epoch
@@ -40,6 +36,7 @@ default_energy_delta_attrs: &default_energy_delta
   SCALE_TYP: log
 
 default_uncertainty_attrs: &default_uncertainty
+  DEPEND_0: epoch
   VAR_TYPE: support_data
   DISPLAY_TYPE: spectrogram
   VALIDMIN: 0
@@ -544,6 +541,20 @@ c_energy_delta_minus:
   FIELDNAM: C energy delta minus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
 
+o_energy_delta_plus:
+  <<: *default_energy_delta
+  DEPEND_0: o_energy_mean
+  CATDESC: O energy delta plus (maximum bin energy minus geometric mean)
+  FIELDNAM: O energy delta plus
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
+
+o_energy_delta_minus:
+  <<: *default_energy_delta
+  DEPEND_0: o_energy_mean
+  CATDESC: O energy delta minus (geometric mean minus minimum bin energy)
+  FIELDNAM: O energy delta minus
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
+
 n_energy_delta_plus:
   <<: *default_energy_delta
   DEPEND_0: n_energy_mean
@@ -598,6 +609,20 @@ mg_energy_delta_minus:
   DEPEND_0: mg_energy_mean
   CATDESC: Mg energy delta minus (geometric mean minus minimum bin energy)
   FIELDNAM: Mg energy delta minus
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
+
+al_energy_delta_plus:
+  <<: *default_energy_delta
+  DEPEND_0: al_energy_mean
+  CATDESC: Al energy delta plus (maximum bin energy minus geometric mean)
+  FIELDNAM: Al energy delta plus
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
+
+al_energy_delta_minus:
+  <<: *default_energy_delta
+  DEPEND_0: al_energy_mean
+  CATDESC: Al energy delta minus (geometric mean minus minimum bin energy)
+  FIELDNAM: Al energy delta minus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
 
 si_energy_delta_plus:
