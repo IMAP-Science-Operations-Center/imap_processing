@@ -30,9 +30,8 @@ def test_data():
     vz_sc = np.array([618.0569, 892.6931, 892.6931, 892.6931])
     energy = np.array([3.384, 3.385, 4.138, 4.138])
     v = np.column_stack((vx_sc, vy_sc, vz_sc))
-    time = np.array([0.0])
 
-    return time, v, energy
+    return v, energy
 
 
 def test_build_energy_bins():
@@ -194,7 +193,7 @@ def mock_imap_state(time, ref_frame):
 
 def test_get_helio_histogram(monkeypatch, test_data):
     """Tests get_helio_histogram function."""
-    time, v, energy = test_data
+    v, energy = test_data
     monkeypatch.setattr(ultra_l1c_pset_bins, "imap_state", mock_imap_state)
 
     energy_bin_edges, _, _ = build_energy_bins()
@@ -209,7 +208,7 @@ def test_get_helio_histogram(monkeypatch, test_data):
         mid_time, v, energy, subset_energy_bin_edges, nside=1
     )
 
-    assert hist.shape == (len(energy_bin_edges), hp.nside2npix(1))
+    assert hist.shape == (len(subset_energy_bin_edges), hp.nside2npix(1))
     assert latitude.shape == (n_pix,)
     assert longitude.shape == (n_pix,)
-    assert np.sum(hist[2, :]) == 2  # Two energy values in third bin
+    assert np.sum(hist[2, :]) == 2
