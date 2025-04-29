@@ -199,7 +199,7 @@ def get_helio_histogram(
         # to the velocity wrt heliosphere.
         # energy_velocity * cartesian -> apply the magnitude of the velocity
         # to every position on the grid in the despun grid.
-        mask = (energy >= 0) & (energy < 1000)
+        mask = (energy >= e_min) & (energy < e_max)
         vx, vy, vz = vhat.T
 
         # Select only the particles that fall within the energy bin.
@@ -214,7 +214,7 @@ def get_helio_histogram(
 
         # Convert Cartesian heliocentric vectors into spherical coordinates.
         # Result: azimuth (longitude) and elevation (latitude) in degrees.
-        helio_spherical = cartesian_to_spherical(helio_normalized)
+        helio_spherical = cartesian_to_spherical(np.squeeze(helio_normalized))
         az, el = helio_spherical[:, 1], helio_spherical[:, 2]
 
         # Convert azimuth/elevation directions to HEALPix pixel indices.
