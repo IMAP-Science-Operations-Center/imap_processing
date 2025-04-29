@@ -1,11 +1,3 @@
-default_coords_int: &default_coords_int
-  # Assumed values for all int coordinate attrs unless overwritten
-  FILLVAL: -9223372036854775808
-  FORMAT: I19
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854769664
-  VAR_TYPE: support_data
-
 default_coords_float32: &default_coords_float32
   # Assumed values for all float coordinate attrs unless overwritten
   FILLVAL: .NAN
@@ -38,10 +30,17 @@ default_float32_attrs: &default_float32
 
 # Define Coordinates
 pixel_index:
-  <<: *default_coords_int
+  # Max number of pixels in Healpix style map which can fit into a 32-bit integer
+  # is with Healpix nside parameter = 16384, npix = 3221225472. Use the max of uint32
+  # as the fill value for the pixel index.
+  dtype: uint32
+  FILLVAL: 4294967295
+  VALIDMIN: 0
+  VALIDMAX: 3221225472
+  FORMAT: I10
   CATDESC: Healpix index corresponding to the bin center.
   FIELDNAM: pixel_index
-  LABLAXIS: HEALPix \#
+  LABLAXIS: "HEALPix #"
   UNITS: " "
   VAR_TYPE: support_data
 
