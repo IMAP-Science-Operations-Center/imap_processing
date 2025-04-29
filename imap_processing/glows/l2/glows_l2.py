@@ -12,7 +12,7 @@ from imap_processing.glows.l1b.glows_l1b_data import HistogramL1B
 from imap_processing.glows.l2.glows_l2_data import DailyLightcurve, HistogramL2
 
 
-def glows_l2(input_dataset: xr.Dataset) -> list[xr.Dataset]:
+def glows_l2(input_dataset: xr.Dataset) -> xr.Dataset:
     """
     Will process GLoWS L2 data from L1 data.
 
@@ -30,13 +30,9 @@ def glows_l2(input_dataset: xr.Dataset) -> list[xr.Dataset]:
     cdf_attrs.add_instrument_global_attrs("glows")
     cdf_attrs.add_instrument_variable_attrs("glows", "l2")
 
-    split_data = split_data_by_observational_day(input_dataset)
-    l2_output = []
-    for data in split_data:
-        l2 = generate_l2(data)
-        l2_output.append(create_l2_dataset(l2, cdf_attrs))
+    l2 = generate_l2(input_dataset)
 
-    return l2_output
+    return create_l2_dataset(l2, cdf_attrs)
 
 
 # TODO: filter good times out
@@ -137,35 +133,6 @@ def filter_bad_bins(histograms: NDArray, bin_exclusions: NDArray) -> NDArray:
 
     # excluded bins can be marked with -1
     return histograms
-
-
-def split_data_by_observational_day(input_dataset: xr.Dataset) -> list[xr.Dataset]:
-    """
-    Return L1B data array for an observational day, given start and stop times.
-
-    Parameters
-    ----------
-    input_dataset : xarray.Dataset
-        Input L1B dataset.
-
-    Returns
-    -------
-    list : xarray.Dataset
-        List of L1B datasets, each representing a day of data.
-    """
-    # TODO: replace this with a query to the spin table to get the observational days
-
-    # Find the range of epoch values within the observational day.
-    # This should be replaced with a query to the spin table to get the observational
-    # days within the time range of the file and when those observational days
-    # start and stop
-
-    # Note: slice is inclusive on both sides.
-    # data_by_day = [
-    #     input_dataset.sel(epoch=slice(day_ends[i], day_ends[i + 1]))
-    #     for i in range(len(day_ends) - 1)
-    # ]
-    return [input_dataset]
 
 
 def create_l2_dataset(
