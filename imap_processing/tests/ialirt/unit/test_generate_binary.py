@@ -1,7 +1,10 @@
+import pytest
+
 from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.generate_binary import generate_binary
 
 
+@pytest.mark.external_test_data
 def test_generate_binary():
     """
     Test test_generate_binary function.
