@@ -36,7 +36,7 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
     l1b_dataset : xarray.Dataset
         The``xarray`` dataset containing the science data and supporting metadata.
     """
-    print(f"\nProcessing {file_path}")
+    logger.info(f"\nProcessing {file_path}")
 
     # Open the l1a file
     l1a_dataset = load_cdf(file_path)
@@ -44,7 +44,7 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
     # Use the logical source as a way to distinguish between data products and
     # set some useful distinguishing variables
     dataset_name = l1a_dataset.attrs["Logical_source"].replace("_l1a_", "_l1b_")
-    descriptor = dataset_name.split("imap_codice_l1b_")[-1]
+    descriptor = dataset_name.removeprefix("imap_codice_l1b_")
     apid = constants.CODICEAPID_MAPPING[descriptor]
 
     # Get the L1b CDF attributes
