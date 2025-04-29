@@ -21,8 +21,7 @@ paths:
           description: |
             The full path to the file to upload, relative to the ``IMAP_DATA_DIR`` environment variable or the user's
             current working directory. (e.g. ``{IMAP_DATA_DIR}/imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts``).
-            The filename must be a valid IMAP Science or ancillary filename that follows the conventions described
-            `here <https://imap-processing.readthedocs.io/en/latest/data-access/index.html>`_.
+            The filename must be a valid IMAP Science or ancillary filename that follows the conventions described in our :ref:`naming conventions <naming-conventions>`.
           schema:
             type: string
         - name: X-api-key
@@ -103,8 +102,7 @@ paths:
           description: |
             The full path to the file to download (e.g.
             ``imap/swe/l0/2024/01/imap_swe_l0_sci_20240105_20240105_v00-01.pkts``). The filename must be a valid science or ancillary IMAP
-            filename that follows the conventions described
-            `here <https://imap-processing.readthedocs.io/en/latest/data-access/index.html>`_.
+            filename that follows the conventions described in our :ref:`naming conventions <naming-conventions>`.
           required: true
           schema:
             type: string
@@ -148,7 +146,7 @@ paths:
           name: instrument
           description: |
             The instrument of interest (e.g. ``mag``). Supported instruments are listed
-            `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_.
+            in our :ref:`naming conventions <naming-conventions>`.
           required: false
           schema:
             type: string
@@ -156,7 +154,7 @@ paths:
           name: data_level
           description: |
             The level of data product (e.g. ``l1a``). Supported levels are listed
-            `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_.
+            in our :ref:`naming conventions <naming-conventions>`.
           required: false
           schema:
             type: string
@@ -164,7 +162,7 @@ paths:
           name: descriptor
           description: |
             The descriptor of interest (e.g. ``burst``). Supported descriptors are listed
-            `here <https://imap-processing.readthedocs.io/en/latest/development-guide/style-guide/naming-conventions.html#data-product-file-naming-conventions>`_.
+            in our :ref:`naming conventions <naming-conventions>`.
           required: false
           schema:
             type: string
