@@ -432,9 +432,9 @@ class RectangularPointingSet(PointingSet):
         )
 
 
-class HealPixPointingSet(PointingSet, ABC):
+class HealpixPointingSet(PointingSet, ABC):
     """
-    Abstract base class for HealPix pointing sets.
+    Abstract base class for Healpix pointing sets.
 
     Defines additional properties and absract properties that are required
     for a PointingSet instance to be used with the match_coords_to_indices
@@ -446,12 +446,12 @@ class HealPixPointingSet(PointingSet, ABC):
     @property
     def nside(self) -> int:
         """
-        Number of pixels on the side of one of the 12 top-level HEALPix tiles.
+        Number of pixels on the side of one of the 12 top-level healpix tiles.
 
         Returns
         -------
         npix: int
-            The number of pixels on the side of one of the 12 ‘top-level’ HEALPix
+            The number of pixels on the side of one of the 12 ‘top-level’ healpix
             tiles.
         """
         return hp.npix_to_nside(self.num_points)
@@ -463,7 +463,7 @@ class HealPixPointingSet(PointingSet, ABC):
         raise NotImplementedError
 
 
-class UltraPointingSet(HealPixPointingSet):
+class UltraPointingSet(HealpixPointingSet):
     """
     Pointing set object specifically for Healpix-tiled ULTRA data, nominally at Level1C.
 
@@ -545,19 +545,19 @@ class UltraPointingSet(HealPixPointingSet):
         Returns
         -------
         num_points: int
-            The number of HEALPix pixels in the pointing set.
+            The number of healpix pixels in the pointing set.
         """
         return self.data[CoordNames.HEALPIX_INDEX.value].size
 
     @property
     def nested(self) -> bool:
         """
-        Whether the HEALPix tessellation is nested.
+        Whether the healpix tessellation is nested.
 
         Returns
         -------
         nested: bool
-            Whether the HEALPix tessellation is nested.
+            Whether the healpix tessellation is nested.
         """
         return bool(
             self.data[CoordNames.HEALPIX_INDEX.value].attrs.get("nested", False)
