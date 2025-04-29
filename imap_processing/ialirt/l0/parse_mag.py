@@ -1,13 +1,11 @@
 """Functions to support I-ALiRT MAG packet parsing."""
 
 import logging
-from pathlib import Path
 from typing import Union
 
 import numpy as np
 import xarray as xr
 
-from imap_processing.cdf.utils import load_cdf
 from imap_processing.ialirt.l0.mag_l0_ialirt_data import (
     Packet0,
     Packet1,
@@ -201,15 +199,15 @@ def get_time(
 
     primary_time = TimeTuple(int(pri_coarsetm.item()), int(pri_fintm.item()))
     secondary_time = TimeTuple(int(sec_coarsetm.item()), int(sec_fintm.item()))
-    time_data["pri_met"] = primary_time.to_seconds()
-    time_data["primary_ttj2000ns"] = met_to_ttj2000ns(time_data["pri_met"])
+    time_data_pri_met = primary_time.to_seconds()
+    time_data_primary_ttj2000ns = met_to_ttj2000ns(time_data_pri_met)
     time_data["primary_epoch"] = shift_time(
-        time_data["primary_ttj2000ns"], time_shift_mago
+        time_data_primary_ttj2000ns, time_shift_mago
     )
-    time_data["sec_met"] = secondary_time.to_seconds()
-    time_data["secondary_ttj2000ns"] = met_to_ttj2000ns(time_data["sec_met"])
+    time_data_sec_met = secondary_time.to_seconds()
+    time_data_secondary_ttj2000ns = met_to_ttj2000ns(time_data_sec_met)
     time_data["secondary_epoch"] = shift_time(
-        time_data["secondary_ttj2000ns"], time_shift_magi
+        time_data_secondary_ttj2000ns, time_shift_magi
     )
 
     return time_data
@@ -221,6 +219,7 @@ def calculate_l1b(
     pkt_counter: xr.DataArray,
     science_data: dict,
     status_data: dict,
+    calibration_dataset: xr.Dataset,
 ) -> tuple[np.ndarray, np.ndarray, dict]:
     """
     Calculate equivalent of l1b data product.
@@ -237,6 +236,8 @@ def calculate_l1b(
         Science data.
     status_data : dict
         Status data.
+    calibration_dataset : xr.Dataset
+        Calibration dataset.
 
     Returns
     -------
@@ -247,14 +248,6 @@ def calculate_l1b(
     time_data : dict
         Time data.
     """
-    # Get calibration data
-    calibration_dataset = load_cdf(
-        Path(__file__).resolve().parents[2]
-        / "mag"
-        / "l1b"
-        / "imap_calibration_mag_20240229_v01.cdf"
-    )
-
     calibration_matrix_mago, time_shift_mago = retrieve_matrix_from_l1b_calibration(
         calibration_dataset, is_mago=True
     )
@@ -290,7 +283,9 @@ def calculate_l1b(
     return updated_vector_mago, updated_vector_magi, time_data
 
 
-def process_packet(accumulated_data: xr.Dataset) -> list[dict]:
+def process_packet(
+    accumulated_data: xr.Dataset, calibration_dataset: xr.Dataset
+) -> list[dict]:
     """
     Parse the MAG packets.
 
@@ -298,6 +293,8 @@ def process_packet(accumulated_data: xr.Dataset) -> list[dict]:
     ----------
     accumulated_data : xr.Dataset
         Packets dataset accumulated over 1 min.
+    calibration_dataset : xr.Dataset
+        Calibration dataset.
 
     Returns
     -------
@@ -352,7 +349,12 @@ def process_packet(accumulated_data: xr.Dataset) -> list[dict]:
         ]
         science_data = extract_magnetic_vectors(science_values)
         updated_vector_mago, updated_vector_magi, time_data = calculate_l1b(
-            grouped_data, group, pkt_counter, science_data, status_data
+            grouped_data,
+            group,
+            pkt_counter,
+            science_data,
+            status_data,
+            calibration_dataset,
         )
 
         # Note: primary = MAGo, secondary = MAGi.

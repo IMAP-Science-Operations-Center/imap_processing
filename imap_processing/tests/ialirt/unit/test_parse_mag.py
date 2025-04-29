@@ -1,7 +1,5 @@
 """Tests to support I-ALiRT MAG packet parsing."""
 
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -116,6 +114,15 @@ def grouped_data():
     return grouped_data
 
 
+@pytest.fixture
+def calibration_dataset():
+    """Returns the calibration data."""
+    calibration_dataset = load_cdf(
+        imap_module_directory / "mag" / "l1b" / "imap_calibration_mag_20240229_v01.cdf"
+    )
+    return calibration_dataset
+
+
 def test_get_pkt_counter(xarray_data):
     """Tests the get_pkt_counter function."""
     status_values = xarray_data["mag_status"].values
@@ -136,15 +143,8 @@ def test_get_status_data(xarray_data, mag_test_data):
         assert status_data[key] == matching_row[key.upper()].values[0]
 
 
-def test_get_time(grouped_data):
+def test_get_time(grouped_data, calibration_dataset):
     """Tests the get_time function."""
-    # Get calibration data
-    calibration_dataset = load_cdf(
-        Path(__file__).resolve().parents[3]
-        / "mag"
-        / "l1b"
-        / "imap_calibration_mag_20240229_v01.cdf"
-    )
 
     calibration_matrix_mago, time_shift_mago = retrieve_matrix_from_l1b_calibration(
         calibration_dataset, is_mago=True
@@ -181,7 +181,7 @@ def test_extract_magnetic_vectors():
     }
 
 
-def test_calculate_l1b(grouped_data, xarray_data):
+def test_calculate_l1b(grouped_data, xarray_data, calibration_dataset):
     """Tests the calculate_l1b function."""
 
     pkt_counter = np.array([0.0, 1.0, 2.0, 3.0])
@@ -201,22 +201,18 @@ def test_calculate_l1b(grouped_data, xarray_data):
     }
 
     vec_mago, vec_magi, time_data = calculate_l1b(
-        grouped_data,
-        0,
-        pkt_counter,
-        science_data,
-        status_data,
+        grouped_data, 0, pkt_counter, science_data, status_data, calibration_dataset
     )
 
     assert vec_mago.shape == (4,)
     assert vec_magi.shape == (4,)
-    assert "pri_met" in time_data
-    assert "sec_met" in time_data
+    assert "primary_epoch" in time_data
+    assert "secondary_epoch" in time_data
 
 
-def test_process_packet(xarray_data, mag_test_data):
+def test_process_packet(xarray_data, mag_test_data, calibration_dataset):
     """Tests the parse_packet function."""
-    parsed_packets = process_packet(xarray_data)
+    parsed_packets = process_packet(xarray_data, calibration_dataset)
 
     for packet in parsed_packets:
         index = packet["pri_coarsetm"] == mag_test_data["PRI_COARSETM"]
