@@ -136,6 +136,8 @@ def get_helio_histogram(
 
     Parameters
     ----------
+    time : np.ndarray
+        Median time of pointing in et.
     vhat : tuple[np.ndarray, np.ndarray, np.ndarray]
         The x,y,z-components of the unit velocity vector.
     energy : np.ndarray
@@ -197,10 +199,13 @@ def get_helio_histogram(
         # to the velocity wrt heliosphere.
         # energy_velocity * cartesian -> apply the magnitude of the velocity
         # to every position on the grid in the despun grid.
-        mask = (energy >= e_min) & (energy < e_max)
-        helio_velocity = (
-            spacecraft_velocity.reshape(1, 3) + energy_velocity * vhat[mask]
-        )
+        mask = (energy >= 0) & (energy < 1000)
+        vx, vy, vz = vhat.T
+
+        # Select only the particles that fall within the energy bin.
+        vx_bin, vy_bin, vz_bin = vx[mask], vy[mask], vz[mask]
+        vhat_bin = np.stack((vx_bin, vy_bin, vz_bin), axis=1)
+        helio_velocity = spacecraft_velocity.reshape(1, 3) + energy_velocity * vhat_bin
 
         # Normalized vectors representing the direction of the heliocentric velocity.
         helio_normalized = helio_velocity / np.linalg.norm(
@@ -216,7 +221,7 @@ def get_helio_histogram(
         hpix_idx = hp.ang2pix(nside, az, el, nest=nested, lonlat=True)
 
         # Only count the events that fall within the energy bin
-        hist[i, :] += np.bincount(hpix_idx[mask], minlength=n_pix).astype(np.float64)
+        hist[i, :] += np.bincount(hpix_idx, minlength=n_pix).astype(np.float64)
 
     return hist, latitude, longitude, n_pix
 

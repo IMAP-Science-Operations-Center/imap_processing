@@ -10,6 +10,7 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     get_background_rates,
     get_helio_exposure_times,
+    get_helio_histogram,
     get_spacecraft_exposure_times,
     get_spacecraft_histogram,
     get_spacecraft_sensitivity,
@@ -181,3 +182,24 @@ def test_get_spacecraft_sensitivity():
     # Check that out-of-bounds energy returns all NaNs
     result = grid_sensitivity(df_efficiencies, df_geometric_function, 2.5)
     assert np.isnan(result).all()
+
+
+@pytest.mark.external_kernel
+@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
+def test_get_helio_histogram(test_data):
+    """Tests get_helio_histogram function."""
+    v, energy = test_data
+
+    energy_bin_edges, _, _ = build_energy_bins()
+    subset_energy_bin_edges = energy_bin_edges[:3]
+
+    start_time = 829485054.185627
+    end_time = 829567884.185627
+
+    mid_time = np.average([start_time, end_time])
+
+    hist, latitude, longitude, n_pix = get_helio_histogram(
+        mid_time, v, energy, subset_energy_bin_edges
+    )
+
+    print("hi")
