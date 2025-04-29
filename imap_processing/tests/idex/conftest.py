@@ -46,6 +46,7 @@ def decom_test_data_sci() -> xr.Dataset:
     return PacketParser(TEST_L0_FILE_SCI).data[0]
 
 
+@pytest.fixture
 def decom_test_data_catlst() -> xr.Dataset:
     """Return a ``xarray`` dataset containing the catalog list summary data.
 
@@ -57,6 +58,7 @@ def decom_test_data_catlst() -> xr.Dataset:
     return PacketParser(TEST_L0_FILE_CATLST).data[0]
 
 
+@pytest.fixture
 def decom_test_data_evt() -> xr.Dataset:
     """Return a ``xarray`` dataset containing the event log data.
 
