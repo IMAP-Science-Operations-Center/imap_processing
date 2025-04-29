@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 
 from imap_processing import imap_module_directory
+from imap_processing.ultra.l1c import ultra_l1c_pset_bins
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     get_background_rates,
@@ -29,8 +30,9 @@ def test_data():
     vz_sc = np.array([618.0569, 892.6931, 892.6931, 892.6931])
     energy = np.array([3.384, 3.385, 4.138, 4.138])
     v = np.column_stack((vx_sc, vy_sc, vz_sc))
+    time = np.array([0.0])
 
-    return v, energy
+    return time, v, energy
 
 
 def test_build_energy_bins():
@@ -184,11 +186,16 @@ def test_get_spacecraft_sensitivity():
     assert np.isnan(result).all()
 
 
-@pytest.mark.external_kernel
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_get_helio_histogram(test_data):
+def mock_imap_state(time, ref_frame):
+    # Return dummy state vector with spacecraft velocity only
+    # Position (0,0,0), velocity (10,20,30)
+    return np.array([0, 0, 0, 10, 20, 30])
+
+
+def test_get_helio_histogram(monkeypatch, test_data):
     """Tests get_helio_histogram function."""
-    v, energy = test_data
+    time, v, energy = test_data
+    monkeypatch.setattr(ultra_l1c_pset_bins, "imap_state", mock_imap_state)
 
     energy_bin_edges, _, _ = build_energy_bins()
     subset_energy_bin_edges = energy_bin_edges[:3]
@@ -199,7 +206,10 @@ def test_get_helio_histogram(test_data):
     mid_time = np.average([start_time, end_time])
 
     hist, latitude, longitude, n_pix = get_helio_histogram(
-        mid_time, v, energy, subset_energy_bin_edges
+        mid_time, v, energy, subset_energy_bin_edges, nside=1
     )
 
-    print("hi")
+    assert hist.shape == (len(energy_bin_edges), hp.nside2npix(1))
+    assert latitude.shape == (n_pix,)
+    assert longitude.shape == (n_pix,)
+    assert np.sum(hist[2, :]) == 2  # Two energy values in third bin

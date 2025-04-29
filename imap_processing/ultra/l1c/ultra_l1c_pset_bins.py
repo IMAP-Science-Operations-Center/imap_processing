@@ -215,6 +215,7 @@ def get_helio_histogram(
         # Convert Cartesian heliocentric vectors into spherical coordinates.
         # Result: azimuth (longitude) and elevation (latitude) in degrees.
         helio_spherical = cartesian_to_spherical(np.squeeze(helio_normalized))
+        # TODO
         az, el = helio_spherical[:, 1], helio_spherical[:, 2]
 
         # Convert azimuth/elevation directions to HEALPix pixel indices.
