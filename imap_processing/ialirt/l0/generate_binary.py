@@ -38,10 +38,7 @@ def generate_binary(
         for packet in packet_generator:
             # Subsecond time conversion specified in 7516-9054 GSW-FSW ICD.
             # Value of SCLK subseconds, unsigned, (LSB = 1/256 sec)
-            met = (
-                packet.user_data["SC_SCLK_SEC"]
-                + packet.user_data["SC_SCLK_SUB_SEC"] * 256
-            )
+            met = packet["SC_SCLK_SEC"] + packet["SC_SCLK_SUB_SEC"] / 256
             ingest_data.append(
                 {
                     "apid": 478,
