@@ -1,44 +1,17 @@
-default_coords_int: &default_coords_int
-  # Assumed values for all int coordinate attrs unless overwritten
-  FILLVAL: -9223372036854775808
-  FORMAT: I19
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854769664
-  VAR_TYPE: support_data
-
-default_coords_float32: &default_coords_float32
-  # Assumed values for all float coordinate attrs unless overwritten
-  FILLVAL: .NAN
-  FORMAT: F12.6
-  VALIDMIN: -3.4028235e+38
-  VALIDMAX: 3.4028235e+38
-  dtype: float32
-  VAR_TYPE: support_data
-
-default_attrs: &default
-  # Assumed values for all variable attrs unless overwritten
-  DEPEND_0: epoch
-  DISPLAY_TYPE: time_series
-  FILLVAL: -9223372036854775808
-  FORMAT: I12
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854775807
-  VAR_TYPE: data
-  UNITS: " "
+# Define Rectangularly Tiled ENA Map values
+# The attributes in this file will be used to supplement/override the common
+# ENA map attributes defined in imap_enamaps_l2-common_variable_attrs.yaml
 
 default_float32_attrs: &default_float32
-  <<: *default
-  FILLVAL: .NAN
   FORMAT: F12.6
+  FILLVAL: -1.0e31
   VALIDMIN: -3.4028235e+38
   VALIDMAX: 3.4028235e+38
   dtype: float32
 
-# Define Rectangularly Tiled Map values
-
-# Define Coordinates
+# Define Coordinates specifically for Rectangular tiling
 longitude:
-  <<: *default_coords_float32
+  <<: *default_float32
   CATDESC: Pixel center longitude.
   FIELDNAM: longitude
   LABLAXIS: longitude
@@ -66,7 +39,7 @@ longitude_delta:
   FIELDNAM: longitude delta
 
 latitude:
-  <<: *default_coords_float32
+  <<: *default_float32
   CATDESC: Pixel center latitude.
   FIELDNAM: latitude
   LABLAXIS: latitude
@@ -93,97 +66,40 @@ latitude_delta:
   UNITS: degrees
   FIELDNAM: latitude delta
 
-energy:
-  <<: *default_coords_float32
-  CATDESC: Geometric mean of energy bin.
-  FIELDNAM: energy_bin_geometric_mean
-  LABLAXIS: Energy bin geometric mean
-  FORMAT: I2
-  UNITS: KeV
-  VAR_TYPE: support_data
-  SCALE_TYP: linear
-
-energy_label:
-  VAR_TYPE: metadata
-  CATDESC: Geometric mean of energy bin.
-  FIELDNAM: energy_bin_geometric_mean
-  FORMAT: A16
-  DEPEND_1: energy
-
 # Define Data variables
 exposure_factor:
-  <<: *default_float32
-  CATDESC: Exact or approximate exposure time over which counts in a pixel are accumulated.  Used as a weighting factor for combining data quantities sensibly.
-  FIELDNAM: Exposure Times
-  DEPEND_0: epoch
+  # TODO: add in energy dimension, at least for Heliosphereic frame
   DEPEND_1: longitude
   DEPEND_2: latitude
-  UNITS: s
-  VAR_TYPE: data
   LABL_PTR_1: longitude_label
   LABL_PTR_2: latitude_label
-  DISPLAY_TYPE: no_plot
 
 ena_intensity:
-  <<: *default_float32
-  CATDESC: Mono-energetic ENA intensity.
-  FIELDNAM: Intensity
-  UNITS: counts/(s * cm^2 * Sr * KeV)
-  DELTA_MINUS_VAR: ena_intensity_stat_unc
-  DELTA_PLUS_VAR: ena_intensity_stat_unc
-  DEPEND_0: epoch
   DEPEND_1: energy
   DEPEND_2: longitude
   DEPEND_3: latitude
-  VAR_TYPE: data
-  LABLAXIS: Intensity
   LABL_PTR_1: energy_label
   LABL_PTR_2: longitude_label
   LABL_PTR_3: latitude_label
-  DISPLAY_TYPE: image
 
 ena_intensity_stat_unc:
-  <<: *default_float32
-  CATDESC: ENA intensity statistical uncertainty.
-  FIELDNAM: Intensity stat unc
-  UNITS: counts/(s * cm^2 * Sr * KeV)
-  DEPEND_0: epoch
   DEPEND_1: energy
   DEPEND_2: longitude
   DEPEND_3: latitude
-  VAR_TYPE: data
-  LABLAXIS: Statistical Unc.
   LABL_PTR_1: energy_label
   LABL_PTR_2: longitude_label
   LABL_PTR_3: latitude_label
-  DISPLAY_TYPE: image
 
 sensitivity:
-  <<: *default_float32
-  CATDESC: Calibration/sensitivity factor calculated from multiple pointing sets.
-  FIELDNAM: sensitivity
-  UNITS: cm^-3
-  DEPEND_0: epoch
   DEPEND_1: energy
   DEPEND_2: longitude
   DEPEND_3: latitude
-  VAR_TYPE: data
-  LABLAXIS: sensitivity
   LABL_PTR_1: energy_label
   LABL_PTR_2: longitude_label
   LABL_PTR_3: latitude_label
-  DISPLAY_TYPE: image
 
 obs_date:
-  <<: *default
-  CATDESC: Exposure time weighted mean collection date of data in a pixel.
-  FIELDNAM: J2000 Nanoseconds
-  UNITS: ns
-  DEPEND_0: epoch
   DEPEND_1: longitude
   DEPEND_2: latitude
-  VAR_TYPE: data
-  LABLAXIS: epoch
   LABL_PTR_1: longitude_label
   LABL_PTR_2: latitude_label
-  DISPLAY_TYPE: image

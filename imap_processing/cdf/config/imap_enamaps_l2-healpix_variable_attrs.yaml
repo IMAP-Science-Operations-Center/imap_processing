@@ -1,34 +1,15 @@
-default_coords_float32: &default_coords_float32
-  # Assumed values for all float coordinate attrs unless overwritten
-  FILLVAL: .NAN
-  FORMAT: F12.6
-  VALIDMIN: -3.4028235e+38
-  VALIDMAX: 3.4028235e+38
-  dtype: float32
-  VAR_TYPE: support_data
-
-default_attrs: &default
-  # Assumed values for all variable attrs unless overwritten
-  DEPEND_0: epoch
-  DISPLAY_TYPE: time_series
-  FILLVAL: -9223372036854775808
-  FORMAT: I12
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854775807
-  VAR_TYPE: data
-  UNITS: " "
+# Define Healpix Tiled ENA Map values
+# The attributes in this file will be used to supplement/override the common
+# ENA map attributes defined in imap_enamaps_l2-common_variable_attrs.yaml
 
 default_float32_attrs: &default_float32
-  <<: *default
-  FILLVAL: .NAN
   FORMAT: F12.6
+  FILLVAL: -1.0e31
   VALIDMIN: -3.4028235e+38
   VALIDMAX: 3.4028235e+38
   dtype: float32
 
-# Define Healpix Tiled Map values
-
-# Define Coordinates
+# Define Coordinates specifically for Healpix tiling
 pixel_index:
   # Max number of pixels in Healpix style map which can fit into a 32-bit integer
   # is with Healpix nside parameter = 16384, npix = 3221225472. Use the max of uint32
@@ -48,30 +29,14 @@ pixel_index_label:
   VAR_TYPE: metadata
   CATDESC: Healpix index corresponding to the bin center.
   FIELDNAM: pixel_index
-  FORMAT: I3
+  FORMAT: I10
   DEPEND_1: pixel_index
 
-energy:
-  <<: *default_coords_float32
-  CATDESC: Geometric mean of energy bin.
-  FIELDNAM: energy_bin_geometric_mean
-  LABLAXIS: Energy bin geometric mean
-  FORMAT: I2
-  UNITS: KeV
-  VAR_TYPE: support_data
-  SCALE_TYP: linear
-
-energy_label:
-  VAR_TYPE: metadata
-  CATDESC: Geometric mean of energy bin.
-  FIELDNAM: energy_bin_geometric_mean
-  FORMAT: A16
-  DEPEND_1: energy
-
 # Define Non-dimension Coordinates
-# (longitude, latitude are not dimension coordinates for healpix tiling)
+# (longitude, latitude are not dimension coordinates for healpix tiling, but rather
+# describe the lon/lat coordinate of the Healpix pixel center)
 longitude:
-  <<: *default_coords_float32
+  <<: *default_float32
   DEPEND_1: pixel_index
   CATDESC: HEALPix pixel center longitude in range [0, 360].
   FIELDNAM: Longitude
@@ -84,7 +49,7 @@ longitude:
   VALIDMAX: 360
 
 latitude:
-  <<: *default_coords_float32
+  <<: *default_float32
   DEPEND_1: pixel_index
   CATDESC: HEALPix pixel center latitude in range [-90, 90].
   FIELDNAM: Latitude
@@ -98,69 +63,29 @@ latitude:
 
 # Define Data variables
 exposure_factor:
-  <<: *default_float32
-  CATDESC: Exact or approximate exposure time over which counts in a pixel are accumulated.  Used as a weighting factor for combining data quantities sensibly.
-  FIELDNAM: Exposure Times
-  DEPEND_0: epoch
+  # TODO: add in energy dimension, at least for Heliosphereic frame
   DEPEND_1: pixel_index
-  UNITS: s
-  VAR_TYPE: data
-  LABLAXIS: Exposure
   LABL_PTR_1: pixel_index_label
-  DISPLAY_TYPE: no_plot
 
 ena_intensity:
-  <<: *default_float32
-  CATDESC: Mono-energetic ENA intensity.
-  FIELDNAM: Intensity
-  UNITS: counts/(s * cm^2 * Sr * KeV)
-  DELTA_MINUS_VAR: ena_intensity_stat_unc
-  DELTA_PLUS_VAR: ena_intensity_stat_unc
-  DEPEND_0: epoch
   DEPEND_1: energy
   DEPEND_2: pixel_index
-  VAR_TYPE: data
-  LABLAXIS: Intensity
   LABL_PTR_1: energy_label
   LABL_PTR_2: pixel_index_label
   DISPLAY_TYPE: image
 
 ena_intensity_stat_unc:
-  <<: *default_float32
-  CATDESC: ENA intensity statistical uncertainty.
-  FIELDNAM: Intensity stat unc
-  UNITS: counts/(s * cm^2 * Sr * KeV)
-  DEPEND_0: epoch
   DEPEND_1: energy
   DEPEND_2: pixel_index
-  VAR_TYPE: data
-  LABLAXIS: Statistical Unc.
   LABL_PTR_1: energy_label
   LABL_PTR_2: pixel_index_label
-  DISPLAY_TYPE: image
 
 sensitivity:
-  <<: *default_float32
-  CATDESC: Calibration/sensitivity factor calculated from multiple pointing sets.
-  FIELDNAM: sensitivity
-  UNITS: cm^-3
-  DEPEND_0: epoch
   DEPEND_1: energy
   DEPEND_2: pixel_index
-  VAR_TYPE: data
-  LABLAXIS: sensitivity
   LABL_PTR_1: energy_label
   LABL_PTR_2: pixel_index_label
-  DISPLAY_TYPE: image
 
 obs_date:
-  <<: *default
-  CATDESC: Exposure time weighted mean collection date of data in a pixel.
-  FIELDNAM: J2000 Nanoseconds
-  UNITS: ns
-  DEPEND_0: epoch
   DEPEND_1: pixel_index
-  VAR_TYPE: data
-  LABLAXIS: epoch
   LABL_PTR_1: pixel_index_label
-  DISPLAY_TYPE: image
