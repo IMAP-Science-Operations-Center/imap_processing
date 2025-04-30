@@ -279,8 +279,13 @@ def ultra_l2(
         output_map_structure=output_map_structure,
     )
 
+    # Always add the common (non-tiling specific) attributes to the attr handler.
+    # These can be updated/overwritten by the tiling specific attributes.
+    cdf_attrs.add_instrument_variable_attrs(instrument="enamaps", level="l2-common")
+
     # Output formatting for HEALPIX tiling
     if output_map_structure.tiling_type is ena_maps.SkyTilingType.HEALPIX:
+        # Add the tiling specific attributes to the attr handler.
         cdf_attrs.add_instrument_variable_attrs(
             instrument="enamaps", level="l2-healpix"
         )
@@ -302,6 +307,7 @@ def ultra_l2(
         }
 
     elif output_map_structure.tiling_type is ena_maps.SkyTilingType.RECTANGULAR:
+        # Add the tiling specific attributes to the attr handler.
         cdf_attrs.add_instrument_variable_attrs(
             instrument="enamaps", level="l2-rectangular"
         )
