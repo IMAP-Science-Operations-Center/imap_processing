@@ -73,7 +73,7 @@ def l1a_example_data(_download_test_data):
 
 
 @pytest.fixture
-def l2a_dataset(decom_test_data_sci: xr.Dataset) -> xr.Dataset:
+def l2a_dataset(l1b_dataset: xr.Dataset) -> xr.Dataset:
     """Return a ``xarray`` dataset containing test data.
 
     Returns
@@ -81,6 +81,7 @@ def l2a_dataset(decom_test_data_sci: xr.Dataset) -> xr.Dataset:
     dataset : xr.Dataset
         A ``xarray`` dataset containing the test data
     """
+    return idex_l2a(l1b_dataset)
     idex_attrs = get_idex_attrs("l1b")
     spin_phase_angles = xr.DataArray(
         np.random.randint(0, 360, len(decom_test_data_sci.epoch)),
@@ -108,10 +109,26 @@ def l1b_example_data(_download_test_data):
     return load_hdf_file(L1B_EXAMPLE_FILE)
 
 
+@pytest.fixture
+@mock.patch("imap_processing.idex.idex_l1b.get_spice_data")
+def l1b_dataset(mock_get_spice_data, decom_test_data_sci: xr.Dataset) -> xr.Dataset:
+    """Return a ``xarray`` dataset containing test data.
+
+    Returns
+    -------
+    dataset : xr.Dataset
+        A ``xarray`` dataset containing the test data
+    """
+
+    mock_get_spice_data.side_effect = get_spice_data_side_effect_func
+    dataset = idex_l1b(decom_test_data_sci)
+    return dataset
+
+
 def get_spice_data_side_effect_func(l1a_ds, idex_attrs):
     # Create a mock dictionary of spice arrays
 
-    return {
+    spice_data = {
         name: xr.DataArray(
             name=name,
             data=np.ones(len(l1a_ds["epoch"])),
@@ -120,6 +137,22 @@ def get_spice_data_side_effect_func(l1a_ds, idex_attrs):
         )
         for name in SPICE_ARRAYS
     }
+    spin_phase_angles = xr.DataArray(np.random.randint(0, 360, len(l1a_ds.epoch)))
+    longitude = xr.DataArray(
+        np.random.uniform(0, 360, len(l1a_ds.epoch)),
+        dims=["epoch"],
+        name="longitude",
+    )
+    latitude = xr.DataArray(
+        np.random.uniform(-90, 90, len(l1a_ds.epoch)),
+        dims=["epoch"],
+        name="latitude",
+    )
+    spice_data["spin_phase"] = spin_phase_angles
+    spice_data["latitude"] = latitude
+    spice_data["longitude"] = longitude
+
+    return spice_data
 
 
 def load_hdf_file(path: str) -> xr.Dataset:

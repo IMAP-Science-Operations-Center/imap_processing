@@ -14,6 +14,7 @@ Examples
     l1b_data = idex_l1b(l1a_data)
     l1a_data = idex_l2a(l1b_data)
     l2b_data = idex_l2b(l2a_data)
+    # TODO remove l2a and l2b?
     write_cdf(l2b_data)
 """
 
@@ -35,37 +36,37 @@ from imap_processing.idex.idex_constants import (
 logger = logging.getLogger(__name__)
 
 
-def idex_l2c(l2b_datasets: list[xr.Dataset]) -> xr.Dataset:
+def idex_l2c(l1b_datasets: list[xr.Dataset]) -> xr.Dataset:
     """
     Will process IDEX l1b data to create l2c data products.
 
     Parameters
     ----------
-    l2b_datasets : list[xarray.Dataset]
-        IDEX L2b datasets.
+    l1b_datasets : list[xarray.Dataset]
+        IDEX L1b datasets.
 
     Returns
     -------
-    l2b_dataset : xarray.Dataset
+    l1b_dataset : xarray.Dataset
         The``xarray`` dataset containing the science data and supporting metadata.
     """
     logger.info(
         f"Running IDEX L2C processing on datasets:"
-        f" {[ds.attrs['Logical_source'] for ds in l2b_datasets]}"
+        f" {[ds.attrs['Logical_source'] for ds in l1b_datasets]}"
     )
 
     # create the attribute manager for this data level
     idex_attrs = ImapCdfAttributes()
     idex_attrs.add_instrument_global_attrs(instrument="idex")
-
+    idex_attrs.add_instrument_variable_attrs("idex", "l2c")
     # Initialize the HealpixSkyMap object
     skymap = ena_maps.HealpixSkyMap(
         nside=IDEX_HEALPIX_NSIDE,
         nested=IDEX_HEALPIX_NESTED,
         spice_frame=IDEX_POINTING_REFERENCE_FRAME,
     )
-
-    for ds in l2b_datasets:
+    # Create raw dust count psets and push values to the map for each l1b dataset.
+    for ds in l1b_datasets:
         pset = idex_pset(ds, idex_attrs)
 
         # TODO exposure time
@@ -89,17 +90,17 @@ def idex_l2c(l2b_datasets: list[xr.Dataset]) -> xr.Dataset:
 
 
 def idex_pset(
-    l2b_dataset: xr.Dataset,
+    l1b_dataset: xr.Dataset,
     idex_attrs: ImapCdfAttributes,
     nside: int = 8,
     nested: bool = False,
 ) -> ena_maps.IDEXPointingSet:
     """
-    Create an IDEX pointing set object out of an l2b dataset.
+    Create an IDEX pointing set object out of an l1b dataset.
 
     Parameters
     ----------
-    l2b_dataset : xarray.Dataset
+    l1b_dataset : xarray.Dataset
         IDEX L2b dataset.
     idex_attrs : ImapCdfAttributes
         IDEX CDF attributes manager.
@@ -115,14 +116,14 @@ def idex_pset(
     """
     # For ISTP, epoch should be the center of the time bin.
     epoch_da = xr.DataArray(
-        np.mean(l2b_dataset["epoch"].data[[0, -1]]),
+        [np.mean(l1b_dataset["epoch"].data[[0, -1]]).astype(np.int64)],
         name="epoch",
         dims=["epoch"],
         attrs=idex_attrs.get_variable_attributes("epoch"),
     )
 
-    longitude = l2b_dataset["longitude"].copy()
-    latitude = l2b_dataset["latitude"].copy()
+    longitude = l1b_dataset["longitude"].copy()
+    latitude = l1b_dataset["latitude"].copy()
 
     hpix_idx = hp.ang2pix(
         nside, nest=nested, lonlat=True, theta=longitude, phi=latitude
@@ -133,15 +134,16 @@ def idex_pset(
         np.arange(n_pix),
         name=CoordNames.HEALPIX_INDEX.value,
         dims=CoordNames.HEALPIX_INDEX.value,
+        attrs=idex_attrs.get_variable_attributes("healpix_index"),
     )
 
-    # Create a histogram of the counts in each pixel
+    # Create a histogram of the raw dust event counts for each pixel
     counts = np.histogram(hpix_idx, bins=n_pix, range=(0, n_pix))[0]
     counds_da = xr.DataArray(
         counts,
         name="counts",
         dims=CoordNames.HEALPIX_INDEX.value,
-        # attrs=idex_attrs.get_variable_attributes("counts"),
+        attrs=idex_attrs.get_variable_attributes("counts"),
     )
     l2c_dataset = xr.Dataset(
         coords={"healpix_index": healpix, "epoch": epoch_da},

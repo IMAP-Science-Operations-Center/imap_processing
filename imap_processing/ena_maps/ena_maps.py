@@ -21,7 +21,6 @@ from imap_processing.ena_maps.utils import map_utils, spatial_utils
 # The coordinate names can vary between L1C and L2 data (e.g. azimuth vs longitude),
 # so we define an enum to handle the coordinate names.
 from imap_processing.ena_maps.utils.coordinates import CoordNames
-from imap_processing.idex.idex_constants import IDEX_HEALPIX_NESTED, IDEX_HEALPIX_NSIDE
 from imap_processing.spice import geometry
 from imap_processing.spice.time import ttj2000ns_to_et
 
@@ -621,14 +620,14 @@ class HiPointingSet(PointingSet):
         self.spatial_coords = ("spin_angle_bin",)
 
 
-class IDEXPointingSet(PointingSet):
+class IDEXPointingSet(HealpixPointingSet):
     """
-    Pointing set object specifically for IDEX data.
+    PointingSet object specific to IDEX data.
 
     Parameters
     ----------
-    l2b_dataset : xr.Dataset | pathlib.Path | str
-        L2b xarray dataset containing the pointing set data or the path to the dataset.
+    l1b_dataset : xr.Dataset
+        L1b xarray dataset containing the pointing set data.
         Currently, the dataset is expected to be tiled in a HEALPix tessellation,
         with data_vars indexed along the coordinates:
             - 'epoch' : time value (1 value per PSET, from the mean of the PSET)
@@ -642,29 +641,17 @@ class IDEXPointingSet(PointingSet):
     ValueError
         If the longitude/az or latitude/el bin centers don't match the constructed grid.
         Or if the longitude or latitude bin spacing is not uniform.
-    ValueError
-        If multiple epochs are found in the dataset.
     """
 
     def __init__(
         self,
-        l2b_dataset: xr.Dataset | pathlib.Path | str,
+        l1b_dataset: xr.Dataset,
         spice_reference_frame: geometry.SpiceFrame = geometry.SpiceFrame.ECLIPJ2000,
     ):
-        self.nside = IDEX_HEALPIX_NSIDE
-        self.nested = IDEX_HEALPIX_NESTED
         # Store the reference frame of the pointing set
         self.spice_reference_frame = spice_reference_frame
         self.spatial_coords = (CoordNames.HEALPIX_INDEX.value,)
-        # Read in the data and store the xarray dataset as data attr
-        if isinstance(l2b_dataset, xr.Dataset):
-            self.data = l2b_dataset
-
-        self.num_points = self.data[CoordNames.HEALPIX_INDEX.value].size
-        # A PSET must have a single epoch
-        self.epoch = self.data["epoch"].values
-        if len(np.unique(self.epoch)) > 1:
-            raise ValueError("Multiple epochs found in the dataset.")
+        self.data = l1b_dataset
 
         # The coordinates of the healpix pixel centers are stored as a 2D array
         # of shape (num_points, 2) where column 0 is the lon/az
@@ -673,6 +660,48 @@ class IDEXPointingSet(PointingSet):
             self.nside, self.data[CoordNames.HEALPIX_INDEX.value], lonlat=True
         )
         self.az_el_points = np.column_stack([lon, lat])
+
+    @property
+    def num_points(self) -> int:
+        """
+        Override the base class property to get the number from the dataset.
+
+        Returns
+        -------
+        num_points: int
+            The number of healpix pixels in the pointing set.
+        """
+        return self.data[CoordNames.HEALPIX_INDEX.value].size
+
+    @property
+    def nested(self) -> bool:
+        """
+        Whether the healpix tessellation is nested.
+
+        Returns
+        -------
+        nested: bool
+            Whether the healpix tessellation is nested.
+        """
+        return bool(
+            self.data[CoordNames.HEALPIX_INDEX.value].attrs.get("nested", False)
+        )
+
+    def __repr__(self) -> str:
+        """
+        Return a string representation of the UltraPointingSet.
+
+        Returns
+        -------
+        str
+            String representation of the UltraPointingSet.
+        """
+        return (
+            f"IDEXPointingSet\n\t(spice_reference_frame="
+            f"{self.spice_reference_frame}, epoch={self.epoch}, "
+            f"num_points={self.num_points})"
+        )
+
 
 # Define the Map classes
 class AbstractSkyMap(ABC):

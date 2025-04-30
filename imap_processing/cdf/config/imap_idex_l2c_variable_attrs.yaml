@@ -1,0 +1,26 @@
+int_fillval: &int_fillval -9223372036854775808
+
+healpix_index:
+  CATDESC: "HEALPix pixel index for IDEX SkyMap"
+  FIELDNAM: "HEALPix Index"
+  FORMAT: I4
+  LABLAXIS: "HEALPix Index"
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: no_plot
+  UNITS: ""
+  VALIDMIN: 0
+  VALIDMAX: 768
+  FILLVAL: *int_fillval
+
+counts:
+  CATDESC: "Number of raw dust events for each healpix pixel"
+  FIELDNAM: "Dust Counts"
+  FORMAT: I4
+  LABLAXIS: "Counts"
+  VAR_TYPE: data
+  DISPLAY_TYPE: time_series
+  DEPEND_0: healpix_index
+  UNITS: "counts"
+  VALIDMIN: 0
+  VALIDMAX: *int_fillval
+  FILLVAL: *int_fillval
