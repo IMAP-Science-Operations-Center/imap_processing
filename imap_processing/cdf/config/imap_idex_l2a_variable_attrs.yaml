@@ -186,6 +186,16 @@ tof_peak_area_under_fit:
   FORMAT: F12.6
   FILLVAL: *double_fillval
 
+tof_peak_chi_squared:
+  <<: *chi_square_base
+  CATDESC: "Chi squared value for the TOF peak emg fits."
+  FIELDNAM: "Chi Square (TOF peak fits))"
+
+tof_peak_reduced_chi_squared:
+  <<: *chi_square_base
+  CATDESC: "Reduced chi squared value for the TOF peak emg fits."
+  FIELDNAM: "Reduced Chi Square (TOF peak fits)"
+
 mass_scale:
   CATDESC: "TOF High spectrum with x-axis converted from time to mass."
   FIELDNAM: "Mass Scale"

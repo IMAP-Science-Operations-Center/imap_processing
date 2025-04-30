@@ -7,14 +7,12 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
 
-def get_idex_attrs(data_version: str, data_level: str) -> ImapCdfAttributes:
+def get_idex_attrs(data_level: str) -> ImapCdfAttributes:
     """
     Load in CDF attributes for IDEX instrument.
 
     Parameters
     ----------
-    data_version : str
-        Data version for CDF filename, in the format "vXXX".
     data_level : str
         Data level of current processing.
 
@@ -26,7 +24,6 @@ def get_idex_attrs(data_version: str, data_level: str) -> ImapCdfAttributes:
     idex_attrs = ImapCdfAttributes()
     idex_attrs.add_instrument_global_attrs("idex")
     idex_attrs.add_instrument_variable_attrs("idex", data_level)
-    idex_attrs.add_global_attribute("Data_version", data_version)
     return idex_attrs
 
 

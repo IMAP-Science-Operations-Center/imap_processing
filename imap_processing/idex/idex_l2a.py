@@ -30,7 +30,7 @@ from scipy.stats import exponnorm
 
 from imap_processing import imap_module_directory
 from imap_processing.idex import idex_constants
-from imap_processing.idex.idex_constants import ConversionFactors
+from imap_processing.idex.idex_constants import SPICE_ARRAYS
 from imap_processing.idex.idex_utils import get_idex_attrs, setup_dataset
 
 logger = logging.getLogger(__name__)
@@ -130,20 +130,33 @@ def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
     peak_fits_params.attrs = idex_attrs.get_variable_attributes(
         "tof_peak_fit_parameters", check_schema=False
     )
-    peak_fits_params.rename("tof_peak_fit_parameters")
     area_under_fits.attrs = idex_attrs.get_variable_attributes(
         "tof_peak_area_under_fit", check_schema=False
     )
+    fit_chisqr.attrs = idex_attrs.get_variable_attributes(
+        "tof_peak_chi_squared", check_schema=False
+    )
+    fit_redchi.attrs = idex_attrs.get_variable_attributes(
+        "tof_peak_reduced_chi_squared", check_schema=False
+    )
 
+    area_under_fits.rename("tof_peak_area_under_fit")
+    peak_fits_params.rename("tof_peak_fit_parameters")
+    fit_chisqr.rename("tof_peak_chi_squared")
+    fit_redchi.rename("tof_peak_reduced_chi_squared")
     # Create l2a Dataset
     prefixes = ["time_low_sample", "time_high_sample"]
     data_vars = {
         "tof_peak_fit_parameters": peak_fits_params,
         "tof_peak_area_under_fit": area_under_fits,
         "mass_scale": mass_scales_da,
+        "tof_peak_chi_square": fit_chisqr,
+        "tof_peak_reduced_chi_square": fit_redchi,
     }
 
-    l2a_dataset = setup_dataset(l1b_dataset, prefixes, idex_attrs, data_vars)
+    l2a_dataset = setup_dataset(
+        l1b_dataset, prefixes + SPICE_ARRAYS, idex_attrs, data_vars
+    )
     l2a_dataset.attrs = idex_attrs.get_global_attributes("imap_idex_l2a_sci")
 
     for waveform in ["Target_Low", "Target_High", "Ion_Grid"]:
@@ -184,16 +197,9 @@ def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
                 name, check_schema=False
             )
 
-    l2a_dataset["tof_peak_fit_parameters"] = peak_fits_params
-    l2a_dataset["tof_peak_area_under_fit"] = area_under_fits
-    l2a_dataset["tof_peak_chi_square"] = fit_chisqr
-    l2a_dataset["tof_peak_reduced_chi_square"] = fit_redchi
-
-    l2a_dataset["tof_peak_kappa"] = xr.DataArray(kappa, dims=["epoch"])
-    l2a_dataset["tof_snr"] = xr.DataArray(snr, dims=["epoch"])
     l2a_dataset["mass"] = mass_scales_da
     # Update global attributes
-    idex_attrs = get_idex_attrs()
+    idex_attrs = get_idex_attrs("l2a")
     l2a_dataset.attrs = idex_attrs.get_global_attributes("imap_idex_l2a_sci")
 
     l2a_dataset["tof_peak_kappa"] = xr.DataArray(
@@ -223,7 +229,7 @@ def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
     )
     l2a_dataset["target_fit_parameter_index"] = xr.DataArray(
         name="target_fit_parameter_index",
-        data=np.arange(5),  # TODO do i need this index,
+        data=np.arange(5),
         dims="target_fit_parameter_index",
         attrs=idex_attrs.get_variable_attributes(
             "target_fit_parameter_index", check_schema=False

@@ -75,7 +75,7 @@ class PacketParser:
             Currently assumes one L0 file will generate exactly one L1a file.
         """
         self.data = []
-        self.idex_attrs = get_idex_attrs()
+        self.idex_attrs = get_idex_attrs("l1a")
         epoch_attrs = self.idex_attrs.get_variable_attributes(
             "epoch", check_schema=False
         )
@@ -385,7 +385,7 @@ class RawDustEvent:
         self.Ion_Grid_bits = ""
 
         self.compressed = self.telemetry_items["idx__sci0comp"]
-        self.cdf_attrs = get_idex_attrs()
+        self.cdf_attrs = get_idex_attrs("l1a")
 
     def _append_raw_data(self, scitype: Scitype, bits: str) -> None:
         """

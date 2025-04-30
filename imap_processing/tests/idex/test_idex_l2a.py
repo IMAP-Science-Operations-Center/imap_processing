@@ -59,7 +59,7 @@ def test_idex_cdf_file(l2a_dataset: xr.Dataset):
     file_name = write_cdf(l2a_dataset)
 
     assert file_name.exists()
-    assert file_name.name == "imap_idex_l2a_sci-1week_20231218_v001.cdf"
+    assert file_name.name == "imap_idex_l2a_sci-1week_20231218_v999.cdf"
 
 
 def test_l2a_cdf_variables(l2a_dataset: xr.Dataset):
