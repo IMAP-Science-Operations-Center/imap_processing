@@ -253,7 +253,11 @@ class PointingSet(ABC):
 
         if isinstance(dataset, (str, Path)):
             dataset = load_cdf(dataset)
-        self.data = dataset
+            self.data = dataset
+        else:
+            # If the dataset is already an xarray.Dataset,
+            # deep copy it to avoid modifying original PSET data
+            self.data = dataset.copy(deep=True)
 
         # A PSET must have a single epoch
         if len(np.unique(self.data["epoch"].values)) > 1:
