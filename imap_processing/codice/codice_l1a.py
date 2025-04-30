@@ -607,8 +607,8 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     # For epoch, we take the first epoch from each priority set
     # epoch_range = packets.epoch[::constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["num_priorities"]]
     epoch_indices = np.where((packets.seq_flgs == 3) | (packets.seq_flgs == 1))[0]
-    print(packets.seq_flgs[epoch_indices])
-    print(len(epoch_indices))
+    # print(packets.seq_flgs[epoch_indices])
+    # print(len(epoch_indices))
     epoch_range = range(77)
     epoch = xr.DataArray(
         epoch_range,  # TODO: How to define epoch for segmented packets?
@@ -649,14 +649,14 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
                 attrs=attrs,
             )
 
-    print('here')
-    print(dataset.P0_ERGE.data)
-    print(dataset.P1_ERGE.data)
-    print(dataset.P2_ERGE.data)
-    print(dataset.P3_ERGE.data)
-    print(dataset.P4_ERGE.data)
-    print(dataset.P5_ERGE.data)
-    print('\n\n\n\n\n')
+    # print('here')
+    # print(dataset.P0_ERGE.data)
+    # print(dataset.P1_ERGE.data)
+    # print(dataset.P2_ERGE.data)
+    # print(dataset.P3_ERGE.data)
+    # print(dataset.P4_ERGE.data)
+    # print(dataset.P5_ERGE.data)
+    # print('\n\n\n\n\n')
     return dataset
 
 
@@ -927,10 +927,17 @@ def reshape_de_data(
 
     # Determine the number of epochs to help with data array initialization
     # There is one epoch per set of priorities
-    print(packets.epoch.data)
-    print(len(packets.epoch.data))
-    print(decompressed_data[0])
+    print(len(packets.epoch.data))  # 633
+    print(len(packets.num_events.data))  # 633
+    print(len(decompressed_data))   # 462
+    print(len(decompressed_data[0]))  # 13712
     num_epochs = len(decompressed_data) // num_priorities  # 77 = 462 / 6
+
+    # Get epoch and num_events data for beginning of segments
+    group_indices = np.where((packets.seq_flgs.data == 3) | (packets.seq_flgs.data == 1))[0]
+    print(group_indices.shape)  # 462
+    num_events = packets.num_events.data[group_indices]
+    print(num_events)
 
     # decompressed data should be reshaped (num_events), 8 (bytes long) because greg is padding everything to 8 bytes
     # chose epoch when priority is 0.
@@ -972,7 +979,7 @@ def reshape_de_data(
             priority_order = packets.priority[epoch_start:epoch_end].data
         elif apid == CODICEAPID.COD_HI_PHA:
             #print(f"Epoch Index: {epoch_index}")
-            print(f"Priority order: {packets.priority[epoch_start:epoch_end].data}")
+            #print(f"Priority order: {packets.priority[epoch_start:epoch_end].data}")
             priority_order = [0, 1, 2, 3, 4, 5]
         data_quality = packets.suspect[epoch_start:epoch_end].data
 
