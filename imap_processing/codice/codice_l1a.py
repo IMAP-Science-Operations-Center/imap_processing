@@ -927,7 +927,13 @@ def reshape_de_data(
 
     # Determine the number of epochs to help with data array initialization
     # There is one epoch per set of priorities
-    num_epochs = len(decompressed_data) // num_priorities
+    print(packets.epoch.data)
+    print(len(packets.epoch.data))
+    print(decompressed_data[0])
+    num_epochs = len(decompressed_data) // num_priorities  # 77 = 462 / 6
+
+    # decompressed data should be reshaped (num_events), 8 (bytes long) because greg is padding everything to 8 bytes
+    # chose epoch when priority is 0.
 
     # Initialize data arrays for each priority and field to store the data
     # We also need arrays to hold number of events and data quality
@@ -965,8 +971,8 @@ def reshape_de_data(
         if apid == CODICEAPID.COD_LO_PHA:
             priority_order = packets.priority[epoch_start:epoch_end].data
         elif apid == CODICEAPID.COD_HI_PHA:
-            # print(f"Epoch Index: {epoch_index}")
-            # print(f"Priority order: {packets.priority[epoch_start:epoch_end].data}")
+            #print(f"Epoch Index: {epoch_index}")
+            print(f"Priority order: {packets.priority[epoch_start:epoch_end].data}")
             priority_order = [0, 1, 2, 3, 4, 5]
         data_quality = packets.suspect[epoch_start:epoch_end].data
 
@@ -976,7 +982,7 @@ def reshape_de_data(
 
             # Number of events and data quality can be determined at this stage
             num_events = len(priority_data) // num_priorities
-            print(f"Epoch Index is {epoch_index}; Priority Number is {priority_num}; Number of events are {num_events}")
+            #print(f"Epoch Index is {epoch_index}; Priority Number is {priority_num}; Number of events are {num_events}")
             data[f"P{priority_num}_NumEvents"][epoch_index] = num_events
             data[f"P{priority_num}_DataQuality"][epoch_index] = data_quality[i]
 
@@ -991,8 +997,13 @@ def reshape_de_data(
                 bit_string = (
                     f"{int.from_bytes(event, byteorder='big'):0{len(event) * 8}b}"
                 )
+                #print(bit_string)
+                #print(len(bit_string))
                 bit_position = 0
                 for field_name, bit_length in reversed(bit_structure.items()):
+                    #print(field_name)
+                    #print(bit_position)
+                    #print(bit_length)
                     if field_name in ["Priority", "Spare"]:
                         bit_position += bit_length
                         continue
