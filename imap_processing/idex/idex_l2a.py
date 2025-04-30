@@ -75,6 +75,10 @@ def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
     l1b_dataset : xarray.Dataset
         The``xarray`` dataset containing the science data and supporting metadata.
     """
+    # TODO replace with idex_attrs = get_idex_attrs("l2a") when attrs are added
+    idex_attrs = ImapCdfAttributes()
+    idex_attrs.add_instrument_global_attrs("idex")
+
     logger.info(
         f"Running IDEX L2A processing on dataset: {l1b_dataset.attrs['Logical_source']}"
     )
@@ -143,6 +147,7 @@ def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
     l2a_dataset = setup_dataset(
         l1b_dataset, prefixes + SPICE_ARRAYS, idex_attrs, data_vars
     )
+    l2a_dataset.attrs = idex_attrs.get_global_attributes("imap_idex_l2a_sci")
 
     for waveform in ["Target_Low", "Target_High", "Ion_Grid"]:
         # Get the dust mass estimates and fit results

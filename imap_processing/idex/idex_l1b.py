@@ -97,7 +97,6 @@ def idex_l1b(l1a_dataset: xr.Dataset) -> xr.Dataset:
     )
 
     # create the attribute manager for this data level
-    # Get attributes
     idex_attrs = get_idex_attrs("l1b")
 
     var_information_path = (
@@ -112,12 +111,6 @@ def idex_l1b(l1a_dataset: xr.Dataset) -> xr.Dataset:
 
     waveforms_converted = convert_waveforms(l1a_dataset, idex_attrs)
 
-    epoch_da = xr.DataArray(
-        l1a_dataset["epoch"],
-        name="epoch",
-        dims=["epoch"],
-        attrs=idex_attrs.get_variable_attributes("epoch"),
-    )
     # Get spice data and save them as xr.DataArrays in the output. Spice data is not
     # used for calculations yet but are saved in the CDF for reference.
     spice_data = get_spice_data(l1a_dataset, idex_attrs)
