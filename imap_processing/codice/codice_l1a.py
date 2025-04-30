@@ -647,11 +647,18 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
         # I-ALiRT data
         if apid == CODICEAPID.COD_LO_IAL:
             ialirt_dataset = process_codicelo(dataset)
+            print(len(ialirt_dataset))
+            print(ialirt_dataset[0].data)
+            print(ialirt_dataset[0].data.shape)
 
             # I have a data array of length 3495, which is 233 chunks of 15 bytes
             # Each 15 byte chunk must be processed similar to a LO_SW_SPECIES data product
             # 15 bytes corresponds to a bit length of
+
+            # String together 15 byte chunks until end character (0xFF) then process as SW Species (including header)
+
             foo = ialirt_dataset[0].data.data[0:15]
+            print(foo)
             bit_stream = ''.join(f'{x:08b}' for x in foo)
             print(bit_stream)
             print(len(bit_stream))
