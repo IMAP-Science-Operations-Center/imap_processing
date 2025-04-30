@@ -1,5 +1,3 @@
-# TODO: add attributes for science packets
-
 # <=== Defaults ===>
 # Default values for variable attrs unless overwritten
 default_attrs: &default
@@ -71,14 +69,6 @@ hk_default_attrs: &hk_default
   VALIDMAX: 4095
   FORMAT: I4
 
-counts_support_attrs: &counts_support_default
-  <<: *default
-  DISPLAY_TYPE: no_plot
-  VAR_TYPE: support_data
-  FILLVAL: -1.00E+31
-  VALIDMIN: 0
-  VALIDMAX: 1000
-
 index_support_attrs: &index_support_default
   <<: *default_uint32
   DISPLAY_TYPE: no_plot
@@ -94,8 +84,25 @@ energy_support_attrs: &energy_support_default
   UNITS: MeV
   FORMAT: F5.1
 
+counts_support_attrs: &counts_support_default
+  <<: *default
+  DISPLAY_TYPE: no_plot
+  VAR_TYPE: support_data
+  FILLVAL: -1.00E+31
+  VALIDMIN: 0
+  VALIDMAX: 1000
 
-# <=== Counts Coordinates ===>
+counts_attrs: &counts_default
+  <<: *default
+  DISPLAY_TYPE: time_series
+  VAR_TYPE: data
+  FORMAT: I10
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  UNITS: counts
+  SCALETYP: log
+
+# <=== Coordinates ===>
 sc_tick:
   <<: *default_uint32
   CATDESC: Raw spacecraft tick time per integration
@@ -107,19 +114,20 @@ sc_tick:
   UNITS: ''
   SCALETYP: linear
 
+# Counts Dataset Coordinates
 declination:
     <<: *counts_support_default
-    CATDESC: Declination
+    CATDESC: Angle from the spin axis (0 deg.) to anti-spin axis (180 deg.) in 8 bins
     FIELDNAM: Declination
     LABLAXIS: Declination
     FORMAT: F5.1
     UNITS: deg
 
-inclination:
+azimuth:
     <<: *counts_support_default
-    CATDESC: Inclination
-    FIELDNAM: Inclination
-    LABLAXIS: Inclination
+    CATDESC: Spin angle in 15 bins (0 deg. is zero of spin phase)
+    FIELDNAM: Azimuth
+    LABLAXIS: Azimuth
     FORMAT: F5.1
     UNITS: deg
 
@@ -228,7 +236,7 @@ fe_energy_mean:
   FIELDNAM: Fe energy mean
 
 
-# <=== Housekeeping Coordinates ===>
+# Housekeeping Dataset Coordinates
 adc_channels:   # adc_channels is a dependency for leak_i data variable
   DISPLAY_TYPE: no_plot
   FILLVAL: -9223372036854775808
@@ -242,17 +250,17 @@ adc_channels:   # adc_channels is a dependency for leak_i data variable
   LABLAXIS: Channel
   FORMAT: I2
 
-# <=== Housekeeping Label Attributes ===>
-# LABL_PTR_i expects VAR_TYPE of metadata with char data type
-
+# <=== Label Attributes ===>
+# Housekeeping Labels
 adc_channels_label:
   CATDESC: Analog Digital Converter Channels
   FIELDNAM: ADC Channels
   FORMAT: A2
   VAR_TYPE: metadata
 
+#TODO: add labels for counts dataset
 
-# <=== Housekeeping Data Variable Attributes ===>
+# <=== Data Variable Attributes ===>
 
 # CCSDS header variables
 version:
@@ -304,8 +312,333 @@ pkt_len:
   VAR_TYPE: support_data
   DEPEND_0: sc_tick
 
+# Counts dataset variables
+#TODO: add counts dataset variables
+hdr_frame_version:
+  <<: *counts_default
+  CATDESC: Raw header frame version per integration
+  FIELDNAM: Header frame version
+  LABLAXIS: hdr_frame_version
+  UNITS: ''
 
-# Housekeeping variables
+hdr_dynamic_threshold_state:
+  <<: *counts_default
+  CATDESC: Raw header dynamic threshold state per integration
+  FIELDNAM: Header dynamic threshold state
+  LABLAXIS: hdr_dynamic_threshold_state
+  UNITS: ''
+  VALIDMAX: 3
+
+hdr_leak_conv:
+  <<: *counts_default
+  CATDESC: Raw header leak conversion per integration
+  FIELDNAM: Header leak conversion
+  LABLAXIS: hdr_leak_conv
+  UNITS: ''
+
+hdr_heavy_duty_cycle:
+  <<: *counts_default
+  CATDESC: Raw header heavy duty cycle per integration
+  FIELDNAM: Header heavy duty cycle
+  LABLAXIS: hdr_heavy_duty_cycle
+  UNITS: ''
+
+hdr_code_ok:
+  <<: *counts_default
+  CATDESC: Raw header code ok per integration
+  FIELDNAM: Header code ok
+  LABLAXIS: hdr_code_ok
+  UNITS: ''
+
+hdr_unit_num:
+  <<: *counts_default
+  CATDESC: Raw header unit number per integration
+  FIELDNAM: Header unit number
+  LABLAXIS: hdr_unit_num
+  UNITS: ''
+
+hdr_minute_cnt:
+  <<: *counts_default
+  CATDESC: Raw header minute count per integration
+  FIELDNAM: Header minute count
+  LABLAXIS: hdr_minute_cnt
+
+livetime_counter:
+  <<: *counts_default
+  CATDESC: Raw livetime counter per integration
+  FIELDNAM: Livetime counter
+  LABLAXIS: Livetime counter
+
+num_trig:
+  <<: *counts_default
+  CATDESC: Raw number of triggers per integration
+  FIELDNAM: Number of triggers
+  LABLAXIS: num_trig
+
+num_reject:
+  <<: *counts_default
+  CATDESC: Raw number of rejects per integration
+  FIELDNAM: Number of rejects
+  LABLAXIS: num_reject
+
+num_acc_w_phase:
+  <<: *counts_default
+  CATDESC: Raw number of accepted events with PHA data per integration
+  FIELDNAM: Number of accepted events with PHA
+  LABLAXIS: num_acc_w_phase
+
+num_acc_no_phase:
+  <<: *counts_default
+  CATDESC: Raw number of events without PHA data per integration
+  FIELDNAM: Number of events without PHA
+  LABLAXIS: num_acc_no_phase
+
+num_haz_trig:
+  <<: *counts_default
+  CATDESC: Raw number of hazard triggers per integration
+  FIELDNAM: Number of hazard triggers
+  LABLAXIS: num_haz_trig
+
+num_haz_reject:
+  <<: *counts_default
+  CATDESC: Raw number of rejected events with hazard per integration
+  FIELDNAM: Number of hazard rejects
+  LABLAXIS: num_haz_reject
+
+num_haz_acc_w_phase:
+  <<: *counts_default
+  CATDESC: Raw number of accepted hazard events with PHA data per integration
+  FIELDNAM: Number of accepted hazard events with PHA
+  LABLAXIS: num_haz_acc_w_phase
+
+num_haz_acc_no_phase:
+  <<: *counts_default
+  CATDESC: Raw number of hazard events without PHA data per integration
+  FIELDNAM: Number of hazard events without PHA
+  LABLAXIS: num_haz_acc_no_phase
+
+nread:
+  <<: *counts_default
+  CATDESC: Raw number of events read per integration
+  FIELDNAM: Number of read events
+  LABLAXIS: nread
+
+nhazard:
+  <<: *counts_default
+  CATDESC: Raw number of hazard events per integration
+  FIELDNAM: Number of hazard events
+  LABLAXIS: nhazard
+
+nadcstim:
+  <<: *counts_default
+  CATDESC: Raw number of ADC-stim events per integration
+  FIELDNAM: Number of ADC-stim events
+  LABLAXIS: nadcstim
+
+nodd:
+  <<: *counts_default
+  CATDESC: Raw number of odd events per integration
+  FIELDNAM: Number of odd events
+  LABLAXIS: nodd
+
+noddfix:
+  <<: *counts_default
+  CATDESC: Raw number of fixed odd events per integration
+  FIELDNAM: Number of fixed odd events
+  LABLAXIS: noddfix
+
+nmulti:
+  <<: *counts_default
+  CATDESC: Raw number of events with multiple hits in a single detector per integration
+  FIELDNAM: Number of events with multiple hits
+  LABLAXIS: nmulti
+
+nmultifix:
+  <<: *counts_default
+  CATDESC: Raw number of multi events that were fixed per integration
+  FIELDNAM: Number of fixed multiple hits
+  LABLAXIS: nmultifix
+
+sngrates:
+  <<: *counts_default
+  DEPEND_1: gain
+  DEPEND_2: sngrates_index
+  CATDESC: Raw single rates per integration
+  FIELDNAM: sngrates
+  LABL_PTR_1: sngrates_index
+  DELTA_MINUS_VAR: sngrates_stat_uncert_minus
+  DELTA_PLUS_VAR: sngrates_stat_uncert_plus
+
+coinrates:
+  <<: *counts_default
+  DEPEND_1: coinrates_index
+  CATDESC: Raw coincidence rates per integration
+  FIELDNAM: coinrates
+  LABL_PTR_1: coinrates_index
+  DELTA_MINUS_VAR: coinrates_stat_uncert_minus
+  DELTA_PLUS_VAR: coinrates_stat_uncert_plus
+
+pbufrates:
+  <<: *counts_default
+  DEPEND_1: pbufrates_index
+  CATDESC: Raw priority buffer rates per integration
+  FIELDNAM: pbufrates
+  LABL_PTR_1: pbufrates_index
+  DELTA_MINUS_VAR: pbufrates_stat_uncert_minus
+  DELTA_PLUS_VAR: pbufrates_stat_uncert_plus
+
+l2fgrates:
+  <<: *counts_default
+  DEPEND_1: l2fgrates_index
+  CATDESC: Raw range 2 foreground rates per integration
+  FIELDNAM: l2fgrates
+  LABL_PTR_1: l2fgrates_index
+  DELTA_MINUS_VAR: l2fgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: l2fgrates_stat_uncert_plus
+
+l2bgrates:
+  <<: *counts_default
+  DEPEND_1: l2bgrates_index
+  CATDESC: Raw range 2 background rates per integration
+  FIELDNAM: l2bgrates
+  LABL_PTR_1: l2bgrates_index
+  DELTA_MINUS_VAR: l2bgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: l2bgrates_stat_uncert_plus
+
+l3fgrates:
+  <<: *counts_default
+  DEPEND_1: l3fgrates_index
+  CATDESC: Raw range 3 foreground rates per integration
+  FIELDNAM: l3fgrates
+  LABL_PTR_1: l3fgrates_index
+  DELTA_MINUS_VAR: l3fgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: l3fgrates_stat_uncert_plus
+
+l3bgrates:
+  <<: *counts_default
+  DEPEND_1: l3bgrates_index
+  CATDESC: Raw range 3 background rates per integration
+  FIELDNAM: l3bgrates
+  LABL_PTR_1: l3bgrates_index
+  DELTA_MINUS_VAR: l3bgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: l3bgrates_stat_uncert_plus
+
+penfgrates:
+  <<: *counts_default
+  DEPEND_1: penfgrates_index
+  CATDESC: Raw range 4 foreground rates per integration
+  FIELDNAM: penfgrates
+  LABL_PTR_1: penfgrates_index
+  DELTA_MINUS_VAR: penfgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: penfgrates_stat_uncert_plus
+
+penbgrates:
+  <<: *counts_default
+  DEPEND_1: penbgrates_index
+  CATDESC: Raw range 4 background rates per integration
+  FIELDNAM: penbgrates
+  LABL_PTR_1: penbgrates_index
+  DELTA_MINUS_VAR: penbgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: penbgrates_stat_uncert_plus
+
+ialirtrates:
+  <<: *counts_default
+  DEPEND_1: ialirtrates_index
+  CATDESC: Raw ialirtrates per integration
+  FIELDNAM: ialirtrates
+  LABL_PTR_1: ialirtrates_index
+  DELTA_MINUS_VAR: ialirtrates_stat_uncert_minus
+  DELTA_PLUS_VAR: ialirtrates_stat_uncert_plus
+
+l4fgrates:
+  <<: *counts_default
+  DEPEND_1: l4fgrates_index
+  CATDESC: Raw L4 ions foreground rates per integration
+  FIELDNAM: l4fgrates
+  LABL_PTR_1: l4fgrates_index
+  DELTA_MINUS_VAR: l4fgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: l4fgrates_stat_uncert_plus
+
+l4bgrates:
+  <<: *counts_default
+  DEPEND_1: l4bgrates_index
+  CATDESC: Raw L4 ions background rates per integration
+  FIELDNAM: l4bgrates
+  LABL_PTR_1: l4bgrates_index
+  DELTA_MINUS_VAR: l4bgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: l4bgrates_stat_uncert_plus
+
+sectorates:
+  <<: *counts_default
+  DEPEND_1: declination
+  DEPEND_2: azimuth
+  CATDESC: Raw sectored rates per integration
+  FIELDNAM: Sectored rates
+  LABL_PTR_1: declination
+  LABL_PTR_2: azimuth
+  DELTA_MINUS_VAR: sectorates_stat_uncert_minus
+  DELTA_PLUS_VAR: sectorates_stat_uncert_plus
+
+h_sectored_counts:
+  <<: *counts_default
+  DEPEND_1: declination
+  DEPEND_2: azimuth
+  CATDESC: Raw H sectored counts per integration
+  FIELDNAM: H sectored counts
+  LABL_PTR_1: declination
+  LABL_PTR_2: azimuth
+  DELTA_MINUS_VAR: h_sectored_counts_stat_uncert_minus
+  DELTA_PLUS_VAR: h_sectored_counts_stat_uncert_plus
+
+he4_sectored_counts:
+  <<: *counts_default
+  DEPEND_1: declination
+  DEPEND_2: azimuth
+  CATDESC: Raw He4 sectored counts per integration
+  FIELDNAM: He4 sectored counts
+  LABL_PTR_1: declination
+  LABL_PTR_2: azimuth
+  DELTA_MINUS_VAR: he4_sectored_counts_stat_uncert_minus
+  DELTA_PLUS_VAR: he4_sectored_counts_stat_uncert_plus
+
+cno_sectored_counts:
+  <<: *counts_default
+  DEPEND_1: declination
+  DEPEND_2: azimuth
+  CATDESC: Raw C, N, O sectored counts per integration
+  FIELDNAM: C, N, O sectored counts
+  LABL_PTR_1: declination
+  LABL_PTR_2: azimuth
+  DELTA_MINUS_VAR: cno_sectored_counts_stat_uncert_minus
+  DELTA_PLUS_VAR: cno_sectored_counts_stat_uncert_plus
+
+nemgsi_sectored_counts:
+  <<: *counts_default
+  DEPEND_1: declination
+  DEPEND_2: azimuth
+  CATDESC: Raw Ne, Mg, Si sectored counts per integration
+  FIELDNAM: Ne, Mg, Si sectored counts
+  LABL_PTR_1: declination
+  LABL_PTR_2: azimuth
+  DELTA_MINUS_VAR: nemgsi_sectored_counts_stat_uncert_minus
+  DELTA_PLUS_VAR: nemgsi_sectored_counts_stat_uncert_plus
+
+fe_sectored_counts:
+  <<: *counts_default
+  DEPEND_1: declination
+  DEPEND_2: azimuth
+  CATDESC: Raw Fe sectored counts per integration
+  FIELDNAM: Fe sectored counts
+  LABL_PTR_1: declination
+  LABL_PTR_2: azimuth
+  DELTA_MINUS_VAR: fe_sectored_counts_stat_uncert_minus
+  DELTA_PLUS_VAR: fe_sectored_counts_stat_uncert_plus
+
+
+#TODO - energy deltas
+#TODO - uncertainties
+
+# Housekeeping dataset variables
 fsw_version_a:
   <<: *hk_support_default
   VALIDMAX: 63
