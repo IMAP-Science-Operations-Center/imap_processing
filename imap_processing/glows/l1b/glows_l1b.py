@@ -181,6 +181,25 @@ def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
 def create_l1b_hist_output(
     input_dataset: xr.Dataset, cdf_attrs: ImapCdfAttributes
 ) -> xr.Dataset:
+    """
+    Create the output dataset for the L1B histogram data.
+
+    This function processes the input dataset and creates a new dataset with the
+    appropriate attributes and data variables. It uses the `process_histogram` function
+    to process the histogram data.
+
+    Parameters
+    ----------
+    input_dataset : xr.Dataset
+        The input L1A GLOWS Histogram dataset to process.
+    cdf_attrs : ImapCdfAttributes
+        The CDF attributes to use for the output dataset.
+
+    Returns
+    -------
+    output_dataset : xr.Dataset
+        The output dataset with the processed histogram data and all attributes.
+    """
     data_epoch = xr.DataArray(
         input_dataset["epoch"],
         name="epoch",
@@ -190,9 +209,9 @@ def create_l1b_hist_output(
 
     flag_data = xr.DataArray(
         np.arange(FLAG_LENGTH),
-        name="flag_attrs_hist",
-        dims=["flag_attrs_hist"],
-        attrs=cdf_attrs.get_variable_attributes("flag_attrs_hist"),
+        name="bad_time_flags",
+        dims=["bad_time_flags"],
+        attrs=cdf_attrs.get_variable_attributes("flag_hist_attrs"),
     )
     bad_flag_data = xr.DataArray(
         np.arange(4),

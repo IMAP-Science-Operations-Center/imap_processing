@@ -675,7 +675,7 @@ flight_software_version:
 
 # Flags
 # MS: this needs to be thoroughly discussed
-flag_attrs_hist: # MS: this should be different for DE and HIST
+flag_hist_attrs: # MS: this should be different for DE and HIST
   <<: *default_attrs
   FILLVAL: -1
   CATDESC: Flag index for histogram flags
@@ -687,7 +687,7 @@ flag_attrs_hist: # MS: this should be different for DE and HIST
   VALIDMAX: 16
   VAR_TYPE: support_data
 
-flag_attrs_de: # MS: this should be different for DE and HIST
+flag_de_attrs: # MS: this should be different for DE and HIST
   <<: *default_attrs
   FILLVAL: -1
   CATDESC: Flag index for DE flags
@@ -733,7 +733,7 @@ histogram_flag_array: # MS does not understand what is this exactly
 
 de_flags:
   <<: *flag_data_defaults
-  DEPEND_1: flag_attrs_de
+  DEPEND_1: flag_de_attrs
   CATDESC: Flags for per-second-grouped direct events
   FIELDNAM: Flags for direct events
   DISPLAY_TYPE: no_plot
@@ -747,7 +747,7 @@ flags: # MS: is this related to flags_set_onboard?
   DISPLAY_TYPE: no_plot
   FIELDNAM: Bad-time mask for histogram
   LABLAXIS: Mask
-  DEPEND_1: flag_attrs_hist
+  DEPEND_1: flag_hist_attrs
   VALIDMIN: 0
   VALIDMAX: 1
   FORMAT: I1
