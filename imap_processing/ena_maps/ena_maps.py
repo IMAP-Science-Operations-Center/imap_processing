@@ -255,7 +255,7 @@ class PointingSet(ABC):
             dataset = load_cdf(dataset)
             self.data = dataset
         else:
-            # If the dataset is already an xarray.Dataset,
+            # If the dataset is already an xarray Dataset,
             # deep copy it to avoid modifying original PSET data
             self.data = dataset.copy(deep=True)
 
