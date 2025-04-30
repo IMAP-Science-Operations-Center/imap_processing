@@ -178,7 +178,9 @@ def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
     return l1b_fields
 
 
-def create_l1b_hist_output(input_dataset: xr.Dataset, cdf_attrs: ImapCdfAttributes) -> xr.Dataset:
+def create_l1b_hist_output(
+    input_dataset: xr.Dataset, cdf_attrs: ImapCdfAttributes
+) -> xr.Dataset:
     data_epoch = xr.DataArray(
         input_dataset["epoch"],
         name="epoch",
@@ -242,9 +244,9 @@ def create_l1b_hist_output(input_dataset: xr.Dataset, cdf_attrs: ImapCdfAttribut
     for index, dataarray in enumerate(output_dataarrays):
         # Dataarray is already an xr.DataArray type, so we can just assign it
         output_dataset[fields[index].name] = dataarray
-        output_dataset[
+        output_dataset[fields[index].name].attrs = cdf_attrs.get_variable_attributes(
             fields[index].name
-        ].attrs = cdf_attrs.get_variable_attributes(fields[index].name)
+        )
 
     output_dataset["bins"] = bin_data
     return output_dataset
@@ -311,9 +313,9 @@ def create_l1b_de_output(
     for index, dataarray in enumerate(output_dataarrays):
         # Dataarray is already an xr.DataArray type, so we can just assign it
         output_dataset[fields[index].name] = dataarray
-        output_dataset[
+        output_dataset[fields[index].name].attrs = cdf_attrs.get_variable_attributes(
             fields[index].name
-        ].attrs = cdf_attrs.get_variable_attributes(fields[index].name)
+        )
 
     output_dataset["within_the_second"] = within_the_second_data
 
