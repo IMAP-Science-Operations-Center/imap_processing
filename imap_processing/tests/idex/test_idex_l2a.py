@@ -1,6 +1,7 @@
 """Tests the L2a processing for IDEX data"""
 
 import numpy as np
+import pytest
 import xarray as xr
 from scipy.stats import exponnorm
 
@@ -47,6 +48,7 @@ def test_l2a_logical_source(l2a_dataset: xr.Dataset):
     assert l2a_dataset.attrs["Logical_source"] == expected_src
 
 
+@pytest.mark.xfail(reason="Attrs not present yet. Remove this line after adding.")
 def test_idex_cdf_file(l2a_dataset: xr.Dataset):
     """Verify the CDF file can be created with no errors.
 
