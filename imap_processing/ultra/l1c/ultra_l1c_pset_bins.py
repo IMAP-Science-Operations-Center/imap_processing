@@ -124,9 +124,9 @@ def get_spacecraft_histogram(
 
 
 def get_helio_histogram(
-    time: np.ndarray,
-    vhat: tuple[np.ndarray, np.ndarray, np.ndarray],
-    energy: np.ndarray,
+    time: NDArray,
+    vhat: NDArray,
+    energy: NDArray,
     energy_bin_edges: list[tuple[float, float]],
     nside: int = 128,
     nested: bool = False,
@@ -208,7 +208,7 @@ def get_helio_histogram(
         helio_velocity = spacecraft_velocity.reshape(1, 3) + energy_velocity * vhat_bin
 
         # Normalized vectors representing the direction of the heliocentric velocity.
-        helio_normalized = helio_velocity / np.linalg.norm(
+        helio_normalized = -helio_velocity / np.linalg.norm(
             helio_velocity, axis=1, keepdims=True
         )
 
