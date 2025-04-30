@@ -192,6 +192,8 @@ def mock_l1c_pset_product_rectangular(
     return pset_product
 
 
+# TODO: Add ability to mock with/without energy dim to exposure_factor
+# The Helio frame L1C will have the energy dimension, but the spacecraft frame will not.
 def mock_l1c_pset_product_healpix(
     nside: int = DEFAULT_HEALPIX_NSIDE_L1C,
     stripe_center_lat: int = 0,
