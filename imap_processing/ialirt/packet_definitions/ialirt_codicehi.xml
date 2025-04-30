@@ -180,7 +180,7 @@
 				<xtce:LongDescription>CODICE HI Status</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="COD_HI_COUNTER" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE HI Status</xtce:LongDescription>
+				<xtce:LongDescription>CODICE HI Counter</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="COD_HI_DATA_00" parameterTypeRef="uint8">
 				<xtce:LongDescription>CODICE HI Data_00</xtce:LongDescription>

@@ -162,12 +162,10 @@ def test_repointing_file_creation(mock_instrument_dependencies):
     # Assert that write_cdf was called with the expected arguments
     assert mock_instrument_dependencies["mock_write_cdf"].call_count == 1
     assert (
-        mock_instrument_dependencies["mock_write_cdf"].call_args[1]["repointing"]
+        mock_instrument_dependencies["mock_write_cdf"]
+        .call_args[0][0]
+        .attrs.get("Repointing", None)
         == "repoint00002"
-    )
-    assert (
-        mock_instrument_dependencies["mock_write_cdf"].call_args[1]["start_date"]
-        is None
     )
 
 

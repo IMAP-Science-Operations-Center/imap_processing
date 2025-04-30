@@ -22,14 +22,7 @@ def xtce_codicelo_path():
 @pytest.fixture(scope="session")
 def binary_packet_path():
     """Returns the xtce directory."""
-    return (
-        imap_module_directory
-        / "tests"
-        / "ialirt"
-        / "test_data"
-        / "l0"
-        / "apid01152.tlm"
-    )
+    return imap_module_directory / "tests" / "ialirt" / "data" / "l0" / "apid01152.tlm"
 
 
 @pytest.fixture(scope="session")
@@ -39,7 +32,7 @@ def codicelo_validation_data():
         imap_module_directory
         / "tests"
         / "ialirt"
-        / "test_data"
+        / "data"
         / "l0"
         / "imap_codice_l1a_lo-ialirt_20241110193700_v0.0.0.cdf"
     )

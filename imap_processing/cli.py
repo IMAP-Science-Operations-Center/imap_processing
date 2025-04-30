@@ -488,10 +488,10 @@ class ProcessInstrument(ABC):
         products = []
         for ds in datasets:
             ds.attrs["Data_version"] = self.version
+            ds.attrs["Repointing"] = self.repointing
+            ds.attrs["Start_date"] = self.start_date
             ds.attrs["Parents"] = parent_files
-            products.append(
-                write_cdf(ds, start_date=self.start_date, repointing=self.repointing)
-            )
+            products.append(write_cdf(ds))
 
         self.upload_products(products)
 

@@ -8,7 +8,7 @@ from numpy.testing import assert_array_equal
 from imap_processing.idex.idex_l2b import idex_l2b, round_spin_phases
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def l2b_dataset(l2a_dataset: xr.Dataset) -> xr.Dataset:
     """Return a ``xarray`` dataset containing test data.
 

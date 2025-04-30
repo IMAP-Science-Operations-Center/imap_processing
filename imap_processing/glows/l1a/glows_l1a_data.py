@@ -326,7 +326,7 @@ class DirectEventL1A:
 
     Methods
     -------
-    append
+    merge_de_packets
         Add another Level0 instance.
     """
 
@@ -346,7 +346,7 @@ class DirectEventL1A:
         if level0.LEN == 1:
             self._process_de_data()
 
-    def append(self, second_l0: DirectEventL0) -> None:
+    def merge_de_packets(self, second_l0: DirectEventL0) -> None:
         """
         Merge an additional direct event packet to this DirectEventL1A class.
 

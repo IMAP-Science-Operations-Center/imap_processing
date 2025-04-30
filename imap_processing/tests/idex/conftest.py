@@ -34,7 +34,7 @@ SPICE_ARRAYS = [
 ]
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def decom_test_data_sci() -> xr.Dataset:
     """Return a ``xarray`` dataset containing test data.
 
@@ -46,7 +46,7 @@ def decom_test_data_sci() -> xr.Dataset:
     return PacketParser(TEST_L0_FILE_SCI).data[0]
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def decom_test_data_catlst() -> xr.Dataset:
     """Return a ``xarray`` dataset containing the catalog list summary data.
 
@@ -58,7 +58,7 @@ def decom_test_data_catlst() -> xr.Dataset:
     return PacketParser(TEST_L0_FILE_CATLST).data[0]
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def decom_test_data_evt() -> xr.Dataset:
     """Return a ``xarray`` dataset containing the event log data.
 
@@ -70,7 +70,7 @@ def decom_test_data_evt() -> xr.Dataset:
     return PacketParser(TEST_L0_FILE_EVT).data[0]
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def l1a_example_data(_download_test_data):
     """
     Pytest fixture to load example L1A data (produced by the IDEX team) for testing.
@@ -83,7 +83,7 @@ def l1a_example_data(_download_test_data):
     return load_hdf_file(L1A_EXAMPLE_FILE)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def l2a_dataset(decom_test_data_sci: xr.Dataset) -> xr.Dataset:
     """Return a ``xarray`` dataset containing test data.
 
@@ -103,7 +103,7 @@ def l2a_dataset(decom_test_data_sci: xr.Dataset) -> xr.Dataset:
     return dataset
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def l1b_example_data(_download_test_data):
     """
     Pytest fixture to load example L1B data (produced by the IDEX team) for testing.

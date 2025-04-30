@@ -30,7 +30,7 @@ def xtce_mag_path():
 @pytest.fixture(scope="session")
 def binary_packet_path():
     """Returns the paths to the binary packets."""
-    directory = imap_module_directory / "tests" / "ialirt" / "test_data" / "l0"
+    directory = imap_module_directory / "tests" / "ialirt" / "data" / "l0"
     filenames = [
         "461971383-404.bin",
         "461971384-405.bin",
@@ -52,7 +52,7 @@ def mag_test_data():
         imap_module_directory
         / "tests"
         / "ialirt"
-        / "test_data"
+        / "data"
         / "l0"
         / "sample_decoded_i-alirt_data.csv"
     )

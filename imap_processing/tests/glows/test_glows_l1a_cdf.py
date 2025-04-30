@@ -1,38 +1,17 @@
 import dataclasses
-from functools import reduce
 
 import numpy as np
-import pytest
 
-from imap_processing.glows.l0 import decom_glows
 from imap_processing.glows.l1a.glows_l1a import (
     create_glows_attr_obj,
     generate_de_dataset,
     generate_histogram_dataset,
-    process_de_l0,
 )
-from imap_processing.glows.l1a.glows_l1a_data import HistogramL1A
 from imap_processing.glows.utils.constants import TimeTuple
 
 
-@pytest.fixture
-def l1a_data(packet_path):
-    """Read test data from file"""
-
-    histogram_l0, de_l0 = decom_glows.decom_packets(packet_path)
-
-    histogram_l1a = [HistogramL1A(hist) for hist in histogram_l0]
-
-    de_l1a_dict = process_de_l0(de_l0)
-
-    # Flatten the dictionary to one list of DE values
-    de_l1a = reduce(list.__add__, [value for value in de_l1a_dict.values()])
-
-    return (histogram_l1a, de_l1a)
-
-
-def test_generate_histogram_dataset(l1a_data):
-    histogram_l1a, _ = l1a_data
+def test_generate_histogram_dataset(l1a_test_data):
+    histogram_l1a, _ = l1a_test_data
     glows_attrs = create_glows_attr_obj()
     dataset = generate_histogram_dataset(histogram_l1a, glows_attrs)
 
@@ -62,8 +41,8 @@ def test_generate_histogram_dataset(l1a_data):
         assert (dataset["histogram"].data[i] == histogram_l1a[i].histogram).all()
 
 
-def test_generate_de_dataset(l1a_data):
-    _, de_l1a = l1a_data
+def test_generate_de_dataset(l1a_test_data):
+    _, de_l1a = l1a_test_data
     glows_attrs = create_glows_attr_obj()
     dataset = generate_de_dataset(de_l1a, glows_attrs)
     assert len(dataset["epoch"].values) == len(de_l1a)

@@ -130,6 +130,10 @@ def _test_data_paths():
     and the corresponding location in which to store the downloaded file"""
     test_data_path_list = [
         (
+            "apid_478.bin",
+            imap_module_directory / "tests" / "ialirt" / "data" / "l0" / "apid_478.bin",
+        ),
+        (
             "imap_codice_l0_raw_20241110_v001.pkts",
             imap_module_directory
             / "tests"
@@ -154,6 +158,15 @@ def _test_data_paths():
             / "data"
             / "l1"
             / "imap_hi_l1b_45sensor-de_20250415_v999.cdf",
+        ),
+        (
+            "imap_hi_l1c_45sensor-pset_20250415_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "hi"
+            / "data"
+            / "l1"
+            / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf",
         ),
         (
             "idex_l1a_validation_file.h5",

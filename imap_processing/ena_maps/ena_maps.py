@@ -228,12 +228,18 @@ class PointingSet(ABC):
     # The minimum set of class attributes for any PointingSet to function with
     # a SkyMap using only the PUSH method of projecting are defined here.
 
-    # Attributes that are set in the ABC __init__ method
+    # ======== Attributes that are set in the ABC __init__ method ========
+    # The xarray.Dataset containing the data from the PSET CDF
     data: xr.Dataset
+    # The spice frame that the az_el_points are expressed in
     spice_reference_frame: geometry.SpiceFrame
-    # Attributes required to be set in a subclass
+
+    # ======== Attributes required to be set in a subclass ========
+    # Azimuth and elevation coordinates of each spatial pixel. The ndarray should
+    # have the shape (n, 2) where n is the number of spatial pixels
     az_el_points: np.ndarray
-    num_points: int
+    # Tuple containing the names of each spatial coordinate of the xarray.Dataset
+    # stored in the data attribute
     spatial_coords: tuple[str, ...]
 
     @abstractmethod
@@ -252,6 +258,18 @@ class PointingSet(ABC):
         # A PSET must have a single epoch
         if len(np.unique(self.data["epoch"].values)) > 1:
             raise ValueError("Multiple epochs found in the dataset.")
+
+    @property
+    def num_points(self) -> int:
+        """
+        The number of spatial pixels in the pointing set.
+
+        Returns
+        -------
+        num_points: int
+            The number of spatial pixels in the pointing set.
+        """
+        return self.az_el_points.shape[0]
 
     @property
     def epoch(self) -> int:
@@ -412,10 +430,40 @@ class RectangularPointingSet(PointingSet):
                 self.sky_grid.el_grid.ravel(),
             )
         )
-        self.num_points = self.az_el_points.shape[0]
 
 
-class UltraPointingSet(PointingSet):
+class HealpixPointingSet(PointingSet, ABC):
+    """
+    Abstract base class for Healpix pointing sets.
+
+    Defines additional properties and absract properties that are required
+    for a PointingSet instance to be used with the match_coords_to_indices
+    function.
+    """
+
+    tiling_type: SkyTilingType = SkyTilingType.HEALPIX
+
+    @property
+    def nside(self) -> int:
+        """
+        Number of pixels on the side of one of the 12 top-level healpix tiles.
+
+        Returns
+        -------
+        npix: int
+            The number of pixels on the side of one of the 12 ‘top-level’ healpix
+            tiles.
+        """
+        return hp.npix_to_nside(self.num_points)
+
+    @property
+    @abstractmethod
+    def nested(self) -> bool:
+        """Abstract property for getting nested boolean."""
+        raise NotImplementedError
+
+
+class UltraPointingSet(HealpixPointingSet):
     """
     Pointing set object specifically for Healpix-tiled ULTRA data, nominally at Level1C.
 
@@ -441,13 +489,6 @@ class UltraPointingSet(PointingSet):
         If multiple epochs are found in the dataset.
     """
 
-    # In addition to the required attributes defined in the base PointingSet
-    # class, the following attributes are required for a UltraPointingSet
-    # to be projected using the PULL method.
-    tiling_type: SkyTilingType = SkyTilingType.HEALPIX
-    nside: int
-    nested: bool
-
     def __init__(
         self,
         dataset: xr.Dataset | str | Path,
@@ -457,16 +498,9 @@ class UltraPointingSet(PointingSet):
 
         # Set the spatial coordinates and number of points
         self.spatial_coords = (CoordNames.HEALPIX_INDEX.value,)
-        self.num_points = self.data[CoordNames.HEALPIX_INDEX.value].size
-        self.nside = hp.npix_to_nside(self.num_points)
 
         # Tracks Per-Pixel Solid Angle in steradians.
         self.solid_angle = hp.nside2pixarea(self.nside, degrees=False)
-
-        # Determine if the HEALPix tessellation is nested, default is False
-        self.nested = bool(
-            self.data[CoordNames.HEALPIX_INDEX.value].attrs.get("nested", False)
-        )
 
         # Get the azimuth and elevation coordinates of the healpix pixel centers (deg)
         azimuth_pixel_center, elevation_pixel_center = hp.pix2ang(
@@ -503,6 +537,32 @@ class UltraPointingSet(PointingSet):
             (azimuth_pixel_center, elevation_pixel_center)
         )
 
+    @property
+    def num_points(self) -> int:
+        """
+        Override the base class property to get the number from the dataset.
+
+        Returns
+        -------
+        num_points: int
+            The number of healpix pixels in the pointing set.
+        """
+        return self.data[CoordNames.HEALPIX_INDEX.value].size
+
+    @property
+    def nested(self) -> bool:
+        """
+        Whether the healpix tessellation is nested.
+
+        Returns
+        -------
+        nested: bool
+            Whether the healpix tessellation is nested.
+        """
+        return bool(
+            self.data[CoordNames.HEALPIX_INDEX.value].attrs.get("nested", False)
+        )
+
     def __repr__(self) -> str:
         """
         Return a string representation of the UltraPointingSet.
@@ -517,6 +577,27 @@ class UltraPointingSet(PointingSet):
             f"{self.spice_reference_frame}, epoch={self.epoch}, "
             f"num_points={self.num_points})"
         )
+
+
+class HiPointingSet(PointingSet):
+    """
+    PointingSet object specific to Hi L1C PSet data.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        Hi L1C pointing set data loaded in an xarray.DataArray.
+    """
+
+    def __init__(self, dataset: xr.Dataset):
+        super().__init__(dataset, spice_reference_frame=geometry.SpiceFrame.ECLIPJ2000)
+        self.az_el_points = np.column_stack(
+            (
+                np.squeeze(self.data["hae_longitude"]),
+                np.squeeze(self.data["hae_latitude"]),
+            )
+        )
+        self.spatial_coords = ("spin_angle_bin",)
 
 
 # Define the Map classes

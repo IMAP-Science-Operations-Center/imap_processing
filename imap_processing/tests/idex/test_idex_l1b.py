@@ -20,7 +20,7 @@ from imap_processing.tests.idex import conftest
 from imap_processing.tests.idex.conftest import get_spice_data_side_effect_func
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 @mock.patch("imap_processing.idex.idex_l1b.get_spice_data")
 def l1b_dataset(mock_get_spice_data, decom_test_data_sci: xr.Dataset) -> xr.Dataset:
     """Return a ``xarray`` dataset containing test data.
@@ -195,7 +195,7 @@ def test_get_trigger_settings_failure(decom_test_data_sci):
 
     Parameters
     ----------
-    decom_test_data : xarray.Dataset
+    decom_test_data_sci : xarray.Dataset
         L1a dataset
     """
     decom_test_data_sci["idx__txhdrhgtrigmode"][0] = 1

@@ -1,19 +1,15 @@
 """Methods for GLOWS Level 1A processing and CDF writing."""
 
-from collections import defaultdict
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.glows.l0.decom_glows import decom_packets
-from imap_processing.glows.l0.glows_l0_data import DirectEventL0, HistogramL0
+from imap_processing.glows.l0.glows_l0_data import DirectEventL0
 from imap_processing.glows.l1a.glows_l1a_data import DirectEventL1A, HistogramL1A
-from imap_processing.glows.l1b.glows_l1b_data import HistogramL1B
 from imap_processing.spice.time import (
-    met_to_datetime64,
     met_to_ttj2000ns,
 )
 
@@ -42,6 +38,9 @@ def glows_l1a(packet_filepath: Path) -> list[xr.Dataset]:
     Outputs Datasets for histogram and direct event GLOWS L1A. This list can be passed
     into write_cdf to output CDF files.
 
+    We expect one input L0 file to be processed into one L1A file, with one
+    observational day's worth of data.
+
     Parameters
     ----------
     packet_filepath : pathlib.Path
@@ -58,70 +57,25 @@ def glows_l1a(packet_filepath: Path) -> list[xr.Dataset]:
     # Decompose packet file into histogram, and direct event data.
     hist_l0, de_l0 = decom_packets(packet_filepath)
 
-    # Create dictionaries to group data by day
-    de_by_day = process_de_l0(de_l0)
-    hists_by_day = defaultdict(list)
-    # Assume the observational day starts with the first packet, then find any new
-    # observation days.
-    # TODO: replace determine_observational_day with spin table API
-    obs_days = [hist_l0[0].SEC]
-    obs_days += determine_observational_day(hist_l0)
-
+    l1a_de = process_de_l0(de_l0)
+    l1a_hists = []
     for hist in hist_l0:
-        hist_l1a = HistogramL1A(hist)
-        # Determine the day the histogram belongs to. This finds the observation
-        # day in obs_day that is nearest the histogram timestamp without going over.
-        hist_day = next(
-            (day for day in reversed(obs_days) if day <= hist.SEC), obs_days[-1]
-        )
-        hists_by_day[hist_day].append(hist_l1a)
+        l1a_hists.append(HistogramL1A(hist))
 
     # Generate CDF files for each day
     output_datasets = []
-    for obs_day, hist_l1a_list in hists_by_day.items():
-        dataset = generate_histogram_dataset(hist_l1a_list, glows_attrs, obs_day)
-        output_datasets.append(dataset)
+    dataset = generate_histogram_dataset(l1a_hists, glows_attrs)
+    output_datasets.append(dataset)
 
-    for de_l1a_list in de_by_day.values():
-        dataset = generate_de_dataset(de_l1a_list, glows_attrs)
-        output_datasets.append(dataset)
+    dataset = generate_de_dataset(l1a_de, glows_attrs)
+    output_datasets.append(dataset)
 
     return output_datasets
 
 
-def determine_observational_day(hist_l0: list[HistogramL0]) -> list:
-    """
-    Find the timestamps for each observational day.
-
-    This function temporarily uses the is_night flag to determine the start of a new
-    observational day, but should eventually use the spin table APIs.
-
-    Parameters
-    ----------
-    hist_l0 : list[HistogramL0]
-        List of HistogramL0 objects.
-
-    Returns
-    -------
-    list
-        List of start times for each observational day.
-    """
-    prev_is_night = -1
-    obs_day_change = []
-    for hist in hist_l0:
-        flags = HistogramL1B.deserialize_flags(hist.FLAGS)
-        is_night: int = int(flags[6])
-        if prev_is_night and not is_night:
-            obs_day_change.append(hist.SEC)
-
-        prev_is_night = is_night
-
-    return obs_day_change
-
-
 def process_de_l0(
     de_l0: list[DirectEventL0],
-) -> dict[np.datetime64, list[DirectEventL1A]]:
+) -> list[DirectEventL1A]:
     """
     Will process Direct Event packets into GLOWS L1A CDF files.
 
@@ -135,25 +89,22 @@ def process_de_l0(
 
     Returns
     -------
-    de_by_day : dict[np.datetime64, list[DirectEventL1A]]
+    de_by_day : list[DirectEventL1A]
         Dictionary with keys of days and values of lists of DirectEventL1A objects.
         Each day has one CDF file associated with it.
     """
-    de_by_day = dict()
+    de_list: list[DirectEventL1A] = []
 
     for de in de_l0:
-        de_day = (met_to_datetime64(de.MET)).astype("datetime64[D]")
-        if de_day not in de_by_day:
-            de_by_day[de_day] = [DirectEventL1A(de)]
         # Putting not first data int o last direct event list.
-        elif de.SEQ != 0:
+        if de.SEQ != 0:
             # If the direct event is part of a sequence and is not the first,
-            # append it to the last direct event in the list
-            de_by_day[de_day][-1].append(de)
+            # add it to the last direct event in the list
+            de_list[-1].merge_de_packets(de)
         else:
-            de_by_day[de_day].append(DirectEventL1A(de))
+            de_list.append(DirectEventL1A(de))
 
-    return de_by_day
+    return de_list
 
 
 def generate_de_dataset(
@@ -274,7 +225,6 @@ def generate_de_dataset(
         ),
     )
 
-    # TODO come up with a better name
     within_the_second = xr.DataArray(
         np.arange(direct_events.shape[1]),
         name="within_the_second",
@@ -294,7 +244,6 @@ def generate_de_dataset(
         attrs=glows_cdf_attributes.get_variable_attributes("direct_events"),
     )
 
-    # TODO: This is the weird global attribute.
     # Create an xarray dataset object, and add DataArray objects into it
     output = xr.Dataset(
         coords={"epoch": time_data},
@@ -302,9 +251,6 @@ def generate_de_dataset(
     )
 
     output["direct_events"] = de
-
-    # TODO: Do we want missing_sequences as support data or as global attrs?
-    # Currently: support data, with a string
 
     for key, value in support_data.items():
         output[key] = xr.DataArray(
@@ -330,7 +276,6 @@ def generate_de_dataset(
 def generate_histogram_dataset(
     hist_l1a_list: list[HistogramL1A],
     glows_cdf_attributes: ImapCdfAttributes,
-    obs_day: Optional[int] = None,
 ) -> xr.Dataset:
     """
     Generate a dataset for GLOWS L1A histogram data CDF files.
@@ -341,9 +286,6 @@ def generate_histogram_dataset(
         List of HistogramL1A objects for a given day.
     glows_cdf_attributes : ImapCdfAttributes
         Object containing l1a CDF attributes for instrument glows.
-    obs_day : int, optional
-        Observational day counter. If supplied, it will be included in the
-        output file name.
 
     Returns
     -------
