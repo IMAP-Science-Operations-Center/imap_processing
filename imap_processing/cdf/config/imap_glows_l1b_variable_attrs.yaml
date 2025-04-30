@@ -74,19 +74,6 @@ bins_attrs:
   MONOTON: INCREASE
   SCALETYP: linear
 
-# MS: this needs to be thoroughly discussed
-flag_dim: # MS: this should be different for DE and HIST
-  <<: *default_attrs
-  FILLVAL: -1
-  CATDESC: Flag index for histogram flags
-  FIELDNAM: Flag index
-  UNITS: ' '
-  FORMAT: I2
-  LABLAXIS: Index
-  VALIDMIN: 0
-  VALIDMAX: 16
-  VAR_TYPE: support_data
-
 within_the_second_attrs: # Used to be per_second_attrs
   <<:  *default_attrs
   VALIDMIN: 0
@@ -230,7 +217,7 @@ number_of_bins_per_histogram:
   VALIDMAX: 3600
   VALIDMIN: 225
 
-ecliptic_dim:
+ecliptic_attrs:
   <<: *default_attrs
   VALIDMIN: 0
   VALIDMAX: 2
@@ -686,6 +673,32 @@ flight_software_version:
   LABLAXIS: FSW ver
   VALIDMAX: 16777215
 
+# Flags
+# MS: this needs to be thoroughly discussed
+flag_attrs_hist: # MS: this should be different for DE and HIST
+  <<: *default_attrs
+  FILLVAL: -1
+  CATDESC: Flag index for histogram flags
+  FIELDNAM: Flag index
+  UNITS: ' '
+  FORMAT: I2
+  LABLAXIS: Index
+  VALIDMIN: 0
+  VALIDMAX: 16
+  VAR_TYPE: support_data
+
+flag_attrs_de: # MS: this should be different for DE and HIST
+  <<: *default_attrs
+  FILLVAL: -1
+  CATDESC: Flag index for DE flags
+  FIELDNAM: Flag index
+  UNITS: ' '
+  FORMAT: I2
+  LABLAXIS: Index
+  VALIDMIN: 0
+  VALIDMAX: 16
+  VAR_TYPE: support_data
+
 flags_set_onboard:
   # TODO: Verify uint32 fillval and uint16 validmax
   <<: *support_data_defaults
@@ -696,35 +709,45 @@ flags_set_onboard:
   LABLAXIS: Onboard mask
   VALIDMAX: *max_uint16
 
+bad_angle_flags_attrs:
+    <<: *flag_data_defaults
+    CATDESC: Binary mask for bad-angle flags
+    FIELDNAM: Mask with bad-angle flags
+    DISPLAY_TYPE: no_plot
+    LABLAXIS: Bad-angle mask
+
+
 # TODO review this
+# This describes per-bin bad time information, including: [is_close_to_uv_source,
+#        is_inside_excluded_region, is_excluded_by_instr_team, is_suspected_transient]
 histogram_flag_array: # MS does not understand what is this exactly
   <<: *flag_data_defaults
   CATDESC: Bad-angle mask for histogram bins
   DISPLAY_TYPE: no_plot
   FIELDNAM: Bad-angle mask for histogram
   LABLAXIS: Mask
-  DEPEND_1: bad_angle_flags # flag_dim
+  DEPEND_1: bad_angle_flags_attrs
   DEPEND_2: bins
   VALIDMIN: 0
   VALIDMAX: 1
 
 de_flags:
   <<: *flag_data_defaults
-  DEPEND_1: flag_dim
+  DEPEND_1: flag_attrs_de
   CATDESC: Flags for per-second-grouped direct events
   FIELDNAM: Flags for direct events
   DISPLAY_TYPE: no_plot
   VALIDMIN: 0
   VALIDMAX: 1
 
+# Decoded on-board flags into a length 16 array
 flags: # MS: is this related to flags_set_onboard?
   <<: *support_data_defaults
   CATDESC: Bad-time mask for histogram
   DISPLAY_TYPE: no_plot
   FIELDNAM: Bad-time mask for histogram
   LABLAXIS: Mask
-  DEPEND_1: flag_dim
-  DEPEND_2: bins
+  DEPEND_1: flag_attrs_hist
   VALIDMIN: 0
   VALIDMAX: 1
   FORMAT: I1

@@ -190,15 +190,15 @@ def create_l1b_hist_output(
 
     flag_data = xr.DataArray(
         np.arange(FLAG_LENGTH),
-        name="flag_dim",
-        dims=["flag_dim"],
-        attrs=cdf_attrs.get_variable_attributes("flag_dim"),
+        name="flag_attrs_hist",
+        dims=["flag_attrs_hist"],
+        attrs=cdf_attrs.get_variable_attributes("flag_attrs_hist"),
     )
     bad_flag_data = xr.DataArray(
         np.arange(4),
         name="bad_angle_flags",
         dims=["bad_angle_flags"],
-        attrs=cdf_attrs.get_variable_attributes("flag_dim"),
+        attrs=cdf_attrs.get_variable_attributes("bad_angle_flags_attrs"),
     )
 
     # TODO: the four spacecraft location/velocity values should probably each get
@@ -207,7 +207,7 @@ def create_l1b_hist_output(
         np.arange(3),
         name="ecliptic",
         dims=["ecliptic"],
-        attrs=cdf_attrs.get_variable_attributes("ecliptic_dim"),
+        attrs=cdf_attrs.get_variable_attributes("ecliptic_attrs"),
     )
     bin_data = xr.DataArray(
         input_dataset["bins"],
@@ -231,7 +231,7 @@ def create_l1b_hist_output(
             "bins": bin_data,
             "bins_label": bin_label,
             "bad_angle_flags": bad_flag_data,
-            "flag_dim": flag_data,
+            "flags": flag_data,
             "ecliptic": eclipic_data,
         },
         attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_hist"),
@@ -282,7 +282,7 @@ def create_l1b_de_output(
         input_dataset["within_the_second"],
         name="within_the_second",
         dims=["within_the_second"],
-        attrs=cdf_attrs.get_variable_attributes("within_the_second"),
+        attrs=cdf_attrs.get_variable_attributes("within_the_second_attrs"),
     )
     # Add the within_the_second label to the xr.Dataset coordinates
     within_the_second_label = xr.DataArray(
@@ -294,9 +294,9 @@ def create_l1b_de_output(
 
     flag_data = xr.DataArray(
         np.arange(11),
-        name="flag_dim",
-        dims=["flag_dim"],
-        attrs=cdf_attrs.get_variable_attributes("flag_dim"),
+        name="flags",
+        dims=["flags"],
+        attrs=cdf_attrs.get_variable_attributes("flag_de_attrs"),
     )
 
     output_dataset = xr.Dataset(
@@ -304,7 +304,7 @@ def create_l1b_de_output(
             "epoch": data_epoch,
             "within_the_second": within_the_second_data,
             "within_the_second_label": within_the_second_label,
-            "flag_dim": flag_data,
+            "flags": flag_data,
         },
         attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_de"),
     )
