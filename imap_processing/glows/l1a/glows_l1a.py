@@ -129,9 +129,7 @@ def generate_de_dataset(
     # TODO: Block header per second, or global attribute?
 
     # Store timestamps for each DirectEventL1a object.
-    time_data = np.zeros(len(de_l1a_list), dtype="datetime64[ns]")
-    # TODO: Should each timestamp point to a list of direct events, each with a
-    #  timestamp? Or should the list be split out to make the timestamps?
+    time_data = np.zeros(len(de_l1a_list), dtype=np.int64)
 
     # Each DirectEventL1A class covers 1 second of direct events data
     direct_events = np.zeros((len(de_l1a_list), len(de_l1a_list[0].direct_events), 4))
@@ -168,7 +166,8 @@ def generate_de_dataset(
 
     for index, de in enumerate(de_l1a_list):
         # Set the timestamp to the first timestamp of the direct event list
-        epoch_time = met_to_ttj2000ns(de.l0.MET).astype("datetime64[ns]")
+        epoch_time = met_to_ttj2000ns(de.l0.MET)
+
         print("Epoch time", epoch_time)
         # determine if the length of the direct_events numpy array is long enough,
         # and extend the direct_events length dimension if necessary.
@@ -207,6 +206,7 @@ def generate_de_dataset(
         for key, val in data_every_second.items():
             val.append(de.status_data.__getattribute__(key))
 
+    print(time_data)
     # Convert arrays and dictionaries into xarray 'DataArray' objects
     epoch_time = xr.DataArray(
         time_data,

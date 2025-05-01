@@ -109,7 +109,7 @@ def write_cdf(
         # If no start time is included, then use the first epoch in the dataset
         dt64 = TTJ2000_EPOCH + dataset["epoch"].values[0].astype("timedelta64[ns]")
         start_date = np.datetime_as_string(dt64, unit="D").replace("-", "")
-        print("Start date", start_date)
+        print("Start date writing out", start_date)
 
     version = dataset.attrs.get("Data_version", None)
     if version is None:
