@@ -168,7 +168,7 @@ def test_subset_data_for_sectored_counts():
     )
 
     # Check the results
-    assert subset_dataset.dims["epoch"] == 10
+    assert subset_dataset.sizes["epoch"] == 10
     assert len(subset_livetime["epoch"]) == 10
     assert np.all(subset_dataset["hdr_minute_cnt"].values % 10 == np.arange(10))
 
