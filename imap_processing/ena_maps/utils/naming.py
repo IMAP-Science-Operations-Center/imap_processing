@@ -29,6 +29,7 @@ def build_l2_map_descriptor(  # noqa: PLR0912
     # Basic parameters must always be passed in as keyword arguments
     instrument: MappableInstrumentShortName,  # Updated to use the enum
     frame: Literal["sf", "hf", "hk"] | SpiceFrame,
+    resolution_str: str,
     duration: str | int | timedelta,
     # The rest of the parameters have default values corresponding to the
     # most general cases
@@ -43,11 +44,11 @@ def build_l2_map_descriptor(  # noqa: PLR0912
     Build a map descriptor string for the L2 ENA maps.
 
     Example descriptor string and its meaning:
-    "h45-ena-h-hf-sp-ram-hae-3mo" is:
+    "h45-ena-h-hf-sp-ram-hae-6deg-3mo" is:
     An IMAP-HI map made from data taken by HI's 45 degree sensor, of hydrogen ENAs,
     in the heliospheric frame, survival probability corrected,
     of counts in the ram direction, in heliocentric aries ecliptic coordinates,
-    with a duration of 3 months.
+    with a pixel spacing of 6 degrees, with a duration of 3 months.
 
     This function requires a large amount of information to be passed in, and will
     likely be used indirectly by methods of a SkyMap object or similar.
@@ -63,6 +64,10 @@ def build_l2_map_descriptor(  # noqa: PLR0912
         sf: Spacecraft frame.
         hf: Heliospheric frame.
         hk: Heliospheric kinematic frame.
+    resolution_str : str
+        The resolution of the map as a string.
+        For Healpix maps, this is the nside value as "nside128", "nside32", etc.
+        For rectangular maps, this is the spacing in degrees as "2deg", "6deg", etc.
     duration : str | int | timedelta
         The duration of the map as a string, and integer number of days, or a timedelta.
         The string should be in the format of "1yr", "6mo", "3mo", etc.
@@ -156,7 +161,8 @@ def build_l2_map_descriptor(  # noqa: PLR0912
 
     map_descriptor = (
         f"{instrument_descriptor}-{principal_data}-{species}-{frame_descriptor}"
-        f"-{survival_corrected}-{spin_phase}-{coordinate_system}-{duration}"
+        f"-{survival_corrected}-{spin_phase}-{coordinate_system}"
+        f"-{resolution_str}-{duration}"
     )
     return map_descriptor
 

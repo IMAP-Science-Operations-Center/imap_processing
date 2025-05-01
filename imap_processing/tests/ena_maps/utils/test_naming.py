@@ -14,6 +14,7 @@ def test_build_l2_map_descriptor_with_timedelta():
     descriptor = build_l2_map_descriptor(
         instrument=MappableInstrumentShortName.HI,
         frame="hf",
+        resolution_str="2deg",
         duration=timedelta(days=60),
         sensor="45",
         principal_data="ena",
@@ -22,13 +23,14 @@ def test_build_l2_map_descriptor_with_timedelta():
         spin_phase="ram",
         coordinate_system="hgi",
     )
-    assert descriptor == "h45-ena-he-hf-sp-ram-hgi-2mo"
+    assert descriptor == "h45-ena-he-hf-sp-ram-hgi-2deg-2mo"
 
 
 def test_build_l2_map_descriptor_with_int_duration():
     descriptor = build_l2_map_descriptor(
         instrument=MappableInstrumentShortName.LO_HI_THROUGHPUT,
         frame="sf",
+        resolution_str="4deg",
         duration=120,
         sensor=75,
         principal_data="ena",
@@ -37,13 +39,14 @@ def test_build_l2_map_descriptor_with_int_duration():
         spin_phase="anti",
         coordinate_system="rc",
     )
-    assert descriptor == "t075-ena-o-sf-nsp-anti-rc-4mo"
+    assert descriptor == "t075-ena-o-sf-nsp-anti-rc-4deg-4mo"
 
 
 def test_build_l2_map_descriptor_with_spice_frame():
     descriptor = build_l2_map_descriptor(
         instrument=MappableInstrumentShortName.IDEX,
         frame=SpiceFrame.IMAP_DPS,
+        resolution_str="nside32",
         duration=365,
         principal_data="drt",
         species="dust",
@@ -51,7 +54,7 @@ def test_build_l2_map_descriptor_with_spice_frame():
         spin_phase="full",
         coordinate_system="hae",
     )
-    assert descriptor == "idx-drt-dust-sf-sp-full-hae-1yr"
+    assert descriptor == "idx-drt-dust-sf-sp-full-hae-nside32-1yr"
 
 
 def test_build_l2_map_descriptor_invalid_frame():
@@ -59,6 +62,7 @@ def test_build_l2_map_descriptor_invalid_frame():
         build_l2_map_descriptor(
             instrument=MappableInstrumentShortName.IDEX,
             frame=SpiceFrame.IMAP_GLOWS,
+            resolution_str="4deg",
             duration="6mo",
             sensor="",
             principal_data="ena",
