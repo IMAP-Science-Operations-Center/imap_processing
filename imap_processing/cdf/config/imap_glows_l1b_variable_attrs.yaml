@@ -675,7 +675,7 @@ flight_software_version:
 
 # Flags
 # MS: this needs to be thoroughly discussed
-flag_hist_attrs: # MS: this should be different for DE and HIST
+bad_time_flag_hist_attrs: # MS: this should be different for DE and HIST
   <<: *default_attrs
   FILLVAL: -1
   CATDESC: Flag index for histogram flags
@@ -710,11 +710,17 @@ flags_set_onboard:
   VALIDMAX: *max_uint16
 
 bad_angle_flags_attrs:
-    <<: *flag_data_defaults
+    <<: *default_attrs
     CATDESC: Binary mask for bad-angle flags
     FIELDNAM: Mask with bad-angle flags
     DISPLAY_TYPE: no_plot
     LABLAXIS: Bad-angle mask
+    FILLVAL: -1
+    UNITS: ' '
+    FORMAT: I2
+    VALIDMIN: 0
+    VALIDMAX: 16
+    VAR_TYPE: support_data
 
 
 # TODO review this
@@ -726,14 +732,14 @@ histogram_flag_array: # MS does not understand what is this exactly
   DISPLAY_TYPE: no_plot
   FIELDNAM: Bad-angle mask for histogram
   LABLAXIS: Mask
-  DEPEND_1: bad_angle_flags_attrs
+  DEPEND_1: bad_angle_flags
   DEPEND_2: bins
   VALIDMIN: 0
   VALIDMAX: 1
 
 de_flags:
   <<: *flag_data_defaults
-  DEPEND_1: flag_de_attrs
+  DEPEND_1: flags
   CATDESC: Flags for per-second-grouped direct events
   FIELDNAM: Flags for direct events
   DISPLAY_TYPE: no_plot
@@ -747,7 +753,7 @@ flags: # MS: is this related to flags_set_onboard?
   DISPLAY_TYPE: no_plot
   FIELDNAM: Bad-time mask for histogram
   LABLAXIS: Mask
-  DEPEND_1: flag_hist_attrs
+  DEPEND_1: bad_time_flags
   VALIDMIN: 0
   VALIDMAX: 1
   FORMAT: I1

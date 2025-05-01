@@ -8,6 +8,7 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.l1b.glows_l1b_data import DirectEventL1B, HistogramL1B
+from imap_processing.spice.time import TTJ2000_EPOCH
 
 
 def glows_l1b(input_dataset: xr.Dataset) -> xr.Dataset:
@@ -33,6 +34,9 @@ def glows_l1b(input_dataset: xr.Dataset) -> xr.Dataset:
         if isinstance(input_dataset.attrs["Logical_source"], list)
         else input_dataset.attrs["Logical_source"]
     )
+    dt64 = TTJ2000_EPOCH + input_dataset["epoch"].values[0].astype("timedelta64[ns]")
+    start_date = np.datetime_as_string(dt64, unit="D").replace("-", "")
+    print("Start date", start_date)
 
     if "hist" in logical_source:
         output_dataset = create_l1b_hist_output(input_dataset, cdf_attrs)
@@ -200,24 +204,25 @@ def create_l1b_hist_output(
     output_dataset : xr.Dataset
         The output dataset with the processed histogram data and all attributes.
     """
-    data_epoch = xr.DataArray(
-        input_dataset["epoch"],
-        name="epoch",
-        dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch"),
-    )
+    data_epoch = input_dataset["epoch"]
+    data_epoch.attrs = cdf_attrs.get_variable_attributes("epoch", check_schema=False)
 
     flag_data = xr.DataArray(
         np.arange(FLAG_LENGTH),
         name="bad_time_flags",
         dims=["bad_time_flags"],
-        attrs=cdf_attrs.get_variable_attributes("flag_hist_attrs"),
+        attrs=cdf_attrs.get_variable_attributes(
+            "bad_time_flag_hist_attrs", check_schema=False
+        ),
     )
+
     bad_flag_data = xr.DataArray(
         np.arange(4),
         name="bad_angle_flags",
         dims=["bad_angle_flags"],
-        attrs=cdf_attrs.get_variable_attributes("bad_angle_flags_attrs"),
+        attrs=cdf_attrs.get_variable_attributes(
+            "bad_angle_flags_attrs", check_schema=False
+        ),
     )
 
     # TODO: the four spacecraft location/velocity values should probably each get
@@ -226,19 +231,21 @@ def create_l1b_hist_output(
         np.arange(3),
         name="ecliptic",
         dims=["ecliptic"],
-        attrs=cdf_attrs.get_variable_attributes("ecliptic_attrs"),
+        attrs=cdf_attrs.get_variable_attributes("ecliptic_attrs", check_schema=False),
     )
+
     bin_data = xr.DataArray(
-        input_dataset["bins"],
+        input_dataset["bins"].data,
         name="bins",
         dims=["bins"],
-        attrs=cdf_attrs.get_variable_attributes("bins_attrs"),
+        attrs=cdf_attrs.get_variable_attributes("bins_attrs", check_schema=False),
     )
+
     bin_label = xr.DataArray(
         bin_data.data.astype(str),
         name="bins_label",
         dims=["bins_label"],
-        attrs=cdf_attrs.get_variable_attributes("bins_label"),
+        attrs=cdf_attrs.get_variable_attributes("bins_label", check_schema=False),
     )
 
     output_dataarrays = process_histogram(input_dataset)
@@ -250,7 +257,7 @@ def create_l1b_hist_output(
             "bins": bin_data,
             "bins_label": bin_label,
             "bad_angle_flags": bad_flag_data,
-            "flags": flag_data,
+            "bad_time_flags": flag_data,
             "ecliptic": eclipic_data,
         },
         attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_hist"),
@@ -289,33 +296,33 @@ def create_l1b_de_output(
     output_dataset : xr.Dataset
         The output dataset with the processed data.
     """
-    data_epoch = xr.DataArray(
-        input_dataset["epoch"],
-        name="epoch",
-        dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch"),
-    )
+    data_epoch = input_dataset["epoch"]
+    data_epoch.attrs = cdf_attrs.get_variable_attributes("epoch", check_schema=False)
 
     output_dataarrays = process_de(input_dataset)
     within_the_second_data = xr.DataArray(
         input_dataset["within_the_second"],
         name="within_the_second",
         dims=["within_the_second"],
-        attrs=cdf_attrs.get_variable_attributes("within_the_second_attrs"),
+        attrs=cdf_attrs.get_variable_attributes(
+            "within_the_second_attrs", check_schema=False
+        ),
     )
     # Add the within_the_second label to the xr.Dataset coordinates
     within_the_second_label = xr.DataArray(
         input_dataset["within_the_second"].data.astype(str),
         name="within_the_second_label",
         dims=["within_the_second_label"],
-        attrs=cdf_attrs.get_variable_attributes("within_the_second_label"),
+        attrs=cdf_attrs.get_variable_attributes(
+            "within_the_second_label", check_schema=False
+        ),
     )
 
     flag_data = xr.DataArray(
         np.arange(11),
         name="flags",
         dims=["flags"],
-        attrs=cdf_attrs.get_variable_attributes("flag_de_attrs"),
+        attrs=cdf_attrs.get_variable_attributes("flag_de_attrs", check_schema=False),
     )
 
     output_dataset = xr.Dataset(
