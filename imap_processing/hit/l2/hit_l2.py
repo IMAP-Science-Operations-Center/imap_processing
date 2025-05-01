@@ -1,7 +1,6 @@
 """IMAP-HIT L2 data processing."""
 
 import logging
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -13,9 +12,6 @@ from imap_processing.hit.hit_utils import (
 )
 from imap_processing.hit.l2.constants import (
     FILLVAL_FLOAT32,
-    L2_SECTORED_ANCILLARY_PATH_PREFIX,
-    L2_STANDARD_ANCILLARY_PATH_PREFIX,
-    L2_SUMMED_ANCILLARY_PATH_PREFIX,
     N_AZIMUTH,
     SECONDS_PER_10_MIN,
     SECONDS_PER_MIN,
@@ -28,10 +24,9 @@ logger = logging.getLogger(__name__)
 
 # TODO:
 #  - review logging levels to use (debug vs. info)
-#  - determine where to pull ancillary data. Storing it locally for now
 
 
-def hit_l2(dependency: xr.Dataset) -> list[xr.Dataset]:
+def hit_l2(dependency_sci: xr.Dataset, dependencies_anc: list) -> list[xr.Dataset]:
     """
     Will process HIT data to L2.
 
@@ -39,9 +34,12 @@ def hit_l2(dependency: xr.Dataset) -> list[xr.Dataset]:
 
     Parameters
     ----------
-    dependency : xr.Dataset
+    dependency_sci : xr.Dataset
         L1B xarray science dataset that is either summed rates
         standard rates or sector rates.
+
+    dependencies_anc : list
+        A list of PosixPaths to ancillary data files.
 
     Returns
     -------
@@ -56,21 +54,21 @@ def hit_l2(dependency: xr.Dataset) -> list[xr.Dataset]:
     l2_datasets: dict = {}
 
     # Process science data to L2 datasets
-    if "imap_hit_l1b_summed-rates" in dependency.attrs["Logical_source"]:
+    if "imap_hit_l1b_summed-rates" in dependency_sci.attrs["Logical_source"]:
         l2_datasets["imap_hit_l2_summed-intensity"] = process_summed_intensity_data(
-            dependency
+            dependency_sci, dependencies_anc
         )
         logger.info("HIT L2 summed intensity dataset created")
 
-    if "imap_hit_l1b_standard-rates" in dependency.attrs["Logical_source"]:
+    if "imap_hit_l1b_standard-rates" in dependency_sci.attrs["Logical_source"]:
         l2_datasets["imap_hit_l2_standard-intensity"] = process_standard_intensity_data(
-            dependency
+            dependency_sci, dependencies_anc
         )
         logger.info("HIT L2 standard intensity dataset created")
 
-    if "imap_hit_l1b_sectored-rates" in dependency.attrs["Logical_source"]:
+    if "imap_hit_l1b_sectored-rates" in dependency_sci.attrs["Logical_source"]:
         l2_datasets["imap_hit_l2_macropixel-intensity"] = (
-            process_sectored_intensity_data(dependency)
+            process_sectored_intensity_data(dependency_sci, dependencies_anc)
         )
         logger.info("HIT L2 macropixel intensity dataset created")
 
@@ -510,7 +508,7 @@ def get_species_ancillary_data(
     }
 
 
-def load_ancillary_data(dynamic_threshold_states: set, path_prefix: Path) -> dict:
+def load_ancillary_data(dynamic_threshold_states: set, ancillary_files: list) -> dict:
     """
     Load ancillary data based on the dynamic threshold state.
 
@@ -522,17 +520,18 @@ def load_ancillary_data(dynamic_threshold_states: set, path_prefix: Path) -> dic
     ----------
     dynamic_threshold_states : set
         A set of dynamic threshold states in the L2 dataset.
-    path_prefix : Path
-        The path prefix for ancillary data files.
+    ancillary_files : list
+        A list of PosixPaths to ancillary data files.
 
     Returns
     -------
     dict
-        A dictionary with ancillary data for each dynamic threshold state.
+        A dictionary with ancillary data frames for each dynamic threshold state.
     """
-    # Load ancillary data
     ancillary_data_frames = {
-        int(state): pd.read_csv(f"{path_prefix}{state}-factors_20250219_v002.csv")
+        int(state): pd.read_csv(
+            next(path for path in ancillary_files if f"dt{state}-factors" in str(path))
+        )
         for state in dynamic_threshold_states
     }
 
@@ -544,7 +543,9 @@ def load_ancillary_data(dynamic_threshold_states: set, path_prefix: Path) -> dic
     return ancillary_data_frames
 
 
-def process_summed_intensity_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Dataset:
+def process_summed_intensity_data(
+    l1b_summed_rates_dataset: xr.Dataset, ancillary_files: list
+) -> xr.Dataset:
     """
     Will process L2 HIT summed intensity data from L1B summed rates.
 
@@ -561,6 +562,9 @@ def process_summed_intensity_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Da
     l1b_summed_rates_dataset : xarray.Dataset
         HIT L1B summed rates dataset.
 
+    ancillary_files : list
+        A list of PosixPaths to ancillary data files.
+
     Returns
     -------
     xr.Dataset
@@ -572,7 +576,7 @@ def process_summed_intensity_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Da
     # Load ancillary data for each dynamic threshold state into a dictionary
     ancillary_data_frames = load_ancillary_data(
         set(l2_summed_intensity_dataset["dynamic_threshold_state"].values),
-        L2_SUMMED_ANCILLARY_PATH_PREFIX,
+        ancillary_files,
     )
 
     # Calculate the intensity for each species
@@ -594,7 +598,7 @@ def process_summed_intensity_data(l1b_summed_rates_dataset: xr.Dataset) -> xr.Da
 
 
 def process_standard_intensity_data(
-    l1b_standard_rates_dataset: xr.Dataset,
+    l1b_standard_rates_dataset: xr.Dataset, ancillary_files: list
 ) -> xr.Dataset:
     """
     Will process L2 standard intensity data from L1B standard rates data.
@@ -622,6 +626,9 @@ def process_standard_intensity_data(
     l1b_standard_rates_dataset : xr.Dataset
         The L1B standard rates dataset.
 
+    ancillary_files : list
+        A list of PosixPaths to ancillary data files.
+
     Returns
     -------
     xr.Dataset
@@ -643,7 +650,7 @@ def process_standard_intensity_data(
     # Load ancillary data for each dynamic threshold state into a dictionary
     ancillary_data_frames = load_ancillary_data(
         set(l2_standard_intensity_dataset["dynamic_threshold_state"].values),
-        L2_STANDARD_ANCILLARY_PATH_PREFIX,
+        ancillary_files,
     )
 
     # Process each particle type and add rates and uncertainties to the dataset
@@ -673,7 +680,7 @@ def process_standard_intensity_data(
 
 
 def process_sectored_intensity_data(
-    l1b_sectored_rates_dataset: xr.Dataset,
+    l1b_sectored_rates_dataset: xr.Dataset, ancillary_files: list
 ) -> xr.Dataset:
     """
     Will process L2 HIT sectored intensity data from L1B sectored rates data.
@@ -691,6 +698,9 @@ def process_sectored_intensity_data(
     l1b_sectored_rates_dataset : xr.Dataset
         The L1B sectored rates dataset.
 
+    ancillary_files : list
+        A list of PosixPaths to ancillary data files.
+
     Returns
     -------
     xr.Dataset
@@ -702,7 +712,7 @@ def process_sectored_intensity_data(
     # Load ancillary data for each dynamic threshold state into a dictionary
     ancillary_data_frames = load_ancillary_data(
         set(l2_sectored_intensity_dataset["dynamic_threshold_state"].values),
-        L2_SECTORED_ANCILLARY_PATH_PREFIX,
+        ancillary_files,
     )
 
     # Calculate the intensity for each species
