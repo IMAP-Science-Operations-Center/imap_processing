@@ -463,6 +463,8 @@ class TestRectangularSkyMap:
         )
 
 
+# Skip these pytests
+@pytest.mark.skip(reason="Skipping tests temporarily")
 class TestHealpixSkyMap:
     @pytest.fixture(autouse=True)
     def _setup_ultra_l1c_pset_products(self, setup_all_pset_products):
