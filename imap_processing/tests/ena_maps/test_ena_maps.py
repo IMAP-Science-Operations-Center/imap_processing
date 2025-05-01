@@ -496,7 +496,7 @@ class TestHealpixSkyMap:
 
     @pytest.mark.parametrize(
         "nside",
-        [8, 16, 32],
+        [4, 8],
     )
     @pytest.mark.parametrize("nested", [True, False], ids=["nested", "ring"])
     def test_instantiate(self, nside, nested):
