@@ -5,7 +5,7 @@ import pytest
 
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils.coordinates import CoordNames
-from imap_processing.tests.ultra.data.mock_data import mock_l1c_pset_product_healpix
+from imap_processing.tests.ultra.mock_data import mock_l1c_pset_product_healpix
 from imap_processing.ultra.l2 import ultra_l2
 
 
