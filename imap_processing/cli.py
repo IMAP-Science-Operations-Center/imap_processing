@@ -709,16 +709,30 @@ class Hit(ProcessInstrument):
             # process data to L1B products
             datasets = hit_l1b(data_dict)
         elif self.data_level == "l2":
-            if len(dependency_list) > 1:
+            if len(dependency_list) != 5:
                 raise ValueError(
                     f"Unexpected dependencies found for HIT L2:"
                     f"{dependency_list}. Expected only one dependency."
                 )
             # Add L1B dataset to process science data
-            science_files = dependencies.get_file_paths(source="hit")
+            science_files = dependencies.get_file_paths(
+                source="hit", descriptor="-rates"
+            )
+            ancillary_files = dependencies.get_file_paths(
+                source="hit", descriptor="-dt"
+            )
+            if len(science_files) > 1:
+                raise ValueError(
+                    "Multiple science files processing is not supported for HIT L2."
+                )
+            if len(ancillary_files) != 4:
+                raise ValueError(
+                    "Unexpected ancillary files found for HIT L2:"
+                    f"{ancillary_files}. Expected 4 ancillary files."
+                )
             l1b_dataset = load_cdf(science_files[0])
             # process data to L2 products
-            datasets = hit_l2(l1b_dataset)
+            datasets = hit_l2(l1b_dataset, ancillary_files)
 
         return datasets
 
