@@ -59,39 +59,45 @@ def idex_l2c(l1b_datasets: list[xr.Dataset]) -> xr.Dataset:
     idex_attrs = ImapCdfAttributes()
     idex_attrs.add_instrument_global_attrs(instrument="idex")
     idex_attrs.add_instrument_variable_attrs("idex", "l2c")
-    # Initialize the HealpixSkyMap object
-    skymap = ena_maps.HealpixSkyMap(
+    # Initialize the HealpixSkyMap and Rectangular object
+    healpix_skymap = ena_maps.HealpixSkyMap(
         nside=IDEX_HEALPIX_NSIDE,
         nested=IDEX_HEALPIX_NESTED,
         spice_frame=IDEX_POINTING_REFERENCE_FRAME,
     )
     # Create raw dust count psets and push values to the map for each l1b dataset.
     for ds in l1b_datasets:
-        pset = idex_pset(ds, idex_attrs)
+        pset = idex_pset(ds)
 
         # TODO exposure time
-        # TODO rectangular map
+        # TODO rectangular map - code for this is coming shortly
         # TODO pull vs push?
-        skymap.project_pset_values_to_map(pset, value_keys=["counts"])
+        healpix_skymap.project_pset_values_to_map(pset, value_keys=["counts"])
 
-    map_dataset = skymap.to_dataset()
-    map_dataset.attrs = idex_attrs.get_global_attributes("imap_idex_l2c_sci")
-
+    healpix_map_dataset = healpix_skymap.to_dataset()
+    healpix_map_dataset.attrs = idex_attrs.get_global_attributes("imap_idex_l2c_sci")
+    healpix_map_dataset["counts"].attrs = idex_attrs.get_variable_attributes("counts")
+    healpix_map_dataset["healpix_index"].attrs = idex_attrs.get_variable_attributes(
+        "healpix_index"
+    )
     # Add attributes related to the map
-    map_attrs = {
-        "HEALPix_nside": IDEX_HEALPIX_NSIDE,
-        "HEALPix_nest": IDEX_HEALPIX_NESTED,
-        "Spice_reference_frame": IDEX_POINTING_REFERENCE_FRAME,
-    }
-    map_dataset.attrs.update(map_attrs)
+    # Always add the following attributes to the map
+
+    healpix_map_dataset.attrs.update(
+        {
+            "Sky_tiling_type": ena_maps.SkyTilingType.HEALPIX.value,
+            "HEALPix_nside": IDEX_HEALPIX_NSIDE,
+            "HEALPix_nest": IDEX_HEALPIX_NESTED,
+            "Spice_reference_frame": IDEX_POINTING_REFERENCE_FRAME,
+        }
+    )
 
     logger.info("IDEX L2C science data processing completed.")
-    return map_dataset
+    return healpix_map_dataset
 
 
 def idex_pset(
     l1b_dataset: xr.Dataset,
-    idex_attrs: ImapCdfAttributes,
     nside: int = 8,
     nested: bool = False,
 ) -> ena_maps.IDEXPointingSet:
@@ -102,8 +108,6 @@ def idex_pset(
     ----------
     l1b_dataset : xarray.Dataset
         IDEX L2b dataset.
-    idex_attrs : ImapCdfAttributes
-        IDEX CDF attributes manager.
     nside : int
         Healpix nside parameter.
     nested : bool
@@ -119,7 +123,6 @@ def idex_pset(
         [np.mean(l1b_dataset["epoch"].data[[0, -1]]).astype(np.int64)],
         name="epoch",
         dims=["epoch"],
-        attrs=idex_attrs.get_variable_attributes("epoch"),
     )
 
     longitude = l1b_dataset["longitude"].copy()
@@ -134,7 +137,6 @@ def idex_pset(
         np.arange(n_pix),
         name=CoordNames.HEALPIX_INDEX.value,
         dims=CoordNames.HEALPIX_INDEX.value,
-        attrs=idex_attrs.get_variable_attributes("healpix_index"),
     )
 
     # Create a histogram of the raw dust event counts for each pixel
@@ -143,12 +145,10 @@ def idex_pset(
         counts,
         name="counts",
         dims=CoordNames.HEALPIX_INDEX.value,
-        attrs=idex_attrs.get_variable_attributes("counts"),
     )
     l2c_dataset = xr.Dataset(
         coords={"healpix_index": healpix, "epoch": epoch_da},
         data_vars={"counts": counds_da},
-        attrs=idex_attrs.get_global_attributes("imap_idex_l2c_sci"),
     )
 
     return ena_maps.IDEXPointingSet(l2c_dataset, IDEX_POINTING_REFERENCE_FRAME)
