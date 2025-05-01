@@ -11,6 +11,7 @@ healpix_index:
   VALIDMIN: 0
   VALIDMAX: 768
   FILLVAL: *int_fillval
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
 
 counts:
   CATDESC: "Number of raw dust events for each healpix pixel"
@@ -24,3 +25,4 @@ counts:
   VALIDMIN: 0
   VALIDMAX: *int_fillval
   FILLVAL: *int_fillval
+  DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
