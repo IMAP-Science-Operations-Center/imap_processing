@@ -201,7 +201,7 @@ def generate_ultra_healpix_skymap(
     # If there are overlapping variable names, issue a warning
     if set(value_keys_to_push_project).intersection(set(value_keys_to_pull_project)):
         logger.warning(
-            "Some variables are present in both the PUSH and PULL projection lists."
+            "Some variables are present in both the PUSH and PULL projection lists. "
             "They will be projected in both ways (PUSH then PULL), which is likely "
             "not the intended behavior. Please check the projection lists."
             f"PUSH Variables: {value_keys_to_push_project} \n"
