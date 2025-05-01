@@ -95,14 +95,14 @@ class TestUltraL2:
                     {
                         "sky_tiling_type": "HEALPIX",
                         "spice_reference_frame": map_frame,
-                        "projection_method_and_values": {
-                            "PUSH": [
-                                "counts",
-                                "exposure_factor",
-                                "sensitivity",
-                                "background_rates",
-                            ],
-                        },
+                        "values_to_push_project": [
+                            "counts",
+                            "sensitivity",
+                            "background_rates",
+                        ],
+                        "values_to_pull_project": [
+                            "exposure_factor",
+                        ],
                         "nside": 32,
                         "nested": False,
                     }
@@ -163,14 +163,12 @@ class TestUltraL2:
                         {
                             "sky_tiling_type": "RECTANGULAR",
                             "spice_reference_frame": "ECLIPJ2000",
-                            "projection_method_and_values": {
-                                "PUSH": [
-                                    "counts",
-                                    "exposure_factor",
-                                    "sensitivity",
-                                    "background_rates",
-                                ],
-                            },
+                            "values_to_push_project": [
+                                "counts",
+                                "sensitivity",
+                                "exposure_factor",
+                                "background_rates",
+                            ],
                             "spacing_deg": 2.0,
                         }
                     ),
@@ -189,7 +187,8 @@ class TestUltraL2:
         # The map should contain the following variables,
         # because we did not drop any variables
         expected_vars = (
-            ultra_l2.REQUIRED_L1C_VARIABLES
+            ultra_l2.REQUIRED_L1C_VARIABLES_PUSH
+            + ultra_l2.REQUIRED_L1C_VARIABLES_PULL
             + ultra_l2.VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION
             + ["ena_intensity", "ena_intensity_stat_unc"]
         )
@@ -216,9 +215,7 @@ class TestUltraL2:
             {
                 "sky_tiling_type": "HEALPIX",
                 "spice_reference_frame": "ECLIPJ2000",
-                "projection_method_and_values": {
-                    "PUSH": ["counts", "exposure_factor", "sensitivity"],
-                },
+                "values_to_push_project": ["counts", "sensitivity", "exposure_factor"],
                 "nside": 16,
                 "nested": True,
             }
@@ -426,3 +423,31 @@ class TestUltraL2:
                 attrs_with_energy_dependent_exposure["DEPEND_3"]
                 == CoordNames.ELEVATION_L2.value
             )
+
+    @pytest.mark.usefixtures("_setup_spice_kernels_list")
+    def test_ultra_l2_warning_for_push_and_pull(
+        self, mock_data_dict, furnish_kernels, caplog
+    ):
+        map_structure = ena_maps.AbstractSkyMap.from_dict(
+            {
+                "sky_tiling_type": "HEALPIX",
+                "spice_reference_frame": "ECLIPJ2000",
+                "values_to_push_project": ["counts", "sensitivity"],
+                "values_to_pull_project": ["sensitivity", "exposure_factor"],
+                "nside": 16,
+                "nested": True,
+            }
+        )
+        # A warning should be raised, since sensitivity is in both PUSH and PULL
+        with furnish_kernels(self.required_kernel_names):
+            [
+                map_dataset,
+            ] = ultra_l2.ultra_l2(
+                data_dict=mock_data_dict,
+                data_version="001",
+                output_map_structure=map_structure,
+            )
+        assert (
+            "variables are present in both the PUSH and PULL projection lists"
+            in caplog.text
+        )
