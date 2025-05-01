@@ -104,12 +104,10 @@ def write_cdf(
     #       5 seconds due to 5 leap-second occurrences since the J2000 epoch.
     # TODO: Create a ttj2000_to_datetime function to handle this conversion
     start_date = dataset.attrs.get("Start_date", None)
-    print("Start date", start_date)
     if start_date is None:
         # If no start time is included, then use the first epoch in the dataset
         dt64 = TTJ2000_EPOCH + dataset["epoch"].values[0].astype("timedelta64[ns]")
         start_date = np.datetime_as_string(dt64, unit="D").replace("-", "")
-        print("Start date writing out", start_date)
 
     version = dataset.attrs.get("Data_version", None)
     if version is None:

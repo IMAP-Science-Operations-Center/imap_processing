@@ -168,7 +168,6 @@ def generate_de_dataset(
         # Set the timestamp to the first timestamp of the direct event list
         epoch_time = met_to_ttj2000ns(de.l0.MET)
 
-        print("Epoch time", epoch_time)
         # determine if the length of the direct_events numpy array is long enough,
         # and extend the direct_events length dimension if necessary.
         de_len = len(de.direct_events)
@@ -206,7 +205,6 @@ def generate_de_dataset(
         for key, val in data_every_second.items():
             val.append(de.status_data.__getattribute__(key))
 
-    print(time_data)
     # Convert arrays and dictionaries into xarray 'DataArray' objects
     epoch_time = xr.DataArray(
         time_data,

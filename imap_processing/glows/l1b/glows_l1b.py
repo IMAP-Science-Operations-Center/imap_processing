@@ -8,7 +8,6 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.l1b.glows_l1b_data import DirectEventL1B, HistogramL1B
-from imap_processing.spice.time import TTJ2000_EPOCH
 
 
 def glows_l1b(input_dataset: xr.Dataset) -> xr.Dataset:
@@ -34,9 +33,6 @@ def glows_l1b(input_dataset: xr.Dataset) -> xr.Dataset:
         if isinstance(input_dataset.attrs["Logical_source"], list)
         else input_dataset.attrs["Logical_source"]
     )
-    dt64 = TTJ2000_EPOCH + input_dataset["epoch"].values[0].astype("timedelta64[ns]")
-    start_date = np.datetime_as_string(dt64, unit="D").replace("-", "")
-    print("Start date", start_date)
 
     if "hist" in logical_source:
         output_dataset = create_l1b_hist_output(input_dataset, cdf_attrs)
@@ -249,7 +245,6 @@ def create_l1b_hist_output(
     )
 
     output_dataarrays = process_histogram(input_dataset)
-    # TODO: Is it ok to copy the dimensions from the input dataset?
 
     output_dataset = xr.Dataset(
         coords={
