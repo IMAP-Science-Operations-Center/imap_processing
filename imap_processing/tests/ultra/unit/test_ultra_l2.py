@@ -246,7 +246,11 @@ class TestUltraL2:
                 "sky_tiling_type": "RECTANGULAR",
                 "spice_reference_frame": "ECLIPJ2000",
                 "projection_method_and_values": {
-                    "PUSH": ["counts", "exposure_factor", "sensitivity"],
+                    "values_to_push_project": [
+                        "counts",
+                        "exposure_factor",
+                        "sensitivity",
+                    ],
                 },
                 "spacing_deg": 10,  # Larger spacing for faster test
             }
@@ -256,7 +260,11 @@ class TestUltraL2:
                 "sky_tiling_type": "HEALPIX",
                 "spice_reference_frame": "ECLIPJ2000",
                 "projection_method_and_values": {
-                    "PUSH": ["counts", "exposure_factor", "sensitivity"],
+                    "values_to_push_project": [
+                        "counts",
+                        "exposure_factor",
+                        "sensitivity",
+                    ],
                 },
                 "nside": 16,
                 "nested": True,
@@ -451,6 +459,5 @@ class TestUltraL2:
             with pytest.raises(ValueError, match="Some variables are present in both"):
                 ultra_l2.ultra_l2(
                     data_dict=mock_data_dict,
-                    data_version="001",
                     output_map_structure=map_structure,
                 )

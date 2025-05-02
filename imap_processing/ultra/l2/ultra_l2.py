@@ -46,7 +46,7 @@ REQUIRED_L1C_VARIABLES_PUSH = [
     "counts",
     "sensitivity",
     "background_rates",
-    "observation_time",
+    "obs_date",
 ]
 REQUIRED_L1C_VARIABLES_PULL = [
     "exposure_factor",
