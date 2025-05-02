@@ -1,4 +1,3 @@
-from pathlib import PosixPath
 from unittest.mock import patch
 
 import numpy as np
@@ -62,22 +61,22 @@ def ancillary_dependencies():
     prefix = imap_module_directory / "tests/hit/test_data/ancillary"
     ancillary_files = {
         "macropixel": [
-            PosixPath(prefix / "imap_hit_sectored-dt0-factors_20250219_v002.csv"),
-            PosixPath(prefix / "imap_hit_sectored-dt1-factors_20250219_v002.csv"),
-            PosixPath(prefix / "imap_hit_sectored-dt2-factors_20250219_v002.csv"),
-            PosixPath(prefix / "imap_hit_sectored-dt3-factors_20250219_v002.csv"),
+            prefix / "imap_hit_sectored-dt0-factors_20250219_v002.csv",
+            prefix / "imap_hit_sectored-dt1-factors_20250219_v002.csv",
+            prefix / "imap_hit_sectored-dt2-factors_20250219_v002.csv",
+            prefix / "imap_hit_sectored-dt3-factors_20250219_v002.csv",
         ],
         "summed": [
-            PosixPath(prefix / "imap_hit_summed-dt0-factors_20250219_v002.csv"),
-            PosixPath(prefix / "imap_hit_summed-dt1-factors_20250219_v002.csv"),
-            PosixPath(prefix / "imap_hit_summed-dt2-factors_20250219_v002.csv"),
-            PosixPath(prefix / "imap_hit_summed-dt3-factors_20250219_v002.csv"),
+            prefix / "imap_hit_summed-dt0-factors_20250219_v002.csv",
+            prefix / "imap_hit_summed-dt1-factors_20250219_v002.csv",
+            prefix / "imap_hit_summed-dt2-factors_20250219_v002.csv",
+            prefix / "imap_hit_summed-dt3-factors_20250219_v002.csv",
         ],
         "standard": [
-            PosixPath(prefix / "imap_hit_standard-dt0-factors_20250219_v002.csv"),
-            PosixPath(prefix / "imap_hit_standard-dt1-factors_20250219_v002.csv"),
-            PosixPath(prefix / "imap_hit_standard-dt2-factors_20250219_v002.csv"),
-            PosixPath(prefix / "imap_hit_standard-dt3-factors_20250219_v002.csv"),
+            prefix / "imap_hit_standard-dt0-factors_20250219_v002.csv",
+            prefix / "imap_hit_standard-dt1-factors_20250219_v002.csv",
+            prefix / "imap_hit_standard-dt2-factors_20250219_v002.csv",
+            prefix / "imap_hit_standard-dt3-factors_20250219_v002.csv",
         ],
     }
     return ancillary_files
@@ -152,10 +151,10 @@ def test_load_ancillary_data():
     # Mock input data
     dynamic_threshold_states = {0, 1, 2, 3}
     ancillary_files = [
-        PosixPath("path/to/dt0-factors.csv"),
-        PosixPath("path/to/dt1-factors.csv"),
-        PosixPath("path/to/dt2-factors.csv"),
-        PosixPath("path/to/dt3-factors.csv"),
+        "path/to/dt0-factors.csv",
+        "path/to/dt1-factors.csv",
+        "path/to/dt2-factors.csv",
+        "path/to/dt3-factors.csv",
     ]
 
     # Mock CSV data
