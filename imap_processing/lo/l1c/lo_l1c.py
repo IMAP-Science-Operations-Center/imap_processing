@@ -1,6 +1,5 @@
 """IMAP-Lo L1C Data Processing."""
 
-from collections import namedtuple
 from dataclasses import Field
 from pathlib import Path
 
@@ -33,32 +32,70 @@ def lo_l1c(dependencies: dict) -> list[Path]:
     # if the dependencies are used to create Annotated Direct Events
     if "imap_lo_l1b_de" in dependencies:
         logical_source = "imap_lo_l1c_pset"
-        # TODO: TEMPORARY. Need to update to use the L1C data class once that exists
-        #  and I have sample data.
-        data_field_tup = namedtuple("data_field_tup", ["name"])
-        data_fields = [
-            data_field_tup("POINTING_START"),
-            data_field_tup("POINTING_END"),
-            data_field_tup("MODE"),
-            data_field_tup("PIVOT_ANGLE"),
-            data_field_tup("TRIPLES_COUNTS"),
-            data_field_tup("TRIPLES_RATES"),
-            data_field_tup("DOUBLES_COUNTS"),
-            data_field_tup("DOUBLES_RATES"),
-            data_field_tup("HYDROGEN_COUNTS"),
-            data_field_tup("HYDROGEN_RATES"),
-            data_field_tup("OXYGEN_COUNTS"),
-            data_field_tup("OXYGEN_RATES"),
-            data_field_tup("EXPOSURE_TIME"),
-        ]
+        l1b_de = dependencies["imap_lo_l1b_de"]
 
-    dataset: list[Path] = create_datasets(attr_mgr, logical_source, data_fields)  # type: ignore[arg-type]
-    # TODO Remove once data_fields input is removed from create_datasets
-    return dataset
+        l1b_goodtimes_only = filter_goodtimes(l1b_de)
+        pset = initialize_pset(l1b_goodtimes_only, attr_mgr, logical_source)
+    return [pset]
 
 
-# TODO: This is going to work differently when I sample data.
-#  The data_fields input is temporary.
+def initialize_pset(
+    l1b_de: xr.Dataset, attr_mgr: ImapCdfAttributes, logical_source: str
+) -> xr.Dataset:
+    """
+    Initialize the PSET dataset and set the Epoch.
+
+    The Epoch time is set to the mid-point of the L1B
+    Direct Event times. There is one Epoch per PSET file.
+
+    Parameters
+    ----------
+    l1b_de : xarray.Dataset
+        L1B Direct Event dataset.
+    attr_mgr : ImapCdfAttributes
+        Attribute manager used to get the L1C attributes.
+    logical_source : str
+        The logical source of the pset.
+
+    Returns
+    -------
+    pset : xarray.Dataset
+        Initialized PSET dataset.
+    """
+    pset = xr.Dataset(
+        attrs=attr_mgr.get_global_attributes(logical_source),
+    )
+
+    mid_idx = len(l1b_de["epoch"]) // 2
+    pset_epoch = l1b_de["epoch"][mid_idx].item()
+    pset["epoch"] = xr.DataArray(
+        np.array([pset_epoch]),
+        dims=["epoch"],
+        attrs=attr_mgr.get_variable_attributes("epoch"),
+    )
+
+    return pset
+
+
+def filter_goodtimes(l1b_de: xr.Dataset) -> xr.Dataset:
+    """
+    Filter the L1B Direct Event dataset to only include good times.
+
+    Parameters
+    ----------
+    l1b_de : xarray.Dataset
+        L1B Direct Event dataset.
+
+    Returns
+    -------
+    l1b_de : xarray.Dataset
+        Filtered L1B Direct Event dataset.
+    """
+    # TODO: Ancilary data for goodtimes is not available yet. Removing badtimes
+    #  for now. This will be updated once the ancillary data is available.
+    return l1b_de.where(l1b_de["badtimes"] == 0, drop=True)
+
+
 def create_datasets(
     attr_mgr: ImapCdfAttributes, logical_source: str, data_fields: list[Field]
 ) -> xr.Dataset:
