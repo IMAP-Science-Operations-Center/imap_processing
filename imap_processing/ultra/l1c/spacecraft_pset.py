@@ -7,7 +7,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
-    get_background_rates,
+    get_spacecraft_background_rates,
     get_spacecraft_exposure_times,
     get_spacecraft_histogram,
 )
@@ -59,7 +59,7 @@ def calculate_spacecraft_pset(
     healpix = np.arange(n_pix)
 
     # calculate background rates
-    background_rates = get_background_rates()
+    background_rates = get_spacecraft_background_rates()
 
     # TODO: calculate sensitivity and interpolate based on energy.
 

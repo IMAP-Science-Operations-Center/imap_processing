@@ -110,7 +110,7 @@ def create_dataset(
                 dims=["energy_bin_geometric_mean", "spin_number"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
-        elif key == "counts":
+        elif key in {"counts", "background_rates"}:
             dataset[key] = xr.DataArray(
                 data,
                 dims=["energy_bin_geometric_mean", "healpix"],

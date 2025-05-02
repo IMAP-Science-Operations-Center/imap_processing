@@ -276,7 +276,7 @@ def get_spacecraft_background_rates(
     """
     npix = hp.nside2npix(nside)
     _, energy_midpoints, _ = build_energy_bins()
-    background = np.zeros((npix, len(energy_midpoints)))
+    background = np.zeros((len(energy_midpoints), npix))
     return background
 
 
@@ -302,7 +302,7 @@ def get_helio_background_rates(
     """
     npix = hp.nside2npix(nside)
     _, energy_midpoints, _ = build_energy_bins()
-    background = np.zeros((npix, len(energy_midpoints)))
+    background = np.zeros((len(energy_midpoints), npix))
     return background
 
 
