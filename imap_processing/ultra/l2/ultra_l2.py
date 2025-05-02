@@ -151,6 +151,11 @@ def generate_ultra_healpix_skymap(
         HealpixSkyMap object containing the combined data from all pointing sets,
         with calculated ena_intensity and its statistical uncertainty values.
 
+    Raises
+    ------
+    ValueError
+        If there are overlapping variable names in the push and pull projection lists.
+
     Notes
     -----
     The structure of this function goes as follows:
@@ -198,9 +203,9 @@ def generate_ultra_healpix_skymap(
     value_keys_to_pull_project = list(
         set(output_map_structure.values_to_pull_project + REQUIRED_L1C_VARIABLES_PULL)
     )
-    # If there are overlapping variable names, issue a warning
+    # If there are overlapping variable names, raise an error
     if set(value_keys_to_push_project).intersection(set(value_keys_to_pull_project)):
-        logger.warning(
+        raise ValueError(
             "Some variables are present in both the PUSH and PULL projection lists. "
             "They will be projected in both ways (PUSH then PULL), which is likely "
             "not the intended behavior. Please check the projection lists."

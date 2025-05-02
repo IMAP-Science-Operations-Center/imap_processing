@@ -166,8 +166,10 @@ class TestUltraL2:
                             "values_to_push_project": [
                                 "counts",
                                 "sensitivity",
-                                "exposure_factor",
                                 "background_rates",
+                            ],
+                            "values_to_pull_project": [
+                                "exposure_factor",
                             ],
                             "spacing_deg": 2.0,
                         }
@@ -215,7 +217,13 @@ class TestUltraL2:
             {
                 "sky_tiling_type": "HEALPIX",
                 "spice_reference_frame": "ECLIPJ2000",
-                "values_to_push_project": ["counts", "sensitivity", "exposure_factor"],
+                "values_to_push_project": [
+                    "counts",
+                    "sensitivity",
+                ],
+                "values_to_pull_project": [
+                    "exposure_factor",
+                ],
                 "nside": 16,
                 "nested": True,
             }
@@ -425,29 +433,24 @@ class TestUltraL2:
             )
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
-    def test_ultra_l2_warning_for_push_and_pull(
+    def test_ultra_l2_error_for_push_and_pull(
         self, mock_data_dict, furnish_kernels, caplog
     ):
         map_structure = ena_maps.AbstractSkyMap.from_dict(
             {
                 "sky_tiling_type": "HEALPIX",
                 "spice_reference_frame": "ECLIPJ2000",
-                "values_to_push_project": ["counts", "sensitivity"],
-                "values_to_pull_project": ["sensitivity", "exposure_factor"],
+                "values_to_push_project": ["counts", "exposure_factor"],
+                "values_to_pull_project": ["exposure_factor", "sensitivity"],
                 "nside": 16,
                 "nested": True,
             }
         )
-        # A warning should be raised, since sensitivity is in both PUSH and PULL
+        # An error is expected when the same variable is in both the push/pull lists
         with furnish_kernels(self.required_kernel_names):
-            [
-                map_dataset,
-            ] = ultra_l2.ultra_l2(
-                data_dict=mock_data_dict,
-                data_version="001",
-                output_map_structure=map_structure,
-            )
-        assert (
-            "variables are present in both the PUSH and PULL projection lists"
-            in caplog.text
-        )
+            with pytest.raises(ValueError, match="Some variables are present in both"):
+                ultra_l2.ultra_l2(
+                    data_dict=mock_data_dict,
+                    data_version="001",
+                    output_map_structure=map_structure,
+                )
