@@ -47,7 +47,6 @@ def test_l2c_attrs_and_vars(l2c_dataset: xr.Dataset, l1b_dataset: xr.Dataset):
     assert l2c_dataset.dims == {
         "healpix_index": hp.nside2npix(IDEX_HEALPIX_NSIDE),
         "epoch": 1,
-        "longitude_and_latitude": 2,
     }
 
     # Assert attributes are present
@@ -66,4 +65,4 @@ def test_idex_pset(l1b_dataset: xr.Dataset):
     assert pset.epoch == np.mean([l1b_dataset.epoch[0], l1b_dataset.epoch[-1]])
 
     npix = hp.nside2npix(IDEX_HEALPIX_NSIDE)
-    np.testing.assert_array_equal(pset.data.counts.shape, (npix,))
+    np.testing.assert_array_equal(pset.counts.shape, (npix,))
