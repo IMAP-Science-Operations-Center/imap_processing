@@ -933,11 +933,12 @@ def reshape_de_data(
     print(len(decompressed_data[0]))  # 13712
     num_epochs = len(decompressed_data) // num_priorities  # 77 = 462 / 6
 
-    # Get epoch and num_events data for beginning of segments
-    group_indices = np.where((packets.seq_flgs.data == 3) | (packets.seq_flgs.data == 1))[0]
-    print(group_indices.shape)  # 462
-    num_events = packets.num_events.data[group_indices]
-    print(num_events)
+    # Get num_events, data quality, and priorities data for beginning of segments
+    segment_starts = np.where((packets.seq_flgs.data == 3) | (packets.seq_flgs.data == 1))[0]
+    num_events_arr = packets.num_events.data[segment_starts]
+    data_quality_arr = packets.suspect.data[segment_starts]
+    priorities_arr = packets.priority.data[segment_starts]  # Groups containing 0-5!
+    print(segment_starts.shape)  # 462
 
     # decompressed data should be reshaped (num_events), 8 (bytes long) because greg is padding everything to 8 bytes
     # chose epoch when priority is 0.
@@ -971,25 +972,19 @@ def reshape_de_data(
 
         # The order of the priorities and data quality flags are unique to each
         # epoch and can be gathered from the packet data
-        # TODO: Currently hi-pha data has possibly unexpected priority orders
-        #       (for example, priority numbers range from 0-15 instead of the
-        #       expected 0-5, and some sets have repeating priorities
-        #       Ask joey about this. For now, just hard-code the priority order
         if apid == CODICEAPID.COD_LO_PHA:
             priority_order = packets.priority[epoch_start:epoch_end].data
         elif apid == CODICEAPID.COD_HI_PHA:
-            #print(f"Epoch Index: {epoch_index}")
-            #print(f"Priority order: {packets.priority[epoch_start:epoch_end].data}")
-            priority_order = [0, 1, 2, 3, 4, 5]
-        data_quality = packets.suspect[epoch_start:epoch_end].data
+            priority_order = priorities_arr[epoch_start:epoch_end]  # TODO: I think Lo can do the same
+        data_quality = data_quality_arr[epoch_start:epoch_end]
 
         # For each epoch/priority combo, iterate over each event
         for i, priority_num in enumerate(priority_order):
-            priority_data = epoch_data[i]  # Is this right?
+            priority_data = epoch_data[i]  # TODO: Is this right?
 
             # Number of events and data quality can be determined at this stage
-            num_events = len(priority_data) // num_priorities
-            #print(f"Epoch Index is {epoch_index}; Priority Number is {priority_num}; Number of events are {num_events}")
+            num_events = num_events_arr[epoch_start:epoch_end][i]
+            print(f"Epoch Index is {epoch_index}; Priority Number is {priority_num}; Number of events are {num_events}")
             data[f"P{priority_num}_NumEvents"][epoch_index] = num_events
             data[f"P{priority_num}_DataQuality"][epoch_index] = data_quality[i]
 
@@ -998,27 +993,37 @@ def reshape_de_data(
                 event_start = event_index * num_priorities
                 event_end = event_start + num_priorities
                 event = priority_data[event_start:event_end]
+                print(f"Event Start: {event_start}")
+                print(f"Event End: {event_end}")
+                print(event)
                 # Separate out each individual field from the bit string
                 # The fields are packed into the bit string in reverse order, so
                 # we need to back them out in reverse order
                 bit_string = (
-                    f"{int.from_bytes(event, byteorder='big'):0{len(event) * 8}b}"
+                    f"{int.from_bytes(event, byteorder='big'):0{len(event) * 8}b}".zfill(64)
                 )
-                #print(bit_string)
-                #print(len(bit_string))
+
+                # TODO: Is this right?
+                print(bit_string)
+                print(len(bit_string))
                 bit_position = 0
                 for field_name, bit_length in reversed(bit_structure.items()):
-                    #print(field_name)
-                    #print(bit_position)
-                    #print(bit_length)
+                    print(f"Field Name: {field_name}")
+                    print(f"Current bit position: {bit_position}")
+                    print(f"Bit length: {bit_length}")
                     if field_name in ["Priority", "Spare"]:
                         bit_position += bit_length
                         continue
                     value = int(bit_string[bit_position : bit_position + bit_length], 2)
+                    print(f"Resulting value: {bit_string[bit_position : bit_position + bit_length]}")
+                    print(f"Resulting value: {value}")
+                    print("\n")
                     data[f"P{priority_num}_{field_name}"][epoch_index, event_index] = (
                         value
                     )
                     bit_position += bit_length
+
+                assert 1 == 0
 
     # TODO: Implement specific np.dtype and fill_val per field
 
@@ -1062,6 +1067,12 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
         # Event data
         if apid in [CODICEAPID.COD_HI_PHA]:
             processed_dataset = create_direct_event_dataset(apid, dataset)
+            print(processed_dataset.P0_SSDEnergy.data)
+            print(processed_dataset.P1_SSDEnergy.data)
+            print(processed_dataset.P2_SSDEnergy.data)
+            print(processed_dataset.P3_SSDEnergy.data)
+            print(processed_dataset.P4_SSDEnergy.data)
+            print(processed_dataset.P5_SSDEnergy.data)
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # # Everything else

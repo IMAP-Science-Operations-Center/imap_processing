@@ -399,7 +399,7 @@ DE_DATA_PRODUCT_CONFIGURATIONS = {
             "SpinAngle": 5,
             "SpinNumber": 4,
             "Priority": 3,
-            "Spare": 6,  # TODO: Ask Joey about this
+            "Spare": 21,  # TODO: Ask Joey about this
         },
         "cdf_fields": [
             "NumEvents",
