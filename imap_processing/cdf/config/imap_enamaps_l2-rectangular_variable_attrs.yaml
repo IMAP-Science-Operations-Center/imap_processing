@@ -10,18 +10,6 @@ default_float32_attrs: &default_float32
   dtype: float32
 
 # Define Coordinates specifically for Rectangular tiling
-longitude:
-  <<: *default_float32
-  CATDESC: Pixel center longitude.
-  FIELDNAM: longitude
-  LABLAXIS: longitude
-  UNITS: degrees
-  DELTA_MINUS_VAR: longitude_delta
-  DELTA_PLUS_VAR: longitude_delta
-  VAR_TYPE: support_data
-  VALIDMIN: 0
-  VALIDMAX: 360
-  SCALE_TYP: linear
 
 longitude_label:
   VAR_TYPE: metadata
@@ -38,19 +26,6 @@ longitude_delta:
   UNITS: degrees
   FIELDNAM: longitude delta
 
-latitude:
-  <<: *default_float32
-  CATDESC: Pixel center latitude.
-  FIELDNAM: latitude
-  LABLAXIS: latitude
-  UNITS: degrees
-  DELTA_MINUS_VAR: latitude_delta
-  DELTA_PLUS_VAR: latitude_delta
-  VAR_TYPE: support_data
-  VALIDMIN: -90
-  VALIDMAX: 90
-  SCALE_TYP: linear
-
 latitude_label:
   VAR_TYPE: metadata
   CATDESC: Label variable for latitude.
@@ -65,6 +40,19 @@ latitude_delta:
   FORMAT: F12.6
   UNITS: degrees
   FIELDNAM: latitude delta
+
+# All variables below override the initial attributes defined in the common ENA Map
+# attributes file, imap_enamaps_l2-common_variable_attrs.yaml
+
+longitude:
+  DELTA_MINUS_VAR: longitude_delta
+  DELTA_PLUS_VAR: longitude_delta
+  SCALE_TYP: linear
+
+latitude:
+  DELTA_MINUS_VAR: latitude_delta
+  DELTA_PLUS_VAR: latitude_delta
+  SCALE_TYP: linear
 
 # Define Data variables
 exposure_factor:

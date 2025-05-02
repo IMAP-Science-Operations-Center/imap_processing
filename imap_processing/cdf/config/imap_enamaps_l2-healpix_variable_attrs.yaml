@@ -32,34 +32,19 @@ pixel_index_label:
   FORMAT: A10
   DEPEND_1: pixel_index
 
+# All variables below override the initial attributes defined in the common ENA Map
+# attributes file, imap_enamaps_l2-common_variable_attrs.yaml
+
 # Define Non-dimension Coordinates
 # (longitude, latitude are not dimension coordinates for healpix tiling, but rather
 # describe the lon/lat coordinate of the Healpix pixel center)
 longitude:
-  <<: *default_float32
   DEPEND_1: pixel_index
-  CATDESC: HEALPix pixel center longitude in range [0, 360].
-  FIELDNAM: Longitude
-  LABLAXIS: Longitude
-  UNITS: degrees
-  VAR_TYPE: support_data
   LABL_PTR_1: pixel_index_label
-  DISPLAY_TYPE: no_plot
-  VALIDMIN: 0
-  VALIDMAX: 360
 
 latitude:
-  <<: *default_float32
   DEPEND_1: pixel_index
-  CATDESC: HEALPix pixel center latitude in range [-90, 90].
-  FIELDNAM: Latitude
-  LABLAXIS: Latitude
-  UNITS: degrees
-  VAR_TYPE: support_data
   LABL_PTR_1: pixel_index_label
-  DISPLAY_TYPE: no_plot
-  VALIDMIN: -90
-  VALIDMAX: 90
 
 # Define Data variables
 exposure_factor:
