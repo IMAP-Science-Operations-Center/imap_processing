@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.hit.hit_utils import (
     add_summed_particle_data_to_dataset,
     get_attribute_manager,
@@ -46,64 +47,100 @@ def hit_l2(dependency_sci: xr.Dataset, dependencies_anc: list) -> list[xr.Datase
     processed_data : list[xarray.Dataset]
         List of one L2 dataset.
     """
-    logger.info("Creating HIT L2 science datasets")
+    logger.info("Creating HIT L2 science dataset")
 
     # Create the attribute manager for this data level
     attr_mgr = get_attribute_manager("l2")
 
-    l2_datasets: dict = {}
+    logical_source = None
+    l2_dataset = None
 
     # Process science data to L2 datasets
     if "imap_hit_l1b_summed-rates" in dependency_sci.attrs["Logical_source"]:
-        l2_datasets["imap_hit_l2_summed-intensity"] = process_summed_intensity_data(
-            dependency_sci, dependencies_anc
-        )
-        logger.info("HIT L2 summed intensity dataset created")
+        l2_dataset = process_summed_intensity_data(dependency_sci, dependencies_anc)
+        logical_source = "imap_hit_l2_summed-intensity"
 
     if "imap_hit_l1b_standard-rates" in dependency_sci.attrs["Logical_source"]:
-        l2_datasets["imap_hit_l2_standard-intensity"] = process_standard_intensity_data(
-            dependency_sci, dependencies_anc
-        )
-        logger.info("HIT L2 standard intensity dataset created")
+        l2_dataset = process_standard_intensity_data(dependency_sci, dependencies_anc)
+        logical_source = "imap_hit_l2_standard-intensity"
 
     if "imap_hit_l1b_sectored-rates" in dependency_sci.attrs["Logical_source"]:
-        l2_datasets["imap_hit_l2_macropixel-intensity"] = (
-            process_sectored_intensity_data(dependency_sci, dependencies_anc)
-        )
-        logger.info("HIT L2 macropixel intensity dataset created")
+        l2_dataset = process_sectored_intensity_data(dependency_sci, dependencies_anc)
+        logical_source = "imap_hit_l2_macropixel-intensity"
 
-    # Update attributes and dimensions
-    for logical_source, dataset in l2_datasets.items():
-        dataset.attrs = attr_mgr.get_global_attributes(logical_source)
-
-        # TODO: Add CDF attributes to yaml once they're defined for L2 science data
-        #  consider moving attribute handling to hit_utils.py
-        # Assign attributes and dimensions to each data array in the Dataset
-        for field in dataset.data_vars.keys():
-            try:
-                # Create a dict of dimensions using the DEPEND_I keys in the
-                # attributes
-                dims = {
-                    key: value
-                    for key, value in attr_mgr.get_variable_attributes(field).items()
-                    if "DEPEND" in key
-                }
-                dataset[field].attrs = attr_mgr.get_variable_attributes(field)
-                dataset[field].assign_coords(dims)
-            except KeyError:
-                # TODO: consider raising an error after L2 attributes are defined.
-                #  Until then, continue with processing and log warning
-                logger.warning(f"Field {field} not found in attribute manager.")
-
-        # Skip schema check for epoch to prevent attr_mgr from adding the
-        # DEPEND_0 attribute which isn't required for epoch
-        dataset.epoch.attrs = attr_mgr.get_variable_attributes(
-            "epoch", check_schema=False
-        )
+    # Add attributes to dataset
+    if l2_dataset is not None and logical_source is not None:
+        l2_dataset = add_cdf_attributes(l2_dataset, logical_source, attr_mgr)
 
         logger.info(f"HIT L2 dataset created for {logical_source}")
 
-    return list(l2_datasets.values())
+    return [l2_dataset]
+
+
+def add_cdf_attributes(
+    dataset: xr.Dataset, logical_source: str, attr_mgr: ImapCdfAttributes
+) -> xr.Dataset:
+    """
+    Update attributes to the given dataset.
+
+    This function adds attributes to the dataset variables and dimensions.
+    It also adds dimension labels to the dataset as coordinates.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        The dataset to update.
+    logical_source : str
+        The logical source of the dataset.
+    attr_mgr : AttributeManager
+        The attribute manager to retrieve attributes.
+
+    Returns
+    -------
+    xr.Dataset
+        The updated dataset with attributes and dimension labels.
+    """
+    # Update global attributes
+    dataset.attrs = attr_mgr.get_global_attributes(logical_source)
+
+    # Assign attributes to each data variable in the Dataset
+    for var in dataset.data_vars.keys():
+        try:
+            if (
+                "macropixel" in logical_source
+                and "intensity" not in var
+                and "energy" not in var
+            ):
+                dataset[var].attrs = attr_mgr.get_variable_attributes(
+                    f"{var}_macropixel"
+                )
+            else:
+                dataset[var].attrs = attr_mgr.get_variable_attributes(var)
+        except KeyError:
+            # TODO: consider raising an error after L2 attributes are defined.
+            #  Until then, continue with processing and log warning
+            logger.error(f"Field {var} not found in attribute manager.")
+
+    # Assign attributes to dimensions and add dimension labels to dataset
+    # check_schema=False to avoid attr_mgr adding stuff dimensions don't need
+    for dim in dataset.dims:
+        dataset[dim].attrs = attr_mgr.get_variable_attributes(dim, check_schema=False)
+        # TODO: should labels be added as coordinates? Check with SPDF
+        if dim != "epoch":
+            dataset = dataset.assign_coords(
+                {
+                    f"{dim}_label": xr.DataArray(
+                        dataset[dim].values.astype(str),
+                        name=f"{dim}_label",
+                        dims=[dim],
+                        attrs=attr_mgr.get_variable_attributes(
+                            f"{dim}_label", check_schema=False
+                        ),
+                    )
+                }
+            )
+
+    return dataset
 
 
 def calculate_intensities(
@@ -730,4 +767,85 @@ def process_sectored_intensity_data(
                 l2_sectored_intensity_dataset, var
             )
 
+            # Expand the variable name to include macropixel intensity
+            l2_sectored_intensity_dataset = l2_sectored_intensity_dataset.rename(
+                {var: f"{var}_macropixel_intensity"}
+            )
+
     return l2_sectored_intensity_dataset
+
+
+if __name__ == "__main__":
+    from imap_processing import imap_module_directory
+    from imap_processing.hit.l1a.hit_l1a import hit_l1a
+    from imap_processing.hit.l1b.hit_l1b import (
+        process_standard_rates_data,
+    )
+
+    # L0 file path
+    packet_file = imap_module_directory / "tests/hit/test_data/sci_sample.ccsds"
+
+    datasets = hit_l1a(packet_file)
+    counts = datasets[0]
+
+    # Calculate livetime from the livetime counter
+    livetime = counts["livetime_counter"] / 270
+
+    # # Process L2 Sectored
+    # sectored_rates = process_sectored_rates_data(counts, livetime)
+    # l2_sectored_intensity_dataset = process_sectored_intensity_data(sectored_rates)
+    # print(l2_sectored_intensity_dataset)
+    # print(l2_sectored_intensity_dataset["h"][0])
+    #
+    # # Process L2 Standard
+    # standard_rates = process_standard_rates_data(counts, livetime)
+    # l2_standard_flux_dataset = process_standard_intensity_data(standard_rates)
+    # print(l2_standard_flux_dataset["h"][1])
+    # print(l2_standard_flux_dataset.data_vars)
+    #
+    # # Process L2 Summed
+    # summed_rates = process_summed_rates_data(counts, livetime)
+    # l2_summed_intensity_dataset = process_summed_intensity_data(summed_rates)
+    # print(l2_summed_intensity_dataset)
+    # print(l2_summed_intensity_dataset["h"][0])
+    #
+    #
+    prefix = imap_module_directory / "tests/hit/test_data/ancillary"
+    ancillary = {
+        "macropixel": [
+            prefix / "imap_hit_sectored-dt0-factors_20250219_v002.csv",
+            prefix / "imap_hit_sectored-dt1-factors_20250219_v002.csv",
+            prefix / "imap_hit_sectored-dt2-factors_20250219_v002.csv",
+            prefix / "imap_hit_sectored-dt3-factors_20250219_v002.csv",
+        ],
+        "summed": [
+            prefix / "imap_hit_summed-dt0-factors_20250219_v002.csv",
+            prefix / "imap_hit_summed-dt1-factors_20250219_v002.csv",
+            prefix / "imap_hit_summed-dt2-factors_20250219_v002.csv",
+            prefix / "imap_hit_summed-dt3-factors_20250219_v002.csv",
+        ],
+        "standard": [
+            prefix / "imap_hit_standard-dt0-factors_20250219_v002.csv",
+            prefix / "imap_hit_standard-dt1-factors_20250219_v002.csv",
+            prefix / "imap_hit_standard-dt2-factors_20250219_v002.csv",
+            prefix / "imap_hit_standard-dt3-factors_20250219_v002.csv",
+        ],
+    }
+
+    # # Process L2 Sectored
+    # sectored_rates = process_sectored_rates_data(counts, livetime)
+    # sectored_rates.attrs["Logical_source"] = "imap_hit_l1b_sectored-rates"
+    # l2_sectored_intensity_dataset = hit_l2(sectored_rates, ancillary["macropixel"])
+    # print(l2_sectored_intensity_dataset[0]["h_macropixel_intensity"])
+    # print(l2_sectored_intensity_dataset[0]["h_sys_err_plus"].attrs)
+    # print(l2_sectored_intensity_dataset[0]["h_macropixel_intensity"].attrs)
+    # print(l2_sectored_intensity_dataset[0]["declination_label"])
+
+    # # Process L2 Standard
+    standard_rates = process_standard_rates_data(counts, livetime)
+    standard_rates.attrs["Logical_source"] = "imap_hit_l1b_standard-rates"
+    l2_standard_intensity_dataset = hit_l2(standard_rates, ancillary["standard"])
+    print(l2_standard_intensity_dataset[0]["h_standard_intensity"])
+    print(l2_standard_intensity_dataset[0]["h_sys_err_plus"].attrs)
+    print(l2_standard_intensity_dataset[0]["h_standard_intensity"].attrs)
+    print(l2_standard_intensity_dataset[0]["declination_label"])

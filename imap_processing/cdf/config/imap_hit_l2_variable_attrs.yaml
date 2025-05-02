@@ -19,7 +19,7 @@ default_energy_mean_attrs: &default_energy_mean
   LABLAXIS: Energy
   FILLVAL: -1.00E+31
   VALIDMIN: 0
-  VALIDMAX: 1000
+  VALIDMAX: 100
   FORMAT: F5.1
   UNITS: MeV
   SCALE_TYP: log
@@ -30,7 +30,7 @@ default_energy_delta_attrs: &default_energy_delta
   LABLAXIS: Energy
   FILLVAL: -1.00E+31
   VALIDMIN: 0
-  VALIDMAX: 1000
+  VALIDMAX: 100
   FORMAT: F5.1
   UNITS: MeV
   SCALE_TYP: log
@@ -68,7 +68,7 @@ default_dynamic_threshold_state_attrs: &default_dns
   DISPLAY_TYPE: time_series
   FORMAT: I1
   UNITS: " "
-  SCALE_TYP: log
+  SCALE_TYP: linear
   SCALEMIN: 0.0001
   SCALEMAX: 1000
   DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
@@ -1431,7 +1431,7 @@ dynamic_threshold_state_macropixel:
   <<: *default_dns
 
 # Particle Intensity Variables
-h_macropixel:
+h_macropixel_intensity:
   <<: *default_particle
   CATDESC: H Macropixel Intensity
   DEPEND_1: h_energy_mean
@@ -1444,7 +1444,7 @@ h_macropixel:
   DELTA_MINUS: h_total_uncert_plus
   DELTA_PLUS: h_total_uncert_minus
 
-he4_macropixel:
+he4_macropixel_intensity:
   <<: *default_particle
   CATDESC: He4 Macropixel Intensity
   DEPEND_1: he4_energy_mean
@@ -1457,7 +1457,7 @@ he4_macropixel:
   DELTA_MINUS: he4_total_uncert_plus
   DELTA_PLUS: he4_total_uncert_minus
 
-cno_macropixel:
+cno_macropixel_intensity:
   <<: *default_particle
   CATDESC: C, N, O Macropixel Intensity
   DEPEND_1: c_energy_mean
@@ -1470,7 +1470,7 @@ cno_macropixel:
   DELTA_MINUS: c_total_uncert_plus
   DELTA_PLUS: c_total_uncert_minus
 
-nemgsi_macropixel:
+nemgsi_macropixel_intensity:
   <<: *default_particle
   CATDESC: NeMgSi Macropixel Intensity
   DEPEND_1: nemgsi_energy_mean
@@ -1483,7 +1483,7 @@ nemgsi_macropixel:
   DELTA_MINUS: nemgsi_total_uncert_plus
   DELTA_PLUS: nemgsi_total_uncert_minus
 
-fe_macropixel:
+fe_macropixel_intensity:
   <<: *default_particle
   CATDESC: Fe Macropixel Intensity
   DEPEND_1: fe_energy_mean
@@ -1497,28 +1497,28 @@ fe_macropixel:
   DELTA_PLUS: fe_total_uncert_minus
 
 # Energy Delta Variables
-cno_energy_delta_plus_macropixel:
+cno_energy_delta_plus:
   <<: *default_energy_delta
   DEPEND_0: cno_energy_mean
   CATDESC: C, N, O energy delta plus (maximum bin energy minus geometric mean)
   FIELDNAM: CNO energy delta plus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
 
-cno_energy_delta_minus_macropixel:
+cno_energy_delta_minus:
   <<: *default_energy_delta
   DEPEND_0: cno_energy_mean
   CATDESC: C, N, O energy delta minus (geometric mean minus minimum bin energy)
   FIELDNAM: CNO energy delta minus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
 
-nemgsi_energy_delta_plus_macropixel:
+nemgsi_energy_delta_plus:
     <<: *default_energy_delta
     DEPEND_0: nemgsi_energy_mean
     CATDESC: Ne, Mg, Si energy delta plus (maximum bin energy minus geometric mean)
     FIELDNAM: NeMgSi energy delta plus
     DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
 
-nemgsi_energy_delta_minus_macropixel:
+nemgsi_energy_delta_minus:
     <<: *default_energy_delta
     DEPEND_0: nemgsi_energy_mean
     CATDESC: Ne, Mg, Si energy delta minus (geometric mean minus minimum bin energy)
