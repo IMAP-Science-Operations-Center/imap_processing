@@ -311,161 +311,315 @@ cno_energy_mean_label:
   FORMAT: A5
   VAR_TYPE: metadata
 
-# <=== Data Variables - Standard & Summed Datasets ===>
+# <=== Data Variables ===>
 
 dynamic_threshold_state:
   <<: *default_dns
 
-# Particle Intensity Variables
-h:
+# Standard Intensity Variables
+h_standard_intensity:
   <<: *default_particle
   DEPEND_1: h_energy_mean
-  CATDESC: H Intensity
+  CATDESC: H Standard Omnidirectional Intensity in 12 energy bins
   LABL_PTR_1: h_energy_mean_label
-  FIELDNAM: H Intensity
+  FIELDNAM: H Intensity Standard
   DELTA_MINUS: h_total_uncert_plus
   DELTA_PLUS: h_total_uncert_minus
 
-he3:
+he3_standard_intensity:
   <<: *default_particle
   DEPEND_1: he3_energy_mean
-  CATDESC: He3 Intensity
-  FIELDNAM: He3 Intensity
+  CATDESC: He3 Standard Omnidirectional Intensity in 11 energy bins
+  FIELDNAM: He3 Intensity Standard
   LABL_PTR_1: he3_energy_mean_label
   DELTA_MINUS: he3_total_uncert_plus
   DELTA_PLUS: he3_total_uncert_minus
 
-he4:
+he4_standard_intensity:
   <<: *default_particle
   DEPEND_1: he4_energy_mean
-  CATDESC: He4 Intensity
-  FIELDNAM: He4 Intensity
+  CATDESC: He4 Standard Omnidirectional Intensity in 12 energy bins
+  FIELDNAM: He4 Intensity Standard
   LABL_PTR_1: he4_energy_mean_label
   DELTA_MINUS: he4_total_uncert_plus
   DELTA_PLUS: he4_total_uncert_minus
 
-he:
+he_standard_intensity:
   <<: *default_particle
   DEPEND_1: he_energy_mean
-  CATDESC: He Intensity
-  FIELDNAM: He Intensity
+  CATDESC: He (total) Standard Omnidirectional Intensity in 11 energy bins
+  FIELDNAM: He Intensity Standard
   LABL_PTR_1: he_energy_mean_label
   DELTA_MINUS: he_total_uncert_plus
   DELTA_PLUS: he_total_uncert_minus
 
-c:
+c_standard_intensity:
   <<: *default_particle
   DEPEND_1: c_energy_mean
-  CATDESC: C Intensity
-  FIELDNAM: C Intensity
+  CATDESC: C Standard Omnidirectional Intensity in 12 energy bins
+  FIELDNAM: C Intensity Standard
   LABL_PTR_1: c_energy_mean_label
   DELTA_MINUS: c_total_uncert_plus
   DELTA_PLUS: c_total_uncert_minus
 
-o:
+o_standard_intensity:
   <<: *default_particle
   DEPEND_1: o_energy_mean
-  CATDESC: O Intensity
-  FIELDNAM: O Intensity
+  CATDESC: O Standard Omnidirectional Intensity in 12 energy bins
+  FIELDNAM: O Intensity Standard
   LABL_PTR_1: o_energy_mean_label
   DELTA_MINUS: o_total_uncert_plus
   DELTA_PLUS: o_total_uncert_minus
 
-n:
+n_standard_intensity:
   <<: *default_particle
   DEPEND_1: n_energy_mean
-  CATDESC: N Intensity
-  FIELDNAM: N Intensity
+  CATDESC: N Standard Omnidirectional Intensity in 12 energy bins
+  FIELDNAM: N Intensity Standard
   LABL_PTR_1: n_energy_mean_label
   DELTA_MINUS: n_total_uncert_plus
   DELTA_PLUS: n_total_uncert_minus
 
-ne:
+ne_standard_intensity:
   <<: *default_particle
   DEPEND_1: ne_energy_mean
-  CATDESC: Ne Intensity
-  FIELDNAM: Ne Intensity
+  CATDESC: Ne Standard Omnidirectional Intensity in 13 energy bins
+  FIELDNAM: Ne Intensity Standard
   LABL_PTR_1: ne_energy_mean_label
   DELTA_MINUS: ne_total_uncert_plus
   DELTA_PLUS: ne_total_uncert_minus
 
-na:
+na_standard_intensity:
   <<: *default_particle
   DEPEND_1: na_energy_mean
-  CATDESC: Na Intensity
-  FIELDNAM: Na Intensity
+  CATDESC: Na Standard Omnidirectional Intensity in 8 energy bins
+  FIELDNAM: Na Intensity Standard
   LABL_PTR_1: na_energy_mean_label
   DELTA_MINUS: na_total_uncert_plus
   DELTA_PLUS: na_total_uncert_minus
 
-mg:
+mg_standard_intensity:
   <<: *default_particle
   DEPEND_1: mg_energy_mean
-  CATDESC: Mg Intensity
-  FIELDNAM: Mg Intensity
+  CATDESC: Mg Standard Omnidirectional Intensity in 14 energy bins
+  FIELDNAM: Mg Intensity Standard
   LABL_PTR_1: mg_energy_mean_label
   DELTA_MINUS: mg_total_uncert_plus
   DELTA_PLUS: mg_total_uncert_minus
 
-al:
+al_standard_intensity:
   <<: *default_particle
   DEPEND_1: al_energy_mean
-  CATDESC: Al Intensity
-  FIELDNAM: Al Intensity
+  CATDESC: Al Standard Omnidirectional Intensity in 9 energy bins
+  FIELDNAM: Al Intensity Standard
   LABL_PTR_1: al_energy_mean_label
   DELTA_MINUS: al_total_uncert_plus
   DELTA_PLUS: al_total_uncert_minus
 
-si:
+si_standard_intensity:
   <<: *default_particle
   DEPEND_1: si_energy_mean
-  CATDESC: Si Intensity
-  FIELDNAM: Si Intensity
+  CATDESC: Si Standard Omnidirectional Intensity in 14 energy bins
+  FIELDNAM: Si Intensity Standard
   LABL_PTR_1: si_energy_mean_label
   DELTA_MINUS: si_total_uncert_plus
   DELTA_PLUS: si_total_uncert_minus
 
-s:
+s_standard_intensity:
   <<: *default_particle
   DEPEND_1: s_energy_mean
-  CATDESC: S Intensity
-  FIELDNAM: S Intensity
+  CATDESC: S Standard Omnidirectional Intensity in 13 energy bins
+  FIELDNAM: S Intensity Standard
   LABL_PTR_1: s_energy_mean_label
   DELTA_MINUS: s_total_uncert_plus
   DELTA_PLUS: s_total_uncert_minus
 
-ar:
+ar_standard_intensity:
   <<: *default_particle
   DEPEND_1: ar_energy_mean
-  CATDESC: Ar Intensity
-  FIELDNAM: Ar Intensity
+  CATDESC: Ar Standard Omnidirectional Intensity in 13 energy bins
+  FIELDNAM: Ar Intensity Standard
   LABL_PTR_1: ar_energy_mean_label
   DELTA_MINUS: ar_total_uncert_plus
   DELTA_PLUS: ar_total_uncert_minus
 
-ca:
+ca_standard_intensity:
   <<: *default_particle
   DEPEND_1: ca_energy_mean
-  CATDESC: Ca Intensity
-  FIELDNAM: Ca Intensity
+  CATDESC: Ca Standard Omnidirectional Intensity in 13 energy bins
+  FIELDNAM: Ca Intensity Standard
   LABL_PTR_1: ca_energy_mean_label
   DELTA_MINUS: ca_total_uncert_plus
   DELTA_PLUS: ca_total_uncert_minus
 
-fe:
+fe_standard_intensity:
   <<: *default_particle
   DEPEND_1: fe_energy_mean
-  CATDESC: Fe Intensity
-  FIELDNAM: Fe Intensity
+  CATDESC: Fe Standard Omnidirectional Intensity in 16 energy bins
+  FIELDNAM: Fe Intensity Standard
   LABL_PTR_1: fe_energy_mean_label
   DELTA_MINUS: fe_total_uncert_plus
   DELTA_PLUS: fe_total_uncert_minus
 
-ni:
+ni_standard_intensity:
   <<: *default_particle
   DEPEND_1: ni_energy_mean
-  CATDESC: Ni Intensity
-  FIELDNAM: Ni Intensity
+  CATDESC: Ni Standard Omnidirectional Intensity in 9 energy bins
+  FIELDNAM: Ni Intensity Standard
+  LABL_PTR_1: ni_energy_mean_label
+  DELTA_MINUS: ni_total_uncert_plus
+  DELTA_PLUS: ni_total_uncert_minus
+
+# Summed Intensity Variables
+h_summed_intensity:
+  <<: *default_particle
+  DEPEND_1: h_energy_mean
+  CATDESC: H Summed Omnidirectional Intensity in 4 energy bins (useful for quiet times)
+  LABL_PTR_1: h_energy_mean_label
+  FIELDNAM: H Intensity Summed
+  DELTA_MINUS: h_total_uncert_plus
+  DELTA_PLUS: h_total_uncert_minus
+
+he3_summed_intensity:
+  <<: *default_particle
+  DEPEND_1: he3_energy_mean
+  CATDESC: He3 Summed Omnidirectional Intensity in 3 energy bins (useful for quiet times)
+  FIELDNAM: He3 Intensity Summed
+  LABL_PTR_1: he3_energy_mean_label
+  DELTA_MINUS: he3_total_uncert_plus
+  DELTA_PLUS: he3_total_uncert_minus
+
+he4_summed_intensity:
+  <<: *default_particle
+  DEPEND_1: he4_energy_mean
+  CATDESC: He4 Summed Omnidirectional Intensity in 4 energy bins (useful for quiet times)
+  FIELDNAM: He4 Intensity Summed
+  LABL_PTR_1: he4_energy_mean_label
+  DELTA_MINUS: he4_total_uncert_plus
+  DELTA_PLUS: he4_total_uncert_minus
+
+he_summed_intensity:
+  <<: *default_particle
+  DEPEND_1: he_energy_mean
+  CATDESC: He (total) Summed Omnidirectional Intensity in 3 energy bins (useful for quiet times)
+  FIELDNAM: He Intensity Summed
+  LABL_PTR_1: he_energy_mean_label
+  DELTA_MINUS: he_total_uncert_plus
+  DELTA_PLUS: he_total_uncert_minus
+
+c_summed_intensity:
+  <<: *default_particle
+  DEPEND_1: c_energy_mean
+  CATDESC: C Summed Omnidirectional Intensity in 4 energy bins (useful for quiet times)
+  FIELDNAM: C Intensity Summed
+  LABL_PTR_1: c_energy_mean_label
+  DELTA_MINUS: c_total_uncert_plus
+  DELTA_PLUS: c_total_uncert_minus
+
+o_summed_intensity:
+  <<: *default_particle
+  DEPEND_1: o_energy_mean
+  CATDESC: O Summed Omnidirectional Intensity in 4 energy bins (useful for quiet times)
+  FIELDNAM: O Intensity Summed
+  LABL_PTR_1: o_energy_mean_label
+  DELTA_MINUS: o_total_uncert_plus
+  DELTA_PLUS: o_total_uncert_minus
+
+n_summed_intensity:
+  <<: *default_particle
+  DEPEND_1: n_energy_mean
+  CATDESC: N Summed Omnidirectional Intensity in 4 energy bins (useful for quiet times)
+  FIELDNAM: N Intensity Summed
+  LABL_PTR_1: n_energy_mean_label
+  DELTA_MINUS: n_total_uncert_plus
+  DELTA_PLUS: n_total_uncert_minus
+
+ne_summed_intensity:
+  <<: *default_particle
+  DEPEND_1: ne_energy_mean
+  CATDESC: Ne Summed Omnidirectional Intensity in 4 energy bins (useful for quiet times)
+  FIELDNAM: Ne Intensity Summed
+  LABL_PTR_1: ne_energy_mean_label
+  DELTA_MINUS: ne_total_uncert_plus
+  DELTA_PLUS: ne_total_uncert_minus
+
+na_summed_intensity:
+  <<: *default_particle
+  DEPEND_1: na_energy_mean
+  CATDESC: Na Summed Omnidirectional Intensity in 2 energy bins (useful for quiet times)
+  FIELDNAM: Na Intensity Summed
+  LABL_PTR_1: na_energy_mean_label
+  DELTA_MINUS: na_total_uncert_plus
+  DELTA_PLUS: na_total_uncert_minus
+
+mg_summed_intensity:
+  <<: *default_particle
+  DEPEND_1: mg_energy_mean
+  CATDESC: Mg Summed Omnidirectional Intensity in 4 energy bins (useful for quiet times)
+  FIELDNAM: Mg Intensity Summed
+  LABL_PTR_1: mg_energy_mean_label
+  DELTA_MINUS: mg_total_uncert_plus
+  DELTA_PLUS: mg_total_uncert_minus
+
+al_summed_intensity:
+  <<: *default_particle
+  DEPEND_1: al_energy_mean
+  CATDESC: Al Summed Omnidirectional Intensity in 3 energy bins (useful for quiet times)
+  FIELDNAM: Al Intensity Summed
+  LABL_PTR_1: al_energy_mean_label
+  DELTA_MINUS: al_total_uncert_plus
+  DELTA_PLUS: al_total_uncert_minus
+
+si_summed_intensity:
+  <<: *default_particle
+  DEPEND_1: si_energy_mean
+  CATDESC: Si Summed Omnidirectional Intensity in 5 energy bins (useful for quiet times)
+  FIELDNAM: Si Intensity Summed
+  LABL_PTR_1: si_energy_mean_label
+  DELTA_MINUS: si_total_uncert_plus
+  DELTA_PLUS: si_total_uncert_minus
+
+s_summed_intensity:
+  <<: *default_particle
+  DEPEND_1: s_energy_mean
+  CATDESC: S Summed Omnidirectional Intensity in 5 energy bins (useful for quiet times)
+  FIELDNAM: S Intensity Summed
+  LABL_PTR_1: s_energy_mean_label
+  DELTA_MINUS: s_total_uncert_plus
+  DELTA_PLUS: s_total_uncert_minus
+
+ar_summed_intensity:
+  <<: *default_particle
+  DEPEND_1: ar_energy_mean
+  CATDESC: Ar Summed Omnidirectional Intensity in 5 energy bins (useful for quiet times)
+  FIELDNAM: Ar Intensity Summed
+  LABL_PTR_1: ar_energy_mean_label
+  DELTA_MINUS: ar_total_uncert_plus
+  DELTA_PLUS: ar_total_uncert_minus
+
+ca_summed_intensity:
+  <<: *default_particle
+  DEPEND_1: ca_energy_mean
+  CATDESC: Ca Summed Omnidirectional Intensity in 5 energy bins (useful for quiet times)
+  FIELDNAM: Ca Intensity Summed
+  LABL_PTR_1: ca_energy_mean_label
+  DELTA_MINUS: ca_total_uncert_plus
+  DELTA_PLUS: ca_total_uncert_minus
+
+fe_summed_intensity:
+  <<: *default_particle
+  DEPEND_1: fe_energy_mean
+  CATDESC: Fe Summed Omnidirectional Intensity in 5 energy bins (useful for quiet times)
+  FIELDNAM: Fe Intensity Summed
+  LABL_PTR_1: fe_energy_mean_label
+  DELTA_MINUS: fe_total_uncert_plus
+  DELTA_PLUS: fe_total_uncert_minus
+
+ni_summed_intensity:
+  <<: *default_particle
+  DEPEND_1: ni_energy_mean
+  CATDESC: Ni Summed Omnidirectional Intensity in 3 energy bins (useful for quiet times)
+  FIELDNAM: Ni Intensity Summed
   LABL_PTR_1: ni_energy_mean_label
   DELTA_MINUS: ni_total_uncert_plus
   DELTA_PLUS: ni_total_uncert_minus
@@ -1430,7 +1584,7 @@ ni_total_uncert_minus:
 dynamic_threshold_state_macropixel:
   <<: *default_dns
 
-# Particle Intensity Variables
+# Macropixel Intensity Variables
 h_macropixel_intensity:
   <<: *default_particle
   CATDESC: H Macropixel Intensity
@@ -1556,7 +1710,7 @@ h_sys_err_plus_macropixel:
   LABL_PTR_1: h_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: declination_label
-  CATDESC: Plus systematic uncertainty for H
+  CATDESC: Plus systematic uncertainty for H Macropixel
   FIELDNAM: H Plus Systematic Uncertainty
 
 h_sys_err_minus_macropixel:
@@ -1567,7 +1721,7 @@ h_sys_err_minus_macropixel:
   LABL_PTR_1: h_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: declination_label
-  CATDESC: Minus systematic uncertainty for H
+  CATDESC: Minus systematic uncertainty for H Macropixel
   FIELDNAM: H Minus Systematic Uncertainty
 
 h_total_uncert_plus_macropixel:
@@ -1578,7 +1732,7 @@ h_total_uncert_plus_macropixel:
   LABL_PTR_1: h_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: declination_label
-  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for H
+  CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for H Macropixel
   FIELDNAM: H Plus Total Uncertainty
 
 h_total_uncert_minus_macropixel:
@@ -1589,7 +1743,7 @@ h_total_uncert_minus_macropixel:
   LABL_PTR_1: h_energy_mean_label
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: declination_label
-  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for H
+  CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for H Macropixel
   FIELDNAM: H Minus Total Uncertainty
 
 he4_stat_uncert_plus_macropixel:

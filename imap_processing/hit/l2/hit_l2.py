@@ -672,48 +672,52 @@ def process_standard_intensity_data(
         The L2 standard intensity dataset.
     """
     # Create a new dataset to store the L2 standard intensity data
-    l2_standard_intensity_dataset = xr.Dataset()
+    standard_intensity_dataset = xr.Dataset()
 
     # Assign the epoch coordinate from the l1B dataset
-    l2_standard_intensity_dataset = l2_standard_intensity_dataset.assign_coords(
+    standard_intensity_dataset = standard_intensity_dataset.assign_coords(
         {"epoch": l1b_standard_rates_dataset.coords["epoch"]}
     )
 
     # Add dynamic threshold state to the dataset
-    l2_standard_intensity_dataset["dynamic_threshold_state"] = (
-        l1b_standard_rates_dataset["dynamic_threshold_state"]
-    )
+    standard_intensity_dataset["dynamic_threshold_state"] = l1b_standard_rates_dataset[
+        "dynamic_threshold_state"
+    ]
 
     # Load ancillary data for each dynamic threshold state into a dictionary
     ancillary_data_frames = load_ancillary_data(
-        set(l2_standard_intensity_dataset["dynamic_threshold_state"].values),
+        set(standard_intensity_dataset["dynamic_threshold_state"].values),
         ancillary_files,
     )
 
     # Process each particle type and add rates and uncertainties to the dataset
     for particle, energy_ranges in STANDARD_PARTICLE_ENERGY_RANGE_MAPPING.items():
         # Add standard particle rates and statistical uncertainties to the dataset
-        l2_standard_intensity_dataset = add_summed_particle_data_to_dataset(
-            l2_standard_intensity_dataset,
+        standard_intensity_dataset = add_summed_particle_data_to_dataset(
+            standard_intensity_dataset,
             l1b_standard_rates_dataset,
             particle,
             energy_ranges,
         )
 
-    l2_standard_intensity_dataset = calculate_intensities_for_all_species(
-        l2_standard_intensity_dataset, ancillary_data_frames, VALID_SPECIES
+    standard_intensity_dataset = calculate_intensities_for_all_species(
+        standard_intensity_dataset, ancillary_data_frames, VALID_SPECIES
     )
 
     # Add total and systematic uncertainties to the dataset
     for particle in STANDARD_PARTICLE_ENERGY_RANGE_MAPPING.keys():
-        l2_standard_intensity_dataset = add_systematic_uncertainties(
-            l2_standard_intensity_dataset, particle
+        standard_intensity_dataset = add_systematic_uncertainties(
+            standard_intensity_dataset, particle
         )
-        l2_standard_intensity_dataset = add_total_uncertainties(
-            l2_standard_intensity_dataset, particle
+        standard_intensity_dataset = add_total_uncertainties(
+            standard_intensity_dataset, particle
+        )
+        # Expand the variable name to include standard intensity
+        standard_intensity_dataset = standard_intensity_dataset.rename(
+            {particle: f"{particle}_standard_intensity"}
         )
 
-    return l2_standard_intensity_dataset
+    return standard_intensity_dataset
 
 
 def process_sectored_intensity_data(
@@ -848,4 +852,4 @@ if __name__ == "__main__":
     print(l2_standard_intensity_dataset[0]["h_standard_intensity"])
     print(l2_standard_intensity_dataset[0]["h_sys_err_plus"].attrs)
     print(l2_standard_intensity_dataset[0]["h_standard_intensity"].attrs)
-    print(l2_standard_intensity_dataset[0]["declination_label"])
+    print(l2_standard_intensity_dataset[0]["h_energy_mean_label"])
