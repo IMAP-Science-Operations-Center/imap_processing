@@ -608,30 +608,34 @@ def process_summed_intensity_data(
         The processed L2 summed intensity dataset.
     """
     # Create a new dataset to store the L2 summed intensity data
-    l2_summed_intensity_dataset = l1b_summed_rates_dataset.copy(deep=True)
+    summed_intensity_dataset = l1b_summed_rates_dataset.copy(deep=True)
 
     # Load ancillary data for each dynamic threshold state into a dictionary
     ancillary_data_frames = load_ancillary_data(
-        set(l2_summed_intensity_dataset["dynamic_threshold_state"].values),
+        set(summed_intensity_dataset["dynamic_threshold_state"].values),
         ancillary_files,
     )
 
     # Calculate the intensity for each species
-    l2_summed_intensity_dataset = calculate_intensities_for_all_species(
-        l2_summed_intensity_dataset, ancillary_data_frames, VALID_SPECIES
+    summed_intensity_dataset = calculate_intensities_for_all_species(
+        summed_intensity_dataset, ancillary_data_frames, VALID_SPECIES
     )
 
     # Add total and systematic uncertainties to the dataset
-    for var in l2_summed_intensity_dataset.data_vars:
+    for var in summed_intensity_dataset.data_vars:
         if var in VALID_SPECIES:
-            l2_summed_intensity_dataset = add_systematic_uncertainties(
-                l2_summed_intensity_dataset, var
+            summed_intensity_dataset = add_systematic_uncertainties(
+                summed_intensity_dataset, var
             )
-            l2_summed_intensity_dataset = add_total_uncertainties(
-                l2_summed_intensity_dataset, var
+            summed_intensity_dataset = add_total_uncertainties(
+                summed_intensity_dataset, var
+            )
+            # Expand the variable name to include standard intensity
+            summed_intensity_dataset = summed_intensity_dataset.rename(
+                {var: f"{var}_summed_intensity"}
             )
 
-    return l2_summed_intensity_dataset
+    return summed_intensity_dataset
 
 
 def process_standard_intensity_data(
@@ -783,37 +787,16 @@ if __name__ == "__main__":
     from imap_processing import imap_module_directory
     from imap_processing.hit.l1a.hit_l1a import hit_l1a
     from imap_processing.hit.l1b.hit_l1b import (
-        process_standard_rates_data,
+        process_summed_rates_data,
     )
 
     # L0 file path
     packet_file = imap_module_directory / "tests/hit/test_data/sci_sample.ccsds"
-
     datasets = hit_l1a(packet_file)
     counts = datasets[0]
-
     # Calculate livetime from the livetime counter
     livetime = counts["livetime_counter"] / 270
 
-    # # Process L2 Sectored
-    # sectored_rates = process_sectored_rates_data(counts, livetime)
-    # l2_sectored_intensity_dataset = process_sectored_intensity_data(sectored_rates)
-    # print(l2_sectored_intensity_dataset)
-    # print(l2_sectored_intensity_dataset["h"][0])
-    #
-    # # Process L2 Standard
-    # standard_rates = process_standard_rates_data(counts, livetime)
-    # l2_standard_flux_dataset = process_standard_intensity_data(standard_rates)
-    # print(l2_standard_flux_dataset["h"][1])
-    # print(l2_standard_flux_dataset.data_vars)
-    #
-    # # Process L2 Summed
-    # summed_rates = process_summed_rates_data(counts, livetime)
-    # l2_summed_intensity_dataset = process_summed_intensity_data(summed_rates)
-    # print(l2_summed_intensity_dataset)
-    # print(l2_summed_intensity_dataset["h"][0])
-    #
-    #
     prefix = imap_module_directory / "tests/hit/test_data/ancillary"
     ancillary = {
         "macropixel": [
@@ -845,11 +828,20 @@ if __name__ == "__main__":
     # print(l2_sectored_intensity_dataset[0]["h_macropixel_intensity"].attrs)
     # print(l2_sectored_intensity_dataset[0]["declination_label"])
 
-    # # Process L2 Standard
-    standard_rates = process_standard_rates_data(counts, livetime)
-    standard_rates.attrs["Logical_source"] = "imap_hit_l1b_standard-rates"
-    l2_standard_intensity_dataset = hit_l2(standard_rates, ancillary["standard"])
-    print(l2_standard_intensity_dataset[0]["h_standard_intensity"])
-    print(l2_standard_intensity_dataset[0]["h_sys_err_plus"].attrs)
-    print(l2_standard_intensity_dataset[0]["h_standard_intensity"].attrs)
-    print(l2_standard_intensity_dataset[0]["h_energy_mean_label"])
+    # # # Process L2 Standard
+    # standard_rates = process_standard_rates_data(counts, livetime)
+    # standard_rates.attrs["Logical_source"] = "imap_hit_l1b_standard-rates"
+    # l2_standard_intensity_dataset = hit_l2(standard_rates, ancillary["standard"])
+    # print(l2_standard_intensity_dataset[0]["h_standard_intensity"])
+    # print(l2_standard_intensity_dataset[0]["h_sys_err_plus"].attrs)
+    # print(l2_standard_intensity_dataset[0]["h_standard_intensity"].attrs)
+    # print(l2_standard_intensity_dataset[0]["h_energy_mean_label"])
+
+    # # Process L2 Summed
+    summed_rates = process_summed_rates_data(counts, livetime)
+    summed_rates.attrs["Logical_source"] = "imap_hit_l1b_summed-rates"
+    l2_summed_intensity_dataset = hit_l2(summed_rates, ancillary["summed"])
+    print(l2_summed_intensity_dataset[0]["h_summed_intensity"])
+    print(l2_summed_intensity_dataset[0]["h_sys_err_plus"].attrs)
+    print(l2_summed_intensity_dataset[0]["h_summed_intensity"].attrs)
+    print(l2_summed_intensity_dataset[0]["h_energy_mean_label"])
