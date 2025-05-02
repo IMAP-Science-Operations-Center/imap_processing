@@ -107,7 +107,7 @@ ena_intensity_stat_unc:
   UNITS: counts/(s * cm^2 * Sr * KeV)
   DEPEND_0: epoch
   VAR_TYPE: data
-  LABLAXIS: Statistical Unc.
+  LABLAXIS: Statistical Unc
   DISPLAY_TYPE: image
 
 sensitivity:
