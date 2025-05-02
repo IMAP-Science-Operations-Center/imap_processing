@@ -702,6 +702,33 @@ class IDEXPointingSet(HealpixPointingSet):
             f"num_points={self.num_points})"
         )
 
+    def to_dataset(self) -> xr.Dataset:
+        """
+        Get the IDEX pointing set data as a formatted xarray Dataset.
+
+        Returns
+        -------
+        xr.Dataset
+            The pointing set data as a formatted xarray Dataset with attributes.
+        """
+        pset_attrs = {
+            "sky_tiling_type": SkyTilingType.HEALPIX.value,
+            "HEALPix_nside": self.nside,
+            "HEALPix_nest": self.nested,
+            "spice_reference_frame": self.spice_reference_frame,
+            "epoch": self.epoch,
+            "num_points": self.num_points,
+        }
+        dataset = self.data
+        dataset["az_el_points"] = xr.DataArray(
+            name="az_el_points",
+            data=self.az_el_points,
+            dims=(CoordNames.HEALPIX_INDEX.value, "longitude_and_latitude"),
+        )
+
+        dataset.attrs.update(pset_attrs)
+        return dataset
+
 
 # Define the Map classes
 class AbstractSkyMap(ABC):

@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.idex.idex_constants import (
     IDEX_HEALPIX_NESTED,
     IDEX_HEALPIX_NSIDE,
@@ -23,7 +24,7 @@ def l2c_dataset(l1b_dataset: xr.Dataset) -> xr.Dataset:
         A ``xarray`` dataset containing the test data
     """
 
-    return idex_l2c([l1b_dataset, l1b_dataset])
+    return idex_l2c(l1b_dataset)
 
 
 def test_l2c_attrs_and_vars(l2c_dataset: xr.Dataset, l1b_dataset: xr.Dataset):
@@ -41,18 +42,21 @@ def test_l2c_attrs_and_vars(l2c_dataset: xr.Dataset, l1b_dataset: xr.Dataset):
     assert l2c_dataset.attrs["Logical_source"] == expected_src
 
     # The total counts in the skymap should be equal to the number of dust events
-    # in the l1b_dataset (x2 because there are two identical l1b datasets in the skymap)
-    np.testing.assert_allclose(l2c_dataset["counts"].sum(), len(l1b_dataset.epoch) * 2)
-    assert l2c_dataset.dims == {"healpix_index": hp.nside2npix(IDEX_HEALPIX_NSIDE)}
+    # in the l1b_dataset
+    np.testing.assert_allclose(l2c_dataset["counts"].sum(), len(l1b_dataset.epoch))
+    assert l2c_dataset.dims == {
+        "healpix_index": hp.nside2npix(IDEX_HEALPIX_NSIDE),
+        "epoch": 1,
+        "longitude_and_latitude": 2,
+    }
 
     # Assert attributes are present
-    assert l2c_dataset.attrs["Sky_tiling_type"] == "Healpix"
+    assert l2c_dataset.attrs["sky_tiling_type"] == "Healpix"
     assert l2c_dataset.attrs["HEALPix_nside"] == IDEX_HEALPIX_NSIDE
     assert l2c_dataset.attrs["HEALPix_nest"] == IDEX_HEALPIX_NESTED
-    assert l2c_dataset.attrs["Spice_reference_frame"] == IDEX_POINTING_REFERENCE_FRAME
+    assert l2c_dataset.attrs["spice_reference_frame"] == IDEX_POINTING_REFERENCE_FRAME
     # Check the attributes of the dataset by writing to a CDF file
-    # TODO map does not have epoch and can not be written out
-    # write_cdf(l2c_dataset)
+    write_cdf(l2c_dataset)
 
 
 def test_idex_pset(l1b_dataset: xr.Dataset):

@@ -14,7 +14,6 @@ Examples
     l1b_data = idex_l1b(l1a_data)
     l1a_data = idex_l2a(l1b_data)
     l2b_data = idex_l2b(l2a_data)
-    # TODO remove l2a and l2b?
     write_cdf(l2b_data)
 """
 
@@ -28,72 +27,49 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.idex.idex_constants import (
-    IDEX_HEALPIX_NESTED,
-    IDEX_HEALPIX_NSIDE,
     IDEX_POINTING_REFERENCE_FRAME,
 )
 
 logger = logging.getLogger(__name__)
 
 
-def idex_l2c(l1b_datasets: list[xr.Dataset]) -> xr.Dataset:
+def idex_l2c(l2b_dataset: xr.Dataset) -> xr.Dataset:
     """
-    Will process IDEX l1b data to create l2c data products.
+    Will process IDEX l2b data to create l2c data products.
 
     Parameters
     ----------
-    l1b_datasets : list[xarray.Dataset]
-        IDEX L1b datasets.
+    l2b_dataset : xarray.Dataset
+        IDEX L2b dataset.
 
     Returns
     -------
-    l1b_dataset : xarray.Dataset
+    l2b_dataset : xarray.Dataset
         The``xarray`` dataset containing the science data and supporting metadata.
     """
     logger.info(
-        f"Running IDEX L2C processing on datasets:"
-        f" {[ds.attrs['Logical_source'] for ds in l1b_datasets]}"
+        f"Running IDEX L2C processing on datasets: "
+        f"{l2b_dataset.attrs['Logical_source']}"
     )
 
     # create the attribute manager for this data level
     idex_attrs = ImapCdfAttributes()
     idex_attrs.add_instrument_global_attrs(instrument="idex")
     idex_attrs.add_instrument_variable_attrs("idex", "l2c")
-    # Initialize the HealpixSkyMap and Rectangular object
-    healpix_skymap = ena_maps.HealpixSkyMap(
-        nside=IDEX_HEALPIX_NSIDE,
-        nested=IDEX_HEALPIX_NESTED,
-        spice_frame=IDEX_POINTING_REFERENCE_FRAME,
-    )
-    # Create raw dust count psets and push values to the map for each l1b dataset.
-    for ds in l1b_datasets:
-        pset = idex_pset(ds)
 
-        # TODO exposure time
-        # TODO rectangular map - code for this is coming shortly
-        # TODO pull vs push?
-        healpix_skymap.project_pset_values_to_map(pset, value_keys=["counts"])
-
-    healpix_map_dataset = healpix_skymap.to_dataset()
-    healpix_map_dataset.attrs = idex_attrs.get_global_attributes("imap_idex_l2c_sci")
-    healpix_map_dataset["counts"].attrs = idex_attrs.get_variable_attributes("counts")
-    healpix_map_dataset["healpix_index"].attrs = idex_attrs.get_variable_attributes(
+    # Create a raw dust count pset
+    pset = idex_pset(l2b_dataset)
+    pset_dataset = pset.to_dataset()
+    # TODO exposure time
+    # TODO rectangular map
+    pset_dataset.attrs.update(idex_attrs.get_global_attributes("imap_idex_l2c_sci"))
+    pset_dataset["counts"].attrs = idex_attrs.get_variable_attributes("counts")
+    pset_dataset["epoch"].attrs = idex_attrs.get_variable_attributes("epoch")
+    pset_dataset["healpix_index"].attrs = idex_attrs.get_variable_attributes(
         "healpix_index"
     )
-    # Add attributes related to the map
-    # Always add the following attributes to the map
-
-    healpix_map_dataset.attrs.update(
-        {
-            "Sky_tiling_type": ena_maps.SkyTilingType.HEALPIX.value,
-            "HEALPix_nside": IDEX_HEALPIX_NSIDE,
-            "HEALPix_nest": IDEX_HEALPIX_NESTED,
-            "Spice_reference_frame": IDEX_POINTING_REFERENCE_FRAME,
-        }
-    )
-
     logger.info("IDEX L2C science data processing completed.")
-    return healpix_map_dataset
+    return pset_dataset
 
 
 def idex_pset(
