@@ -18,7 +18,7 @@ pixel_index:
   FILLVAL: 4294967295
   VALIDMIN: 0
   VALIDMAX: 3221225472
-  FORMAT: I10
+  FORMAT: I12
   CATDESC: Healpix index corresponding to the bin center.
   FIELDNAM: pixel_index
   LABLAXIS: "HEALPix #"
@@ -29,7 +29,7 @@ pixel_index_label:
   VAR_TYPE: metadata
   CATDESC: Healpix index corresponding to the bin center.
   FIELDNAM: pixel_index
-  FORMAT: I10
+  FORMAT: A10
   DEPEND_1: pixel_index
 
 # Define Non-dimension Coordinates

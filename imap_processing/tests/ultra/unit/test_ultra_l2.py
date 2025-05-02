@@ -229,8 +229,8 @@ class TestUltraL2:
                 output_map_structure=map_structure,
             )
 
-        assert map_dataset.attrs["HEALPix_nside"] == map_structure.nside
-        assert map_dataset.attrs["HEALPix_nest"] == map_structure.nested
+        assert map_dataset.attrs["HEALPix_nside"] == str(map_structure.nside)
+        assert map_dataset.attrs["HEALPix_nest"] == str(map_structure.nested)
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
     def test_ultra_l2_rectangular(self, mock_data_dict, furnish_kernels):
@@ -271,8 +271,8 @@ class TestUltraL2:
                 output_map_structure=hp_map_structure,
             )
 
-        assert (
-            rect_map_dataset.attrs["Spacing_degrees"] == rect_map_structure.spacing_deg
+        assert rect_map_dataset.attrs["Spacing_degrees"] == str(
+            rect_map_structure.spacing_deg
         )
         assert (
             rect_map_dataset.attrs["Spice_reference_frame"]

@@ -264,7 +264,7 @@ def ultra_l2(
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs(instrument="ultra")
 
-    l1c_products = data_dict.values()
+    l1c_products: list[xr.Dataset] = list(data_dict.values())
     num_l1c_products = len(l1c_products)
     logger.info(f"Running ultra_l2 processing on {num_l1c_products} L1C products")
 
@@ -275,7 +275,7 @@ def ultra_l2(
     # project the PSET values into a healpix map. However, if we are outputting
     # a Healpix map, we can go directly to map with desired nside, nested params
     healpix_skymap = generate_ultra_healpix_skymap(
-        ultra_l1c_psets=list(l1c_products),
+        ultra_l1c_psets=l1c_products,
         output_map_structure=output_map_structure,
     )
 
@@ -302,8 +302,8 @@ def ultra_l2(
         map_dataset = healpix_skymap.to_dataset()
         # Add attributes related to the map
         map_attrs = {
-            "HEALPix_nside": output_map_structure.nside,
-            "HEALPix_nest": output_map_structure.nested,
+            "HEALPix_nside": str(output_map_structure.nside),
+            "HEALPix_nest": str(output_map_structure.nested),
         }
 
     elif output_map_structure.tiling_type is ena_maps.SkyTilingType.RECTANGULAR:
@@ -340,7 +340,7 @@ def ultra_l2(
         map_dataset["latitude_delta"] = rectangular_skymap.spacing_deg / 2
 
         map_attrs = {
-            "Spacing_degrees": output_map_structure.spacing_deg,
+            "Spacing_degrees": str(output_map_structure.spacing_deg),
         }
 
     # TODO: keep track of the map duration correctly
@@ -353,7 +353,7 @@ def ultra_l2(
     for key in ["Data_type", "Logical_source", "Logical_source_description"]:
         map_attrs[key] = map_attrs[key].format(
             sensor=ultra_sensor_number,
-            tiling=output_map_structure.tiling_type.value,
+            tiling=output_map_structure.tiling_type.value.lower(),
             duration=map_duration,
         )
 
@@ -384,6 +384,17 @@ def ultra_l2(
                 name=f"{coord_var}_label",
             )
 
+    # Add the energy delta plus/minus to the map dataset
+    # TODO: Update these placeholders on energy deltas (our mean is the geometric mean,
+    # so it should have asymmetric deltas).
+    map_dataset.coords["energy_delta_minus"] = xr.DataArray(
+        (l1c_products[0]["energy_bin_delta"].values / 2),
+        dims=(CoordNames.ENERGY_L2.value,),
+    )
+    map_dataset.coords["energy_delta_plus"] = map_dataset["energy_delta_minus"].copy(
+        deep=True
+    )
+
     # Add variable specific attributes to the map's data_vars and coords
     for variable in map_dataset.data_vars:
         # Skip the subdivision depth variables, as these will only be
@@ -408,4 +419,6 @@ def ultra_l2(
             )
         )
 
+    # Adjust the dtype of obs_date to be int64
+    map_dataset["obs_date"] = map_dataset["obs_date"].astype(np.int64)
     return [map_dataset]

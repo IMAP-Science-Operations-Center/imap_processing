@@ -27,7 +27,7 @@ default_int64_attrs: &default_int64
   dtype: int64
 
 default_float32_attrs: &default_float32
-  FORMAT: F12.6
+  FORMAT: F18.6
   FILLVAL: -1.0e31
   VALIDMIN: -3.4028235e+38
   VALIDMAX: 3.4028235e+38
@@ -39,7 +39,6 @@ energy:
   CATDESC: Geometric mean of energy bin.
   FIELDNAM: energy_bin_geometric_mean
   LABLAXIS: Energy bin geometric mean
-  FORMAT: I2
   UNITS: KeV
   VAR_TYPE: support_data
   SCALE_TYP: linear
@@ -53,6 +52,28 @@ energy_label:
   FIELDNAM: energy_bin_geometric_mean
   FORMAT: A16
   DEPEND_1: energy
+
+energy_delta_minus:
+  <<: *default_float32
+  VAR_TYPE: support_data
+  CATDESC: Difference between the energy bin center and lower edge.
+  LABLAXIS: energy
+  UNITS: KeV
+  FIELDNAM: energy_bin_delta_minus
+  DISPLAY_TYPE: no_plot
+  DEPEND_1: energy
+  LABL_PTR_1: energy_label
+
+energy_delta_plus:
+  <<: *default_float32
+  VAR_TYPE: support_data
+  CATDESC: Difference between the energy bin center and upper edge.
+  LABLAXIS: energy
+  UNITS: KeV
+  FIELDNAM: energy_bin_delta_plus
+  DISPLAY_TYPE: no_plot
+  DEPEND_1: energy
+  LABL_PTR_1: energy_label
 
 # Define Data variables, but not their pixel-level DEPENDs
 # (e.g. pixel_index for HEALPix maps, longitude/latitude for rectangular maps).
@@ -101,6 +122,7 @@ sensitivity:
 
 obs_date:
   <<: *default_int64
+  datatype: int64
   CATDESC: Exposure time weighted mean collection date of data in a pixel.
   FIELDNAM: J2000 Nanoseconds
   UNITS: ns

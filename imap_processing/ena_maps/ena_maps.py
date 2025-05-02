@@ -1036,12 +1036,12 @@ class RectangularSkyMap(AbstractSkyMap):
             CoordNames.AZIMUTH_L1C.value: xr.DataArray(
                 self.sky_grid.az_bin_midpoints,
                 dims=[CoordNames.AZIMUTH_L1C.value],
-                attrs={"units": "degrees"},
+                attrs={"UNITS": "degrees"},
             ),
             CoordNames.ELEVATION_L1C.value: xr.DataArray(
                 self.sky_grid.el_bin_midpoints,
                 dims=[CoordNames.ELEVATION_L1C.value],
-                attrs={"units": "degrees"},
+                attrs={"UNITS": "degrees"},
             ),
         }
 
