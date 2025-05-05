@@ -3,6 +3,8 @@
 from dataclasses import dataclass
 from enum import Enum, IntEnum
 
+from imap_processing.spice.geometry import SpiceFrame
+
 
 class IDEXAPID(IntEnum):
     """Create ENUM for apid."""
@@ -10,8 +12,6 @@ class IDEXAPID(IntEnum):
     IDEX_SCIENCE = 1424
     IDEX_CATLST = 1419
     IDEX_EVT = 1418
-
-from imap_processing.spice.geometry import SpiceFrame
 
 
 @dataclass
