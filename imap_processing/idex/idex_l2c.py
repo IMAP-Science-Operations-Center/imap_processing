@@ -64,9 +64,7 @@ def idex_l2c(l2b_dataset: xr.Dataset) -> xr.Dataset:
     l2c_dataset.attrs.update(idex_attrs.get_global_attributes("imap_idex_l2c_sci"))
     l2c_dataset["counts"].attrs = idex_attrs.get_variable_attributes("counts")
     l2c_dataset["epoch"].attrs = idex_attrs.get_variable_attributes("epoch")
-    l2c_dataset["healpix_index"].attrs = idex_attrs.get_variable_attributes(
-        "healpix_index"
-    )
+    l2c_dataset["pixel_index"].attrs = idex_attrs.get_variable_attributes("pixel_index")
     logger.info("IDEX L2C science data processing completed.")
     return l2c_dataset
 

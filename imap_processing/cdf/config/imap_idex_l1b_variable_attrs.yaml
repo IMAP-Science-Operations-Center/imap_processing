@@ -385,18 +385,18 @@ ephemeris_velocity_z:
   LABLAXIS: Velocity Z
   UNITS: km/s
 
-right_ascension:
+longitude:
   <<: *spice_base
   VALIDMIN: 0
-  FIELDNAM: Right Ascension
-  CATDESC: Right ascension of the IMAP spacecraft position as observed from Earth in the ECLIPJ2000 reference frame.
-  LABLAXIS: Right Ascension
+  FIELDNAM: Longitude
+  CATDESC: Longitude of the IMAP spacecraft position as observed from Earth in the ECLIPJ2000 reference frame.
+  LABLAXIS: Longitude
 
-declination:
+latitude:
   <<: *spice_base
-  FIELDNAM: Declination
-  CATDESC: Declination of the IMAP spacecraft position as observed from Earth in the ECLIPJ2000 reference frame.
-  LABLAXIS: Declination
+  FIELDNAM: Latitude
+  CATDESC: Latitude of the IMAP spacecraft position as observed from Earth in the ECLIPJ2000 reference frame.
+  LABLAXIS: Latitude
 
 spin_phase:
   <<: *spice_base

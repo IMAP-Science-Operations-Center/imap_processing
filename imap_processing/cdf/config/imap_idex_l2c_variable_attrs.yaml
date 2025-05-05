@@ -1,6 +1,6 @@
 int_fillval: &int_fillval -9223372036854775808
 
-healpix_index:
+pixel_index:
   CATDESC: "HEALPix pixel index for IDEX SkyMap"
   FIELDNAM: "HEALPix Index"
   FORMAT: I4
@@ -20,7 +20,7 @@ counts:
   LABLAXIS: "Counts"
   VAR_TYPE: data
   DISPLAY_TYPE: time_series
-  DEPEND_0: healpix_index
+  DEPEND_0: pixel_index
   UNITS: "counts"
   VALIDMIN: 0
   VALIDMAX: *int_fillval

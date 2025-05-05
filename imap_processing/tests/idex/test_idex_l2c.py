@@ -45,7 +45,7 @@ def test_l2c_attrs_and_vars(l2c_dataset: xr.Dataset, l1b_dataset: xr.Dataset):
     # in the l1b_dataset
     np.testing.assert_allclose(l2c_dataset["counts"].sum(), len(l1b_dataset.epoch))
     assert l2c_dataset.dims == {
-        "healpix_index": hp.nside2npix(IDEX_HEALPIX_NSIDE),
+        "pixel_index": hp.nside2npix(IDEX_HEALPIX_NSIDE),
         "epoch": 1,
     }
 

@@ -137,16 +137,23 @@ def get_spice_data_side_effect_func(l1a_ds, idex_attrs):
         )
         for name in SPICE_ARRAYS
     }
-    spin_phase_angles = xr.DataArray(np.random.randint(0, 360, len(l1a_ds.epoch)))
+    spin_phase_angles = xr.DataArray(
+        name="spin_phase",
+        dims=["epoch"],
+        data=np.random.randint(0, 360, len(l1a_ds.epoch)),
+        attrs=idex_attrs.get_variable_attributes("spin_phase"),
+    )
     longitude = xr.DataArray(
         np.random.uniform(0, 360, len(l1a_ds.epoch)),
         dims=["epoch"],
         name="longitude",
+        attrs=idex_attrs.get_variable_attributes("longitude"),
     )
     latitude = xr.DataArray(
         np.random.uniform(-90, 90, len(l1a_ds.epoch)),
         dims=["epoch"],
         name="latitude",
+        attrs=idex_attrs.get_variable_attributes("latitude"),
     )
     spice_data["spin_phase"] = spin_phase_angles
     spice_data["latitude"] = latitude
