@@ -202,6 +202,7 @@ def mock_l1c_pset_product_healpix(
     peak_exposure: float = 1000.0,
     timestr: str = "2025-01-01T00:00:00",
     head: str = "45",
+    energy_dependent_exposure: bool = False,
 ) -> xr.Dataset:
     """
     Mock the L1C PSET product with recognizable but unrealistic counts.
@@ -256,6 +257,10 @@ def mock_l1c_pset_product_healpix(
         The time string for the epoch (default is "2025-01-01T00:00:00").
     head : str, optional
         The sensor head (either '45' or '90') (default is '45').
+    energy_dependent_exposure : bool, optional
+        Whether the exposure time is energy dependent (default is False).
+        If True, the exposure time will have an additional energy dimension.
+        All the exposure times will be the same for each energy bin.
     """
     energy_intervals, energy_bin_midpoints, _ = build_energy_bins()
     energy_bin_delta = np.diff(energy_intervals, axis=1).squeeze()
@@ -293,6 +298,23 @@ def mock_l1c_pset_product_healpix(
         * (prob_scaling_factor_exptime / prob_scaling_factor_exptime.max())
     )[np.newaxis, :]
 
+    # Exposure time/factor can optionally be energy dependent
+    if energy_dependent_exposure:
+        # Add energy dimension to exposure time as axis 1
+        exposure_time = np.repeat(
+            exposure_time[:, np.newaxis, :], num_energy_bins, axis=1
+        )
+        exposure_dims = [
+            CoordNames.TIME.value,
+            CoordNames.ENERGY_ULTRA_L1C.value,
+            CoordNames.HEALPIX_INDEX.value,
+        ]
+    else:
+        exposure_dims = [
+            CoordNames.TIME.value,
+            CoordNames.HEALPIX_INDEX.value,
+        ]
+
     # Ensure counts are integers
     counts = counts.astype(int)
     # add an epoch dimension
@@ -329,7 +351,7 @@ def mock_l1c_pset_product_healpix(
                 np.full_like(counts, 0.05, dtype=float),
             ),
             "exposure_factor": (
-                [CoordNames.TIME.value, CoordNames.HEALPIX_INDEX.value],
+                exposure_dims,  # special case: optionally energy dependent exposure
                 exposure_time,
             ),
             "sensitivity": (
