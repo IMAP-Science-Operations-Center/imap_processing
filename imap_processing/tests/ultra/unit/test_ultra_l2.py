@@ -2,7 +2,9 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+import xarray as xr
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.tests.ultra.mock_data import mock_l1c_pset_product_healpix
@@ -328,3 +330,99 @@ class TestUltraL2:
         exposure_attrs = rect_map_dataset["exposure_factor"].attrs
         assert exposure_attrs["VAR_TYPE"] == "data"
         assert exposure_attrs["UNITS"] == "s"
+
+    @pytest.mark.parametrize(
+        "tiling",
+        [
+            "healpix",
+            "rectangular",
+        ],
+    )
+    def test_get_variable_attributes_optional_energy_dependence(self, tiling):
+        # Setup CDF attributes class
+        cdf_attrs = ImapCdfAttributes()
+        cdf_attrs.add_instrument_variable_attrs(instrument="enamaps", level="l2-common")
+        cdf_attrs.add_instrument_variable_attrs(
+            instrument="enamaps", level=f"l2-{tiling}"
+        )
+
+        exposure_factor_array_energy_independent = xr.DataArray(
+            name="exposure_factor",
+            data=np.ones((1, 16)),
+            dims=(
+                CoordNames.TIME.value,
+                CoordNames.GENERIC_PIXEL.value,
+            ),
+        )
+        exposure_factor_array_energy_dependent = xr.DataArray(
+            name="exposure_factor",
+            data=np.ones((1, 24, 16)),
+            dims=(
+                CoordNames.TIME.value,
+                CoordNames.ENERGY_L2.value,
+                CoordNames.GENERIC_PIXEL.value,
+            ),
+        )
+
+        # Check the energy independent case attributes
+        attrs_with_energy_independent_exposure = (
+            ultra_l2.get_variable_attributes_optional_energy_dependence(
+                cdf_attrs=cdf_attrs,
+                variable_array=exposure_factor_array_energy_independent,
+            )
+        )
+
+        # Check non dimensioned attributes
+        assert attrs_with_energy_independent_exposure["UNITS"] == "s"
+
+        # Check the depends (dimensions)
+        assert (
+            attrs_with_energy_independent_exposure["DEPEND_0"] == CoordNames.TIME.value
+        )
+        if tiling == "healpix":
+            assert (
+                attrs_with_energy_independent_exposure["DEPEND_1"]
+                == CoordNames.HEALPIX_INDEX.value
+            )
+        elif tiling == "rectangular":
+            assert (
+                attrs_with_energy_independent_exposure["DEPEND_1"]
+                == CoordNames.AZIMUTH_L2.value
+            )
+            assert (
+                attrs_with_energy_independent_exposure["DEPEND_2"]
+                == CoordNames.ELEVATION_L2.value
+            )
+
+        # Check the energy dependent case attributes
+        attrs_with_energy_dependent_exposure = (
+            ultra_l2.get_variable_attributes_optional_energy_dependence(
+                cdf_attrs=cdf_attrs,
+                variable_array=exposure_factor_array_energy_dependent,
+            )
+        )
+
+        # Check an un-altered attribute (set by energy independent metadata and not
+        # modified by energy dependent metadata)
+        assert attrs_with_energy_dependent_exposure["UNITS"] == "s"
+
+        # Check the depends (dimensions)
+        assert attrs_with_energy_dependent_exposure["DEPEND_0"] == CoordNames.TIME.value
+        assert (
+            attrs_with_energy_dependent_exposure["DEPEND_1"]
+            == CoordNames.ENERGY_L2.value
+        )
+        if tiling == "healpix":
+            assert (
+                attrs_with_energy_dependent_exposure["DEPEND_2"]
+                == CoordNames.HEALPIX_INDEX.value
+            )
+        elif tiling == "rectangular":
+            assert (
+                attrs_with_energy_dependent_exposure["DEPEND_2"]
+                == CoordNames.AZIMUTH_L2.value
+            )
+            assert (
+                attrs_with_energy_dependent_exposure["DEPEND_3"]
+                == CoordNames.ELEVATION_L2.value
+            )

@@ -66,6 +66,62 @@ VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION = [
     "corrected_count_rate",
 ]
 
+# These variables may or may not be energy dependent, depending on the
+# input data. They must be handled slightly differently when it comes to adding
+# metadata to the map dataset.
+INCONSISTENTLY_ENERGY_DEPENDENT_VARIABLES = ["obs_date", "exposure_factor"]
+
+
+def get_variable_attributes_optional_energy_dependence(
+    cdf_attrs: ImapCdfAttributes,
+    variable_array: xr.DataArray,
+    *,
+    check_schema: bool = True,
+) -> dict:
+    """
+    Wrap `get_variable_attributes` to handle optionally energy-dependent vars.
+
+    Several variables are only energy dependent in some cases (input PSET dependent).
+    The metadata on those variables must be handled differently in such cases.
+
+    Parameters
+    ----------
+    cdf_attrs : ImapCdfAttributes
+        The CDF attributes object to use for getting variable attributes.
+    variable_array : xr.DataArray
+        The xarray DataArray containing the variable data and dims.
+        Must have a name attribute.
+    check_schema : bool
+        Flag to bypass schema validation.
+
+    Returns
+    -------
+    dict
+        The attributes for the variable.
+    """
+    variable_name = variable_array.name
+    variable_dims = variable_array.dims
+
+    # Even if we will override with the energy-dependent metadata, begin by
+    # getting the metadata for the energy-independent variable.
+    metadata = cdf_attrs.get_variable_attributes(
+        variable_name=variable_name,
+        check_schema=check_schema,
+    )
+    if (variable_name in INCONSISTENTLY_ENERGY_DEPENDENT_VARIABLES) and (
+        "energy" in variable_dims
+    ):
+        # These are overrides which only affect the latter DEPEND_N and LABL_PTR_N
+        # They do not cover all the metadata values so we will not
+        # use the schema validation.
+        metadata.update(
+            cdf_attrs.get_variable_attributes(
+                variable_name=f"{variable_name}_energy_dependent",
+                check_schema=False,
+            )
+        )
+    return metadata
+
 
 def generate_ultra_healpix_skymap(
     ultra_l1c_psets: list[str | xr.Dataset],
@@ -153,9 +209,13 @@ def generate_ultra_healpix_skymap(
             np.ones(pointing_set.num_points, dtype=int),
             dims=(CoordNames.HEALPIX_INDEX.value),
         )
-        pointing_set.data["obs_date"] = xr.DataArray(
-            np.full((1, pointing_set.num_points), pointing_set.epoch),
-            dims=(CoordNames.TIME.value, CoordNames.HEALPIX_INDEX.value),
+
+        # The obs_date is the same for all pixels in a pointing set, and the same
+        # dimension as the exposure_factor.
+        pointing_set.data["obs_date"] = xr.full_like(
+            pointing_set.data["exposure_factor"],
+            fill_value=pointing_set.epoch,
+            dtype=np.int64,
         )
         # Add solid_angle * exposure of pointing set as data_var
         # so this quantity is projected to map pixels for use in weighted averaging
@@ -405,8 +465,9 @@ def ultra_l2(
         # The longitude and latitude variables will be present only in Healpix tiled
         # map, and, as support_data, should not have schema validation
         map_dataset[variable].attrs.update(
-            cdf_attrs.get_variable_attributes(
-                variable_name=variable,
+            get_variable_attributes_optional_energy_dependence(
+                cdf_attrs=cdf_attrs,
+                variable_array=map_dataset[variable],
                 check_schema=variable
                 not in ["longitude", "latitude", "longitude_delta", "latitude_delta"],
             )
