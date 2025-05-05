@@ -653,15 +653,21 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
 
             # I have a data array of length 3495, which is 233 chunks of 15 bytes
             # Each 15 byte chunk must be processed similar to a LO_SW_SPECIES data product
-            # 15 bytes corresponds to a bit length of
 
             # String together 15 byte chunks until end character (0xFF) then process as SW Species (including header)
 
-            foo = ialirt_dataset[0].data.data[0:15]
-            print(foo)
-            bit_stream = ''.join(f'{x:08b}' for x in foo)
-            print(bit_stream)
-            print(len(bit_stream))
+            byte_stream = ialirt_dataset[0].data.data.tobytes()
+            print(byte_stream)
+            eos_indices = [i for i, byte in enumerate(byte_stream) if byte == 0xFF]
+            print(eos_indices)
+            # print(byte_stream)
+            # print(len(byte_stream))
+            bit_stream = ''.join(f'{byte:08b}' for byte in byte_stream)
+            # print(bit_stream)
+            # print(len(bit_stream))
+            # bit_stream = ''.join(f'{x:08b}' for x in foo)
+            # print(bit_stream)
+            # print(len(bit_stream))
 
             # science_values = [packet.data.astype(int) for packet in ialirt_dataset]
             # table_id, plan_id, plan_step, view_id = 0, 0, 0, 0
