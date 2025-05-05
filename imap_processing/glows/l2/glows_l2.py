@@ -169,7 +169,7 @@ def create_l2_dataset(
     )
 
     bins = xr.DataArray(
-        np.arange(histogram_l2.daily_lightcurve.number_of_bins),
+        np.arange(histogram_l2.daily_lightcurve.number_of_bins, dtype=np.uint32),
         name="bins",
         dims=["bins"],
         attrs=attrs.get_variable_attributes("bins_dim", check_schema=False),
@@ -182,7 +182,7 @@ def create_l2_dataset(
     )
 
     flags = xr.DataArray(
-        np.ones(FLAG_LENGTH),
+        np.ones(FLAG_LENGTH, dtype=np.uint8),
         dims=["flags"],
         attrs=attrs.get_variable_attributes("flags_dim", check_schema=False),
     )
@@ -194,7 +194,7 @@ def create_l2_dataset(
     )
 
     eclipic_data = xr.DataArray(
-        np.arange(3),
+        np.arange(3, dtype=np.uint8),
         name="ecliptic",
         dims=["ecliptic"],
         attrs=attrs.get_variable_attributes("ecliptic_dim", check_schema=False),
