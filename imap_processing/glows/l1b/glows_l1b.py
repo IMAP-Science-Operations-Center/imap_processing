@@ -339,5 +339,8 @@ def create_l1b_de_output(
         )
 
     output_dataset["within_the_second"] = within_the_second_data
+    output_dataset.attrs["missing_packets_sequence"] = input_dataset.attrs.get(
+        "missing_packets_sequence", ""
+    )
 
     return output_dataset

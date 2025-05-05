@@ -133,12 +133,12 @@ def generate_de_dataset(
 
     # Each DirectEventL1A class covers 1 second of direct events data
     direct_events = np.zeros((len(de_l1a_list), len(de_l1a_list[0].direct_events), 4))
+    missing_packets_sequence = ""
 
     support_data: dict = {
         # "flight_software_version": [],
         "seq_count_in_pkts_file": [np.uint16, []],
         "number_of_de_packets": [np.uint32, []],
-        # "missing_packets_sequence": [str, []]
     }
 
     data_every_second: dict = {
@@ -198,7 +198,7 @@ def generate_de_dataset(
             int(de.l0.ccsds_header.SRC_SEQ_CTR)
         )
         support_data["number_of_de_packets"][1].append(int(de.l0.LEN))
-        # support_data["missing_packets_sequence"][1].append(str(de.missing_seq))
+        missing_packets_sequence += str(de.missing_seq) + ","
 
         for key, val in data_every_second.items():
             val[1].append(de.status_data.__getattribute__(key))
@@ -267,7 +267,7 @@ def generate_de_dataset(
             coords={"epoch": epoch_time},
             attrs=glows_cdf_attributes.get_variable_attributes(key),
         )
-
+    output.attrs["missing_packets_sequence"] = missing_packets_sequence[:-1]
     return output
 
 
@@ -388,7 +388,6 @@ def generate_histogram_dataset(
     output["histogram"] = hist
 
     for key, value in support_data.items():
-        print(key, value)
         output[key] = xr.DataArray(
             np.array(value[1], dtype=value[0]),
             name=key,
@@ -396,7 +395,6 @@ def generate_histogram_dataset(
             coords={"epoch": epoch_time},
             attrs=glows_cdf_attributes.get_variable_attributes(key),
         )
-        print(output[key].dtype)
     for key, value in time_metadata.items():
         output[key] = xr.DataArray(
             np.array(value[1], dtype=value[0]),
