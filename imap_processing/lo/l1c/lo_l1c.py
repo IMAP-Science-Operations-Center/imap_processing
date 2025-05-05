@@ -91,8 +91,10 @@ def filter_goodtimes(l1b_de: xr.Dataset) -> xr.Dataset:
     l1b_de : xarray.Dataset
         Filtered L1B Direct Event dataset.
     """
-    # TODO: Ancilary data for goodtimes is not available yet. Removing badtimes
-    #  for now. This will be updated once the ancillary data is available.
+    # TODO: Need to setup Ancillary dependency. Hardcoding for now
+
+    good_times_start = [0]
+    good_times_end = [3600]
     return l1b_de.where(l1b_de["badtimes"] == 0, drop=True)
 
 
