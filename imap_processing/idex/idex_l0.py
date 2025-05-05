@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def decom_packets(
     packet_file: Union[str, Path],
-) -> tuple[list[Any], dict[int, Dataset]]:
+) -> tuple[list[Any], dict[int, Dataset], dict[int, Dataset]]:
     """
     Decom IDEX data packets using IDEX packet definition.
 
@@ -27,7 +27,7 @@ def decom_packets(
     -------
     Tuple[list, dict]
         Returns a list of all unpacked science data and a dictionary of datasets
-        indexed by their APIDs.
+        indexed by their APIDs, one for raw and derived values.
 
     Notes
     -----
@@ -40,6 +40,15 @@ def decom_packets(
     hk_xtce_file = f"{xtce_base_path}/idex_housekeeping_packet_definition.xml"
 
     science_decom_packet_list = decom.decom_packets(packet_file, science_xtce_file)
-    datasets_by_apid = packet_file_to_datasets(packet_file, hk_xtce_file)
+    raw_datasets_by_apid = packet_file_to_datasets(
+        packet_file, hk_xtce_file, use_derived_value=False
+    )
+    derived_datasets_by_apid = packet_file_to_datasets(
+        packet_file, hk_xtce_file, use_derived_value=True
+    )
 
-    return list(science_decom_packet_list), datasets_by_apid
+    return (
+        list(science_decom_packet_list),
+        raw_datasets_by_apid,
+        derived_datasets_by_apid,
+    )

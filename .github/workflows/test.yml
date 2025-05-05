@@ -63,9 +63,9 @@ jobs:
             # Download external data before we run our tests so that
             # we don't try to download them in parallel
             poetry run python imap_processing/tests/conftest.py
-            poetry run pytest -n auto --color=yes --cov --cov-report=xml
+            poetry run pytest -vvv -n auto --color=yes --cov --cov-report=xml
           else
-            poetry run pytest -n auto --color=yes --cov --cov-report=xml -m "not external_kernel and not external_test_data"
+            poetry run pytest -vvv -n auto --color=yes --cov --cov-report=xml -m "not external_kernel and not external_test_data"
           fi
 
       - name: Upload coverage reports to Codecov

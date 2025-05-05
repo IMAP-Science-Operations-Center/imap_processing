@@ -146,7 +146,7 @@ def mock_l1c_pset_product_rectangular(
             "counts": (
                 [
                     CoordNames.TIME.value,
-                    CoordNames.ENERGY_ULTRA.value,
+                    CoordNames.ENERGY_ULTRA_L1C.value,
                     CoordNames.AZIMUTH_L1C.value,
                     CoordNames.ELEVATION_L1C.value,
                 ],
@@ -163,7 +163,7 @@ def mock_l1c_pset_product_rectangular(
             "sensitivity": (
                 [
                     CoordNames.TIME.value,
-                    CoordNames.ENERGY_ULTRA.value,
+                    CoordNames.ENERGY_ULTRA_L1C.value,
                     CoordNames.AZIMUTH_L1C.value,
                     CoordNames.ELEVATION_L1C.value,
                 ],
@@ -174,7 +174,7 @@ def mock_l1c_pset_product_rectangular(
             CoordNames.TIME.value: [
                 tt_j2000ns,
             ],
-            CoordNames.ENERGY_ULTRA.value: energy_bin_midpoints,
+            CoordNames.ENERGY_ULTRA_L1C.value: energy_bin_midpoints,
             CoordNames.AZIMUTH_L1C.value: np.arange(
                 0 + spacing_deg / 2, 360, spacing_deg
             ),
@@ -192,6 +192,8 @@ def mock_l1c_pset_product_rectangular(
     return pset_product
 
 
+# TODO: Add ability to mock with/without energy dim to exposure_factor
+# The Helio frame L1C will have the energy dimension, but the spacecraft frame will not.
 def mock_l1c_pset_product_healpix(
     nside: int = DEFAULT_HEALPIX_NSIDE_L1C,
     stripe_center_lat: int = 0,
@@ -286,9 +288,10 @@ def mock_l1c_pset_product_healpix(
     prob_scaling_factor_exptime = counts_scaling_params[1] * np.exp(
         -(lat_diff**2) / (2 * (3 * width_scale) ** 2)
     )
-    exposure_time = peak_exposure * (
-        prob_scaling_factor_exptime / prob_scaling_factor_exptime.max()
-    )
+    exposure_time = (
+        peak_exposure
+        * (prob_scaling_factor_exptime / prob_scaling_factor_exptime.max())
+    )[np.newaxis, :]
 
     # Ensure counts are integers
     counts = counts.astype(int)
@@ -312,7 +315,7 @@ def mock_l1c_pset_product_healpix(
             "counts": (
                 [
                     CoordNames.TIME.value,
-                    CoordNames.ENERGY_ULTRA.value,
+                    CoordNames.ENERGY_ULTRA_L1C.value,
                     CoordNames.HEALPIX_INDEX.value,
                 ],
                 counts,
@@ -320,19 +323,19 @@ def mock_l1c_pset_product_healpix(
             "background_rates": (
                 [
                     CoordNames.TIME.value,
-                    CoordNames.ENERGY_ULTRA.value,
+                    CoordNames.ENERGY_ULTRA_L1C.value,
                     CoordNames.HEALPIX_INDEX.value,
                 ],
                 np.full_like(counts, 0.05, dtype=float),
             ),
             "exposure_factor": (
-                [CoordNames.HEALPIX_INDEX.value],
+                [CoordNames.TIME.value, CoordNames.HEALPIX_INDEX.value],
                 exposure_time,
             ),
             "sensitivity": (
                 [
                     CoordNames.TIME.value,
-                    CoordNames.ENERGY_ULTRA.value,
+                    CoordNames.ENERGY_ULTRA_L1C.value,
                     CoordNames.HEALPIX_INDEX.value,
                 ],
                 sensitivity,
@@ -346,7 +349,7 @@ def mock_l1c_pset_product_healpix(
                 lat_pix,
             ),
             "energy_bin_delta": (
-                [CoordNames.ENERGY_ULTRA.value],
+                [CoordNames.ENERGY_ULTRA_L1C.value],
                 energy_bin_delta,
             ),
         },
@@ -354,8 +357,8 @@ def mock_l1c_pset_product_healpix(
             CoordNames.TIME.value: [
                 tt_j2000ns,
             ],
-            CoordNames.ENERGY_ULTRA.value: xr.DataArray(
-                energy_bin_midpoints, dims=(CoordNames.ENERGY_ULTRA.value,)
+            CoordNames.ENERGY_ULTRA_L1C.value: xr.DataArray(
+                energy_bin_midpoints, dims=(CoordNames.ENERGY_ULTRA_L1C.value,)
             ),
             CoordNames.HEALPIX_INDEX.value: pix_indices,
         },

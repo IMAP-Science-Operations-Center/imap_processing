@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -24,6 +26,7 @@ from imap_processing.hit.l2.hit_l2 import (
     calculate_intensities_for_all_species,
     get_species_ancillary_data,
     hit_l2,
+    load_ancillary_data,
     process_sectored_intensity_data,
     process_standard_intensity_data,
     process_summed_intensity_data,
@@ -51,6 +54,32 @@ def dependencies(sci_packet_filepath):
             for l1b_dataset in l1b_datasets:
                 data_dict[l1b_dataset.attrs["Logical_source"]] = l1b_dataset
     return data_dict
+
+
+@pytest.fixture
+def ancillary_dependencies():
+    prefix = imap_module_directory / "tests/hit/test_data/ancillary"
+    ancillary_files = {
+        "macropixel": [
+            prefix / "imap_hit_sectored-dt0-factors_20250219_v002.csv",
+            prefix / "imap_hit_sectored-dt1-factors_20250219_v002.csv",
+            prefix / "imap_hit_sectored-dt2-factors_20250219_v002.csv",
+            prefix / "imap_hit_sectored-dt3-factors_20250219_v002.csv",
+        ],
+        "summed": [
+            prefix / "imap_hit_summed-dt0-factors_20250219_v002.csv",
+            prefix / "imap_hit_summed-dt1-factors_20250219_v002.csv",
+            prefix / "imap_hit_summed-dt2-factors_20250219_v002.csv",
+            prefix / "imap_hit_summed-dt3-factors_20250219_v002.csv",
+        ],
+        "standard": [
+            prefix / "imap_hit_standard-dt0-factors_20250219_v002.csv",
+            prefix / "imap_hit_standard-dt1-factors_20250219_v002.csv",
+            prefix / "imap_hit_standard-dt2-factors_20250219_v002.csv",
+            prefix / "imap_hit_standard-dt3-factors_20250219_v002.csv",
+        ],
+    }
+    return ancillary_files
 
 
 @pytest.fixture
@@ -115,6 +144,48 @@ def _check_ancillary_dataset(
         np.testing.assert_array_equal(
             species_array.coords[coord], ancillary_ds.coords[coord]
         )
+
+
+def test_load_ancillary_data():
+    """Test the load_ancillary_data function."""
+    # Mock input data
+    dynamic_threshold_states = {0, 1, 2, 3}
+    ancillary_files = [
+        "path/to/dt0-factors.csv",
+        "path/to/dt1-factors.csv",
+        "path/to/dt2-factors.csv",
+        "path/to/dt3-factors.csv",
+    ]
+
+    # Mock CSV data
+    mock_csv_data = pd.DataFrame(
+        {
+            "species": ["H", "He"],
+            "lower energy (mev)": [1.0, 2.0],
+            "delta e (mev)": [0.1, 0.2],
+            "geometry factor (cm2 sr)": [0.01, 0.02],
+            "efficiency": [0.9, 0.8],
+            "b": [0.001, 0.002],
+        }
+    )
+
+    # Mock pd.read_csv to return the mock data
+    with patch("pandas.read_csv", return_value=mock_csv_data) as mock_read_csv:
+        # Call the function
+        result = load_ancillary_data(dynamic_threshold_states, ancillary_files)
+
+        # Assertions
+        assert len(result) == 4  # One entry for each dynamic threshold state
+        for state in dynamic_threshold_states:
+            assert state in result
+            assert isinstance(result[state], pd.DataFrame)
+            assert "species" in result[state].columns
+            assert "lower energy (mev)" in result[state].columns
+
+        # Ensure read_csv was called for each file
+        assert mock_read_csv.call_count == 4
+        for file in ancillary_files:
+            mock_read_csv.assert_any_call(file)
 
 
 def test_build_ancillary_dataset_sectored():
@@ -546,11 +617,13 @@ def test_add_total_uncertainties():
     )
 
 
-def test_process_sectored_intensity_data(l1b_sectored_rates_dataset):
+def test_process_sectored_intensity_data(
+    l1b_sectored_rates_dataset, ancillary_dependencies
+):
     """Test the variables in the sectored intensity dataset"""
 
     l2_sectored_intensity_dataset = process_sectored_intensity_data(
-        l1b_sectored_rates_dataset
+        l1b_sectored_rates_dataset, ancillary_dependencies["macropixel"]
     )
 
     # Check that a xarray dataset is returned
@@ -590,11 +663,13 @@ def test_process_sectored_intensity_data(l1b_sectored_rates_dataset):
         )
 
 
-def test_process_summed_intensity_data(l1b_summed_rates_dataset):
+def test_process_summed_intensity_data(
+    l1b_summed_rates_dataset, ancillary_dependencies
+):
     """Test the variables in the summed intensity dataset"""
 
     l2_summed_intensity_dataset = process_summed_intensity_data(
-        l1b_summed_rates_dataset
+        l1b_summed_rates_dataset, ancillary_dependencies["summed"]
     )
 
     # Check that a xarray dataset is returned
@@ -638,11 +713,13 @@ def test_process_summed_intensity_data(l1b_summed_rates_dataset):
         assert f"{particle}_energy_delta_plus" in l2_summed_intensity_dataset.data_vars
 
 
-def test_process_standard_intensity_data(l1b_standard_rates_dataset):
+def test_process_standard_intensity_data(
+    l1b_standard_rates_dataset, ancillary_dependencies
+):
     """Test the variables in the standard intensity dataset"""
 
     l2_standard_intensity_dataset = process_standard_intensity_data(
-        l1b_standard_rates_dataset
+        l1b_standard_rates_dataset, ancillary_dependencies["standard"]
     )
 
     # Check that a xarray dataset is returned
@@ -692,7 +769,7 @@ def test_process_standard_intensity_data(l1b_standard_rates_dataset):
         )
 
 
-def test_hit_l2(dependencies):
+def test_hit_l2(dependencies, ancillary_dependencies):
     """Test creating L2 datasets ready for CDF output
 
     Creates a list of xarray datasets for L2 products.
@@ -701,16 +778,25 @@ def test_hit_l2(dependencies):
     ----------
     dependencies : dict
         Dictionary of L1B datasets
+
+    ancillary_dependencies : dict
+        Dictionary of ancillary file paths
     """
-    # TODO: update assertions after science data processing is completed
-    l2_datasets = hit_l2(dependencies["imap_hit_l1b_summed-rates"])
+    l2_datasets = hit_l2(
+        dependencies["imap_hit_l1b_summed-rates"], ancillary_dependencies["summed"]
+    )
     assert len(l2_datasets) == 1
     assert l2_datasets[0].attrs["Logical_source"] == "imap_hit_l2_summed-intensity"
 
-    l2_datasets = hit_l2(dependencies["imap_hit_l1b_standard-rates"])
+    l2_datasets = hit_l2(
+        dependencies["imap_hit_l1b_standard-rates"], ancillary_dependencies["standard"]
+    )
     assert len(l2_datasets) == 1
     assert l2_datasets[0].attrs["Logical_source"] == "imap_hit_l2_standard-intensity"
 
-    l2_datasets = hit_l2(dependencies["imap_hit_l1b_sectored-rates"])
+    l2_datasets = hit_l2(
+        dependencies["imap_hit_l1b_sectored-rates"],
+        ancillary_dependencies["macropixel"],
+    )
     assert len(l2_datasets) == 1
     assert l2_datasets[0].attrs["Logical_source"] == "imap_hit_l2_macropixel-intensity"

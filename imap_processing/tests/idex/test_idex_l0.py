@@ -48,23 +48,26 @@ def test_idex_tof_high_data(decom_test_data_sci: xr.Dataset):
     assert (decom_test_data_sci["TOF_High"][13].data == data).all()
 
 
-def test_catlst_event_num(decom_test_data_catlst: xr.Dataset):
+def test_catlst_event_num(decom_test_data_catlst: list[xr.Dataset]):
     """Verify that a sample of the data is correct.
 
     Parameters
     ----------
-    decom_test_data_catlst : xarray.Dataset
-        The dataset to test with
+    decom_test_data_catlst : list[xarray.Dataset]
+        The raw and derived (l1a and l1b) datasets to test with.
     """
-    assert len(decom_test_data_catlst["epoch"]) == 1
+    # test both l1a and l1b datasets
+    for ds in decom_test_data_catlst:
+        assert len(ds["epoch"]) == 1
 
 
-def test_evt_event_num(decom_test_data_evt: xr.Dataset):
+def test_evt_event_num(decom_test_data_evt: list[xr.Dataset]):
     """Verify that a sample of the data is correct.
 
     Parameters
     ----------
-    decom_test_data_evt : xarray.Dataset
-        The dataset to test with
+    decom_test_data_evt : list[xarray.Dataset]
+        The raw and derived (l1a and l1b) datasets to test with.
     """
-    assert len(decom_test_data_evt["epoch"]) == 28
+    for ds in decom_test_data_evt:
+        assert len(ds["epoch"]) == 28

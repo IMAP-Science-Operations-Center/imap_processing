@@ -253,7 +253,11 @@ class PointingSet(ABC):
 
         if isinstance(dataset, (str, Path)):
             dataset = load_cdf(dataset)
-        self.data = dataset
+            self.data = dataset
+        else:
+            # If the dataset is already an xarray Dataset,
+            # deep copy it to avoid modifying original PSET data
+            self.data = dataset.copy(deep=True)
 
         # A PSET must have a single epoch
         if len(np.unique(self.data["epoch"].values)) > 1:
@@ -675,14 +679,14 @@ class AbstractSkyMap(ABC):
                     ),
                     dims=rewrapped_dims,
                 )
-            # Add the output coordinates to the rewrapped data, excluding the pixel
-            self.non_spatial_coords.update(
-                {
-                    key: self.data_1d[key].coords[key]
-                    for key in self.data_1d[key].coords
-                    if key != CoordNames.GENERIC_PIXEL.value
-                }
-            )
+                # Add the output coordinates to the rewrapped data, excluding the pixel
+                self.non_spatial_coords.update(
+                    {
+                        coord: self.data_1d[key].coords[coord]
+                        for coord in self.data_1d[key].coords
+                        if coord != CoordNames.GENERIC_PIXEL.value
+                    }
+                )
             return xr.Dataset(
                 rewrapped_data,
                 coords={**self.non_spatial_coords, **self.spatial_coords},
@@ -1032,12 +1036,12 @@ class RectangularSkyMap(AbstractSkyMap):
             CoordNames.AZIMUTH_L1C.value: xr.DataArray(
                 self.sky_grid.az_bin_midpoints,
                 dims=[CoordNames.AZIMUTH_L1C.value],
-                attrs={"units": "degrees"},
+                attrs={"UNITS": "degrees"},
             ),
             CoordNames.ELEVATION_L1C.value: xr.DataArray(
                 self.sky_grid.el_bin_midpoints,
                 dims=[CoordNames.ELEVATION_L1C.value],
-                attrs={"units": "degrees"},
+                attrs={"UNITS": "degrees"},
             ),
         }
 

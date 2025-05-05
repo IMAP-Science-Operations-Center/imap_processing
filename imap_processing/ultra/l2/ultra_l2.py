@@ -7,6 +7,7 @@ import logging
 import numpy as np
 import xarray as xr
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 
@@ -51,12 +52,13 @@ REQUIRED_L1C_VARIABLES = [
 VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE = [
     "sensitivity",
     "background_rates",
-    "observation_time",
+    "obs_date",
 ]
 
-# These variables are dropped after they are used to calculate flux and flux uncertainty
+# These variables are dropped after they are used to
+# calculate ena_intensity and its statistical uncertainty
 # They will not be present in the final map
-VARIABLES_TO_DROP_AFTER_FLUX_CALCULATION = [
+VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION = [
     "counts",
     "background_rates",
     "pointing_set_exposure_times_solid_angle",
@@ -76,7 +78,8 @@ def generate_ultra_healpix_skymap(
 
     This function combines IMAP Ultra L1C pointing sets into a single L2 HealpixSkyMap.
     It handles the projection of values from pointing sets to the map, applies necessary
-    weighting and background subtraction, and calculates flux and flux uncertainty.
+    weighting and background subtraction, and calculates ena_intensity
+    and ena_intensity_stat_unc.
 
     Parameters
     ----------
@@ -91,7 +94,7 @@ def generate_ultra_healpix_skymap(
     -------
     ena_maps.HealpixSkyMap
         HealpixSkyMap object containing the combined data from all pointing sets,
-        with calculated flux and flux uncertainty values.
+        with calculated ena_intensity and its statistical uncertainty values.
 
     Notes
     -----
@@ -105,7 +108,7 @@ def generate_ultra_healpix_skymap(
     (e.g., divide weighted quantities by their summed weights to
     get their weighted mean)
     6. Calculate corrected count rate with background subtraction applied.
-    7. Calculate flux and flux uncertainty.
+    7. Calculate ena_intensity and its statistical uncertainty.
     8. Drop unnecessary variables from the map.
     """
     if output_map_structure.tiling_type is ena_maps.SkyTilingType.HEALPIX:
@@ -126,7 +129,7 @@ def generate_ultra_healpix_skymap(
     # Add additional data variables to the map
     output_map_structure.values_to_push_project.extend(
         [
-            "observation_time",
+            "obs_date",
             "pointing_set_exposure_times_solid_angle",
             "num_pointing_set_pixel_members",
         ]
@@ -150,9 +153,9 @@ def generate_ultra_healpix_skymap(
             np.ones(pointing_set.num_points, dtype=int),
             dims=(CoordNames.HEALPIX_INDEX.value),
         )
-        pointing_set.data["observation_time"] = xr.DataArray(
-            np.full(pointing_set.num_points, pointing_set.epoch),
-            dims=(CoordNames.HEALPIX_INDEX.value),
+        pointing_set.data["obs_date"] = xr.DataArray(
+            np.full((1, pointing_set.num_points), pointing_set.epoch),
+            dims=(CoordNames.TIME.value, CoordNames.HEALPIX_INDEX.value),
         )
         # Add solid_angle * exposure of pointing set as data_var
         # so this quantity is projected to map pixels for use in weighted averaging
@@ -193,8 +196,9 @@ def generate_ultra_healpix_skymap(
     # Get the energy bin widths from a PointingSet (they will all be the same)
     delta_energy = pointing_set.data["energy_bin_delta"]
 
-    # Core calculations of flux and flux uncertainty for L2
-    # Exposure time may contain 0s, producing NaNs in the corrected count rate and flux.
+    # Core calculations of ena_intensity and its statistical uncertainty for L2
+    # Exposure time may contain 0s, producing NaNs in the corrected count rate
+    # and ena_intensity.
     # These NaNs are not incorrect, so we temporarily ignore numpy div by 0 warnings.
     with np.errstate(divide="ignore"):
         # Get corrected count rate with background subtraction applied
@@ -202,12 +206,13 @@ def generate_ultra_healpix_skymap(
             skymap.data_1d["counts"].astype(float) / skymap.data_1d["exposure_factor"]
         ) - skymap.data_1d["background_rates"]
 
-        # Calculate flux = corrected_counts / (sensitivity * solid_angle * delta_energy)
-        skymap.data_1d["flux"] = skymap.data_1d["corrected_count_rate"] / (
+        # Calculate ena_intensity = corrected_counts / (
+        # sensitivity * solid_angle * delta_energy)
+        skymap.data_1d["ena_intensity"] = skymap.data_1d["corrected_count_rate"] / (
             skymap.data_1d["sensitivity"] * skymap.solid_angle * delta_energy
         )
 
-        skymap.data_1d["flux_uncertainty"] = (
+        skymap.data_1d["ena_intensity_stat_unc"] = (
             skymap.data_1d["counts"].astype(float) ** 0.5
         ) / (
             skymap.data_1d["exposure_factor"]
@@ -218,7 +223,7 @@ def generate_ultra_healpix_skymap(
 
     # Drop the variables that are no longer needed
     skymap.data_1d = skymap.data_1d.drop_vars(
-        VARIABLES_TO_DROP_AFTER_FLUX_CALCULATION,
+        VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION,
     )
 
     return skymap
@@ -226,10 +231,11 @@ def generate_ultra_healpix_skymap(
 
 def ultra_l2(
     data_dict: dict[str, xr.Dataset | str],
-    data_version: str,
     output_map_structure: (
         ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap
     ) = DEFAULT_ULTRA_L2_MAP_STRUCTURE,
+    *,
+    store_subdivision_depth: bool = False,
 ) -> list[xr.Dataset]:
     """
     Generate and format Ultra L2 ENA Map Product from L1C Products.
@@ -238,62 +244,181 @@ def ultra_l2(
     ----------
     data_dict : dict[str, xr.Dataset]
         Dict mapping l1c product identifiers to paths/Datasets containing l1c psets.
-    data_version : str
-        Version of the data product being created.
     output_map_structure : ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap, optional
         Empty SkyMap structure providing the properties of the map to be generated.
         Defaults to DEFAULT_ULTRA_L2_MAP_STRUCTURE defined in this module.
+    store_subdivision_depth : bool, optional
+        If True, the subdivision depth required to calculate each rectangular pixel
+        value will be added to the map dataset.
+        E.g. a "ena_intensity_subdivision_depth" DataArray will be
+        added to the map dataset.
+        Defaults to False.
 
     Returns
     -------
     list[xarray.Dataset,]
         L2 output dataset containing map of the counts on the sky.
         Wrapped in a list for consistency with other product levels.
-
-    Raises
-    ------
-    NotImplementedError
-        If asked to project to a rectangular map.
-        # TODO: This is coming shortly
     """
-    l1c_products = data_dict.values()
+    # Object which holds CDF attributes for the map
+    cdf_attrs = ImapCdfAttributes()
+    cdf_attrs.add_instrument_global_attrs(instrument="ultra")
+
+    l1c_products: list[xr.Dataset] = list(data_dict.values())
     num_l1c_products = len(l1c_products)
     logger.info(f"Running ultra_l2 processing on {num_l1c_products} L1C products")
+
+    ultra_sensor_number = 45 if "45sensor" in next(iter(data_dict.keys())) else 90
+    logger.info(f"Assuming all products are from sensor {ultra_sensor_number}")
 
     # Regardless of the output sky tiling type, we will directly
     # project the PSET values into a healpix map. However, if we are outputting
     # a Healpix map, we can go directly to map with desired nside, nested params
     healpix_skymap = generate_ultra_healpix_skymap(
-        ultra_l1c_psets=list(l1c_products),
+        ultra_l1c_psets=l1c_products,
         output_map_structure=output_map_structure,
     )
 
+    # Always add the common (non-tiling specific) attributes to the attr handler.
+    # These can be updated/overwritten by the tiling specific attributes.
+    cdf_attrs.add_instrument_variable_attrs(instrument="enamaps", level="l2-common")
+
     # Output formatting for HEALPIX tiling
     if output_map_structure.tiling_type is ena_maps.SkyTilingType.HEALPIX:
+        # Add the tiling specific attributes to the attr handler.
+        cdf_attrs.add_instrument_variable_attrs(
+            instrument="enamaps", level="l2-healpix"
+        )
+
+        # Add the longitude and latitude coordinate-like data_vars to the map dataset
+        # These are not xarray coordinates, but the lon/lat corresponding to the
+        # Healpix pixel centers.
+        for i, angle_name in enumerate(["longitude", "latitude"]):
+            healpix_skymap.data_1d[angle_name] = xr.DataArray(
+                data=healpix_skymap.az_el_points[:, i],
+                dims=(CoordNames.GENERIC_PIXEL.value,),
+            )
+
         map_dataset = healpix_skymap.to_dataset()
         # Add attributes related to the map
         map_attrs = {
-            "HEALPix_nside": output_map_structure.nside,
-            "HEALPix_nest": output_map_structure.nested,
-            "Data_version": data_version,
+            "HEALPix_nside": str(output_map_structure.nside),
+            "HEALPix_nest": str(output_map_structure.nested),
         }
 
-    # TODO: Implement conversion to Rectangular map
     elif output_map_structure.tiling_type is ena_maps.SkyTilingType.RECTANGULAR:
+        # Add the tiling specific attributes to the attr handler.
+        cdf_attrs.add_instrument_variable_attrs(
+            instrument="enamaps", level="l2-rectangular"
+        )
+        rectangular_skymap, subdiv_depth_dict = healpix_skymap.to_rectangular_skymap(
+            rect_spacing_deg=output_map_structure.spacing_deg,
+            value_keys=healpix_skymap.data_1d.data_vars,
+        )
+
+        # Add the subdiv_depth_by_pixel of each key to the map dataset if requested
+        if store_subdivision_depth:
+            logger.info(
+                "For debugging purposes, adding the subdivision depth "
+                "required to calculate each rectangular pixel value to the map dataset."
+            )
+            for key, depth_by_pixel in subdiv_depth_dict.items():
+                subdiv_depth_key = f"{key}_subdivision_depth"
+                logger.info(f"Adding {subdiv_depth_key} to the map dataset.")
+                rectangular_skymap.data_1d[subdiv_depth_key] = xr.DataArray(
+                    data=depth_by_pixel,
+                    dims=(CoordNames.GENERIC_PIXEL.value,),
+                    attrs={
+                        "long_name": f"Subdiv_depth of {key}",
+                    },
+                )
+
+        map_dataset = rectangular_skymap.to_dataset()
+
+        # Add longitude_delta, latitude_delta to the map dataset
+        map_dataset["longitude_delta"] = rectangular_skymap.spacing_deg / 2
+        map_dataset["latitude_delta"] = rectangular_skymap.spacing_deg / 2
+
         map_attrs = {
-            "Spacing_degrees": output_map_structure.spacing_deg,
-            "Data_version": data_version,
+            "Spacing_degrees": str(output_map_structure.spacing_deg),
         }
-        raise NotImplementedError
+
+    # TODO: keep track of the map duration correctly
+    map_duration = "99mo"
+
+    # Get the global attributes, and then fill the sensor, tiling, etc. in the
+    # format-able strings.
+
+    map_attrs.update(cdf_attrs.get_global_attributes("imap_ultra_l2_enamap-hf"))
+    for key in ["Data_type", "Logical_source", "Logical_source_description"]:
+        map_attrs[key] = map_attrs[key].format(
+            sensor=ultra_sensor_number,
+            tiling=output_map_structure.tiling_type.value.lower(),
+            duration=map_duration,
+        )
 
     # Always add the following attributes to the map
     map_attrs.update(
         {
             "Sky_tiling_type": output_map_structure.tiling_type.value,
-            "Spice_reference_frame": output_map_structure.spice_reference_frame,
+            "Spice_reference_frame": output_map_structure.spice_reference_frame.name,
         }
     )
 
+    # Rename any variables as necessary for L2 Map schema compliance
+    # Energy at L1C is named "energy_bin_geometric_mean", but at L2 it is standardized
+    # to "energy" for all instruments.
+    map_dataset = map_dataset.rename({"energy_bin_geometric_mean": "energy"})
+
     # Add the defined attributes to the map's global attrs
     map_dataset.attrs.update(map_attrs)
+
+    # Add the "label" coordinates to the map dataset
+    for coord_var, coord_data in map_dataset.coords.items():
+        if coord_var != "epoch":
+            map_dataset.coords[f"{coord_var}_label"] = xr.DataArray(
+                coord_data.values.astype(str),
+                dims=[
+                    coord_var,
+                ],
+                name=f"{coord_var}_label",
+            )
+
+    # Add the energy delta plus/minus to the map dataset
+    # TODO: Update these placeholders on energy deltas (our mean is the geometric mean,
+    # so it should have asymmetric deltas).
+    map_dataset.coords["energy_delta_minus"] = xr.DataArray(
+        (l1c_products[0]["energy_bin_delta"].values / 2),
+        dims=(CoordNames.ENERGY_L2.value,),
+    )
+    map_dataset.coords["energy_delta_plus"] = map_dataset["energy_delta_minus"].copy(
+        deep=True
+    )
+
+    # Add variable specific attributes to the map's data_vars and coords
+    for variable in map_dataset.data_vars:
+        # Skip the subdivision depth variables, as these will only be
+        # present for debugging purposes
+        if "subdivision_depth" in variable:
+            continue
+
+        # The longitude and latitude variables will be present only in Healpix tiled
+        # map, and, as support_data, should not have schema validation
+        map_dataset[variable].attrs.update(
+            cdf_attrs.get_variable_attributes(
+                variable_name=variable,
+                check_schema=variable
+                not in ["longitude", "latitude", "longitude_delta", "latitude_delta"],
+            )
+        )
+    for coord_variable in map_dataset.coords:
+        map_dataset[coord_variable].attrs.update(
+            cdf_attrs.get_variable_attributes(
+                variable_name=coord_variable,
+                check_schema=False,
+            )
+        )
+
+    # Adjust the dtype of obs_date to be int64
+    map_dataset["obs_date"] = map_dataset["obs_date"].astype(np.int64)
     return [map_dataset]

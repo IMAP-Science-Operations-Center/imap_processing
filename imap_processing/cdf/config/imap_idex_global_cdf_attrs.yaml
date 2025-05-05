@@ -33,6 +33,18 @@ imap_idex_l1b_sci:
   Logical_source: imap_idex_l1b_sci-1week
   Logical_source_description: IMAP Mission IDEX Instrument Level-1B Data.
 
+imap_idex_l1b_evt:
+   <<: *instrument_base
+   Data_type: L1B_EVT>Level-1B Event Message Data
+   Logical_source: imap_idex_l1b_evt
+   Logical_source_description: IMAP Mission IDEX Instrument Level-1B Event Message Data.
+
+imap_idex_l1b_catlst:
+  <<: *instrument_base
+  Data_type: L1B_CATLST>Level-1B Packet Catalog Summary Data
+  Logical_source: imap_idex_l1b_catlst
+  Logical_source_description: IMAP Mission IDEX Instrument Level-1B Packet Catalog Summary Data.
+
 imap_idex_l2a_sci:
   <<: *instrument_base
   Data_type: L2A_SCI>Level-2A Science Data

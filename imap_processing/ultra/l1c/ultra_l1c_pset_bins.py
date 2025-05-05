@@ -123,6 +123,110 @@ def get_spacecraft_histogram(
     return hist, latitude, longitude, n_pix
 
 
+def get_helio_histogram(
+    time: NDArray,
+    vhat: NDArray,
+    energy: NDArray,
+    energy_bin_edges: list[tuple[float, float]],
+    nside: int = 128,
+    nested: bool = False,
+) -> tuple[NDArray, NDArray, NDArray, NDArray]:
+    """
+    Compute a 3D histogram of the particle data using HEALPix binning.
+
+    Parameters
+    ----------
+    time : np.ndarray
+        Median time of pointing in et.
+    vhat : tuple[np.ndarray, np.ndarray, np.ndarray]
+        The x,y,z-components of the unit velocity vector.
+    energy : np.ndarray
+        The particle energy.
+    energy_bin_edges : list[tuple[float, float]]
+        Array of energy bin edges.
+    nside : int, optional
+        The nside parameter of the Healpix tessellation.
+        Default is 128.
+    nested : bool, optional
+        Whether the Healpix tessellation is nested. Default is False.
+
+    Returns
+    -------
+    hist : np.ndarray
+        A 3D histogram array with shape (n_pix, n_energy_bins).
+    latitude : np.ndarray
+        Array of latitude values.
+    longitude : np.ndarray
+        Array of longitude values.
+    n_pix : int
+        Number of healpix pixels.
+
+    Notes
+    -----
+    The histogram will work properly for overlapping energy bins, i.e.
+    the same energy value can fall into multiple bins if the intervals overlap.
+
+    azimuthal angle [0, 360], elevation angle [-90, 90]
+    """
+    # Compute number of HEALPix pixels that cover the sphere
+    n_pix = hp.nside2npix(nside)
+
+    # Calculate the corresponding longitude (az) latitude (el)
+    # center coordinates
+    longitude, latitude = hp.pix2ang(nside, np.arange(n_pix), lonlat=True)
+
+    # The Cartesian state vector representing the position and velocity of the
+    # IMAP spacecraft.
+    state = imap_state(time, ref_frame=SpiceFrame.IMAP_DPS)
+
+    # Extract the velocity part of the state vector
+    spacecraft_velocity = state[3:6]
+
+    # Initialize histogram: (n_energy_bins, n_HEALPix pixels)
+    hist = np.zeros((len(energy_bin_edges), n_pix))
+
+    # Bin data in energy & HEALPix space
+    for i, (e_min, e_max) in enumerate(energy_bin_edges):
+        # Convert the midpoint energy to a velocity (km/s).
+        # Based on kinetic energy equation: E = 1/2 * m * v^2.
+        energy_midpoint = (e_min + e_max) / 2
+        energy_velocity = (
+            np.sqrt(2 * energy_midpoint * UltraConstants.KEV_J / UltraConstants.MASS_H)
+            / 1e3
+        )
+
+        # Use Galilean Transform to transform the velocity wrt spacecraft
+        # to the velocity wrt heliosphere.
+        # energy_velocity * cartesian -> apply the magnitude of the velocity
+        # to every position on the grid in the despun grid.
+        mask = (energy >= e_min) & (energy < e_max)
+        vx, vy, vz = vhat.T
+
+        # Select only the particles that fall within the energy bin.
+        vx_bin, vy_bin, vz_bin = vx[mask], vy[mask], vz[mask]
+        vhat_bin = np.stack((vx_bin, vy_bin, vz_bin), axis=1)
+        helio_velocity = spacecraft_velocity.reshape(1, 3) + energy_velocity * vhat_bin
+
+        # Normalized vectors representing the direction of the heliocentric velocity.
+        helio_normalized = -helio_velocity / np.linalg.norm(
+            helio_velocity, axis=1, keepdims=True
+        )
+
+        # Convert Cartesian heliocentric vectors into spherical coordinates.
+        # Result: azimuth (longitude) and elevation (latitude) in degrees.
+        helio_spherical = cartesian_to_spherical(np.squeeze(helio_normalized))
+        helio_spherical = np.atleast_2d(helio_spherical)
+        az, el = helio_spherical[:, 1], helio_spherical[:, 2]
+
+        # Convert azimuth/elevation directions to HEALPix pixel indices.
+        hpix_idx = hp.ang2pix(nside, az, el, nest=nested, lonlat=True)
+
+        # Only count the events that fall within the energy bin
+        hist[i, :] += np.bincount(hpix_idx, minlength=n_pix).astype(np.float64)
+
+    return hist, latitude, longitude, n_pix
+
+
 def get_background_rates(
     nside: int = 128,
 ) -> NDArray:

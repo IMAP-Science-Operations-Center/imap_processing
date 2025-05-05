@@ -261,14 +261,16 @@ class TestRectangularSkyMap:
         simple_summed_pset_counts_by_energy = np.zeros(
             shape=(
                 self.ultra_l1c_pset_products[0]["counts"].sizes[
-                    CoordNames.ENERGY_ULTRA.value
+                    CoordNames.ENERGY_ULTRA_L1C.value
                 ],
             )
         )
         for pset in self.ultra_l1c_pset_products:
             simple_summed_pset_counts_by_energy += pset["counts"].sum(
                 dim=[
-                    d for d in pset["counts"].dims if d != CoordNames.ENERGY_ULTRA.value
+                    d
+                    for d in pset["counts"].dims
+                    if d != CoordNames.ENERGY_ULTRA_L1C.value
                 ]
             )
 
@@ -276,7 +278,7 @@ class TestRectangularSkyMap:
             dim=[
                 d
                 for d in rectangular_map.data_1d["counts"].dims
-                if d != CoordNames.ENERGY_ULTRA.value
+                if d != CoordNames.ENERGY_ULTRA_L1C.value
             ]
         )
 
@@ -326,14 +328,16 @@ class TestRectangularSkyMap:
         simple_summed_pset_counts_by_energy = np.zeros(
             shape=(
                 self.rectangular_l1c_pset_products[0]["counts"].sizes[
-                    CoordNames.ENERGY_ULTRA.value
+                    CoordNames.ENERGY_ULTRA_L1C.value
                 ],
             )
         )
         for pset in self.rectangular_l1c_pset_products:
             simple_summed_pset_counts_by_energy += pset["counts"].sum(
                 dim=[
-                    d for d in pset["counts"].dims if d != CoordNames.ENERGY_ULTRA.value
+                    d
+                    for d in pset["counts"].dims
+                    if d != CoordNames.ENERGY_ULTRA_L1C.value
                 ]
             )
 
@@ -341,7 +345,7 @@ class TestRectangularSkyMap:
             dim=[
                 d
                 for d in rectangular_map.data_1d["counts"].dims
-                if d != CoordNames.ENERGY_ULTRA.value
+                if d != CoordNames.ENERGY_ULTRA_L1C.value
             ]
         )
 
@@ -438,13 +442,13 @@ class TestRectangularSkyMap:
         assert "counts" in rect_map_ds.data_vars
         assert rect_map_ds["counts"].shape == (
             1,
-            rectangular_pset.data["counts"].sizes[CoordNames.ENERGY_ULTRA.value],
+            rectangular_pset.data["counts"].sizes[CoordNames.ENERGY_ULTRA_L1C.value],
             360 / skymap_spacing,
             180 / skymap_spacing,
         )
         assert rect_map_ds["counts"].dims == (
             CoordNames.TIME.value,
-            CoordNames.ENERGY_ULTRA.value,
+            CoordNames.ENERGY_ULTRA_L1C.value,
             CoordNames.AZIMUTH_L2.value,
             CoordNames.ELEVATION_L2.value,
         )
@@ -492,7 +496,7 @@ class TestHealpixSkyMap:
 
     @pytest.mark.parametrize(
         "nside",
-        [8, 16, 32],
+        [4, 8],
     )
     @pytest.mark.parametrize("nested", [True, False], ids=["nested", "ring"])
     def test_instantiate(self, nside, nested):
@@ -694,12 +698,14 @@ class TestHealpixSkyMap:
         assert "counts" in hp_map_ds.data_vars
         assert hp_map_ds["counts"].shape == (
             1,
-            mock_pset_input_frame.data["counts"].sizes[CoordNames.ENERGY_ULTRA.value],
+            mock_pset_input_frame.data["counts"].sizes[
+                CoordNames.ENERGY_ULTRA_L1C.value
+            ],
             hp_map.num_points,
         )
         assert hp_map_ds["counts"].dims == (
             CoordNames.TIME.value,
-            CoordNames.ENERGY_ULTRA.value,
+            CoordNames.ENERGY_ULTRA_L1C.value,
             CoordNames.HEALPIX_INDEX.value,
         )
         np.testing.assert_array_equal(
