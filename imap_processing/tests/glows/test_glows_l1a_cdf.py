@@ -14,9 +14,10 @@ def test_generate_histogram_dataset(l1a_test_data):
     histogram_l1a, _ = l1a_test_data
     glows_attrs = create_glows_attr_obj()
     dataset = generate_histogram_dataset(histogram_l1a, glows_attrs)
-
     assert (dataset["histogram"].data[0] == histogram_l1a[0].histogram).all()
     hist_dict = dataclasses.asdict(histogram_l1a[0])
+    print(hist_dict["pulse_length_variance"])
+    print(type(dataset["pulse_length_variance"].data[0]))
     for key, item in hist_dict.items():
         if key in [
             "imap_start_time",
@@ -35,6 +36,9 @@ def test_generate_histogram_dataset(l1a_test_data):
                 == item["is_generated_on_ground"]
             )
         elif key not in ["histogram", "ground_software_version", "pkts_file_name"]:
+            print(key)
+            print(type(item))
+            print(type(dataset[key].data[0]))
             assert dataset[key].data[0] == item
 
     for i in range(len(dataset["histogram"].data)):

@@ -298,53 +298,50 @@ def generate_histogram_dataset(
     # TODO compute average temperature etc
     # Data in lists, for each of the 25 time varying datapoints in HistogramL1A
 
-    hist_data = np.zeros((len(hist_l1a_list), 3600), dtype=np.int64)
+    hist_data = np.zeros((len(hist_l1a_list), 3600), dtype=np.uint16)
 
-    # TODO: add missing attributes
     support_data: dict = {
-        "flight_software_version": [],
-        # "pkts_file_name": [],
-        "seq_count_in_pkts_file": [],
-        "first_spin_id": [],
-        "last_spin_id": [],
-        "flags_set_onboard": [],
-        "is_generated_on_ground": [],
-        "number_of_spins_per_block": [],
-        "number_of_bins_per_histogram": [],
-        "number_of_events": [],
-        "filter_temperature_average": [],
-        "filter_temperature_variance": [],
-        "hv_voltage_average": [],
-        "hv_voltage_variance": [],
-        "spin_period_average": [],
-        "spin_period_variance": [],
-        "pulse_length_average": [],
-        "pulse_length_variance": [],
+        "flight_software_version": [np.uint32, []],
+        "seq_count_in_pkts_file": [np.uint16, []],
+        "first_spin_id": [np.uint32, []],
+        "last_spin_id": [np.uint32, []],
+        "flags_set_onboard": [np.uint16, []],
+        "is_generated_on_ground": [np.uint8, []],
+        "number_of_spins_per_block": [np.uint8, []],
+        "number_of_bins_per_histogram": [np.uint16, []],
+        "number_of_events": [np.uint32, []],
+        "filter_temperature_average": [np.uint32, []],
+        "filter_temperature_variance": [np.uint32, []],
+        "hv_voltage_average": [np.uint32, []],
+        "hv_voltage_variance": [np.uint32, []],
+        "spin_period_average": [np.uint32, []],
+        "spin_period_variance": [np.uint32, []],
+        "pulse_length_average": [np.uint32, []],
+        "pulse_length_variance": [np.uint32, []],
     }
     time_metadata: dict = {
-        "imap_start_time": [],
-        "imap_time_offset": [],
-        "glows_start_time": [],
-        "glows_time_offset": [],
+        "imap_start_time": [np.float64, []],
+        "imap_time_offset": [np.float64, []],
+        "glows_start_time": [np.float64, []],
+        "glows_time_offset": [np.float64, []],
     }
 
     for index, hist in enumerate(hist_l1a_list):
-        # TODO: Should this be MET?
         epoch_time = met_to_ttj2000ns(hist.imap_start_time.to_seconds())
         hist_data[index] = hist.histogram
 
-        support_data["flags_set_onboard"].append(hist.flags["flags_set_onboard"])
-        support_data["is_generated_on_ground"].append(
+        support_data["flags_set_onboard"][1].append(hist.flags["flags_set_onboard"])
+        support_data["is_generated_on_ground"][1].append(
             int(hist.flags["is_generated_on_ground"])
         )
 
         # Add support_data keys to the support_data dictionary
         for key, support_val in support_data.items():
             if key not in ["flags_set_onboard", "is_generated_on_ground"]:
-                support_val.append(hist.__getattribute__(key))
+                support_val[1].append(hist.__getattribute__(key))
         # For the time varying data, convert to seconds and then append
         for key, time_metadata_val in time_metadata.items():
-            time_metadata_val.append(hist.__getattribute__(key).to_seconds())
+            time_metadata_val[1].append(hist.__getattribute__(key).to_seconds())
         time_data[index] = epoch_time
 
     epoch_time = xr.DataArray(
@@ -393,17 +390,18 @@ def generate_histogram_dataset(
     output["histogram"] = hist
 
     for key, value in support_data.items():
+        print(key, value)
         output[key] = xr.DataArray(
-            value,
+            np.array(value[1], dtype=value[0]),
             name=key,
             dims=["epoch"],
             coords={"epoch": epoch_time},
             attrs=glows_cdf_attributes.get_variable_attributes(key),
         )
-
+        print(output[key].dtype)
     for key, value in time_metadata.items():
         output[key] = xr.DataArray(
-            value,
+            np.array(value[1], dtype=value[0]),
             name=key,
             dims=["epoch"],
             coords={"epoch": epoch_time},
