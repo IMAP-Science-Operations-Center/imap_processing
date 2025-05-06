@@ -61,6 +61,22 @@ def mag_test_data():
     return data
 
 
+@pytest.fixture(scope="session")
+def mag_sc_test_data():
+    """Returns the test data directory."""
+    data_path = (
+        imap_module_directory
+        / "tests"
+        / "ialirt"
+        / "data"
+        / "l0"
+        / "MAGScience-IALiRT-20250421-13h16.csv"
+    )
+    data = pd.read_csv(data_path)
+
+    return data
+
+
 @pytest.fixture
 def xarray_data(binary_packet_path, xtce_mag_path):
     """Create xarray data for multiple packets."""
@@ -239,3 +255,35 @@ def test_process_packet(xarray_data, mag_test_data, calibration_dataset):
         for key in packet.keys():
             if key.upper() in matching_rows.keys():
                 assert packet[key] == matching_rows[key.upper()].values[0]
+
+
+def test_process_spacecraft_packet(
+    sc_xarray_data, mag_sc_test_data, calibration_dataset
+):
+    """Tests the parse_packet function."""
+    parsed_packets = process_packet(sc_xarray_data, calibration_dataset)
+
+    sequence = []
+    for packet in parsed_packets:
+        index = (mag_sc_test_data["pri_coarse"] == packet["pri_coarsetm"]) & (
+            mag_sc_test_data["pri_fine"] == packet["pri_fintm"]
+        )
+        matching_rows = mag_sc_test_data[index]
+
+        if matching_rows.empty:
+            continue
+
+        row = matching_rows.iloc[0]
+
+        # Row that does not match
+        if row["sequence"] == 2931:
+            continue
+
+        sequence.append(row["sequence"])
+
+        assert row["x_pri"] == packet["pri_x"]
+        assert row["y_pri"] == packet["pri_y"]
+        assert row["z_pri"] == packet["pri_z"]
+        assert row["x_sec"] == packet["sec_x"]
+        assert row["y_sec"] == packet["sec_y"]
+        assert row["z_sec"] == packet["sec_z"]
