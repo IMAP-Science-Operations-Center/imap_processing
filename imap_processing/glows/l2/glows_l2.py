@@ -12,7 +12,7 @@ from imap_processing.glows.l1b.glows_l1b_data import HistogramL1B
 from imap_processing.glows.l2.glows_l2_data import DailyLightcurve, HistogramL2
 
 
-def glows_l2(input_dataset: xr.Dataset) -> xr.Dataset:
+def glows_l2(input_dataset: xr.Dataset) -> list[xr.Dataset]:
     """
     Will process GLoWS L2 data from L1 data.
 
@@ -32,7 +32,7 @@ def glows_l2(input_dataset: xr.Dataset) -> xr.Dataset:
 
     l2 = generate_l2(input_dataset)
 
-    return create_l2_dataset(l2, cdf_attrs)
+    return [create_l2_dataset(l2, cdf_attrs)]
 
 
 # TODO: filter good times out
