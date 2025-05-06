@@ -76,6 +76,24 @@ def xarray_data(binary_packet_path, xtce_mag_path):
 
 
 @pytest.fixture
+def sc_xarray_data():
+    """Create xarray data for spacecraft packets."""
+    apid = 478
+    packet_path = (
+        imap_module_directory / "tests" / "ialirt" / "data" / "l0" / "apid_478.bin"
+    )
+    xtce_ialirt_path = (
+        imap_module_directory / "ialirt" / "packet_definitions" / "ialirt.xml"
+    )
+
+    xarray_data = packet_file_to_datasets(
+        packet_path, xtce_ialirt_path, use_derived_value=False
+    )[apid]
+
+    return xarray_data
+
+
+@pytest.fixture
 def grouped_data():
     """Creates grouped data for tests."""
     epoch = np.arange(12)

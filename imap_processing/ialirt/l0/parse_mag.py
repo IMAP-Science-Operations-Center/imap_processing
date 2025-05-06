@@ -13,7 +13,6 @@ from imap_processing.ialirt.l0.mag_l0_ialirt_data import (
     Packet3,
 )
 from imap_processing.ialirt.utils.grouping import find_groups
-from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.mag.l1a.mag_l1a_data import TimeTuple
 from imap_processing.mag.l1b.mag_l1b import (
     calibrate_vector,
@@ -100,6 +99,23 @@ def get_bytes(val: int) -> list[int]:
     ]
 
 
+def to_signed(val: int) -> int:
+    """
+    Convert a 16-bit value to signed integer.
+
+    Parameters
+    ----------
+    val : int
+        16 bit value.
+
+    Returns
+    -------
+    signed : int
+        Signed int.
+    """
+    return val - 0x10000 if val & 0x8000 else val
+
+
 def extract_magnetic_vectors(science_values: xr.DataArray) -> dict:
     """
     Extract the magnetic vectors.
@@ -115,18 +131,20 @@ def extract_magnetic_vectors(science_values: xr.DataArray) -> dict:
         Magnetic vectors.
     """
     # Primary sensor:
-    pri_x = (int(science_values[0]) >> 8) & 0xFFFF
-    pri_y = ((int(science_values[0]) << 8) & 0xFF00) | (
-        (int(science_values[1]) >> 16) & 0xFF
+    pri_x = to_signed((int(science_values[0]) >> 8) & 0xFFFF)
+    pri_y = to_signed(
+        ((int(science_values[0]) << 8) & 0xFF00)
+        | ((int(science_values[1]) >> 16) & 0xFF)
     )
-    pri_z = int(science_values[1]) & 0xFFFF
+    pri_z = to_signed(int(science_values[1]) & 0xFFFF)
 
     # Secondary sensor:
-    sec_x = (int(science_values[2]) >> 8) & 0xFFFF
-    sec_y = ((int(science_values[2]) << 8) & 0xFF00) | (
-        (int(science_values[3]) >> 16) & 0xFF
+    sec_x = to_signed((int(science_values[2]) >> 8) & 0xFFFF)
+    sec_y = to_signed(
+        ((int(science_values[2]) << 8) & 0xFF00)
+        | ((int(science_values[3]) >> 16) & 0xFF)
     )
-    sec_z = int(science_values[3]) & 0xFFFF
+    sec_z = to_signed(int(science_values[3]) & 0xFFFF)
 
     vectors = {
         "pri_x": pri_x,
@@ -306,20 +324,16 @@ def process_packet(
         f"{accumulated_data['mag_acq_tm_coarse'].max().values}."
     )
 
-    # Note that the fine time second is split into 65535.
-    time_seconds = calculate_time(
-        accumulated_data["mag_acq_tm_coarse"],
-        accumulated_data["mag_acq_tm_fine"],
-        65535,
-    )
+    # Subsecond time conversion specified in 7516-9054 GSW-FSW ICD.
+    # Value of SCLK subseconds, unsigned, (LSB = 1/256 sec)
+    met = accumulated_data["sc_sclk_sec"] + accumulated_data["sc_sclk_sub_sec"] / 256
 
     # Add required parameters.
-    accumulated_data["time_seconds"] = time_seconds
-    sorted_data = accumulated_data.sortby("time_seconds", ascending=True)
-    pkt_counter = get_pkt_counter(sorted_data["mag_status"])
-    sorted_data["pkt_counter"] = pkt_counter
+    accumulated_data["met"] = met
+    pkt_counter = get_pkt_counter(accumulated_data["mag_status"])
+    accumulated_data["pkt_counter"] = pkt_counter
 
-    grouped_data = find_groups(sorted_data, (0, 3), "pkt_counter", "time_seconds")
+    grouped_data = find_groups(accumulated_data, (0, 3), "pkt_counter", "met")
 
     unique_groups = np.unique(grouped_data["group"])
     mag_data = []
