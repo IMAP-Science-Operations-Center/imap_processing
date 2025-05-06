@@ -66,6 +66,7 @@ from imap_processing.swe.l1b.swe_l1b import swe_l1b
 from imap_processing.ultra.l1a import ultra_l1a
 from imap_processing.ultra.l1b import ultra_l1b
 from imap_processing.ultra.l1c import ultra_l1c
+from imap_processing.ultra.l2 import ultra_l2
 
 logger = logging.getLogger(__name__)
 
@@ -1135,6 +1136,19 @@ class Ultra(ProcessInstrument):
                 dataset = load_cdf(dep.imap_file_paths[0])
                 data_dict[dataset.attrs["Logical_source"]] = dataset
             datasets = ultra_l1c.ultra_l1c(data_dict)
+
+        elif self.data_level == "l2":
+            all_pset_filepaths = dependencies.get_file_paths(
+                source="ultra", descriptor="pset"
+            )
+            # There can be many PSET files, so avoid reading them all in.
+            # The filename stem (logical_file_id) contains
+            # all the information needed in the key.
+            data_dict = {
+                pset_filepath.stem: pset_filepath
+                for pset_filepath in all_pset_filepaths
+            }
+            datasets = ultra_l2.ultra_l2(data_dict)
 
         return datasets
 

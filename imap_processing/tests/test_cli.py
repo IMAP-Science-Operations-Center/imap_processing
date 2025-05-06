@@ -295,6 +295,34 @@ def test_ultra_l1c(mock_ultra_l1c, mock_instrument_dependencies):
     assert mocks["mock_upload"].call_count == 2
 
 
+@mock.patch("imap_processing.cli.ultra_l2.ultra_l2")
+def test_ultra_l2(mock_ultra_l2, mock_instrument_dependencies):
+    """Test coverage for cli.Ultra class with l2 data level"""
+    mocks = mock_instrument_dependencies
+    mock_ultra_l2.return_value = [xr.Dataset()]
+    mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
+    input_collection = ProcessingInputCollection(
+        ScienceInput("imap_ultra_l1c_90sensor-pset_20240207_v001.cdf"),
+        ScienceInput("imap_ultra_l1c_90sensor-pset_20240208_v001.cdf"),
+        ScienceInput("imap_ultra_l1c_90sensor-pset_20240209_v001.cdf"),
+    )
+    mocks["mock_pre_processing"].return_value = input_collection
+
+    instrument = Ultra(
+        "l2",
+        "u90-ena-h-sf-nsp-full-hae-2deg-3mo",
+        "[]",
+        "20240207",
+        "20240207",
+        "v001",
+        True,
+    )
+
+    instrument.process()
+    assert mock_ultra_l2.call_count == 1
+    assert mocks["mock_upload"].call_count == 1
+
+
 @mock.patch("imap_processing.cli.hit_l1a")
 def test_hit_l1a(mock_hit_l1a, mock_instrument_dependencies):
     """Test coverage for cli.Hit class with l1a data level"""
