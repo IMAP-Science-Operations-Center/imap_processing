@@ -102,24 +102,18 @@ def get_variable_attributes_optional_energy_dependence(
     variable_name = variable_array.name
     variable_dims = variable_array.dims
 
-    # Even if we will override with the energy-dependent metadata, begin by
-    # getting the metadata for the energy-independent variable.
+    # These variables must get metadata with a different key if they are energy
+    # dependent.
+    if (variable_name in INCONSISTENTLY_ENERGY_DEPENDENT_VARIABLES) and (
+        (CoordNames.ENERGY_L2.value in variable_dims)
+        or (CoordNames.ENERGY_ULTRA_L1C.value in variable_dims)
+    ):
+        variable_name = f"{variable_name}_energy_dependent"
+
     metadata = cdf_attrs.get_variable_attributes(
         variable_name=variable_name,
         check_schema=check_schema,
     )
-    if (variable_name in INCONSISTENTLY_ENERGY_DEPENDENT_VARIABLES) and (
-        "energy" in variable_dims
-    ):
-        # These are overrides which only affect the latter DEPEND_N and LABL_PTR_N
-        # They do not cover all the metadata values so we will not
-        # use the schema validation.
-        metadata.update(
-            cdf_attrs.get_variable_attributes(
-                variable_name=f"{variable_name}_energy_dependent",
-                check_schema=False,
-            )
-        )
     return metadata
 
 

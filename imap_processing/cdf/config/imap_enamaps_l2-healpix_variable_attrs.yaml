@@ -68,6 +68,7 @@ sensitivity:
 
 # These data variables will have an extra (energy) dimension
 # only if the energy dimension is present in the L1C data.
+# The default is energy-independent.
 exposure_factor:
   DEPEND_1: pixel_index
   LABL_PTR_1: pixel_index_label

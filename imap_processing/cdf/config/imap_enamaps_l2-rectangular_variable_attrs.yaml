@@ -81,6 +81,7 @@ sensitivity:
 
 # These data variables will have an extra (energy) dimension
 # only if the energy dimension is present in the L1C data.
+# The default is energy-independent.
 exposure_factor:
   DEPEND_1: longitude
   DEPEND_2: latitude
