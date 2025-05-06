@@ -137,7 +137,7 @@ sensitivity:
 
 exposure_factor: &exposure_factor_energy_independent
   <<: *default_float32
-  CATDESC: Exact or approximate exposure time over which counts in a pixel are accumulated.  Used as a weighting factor for combining data quantities sensibly.
+  CATDESC: Exact or approximate time over which counts are accumulated.
   FIELDNAM: Exposure Times
   DEPEND_0: epoch
   UNITS: s
