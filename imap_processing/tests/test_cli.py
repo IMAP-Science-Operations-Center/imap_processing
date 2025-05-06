@@ -251,12 +251,12 @@ def test_ultra_l1a(mock_ultra_l1a, mock_instrument_dependencies):
         '[{"type": "science","files": ["imap_ultra_l0_raw_20240207_v001.pkts"]}]'
     )
     instrument = Ultra(
-        "l1a", "raw", dependency_str, "20240207", "20240208", "v001", True
+        "l1a", "raw", dependency_str, "20240207", "20240208", "v001", False
     )
 
     instrument.process()
     assert mock_ultra_l1a.call_count == 1
-    assert mocks["mock_upload"].call_count == 2
+    assert mock_instrument_dependencies["mock_write_cdf"].call_count == 2
 
 
 @mock.patch("imap_processing.cli.ultra_l1b.ultra_l1b")
