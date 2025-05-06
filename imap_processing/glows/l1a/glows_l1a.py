@@ -135,6 +135,7 @@ def generate_de_dataset(
     direct_events = np.zeros((len(de_l1a_list), len(de_l1a_list[0].direct_events), 4))
     missing_packets_sequence = ""
 
+    # First variable is the output data type, second is the list of values
     support_data: dict = {
         # "flight_software_version": [],
         "seq_count_in_pkts_file": [np.uint16, []],
@@ -293,11 +294,11 @@ def generate_histogram_dataset(
     # Store timestamps for each HistogramL1A object.
     time_data = np.zeros(len(hist_l1a_list), dtype=np.int64)
     # TODO Add daily average of histogram counts
-    # TODO compute average temperature etc
     # Data in lists, for each of the 25 time varying datapoints in HistogramL1A
 
     hist_data = np.zeros((len(hist_l1a_list), 3600), dtype=np.uint16)
 
+    # First variable is the output data type, second is the list of values
     support_data: dict = {
         "flight_software_version": [np.uint32, []],
         "seq_count_in_pkts_file": [np.uint16, []],
