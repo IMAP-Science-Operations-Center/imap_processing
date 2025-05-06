@@ -4,6 +4,11 @@ from numpy.typing import NDArray
 import spiceypy as spice
 
 from imap_processing.spice.geometry import spherical_to_cartesian
+from imap_processing.spice.geometry import BORESIGHT_LOOKUP
+from imap_processing.spice.geometry import frame_transform, SpiceFrame
+from numpy.typing import NDArray
+import numpy as np
+from typing import Union
 
 
 def get_z_axis(sc_inertial_right: NDArray, sc_inertial_decline: NDArray) -> NDArray:
@@ -95,6 +100,10 @@ def rotate_frame_about_spin_axis(
     -------
     rot_matrices : NDArray
         Rotation matrix.
+
+    Notes
+    -----
+    This matrix acts just like SPICE's pxform("SC_BODY", "ECLIPJ2000", et) would.
     """
     # Rotation matrix to rotate about z_axis by -spin_phase
     rot_matrices = np.stack(
@@ -103,4 +112,68 @@ def rotate_frame_about_spin_axis(
     )
 
     return rot_matrices
+
+
+def transform_instrument_to_spacecraft_frame(
+    et: Union[float, NDArray],
+    instrument_vectors: NDArray,
+    instrument_frame: SpiceFrame
+) -> NDArray:
+    """
+    Transform vectors from an instrument frame into the spacecraft (URF) frame.
+
+    Parameters
+    ----------
+    et : float or np.ndarray
+        Ephemeris time(s) corresponding to the vectors.
+    instrument_vectors : np.ndarray
+        Vectors in the instrument frame. Shape: (N, 3).
+    instrument_frame : SpiceFrame
+        The SPICE frame enum of the instrument (e.g., SpiceFrame.IMAP_MAG).
+
+    Returns
+    -------
+    vectors_urf : np.ndarray
+        Vectors transformed into the spacecraft (URF) frame. Shape: (N, 3).
+    """
+    vectors_urf = frame_transform(
+        et,
+        instrument_vectors,
+        from_frame=instrument_frame,
+        to_frame=SpiceFrame.IMAP_SPACECRAFT,
+    )
+
+    return vectors_urf
+
+
+def despin_vector(
+    v_rotating: NDArray,
+    z_axis: NDArray,
+    spin_phase: NDArray
+) -> NDArray:
+    """
+    Despin a vector from spacecraft (rotating) frame to inertial frame.
+
+    Parameters
+    ----------
+    v_rotating : NDArray
+        Vector(s) in the rotating spacecraft frame (URF), shape (N, 3).
+    z_axis : NDArray
+        Spacecraft angular momentum vectors (unit), shape (N, 3).
+    spin_phase : NDArray
+        Spin phase angles in radians, shape (N,).
+
+    Returns
+    -------
+    v_despun : NDArray
+        Vector(s) in the inertial (de-spun) frame, shape (N, 3).
+    """
+    # Reuse your existing function to build rotation matrices
+    rot_matrices = rotate_frame_about_spin_axis(z_axis, spin_phase)
+
+    v_despun = np.array([
+        spice.mxv(rot.T, v) for rot, v in zip(rot_matrices, v_rotating)
+    ])
+
+    return v_despun
 

@@ -97,11 +97,10 @@ def test_rotate_frame_about_spin_axis():
     x = np.array([1, 0, 0])
     x_rot = R @ x
 
-    # TODO: understand this better.
     # Expect X to become Y
     expected = np.array([
         [1.0, 0.0, 0.0],  # Rotating around X leaves X unchanged
         [0.0, 0.0, 1.0],  # Rotating around Y sends X → Z
         [0.0, -1.0, 0.0],  # Rotating around Z sends X → -Y
     ])
-    np.assert_allclose(x_rot, expected, atol=1e-8)
+    assert np.allclose(x_rot, expected, atol=1e-8)
