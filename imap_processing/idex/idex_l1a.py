@@ -152,7 +152,7 @@ class PacketParser:
         processed_dust_impact_list = [
             dust_event.process() for dust_event in dust_events.values()
         ]
-
+        processed_dust_impact_list = [x for x in processed_dust_impact_list if x]
         data = xr.concat(processed_dust_impact_list, dim="epoch")
         data.attrs = self.idex_attrs.get_global_attributes("imap_idex_l1a_sci")
 
@@ -354,6 +354,7 @@ class RawDustEvent:
         self.impact_time = calculate_idex_epoch_time(
             header_packet["SHCOARSE"], header_packet["SHFINE"]
         )
+        self.event_number = header_packet["IDX__SCI0EVTNUM"]
 
         # The actual trigger time for the low and high sample rate in
         # microseconds since the impact time
@@ -599,7 +600,7 @@ class RawDustEvent:
         raw_science_bits = convert_to_binary_string(packet["IDX__SCI0RAW"])
         self._append_raw_data(scitype, raw_science_bits)
 
-    def process(self) -> xr.Dataset:
+    def process(self) -> Union[xr.Dataset, None]:
         """
         Will process the raw data into a ``xarray.Dataset``.
 
@@ -609,7 +610,7 @@ class RawDustEvent:
 
         Returns
         -------
-        dataset : xarray.Dataset
+        dataset : xarray.Dataset, None
             A Dataset object containing the data from a single impact.
         """
         # Create an object for CDF attrs
@@ -684,23 +685,31 @@ class RawDustEvent:
             dims=("epoch", "time_high_sample_rate_index"),
             attrs=idex_attrs.get_variable_attributes("high_sample_rate_attrs"),
         )
-
-        # Combine to return a dataset object
-        dataset = xr.Dataset(
-            data_vars={
-                "TOF_Low": tof_low,
-                "TOF_High": tof_high,
-                "TOF_Mid": tof_mid,
-                "Target_High": target_high,
-                "Target_Low": target_low,
-                "Ion_Grid": ion_grid,
-                "time_low_sample_rate": time_low_sample_rate,
-                "time_high_sample_rate": time_high_sample_rate,
-            }
-            | trigger_vars,
-            coords={"epoch": epoch},
-        )
-
+        try:
+            # Combine to return a dataset object
+            dataset = xr.Dataset(
+                data_vars={
+                    "TOF_Low": tof_low,
+                    "TOF_High": tof_high,
+                    "TOF_Mid": tof_mid,
+                    "Target_High": target_high,
+                    "Target_Low": target_low,
+                    "Ion_Grid": ion_grid,
+                    "time_low_sample_rate": time_low_sample_rate,
+                    "time_high_sample_rate": time_high_sample_rate,
+                }
+                | trigger_vars,
+                coords={"epoch": epoch},
+            )
+        except ValueError as e:
+            # The IDEX team requests that a warning be logged for incomplete events
+            # (dropped packets) in the data, while still allowing the CDF to be created
+            # with the remainder of the complete events.
+            logger.warning(
+                f"Missing packet for event number %s. Error: {e}Skipping event..",
+                self.event_number,
+            )
+            return None
         return dataset
 
 
