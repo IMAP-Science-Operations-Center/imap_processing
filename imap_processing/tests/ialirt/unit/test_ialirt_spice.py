@@ -1,7 +1,13 @@
 """Module to test attitude calculations."""
+
 import numpy as np
 
-from imap_processing.ialirt.l0.ialirt_spice import get_z_axis, get_x_y_axes, rotate_frame_about_spin_axis, transform_instrument_vectors_to_urf
+from imap_processing.ialirt.l0.ialirt_spice import (
+    get_x_y_axes,
+    get_z_axis,
+    rotate_frame_about_spin_axis,
+    transform_instrument_vectors_to_urf,
+)
 
 
 def test_get_z_axis():
@@ -18,11 +24,13 @@ def test_get_z_axis():
 
     z_axis = get_z_axis(ra_rad, dec_rad)
 
-    expected = np.array([
-        [1.0, 0.0, 0.0],  # RA=0, Dec=0 → +X
-        [0.0, 1.0, 0.0], # RA=90°, Dec=0° → +Y
-        [0.0, 0.0, 1.0],  # RA=0°, Dec=90° → +Z
-    ])
+    expected = np.array(
+        [
+            [1.0, 0.0, 0.0],  # RA=0, Dec=0 → +X
+            [0.0, 1.0, 0.0],  # RA=90°, Dec=0° → +Y
+            [0.0, 0.0, 1.0],  # RA=0°, Dec=90° → +Z
+        ]
+    )
 
     norms = np.linalg.norm(z_axis, axis=1)
     assert np.allclose(norms, 1.0, atol=1e-6)
@@ -33,35 +41,13 @@ def test_get_z_axis():
 def test_get_x_y_axes():
     """Tests get_x_y_axes function."""
 
-    z_axis = np.array([
-        [1.0, 0.0, 0.0],  # RA=0, Dec=0 → +X
-        [0.0, 1.0, 0.0],  # RA=90°, Dec=0° → +Y
-        [0.0, 0.0, 1.0],  # RA=0°, Dec=90° → +Z
-    ])
-    x_axis, y_axis = get_x_y_axes(z_axis)
-
-    # Check that the axes are unit vectors.
-    assert np.allclose(np.linalg.norm(x_axis, axis=1), 1.0, atol=1e-6)
-    assert np.allclose(np.linalg.norm(y_axis, axis=1), 1.0, atol=1e-6)
-
-    # Check each pair of vectors is 90 degrees apart.
-    assert np.allclose(np.sum(x_axis * y_axis, axis=1), 0.0, atol=1e-6)
-    assert np.allclose(np.sum(x_axis * z_axis, axis=1), 0.0, atol=1e-6)
-    assert np.allclose(np.sum(y_axis * z_axis, axis=1), 0.0, atol=1e-6)
-
-    # Check cross(X, Y) = Z.
-    reconstructed_z = np.cross(x_axis, y_axis)
-    assert np.allclose(reconstructed_z, z_axis, atol=1e-6)
-
-
-def test_get_x_y_axes():
-    """Tests get_x_y_axes function."""
-
-    z_axis = np.array([
-        [1.0, 0.0, 0.0],  # RA=0, Dec=0 → +X
-        [0.0, 1.0, 0.0],  # RA=90°, Dec=0° → +Y
-        [0.0, 0.0, 1.0],  # RA=0°, Dec=90° → +Z
-    ])
+    z_axis = np.array(
+        [
+            [1.0, 0.0, 0.0],  # RA=0, Dec=0 → +X
+            [0.0, 1.0, 0.0],  # RA=90°, Dec=0° → +Y
+            [0.0, 0.0, 1.0],  # RA=0°, Dec=90° → +Z
+        ]
+    )
     x_axis, y_axis = get_x_y_axes(z_axis)
 
     # Check that the axes are unit vectors.
@@ -81,53 +67,54 @@ def test_get_x_y_axes():
 def test_rotate_frame_about_spin_axis():
     """Tests rotate_frame_about_spin_axis function."""
 
-    z_axis = np.array([
-        [1.0, 0.0, 0.0],  # RA=0, Dec=0 → +X
-        [0.0, 1.0, 0.0],  # RA=90°, Dec=0° → +Y
-        [0.0, 0.0, 1.0],  # RA=0°, Dec=90° → +Z
-    ])
+    z_axis = np.array(
+        [
+            [1.0, 0.0, 0.0],  # RA=0, Dec=0 → +X
+            [0.0, 1.0, 0.0],  # RA=90°, Dec=0° → +Y
+            [0.0, 0.0, 1.0],  # RA=0°, Dec=90° → +Z
+        ]
+    )
 
     # Rotate 90 degrees (π/2 radians)
     spin_phase = np.array([np.pi / 2, np.pi / 2, np.pi / 2])
 
     # Get rotation matrix
-    R = rotate_frame_about_spin_axis(z_axis, spin_phase)
+    r = rotate_frame_about_spin_axis(z_axis, spin_phase)
 
     # Apply to X-axis
     x = np.array([1, 0, 0])
-    x_rot = R @ x
+    x_rot = r @ x
 
     # Expect X to become Y
-    expected = np.array([
-        [1.0, 0.0, 0.0],  # Rotating around X leaves X unchanged
-        [0.0, 0.0, -1.0],  # Rotating around Y sends X → -Z
-        [0.0, 1.0, 0.0],  # Rotating around Z sends X → Y
-    ])
+    expected = np.array(
+        [
+            [1.0, 0.0, 0.0],  # Rotating around X leaves X unchanged
+            [0.0, 0.0, -1.0],  # Rotating around Y sends X → -Z
+            [0.0, 1.0, 0.0],  # Rotating around Z sends X → Y
+        ]
+    )
     assert np.allclose(x_rot, expected, atol=1e-8)
 
 
-def test_transform_instrument_vectors_to_urf_intuitive():
-    """Tests transform_instrument_vectors_to_urf with Z-axis aligned to +Z."""
+def test_transform_instrument_vectors_to_urf():
+    """Tests function transform_instrument_vectors_to_urf."""
 
-    # All Z-axes point along +Z
     sc_inertial_right = np.zeros(3)  # RA = 0
-    sc_inertial_decline = np.radians([90, 90, 90])  # Dec = 90° → Z-axis = [0, 0, 1]
+    sc_inertial_decline = np.radians([90, 90, 90])  # Z-axis = [0, 0, 1]
 
-    # Spin phases (0, 90°, 180°)
+    # Spin phases (0, 90, 180)
     spin_phase = np.radians([0, 90, 180])
 
-    # Start with a unit vector along +X
-    instrument_vectors = np.tile(np.array([1.0, 0.0, 0.0]), (3, 1))  # shape: (3, 3)
+    # Unit vector along +X
+    instrument_vectors = np.tile(np.array([1.0, 0.0, 0.0]), (3, 1))
 
-    # Expected:
-    # - No rotation: remains [1, 0, 0]
-    # - 90° about +Z: becomes [0, 1, 0]
-    # - 180° about +Z: becomes [-1, 0, 0]
-    expected = np.array([
-        [1.0,  0.0, 0.0],
-        [0.0,  1.0, 0.0],
-        [-1.0, 0.0, 0.0],
-    ])
+    expected = np.array(
+        [
+            [1.0, 0.0, 0.0],  # No rotation: remains [1, 0, 0]
+            [0.0, 1.0, 0.0],  # 90° about +Z: becomes [0, 1, 0]
+            [-1.0, 0.0, 0.0],  # 180° about +Z: becomes [-1, 0, 0]
+        ]
+    )
 
     result = transform_instrument_vectors_to_urf(
         instrument_vectors, spin_phase, sc_inertial_right, sc_inertial_decline

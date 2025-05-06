@@ -1,7 +1,8 @@
 """Module to calculate attitude."""
+
 import numpy as np
-from numpy.typing import NDArray
 import spiceypy as spice
+from numpy.typing import NDArray
 
 from imap_processing.spice.geometry import spherical_to_cartesian
 
@@ -23,7 +24,6 @@ def get_z_axis(sc_inertial_right: NDArray, sc_inertial_decline: NDArray) -> NDAr
     z_axis : np.ndarray
         Unit vectors of the spacecraft Z-axis (N, 3).
     """
-
     # Convert right ascension from counts to radians (0-2pi).
     ra_deg = np.degrees(sc_inertial_right)
     # Convert declination from counts to radians (-pi/2 to pi/2).
@@ -77,10 +77,7 @@ def get_x_y_axes(z_axis: NDArray) -> tuple[NDArray, NDArray]:
     return x_axis, y_axis
 
 
-def rotate_frame_about_spin_axis(
-    z_axis: NDArray,
-    spin_phase: NDArray
-) -> NDArray:
+def rotate_frame_about_spin_axis(z_axis: NDArray, spin_phase: NDArray) -> NDArray:
     """
     Rotate a spacecraft frame about the spin axis by the given spin phase angle.
 
@@ -89,7 +86,7 @@ def rotate_frame_about_spin_axis(
     z_axis : NDArray
         Unit vector spacecraft Z-axis.
     spin_phase : NDArray
-        Spin phase angle in radians. Positive rotation is right-hand rule about z_axis.
+        Spin phase angle in radians.
 
     Returns
     -------
@@ -98,11 +95,11 @@ def rotate_frame_about_spin_axis(
 
     Notes
     -----
-    This matrix acts just like SPICE's pxform(instrument_frame, "IMAP_SPACECRAFT", et) would.
+    This matrix acts just like SPICE's pxform(instrument_frame, "IMAP_SPACECRAFT", et).
     A forward rotation that transforms vectors from the instrument's local frame
     to the spacecraft’s rotating frame (URF)
     """
-    # Rotation matrix to rotate about z_axis by -spin_phase
+    # Rotation matrix to rotate about z_axis by spin_phase
     rot_matrices = []
     for z, phase in zip(z_axis, spin_phase):
         rot = spice.axisar(z, float(phase))
@@ -141,8 +138,8 @@ def transform_instrument_vectors_to_urf(
     rot_matrices = rotate_frame_about_spin_axis(z_axis, spin_phase)
 
     vectors_urf = []
-    for R, v in zip(rot_matrices, instrument_vectors):
-        vectors_urf.append(spice.mxv(R, v))
+    for r, v in zip(rot_matrices, instrument_vectors):
+        vectors_urf.append(spice.mxv(r, v))
     vectors_urf = np.array(vectors_urf)
 
     return vectors_urf
