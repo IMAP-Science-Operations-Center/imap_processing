@@ -871,7 +871,6 @@ class Mag(ProcessInstrument):
                     f"Unexpected dependencies found for MAG L1A:"
                     f"{dependency_list}. Expected only one dependency."
                 )
-            # TODO: Update this type
 
             datasets = mag_l1a(science_files[0])
 
