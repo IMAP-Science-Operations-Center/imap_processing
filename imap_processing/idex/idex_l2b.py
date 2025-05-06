@@ -84,13 +84,11 @@ def idex_l2b(l2a_dataset: xr.Dataset) -> xr.Dataset:
 
     # Get the time of impact array (in day of year)
     impact_day_of_year = epoch_to_doy(epoch_da.data)
-    spin_phase_quadrants.attrs.update(
-        idex_attrs.get_variable_attributes("impact_day_of_year")
-    )
     l2b_dataset["impact_day_of_year"] = xr.DataArray(
         name="impact_day_of_year",
         data=impact_day_of_year,
         dims="epoch",
+        attrs=idex_attrs.get_variable_attributes("impact_day_of_year"),
     )
 
     logger.info("IDEX L2B science data processing completed.")
