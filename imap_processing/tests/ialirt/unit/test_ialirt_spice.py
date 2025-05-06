@@ -1,7 +1,7 @@
 """Module to test attitude calculations."""
 import numpy as np
 
-from imap_processing.ialirt.l0.ialirt_spice import get_z_axis, get_x_y_axes, rotate_frame_about_spin_axis
+from imap_processing.ialirt.l0.ialirt_spice import get_z_axis, get_x_y_axes, rotate_frame_about_spin_axis, transform_instrument_vectors_to_urf
 
 
 def test_get_z_axis():
@@ -88,7 +88,7 @@ def test_rotate_frame_about_spin_axis():
     ])
 
     # Rotate 90 degrees (π/2 radians)
-    spin_phase = np.pi / 2
+    spin_phase = np.array([np.pi / 2, np.pi / 2, np.pi / 2])
 
     # Get rotation matrix
     R = rotate_frame_about_spin_axis(z_axis, spin_phase)
@@ -100,7 +100,37 @@ def test_rotate_frame_about_spin_axis():
     # Expect X to become Y
     expected = np.array([
         [1.0, 0.0, 0.0],  # Rotating around X leaves X unchanged
-        [0.0, 0.0, 1.0],  # Rotating around Y sends X → Z
-        [0.0, -1.0, 0.0],  # Rotating around Z sends X → -Y
+        [0.0, 0.0, -1.0],  # Rotating around Y sends X → -Z
+        [0.0, 1.0, 0.0],  # Rotating around Z sends X → Y
     ])
     assert np.allclose(x_rot, expected, atol=1e-8)
+
+
+def test_transform_instrument_vectors_to_urf_intuitive():
+    """Tests transform_instrument_vectors_to_urf with Z-axis aligned to +Z."""
+
+    # All Z-axes point along +Z
+    sc_inertial_right = np.zeros(3)  # RA = 0
+    sc_inertial_decline = np.radians([90, 90, 90])  # Dec = 90° → Z-axis = [0, 0, 1]
+
+    # Spin phases (0, 90°, 180°)
+    spin_phase = np.radians([0, 90, 180])
+
+    # Start with a unit vector along +X
+    instrument_vectors = np.tile(np.array([1.0, 0.0, 0.0]), (3, 1))  # shape: (3, 3)
+
+    # Expected:
+    # - No rotation: remains [1, 0, 0]
+    # - 90° about +Z: becomes [0, 1, 0]
+    # - 180° about +Z: becomes [-1, 0, 0]
+    expected = np.array([
+        [1.0,  0.0, 0.0],
+        [0.0,  1.0, 0.0],
+        [-1.0, 0.0, 0.0],
+    ])
+
+    result = transform_instrument_vectors_to_urf(
+        instrument_vectors, spin_phase, sc_inertial_right, sc_inertial_decline
+    )
+
+    np.testing.assert_allclose(result, expected, atol=1e-8)
