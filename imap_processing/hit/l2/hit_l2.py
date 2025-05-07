@@ -116,6 +116,10 @@ def add_cdf_attributes(
                 )
             else:
                 dataset[var].attrs = attr_mgr.get_variable_attributes(var)
+            if "energy_delta" in var:
+                dataset[var].attrs = attr_mgr.get_variable_attributes(
+                    var, check_schema=False
+                )
         except KeyError:
             # TODO: consider raising an error after L2 attributes are defined.
             #  Until then, continue with processing and log warning
@@ -738,6 +742,8 @@ def process_sectored_intensity_data(
     Sectored Intensity = (Summed L1B Sectored Rates) /
                        (600 * Delta E * Geometry Factor * Efficiency) - b
 
+    Note: sectored is also known as macropixel at this data level
+
     Parameters
     ----------
     l1b_sectored_rates_dataset : xr.Dataset
@@ -752,96 +758,32 @@ def process_sectored_intensity_data(
         The processed L2 sectored intensity dataset.
     """
     # Create a new dataset to store the L2 sectored intensity data
-    l2_sectored_intensity_dataset = l1b_sectored_rates_dataset.copy(deep=True)
+    sectored_intensity_dataset = l1b_sectored_rates_dataset.copy(deep=True)
 
     # Load ancillary data for each dynamic threshold state into a dictionary
     ancillary_data_frames = load_ancillary_data(
-        set(l2_sectored_intensity_dataset["dynamic_threshold_state"].values),
+        set(sectored_intensity_dataset["dynamic_threshold_state"].values),
         ancillary_files,
     )
 
     # Calculate the intensity for each species
-    l2_sectored_intensity_dataset = calculate_intensities_for_all_species(
-        l2_sectored_intensity_dataset, ancillary_data_frames, VALID_SECTORED_SPECIES
+    sectored_intensity_dataset = calculate_intensities_for_all_species(
+        sectored_intensity_dataset, ancillary_data_frames, VALID_SECTORED_SPECIES
     )
 
     # Add total and systematic uncertainties to the dataset
-    for var in l2_sectored_intensity_dataset.data_vars:
+    for var in sectored_intensity_dataset.data_vars:
         if var in VALID_SECTORED_SPECIES:
-            l2_sectored_intensity_dataset = add_systematic_uncertainties(
-                l2_sectored_intensity_dataset, var
+            sectored_intensity_dataset = add_systematic_uncertainties(
+                sectored_intensity_dataset, var
             )
-            l2_sectored_intensity_dataset = add_total_uncertainties(
-                l2_sectored_intensity_dataset, var
+            sectored_intensity_dataset = add_total_uncertainties(
+                sectored_intensity_dataset, var
             )
 
             # Expand the variable name to include macropixel intensity
-            l2_sectored_intensity_dataset = l2_sectored_intensity_dataset.rename(
+            sectored_intensity_dataset = sectored_intensity_dataset.rename(
                 {var: f"{var}_macropixel_intensity"}
             )
 
-    return l2_sectored_intensity_dataset
-
-
-if __name__ == "__main__":
-    from imap_processing import imap_module_directory
-    from imap_processing.hit.l1a.hit_l1a import hit_l1a
-    from imap_processing.hit.l1b.hit_l1b import (
-        process_summed_rates_data,
-    )
-
-    # L0 file path
-    packet_file = imap_module_directory / "tests/hit/test_data/sci_sample.ccsds"
-    datasets = hit_l1a(packet_file)
-    counts = datasets[0]
-    # Calculate livetime from the livetime counter
-    livetime = counts["livetime_counter"] / 270
-
-    prefix = imap_module_directory / "tests/hit/test_data/ancillary"
-    ancillary = {
-        "macropixel": [
-            prefix / "imap_hit_sectored-dt0-factors_20250219_v002.csv",
-            prefix / "imap_hit_sectored-dt1-factors_20250219_v002.csv",
-            prefix / "imap_hit_sectored-dt2-factors_20250219_v002.csv",
-            prefix / "imap_hit_sectored-dt3-factors_20250219_v002.csv",
-        ],
-        "summed": [
-            prefix / "imap_hit_summed-dt0-factors_20250219_v002.csv",
-            prefix / "imap_hit_summed-dt1-factors_20250219_v002.csv",
-            prefix / "imap_hit_summed-dt2-factors_20250219_v002.csv",
-            prefix / "imap_hit_summed-dt3-factors_20250219_v002.csv",
-        ],
-        "standard": [
-            prefix / "imap_hit_standard-dt0-factors_20250219_v002.csv",
-            prefix / "imap_hit_standard-dt1-factors_20250219_v002.csv",
-            prefix / "imap_hit_standard-dt2-factors_20250219_v002.csv",
-            prefix / "imap_hit_standard-dt3-factors_20250219_v002.csv",
-        ],
-    }
-
-    # # Process L2 Sectored
-    # sectored_rates = process_sectored_rates_data(counts, livetime)
-    # sectored_rates.attrs["Logical_source"] = "imap_hit_l1b_sectored-rates"
-    # l2_sectored_intensity_dataset = hit_l2(sectored_rates, ancillary["macropixel"])
-    # print(l2_sectored_intensity_dataset[0]["h_macropixel_intensity"])
-    # print(l2_sectored_intensity_dataset[0]["h_sys_err_plus"].attrs)
-    # print(l2_sectored_intensity_dataset[0]["h_macropixel_intensity"].attrs)
-    # print(l2_sectored_intensity_dataset[0]["declination_label"])
-
-    # # # Process L2 Standard
-    # standard_rates = process_standard_rates_data(counts, livetime)
-    # standard_rates.attrs["Logical_source"] = "imap_hit_l1b_standard-rates"
-    # l2_standard_intensity_dataset = hit_l2(standard_rates, ancillary["standard"])
-    # print(l2_standard_intensity_dataset[0]["h_standard_intensity"])
-    # print(l2_standard_intensity_dataset[0]["h_sys_err_plus"].attrs)
-    # print(l2_standard_intensity_dataset[0]["h_standard_intensity"].attrs)
-    # print(l2_standard_intensity_dataset[0]["h_energy_mean_label"])
-
-    # # Process L2 Summed
-    summed_rates = process_summed_rates_data(counts, livetime)
-    summed_rates.attrs["Logical_source"] = "imap_hit_l1b_summed-rates"
-    l2_summed_intensity_dataset = hit_l2(summed_rates, ancillary["summed"])
-    print(l2_summed_intensity_dataset[0]["h_summed_intensity"])
-    print(l2_summed_intensity_dataset[0]["h_sys_err_plus"].attrs)
-    print(l2_summed_intensity_dataset[0]["h_summed_intensity"].attrs)
-    print(l2_summed_intensity_dataset[0]["h_energy_mean_label"])
+    return sectored_intensity_dataset
