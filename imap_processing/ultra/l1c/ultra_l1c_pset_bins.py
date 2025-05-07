@@ -50,22 +50,22 @@ def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray, np.ndarr
     return intervals, energy_midpoints, energy_bin_geometric_means
 
 
-def get_energy_delta_plus_minus() -> tuple[NDArray, NDArray]:
+def get_energy_delta_minus_plus() -> tuple[NDArray, NDArray]:
     """
-    Calculate the energy_delta_plus and energy_delta_minus for use in the CDF.
+    Calculate the energy_delta_minus and energy_delta_plus for use in the CDF.
 
     Returns
     -------
-    bins_energy_delta_plus : np.ndarray
-        Array of energy delta plus values.
     bins_energy_delta_minus : np.ndarray
-        Array of energy delta minus values.
+        Array of energy_delta_minus values.
+    bins_energy_delta_plus : np.ndarray
+        Array of energy_delta_plus values.
 
     Notes
     -----
     Calculates as the following:
-    energy_delta_plus=abs(bin_upper - bin_geom_mean)
     energy_delta_minus=abs(bin_geom_mean - bin_lower)
+    energy_delta_plus=abs(bin_upper - bin_geom_mean)
     where bin_upper and bin_lower are the upper and lower bounds of the energy bins
     and bin_geom_mean is the geometric mean of the energy bin.
     """
@@ -74,7 +74,7 @@ def get_energy_delta_plus_minus() -> tuple[NDArray, NDArray]:
     for bin_edges, bin_geom_mean in zip(bins, bin_geom_means):
         bins_energy_delta_plus.append(bin_edges[1] - bin_geom_mean)
         bins_energy_delta_minus.append(bin_geom_mean - bin_edges[0])
-    return abs(np.array(bins_energy_delta_plus)), abs(np.array(bins_energy_delta_minus))
+    return abs(np.array(bins_energy_delta_minus)), abs(np.array(bins_energy_delta_plus))
 
 
 def get_spacecraft_histogram(
