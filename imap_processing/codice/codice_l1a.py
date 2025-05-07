@@ -100,6 +100,9 @@ class CoDICEL1aPipeline:
         epoch : NDArray[int]
             List of epoch values.
         """
+        # TODO: Make this method accessible outside of the class so that it
+        #       can be used by direct event data processing
+
         epoch = met_to_ttj2000ns(
             self.dataset.acq_start_seconds + self.dataset.acq_start_subseconds / 1e6
         )
@@ -604,14 +607,19 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
 
     # Define coordinates
-    # For epoch, we take the first epoch from each priority set
-    # epoch_range = packets.epoch[::constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["num_priorities"]]
-    epoch_indices = np.where((packets.seq_flgs == 3) | (packets.seq_flgs == 1))[0]
-    # print(packets.seq_flgs[epoch_indices])
-    # print(len(epoch_indices))
-    epoch_range = range(77)
+    # For epoch, we take the epoch whenever the priority is 0
+    # TODO: Double check with Joey on this
+    epoch_indices = np.where(
+        ((packets.seq_flgs.data == 3) | (packets.seq_flgs.data == 1))
+        & (packets.priority.data == 0)
+    )[0]
+    acq_start_seconds = packets.acq_start_seconds[epoch_indices]
+    acq_start_subseconds = packets.acq_start_subseconds[epoch_indices]
+
+    epochs = met_to_ttj2000ns(acq_start_seconds + acq_start_subseconds / 1e6)
+
     epoch = xr.DataArray(
-        epoch_range,  # TODO: How to define epoch for segmented packets?
+        epochs,
         name="epoch",
         dims=["epoch"],
         attrs=cdf_attrs.get_variable_attributes("epoch"),
@@ -649,14 +657,6 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
                 attrs=attrs,
             )
 
-    # print('here')
-    # print(dataset.P0_ERGE.data)
-    # print(dataset.P1_ERGE.data)
-    # print(dataset.P2_ERGE.data)
-    # print(dataset.P3_ERGE.data)
-    # print(dataset.P4_ERGE.data)
-    # print(dataset.P5_ERGE.data)
-    # print('\n\n\n\n\n')
     return dataset
 
 
@@ -754,12 +754,12 @@ def get_de_metadata(packets: xr.Dataset, segment: int) -> bytes:
 
     # String together the metadata fields and convert the data to a bytes
     # object
-    metadata = ""
+    metadata_str = ""
     for field, num_bits in metadata_fields.items():
-        metadata += f"{packets[field].data[segment]:0{num_bits}b}"
-    metadata = [metadata[i : i + 8] for i in range(0, len(metadata), 8)]
-    metadata = [int(item, 2) for item in metadata]
-    metadata = bytes(metadata)
+        metadata_str += f"{packets[field].data[segment]:0{num_bits}b}"
+    metadata_chunks = [metadata_str[i : i + 8] for i in range(0, len(metadata_str), 8)]
+    metadata_ints = [int(item, 2) for item in metadata_chunks]
+    metadata = bytes(metadata_ints)
 
     return metadata
 
@@ -927,21 +927,15 @@ def reshape_de_data(
 
     # Determine the number of epochs to help with data array initialization
     # There is one epoch per set of priorities
-    print(len(packets.epoch.data))  # 633
-    print(len(packets.num_events.data))  # 633
-    print(len(decompressed_data))   # 462
-    print(len(decompressed_data[0]))  # 13712
-    num_epochs = len(decompressed_data) // num_priorities  # 77 = 462 / 6
+    num_epochs = len(decompressed_data) // num_priorities
 
     # Get num_events, data quality, and priorities data for beginning of segments
-    segment_starts = np.where((packets.seq_flgs.data == 3) | (packets.seq_flgs.data == 1))[0]
+    segment_starts = np.where(
+        (packets.seq_flgs.data == 3) | (packets.seq_flgs.data == 1)
+    )[0]
     num_events_arr = packets.num_events.data[segment_starts]
     data_quality_arr = packets.suspect.data[segment_starts]
-    priorities_arr = packets.priority.data[segment_starts]  # Groups containing 0-5!
-    print(segment_starts.shape)  # 462
-
-    # decompressed data should be reshaped (num_events), 8 (bytes long) because greg is padding everything to 8 bytes
-    # chose epoch when priority is 0.
+    priorities_arr = packets.priority.data[segment_starts]
 
     # Initialize data arrays for each priority and field to store the data
     # We also need arrays to hold number of events and data quality
@@ -963,65 +957,50 @@ def reshape_de_data(
         # Determine the starting and ending indices of the epoch
         epoch_start = epoch_index * num_priorities
         epoch_end = epoch_start + num_priorities
-        # print(f"Epoch Index: {epoch_index}")
-        # print(f"Epoch start: {epoch_start}")
-        # print(f"Epoch end: {epoch_end}")
 
         # Extract the data for the epoch
         epoch_data = decompressed_data[epoch_start:epoch_end]
 
         # The order of the priorities and data quality flags are unique to each
         # epoch and can be gathered from the packet data
-        if apid == CODICEAPID.COD_LO_PHA:
-            priority_order = packets.priority[epoch_start:epoch_end].data
-        elif apid == CODICEAPID.COD_HI_PHA:
-            priority_order = priorities_arr[epoch_start:epoch_end]  # TODO: I think Lo can do the same
+        priority_order = priorities_arr[epoch_start:epoch_end]
         data_quality = data_quality_arr[epoch_start:epoch_end]
 
         # For each epoch/priority combo, iterate over each event
         for i, priority_num in enumerate(priority_order):
-            priority_data = epoch_data[i]  # TODO: Is this right?
+            priority_data = epoch_data[i]
 
             # Number of events and data quality can be determined at this stage
             num_events = num_events_arr[epoch_start:epoch_end][i]
-            print(f"Epoch Index is {epoch_index}; Priority Number is {priority_num}; Number of events are {num_events}")
             data[f"P{priority_num}_NumEvents"][epoch_index] = num_events
             data[f"P{priority_num}_DataQuality"][epoch_index] = data_quality[i]
 
             # Iterate over each event
             for event_index in range(num_events):
-                event_start = event_index * 8  # 8 bytes, not num_priorities
+                event_start = event_index * 8  # The 8 is for 8 bytes
                 event_end = event_start + 8
                 event = priority_data[event_start:event_end]
-                # print(f"Event Start: {event_start}")
-                # print(f"Event End: {event_end}")
-                # print(event)
+
                 # Separate out each individual field from the bit string
                 # The fields are packed into the bit string in reverse order, so
                 # we need to back them out in reverse order
                 bit_string = (
                     f"{int.from_bytes(event, byteorder='big'):0{len(event) * 8}b}"
                 )
-                # print(bit_string)
-                bit_string = (
-                    f"{int.from_bytes(event, byteorder='big'):0{len(event) * 8}b}".zfill(64)
-                )
 
-                # TODO: Is this right?
-                # print(bit_string)
-                # print(len(bit_string))
-                bit_position = 1
+                bit_position = constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid][
+                    "start_bit_pos"
+                ]  # TODO: Why is this different for lo and hi?
                 for field_name, bit_length in reversed(bit_structure.items()):
-                    # print(f"Field Name: {field_name}")
-                    # print(f"Current bit position: {bit_position}")
-                    # print(f"Bit length: {bit_length}")
+                    # We don't need to carry Priority and Spare fields through
                     if field_name in ["Priority", "Spare"]:
                         bit_position += bit_length
                         continue
+
+                    # Convert from binary to integer
                     value = int(bit_string[bit_position : bit_position + bit_length], 2)
-                    # print(f"Resulting value: {bit_string[bit_position : bit_position + bit_length]}")
-                    # print(f"Resulting value: {value}")
-                    # print("\n")
+
+                    # Set the value into the data array
                     data[f"P{priority_num}_{field_name}"][epoch_index, event_index] = (
                         value
                     )
@@ -1061,47 +1040,41 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
         dataset = datasets[apid]
         logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
 
-        # # Housekeeping data
-        # if apid == CODICEAPID.COD_NHK:
-        #     processed_dataset = create_hskp_dataset(dataset)
-        #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
-
-        # Event data
-        if apid in [CODICEAPID.COD_HI_PHA]:
-            processed_dataset = create_direct_event_dataset(apid, dataset)
-            print(processed_dataset.P0_SSDEnergy.data)
-            print(processed_dataset.P1_SSDEnergy.data)
-            print(processed_dataset.P2_SSDEnergy.data)
-            print(processed_dataset.P3_SSDEnergy.data)
-            print(processed_dataset.P4_SSDEnergy.data)
-            print(processed_dataset.P5_SSDEnergy.data)
+        # Housekeeping data
+        if apid == CODICEAPID.COD_NHK:
+            processed_dataset = create_hskp_dataset(dataset)
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
-        # # Everything else
-        # elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
-        #     # Extract the data
-        #     science_values = [packet.data for packet in dataset.data]
-        #
-        #     # Get the four "main" parameters for processing
-        #     table_id, plan_id, plan_step, view_id = get_params(dataset)
-        #
-        #     # Run the pipeline to create a dataset for the product
-        #     pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-        #     pipeline.set_data_product_config(apid, dataset)
-        #     pipeline.decompress_data(science_values)
-        #     pipeline.reshape_data()
-        #     pipeline.define_coordinates()
-        #     processed_dataset = pipeline.define_data_variables()
-        #
-        #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+        # Event data
+        elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
+            processed_dataset = create_direct_event_dataset(apid, dataset)
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
-        # # TODO: Still need to implement I-ALiRT data products
-        # elif apid in [
-        #     CODICEAPID.COD_HI_IAL,
-        #     CODICEAPID.COD_LO_IAL,
-        # ]:
-        #     logger.info("\tStill need to properly implement")
-        #     processed_dataset = None
+        # Everything else
+        elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
+            # Extract the data
+            science_values = [packet.data for packet in dataset.data]
+
+            # Get the four "main" parameters for processing
+            table_id, plan_id, plan_step, view_id = get_params(dataset)
+
+            # Run the pipeline to create a dataset for the product
+            pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
+            pipeline.set_data_product_config(apid, dataset)
+            pipeline.decompress_data(science_values)
+            pipeline.reshape_data()
+            pipeline.define_coordinates()
+            processed_dataset = pipeline.define_data_variables()
+
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+
+        # TODO: Still need to implement I-ALiRT data products
+        elif apid in [
+            CODICEAPID.COD_HI_IAL,
+            CODICEAPID.COD_LO_IAL,
+        ]:
+            logger.info("\tStill need to properly implement")
+            processed_dataset = None
 
         # For APIDs that don't require processing
         else:
@@ -1111,21 +1084,3 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
         processed_datasets.append(processed_dataset)
 
     return processed_datasets
-
-
-if __name__ == "__main__":
-    from imap_processing import imap_module_directory
-    from imap_processing.cdf.utils import write_cdf
-
-    TEST_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"
-    file_path = TEST_DATA_PATH / "imap_codice_l0_raw_20241110_v001.pkts"
-
-    processed_datasets = process_codice_l1a(file_path)
-
-    for dataset in processed_datasets:
-        if dataset is not None:
-            try:
-                filename = write_cdf(dataset)
-                print(filename)
-            except:
-                pass
