@@ -14,6 +14,7 @@ from imap_processing.ialirt.l0.parse_mag import (
     get_status_data,
     get_time,
     process_packet,
+    to_signed,
 )
 from imap_processing.mag.constants import MAX_FINE_TIME
 from imap_processing.mag.l1b.mag_l1b import (
@@ -208,12 +209,12 @@ def test_extract_magnetic_vectors():
     vectors = extract_magnetic_vectors(science_values)
 
     assert vectors == {
-        "pri_x": 61707,
-        "pri_y": 55127,
-        "pri_z": 49066,
-        "sec_x": 62191,
-        "sec_y": 54819,
-        "sec_z": 49158,
+        "pri_x": -3829,
+        "pri_y": -10409,
+        "pri_z": -16470,
+        "sec_x": -3345,
+        "sec_y": -10717,
+        "sec_z": -16378,
     }
 
 
@@ -248,6 +249,11 @@ def test_calculate_l1b(grouped_data, xarray_data, calibration_dataset):
 
 def test_process_packet(xarray_data, mag_test_data, calibration_dataset):
     """Tests the parse_packet function."""
+
+    # Create fake data here since instrument packet doesn't contain it.
+    xarray_data["sc_sclk_sec"] = xarray_data["mag_acq_tm_coarse"]
+    xarray_data["sc_sclk_sub_sec"] = xarray_data["mag_acq_tm_fine"]
+
     parsed_packets = process_packet(xarray_data, calibration_dataset)
 
     for packet in parsed_packets:
@@ -256,7 +262,7 @@ def test_process_packet(xarray_data, mag_test_data, calibration_dataset):
 
         for key in packet.keys():
             if key.upper() in matching_rows.keys():
-                assert packet[key] == matching_rows[key.upper()].values[0]
+                assert packet[key] == to_signed(matching_rows[key.upper()].values[0])
 
 
 def test_process_spacecraft_packet(

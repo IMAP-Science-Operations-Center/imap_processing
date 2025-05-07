@@ -377,8 +377,6 @@ def process_packet(
             status_data,
             calibration_dataset,
         )
-        if time_data["primary_epoch"] >= 7.985136076764696e17:
-            print("hi")
 
         # Note: primary = MAGo, secondary = MAGi.
         science_data.update(
