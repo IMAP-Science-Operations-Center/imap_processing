@@ -58,7 +58,7 @@ EXPECTED_ARRAY_SHAPES = [
     (77, 8, 12, 12),  # hi-sectored
     (77,),  # hi-priority
     (77, 10000),  # lo-pha
-    (),  # hi-pha  # TODO: Need to implement
+    (77, 10000),  # hi-pha
 ]
 
 EXPECTED_NUM_VARIABLES = [
@@ -79,7 +79,7 @@ EXPECTED_NUM_VARIABLES = [
     6,  # hi-sectored
     8,  # hi-priority
     80,  # lo-pha
-    0,  # hi-pha  # TODO: Need to implement
+    60,  # hi-pha
 ]
 
 # CoDICE-Hi products that have support variables to test
@@ -140,7 +140,7 @@ def test_l1a_data_array_shape(test_l1a_data, index):
 
     # Mark currently broken/unsupported datasets as expected to fail
     # TODO: Remove these once they are supported
-    if index in [0, 1, 17]:
+    if index in [0, 1]:
         pytest.xfail("Data product is currently unsupported")
 
     # There are exceptions for some variables
@@ -188,7 +188,7 @@ def test_l1a_logical_sources(test_l1a_data, index):
 
     # Mark currently broken/unsupported datasets as expected to fail
     # TODO: Remove these once they are supported
-    if index in [0, 1, 17]:
+    if index in [0, 1]:
         pytest.xfail("Data product is currently unsupported")
 
     # Write the dataset to a file to set the logical source attribute
@@ -216,7 +216,7 @@ def test_l1a_num_data_variables(test_l1a_data, index):
 
     # Mark currently broken/unsupported datasets as expected to fail
     # TODO: Remove these once they are supported
-    if index in [0, 1, 17]:
+    if index in [0, 1]:
         pytest.xfail("Data product is currently unsupported")
 
     assert len(processed_dataset) == EXPECTED_NUM_VARIABLES[index]
@@ -255,7 +255,7 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         "lo-nsw-priority",
         "lo-sw-species",
         "lo-nsw-species",
-        "lo_pha",
+        "lo-pha",
     ]
 
     if descriptor in able_to_be_validated:
@@ -266,10 +266,28 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         validation_dataset = load_cdf(VALIDATION_DATA[index])
 
         for counter in counters:
-            # Ensure the data arrays are equal
-            np.testing.assert_equal(
-                processed_dataset[counter].data, validation_dataset[counter].data
-            )
+            # Ignore padding values in direct event data for now
+            # TODO: This can be removed once field-specific dtypes are
+            #       implemented (see relevant note in codice_l1a.py)
+            if descriptor in ["lo-pha", "hi-pha"]:
+                processed = processed_dataset[counter].data
+                validated = validation_dataset[counter].data
+
+                # Create mask to ignore fill values
+                mask = ~(
+                    (processed == 255)
+                    | (processed == 65535)
+                    | (validated == 255)
+                    | (validated == 65535)
+                )
+                # Ensure the data arrays are equal
+                np.testing.assert_equal(processed[mask], validated[mask])
+
+            else:
+                # Ensure the data arrays are equal
+                np.testing.assert_equal(
+                    processed_dataset[counter].data, validation_dataset[counter].data
+                )
 
     else:
         pytest.xfail(f"Still need to implement validation for {descriptor}")
