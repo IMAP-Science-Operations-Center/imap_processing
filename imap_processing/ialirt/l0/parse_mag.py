@@ -13,6 +13,7 @@ from imap_processing.ialirt.l0.mag_l0_ialirt_data import (
     Packet3,
 )
 from imap_processing.ialirt.utils.grouping import find_groups
+from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.mag.l1a.mag_l1a_data import TimeTuple
 from imap_processing.mag.l1b.mag_l1b import (
     calibrate_vector,
@@ -310,7 +311,9 @@ def process_packet(
 
     # Subsecond time conversion specified in 7516-9054 GSW-FSW ICD.
     # Value of SCLK subseconds, unsigned, (LSB = 1/256 sec)
-    met = accumulated_data["sc_sclk_sec"] + accumulated_data["sc_sclk_sub_sec"] / 256
+    met = calculate_time(
+        accumulated_data["sc_sclk_sec"], accumulated_data["sc_sclk_sub_sec"], 256
+    )
 
     # Add required parameters.
     accumulated_data["met"] = met
