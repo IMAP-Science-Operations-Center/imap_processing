@@ -197,20 +197,22 @@ def generate_ultra_healpix_skymap(
 
     # Get full list of variables to push to the map: all requested variables plus
     # any which are required for L2 processing
-    value_keys_to_push_project = list(
+    output_map_structure.values_to_push_project = list(
         set(output_map_structure.values_to_push_project + REQUIRED_L1C_VARIABLES_PUSH)
     )
-    value_keys_to_pull_project = list(
+    output_map_structure.values_to_pull_project = list(
         set(output_map_structure.values_to_pull_project + REQUIRED_L1C_VARIABLES_PULL)
     )
     # If there are overlapping variable names, raise an error
-    if set(value_keys_to_push_project).intersection(set(value_keys_to_pull_project)):
+    if set(output_map_structure.values_to_push_project).intersection(
+        set(output_map_structure.values_to_pull_project)
+    ):
         raise ValueError(
             "Some variables are present in both the PUSH and PULL projection lists. "
             "They will be projected in both ways (PUSH then PULL), which is likely "
             "not the intended behavior. Please check the projection lists."
-            f"PUSH Variables: {value_keys_to_push_project} \n"
-            f"PULL Variables: {value_keys_to_pull_project}"
+            f"PUSH Variables: {output_map_structure.values_to_push_project} \n"
+            f"PULL Variables: {output_map_structure.values_to_pull_project}"
         )
 
     for ultra_l1c_pset in ultra_l1c_psets:
@@ -218,8 +220,10 @@ def generate_ultra_healpix_skymap(
         logger.info(
             f"Projecting a PointingSet with {pointing_set.num_points} pixels "
             f"at epoch:{pointing_set.epoch}\n"
-            f"These values will be push projected: {value_keys_to_push_project}"
-            f"\nThese values will be pull projected: {value_keys_to_pull_project}",
+            "These values will be push projected: "
+            f">> {output_map_structure.values_to_push_project}"
+            "\nThese values will be pull projected: "
+            f">> {output_map_structure.values_to_pull_project}",
         )
 
         pointing_set.data["num_pointing_set_pixel_members"] = xr.DataArray(
@@ -249,14 +253,14 @@ def generate_ultra_healpix_skymap(
         # Project values such as counts via the PUSH method
         skymap.project_pset_values_to_map(
             pointing_set=pointing_set,
-            value_keys=value_keys_to_push_project,
+            value_keys=output_map_structure.values_to_push_project,
             index_match_method=ena_maps.IndexMatchMethod.PUSH,
         )
 
         # Project values such as exposure_factor via the PULL method
         skymap.project_pset_values_to_map(
             pointing_set=pointing_set,
-            value_keys=value_keys_to_pull_project,
+            value_keys=output_map_structure.values_to_pull_project,
             index_match_method=ena_maps.IndexMatchMethod.PULL,
         )
 
