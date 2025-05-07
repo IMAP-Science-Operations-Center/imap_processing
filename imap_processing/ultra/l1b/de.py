@@ -15,6 +15,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_ctof,
     get_de_energy_kev,
     get_de_velocity,
+    get_efficiency,
     get_energy_pulse_height,
     get_energy_ssd,
     get_eventtimes,
@@ -241,6 +242,11 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     de_dict["phi_fwhm"], de_dict["theta_fwhm"] = get_fwhm(
         start_type,
         f"ultra{sensor}",
+        de_dict["tof_energy"],
+        de_dict["phi"],
+        de_dict["theta"],
+    )
+    de_dict["event_efficiency"] = get_efficiency(
         de_dict["tof_energy"],
         de_dict["phi"],
         de_dict["theta"],

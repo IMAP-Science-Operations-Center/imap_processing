@@ -108,6 +108,7 @@ def test_ultra_l1b(l1b_de_dataset):
 
 def test_cdf_de(l1b_de_dataset):
     """Tests that CDF file is created and contains same attributes as xarray."""
+    l1b_de_dataset[0].attrs["Data_version"] = "v999"
     test_data_path = write_cdf(l1b_de_dataset[0], istp=True)
     assert test_data_path.exists()
     assert test_data_path.name == "imap_ultra_l1b_45sensor-de_20240207_v999.cdf"
@@ -132,6 +133,7 @@ def test_ultra_l1b_extendedspin(l1b_extendedspin_dataset):
 
 def test_cdf_extendedspin(l1b_extendedspin_dataset):
     """Tests that CDF file is created and contains same attributes as xarray."""
+    l1b_extendedspin_dataset[0].attrs["Data_version"] = "v999"
     test_data_path = write_cdf(l1b_extendedspin_dataset[0], istp=True)
     assert test_data_path.exists()
     assert (
@@ -141,6 +143,7 @@ def test_cdf_extendedspin(l1b_extendedspin_dataset):
 
 def test_cdf_cullingmask(l1b_extendedspin_dataset):
     """Tests that CDF file is created and contains same attributes as xarray."""
+    l1b_extendedspin_dataset[1].attrs["Data_version"] = "v999"
     test_data_path = write_cdf(l1b_extendedspin_dataset[1], istp=True)
     assert test_data_path.exists()
     assert (
@@ -150,6 +153,7 @@ def test_cdf_cullingmask(l1b_extendedspin_dataset):
 
 def test_cdf_badtimes(l1b_extendedspin_dataset):
     """Tests that CDF file is created and contains same attributes as xarray."""
+    l1b_extendedspin_dataset[2].attrs["Data_version"] = "v999"
     test_data_path = write_cdf(l1b_extendedspin_dataset[2], istp=True)
     assert test_data_path.exists()
     assert test_data_path.name == "imap_ultra_l1b_45sensor-badtimes_20240207_v999.cdf"
