@@ -217,6 +217,7 @@ def test_extract_magnetic_vectors():
     }
 
 
+@pytest.mark.external_test_data
 def test_calculate_l1b(grouped_data, xarray_data, calibration_dataset):
     """Tests the calculate_l1b function."""
 
