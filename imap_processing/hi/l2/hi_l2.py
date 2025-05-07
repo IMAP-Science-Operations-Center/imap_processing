@@ -13,14 +13,14 @@ from imap_processing.spice.geometry import SpiceFrame
 logger = logging.getLogger(__name__)
 
 
-def hi_l2(
+def generate_hi_map(
     psets: list[str | Path],
     geometric_factors_path: str | Path,
     esa_energies_path: str | Path,
     cg_corrected: bool = False,
     direction: Literal["ram", "anti-ram", "full"] = "full",
     map_spacing_deg: int = 4,
-) -> list[xr.Dataset]:
+) -> xr.Dataset:
     """
     High level IMAP-Hi L2 processing function.
 
@@ -63,9 +63,8 @@ def hi_l2(
 
         # Background rate and uncertainty are exposure time weighted means in
         # the map.
-        pset.data.rename({"exposure_times": "exposure_factor"})
-        pset.data["background_rates"] *= pset.data["exposure_factor"]
-        pset.data["background_rates_uncertainty"] *= pset.data["exposure_factor"]
+        pset.data["bg_rates"] *= pset.data["exposure_factor"]
+        pset.data["bg_rates_unc"] *= pset.data["exposure_factor"]
 
         # Project (bin) the PSET variables into the map pixels
         rect_map.project_pset_values_to_map(
@@ -73,8 +72,8 @@ def hi_l2(
             [
                 "counts",
                 "exposure_factor",
-                "background_rates",
-                "background_rates_uncertainty",
+                "bg_rates",
+                "bg_rates_unc",
             ],
         )
 
@@ -84,8 +83,8 @@ def hi_l2(
     # Finish the exposure time weighted mean calculation of backgrounds
     # Allow divide by zero to fill set pixels with zero exposure time to NaN
     with np.errstate(divide="ignore"):
-        map_ds["background_rates"] /= map_ds["exposure_factor"]
-        map_ds["background_rates_uncertainty"] /= map_ds["exposure_factor"]
+        map_ds["bg_rates"] /= map_ds["exposure_factor"]
+        map_ds["bg_rates_unc"] /= map_ds["exposure_factor"]
 
     map_ds.update(calculate_ena_signal_rates(map_ds))
     map_ds.update(
@@ -117,7 +116,7 @@ def calculate_ena_signal_rates(map_ds: xr.Dataset) -> dict[str, xr.DataArray]:
     with np.errstate(divide="ignore"):
         # Calculate the ENA Signal Rate and Signal Rate Uncertainties
         signal_rate_vars["ena_signal_rates"] = (
-            map_ds["counts"] / map_ds["exposure_factor"] - map_ds["background_rates"]
+            map_ds["counts"] / map_ds["exposure_factor"] - map_ds["bg_rates"]
         )
         signal_rate_vars["ena_signal_rate_stat_unc"] = np.sqrt(
             map_ds["counts"] / map_ds["exposure_factor"]
