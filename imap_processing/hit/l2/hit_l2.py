@@ -57,15 +57,15 @@ def hit_l2(dependency_sci: xr.Dataset, dependencies_anc: list) -> list[xr.Datase
 
     # Process science data to L2 datasets
     if "imap_hit_l1b_summed-rates" in dependency_sci.attrs["Logical_source"]:
-        l2_dataset = process_summed_intensity_data(dependency_sci, dependencies_anc)
+        l2_dataset = process_summed_intensity(dependency_sci, dependencies_anc)
         logical_source = "imap_hit_l2_summed-intensity"
 
     if "imap_hit_l1b_standard-rates" in dependency_sci.attrs["Logical_source"]:
-        l2_dataset = process_standard_intensity_data(dependency_sci, dependencies_anc)
+        l2_dataset = process_standard_intensity(dependency_sci, dependencies_anc)
         logical_source = "imap_hit_l2_standard-intensity"
 
     if "imap_hit_l1b_sectored-rates" in dependency_sci.attrs["Logical_source"]:
-        l2_dataset = process_sectored_intensity_data(dependency_sci, dependencies_anc)
+        l2_dataset = process_macropixel_intensity(dependency_sci, dependencies_anc)
         logical_source = "imap_hit_l2_macropixel-intensity"
 
     # Add attributes to dataset
@@ -158,7 +158,7 @@ def calculate_intensities(
     for all epochs.
 
         This function uses equation 9 and 12 from the HIT algorithm document:
-        ((Summed L1B Rates) / (Delta Time * Delta E * Geometry Factor * Efficiency)) - b
+        ((L1B Rates) / (Delta Time * Delta E * Geometry Factor * Efficiency)) - b
 
     Parameters
     ----------
@@ -584,11 +584,11 @@ def load_ancillary_data(dynamic_threshold_states: set, ancillary_files: list) ->
     return ancillary_data_frames
 
 
-def process_summed_intensity_data(
+def process_summed_intensity(
     l1b_summed_rates_dataset: xr.Dataset, ancillary_files: list
 ) -> xr.Dataset:
     """
-    Will process L2 HIT summed intensity data from L1B summed rates.
+    Will process L1B summed rates to L2 HIT summed intensity data.
 
     This function converts the L1B summed rates to L2 summed intensities
     using ancillary tables containing factors needed to calculate the
@@ -642,11 +642,11 @@ def process_summed_intensity_data(
     return summed_intensity_dataset
 
 
-def process_standard_intensity_data(
+def process_standard_intensity(
     l1b_standard_rates_dataset: xr.Dataset, ancillary_files: list
 ) -> xr.Dataset:
     """
-    Will process L2 standard intensity data from L1B standard rates data.
+    Will process L1B standard rates data to L2 standard intensity data.
 
     This function converts L1B standard rates to L2 standard intensities for each
     particle type and energy range using ancillary tables containing factors
@@ -728,21 +728,19 @@ def process_standard_intensity_data(
     return standard_intensity_dataset
 
 
-def process_sectored_intensity_data(
+def process_macropixel_intensity(
     l1b_sectored_rates_dataset: xr.Dataset, ancillary_files: list
 ) -> xr.Dataset:
     """
-    Will process L2 HIT sectored intensity data from L1B sectored rates data.
+    Will process L1B sectored rates data to L2 macropixel intensity data.
 
-    This function converts the L1B sectored rates to L2 sectored intensities
+    This function converts the L1B sectored rates to L2 macropixel intensities
     using ancillary tables containing factors needed to calculate the
     intensity (energy bin width, geometry factor, efficiency, and b).
 
     Equation 12 from the HIT algorithm document:
-    Sectored Intensity = (Summed L1B Sectored Rates) /
-                       (600 * Delta E * Geometry Factor * Efficiency) - b
-
-    Note: sectored is also known as macropixel at this data level
+    Macropixel Intensity = ((Summed L1B Sectored Rates) /
+                       (600 * Delta E * Geometry Factor * Efficiency)) - b
 
     Parameters
     ----------
@@ -755,35 +753,35 @@ def process_sectored_intensity_data(
     Returns
     -------
     xr.Dataset
-        The processed L2 sectored intensity dataset.
+        The processed L2 macropixel intensity dataset.
     """
-    # Create a new dataset to store the L2 sectored intensity data
-    sectored_intensity_dataset = l1b_sectored_rates_dataset.copy(deep=True)
+    # Create a new dataset to store the L2 macropixel intensity data
+    macropixel_intensity_dataset = l1b_sectored_rates_dataset.copy(deep=True)
 
     # Load ancillary data for each dynamic threshold state into a dictionary
     ancillary_data_frames = load_ancillary_data(
-        set(sectored_intensity_dataset["dynamic_threshold_state"].values),
+        set(macropixel_intensity_dataset["dynamic_threshold_state"].values),
         ancillary_files,
     )
 
     # Calculate the intensity for each species
-    sectored_intensity_dataset = calculate_intensities_for_all_species(
-        sectored_intensity_dataset, ancillary_data_frames, VALID_SECTORED_SPECIES
+    macropixel_intensity_dataset = calculate_intensities_for_all_species(
+        macropixel_intensity_dataset, ancillary_data_frames, VALID_SECTORED_SPECIES
     )
 
     # Add total and systematic uncertainties to the dataset
-    for var in sectored_intensity_dataset.data_vars:
+    for var in macropixel_intensity_dataset.data_vars:
         if var in VALID_SECTORED_SPECIES:
-            sectored_intensity_dataset = add_systematic_uncertainties(
-                sectored_intensity_dataset, var
+            macropixel_intensity_dataset = add_systematic_uncertainties(
+                macropixel_intensity_dataset, var
             )
-            sectored_intensity_dataset = add_total_uncertainties(
-                sectored_intensity_dataset, var
+            macropixel_intensity_dataset = add_total_uncertainties(
+                macropixel_intensity_dataset, var
             )
 
             # Expand the variable name to include macropixel intensity
-            sectored_intensity_dataset = sectored_intensity_dataset.rename(
+            macropixel_intensity_dataset = macropixel_intensity_dataset.rename(
                 {var: f"{var}_macropixel_intensity"}
             )
 
-    return sectored_intensity_dataset
+    return macropixel_intensity_dataset

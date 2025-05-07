@@ -27,9 +27,9 @@ from imap_processing.hit.l2.hit_l2 import (
     get_species_ancillary_data,
     hit_l2,
     load_ancillary_data,
-    process_sectored_intensity_data,
-    process_standard_intensity_data,
-    process_summed_intensity_data,
+    process_macropixel_intensity,
+    process_standard_intensity,
+    process_summed_intensity,
     reshape_for_sectored,
 )
 
@@ -617,12 +617,12 @@ def test_add_total_uncertainties():
     )
 
 
-def test_process_sectored_intensity_data(
+def test_process_macropixel_intensity(
     l1b_sectored_rates_dataset, ancillary_dependencies
 ):
     """Test the variables in the sectored intensity dataset"""
 
-    l2_sectored_intensity_dataset = process_sectored_intensity_data(
+    l2_sectored_intensity_dataset = process_macropixel_intensity(
         l1b_sectored_rates_dataset, ancillary_dependencies["macropixel"]
     )
 
@@ -663,12 +663,10 @@ def test_process_sectored_intensity_data(
         )
 
 
-def test_process_summed_intensity_data(
-    l1b_summed_rates_dataset, ancillary_dependencies
-):
+def test_process_summed_intensity(l1b_summed_rates_dataset, ancillary_dependencies):
     """Test the variables in the summed intensity dataset"""
 
-    l2_summed_intensity_dataset = process_summed_intensity_data(
+    l2_summed_intensity_dataset = process_summed_intensity(
         l1b_summed_rates_dataset, ancillary_dependencies["summed"]
     )
 
@@ -713,12 +711,10 @@ def test_process_summed_intensity_data(
         assert f"{particle}_energy_delta_plus" in l2_summed_intensity_dataset.data_vars
 
 
-def test_process_standard_intensity_data(
-    l1b_standard_rates_dataset, ancillary_dependencies
-):
+def test_process_standard_intensity(l1b_standard_rates_dataset, ancillary_dependencies):
     """Test the variables in the standard intensity dataset"""
 
-    l2_standard_intensity_dataset = process_standard_intensity_data(
+    l2_standard_intensity_dataset = process_standard_intensity(
         l1b_standard_rates_dataset, ancillary_dependencies["standard"]
     )
 
