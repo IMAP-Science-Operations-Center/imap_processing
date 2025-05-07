@@ -421,7 +421,6 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
 DE_DATA_PRODUCT_CONFIGURATIONS = {
     CODICEAPID.COD_HI_PHA: {
         "num_priorities": 6,
-        "start_bit_pos": 1,
         "bit_structure": {
             "SSDEnergy": 11,
             "TOF": 10,
@@ -432,13 +431,12 @@ DE_DATA_PRODUCT_CONFIGURATIONS = {
             "SpinAngle": 5,
             "SpinNumber": 4,
             "Priority": 3,
-            "Spare": 21,  # TODO: Ask Joey about this
+            "Spare": 22,
         },
         "cdf_fields": HI_PHA_CDF_FIELDS,
     },
     CODICEAPID.COD_LO_PHA: {
         "num_priorities": 8,
-        "start_bit_pos": 0,
         "bit_structure": {
             "APDGain": 1,
             "APD_ID": 5,

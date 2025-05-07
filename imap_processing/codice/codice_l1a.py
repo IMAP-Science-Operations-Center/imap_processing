@@ -988,9 +988,7 @@ def reshape_de_data(
                     f"{int.from_bytes(event, byteorder='big'):0{len(event) * 8}b}"
                 )
 
-                bit_position = constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid][
-                    "start_bit_pos"
-                ]  # TODO: Why is this different for lo and hi?
+                bit_position = 0
                 for field_name, bit_length in reversed(bit_structure.items()):
                     # We don't need to carry Priority and Spare fields through
                     if field_name in ["Priority", "Spare"]:
