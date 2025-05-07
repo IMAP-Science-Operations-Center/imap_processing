@@ -595,6 +595,16 @@ class HiPointingSet(PointingSet):
 
     def __init__(self, dataset: xr.Dataset):
         super().__init__(dataset, spice_reference_frame=geometry.SpiceFrame.ECLIPJ2000)
+
+        # Rename some PSET vars to match L2 variables
+        self.data = self.data.rename(
+            {
+                "exposure_times": "exposure_factor",
+                "background_rates": "bg_rates",
+                "background_rates_uncertainty": "bg_rates_unc",
+            }
+        )
+
         self.az_el_points = np.column_stack(
             (
                 np.squeeze(self.data["hae_longitude"]),
