@@ -1,23 +1,25 @@
 """IMAP-Lo L1C Data Processing."""
 
 from dataclasses import Field
-from pathlib import Path
 
 import numpy as np
-import xarray as xr
 import pandas as pd
+import xarray as xr
+
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.spice.time import met_to_ttj2000ns
 
 
-def lo_l1c(sci_dependencies, anc_dependencies: list) -> list[xr.Dataset]:
+def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
     """
     Will process IMAP-Lo L1B data into L1C CDF data products.
 
     Parameters
     ----------
-    dependencies : dict
+    sci_dependencies : dict
         Dictionary of datasets needed for L1C data product creation in xarray Datasets.
+    anc_dependencies : list
+        Ancillary files needed for L1C data product creation.
 
     Returns
     -------
@@ -81,25 +83,28 @@ def filter_goodtimes(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
     """
     Filter the L1B Direct Event dataset to only include good times.
 
+    The good times are read from the sweep table ancillary file.
+
     Parameters
     ----------
     l1b_de : xarray.Dataset
         L1B Direct Event dataset.
+
+    anc_dependencies : list
+        Ancillary files needed for L1C data product creation.
 
     Returns
     -------
     l1b_de : xarray.Dataset
         Filtered L1B Direct Event dataset.
     """
-    # TODO: I need to come back the ancillary dependencies when I get a
-    #  better idea of what the naming will look like from Lo. This will be
-    #  moved to a function, but doing this for now to get the init working.
-    print("ANC DEPENDS", anc_dependencies)
-    sweep_table = next((item for item in anc_dependencies if "sweeptable" in item),
-                       None)
+    # Get the sweep table from the ancillary dependencies
+    sweep_table = next(
+        (item for item in anc_dependencies if "sweeptable" in item), None
+    )
     # sweep table is a dependency so this should always be in the list
     sweep_table_df = pd.read_csv(sweep_table)
-    columns_list = list(sweep_table_df.columns)
+
     # convert goodtimes from MET to TTJ2000
     goodtimes_start = met_to_ttj2000ns(sweep_table_df["GoodTime_strt"])
     goodtimes_end = met_to_ttj2000ns(sweep_table_df["GoodTime_end"])
@@ -107,12 +112,13 @@ def filter_goodtimes(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
     # Create a mask for epochs within any of the start/end time ranges
     mask = np.zeros_like(l1b_de["epoch"], dtype=bool)
 
-
+    # Iterate over the good times and create a mask
     for start, end in zip(goodtimes_start, goodtimes_end):
         mask |= (l1b_de["epoch"] >= start) & (l1b_de["epoch"] < end)
 
     # Filter the dataset using the mask
     filtered_epochs = l1b_de.sel(epoch=mask)
+
     return filtered_epochs
 
 
