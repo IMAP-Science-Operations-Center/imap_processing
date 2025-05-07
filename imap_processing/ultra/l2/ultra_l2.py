@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 import numpy as np
 import xarray as xr
@@ -310,7 +311,7 @@ def generate_ultra_healpix_skymap(
 
 
 def ultra_l2(
-    data_dict: dict[str, xr.Dataset | str],
+    data_dict: dict[str, xr.Dataset | str | Path],
     output_map_structure: (
         ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap
     ) = DEFAULT_ULTRA_L2_MAP_STRUCTURE,
