@@ -1004,7 +1004,20 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
             pipeline.set_data_product_config(apid, dataset)
             pipeline.decompress_data(science_values)
 
-            foo = np.array(pipeline.__dict__["raw_data"][1], dtype=np.uint32)  # 77 * 480
+            print(len(pipeline.__dict__["raw_data"]))
+            foo = np.array(pipeline.__dict__["raw_data"][0], dtype=np.uint32)  # 77 * 480
+            print(foo)
+            print(len(foo))
+
+            foo.reshape()
+
+            # Iterate over the 480
+            # Go through species, some have 15, 18, 5, 1. Should add up to 480
+            #
+
+            # We collapse the number of spins (2 **2 in omni case)
+            # Have an initoal epoch time, then add to it the number collapsed spins)
+            # ie add seconds=spin_period * num_spins_collapsed
 
             # Chunk into species
             chunks = np.split(foo, 8)
