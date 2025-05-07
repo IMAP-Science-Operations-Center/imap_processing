@@ -114,24 +114,21 @@ def extract_magnetic_vectors(science_values: xr.DataArray) -> dict:
         Magnetic vectors.
     """
     # Primary sensor:
-    pri_x = int(np.uint16((int(science_values[0]) >> 8) & 0xFFFF).astype(np.int16))
-    pri_y = int(
-        np.uint16(
-            ((int(science_values[0]) << 8) & 0xFF00)
-            | ((int(science_values[1]) >> 16) & 0xFF)
-        ).astype(np.int16)
-    )
-    pri_z = int(np.uint16(int(science_values[1]) & 0xFFFF).astype(np.int16))
+    pri_x: np.int16 = np.uint16((int(science_values[0]) >> 8) & 0xFFFF).astype(np.int16)
+    pri_y: np.int16 = np.uint16(
+        ((int(science_values[0]) << 8) & 0xFF00)
+        | ((int(science_values[1]) >> 16) & 0xFF)
+    ).astype(np.int16)
+    pri_z: np.int16 = np.uint16(int(science_values[1]) & 0xFFFF).astype(np.int16)
 
     # Secondary sensor:
-    sec_x = int(np.uint16((int(science_values[2]) >> 8) & 0xFFFF).astype(np.int16))
-    sec_y = int(
-        np.uint16(
-            ((int(science_values[2]) << 8) & 0xFF00)
-            | ((int(science_values[3]) >> 16) & 0xFF)
-        ).astype(np.int16)
-    )
-    sec_z = int(np.uint16(int(science_values[3]) & 0xFFFF).astype(np.int16))
+    sec_x: np.int16 = np.uint16((int(science_values[2]) >> 8) & 0xFFFF).astype(np.int16)
+    sec_y: np.int16 = np.uint16(
+        ((int(science_values[2]) << 8) & 0xFF00)
+        | ((int(science_values[3]) >> 16) & 0xFF)
+    ).astype(np.int16)
+
+    sec_z: np.int16 = np.uint16(int(science_values[3]) & 0xFFFF).astype(np.int16)
 
     vectors = {
         "pri_x": pri_x,
