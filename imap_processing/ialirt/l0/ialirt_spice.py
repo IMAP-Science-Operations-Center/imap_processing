@@ -63,11 +63,9 @@ def get_rotation_matrix(z_axis: NDArray, spin_phase: NDArray) -> NDArray:
     to the spacecraft’s rotating frame (URF)
     """
     # Rotation matrix to rotate about z_axis by spin_phase
-    rot_matrices = []
-    for z, phase in zip(z_axis, spin_phase):
-        rot = spice.axisar(z, float(phase))
-        rot_matrices.append(rot)
-    rot_matrices = np.array(rot_matrices)
+    rot_matrices = np.array(
+        [spice.axisar(z, float(phase)) for z, phase in zip(z_axis, spin_phase)]
+    )
 
     return rot_matrices
 
@@ -96,13 +94,17 @@ def transform_instrument_vectors_to_urf(
     -------
     vectors_urf : np.ndarray
         Vectors in the spacecraft URF frame. Shape: (N, 3).
+
+    Notes
+    -----
+    URF = Unrotated Reference Frame.
+    It is a spacecraft-fixed frame that rotates with the spacecraft.
     """
     z_axis = get_z_axis(sc_inertial_right, sc_inertial_decline)
     rot_matrices = get_rotation_matrix(z_axis, spin_phase)
 
-    vectors_urf = []
-    for r, v in zip(rot_matrices, instrument_vectors):
-        vectors_urf.append(spice.mxv(r, v))
-    vectors_urf = np.array(vectors_urf)
+    vectors_urf = np.array(
+        [spice.mxv(r, v) for r, v in zip(rot_matrices, instrument_vectors)]
+    )
 
     return vectors_urf
