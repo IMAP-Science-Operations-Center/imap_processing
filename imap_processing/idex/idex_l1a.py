@@ -23,6 +23,7 @@ import numpy as np
 import numpy.typing as npt
 import space_packet_parser
 import xarray as xr
+from xarray import Dataset
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.idex.decode import rice_decode
@@ -152,7 +153,9 @@ class PacketParser:
         processed_dust_impact_list = [
             dust_event.process() for dust_event in dust_events.values()
         ]
-        processed_dust_impact_list = [x for x in processed_dust_impact_list if x]
+        processed_dust_impact_list = [
+            x for x in processed_dust_impact_list if x is not None
+        ]
         data = xr.concat(processed_dust_impact_list, dim="epoch")
         data.attrs = self.idex_attrs.get_global_attributes("imap_idex_l1a_sci")
 
@@ -600,7 +603,7 @@ class RawDustEvent:
         raw_science_bits = convert_to_binary_string(packet["IDX__SCI0RAW"])
         self._append_raw_data(scitype, raw_science_bits)
 
-    def process(self) -> Union[xr.Dataset, None]:
+    def process(self) -> Dataset | None:
         """
         Will process the raw data into a ``xarray.Dataset``.
 
@@ -626,90 +629,89 @@ class RawDustEvent:
                 attrs=idex_attrs.get_variable_attributes(var),
             )
 
-        # Process the 6 primary data variables
-        tof_high = xr.DataArray(
-            name="TOF_High",
-            data=[self._parse_high_sample_waveform(self.TOF_High_bits)],
-            dims=("epoch", "time_high_sample_rate_index"),
-            attrs=idex_attrs.get_variable_attributes("tof_high_attrs"),
-        )
-        tof_low = xr.DataArray(
-            name="TOF_Low",
-            data=[self._parse_high_sample_waveform(self.TOF_Low_bits)],
-            dims=("epoch", "time_high_sample_rate_index"),
-            attrs=idex_attrs.get_variable_attributes("tof_low_attrs"),
-        )
-        tof_mid = xr.DataArray(
-            name="TOF_Mid",
-            data=[self._parse_high_sample_waveform(self.TOF_Mid_bits)],
-            dims=("epoch", "time_high_sample_rate_index"),
-            attrs=idex_attrs.get_variable_attributes("tof_mid_attrs"),
-        )
-        target_high = xr.DataArray(
-            name="Target_High",
-            data=[self._parse_low_sample_waveform(self.Target_High_bits)],
-            dims=("epoch", "time_low_sample_rate_index"),
-            attrs=idex_attrs.get_variable_attributes("target_high_attrs"),
-        )
-        target_low = xr.DataArray(
-            name="Target_Low",
-            data=[self._parse_low_sample_waveform(self.Target_Low_bits)],
-            dims=("epoch", "time_low_sample_rate_index"),
-            attrs=idex_attrs.get_variable_attributes("target_low_attrs"),
-        )
-        ion_grid = xr.DataArray(
-            name="Ion_Grid",
-            data=[self._parse_low_sample_waveform(self.Ion_Grid_bits)],
-            dims=("epoch", "time_low_sample_rate_index"),
-            attrs=idex_attrs.get_variable_attributes("ion_grid_attrs"),
-        )
-
+        data_vars = {
+            # Process the 6 primary data variables
+            "TOF_High": xr.DataArray(
+                name="TOF_High",
+                data=[self._parse_high_sample_waveform(self.TOF_High_bits)],
+                dims=("epoch", "time_high_sample_rate_index"),
+                attrs=idex_attrs.get_variable_attributes("tof_high_attrs"),
+            ),
+            "TOF_Low": xr.DataArray(
+                name="TOF_Low",
+                data=[self._parse_high_sample_waveform(self.TOF_Low_bits)],
+                dims=("epoch", "time_high_sample_rate_index"),
+                attrs=idex_attrs.get_variable_attributes("tof_low_attrs"),
+            ),
+            "TOF_Mid": xr.DataArray(
+                name="TOF_Mid",
+                data=[self._parse_high_sample_waveform(self.TOF_Mid_bits)],
+                dims=("epoch", "time_high_sample_rate_index"),
+                attrs=idex_attrs.get_variable_attributes("tof_mid_attrs"),
+            ),
+            "Target_High": xr.DataArray(
+                name="Target_High",
+                data=[self._parse_low_sample_waveform(self.Target_High_bits)],
+                dims=("epoch", "time_low_sample_rate_index"),
+                attrs=idex_attrs.get_variable_attributes("target_high_attrs"),
+            ),
+            "Target_Low": xr.DataArray(
+                name="Target_Low",
+                data=[self._parse_low_sample_waveform(self.Target_Low_bits)],
+                dims=("epoch", "time_low_sample_rate_index"),
+                attrs=idex_attrs.get_variable_attributes("target_low_attrs"),
+            ),
+            "Ion_Grid": xr.DataArray(
+                name="Ion_Grid",
+                data=[self._parse_low_sample_waveform(self.Ion_Grid_bits)],
+                dims=("epoch", "time_low_sample_rate_index"),
+                attrs=idex_attrs.get_variable_attributes("ion_grid_attrs"),
+            ),
+        }
         # Determine the 3 coordinate variables
-        epoch = xr.DataArray(
-            name="epoch",
-            data=[self.impact_time],
-            dims=("epoch"),
-            attrs=idex_attrs.get_variable_attributes("epoch"),
-        )
-
-        time_low_sample_rate = xr.DataArray(
-            name="time_low_sample_rate",
-            data=[self._calc_low_sample_resolution(len(target_low[0]))],
-            dims=("epoch", "time_low_sample_rate_index"),
-            attrs=idex_attrs.get_variable_attributes("low_sample_rate_attrs"),
-        )
-
-        time_high_sample_rate = xr.DataArray(
-            name="time_high_sample_rate",
-            data=[self._calc_high_sample_resolution(len(tof_low[0]))],
-            dims=("epoch", "time_high_sample_rate_index"),
-            attrs=idex_attrs.get_variable_attributes("high_sample_rate_attrs"),
-        )
-        try:
-            # Combine to return a dataset object
-            dataset = xr.Dataset(
-                data_vars={
-                    "TOF_Low": tof_low,
-                    "TOF_High": tof_high,
-                    "TOF_Mid": tof_mid,
-                    "Target_High": target_high,
-                    "Target_Low": target_low,
-                    "Ion_Grid": ion_grid,
-                    "time_low_sample_rate": time_low_sample_rate,
-                    "time_high_sample_rate": time_high_sample_rate,
-                }
-                | trigger_vars,
-                coords={"epoch": epoch},
-            )
-        except ValueError as e:
+        coords = {
+            "epoch": xr.DataArray(
+                name="epoch",
+                data=[self.impact_time],
+                dims=("epoch"),
+                attrs=idex_attrs.get_variable_attributes("epoch"),
+            ),
+            "time_low_sample_rate": xr.DataArray(
+                name="time_low_sample_rate",
+                data=[
+                    self._calc_low_sample_resolution(len(data_vars["Target_Low"][0]))
+                ],
+                dims=("epoch", "time_low_sample_rate_index"),
+                attrs=idex_attrs.get_variable_attributes("low_sample_rate_attrs"),
+            ),
+            "time_high_sample_rate": xr.DataArray(
+                name="time_high_sample_rate",
+                data=[self._calc_high_sample_resolution(len(data_vars["TOF_Low"][0]))],
+                dims=("epoch", "time_high_sample_rate_index"),
+                attrs=idex_attrs.get_variable_attributes("high_sample_rate_attrs"),
+            ),
+        }
+        expected_shapes = {
+            "time_low_sample_rate_index": coords["time_low_sample_rate"].shape[1],
+            "time_high_sample_rate_index": coords["time_high_sample_rate"].shape[1],
+        }
+        if any(
+            var.shape[1] != expected_shapes[var.dims[1]] for var in data_vars.values()
+        ):
             # The IDEX team requests that a warning be logged for incomplete events
             # (dropped packets) in the data, while still allowing the CDF to be created
             # with the remainder of the complete events.
             logger.warning(
-                f"Missing packet for event number %s. Error: {e}Skipping event..",
+                "Missing packet for event number %s. Skipping event..",
                 self.event_number,
             )
             return None
+
+        # Combine to return a dataset object
+        dataset = xr.Dataset(
+            data_vars=data_vars | trigger_vars,
+            coords=coords,
+        )
         return dataset
 
 
