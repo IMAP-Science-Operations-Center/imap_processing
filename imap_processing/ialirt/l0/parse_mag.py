@@ -346,12 +346,19 @@ def process_packet(
         pkt_counter = grouped_data["pkt_counter"][
             (grouped_data["group"] == group).values
         ]
+        coarse_time = grouped_data["mag_acq_tm_coarse"][
+            (grouped_data["group"] == group).values
+        ]
 
         if not np.array_equal(pkt_counter, np.arange(4)):
-            logger.warning(
+            logger.info(
                 f"Group {group} does not contain all values from 0 to "
                 f"3 without duplicates."
             )
+            continue
+
+        if (coarse_time == 0).all():
+            logger.info(f"Group {group} contains zero timestamps.")
             continue
 
         # Get decoded status data.
@@ -370,6 +377,8 @@ def process_packet(
             status_data,
             calibration_dataset,
         )
+        if time_data["primary_epoch"] >= 7.985136076764696e17:
+            print("hi")
 
         # Note: primary = MAGo, secondary = MAGi.
         science_data.update(
