@@ -342,7 +342,7 @@ def process_packet(
             continue
 
         if (coarse_time == 0).all():
-            logger.info(f"Group {group} contains zero timestamps.")
+            logger.info(f"Group {group} contains timestamps equal to zero.")
             continue
 
         # Get decoded status data.
