@@ -100,8 +100,8 @@ class CoDICEL1aPipeline:
         epoch : NDArray[int]
             List of epoch values.
         """
-        # TODO: Make this method accessible outside of the class so that it
-        #       can be used by direct event data processing
+        # TODO: Make this a utility function outside of the class so that it
+        #       can be used by direct event data processing too
 
         epoch = met_to_ttj2000ns(
             self.dataset.acq_start_seconds + self.dataset.acq_start_subseconds / 1e6
