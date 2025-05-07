@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pandas as pd
@@ -18,6 +18,7 @@ from imap_processing.hit.l2.hit_l2 import (
     SECONDS_PER_MIN,
     STANDARD_PARTICLE_ENERGY_RANGE_MAPPING,
     VALID_SECTORED_SPECIES,
+    add_cdf_attributes,
     add_systematic_uncertainties,
     add_total_uncertainties,
     build_ancillary_dataset,
@@ -144,6 +145,56 @@ def _check_ancillary_dataset(
         np.testing.assert_array_equal(
             species_array.coords[coord], ancillary_ds.coords[coord]
         )
+
+
+def test_add_cdf_attributes():
+    # Create a dataset with multiple variable name patterns
+    dataset = xr.Dataset(
+        {
+            "intensity_var": (["dim1", "dim2"], np.ones((2, 2))),
+            "energy_var": (["dim1", "dim2"], np.ones((2, 2))),
+            "energy_delta_var": (["dim1", "dim2"], np.ones((2, 2))),
+            "other_var": (["dim1", "dim2"], np.ones((2, 2))),
+        },
+        coords={"dim1": [10, 20], "dim2": [1, 2]},
+    )
+
+    # Logical source to test macropixel logic
+    logical_source = "test_macropixel"
+
+    # Create a mock attribute manager
+    attr_mgr = Mock()
+    attr_mgr.get_global_attributes.return_value = {"Global_attr": "Test Dataset"}
+
+    def fake_get_variable_attributes(name, check_schema=True):
+        return {f"{name}_attr": "value", "check_schema": check_schema}
+
+    attr_mgr.get_variable_attributes.side_effect = fake_get_variable_attributes
+
+    # Run the function
+    result = add_cdf_attributes(dataset, logical_source, attr_mgr)
+
+    # 1. Global attributes
+    assert result.attrs["Global_attr"] == "Test Dataset"
+
+    # 2. Variable attributes
+    # 'other_var' should use macropixel logic
+    assert "other_var_macropixel_attr" in result["other_var"].attrs
+
+    # 'intensity_var' and 'energy_var' should use regular logic
+    assert "intensity_var_attr" in result["intensity_var"].attrs
+    assert "energy_var_attr" in result["energy_var"].attrs
+
+    # 'energy_delta_var' should have check_schema=False
+    assert "energy_delta_var_attr" in result["energy_delta_var"].attrs
+    assert result["energy_delta_var"].attrs["check_schema"] is False
+
+    # 3. Dimension attributes and labels
+    for dim in ["dim1", "dim2"]:
+        assert f"{dim}_attr" in result[dim].attrs
+        assert f"{dim}_label" in result.coords
+        assert f"{f'{dim}_label'}_attr" in result[f"{dim}_label"].attrs
+        assert list(result[f"{dim}_label"].dims) == [dim]
 
 
 def test_load_ancillary_data():
@@ -648,7 +699,10 @@ def test_process_macropixel_intensity(
     assert "dynamic_threshold_state" in l2_sectored_intensity_dataset.data_vars
 
     for particle in VALID_SECTORED_SPECIES:
-        assert f"{particle}" in l2_sectored_intensity_dataset.data_vars
+        assert (
+            f"{particle}_macropixel_intensity"
+            in l2_sectored_intensity_dataset.data_vars
+        )
         assert (
             f"{particle}_stat_uncert_minus" in l2_sectored_intensity_dataset.data_vars
         )
@@ -702,7 +756,7 @@ def test_process_summed_intensity(l1b_summed_rates_dataset, ancillary_dependenci
     assert "dynamic_threshold_state" in l1b_summed_rates_dataset.data_vars
 
     for particle in SUMMED_PARTICLE_ENERGY_RANGE_MAPPING.keys():
-        assert f"{particle}" in l2_summed_intensity_dataset.data_vars
+        assert f"{particle}_summed_intensity" in l2_summed_intensity_dataset.data_vars
         assert f"{particle}_stat_uncert_minus" in l2_summed_intensity_dataset.data_vars
         assert f"{particle}_stat_uncert_plus" in l2_summed_intensity_dataset.data_vars
         assert f"{particle}_sys_err_minus" in l2_summed_intensity_dataset.data_vars
@@ -750,7 +804,9 @@ def test_process_standard_intensity(l1b_standard_rates_dataset, ancillary_depend
     assert "dynamic_threshold_state" in l1b_standard_rates_dataset.data_vars
 
     for particle in STANDARD_PARTICLE_ENERGY_RANGE_MAPPING.keys():
-        assert f"{particle}" in l2_standard_intensity_dataset.data_vars
+        assert (
+            f"{particle}_standard_intensity" in l2_standard_intensity_dataset.data_vars
+        )
         assert (
             f"{particle}_stat_uncert_minus" in l2_standard_intensity_dataset.data_vars
         )
