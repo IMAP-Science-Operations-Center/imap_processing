@@ -14,7 +14,6 @@ from imap_processing.ialirt.l0.parse_mag import (
     get_status_data,
     get_time,
     process_packet,
-    to_signed,
 )
 from imap_processing.mag.constants import MAX_FINE_TIME
 from imap_processing.mag.l1b.mag_l1b import (
@@ -260,9 +259,17 @@ def test_process_packet(xarray_data, mag_test_data, calibration_dataset):
         index = packet["pri_coarsetm"] == mag_test_data["PRI_COARSETM"]
         matching_rows = mag_test_data[index]
 
+        data_keys = ["pri_x", "pri_y", "pri_z", "sec_x", "sec_y", "sec_z"]
+
         for key in packet.keys():
             if key.upper() in matching_rows.keys():
-                assert packet[key] == to_signed(matching_rows[key.upper()].values[0])
+                if key in data_keys:
+                    # Convert to int16 for comparison.
+                    assert packet[key] == int(
+                        np.uint16(matching_rows[key.upper()].values[0]).astype(np.int16)
+                    )
+                else:
+                    assert packet[key] == matching_rows[key.upper()].values[0]
 
 
 def test_process_spacecraft_packet(

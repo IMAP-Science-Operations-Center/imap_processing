@@ -99,23 +99,6 @@ def get_bytes(val: int) -> list[int]:
     ]
 
 
-def to_signed(val: int) -> int:
-    """
-    Convert a 16-bit value to signed integer.
-
-    Parameters
-    ----------
-    val : int
-        16 bit value.
-
-    Returns
-    -------
-    signed : int
-        Signed int.
-    """
-    return val - 0x10000 if val & 0x8000 else val
-
-
 def extract_magnetic_vectors(science_values: xr.DataArray) -> dict:
     """
     Extract the magnetic vectors.
@@ -131,20 +114,24 @@ def extract_magnetic_vectors(science_values: xr.DataArray) -> dict:
         Magnetic vectors.
     """
     # Primary sensor:
-    pri_x = to_signed((int(science_values[0]) >> 8) & 0xFFFF)
-    pri_y = to_signed(
-        ((int(science_values[0]) << 8) & 0xFF00)
-        | ((int(science_values[1]) >> 16) & 0xFF)
+    pri_x = int(np.uint16((int(science_values[0]) >> 8) & 0xFFFF).astype(np.int16))
+    pri_y = int(
+        np.uint16(
+            ((int(science_values[0]) << 8) & 0xFF00)
+            | ((int(science_values[1]) >> 16) & 0xFF)
+        ).astype(np.int16)
     )
-    pri_z = to_signed(int(science_values[1]) & 0xFFFF)
+    pri_z = int(np.uint16(int(science_values[1]) & 0xFFFF).astype(np.int16))
 
     # Secondary sensor:
-    sec_x = to_signed((int(science_values[2]) >> 8) & 0xFFFF)
-    sec_y = to_signed(
-        ((int(science_values[2]) << 8) & 0xFF00)
-        | ((int(science_values[3]) >> 16) & 0xFF)
+    sec_x = int(np.uint16((int(science_values[2]) >> 8) & 0xFFFF).astype(np.int16))
+    sec_y = int(
+        np.uint16(
+            ((int(science_values[2]) << 8) & 0xFF00)
+            | ((int(science_values[3]) >> 16) & 0xFF)
+        ).astype(np.int16)
     )
-    sec_z = to_signed(int(science_values[3]) & 0xFFFF)
+    sec_z = int(np.uint16(int(science_values[3]) & 0xFFFF).astype(np.int16))
 
     vectors = {
         "pri_x": pri_x,
