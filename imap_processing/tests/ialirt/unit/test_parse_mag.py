@@ -15,9 +15,11 @@ from imap_processing.ialirt.l0.parse_mag import (
     get_time,
     process_packet,
 )
+from imap_processing.mag.constants import MAX_FINE_TIME
 from imap_processing.mag.l1b.mag_l1b import (
     retrieve_matrix_from_l1b_calibration,
 )
+from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.utils import packet_file_to_datasets
 
 
@@ -287,3 +289,13 @@ def test_process_spacecraft_packet(
         assert row["x_sec"] == packet["sec_x"]
         assert row["y_sec"] == packet["sec_y"]
         assert row["z_sec"] == packet["sec_z"]
+
+        # Timestamp check
+        time_data_pri_met = float(row["pri_coarse"] + row["pri_fine"] / MAX_FINE_TIME)
+        time_data_primary_ttj2000ns = met_to_ttj2000ns(time_data_pri_met)
+        _, time_shift_mago = retrieve_matrix_from_l1b_calibration(
+            calibration_dataset, is_mago=True
+        )
+        primary_epoch = time_data_primary_ttj2000ns + time_shift_mago.data * 1e9
+
+        assert packet["primary_epoch"] == primary_epoch
