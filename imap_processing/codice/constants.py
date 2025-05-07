@@ -89,6 +89,38 @@ HI_PRIORITY_VARIABLE_NAMES = [
 ]
 HI_SECTORED_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
 
+# CDF variable names used for direct event data products
+HI_PHA_CDF_FIELDS = [
+    "NumEvents",
+    "DataQuality",
+    "SSDEnergy",
+    "TOF",
+    "SSD_ID",
+    "ERGE",
+    "MultiFlag",
+    "Type",
+    "SpinAngle",
+    "SpinNumber",
+]
+HI_PHA_VARIABLE_NAMES = [
+    f"P{n}_{field}" for n in range(6) for field in HI_PHA_CDF_FIELDS
+]
+LO_PHA_CDF_FIELDS = [
+    "NumEvents",
+    "DataQuality",
+    "APDGain",
+    "APD_ID",
+    "APDEnergy",
+    "TOF",
+    "MultiFlag",
+    "PHAType",
+    "SpinAngle",
+    "EnergyStep",
+]
+LO_PHA_VARIABLE_NAMES = [
+    f"P{n}_{field}" for n in range(8) for field in LO_PHA_CDF_FIELDS
+]
+
 # lo- and hi-counters-aggregated data product variables are dynamically
 # determined based on the number of active counters
 # TODO: Try to convince Joey to move to lower case variable names with
@@ -389,6 +421,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
 DE_DATA_PRODUCT_CONFIGURATIONS = {
     CODICEAPID.COD_HI_PHA: {
         "num_priorities": 6,
+        "start_bit_pos": 1,
         "bit_structure": {
             "SSDEnergy": 11,
             "TOF": 10,
@@ -401,21 +434,11 @@ DE_DATA_PRODUCT_CONFIGURATIONS = {
             "Priority": 3,
             "Spare": 21,  # TODO: Ask Joey about this
         },
-        "cdf_fields": [
-            "NumEvents",
-            "DataQuality",
-            "SSDEnergy",
-            "TOF",
-            "SSD_ID",
-            "ERGE",
-            "MultiFlag",
-            "Type",
-            "SpinAngle",
-            "SpinNumber",
-        ],
+        "cdf_fields": HI_PHA_CDF_FIELDS,
     },
     CODICEAPID.COD_LO_PHA: {
         "num_priorities": 8,
+        "start_bit_pos": 0,
         "bit_structure": {
             "APDGain": 1,
             "APD_ID": 5,
@@ -429,18 +452,7 @@ DE_DATA_PRODUCT_CONFIGURATIONS = {
             "Priority": 3,
             "Spare": 16,
         },
-        "cdf_fields": [
-            "NumEvents",
-            "DataQuality",
-            "APDGain",
-            "APD_ID",
-            "APDEnergy",
-            "TOF",
-            "MultiFlag",
-            "PHAType",
-            "SpinAngle",
-            "EnergyStep",
-        ],
+        "cdf_fields": LO_PHA_CDF_FIELDS,
     },
 }
 
