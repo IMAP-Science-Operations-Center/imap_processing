@@ -217,7 +217,6 @@ def test_extract_magnetic_vectors():
     }
 
 
-@pytest.mark.external_test_data
 def test_calculate_l1b(grouped_data, xarray_data, calibration_dataset):
     """Tests the calculate_l1b function."""
 
@@ -273,6 +272,7 @@ def test_process_packet(xarray_data, mag_test_data, calibration_dataset):
                     assert packet[key] == matching_rows[key.upper()].values[0]
 
 
+@pytest.mark.external_test_data
 def test_process_spacecraft_packet(
     sc_xarray_data, mag_sc_test_data, calibration_dataset
 ):
