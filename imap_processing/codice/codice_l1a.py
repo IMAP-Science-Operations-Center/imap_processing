@@ -990,40 +990,42 @@ def reshape_de_data(
 
             # Iterate over each event
             for event_index in range(num_events):
-                event_start = event_index * num_priorities
-                event_end = event_start + num_priorities
+                event_start = event_index * 8  # 8 bytes, not num_priorities
+                event_end = event_start + 8
                 event = priority_data[event_start:event_end]
-                print(f"Event Start: {event_start}")
-                print(f"Event End: {event_end}")
-                print(event)
+                # print(f"Event Start: {event_start}")
+                # print(f"Event End: {event_end}")
+                # print(event)
                 # Separate out each individual field from the bit string
                 # The fields are packed into the bit string in reverse order, so
                 # we need to back them out in reverse order
+                bit_string = (
+                    f"{int.from_bytes(event, byteorder='big'):0{len(event) * 8}b}"
+                )
+                # print(bit_string)
                 bit_string = (
                     f"{int.from_bytes(event, byteorder='big'):0{len(event) * 8}b}".zfill(64)
                 )
 
                 # TODO: Is this right?
-                print(bit_string)
-                print(len(bit_string))
-                bit_position = 0
+                # print(bit_string)
+                # print(len(bit_string))
+                bit_position = 1
                 for field_name, bit_length in reversed(bit_structure.items()):
-                    print(f"Field Name: {field_name}")
-                    print(f"Current bit position: {bit_position}")
-                    print(f"Bit length: {bit_length}")
+                    # print(f"Field Name: {field_name}")
+                    # print(f"Current bit position: {bit_position}")
+                    # print(f"Bit length: {bit_length}")
                     if field_name in ["Priority", "Spare"]:
                         bit_position += bit_length
                         continue
                     value = int(bit_string[bit_position : bit_position + bit_length], 2)
-                    print(f"Resulting value: {bit_string[bit_position : bit_position + bit_length]}")
-                    print(f"Resulting value: {value}")
-                    print("\n")
+                    # print(f"Resulting value: {bit_string[bit_position : bit_position + bit_length]}")
+                    # print(f"Resulting value: {value}")
+                    # print("\n")
                     data[f"P{priority_num}_{field_name}"][epoch_index, event_index] = (
                         value
                     )
                     bit_position += bit_length
-
-                assert 1 == 0
 
     # TODO: Implement specific np.dtype and fill_val per field
 

@@ -246,6 +246,7 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         "hi-counters-singles",
         "hi-priority",
         "hi-sectored",
+        "hi-pha",
         "lo-counters-aggregated",
         "lo-counters-singles",
         "lo-sw-angular",
