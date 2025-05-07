@@ -646,23 +646,44 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
 
         # I-ALiRT data
         if apid == CODICEAPID.COD_LO_IAL:
-            ialirt_dataset = process_codicelo(dataset)
-            print(len(ialirt_dataset))
-            print(ialirt_dataset[0].data)
-            print(ialirt_dataset[0].data.shape)
+
+            print(dataset.counter.data)
+            print(np.where(dataset.counter.data == 255))
+
+            # every 15 items, append two byte data to a byte stream
+
+
+            # ialirt_datasets = process_codicelo(dataset)
+            # print(len(ialirt_datasets))
+            # for i, dataset in enumerate(ialirt_datasets):
+            #     print(i)
+            #     print(dataset.epoch.data)
+            #     print(len(dataset.epoch.data))
+
+            # byte_stream = bytearray()
+            # for epoch in ialirt_datasets:
+            #     byte_stream += epoch.data.data.tobytes()
+            # print(byte_stream)
+            # print(len(byte_stream))
+
+            # print(len(ialirt_datasets))
+            # print(ialirt_datasets[1].data)
+            # print(ialirt_datasets[1].data.shape)
+            # for i, item in enumerate(ialirt_datasets[0].data.data):
+            #     print(f"{i}: {item}")
 
             # I have a data array of length 3495, which is 233 chunks of 15 bytes
             # Each 15 byte chunk must be processed similar to a LO_SW_SPECIES data product
 
             # String together 15 byte chunks until end character (0xFF) then process as SW Species (including header)
 
-            byte_stream = ialirt_dataset[0].data.data.tobytes()
-            print(byte_stream)
-            eos_indices = [i for i, byte in enumerate(byte_stream) if byte == 0xFF]
-            print(eos_indices)
+            # byte_stream = ialirt_datasets[0].data.data.tobytes()
             # print(byte_stream)
-            # print(len(byte_stream))
-            bit_stream = ''.join(f'{byte:08b}' for byte in byte_stream)
+            # end_char_indices = [i for i, byte in enumerate(byte_stream) if byte == 0xFF]
+            # print(end_char_indices)
+            # bit_stream = ''.join(f'{byte:08b}' for byte in byte_stream)
+            # print(bit_stream)
+            # print(len(bit_stream))
             # print(bit_stream)
             # print(len(bit_stream))
             # bit_stream = ''.join(f'{x:08b}' for x in foo)

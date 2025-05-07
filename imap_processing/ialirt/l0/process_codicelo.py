@@ -125,10 +125,12 @@ def process_codicelo(xarray_data: xr.Dataset) -> list[dict]:
     - Calculate L2 CoDICE pseudodensities (pg 37 of Algorithm Document)
     - Calculate the public data products
     """
+    # print(xarray_data)
     grouped_data = find_groups(xarray_data)
+    # print(grouped_data)
     # print(grouped_data.group.data.shape)  # 17941
     unique_groups = np.unique(grouped_data["group"])
-    # print(unique_groups)  # List of [1-77]
+    print(unique_groups)  # List of [1-77]
     codicelo_data: list[dict[str, Any]] = []
 
     for group in unique_groups:
@@ -137,7 +139,7 @@ def process_codicelo(xarray_data: xr.Dataset) -> list[dict]:
         # print("\n")
         # counter values for the group should be 0-232 with no duplicates.
         subcom_values = grouped_data["counter"][(grouped_data["group"] == group).values]
-        # print(subcom_values)  # List of [0. - 232.] (in float)
+        print(subcom_values)  # List of [0. - 232.] (in float)
 
         # Ensure no duplicates and all values from 0 to 232 are present
         if not np.array_equal(subcom_values, np.arange(233)):
