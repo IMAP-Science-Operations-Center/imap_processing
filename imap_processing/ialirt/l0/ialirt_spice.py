@@ -14,19 +14,19 @@ def get_z_axis(sc_inertial_right: NDArray, sc_inertial_decline: NDArray) -> NDAr
     Parameters
     ----------
     sc_inertial_right : np.ndarray
-        Right ascension in radians.
+        Right ascension of the spacecraft spin-axis in radians.
 
     sc_inertial_decline : np.ndarray
-        Declination in radians.
+        Declination of the spacecraft spin-axis in radians.
 
     Returns
     -------
     z_axis : np.ndarray
         Unit vectors of the spacecraft Z-axis (N, 3).
     """
-    # Convert right ascension from counts to radians (0-2pi).
+    # Convert right ascension from radians to degrees.
     ra_deg = np.degrees(sc_inertial_right)
-    # Convert declination from counts to radians (-pi/2 to pi/2).
+    # Convert declination from radians to degrees.
     dec_deg = np.degrees(sc_inertial_decline)
 
     # All vectors are unit-length; we only care about direction, not magnitude.
@@ -40,44 +40,7 @@ def get_z_axis(sc_inertial_right: NDArray, sc_inertial_decline: NDArray) -> NDAr
     return z_axis
 
 
-def get_x_y_axes(z_axis: NDArray) -> tuple[NDArray, NDArray]:
-    """
-    Compute X and Y vectors that are perpendicular to Z and to each other.
-
-    Parameters
-    ----------
-    z_axis : NDArray
-        Array of shape (N, 3).
-
-    Returns
-    -------
-    x_axis : NDArray
-        Array of shape (N, 3) perpendicular to z_axis.
-    y_axis : NDArray
-        Array of shape (N, 3) perpendicular to z_axis.
-    """
-    # Pick a fixed reference vector.
-    v_ref = np.array([0, 1, 0])
-
-    # Detect if z_axis is nearly aligned with v_ref.
-    dot_products = np.dot(z_axis, v_ref)
-    too_parallel = np.abs(dot_products) > 0.99
-
-    # Use alternate reference vector where needed.
-    v_refs = np.tile(v_ref, (z_axis.shape[0], 1))
-    v_refs[too_parallel] = np.array([1, 0, 0])
-
-    # Compute a temporary X-axis: perpendicular to both v_ref and z_axis.
-    x_temp = np.cross(v_refs, z_axis)
-    x_axis = x_temp / np.linalg.norm(x_temp, axis=-1, keepdims=True)
-
-    # Take the cross product to get the Y-axis.
-    y_axis = np.cross(z_axis, x_axis)
-
-    return x_axis, y_axis
-
-
-def rotate_frame_about_spin_axis(z_axis: NDArray, spin_phase: NDArray) -> NDArray:
+def get_rotation_matrix(z_axis: NDArray, spin_phase: NDArray) -> NDArray:
     """
     Rotate a spacecraft frame about the spin axis by the given spin phase angle.
 
@@ -135,7 +98,7 @@ def transform_instrument_vectors_to_urf(
         Vectors in the spacecraft URF frame. Shape: (N, 3).
     """
     z_axis = get_z_axis(sc_inertial_right, sc_inertial_decline)
-    rot_matrices = rotate_frame_about_spin_axis(z_axis, spin_phase)
+    rot_matrices = get_rotation_matrix(z_axis, spin_phase)
 
     vectors_urf = []
     for r, v in zip(rot_matrices, instrument_vectors):

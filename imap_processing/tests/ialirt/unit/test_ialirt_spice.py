@@ -3,9 +3,8 @@
 import numpy as np
 
 from imap_processing.ialirt.l0.ialirt_spice import (
-    get_x_y_axes,
+    get_rotation_matrix,
     get_z_axis,
-    rotate_frame_about_spin_axis,
     transform_instrument_vectors_to_urf,
 )
 
@@ -38,34 +37,8 @@ def test_get_z_axis():
     assert np.allclose(z_axis, expected, atol=1e-6)
 
 
-def test_get_x_y_axes():
-    """Tests get_x_y_axes function."""
-
-    z_axis = np.array(
-        [
-            [1.0, 0.0, 0.0],  # RA=0, Dec=0 → +X
-            [0.0, 1.0, 0.0],  # RA=90°, Dec=0° → +Y
-            [0.0, 0.0, 1.0],  # RA=0°, Dec=90° → +Z
-        ]
-    )
-    x_axis, y_axis = get_x_y_axes(z_axis)
-
-    # Check that the axes are unit vectors.
-    assert np.allclose(np.linalg.norm(x_axis, axis=1), 1.0, atol=1e-6)
-    assert np.allclose(np.linalg.norm(y_axis, axis=1), 1.0, atol=1e-6)
-
-    # Check each pair of vectors is 90 degrees apart.
-    assert np.allclose(np.sum(x_axis * y_axis, axis=1), 0.0, atol=1e-6)
-    assert np.allclose(np.sum(x_axis * z_axis, axis=1), 0.0, atol=1e-6)
-    assert np.allclose(np.sum(y_axis * z_axis, axis=1), 0.0, atol=1e-6)
-
-    # Check cross(X, Y) = Z.
-    reconstructed_z = np.cross(x_axis, y_axis)
-    assert np.allclose(reconstructed_z, z_axis, atol=1e-6)
-
-
-def test_rotate_frame_about_spin_axis():
-    """Tests rotate_frame_about_spin_axis function."""
+def test_get_rotation_matrix():
+    """Tests get_rotation_matrix function."""
 
     z_axis = np.array(
         [
@@ -79,13 +52,12 @@ def test_rotate_frame_about_spin_axis():
     spin_phase = np.array([np.pi / 2, np.pi / 2, np.pi / 2])
 
     # Get rotation matrix
-    r = rotate_frame_about_spin_axis(z_axis, spin_phase)
+    r = get_rotation_matrix(z_axis, spin_phase)
 
     # Apply to X-axis
     x = np.array([1, 0, 0])
     x_rot = r @ x
 
-    # Expect X to become Y
     expected = np.array(
         [
             [1.0, 0.0, 0.0],  # Rotating around X leaves X unchanged
@@ -111,8 +83,8 @@ def test_transform_instrument_vectors_to_urf():
     expected = np.array(
         [
             [1.0, 0.0, 0.0],  # No rotation: remains [1, 0, 0]
-            [0.0, 1.0, 0.0],  # 90° about +Z: becomes [0, 1, 0]
-            [-1.0, 0.0, 0.0],  # 180° about +Z: becomes [-1, 0, 0]
+            [0.0, 1.0, 0.0],  # 90 about +Z: becomes [0, 1, 0]
+            [-1.0, 0.0, 0.0],  # 180 about +Z: becomes [-1, 0, 0]
         ]
     )
 
