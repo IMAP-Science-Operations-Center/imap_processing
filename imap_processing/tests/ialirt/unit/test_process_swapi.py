@@ -3,7 +3,10 @@ import pandas as pd
 import pytest
 
 from imap_processing import imap_module_directory
-from imap_processing.ialirt.l0.process_swapi import process_swapi_ialirt
+from imap_processing.ialirt.l0.process_swapi import (
+    optimize_pseudo_parameters,
+    process_swapi_ialirt,
+)
 from imap_processing.utils import packet_file_to_datasets
 
 
@@ -87,7 +90,20 @@ def test_decom_packets(xarray_data, swapi_test_data):
 
 
 def test_process_swapi_ialirt(xarray_data):
-    """Placeholder test for the process_swapi_ialirt function."""
+    """Test that the process_swapi_ialirt function returns expected keys."""
 
     swapi_result = process_swapi_ialirt(xarray_data)
     assert swapi_result["met"] is not None
+    assert len(swapi_result["met"]) == len(swapi_result["pseudo_speed"])
+
+
+def test_optimize_parameters(xarray_data):
+    """Test the optimize_pseudo_parameters function."""
+
+    energy_data = pd.read_csv(
+        f"{imap_module_directory}/tests/ialirt/test_data/ialirt_test_data.csv"
+    )
+    count_rates = energy_data["Count Rates [Hz]"].to_numpy()
+
+    result = optimize_pseudo_parameters(count_rates)
+    assert result is not None
