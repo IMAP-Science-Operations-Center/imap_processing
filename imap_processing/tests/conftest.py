@@ -185,6 +185,15 @@ def _test_data_paths():
             / "idex_l1b_validation_file.h5",
         ),
         (
+            "imap_ultra_l1b_45sensor-de_20240207_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "data"
+            / "l1"
+            / "imap_ultra_l1b_45sensor-de_20240207_v999.cdf",
+        ),
+        (
             "ultra-90_raw_event_data_shortened.csv",
             imap_module_directory
             / "tests"
