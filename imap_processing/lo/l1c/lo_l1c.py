@@ -5,12 +5,12 @@ from pathlib import Path
 
 import numpy as np
 import xarray as xr
-
+import pandas as pd
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.spice.time import met_to_ttj2000ns
 
 
-def lo_l1c(dependencies: dict) -> list[Path]:
+def lo_l1c(sci_dependencies, anc_dependencies: list) -> list[xr.Dataset]:
     """
     Will process IMAP-Lo L1B data into L1C CDF data products.
 
@@ -30,11 +30,11 @@ def lo_l1c(dependencies: dict) -> list[Path]:
     attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1c")
 
     # if the dependencies are used to create Annotated Direct Events
-    if "imap_lo_l1b_de" in dependencies:
+    if "imap_lo_l1b_de" in sci_dependencies:
         logical_source = "imap_lo_l1c_pset"
-        l1b_de = dependencies["imap_lo_l1b_de"]
+        l1b_de = sci_dependencies["imap_lo_l1b_de"]
 
-        l1b_goodtimes_only = filter_goodtimes(l1b_de)
+        l1b_goodtimes_only = filter_goodtimes(l1b_de, anc_dependencies)
         pset = initialize_pset(l1b_goodtimes_only, attr_mgr, logical_source)
     return [pset]
 
@@ -77,7 +77,7 @@ def initialize_pset(
     return pset
 
 
-def filter_goodtimes(l1b_de: xr.Dataset) -> xr.Dataset:
+def filter_goodtimes(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
     """
     Filter the L1B Direct Event dataset to only include good times.
 
@@ -91,11 +91,29 @@ def filter_goodtimes(l1b_de: xr.Dataset) -> xr.Dataset:
     l1b_de : xarray.Dataset
         Filtered L1B Direct Event dataset.
     """
-    # TODO: Need to setup Ancillary dependency. Hardcoding for now
+    # TODO: I need to come back the ancillary dependencies when I get a
+    #  better idea of what the naming will look like from Lo. This will be
+    #  moved to a function, but doing this for now to get the init working.
+    print("ANC DEPENDS", anc_dependencies)
+    sweep_table = next((item for item in anc_dependencies if "sweeptable" in item),
+                       None)
+    # sweep table is a dependency so this should always be in the list
+    sweep_table_df = pd.read_csv(sweep_table)
+    columns_list = list(sweep_table_df.columns)
+    # convert goodtimes from MET to TTJ2000
+    goodtimes_start = met_to_ttj2000ns(sweep_table_df["GoodTime_strt"])
+    goodtimes_end = met_to_ttj2000ns(sweep_table_df["GoodTime_end"])
 
-    good_times_start = [0]
-    good_times_end = [3600]
-    return l1b_de.where(l1b_de["badtimes"] == 0, drop=True)
+    # Create a mask for epochs within any of the start/end time ranges
+    mask = np.zeros_like(l1b_de["epoch"], dtype=bool)
+
+
+    for start, end in zip(goodtimes_start, goodtimes_end):
+        mask |= (l1b_de["epoch"] >= start) & (l1b_de["epoch"] < end)
+
+    # Filter the dataset using the mask
+    filtered_epochs = l1b_de.sel(epoch=mask)
+    return filtered_epochs
 
 
 def create_datasets(
