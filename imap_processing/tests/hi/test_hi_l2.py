@@ -110,6 +110,8 @@ def test_calculate_ena_intensity(empty_rectangular_map_dataset):
         }
     )
     ena_intesity_vars = calculate_ena_intensity(map_ds, None, None)
+
+    # TODO: add value/functional test checks once the full algorithm is implemented
     for var_name in [
         "ena_intensity",
         "ena_intensity_stat_unc",
