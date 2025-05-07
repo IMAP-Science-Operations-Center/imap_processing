@@ -11,6 +11,7 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils.coordinates import CoordNames
+from imap_processing.ultra.l1c.ultra_l1c_pset_bins import get_energy_delta_minus_plus
 
 logger = logging.getLogger(__name__)
 logger.info("Importing ultra_l2 module")
@@ -466,14 +467,14 @@ def ultra_l2(
             )
 
     # Add the energy delta plus/minus to the map dataset
-    # TODO: Update these placeholders on energy deltas (our mean is the geometric mean,
-    # so it should have asymmetric deltas).
+    energy_delta_minus, energy_delta_plus = get_energy_delta_minus_plus()
     map_dataset.coords["energy_delta_minus"] = xr.DataArray(
-        (l1c_products[0]["energy_bin_delta"].values / 2),
+        energy_delta_minus,
         dims=(CoordNames.ENERGY_L2.value,),
     )
-    map_dataset.coords["energy_delta_plus"] = map_dataset["energy_delta_minus"].copy(
-        deep=True
+    map_dataset.coords["energy_delta_plus"] = xr.DataArray(
+        energy_delta_plus,
+        dims=(CoordNames.ENERGY_L2.value,),
     )
 
     # Add variable specific attributes to the map's data_vars and coords
