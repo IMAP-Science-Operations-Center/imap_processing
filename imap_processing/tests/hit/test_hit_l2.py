@@ -148,13 +148,14 @@ def _check_ancillary_dataset(
 
 
 def test_add_cdf_attributes():
+    """Test the add_cdf_attributes function."""
     # Create a dataset with multiple variable name patterns
     dataset = xr.Dataset(
         {
             "intensity_var": (["dim1", "dim2"], np.ones((2, 2))),
-            "energy_var": (["dim1", "dim2"], np.ones((2, 2))),
-            "energy_delta_var": (["dim1", "dim2"], np.ones((2, 2))),
             "other_var": (["dim1", "dim2"], np.ones((2, 2))),
+            "energy_var": (["dim1"], np.ones(2)),
+            "energy_delta_var": (["dim1"], np.ones(2)),
         },
         coords={"dim1": [10, 20], "dim2": [1, 2]},
     )
