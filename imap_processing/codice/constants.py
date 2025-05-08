@@ -142,13 +142,19 @@ DATA_PRODUCT_CONFIGURATIONS = {
     },
     CODICEAPID.COD_LO_IAL: {
         "dataset_name": "imap_codice_l1a_lo-ialirt",
-        "dims": {"esa_step": 128, "inst_az": 1, "spin_sector": 1},
+        "dims": {"spin_sector": 1, "esa_step": 128},
         "instrument": "lo",
         "num_counters": 9,
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
-        ],  # TODO: Double check with Joey
+            "rgfo_half_spin",
+            "nso_half_spin",
+            "sw_bias_gain_mode",
+            "st_bias_gain_mode",
+            "data_quality",
+            "spin_period",
+        ],
         "variable_names": LO_IAL_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED: {
