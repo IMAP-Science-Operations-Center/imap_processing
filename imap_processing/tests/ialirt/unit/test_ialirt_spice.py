@@ -3,10 +3,12 @@
 import numpy as np
 
 from imap_processing.ialirt.l0.ialirt_spice import (
+    get_instrument_vector,
     get_rotation_matrix,
     get_z_axis,
     transform_instrument_vectors_to_urf,
 )
+from imap_processing.spice.geometry import SpiceFrame
 
 
 def test_get_z_axis():
@@ -93,3 +95,18 @@ def test_transform_instrument_vectors_to_urf():
     )
 
     np.testing.assert_allclose(result, expected, atol=1e-8)
+
+
+def test_get_instrument_vector():
+    """Test get_instrument_vector function."""
+    et = np.array([0.0])
+    vector = np.array([[1.0, 0.0, 0.0]])
+
+    result = get_instrument_vector(
+        et,
+        vector,
+        SpiceFrame.IMAP_SPACECRAFT,
+        SpiceFrame.IMAP_SPACECRAFT,
+    )
+
+    np.testing.assert_allclose(result, vector, atol=1e-8)

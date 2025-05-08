@@ -4,7 +4,11 @@ import numpy as np
 import spiceypy as spice
 from numpy.typing import NDArray
 
-from imap_processing.spice.geometry import spherical_to_cartesian
+from imap_processing.spice.geometry import (
+    SpiceFrame,
+    frame_transform,
+    spherical_to_cartesian,
+)
 
 
 def get_z_axis(sc_inertial_right: NDArray, sc_inertial_decline: NDArray) -> NDArray:
@@ -108,3 +112,39 @@ def transform_instrument_vectors_to_urf(
     )
 
     return vectors_urf
+
+
+def get_instrument_vector(
+    et: np.ndarray,
+    vector: np.ndarray,
+    instrument_frame: SpiceFrame = SpiceFrame.IMAP_MAG,
+    spacecraft_frame: SpiceFrame = SpiceFrame.IMAP_SPACECRAFT,
+) -> np.ndarray:
+    """
+    Get the vectors wrt the spacecraft.
+
+    Parameters
+    ----------
+    et : np.ndarray
+        Ephemeris time.
+    vector : np.ndarray
+        Vector in the instrument frame.
+    instrument_frame : SpiceFrame
+        Instrument frame.
+    spacecraft_frame : SpiceFrame
+        Spacecraft frame.
+
+    Returns
+    -------
+    vector_urf : np.ndarray
+        Transformed vector(s) in the spacecraft frame.
+    """
+    # Instrument frame → SC frame (URF)
+    vector_urf = frame_transform(
+        et=et,
+        position=vector,
+        from_frame=instrument_frame,
+        to_frame=spacecraft_frame,
+    )
+
+    return vector_urf
