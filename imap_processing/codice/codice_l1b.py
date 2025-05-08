@@ -11,8 +11,11 @@ dataset = process_codice_l1b(l1a_filenanme)
 
 # TODO: Some things to figure out with Joey:
 #       - Do any of the support variables need to be converted to rates?
+#         - No
 #       - How to convert hi-priority data product?
+#         - Need updated algorithm document
 #       - Do hi-omni and hi-sectored energy bins need to be converted?
+#         - No
 
 import logging
 import sys
