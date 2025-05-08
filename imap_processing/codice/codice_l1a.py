@@ -27,7 +27,6 @@ from imap_processing.codice import constants
 from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.decompress import decompress
 from imap_processing.codice.utils import CODICEAPID
-from imap_processing.ialirt.l0.process_codicelo import process_codicelo
 from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
@@ -103,12 +102,13 @@ class CoDICEL1aPipeline:
             List of epoch values.
         """
         epoch = met_to_ttj2000ns(
-            self.dataset.acq_start_seconds + self.dataset.acq_start_subseconds / 1e6
+            self.dataset["acq_start_seconds"]
+            + self.dataset["acq_start_subseconds"] / 1e6
         )
 
         return epoch
 
-    def decompress_data(self, science_values: list[str]) -> None:
+    def decompress_data(self, science_values: list[str] | str) -> None:
         """
         Perform decompression on the data.
 
@@ -118,9 +118,9 @@ class CoDICEL1aPipeline:
 
         Parameters
         ----------
-        science_values : list[str]
-            A list of byte strings representing the science values of the data
-            for each packet.
+        science_values : list[str] | str
+            A list of (or a single) byte string(s) representing the science
+            values of the data for each packet.
         """
         # The compression algorithm depends on the instrument and view ID
         if self.config["instrument"] == "lo":
@@ -129,16 +129,28 @@ class CoDICEL1aPipeline:
             compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[self.view_id]
 
         self.raw_data = []
-        for packet_data, byte_count in zip(science_values, self.dataset.pkt_len.data):
-            # Convert from numpy array to byte object
-            values = ast.literal_eval(str(packet_data))
 
-            # Only use the values up to the byte count. Bytes after this are
-            # used as padding and are not needed
-            values = values[:byte_count]
+        if self.config["dataset_name"] == "imap_codice_l1a_lo-ialirt":
+            integers = [
+                int(science_values[i : i + 3], 2)
+                for i in range(0, len(science_values), 3)
+            ]
+            self.raw_data = [integers]
+            # TODO: Not confident this is right
 
-            decompressed_values = decompress(values, compression_algorithm)
-            self.raw_data.append(decompressed_values)
+        else:
+            for packet_data, byte_count in zip(
+                science_values, self.dataset.pkt_len.data
+            ):
+                # Convert from numpy array to byte object
+                values = ast.literal_eval(str(packet_data))
+
+                # Only use the values up to the byte count. Bytes after this are
+                # used as padding and are not needed
+                values = values[:byte_count]
+
+                decompressed_values = decompress(values, compression_algorithm)
+                self.raw_data.append(decompressed_values)
 
     def define_coordinates(self) -> None:
         """
@@ -152,7 +164,8 @@ class CoDICEL1aPipeline:
 
         for name in coord_names:
             if name == "epoch":
-                values = self.calculate_epoch_values()
+                # TODO add check for list length
+                values = [self.calculate_epoch_values()]
             elif name in ["esa_step", "inst_az", "spin_sector"]:
                 values = np.arange(self.config["dims"][name])
             else:
@@ -265,21 +278,24 @@ class CoDICEL1aPipeline:
                 )
 
             elif variable_name in packet_data_variables:
-                variable_data = self.dataset[variable_name].data
+                variable_data = [self.dataset[variable_name]["data"]]
+                # TODO: Check for list length
                 dims = ["epoch"]
                 attrs = self.cdf_attrs.get_variable_attributes(variable_name)
 
             # Data quality is named differently in packet data and needs to be
             # treated slightly differently
             elif variable_name == "data_quality":
-                variable_data = self.dataset.suspect.data
+                variable_data = [self.dataset["suspect"]["data"]]
+                # TODO: Check for list length
                 dims = ["epoch"]
                 attrs = self.cdf_attrs.get_variable_attributes("data_quality")
 
             # Spin period requires the application of a conversion factor
             # See Table B.5 in the algorithm document
             elif variable_name == "spin_period":
-                variable_data = self.dataset.spin_period.data * 0.00032
+                variable_data = [self.dataset["spin_period"]["data"] * 0.00032]
+                # TODO: Check for list length
                 dims = ["epoch"]
                 attrs = self.cdf_attrs.get_variable_attributes("spin_period")
 
@@ -634,30 +650,30 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
         dataset = datasets[apid]
         logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
 
-        # # Housekeeping data
-        # if apid == CODICEAPID.COD_NHK:
-        #     processed_dataset = create_hskp_dataset(dataset, data_version)
-        #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
-        #
-        # # Event data
-        # elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
-        #     processed_dataset = create_event_dataset(apid, dataset, data_version)
-        #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+        # Housekeeping data
+        if apid == CODICEAPID.COD_NHK:
+            processed_dataset = create_hskp_dataset(dataset, data_version)
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+
+        # Event data
+        elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
+            processed_dataset = create_event_dataset(apid, dataset, data_version)
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # I-ALiRT data
-        if apid == CODICEAPID.COD_LO_IAL:
-
+        elif apid == CODICEAPID.COD_LO_IAL:
             all_data_streams = []
             current_data_stream = bytearray()
+            all_datasets = []
 
-            # every 15 items, append two byte data to a byte stream
+            # Every 15 items, append two byte data to a byte stream
             for packet_num in range(0, len(dataset.acquisition_time.data)):
-                # print(f"\nProcessing packet number {packet_num}")
                 counter = dataset.counter.data[packet_num]
-                # print(f"The counter is {counter}")
                 if counter != 255:
                     for i in range(0, 15):
-                        current_data_stream.extend(bytearray([dataset[f"data_{i:02}"].data[packet_num]]))
+                        current_data_stream.extend(
+                            bytearray([dataset[f"data_{i:02}"].data[packet_num]])
+                        )
                 else:
                     # Data stream is ready to be processed like SW species product
                     if len(current_data_stream) > 0:
@@ -665,133 +681,131 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
                     # Append header info?
                     current_data_stream = bytearray()
 
+            # The first packet is bad
+            all_data_streams = all_data_streams[1:]
 
             for i, data_stream in enumerate(all_data_streams, start=1):
-                print(f"\nProcessing epoch {i} of {len(all_data_streams)}")
-                bit_string = ''.join(f'{byte:08b}' for byte in data_stream)
+                bit_string = "".join(f"{byte:08b}" for byte in data_stream)
 
                 bit_structure = {
-                    "SHCOARSE": 32,
-                    "PACKET_VERSION": 16,
-                    "SPIN_PERIOD": 16,
-                    "ACQ_START_SECONDS": 32,
-                    "ACQ_START_SUBSECONDS": 20,
-                    "SPARE_00": 8,
-                    "ST_BIAS_GAIN_MODE": 2,
-                    "SW_BIAS_GAIN_MODE": 2,
-                    "TABLE_ID": 32,
-                    "PLAN_ID": 16,
-                    "PLAN_STEP": 4,
-                    "VIEW_ID": 4,
-                    "RGFO_HALF_SPIN": 6,
-                    "NSO_HALF_SPIN": 6,
-                    "SPARE_01": 1,
-                    "SUSPECT": 1,
-                    "COMPRESSION": 3,
-                    "BYTE_COUNT": 23,
+                    "SHCOARSE": {"bit_length": 32, "value": None},
+                    "PACKET_VERSION": {"bit_length": 16, "value": None},
+                    "SPIN_PERIOD": {"bit_length": 16, "value": None},
+                    "ACQ_START_SECONDS": {"bit_length": 32, "value": None},
+                    "ACQ_START_SUBSECONDS": {"bit_length": 20, "value": None},
+                    "SPARE_00": {"bit_length": 8, "value": None},
+                    "ST_BIAS_GAIN_MODE": {"bit_length": 2, "value": None},
+                    "SW_BIAS_GAIN_MODE": {"bit_length": 2, "value": None},
+                    "TABLE_ID": {"bit_length": 32, "value": None},
+                    "PLAN_ID": {"bit_length": 16, "value": None},
+                    "PLAN_STEP": {"bit_length": 4, "value": None},
+                    "VIEW_ID": {"bit_length": 4, "value": None},
+                    "RGFO_HALF_SPIN": {"bit_length": 6, "value": None},
+                    "NSO_HALF_SPIN": {"bit_length": 6, "value": None},
+                    "SPARE_01": {"bit_length": 1, "value": None},
+                    "SUSPECT": {"bit_length": 1, "value": None},
+                    "COMPRESSION": {"bit_length": 3, "value": None},
+                    "BYTE_COUNT": {"bit_length": 23, "value": None},
                 }
 
                 bit_position = 0
-                for field_name, bit_length in bit_structure.items():
-
+                for field in bit_structure:
                     # Convert from binary to integer
-                    value = int(bit_string[bit_position: bit_position + bit_length], 2)
-                    print(f"\t{field_name}: {value}")
-                    bit_position += bit_length
+                    value = int(
+                        bit_string[
+                            bit_position : bit_position
+                            + bit_structure[field]["bit_length"]
+                        ],
+                        2,
+                    )
+                    bit_structure[field]["value"] = value
+                    bit_position += bit_structure[field]["bit_length"]
 
-                # The rest is the data field
-                data_field = bit_string[bit_position:]
-                print(f"\tLength of data field is {int(len(data_field)/8)} bytes")
-                print(data_field[:-88])
+                # The rest is the data field, up to the byte count
+                data_field = bit_string[
+                    bit_position : bit_position + bit_structure["BYTE_COUNT"]["value"]
+                ]
 
-                # The extra 3 is becuase its a 3-byte integer
-                # Determine bad packet based on the time
+                # Run the pipeline to create a dataset for the product
+                pipeline = CoDICEL1aPipeline(
+                    bit_structure["TABLE_ID"]["value"],
+                    bit_structure["PLAN_ID"]["value"],
+                    bit_structure["PLAN_STEP"]["value"],
+                    bit_structure["VIEW_ID"]["value"],
+                )
+                pipeline.set_data_product_config(apid, dataset, data_version)
+                pipeline.decompress_data(data_field)
+                pipeline.reshape_data()
+                pipeline.dataset = {}
+                pipeline.dataset["acq_start_seconds"] = bit_structure[
+                    "ACQ_START_SECONDS"
+                ]["value"]
+                pipeline.dataset["acq_start_subseconds"] = bit_structure[
+                    "ACQ_START_SUBSECONDS"
+                ]["value"]
+                pipeline.dataset["rgfo_half_spin"] = {}
+                pipeline.dataset["rgfo_half_spin"]["data"] = bit_structure[
+                    "RGFO_HALF_SPIN"
+                ]["value"]
+                pipeline.dataset["nso_half_spin"] = {}
+                pipeline.dataset["nso_half_spin"]["data"] = bit_structure[
+                    "NSO_HALF_SPIN"
+                ]["value"]
+                pipeline.dataset["sw_bias_gain_mode"] = {}
+                pipeline.dataset["sw_bias_gain_mode"]["data"] = bit_structure[
+                    "SW_BIAS_GAIN_MODE"
+                ]["value"]
+                pipeline.dataset["st_bias_gain_mode"] = {}
+                pipeline.dataset["st_bias_gain_mode"]["data"] = bit_structure[
+                    "ST_BIAS_GAIN_MODE"
+                ]["value"]
+                pipeline.dataset["suspect"] = {}
+                pipeline.dataset["suspect"]["data"] = bit_structure["SUSPECT"]["value"]
+                pipeline.dataset["spin_period"] = {}
+                pipeline.dataset["spin_period"]["data"] = bit_structure["SPIN_PERIOD"][
+                    "value"
+                ]
+                pipeline.define_coordinates()
+                completed_dataset = pipeline.define_data_variables()
+                all_datasets.append(completed_dataset)
 
-            # (27960 - (272 - 32)) / 8
-            # Matter of cutting out after the byte count?
+            processed_dataset = xr.merge(all_datasets)
+            print(processed_dataset)
 
+        # Everything else
+        elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
+            # Extract the data
+            science_values = [packet.data for packet in dataset.data]
 
+            # Get the four "main" parameters for processing
+            table_id, plan_id, plan_step, view_id = get_params(dataset)
 
-            # ialirt_datasets = process_codicelo(dataset)
-            # print(len(ialirt_datasets))
-            # for i, dataset in enumerate(ialirt_datasets):
-            #     print(i)
-            #     print(dataset.epoch.data)
-            #     print(len(dataset.epoch.data))
+            # Run the pipeline to create a dataset for the product
+            pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
+            pipeline.set_data_product_config(apid, dataset, data_version)
+            pipeline.decompress_data(science_values)
+            pipeline.reshape_data()
+            pipeline.define_coordinates()
+            processed_dataset = pipeline.define_data_variables()
 
-            # byte_stream = bytearray()
-            # for epoch in ialirt_datasets:
-            #     byte_stream += epoch.data.data.tobytes()
-            # print(byte_stream)
-            # print(len(byte_stream))
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
-            # print(len(ialirt_datasets))
-            # print(ialirt_datasets[1].data)
-            # print(ialirt_datasets[1].data.shape)
-            # for i, item in enumerate(ialirt_datasets[0].data.data):
-            #     print(f"{i}: {item}")
+        # TODO: Still need to implement I-ALiRT and hi-priorities data products
+        elif apid in [
+            CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES,
+            CODICEAPID.COD_HI_IAL,
+        ]:
+            logger.info("\tStill need to properly implement")
+            processed_dataset = None
 
-            # I have a data array of length 3495, which is 233 chunks of 15 bytes
-            # Each 15 byte chunk must be processed similar to a LO_SW_SPECIES data product
+        # For APIDs that don't require processing
+        else:
+            logger.info(f"\t{apid} does not require processing")
+            continue
 
-            # String together 15 byte chunks until end character (0xFF) then process as SW Species (including header)
+        processed_datasets.append(processed_dataset)
 
-            # byte_stream = ialirt_datasets[0].data.data.tobytes()
-            # print(byte_stream)
-            # end_char_indices = [i for i, byte in enumerate(byte_stream) if byte == 0xFF]
-            # print(end_char_indices)
-            # bit_stream = ''.join(f'{byte:08b}' for byte in byte_stream)
-            # print(bit_stream)
-            # print(len(bit_stream))
-            # print(bit_stream)
-            # print(len(bit_stream))
-            # bit_stream = ''.join(f'{x:08b}' for x in foo)
-            # print(bit_stream)
-            # print(len(bit_stream))
-
-            # science_values = [packet.data.astype(int) for packet in ialirt_dataset]
-            # table_id, plan_id, plan_step, view_id = 0, 0, 0, 0
-            # pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-            # pipeline.set_data_product_config(apid, dataset, data_version)
-            # pipeline.raw_data = []
-            # for packet_data in science_values:
-            #     pipeline.raw_data.append(packet_data.data)
-            # print(pipeline.__dict__["raw_data"][0].shape)
-
-        # # Everything else
-        # elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
-        #     # Extract the data
-        #     science_values = [packet.data for packet in dataset.data]
-        #
-        #     # Get the four "main" parameters for processing
-        #     table_id, plan_id, plan_step, view_id = get_params(dataset)
-        #
-        #     # Run the pipeline to create a dataset for the product
-        #     pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-        #     pipeline.set_data_product_config(apid, dataset, data_version)
-        #     pipeline.decompress_data(science_values)
-        #     pipeline.reshape_data()
-        #     pipeline.define_coordinates()
-        #     processed_dataset = pipeline.define_data_variables()
-        #
-        #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
-
-        # # TODO: Still need to implement I-ALiRT and hi-priorities data products
-        # elif apid in [
-        #     CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES,
-        #     CODICEAPID.COD_HI_IAL,
-        # ]:
-        #     logger.info("\tStill need to properly implement")
-        #     processed_dataset = None
-
-        # # For APIDs that don't require processing
-        # else:
-        #     logger.info(f"\t{apid} does not require processing")
-        #     continue
-
-    #     processed_datasets.append(processed_dataset)
-    #
-    # return processed_datasets
+    return processed_datasets
 
 
 if __name__ == "__main__":
