@@ -30,7 +30,7 @@ def test_l2b_logical_source(l2b_dataset: xr.Dataset):
     l2b_dataset : xr.Dataset
         A ``xarray`` dataset containing the test data
     """
-    expected_src = "imap_idex_l2b_sci"
+    expected_src = "imap_idex_l2b_sci-1week"
     assert l2b_dataset.attrs["Logical_source"] == expected_src
 
 
