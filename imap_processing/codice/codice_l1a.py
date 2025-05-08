@@ -647,38 +647,42 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
         # I-ALiRT data
         if apid == CODICEAPID.COD_LO_IAL:
 
-            print(dataset)
-            print(dataset["data_00"].data)
-            #print(len(dataset.acquisition_time.data))  #18917
+            # print(dataset)
+            # print(dataset["data_00"].data)
+            # print(len(dataset["data_00"].data))
+            # print(len(dataset.acquisition_time.data))  #18917 This is right
 
             all_data_streams = []
             data_stream = bytearray()
 
             # every 15 items, append two byte data to a byte stream
-            j=0
             for packet_num in range(0, len(dataset.acquisition_time.data)):
-                print(f"\nProcessing packet number {packet_num}")
+                # print(f"\nProcessing packet number {packet_num}")
                 counter = dataset.counter.data[packet_num]
-                print(f"The counter is {counter}")
+                # print(f"The counter is {counter}")
                 if counter != 255:
                     for i in range(0, 15):
-                        foo = bytearray([dataset[f"data_{i:02}"].data[packet_num]])
-                        data_stream.extend(foo)
+                        data_stream.extend(bytearray([dataset[f"data_{i:02}"].data[packet_num]]))
                 else:
-                    # append any header info
-                    # Go off and process the data like a SW species
-                    j += 1
-                    # print(f"Ready to be processed")
-                    # print(data_stream)
-                    all_data_streams.append(data_stream)
+                    # Data stream is ready to be processed like SW species product
+                    if len(data_stream) > 0:
+                        all_data_streams.append(data_stream)
+                    # Append header info?
                     data_stream = bytearray()
-                # if packet_num > 100:
-                #     assert 1 == 0
-            # print(j)
+
+
             for i, stream in enumerate(all_data_streams):
                 print(f"{i}: {len(stream)}")
+            #
+            foo = all_data_streams[1]
+            data_bits = ''.join(f'{byte:08b}' for byte in foo)
 
-            print(all_data_streams[898])
+
+
+
+            # (27960 - (272 - 32)) / 8
+            # Matter of cutting out after the byte count?
+
 
 
             # ialirt_datasets = process_codicelo(dataset)
