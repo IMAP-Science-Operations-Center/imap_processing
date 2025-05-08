@@ -81,7 +81,7 @@ def add_cdf_attributes(
     dataset: xr.Dataset, logical_source: str, attr_mgr: ImapCdfAttributes
 ) -> xr.Dataset:
     """
-    Update attributes to the given dataset.
+    Add attributes to the given dataset.
 
     This function adds attributes to the dataset variables and dimensions.
     It also adds dimension labels to the dataset as coordinates.
