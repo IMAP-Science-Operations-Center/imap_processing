@@ -349,7 +349,7 @@ def compare_data(
                     # which are only present in the validation data. In the actual
                     # data, sectored rates are organized by species in 4D arrays.
                     #    i.e. h_sectored_counts has shape
-                    #         (epoch, h_energy_index, azimuth, declination).
+                    #         (epoch, h_energy_index, azimuth, zenith).
                     # species and energy index are used to find the correct
                     # array of sectored rate data from the actual data for comparison.
                     species = expected_data[field][frame]

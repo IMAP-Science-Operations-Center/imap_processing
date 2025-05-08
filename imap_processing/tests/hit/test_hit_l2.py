@@ -251,16 +251,16 @@ def test_build_ancillary_dataset_sectored():
     np.random.seed(42)  # Set a random seed for reproducibility
     epoch = np.array(["2025-01-01T00:00", "2025-01-01T00:01"], dtype="datetime64[m]")
     energy_mean = [1.8, 4, 6]
-    declination = np.arange(8)
+    zenith = np.arange(8)
     azimuth = np.arange(15)
 
     species_array = xr.DataArray(
-        data=np.random.rand(2, 3, 15, 8),  # (epoch, energy_mean, azimuth, declination)
-        dims=("epoch", "energy_mean", "azimuth", "declination"),
+        data=np.random.rand(2, 3, 15, 8),  # (epoch, energy_mean, azimuth, zenith)
+        dims=("epoch", "energy_mean", "azimuth", "zenith"),
         coords={
             "epoch": epoch,
             "energy_mean": energy_mean,
-            "declination": declination,
+            "zenith": zenith,
             "azimuth": azimuth,
         },
         name="h",
@@ -378,13 +378,13 @@ def test_reshape_for_sectored():
     """
     Test the reshape_for_sectored function.
     """
-    # Mock input data: 3D array (epoch, energy, declination)
+    # Mock input data: 3D array (epoch, energy, zenith)
     np.random.seed(42)  # Set a random seed for reproducibility
-    epoch, energy, declination = 2, 3, 8
-    input_array = np.random.rand(epoch, energy, declination)
+    epoch, energy, zenith = 2, 3, 8
+    input_array = np.random.rand(epoch, energy, zenith)
 
-    # Expected output shape: 4D array (epoch, energy, azimuth, declination)
-    expected_shape = (epoch, energy, N_AZIMUTH, declination)
+    # Expected output shape: 4D array (epoch, energy, azimuth, zenith)
+    expected_shape = (epoch, energy, N_AZIMUTH, zenith)
 
     # Call the function
     reshaped_array = reshape_for_sectored(input_array)
@@ -600,7 +600,7 @@ def test_add_systematic_uncertainties():
         xr.Dataset(
             {
                 "h": (
-                    ("epoch", "h_energy_mean", "azimuth", "declination"),
+                    ("epoch", "h_energy_mean", "azimuth", "zenith"),
                     np.random.rand(2, 3, 15, 8).astype("float32"),
                 )
             }
@@ -688,7 +688,7 @@ def test_process_macropixel_intensity(
     valid_coords = {
         "epoch",
         "azimuth",
-        "declination",
+        "zenith",
         "h_energy_mean",
         "he4_energy_mean",
         "cno_energy_mean",

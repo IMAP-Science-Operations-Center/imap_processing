@@ -197,8 +197,8 @@ def reshape_for_sectored(arr: np.ndarray) -> np.ndarray:
     """
     Reshape the ancillary data for sectored rates.
 
-    Reshape the 3D arrays (epoch, energy, declination) to 4D arrays
-    (epoch, energy, azimuth, declination) by repeating the data
+    Reshape the 3D arrays (epoch, energy, zenith) to 4D arrays
+    (epoch, energy, azimuth, zenith) by repeating the data
     along the azimuth dimension. This is done to match the dimensions
     of the sectored rates data to allow for proper calculation of
     intensities.
@@ -255,10 +255,8 @@ def build_ancillary_dataset(
     """
     data_vars = {}
 
-    # Check if this is sectored data (i.e., has azimuth and declination dims)
-    is_sectored = (
-        "declination" in species_array.dims or "declination" in species_array.coords
-    )
+    # Check if this is sectored data (i.e., has azimuth and zenith dims)
+    is_sectored = "zenith" in species_array.dims or "zenith" in species_array.coords
 
     # Build variables
     data_vars["delta_e"] = (species_array.dims, delta_e)
@@ -355,7 +353,7 @@ def calculate_intensities_for_a_species(
     )
 
     # Reshape parameters for sectored rates to 4D arrays
-    if "declination" in updated_ds[species_variable].dims:
+    if "zenith" in updated_ds[species_variable].dims:
         delta_e = reshape_for_sectored(delta_e)
         geometry_factors = reshape_for_sectored(geometry_factors)
         efficiencies = reshape_for_sectored(efficiencies)

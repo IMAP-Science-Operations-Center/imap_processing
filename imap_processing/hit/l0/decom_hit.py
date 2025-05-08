@@ -6,11 +6,11 @@ import xarray as xr
 from imap_processing.hit.l0.constants import (
     AZIMUTH_ANGLES,
     COUNTS_DATA_STRUCTURE,
-    DECLINATION_ANGLES,
     EXPONENT_BITS,
     FLAG_PATTERN,
     FRAME_SIZE,
     MANTISSA_BITS,
+    ZENITH_ANGLES,
 )
 from imap_processing.utils import convert_to_binary_string
 
@@ -92,14 +92,14 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
         # Get dims for data variables (yaml file not created yet)
         if len(field_meta.shape) > 1:
             if "sectorates" in field:
-                # Reshape data to 15x8 for azimuth and declination look directions
+                # Reshape data to 15x8 for azimuth and zenith look directions
                 parsed_data = np.array(parsed_data).reshape((-1, *field_meta.shape))
-                dims = ["epoch", "azimuth", "declination"]
+                dims = ["epoch", "azimuth", "zenith"]
                 # Add angle values to coordinates
-                sci_dataset.coords["declination"] = xr.DataArray(
-                    data=DECLINATION_ANGLES,
-                    dims=["declination"],
-                    name="declination",
+                sci_dataset.coords["zenith"] = xr.DataArray(
+                    data=ZENITH_ANGLES,
+                    dims=["zenith"],
+                    name="zenith",
                 )
                 sci_dataset.coords["azimuth"] = xr.DataArray(
                     data=AZIMUTH_ANGLES,

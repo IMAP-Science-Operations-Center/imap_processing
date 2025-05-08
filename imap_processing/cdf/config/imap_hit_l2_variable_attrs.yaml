@@ -57,11 +57,11 @@ default_angle_attrs: &default_angle
   SCALE_TYP: linear
 
 # <=== Coordinates ===>
-declination:
+zenith:
   <<: *default_angle
   CATDESC: Angle from the spin axis (0 deg.) to anti-spin axis (180 deg.) in 8 bins
-  FIELDNAM: Declination
-  LABLAXIS: Declination
+  FIELDNAM: Zenith
+  LABLAXIS: Zenith
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifer:DirectionAngle.PolarAngle
 
 azimuth:
@@ -187,9 +187,9 @@ cno_energy_mean:
 
 
 # <=== Labels ===>
-declination_label:
+zenith_label:
   CATDESC: Angle from the spin axis (0 deg.) to anti-spin axis (180 deg.) in 8 bins
-  FIELDNAM: Declination Angle
+  FIELDNAM: Zenith Angle
   FORMAT: A6
   VAR_TYPE: metadata
 
@@ -1603,10 +1603,10 @@ h_macropixel_intensity:
   CATDESC: H Macropixel Intensity
   DEPEND_1: h_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: h_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   FIELDNAM: H Intensity Macropixel
   DELTA_MINUS: h_total_uncert_plus
   DELTA_PLUS: h_total_uncert_minus
@@ -1616,10 +1616,10 @@ he4_macropixel_intensity:
   CATDESC: He4 Macropixel Intensity
   DEPEND_1: he4_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: he4_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   FIELDNAM: He4 Intensity Macropixel
   DELTA_MINUS: he4_total_uncert_plus
   DELTA_PLUS: he4_total_uncert_minus
@@ -1629,10 +1629,10 @@ cno_macropixel_intensity:
   CATDESC: C, N, O Macropixel Intensity
   DEPEND_1: cno_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: cno_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   FIELDNAM: CNO Intensity Macropixel
   DELTA_MINUS: c_total_uncert_plus
   DELTA_PLUS: c_total_uncert_minus
@@ -1642,10 +1642,10 @@ nemgsi_macropixel_intensity:
   CATDESC: NeMgSi Macropixel Intensity
   DEPEND_1: nemgsi_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: nemgsi_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   FIELDNAM: NeMgSi Intensity Macropixel
   DELTA_MINUS: nemgsi_total_uncert_plus
   DELTA_PLUS: nemgsi_total_uncert_minus
@@ -1655,10 +1655,10 @@ fe_macropixel_intensity:
   CATDESC: Fe Macropixel Intensity
   DEPEND_1: fe_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: fe_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   FIELDNAM: Fe Intensity Macropixel
   DELTA_MINUS: fe_total_uncert_plus
   DELTA_PLUS: fe_total_uncert_minus
@@ -1697,10 +1697,10 @@ h_stat_uncert_plus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: h_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: h_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Plus statistical uncertainty for H Macropixel
   FIELDNAM: H plus statistical uncertainty
 
@@ -1708,10 +1708,10 @@ h_stat_uncert_minus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: h_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: h_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Minus statistical uncertainty for H Macropixel
   FIELDNAM: H Minus Statistical Uncertainty
 
@@ -1719,10 +1719,10 @@ h_sys_err_plus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: h_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: h_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Plus systematic uncertainty for H Macropixel
   FIELDNAM: H Plus Systematic Uncertainty
 
@@ -1730,10 +1730,10 @@ h_sys_err_minus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: h_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: h_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Minus systematic uncertainty for H Macropixel
   FIELDNAM: H Minus Systematic Uncertainty
 
@@ -1741,10 +1741,10 @@ h_total_uncert_plus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: h_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: h_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for H Macropixel
   FIELDNAM: H Plus Total Uncertainty
 
@@ -1752,10 +1752,10 @@ h_total_uncert_minus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: h_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: h_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for H Macropixel
   FIELDNAM: H Minus Total Uncertainty
 
@@ -1763,10 +1763,10 @@ he4_stat_uncert_plus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: he4_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: he4_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Plus statistical uncertainty for He4 Macropixel
   FIELDNAM: He4 Plus Statistical Uncertainty
 
@@ -1774,10 +1774,10 @@ he4_stat_uncert_minus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: he4_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: he4_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Minus statistical uncertainty for He4 Macropixel
   FIELDNAM: He4 Minus Statistical Uncertainty
 
@@ -1785,10 +1785,10 @@ he4_sys_err_plus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: he4_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: he4_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Plus systematic uncertainty for He4 Macropixel
   FIELDNAM: He4 Plus Systematic Uncertainty
 
@@ -1796,10 +1796,10 @@ he4_sys_err_minus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: he4_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: he4_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Minus systematic uncertainty for He4 Macropixel
   FIELDNAM: He4 Minus Systematic Uncertainty
 
@@ -1807,10 +1807,10 @@ he4_total_uncert_plus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: he4_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: he4_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for He4 Macropixel
   FIELDNAM: He4 Plus Total Uncertainty
 
@@ -1818,10 +1818,10 @@ he4_total_uncert_minus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: he4_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: he4_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for He4 Macropixel
   FIELDNAM: He4 Minus Total Uncertainty
 
@@ -1829,10 +1829,10 @@ cno_stat_uncert_plus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: cno_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: cno_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Plus statistical uncertainty for C, N, O Macropixel
   FIELDNAM: CNO Plus Statistical Uncertainty
 
@@ -1840,10 +1840,10 @@ cno_stat_uncert_minus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: cno_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: cno_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Minus statistical uncertainty for C, N, O Macropixel
   FIELDNAM: CNO Minus Statistical Uncertainty
 
@@ -1851,10 +1851,10 @@ cno_sys_err_plus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: cno_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: cno_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Plus systematic uncertainty for C, N, O Macropixel
   FIELDNAM: CNO Plus Systematic Uncertainty
 
@@ -1862,10 +1862,10 @@ cno_sys_err_minus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: cno_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: cno_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Minus systematic uncertainty for C, N, O Macropixel
   FIELDNAM: CNO Minus Systematic Uncertainty
 
@@ -1873,10 +1873,10 @@ cno_total_uncert_plus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: cno_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: cno_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for C, N, O Macropixel
   FIELDNAM: CNO Plus Total Uncertainty
 
@@ -1884,10 +1884,10 @@ cno_total_uncert_minus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: cno_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: cno_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for C, N, O Macropixel
   FIELDNAM: CNO Minus Total Uncertainty
 
@@ -1895,10 +1895,10 @@ nemgsi_stat_uncert_plus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: nemgsi_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: nemgsi_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Plus statistical uncertainty for Ne, Mg, Si Macropixel
   FIELDNAM: NeMgSi Plus Statistical Uncertainty
 
@@ -1906,10 +1906,10 @@ nemgsi_stat_uncert_minus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: nemgsi_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: nemgsi_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Minus statistical uncertainty for Ne, Mg, Si Macropixel
   FIELDNAM: NeMgSi Minus Statistical Uncertainty
 
@@ -1917,10 +1917,10 @@ nemgsi_sys_err_plus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: nemgsi_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: nemgsi_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Plus systematic uncertainty for Ne, Mg, Si Macropixel
   FIELDNAM: NeMgSi Plus Systematic Uncertainty
 
@@ -1928,10 +1928,10 @@ nemgsi_sys_err_minus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: nemgsi_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: nemgsi_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Minus systematic uncertainty for Ne, Mg, Si Macropixel
   FIELDNAM: NeMgSi Minus Systematic Uncertainty
 
@@ -1939,10 +1939,10 @@ nemgsi_total_uncert_plus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: nemgsi_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: nemgsi_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Ne, Mg, Si Macropixel
   FIELDNAM: NeMgSi Plus Total Uncertainty
 
@@ -1950,10 +1950,10 @@ nemgsi_total_uncert_minus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: nemgsi_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: nemgsi_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Ne, Mg, Si Macropixel
   FIELDNAM: NeMgSi Minus Total Uncertainty
 
@@ -1961,10 +1961,10 @@ fe_stat_uncert_plus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: fe_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: fe_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Plus statistical uncertainty for Fe Macropixel
   FIELDNAM: Fe Plus Statistical Uncertainty
 
@@ -1972,10 +1972,10 @@ fe_stat_uncert_minus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: fe_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: fe_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Minus statistical uncertainty for Fe Macropixel
   FIELDNAM: Fe Minus Statistical Uncertainty
 
@@ -1983,10 +1983,10 @@ fe_sys_err_plus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: fe_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: fe_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Plus systematic uncertainty for Fe Macropixel
   FIELDNAM: Fe Plus Systematic Uncertainty
 
@@ -1994,10 +1994,10 @@ fe_sys_err_minus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: fe_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: fe_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Minus systematic uncertainty for Fe Macropixel
   FIELDNAM: Fe Minus Systematic Uncertainty
 
@@ -2005,10 +2005,10 @@ fe_total_uncert_plus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: fe_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: fe_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Plus total (statistical and systematic added in quadrature) uncertainty for Fe Macropixel
   FIELDNAM: Fe Plus Total Uncertainty
 
@@ -2016,10 +2016,10 @@ fe_total_uncert_minus_macropixel:
   <<: *default_uncertainty
   DEPEND_1: fe_energy_mean
   DEPEND_2: azimuth
-  DEPEND_3: declination
+  DEPEND_3: zenith
   LABL_PTR_1: fe_energy_mean_label
   LABL_PTR_2: azimuth_label
-  LABL_PTR_3: declination_label
+  LABL_PTR_3: zenith_label
   CATDESC: Minus total (statistical and systematic added in quadrature) uncertainty for Fe Macropixel
   FIELDNAM: Fe Minus Total Uncertainty
 
