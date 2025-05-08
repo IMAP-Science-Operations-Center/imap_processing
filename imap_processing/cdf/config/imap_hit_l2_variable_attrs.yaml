@@ -56,23 +56,6 @@ default_angle_attrs: &default_angle
   UNITS: Deg
   SCALE_TYP: linear
 
-default_dynamic_threshold_state_attrs: &default_dns
-  DEPEND_0: epoch
-  VAR_TYPE: data
-  CATDESC: Raw dynamic threshold state per integration
-  FIELDNAM: Dynamic threshold state
-  LABLAXIS: Counts
-  VALIDMIN: 0
-  VALIDMAX: 3
-  FILLVAL: -9223372036854775808
-  DISPLAY_TYPE: time_series
-  FORMAT: I1
-  UNITS: " "
-  SCALE_TYP: linear
-  SCALEMIN: 0.0001
-  SCALEMAX: 1000
-  DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
-
 # <=== Coordinates ===>
 declination:
   <<: *default_angle
@@ -333,7 +316,21 @@ cno_energy_mean_label:
 # <=== Data Variables ===>
 
 dynamic_threshold_state:
-  <<: *default_dns
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  CATDESC: Raw dynamic threshold state per integration
+  FIELDNAM: Dynamic threshold state
+  LABLAXIS: Counts
+  VALIDMIN: 0
+  VALIDMAX: 3
+  FILLVAL: -9223372036854775808
+  DISPLAY_TYPE: time_series
+  FORMAT: I1
+  UNITS: " "
+  SCALE_TYP: linear
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
 
 # Standard Intensity Variables
 h_standard_intensity:
@@ -1599,9 +1596,6 @@ ni_total_uncert_minus:
 
 
 # <=== Data Variables - Macropixel Dataset ===>
-
-dynamic_threshold_state_macropixel:
-  <<: *default_dns
 
 # Macropixel Intensity Variables
 h_macropixel_intensity:

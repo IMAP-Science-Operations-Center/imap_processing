@@ -154,6 +154,8 @@ def test_add_cdf_attributes():
         {
             "intensity_var": (["dim1", "dim2"], np.ones((2, 2))),
             "other_var": (["dim1", "dim2"], np.ones((2, 2))),
+            "uncert_var": (["dim1", "dim2"], np.ones((2, 2))),
+            "sys_err_var": (["dim1", "dim2"], np.ones((2, 2))),
             "energy_var": (["dim1"], np.ones(2)),
             "energy_delta_var": (["dim1"], np.ones(2)),
         },
@@ -179,12 +181,14 @@ def test_add_cdf_attributes():
     assert result.attrs["Global_attr"] == "Test Dataset"
 
     # 2. Variable attributes
-    # 'other_var' should use macropixel logic
-    assert "other_var_macropixel_attr" in result["other_var"].attrs
+    # uncertainty vars should use macropixel logic
+    assert "uncert_var_macropixel_attr" in result["uncert_var"].attrs
+    assert "sys_err_var_macropixel_attr" in result["sys_err_var"].attrs
 
-    # 'intensity_var' and 'energy_var' should use regular logic
+    # 'intensity_var', 'energy_var', 'other_var' should use regular logic
     assert "intensity_var_attr" in result["intensity_var"].attrs
     assert "energy_var_attr" in result["energy_var"].attrs
+    assert "other_var_attr" in result["other_var"].attrs
 
     # 'energy_delta_var' should have check_schema=False
     assert "energy_delta_var_attr" in result["energy_delta_var"].attrs

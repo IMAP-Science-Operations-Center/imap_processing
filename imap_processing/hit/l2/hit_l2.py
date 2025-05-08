@@ -86,6 +86,13 @@ def add_cdf_attributes(
     This function adds attributes to the dataset variables and dimensions.
     It also adds dimension labels to the dataset as coordinates.
 
+    The attributes are defined in a YAML file and retrieved by the attribute manager.
+    Many variables share attributes across datasets, but some differ due to dimension
+    variations. For example, macropixel uncertainty variables are 4D, while summed
+    and standard uncertainty variables are 2D. To handle this, macropixel uncertainty
+    variables have a "_macropixel" suffix in the YAML file, while summed and standard
+    variables do not (i.e. h_total_uncert_minus_macropixel vs. h_total_uncert_minus).
+
     Parameters
     ----------
     dataset : xr.Dataset
@@ -106,23 +113,19 @@ def add_cdf_attributes(
     # Assign attributes to each data variable in the Dataset
     for var in dataset.data_vars.keys():
         try:
-            if (
-                "macropixel" in logical_source
-                and "intensity" not in var
-                and "energy" not in var
-            ):
+            if "macropixel" in logical_source and ("uncert" in var or "sys_err" in var):
+                # Retrieve attributes specific to macropixel data.
                 dataset[var].attrs = attr_mgr.get_variable_attributes(
                     f"{var}_macropixel"
                 )
             else:
                 dataset[var].attrs = attr_mgr.get_variable_attributes(var)
             if "energy_delta" in var:
+                # skip schema check to avoid DEPEND_0 being added unnecessarily
                 dataset[var].attrs = attr_mgr.get_variable_attributes(
                     var, check_schema=False
                 )
         except KeyError:
-            # TODO: consider raising an error after L2 attributes are defined.
-            #  Until then, continue with processing and log warning
             logger.error(f"Field {var} not found in attribute manager.")
 
     # Assign attributes to dimensions and add dimension labels to dataset
