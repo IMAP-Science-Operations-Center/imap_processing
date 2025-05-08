@@ -317,12 +317,12 @@ def test_ultra_l2(mock_ultra_l2, mock_instrument_dependencies):
         "20240207",
         "20240207",
         "v001",
-        True,
+        False,
     )
 
     instrument.process()
     assert mock_ultra_l2.call_count == 1
-    assert mocks["mock_upload"].call_count == 1
+    assert mock_instrument_dependencies["mock_write_cdf"].call_count == 1
 
 
 @mock.patch("imap_processing.cli.hit_l1a")
