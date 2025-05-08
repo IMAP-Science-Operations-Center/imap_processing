@@ -6,7 +6,7 @@ default_particle_attrs: &default_particle
   FILLVAL: -1.00E+31
   VALIDMIN: 0
   VALIDMAX: 10000000000
-  FORMAT: F9.3
+  FORMAT: F14.3
   UNITS: 1/(cm^2 s MeV/nuc sr)
   SCALE_TYP: log
   SCALEMIN: 0.0001
@@ -42,7 +42,7 @@ default_uncertainty_attrs: &default_uncertainty
   VALIDMIN: 0
   VALIDMAX: 10000000000
   FILLVAL: -1.00E+31
-  FORMAT: F9.3
+  FORMAT: F14.3
   UNITS: 1/(cm^2 s MeV/nuc sr)
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential_Uncertainty
 
@@ -52,7 +52,7 @@ default_angle_attrs: &default_angle
   FILLVAL: -1.00E+31
   VALIDMIN: 0
   VALIDMAX: 1000
-  FORMAT: F5.1
+  FORMAT: F12.2
   UNITS: Deg
   SCALE_TYP: linear
 
