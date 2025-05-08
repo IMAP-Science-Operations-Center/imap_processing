@@ -647,13 +647,8 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
         # I-ALiRT data
         if apid == CODICEAPID.COD_LO_IAL:
 
-            # print(dataset)
-            # print(dataset["data_00"].data)
-            # print(len(dataset["data_00"].data))
-            # print(len(dataset.acquisition_time.data))  #18917 This is right
-
             all_data_streams = []
-            data_stream = bytearray()
+            current_data_stream = bytearray()
 
             # every 15 items, append two byte data to a byte stream
             for packet_num in range(0, len(dataset.acquisition_time.data)):
@@ -662,23 +657,55 @@ def process_codice_l1a(file_path: Path, data_version: str) -> list[xr.Dataset]:
                 # print(f"The counter is {counter}")
                 if counter != 255:
                     for i in range(0, 15):
-                        data_stream.extend(bytearray([dataset[f"data_{i:02}"].data[packet_num]]))
+                        current_data_stream.extend(bytearray([dataset[f"data_{i:02}"].data[packet_num]]))
                 else:
                     # Data stream is ready to be processed like SW species product
-                    if len(data_stream) > 0:
-                        all_data_streams.append(data_stream)
+                    if len(current_data_stream) > 0:
+                        all_data_streams.append(current_data_stream)
                     # Append header info?
-                    data_stream = bytearray()
+                    current_data_stream = bytearray()
 
 
-            for i, stream in enumerate(all_data_streams):
-                print(f"{i}: {len(stream)}")
-            #
-            foo = all_data_streams[1]
-            data_bits = ''.join(f'{byte:08b}' for byte in foo)
+            for i, data_stream in enumerate(all_data_streams, start=1):
+                print(f"\nProcessing epoch {i} of {len(all_data_streams)}")
+                bit_string = ''.join(f'{byte:08b}' for byte in data_stream)
 
+                bit_structure = {
+                    "SHCOARSE": 32,
+                    "PACKET_VERSION": 16,
+                    "SPIN_PERIOD": 16,
+                    "ACQ_START_SECONDS": 32,
+                    "ACQ_START_SUBSECONDS": 20,
+                    "SPARE_00": 8,
+                    "ST_BIAS_GAIN_MODE": 2,
+                    "SW_BIAS_GAIN_MODE": 2,
+                    "TABLE_ID": 32,
+                    "PLAN_ID": 16,
+                    "PLAN_STEP": 4,
+                    "VIEW_ID": 4,
+                    "RGFO_HALF_SPIN": 6,
+                    "NSO_HALF_SPIN": 6,
+                    "SPARE_01": 1,
+                    "SUSPECT": 1,
+                    "COMPRESSION": 3,
+                    "BYTE_COUNT": 23,
+                }
 
+                bit_position = 0
+                for field_name, bit_length in bit_structure.items():
 
+                    # Convert from binary to integer
+                    value = int(bit_string[bit_position: bit_position + bit_length], 2)
+                    print(f"\t{field_name}: {value}")
+                    bit_position += bit_length
+
+                # The rest is the data field
+                data_field = bit_string[bit_position:]
+                print(f"\tLength of data field is {int(len(data_field)/8)} bytes")
+                print(data_field[:-88])
+
+                # The extra 3 is becuase its a 3-byte integer
+                # Determine bad packet based on the time
 
             # (27960 - (272 - 32)) / 8
             # Matter of cutting out after the byte count?
