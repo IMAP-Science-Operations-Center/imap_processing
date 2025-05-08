@@ -75,11 +75,12 @@ SPICE_ARRAYS = [
 ]
 
 # Default IDEX Healpix parameters
-# Used in ena_maps.IDEXPointingSet and IDEX l2c processing
-# IDEX maps and psets should use the same healpix parameters
+# Used in IDEX l2c processing
 IDEX_HEALPIX_NSIDE = 8
 IDEX_HEALPIX_NESTED = False
-
+# Default IDEX Rectangular parameters
+# Used in IDEX l2c processing
+IDEX_SPACING_DEG = 10
 
 # Define the pointing reference frame for IDEX
 IDEX_POINTING_REFERENCE_FRAME = SpiceFrame.ECLIPJ2000

@@ -1,10 +1,22 @@
 int_fillval: &int_fillval -9223372036854775808
 
+rectangular_lon_pixel_label:
+  CATDESC: Longitude pixel index label for IDEX SkyMap.
+  FIELDNAM: Longitude pixel label
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+rectangular_lat_pixel_label:
+  CATDESC: Latitude pixel index label for IDEX SkyMap.
+  FIELDNAM: Latitude pixel label
+  FORMAT: A5
+  VAR_TYPE: metadata
+
 pixel_index:
-  CATDESC: "HEALPix pixel index for IDEX SkyMap"
-  FIELDNAM: "HEALPix Index"
+  CATDESC: HEALPix pixel index for IDEX SkyMap
+  FIELDNAM: HEALPix Index
   FORMAT: I4
-  LABLAXIS: "HEALPix Index"
+  LABLAXIS: HEALPix Index
   VAR_TYPE: support_data
   DISPLAY_TYPE: no_plot
   UNITS: ""
@@ -13,14 +25,56 @@ pixel_index:
   FILLVAL: *int_fillval
   DICT_KEY: SPASE>Support>SupportQuantity:Positional
 
-counts:
-  CATDESC: "Number of raw dust events for each healpix pixel"
-  FIELDNAM: "Dust Counts"
+rectangular_lon_pixel:
+  CATDESC: Longitude pixel index for IDEX SkyMap
+  FIELDNAM: Rectangular Longitude Index
   FORMAT: I4
-  LABLAXIS: "Counts"
+  LABLAXIS: Longitude Pixel
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: no_plot
+  UNITS: "degrees"
+  VALIDMIN: 0
+  VALIDMAX: 360
+  FILLVAL: *int_fillval
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
+
+rectangular_lat_pixel:
+  CATDESC: Latitude pixel index for IDEX SkyMap
+  FIELDNAM: Rectangular Latitude Index
+  FORMAT: I4
+  LABLAXIS: Latitude Pixel
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: no_plot
+  UNITS: "degrees"
+  VALIDMIN: 0
+  VALIDMAX: 180
+  FILLVAL: *int_fillval
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
+
+healpix_counts:
+  CATDESC: Number of raw dust events for each healpix pixel
+  FIELDNAM: Dust Counts
+  FORMAT: I4
+  LABLAXIS: Counts
   VAR_TYPE: data
   DISPLAY_TYPE: time_series
   DEPEND_0: pixel_index
+  UNITS: "counts"
+  VALIDMIN: 0
+  VALIDMAX: *int_fillval
+  FILLVAL: *int_fillval
+  DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
+
+rectangular_counts:
+  CATDESC: Number of raw dust events for each rectangular pixel
+  FIELDNAM: Dust Counts
+  FORMAT: I4
+  VAR_TYPE: data
+  DISPLAY_TYPE: time_series
+  DEPEND_0: rectangular_lon_pixel
+  DEPEND_1: rectangular_lat_pixel
+  LABL_PTR_0: rectangular_lon_pixel_label
+  LABL_PTR_1: rectangular_lat_pixel_label
   UNITS: "counts"
   VALIDMIN: 0
   VALIDMAX: *int_fillval

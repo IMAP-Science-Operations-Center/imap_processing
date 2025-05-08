@@ -11,56 +11,63 @@ from imap_processing.idex.idex_constants import (
     IDEX_HEALPIX_NSIDE,
     IDEX_POINTING_REFERENCE_FRAME,
 )
-from imap_processing.idex.idex_l2c import idex_l2c, idex_pset
+from imap_processing.idex.idex_l2c import idex_healpix_pset, idex_l2c
 
 
 @pytest.fixture
-def l2c_dataset(l1b_dataset: xr.Dataset) -> xr.Dataset:
+def l2c_datasets(l1b_dataset: xr.Dataset) -> list[xr.Dataset]:
     """Return a ``xarray`` dataset containing test data.
 
     Returns
     -------
-    dataset : xr.Dataset
-        A ``xarray`` dataset containing the test data
+    dataset : list[xr.Dataset]
+        A list of ``xarray`` datasets containing the test data
     """
 
     return idex_l2c(l1b_dataset)
 
 
-def test_l2c_attrs_and_vars(l2c_dataset: xr.Dataset, l1b_dataset: xr.Dataset):
+def test_l2c_attrs_and_vars(l2c_datasets: list[xr.Dataset], l1b_dataset: xr.Dataset):
     """Tests that the ``idex_l2b`` function generates datasets
     with the expected variables and attributes.
 
     Parameters
     ----------
-    l2c_dataset : xr.Dataset
+    l2c_datasets : list[xr.Dataset]
         A ``xarray`` dataset containing the l2c test data.
     l1b_dataset
         A ``xarray`` dataset containing the l1b test data.
     """
-    expected_src = "imap_idex_l2c_sci"
-    assert l2c_dataset.attrs["Logical_source"] == expected_src
-
-    # The total counts in the skymap should be equal to the number of dust events
+    healpix_ds = l2c_datasets[0]
+    rect_ds = l2c_datasets[1]
+    assert healpix_ds.attrs["Logical_source"] == "imap_idex_l2c_healpix-pset-1week"
+    assert rect_ds.attrs["Logical_source"] == "imap_idex_l2c_rectangular-pset-1week"
+    # The total counts in the pset should be equal to the number of dust events
     # in the l1b_dataset
-    np.testing.assert_allclose(l2c_dataset["counts"].sum(), len(l1b_dataset.epoch))
-    assert l2c_dataset.dims == {
+    np.testing.assert_allclose(
+        healpix_ds["healpix_counts"].sum(), len(l1b_dataset.epoch)
+    )
+    np.testing.assert_allclose(
+        rect_ds["rectangular_counts"].sum(), len(l1b_dataset.epoch)
+    )
+    assert healpix_ds.dims == {
         "pixel_index": hp.nside2npix(IDEX_HEALPIX_NSIDE),
         "epoch": 1,
     }
 
     # Assert attributes are present
-    assert l2c_dataset.attrs["sky_tiling_type"] == "Healpix"
-    assert l2c_dataset.attrs["HEALPix_nside"] == IDEX_HEALPIX_NSIDE
-    assert l2c_dataset.attrs["HEALPix_nest"] == IDEX_HEALPIX_NESTED
-    assert l2c_dataset.attrs["spice_reference_frame"] == IDEX_POINTING_REFERENCE_FRAME
+    assert healpix_ds.attrs["sky_tiling_type"] == "Healpix"
+    assert healpix_ds.attrs["HEALPix_nside"] == IDEX_HEALPIX_NSIDE
+    assert healpix_ds.attrs["HEALPix_nest"] == IDEX_HEALPIX_NESTED
+    assert healpix_ds.attrs["spice_reference_frame"] == IDEX_POINTING_REFERENCE_FRAME
     # Check the attributes of the dataset by writing to a CDF file
-    write_cdf(l2c_dataset)
+    write_cdf(healpix_ds)
+    write_cdf(rect_ds)
 
 
 def test_idex_pset(l1b_dataset: xr.Dataset):
     """Test for idex_pset function"""
-    pset = idex_pset(l1b_dataset)
+    pset = idex_healpix_pset(l1b_dataset)
 
     assert pset.epoch == np.mean([l1b_dataset.epoch[0], l1b_dataset.epoch[-1]])
 
