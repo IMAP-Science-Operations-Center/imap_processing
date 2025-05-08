@@ -1324,11 +1324,9 @@ class HealpixSkyMap(AbstractSkyMap):
             # Determine if tolerance is met
             # (skip on the 0th iteration, as there's no delta)
             if depth > 0:
-                # TODO: Ask Nick/Ultra Instrument team if we need to compare each value
-                # in the pixel's array, or just the mean value.
-                if np.isclose(
-                    mean_pixel_value.mean(),
-                    previous_mean_pixel_value.mean(),
+                if np.allclose(
+                    mean_pixel_value,
+                    previous_mean_pixel_value,
                     rtol=rtol,
                     atol=atol,
                 ):
