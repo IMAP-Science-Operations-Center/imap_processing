@@ -4,9 +4,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing.ultra.constants import UltraConstants
-from imap_processing.cdf.utils import load_cdf
 from imap_processing import imap_module_directory
+from imap_processing.cdf.utils import load_cdf
+from imap_processing.ultra.constants import UltraConstants
 
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
