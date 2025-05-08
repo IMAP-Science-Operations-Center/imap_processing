@@ -22,6 +22,7 @@ from typing import final
 
 import imap_data_access
 import xarray as xr
+from imap_data_access import ScienceFilePath
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
 )
@@ -342,6 +343,11 @@ class ProcessInstrument(ABC):
         A flag indicating whether to upload the output file to the SDC.
     """
 
+    class ImapFileExistsError(Exception):
+        """Indicates a failure because the files already exist."""
+
+        pass
+
     def __init__(
         self,
         data_level: str,
@@ -373,6 +379,26 @@ class ProcessInstrument(ABC):
             A list of file paths to upload to the SDC.
         """
         if self.upload_to_sdc:
+            # Validate that the files don't already exist
+            for filename in products:
+                file_path = ScienceFilePath(filename)
+                existing_file = imap_data_access.query(
+                    instrument=file_path.instrument,
+                    data_level=file_path.data_level,
+                    descriptor=file_path.descriptor,
+                    start_date=file_path.start_date,
+                    end_date=file_path.start_date,
+                    repointing=file_path.repointing,
+                    version=file_path.version,
+                    extension="cdf",
+                )
+                if existing_file:
+                    raise ProcessInstrument.ImapFileExistsError(
+                        f"File {filename} already exists in the IMAP SDC. "
+                        "No files were uploaded."
+                        f"Generated files: {products}."
+                    )
+
             if len(products) == 0:
                 logger.info("No files to upload.")
             for filename in products:

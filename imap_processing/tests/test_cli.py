@@ -15,6 +15,7 @@ from imap_processing.cli import (
     Glows,
     Hi,
     Hit,
+    ProcessInstrument,
     Spacecraft,
     Swe,
     Ultra,
@@ -134,11 +135,12 @@ def test_codice(mock_codice_l1a, mock_instrument_dependencies):
         '[{"type": "science","files": ["imap_codice_l0_raw_20230822_v001.pkts"]}]'
     )
 
-    instrument = Codice("l1a", "hskp", dependency_str, "20230822", None, "v001", True)
+    instrument = Codice("l1a", "hskp", dependency_str, "20230822", None, "v001", False)
 
     instrument.process()
     assert mock_codice_l1a.call_count == 1
-    assert mocks["mock_upload"].call_count == 1
+    # Assert that write_cdf was called with the expected arguments
+    assert mock_instrument_dependencies["mock_write_cdf"].call_count == 1
 
 
 def test_repointing_file_creation(mock_instrument_dependencies):
@@ -198,12 +200,12 @@ def test_hi_l1(mock_instrument_dependencies, data_level, science_input, n_prods)
             '[{"type": "science","files": ["imap_hi_l0_raw_20231212_v001.pkts"]}]'
         )
         instrument = Hi(
-            data_level, "sci", dependency_str, "20231212", "20231213", "v005", True
+            data_level, "sci", dependency_str, "20231212", "20231213", "v005", False
         )
 
         instrument.process()
         assert mock_hi.call_count == 1
-        assert mocks["mock_upload"].call_count == n_prods
+        assert mock_instrument_dependencies["mock_write_cdf"].call_count == n_prods
 
 
 @mock.patch("imap_processing.cli.quaternions.process_quaternions", autospec=True)
@@ -226,12 +228,12 @@ def test_spacecraft(mock_spacecraft_l1a, mock_instrument_dependencies):
     )
 
     instrument = Spacecraft(
-        "l1a", "quaternions", dependency_str, "20230822", "20230822", "v001", True
+        "l1a", "quaternions", dependency_str, "20230822", "20230822", "v001", False
     )
 
     instrument.process()
     assert mock_spacecraft_l1a.call_count == 1
-    assert mocks["mock_upload"].call_count == 1
+    assert mock_instrument_dependencies["mock_write_cdf"].call_count == 1
 
 
 @mock.patch("imap_processing.cli.ultra_l1a.ultra_l1a")
@@ -249,12 +251,12 @@ def test_ultra_l1a(mock_ultra_l1a, mock_instrument_dependencies):
         '[{"type": "science","files": ["imap_ultra_l0_raw_20240207_v001.pkts"]}]'
     )
     instrument = Ultra(
-        "l1a", "raw", dependency_str, "20240207", "20240208", "v001", True
+        "l1a", "raw", dependency_str, "20240207", "20240208", "v001", False
     )
 
     instrument.process()
     assert mock_ultra_l1a.call_count == 1
-    assert mocks["mock_upload"].call_count == 2
+    assert mock_instrument_dependencies["mock_write_cdf"].call_count == 2
 
 
 @mock.patch("imap_processing.cli.ultra_l1b.ultra_l1b")
@@ -269,12 +271,12 @@ def test_ultra_l1b(mock_ultra_l1b, mock_instrument_dependencies):
     )
     mocks["mock_pre_processing"].return_value = input_collection
 
-    instrument = Ultra("l1b", "de", "[]", "20240207", "20240208", "v001", True)
+    instrument = Ultra("l1b", "de", "[]", "20240207", "20240208", "v001", False)
 
     instrument.process()
     assert mocks["mock_download"].call_count == 0
     assert mock_ultra_l1b.call_count == 1
-    assert mocks["mock_upload"].call_count == 2
+    assert mock_instrument_dependencies["mock_write_cdf"].call_count == 2
 
 
 @mock.patch("imap_processing.cli.ultra_l1c.ultra_l1c")
@@ -288,11 +290,11 @@ def test_ultra_l1c(mock_ultra_l1c, mock_instrument_dependencies):
     )
     mocks["mock_pre_processing"].return_value = input_collection
 
-    instrument = Ultra("l1c", "pset", "[]", "20240207", "20240208", "v001", True)
+    instrument = Ultra("l1c", "pset", "[]", "20240207", "20240208", "v001", False)
 
     instrument.process()
     assert mock_ultra_l1c.call_count == 1
-    assert mocks["mock_upload"].call_count == 2
+    assert mock_instrument_dependencies["mock_write_cdf"].call_count == 2
 
 
 @mock.patch("imap_processing.cli.ultra_l2.ultra_l2")
@@ -315,12 +317,12 @@ def test_ultra_l2(mock_ultra_l2, mock_instrument_dependencies):
         "20240207",
         "20240207",
         "v001",
-        True,
+        False,
     )
 
     instrument.process()
     assert mock_ultra_l2.call_count == 1
-    assert mocks["mock_upload"].call_count == 1
+    assert mock_instrument_dependencies["mock_write_cdf"].call_count == 1
 
 
 @mock.patch("imap_processing.cli.hit_l1a")
@@ -337,18 +339,43 @@ def test_hit_l1a(mock_hit_l1a, mock_instrument_dependencies):
     dependency_str = (
         '[{"type": "science","files": ["imap_hit_l0_raw_20100105_v001.pkts"]}]'
     )
-    instrument = Hit("l1a", "raw", dependency_str, "20100105", "20100101", "v001", True)
+    instrument = Hit(
+        "l1a", "raw", dependency_str, "20100105", "20100101", "v001", False
+    )
 
     instrument.process()
     assert mock_hit_l1a.call_count == 1
-    assert mocks["mock_upload"].call_count == 2
+    assert mock_instrument_dependencies["mock_write_cdf"].call_count == 2
 
 
 @mock.patch("imap_processing.cli.swe_l1a")
-def test_post_processing(mock_swe_l1a, mock_instrument_dependencies):
+@pytest.mark.parametrize(
+    "query_return, expected_error",
+    [
+        ([], None),
+        (
+            [
+                '{"file_path": '
+                '"/path/to/imap_swe_l1a_test_20100105_v001.cdf", "instrument": "swe"}'
+            ],
+            ProcessInstrument.ImapFileExistsError,
+        ),
+    ],
+)
+def test_post_processing(
+    mock_swe_l1a, mock_instrument_dependencies, query_return, expected_error
+):
     """Test coverage for post processing"""
     mocks = mock_instrument_dependencies
     mocks["mock_download"].return_value = "dependency0"
+    mocks["mock_write_cdf"].side_effect = [
+        "/path/to/imap_swe_l1a_test_20100105_v001.cdf"
+    ]
+    mocks[
+        "mock_write_cdf"
+    ].return_value = "/path/to/imap_swe_l1a_test_20100105_v001.cdf"
+    mocks["mock_query"].return_value = query_return
+
     test_ds = xr.Dataset()
     mock_swe_l1a.return_value = [test_ds]
     input_collection = ProcessingInputCollection(
@@ -361,12 +388,16 @@ def test_post_processing(mock_swe_l1a, mock_instrument_dependencies):
     )
     instrument = Swe("l1a", "raw", dependency_str, "20100105", None, "v001", True)
 
-    # This function calls both the instrument.do_processing() and
-    # instrument.post_processing()
-    instrument.process()
-    assert mock_swe_l1a.call_count == 1
-    # This test is testing that one file was uploaded
-    assert mocks["mock_upload"].call_count == 1
+    if expected_error:
+        with pytest.raises(expected_error):
+            instrument.process()
+    else:
+        # This function calls both the instrument.do_processing() and
+        # instrument.post_processing()
+        instrument.process()
+        assert mock_swe_l1a.call_count == 1
+        # This test is testing that one file was uploaded
+        assert mocks["mock_upload"].call_count == 1
 
     # Test parent injection
     assert test_ds.attrs["Parents"] == ["imap_swe_l0_raw_20100105_v001.pkts"]

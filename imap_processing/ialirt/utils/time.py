@@ -4,17 +4,17 @@ import xarray as xr
 
 
 def calculate_time(
-    coarse_time: xr.DataArray, fine_time: xr.DataArray, conversion: int
+    sc_sclk_sec: xr.DataArray, sc_sclk_sub_sec: xr.DataArray, conversion: int
 ) -> xr.DataArray:
     """
     Calculate the time.
 
     Parameters
     ----------
-    coarse_time : xr.DataArray
-        Coarse time.
-    fine_time : xr.DataArray
-        Fine time.
+    sc_sclk_sec : xr.DataArray
+        SCLK seconds.
+    sc_sclk_sub_sec : xr.DataArray
+        SCLK subseconds.
     conversion : int
         Fine time units = 1 second.
 
@@ -23,7 +23,7 @@ def calculate_time(
     time_seconds: xr.DataArray
         Calculated time.
     """
-    fine_time_fraction = fine_time / conversion
-    time_seconds = coarse_time + fine_time_fraction
+    time_fraction = sc_sclk_sub_sec / conversion
+    time_seconds = sc_sclk_sec + time_fraction
 
     return time_seconds
