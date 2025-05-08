@@ -6,7 +6,7 @@ import re
 import time
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import cdflib
 import imap_data_access
@@ -17,7 +17,7 @@ import requests
 import spiceypy
 
 from imap_processing import imap_module_directory
-from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns
 
 
 @pytest.fixture(autouse=True)
@@ -55,7 +55,8 @@ def _download_external_kernels(spice_test_data_path):
     kernel_urls = [
         "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp",
         "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc",
-        "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/earth_1962_240827_2124_combined.bpc",
+        "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/"
+        "earth_1962_240827_2124_combined.bpc",
     ]
 
     for kernel_url in kernel_urls:
@@ -92,7 +93,11 @@ def _download_external_kernels(spice_test_data_path):
 
 
 @pytest.fixture(scope="session")
-def _download_test_data(test_data_paths):
+def _download_test_data():
+    _download_external_data(_test_data_paths())
+
+
+def _download_external_data(test_data_path_list):
     """This fixture downloads externally-located test data files into a specific
     location. The list of files and their storage locations are specified in
     the `test_data_paths` parameter, which is a list of tuples; the zeroth
@@ -101,8 +106,9 @@ def _download_test_data(test_data_paths):
 
     logger = logging.getLogger(__name__)
 
-    for test_data_path in test_data_paths:
-        source = test_data_path[0]
+    api_path = "https://api.dev.imap-mission.com/download/test_data/"
+    for test_data_path in test_data_path_list:
+        source = api_path + test_data_path[0]
         destination = test_data_path[1]
 
         # Download the test data if necessary and write it to the appropriate
@@ -119,20 +125,112 @@ def _download_test_data(test_data_paths):
             logger.info(f"File already exists: {destination}")
 
 
-@pytest.fixture(scope="session")
-def test_data_paths():
+def _test_data_paths():
     """Defines a list of test data files to download from the AWS S3 bucket
     and the corresponding location in which to store the downloaded file"""
     test_data_path_list = [
         (
-            "https://api.dev.imap-mission.com/download/test_data/imap_codice_l0_raw_20241110_v001.pkts",
+            "apid_478.bin",
+            imap_module_directory / "tests" / "ialirt" / "data" / "l0" / "apid_478.bin",
+        ),
+        (
+            "imap_codice_l0_raw_20241110_v001.pkts",
             imap_module_directory
             / "tests"
             / "codice"
             / "data"
             / "imap_codice_l0_raw_20241110_v001.pkts",
         ),
+        (
+            "imap_hi_l1a_45sensor-de_20250415_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "hi"
+            / "data"
+            / "l1"
+            / "imap_hi_l1a_45sensor-de_20250415_v999.cdf",
+        ),
+        (
+            "imap_hi_l1b_45sensor-de_20250415_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "hi"
+            / "data"
+            / "l1"
+            / "imap_hi_l1b_45sensor-de_20250415_v999.cdf",
+        ),
+        (
+            "imap_hi_l1c_45sensor-pset_20250415_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "hi"
+            / "data"
+            / "l1"
+            / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf",
+        ),
+        (
+            "idex_l1a_validation_file.h5",
+            imap_module_directory
+            / "tests"
+            / "idex"
+            / "test_data"
+            / "idex_l1a_validation_file.h5",
+        ),
+        (
+            "idex_l1b_validation_file.h5",
+            imap_module_directory
+            / "tests"
+            / "idex"
+            / "test_data"
+            / "idex_l1b_validation_file.h5",
+        ),
+        (
+            "ultra-90_raw_event_data_shortened.csv",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "data"
+            / "l1"
+            / "ultra-90_raw_event_data_shortened.csv",
+        ),
+        (
+            "Ultra_90_DPS_efficiencies_all.csv",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "data"
+            / "l1"
+            / "Ultra_90_DPS_efficiencies_all.csv",
+        ),
+        (
+            "ultra_90_dps_gf.csv",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "data"
+            / "l1"
+            / "ultra_90_dps_gf.csv",
+        ),
+        (
+            "ultra_90_dps_exposure.csv",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "data"
+            / "l1"
+            / "ultra_90_dps_exposure.csv",
+        ),
+        (
+            "Ultra_efficiencies_45_combined_logistic_interpolation.csv",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "data"
+            / "l1"
+            / "Ultra_efficiencies_45_combined_logistic_interpolation.csv",
+        ),
     ]
+
     return test_data_path_list
 
 
@@ -154,7 +252,8 @@ def pytest_collection_modifyitems(items):
     -----
     See the following link for details about this function, also known as a
     pytest hook:
-    https://docs.pytest.org/en/stable/reference/reference.html#pytest.hookspec.pytest_collection_modifyitems
+    https://docs.pytest.org/en/stable/reference/reference.html#
+    pytest.hookspec.pytest_collection_modifyitems
     """
     markers_to_fixtures = {
         "external_kernel": "_download_external_kernels",
@@ -173,7 +272,7 @@ def spice_test_data_path(imap_tests_path):
     return imap_tests_path / "spice/test_data"
 
 
-@pytest.fixture()
+@pytest.fixture
 def furnish_time_kernels(spice_test_data_path):
     """Furnishes (temporarily) the testing LSK and SCLK"""
     spiceypy.kclear()
@@ -185,7 +284,7 @@ def furnish_time_kernels(spice_test_data_path):
     spiceypy.kclear()
 
 
-@pytest.fixture()
+@pytest.fixture
 def furnish_sclk(spice_test_data_path):
     """Furnishes (temporarily) the SCLK for JPSS stored in the package data directory"""
     test_sclk = spice_test_data_path / "imap_sclk_0000.tsc"
@@ -194,7 +293,7 @@ def furnish_sclk(spice_test_data_path):
     spiceypy.kclear()
 
 
-@pytest.fixture()
+@pytest.fixture
 def furnish_kernels(spice_test_data_path):
     """Return a function that will furnish an arbitrary list of kernels."""
 
@@ -296,7 +395,7 @@ def session_test_metakernel(monkeypatch_session, tmpdir_factory, spice_test_data
     spiceypy.kclear()
 
 
-@pytest.fixture()
+@pytest.fixture
 def use_test_metakernel(
     request, monkeypatch, spice_test_data_path, session_test_metakernel
 ):
@@ -346,14 +445,14 @@ def use_test_metakernel(
     spiceypy.kclear()
 
 
-@pytest.fixture()
+@pytest.fixture
 def _unset_metakernel_path(monkeypatch):
     """Temporarily unsets the SPICE_METAKERNEL environment variable"""
     if os.getenv("SPICE_METAKERNEL", None) is not None:
         monkeypatch.delenv("SPICE_METAKERNEL")
 
 
-@pytest.fixture()
+@pytest.fixture
 def use_test_spin_data_csv(monkeypatch):
     """Sets the SPIN_DATA_FILEPATH environment variable to input path."""
 
@@ -363,7 +462,7 @@ def use_test_spin_data_csv(monkeypatch):
     return wrapped_set_spin_data_filepath
 
 
-@pytest.fixture()
+@pytest.fixture
 def use_fake_spin_data_for_time(
     request, use_test_spin_data_csv, tmpdir, generate_spin_data
 ):
@@ -400,7 +499,7 @@ def use_fake_spin_data_for_time(
     return wrapped_set_spin_data_filepath
 
 
-@pytest.fixture()
+@pytest.fixture
 def generate_spin_data():
     def make_data(start_met: float, end_met: Optional[float] = None) -> pd.DataFrame:
         """
@@ -408,8 +507,9 @@ def generate_spin_data():
         Spin table contains the following fields:
             (
             spin_number,
-            spin_start_sec,
-            spin_start_subsec,
+            spin_start_sec_sclk,
+            spin_start_subsec_sclk,
+            spin_start_utc,
             spin_period_sec,
             spin_period_valid,
             spin_phase_valid,
@@ -437,18 +537,25 @@ def generate_spin_data():
             end_met = start_met + 86400
 
         # Create spin start second data of 15 seconds increment
-        spin_start_sec = np.arange(np.floor(start_met), end_met + 1, 15)
-        spin_start_subsec = int((start_met - spin_start_sec[0]) * 1000)
+        spin_start_met = np.arange(start_met, end_met + 1, 15)
+        spin_start_sec = np.floor(spin_start_met).astype(int)
+        spin_start_subsec = int((start_met - spin_start_sec[0]) * 1e6)
+
+        # Calculate UTC times without spice (accepting ~5 second inaccuracy)
+        spin_start_dt64 = TTJ2000_EPOCH + (spin_start_met * 1e9).astype(
+            "timedelta64[ns]"
+        )
 
         nspins = len(spin_start_sec)
 
         spin_df = pd.DataFrame.from_dict(
             {
                 "spin_number": np.arange(nspins, dtype=np.uint32),
-                "spin_start_sec": spin_start_sec,
-                "spin_start_subsec": np.full(
+                "spin_start_sec_sclk": spin_start_sec,
+                "spin_start_subsec_sclk": np.full(
                     nspins, spin_start_subsec, dtype=np.uint32
                 ),
+                "spin_start_utc": np.datetime_as_string(spin_start_dt64, unit="us"),
                 "spin_period_sec": np.full(nspins, 15.0, dtype=np.float32),
                 "spin_period_valid": np.ones(nspins, dtype=np.uint8),
                 "spin_phase_valid": np.ones(nspins, dtype=np.uint8),
@@ -458,7 +565,7 @@ def generate_spin_data():
         )
 
         # Convert spin_start_sec to datetime to set repointing times flags
-        spin_start_dates = met_to_ttj2000ns(spin_start_sec + spin_start_subsec / 1000)
+        spin_start_dates = met_to_ttj2000ns(spin_start_sec + spin_start_subsec / 1e6)
         spin_start_dates = cdflib.cdfepoch.to_datetime(spin_start_dates)
 
         # Convert DatetimeIndex to Series for using .dt accessor
@@ -480,3 +587,113 @@ def generate_spin_data():
         return spin_df
 
     return make_data
+
+
+@pytest.fixture
+def use_test_repoint_data_csv(monkeypatch):
+    """Sets the REPOINT_DATA_FILEPATH environment variable to input path."""
+
+    def wrapped_set_repoint_data_filepath(path: Path):
+        monkeypatch.setenv("REPOINT_DATA_FILEPATH", str(path))
+
+    return wrapped_set_repoint_data_filepath
+
+
+def generate_repoint_data(
+    repoint_start_met: Union[float, np.ndarray],
+    repoint_end_met: Optional[Union[float, np.ndarray]] = None,
+    repoint_id_start: Optional[int] = 0,
+) -> pd.DataFrame:
+    """
+    Generate a repoint dataframe for the star/end times provided.
+
+    Parameters
+    ----------
+    repoint_start_met : float, np.ndarray
+            Provides the repoint start time(s) in Mission Elapsed Time (MET).
+    repoint_end_met : float, np.ndarray, optional
+        Provides the repoint end time(s) in MET. If not provided, end times
+        will be 15 minutes after start times.
+    repoint_id_start : int, optional
+        Provides the starting repoint id number of the first repoint in the
+        generated data.
+
+    Returns
+    -------
+    repoint_df : pd.DataFrame
+        Repoint dataframe with start and end repoint times provided and incrementing
+        repoint_ids starting at 1.
+    """
+    repoint_start_times = np.array(repoint_start_met)
+    if repoint_end_met is None:
+        repoint_end_met = repoint_start_times + 15 * 60
+    # Calculate UTC times without spice (accepting ~5 second inaccuracy)
+    repoint_start_dt64 = TTJ2000_EPOCH + (repoint_start_times * 1e9).astype(
+        "timedelta64[ns]"
+    )
+    repoint_end_dt64 = TTJ2000_EPOCH + (repoint_end_met * 1e9).astype("timedelta64[ns]")
+    repoint_df = pd.DataFrame.from_dict(
+        {
+            "repoint_start_sec_sclk": repoint_start_times.astype(int),
+            "repoint_start_subsec_sclk": ((repoint_start_times % 1.0) * 1e6).astype(
+                int
+            ),
+            "repoint_start_utc": np.datetime_as_string(repoint_start_dt64, unit="us"),
+            "repoint_end_sec_sclk": repoint_end_met.astype(int),
+            "repoint_end_subsec_sclk": ((repoint_end_met % 1.0) * 1e6).astype(int),
+            "repoint_end_utc": np.datetime_as_string(repoint_end_dt64, unit="us"),
+            "repoint_id": np.arange(repoint_start_times.size, dtype=int)
+            + repoint_id_start,
+        }
+    )
+    return repoint_df
+
+
+@pytest.fixture
+def use_fake_repoint_data_for_time(use_test_repoint_data_csv, tmpdir):
+    """
+    Generate and use fake spin data for testing.
+
+    Returns
+    -------
+    callable
+        Returns a callable function that takes start_met and optionally n_repoints
+        as inputs, generates fake repoint data, writes the data to a csv file,
+        and sets the REPOINT_DATA_FILEPATH environment variable to point to the
+        fake repoint data file.
+    """
+
+    def wrapped_repoint_data_filepath(
+        repoint_start_met: Union[float, np.ndarray],
+        repoint_end_met: Optional[Union[float, np.ndarray]] = None,
+        repoint_id_start: Optional[int] = 0,
+    ) -> pd.DataFrame:
+        """
+        Generate and use fake repoint data for testing.
+        Parameters
+        ----------
+        repoint_start_met : float, np.ndarray
+            Provides the repoint start time(s) in Mission Elapsed Time (MET).
+        repoint_end_met : float, np.ndarray
+            Provides the repoint end time(s) in MET. If not provided, end times
+            will be 15 minutes after start times.
+        repoint_id_start : int, optional
+            Provides the starting repoint id number of the first repoint in the
+            generated data.
+        """
+        repoint_df = generate_repoint_data(
+            repoint_start_met,
+            repoint_end_met=repoint_end_met,
+            repoint_id_start=repoint_id_start,
+        )
+        repoint_csv_file_path = tmpdir / "repoint_data.repointing.csv"
+        repoint_df.to_csv(repoint_csv_file_path, index=False)
+        use_test_repoint_data_csv(repoint_csv_file_path)
+
+    return wrapped_repoint_data_filepath
+
+
+if __name__ == "__main__":
+    # This is to enable downloading files easier by letting us
+    # run this file directly
+    _download_external_data(_test_data_paths())

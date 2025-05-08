@@ -5,7 +5,7 @@ import pytest
 
 @pytest.fixture(scope="session")
 def hi_test_data_path(imap_tests_path):
-    return imap_tests_path / "hi" / "test_data"
+    return imap_tests_path / "hi" / "data"
 
 
 @pytest.fixture(scope="session")
@@ -48,7 +48,7 @@ def check_sum(bits_size):
     return f"{0:0{bits_size}b}"
 
 
-@pytest.fixture()
+@pytest.fixture
 def create_de_data(tmp_path):
     """Fixture to create fake direct event data. Note that there has been no
     effort to make simulate this data meaning that packets are not self

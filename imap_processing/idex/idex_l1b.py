@@ -9,8 +9,8 @@ Examples
     from imap_processing.idex.idex_l1b import idex_l1b
 
     l0_file = "imap_processing/tests/idex/imap_idex_l0_sci_20231214_v001.pkts"
-    l1a_data = PacketParser(l0_file, data_version)
-    l1b_data = idex_l1b(l1a_data, data_version)
+    l1a_data = PacketParser(l0_file)
+    l1b_data = idex_l1b(l1a_data)
     write_cdf(l1b_data)
 """
 
@@ -23,6 +23,7 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.idex.idex_constants import ConversionFactors
 from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
@@ -36,34 +37,6 @@ from imap_processing.spice.time import ttj2000ns_to_et
 from imap_processing.utils import convert_raw_to_eu
 
 logger = logging.getLogger(__name__)
-
-
-class ConversionFactors(float, Enum):
-    """
-    Enum class for conversion factor values.
-
-    Attributes
-    ----------
-    TOF_High : float
-        Time of flight high conversion factor.
-    TOF_Low : float
-        Time of flight low conversion factor.
-    TOF_Mid : float
-        Time of flight mid conversion factor.
-    Target_Low : float
-        Target Low conversion factor.
-    Target_High : float
-        Target High conversion factor.
-    Ion_Grid : float
-        Ion Grid conversion factor.
-    """
-
-    TOF_High = 2.89e-4
-    TOF_Low = 5.14e-4
-    TOF_Mid = 1.13e-2
-    Target_Low = 1.58e1
-    Target_High = 1.63e-1
-    Ion_Grid = 7.46e-4
 
 
 class TriggerMode(Enum):
@@ -104,7 +77,7 @@ class TriggerMode(Enum):
         return f"{channel.upper()}{TriggerMode(mode).name}"
 
 
-def idex_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+def idex_l1b(l1a_dataset: xr.Dataset) -> xr.Dataset:
     """
     Will process IDEX l1a data to create l1b data products.
 
@@ -112,8 +85,6 @@ def idex_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     ----------
     l1a_dataset : xarray.Dataset
         IDEX L1a dataset to process.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -128,7 +99,6 @@ def idex_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     idex_attrs = ImapCdfAttributes()
     idex_attrs.add_instrument_global_attrs(instrument="idex")
     idex_attrs.add_instrument_variable_attrs(instrument="idex", level="l1b")
-    idex_attrs.add_global_attribute("Data_version", data_version)
 
     var_information_path = (
         f"{imap_module_directory}/idex/idex_variable_unpacking_and_eu_conversion.csv"
@@ -183,8 +153,6 @@ def idex_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     for var in vars_to_copy:
         l1b_dataset[var] = l1a_dataset[var].copy()
 
-    # TODO: Spice data?
-
     logger.info("IDEX L1B science data processing completed.")
 
     return l1b_dataset
@@ -216,7 +184,9 @@ def unpack_instrument_settings(
         values are the unpacked xr.DataArrays.
     """
     telemetry_data = {}
-
+    # Unpack each instrument setting only once (remove duplicated rows for segmented
+    # polynomials)
+    var_information_df = var_information_df.drop_duplicates(subset=["mnemonic"])
     for _, row in var_information_df.iterrows():
         unpacked_name = row["mnemonic"]
 
@@ -322,10 +292,14 @@ def get_trigger_mode_and_level(
         # Bit-shift right 22 places and use a 10-bit mask to extract the level value.
         threshold_level = float((trigger_controls >> 22) & mask)
 
-        # If it is the high gain channel multiply the level by the conversion factor.
-        # TODO: determine why the idex team is only doing this for the high gain channel
+        # multiply the threshold level by the conversion factor.
         if gain_channel == "hg":
             threshold_level *= ConversionFactors["TOF_High"]
+        elif gain_channel == "mg":
+            threshold_level *= ConversionFactors["TOF_Mid"]
+        elif gain_channel == "lg":
+            threshold_level *= ConversionFactors["TOF_Low"]
+
         return mode_label, threshold_level
 
     for channel in channels:

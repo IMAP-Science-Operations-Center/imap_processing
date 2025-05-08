@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="SWP">
-	<xtce:Header date="06/10/2023" version="1" author="IMAP SDC" />
+	<xtce:Header date="05/02/2025" version="1" author="IMAP SDC" source_file="TLM_SWP.xlsx" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="VERSION" signed="false">
@@ -36,113 +36,113 @@
 			<xtce:EnumeratedParameterType name="SWP_HK.LUT_CHOICE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="TBD_0" />
-					<xtce:Enumeration value="1" label="TBD_1" />
+					<xtce:Enumeration value="0" label="EEPL1" />
+					<xtce:Enumeration value="1" label="EEPL2" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.PCEM_SAFE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.SCEM_SAFE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.WDT_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.RCV_SAFE_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.SAFE_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.PCEM_RATE_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.SCEM_RATE_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.PCEM_I_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.SCEM_I_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.PCEM_V_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.SCEM_V_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.LVPS_V_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.LVPS_I_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.OVR_T_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.UND_T_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.MODE" signed="false">
@@ -167,8 +167,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="130.72722" exponent="0" />
-							<xtce:Term coefficient="-0.2366468" exponent="1" />
+							<xtce:Term coefficient="130.7272213247" exponent="0" />
+							<xtce:Term coefficient="-0.2366468093699516" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -177,8 +177,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="130.72722" exponent="0" />
-							<xtce:Term coefficient="-0.2366468" exponent="1" />
+							<xtce:Term coefficient="130.7272213247" exponent="0" />
+							<xtce:Term coefficient="-0.2366468093699516" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -187,8 +187,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="130.72722" exponent="0" />
-							<xtce:Term coefficient="-0.2366468" exponent="1" />
+							<xtce:Term coefficient="130.7272213247" exponent="0" />
+							<xtce:Term coefficient="-0.2366468093699516" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -197,7 +197,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="-2.636717948717949" exponent="1" />
+							<xtce:Term coefficient="1.784111993082661" exponent="0" />
+							<xtce:Term coefficient="-2.641481148440142" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -206,7 +207,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="2.636717948717949" exponent="1" />
+							<xtce:Term coefficient="0.3392409365646927" exponent="0" />
+							<xtce:Term coefficient="2.640157732627925" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -215,7 +217,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.46495726495726e-08" exponent="1" />
+							<xtce:Term coefficient="0.001821464429724529" exponent="0" />
+							<xtce:Term coefficient="-0.01485630585180211" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -224,7 +227,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.46495726495726e-08" exponent="1" />
+							<xtce:Term coefficient="-0.009692036477526145" exponent="0" />
+							<xtce:Term coefficient="-0.01515976630152695" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -233,7 +237,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="0.00293040293040293" exponent="1" />
+							<xtce:Term coefficient="-0.03030806890143189" exponent="0" />
+							<xtce:Term coefficient="0.003242660724118943" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -242,7 +247,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="0.00293040293040293" exponent="1" />
+							<xtce:Term coefficient="0.02738404057155375" exponent="0" />
+							<xtce:Term coefficient="0.003248249261192152" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -251,8 +257,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="99.264" exponent="0" />
-							<xtce:Term coefficient="-0.2965" exponent="1" />
+							<xtce:Term coefficient="-3.213239072749474" exponent="0" />
+							<xtce:Term coefficient="-0.2768281702136274" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -261,8 +267,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="95.039" exponent="0" />
-							<xtce:Term coefficient="0.2687" exponent="1" />
+							<xtce:Term coefficient="69.64215069080154" exponent="0" />
+							<xtce:Term coefficient="-0.308170409377625" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -298,6 +304,7 @@
 					<xtce:Enumeration value="52" label="SWP_NOOP" />
 					<xtce:Enumeration value="56" label="SWP_HK_LATCHED_CLR" />
 					<xtce:Enumeration value="58" label="SWP_STIM_EN" />
+					<xtce:Enumeration value="60" label="SWP_ESA_GATE_CFG" />
 					<xtce:Enumeration value="65" label="SWP_SCI_SWP_PLAN_SET" />
 					<xtce:Enumeration value="83" label="SWP_TLM_IAL_RATE_SET" />
 					<xtce:Enumeration value="85" label="SWP_TLM_SCI_RATE_SET" />
@@ -311,7 +318,7 @@
 					<xtce:Enumeration value="102" label="SWP_MEMLOAD_CHKSUM" />
 					<xtce:Enumeration value="90" label="SWP_MACRO_EXEC" />
 					<xtce:Enumeration value="112" label="SWP_DIAGNOSTIC" />
-					<xtce:Enumeration value="254" label="SWP_Time_and_Status" />
+					<xtce:Enumeration value="254" label="SWP_TIME_AND_STATUS" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="SWP_HK.PHD_LLD1_LVL" signed="false">
@@ -347,8 +354,8 @@
 			<xtce:EnumeratedParameterType name="SWP_HK.BOOT_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Boot" />
-					<xtce:Enumeration value="1" label="App" />
+					<xtce:Enumeration value="0" label="BOOT" />
+					<xtce:Enumeration value="1" label="APP" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.ESA_ST" signed="false">
@@ -378,22 +385,23 @@
 			<xtce:EnumeratedParameterType name="SWP_HK.PCEM_CNT_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.SCEM_CNT_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="SWP_HK.PCEM_I_THR" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.46495726495726e-08" exponent="1" />
+							<xtce:Term coefficient="-0.001821464429724529" exponent="0" />
+							<xtce:Term coefficient="0.0148563058518021" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -402,7 +410,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.46495726495726e-08" exponent="1" />
+							<xtce:Term coefficient="62.08471073457684" exponent="0" />
+							<xtce:Term coefficient="-0.01515976630152695" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -411,7 +420,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="-1.098901098901099" exponent="1" />
+							<xtce:Term coefficient="7.25300688893745" exponent="0" />
+							<xtce:Term coefficient="-1.10024002789573" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -420,7 +430,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.098901098901099" exponent="1" />
+							<xtce:Term coefficient="-8.40333744223852" exponent="0" />
+							<xtce:Term coefficient="1.098652943717334" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -429,7 +440,7 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="0.001465201465201465" exponent="1" />
+							<xtce:Term coefficient="0.00146484375" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -438,7 +449,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.46495726495726e-08" exponent="1" />
+							<xtce:Term coefficient="0.01361527184471711" exponent="0" />
+							<xtce:Term coefficient="0.01449146573864282" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -447,7 +459,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="-0.6002931119" exponent="1" />
+							<xtce:Term coefficient="0.7328995176342232" exponent="0" />
+							<xtce:Term coefficient="-0.6002110155596884" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -456,7 +469,7 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="0.001465201465201465" exponent="1" />
+							<xtce:Term coefficient="0.00146484375" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -465,7 +478,7 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="0.001465201465201465" exponent="1" />
+							<xtce:Term coefficient="0.00146484375" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -505,7 +518,7 @@
 				<xtce:IntegerDataEncoding sizeInBits="5" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="7.80645161290323e-07" exponent="1" />
+							<xtce:Term coefficient="7.8125e-07" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -558,7 +571,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.098901098901099" exponent="1" />
+							<xtce:Term coefficient="-7.82858729963861" exponent="0" />
+							<xtce:Term coefficient="1.099445913012831" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -572,66 +586,66 @@
 			<xtce:EnumeratedParameterType name="SWP_HK.PCEM_V1_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Warn" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="WARN" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.PCEM_I1_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Warn" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="WARN" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.SCEM_V1_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Warn" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="WARN" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.SCEM_I1_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Warn" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="WARN" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.PCEM_INT_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.SCEM_INT_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.EEP2_RDY" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Busy" />
-					<xtce:Enumeration value="1" label="Ready" />
+					<xtce:Enumeration value="0" label="BUSY" />
+					<xtce:Enumeration value="1" label="READY" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.EEP1_RDY" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Busy" />
-					<xtce:Enumeration value="1" label="Ready" />
+					<xtce:Enumeration value="0" label="BUSY" />
+					<xtce:Enumeration value="1" label="READY" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.FPGA_TYPE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="EM" />
-					<xtce:Enumeration value="1" label="SIM" />
-					<xtce:Enumeration value="2" label="FM" />
-					<xtce:Enumeration value="3" label="INVALID" />
+					<xtce:Enumeration value="0" label="INVALID" />
+					<xtce:Enumeration value="1" label="EM" />
+					<xtce:Enumeration value="2" label="SIM" />
+					<xtce:Enumeration value="3" label="FM" />
 					<xtce:Enumeration value="4" label="INVALID" />
 					<xtce:Enumeration value="5" label="INVALID" />
 					<xtce:Enumeration value="6" label="INVALID" />
@@ -667,7 +681,11 @@
 					<xtce:Enumeration value="12" label="PER_60S" />
 					<xtce:Enumeration value="13" label="PER_24S" />
 					<xtce:Enumeration value="14" label="PER_12S" />
-					<xtce:Enumeration value="15" label="PER_INVALID" />
+					<xtce:Enumeration value="15" label="PER_8S" />
+					<xtce:Enumeration value="16" label="PER_4S" />
+					<xtce:Enumeration value="17" label="PER_2S" />
+					<xtce:Enumeration value="18" label="PER_1S" />
+					<xtce:Enumeration value="19" label="PER_INVALID" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.SCI_TLM" signed="false">
@@ -688,7 +706,11 @@
 					<xtce:Enumeration value="12" label="PER_60S" />
 					<xtce:Enumeration value="13" label="PER_24S" />
 					<xtce:Enumeration value="14" label="PER_12S" />
-					<xtce:Enumeration value="15" label="PER_INVALID" />
+					<xtce:Enumeration value="15" label="PER_8S" />
+					<xtce:Enumeration value="16" label="PER_4S" />
+					<xtce:Enumeration value="17" label="PER_2S" />
+					<xtce:Enumeration value="18" label="PER_1S" />
+					<xtce:Enumeration value="19" label="PER_INVALID" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.HK_TLM" signed="false">
@@ -716,59 +738,63 @@
 					<xtce:Enumeration value="19" label="PER_INVALID" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
-			<xtce:IntegerParameterType name="SWP_HK.SPARE_4" signed="false">
+			<xtce:EnumeratedParameterType name="SWP_HK.ESA_GATE_SET" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
-			</xtce:IntegerParameterType>
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="DS" />
+					<xtce:Enumeration value="1" label="EN" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="SWP_HK.FPGA_PUP_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.EEPL2_CKS_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.EEPL1_CKS_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.RAM_D_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.EEPC2_CKS_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.EEPC1_CKS_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.RAM_C_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:EnumeratedParameterType name="SWP_HK.PROM_CKS_ST" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
 				<xtce:EnumerationList>
-					<xtce:Enumeration value="0" label="Ok" />
-					<xtce:Enumeration value="1" label="Err" />
+					<xtce:Enumeration value="0" label="OK" />
+					<xtce:Enumeration value="1" label="ERR" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="SWP_HK.LUT_REV" signed="false">
@@ -778,7 +804,7 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="0.001465559355153884" exponent="1" />
+							<xtce:Term coefficient="0.00146484375" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -787,7 +813,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="0.002931118710307767" exponent="1" />
+							<xtce:Term coefficient="-0.009006303027544238" exponent="0" />
+							<xtce:Term coefficient="0.001759593433015" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -796,7 +823,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="0.002442598925256473" exponent="1" />
+							<xtce:Term coefficient="-0.0002320119213958804" exponent="0" />
+							<xtce:Term coefficient="0.001464308471138" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -805,7 +833,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="0.002442598925256473" exponent="1" />
+							<xtce:Term coefficient="0.0007151047127675891" exponent="0" />
+							<xtce:Term coefficient="0.001464210815859898" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -814,7 +843,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="0.001465559355153884" exponent="1" />
+							<xtce:Term coefficient="0.0009139053727120761" exponent="0" />
+							<xtce:Term coefficient="0.001464386834274839" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -823,7 +853,7 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="0.002442598925256473" exponent="1" />
+							<xtce:Term coefficient="0.00146484375" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -836,6 +866,46 @@
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
 							<xtce:Term coefficient="1.0" exponent="0" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWP_HK.P5V_ESA_V_MON" signed="true">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-0.0294076344936709" exponent="0" />
+							<xtce:Term coefficient="0.003238726265822785" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWP_HK.M5V_ESA_V_MON" signed="true">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.03327668788865878" exponent="0" />
+							<xtce:Term coefficient="0.003248249261192152" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWP_HK.P5V_ESA_I_MON" signed="true">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-30.0063752836787" exponent="0" />
+							<xtce:Term coefficient="-0.4269107500560838" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWP_HK.M5V_ESA_I_MON" signed="true">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-101.0927208994075" exponent="0" />
+							<xtce:Term coefficient="-0.2013535930625734" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -871,7 +941,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="13" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="0.2500610500610501" exponent="1" />
+							<xtce:Term coefficient="-2.154606659914435" exponent="0" />
+							<xtce:Term coefficient="0.2503956575681914" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -1006,166 +1077,58 @@
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="SWP_SCI.PCEM_CNT0" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_SCI.SCEM_CNT0" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_SCI.COIN_CNT0" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_SCI.PCEM_CNT1" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_SCI.SCEM_CNT1" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_SCI.COIN_CNT1" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_SCI.PCEM_CNT2" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_SCI.SCEM_CNT2" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_SCI.COIN_CNT2" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_SCI.PCEM_CNT3" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_SCI.SCEM_CNT3" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_SCI.COIN_CNT3" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_SCI.PCEM_CNT4" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_SCI.SCEM_CNT4" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_SCI.COIN_CNT4" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_SCI.PCEM_CNT5" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_SCI.SCEM_CNT5" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_SCI.COIN_CNT5" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
-				</xtce:IntegerDataEncoding>
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_SCI.CHKSUM" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
@@ -1194,430 +1157,442 @@
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SHCOARSE" parameterTypeRef="SWP_HK.SHCOARSE">
-				<xtce:LongDescription>CCSDS Packet Time (SCLK) at which C&amp;DH software created packet)</xtce:LongDescription>
+				<xtce:LongDescription>CCSDS PACKET TIME (SCLK) AT WHICH C&amp;DH SOFTWARE CREATED PACKET)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.CMDEXE" parameterTypeRef="SWP_HK.CMDEXE">
-				<xtce:LongDescription>Cumulative modulo-256 count of successfully executed commands</xtce:LongDescription>
+				<xtce:LongDescription>CUMULATIVE MODULO-256 COUNT OF SUCCESSFULLY EXECUTED COMMANDS</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.CMDRJCT" parameterTypeRef="SWP_HK.CMDRJCT">
-				<xtce:LongDescription>Cumulative modulo-256 count of rejected commands</xtce:LongDescription>
+				<xtce:LongDescription>CUMULATIVE MODULO-256 COUNT OF REJECTED COMMANDS</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.LUT_CHOICE" parameterTypeRef="SWP_HK.LUT_CHOICE">
-				<xtce:LongDescription>Which LUT is in use</xtce:LongDescription>
+				<xtce:LongDescription>WHICH LUT IS IN USE</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PCEM_SAFE" parameterTypeRef="SWP_HK.PCEM_SAFE">
-				<xtce:LongDescription>If the CEM interrupt occurs and dipping the supplies does not help within 3 (TBR) consecutive samples then SWAPI is safed.</xtce:LongDescription>
+				<xtce:LongDescription>IF THE CEM INTERRUPT OCCURS AND DIPPING THE SUPPLIES DOES NOT HELP WITHIN 3 (TBR) CONSECUTIVE SAMPLES THEN SWAPI IS SAFED.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SCEM_SAFE" parameterTypeRef="SWP_HK.SCEM_SAFE">
-				<xtce:LongDescription>If the CEM interrupt occurs and dipping the supplies does not help within 3 (TBR) consecutive samples then SWAPI is safed.</xtce:LongDescription>
+				<xtce:LongDescription>IF THE CEM INTERRUPT OCCURS AND DIPPING THE SUPPLIES DOES NOT HELP WITHIN 3 (TBR) CONSECUTIVE SAMPLES THEN SWAPI IS SAFED.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.WDT_ST" parameterTypeRef="SWP_HK.WDT_ST">
-				<xtce:LongDescription>SWAPI has rebooted due to a watchdog expiration.</xtce:LongDescription>
+				<xtce:LongDescription>SWAPI HAS REBOOTED DUE TO A WATCHDOG EXPIRATION.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.RCV_SAFE_ST" parameterTypeRef="SWP_HK.RCV_SAFE_ST">
-				<xtce:LongDescription>SWAPI has received safe command from S/C</xtce:LongDescription>
+				<xtce:LongDescription>SWAPI HAS RECEIVED SAFE COMMAND FROM S/C</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SAFE_ST" parameterTypeRef="SWP_HK.SAFE_ST">
-				<xtce:LongDescription>SWAPI has safed itself.  The cause would be due to one of the following status bits.</xtce:LongDescription>
+				<xtce:LongDescription>SWAPI HAS SAFED ITSELF.  THE CAUSE WOULD BE DUE TO ONE OF THE FOLLOWING STATUS BITS.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PCEM_RATE_ST" parameterTypeRef="SWP_HK.PCEM_RATE_ST">
-				<xtce:LongDescription>The count rate threshold for the PCEM counter has been exceeded once and has continued to be exceeded despite measures by SWAPIFW. The PCEM count rate threshold defaults to TBD but can be updated with command TBD.</xtce:LongDescription>
+				<xtce:LongDescription>THE COUNT RATE THRESHOLD FOR THE PCEM COUNTER HAS BEEN EXCEEDED ONCE AND HAS CONTINUED TO BE EXCEEDED DESPITE MEASURES BY SWAPIFW. THE PCEM COUNT RATE THRESHOLD DEFAULTS TO TBD BUT CAN BE UPDATED WITH COMMAND TBD.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SCEM_RATE_ST" parameterTypeRef="SWP_HK.SCEM_RATE_ST">
-				<xtce:LongDescription>The count rate threshold for the SCEM counter has been exceeded once and has continued to be exceeded despite measures by SWAPIFW. The SCEM count rate threshold defaults to TBD but can be updated with command TBD.</xtce:LongDescription>
+				<xtce:LongDescription>THE COUNT RATE THRESHOLD FOR THE SCEM COUNTER HAS BEEN EXCEEDED ONCE AND HAS CONTINUED TO BE EXCEEDED DESPITE MEASURES BY SWAPIFW. THE SCEM COUNT RATE THRESHOLD DEFAULTS TO TBD BUT CAN BE UPDATED WITH COMMAND TBD.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PCEM_I_ST" parameterTypeRef="SWP_HK.PCEM_I_ST">
-				<xtce:LongDescription>The current threshold for the PCEM has been exceeded once and has continued to be exceeded despite measures by SWAPIFW.  An overcurrent on the CEM's collectively trips an interrupt which the SWAPIFW handles.  The SWAPIFW also collects the PCEM current monitor for comparison at 1 Hz. The CEM current rate threshold defaults to TBD but can be updated with command TBD.</xtce:LongDescription>
+				<xtce:LongDescription>THE CURRENT THRESHOLD FOR THE PCEM HAS BEEN EXCEEDED ONCE AND HAS CONTINUED TO BE EXCEEDED DESPITE MEASURES BY SWAPIFW.  AN OVERCURRENT ON THE CEM'S COLLECTIVELY TRIPS AN INTERRUPT WHICH THE SWAPIFW HANDLES.  THE SWAPIFW ALSO COLLECTS THE PCEM CURRENT MONITOR FOR COMPARISON AT 1 HZ. THE CEM CURRENT RATE THRESHOLD DEFAULTS TO TBD BUT CAN BE UPDATED WITH COMMAND TBD.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SCEM_I_ST" parameterTypeRef="SWP_HK.SCEM_I_ST">
-				<xtce:LongDescription>The current threshold for the SCEM has been exceeded once and has continued to be exceeded despite measures by SWAPIFW.  An overcurrent on the CEMs collectively trips an interrupt which the SWAPIFW handles.  The SWAPIFW also collects the SCEM current monitor for comparison at 1 Hz. The CEM current rate threshold defaults to TBD but can be updated with command TBD.</xtce:LongDescription>
+				<xtce:LongDescription>THE CURRENT THRESHOLD FOR THE SCEM HAS BEEN EXCEEDED ONCE AND HAS CONTINUED TO BE EXCEEDED DESPITE MEASURES BY SWAPIFW.  AN OVERCURRENT ON THE CEMS COLLECTIVELY TRIPS AN INTERRUPT WHICH THE SWAPIFW HANDLES.  THE SWAPIFW ALSO COLLECTS THE SCEM CURRENT MONITOR FOR COMPARISON AT 1 HZ. THE CEM CURRENT RATE THRESHOLD DEFAULTS TO TBD BUT CAN BE UPDATED WITH COMMAND TBD.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PCEM_V_ST" parameterTypeRef="SWP_HK.PCEM_V_ST">
-				<xtce:LongDescription>The voltage tolerance for the PCEM for its current setting has been exceeded. The PCEM voltage tolerance is set by SWAPIFW and cannot be altered by command.</xtce:LongDescription>
+				<xtce:LongDescription>THE VOLTAGE TOLERANCE FOR THE PCEM FOR ITS CURRENT SETTING HAS BEEN EXCEEDED. THE PCEM VOLTAGE TOLERANCE IS SET BY SWAPIFW AND CANNOT BE ALTERED BY COMMAND.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SCEM_V_ST" parameterTypeRef="SWP_HK.SCEM_V_ST">
-				<xtce:LongDescription>The voltage tolerance for the SCEM for its current setting has been exceeded. The SCEM voltage tolerance is set by SWAPIFW and cannot be altered by command.</xtce:LongDescription>
+				<xtce:LongDescription>THE VOLTAGE TOLERANCE FOR THE SCEM FOR ITS CURRENT SETTING HAS BEEN EXCEEDED. THE SCEM VOLTAGE TOLERANCE IS SET BY SWAPIFW AND CANNOT BE ALTERED BY COMMAND.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.LVPS_V_ST" parameterTypeRef="SWP_HK.LVPS_V_ST">
-				<xtce:LongDescription>The voltage tolerance for +5 V or -5 V supply has been exceeded.</xtce:LongDescription>
+				<xtce:LongDescription>THE VOLTAGE TOLERANCE FOR +5 V OR -5 V SUPPLY HAS BEEN EXCEEDED.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.LVPS_I_ST" parameterTypeRef="SWP_HK.LVPS_I_ST">
-				<xtce:LongDescription>The current tolerance for +5 V or -5 V supply has been exceeded.</xtce:LongDescription>
+				<xtce:LongDescription>THE CURRENT TOLERANCE FOR +5 V OR -5 V SUPPLY HAS BEEN EXCEEDED.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.OVR_T_ST" parameterTypeRef="SWP_HK.OVR_T_ST">
-				<xtce:LongDescription>The upper temperature limit of any one of the thermistors has been exceeded.</xtce:LongDescription>
+				<xtce:LongDescription>THE UPPER TEMPERATURE LIMIT OF ANY ONE OF THE THERMISTORS HAS BEEN EXCEEDED.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.UND_T_ST" parameterTypeRef="SWP_HK.UND_T_ST">
-				<xtce:LongDescription>The lower temperature limit of any one of the thermistors has been exceeded. The lower temperature limit is set by SWAPIFW and cannot be altered by command.</xtce:LongDescription>
+				<xtce:LongDescription>THE LOWER TEMPERATURE LIMIT OF ANY ONE OF THE THERMISTORS HAS BEEN EXCEEDED. THE LOWER TEMPERATURE LIMIT IS SET BY SWAPIFW AND CANNOT BE ALTERED BY COMMAND.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.MODE" parameterTypeRef="SWP_HK.MODE">
-				<xtce:LongDescription>Enumerated type representing each of the modes</xtce:LongDescription>
+				<xtce:LongDescription>ENUMERATED TYPE REPRESENTING EACH OF THE MODES</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.MEMDP_ST" parameterTypeRef="SWP_HK.MEMDP_ST">
-				<xtce:LongDescription>MEMDP state</xtce:LongDescription>
+				<xtce:LongDescription>MEMDP STATE</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SENSOR_T" parameterTypeRef="SWP_HK.SENSOR_T">
-				<xtce:LongDescription>Temperature of sensor detector. AD MUX = 0x10</xtce:LongDescription>
+				<xtce:LongDescription>TEMPERATURE OF SENSOR DETECTOR. AD MUX = 0X10</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.HVSUPP_T" parameterTypeRef="SWP_HK.HVSUPP_T">
-				<xtce:LongDescription>Temperature of hvps. AD MUX = 0x11</xtce:LongDescription>
+				<xtce:LongDescription>TEMPERATURE OF HVPS. AD MUX = 0X11</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.CNTRLR_T" parameterTypeRef="SWP_HK.CNTRLR_T">
-				<xtce:LongDescription>Temperature of controller. AD MUX = 0x12</xtce:LongDescription>
+				<xtce:LongDescription>TEMPERATURE OF CONTROLLER. AD MUX = 0X12</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PCEM_V" parameterTypeRef="SWP_HK.PCEM_V">
-				<xtce:LongDescription>Volt mon of primary channel electron multiplier high-voltage power supply. AD MUX = 0x02</xtce:LongDescription>
+				<xtce:LongDescription>VOLT MON OF PRIMARY CHANNEL ELECTRON MULTIPLIER HIGH-VOLTAGE POWER SUPPLY. AD MUX = 0X02</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SCEM_V" parameterTypeRef="SWP_HK.SCEM_V">
-				<xtce:LongDescription>Volt mon of secondary channel electron multiplier high-voltage power supply. AD MUX = 0x03</xtce:LongDescription>
+				<xtce:LongDescription>VOLT MON OF SECONDARY CHANNEL ELECTRON MULTIPLIER HIGH-VOLTAGE POWER SUPPLY. AD MUX = 0X03</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PCEM_I" parameterTypeRef="SWP_HK.PCEM_I">
-				<xtce:LongDescription>Strip current monitor of primary electron multiplier high-voltage power supply. AD MUX = 0x04</xtce:LongDescription>
+				<xtce:LongDescription>STRIP CURRENT MONITOR OF PRIMARY ELECTRON MULTIPLIER HIGH-VOLTAGE POWER SUPPLY. AD MUX = 0X04</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SCEM_I" parameterTypeRef="SWP_HK.SCEM_I">
-				<xtce:LongDescription>Strip current monitor of secondary electron multiplier high-voltage power supply. AD MUX = 0x05</xtce:LongDescription>
+				<xtce:LongDescription>STRIP CURRENT MONITOR OF SECONDARY ELECTRON MULTIPLIER HIGH-VOLTAGE POWER SUPPLY. AD MUX = 0X05</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.P5_V" parameterTypeRef="SWP_HK.P5_V">
-				<xtce:LongDescription>Volt mon of +5 V power supply. AD MUX = 0x0C</xtce:LongDescription>
+				<xtce:LongDescription>VOLT MON OF +5 V POWER SUPPLY. AD MUX = 0X0C</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.N5_V" parameterTypeRef="SWP_HK.N5_V">
-				<xtce:LongDescription>Volt mon of -5 V power supply. AD MUX = 0x0D</xtce:LongDescription>
+				<xtce:LongDescription>VOLT MON OF -5 V POWER SUPPLY. AD MUX = 0X0D</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.P5_I" parameterTypeRef="SWP_HK.P5_I">
-				<xtce:LongDescription>Current monitor of +5 V power supply. AD MUX = 0x0E</xtce:LongDescription>
+				<xtce:LongDescription>CURRENT MONITOR OF +5 V POWER SUPPLY. AD MUX = 0X0E</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.N5_I" parameterTypeRef="SWP_HK.N5_I">
-				<xtce:LongDescription>Current monitor of -5 V power supply. AD MUX = 0x0F</xtce:LongDescription>
+				<xtce:LongDescription>CURRENT MONITOR OF -5 V POWER SUPPLY. AD MUX = 0X0F</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SWP_REV" parameterTypeRef="SWP_HK.SWP_REV">
-				<xtce:LongDescription>Revision number for the SWAPI software</xtce:LongDescription>
+				<xtce:LongDescription>REVISION NUMBER FOR THE SWAPI SOFTWARE</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.LAST_OPCODE" parameterTypeRef="SWP_HK.LAST_OPCODE">
-				<xtce:LongDescription>Opcode of last executed command</xtce:LongDescription>
+				<xtce:LongDescription>OPCODE OF LAST EXECUTED COMMAND</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PHD_LLD1_LVL" parameterTypeRef="SWP_HK.PHD_LLD1_LVL">
-				<xtce:LongDescription>DAC level of PHD LLD</xtce:LongDescription>
+				<xtce:LongDescription>DAC LEVEL OF PHD LLD</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.MEMLD_ST" parameterTypeRef="SWP_HK.MEMLD_ST">
-				<xtce:LongDescription>MEMLD state</xtce:LongDescription>
+				<xtce:LongDescription>MEMLD STATE</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.BOOT_ST" parameterTypeRef="SWP_HK.BOOT_ST">
-				<xtce:LongDescription>Indicates which application is running (Boot or App)</xtce:LongDescription>
+				<xtce:LongDescription>INDICATES WHICH APPLICATION IS RUNNING (BOOT OR APP)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.ESA_ST" parameterTypeRef="SWP_HK.ESA_ST">
-				<xtce:LongDescription>State of ESA Enable</xtce:LongDescription>
+				<xtce:LongDescription>STATE OF ESA ENABLE</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PCEM_ST" parameterTypeRef="SWP_HK.PCEM_ST">
-				<xtce:LongDescription>State of primary channel electron multiplier disable/enable</xtce:LongDescription>
+				<xtce:LongDescription>STATE OF PRIMARY CHANNEL ELECTRON MULTIPLIER DISABLE/ENABLE</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SCEM_ST" parameterTypeRef="SWP_HK.SCEM_ST">
-				<xtce:LongDescription>State of secondary channel electron disable/enable</xtce:LongDescription>
+				<xtce:LongDescription>STATE OF SECONDARY CHANNEL ELECTRON DISABLE/ENABLE</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SPARE_1" parameterTypeRef="SWP_HK.SPARE_1">
-				<xtce:LongDescription>Spare</xtce:LongDescription>
+				<xtce:LongDescription>SPARE</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PCEM_CNT_ST" parameterTypeRef="SWP_HK.PCEM_CNT_ST">
-				<xtce:LongDescription>The PCEM count rate was tripped but handled by SWAPIFW</xtce:LongDescription>
+				<xtce:LongDescription>THE PCEM COUNT RATE WAS TRIPPED BUT HANDLED BY SWAPIFW</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SCEM_CNT_ST" parameterTypeRef="SWP_HK.SCEM_CNT_ST">
-				<xtce:LongDescription>The SCEM count rate was tripped but handled by SWAPIFW</xtce:LongDescription>
+				<xtce:LongDescription>THE SCEM COUNT RATE WAS TRIPPED BUT HANDLED BY SWAPIFW</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PCEM_I_THR" parameterTypeRef="SWP_HK.PCEM_I_THR">
-				<xtce:LongDescription>The level at which safety algorithms for the PCEM monitor are tripped due to overcurrent in the PCEM monitor</xtce:LongDescription>
+				<xtce:LongDescription>THE LEVEL AT WHICH SAFETY ALGORITHMS FOR THE PCEM MONITOR ARE TRIPPED DUE TO OVERCURRENT IN THE PCEM MONITOR</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SCEM_I_THR" parameterTypeRef="SWP_HK.SCEM_I_THR">
-				<xtce:LongDescription>The level at which safety algorithms for the SCEM monitor are tripped due to overcurrent in the SCEM monitor</xtce:LongDescription>
+				<xtce:LongDescription>THE LEVEL AT WHICH SAFETY ALGORITHMS FOR THE SCEM MONITOR ARE TRIPPED DUE TO OVERCURRENT IN THE SCEM MONITOR</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PCEM_LVL" parameterTypeRef="SWP_HK.PCEM_LVL">
-				<xtce:LongDescription>PCEM DAC level</xtce:LongDescription>
+				<xtce:LongDescription>PCEM DAC LEVEL</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SCEM_LVL" parameterTypeRef="SWP_HK.SCEM_LVL">
-				<xtce:LongDescription>SCEM DAC level</xtce:LongDescription>
+				<xtce:LongDescription>SCEM DAC LEVEL</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.AGND_VOLT" parameterTypeRef="SWP_HK.AGND_VOLT">
-				<xtce:LongDescription>Volt mon of analog ground.</xtce:LongDescription>
+				<xtce:LongDescription>VOLT MON OF ANALOG GROUND.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.CEM_I" parameterTypeRef="SWP_HK.CEM_I">
-				<xtce:LongDescription>The current limit monitor for the PCEM and SCEM at which the SWAPI software brings down the PCEM and SCEM by TBD volts for TBD seconds before they are brought back up.</xtce:LongDescription>
+				<xtce:LongDescription>THE CURRENT LIMIT MONITOR FOR THE PCEM AND SCEM AT WHICH THE SWAPI SOFTWARE BRINGS DOWN THE PCEM AND SCEM BY TBD VOLTS FOR TBD SECONDS BEFORE THEY ARE BROUGHT BACK UP.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.ESA_V" parameterTypeRef="SWP_HK.ESA_V">
-				<xtce:LongDescription>Volt mon of electrostatic analyzer high-voltage power supply.</xtce:LongDescription>
+				<xtce:LongDescription>VOLT MON OF ELECTROSTATIC ANALYZER HIGH-VOLTAGE POWER SUPPLY.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.P2_5_V" parameterTypeRef="SWP_HK.P2_5_V">
-				<xtce:LongDescription>Volt mon of +2.5 V reference.</xtce:LongDescription>
+				<xtce:LongDescription>VOLT MON OF +2.5 V REFERENCE.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PHD_LLD1_V" parameterTypeRef="SWP_HK.PHD_LLD1_V">
-				<xtce:LongDescription>Volt mon of PHD LLD.</xtce:LongDescription>
+				<xtce:LongDescription>VOLT MON OF PHD LLD.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SPARE_2" parameterTypeRef="SWP_HK.SPARE_2">
-				<xtce:LongDescription>Spare</xtce:LongDescription>
+				<xtce:LongDescription>SPARE</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PCEM_RATELIM" parameterTypeRef="SWP_HK.PCEM_RATELIM">
-				<xtce:LongDescription>The count value at which the primary CEM safety limit is set. If this limit is exceeded twice SWAPI is safed</xtce:LongDescription>
+				<xtce:LongDescription>THE COUNT VALUE AT WHICH THE PRIMARY CEM SAFETY LIMIT IS SET. IF THIS LIMIT IS EXCEEDED TWICE SWAPI IS SAFED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SCEM_RATELIM" parameterTypeRef="SWP_HK.SCEM_RATELIM">
-				<xtce:LongDescription>The count value at which the secondary CEM safety limit is set. If this limit is exceeded twice SWAPI is safed</xtce:LongDescription>
+				<xtce:LongDescription>THE COUNT VALUE AT WHICH THE SECONDARY CEM SAFETY LIMIT IS SET. IF THIS LIMIT IS EXCEEDED TWICE SWAPI IS SAFED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.STIM_EN" parameterTypeRef="SWP_HK.STIM_EN">
-				<xtce:LongDescription>State of whether the stim pulsers are enabled or disabled.</xtce:LongDescription>
+				<xtce:LongDescription>STATE OF WHETHER THE STIM PULSERS ARE ENABLED OR DISABLED.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.MISSED_PPS_CNT" parameterTypeRef="SWP_HK.MISSED_PPS_CNT">
-				<xtce:LongDescription>Count of missed PPS signals (i.e. a PPS was not received when expected).  This is a 2-bit counter that will freeze when it reaches 3.  Can be cleared via the CLR_LATCHED command.</xtce:LongDescription>
+				<xtce:LongDescription>COUNT OF MISSED PPS SIGNALS (I.E. A PPS WAS NOT RECEIVED WHEN EXPECTED).  THIS IS A 2-BIT COUNTER THAT WILL FREEZE WHEN IT REACHES 3.  CAN BE CLEARED VIA THE CLR_LATCHED COMMAND.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.CEM_INT_LIM" parameterTypeRef="SWP_HK.CEM_INT_LIM">
-				<xtce:LongDescription>The limit at which the PCEM and SCEM current triggers an interrupt to the SWAPI software.</xtce:LongDescription>
+				<xtce:LongDescription>THE LIMIT AT WHICH THE PCEM AND SCEM CURRENT TRIGGERS AN INTERRUPT TO THE SWAPI SOFTWARE.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.CMD_ECHO_ST" parameterTypeRef="SWP_HK.CMD_ECHO_ST">
-				<xtce:LongDescription>A value that represents whether command echo is enabled or disabled</xtce:LongDescription>
+				<xtce:LongDescription>A VALUE THAT REPRESENTS WHETHER COMMAND ECHO IS ENABLED OR DISABLED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.HV_PGSAFE_ST" parameterTypeRef="SWP_HK.HV_PGSAFE_ST">
-				<xtce:LongDescription>State of disable/safe/arm plug</xtce:LongDescription>
+				<xtce:LongDescription>STATE OF DISABLE/SAFE/ARM PLUG</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.HV_ARM_ST" parameterTypeRef="SWP_HK.HV_ARM_ST">
-				<xtce:LongDescription>State of high-voltage software disable/enable</xtce:LongDescription>
+				<xtce:LongDescription>STATE OF HIGH-VOLTAGE SOFTWARE DISABLE/ENABLE</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SPARE_3" parameterTypeRef="SWP_HK.SPARE_3">
-				<xtce:LongDescription>Spare</xtce:LongDescription>
+				<xtce:LongDescription>SPARE</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.CEM_INT_DIP" parameterTypeRef="SWP_HK.CEM_INT_DIP">
-				<xtce:LongDescription>The number of counts to dip the CEM supplies when a CEM current interrupt occurs</xtce:LongDescription>
+				<xtce:LongDescription>THE NUMBER OF COUNTS TO DIP THE CEM SUPPLIES WHEN A CEM CURRENT INTERRUPT OCCURS</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PLAN_ID" parameterTypeRef="SWP_HK.PLAN_ID">
-				<xtce:LongDescription>The PLAN ID used for the current science sweeping mode if any.</xtce:LongDescription>
+				<xtce:LongDescription>THE PLAN ID USED FOR THE CURRENT SCIENCE SWEEPING MODE IF ANY.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SWEEP_ID" parameterTypeRef="SWP_HK.SWEEP_ID">
-				<xtce:LongDescription>Sweep table ID within the PLAN ID that is being used for the current science sweeping mode.</xtce:LongDescription>
+				<xtce:LongDescription>SWEEP TABLE ID WITHIN THE PLAN ID THAT IS BEING USED FOR THE CURRENT SCIENCE SWEEPING MODE.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PCEM_V1_ST" parameterTypeRef="SWP_HK.PCEM_V1_ST">
-				<xtce:LongDescription>If the PCEM voltage is out of tolerance for only 0.5 second this bit is asserted.</xtce:LongDescription>
+				<xtce:LongDescription>IF THE PCEM VOLTAGE IS OUT OF TOLERANCE FOR ONLY 0.5 SECOND THIS BIT IS ASSERTED.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PCEM_I1_ST" parameterTypeRef="SWP_HK.PCEM_I1_ST">
-				<xtce:LongDescription>If the PCEM current is out of tolerance for only 0.5 second this bit is asserted.</xtce:LongDescription>
+				<xtce:LongDescription>IF THE PCEM CURRENT IS OUT OF TOLERANCE FOR ONLY 0.5 SECOND THIS BIT IS ASSERTED.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SCEM_V1_ST" parameterTypeRef="SWP_HK.SCEM_V1_ST">
-				<xtce:LongDescription>If the SCEM voltage is out of tolerance for only 0.5 second this bit is asserted.</xtce:LongDescription>
+				<xtce:LongDescription>IF THE SCEM VOLTAGE IS OUT OF TOLERANCE FOR ONLY 0.5 SECOND THIS BIT IS ASSERTED.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SCEM_I1_ST" parameterTypeRef="SWP_HK.SCEM_I1_ST">
-				<xtce:LongDescription>If the SCEM current is out of tolerance for only 0.5 second this bit is asserted.</xtce:LongDescription>
+				<xtce:LongDescription>IF THE SCEM CURRENT IS OUT OF TOLERANCE FOR ONLY 0.5 SECOND THIS BIT IS ASSERTED.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PCEM_INT_ST" parameterTypeRef="SWP_HK.PCEM_INT_ST">
-				<xtce:LongDescription>The PCEM current interrupt was tripped but handled by SWAPIFW</xtce:LongDescription>
+				<xtce:LongDescription>THE PCEM CURRENT INTERRUPT WAS TRIPPED BUT HANDLED BY SWAPIFW</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SCEM_INT_ST" parameterTypeRef="SWP_HK.SCEM_INT_ST">
-				<xtce:LongDescription>The SCEM current interrupt was tripped but handled by SWAPIFW</xtce:LongDescription>
+				<xtce:LongDescription>THE SCEM CURRENT INTERRUPT WAS TRIPPED BUT HANDLED BY SWAPIFW</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.EEP2_RDY" parameterTypeRef="SWP_HK.EEP2_RDY">
-				<xtce:LongDescription>EEPROM 2 is ready to be written</xtce:LongDescription>
+				<xtce:LongDescription>EEPROM 2 IS READY TO BE WRITTEN</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.EEP1_RDY" parameterTypeRef="SWP_HK.EEP1_RDY">
-				<xtce:LongDescription>EEPROM 1 is ready to be written</xtce:LongDescription>
+				<xtce:LongDescription>EEPROM 1 IS READY TO BE WRITTEN</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.FPGA_TYPE" parameterTypeRef="SWP_HK.FPGA_TYPE">
-				<xtce:LongDescription>Type number of the FPGA</xtce:LongDescription>
+				<xtce:LongDescription>TYPE NUMBER OF THE FPGA</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.FPGA_REV" parameterTypeRef="SWP_HK.FPGA_REV">
-				<xtce:LongDescription>Revision number of the FPGA</xtce:LongDescription>
+				<xtce:LongDescription>REVISION NUMBER OF THE FPGA</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.IAL_TLM" parameterTypeRef="SWP_HK.IAL_TLM">
-				<xtce:LongDescription>A value representing how often the I-ALiRT telemetry packet is output.</xtce:LongDescription>
+				<xtce:LongDescription>A VALUE REPRESENTING HOW OFTEN THE I-ALIRT TELEMETRY PACKET IS OUTPUT.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SCI_TLM" parameterTypeRef="SWP_HK.SCI_TLM">
-				<xtce:LongDescription>A value representing how often all of the 12-second science packets are output.</xtce:LongDescription>
+				<xtce:LongDescription>A VALUE REPRESENTING HOW OFTEN ALL OF THE 12-SECOND SCIENCE PACKETS ARE OUTPUT.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.HK_TLM" parameterTypeRef="SWP_HK.HK_TLM">
-				<xtce:LongDescription>A value representing a choice for how often the housekeeping packet is output.</xtce:LongDescription>
+				<xtce:LongDescription>A VALUE REPRESENTING A CHOICE FOR HOW OFTEN THE HOUSEKEEPING PACKET IS OUTPUT.</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SWP_HK.SPARE_4" parameterTypeRef="SWP_HK.SPARE_4">
-				<xtce:LongDescription>Spare</xtce:LongDescription>
+			<xtce:Parameter name="SWP_HK.ESA_GATE_SET" parameterTypeRef="SWP_HK.ESA_GATE_SET">
+				<xtce:LongDescription>ESA GATE DRIVE SETTING</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.FPGA_PUP_ST" parameterTypeRef="SWP_HK.FPGA_PUP_ST">
-				<xtce:LongDescription>A status of the power on check of the FPGA initialization check - need to fix or make Spare</xtce:LongDescription>
+				<xtce:LongDescription>A STATUS OF THE POWER ON CHECK OF THE FPGA INITIALIZATION CHECK - NEED TO FIX OR MAKE SPARE</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.EEPL2_CKS_ST" parameterTypeRef="SWP_HK.EEPL2_CKS_ST">
-				<xtce:LongDescription>A status of the power on check of the EEP_L2 checksum compared against a stored checksum</xtce:LongDescription>
+				<xtce:LongDescription>A STATUS OF THE POWER ON CHECK OF THE EEP_L2 CHECKSUM COMPARED AGAINST A STORED CHECKSUM</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.EEPL1_CKS_ST" parameterTypeRef="SWP_HK.EEPL1_CKS_ST">
-				<xtce:LongDescription>A status of the power on check of EEP_L1 checksum compared against a stored checksum</xtce:LongDescription>
+				<xtce:LongDescription>A STATUS OF THE POWER ON CHECK OF EEP_L1 CHECKSUM COMPARED AGAINST A STORED CHECKSUM</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.RAM_D_ST" parameterTypeRef="SWP_HK.RAM_D_ST">
-				<xtce:LongDescription>A status of the power on check of the RAM_D memory test</xtce:LongDescription>
+				<xtce:LongDescription>A STATUS OF THE POWER ON CHECK OF THE RAM_D MEMORY TEST</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.EEPC2_CKS_ST" parameterTypeRef="SWP_HK.EEPC2_CKS_ST">
-				<xtce:LongDescription>A status of the power on check of the EEP_C2 checksum compared against a stored checksum</xtce:LongDescription>
+				<xtce:LongDescription>A STATUS OF THE POWER ON CHECK OF THE EEP_C2 CHECKSUM COMPARED AGAINST A STORED CHECKSUM</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.EEPC1_CKS_ST" parameterTypeRef="SWP_HK.EEPC1_CKS_ST">
-				<xtce:LongDescription>A status of the power on check of the EEP_C1 checksum compared against a stored checksum</xtce:LongDescription>
+				<xtce:LongDescription>A STATUS OF THE POWER ON CHECK OF THE EEP_C1 CHECKSUM COMPARED AGAINST A STORED CHECKSUM</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.RAM_C_ST" parameterTypeRef="SWP_HK.RAM_C_ST">
-				<xtce:LongDescription>A status of the power on check of the RAM_C memory test</xtce:LongDescription>
+				<xtce:LongDescription>A STATUS OF THE POWER ON CHECK OF THE RAM_C MEMORY TEST</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PROM_CKS_ST" parameterTypeRef="SWP_HK.PROM_CKS_ST">
-				<xtce:LongDescription>A status of the power on check of the PROM checksum compared against a stored checksum</xtce:LongDescription>
+				<xtce:LongDescription>A STATUS OF THE POWER ON CHECK OF THE PROM CHECKSUM COMPARED AGAINST A STORED CHECKSUM</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SWP_HK.LUT_REV" parameterTypeRef="SWP_HK.LUT_REV" shortDescription="Lookup table version">
-				<xtce:LongDescription>Lookup table version</xtce:LongDescription>
+			<xtce:Parameter name="SWP_HK.LUT_REV" parameterTypeRef="SWP_HK.LUT_REV" shortDescription="LOOKUP TABLE VERSION">
+				<xtce:LongDescription>LOOKUP TABLE VERSION</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.P2V5D" parameterTypeRef="SWP_HK.P2V5D">
-				<xtce:LongDescription>2.5V Regulator for FPVA Core</xtce:LongDescription>
+				<xtce:LongDescription>2.5V REGULATOR FOR FPVA CORE</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.P3V3_V_MON" parameterTypeRef="SWP_HK.P3V3_V_MON">
-				<xtce:LongDescription>3.3V Regulator for LVDS TX/RX</xtce:LongDescription>
+				<xtce:LongDescription>3.3V REGULATOR FOR LVDS TX/RX</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.P_CEM_CMD_LVL_MON" parameterTypeRef="SWP_HK.P_CEM_CMD_LVL_MON">
-				<xtce:LongDescription>PCEM Voltage Level Command</xtce:LongDescription>
+				<xtce:LongDescription>PCEM VOLTAGE LEVEL COMMAND</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.S_CEM_CMD_LVL_MON" parameterTypeRef="SWP_HK.S_CEM_CMD_LVL_MON">
-				<xtce:LongDescription>SCEM Voltage Level Command</xtce:LongDescription>
+				<xtce:LongDescription>SCEM VOLTAGE LEVEL COMMAND</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.ESA_CMD_LVL_MON" parameterTypeRef="SWP_HK.ESA_CMD_LVL_MON">
-				<xtce:LongDescription>ESA Voltage Level Command</xtce:LongDescription>
+				<xtce:LongDescription>ESA VOLTAGE LEVEL COMMAND</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PHD_LLD2_V" parameterTypeRef="SWP_HK.PHD_LLD2_V">
-				<xtce:LongDescription>SCEM LLD Threshold</xtce:LongDescription>
+				<xtce:LongDescription>SCEM LLD THRESHOLD</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SPARE_5" parameterTypeRef="SWP_HK.SPARE_5">
-				<xtce:LongDescription>Spare</xtce:LongDescription>
+				<xtce:LongDescription>SPARE</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PHD_LLD2_LVL" parameterTypeRef="SWP_HK.PHD_LLD2_LVL">
-				<xtce:LongDescription>DAC level of PHD LLD 2</xtce:LongDescription>
+				<xtce:LongDescription>DAC LEVEL OF PHD LLD 2</xtce:LongDescription>
 			</xtce:Parameter>
-			<xtce:Parameter name="SWP_HK.CHKSUM" parameterTypeRef="SWP_HK.CHKSUM" shortDescription="Packet checksum">
-				<xtce:LongDescription>XOR checksum starting with beginning of CCSDS header to the byte prior to this field</xtce:LongDescription>
+			<xtce:Parameter name="SWP_HK.P5V_ESA_V_MON" parameterTypeRef="SWP_HK.P5V_ESA_V_MON">
+				<xtce:LongDescription>ESA +5V VOLTAGE</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWP_HK.M5V_ESA_V_MON" parameterTypeRef="SWP_HK.M5V_ESA_V_MON">
+				<xtce:LongDescription>ESA -5V VOLTAGE</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWP_HK.P5V_ESA_I_MON" parameterTypeRef="SWP_HK.P5V_ESA_I_MON">
+				<xtce:LongDescription>ESA +5V CURRENT</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWP_HK.M5V_ESA_I_MON" parameterTypeRef="SWP_HK.M5V_ESA_I_MON">
+				<xtce:LongDescription>ESA -5V CURRENT</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWP_HK.CHKSUM" parameterTypeRef="SWP_HK.CHKSUM" shortDescription="PACKET CHECKSUM">
+				<xtce:LongDescription>XOR CHECKSUM STARTING WITH BEGINNING OF CCSDS HEADER TO THE BYTE PRIOR TO THIS FIELD</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.SHCOARSE" parameterTypeRef="SWP_SCI.SHCOARSE">
-				<xtce:LongDescription>CCSDS Packet Time (SCLK) at which C&amp;DH software created packet)</xtce:LongDescription>
+				<xtce:LongDescription>CCSDS PACKET TIME (SCLK) AT WHICH C&amp;DH SOFTWARE CREATED PACKET)</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.SEQ_NUMBER" parameterTypeRef="SWP_SCI.SEQ_NUMBER">
-				<xtce:LongDescription>Sequence number of set of steps in energy sweep</xtce:LongDescription>
+				<xtce:LongDescription>SEQUENCE NUMBER OF SET OF STEPS IN ENERGY SWEEP</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.SWEEP_TABLE" parameterTypeRef="SWP_SCI.SWEEP_TABLE">
-				<xtce:LongDescription>Sweep ID</xtce:LongDescription>
+				<xtce:LongDescription>SWEEP ID</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.PLAN_ID" parameterTypeRef="SWP_SCI.PLAN_ID">
-				<xtce:LongDescription>Plan ID</xtce:LongDescription>
+				<xtce:LongDescription>PLAN ID</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.MODE" parameterTypeRef="SWP_SCI.MODE">
-				<xtce:LongDescription>LVENG, LVSCI, HVENG or HVSCI</xtce:LongDescription>
+				<xtce:LongDescription>LVENG, LVSCI, HVENG OR HVSCI</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.SPARE_1" parameterTypeRef="SWP_SCI.SPARE_1">
-				<xtce:LongDescription>Spare</xtce:LongDescription>
+				<xtce:LongDescription>SPARE</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.ESA_LVL5" parameterTypeRef="SWP_SCI.ESA_LVL5">
-				<xtce:LongDescription>ESA level during sixth 1/6 second</xtce:LongDescription>
+				<xtce:LongDescription>ESA LEVEL DURING SIXTH 1/6 SECOND</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.SPARE_2" parameterTypeRef="SWP_SCI.SPARE_2">
-				<xtce:LongDescription>Spare</xtce:LongDescription>
+				<xtce:LongDescription>SPARE</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.PCEM_RNG_ST0" parameterTypeRef="SWP_SCI.PCEM_RNG_ST0">
-				<xtce:LongDescription>PCEM count range during first 1/6-second: raw or compressed</xtce:LongDescription>
+				<xtce:LongDescription>PCEM COUNT RANGE DURING FIRST 1/6-SECOND: RAW OR COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.SCEM_RNG_ST0" parameterTypeRef="SWP_SCI.SCEM_RNG_ST0">
-				<xtce:LongDescription>SCEM count range during first 1/6-second: raw or compressed</xtce:LongDescription>
+				<xtce:LongDescription>SCEM COUNT RANGE DURING FIRST 1/6-SECOND: RAW OR COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.COIN_RNG_ST0" parameterTypeRef="SWP_SCI.COIN_RNG_ST0">
-				<xtce:LongDescription>Coincidence count range during first 1/6-second: raw or compressed</xtce:LongDescription>
+				<xtce:LongDescription>COINCIDENCE COUNT RANGE DURING FIRST 1/6-SECOND: RAW OR COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.PCEM_RNG_ST1" parameterTypeRef="SWP_SCI.PCEM_RNG_ST1">
-				<xtce:LongDescription>PCEM count range during second 1/6-second: raw or compressed</xtce:LongDescription>
+				<xtce:LongDescription>PCEM COUNT RANGE DURING SECOND 1/6-SECOND: RAW OR COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.SCEM_RNG_ST1" parameterTypeRef="SWP_SCI.SCEM_RNG_ST1">
-				<xtce:LongDescription>SCEM count range during second 1/6-second: raw or compressed</xtce:LongDescription>
+				<xtce:LongDescription>SCEM COUNT RANGE DURING SECOND 1/6-SECOND: RAW OR COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.COIN_RNG_ST1" parameterTypeRef="SWP_SCI.COIN_RNG_ST1">
-				<xtce:LongDescription>Coincidence count range during second 1/6-second: raw or compressed</xtce:LongDescription>
+				<xtce:LongDescription>COINCIDENCE COUNT RANGE DURING SECOND 1/6-SECOND: RAW OR COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.PCEM_RNG_ST2" parameterTypeRef="SWP_SCI.PCEM_RNG_ST2">
-				<xtce:LongDescription>PCEM count range during third 1/6-second: raw or compressed</xtce:LongDescription>
+				<xtce:LongDescription>PCEM COUNT RANGE DURING THIRD 1/6-SECOND: RAW OR COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.SCEM_RNG_ST2" parameterTypeRef="SWP_SCI.SCEM_RNG_ST2">
-				<xtce:LongDescription>SCEM count range during third 1/6-second: raw or compressed</xtce:LongDescription>
+				<xtce:LongDescription>SCEM COUNT RANGE DURING THIRD 1/6-SECOND: RAW OR COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.COIN_RNG_ST2" parameterTypeRef="SWP_SCI.COIN_RNG_ST2">
-				<xtce:LongDescription>Coincidence count range during third 1/6-second: raw or compressed</xtce:LongDescription>
+				<xtce:LongDescription>COINCIDENCE COUNT RANGE DURING THIRD 1/6-SECOND: RAW OR COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.PCEM_RNG_ST3" parameterTypeRef="SWP_SCI.PCEM_RNG_ST3">
-				<xtce:LongDescription>PCEM count range during fourth 1/6-second: raw or compressed</xtce:LongDescription>
+				<xtce:LongDescription>PCEM COUNT RANGE DURING FOURTH 1/6-SECOND: RAW OR COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.SCEM_RNG_ST3" parameterTypeRef="SWP_SCI.SCEM_RNG_ST3">
-				<xtce:LongDescription>SCEM count range during fourth 1/6-second: raw or compressed</xtce:LongDescription>
+				<xtce:LongDescription>SCEM COUNT RANGE DURING FOURTH 1/6-SECOND: RAW OR COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.COIN_RNG_ST3" parameterTypeRef="SWP_SCI.COIN_RNG_ST3">
-				<xtce:LongDescription>Coincidence count range during fourth 1/6-second: raw or compressed</xtce:LongDescription>
+				<xtce:LongDescription>COINCIDENCE COUNT RANGE DURING FOURTH 1/6-SECOND: RAW OR COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.PCEM_RNG_ST4" parameterTypeRef="SWP_SCI.PCEM_RNG_ST4">
-				<xtce:LongDescription>PCEM count range during fifth 1/6-second: raw or compressed</xtce:LongDescription>
+				<xtce:LongDescription>PCEM COUNT RANGE DURING FIFTH 1/6-SECOND: RAW OR COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.SCEM_RNG_ST4" parameterTypeRef="SWP_SCI.SCEM_RNG_ST4">
-				<xtce:LongDescription>SCEM count range during fifth 1/6-second: raw or compressed</xtce:LongDescription>
+				<xtce:LongDescription>SCEM COUNT RANGE DURING FIFTH 1/6-SECOND: RAW OR COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.COIN_RNG_ST4" parameterTypeRef="SWP_SCI.COIN_RNG_ST4">
-				<xtce:LongDescription>Coincidence count range during fifth 1/6-second: raw or compressed</xtce:LongDescription>
+				<xtce:LongDescription>COINCIDENCE COUNT RANGE DURING FIFTH 1/6-SECOND: RAW OR COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.PCEM_RNG_ST5" parameterTypeRef="SWP_SCI.PCEM_RNG_ST5">
-				<xtce:LongDescription>PCEM count range during sixth 1/6-second: raw or compressed</xtce:LongDescription>
+				<xtce:LongDescription>PCEM COUNT RANGE DURING SIXTH 1/6-SECOND: RAW OR COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.SCEM_RNG_ST5" parameterTypeRef="SWP_SCI.SCEM_RNG_ST5">
-				<xtce:LongDescription>SCEM count range during sixth 1/6-second: raw or compressed</xtce:LongDescription>
+				<xtce:LongDescription>SCEM COUNT RANGE DURING SIXTH 1/6-SECOND: RAW OR COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.COIN_RNG_ST5" parameterTypeRef="SWP_SCI.COIN_RNG_ST5">
-				<xtce:LongDescription>Coincidence count range during sixth 1/6-second: raw or compressed</xtce:LongDescription>
+				<xtce:LongDescription>COINCIDENCE COUNT RANGE DURING SIXTH 1/6-SECOND: RAW OR COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.PCEM_CNT0" parameterTypeRef="SWP_SCI.PCEM_CNT0">
-				<xtce:LongDescription>1st Primary CEM count: LS 16 bits if RAW, MS 16 bits if compressed</xtce:LongDescription>
+				<xtce:LongDescription>1ST PRIMARY CEM COUNT: LS 16 BITS IF RAW, MS 16 BITS IF COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.SCEM_CNT0" parameterTypeRef="SWP_SCI.SCEM_CNT0">
-				<xtce:LongDescription>1st Secondary CEM count: LS 16 bits if RAW, MS 16 bits if compressed</xtce:LongDescription>
+				<xtce:LongDescription>1ST SECONDARY CEM COUNT: LS 16 BITS IF RAW, MS 16 BITS IF COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.COIN_CNT0" parameterTypeRef="SWP_SCI.COIN_CNT0">
-				<xtce:LongDescription>1st Coincidence count: LS 16 bits if RAW, MS 16 bits if compressed</xtce:LongDescription>
+				<xtce:LongDescription>1ST COINCIDENCE COUNT: LS 16 BITS IF RAW, MS 16 BITS IF COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.PCEM_CNT1" parameterTypeRef="SWP_SCI.PCEM_CNT1">
-				<xtce:LongDescription>2nd Primary CEM count: LS 16 bits if RAW, MS 16 bits if compressed</xtce:LongDescription>
+				<xtce:LongDescription>2ND PRIMARY CEM COUNT: LS 16 BITS IF RAW, MS 16 BITS IF COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.SCEM_CNT1" parameterTypeRef="SWP_SCI.SCEM_CNT1">
-				<xtce:LongDescription>2nd Secondary CEM count: LS 16 bits if RAW, MS 16 bits if compressed</xtce:LongDescription>
+				<xtce:LongDescription>2ND SECONDARY CEM COUNT: LS 16 BITS IF RAW, MS 16 BITS IF COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.COIN_CNT1" parameterTypeRef="SWP_SCI.COIN_CNT1">
-				<xtce:LongDescription>2nd Coincidence count: LS 16 bits if RAW, MS 16 bits if compressed</xtce:LongDescription>
+				<xtce:LongDescription>2ND COINCIDENCE COUNT: LS 16 BITS IF RAW, MS 16 BITS IF COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.PCEM_CNT2" parameterTypeRef="SWP_SCI.PCEM_CNT2">
-				<xtce:LongDescription>3rd Primary CEM count: LS 16 bits if RAW, MS 16 bits if compressed</xtce:LongDescription>
+				<xtce:LongDescription>3RD PRIMARY CEM COUNT: LS 16 BITS IF RAW, MS 16 BITS IF COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.SCEM_CNT2" parameterTypeRef="SWP_SCI.SCEM_CNT2">
-				<xtce:LongDescription>3rd Secondary CEM count: LS 16 bits if RAW, MS 16 bits if compressed</xtce:LongDescription>
+				<xtce:LongDescription>3RD SECONDARY CEM COUNT: LS 16 BITS IF RAW, MS 16 BITS IF COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.COIN_CNT2" parameterTypeRef="SWP_SCI.COIN_CNT2">
-				<xtce:LongDescription>3rd Coincidence count: LS 16 bits if RAW, MS 16 bits if compressed</xtce:LongDescription>
+				<xtce:LongDescription>3RD COINCIDENCE COUNT: LS 16 BITS IF RAW, MS 16 BITS IF COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.PCEM_CNT3" parameterTypeRef="SWP_SCI.PCEM_CNT3">
-				<xtce:LongDescription>4th Primary CEM count: LS 16 bits if RAW, MS 16 bits if compressed</xtce:LongDescription>
+				<xtce:LongDescription>4TH PRIMARY CEM COUNT: LS 16 BITS IF RAW, MS 16 BITS IF COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.SCEM_CNT3" parameterTypeRef="SWP_SCI.SCEM_CNT3">
-				<xtce:LongDescription>4th Primary CEM count: LS 16 bits if RAW, MS 16 bits if compressed</xtce:LongDescription>
+				<xtce:LongDescription>4TH PRIMARY CEM COUNT: LS 16 BITS IF RAW, MS 16 BITS IF COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.COIN_CNT3" parameterTypeRef="SWP_SCI.COIN_CNT3">
-				<xtce:LongDescription>4th Primary CEM count: LS 16 bits if RAW, MS 16 bits if compressed</xtce:LongDescription>
+				<xtce:LongDescription>4TH PRIMARY CEM COUNT: LS 16 BITS IF RAW, MS 16 BITS IF COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.PCEM_CNT4" parameterTypeRef="SWP_SCI.PCEM_CNT4">
-				<xtce:LongDescription>5th Primary CEM count: LS 16 bits if RAW, MS 16 bits if compressed</xtce:LongDescription>
+				<xtce:LongDescription>5TH PRIMARY CEM COUNT: LS 16 BITS IF RAW, MS 16 BITS IF COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.SCEM_CNT4" parameterTypeRef="SWP_SCI.SCEM_CNT4">
-				<xtce:LongDescription>5th Secondary CEM count: LS 16 bits if RAW, MS 16 bits if compressed</xtce:LongDescription>
+				<xtce:LongDescription>5TH SECONDARY CEM COUNT: LS 16 BITS IF RAW, MS 16 BITS IF COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.COIN_CNT4" parameterTypeRef="SWP_SCI.COIN_CNT4">
-				<xtce:LongDescription>5th Coincidence count: LS 16 bits if RAW, MS 16 bits if compressed</xtce:LongDescription>
+				<xtce:LongDescription>5TH COINCIDENCE COUNT: LS 16 BITS IF RAW, MS 16 BITS IF COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.PCEM_CNT5" parameterTypeRef="SWP_SCI.PCEM_CNT5">
-				<xtce:LongDescription>6th Primary CEM count: LS 16 bits if RAW, MS 16 bits if compressed</xtce:LongDescription>
+				<xtce:LongDescription>6TH PRIMARY CEM COUNT: LS 16 BITS IF RAW, MS 16 BITS IF COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.SCEM_CNT5" parameterTypeRef="SWP_SCI.SCEM_CNT5">
-				<xtce:LongDescription>6th Secondary CEM count: LS 16 bits if RAW, MS 16 bits if compressed</xtce:LongDescription>
+				<xtce:LongDescription>6TH SECONDARY CEM COUNT: LS 16 BITS IF RAW, MS 16 BITS IF COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.COIN_CNT5" parameterTypeRef="SWP_SCI.COIN_CNT5">
-				<xtce:LongDescription>6th Coincidence count: LS 16 bits if RAW, MS 16 bits if compressed</xtce:LongDescription>
+				<xtce:LongDescription>6TH COINCIDENCE COUNT: LS 16 BITS IF RAW, MS 16 BITS IF COMPRESSED</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_SCI.CHKSUM" parameterTypeRef="SWP_SCI.CHKSUM">
-				<xtce:LongDescription>XOR checksum starting with beginning of CCSDS header to the byte prior to this field</xtce:LongDescription>
+				<xtce:LongDescription>XOR CHECKSUM STARTING WITH BEGINNING OF CCSDS HEADER TO THE BYTE PRIOR TO THIS FIELD</xtce:LongDescription>
 			</xtce:Parameter>
 		</xtce:ParameterSet>
 		<xtce:ContainerSet>
@@ -1717,7 +1692,7 @@
 					<xtce:ParameterRefEntry parameterRef="SWP_HK.IAL_TLM" />
 					<xtce:ParameterRefEntry parameterRef="SWP_HK.SCI_TLM" />
 					<xtce:ParameterRefEntry parameterRef="SWP_HK.HK_TLM" />
-					<xtce:ParameterRefEntry parameterRef="SWP_HK.SPARE_4" />
+					<xtce:ParameterRefEntry parameterRef="SWP_HK.ESA_GATE_SET" />
 					<xtce:ParameterRefEntry parameterRef="SWP_HK.FPGA_PUP_ST" />
 					<xtce:ParameterRefEntry parameterRef="SWP_HK.EEPL2_CKS_ST" />
 					<xtce:ParameterRefEntry parameterRef="SWP_HK.EEPL1_CKS_ST" />
@@ -1735,6 +1710,10 @@
 					<xtce:ParameterRefEntry parameterRef="SWP_HK.PHD_LLD2_V" />
 					<xtce:ParameterRefEntry parameterRef="SWP_HK.SPARE_5" />
 					<xtce:ParameterRefEntry parameterRef="SWP_HK.PHD_LLD2_LVL" />
+					<xtce:ParameterRefEntry parameterRef="SWP_HK.P5V_ESA_V_MON" />
+					<xtce:ParameterRefEntry parameterRef="SWP_HK.M5V_ESA_V_MON" />
+					<xtce:ParameterRefEntry parameterRef="SWP_HK.P5V_ESA_I_MON" />
+					<xtce:ParameterRefEntry parameterRef="SWP_HK.M5V_ESA_I_MON" />
 					<xtce:ParameterRefEntry parameterRef="SWP_HK.CHKSUM" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>

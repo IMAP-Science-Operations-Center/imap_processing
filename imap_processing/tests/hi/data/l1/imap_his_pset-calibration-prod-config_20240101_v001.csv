@@ -1,0 +1,31 @@
+# Calibration Product DE Filter Configuration File
+# Valid start date: 2024-01-01 (from filename)
+# This file will be used in processing until a new calibration file is uploaded
+# to the SDC with either a higher version number or new date in the filename.
+# For details on how the SDC selects ancillary files for processing, see:
+# https://imap-processing.readthedocs.io/en/latest/data-access/calibration-files.html
+#
+# When creating PSET products, the following table will be used to filter the list
+# of DEs into the into calibration product categories at each ESA energy step. Only
+# DEs with coincidence type contained in the `coincidence_type_list` and time-of-flight
+# values that are in the inclusive range specified by the low and high entries for each
+# energy step are included in the angular pset bins.
+cal_prod_num,esa_energy_step,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high
+0,1,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25
+0,2,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25
+0,3,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25
+0,4,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25
+0,5,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25
+0,6,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25
+0,7,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25
+0,8,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25
+0,9,ABC1C2|ABC1|AC1C2,15,55,0,70,-50,10,5,25
+1,1,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25
+1,2,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25
+1,3,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25
+1,4,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25
+1,5,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25
+1,6,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25
+1,7,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25
+1,8,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25
+1,9,BC1C2|AB|AC1,15,55,0,70,-50,10,5,25

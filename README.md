@@ -47,7 +47,12 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/subagonsouth"><img src="https://avatars.githubusercontent.com/u/16110870?v=4?s=100" width="100px;" alt="Tim Plummer"/><br /><sub><b>Tim Plummer</b></sub></a><br /></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/daralynnrhode"><img src="https://avatars.githubusercontent.com/u/143308810?v=4?s=100" width="100px;" alt="Daralynn Rhode"/><br /><sub><b>Daralynn Rhode</b></sub></a><br /></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/anamanica"><img src="https://avatars.githubusercontent.com/u/171708990?v=4?s=100" width="100px;" alt="Ana Manica"/><br /><sub><b>Ana Manica</b></sub></a><br /></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/lacoak21"><img src="https://avatars.githubusercontent.com/u/48064300?v=4?s=100" width="100px;" alt="Luisa Coakley"/><br /><sub><b>Luisa Coakley</b></sub></a><br /></td>
     </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/nkerman"><img src="https://avatars.githubusercontent.com/u/13221946?v=4?s=100" width="100px;" alt="Nat Kerman"/><br /><sub><b>Nat Kerman</b></sub></a><br /></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/torimarbois"><img src="https://avatars.githubusercontent.com/u/65727848?v=4?s=100" width="100px;" alt="Tori Marbois"/><br /><sub><b>Tori Marbois</b></sub></a><br /></td>
+</tr>
   </tbody>
 </table>
 

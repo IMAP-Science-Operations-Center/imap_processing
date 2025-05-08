@@ -14,9 +14,9 @@ from imap_processing.hit.l1a.hit_l1a import (
     hit_l1a,
     subcom_sectorates,
 )
-from imap_processing.tests.hit.helpers.l1a_validation import (
+from imap_processing.tests.hit.helpers.l1_validation import (
     compare_data,
-    prepare_validation_data,
+    prepare_counts_validation_data,
 )
 
 # TODO: Packet files are per apid at the moment so the tests currently
@@ -27,9 +27,7 @@ from imap_processing.tests.hit.helpers.l1a_validation import (
 @pytest.fixture(scope="module")
 def hk_packet_filepath():
     """Set path to test data file"""
-    return (
-        imap_module_directory / "tests/hit/test_data/imap_hit_l0_raw_20100105_v001.pkts"
-    )
+    return imap_module_directory / "tests/hit/test_data/hskp_sample.ccsds"
 
 
 @pytest.fixture(scope="module")
@@ -54,7 +52,7 @@ def validation_data():
 def test_subcom_sectorates(sci_packet_filepath):
     """Test the subcom_sectorates function.
 
-    This function organizes the sector rates data
+    This function organizes the sectored rates data
     by species and adds the data as new variables
     to the dataset.
     """
@@ -64,31 +62,31 @@ def test_subcom_sectorates(sci_packet_filepath):
     sci_dataset = decom_hit(sci_dataset)
 
     # Call the function to be tested
-    subcom_sectorates(sci_dataset)
+    sci_dataset = subcom_sectorates(sci_dataset)
 
     # Number of science frames in the dataset
     frames = sci_dataset["epoch"].shape[0]
 
-    # Check if the dataset has the expected new variables
-    for species in ["h", "he4", "cno", "nemgsi", "fe"]:
-        assert f"{species}_counts_sectored" in sci_dataset
-        assert f"{species}_energy_min" in sci_dataset
-        assert f"{species}_energy_max" in sci_dataset
+    # Shape of the new data variables
+    expected_shapes = {
+        "h": (3, 15, 8),
+        "he4": (2, 15, 8),
+        "cno": (2, 15, 8),
+        "nemgsi": (2, 15, 8),
+        "fe": (1, 15, 8),
+    }
 
+    for species, shape in expected_shapes.items():
+        # Check if the dataset has the new  data variables
+        assert f"{species}_sectored_counts" in sci_dataset
+        assert f"{species}_energy_mean" in sci_dataset.coords
+        assert f"{species}_energy_delta_minus" in sci_dataset
+        assert f"{species}_energy_delta_plus" in sci_dataset
         # Check the shape of the new data variables
-        if species == "h":
-            assert sci_dataset[f"{species}_counts_sectored"].shape == (frames, 3, 8, 15)
-            assert sci_dataset[f"{species}_energy_min"].shape == (3,)
-        elif species in ("4he", "cno", "nemgsi"):
-            assert sci_dataset[f"{species}_counts_sectored"].shape == (frames, 2, 8, 15)
-            assert sci_dataset[f"{species}_energy_min"].shape == (2,)
-        elif species == "fe":
-            assert sci_dataset[f"{species}_counts_sectored"].shape == (frames, 1, 8, 15)
-            assert sci_dataset[f"{species}_energy_min"].shape == (1,)
-        assert (
-            sci_dataset[f"{species}_energy_max"].shape
-            == sci_dataset[f"{species}_energy_min"].shape
-        )
+        assert sci_dataset[f"{species}_sectored_counts"].shape == (frames, *shape)
+        assert sci_dataset[f"{species}_energy_mean"].shape == (shape[0],)
+        assert sci_dataset[f"{species}_energy_delta_minus"].shape == (shape[0],)
+        assert sci_dataset[f"{species}_energy_delta_plus"].shape == (shape[0],)
 
 
 def test_calculate_uncertainties():
@@ -119,13 +117,13 @@ def test_calculate_uncertainties():
 
     # Assertions
     np.testing.assert_array_almost_equal(
-        result["counts_delta_plus"].values, expected_delta_plus
+        result["counts_stat_uncert_plus"].values, expected_delta_plus
     )
     np.testing.assert_array_almost_equal(
-        result["counts_delta_minus"].values, expected_delta_minus
+        result["counts_stat_uncert_minus"].values, expected_delta_minus
     )
-    assert "version_delta_plus" not in result
-    assert "version_delta_minus" not in result
+    assert "version_stat_uncert_plus" not in result
+    assert "version_stat_uncert_minus" not in result
 
 
 def test_validate_l1a_housekeeping_data(hk_packet_filepath):
@@ -139,7 +137,7 @@ def test_validate_l1a_housekeeping_data(hk_packet_filepath):
     hk_packet_filepath : str
         File path to housekeeping ccsds file
     """
-    datasets = hit_l1a(hk_packet_filepath, "001")
+    datasets = hit_l1a(hk_packet_filepath)
     hk_dataset = None
     for dataset in datasets:
         if dataset.attrs["Logical_source"] == "imap_hit_l1a_hk":
@@ -151,6 +149,7 @@ def test_validate_l1a_housekeeping_data(hk_packet_filepath):
     )
     validation_data = pd.read_csv(validation_file)
     validation_data.columns = validation_data.columns.str.lower()
+    validation_data.columns = validation_data.columns.str.strip()
 
     # Get a list of leak columns in ascending order
     # (LEAK_I_00, LEAK_I_01, ..., LEAK_I_63)
@@ -166,7 +165,6 @@ def test_validate_l1a_housekeeping_data(hk_packet_filepath):
     # Define the keys that should have dropped from the housekeeping dataset
     dropped_fields = {
         "pkt_apid",
-        "sc_tick",
         "version",
         "type",
         "sec_hdr_flg",
@@ -190,7 +188,6 @@ def test_validate_l1a_housekeeping_data(hk_packet_filepath):
         "ccsds_grp_flag",
         "ccsds_seq_cnt",
         "ccsds_length",
-        "shcoarse",
     }
 
     # Check that dropped variables are not in the dataset
@@ -226,11 +223,11 @@ def test_validate_l1a_counts_data(sci_packet_filepath, validation_data):
     """
 
     # Process the sample data
-    processed_datasets = hit_l1a(sci_packet_filepath, "001")
+    processed_datasets = hit_l1a(sci_packet_filepath)
     l1a_counts_data = processed_datasets[0]
 
     # Prepare validation data for comparison with processed data
-    validation_data = prepare_validation_data(validation_data)
+    validation_data = prepare_counts_validation_data(validation_data)
 
     # Fields to skip in comparison. CCSDS headers plus a few others.
     # The CCSDS header fields contain data per packet in the dataset, but the
@@ -243,7 +240,7 @@ def test_validate_l1a_counts_data(sci_packet_filepath, validation_data):
         "seq_flgs",
         "src_seq_ctr",
         "pkt_len",
-        "energy_idx",
+        "energy_bin",
     ]
 
     # Compare processed data to validation data
@@ -263,7 +260,7 @@ def test_hit_l1a(hk_packet_filepath, sci_packet_filepath):
         Path to ccsds file for science data
     """
     for packet_filepath in [hk_packet_filepath, sci_packet_filepath]:
-        processed_datasets = hit_l1a(packet_filepath, "001")
+        processed_datasets = hit_l1a(packet_filepath)
         assert isinstance(processed_datasets, list)
         assert all(isinstance(ds, xr.Dataset) for ds in processed_datasets)
         if packet_filepath == hk_packet_filepath:
@@ -272,10 +269,9 @@ def test_hit_l1a(hk_packet_filepath, sci_packet_filepath):
         else:
             assert len(processed_datasets) == 2
             assert (
-                processed_datasets[0].attrs["Logical_source"]
-                == "imap_hit_l1a_count-rates"
+                processed_datasets[0].attrs["Logical_source"] == "imap_hit_l1a_counts"
             )
             assert (
                 processed_datasets[1].attrs["Logical_source"]
-                == "imap_hit_l1a_pulse-height-events"
+                == "imap_hit_l1a_direct-events"
             )

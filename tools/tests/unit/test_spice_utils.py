@@ -10,7 +10,7 @@ from tools.spice.spice_utils import (
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def kernels():
     """Return the SPICE kernels used for testing"""
     # TODO: ALl kernels able to be downloaded from NAIF are not available

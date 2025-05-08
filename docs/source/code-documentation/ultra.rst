@@ -48,4 +48,4 @@ Level 1C Processing Code:
 
     l1c.ultra_l1c
     l1c.histogram
-    l1c.pset
+    l1c.spacecraft_pset

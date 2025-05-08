@@ -63,7 +63,7 @@ class SpiceFrame(IntEnum):
 
 
 BORESIGHT_LOOKUP = {
-    SpiceFrame.IMAP_LO: np.array([0, -1, 0]),
+    SpiceFrame.IMAP_LO_BASE: np.array([0, -1, 0]),
     SpiceFrame.IMAP_HI_45: np.array([0, 1, 0]),
     SpiceFrame.IMAP_HI_90: np.array([0, 1, 0]),
     SpiceFrame.IMAP_ULTRA_45: np.array([0, 0, 1]),
@@ -136,7 +136,7 @@ def get_spacecraft_to_instrument_spin_phase_offset(instrument: SpiceFrame) -> fl
     """
     # TODO: Implement retrieval from SPICE?
     offset_lookup = {
-        SpiceFrame.IMAP_LO: 330 / 360,
+        SpiceFrame.IMAP_LO_BASE: 330 / 360,
         SpiceFrame.IMAP_HI_45: 255 / 360,
         SpiceFrame.IMAP_HI_90: 285 / 360,
         SpiceFrame.IMAP_ULTRA_45: 33 / 360,
@@ -189,6 +189,10 @@ def frame_transform(
     result : np.ndarray
         3d Cartesian position vector(s) in reference frame `to_frame`.
     """
+    # If from_frame and to_frame are the same, no rotation needed
+    if from_frame == to_frame:
+        return position
+
     if position.ndim == 1:
         if not len(position) == 3:
             raise ValueError(
@@ -264,7 +268,7 @@ def frame_transform_az_el(
     spherical_coords_in = np.array(
         [np.ones_like(az_el[..., 0]), az_el[..., 0], az_el[..., 1]]
     ).T
-    from_frame_cartesian = spherical_to_cartesian(spherical_coords_in, degrees=degrees)
+    from_frame_cartesian = spherical_to_cartesian(spherical_coords_in)
     # Transform to to_frame
     to_frame_cartesian = frame_transform(et, from_frame_cartesian, from_frame, to_frame)
     # Convert to spherical and extract azimuth/elevation
@@ -321,7 +325,7 @@ def instrument_pointing(
     """
     Compute the instrument pointing at the specified times.
 
-    By default, the coordinates returned are Latitude/Longitude coordinates in
+    By default, the coordinates returned are (Longitude, Latitude) coordinates in
     the reference frame `to_frame`. Cartesian coordinates can be returned if
     desired by setting `cartesian=True`.
 
@@ -421,14 +425,14 @@ def cartesian_to_spherical(
         - r : Distance of the point from the origin.
         - azimuth : angle in the xy-plane
           In degrees if degrees parameter is True (by default):
-          output range=[0, 360],
+          output range=[0, 360) degrees,
           otherwise in radians if degrees parameter is False:
-          output range=[0, 2*pi].
+          output range=[0, 2*pi) radians.
         - elevation : angle from the xy-plane
           In degrees if degrees parameter is True (by default):
-          output range=[0, 180],
+          output range=[-90, 90) degrees,
           otherwise in radians if degrees parameter is False:
-          output range=[-pi/2, pi/2].
+          output range=[-pi/2, pi/2) radians.
     """
     # Magnitude of the velocity vector
     magnitude_v = np.linalg.norm(v, axis=-1, keepdims=True)
@@ -453,9 +457,9 @@ def cartesian_to_spherical(
     return spherical_coords
 
 
-def spherical_to_cartesian(spherical_coords: NDArray, degrees: bool = False) -> NDArray:
+def spherical_to_cartesian(spherical_coords: NDArray) -> NDArray:
     """
-    Convert spherical coordinates to Cartesian coordinates.
+    Convert spherical coordinates (angles in degrees) to Cartesian coordinates.
 
     Parameters
     ----------
@@ -464,11 +468,8 @@ def spherical_to_cartesian(spherical_coords: NDArray, degrees: bool = False) -> 
         the spherical coordinates (r, azimuth, elevation):
 
         - r : Distance of the point from the origin.
-        - azimuth : angle in the xy-plane in radians [0, 2*pi].
-        - elevation : angle from the xy-plane in radians [-pi/2, pi/2].
-    degrees : bool
-        Set to True if input azimuth and elevation angles are in degrees.
-        Defaults to False.
+        - azimuth : angle in the xy-plane in degrees. Range is [0, 360) degrees.
+        - elevation : angle from the xy-plane in degrees. Range is [-90, 90) degrees.
 
     Returns
     -------
@@ -479,9 +480,9 @@ def spherical_to_cartesian(spherical_coords: NDArray, degrees: bool = False) -> 
     azimuth = spherical_coords[..., 1]
     elevation = spherical_coords[..., 2]
 
-    if degrees:
-        azimuth = np.radians(azimuth)
-        elevation = np.radians(elevation)
+    # Convert to radians for numpy trigonometric operations
+    azimuth = np.deg2rad(azimuth)
+    elevation = np.deg2rad(elevation)
 
     x = r * np.cos(elevation) * np.cos(azimuth)
     y = r * np.cos(elevation) * np.sin(azimuth)
@@ -492,7 +493,7 @@ def spherical_to_cartesian(spherical_coords: NDArray, degrees: bool = False) -> 
     return cartesian_coords
 
 
-def cartesian_to_latitudinal(coords: NDArray, degrees: bool = False) -> NDArray:
+def cartesian_to_latitudinal(coords: NDArray, degrees: bool = True) -> NDArray:
     """
     Convert cartesian coordinates to latitudinal coordinates in radians.
 
@@ -507,7 +508,7 @@ def cartesian_to_latitudinal(coords: NDArray, degrees: bool = False) -> NDArray:
         with x, y, z-components.
     degrees : bool
         If True, the longitude and latitude coords are returned in degrees.
-        Defaults to False.
+        Defaults to True.
 
     Returns
     -------
@@ -528,7 +529,7 @@ def cartesian_to_latitudinal(coords: NDArray, degrees: bool = False) -> NDArray:
 
 def solar_longitude(
     et: Union[np.ndarray, float],
-    degrees: bool = False,
+    degrees: bool = True,
 ) -> Union[float, npt.NDArray]:
     """
     Compute the solar longitude of the Imap Spacecraft.
@@ -539,7 +540,7 @@ def solar_longitude(
         Ephemeris time(s) to at which to compute solar longitude.
     degrees : bool
         If True, the longitude is returned in degrees.
-        Defaults to False.
+        Defaults to True.
 
     Returns
     -------

@@ -8,51 +8,52 @@ import pytest
 import xarray as xr
 from cdflib.xarray.xarray_to_cdf import ISTPError
 
-from imap_processing import imap_module_directory
+from imap_processing import decom, imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.idex.decode import _decode_sub_frame, read_bits, rice_decode
 from imap_processing.idex.idex_l1a import PacketParser
+from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.tests.idex.conftest import TEST_L0_FILE_SCI
 
 
-def test_idex_cdf_file(decom_test_data: xr.Dataset):
+def test_idex_cdf_file(decom_test_data_sci: xr.Dataset):
     """Verify the CDF file can be created with no errors.
 
     Parameters
     ----------
-    decom_test_data : xarray.Dataset
+    decom_test_data_sci : xarray.Dataset
         The dataset to test with
     """
-
-    file_name = write_cdf(decom_test_data)
+    file_name = write_cdf(decom_test_data_sci)
 
     assert file_name.exists()
-    assert file_name.name == "imap_idex_l1a_sci_20231214_v001.cdf"
+    assert file_name.name == "imap_idex_l1a_sci-1week_20231218_v999.cdf"
 
 
-def test_bad_cdf_attributes(decom_test_data: xr.Dataset):
+def test_bad_cdf_attributes(decom_test_data_sci: xr.Dataset):
     """Ensure an ``ISTPError`` is raised when using bad CDF attributes.
 
     Parameters
     ----------
-    decom_test_data : xarray.Dataset
+    decom_test_data_sci : xarray.Dataset
         The dataset to test with
     """
-    tof_catdesc = decom_test_data["TOF_High"].attrs["CATDESC"]
-    del decom_test_data["TOF_High"].attrs["CATDESC"]
+    tof_catdesc = decom_test_data_sci["TOF_High"].attrs["CATDESC"]
+    del decom_test_data_sci["TOF_High"].attrs["CATDESC"]
 
     with pytest.raises(ISTPError):
-        write_cdf(decom_test_data)
+        write_cdf(decom_test_data_sci, istp=True, terminate_on_warning=True)
 
     # Add attributes back so future tests do not fail
-    decom_test_data["TOF_High"].attrs["CATDESC"] = tof_catdesc
+    decom_test_data_sci["TOF_High"].attrs["CATDESC"] = tof_catdesc
 
 
-def test_bad_cdf_file_data(decom_test_data: xr.Dataset):
+def test_bad_cdf_file_data(decom_test_data_sci: xr.Dataset):
     """Ensure an ``ISTPError`` is raised when using bad data.
 
     Parameters
     ----------
-    decom_test_data : xarray.Dataset
+    decom_test_data_sci : xarray.Dataset
         The dataset to test with
     """
     bad_data_attrs = {
@@ -76,22 +77,46 @@ def test_bad_cdf_file_data(decom_test_data: xr.Dataset):
         dims=("bad_data"),
         attrs=bad_data_attrs,
     )
-    decom_test_data["Bad_data"] = bad_data_xr
+    decom_test_data_sci["Bad_data"] = bad_data_xr
 
     with pytest.raises(ISTPError):
-        write_cdf(decom_test_data)
+        write_cdf(decom_test_data_sci, istp=True, terminate_on_warning=True)
 
-    del decom_test_data["Bad_data"]
+    del decom_test_data_sci["Bad_data"]
 
 
-def test_idex_tof_high_data_from_cdf(decom_test_data: xr.Dataset):
+def test_incomplete_event(caplog):
+    """Verify that a CDF is still produced if a packet is dropped.
+
+    The IDEX team requests that a warning be logged for incomplete events
+    (dropped packets) in the data, while still allowing the CDF to be created with
+    the remainder of the complete events.
+    """
+    xml = (
+        f"{imap_module_directory}/idex/packet_definitions/"
+        f"idex_science_packet_definition.xml"
+    )
+    caplog.at_level("WARNING")
+    packets = decom.decom_packets(TEST_L0_FILE_SCI, xml)
+    packets = packets[0:1] + packets[2:]
+    with mock.patch(
+        "imap_processing.idex.idex_l1a.decom_packets",
+        return_value=(packets, xr.Dataset(), xr.Dataset()),
+    ):
+        l1a_dataset = PacketParser(TEST_L0_FILE_SCI).data[0]
+    # Assert that all the events are present except for one.
+    assert len(l1a_dataset["epoch"]) == 13
+    assert "Missing packet for event number 1" in caplog.text
+
+
+def test_idex_tof_high_data_from_cdf(decom_test_data_sci: xr.Dataset):
     """Verify that a sample of the data is correct inside the CDF file.
 
     ``impact_14_tof_high_data.txt`` has been verified correct by the IDEX team
 
     Parameters
     ----------
-    decom_test_data : xarray.Dataset
+    decom_test_data_sci : xarray.Dataset
         The dataset to test with
     """
     with open(
@@ -99,9 +124,55 @@ def test_idex_tof_high_data_from_cdf(decom_test_data: xr.Dataset):
     ) as f:
         data = np.array([int(line.rstrip()) for line in f])
 
-    file_name = write_cdf(decom_test_data)
+    file_name = write_cdf(decom_test_data_sci)
     l1_data = load_cdf(file_name)
     assert (l1_data["TOF_High"][13].data == data).all()
+
+
+@pytest.mark.external_test_data
+def test_validate_l1a_idex_data_variables(
+    decom_test_data_sci: xr.Dataset, l1a_example_data: xr.Dataset
+):
+    """
+    Verify that each of the 6 waveform and telemetry arrays are equal to the
+    corresponding array produced by the IDEX team using the same l0 file.
+
+
+    Parameters
+    ----------
+    decom_test_data_sci : xarray.Dataset
+        The dataset to test with
+    l1a_example_data: xarray.Dataset
+        A dataset containing the 6 waveform and telemetry arrays
+    """
+    # Lookup table to match the SDS array names to the Idex Team array names
+    match_variables = {
+        "TOF L": "TOF_Low",
+        "TOF H": "TOF_High",
+        "TOF M": "TOF_Mid",
+        "Target H": "Target_High",
+        "Target L": "Target_Low",
+        "Ion Grid": "Ion_Grid",
+        "Time (high sampling)": "time_high_sample_rate",
+        "Time (low sampling)": "time_low_sample_rate",
+    }
+    # The Engineering data is converting to UTC, and the SDC is converting to J2000,
+    # for 'epoch' and 'Timestamp' so this test is using the raw time value 'SCHOARSE' to
+    # validate time
+    arrays_to_skip = ["Timestamp", "Epoch", "event"]
+
+    # loop through all keys from the l1a example dict
+    for var in l1a_example_data.variables:
+        if var not in arrays_to_skip:
+            # Find the corresponding array name
+            cdf_var = match_variables.get(var, var.lower())
+
+            np.testing.assert_array_equal(
+                decom_test_data_sci[cdf_var],
+                l1a_example_data[var],
+                f"The array '{cdf_var}' does not equal the expected example "
+                f"array '{var}' produced by the IDEX team",
+            )
 
 
 def test_compressed_packet():
@@ -113,8 +184,8 @@ def test_compressed_packet():
     compressed = Path(f"{test_data_dir}/compressed_2023_102_14_24_55.pkts")
     non_compressed = Path(f"{test_data_dir}/non_compressed_2023_102_14_22_26.pkts")
 
-    decompressed = PacketParser(compressed, "001").data
-    expected = PacketParser(non_compressed, "001").data
+    decompressed = PacketParser(compressed).data[0]
+    expected = PacketParser(non_compressed).data[0]
 
     waveforms = [
         "TOF_High",
@@ -245,3 +316,49 @@ def test_decode_sub_frame_psel_3():
     bstring = warmup1 + warmup2 + residual_1 + residual_2 + residual_3
     ints, bp = _decode_sub_frame(bstring, bp=0, psel=psel, k=k, n_bits=10)
     assert ints == [1, 2, 4, 1, 5]
+
+
+def test_catlst_dataset(decom_test_data_catlst: list[xr.Dataset]):
+    """Verify that the dataset contains what we expect and can be written to a cdf.
+
+    Parameters
+    ----------
+    decom_test_data_catlst : list[xarray.Dataset]
+        The raw and derived (l1a and l1b) datasets to test with.
+    """
+    for ds in decom_test_data_catlst:
+        assert "shcoarse" in ds
+        assert "shfine" in ds
+        # Assert epoch is calculated using fine-grained clock ticks
+        expected_epoch = met_to_ttj2000ns(ds["shcoarse"] + ds["shfine"] * 20e-6)
+        np.testing.assert_array_equal(ds.epoch, expected_epoch)
+    # Assert that the dataset can be written to a CDF file
+    filename_l1a = write_cdf(decom_test_data_catlst[0])
+    assert filename_l1a.name == "imap_idex_l1a_catlst_20241206_v999.cdf"
+
+    filename_l1b = write_cdf(decom_test_data_catlst[1])
+    assert filename_l1b.name == "imap_idex_l1b_catlst_20241206_v999.cdf"
+
+
+def test_evt_dataset(decom_test_data_evt: list[xr.Dataset]):
+    """Verify that the dataset contains what we expect and can be written to a cdf.
+
+    Parameters
+    ----------
+    decom_test_data_evt : list[xarray.Dataset]
+        The raw and derived (l1a and l1b) datasets to test with.
+    """
+    for ds in decom_test_data_evt:
+        assert "shcoarse" in ds
+        assert "shfine" in ds
+        # Assert epoch is calculated using fine grained clock ticks
+        expected_epoch = met_to_ttj2000ns(ds["shcoarse"] + ds["shfine"] * 20e-6)
+        np.testing.assert_array_equal(ds.epoch, expected_epoch)
+    assert decom_test_data_evt[0]["elid_evtpkt"][9] == 192
+    assert decom_test_data_evt[1]["elid_evtpkt"][9] == "SCI_STE"
+    # Assert that the dataset can be written to a CDF file
+    filename_l1a = write_cdf(decom_test_data_evt[0])
+    assert filename_l1a.name == "imap_idex_l1a_evt_20250108_v999.cdf"
+
+    filename_l1b = write_cdf(decom_test_data_evt[1])
+    assert filename_l1b.name == "imap_idex_l1b_evt_20250108_v999.cdf"

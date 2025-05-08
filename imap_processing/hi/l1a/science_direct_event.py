@@ -16,11 +16,10 @@ from imap_processing.spice.time import met_to_ttj2000ns
 # it if needed. It stores information about how
 # fast the time was ticking. It is in microseconds.
 DE_CLOCK_TICK_US = 1999
+DE_CLOCK_TICK_S = DE_CLOCK_TICK_US / 1e6
+HALF_CLOCK_TICK_S = DE_CLOCK_TICK_S / 2
 
-SECOND_TO_NS = 1e9
-MILLISECOND_TO_NS = 1e6
-MICROSECOND_TO_NS = 1e3
-HALF_CLOCK_TICK_NS = DE_CLOCK_TICK_US * MICROSECOND_TO_NS / 2
+MILLISECOND_TO_S = 1e-3
 
 logger = logging.getLogger(__name__)
 
@@ -32,11 +31,11 @@ def parse_direct_events(de_data: bytes) -> dict[str, npt.ArrayLike]:
     IMAP-Hi direct event data information is stored in
     48-bits as follows:
 
-    |        Read 48-bits into 2, 16, 10, 10, 10, bits. Each of these breaks
+    |        Read 48-bits into 16, 2, 10, 10, 10, bits. Each of these breaks
     |        down as:
     |
-    |            start_bitmask_data - 2 bits (tA=1, tB=2, tC1=3, META=0)
     |            de_tag - 16 bits
+    |            start_bitmask_data - 2 bits (tA=1, tB=2, tC1=3)
     |            tof_1 - 10 bit counter
     |            tof_2 - 10 bit counter
     |            tof_3 - 10 bit counter
@@ -71,16 +70,16 @@ def parse_direct_events(de_data: bytes) -> dict[str, npt.ArrayLike]:
     # direct events.
     # Considering the 6-bytes of data for each DE as 3 2-byte words,
     # each word contains the following:
-    # word_0: 2-bits of Trigger ID, upper 14-bits of de_tag
-    # word_1: lower 2-bits of de_tag, 10-bits tof_1, upper 4-bits of tof_2
+    # word_0: full 16-bits is the de_tag
+    # word_1: 2-bits of Trigger ID, 10-bits tof_1, upper 4-bits of tof_2
     # word_2: lower 6-bits of tof_2, 10-bits of tof_3
     data_uint16 = np.reshape(
         np.frombuffer(de_data, dtype=">u2"), (3, -1), order="F"
     ).astype(np.uint16)
 
     de_dict = dict()
-    de_dict["trigger_id"] = (data_uint16[0] >> 14).astype(np.uint8)
-    de_dict["de_tag"] = (data_uint16[0] << 2) + (data_uint16[1] >> 14)
+    de_dict["de_tag"] = data_uint16[0]
+    de_dict["trigger_id"] = (data_uint16[1] >> 14).astype(np.uint8)
     de_dict["tof_1"] = (data_uint16[1] & int(b"00111111_11110000", 2)) >> 4
     de_dict["tof_2"] = ((data_uint16[1] & int(b"00000000_00001111", 2)) << 6) + (
         data_uint16[2] >> 10
@@ -128,17 +127,17 @@ def create_dataset(de_data_dict: dict[str, npt.ArrayLike]) -> xr.Dataset:
     # For L1A DE, event_met is its own dimension, so we remove the DEPEND_0 attribute
     _ = event_met_attrs.pop("DEPEND_0")
 
-    # Compute the meta-event MET in nanoseconds
-    meta_event_met_ns = (
-        np.array(de_data_dict["meta_seconds"]) * SECOND_TO_NS
-        + np.array(de_data_dict["meta_subseconds"]) * MILLISECOND_TO_NS
+    # Compute the meta-event MET in seconds
+    meta_event_met = (
+        np.array(de_data_dict["meta_seconds"]).astype(np.float64)
+        + np.array(de_data_dict["meta_subseconds"]) * MILLISECOND_TO_S
     )
-    # Compute the MET of each event in nanoseconds
+    # Compute the MET of each event in seconds
     # event MET = meta_event_met + de_clock
     # See Hi Algorithm Document section 2.2.5
     event_met_array = np.array(
-        meta_event_met_ns[de_data_dict["ccsds_index"]]
-        + np.array(de_data_dict["de_tag"]) * DE_CLOCK_TICK_US * MICROSECOND_TO_NS,
+        meta_event_met[de_data_dict["ccsds_index"]]
+        + np.array(de_data_dict["de_tag"]) * DE_CLOCK_TICK_S,
         dtype=event_met_attrs.pop("dtype"),
     )
     event_met = xr.DataArray(
@@ -148,10 +147,8 @@ def create_dataset(de_data_dict: dict[str, npt.ArrayLike]) -> xr.Dataset:
         attrs=event_met_attrs,
     )
 
-    de_global_attrs = attr_mgr.get_global_attributes("imap_hi_l1a_de_attrs")
     dataset = xr.Dataset(
         coords={"epoch": epoch, "event_met": event_met},
-        attrs=de_global_attrs,
     )
 
     for var_name, data in de_data_dict.items():

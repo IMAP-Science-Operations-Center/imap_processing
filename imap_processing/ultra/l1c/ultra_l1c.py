@@ -3,10 +3,10 @@
 import xarray as xr
 
 from imap_processing.ultra.l1c.histogram import calculate_histogram
-from imap_processing.ultra.l1c.pset import calculate_pset
+from imap_processing.ultra.l1c.spacecraft_pset import calculate_spacecraft_pset
 
 
-def ultra_l1c(data_dict: dict, data_version: str) -> list[xr.Dataset]:
+def ultra_l1c(data_dict: dict) -> list[xr.Dataset]:
     """
     Will process ULTRA L1A and L1B data into L1C CDF files at output_filepath.
 
@@ -14,8 +14,6 @@ def ultra_l1c(data_dict: dict, data_version: str) -> list[xr.Dataset]:
     ----------
     data_dict : dict
         The data itself and its dependent data.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -31,7 +29,6 @@ def ultra_l1c(data_dict: dict, data_version: str) -> list[xr.Dataset]:
         histogram_dataset = calculate_histogram(
             data_dict[f"imap_ultra_l1a_{instrument_id}sensor-histogram"],
             f"imap_ultra_l1c_{instrument_id}sensor-histogram",
-            data_version,
         )
         output_datasets = [histogram_dataset]
     elif (
@@ -39,12 +36,14 @@ def ultra_l1c(data_dict: dict, data_version: str) -> list[xr.Dataset]:
         and f"imap_ultra_l1b_{instrument_id}sensor-de" in data_dict
         and f"imap_ultra_l1b_{instrument_id}sensor-extendedspin" in data_dict
     ):
-        pset_dataset = calculate_pset(
+        spacecraft_pset = calculate_spacecraft_pset(
             data_dict[f"imap_ultra_l1b_{instrument_id}sensor-de"],
-            f"imap_ultra_l1c_{instrument_id}sensor-pset",
-            data_version,
+            data_dict[f"imap_ultra_l1b_{instrument_id}sensor-extendedspin"],
+            data_dict[f"imap_ultra_l1b_{instrument_id}sensor-cullingmask"],
+            f"imap_ultra_l1c_{instrument_id}sensor-spacecraftpset",
         )
-        output_datasets = [pset_dataset]
+        # TODO: add calculate_helio_pset here
+        output_datasets = [spacecraft_pset]
     else:
         raise ValueError("Data dictionary does not contain the expected keys.")
 

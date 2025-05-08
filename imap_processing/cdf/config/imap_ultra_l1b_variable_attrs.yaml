@@ -9,6 +9,13 @@ default_attrs: &default
   VAR_TYPE: data
   UNITS: " "
 
+component:
+  CATDESC: Velocity components (vx, vy, vz)
+  FIELDNAM: component
+  LABLAXIS: component
+  FORMAT: A3
+  VAR_TYPE: metadata
+
 default_uint8_attrs: &default_uint8
   <<: *default
   FILLVAL: 255
@@ -51,7 +58,7 @@ default_int32_attrs: &default_int32
 
 default_float32_attrs: &default_float32
   <<: *default
-  FILLVAL: .NAN
+  FILLVAL: -1.0e31
   FORMAT: F12.6
   VALIDMIN: -3.4028235e+38
   VALIDMAX: 3.4028235e+38
@@ -94,10 +101,31 @@ x_coin:
 
 event_times:
   <<: *default_float32
-  CATDESC: time of event as calculated using aux and de l1a packets
+  CATDESC: time of event as calculated using Universal Spin Table and de l1a packets
   FIELDNAM: event_times
   LABLAXIS: event times
   UNITS: seconds
+
+spin_starts:
+  <<: *default_float32
+  CATDESC: time of spin from Universal Spin Table.
+  FIELDNAM: spin_starts
+  LABLAXIS: spin starts
+  UNITS: seconds
+
+phase_angle:
+  <<: *default_float32
+  CATDESC: Phase angle from the direct event packet in 1/2 degree increments (range is 0-719)
+  FIELDNAM: phase_angle
+  LABLAXIS: phase angle
+  UNITS: degrees
+
+spin:
+  <<: *default_uint32
+  CATDESC: Spin number.
+  FIELDNAM: spin_number
+  LABLAXIS: spin number
+  UNITS: " "
 
 tof_start_stop:
   <<: *default_float32
@@ -165,19 +193,31 @@ energy:
 
 tof_energy:
   <<: *default_float32
-  CATDESC: Energy measured using kinetic energy equation.
+  CATDESC: Energy measured using kinetic energy equation in the instrument frame.
+  FIELDNAM: energy
+  LABLAXIS: energy
+  UNITS: keV
+
+energy_spacecraft:
+  <<: *default_float32
+  CATDESC: Energy measured using kinetic energy equation in the despun spacecraft frame.
+  FIELDNAM: energy
+  LABLAXIS: energy
+  UNITS: keV
+
+energy_heliosphere:
+  <<: *default_float32
+  CATDESC: Energy measured using kinetic energy equation in the despun heliosphere frame.
   FIELDNAM: energy
   LABLAXIS: energy
   UNITS: keV
 
 species:
-  <<: *default
+  <<: *default_uint8
   DISPLAY_TYPE: no_plot
   CATDESC: Label species type.
   FIELDNAM: Label species type.
-  FILLVAL: "UNKNOWN"
-  FORMAT: A8
-  dtype: str
+  LABLAXIS: species
   UNITS: " "
 
 front_back_distance:
@@ -194,25 +234,55 @@ path_length:
   LABLAXIS: path_length
   UNITS: mm / 100
 
-azimuth:
+phi:
   <<: *default_float32
-  CATDESC: Azimuth.
-  FIELDNAM: azimuth
-  LABLAXIS: azimuth
-  UNITS: radians
+  CATDESC: Ultra instrument frame event phi (azimuth with range -90 -> 90).
+  FIELDNAM: phi
+  LABLAXIS: phi
+  UNITS: degrees
 
-elevation:
+theta:
   <<: *default_float32
-  CATDESC: Elevation.
-  FIELDNAM: elevation
-  LABLAXIS: elevation
-  UNITS: radians
+  CATDESC: Ultra instrument frame event theta (elevation with range -90 -> 90).
+  FIELDNAM: theta
+  LABLAXIS: theta
+  UNITS: degrees
+
+phi_fwhm:
+  <<: *default_float32
+  CATDESC: FWHM of the phi distribution.
+  FIELDNAM: phi_fwhm
+  LABLAXIS: phi fwhm
+  UNITS: degrees
+
+theta_fwhm:
+  <<: *default_float32
+  CATDESC: FWHM of the theta distribution.
+  FIELDNAM: phi_fwhm
+  LABLAXIS: phi fwhm
+  UNITS: degrees
 
 event_efficiency:
   <<: *default_float32
   CATDESC: Estimated event efficiency for this path through the instrument.
   FIELDNAM: event_efficiency
   LABLAXIS: event efficiency
+  UNITS: " "
+
+direct_event_unit_velocity:
+  <<: *default_float32
+  CATDESC: Unit vector of the direct event velocity in the instrument frame.
+  DEPEND_1: component
+  FIELDNAM: direct_event_unit_velocity
+  LABLAXIS: direct event unit velocity
+  UNITS: " "
+
+direct_event_unit_position:
+  <<: *default_float32
+  CATDESC: Unit vector of the direct event position in the instrument frame.
+  DEPEND_1: component
+  FIELDNAM: direct_event_unit_position
+  LABLAXIS: direct event unit position
   UNITS: " "
 
 velocity_sc:

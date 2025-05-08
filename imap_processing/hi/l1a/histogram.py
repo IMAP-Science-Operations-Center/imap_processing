@@ -116,7 +116,6 @@ def create_dataset(input_ds: xr.Dataset) -> xr.Dataset:
     )
 
     dataset.update(new_vars)
-    dataset.attrs.update(attr_mgr.get_global_attributes("imap_hi_l1a_hist_attrs"))
 
     return dataset
 

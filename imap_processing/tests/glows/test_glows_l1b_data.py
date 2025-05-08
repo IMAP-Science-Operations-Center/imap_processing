@@ -48,8 +48,8 @@ def test_glows_l1b_ancillary_file():
     }
 
     ancillary = AncillaryParameters(fake_good_input)
-    for key in fake_good_input:
-        assert getattr(ancillary, key) == fake_good_input[key]
+    for key, data in fake_good_input.items():
+        assert getattr(ancillary, key) == data
 
     fake_bad_input = {
         "version": "0.1",
@@ -80,7 +80,7 @@ def test_glows_l1b_de():
 
 
 def test_validation_data_histogram(l1a_dataset):
-    l1b = [glows_l1b(l1a_dataset[0], "v001"), glows_l1b(l1a_dataset[1], "v001")]
+    l1b = [glows_l1b(l1a_dataset[0]), glows_l1b(l1a_dataset[1])]
     end_time = l1b[0]["epoch"].data[-1]
 
     validation_data = (
@@ -147,9 +147,9 @@ def test_validation_data_histogram(l1a_dataset):
 
 
 def test_validation_data_de(l1a_dataset):
-    de_data = l1a_dataset[2]
+    de_data = l1a_dataset[1]
 
-    l1b = glows_l1b(de_data, "v001")
+    l1b = glows_l1b(de_data)
     validation_data = (
         Path(__file__).parent / "validation_data" / "imap_glows_l1b_de_output.json"
     )

@@ -11,7 +11,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.spice.time import met_to_ttj2000ns
 
 
-def lo_l1c(dependencies: dict, data_version: str) -> list[Path]:
+def lo_l1c(dependencies: dict) -> list[Path]:
     """
     Will process IMAP-Lo L1B data into L1C CDF data products.
 
@@ -19,8 +19,6 @@ def lo_l1c(dependencies: dict, data_version: str) -> list[Path]:
     ----------
     dependencies : dict
         Dictionary of datasets needed for L1C data product creation in xarray Datasets.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -31,7 +29,6 @@ def lo_l1c(dependencies: dict, data_version: str) -> list[Path]:
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs(instrument="lo")
     attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1c")
-    attr_mgr.add_global_attribute("Data_version", data_version)
 
     # if the dependencies are used to create Annotated Direct Events
     if "imap_lo_l1b_de" in dependencies:
