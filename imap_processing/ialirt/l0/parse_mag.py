@@ -333,9 +333,6 @@ def process_packet(
         pkt_counter = grouped_data["pkt_counter"][
             (grouped_data["group"] == group).values
         ]
-        coarse_time = grouped_data["mag_acq_tm_coarse"][
-            (grouped_data["group"] == group).values
-        ]
 
         if not np.array_equal(pkt_counter, np.arange(4)):
             logger.info(
@@ -344,12 +341,12 @@ def process_packet(
             )
             continue
 
-        if (coarse_time == 0).all():
-            logger.info(f"Group {group} contains timestamps equal to zero.")
-            continue
-
         # Get decoded status data.
         status_data = get_status_data(status_values, pkt_counter)
+
+        if status_data["pri_isvalid"] == 0 and status_data["sec_isvalid"] == 0:
+            logger.info(f"Group {group} contains no valid data for either sensor.")
+            continue
 
         # Get science values for each group.
         science_values = grouped_data["mag_data"][
@@ -366,6 +363,13 @@ def process_packet(
         )
 
         # Note: primary = MAGo, secondary = MAGi.
+        # Populate with a FILL value if either sensor is invalid,
+        # but not both.
+        if status_data["pri_isvalid"] == 0:
+            updated_vector_mago = np.full(4, -32768)
+        if status_data["sec_isvalid"] == 0:
+            updated_vector_magi = np.full(4, -32768)
+
         science_data.update(
             {
                 "calibrated_pri_x": updated_vector_mago[0],
