@@ -1,15 +1,16 @@
 import numpy as np
 import pytest
 import xarray as xr
-import pandas as pd
+
+from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.lo.l1c.lo_l1c import (
     filter_goodtimes,
     initialize_pset,
     lo_l1c,
 )
-from imap_processing import imap_module_directory
-from imap_processing.cdf.utils import write_cdf
+
+
 @pytest.fixture
 def l1b_de():
     l1b_de = xr.Dataset(
@@ -42,10 +43,13 @@ def l1b_de():
         },
     )
     return l1b_de
+
+
 @pytest.fixture
 def anc_dependencies():
     anc_dependencies_path = (
-        imap_module_directory / "tests/lo/test_anc/imap_lo_l1c-sweeptable_20250415_v001.csv"
+        imap_module_directory
+        / "tests/lo/test_anc/imap_lo_l1c-sweeptable_20250415_v001.csv"
     )
     return [str(anc_dependencies_path)]
 
