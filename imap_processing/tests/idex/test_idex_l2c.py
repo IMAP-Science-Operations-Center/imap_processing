@@ -6,6 +6,7 @@ import pytest
 import xarray as xr
 
 from imap_processing.cdf.utils import write_cdf
+from imap_processing.ena_maps.utils.spatial_utils import AzElSkyGrid
 from imap_processing.idex.idex_constants import (
     IDEX_HEALPIX_NSIDE,
     IDEX_SPACING_DEG,
@@ -101,3 +102,27 @@ def test_idex_rectangular_pset(l1b_dataset: xr.Dataset):
             int(180 / IDEX_SPACING_DEG),
         ),
     )
+
+    expected_counts = np.zeros(
+        (int(360 / IDEX_SPACING_DEG), int(180 / IDEX_SPACING_DEG))
+    )
+    grid = AzElSkyGrid(IDEX_SPACING_DEG)
+    for lon, lat in zip(l1b_dataset["longitude"].data, l1b_dataset["latitude"].data):
+        lon_wrapped = lon % 360
+        az_indices = (
+            np.digitize(
+                lon_wrapped,
+                grid.az_bin_edges,
+            )
+            - 1
+        )
+        el_indices = (
+            np.digitize(
+                lat,
+                grid.el_bin_edges,
+            )
+            - 1
+        )
+        expected_counts[az_indices, el_indices] += 1
+
+    np.testing.assert_array_equal(expected_counts, pset.rectangular_counts.data)
