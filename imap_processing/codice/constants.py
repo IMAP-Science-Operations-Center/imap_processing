@@ -54,18 +54,7 @@ CODICEAPID_MAPPING = {
     "hi-priority": CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES,
 }
 
-# CDF-friendly names for lo data products
-LO_IAL_VARIABLE_NAMES = [
-    "heplusplus",
-    "cplus5",
-    "cplus6",
-    "oplus6",
-    "oplus7",
-    "oplus8",
-    "mg",
-    "fe_loq",
-    "fe_hiq",
-]
+
 # Numerical constants
 SPIN_PERIOD_CONVERSION = 0.00032
 
@@ -109,6 +98,17 @@ LO_NSW_SPECIES_VARIABLE_NAMES = [
     "heplus",
     "cnoplus",
 ]
+LO_IAL_VARIABLE_NAMES = [
+    "heplusplus",
+    "cplus5",
+    "cplus6",
+    "oplus6",
+    "oplus7",
+    "oplus8",
+    "mg",
+    "fe_loq",
+    "fe_hiq",
+]
 
 # CDF variable names used for hi data products
 HI_COUNTERS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
@@ -122,6 +122,9 @@ HI_PRIORITY_VARIABLE_NAMES = [
     "Priority5",
 ]
 HI_SECTORED_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
+HI_IAL_VARIABLE_NAMES = [
+    "h",
+]
 
 # lo- and hi-counters-aggregated data product variables are dynamically
 # determined based on the number of active counters
@@ -192,6 +195,18 @@ HI_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
 # Much of these are described in the algorithm document in chapter 10 ("Data
 # Level 1A")
 DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
+    CODICEAPID.COD_HI_IAL: {
+        "dataset_name": "imap_codice_l1a_hi-ialirt",
+        "input_dims": {"spin_sector": 1, "esa_step": 128},
+        "instrument": "hi",
+        "num_counters": 1,
+        "output_dims": {"spin_sector": 1, "esa_step": 128},
+        "support_variables": [
+            "data_quality",
+            "spin_period",
+        ],
+        "variable_names": HI_IAL_VARIABLE_NAMES,
+    },
     CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED: {
         "dataset_name": "imap_codice_l1a_hi-counters-aggregated",
         "input_dims": {},
@@ -272,9 +287,10 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     },
     CODICEAPID.COD_LO_IAL: {
         "dataset_name": "imap_codice_l1a_lo-ialirt",
-        "dims": {"spin_sector": 1, "esa_step": 128},
+        "input_dims": {"spin_sector": 1, "esa_step": 128},
         "instrument": "lo",
         "num_counters": 9,
+        "output_dims": {"spin_sector": 1, "esa_step": 128},
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
