@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 import numpy as np
 import xarray as xr
@@ -22,9 +23,11 @@ DEFAULT_ULTRA_L2_MAP_STRUCTURE: ena_maps.RectangularSkyMap | ena_maps.HealpixSky
             "spice_reference_frame": "ECLIPJ2000",
             "values_to_push_project": [
                 "counts",
-                "exposure_factor",
                 "sensitivity",
                 "background_rates",
+            ],
+            "values_to_pull_project": [
+                "exposure_factor",
             ],
             "nside": 32,
             "nested": False,
@@ -40,11 +43,14 @@ DEFAULT_L2_HEALPIX_NESTED = False
 
 
 # These variables must always be present in each L1C dataset
-REQUIRED_L1C_VARIABLES = [
+REQUIRED_L1C_VARIABLES_PUSH = [
     "counts",
-    "exposure_factor",
     "sensitivity",
     "background_rates",
+    "obs_date",
+]
+REQUIRED_L1C_VARIABLES_PULL = [
+    "exposure_factor",
 ]
 
 # These variables are projected to the map as the mean of pointing set pixels value,
@@ -146,6 +152,11 @@ def generate_ultra_healpix_skymap(
         HealpixSkyMap object containing the combined data from all pointing sets,
         with calculated ena_intensity and its statistical uncertainty values.
 
+    Raises
+    ------
+    ValueError
+        If there are overlapping variable names in the push and pull projection lists.
+
     Notes
     -----
     The structure of this function goes as follows:
@@ -153,7 +164,7 @@ def generate_ultra_healpix_skymap(
     2. Iterate over the input pointing sets and read them into UltraPointingSet objects.
     3. For each pointing set, weight certain variables by exposure and solid angle of
     the pointing set pixels.
-    4. Project the pointing set values to the map using the push method.
+    4. Project the pointing set values to the map using the push/pull methods.
     5. Perform subsequent processing for weighted quantities at the SkyMap level
     (e.g., divide weighted quantities by their summed weights to
     get their weighted mean)
@@ -187,16 +198,33 @@ def generate_ultra_healpix_skymap(
 
     # Get full list of variables to push to the map: all requested variables plus
     # any which are required for L2 processing
-    value_keys_to_push_project = list(
-        set(output_map_structure.values_to_push_project + REQUIRED_L1C_VARIABLES)
+    output_map_structure.values_to_push_project = list(
+        set(output_map_structure.values_to_push_project + REQUIRED_L1C_VARIABLES_PUSH)
     )
+    output_map_structure.values_to_pull_project = list(
+        set(output_map_structure.values_to_pull_project + REQUIRED_L1C_VARIABLES_PULL)
+    )
+    # If there are overlapping variable names, raise an error
+    if set(output_map_structure.values_to_push_project).intersection(
+        set(output_map_structure.values_to_pull_project)
+    ):
+        raise ValueError(
+            "Some variables are present in both the PUSH and PULL projection lists. "
+            "They will be projected in both ways (PUSH then PULL), which is likely "
+            "not the intended behavior. Please check the projection lists."
+            f"PUSH Variables: {output_map_structure.values_to_push_project} \n"
+            f"PULL Variables: {output_map_structure.values_to_pull_project}"
+        )
 
     for ultra_l1c_pset in ultra_l1c_psets:
         pointing_set = ena_maps.UltraPointingSet(ultra_l1c_pset)
         logger.info(
             f"Projecting a PointingSet with {pointing_set.num_points} pixels "
             f"at epoch:{pointing_set.epoch}\n"
-            f"These values will be projected: {value_keys_to_push_project}"
+            "These values will be push projected: "
+            f">> {output_map_structure.values_to_push_project}"
+            "\nThese values will be pull projected: "
+            f">> {output_map_structure.values_to_pull_project}",
         )
 
         pointing_set.data["num_pointing_set_pixel_members"] = xr.DataArray(
@@ -223,25 +251,24 @@ def generate_ultra_healpix_skymap(
             VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE
         ] *= pointing_set.data["pointing_set_exposure_times_solid_angle"]
 
+        # Project values such as counts via the PUSH method
         skymap.project_pset_values_to_map(
             pointing_set=pointing_set,
-            value_keys=value_keys_to_push_project,
+            value_keys=output_map_structure.values_to_push_project,
             index_match_method=ena_maps.IndexMatchMethod.PUSH,
+        )
+
+        # Project values such as exposure_factor via the PULL method
+        skymap.project_pset_values_to_map(
+            pointing_set=pointing_set,
+            value_keys=output_map_structure.values_to_pull_project,
+            index_match_method=ena_maps.IndexMatchMethod.PULL,
         )
 
     # Subsequent processing for weighted quantities at SkyMap level
     skymap.data_1d[VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE] /= (
         skymap.data_1d["pointing_set_exposure_times_solid_angle"]
     )
-
-    # TODO: Ask Ultra team about this - I think this is a decent
-    # but imperfect approximation for meaning the exposure:
-    # (dividing by the 1/(number of PSETs)) to fix the exposure being mean-ed over
-    # all pixels in all PSETs which feed into a map superpixel,
-    # rather than being mean-ed over pixels in a PSET and summed over PSETs
-    skymap.data_1d["exposure_factor"] /= skymap.data_1d[
-        "num_pointing_set_pixel_members"
-    ] / len(ultra_l1c_psets)
 
     # TODO: Ask Ultra team about background rates - I think they should increase when
     # binned to larger pixels, as I've done here, but that was never explicitly stated
@@ -284,7 +311,7 @@ def generate_ultra_healpix_skymap(
 
 
 def ultra_l2(
-    data_dict: dict[str, xr.Dataset | str],
+    data_dict: dict[str, xr.Dataset | str | Path],
     output_map_structure: (
         ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap
     ) = DEFAULT_ULTRA_L2_MAP_STRUCTURE,
