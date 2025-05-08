@@ -80,7 +80,7 @@ IDEX_HEALPIX_NSIDE = 8
 IDEX_HEALPIX_NESTED = False
 # Default IDEX Rectangular parameters
 # Used in IDEX l2c processing
-IDEX_SPACING_DEG = 10
+IDEX_SPACING_DEG = 4  # TODO
 
 # Define the pointing reference frame for IDEX
 IDEX_POINTING_REFERENCE_FRAME = SpiceFrame.ECLIPJ2000
