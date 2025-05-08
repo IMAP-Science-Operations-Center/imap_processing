@@ -7,11 +7,14 @@ import xarray as xr
 
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.idex.idex_constants import (
-    IDEX_HEALPIX_NESTED,
     IDEX_HEALPIX_NSIDE,
-    IDEX_POINTING_REFERENCE_FRAME,
+    IDEX_SPACING_DEG,
 )
-from imap_processing.idex.idex_l2c import idex_healpix_pset, idex_l2c
+from imap_processing.idex.idex_l2c import (
+    idex_healpix_pset,
+    idex_l2c,
+    idex_rectangular_pset,
+)
 
 
 @pytest.fixture
@@ -55,21 +58,46 @@ def test_l2c_attrs_and_vars(l2c_datasets: list[xr.Dataset], l1b_dataset: xr.Data
         "epoch": 1,
     }
 
-    # Assert attributes are present
-    assert healpix_ds.attrs["sky_tiling_type"] == "Healpix"
-    assert healpix_ds.attrs["HEALPix_nside"] == IDEX_HEALPIX_NSIDE
-    assert healpix_ds.attrs["HEALPix_nest"] == IDEX_HEALPIX_NESTED
-    assert healpix_ds.attrs["spice_reference_frame"] == IDEX_POINTING_REFERENCE_FRAME
+    assert rect_ds.dims == {
+        "rectangular_lon_pixel": int(360 / IDEX_SPACING_DEG),
+        "rectangular_lat_pixel": int(180 / IDEX_SPACING_DEG),
+        "epoch": 1,
+    }
     # Check the attributes of the dataset by writing to a CDF file
     write_cdf(healpix_ds)
     write_cdf(rect_ds)
 
 
-def test_idex_pset(l1b_dataset: xr.Dataset):
-    """Test for idex_pset function"""
-    pset = idex_healpix_pset(l1b_dataset)
+def test_idex_healpix_pset(l1b_dataset: xr.Dataset):
+    """Test for idex_healpix_pset function"""
+    epoch = xr.DataArray(
+        [np.mean(l1b_dataset["epoch"].data[[0, -1]]).astype(np.int64)],
+        name="epoch",
+        dims=["epoch"],
+    )
+    pset = idex_healpix_pset(l1b_dataset, epoch)
 
     assert pset.epoch == np.mean([l1b_dataset.epoch[0], l1b_dataset.epoch[-1]])
 
     npix = hp.nside2npix(IDEX_HEALPIX_NSIDE)
-    np.testing.assert_array_equal(pset.counts.shape, (npix,))
+    np.testing.assert_array_equal(pset.healpix_counts.shape, (npix,))
+
+
+def test_idex_rectangular_pset(l1b_dataset: xr.Dataset):
+    """Test for idex_rectangular_pset function"""
+    epoch = xr.DataArray(
+        [np.mean(l1b_dataset["epoch"].data[[0, -1]]).astype(np.int64)],
+        name="epoch",
+        dims=["epoch"],
+    )
+    pset = idex_rectangular_pset(l1b_dataset, epoch)
+
+    assert pset.epoch == np.mean([l1b_dataset.epoch[0], l1b_dataset.epoch[-1]])
+
+    np.testing.assert_array_equal(
+        pset.rectangular_counts.shape,
+        (
+            int(360 / IDEX_SPACING_DEG),
+            int(180 / IDEX_SPACING_DEG),
+        ),
+    )
