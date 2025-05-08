@@ -130,12 +130,25 @@ class CoDICEL1aPipeline:
         self.raw_data = []
 
         if self.config["dataset_name"] == "imap_codice_l1a_lo-ialirt":
+            #science_values = bytes(int(science_values[i:i + 8], 2) for i in range(0, len(science_values), 8))
+            # print(science_values)
+            # values = []
+            # for i in range(0, len(science_values), 24):
+            #     bits = science_values[i:i + 24]
+            #     value = int(bits, 2)
+            #     values.append(value)
+            # print(values)
+            # print(len(values))
+            print(len(science_values))
             integers = [
                 int(science_values[i : i + 3], 2)
                 for i in range(0, len(science_values), 3)
             ]
             self.raw_data = [integers]
             # TODO: Not confident this is right
+
+            # data = np.frombuffer(data_from_raw_packet, dtype=np.uint8).reshape(-1,3)
+            # data = np.array([int.from_bytes(x, byteorder='big') for x in data], dtype=np.uint32)
 
         else:
             for packet_data, byte_count in zip(
@@ -174,7 +187,7 @@ class CoDICEL1aPipeline:
                 # TODO add check for list length
                 values = [self.calculate_epoch_values()]
             elif name in ["esa_step", "inst_az", "spin_sector"]:
-                values = np.arange(self.config["dims"][name])
+                values = np.arange(self.config["output_dims"][name])
             elif name == "spin_sector_pairs_label":
                 values = np.array(
                     [
@@ -995,16 +1008,24 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # I-ALiRT data
-        elif apid == CODICEAPID.COD_LO_IAL:
+        elif apid in [CODICEAPID.COD_LO_IAL, CODICEAPID.COD_HI_IAL]:
+
+
+
+            # Set some lo- and hi- specific info
+            if apid == CODICEAPID.COD_LO_IAL:
+                data_range = range(0, 15)
+            elif apid == CODICEAPID.COD_HI_IAL:
+                data_range = range(0, 5)
+
             all_data_streams = []
             current_data_stream = bytearray()
             all_datasets = []
 
-            # Every 15 items, append two byte data to a byte stream
             for packet_num in range(0, len(dataset.acquisition_time.data)):
                 counter = dataset.counter.data[packet_num]
                 if counter != 255:
-                    for i in range(0, 15):
+                    for i in data_range:
                         current_data_stream.extend(
                             bytearray([dataset[f"data_{i:02}"].data[packet_num]])
                         )
@@ -1016,10 +1037,14 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
                     current_data_stream = bytearray()
 
             # The first packet is bad
+            for i in all_data_streams:
+                print(len(i))
             all_data_streams = all_data_streams[1:]
 
             for data_stream in all_data_streams:
                 bit_string = "".join(f"{byte:08b}" for byte in data_stream)
+                print(bit_string)
+                print(len(bit_string))
 
                 bit_structure = {
                     "SHCOARSE": {"bit_length": 32, "value": None},
@@ -1052,6 +1077,8 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
                         ],
                         2,
                     )
+                    print(field)
+                    print(value)
                     bit_structure[field]["value"] = value
                     bit_position += bit_structure[field]["bit_length"]
 
@@ -1104,7 +1131,13 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
                 all_datasets.append(completed_dataset)
 
             processed_dataset = xr.merge(all_datasets)
-            print(processed_dataset)
+
+            from imap_processing.cdf.utils import load_cdf
+            validation_dataset = load_cdf("/Users/mabo8927/Desktop/repositories/imap_processing/imap_processing/tests/codice/data/validation/imap_codice_l1a_lo-ialirt_20241110193700_v0.0.0.cdf")
+            #np.testing.assert_equal(processed_dataset.cplus6.data, validation_dataset.cplus6.data)
+
+
+
 
         # Everything else
         elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
@@ -1126,7 +1159,6 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
 
         # TODO: Still need to implement I-ALiRT data products
         elif apid in [
-            CODICEAPID.COD_HI_IAL,
             CODICEAPID.COD_HI_PHA,
         ]:
             logger.info("\tStill need to properly implement")
