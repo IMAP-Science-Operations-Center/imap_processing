@@ -618,6 +618,71 @@ lo-nsw-species-cnoplus:
     LABL_PTR_1: spin_sector
     LABL_PTR_2: esa_step
 
+# lo-ialirt
+# TODO: Doulbe check these
+lo-ialirt-heplusplus:
+    <<: *counters
+    CATDESC: He++ Sunward Species
+    FIELDNAM: SW - He++
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
+
+lo-ialirt-cplus5:
+    <<: *counters
+    CATDESC: C+5 Sunward Species
+    FIELDNAM: SW - C+5
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
+
+lo-ialirt-cplus6:
+    <<: *counters
+    CATDESC: C+6 Sunward Species
+    FIELDNAM: SW - C+6
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
+
+lo-ialirt-oplus6:
+    <<: *counters
+    CATDESC: O+6 Sunward Species
+    FIELDNAM: SW - O+6
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
+
+lo-ialirt-oplus7:
+    <<: *counters
+    CATDESC: O+7 Sunward Species
+    FIELDNAM: SW - O+7
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
+
+lo-ialirt-oplus8:
+    <<: *counters
+    CATDESC: O+8 Sunward Species
+    FIELDNAM: SW - O+8
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
+
+lo-ialirt-mg:
+    <<: *counters
+    CATDESC: Mg Sunward Species
+    FIELDNAM: SW - Mg
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
+
+lo-ialirt-fe_loq:
+    <<: *counters
+    CATDESC: Fe lowQ Sunward Species
+    FIELDNAM: SW - Fe lowQ
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
+
+lo-ialirt-fe_hiq:
+    <<: *counters
+    CATDESC: Fe highQ Sunward Species
+    FIELDNAM: SW - Fe highQ
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
+
 # <=== CCSDS Header Attributes ===>
 version:
     <<: *hskp_default
