@@ -390,6 +390,17 @@ hi-counters-singles-stssd:
     LABL_PTR_1: ssd_index
     UNITS: events
 
+# TODO: Double check this
+# hi-ialirt
+hi-ialirt-h:
+    <<: *counters
+    CATDESC: Omnidirectional H Counts
+    FIELDNAM: H
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
+    LABL_PTR_1: esa_step
+    LABL_PTR_2: inst_az
+
 # hi-omni
 hi-omni-h:
     <<: *counters
