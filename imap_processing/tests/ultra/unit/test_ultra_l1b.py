@@ -204,6 +204,7 @@ def test_cdf_extendedspin(use_fake_spin_data_for_time, faux_aux_dataset, rates_d
     )
 
 
+@pytest.mark.external_test_data
 def test_cdf_cullingmask(use_fake_spin_data_for_time, faux_aux_dataset, rates_dataset):
     """Tests that CDF file is created and contains same attributes as xarray."""
     use_fake_spin_data_for_time(0, 141 * 15)
@@ -230,6 +231,7 @@ def test_cdf_cullingmask(use_fake_spin_data_for_time, faux_aux_dataset, rates_da
     )
 
 
+@pytest.mark.external_test_data
 def test_cdf_badtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_dataset):
     """Tests that CDF file is created and contains same attributes as xarray."""
     use_fake_spin_data_for_time(0, 141 * 15)
