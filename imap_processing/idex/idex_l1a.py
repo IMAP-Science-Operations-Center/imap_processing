@@ -668,7 +668,7 @@ class RawDustEvent:
                 attrs=idex_attrs.get_variable_attributes("ion_grid_attrs"),
             ),
         }
-        # Determine the 3 coordinate variables
+        # Determine coordinate variables
         coords = {
             "epoch": xr.DataArray(
                 name="epoch",
@@ -676,6 +676,8 @@ class RawDustEvent:
                 dims=("epoch"),
                 attrs=idex_attrs.get_variable_attributes("epoch"),
             ),
+        }
+        sampling_rates = {
             "time_low_sample_rate": xr.DataArray(
                 name="time_low_sample_rate",
                 data=[
@@ -692,8 +694,7 @@ class RawDustEvent:
             ),
         }
         expected_shapes = {
-            "time_low_sample_rate_index": coords["time_low_sample_rate"].shape[1],
-            "time_high_sample_rate_index": coords["time_high_sample_rate"].shape[1],
+            f"{name}_index": array.shape[1] for name, array in sampling_rates.items()
         }
         if any(
             var.shape[1] != expected_shapes[var.dims[1]] for var in data_vars.values()
@@ -709,7 +710,7 @@ class RawDustEvent:
 
         # Combine to return a dataset object
         dataset = xr.Dataset(
-            data_vars=data_vars | trigger_vars,
+            data_vars=data_vars | trigger_vars | sampling_rates,
             coords=coords,
         )
         return dataset
