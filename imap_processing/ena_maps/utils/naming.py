@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Literal
@@ -26,8 +28,105 @@ class MappableInstrumentShortName(Enum):
     GLOWS = "glx"
 
 
+def get_instrument_descriptor(
+    instrument: MappableInstrumentShortName,
+    sensor: int | Literal["45", "90", "combined"] | str = "",
+) -> str:
+    """
+    Get the instrument descriptor string for a given instrument and sensor.
+
+    Parameters
+    ----------
+    instrument : MappableInstrumentShortName
+        The short name Enum of the instrument.
+    sensor : int | Literal["45", "90", "combined"] | str, optional
+        The sensor identifier, by default "".
+
+    Returns
+    -------
+    str
+        The instrument descriptor string.
+        E.g. "u90", "u45", "ulc", "h45", "ilo", "t075".
+
+    Raises
+    ------
+    ValueError
+        If the sensor is an integer and the instrument is not LO.
+    """
+    # Handle sensor
+    # Lo may pass in an integer, which should be converted to a 3 character string
+    if isinstance(sensor, int):
+        if instrument in [
+            MappableInstrumentShortName.LO,
+            MappableInstrumentShortName.LO_HI_RES,
+            MappableInstrumentShortName.LO_HI_THROUGHPUT,
+        ]:
+            sensor = f"{sensor:03}"
+        else:
+            raise ValueError("Integer sensor values are only valid for LO instruments.")
+    # Hi and Ultra may be either "45", "90", or "combined", in which case
+    # Hi should get the sensor "ic" and Ultra should get the sensor "lc"
+    elif sensor == "combined":
+        if instrument is MappableInstrumentShortName.ULTRA:
+            sensor = "lc"
+        elif instrument is MappableInstrumentShortName.HI:
+            sensor = "ic"
+
+    # Get the instrument descriptor (e.g. "u90", "h45", "ilo")
+    instrument_descriptor = f"{instrument.value}{sensor}"
+    return instrument_descriptor
+
+
+def parse_instrument_descriptor(
+    instrument_descriptor: str,
+) -> tuple[MappableInstrumentShortName, str]:
+    """
+    Parse the instrument descriptor string into instrument and sensor.
+
+    Parameters
+    ----------
+    instrument_descriptor : str
+        The instrument descriptor string to parse.
+
+    Returns
+    -------
+    tuple[str, str]
+        A tuple containing the instrument short name and the sensor.
+
+    Raises
+    ------
+    ValueError
+        If the instrument descriptor format can't be parsed as a combined instrument or
+        as a regex match to the expected format.
+    """
+    # Default to no sensor
+    sensor = ""
+
+    if instrument_descriptor.endswith("c"):
+        sensor = "combined"
+        instrument_short_name = instrument_descriptor[:-2]
+        instrument = MappableInstrumentShortName(instrument_short_name)
+    else:
+        # Do regex to get the instrument and sensor:
+        # The first 1 or 3 characters are the instrument short name
+        # if the last 2 or 3 characters are digits, then this is a sensor
+        # otherwise, the sensor is empty str
+        match = re.match(r"([a-z]{1,3})(\d{2,3})?", instrument_descriptor)
+        if match:
+            instrument_short_name = match.group(1)
+            sensor = match.group(2) if match.group(2) else ""
+            instrument = MappableInstrumentShortName(instrument_short_name)
+        else:
+            raise ValueError(
+                f"Invalid instrument descriptor: {instrument_descriptor}. "
+                "Expected format: <instrument_short_name><sensor>."
+            )
+    instrument = MappableInstrumentShortName(instrument_short_name)
+    return instrument, sensor
+
+
 # Ignore too many branches warning
-def build_l2_map_descriptor(  # noqa: PLR0912
+def build_l2_map_descriptor(
     *,
     # Basic parameters must always be passed in as keyword arguments
     instrument: MappableInstrumentShortName,  # Updated to use the enum
@@ -112,28 +211,7 @@ def build_l2_map_descriptor(  # noqa: PLR0912
     str
         The map descriptor string.
     """
-    # Handle sensor
-    # Lo may pass in an integer, which should be converted to a 3 character string
-    if isinstance(sensor, int):
-        if instrument in [
-            MappableInstrumentShortName.LO,
-            MappableInstrumentShortName.LO_HI_RES,
-            MappableInstrumentShortName.LO_HI_THROUGHPUT,
-        ]:
-            sensor = f"{sensor:03}"
-        else:
-            raise ValueError("Integer sensor values are only valid for LO instruments.")
-    # Hi and Ultra may be either "45", "90", or "combined", in which case
-    # Hi should get the sensor "ic" and Ultra should get the sensor "lc"
-    elif sensor == "combined":
-        if instrument is MappableInstrumentShortName.ULTRA:
-            sensor = "lc"
-        elif instrument is MappableInstrumentShortName.HI:
-            sensor = "ic"
-
-    # Get the instrument descriptor (e.g. "u90", "h45", "ilo")
-    instrument_descriptor = f"{instrument.value}{sensor}"
-
+    instrument_descriptor = get_instrument_descriptor(instrument, sensor)
     # Handle duration
     if isinstance(duration, timedelta):
         # Convert timedelta to str representation of number of DAYS_IN_MONTH-day months
@@ -201,6 +279,134 @@ def ns_to_duration_months(ns: int) -> int:
     days = ns / (1e9 * 60 * 60 * 24)
     months = days // DAYS_IN_MONTH
     return int(months)
+
+
+@dataclass
+class MapDescriptor:
+    """
+    A class to represent a map descriptor for ENA maps.
+
+    This class provides methods to parse a map descriptor string and convert it
+    back into a string.
+
+    Attributes
+    ----------
+    instrument : MappableInstrumentShortName
+        The short name of the instrument.
+    frame_descriptor : str
+        The frame descriptor string. (e.g. "sf", "hf", "hk").
+    resolution_str : str
+        The resolution string for the map (e.g. "nside128", "2deg").
+    duration : str
+        The duration of the map (e.g. "1yr", "6mo").
+    sensor : str, optional
+        The sensor identifier (e.g. "45", "90", "combined", "").
+        Default is "".
+    principal_data : str, optional
+        The principal data type for the map (e.g. "ena", "spx", "isn").
+        Default is "ena".
+    species : str, optional
+        The species for the map (e.g. "h", "he", "o").
+        Default is "h".
+    survival_corrected : str, optional
+        Whether the map is survival probability corrected ("sp") or not ("nsp").
+        Default is "nsp".
+    spin_phase : str, optional
+        The spin phase for the map (e.g. "full", "ram", "anti").
+        Default is "full".
+    coordinate_system : str, optional
+        The coordinate system for the map (e.g. "hae", "hgi", "rc").
+        Default is "hae".
+    """
+
+    instrument: MappableInstrumentShortName
+    frame_descriptor: str
+    resolution_str: str
+    duration: str
+    sensor: str = ""
+    principal_data: str = "ena"
+    species: str = "h"
+    survival_corrected: str = "nsp"
+    spin_phase: str = "full"
+    coordinate_system: str = "hae"
+
+    @property
+    def instrument_descriptor(self) -> str:
+        """
+        Get the instrument descriptor string.
+
+        Returns
+        -------
+        str
+            The instrument descriptor string.
+        """
+        return get_instrument_descriptor(self.instrument, self.sensor)
+
+    @classmethod
+    def from_string(cls, map_descriptor: str) -> MapDescriptor:
+        """
+        Parse a map_descriptor string and return a MapDescriptor instance.
+
+        The map_descriptor string is expected to follow the format:
+        "instrument_descriptor-principal_data-species-frame_descriptor-...cont...
+        survival_corrected-spin_phase-coordinate_system-resolution_str-duration".
+
+        Parameters
+        ----------
+        map_descriptor : str
+            The map descriptor string to parse.
+
+        Returns
+        -------
+        MapDescriptor
+            An instance of the MapDescriptor class with parsed values.
+        """
+        parts = map_descriptor.split("-")
+        if len(parts) != 9:
+            raise ValueError(
+                f"Invalid map_descriptor format: {map_descriptor}. Expected 9 parts."
+            )
+        # Extract the instrument and sensor from the first part
+        instrument_sensor = parts[0]
+        instrument, sensor = parse_instrument_descriptor(instrument_sensor)
+
+        return cls(
+            instrument=instrument,
+            sensor=sensor,
+            principal_data=parts[1],
+            species=parts[2],
+            frame_descriptor=parts[3],
+            survival_corrected=parts[4],
+            spin_phase=parts[5],
+            coordinate_system=parts[6],
+            resolution_str=parts[7],
+            duration=parts[8],
+        )
+
+    def to_str(self) -> str:
+        """
+        Convert the MapDescriptor instance back into a map_descriptor string.
+
+        Returns
+        -------
+        str
+            The map_descriptor string in the format:
+            "instrument_descriptor-principal_data-species-frame_descriptor-...cont...
+            survival_corrected-spin_phase-coordinate_system-resolution_str-duration".
+        """
+        return "-".join(
+            [
+                self.instrument_descriptor,
+                self.principal_data,
+                self.species,
+                self.frame_descriptor,
+                self.survival_corrected,
+                self.spin_phase,
+                self.coordinate_system,
+                self.resolution_str,
+                self.duration,
+            ]
+        )
 
 
 def build_friendly_date_descriptor(

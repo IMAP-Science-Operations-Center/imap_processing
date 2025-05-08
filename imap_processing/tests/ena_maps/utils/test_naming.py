@@ -7,8 +7,70 @@ from imap_processing.ena_maps.utils.naming import (
     build_friendly_date_descriptor,
     build_l2_map_descriptor,
     ns_to_duration_months,
+    get_instrument_descriptor,
+    parse_instrument_descriptor,
 )
 from imap_processing.spice.geometry import SpiceFrame
+
+
+def test_get_instrument_descriptor():
+    assert (
+        get_instrument_descriptor(
+            instrument=MappableInstrumentShortName.HI,
+            sensor="45",
+        )
+        == "h45"
+    )
+    assert (
+        get_instrument_descriptor(
+            instrument=MappableInstrumentShortName.LO_HI_THROUGHPUT,
+            sensor=75,
+        )
+        == "t075"
+    )
+    assert (
+        get_instrument_descriptor(
+            instrument=MappableInstrumentShortName.IDEX,
+            sensor="",
+        )
+        == "idx"
+    )
+    assert (
+        get_instrument_descriptor(
+            instrument=MappableInstrumentShortName.ULTRA, sensor="90"
+        )
+        == "u90"
+    )
+    assert (
+        get_instrument_descriptor(
+            instrument=MappableInstrumentShortName.ULTRA,
+            sensor="combined",
+        )
+        == "ulc"
+    )
+
+
+def test_parse_instrument_descriptor():
+    assert parse_instrument_descriptor("h45") == (
+        MappableInstrumentShortName.HI,
+        "45",
+    )
+    assert parse_instrument_descriptor("t075") == (
+        MappableInstrumentShortName.LO_HI_THROUGHPUT,
+        "075",
+    )
+    assert parse_instrument_descriptor("idx") == (
+        MappableInstrumentShortName.IDEX,
+        "",
+    )
+    assert parse_instrument_descriptor("u90") == (
+        MappableInstrumentShortName.ULTRA,
+        "90",
+    )
+    assert parse_instrument_descriptor("ulc") == (
+        MappableInstrumentShortName.ULTRA,
+        "combined",
+    )
 
 
 def test_build_l2_map_descriptor_with_timedelta():
