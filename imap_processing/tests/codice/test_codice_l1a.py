@@ -266,28 +266,10 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         validation_dataset = load_cdf(VALIDATION_DATA[index])
 
         for counter in counters:
-            # Ignore padding values in direct event data for now
-            # TODO: This can be removed once field-specific dtypes are
-            #       implemented (see relevant note in codice_l1a.py)
-            if descriptor in ["lo-pha", "hi-pha"]:
-                processed = processed_dataset[counter].data
-                validated = validation_dataset[counter].data
-
-                # Create mask to ignore fill values
-                mask = ~(
-                    (processed == 255)
-                    | (processed == 65535)
-                    | (validated == 255)
-                    | (validated == 65535)
-                )
-                # Ensure the data arrays are equal
-                np.testing.assert_equal(processed[mask], validated[mask])
-
-            else:
-                # Ensure the data arrays are equal
-                np.testing.assert_equal(
-                    processed_dataset[counter].data, validation_dataset[counter].data
-                )
+            # Ensure the data arrays are equal
+            np.testing.assert_equal(
+                processed_dataset[counter].data, validation_dataset[counter].data
+            )
 
     else:
         pytest.xfail(f"Still need to implement validation for {descriptor}")
