@@ -731,27 +731,9 @@ def get_de_metadata(packets: xr.Dataset, segment: int) -> bytes:
     metadata : bytes
         The compressed metadata for the segmented packet.
     """
-    # Define the packet fields needed to be stored in segmented data and their
-    # corresponding bit lengths
-    metadata_fields = {
-        "packet_version": 16,
-        "spin_period": 16,
-        "acq_start_seconds": 32,
-        "acq_start_subseconds": 20,
-        "spare_1": 2,
-        "st_bias_gain_mode": 2,
-        "sw_bias_gain_mode": 2,
-        "priority": 4,
-        "suspect": 1,
-        "compressed": 1,
-        "num_events": 32,
-        "byte_count": 32,
-    }
-
-    # String together the metadata fields and convert the data to a bytes
-    # object
+    # String together the metadata fields and convert the data to a bytes obj
     metadata_str = ""
-    for field, num_bits in metadata_fields.items():
+    for field, num_bits in constants.DE_METADATA_FIELDS.items():
         metadata_str += f"{packets[field].data[segment]:0{num_bits}b}"
     metadata_chunks = [metadata_str[i : i + 8] for i in range(0, len(metadata_str), 8)]
     metadata_ints = [int(item, 2) for item in metadata_chunks]

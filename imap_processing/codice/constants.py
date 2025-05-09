@@ -458,6 +458,23 @@ DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
     },
 }
 
+# Define the packet fields needed to be stored in segmented data and their
+# corresponding bit lengths for direct event data products
+DE_METADATA_FIELDS = {
+    "packet_version": 16,
+    "spin_period": 16,
+    "acq_start_seconds": 32,
+    "acq_start_subseconds": 20,
+    "spare_1": 2,
+    "st_bias_gain_mode": 2,
+    "sw_bias_gain_mode": 2,
+    "priority": 4,
+    "suspect": 1,
+    "compressed": 1,
+    "num_events": 32,
+    "byte_count": 32,
+}
+
 # Compression ID lookup tables
 # The key is the view_id and the value is the ID for the compression algorithm
 # (see utils.CoDICECompression to see how the values correspond)
