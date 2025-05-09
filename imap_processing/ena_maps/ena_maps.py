@@ -1279,7 +1279,8 @@ class HealpixSkyMap(AbstractSkyMap):
         smaller and smaller subpixels, then calculates the solid-angle weighted mean
         of the healpix map's value at this pixel, until the difference
         between the mean values of two consecutive subdivisions is within the
-        specified tolerances. The function returns the mean value at the final level
+        specified tolerances at all values in that pixel (e.g., all energy bins).
+        The function returns the mean value at the final level
         of subdivision and the depth of recursion.
 
         Parameters
@@ -1321,8 +1322,15 @@ class HealpixSkyMap(AbstractSkyMap):
                 )
             )
 
-            # Determine if tolerance is met
-            # (skip on the 0th iteration, as there's no delta)
+            # Determine if tolerance is met,
+            # (skip on the 0th iteration, as there's no delta to compare).
+
+            # Note:  Using allclose() means that, while we calculate the mean pixel
+            # value(s) over  all the subdivided subpixels, this mean may have multiple
+            # values (e.g., different energy bins), so we check if
+            # all of them are within the tolerances. This can result in
+            # over-subdividing some energy bins, where there is little spatial gradient,
+            # but where another energy bin has a large gradient.
             if depth > 0:
                 if np.allclose(
                     mean_pixel_value,
