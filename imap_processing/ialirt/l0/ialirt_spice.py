@@ -101,9 +101,6 @@ def compute_sc_to_inertial_rotation_matrix_from_z(
         # Columns = spacecraft axes in inertial frame:
         # SPICE: Zsc → X, Ysc → Y, Xsc → Z
         R = np.stack([x_rot, y_rot, z], axis=1)
-        # Orthonormalize
-        u, _, vh = np.linalg.svd(R)
-        R = u @ vh
         R_all.append(R)
 
     return np.stack(R_all)
@@ -133,7 +130,7 @@ def transform_instrument_vectors_to_inertial(
     R_mount = spice.pxform("IMAP_MAG", "IMAP_SPACECRAFT", 0.0)
 
     # SC → inertial
-    R_sc_to_inertial = spice.pxform("IMAP_SPACECRAFT", "ECLIPJ2000", et[0])
+    #R_sc_to_inertial = spice.pxform("IMAP_SPACECRAFT", "ECLIPJ2000", et[0])
 
     R_sc_to_inertial_test = compute_sc_to_inertial_rotation_matrix_from_z(
         z_axis,
