@@ -187,8 +187,8 @@ def test_transform_instrument_vectors_to_inertial(
         atol=1e-9,
     )
 
-    # i.e., no spin rotation
-    spin_phase = np.array([np.radians(179.5 + 180.0)])
+    # At this timestamp for the attitude kernel.
+    spin_phase = np.array([np.radians(-0.5)])
 
     v_manual = transform_instrument_vectors_to_inertial(
         instrument_vector,

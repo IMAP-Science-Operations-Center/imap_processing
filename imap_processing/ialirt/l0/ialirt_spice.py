@@ -93,7 +93,7 @@ def transform_instrument_vectors_to_inertial(
     rot_spin = get_rotation_matrix(z_axis, spin_phase)
 
     # Static mount matrix: MAG → SC
-    R_mount = spice.pxform("IMAP_MAG", "IMAP_SPACECRAFT", et[0])
+    R_mount = spice.pxform("IMAP_MAG", "IMAP_SPACECRAFT", 0.0)
 
     # SC → inertial
     R_sc_to_inertial = spice.pxform("IMAP_SPACECRAFT", "ECLIPJ2000", et[0])
@@ -104,7 +104,10 @@ def transform_instrument_vectors_to_inertial(
     ])
 
     # Apply transform
-    vectors_inertial = np.einsum("nij,nj->ni", rot_total, instrument_vectors)
+    vectors_inertial = np.array([
+        spice.mxv(rot, vec)
+        for rot, vec in zip(rot_total, instrument_vectors)
+    ])
 
     return vectors_inertial
 
