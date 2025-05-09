@@ -74,7 +74,7 @@ def get_rotation_matrix(z_axis: NDArray, spin_phase: NDArray) -> NDArray:
     return rot_matrices
 
 
-def transform_instrument_vectors_to_urf(
+def transform_instrument_vectors_to_inertial(
     instrument_vectors: NDArray,
     spin_phase: NDArray,
     sc_inertial_right: NDArray,
@@ -82,7 +82,7 @@ def transform_instrument_vectors_to_urf(
     et: np.ndarray,
 ) -> NDArray:
     """
-    Transform instrument-frame vectors into the spacecraft URF frame.
+    Transform instrument-frame vectors into the inertial frame (ECLIPJ2000).
 
     Parameters
     ----------
@@ -95,17 +95,18 @@ def transform_instrument_vectors_to_urf(
     sc_inertial_decline : np.ndarray
         Spacecraft declination in radians. Shape: (N,).
     et : np.ndarray
-        Ephemeris time.
+        Ephemeris time. Shape: (N,).
 
     Returns
     -------
-    vectors_urf : np.ndarray
-        Vectors in the spacecraft URF frame. Shape: (N, 3).
+    vectors_inertial : np.ndarray
+        Vectors in the inertial frame. Shape: (N, 3).
 
     Notes
     -----
-    URF = Unrotated Reference Frame.
-    It is a spacecraft-fixed frame that rotates with the spacecraft.
+    This function transforms vectors from the instrument
+    frame through the spacecraft URF, then despins them
+    using onboard RA/Dec and spin phase to get inertial directions.
     """
     z_axis = get_z_axis(sc_inertial_right, sc_inertial_decline)
     rot_matrices = get_rotation_matrix(z_axis, spin_phase)
