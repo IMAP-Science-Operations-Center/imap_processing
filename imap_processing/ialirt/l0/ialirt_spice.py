@@ -79,6 +79,7 @@ def transform_instrument_vectors_to_urf(
     spin_phase: NDArray,
     sc_inertial_right: NDArray,
     sc_inertial_decline: NDArray,
+    et: np.ndarray,
 ) -> NDArray:
     """
     Transform instrument-frame vectors into the spacecraft URF frame.
@@ -93,6 +94,8 @@ def transform_instrument_vectors_to_urf(
         Spacecraft right ascension in radians. Shape: (N,).
     sc_inertial_decline : np.ndarray
         Spacecraft declination in radians. Shape: (N,).
+    et : np.ndarray
+        Ephemeris time.
 
     Returns
     -------
@@ -106,12 +109,16 @@ def transform_instrument_vectors_to_urf(
     """
     z_axis = get_z_axis(sc_inertial_right, sc_inertial_decline)
     rot_matrices = get_rotation_matrix(z_axis, spin_phase)
-
-    vectors_urf = np.array(
-        [spice.mxv(r, v) for r, v in zip(rot_matrices, instrument_vectors)]
+    vectors_urf = get_instrument_vector(
+        et,
+        instrument_vectors,
     )
 
-    return vectors_urf
+    vectors_inertial = np.array(
+        [spice.mxv(r.T, v) for r, v in zip(rot_matrices, vectors_urf)]
+    )
+
+    return vectors_inertial
 
 
 def get_instrument_vector(
