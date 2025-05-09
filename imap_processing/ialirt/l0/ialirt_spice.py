@@ -79,7 +79,9 @@ def transform_instrument_vectors_to_inertial(
     spin_phase: NDArray,
     sc_inertial_right: NDArray,
     sc_inertial_decline: NDArray,
-    et: np.ndarray,
+    et: NDArray,
+    instrument_frame: SpiceFrame = SpiceFrame.IMAP_MAG,
+    spacecraft_frame: SpiceFrame = SpiceFrame.IMAP_SPACECRAFT,
 ) -> NDArray:
     """
     Transform instrument-frame vectors into the inertial frame (ECLIPJ2000).
@@ -96,6 +98,10 @@ def transform_instrument_vectors_to_inertial(
         Spacecraft declination in radians. Shape: (N,).
     et : np.ndarray
         Ephemeris time. Shape: (N,).
+    instrument_frame : SpiceFrame
+        Instrument frame.
+    spacecraft_frame : SpiceFrame
+        Spacecraft frame.
 
     Returns
     -------
@@ -113,20 +119,22 @@ def transform_instrument_vectors_to_inertial(
     vectors_urf = get_instrument_vector(
         et,
         instrument_vectors,
+        instrument_frame,
+        spacecraft_frame,
     )
 
     vectors_inertial = np.array(
-        [spice.mxv(r.T, v) for r, v in zip(rot_matrices, vectors_urf)]
+        [spice.mxv(r.T.copy(), v) for r, v in zip(rot_matrices, vectors_urf)]
     )
 
     return vectors_inertial
 
 
 def get_instrument_vector(
-    et: np.ndarray,
-    vector: np.ndarray,
-    instrument_frame: SpiceFrame = SpiceFrame.IMAP_MAG,
-    spacecraft_frame: SpiceFrame = SpiceFrame.IMAP_SPACECRAFT,
+    et: NDArray,
+    vector: NDArray,
+    instrument_frame: SpiceFrame,
+    spacecraft_frame: SpiceFrame,
 ) -> np.ndarray:
     """
     Get the vectors wrt the spacecraft.
@@ -149,10 +157,10 @@ def get_instrument_vector(
     """
     # Instrument frame → SC frame (URF)
     vector_urf = frame_transform(
-        et=et,
-        position=vector,
-        from_frame=instrument_frame,
-        to_frame=spacecraft_frame,
+        et,
+        vector,
+        instrument_frame,
+        spacecraft_frame,
     )
 
     return vector_urf
