@@ -120,30 +120,33 @@ def transform_instrument_vectors_to_inertial(
     """
     Transform instrument-frame vectors into the inertial frame (ECLIPJ2000).
     """
-    # Convert RA/Dec → inertial Z-axis
     z_axis = get_z_axis(sc_inertial_right, sc_inertial_decline)
 
-    # Rotation about Z-axis (spin), shape (N, 3, 3)
-    rot_spin = get_rotation_matrix(z_axis, spin_phase)
+    # Construct orthonormal S/C frame in inertial space
+    inertial_frames = []
+    for z in z_axis:
+        # Pick a reference not parallel to z
+        ref = np.array([0.0, 0.0, 1.0]) if not np.allclose(z, [0, 0, 1.0]) else np.array([1.0, 0.0, 0.0])
+        y = np.cross(z, ref)
+        y /= np.linalg.norm(y)
+        x = np.cross(y, z)
+        R_sc_to_inertial = np.stack([x, y, z], axis=1)
+        inertial_frames.append(R_sc_to_inertial)
+    inertial_frames = np.array(inertial_frames)
 
-    # Static mount matrix: MAG → SC
-    R_mount = spice.pxform("IMAP_MAG", "IMAP_SPACECRAFT", 0.0)
+    # Rotation about z by spin phase (in spacecraft XY plane)
+    rot_spin = get_rotation_matrix(np.tile([0, 0, 1], (len(spin_phase), 1)), spin_phase)
 
-    # SC → inertial
-    #R_sc_to_inertial = spice.pxform("IMAP_SPACECRAFT", "ECLIPJ2000", et[0])
+    # Static mount matrix from instrument to spacecraft
+    R_mount = spice.pxform(instrument_frame.name, spacecraft_frame.name, 0.0)
 
-    R_sc_to_inertial_test = compute_sc_to_inertial_rotation_matrix_from_z(
-        z_axis,
-        spin_phase,
-    )
-    R_sc_to_inertial = R_sc_to_inertial_test[0]
-
-    # Final transform matrix: (N, 3, 3)
+    # Final transform: inertial = R_sc @ spin @ R_mount @ instrument_vector
     rot_total = np.array([
-        R_sc_to_inertial @ spin @ R_mount for spin in rot_spin
+        R_sc @ spin @ R_mount
+        for R_sc, spin in zip(inertial_frames, rot_spin)
     ])
 
-    # Apply transform
+    # Apply to instrument vectors
     vectors_inertial = np.array([
         spice.mxv(rot, vec)
         for rot, vec in zip(rot_total, instrument_vectors)

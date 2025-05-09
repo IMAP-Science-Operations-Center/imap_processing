@@ -201,7 +201,7 @@ def test_transform_instrument_vectors_to_inertial(
     # SPICE direct transform from instrument frame to inertial
     rot_inst_to_inertial = spiceypy.pxform("IMAP_MAG", "ECLIPJ2000", et)
     v_spice = spiceypy.mxv(rot_inst_to_inertial, instrument_vector[0])
-
+    print('hi')
     np.testing.assert_allclose(
         v_manual[0],
         v_spice,
