@@ -422,7 +422,7 @@ class ProcessInstrument(ABC):
         # Furnish spice kernels
         kernel_paths = dependencies.get_file_paths(source=SPICESource.SPICE.value)
         logger.info(f"Furnishing kernels: {kernel_paths}")
-        spiceypy.furnsh([str(kernel_path) for kernel_path in kernel_paths])
+        spiceypy.furnsh([str(kernel_path.resolve()) for kernel_path in kernel_paths])
 
         return dependencies
 
@@ -503,6 +503,9 @@ class ProcessInstrument(ABC):
             products.append(write_cdf(ds))
 
         self.upload_products(products)
+
+        logger.info("Clearing furnished SPICE kernels")
+        spiceypy.kclear()
 
 
 class Codice(ProcessInstrument):
