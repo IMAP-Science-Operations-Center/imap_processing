@@ -327,8 +327,8 @@ def test_pre_processing(spice_test_data_path):
     dependency_str = (
         "["
         '{"type": "science","files": ["imap_hi_l2a_sensor45-de_20100105_v001.cdf"]},'
-        f'{{"type":"spice","files": ["{'", "'.join(kernels_to_furnish)}"]}},'
-        '{"type": "spice","files": ["imap_2010_104_01.repoint.csv"]}'
+        + f'{{"type":"spice","files": {kernels_to_furnish}}},'.replace("'", '"')
+        + '{"type": "spice","files": ["imap_2010_104_01.repoint.csv"]}'
         "]"
     )
 
