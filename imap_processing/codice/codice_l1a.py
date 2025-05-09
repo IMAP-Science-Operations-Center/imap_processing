@@ -100,9 +100,6 @@ class CoDICEL1aPipeline:
         epoch : NDArray[int]
             List of epoch values.
         """
-        # TODO: Make this a utility function outside of the class so that it
-        #       can be used by direct event data processing too
-
         epoch = met_to_ttj2000ns(
             self.dataset.acq_start_seconds + self.dataset.acq_start_subseconds / 1e6
         )
@@ -606,18 +603,17 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     cdf_attrs.add_instrument_global_attrs("codice")
     cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
 
-    # Define coordinates
-    # For epoch, we take the epoch whenever the priority is 0
-    # TODO: Double check with Joey on this
+    # Determine the epochs to use in the dataset, which are the epochs whenever
+    # there is a start of a segment and the priority is 0
     epoch_indices = np.where(
         ((packets.seq_flgs.data == 3) | (packets.seq_flgs.data == 1))
         & (packets.priority.data == 0)
     )[0]
     acq_start_seconds = packets.acq_start_seconds[epoch_indices]
     acq_start_subseconds = packets.acq_start_subseconds[epoch_indices]
-
     epochs = met_to_ttj2000ns(acq_start_seconds + acq_start_subseconds / 1e6)
 
+    # Define coordinates
     epoch = xr.DataArray(
         epochs,
         name="epoch",
@@ -642,7 +638,8 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     )
 
     # Create the CDF data variables for each Priority and Field
-    for i in range(constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["num_priorities"]):
+    num_priorities = constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["num_priorities"]
+    for i in range(num_priorities):
         for field in constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["cdf_fields"]:
             variable_name = f"P{i}_{field}"
             attrs = cdf_attrs.get_variable_attributes(variable_name)
@@ -943,12 +940,12 @@ def reshape_de_data(
         for field in bit_structure:
             if field not in ["Priority", "Spare"]:
                 data[f"P{priority_num}_{field}"] = np.full(
-                    (num_epochs, 10000), 65535, dtype=np.uint16
+                    (num_epochs, 10000),
+                    bit_structure[field]["fillval"],
+                    dtype=bit_structure[field]["dtype"],
                 )
         data[f"P{priority_num}_NumEvents"] = np.full(num_epochs, 65535, dtype=np.uint16)
-        data[f"P{priority_num}_DataQuality"] = np.full(
-            num_epochs, 65535, dtype=np.uint16
-        )
+        data[f"P{priority_num}_DataQuality"] = np.full(num_epochs, 255, dtype=np.uint8)
 
     # decompressed_data is one large list of values of length
     # (<number of epochs> * <number of priorities>)
@@ -989,22 +986,25 @@ def reshape_de_data(
                 )
 
                 bit_position = 0
-                for field_name, bit_length in reversed(bit_structure.items()):
+                for field_name, field_components in reversed(bit_structure.items()):
                     # We don't need to carry Priority and Spare fields through
                     if field_name in ["Priority", "Spare"]:
-                        bit_position += bit_length
+                        bit_position += field_components["bit_length"]
                         continue
 
                     # Convert from binary to integer
-                    value = int(bit_string[bit_position : bit_position + bit_length], 2)
+                    value = int(
+                        bit_string[
+                            bit_position : bit_position + field_components["bit_length"]
+                        ],
+                        2,
+                    )
 
                     # Set the value into the data array
                     data[f"P{priority_num}_{field_name}"][epoch_index, event_index] = (
                         value
                     )
-                    bit_position += bit_length
-
-    # TODO: Implement specific np.dtype and fill_val per field
+                    bit_position += field_components["bit_length"]
 
     return data
 

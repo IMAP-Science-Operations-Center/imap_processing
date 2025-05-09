@@ -13,6 +13,10 @@ PUI = PickUp Ion
 ESA = ElectroStatic Analyzer
 """
 
+from typing import Any
+
+import numpy as np
+
 from imap_processing.codice.utils import CODICEAPID, CoDICECompression
 
 # Grouping of APIDs used to signify similar L1a processing
@@ -418,37 +422,37 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
 
 # Various configurations to support processing of direct events data products
 # These are described in the algorithm document in chapter 10 ("Data Level 1A")
-DE_DATA_PRODUCT_CONFIGURATIONS = {
+DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
     CODICEAPID.COD_HI_PHA: {
         "num_priorities": 6,
         "bit_structure": {
-            "SSDEnergy": 11,
-            "TOF": 10,
-            "SSD_ID": 4,
-            "ERGE": 2,
-            "MultiFlag": 1,
-            "Type": 2,
-            "SpinAngle": 5,
-            "SpinNumber": 4,
-            "Priority": 3,
-            "Spare": 22,
+            "SSDEnergy": {"bit_length": 11, "dtype": np.uint16, "fillval": 65535},
+            "TOF": {"bit_length": 10, "dtype": np.uint16, "fillval": 65535},
+            "SSD_ID": {"bit_length": 4, "dtype": np.uint8, "fillval": 255},
+            "ERGE": {"bit_length": 2, "dtype": np.uint8, "fillval": 255},
+            "MultiFlag": {"bit_length": 1, "dtype": np.uint8, "fillval": 255},
+            "Type": {"bit_length": 2, "dtype": np.uint8, "fillval": 255},
+            "SpinAngle": {"bit_length": 5, "dtype": np.uint8, "fillval": 255},
+            "SpinNumber": {"bit_length": 4, "dtype": np.uint8, "fillval": 255},
+            "Priority": {"bit_length": 3, "dtype": np.uint8, "fillval": 255},
+            "Spare": {"bit_length": 22, "dtype": np.uint8, "fillval": 255},
         },
         "cdf_fields": HI_PHA_CDF_FIELDS,
     },
     CODICEAPID.COD_LO_PHA: {
         "num_priorities": 8,
         "bit_structure": {
-            "APDGain": 1,
-            "APD_ID": 5,
-            "Position": 5,
-            "APDEnergy": 9,
-            "TOF": 10,
-            "MultiFlag": 1,
-            "PHAType": 2,
-            "SpinAngle": 5,
-            "EnergyStep": 7,
-            "Priority": 3,
-            "Spare": 16,
+            "APDGain": {"bit_length": 1, "dtype": np.uint8, "fillval": 255},
+            "APD_ID": {"bit_length": 5, "dtype": np.uint8, "fillval": 255},
+            "Position": {"bit_length": 5, "dtype": np.uint8, "fillval": 255},
+            "APDEnergy": {"bit_length": 9, "dtype": np.uint16, "fillval": 65535},
+            "TOF": {"bit_length": 10, "dtype": np.uint16, "fillval": 65535},
+            "MultiFlag": {"bit_length": 1, "dtype": np.uint8, "fillval": 255},
+            "PHAType": {"bit_length": 2, "dtype": np.uint8, "fillval": 255},
+            "SpinAngle": {"bit_length": 5, "dtype": np.uint8, "fillval": 255},
+            "EnergyStep": {"bit_length": 7, "dtype": np.uint8, "fillval": 255},
+            "Priority": {"bit_length": 3, "dtype": np.uint8, "fillval": 255},
+            "Spare": {"bit_length": 16, "dtype": np.uint8, "fillval": 255},
         },
         "cdf_fields": LO_PHA_CDF_FIELDS,
     },
