@@ -638,8 +638,7 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     )
 
     # Create the CDF data variables for each Priority and Field
-    num_priorities = constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["num_priorities"]
-    for i in range(num_priorities):
+    for i in range(constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["num_priorities"]):
         for field in constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["cdf_fields"]:
             variable_name = f"P{i}_{field}"
             attrs = cdf_attrs.get_variable_attributes(variable_name)
