@@ -45,6 +45,7 @@ energy:
   # We might not have these set up yet
   DELTA_MINUS_VAR: energy_delta_minus
   DELTA_PLUS_VAR: energy_delta_plus
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Energy,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 energy_label:
   VAR_TYPE: metadata
@@ -63,6 +64,7 @@ energy_delta_minus:
   DISPLAY_TYPE: no_plot
   DEPEND_1: energy
   LABL_PTR_1: energy_label
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Energy,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 energy_delta_plus:
   <<: *default_float32
@@ -74,6 +76,7 @@ energy_delta_plus:
   DISPLAY_TYPE: no_plot
   DEPEND_1: energy
   LABL_PTR_1: energy_label
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Energy,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 # These two coordinates will be treated differently in the
 # HEALPix and rectangular tilings. They will be substantially overridden
@@ -88,6 +91,7 @@ longitude:
   DISPLAY_TYPE: no_plot
   VALIDMIN: 0
   VALIDMAX: 360
+  DICT_KEY: SPASE>Support>SupportQuantity:Orientation,Qualifier:DirectionAngle.AzimuthAngle,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 latitude:
   <<: *default_float32
@@ -99,6 +103,7 @@ latitude:
   DISPLAY_TYPE: no_plot
   VALIDMIN: -90
   VALIDMAX: 90
+  DICT_KEY: SPASE>Support>SupportQuantity:Orientation,Qualifier:DirectionAngle.ElevationAngle,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 # Define Data variables, but not their pixel-level DEPENDs
 # (e.g. pixel_index for HEALPix maps, longitude/latitude for rectangular maps).
@@ -114,6 +119,7 @@ ena_intensity:
   VAR_TYPE: data
   LABLAXIS: Intensity
   DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 ena_intensity_stat_unc:
   <<: *default_float32
@@ -124,6 +130,7 @@ ena_intensity_stat_unc:
   VAR_TYPE: data
   LABLAXIS: Statistical Unc
   DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 sensitivity:
   <<: *default_float32
@@ -134,6 +141,7 @@ sensitivity:
   VAR_TYPE: data
   LABLAXIS: sensitivity
   DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:GeometricFactor,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 exposure_factor: &exposure_factor_energy_independent
   <<: *default_float32
@@ -144,6 +152,7 @@ exposure_factor: &exposure_factor_energy_independent
   VAR_TYPE: data
   LABLAXIS: Exposure
   DISPLAY_TYPE: no_plot
+  DICT_KEY: SPASE>TemporalDescription:Exposure,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 obs_date: &obs_date_energy_independent
   <<: *default_int64
@@ -155,6 +164,7 @@ obs_date: &obs_date_energy_independent
   VAR_TYPE: data
   LABLAXIS: epoch
   DISPLAY_TYPE: image
+  DICT_KEY: SPASE>TemporalDescription:TimeSpan,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 # These copied metadata vars will allow for variables
 # to be either energy-dependent or independent.
