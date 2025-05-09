@@ -13,18 +13,7 @@ default_particle_attrs: &default_particle
   SCALEMAX: 1000
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
 
-default_energy_mean_attrs: &default_energy_mean
-  VAR_TYPE: support_data
-  DISPLAY_TYPE: no_plot
-  LABLAXIS: Energy
-  FILLVAL: -1.00E+31
-  VALIDMIN: 0
-  VALIDMAX: 100
-  FORMAT: F5.1
-  UNITS: MeV
-  SCALE_TYP: log
-
-default_energy_delta_attrs: &default_energy_delta
+default_energy_attrs: &default_energy
   VAR_TYPE: support_data
   DISPLAY_TYPE: no_plot
   LABLAXIS: Energy
@@ -72,115 +61,115 @@ azimuth:
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifer:DirectionAngle.AzimuthAngle
 
 h_energy_mean:
-  <<: *default_energy_mean
+  <<: *default_energy
   DEPEND_1: h_energy_mean
   CATDESC: Geometric mean energy for H
   FIELDNAM: H Energy
 
 he3_energy_mean:
-  <<: *default_energy_mean
+  <<: *default_energy
   DEPEND_1: he3_energy_mean
   CATDESC: Geometric mean energy for He3
   FIELDNAM: He3 Energy
 
 he4_energy_mean:
-  <<: *default_energy_mean
+  <<: *default_energy
   DEPEND_1: he4_energy_mean
   CATDESC: Geometric mean energy for He4
   FIELDNAM: He4 Energy
 
 he_energy_mean:
-  <<: *default_energy_mean
+  <<: *default_energy
   DEPEND_1: he_energy_mean
   CATDESC: Geometric mean energy for He
   FIELDNAM: He Energy
 
 c_energy_mean:
-  <<: *default_energy_mean
+  <<: *default_energy
   DEPEND_1: c_energy_mean
   CATDESC: Geometric mean energy for C
   FIELDNAM: C Energy
 
 n_energy_mean:
-  <<: *default_energy_mean
+  <<: *default_energy
   DEPEND_1: n_energy_mean
   CATDESC: Geometric mean energy for N
   FIELDNAM: N Energy
 
 o_energy_mean:
-  <<: *default_energy_mean
+  <<: *default_energy
   DEPEND_1: o_energy_mean
   CATDESC: Geometric mean energy for O
   FIELDNAM: O Energy
 
 ne_energy_mean:
-  <<: *default_energy_mean
+  <<: *default_energy
   DEPEND_1: ne_energy_mean
   CATDESC: Geometric mean energy for Ne
   FIELDNAM: Ne Energy
 
 na_energy_mean:
-  <<: *default_energy_mean
+  <<: *default_energy
   DEPEND_1: na_energy_mean
   CATDESC: Geometric mean energy for Na
   FIELDNAM: Na Energy
 
 mg_energy_mean:
-  <<: *default_energy_mean
+  <<: *default_energy
   DEPEND_1: mg_energy_mean
   CATDESC: Geometric mean energy for Mg
   FIELDNAM: Mg Energy
 
 si_energy_mean:
-  <<: *default_energy_mean
+  <<: *default_energy
   DEPEND_1: si_energy_mean
   CATDESC: Geometric mean energy for Si
   FIELDNAM: Si Energy
 
 s_energy_mean:
-  <<: *default_energy_mean
+  <<: *default_energy
   DEPEND_1: s_energy_mean
   CATDESC: Geometric mean energy for S
   FIELDNAM: S Energy
 
 al_energy_mean:
-  <<: *default_energy_mean
+  <<: *default_energy
   DEPEND_1: al_energy_mean
   CATDESC: Geometric mean energy for Al
   FIELDNAM: Al Energy
 
 ar_energy_mean:
-  <<: *default_energy_mean
+  <<: *default_energy
   DEPEND_1: ar_energy_mean
   CATDESC: Geometric mean energy for Ar
   FIELDNAM: Ar Energy
 
 ca_energy_mean:
-  <<: *default_energy_mean
+  <<: *default_energy
   DEPEND_1: ca_energy_mean
   CATDESC: Geometric mean energy for Ca
   FIELDNAM: Ca Energy
 
 fe_energy_mean:
-  <<: *default_energy_mean
+  <<: *default_energy
   DEPEND_1: fe_energy_mean
   CATDESC: Geometric mean energy for Fe
   FIELDNAM: Fe Energy
 
 ni_energy_mean:
-  <<: *default_energy_mean
+  <<: *default_energy
   DEPEND_1: ni_energy_mean
   CATDESC: Geometric mean energy for Ni
   FIELDNAM: Ni Energy
 
 nemgsi_energy_mean:
-  <<: *default_energy_mean
+  <<: *default_energy
   DEPEND_1: nemgsi_energy_mean
   CATDESC: Geometric mean energy for NeMgSi
   FIELDNAM: NeMgSi Energy
 
 cno_energy_mean:
-  <<: *default_energy_mean
+  <<: *default_energy
   DEPEND_1: cno_energy_mean
   CATDESC: Geometric mean energy for CNO
   FIELDNAM: CNO Energy
@@ -642,238 +631,238 @@ ni_summed_intensity:
 
 # Energy Delta Variables
 h_energy_delta_plus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: h_energy_mean
   CATDESC: H energy delta plus (maximum bin energy minus geometric mean)
   FIELDNAM: H energy delta plus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
 
 h_energy_delta_minus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: h_energy_mean
   CATDESC: H energy delta minus (geometric mean minus minimum bin energy)
   FIELDNAM: H energy delta minus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
 
 he3_energy_delta_plus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: he3_energy_mean
   CATDESC: He3 energy delta plus (maximum bin energy minus geometric mean)
   FIELDNAM: He3 energy delta plus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
 
 he3_energy_delta_minus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: he3_energy_mean
   CATDESC: He3 energy delta minus (geometric mean minus minimum bin energy)
   FIELDNAM: He3 energy delta minus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
 
 he4_energy_delta_plus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: he4_energy_mean
   CATDESC: He4 energy delta plus (maximum bin energy minus geometric mean)
   FIELDNAM: He4 energy delta plus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
 
 he4_energy_delta_minus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: he4_energy_mean
   CATDESC: He4 energy delta minus (geometric mean minus minimum bin energy)
   FIELDNAM: He4 energy delta minus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
 
 he_energy_delta_plus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: he_energy_mean
   CATDESC: He energy delta plus (maximum bin energy minus geometric mean)
   FIELDNAM: He energy delta plus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
 
 he_energy_delta_minus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: he_energy_mean
   CATDESC: He energy delta minus (geometric mean minus minimum bin energy)
   FIELDNAM: He energy delta minus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
 
 c_energy_delta_plus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: c_energy_mean
   CATDESC: C energy delta plus (maximum bin energy minus geometric mean)
   FIELDNAM: C energy delta plus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
 
 c_energy_delta_minus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: c_energy_mean
   CATDESC: C energy delta minus (geometric mean minus minimum bin energy)
   FIELDNAM: C energy delta minus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
 
 o_energy_delta_plus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: o_energy_mean
   CATDESC: O energy delta plus (maximum bin energy minus geometric mean)
   FIELDNAM: O energy delta plus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
 
 o_energy_delta_minus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: o_energy_mean
   CATDESC: O energy delta minus (geometric mean minus minimum bin energy)
   FIELDNAM: O energy delta minus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
 
 n_energy_delta_plus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: n_energy_mean
   CATDESC: N energy delta plus (maximum bin energy minus geometric mean)
   FIELDNAM: N energy delta plus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
 
 n_energy_delta_minus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: n_energy_mean
   CATDESC: N energy delta minus (geometric mean minus minimum bin energy)
   FIELDNAM: N energy delta minus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
 
 ne_energy_delta_plus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: ne_energy_mean
   CATDESC: Ne energy delta plus (maximum bin energy minus geometric mean)
   FIELDNAM: Ne energy delta plus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
 
 ne_energy_delta_minus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: ne_energy_mean
   CATDESC: Ne energy delta minus (geometric mean minus minimum bin energy)
   FIELDNAM: Ne energy delta minus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
 
 na_energy_delta_plus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: na_energy_mean
   CATDESC: Na energy delta plus (maximum bin energy minus geometric mean)
   FIELDNAM: Na energy delta plus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
 
 na_energy_delta_minus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: na_energy_mean
   CATDESC: Na energy delta minus (geometric mean minus minimum bin energy)
   FIELDNAM: Na energy delta minus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
 
 mg_energy_delta_plus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: mg_energy_mean
   CATDESC: Mg energy delta plus (maximum bin energy minus geometric mean)
   FIELDNAM: Mg energy delta plus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
 
 mg_energy_delta_minus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: mg_energy_mean
   CATDESC: Mg energy delta minus (geometric mean minus minimum bin energy)
   FIELDNAM: Mg energy delta minus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
 
 al_energy_delta_plus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: al_energy_mean
   CATDESC: Al energy delta plus (maximum bin energy minus geometric mean)
   FIELDNAM: Al energy delta plus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
 
 al_energy_delta_minus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: al_energy_mean
   CATDESC: Al energy delta minus (geometric mean minus minimum bin energy)
   FIELDNAM: Al energy delta minus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
 
 si_energy_delta_plus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: si_energy_mean
   CATDESC: Si energy delta plus (maximum bin energy minus geometric mean)
   FIELDNAM: Si energy delta plus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
 
 si_energy_delta_minus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: si_energy_mean
   CATDESC: Si energy delta minus (geometric mean minus minimum bin energy)
   FIELDNAM: Si energy delta minus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
 
 s_energy_delta_plus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: s_energy_mean
   CATDESC: S energy delta plus (maximum bin energy minus geometric mean)
   FIELDNAM: S energy delta plus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
 
 s_energy_delta_minus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: s_energy_mean
   CATDESC: S energy delta minus (geometric mean minus minimum bin energy)
   FIELDNAM: S energy delta minus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
 
 ar_energy_delta_plus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: ar_energy_mean
   CATDESC: Ar energy delta plus (maximum bin energy minus geometric mean)
   FIELDNAM: Ar energy delta plus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
 
 ar_energy_delta_minus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: ar_energy_mean
   CATDESC: Ar energy delta minus (geometric mean minus minimum bin energy)
   FIELDNAM: Ar energy delta minus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
 
 ca_energy_delta_plus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: ca_energy_mean
   CATDESC: Ca energy delta plus (maximum bin energy minus geometric mean)
   FIELDNAM: Ca energy delta plus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
 
 ca_energy_delta_minus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: ca_energy_mean
   CATDESC: Ca energy delta minus (geometric mean minus minimum bin energy)
   FIELDNAM: Ca energy delta minus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
 
 fe_energy_delta_plus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: fe_energy_mean
   CATDESC: Fe energy delta plus (maximum bin energy minus geometric mean)
   FIELDNAM: Fe energy delta plus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
 
 fe_energy_delta_minus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: fe_energy_mean
   CATDESC: Fe energy delta minus (geometric mean minus minimum bin energy)
   FIELDNAM: Fe energy delta minus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
 
 ni_energy_delta_plus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: ni_energy_mean
   CATDESC: Ni energy delta plus (maximum bin energy minus geometric mean)
   FIELDNAM: Ni energy delta plus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
 
 ni_energy_delta_minus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_1: ni_energy_mean
   CATDESC: Ni energy delta minus (geometric mean minus minimum bin energy)
   FIELDNAM: Ni energy delta minus
@@ -1665,28 +1654,28 @@ fe_macropixel_intensity:
 
 # Energy Delta Variables
 cno_energy_delta_plus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_0: cno_energy_mean
   CATDESC: C, N, O energy delta plus (maximum bin energy minus geometric mean)
   FIELDNAM: CNO energy delta plus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
 
 cno_energy_delta_minus:
-  <<: *default_energy_delta
+  <<: *default_energy
   DEPEND_0: cno_energy_mean
   CATDESC: C, N, O energy delta minus (geometric mean minus minimum bin energy)
   FIELDNAM: CNO energy delta minus
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Minimum
 
 nemgsi_energy_delta_plus:
-    <<: *default_energy_delta
+    <<: *default_energy
     DEPEND_0: nemgsi_energy_mean
     CATDESC: Ne, Mg, Si energy delta plus (maximum bin energy minus geometric mean)
     FIELDNAM: NeMgSi energy delta plus
     DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Maximum
 
 nemgsi_energy_delta_minus:
-    <<: *default_energy_delta
+    <<: *default_energy
     DEPEND_0: nemgsi_energy_mean
     CATDESC: Ne, Mg, Si energy delta minus (geometric mean minus minimum bin energy)
     FIELDNAM: NeMgSi energy delta minus
