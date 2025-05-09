@@ -97,11 +97,11 @@ class TestUltraL2:
                         "spice_reference_frame": map_frame,
                         "values_to_push_project": [
                             "counts",
-                            "sensitivity",
-                            "background_rates",
                         ],
                         "values_to_pull_project": [
                             "exposure_factor",
+                            "sensitivity",
+                            "background_rates",
                         ],
                         "nside": 32,
                         "nested": False,
@@ -165,11 +165,11 @@ class TestUltraL2:
                             "spice_reference_frame": "ECLIPJ2000",
                             "values_to_push_project": [
                                 "counts",
-                                "sensitivity",
-                                "background_rates",
                             ],
                             "values_to_pull_project": [
                                 "exposure_factor",
+                                "sensitivity",
+                                "background_rates",
                             ],
                             "spacing_deg": 2.0,
                         }
@@ -219,10 +219,10 @@ class TestUltraL2:
                 "spice_reference_frame": "ECLIPJ2000",
                 "values_to_push_project": [
                     "counts",
-                    "sensitivity",
                 ],
                 "values_to_pull_project": [
                     "exposure_factor",
+                    "sensitivity",
                 ],
                 "nside": 16,
                 "nested": True,

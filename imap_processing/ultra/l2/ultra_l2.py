@@ -23,11 +23,11 @@ DEFAULT_ULTRA_L2_MAP_STRUCTURE: ena_maps.RectangularSkyMap | ena_maps.HealpixSky
             "spice_reference_frame": "ECLIPJ2000",
             "values_to_push_project": [
                 "counts",
-                "sensitivity",
-                "background_rates",
             ],
             "values_to_pull_project": [
                 "exposure_factor",
+                "sensitivity",
+                "background_rates",
             ],
             "nside": 32,
             "nested": False,
@@ -45,12 +45,12 @@ DEFAULT_L2_HEALPIX_NESTED = False
 # These variables must always be present in each L1C dataset
 REQUIRED_L1C_VARIABLES_PUSH = [
     "counts",
-    "sensitivity",
-    "background_rates",
-    "obs_date",
 ]
 REQUIRED_L1C_VARIABLES_PULL = [
     "exposure_factor",
+    "sensitivity",
+    "background_rates",
+    "obs_date",
 ]
 
 # These variables are projected to the map as the mean of pointing set pixels value,
@@ -190,9 +190,13 @@ def generate_ultra_healpix_skymap(
     # Add additional data variables to the map
     output_map_structure.values_to_push_project.extend(
         [
+            "num_pointing_set_pixel_members",
+        ]
+    )
+    output_map_structure.values_to_pull_project.extend(
+        [
             "obs_date",
             "pointing_set_exposure_times_solid_angle",
-            "num_pointing_set_pixel_members",
         ]
     )
 
@@ -270,8 +274,8 @@ def generate_ultra_healpix_skymap(
         skymap.data_1d["pointing_set_exposure_times_solid_angle"]
     )
 
-    # TODO: Ask Ultra team about background rates - I think they should increase when
-    # binned to larger pixels, as I've done here, but that was never explicitly stated
+    # Background rates must be scaled by the ratio of the solid angles of the
+    # map pixel / pointing set pixel
     skymap.data_1d["background_rates"] *= skymap.solid_angle / pointing_set.solid_angle
 
     # Get the energy bin widths from a PointingSet (they will all be the same)
