@@ -1,7 +1,15 @@
 """Contains dataclasses to support IDEX processing."""
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, IntEnum
+
+
+class IDEXAPID(IntEnum):
+    """Create ENUM for apid."""
+
+    IDEX_SCIENCE = 1424
+    IDEX_CATLST = 1419
+    IDEX_EVT = 1418
 
 
 @dataclass

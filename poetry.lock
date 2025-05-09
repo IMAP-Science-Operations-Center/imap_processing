@@ -200,7 +200,7 @@ tests = ["astropy", "h5netcdf", "hypothesis", "netcdf4", "pytest (>=3.9)", "pyte
 name = "certifi"
 version = "2025.1.31"
 description = "Python package for providing Mozilla's CA Bundle."
-optional = true
+optional = false
 python-versions = ">=3.6"
 files = [
     {file = "certifi-2025.1.31-py3-none-any.whl", hash = "sha256:ca78db4565a652026a4db2bcdf68f2fb589ea80d0be70e03929ed730746b84fe"},
@@ -273,7 +273,7 @@ numpy = [
 name = "charset-normalizer"
 version = "3.4.1"
 description = "The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet."
-optional = true
+optional = false
 python-versions = ">=3.7"
 files = [
     {file = "charset_normalizer-3.4.1-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:91b36a978b5ae0ee86c394f5a54d6ef44db1de0815eb43de826d41d21e4af3de"},
@@ -602,7 +602,7 @@ license = ["ukkonen"]
 name = "idna"
 version = "3.10"
 description = "Internationalized Domain Names in Applications (IDNA)"
-optional = true
+optional = false
 python-versions = ">=3.6"
 files = [
     {file = "idna-3.10-py3-none-any.whl", hash = "sha256:946d195a0d259cbba61165e88e65941f16e9b36ea6ddb97f00452bae8b1287d3"},
@@ -625,14 +625,17 @@ files = [
 
 [[package]]
 name = "imap-data-access"
-version = "0.16.0"
+version = "0.24.0"
 description = "IMAP SDC Data Access"
 optional = false
 python-versions = "*"
 files = [
-    {file = "imap_data_access-0.16.0-py3-none-any.whl", hash = "sha256:81a72104c0b80a4314c2b081a748718f99bc10dc775db333c7c1b34ae56a46e1"},
-    {file = "imap_data_access-0.16.0.tar.gz", hash = "sha256:d87f3b038d84c259ba18a1a7a8f3e8c3873dd3625c270fbae9513d1e0184139e"},
+    {file = "imap_data_access-0.24.0-py3-none-any.whl", hash = "sha256:e3df17b169d431153c3b215266f62f0f7295574ff0a847eb91e95027755c5946"},
+    {file = "imap_data_access-0.24.0.tar.gz", hash = "sha256:a5f80521d8b38a9d05722ec2c7b2c770b1f6a5de4b105c6dd63579761b274ad3"},
 ]
+
+[package.dependencies]
+requests = ">=2.29"
 
 [package.extras]
 dev = ["imap_data_access[test]", "pre-commit", "ruff"]
@@ -1546,7 +1549,7 @@ typing-extensions = {version = ">=4.4.0", markers = "python_version < \"3.13\""}
 name = "requests"
 version = "2.32.3"
 description = "Python HTTP for Humans."
-optional = true
+optional = false
 python-versions = ">=3.8"
 files = [
     {file = "requests-2.32.3-py3-none-any.whl", hash = "sha256:70761cfe03c773ceb22aa2f671b4757976145175cdfca038c02654d061d6dcc6"},
@@ -2117,7 +2120,7 @@ files = [
 name = "urllib3"
 version = "2.3.0"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
-optional = true
+optional = false
 python-versions = ">=3.9"
 files = [
     {file = "urllib3-2.3.0-py3-none-any.whl", hash = "sha256:1cee9ad369867bfdbbb48b7dd50374c0967a0bb7710050facf0dd6911440e3df"},
@@ -2185,4 +2188,4 @@ tools = ["openpyxl", "pandas"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<4"
-content-hash = "797bab33ebc52d61b95fd234612fe9364d43426f79d9f6e1c312f2dcae7e1ef6"
+content-hash = "52848f093af8c3a8965b37a4f6cb4572668988c9ac58653982da81ac431debe5"

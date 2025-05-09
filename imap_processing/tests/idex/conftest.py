@@ -11,7 +11,10 @@ from imap_processing.idex.idex_l2a import idex_l2a
 
 TEST_DATA_PATH = imap_module_directory / "tests" / "idex" / "test_data"
 
-TEST_L0_FILE = TEST_DATA_PATH / "imap_idex_l0_raw_20231218_v001.pkts"
+TEST_L0_FILE_SCI = TEST_DATA_PATH / "imap_idex_l0_raw_20231218_v001.pkts"
+TEST_L0_FILE_EVT = TEST_DATA_PATH / "imap_idex_l0_raw_20250108_v001.pkts"  # 1418
+TEST_L0_FILE_CATLST = TEST_DATA_PATH / "imap_idex_l0_raw_20241206_v001.pkts"  # 1419
+
 L1A_EXAMPLE_FILE = TEST_DATA_PATH / "idex_l1a_validation_file.h5"
 L1B_EXAMPLE_FILE = TEST_DATA_PATH / "idex_l1b_validation_file.h5"
 
@@ -31,19 +34,43 @@ SPICE_ARRAYS = [
 ]
 
 
-@pytest.fixture(scope="module")
-def decom_test_data() -> xr.Dataset:
+@pytest.fixture
+def decom_test_data_sci() -> xr.Dataset:
     """Return a ``xarray`` dataset containing test data.
 
     Returns
     -------
     dataset : xarray.Dataset
-        A ``xarray`` dataset containing the test data
+        A ``xarray`` dataset containing the science test data
     """
-    return PacketParser(TEST_L0_FILE).data
+    return PacketParser(TEST_L0_FILE_SCI).data[0]
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
+def decom_test_data_catlst() -> xr.Dataset:
+    """List of ``xarray`` datasets containing the raw and derived catalog list data.
+
+    Returns
+    -------
+    dataset : list[xarray.Dataset]
+        A list of ``xarray`` dataset containing the catalog list summary datasets.
+    """
+    return PacketParser(TEST_L0_FILE_CATLST).data
+
+
+@pytest.fixture
+def decom_test_data_evt() -> xr.Dataset:
+    """List of ``xarray`` datasets containing the raw and derived event log data.
+
+    Returns
+    -------
+    dataset : list[xarray.Dataset]
+        A list of ``xarray`` datasets containing the event log datasets.
+    """
+    return PacketParser(TEST_L0_FILE_EVT).data
+
+
+@pytest.fixture
 def l1a_example_data(_download_test_data):
     """
     Pytest fixture to load example L1A data (produced by the IDEX team) for testing.
@@ -56,8 +83,8 @@ def l1a_example_data(_download_test_data):
     return load_hdf_file(L1A_EXAMPLE_FILE)
 
 
-@pytest.fixture(scope="module")
-def l2a_dataset(decom_test_data: xr.Dataset) -> xr.Dataset:
+@pytest.fixture
+def l2a_dataset(decom_test_data_sci: xr.Dataset) -> xr.Dataset:
     """Return a ``xarray`` dataset containing test data.
 
     Returns
@@ -66,17 +93,17 @@ def l2a_dataset(decom_test_data: xr.Dataset) -> xr.Dataset:
         A ``xarray`` dataset containing the test data
     """
     spin_phase_angles = xr.DataArray(
-        np.random.randint(0, 360, len(decom_test_data.epoch))
+        np.random.randint(0, 360, len(decom_test_data_sci.epoch))
     )
     with mock.patch(
         "imap_processing.idex.idex_l1b.get_spice_data",
         return_value={"spin_phase": spin_phase_angles},
     ):
-        dataset = idex_l2a(idex_l1b(decom_test_data))
+        dataset = idex_l2a(idex_l1b(decom_test_data_sci))
     return dataset
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def l1b_example_data(_download_test_data):
     """
     Pytest fixture to load example L1B data (produced by the IDEX team) for testing.

@@ -326,6 +326,192 @@
 				<xtce:LongDescription>Spare 3</xtce:LongDescription>
 			</xtce:Parameter>
 			<!-- Spacecraft -->
+			<!-- CoDICE LO -->
+			<xtce:Parameter name="COD_LO_ACQ" parameterTypeRef="uint32">
+				<xtce:LongDescription>CODICE LO Acquisition Time</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_STATUS" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Status</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_COUNTER" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Counter</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_00" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_00</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_01" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_01</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_02" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_02</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_03" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_03</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_04" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_04</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_05" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_05</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_06" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_06</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_07" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_07</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_08" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_08</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_09" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_09</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_10" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_10</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_11" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_11</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_12" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_12</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_13" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_13</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_DATA_14" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Data_14</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_LO_SPARE_0" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE LO Spare 0</xtce:LongDescription>
+			</xtce:Parameter>
+			<!-- CoDICE LO -->
+			<!-- CoDICE HI -->
+			<xtce:Parameter name="COD_HI_ACQ" parameterTypeRef="uint32">
+				<xtce:LongDescription>CODICE HI Acquisition Time</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_HI_STATUS" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE HI Status</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_HI_COUNTER" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE HI Status</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_HI_DATA_00" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE HI Data_00</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_HI_DATA_01" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE HI Data_01</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_HI_DATA_02" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE HI Data_02</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_HI_DATA_03" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE HI Data_03</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_HI_DATA_04" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE HI Data_04</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="COD_HI_SPARE_0" parameterTypeRef="uint8">
+				<xtce:LongDescription>CODICE HI Spare 0</xtce:LongDescription>
+			</xtce:Parameter>
+			<!-- CoDICE HI -->
+			<!-- SWAPI -->
+			<xtce:Parameter name="SWAPI_ACQ" parameterTypeRef="uint32">
+				<xtce:LongDescription>SWAPI Acquisition Time</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_FLAG" parameterTypeRef="swapi_validity_enum">
+				<xtce:LongDescription>
+                    Valid bit:
+                    '1' -- valid,
+                    '0' -- invalid
+                </xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_RESERVED" parameterTypeRef="uint15">
+				<xtce:LongDescription>SWAPI Instrument Reserved</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_SEQ_NUMBER" parameterTypeRef="uint4">
+				<xtce:LongDescription>Sequence Number in Table</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_VERSION" parameterTypeRef="uint4">
+				<xtce:LongDescription>Sweep Table Version Number</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_COIN_CNT0" parameterTypeRef="uint16">
+				<xtce:LongDescription>Coincidence Counts During the First 1/6 Sec</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_COIN_CNT1" parameterTypeRef="uint16">
+				<xtce:LongDescription>Coincidence Counts During the Second 1/6 Sec</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_COIN_CNT2" parameterTypeRef="uint16">
+				<xtce:LongDescription>Coincidence Counts During the Third 1/6 Sec</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_COIN_CNT3" parameterTypeRef="uint16">
+				<xtce:LongDescription>Coincidence Counts During the Fourth 1/6 Sec</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_COIN_CNT4" parameterTypeRef="uint16">
+				<xtce:LongDescription>Coincidence Counts During the Fifth 1/6 Sec</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_COIN_CNT5" parameterTypeRef="uint16">
+				<xtce:LongDescription>Coincidence Counts During the Sixth 1/6 Sec</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWAPI_SPARE" parameterTypeRef="uint8">
+				<xtce:LongDescription>Spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<!-- SWAPI -->
+			<!-- HIT -->
+			<xtce:Parameter name="HIT_MET" parameterTypeRef="uint32">
+				<xtce:LongDescription>Mission elapsed time</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_STATUS" parameterTypeRef="instrument_status">
+				<xtce:LongDescription>1 = nominal, 0 = off-nominal</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_SPARE" parameterTypeRef="uint1">
+				<xtce:LongDescription>Spare</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_SUBCOM" parameterTypeRef="uint6">
+				<xtce:LongDescription>Seconds counter</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_FAST_RATE_1" parameterTypeRef="uint16">
+				<xtce:LongDescription>4 second cadence</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_FAST_RATE_2" parameterTypeRef="uint16">
+				<xtce:LongDescription>4 second cadence</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_SLOW_RATE" parameterTypeRef="uint16">
+				<xtce:LongDescription>1 minute cadence</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_00" parameterTypeRef="uint32">
+				<xtce:LongDescription>event data 00</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_01" parameterTypeRef="uint32">
+				<xtce:LongDescription>event data 01</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_02" parameterTypeRef="uint32">
+				<xtce:LongDescription>event data 02</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_03" parameterTypeRef="uint32">
+				<xtce:LongDescription>event data 03</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_04" parameterTypeRef="uint32">
+				<xtce:LongDescription>event data 04</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_05" parameterTypeRef="uint32">
+				<xtce:LongDescription>event data 05</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_06" parameterTypeRef="uint32">
+				<xtce:LongDescription>event data 06</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_07" parameterTypeRef="uint32">
+				<xtce:LongDescription>event data 07</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_08" parameterTypeRef="uint32">
+				<xtce:LongDescription>event data 08</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_09" parameterTypeRef="uint32">
+				<xtce:LongDescription>event data 09</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="HIT_EVENT_DATA_10" parameterTypeRef="uint24">
+				<xtce:LongDescription>event data 10</xtce:LongDescription>
+			</xtce:Parameter>
+			<!-- HIT -->
 			<!-- SWE -->
 			<xtce:Parameter name="SWE_ACQ_SEC" parameterTypeRef="uint32">
 				<xtce:LongDescription>SWE Acquisition Time (sec)</xtce:LongDescription>
@@ -441,195 +627,6 @@
 				<xtce:LongDescription>MAG Data</xtce:LongDescription>
 			</xtce:Parameter>
 			<!-- MAG -->
-			<!-- SWAPI -->
-			<xtce:Parameter name="SWAPI_SHCOARSE" parameterTypeRef="uint32">
-				<xtce:LongDescription>SWAPI MET at End of Data Acquisition</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_ACQ" parameterTypeRef="uint32">
-				<xtce:LongDescription>SWAPI Acquisition Time</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_FLAG" parameterTypeRef="swapi_validity_enum">
-				<xtce:LongDescription>
-                    Valid bit:
-                    '1' -- valid,
-                    '0' -- invalid
-                </xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_RESERVED" parameterTypeRef="uint15">
-				<xtce:LongDescription>SWAPI Instrument Reserved</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_SEQ_NUMBER" parameterTypeRef="uint4">
-				<xtce:LongDescription>Sequence Number in Table</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_VERSION" parameterTypeRef="uint4">
-				<xtce:LongDescription>Sweep Table Version Number</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_COIN_CNT0" parameterTypeRef="uint16">
-				<xtce:LongDescription>Coincidence Counts During the First 1/6 Sec</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_COIN_CNT1" parameterTypeRef="uint16">
-				<xtce:LongDescription>Coincidence Counts During the Second 1/6 Sec</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_COIN_CNT2" parameterTypeRef="uint16">
-				<xtce:LongDescription>Coincidence Counts During the Third 1/6 Sec</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_COIN_CNT3" parameterTypeRef="uint16">
-				<xtce:LongDescription>Coincidence Counts During the Fourth 1/6 Sec</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_COIN_CNT4" parameterTypeRef="uint16">
-				<xtce:LongDescription>Coincidence Counts During the Fifth 1/6 Sec</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_COIN_CNT5" parameterTypeRef="uint16">
-				<xtce:LongDescription>Coincidence Counts During the Sixth 1/6 Sec</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="SWAPI_SPARE" parameterTypeRef="uint8">
-				<xtce:LongDescription>Spare</xtce:LongDescription>
-			</xtce:Parameter>
-			<!-- SWAPI -->
-			<!-- CoDICE HI -->
-			<xtce:Parameter name="COD_HI_ACQ" parameterTypeRef="uint32">
-				<xtce:LongDescription>CODICE HI Acquisition Time</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_HI_STATUS" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE HI Status</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_HI_COUNTER" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE HI Status</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_HI_DATA_00" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE HI Data_00</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_HI_DATA_01" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE HI Data_01</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_HI_DATA_02" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE HI Data_02</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_HI_DATA_03" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE HI Data_03</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_HI_DATA_04" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE HI Data_04</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_HI_SPARE_0" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE HI Spare 0</xtce:LongDescription>
-			</xtce:Parameter>
-			<!-- CoDICE HI -->
-			<!-- CoDICE LO -->
-			<xtce:Parameter name="COD_LO_ACQ" parameterTypeRef="uint32">
-				<xtce:LongDescription>CODICE LO Acquisition Time</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_STATUS" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE LO Status</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_COUNTER" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE LO Counter</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_00" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE LO Data_00</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_01" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE LO Data_01</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_02" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE LO Data_02</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_03" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE LO Data_03</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_04" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE LO Data_04</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_05" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE LO Data_05</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_06" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE LO Data_06</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_07" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE LO Data_07</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_08" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE LO Data_08</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_09" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE LO Data_09</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_10" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE LO Data_10</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_11" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE LO Data_11</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_12" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE LO Data_12</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_13" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE LO Data_13</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_DATA_14" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE LO Data_14</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="COD_LO_SPARE_0" parameterTypeRef="uint8">
-				<xtce:LongDescription>CODICE LO Spare 0</xtce:LongDescription>
-			</xtce:Parameter>
-			<!-- CoDICE LO -->
-			<!-- HIT -->
-			<xtce:Parameter name="HIT_MET" parameterTypeRef="uint32">
-				<xtce:LongDescription>Mission elapsed time</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="HIT_STATUS" parameterTypeRef="instrument_status">
-				<xtce:LongDescription>1 = nominal, 0 = off-nominal</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="HIT_SPARE" parameterTypeRef="uint1">
-				<xtce:LongDescription>Spare</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="HIT_SUBCOM" parameterTypeRef="uint6">
-				<xtce:LongDescription>Seconds counter</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="HIT_FAST_RATE_1" parameterTypeRef="uint16">
-				<xtce:LongDescription>4 second cadence</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="HIT_FAST_RATE_2" parameterTypeRef="uint16">
-				<xtce:LongDescription>4 second cadence</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="HIT_SLOW_RATE" parameterTypeRef="uint16">
-				<xtce:LongDescription>1 minute cadence</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="HIT_EVENT_DATA_00" parameterTypeRef="uint32">
-				<xtce:LongDescription>event data 00</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="HIT_EVENT_DATA_01" parameterTypeRef="uint32">
-				<xtce:LongDescription>event data 01</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="HIT_EVENT_DATA_02" parameterTypeRef="uint32">
-				<xtce:LongDescription>event data 02</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="HIT_EVENT_DATA_03" parameterTypeRef="uint32">
-				<xtce:LongDescription>event data 03</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="HIT_EVENT_DATA_04" parameterTypeRef="uint32">
-				<xtce:LongDescription>event data 04</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="HIT_EVENT_DATA_05" parameterTypeRef="uint32">
-				<xtce:LongDescription>event data 05</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="HIT_EVENT_DATA_06" parameterTypeRef="uint32">
-				<xtce:LongDescription>event data 06</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="HIT_EVENT_DATA_07" parameterTypeRef="uint32">
-				<xtce:LongDescription>event data 07</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="HIT_EVENT_DATA_08" parameterTypeRef="uint32">
-				<xtce:LongDescription>event data 08</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="HIT_EVENT_DATA_09" parameterTypeRef="uint32">
-				<xtce:LongDescription>event data 09</xtce:LongDescription>
-			</xtce:Parameter>
-			<xtce:Parameter name="HIT_EVENT_DATA_10" parameterTypeRef="uint24">
-				<xtce:LongDescription>event data 10</xtce:LongDescription>
-			</xtce:Parameter>
-			<!-- HIT -->
 		</xtce:ParameterSet>
 		<!-- End metadata -->
 		<xtce:ContainerSet>
@@ -683,38 +680,6 @@
 					<xtce:ParameterRefEntry parameterRef="SC_AUTONOMY"/>
 					<xtce:ParameterRefEntry parameterRef="SC_SPARE_3"/>
 					<!-- Spacecraft -->
-					<!-- MAG -->
-					<xtce:ParameterRefEntry parameterRef="MAG_ACQ_TM_COARSE"/>
-					<xtce:ParameterRefEntry parameterRef="MAG_ACQ_TM_FINE"/>
-					<xtce:ParameterRefEntry parameterRef="MAG_STATUS"/>
-					<xtce:ParameterRefEntry parameterRef="MAG_DATA"/>
-					<!-- MAG -->
-					<!-- SWAPI -->
-					<xtce:ParameterRefEntry parameterRef="SWAPI_SHCOARSE"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_ACQ"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_FLAG"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_RESERVED"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_SEQ_NUMBER"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_VERSION"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_CNT0"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_CNT1"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_CNT2"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_CNT3"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_CNT4"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_CNT5"/>
-					<xtce:ParameterRefEntry parameterRef="SWAPI_SPARE"/>
-					<!-- SWAPI -->
-					<!-- CoDICE HI -->
-					<xtce:ParameterRefEntry parameterRef="COD_HI_ACQ"/>
-					<xtce:ParameterRefEntry parameterRef="COD_HI_STATUS"/>
-					<xtce:ParameterRefEntry parameterRef="COD_HI_COUNTER"/>
-					<xtce:ParameterRefEntry parameterRef="COD_HI_DATA_00"/>
-					<xtce:ParameterRefEntry parameterRef="COD_HI_DATA_01"/>
-					<xtce:ParameterRefEntry parameterRef="COD_HI_DATA_02"/>
-					<xtce:ParameterRefEntry parameterRef="COD_HI_DATA_03"/>
-					<xtce:ParameterRefEntry parameterRef="COD_HI_DATA_04"/>
-					<xtce:ParameterRefEntry parameterRef="COD_HI_SPARE_0"/>
-					<!-- CoDICE HI -->
 					<!-- CoDICE LO -->
 					<xtce:ParameterRefEntry parameterRef="COD_LO_ACQ"/>
 					<xtce:ParameterRefEntry parameterRef="COD_LO_STATUS"/>
@@ -736,6 +701,31 @@
 					<xtce:ParameterRefEntry parameterRef="COD_LO_DATA_14"/>
 					<xtce:ParameterRefEntry parameterRef="COD_LO_SPARE_0"/>
 					<!-- CoDICE LO -->
+					<!-- CoDICE HI -->
+					<xtce:ParameterRefEntry parameterRef="COD_HI_ACQ"/>
+					<xtce:ParameterRefEntry parameterRef="COD_HI_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="COD_HI_COUNTER"/>
+					<xtce:ParameterRefEntry parameterRef="COD_HI_DATA_00"/>
+					<xtce:ParameterRefEntry parameterRef="COD_HI_DATA_01"/>
+					<xtce:ParameterRefEntry parameterRef="COD_HI_DATA_02"/>
+					<xtce:ParameterRefEntry parameterRef="COD_HI_DATA_03"/>
+					<xtce:ParameterRefEntry parameterRef="COD_HI_DATA_04"/>
+					<xtce:ParameterRefEntry parameterRef="COD_HI_SPARE_0"/>
+					<!-- CoDICE HI -->
+					<!-- SWAPI -->
+					<xtce:ParameterRefEntry parameterRef="SWAPI_ACQ"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_FLAG"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_RESERVED"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_SEQ_NUMBER"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_VERSION"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_CNT0"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_CNT1"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_CNT2"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_CNT3"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_CNT4"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_COIN_CNT5"/>
+					<xtce:ParameterRefEntry parameterRef="SWAPI_SPARE"/>
+					<!-- SWAPI -->
 					<!-- HIT -->
 					<xtce:ParameterRefEntry parameterRef="HIT_MET"/>
 					<xtce:ParameterRefEntry parameterRef="HIT_STATUS"/>
@@ -791,6 +781,12 @@
 					<xtce:ParameterRefEntry parameterRef="SWE_CEM7_E3"/>
 					<xtce:ParameterRefEntry parameterRef="SWE_CEM7_E4"/>
 					<!-- SWE -->
+					<!-- MAG -->
+					<xtce:ParameterRefEntry parameterRef="MAG_ACQ_TM_COARSE"/>
+					<xtce:ParameterRefEntry parameterRef="MAG_ACQ_TM_FINE"/>
+					<xtce:ParameterRefEntry parameterRef="MAG_STATUS"/>
+					<xtce:ParameterRefEntry parameterRef="MAG_DATA"/>
+					<!-- MAG -->
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 		</xtce:ContainerSet>

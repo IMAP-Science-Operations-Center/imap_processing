@@ -29,6 +29,9 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
 )
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
+FILLVAL_UINT8 = 255
+FILLVAL_FLOAT32 = -1.0e31
+
 
 def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     """
@@ -75,7 +78,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
         {key: de_dataset[dataset_key] for key, dataset_key in zip(keys, dataset_keys)}
     )
 
-    valid_mask = de_dataset["start_type"].data != np.iinfo(np.int64).min
+    valid_mask = de_dataset["start_type"].data != FILLVAL_UINT8
     ph_mask = np.isin(
         de_dataset["stop_type"].data, [StopType.Top.value, StopType.Bottom.value]
     )
@@ -86,26 +89,28 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     ssd_indices = np.nonzero(valid_mask & ssd_mask)[0]
 
     # Instantiate arrays
-    xf = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    yf = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    xb = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    yb = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    xc = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    d = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
-    r = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    phi = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    theta = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    tof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    etof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    ctof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    magnitude_v = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    energy = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    species_bin = np.full(len(de_dataset["epoch"]), "UNKNOWN", dtype="U10")
-    t2 = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    event_times = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
-    spin_starts = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
-    spin_period_sec = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
-    start_type = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.uint8)
+    xf = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    yf = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    xb = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    yb = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    xc = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    d = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
+    r = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    phi = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    theta = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    tof = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    etof = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    ctof = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    magnitude_v = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    energy = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    species_bin = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
+    t2 = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    event_times = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
+    spin_starts = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
+    spin_period_sec = np.full(
+        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64
+    )
+    start_type = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
 
     xf[valid_indices] = get_front_x_position(
         de_dataset["start_type"].data[valid_indices],

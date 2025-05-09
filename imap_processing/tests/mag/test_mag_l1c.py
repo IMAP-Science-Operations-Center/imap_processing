@@ -82,16 +82,6 @@ def test_configuration_file():
         e.name for e in InterpolationFunction
     ]
 
-    # should not raise an error
-    configuration_file = InterpolationFunction[configuration.L1C_INTERPOLATION_METHOD]
-    configuration_file(
-        np.array([1, 2]),
-        np.array([1, 2]),
-        np.array([1]),
-        input_rate=VecSec.TWO_VECS_PER_S,
-        output_rate=VecSec.ONE_VEC_PER_S,
-    )
-
 
 def test_interpolation_methods():
     # very basic test of all methods

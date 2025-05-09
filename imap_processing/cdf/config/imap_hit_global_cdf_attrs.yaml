@@ -38,7 +38,7 @@ imap_hit_l1b_hk:
 
 imap_hit_l1b_standard-rates:
     <<: *instrument_base
-    Data_type: L1B_rates>Level-1B Standard Rates
+    Data_type: L1B_standard-rates>Level-1B Standard Rates
     Logical_source: imap_hit_l1b_standard-rates
     Logical_source_description: IMAP Mission HIT Instrument Level-1B Standard Rates Data.
 
@@ -58,19 +58,19 @@ imap_hit_l1b_sectored-rates:
 
 imap_hit_l2_standard-intensity:
     <<: *instrument_base
-    Data_type: L2_rates>Level-2 Standard Intensity
+    Data_type: L2_standard-intensity>Level-2 Standard Intensity
     Logical_source: imap_hit_l2_standard-intensity
     Logical_source_description: IMAP Mission HIT Instrument Level-2 Standard Intensity Data.
 
 imap_hit_l2_summed-intensity:
     <<: *instrument_base
-    Data_type: L2_summed-rates>Level-2 Summed Intensity
+    Data_type: L2_summed-intensity>Level-2 Summed Intensity
     Logical_source: imap_hit_l2_summed-intensity
     Logical_source_description: IMAP Mission HIT Instrument Level-2 Summed Intensity Data.
 
-imap_hit_l2_sectored-intensity:
+imap_hit_l2_macropixel-intensity:
     <<: *instrument_base
-    Data_type: L2_sectored-rates>Level-2 Macro Pixel Intensity
+    Data_type: L2_macro-pixel-intensity>Level-2 Macro Pixel Intensity
     Logical_source: imap_hit_l2_macropixel-intensity
     Logical_source_description: IMAP Mission HIT Instrument Level-2 Macro Pixel Intensity Data.
 

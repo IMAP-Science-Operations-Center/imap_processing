@@ -50,6 +50,7 @@ def idex_l2b(l2a_dataset: xr.Dataset) -> xr.Dataset:
     # create the attribute manager for this data level
     idex_attrs = ImapCdfAttributes()
     idex_attrs.add_instrument_global_attrs(instrument="idex")
+    idex_attrs.add_instrument_variable_attrs("idex", "l2b")
 
     epoch_da = xr.DataArray(
         l2a_dataset["epoch"],
@@ -76,7 +77,9 @@ def idex_l2b(l2a_dataset: xr.Dataset) -> xr.Dataset:
         )
 
     spin_phase_quadrants = round_spin_phases(l2a_dataset["spin_phase"])
-    # TODO add variable attributes
+    spin_phase_quadrants.attrs.update(
+        idex_attrs.get_variable_attributes("spin_phase_quadrants")
+    )
     l2b_dataset["spin_phase_quadrants"] = spin_phase_quadrants
 
     # Get the time of impact array (in day of year)
@@ -85,6 +88,7 @@ def idex_l2b(l2a_dataset: xr.Dataset) -> xr.Dataset:
         name="impact_day_of_year",
         data=impact_day_of_year,
         dims="epoch",
+        attrs=idex_attrs.get_variable_attributes("impact_day_of_year"),
     )
 
     logger.info("IDEX L2B science data processing completed.")

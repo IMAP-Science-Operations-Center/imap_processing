@@ -198,6 +198,32 @@ def test_get_tof_window_mask():
     np.testing.assert_array_equal(expected_mask, window_mask)
 
 
+def test_pset_backgrounds():
+    """Test coverage for pset_backgrounds function."""
+    # Create some fake coordinates to use
+    n_epoch = 1
+    n_energy = 9
+    n_cal_prod = 2
+    n_spin_bins = 3600
+    pset_coords = {
+        "epoch": xr.DataArray(np.arange(n_epoch)),
+        "esa_energy_step": xr.DataArray(np.arange(n_energy) + 1),
+        "calibration_prod": xr.DataArray(np.arange(n_cal_prod)),
+        "spin_angle_bin": xr.DataArray(np.arange(n_spin_bins)),
+    }
+    backgrounds_vars = hi_l1c.pset_backgrounds(pset_coords)
+    assert "background_rates" in backgrounds_vars
+    np.testing.assert_array_equal(
+        backgrounds_vars["background_rates"].data,
+        np.zeros((n_epoch, n_energy, n_cal_prod, n_spin_bins)),
+    )
+    assert "background_rates_uncertainty" in backgrounds_vars
+    np.testing.assert_array_equal(
+        backgrounds_vars["background_rates_uncertainty"].data,
+        np.ones((n_epoch, n_energy, n_cal_prod, n_spin_bins)),
+    )
+
+
 @mock.patch("imap_processing.hi.l1c.hi_l1c.get_spin_data", return_value=None)
 @mock.patch("imap_processing.hi.l1c.hi_l1c.get_instrument_spin_phase")
 @mock.patch("imap_processing.hi.l1c.hi_l1c.get_de_clock_ticks_for_esa_step")

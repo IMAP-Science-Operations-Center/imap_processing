@@ -14,7 +14,8 @@ from imap_processing.lo.l1b.tof_conversions import (
     TOF2_CONV,
     TOF3_CONV,
 )
-from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.spice.geometry import SpiceFrame, instrument_pointing
+from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 
 
 def lo_l1b(dependencies: dict) -> list[Path]:
@@ -76,7 +77,11 @@ def lo_l1b(dependencies: dict) -> list[Path]:
         l1b_de = identify_species(l1b_de)
         # set the badtimes
         l1b_de = set_bad_times(l1b_de)
-        # TODO: set the direction for each direct event
+        # set the pointing direction for each direct event
+        l1b_de = set_pointing_direction(l1b_de)
+        # calculate and set the pointing bin based on the spin phase
+        # pointing bin is 3600 x 40 bins
+        l1b_de = set_pointing_bin(l1b_de)
 
     return [l1b_de]
 
@@ -629,6 +634,99 @@ def set_bad_times(l1b_de: xr.Dataset) -> xr.Dataset:
         dims=["epoch"],
         # TODO: Add to yaml
         # attrs=attr_mgr.get_variable_attributes("bad_times"),
+    )
+
+    return l1b_de
+
+
+def set_pointing_direction(l1b_de: xr.Dataset) -> xr.Dataset:
+    """
+    Set the pointing direction for each direct event.
+
+    The pointing direction is determined using the SPICE instrument pointing
+    function. The pointing direction are two 1D vectors in units of degrees
+    for longitude and latitude sharing the same epoch dimension.
+
+    Parameters
+    ----------
+    l1b_de : xarray.Dataset
+        The L1B DE dataset.
+
+    Returns
+    -------
+    l1b_de : xarray.Dataset
+        The L1B DE dataset with the pointing direction added.
+    """
+    # Get the pointing bin for each DE
+    et = ttj2000ns_to_et(l1b_de["epoch"])
+
+    direction = instrument_pointing(et, SpiceFrame.IMAP_LO_BASE, SpiceFrame.IMAP_DPS)
+    # TODO: Need to ask Lo what to do if a latitude is outside of the
+    # +/-2 degree range. Is that possible?
+    l1b_de["direction_lon"] = xr.DataArray(
+        direction[:, 0],
+        dims=["epoch"],
+        # TODO: Add direction_lon to YAML file
+        # attrs=attr_mgr.get_variable_attributes("direction_lon"),
+    )
+
+    l1b_de["direction_lat"] = xr.DataArray(
+        direction[:, 1],
+        dims=["epoch"],
+        # TODO: Add direction_lat to YAML file
+        # attrs=attr_mgr.get_variable_attributes("direction_lat"),
+    )
+
+    return l1b_de
+
+
+def set_pointing_bin(l1b_de: xr.Dataset) -> xr.Dataset:
+    """
+    Set the pointing bin for each direct event.
+
+    The pointing bins are defined as 3600 bins for longitude and 40 bins for latitude.
+    Each bin is 0.1 degrees. The bins are defined as follows:
+    Longitude bins: -180 to 180 degrees
+    Latitude bins: -2 to 2 degrees
+
+    Parameters
+    ----------
+    l1b_de : xarray.Dataset
+        The L1B DE dataset.
+
+    Returns
+    -------
+    l1b_de : xarray.Dataset
+        The L1B DE dataset with the pointing bins added.
+    """
+    # First column: latitudes
+    lats = l1b_de["direction_lat"]
+    # Second column: longitudes
+    lons = l1b_de["direction_lon"]
+
+    # Define bin edges
+    # 3600 bins, 0.1° each
+    lon_bins = np.linspace(-180, 180, 3601)
+    # 40 bins, 0.1° each
+    lat_bins = np.linspace(-2, 2, 41)
+
+    # put the lons and lats into bins
+    # shift to 0-based index
+    lon_bins = np.digitize(lons, lon_bins) - 1
+    lat_bins = np.digitize(lats, lat_bins) - 1
+
+    l1b_de["pointing_bin_lon"] = xr.DataArray(
+        lon_bins,
+        dims=["epoch"],
+        # TODO: Add pointing_bin_lon to YAML file
+        # attrs=attr_mgr.get_variable_attributes("pointing_bin_lon"),
+    )
+
+    l1b_de["pointing_bin_lat"] = xr.DataArray(
+        lat_bins,
+        dims=["epoch"],
+        # TODO: Add point_bin_lat to YAML file
+        # attrs=attr_mgr.get_variable_attributes("pointing_bin_lat"),
     )
 
     return l1b_de

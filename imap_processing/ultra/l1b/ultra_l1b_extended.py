@@ -572,7 +572,7 @@ def get_de_energy_kev(v: np.ndarray, species: np.ndarray) -> NDArray:
     # Compute the sum of squares.
     v2 = np.sum(vv**2, axis=1)
 
-    index_hydrogen = np.where(species == "H")
+    index_hydrogen = np.where(species == 1)
     energy = np.full_like(v2, np.nan)
 
     # 1/2 mv^2 in Joules, convert to keV
@@ -670,7 +670,7 @@ def get_energy_ssd(de_dataset: xarray.Dataset, ssd: np.ndarray) -> NDArray[np.fl
     energy_norm : np.ndarray
         Energy measured using the SSD.
     """
-    ssd_indices = np.where(de_dataset["stop_type"].data >= 8)[0]
+    ssd_indices = np.nonzero(np.isin(de_dataset["stop_type"], StopType.SSD.value))[0]
     energy = de_dataset["energy_ph"].data[ssd_indices]
 
     composite_energy = np.empty(len(energy), dtype=np.float64)
@@ -722,9 +722,11 @@ def get_ctof(
 
     # Multiply times 100 to convert to hundredths of a millimeter.
     ctof = tof * dmin_ctof * 100 / path_length
+    magnitude_v = np.full(len(ctof), -1.0e31, dtype=np.float32)
 
-    # Convert from mm/0.1ns to km/s.
-    magnitude_v = dmin_ctof / np.abs(ctof) * 1e4
+    # Convert from mm/0.1ns to km/s for valid ctof values
+    valid_mask = ctof >= 0
+    magnitude_v[valid_mask] = dmin_ctof / ctof[valid_mask] * 1e4
 
     return ctof, magnitude_v
 
@@ -759,13 +761,13 @@ def determine_species(tof: np.ndarray, path_length: np.ndarray, type: str) -> ND
     # Event TOF normalization to Z axis
     ctof, _ = get_ctof(tof, path_length, type)
     # Initialize bin array
-    species_bin = np.full(len(ctof), "UNKNOWN", dtype="U10")
+    species_bin = np.full(len(ctof), 255, dtype=np.uint8)
 
-    # Assign "H" to bins where cTOF is within the specified range
+    # Assign Species 1 ("H") to bins where cTOF is within the specified range
     species_bin[
         (ctof > UltraConstants.CTOF_SPECIES_MIN)
         & (ctof < UltraConstants.CTOF_SPECIES_MAX)
-    ] = "H"
+    ] = 1
 
     return species_bin
 

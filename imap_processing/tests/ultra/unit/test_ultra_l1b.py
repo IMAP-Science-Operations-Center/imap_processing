@@ -42,6 +42,10 @@ def mock_data_l1b_de_dict():
 
 @pytest.fixture
 def mock_data_l1b_extendedspin_dict():
+    epoch = np.array(
+        [760591786368000000, 760591787368000000, 760591788368000000],
+        dtype="datetime64[ns]",
+    )
     spin = np.array(
         [0, 1, 2],
         dtype="uint32",
@@ -53,6 +57,7 @@ def mock_data_l1b_extendedspin_dict():
     spin_start_time = np.array([0, 1, 2], dtype="uint64")
     quality = np.zeros((2, 3), dtype="uint16")
     data_dict = {
+        "epoch": epoch,
         "spin_number": spin,
         "energy_bin_geometric_mean": energy,
         "spin_start_time": spin_start_time,
@@ -103,7 +108,7 @@ def test_ultra_l1b(l1b_de_dataset):
 
 def test_cdf_de(l1b_de_dataset):
     """Tests that CDF file is created and contains same attributes as xarray."""
-    test_data_path = write_cdf(l1b_de_dataset[0], istp=False)
+    test_data_path = write_cdf(l1b_de_dataset[0], istp=True)
     assert test_data_path.exists()
     assert test_data_path.name == "imap_ultra_l1b_45sensor-de_20240207_v999.cdf"
 
@@ -127,11 +132,27 @@ def test_ultra_l1b_extendedspin(l1b_extendedspin_dataset):
 
 def test_cdf_extendedspin(l1b_extendedspin_dataset):
     """Tests that CDF file is created and contains same attributes as xarray."""
-    test_data_path = write_cdf(l1b_extendedspin_dataset[0], istp=False)
+    test_data_path = write_cdf(l1b_extendedspin_dataset[0], istp=True)
     assert test_data_path.exists()
     assert (
-        test_data_path.name == "imap_ultra_l1b_45sensor-extendedspin_20000101_v999.cdf"
+        test_data_path.name == "imap_ultra_l1b_45sensor-extendedspin_20240207_v999.cdf"
     )
+
+
+def test_cdf_cullingmask(l1b_extendedspin_dataset):
+    """Tests that CDF file is created and contains same attributes as xarray."""
+    test_data_path = write_cdf(l1b_extendedspin_dataset[1], istp=True)
+    assert test_data_path.exists()
+    assert (
+        test_data_path.name == "imap_ultra_l1b_45sensor-cullingmask_20240207_v999.cdf"
+    )
+
+
+def test_cdf_badtimes(l1b_extendedspin_dataset):
+    """Tests that CDF file is created and contains same attributes as xarray."""
+    test_data_path = write_cdf(l1b_extendedspin_dataset[2], istp=True)
+    assert test_data_path.exists()
+    assert test_data_path.name == "imap_ultra_l1b_45sensor-badtimes_20240207_v999.cdf"
 
 
 def test_ultra_l1b_error(mock_data_l1a_rates_dict):

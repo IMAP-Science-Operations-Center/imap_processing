@@ -1,5 +1,7 @@
 """Various utility functions to support creation of CDF files."""
 
+from __future__ import annotations
+
 import logging
 import re
 import warnings
@@ -19,14 +21,14 @@ logger = logging.getLogger(__name__)
 
 
 def load_cdf(
-    file_path: Path, remove_xarray_attrs: bool = True, **kwargs: dict
+    file_path: Path | str, remove_xarray_attrs: bool = True, **kwargs: dict
 ) -> xr.Dataset:
     """
     Load the contents of a CDF file into an ``xarray`` dataset.
 
     Parameters
     ----------
-    file_path : Path or ImapFilePath
+    file_path : Path or ImapFilePath or str
         The path to the CDF file or ImapFilePath object.
     remove_xarray_attrs : bool
         Whether to remove the xarray attributes that get injected by the
@@ -73,8 +75,14 @@ def write_cdf(
     fills in the final attributes, and converts the whole dataset to a CDF.
     The date in the file name is determined by the time of the first epoch in the
     xarray Dataset.  The first 3 file name fields (mission, instrument, level) are
-    determined by the "Logical_source" attribute.  The version is determiend from
+    determined by the "Logical_source" attribute.  The version is determined from
     "Data_version".
+
+    The start_date and repointing attributes in the dataset are used to override the
+    computed values.
+
+    If these are not included, start_date is generated from the first epoch in the
+    dataset and repointing is not included if the attribute is not present or None.
 
     Parameters
     ----------
@@ -94,8 +102,12 @@ def write_cdf(
     # Convert J2000 epoch referenced data to datetime64
     # TODO: This implementation of epoch to time string results in an error of
     #       5 seconds due to 5 leap-second occurrences since the J2000 epoch.
-    dt64 = TTJ2000_EPOCH + dataset["epoch"].values[0].astype("timedelta64[ns]")
-    start_time = np.datetime_as_string(dt64, unit="D").replace("-", "")
+    # TODO: Create a ttj2000_to_datetime function to handle this conversion
+    start_date = dataset.attrs.get("Start_date", None)
+    if start_date is None:
+        # If no start time is included, then use the first epoch in the dataset
+        dt64 = TTJ2000_EPOCH + dataset["epoch"].values[0].astype("timedelta64[ns]")
+        start_date = np.datetime_as_string(dt64, unit="D").replace("-", "")
 
     version = dataset.attrs.get("Data_version", None)
     if version is None:
@@ -110,13 +122,15 @@ def write_cdf(
         )
 
     repointing = dataset.attrs.get("Repointing", None)
+
+    repointing_int = int(repointing[-5:]) if repointing else None
     science_file = imap_data_access.ScienceFilePath.generate_from_inputs(
         instrument=instrument,
         data_level=data_level,
         descriptor=descriptor,
-        start_time=start_time,
+        start_time=start_date,
         version=version,
-        repointing=repointing,
+        repointing=repointing_int,
     )
     file_path = Path(science_file.construct_path())
     if not file_path.parent.exists():

@@ -245,10 +245,6 @@ class DirectEventL1B:
     hv_test_in_progress: InitVar[np.double]
     pulse_test_in_progress: InitVar[np.double]
     memory_error_detected: InitVar[np.double]
-
-    # pkts_file_name: str # TODO: Add once L1A questions are answered
-    # l1a_file_name: str # TODO: Add once L1A questions are answered
-    # ancillary_data_files: np.ndarray # TODO: Add once L1A questions are answered
     # The following variables are created from the InitVar data
     de_flags: Optional[np.ndarray] = field(init=False, default=None)
     # TODO: First two values of DE are sec/subsec

@@ -58,7 +58,7 @@ default_int32_attrs: &default_int32
 
 default_float32_attrs: &default_float32
   <<: *default
-  FILLVAL: .NAN
+  FILLVAL: -1.0e31
   FORMAT: F12.6
   VALIDMIN: -3.4028235e+38
   VALIDMAX: 3.4028235e+38
@@ -213,13 +213,11 @@ energy_heliosphere:
   UNITS: keV
 
 species:
-  <<: *default
+  <<: *default_uint8
   DISPLAY_TYPE: no_plot
   CATDESC: Label species type.
   FIELDNAM: Label species type.
-  FILLVAL: "UNKNOWN"
-  FORMAT: A8
-  dtype: str
+  LABLAXIS: species
   UNITS: " "
 
 front_back_distance:

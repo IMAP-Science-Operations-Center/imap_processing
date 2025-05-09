@@ -3,6 +3,7 @@
 import numpy as np
 import pytest
 
+from imap_processing import imap_module_directory
 from imap_processing.quality_flags import ImapAttitudeUltraFlags, ImapRatesUltraFlags
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.ultra_l1b_culling import (
@@ -13,6 +14,8 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     get_n_sigma,
     get_spin_data,
 )
+
+TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
 @pytest.fixture

@@ -117,73 +117,79 @@ imap_codice_l1b_hskp:
     Logical_source: imap_codice_l1b_hskp
     Logical_source_description: IMAP Mission CoDICE Instrument Level-1B Housekeeping Data.
 
-imap_codice_l1b_hi_counters_aggregated:
+imap_codice_l1b_hi-counters-aggregated:
     <<: *instrument_base
     Data_type: L1B_hi-counters-aggregated->Level-1B Hi Aggregated Instrument Rates Data
     Logical_source: imap_codice_l1b_hi-counters-aggregated
     Logical_source_description: IMAP Mission CoDICE Hi Level-1B Aggregated Instrument Rates Data.
 
-imap_codice_l1b_hi_counters_singles:
+imap_codice_l1b_hi-counters-singles:
     <<: *instrument_base
     Data_type: L1B_hi-counters-singles->Level-1B Hi Single Instrument Rates Data
     Logical_source: imap_codice_l1b_hi-counters-singles
     Logical_source_description: IMAP Mission CoDICE Hi Level-1B Single Instrument Rates Data.
 
-imap_codice_l1b_hi_omni:
+imap_codice_l1b_hi-omni:
     <<: *instrument_base
     Data_type: L1B_hi-omni->Level-1B Hi Omnidirectional Data
     Logical_source: imap_codice_l1b_hi-omni
     Logical_source_description: IMAP Mission CoDICE Hi Level-1B Omnidirectional Data.
 
-imap_codice_l1b_hi_sectored:
+imap_codice_l1b_hi-priority:
+    <<: *instrument_base
+    Data_type: L1B_hi-priority->Level-1B Hi Priority Data
+    Logical_source: imap_codice_l1b_hi-priority
+    Logical_source_description: IMAP Mission CoDICE Hi Level-1B Priority Data.
+
+imap_codice_l1b_hi-sectored:
     <<: *instrument_base
     Data_type: L1B_hi-sectored->Level-1B Hi Sectored Data
     Logical_source: imap_codice_l1b_hi-sectored
     Logical_source_description: IMAP Mission CoDICE Hi Level-1B Sectored Data.
 
-imap_codice_l1b_lo_counters_aggregated:
+imap_codice_l1b_lo-counters-aggregated:
     <<: *instrument_base
     Data_type: L1B_lo-counters-aggregated->Level-1B Lo Aggregated Instrument Rates Data
     Logical_source: imap_codice_l1b_lo-counters-aggregated
     Logical_source_description: IMAP Mission CoDICE Lo Level-1B Aggregated Instrument Rates Data.
 
-imap_codice_l1b_lo_counters_singles:
+imap_codice_l1b_lo-counters-singles:
     <<: *instrument_base
     Data_type: L1B_lo-counters-aggregated->Level-1B Lo Single Instrument Rates Data
     Logical_source: imap_codice_l1b_lo-counters-singles
     Logical_source_description: IMAP Mission CoDICE Lo Level-1B Single Instrument Rates Data.
 
-imap_codice_l1b_lo_sw_angular:
+imap_codice_l1b_lo-sw-angular:
     <<: *instrument_base
     Data_type: L1B_lo-sw-angular->Level-1B Lo Sunward Angular Rates Data
     Logical_source: imap_codice_l1b_lo-sw-angular
     Logical_source_description: IMAP Mission CoDICE Lo Level-1B Sunward Angular Rates Data.
 
-imap_codice_l1b_lo_nsw_angular:
+imap_codice_l1b_lo-nsw-angular:
     <<: *instrument_base
     Data_type: L1B_lo-nsw-angular->Level-1B Lo Non-Sunward Angular Rates Data
     Logical_source: imap_codice_l1b_lo-nsw-angular
     Logical_source_description: IMAP Mission CoDICE Lo Level-1B Non-Sunward Angular Rates Data.
 
-imap_codice_l1b_lo_sw_priority:
+imap_codice_l1b_lo-sw-priority:
     <<: *instrument_base
     Data_type: L1B_lo-sw-priority->Level-1B Lo Sunward Priority Rates Data
     Logical_source: imap_codice_l1b_lo-sw-priority
     Logical_source_description: IMAP Mission CoDICE Lo Level-1B Sunward Priority Rates Data.
 
-imap_codice_l1b_lo_nsw_priority:
+imap_codice_l1b_lo-nsw-priority:
     <<: *instrument_base
     Data_type: L1B_lo-nsw-priority->Level-1B Lo Non-Sunward Priority Rates Data
     Logical_source: imap_codice_l1b_lo-nsw-priority
     Logical_source_description: IMAP Mission CoDICE Lo Level-1B Non-Sunward Priority Rates Data.
 
-imap_codice_l1b_lo_sw_species:
+imap_codice_l1b_lo-sw-species:
     <<: *instrument_base
     Data_type: L1B_lo-sw-species->Level-1B Lo Sunward Species Rates Data
     Logical_source: imap_codice_l1b_lo-sw-species
     Logical_source_description: IMAP Mission CoDICE Lo Level-1B Sunward Species Rates Data.
 
-imap_codice_l1b_lo_nsw_species:
+imap_codice_l1b_lo-nsw-species:
     <<: *instrument_base
     Data_type: L1B_lo-nsw-species->Level-1B Lo Non-Sunward Species Rates Data
     Logical_source: imap_codice_l1b_lo-nsw-species

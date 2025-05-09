@@ -1,0 +1,29 @@
+int_fillval: &int_fillval -9223372036854775808
+
+impact_day_of_year:
+    CATDESC: The day of the year when the impact occurred.
+    FIELDNAM: Impact Day of Year
+    LABLAXIS: Impact DOY
+    DEPEND_0: epoch
+    DISPLAY_TYPE: time_series
+    FILLVAL: *int_fillval
+    FORMAT: I3
+    VALIDMIN: 1
+    VALIDMAX: 366
+    VAR_TYPE: data
+    UNITS: days
+    DICT_KEY: SPASE>SupportQuantity:Temporal,Qualifier:Array # TODO: review this
+
+spin_phase_quadrants:
+    CATDESC: The spacecraft spin phase at the time of detection. This is given in quadrants (0, 90, 180, 270).
+    FIELDNAM: Spin Phase Quadrants
+    LABLAXIS: Spin Phase Quadrants
+    DEPEND_0: epoch
+    DISPLAY_TYPE: time_series
+    FILLVAL: *int_fillval
+    FORMAT: I3
+    VALIDMIN: 0
+    VALIDMAX: 270
+    VAR_TYPE: data
+    UNITS: degrees
+    DICT_KEY: SPASE>SupportQuantity:SpinPhase,Qualifier:Array # TODO: review this

@@ -51,7 +51,7 @@ def test_imap_state_ecliptic():
 @pytest.mark.parametrize(
     "instrument, expected_offset",
     [
-        (SpiceFrame.IMAP_LO, 330 / 360),
+        (SpiceFrame.IMAP_LO_BASE, 330 / 360),
         (SpiceFrame.IMAP_HI_45, 255 / 360),
         (SpiceFrame.IMAP_HI_90, 285 / 360),
         (SpiceFrame.IMAP_ULTRA_45, 33 / 360),
