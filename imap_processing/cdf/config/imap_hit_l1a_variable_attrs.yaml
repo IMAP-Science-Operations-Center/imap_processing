@@ -115,11 +115,11 @@ sc_tick:
   SCALETYP: linear
 
 # Counts Dataset Coordinates
-declination:
+zenith:
     <<: *counts_support_default
     CATDESC: Angle from the spin axis (0 deg.) to anti-spin axis (180 deg.) in 8 bins
-    FIELDNAM: Declination
-    LABLAXIS: Declination
+    FIELDNAM: Zenith
+    LABLAXIS: Zenith
     FORMAT: F5.1
     UNITS: deg
 
@@ -129,7 +129,7 @@ azimuth:
     FIELDNAM: Azimuth
     LABLAXIS: Azimuth
     FORMAT: F5.1
-    UNITS: deg
+    UNITS: Deg
 
 gain:
     <<: *counts_support_default
@@ -141,74 +141,74 @@ gain:
 sngrates_index:
     <<: *index_support_default
     CATDESC: Single rates index
-    FIELDNAM: SNGRATES Index
-    LABLAXIS: SNGRATES Index
+    FIELDNAM: sngrates index
+    LABLAXIS: sngrates index
 
 coinrates_index:
   <<: *index_support_default
   CATDESC: Coincidence rates index
-  FIELDNAM: COINRATES index
-  LABLAXIS: COINRATES index
+  FIELDNAM: coinrates index
+  LABLAXIS: coinrates index
 
 pbufrates_index:
   <<: *index_support_default
   CATDESC: Priority buffer rates index
-  FIELDNAM: pbufrates Index
-  LABLAXIS: pbufrates Index
+  FIELDNAM: pbufrates index
+  LABLAXIS: pbufrates index
 
 l2fgrates_index:
   <<: *index_support_default
   CATDESC: Range 2 foreground rates index
-  FIELDNAM: l2fgrates Index
-  LABLAXIS: l2fgrates Index
+  FIELDNAM: l2fgrates index
+  LABLAXIS: l2fgrates index
 
 l2bgrates_index:
   <<: *index_support_default
   CATDESC: Range 2 background rates index
-  FIELDNAM: l2bgrates Index
-  LABLAXIS: l2bgrates Index
+  FIELDNAM: l2bgrates index
+  LABLAXIS: l2bgrates index
 
 l3fgrates_index:
   <<: *index_support_default
   CATDESC: Range 3 foreground rates index
-  FIELDNAM: l3fgrates Index
-  LABLAXIS: l3fgrates Index
+  FIELDNAM: l3fgrates index
+  LABLAXIS: l3fgrates index
 
 l3bgrates_index:
   <<: *index_support_default
   CATDESC: Range 3 background rates index
-  FIELDNAM: l3bgrates Index
-  LABLAXIS: l3bgrates Index
+  FIELDNAM: l3bgrates index
+  LABLAXIS: l3bgrates index
 
 penfgrates_index:
   <<: *index_support_default
   CATDESC: Range 4 foreground rates index
-  FIELDNAM: penfgrates Index
-  LABLAXIS: penfgrates Index
+  FIELDNAM: penfgrates index
+  LABLAXIS: penfgrates index
 
 penbgrates_index:
   <<: *index_support_default
   CATDESC: Range 4 background rates index
-  FIELDNAM: penbgrates Index
-  LABLAXIS: penbgrates Index
+  FIELDNAM: penbgrates index
+  LABLAXIS: penbgrates index
 
 ialirtrates_index:
   <<: *index_support_default
   CATDESC: ialirtrates index
-  FIELDNAM: ialirtrates Index
-  LABLAXIS: ialirtrates Index
+  FIELDNAM: ialirtrates index
+  LABLAXIS: ialirtrates index
 
 l4fgrates_index:
   <<: *index_support_default
   CATDESC: L4 ions foreground rates index
-  FIELDNAM: l4fgrates Index
-  LABLAXIS: l4fgrates Index
+  FIELDNAM: l4fgrates index
+  LABLAXIS: l4fgrates index
 
 l4bgrates_index:
   <<: *index_support_default
   CATDESC: L4 ions background rates index
-  FIELDNAM: l4bgrates Index
-  LABLAXIS: l4bgrates Index
+  FIELDNAM: l4bgrates index
+  LABLAXIS: l4bgrates index
 
 h_energy_mean:
   <<: *energy_support_default
@@ -257,6 +257,129 @@ adc_channels_label:
   FIELDNAM: ADC Channels
   FORMAT: A2
   VAR_TYPE: metadata
+
+# Counts Dataset Labels
+zenith_label:
+  CATDESC: Angle from the spin axis (0 deg.) to anti-spin axis (180 deg.) in 8 bins
+  FIELDNAM: Zenith Angle
+  FORMAT: A6
+  VAR_TYPE: metadata
+
+azimuth_label:
+  CATDESC: Spin angle in 15 bins (0 deg. is zero of spin phase)
+  FIELDNAM: Azimuth Angle
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+gain_label:
+  CATDESC: Single rates gain. 0=low, 1=high
+  FIELDNAM: Gain
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+sngrates_index_label:
+  CATDESC: Single rates index
+  FIELDNAM: SNGRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+coinrates_index_label:
+  CATDESC: Coincidence rates index
+  FIELDNAM: COINRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+pbufrates_index_label:
+  CATDESC: Priority buffer rates index
+  FIELDNAM: PBUFRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+l2fgrates_index_label:
+  CATDESC: Range 2 foreground rates index
+  FIELDNAM: L2FGRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+l2bgrates_index_label:
+  CATDESC: Range 2 background rates index
+  FIELDNAM: L2BGRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+l3fgrates_index_label:
+  CATDESC: Range 3 foreground rates index
+  FIELDNAM: L2FGRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+l3bgrates_index_label:
+  CATDESC: Range 3 background rates index
+  FIELDNAM: L3BGRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+penfgrates_index_label:
+  CATDESC: Range 4 foreground rates index
+  FIELDNAM: PENFGRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+penbgrates_index_label:
+  CATDESC: Range 4 background rates index
+  FIELDNAM: PENBGRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+ialirtrates_index_label:
+  CATDESC: ialirtrates index
+  FIELDNAM: IALIRTRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+l4fgrates_index_label:
+  CATDESC: L4 ions foreground rates index
+  FIELDNAM: L4FGRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+l4bgrates_index_label:
+  CATDESC: L4 ions background rates index
+  FIELDNAM: L4BGRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+h_energy_mean_label:
+  CATDESC: Geometric mean energy for H
+  FIELDNAM: H Energy
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+he4_energy_mean_label:
+  CATDESC: Geometric mean energy for He4
+  FIELDNAM: He4 Energy
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+nemgsi_energy_mean_label:
+  CATDESC: Geometric mean energy for NeMgSi
+  FIELDNAM: NeMgSi Energy
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+cno_energy_mean_label:
+  CATDESC: Geometric mean energy for CNO
+  FIELDNAM: CNO Energy
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+fe_energy_mean_label:
+  CATDESC: Geometric mean energy for Fe
+  FIELDNAM: Fe Energy
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+
 
 #TODO: add labels for counts dataset
 
@@ -570,66 +693,66 @@ l4bgrates:
 
 sectorates:
   <<: *counts_default
-  DEPEND_1: declination
+  DEPEND_1: zenith
   DEPEND_2: azimuth
   CATDESC: Raw sectored rates per integration
   FIELDNAM: Sectored rates
-  LABL_PTR_1: declination
+  LABL_PTR_1: zenith
   LABL_PTR_2: azimuth
   DELTA_MINUS_VAR: sectorates_stat_uncert_minus
   DELTA_PLUS_VAR: sectorates_stat_uncert_plus
 
 h_sectored_counts:
   <<: *counts_default
-  DEPEND_1: declination
+  DEPEND_1: zenith
   DEPEND_2: azimuth
   CATDESC: Raw H sectored counts per integration
   FIELDNAM: H sectored counts
-  LABL_PTR_1: declination
+  LABL_PTR_1: zenith
   LABL_PTR_2: azimuth
   DELTA_MINUS_VAR: h_sectored_counts_stat_uncert_minus
   DELTA_PLUS_VAR: h_sectored_counts_stat_uncert_plus
 
 he4_sectored_counts:
   <<: *counts_default
-  DEPEND_1: declination
+  DEPEND_1: zenith
   DEPEND_2: azimuth
   CATDESC: Raw He4 sectored counts per integration
   FIELDNAM: He4 sectored counts
-  LABL_PTR_1: declination
+  LABL_PTR_1: zenith
   LABL_PTR_2: azimuth
   DELTA_MINUS_VAR: he4_sectored_counts_stat_uncert_minus
   DELTA_PLUS_VAR: he4_sectored_counts_stat_uncert_plus
 
 cno_sectored_counts:
   <<: *counts_default
-  DEPEND_1: declination
+  DEPEND_1: zenith
   DEPEND_2: azimuth
   CATDESC: Raw C, N, O sectored counts per integration
   FIELDNAM: C, N, O sectored counts
-  LABL_PTR_1: declination
+  LABL_PTR_1: zenith
   LABL_PTR_2: azimuth
   DELTA_MINUS_VAR: cno_sectored_counts_stat_uncert_minus
   DELTA_PLUS_VAR: cno_sectored_counts_stat_uncert_plus
 
 nemgsi_sectored_counts:
   <<: *counts_default
-  DEPEND_1: declination
+  DEPEND_1: zenith
   DEPEND_2: azimuth
   CATDESC: Raw Ne, Mg, Si sectored counts per integration
   FIELDNAM: Ne, Mg, Si sectored counts
-  LABL_PTR_1: declination
+  LABL_PTR_1: zenith
   LABL_PTR_2: azimuth
   DELTA_MINUS_VAR: nemgsi_sectored_counts_stat_uncert_minus
   DELTA_PLUS_VAR: nemgsi_sectored_counts_stat_uncert_plus
 
 fe_sectored_counts:
   <<: *counts_default
-  DEPEND_1: declination
+  DEPEND_1: zenith
   DEPEND_2: azimuth
   CATDESC: Raw Fe sectored counts per integration
   FIELDNAM: Fe sectored counts
-  LABL_PTR_1: declination
+  LABL_PTR_1: zenith
   LABL_PTR_2: azimuth
   DELTA_MINUS_VAR: fe_sectored_counts_stat_uncert_minus
   DELTA_PLUS_VAR: fe_sectored_counts_stat_uncert_plus
