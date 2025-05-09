@@ -85,82 +85,26 @@ def transform_instrument_vectors_to_inertial(
 ) -> NDArray:
     """
     Transform instrument-frame vectors into the inertial frame (ECLIPJ2000).
-
-    Parameters
-    ----------
-    instrument_vectors : np.ndarray
-        Vectors in the instrument frame. Shape: (N, 3).
-    spin_phase : np.ndarray
-        Spin phase angle(s) in radians. Shape: (N,).
-    sc_inertial_right : np.ndarray
-        Spacecraft right ascension in radians. Shape: (N,).
-    sc_inertial_decline : np.ndarray
-        Spacecraft declination in radians. Shape: (N,).
-    et : np.ndarray
-        Ephemeris time. Shape: (N,).
-    instrument_frame : SpiceFrame
-        Instrument frame.
-    spacecraft_frame : SpiceFrame
-        Spacecraft frame.
-
-    Returns
-    -------
-    vectors_inertial : np.ndarray
-        Vectors in the inertial frame. Shape: (N, 3).
-
-    Notes
-    -----
-    This function transforms vectors from the instrument
-    frame through the spacecraft URF, then despins them
-    using onboard RA/Dec and spin phase to get inertial directions.
     """
+    # Convert RA/Dec → inertial Z-axis
     z_axis = get_z_axis(sc_inertial_right, sc_inertial_decline)
-    rot_matrices = get_rotation_matrix(z_axis, spin_phase)
-    vectors_urf = get_instrument_vector(
-        et,
-        instrument_vectors,
-        instrument_frame,
-        spacecraft_frame,
-    )
 
-    vectors_inertial = np.array(
-        [spice.mxv(r.T.copy(), v) for r, v in zip(rot_matrices, vectors_urf)]
-    )
+    # Rotation about Z-axis (spin), shape (N, 3, 3)
+    rot_spin = get_rotation_matrix(z_axis, spin_phase)
+
+    # Static mount matrix: MAG → SC
+    R_mount = spice.pxform("IMAP_MAG", "IMAP_SPACECRAFT", et[0])
+
+    # SC → inertial
+    R_sc_to_inertial = spice.pxform("IMAP_SPACECRAFT", "ECLIPJ2000", et[0])
+
+    # Final transform matrix: (N, 3, 3)
+    rot_total = np.array([
+        R_sc_to_inertial @ spin @ R_mount for spin in rot_spin
+    ])
+
+    # Apply transform
+    vectors_inertial = np.einsum("nij,nj->ni", rot_total, instrument_vectors)
 
     return vectors_inertial
 
-
-def get_instrument_vector(
-    et: NDArray,
-    vector: NDArray,
-    instrument_frame: SpiceFrame,
-    spacecraft_frame: SpiceFrame,
-) -> np.ndarray:
-    """
-    Get the vectors wrt the spacecraft.
-
-    Parameters
-    ----------
-    et : np.ndarray
-        Ephemeris time.
-    vector : np.ndarray
-        Vector in the instrument frame.
-    instrument_frame : SpiceFrame
-        Instrument frame.
-    spacecraft_frame : SpiceFrame
-        Spacecraft frame.
-
-    Returns
-    -------
-    vector_urf : np.ndarray
-        Transformed vector(s) in the spacecraft frame.
-    """
-    # Instrument frame → SC frame (URF)
-    vector_urf = frame_transform(
-        et,
-        vector,
-        instrument_frame,
-        spacecraft_frame,
-    )
-
-    return vector_urf

@@ -5,7 +5,6 @@ import pytest
 import spiceypy
 
 from imap_processing.ialirt.l0.ialirt_spice import (
-    get_instrument_vector,
     get_rotation_matrix,
     get_z_axis,
     transform_instrument_vectors_to_inertial,
@@ -125,6 +124,34 @@ def test_get_instrument_vector():
 
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 @ensure_spice
+def test_get_instrument_vector2(use_test_metakernel, spice_test_data_path):
+    """Test get_instrument_vector function."""
+    ck_path = spice_test_data_path / "sim_1yr_imap_attitude.bc"
+    id_imap_spacecraft = spiceypy.gipool("FRAME_IMAP_SPACECRAFT", 0, 1)
+
+    ck_cover = spiceypy.ckcov(
+        str(ck_path), int(id_imap_spacecraft), True, "INTERVAL", 0, "TDB"
+    )
+
+    # Pick midpoint of first coverage interval
+    et_start = ck_cover[0]
+    et_end = ck_cover[1]
+    et = (et_start + et_end) / 2.0
+    vector = np.array([[1.0, 0.0, 0.0]])
+
+    result = get_instrument_vector(
+        et,
+        vector,
+        SpiceFrame.IMAP_MAG,
+        SpiceFrame.IMAP_SPACECRAFT,
+    )
+    test = spiceypy.pxform("IMAP_MAG", "IMAP_SPACECRAFT", et)
+
+    np.testing.assert_allclose(result, vector, atol=1e-8)
+
+
+@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
+@ensure_spice
 def test_transform_instrument_vectors_to_inertial(
     use_test_metakernel, spice_test_data_path
 ):
@@ -161,7 +188,7 @@ def test_transform_instrument_vectors_to_inertial(
     )
 
     # i.e., no spin rotation
-    spin_phase = np.array([0.0])
+    spin_phase = np.array([np.radians(179.5 + 180.0)])
 
     v_manual = transform_instrument_vectors_to_inertial(
         instrument_vector,
