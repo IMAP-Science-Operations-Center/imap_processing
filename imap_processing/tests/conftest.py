@@ -142,6 +142,15 @@ def _test_data_paths():
             / "imap_codice_l0_raw_20241110_v001.pkts",
         ),
         (
+            "imap_codice_l1a_hi-pha_20241110193700_v0.0.0.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "validation"
+            / "imap_codice_l1a_hi-pha_20241110193700_v0.0.0.cdf",
+        ),
+        (
             "imap_hi_l1a_45sensor-de_20250415_v999.cdf",
             imap_module_directory
             / "tests"
