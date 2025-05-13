@@ -103,13 +103,15 @@ def test_write_pointing_frame_ck(
 
     for i_seg in range(len(segment_id)):
         # Verify that the rotation matrix is as expected
-        et_to_test = (
-            et_start + (segment_start_offset[i_seg] + segment_start_offset[i_seg]) / 2
-        )
-        rotation_matrix = spiceypy.pxform("ECLIPJ2000", "IMAP_DPS", et_to_test)
-        np.testing.assert_allclose(
-            rotation_matrix, spiceypy.q2m(segment_data[i_seg]["quaternion"])
-        )
+        for et_to_test in np.linspace(
+            et_start + segment_start_offset[i_seg],
+            et_start + segment_end_offset[i_seg],
+            4,
+        ):
+            rotation_matrix = spiceypy.pxform("ECLIPJ2000", "IMAP_DPS", et_to_test)
+            np.testing.assert_allclose(
+                rotation_matrix, spiceypy.q2m(segment_data[i_seg]["quaternion"])
+            )
     fh = spiceypy.cklpf(str(pointing_ck))
     n_lines, lines, all_lines_returned = spiceypy.dafec(fh, 8, 120)
     assert all_lines_returned
@@ -186,8 +188,8 @@ def test_calculate_pointing_attitude_segments(
     rotation_matrix_expected = np.array(
         [[0.0000, 0.0000, 1.0000], [0.9104, -0.4136, 0.0000], [0.4136, 0.9104, 0.0000]]
     )
-    np.testing.assert_allclose(
-        spiceypy.q2m(segment_data["quaternion"][0]), rotation_matrix_expected, atol=1e-4
+    np.testing.assert_almost_equal(
+        spiceypy.q2m(segment_data["quaternion"][0]), rotation_matrix_expected, decimal=4
     )
 
     # Tests error handling when incorrect kernel is loaded.
@@ -224,11 +226,11 @@ def test_multiple_pointings(
     )
 
     # Pointings are between repoints, so we expect one less than repoints
-    assert len(segment_data["sclk_start"]) == len(repoint_start_met) - 1
+    assert len(segment_data["start_sclk_ticks"]) == len(repoint_start_met) - 1
 
     np.testing.assert_allclose(
-        segment_data["sclk_start"], repoint_end_met[:-1] / TICK_DURATION
+        segment_data["start_sclk_ticks"], repoint_end_met[:-1] / TICK_DURATION
     )
     np.testing.assert_allclose(
-        segment_data["sclk_end"], repoint_start_met[1:] / TICK_DURATION
+        segment_data["end_sclk_ticks"], repoint_start_met[1:] / TICK_DURATION
     )

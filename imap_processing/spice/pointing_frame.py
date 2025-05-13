@@ -14,16 +14,23 @@ from numpy.typing import NDArray
 from imap_processing.spice.geometry import SpiceFrame
 from imap_processing.spice.kernels import ensure_spice
 from imap_processing.spice.repoint import get_repoint_data
-from imap_processing.spice.time import et_to_utc, met_to_sclkticks, sct_to_et
+from imap_processing.spice.time import (
+    TICK_DURATION,
+    et_to_utc,
+    met_to_sclkticks,
+    sct_to_et,
+)
 
 logger = logging.getLogger(__name__)
 
 POINTING_SEGMENT_DTYPE = np.dtype(
     [
-        ("sclk_start", np.float64),
-        ("sclk_end", np.float64),
+        # sclk ticks are a double precision number of SCLK ticks since the
+        # start of the mission (e.g. MET_seconds / TICK_DURATION)
+        ("start_sclk_ticks", np.float64),
+        ("end_sclk_ticks", np.float64),
         ("quaternion", np.float64, (4,)),
-        ("pointing_id", np.int32),
+        ("pointing_id", np.uint32),
     ]
 )
 
@@ -65,10 +72,10 @@ def write_pointing_frame_ck(
         Location to write the CK kernel.
     segment_data : np.ndarray
         Numpy structured array with the following dtypes:
-            ('sclk_start', np.float64),
-            ('sclk_end', np.float64),
-            ('quaternion', np.float64, (4,)),
-            ('pointing_id', np.int32)
+            ("start_sclk_ticks", np.float64),
+            ("end_sclk_ticks", np.float64),
+            ("quaternion", np.float64, (4,)),
+            ("pointing_id", np.uint32),
     parent_ck : str
         Filename of the CK kernel that the quaternion was derived from.
     """
@@ -95,9 +102,9 @@ def write_pointing_frame_ck(
                 # Handle of an open CK file.
                 handle,
                 # Start time of the segment.
-                segment["sclk_start"],
+                segment["start_sclk_ticks"],
                 # End time of the segment.
-                segment["sclk_end"],
+                segment["end_sclk_ticks"],
                 # Pointing frame ID.
                 int(id_imap_dps),
                 # Reference frame.
@@ -108,17 +115,18 @@ def write_pointing_frame_ck(
                 1,
                 # Start times of individual pointing records within segment.
                 # Since there is only a single record this is equal to sclk_begtim.
-                np.array([segment["sclk_start"]]),
+                np.array([segment["start_sclk_ticks"]]),
                 # End times of individual pointing records within segment.
                 # Since there is only a single record this is equal to sclk_endtim.
-                np.array([segment["sclk_end"]]),  # Single stop time
+                np.array([segment["end_sclk_ticks"]]),  # Single stop time
                 # Average quaternion.
                 segment["quaternion"],
-                # 0.0 Angular rotation terms.
+                # Angular velocity vectors. The IMAP_DPS frame is quasi-inertial
+                # for each pointing so each segment has zeros here.
                 np.array([0.0, 0.0, 0.0]),
-                # Rates (seconds per tick) at which the quaternion and
-                # angular velocity change.
-                np.array([1.0]),
+                # The number of seconds per encoded spacecraft clock
+                # tick for each interval.
+                np.array([TICK_DURATION]),
             )
 
 
@@ -146,16 +154,16 @@ def calculate_pointing_attitude_segments(
     -------
     pointing_segments : numpy.ndarray
         Structured array of data for each pointing. Included fields are:
-        - sclk_start
-        - sclk_end
-        - quaternion
-        - pointing_id
+            ("start_sclk_ticks", np.float64),
+            ("end_sclk_ticks", np.float64),
+            ("quaternion", np.float64, (4,)),
+            ("pointing_id", np.uint32),
 
     Notes
     -----
     Kernels required to be furnished:
 
-    - Latest NAIF leapseconds kernel (naif0012.tls
+    - Latest NAIF leapseconds kernel (naif0012.tls)
     - The latest IMAP sclk (imap_sclk_NNNN.tsc)
     - The latest IMAP frame kernel (imap_wkcp.tf)
     - IMAP DPS frame kernel (imap_science_0001.tf)
@@ -203,18 +211,17 @@ def calculate_pointing_attitude_segments(
     ]
     n_pointings = len(repoint_df) - 1
 
-    sclk_start = np.zeros(n_pointings, dtype=POINTING_SEGMENT_DTYPE["sclk_start"])
-    sclk_end = np.zeros(n_pointings, dtype=POINTING_SEGMENT_DTYPE["sclk_end"])
-    quaternion = np.zeros(n_pointings, dtype=POINTING_SEGMENT_DTYPE["quaternion"])
-    pointing_id = np.zeros(n_pointings, dtype=POINTING_SEGMENT_DTYPE["pointing_id"])
+    pointing_segments = np.zeros(n_pointings, dtype=POINTING_SEGMENT_DTYPE)
 
     for i_pointing in range(n_pointings):
-        pointing_id[i_pointing] = repoint_df.iloc[i_pointing]["repoint_id"]
+        pointing_segments[i_pointing]["pointing_id"] = repoint_df.iloc[i_pointing][
+            "repoint_id"
+        ]
         pointing_start_et = repoint_df.iloc[i_pointing]["repoint_end_et"]
         pointing_end_et = repoint_df["repoint_start_et"][i_pointing + 1]
         logger.debug(
             f"Calculating pointing attitude for pointing "
-            f"{pointing_id[i_pointing]} with time "
+            f"{pointing_segments[i_pointing]['pointing_id']} with time "
             f"range: ({et_to_utc(pointing_start_et)}, {et_to_utc(pointing_end_et)})"
         )
 
@@ -237,17 +244,18 @@ def calculate_pointing_attitude_segments(
 
         # Convert the rotation matrix to a quaternion.
         # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.m2q
-        quaternion[i_pointing] = spiceypy.m2q(rotation_matrix)
+        pointing_segments[i_pointing]["quaternion"] = spiceypy.m2q(rotation_matrix)
 
         # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.sce2c
         # Convert start and end times to SCLK ticks.
-        sclk_start[i_pointing] = spiceypy.sce2c(int(id_imap_sclk), pointing_start_et)
-        sclk_end[i_pointing] = spiceypy.sce2c(int(id_imap_sclk), pointing_end_et)
+        pointing_segments[i_pointing]["start_sclk_ticks"] = spiceypy.sce2c(
+            int(id_imap_sclk), pointing_start_et
+        )
+        pointing_segments[i_pointing]["end_sclk_ticks"] = spiceypy.sce2c(
+            int(id_imap_sclk), pointing_end_et
+        )
 
-    return np.array(
-        list(zip(sclk_start, sclk_end, quaternion, pointing_id)),
-        dtype=POINTING_SEGMENT_DTYPE,
-    )
+    return pointing_segments
 
 
 @typing.no_type_check
