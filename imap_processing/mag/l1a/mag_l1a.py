@@ -97,20 +97,23 @@ def create_l1a(
 
     l1a = process_packets(packet_data)
 
-    # TODO: Rearrange generate_dataset to combine these two for loops
-    # Split into MAGo and MAGi
-
+    # given the processed packets in MagL1A classes, we can generate the MAGo and MAGi
+    # datasets. A given set of packets may have only mago or only magi.
     logical_file_id = f"imap_mag_l1a_{data_mode.value.lower()}-mago"
-    norm_mago_output = generate_dataset(l1a["mago"], logical_file_id, attribute_manager)
-    generated_datasets.append(norm_mago_output)
+    if l1a["mago"] is not None:
+        norm_mago_output = generate_dataset(
+            l1a["mago"], logical_file_id, attribute_manager
+        )
+        generated_datasets.append(norm_mago_output)
 
     logical_file_id = f"imap_mag_l1a_{data_mode.value.lower()}-magi"
-    norm_magi_output = generate_dataset(
-        l1a["magi"],
-        logical_file_id,
-        attribute_manager,
-    )
-    generated_datasets.append(norm_magi_output)
+    if l1a["magi"] is not None:
+        norm_magi_output = generate_dataset(
+            l1a["magi"],
+            logical_file_id,
+            attribute_manager,
+        )
+        generated_datasets.append(norm_magi_output)
 
     return generated_datasets
 
