@@ -15,7 +15,7 @@ TimestampedData = namedtuple(
 )
 
 
-class AncillaryConverter:
+class AncillaryCombiner:
     """
     Class for managing multiple ancillary files, received as one ProcessingInput.
 
@@ -205,7 +205,7 @@ class AncillaryConverter:
         return output_dataset
 
 
-class MagAncillaryConverter(AncillaryConverter):
+class MagAncillaryCombiner(AncillaryCombiner):
     """
     MAG-specific instance of AncillaryConverter.
 

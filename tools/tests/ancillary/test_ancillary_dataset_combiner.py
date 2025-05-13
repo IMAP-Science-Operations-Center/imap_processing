@@ -7,9 +7,9 @@ import xarray as xr
 from imap_data_access.processing_input import AncillaryInput
 
 from imap_processing.cdf.utils import load_cdf
-from tools.ancillary.ancillary_dataset_generator import (
-    AncillaryConverter,
-    MagAncillaryConverter,
+from tools.ancillary.ancillary_dataset_combiner import (
+    AncillaryCombiner,
+    MagAncillaryCombiner,
     TimestampedData,
 )
 
@@ -64,7 +64,7 @@ def test_mag_ancillary_converter(mocks, mag_calibration_dataset):
 
     mocks["read_cdf"].return_value = mag_calibration_dataset
 
-    output = MagAncillaryConverter(input_example)
+    output = MagAncillaryCombiner(input_example)
     expected_epoch = [
         np.datetime64("2025-10-17"),
         np.datetime64("2025-10-18"),
@@ -89,7 +89,7 @@ def test_ancillary_converter_overlaps(mocks, mag_calibration_dataset):
 
     mocks["read_cdf"].return_value = mag_calibration_dataset
 
-    output = AncillaryConverter(input_example)
+    output = AncillaryCombiner(input_example)
     expected_epoch = [
         np.datetime64("2025-10-17"),
         np.datetime64("2025-10-18"),
@@ -138,7 +138,7 @@ def test_timestamped_data(mocks, mag_calibration_dataset, ancillary_input):
 
     mocks["read_cdf"].return_value = mag_calibration_dataset
 
-    output = MagAncillaryConverter(ancillary_input)
+    output = MagAncillaryCombiner(ancillary_input)
 
     for index, d in enumerate(data):
         assert d.start_time == output.timestamped_data[index].start_time
@@ -159,7 +159,7 @@ def test_timestamped_data(mocks, mag_calibration_dataset, ancillary_input):
 def test_mag_edge_cases(mocks, mag_calibration_dataset, ancillary_input):
     mocks["read_cdf"].return_value = mag_calibration_dataset
 
-    output = MagAncillaryConverter(ancillary_input)
+    output = MagAncillaryCombiner(ancillary_input)
 
     # "imap_mag_l2-calibration-matrices_20251017_20251023_v003.cdf",
     # "imap_mag_l2-calibration-matrices_20251020_20251022_v001.cdf",
