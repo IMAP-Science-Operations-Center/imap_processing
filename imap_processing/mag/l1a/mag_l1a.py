@@ -1,5 +1,7 @@
 """Methods for decomming packets, processing to level 1A, and writing CDFs for MAG."""
 
+from __future__ import annotations
+
 import dataclasses
 import logging
 from pathlib import Path
@@ -115,7 +117,7 @@ def create_l1a(
 
 def process_packets(
     mag_l0_list: list[MagL0],
-) -> dict[str, MagL1a]:
+) -> dict[str, MagL1a | None]:
     """
     Given a list of MagL0 packets, process them into MagO and MagI L1A data classes.
 
@@ -129,7 +131,7 @@ def process_packets(
 
     Returns
     -------
-    packet_dict : dict[str, dict[numpy.datetime64, MagL1a]]
+    packet_dict : dict[str, MagL1a | None]
         Dictionary containing two keys: "mago" which points to a dictionary of mago
          MagL1A objects, and "magi" which points to a dictionary of magi MagL1A objects.
          Each dictionary has keys of days and values of MagL1A objects, so each day
