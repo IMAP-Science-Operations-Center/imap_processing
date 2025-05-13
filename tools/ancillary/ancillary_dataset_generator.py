@@ -1,137 +1,194 @@
-""" File for taking in multiple ancillary files and creating a dataset over the required time range."""
+"""File for taking in multiple ancillary files and creating a dataset over the required time range."""
+
 from collections import namedtuple
-from datetime import datetime
 
-from abc import ABC, abstractmethod
-from cdflib.xarray import cdf_to_xarray
+import numpy as np
 import xarray as xr
-
-from dataclasses import dataclass
+from cdflib.xarray import cdf_to_xarray
 from imap_data_access import AncillaryFilePath
-from imap_data_access.processing_input import ProcessingInputCollection, \
-    ProcessingInputType, ProcessingInput
+from imap_data_access.processing_input import (
+    ProcessingInput,
+)
 
-DataWithRange = namedtuple("DataWithRange", ["start_time", "end_time", "dataset", "version"])
+TimestampedData = namedtuple(
+    "TimestampedData", ["start_time", "end_time", "dataset", "version"]
+)
 
 
-class AncillaryConverter(ABC):
+class AncillaryConverter:
+    """
+    Class for managing multiple ancillary files that are recieved as one ProcessingInput value.
+
+    These are the same files across different time spans and versions.
+
+    The base version of the class works as defined for CDF files which do not have time
+    varying variables inside them - so, they are valid from the first second of the start_date
+    to the last second of the end_date.
+
+    To change the behavior of the class, the methods "convert_file_to_dataset" and
+    "get_combined_dataset" can be overridden. If using a file format that is different than CDF,
+    override "convert_file_to_dataset" to convert the file to an xarray dataset. If the
+    structure of the input file or output file needs to be changed, or they need to
+    be combined in a different way, "get_combined_dataset" should be overridden.
+
+    Methods
+    -------
+    convert_to_timestamped_data(filename)
+    convert_file_to_dataset(filepath)
+    get_combined_dataset()
+    """
+
     time_variable = "epoch"
 
     def __init__(self, ancillary_input: ProcessingInput):
         """
-        Add processing inputs to the dataset
+        Create the class variables. This does not create the combined dataset.
+
+        Parameters
+        ----------
+        ancillary_input : ProcessingInput
+            The input to convert, which should consist of a collection of files from
+            different dates, all with differing versions.
         """
-        # TODO: each processing input represents multiple files to combine. Combine them here.
-        # Get date range of each file, then set the start times for datasets and versions.
-        # Go through each datapoint and recursively:
-        # 1. see if any range is already covered in the dataset
-        # 2. determine which version number is higher
-        # 3. Overwrite the covered ranges with the new data
-        # 4. Add any new data to the dataset. Save data into datavars and index of the range, dataset, and version tuple.
-
-        self.dataset_list = []
+        self.ancillary_input = ancillary_input
         # TODO NEXT STEP: WRITE SOME TESTS
-
+        self.timestamped_data = []
         for file in ancillary_input.filename_list:
-            self.dataset_list.append(self.convert_to_dataset(file))
+            self.timestamped_data.append(self.convert_to_timestamped_data(file))
+        self.combined_dataset = self._combine_input_datasets()
 
-        self.combined_dataset = self.combine_datasets(ancillary_input)
+    def convert_to_timestamped_data(self, filename: str) -> TimestampedData:
+        """
+        Given an ancillary input, convert it to a TimestampedData object.
 
-    def convert_to_dataset(self, filepath: str) -> xr.Dataset:
+        These objects are then used to combine data together.
+
+        Parameters
+        ----------
+        filename : str
+            The ancillary input to convert.
+
+        Returns
+        -------
+        TimestampedData
+            The converted TimestampedData object.
+        """
+        filepath = AncillaryFilePath(filename)
+        dataset = self.convert_file_to_dataset(filename)
+
+        # Convert start_date to np.datetime64
+        formatted_str = f"{filepath.start_date[:4]}-{filepath.start_date[4:6]}-{filepath.start_date[6:]}"  # '2025-07-01'
+        start_dt = np.datetime64(formatted_str, "D")
+
+        # Convert end_date to np.datetime64
+        formatted_str = (
+            f"{filepath.end_date[:4]}-{filepath.end_date[4:6]}-{filepath.end_date[6:]}"
+        )
+        end_dt = np.datetime64(formatted_str, "D")
+
+        return TimestampedData(start_dt, end_dt, dataset, filepath.version)
+
+    def convert_file_to_dataset(self, filepath: str) -> xr.Dataset:
         """
         Method for converting the input filepaths to an xarray dataset.
+
+        This method should be overridden if the input file is not a CDF file.
+
+        Parameters
+        ----------
+        filepath : str
+            The path to the file to convert.
         """
         return cdf_to_xarray(filepath)
 
-
-    def combine_datasets(self, ancillary_input) -> xr.Dataset:
+    def _combine_input_datasets(self) -> xr.Dataset:
         """
         Combine all the input datasets into one output dataset.
 
-        This instance works if there is no time-varying data inside the input datasets -
-        that is, the output should be a single dataset with
+        This method assumes the input datasets have no time-varying dimensions in them.
+        Instead, it will take the full time range covered by the input files, and
+        assign each epoch such that each day has the valid data for that day.
+
+        To do this, it checks to see if there is data available for that day, and takes
+        the highest version of any file that covers the day. Missing days are filled
+        with MAX_INT.
+
+        This assumes that the input files cover a full day for each day in the time
+        range. It also assumes that all the input files have the same datavars defined
+        the same way.
+
         Returns
         -------
-
+        xr.Dataset
+            The combined dataset.
         """
         output_dataset = xr.Dataset()
-        data_list = []
-        for filename in ancillary_input.filename_list:
-            filepath = AncillaryFilePath(filename)
-            dataset = self.convert_to_dataset(filename)
-            data_with_range = DataWithRange(filepath.start_date, filepath.end_date, dataset, filepath.version)
-            data_list = self.add_dataset_to_output(data_list, data_with_range)
 
-        print(f"Final data list: {data_list}")
-        #TODO collapse data_list into a single dataset with xr.concat along "epoch" dim
-        return self.convert_data_list_to_dataset(data_list)
+        full_range_start = None
+        full_range_end = None
+        for timestamped_data in self.timestamped_data:
+            start_dt = timestamped_data.start_time
+            end_dt = timestamped_data.end_time
 
-    def convert_data_list_to_dataset(self, data_list) -> xr.Dataset:
-        """
+            if full_range_start is None or start_dt < full_range_start:
+                full_range_start = start_dt
+            if full_range_end is None or end_dt > full_range_end:
+                full_range_end = end_dt
 
-        Parameters
-        ----------
-        data_list
+        # sort by version
+        sorted_data_list = sorted(
+            self.timestamped_data, key=lambda x: (int(x.version[-3:]))
+        )
 
-        Returns
-        -------
+        epoch_data = xr.date_range(
+            full_range_start, full_range_end, freq="D"
+        ).values.astype("datetime64[D]")
+        output_dataset = output_dataset.assign_coords({self.time_variable: epoch_data})
 
-        """
-        datasets = [row[0] for row in data_list]
-        output_ds = xr.concat(datasets, dim=self.time_variable)
+        if any(["epoch" in i.dataset.dims for i in self.timestamped_data]):
+            raise ValueError(
+                "ERROR: input dataset has epoch dimension. This is not "
+                "allowed for this algorithm."
+            )
 
-        return output_ds
+        # create output dimensions for dataset. Each datavar gets its own anonymous
+        # dimension, named like {datavar}_dim_0, {datavar}_dim_1, etc.
+        for data_var in self.timestamped_data[0].dataset.data_vars:
+            shape = self.timestamped_data[0].dataset[data_var].shape
+            extra_shape = shape if len(shape) == 0 else shape  # Handle scalars too
+            output_dataset[data_var] = xr.DataArray(
+                np.full((len(epoch_data), *extra_shape), np.iinfo(np.int32).max),
+                dims=[self.time_variable]
+                + [f"{data_var}_dim_{i}" for i in range(len(extra_shape))],
+            )
 
+        output_dataset["input_file_version"] = xr.DataArray(
+            np.zeros((len(epoch_data),)), dims=[self.time_variable]
+        )
 
-    def add_dataset_to_output(self, input_list, data_with_range: DataWithRange):
-        """
-        Given an input dataset, add the new DataWithRange piece of data and return.
+        for data_input in sorted_data_list:
+            for date in xr.date_range(
+                data_input.start_time, data_input.end_time, freq="D"
+            ):
+                np_date = np.datetime64(date, "D")
+                for data_var in output_dataset.data_vars.keys():
+                    # find the index in output_dataset where date is equal to epoch
+                    index = output_dataset.get_index(self.time_variable).get_loc(
+                        np_date
+                    )
+                    # For each data_var, fill the date in output_dataset with the data_var from the input dataset.
+                    if data_var in "input_file_version":
+                        output_dataset["input_file_version"].data[index] = int(
+                            data_input.version[-3:]
+                        )
+                    else:
+                        output_dataset[data_var].data[index] = data_input.dataset[
+                            data_var
+                        ].data
 
-        Overwrite any overlapping data that already exists in input_dataset if the
-        version number is higher.
+        return output_dataset
 
-        Parameters
-        ----------
-        input_dataset: xr.Dataset
-            The dataset to add the new data to.
-        data_with_range : DataWithRange
-            The new data to add to the dataset.
-
-        Returns
-        -------
-
-        """
-
-        epoch_timestamp = datetime.strptime(data_with_range.start_time, "%Y%m%d")
-        # Check for epoch in existing input_list
-        new_epoch = epoch_timestamp
-        expanded_datasets = data_with_range.dataset.expand_dims(dim={self.time_variable: [new_epoch]})
-        print(f"Adding dataset to input_list with epoch {new_epoch} and version {data_with_range.version}")
-        input_list.append([expanded_datasets, new_epoch, data_with_range.version])
-
-        return input_list
 
 class MagAncillaryConverter(AncillaryConverter):
     def __init__(self, ancillary_input: ProcessingInput):
         super().__init__(ancillary_input)
-
-    def convert_to_dataset(self, filepath) -> xr.Dataset:
-        return cdf_to_xarray(filepath)
-
-
-
-
-class AncillaryDatasetGenerator:
-    """
-
-    """
-    # I need to:
-    # 1. Read in all files as xarray datasets
-    # 2. Using time range and version numbers, overwrite and extend input datasets
-    # 3. return the final dataset.
-    def __init__(self, input_collection: ProcessingInputCollection, ancillary_converter: AncillaryConverter):
-        self.ancillary_inputs = input_collection.get_processing_inputs(input_type=ProcessingInputType.ANCILLARY_FILE)
-        # TODO: each processinginput should return one xarray. Only the files in one processinginput should be combined together.
-        for ancillary_input in self.ancillary_inputs:
-            ancillary_converter(anc)
-

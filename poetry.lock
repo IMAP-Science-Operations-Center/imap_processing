@@ -625,14 +625,12 @@ files = [
 
 [[package]]
 name = "imap-data-access"
-version = "0.21.0"
+version = "0.23.0"
 description = "IMAP SDC Data Access"
 optional = false
 python-versions = "*"
-files = [
-    {file = "imap_data_access-0.21.0-py3-none-any.whl", hash = "sha256:9193c48d91476149d76834efb83a6463f0296456b8a434a1467ffee587de7c99"},
-    {file = "imap_data_access-0.21.0.tar.gz", hash = "sha256:a2308f73be95cd66fdb7a02e70df049755c77d1d9246d4692b6d669217d7974f"},
-]
+files = []
+develop = false
 
 [package.dependencies]
 requests = ">=2.29"
@@ -640,6 +638,12 @@ requests = ">=2.29"
 [package.extras]
 dev = ["imap_data_access[test]", "pre-commit", "ruff"]
 test = ["pytest", "pytest-cov"]
+
+[package.source]
+type = "git"
+url = "https://github.com/maxinelasp/imap-data-access.git"
+reference = "add_get_ancillary_files"
+resolved_reference = "4a6630ac37a806b126480539615a0987cb0ab508"
 
 [[package]]
 name = "iniconfig"
@@ -2188,4 +2192,4 @@ tools = ["openpyxl", "pandas"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<4"
-content-hash = "550d2cc140be8aadaaf3b33fee3b6dd98d6ad2aff0f1ea87b4f63787acbc49e5"
+content-hash = "a09df0653428543b1f1d0420f1b567689ea8f4efa90244cf901995842e813898"
