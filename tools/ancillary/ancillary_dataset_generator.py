@@ -1,4 +1,4 @@
-"""File for taking in multiple ancillary files and creating a dataset over the required time range."""
+"""File for taking in multiple ancillary files and creating a combined dataset."""
 
 from collections import namedtuple
 
@@ -17,19 +17,26 @@ TimestampedData = namedtuple(
 
 class AncillaryConverter:
     """
-    Class for managing multiple ancillary files that are recieved as one ProcessingInput value.
+    Class for managing multiple ancillary files, received as one ProcessingInput.
 
     These are the same files across different time spans and versions.
 
     The base version of the class works as defined for CDF files which do not have time
-    varying variables inside them - so, they are valid from the first second of the start_date
-    to the last second of the end_date.
+    varying variables inside them - so, they are valid from the first second of the
+    start_date to the last second of the end_date.
 
     To change the behavior of the class, the methods "convert_file_to_dataset" and
-    "get_combined_dataset" can be overridden. If using a file format that is different than CDF,
-    override "convert_file_to_dataset" to convert the file to an xarray dataset. If the
-    structure of the input file or output file needs to be changed, or they need to
-    be combined in a different way, "get_combined_dataset" should be overridden.
+    "get_combined_dataset" can be overridden. If using a file format that is different
+    than CDF, override "convert_file_to_dataset" to convert the file to an xarray
+    dataset. If the structure of the input file or output file needs to be changed, or
+    they need to be combined in a different way, "get_combined_dataset" should be
+    overridden.
+
+    Parameters
+    ----------
+    ancillary_input : ProcessingInput
+        The input to convert, which consists of a collection of ancillary files from
+        different dates, all with differing versions.
 
     Methods
     -------
@@ -77,7 +84,11 @@ class AncillaryConverter:
         dataset = self.convert_file_to_dataset(filename)
 
         # Convert start_date to np.datetime64
-        formatted_str = f"{filepath.start_date[:4]}-{filepath.start_date[4:6]}-{filepath.start_date[6:]}"  # '2025-07-01'
+        formatted_str = (
+            f"{filepath.start_date[:4]}-"
+            f"{filepath.start_date[4:6]}-"
+            f"{filepath.start_date[6:]}"
+        )  # '2025-07-01'
         start_dt = np.datetime64(formatted_str, "D")
 
         # Convert end_date to np.datetime64
@@ -90,7 +101,7 @@ class AncillaryConverter:
 
     def convert_file_to_dataset(self, filepath: str) -> xr.Dataset:
         """
-        Method for converting the input filepaths to an xarray dataset.
+        Convert the file at filepath to an xarray dataset.
 
         This method should be overridden if the input file is not a CDF file.
 
@@ -98,6 +109,11 @@ class AncillaryConverter:
         ----------
         filepath : str
             The path to the file to convert.
+
+        Returns
+        -------
+        xr.Dataset
+            The converted xarray dataset.
         """
         return cdf_to_xarray(filepath)
 
@@ -155,11 +171,10 @@ class AncillaryConverter:
         # dimension, named like {datavar}_dim_0, {datavar}_dim_1, etc.
         for data_var in self.timestamped_data[0].dataset.data_vars:
             shape = self.timestamped_data[0].dataset[data_var].shape
-            extra_shape = shape if len(shape) == 0 else shape  # Handle scalars too
             output_dataset[data_var] = xr.DataArray(
-                np.full((len(epoch_data), *extra_shape), np.iinfo(np.int32).max),
+                np.full((len(epoch_data), shape), np.iinfo(np.int32).max),
                 dims=[self.time_variable]
-                + [f"{data_var}_dim_{i}" for i in range(len(extra_shape))],
+                + [f"{data_var}_dim_{i}" for i in range(shape[1])],
             )
 
         output_dataset["input_file_version"] = xr.DataArray(
@@ -176,7 +191,8 @@ class AncillaryConverter:
                     index = output_dataset.get_index(self.time_variable).get_loc(
                         np_date
                     )
-                    # For each data_var, fill the date in output_dataset with the data_var from the input dataset.
+                    # For each data_var, fill the date in output_dataset with the
+                    # data_var from the input dataset.
                     if data_var in "input_file_version":
                         output_dataset["input_file_version"].data[index] = int(
                             data_input.version[-3:]
@@ -190,5 +206,14 @@ class AncillaryConverter:
 
 
 class MagAncillaryConverter(AncillaryConverter):
+    """
+    MAG-specific instance of AncillaryConverter.
+
+    Parameters
+    ----------
+        ancillary_input : ProcessingInput
+            Collection of MAG calibration files.
+    """
+
     def __init__(self, ancillary_input: ProcessingInput):
         super().__init__(ancillary_input)
