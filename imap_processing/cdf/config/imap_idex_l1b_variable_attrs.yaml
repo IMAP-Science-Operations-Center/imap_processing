@@ -389,13 +389,13 @@ longitude:
   <<: *spice_base
   VALIDMIN: 0
   FIELDNAM: Longitude
-  CATDESC: Longitude of the IMAP spacecraft position as observed from Earth in the ECLIPJ2000 reference frame.
+  CATDESC: Longitude (spherical coordinate) of the dust event (IDEX pointing) as observed from Earth in the ECLIPJ2000 reference frame.
   LABLAXIS: Longitude
 
 latitude:
   <<: *spice_base
   FIELDNAM: Latitude
-  CATDESC: Latitude of the IMAP spacecraft position as observed from Earth in the ECLIPJ2000 reference frame.
+  CATDESC: Latitude (spherical coordinate) of the dust event (IDEX pointing) as observed from Earth in the ECLIPJ2000 reference frame.
   LABLAXIS: Latitude
 
 spin_phase:

@@ -28,9 +28,9 @@ from imap_processing.ena_maps.ena_maps import SkyTilingType
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.ena_maps.utils.spatial_utils import AzElSkyGrid
 from imap_processing.idex.idex_constants import (
+    IDEX_EVENT_REFERENCE_FRAME,
     IDEX_HEALPIX_NESTED,
     IDEX_HEALPIX_NSIDE,
-    IDEX_POINTING_REFERENCE_FRAME,
     IDEX_SPACING_DEG,
 )
 
@@ -61,8 +61,8 @@ def idex_l2c(l2b_dataset: xr.Dataset) -> list[xr.Dataset]:
         name="epoch",
         dims=["epoch"],
     )
-    l2c_healpix_dataset = idex_healpix_pset(l2b_dataset, epoch)
-    l2c_rectangular_dataset = idex_rectangular_pset(l2b_dataset, epoch)
+    l2c_healpix_dataset = idex_healpix_map(l2b_dataset, epoch)
+    l2c_rectangular_dataset = idex_rectangular_map(l2b_dataset, epoch)
     # create the attribute manager for this data level
     idex_attrs = ImapCdfAttributes()
     idex_attrs.add_instrument_global_attrs(instrument="idex")
@@ -104,14 +104,14 @@ def idex_l2c(l2b_dataset: xr.Dataset) -> list[xr.Dataset]:
     return [l2c_healpix_dataset, l2c_rectangular_dataset]
 
 
-def idex_healpix_pset(
+def idex_healpix_map(
     l1b_dataset: xr.Dataset,
     epoch_da: xr.DataArray,
     nside: int = IDEX_HEALPIX_NSIDE,
     nested: bool = IDEX_HEALPIX_NESTED,
 ) -> xr.Dataset:
     """
-    Create a healpix IDEX pointing set out of an l1b dataset.
+    Create a healpix map out of an l1b dataset.
 
     Parameters
     ----------
@@ -129,8 +129,8 @@ def idex_healpix_pset(
     pset : xarray.Dataset
         IDEX pointing set dataset.
     """
-    longitude = l1b_dataset["longitude"].copy()
-    latitude = l1b_dataset["latitude"].copy()
+    longitude = l1b_dataset["longitude"]
+    latitude = l1b_dataset["latitude"]
 
     # Get the healpix indices
     hpix_idx = hp.ang2pix(
@@ -163,7 +163,7 @@ def idex_healpix_pset(
         "sky_tiling_type": SkyTilingType.HEALPIX.value,
         "HEALPix_nside": nside,
         "HEALPix_nest": nested,
-        "spice_reference_frame": IDEX_POINTING_REFERENCE_FRAME,
+        "spice_reference_frame": IDEX_EVENT_REFERENCE_FRAME,
         "num_points": n_pix,
     }
     l2c_dataset.attrs.update(pset_attrs)
@@ -171,11 +171,11 @@ def idex_healpix_pset(
     return l2c_dataset
 
 
-def idex_rectangular_pset(
+def idex_rectangular_map(
     l1b_dataset: xr.Dataset, epoch_da: xr.DataArray, spacing_deg: int = IDEX_SPACING_DEG
 ) -> xr.Dataset:
     """
-    Create a rectangular IDEX pointing set object out of a l1b dataset.
+    Create a rectangular map out of a l1b dataset.
 
     Parameters
     ----------
@@ -229,7 +229,7 @@ def idex_rectangular_pset(
     pset_attrs = {
         "sky_tiling_type": SkyTilingType.RECTANGULAR.value,
         "spacing_degree": spacing_deg,
-        "spice_reference_frame": IDEX_POINTING_REFERENCE_FRAME,
+        "spice_reference_frame": IDEX_EVENT_REFERENCE_FRAME,
         "num_points": counts.size,
     }
     l2c_dataset.attrs.update(pset_attrs)

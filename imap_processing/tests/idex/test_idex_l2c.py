@@ -12,9 +12,9 @@ from imap_processing.idex.idex_constants import (
     IDEX_SPACING_DEG,
 )
 from imap_processing.idex.idex_l2c import (
-    idex_healpix_pset,
+    idex_healpix_map,
     idex_l2c,
-    idex_rectangular_pset,
+    idex_rectangular_map,
 )
 
 
@@ -69,14 +69,14 @@ def test_l2c_attrs_and_vars(l2c_datasets: list[xr.Dataset], l1b_dataset: xr.Data
     write_cdf(rect_ds)
 
 
-def test_idex_healpix_pset(l1b_dataset: xr.Dataset):
-    """Test for idex_healpix_pset function"""
+def test_idex_healpix_map(l1b_dataset: xr.Dataset):
+    """Test for idex_healpix_map function"""
     epoch = xr.DataArray(
         [np.mean(l1b_dataset["epoch"].data[[0, -1]]).astype(np.int64)],
         name="epoch",
         dims=["epoch"],
     )
-    pset = idex_healpix_pset(l1b_dataset, epoch)
+    pset = idex_healpix_map(l1b_dataset, epoch)
 
     assert pset.epoch == np.mean([l1b_dataset.epoch[0], l1b_dataset.epoch[-1]])
 
@@ -84,14 +84,14 @@ def test_idex_healpix_pset(l1b_dataset: xr.Dataset):
     np.testing.assert_array_equal(pset.healpix_counts.shape, (npix,))
 
 
-def test_idex_rectangular_pset(l1b_dataset: xr.Dataset):
-    """Test for idex_rectangular_pset function"""
+def test_idex_rectangular_map(l1b_dataset: xr.Dataset):
+    """Test for idex_rectangular_map function"""
     epoch = xr.DataArray(
         [np.mean(l1b_dataset["epoch"].data[[0, -1]]).astype(np.int64)],
         name="epoch",
         dims=["epoch"],
     )
-    pset = idex_rectangular_pset(l1b_dataset, epoch)
+    pset = idex_rectangular_map(l1b_dataset, epoch)
 
     assert pset.epoch == np.mean([l1b_dataset.epoch[0], l1b_dataset.epoch[-1]])
 

@@ -26,7 +26,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.idex.idex_constants import ConversionFactors
 from imap_processing.idex.idex_utils import get_idex_attrs, setup_dataset
 from imap_processing.idex.idex_constants import (
-    IDEX_POINTING_REFERENCE_FRAME,
+    IDEX_EVENT_REFERENCE_FRAME,
     ConversionFactors,
 )
 from imap_processing.spice.geometry import (
@@ -358,7 +358,7 @@ def get_spice_data(
     ephemeris = imap_state(et, observer=SpiceBody.SUN)
     # Get Idex pointing in the defined frame
     idex_pointing = instrument_pointing(
-        et, SpiceFrame.IMAP_IDEX, IDEX_POINTING_REFERENCE_FRAME, cartesian=True
+        et, SpiceFrame.IMAP_IDEX, IDEX_EVENT_REFERENCE_FRAME, cartesian=True
     )
     solar_lon = solar_longitude(et, degrees=True)
     # longitude and latitude
