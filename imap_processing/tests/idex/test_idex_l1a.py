@@ -8,11 +8,12 @@ import pytest
 import xarray as xr
 from cdflib.xarray.xarray_to_cdf import ISTPError
 
-from imap_processing import imap_module_directory
+from imap_processing import decom, imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.idex.decode import _decode_sub_frame, read_bits, rice_decode
 from imap_processing.idex.idex_l1a import PacketParser
 from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.tests.idex.conftest import TEST_L0_FILE_SCI
 
 
 def test_idex_cdf_file(decom_test_data_sci: xr.Dataset):
@@ -82,6 +83,30 @@ def test_bad_cdf_file_data(decom_test_data_sci: xr.Dataset):
         write_cdf(decom_test_data_sci, istp=True, terminate_on_warning=True)
 
     del decom_test_data_sci["Bad_data"]
+
+
+def test_incomplete_event(caplog):
+    """Verify that a CDF is still produced if a packet is dropped.
+
+    The IDEX team requests that a warning be logged for incomplete events
+    (dropped packets) in the data, while still allowing the CDF to be created with
+    the remainder of the complete events.
+    """
+    xml = (
+        f"{imap_module_directory}/idex/packet_definitions/"
+        f"idex_science_packet_definition.xml"
+    )
+    caplog.at_level("WARNING")
+    packets = decom.decom_packets(TEST_L0_FILE_SCI, xml)
+    packets = packets[0:1] + packets[2:]
+    with mock.patch(
+        "imap_processing.idex.idex_l1a.decom_packets",
+        return_value=(packets, xr.Dataset(), xr.Dataset()),
+    ):
+        l1a_dataset = PacketParser(TEST_L0_FILE_SCI).data[0]
+    # Assert that all the events are present except for one.
+    assert len(l1a_dataset["epoch"]) == 13
+    assert "Missing packet for event number 1" in caplog.text
 
 
 def test_idex_tof_high_data_from_cdf(decom_test_data_sci: xr.Dataset):

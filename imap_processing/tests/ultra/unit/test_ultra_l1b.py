@@ -1,10 +1,15 @@
+from unittest import mock
+
 import numpy as np
 import pytest
 import xarray as xr
 
-from imap_processing.cdf.utils import write_cdf
+from imap_processing import imap_module_directory
+from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.ultra.l1b.ultra_l1b import ultra_l1b
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
+
+TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
 @pytest.fixture
@@ -95,26 +100,68 @@ def test_create_de_dataset(mock_data_l1b_de_dict):
     np.testing.assert_array_equal(dataset["x_front"], np.zeros(3))
 
 
-def test_ultra_l1b(l1b_de_dataset):
-    """Tests that L1b data is created."""
+@pytest.mark.external_test_data
+@mock.patch("imap_processing.ultra.l1b.de.get_annotated_particle_velocity")
+def test_cdf_de(
+    mock_get_annotated_particle_velocity, de_dataset, use_fake_spin_data_for_time
+):
+    """Tests that CDF file is created and contains same attributes as xarray."""
 
-    assert len(l1b_de_dataset) == 1
+    data_dict = {}
+    data_dict[de_dataset.attrs["Logical_source"]] = de_dataset
+    # Create a spin table that cover spin 0-141
+    use_fake_spin_data_for_time(0, 141 * 15)
+
+    # Mock get_annotated_particle_velocity to avoid needing kernels
+    def side_effect_func(event_times, position, ultra_frame, dps_frame, sc_frame):
+        """
+        Mock behavior of get_annotated_particle_velocity.
+
+        Returns NaN-filled arrays matching the expected output shape.
+        """
+        num_events = event_times.size
+        return (
+            np.full((num_events, 3), np.nan),  # sc_velocity
+            np.full((num_events, 3), np.nan),  # sc_dps_velocity
+            np.full((num_events, 3), np.nan),  # helio_velocity
+        )
+
+    mock_get_annotated_particle_velocity.side_effect = side_effect_func
+
+    l1b_de_dataset = ultra_l1b(data_dict)
 
     assert (
         l1b_de_dataset[0].attrs["Logical_source_description"]
         == "IMAP-Ultra Instrument Level-1B Direct Event Data."
     )
 
-
-def test_cdf_de(l1b_de_dataset):
-    """Tests that CDF file is created and contains same attributes as xarray."""
+    l1b_de_dataset[0].attrs["Data_version"] = "v999"
     test_data_path = write_cdf(l1b_de_dataset[0], istp=True)
     assert test_data_path.exists()
     assert test_data_path.name == "imap_ultra_l1b_45sensor-de_20240207_v999.cdf"
 
 
-def test_ultra_l1b_extendedspin(l1b_extendedspin_dataset):
+@pytest.mark.external_test_data
+def test_ultra_l1b_extendedspin(
+    use_fake_spin_data_for_time, faux_aux_dataset, rates_dataset
+):
     """Tests that L1b data is created."""
+    use_fake_spin_data_for_time(0, 141 * 15)
+    l1b_de_dataset_path = TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207_v999.cdf"
+    l1b_de_dataset = load_cdf(l1b_de_dataset_path)
+
+    data_dict = {
+        key: l1b_de_dataset
+        for key in [
+            "imap_ultra_l1b_45sensor-de",
+            "imap_ultra_l1a_45sensor-hk",
+            "imap_ultra_l1a_45sensor-params",
+        ]
+    }
+    data_dict["imap_ultra_l1a_45sensor-aux"] = faux_aux_dataset
+    data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
+
+    l1b_extendedspin_dataset = ultra_l1b(data_dict)
 
     assert len(l1b_extendedspin_dataset) == 3
 
@@ -130,8 +177,26 @@ def test_ultra_l1b_extendedspin(l1b_extendedspin_dataset):
         )
 
 
-def test_cdf_extendedspin(l1b_extendedspin_dataset):
+@pytest.mark.external_test_data
+def test_cdf_extendedspin(use_fake_spin_data_for_time, faux_aux_dataset, rates_dataset):
+    use_fake_spin_data_for_time(0, 141 * 15)
+    l1b_de_dataset_path = TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207_v999.cdf"
+    l1b_de_dataset = load_cdf(l1b_de_dataset_path)
+
+    data_dict = {
+        key: l1b_de_dataset
+        for key in [
+            "imap_ultra_l1b_45sensor-de",
+            "imap_ultra_l1a_45sensor-hk",
+            "imap_ultra_l1a_45sensor-params",
+        ]
+    }
+    data_dict["imap_ultra_l1a_45sensor-aux"] = faux_aux_dataset
+    data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
+
+    l1b_extendedspin_dataset = ultra_l1b(data_dict)
     """Tests that CDF file is created and contains same attributes as xarray."""
+    l1b_extendedspin_dataset[0].attrs["Data_version"] = "v999"
     test_data_path = write_cdf(l1b_extendedspin_dataset[0], istp=True)
     assert test_data_path.exists()
     assert (
@@ -139,8 +204,26 @@ def test_cdf_extendedspin(l1b_extendedspin_dataset):
     )
 
 
-def test_cdf_cullingmask(l1b_extendedspin_dataset):
+@pytest.mark.external_test_data
+def test_cdf_cullingmask(use_fake_spin_data_for_time, faux_aux_dataset, rates_dataset):
     """Tests that CDF file is created and contains same attributes as xarray."""
+    use_fake_spin_data_for_time(0, 141 * 15)
+    l1b_de_dataset_path = TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207_v999.cdf"
+    l1b_de_dataset = load_cdf(l1b_de_dataset_path)
+
+    data_dict = {
+        key: l1b_de_dataset
+        for key in [
+            "imap_ultra_l1b_45sensor-de",
+            "imap_ultra_l1a_45sensor-hk",
+            "imap_ultra_l1a_45sensor-params",
+        ]
+    }
+    data_dict["imap_ultra_l1a_45sensor-aux"] = faux_aux_dataset
+    data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
+
+    l1b_extendedspin_dataset = ultra_l1b(data_dict)
+    l1b_extendedspin_dataset[1].attrs["Data_version"] = "v999"
     test_data_path = write_cdf(l1b_extendedspin_dataset[1], istp=True)
     assert test_data_path.exists()
     assert (
@@ -148,8 +231,26 @@ def test_cdf_cullingmask(l1b_extendedspin_dataset):
     )
 
 
-def test_cdf_badtimes(l1b_extendedspin_dataset):
+@pytest.mark.external_test_data
+def test_cdf_badtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_dataset):
     """Tests that CDF file is created and contains same attributes as xarray."""
+    use_fake_spin_data_for_time(0, 141 * 15)
+    l1b_de_dataset_path = TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207_v999.cdf"
+    l1b_de_dataset = load_cdf(l1b_de_dataset_path)
+
+    data_dict = {
+        key: l1b_de_dataset
+        for key in [
+            "imap_ultra_l1b_45sensor-de",
+            "imap_ultra_l1a_45sensor-hk",
+            "imap_ultra_l1a_45sensor-params",
+        ]
+    }
+    data_dict["imap_ultra_l1a_45sensor-aux"] = faux_aux_dataset
+    data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
+
+    l1b_extendedspin_dataset = ultra_l1b(data_dict)
+    l1b_extendedspin_dataset[2].attrs["Data_version"] = "v999"
     test_data_path = write_cdf(l1b_extendedspin_dataset[2], istp=True)
     assert test_data_path.exists()
     assert test_data_path.name == "imap_ultra_l1b_45sensor-badtimes_20240207_v999.cdf"

@@ -21,10 +21,12 @@ from pathlib import Path
 from typing import final
 
 import imap_data_access
+import spiceypy
 import xarray as xr
 from imap_data_access import ScienceFilePath
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
+    SPICESource,
 )
 
 import imap_processing
@@ -431,7 +433,8 @@ class ProcessInstrument(ABC):
         Complete pre-processing.
 
         For this baseclass, pre-processing consists of downloading dependencies
-        for processing. Child classes can override this method to customize the
+        for processing and furnishing any spice kernels in the input
+        dependencies. Child classes can override this method to customize the
         pre-processing actions.
 
         Returns
@@ -442,6 +445,12 @@ class ProcessInstrument(ABC):
         dependencies = ProcessingInputCollection()
         dependencies.deserialize(self.dependency_str)
         dependencies.download_all_files()
+
+        # Furnish spice kernels
+        kernel_paths = dependencies.get_file_paths(source=SPICESource.SPICE.value)
+        logger.info(f"Furnishing kernels: {kernel_paths}")
+        spiceypy.furnsh([str(kernel_path.resolve()) for kernel_path in kernel_paths])
+
         return dependencies
 
     @abstractmethod
@@ -521,6 +530,9 @@ class ProcessInstrument(ABC):
             products.append(write_cdf(ds))
 
         self.upload_products(products)
+
+        logger.info("Clearing furnished SPICE kernels")
+        spiceypy.kclear()
 
 
 class Codice(ProcessInstrument):

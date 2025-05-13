@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pandas as pd
@@ -18,6 +18,7 @@ from imap_processing.hit.l2.hit_l2 import (
     SECONDS_PER_MIN,
     STANDARD_PARTICLE_ENERGY_RANGE_MAPPING,
     VALID_SECTORED_SPECIES,
+    add_cdf_attributes,
     add_systematic_uncertainties,
     add_total_uncertainties,
     build_ancillary_dataset,
@@ -27,9 +28,9 @@ from imap_processing.hit.l2.hit_l2 import (
     get_species_ancillary_data,
     hit_l2,
     load_ancillary_data,
-    process_sectored_intensity_data,
-    process_standard_intensity_data,
-    process_summed_intensity_data,
+    process_macropixel_intensity,
+    process_standard_intensity,
+    process_summed_intensity,
     reshape_for_sectored,
 )
 
@@ -146,6 +147,61 @@ def _check_ancillary_dataset(
         )
 
 
+def test_add_cdf_attributes():
+    """Test the add_cdf_attributes function."""
+    # Create a dataset with multiple variable name patterns
+    dataset = xr.Dataset(
+        {
+            "intensity_var": (["dim1", "dim2"], np.ones((2, 2))),
+            "other_var": (["dim1", "dim2"], np.ones((2, 2))),
+            "uncert_var": (["dim1", "dim2"], np.ones((2, 2))),
+            "sys_err_var": (["dim1", "dim2"], np.ones((2, 2))),
+            "energy_var": (["dim1"], np.ones(2)),
+            "energy_delta_var": (["dim1"], np.ones(2)),
+        },
+        coords={"dim1": [10, 20], "dim2": [1, 2]},
+    )
+
+    # Logical source to test macropixel logic
+    logical_source = "test_macropixel"
+
+    # Create a mock attribute manager
+    attr_mgr = Mock()
+    attr_mgr.get_global_attributes.return_value = {"Global_attr": "Test Dataset"}
+
+    def fake_get_variable_attributes(name, check_schema=True):
+        return {f"{name}_attr": "value", "check_schema": check_schema}
+
+    attr_mgr.get_variable_attributes.side_effect = fake_get_variable_attributes
+
+    # Run the function
+    result = add_cdf_attributes(dataset, logical_source, attr_mgr)
+
+    # 1. Global attributes
+    assert result.attrs["Global_attr"] == "Test Dataset"
+
+    # 2. Variable attributes
+    # uncertainty vars should use macropixel logic
+    assert "uncert_var_macropixel_attr" in result["uncert_var"].attrs
+    assert "sys_err_var_macropixel_attr" in result["sys_err_var"].attrs
+
+    # 'intensity_var', 'energy_var', 'other_var' should use regular logic
+    assert "intensity_var_attr" in result["intensity_var"].attrs
+    assert "energy_var_attr" in result["energy_var"].attrs
+    assert "other_var_attr" in result["other_var"].attrs
+
+    # 'energy_delta_var' should have check_schema=False
+    assert "energy_delta_var_attr" in result["energy_delta_var"].attrs
+    assert result["energy_delta_var"].attrs["check_schema"] is False
+
+    # 3. Dimension attributes and labels
+    for dim in ["dim1", "dim2"]:
+        assert f"{dim}_attr" in result[dim].attrs
+        assert f"{dim}_label" in result.coords
+        assert f"{f'{dim}_label'}_attr" in result[f"{dim}_label"].attrs
+        assert list(result[f"{dim}_label"].dims) == [dim]
+
+
 def test_load_ancillary_data():
     """Test the load_ancillary_data function."""
     # Mock input data
@@ -195,16 +251,16 @@ def test_build_ancillary_dataset_sectored():
     np.random.seed(42)  # Set a random seed for reproducibility
     epoch = np.array(["2025-01-01T00:00", "2025-01-01T00:01"], dtype="datetime64[m]")
     energy_mean = [1.8, 4, 6]
-    declination = np.arange(8)
+    zenith = np.arange(8)
     azimuth = np.arange(15)
 
     species_array = xr.DataArray(
-        data=np.random.rand(2, 3, 15, 8),  # (epoch, energy_mean, azimuth, declination)
-        dims=("epoch", "energy_mean", "azimuth", "declination"),
+        data=np.random.rand(2, 3, 15, 8),  # (epoch, energy_mean, azimuth, zenith)
+        dims=("epoch", "energy_mean", "azimuth", "zenith"),
         coords={
             "epoch": epoch,
             "energy_mean": energy_mean,
-            "declination": declination,
+            "zenith": zenith,
             "azimuth": azimuth,
         },
         name="h",
@@ -322,13 +378,13 @@ def test_reshape_for_sectored():
     """
     Test the reshape_for_sectored function.
     """
-    # Mock input data: 3D array (epoch, energy, declination)
+    # Mock input data: 3D array (epoch, energy, zenith)
     np.random.seed(42)  # Set a random seed for reproducibility
-    epoch, energy, declination = 2, 3, 8
-    input_array = np.random.rand(epoch, energy, declination)
+    epoch, energy, zenith = 2, 3, 8
+    input_array = np.random.rand(epoch, energy, zenith)
 
-    # Expected output shape: 4D array (epoch, energy, azimuth, declination)
-    expected_shape = (epoch, energy, N_AZIMUTH, declination)
+    # Expected output shape: 4D array (epoch, energy, azimuth, zenith)
+    expected_shape = (epoch, energy, N_AZIMUTH, zenith)
 
     # Call the function
     reshaped_array = reshape_for_sectored(input_array)
@@ -544,7 +600,7 @@ def test_add_systematic_uncertainties():
         xr.Dataset(
             {
                 "h": (
-                    ("epoch", "h_energy_mean", "azimuth", "declination"),
+                    ("epoch", "h_energy_mean", "azimuth", "zenith"),
                     np.random.rand(2, 3, 15, 8).astype("float32"),
                 )
             }
@@ -617,12 +673,12 @@ def test_add_total_uncertainties():
     )
 
 
-def test_process_sectored_intensity_data(
+def test_process_macropixel_intensity(
     l1b_sectored_rates_dataset, ancillary_dependencies
 ):
     """Test the variables in the sectored intensity dataset"""
 
-    l2_sectored_intensity_dataset = process_sectored_intensity_data(
+    l2_sectored_intensity_dataset = process_macropixel_intensity(
         l1b_sectored_rates_dataset, ancillary_dependencies["macropixel"]
     )
 
@@ -632,7 +688,7 @@ def test_process_sectored_intensity_data(
     valid_coords = {
         "epoch",
         "azimuth",
-        "declination",
+        "zenith",
         "h_energy_mean",
         "he4_energy_mean",
         "cno_energy_mean",
@@ -648,7 +704,10 @@ def test_process_sectored_intensity_data(
     assert "dynamic_threshold_state" in l2_sectored_intensity_dataset.data_vars
 
     for particle in VALID_SECTORED_SPECIES:
-        assert f"{particle}" in l2_sectored_intensity_dataset.data_vars
+        assert (
+            f"{particle}_macropixel_intensity"
+            in l2_sectored_intensity_dataset.data_vars
+        )
         assert (
             f"{particle}_stat_uncert_minus" in l2_sectored_intensity_dataset.data_vars
         )
@@ -663,12 +722,10 @@ def test_process_sectored_intensity_data(
         )
 
 
-def test_process_summed_intensity_data(
-    l1b_summed_rates_dataset, ancillary_dependencies
-):
+def test_process_summed_intensity(l1b_summed_rates_dataset, ancillary_dependencies):
     """Test the variables in the summed intensity dataset"""
 
-    l2_summed_intensity_dataset = process_summed_intensity_data(
+    l2_summed_intensity_dataset = process_summed_intensity(
         l1b_summed_rates_dataset, ancillary_dependencies["summed"]
     )
 
@@ -704,7 +761,7 @@ def test_process_summed_intensity_data(
     assert "dynamic_threshold_state" in l1b_summed_rates_dataset.data_vars
 
     for particle in SUMMED_PARTICLE_ENERGY_RANGE_MAPPING.keys():
-        assert f"{particle}" in l2_summed_intensity_dataset.data_vars
+        assert f"{particle}_summed_intensity" in l2_summed_intensity_dataset.data_vars
         assert f"{particle}_stat_uncert_minus" in l2_summed_intensity_dataset.data_vars
         assert f"{particle}_stat_uncert_plus" in l2_summed_intensity_dataset.data_vars
         assert f"{particle}_sys_err_minus" in l2_summed_intensity_dataset.data_vars
@@ -713,12 +770,10 @@ def test_process_summed_intensity_data(
         assert f"{particle}_energy_delta_plus" in l2_summed_intensity_dataset.data_vars
 
 
-def test_process_standard_intensity_data(
-    l1b_standard_rates_dataset, ancillary_dependencies
-):
+def test_process_standard_intensity(l1b_standard_rates_dataset, ancillary_dependencies):
     """Test the variables in the standard intensity dataset"""
 
-    l2_standard_intensity_dataset = process_standard_intensity_data(
+    l2_standard_intensity_dataset = process_standard_intensity(
         l1b_standard_rates_dataset, ancillary_dependencies["standard"]
     )
 
@@ -754,7 +809,9 @@ def test_process_standard_intensity_data(
     assert "dynamic_threshold_state" in l1b_standard_rates_dataset.data_vars
 
     for particle in STANDARD_PARTICLE_ENERGY_RANGE_MAPPING.keys():
-        assert f"{particle}" in l2_standard_intensity_dataset.data_vars
+        assert (
+            f"{particle}_standard_intensity" in l2_standard_intensity_dataset.data_vars
+        )
         assert (
             f"{particle}_stat_uncert_minus" in l2_standard_intensity_dataset.data_vars
         )

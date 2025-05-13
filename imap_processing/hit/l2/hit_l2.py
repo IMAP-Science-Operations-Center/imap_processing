@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.hit.hit_utils import (
     add_summed_particle_data_to_dataset,
     get_attribute_manager,
@@ -46,64 +47,107 @@ def hit_l2(dependency_sci: xr.Dataset, dependencies_anc: list) -> list[xr.Datase
     processed_data : list[xarray.Dataset]
         List of one L2 dataset.
     """
-    logger.info("Creating HIT L2 science datasets")
+    logger.info("Creating HIT L2 science dataset")
 
     # Create the attribute manager for this data level
     attr_mgr = get_attribute_manager("l2")
 
-    l2_datasets: dict = {}
+    logical_source = None
+    l2_dataset = None
 
     # Process science data to L2 datasets
     if "imap_hit_l1b_summed-rates" in dependency_sci.attrs["Logical_source"]:
-        l2_datasets["imap_hit_l2_summed-intensity"] = process_summed_intensity_data(
-            dependency_sci, dependencies_anc
-        )
-        logger.info("HIT L2 summed intensity dataset created")
+        l2_dataset = process_summed_intensity(dependency_sci, dependencies_anc)
+        logical_source = "imap_hit_l2_summed-intensity"
 
     if "imap_hit_l1b_standard-rates" in dependency_sci.attrs["Logical_source"]:
-        l2_datasets["imap_hit_l2_standard-intensity"] = process_standard_intensity_data(
-            dependency_sci, dependencies_anc
-        )
-        logger.info("HIT L2 standard intensity dataset created")
+        l2_dataset = process_standard_intensity(dependency_sci, dependencies_anc)
+        logical_source = "imap_hit_l2_standard-intensity"
 
     if "imap_hit_l1b_sectored-rates" in dependency_sci.attrs["Logical_source"]:
-        l2_datasets["imap_hit_l2_macropixel-intensity"] = (
-            process_sectored_intensity_data(dependency_sci, dependencies_anc)
-        )
-        logger.info("HIT L2 macropixel intensity dataset created")
+        l2_dataset = process_macropixel_intensity(dependency_sci, dependencies_anc)
+        logical_source = "imap_hit_l2_macropixel-intensity"
 
-    # Update attributes and dimensions
-    for logical_source, dataset in l2_datasets.items():
-        dataset.attrs = attr_mgr.get_global_attributes(logical_source)
-
-        # TODO: Add CDF attributes to yaml once they're defined for L2 science data
-        #  consider moving attribute handling to hit_utils.py
-        # Assign attributes and dimensions to each data array in the Dataset
-        for field in dataset.data_vars.keys():
-            try:
-                # Create a dict of dimensions using the DEPEND_I keys in the
-                # attributes
-                dims = {
-                    key: value
-                    for key, value in attr_mgr.get_variable_attributes(field).items()
-                    if "DEPEND" in key
-                }
-                dataset[field].attrs = attr_mgr.get_variable_attributes(field)
-                dataset[field].assign_coords(dims)
-            except KeyError:
-                # TODO: consider raising an error after L2 attributes are defined.
-                #  Until then, continue with processing and log warning
-                logger.warning(f"Field {field} not found in attribute manager.")
-
-        # Skip schema check for epoch to prevent attr_mgr from adding the
-        # DEPEND_0 attribute which isn't required for epoch
-        dataset.epoch.attrs = attr_mgr.get_variable_attributes(
-            "epoch", check_schema=False
-        )
+    # Add attributes to dataset
+    if l2_dataset is not None and logical_source is not None:
+        l2_dataset = add_cdf_attributes(l2_dataset, logical_source, attr_mgr)
 
         logger.info(f"HIT L2 dataset created for {logical_source}")
 
-    return list(l2_datasets.values())
+    return [l2_dataset]
+
+
+def add_cdf_attributes(
+    dataset: xr.Dataset, logical_source: str, attr_mgr: ImapCdfAttributes
+) -> xr.Dataset:
+    """
+    Add attributes to the given dataset.
+
+    This function adds attributes to the dataset variables and dimensions.
+    It also adds dimension labels to the dataset as coordinates.
+
+    The attributes are defined in a YAML file and retrieved by the attribute manager.
+    Many variables share attributes across datasets, but some differ due to dimension
+    variations. For example, macropixel uncertainty variables are 4D, while summed
+    and standard uncertainty variables are 2D. To handle this, macropixel uncertainty
+    variables have a "_macropixel" suffix in the YAML file, while summed and standard
+    variables do not (i.e. h_total_uncert_minus_macropixel vs. h_total_uncert_minus).
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        The dataset to update.
+    logical_source : str
+        The logical source of the dataset.
+    attr_mgr : AttributeManager
+        The attribute manager to retrieve attributes.
+
+    Returns
+    -------
+    xr.Dataset
+        The updated dataset with attributes and dimension labels.
+    """
+    # Update global attributes
+    dataset.attrs = attr_mgr.get_global_attributes(logical_source)
+
+    # Assign attributes to each data variable in the Dataset
+    for var in dataset.data_vars.keys():
+        try:
+            if "macropixel" in logical_source and ("uncert" in var or "sys_err" in var):
+                # Retrieve attributes specific to macropixel data.
+                dataset[var].attrs = attr_mgr.get_variable_attributes(
+                    f"{var}_macropixel"
+                )
+            else:
+                dataset[var].attrs = attr_mgr.get_variable_attributes(var)
+            if "energy_delta" in var:
+                # skip schema check to avoid DEPEND_0 being added unnecessarily
+                dataset[var].attrs = attr_mgr.get_variable_attributes(
+                    var, check_schema=False
+                )
+        except KeyError:
+            logger.error(f"Field {var} not found in attribute manager.")
+
+    # Assign attributes to dimensions and add dimension labels to dataset
+    # check_schema=False to avoid attr_mgr adding stuff dimensions don't need
+    for dim in dataset.dims:
+        dataset[dim].attrs = attr_mgr.get_variable_attributes(dim, check_schema=False)
+        # TODO: should labels be added as coordinates? Check with SPDF
+        if dim != "epoch":
+            dataset = dataset.assign_coords(
+                {
+                    f"{dim}_label": xr.DataArray(
+                        dataset[dim].values.astype(str),
+                        name=f"{dim}_label",
+                        dims=[dim],
+                        attrs=attr_mgr.get_variable_attributes(
+                            f"{dim}_label", check_schema=False
+                        ),
+                    )
+                }
+            )
+
+    return dataset
 
 
 def calculate_intensities(
@@ -117,7 +161,7 @@ def calculate_intensities(
     for all epochs.
 
         This function uses equation 9 and 12 from the HIT algorithm document:
-        ((Summed L1B Rates) / (Delta Time * Delta E * Geometry Factor * Efficiency)) - b
+        ((L1B Rates) / (Delta Time * Delta E * Geometry Factor * Efficiency)) - b
 
     Parameters
     ----------
@@ -153,8 +197,8 @@ def reshape_for_sectored(arr: np.ndarray) -> np.ndarray:
     """
     Reshape the ancillary data for sectored rates.
 
-    Reshape the 3D arrays (epoch, energy, declination) to 4D arrays
-    (epoch, energy, azimuth, declination) by repeating the data
+    Reshape the 3D arrays (epoch, energy, zenith) to 4D arrays
+    (epoch, energy, azimuth, zenith) by repeating the data
     along the azimuth dimension. This is done to match the dimensions
     of the sectored rates data to allow for proper calculation of
     intensities.
@@ -211,10 +255,8 @@ def build_ancillary_dataset(
     """
     data_vars = {}
 
-    # Check if this is sectored data (i.e., has azimuth and declination dims)
-    is_sectored = (
-        "declination" in species_array.dims or "declination" in species_array.coords
-    )
+    # Check if this is sectored data (i.e., has azimuth and zenith dims)
+    is_sectored = "zenith" in species_array.dims or "zenith" in species_array.coords
 
     # Build variables
     data_vars["delta_e"] = (species_array.dims, delta_e)
@@ -311,7 +353,7 @@ def calculate_intensities_for_a_species(
     )
 
     # Reshape parameters for sectored rates to 4D arrays
-    if "declination" in updated_ds[species_variable].dims:
+    if "zenith" in updated_ds[species_variable].dims:
         delta_e = reshape_for_sectored(delta_e)
         geometry_factors = reshape_for_sectored(geometry_factors)
         efficiencies = reshape_for_sectored(efficiencies)
@@ -543,11 +585,11 @@ def load_ancillary_data(dynamic_threshold_states: set, ancillary_files: list) ->
     return ancillary_data_frames
 
 
-def process_summed_intensity_data(
+def process_summed_intensity(
     l1b_summed_rates_dataset: xr.Dataset, ancillary_files: list
 ) -> xr.Dataset:
     """
-    Will process L2 HIT summed intensity data from L1B summed rates.
+    Will process L1B summed rates to L2 HIT summed intensity data.
 
     This function converts the L1B summed rates to L2 summed intensities
     using ancillary tables containing factors needed to calculate the
@@ -571,37 +613,41 @@ def process_summed_intensity_data(
         The processed L2 summed intensity dataset.
     """
     # Create a new dataset to store the L2 summed intensity data
-    l2_summed_intensity_dataset = l1b_summed_rates_dataset.copy(deep=True)
+    summed_intensity_dataset = l1b_summed_rates_dataset.copy(deep=True)
 
     # Load ancillary data for each dynamic threshold state into a dictionary
     ancillary_data_frames = load_ancillary_data(
-        set(l2_summed_intensity_dataset["dynamic_threshold_state"].values),
+        set(summed_intensity_dataset["dynamic_threshold_state"].values),
         ancillary_files,
     )
 
     # Calculate the intensity for each species
-    l2_summed_intensity_dataset = calculate_intensities_for_all_species(
-        l2_summed_intensity_dataset, ancillary_data_frames, VALID_SPECIES
+    summed_intensity_dataset = calculate_intensities_for_all_species(
+        summed_intensity_dataset, ancillary_data_frames, VALID_SPECIES
     )
 
     # Add total and systematic uncertainties to the dataset
-    for var in l2_summed_intensity_dataset.data_vars:
+    for var in summed_intensity_dataset.data_vars:
         if var in VALID_SPECIES:
-            l2_summed_intensity_dataset = add_systematic_uncertainties(
-                l2_summed_intensity_dataset, var
+            summed_intensity_dataset = add_systematic_uncertainties(
+                summed_intensity_dataset, var
             )
-            l2_summed_intensity_dataset = add_total_uncertainties(
-                l2_summed_intensity_dataset, var
+            summed_intensity_dataset = add_total_uncertainties(
+                summed_intensity_dataset, var
+            )
+            # Expand the variable name to include standard intensity
+            summed_intensity_dataset = summed_intensity_dataset.rename(
+                {var: f"{var}_summed_intensity"}
             )
 
-    return l2_summed_intensity_dataset
+    return summed_intensity_dataset
 
 
-def process_standard_intensity_data(
+def process_standard_intensity(
     l1b_standard_rates_dataset: xr.Dataset, ancillary_files: list
 ) -> xr.Dataset:
     """
-    Will process L2 standard intensity data from L1B standard rates data.
+    Will process L1B standard rates data to L2 standard intensity data.
 
     This function converts L1B standard rates to L2 standard intensities for each
     particle type and energy range using ancillary tables containing factors
@@ -635,63 +681,67 @@ def process_standard_intensity_data(
         The L2 standard intensity dataset.
     """
     # Create a new dataset to store the L2 standard intensity data
-    l2_standard_intensity_dataset = xr.Dataset()
+    standard_intensity_dataset = xr.Dataset()
 
     # Assign the epoch coordinate from the l1B dataset
-    l2_standard_intensity_dataset = l2_standard_intensity_dataset.assign_coords(
+    standard_intensity_dataset = standard_intensity_dataset.assign_coords(
         {"epoch": l1b_standard_rates_dataset.coords["epoch"]}
     )
 
     # Add dynamic threshold state to the dataset
-    l2_standard_intensity_dataset["dynamic_threshold_state"] = (
-        l1b_standard_rates_dataset["dynamic_threshold_state"]
-    )
+    standard_intensity_dataset["dynamic_threshold_state"] = l1b_standard_rates_dataset[
+        "dynamic_threshold_state"
+    ]
 
     # Load ancillary data for each dynamic threshold state into a dictionary
     ancillary_data_frames = load_ancillary_data(
-        set(l2_standard_intensity_dataset["dynamic_threshold_state"].values),
+        set(standard_intensity_dataset["dynamic_threshold_state"].values),
         ancillary_files,
     )
 
     # Process each particle type and add rates and uncertainties to the dataset
     for particle, energy_ranges in STANDARD_PARTICLE_ENERGY_RANGE_MAPPING.items():
         # Add standard particle rates and statistical uncertainties to the dataset
-        l2_standard_intensity_dataset = add_summed_particle_data_to_dataset(
-            l2_standard_intensity_dataset,
+        standard_intensity_dataset = add_summed_particle_data_to_dataset(
+            standard_intensity_dataset,
             l1b_standard_rates_dataset,
             particle,
             energy_ranges,
         )
 
-    l2_standard_intensity_dataset = calculate_intensities_for_all_species(
-        l2_standard_intensity_dataset, ancillary_data_frames, VALID_SPECIES
+    standard_intensity_dataset = calculate_intensities_for_all_species(
+        standard_intensity_dataset, ancillary_data_frames, VALID_SPECIES
     )
 
     # Add total and systematic uncertainties to the dataset
     for particle in STANDARD_PARTICLE_ENERGY_RANGE_MAPPING.keys():
-        l2_standard_intensity_dataset = add_systematic_uncertainties(
-            l2_standard_intensity_dataset, particle
+        standard_intensity_dataset = add_systematic_uncertainties(
+            standard_intensity_dataset, particle
         )
-        l2_standard_intensity_dataset = add_total_uncertainties(
-            l2_standard_intensity_dataset, particle
+        standard_intensity_dataset = add_total_uncertainties(
+            standard_intensity_dataset, particle
+        )
+        # Expand the variable name to include standard intensity
+        standard_intensity_dataset = standard_intensity_dataset.rename(
+            {particle: f"{particle}_standard_intensity"}
         )
 
-    return l2_standard_intensity_dataset
+    return standard_intensity_dataset
 
 
-def process_sectored_intensity_data(
+def process_macropixel_intensity(
     l1b_sectored_rates_dataset: xr.Dataset, ancillary_files: list
 ) -> xr.Dataset:
     """
-    Will process L2 HIT sectored intensity data from L1B sectored rates data.
+    Will process L1B sectored rates data to L2 macropixel intensity data.
 
-    This function converts the L1B sectored rates to L2 sectored intensities
+    This function converts the L1B sectored rates to L2 macropixel intensities
     using ancillary tables containing factors needed to calculate the
     intensity (energy bin width, geometry factor, efficiency, and b).
 
     Equation 12 from the HIT algorithm document:
-    Sectored Intensity = (Summed L1B Sectored Rates) /
-                       (600 * Delta E * Geometry Factor * Efficiency) - b
+    Macropixel Intensity = ((Summed L1B Sectored Rates) /
+                       (600 * Delta E * Geometry Factor * Efficiency)) - b
 
     Parameters
     ----------
@@ -704,30 +754,35 @@ def process_sectored_intensity_data(
     Returns
     -------
     xr.Dataset
-        The processed L2 sectored intensity dataset.
+        The processed L2 macropixel intensity dataset.
     """
-    # Create a new dataset to store the L2 sectored intensity data
-    l2_sectored_intensity_dataset = l1b_sectored_rates_dataset.copy(deep=True)
+    # Create a new dataset to store the L2 macropixel intensity data
+    macropixel_intensity_dataset = l1b_sectored_rates_dataset.copy(deep=True)
 
     # Load ancillary data for each dynamic threshold state into a dictionary
     ancillary_data_frames = load_ancillary_data(
-        set(l2_sectored_intensity_dataset["dynamic_threshold_state"].values),
+        set(macropixel_intensity_dataset["dynamic_threshold_state"].values),
         ancillary_files,
     )
 
     # Calculate the intensity for each species
-    l2_sectored_intensity_dataset = calculate_intensities_for_all_species(
-        l2_sectored_intensity_dataset, ancillary_data_frames, VALID_SECTORED_SPECIES
+    macropixel_intensity_dataset = calculate_intensities_for_all_species(
+        macropixel_intensity_dataset, ancillary_data_frames, VALID_SECTORED_SPECIES
     )
 
     # Add total and systematic uncertainties to the dataset
-    for var in l2_sectored_intensity_dataset.data_vars:
+    for var in macropixel_intensity_dataset.data_vars:
         if var in VALID_SECTORED_SPECIES:
-            l2_sectored_intensity_dataset = add_systematic_uncertainties(
-                l2_sectored_intensity_dataset, var
+            macropixel_intensity_dataset = add_systematic_uncertainties(
+                macropixel_intensity_dataset, var
             )
-            l2_sectored_intensity_dataset = add_total_uncertainties(
-                l2_sectored_intensity_dataset, var
+            macropixel_intensity_dataset = add_total_uncertainties(
+                macropixel_intensity_dataset, var
             )
 
-    return l2_sectored_intensity_dataset
+            # Expand the variable name to include macropixel intensity
+            macropixel_intensity_dataset = macropixel_intensity_dataset.rename(
+                {var: f"{var}_macropixel_intensity"}
+            )
+
+    return macropixel_intensity_dataset

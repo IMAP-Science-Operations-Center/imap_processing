@@ -1,9 +1,14 @@
 """Tests coverage for imap_processing.cli."""
 
+import json
+import shutil
 import sys
+from pathlib import Path
 from unittest import mock
 
+import numpy as np
 import pytest
+import spiceypy
 import xarray as xr
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
@@ -346,6 +351,59 @@ def test_hit_l1a(mock_hit_l1a, mock_instrument_dependencies):
     instrument.process()
     assert mock_hit_l1a.call_count == 1
     assert mock_instrument_dependencies["mock_write_cdf"].call_count == 2
+
+
+@pytest.mark.usefixtures("_unset_metakernel_path")
+def test_spice_kernel_handling(spice_test_data_path):
+    """Test coverage for ProcessInstrument.pre_processing method()."""
+    kernels_to_furnish = ["naif0012.tls", "imap_sclk_0000.tsc"]
+    dependency_obj = [
+        {"type": "science", "files": ["imap_hi_l2a_sensor45-de_20100105_v001.cdf"]},
+        {"type": "spice", "files": kernels_to_furnish},
+        {"type": "spice", "files": ["imap_2010_104_01.repoint.csv"]},
+    ]
+    dependency_str = json.dumps(dependency_obj)
+
+    def download_side_effect(path: Path):
+        """Copy kernels from spice_test_data_path to expected DATA_DIR location."""
+        if (spice_test_data_path / path.name).exists():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(spice_test_data_path / path.name, path)
+
+    # Test that the expected kernels are furnished within the function that
+    # gets substituted in for the processing function.
+    def do_processing_side_effect(*args, **kwargs):
+        """Check that the expected kernels are furnished"""
+        kernel_count = spiceypy.ktotal("ALL")
+        furnished_kernels = [
+            Path(spiceypy.kdata(i, "ALL")[0]).name for i in range(kernel_count)
+        ]
+        np.testing.assert_array_equal(
+            sorted(furnished_kernels), sorted(kernels_to_furnish)
+        )
+        return [xr.Dataset()]
+
+    with (
+        mock.patch("imap_data_access.processing_input.download") as mock_download,
+        mock.patch("imap_processing.cli.load_cdf"),
+        mock.patch("imap_processing.cli.Hi.do_processing") as mock_do_processing,
+        # mock.patch("imap_processing.cli.ProcessInstrument.post_processing"),
+        mock.patch("imap_processing.cli.write_cdf"),
+        mock.patch("imap_processing.cli.ProcessInstrument.upload_products"),
+    ):
+        mock_download.side_effect = download_side_effect
+        mock_do_processing.side_effect = do_processing_side_effect
+
+        instrument = Hi(
+            "l1b", "sensor45-de", dependency_str, "20100105", None, "v001", True
+        )
+        # Verify no kernels are furnished prior to calling process
+        assert spiceypy.ktotal("ALL") == 0
+        # Verification that the expected kernels get furnished is done in the
+        # mocked do_processing function
+        instrument.process()
+        # Verify that the furnished kernels get cleared in the post_processing method
+        assert spiceypy.ktotal("ALL") == 0
 
 
 @mock.patch("imap_processing.cli.swe_l1a")

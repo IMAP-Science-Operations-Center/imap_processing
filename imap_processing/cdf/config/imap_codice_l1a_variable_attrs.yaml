@@ -1265,6 +1265,12 @@ P0_EnergyStep:
     FIELDNAM: Priority 0 Energy Step
     VALIDMAX: 128
 
+P0_ERGE:
+    <<: *direct_events
+    CATDESC: Priority 0 Energy Range
+    FIELDNAM: Priority 0 Energy Range
+    VALIDMAX: 4
+
 P0_MultiFlag:
     <<: *direct_events
     CATDESC: Priority 0 Multi Flag
@@ -1295,12 +1301,36 @@ P0_SpinAngle:
     FIELDNAM: Priority 0 Spin Angle
     VALIDMAX: 128
 
+P0_SpinNumber:
+    <<: *direct_events
+    CATDESC: Priority 0 Spin Number
+    FIELDNAM: Priority 0 Spin Number
+    VALIDMAX: 32
+
+P0_SSD_ID:
+    <<: *direct_events
+    CATDESC: Priority 0 SSD ID or Azimuth Angle
+    FIELDNAM: Priority 0 SSD ID or Azimuth Angle
+    VALIDMAX: 32
+
+P0_SSDEnergy:
+    <<: *direct_events
+    CATDESC: Priority 0 APD Energy
+    FIELDNAM: Priority 0 APD Energy
+    VALIDMAX: 2048
+
 P0_TOF:
     <<: *direct_events
     CATDESC: Priority 0 Time of Flight
     FIELDNAM: Priority 0 Time of Flight
     FILLVAL: 65535
     VALIDMAX: 1024
+
+P0_Type:
+    <<: *direct_events
+    CATDESC: Priority 0 Type
+    FIELDNAM: Priority 0 Type
+    VALIDMAX: 3
 
 P1_APD_ID:
     <<: *direct_events
@@ -1333,6 +1363,12 @@ P1_EnergyStep:
     FIELDNAM: Priority 1 Energy Step
     VALIDMAX: 128
 
+P1_ERGE:
+    <<: *direct_events
+    CATDESC: Priority 1 Energy Range
+    FIELDNAM: Priority 1 Energy Range
+    VALIDMAX: 4
+
 P1_MultiFlag:
     <<: *direct_events
     CATDESC: Priority 1 Multi Flag
@@ -1363,12 +1399,36 @@ P1_SpinAngle:
     FIELDNAM: Priority 1 Spin Angle
     VALIDMAX: 128
 
+P1_SpinNumber:
+    <<: *direct_events
+    CATDESC: Priority 1 Spin Number
+    FIELDNAM: Priority 1 Spin Number
+    VALIDMAX: 32
+
+P1_SSD_ID:
+    <<: *direct_events
+    CATDESC: Priority 1 SSD ID or Azimuth Angle
+    FIELDNAM: Priority 1 SSD ID or Azimuth Angle
+    VALIDMAX: 32
+
+P1_SSDEnergy:
+    <<: *direct_events
+    CATDESC: Priority 1 APD Energy
+    FIELDNAM: Priority 1 APD Energy
+    VALIDMAX: 2048
+
 P1_TOF:
     <<: *direct_events
     CATDESC: Priority 1 Time of Flight
     FIELDNAM: Priority 1 Time of Flight
     FILLVAL: 65535
     VALIDMAX: 1024
+
+P1_Type:
+    <<: *direct_events
+    CATDESC: Priority 1 Type
+    FIELDNAM: Priority 1 Type
+    VALIDMAX: 3
 
 P2_APD_ID:
     <<: *direct_events
@@ -1401,6 +1461,12 @@ P2_EnergyStep:
     FIELDNAM: Priority 2 Energy Step
     VALIDMAX: 128
 
+P2_ERGE:
+    <<: *direct_events
+    CATDESC: Priority 2 Energy Range
+    FIELDNAM: Priority 2 Energy Range
+    VALIDMAX: 4
+
 P2_MultiFlag:
     <<: *direct_events
     CATDESC: Priority 2 Multi Flag
@@ -1431,12 +1497,36 @@ P2_SpinAngle:
     FIELDNAM: Priority 2 Spin Angle
     VALIDMAX: 128
 
+P2_SpinNumber:
+    <<: *direct_events
+    CATDESC: Priority 2 Spin Number
+    FIELDNAM: Priority 2 Spin Number
+    VALIDMAX: 32
+
+P2_SSD_ID:
+    <<: *direct_events
+    CATDESC: Priority 2 SSD ID or Azimuth Angle
+    FIELDNAM: Priority 2 SSD ID or Azimuth Angle
+    VALIDMAX: 32
+
+P2_SSDEnergy:
+    <<: *direct_events
+    CATDESC: Priority 2 APD Energy
+    FIELDNAM: Priority 2 APD Energy
+    VALIDMAX: 2048
+
 P2_TOF:
     <<: *direct_events
     CATDESC: Priority 2 Time of Flight
     FIELDNAM: Priority 2 Time of Flight
     FILLVAL: 65535
     VALIDMAX: 1024
+
+P2_Type:
+    <<: *direct_events
+    CATDESC: Priority 2 Type
+    FIELDNAM: Priority 2 Type
+    VALIDMAX: 3
 
 P3_APD_ID:
     <<: *direct_events
@@ -1469,6 +1559,12 @@ P3_EnergyStep:
     FIELDNAM: Priority 3 Energy Step
     VALIDMAX: 128
 
+P3_ERGE:
+    <<: *direct_events
+    CATDESC: Priority 3 Energy Range
+    FIELDNAM: Priority 3 Energy Range
+    VALIDMAX: 4
+
 P3_MultiFlag:
     <<: *direct_events
     CATDESC: Priority 3 Multi Flag
@@ -1499,12 +1595,36 @@ P3_SpinAngle:
     FIELDNAM: Priority 3 Spin Angle
     VALIDMAX: 128
 
+P3_SpinNumber:
+    <<: *direct_events
+    CATDESC: Priority 3 Spin Number
+    FIELDNAM: Priority 3 Spin Number
+    VALIDMAX: 32
+
+P3_SSD_ID:
+    <<: *direct_events
+    CATDESC: Priority 3 SSD ID or Azimuth Angle
+    FIELDNAM: Priority 3 SSD ID or Azimuth Angle
+    VALIDMAX: 32
+
+P3_SSDEnergy:
+    <<: *direct_events
+    CATDESC: Priority 3 APD Energy
+    FIELDNAM: Priority 3 APD Energy
+    VALIDMAX: 2048
+
 P3_TOF:
     <<: *direct_events
     CATDESC: Priority 3 Time of Flight
     FIELDNAM: Priority 3 Time of Flight
     FILLVAL: 65535
     VALIDMAX: 1024
+
+P3_Type:
+    <<: *direct_events
+    CATDESC: Priority 3 Type
+    FIELDNAM: Priority 3 Type
+    VALIDMAX: 3
 
 P4_APD_ID:
     <<: *direct_events
@@ -1537,6 +1657,12 @@ P4_EnergyStep:
     FIELDNAM: Priority 4 Energy Step
     VALIDMAX: 128
 
+P4_ERGE:
+    <<: *direct_events
+    CATDESC: Priority 4 Energy Range
+    FIELDNAM: Priority 4 Energy Range
+    VALIDMAX: 4
+
 P4_MultiFlag:
     <<: *direct_events
     CATDESC: Priority 4 Multi Flag
@@ -1567,12 +1693,36 @@ P4_SpinAngle:
     FIELDNAM: Priority 4 Spin Angle
     VALIDMAX: 128
 
+P4_SpinNumber:
+    <<: *direct_events
+    CATDESC: Priority 4 Spin Number
+    FIELDNAM: Priority 4 Spin Number
+    VALIDMAX: 32
+
+P4_SSD_ID:
+    <<: *direct_events
+    CATDESC: Priority 4 SSD ID or Azimuth Angle
+    FIELDNAM: Priority 4 SSD ID or Azimuth Angle
+    VALIDMAX: 32
+
+P4_SSDEnergy:
+    <<: *direct_events
+    CATDESC: Priority 4 APD Energy
+    FIELDNAM: Priority 4 APD Energy
+    VALIDMAX: 2048
+
 P4_TOF:
     <<: *direct_events
     CATDESC: Priority 4 Time of Flight
     FIELDNAM: Priority 4 Time of Flight
     FILLVAL: 65535
     VALIDMAX: 1024
+
+P4_Type:
+    <<: *direct_events
+    CATDESC: Priority 4 Type
+    FIELDNAM: Priority 4 Type
+    VALIDMAX: 3
 
 P5_APD_ID:
     <<: *direct_events
@@ -1605,6 +1755,12 @@ P5_EnergyStep:
     FIELDNAM: Priority 5 Energy Step
     VALIDMAX: 128
 
+P5_ERGE:
+    <<: *direct_events
+    CATDESC: Priority 5 Energy Range
+    FIELDNAM: Priority 5 Energy Range
+    VALIDMAX: 4
+
 P5_MultiFlag:
     <<: *direct_events
     CATDESC: Priority 5 Multi Flag
@@ -1635,12 +1791,36 @@ P5_SpinAngle:
     FIELDNAM: Priority 5 Spin Angle
     VALIDMAX: 128
 
+P5_SpinNumber:
+    <<: *direct_events
+    CATDESC: Priority 5 Spin Number
+    FIELDNAM: Priority 5 Spin Number
+    VALIDMAX: 32
+
+P5_SSD_ID:
+    <<: *direct_events
+    CATDESC: Priority 5 SSD ID or Azimuth Angle
+    FIELDNAM: Priority 5 SSD ID or Azimuth Angle
+    VALIDMAX: 32
+
+P5_SSDEnergy:
+    <<: *direct_events
+    CATDESC: Priority 5 APD Energy
+    FIELDNAM: Priority 5 APD Energy
+    VALIDMAX: 2048
+
 P5_TOF:
     <<: *direct_events
     CATDESC: Priority 5 Time of Flight
     FIELDNAM: Priority 5 Time of Flight
     FILLVAL: 65535
     VALIDMAX: 1024
+
+P5_Type:
+    <<: *direct_events
+    CATDESC: Priority 5 Type
+    FIELDNAM: Priority 5 Type
+    VALIDMAX: 3
 
 P6_APD_ID:
     <<: *direct_events

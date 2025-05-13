@@ -152,6 +152,9 @@ class TestHiPointingSet:
         assert hi_pset.num_points == 3600
         np.testing.assert_array_equal(hi_pset.az_el_points.shape, (3600, 2))
 
+        for var_name in ["exposure_factor", "bg_rates", "bg_rates_unc"]:
+            assert var_name in hi_pset.data
+
     def test_from_cdf(self, hi_pset_cdf_path):
         """Test coverage for from_cdf method."""
         hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path)
@@ -163,7 +166,7 @@ class TestHiPointingSet:
         rect_map = ena_maps.RectangularSkyMap(
             spacing_deg=2, spice_frame=geometry.SpiceFrame.ECLIPJ2000
         )
-        rect_map.project_pset_values_to_map(hi_pset, ["counts", "exposure_times"])
+        rect_map.project_pset_values_to_map(hi_pset, ["counts", "exposure_factor"])
         assert rect_map.data_1d["counts"].max() > 0
 
 
