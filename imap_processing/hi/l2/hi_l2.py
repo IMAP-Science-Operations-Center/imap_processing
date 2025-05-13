@@ -12,6 +12,8 @@ from imap_processing.spice.geometry import SpiceFrame
 
 logger = logging.getLogger(__name__)
 
+VARS_TO_EXPOSURE_TIME_AVERAGE = ["bg_rates", "bg_rates_unc"]
+
 
 def generate_hi_map(
     psets: list[str | Path],
@@ -63,8 +65,8 @@ def generate_hi_map(
 
         # Background rate and uncertainty are exposure time weighted means in
         # the map.
-        pset.data["bg_rates"] *= pset.data["exposure_factor"]
-        pset.data["bg_rates_unc"] *= pset.data["exposure_factor"]
+        for var in VARS_TO_EXPOSURE_TIME_AVERAGE:
+            pset.data[var] *= pset.data["exposure_factor"]
 
         # Project (bin) the PSET variables into the map pixels
         rect_map.project_pset_values_to_map(
@@ -83,8 +85,8 @@ def generate_hi_map(
     # Finish the exposure time weighted mean calculation of backgrounds
     # Allow divide by zero to fill set pixels with zero exposure time to NaN
     with np.errstate(divide="ignore"):
-        map_ds["bg_rates"] /= map_ds["exposure_factor"]
-        map_ds["bg_rates_unc"] /= map_ds["exposure_factor"]
+        for var in VARS_TO_EXPOSURE_TIME_AVERAGE:
+            map_ds[var] /= map_ds["exposure_factor"]
 
     map_ds.update(calculate_ena_signal_rates(map_ds))
     map_ds.update(
@@ -112,26 +114,29 @@ def calculate_ena_signal_rates(map_ds: xr.Dataset) -> dict[str, xr.DataArray]:
         ENA signal rates computed from the binned PSET data.
     """
     signal_rate_vars = {}
-    # Allow divide by zero to fill set pixels with zero exposure time to NaN
+    # Allow divide by zero to set pixels with zero exposure time to NaN
     with np.errstate(divide="ignore"):
-        # Calculate the ENA Signal Rate and Signal Rate Uncertainties
+        # Calculate the ENA Signal Rate
         signal_rate_vars["ena_signal_rates"] = (
             map_ds["counts"] / map_ds["exposure_factor"] - map_ds["bg_rates"]
         )
-        signal_rate_vars["ena_signal_rate_stat_unc"] = np.sqrt(
-            map_ds["counts"] / map_ds["exposure_factor"]
+        # Calculate the ENA Signal Rate Uncertainties
+        # The minimum count uncertainty is 1 for any pixel that has non-zero
+        # exposure time. See IMAP Hi Algorithm Document section 3.1.1. Here,
+        # we can ignore the non-zero exposure time condition when setting the
+        # minimum count uncertainty because division by zero exposure time results
+        # in the correct NaN value.
+        min_counts_unc = xr.ufuncs.maximum(map_ds["counts"], 1)
+        signal_rate_vars["ena_signal_rate_stat_unc"] = (
+            np.sqrt(min_counts_unc) / map_ds["exposure_factor"]
         )
+
     # Statistical fluctuations may result in a negative ENA signal rate after
     # background subtraction. A negative signal rate is nonphysical. See IMAP Hi
     # Algorithm Document section 3.1.1
     signal_rate_vars["ena_signal_rates"].values[
         signal_rate_vars["ena_signal_rates"].values < 0
     ] = 0
-    # Minimum count uncertainty is 1 for any pixel that has non-zero exposure time
-    # See IMAP Hi Algorithm Document section 3.1.1
-    signal_rate_vars["ena_signal_rate_stat_unc"].values[
-        (signal_rate_vars["ena_signal_rate_stat_unc"].values == 0)
-    ] = 1
     return signal_rate_vars
 
 
@@ -171,14 +176,19 @@ def calculate_ena_intensity(
 
     # Convert ENA Signal Rate to Flux
     intensity_vars = {
-        "ena_intensity": map_ds["ena_signal_rates"] / geometric_factor / esa_energy,
+        "ena_intensity": map_ds["ena_signal_rates"] / (geometric_factor * esa_energy),
         "ena_intensity_stat_unc": map_ds["ena_signal_rate_stat_unc"]
         / geometric_factor
         / esa_energy,
-        "ena_intensity_sys_err": map_ds["bg_rates_unc"] / geometric_factor / esa_energy,
+        "ena_intensity_sys_err": map_ds["bg_rates_unc"]
+        / (geometric_factor * esa_energy),
     }
 
     # TODO: Correctly implement combining of calibration products. For now, just sum
+    # Hi groups direct events into distinct calibration products based on coincidence
+    # type. (See L1B processing and Hi Algorithm Document section 6.1.2) When adding
+    # together different calibration products, a different weighting must be used
+    # than exposure time. (See Hi Algorithm Document Section 3.1.2)
     intensity_vars["ena_intensity"] = intensity_vars["ena_intensity"].sum(
         dim="calibration_prod"
     )

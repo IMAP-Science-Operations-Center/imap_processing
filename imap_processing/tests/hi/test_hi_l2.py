@@ -49,11 +49,13 @@ def test_calculate_ena_signal_rates(empty_rectangular_map_dataset):
     # Add some data_vars needed for the signal rates calculations
     counts_shape = tuple(map_ds.sizes.values())
     exposure_sizes = {k: v for k, v in map_ds.sizes.items() if k != "calibration_prod"}
+    # By using np.arange % n_i where no n shares a common factor with any other n,
+    # we ensure that each unique combination is encountered in a PSET bin.
     map_ds.update(
         {
             "counts": xr.DataArray(
                 np.arange(np.prod(tuple(map_ds.sizes.values()))).reshape(counts_shape)
-                % 4,
+                % 5,
                 name="counts",
                 dims=list(map_ds.sizes.keys()),
             ),
@@ -77,9 +79,13 @@ def test_calculate_ena_signal_rates(empty_rectangular_map_dataset):
     for var_name in ["ena_signal_rates", "ena_signal_rate_stat_unc"]:
         assert var_name in signal_rates_vars
         assert signal_rates_vars[var_name].shape == counts_shape
-    # Verify that there are no negative signal rates
+    # Verify that there are no negative signal rates. The synthetic data combination
+    # where counts = 0, exposure_factor = 1, and bg_rates = 2 would result in
+    # an ena_signal_rate of (0 / 1) - 2 = -2
     assert np.nanmin(signal_rates_vars["ena_signal_rates"].values) >= 0
-    # Verify that the minimum finite uncertainty is 1
+    # Verify that the minimum finite uncertainty is sqrt(1) / exposure_factor.
+    # Exposure factor is either 1 or 0, so we can expect the minimum finite
+    # uncertainty value to be 1.
     assert np.nanmin(signal_rates_vars["ena_signal_rate_stat_unc"].values) == 1
 
 
