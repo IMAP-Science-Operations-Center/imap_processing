@@ -29,10 +29,9 @@ from scipy.signal import butter, detrend, filtfilt, find_peaks
 from scipy.stats import exponnorm
 
 from imap_processing import imap_module_directory
-from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.idex import idex_constants
 from imap_processing.idex.idex_constants import SPICE_ARRAYS
-from imap_processing.idex.idex_utils import setup_dataset
+from imap_processing.idex.idex_utils import get_idex_attrs, setup_dataset
 
 logger = logging.getLogger(__name__)
 
@@ -75,10 +74,7 @@ def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
     l1b_dataset : xarray.Dataset
         The``xarray`` dataset containing the science data and supporting metadata.
     """
-    # TODO replace with idex_attrs = get_idex_attrs("l2a") when attrs are added
-    idex_attrs = ImapCdfAttributes()
-    idex_attrs.add_instrument_global_attrs("idex")
-
+    idex_attrs = get_idex_attrs("l2a")
     logger.info(
         f"Running IDEX L2A processing on dataset: {l1b_dataset.attrs['Logical_source']}"
     )
@@ -142,8 +138,6 @@ def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
         "tof_peak_chi_square": fit_chisqr,
         "tof_peak_reduced_chi_square": fit_redchi,
     }
-    idex_attrs = ImapCdfAttributes()
-    idex_attrs.add_instrument_global_attrs("idex")
     l2a_dataset = setup_dataset(
         l1b_dataset, prefixes + SPICE_ARRAYS, idex_attrs, data_vars
     )

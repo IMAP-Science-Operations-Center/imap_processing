@@ -23,7 +23,7 @@ import logging
 import numpy as np
 import xarray as xr
 
-from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.idex.idex_utils import get_idex_attrs
 from imap_processing.spice.time import epoch_to_doy
 
 logger = logging.getLogger(__name__)
@@ -48,9 +48,7 @@ def idex_l2b(l2a_dataset: xr.Dataset) -> xr.Dataset:
     )
 
     # create the attribute manager for this data level
-    idex_attrs = ImapCdfAttributes()
-    idex_attrs.add_instrument_global_attrs(instrument="idex")
-    idex_attrs.add_instrument_variable_attrs("idex", "l2b")
+    idex_attrs = get_idex_attrs("l2b")
 
     epoch_da = xr.DataArray(
         l2a_dataset["epoch"],
