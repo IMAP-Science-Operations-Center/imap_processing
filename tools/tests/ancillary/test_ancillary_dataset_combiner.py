@@ -17,7 +17,7 @@ from tools.ancillary.ancillary_dataset_combiner import (
 @pytest.fixture
 def mocks():
     with mock.patch(
-        "tools.ancillary.ancillary_dataset_generator.cdf_to_xarray"
+        "tools.ancillary.ancillary_dataset_combiner.cdf_to_xarray"
     ) as read_cdf:
         mocks = {
             "read_cdf": read_cdf,

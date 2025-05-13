@@ -172,9 +172,9 @@ class AncillaryCombiner:
         for data_var in self.timestamped_data[0].dataset.data_vars:
             shape = self.timestamped_data[0].dataset[data_var].shape
             output_dataset[data_var] = xr.DataArray(
-                np.full((len(epoch_data), shape), np.iinfo(np.int32).max),
+                np.full((len(epoch_data), *shape), np.iinfo(np.int32).max),
                 dims=[self.time_variable]
-                + [f"{data_var}_dim_{i}" for i in range(shape[1])],
+                + [f"{data_var}_dim_{i}" for i in range(len(shape))],
             )
 
         output_dataset["input_file_version"] = xr.DataArray(
