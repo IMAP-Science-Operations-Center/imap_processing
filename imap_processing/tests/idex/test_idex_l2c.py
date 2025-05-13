@@ -48,25 +48,21 @@ def test_l2c_attrs_and_vars(l2c_datasets: list[xr.Dataset], l1b_dataset: xr.Data
     assert rect_ds.attrs["Logical_source"] == "imap_idex_l2c_rectangular-pset-1week"
     # The total counts in the pset should be equal to the number of dust events
     # in the l1b_dataset
-    np.testing.assert_allclose(
-        healpix_ds["healpix_counts"].sum(), len(l1b_dataset.epoch)
-    )
-    np.testing.assert_allclose(
-        rect_ds["rectangular_counts"].sum(), len(l1b_dataset.epoch)
-    )
-    assert healpix_ds.dims == {
+    np.testing.assert_allclose(healpix_ds["counts"].sum(), len(l1b_dataset.epoch))
+    np.testing.assert_allclose(rect_ds["counts"].sum(), len(l1b_dataset.epoch))
+    assert healpix_ds.sizes == {
         "pixel_index": hp.nside2npix(IDEX_HEALPIX_NSIDE),
         "epoch": 1,
     }
 
-    assert rect_ds.dims == {
+    assert rect_ds.sizes == {
         "rectangular_lon_pixel": int(360 / IDEX_SPACING_DEG),
         "rectangular_lat_pixel": int(180 / IDEX_SPACING_DEG),
         "epoch": 1,
     }
     # Check the attributes of the dataset by writing to a CDF file
-    write_cdf(healpix_ds)
-    write_cdf(rect_ds)
+    write_cdf(healpix_ds, istp=True)
+    write_cdf(rect_ds, istp=True)
 
 
 def test_idex_healpix_map(l1b_dataset: xr.Dataset):
@@ -76,12 +72,17 @@ def test_idex_healpix_map(l1b_dataset: xr.Dataset):
         name="epoch",
         dims=["epoch"],
     )
-    pset = idex_healpix_map(l1b_dataset, epoch)
-
-    assert pset.epoch == np.mean([l1b_dataset.epoch[0], l1b_dataset.epoch[-1]])
+    collection = idex_healpix_map(l1b_dataset, epoch)
+    assert collection.epoch == np.mean([l1b_dataset.epoch[0], l1b_dataset.epoch[-1]])
 
     npix = hp.nside2npix(IDEX_HEALPIX_NSIDE)
-    np.testing.assert_array_equal(pset.healpix_counts.shape, (npix,))
+    np.testing.assert_array_equal(
+        collection.counts.shape,
+        (
+            1,
+            npix,
+        ),
+    )
 
 
 def test_idex_rectangular_map(l1b_dataset: xr.Dataset):
@@ -91,20 +92,21 @@ def test_idex_rectangular_map(l1b_dataset: xr.Dataset):
         name="epoch",
         dims=["epoch"],
     )
-    pset = idex_rectangular_map(l1b_dataset, epoch)
+    collection = idex_rectangular_map(l1b_dataset, epoch)
 
-    assert pset.epoch == np.mean([l1b_dataset.epoch[0], l1b_dataset.epoch[-1]])
+    assert collection.epoch == np.mean([l1b_dataset.epoch[0], l1b_dataset.epoch[-1]])
 
     np.testing.assert_array_equal(
-        pset.rectangular_counts.shape,
+        collection.counts.shape,
         (
+            1,
             int(360 / IDEX_SPACING_DEG),
             int(180 / IDEX_SPACING_DEG),
         ),
     )
 
     expected_counts = np.zeros(
-        (int(360 / IDEX_SPACING_DEG), int(180 / IDEX_SPACING_DEG))
+        (1, int(360 / IDEX_SPACING_DEG), int(180 / IDEX_SPACING_DEG))
     )
     grid = AzElSkyGrid(IDEX_SPACING_DEG)
     for lon, lat in zip(l1b_dataset["longitude"].data, l1b_dataset["latitude"].data):
@@ -123,6 +125,6 @@ def test_idex_rectangular_map(l1b_dataset: xr.Dataset):
             )
             - 1
         )
-        expected_counts[az_indices, el_indices] += 1
+        expected_counts[:, az_indices, el_indices] += 1
 
-    np.testing.assert_array_equal(expected_counts, pset.rectangular_counts.data)
+    np.testing.assert_array_equal(expected_counts, collection.counts.data)

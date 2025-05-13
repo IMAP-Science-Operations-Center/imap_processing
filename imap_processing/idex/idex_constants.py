@@ -61,6 +61,7 @@ class ConversionFactors(float, Enum):
     Target_High = 1.63e-1
     Ion_Grid = 7.46e-4
 
+
 SPICE_ARRAYS = [
     "ephemeris_position_x",
     "ephemeris_position_y",
@@ -68,8 +69,8 @@ SPICE_ARRAYS = [
     "ephemeris_velocity_x",
     "ephemeris_velocity_y",
     "ephemeris_velocity_z",
-    "right_ascension",
-    "declination",
+    "longitude",
+    "latitude",
     "solar_longitude",
     "spin_phase",
 ]
