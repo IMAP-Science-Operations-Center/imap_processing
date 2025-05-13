@@ -63,13 +63,13 @@ def test_calculate_ena_signal_rates(empty_rectangular_map_dataset):
                 np.arange(np.prod(tuple(exposure_sizes.values()))).reshape(
                     tuple(exposure_sizes.values())
                 )
-                % 2,
+                % 3,
                 name="exposure_factor",
                 dims=list(exposure_sizes.keys()),
             ),
             "bg_rates": xr.DataArray(
                 np.arange(np.prod(tuple(map_ds.sizes.values()))).reshape(counts_shape)
-                % 3,
+                % 2,
                 name="bg_rates",
                 dims=list(map_ds.sizes.keys()),
             ),
@@ -80,13 +80,13 @@ def test_calculate_ena_signal_rates(empty_rectangular_map_dataset):
         assert var_name in signal_rates_vars
         assert signal_rates_vars[var_name].shape == counts_shape
     # Verify that there are no negative signal rates. The synthetic data combination
-    # where counts = 0, exposure_factor = 1, and bg_rates = 2 would result in
-    # an ena_signal_rate of (0 / 1) - 2 = -2
+    # where counts = 0, exposure_factor = 1, and bg_rates = 1 would result in
+    # an ena_signal_rate of (0 / 1) - 1 = -1
     assert np.nanmin(signal_rates_vars["ena_signal_rates"].values) >= 0
     # Verify that the minimum finite uncertainty is sqrt(1) / exposure_factor.
-    # Exposure factor is either 1 or 0, so we can expect the minimum finite
-    # uncertainty value to be 1.
-    assert np.nanmin(signal_rates_vars["ena_signal_rate_stat_unc"].values) == 1
+    # The max exposure factor is 2, so we can expect the minimum finite
+    # uncertainty value to be 1/2.
+    assert np.nanmin(signal_rates_vars["ena_signal_rate_stat_unc"].values) == 1 / 2
 
 
 def test_calculate_ena_intensity(empty_rectangular_map_dataset):
