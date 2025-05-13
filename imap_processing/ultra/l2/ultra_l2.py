@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 import numpy as np
 import xarray as xr
@@ -22,6 +23,8 @@ DEFAULT_ULTRA_L2_MAP_STRUCTURE: ena_maps.RectangularSkyMap | ena_maps.HealpixSky
             "spice_reference_frame": "ECLIPJ2000",
             "values_to_push_project": [
                 "counts",
+            ],
+            "values_to_pull_project": [
                 "exposure_factor",
                 "sensitivity",
                 "background_rates",
@@ -40,11 +43,14 @@ DEFAULT_L2_HEALPIX_NESTED = False
 
 
 # These variables must always be present in each L1C dataset
-REQUIRED_L1C_VARIABLES = [
+REQUIRED_L1C_VARIABLES_PUSH = [
     "counts",
+]
+REQUIRED_L1C_VARIABLES_PULL = [
     "exposure_factor",
     "sensitivity",
     "background_rates",
+    "obs_date",
 ]
 
 # These variables are projected to the map as the mean of pointing set pixels value,
@@ -65,6 +71,56 @@ VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION = [
     "num_pointing_set_pixel_members",
     "corrected_count_rate",
 ]
+
+# These variables may or may not be energy dependent, depending on the
+# input data. They must be handled slightly differently when it comes to adding
+# metadata to the map dataset.
+INCONSISTENTLY_ENERGY_DEPENDENT_VARIABLES = ["obs_date", "exposure_factor"]
+
+
+def get_variable_attributes_optional_energy_dependence(
+    cdf_attrs: ImapCdfAttributes,
+    variable_array: xr.DataArray,
+    *,
+    check_schema: bool = True,
+) -> dict:
+    """
+    Wrap `get_variable_attributes` to handle optionally energy-dependent vars.
+
+    Several variables are only energy dependent in some cases (input PSET dependent).
+    The metadata on those variables must be handled differently in such cases.
+
+    Parameters
+    ----------
+    cdf_attrs : ImapCdfAttributes
+        The CDF attributes object to use for getting variable attributes.
+    variable_array : xr.DataArray
+        The xarray DataArray containing the variable data and dims.
+        Must have a name attribute.
+    check_schema : bool
+        Flag to bypass schema validation.
+
+    Returns
+    -------
+    dict
+        The attributes for the variable.
+    """
+    variable_name = variable_array.name
+    variable_dims = variable_array.dims
+
+    # These variables must get metadata with a different key if they are energy
+    # dependent.
+    if (variable_name in INCONSISTENTLY_ENERGY_DEPENDENT_VARIABLES) and (
+        (CoordNames.ENERGY_L2.value in variable_dims)
+        or (CoordNames.ENERGY_ULTRA_L1C.value in variable_dims)
+    ):
+        variable_name = f"{variable_name}_energy_dependent"
+
+    metadata = cdf_attrs.get_variable_attributes(
+        variable_name=variable_name,
+        check_schema=check_schema,
+    )
+    return metadata
 
 
 def generate_ultra_healpix_skymap(
@@ -96,6 +152,11 @@ def generate_ultra_healpix_skymap(
         HealpixSkyMap object containing the combined data from all pointing sets,
         with calculated ena_intensity and its statistical uncertainty values.
 
+    Raises
+    ------
+    ValueError
+        If there are overlapping variable names in the push and pull projection lists.
+
     Notes
     -----
     The structure of this function goes as follows:
@@ -103,7 +164,7 @@ def generate_ultra_healpix_skymap(
     2. Iterate over the input pointing sets and read them into UltraPointingSet objects.
     3. For each pointing set, weight certain variables by exposure and solid angle of
     the pointing set pixels.
-    4. Project the pointing set values to the map using the push method.
+    4. Project the pointing set values to the map using the push/pull methods.
     5. Perform subsequent processing for weighted quantities at the SkyMap level
     (e.g., divide weighted quantities by their summed weights to
     get their weighted mean)
@@ -129,33 +190,58 @@ def generate_ultra_healpix_skymap(
     # Add additional data variables to the map
     output_map_structure.values_to_push_project.extend(
         [
+            "num_pointing_set_pixel_members",
+        ]
+    )
+    output_map_structure.values_to_pull_project.extend(
+        [
             "obs_date",
             "pointing_set_exposure_times_solid_angle",
-            "num_pointing_set_pixel_members",
         ]
     )
 
     # Get full list of variables to push to the map: all requested variables plus
     # any which are required for L2 processing
-    value_keys_to_push_project = list(
-        set(output_map_structure.values_to_push_project + REQUIRED_L1C_VARIABLES)
+    output_map_structure.values_to_push_project = list(
+        set(output_map_structure.values_to_push_project + REQUIRED_L1C_VARIABLES_PUSH)
     )
+    output_map_structure.values_to_pull_project = list(
+        set(output_map_structure.values_to_pull_project + REQUIRED_L1C_VARIABLES_PULL)
+    )
+    # If there are overlapping variable names, raise an error
+    if set(output_map_structure.values_to_push_project).intersection(
+        set(output_map_structure.values_to_pull_project)
+    ):
+        raise ValueError(
+            "Some variables are present in both the PUSH and PULL projection lists. "
+            "They will be projected in both ways (PUSH then PULL), which is likely "
+            "not the intended behavior. Please check the projection lists."
+            f"PUSH Variables: {output_map_structure.values_to_push_project} \n"
+            f"PULL Variables: {output_map_structure.values_to_pull_project}"
+        )
 
     for ultra_l1c_pset in ultra_l1c_psets:
         pointing_set = ena_maps.UltraPointingSet(ultra_l1c_pset)
         logger.info(
             f"Projecting a PointingSet with {pointing_set.num_points} pixels "
             f"at epoch:{pointing_set.epoch}\n"
-            f"These values will be projected: {value_keys_to_push_project}"
+            "These values will be push projected: "
+            f">> {output_map_structure.values_to_push_project}"
+            "\nThese values will be pull projected: "
+            f">> {output_map_structure.values_to_pull_project}",
         )
 
         pointing_set.data["num_pointing_set_pixel_members"] = xr.DataArray(
             np.ones(pointing_set.num_points, dtype=int),
             dims=(CoordNames.HEALPIX_INDEX.value),
         )
-        pointing_set.data["obs_date"] = xr.DataArray(
-            np.full((1, pointing_set.num_points), pointing_set.epoch),
-            dims=(CoordNames.TIME.value, CoordNames.HEALPIX_INDEX.value),
+
+        # The obs_date is the same for all pixels in a pointing set, and the same
+        # dimension as the exposure_factor.
+        pointing_set.data["obs_date"] = xr.full_like(
+            pointing_set.data["exposure_factor"],
+            fill_value=pointing_set.epoch,
+            dtype=np.int64,
         )
         # Add solid_angle * exposure of pointing set as data_var
         # so this quantity is projected to map pixels for use in weighted averaging
@@ -169,10 +255,18 @@ def generate_ultra_healpix_skymap(
             VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE
         ] *= pointing_set.data["pointing_set_exposure_times_solid_angle"]
 
+        # Project values such as counts via the PUSH method
         skymap.project_pset_values_to_map(
             pointing_set=pointing_set,
-            value_keys=value_keys_to_push_project,
+            value_keys=output_map_structure.values_to_push_project,
             index_match_method=ena_maps.IndexMatchMethod.PUSH,
+        )
+
+        # Project values such as exposure_factor via the PULL method
+        skymap.project_pset_values_to_map(
+            pointing_set=pointing_set,
+            value_keys=output_map_structure.values_to_pull_project,
+            index_match_method=ena_maps.IndexMatchMethod.PULL,
         )
 
     # Subsequent processing for weighted quantities at SkyMap level
@@ -180,17 +274,8 @@ def generate_ultra_healpix_skymap(
         skymap.data_1d["pointing_set_exposure_times_solid_angle"]
     )
 
-    # TODO: Ask Ultra team about this - I think this is a decent
-    # but imperfect approximation for meaning the exposure:
-    # (dividing by the 1/(number of PSETs)) to fix the exposure being mean-ed over
-    # all pixels in all PSETs which feed into a map superpixel,
-    # rather than being mean-ed over pixels in a PSET and summed over PSETs
-    skymap.data_1d["exposure_factor"] /= skymap.data_1d[
-        "num_pointing_set_pixel_members"
-    ] / len(ultra_l1c_psets)
-
-    # TODO: Ask Ultra team about background rates - I think they should increase when
-    # binned to larger pixels, as I've done here, but that was never explicitly stated
+    # Background rates must be scaled by the ratio of the solid angles of the
+    # map pixel / pointing set pixel
     skymap.data_1d["background_rates"] *= skymap.solid_angle / pointing_set.solid_angle
 
     # Get the energy bin widths from a PointingSet (they will all be the same)
@@ -230,7 +315,7 @@ def generate_ultra_healpix_skymap(
 
 
 def ultra_l2(
-    data_dict: dict[str, xr.Dataset | str],
+    data_dict: dict[str, xr.Dataset | str | Path],
     output_map_structure: (
         ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap
     ) = DEFAULT_ULTRA_L2_MAP_STRUCTURE,
@@ -405,8 +490,9 @@ def ultra_l2(
         # The longitude and latitude variables will be present only in Healpix tiled
         # map, and, as support_data, should not have schema validation
         map_dataset[variable].attrs.update(
-            cdf_attrs.get_variable_attributes(
-                variable_name=variable,
+            get_variable_attributes_optional_energy_dependence(
+                cdf_attrs=cdf_attrs,
+                variable_array=map_dataset[variable],
                 check_schema=variable
                 not in ["longitude", "latitude", "longitude_delta", "latitude_delta"],
             )

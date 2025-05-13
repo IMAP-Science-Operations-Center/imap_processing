@@ -2,7 +2,9 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+import xarray as xr
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.tests.ultra.mock_data import mock_l1c_pset_product_healpix
@@ -93,14 +95,14 @@ class TestUltraL2:
                     {
                         "sky_tiling_type": "HEALPIX",
                         "spice_reference_frame": map_frame,
-                        "projection_method_and_values": {
-                            "PUSH": [
-                                "counts",
-                                "exposure_factor",
-                                "sensitivity",
-                                "background_rates",
-                            ],
-                        },
+                        "values_to_push_project": [
+                            "counts",
+                        ],
+                        "values_to_pull_project": [
+                            "exposure_factor",
+                            "sensitivity",
+                            "background_rates",
+                        ],
                         "nside": 32,
                         "nested": False,
                     }
@@ -161,14 +163,14 @@ class TestUltraL2:
                         {
                             "sky_tiling_type": "RECTANGULAR",
                             "spice_reference_frame": "ECLIPJ2000",
-                            "projection_method_and_values": {
-                                "PUSH": [
-                                    "counts",
-                                    "exposure_factor",
-                                    "sensitivity",
-                                    "background_rates",
-                                ],
-                            },
+                            "values_to_push_project": [
+                                "counts",
+                            ],
+                            "values_to_pull_project": [
+                                "exposure_factor",
+                                "sensitivity",
+                                "background_rates",
+                            ],
                             "spacing_deg": 2.0,
                         }
                     ),
@@ -187,7 +189,8 @@ class TestUltraL2:
         # The map should contain the following variables,
         # because we did not drop any variables
         expected_vars = (
-            ultra_l2.REQUIRED_L1C_VARIABLES
+            ultra_l2.REQUIRED_L1C_VARIABLES_PUSH
+            + ultra_l2.REQUIRED_L1C_VARIABLES_PULL
             + ultra_l2.VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION
             + ["ena_intensity", "ena_intensity_stat_unc"]
         )
@@ -214,9 +217,13 @@ class TestUltraL2:
             {
                 "sky_tiling_type": "HEALPIX",
                 "spice_reference_frame": "ECLIPJ2000",
-                "projection_method_and_values": {
-                    "PUSH": ["counts", "exposure_factor", "sensitivity"],
-                },
+                "values_to_push_project": [
+                    "counts",
+                ],
+                "values_to_pull_project": [
+                    "exposure_factor",
+                    "sensitivity",
+                ],
                 "nside": 16,
                 "nested": True,
             }
@@ -239,7 +246,11 @@ class TestUltraL2:
                 "sky_tiling_type": "RECTANGULAR",
                 "spice_reference_frame": "ECLIPJ2000",
                 "projection_method_and_values": {
-                    "PUSH": ["counts", "exposure_factor", "sensitivity"],
+                    "values_to_push_project": [
+                        "counts",
+                        "exposure_factor",
+                        "sensitivity",
+                    ],
                 },
                 "spacing_deg": 10,  # Larger spacing for faster test
             }
@@ -249,7 +260,11 @@ class TestUltraL2:
                 "sky_tiling_type": "HEALPIX",
                 "spice_reference_frame": "ECLIPJ2000",
                 "projection_method_and_values": {
-                    "PUSH": ["counts", "exposure_factor", "sensitivity"],
+                    "values_to_push_project": [
+                        "counts",
+                        "exposure_factor",
+                        "sensitivity",
+                    ],
                 },
                 "nside": 16,
                 "nested": True,
@@ -328,3 +343,121 @@ class TestUltraL2:
         exposure_attrs = rect_map_dataset["exposure_factor"].attrs
         assert exposure_attrs["VAR_TYPE"] == "data"
         assert exposure_attrs["UNITS"] == "s"
+
+    @pytest.mark.parametrize(
+        "tiling",
+        [
+            "healpix",
+            "rectangular",
+        ],
+    )
+    def test_get_variable_attributes_optional_energy_dependence(self, tiling):
+        # Setup CDF attributes class
+        cdf_attrs = ImapCdfAttributes()
+        cdf_attrs.add_instrument_variable_attrs(instrument="enamaps", level="l2-common")
+        cdf_attrs.add_instrument_variable_attrs(
+            instrument="enamaps", level=f"l2-{tiling}"
+        )
+
+        exposure_factor_array_energy_independent = xr.DataArray(
+            name="exposure_factor",
+            data=np.ones((1, 16)),
+            dims=(
+                CoordNames.TIME.value,
+                CoordNames.GENERIC_PIXEL.value,
+            ),
+        )
+        exposure_factor_array_energy_dependent = xr.DataArray(
+            name="exposure_factor",
+            data=np.ones((1, 24, 16)),
+            dims=(
+                CoordNames.TIME.value,
+                CoordNames.ENERGY_L2.value,
+                CoordNames.GENERIC_PIXEL.value,
+            ),
+        )
+
+        # Check the energy independent case attributes
+        attrs_with_energy_independent_exposure = (
+            ultra_l2.get_variable_attributes_optional_energy_dependence(
+                cdf_attrs=cdf_attrs,
+                variable_array=exposure_factor_array_energy_independent,
+            )
+        )
+
+        # Check non dimensioned attributes
+        assert attrs_with_energy_independent_exposure["UNITS"] == "s"
+
+        # Check the depends (dimensions)
+        assert (
+            attrs_with_energy_independent_exposure["DEPEND_0"] == CoordNames.TIME.value
+        )
+        if tiling == "healpix":
+            assert (
+                attrs_with_energy_independent_exposure["DEPEND_1"]
+                == CoordNames.HEALPIX_INDEX.value
+            )
+        elif tiling == "rectangular":
+            assert (
+                attrs_with_energy_independent_exposure["DEPEND_1"]
+                == CoordNames.AZIMUTH_L2.value
+            )
+            assert (
+                attrs_with_energy_independent_exposure["DEPEND_2"]
+                == CoordNames.ELEVATION_L2.value
+            )
+
+        # Check the energy dependent case attributes
+        attrs_with_energy_dependent_exposure = (
+            ultra_l2.get_variable_attributes_optional_energy_dependence(
+                cdf_attrs=cdf_attrs,
+                variable_array=exposure_factor_array_energy_dependent,
+            )
+        )
+
+        # Check an un-altered attribute (set by energy independent metadata and not
+        # modified by energy dependent metadata)
+        assert attrs_with_energy_dependent_exposure["UNITS"] == "s"
+
+        # Check the depends (dimensions)
+        assert attrs_with_energy_dependent_exposure["DEPEND_0"] == CoordNames.TIME.value
+        assert (
+            attrs_with_energy_dependent_exposure["DEPEND_1"]
+            == CoordNames.ENERGY_L2.value
+        )
+        if tiling == "healpix":
+            assert (
+                attrs_with_energy_dependent_exposure["DEPEND_2"]
+                == CoordNames.HEALPIX_INDEX.value
+            )
+        elif tiling == "rectangular":
+            assert (
+                attrs_with_energy_dependent_exposure["DEPEND_2"]
+                == CoordNames.AZIMUTH_L2.value
+            )
+            assert (
+                attrs_with_energy_dependent_exposure["DEPEND_3"]
+                == CoordNames.ELEVATION_L2.value
+            )
+
+    @pytest.mark.usefixtures("_setup_spice_kernels_list")
+    def test_ultra_l2_error_for_push_and_pull(
+        self, mock_data_dict, furnish_kernels, caplog
+    ):
+        map_structure = ena_maps.AbstractSkyMap.from_dict(
+            {
+                "sky_tiling_type": "HEALPIX",
+                "spice_reference_frame": "ECLIPJ2000",
+                "values_to_push_project": ["counts", "exposure_factor"],
+                "values_to_pull_project": ["exposure_factor", "sensitivity"],
+                "nside": 16,
+                "nested": True,
+            }
+        )
+        # An error is expected when the same variable is in both the push/pull lists
+        with furnish_kernels(self.required_kernel_names):
+            with pytest.raises(ValueError, match="Some variables are present in both"):
+                ultra_l2.ultra_l2(
+                    data_dict=mock_data_dict,
+                    output_map_structure=map_structure,
+                )

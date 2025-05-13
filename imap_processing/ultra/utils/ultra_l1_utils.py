@@ -95,31 +95,31 @@ def create_dataset(
             dataset[key] = xr.DataArray(
                 data,
                 dims=["epoch", "component"],
-                attrs=cdf_manager.get_variable_attributes(key),
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         elif key in ("ena_rates_threshold", "energy_bin_delta"):
             dataset[key] = xr.DataArray(
                 data,
                 dims=["energy_bin_geometric_mean"],
-                attrs=cdf_manager.get_variable_attributes(key),
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         elif key in rates_keys:
             dataset[key] = xr.DataArray(
                 data,
                 dims=["energy_bin_geometric_mean", "spin_number"],
-                attrs=cdf_manager.get_variable_attributes(key),
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         elif key == "counts":
             dataset[key] = xr.DataArray(
                 data,
                 dims=["energy_bin_geometric_mean", "healpix"],
-                attrs=cdf_manager.get_variable_attributes(key),
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         else:
             dataset[key] = xr.DataArray(
                 data,
                 dims=[default_dimension],
-                attrs=cdf_manager.get_variable_attributes(key),
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
 
     return dataset

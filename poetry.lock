@@ -625,13 +625,13 @@ files = [
 
 [[package]]
 name = "imap-data-access"
-version = "0.21.0"
+version = "0.24.0"
 description = "IMAP SDC Data Access"
 optional = false
 python-versions = "*"
 files = [
-    {file = "imap_data_access-0.21.0-py3-none-any.whl", hash = "sha256:9193c48d91476149d76834efb83a6463f0296456b8a434a1467ffee587de7c99"},
-    {file = "imap_data_access-0.21.0.tar.gz", hash = "sha256:a2308f73be95cd66fdb7a02e70df049755c77d1d9246d4692b6d669217d7974f"},
+    {file = "imap_data_access-0.24.0-py3-none-any.whl", hash = "sha256:e3df17b169d431153c3b215266f62f0f7295574ff0a847eb91e95027755c5946"},
+    {file = "imap_data_access-0.24.0.tar.gz", hash = "sha256:a5f80521d8b38a9d05722ec2c7b2c770b1f6a5de4b105c6dd63579761b274ad3"},
 ]
 
 [package.dependencies]
@@ -2188,4 +2188,4 @@ tools = ["openpyxl", "pandas"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<4"
-content-hash = "550d2cc140be8aadaaf3b33fee3b6dd98d6ad2aff0f1ea87b4f63787acbc49e5"
+content-hash = "52848f093af8c3a8965b37a4f6cb4572668988c9ac58653982da81ac431debe5"

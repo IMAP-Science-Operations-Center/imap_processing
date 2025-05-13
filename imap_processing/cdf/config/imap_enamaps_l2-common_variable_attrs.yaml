@@ -103,16 +103,6 @@ latitude:
 # Define Data variables, but not their pixel-level DEPENDs
 # (e.g. pixel_index for HEALPix maps, longitude/latitude for rectangular maps).
 # Those are defined in the tiling specific YAML files.
-exposure_factor:
-  <<: *default_float32
-  CATDESC: Exact or approximate exposure time over which counts in a pixel are accumulated.  Used as a weighting factor for combining data quantities sensibly.
-  FIELDNAM: Exposure Times
-  DEPEND_0: epoch
-  UNITS: s
-  VAR_TYPE: data
-  LABLAXIS: Exposure
-  DISPLAY_TYPE: no_plot
-
 ena_intensity:
   <<: *default_float32
   CATDESC: Mono-energetic ENA intensity.
@@ -145,7 +135,17 @@ sensitivity:
   LABLAXIS: sensitivity
   DISPLAY_TYPE: image
 
-obs_date:
+exposure_factor: &exposure_factor_energy_independent
+  <<: *default_float32
+  CATDESC: Exact or approximate time over which counts are accumulated.
+  FIELDNAM: Exposure Times
+  DEPEND_0: epoch
+  UNITS: s
+  VAR_TYPE: data
+  LABLAXIS: Exposure
+  DISPLAY_TYPE: no_plot
+
+obs_date: &obs_date_energy_independent
   <<: *default_int64
   datatype: int64
   CATDESC: Exposure time weighted mean collection date of data in a pixel.
@@ -155,3 +155,12 @@ obs_date:
   VAR_TYPE: data
   LABLAXIS: epoch
   DISPLAY_TYPE: image
+
+# These copied metadata vars will allow for variables
+# to be either energy-dependent or independent.
+# The tiling-specific YAML files will override the DEPENDs and LABL_PTRs.
+exposure_factor_energy_dependent:
+  <<: *exposure_factor_energy_independent
+
+obs_date_energy_dependent:
+  <<: *obs_date_energy_independent

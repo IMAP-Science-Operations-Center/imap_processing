@@ -17,11 +17,7 @@ string_base_attrs: &string_base
   CATDESC: " "
   FIELDNAM: " "
   FORMAT: A3
-  LABLAXIS: "none"
   VAR_TYPE: metadata
-  DISPLAY_TYPE: no_plot
-  DEPEND_0: epoch
-  UNITS: " "
 
 l1a_data_base: &l1a_data_base
   VALIDMIN: *data_min

@@ -47,11 +47,6 @@ latitude:
   LABL_PTR_1: pixel_index_label
 
 # Define Data variables
-exposure_factor:
-  # TODO: add in energy dimension, at least for Heliosphereic frame
-  DEPEND_1: pixel_index
-  LABL_PTR_1: pixel_index_label
-
 ena_intensity:
   DEPEND_1: energy
   DEPEND_2: pixel_index
@@ -71,6 +66,25 @@ sensitivity:
   LABL_PTR_1: energy_label
   LABL_PTR_2: pixel_index_label
 
+# These data variables will have an extra (energy) dimension
+# only if the energy dimension is present in the L1C data.
+# The default is energy-independent.
+exposure_factor:
+  DEPEND_1: pixel_index
+  LABL_PTR_1: pixel_index_label
+
 obs_date:
   DEPEND_1: pixel_index
   LABL_PTR_1: pixel_index_label
+
+exposure_factor_energy_dependent:
+  DEPEND_1: energy
+  DEPEND_2: pixel_index
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: pixel_index_label
+
+obs_date_energy_dependent:
+  DEPEND_1: energy
+  DEPEND_2: pixel_index
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: pixel_index_label

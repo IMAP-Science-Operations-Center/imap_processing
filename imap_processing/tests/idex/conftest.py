@@ -5,9 +5,11 @@ import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
+from imap_processing.idex.idex_constants import SPICE_ARRAYS
 from imap_processing.idex.idex_l1a import PacketParser
 from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.idex.idex_l2a import idex_l2a
+from imap_processing.idex.idex_utils import get_idex_attrs
 
 TEST_DATA_PATH = imap_module_directory / "tests" / "idex" / "test_data"
 
@@ -19,19 +21,6 @@ L1A_EXAMPLE_FILE = TEST_DATA_PATH / "idex_l1a_validation_file.h5"
 L1B_EXAMPLE_FILE = TEST_DATA_PATH / "idex_l1b_validation_file.h5"
 
 pytestmark = pytest.mark.external_test_data
-
-SPICE_ARRAYS = [
-    "ephemeris_position_x",
-    "ephemeris_position_y",
-    "ephemeris_position_z",
-    "ephemeris_velocity_x",
-    "ephemeris_velocity_y",
-    "ephemeris_velocity_z",
-    "right_ascension",
-    "declination",
-    "solar_longitude",
-    "spin_phase",
-]
 
 
 @pytest.fixture
@@ -92,8 +81,11 @@ def l2a_dataset(decom_test_data_sci: xr.Dataset) -> xr.Dataset:
     dataset : xr.Dataset
         A ``xarray`` dataset containing the test data
     """
+    idex_attrs = get_idex_attrs("l1b")
     spin_phase_angles = xr.DataArray(
-        np.random.randint(0, 360, len(decom_test_data_sci.epoch))
+        np.random.randint(0, 360, len(decom_test_data_sci.epoch)),
+        dims="epoch",
+        attrs=idex_attrs.get_variable_attributes("spin_phase"),
     )
     with mock.patch(
         "imap_processing.idex.idex_l1b.get_spice_data",

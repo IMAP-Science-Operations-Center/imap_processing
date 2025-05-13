@@ -13,6 +13,10 @@ PUI = PickUp Ion
 ESA = ElectroStatic Analyzer
 """
 
+from typing import Any
+
+import numpy as np
+
 from imap_processing.codice.utils import CODICEAPID, CoDICECompression
 
 # Grouping of APIDs used to signify similar L1a processing
@@ -110,6 +114,38 @@ HI_PRIORITY_VARIABLE_NAMES = [
     "Priority5",
 ]
 HI_SECTORED_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
+
+# CDF variable names used for direct event data products
+HI_PHA_CDF_FIELDS = [
+    "NumEvents",
+    "DataQuality",
+    "SSDEnergy",
+    "TOF",
+    "SSD_ID",
+    "ERGE",
+    "MultiFlag",
+    "Type",
+    "SpinAngle",
+    "SpinNumber",
+]
+HI_PHA_VARIABLE_NAMES = [
+    f"P{n}_{field}" for n in range(6) for field in HI_PHA_CDF_FIELDS
+]
+LO_PHA_CDF_FIELDS = [
+    "NumEvents",
+    "DataQuality",
+    "APDGain",
+    "APD_ID",
+    "APDEnergy",
+    "TOF",
+    "MultiFlag",
+    "PHAType",
+    "SpinAngle",
+    "EnergyStep",
+]
+LO_PHA_VARIABLE_NAMES = [
+    f"P{n}_{field}" for n in range(8) for field in LO_PHA_CDF_FIELDS
+]
 
 # lo- and hi-counters-aggregated data product variables are dynamically
 # determined based on the number of active counters
@@ -406,19 +442,143 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     },
 }
 
-# Dictionary to define the bit structure of CoDICE-Lo direct events
-LO_DE_BIT_STRUCTURE = {
-    "APDGain": 1,
-    "APD_ID": 5,
-    "Position": 5,
-    "APDEnergy": 9,
-    "TOF": 10,
-    "MultiFlag": 1,
-    "PHAType": 2,
-    "SpinAngle": 5,
-    "EnergyStep": 7,
-    "Priority": 3,
-    "Spare": 16,
+# Various configurations to support processing of direct events data products
+# These are described in the algorithm document in chapter 10 ("Data Level 1A")
+DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
+    CODICEAPID.COD_HI_PHA: {
+        "num_priorities": 6,
+        "bit_structure": {
+            "SSDEnergy": {
+                "bit_length": 11,
+                "dtype": np.uint16,
+                "fillval": np.iinfo(np.uint16).max,
+            },
+            "TOF": {
+                "bit_length": 10,
+                "dtype": np.uint16,
+                "fillval": np.iinfo(np.uint16).max,
+            },
+            "SSD_ID": {
+                "bit_length": 4,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "ERGE": {
+                "bit_length": 2,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "MultiFlag": {
+                "bit_length": 1,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "Type": {
+                "bit_length": 2,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "SpinAngle": {
+                "bit_length": 5,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "SpinNumber": {
+                "bit_length": 4,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "Priority": {
+                "bit_length": 3,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "Spare": {
+                "bit_length": 22,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+        },
+        "cdf_fields": HI_PHA_CDF_FIELDS,
+    },
+    CODICEAPID.COD_LO_PHA: {
+        "num_priorities": 8,
+        "bit_structure": {
+            "APDGain": {
+                "bit_length": 1,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "APD_ID": {
+                "bit_length": 5,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "Position": {
+                "bit_length": 5,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "APDEnergy": {
+                "bit_length": 9,
+                "dtype": np.uint16,
+                "fillval": np.iinfo(np.uint16).max,
+            },
+            "TOF": {
+                "bit_length": 10,
+                "dtype": np.uint16,
+                "fillval": np.iinfo(np.uint16).max,
+            },
+            "MultiFlag": {
+                "bit_length": 1,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "PHAType": {
+                "bit_length": 2,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "SpinAngle": {
+                "bit_length": 5,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "EnergyStep": {
+                "bit_length": 7,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "Priority": {
+                "bit_length": 3,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "Spare": {
+                "bit_length": 16,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+        },
+        "cdf_fields": LO_PHA_CDF_FIELDS,
+    },
+}
+
+# Define the packet fields needed to be stored in segmented data and their
+# corresponding bit lengths for direct event data products
+DE_METADATA_FIELDS = {
+    "packet_version": 16,
+    "spin_period": 16,
+    "acq_start_seconds": 32,
+    "acq_start_subseconds": 20,
+    "spare_1": 2,
+    "st_bias_gain_mode": 2,
+    "sw_bias_gain_mode": 2,
+    "priority": 4,
+    "suspect": 1,
+    "compressed": 1,
+    "num_events": 32,
+    "byte_count": 32,
 }
 
 # Compression ID lookup tables

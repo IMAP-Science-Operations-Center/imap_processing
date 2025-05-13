@@ -55,13 +55,6 @@ latitude:
   SCALE_TYP: linear
 
 # Define Data variables
-exposure_factor:
-  # TODO: add in energy dimension, at least for Heliosphereic frame
-  DEPEND_1: longitude
-  DEPEND_2: latitude
-  LABL_PTR_1: longitude_label
-  LABL_PTR_2: latitude_label
-
 ena_intensity:
   DEPEND_1: energy
   DEPEND_2: longitude
@@ -86,8 +79,33 @@ sensitivity:
   LABL_PTR_2: longitude_label
   LABL_PTR_3: latitude_label
 
+# These data variables will have an extra (energy) dimension
+# only if the energy dimension is present in the L1C data.
+# The default is energy-independent.
+exposure_factor:
+  DEPEND_1: longitude
+  DEPEND_2: latitude
+  LABL_PTR_1: longitude_label
+  LABL_PTR_2: latitude_label
+
 obs_date:
   DEPEND_1: longitude
   DEPEND_2: latitude
   LABL_PTR_1: longitude_label
   LABL_PTR_2: latitude_label
+
+exposure_factor_energy_dependent:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+obs_date_energy_dependent:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label

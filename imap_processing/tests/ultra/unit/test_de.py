@@ -4,7 +4,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from imap_processing import imap_module_directory
+from imap_processing.cdf.utils import load_cdf
 from imap_processing.ultra.constants import UltraConstants
+
+TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
 @pytest.fixture
@@ -17,10 +21,12 @@ def df_filt(de_dataset, events_fsw_comparison_theta_0):
     return df_filt
 
 
-def test_calculate_de(l1b_de_dataset, df_filt):
+@pytest.mark.external_test_data
+def test_calculate_de(df_filt):
     """Tests calculate_de function."""
 
-    l1b_de_dataset = l1b_de_dataset[0]
+    l1b_de_dataset_path = TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207_v999.cdf"
+    l1b_de_dataset = load_cdf(l1b_de_dataset_path)
     l1b_de_dataset = l1b_de_dataset.where(
         l1b_de_dataset["start_type"] != 255, drop=True
     )

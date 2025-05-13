@@ -115,18 +115,21 @@ def extract_magnetic_vectors(science_values: xr.DataArray) -> dict:
         Magnetic vectors.
     """
     # Primary sensor:
-    pri_x = (int(science_values[0]) >> 8) & 0xFFFF
-    pri_y = ((int(science_values[0]) << 8) & 0xFF00) | (
-        (int(science_values[1]) >> 16) & 0xFF
-    )
-    pri_z = int(science_values[1]) & 0xFFFF
+    pri_x: np.int16 = np.uint16((int(science_values[0]) >> 8) & 0xFFFF).astype(np.int16)
+    pri_y: np.int16 = np.uint16(
+        ((int(science_values[0]) << 8) & 0xFF00)
+        | ((int(science_values[1]) >> 16) & 0xFF)
+    ).astype(np.int16)
+    pri_z: np.int16 = np.uint16(int(science_values[1]) & 0xFFFF).astype(np.int16)
 
     # Secondary sensor:
-    sec_x = (int(science_values[2]) >> 8) & 0xFFFF
-    sec_y = ((int(science_values[2]) << 8) & 0xFF00) | (
-        (int(science_values[3]) >> 16) & 0xFF
-    )
-    sec_z = int(science_values[3]) & 0xFFFF
+    sec_x: np.int16 = np.uint16((int(science_values[2]) >> 8) & 0xFFFF).astype(np.int16)
+    sec_y: np.int16 = np.uint16(
+        ((int(science_values[2]) << 8) & 0xFF00)
+        | ((int(science_values[3]) >> 16) & 0xFF)
+    ).astype(np.int16)
+
+    sec_z: np.int16 = np.uint16(int(science_values[3]) & 0xFFFF).astype(np.int16)
 
     vectors = {
         "pri_x": pri_x,
@@ -306,20 +309,18 @@ def process_packet(
         f"{accumulated_data['mag_acq_tm_coarse'].max().values}."
     )
 
-    # Note that the fine time second is split into 65535.
-    time_seconds = calculate_time(
-        accumulated_data["mag_acq_tm_coarse"],
-        accumulated_data["mag_acq_tm_fine"],
-        65535,
+    # Subsecond time conversion specified in 7516-9054 GSW-FSW ICD.
+    # Value of SCLK subseconds, unsigned, (LSB = 1/256 sec)
+    met = calculate_time(
+        accumulated_data["sc_sclk_sec"], accumulated_data["sc_sclk_sub_sec"], 256
     )
 
     # Add required parameters.
-    accumulated_data["time_seconds"] = time_seconds
-    sorted_data = accumulated_data.sortby("time_seconds", ascending=True)
-    pkt_counter = get_pkt_counter(sorted_data["mag_status"])
-    sorted_data["pkt_counter"] = pkt_counter
+    accumulated_data["met"] = met
+    pkt_counter = get_pkt_counter(accumulated_data["mag_status"])
+    accumulated_data["pkt_counter"] = pkt_counter
 
-    grouped_data = find_groups(sorted_data, (0, 3), "pkt_counter", "time_seconds")
+    grouped_data = find_groups(accumulated_data, (0, 3), "pkt_counter", "met")
 
     unique_groups = np.unique(grouped_data["group"])
     mag_data = []
@@ -334,7 +335,7 @@ def process_packet(
         ]
 
         if not np.array_equal(pkt_counter, np.arange(4)):
-            logger.warning(
+            logger.info(
                 f"Group {group} does not contain all values from 0 to "
                 f"3 without duplicates."
             )
@@ -342,6 +343,10 @@ def process_packet(
 
         # Get decoded status data.
         status_data = get_status_data(status_values, pkt_counter)
+
+        if status_data["pri_isvalid"] == 0 and status_data["sec_isvalid"] == 0:
+            logger.info(f"Group {group} contains no valid data for either sensor.")
+            continue
 
         # Get science values for each group.
         science_values = grouped_data["mag_data"][
@@ -358,6 +363,13 @@ def process_packet(
         )
 
         # Note: primary = MAGo, secondary = MAGi.
+        # Populate with a FILL value if either sensor is invalid,
+        # but not both.
+        if status_data["pri_isvalid"] == 0:
+            updated_vector_mago = np.full(4, -32768)
+        if status_data["sec_isvalid"] == 0:
+            updated_vector_magi = np.full(4, -32768)
+
         science_data.update(
             {
                 "calibrated_pri_x": updated_vector_mago[0],
