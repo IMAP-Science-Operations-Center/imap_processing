@@ -71,6 +71,7 @@ def test_cdf_aux(ccsds_path_theta_0):
 
     test_data = ultra_l1a(ccsds_path_theta_0, apid_input=ULTRA_AUX.apid[0])
     test_data[0].attrs["Data_version"] = "v999"
+    test_data[0].attrs["Repointing"] = "repoint99999"
     test_data_path = write_cdf(test_data[0], istp=True)
 
     assert test_data_path.exists()
@@ -81,6 +82,7 @@ def test_cdf_rates(ccsds_path_theta_0):
     """Tests that CDF file can be created."""
     test_data = ultra_l1a(ccsds_path_theta_0, apid_input=ULTRA_RATES.apid[0])
     test_data[0].attrs["Data_version"] = "v999"
+    test_data[0].attrs["Repointing"] = "repoint99999"
     test_data_path = write_cdf(test_data[0], istp=False)
 
     assert test_data_path.exists()
@@ -91,6 +93,7 @@ def test_cdf_tof(ccsds_path_theta_0):
     """Tests that CDF file can be created."""
     test_data = ultra_l1a(ccsds_path_theta_0, apid_input=ULTRA_TOF.apid[0])
     test_data[0].attrs["Data_version"] = "v999"
+    test_data[0].attrs["Repointing"] = "repoint99999"
     test_data_path = write_cdf(test_data[0], istp=True)
     assert test_data_path.exists()
     assert (
@@ -103,6 +106,7 @@ def test_cdf_events(ccsds_path_theta_0):
     """Tests that CDF file can be created."""
     test_data = ultra_l1a(ccsds_path_theta_0, apid_input=ULTRA_EVENTS.apid[0])
     test_data[0].attrs["Data_version"] = "v999"
+    test_data[0].attrs["Repointing"] = "repoint99999"
     test_data_path = write_cdf(test_data[0], istp=True)
 
     assert test_data_path.exists()
@@ -114,6 +118,7 @@ def test_cdf_hk(ccsds_path_theta_0):
     test_data = ultra_l1a(ccsds_path_theta_0, apid_input=869)
     data = test_data[0]
     data.attrs["Data_version"] = "v999"
+    data.attrs["Repointing"] = "repoint99999"
     test_data_path = write_cdf(data, istp=True)
 
     assert test_data_path.exists()
