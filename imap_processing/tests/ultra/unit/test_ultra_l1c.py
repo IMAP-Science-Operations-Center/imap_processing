@@ -176,5 +176,5 @@ def test_calculate_spacecraft_pset_with_cdf():
     assert test_data_path.exists()
     assert (
         test_data_path.name
-        == "imap_ultra_l1c_45sensor-pset_20250415-repoint00001_v999.cdf"
+        == "imap_ultra_l1c_45sensor-spacecraftpset_20250415-repoint00001_v999.cdf"
     )
