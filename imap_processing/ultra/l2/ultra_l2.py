@@ -17,7 +17,7 @@ logger.info("Importing ultra_l2 module")
 
 # Default properties for the Ultra L2 map
 DEFAULT_ULTRA_L2_MAP_STRUCTURE: ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap = (
-    ena_maps.AbstractSkyMap.from_dict(
+    ena_maps.AbstractSkyMap.from_properties_dict(
         {
             "sky_tiling_type": "HEALPIX",
             "spice_reference_frame": "ECLIPJ2000",

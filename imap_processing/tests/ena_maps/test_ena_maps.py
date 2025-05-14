@@ -1243,13 +1243,15 @@ class TestAbstractSkyMap:
             temp_file_path_input = temp_file.name
 
         # Read the json file and create a new SkyMap from it
-        skymap_from_json = ena_maps.AbstractSkyMap.from_json(temp_file_path_input)
+        skymap_from_json = ena_maps.AbstractSkyMap.from_properties_json(
+            temp_file_path_input
+        )
 
         # Create json output from the SkyMap at a separate temporary file path
         temp_file_path_output = tempfile.NamedTemporaryFile(
             delete=False, suffix=".json", mode="w"
         ).name
-        skymap_from_json.to_json(json_path=temp_file_path_output)
+        skymap_from_json.to_properties_json(json_path=temp_file_path_output)
 
         assert skymap_from_json.spice_reference_frame == geometry.SpiceFrame.ECLIPJ2000
         assert skymap_from_json.tiling_type is ena_maps.SkyTilingType.HEALPIX

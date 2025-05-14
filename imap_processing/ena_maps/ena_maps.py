@@ -820,7 +820,9 @@ class AbstractSkyMap(ABC):
             self.data_1d[value_key] += pointing_projected_values
 
     @classmethod
-    def from_json(cls, json_path: str | Path) -> RectangularSkyMap | HealpixSkyMap:
+    def from_properties_json(
+        cls, json_path: str | Path
+    ) -> RectangularSkyMap | HealpixSkyMap:
         """
         Create a SkyMap object from a JSON configuration file.
 
@@ -836,10 +838,12 @@ class AbstractSkyMap(ABC):
         """
         with open(json_path) as f:
             properties = json.load(f)
-        return cls.from_dict(properties)
+        return cls.from_properties_dict(properties)
 
     @classmethod
-    def from_dict(cls, properties: dict) -> RectangularSkyMap | HealpixSkyMap:
+    def from_properties_dict(
+        cls, properties: dict
+    ) -> RectangularSkyMap | HealpixSkyMap:
         """
         Create a SkyMap object from a dictionary of properties.
 
@@ -924,7 +928,7 @@ class AbstractSkyMap(ABC):
         return skymap
 
     @abstractmethod
-    def to_dict(self) -> dict:
+    def to_properties_dict(self) -> dict:
         """
         Convert the SkyMap object to a dictionary of properties.
 
@@ -935,7 +939,7 @@ class AbstractSkyMap(ABC):
         """
         raise NotImplementedError("to_dict must be implemented in a subclass.")
 
-    def to_json(self, json_path: str | Path) -> None:
+    def to_properties_json(self, json_path: str | Path) -> None:
         """
         Save the SkyMap object to a JSON configuration file.
 
@@ -945,7 +949,7 @@ class AbstractSkyMap(ABC):
             Path to the JSON file where the properties will be saved.
         """
         with open(json_path, "w") as f:
-            json.dump(self.to_dict(), f, indent=4)
+            json.dump(self.to_properties_dict(), f, indent=4)
 
 
 class RectangularSkyMap(AbstractSkyMap):
@@ -1124,7 +1128,7 @@ class RectangularSkyMap(AbstractSkyMap):
             coords={**self.non_spatial_coords, **self.spatial_coords},
         )
 
-    def to_dict(self) -> dict:
+    def to_properties_dict(self) -> dict:
         """
         Convert the RectangularSkyMap object to a dictionary of properties.
 
@@ -1137,12 +1141,8 @@ class RectangularSkyMap(AbstractSkyMap):
             "sky_tiling_type": "RECTANGULAR",
             "spice_reference_frame": self.spice_reference_frame.name,
             "spacing_deg": self.spacing_deg,
-            "values_to_push_project": (
-                self.values_to_push_project if self.values_to_push_project else []
-            ),
-            "values_to_pull_project": (
-                self.values_to_pull_project if self.values_to_pull_project else []
-            ),
+            "values_to_push_project": self.values_to_push_project,
+            "values_to_pull_project": self.values_to_pull_project,
         }
         return map_properties_dict
 
@@ -1234,7 +1234,7 @@ class HealpixSkyMap(AbstractSkyMap):
         Returns
         -------
         binning_grid_shape : tuple[int]
-            Shape of the AzElSkyGrid (num_az_bins, num_el_bins).
+            Shape of the HealpixSkyGrid (num_points,).
         """
         return (self.num_points,)
 
@@ -1588,7 +1588,7 @@ class HealpixSkyMap(AbstractSkyMap):
 
         return rect_map, subdiv_depth_dict
 
-    def to_dict(self) -> dict:
+    def to_properties_dict(self) -> dict:
         """
         Convert the HealpixSkyMap object to a dictionary of properties.
 
@@ -1602,12 +1602,8 @@ class HealpixSkyMap(AbstractSkyMap):
             "spice_reference_frame": self.spice_reference_frame.name,
             "nside": self.nside,
             "nested": self.nested,
-            "values_to_push_project": (
-                self.values_to_push_project if self.values_to_push_project else []
-            ),
-            "values_to_pull_project": (
-                self.values_to_pull_project if self.values_to_pull_project else []
-            ),
+            "values_to_push_project": self.values_to_push_project,
+            "values_to_pull_project": self.values_to_pull_project,
         }
         return map_properties_dict
 
