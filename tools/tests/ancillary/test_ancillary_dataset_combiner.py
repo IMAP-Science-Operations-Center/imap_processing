@@ -64,7 +64,7 @@ def test_mag_ancillary_converter(mocks, mag_calibration_dataset):
 
     mocks["read_cdf"].return_value = mag_calibration_dataset
 
-    output = MagAncillaryCombiner(input_example)
+    output = MagAncillaryCombiner(input_example, "20251031")
     expected_epoch = [
         np.datetime64("2025-10-17"),
         np.datetime64("2025-10-18"),
@@ -89,7 +89,7 @@ def test_ancillary_converter_overlaps(mocks, mag_calibration_dataset):
 
     mocks["read_cdf"].return_value = mag_calibration_dataset
 
-    output = AncillaryCombiner(input_example)
+    output = AncillaryCombiner(input_example, "20251031")
     expected_epoch = [
         np.datetime64("2025-10-17"),
         np.datetime64("2025-10-18"),
@@ -138,7 +138,7 @@ def test_timestamped_data(mocks, mag_calibration_dataset, ancillary_input):
 
     mocks["read_cdf"].return_value = mag_calibration_dataset
 
-    output = MagAncillaryCombiner(ancillary_input)
+    output = MagAncillaryCombiner(ancillary_input, "20251031")
 
     for index, d in enumerate(data):
         assert d.start_time == output.timestamped_data[index].start_time
@@ -159,13 +159,8 @@ def test_timestamped_data(mocks, mag_calibration_dataset, ancillary_input):
 def test_mag_edge_cases(mocks, mag_calibration_dataset, ancillary_input):
     mocks["read_cdf"].return_value = mag_calibration_dataset
 
-    output = MagAncillaryCombiner(ancillary_input)
+    output = MagAncillaryCombiner(ancillary_input, "20251031")
 
-    # "imap_mag_l2-calibration-matrices_20251017_20251023_v003.cdf",
-    # "imap_mag_l2-calibration-matrices_20251020_20251022_v001.cdf",
-    # "imap_mag_l2-calibration-matrices_20251020_20251021_v004.cdf",
-    # "imap_mag_l2-calibration-matrices_20251015_20251018_v005.cdf"
-    # "imap_mag_l2-calibration-matrices_20251016_20251016_v006.cdf",
     expected_epoch_range = [
         np.datetime64("2025-10-15"),
         np.datetime64("2025-10-16"),
@@ -184,4 +179,27 @@ def test_mag_edge_cases(mocks, mag_calibration_dataset, ancillary_input):
     assert np.array_equal(output.combined_dataset["epoch"].data, expected_epoch_range)
     assert np.array_equal(
         output.combined_dataset["input_file_version"].data, expected_output_versions
+    )
+
+
+def test_no_end_date(mocks, mag_calibration_dataset):
+    mocks["read_cdf"].return_value = mag_calibration_dataset
+    input_example = AncillaryInput(
+        "imap_mag_l2-calibration-matrices_20251019_20251021_v003.cdf",
+        "imap_mag_l2-calibration-matrices_20251020_v002.cdf",
+    )
+
+    output = AncillaryCombiner(input_example, "20251023")
+    expected_epochs = [
+        np.datetime64("2025-10-19"),
+        np.datetime64("2025-10-20"),
+        np.datetime64("2025-10-21"),
+        np.datetime64("2025-10-22"),
+        np.datetime64("2025-10-23"),
+    ]
+    expected_versions = [3, 3, 3, 2, 2]
+
+    assert np.array_equal(output.combined_dataset["epoch"].data, expected_epochs)
+    assert np.array_equal(
+        output.combined_dataset["input_file_version"].data, expected_versions
     )
