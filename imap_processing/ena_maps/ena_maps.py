@@ -605,6 +605,11 @@ class HiPointingSet(PointingSet):
             }
         )
 
+        # Add obs_date variable to be used in determining a map mean obs_date
+        self.data["obs_date"] = xr.full_like(
+            self.data["exposure_factor"], self.data["epoch"].values[0]
+        )
+
         self.az_el_points = np.column_stack(
             (
                 np.squeeze(self.data["hae_longitude"]),
@@ -1052,7 +1057,13 @@ class RectangularSkyMap(AbstractSkyMap):
         self.data_1d: xr.Dataset = xr.Dataset(
             coords={
                 CoordNames.GENERIC_PIXEL.value: np.arange(self.num_points),
-            }
+            },
+            data_vars={
+                "solid_angle": xr.DataArray(
+                    self.solid_angle_points,
+                    dims=[CoordNames.GENERIC_PIXEL.value],
+                )
+            },
         )
 
     @property

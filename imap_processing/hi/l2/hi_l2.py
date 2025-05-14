@@ -12,7 +12,8 @@ from imap_processing.spice.geometry import SpiceFrame
 
 logger = logging.getLogger(__name__)
 
-VARS_TO_EXPOSURE_TIME_AVERAGE = ["bg_rates", "bg_rates_unc"]
+# TODO: is an exposure time weighted average for obs_date appropriate?
+VARS_TO_EXPOSURE_TIME_AVERAGE = ["bg_rates", "bg_rates_unc", "obs_date"]
 
 
 def generate_hi_map(
@@ -71,12 +72,7 @@ def generate_hi_map(
         # Project (bin) the PSET variables into the map pixels
         rect_map.project_pset_values_to_map(
             pset,
-            [
-                "counts",
-                "exposure_factor",
-                "bg_rates",
-                "bg_rates_unc",
-            ],
+            ["counts", "exposure_factor", "bg_rates", "bg_rates_unc", "obs_date"],
         )
 
     # Get the map dataset with variables/coordinates in the correct shape
@@ -93,8 +89,28 @@ def generate_hi_map(
         calculate_ena_intensity(map_ds, geometric_factors_path, esa_energies_path)
     )
 
-    # TODO: Get Dataset ready for writing to CDF by removing some variables
-    #    and adding global and variable attributes
+    # By dropping the calibration_prod dimension, the correct set of variables
+    # also get removed
+    map_ds = map_ds.drop_dims("calibration_prod")
+
+    # TODO: the correct conversion from esa_energy_step to esa_energy
+    esa_energy_step_conversion = (np.arange(10, dtype=float) + 1) * 1000
+    map_ds = map_ds.rename({"esa_energy_step": "energy"})
+    map_ds = map_ds.assign_coords(
+        energy=esa_energy_step_conversion[map_ds["energy"].values]
+    )
+    map_ds = map_ds.drop("esa_energy_step_label")
+    map_ds["energy_label"] = xr.DataArray(
+        map_ds["energy"].values.astype(str),
+        name="energy_label",
+        dims=["energy"],
+    )
+    # TODO: get the correct energy delta values
+    map_ds["energy_delta_minus"] = xr.full_like(map_ds["energy"], np.nan)
+    map_ds["energy_delta_plus"] = xr.full_like(map_ds["energy"], np.nan)
+
+    # TODO: Figure out how to compute obs_date_range (stddev of obs_date)
+    map_ds["obs_date_range"] = xr.zeros_like(map_ds["obs_date"])
 
     return map_ds
 
