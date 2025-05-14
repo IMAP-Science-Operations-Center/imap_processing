@@ -47,7 +47,7 @@ def initialize_pset(
     """
     Initialize the PSET dataset and set the Epoch.
 
-    The Epoch time is set to the mid-point of the L1B
+    The Epoch time is set to the first of the L1B
     Direct Event times. There is one Epoch per PSET file.
 
     Parameters
@@ -67,9 +67,9 @@ def initialize_pset(
     pset = xr.Dataset(
         attrs=attr_mgr.get_global_attributes(logical_source),
     )
-
-    mid_idx = len(l1b_de["epoch"]) // 2
-    pset_epoch = l1b_de["epoch"][mid_idx].item()
+    # TODO: Need to create utility to get start of repointing to use
+    #  for the pset epoch time. Setting to first DE for now
+    pset_epoch = l1b_de["epoch"][0].item()
     pset["epoch"] = xr.DataArray(
         np.array([pset_epoch]),
         dims=["epoch"],
@@ -99,25 +99,25 @@ def filter_goodtimes(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
         Filtered L1B Direct Event dataset.
     """
     # Get the sweep table from the ancillary dependencies
-    sweep_table = next(
-        (item for item in anc_dependencies if "sweeptable" in item), None
+    goodtimes_table = next(
+        (item for item in anc_dependencies if "goodtimes" in item), None
     )
     # sweep table is a dependency so this should always be in the list
-    sweep_table_df = pd.read_csv(sweep_table)
+    goodtimes_table_df = pd.read_csv(goodtimes_table)
 
     # convert goodtimes from MET to TTJ2000
-    goodtimes_start = met_to_ttj2000ns(sweep_table_df["GoodTime_strt"])
-    goodtimes_end = met_to_ttj2000ns(sweep_table_df["GoodTime_end"])
+    goodtimes_start = met_to_ttj2000ns(goodtimes_table_df["GoodTime_strt"])
+    goodtimes_end = met_to_ttj2000ns(goodtimes_table_df["GoodTime_end"])
 
     # Create a mask for epochs within any of the start/end time ranges
-    mask = np.zeros_like(l1b_de["epoch"], dtype=bool)
+    goodtimes_mask = np.zeros_like(l1b_de["epoch"], dtype=bool)
 
     # Iterate over the good times and create a mask
     for start, end in zip(goodtimes_start, goodtimes_end):
-        mask |= (l1b_de["epoch"] >= start) & (l1b_de["epoch"] < end)
+        goodtimes_mask |= (l1b_de["epoch"] >= start) & (l1b_de["epoch"] < end)
 
     # Filter the dataset using the mask
-    filtered_epochs = l1b_de.sel(epoch=mask)
+    filtered_epochs = l1b_de.sel(epoch=goodtimes_mask)
 
     return filtered_epochs
 
