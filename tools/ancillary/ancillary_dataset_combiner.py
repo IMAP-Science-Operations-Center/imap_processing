@@ -1,6 +1,9 @@
 """File for taking in multiple ancillary files and creating a combined dataset."""
 
+from __future__ import annotations
+
 from collections import namedtuple
+from pathlib import Path
 
 import numpy as np
 import xarray as xr
@@ -81,7 +84,7 @@ class AncillaryCombiner:
             The converted TimestampedData object.
         """
         filepath = AncillaryFilePath(filename)
-        dataset = self.convert_file_to_dataset(filename)
+        dataset = self.convert_file_to_dataset(filepath.construct_path())
 
         # Convert start_date to np.datetime64
         formatted_str = (
@@ -99,7 +102,7 @@ class AncillaryCombiner:
 
         return TimestampedData(start_dt, end_dt, dataset, filepath.version)
 
-    def convert_file_to_dataset(self, filepath: str) -> xr.Dataset:
+    def convert_file_to_dataset(self, filepath: str | Path) -> xr.Dataset:
         """
         Convert the file at filepath to an xarray dataset.
 
@@ -107,7 +110,7 @@ class AncillaryCombiner:
 
         Parameters
         ----------
-        filepath : str
+        filepath : str | Path
             The path to the file to convert.
 
         Returns
