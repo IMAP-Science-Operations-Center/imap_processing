@@ -69,7 +69,7 @@ def calculate_spacecraft_pset(
     exposure_pointing = get_spacecraft_exposure_times(df_exposure)
 
     # For ISTP, epoch should be the center of the time bin.
-    pset_dict["epoch"] = de_dataset.epoch.data[0].astype(np.int64)
+    pset_dict["epoch"] = de_dataset.epoch.data[:1].astype(np.int64)
     pset_dict["counts"] = counts
     pset_dict["latitude"] = latitude
     pset_dict["longitude"] = longitude
