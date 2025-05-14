@@ -1,19 +1,15 @@
 """Methods for GLOWS Level 1A processing and CDF writing."""
 
-from collections import defaultdict
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.glows.l0.decom_glows import decom_packets
-from imap_processing.glows.l0.glows_l0_data import DirectEventL0, HistogramL0
+from imap_processing.glows.l0.glows_l0_data import DirectEventL0
 from imap_processing.glows.l1a.glows_l1a_data import DirectEventL1A, HistogramL1A
-from imap_processing.glows.l1b.glows_l1b_data import HistogramL1B
 from imap_processing.spice.time import (
-    met_to_datetime64,
     met_to_ttj2000ns,
 )
 
@@ -42,6 +38,9 @@ def glows_l1a(packet_filepath: Path) -> list[xr.Dataset]:
     Outputs Datasets for histogram and direct event GLOWS L1A. This list can be passed
     into write_cdf to output CDF files.
 
+    We expect one input L0 file to be processed into one L1A file, with one
+    observational day's worth of data.
+
     Parameters
     ----------
     packet_filepath : pathlib.Path
@@ -58,70 +57,25 @@ def glows_l1a(packet_filepath: Path) -> list[xr.Dataset]:
     # Decompose packet file into histogram, and direct event data.
     hist_l0, de_l0 = decom_packets(packet_filepath)
 
-    # Create dictionaries to group data by day
-    de_by_day = process_de_l0(de_l0)
-    hists_by_day = defaultdict(list)
-    # Assume the observational day starts with the first packet, then find any new
-    # observation days.
-    # TODO: replace determine_observational_day with spin table API
-    obs_days = [hist_l0[0].SEC]
-    obs_days += determine_observational_day(hist_l0)
-
+    l1a_de = process_de_l0(de_l0)
+    l1a_hists = []
     for hist in hist_l0:
-        hist_l1a = HistogramL1A(hist)
-        # Determine the day the histogram belongs to. This finds the observation
-        # day in obs_day that is nearest the histogram timestamp without going over.
-        hist_day = next(
-            (day for day in reversed(obs_days) if day <= hist.SEC), obs_days[-1]
-        )
-        hists_by_day[hist_day].append(hist_l1a)
+        l1a_hists.append(HistogramL1A(hist))
 
     # Generate CDF files for each day
     output_datasets = []
-    for obs_day, hist_l1a_list in hists_by_day.items():
-        dataset = generate_histogram_dataset(hist_l1a_list, glows_attrs, obs_day)
-        output_datasets.append(dataset)
+    dataset = generate_histogram_dataset(l1a_hists, glows_attrs)
+    output_datasets.append(dataset)
 
-    for de_l1a_list in de_by_day.values():
-        dataset = generate_de_dataset(de_l1a_list, glows_attrs)
-        output_datasets.append(dataset)
+    dataset = generate_de_dataset(l1a_de, glows_attrs)
+    output_datasets.append(dataset)
 
     return output_datasets
 
 
-def determine_observational_day(hist_l0: list[HistogramL0]) -> list:
-    """
-    Find the timestamps for each observational day.
-
-    This function temporarily uses the is_night flag to determine the start of a new
-    observational day, but should eventually use the spin table APIs.
-
-    Parameters
-    ----------
-    hist_l0 : list[HistogramL0]
-        List of HistogramL0 objects.
-
-    Returns
-    -------
-    list
-        List of start times for each observational day.
-    """
-    prev_is_night = -1
-    obs_day_change = []
-    for hist in hist_l0:
-        flags = HistogramL1B.deserialize_flags(hist.FLAGS)
-        is_night: int = int(flags[6])
-        if prev_is_night and not is_night:
-            obs_day_change.append(hist.SEC)
-
-        prev_is_night = is_night
-
-    return obs_day_change
-
-
 def process_de_l0(
     de_l0: list[DirectEventL0],
-) -> dict[np.datetime64, list[DirectEventL1A]]:
+) -> list[DirectEventL1A]:
     """
     Will process Direct Event packets into GLOWS L1A CDF files.
 
@@ -135,25 +89,22 @@ def process_de_l0(
 
     Returns
     -------
-    de_by_day : dict[np.datetime64, list[DirectEventL1A]]
+    de_by_day : list[DirectEventL1A]
         Dictionary with keys of days and values of lists of DirectEventL1A objects.
         Each day has one CDF file associated with it.
     """
-    de_by_day = dict()
+    de_list: list[DirectEventL1A] = []
 
     for de in de_l0:
-        de_day = (met_to_datetime64(de.MET)).astype("datetime64[D]")
-        if de_day not in de_by_day:
-            de_by_day[de_day] = [DirectEventL1A(de)]
         # Putting not first data int o last direct event list.
-        elif de.SEQ != 0:
+        if de.SEQ != 0:
             # If the direct event is part of a sequence and is not the first,
-            # append it to the last direct event in the list
-            de_by_day[de_day][-1].append(de)
+            # add it to the last direct event in the list
+            de_list[-1].merge_de_packets(de)
         else:
-            de_by_day[de_day].append(DirectEventL1A(de))
+            de_list.append(DirectEventL1A(de))
 
-    return de_by_day
+    return de_list
 
 
 def generate_de_dataset(
@@ -178,46 +129,45 @@ def generate_de_dataset(
     # TODO: Block header per second, or global attribute?
 
     # Store timestamps for each DirectEventL1a object.
-    time_data = np.zeros(len(de_l1a_list), dtype="datetime64[ns]")
-    # TODO: Should each timestamp point to a list of direct events, each with a
-    #  timestamp? Or should the list be split out to make the timestamps?
+    time_data = np.zeros(len(de_l1a_list), dtype=np.int64)
 
     # Each DirectEventL1A class covers 1 second of direct events data
     direct_events = np.zeros((len(de_l1a_list), len(de_l1a_list[0].direct_events), 4))
+    missing_packets_sequence = ""
 
+    # First variable is the output data type, second is the list of values
     support_data: dict = {
-        # "flight_software_version": [], # breaks
-        "seq_count_in_pkts_file": [],  # works
-        "number_of_de_packets": [],  # works
-        # "missing_packet_sequences": [] # breaks
+        # "flight_software_version": [],
+        "seq_count_in_pkts_file": [np.uint16, []],
+        "number_of_de_packets": [np.uint32, []],
     }
 
     data_every_second: dict = {
-        "imap_sclk_last_pps": [],
-        "glows_sclk_last_pps": [],
-        "glows_ssclk_last_pps": [],
-        "imap_sclk_next_pps": [],
-        "catbed_heater_active": [],
-        "spin_period_valid": [],
-        "spin_phase_at_next_pps_valid": [],
-        "spin_period_source": [],
-        "spin_period": [],
-        "spin_phase_at_next_pps": [],
-        "number_of_completed_spins": [],
-        "filter_temperature": [],
-        "hv_voltage": [],
-        "glows_time_on_pps_valid": [],
-        "time_status_valid": [],
-        "housekeeping_valid": [],
-        "is_pps_autogenerated": [],
-        "hv_test_in_progress": [],
-        "pulse_test_in_progress": [],
-        "memory_error_detected": [],
+        "imap_sclk_last_pps": [np.uint32, []],
+        "glows_sclk_last_pps": [np.float64, []],
+        "glows_ssclk_last_pps": [np.float64, []],
+        "imap_sclk_next_pps": [np.uint32, []],
+        "catbed_heater_active": [np.uint8, []],
+        "spin_period_valid": [np.uint8, []],
+        "spin_phase_at_next_pps_valid": [np.uint8, []],
+        "spin_period_source": [np.uint8, []],
+        "spin_period": [np.float64, []],
+        "spin_phase_at_next_pps": [np.float64, []],
+        "number_of_completed_spins": [np.uint32, []],
+        "filter_temperature": [np.float64, []],
+        "hv_voltage": [np.float64, []],
+        "glows_time_on_pps_valid": [np.uint8, []],
+        "time_status_valid": [np.uint8, []],
+        "housekeeping_valid": [np.uint8, []],
+        "is_pps_autogenerated": [np.uint8, []],
+        "hv_test_in_progress": [np.uint8, []],
+        "pulse_test_in_progress": [np.uint8, []],
+        "memory_error_detected": [np.uint8, []],
     }
 
     for index, de in enumerate(de_l1a_list):
         # Set the timestamp to the first timestamp of the direct event list
-        epoch_time = met_to_ttj2000ns(de.l0.MET).astype("datetime64[ns]")
+        epoch_time = met_to_ttj2000ns(de.l0.MET)
 
         # determine if the length of the direct_events numpy array is long enough,
         # and extend the direct_events length dimension if necessary.
@@ -245,23 +195,21 @@ def generate_de_dataset(
         time_data[index] = epoch_time
 
         # Adding data that will go into CDF file
-        # support_data["flight_software_version"].append(
-        # str(de.l0.ccsds_header.VERSION))
-        support_data["seq_count_in_pkts_file"].append(
+        support_data["seq_count_in_pkts_file"][1].append(
             int(de.l0.ccsds_header.SRC_SEQ_CTR)
         )
-        support_data["number_of_de_packets"].append(int(de.l0.LEN))
-        # support_data["missing_packet_sequences"].append(str(de.missing_seq))
+        support_data["number_of_de_packets"][1].append(int(de.l0.LEN))
+        missing_packets_sequence += str(de.missing_seq) + ","
 
         for key, val in data_every_second.items():
-            val.append(de.status_data.__getattribute__(key))
+            val[1].append(de.status_data.__getattribute__(key))
 
     # Convert arrays and dictionaries into xarray 'DataArray' objects
     epoch_time = xr.DataArray(
         time_data,
         name="epoch",
         dims=["epoch"],
-        attrs=glows_cdf_attributes.get_variable_attributes("epoch"),
+        attrs=glows_cdf_attributes.get_variable_attributes("epoch", check_schema=False),
     )
 
     direct_event = xr.DataArray(
@@ -270,16 +218,17 @@ def generate_de_dataset(
         name="direct_event_components",
         dims=["direct_event_components"],
         attrs=glows_cdf_attributes.get_variable_attributes(
-            "direct_event_components_attrs"
+            "direct_event_components_attrs", check_schema=False
         ),
     )
 
-    # TODO come up with a better name
     within_the_second = xr.DataArray(
         np.arange(direct_events.shape[1]),
         name="within_the_second",
         dims=["within_the_second"],
-        attrs=glows_cdf_attributes.get_variable_attributes("within_the_second"),
+        attrs=glows_cdf_attributes.get_variable_attributes(
+            "within_the_second", check_schema=False
+        ),
     )
 
     de = xr.DataArray(
@@ -294,7 +243,6 @@ def generate_de_dataset(
         attrs=glows_cdf_attributes.get_variable_attributes("direct_events"),
     )
 
-    # TODO: This is the weird global attribute.
     # Create an xarray dataset object, and add DataArray objects into it
     output = xr.Dataset(
         coords={"epoch": time_data},
@@ -303,12 +251,9 @@ def generate_de_dataset(
 
     output["direct_events"] = de
 
-    # TODO: Do we want missing_sequences as support data or as global attrs?
-    # Currently: support data, with a string
-
     for key, value in support_data.items():
         output[key] = xr.DataArray(
-            value,
+            np.array(value[1], dtype=value[0]),
             name=key,
             dims=["epoch"],
             coords={"epoch": epoch_time},
@@ -317,20 +262,19 @@ def generate_de_dataset(
 
     for key, value in data_every_second.items():
         output[key] = xr.DataArray(
-            value,
+            np.array(value[1], dtype=value[0]),
             name=key,
             dims=["epoch"],
             coords={"epoch": epoch_time},
             attrs=glows_cdf_attributes.get_variable_attributes(key),
         )
-
+    output.attrs["missing_packets_sequence"] = missing_packets_sequence[:-1]
     return output
 
 
 def generate_histogram_dataset(
     hist_l1a_list: list[HistogramL1A],
     glows_cdf_attributes: ImapCdfAttributes,
-    obs_day: Optional[int] = None,
 ) -> xr.Dataset:
     """
     Generate a dataset for GLOWS L1A histogram data CDF files.
@@ -341,9 +285,6 @@ def generate_histogram_dataset(
         List of HistogramL1A objects for a given day.
     glows_cdf_attributes : ImapCdfAttributes
         Object containing l1a CDF attributes for instrument glows.
-    obs_day : int, optional
-        Observational day counter. If supplied, it will be included in the
-        output file name.
 
     Returns
     -------
@@ -351,65 +292,62 @@ def generate_histogram_dataset(
         Dataset containing the GLOWS L1A histogram CDF output.
     """
     # Store timestamps for each HistogramL1A object.
-    time_data = np.zeros(len(hist_l1a_list), dtype="int64")
+    time_data = np.zeros(len(hist_l1a_list), dtype=np.int64)
     # TODO Add daily average of histogram counts
-    # TODO compute average temperature etc
     # Data in lists, for each of the 25 time varying datapoints in HistogramL1A
 
-    hist_data = np.zeros((len(hist_l1a_list), 3600), dtype=np.int64)
+    hist_data = np.zeros((len(hist_l1a_list), 3600), dtype=np.uint16)
 
-    # TODO: add missing attributes
+    # First variable is the output data type, second is the list of values
     support_data: dict = {
-        "flight_software_version": [],
-        # "pkts_file_name": [],
-        "seq_count_in_pkts_file": [],
-        "first_spin_id": [],
-        "last_spin_id": [],
-        "flags_set_onboard": [],
-        "is_generated_on_ground": [],
-        "number_of_spins_per_block": [],
-        "number_of_bins_per_histogram": [],
-        "number_of_events": [],
-        "filter_temperature_average": [],
-        "filter_temperature_variance": [],
-        "hv_voltage_average": [],
-        "hv_voltage_variance": [],
-        "spin_period_average": [],
-        "spin_period_variance": [],
-        "pulse_length_average": [],
-        "pulse_length_variance": [],
+        "flight_software_version": [np.uint32, []],
+        "seq_count_in_pkts_file": [np.uint16, []],
+        "first_spin_id": [np.uint32, []],
+        "last_spin_id": [np.uint32, []],
+        "flags_set_onboard": [np.uint16, []],
+        "is_generated_on_ground": [np.uint8, []],
+        "number_of_spins_per_block": [np.uint8, []],
+        "number_of_bins_per_histogram": [np.uint16, []],
+        "number_of_events": [np.uint32, []],
+        "filter_temperature_average": [np.uint32, []],
+        "filter_temperature_variance": [np.uint32, []],
+        "hv_voltage_average": [np.uint32, []],
+        "hv_voltage_variance": [np.uint32, []],
+        "spin_period_average": [np.uint32, []],
+        "spin_period_variance": [np.uint32, []],
+        "pulse_length_average": [np.uint32, []],
+        "pulse_length_variance": [np.uint32, []],
     }
     time_metadata: dict = {
-        "imap_start_time": [],
-        "imap_time_offset": [],
-        "glows_start_time": [],
-        "glows_time_offset": [],
+        "imap_start_time": [np.float64, []],
+        "imap_time_offset": [np.float64, []],
+        "glows_start_time": [np.float64, []],
+        "glows_time_offset": [np.float64, []],
     }
 
     for index, hist in enumerate(hist_l1a_list):
-        # TODO: Should this be MET?
         epoch_time = met_to_ttj2000ns(hist.imap_start_time.to_seconds())
         hist_data[index] = hist.histogram
 
-        support_data["flags_set_onboard"].append(hist.flags["flags_set_onboard"])
-        support_data["is_generated_on_ground"].append(
+        support_data["flags_set_onboard"][1].append(hist.flags["flags_set_onboard"])
+        support_data["is_generated_on_ground"][1].append(
             int(hist.flags["is_generated_on_ground"])
         )
 
         # Add support_data keys to the support_data dictionary
         for key, support_val in support_data.items():
             if key not in ["flags_set_onboard", "is_generated_on_ground"]:
-                support_val.append(hist.__getattribute__(key))
+                support_val[1].append(hist.__getattribute__(key))
         # For the time varying data, convert to seconds and then append
         for key, time_metadata_val in time_metadata.items():
-            time_metadata_val.append(hist.__getattribute__(key).to_seconds())
+            time_metadata_val[1].append(hist.__getattribute__(key).to_seconds())
         time_data[index] = epoch_time
 
     epoch_time = xr.DataArray(
         time_data,
         name="epoch",
         dims=["epoch"],
-        attrs=glows_cdf_attributes.get_variable_attributes("epoch"),
+        attrs=glows_cdf_attributes.get_variable_attributes("epoch", check_schema=False),
     )
     bin_count = 3600  # TODO: Is it always 3600 bins?
 
@@ -417,7 +355,9 @@ def generate_histogram_dataset(
         np.arange(bin_count),
         name="bins",
         dims=["bins"],
-        attrs=glows_cdf_attributes.get_variable_attributes("bins_attrs"),
+        attrs=glows_cdf_attributes.get_variable_attributes(
+            "bins_attrs", check_schema=False
+        ),
     )
 
     bin_label = xr.DataArray(
@@ -440,9 +380,6 @@ def generate_histogram_dataset(
     )
 
     attrs = glows_cdf_attributes.get_global_attributes("imap_glows_l1a_hist")
-    if obs_day:
-        # this needs to be 5 digits, so truncate it from the temporary obs day
-        attrs["Repointing"] = int(str(obs_day)[-5:])
 
     output = xr.Dataset(
         coords={"epoch": epoch_time, "bins": bins, "bins_label": bin_label},
@@ -453,16 +390,15 @@ def generate_histogram_dataset(
 
     for key, value in support_data.items():
         output[key] = xr.DataArray(
-            value,
+            np.array(value[1], dtype=value[0]),
             name=key,
             dims=["epoch"],
             coords={"epoch": epoch_time},
             attrs=glows_cdf_attributes.get_variable_attributes(key),
         )
-
     for key, value in time_metadata.items():
         output[key] = xr.DataArray(
-            value,
+            np.array(value[1], dtype=value[0]),
             name=key,
             dims=["epoch"],
             coords={"epoch": epoch_time},

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import json
 import logging
-import pathlib
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
+from typing import TypeVar
 
 import astropy_healpix.healpy as hp
 import numpy as np
@@ -138,9 +138,9 @@ def match_coords_to_indices(
     # which must be converted to ephemeris time (ET) for SPICE.
     if event_et is None:
         if isinstance(input_object, PointingSet):
-            event_et = ttj2000ns_to_et(input_object.data["epoch"].values)
+            event_et = ttj2000ns_to_et(input_object.epoch)
         elif isinstance(output_object, PointingSet):
-            event_et = ttj2000ns_to_et(output_object.data["epoch"].values)
+            event_et = ttj2000ns_to_et(output_object.epoch)
         else:
             raise ValueError(
                 "Event time must be specified if both objects are SkyMaps."
@@ -204,6 +204,11 @@ def match_coords_to_indices(
     return flat_indices_input_grid_output_frame
 
 
+# Define a TypeVar type to dynamically hint the return type of the base PointingSet
+# class classmethod
+T = TypeVar("T", bound="PointingSet")
+
+
 # Define the pointing set classes
 class PointingSet(ABC):
     """
@@ -214,20 +219,73 @@ class PointingSet(ABC):
 
     Parameters
     ----------
-    dataset : xr.Dataset
-        Dataset containing the pointing set data.
+    dataset : xr.Dataset | str | Path
+        Dataset or path to CDF file containing the pointing set data.
     spice_reference_frame : geometry.SpiceFrame
         The reference Spice frame of the pointing set.
     """
 
+    # The minimum set of class attributes for any PointingSet to function with
+    # a SkyMap using only the PUSH method of projecting are defined here.
+
+    # ======== Attributes that are set in the ABC __init__ method ========
+    # The xarray.Dataset containing the data from the PSET CDF
+    data: xr.Dataset
+    # The spice frame that the az_el_points are expressed in
+    spice_reference_frame: geometry.SpiceFrame
+
+    # ======== Attributes required to be set in a subclass ========
+    # Azimuth and elevation coordinates of each spatial pixel. The ndarray should
+    # have the shape (n, 2) where n is the number of spatial pixels
+    az_el_points: np.ndarray
+    # Tuple containing the names of each spatial coordinate of the xarray.Dataset
+    # stored in the data attribute
+    spatial_coords: tuple[str, ...]
+
     @abstractmethod
-    def __init__(self, dataset: xr.Dataset, spice_reference_frame: geometry.SpiceFrame):
+    def __init__(
+        self,
+        dataset: xr.Dataset | str | Path,
+        spice_reference_frame: geometry.SpiceFrame = geometry.SpiceFrame.IMAP_DPS,
+    ):
         """Abstract method to initialize the pointing set object."""
         self.spice_reference_frame = spice_reference_frame
-        self.num_points = 0
-        self.az_el_points = np.zeros((self.num_points, 2))
-        self.data = xr.Dataset()
-        self.spatial_coords: tuple[str, ...] = ()
+
+        if isinstance(dataset, (str, Path)):
+            dataset = load_cdf(dataset)
+            self.data = dataset
+        else:
+            # If the dataset is already an xarray Dataset,
+            # deep copy it to avoid modifying original PSET data
+            self.data = dataset.copy(deep=True)
+
+        # A PSET must have a single epoch
+        if len(np.unique(self.data["epoch"].values)) > 1:
+            raise ValueError("Multiple epochs found in the dataset.")
+
+    @property
+    def num_points(self) -> int:
+        """
+        The number of spatial pixels in the pointing set.
+
+        Returns
+        -------
+        num_points: int
+            The number of spatial pixels in the pointing set.
+        """
+        return self.az_el_points.shape[0]
+
+    @property
+    def epoch(self) -> int:
+        """
+        The singular epoch value from the xarray.Dataset.
+
+        Returns
+        -------
+        epoch: int
+            The epoch value [J2000 TT ns] of the pointing set.
+        """
+        return self.data["epoch"].values[0]
 
     @property
     def unwrapped_dims_dict(self) -> dict[str, tuple[str, ...]]:
@@ -292,8 +350,8 @@ class RectangularPointingSet(PointingSet):
 
     Parameters
     ----------
-    l1c_dataset : xr.Dataset | pathlib.Path | str
-        L1c xarray dataset containing the pointing set data or the path to the dataset.
+    dataset : xr.Dataset | str | Path
+        Dataset or path to CDF file containing the pointing set data.
         Currently, the dataset is expected to be tiled in a rectangular grid,
         with data_vars indexed along the coordinates:
             - 'epoch' : time value (1 value per PSET)
@@ -311,26 +369,19 @@ class RectangularPointingSet(PointingSet):
         If multiple epochs are found in the dataset.
     """
 
+    # In addition to the required attributes defined in the base PointingSet
+    # class, the following attributes are required for a RectangularPointingSet
+    # to be projected using the PULL method.
+    tiling_type: SkyTilingType = SkyTilingType.RECTANGULAR
+    sky_grid: spatial_utils.AzElSkyGrid
+
     def __init__(
         self,
-        l1c_dataset: xr.Dataset | pathlib.Path | str,
+        dataset: xr.Dataset | str | Path,
         spice_reference_frame: geometry.SpiceFrame = geometry.SpiceFrame.IMAP_DPS,
     ):
-        # Store the reference frame of the pointing set
-        self.spice_reference_frame = spice_reference_frame
+        super().__init__(dataset, spice_reference_frame)
 
-        # Read in the data and store the xarray dataset as data attr
-        if isinstance(l1c_dataset, (str, pathlib.Path)):
-            self.data = load_cdf(pathlib.Path(l1c_dataset))
-        elif isinstance(l1c_dataset, xr.Dataset):
-            self.data = l1c_dataset
-
-        # A PSET must have a single epoch
-        self.epoch = self.data["epoch"].values
-        if len(np.unique(self.epoch)) > 1:
-            raise ValueError("Multiple epochs found in the dataset.")
-
-        self.tiling_type = SkyTilingType.RECTANGULAR
         self.spatial_coords = (
             CoordNames.AZIMUTH_L1C.value,
             CoordNames.ELEVATION_L1C.value,
@@ -349,12 +400,12 @@ class RectangularPointingSet(PointingSet):
                 "Azimuth and elevation bin spacing do not match: "
                 f"az {az_bin_delta[0]} != el {el_bin_delta[0]}."
             )
-        self.spacing_deg = az_bin_delta[0]
+        spacing_deg = az_bin_delta[0]
 
         # Build the az/azimuth and el/elevation grids with an AzElSkyGrid object
         # and check that the 1D axes match the dataset's az and el.
         self.sky_grid = spatial_utils.AzElSkyGrid(
-            spacing_deg=self.spacing_deg,
+            spacing_deg=spacing_deg,
         )
 
         for dim, constructed_bins in zip(
@@ -383,23 +434,47 @@ class RectangularPointingSet(PointingSet):
                 self.sky_grid.el_grid.ravel(),
             )
         )
-        self.num_points = self.az_el_points.shape[0]
-
-        # Also store the bin edges for the pointing set to allow for "pull" method
-        # of index matching (not yet implemented).
-        # These are 1D arrays of different lengths and cannot be stacked.
-        self.az_bin_edges = self.sky_grid.az_bin_edges
-        self.el_bin_edges = self.sky_grid.el_bin_edges
 
 
-class UltraPointingSet(PointingSet):
+class HealpixPointingSet(PointingSet, ABC):
+    """
+    Abstract base class for Healpix pointing sets.
+
+    Defines additional properties and absract properties that are required
+    for a PointingSet instance to be used with the match_coords_to_indices
+    function.
+    """
+
+    tiling_type: SkyTilingType = SkyTilingType.HEALPIX
+
+    @property
+    def nside(self) -> int:
+        """
+        Number of pixels on the side of one of the 12 top-level healpix tiles.
+
+        Returns
+        -------
+        npix: int
+            The number of pixels on the side of one of the 12 ‘top-level’ healpix
+            tiles.
+        """
+        return hp.npix_to_nside(self.num_points)
+
+    @property
+    @abstractmethod
+    def nested(self) -> bool:
+        """Abstract property for getting nested boolean."""
+        raise NotImplementedError
+
+
+class UltraPointingSet(HealpixPointingSet):
     """
     Pointing set object specifically for Healpix-tiled ULTRA data, nominally at Level1C.
 
     Parameters
     ----------
-    l1c_dataset : xr.Dataset | pathlib.Path | str
-        L1c xarray dataset containing the pointing set data or the path to the dataset.
+    dataset : xr.Dataset | str | Path
+        Dataset or path to CDF file containing the pointing set data.
         Currently, the dataset is expected to be tiled in a HEALPix tessellation,
         with data_vars indexed along the coordinates:
             - 'epoch' : time value (1 value per PSET, from the mean of the PSET)
@@ -420,39 +495,19 @@ class UltraPointingSet(PointingSet):
 
     def __init__(
         self,
-        l1c_dataset: xr.Dataset | pathlib.Path | str,
+        dataset: xr.Dataset | str | Path,
         spice_reference_frame: geometry.SpiceFrame = geometry.SpiceFrame.IMAP_DPS,
     ):
-        # Store the reference frame of the pointing set
-        self.spice_reference_frame = spice_reference_frame
+        super().__init__(dataset, spice_reference_frame)
 
-        # Read in the data and store the xarray dataset as data attr
-        if isinstance(l1c_dataset, (str, pathlib.Path)):
-            self.data = load_cdf(pathlib.Path(l1c_dataset))
-        elif isinstance(l1c_dataset, xr.Dataset):
-            self.data = l1c_dataset
-
-        # A PSET must have a single epoch
-        self.epoch = self.data["epoch"].values
-        if len(np.unique(self.epoch)) > 1:
-            raise ValueError("Multiple epochs found in the dataset.")
-
-        # Set the tiling type and number of points
-        self.tiling_type = SkyTilingType.HEALPIX
+        # Set the spatial coordinates and number of points
         self.spatial_coords = (CoordNames.HEALPIX_INDEX.value,)
-        self.num_points = self.data[CoordNames.HEALPIX_INDEX.value].size
-        self.nside = hp.npix_to_nside(self.num_points)
 
         # Tracks Per-Pixel Solid Angle in steradians.
         self.solid_angle = hp.nside2pixarea(self.nside, degrees=False)
 
-        # Determine if the HEALPix tessellation is nested, default is False
-        self.nested = bool(
-            self.data[CoordNames.HEALPIX_INDEX.value].attrs.get("nested", False)
-        )
-
         # Get the azimuth and elevation coordinates of the healpix pixel centers (deg)
-        self.azimuth_pixel_center, self.elevation_pixel_center = hp.pix2ang(
+        azimuth_pixel_center, elevation_pixel_center = hp.pix2ang(
             nside=self.nside,
             ipix=np.arange(self.num_points),
             nest=self.nested,
@@ -465,7 +520,7 @@ class UltraPointingSet(PointingSet):
         # (e.g. "longitude"/"latitude" vs "azimuth"/"elevation").
         for dim, constructed_bins in zip(
             [CoordNames.AZIMUTH_L1C.value, CoordNames.ELEVATION_L1C.value],
-            [self.azimuth_pixel_center, self.elevation_pixel_center],
+            [azimuth_pixel_center, elevation_pixel_center],
         ):
             if not np.allclose(
                 self.data[dim],
@@ -483,50 +538,34 @@ class UltraPointingSet(PointingSet):
         # of shape (num_points, 2) where column 0 is the lon/az
         # and column 1 is the lat/el.
         self.az_el_points = np.column_stack(
-            (self.azimuth_pixel_center, self.elevation_pixel_center)
+            (azimuth_pixel_center, elevation_pixel_center)
         )
 
-    @classmethod
-    def from_path_or_dataset(
-        cls,
-        input_data: xr.Dataset | str | pathlib.Path,
-    ) -> UltraPointingSet:
+    @property
+    def num_points(self) -> int:
         """
-        Read a path or Dataset into an UltraPointingSet.
-
-        Parameters
-        ----------
-        input_data : xr.Dataset | str | pathlib.Path
-            Path to the CDF file or xarray Dataset containing the L1C dataset.
-            If a dataset is provided, it will be copied to avoid modifying the original.
+        Override the base class property to get the number from the dataset.
 
         Returns
         -------
-        UltraPointingSet
-            An UltraPointingSet object containing the L1C dataset.
-
-        Raises
-        ------
-        ValueError
-            If input_data is neither an xarray Dataset nor a path to a CDF file.
+        num_points: int
+            The number of healpix pixels in the pointing set.
         """
-        # Allow for passing in EITHER xarray Datasets (preferable for testing)
-        if isinstance(input_data, xr.Dataset):
-            # Copy to avoid modifying the original dataset in place
-            input_data = input_data.copy(deep=True)
-            ultra_pointing_set = UltraPointingSet(l1c_dataset=input_data)
-        # OR paths to CDF files (preferable for projecting many PointingSets)
-        elif isinstance(input_data, str | pathlib.Path):
-            if isinstance(input_data, str):
-                input_data = pathlib.Path(input_data)
-            ultra_pointing_set = UltraPointingSet(l1c_dataset=load_cdf(input_data))
-        else:
-            raise ValueError(
-                f"Input data must be either an xarray Dataset or a path to a CDF file "
-                "containing the L1C dataset.\n"
-                f"Found {type(input_data)} instead."
-            )
-        return ultra_pointing_set
+        return self.data[CoordNames.HEALPIX_INDEX.value].size
+
+    @property
+    def nested(self) -> bool:
+        """
+        Whether the healpix tessellation is nested.
+
+        Returns
+        -------
+        nested: bool
+            Whether the healpix tessellation is nested.
+        """
+        return bool(
+            self.data[CoordNames.HEALPIX_INDEX.value].attrs.get("nested", False)
+        )
 
     def __repr__(self) -> str:
         """
@@ -542,6 +581,37 @@ class UltraPointingSet(PointingSet):
             f"{self.spice_reference_frame}, epoch={self.epoch}, "
             f"num_points={self.num_points})"
         )
+
+
+class HiPointingSet(PointingSet):
+    """
+    PointingSet object specific to Hi L1C PSet data.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        Hi L1C pointing set data loaded in an xarray.DataArray.
+    """
+
+    def __init__(self, dataset: xr.Dataset):
+        super().__init__(dataset, spice_reference_frame=geometry.SpiceFrame.ECLIPJ2000)
+
+        # Rename some PSET vars to match L2 variables
+        self.data = self.data.rename(
+            {
+                "exposure_times": "exposure_factor",
+                "background_rates": "bg_rates",
+                "background_rates_uncertainty": "bg_rates_unc",
+            }
+        )
+
+        self.az_el_points = np.column_stack(
+            (
+                np.squeeze(self.data["hae_longitude"]),
+                np.squeeze(self.data["hae_latitude"]),
+            )
+        )
+        self.spatial_coords = ("spin_angle_bin",)
 
 
 # Define the Map classes
@@ -619,14 +689,14 @@ class AbstractSkyMap(ABC):
                     ),
                     dims=rewrapped_dims,
                 )
-            # Add the output coordinates to the rewrapped data, excluding the pixel
-            self.non_spatial_coords.update(
-                {
-                    key: self.data_1d[key].coords[key]
-                    for key in self.data_1d[key].coords
-                    if key != CoordNames.GENERIC_PIXEL.value
-                }
-            )
+                # Add the output coordinates to the rewrapped data, excluding the pixel
+                self.non_spatial_coords.update(
+                    {
+                        coord: self.data_1d[key].coords[coord]
+                        for coord in self.data_1d[key].coords
+                        if coord != CoordNames.GENERIC_PIXEL.value
+                    }
+                )
             return xr.Dataset(
                 rewrapped_data,
                 coords={**self.non_spatial_coords, **self.spatial_coords},
@@ -976,12 +1046,12 @@ class RectangularSkyMap(AbstractSkyMap):
             CoordNames.AZIMUTH_L1C.value: xr.DataArray(
                 self.sky_grid.az_bin_midpoints,
                 dims=[CoordNames.AZIMUTH_L1C.value],
-                attrs={"units": "degrees"},
+                attrs={"UNITS": "degrees"},
             ),
             CoordNames.ELEVATION_L1C.value: xr.DataArray(
                 self.sky_grid.el_bin_midpoints,
                 dims=[CoordNames.ELEVATION_L1C.value],
-                attrs={"units": "degrees"},
+                attrs={"UNITS": "degrees"},
             ),
         }
 
@@ -1219,7 +1289,8 @@ class HealpixSkyMap(AbstractSkyMap):
         smaller and smaller subpixels, then calculates the solid-angle weighted mean
         of the healpix map's value at this pixel, until the difference
         between the mean values of two consecutive subdivisions is within the
-        specified tolerances. The function returns the mean value at the final level
+        specified tolerances at all values in that pixel (e.g., all energy bins).
+        The function returns the mean value at the final level
         of subdivision and the depth of recursion.
 
         Parameters
@@ -1261,14 +1332,19 @@ class HealpixSkyMap(AbstractSkyMap):
                 )
             )
 
-            # Determine if tolerance is met
-            # (skip on the 0th iteration, as there's no delta)
+            # Determine if tolerance is met,
+            # (skip on the 0th iteration, as there's no delta to compare).
+
+            # Note:  Using allclose() means that, while we calculate the mean pixel
+            # value(s) over  all the subdivided subpixels, this mean may have multiple
+            # values (e.g., different energy bins), so we check if
+            # all of them are within the tolerances. This can result in
+            # over-subdividing some energy bins, where there is little spatial gradient,
+            # but where another energy bin has a large gradient.
             if depth > 0:
-                # TODO: Ask Nick/Ultra Instrument team if we need to compare each value
-                # in the pixel's array, or just the mean value.
-                if np.isclose(
-                    mean_pixel_value.mean(),
-                    previous_mean_pixel_value.mean(),
+                if np.allclose(
+                    mean_pixel_value,
+                    previous_mean_pixel_value,
                     rtol=rtol,
                     atol=atol,
                 ):

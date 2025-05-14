@@ -12,35 +12,9 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.spice.geometry import SpiceFrame
 from imap_processing.spice.spin import get_instrument_spin_phase, get_spin_angle
 from imap_processing.swe.utils import swe_constants
-from imap_processing.swe.utils.swe_utils import (
-    read_lookup_table,
-)
 
 
-def get_particle_energy() -> npt.NDArray:
-    """
-    Get particle energy.
-
-    Calculate particle energy and add to the lookup table.
-    To convert Volts to Energy, multiply ESA voltage in Volts by
-    energy conversion factor to get electron energy in eV.
-
-    Returns
-    -------
-    lookup_table : pandas.DataFrame
-        Lookup table with energy column added.
-    """
-    # The lookup table gives voltage applied to analyzers.
-    lookup_table = read_lookup_table()
-
-    # Convert voltage to electron energy in eV by apply conversion factor.
-    lookup_table["energy"] = (
-        lookup_table["esa_v"].values * swe_constants.ENERGY_CONVERSION_FACTOR
-    )
-    return lookup_table
-
-
-def calculate_phase_space_density(l1b_dataset: xr.Dataset) -> xr.Dataset:
+def calculate_phase_space_density(l1b_dataset: xr.Dataset) -> npt.NDArray:
     """
     Convert counts to phase space density.
 
@@ -52,7 +26,7 @@ def calculate_phase_space_density(l1b_dataset: xr.Dataset) -> xr.Dataset:
     Where:
         C / tau = corrected count rate which in the input L1B science data.
         G = geometric factor, in (cm^2 * ster). 7 CEMs geometric factor value.
-        eV = eV in electron-volts, calculated by get_particle_energy().
+        eV = eV in electron-volts.
         E = Energy in Joules. eV * 1.60219e-19(J/eV).
         m = mass of electron (9.10938356e-31 kg).
         s = second.
@@ -80,25 +54,12 @@ def calculate_phase_space_density(l1b_dataset: xr.Dataset) -> xr.Dataset:
 
     Returns
     -------
-    phase_space_density_dataset : xarray.Dataset
+    phase_space_density : np.ndarray
         Phase space density. We need to call this phase space density because
         there will be density in L3 processing.
     """
-    # Get esa_table_num for each full sweep.
-    esa_table_nums = l1b_dataset["esa_table_num"].values[:, 0]
-    # Get energy values from lookup table.
-    particle_energy = get_particle_energy()
-    # Get 720 (24 energy steps x 30 angle) particle energy for each full
-    # sweep data.
-    particle_energy_data = np.array(
-        [
-            particle_energy[particle_energy["table_index"] == val]["energy"].tolist()
-            for val in esa_table_nums
-        ]
-    )
-    particle_energy_data = particle_energy_data.reshape(
-        -1, swe_constants.N_ESA_STEPS, swe_constants.N_ANGLE_SECTORS
-    )
+    # Get energy values.
+    particle_energy_data = l1b_dataset["esa_energy"].values
 
     # Calculate phase space density using formula:
     #   2 * (C/tau) / (G * 1.237e31 * eV^2)
@@ -108,27 +69,14 @@ def calculate_phase_space_density(l1b_dataset: xr.Dataset) -> xr.Dataset:
         * swe_constants.VELOCITY_CONVERSION_FACTOR
         * particle_energy_data[:, :, :, np.newaxis] ** 2
     )
+    phase_space_density = density.data
 
-    # Return density as xr.dataset with phase space density and
-    # energy in eV value that flux calculation can use.
-    phase_space_density_dataset = xr.Dataset(
-        {
-            "phase_space_density": (
-                ["epoch", "esa_step", "spin_sector", "cem_id"],
-                density.data,
-            ),
-            "energy_in_eV": (
-                ["epoch", "esa_step", "spin_sector"],
-                particle_energy_data,
-            ),
-        },
-        coords=l1b_dataset.coords,
-    )
-
-    return phase_space_density_dataset
+    return phase_space_density
 
 
-def calculate_flux(l1b_dataset: xr.Dataset) -> npt.NDArray:
+def calculate_flux(
+    phase_space_density: np.ndarray, esa_energy: np.ndarray
+) -> npt.NDArray:
     """
     Calculate flux.
 
@@ -140,7 +88,7 @@ def calculate_flux(l1b_dataset: xr.Dataset) -> npt.NDArray:
     Where:
         fv = the phase space density of solar wind electrons
             given by calculate_phase_space_density() result.
-        eV = Energy in electron-volts, calculated by get_particle_energy().
+        eV = Energy in electron-volts.
         E  = Energy in Joules. eV * 1.60219e-19(J/eV).
         v  = sqrt( (3.20438 * 10e-15 / 9.10938e-31) * eV ) cm/s. See
             calculate_phase_space_density() for this calculation.
@@ -165,19 +113,20 @@ def calculate_flux(l1b_dataset: xr.Dataset) -> npt.NDArray:
 
     Parameters
     ----------
-    l1b_dataset : xarray.Dataset
-        The L1B dataset to process.
+    phase_space_density : numpy.ndarray
+        The phase space density.
+    esa_energy : numpy.ndarray
+        The energy values in eV.
 
     Returns
     -------
     flux : numpy.ndarray
         Flux values.
     """
-    phase_space_density_ds = calculate_phase_space_density(l1b_dataset)
     flux = (
         swe_constants.FLUX_CONVERSION_FACTOR
-        * phase_space_density_ds["energy_in_eV"].data[:, :, :, np.newaxis]
-        * phase_space_density_ds["phase_space_density"].data
+        * esa_energy[:, :, :, np.newaxis]
+        * phase_space_density
     )
     return flux
 
@@ -394,9 +343,7 @@ def swe_l2(l1b_dataset: xr.Dataset) -> xr.Dataset:
     # Calculate phase space density and flux. Store data in shape
     # (epoch, esa_step, spin_sector, cem_id). This is for L3 purposes.
     ############################################################
-    phase_space_density = calculate_phase_space_density(l1b_dataset)[
-        "phase_space_density"
-    ]
+    phase_space_density = calculate_phase_space_density(l1b_dataset)
     dataset["phase_space_density_spin_sector"] = xr.DataArray(
         phase_space_density,
         name="phase_space_density_spin_sector",
@@ -404,7 +351,7 @@ def swe_l2(l1b_dataset: xr.Dataset) -> xr.Dataset:
         attrs=cdf_attributes.get_variable_attributes("phase_space_density_spin_sector"),
     )
 
-    flux = calculate_flux(l1b_dataset)
+    flux = calculate_flux(phase_space_density, l1b_dataset["esa_energy"].data)
     dataset["flux_spin_sector"] = xr.DataArray(
         flux,
         name="flux_spin_sector",
@@ -463,7 +410,7 @@ def swe_l2(l1b_dataset: xr.Dataset) -> xr.Dataset:
 
     # Put phase space density data in its spin angle bins using the indices.
     phase_space_density_binned_data = put_data_into_angle_bins(
-        phase_space_density.data, spin_angle_bins_indices
+        phase_space_density, spin_angle_bins_indices
     )
     dataset["phase_space_density"] = xr.DataArray(
         phase_space_density_binned_data,

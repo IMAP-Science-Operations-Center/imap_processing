@@ -10,6 +10,8 @@ Examples
     imap_cli --instrument <instrument> --level <data_level>
 """
 
+from __future__ import annotations
+
 import argparse
 import logging
 import re
@@ -19,9 +21,12 @@ from pathlib import Path
 from typing import final
 
 import imap_data_access
+import spiceypy
 import xarray as xr
+from imap_data_access import ScienceFilePath
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
+    SPICESource,
 )
 
 import imap_processing
@@ -64,6 +69,7 @@ from imap_processing.swe.l1b.swe_l1b import swe_l1b
 from imap_processing.ultra.l1a import ultra_l1a
 from imap_processing.ultra.l1b import ultra_l1b
 from imap_processing.ultra.l1c import ultra_l1c
+from imap_processing.ultra.l2 import ultra_l2
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +114,7 @@ def _parse_args() -> argparse.Namespace:
         '--data-level "l1a" '
         '--descriptor "all" '
         ' --start-date "20231212" '
+        '--repointing "repoint12345" '
         '--version "v001" '
         '--dependency "['
         "    {"
@@ -195,7 +202,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--start-date",
         type=str,
-        required=True,
+        required=False,
         help="Start time for the output data. Format: YYYYMMDD",
     )
 
@@ -203,10 +210,17 @@ def _parse_args() -> argparse.Namespace:
         "--end-date",
         type=str,
         required=False,
-        help="End time for the output data. If not provided, start_time will be used "
+        help="DEPRECATED: Do not use this."
+        "End time for the output data. If not provided, start_time will be used "
         "for end_time. Format: YYYYMMDD",
     )
-    # TODO: Will need to add some way of including pointing numbers
+    parser.add_argument(
+        "--repointing",
+        type=str,
+        required=False,
+        help="Repointing time for output data. Replaces start_time if both are "
+        "provided. Format: repoint#####",
+    )
 
     parser.add_argument(
         "--version",
@@ -251,6 +265,30 @@ def _validate_args(args: argparse.Namespace) -> None:
             f"{args.data_level} is not a supported data level for the {args.instrument}"
             " instrument, valid levels are: "
             f"{imap_processing.PROCESSING_LEVELS[args.instrument]}"
+        )
+    if args.start_date is None and args.repointing is None:
+        raise ValueError(
+            "Either start_date or repointing must be provided. "
+            "Run 'imap_cli -h' for more information."
+        )
+
+    if (
+        args.start_date is not None
+        and not imap_data_access.ScienceFilePath.is_valid_date(args.start_date)
+    ):
+        raise ValueError(f"{args.start_date} is not a valid date, use format YYYYMMDD.")
+
+    if (
+        args.repointing is not None
+        and not imap_data_access.ScienceFilePath.is_valid_repointing(args.repointing)
+    ):
+        raise ValueError(
+            f"{args.repointing} is not a valid repointing, use format repoint#####."
+        )
+
+    if getattr(args, "end_date", None) is not None:
+        logger.warning(
+            "The end_date argument is deprecated and will be ignored. Do not use."
         )
 
 
@@ -299,21 +337,26 @@ class ProcessInstrument(ABC):
         This is what ProcessingInputCollection.serialize() outputs.
     start_date : str
         The start date for the output data in YYYYMMDD format.
-    end_date : str
-        The end date for the output data in YYYYMMDD format.
+    repointing : str
+        The repointing for the output data in the format 'repoint#####'.
     version : str
         The version of the data in vXXX format.
     upload_to_sdc : bool
         A flag indicating whether to upload the output file to the SDC.
     """
 
+    class ImapFileExistsError(Exception):
+        """Indicates a failure because the files already exist."""
+
+        pass
+
     def __init__(
         self,
         data_level: str,
         data_descriptor: str,
         dependency_str: str,
-        start_date: str,
-        end_date: str,
+        start_date: str | None,
+        repointing: str | None,
         version: str,
         upload_to_sdc: bool,
     ) -> None:
@@ -323,9 +366,7 @@ class ProcessInstrument(ABC):
         self.dependency_str = dependency_str
 
         self.start_date = start_date
-        self.end_date = end_date
-        if not end_date:
-            self.end_date = start_date
+        self.repointing = repointing
 
         self.version = version
         self.upload_to_sdc = upload_to_sdc
@@ -340,6 +381,26 @@ class ProcessInstrument(ABC):
             A list of file paths to upload to the SDC.
         """
         if self.upload_to_sdc:
+            # Validate that the files don't already exist
+            for filename in products:
+                file_path = ScienceFilePath(filename)
+                existing_file = imap_data_access.query(
+                    instrument=file_path.instrument,
+                    data_level=file_path.data_level,
+                    descriptor=file_path.descriptor,
+                    start_date=file_path.start_date,
+                    end_date=file_path.start_date,
+                    repointing=file_path.repointing,
+                    version=file_path.version,
+                    extension="cdf",
+                )
+                if existing_file:
+                    raise ProcessInstrument.ImapFileExistsError(
+                        f"File {filename} already exists in the IMAP SDC. "
+                        "No files were uploaded."
+                        f"Generated files: {products}."
+                    )
+
             if len(products) == 0:
                 logger.info("No files to upload.")
             for filename in products:
@@ -372,7 +433,8 @@ class ProcessInstrument(ABC):
         Complete pre-processing.
 
         For this baseclass, pre-processing consists of downloading dependencies
-        for processing. Child classes can override this method to customize the
+        for processing and furnishing any spice kernels in the input
+        dependencies. Child classes can override this method to customize the
         pre-processing actions.
 
         Returns
@@ -383,6 +445,12 @@ class ProcessInstrument(ABC):
         dependencies = ProcessingInputCollection()
         dependencies.deserialize(self.dependency_str)
         dependencies.download_all_files()
+
+        # Furnish spice kernels
+        kernel_paths = dependencies.get_file_paths(source=SPICESource.SPICE.value)
+        logger.info(f"Furnishing kernels: {kernel_paths}")
+        spiceypy.furnsh([str(kernel_path.resolve()) for kernel_path in kernel_paths])
+
         return dependencies
 
     @abstractmethod
@@ -419,6 +487,10 @@ class ProcessInstrument(ABC):
         Child classes can override this method to customize the
         post-processing actions.
 
+        The values from start_date and/or repointing are used to generate the output
+        file name if supplied. All other filename fields are derived from the
+        dataset attributes.
+
         Parameters
         ----------
         datasets : list[xarray.Dataset]
@@ -437,20 +509,30 @@ class ProcessInstrument(ABC):
         # https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html.
         parent_files = [p.name for p in dependencies.get_file_paths()]
         logger.info("Parent files: %s", parent_files)
-
         # Format version to vXXX if not already in that format. Eg.
         # If version is passed in as 1 or 001, it will be converted to v001.
         r = re.compile(r"v\d{3}")
         if not isinstance(self.version, str) or r.match(self.version) is None:
             self.version = f"v{int(self.version):03d}"  # vXXX
 
+        # Start date is either the start date or the repointing.
+        # if it is the repointing, default to using the first epoch in the file as
+        # start_date.
+        # If it is start_date, skip repointing in the output filename.
+
         products = []
         for ds in datasets:
             ds.attrs["Data_version"] = self.version
+            if self.repointing is not None:
+                ds.attrs["Repointing"] = self.repointing
+            ds.attrs["Start_date"] = self.start_date
             ds.attrs["Parents"] = parent_files
             products.append(write_cdf(ds))
 
         self.upload_products(products)
+
+        logger.info("Clearing furnished SPICE kernels")
+        spiceypy.kclear()
 
 
 class Codice(ProcessInstrument):
@@ -665,16 +747,30 @@ class Hit(ProcessInstrument):
             # process data to L1B products
             datasets = hit_l1b(data_dict)
         elif self.data_level == "l2":
-            if len(dependency_list) > 1:
+            if len(dependency_list) != 5:
                 raise ValueError(
                     f"Unexpected dependencies found for HIT L2:"
                     f"{dependency_list}. Expected only one dependency."
                 )
             # Add L1B dataset to process science data
-            science_files = dependencies.get_file_paths(source="hit")
+            science_files = dependencies.get_file_paths(
+                source="hit", descriptor="-rates"
+            )
+            ancillary_files = dependencies.get_file_paths(
+                source="hit", descriptor="-dt"
+            )
+            if len(science_files) > 1:
+                raise ValueError(
+                    "Multiple science files processing is not supported for HIT L2."
+                )
+            if len(ancillary_files) != 4:
+                raise ValueError(
+                    "Unexpected ancillary files found for HIT L2:"
+                    f"{ancillary_files}. Expected 4 ancillary files."
+                )
             l1b_dataset = load_cdf(science_files[0])
             # process data to L2 products
-            datasets = hit_l2(l1b_dataset)
+            datasets = hit_l2(l1b_dataset, ancillary_files)
 
         return datasets
 
@@ -706,11 +802,11 @@ class Idex(ProcessInstrument):
             if len(dependency_list) > 1:
                 raise ValueError(
                     f"Unexpected dependencies found for IDEX L1A:"
-                    f"{dependency_list}. Expected only one science dependency."
+                    f"{dependency_list}. Expected only one dependency."
                 )
             # get l0 file
             science_files = dependencies.get_file_paths(source="idex")
-            datasets = [PacketParser(science_files[0]).data]
+            datasets = PacketParser(science_files[0]).data
         elif self.data_level == "l1b":
             if len(dependency_list) > 1:
                 raise ValueError(
@@ -814,7 +910,6 @@ class Mag(ProcessInstrument):
                     f"Unexpected dependencies found for MAG L1A:"
                     f"{dependency_list}. Expected only one dependency."
                 )
-            # TODO: Update this type
 
             datasets = mag_l1a(science_files[0])
 
@@ -1013,10 +1108,10 @@ class Swe(ProcessInstrument):
             # we expect only one dataset to be returned.
 
         elif self.data_level == "l1b":
-            if len(dependency_list) > 2:
+            if len(dependency_list) != 4:
                 raise ValueError(
                     f"Unexpected dependencies found for SWE L1B:"
-                    f"{dependency_list}. Expected only two dependency."
+                    f"{dependency_list}. Expected exactly four dependencies."
                 )
 
             science_files = dependencies.get_file_paths("swe", "sci")
@@ -1024,16 +1119,8 @@ class Swe(ProcessInstrument):
                 raise ValueError(
                     "Multiple science files processing is not supported for SWE L1B."
                 )
-            l1a_file_path = science_files[0]
-            # read CDF file
-            l1a_dataset = load_cdf(l1a_file_path)
-            # TODO: fix this to read multiple files as needed.
-            # TODO: pass pandas dataframe to swe_l1b
-            # in_flight_cal_path = dependencies.get_file_paths(
-            #     "swe", "l1b-in-flight-cal"
-            # )[0]
-            # TODO: read lookup table and in-flight calibration data here.
-            datasets = swe_l1b(l1a_dataset)
+
+            datasets = swe_l1b(dependencies)
         else:
             print("Did not recognize data level. No processing done.")
 
@@ -1087,6 +1174,19 @@ class Ultra(ProcessInstrument):
                 data_dict[dataset.attrs["Logical_source"]] = dataset
             datasets = ultra_l1c.ultra_l1c(data_dict)
 
+        elif self.data_level == "l2":
+            all_pset_filepaths = dependencies.get_file_paths(
+                source="ultra", descriptor="pset"
+            )
+            # There can be many PSET files, so avoid reading them all in.
+            # The filename stem (logical_file_id) contains
+            # all the information needed in the key.
+            data_dict = {
+                pset_filepath.stem: pset_filepath
+                for pset_filepath in all_pset_filepaths
+            }
+            datasets = ultra_l2.ultra_l2(data_dict)
+
         return datasets
 
 
@@ -1108,7 +1208,7 @@ def main() -> None:
         args.descriptor,
         args.dependency,
         args.start_date,
-        args.end_date,
+        args.repointing,
         args.version,
         args.upload_to_sdc,
     )

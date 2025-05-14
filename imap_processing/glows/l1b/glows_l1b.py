@@ -28,13 +28,6 @@ def glows_l1b(input_dataset: xr.Dataset) -> xr.Dataset:
     cdf_attrs.add_instrument_global_attrs("glows")
     cdf_attrs.add_instrument_variable_attrs("glows", "l1b")
 
-    data_epoch = xr.DataArray(
-        input_dataset["epoch"],
-        name="epoch",
-        dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch"),
-    )
-
     logical_source = (
         input_dataset.attrs["Logical_source"][0]
         if isinstance(input_dataset.attrs["Logical_source"], list)
@@ -42,110 +35,10 @@ def glows_l1b(input_dataset: xr.Dataset) -> xr.Dataset:
     )
 
     if "hist" in logical_source:
-        flag_data = xr.DataArray(
-            np.arange(FLAG_LENGTH),
-            name="flag_dim",
-            dims=["flag_dim"],
-            attrs=cdf_attrs.get_variable_attributes("flag_dim"),
-        )
-        bad_flag_data = xr.DataArray(
-            np.arange(4),
-            name="bad_angle_flags",
-            dims=["bad_angle_flags"],
-            attrs=cdf_attrs.get_variable_attributes("flag_dim"),
-        )
-
-        # TODO: the four spacecraft location/velocity values should probably each get
-        # their own dimension/attributes
-        eclipic_data = xr.DataArray(
-            np.arange(3),
-            name="ecliptic",
-            dims=["ecliptic"],
-            attrs=cdf_attrs.get_variable_attributes("ecliptic_dim"),
-        )
-        bin_data = xr.DataArray(
-            input_dataset["bins"],
-            name="bins",
-            dims=["bins"],
-            attrs=cdf_attrs.get_variable_attributes("bins_attrs"),
-        )
-        bin_label = xr.DataArray(
-            bin_data.data.astype(str),
-            name="bins_label",
-            dims=["bins_label"],
-            attrs=cdf_attrs.get_variable_attributes("bins_label"),
-        )
-
-        output_dataarrays = process_histogram(input_dataset)
-        # TODO: Is it ok to copy the dimensions from the input dataset?
-
-        output_dataset = xr.Dataset(
-            coords={
-                "epoch": data_epoch,
-                "bins": bin_data,
-                "bins_label": bin_label,
-                "bad_angle_flags": bad_flag_data,
-                "flag_dim": flag_data,
-                "ecliptic": eclipic_data,
-            },
-            attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_hist"),
-        )
-
-        # Since we know the output_dataarrays are in the same order as the fields in the
-        # HistogramL1B dataclass, we can use dataclasses.fields to get the field names.
-
-        fields = dataclasses.fields(HistogramL1B)
-        for index, dataarray in enumerate(output_dataarrays):
-            # Dataarray is already an xr.DataArray type, so we can just assign it
-            output_dataset[fields[index].name] = dataarray
-            output_dataset[
-                fields[index].name
-            ].attrs = cdf_attrs.get_variable_attributes(fields[index].name)
-
-        output_dataset["bins"] = bin_data
+        output_dataset = create_l1b_hist_output(input_dataset, cdf_attrs)
 
     elif "de" in logical_source:
-        output_dataarrays = process_de(input_dataset)
-        within_the_second_data = xr.DataArray(
-            input_dataset["within_the_second"],
-            name="within_the_second",
-            dims=["within_the_second"],
-            attrs=cdf_attrs.get_variable_attributes("within_the_second"),
-        )
-        # Add the within_the_second label to the xr.Dataset coordinates
-        within_the_second_label = xr.DataArray(
-            input_dataset["within_the_second"].data.astype(str),
-            name="within_the_second_label",
-            dims=["within_the_second_label"],
-            attrs=cdf_attrs.get_variable_attributes("within_the_second_label"),
-        )
-
-        flag_data = xr.DataArray(
-            np.arange(11),
-            name="flag_dim",
-            dims=["flag_dim"],
-            attrs=cdf_attrs.get_variable_attributes("flag_dim"),
-        )
-
-        output_dataset = xr.Dataset(
-            coords={
-                "epoch": data_epoch,
-                "within_the_second": within_the_second_data,
-                "within_the_second_label": within_the_second_label,
-                "flag_dim": flag_data,
-            },
-            attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_de"),
-        )
-        fields = dataclasses.fields(DirectEventL1B)
-
-        for index, dataarray in enumerate(output_dataarrays):
-            # Dataarray is already an xr.DataArray type, so we can just assign it
-            output_dataset[fields[index].name] = dataarray
-            output_dataset[
-                fields[index].name
-            ].attrs = cdf_attrs.get_variable_attributes(fields[index].name)
-
-        output_dataset["within_the_second"] = within_the_second_data
+        output_dataset = create_l1b_de_output(input_dataset, cdf_attrs)
 
     else:
         raise ValueError(
@@ -283,3 +176,171 @@ def process_histogram(l1a: xr.Dataset) -> xr.Dataset:
 
     # This is a tuple of dataarrays and not a dataset yet
     return l1b_fields
+
+
+def create_l1b_hist_output(
+    input_dataset: xr.Dataset, cdf_attrs: ImapCdfAttributes
+) -> xr.Dataset:
+    """
+    Create the output dataset for the L1B histogram data.
+
+    This function processes the input dataset and creates a new dataset with the
+    appropriate attributes and data variables. It uses the `process_histogram` function
+    to process the histogram data.
+
+    Parameters
+    ----------
+    input_dataset : xr.Dataset
+        The input L1A GLOWS Histogram dataset to process.
+    cdf_attrs : ImapCdfAttributes
+        The CDF attributes to use for the output dataset.
+
+    Returns
+    -------
+    output_dataset : xr.Dataset
+        The output dataset with the processed histogram data and all attributes.
+    """
+    data_epoch = input_dataset["epoch"]
+    data_epoch.attrs = cdf_attrs.get_variable_attributes("epoch", check_schema=False)
+
+    flag_data = xr.DataArray(
+        np.arange(FLAG_LENGTH),
+        name="bad_time_flags",
+        dims=["bad_time_flags"],
+        attrs=cdf_attrs.get_variable_attributes(
+            "bad_time_flag_hist_attrs", check_schema=False
+        ),
+    )
+
+    bad_flag_data = xr.DataArray(
+        np.arange(4),
+        name="bad_angle_flags",
+        dims=["bad_angle_flags"],
+        attrs=cdf_attrs.get_variable_attributes(
+            "bad_angle_flags_attrs", check_schema=False
+        ),
+    )
+
+    # TODO: the four spacecraft location/velocity values should probably each get
+    # their own dimension/attributes
+    eclipic_data = xr.DataArray(
+        np.arange(3),
+        name="ecliptic",
+        dims=["ecliptic"],
+        attrs=cdf_attrs.get_variable_attributes("ecliptic_attrs", check_schema=False),
+    )
+
+    bin_data = xr.DataArray(
+        input_dataset["bins"].data,
+        name="bins",
+        dims=["bins"],
+        attrs=cdf_attrs.get_variable_attributes("bins_attrs", check_schema=False),
+    )
+
+    bin_label = xr.DataArray(
+        bin_data.data.astype(str),
+        name="bins_label",
+        dims=["bins_label"],
+        attrs=cdf_attrs.get_variable_attributes("bins_label", check_schema=False),
+    )
+
+    output_dataarrays = process_histogram(input_dataset)
+
+    output_dataset = xr.Dataset(
+        coords={
+            "epoch": data_epoch,
+            "bins": bin_data,
+            "bins_label": bin_label,
+            "bad_angle_flags": bad_flag_data,
+            "bad_time_flags": flag_data,
+            "ecliptic": eclipic_data,
+        },
+        attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_hist"),
+    )
+
+    # Since we know the output_dataarrays are in the same order as the fields in the
+    # HistogramL1B dataclass, we can use dataclasses.fields to get the field names.
+
+    fields = dataclasses.fields(HistogramL1B)
+    for index, dataarray in enumerate(output_dataarrays):
+        # Dataarray is already an xr.DataArray type, so we can just assign it
+        output_dataset[fields[index].name] = dataarray
+        output_dataset[fields[index].name].attrs = cdf_attrs.get_variable_attributes(
+            fields[index].name
+        )
+
+    output_dataset["bins"] = bin_data
+    return output_dataset
+
+
+def create_l1b_de_output(
+    input_dataset: xr.Dataset, cdf_attrs: ImapCdfAttributes
+) -> xr.Dataset:
+    """
+    Create the output dataset for the L1B direct event data.
+
+    Parameters
+    ----------
+    input_dataset : xr.Dataset
+        The input dataset to process.
+    cdf_attrs : ImapCdfAttributes
+        The CDF attributes to use for the output dataset.
+
+    Returns
+    -------
+    output_dataset : xr.Dataset
+        The output dataset with the processed data.
+    """
+    data_epoch = input_dataset["epoch"]
+    data_epoch.attrs = cdf_attrs.get_variable_attributes("epoch", check_schema=False)
+
+    output_dataarrays = process_de(input_dataset)
+    within_the_second_data = xr.DataArray(
+        input_dataset["within_the_second"],
+        name="within_the_second",
+        dims=["within_the_second"],
+        attrs=cdf_attrs.get_variable_attributes(
+            "within_the_second_attrs", check_schema=False
+        ),
+    )
+    # Add the within_the_second label to the xr.Dataset coordinates
+    within_the_second_label = xr.DataArray(
+        input_dataset["within_the_second"].data.astype(str),
+        name="within_the_second_label",
+        dims=["within_the_second_label"],
+        attrs=cdf_attrs.get_variable_attributes(
+            "within_the_second_label", check_schema=False
+        ),
+    )
+
+    flag_data = xr.DataArray(
+        np.arange(11),
+        name="flags",
+        dims=["flags"],
+        attrs=cdf_attrs.get_variable_attributes("flag_de_attrs", check_schema=False),
+    )
+
+    output_dataset = xr.Dataset(
+        coords={
+            "epoch": data_epoch,
+            "within_the_second": within_the_second_data,
+            "within_the_second_label": within_the_second_label,
+            "flags": flag_data,
+        },
+        attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_de"),
+    )
+    fields = dataclasses.fields(DirectEventL1B)
+
+    for index, dataarray in enumerate(output_dataarrays):
+        # Dataarray is already an xr.DataArray type, so we can just assign it
+        output_dataset[fields[index].name] = dataarray
+        output_dataset[fields[index].name].attrs = cdf_attrs.get_variable_attributes(
+            fields[index].name
+        )
+
+    output_dataset["within_the_second"] = within_the_second_data
+    output_dataset.attrs["missing_packets_sequence"] = input_dataset.attrs.get(
+        "missing_packets_sequence", ""
+    )
+
+    return output_dataset

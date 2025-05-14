@@ -8,7 +8,7 @@ from numpy.testing import assert_array_equal
 from imap_processing.idex.idex_l2b import idex_l2b, round_spin_phases
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def l2b_dataset(l2a_dataset: xr.Dataset) -> xr.Dataset:
     """Return a ``xarray`` dataset containing test data.
 
@@ -47,12 +47,12 @@ def test_l2a_cdf_variables(l2b_dataset: xr.Dataset):
         "epoch",
         "impact_day_of_year",
         "spin_phase_quadrants",
-        "target_low_fit_impact_charge",
-        "target_low_fit_impact_mass_estimate",
-        "target_high_fit_impact_charge",
-        "target_high_fit_impact_mass_estimate",
-        "ion_grid_fit_impact_charge",
-        "ion_grid_fit_impact_mass_estimate",
+        "target_low_impact_charge",
+        "target_low_dust_mass_estimate",
+        "target_high_impact_charge",
+        "target_high_dust_mass_estimate",
+        "ion_grid_impact_charge",
+        "ion_grid_dust_mass_estimate",
     ]
 
     cdf_vars = l2b_dataset.variables

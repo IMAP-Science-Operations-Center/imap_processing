@@ -257,16 +257,36 @@ class CoDICEL1aPipeline:
 
         # For CoDICE-Hi products, since energy dimension was replaced, we no
         # longer need the "esa_step" coordinate
-        # TODO: This will be expanded to all CoDICE-Hi products once I
-        #       can validate them. For now, just operate on hi-sectored
+        # TODO: This bit of code may no longer be needed once I can figure
+        #       out how to run hi-sectored product through the
+        #       create_binned_dataset function
         if self.config["dataset_name"] == "imap_codice_l1a_hi-sectored":
+            for species in self.config["energy_table"]:
+                dataset = self.define_energy_bins(dataset, species)
             dataset = dataset.drop_vars("esa_step")
 
         return dataset
 
-    def define_energy_bins(self, dataset, species):
-        """"""
+    def define_energy_bins(self, dataset: xr.Dataset, species: str) -> xr.Dataset:
+        """
+        Define/add variables to the dataset that correspond to the energy bins.
 
+        For hi-omni and hi-sectored data products specifically, the L1a data
+        product contains the energy bin centers and deltas. This method
+        handles adding these bins as CDF variables and their attributes.
+
+        Parameters
+        ----------
+        dataset : xarray.Dataset
+            ``xarray`` dataset for the data product.
+        species : str
+            The species for which to add the energy bins (e.g. "he3").
+
+        Returns
+        -------
+        dataset : xarray.Dataset
+            ``xarray`` dataset for the data product, with added energy variables.
+        """
         energy_bin_name = f"energy_{species}"
         centers, deltas = self.get_hi_energy_table_data(
             energy_bin_name.split("energy_")[-1]
@@ -289,7 +309,6 @@ class CoDICEL1aPipeline:
         )
 
         return dataset
-
 
     def define_support_variables(self, dataset: xr.Dataset) -> xr.Dataset:
         """
@@ -318,7 +337,6 @@ class CoDICEL1aPipeline:
         ]
 
         for variable_name in self.config["support_variables"]:
-
             # These variables require reading in external tables
             if variable_name == "energy_table":
                 variable_data = self.get_energy_table()
@@ -550,7 +568,7 @@ class CoDICEL1aPipeline:
         self.cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
 
 
-def create_binned_dataset(apid, dataset):
+def create_binned_dataset(apid: int, dataset: xr.Dataset) -> xr.Dataset:
     """
     Create dataset for data that is binned by energy.
 
@@ -568,7 +586,6 @@ def create_binned_dataset(apid, dataset):
     dataset : xarray.Dataset
         Xarray dataset containing the final processed dataset.
     """
-
     # Extract the data
     science_values = [packet.data for packet in dataset.data]
 
@@ -583,11 +600,13 @@ def create_binned_dataset(apid, dataset):
 
     # hi-omni data gets reshaped a bit differently than other products,
     # so we need to stray away from the nominal pipeline
-    stacked_data = np.stack([np.array(item, dtype=np.uint32) for item in pipeline.__dict__["raw_data"]])
+    stacked_data = np.stack(
+        [np.array(item, dtype=np.uint32) for item in pipeline.__dict__["raw_data"]]
+    )
 
     # This will hold all of the data per-species and support variables,
     # ready to be put in a CDF file
-    data = {}
+    data: dict[str, list] = {}
     for species in pipeline.config["energy_table"]:
         data[species] = []
     data["epoch"] = []
@@ -603,23 +622,31 @@ def create_binned_dataset(apid, dataset):
         current_epoch = dataset.epoch.data[i]
         position = 0
         for species in pipeline.config["energy_table"]:
-            num_bins = len(
-                pipeline.config["energy_table"][species]) - 1  # Subtracting one here since the table includes endpoints
-            print(epoch[position:position + num_bins * pipeline.config["num_spins"]].shape)
-            species_data = epoch[position:position + num_bins * pipeline.config["num_spins"]].reshape(num_bins ,num_spins).T
+            num_bins = (
+                len(pipeline.config["energy_table"][species]) - 1
+            )  # Subtracting one here since the table includes endpoints
+            species_data = (
+                epoch[position : position + num_bins * pipeline.config["num_spins"]]
+                .reshape(num_bins, num_spins)
+                .T
+            )
             # TODO: Is this reshaping different for hi-sectored?
             #       Double check with Joey
 
             # Now pull out the data for each spin within the species data
-            for j, spin_data in enumerate(species_data):
+            for spin_data in species_data:
                 data[species].append(spin_data)
 
                 # We only need one set of support variables in the CDF,
                 # so just iterate using one species for these
-                if species == 'h':
+                if species == "h":
                     # For each spin, we add <spin_period>*<num_spins> to the epoch value
-                    spin_period = dataset.spin_period.data[i] * constants.SPIN_PERIOD_CONVERSION
-                    epoch_value = current_epoch + np.int64((spin_period * num_spins) * 1e9)
+                    spin_period = (
+                        dataset.spin_period.data[i] * constants.SPIN_PERIOD_CONVERSION
+                    )
+                    epoch_value = current_epoch + np.int64(
+                        (spin_period * num_spins) * 1e9
+                    )
                     data["epoch"].append(epoch_value)
                     current_epoch = epoch_value
 
@@ -657,19 +684,18 @@ def create_binned_dataset(apid, dataset):
         # Add the energy bins to the dataset
         dataset = pipeline.define_energy_bins(dataset, species)
 
-
     # Add support variables to the dataset
     dataset["spin_period"] = xr.DataArray(
         np.array(data["spin_period"]),
         name="spin_period",
         dims=["epoch"],
-        attrs=pipeline.cdf_attrs.get_variable_attributes("spin_period")
+        attrs=pipeline.cdf_attrs.get_variable_attributes("spin_period"),
     )
     dataset["data_quality"] = xr.DataArray(
         np.array(data["data_quality"]),
         name="data_quality",
         dims=["epoch"],
-        attrs=pipeline.cdf_attrs.get_variable_attributes("data_quality")
+        attrs=pipeline.cdf_attrs.get_variable_attributes("data_quality"),
     )
 
     return dataset
@@ -706,35 +732,6 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     dataset : xarray.Dataset
         Xarray dataset containing the direct event data.
     """
-    # Set some useful variables unique to CoDICE-Lo and CoDICE-Hi
-    if apid == CODICEAPID.COD_LO_PHA:
-        num_priorities = 8
-        cdf_fields = [
-            "NumEvents",
-            "DataQuality",
-            "APDGain",
-            "APD_ID",
-            "APDEnergy",
-            "TOF",
-            "MultiFlag",
-            "PHAType",
-            "SpinAngle",
-            "EnergyStep",
-        ]
-    elif apid == CODICEAPID.COD_HI_PHA:
-        num_priorities = 6
-        cdf_fields = [
-            "NumEvents",
-            "DataQuality",
-            "SSDEnergy0,TOF",
-            "SSD_ID",
-            "ERGE",
-            "MultiFlag",
-            "Type",
-            "SpinAngle",
-            "SpinNumber",
-        ]
-
     # Group and decompress the data
     grouped_data = group_data(packets)
     decompressed_data = [
@@ -742,17 +739,26 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     ]
 
     # Reshape the packet data into CDF-ready variables
-    data = reshape_de_data(packets, decompressed_data, num_priorities)
+    data = reshape_de_data(packets, decompressed_data, apid)
 
     # Gather the CDF attributes
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
     cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
 
+    # Determine the epochs to use in the dataset, which are the epochs whenever
+    # there is a start of a segment and the priority is 0
+    epoch_indices = np.where(
+        ((packets.seq_flgs.data == 3) | (packets.seq_flgs.data == 1))
+        & (packets.priority.data == 0)
+    )[0]
+    acq_start_seconds = packets.acq_start_seconds[epoch_indices]
+    acq_start_subseconds = packets.acq_start_subseconds[epoch_indices]
+    epochs = met_to_ttj2000ns(acq_start_seconds + acq_start_subseconds / 1e6)
+
     # Define coordinates
-    # For epoch, we take the first epoch from each priority set
     epoch = xr.DataArray(
-        packets.epoch[::num_priorities],
+        epochs,
         name="epoch",
         dims=["epoch"],
         attrs=cdf_attrs.get_variable_attributes("epoch"),
@@ -775,8 +781,8 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     )
 
     # Create the CDF data variables for each Priority and Field
-    for i in range(num_priorities):
-        for field in cdf_fields:
+    for i in range(constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["num_priorities"]):
+        for field in constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["cdf_fields"]:
             variable_name = f"P{i}_{field}"
             attrs = cdf_attrs.get_variable_attributes(variable_name)
             if field in ["NumEvents", "DataQuality"]:
@@ -849,6 +855,36 @@ def create_hskp_dataset(packet: xr.Dataset) -> xr.Dataset:
     return dataset
 
 
+def get_de_metadata(packets: xr.Dataset, segment: int) -> bytes:
+    """
+    Gather and return packet metadata (From packet_version through byte_count).
+
+    Extract the metadata in the segmented direct event packet, which is then
+    used to construct the full data of the group of segments.
+
+    Parameters
+    ----------
+    packets : xarray.Dataset
+        The segmented direct event packet data.
+    segment : int
+        The index of the segment of interest.
+
+    Returns
+    -------
+    metadata : bytes
+        The compressed metadata for the segmented packet.
+    """
+    # String together the metadata fields and convert the data to a bytes obj
+    metadata_str = ""
+    for field, num_bits in constants.DE_METADATA_FIELDS.items():
+        metadata_str += f"{packets[field].data[segment]:0{num_bits}b}"
+    metadata_chunks = [metadata_str[i : i + 8] for i in range(0, len(metadata_str), 8)]
+    metadata_ints = [int(item, 2) for item in metadata_chunks]
+    metadata = bytes(metadata_ints)
+
+    return metadata
+
+
 def get_params(dataset: xr.Dataset) -> tuple[int, int, int, int]:
     """
     Return the four 'main' parameters used for l1a processing.
@@ -919,32 +955,39 @@ def group_data(packets: xr.Dataset) -> list[bytes]:
     current_group = bytearray()  # Temporary storage for current group
     group_byte_count = None  # Temporary storage for current group byte count
 
-    for packet_data, group_code, byte_count in zip(
-        packets.event_data.data, packets.seq_flgs.data, packets.byte_count.data
-    ):
+    for segment in range(len(packets.event_data.data)):
+        packet_data = packets.event_data.data[segment]
+        group_code = packets.seq_flgs.data[segment]
+        byte_count = packets.byte_count.data[segment]
+
         # If the group code is 3, this means the data is not part of a group
         # and can be decompressed as-is
         if group_code == 3:
-            values_to_decompress = packet_data[:byte_count]
-            grouped_data.append(values_to_decompress)
+            grouped_data.append(packet_data[:byte_count])
 
         # If the group code is 1, this means the data is the first data in a
         # group. Also, set the byte count for the group
         elif group_code == 1:
             group_byte_count = byte_count
-            current_group = packet_data
+            current_group += packet_data
 
         # If the group code is 0, this means the data is part of the middle of
-        # the group
+        # the group.
         elif group_code == 0:
+            current_group += get_de_metadata(packets, segment)
             current_group += packet_data
 
         # If the group code is 2, this means the data is the last data in the
         # group
         elif group_code == 2:
+            current_group += get_de_metadata(packets, segment)
             current_group += packet_data
+
+            # The grouped data is now ready to be decompressed
             values_to_decompress = current_group[:group_byte_count]
             grouped_data.append(values_to_decompress)
+
+            # Reset the current group
             current_group = bytearray()
             group_byte_count = None
 
@@ -974,7 +1017,7 @@ def log_dataset_info(datasets: dict[int, xr.Dataset]) -> None:
 
 
 def reshape_de_data(
-    packets: xr.Dataset, decompressed_data: list[list[int]], num_priorities: int
+    packets: xr.Dataset, decompressed_data: list[list[int]], apid: int
 ) -> dict[str, np.ndarray]:
     """
     Reshape the decompressed direct event data into CDF-ready arrays.
@@ -986,9 +1029,9 @@ def reshape_de_data(
         and data quality.
     decompressed_data : list[list[int]]
         The decompressed data to reshape, in the format <epoch>[<priority>[<event>]].
-    num_priorities : int
-        The number of priorities in the data product (differs between CoDICE-Lo
-        and CoDICE-Hi).
+    apid : int
+        The APID of the packet, used primarily to determine if the data are from
+        CoDICE-Lo or CoDICE-Hi.
 
     Returns
     -------
@@ -999,23 +1042,37 @@ def reshape_de_data(
     # Dictionary to hold all the (soon to be restructured) direct event data
     data: dict[str, np.ndarray] = {}
 
+    # Extract some useful variables
+    num_priorities = constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["num_priorities"]
+    bit_structure = constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["bit_structure"]
+
     # Determine the number of epochs to help with data array initialization
     # There is one epoch per set of priorities
-    num_epochs = len(packets.epoch.data) // num_priorities
+    num_epochs = len(decompressed_data) // num_priorities
+
+    # Get num_events, data quality, and priorities data for beginning of segments
+    segment_starts = np.where(
+        (packets.seq_flgs.data == 3) | (packets.seq_flgs.data == 1)
+    )[0]
+    num_events_arr = packets.num_events.data[segment_starts]
+    data_quality_arr = packets.suspect.data[segment_starts]
+    priorities_arr = packets.priority.data[segment_starts]
 
     # Initialize data arrays for each priority and field to store the data
     # We also need arrays to hold number of events and data quality
     for priority_num in range(num_priorities):
-        for field in constants.LO_DE_BIT_STRUCTURE:
+        for field in bit_structure:
             if field not in ["Priority", "Spare"]:
                 data[f"P{priority_num}_{field}"] = np.full(
-                    (num_epochs, 10000), 255, dtype=np.uint16
+                    (num_epochs, 10000),
+                    bit_structure[field]["fillval"],
+                    dtype=bit_structure[field]["dtype"],
                 )
-        data[f"P{priority_num}_NumEvents"] = np.full(num_epochs, 255, dtype=np.uint16)
-        data[f"P{priority_num}_DataQuality"] = np.full(num_epochs, 255, dtype=np.uint16)
+        data[f"P{priority_num}_NumEvents"] = np.full(num_epochs, 65535, dtype=np.uint16)
+        data[f"P{priority_num}_DataQuality"] = np.full(num_epochs, 255, dtype=np.uint8)
 
     # decompressed_data is one large list of values of length
-    # (<number of epochs> * <8 priorities>)
+    # (<number of epochs> * <number of priorities>)
     # Chunk the data into each epoch
     for epoch_index in range(num_epochs):
         # Determine the starting and ending indices of the epoch
@@ -1027,43 +1084,51 @@ def reshape_de_data(
 
         # The order of the priorities and data quality flags are unique to each
         # epoch and can be gathered from the packet data
-        priority_order = packets.priority[epoch_start:epoch_end].data
-        data_quality = packets.suspect[epoch_start:epoch_end].data
+        priority_order = priorities_arr[epoch_start:epoch_end]
+        data_quality = data_quality_arr[epoch_start:epoch_end]
 
         # For each epoch/priority combo, iterate over each event
         for i, priority_num in enumerate(priority_order):
             priority_data = epoch_data[i]
 
             # Number of events and data quality can be determined at this stage
-            num_events = len(priority_data) // num_priorities
+            num_events = num_events_arr[epoch_start:epoch_end][i]
             data[f"P{priority_num}_NumEvents"][epoch_index] = num_events
             data[f"P{priority_num}_DataQuality"][epoch_index] = data_quality[i]
 
             # Iterate over each event
             for event_index in range(num_events):
-                event_start = event_index * num_priorities
-                event_end = event_start + num_priorities
+                event_start = event_index * 8  # The 8 is for 8 bytes
+                event_end = event_start + 8
                 event = priority_data[event_start:event_end]
+
                 # Separate out each individual field from the bit string
                 # The fields are packed into the bit string in reverse order, so
                 # we need to back them out in reverse order
                 bit_string = (
                     f"{int.from_bytes(event, byteorder='big'):0{len(event) * 8}b}"
                 )
+
                 bit_position = 0
-                for field_name, bit_length in reversed(
-                    constants.LO_DE_BIT_STRUCTURE.items()
-                ):
+                for field_name, field_components in reversed(bit_structure.items()):
+                    # We don't need to carry Priority and Spare fields through
                     if field_name in ["Priority", "Spare"]:
-                        bit_position += bit_length
+                        bit_position += field_components["bit_length"]
                         continue
-                    value = int(bit_string[bit_position : bit_position + bit_length], 2)
+
+                    # Convert from binary to integer
+                    value = int(
+                        bit_string[
+                            bit_position : bit_position + field_components["bit_length"]
+                        ],
+                        2,
+                    )
+
+                    # Set the value into the data array
                     data[f"P{priority_num}_{field_name}"][epoch_index, event_index] = (
                         value
                     )
-                    bit_position += bit_length
-
-    # TODO: Implement specific np.dtype and fill_val per field
+                    bit_position += field_components["bit_length"]
 
     return data
 
@@ -1099,12 +1164,12 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
 
         # Housekeeping data
         if apid == CODICEAPID.COD_NHK:
-            processed_dataset = create_hskp_dataset(dataset, data_version)
+            processed_dataset = create_hskp_dataset(dataset)
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # Event data
         elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
-            processed_dataset = create_event_dataset(apid, dataset, data_version)
+            processed_dataset = create_direct_event_dataset(apid, dataset)
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # hi-omni data
@@ -1112,14 +1177,8 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
             processed_dataset = create_binned_dataset(apid, dataset)
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
-        # TODO: Still need to implement
-        elif apid == CODICEAPID.COD_HI_PHA:
-            logger.info("\tStill need to properly implement")
-            processed_dataset = None
-
         # Everything else
         elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
-
             # Extract the data
             science_values = [packet.data for packet in dataset.data]
 
@@ -1152,21 +1211,3 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
         processed_datasets.append(processed_dataset)
 
     return processed_datasets
-
-
-if __name__ == "__main__":
-    from imap_processing import imap_module_directory
-    from imap_processing.cdf.utils import write_cdf
-
-    TEST_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"
-    file_path = TEST_DATA_PATH / "imap_codice_l0_raw_20241110_v001.pkts"
-
-    processed_datasets = process_codice_l1a(file_path)
-
-    for dataset in processed_datasets:
-        if dataset is not None:
-            try:
-                filename = write_cdf(dataset)
-                print(filename)
-            except:
-                pass

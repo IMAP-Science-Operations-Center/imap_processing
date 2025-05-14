@@ -40,9 +40,7 @@ TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 def test_fixture(de_dataset, events_fsw_comparison_theta_0):
     """Fixture to compute and return yf and related data."""
     # Remove start_type with fill values
-    de_dataset = de_dataset.where(
-        de_dataset["start_type"] != np.iinfo(np.int64).min, drop=True
-    )
+    de_dataset = de_dataset.where(de_dataset["start_type"] != 255, drop=True)
 
     df = pd.read_csv(events_fsw_comparison_theta_0)
     df_filt = df[df["StartType"] != -1]
@@ -343,7 +341,7 @@ def test_get_de_energy_kev(test_fixture):
     )
 
     energy = get_de_energy_kev(v, species_bin_ph)
-    index_hydrogen = np.where(species_bin_ph == "H")
+    index_hydrogen = np.where(species_bin_ph == 1)
     actual_energy = energy[index_hydrogen[0]]
     expected_energy = df_ph["energy_revised"].astype("float")
 
@@ -436,13 +434,13 @@ def test_determine_species(test_fixture):
         "SSD",
     )
 
-    h_indices_ph = np.where(species_bin_ph == "H")[0]
+    h_indices_ph = np.where(species_bin_ph == 1)[0]
     ctof_indices_ph = np.where(
         (df_ph["cTOF"].astype("float") > UltraConstants.CTOF_SPECIES_MIN)
         & (df_ph["cTOF"].astype("float") < UltraConstants.CTOF_SPECIES_MAX)
     )[0]
 
-    h_indices_ssd = np.where(species_bin_ssd == "H")[0]
+    h_indices_ssd = np.where(species_bin_ssd == 1)[0]
     ctof_indices_ssd = np.where(
         (df_ssd["cTOF"].astype("float") > UltraConstants.CTOF_SPECIES_MIN)
         & (df_ssd["cTOF"].astype("float") < UltraConstants.CTOF_SPECIES_MAX)

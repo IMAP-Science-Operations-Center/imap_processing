@@ -1,391 +1,2109 @@
 # <=== Defaults ===>
 default_attrs: &default
-    CATDESC: ""
+    DEPEND_0: epoch
     DISPLAY_TYPE: no_plot
-    FIELDNAM: ""
+    FIELDNAM: " "
     FILLVAL: -9223372036854775808
     FORMAT: I12
-    LABLAXIS: ""
-    REFERENCE_POSITION: ""
-    RESOLUTION: ""
     SCALETYP: linear
-    TIME_BASE: ""
-    TIME_SCALE: ""
     UNITS: dN
     VALIDMIN: -9223372036854775808
     VALIDMAX: 9223372036854775807
     VAR_TYPE: data
 
-codice_support_attrs: &support_default
+hskp_attrs: &hskp_default
     <<: *default
+    DEPEND_0: epoch
     VAR_TYPE: support_data
 
+hi_energies_attrs: &hi_energies_default
+    FIELDNAM: Energy Table
+    FILLVAL: -1.0e+30
+    FORMAT: F10.8
+    LABLAXIS: MeV/n
+    SCALETYP: log
+    UNITS: MeV/n
+    VALIDMIN: 0.05
+    VALIDMAX: 200.00
+    VAR_TYPE: support_data
+
+hi_priorities_attrs: &hi_priorities_default
+    FILLVAL: -1
+    LABLAXIS: events
+    UNITS: events
+    VALIDMIN: 0
+    VALIDMAX: 16777216
+
+
 # <=== Coordinates ===>
-energy_attrs:
-    <<: *default
+esa_step:
     CATDESC: Energy per charge (E/q) sweeping step
-    FIELDNAM: Energy step
+    FIELDNAM: Energy Index
+    FILLVAL: 254
     FORMAT: I3
-    LABLAXIS: energy step
-    UNITS: ' '
+    LABLAXIS: Energy Index
+    SCALETYP: linear
+    UNITS: " "
     VALIDMIN: 0
     VALIDMAX: 127
     VAR_TYPE: support_data
 
-inst_az_attrs:
-    <<: *default
-    CATDESC: Azimuth
-    FIELDNAM: Azimuth
-    FORMAT: I2
-    LABLAXIS: Azimuth
-    UNITS: ' '
+inst_az:
+    CATDESC: Instrument Azimuth Index
+    FIELDNAM: Azimuth Index
+    FILLVAL: 254
+    FORMAT: I3
+    LABLAXIS: Azimuth Index
+    SCALETYP: linear
+    UNITS: " "
     VALIDMIN: 0
     VALIDMAX: 31
     VAR_TYPE: support_data
 
-spin_sector_attrs:
-    <<: *default
+spin_sector:
     CATDESC: Spin sector indicating range of spin angles
-    FIELDNAM: Spin sector
-    FORMAT: I4
-    LABLAXIS: spin sector
-    UNITS: ' '
+    FIELDNAM: Spin Sector Index
+    FILLVAL: 254
+    FORMAT: I3
+    LABLAXIS: Spin Sector
+    SCALETYP: linear
+    UNITS: " "
     VALIDMIN: 0
-    VALIDMAX: 1152
+    VALIDMAX: 12
+    VAR_TYPE: support_data
+
+# TODO: These values will likely change, check with Joey
+spin_sector_pairs:
+    CATDESC: Spin sector Pairs
+    FIELDNAM: Spin Sector Pairs
+    FILLVAL: -1
+    FORMAT: I1
+    LABLAXIS: " "
+    SCALETYP: linear
+    UNITS: " "
+    VALIDMIN: 0
+    VALIDMAX: 6
+    VAR_TYPE: support_data
+
+spin_sector_index:
+    CATDESC: Spin Sector Index
+    FIELDNAM: Spin Sector Index
+    FILLVAL: -1
+    FORMAT: I2
+    LABLAXIS: " "
+    SCALETYP: linear
+    UNITS: " "
+    VALIDMIN: 0
+    VALIDMAX: 12
+    VAR_TYPE: support_data
+
+ssd_index:
+    CATDESC: SSD Index
+    FIELDNAM: SSD Index
+    FILLVAL: -1
+    FORMAT: I2
+    LABLAXIS: " "
+    SCALETYP: linear
+    UNITS: " "
+    VALIDMIN: 0
+    VALIDMAX: 12
+    VAR_TYPE: support_data
+
+ssdid:
+    CATDESC: SSD ID
+    FIELDNAM: SSD ID
+    FILLVAL: -1
+    FORMAT: I2
+    LABLAXIS: " "
+    SCALETYP: linear
+    UNITS: " "
+    VALIDMIN: 0
+    VALIDMAX: 12
     VAR_TYPE: support_data
 
 # <=== Labels ===>
-energy_label:
-    CATDESC: Energy per charge (E/q) sweeping step
-    DISPLAY_TYPE: ""
-    FIELDNAM: Energy step
-    FILLVAL: ""
-    FORMAT: A3
-    LABLAXIS: ""
-    REFERENCE_POSITION: ""
-    RESOLUTION: ""
-    TIME_BASE: ""
-    TIME_SCALE: ""
-    UNITS: ""
-    VALIDMAX: ""
-    VALIDMIN: ""
+spin_sector_pairs_label:
+    CATDESC: Spin sector Pairs
+    FIELDNAM: Spin Sector Pairs
+    FORMAT: A11
     VAR_TYPE: metadata
 
-# <=== Dataset Attributes ===>
-acquisition_times_attrs:
-    <<: *default
-    CATDESC: Time of acquisition for the energy step
-    DEPEND_1: energy
+# <=== Dataset Variable Attributes ===>
+# The following are set in multiple data products
+acquisition_time_per_step:
+    CATDESC: Acquisition time for each step of energy
     FIELDNAM: Acquisition Time
-    FILLVAL: .NAN
+    FILLVAL: -1.0e+30
     FORMAT: F10.3
-    LABLAXIS: Acq Time
+    LABLAXIS: Acquisition Time
+    SCALETYP: linear
     UNITS: ms
-    VALIDMIN: 0
-    VALIDMAX: 1000
+    VALIDMIN: 0.000000
+    VALIDMAX: 625.000000
     VAR_TYPE: support_data
 
 counters_attrs: &counters
     <<: *default
     CATDESC: Fill in at creation
-    DEPEND_0: epoch
-    DEPEND_1: energy
     DISPLAY_TYPE: time_series
     FIELDNAM: Fill in at creation
-    LABL_PTR_1: energy_label
+    FORMAT: I7
+    SCALETYP: linear
     UNITS: counts
     VALIDMIN: 0
     VALIDMAX: 8388607  # max value for a signed 24-bit integer
+    VAR_TYPE: data
 
-esa_sweep_attrs:
+events_attrs: &events
     <<: *default
-    CATDESC: ElectroStatic Analyzer Energy Values
-    DEPEND_1: energy
-    FIELDNAM: ESA Voltage
-    FORMAT: I19
-    LABLAXIS: ESA V
-    UNITS: V
+    CATDESC: Fill in at creation
+    DISPLAY_TYPE: time_series
+    FIELDNAM: Fill in at creation
+    FILLVAL: -1
+    FORMAT: I8
+    SCALETYP: linear
+    UNITS: counts
     VALIDMIN: 0
+    VALIDMAX: 16777216  # max value for a signed 32-bit integer
+    VAR_TYPE: data
+
+data_quality:
+    <<: *default
+    CATDESC: Indicates whether data quality is suspect (1).
+    DISPLAY_TYPE: time_series
+    FIELDNAM: Data Quality
+    FILLVAL: 255
+    FORMAT: I1
+    LABLAXIS: Data Quality
+    SCALETYP: linear
+    UNITS: " "
+    VALIDMIN: 0
+    VALIDMAX: 1
+    VAR_TYPE: data
+
+energy_table:
+    CATDESC: ElectroStatic Analyzer Energy Values
+    FIELDNAM: Energy Table
+    FORMAT: I5
+    LABLAXIS: eV
+    SCALETYP: log
+    UNITS: eV
+    VALIDMIN: 1
+    VALIDMAX: 14100
     VAR_TYPE: support_data
 
-# <=== Data Variable Attributes ===>
+nso_half_spin:
+    <<: *default
+    CATDESC: When No Scan Operation (NSO) was activated
+    DISPLAY_TYPE: time_series
+    FIELDNAM: NSO Mode
+    FILLVAL: 255
+    FORMAT: I3
+    LABLAXIS: NSO Half Spin
+    SCALETYP: linear
+    UNITS: half spin number
+    VALIDMIN: 0
+    VALIDMAX: 255
+    VAR_NOTES: Indicates the point when No Scan Operation (NSO) was activated. In NSO, the ESA voltage is set to the first step in the scan and remains fixed until the next cycle boundary.
+    VAR_TYPE: data
+
+rgfo_half_spin:
+    <<: *default
+    CATDESC: When Reduced Gain Factor Operation (RGFO) was activated
+    DISPLAY_TYPE: time_series
+    FIELDNAM: RGFO Mode
+    FILLVAL: 255
+    FORMAT: I3
+    LABLAXIS: RGFO Half Spin
+    SCALETYP: linear
+    UNITS: half spin number
+    VALIDMIN: 0
+    VALIDMAX: 255
+    VAR_NOTES: Indicates the point when Reduced Gain Factor Operation (RGFO) was activated. In RGFO, the Entrance ESA voltage is reduced in order to limit the number of ions that reach the detectors.
+    VAR_TYPE: data
+
+spin_period:
+    <<: *default
+    CATDESC: The spin period as reported by the spacecraft.
+    DISPLAY_TYPE: time_series
+    FIELDNAM: Spin Period
+    FILLVAL: 1.0e+31
+    FORMAT: F3.1
+    LABLAXIS: Spin Period
+    SCALETYP: linear
+    UNITS: s
+    VALIDMIN: 0.0
+    VALIDMAX: 16.0
+    VAR_TYPE: data
+
+st_bias_gain_mode:
+    <<: *default
+    CATDESC: Suprathermal Bias Gain Mode
+    DISPLAY_TYPE: " "
+    FIELDNAM: Suprathermal Bias Gain Mode
+    FILLVAL: 255
+    FORMAT: I1
+    LABLAXIS: Suprathermal Bias Gain Mode
+    SCALETYP: linear
+    UNITS: " "
+    VALIDMIN: 0
+    VALIDMAX: 1
+    VAR_NOTES: Indicates whether FSW is tracking the Suprathermal High-Gain bias curve or the Suprathermal Low-Gain bias curve.
+    VAR_TYPE: data
+
+sw_bias_gain_mode:
+    <<: *default
+    CATDESC: Solarwind Bias Gain Mode
+    DISPLAY_TYPE: " "
+    FIELDNAM: Solarwind Bias Gain Mode
+    FILLVAL: 255
+    FORMAT: I1
+    LABLAXIS: Solarwind Bias Gain Mode
+    SCALETYP: linear
+    UNITS: " "
+    VALIDMIN: 0
+    VALIDMAX: 1
+    VAR_NOTES: Indicates whether FSW is tracking the Solarwind High-Gain bias curve or the Solarwind Low-Gain bias curve.
+    VAR_TYPE: data
+
+# The following are data product-specific
 # hi-counters-aggregated
-hi_counters_aggregated-aggregated:
-    <<: *counters
-    CATDESC: Aggregated Rates
-    FIELDNAM: Rates - Aggregated
+hi-counters-aggregated-DCR:
+    <<: *events
+    CATDESC: Event B - Double Coincidence Rate (DCR)
+    FIELDNAM: DCRs
+
+hi-counters-aggregated-STO:
+    <<: *events
+    CATDESC: Event C - Start Only (STO)
+    FIELDNAM: Start Only
+
+hi-counters-aggregated-SPO:
+    <<: *events
+    CATDESC: Event D - Stop Only (SPO)
+    FIELDNAM: Stop Only
+
+hi-counters-aggregated-Reserved1:
+    <<: *events
+    CATDESC: Reserved 1
+    FIELDNAM: Reserved 1
+
+hi-counters-aggregated-MST:
+    <<: *events
+    CATDESC: Event H - Multi Start (MST)
+    FIELDNAM: Multi Start
+
+hi-counters-aggregated-Reserved2:
+    <<: *events
+    CATDESC: Reserved 2
+    FIELDNAM: Reserved 2
+
+hi-counters-aggregated-Reserved3:
+    <<: *events
+    CATDESC: Reserved 3
+    FIELDNAM: Reserved 3
+
+hi-counters-aggregated-Reserved4:
+    <<: *events
+    CATDESC: Reserved 4
+    FIELDNAM: Reserved 4
+
+hi-counters-aggregated-Reserved5:
+    <<: *events
+    CATDESC: Reserved 5
+    FIELDNAM: Reserved 5
+
+hi-counters-aggregated-LowTOFCutoff:
+    <<: *events
+    CATDESC: Low TOF Cutoff
+    FIELDNAM: Low TOF Cutoff
+
+hi-counters-aggregated-Reserved6:
+    <<: *events
+    CATDESC: Reserved 6
+    FIELDNAM: Reserved 6
+
+hi-counters-aggregated-Reserved7:
+    <<: *events
+    CATDESC: Reserved 7
+    FIELDNAM: Reserved 7
+
+hi-counters-aggregated-ASIC1FlagInvalid:
+    <<: *events
+    CATDESC: ASIC 1 Flag Invalid Count
+    FIELDNAM: ASIC 1 Flag Invalid
+
+hi-counters-aggregated-ASIC2FlagInvalid:
+    <<: *events
+    CATDESC: ASIC 2 Flag Invalid Count
+    FIELDNAM: ASIC 2 Flag Invalid
+
+hi-counters-aggregated-ASIC1ChannelInvalid:
+    <<: *events
+    CATDESC: ASIC 1 Channel Invalid Count
+    FIELDNAM: ASIC 1 Channel Invalid
+
+hi-counters-aggregated-ASIC2ChannelInvalid:
+    <<: *events
+    CATDESC: ASIC 2 Channel Invalid Count
+    FIELDNAM: ASIC 2 Channel Invalid
 
 # hi-counters-singles
-hi_counters_singles-tcr:
+hi-counters-singles-tcr:
     <<: *counters
-    CATDESC: TCR Rates
-    FIELDNAM: Rates - Event A (TCR)
+    CATDESC: Rates - Event A (TCR)
+    FIELDNAM: Rates
+    DEPEND_1: ssdid
+    LABL_PTR_1: ssdid
+    UNITS: events
 
-hi_counters_singles-ssdo:
+hi-counters-singles-ssdo:
     <<: *counters
-    CATDESC: SSDO Rates
-    FIELDNAM: Rates - Event E (SSDO)
+    CATDESC: Rates - Event E (SSDO)
+    FIELDNAM: Rates
+    DEPEND_1: ssdid
+    LABL_PTR_1: ssdid
+    UNITS: events
 
-hi_counters_singles-stssd:
+hi-counters-singles-stssd:
     <<: *counters
-    CATDESC: STSSD Rates
-    FIELDNAM: Rates - Event G (STSSD)
+    CATDESC: Rates - Event G (STSSD)
+    FIELDNAM: Rates
+    DEPEND_1: ssdid
+    LABL_PTR_1: ssdid
+    UNITS: events
 
 # hi-omni
-hi_omni-h:
+hi-omni-h:
     <<: *counters
     CATDESC: Omnidirectional H Rates
     FIELDNAM: H
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
+    LABL_PTR_1: esa_step
+    LABL_PTR_2: inst_az
 
-hi_omni-he3:
+hi-omni-energy_h:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for h
+    DELTA_MINUS_VAR: energy_h_delta
+    DELTA_PLUS_VAR: energy_h_delta
+
+hi-omni-energy_h_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for h
+    FIELDNAM: Delta Energy
+
+hi-omni-he3:
     <<: *counters
     CATDESC: Omnidirectional He3 Rates
     FIELDNAM: He3
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
+    LABL_PTR_1: esa_step
+    LABL_PTR_2: inst_az
 
-hi_omni-he4:
+hi-omni-energy_he3:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for he3
+    DELTA_MINUS_VAR: energy_he3_delta
+    DELTA_PLUS_VAR: energy_he3_delta
+
+hi-omni-energy_he3_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for he3
+    FIELDNAM: Delta Energy
+
+hi-omni-he4:
     <<: *counters
     CATDESC: Omnidirectional He4 Rates
     FIELDNAM: He4
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
+    LABL_PTR_1: esa_step
+    LABL_PTR_2: inst_az
 
-hi_omni-c:
+hi-omni-energy_he4:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for he4
+    DELTA_MINUS_VAR: energy_he4_delta
+    DELTA_PLUS_VAR: energy_he4_delta
+
+hi-omni-energy_he4_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for he4
+    FIELDNAM: Delta Energy
+
+hi-omni-c:
     <<: *counters
     CATDESC: Omnidirectional C Rates
     FIELDNAM: C
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
+    LABL_PTR_1: esa_step
+    LABL_PTR_2: inst_az
 
-hi_omni-o:
+hi-omni-energy_c:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for c
+    DELTA_MINUS_VAR: energy_c_delta
+    DELTA_PLUS_VAR: energy_c_delta
+
+hi-omni-energy_c_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for c
+    FIELDNAM: Delta Energy
+
+hi-omni-o:
     <<: *counters
     CATDESC: Omnidirectional O Rates
     FIELDNAM: O
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
+    LABL_PTR_1: esa_step
+    LABL_PTR_2: inst_az
 
-hi_omni-ne_mg_si:
+hi-omni-energy_o:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for o
+    DELTA_MINUS_VAR: energy_o_delta
+    DELTA_PLUS_VAR: energy_o_delta
+
+hi-omni-energy_o_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for o
+    FIELDNAM: Delta Energy
+
+hi-omni-ne_mg_si:
     <<: *counters
     CATDESC: Omnidirectional Ne_Mg_Si Rates
     FIELDNAM: Ne_Mg_Si
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
+    LABL_PTR_1: esa_step
+    LABL_PTR_2: inst_az
 
-hi_omni-fe:
+hi-omni-energy_ne_mg_si:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for ne_mg_si
+    DELTA_MINUS_VAR: energy_ne_mg_si_delta
+    DELTA_PLUS_VAR: energy_ne_mg_si_delta
+
+hi-omni-energy_ne_mg_si_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for ne_mg_si
+    FIELDNAM: Delta Energy
+
+hi-omni-fe:
     <<: *counters
     CATDESC: Omnidirectional Fe Rates
     FIELDNAM: Fe
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
+    LABL_PTR_1: esa_step
+    LABL_PTR_2: inst_az
 
-hi_omni-uh:
+hi-omni-energy_fe:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for fe
+    DELTA_MINUS_VAR: energy_fe_delta
+    DELTA_PLUS_VAR: energy_fe_delta
+
+hi-omni-energy_fe_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for fe
+    FIELDNAM: Delta Energy
+
+hi-omni-uh:
     <<: *counters
     CATDESC: Omnidirectional UH Rates
     FIELDNAM: UH
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
+    LABL_PTR_1: esa_step
+    LABL_PTR_2: inst_az
+
+hi-omni-energy_uh:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for uh
+    DELTA_MINUS_VAR: energy_uh_delta
+    DELTA_PLUS_VAR: energy_uh_delta
+
+hi-omni-energy_uh_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for uh
+    FIELDNAM: Delta Energy
+
+hi-omni-junk:
+    <<: *counters
+    CATDESC: Junk (Root 2 spacing)
+    FIELDNAM: Junk
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
+    LABL_PTR_1: esa_step
+    LABL_PTR_2: inst_az
+
+hi-omni-energy_junk:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for junk
+    DELTA_MINUS_VAR: energy_junk_delta
+    DELTA_PLUS_VAR: energy_junk_delta
+
+hi-omni-energy_junk_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for junk
+    FIELDNAM: Delta Energy
+
+# hi-priority
+hi-priority-Priority0:
+    <<: *hi_priorities_default
+    CATDESC: Priority 0
+    FIELDNAM: Priority 0
+
+hi-priority-Priority1:
+    <<: *hi_priorities_default
+    CATDESC: Priority 1
+    FIELDNAM: Priority 1
+
+hi-priority-Priority2:
+    <<: *hi_priorities_default
+    CATDESC: Priority 2
+    FIELDNAM: Priority 2
+
+hi-priority-Priority3:
+    <<: *hi_priorities_default
+    CATDESC: Priority 3
+    FIELDNAM: Priority 3
+
+hi-priority-Priority4:
+    <<: *hi_priorities_default
+    CATDESC: Priority 4
+    FIELDNAM: Priority 4
+
+hi-priority-Priority5:
+    <<: *hi_priorities_default
+    CATDESC: Priority 5
+    FIELDNAM: Priority 5
 
 # hi-sectored
-hi_sectored-h:
+hi-sectored-h:
     <<: *counters
     CATDESC: Sectored H Rates
     FIELDNAM: H
+    DEPEND_1: energy_h
+    DEPEND_2: ssd_index
+    DEPEND_3: spin_sector_index
+    LABL_PTR_1: energy_h
+    LABL_PTR_2: ssd_index
+    LABL_PTR_3: spin_sector_index
 
-hi_sectored-he3he4:
+hi-sectored-energy_h:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for H
+    DELTA_MINUS_VAR: energy_h_delta
+    DELTA_PLUS_VAR: energy_h_delta
+
+hi-sectored-energy_h_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for H
+    FIELDNAM: Delta Energy
+
+hi-sectored-he3he4:
     <<: *counters
     CATDESC: Sectored He3He4 Rates
     FIELDNAM: He3He4
+    DEPEND_1: energy_he3he4
+    DEPEND_2: ssd_index
+    DEPEND_3: spin_sector_index
+    LABL_PTR_1: energy_he3he4
+    LABL_PTR_2: ssd_index
+    LABL_PTR_3: spin_sector_index
 
-hi_sectored-cno:
+hi-sectored-energy_he3he4:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for He3He4
+    DELTA_MINUS_VAR: energy_he3he4_delta
+    DELTA_PLUS_VAR: energy_he3he4_delta
+
+hi-sectored-energy_he3he4_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for He3He4
+    FIELDNAM: Delta Energy
+
+hi-sectored-cno:
     <<: *counters
     CATDESC: Sectored CNO Rates
     FIELDNAM: CNO
+    DEPEND_1: energy_cno
+    DEPEND_2: ssd_index
+    DEPEND_3: spin_sector_index
+    LABL_PTR_1: energy_cno
+    LABL_PTR_2: ssd_index
+    LABL_PTR_3: spin_sector_index
 
-hi_sectored-fe:
+hi-sectored-energy_cno:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for CNO
+    DELTA_MINUS_VAR: energy_cno_delta
+    DELTA_PLUS_VAR: energy_cno_delta
+
+hi-sectored-energy_cno_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for CNO
+    FIELDNAM: Delta Energy
+
+hi-sectored-fe:
     <<: *counters
     CATDESC: Sectored Fe Rates
     FIELDNAM: Fe
+    DEPEND_1: energy_fe
+    DEPEND_2: ssd_index
+    DEPEND_3: spin_sector_index
+    LABL_PTR_1: energy_fe
+    LABL_PTR_2: ssd_index
+    LABL_PTR_3: spin_sector_index
+
+hi-sectored-energy_fe:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for Fe
+    DELTA_MINUS_VAR: energy_fe_delta
+    DELTA_PLUS_VAR: energy_fe_delta
+
+hi-sectored-energy_fe_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for Fe
+    FIELDNAM: Delta Energy
 
 # lo-counters-aggregated
-lo_counters_aggregated-aggregated:
-    <<: *counters
-    CATDESC: Aggregated Rates
-    FIELDNAM: Rates - Aggregated
+lo-counters-aggregated-TCR:
+    <<: *events
+    CATDESC: Triple Coincidence Rate
+    FIELDNAM: Event A - Triple Coincidence Rate
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-DCR:
+    <<: *events
+    CATDESC: Double Coincidence Rate
+    FIELDNAM: Event B - Double Coincidence Rate
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-TOFPlusAPD:
+    <<: *events
+    CATDESC: TOF + APD
+    FIELDNAM: Event C - TOF + APD
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-TOFOnly:
+    <<: *events
+    CATDESC: TOF Only
+    FIELDNAM: Event D - TOF Only
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-PositionPlusAPD:
+    <<: *events
+    CATDESC: Position + APD
+    FIELDNAM: Event E - Position + APD
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-PositionOnly:
+    <<: *events
+    CATDESC: Position Only
+    FIELDNAM: Event F - Position Only
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-STAorSTBPlusAPD:
+    <<: *events
+    CATDESC: STA or STB + APD
+    FIELDNAM: Event G - STA or STB + APD
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-STAorSTBOnly:
+    <<: *events
+    CATDESC: STA or STB Only
+    FIELDNAM: Event H - STA or STB Only
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-Reserved1:
+    <<: *events
+    CATDESC: Reserved
+    FIELDNAM: Reserved 1
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-Reserved2:
+    <<: *events
+    CATDESC: Reserved
+    FIELDNAM: Reserved 2
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-SPOnly:
+    <<: *events
+    CATDESC: SP Only
+    FIELDNAM: Event K - SP Only
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-APDOnly:
+    <<: *events
+    CATDESC: APD Only
+    FIELDNAM: Event L - APD Only
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-LowTOFCutoff:
+    <<: *events
+    CATDESC: Low TOF Cutoff
+    FIELDNAM: Low TOF Cutoff
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-STA:
+    <<: *events
+    CATDESC: Start A
+    FIELDNAM: Singles - Start-A (STA)
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-STB:
+    <<: *events
+    CATDESC: Start B
+    FIELDNAM: Singles - Start-B (STB)
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-SP:
+    <<: *events
+    CATDESC: Stop
+    FIELDNAM: Singles - Stop (SP)
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-TotalPositionCount:
+    <<: *events
+    CATDESC: Total Position Count
+    FIELDNAM: Singles - Total Position Count
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-InvalidPositionCount:
+    <<: *events
+    CATDESC: Invalid Position Count
+    FIELDNAM: Singles - Invalid Position Count
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-ASIC1FlagInvalid:
+    <<: *events
+    CATDESC: ASIC 1 Flag Invalid
+    FIELDNAM: ASIC 1 Flag Invalid Count
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-ASIC2FlagInvalid:
+    <<: *events
+    CATDESC: ASIC 2 Flag Invalid
+    FIELDNAM: ASIC 2 Flag Invalid Count
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-ASIC1ChannelInvalid:
+    <<: *events
+    CATDESC: ASIC 1 Channel Invalid
+    FIELDNAM: ASIC 1 Channel Invalid Count
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-ASIC2ChannelInvalid:
+    <<: *events
+    CATDESC: ASIC 2 Channel Invalid
+    FIELDNAM: ASIC 2 Channel Invalid Count
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-TEC4TimeoutTOFNoPos:
+    <<: *events
+    CATDESC: TEC-4 Timeout TOF no Position
+    FIELDNAM: TEC-4 Timeout Count; TOF, No Position
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-TEC4TimeoutPosNoTOF:
+    <<: *events
+    CATDESC: TEC-4 Timeout Position no TOF
+    FIELDNAM: TEC-4 Timeout Count; Position, No TOF
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-TEC4TimeoutNoPosTOF:
+    <<: *events
+    CATDESC: TEC-4 Timeout No Position or TOF
+    FIELDNAM: TEC-4 Timeout Count; No Position or TOF
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-TEC5TimeoutTOFNoPos:
+    <<: *events
+    CATDESC: TEC-5 Timeout TOF no Position
+    FIELDNAM: TEC-5 Timeout Count; TOF, No Position
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-TEC5TimeoutPosNoTOF:
+    <<: *events
+    CATDESC: TEC-5 Timeout Position no TOF
+    FIELDNAM: TEC-5 Timeout Count; Position, No TOF
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
+
+lo-counters-aggregated-TEC5TimeoutNoPosTOF:
+    <<: *events
+    CATDESC: TEC-5 Timeout No Position or TOF
+    FIELDNAM: TEC-5 Timeout Count; No Position or TOF
+    DEPEND_1: spin_sector_pairs
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_pairs_label
+    LABL_PTR_2: esa_step
 
 # lo-counters-singles
-lo_counters_singles-apd_singles:
+lo-counters-singles-apd_singles:
     <<: *counters
     CATDESC: Single Rates (APD)
     FIELDNAM: Rates - Single (APD)
+    DEPEND_1: inst_az
+    DEPEND_2: spin_sector_pairs
+    DEPEND_3: esa_step
+    LABL_PTR_1: inst_az
+    LABL_PTR_2: spin_sector_pairs_label
+    LABL_PTR_3: esa_step
 
 # lo-sw-angular
-lo_sw_angular-hplus:
+lo-sw-angular-hplus:
     <<: *counters
     CATDESC: Sunward H+ Species
     FIELDNAM: SW - H+
+    DEPEND_1: inst_az
+    DEPEND_2: spin_sector
+    DEPEND_3: esa_step
+    LABL_PTR_1: inst_az
+    LABL_PTR_2: spin_sector
+    LABL_PTR_3: esa_step
 
-lo_sw_angular-heplusplus:
+lo-sw-angular-heplusplus:
     <<: *counters
     CATDESC: Sunward He++ Species
     FIELDNAM: SW - He++
+    DEPEND_1: inst_az
+    DEPEND_2: spin_sector
+    DEPEND_3: esa_step
+    LABL_PTR_1: inst_az
+    LABL_PTR_2: spin_sector
+    LABL_PTR_3: esa_step
 
-lo_sw_angular-oplus6:
+lo-sw-angular-oplus6:
     <<: *counters
     CATDESC: Sunward O+6 Species
     FIELDNAM: SW - O+6
+    DEPEND_1: inst_az
+    DEPEND_2: spin_sector
+    DEPEND_3: esa_step
+    LABL_PTR_1: inst_az
+    LABL_PTR_2: spin_sector
+    LABL_PTR_3: esa_step
 
-lo_sw_angular-fe_loq:
+lo-sw-angular-fe_loq:
     <<: *counters
     CATDESC: Sunward Fe lowQ Species
     FIELDNAM: SW - Fe lowQ
+    DEPEND_1: inst_az
+    DEPEND_2: spin_sector
+    DEPEND_3: esa_step
+    LABL_PTR_1: inst_az
+    LABL_PTR_2: spin_sector
+    LABL_PTR_3: esa_step
 
-lo_nsw_angular-heplusplus:
+lo-nsw-angular-heplusplus:
     <<: *counters
     CATDESC: Non-sunward He++ Species
     FIELDNAM: NSW - He++
+    DEPEND_1: inst_az
+    DEPEND_2: spin_sector
+    DEPEND_3: esa_step
+    LABL_PTR_1: inst_az
+    LABL_PTR_2: spin_sector
+    LABL_PTR_3: esa_step
 
 # lo-sw-priority
-lo_sw_priority-p0_tcrs:
+lo-sw-priority-p0_tcrs:
     <<: *counters
     CATDESC: Sunward Sector Triple Coincidence Pickup Ions Priority
     FIELDNAM: SW Sector Triple Coincidence PUI's
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_sw_priority-p1_hplus:
+lo-sw-priority-p1_hplus:
     <<: *counters
     CATDESC: Sunward Sector H+ Priority
     FIELDNAM: SW Sector H+
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_sw_priority-p2_heplusplus:
+lo-sw-priority-p2_heplusplus:
     <<: *counters
     CATDESC: Sunward Sector He++ Priority
     FIELDNAM: SW Sector He++
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_sw_priority-p3_heavies:
+lo-sw-priority-p3_heavies:
     <<: *counters
     CATDESC: Sunward Sector High Charge State Heavies Priority
     FIELDNAM: SW Sector High Charge State Heavies
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_sw_priority-p4_dcrs:
+lo-sw-priority-p4_dcrs:
     <<: *counters
     CATDESC: Sunward Sector Double Coincidence Pickup Ions Priority
     FIELDNAM: SW Sector Double Coincidence PUI's
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
 # lo-nsw-priority
-lo_nsw_priority-p5_heavies:
+lo-nsw-priority-p5_heavies:
     <<: *counters
     CATDESC: Non-sunward Sector Heavies Priority
     FIELDNAM: NSW Sector Heavies
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_nsw_priority-p6_hplus_heplusplus:
+lo-nsw-priority-p6_hplus_heplusplus:
     <<: *counters
     CATDESC: Non-sunward H+ and He++ Priority
     FIELDNAM: NSW H+ and He++
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
 # lo-sw-species
-lo_sw_species-hplus:
+lo-sw-species-hplus:
     <<: *counters
     CATDESC: H+ Sunward Species
     FIELDNAM: SW - H+
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_sw_species-heplusplus:
+lo-sw-species-heplusplus:
     <<: *counters
     CATDESC: He++ Sunward Species
     FIELDNAM: SW - He++
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_sw_species-cplus4:
+lo-sw-species-cplus4:
     <<: *counters
     CATDESC: C+4 Sunward Species
     FIELDNAM: SW - C+4
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_sw_species-cplus5:
+lo-sw-species-cplus5:
     <<: *counters
     CATDESC: C+5 Sunward Species
     FIELDNAM: SW - C+5
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_sw_species-cplus6:
+lo-sw-species-cplus6:
     <<: *counters
     CATDESC: C+6 Sunward Species
     FIELDNAM: SW - C+6
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_sw_species-oplus5:
+lo-sw-species-oplus5:
     <<: *counters
     CATDESC: O+5 Sunward Species
     FIELDNAM: SW - O+5
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_sw_species-oplus6:
+lo-sw-species-oplus6:
     <<: *counters
     CATDESC: O+6 Sunward Species
     FIELDNAM: SW - O+6
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_sw_species-oplus7:
+lo-sw-species-oplus7:
     <<: *counters
     CATDESC: O+7 Sunward Species
     FIELDNAM: SW - O+7
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_sw_species-oplus8:
+lo-sw-species-oplus8:
     <<: *counters
     CATDESC: O+8 Sunward Species
     FIELDNAM: SW - O+8
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_sw_species-ne:
+lo-sw-species-ne:
     <<: *counters
     CATDESC: Ne Sunward Species
     FIELDNAM: SW - Ne
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_sw_species-mg:
+lo-sw-species-mg:
     <<: *counters
     CATDESC: Mg Sunward Species
     FIELDNAM: SW - Mg
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_sw_species-si:
+lo-sw-species-si:
     <<: *counters
     CATDESC: Si Sunward Species
     FIELDNAM: SW - Si
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_sw_species-fe_loq:
+lo-sw-species-fe_loq:
     <<: *counters
     CATDESC: Fe lowQ Sunward Species
     FIELDNAM: SW - Fe lowQ
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_sw_species-fe_hiq:
+lo-sw-species-fe_hiq:
     <<: *counters
     CATDESC: Fe highQ Sunward Species
     FIELDNAM: SW - Fe highQ
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_sw_species-heplus:
+lo-sw-species-heplus:
     <<: *counters
     CATDESC: He+ Pickup Ion Sunward Species
     FIELDNAM: SW - He+ (PUI)
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_sw_species-cnoplus:
+lo-sw-species-cnoplus:
     <<: *counters
     CATDESC: CNO+ Pickup Ion Sunward Species
     FIELDNAM: SW - CNO+ (PUI)
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
 # lo-nsw-species
-lo_nsw_species-hplus:
+lo-nsw-species-hplus:
     <<: *counters
     CATDESC: H+ Non-sunward Species
     FIELDNAM: NSW - H+
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_nsw_species-heplusplus:
+lo-nsw-species-heplusplus:
     <<: *counters
     CATDESC: He++ Non-sunward Species
     FIELDNAM: NSW - He++
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_nsw_species-c:
+lo-nsw-species-c:
     <<: *counters
     CATDESC: C Non-sunward Species
     FIELDNAM: NSW - C
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_nsw_species-o:
+lo-nsw-species-o:
     <<: *counters
     CATDESC: O Non-sunward Species
     FIELDNAM: NSW - O
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_nsw_species-ne_si_mg:
+lo-nsw-species-ne_si_mg:
     <<: *counters
     CATDESC: Ne-Si-Mg Non-sunward Species
     FIELDNAM: NSW - Ne_Si_Mg
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_nsw_species-fe:
+lo-nsw-species-fe:
     <<: *counters
     CATDESC: Fe Non-sunward Species
     FIELDNAM: NSW - Fe
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_nsw_species-heplus:
+lo-nsw-species-heplus:
     <<: *counters
     CATDESC: He+ Non-sunward Species
     FIELDNAM: NSW - He+
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
 
-lo_nsw_species-cnoplus:
+lo-nsw-species-cnoplus:
     <<: *counters
     CATDESC: CNO+ Non-sunward Species
     FIELDNAM: NSW - CNO+
+    LABL_PTR_1: spin_sector
+    LABL_PTR_2: esa_step
+
+# <=== CCSDS Header Attributes ===>
+version:
+    <<: *hskp_default
+    CATDESC: CCSDS Packet Version Number (always 0)
+    FIELDNAM: Version
+    LABLAXIS: VERSION
+
+type:
+    <<: *hskp_default
+    CATDESC: CCSDS Packet Type Indicator (0=telemetry)
+    FIELDNAM: Type
+    LABLAXIS: TYPE
+
+sec_hdr_flg:
+    <<: *hskp_default
+    CATDESC: CCSDS Packet Secondary Header Flag (always 1)
+    FIELDNAM: Secondary Header Flag
+    LABLAXIS: SEC_HDR_FLG
+
+pkt_apid:
+    <<: *hskp_default
+    CATDESC: CCSDS Packet Application Process ID
+    FIELDNAM: Packet APID
+    LABLAXIS: PKT_APID
+
+seq_flgs:
+    <<: *hskp_default
+    CATDESC: CCSDS Packet Grouping Flags (3=not part of group)
+    FIELDNAM: Grouping Flags
+    LABLAXIS: SEQ_FLGS
+
+src_seq_ctr:
+    <<: *hskp_default
+    CATDESC: CCSDS Packet Sequence Count (increments with each new packet)
+    FIELDNAM: Packet Sequence Count
+    LABLAXIS: SRC_SEQ_CTR
+
+pkt_len:
+    <<: *hskp_default
+    CATDESC: CCSDS Packet Length (number of bytes after Packet length minus 1)
+    FIELDNAM: Packet Length
+    LABLAXIS: PKT_LEN
+
+shcoarse:
+    <<: *hskp_default
+    CATDESC: Secondary Header - Whole-seconds part of SCLK
+    FIELDNAM: S/C Time - Seconds
+    LABLAXIS: SHCOARSE
+
+packet_version:
+    <<: *hskp_default
+    CATDESC: Packet Version
+    FIELDNAM: Packet Version
+    LABLAXIS: PACKET_VERSION
+    VAR_NOTES: Packet version - this will be incremented each time the format of the packet changes.
+
+chksum:
+    <<: *hskp_default
+    CATDESC: Packet Checksum
+    LABLAXIS: CHKSUM
+    FIELDNAM: Packet Checksum
+
+# <=== Housekeeping Attributes ===>
+cmdexe:
+    <<: *hskp_default
+    LABLAXIS: CMDEXE
+    FIELDNAM: Number of commands executed
+    CATDESC: Number of commands executed. See VAR_NOTES for more details.
+    VAR_NOTES: Number of commands that have been executed. Counts 0-255, then rolls over to 0.  Reset via CLR_LATCHED_SINGLE(COMMAND_COUNTS) [also resets cmdjrct, cmdacc, itf_error counts)
+
+cmdrjct:
+    <<: *hskp_default
+    LABLAXIS: CMDRJCT
+    FIELDNAM: Number of commands rejected
+    CATDESC: Number of commands rejected. See VAR_NOTES for more details.
+    VAR_NOTES: Number of commands that have been rejected. Counts 0-255, then rolls over to 0.  Reset via CLR_LATCHED_SINGLE(COMMAND_COUNTS) [also resets cmdexe, cmdacc, itf_error counts)
+
+last_opcode:
+    <<: *hskp_default
+    LABLAXIS: LAST_OPCODE
+    FIELDNAM: Last executed opcode
+    CATDESC: Opcode of the last executed command
+
+mode:
+    <<: *hskp_default
+    LABLAXIS: MODE
+    FIELDNAM: Instrument Mode
+    CATDESC: Current operating mode
+
+memop_state:
+    <<: *hskp_default
+    LABLAXIS: MEMOP_STATE
+    FIELDNAM: Memory Operation State
+    CATDESC: State of the memory-operations handler
+
+memdump_state:
+    <<: *hskp_default
+    LABLAXIS: MEMDUMP_STATE
+    FIELDNAM: Memory Dump State
+    CATDESC: State of the memory-dump handler (busy/idle)
+
+itf_err_cnt:
+    <<: *hskp_default
+    LABLAXIS: ITF_ERR_CNT
+    FIELDNAM: Number of ITF errors encountered
+    CATDESC: Number of ITF Errors detected. See VAR_NOTES for more details.
+    VAR_NOTES: Number of ITF Errors that have been detected; counts 0-3, then rolls over to 0.   Reset via CLR_LATCHED_SINGLE(COMMAND_COUNTS) [also resets cmdexe, cmdjrct, cmdacc counts)
+
+spin_cnt:
+    <<: *hskp_default
+    LABLAXIS: SPIN_CNT
+    FIELDNAM: Number of spin pulses received
+    CATDESC: Number of spin pulses received
+
+missed_pps_cnt:
+    <<: *hskp_default
+    LABLAXIS: MISSED_PPS_CNT
+    FIELDNAM: Number of missed PPS pulses
+    CATDESC: Number of missed PPS pulses. See VAR_NOTES for more details.
+    VAR_NOTES: Number of missed PPS pulses.  Counts 0-3, then freezes at 3.  Reset via CLR_LATCHED_SINGLE(PPS_STATS)
+
+wdog_timeout_cnt:
+    <<: *hskp_default
+    LABLAXIS: WDOG_TIMEOUT_CNT
+    FIELDNAM: Number of watchdog timeouts since last reset
+    CATDESC: Number of times the watchdog has timed out.
+
+hv_plug:
+    <<: *hskp_default
+    LABLAXIS: HV_PLUG
+    FIELDNAM: Status of the HV Disable Plug
+    CATDESC: Status of the HV plugs. See VAR_NOTES for more details.
+    VAR_NOTES: Current status of the HV SAFE/DISABLE plugs -- "SAFE" - all HVPS outputs provide 1/10 the commanded voltage; "DIS" - all HVPS outputs provide 0V, regardless of commanded voltage; "FULL" - HVPS outputs provide the full commanded voltage
+
+cmd_fifo_overrun_cnt:
+    <<: *hskp_default
+    LABLAXIS: CMD_FIFO_OVERRUN_CNT
+    FIELDNAM: Number of Command FIFO Overruns
+    CATDESC: Number of Command FIFO Overruns
+
+cmd_fifo_underrun_cnt:
+    <<: *hskp_default
+    LABLAXIS: CMD_FIFO_UNDERRUN_CNT
+    FIELDNAM: Number of Command FIFO Underruns
+    CATDESC: Number of Command FIFO Underruns
+
+cmd_fifo_parity_err_cnt:
+    <<: *hskp_default
+    LABLAXIS: CMD_FIFO_PARITY_ERR_CNT
+    FIELDNAM: Number of Command FIFO Parity Errors
+    CATDESC: Number of Command FIFO Parity Errors
+
+cmd_fifo_frame_err_cnt:
+    <<: *hskp_default
+    LABLAXIS: CMD_FIFO_FRAME_ERR_CNT
+    FIELDNAM: Number of Command FIFO Frame Errors
+    CATDESC: Number of Command FIFO Frame Errors
+
+tlm_fifo_overrun_cnt:
+    <<: *hskp_default
+    LABLAXIS: TLM_FIFO_OVERRUN_CNT
+    FIELDNAM: Number of Telemetry FIFO Overruns
+    CATDESC: Number of Telemetry FIFO Overruns
+
+spin_bin_period:
+    <<: *hskp_default
+    LABLAXIS: SPIN_BIN_PERIOD
+    FIELDNAM: Spin Bin Period
+    CATDESC: Spin Bin Period
+
+spin_period_timer:
+    <<: *hskp_default
+    LABLAXIS: SPIN_PERIOD_TIMER
+    FIELDNAM: Spin Period Timer
+    CATDESC: Spin Period Timer
+
+spin_timestamp_seconds:
+    <<: *hskp_default
+    LABLAXIS: SPIN_TIMESTAMP_SECONDS
+    FIELDNAM: Full-seconds timestamp of the most recent spin pulse
+    CATDESC: Full-seconds timestamp of the most recent spin pulse
+
+spin_timestamp_subseconds:
+    <<: *hskp_default
+    LABLAXIS: SPIN_TIMESTAMP_SUBSECONDS
+    FIELDNAM: Sub-seconds timestamp of the most recent spin pulse
+    CATDESC: Sub-seconds timestamp of the most recent spin pulse
+
+spin_bin_index:
+    <<: *hskp_default
+    LABLAXIS: SPIN_BIN_INDEX
+    FIELDNAM: Spin Bin Index
+    CATDESC: Spin Bin Index
+
+optc_hv_cmd_err_cnt:
+    <<: *hskp_default
+    LABLAXIS: OPTICS_HV_CMD_ERR_CNT
+    FIELDNAM: Optics HV - Number of command errors
+    CATDESC: Optics HV - Number of command errors
+
+spare_1:
+    <<: *hskp_default
+    LABLAXIS: SPARE_1
+    FIELDNAM: Spare for alignment
+    CATDESC: Spare for alignment
+
+optc_hv_arm_err_cnt:
+    <<: *hskp_default
+    LABLAXIS: OPTICS_HV_ARM_ERR_CNT
+    FIELDNAM: Optics HV - Number of arm errors
+    CATDESC: Optics HV - Number of arm errors
+
+optc_hv_master_en:
+    <<: *hskp_default
+    LABLAXIS: OPTICS_HV_MASTER_ENABLE
+    FIELDNAM: Optics HV - Master Enable
+    CATDESC: Optics HV - Master Enable
+
+iobulk_en:
+    <<: *hskp_default
+    LABLAXIS: OPTICS_HV_P15KV_ENABLE
+    FIELDNAM: Optics HV - P15KV Enable
+    CATDESC: Optics HV - P15KV Enable
+
+esab_en:
+    <<: *hskp_default
+    LABLAXIS: OPTICS_HV_ESAB_ENABLE
+    FIELDNAM: Optics HV - ESA B Enable
+    CATDESC: Optics HV - ESA B Enable
+
+spare_2:
+    <<: *hskp_default
+    LABLAXIS: SPARE_2
+    FIELDNAM: Spare (was Optics HV - ESA B Range)
+    CATDESC: Spare (was Optics HV - ESA B Range)
+
+esaa_en:
+    <<: *hskp_default
+    LABLAXIS: OPTICS_HV_ESAA_ENABLE
+    FIELDNAM: Optics HV - ESA A Enable
+    CATDESC: Optics HV - ESA A Enable
+
+spare_3:
+    <<: *hskp_default
+    LABLAXIS: SPARE_3
+    FIELDNAM: Spare (was Optics HV - ESA A Range)
+    CATDESC: Spare (was Optics HV - ESA A Range)
+
+snsr_hv_cmd_err_cnt:
+    <<: *hskp_default
+    LABLAXIS: SENSOR_HV_CMD_ERR_CNT
+    FIELDNAM: Sensor HV -  Number of command errors
+    CATDESC: Sensor HV -  Number of command errors
+
+snsr_hv_arm_err_cnt:
+    <<: *hskp_default
+    LABLAXIS: SENSOR_HV_ARM_ERR_CNT
+    FIELDNAM: Sensor HV - Number of Arm errors
+    CATDESC: Sensor HV - Number of Arm errors
+
+snsr_hv_master_en:
+    <<: *hskp_default
+    LABLAXIS: SENSOR_HV_MASTER_ENABLE
+    FIELDNAM: Sensor HV - Master Enable
+    CATDESC: Sensor HV - Master Enable
+
+apdb_en:
+    <<: *hskp_default
+    LABLAXIS: SENSOR_HV_APD_BIAS_ENABLE
+    FIELDNAM: Sensor HV - APD Bias Enable
+    CATDESC: Sensor HV - APD Bias Enable
+
+sbulk_en:
+    <<: *hskp_default
+    LABLAXIS: SENSOR_HV_P6KV_ENABLE
+    FIELDNAM: Sensor HV - p6KV Enable
+    CATDESC: Sensor HV - p6KV Enable
+
+stpmcp_en:
+    <<: *hskp_default
+    LABLAXIS: SENSOR_HV_STOP_MCP_ENABLE
+    FIELDNAM: Sensor HV - Stop MCP Enable
+    CATDESC: Sensor HV - Stop MCP Enable
+
+strmcp_en:
+    <<: *hskp_default
+    LABLAXIS: SENSOR_HV_START_MCP_ENABLE
+    FIELDNAM: Sensor HV - Start MCP Enable
+    CATDESC: Sensor HV - Start MCP Enable
+
+spare_4:
+    <<: *hskp_default
+    LABLAXIS: SPARE_4
+    FIELDNAM: Spare for alignment
+    CATDESC: Spare for alignment
+
+esaa_dac:
+    <<: *hskp_default
+    LABLAXIS: OPTICS_HV_DAC_ESA_A
+    FIELDNAM: Optics HV - ESA A DAC
+    CATDESC: Optics HV - ESA A DAC
+
+esab_dac:
+    <<: *hskp_default
+    LABLAXIS: OPTICS_HV_DAC_ESA_B
+    FIELDNAM: Optics HV -  ESA B DAC
+    CATDESC: Optics HV -  ESA B DAC
+
+iobulk_dac:
+    <<: *hskp_default
+    LABLAXIS: OPTICS_HV_DAC_IONBULK
+    FIELDNAM: Optics HV - Ion Bulk DAC
+    CATDESC: Optics HV - Ion Bulk DAC
+
+ssdo_dac:
+    <<: *hskp_default
+    LABLAXIS: SENSOR_HV_DAC_SSDO
+    FIELDNAM: Sensor HV - SSDO Enable
+    CATDESC: Sensor HV - SSDO Enable
+
+ssdb_dac:
+    <<: *hskp_default
+    LABLAXIS: SENSOR_HV_DAC_SSDB
+    FIELDNAM: Sensor HV - SSD Bias Enable
+    CATDESC: Sensor HV - SSD Bias Enable
+
+apdb_dac:
+    <<: *hskp_default
+    LABLAXIS: SENSOR_HV_DAC_APDB
+    FIELDNAM: Sensor HV - ADP Bias Enable
+    CATDESC: Sensor HV - ADP Bias Enable
+
+apdb2_dac:
+    <<: *hskp_default
+    LABLAXIS: SENSOR_HV_DAC_APDB2
+    FIELDNAM: Sensor HV - ADP Bias 2 Enable
+    CATDESC: Sensor HV - ADP Bias 2 Enable
+
+strmcp_dac:
+    <<: *hskp_default
+    LABLAXIS: SENSOR_HV_DAC_START_MCP
+    FIELDNAM: Sensor HV - Start MCP DAC
+    CATDESC: Sensor HV - Start MCP DAC
+
+stpmcp_dac:
+    <<: *hskp_default
+    LABLAXIS: SENSOR_HV_DAC_STOP_MCP
+    FIELDNAM: Sensor HV - Stop MCP DAC
+    CATDESC: Sensor HV - Stop MCP DAC
+
+stpog_dac:
+    <<: *hskp_default
+    LABLAXIS: SENSOR_HV_DAC_STOP_OPTICS_GRID
+    FIELDNAM: Sensor HV - Stop Optics Grid DAC
+    CATDESC: Sensor HV - Stop Optics Grid DAC
+
+sbulk_vmon:
+    <<: *hskp_default
+    LABLAXIS: SBULK_VMON
+    FIELDNAM: HVPS – V1 -- Sensor Bulk Voltage Monitor
+    CATDESC: HVPS – V1 -- Sensor Bulk Voltage Monitor
+
+ssdo_vmon:
+    <<: *hskp_default
+    LABLAXIS: SSDO_VMON
+    FIELDNAM: HVPS – V2 -- SSD Optics Voltage Monitor
+    CATDESC: HVPS – V2 -- SSD Optics Voltage Monitor
+
+ssdb_vmon:
+    <<: *hskp_default
+    LABLAXIS: SSDB_VMON
+    FIELDNAM: HVPS – V3 -- SSD Bias Voltage Monitor
+    CATDESC: HVPS – V3 -- SSD Bias Voltage Monitor
+
+apdb1_vmon:
+    <<: *hskp_default
+    LABLAXIS: APDB1_VMON
+    FIELDNAM: HVPS – V4 -- APD1 Bias Voltage Monitor
+    CATDESC: HVPS – V4 -- APD1 Bias Voltage Monitor
+
+apdb2_vmon:
+    <<: *hskp_default
+    LABLAXIS: APDB2_VMON
+    FIELDNAM: HVPS – V5 -- APD1 Bias Voltage Monitor
+    CATDESC: HVPS – V5 -- APD1 Bias Voltage Monitor
+
+iobulk_vmon:
+    <<: *hskp_default
+    LABLAXIS: IOBULK_VMON
+    FIELDNAM: HVPS – V6 -- IO Bulk Voltage Monitor
+    CATDESC: HVPS – V6 -- IO Bulk Voltage Monitor
+
+esaa_hi_vmon:
+    <<: *hskp_default
+    LABLAXIS: ESAA_HI_VMON
+    FIELDNAM: HVPS – V7 -- ESA A High Range Voltage Monitor
+    CATDESC: HVPS – V7 -- ESA A High Range Voltage Monitorf
+
+spare_62:
+    <<: *hskp_default
+    LABLAXIS: SPARE_62
+    FIELDNAM: Spare (was ESAA_LO_VMON)
+    CATDESC: Spare (was ESAA_LO_VMON)
+
+strmcp_vmon:
+    <<: *hskp_default
+    LABLAXIS: STRMCP_VMON
+    FIELDNAM: HVPS – V9 -- Start MCP Voltage Monitor
+    CATDESC: HVPS – V9 -- Start MCP Voltage Monitor
+
+stpmcp_vmon:
+    <<: *hskp_default
+    LABLAXIS: STPMCP_VMON
+    FIELDNAM: HVPS – V10 -- Stop MCP Voltage Monitor
+    CATDESC: HVPS – V10 -- Stop MCP Voltage Monitor
+
+stpog_vmon:
+    <<: *hskp_default
+    LABLAXIS: STPOG_VMON
+    FIELDNAM: HVPS – V11 -- Stop Optics Grid Voltage Monitor
+    CATDESC: HVPS – V11 -- Stop Optics Grid Voltage Monitor
+
+apdb1_imon:
+    <<: *hskp_default
+    LABLAXIS: APDB1_IMON
+    FIELDNAM: HVPS – V12 -- APD1 Bias Current Monitor
+    CATDESC: HVPS – V12 -- APD1 Bias Current Monitor
+
+esab_hi_vmon:
+    <<: *hskp_default
+    LABLAXIS: ESAB_HI_VMON
+    FIELDNAM: HVPS – V13 -- ESA A High Range Voltage Monitor
+    CATDESC: HVPS – V13 -- ESA A High Range Voltage Monitor
+
+spare_68:
+    <<: *hskp_default
+    LABLAXIS: SPARE_68
+    FIELDNAM: Spare (was ESAB_LO_VMON)
+    CATDESC: Spare (was ESAB_LO_VMON)
+
+apdb2_imon:
+    <<: *hskp_default
+    LABLAXIS: APDB2_IMON
+    FIELDNAM: HVPS – V15 -- APD2 Bias Current Monitor
+    CATDESC: HVPS – V15 -- APD2 Bias Current Monitor
+
+ssdb_imon:
+    <<: *hskp_default
+    LABLAXIS: SSDB_IMON
+    FIELDNAM: HVPS – V16 -- SSD Bias Current Monitor
+    CATDESC: HVPS – V16 -- SSD Bias Current Monitor
+
+stpmcp_imon:
+    <<: *hskp_default
+    LABLAXIS: STPMCP_IMON
+    FIELDNAM: HVPS – I1 -- Stop MCP Current Monitor
+    CATDESC: HVPS – I1 -- Stop MCP Current Monitor
+
+iobulk_imon:
+    <<: *hskp_default
+    LABLAXIS: IOBULK_IMON
+    FIELDNAM: HVPS – I2 -- IO Bulk Current Monitor
+    CATDESC: HVPS – I2 -- IO Bulk Current Monitor
+
+strmcp_imon:
+    <<: *hskp_default
+    LABLAXIS: STRMCP_IMON
+    FIELDNAM: HVPS – I3 -- Start MCP Current Monitor
+    CATDESC: HVPS – I3 -- Start MCP Current Monitor
+
+mdm25p_14_t:
+    <<: *hskp_default
+    LABLAXIS: MDM25P_14_T
+    FIELDNAM: System Temperature 1 -- MDM25P – 14 Temperature
+    CATDESC: System Temperature 1 -- MDM25P – 14 Temperature
+
+mdm25p_15_t:
+    <<: *hskp_default
+    LABLAXIS: MDM25P_15_T
+    FIELDNAM: System Temperature 2 -- MDM25P – 15 Temperature
+    CATDESC: System Temperature 2 -- MDM25P – 15 Temperature
+
+mdm25p_16_t:
+    <<: *hskp_default
+    LABLAXIS: MDM25P_16_T
+    FIELDNAM: System Temperature 3 -- MDM25P – 16 Temperature
+    CATDESC: System Temperature 3 -- MDM25P – 16 Temperature
+
+mdm51p_27_t:
+    <<: *hskp_default
+    LABLAXIS: MDM51P_27_T
+    FIELDNAM: LO Temperature -- MDM51P – 27 Temperature
+    CATDESC: LO Temperature -- MDM51P – 27 Temperature
+
+io_hvps_t:
+    <<: *hskp_default
+    LABLAXIS: IO_HVPS_T
+    FIELDNAM: HVPS Temperature -- IO-HVPS Temperature
+    CATDESC: HVPS Temperature -- IO-HVPS Temperature
+
+lvps_12v_t:
+    <<: *hskp_default
+    LABLAXIS: LVPS_12V_T
+    FIELDNAM: LVPS Temperature 1 -- LVPS – 12V Temperature
+    CATDESC: LVPS Temperature 1 -- LVPS – 12V Temperature
+
+lvps_5v_t:
+    <<: *hskp_default
+    LABLAXIS: LVPS_5V_T
+    FIELDNAM: LVPS Temperature 2 -- LVPS – 5V Temperature
+    CATDESC: LVPS Temperature 2 -- LVPS – 5V Temperature
+
+lvps_3p3v_t:
+    <<: *hskp_default
+    LABLAXIS: LVPS_3P3V_T
+    FIELDNAM: LVPS Temperature 3 -- LVPS – +3.3V Temperature
+    CATDESC: LVPS Temperature 3 -- LVPS – +3.3V Temperature
+
+lvps_3p3v:
+    <<: *hskp_default
+    LABLAXIS: LVPS_3P3V
+    FIELDNAM: LVPS – Digital V1 -- LVPS – +3.3V
+    CATDESC: LVPS – Digital V1 -- LVPS – +3.3V
+
+lvps_5v:
+    <<: *hskp_default
+    LABLAXIS: LVPS_5V
+    FIELDNAM: LVPS – Digital V2 -- LVPS – +5V
+    CATDESC: LVPS – Digital V2 -- LVPS – +5V
+
+lvps_n5v:
+    <<: *hskp_default
+    LABLAXIS: LVPS_N5V
+    FIELDNAM: LVPS – Digital V3 -- LVPS – -5V
+    CATDESC: LVPS – Digital V3 -- LVPS – -5V
+
+lvps_12v:
+    <<: *hskp_default
+    LABLAXIS: LVPS_12V
+    FIELDNAM: LVPS – Digital V4 -- LVPS – +12V
+    CATDESC: LVPS – Digital V4 -- LVPS – +12V
+
+lvps_n12v:
+    <<: *hskp_default
+    LABLAXIS: LVPS_N12V
+    FIELDNAM: LVPS – Digital V5 -- LVPS – -12V
+    CATDESC: LVPS – Digital V5 -- LVPS – -12V
+
+lvps_3p3v_i:
+    <<: *hskp_default
+    LABLAXIS: LVPS_3P3V_I
+    FIELDNAM: LVPS – Digital I1 -- LVPS – +3.3V Current
+    CATDESC: LVPS – Digital I1 -- LVPS – +3.3V Current
+
+lvps_5v_i:
+    <<: *hskp_default
+    LABLAXIS: LVPS_5V_I
+    FIELDNAM: LVPS – Digital I2 -- LVPS – +5V Current
+    CATDESC: LVPS – Digital I2 -- LVPS – +5V Current
+
+lvps_n5v_i:
+    <<: *hskp_default
+    LABLAXIS: LVPS_N5V_I
+    FIELDNAM: LVPS – Digital I3 -- LVPS – -5V Current
+    CATDESC: LVPS – Digital I3 -- LVPS – -5V Current
+
+lvps_12v_i:
+    <<: *hskp_default
+    LABLAXIS: LVPS_12V_I
+    FIELDNAM: LVPS – Digital I4 -- LVPS – +12V Current
+    CATDESC: LVPS – Digital I4 -- LVPS – +12V Current
+
+lvps_n12v_i:
+    <<: *hskp_default
+    LABLAXIS: LVPS_N12V_I
+    FIELDNAM: LVPS – Digital I5 -- LVPS – -12V Current
+    CATDESC: LVPS – Digital I5 -- LVPS – -12V Current
+
+cdh_1p5v:
+    <<: *hskp_default
+    LABLAXIS: CDH_1P5V
+    FIELDNAM: CDH – + 1.5V
+    CATDESC: CDH – + 1.5V
+
+cdh_1p8v:
+    <<: *hskp_default
+    LABLAXIS: CDH_1P8V
+    FIELDNAM: CDH – +1.8V
+    CATDESC: CDH – +1.8V
+
+cdh_3p3v:
+    <<: *hskp_default
+    LABLAXIS: CDH_3P3V
+    FIELDNAM: CDH – +3.3V
+    CATDESC: CDH – +3.3V
+
+cdh_12v:
+    <<: *hskp_default
+    LABLAXIS: CDH_12V
+    FIELDNAM: CDH – +12V
+    CATDESC: CDH – +12V
+
+cdh_n12v:
+    <<: *hskp_default
+    LABLAXIS: CDH_N12V
+    FIELDNAM: CDH – -12V
+    CATDESC: CDH – -12V
+
+cdh_5v:
+    <<: *hskp_default
+    LABLAXIS: CDH_5V
+    FIELDNAM: CDH – +5V
+    CATDESC: CDH – +5V
+
+cdh_5v_adc:
+    <<: *hskp_default
+    LABLAXIS: CDH_5V_ADC
+    FIELDNAM: CDH – Analog Ref -- CDH – +5V ADC
+    CATDESC: CDH – Analog Ref -- CDH – +5V ADC
+
+tbd_hvps_1_if_err_cnt:
+    <<: *hskp_default
+    LABLAXIS: TBD_HVPS_1_IF_ERR_CNT
+    FIELDNAM: TBD - Placeholder for HVPS 1 Interface error counts
+    CATDESC: TBD - Placeholder for HVPS 1 Interface error counts
+
+tbd_hvps_2_if_err_cnt:
+    <<: *hskp_default
+    LABLAXIS: TBD_HVPS_2_IF_ERR_CNT
+    FIELDNAM: TBD - Placeholder for HVPS 2 Interface error counts
+    CATDESC: TBD - Placeholder for HVPS 2 Interface error counts
+
+tbd_fee_1_if_err_cnt:
+    <<: *hskp_default
+    LABLAXIS: TBD_FEE_1_IF_ERR_CNT
+    FIELDNAM: TBD - Placeholder for FEE 1 Interface error counts
+    CATDESC: TBD - Placeholder for FEE 1 Interface error counts
+
+tbd_fee_2_if_err_cnt:
+    <<: *hskp_default
+    LABLAXIS: TBD_FEE_2_IF_ERR_CNT
+    FIELDNAM: TBD - Placeholder for FEE 2 Interface error counts
+    CATDESC: TBD - Placeholder for FEE 2 Interface error counts
+
+tbd_macro_status:
+    <<: *hskp_default
+    LABLAXIS: TBD_MACRO_STATUS
+    FIELDNAM: TBD - Placeholder for Macro status
+    CATDESC: TBD - Placeholder for Macro status
+
+fdc_trigger_cnt_fsw:
+    <<: *hskp_default
+    LABLAXIS: FDC_TRIGGER_CNT_FSW
+    FIELDNAM: Indicates whether any CATEGORY 1 limits have triggered
+    CATDESC: Indicates any CATEGORY 1 limits triggered. See VAR_NOTES for more details.
+    VAR_NOTES: Indicates whether any CATEGORY 1 limits have triggered -- 2 bits -- 0=No triggers; 1=One trigger; 2=Two triggers; 3=More than two triggers
+
+fdc_trigger_cnt_hvps:
+    <<: *hskp_default
+    LABLAXIS: FDC_TRIGGER_CNT_HVPS
+    FIELDNAM: Indicates whether any CATEGORY 2 limits have triggered
+    CATDESC: Indicates whether any CATEGORY 2 limits have triggered
+
+fdc_trigger_cnt_cdh:
+    <<: *hskp_default
+    LABLAXIS: FDC_TRIGGER_CNT_CDH
+    FIELDNAM: Indicates whether any CATEGORY 3 limits have triggered
+    CATDESC: Indicates whether any CATEGORY 3 limits have triggered
+
+fdc_trigger_cnt_fee:
+    <<: *hskp_default
+    LABLAXIS: FDC_TRIGGER_CNT_FEE
+    FIELDNAM: Indicates whether any CATEGORY 4 limits have triggered
+    CATDESC: Indicates whether any CATEGORY 4 limits have triggered
+
+fdc_trigger_cnt_spare1:
+    <<: *hskp_default
+    LABLAXIS: FDC_TRIGGER_CNT_SPARE1
+    FIELDNAM: Indicates whether any CATEGORY 5 limits have triggered
+    CATDESC: Indicates whether any CATEGORY 5 limits have triggered
+
+fdc_trigger_cnt_spare2:
+    <<: *hskp_default
+    LABLAXIS: FDC_TRIGGER_CNT_SPARE2
+    FIELDNAM: Indicates whether any CATEGORY 6 limits have triggered
+    CATDESC: Indicates whether any CATEGORY 6 limits have triggered
+
+fdc_trigger_cnt_spare3:
+    <<: *hskp_default
+    LABLAXIS: FDC_TRIGGER_CNT_SPARE3
+    FIELDNAM: Indicates whether any CATEGORY 7 limits have triggered
+    CATDESC: Indicates whether any CATEGORY 7 limits have triggered
+
+fdc_trigger_cnt_spare4:
+    <<: *hskp_default
+    LABLAXIS: FDC_TRIGGER_CNT_SPARE4
+    FIELDNAM: Indicates whether any CATEGORY 8 limits have triggered
+    CATDESC: Indicates whether any CATEGORY 8 limits have triggered
+
+fdc_last_trigger_minmax:
+    <<: *hskp_default
+    LABLAXIS: FDC_LAST_TRIGGER_MINMAX
+    FIELDNAM: Indicates whether the most recent trigger was a minimum or maximum limit
+    CATDESC: Indicates whether the most recent trigger was a minimum or maximum limit
+
+fdc_last_trigger_id:
+    <<: *hskp_default
+    LABLAXIS: FDC_LAST_TRIGGER_ID
+    FIELDNAM: Indicates the ID of the most recent FDC trigger
+    CATDESC: Indicates the ID of the most recent FDC trigger
+
+fdc_last_trigger_action:
+    <<: *hskp_default
+    LABLAXIS: FDC_LAST_TRIGGER_ACTION
+    FIELDNAM: Indicates the action that was taken for the most recent FDC trigger
+    CATDESC: Indicates the action that was taken for the most recent FDC trigger
+
+round_robin_index:
+    <<: *hskp_default
+    LABLAXIS: ROUND_ROBIN_INDEX
+    FIELDNAM: Round Robin Parameter Report Index
+    CATDESC: Index for Round Robin parameter reporting. See VAR_NOTES for more details.
+    VAR_NOTES: Current index for the Round Robin parameter reporting.  The Round Robin mechanism reports one value from the Parameter Table each time this packet is generated.
+
+round_robin_value:
+    <<: *hskp_default
+    LABLAXIS: ROUND_ROBIN_VALUE
+    FIELDNAM: Round Robin Parameter Report Value
+    CATDESC: Parameter value corresponding to the current Round_Robin_Index value.
+
+heater_control_state:
+    <<: *hskp_default
+    LABLAXIS: HEATER_CONTROL_STATE
+    FIELDNAM: State of the heater controller
+    CATDESC: Indicates whether FSW control of the operational heater is enabled
+
+heater_output_state:
+    <<: *hskp_default
+    LABLAXIS: HEATER_OUTPUT_STATE
+    FIELDNAM: State of the heater output
+    CATDESC: Indicates the current state of the physical heater output
+
+heater_output_state_2:
+    <<: *hskp_default
+    LABLAXIS: HEATER_OUTPUT_STATE_2
+    FIELDNAM: State of the heater output 2
+    CATDESC: Indicates the current state of the physical heater output
+
+spare_5:
+    <<: *hskp_default
+    LABLAXIS: SPARE_5
+    FIELDNAM: Spare for alignment
+    CATDESC: Spare for alignment
+
+cpu_idle:
+    <<: *hskp_default
+    LABLAXIS: CPU_IDLE
+    FIELDNAM: CPU Idle Percent
+    CATDESC: CPU Idle Percent
+
+cdh_processor_t:
+    <<: *hskp_default
+    LABLAXIS: CDH_PROCESSOR_T
+    FIELDNAM: CDH – Processor Temp monitor
+    CATDESC: CDH – Processor Temp monitor
+
+cdh_1p8v_ldo_t:
+    <<: *hskp_default
+    LABLAXIS: CDH_1P8V_LDO_T
+    FIELDNAM: CDH – +1.8V LDO Temp monitor
+    CATDESC: CDH – +1.8V LDO Temp monitor
+
+cdh_1p5v_ldo_t:
+    <<: *hskp_default
+    LABLAXIS: CDH_1P5V_LDO_T
+    FIELDNAM: CDH – +1.5V LDO Temp monitor
+    CATDESC: CDH – +1.5V LDO Temp monitor
+
+cdh_sdram_t:
+    <<: *hskp_default
+    LABLAXIS: CDH_SDRAM_T
+    FIELDNAM: CDH – SDRAM Temp monitor
+    CATDESC: CDH – SDRAM Temp monitor
+
+snsr_hvps_t:
+    <<: *hskp_default
+    LABLAXIS: SNSR_HVPS_T
+    FIELDNAM: CoDICE – Sensor HVPS Temp monitor
+    CATDESC: CoDICE – Sensor HVPS Temp monitor
+
+fee_apd_3p3_digital_v:
+    <<: *hskp_default
+    LABLAXIS: FEE_APD_3P3_DIGITAL_V
+    FIELDNAM: FEE; APD Side +3.3V Digital
+    CATDESC: FEE; APD Side +3.3V Digital
+
+fee_apd_5p0_analog_v:
+    <<: *hskp_default
+    LABLAXIS: FEE_APD_5P0_ANALOG_V
+    FIELDNAM: FEE; APD Side +5.0V Analog
+    CATDESC: FEE; APD Side +5.0V Analog
+
+fee_apd_t:
+    <<: *hskp_default
+    LABLAXIS: FEE_APD_T
+    FIELDNAM: FEE; APD Side Temperature
+    CATDESC: FEE; APD Side Temperature
+
+fee_apd_12p0_analog_v:
+    <<: *hskp_default
+    LABLAXIS: FEE_APD_12P0_ANALOG_V
+    FIELDNAM: FEE; APD Side +12.0V Analog
+    CATDESC: FEE; APD Side +12.0V Analog
+
+fee_apd_eb_temp_1_t:
+    <<: *hskp_default
+    LABLAXIS: FEE_APD_EB_TEMP_1_T
+    FIELDNAM: FEE; AEB Temp Sensor 1
+    CATDESC: FEE; AEB Temp Sensor 1
+
+fee_apd_eb_temp_2_t:
+    <<: *hskp_default
+    LABLAXIS: FEE_APD_EB_TEMP_2_T
+    FIELDNAM: FEE; AEB Temp Sensor 2
+    CATDESC: FEE; AEB Temp Sensor 2
+
+fee_apd_eb_temp_3_t:
+    <<: *hskp_default
+    LABLAXIS: FEE_APD_EB_TEMP_3_T
+    FIELDNAM: FEE; AEB Temp Sensor 3
+    CATDESC: FEE; AEB Temp Sensor 3
+
+fee_apd_eb_temp_4_t:
+    <<: *hskp_default
+    LABLAXIS: FEE_APD_EB_TEMP_4_T
+    FIELDNAM: FEE; AEB Temp Sensor 4
+    CATDESC: FEE; AEB Temp Sensor 4
+
+fee_ssd_3p3_digital_v:
+    <<: *hskp_default
+    LABLAXIS: FEE_SSD_3P3_DIGITAL_V
+    FIELDNAM: FEE; SSD Side +3.3V Digital
+    CATDESC: FEE; SSD Side +3.3V Digital
+
+fee_ssd_5p0_analog_v:
+    <<: *hskp_default
+    LABLAXIS: FEE_SSD_5P0_ANALOG_V
+    FIELDNAM: FEE; SSD Side +5.0V Analog
+    CATDESC: FEE; SSD Side +5.0V Analog
+
+fee_ssd_t:
+    <<: *hskp_default
+    LABLAXIS: FEE_SSD_T
+    FIELDNAM: FEE; SSD Side Temperature
+    CATDESC: FEE; SSD Side Temperature
+
+fee_ssd_12p0_analog_v:
+    <<: *hskp_default
+    LABLAXIS: FEE_SSD_12P0_ANALOG_V
+    FIELDNAM: FEE; SSD Side +12.0V Analog
+    CATDESC: FEE; SSD Side +12.0V Analog
+
+fee_ssd_eb_temp_1_t:
+    <<: *hskp_default
+    LABLAXIS: FEE_SSD_EB_TEMP_1_T
+    FIELDNAM: FEE; SEB Temp Sensor 1
+    CATDESC: FEE; SEB Temp Sensor 1
+
+fee_ssd_eb_temp_2_t:
+    <<: *hskp_default
+    LABLAXIS: FEE_SSD_EB_TEMP_2_T
+    FIELDNAM: FEE; SEB Temp Sensor 2
+    CATDESC: FEE; SEB Temp Sensor 2
+
+fee_ssd_eb_temp_3_t:
+    <<: *hskp_default
+    LABLAXIS: FEE_SSD_EB_TEMP_3_T
+    FIELDNAM: FEE; SEB Temp Sensor 3
+    CATDESC: FEE; SEB Temp Sensor 3
+
+fee_ssd_eb_temp_4_t:
+    <<: *hskp_default
+    LABLAXIS: FEE_SSD_EB_TEMP_4_T
+    FIELDNAM: FEE; SEB Temp Sensor 4
+    CATDESC: FEE; SEB Temp Sensor 4
+
+spare_6:
+    <<: *hskp_default
+    LABLAXIS: SPARE_6
+    FIELDNAM: Spare for alignment
+    CATDESC: Spare for alignment

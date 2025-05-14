@@ -1,7 +1,15 @@
 """Contains dataclasses to support IDEX processing."""
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, IntEnum
+
+
+class IDEXAPID(IntEnum):
+    """Create ENUM for apid."""
+
+    IDEX_SCIENCE = 1424
+    IDEX_CATLST = 1419
+    IDEX_EVT = 1418
 
 
 @dataclass
@@ -50,3 +58,17 @@ class ConversionFactors(float, Enum):
     Target_Low = 1.58e1
     Target_High = 1.63e-1
     Ion_Grid = 7.46e-4
+
+
+SPICE_ARRAYS = [
+    "ephemeris_position_x",
+    "ephemeris_position_y",
+    "ephemeris_position_z",
+    "ephemeris_velocity_x",
+    "ephemeris_velocity_y",
+    "ephemeris_velocity_z",
+    "right_ascension",
+    "declination",
+    "solar_longitude",
+    "spin_phase",
+]

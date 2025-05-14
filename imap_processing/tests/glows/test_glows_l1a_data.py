@@ -43,17 +43,15 @@ def test_histogram_list(histogram_test_data, decom_test_data):
 def test_histogram_obs_day(packet_path):
     l1a = glows_l1a(packet_path)
 
-    assert len(l1a) == 3
+    assert len(l1a) == 2
 
     assert "hist" in l1a[0].attrs["Logical_source"]
-    assert "hist" in l1a[1].attrs["Logical_source"]
 
     # Numbers pulled from the validation data.
     # this test assumes that the "is_night" flag switching from true to false is the
     # start of the observation day.
 
     assert np.array_equal(l1a[0]["imap_start_time"].data[0], 54232215.0)
-    assert np.array_equal(l1a[1]["imap_start_time"].data[0], 54232455.0)
 
 
 def test_histogram_attributes(histogram_test_data):
@@ -270,7 +268,7 @@ def test_combine_direct_events(decom_test_data):
     de1 = DirectEventL1A(de0_first)
     assert not de1.direct_events
     if not de1.direct_events:
-        de1.append(de0_second)
+        de1.merge_de_packets(de0_second)
 
     assert de1.direct_events
 
@@ -293,7 +291,7 @@ def test_combine_direct_events_with_missing(decom_test_data):
     de1 = DirectEventL1A(de0_first)
     assert not de1.direct_events
     if not de1.direct_events:
-        de1.append(de0_second)
+        de1.merge_de_packets(de0_second)
 
     assert de1.direct_events
     # Missing one value

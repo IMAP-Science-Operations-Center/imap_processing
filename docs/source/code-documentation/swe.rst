@@ -28,7 +28,6 @@ found below.
     :recursive:
 
     l1b.swe_l1b
-    l1b.swe_l1b_science
 
 The modules below contains various utility classes and functions used for processing SWE data.
 

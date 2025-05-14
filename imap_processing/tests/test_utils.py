@@ -225,7 +225,8 @@ def test_packet_file_to_datasets_flat_definition():
     test_file = "tests/idex/test_data/imap_idex_l0_raw_20231218_v001.pkts"
     packet_files = imap_module_directory / test_file
     packet_definition = (
-        imap_module_directory / "idex/packet_definitions/idex_packet_definition.xml"
+        imap_module_directory
+        / "idex/packet_definitions/idex_science_packet_definition.xml"
     )
     with pytest.raises(ValueError, match="Packet fields do not match"):
         utils.packet_file_to_datasets(packet_files, packet_definition)

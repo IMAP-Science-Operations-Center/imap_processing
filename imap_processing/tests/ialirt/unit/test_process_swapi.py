@@ -20,7 +20,7 @@ def binary_packet_path():
         imap_module_directory
         / "tests"
         / "ialirt"
-        / "test_data"
+        / "data"
         / "l0"
         / "BinLog CCSDS_FRAG_TLM_20240826_152323Z_IALIRT_data_for_SDC.bin"
     )
@@ -33,7 +33,7 @@ def swapi_test_data():
         imap_module_directory
         / "tests"
         / "ialirt"
-        / "test_data"
+        / "data"
         / "l0"
         / "eu_SWP_IAL_20240826_152033.csv"
     )
