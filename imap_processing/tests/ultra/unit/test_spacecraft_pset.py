@@ -100,12 +100,14 @@ def test_calculate_spacecraft_pset_with_cdf():
         # PosYSlit is True for left (start_type = 1)
         # PosYSlit is False for right (start_type = 2)
         start_type = np.where(df_subset["PosYSlit"].values, 1, 2)
-        d, yf = get_front_y_position(start_type, df_subset["StopY"].values)
-        v, vhat, r = get_de_velocity(
-            (df_subset["StartX"].values, yf),
-            (df_subset["StopX"].values, df_subset["StopY"].values),
+        # Convert StartX, StopX, StopY to hundredths of mm.
+        d, yf = get_front_y_position(start_type, df_subset["StopY"].values * 100)
+        tof_tenths_ns = df_subset["TOF"].values * 10000
+        v, _, _ = get_de_velocity(
+            (df_subset["StartX"].values * 100, yf),
+            (df_subset["StopX"].values * 100, df_subset["StopY"].values * 100),
             d,
-            df_subset["TOF"].values,
+            tof_tenths_ns,
         )
         de_dict["direct_event_velocity"] = v.astype(np.float32)
 
