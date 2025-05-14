@@ -97,7 +97,9 @@ def test_calculate_spacecraft_pset_with_cdf():
         de_dict["epoch"] = df_subset["epoch"].values
         species_bin = np.full(len(df_subset), 1, dtype=np.uint8)
 
-        start_type = np.where(df_subset["PosYSlit"].values, 2, 1)
+        # PosYSlit is True for left (start_type = 1)
+        # PosYSlit is False for right (start_type = 2)
+        start_type = np.where(df_subset["PosYSlit"].values, 1, 2)
         d, yf = get_front_y_position(start_type, df_subset["StopY"].values)
         v, vhat, r = get_de_velocity(
             (df_subset["StartX"].values, yf),
