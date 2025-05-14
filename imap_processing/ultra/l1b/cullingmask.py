@@ -55,15 +55,20 @@ def calculate_cullingmask(extendedspin_dataset: xr.Dataset, name: str) -> xr.Dat
         cullingmask_dataset = cullingmask_dataset.expand_dims(
             spin_number=[FILLVAL_UINT32]
         )
-        cullingmask_dataset["spin_start_time"] = np.array(
-            [FILLVAL_FLOAT64], dtype="float64"
+        cullingmask_dataset = cullingmask_dataset.assign_coords(
+            epoch=("spin_number", [extendedspin_dataset["epoch"].values[0]])
         )
-        cullingmask_dataset["spin_period"] = np.array(
-            [FILLVAL_FLOAT64], dtype="float64"
+        cullingmask_dataset["spin_start_time"] = xr.DataArray(
+            np.array([FILLVAL_FLOAT64], dtype="float64"), dims=["spin_number"]
         )
-        cullingmask_dataset["spin_rate"] = np.array([FILLVAL_FLOAT64], dtype="float64")
-        cullingmask_dataset["quality_attitude"] = np.array(
-            [FILLVAL_UINT16], dtype="uint16"
+        cullingmask_dataset["spin_period"] = xr.DataArray(
+            np.array([FILLVAL_FLOAT64], dtype="float64"), dims=["spin_number"]
+        )
+        cullingmask_dataset["spin_rate"] = xr.DataArray(
+            np.array([FILLVAL_FLOAT64], dtype="float64"), dims=["spin_number"]
+        )
+        cullingmask_dataset["quality_attitude"] = xr.DataArray(
+            np.array([FILLVAL_UINT16], dtype="uint16"), dims=["spin_number"]
         )
         cullingmask_dataset["quality_ena_rates"] = (
             ("energy_bin_geometric_mean", "spin_number"),

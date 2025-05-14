@@ -44,13 +44,20 @@ def calculate_badtimes(
     if badtimes_dataset["spin_number"].size == 0:
         badtimes_dataset = badtimes_dataset.drop_dims("spin_number")
         badtimes_dataset = badtimes_dataset.expand_dims(spin_number=[FILLVAL_UINT32])
-        badtimes_dataset["spin_start_time"] = np.array(
-            [FILLVAL_FLOAT64], dtype="float64"
+        badtimes_dataset = badtimes_dataset.assign_coords(
+            epoch=("spin_number", [extendedspin_dataset["epoch"].values[0]])
         )
-        badtimes_dataset["spin_period"] = np.array([FILLVAL_FLOAT64], dtype="float64")
-        badtimes_dataset["spin_rate"] = np.array([FILLVAL_FLOAT64], dtype="float64")
-        badtimes_dataset["quality_attitude"] = np.array(
-            [FILLVAL_UINT16], dtype="uint16"
+        badtimes_dataset["spin_start_time"] = xr.DataArray(
+            np.array([FILLVAL_FLOAT64], dtype="float64"), dims=["spin_number"]
+        )
+        badtimes_dataset["spin_period"] = xr.DataArray(
+            np.array([FILLVAL_FLOAT64], dtype="float64"), dims=["spin_number"]
+        )
+        badtimes_dataset["spin_rate"] = xr.DataArray(
+            np.array([FILLVAL_FLOAT64], dtype="float64"), dims=["spin_number"]
+        )
+        badtimes_dataset["quality_attitude"] = xr.DataArray(
+            np.array([FILLVAL_UINT16], dtype="uint16"), dims=["spin_number"]
         )
         badtimes_dataset["quality_ena_rates"] = (
             ("energy_bin_geometric_mean", "spin_number"),

@@ -1,5 +1,6 @@
 """Create dataset."""
 
+import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
@@ -37,7 +38,7 @@ def create_dataset(
             "spin_number": data_dict["spin_number"],
             "energy_bin_geometric_mean": data_dict["energy_bin_geometric_mean"],
             # Start time aligns with the universal spin table
-            "epoch": data_dict["epoch"],
+            "epoch": ("spin_number", np.asarray(data_dict["epoch"])),
         }
         default_dimension = "spin_number"
     # L1c pset data products
@@ -113,6 +114,70 @@ def create_dataset(
             dataset[key] = xr.DataArray(
                 data,
                 dims=["energy_bin_geometric_mean", "healpix"],
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
+            )
+        else:
+            dataset[key] = xr.DataArray(
+                data,
+                dims=[default_dimension],
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
+            )
+
+    return dataset
+
+
+def create_spin_dataset(
+    data_dict: dict,
+    name: str,
+    level: str,
+) -> xr.Dataset:
+    """
+    Create xarray for L1b extended spin, badtimes, and cullingmask data products.
+
+    Parameters
+    ----------
+    data_dict : dict
+        L1b data dictionary.
+    name : str
+        Name of the dataset.
+    level : str
+        Level of the dataset.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Data in xarray format.
+    """
+    cdf_manager = ImapCdfAttributes()
+    cdf_manager.add_instrument_global_attrs("ultra")
+    cdf_manager.add_instrument_variable_attrs("ultra", level)
+
+    coords = {
+        "spin_number": data_dict["spin_number"],
+        "energy_bin_geometric_mean": data_dict["energy_bin_geometric_mean"],
+        "epoch": ("spin_number", np.asarray(data_dict["epoch"])),
+    }
+    default_dimension = "spin_number"
+
+    dataset = xr.Dataset(
+        coords=coords,
+        attrs=cdf_manager.get_global_attributes(name),
+    )
+
+    for key, data in data_dict.items():
+        # Skip keys that are coordinates.
+        if key in ["epoch", "spin_number", "energy_bin_geometric_mean"]:
+            continue
+        elif key == "ena_rates_threshold":
+            dataset[key] = xr.DataArray(
+                data,
+                dims=["energy_bin_geometric_mean"],
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
+            )
+        elif key in ["ena_rates", "quality_ena_rates"]:
+            dataset[key] = xr.DataArray(
+                data,
+                dims=["energy_bin_geometric_mean", "spin_number"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         else:
