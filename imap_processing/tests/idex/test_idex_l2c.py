@@ -44,9 +44,9 @@ def test_l2c_attrs_and_vars(l2c_datasets: list[xr.Dataset], l1b_dataset: xr.Data
     """
     healpix_ds = l2c_datasets[0]
     rect_ds = l2c_datasets[1]
-    assert healpix_ds.attrs["Logical_source"] == "imap_idex_l2c_healpix-pset-1week"
-    assert rect_ds.attrs["Logical_source"] == "imap_idex_l2c_rectangular-pset-1week"
-    # The total counts in the pset should be equal to the number of dust events
+    assert healpix_ds.attrs["Logical_source"] == "imap_idex_l2c_healpix-map-1week"
+    assert rect_ds.attrs["Logical_source"] == "imap_idex_l2c_rectangular-map-1week"
+    # The total counts in the map should be equal to the number of dust events
     # in the l1b_dataset
     np.testing.assert_allclose(healpix_ds["counts"].sum(), len(l1b_dataset.epoch))
     np.testing.assert_allclose(rect_ds["counts"].sum(), len(l1b_dataset.epoch))
@@ -68,12 +68,12 @@ def test_l2c_attrs_and_vars(l2c_datasets: list[xr.Dataset], l1b_dataset: xr.Data
 def test_idex_healpix_map(l1b_dataset: xr.Dataset):
     """Test for idex_healpix_map function"""
     epoch = xr.DataArray(
-        [np.mean(l1b_dataset["epoch"].data[[0, -1]]).astype(np.int64)],
+        l1b_dataset["epoch"].data[0:1].astype(np.int64),
         name="epoch",
         dims=["epoch"],
     )
     collection = idex_healpix_map(l1b_dataset, epoch)
-    assert collection.epoch == np.mean([l1b_dataset.epoch[0], l1b_dataset.epoch[-1]])
+    np.testing.assert_array_equal(collection.epoch, l1b_dataset.epoch[0])
 
     npix = hp.nside2npix(IDEX_HEALPIX_NSIDE)
     np.testing.assert_array_equal(
@@ -88,13 +88,12 @@ def test_idex_healpix_map(l1b_dataset: xr.Dataset):
 def test_idex_rectangular_map(l1b_dataset: xr.Dataset):
     """Test for idex_rectangular_map function"""
     epoch = xr.DataArray(
-        [np.mean(l1b_dataset["epoch"].data[[0, -1]]).astype(np.int64)],
+        l1b_dataset["epoch"].data[0:1].astype(np.int64),
         name="epoch",
         dims=["epoch"],
     )
     collection = idex_rectangular_map(l1b_dataset, epoch)
-
-    assert collection.epoch == np.mean([l1b_dataset.epoch[0], l1b_dataset.epoch[-1]])
+    np.testing.assert_array_equal(collection.epoch, l1b_dataset.epoch[0])
 
     np.testing.assert_array_equal(
         collection.counts.shape,

@@ -56,10 +56,9 @@ def idex_l2c(l2b_dataset: xr.Dataset) -> list[xr.Dataset]:
         f"Running IDEX L2C processing on datasets: "
         f"{l2b_dataset.attrs['Logical_source']}"
     )
-    # For ISTP, epoch should be the center of the time bin.
-    # TODO epoch should be the start of the collection period.
+    # Epoch should be the start of the collection period.
     epoch = xr.DataArray(
-        [np.mean(l2b_dataset["epoch"].data[[0, -1]]).astype(np.int64)],
+        l2b_dataset["epoch"].data[0:1].astype(np.int64),
         name="epoch",
         dims=["epoch"],
     )
@@ -115,7 +114,7 @@ def idex_healpix_map(
     nested: bool = IDEX_HEALPIX_NESTED,
 ) -> xr.Dataset:
     """
-    Create a healpix map out of an l1b dataset.
+    Create a healpix map out of a l1b dataset.
 
     Parameters
     ----------
@@ -130,8 +129,8 @@ def idex_healpix_map(
 
     Returns
     -------
-    pset : xarray.Dataset
-        IDEX pointing set dataset.
+    map : xarray.Dataset
+        Spatially binned dust counts in a healpix map format.
     """
     longitude = l1b_dataset["longitude"]
     latitude = l1b_dataset["latitude"]
@@ -170,14 +169,14 @@ def idex_healpix_map(
             "pixel_label": pixel_label,
         },
     )
-    pset_attrs = {
+    map_attrs = {
         "Sky_tiling_type": SkyTilingType.HEALPIX.value,
         "HEALPix_nside": nside,
         "HEALPix_nest": nested,
         "Spice_reference_frame": IDEX_EVENT_REFERENCE_FRAME,
         "num_points": n_pix,
     }
-    l2c_dataset.attrs.update(pset_attrs)
+    l2c_dataset.attrs.update(map_attrs)
 
     return l2c_dataset
 
@@ -199,8 +198,8 @@ def idex_rectangular_map(
 
     Returns
     -------
-    pset : xarray.Dataset
-        IDEX pointing set dataset.
+    map : xarray.Dataset
+        Spatially binned dust counts in a rectangular map format.
     """
     # Get the rectangular grid with the specified spacing
     grid = AzElSkyGrid(spacing_deg)
@@ -233,11 +232,11 @@ def idex_rectangular_map(
             "rectangular_lat_pixel_label": rec_lat_pixels.astype(str),
         },
     )
-    pset_attrs = {
+    map_attrs = {
         "sky_tiling_type": SkyTilingType.RECTANGULAR.value,
         "Spacing_degrees": spacing_deg,
         "Spice_reference_frame": IDEX_EVENT_REFERENCE_FRAME,
         "num_points": counts.size,
     }
-    l2c_dataset.attrs.update(pset_attrs)
+    l2c_dataset.attrs.update(map_attrs)
     return l2c_dataset
