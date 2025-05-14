@@ -409,6 +409,39 @@ class MapDescriptor:
         )
 
 
+def ns_to_duration_months(ns: int) -> int:
+    """
+    Convert nanoseconds to months using 28.5 days per month approximation.
+
+    Parameters
+    ----------
+    ns : int
+        The number of nanoseconds to convert.
+
+    Returns
+    -------
+    int
+        The number of months, floored to the nearest integer.
+
+    Notes
+    -----
+    This can be used to convert from the difference between two epochs in ns to the
+    number of months between them.
+
+    This is a very simple estimate, which assumes that a month is 28.5 days and
+    floors the result.
+
+    This successfully yields:
+    - 12 months for 365.25 days in ns
+    - 6 months for 182.625 days (365.25/2) in ns
+    - 4 months for 121.75 days (365.25/3) in ns
+    - 3 months for 91.3125 days (365.25/4) in ns
+    """
+    days = ns / (1e9 * 60 * 60 * 24)
+    months = days // 28.5
+    return int(months)
+
+
 def build_friendly_date_descriptor(
     start_datestring: str,
     duration_months: int,

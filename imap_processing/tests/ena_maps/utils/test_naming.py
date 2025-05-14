@@ -8,6 +8,7 @@ from imap_processing.ena_maps.utils.naming import (
     build_l2_map_descriptor,
     ns_to_duration_months,
     get_instrument_descriptor,
+    ns_to_duration_months,
     parse_instrument_descriptor,
 )
 from imap_processing.spice.geometry import SpiceFrame
