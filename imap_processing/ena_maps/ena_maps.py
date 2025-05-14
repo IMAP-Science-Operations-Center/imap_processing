@@ -681,8 +681,8 @@ class AbstractSkyMap(ABC):
         """
         raise NotImplementedError("AbstractSkyMap.to_dataset() not implemented.")
 
-    @abstractmethod
     @property
+    @abstractmethod
     def binning_grid_shape(self) -> tuple[int]:
         """
         Shape of the binning grid.
@@ -923,6 +923,7 @@ class AbstractSkyMap(ABC):
         skymap.values_to_pull_project = properties.get("values_to_pull_project", [])
         return skymap
 
+    @abstractmethod
     def to_dict(self) -> dict:
         """
         Convert the SkyMap object to a dictionary of properties.
@@ -932,32 +933,7 @@ class AbstractSkyMap(ABC):
         dict
             Dictionary containing the map properties.
         """
-        if isinstance(self, HealpixSkyMap):
-            map_properties_dict = {
-                "sky_tiling_type": "HEALPIX",
-                "spice_reference_frame": self.spice_reference_frame.name,
-                "nside": self.nside,
-                "nested": self.nested,
-            }
-        elif isinstance(self, RectangularSkyMap):
-            map_properties_dict = {
-                "sky_tiling_type": "RECTANGULAR",
-                "spice_reference_frame": self.spice_reference_frame.name,
-                "spacing_deg": self.spacing_deg,
-            }
-        else:
-            raise ValueError(
-                f"Unknown SkyMap type: {self.__class__.__name__}. "
-                f"Must be one of: {AbstractSkyMap.__subclasses__()}"
-            )
-
-        map_properties_dict["values_to_push_project"] = (
-            self.values_to_push_project if self.values_to_push_project else []
-        )
-        map_properties_dict["values_to_pull_project"] = (
-            self.values_to_pull_project if self.values_to_pull_project else []
-        )
-        return map_properties_dict
+        raise NotImplementedError("to_dict must be implemented in a subclass.")
 
     def to_json(self, json_path: str | Path) -> None:
         """
@@ -1144,6 +1120,28 @@ class RectangularSkyMap(AbstractSkyMap):
             rewrapped_data,
             coords={**self.non_spatial_coords, **self.spatial_coords},
         )
+
+    def to_dict(self) -> dict:
+        """
+        Convert the RectangularSkyMap object to a dictionary of properties.
+
+        Returns
+        -------
+        dict
+            Dictionary containing the map properties.
+        """
+        map_properties_dict = {
+            "sky_tiling_type": "RECTANGULAR",
+            "spice_reference_frame": self.spice_reference_frame.name,
+            "spacing_deg": self.spacing_deg,
+            "values_to_push_project": (
+                self.values_to_push_project if self.values_to_push_project else []
+            ),
+            "values_to_pull_project": (
+                self.values_to_pull_project if self.values_to_pull_project else []
+            ),
+        }
+        return map_properties_dict
 
     def __repr__(self) -> str:
         """
@@ -1580,6 +1578,29 @@ class HealpixSkyMap(AbstractSkyMap):
             )
 
         return rect_map, subdiv_depth_dict
+
+    def to_dict(self) -> dict:
+        """
+        Convert the HealpixSkyMap object to a dictionary of properties.
+
+        Returns
+        -------
+        dict
+            Dictionary containing the map properties.
+        """
+        map_properties_dict = {
+            "sky_tiling_type": "HEALPIX",
+            "spice_reference_frame": self.spice_reference_frame.name,
+            "nside": self.nside,
+            "nested": self.nested,
+            "values_to_push_project": (
+                self.values_to_push_project if self.values_to_push_project else []
+            ),
+            "values_to_pull_project": (
+                self.values_to_pull_project if self.values_to_pull_project else []
+            ),
+        }
+        return map_properties_dict
 
     def __repr__(self) -> str:
         """
