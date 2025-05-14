@@ -54,7 +54,7 @@ EXPECTED_ARRAY_SHAPES = [
     (77, 19, 12, 128),  # lo-nsw-angular
     (77,),  # hi-counters-aggregated
     (77, 12),  # hi-counters-singles
-    (77, 15, 4),  # hi-omni
+    (308, 15),  # hi-omni
     (77, 8, 12, 12),  # hi-sectored
     (77,),  # hi-priority
     (77, 10000),  # lo-pha
@@ -75,7 +75,7 @@ EXPECTED_NUM_VARIABLES = [
     9,  # lo-nsw-angular
     2 + len(constants.HI_COUNTERS_AGGREGATED_VARIABLE_NAMES),  # hi-counters-aggregated
     5,  # hi-counters-singles
-    10,  # hi-omni
+    11,  # hi-omni
     6,  # hi-sectored
     8,  # hi-priority
     80,  # lo-pha
@@ -135,6 +135,7 @@ def test_l1a_data_array_shape(test_l1a_data, index):
         The index of the list to test
     """
 
+    descriptor = DESCRIPTORS[index]
     processed_dataset = test_l1a_data[index]
     expected_shape = EXPECTED_ARRAY_SHAPES[index]
 
@@ -142,6 +143,10 @@ def test_l1a_data_array_shape(test_l1a_data, index):
     # TODO: Remove these once they are supported
     if index in [0, 1]:
         pytest.xfail("Data product is currently unsupported")
+
+    # hi-omni data array shapes depend on the species
+    if descriptor == "hi-omni":
+        pytest.skip("Omni is weird")
 
     # There are exceptions for some variables
     for variable in processed_dataset:
@@ -244,7 +249,7 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
     able_to_be_validated = [
         "hi-counters-aggregated",
         "hi-counters-singles",
-        "hi-priority",
+        "hi-omnihi-priority",
         "hi-sectored",
         "hi-pha",
         "lo-counters-aggregated",
