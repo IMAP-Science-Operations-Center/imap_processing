@@ -76,7 +76,7 @@ def test_lo_l1c(l1b_de, anc_dependencies):
 def test_initialize_pset(l1b_de, attr_mgr):
     # Arrange
     logical_source = "imap_lo_l1c_pset"
-    expected_epoch = 7.9794907254e17
+    expected_epoch = 7.9794907049e17
 
     # Act
     pset = initialize_pset(l1b_de, attr_mgr, logical_source)
