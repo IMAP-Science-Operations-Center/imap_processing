@@ -57,6 +57,8 @@ def idex_l2c(l2b_dataset: xr.Dataset) -> list[xr.Dataset]:
         f"{l2b_dataset.attrs['Logical_source']}"
     )
     # Epoch should be the start of the collection period.
+    # TODO update metadata to indicate the collection period.
+    # TODO should epoch be start of sci acquisition?
     epoch = xr.DataArray(
         l2b_dataset["epoch"].data[0:1].astype(np.int64),
         name="epoch",
