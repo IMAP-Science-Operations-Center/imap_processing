@@ -999,7 +999,10 @@ class RectangularSkyMap(AbstractSkyMap):
     """
 
     tiling_type = SkyTilingType.RECTANGULAR  # Type of tiling of the sky
+
+    # ======== Attributes unique to RectangularSkyMap ========
     sky_grid: spatial_utils.AzElSkyGrid
+    solid_angle_grid: np.ndarray
 
     def __init__(
         self,
@@ -1174,6 +1177,12 @@ class HealpixSkyMap(AbstractSkyMap):
     """
 
     tiling_type = SkyTilingType.HEALPIX
+
+    # ======== Attributes unique to HealpixSkyMap ========
+    nside: int
+    nested: bool
+    approx_resolution: float
+    solid_angle: float
 
     def __init__(
         self, nside: int, spice_frame: geometry.SpiceFrame, nested: bool = False
