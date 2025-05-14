@@ -53,6 +53,18 @@ energy_label:
   FORMAT: A16
   DEPEND_1: energy
 
+epoch_delta:
+  <<: *default_int64
+  CATDESC: Time difference between the start and end of the exposure.
+  FIELDNAM: epoch_delta
+  UNITS: ns
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: no_plot
+  DEPEND_0: epoch
+  dtype: int64
+  TIME_BASE: J2000
+  TIME_SCALE: Terrestrial Time
+
 energy_delta_minus:
   <<: *default_float32
   VAR_TYPE: support_data

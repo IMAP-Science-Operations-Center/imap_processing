@@ -7,9 +7,11 @@ from pathlib import Path
 
 import numpy as np
 import xarray as xr
+from numpy.typing import NDArray
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
+from imap_processing.ena_maps.utils import naming
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import get_energy_delta_minus_plus
 
@@ -129,7 +131,7 @@ def generate_ultra_healpix_skymap(
     output_map_structure: (
         ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap
     ) = DEFAULT_ULTRA_L2_MAP_STRUCTURE,
-) -> ena_maps.HealpixSkyMap:
+) -> tuple[ena_maps.HealpixSkyMap, NDArray]:
     """
     Generate a Healpix skymap from ULTRA L1C pointing sets.
 
@@ -152,6 +154,8 @@ def generate_ultra_healpix_skymap(
     ena_maps.HealpixSkyMap
         HealpixSkyMap object containing the combined data from all pointing sets,
         with calculated ena_intensity and its statistical uncertainty values.
+    NDArray
+        Array of epochs corresponding to the pointing sets used in the map.
 
     Raises
     ------
@@ -221,8 +225,10 @@ def generate_ultra_healpix_skymap(
             f"PULL Variables: {output_map_structure.values_to_pull_project}"
         )
 
+    all_pset_epochs = []
     for ultra_l1c_pset in ultra_l1c_psets:
         pointing_set = ena_maps.UltraPointingSet(ultra_l1c_pset)
+        all_pset_epochs.append(pointing_set.epoch)
         logger.info(
             f"Projecting a PointingSet with {pointing_set.num_points} pixels "
             f"at epoch:{pointing_set.epoch}\n"
@@ -312,7 +318,7 @@ def generate_ultra_healpix_skymap(
         VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION,
     )
 
-    return skymap
+    return skymap, np.array(all_pset_epochs)
 
 
 def ultra_l2(
@@ -360,10 +366,25 @@ def ultra_l2(
     # Regardless of the output sky tiling type, we will directly
     # project the PSET values into a healpix map. However, if we are outputting
     # a Healpix map, we can go directly to map with desired nside, nested params
-    healpix_skymap = generate_ultra_healpix_skymap(
+    healpix_skymap, pset_epochs = generate_ultra_healpix_skymap(
         ultra_l1c_psets=l1c_products,
         output_map_structure=output_map_structure,
     )
+    # Ensure that the epoch of the map is the earliest epoch of the input PSETs
+    healpix_skymap.data_1d.assign_coords(
+        epoch=(
+            (CoordNames.TIME.value,),
+            [
+                pset_epochs.min(),
+            ],
+        ),
+    )
+
+    # TODO: replace 1 day in ns below with the actual end time of the last PSET.
+    # Currently assumes the end time of the last PSET is 1 day after its start.
+    map_duration_ns = (pset_epochs.max() + (86400 * 1e9)) - pset_epochs.min()
+    map_duration_months_int = naming.ns_to_duration_months(map_duration_ns)
+    map_duration = f"{map_duration_months_int}mo"
 
     # Always add the common (non-tiling specific) attributes to the attr handler.
     # These can be updated/overwritten by the tiling specific attributes.
@@ -429,12 +450,8 @@ def ultra_l2(
             "Spacing_degrees": str(output_map_structure.spacing_deg),
         }
 
-    # TODO: keep track of the map duration correctly
-    map_duration = "99mo"
-
     # Get the global attributes, and then fill the sensor, tiling, etc. in the
     # format-able strings.
-
     map_attrs.update(cdf_attrs.get_global_attributes("imap_ultra_l2_enamap-hf"))
     for key in ["Data_type", "Logical_source", "Logical_source_description"]:
         map_attrs[key] = map_attrs[key].format(
@@ -469,6 +486,15 @@ def ultra_l2(
                 ],
                 name=f"{coord_var}_label",
             )
+
+    # Add epoch_delta
+    map_dataset.coords["epoch_delta"] = xr.DataArray(
+        [
+            map_duration_ns,
+        ],
+        dims=(CoordNames.TIME.value,),
+    )
+    map_dataset.coords["epoch"].attrs["DELTA_PLUS_VAR"] = "epoch_delta"
 
     # Add the energy delta plus/minus to the map dataset
     energy_delta_minus, energy_delta_plus = get_energy_delta_minus_plus()
