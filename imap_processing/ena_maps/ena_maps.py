@@ -679,16 +679,7 @@ class AbstractSkyMap(ABC):
             If the SkyMap is Healpix, the data is unchanged from the data_1d, but
             the pixel coordinate is renamed to CoordNames.HEALPIX_INDEX.value.
         """
-        if len(self.data_1d.data_vars) == 0:
-            # If the map is empty, return an empty xarray Dataset,
-            # with the unaltered spatial coords of the map
-            return xr.Dataset(
-                {},
-                coords={**self.spatial_coords},
-            )
-        raise NotImplementedError(
-            "AbstractSkyMap.to_dataset() not implemented for no-empty objects."
-        )
+        raise NotImplementedError("AbstractSkyMap.to_dataset() not implemented.")
 
     @abstractmethod
     @property
@@ -1120,7 +1111,10 @@ class RectangularSkyMap(AbstractSkyMap):
         if len(self.data_1d.data_vars) == 0:
             # If the map is empty, return an empty xarray Dataset,
             # with the unaltered spatial coords of the map
-            return super().to_dataset()
+            return xr.Dataset(
+                {},
+                coords={**self.spatial_coords},
+            )
         # Rewrap each data array in the data_1d to the original 2D grid shape
         rewrapped_data = {}
         for key in self.data_1d.data_vars:
@@ -1252,7 +1246,10 @@ class HealpixSkyMap(AbstractSkyMap):
         if len(self.data_1d.data_vars) == 0:
             # If the map is empty, return an empty xarray Dataset,
             # with the unaltered spatial coords of the map
-            return super().to_dataset()
+            return xr.Dataset(
+                {},
+                coords={**self.spatial_coords},
+            )
         # return the data_1d as is, but with the pixel coordinate
         # renamed to CoordNames.HEALPIX_INDEX.value
         return self.data_1d.rename(
