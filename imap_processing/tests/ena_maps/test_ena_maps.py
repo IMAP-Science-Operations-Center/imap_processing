@@ -1160,10 +1160,12 @@ class TestAbstractSkyMap:
     def test_to_dict_and_from_dict(self, skymap_props_dict):
         """Test serialization to and from dictionary"""
         # Make a SkyMap from the original properties dict
-        skymap_from_dict = ena_maps.AbstractSkyMap.from_dict(skymap_props_dict)
+        skymap_from_dict = ena_maps.AbstractSkyMap.from_properties_dict(
+            skymap_props_dict
+        )
 
         # Use the SkyMap to create a new properties dict
-        dict_from_skymap = skymap_from_dict.to_dict()
+        dict_from_skymap = skymap_from_dict.to_properties_dict()
 
         assert (
             skymap_from_dict.spice_reference_frame
