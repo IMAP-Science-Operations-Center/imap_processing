@@ -23,12 +23,11 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.idex.idex_constants import ConversionFactors
-from imap_processing.idex.idex_utils import get_idex_attrs, setup_dataset
 from imap_processing.idex.idex_constants import (
     IDEX_EVENT_REFERENCE_FRAME,
     ConversionFactors,
 )
+from imap_processing.idex.idex_utils import get_idex_attrs, setup_dataset
 from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
