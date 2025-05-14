@@ -35,11 +35,18 @@ class AncillaryCombiner:
     they need to be combined in a different way, "get_combined_dataset" should be
     overridden.
 
+    Some ancillary files can extend indefinitely. Therefore, the class requires the user
+    to provide an end time, which will
+
     Parameters
     ----------
     ancillary_input : ProcessingInput
         The input to convert, which consists of a collection of ancillary files from
         different dates, all with differing versions.
+    expected_end_date : np.datetime64
+        The expected end date of the dataset. This is used to fill in the end date
+        of the dataset if it is not provided in the input file. This should either
+        be a numpy datetime64 object or a string in the format YYYYMMDD.
 
     Methods
     -------
@@ -50,17 +57,19 @@ class AncillaryCombiner:
 
     time_variable = "epoch"
 
-    def __init__(self, ancillary_input: ProcessingInput):
-        """
-        Create the class variables. This does not create the combined dataset.
-
-        Parameters
-        ----------
-        ancillary_input : ProcessingInput
-            The input to convert, which should consist of a collection of files from
-            different dates, all with differing versions.
-        """
+    def __init__(
+        self, ancillary_input: ProcessingInput, expected_end_date: np.datetime64 | str
+    ):
         self.ancillary_input = ancillary_input
+        if isinstance(expected_end_date, str):
+            expected_end_date = np.datetime64(
+                f"{expected_end_date[:4]}-"
+                f"{expected_end_date[4:6]}-"
+                f"{expected_end_date[6:]}"
+            )
+
+        self.expected_end_date = expected_end_date
+
         # TODO NEXT STEP: WRITE SOME TESTS
         self.timestamped_data = []
         for file in ancillary_input.filename_list:
@@ -94,11 +103,16 @@ class AncillaryCombiner:
         )  # '2025-07-01'
         start_dt = np.datetime64(formatted_str, "D")
 
-        # Convert end_date to np.datetime64
-        formatted_str = (
-            f"{filepath.end_date[:4]}-{filepath.end_date[4:6]}-{filepath.end_date[6:]}"
-        )
-        end_dt = np.datetime64(formatted_str, "D")
+        if filepath.end_date is not None:
+            # Convert end_date to np.datetime64
+            formatted_str = (
+                f"{filepath.end_date[:4]}-"
+                f"{filepath.end_date[4:6]}-"
+                f"{filepath.end_date[6:]}"
+            )
+            end_dt = np.datetime64(formatted_str, "D")
+        else:
+            end_dt = self.expected_end_date
 
         return TimestampedData(start_dt, end_dt, dataset, filepath.version)
 
@@ -216,7 +230,14 @@ class MagAncillaryCombiner(AncillaryCombiner):
     ----------
         ancillary_input : ProcessingInput
             Collection of MAG calibration files.
+        expected_end_date : np.datetime64 | str
+            The expected end date of the dataset. This is used to fill in the end date
+            of the dataset if it is not provided in the input file. This should either
+            be a numpy datetime64 object or a string in the format YYYYMMDD. For MAG,
+            1-2 days after the science file timestamp is sufficient.
     """
 
-    def __init__(self, ancillary_input: ProcessingInput):
-        super().__init__(ancillary_input)
+    def __init__(
+        self, ancillary_input: ProcessingInput, expected_end_date: np.datetime64 | str
+    ):
+        super().__init__(ancillary_input, expected_end_date)
