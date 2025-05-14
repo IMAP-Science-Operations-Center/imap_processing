@@ -26,7 +26,7 @@ import xarray as xr
 from imap_data_access import ScienceFilePath
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
-    SPICESource,
+    SPICESource, ProcessingInputType,
 )
 
 import imap_processing
@@ -70,6 +70,7 @@ from imap_processing.ultra.l1a import ultra_l1a
 from imap_processing.ultra.l1b import ultra_l1b
 from imap_processing.ultra.l1c import ultra_l1c
 from imap_processing.ultra.l2 import ultra_l2
+from tools.ancillary.ancillary_dataset_combiner import MagAncillaryCombiner
 
 logger = logging.getLogger(__name__)
 
@@ -957,8 +958,28 @@ class Mag(ProcessInstrument):
                 / "calibration"
                 / "imap_mag_l2-offsets-norm_20251017_20251017_v001.cdf"
             )
+
+            # We expect either a norm or a burst input descriptor.
+            offsets_desc = f"l2-offsets-{self.descriptor}"
+            offsets = dependencies.get_processing_inputs(descriptor=offsets_desc)
+
+            calibration = dependencies.get_processing_inputs(descriptor='l2-calibration-matrices')
+
+            if (len(offsets) != 1 or len(offsets[0].filename_list) != 1 or
+                    len(calibration) != 1):
+                raise ValueError(
+                    f"Unexpected dependencies found in MAG L2."
+                    f"Expected exactly one offsets dependency input file "
+                    f"and at least one calibration file."
+                    f"All ancillary dependencies: {dependencies.get_processing_inputs(input_type=ProcessingInputType.ANCILLARY_FILE)}"
+                )
+
+            combined_calibration = MagAncillaryCombiner(calibration[0])
+            offset_dataset = load_cdf(dependencies.get_file_paths(descriptor=offsets_desc, source="ancillary")[0])
+            # TODO: get input data from offsets file
+
             # TODO: Test data missing
-            datasets = mag_l2(calibration_dataset, offset_dataset, input_data)
+            datasets = mag_l2(combined_calibration.combined_dataset, offset_dataset, input_data)
 
         return datasets
 
