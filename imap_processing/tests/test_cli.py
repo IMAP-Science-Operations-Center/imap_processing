@@ -1,6 +1,7 @@
 """Tests coverage for imap_processing.cli."""
 
 import json
+import logging
 import shutil
 import sys
 from pathlib import Path
@@ -25,6 +26,7 @@ from imap_processing.cli import (
     Spacecraft,
     Swe,
     Ultra,
+    _parse_args,
     _validate_args,
     main,
 )
@@ -92,6 +94,54 @@ def test_main(mock_instrument):
         # Running without raising an exception is a pass.
         # No asserts needed.
         main()
+
+
+def test_parse_args_dependency_json_file(caplog):
+    # Set caplog to capture all log levels
+    caplog.set_level(logging.DEBUG)
+    """Test imap_processing.cli.main() with --dependency as a JSON file path."""
+    test_json_content = [
+        {
+            "type": "ancillary",
+            "files": [
+                "imap_mag_l1b-cal_20250101_v001.cdf",
+                "imap_mag_l1b-cal_20250103_20250104_v002.cdf",
+            ],
+        },
+        {
+            "type": "science",
+            "files": [
+                "imap_idex_l2_sci_20240312_v000.cdf",
+                "imap_idex_l2_sci_20240312_v001.cdf",
+            ],
+        },
+    ]
+    test_json_dst = "test_cli_dependency_json.json"
+    with open(test_json_dst, "w") as f:
+        f.write(json.dumps(test_json_content))
+
+    test_args = [
+        "imap_cli",
+        "--instrument",
+        "mag",
+        "--dependency",
+        str(test_json_dst),
+        "--data-level",
+        "l1a",
+        "--start-date",
+        "20240430",
+        "--repointing",
+        "repoint12345",
+        "--version",
+        "v001",
+        "--upload-to-sdc",
+    ]
+    with mock.patch.object(sys, "argv", test_args):
+        _parse_args()
+        # Check that the dependency JSON file was read correctly
+        assert "Interpreting dependency argument as a JSON file" in caplog.text, (
+            "Dependency JSON file was not read correctly"
+        )
 
 
 @pytest.mark.parametrize(

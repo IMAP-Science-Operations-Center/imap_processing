@@ -167,6 +167,9 @@ def _parse_args() -> argparse.Namespace:
         "        ]"
         "    }"
         "]'"
+        "    A path to a JSON file containing this same information may also be"
+        "passed in. If dependency is a string ending in '.json', it will be interpreted"
+        " as such a file path."
     )
 
     parser = argparse.ArgumentParser(prog="imap_cli", description=description)
@@ -244,6 +247,14 @@ def _parse_args() -> argparse.Namespace:
         help="Upload completed output files to the IMAP SDC.",
     )
     args = parser.parse_args()
+
+    # If the dependency argument was passed in as a json file, read it into a string
+    if args.dependency.endswith(".json"):
+        logger.info(
+            f"Interpreting dependency argument as a JSON file: {args.dependency}"
+        )
+        with open(args.dependency) as f:
+            args.dependency = f.read()
 
     return args
 
