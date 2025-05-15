@@ -153,7 +153,6 @@ def test_transform_instrument_vectors_to_inertial(
         spin_phase,
         np.array([ra]),
         np.array([dec]),
-        np.array([et]),
     )
 
     # SPICE direct transform from instrument frame to inertial

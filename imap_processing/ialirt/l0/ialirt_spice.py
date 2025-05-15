@@ -73,50 +73,71 @@ def get_rotation_matrix(z_axis: NDArray, spin_phase: NDArray) -> NDArray:
     return rot_matrices
 
 
+def build_sc_frame_in_inertial(z_axis: NDArray) -> NDArray:
+    """
+    Create spacecraft orthonormal frame in inertial space for each z-axis.
+    """
+    frames = []
+    for z in z_axis:
+        ref = np.array([0.0, 0.0, 1.0]) if not np.allclose(z, [0, 0, 1.0]) else np.array([1.0, 0.0, 0.0])
+        y = np.cross(z, ref)
+        y /= np.linalg.norm(y)
+        x = np.cross(y, z)
+        frames.append(np.stack([x, y, z], axis=1))
+    return np.array(frames)
+
+
+def get_instrument_mount_matrix(instrument_frame: SpiceFrame, spacecraft_frame: SpiceFrame) -> NDArray:
+    """
+    Get static instrument-to-spacecraft rotation matrix.
+    """
+    return spice.pxform(instrument_frame.name, spacecraft_frame.name, 0.0)
+
+
+def compute_total_rotation(
+    inertial_frames: NDArray,
+    spin_rotations: NDArray,
+    mount_matrix: NDArray
+) -> NDArray:
+    """
+    Compute full rotation matrices from instrument to inertial frame.
+    """
+    return np.array([R_sc @ spin @ mount_matrix for R_sc, spin in zip(inertial_frames, spin_rotations)])
+
+
+def apply_rotations_to_vectors(rotations: NDArray, vectors: NDArray) -> NDArray:
+    """
+    Apply rotation matrices to instrument vectors.
+    """
+    return np.array([spice.mxv(rot, vec) for rot, vec in zip(rotations, vectors)])
+
+
 def transform_instrument_vectors_to_inertial(
     instrument_vectors: NDArray,
     spin_phase: NDArray,
     sc_inertial_right: NDArray,
     sc_inertial_decline: NDArray,
-    et: NDArray,
     instrument_frame: SpiceFrame = SpiceFrame.IMAP_MAG,
     spacecraft_frame: SpiceFrame = SpiceFrame.IMAP_SPACECRAFT,
 ) -> NDArray:
     """
     Transform instrument-frame vectors into the inertial frame (ECLIPJ2000).
     """
+    # Step 1: compute spin axis
     z_axis = get_z_axis(sc_inertial_right, sc_inertial_decline)
 
-    # Construct orthonormal S/C frame in inertial space
-    inertial_frames = []
-    for z in z_axis:
-        # Pick a reference not parallel to z
-        ref = (
-            np.array([0.0, 0.0, 1.0])
-            if not np.allclose(z, [0, 0, 1.0])
-            else np.array([1.0, 0.0, 0.0])
-        )
-        y = np.cross(z, ref)
-        y /= np.linalg.norm(y)
-        x = np.cross(y, z)
-        R_sc_to_inertial = np.stack([x, y, z], axis=1)
-        inertial_frames.append(R_sc_to_inertial)
-    inertial_frames = np.array(inertial_frames)
+    # Step 2: build inertial S/C frames
+    inertial_frames = build_sc_frame_in_inertial(z_axis)
 
-    # Rotation about z by spin phase (in spacecraft XY plane)
-    rot_spin = get_rotation_matrix(np.tile([0, 0, 1], (len(spin_phase), 1)), spin_phase)
+    # Step 3: get spin rotation matrices (around Z)
+    spin_rotations = get_rotation_matrix(np.tile([0, 0, 1], (len(spin_phase), 1)), spin_phase)
 
-    # Static mount matrix from instrument to spacecraft
-    R_mount = spice.pxform(instrument_frame.name, spacecraft_frame.name, 0.0)
+    # Step 4: get static mount matrix
+    mount_matrix = get_instrument_mount_matrix(instrument_frame, spacecraft_frame)
 
-    # Final transform: inertial = R_sc @ spin @ R_mount @ instrument_vector
-    rot_total = np.array(
-        [R_sc @ spin @ R_mount for R_sc, spin in zip(inertial_frames, rot_spin)]
-    )
+    # Step 5: compute total rotations
+    total_rotations = compute_total_rotation(inertial_frames, spin_rotations, mount_matrix)
 
-    # Apply to instrument vectors
-    vectors_inertial = np.array(
-        [spice.mxv(rot, vec) for rot, vec in zip(rot_total, instrument_vectors)]
-    )
+    # Step 6: apply to instrument vectors
+    return apply_rotations_to_vectors(total_rotations, instrument_vectors)
 
-    return vectors_inertial
