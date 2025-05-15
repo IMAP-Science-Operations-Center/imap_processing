@@ -16,16 +16,64 @@ logger = logging.getLogger(__name__)
 VARS_TO_EXPOSURE_TIME_AVERAGE = ["bg_rates", "bg_rates_unc", "obs_date"]
 
 
+def hi_l2(
+    psets: list[str | Path],
+    geometric_factors_path: str | Path,
+    esa_energies_path: str | Path,
+    descriptor: str,
+) -> list[xr.Dataset]:
+    """
+    High level IMAP-Hi L2 processing function.
+
+    Parameters
+    ----------
+    psets : list of str or Path
+        List of input PSETs to make a map from.
+    geometric_factors_path : str or Path
+        Where to get the geometric factors from.
+    esa_energies_path : str or Path
+        Where to get the energies from.
+    descriptor : str
+        Output filename descriptor. Contains full configuration for the options
+        of how to generate the map.
+
+    Returns
+    -------
+    l2_dataset : list[xr.Dataset]
+        Level 2 IMAP-Hi dataset ready to be written to a CDF file.
+    """
+    # TODO: parse descriptor to determine map configuration
+    sensor = "45" if "45" in descriptor else "90"
+    direction: Literal["full"] = "full"
+    cg_corrected = False
+    map_spacing = 4
+
+    rect_map = generate_hi_map(
+        psets,
+        geometric_factors_path,
+        esa_energies_path,
+        direction=direction,
+        cg_corrected=cg_corrected,
+        map_spacing=map_spacing,
+    )
+
+    # Get the map dataset with variables/coordinates in the correct shape
+    # TODO get the correct descriptor and frame
+    l2_ds = rect_map.build_cdf_dataset("hi", "l2", "sf", descriptor, sensor=sensor)
+
+    return [l2_ds]
+
+
 def generate_hi_map(
     psets: list[str | Path],
     geometric_factors_path: str | Path,
     esa_energies_path: str | Path,
     cg_corrected: bool = False,
     direction: Literal["ram", "anti-ram", "full"] = "full",
-    map_spacing_deg: int = 4,
-) -> xr.Dataset:
+    map_spacing: int = 4,
+) -> RectangularSkyMap:
     """
-    High level IMAP-Hi L2 processing function.
+    Project Hi PSET data into a rectangular sky map.
 
     Parameters
     ----------
@@ -41,16 +89,16 @@ def generate_hi_map(
     direction : str, optional
         Apply filtering to PSET data include ram or anti-ram or full spin data.
         Defaults to "full".
-    map_spacing_deg : int, optional
-        Pixel spacing of the output map in degrees. Defaults to 4.
+    map_spacing : int, optional
+        Pixel spacing, in degrees, of the output map in degrees. Defaults to 4.
 
     Returns
     -------
-    l2_dataset : xr.Dataset
-        Level 2 IMAP-Hi dataset ready to be written to a CDF file.
+    sky_map : RectangularSkyMap
+        The sky map with all the PSET data projected into the map.
     """
     rect_map = RectangularSkyMap(
-        spacing_deg=map_spacing_deg, spice_frame=SpiceFrame.ECLIPJ2000
+        spacing_deg=map_spacing, spice_frame=SpiceFrame.ECLIPJ2000
     )
 
     # TODO: Implement Compton-Getting correction
@@ -60,9 +108,14 @@ def generate_hi_map(
     if direction != "full":
         raise NotImplementedError
 
+    min_epoch = np.nan
+    max_epoch = np.nan
+
     for pset_path in psets:
         logger.info(f"Processing {pset_path}")
         pset = HiPointingSet(pset_path)
+        min_epoch = np.nanmin(min_epoch, pset.epoch)
+        max_epoch = np.nanmax(max_epoch, pset.epoch)
 
         # Background rate and uncertainty are exposure time weighted means in
         # the map.
@@ -75,44 +128,36 @@ def generate_hi_map(
             ["counts", "exposure_factor", "bg_rates", "bg_rates_unc", "obs_date"],
         )
 
-    # Get the map dataset with variables/coordinates in the correct shape
-    map_ds = rect_map.to_dataset()
-
     # Finish the exposure time weighted mean calculation of backgrounds
     # Allow divide by zero to fill set pixels with zero exposure time to NaN
     with np.errstate(divide="ignore"):
         for var in VARS_TO_EXPOSURE_TIME_AVERAGE:
-            map_ds[var] /= map_ds["exposure_factor"]
+            rect_map.data_1d[var] /= rect_map.data_1d["exposure_factor"]
 
-    map_ds.update(calculate_ena_signal_rates(map_ds))
-    map_ds.update(
-        calculate_ena_intensity(map_ds, geometric_factors_path, esa_energies_path)
+    rect_map.data_1d.update(calculate_ena_signal_rates(rect_map.data_1d))
+    rect_map.data_1d.update(
+        calculate_ena_intensity(
+            rect_map.data_1d, geometric_factors_path, esa_energies_path
+        )
     )
-
-    # By dropping the calibration_prod dimension, the correct set of variables
-    # also get removed
-    map_ds = map_ds.drop_dims("calibration_prod")
-
-    # TODO: the correct conversion from esa_energy_step to esa_energy
-    esa_energy_step_conversion = (np.arange(10, dtype=float) + 1) * 1000
-    map_ds = map_ds.rename({"esa_energy_step": "energy"})
-    map_ds = map_ds.assign_coords(
-        energy=esa_energy_step_conversion[map_ds["energy"].values]
-    )
-    map_ds = map_ds.drop("esa_energy_step_label")
-    map_ds["energy_label"] = xr.DataArray(
-        map_ds["energy"].values.astype(str),
-        name="energy_label",
-        dims=["energy"],
-    )
-    # TODO: get the correct energy delta values
-    map_ds["energy_delta_minus"] = xr.full_like(map_ds["energy"], np.nan)
-    map_ds["energy_delta_plus"] = xr.full_like(map_ds["energy"], np.nan)
 
     # TODO: Figure out how to compute obs_date_range (stddev of obs_date)
-    map_ds["obs_date_range"] = xr.zeros_like(map_ds["obs_date"])
+    rect_map.data_1d["obs_date_range"] = xr.zeros_like(rect_map.data_1d["obs_date"])
 
-    return map_ds
+    # Rename and convert coordinate from esa_energy_step energy
+    # TODO: the correct conversion from esa_energy_step to esa_energy
+    esa_energy_step_conversion = (np.arange(10, dtype=float) + 1) * 1000
+    rect_map.data_1d = rect_map.data_1d.rename({"esa_energy_step": "energy"})
+    rect_map.data_1d = rect_map.data_1d.assign_coords(
+        energy=esa_energy_step_conversion[rect_map.data_1d["energy"].values]
+    )
+    # Set the energy_step_delta values
+    # TODO: get the correct energy delta values (they are set to NaN) in
+    #    rect_map.build_cdf_dataset()
+
+    rect_map.data_1d = rect_map.data_1d.drop("esa_energy_step_label")
+
+    return rect_map
 
 
 def calculate_ena_signal_rates(map_ds: xr.Dataset) -> dict[str, xr.DataArray]:
