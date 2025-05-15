@@ -266,7 +266,7 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
     able_to_be_validated = [
         "hi-counters-aggregated",
         "hi-counters-singles",
-        "hi-omnihi-priority",
+        "hi-omni",
         "hi-sectored",
         "hi-pha",
         "lo-counters-aggregated",
