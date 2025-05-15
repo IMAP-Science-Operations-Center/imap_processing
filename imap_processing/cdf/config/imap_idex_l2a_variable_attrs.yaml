@@ -20,7 +20,7 @@ fit_parameter_base: &fit_parameter_base
   DICT_KEY: SPASE>Particle>ParticleType:Dust>ParticleQuantity:Current>Qualifier:Fit # TODO quantity should be charge but there is no SPASE charge
 
 impact_charge_base: &impact_charge_base
-  UNITS: C
+  UNITS: pC
   VALIDMIN: *int_fillval
   VALIDMAX: *int_maxval
   VAR_TYPE: data
