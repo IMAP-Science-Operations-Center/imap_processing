@@ -236,8 +236,9 @@ class CoDICEL1aPipeline:
 
             # However, CoDICE-Hi products use specific energy bins for the
             # energy dimension
-            # TODO: This will be expanded to all CoDICE-Hi products once I
-            #       can validate them. For now, just operate on hi-sectored
+            # TODO: This bit of code may no longer be needed once I can figure
+            #       out how to run hi-sectored product through the
+            #       create_binned_dataset function
             if self.config["dataset_name"] == "imap_codice_l1a_hi-sectored":
                 dims = [
                     f"energy_{variable_name}" if item == "esa_step" else item
@@ -586,6 +587,9 @@ def create_binned_dataset(apid: int, dataset: xr.Dataset) -> xr.Dataset:
     dataset : xarray.Dataset
         Xarray dataset containing the final processed dataset.
     """
+    # TODO: hi-sectored data product should be processed similar to hi-omni,
+    #       so I should be able to use this method.
+
     # Extract the data
     science_values = [packet.data for packet in dataset.data]
 
@@ -630,8 +634,6 @@ def create_binned_dataset(apid: int, dataset: xr.Dataset) -> xr.Dataset:
                 .reshape(num_bins, num_spins)
                 .T
             )
-            # TODO: Is this reshaping different for hi-sectored?
-            #       Double check with Joey
 
             # Now pull out the data for each spin within the species data
             for spin_data in species_data:
