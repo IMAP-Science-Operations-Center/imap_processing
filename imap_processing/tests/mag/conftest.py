@@ -1,15 +1,29 @@
 """Shared modules for MAG tests"""
 
 from pathlib import Path
+from unittest import mock
 
 import numpy as np
 import pytest
 import xarray as xr
+from imap_data_access.processing_input import AncillaryInput
 
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.mag.constants import VecSec
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.spice.time import TTJ2000_EPOCH
+from tools.ancillary.ancillary_dataset_combiner import MagAncillaryCombiner
+
+
+@pytest.fixture
+def mocks():
+    with mock.patch(
+        "tools.ancillary.ancillary_dataset_combiner.AncillaryFilePath.construct_path"
+    ) as construct_path:
+        mocks = {
+            "construct_path": construct_path,
+        }
+        yield mocks
 
 
 @pytest.fixture
@@ -73,15 +87,17 @@ def mag_test_l1b_calibration_data():
 
 
 @pytest.fixture
-def mag_test_l2_data():
+def mag_test_l2_data(mocks):
     imap_dir = Path(__file__).parent
-    cal_file = (
+    cal_path = (
         imap_dir
         / "validation"
         / "calibration"
         / "imap_mag_l2-calibration-matrices_20251017_v004.cdf"
     )
-    calibration_data = load_cdf(cal_file)
+    mocks["construct_path"].return_value = cal_path
+    processing = AncillaryInput(cal_path.name)
+    calibration_data = MagAncillaryCombiner(processing, "20251017").combined_dataset
 
     offsets_data = load_cdf(
         imap_dir
