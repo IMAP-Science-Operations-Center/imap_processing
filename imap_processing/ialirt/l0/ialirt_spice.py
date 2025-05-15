@@ -105,9 +105,7 @@ def get_x_y_axes(z_axis: NDArray) -> NDArray:
 
 
 def compute_total_rotation(
-    inertial_frames: NDArray,
-    spin_rotations: NDArray,
-    mount_matrix: NDArray
+    inertial_frames: NDArray, spin_rotations: NDArray, mount_matrix: NDArray
 ) -> NDArray:
     """
     Map instrument vectors to inertial space.
@@ -126,11 +124,9 @@ def compute_total_rotation(
     total_rotations : NDArray
         Instrument to inertial rotation matrices (N, 3, 3).
     """
-
     total_rotations = []
 
     for rotation_sc, spin in zip(inertial_frames, spin_rotations):
-
         # Multiply the three matrices: inertial, spin, and mount.
         # instrument → spacecraft → rotated spacecraft → inertial
         rotation_inst_to_inertial = rotation_sc @ spin @ mount_matrix
@@ -174,7 +170,7 @@ def transform_instrument_vectors_to_inertial(
         Array of transformed vectors in inertial frame, shape (N, 3).
 
     Notes
-    -------
+    -----
     Applies: instrument → spacecraft → spun spacecraft → inertial frame.
     """
     # Compute inertial spin axis
@@ -186,15 +182,21 @@ def transform_instrument_vectors_to_inertial(
     # Get spin rotation matrices (around Z) in the spacecraft frame
     # The spin rotation happens in the spacecraft frame, not in inertial frame.
     # In the spacecraft frame, the spin axis is always exactly [0, 0, 1]
-    spin_rotations = get_rotation_matrix(np.tile([0, 0, 1], (len(spin_phase), 1)), spin_phase)
+    spin_rotations = get_rotation_matrix(
+        np.tile([0, 0, 1], (len(spin_phase), 1)), spin_phase
+    )
 
     # Get static mount matrix
     mount_matrix = spice.pxform(instrument_frame.name, spacecraft_frame.name, 0.0)
 
     # Compute total rotations
-    total_rotations = compute_total_rotation(inertial_frames, spin_rotations, mount_matrix)
+    total_rotations = compute_total_rotation(
+        inertial_frames, spin_rotations, mount_matrix
+    )
 
     # Apply to instrument vectors
-    vectors = np.array([spice.mxv(rot, vec) for rot, vec in zip(total_rotations, instrument_vectors)])
+    vectors = np.array(
+        [spice.mxv(rot, vec) for rot, vec in zip(total_rotations, instrument_vectors)]
+    )
 
     return vectors
