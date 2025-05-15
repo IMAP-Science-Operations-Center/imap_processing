@@ -7,13 +7,14 @@ import logging
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import TypeVar
+from typing import Optional, TypeVar
 
 import astropy_healpix.healpy as hp
 import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.ena_maps.utils import map_utils, spatial_utils
 
@@ -645,6 +646,8 @@ class AbstractSkyMap(ABC):
     # Lists of variables to project using push and pull methods
     values_to_push_project: list[str]
     values_to_pull_project: list[str]
+    min_epoch: int
+    max_epoch: int
 
     # ======== Attributes required to be set in a subclass ========
     # Azimuth and elevation coordinates of each spatial pixel. The ndarray should
@@ -668,6 +671,11 @@ class AbstractSkyMap(ABC):
         # Initialize values to be used by the instrument code to push/pull
         self.values_to_push_project = []
         self.values_to_pull_project = []
+
+        # Initialize min and max epoch variables that are used to keep track of
+        # PSET epochs that get binned to the map
+        self.min_epoch = np.iinfo(np.int64).max
+        self.max_epoch = np.iinfo(np.int64).min
 
     @abstractmethod
     def to_dataset(self) -> xr.Dataset:
@@ -823,6 +831,9 @@ class AbstractSkyMap(ABC):
             # For unweighted means, we could use the number of pointing set pixels
             # that correspond to each map pixel as the weights.
             self.data_1d[value_key] += pointing_projected_values
+
+        self.min_epoch = min(self.min_epoch, pointing_set.epoch)
+        self.max_epoch = max(self.max_epoch, pointing_set.epoch)
 
     @classmethod
     def from_properties_json(
@@ -1138,6 +1149,136 @@ class RectangularSkyMap(AbstractSkyMap):
             rewrapped_data,
             coords={**self.non_spatial_coords, **self.spatial_coords},
         )
+
+    def build_cdf_dataset(
+        self,
+        instrument: str,
+        level: str,
+        frame: str,
+        descriptor: str,
+        sensor: Optional[str] = None,
+    ) -> xr.Dataset:
+        """
+        Format the data into a xarray.Dataset and add required CDF variables.
+
+        Parameters
+        ----------
+        instrument : str
+            Instrument name. "hi", "lo", "ultra".
+        level : str
+            Product level. "l2" or "l3".
+        frame : str
+            Map frame. "sf", "hf" or "hk".
+        descriptor : str
+            Descriptor for filename.
+        sensor : str, optional
+            Sensor number "45" or "90".
+
+        Returns
+        -------
+        xarray.Dataset
+            - Data is reshaped into expected shapes with coordinates:
+            (epoch, energy, longitude, latitude)
+            - Label variables are generated for coordinates other than epoch
+            - Delta variables are generated and set for spatial coordinates
+            - Delta plus/minus variables are generated and set to NaN for energy.
+        """
+        # TODO: some of this could be moved into a AbstractSkyMap method so
+        #    that HealpixSkyMap would benefit from this as well.
+
+        logger.info("Building CDF ready dataset from RectangularSkyMap data.")
+
+        cdf_ds = self.to_dataset()
+
+        # Set the value of the epoch coord
+        cdf_ds = cdf_ds.assign_coords(**{CoordNames.TIME.value: [self.min_epoch]})
+
+        # Drop variables dependent on dimensions not in L2 output
+        # Need to iterate over CoordNames.__members__ because for an Enum, labels
+        # with duplicate values are turned into aliases for the first such label.
+        l2_coords = [
+            coord_name.value
+            for name, coord_name in CoordNames.__members__.items()
+            if ("L2" in name)
+        ]
+        l2_coords.append(CoordNames.TIME.value)
+        for map_coord in cdf_ds.dims.keys():
+            if map_coord not in l2_coords:
+                cdf_ds = cdf_ds.drop_dims(map_coord)
+
+        # Add coordinate label and delta variables (not needed for epoch)
+        for coord_name in l2_coords:
+            # Label variable not needed for epoch
+            if coord_name != CoordNames.TIME.value:
+                cdf_ds[f"{coord_name}_label"] = xr.DataArray(
+                    cdf_ds[coord_name].values.astype(str),
+                    name=f"{coord_name}_label",
+                    dims=[coord_name],
+                )
+            # We can set the correct delta value of the spatial coordinates
+            if coord_name == CoordNames.TIME.value:
+                cdf_ds[f"{coord_name}_delta"] = xr.DataArray(
+                    xr.full_like(cdf_ds[coord_name], self.max_epoch - self.min_epoch),
+                    name=f"{coord_name}_delta",
+                    dims=[coord_name],
+                )
+            elif coord_name in self.spatial_coords:
+                cdf_ds[f"{coord_name}_delta"] = xr.DataArray(
+                    xr.full_like(cdf_ds[coord_name], self.spacing_deg / 2),
+                    name=f"{coord_name}_delta",
+                    dims=[coord_name],
+                )
+            # Add energy delta_minus and delta_plus variables
+            elif coord_name == CoordNames.ENERGY_L2.value:
+                cdf_ds[f"{coord_name}_delta_minus"] = xr.DataArray(
+                    xr.full_like(cdf_ds[coord_name], np.nan),
+                    name=f"{coord_name}_delta",
+                    dims=[coord_name],
+                )
+                cdf_ds[f"{coord_name}_delta_plus"] = xr.DataArray(
+                    xr.full_like(cdf_ds[coord_name], np.nan),
+                    name=f"{coord_name}_delta",
+                    dims=[coord_name],
+                )
+
+        # Object which holds CDF attributes for the map
+        cdf_attrs = ImapCdfAttributes()
+        cdf_attrs.add_instrument_global_attrs(instrument=instrument)
+        cdf_attrs.add_instrument_variable_attrs(instrument="enamaps", level="l2-common")
+        # Load rectangular map specific variable attributes
+        cdf_attrs.add_instrument_variable_attrs(
+            instrument="enamaps", level="l2-rectangular"
+        )
+
+        # Now set global attributes
+        map_attrs = cdf_attrs.get_global_attributes(
+            f"imap_{instrument}_{level}_enamap-{frame}"
+        )
+        map_attrs["Spacing_degrees"] = str(self.spacing_deg)
+        for key in ["Data_type", "Logical_source", "Logical_source_description"]:
+            map_attrs[key] = map_attrs[key].format(
+                descriptor=descriptor,
+                sensor=sensor,
+            )
+            # Always add the following attributes to the map
+        map_attrs.update(
+            {
+                "Sky_tiling_type": self.tiling_type.value,
+                "Spice_reference_frame": self.spice_reference_frame.name,
+            }
+        )
+        cdf_ds.attrs.update(map_attrs)
+
+        # Set the variable attributes
+        for var in [*cdf_ds.data_vars, *cdf_ds.coords]:
+            cdf_ds[var].attrs.update(
+                cdf_attrs.get_variable_attributes(
+                    variable_name=var,
+                    check_schema=False,
+                )
+            )
+
+        return cdf_ds
 
     def to_properties_dict(self) -> dict:
         """

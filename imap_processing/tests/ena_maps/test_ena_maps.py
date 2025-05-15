@@ -465,6 +465,72 @@ class TestRectangularSkyMap:
             ),
         )
 
+    @mock.patch("imap_processing.ena_maps.ena_maps.RectangularSkyMap.to_dataset")
+    def test_build_cdf_dataset(self, mock_to_dataset):
+        """Test coverage for the RectangularSkyMap.build_cdf_dataset method."""
+        # Set up the mock
+        coord_sizes = {
+            CoordNames.TIME.value: 1,
+            CoordNames.ENERGY_L2.value: 5,
+            CoordNames.AZIMUTH_L2.value: 20,
+            CoordNames.ELEVATION_L2.value: 10,
+            "foo_coord": 2,
+        }
+        mock_dataset = xr.Dataset(
+            coords={
+                key: xr.DataArray(
+                    np.arange(value),
+                    name=key,
+                    dims=[key],
+                )
+                for key, value in coord_sizes.items()
+            }
+        )
+        # Add ena intensity variable
+        mock_dataset["ena_intensity"] = xr.DataArray(
+            np.ones(tuple(s for s in coord_sizes.values())[:-1]),
+            name="ena_intesity",
+            dims=[k for k in coord_sizes.keys()][:-1],
+        )
+        # Add one variable that is expected to get removed
+        mock_dataset["foo_var"] = xr.DataArray(
+            np.ones(tuple(s for s in coord_sizes.values())),
+            name="foo_var",
+            dims=[k for k in coord_sizes.keys()],
+        )
+        mock_to_dataset.return_value = mock_dataset
+
+        skymap = ena_maps.RectangularSkyMap(6, geometry.SpiceFrame.ECLIPJ2000)
+        skymap.min_epoch = 10
+        skymap.max_epoch = 15
+        cdf_dataset = skymap.build_cdf_dataset(
+            "hi", "l2", "sf", "foo_descriptor", sensor="45"
+        )
+
+        # Check that expected var gets removed
+        assert "foo_var" not in cdf_dataset
+        # Check the epoch values
+        assert CoordNames.TIME.value in cdf_dataset
+        assert cdf_dataset[CoordNames.TIME.value].values[0] == skymap.min_epoch
+        assert f"{CoordNames.TIME.value}_delta" in cdf_dataset
+        assert (
+            cdf_dataset[f"{CoordNames.TIME.value}_delta"].values[0]
+            == skymap.max_epoch - skymap.min_epoch
+        )
+
+        assert CoordNames.ENERGY_L2.value in cdf_dataset
+        assert f"{CoordNames.ENERGY_L2.value}_delta_plus" in cdf_dataset
+        assert f"{CoordNames.ENERGY_L2.value}_delta_minus" in cdf_dataset
+        assert f"{CoordNames.ENERGY_L2.value}_label" in cdf_dataset
+
+        assert CoordNames.AZIMUTH_L2.value in cdf_dataset
+        assert f"{CoordNames.AZIMUTH_L2.value}_delta" in cdf_dataset
+        assert f"{CoordNames.AZIMUTH_L2.value}_label" in cdf_dataset
+
+        assert CoordNames.ELEVATION_L2.value in cdf_dataset
+        assert f"{CoordNames.ELEVATION_L2.value}_delta" in cdf_dataset
+        assert f"{CoordNames.ELEVATION_L2.value}_label" in cdf_dataset
+
 
 class TestHealpixSkyMap:
     @pytest.fixture(autouse=True)
