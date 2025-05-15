@@ -65,6 +65,8 @@ class CoDICEL1aPipeline:
         Define and add the appropriate data variables to the dataset.
     define_dimensions()
         Define the dimensions of the data arrays for the final dataset.
+    define_energy_bins()
+        Define/add variables to the dataset that correspond to the energy bins.
     define_support_variables()
         Define and add 'support' CDF data variables to the dataset.
     get_acquisition_times()
@@ -236,8 +238,9 @@ class CoDICEL1aPipeline:
 
             # However, CoDICE-Hi products use specific energy bins for the
             # energy dimension
-            # TODO: This will be expanded to all CoDICE-Hi products once I
-            #       can validate them. For now, just operate on hi-sectored
+            # TODO: This bit of code may no longer be needed once I can figure
+            #       out how to run hi-sectored product through the
+            #       create_binned_dataset function
             if self.config["dataset_name"] == "imap_codice_l1a_hi-sectored":
                 dims = [
                     f"energy_{variable_name}" if item == "esa_step" else item
@@ -257,10 +260,56 @@ class CoDICEL1aPipeline:
 
         # For CoDICE-Hi products, since energy dimension was replaced, we no
         # longer need the "esa_step" coordinate
-        # TODO: This will be expanded to all CoDICE-Hi products once I
-        #       can validate them. For now, just operate on hi-sectored
+        # TODO: This bit of code may no longer be needed once I can figure
+        #       out how to run hi-sectored product through the
+        #       create_binned_dataset function
         if self.config["dataset_name"] == "imap_codice_l1a_hi-sectored":
+            for species in self.config["energy_table"]:
+                dataset = self.define_energy_bins(dataset, species)
             dataset = dataset.drop_vars("esa_step")
+
+        return dataset
+
+    def define_energy_bins(self, dataset: xr.Dataset, species: str) -> xr.Dataset:
+        """
+        Define/add variables to the dataset that correspond to the energy bins.
+
+        For hi-omni and hi-sectored data products specifically, the L1a data
+        product contains the energy bin centers and deltas. This method
+        handles adding these bins as CDF variables and their attributes.
+
+        Parameters
+        ----------
+        dataset : xarray.Dataset
+            ``xarray`` dataset for the data product.
+        species : str
+            The species for which to add the energy bins (e.g. "he3").
+
+        Returns
+        -------
+        dataset : xarray.Dataset
+            ``xarray`` dataset for the data product, with added energy variables.
+        """
+        energy_bin_name = f"energy_{species}"
+        centers, deltas = self.get_hi_energy_table_data(
+            energy_bin_name.split("energy_")[-1]
+        )
+
+        # Add bin centers and deltas to the dataset
+        dataset[energy_bin_name] = xr.DataArray(
+            centers,
+            dims=[energy_bin_name],
+            attrs=self.cdf_attrs.get_variable_attributes(
+                f"{self.config['dataset_name'].split('_')[-1]}-{energy_bin_name}"
+            ),
+        )
+        dataset[f"{energy_bin_name}_delta"] = xr.DataArray(
+            deltas,
+            dims=[f"{energy_bin_name}_delta"],
+            attrs=self.cdf_attrs.get_variable_attributes(
+                f"{self.config['dataset_name'].split('_')[-1]}-{energy_bin_name}_delta"
+            ),
+        )
 
         return dataset
 
@@ -290,88 +339,52 @@ class CoDICEL1aPipeline:
             "st_bias_gain_mode",
         ]
 
-        hi_energy_table_variables = [
-            "energy_h",
-            "energy_he3",
-            "energy_he4",
-            "energy_c",
-            "energy_o",
-            "energy_ne_mg_si",
-            "energy_fe",
-            "energy_uh",
-            "energy_junk",
-            "energy_he3he4",
-            "energy_cno",
-        ]
-
         for variable_name in self.config["support_variables"]:
-            # CoDICE-Hi energy tables are treated differently because values
-            # are binned and we need to record the energies _and_ their deltas
-            if variable_name in hi_energy_table_variables:
-                centers, deltas = self.get_hi_energy_table_data(
-                    variable_name.split("energy_")[-1]
+            # These variables require reading in external tables
+            if variable_name == "energy_table":
+                variable_data = self.get_energy_table()
+                dims = ["esa_step"]
+                attrs = self.cdf_attrs.get_variable_attributes("energy_table")
+
+            elif variable_name == "acquisition_time_per_step":
+                variable_data = self.get_acquisition_times()
+                dims = ["esa_step"]
+                attrs = self.cdf_attrs.get_variable_attributes(
+                    "acquisition_time_per_step"
                 )
 
-                # Add bin centers and deltas to the dataset
-                dataset[variable_name] = xr.DataArray(
-                    centers,
-                    dims=[variable_name],
-                    attrs=self.cdf_attrs.get_variable_attributes(
-                        f"{self.config['dataset_name'].split('_')[-1]}-{variable_name}"
-                    ),
-                )
-                dataset[f"{variable_name}_delta"] = xr.DataArray(
-                    deltas,
-                    dims=[f"{variable_name}_delta"],
-                    attrs=self.cdf_attrs.get_variable_attributes(
-                        f"{self.config['dataset_name'].split('_')[-1]}-{variable_name}_delta"
-                    ),
-                )
+            # These variables can be gathered straight from the packet data
+            elif variable_name in packet_data_variables:
+                variable_data = self.dataset[variable_name].data
+                dims = ["epoch"]
+                attrs = self.cdf_attrs.get_variable_attributes(variable_name)
 
-            # Otherwise, support variable data can be gathered from nominal
-            # lookup tables or packet data
-            else:
-                # These variables require reading in external tables
-                if variable_name == "energy_table":
-                    variable_data = self.get_energy_table()
-                    dims = ["esa_step"]
-                    attrs = self.cdf_attrs.get_variable_attributes("energy_table")
+            # Data quality is named differently in packet data and needs to be
+            # treated slightly differently
+            elif variable_name == "data_quality":
+                if "hi-omni" in self.config["dataset_name"]:
+                    continue
+                variable_data = self.dataset.suspect.data
+                dims = ["epoch"]
+                attrs = self.cdf_attrs.get_variable_attributes("data_quality")
 
-                elif variable_name == "acquisition_time_per_step":
-                    variable_data = self.get_acquisition_times()
-                    dims = ["esa_step"]
-                    attrs = self.cdf_attrs.get_variable_attributes(
-                        "acquisition_time_per_step"
-                    )
+            # Spin period requires the application of a conversion factor
+            # See Table B.5 in the algorithm document
+            elif variable_name == "spin_period":
+                if "hi-omni" in self.config["dataset_name"]:
+                    continue
+                variable_data = (
+                    self.dataset.spin_period.data * constants.SPIN_PERIOD_CONVERSION
+                ).astype(np.float32)
+                dims = ["epoch"]
+                attrs = self.cdf_attrs.get_variable_attributes("spin_period")
 
-                # These variables can be gathered straight from the packet data
-                elif variable_name in packet_data_variables:
-                    variable_data = self.dataset[variable_name].data
-                    dims = ["epoch"]
-                    attrs = self.cdf_attrs.get_variable_attributes(variable_name)
-
-                # Data quality is named differently in packet data and needs to be
-                # treated slightly differently
-                elif variable_name == "data_quality":
-                    variable_data = self.dataset.suspect.data
-                    dims = ["epoch"]
-                    attrs = self.cdf_attrs.get_variable_attributes("data_quality")
-
-                # Spin period requires the application of a conversion factor
-                # See Table B.5 in the algorithm document
-                elif variable_name == "spin_period":
-                    variable_data = (
-                        self.dataset.spin_period.data * constants.SPIN_PERIOD_CONVERSION
-                    ).astype(np.float32)
-                    dims = ["epoch"]
-                    attrs = self.cdf_attrs.get_variable_attributes("spin_period")
-
-                # Add variable to the dataset
-                dataset[variable_name] = xr.DataArray(
-                    variable_data,
-                    dims=dims,
-                    attrs=attrs,
-                )
+            # Add variable to the dataset
+            dataset[variable_name] = xr.DataArray(
+                variable_data,
+                dims=dims,
+                attrs=attrs,
+            )
 
         return dataset
 
@@ -556,6 +569,143 @@ class CoDICEL1aPipeline:
         self.cdf_attrs = ImapCdfAttributes()
         self.cdf_attrs.add_instrument_global_attrs("codice")
         self.cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
+
+
+def create_binned_dataset(apid: int, dataset: xr.Dataset) -> xr.Dataset:
+    """
+    Create dataset for data that is binned by energy.
+
+    This applies to the ``hi-omni`` and ``hi-sectored`` datasets. In addition to
+    data for species (e.g. ``h``, ``c``, ``o``, etc.), we add CDF variables
+    for their respective energy bin centers and deltas (e.g. ``energy_h``,
+    ``energy_h_delta``, etc.)
+
+    Parameters
+    ----------
+    apid : int
+        The APID of the packet.
+    dataset : xarray.Dataset
+        The packets to process.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Xarray dataset containing the final processed dataset.
+    """
+    # TODO: hi-sectored data product should be processed similar to hi-omni,
+    #       so I should be able to use this method.
+
+    # Extract the data
+    science_values = [packet.data for packet in dataset.data]
+
+    # Get the four "main" parameters for processing
+    table_id, plan_id, plan_step, view_id = get_params(dataset)
+
+    # Run some of the pipeline methods to set configs and decompress
+    # the data
+    pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
+    pipeline.set_data_product_config(apid, dataset)
+    pipeline.decompress_data(science_values)
+
+    # hi-omni data gets reshaped a bit differently than other products,
+    # so we need to stray away from the nominal pipeline
+    stacked_data = np.stack(
+        [np.array(item, dtype=np.uint32) for item in pipeline.raw_data]
+    )
+
+    # This will hold all of the data per-species and support variables,
+    # ready to be put in a CDF file
+    data: dict[str, list] = {}
+    for species in pipeline.config["energy_table"]:
+        data[species] = []
+    data["epoch"] = []
+    data["spin_period"] = []
+    data["data_quality"] = []
+
+    # Get the number of spins per species
+    num_spins = pipeline.config["num_spins"]
+
+    # Iterate through each epoch's data and pull out the data for each
+    # species
+    for i, epoch in enumerate(stacked_data):
+        current_epoch = dataset.epoch.data[i]
+        position = 0
+        for species in pipeline.config["energy_table"]:
+            num_bins = (
+                len(pipeline.config["energy_table"][species]) - 1
+            )  # Subtracting one here since the table includes endpoints
+            species_data = (
+                epoch[position : position + num_bins * pipeline.config["num_spins"]]
+                .reshape(num_bins, num_spins)
+                .T
+            )
+
+            # Now pull out the data for each spin within the species data
+            for spin_data in species_data:
+                data[species].append(spin_data)
+
+                # We only need one set of support variables in the CDF,
+                # so just iterate using one species for these
+                if species == "h":
+                    # For each spin, we add <spin_period>*<num_spins> to the epoch value
+                    spin_period = (
+                        dataset.spin_period.data[i] * constants.SPIN_PERIOD_CONVERSION
+                    )
+                    epoch_value = current_epoch + np.int64(
+                        (spin_period * num_spins) * 1e9  # Convert from s to ns
+                    )
+                    data["epoch"].append(epoch_value)
+                    current_epoch = epoch_value
+
+                    # Other support variables
+                    data["spin_period"].append(spin_period)
+                    data["data_quality"].append(dataset.suspect.data[i])
+
+            position += num_bins * num_spins
+
+    # Create the main dataset to hold all the variables
+    coord = xr.DataArray(
+        np.array(data["epoch"], dtype=np.uint64),
+        name="epoch",
+        dims=["epoch"],
+        attrs=pipeline.cdf_attrs.get_variable_attributes("epoch"),
+    )
+    dataset = xr.Dataset(
+        coords={"epoch": coord},
+        attrs=pipeline.cdf_attrs.get_global_attributes(pipeline.config["dataset_name"]),
+    )
+
+    # Add the data variables
+    for species in pipeline.config["energy_table"]:
+        # Add the species data to the dataset
+        values = np.array(data[species], dtype=np.uint32)
+        attrs = pipeline.cdf_attrs.get_variable_attributes(f"hi-omni-{species}")
+        dims = ["epoch", f"energy_{species}"]
+        dataset[species] = xr.DataArray(
+            values,
+            name=species,
+            dims=dims,
+            attrs=attrs,
+        )
+
+        # Add the energy bins to the dataset
+        dataset = pipeline.define_energy_bins(dataset, species)
+
+    # Add support variables to the dataset
+    dataset["spin_period"] = xr.DataArray(
+        np.array(data["spin_period"]),
+        name="spin_period",
+        dims=["epoch"],
+        attrs=pipeline.cdf_attrs.get_variable_attributes("spin_period"),
+    )
+    dataset["data_quality"] = xr.DataArray(
+        np.array(data["data_quality"]),
+        name="data_quality",
+        dims=["epoch"],
+        attrs=pipeline.cdf_attrs.get_variable_attributes("data_quality"),
+    )
+
+    return dataset
 
 
 def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
@@ -1027,6 +1177,11 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
         # Event data
         elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
             processed_dataset = create_direct_event_dataset(apid, dataset)
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+
+        # hi-omni data
+        elif apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
+            processed_dataset = create_binned_dataset(apid, dataset)
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # Everything else

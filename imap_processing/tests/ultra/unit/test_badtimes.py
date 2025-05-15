@@ -32,7 +32,7 @@ def test_calculate_badtimes():
 
     ds = xr.Dataset(
         {
-            "epoch": np.array([0, 1, 2, 3], dtype="datetime64[ns]"),
+            "epoch": (("spin_number",), np.array([0, 1, 2, 3], dtype="datetime64[ns]")),
             "quality_attitude": (("spin_number",), quality_attitude),
             "quality_ena_rates": (
                 ("energy_bin_geometric_mean", "spin_number"),
@@ -77,7 +77,7 @@ def test_calculate_badtimes_empty():
 
     ds = xr.Dataset(
         {
-            "epoch": np.array([0, 1, 2], dtype="datetime64[ns]"),
+            "epoch": (("spin_number",), np.array([0, 1, 2], dtype="datetime64[ns]")),
             "quality_attitude": (("spin_number",), quality_attitude),
             "quality_ena_rates": (
                 ("energy_bin_geometric_mean", "spin_number"),

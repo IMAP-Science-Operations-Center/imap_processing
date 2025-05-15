@@ -876,8 +876,10 @@ class Lo(ProcessInstrument):
                 )
                 dataset = load_cdf(science_files[0])
                 data_dict[dataset.attrs["Logical_source"]] = dataset
-            # TODO: This is returning the wrong type
-            datasets = lo_l1c.lo_l1c(data_dict)
+                # TODO: add dependencies to S3 and dependency tree
+                #  setting to empty for now
+            anc_depedencies: list = []
+            datasets = lo_l1c.lo_l1c(data_dict, anc_depedencies)
 
         return datasets
 

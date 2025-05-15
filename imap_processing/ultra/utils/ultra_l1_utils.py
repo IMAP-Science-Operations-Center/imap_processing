@@ -1,5 +1,6 @@
 """Create dataset."""
 
+import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
@@ -37,7 +38,7 @@ def create_dataset(
             "spin_number": data_dict["spin_number"],
             "energy_bin_geometric_mean": data_dict["energy_bin_geometric_mean"],
             # Start time aligns with the universal spin table
-            "epoch": data_dict["epoch"],
+            "epoch": ("spin_number", np.asarray(data_dict["epoch"])),
         }
         default_dimension = "spin_number"
     # L1c pset data products

@@ -396,9 +396,7 @@ hi-omni-h:
     CATDESC: Omnidirectional H Counts
     FIELDNAM: H
     DEPEND_1: esa_step
-    DEPEND_2: inst_az
     LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
 
 hi-omni-energy_h:
     <<: *hi_energies_default
@@ -416,9 +414,7 @@ hi-omni-he3:
     CATDESC: Omnidirectional He3 Counts
     FIELDNAM: He3
     DEPEND_1: esa_step
-    DEPEND_2: inst_az
     LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
 
 hi-omni-energy_he3:
     <<: *hi_energies_default
@@ -436,9 +432,7 @@ hi-omni-he4:
     CATDESC: Omnidirectional He4 Counts
     FIELDNAM: He4
     DEPEND_1: esa_step
-    DEPEND_2: inst_az
     LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
 
 hi-omni-energy_he4:
     <<: *hi_energies_default
@@ -456,9 +450,7 @@ hi-omni-c:
     CATDESC: Omnidirectional C Counts
     FIELDNAM: C
     DEPEND_1: esa_step
-    DEPEND_2: inst_az
     LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
 
 hi-omni-energy_c:
     <<: *hi_energies_default
@@ -476,9 +468,7 @@ hi-omni-o:
     CATDESC: Omnidirectional O Counts
     FIELDNAM: O
     DEPEND_1: esa_step
-    DEPEND_2: inst_az
     LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
 
 hi-omni-energy_o:
     <<: *hi_energies_default
@@ -496,9 +486,7 @@ hi-omni-ne_mg_si:
     CATDESC: Omnidirectional Ne_Mg_Si Counts
     FIELDNAM: Ne_Mg_Si
     DEPEND_1: esa_step
-    DEPEND_2: inst_az
     LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
 
 hi-omni-energy_ne_mg_si:
     <<: *hi_energies_default
@@ -516,9 +504,7 @@ hi-omni-fe:
     CATDESC: Omnidirectional Fe Counts
     FIELDNAM: Fe
     DEPEND_1: esa_step
-    DEPEND_2: inst_az
     LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
 
 hi-omni-energy_fe:
     <<: *hi_energies_default
@@ -536,9 +522,7 @@ hi-omni-uh:
     CATDESC: Omnidirectional UH Counts
     FIELDNAM: UH
     DEPEND_1: esa_step
-    DEPEND_2: inst_az
     LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
 
 hi-omni-energy_uh:
     <<: *hi_energies_default
@@ -556,9 +540,7 @@ hi-omni-junk:
     CATDESC: Junk (Root 2 spacing)
     FIELDNAM: Junk
     DEPEND_1: esa_step
-    DEPEND_2: inst_az
     LABL_PTR_1: esa_step
-    LABL_PTR_2: inst_az
 
 hi-omni-energy_junk:
     <<: *hi_energies_default

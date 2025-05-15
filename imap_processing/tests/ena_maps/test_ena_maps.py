@@ -1160,10 +1160,12 @@ class TestAbstractSkyMap:
     def test_to_dict_and_from_dict(self, skymap_props_dict):
         """Test serialization to and from dictionary"""
         # Make a SkyMap from the original properties dict
-        skymap_from_dict = ena_maps.AbstractSkyMap.from_dict(skymap_props_dict)
+        skymap_from_dict = ena_maps.AbstractSkyMap.from_properties_dict(
+            skymap_props_dict
+        )
 
         # Use the SkyMap to create a new properties dict
-        dict_from_skymap = skymap_from_dict.to_dict()
+        dict_from_skymap = skymap_from_dict.to_properties_dict()
 
         assert (
             skymap_from_dict.spice_reference_frame
@@ -1243,13 +1245,15 @@ class TestAbstractSkyMap:
             temp_file_path_input = temp_file.name
 
         # Read the json file and create a new SkyMap from it
-        skymap_from_json = ena_maps.AbstractSkyMap.from_json(temp_file_path_input)
+        skymap_from_json = ena_maps.AbstractSkyMap.from_properties_json(
+            temp_file_path_input
+        )
 
         # Create json output from the SkyMap at a separate temporary file path
         temp_file_path_output = tempfile.NamedTemporaryFile(
             delete=False, suffix=".json", mode="w"
         ).name
-        skymap_from_json.to_json(json_path=temp_file_path_output)
+        skymap_from_json.to_properties_json(json_path=temp_file_path_output)
 
         assert skymap_from_json.spice_reference_frame == geometry.SpiceFrame.ECLIPJ2000
         assert skymap_from_json.tiling_type is ena_maps.SkyTilingType.HEALPIX

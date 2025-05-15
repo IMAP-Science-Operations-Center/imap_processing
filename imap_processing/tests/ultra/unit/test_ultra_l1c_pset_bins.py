@@ -10,6 +10,7 @@ from imap_processing.ultra.l1c import ultra_l1c_pset_bins
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     get_background_rates,
+    get_energy_delta_minus_plus,
     get_helio_exposure_times,
     get_helio_histogram,
     get_spacecraft_exposure_times,
@@ -56,6 +57,28 @@ def test_build_energy_bins():
     np.testing.assert_allclose(
         energy_bin_geometric_means, expected_geometric_means, atol=1e-4
     )
+
+
+def test_get_energy_delta_minus_plus(monkeypatch):
+    """Tests get_energy_delta_minus_plus function."""
+    # Mock fixed values for the energy bins - these are not the actual geometric means
+    mock_intervals = [(0, 1), (1, 5), (5, 20), (20, 1234)]
+    mock_midpoints = None
+    mock_geometric_means = np.array([0, 2, 7, 100])
+
+    expected_bins_energy_delta_plus = np.array([1, 3, 13, 1134])
+    expected_bins_energy_delta_minus = np.array([0, 1, 2, 80])
+
+    def mock_build_energy_bins():
+        return mock_intervals, mock_midpoints, mock_geometric_means
+
+    monkeypatch.setattr(
+        ultra_l1c_pset_bins, "build_energy_bins", mock_build_energy_bins
+    )
+
+    bins_energy_delta_minus, bins_energy_delta_plus = get_energy_delta_minus_plus()
+    assert np.array_equal(bins_energy_delta_plus, expected_bins_energy_delta_plus)
+    assert np.array_equal(bins_energy_delta_minus, expected_bins_energy_delta_minus)
 
 
 def test_get_spacecraft_histogram(test_data):

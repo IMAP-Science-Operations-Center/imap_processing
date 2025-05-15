@@ -25,7 +25,7 @@ def test_calculate_cullingmask_attitude():
 
     ds = xr.Dataset(
         {
-            "epoch": np.array([0, 1, 2, 3], dtype="datetime64[ns]"),
+            "epoch": (("spin_number",), np.array([0, 1], dtype="datetime64[ns]")),
             "quality_attitude": (("spin_number",), quality_attitude),
             "quality_ena_rates": (
                 ("energy_bin_geometric_mean", "spin_number"),
@@ -77,7 +77,7 @@ def test_calculate_cullingmask_rates():
             "spin_start_time": (("spin_number",), spin_start_time),
         },
         coords={
-            "epoch": np.array([0, 1, 2, 3], dtype="datetime64[ns]"),
+            "epoch": (("spin_number",), np.array([0, 1, 2, 3], dtype="datetime64[ns]")),
             "spin_number": spin_numbers,
             "energy_bin_geometric_mean": energy_bins,
         },
@@ -108,7 +108,7 @@ def test_calculate_cullingmask_empty():
 
     ds = xr.Dataset(
         {
-            "epoch": np.array([0, 1, 2], dtype="datetime64[ns]"),
+            "epoch": (("spin_number",), np.array([0, 1, 2], dtype="datetime64[ns]")),
             "quality_attitude": (("spin_number",), quality_attitude),
             "quality_ena_rates": (
                 ("energy_bin_geometric_mean", "spin_number"),
