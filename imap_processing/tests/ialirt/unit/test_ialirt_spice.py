@@ -6,6 +6,7 @@ import spiceypy
 
 from imap_processing.ialirt.l0.ialirt_spice import (
     get_rotation_matrix,
+    get_x_y_axes,
     get_z_axis,
     transform_instrument_vectors_to_inertial,
 )
@@ -70,6 +71,32 @@ def test_get_rotation_matrix():
         ]
     )
     assert np.allclose(x_rot, expected, atol=1e-8)
+
+
+def test_get_x_y_axes():
+    """Tests get_x_y_axes function."""
+
+    z_axis = np.array(
+        [
+            [1.0, 0.0, 0.0],  # RA=0, Dec=0 → +X
+            [0.0, 1.0, 0.0],  # RA=90°, Dec=0° → +Y
+            [0.0, 0.0, 1.0],  # RA=0°, Dec=90° → +Z
+        ]
+    )
+    x_axis, y_axis = get_x_y_axes(z_axis)
+
+    # Check that the axes are unit vectors.
+    assert np.allclose(np.linalg.norm(x_axis, axis=1), 1.0, atol=1e-6)
+    assert np.allclose(np.linalg.norm(y_axis, axis=1), 1.0, atol=1e-6)
+
+    # Check each pair of vectors is 90 degrees apart.
+    assert np.allclose(np.sum(x_axis * y_axis, axis=1), 0.0, atol=1e-6)
+    assert np.allclose(np.sum(x_axis * z_axis, axis=1), 0.0, atol=1e-6)
+    assert np.allclose(np.sum(y_axis * z_axis, axis=1), 0.0, atol=1e-6)
+
+    # Check cross(X, Y) = Z.
+    reconstructed_z = np.cross(x_axis, y_axis)
+    assert np.allclose(reconstructed_z, z_axis, atol=1e-6)
 
 
 def test_transform_instrument_vectors_to_inertial_no_spice(spice_test_data_path):

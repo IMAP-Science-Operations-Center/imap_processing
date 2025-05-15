@@ -102,7 +102,7 @@ def get_x_y_axes(z_axis: NDArray) -> tuple[NDArray, NDArray]:
         Array of shape (N, 3) perpendicular to z_axis.
     """
     # Pick a fixed reference vector.
-    v_ref = np.array([0, 1, 0])
+    v_ref = np.array([0, 0, 1])
 
     # Detect if z_axis is nearly aligned with v_ref.
     dot_products = np.dot(z_axis, v_ref)
@@ -112,14 +112,17 @@ def get_x_y_axes(z_axis: NDArray) -> tuple[NDArray, NDArray]:
     v_refs = np.tile(v_ref, (z_axis.shape[0], 1))
     v_refs[too_parallel] = np.array([1, 0, 0])
 
-    # Compute a temporary X-axis: perpendicular to both v_ref and z_axis.
-    x_temp = np.cross(v_refs, z_axis)
-    x_axis = x_temp / np.linalg.norm(x_temp, axis=-1, keepdims=True)
+    # Compute a temporary Y-axis: perpendicular to both z_axis and v_ref.
+    y_temp = np.cross(z_axis, v_refs)
+    # Make it a unit vector.
+    y_axis = y_temp / np.linalg.norm(y_temp, axis=-1, keepdims=True)
 
-    # Take the cross product to get the Y-axis.
-    y_axis = np.cross(z_axis, x_axis)
+    # Take the cross product to get the X-axis.
+    x_axis = np.cross(y_axis, z_axis)
 
-    return x_axis, y_axis
+    frames = np.stack([x_axis, y_axis, z_axis], axis=1)
+
+    return frames
 
 
 def get_instrument_mount_matrix(instrument_frame: SpiceFrame, spacecraft_frame: SpiceFrame) -> NDArray:
