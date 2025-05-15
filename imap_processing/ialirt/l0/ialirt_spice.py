@@ -6,7 +6,6 @@ from numpy.typing import NDArray
 
 from imap_processing.spice.geometry import (
     SpiceFrame,
-    frame_transform,
     spherical_to_cartesian,
 )
 
@@ -74,40 +73,6 @@ def get_rotation_matrix(z_axis: NDArray, spin_phase: NDArray) -> NDArray:
     return rot_matrices
 
 
-def compute_sc_to_inertial_rotation_matrix_from_z(
-    z_axis: NDArray,
-    spin_phase: NDArray,
-) -> NDArray:
-    """
-    Replace SPICE pxform('IMAP_SPACECRAFT', 'ECLIPJ2000', et)
-    using onboard spin axis and spin phase.
-
-    Returns matrix such that: inertial = R @ spacecraft_vector
-    """
-    R_all = []
-
-    for z, phi in zip(z_axis, spin_phase):
-        # Choose reference orthogonal to z
-        ref = np.array([0.0, 0.0, 1.0]) if not np.allclose(z, [0, 0, 1.0]) else np.array([1.0, 0.0, 0.0])
-        y0 = np.cross(z, ref)
-        y0 /= np.linalg.norm(y0)
-        x0 = np.cross(y0, z)
-
-        # Spin rotation in XY plane
-        cos_phi, sin_phi = np.cos(phi), np.sin(phi)
-        x_rot = cos_phi * x0 + sin_phi * y0
-        y_rot = -sin_phi * x0 + cos_phi * y0
-
-        # Columns = spacecraft axes in inertial frame:
-        # SPICE: Zsc → X, Ysc → Y, Xsc → Z
-        R = np.stack([x_rot, y_rot, z], axis=1)
-        R_all.append(R)
-
-    return np.stack(R_all)
-
-
-
-
 def transform_instrument_vectors_to_inertial(
     instrument_vectors: NDArray,
     spin_phase: NDArray,
@@ -126,7 +91,11 @@ def transform_instrument_vectors_to_inertial(
     inertial_frames = []
     for z in z_axis:
         # Pick a reference not parallel to z
-        ref = np.array([0.0, 0.0, 1.0]) if not np.allclose(z, [0, 0, 1.0]) else np.array([1.0, 0.0, 0.0])
+        ref = (
+            np.array([0.0, 0.0, 1.0])
+            if not np.allclose(z, [0, 0, 1.0])
+            else np.array([1.0, 0.0, 0.0])
+        )
         y = np.cross(z, ref)
         y /= np.linalg.norm(y)
         x = np.cross(y, z)
@@ -141,16 +110,13 @@ def transform_instrument_vectors_to_inertial(
     R_mount = spice.pxform(instrument_frame.name, spacecraft_frame.name, 0.0)
 
     # Final transform: inertial = R_sc @ spin @ R_mount @ instrument_vector
-    rot_total = np.array([
-        R_sc @ spin @ R_mount
-        for R_sc, spin in zip(inertial_frames, rot_spin)
-    ])
+    rot_total = np.array(
+        [R_sc @ spin @ R_mount for R_sc, spin in zip(inertial_frames, rot_spin)]
+    )
 
     # Apply to instrument vectors
-    vectors_inertial = np.array([
-        spice.mxv(rot, vec)
-        for rot, vec in zip(rot_total, instrument_vectors)
-    ])
+    vectors_inertial = np.array(
+        [spice.mxv(rot, vec) for rot, vec in zip(rot_total, instrument_vectors)]
+    )
 
     return vectors_inertial
-
