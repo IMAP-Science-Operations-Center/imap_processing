@@ -87,6 +87,41 @@ def build_sc_frame_in_inertial(z_axis: NDArray) -> NDArray:
     return np.array(frames)
 
 
+def get_x_y_axes(z_axis: NDArray) -> tuple[NDArray, NDArray]:
+    """
+    Compute X and Y vectors that are perpendicular to Z and to each other.
+    Parameters
+    ----------
+    z_axis : NDArray
+        Array of shape (N, 3).
+    Returns
+    -------
+    x_axis : NDArray
+        Array of shape (N, 3) perpendicular to z_axis.
+    y_axis : NDArray
+        Array of shape (N, 3) perpendicular to z_axis.
+    """
+    # Pick a fixed reference vector.
+    v_ref = np.array([0, 1, 0])
+
+    # Detect if z_axis is nearly aligned with v_ref.
+    dot_products = np.dot(z_axis, v_ref)
+    too_parallel = np.abs(dot_products) > 0.99
+
+    # Use alternate reference vector where needed.
+    v_refs = np.tile(v_ref, (z_axis.shape[0], 1))
+    v_refs[too_parallel] = np.array([1, 0, 0])
+
+    # Compute a temporary X-axis: perpendicular to both v_ref and z_axis.
+    x_temp = np.cross(v_refs, z_axis)
+    x_axis = x_temp / np.linalg.norm(x_temp, axis=-1, keepdims=True)
+
+    # Take the cross product to get the Y-axis.
+    y_axis = np.cross(z_axis, x_axis)
+
+    return x_axis, y_axis
+
+
 def get_instrument_mount_matrix(instrument_frame: SpiceFrame, spacecraft_frame: SpiceFrame) -> NDArray:
     """
     Get static instrument-to-spacecraft rotation matrix.
@@ -128,6 +163,8 @@ def transform_instrument_vectors_to_inertial(
 
     # Step 2: build inertial S/C frames
     inertial_frames = build_sc_frame_in_inertial(z_axis)
+
+    x_axis, y_axis = get_x_y_axes(z_axis)
 
     # Step 3: get spin rotation matrices (around Z)
     spin_rotations = get_rotation_matrix(np.tile([0, 0, 1], (len(spin_phase), 1)), spin_phase)
