@@ -131,6 +131,33 @@ def ttj2000ns_to_et(tt_ns: npt.ArrayLike) -> npt.NDArray[float]:
 
 
 @typing.no_type_check
+@ensure_spice
+def et_to_ttj2000ns(et: npt.ArrayLike) -> npt.NDArray[float]:
+    """
+    Convert TDB J2000 epoch seconds to TT J2000 epoch nanoseconds.
+
+    Opposite of `ttj2000ns_to_et`.
+
+    Parameters
+    ----------
+    et : float, numpy.ndarray
+        Number of seconds since the J2000 epoch in the TDB timescale.
+
+    Returns
+    -------
+    numpy.ndarray[float]
+        Number of nanoseconds since the J2000 epoch in the TT timescale.
+    """
+    # tt_seconds = np.asarray(tt_ns, dtype=np.float64) / 1e9
+    vectorized_unitim = _vectorize(
+        spiceypy.unitim, otypes=[float], excluded=["insys", "outsys"]
+    )
+    tt_s = vectorized_unitim(et, "ET", "TT")
+    tt_ns = np.asarray(tt_s, dtype=np.float64) * 1e9
+    return tt_ns
+
+
+@typing.no_type_check
 @ensure_spice(time_kernels_only=True)
 def met_to_utc(met: npt.ArrayLike, precision: int = 9) -> npt.NDArray[str]:
     """
