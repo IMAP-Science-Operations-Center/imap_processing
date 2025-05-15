@@ -54,7 +54,7 @@ EXPECTED_ARRAY_SHAPES = [
     (77, 19, 12, 128),  # lo-nsw-angular
     (77,),  # hi-counters-aggregated
     (77, 12),  # hi-counters-singles
-    (308, 15),  # hi-omni
+    (),  # hi-omni, shapes are specific to species
     (77, 8, 12, 12),  # hi-sectored
     (77,),  # hi-priority
     (77, 10000),  # lo-pha
