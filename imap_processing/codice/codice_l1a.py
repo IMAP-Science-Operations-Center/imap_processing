@@ -575,7 +575,10 @@ def create_binned_dataset(apid: int, dataset: xr.Dataset) -> xr.Dataset:
     """
     Create dataset for data that is binned by energy.
 
-    This applies to the ``hi-omni`` and ``hi-sectored`` datasets.
+    This applies to the ``hi-omni`` and ``hi-sectored`` datasets. In addition to
+    data for species (e.g. ``h``, ``c``, ``o``, etc.), we add CDF variables
+    for their respective energy bin centers and deltas (e.g. ``energy_h``,
+    ``energy_h_delta``, etc.)
 
     Parameters
     ----------
@@ -607,7 +610,7 @@ def create_binned_dataset(apid: int, dataset: xr.Dataset) -> xr.Dataset:
     # hi-omni data gets reshaped a bit differently than other products,
     # so we need to stray away from the nominal pipeline
     stacked_data = np.stack(
-        [np.array(item, dtype=np.uint32) for item in pipeline.__dict__["raw_data"]]
+        [np.array(item, dtype=np.uint32) for item in pipeline.raw_data]
     )
 
     # This will hold all of the data per-species and support variables,
@@ -649,7 +652,7 @@ def create_binned_dataset(apid: int, dataset: xr.Dataset) -> xr.Dataset:
                         dataset.spin_period.data[i] * constants.SPIN_PERIOD_CONVERSION
                     )
                     epoch_value = current_epoch + np.int64(
-                        (spin_period * num_spins) * 1e9
+                        (spin_period * num_spins) * 1e9  # Convert from s to ns
                     )
                     data["epoch"].append(epoch_value)
                     current_epoch = epoch_value
