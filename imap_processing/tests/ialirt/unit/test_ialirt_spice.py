@@ -83,7 +83,9 @@ def test_get_x_y_axes():
             [0.0, 0.0, 1.0],  # RA=0°, Dec=90° → +Z
         ]
     )
-    x_axis, y_axis = get_x_y_axes(z_axis)
+    frames = get_x_y_axes(z_axis)
+    x_axis = frames[:, 0, :]
+    y_axis = frames[:, 1, :]
 
     # Check that the axes are unit vectors.
     assert np.allclose(np.linalg.norm(x_axis, axis=1), 1.0, atol=1e-6)

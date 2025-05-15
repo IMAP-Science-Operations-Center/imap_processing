@@ -120,7 +120,7 @@ def get_x_y_axes(z_axis: NDArray) -> tuple[NDArray, NDArray]:
     # Take the cross product to get the X-axis.
     x_axis = np.cross(y_axis, z_axis)
 
-    frames = np.stack([x_axis, y_axis, z_axis], axis=1)
+    frames = np.stack([y_axis, z_axis, x_axis], axis=1)
 
     return frames
 
@@ -167,7 +167,7 @@ def transform_instrument_vectors_to_inertial(
     # Step 2: build inertial S/C frames
     inertial_frames = build_sc_frame_in_inertial(z_axis)
 
-    x_axis, y_axis = get_x_y_axes(z_axis)
+    inertial_frames2 = get_x_y_axes(z_axis)
 
     # Step 3: get spin rotation matrices (around Z)
     spin_rotations = get_rotation_matrix(np.tile([0, 0, 1], (len(spin_phase), 1)), spin_phase)
