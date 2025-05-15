@@ -3,6 +3,7 @@ from datetime import timedelta
 import pytest
 
 from imap_processing.ena_maps.utils.naming import (
+    MapDescriptor,
     MappableInstrumentShortName,
     build_friendly_date_descriptor,
     build_l2_map_descriptor,
@@ -174,3 +175,37 @@ class TestNaming:
                 ns_to_duration_months(fraction_of_year * days_per_avg_year * ns_per_day)
                 == expected_months
             )
+
+
+class TestMapDescriptor:
+    def test_init_and_instrument_descriptor_hi45(self):
+        md_h45 = MapDescriptor(
+            instrument=MappableInstrumentShortName.HI,
+            frame_descriptor="hf",
+            resolution_str="2deg",
+            duration=timedelta(days=60),
+            sensor="45",
+            principal_data="ena",
+            species="he",
+            survival_corrected="sp",
+            spin_phase="ram",
+            coordinate_system="hgi",
+        )
+        assert md_h45.instrument == MappableInstrumentShortName.HI
+        assert md_h45.instrument_descriptor == "h45"
+
+    def test_init_and_instrument_descriptor_lo_hi_throughput_075(self):
+        md_lo_hi_075 = MapDescriptor(
+            instrument=MappableInstrumentShortName.LO_HI_THROUGHPUT,
+            frame_descriptor="sf",
+            resolution_str="4deg",
+            duration=120,
+            sensor=75,
+            principal_data="ena",
+            species="o",
+            survival_corrected="nsp",
+            spin_phase="anti",
+            coordinate_system="rc",
+        )
+        assert md_lo_hi_075.instrument == MappableInstrumentShortName.LO_HI_THROUGHPUT
+        assert md_lo_hi_075.instrument_descriptor == "t075"

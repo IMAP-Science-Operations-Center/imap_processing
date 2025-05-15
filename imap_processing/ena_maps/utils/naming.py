@@ -323,7 +323,7 @@ class MapDescriptor:
     frame_descriptor: str
     resolution_str: str
     duration: str
-    sensor: str = ""
+    sensor: int | str = ""
     principal_data: str = "ena"
     species: str = "h"
     survival_corrected: str = "nsp"
