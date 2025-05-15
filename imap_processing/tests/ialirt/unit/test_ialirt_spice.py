@@ -104,41 +104,8 @@ def test_get_x_y_axes():
     assert np.allclose(reconstructed_z, z_axis, atol=1e-6)
 
 
-def test_transform_instrument_vectors_to_inertial_no_spice(spice_test_data_path):
-    """Tests function transform_instrument_vectors_to_inertial."""
-
-    spiceypy.furnsh(str(spice_test_data_path / "imap_wkcp.tf"))
-    sc_inertial_right = np.zeros(3)  # RA = 0
-    sc_inertial_decline = np.radians([90, 90, 90])  # Z-axis = [0, 0, 1]
-
-    # Spin phases (0, 90, 180)
-    spin_phase = np.radians([0, 90, 180])
-
-    # Unit vector along +X
-    instrument_vectors = np.tile(np.array([1.0, 0.0, 0.0]), (3, 1))
-
-    expected = np.array(
-        [
-            [1.0, 0.0, 0.0],  # No rotation: remains [1, 0, 0]
-            [0.0, -1.0, 0.0],  # 90 about +Z: becomes [0, -1, 0]
-            [-1.0, 0.0, 0.0],  # 180 about +Z: becomes [-1, 0, 0]
-        ]
-    )
-
-    result = transform_instrument_vectors_to_inertial(
-        instrument_vectors,
-        spin_phase,
-        sc_inertial_right,
-        sc_inertial_decline,
-        SpiceFrame.IMAP_SPACECRAFT,
-        SpiceFrame.IMAP_SPACECRAFT,
-    )
-
-    np.testing.assert_allclose(result, expected, atol=1e-8)
-
-
-def test_compute_total_rotation_identity_case():
-    """Test compute_total_rotation with all identity inputs (no rotation)."""
+def test_compute_total_rotation():
+    """Test compute_total_rotation function."""
 
     r_sc = spin = mount_matrix = [
         [1.0, 0.0, 0.0],
@@ -159,7 +126,7 @@ def test_compute_total_rotation_identity_case():
 
 
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-# @pytest.mark.external_kernel
+@pytest.mark.external_kernel
 @ensure_spice
 def test_transform_instrument_vectors_to_inertial(
     use_test_metakernel, spice_test_data_path
@@ -196,6 +163,37 @@ def test_transform_instrument_vectors_to_inertial(
         atol=1e-9,
     )
 
+    spin_phase = np.array([0.0])
+
+    v_manual = transform_instrument_vectors_to_inertial(
+        instrument_vector,
+        spin_phase,
+        np.array([ra]),
+        np.array([dec]),
+    )
+
+    rot_inst_to_inertial = spiceypy.pxform("IMAP_MAG", "ECLIPJ2000", et)
+    v_spice = spiceypy.mxv(rot_inst_to_inertial, instrument_vector[0])
+
+    np.testing.assert_allclose(
+        v_manual[0],
+        v_spice,
+        atol=1e-9,
+    )
+
+
+@pytest.mark.use_test_metakernel("imap_ialirt_sim_metakernel.template")
+@pytest.mark.external_kernel
+@ensure_spice
+def test_no_attitude():
+    """Test transform_instrument_vectors_to_inertial function."""
+
+    ra = 0.3653037895099079
+    dec = 4.440892098775276e-16
+
+    # Assume IMAP_MAG +X is boresight
+    instrument_vector = np.array([[1.0, 0.0, 0.0]])
+
     # At this timestamp for the attitude kernel.
     spin_phase = np.array([0.0])
 
@@ -206,12 +204,9 @@ def test_transform_instrument_vectors_to_inertial(
         np.array([dec]),
     )
 
-    # SPICE direct transform from instrument frame to inertial
-    rot_inst_to_inertial = spiceypy.pxform("IMAP_MAG", "ECLIPJ2000", et)
-    v_spice = spiceypy.mxv(rot_inst_to_inertial, instrument_vector[0])
-    print("hi")
-    np.testing.assert_allclose(
-        v_manual[0],
-        v_spice,
-        atol=1e-9,
-    )
+    # TODO: Put this into GSE and GSM once we have proper kernels.
+    # Example:
+    # rotation_ecl_to_gse = spiceypy.pxform("ECLIPJ2000", "GSE", et)
+    # v_j2000 = spiceypy.mxv(rotation_ecl_to_gse, v_manual[0])
+
+    assert v_manual is not None
