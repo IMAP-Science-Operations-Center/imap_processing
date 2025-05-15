@@ -972,19 +972,23 @@ class Mag(ProcessInstrument):
             # calibration file.
 
             if self.start_date is not None:
-                day_buffer = np.datetime64(
+                current_day = np.datetime64(
                     f"{self.start_date[:4]}-{self.start_date[4:6]}-{self.start_date[6:]}"
-                ) + np.timedelta64(3, "D")
+                )
+                day_buffer = current_day + np.timedelta64(3, "D")
             else:
                 raise ValueError("Start date is not set for MAG L2 processing.")
 
             combined_calibration = MagAncillaryCombiner(calibration[0], day_buffer)
             offset_dataset = load_cdf(offsets[0].imap_file_paths[0].construct_path())
             # TODO: get input data from offsets file
-
+            print(offset_dataset.attrs)
             # TODO: Test data missing
             datasets = mag_l2(
-                combined_calibration.combined_dataset, offset_dataset, input_data
+                combined_calibration.combined_dataset,
+                offset_dataset,
+                input_data,
+                current_day,
             )
 
         return datasets

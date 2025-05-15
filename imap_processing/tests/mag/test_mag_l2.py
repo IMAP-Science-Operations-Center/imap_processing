@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
+import xarray as xr
 
-from imap_processing.mag.l2.mag_l2 import mag_l2
+from imap_processing.mag.l2.mag_l2 import mag_l2, retrieve_matrix_from_l2_calibration
 from imap_processing.mag.l2.mag_l2_data import MagL2
 from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
 
@@ -128,3 +129,54 @@ def test_expected_output_norm():
 def test_expected_output_burst():
     # should return 4 files with correct attributes
     pass
+
+
+@pytest.mark.parametrize(
+    ("is_mago", "data_var"),
+    [
+        (True, "URFTOORFO"),
+        (False, "URFTOORFI"),
+    ],
+)
+def test_retrieve_matrix_from_l2_calibration(is_mago, data_var):
+    start_day = np.datetime64("2025-10-15").astype("datetime64[D]")
+    end_day = np.datetime64("2025-10-20").astype("datetime64[D]")
+    epoch_vars = xr.DataArray(
+        np.arange(start_day, end_day, dtype="datetime64[D]"),
+        dims=["epoch"],
+        coords={"epoch": np.arange(5)},
+    )
+    example_calibration_dataset = xr.Dataset(
+        {
+            "URFTOORFO": xr.DataArray(
+                np.random.rand(5, 3, 3, 4),
+                dims=["epoch", "URFTOORFO_dim_0", "URFTOORFO_dim_1", "URFTOORFO_dim_2"],
+            ),
+            "URFTOORFI": xr.DataArray(
+                np.random.rand(5, 3, 3, 4),
+                dims=["epoch", "URFTOORFI_dim_0", "URFTOORFI_dim_1", "URFTOORFI_dim_2"],
+            ),
+        },
+        coords={"epoch": epoch_vars},
+    )
+
+    calibration_matrix = retrieve_matrix_from_l2_calibration(
+        example_calibration_dataset, start_day, use_mago=is_mago
+    )
+
+    assert calibration_matrix.shape == (3, 3, 4)
+    assert np.array_equal(
+        example_calibration_dataset.sel(epoch=start_day)[data_var].data,
+        calibration_matrix,
+    )
+
+    test_day = np.datetime64("2025-10-17").astype("datetime64[D]")
+    calibration_matrix = retrieve_matrix_from_l2_calibration(
+        example_calibration_dataset, test_day, use_mago=is_mago
+    )
+
+    assert calibration_matrix.shape == (3, 3, 4)
+    assert np.array_equal(
+        example_calibration_dataset.sel(epoch=test_day)[data_var].data,
+        calibration_matrix,
+    )
