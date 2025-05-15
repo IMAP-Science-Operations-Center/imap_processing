@@ -173,7 +173,7 @@ current_1p9v_pol:
 
 temperature_1:
   <<: *trigger_base
-  FORMAT: I4
+  FORMAT: F12.6
   FIELDNAM: ProcBd Temp1
   CATDESC: Temperature reading near high speed ADCs on Processor Board (ADC channel 2)
   LABLAXIS: Temperature
@@ -181,7 +181,7 @@ temperature_1:
 
 temperature_2:
   <<: *trigger_base
-  FORMAT: I4
+  FORMAT: F12.6
   FIELDNAM: ProcBd Temp2
   CATDESC: Temperature reading near center of Processor Board (ADC channel 3)
   LABLAXIS: Temperature
