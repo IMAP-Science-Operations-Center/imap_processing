@@ -11,7 +11,6 @@ from imap_processing.ialirt.l0.ialirt_spice import (
     get_z_axis,
     transform_instrument_vectors_to_inertial,
 )
-from imap_processing.spice.geometry import SpiceFrame
 from imap_processing.spice.kernels import ensure_spice
 
 
@@ -114,9 +113,7 @@ def test_compute_total_rotation():
     ]
 
     total_rotations = compute_total_rotation(
-        np.array([r_sc]),
-        np.array([spin]),
-        np.array(mount_matrix)
+        np.array([r_sc]), np.array([spin]), np.array(mount_matrix)
     )
 
     instrument_vector = np.array([1.0, 2.0, 3.0])
