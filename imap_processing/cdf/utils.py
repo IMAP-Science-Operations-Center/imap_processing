@@ -116,6 +116,7 @@ def write_cdf(
             stacklevel=2,
         )
         version = "v999"
+        dataset.attrs["Data_version"] = version
     elif not re.match(r"v\d{3}", version):
         raise ValueError(
             f"The Data_version attribute {version} does not match expected format vXXX."
