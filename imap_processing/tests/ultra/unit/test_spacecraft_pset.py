@@ -79,7 +79,7 @@ def test_calculate_spacecraft_pset():
     assert "energy_bin_geometric_mean" in spacecraft_pset.coords
 
 
-@pytest.mark.external_test_data
+@pytest.mark.xfail(reason="IMAP-Ultra45_r1_L1_V0.csv too large to download.")
 @pytest.mark.external_kernel
 @ensure_spice
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")

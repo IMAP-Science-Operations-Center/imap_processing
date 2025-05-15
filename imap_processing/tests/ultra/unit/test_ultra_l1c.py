@@ -119,7 +119,7 @@ def test_ultra_l1c_error(mock_data_l1b_dict):
         ultra_l1c(mock_data_l1b_dict)
 
 
-@pytest.mark.external_test_data
+@pytest.mark.xfail(reason="IMAP-Ultra45_r1_L1_V0.csv too large to download.")
 @pytest.mark.external_kernel
 @ensure_spice
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
