@@ -125,7 +125,7 @@ def test_ultra_l1c_error(mock_data_l1b_dict):
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_calculate_spacecraft_pset_with_cdf():
     """Tests ultra_l1c function with imported test data."""
-
+    # pragma: no cover
     df = pd.read_csv(TEST_PATH / "IMAP-Ultra45_r1_L1_V0.csv")
 
     # Select a single pointing number

@@ -85,7 +85,7 @@ def test_calculate_spacecraft_pset():
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_calculate_spacecraft_pset_with_cdf():
     """Tests calculate_spacecraft_pset function with imported test data."""
-
+    # pragma: no cover
     df = pd.read_csv(TEST_PATH / "IMAP-Ultra45_r1_L1_V0.csv")
 
     # Loop over all unique pointing numbers
