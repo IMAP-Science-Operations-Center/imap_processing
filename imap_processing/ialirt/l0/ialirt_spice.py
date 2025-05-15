@@ -125,13 +125,6 @@ def get_x_y_axes(z_axis: NDArray) -> tuple[NDArray, NDArray]:
     return frames
 
 
-def get_instrument_mount_matrix(instrument_frame: SpiceFrame, spacecraft_frame: SpiceFrame) -> NDArray:
-    """
-    Get static instrument-to-spacecraft rotation matrix.
-    """
-    return spice.pxform(instrument_frame.name, spacecraft_frame.name, 0.0)
-
-
 def compute_total_rotation(
     inertial_frames: NDArray,
     spin_rotations: NDArray,
@@ -139,8 +132,25 @@ def compute_total_rotation(
 ) -> NDArray:
     """
     Compute full rotation matrices from instrument to inertial frame.
+    instrument → spacecraft → spun spacecraft → inertial frame
     """
-    return np.array([R_sc @ spin @ mount_matrix for R_sc, spin in zip(inertial_frames, spin_rotations)])
+
+    total_rotations = []
+
+    # loop over each time sample
+    for r_sc, spin in zip(inertial_frames, spin_rotations):
+
+        # multiply the three matrices: inertial, spin, and mount.
+        # instrument → spacecraft → rotated spacecraft → inertial
+        # Read in reverse order: mount_matrix, spin, r_sc.
+        R_inst_to_inertial = r_sc @ spin @ mount_matrix
+
+        total_rotations.append(R_inst_to_inertial)
+
+    # Convert list of matrices to array
+    total_rotations = np.array(total_rotations)
+
+    return total_rotations
 
 
 def apply_rotations_to_vectors(rotations: NDArray, vectors: NDArray) -> NDArray:
@@ -161,17 +171,19 @@ def transform_instrument_vectors_to_inertial(
     """
     Transform instrument-frame vectors into the inertial frame (ECLIPJ2000).
     """
-    # Step 1: compute spin axis
-    z_axis = get_z_axis(sc_inertial_right, sc_inertial_decline)
+    # Step 1: compute inertial spin axis
+    inertial_z_axis = get_z_axis(sc_inertial_right, sc_inertial_decline)
 
     # Step 2: build inertial S/C frames
-    inertial_frames = get_x_y_axes(z_axis)
+    inertial_frames = get_x_y_axes(inertial_z_axis)
 
-    # Step 3: get spin rotation matrices (around Z)
+    # Step 3: get spin rotation matrices (around Z) in the spacecraft frame
+    # The spin rotation happens in the spacecraft frame, not in inertial frame.
+    # In the spacecraft frame, the spin axis is always exactly [0, 0, 1]
     spin_rotations = get_rotation_matrix(np.tile([0, 0, 1], (len(spin_phase), 1)), spin_phase)
 
     # Step 4: get static mount matrix
-    mount_matrix = get_instrument_mount_matrix(instrument_frame, spacecraft_frame)
+    mount_matrix = spice.pxform(instrument_frame.name, spacecraft_frame.name, 0.0)
 
     # Step 5: compute total rotations
     total_rotations = compute_total_rotation(inertial_frames, spin_rotations, mount_matrix)

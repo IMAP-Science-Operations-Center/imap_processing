@@ -124,13 +124,11 @@ def test_transform_instrument_vectors_to_inertial_no_spice(spice_test_data_path)
         ]
     )
 
-    et = np.array([0.0, 0.0, 0.0])
     result = transform_instrument_vectors_to_inertial(
         instrument_vectors,
         spin_phase,
         sc_inertial_right,
         sc_inertial_decline,
-        et,
         SpiceFrame.IMAP_SPACECRAFT,
         SpiceFrame.IMAP_SPACECRAFT,
     )
