@@ -128,7 +128,6 @@ def retrieve_matrix_from_l2_calibration(
     np.ndarray
         Calibration matrix in the shape (3, 3, 4) to rotate vectors.
     """
-    print(calibration_dataset)
     if use_mago:
         calibration_data = calibration_dataset.sel(epoch=day)["URFTOORFO"]
     else:

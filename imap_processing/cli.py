@@ -982,7 +982,6 @@ class Mag(ProcessInstrument):
             combined_calibration = MagAncillaryCombiner(calibration[0], day_buffer)
             offset_dataset = load_cdf(offsets[0].imap_file_paths[0].construct_path())
             # TODO: get input data from offsets file
-            print(offset_dataset.attrs)
             # TODO: Test data missing
             datasets = mag_l2(
                 combined_calibration.combined_dataset,
