@@ -84,18 +84,19 @@ def test_get_x_y_axes():
         ]
     )
     frames = get_x_y_axes(z_axis)
-    x_axis = frames[:, 0, :]
+    z_axis = frames[:, 0, :]
     y_axis = frames[:, 1, :]
-    z_axis = frames[:, 2, :]
+    x_axis = frames[:, 2, :]
 
     # Check that the axes are unit vectors.
     assert np.allclose(np.linalg.norm(x_axis, axis=1), 1.0, atol=1e-6)
     assert np.allclose(np.linalg.norm(y_axis, axis=1), 1.0, atol=1e-6)
+    assert np.allclose(np.linalg.norm(z_axis, axis=1), 1.0, atol=1e-6)
 
     # Check each pair of vectors is 90 degrees apart.
-    assert np.allclose(np.sum(x_axis * y_axis, axis=1), 0.0, atol=1e-6)
-    assert np.allclose(np.sum(x_axis * z_axis, axis=1), 0.0, atol=1e-6)
-    assert np.allclose(np.sum(y_axis * z_axis, axis=1), 0.0, atol=1e-6)
+    assert np.allclose(np.sum(z_axis * y_axis, axis=1), 0.0, atol=1e-6)
+    assert np.allclose(np.sum(z_axis * x_axis, axis=1), 0.0, atol=1e-6)
+    assert np.allclose(np.sum(y_axis * x_axis, axis=1), 0.0, atol=1e-6)
 
     # Check cross(X, Y) = Z.
     reconstructed_z = np.cross(x_axis, y_axis)
