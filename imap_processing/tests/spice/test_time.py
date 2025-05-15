@@ -8,6 +8,7 @@ from imap_processing.spice import IMAP_SC_ID
 from imap_processing.spice.time import (
     TICK_DURATION,
     epoch_to_doy,
+    et_to_datetime64,
     et_to_ttj2000ns,
     et_to_utc,
     met_to_datetime64,
@@ -230,6 +231,15 @@ def test_et_to_utc(furnish_time_kernels):
     )
     actual_utc_array = et_to_utc(array_of_et)
     assert np.array_equal(expected_utc_array, actual_utc_array)
+
+
+def test_et_to_datetime(furnish_time_kernels):
+    et = 553333629.1837274
+    # Test single value input
+    expected_dt = np.datetime64("2017-07-14T19:46:00.000")
+
+    actual_dt = et_to_datetime64(et)
+    assert actual_dt == expected_dt
 
 
 def test_epoch_to_doy():

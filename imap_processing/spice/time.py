@@ -202,6 +202,25 @@ def met_to_datetime64(
     return np.array(met_to_utc(met), dtype=np.datetime64)[()]
 
 
+def et_to_datetime64(
+    et: npt.ArrayLike,
+) -> Union[np.datetime64, npt.NDArray[np.datetime64]]:
+    """
+    Convert ET to datetime.datetime.
+
+    Parameters
+    ----------
+    et : float, numpy.ndarray
+        Number of seconds since the J2000 epoch in the TDB timescale.
+
+    Returns
+    -------
+    numpy.ndarray[str]
+        The mission elapsed time converted to numpy.datetime64.
+    """
+    return np.array(et_to_utc(et), dtype=np.datetime64)[()]
+
+
 @typing.no_type_check
 @ensure_spice
 def sct_to_et(
