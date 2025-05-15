@@ -65,6 +65,8 @@ class CoDICEL1aPipeline:
         Define and add the appropriate data variables to the dataset.
     define_dimensions()
         Define the dimensions of the data arrays for the final dataset.
+    define_energy_bins()
+        Define/add variables to the dataset that correspond to the energy bins.
     define_support_variables()
         Define and add 'support' CDF data variables to the dataset.
     get_acquisition_times()
