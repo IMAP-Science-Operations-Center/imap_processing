@@ -5,6 +5,7 @@ import pytest
 import spiceypy
 
 from imap_processing.ialirt.l0.ialirt_spice import (
+    compute_total_rotation,
     get_rotation_matrix,
     get_x_y_axes,
     get_z_axis,
@@ -134,6 +135,27 @@ def test_transform_instrument_vectors_to_inertial_no_spice(spice_test_data_path)
     )
 
     np.testing.assert_allclose(result, expected, atol=1e-8)
+
+
+def test_compute_total_rotation_identity_case():
+    """Test compute_total_rotation with all identity inputs (no rotation)."""
+
+    r_sc = spin = mount_matrix = [
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0],
+    ]
+
+    total_rotations = compute_total_rotation(
+        np.array([r_sc]),
+        np.array([spin]),
+        np.array(mount_matrix)
+    )
+
+    instrument_vector = np.array([1.0, 2.0, 3.0])
+    output_vector = spiceypy.mxv(total_rotations[0], instrument_vector)
+
+    np.testing.assert_allclose(output_vector, instrument_vector, atol=1e-9)
 
 
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
