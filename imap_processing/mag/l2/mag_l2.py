@@ -104,7 +104,7 @@ def mag_l2(
     attributes.add_instrument_global_attrs("mag")
     # temporarily point to l1c
     attributes.add_instrument_variable_attrs("mag", "l1c")
-    return [basic_test_data.generate_dataset(attributes)]
+    return [basic_test_data.generate_dataset(attributes, day)]
 
 
 def retrieve_matrix_from_l2_calibration(

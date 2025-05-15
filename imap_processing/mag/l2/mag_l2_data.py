@@ -8,6 +8,7 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.mag.constants import DataMode
+from imap_processing.spice.time import et_to_utc, ttj2000ns_to_et
 
 
 class ValidFrames(Enum):
@@ -167,22 +168,10 @@ class MagL2:
         shifted_timestamps = epoch + timedelta_ns
         return shifted_timestamps
 
-    def truncate_to_24h(self, timestamp: str) -> None:
-        """
-        Truncate all data to a 24 hour period.
-
-        24 hours is given by timestamp in the format YYYYmmdd.
-
-        Parameters
-        ----------
-        timestamp : str
-            Timestamp in the format YYYYMMDD.
-        """
-        pass
-
     def generate_dataset(
         self,
         attribute_manager: ImapCdfAttributes,
+        day: np.datetime64,
         frame: ValidFrames = ValidFrames.dsrf,
     ) -> xr.Dataset:
         """
@@ -195,6 +184,8 @@ class MagL2:
         ----------
         attribute_manager : ImapCdfAttributes
             CDF attributes object for the correct level.
+        day : np.datetime64
+         The 24 hour day to process, as a numpy datetime format.
         frame : ValidFrames
             SPICE reference frame to rotate the data into.
 
@@ -203,6 +194,8 @@ class MagL2:
         xr.Dataset
             Complete dataset ready to write to CDF file.
         """
+        self.truncate_to_24h(day)
+
         logical_source_id = f"imap_mag_l2_{self.data_mode.value.lower()}-{frame.name}"
         direction = xr.DataArray(
             np.arange(3),
@@ -286,3 +279,23 @@ class MagL2:
         output["magnitude"] = magnitude
 
         return output
+
+    def truncate_to_24h(self, timestamp: np.datetime64) -> None:
+        """
+        Truncate all data to a 24 hour period.
+
+        24 hours is given by timestamp in the format YYYYmmdd.
+
+        Parameters
+        ----------
+        timestamp : str
+            Timestamp in the format YYYYMMDD.
+        """
+        # Find where in epoch the timestamps don't equal 24hours
+        print("Start time:")
+
+        print(et_to_utc(ttj2000ns_to_et(self.epoch[0])))
+        print("End time:")
+        print(et_to_utc(ttj2000ns_to_et(self.epoch[-1])))
+
+        pass

@@ -2,8 +2,10 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l2.mag_l2 import mag_l2, retrieve_matrix_from_l2_calibration
 from imap_processing.mag.l2.mag_l2_data import MagL2
+from imap_processing.spice.time import et_to_utc, ttj2000ns_to_et
 from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
 
 
@@ -119,14 +121,42 @@ def test_full_calculation(norm_dataset, mag_test_l2_data):
     pass
 
 
-def test_timestamp_truncation():
-    # Test that data is truncated to exactly 24 hours
-    pass
+def test_timestamp_truncation(norm_dataset, mag_test_l2_data):
+    time_shift = 1.08e13  # 3 hrs in ns
+    day = np.datetime64("2025-10-17").astype("datetime64[D]")
+    l2 = MagL2(
+        norm_dataset["vectors"].data[:, :3],
+        norm_dataset["epoch"].data - time_shift,
+        norm_dataset["vectors"].data[:, 3],
+        {},
+        np.zeros(len(norm_dataset["epoch"].data)),
+        np.zeros(len(norm_dataset["epoch"].data)),
+        DataMode.NORM,
+        offsets=np.zeros((len(norm_dataset["epoch"].data), 3)),
+        timedelta=np.zeros(len(norm_dataset["epoch"].data)),
+    )
+    first_epoch_val = np.array(et_to_utc(ttj2000ns_to_et(l2.epoch[0]))).astype(
+        "datetime64[D]"
+    )
+    print(first_epoch_val)
+    assert first_epoch_val == day - 1
 
+    last_epoch_val = np.array(et_to_utc(ttj2000ns_to_et(l2.epoch[-1]))).astype(
+        "datetime64[D]"
+    )
+    assert last_epoch_val == day
 
-def test_fail_on_missing_offsets():
-    # Processing should fail if vectors do not have corresponding timestamps
-    pass
+    l2.truncate_to_24h(day)
+
+    first_epoch_val = np.array(et_to_utc(ttj2000ns_to_et(l2.epoch[0]))).astype(
+        "datetime64[D]"
+    )
+    last_epoch_val = np.array(et_to_utc(ttj2000ns_to_et(l2.epoch[-1]))).astype(
+        "datetime64[D]"
+    )
+
+    assert first_epoch_val == day
+    assert last_epoch_val == day
 
 
 def test_magnitude():
