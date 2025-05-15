@@ -61,6 +61,18 @@ EXPECTED_ARRAY_SHAPES = [
     (77, 10000),  # hi-pha
 ]
 
+EXPECTED_HI_OMNI_ARRAY_SHAPES = {
+    "h": (308, 15),
+    "he3": (308, 15),
+    "he4": (308, 15),
+    "c": (308, 18),
+    "o": (308, 18),
+    "ne_mg_si": (308, 15),
+    "fe": (308, 18),
+    "uh": (308, 5),
+    "junk": (308, 1),
+}
+
 EXPECTED_NUM_VARIABLES = [
     0,  # hi-ialirt  # TODO: Need to implement
     0,  # lo-ialirt  # TODO: Need to implement
@@ -146,31 +158,36 @@ def test_l1a_data_array_shape(test_l1a_data, index):
 
     # hi-omni data array shapes depend on the species
     if descriptor == "hi-omni":
-        pytest.skip("Omni is weird")
-
-    # There are exceptions for some variables
-    for variable in processed_dataset:
-        # For variables with energy dimensions
-        if variable in ["energy_table", "acquisition_time_per_step"]:
-            assert processed_dataset[variable].data.shape == (128,)
-        # For "support" variables with epoch dimensions
-        elif variable in [
-            "rgfo_half_spin",
-            "nso_half_spin",
-            "sw_bias_gain_mode",
-            "st_bias_gain_mode",
-            "data_quality",
-            "spin_period",
-        ]:
-            assert processed_dataset[variable].data.shape == (
-                len(processed_dataset["epoch"].data),
+        for variable in constants.HI_OMNI_VARIABLE_NAMES:
+            assert (
+                processed_dataset[variable].data.shape
+                == EXPECTED_HI_OMNI_ARRAY_SHAPES[variable]
             )
-        # For some direct event variables:
-        elif re.match(r"P[0-7]_(NumEvents|DataQuality)", variable):
-            assert processed_dataset[variable].data.shape == (77,)
-        # For nominal variables
-        else:
-            assert processed_dataset[variable].data.shape == expected_shape
+
+    else:
+        # There are exceptions for some variables
+        for variable in processed_dataset:
+            # For variables with energy dimensions
+            if variable in ["energy_table", "acquisition_time_per_step"]:
+                assert processed_dataset[variable].data.shape == (128,)
+            # For "support" variables with epoch dimensions
+            elif variable in [
+                "rgfo_half_spin",
+                "nso_half_spin",
+                "sw_bias_gain_mode",
+                "st_bias_gain_mode",
+                "data_quality",
+                "spin_period",
+            ]:
+                assert processed_dataset[variable].data.shape == (
+                    len(processed_dataset["epoch"].data),
+                )
+            # For some direct event variables:
+            elif re.match(r"P[0-7]_(NumEvents|DataQuality)", variable):
+                assert processed_dataset[variable].data.shape == (77,)
+            # For nominal variables
+            else:
+                assert processed_dataset[variable].data.shape == expected_shape
 
 
 @pytest.mark.parametrize("index", range(len(DESCRIPTORS)))
