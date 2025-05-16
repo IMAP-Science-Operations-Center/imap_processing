@@ -1225,7 +1225,10 @@ class Ultra(ProcessInstrument):
                 pset_filepath.stem: pset_filepath
                 for pset_filepath in all_pset_filepaths
             }
-            datasets = ultra_l2.ultra_l2(data_dict)
+            datasets = ultra_l2.ultra_l2(
+                data_dict,
+                descriptor=self.descriptor,
+            )
 
         return datasets
 

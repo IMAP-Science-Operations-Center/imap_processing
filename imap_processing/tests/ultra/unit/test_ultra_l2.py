@@ -451,6 +451,31 @@ class TestUltraL2:
             )
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
+    def test_ultra_l2_descriptor_rectmap(self, mock_data_dict, furnish_kernels, caplog):
+        with furnish_kernels(self.required_kernel_names):
+            output_map = ultra_l2.ultra_l2(
+                data_dict=mock_data_dict,
+                descriptor="u90-ena-h-hf-nsp-full-hae-6deg-3mo",
+            )[0]
+
+        assert output_map.attrs["Spice_reference_frame"] == "ECLIPJ2000"
+        assert output_map.attrs["Spacing_degrees"] == "6.0"
+
+        assert "Using the provided descriptor" in caplog.text
+
+    @pytest.mark.usefixtures("_setup_spice_kernels_list")
+    def test_ultra_l2_descriptor_hpmap(self, mock_data_dict, furnish_kernels, caplog):
+        with furnish_kernels(self.required_kernel_names):
+            output_map = ultra_l2.ultra_l2(
+                data_dict=mock_data_dict,
+                descriptor="u90-ena-h-hf-nsp-full-hae-nside32-3mo",
+            )[0]
+
+        assert output_map.attrs["Spice_reference_frame"] == "ECLIPJ2000"
+        assert output_map.attrs["HEALPix_nside"] == "32"
+        assert "Using the provided descriptor" in caplog.text
+
+    @pytest.mark.usefixtures("_setup_spice_kernels_list")
     def test_ultra_l2_error_for_push_and_pull(
         self, mock_data_dict, furnish_kernels, caplog
     ):

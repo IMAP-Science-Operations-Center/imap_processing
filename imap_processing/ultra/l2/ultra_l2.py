@@ -327,6 +327,7 @@ def ultra_l2(
         ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap
     ) = DEFAULT_ULTRA_L2_MAP_STRUCTURE,
     *,
+    descriptor: str | None = None,
     store_subdivision_depth: bool = False,
 ) -> list[xr.Dataset]:
     """
@@ -338,7 +339,11 @@ def ultra_l2(
         Dict mapping l1c product identifiers to paths/Datasets containing l1c psets.
     output_map_structure : ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap, optional
         Empty SkyMap structure providing the properties of the map to be generated.
+        If a descriptor is provided, this will be ignored.
         Defaults to DEFAULT_ULTRA_L2_MAP_STRUCTURE defined in this module.
+    descriptor : str | None, optional
+        A descriptor to set the output map structure
+        If provided, this overrides the default output_map_structure parameter.
     store_subdivision_depth : bool, optional
         If True, the subdivision depth required to calculate each rectangular pixel
         value will be added to the map dataset.
@@ -352,6 +357,15 @@ def ultra_l2(
         L2 output dataset containing map of the counts on the sky.
         Wrapped in a list for consistency with other product levels.
     """
+    if descriptor is not None:
+        output_map_structure = naming.get_output_map_structure_from_descriptor_string(
+            descriptor
+        )
+        logger.info(
+            f"Using the provided descriptor '{descriptor}' to set the map structure."
+            "\nThis will override any input map structure."
+        )
+
     # Object which holds CDF attributes for the map
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs(instrument="ultra")
