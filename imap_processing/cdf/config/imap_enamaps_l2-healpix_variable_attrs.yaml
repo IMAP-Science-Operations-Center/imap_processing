@@ -88,3 +88,7 @@ obs_date_energy_dependent:
   DEPEND_2: pixel_index
   LABL_PTR_1: energy_label
   LABL_PTR_2: pixel_index_label
+
+solid_angle:
+  DEPEND_1: pixel_index
+  LABL_PTR_1: pixel_index_label

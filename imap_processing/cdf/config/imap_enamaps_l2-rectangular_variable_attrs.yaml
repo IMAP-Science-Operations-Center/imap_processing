@@ -109,3 +109,9 @@ obs_date_energy_dependent:
   LABL_PTR_1: energy_label
   LABL_PTR_2: longitude_label
   LABL_PTR_3: latitude_label
+
+solid_angle:
+  DEPEND_1: longitude
+  DEPEND_2: latitude
+  LABL_PTR_1: longitude_label
+  LABL_PTR_2: latitude_label

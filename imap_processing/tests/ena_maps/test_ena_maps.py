@@ -442,6 +442,7 @@ class TestRectangularSkyMap:
         # innefficient, as it would require all the same, computationally intensive
         # operations to be repeated as this test
         rect_map_ds = rectangular_map.to_dataset()
+        assert "solid_angle" in rect_map_ds.data_vars
         assert "counts" in rect_map_ds.data_vars
         assert rect_map_ds["counts"].shape == (
             1,

@@ -646,6 +646,7 @@ class AbstractSkyMap(ABC):
     # Lists of variables to project using push and pull methods
     values_to_push_project: list[str]
     values_to_pull_project: list[str]
+    # Variables used to track min/max epoch of data that gets projected to map
     min_epoch: int
     max_epoch: int
 
@@ -1069,12 +1070,6 @@ class RectangularSkyMap(AbstractSkyMap):
             coords={
                 CoordNames.GENERIC_PIXEL.value: np.arange(self.num_points),
             },
-            data_vars={
-                "solid_angle": xr.DataArray(
-                    self.solid_angle_points,
-                    dims=[CoordNames.GENERIC_PIXEL.value],
-                )
-            },
         )
 
     @property
@@ -1119,6 +1114,12 @@ class RectangularSkyMap(AbstractSkyMap):
             return xr.Dataset(
                 {},
                 coords={**self.spatial_coords},
+            )
+        # Add the solid angle variable to the data_1d Dataset
+        self.data_1d["solid_angle"] = xr.DataArray(
+                self.solid_angle_points,
+                name="solid_angle",
+                dims=[CoordNames.GENERIC_PIXEL.value],
             )
         # Rewrap each data array in the data_1d to the original 2D grid shape
         rewrapped_data = {}
