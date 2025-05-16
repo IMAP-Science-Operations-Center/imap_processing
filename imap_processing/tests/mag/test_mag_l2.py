@@ -34,11 +34,6 @@ def test_mag_l2(norm_dataset, mag_test_l2_data):
     assert "vectors" in l2[0].data_vars
 
 
-def test_failure_on_mismatch_files():
-    # input_offsets =
-    pass
-
-
 def test_offset_application(norm_dataset, mag_test_l2_data):
     # Test against zeros
     offsets = mag_test_l2_data[1]
@@ -114,11 +109,6 @@ def test_error_raises(mag_test_l2_data):
             dataset,
             np.datetime64("2025-10-17"),
         )
-
-
-def test_full_calculation(norm_dataset, mag_test_l2_data):
-    # test matrix + offsets calculation
-    pass
 
 
 @pytest.mark.parametrize(
@@ -219,8 +209,10 @@ def test_magnitude():
     assert output_magnitude.shape == (10,)
 
 
-def test_expected_output_norm():
+def test_expected_output_norm(norm_dataset):
     # should return 4 files with correct attributes
+    # TODO: complete with L2 attributes
+
     pass
 
 

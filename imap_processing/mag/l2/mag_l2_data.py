@@ -10,9 +10,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.mag.constants import DataMode
 from imap_processing.spice.time import (
     et_to_ttj2000ns,
-    et_to_utc,
     str_to_et,
-    ttj2000ns_to_et,
 )
 
 
@@ -296,13 +294,6 @@ class MagL2:
         timestamp : str
             Timestamp in the format YYYYMMDD.
         """
-        # Find where in epoch the timestamps don't equal 24hours
-        print("Start time:")
-
-        print(et_to_utc(ttj2000ns_to_et(self.epoch[0])))
-        print("End time:")
-        print(et_to_utc(ttj2000ns_to_et(self.epoch[-1])))
-
         if self.epoch.shape[0] != self.vectors.shape[0]:
             raise ValueError("Timestamps and vectors are not the same shape!")
 

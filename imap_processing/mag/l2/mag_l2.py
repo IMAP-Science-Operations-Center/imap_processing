@@ -89,7 +89,7 @@ def mag_l2(
         calibration_matrix=calibration_matrix,
     )
 
-    basic_test_data = MagL2(
+    input_data = MagL2(
         vectors[:, :3],  # level 2 vectors don't include range
         input_data["epoch"].data,
         input_data["vectors"].data[:, 3],
@@ -104,7 +104,7 @@ def mag_l2(
     attributes.add_instrument_global_attrs("mag")
     # temporarily point to l1c
     attributes.add_instrument_variable_attrs("mag", "l1c")
-    return [basic_test_data.generate_dataset(attributes, day)]
+    return [input_data.generate_dataset(attributes, day)]
 
 
 def retrieve_matrix_from_l2_calibration(
