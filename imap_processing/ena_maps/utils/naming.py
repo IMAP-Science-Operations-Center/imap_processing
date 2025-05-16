@@ -33,7 +33,7 @@ def get_instrument_descriptor(
     sensor: int | Literal["45", "90", "combined"] | str = "",
 ) -> str:
     """
-    Get the instrument descriptor string for a given instrument and sensor.
+    Get the instrument descriptor string for a given instrument and sensor (e.g. "u45").
 
     Parameters
     ----------
@@ -81,7 +81,7 @@ def parse_instrument_descriptor(
     instrument_descriptor: str,
 ) -> tuple[MappableInstrumentShortName, str]:
     """
-    Parse the instrument descriptor string into instrument and sensor.
+    Parse the instrument descriptor string into instrument, sensor str reprs.
 
     Parameters
     ----------
@@ -116,13 +116,229 @@ def parse_instrument_descriptor(
             instrument_short_name = match.group(1)
             sensor = match.group(2) if match.group(2) else ""
             instrument = MappableInstrumentShortName(instrument_short_name)
-        else:
-            raise ValueError(
-                f"Invalid instrument descriptor: {instrument_descriptor}. "
-                "Expected format: <instrument_short_name><sensor>."
-            )
     instrument = MappableInstrumentShortName(instrument_short_name)
     return instrument, sensor
+
+
+def parse_map_duration(
+    duration: str | int | timedelta,
+) -> str:
+    """
+    Parse the duration into a string representation.
+
+    Parameters
+    ----------
+    duration : str | int | timedelta
+        The duration to parse. This can be a string in the format "1yr", "6mo", etc.,
+        an integer representing the number of days, or a timedelta object.
+
+    Returns
+    -------
+    str
+        The parsed duration string in the format "1yr", "6mo", etc.
+    """
+    if isinstance(duration, timedelta):
+        # Convert timedelta to a string representation of number of 28.5 day months
+        num_months = int(duration.days // 28.5)
+        duration = f"{num_months}mo"
+    elif isinstance(duration, int):
+        # Assume number of days and convert to 28.5-day months
+        duration = f"{int(duration // 28.5)}mo"
+    elif isinstance(duration, str):
+        pass
+    else:
+        raise ValueError("Invalid duration type. Must be str, int, or timedelta.")
+    # Replace 12mo with 1yr
+    if duration == "12mo":
+        duration = "1yr"
+    return duration
+
+
+def parse_map_frame(
+    frame: SpiceFrame | Literal["sf", "hf", "hk"],
+) -> str:
+    """
+    Parse the frame into a string representation.
+
+    Parameters
+    ----------
+    frame : str | SpiceFrame
+        The frame to parse. This can be a string in the format "sf", "hf", "hk", or
+        a SpiceFrame object.
+
+    Returns
+    -------
+    str
+        The parsed frame string.
+    """
+    if isinstance(frame, SpiceFrame):
+        match frame:
+            case SpiceFrame.IMAP_DPS.value:
+                return "sf"
+            case SpiceFrame.ECLIPJ2000.value:
+                return "hf"
+            case _:
+                raise NotImplementedError(f"Frame {frame} is not yet implemented.")
+    # Handle string frame
+    elif frame in ["sf", "hf", "hk"]:
+        return frame
+    else:
+        raise ValueError(
+            f"Invalid frame: {frame}. Expected 'sf', 'hf', 'hk', or a SpiceFrame."
+        )
+
+
+@dataclass
+class MapDescriptor:
+    """
+    A class to represent a map descriptor for ENA maps.
+
+    This class provides methods to parse a map descriptor string and convert it
+    back into a string.
+
+    Attributes
+    ----------
+    instrument : MappableInstrumentShortName
+        The short name of the instrument.
+    frame : str
+        The frame descriptor string. (e.g. "sf", "hf", "hk").
+    resolution_str : str
+        The resolution string for the map (e.g. "nside128", "2deg").
+    duration : str
+        The duration of the map (e.g. "1yr", "6mo").
+    sensor : str, optional
+        The sensor identifier (e.g. "45", "90", "combined", "").
+        Default is "".
+    principal_data : str, optional
+        The principal data type for the map (e.g. "ena", "spx", "isn").
+        Default is "ena".
+    species : str, optional
+        The species for the map (e.g. "h", "he", "o").
+        Default is "h".
+    survival_corrected : str, optional
+        Whether the map is survival probability corrected ("sp") or not ("nsp").
+        Default is "nsp".
+    spin_phase : str, optional
+        The spin phase for the map (e.g. "full", "ram", "anti").
+        Default is "full".
+    coordinate_system : str, optional
+        The coordinate system for the map (e.g. "hae", "hgi", "rc").
+        Default is "hae".
+    """
+
+    instrument: MappableInstrumentShortName
+    frame: str | SpiceFrame
+    resolution_str: str
+    duration: str | int | timedelta
+    sensor: int | str = ""
+    principal_data: str = "ena"
+    species: str = "h"
+    survival_corrected: str = "nsp"
+    spin_phase: str = "full"
+    coordinate_system: str = "hae"
+
+    # Quantities parsed into strings that will fit in the descriptor
+    @property
+    def frame_str(self) -> str:
+        """
+        Get the frame's string representation. See parse_map_frame().
+
+        Returns
+        -------
+        str
+            The frame string representation.
+        """
+        return parse_map_frame(self.frame)
+
+    @property
+    def duration_str(self) -> str:
+        """
+        Get the duration's string representation. See parse_map_duration().
+
+        Returns
+        -------
+        str
+            The duration string representation.
+        """
+        return parse_map_duration(self.duration)
+
+    @property
+    def instrument_descriptor(self) -> str:
+        """
+        Get the instrument descriptor string.
+
+        Returns
+        -------
+        str
+            The instrument descriptor string.
+        """
+        return get_instrument_descriptor(self.instrument, self.sensor)
+
+    @classmethod
+    def from_string(cls, map_descriptor: str) -> MapDescriptor:
+        """
+        Parse a map_descriptor string and return a MapDescriptor instance.
+
+        The map_descriptor string is expected to follow the format:
+        "instrument_descriptor-principal_data-species-frame-...cont...
+        survival_corrected-spin_phase-coordinate_system-resolution_str-duration".
+
+        Parameters
+        ----------
+        map_descriptor : str
+            The map descriptor string to parse.
+
+        Returns
+        -------
+        MapDescriptor
+            An instance of the MapDescriptor class with parsed values.
+        """
+        parts = map_descriptor.split("-")
+        if len(parts) != 9:
+            raise ValueError(
+                f"Invalid map_descriptor format: {map_descriptor}. Expected 9 parts."
+            )
+        # Extract the instrument and sensor from the first part
+        instrument_sensor = parts[0]
+        instrument, sensor = parse_instrument_descriptor(instrument_sensor)
+
+        return cls(
+            instrument=instrument,
+            sensor=sensor,
+            principal_data=parts[1],
+            species=parts[2],
+            frame=parts[3],
+            survival_corrected=parts[4],
+            spin_phase=parts[5],
+            coordinate_system=parts[6],
+            resolution_str=parts[7],
+            duration=parts[8],
+        )
+
+    def to_string(self) -> str:
+        """
+        Convert the MapDescriptor instance back into a map_descriptor string.
+
+        Returns
+        -------
+        str
+            The map_descriptor string in the format:
+            "instrument_descriptor-principal_data-species-frame-...cont...
+            survival_corrected-spin_phase-coordinate_system-resolution_str-duration".
+        """
+        return "-".join(
+            [
+                self.instrument_descriptor,
+                self.principal_data,
+                self.species,
+                self.frame_str,
+                self.survival_corrected,
+                self.spin_phase,
+                self.coordinate_system,
+                self.resolution_str,
+                self.duration_str,
+            ]
+        )
 
 
 # Ignore too many branches warning
