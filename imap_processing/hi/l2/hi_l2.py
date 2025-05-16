@@ -108,14 +108,9 @@ def generate_hi_map(
     if direction != "full":
         raise NotImplementedError
 
-    min_epoch = np.nan
-    max_epoch = np.nan
-
     for pset_path in psets:
         logger.info(f"Processing {pset_path}")
         pset = HiPointingSet(pset_path)
-        min_epoch = np.nanmin(min_epoch, pset.epoch)
-        max_epoch = np.nanmax(max_epoch, pset.epoch)
 
         # Background rate and uncertainty are exposure time weighted means in
         # the map.
