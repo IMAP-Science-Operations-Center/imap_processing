@@ -1,24 +1,25 @@
 """IMAP-Lo L1C Data Processing."""
 
-from collections import namedtuple
 from dataclasses import Field
-from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.spice.time import met_to_ttj2000ns
 
 
-def lo_l1c(dependencies: dict) -> list[Path]:
+def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
     """
     Will process IMAP-Lo L1B data into L1C CDF data products.
 
     Parameters
     ----------
-    dependencies : dict
+    sci_dependencies : dict
         Dictionary of datasets needed for L1C data product creation in xarray Datasets.
+    anc_dependencies : list
+        Ancillary files needed for L1C data product creation.
 
     Returns
     -------
@@ -31,34 +32,96 @@ def lo_l1c(dependencies: dict) -> list[Path]:
     attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1c")
 
     # if the dependencies are used to create Annotated Direct Events
-    if "imap_lo_l1b_de" in dependencies:
+    if "imap_lo_l1b_de" in sci_dependencies:
         logical_source = "imap_lo_l1c_pset"
-        # TODO: TEMPORARY. Need to update to use the L1C data class once that exists
-        #  and I have sample data.
-        data_field_tup = namedtuple("data_field_tup", ["name"])
-        data_fields = [
-            data_field_tup("POINTING_START"),
-            data_field_tup("POINTING_END"),
-            data_field_tup("MODE"),
-            data_field_tup("PIVOT_ANGLE"),
-            data_field_tup("TRIPLES_COUNTS"),
-            data_field_tup("TRIPLES_RATES"),
-            data_field_tup("DOUBLES_COUNTS"),
-            data_field_tup("DOUBLES_RATES"),
-            data_field_tup("HYDROGEN_COUNTS"),
-            data_field_tup("HYDROGEN_RATES"),
-            data_field_tup("OXYGEN_COUNTS"),
-            data_field_tup("OXYGEN_RATES"),
-            data_field_tup("EXPOSURE_TIME"),
-        ]
+        l1b_de = sci_dependencies["imap_lo_l1b_de"]
 
-    dataset: list[Path] = create_datasets(attr_mgr, logical_source, data_fields)  # type: ignore[arg-type]
-    # TODO Remove once data_fields input is removed from create_datasets
-    return dataset
+        l1b_goodtimes_only = filter_goodtimes(l1b_de, anc_dependencies)
+        pset = initialize_pset(l1b_goodtimes_only, attr_mgr, logical_source)
+    return [pset]
 
 
-# TODO: This is going to work differently when I sample data.
-#  The data_fields input is temporary.
+def initialize_pset(
+    l1b_de: xr.Dataset, attr_mgr: ImapCdfAttributes, logical_source: str
+) -> xr.Dataset:
+    """
+    Initialize the PSET dataset and set the Epoch.
+
+    The Epoch time is set to the first of the L1B
+    Direct Event times. There is one Epoch per PSET file.
+
+    Parameters
+    ----------
+    l1b_de : xarray.Dataset
+        L1B Direct Event dataset.
+    attr_mgr : ImapCdfAttributes
+        Attribute manager used to get the L1C attributes.
+    logical_source : str
+        The logical source of the pset.
+
+    Returns
+    -------
+    pset : xarray.Dataset
+        Initialized PSET dataset.
+    """
+    pset = xr.Dataset(
+        attrs=attr_mgr.get_global_attributes(logical_source),
+    )
+    # TODO: Need to create utility to get start of repointing to use
+    #  for the pset epoch time. Setting to first DE for now
+    pset_epoch = l1b_de["epoch"][0].item()
+    pset["epoch"] = xr.DataArray(
+        np.array([pset_epoch]),
+        dims=["epoch"],
+        attrs=attr_mgr.get_variable_attributes("epoch"),
+    )
+
+    return pset
+
+
+def filter_goodtimes(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
+    """
+    Filter the L1B Direct Event dataset to only include good times.
+
+    The good times are read from the sweep table ancillary file.
+
+    Parameters
+    ----------
+    l1b_de : xarray.Dataset
+        L1B Direct Event dataset.
+
+    anc_dependencies : list
+        Ancillary files needed for L1C data product creation.
+
+    Returns
+    -------
+    l1b_de : xarray.Dataset
+        Filtered L1B Direct Event dataset.
+    """
+    # Get the sweep table from the ancillary dependencies
+    goodtimes_table = next(
+        (item for item in anc_dependencies if "goodtimes" in item), None
+    )
+    # sweep table is a dependency so this should always be in the list
+    goodtimes_table_df = pd.read_csv(goodtimes_table)
+
+    # convert goodtimes from MET to TTJ2000
+    goodtimes_start = met_to_ttj2000ns(goodtimes_table_df["GoodTime_strt"])
+    goodtimes_end = met_to_ttj2000ns(goodtimes_table_df["GoodTime_end"])
+
+    # Create a mask for epochs within any of the start/end time ranges
+    goodtimes_mask = np.zeros_like(l1b_de["epoch"], dtype=bool)
+
+    # Iterate over the good times and create a mask
+    for start, end in zip(goodtimes_start, goodtimes_end):
+        goodtimes_mask |= (l1b_de["epoch"] >= start) & (l1b_de["epoch"] < end)
+
+    # Filter the dataset using the mask
+    filtered_epochs = l1b_de.sel(epoch=goodtimes_mask)
+
+    return filtered_epochs
+
+
 def create_datasets(
     attr_mgr: ImapCdfAttributes, logical_source: str, data_fields: list[Field]
 ) -> xr.Dataset:

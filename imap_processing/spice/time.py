@@ -131,6 +131,32 @@ def ttj2000ns_to_et(tt_ns: npt.ArrayLike) -> npt.NDArray[float]:
 
 
 @typing.no_type_check
+@ensure_spice
+def et_to_ttj2000ns(et: npt.ArrayLike) -> npt.NDArray[float]:
+    """
+    Convert TDB J2000 epoch seconds to TT J2000 epoch nanoseconds.
+
+    Opposite of `ttj2000ns_to_et`.
+
+    Parameters
+    ----------
+    et : float, numpy.ndarray
+        Number of seconds since the J2000 epoch in the TDB timescale.
+
+    Returns
+    -------
+    numpy.ndarray[float]
+        Number of nanoseconds since the J2000 epoch in the TT timescale.
+    """
+    vectorized_unitim = _vectorize(
+        spiceypy.unitim, otypes=[float], excluded=["insys", "outsys"]
+    )
+    tt_s = vectorized_unitim(et, "ET", "TT")
+    tt_ns = np.asarray(tt_s, dtype=np.float64) * 1e9
+    return tt_ns
+
+
+@typing.no_type_check
 @ensure_spice(time_kernels_only=True)
 def met_to_utc(met: npt.ArrayLike, precision: int = 9) -> npt.NDArray[str]:
     """
@@ -173,6 +199,25 @@ def met_to_datetime64(
         The mission elapsed time converted to UTC string.
     """
     return np.array(met_to_utc(met), dtype=np.datetime64)[()]
+
+
+def et_to_datetime64(
+    et: npt.ArrayLike,
+) -> Union[np.datetime64, npt.NDArray[np.datetime64]]:
+    """
+    Convert ET to numpy datetime64.
+
+    Parameters
+    ----------
+    et : float, numpy.ndarray
+        Number of seconds since the J2000 epoch in the TDB timescale.
+
+    Returns
+    -------
+    numpy.ndarray[str]
+        The mission elapsed time converted to numpy.datetime64.
+    """
+    return np.array(et_to_utc(et), dtype=np.datetime64)[()]
 
 
 @typing.no_type_check

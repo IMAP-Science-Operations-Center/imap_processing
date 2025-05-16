@@ -1,17 +1,5 @@
 """HIT L2 constants."""
 
-from imap_processing import imap_module_directory
-
-L2_STANDARD_ANCILLARY_PATH_PREFIX = (
-    imap_module_directory / "hit/ancillary/imap_hit_l1b-to-l2-standard-dt"
-)
-L2_SUMMED_ANCILLARY_PATH_PREFIX = (
-    imap_module_directory / "hit/ancillary/imap_hit_l1b-to-l2-summed-dt"
-)
-L2_SECTORED_ANCILLARY_PATH_PREFIX = (
-    imap_module_directory / "hit/ancillary/imap_hit_l1b-to-l2-sector-dt"
-)
-
 # Constants for HIT L2 intensity calculation
 SECONDS_PER_MIN = 60  # seconds per minute
 SECONDS_PER_10_MIN = 600  # seconds per 10 minutes

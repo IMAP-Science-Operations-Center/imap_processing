@@ -259,3 +259,10 @@ imap_ultra_l1a_90sensor-imgparams:
     Data_type: L1A_90Sensor-ImgParams>Level-1A Image Parameters for Ultra90
     Logical_source: imap_ultra_l1a_90sensor-imgparams
     Logical_source_description: IMAP-Ultra Instrument Level-1A Image Parameters Data for Ultra90.
+
+# Ultra L2 Global attributes for different sensors and sky tiling types and durations
+imap_ultra_l2_enamap-hf:
+    <<: *instrument_base
+    Data_type: L2_{sensor}Sensor-enamap{tiling}-hf-{duration}>Level-2 ENA Intensity Map for Ultra{sensor}
+    Logical_source: imap_ultra_l2_{sensor}sensor-enamap{tiling}-hf-{duration}
+    Logical_source_description: IMAP-Ultra Instrument Level-2 ENA Intensity Map Data for Ultra{sensor} on {tiling} tiling in heliospheric frame over {duration} duration.

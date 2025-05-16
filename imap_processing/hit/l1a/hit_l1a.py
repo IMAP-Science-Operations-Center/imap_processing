@@ -83,7 +83,7 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> xr.Dataset:
 
     The data is added to the dataset as new data fields named
     according to their species. They have 4 dimensions: epoch
-    energy mean, azimuth, and declination. The energy mean
+    energy mean, azimuth, and zenith. The energy mean
     dimension is used to distinguish between the different energy
     ranges the data belongs to. The energy deltas for each species
     are also added to the dataset as new data fields.
@@ -136,14 +136,14 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> xr.Dataset:
 
     # Add sectored rates by species to the dataset
     for species, data in data_by_species.items():
-        # Rates data has shape: energy_mean, epoch, azimuth, declination
+        # Rates data has shape: energy_mean, epoch, azimuth, zenith
         # Convert rates to numpy array and transpose axes to get
-        # shape: epoch, energy_mean, azimuth, declination
+        # shape: epoch, energy_mean, azimuth, zenith
         rates_data = np.transpose(np.array(data["counts"]), axes=(1, 0, 2, 3))
 
         updated_dataset[f"{species}_sectored_counts"] = xr.DataArray(
             data=rates_data,
-            dims=["epoch", f"{species}_energy_mean", "azimuth", "declination"],
+            dims=["epoch", f"{species}_energy_mean", "azimuth", "zenith"],
             name=f"{species}_counts_sectored",
         )
 

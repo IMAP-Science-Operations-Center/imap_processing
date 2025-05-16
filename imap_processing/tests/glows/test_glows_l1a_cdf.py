@@ -14,7 +14,6 @@ def test_generate_histogram_dataset(l1a_test_data):
     histogram_l1a, _ = l1a_test_data
     glows_attrs = create_glows_attr_obj()
     dataset = generate_histogram_dataset(histogram_l1a, glows_attrs)
-
     assert (dataset["histogram"].data[0] == histogram_l1a[0].histogram).all()
     hist_dict = dataclasses.asdict(histogram_l1a[0])
     for key, item in hist_dict.items():

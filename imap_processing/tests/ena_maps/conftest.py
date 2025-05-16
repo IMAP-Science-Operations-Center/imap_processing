@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from imap_processing.tests.ultra.data.mock_data import (
+from imap_processing.tests.ultra.mock_data import (
     mock_l1c_pset_product_healpix,
     mock_l1c_pset_product_rectangular,
 )
@@ -12,7 +12,7 @@ from imap_processing.tests.ultra.data.mock_data import (
 @pytest.fixture(scope="module")
 def ultra_l1c_pset_datasets():
     """Make fake L1C Ultra PSET products on a HEALPix tiling for testing"""
-    l1c_nside = 64
+    l1c_nside = 32
     return {
         "nside": l1c_nside,
         "products": [
@@ -33,7 +33,7 @@ def ultra_l1c_pset_datasets():
 @pytest.fixture(scope="session")
 def rectangular_l1c_pset_datasets():
     """Make fake L1C Ultra PSET products on a rectangular tiling for testing"""
-    l1c_spacing_deg = 1
+    l1c_spacing_deg = 4
     return {
         "spacing": l1c_spacing_deg,
         "products": [

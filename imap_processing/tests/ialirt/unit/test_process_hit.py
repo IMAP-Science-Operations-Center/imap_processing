@@ -25,7 +25,7 @@ def binary_packet_path():
         imap_module_directory
         / "tests"
         / "ialirt"
-        / "test_data"
+        / "data"
         / "l0"
         / "hit_ialirt_sample.ccsds"
     )
@@ -38,7 +38,7 @@ def hit_test_data():
         imap_module_directory
         / "tests"
         / "ialirt"
-        / "test_data"
+        / "data"
         / "l0"
         / "hit_ialirt_sample.csv"
     )

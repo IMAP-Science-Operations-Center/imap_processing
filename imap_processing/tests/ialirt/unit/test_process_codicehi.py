@@ -26,7 +26,7 @@ def binary_packet_path():
         imap_module_directory
         / "tests"
         / "ialirt"
-        / "test_data"
+        / "data"
         / "l0"
         / "hi_fsw_view_1_ccsds.bin"
     )
@@ -39,7 +39,7 @@ def codicehi_validation_data():
         imap_module_directory
         / "tests"
         / "ialirt"
-        / "test_data"
+        / "data"
         / "l0"
         / "imap_codice_l1a_hi-ialirt_20240523200000_v0.0.0.cdf"
     )

@@ -98,13 +98,13 @@ def test_written_and_loaded_dataset(test_dataset):
 def test_repoint_start_date(test_dataset):
     output_file_path = write_cdf(test_dataset)
     assert "imap_swe_l1a_sci_20100101_v001.cdf" in output_file_path.name
-    output_file_path = write_cdf(test_dataset, start_date="20001212")
+    test_dataset.attrs["Start_date"] = "20001212"
+
+    output_file_path = write_cdf(test_dataset)
     assert "imap_swe_l1a_sci_20001212_v001.cdf" in output_file_path.name
-    output_file_path = write_cdf(test_dataset, repointing="repoint12345")
-    assert "imap_swe_l1a_sci_20100101-repoint12345_v001.cdf" in output_file_path.name
-    output_file_path = write_cdf(
-        test_dataset, start_date="20001212", repointing="12345"
-    )
+
+    test_dataset.attrs["Repointing"] = "12345"
+    output_file_path = write_cdf(test_dataset)
     assert "imap_swe_l1a_sci_20001212-repoint12345_v001.cdf" in output_file_path.name
 
 

@@ -21,14 +21,14 @@ logger = logging.getLogger(__name__)
 
 
 def load_cdf(
-    file_path: Path, remove_xarray_attrs: bool = True, **kwargs: dict
+    file_path: Path | str, remove_xarray_attrs: bool = True, **kwargs: dict
 ) -> xr.Dataset:
     """
     Load the contents of a CDF file into an ``xarray`` dataset.
 
     Parameters
     ----------
-    file_path : Path or ImapFilePath
+    file_path : Path or ImapFilePath or str
         The path to the CDF file or ImapFilePath object.
     remove_xarray_attrs : bool
         Whether to remove the xarray attributes that get injected by the
@@ -66,9 +66,6 @@ def load_cdf(
 
 def write_cdf(
     dataset: xr.Dataset,
-    *,
-    start_date: str | None = None,
-    repointing: str | None = None,
     **extra_cdf_kwargs: dict,
 ) -> Path:
     """
@@ -81,22 +78,16 @@ def write_cdf(
     determined by the "Logical_source" attribute.  The version is determined from
     "Data_version".
 
-    The start_date and repointing parameters are used to override the computed values.
+    The start_date and repointing attributes in the dataset are used to override the
+    computed values.
+
     If these are not included, start_date is generated from the first epoch in the
-    dataset and repointing is retrieved from the dataset attributes (or not included if
-    the attribute is not present).
+    dataset and repointing is not included if the attribute is not present or None.
 
     Parameters
     ----------
     dataset : xarray.Dataset
         The dataset object to convert to a CDF.
-    start_date : str
-        In the output filename, this is the start_date. If not provided or None,
-        the first epoch in the dataset is used.
-    repointing : str
-        The repointing number to use in the output filename. If not provided or None,
-        the repointing number is retrieved from the dataset attributes. If none are
-        provided, it is excluded from the filename.
     **extra_cdf_kwargs : dict
         Additional keyword arguments to pass to the ``xarray_to_cdf`` function.
 
@@ -112,6 +103,7 @@ def write_cdf(
     # TODO: This implementation of epoch to time string results in an error of
     #       5 seconds due to 5 leap-second occurrences since the J2000 epoch.
     # TODO: Create a ttj2000_to_datetime function to handle this conversion
+    start_date = dataset.attrs.get("Start_date", None)
     if start_date is None:
         # If no start time is included, then use the first epoch in the dataset
         dt64 = TTJ2000_EPOCH + dataset["epoch"].values[0].astype("timedelta64[ns]")
@@ -129,11 +121,7 @@ def write_cdf(
             f"The Data_version attribute {version} does not match expected format vXXX."
         )
 
-    if "repointing" in dataset.attrs:
-        # If provided, assume that we want to override the passed-in value
-        repointing = dataset.attrs["repointing"]
-    elif repointing is not None:
-        dataset.attrs["repointing"] = repointing
+    repointing = dataset.attrs.get("Repointing", None)
 
     repointing_int = int(repointing[-5:]) if repointing else None
     science_file = imap_data_access.ScienceFilePath.generate_from_inputs(

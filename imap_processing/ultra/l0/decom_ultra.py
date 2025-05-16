@@ -8,6 +8,7 @@ import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ultra.l0.decom_tools import (
     decompress_binary,
     decompress_image,
@@ -151,7 +152,17 @@ def process_ultra_events(ds: xr.Dataset) -> xr.Dataset:
     """
     all_events = []
     all_indices = []
-    empty_event = {field: np.iinfo(np.int64).min for field in EVENT_FIELD_RANGES}
+
+    attrs = ImapCdfAttributes()
+    attrs.add_instrument_variable_attrs("ultra", level="l1a")
+
+    empty_event = {
+        field: attrs.get_variable_attributes(field).get(
+            "FILLVAL", np.iinfo(np.int64).min
+        )
+        for field in EVENT_FIELD_RANGES
+    }
+
     counts = ds["count"].values
     eventdata_array = ds["eventdata"].values
 

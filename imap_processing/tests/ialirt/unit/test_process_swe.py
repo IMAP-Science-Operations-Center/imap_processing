@@ -1,3 +1,7 @@
+"""Tests to support I-ALiRT SWE packet parsing."""
+
+from unittest.mock import patch
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -5,10 +9,17 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.process_swe import (
+    average_counts,
+    azimuthal_check_counterstreaming,
+    compute_bidirectional,
     decompress_counts,
+    determine_streaming,
+    find_bin_offsets,
+    find_min_counts,
     get_ialirt_energies,
     normalize_counts,
     phi_to_bin,
+    polar_check_counterstreaming,
     prepare_raw_counts,
     process_swe,
 )
@@ -32,7 +43,7 @@ def binary_packet_path():
         imap_module_directory
         / "tests"
         / "ialirt"
-        / "test_data"
+        / "data"
         / "l0"
         / "20240827095047_SWE_IALIRT_packet.bin"
     )
@@ -45,7 +56,7 @@ def swe_test_data():
         imap_module_directory
         / "tests"
         / "ialirt"
-        / "test_data"
+        / "data"
         / "l0"
         / "idle_export_eu.SWE_IALIRT_20240827_093852.csv"
     )
@@ -105,6 +116,25 @@ def fields_to_test():
         "swe_cem7_e4": "ELEC_COUNTS_SPIN_I_POL_6_E_3J",
     }
     return fields_to_test
+
+
+@pytest.fixture
+def summed_half_cycle():
+    """Create test set with known peaks"""
+
+    summed_half_cycle = np.zeros((8, 30))
+
+    for i in range(8):
+        peak = i + 5
+        summed_half_cycle[i, peak] = 100
+        summed_half_cycle[i, (peak + 6) % 30] = 60  # +90 offset
+        summed_half_cycle[i, (peak + 8) % 30] = 80  # +90 offset
+        summed_half_cycle[i, (peak + 14) % 30] = 20  # +180 offset
+        summed_half_cycle[i, (peak + 16) % 30] = 40  # +180 offset
+        summed_half_cycle[i, (peak - 6) % 30] = 5  # -90 offset
+        summed_half_cycle[i, (peak - 8) % 30] = 15  # -90 offset
+
+    return summed_half_cycle
 
 
 def test_get_energy():
@@ -223,7 +253,7 @@ def test_prepare_raw_counts():
     assert np.array_equal(raw_counts, expected)
 
 
-def test_norm_counts():
+def test_normalize_counts():
     """Tests normalize_counts function"""
 
     # Shape (2, 7, 3) for a small test case
@@ -281,7 +311,95 @@ def test_norm_counts():
     assert np.allclose(norm_counts, expected, atol=1e-9)
 
 
-def test_process_swe(swe_test_data, fields_to_test):
+def test_find_bin_offsets():
+    """Tests find_bin_offsets function"""
+
+    peak_bins = np.array([5, 6, 29])
+    bins = find_bin_offsets(peak_bins, (2, 3))
+    np.testing.assert_array_equal(bins, np.array([[7, 8, 1], [8, 9, 2]]))
+
+
+def test_average_counts(summed_half_cycle):
+    """Tests average_values_and_azimuth function"""
+
+    # Find the azimuth angle that corresponds to the maximum counts at each energy
+    peak_az_bin = np.argmax(summed_half_cycle, axis=1)
+
+    # Bins +6 and +8 correspond to +90 degrees.
+    counts_90 = average_counts(peak_az_bin, summed_half_cycle, (6, 8))
+
+    assert np.allclose(counts_90, np.full(8, 70), atol=1e-9)
+
+
+def test_find_min_counts(summed_half_cycle):
+    """Tests find_min_counts function"""
+
+    cpeak, cmin, counts = find_min_counts(summed_half_cycle)
+    np.testing.assert_array_equal(cpeak, np.full(8, 100))
+    np.testing.assert_array_equal(cmin, counts[0])
+
+
+def test_determine_streaming_summed_cems():
+    """Tests determine_streaming_summed_cems function."""
+
+    # Case where streaming should be True
+    cpeak = np.array([100, 80, 50, 60])
+    cmin = np.array([20, 70, 40, 60])
+    counts_180 = np.array([40, 60, 90, 110])
+    assert np.array_equal(
+        determine_streaming(cpeak, counts_180, cmin), np.array([1, 0, 0, 0])
+    )
+
+
+def test_compute_bidirectional():
+    """Tests compute_bidirectional function."""
+
+    first_half = np.array([1, 0, 0, 0, 1, 0, 0, 0])
+    second_half = np.array([1, 0, 0, 0, 1, 0, 0, 0])
+    assert compute_bidirectional(first_half, second_half) == (0, 0)
+
+    first_half = np.array([1, 1, 1, 0, 0, 0, 0, 0])
+    second_half = np.array([0, 0, 0, 0, 0, 0, 0, 0])
+    assert compute_bidirectional(first_half, second_half) == (1, 0)
+
+
+def test_azimuthal_check_counterstreaming(summed_half_cycle):
+    """Tests azimuthal_check_counterstreaming function."""
+
+    bde = azimuthal_check_counterstreaming(summed_half_cycle, summed_half_cycle)
+
+    assert bde == (1, 1)
+
+
+def test_polar_check_counterstreaming():
+    """Tests polar_check_counterstreaming function."""
+
+    # cem0 (cem1) and cem6 (cem7) have high values
+    # cem2, cem3, cem4 (cem3 to cem5) are low and used for cmin
+    row = np.array([100, 20, 5, 5, 5, 20, 100])
+    summed_half = np.tile(row, (8, 1))
+
+    bde = polar_check_counterstreaming(summed_half, summed_half)
+
+    assert bde == (1, 1)
+
+
+@patch(
+    "imap_processing.ialirt.l0.process_swe.read_in_flight_cal_data",
+    return_value=pd.DataFrame(
+        {
+            "met_time": [453051300, 453051900],
+            "cem1": [1, 2],
+            "cem2": [1, 2],
+            "cem3": [1, 2],
+            "cem4": [1, 2],
+            "cem5": [1, 2],
+            "cem6": [1, 2],
+            "cem7": [1, 2],
+        }
+    ),
+)
+def test_process_swe(mock_read_cal, swe_test_data, fields_to_test):
     """Test processing for swe."""
     swe_test_data = swe_test_data.rename(
         columns={v: k for k, v in fields_to_test.items()}
@@ -295,4 +413,7 @@ def test_process_swe(swe_test_data, fields_to_test):
     )
     swe_data = process_swe(ds, [in_flight_cal_file])
 
-    assert swe_data == []
+    # TODO: add tests with test data here.
+
+    # Check that all groups in the data are accounted for.
+    assert len(swe_data) == 912 // 60

@@ -23,7 +23,7 @@ import logging
 import numpy as np
 import xarray as xr
 
-from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.idex.idex_utils import get_idex_attrs
 from imap_processing.spice.time import epoch_to_doy
 
 logger = logging.getLogger(__name__)
@@ -48,8 +48,7 @@ def idex_l2b(l2a_dataset: xr.Dataset) -> xr.Dataset:
     )
 
     # create the attribute manager for this data level
-    idex_attrs = ImapCdfAttributes()
-    idex_attrs.add_instrument_global_attrs(instrument="idex")
+    idex_attrs = get_idex_attrs("l2b")
 
     epoch_da = xr.DataArray(
         l2a_dataset["epoch"],
@@ -64,8 +63,8 @@ def idex_l2b(l2a_dataset: xr.Dataset) -> xr.Dataset:
     )
 
     target_waveforms = ["target_high", "target_low", "ion_grid"]
-    mass_name = "_fit_impact_mass_estimate"
-    charge_name = "_fit_impact_charge"
+    mass_name = "_dust_mass_estimate"
+    charge_name = "_impact_charge"
     # Copy arrays to l2b dataset
     for waveform in target_waveforms:
         l2b_dataset[waveform + charge_name] = l2a_dataset[waveform + charge_name].copy(
@@ -76,7 +75,9 @@ def idex_l2b(l2a_dataset: xr.Dataset) -> xr.Dataset:
         )
 
     spin_phase_quadrants = round_spin_phases(l2a_dataset["spin_phase"])
-    # TODO add variable attributes
+    spin_phase_quadrants.attrs.update(
+        idex_attrs.get_variable_attributes("spin_phase_quadrants")
+    )
     l2b_dataset["spin_phase_quadrants"] = spin_phase_quadrants
 
     # Get the time of impact array (in day of year)
@@ -85,6 +86,7 @@ def idex_l2b(l2a_dataset: xr.Dataset) -> xr.Dataset:
         name="impact_day_of_year",
         data=impact_day_of_year,
         dims="epoch",
+        attrs=idex_attrs.get_variable_attributes("impact_day_of_year"),
     )
 
     logger.info("IDEX L2B science data processing completed.")

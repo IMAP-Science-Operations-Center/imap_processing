@@ -4,7 +4,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from imap_processing import imap_module_directory
+from imap_processing.cdf.utils import load_cdf
 from imap_processing.ultra.constants import UltraConstants
+
+TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
 @pytest.fixture
@@ -17,12 +21,14 @@ def df_filt(de_dataset, events_fsw_comparison_theta_0):
     return df_filt
 
 
-def test_calculate_de(l1b_de_dataset, df_filt):
+@pytest.mark.external_test_data
+def test_calculate_de(df_filt):
     """Tests calculate_de function."""
 
-    l1b_de_dataset = l1b_de_dataset[0]
+    l1b_de_dataset_path = TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207_v999.cdf"
+    l1b_de_dataset = load_cdf(l1b_de_dataset_path)
     l1b_de_dataset = l1b_de_dataset.where(
-        l1b_de_dataset["start_type"] != np.iinfo(np.int64).min, drop=True
+        l1b_de_dataset["start_type"] != 255, drop=True
     )
     # Front and back positions
     assert np.allclose(l1b_de_dataset["x_front"].data, df_filt["Xf"].astype("float"))
@@ -63,7 +69,7 @@ def test_calculate_de(l1b_de_dataset, df_filt):
             & (l1b_de_dataset["tof_corrected"] < UltraConstants.CTOF_SPECIES_MAX)
         )[0]
     ]
-    assert np.all(species_array == "H")
+    assert np.all(species_array == 1)
 
     # Velocities in various frames
     test_tof = l1b_de_dataset["tof_start_stop"]

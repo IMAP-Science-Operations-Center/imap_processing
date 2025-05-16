@@ -1,5 +1,6 @@
 """Create dataset."""
 
+import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
@@ -37,7 +38,7 @@ def create_dataset(
             "spin_number": data_dict["spin_number"],
             "energy_bin_geometric_mean": data_dict["energy_bin_geometric_mean"],
             # Start time aligns with the universal spin table
-            "epoch": data_dict["spin_start_time"],
+            "epoch": ("spin_number", np.asarray(data_dict["epoch"])),
         }
         default_dimension = "spin_number"
     # L1c pset data products
@@ -95,31 +96,31 @@ def create_dataset(
             dataset[key] = xr.DataArray(
                 data,
                 dims=["epoch", "component"],
-                attrs=cdf_manager.get_variable_attributes(key),
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         elif key in ("ena_rates_threshold", "energy_bin_delta"):
             dataset[key] = xr.DataArray(
                 data,
                 dims=["energy_bin_geometric_mean"],
-                attrs=cdf_manager.get_variable_attributes(key),
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         elif key in rates_keys:
             dataset[key] = xr.DataArray(
                 data,
                 dims=["energy_bin_geometric_mean", "spin_number"],
-                attrs=cdf_manager.get_variable_attributes(key),
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         elif key == "counts":
             dataset[key] = xr.DataArray(
                 data,
                 dims=["energy_bin_geometric_mean", "healpix"],
-                attrs=cdf_manager.get_variable_attributes(key),
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         else:
             dataset[key] = xr.DataArray(
                 data,
                 dims=[default_dimension],
-                attrs=cdf_manager.get_variable_attributes(key),
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
 
     return dataset

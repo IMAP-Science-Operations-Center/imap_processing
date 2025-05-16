@@ -1,5 +1,7 @@
 """Methods for decomming packets, processing to level 1A, and writing CDFs for MAG."""
 
+from __future__ import annotations
+
 import dataclasses
 import logging
 from pathlib import Path
@@ -16,10 +18,6 @@ from imap_processing.mag.l1a.mag_l1a_data import (
     MagL1aPacketProperties,
     TimeTuple,
 )
-from imap_processing.spice.time import (
-    et_to_utc,
-    ttj2000ns_to_et,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +25,12 @@ logger = logging.getLogger(__name__)
 def mag_l1a(packet_filepath: Path) -> list[xr.Dataset]:
     """
     Will process MAG L0 data into L1A CDF files at cdf_filepath.
+
+    For each packet file passed in, this will output between 2 and 6 CDF files.
+
+    Nominally, we expect raw, burst, and norm mode data for the mago and magi sensors.
+    It is possible to only have norm or burst mode, or to only have data from one
+    sensor.
 
     Parameters
     ----------
@@ -43,13 +47,10 @@ def mag_l1a(packet_filepath: Path) -> list[xr.Dataset]:
     norm_data = packets["norm"]
     burst_data = packets["burst"]
 
-    input_files = [packet_filepath.name]
-
     # Create attribute manager and add MAG L1A attributes and global variables
     attribute_manager = ImapCdfAttributes()
     attribute_manager.add_instrument_global_attrs("mag")
     attribute_manager.add_instrument_variable_attrs("mag", "l1a")
-    attribute_manager.add_global_attribute("Input_files", str(input_files))
     attribute_manager.add_global_attribute(
         "Generation_date",
         np.datetime64(
@@ -96,17 +97,19 @@ def create_l1a(
 
     l1a = process_packets(packet_data)
 
-    # TODO: Rearrange generate_dataset to combine these two for loops
-    # Split into MAGo and MAGi
-    for _, mago in l1a["mago"].items():
-        logical_file_id = f"imap_mag_l1a_{data_mode.value.lower()}-mago"
-        norm_mago_output = generate_dataset(mago, logical_file_id, attribute_manager)
+    # given the processed packets in MagL1A classes, we can generate the MAGo and MAGi
+    # datasets. A given set of packets may have only mago or only magi.
+    logical_file_id = f"imap_mag_l1a_{data_mode.value.lower()}-mago"
+    if l1a["mago"] is not None:
+        norm_mago_output = generate_dataset(
+            l1a["mago"], logical_file_id, attribute_manager
+        )
         generated_datasets.append(norm_mago_output)
 
-    for _, magi in l1a["magi"].items():
-        logical_file_id = f"imap_mag_l1a_{data_mode.value.lower()}-magi"
+    logical_file_id = f"imap_mag_l1a_{data_mode.value.lower()}-magi"
+    if l1a["magi"] is not None:
         norm_magi_output = generate_dataset(
-            magi,
+            l1a["magi"],
             logical_file_id,
             attribute_manager,
         )
@@ -117,7 +120,7 @@ def create_l1a(
 
 def process_packets(
     mag_l0_list: list[MagL0],
-) -> dict[str, dict[np.datetime64, MagL1a]]:
+) -> dict[str, MagL1a | None]:
     """
     Given a list of MagL0 packets, process them into MagO and MagI L1A data classes.
 
@@ -131,27 +134,20 @@ def process_packets(
 
     Returns
     -------
-    packet_dict : dict[str, dict[numpy.datetime64, MagL1a]]
+    packet_dict : dict[str, MagL1a | None]
         Dictionary containing two keys: "mago" which points to a dictionary of mago
          MagL1A objects, and "magi" which points to a dictionary of magi MagL1A objects.
          Each dictionary has keys of days and values of MagL1A objects, so each day
          corresponds to one MagL1A object.
     """
-    magi = {}
-    mago = {}
+    magi = None
+    mago = None
 
     for mag_l0 in mag_l0_list:
         primary_start_time = TimeTuple(mag_l0.PRI_COARSETM, mag_l0.PRI_FNTM)
         secondary_start_time = TimeTuple(mag_l0.SEC_COARSETM, mag_l0.SEC_FNTM)
 
         mago_is_primary = mag_l0.PRI_SENS == PrimarySensor.MAGO.value
-
-        primary_day = (
-            et_to_utc(ttj2000ns_to_et([primary_start_time.to_j2000ns()]))[0]
-        ).astype("datetime64[D]")
-        secondary_day = (
-            et_to_utc(ttj2000ns_to_et([secondary_start_time.to_j2000ns()]))[0]
-        ).astype("datetime64[D]")
 
         primary_packet_properties = MagL1aPacketProperties(
             mag_l0.SHCOARSE,
@@ -193,11 +189,9 @@ def process_packets(
         )
 
         # Sort primary and secondary into MAGo and MAGi by 24 hour chunks
-        mago_day = primary_day if mago_is_primary else secondary_day
-        magi_day = primary_day if not mago_is_primary else secondary_day
 
-        if mago_day not in mago:
-            mago[mago_day] = MagL1a(
+        if mago is None:
+            mago = MagL1a(
                 True,
                 mag_l0.MAGO_ACT,
                 mag_l0.SHCOARSE,
@@ -207,7 +201,7 @@ def process_packets(
                 primary_packet_properties if mago_is_primary else secondary_packet_data,
             )
         else:
-            mago[mago_day].append_vectors(
+            mago.append_vectors(
                 (
                     primary_timestamped_vectors
                     if mago_is_primary
@@ -216,8 +210,8 @@ def process_packets(
                 primary_packet_properties if mago_is_primary else secondary_packet_data,
             )
 
-        if magi_day not in magi:
-            magi[magi_day] = MagL1a(
+        if magi is None:
+            magi = MagL1a(
                 False,
                 mag_l0.MAGI_ACT,
                 mag_l0.SHCOARSE,
@@ -229,7 +223,7 @@ def process_packets(
                 else secondary_packet_data,
             )
         else:
-            magi[magi_day].append_vectors(
+            magi.append_vectors(
                 (
                     primary_timestamped_vectors
                     if not mago_is_primary

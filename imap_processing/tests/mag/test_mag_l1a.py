@@ -318,15 +318,14 @@ def test_different_vector_rates(
         )
     )
     l1 = process_packets([l0])
-    expected_day = np.datetime64("2023-11-30")
-    assert len(l1["magi"][expected_day].vectors) == 16
-    assert len(l1["mago"][expected_day].vectors) == 32
+    assert len(l1["magi"].vectors) == 16
+    assert len(l1["mago"].vectors) == 32
 
     assert np.array_equal(
-        l1["mago"][expected_day].vectors[:, :4],
+        l1["mago"].vectors[:, :4],
         np.concatenate((expected_vectors[0], expected_vectors[0])),
     )
-    assert np.array_equal(l1["magi"][expected_day].vectors[:, :4], expected_vectors[1])
+    assert np.array_equal(l1["magi"].vectors[:, :4], expected_vectors[1])
 
     # compressed data
     # Compression headers - indicating a 16 bit width and no range section
@@ -406,9 +405,8 @@ def test_compare_validation_data():
     l0 = decom_packets(test_file)
     l1 = process_packets(l0["norm"])
     # Should have one day of data
-    expected_day = np.datetime64("2023-11-30")
-    l1_mago = l1["mago"][expected_day]
-    l1_magi = l1["magi"][expected_day]
+    l1_mago = l1["mago"]
+    l1_magi = l1["magi"]
 
     assert len(l1_mago.vectors) == 96
     assert len(l1_magi.vectors) == 96

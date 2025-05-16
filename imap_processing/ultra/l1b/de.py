@@ -15,6 +15,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_ctof,
     get_de_energy_kev,
     get_de_velocity,
+    get_efficiency,
     get_energy_pulse_height,
     get_energy_ssd,
     get_eventtimes,
@@ -28,6 +29,9 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_ssd_tof,
 )
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
+
+FILLVAL_UINT8 = 255
+FILLVAL_FLOAT32 = -1.0e31
 
 
 def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
@@ -75,7 +79,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
         {key: de_dataset[dataset_key] for key, dataset_key in zip(keys, dataset_keys)}
     )
 
-    valid_mask = de_dataset["start_type"].data != np.iinfo(np.int64).min
+    valid_mask = de_dataset["start_type"].data != FILLVAL_UINT8
     ph_mask = np.isin(
         de_dataset["stop_type"].data, [StopType.Top.value, StopType.Bottom.value]
     )
@@ -86,26 +90,28 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     ssd_indices = np.nonzero(valid_mask & ssd_mask)[0]
 
     # Instantiate arrays
-    xf = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    yf = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    xb = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    yb = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    xc = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    d = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
-    r = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    phi = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    theta = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    tof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    etof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    ctof = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    magnitude_v = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    energy = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    species_bin = np.full(len(de_dataset["epoch"]), "UNKNOWN", dtype="U10")
-    t2 = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float32)
-    event_times = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
-    spin_starts = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
-    spin_period_sec = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.float64)
-    start_type = np.full(len(de_dataset["epoch"]), np.nan, dtype=np.uint8)
+    xf = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    yf = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    xb = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    yb = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    xc = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    d = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
+    r = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    phi = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    theta = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    tof = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    etof = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    ctof = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    magnitude_v = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    energy = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    species_bin = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
+    t2 = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    event_times = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
+    spin_starts = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
+    spin_period_sec = np.full(
+        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64
+    )
+    start_type = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
 
     xf[valid_indices] = get_front_x_position(
         de_dataset["start_type"].data[valid_indices],
@@ -236,6 +242,11 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     de_dict["phi_fwhm"], de_dict["theta_fwhm"] = get_fwhm(
         start_type,
         f"ultra{sensor}",
+        de_dict["tof_energy"],
+        de_dict["phi"],
+        de_dict["theta"],
+    )
+    de_dict["event_efficiency"] = get_efficiency(
         de_dict["tof_energy"],
         de_dict["phi"],
         de_dict["theta"],
