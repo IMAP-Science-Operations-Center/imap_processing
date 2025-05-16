@@ -445,18 +445,7 @@ class ProcessInstrument(ABC):
         dependencies = ProcessingInputCollection()
         dependencies.deserialize(self.dependency_str)
         dependencies.download_all_files()
-        logger.info(f"deserialized dependencies: {self.dependency_str}")
-        logger.info(f"dependency filepaths:{dependencies.get_file_paths()}")
-        logger.info(
-            f"dependency filepaths filtered by source:"
-            f"{dependencies.get_file_paths(source=SPICESource.SPICE.value)}"
-        )
-        logger.info(
-            f"dependency filepaths filtered by source as string:"
-            f"{dependencies.get_file_paths(source='spice')}"
-        )
-        for filepath in dependencies.get_file_paths():
-            logger.info(filepath.exists(), filepath)
+
         # Furnish spice kernels
         kernel_paths = dependencies.get_file_paths(data_type=SPICESource.SPICE.value)
         logger.info(f"Furnishing kernels: {kernel_paths}")
