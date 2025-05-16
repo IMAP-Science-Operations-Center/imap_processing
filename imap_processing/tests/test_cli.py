@@ -11,6 +11,7 @@ import pytest
 import spiceypy
 import xarray as xr
 from imap_data_access.processing_input import (
+    AncillaryInput,
     ProcessingInputCollection,
     ScienceInput,
     SPICEInput,
@@ -178,21 +179,38 @@ def test_repointing_file_creation(mock_instrument_dependencies):
 
 
 @pytest.mark.parametrize(
-    "data_level, science_input, n_prods",
+    "data_level, science_input, anc_input, n_prods",
     [
-        ("l1a", ["imap_hi_l0_raw_20231212_v001.pkts"], 2),
-        ("l1b", ["imap_hi_l1a_90sensor-de_20241105_v001.cdf"], 1),
-        ("l1b", ["imap_hi_l0_raw_20231212_v001.pkts"], 2),
-        ("l1c", ["imap_hi_l1b_45sensor-de_20250415_v001.cdf"], 1),
+        ("l1a", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
+        ("l1b", ["imap_hi_l1a_90sensor-de_20241105_v001.cdf"], [], 1),
+        ("l1b", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
+        (
+            "l1c",
+            ["imap_hi_l1b_45sensor-de_20250415_v001.cdf"],
+            ["imap_hi_calibration-prod-config_20240101_v001.csv"],
+            1,
+        ),
+        (
+            "l2",
+            [
+                "imap_hi_l1c_90sensor-pset_20250415_v001.cdf",
+                "imap_hi_l1c_90sensor-pset_20250416_v001.cdf",
+            ],
+            [],
+            1,
+        ),
     ],
 )
-def test_hi_l1(mock_instrument_dependencies, data_level, science_input, n_prods):
+def test_hi(
+    mock_instrument_dependencies, data_level, science_input, anc_input, n_prods
+):
     """Test coverage for cli.Hi class"""
     mocks = mock_instrument_dependencies
     mocks["mock_write_cdf"].side_effect = ["/path/to/file0"] * n_prods
     mocks["mock_load_cdf"].return_value = xr.Dataset()
     input_collection = ProcessingInputCollection(
-        *[ScienceInput(file) for file in science_input]
+        *[ScienceInput(file) for file in science_input],
+        *[AncillaryInput(file) for file in anc_input],
     )
     mocks["mock_pre_processing"].return_value = input_collection
 

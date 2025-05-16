@@ -42,7 +42,9 @@ SPIN_PHASE_BIN_CENTERS = (SPIN_PHASE_BIN_EDGES[:-1] + SPIN_PHASE_BIN_EDGES[1:]) 
 logger = logging.getLogger(__name__)
 
 
-def hi_l1c(dependencies: list) -> list[xr.Dataset]:
+def hi_l1c(
+    de_dataset: xr.Dataset, calibration_prod_config_path: Path
+) -> list[xr.Dataset]:
     """
     High level IMAP-Hi l1c processing function.
 
@@ -53,8 +55,10 @@ def hi_l1c(dependencies: list) -> list[xr.Dataset]:
 
     Parameters
     ----------
-    dependencies : list
-        Input dependencies needed for l1c processing.
+    de_dataset : xarray.Dataset
+        IMAP-Hi l1b de product.
+    calibration_prod_config_path : Path
+        Calibration product configuration file.
 
     Returns
     -------
@@ -65,12 +69,7 @@ def hi_l1c(dependencies: list) -> list[xr.Dataset]:
 
     # TODO: I am not sure what the input for Goodtimes will be so for now,
     #    If the input is an xarray Dataset, do pset processing
-    if len(dependencies) == 2 and isinstance(dependencies[0], xr.Dataset):
-        l1c_dataset = generate_pset_dataset(*dependencies)
-    else:
-        raise NotImplementedError(
-            "Input dependencies not recognized for l1c pset processing."
-        )
+    l1c_dataset = generate_pset_dataset(de_dataset, calibration_prod_config_path)
 
     return [l1c_dataset]
 

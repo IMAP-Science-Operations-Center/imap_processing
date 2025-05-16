@@ -48,6 +48,7 @@ from imap_processing.glows.l2.glows_l2 import glows_l2
 from imap_processing.hi.l1a import hi_l1a
 from imap_processing.hi.l1b import hi_l1b
 from imap_processing.hi.l1c import hi_l1c
+from imap_processing.hi.l2 import hi_l2
 from imap_processing.hit.l1a.hit_l1a import hit_l1a
 from imap_processing.hit.l1b.hit_l1b import hit_l1b
 from imap_processing.hit.l2.hit_l2 import hit_l2
@@ -661,34 +662,44 @@ class Hi(ProcessInstrument):
         print(f"Processing IMAP-Hi {self.data_level}")
         datasets: list[xr.Dataset] = []
 
-        dependency_list = dependencies.processing_input
         if self.data_level == "l1a":
-            # File path is expected output file path
-            if len(dependency_list) > 1:
-                raise ValueError(
-                    f"Unexpected dependencies found for Hi L1A:"
-                    f"{dependency_list}. Expected only one dependency."
-                )
             science_files = dependencies.get_file_paths(source="hi")
+            if len(science_files) != 1:
+                raise ValueError(
+                    f"Unexpected science_files found for Hi L1A:"
+                    f"{science_files}. Expected only one dependency."
+                )
             datasets = hi_l1a.hi_l1a(science_files[0])
         elif self.data_level == "l1b":
             l0_files = dependencies.get_file_paths(source="hi", descriptor="raw")
             if l0_files:
                 datasets = hi_l1b.hi_l1b(l0_files[0])
             else:
-                l1a_files = dependencies.get_file_paths(source="hi")
+                l1a_files = dependencies.get_file_paths(source="hi", data_type="l1a")
                 datasets = hi_l1b.hi_l1b(load_cdf(l1a_files[0]))
         elif self.data_level == "l1c":
-            # TODO: Add PSET calibration product config file dependency and remove
-            #    below injected dependency
-            hi_dependencies = dependencies.get_file_paths(source="hi")
-            hi_dependencies.append(
-                Path(__file__).parent
-                / "tests/hi/test_data/l1"
-                / "imap_his_pset-calibration-prod-config_20240101_v001.csv"
+            science_paths = dependencies.get_file_paths(source="hi", data_type="l1b")
+            if len(science_paths) != 1:
+                raise ValueError(
+                    f"Expected only one science dependency. Got {science_paths}"
+                )
+            anc_paths = dependencies.get_file_paths(data_type="ancillary")
+            if len(anc_paths) != 1:
+                raise ValueError(
+                    f"Expected only one ancillary dependency. Got {anc_paths}"
+                )
+            datasets = hi_l1c.hi_l1c(load_cdf(science_paths[0]), anc_paths[0])
+        elif self.data_level == "l2":
+            science_paths = dependencies.get_file_paths(source="hi", data_type="l2")
+            # TODO get ancillary paths
+            geometric_factors_path = None
+            esa_energies_path = None
+            datasets = hi_l2.hi_l2(
+                science_paths,
+                geometric_factors_path,
+                esa_energies_path,
+                self.descriptor,
             )
-            hi_dependencies[0] = load_cdf(hi_dependencies[0])
-            datasets = hi_l1c.hi_l1c(hi_dependencies)
         else:
             raise NotImplementedError(
                 f"Hi processing not implemented for level {self.data_level}"

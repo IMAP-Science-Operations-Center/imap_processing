@@ -28,15 +28,9 @@ def hi_test_cal_prod_config_path(hi_l1_test_data_path):
 def test_hi_l1c(mock_generate_pset_dataset, hi_test_cal_prod_config_path):
     """Test coverage for hi_l1c function"""
     mock_generate_pset_dataset.return_value = xr.Dataset()
-    pset = hi_l1c.hi_l1c([xr.Dataset(), hi_test_cal_prod_config_path])[0]
+    pset = hi_l1c.hi_l1c(xr.Dataset(), hi_test_cal_prod_config_path)[0]
     # Empty attributes, global values get added in post-processing
     assert pset.attrs == {}
-
-
-def test_hi_l1c_not_implemented():
-    """Test coverage for hi_l1c function with unrecognized dependencies"""
-    with pytest.raises(NotImplementedError):
-        hi_l1c.hi_l1c([None, None])
 
 
 @pytest.mark.external_test_data
