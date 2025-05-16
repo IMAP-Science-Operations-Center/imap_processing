@@ -1,6 +1,7 @@
 """Test ULTRA L1a CDFs."""
 
 import numpy as np
+import pytest
 import xarray as xr
 
 from imap_processing.cdf.utils import write_cdf
@@ -137,6 +138,7 @@ def test_cdf_hk(ccsds_path_theta_0):
     )
 
 
+@pytest.mark.external_test_data
 def test_cdf_cmdtxt(ccsds_path_hk):
     """Tests that CDF file can be created."""
     test_data = ultra_l1a(ccsds_path_hk, apid_input=939)
@@ -148,6 +150,7 @@ def test_cdf_cmdtxt(ccsds_path_hk):
     assert test_data_path.name == "imap_ultra_l1a_90sensor-cmdtext_20250517_v999.cdf"
 
 
+@pytest.mark.external_test_data
 def test_cdf_monitorlimits(ccsds_path_functional):
     """Tests that CDF file can be created."""
     test_data = ultra_l1a(ccsds_path_functional, apid_input=873)
@@ -161,6 +164,7 @@ def test_cdf_monitorlimits(ccsds_path_functional):
     )
 
 
+@pytest.mark.external_test_data
 def test_cdf_startup(ccsds_path_startup):
     """Tests that CDF file can be created."""
     test_data = ultra_l1a(ccsds_path_startup, apid_input=941)

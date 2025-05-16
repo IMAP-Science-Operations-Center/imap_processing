@@ -203,6 +203,33 @@ def _test_data_paths():
             / "IMAP-Ultra45_r1_L1_V0_shortened.csv",
         ),
         (
+            "FM45_Startup1_20240207T133409.CCSDS",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "data"
+            / "l1"
+            / "FM45_Startup1_20240207T133409.CCSDS",
+        ),
+        (
+            "FM45_UltraFM45_Functional_2024-01-22T0105_20240122T010548.CCSDS",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "data"
+            / "l1"
+            / "FM45_UltraFM45_Functional_2024-01-22T0105_20240122T010548.CCSDS",
+        ),
+        (
+            "imap_ultra_l0_raw_20250517_v001.pkts",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "data"
+            / "l1"
+            / "imap_ultra_l0_raw_20250517_v001.pkts",
+        ),
+        (
             "imap_ultra_l1b_45sensor-de_20240207_v999.cdf",
             imap_module_directory
             / "tests"
