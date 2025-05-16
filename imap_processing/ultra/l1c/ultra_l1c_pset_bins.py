@@ -273,6 +273,7 @@ def get_spacecraft_background_rates(
     Notes
     -----
     This is a placeholder.
+    TODO: background rates to be provided by IT.
     """
     npix = hp.nside2npix(nside)
     _, energy_midpoints, _ = build_energy_bins()
@@ -299,6 +300,7 @@ def get_helio_background_rates(
     Notes
     -----
     This is a placeholder.
+    TODO: background rates to be provided by IT.
     """
     npix = hp.nside2npix(nside)
     _, energy_midpoints, _ = build_energy_bins()
