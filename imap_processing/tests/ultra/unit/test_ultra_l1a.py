@@ -122,9 +122,9 @@ def test_cdf_events(ccsds_path_theta_0):
     )
 
 
-def test_cdf_hk(ccsds_path_theta_0):
+def test_cdf_hk(ccsds_path_hk):
     """Tests that CDF file can be created."""
-    test_data = ultra_l1a(ccsds_path_theta_0, apid_input=869)
+    test_data = ultra_l1a(ccsds_path_hk, apid_input=939)
     data = test_data[0]
     data.attrs["Data_version"] = "v999"
     data.attrs["Repointing"] = "repoint99999"
@@ -135,6 +135,17 @@ def test_cdf_hk(ccsds_path_theta_0):
         test_data_path.name
         == "imap_ultra_l1a_45sensor-status_20240207-repoint99999_v999.cdf"
     )
+
+
+def test_cdf_cmdtxt(ccsds_path_hk):
+    """Tests that CDF file can be created."""
+    test_data = ultra_l1a(ccsds_path_hk, apid_input=939)
+    data = test_data[0]
+    data.attrs["Data_version"] = "v999"
+    test_data_path = write_cdf(data, istp=True)
+
+    assert test_data_path.exists()
+    assert test_data_path.name == "imap_ultra_l1a_45sensor-c_20240207_v999.cdf"
 
 
 def test_get_event_id():

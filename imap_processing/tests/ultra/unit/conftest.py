@@ -61,6 +61,19 @@ def ccsds_path_theta_0():
 
 
 @pytest.fixture
+def ccsds_path_hk():
+    """Returns the ccsds directory."""
+    return (
+        imap_module_directory
+        / "tests"
+        / "ultra"
+        / "data"
+        / "l0"
+        / "imap_ultra_l0_raw_20250517_v001.pkts"
+    )
+
+
+@pytest.fixture
 def ccsds_path_tof():
     """Returns the ccsds directory."""
     return (
