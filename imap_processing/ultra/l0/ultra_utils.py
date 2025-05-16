@@ -123,21 +123,6 @@ ULTRA_CMD_TEXT = PacketProperties(
     len_array=None,
     mantissa_bit_length=None,
 )
-ULTRA_MACRODUMP = PacketProperties(
-    apid=[
-        871,
-        935,
-    ],
-    logical_source=[
-        "imap_ultra_l1a_45sensor-macrodump",
-        "imap_ultra_l1a_90sensor-macrodump",
-    ],
-    addition_to_logical_desc="Housekeeping with binary data",
-    width=None,
-    block=None,
-    len_array=None,
-    mantissa_bit_length=None,
-)
 
 
 # Module-level constant for event field ranges
