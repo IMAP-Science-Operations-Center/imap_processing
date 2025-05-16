@@ -45,7 +45,7 @@ energy:
   # We might not have these set up yet
   DELTA_MINUS_VAR: energy_delta_minus
   DELTA_PLUS_VAR: energy_delta_plus
-  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Energy,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Energy,Qualifier:Incident
 
 energy_label:
   VAR_TYPE: metadata
@@ -64,7 +64,7 @@ energy_delta_minus:
   DISPLAY_TYPE: no_plot
   DEPEND_1: energy
   LABL_PTR_1: energy_label
-  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Energy,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Energy,Qualifier:Uncertainty
 
 energy_delta_plus:
   <<: *default_float32
@@ -76,7 +76,7 @@ energy_delta_plus:
   DISPLAY_TYPE: no_plot
   DEPEND_1: energy
   LABL_PTR_1: energy_label
-  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Energy,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Energy,Qualifier:Uncertainty
 
 # These two coordinates will be treated differently in the
 # HEALPix and rectangular tilings. They will be substantially overridden
