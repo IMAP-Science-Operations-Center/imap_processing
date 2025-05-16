@@ -7,7 +7,7 @@ import logging
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import Optional, TypeVar
+from typing import TypeVar
 
 import astropy_healpix.healpy as hp
 import numpy as np
@@ -1117,10 +1117,10 @@ class RectangularSkyMap(AbstractSkyMap):
             )
         # Add the solid angle variable to the data_1d Dataset
         self.data_1d["solid_angle"] = xr.DataArray(
-                self.solid_angle_points,
-                name="solid_angle",
-                dims=[CoordNames.GENERIC_PIXEL.value],
-            )
+            self.solid_angle_points,
+            name="solid_angle",
+            dims=[CoordNames.GENERIC_PIXEL.value],
+        )
         # Rewrap each data array in the data_1d to the original 2D grid shape
         rewrapped_data = {}
         for key in self.data_1d.data_vars:
@@ -1157,7 +1157,7 @@ class RectangularSkyMap(AbstractSkyMap):
         level: str,
         frame: str,
         descriptor: str,
-        sensor: Optional[str] = None,
+        sensor: str | None = None,
     ) -> xr.Dataset:
         """
         Format the data into a xarray.Dataset and add required CDF variables.
