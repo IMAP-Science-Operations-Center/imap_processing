@@ -445,7 +445,7 @@ class ProcessInstrument(ABC):
         dependencies = ProcessingInputCollection()
         dependencies.deserialize(self.dependency_str)
         dependencies.download_all_files()
-
+        print(self.dependency_str)
         # Furnish spice kernels
         kernel_paths = dependencies.get_file_paths(source=SPICESource.SPICE.value)
         logger.info(f"Furnishing kernels: {kernel_paths}")
