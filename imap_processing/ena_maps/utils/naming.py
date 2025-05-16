@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Literal
 
+from imap_processing.ena_maps import ena_maps
 from imap_processing.spice.geometry import SpiceFrame
 
 # Set a constant number of days in a month to calculate the duration of maps
@@ -152,6 +153,36 @@ def parse_map_duration(
     if duration == "12mo":
         duration = "1yr"
     return duration
+
+
+def get_map_coord_frame(frame_str: str | Literal["hae",]) -> SpiceFrame:
+    """
+    Get the SpiceFrame object for a given frame string.
+
+    This Frame is used for rotation from PSET coordinates to
+    SkyMap coordinates, and so is more analogous the the
+    coordinate frame component of the map descriptor string
+    than to the hf/sf/hk frame component.
+
+    Parameters
+    ----------
+    frame_str : Literal["hae",]
+        The frame string corresponding to the SpiceFrame object.
+
+    Returns
+    -------
+    SpiceFrame
+        The SpiceFrame object corresponding to the frame string.
+
+    Raises
+    ------
+    NotImplementedError
+        If the frame string is not recognized.
+    """
+    if frame_str == "hae":
+        return SpiceFrame.ECLIPJ2000
+    else:
+        raise NotImplementedError("Coordinate frame is not yet implemented.")
 
 
 def parse_map_frame(
@@ -622,6 +653,50 @@ class MapDescriptor:
                 self.resolution_str,
                 self.duration,
             ]
+        )
+
+
+def get_output_map_structure_from_descriptor_string(
+    descriptor: str,
+) -> ena_maps.HealpixSkyMap | ena_maps.RectangularSkyMap:
+    """
+    Get the output map structure from a map descriptor string.
+
+    Parameters
+    ----------
+    descriptor : str
+        The map descriptor string.
+
+    Returns
+    -------
+    ena_maps.HealpixSkyMap | ena_maps.RectangularSkyMap
+        The output map structure.
+
+    Raises
+    ------
+    ValueError
+        If the descriptor string is invalid.
+    """
+    map_descriptor = MapDescriptor.from_string(descriptor)
+
+    # If "deg" is in the resolution string, then this is a rectangular map
+    # (e.g., '2deg')
+    if "deg" in map_descriptor.resolution_str:
+        return ena_maps.RectangularSkyMap(
+            spacing_deg=float(map_descriptor.resolution_str.split("deg")[0]),
+            spice_frame=get_map_coord_frame(map_descriptor.coordinate_system),
+        )
+    # If "nside" is in the resolution string, then this is a Healpix map
+    # (e.g., 'nside32')
+    elif "nside" in map_descriptor.resolution_str:
+        return ena_maps.HealpixSkyMap(
+            nside=int(map_descriptor.resolution_str.split("nside")[1]),
+            spice_frame=get_map_coord_frame(map_descriptor.coordinate_system),
+        )
+    else:
+        raise ValueError(
+            f"Could not interpret resolution string: {map_descriptor.resolution_str} "
+            "as either a Healpix ('nside32') or rectangular map ('2deg')."
         )
 
 

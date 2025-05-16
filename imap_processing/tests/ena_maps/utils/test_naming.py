@@ -2,6 +2,7 @@ from datetime import timedelta
 
 import pytest
 
+from imap_processing.ena_maps.ena_maps import HealpixSkyMap, RectangularSkyMap
 from imap_processing.ena_maps.utils.naming import (
     MapDescriptor,
     MappableInstrumentShortName,
@@ -9,6 +10,8 @@ from imap_processing.ena_maps.utils.naming import (
     build_l2_map_descriptor,
     ns_to_duration_months,
     get_instrument_descriptor,
+    get_map_coord_frame,
+    get_output_map_structure_from_descriptor_string,
     ns_to_duration_months,
     parse_instrument_descriptor,
     parse_map_duration,
@@ -211,6 +214,42 @@ class TestNaming:
             assert (
                 ns_to_duration_months(fraction_of_year * days_per_avg_year * ns_per_day)
                 == expected_months
+            )
+
+    def test_get_map_frame(
+        self,
+    ):
+        # Test with a string frame
+        assert get_map_coord_frame("hae") is SpiceFrame.ECLIPJ2000
+
+        # Test with not implemented 'hgi'
+        with pytest.raises(NotImplementedError):
+            get_map_coord_frame("hgi")
+
+    def test_get_output_map_structure_from_descriptor_string(self):
+        descriptor_str_half_deg = "h45-ena-he-hf-sp-ram-hae-0.5deg-2mo"
+        output_map_structure_half_deg = get_output_map_structure_from_descriptor_string(
+            descriptor_str_half_deg
+        )
+        assert isinstance(output_map_structure_half_deg, RectangularSkyMap)
+        assert output_map_structure_half_deg.spacing_deg == 0.5
+        assert (
+            output_map_structure_half_deg.spice_reference_frame is SpiceFrame.ECLIPJ2000
+        )
+
+        descriptor_str_nside32 = "ulc-ena-h-sf-nsp-full-hae-nside32-1yr"
+        output_map_structure_nside32 = get_output_map_structure_from_descriptor_string(
+            descriptor_str_nside32
+        )
+        assert isinstance(output_map_structure_nside32, HealpixSkyMap)
+        assert output_map_structure_nside32.nside == 32
+
+        with pytest.raises(
+            ValueError,
+            match="Could not interpret resolution string",
+        ):
+            get_output_map_structure_from_descriptor_string(
+                "ulc-ena-h-sf-nsp-full-hae-2abcd32-1yr"
             )
 
 
