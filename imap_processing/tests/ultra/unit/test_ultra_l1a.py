@@ -86,7 +86,7 @@ def test_cdf_rates(ccsds_path_theta_0):
     test_data = ultra_l1a(ccsds_path_theta_0, apid_input=ULTRA_RATES.apid[0])
     test_data[0].attrs["Data_version"] = "v999"
     test_data[0].attrs["Repointing"] = "repoint99999"
-    test_data_path = write_cdf(test_data[0], istp=False)
+    test_data_path = write_cdf(test_data[0], istp=True)
 
     assert test_data_path.exists()
     assert (

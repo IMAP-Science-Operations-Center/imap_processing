@@ -72,6 +72,7 @@ def ultra_l1a(packet_file: str, apid_input: Optional[int] = None) -> list[xr.Dat
             gattr_key = ULTRA_TOF.logical_source[ULTRA_TOF.apid.index(apid)]
         elif apid in ULTRA_RATES.apid:
             decom_ultra_dataset = process_ultra_rates(datasets_by_apid[apid])
+            decom_ultra_dataset = decom_ultra_dataset.drop_vars("fastdata_00")
             gattr_key = ULTRA_RATES.logical_source[ULTRA_RATES.apid.index(apid)]
         elif apid in ULTRA_EVENTS.apid:
             decom_ultra_dataset = process_ultra_events(datasets_by_apid[apid])
