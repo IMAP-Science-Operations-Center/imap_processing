@@ -148,7 +148,6 @@ def et_to_ttj2000ns(et: npt.ArrayLike) -> npt.NDArray[float]:
     numpy.ndarray[float]
         Number of nanoseconds since the J2000 epoch in the TT timescale.
     """
-    # tt_seconds = np.asarray(tt_ns, dtype=np.float64) / 1e9
     vectorized_unitim = _vectorize(
         spiceypy.unitim, otypes=[float], excluded=["insys", "outsys"]
     )
@@ -206,7 +205,7 @@ def et_to_datetime64(
     et: npt.ArrayLike,
 ) -> Union[np.datetime64, npt.NDArray[np.datetime64]]:
     """
-    Convert ET to datetime.datetime.
+    Convert ET to numpy datetime64.
 
     Parameters
     ----------
