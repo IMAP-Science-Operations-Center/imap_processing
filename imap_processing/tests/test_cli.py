@@ -13,6 +13,7 @@ import xarray as xr
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
     ScienceInput,
+    SPICEInput,
 )
 
 from imap_processing.cli import (
@@ -360,7 +361,7 @@ def test_spice_kernel_handling(spice_test_data_path):
     dependency_obj = [
         {"type": "science", "files": ["imap_hi_l2a_sensor45-de_20100105_v001.cdf"]},
         {"type": "spice", "files": kernels_to_furnish},
-        {"type": "spice", "files": ["imap_2010_104_01.repoint.csv"]},
+        {"type": "repoint", "files": ["imap_2010_104_01.repoint.csv"]},
     ]
     dependency_str = json.dumps(dependency_obj)
 
@@ -437,12 +438,14 @@ def test_post_processing(
     test_ds = xr.Dataset()
     mock_swe_l1a.return_value = [test_ds]
     input_collection = ProcessingInputCollection(
-        ScienceInput("imap_swe_l0_raw_20100105_v001.pkts")
+        ScienceInput("imap_swe_l0_raw_20100105_v001.pkts"),
+        SPICEInput("naif0012.tls", "imap_sclk_0001.tsc"),
     )
     mocks["mock_pre_processing"].return_value = input_collection
 
     dependency_str = (
-        '[{"type": "science","files": ["imap_swe_l0_raw_20100105_v001.pkts"]}]'
+        '[{"type": "science","files": ["imap_swe_l0_raw_20100105_v001.pkts"]}, '
+        '{"type": "spice", "files": ["naif0012.tls", "imap_sclk_0001.tsc"]}]'
     )
     instrument = Swe("l1a", "raw", dependency_str, "20100105", None, "v001", True)
 
@@ -458,4 +461,8 @@ def test_post_processing(
         assert mocks["mock_upload"].call_count == 1
 
     # Test parent injection
-    assert test_ds.attrs["Parents"] == ["imap_swe_l0_raw_20100105_v001.pkts"]
+    assert test_ds.attrs["Parents"] == [
+        "imap_swe_l0_raw_20100105_v001.pkts",
+        "naif0012.tls",
+        "imap_sclk_0001.tsc",
+    ]

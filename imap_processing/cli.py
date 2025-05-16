@@ -1099,7 +1099,6 @@ class Swe(ProcessInstrument):
 
         dependency_list = dependencies.processing_input
         if self.data_level == "l1a":
-            print(f"len(dependency_list) = {len(dependency_list)}")
             if len(dependency_list) != 2:
                 raise ValueError(
                     f"Unexpected dependencies found for SWE L1A:"
