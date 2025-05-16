@@ -58,6 +58,11 @@ def test_genarate_hi_map(hi_l1_test_data_path):
     assert isinstance(sky_map, RectangularSkyMap)
     assert sky_map.spacing_deg == 6
 
+    # Test that we got some non-zero values
+    for var_name in ["counts", "exposure_factor", "obs_date"]:
+        assert var_name in sky_map.data_1d.data_vars
+        assert np.nanmax(sky_map.data_1d[var_name].data) > 0
+
 
 def test_calculate_ena_signal_rates(empty_rectangular_map_dataset):
     """Test coverage for calculate_ena_signal_rates"""

@@ -833,6 +833,8 @@ class AbstractSkyMap(ABC):
             # that correspond to each map pixel as the weights.
             self.data_1d[value_key] += pointing_projected_values
 
+        # TODO: The max epoch needs to include the pset duration. Right now it
+        #     is just capturing the start epoch. See issue #1747
         self.min_epoch = min(self.min_epoch, pointing_set.epoch)
         self.max_epoch = max(self.max_epoch, pointing_set.epoch)
 

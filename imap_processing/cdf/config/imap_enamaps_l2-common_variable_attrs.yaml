@@ -167,7 +167,7 @@ obs_date_energy_dependent:
 
 solid_angle:
   <<: *default_float32
-  CATDESC: Solid angle of subtended by each pixel.
+  CATDESC: Solid angle subtended by each pixel.
   FIELDNAM: Solid Angle
   DEPEND_0: epoch
   UNITS: sr
