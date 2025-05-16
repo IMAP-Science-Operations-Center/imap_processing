@@ -458,7 +458,7 @@ class ProcessInstrument(ABC):
         for filepath in dependencies.get_file_paths():
             logger.info(filepath.exists(), filepath)
         # Furnish spice kernels
-        kernel_paths = dependencies.get_file_paths(source=SPICESource.SPICE.value)
+        kernel_paths = dependencies.get_file_paths(data_type=SPICESource.SPICE.value)
         logger.info(f"Furnishing kernels: {kernel_paths}")
         spiceypy.furnsh([str(kernel_path.resolve()) for kernel_path in kernel_paths])
 
