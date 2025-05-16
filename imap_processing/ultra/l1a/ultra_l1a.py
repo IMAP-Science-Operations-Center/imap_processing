@@ -99,7 +99,6 @@ def ultra_l1a(packet_file: str, apid_input: Optional[int] = None) -> list[xr.Dat
             gattr_key = ULTRA_CMD_TEXT.logical_source[ULTRA_CMD_TEXT.apid.index(apid)]
         else:
             logger.error(f"APID {apid} not recognized.")
-            # TODO: here we can put other apids
             continue
 
         decom_ultra_dataset.attrs.update(attr_mgr.get_global_attributes(gattr_key))

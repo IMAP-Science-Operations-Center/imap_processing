@@ -74,6 +74,32 @@ def ccsds_path_hk():
 
 
 @pytest.fixture
+def ccsds_path_functional():
+    """Returns the ccsds directory."""
+    return (
+        imap_module_directory
+        / "tests"
+        / "ultra"
+        / "data"
+        / "l0"
+        / "FM45_UltraFM45_Functional_2024-01-22T0105_20240122T010548.CCSDS"
+    )
+
+
+@pytest.fixture
+def ccsds_path_startup():
+    """Returns the ccsds directory."""
+    return (
+        imap_module_directory
+        / "tests"
+        / "ultra"
+        / "data"
+        / "l0"
+        / "FM90_Startup_20230711T081655.CCSDS"
+    )
+
+
+@pytest.fixture
 def ccsds_path_tof():
     """Returns the ccsds directory."""
     return (

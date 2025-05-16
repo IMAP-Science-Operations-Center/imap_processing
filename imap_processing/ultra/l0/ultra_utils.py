@@ -68,7 +68,6 @@ ULTRA_HK = PacketProperties(
         868,
         869,
         870,
-        871,
         873,
         874,
         876,
@@ -78,7 +77,6 @@ ULTRA_HK = PacketProperties(
         932,
         933,
         934,
-        935,
         937,
         938,
         940,
@@ -90,7 +88,6 @@ ULTRA_HK = PacketProperties(
         "imap_ultra_l1a_45sensor-memdump",
         "imap_ultra_l1a_45sensor-status",
         "imap_ultra_l1a_45sensor-bootstatus",
-        "imap_ultra_l1a_45sensor-macrodump",
         "imap_ultra_l1a_45sensor-monitorlimits",
         "imap_ultra_l1a_45sensor-params",
         "imap_ultra_l1a_45sensor-scauto",
@@ -100,7 +97,6 @@ ULTRA_HK = PacketProperties(
         "imap_ultra_l1a_90sensor-memdump",
         "imap_ultra_l1a_90sensor-status",
         "imap_ultra_l1a_90sensor-bootstatus",
-        "imap_ultra_l1a_90sensor-macrodump",
         "imap_ultra_l1a_90sensor-monitorlimits",
         "imap_ultra_l1a_90sensor-params",
         "imap_ultra_l1a_90sensor-scauto",
@@ -120,6 +116,21 @@ ULTRA_CMD_TEXT = PacketProperties(
     logical_source=[
         "imap_ultra_l1a_45sensor-cmdtext",
         "imap_ultra_l1a_90sensor-cmdtext",
+    ],
+    addition_to_logical_desc="Housekeeping with binary data",
+    width=None,
+    block=None,
+    len_array=None,
+    mantissa_bit_length=None,
+)
+ULTRA_MACRODUMP = PacketProperties(
+    apid=[
+        871,
+        935,
+    ],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-macrodump",
+        "imap_ultra_l1a_90sensor-macrodump",
     ],
     addition_to_logical_desc="Housekeeping with binary data",
     width=None,
