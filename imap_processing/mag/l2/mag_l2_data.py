@@ -8,7 +8,12 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.mag.constants import DataMode
-from imap_processing.spice.time import et_to_utc, ttj2000ns_to_et
+from imap_processing.spice.time import (
+    et_to_ttj2000ns,
+    et_to_utc,
+    str_to_et,
+    ttj2000ns_to_et,
+)
 
 
 class ValidFrames(Enum):
@@ -298,4 +303,20 @@ class MagL2:
         print("End time:")
         print(et_to_utc(ttj2000ns_to_et(self.epoch[-1])))
 
-        pass
+        if self.epoch.shape[0] != self.vectors.shape[0]:
+            raise ValueError("Timestamps and vectors are not the same shape!")
+
+        start_timestamp_j2000 = et_to_ttj2000ns(str_to_et(str(timestamp)))
+        end_timestamp_j2000 = et_to_ttj2000ns(
+            str_to_et(str(timestamp + np.timedelta64(1, "D")))
+        )
+
+        day_start_index = np.searchsorted(self.epoch, start_timestamp_j2000)
+        day_end_index = np.searchsorted(self.epoch, end_timestamp_j2000)
+
+        self.epoch = self.epoch[day_start_index:day_end_index]
+        self.vectors = self.vectors[day_start_index:day_end_index, :]
+        self.range = self.range[day_start_index:day_end_index]
+        self.magnitude = self.magnitude[day_start_index:day_end_index]
+        self.quality_flags = self.quality_flags[day_start_index:day_end_index]
+        self.quality_bitmask = self.quality_bitmask[day_start_index:day_end_index]

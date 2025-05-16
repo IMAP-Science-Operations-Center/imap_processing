@@ -5,7 +5,7 @@ import xarray as xr
 from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l2.mag_l2 import mag_l2, retrieve_matrix_from_l2_calibration
 from imap_processing.mag.l2.mag_l2_data import MagL2
-from imap_processing.spice.time import et_to_utc, ttj2000ns_to_et
+from imap_processing.spice.time import et_to_datetime64, et_to_utc, ttj2000ns_to_et
 from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
 
 
@@ -121,12 +121,23 @@ def test_full_calculation(norm_dataset, mag_test_l2_data):
     pass
 
 
-def test_timestamp_truncation(norm_dataset, mag_test_l2_data):
-    time_shift = 1.08e13  # 3 hrs in ns
+@pytest.mark.parametrize(
+    ("time_shift", "start_diff", "end_diff"),
+    # 3 hours in ns
+    [
+        (-1.08e13, -1, 0),
+        # 19 hours in ns
+        (6.84e13, 0, 1),
+    ],
+)
+def test_timestamp_truncation(
+    norm_dataset, mag_test_l2_data, time_shift, start_diff, end_diff
+):
     day = np.datetime64("2025-10-17").astype("datetime64[D]")
+    shifted_timestamps = norm_dataset["epoch"].data + time_shift
     l2 = MagL2(
         norm_dataset["vectors"].data[:, :3],
-        norm_dataset["epoch"].data - time_shift,
+        shifted_timestamps,
         norm_dataset["vectors"].data[:, 3],
         {},
         np.zeros(len(norm_dataset["epoch"].data)),
@@ -138,20 +149,49 @@ def test_timestamp_truncation(norm_dataset, mag_test_l2_data):
     first_epoch_val = np.array(et_to_utc(ttj2000ns_to_et(l2.epoch[0]))).astype(
         "datetime64[D]"
     )
-    print(first_epoch_val)
-    assert first_epoch_val == day - 1
+
+    # Before starting: epoch spans two days
+    assert first_epoch_val == day + start_diff
 
     last_epoch_val = np.array(et_to_utc(ttj2000ns_to_et(l2.epoch[-1]))).astype(
         "datetime64[D]"
     )
-    assert last_epoch_val == day
+    assert last_epoch_val == day + end_diff
 
     l2.truncate_to_24h(day)
 
-    first_epoch_val = np.array(et_to_utc(ttj2000ns_to_et(l2.epoch[0]))).astype(
+    # after truncation: epoch spans one day
+    first_epoch_val = et_to_datetime64(ttj2000ns_to_et(l2.epoch[0])).astype(
         "datetime64[D]"
     )
-    last_epoch_val = np.array(et_to_utc(ttj2000ns_to_et(l2.epoch[-1]))).astype(
+    last_epoch_val = et_to_datetime64(ttj2000ns_to_et(l2.epoch[-1])).astype(
+        "datetime64[D]"
+    )
+
+    assert first_epoch_val == day
+    assert last_epoch_val == day
+
+    # Timestamps should align with all data
+    assert l2.epoch.shape[0] == l2.vectors.shape[0]
+    assert l2.epoch.shape[0] == l2.magnitude.shape[0]
+    assert l2.epoch.shape[0] == l2.range.shape[0]
+    assert l2.epoch.shape[0] == l2.quality_flags.shape[0]
+    assert l2.epoch.shape[0] == l2.quality_bitmask.shape[0]
+
+    assert l2.epoch.shape[0] < shifted_timestamps.shape[0]
+    post_trunc_shape = l2.epoch.shape[0]
+
+    for ts in l2.epoch:
+        assert ts in shifted_timestamps
+    # Applying twice shouldn't affect anything
+    l2.truncate_to_24h(day)
+
+    assert l2.epoch.shape[0] == post_trunc_shape
+
+    first_epoch_val = et_to_datetime64(ttj2000ns_to_et(l2.epoch[0])).astype(
+        "datetime64[D]"
+    )
+    last_epoch_val = et_to_datetime64(ttj2000ns_to_et(l2.epoch[-1])).astype(
         "datetime64[D]"
     )
 
