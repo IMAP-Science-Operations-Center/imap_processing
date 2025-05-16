@@ -201,7 +201,22 @@ def test_timestamp_truncation(
 
 def test_magnitude():
     # Test magnitude calculation
-    pass
+    test_vector_one = np.array([[6, 9, 12]])
+    expected_magnitude = np.sqrt(6**2 + 9**2 + 12**2)
+
+    output_magnitude = MagL2.calculate_magnitude(test_vector_one)
+
+    assert np.allclose(output_magnitude, expected_magnitude, atol=1e-9)
+
+    test_multiple_vectors = np.random.rand(10, 3) * 10
+    expected_magnitude = [
+        np.sqrt(x[0] ** 2 + x[1] ** 2 + x[2] ** 2) for x in test_multiple_vectors
+    ]
+
+    output_magnitude = MagL2.calculate_magnitude(test_multiple_vectors)
+    assert np.allclose(output_magnitude, expected_magnitude, atol=1e-9)
+
+    assert output_magnitude.shape == (10,)
 
 
 def test_expected_output_norm():
