@@ -5,7 +5,7 @@ build-backend = "poetry_dynamic_versioning.backend"
 [tool.poetry]
 name = "imap-processing"
 # Gets updated dynamically by the poetry-dynamic-versioning plugin
-version = "0.13.0.post36.dev0+88bbafa"
+version = "0.0.0"
 description = "IMAP Science Operations Center Processing"
 authors = ["IMAP SDC Developers <imap-sdc@lists.lasp.colorado.edu>"]
 readme = "README.md"
@@ -119,7 +119,7 @@ imap_xtce = 'imap_processing.ccsds.excel_to_xtce:main'
 ignore-words-list = "livetime"
 
 [tool.poetry-dynamic-versioning]
-enable = false
+enable = true
 vcs = "git"
 
 [tool.poetry-dynamic-versioning.files."imap_processing/_version.py"]
