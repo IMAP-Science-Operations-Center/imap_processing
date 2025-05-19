@@ -10,6 +10,7 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
+from imap_processing.ena_maps.utils import naming
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import get_energy_delta_minus_plus
 

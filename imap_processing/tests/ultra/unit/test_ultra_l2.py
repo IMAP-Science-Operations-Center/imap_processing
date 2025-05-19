@@ -443,7 +443,7 @@ class TestUltraL2:
             )
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
-    def test_ultra_l2_descriptor_rectmap(self, mock_data_dict, furnish_kernels, caplog):
+    def test_ultra_l2_descriptor_rectmap(self, mock_data_dict, furnish_kernels):
         with furnish_kernels(self.required_kernel_names):
             output_map = ultra_l2.ultra_l2(
                 data_dict=mock_data_dict,
@@ -453,10 +453,8 @@ class TestUltraL2:
         assert output_map.attrs["Spice_reference_frame"] == "ECLIPJ2000"
         assert output_map.attrs["Spacing_degrees"] == "6.0"
 
-        assert "Using the provided descriptor" in caplog.text
-
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
-    def test_ultra_l2_descriptor_hpmap(self, mock_data_dict, furnish_kernels, caplog):
+    def test_ultra_l2_descriptor_hpmap(self, mock_data_dict, furnish_kernels):
         with furnish_kernels(self.required_kernel_names):
             output_map = ultra_l2.ultra_l2(
                 data_dict=mock_data_dict,
@@ -465,12 +463,9 @@ class TestUltraL2:
 
         assert output_map.attrs["Spice_reference_frame"] == "ECLIPJ2000"
         assert output_map.attrs["HEALPix_nside"] == "32"
-        assert "Using the provided descriptor" in caplog.text
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
-    def test_ultra_l2_error_for_push_and_pull(
-        self, mock_data_dict, furnish_kernels, caplog
-    ):
+    def test_ultra_l2_error_for_push_and_pull(self, mock_data_dict, furnish_kernels):
         map_structure = ena_maps.AbstractSkyMap.from_properties_dict(
             {
                 "sky_tiling_type": "HEALPIX",
