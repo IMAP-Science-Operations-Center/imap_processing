@@ -95,7 +95,7 @@ def get_x_y_axes(z_axis: NDArray) -> NDArray:
     # Take the cross product to get the X-axis.
     x_axis = np.cross(y_axis, z_axis)
 
-    frames = np.stack([z_axis, y_axis, x_axis], axis=1)
+    frames = np.stack([x_axis, y_axis, z_axis], axis=1)
 
     return frames
 
@@ -120,16 +120,7 @@ def compute_total_rotation(
     total_rotations : NDArray
         Instrument to inertial rotation matrices (N, 3, 3).
     """
-    total_rotations = []
-
-    for rotation_sc, spin in zip(inertial_frames, spin_rotations):
-        # Multiply the three matrices: inertial, spin, and mount.
-        # instrument → spacecraft → rotated spacecraft → inertial
-        rotation_inst_to_inertial = rotation_sc @ spin @ mount_matrix
-
-        total_rotations.append(rotation_inst_to_inertial)
-
-    total_rotations = np.array(total_rotations)
+    total_rotations = inertial_frames @ spin_rotations @ mount_matrix
 
     return total_rotations
 
@@ -163,7 +154,7 @@ def transform_instrument_vectors_to_inertial(
     Returns
     -------
     vectors : NDArray
-        Array of transformed vectors in inertial frame, shape (N, 3).
+        Transformed vectors in the inertial frame (ECLIPJ2000), shape (N, 3).
 
     Notes
     -----
