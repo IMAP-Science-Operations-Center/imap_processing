@@ -134,6 +134,16 @@ ena_intensity_stat_unc:
   LABLAXIS: Statistical Unc
   DISPLAY_TYPE: image
 
+ena_intensity_sys_err:
+  <<: *default_float32
+  CATDESC: ENA intensity non-statistical error.
+  FIELDNAM: Intensity non-stat error
+  UNITS: counts/(s * cm^2 * Sr * KeV)
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Non-Statistical Err
+  DISPLAY_TYPE: image
+
 sensitivity:
   <<: *default_float32
   CATDESC: Calibration/sensitivity factor calculated from multiple pointing sets.
@@ -159,6 +169,17 @@ obs_date: &obs_date_energy_independent
   datatype: int64
   CATDESC: Exposure time weighted mean collection date of data in a pixel.
   FIELDNAM: J2000 Nanoseconds
+  UNITS: ns
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: epoch
+  DISPLAY_TYPE: image
+
+obs_date_range:
+  <<: *default_int64
+  datatype: int64
+  CATDESC: Standard deviation of the observation date.
+  FIELDNAM: Observation date range
   UNITS: ns
   DEPEND_0: epoch
   VAR_TYPE: data
