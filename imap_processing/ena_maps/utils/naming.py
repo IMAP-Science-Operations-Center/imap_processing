@@ -372,7 +372,6 @@ class MapDescriptor:
         )
 
 
-# Ignore too many branches warning
 def build_l2_map_descriptor(
     *,
     # Basic parameters must always be passed in as keyword arguments
