@@ -153,8 +153,8 @@ def create_pset_counts(
     Create the PSET counts for the L1B Direct Event dataset.
 
     The counts are created by binning the data into 3600 longitude bins,
-    40 latitude bins, and 7 energy bins. The data is filtered based on
-    the specified filter: "triples", "doubles", "h", or "o".
+    40 latitude bins, and 7 energy bins. The data is filtered to only
+    include counts based on the specified filter: "triples", "doubles", "h", or "o".
 
     Parameters
     ----------
