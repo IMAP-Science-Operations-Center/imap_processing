@@ -38,6 +38,10 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
 
         l1b_goodtimes_only = filter_goodtimes(l1b_de, anc_dependencies)
         pset = initialize_pset(l1b_goodtimes_only, attr_mgr, logical_source)
+        pset["triples_counts"] = create_pset_counts(l1b_goodtimes_only, "triples")
+        pset["doubles_counts"] = create_pset_counts(l1b_goodtimes_only, "doubles")
+        pset["h_counts"] = create_pset_counts(l1b_goodtimes_only, "h")
+        pset["o_counts"] = create_pset_counts(l1b_goodtimes_only, "o")
     return [pset]
 
 
@@ -120,6 +124,94 @@ def filter_goodtimes(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
     filtered_epochs = l1b_de.sel(epoch=goodtimes_mask)
 
     return filtered_epochs
+
+
+def create_pset_counts(de: xr.Dataset, filter: str = "") -> xr.DataArray:
+    """
+    Create the PSET counts for the L1B Direct Event dataset.
+
+    The counts are created by binning the data into 3600 longitude bins,
+    40 latitude bins, and 7 energy bins. The data is filtered based on
+    the specified filter: "triples", "doubles", "h", or "o".
+
+    Parameters
+    ----------
+    de : xarray.Dataset
+        L1B Direct Event dataset.
+    filter : str, optional
+        The filter to apply to the data. Options are "triples", "doubles", "h", or "o".
+
+    Returns
+    -------
+    counts : xarray.DataArray
+        The counts for the specified filter.
+    """
+    filter_options = {
+        # triples coincidence types
+        "triples": ["111111", "111100", "111000"],
+        # doubles coincidence types
+        "doubles": [
+            "110100",
+            "110000",
+            "101101",
+            "101100",
+            "101000",
+            "100100",
+            "100101",
+            "100000",
+            "011100",
+            "011000",
+            "010100",
+            "010101",
+            "010000",
+            "001100",
+            "001101",
+            "001000",
+        ],
+        # hydrogen species identifier
+        "h": "h",
+        # oxygen species identifier
+        "o": "o",
+    }
+
+    if filter not in filter_options and filter != "":
+        raise ValueError(f"Invalid filter option. Choose from {filter_options}")
+
+    if filter in {"triples", "doubles"}:
+        filter_idx = np.where(np.isin(de["coincidence_type"], filter_options[filter]))[
+            0
+        ]
+    elif filter in {"h", "o"}:
+        filter_idx = np.where(np.isin(de["species"], filter_options[filter]))[0]
+    else:
+        filter_idx = np.arange(len(de["epoch"]))
+
+    de_filtered = de.isel(epoch=filter_idx)
+    data = np.column_stack(
+        (
+            de_filtered["pointing_bin_lon"],
+            de_filtered["pointing_bin_lat"],
+            de_filtered["esa_step"],
+        )
+    )
+    lon_edges = np.arange(3601)
+    lat_edges = np.arange(41)
+    energy_edges = np.arange(8)
+
+    hist, edges = np.histogramdd(
+        data,
+        bins=[lon_edges, lat_edges, energy_edges],
+    )
+
+    # add a new axis of size 1 for the epoch
+    hist = hist[np.newaxis, :, :, :]
+
+    counts = xr.DataArray(
+        data=hist.astype(np.int16),
+        dims=["epoch", "lon_bins", "lat_bins", "energy_bins"],
+    )
+
+    return counts
 
 
 def create_datasets(
