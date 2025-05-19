@@ -177,6 +177,49 @@ def test_transform_instrument_vectors_to_inertial(
         atol=1e-9,
     )
 
+@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
+@pytest.mark.external_kernel
+@ensure_spice
+def test_extract_spin_phase_from_spice_rotation(spice_test_data_path, use_test_metakernel):
+    """Extract spacecraft spin phase from rotation matrix using SPICE."""
+
+    ck_path = spice_test_data_path / "sim_1yr_imap_attitude.bc"
+    id_imap_spacecraft = spiceypy.gipool("FRAME_IMAP_SPACECRAFT", 0, 1)
+
+    # Get mid-point of CK coverage
+    ck_cover = spiceypy.ckcov(str(ck_path), int(id_imap_spacecraft), True, "INTERVAL", 0.0, "TDB")
+    et = (ck_cover[0] + ck_cover[1]) / 2.0
+
+    # Get rotation matrix from spacecraft to ECLIPJ2000
+    r_sc_to_inertial = spiceypy.pxform("IMAP_SPACECRAFT", "ECLIPJ2000", et)
+
+    # Extract inertial-frame X and Y axes
+    x_inertial = r_sc_to_inertial[:, 0]
+    y_inertial = r_sc_to_inertial[:, 1]
+    z_inertial = r_sc_to_inertial[:, 2]  # Spin axis
+
+    # Construct a frame where +X is reference direction in SC XY-plane
+    # In spacecraft frame, +X is initial direction before spin
+    # Project inertial +X axis onto XY plane orthogonal to Z
+    x_proj = x_inertial - np.dot(x_inertial, z_inertial) * z_inertial
+    y_proj = y_inertial - np.dot(y_inertial, z_inertial) * z_inertial
+
+    x_proj /= np.linalg.norm(x_proj)
+    y_proj /= np.linalg.norm(y_proj)
+
+    # Compute spin phase (angle between inertial +X projection and a reference)
+    spin_phase_rad = np.arctan2(
+        np.dot(y_proj, [0, 1, 0]),  # sinθ
+        np.dot(x_proj, [1, 0, 0])   # cosθ
+    )
+    spin_phase_deg = np.degrees(spin_phase_rad) % 360
+
+    print(f"Spin phase at ET {et:.2f} is approximately {spin_phase_deg:.2f} degrees")
+
+
+
+
+
 
 @pytest.mark.use_test_metakernel("imap_ialirt_sim_metakernel.template")
 @pytest.mark.external_kernel
