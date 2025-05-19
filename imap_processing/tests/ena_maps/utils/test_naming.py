@@ -12,7 +12,6 @@ from imap_processing.ena_maps.utils.naming import (
     get_instrument_descriptor,
     get_map_coord_frame,
     get_output_map_structure_from_descriptor_string,
-    ns_to_duration_months,
     parse_instrument_descriptor,
     parse_map_duration,
     parse_map_frame,
@@ -201,7 +200,9 @@ class TestNaming:
         )
         assert friendly_date_descriptor == "202605m03"
 
-    def test_ns_to_duration_months():
+    def test_ns_to_duration_months(
+        self,
+    ):
         days_per_avg_year = 365.25
         ns_per_day = 24 * 60 * 60 * 1e9
 
