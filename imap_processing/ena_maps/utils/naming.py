@@ -186,7 +186,7 @@ def get_map_coord_frame(frame_str: str | Literal["hae",]) -> SpiceFrame:
 
 
 def parse_map_frame(
-    frame: SpiceFrame | Literal["sf", "hf", "hk"],
+    frame: SpiceFrame | Literal["sf", "hf", "hk"] | str,
 ) -> str:
     """
     Parse the frame into a string representation.
