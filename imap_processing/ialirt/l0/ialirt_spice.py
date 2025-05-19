@@ -152,9 +152,9 @@ def transform_instrument_vectors_to_inertial(
     spin_phase : NDArray
         Spin phase angles (radians), shape (N,).
     sc_inertial_right : NDArray
-        Right ascension of spacecraft spin axis (radians), shape (N,).
+        Right ascension of spacecraft spin axis (degrees), shape (N,).
     sc_inertial_decline : NDArray
-        Declination of spacecraft spin axis (radians), shape (N,).
+        Declination of spacecraft spin axis (degrees), shape (N,).
     instrument_frame : SpiceFrame, optional
         SPICE frame of the instrument.
     spacecraft_frame : SpiceFrame, optional

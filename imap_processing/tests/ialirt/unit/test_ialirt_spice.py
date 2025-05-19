@@ -148,7 +148,9 @@ def test_transform_instrument_vectors_to_inertial(
     # Convert inertial Z into RA/Dec (radians)
     _, ra, dec = spiceypy.recrad(sc_z_inertial.copy())
 
-    z_axis = get_z_axis(np.array([ra]), np.array([dec]))[0]  # extract the single row
+    z_axis = get_z_axis(np.array([np.degrees(ra)]), np.array([np.degrees(dec)]))[
+        0
+    ]  # extract the single row
 
     # Test that our get_z_axis code is returning what SPICE returns.
     np.testing.assert_allclose(
@@ -162,8 +164,8 @@ def test_transform_instrument_vectors_to_inertial(
     v_manual = transform_instrument_vectors_to_inertial(
         instrument_vector,
         spin_phase,
-        np.array([ra]),
-        np.array([dec]),
+        np.array([np.degrees(ra)]),
+        np.array([np.degrees(dec)]),
     )
 
     rot_inst_to_inertial = spiceypy.pxform("IMAP_MAG", "ECLIPJ2000", et)
@@ -194,8 +196,8 @@ def test_no_attitude():
     v_manual = transform_instrument_vectors_to_inertial(
         instrument_vector,
         spin_phase,
-        np.array([ra]),
-        np.array([dec]),
+        np.array([np.degrees(ra)]),
+        np.array([np.degrees(dec)]),
     )
 
     # TODO: Put this into GSE and GSM once we have proper kernels.
