@@ -174,19 +174,26 @@ def create_pset_counts(de: xr.Dataset, filter: str = "") -> xr.DataArray:
         "o": "o",
     }
 
+    # if the filter is not in the options, raise an error
     if filter not in filter_options and filter != "":
         raise ValueError(f"Invalid filter option. Choose from {filter_options}")
 
+    # if the filter string is triples or doubles, filter using the coincidence type
     if filter in {"triples", "doubles"}:
         filter_idx = np.where(np.isin(de["coincidence_type"], filter_options[filter]))[
             0
         ]
+    # if the filter is h or o, filter using the species
     elif filter in {"h", "o"}:
         filter_idx = np.where(np.isin(de["species"], filter_options[filter]))[0]
     else:
+        # if no filter is specified, use all data
         filter_idx = np.arange(len(de["epoch"]))
 
+    # Filter the dataset using the filter index
     de_filtered = de.isel(epoch=filter_idx)
+
+    # stack the filtered data into the 3D array
     data = np.column_stack(
         (
             de_filtered["pointing_bin_lon"],
@@ -194,6 +201,7 @@ def create_pset_counts(de: xr.Dataset, filter: str = "") -> xr.DataArray:
             de_filtered["esa_step"],
         )
     )
+    # Create the histogram with 3600 longitude bins, 40 latitude bins, and 7 energy bins
     lon_edges = np.arange(3601)
     lat_edges = np.arange(41)
     energy_edges = np.arange(8)
