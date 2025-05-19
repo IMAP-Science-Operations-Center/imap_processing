@@ -91,9 +91,7 @@ def test_build_friendly_date_descriptor(start_datestring):
     assert friendly_date_descriptor == "202605m03"
 
 
-def test_ns_to_duration_months(
-    self,
-):
+def test_ns_to_duration_months():
     days_per_avg_year = 365.25
     ns_per_day = 24 * 60 * 60 * 1e9
 
