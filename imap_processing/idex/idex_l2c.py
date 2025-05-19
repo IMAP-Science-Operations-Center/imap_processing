@@ -34,6 +34,7 @@ from imap_processing.idex.idex_constants import (
     IDEX_HEALPIX_NSIDE,
     IDEX_SPACING_DEG,
 )
+from imap_processing.idex.idex_utils import get_idex_attrs
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,8 @@ def idex_l2c(l2b_dataset: xr.Dataset) -> list[xr.Dataset]:
         f"Running IDEX L2C processing on datasets: "
         f"{l2b_dataset.attrs['Logical_source']}"
     )
+    # create the attribute manager for this data level
+    idex_attrs = get_idex_attrs("l2c")
     # Epoch should be the start of the collection period.
     # TODO update metadata to indicate the collection period.
     # TODO should epoch be start of sci acquisition?
@@ -63,47 +66,12 @@ def idex_l2c(l2b_dataset: xr.Dataset) -> list[xr.Dataset]:
         l2b_dataset["epoch"].data[0:1].astype(np.int64),
         name="epoch",
         dims=["epoch"],
+        attrs=idex_attrs.get_variable_attributes("epoch", check_schema=False),
     )
-    l2c_healpix_dataset = idex_healpix_map(l2b_dataset, epoch)
-    l2c_rectangular_dataset = idex_rectangular_map(l2b_dataset, epoch)
-    # create the attribute manager for this data level
-    idex_attrs = ImapCdfAttributes()
-    idex_attrs.add_instrument_global_attrs(instrument="idex")
-    idex_attrs.add_instrument_variable_attrs("idex", "l2c")
+    l2c_healpix_dataset = idex_healpix_map(l2b_dataset, epoch, idex_attrs)
+    l2c_rectangular_dataset = idex_rectangular_map(l2b_dataset, epoch, idex_attrs)
 
     # TODO exposure time
-    l2c_healpix_dataset.attrs.update(
-        idex_attrs.get_global_attributes("imap_idex_l2c_sci-healpix")
-    )
-    l2c_healpix_dataset["counts"].attrs = idex_attrs.get_variable_attributes(
-        "healpix_counts"
-    )
-    l2c_healpix_dataset["epoch"].attrs = idex_attrs.get_variable_attributes("epoch")
-    l2c_healpix_dataset["pixel_index"].attrs = idex_attrs.get_variable_attributes(
-        "pixel_index"
-    )
-    l2c_healpix_dataset["pixel_label"].attrs = idex_attrs.get_variable_attributes(
-        "pixel_label"
-    )
-    l2c_rectangular_dataset.attrs.update(
-        idex_attrs.get_global_attributes("imap_idex_l2c_sci-rectangular")
-    )
-    l2c_rectangular_dataset["counts"].attrs = idex_attrs.get_variable_attributes(
-        "rectangular_counts"
-    )
-    l2c_rectangular_dataset["epoch"].attrs = idex_attrs.get_variable_attributes("epoch")
-    l2c_rectangular_dataset[
-        "rectangular_lat_pixel"
-    ].attrs = idex_attrs.get_variable_attributes("rectangular_lat_pixel")
-    l2c_rectangular_dataset[
-        "rectangular_lon_pixel"
-    ].attrs = idex_attrs.get_variable_attributes("rectangular_lon_pixel")
-    l2c_rectangular_dataset[
-        "rectangular_lat_pixel_label"
-    ].attrs = idex_attrs.get_variable_attributes("rectangular_lat_pixel_label")
-    l2c_rectangular_dataset[
-        "rectangular_lon_pixel_label"
-    ].attrs = idex_attrs.get_variable_attributes("rectangular_lon_pixel_label")
 
     logger.info("IDEX L2C science data processing completed.")
     return [l2c_healpix_dataset, l2c_rectangular_dataset]
@@ -112,6 +80,7 @@ def idex_l2c(l2b_dataset: xr.Dataset) -> list[xr.Dataset]:
 def idex_healpix_map(
     l1b_dataset: xr.Dataset,
     epoch_da: xr.DataArray,
+    idex_attrs: ImapCdfAttributes,
     nside: int = IDEX_HEALPIX_NSIDE,
     nested: bool = IDEX_HEALPIX_NESTED,
 ) -> xr.Dataset:
@@ -124,6 +93,8 @@ def idex_healpix_map(
         IDEX L2b dataset.
     epoch_da : xarray.DataArray
         Epoch data array of size (1,).
+    idex_attrs : ImapCdfAttributes
+        The attribute manager for this data level.
     nside : int
         Healpix nside parameter.
     nested : bool
@@ -147,20 +118,23 @@ def idex_healpix_map(
         np.arange(n_pix),
         name=CoordNames.HEALPIX_INDEX.value,
         dims=CoordNames.HEALPIX_INDEX.value,
+        attrs=idex_attrs.get_variable_attributes("pixel_index", check_schema=False),
     )
 
     # Create a histogram of the raw dust event counts for each pixel
     counts = np.histogram(hpix_idx, bins=n_pix, range=(0, n_pix))[0]
     # Add epoch dimension
     counts_da = xr.DataArray(
-        counts[np.newaxis, :],
+        counts[np.newaxis, :].astype(int),
         name="counts",
         dims=("epoch", CoordNames.HEALPIX_INDEX.value),
+        attrs=idex_attrs.get_variable_attributes("healpix_counts"),
     )
     pixel_label = xr.DataArray(
         healpix.astype(str),
         name="pixel_label",
         dims="pixel_index",
+        attrs=idex_attrs.get_variable_attributes("pixel_label", check_schema=False),
     )
     l2c_dataset = xr.Dataset(
         coords={CoordNames.HEALPIX_INDEX.value: healpix, "epoch": epoch_da},
@@ -177,14 +151,17 @@ def idex_healpix_map(
         "HEALPix_nest": nested,
         "Spice_reference_frame": IDEX_EVENT_REFERENCE_FRAME,
         "num_points": n_pix,
-    }
+    } | idex_attrs.get_global_attributes("imap_idex_l2c_sci-healpix")
     l2c_dataset.attrs.update(map_attrs)
 
     return l2c_dataset
 
 
 def idex_rectangular_map(
-    l1b_dataset: xr.Dataset, epoch_da: xr.DataArray, spacing_deg: int = IDEX_SPACING_DEG
+    l1b_dataset: xr.Dataset,
+    epoch_da: xr.DataArray,
+    idex_attrs: ImapCdfAttributes,
+    spacing_deg: int = IDEX_SPACING_DEG,
 ) -> xr.Dataset:
     """
     Create a rectangular map out of a l1b dataset.
@@ -195,6 +172,8 @@ def idex_rectangular_map(
         IDEX L2b dataset.
     epoch_da : xarray.DataArray
         Epoch data array of size (1,).
+    idex_attrs : ImapCdfAttributes
+        The attribute manager for this data level.
     spacing_deg : int
         The spacing in degrees for the rectangular grid.
 
@@ -214,12 +193,28 @@ def idex_rectangular_map(
         longitude_wrapped, latitude, bins=[grid.az_bin_edges, grid.el_bin_edges]
     )
     counts_da = xr.DataArray(
-        counts[np.newaxis, :, :],
+        counts[np.newaxis, :, :].astype(int),
         name="counts",
         dims=("epoch", "rectangular_lon_pixel", "rectangular_lat_pixel"),
+        attrs=idex_attrs.get_variable_attributes("rectangular_counts"),
     )
-    rec_lon_pixels = xr.DataArray(grid.az_bin_midpoints, dims="rectangular_lon_pixel")
-    rec_lat_pixels = xr.DataArray(grid.el_bin_midpoints, dims="rectangular_lat_pixel")
+    rec_lon_pixels = xr.DataArray(
+        name="rectangular_lon_pixel",
+        data=grid.az_bin_midpoints,
+        dims="rectangular_lon_pixel",
+        attrs=idex_attrs.get_variable_attributes(
+            "rectangular_lon_pixel", check_schema=False
+        ),
+    )
+    rec_lat_pixels = xr.DataArray(
+        name="rectangular_lat_pixel",
+        data=grid.el_bin_midpoints,
+        dims="rectangular_lat_pixel",
+        attrs=idex_attrs.get_variable_attributes(
+            "rectangular_lat_pixel", check_schema=False
+        ),
+    )
+
     l2c_dataset = xr.Dataset(
         coords={
             "epoch": epoch_da,
@@ -234,11 +229,22 @@ def idex_rectangular_map(
             "rectangular_lat_pixel_label": rec_lat_pixels.astype(str),
         },
     )
+    l2c_dataset[
+        "rectangular_lon_pixel_label"
+    ].attrs = idex_attrs.get_variable_attributes(
+        "rectangular_lon_pixel_label", check_schema=False
+    )
+    l2c_dataset[
+        "rectangular_lat_pixel_label"
+    ].attrs = idex_attrs.get_variable_attributes(
+        "rectangular_lat_pixel_label", check_schema=False
+    )
     map_attrs = {
         "sky_tiling_type": SkyTilingType.RECTANGULAR.value,
         "Spacing_degrees": spacing_deg,
         "Spice_reference_frame": IDEX_EVENT_REFERENCE_FRAME,
         "num_points": counts.size,
-    }
+    } | idex_attrs.get_global_attributes("imap_idex_l2c_sci-rectangular")
+
     l2c_dataset.attrs.update(map_attrs)
     return l2c_dataset

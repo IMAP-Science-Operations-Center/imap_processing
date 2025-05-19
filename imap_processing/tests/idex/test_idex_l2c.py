@@ -16,6 +16,7 @@ from imap_processing.idex.idex_l2c import (
     idex_l2c,
     idex_rectangular_map,
 )
+from imap_processing.idex.idex_utils import get_idex_attrs
 
 
 @pytest.fixture
@@ -60,9 +61,18 @@ def test_l2c_attrs_and_vars(l2c_datasets: list[xr.Dataset], l1b_dataset: xr.Data
         "rectangular_lat_pixel": int(180 / IDEX_SPACING_DEG),
         "epoch": 1,
     }
+    healpix_ds.attrs["Data_version"] = "v999"
+    rect_ds.attrs["Data_version"] = "v999"
     # Check the attributes of the dataset by writing to a CDF file
-    write_cdf(healpix_ds, istp=True)
-    write_cdf(rect_ds, istp=True)
+    hp_file_name = write_cdf(healpix_ds)
+    rect_file_name = write_cdf(rect_ds)
+    assert hp_file_name.exists()
+    assert hp_file_name.name == "imap_idex_l2c_healpix-map-1week_20231218_v999.cdf"
+
+    assert rect_file_name.exists()
+    assert (
+        rect_file_name.name == "imap_idex_l2c_rectangular-map-1week_20231218_v999.cdf"
+    )
 
 
 def test_idex_healpix_map(l1b_dataset: xr.Dataset):
@@ -72,7 +82,7 @@ def test_idex_healpix_map(l1b_dataset: xr.Dataset):
         name="epoch",
         dims=["epoch"],
     )
-    collection = idex_healpix_map(l1b_dataset, epoch)
+    collection = idex_healpix_map(l1b_dataset, epoch, get_idex_attrs("l2c"))
     np.testing.assert_array_equal(collection.epoch, l1b_dataset.epoch[0])
 
     npix = hp.nside2npix(IDEX_HEALPIX_NSIDE)
@@ -92,7 +102,7 @@ def test_idex_rectangular_map(l1b_dataset: xr.Dataset):
         name="epoch",
         dims=["epoch"],
     )
-    collection = idex_rectangular_map(l1b_dataset, epoch)
+    collection = idex_rectangular_map(l1b_dataset, epoch, get_idex_attrs("l2c"))
     np.testing.assert_array_equal(collection.epoch, l1b_dataset.epoch[0])
 
     np.testing.assert_array_equal(

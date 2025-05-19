@@ -1,5 +1,6 @@
 int_fillval: &int_fillval -9223372036854775808
-
+int_maxval: &int_maxval 9223372036854775807
+double_fillval: &double_fillval -1.0E31
 rectangular_lon_pixel_label:
   CATDESC: Longitude pixel index label for IDEX SkyMap.
   FIELDNAM: Longitude pixel label
@@ -24,8 +25,7 @@ pixel_index:
   FORMAT: I4
   LABLAXIS: HEALPix Index
   VAR_TYPE: support_data
-  DISPLAY_TYPE: no_plot
-  UNITS: ""
+  UNITS: " "
   VALIDMIN: 0
   VALIDMAX: 768
   FILLVAL: *int_fillval
@@ -34,39 +34,37 @@ pixel_index:
 rectangular_lon_pixel:
   CATDESC: Longitude pixel index for IDEX SkyMap
   FIELDNAM: Rectangular Longitude Index
-  FORMAT: I4
+  FORMAT: F12.6
   LABLAXIS: Longitude Pixel
   VAR_TYPE: support_data
-  DISPLAY_TYPE: no_plot
   UNITS: "degrees"
   VALIDMIN: 0
   VALIDMAX: 360
-  FILLVAL: *int_fillval
+  FILLVAL: *double_fillval
   DICT_KEY: SPASE>Support>SupportQuantity:Positional
 
 rectangular_lat_pixel:
   CATDESC: Latitude pixel index for IDEX SkyMap
   FIELDNAM: Rectangular Latitude Index
-  FORMAT: I4
+  FORMAT: F12.6
   LABLAXIS: Latitude Pixel
   VAR_TYPE: support_data
-  DISPLAY_TYPE: no_plot
   UNITS: "degrees"
-  VALIDMIN: 0
-  VALIDMAX: 180
-  FILLVAL: *int_fillval
+  VALIDMIN: -90
+  VALIDMAX: 90
+  FILLVAL: *double_fillval
   DICT_KEY: SPASE>Support>SupportQuantity:Positional
 
 counts: &counts
   CATDESC: Number of raw dust events for each pixel
   FIELDNAM: Dust Counts
-  FORMAT: I4
+  FORMAT: I12
   UNITS: "counts"
   VAR_TYPE: data
   DISPLAY_TYPE: time_series
   DEPEND_0: epoch
   VALIDMIN: 0
-  VALIDMAX: *int_fillval
+  VALIDMAX: *int_maxval
   FILLVAL: *int_fillval
   DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
 
