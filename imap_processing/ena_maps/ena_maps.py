@@ -1274,12 +1274,17 @@ class RectangularSkyMap(AbstractSkyMap):
 
         # Set the variable attributes
         for var in [*cdf_ds.data_vars, *cdf_ds.coords]:
-            cdf_ds[var].attrs.update(
-                cdf_attrs.get_variable_attributes(
+            try:
+                var_attrs = cdf_attrs.get_variable_attributes(
                     variable_name=var,
-                    check_schema=False,
                 )
-            )
+            except KeyError as e:
+                raise KeyError(
+                    f"Attributes for variable {var} not found in "
+                    f"loaded variable attributes."
+                ) from e
+
+            cdf_ds[var].attrs.update(var_attrs)
 
         return cdf_ds
 
