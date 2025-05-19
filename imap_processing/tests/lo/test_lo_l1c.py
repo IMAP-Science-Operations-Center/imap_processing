@@ -5,6 +5,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.lo.l1c.lo_l1c import (
+    FilterType,
     create_pset_counts,
     filter_goodtimes,
     initialize_pset,
@@ -177,7 +178,7 @@ def test_create_pset_counts(l1b_de):
 
 def test_create_h_pset_counts(l1b_de, h_counts):
     # Act
-    counts = create_pset_counts(l1b_de, "h")
+    counts = create_pset_counts(l1b_de, FilterType.HYDROGEN)
 
     # Assert
     np.testing.assert_array_equal(counts, h_counts)
@@ -185,7 +186,7 @@ def test_create_h_pset_counts(l1b_de, h_counts):
 
 def test_create_o_pset_counts(l1b_de, o_counts):
     # Act
-    counts = create_pset_counts(l1b_de, "o")
+    counts = create_pset_counts(l1b_de, FilterType.OXYGEN)
 
     # Assert
     np.testing.assert_array_equal(counts, o_counts)
@@ -193,7 +194,7 @@ def test_create_o_pset_counts(l1b_de, o_counts):
 
 def test_create_triples_pset_counts(l1b_de, triples_counts):
     # Act
-    counts = create_pset_counts(l1b_de, "triples")
+    counts = create_pset_counts(l1b_de, FilterType.TRIPLES)
 
     # Assert
     np.testing.assert_array_equal(counts, triples_counts)
@@ -201,7 +202,7 @@ def test_create_triples_pset_counts(l1b_de, triples_counts):
 
 def test_create_doubles_pset_counts(l1b_de, doubles_counts):
     # Act
-    counts = create_pset_counts(l1b_de, "doubles")
+    counts = create_pset_counts(l1b_de, FilterType.DOUBLES)
 
     # Assert
     np.testing.assert_array_equal(counts, doubles_counts)
