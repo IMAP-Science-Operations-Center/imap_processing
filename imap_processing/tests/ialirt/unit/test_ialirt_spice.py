@@ -23,10 +23,7 @@ def test_get_z_axis():
     ra_deg = np.array([0.0, 90.0, 0.0])
     dec_deg = np.array([0.0, 0.0, 90.0])
 
-    ra_rad = np.radians(ra_deg)
-    dec_rad = np.radians(dec_deg)
-
-    z_axis = get_z_axis(ra_rad, dec_rad)
+    z_axis = get_z_axis(ra_deg, dec_deg)
 
     expected = np.array(
         [
@@ -53,8 +50,8 @@ def test_get_rotation_matrix():
         ]
     )
 
-    # Rotate 90 degrees (π/2 radians)
-    spin_phase = np.array([np.pi / 2, np.pi / 2, np.pi / 2])
+    # Rotate 90 degrees
+    spin_phase = np.array([90, 90, 90])
 
     # Get rotation matrix
     r = get_rotation_matrix(z_axis, spin_phase)

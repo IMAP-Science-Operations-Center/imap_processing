@@ -17,50 +17,46 @@ def get_z_axis(sc_inertial_right: NDArray, sc_inertial_decline: NDArray) -> NDAr
     Parameters
     ----------
     sc_inertial_right : NDArray
-        Right ascension of the spacecraft spin-axis in radians.
+        Right ascension of the spacecraft spin-axis in degrees.
 
     sc_inertial_decline : NDArray
-        Declination of the spacecraft spin-axis in radians.
+        Declination of the spacecraft spin-axis in degrees.
 
     Returns
     -------
     z_axis : np.ndarray
         Unit vectors of the spacecraft Z-axis (N, 3).
     """
-    # Convert right ascension from radians to degrees.
-    ra_deg = np.degrees(sc_inertial_right)
-    # Convert declination from radians to degrees.
-    dec_deg = np.degrees(sc_inertial_decline)
-
     # All vectors are unit-length; we only care about direction, not magnitude.
     # So we explicitly set radius r = 1 for all RA/Dec samples.
-    r = np.ones_like(ra_deg)
+    r = np.ones_like(sc_inertial_right)
 
     # Prepare input of shape (N, 3): (r, azimuth=RA, elevation=Dec)
-    spherical = np.stack([r, ra_deg, dec_deg], axis=-1)
+    spherical = np.stack([r, sc_inertial_right, sc_inertial_decline], axis=-1)
     z_axis = spherical_to_cartesian(spherical)  # shape: (n, 3)
 
     return z_axis
 
 
-def get_rotation_matrix(z_axis: NDArray, spin_phase: NDArray) -> NDArray:
+def get_rotation_matrix(axis: NDArray, angle: NDArray) -> NDArray:
     """
-    Create rotation matrices for spin about the spacecraft Z-axis.
+    Construct a rotation matrix that rotates vectors by an angle about a specified axis.
 
     Parameters
     ----------
-    z_axis : NDArray
-        Unit vector of spacecraft spin axis (Z-axis).
-    spin_phase : NDArray
-        Spin phase angle in radians.
+    axis : NDArray
+        Rotation axis.
+    angle : NDArray
+        Rotation angle, in degrees.
 
     Returns
     -------
     rot_matrices : NDArray
         Rotation matrices to rotate vectors around Z by spin_phase.
     """
+    angle_rad = np.radians(angle)
     rot_matrices = np.array(
-        [spice.axisar(z, float(phase)) for z, phase in zip(z_axis, spin_phase)]
+        [spice.axisar(z, float(phase)) for z, phase in zip(axis, angle_rad)]
     )
 
     return rot_matrices
