@@ -1,6 +1,5 @@
 int_fillval: &int_fillval -9223372036854775808
-
-max_uint16: &max_uint16 65535
+double_fillval: &double_fillval -1.0E31
 
 data_min: &data_min 0
 data_max: &data_max 4095
@@ -21,12 +20,12 @@ l1b_data_base: &l1b_data_base
   VALIDMAX: *data_max
   DISPLAY_TYPE: spectrogram
   DEPEND_0: epoch
-  FORMAT: I12
+  FORMAT: F12.6
   UNITS: pC
   VAR_TYPE: data
   CATDESC: ""
   FIELDNAM: ""
-  FILLVAL: *max_uint16
+  FILLVAL: *double_fillval
   LABLAXIS: ""
 
 l1b_tof_base: &l1b_tof_base
@@ -47,8 +46,6 @@ trigger_base: &trigger_base
 spice_base: &spice_base
   <<: *l1b_data_base
   VAR_TYPE: data
-  VALIDMIN: -180
-  VALIDMAX: 360
   DISPLAY_TYPE: time_series
   UNITS: Degrees
 
@@ -59,7 +56,7 @@ trigger_mode:
   CATDESC: Channel and mode that triggered the event
 
 trigger_level:
-  <<: *string_base
+  <<: *trigger_base
   FIELDNAM: Trigger Level
   CATDESC: Threshold signal level that triggered the event
 
@@ -176,6 +173,7 @@ current_1p9v_pol:
 
 temperature_1:
   <<: *trigger_base
+  FORMAT: F12.6
   FIELDNAM: ProcBd Temp1
   CATDESC: Temperature reading near high speed ADCs on Processor Board (ADC channel 2)
   LABLAXIS: Temperature
@@ -183,6 +181,7 @@ temperature_1:
 
 temperature_2:
   <<: *trigger_base
+  FORMAT: F12.6
   FIELDNAM: ProcBd Temp2
   CATDESC: Temperature reading near center of Processor Board (ADC channel 3)
   LABLAXIS: Temperature
@@ -405,6 +404,8 @@ spin_phase:
   FIELDNAM: Spin Phase
   CATDESC: IMAP Spin Phase
   LABLAXIS: Spin Phase
+  FORMAT: I8
+  FILLVAL: *int_fillval
 
 solar_longitude:
   <<: *spice_base
@@ -412,3 +413,4 @@ solar_longitude:
   FIELDNAM: Solar Longitude
   CATDESC: Solar Longitude of the IMAP spacecraft
   LABLAXIS: Solar Longitude
+

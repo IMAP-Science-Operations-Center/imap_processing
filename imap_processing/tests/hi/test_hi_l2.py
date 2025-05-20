@@ -4,10 +4,12 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from imap_processing.ena_maps.ena_maps import RectangularSkyMap
 from imap_processing.hi.l2.hi_l2 import (
     calculate_ena_intensity,
     calculate_ena_signal_rates,
     generate_hi_map,
+    hi_l2,
 )
 
 
@@ -38,8 +40,28 @@ def empty_rectangular_map_dataset() -> xr.Dataset:
 def test_hi_l2(hi_l1_test_data_path):
     """Integration type test for hi_l2()"""
     pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
-    l2_dataset = generate_hi_map([pset_path], None, None)
+    l2_dataset = hi_l2([pset_path], None, None, "h90-ena-h-sf-nsp-full-hae-4deg-3mo")[0]
     assert isinstance(l2_dataset, xr.Dataset)
+    assert len(l2_dataset.data_vars) == 15
+    np.testing.assert_array_equal(
+        l2_dataset["ena_intensity"].dims, ["epoch", "energy", "longitude", "latitude"]
+    )
+
+
+@pytest.mark.external_test_data
+def test_genarate_hi_map(hi_l1_test_data_path):
+    """Test coverage for genarate_hi_map()"""
+    pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
+    sky_map = generate_hi_map(
+        [pset_path], None, None, cg_corrected=False, direction="full", map_spacing=6
+    )
+    assert isinstance(sky_map, RectangularSkyMap)
+    assert sky_map.spacing_deg == 6
+
+    # Test that we got some non-zero values
+    for var_name in ["counts", "exposure_factor", "obs_date"]:
+        assert var_name in sky_map.data_1d.data_vars
+        assert np.nanmax(sky_map.data_1d[var_name].data) > 0
 
 
 def test_calculate_ena_signal_rates(empty_rectangular_map_dataset):

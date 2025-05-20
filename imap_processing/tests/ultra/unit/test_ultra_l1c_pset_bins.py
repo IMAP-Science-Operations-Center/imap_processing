@@ -9,10 +9,12 @@ from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c import ultra_l1c_pset_bins
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
-    get_background_rates,
     get_energy_delta_minus_plus,
+    get_helio_background_rates,
     get_helio_exposure_times,
     get_helio_histogram,
+    get_helio_sensitivity,
+    get_spacecraft_background_rates,
     get_spacecraft_exposure_times,
     get_spacecraft_histogram,
     get_spacecraft_sensitivity,
@@ -145,10 +147,18 @@ def test_get_helio_histogram(monkeypatch, test_data):
     assert np.array_equal(hist_helio, hist_sc)
 
 
-def test_get_background_rates():
+def test_get_spacecraft_background_rates():
     """Tests get_background_rates function."""
-    background_rates = get_background_rates(nside=128)
-    assert background_rates.shape == hp.nside2npix(128)
+    background_rates = get_spacecraft_background_rates(nside=128)
+    _, energy_midpoints, _ = build_energy_bins()
+    assert background_rates.shape == (len(energy_midpoints), hp.nside2npix(128))
+
+
+def test_get_helio_background_rates():
+    """Tests get_background_rates function."""
+    background_rates = get_helio_background_rates(nside=128)
+    _, energy_midpoints, _ = build_energy_bins()
+    assert background_rates.shape == (len(energy_midpoints), hp.nside2npix(128))
 
 
 @pytest.mark.external_test_data
@@ -236,3 +246,45 @@ def test_get_spacecraft_sensitivity():
     # Check that out-of-bounds energy returns all NaNs
     result = grid_sensitivity(df_efficiencies, df_geometric_function, 2.5)
     assert np.isnan(result).all()
+
+
+@pytest.mark.external_test_data
+@pytest.mark.external_kernel
+@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
+def test_get_helio_sensitivity(monkeypatch):
+    """Test get_helio_sensitivity function."""
+
+    # Load test data
+    efficiencies = TEST_PATH / "Ultra_90_DPS_efficiencies_all.csv"
+    geometric_function = TEST_PATH / "ultra_90_dps_gf.csv"
+    df_efficiencies = pd.read_csv(efficiencies)
+    df_geometric_function = pd.read_csv(geometric_function)
+
+    # Patch spacecraft velocity to be zero
+    monkeypatch.setattr(ultra_l1c_pset_bins, "imap_state", mock_imap_state)
+
+    # Define time
+    start_time = 829485054.185627
+    end_time = 829567884.185627
+    mid_time = np.average([start_time, end_time])
+
+    # Build energy bins and spacecraft-frame sensitivity
+    _, energy_midpoints, _ = build_energy_bins()
+    sc_sensitivity = []
+    for energy in energy_midpoints:
+        s = grid_sensitivity(df_efficiencies, df_geometric_function, energy)
+        sc_sensitivity.append(s)
+    sc_sensitivity = np.stack(sc_sensitivity, axis=1)  # shape: (npix, n_energy_bins)
+
+    # Compute helio-frame sensitivity
+    helio_sensitivity = get_helio_sensitivity(
+        mid_time,
+        df_efficiencies,
+        df_geometric_function,
+    )
+
+    # Flatten and compare
+    flat_sc = np.nansum(sc_sensitivity, axis=0)
+    flat_helio = np.nansum(helio_sensitivity, axis=0)
+
+    np.testing.assert_allclose(flat_sc, flat_helio, atol=1e-5)

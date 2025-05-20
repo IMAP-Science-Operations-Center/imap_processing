@@ -1,6 +1,7 @@
 """Tests coverage for imap_processing.cli."""
 
 import json
+import logging
 import shutil
 import sys
 from pathlib import Path
@@ -13,6 +14,7 @@ import xarray as xr
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
     ScienceInput,
+    SPICEInput,
 )
 
 from imap_processing.cli import (
@@ -24,6 +26,7 @@ from imap_processing.cli import (
     Spacecraft,
     Swe,
     Ultra,
+    _parse_args,
     _validate_args,
     main,
 )
@@ -91,6 +94,58 @@ def test_main(mock_instrument):
         # Running without raising an exception is a pass.
         # No asserts needed.
         main()
+
+
+def test_parse_args_dependency_json_file(caplog, tmp_path):
+    # Set caplog to capture all log levels
+    caplog.set_level(logging.DEBUG)
+    """Test imap_processing.cli.main() with --dependency as a JSON file path."""
+    test_json_content = [
+        {
+            "type": "ancillary",
+            "files": [
+                "imap_mag_l1b-cal_20250101_v001.cdf",
+                "imap_mag_l1b-cal_20250103_20250104_v002.cdf",
+            ],
+        },
+        {
+            "type": "science",
+            "files": [
+                "imap_idex_l2_sci_20240312_v000.cdf",
+                "imap_idex_l2_sci_20240312_v001.cdf",
+            ],
+        },
+    ]
+    test_json_filename = "imap_ultra_l2_test-dependency-json_20250520_v999.json"
+    test_json_dir = tmp_path / "imap/cadence/ultra/l2/2025/05/"
+    test_json_dir.mkdir(parents=True, exist_ok=True)
+    test_json_dst = test_json_dir / test_json_filename
+
+    with open(test_json_dst, "w") as f:
+        f.write(json.dumps(test_json_content))
+
+    test_args = [
+        "imap_cli",
+        "--instrument",
+        "mag",
+        "--dependency",
+        str(test_json_dst),
+        "--data-level",
+        "l1a",
+        "--start-date",
+        "20240430",
+        "--repointing",
+        "repoint12345",
+        "--version",
+        "v001",
+        "--upload-to-sdc",
+    ]
+    with mock.patch.object(sys, "argv", test_args):
+        _parse_args()
+        # Check that the dependency JSON file was read correctly
+        assert "Interpreting dependency argument as a JSON file" in caplog.text, (
+            "Dependency JSON file was not read correctly"
+        )
 
 
 @pytest.mark.parametrize(
@@ -360,7 +415,7 @@ def test_spice_kernel_handling(spice_test_data_path):
     dependency_obj = [
         {"type": "science", "files": ["imap_hi_l2a_sensor45-de_20100105_v001.cdf"]},
         {"type": "spice", "files": kernels_to_furnish},
-        {"type": "spice", "files": ["imap_2010_104_01.repoint.csv"]},
+        {"type": "repoint", "files": ["imap_2010_104_01.repoint.csv"]},
     ]
     dependency_str = json.dumps(dependency_obj)
 
@@ -437,12 +492,14 @@ def test_post_processing(
     test_ds = xr.Dataset()
     mock_swe_l1a.return_value = [test_ds]
     input_collection = ProcessingInputCollection(
-        ScienceInput("imap_swe_l0_raw_20100105_v001.pkts")
+        ScienceInput("imap_swe_l0_raw_20100105_v001.pkts"),
+        SPICEInput("naif0012.tls", "imap_sclk_0001.tsc"),
     )
     mocks["mock_pre_processing"].return_value = input_collection
 
     dependency_str = (
-        '[{"type": "science","files": ["imap_swe_l0_raw_20100105_v001.pkts"]}]'
+        '[{"type": "science","files": ["imap_swe_l0_raw_20100105_v001.pkts"]}, '
+        '{"type": "spice", "files": ["naif0012.tls", "imap_sclk_0001.tsc"]}]'
     )
     instrument = Swe("l1a", "raw", dependency_str, "20100105", None, "v001", True)
 
@@ -458,4 +515,8 @@ def test_post_processing(
         assert mocks["mock_upload"].call_count == 1
 
     # Test parent injection
-    assert test_ds.attrs["Parents"] == ["imap_swe_l0_raw_20100105_v001.pkts"]
+    assert test_ds.attrs["Parents"] == [
+        "imap_swe_l0_raw_20100105_v001.pkts",
+        "naif0012.tls",
+        "imap_sclk_0001.tsc",
+    ]
