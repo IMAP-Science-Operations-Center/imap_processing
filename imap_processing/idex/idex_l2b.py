@@ -23,7 +23,7 @@ import logging
 import numpy as np
 import xarray as xr
 
-from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.idex.idex_utils import get_idex_attrs
 from imap_processing.spice.time import epoch_to_doy
 
 logger = logging.getLogger(__name__)
@@ -48,9 +48,7 @@ def idex_l2b(l2a_dataset: xr.Dataset) -> xr.Dataset:
     )
 
     # create the attribute manager for this data level
-    idex_attrs = ImapCdfAttributes()
-    idex_attrs.add_instrument_global_attrs(instrument="idex")
-    idex_attrs.add_instrument_variable_attrs("idex", "l2b")
+    idex_attrs = get_idex_attrs("l2b")
 
     epoch_da = xr.DataArray(
         l2a_dataset["epoch"],
@@ -65,8 +63,8 @@ def idex_l2b(l2a_dataset: xr.Dataset) -> xr.Dataset:
     )
 
     target_waveforms = ["target_high", "target_low", "ion_grid"]
-    mass_name = "_fit_impact_mass_estimate"
-    charge_name = "_fit_impact_charge"
+    mass_name = "_dust_mass_estimate"
+    charge_name = "_impact_charge"
     # Copy arrays to l2b dataset
     for waveform in target_waveforms:
         l2b_dataset[waveform + charge_name] = l2a_dataset[waveform + charge_name].copy(

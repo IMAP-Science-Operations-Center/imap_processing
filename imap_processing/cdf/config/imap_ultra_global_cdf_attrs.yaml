@@ -107,14 +107,26 @@ imap_ultra_l1b_90sensor-badtimes:
 imap_ultra_l1c_45sensor-spacecraftpset:
     <<: *instrument_base
     Data_type: L1C_45Sensor-PSET>Level-1C Pointing Set Grid for Ultra45
-    Logical_source: imap_ultra_l1c_45sensor-pset
-    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Exposure Data.
+    Logical_source: imap_ultra_l1c_45sensor-spacecraftpset
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Spacecraft Pointing Set Grid.
 
 imap_ultra_l1c_90sensor-spacecraftpset:
     <<: *instrument_base
     Data_type: L1C_90Sensor-PSET>Level-1C Pointing Set Grid for Ultra90
-    Logical_source: imap_ultra_l1c_90sensor-pset
-    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Exposure Data.
+    Logical_source: imap_ultra_l1c_90sensor-spacecraftpset
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Spacecraft Pointing Set Grid.
+
+imap_ultra_l1c_45sensor-heliopset:
+    <<: *instrument_base
+    Data_type: L1C_45Sensor-PSET>Level-1C Pointing Set Grid for Ultra45
+    Logical_source: imap_ultra_l1c_45sensor-heliopset
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Heliosphere Pointing Set Grid.
+
+imap_ultra_l1c_90sensor-heliopset:
+    <<: *instrument_base
+    Data_type: L1C_90Sensor-PSET>Level-1C Pointing Set Grid for Ultra90
+    Logical_source: imap_ultra_l1c_90sensor-heliopset
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Heliosphere Pointing Set Grid.
 
 imap_ultra_l1c_45sensor-histogram:
     <<: *instrument_base

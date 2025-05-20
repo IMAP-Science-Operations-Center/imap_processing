@@ -33,6 +33,15 @@ default_float32_attrs: &default_float32
   VALIDMAX: 3.4028235e+38
   dtype: float32
 
+# Define epoch_delta attributes
+epoch_delta:
+  <<: *default_int64
+  CATDESC: Number of nanoseconds covered by data included in this map product.
+  DISPLAY_TYPE: no_plot
+  VALIDMIN: 0
+  VAR_TYPE: metadata
+  UNITS: ns
+
 # Define Coordinate(s) which are tiling-independent
 energy:
   <<: *default_float32
@@ -125,6 +134,16 @@ ena_intensity_stat_unc:
   LABLAXIS: Statistical Unc
   DISPLAY_TYPE: image
 
+ena_intensity_sys_err:
+  <<: *default_float32
+  CATDESC: ENA intensity non-statistical error.
+  FIELDNAM: Intensity non-stat error
+  UNITS: counts/(s * cm^2 * Sr * KeV)
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Non-Statistical Err
+  DISPLAY_TYPE: image
+
 sensitivity:
   <<: *default_float32
   CATDESC: Calibration/sensitivity factor calculated from multiple pointing sets.
@@ -156,6 +175,17 @@ obs_date: &obs_date_energy_independent
   LABLAXIS: epoch
   DISPLAY_TYPE: image
 
+obs_date_range:
+  <<: *default_int64
+  datatype: int64
+  CATDESC: Standard deviation of the observation date.
+  FIELDNAM: Observation date range
+  UNITS: ns
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: epoch
+  DISPLAY_TYPE: image
+
 # These copied metadata vars will allow for variables
 # to be either energy-dependent or independent.
 # The tiling-specific YAML files will override the DEPENDs and LABL_PTRs.
@@ -164,3 +194,13 @@ exposure_factor_energy_dependent:
 
 obs_date_energy_dependent:
   <<: *obs_date_energy_independent
+
+solid_angle:
+  <<: *default_float32
+  CATDESC: Solid angle subtended by each pixel.
+  FIELDNAM: Solid Angle
+  DEPEND_0: epoch
+  UNITS: sr
+  VAR_TYPE: data
+  LABLAXIS: Solid Angle
+  DISPLAY_TYPE: image

@@ -14,6 +14,7 @@ import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.ena_maps.utils import map_utils, spatial_utils
 
@@ -595,6 +596,21 @@ class HiPointingSet(PointingSet):
 
     def __init__(self, dataset: xr.Dataset):
         super().__init__(dataset, spice_reference_frame=geometry.SpiceFrame.ECLIPJ2000)
+
+        # Rename some PSET vars to match L2 variables
+        self.data = self.data.rename(
+            {
+                "exposure_times": "exposure_factor",
+                "background_rates": "bg_rates",
+                "background_rates_uncertainty": "bg_rates_unc",
+            }
+        )
+
+        # Add obs_date variable to be used in determining a map mean obs_date
+        self.data["obs_date"] = xr.full_like(
+            self.data["exposure_factor"], self.data["epoch"].values[0]
+        )
+
         self.az_el_points = np.column_stack(
             (
                 np.squeeze(self.data["hae_longitude"]),
@@ -617,22 +633,52 @@ class AbstractSkyMap(ABC):
     The data can be also accessed via the to_dataset method, which rewraps the data to
     a 2D grid shape if the map is rectangular and formats the data as an xarray
     Dataset with the correct dims and coords.
+
+    Parameters
+    ----------
+    spice_frame : geometry.SpiceFrame
+        The reference Spice frame of the map.
     """
 
+    # ======== Attributes that are set in the ABC __init__ method ========
+    # The spice frame that the az_el_points are expressed in
+    spice_frame: geometry.SpiceFrame
+    # Lists of variables to project using push and pull methods
+    values_to_push_project: list[str]
+    values_to_pull_project: list[str]
+    # Variables used to track min/max epoch of data that gets projected to map
+    min_epoch: int
+    max_epoch: int
+
+    # ======== Attributes required to be set in a subclass ========
+    # Azimuth and elevation coordinates of each spatial pixel. The ndarray should
+    # have the shape (n, 2) where n is the number of spatial pixels
+    az_el_points: np.ndarray
+    # Type of sky tiling
+    tiling_type: SkyTilingType
+    # Dictionary of xr.DataArray objects for each non-spatial coordinate in the SkyMap
+    non_spatial_coords: dict[str, xr.DataArray | NDArray]
+    # Dictionary of xr.DataArray objects for each spatial coordinate in the SkyMap
+    spatial_coords: dict[str, xr.DataArray | NDArray]
+    # 1D Array of spatial pixel solid angles
+    solid_angle_points: np.ndarray
+    # Dataset to store map data projected from PointingSet objects
+    data_1d: xr.Dataset
+
     @abstractmethod
-    def __init__(self) -> None:
-        self.tiling_type: SkyTilingType
-        self.sky_grid: spatial_utils.AzElSkyGrid
-        self.num_points: int
-        self.non_spatial_coords: dict[str, xr.DataArray | NDArray]
-        self.spatial_coords: dict[str, xr.DataArray | NDArray]
-        self.binning_grid_shape: tuple[int, ...]
-        self.data_1d: xr.Dataset
+    def __init__(self, spice_frame: geometry.SpiceFrame) -> None:
+        self.spice_reference_frame = spice_frame
 
         # Initialize values to be used by the instrument code to push/pull
-        self.values_to_push_project: list[str] = []
-        self.values_to_pull_project: list[str] = []
+        self.values_to_push_project = []
+        self.values_to_pull_project = []
 
+        # Initialize min and max epoch variables that are used to keep track of
+        # PSET epochs that get binned to the map
+        self.min_epoch = np.iinfo(np.int64).max
+        self.max_epoch = np.iinfo(np.int64).min
+
+    @abstractmethod
     def to_dataset(self) -> xr.Dataset:
         """
         Get the SkyMap data as a formatted xarray Dataset.
@@ -647,50 +693,32 @@ class AbstractSkyMap(ABC):
             If the SkyMap is Healpix, the data is unchanged from the data_1d, but
             the pixel coordinate is renamed to CoordNames.HEALPIX_INDEX.value.
         """
-        if len(self.data_1d.data_vars) == 0:
-            # If the map is empty, return an empty xarray Dataset,
-            # with the unaltered spatial coords of the map
-            return xr.Dataset(
-                {},
-                coords={**self.spatial_coords},
-            )
+        raise NotImplementedError("AbstractSkyMap.to_dataset() not implemented.")
 
-        if self.tiling_type is SkyTilingType.HEALPIX:
-            # return the data_1d as is, but with the pixel coordinate
-            # renamed to CoordNames.HEALPIX_INDEX.value
-            return self.data_1d.rename(
-                {CoordNames.GENERIC_PIXEL.value: CoordNames.HEALPIX_INDEX.value}
-            )
-        elif self.tiling_type is SkyTilingType.RECTANGULAR:
-            # Rewrap each data array in the data_1d to the original 2D grid shape
-            rewrapped_data = {}
-            for key in self.data_1d.data_vars:
-                # drop pixel dim from the end, and add the spatial coords as dims
-                rewrapped_dims = [
-                    dim
-                    for dim in self.data_1d[key].dims
-                    if dim != CoordNames.GENERIC_PIXEL.value
-                ]
-                rewrapped_dims.extend(self.spatial_coords.keys())
-                rewrapped_data[key] = xr.DataArray(
-                    spatial_utils.rewrap_even_spaced_az_el_grid(
-                        self.data_1d[key].values,
-                        self.binning_grid_shape,
-                    ),
-                    dims=rewrapped_dims,
-                )
-                # Add the output coordinates to the rewrapped data, excluding the pixel
-                self.non_spatial_coords.update(
-                    {
-                        coord: self.data_1d[key].coords[coord]
-                        for coord in self.data_1d[key].coords
-                        if coord != CoordNames.GENERIC_PIXEL.value
-                    }
-                )
-            return xr.Dataset(
-                rewrapped_data,
-                coords={**self.non_spatial_coords, **self.spatial_coords},
-            )
+    @property
+    @abstractmethod
+    def binning_grid_shape(self) -> tuple[int]:
+        """
+        Shape of the binning grid.
+
+        Returns
+        -------
+        binning_grid_shape : tuple[int]
+            Shape of the binning grid.
+        """
+        raise NotImplementedError("binning_grid_shape property method not implemented.")
+
+    @property
+    def num_points(self) -> int:
+        """
+        The number of spatial pixels in the SkyMap.
+
+        Returns
+        -------
+        num_points: int
+            The number of spatial pixels in the pointing set.
+        """
+        return self.az_el_points.shape[0]
 
     def project_pset_values_to_map(
         self,
@@ -805,8 +833,15 @@ class AbstractSkyMap(ABC):
             # that correspond to each map pixel as the weights.
             self.data_1d[value_key] += pointing_projected_values
 
+        # TODO: The max epoch needs to include the pset duration. Right now it
+        #     is just capturing the start epoch. See issue #1747
+        self.min_epoch = min(self.min_epoch, pointing_set.epoch)
+        self.max_epoch = max(self.max_epoch, pointing_set.epoch)
+
     @classmethod
-    def from_json(cls, json_path: str | Path) -> RectangularSkyMap | HealpixSkyMap:
+    def from_properties_json(
+        cls, json_path: str | Path
+    ) -> RectangularSkyMap | HealpixSkyMap:
         """
         Create a SkyMap object from a JSON configuration file.
 
@@ -822,10 +857,12 @@ class AbstractSkyMap(ABC):
         """
         with open(json_path) as f:
             properties = json.load(f)
-        return cls.from_dict(properties)
+        return cls.from_properties_dict(properties)
 
     @classmethod
-    def from_dict(cls, properties: dict) -> RectangularSkyMap | HealpixSkyMap:
+    def from_properties_dict(
+        cls, properties: dict
+    ) -> RectangularSkyMap | HealpixSkyMap:
         """
         Create a SkyMap object from a dictionary of properties.
 
@@ -909,7 +946,8 @@ class AbstractSkyMap(ABC):
         skymap.values_to_pull_project = properties.get("values_to_pull_project", [])
         return skymap
 
-    def to_dict(self) -> dict:
+    @abstractmethod
+    def to_properties_dict(self) -> dict:
         """
         Convert the SkyMap object to a dictionary of properties.
 
@@ -918,34 +956,9 @@ class AbstractSkyMap(ABC):
         dict
             Dictionary containing the map properties.
         """
-        if isinstance(self, HealpixSkyMap):
-            map_properties_dict = {
-                "sky_tiling_type": "HEALPIX",
-                "spice_reference_frame": self.spice_reference_frame.name,
-                "nside": self.nside,
-                "nested": self.nested,
-            }
-        elif isinstance(self, RectangularSkyMap):
-            map_properties_dict = {
-                "sky_tiling_type": "RECTANGULAR",
-                "spice_reference_frame": self.spice_reference_frame.name,
-                "spacing_deg": self.spacing_deg,
-            }
-        else:
-            raise ValueError(
-                f"Unknown SkyMap type: {self.__class__.__name__}. "
-                f"Must be one of: {AbstractSkyMap.__subclasses__()}"
-            )
+        raise NotImplementedError("to_dict must be implemented in a subclass.")
 
-        map_properties_dict["values_to_push_project"] = (
-            self.values_to_push_project if self.values_to_push_project else []
-        )
-        map_properties_dict["values_to_pull_project"] = (
-            self.values_to_pull_project if self.values_to_pull_project else []
-        )
-        return map_properties_dict
-
-    def to_json(self, json_path: str | Path) -> None:
+    def to_properties_json(self, json_path: str | Path) -> None:
         """
         Save the SkyMap object to a JSON configuration file.
 
@@ -955,7 +968,7 @@ class AbstractSkyMap(ABC):
             Path to the JSON file where the properties will be saved.
         """
         with open(json_path, "w") as f:
-            json.dump(self.to_dict(), f, indent=4)
+            json.dump(self.to_properties_dict(), f, indent=4)
 
 
 class RectangularSkyMap(AbstractSkyMap):
@@ -1008,28 +1021,24 @@ class RectangularSkyMap(AbstractSkyMap):
     increases in pixel index, elevation increments first, then azimuth.
     """
 
+    tiling_type = SkyTilingType.RECTANGULAR  # Type of tiling of the sky
+
+    # ======== Attributes unique to RectangularSkyMap ========
+    sky_grid: spatial_utils.AzElSkyGrid
+    solid_angle_grid: np.ndarray
+
     def __init__(
         self,
         spacing_deg: float,
         spice_frame: geometry.SpiceFrame,
     ):
         # Define the core properties of the map:
-        self.tiling_type = SkyTilingType.RECTANGULAR  # Type of tiling of the sky
-
-        # The reference Spice frame of the map, in which angles are defined
-        self.spice_reference_frame = spice_frame
-
-        # Initialize values to be used by the instrument code to push/pull
-        self.values_to_push_project: list[str] = []
-        self.values_to_pull_project: list[str] = []
+        super().__init__(spice_frame)
 
         # Angular spacing of the map grid (degrees) defines the number, size of pixels.
-        self.spacing_deg = spacing_deg
         self.sky_grid = spatial_utils.AzElSkyGrid(
-            spacing_deg=self.spacing_deg,
+            spacing_deg=spacing_deg,
         )
-        # The shape of the map (num_az_bins, num_el_bins) is used to bin the data
-        self.binning_grid_shape = self.sky_grid.grid_shape
 
         self.non_spatial_coords = {}
         self.spatial_coords = {
@@ -1051,7 +1060,6 @@ class RectangularSkyMap(AbstractSkyMap):
 
         # Stack so axis 0 is different pixels, and axis 1 is (az, el) of the pixel
         self.az_el_points = np.column_stack((az_points, el_points))
-        self.num_points = self.az_el_points.shape[0]
 
         # Calculate solid angles of each pixel in the map grid in units of steradians
         self.solid_angle_grid = spatial_utils.build_solid_angle_map(
@@ -1063,8 +1071,240 @@ class RectangularSkyMap(AbstractSkyMap):
         self.data_1d: xr.Dataset = xr.Dataset(
             coords={
                 CoordNames.GENERIC_PIXEL.value: np.arange(self.num_points),
+            },
+        )
+
+    @property
+    def spacing_deg(self) -> float:
+        """
+        Pixel spacing angle in degrees.
+
+        Returns
+        -------
+        spacing_deg : float
+            Spacing angle in degrees.
+        """
+        return self.sky_grid.spacing_deg
+
+    @property
+    def binning_grid_shape(self) -> tuple[int]:
+        """
+        Shape of the AzElSkyGrid.
+
+        Returns
+        -------
+        binning_grid_shape : tuple[int]
+            Shape of the AzElSkyGrid (num_az_bins, num_el_bins).
+        """
+        return self.sky_grid.grid_shape
+
+    def to_dataset(self) -> xr.Dataset:
+        """
+        Get the SkyMap data as a formatted xarray.Dataset.
+
+        Returns
+        -------
+        xr.Dataset
+            The SkyMap data as a formatted xarray Dataset with dims and coords.
+            If the SkyMap is empty, an empty xarray Dataset is returned.
+            The 1D data used for projecting is rewrapped to a 2D grid of
+            lon/lat (AKA az/el) coordinates.
+        """
+        if len(self.data_1d.data_vars) == 0:
+            # If the map is empty, return an empty xarray Dataset,
+            # with the unaltered spatial coords of the map
+            return xr.Dataset(
+                {},
+                coords={**self.spatial_coords},
+            )
+        # Add the solid angle variable to the data_1d Dataset
+        self.data_1d["solid_angle"] = xr.DataArray(
+            self.solid_angle_points,
+            name="solid_angle",
+            dims=[CoordNames.GENERIC_PIXEL.value],
+        )
+        # Rewrap each data array in the data_1d to the original 2D grid shape
+        rewrapped_data = {}
+        for key in self.data_1d.data_vars:
+            # drop pixel dim from the end, and add the spatial coords as dims
+            rewrapped_dims = [
+                dim
+                for dim in self.data_1d[key].dims
+                if dim != CoordNames.GENERIC_PIXEL.value
+            ]
+            rewrapped_dims.extend(self.spatial_coords.keys())
+            rewrapped_data[key] = xr.DataArray(
+                spatial_utils.rewrap_even_spaced_az_el_grid(
+                    self.data_1d[key].values,
+                    self.binning_grid_shape,
+                ),
+                dims=rewrapped_dims,
+            )
+            # Add the output coordinates to the rewrapped data, excluding the pixel
+            self.non_spatial_coords.update(
+                {
+                    coord: self.data_1d[key].coords[coord]
+                    for coord in self.data_1d[key].coords
+                    if coord != CoordNames.GENERIC_PIXEL.value
+                }
+            )
+        return xr.Dataset(
+            rewrapped_data,
+            coords={**self.non_spatial_coords, **self.spatial_coords},
+        )
+
+    def build_cdf_dataset(
+        self,
+        instrument: str,
+        level: str,
+        frame: str,
+        descriptor: str,
+        sensor: str | None = None,
+    ) -> xr.Dataset:
+        """
+        Format the data into a xarray.Dataset and add required CDF variables.
+
+        Parameters
+        ----------
+        instrument : str
+            Instrument name. "hi", "lo", "ultra".
+        level : str
+            Product level. "l2" or "l3".
+        frame : str
+            Map frame. "sf", "hf" or "hk".
+        descriptor : str
+            Descriptor for filename.
+        sensor : str, optional
+            Sensor number "45" or "90".
+
+        Returns
+        -------
+        xarray.Dataset
+            - Data is reshaped into expected shapes with coordinates:
+            (epoch, energy, longitude, latitude)
+            - Label variables are generated for coordinates other than epoch
+            - Delta variables are generated and set for spatial coordinates
+            - Delta plus/minus variables are generated and set to NaN for energy.
+        """
+        # TODO: some of this could be moved into a AbstractSkyMap method so
+        #    that HealpixSkyMap would benefit from this as well.
+
+        logger.info("Building CDF ready dataset from RectangularSkyMap data.")
+
+        cdf_ds = self.to_dataset()
+
+        # Set the value of the epoch coord
+        cdf_ds = cdf_ds.assign_coords(**{CoordNames.TIME.value: [self.min_epoch]})
+
+        # Drop variables dependent on dimensions not in L2 output
+        # Need to iterate over CoordNames.__members__ because for an Enum, labels
+        # with duplicate values are turned into aliases for the first such label.
+        l2_coords = [
+            coord_name.value
+            for name, coord_name in CoordNames.__members__.items()
+            if ("L2" in name)
+        ]
+        l2_coords.append(CoordNames.TIME.value)
+        for map_coord in cdf_ds.dims.keys():
+            if map_coord not in l2_coords:
+                cdf_ds = cdf_ds.drop_dims(map_coord)
+
+        # Add coordinate label and delta variables (not needed for epoch)
+        for coord_name in l2_coords:
+            # Label variable not needed for epoch
+            if coord_name != CoordNames.TIME.value:
+                cdf_ds[f"{coord_name}_label"] = xr.DataArray(
+                    cdf_ds[coord_name].values.astype(str),
+                    name=f"{coord_name}_label",
+                    dims=[coord_name],
+                )
+            # We can set the correct delta value of the spatial coordinates
+            if coord_name == CoordNames.TIME.value:
+                cdf_ds[f"{coord_name}_delta"] = xr.DataArray(
+                    xr.full_like(cdf_ds[coord_name], self.max_epoch - self.min_epoch),
+                    name=f"{coord_name}_delta",
+                    dims=[coord_name],
+                )
+            elif coord_name in self.spatial_coords:
+                cdf_ds[f"{coord_name}_delta"] = xr.DataArray(
+                    xr.full_like(cdf_ds[coord_name], self.spacing_deg / 2),
+                    name=f"{coord_name}_delta",
+                    dims=[coord_name],
+                )
+            # Add energy delta_minus and delta_plus variables
+            elif coord_name == CoordNames.ENERGY_L2.value:
+                cdf_ds[f"{coord_name}_delta_minus"] = xr.DataArray(
+                    xr.full_like(cdf_ds[coord_name], np.nan),
+                    name=f"{coord_name}_delta",
+                    dims=[coord_name],
+                )
+                cdf_ds[f"{coord_name}_delta_plus"] = xr.DataArray(
+                    xr.full_like(cdf_ds[coord_name], np.nan),
+                    name=f"{coord_name}_delta",
+                    dims=[coord_name],
+                )
+
+        # Object which holds CDF attributes for the map
+        cdf_attrs = ImapCdfAttributes()
+        cdf_attrs.add_instrument_global_attrs(instrument=instrument)
+        cdf_attrs.add_instrument_variable_attrs(instrument="enamaps", level="l2-common")
+        # Load rectangular map specific variable attributes
+        cdf_attrs.add_instrument_variable_attrs(
+            instrument="enamaps", level="l2-rectangular"
+        )
+
+        # Now set global attributes
+        map_attrs = cdf_attrs.get_global_attributes(
+            f"imap_{instrument}_{level}_enamap-{frame}"
+        )
+        map_attrs["Spacing_degrees"] = str(self.spacing_deg)
+        for key in ["Data_type", "Logical_source", "Logical_source_description"]:
+            map_attrs[key] = map_attrs[key].format(
+                descriptor=descriptor,
+                sensor=sensor,
+            )
+            # Always add the following attributes to the map
+        map_attrs.update(
+            {
+                "Sky_tiling_type": self.tiling_type.value,
+                "Spice_reference_frame": self.spice_reference_frame.name,
             }
         )
+        cdf_ds.attrs.update(map_attrs)
+
+        # Set the variable attributes
+        for var in [*cdf_ds.data_vars, *cdf_ds.coords]:
+            try:
+                var_attrs = cdf_attrs.get_variable_attributes(
+                    variable_name=var,
+                )
+            except KeyError as e:
+                raise KeyError(
+                    f"Attributes for variable {var} not found in "
+                    f"loaded variable attributes."
+                ) from e
+
+            cdf_ds[var].attrs.update(var_attrs)
+
+        return cdf_ds
+
+    def to_properties_dict(self) -> dict:
+        """
+        Convert the RectangularSkyMap object to a dictionary of properties.
+
+        Returns
+        -------
+        dict
+            Dictionary containing the map properties.
+        """
+        map_properties_dict = {
+            "sky_tiling_type": "RECTANGULAR",
+            "spice_reference_frame": self.spice_reference_frame.name,
+            "spacing_deg": self.spacing_deg,
+            "values_to_push_project": self.values_to_push_project,
+            "values_to_pull_project": self.values_to_pull_project,
+        }
+        return map_properties_dict
 
     def __repr__(self) -> str:
         """
@@ -1096,40 +1336,41 @@ class HealpixSkyMap(AbstractSkyMap):
         Whether the Healpix tessellation is nested. Default is False.
     """
 
+    tiling_type = SkyTilingType.HEALPIX
+
+    # ======== Attributes unique to HealpixSkyMap ========
+    nside: int
+    nested: bool
+    approx_resolution: float
+    solid_angle: float
+
     def __init__(
         self, nside: int, spice_frame: geometry.SpiceFrame, nested: bool = False
     ):
         # Define the core properties of the map:
-        self.tiling_type = SkyTilingType.HEALPIX
-        self.spice_reference_frame = spice_frame
-
-        # Initialize values to be used by the instrument code to push/pull
-        self.values_to_push_project: list[str] = []
-        self.values_to_pull_project: list[str] = []
+        super().__init__(spice_frame)
 
         # Tile the sky with a Healpix tessellation. Defined by nside, nested parameters.
         self.nside = nside
         self.nested = nested
 
-        # Calculate how many pixels cover the sky and the approximate resolution (deg)
-        self.num_points = hp.nside2npix(nside)
+        # Calculate the approximate resolution (deg)
         self.approx_resolution = np.rad2deg(hp.nside2resol(nside, arcmin=False))
-        # Define binning_grid_shape for consistency with RectangularSkyMap
-        self.binning_grid_shape = (self.num_points,)
+
+        # The centers of each pixel in the Healpix tessellation in azimuth (az) and
+        # elevation (el) coordinates (degrees) within the map's Spice frame.
+        pixel_az, pixel_el = hp.pix2ang(
+            nside=nside, ipix=np.arange(hp.nside2npix(nside)), nest=nested, lonlat=True
+        )
+        # Stack so axis 0 is different pixels, and axis 1 is (az, el) of the pixel
+        self.az_el_points = np.column_stack((pixel_az, pixel_el))
+
         self.spatial_coords = {
             CoordNames.HEALPIX_INDEX.value: xr.DataArray(
                 np.arange(self.num_points),
                 dims=[CoordNames.HEALPIX_INDEX.value],
             )
         }
-
-        # The centers of each pixel in the Healpix tessellation in azimuth (az) and
-        # elevation (el) coordinates (degrees) within the map's Spice frame.
-        pixel_az, pixel_el = hp.pix2ang(
-            nside=nside, ipix=np.arange(self.num_points), nest=nested, lonlat=True
-        )
-        # Stack so axis 0 is different pixels, and axis 1 is (az, el) of the pixel
-        self.az_el_points = np.column_stack((pixel_az, pixel_el))
 
         # Tracks Per-Pixel Solid Angle in steradians.
         self.solid_angle = hp.nside2pixarea(nside, degrees=False)
@@ -1143,6 +1384,43 @@ class HealpixSkyMap(AbstractSkyMap):
             coords={
                 CoordNames.GENERIC_PIXEL.value: np.arange(self.num_points),
             }
+        )
+
+    @property
+    def binning_grid_shape(self) -> tuple[int]:
+        """
+        Binning_grid_shape for consistency with RectangularSkyMap.
+
+        Returns
+        -------
+        binning_grid_shape : tuple[int]
+            Shape of the HealpixSkyGrid (num_points,).
+        """
+        return (self.num_points,)
+
+    def to_dataset(self) -> xr.Dataset:
+        """
+        Get the SkyMap data as a formatted xarray Dataset.
+
+        Returns
+        -------
+        xr.Dataset
+            The SkyMap data as a formatted xarray Dataset with dims and coords.
+            If the SkyMap is empty, an empty xarray Dataset is returned.
+            Otherwise, he data is unchanged from the data_1d, but
+            the pixel coordinate is renamed to CoordNames.HEALPIX_INDEX.value.
+        """
+        if len(self.data_1d.data_vars) == 0:
+            # If the map is empty, return an empty xarray Dataset,
+            # with the unaltered spatial coords of the map
+            return xr.Dataset(
+                {},
+                coords={**self.spatial_coords},
+            )
+        # return the data_1d as is, but with the pixel coordinate
+        # renamed to CoordNames.HEALPIX_INDEX.value
+        return self.data_1d.rename(
+            {CoordNames.GENERIC_PIXEL.value: CoordNames.HEALPIX_INDEX.value}
         )
 
     # Define several methods for converting a Healpix map to a Rectangular map:
@@ -1279,7 +1557,8 @@ class HealpixSkyMap(AbstractSkyMap):
         smaller and smaller subpixels, then calculates the solid-angle weighted mean
         of the healpix map's value at this pixel, until the difference
         between the mean values of two consecutive subdivisions is within the
-        specified tolerances. The function returns the mean value at the final level
+        specified tolerances at all values in that pixel (e.g., all energy bins).
+        The function returns the mean value at the final level
         of subdivision and the depth of recursion.
 
         Parameters
@@ -1321,14 +1600,19 @@ class HealpixSkyMap(AbstractSkyMap):
                 )
             )
 
-            # Determine if tolerance is met
-            # (skip on the 0th iteration, as there's no delta)
+            # Determine if tolerance is met,
+            # (skip on the 0th iteration, as there's no delta to compare).
+
+            # Note:  Using allclose() means that, while we calculate the mean pixel
+            # value(s) over  all the subdivided subpixels, this mean may have multiple
+            # values (e.g., different energy bins), so we check if
+            # all of them are within the tolerances. This can result in
+            # over-subdividing some energy bins, where there is little spatial gradient,
+            # but where another energy bin has a large gradient.
             if depth > 0:
-                # TODO: Ask Nick/Ultra Instrument team if we need to compare each value
-                # in the pixel's array, or just the mean value.
-                if np.isclose(
-                    mean_pixel_value.mean(),
-                    previous_mean_pixel_value.mean(),
+                if np.allclose(
+                    mean_pixel_value,
+                    previous_mean_pixel_value,
                     rtol=rtol,
                     atol=atol,
                 ):
@@ -1463,6 +1747,25 @@ class HealpixSkyMap(AbstractSkyMap):
             )
 
         return rect_map, subdiv_depth_dict
+
+    def to_properties_dict(self) -> dict:
+        """
+        Convert the HealpixSkyMap object to a dictionary of properties.
+
+        Returns
+        -------
+        dict
+            Dictionary containing the map properties.
+        """
+        map_properties_dict = {
+            "sky_tiling_type": "HEALPIX",
+            "spice_reference_frame": self.spice_reference_frame.name,
+            "nside": self.nside,
+            "nested": self.nested,
+            "values_to_push_project": self.values_to_push_project,
+            "values_to_pull_project": self.values_to_pull_project,
+        }
+        return map_properties_dict
 
     def __repr__(self) -> str:
         """

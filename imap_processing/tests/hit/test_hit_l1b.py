@@ -303,7 +303,7 @@ def test_process_sectored_rates_data(l1a_counts_dataset, livetime):
 
     valid_coords = {
         "epoch",
-        "declination",
+        "zenith",
         "azimuth",
         "h_energy_mean",
         "he4_energy_mean",

@@ -13,6 +13,10 @@ PUI = PickUp Ion
 ESA = ElectroStatic Analyzer
 """
 
+from typing import Any
+
+import numpy as np
+
 from imap_processing.codice.utils import CODICEAPID, CoDICECompression
 
 # Grouping of APIDs used to signify similar L1a processing
@@ -20,7 +24,6 @@ APIDS_FOR_SCIENCE_PROCESSING = [
     CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED,
     CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES,
     CODICEAPID.COD_HI_INST_COUNTS_SINGLES,
-    CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS,
     CODICEAPID.COD_HI_SECT_SPECIES_COUNTS,
     CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED,
     CODICEAPID.COD_LO_INST_COUNTS_SINGLES,
@@ -111,7 +114,7 @@ LO_IAL_VARIABLE_NAMES = [
 
 # CDF variable names used for hi data products
 HI_COUNTERS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
-HI_OMNI_VARIABLE_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
+HI_OMNI_VARIABLE_NAMES = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh", "junk"]
 HI_PRIORITY_VARIABLE_NAMES = [
     "Priority0",
     "Priority1",
@@ -121,8 +124,38 @@ HI_PRIORITY_VARIABLE_NAMES = [
     "Priority5",
 ]
 HI_SECTORED_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
-HI_IAL_VARIABLE_NAMES = [
-    "h",
+HI_IAL_VARIABLE_NAMES = ["h"]
+
+# CDF variable names used for direct event data products
+HI_PHA_CDF_FIELDS = [
+    "NumEvents",
+    "DataQuality",
+    "SSDEnergy",
+    "TOF",
+    "SSD_ID",
+    "ERGE",
+    "MultiFlag",
+    "Type",
+    "SpinAngle",
+    "SpinNumber",
+]
+HI_PHA_VARIABLE_NAMES = [
+    f"P{n}_{field}" for n in range(6) for field in HI_PHA_CDF_FIELDS
+]
+LO_PHA_CDF_FIELDS = [
+    "NumEvents",
+    "DataQuality",
+    "APDGain",
+    "APD_ID",
+    "APDEnergy",
+    "TOF",
+    "MultiFlag",
+    "PHAType",
+    "SpinAngle",
+    "EnergyStep",
+]
+LO_PHA_VARIABLE_NAMES = [
+    f"P{n}_{field}" for n in range(8) for field in LO_PHA_CDF_FIELDS
 ]
 
 # lo- and hi-counters-aggregated data product variables are dynamically
@@ -188,6 +221,158 @@ HI_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
     if is_active
 ]
 
+# Energy tables for CoDICE-Hi data products. These values represent the edges
+# of the bins, and are used in the CoDICE L1a pipeline to compute the centers
+# and deltas of the bins, which then get stored in the CDF files for future use.
+# These are defined in the "Data Products - Hi" tab of the "*-SCI-LUT-*.xml"
+# spreadsheet that largely defines CoDICE processing.
+OMNI_ENERGY_TABLE = {
+    "h": [
+        0.05,
+        0.070710678,
+        0.1,
+        0.141421356,
+        0.2,
+        0.282842712,
+        0.4,
+        0.565685425,
+        0.8,
+        1.13137085,
+        1.6,
+        2.2627417,
+        3.2,
+        4.5254834,
+        6.4,
+        9.050966799,
+    ],
+    "he3": [
+        0.035355339,
+        0.05,
+        0.070710678,
+        0.1,
+        0.141421356,
+        0.2,
+        0.282842712,
+        0.4,
+        0.565685425,
+        0.8,
+        1.13137085,
+        1.6,
+        2.2627417,
+        3.2,
+        4.5254834,
+        6.4,
+    ],
+    "he4": [
+        0.035355339,
+        0.05,
+        0.070710678,
+        0.1,
+        0.141421356,
+        0.2,
+        0.282842712,
+        0.4,
+        0.565685425,
+        0.8,
+        1.13137085,
+        1.6,
+        2.2627417,
+        3.2,
+        4.5254834,
+        6.4,
+    ],
+    "c": [
+        0.025,
+        0.035355339,
+        0.05,
+        0.070710678,
+        0.1,
+        0.141421356,
+        0.2,
+        0.282842712,
+        0.4,
+        0.565685425,
+        0.8,
+        1.13137085,
+        1.6,
+        2.2627417,
+        3.2,
+        4.5254834,
+        6.4,
+        9.050966799,
+        12.8,
+    ],
+    "o": [
+        0.025,
+        0.035355339,
+        0.05,
+        0.070710678,
+        0.1,
+        0.141421356,
+        0.2,
+        0.282842712,
+        0.4,
+        0.565685425,
+        0.8,
+        1.13137085,
+        1.6,
+        2.2627417,
+        3.2,
+        4.5254834,
+        6.4,
+        9.050966799,
+        12.8,
+    ],
+    "ne_mg_si": [
+        0.01767767,
+        0.025,
+        0.035355339,
+        0.05,
+        0.070710678,
+        0.1,
+        0.141421356,
+        0.2,
+        0.282842712,
+        0.4,
+        0.565685425,
+        0.8,
+        1.13137085,
+        1.6,
+        2.2627417,
+        3.2,
+    ],
+    "fe": [
+        0.01767767,
+        0.025,
+        0.035355339,
+        0.05,
+        0.070710678,
+        0.1,
+        0.141421356,
+        0.2,
+        0.282842712,
+        0.4,
+        0.565685425,
+        0.8,
+        1.13137085,
+        1.6,
+        2.2627417,
+        3.2,
+        4.5254834,
+        6.4,
+        9.050966799,
+    ],
+    "uh": [0.01767767, 0.025, 0.035355339, 0.05, 0.070710678, 0.1],
+    "junk": [0.05, 0.070710678],
+}
+
+SECTORED_ENERGY_TABLE = {
+    "h": [0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8],
+    "he3he4": [0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4],
+    "cno": [0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4],
+    "fe": [0.0125, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2],
+}
+
 # TODO: Possibly move to consistent order of dimensions with other instruments
 #       TBD after discussion with Joey and at the Science Team Meeting in Feb
 # Various configurations to support processing of individual data products
@@ -241,9 +426,11 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     },
     CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS: {
         "dataset_name": "imap_codice_l1a_hi-omni",
+        "energy_table": OMNI_ENERGY_TABLE,
         "input_dims": {"esa_step": 15, "inst_az": 4},
         "instrument": "hi",
         "num_counters": 8,
+        "num_spins": 4,
         "output_dims": {"esa_step": 15, "inst_az": 4},
         "support_variables": [
             "data_quality",
@@ -262,6 +449,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     },
     CODICEAPID.COD_HI_SECT_SPECIES_COUNTS: {
         "dataset_name": "imap_codice_l1a_hi-sectored",
+        "energy_table": SECTORED_ENERGY_TABLE,
         "input_dims": {
             "esa_step": 8,
             "ssd_index": 12,
@@ -269,6 +457,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
         },
         "instrument": "hi",
         "num_counters": 4,
+        "num_spins": 16,
         "output_dims": {
             "esa_step": 8,
             "ssd_index": 12,
@@ -450,7 +639,130 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     },
 }
 
-# Dictionary to define the bit structure of I-ALiRT data products
+# Various configurations to support processing of direct events data products
+# These are described in the algorithm document in chapter 10 ("Data Level 1A")
+DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
+    CODICEAPID.COD_HI_PHA: {
+        "num_priorities": 6,
+        "bit_structure": {
+            "SSDEnergy": {
+                "bit_length": 11,
+                "dtype": np.uint16,
+                "fillval": np.iinfo(np.uint16).max,
+            },
+            "TOF": {
+                "bit_length": 10,
+                "dtype": np.uint16,
+                "fillval": np.iinfo(np.uint16).max,
+            },
+            "SSD_ID": {
+                "bit_length": 4,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "ERGE": {
+                "bit_length": 2,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "MultiFlag": {
+                "bit_length": 1,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "Type": {
+                "bit_length": 2,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "SpinAngle": {
+                "bit_length": 5,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "SpinNumber": {
+                "bit_length": 4,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "Priority": {
+                "bit_length": 3,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "Spare": {
+                "bit_length": 22,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+        },
+        "cdf_fields": HI_PHA_CDF_FIELDS,
+    },
+    CODICEAPID.COD_LO_PHA: {
+        "num_priorities": 8,
+        "bit_structure": {
+            "APDGain": {
+                "bit_length": 1,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "APD_ID": {
+                "bit_length": 5,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "Position": {
+                "bit_length": 5,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "APDEnergy": {
+                "bit_length": 9,
+                "dtype": np.uint16,
+                "fillval": np.iinfo(np.uint16).max,
+            },
+            "TOF": {
+                "bit_length": 10,
+                "dtype": np.uint16,
+                "fillval": np.iinfo(np.uint16).max,
+            },
+            "MultiFlag": {
+                "bit_length": 1,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "PHAType": {
+                "bit_length": 2,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "SpinAngle": {
+                "bit_length": 5,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "EnergyStep": {
+                "bit_length": 7,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "Priority": {
+                "bit_length": 3,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+            "Spare": {
+                "bit_length": 16,
+                "dtype": np.uint8,
+                "fillval": np.iinfo(np.uint8).max,
+            },
+        },
+        "cdf_fields": LO_PHA_CDF_FIELDS,
+    },
+}
+
+# Define the packet fields needed to be stored in segmented data and their
+# corresponding bit lengths for direct event data products
 IAL_BIT_STRUCTURE = {
     "SHCOARSE": 32,
     "PACKET_VERSION": 16,
@@ -472,19 +784,21 @@ IAL_BIT_STRUCTURE = {
     "BYTE_COUNT": 23,
 }
 
-# Dictionary to define the bit structure of CoDICE-Lo direct events
-LO_DE_BIT_STRUCTURE = {
-    "APDGain": 1,
-    "APD_ID": 5,
-    "Position": 5,
-    "APDEnergy": 9,
-    "TOF": 10,
-    "MultiFlag": 1,
-    "PHAType": 2,
-    "SpinAngle": 5,
-    "EnergyStep": 7,
-    "Priority": 3,
-    "Spare": 16,
+# Define the packet fields needed to be stored in segmented data and their
+# corresponding bit lengths for direct event data products
+DE_METADATA_FIELDS = {
+    "packet_version": 16,
+    "spin_period": 16,
+    "acq_start_seconds": 32,
+    "acq_start_subseconds": 20,
+    "spare_1": 2,
+    "st_bias_gain_mode": 2,
+    "sw_bias_gain_mode": 2,
+    "priority": 4,
+    "suspect": 1,
+    "compressed": 1,
+    "num_events": 32,
+    "byte_count": 32,
 }
 
 # Compression ID lookup tables
@@ -1644,156 +1958,4 @@ ACQUISITION_TIMES = {
         95.69444,
         95.69444,
     ],
-}
-
-# Energy tables for CoDICE-Hi data products. These values represent the edges
-# of the bins, and are used in the CoDICE L1a pipeline to compute the centers
-# and deltas of the bins, which then get stored in the CDF files for future use.
-# These are defined in the "Data Products - Hi" tab of the "*-SCI-LUT-*.xml"
-# spreadsheet that largely defines CoDICE processing.
-OMNI_ENERGY_TABLE = {
-    "h": [
-        0.05,
-        0.070710678,
-        0.1,
-        0.141421356,
-        0.2,
-        0.282842712,
-        0.4,
-        0.565685425,
-        0.8,
-        1.13137085,
-        1.6,
-        2.2627417,
-        3.2,
-        4.5254834,
-        6.4,
-        9.050966799,
-    ],
-    "he3": [
-        0.035355339,
-        0.05,
-        0.070710678,
-        0.1,
-        0.141421356,
-        0.2,
-        0.282842712,
-        0.4,
-        0.565685425,
-        0.8,
-        1.13137085,
-        1.6,
-        2.2627417,
-        3.2,
-        4.5254834,
-        6.4,
-    ],
-    "he4": [
-        0.035355339,
-        0.05,
-        0.070710678,
-        0.1,
-        0.141421356,
-        0.2,
-        0.282842712,
-        0.4,
-        0.565685425,
-        0.8,
-        1.13137085,
-        1.6,
-        2.2627417,
-        3.2,
-        4.5254834,
-        6.4,
-    ],
-    "c": [
-        0.025,
-        0.035355339,
-        0.05,
-        0.070710678,
-        0.1,
-        0.141421356,
-        0.2,
-        0.282842712,
-        0.4,
-        0.565685425,
-        0.8,
-        1.13137085,
-        1.6,
-        2.2627417,
-        3.2,
-        4.5254834,
-        6.4,
-        9.050966799,
-        12.8,
-    ],
-    "o": [
-        0.025,
-        0.035355339,
-        0.05,
-        0.070710678,
-        0.1,
-        0.141421356,
-        0.2,
-        0.282842712,
-        0.4,
-        0.565685425,
-        0.8,
-        1.13137085,
-        1.6,
-        2.2627417,
-        3.2,
-        4.5254834,
-        6.4,
-        9.050966799,
-        12.8,
-    ],
-    "ne_mg_si": [
-        0.01767767,
-        0.025,
-        0.035355339,
-        0.05,
-        0.070710678,
-        0.1,
-        0.141421356,
-        0.2,
-        0.282842712,
-        0.4,
-        0.565685425,
-        0.8,
-        1.13137085,
-        1.6,
-        2.2627417,
-        3.2,
-    ],
-    "fe": [
-        0.01767767,
-        0.025,
-        0.035355339,
-        0.05,
-        0.070710678,
-        0.1,
-        0.141421356,
-        0.2,
-        0.282842712,
-        0.4,
-        0.565685425,
-        0.8,
-        1.13137085,
-        1.6,
-        2.2627417,
-        3.2,
-        4.5254834,
-        6.4,
-        9.050966799,
-    ],
-    "uh": [0.01767767, 0.025, 0.035355339, 0.05, 0.070710678, 0.1],
-    "junk": [0.05, 0.070710678],
-}
-
-SECTORED_ENERGY_TABLE = {
-    "h": [0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8],
-    "he3he4": [0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4],
-    "cno": [0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4],
-    "fe": [0.0125, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2],
 }

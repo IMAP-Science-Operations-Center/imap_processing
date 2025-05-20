@@ -4,16 +4,35 @@ import logging
 import typing
 from collections.abc import Generator
 from contextlib import contextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
 import spiceypy
 from numpy.typing import NDArray
 
+from imap_processing.spice.geometry import SpiceFrame
 from imap_processing.spice.kernels import ensure_spice
-from imap_processing.spice.time import met_to_sclkticks, sct_to_et
+from imap_processing.spice.repoint import get_repoint_data
+from imap_processing.spice.time import (
+    TICK_DURATION,
+    et_to_utc,
+    met_to_sclkticks,
+    sct_to_et,
+)
 
 logger = logging.getLogger(__name__)
+
+POINTING_SEGMENT_DTYPE = np.dtype(
+    [
+        # sclk ticks are a double precision number of SCLK ticks since the
+        # start of the mission (e.g. MET_seconds / TICK_DURATION)
+        ("start_sclk_ticks", np.float64),
+        ("end_sclk_ticks", np.float64),
+        ("quaternion", np.float64, (4,)),
+        ("pointing_id", np.uint32),
+    ]
+)
 
 
 @contextmanager
@@ -41,54 +60,126 @@ def open_spice_ck_file(pointing_frame_path: Path) -> Generator[int, None, None]:
         spiceypy.ckcls(handle)
 
 
-@typing.no_type_check
-@ensure_spice
-def create_pointing_frame(
-    pointing_frame_path: Path,
-    ck_path: Path,
-    repoint_start_met: NDArray,
-    repoint_end_met: NDArray,
+def write_pointing_frame_ck(
+    pointing_kernel_path: Path, segment_data: np.ndarray, parent_ck: str
 ) -> None:
     """
-    Create the pointing frame.
+    Write a Pointing Frame attitude kernel.
 
     Parameters
     ----------
-    pointing_frame_path : pathlib.Path
-        Location of pointing frame kernel.
+    pointing_kernel_path : pathlib.Path
+        Location to write the CK kernel.
+    segment_data : np.ndarray
+        Numpy structured array with the following dtypes:
+            ("start_sclk_ticks", np.float64),
+            ("end_sclk_ticks", np.float64),
+            ("quaternion", np.float64, (4,)),
+            ("pointing_id", np.uint32),
+    parent_ck : str
+        Filename of the CK kernel that the quaternion was derived from.
+    """
+    id_imap_dps = spiceypy.gipool("FRAME_IMAP_DPS", 0, 1)
+
+    comments = [
+        "CK FOR IMAP_DPS FRAME",
+        "==================================================================",
+        "",
+        f"Original file name: {pointing_kernel_path.name}",
+        f"Creation date: {datetime.now(timezone.utc).strftime('%Y-%m-%d')}",
+        f"Parent file: {parent_ck}",
+        "",
+    ]
+
+    with open_spice_ck_file(pointing_kernel_path) as handle:
+        # Write the comments to the file
+        spiceypy.dafac(handle, comments)
+
+        for segment in segment_data:
+            # Write the single segment to the file
+            # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.ckw02
+            spiceypy.ckw02(
+                # Handle of an open CK file.
+                handle,
+                # Start time of the segment.
+                segment["start_sclk_ticks"],
+                # End time of the segment.
+                segment["end_sclk_ticks"],
+                # Pointing frame ID.
+                int(id_imap_dps),
+                # Reference frame.
+                SpiceFrame.ECLIPJ2000.name,  # Reference frame
+                # Identifier.
+                SpiceFrame.IMAP_DPS.name,
+                # Number of pointing intervals.
+                1,
+                # Start times of individual pointing records within segment.
+                # Since there is only a single record this is equal to sclk_begtim.
+                np.array([segment["start_sclk_ticks"]]),
+                # End times of individual pointing records within segment.
+                # Since there is only a single record this is equal to sclk_endtim.
+                np.array([segment["end_sclk_ticks"]]),  # Single stop time
+                # Average quaternion.
+                segment["quaternion"],
+                # Angular velocity vectors. The IMAP_DPS frame is quasi-inertial
+                # for each pointing so each segment has zeros here.
+                np.array([0.0, 0.0, 0.0]),
+                # The number of seconds per encoded spacecraft clock
+                # tick for each interval.
+                np.array([TICK_DURATION]),
+            )
+
+
+@typing.no_type_check
+@ensure_spice
+def calculate_pointing_attitude_segments(
+    ck_path: Path,
+) -> NDArray:
+    """
+    Calculate the data for each segment of the DPS_FRAME attitude kernel.
+
+    Each segment corresponds 1:1 with an IMAP pointing. Since the Pointing
+    frame is quasi-inertial, the only data needed for each segment are:
+
+    - spacecraft clock start time
+    - spacecraft clock end time
+    - pointing frame quaternion
+
+    Parameters
+    ----------
     ck_path : pathlib.Path
         Location of the CK kernel.
-    repoint_start_met : numpy.ndarray
-        Start time of the repointing in MET.
-    repoint_end_met : numpy.ndarray
-        End time of the repointing in MET.
+
+    Returns
+    -------
+    pointing_segments : numpy.ndarray
+        Structured array of data for each pointing. Included fields are:
+            ("start_sclk_ticks", np.float64),
+            ("end_sclk_ticks", np.float64),
+            ("quaternion", np.float64, (4,)),
+            ("pointing_id", np.uint32),
 
     Notes
     -----
     Kernels required to be furnished:
-    "imap_science_0001.tf",
-    "imap_sclk_0000.tsc",
-    "imap_sim_ck_2hr_2secsampling_with_nutation.bc" or
-    "sim_1yr_imap_attitude.bc",
-    "imap_wkcp.tf",
-    "naif0012.tls"
 
-    Assumptions:
-    - The MOC has removed timeframe in which nutation/procession are present.
-    TODO: We may come back and have a check for this.
-    - The pointing frame kernel is made based on the most recent ck kernel.
-    In other words 1:1 ratio.
+    - Latest NAIF leapseconds kernel (naif0012.tls)
+    - The latest IMAP sclk (imap_sclk_NNNN.tsc)
+    - The latest IMAP frame kernel (imap_wkcp.tf)
+    - IMAP DPS frame kernel (imap_science_0001.tf)
+    - IMAP historical attitude kernel from which the pointing frame kernel will
+    be generated.
     """
+    logger.info(f"Extracting mean spin axes from CK kernel {ck_path.name}")
     # Get IDs.
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.gipool
-    id_imap_dps = spiceypy.gipool("FRAME_IMAP_DPS", 0, 1)
     id_imap_sclk = spiceypy.gipool("CK_-43000_SCLK", 0, 1)
 
-    # Verify that only ck_path kernel is loaded.
+    # Check that the last loaded kernel matches it input kernel name. This ensures
+    # that this CK take priority when computing attitude for it's time coverage.
     count = spiceypy.ktotal("ck")
     loaded_ck_kernel, _, _, _ = spiceypy.kdata(count - 1, "ck")
-
-    if count != 1 or str(ck_path) != loaded_ck_kernel:
+    if str(ck_path) != loaded_ck_kernel:
         raise ValueError(f"Error: Expected CK kernel {ck_path}")
 
     id_imap_spacecraft = spiceypy.gipool("FRAME_IMAP_SPACECRAFT", 0, 1)
@@ -100,72 +191,71 @@ def create_pointing_frame(
     num_intervals = spiceypy.wncard(ck_cover)
     et_start, _ = spiceypy.wnfetd(ck_cover, 0)
     _, et_end = spiceypy.wnfetd(ck_cover, num_intervals - 1)
+    logger.info(
+        f"{ck_path.name} contains {num_intervals} intervals with "
+        f"start time: {et_to_utc(et_start)}, and end time: {et_to_utc(et_end)}"
+    )
 
-    sclk_ticks_start = met_to_sclkticks(repoint_start_met)
-    et_start_repoint = sct_to_et(sclk_ticks_start)
-    sclk_ticks_end = met_to_sclkticks(repoint_end_met)
-    et_end_repoint = sct_to_et(sclk_ticks_end)
+    # Get data from the repoint table and filter to only the pointings fully
+    # covered by this attitude kernel
+    repoint_df = get_repoint_data()
+    repoint_df["repoint_start_et"] = sct_to_et(
+        met_to_sclkticks(repoint_df["repoint_start_met"].values)
+    )
+    repoint_df["repoint_end_et"] = sct_to_et(
+        met_to_sclkticks(repoint_df["repoint_end_met"].values)
+    )
+    repoint_df = repoint_df[
+        (repoint_df["repoint_end_et"] >= et_start)
+        & (repoint_df["repoint_start_et"] <= et_end)
+    ]
+    n_pointings = len(repoint_df) - 1
 
-    valid_mask = (et_start_repoint >= et_start) & (et_end_repoint <= et_end)
-    et_start_repoint = et_start_repoint[valid_mask]
-    et_end_repoint = et_end_repoint[valid_mask]
+    pointing_segments = np.zeros(n_pointings, dtype=POINTING_SEGMENT_DTYPE)
 
-    with open_spice_ck_file(pointing_frame_path) as handle:
-        for i in range(len(repoint_start_met)):
-            # 1 spin/15 seconds; 10 quaternions / spin.
-            num_samples = (et_end_repoint[i] - et_start_repoint[i]) / 15 * 10
-            # There were rounding errors when using spiceypy.pxform
-            # so np.ceil and np.floor were used to ensure the start
-            # and end times were within the ck range.
-            et_times = np.linspace(
-                np.ceil(et_start_repoint[i] * 1e6) / 1e6,
-                np.floor(et_end_repoint[i] * 1e6) / 1e6,
-                int(num_samples),
-            )
+    for i_pointing in range(n_pointings):
+        pointing_segments[i_pointing]["pointing_id"] = repoint_df.iloc[i_pointing][
+            "repoint_id"
+        ]
+        pointing_start_et = repoint_df.iloc[i_pointing]["repoint_end_et"]
+        pointing_end_et = repoint_df["repoint_start_et"][i_pointing + 1]
+        logger.debug(
+            f"Calculating pointing attitude for pointing "
+            f"{pointing_segments[i_pointing]['pointing_id']} with time "
+            f"range: ({et_to_utc(pointing_start_et)}, {et_to_utc(pointing_end_et)})"
+        )
 
-            # Create a rotation matrix
-            rotation_matrix = _create_rotation_matrix(et_times)
+        # 1 spin/15 seconds; 10 quaternions / spin.
+        num_samples = (pointing_end_et - pointing_start_et) / 15 * 10
+        # There were rounding errors when using spiceypy.pxform
+        # so np.ceil and np.floor were used to ensure the start
+        # and end times were within the ck range.
+        et_times = np.linspace(
+            np.ceil(pointing_start_et * 1e6) / 1e6,
+            np.floor(pointing_end_et * 1e6) / 1e6,
+            int(num_samples),
+        )
 
-            # Convert the rotation matrix to a quaternion.
-            # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.m2q
-            q_avg = spiceypy.m2q(rotation_matrix)
+        # Get the average quaternions for the pointing
+        q_avg = _average_quaternions(et_times)
 
-            # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.sce2c
-            # Convert start and end times to SCLK.
-            sclk_begtim = spiceypy.sce2c(int(id_imap_sclk), et_times[0])
-            sclk_endtim = spiceypy.sce2c(int(id_imap_sclk), et_times[-1])
+        # Create a rotation matrix
+        rotation_matrix = _create_rotation_matrix(q_avg)
 
-            # Create the pointing frame kernel.
-            # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.ckw02
-            spiceypy.ckw02(
-                # Handle of an open CK file.
-                handle,
-                # Start time of the segment.
-                sclk_begtim,
-                # End time of the segment.
-                sclk_endtim,
-                # Pointing frame ID.
-                int(id_imap_dps),
-                # Reference frame.
-                "ECLIPJ2000",  # Reference frame
-                # Identifier.
-                "IMAP_DPS",
-                # Number of pointing intervals.
-                1,
-                # Start times of individual pointing records within segment.
-                # Since there is only a single record this is equal to sclk_begtim.
-                np.array([sclk_begtim]),
-                # End times of individual pointing records within segment.
-                # Since there is only a single record this is equal to sclk_endtim.
-                np.array([sclk_endtim]),  # Single stop time
-                # Average quaternion.
-                q_avg,
-                # 0.0 Angular rotation terms.
-                np.array([0.0, 0.0, 0.0]),
-                # Rates (seconds per tick) at which the quaternion and
-                # angular velocity change.
-                np.array([1.0]),
-            )
+        # Convert the rotation matrix to a quaternion.
+        # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.m2q
+        pointing_segments[i_pointing]["quaternion"] = spiceypy.m2q(rotation_matrix)
+
+        # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.sce2c
+        # Convert start and end times to SCLK ticks.
+        pointing_segments[i_pointing]["start_sclk_ticks"] = spiceypy.sce2c(
+            int(id_imap_sclk), pointing_start_et
+        )
+        pointing_segments[i_pointing]["end_sclk_ticks"] = spiceypy.sce2c(
+            int(id_imap_sclk), pointing_end_et
+        )
+
+    return pointing_segments
 
 
 @typing.no_type_check
@@ -225,23 +315,20 @@ def _average_quaternions(et_times: np.ndarray) -> NDArray:
     return q_avg
 
 
-def _create_rotation_matrix(et_times: np.ndarray) -> NDArray:
+def _create_rotation_matrix(q_avg: np.ndarray) -> NDArray:
     """
     Create a rotation matrix.
 
     Parameters
     ----------
-    et_times : numpy.ndarray
-        Array of times between et_start and et_end.
+    q_avg : numpy.ndarray
+        Averaged quaternions for the pointing.
 
     Returns
     -------
     rotation_matrix : np.ndarray
         Rotation matrix.
     """
-    # Averaged quaternions.
-    q_avg = _average_quaternions(et_times)
-
     # Converts the averaged quaternion (q_avg) into a rotation matrix
     # and get inertial z axis.
     # https://spiceypy.readthedocs.io/en/main/documentation.html#spiceypy.spiceypy.q2m

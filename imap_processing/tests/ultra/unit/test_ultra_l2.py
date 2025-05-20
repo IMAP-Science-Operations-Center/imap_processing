@@ -91,17 +91,17 @@ class TestUltraL2:
                 ultra_l1c_psets=[
                     pset,
                 ],
-                output_map_structure=ena_maps.AbstractSkyMap.from_dict(
+                output_map_structure=ena_maps.AbstractSkyMap.from_properties_dict(
                     {
                         "sky_tiling_type": "HEALPIX",
                         "spice_reference_frame": map_frame,
                         "values_to_push_project": [
                             "counts",
-                            "sensitivity",
-                            "background_rates",
                         ],
                         "values_to_pull_project": [
                             "exposure_factor",
+                            "sensitivity",
+                            "background_rates",
                         ],
                         "nside": 32,
                         "nested": False,
@@ -159,17 +159,17 @@ class TestUltraL2:
             with furnish_kernels(self.required_kernel_names):
                 hp_skymap = ultra_l2.generate_ultra_healpix_skymap(
                     ultra_l1c_psets=self.ultra_psets,
-                    output_map_structure=ena_maps.AbstractSkyMap.from_dict(
+                    output_map_structure=ena_maps.AbstractSkyMap.from_properties_dict(
                         {
                             "sky_tiling_type": "RECTANGULAR",
                             "spice_reference_frame": "ECLIPJ2000",
                             "values_to_push_project": [
                                 "counts",
-                                "sensitivity",
-                                "background_rates",
                             ],
                             "values_to_pull_project": [
                                 "exposure_factor",
+                                "sensitivity",
+                                "background_rates",
                             ],
                             "spacing_deg": 2.0,
                         }
@@ -213,16 +213,16 @@ class TestUltraL2:
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
     def test_ultra_l2_output_unbinned_healpix(self, mock_data_dict, furnish_kernels):
-        map_structure = ena_maps.AbstractSkyMap.from_dict(
+        map_structure = ena_maps.AbstractSkyMap.from_properties_dict(
             {
                 "sky_tiling_type": "HEALPIX",
                 "spice_reference_frame": "ECLIPJ2000",
                 "values_to_push_project": [
                     "counts",
-                    "sensitivity",
                 ],
                 "values_to_pull_project": [
                     "exposure_factor",
+                    "sensitivity",
                 ],
                 "nside": 16,
                 "nested": True,
@@ -241,7 +241,7 @@ class TestUltraL2:
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
     def test_ultra_l2_rectangular(self, mock_data_dict, furnish_kernels):
-        rect_map_structure = ena_maps.AbstractSkyMap.from_dict(
+        rect_map_structure = ena_maps.AbstractSkyMap.from_properties_dict(
             {
                 "sky_tiling_type": "RECTANGULAR",
                 "spice_reference_frame": "ECLIPJ2000",
@@ -255,7 +255,7 @@ class TestUltraL2:
                 "spacing_deg": 10,  # Larger spacing for faster test
             }
         )
-        hp_map_structure = ena_maps.AbstractSkyMap.from_dict(
+        hp_map_structure = ena_maps.AbstractSkyMap.from_properties_dict(
             {
                 "sky_tiling_type": "HEALPIX",
                 "spice_reference_frame": "ECLIPJ2000",
@@ -444,7 +444,7 @@ class TestUltraL2:
     def test_ultra_l2_error_for_push_and_pull(
         self, mock_data_dict, furnish_kernels, caplog
     ):
-        map_structure = ena_maps.AbstractSkyMap.from_dict(
+        map_structure = ena_maps.AbstractSkyMap.from_properties_dict(
             {
                 "sky_tiling_type": "HEALPIX",
                 "spice_reference_frame": "ECLIPJ2000",

@@ -25,10 +25,10 @@ import space_packet_parser
 import xarray as xr
 from xarray import Dataset
 
-from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.idex.decode import rice_decode
 from imap_processing.idex.idex_constants import IDEXAPID
 from imap_processing.idex.idex_l0 import decom_packets
+from imap_processing.idex.idex_utils import get_idex_attrs
 from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.utils import convert_to_binary_string
 
@@ -75,7 +75,7 @@ class PacketParser:
             Currently assumes one L0 file will generate exactly one L1a file.
         """
         self.data = []
-        self.idex_attrs = get_idex_attrs()
+        self.idex_attrs = get_idex_attrs("l1a")
         epoch_attrs = self.idex_attrs.get_variable_attributes(
             "epoch", check_schema=False
         )
@@ -164,7 +164,9 @@ class PacketParser:
             np.arange(len(data["time_low_sample_rate"][0])),
             name="time_low_sample_rate_index",
             dims=["time_low_sample_rate_index"],
-            attrs=self.idex_attrs.get_variable_attributes("time_low_sample_rate_index"),
+            attrs=self.idex_attrs.get_variable_attributes(
+                "time_low_sample_rate_index", check_schema=False
+            ),
         )
 
         data["time_high_sample_rate_index"] = xr.DataArray(
@@ -172,7 +174,7 @@ class PacketParser:
             name="time_high_sample_rate_index",
             dims=["time_high_sample_rate_index"],
             attrs=self.idex_attrs.get_variable_attributes(
-                "time_high_sample_rate_index"
+                "time_high_sample_rate_index", check_schema=False
             ),
         )
         # NOTE: LABL_PTR_1 should be CDF_CHAR.
@@ -180,7 +182,9 @@ class PacketParser:
             data.time_low_sample_rate_index.values.astype(str),
             name="time_low_sample_rate_label",
             dims=["time_low_sample_rate_index"],
-            attrs=self.idex_attrs.get_variable_attributes("time_low_sample_rate_label"),
+            attrs=self.idex_attrs.get_variable_attributes(
+                "time_low_sample_rate_label", check_schema=False
+            ),
         )
 
         data["time_high_sample_rate_label"] = xr.DataArray(
@@ -188,7 +192,7 @@ class PacketParser:
             name="time_high_sample_rate_label",
             dims=["time_high_sample_rate_index"],
             attrs=self.idex_attrs.get_variable_attributes(
-                "time_high_sample_rate_label"
+                "time_high_sample_rate_label", check_schema=False
             ),
         )
 
@@ -385,7 +389,7 @@ class RawDustEvent:
         self.Ion_Grid_bits = ""
 
         self.compressed = self.telemetry_items["idx__sci0comp"]
-        self.cdf_attrs = get_idex_attrs()
+        self.cdf_attrs = get_idex_attrs("l1a")
 
     def _append_raw_data(self, scitype: Scitype, bits: str) -> None:
         """
@@ -674,7 +678,7 @@ class RawDustEvent:
                 name="epoch",
                 data=[self.impact_time],
                 dims=("epoch"),
-                attrs=idex_attrs.get_variable_attributes("epoch"),
+                attrs=idex_attrs.get_variable_attributes("epoch", check_schema=False),
             ),
         }
         sampling_rates = {
@@ -684,13 +688,17 @@ class RawDustEvent:
                     self._calc_low_sample_resolution(len(data_vars["Target_Low"][0]))
                 ],
                 dims=("epoch", "time_low_sample_rate_index"),
-                attrs=idex_attrs.get_variable_attributes("low_sample_rate_attrs"),
+                attrs=idex_attrs.get_variable_attributes(
+                    "low_sample_rate_attrs", check_schema=False
+                ),
             ),
             "time_high_sample_rate": xr.DataArray(
                 name="time_high_sample_rate",
                 data=[self._calc_high_sample_resolution(len(data_vars["TOF_Low"][0]))],
                 dims=("epoch", "time_high_sample_rate_index"),
-                attrs=idex_attrs.get_variable_attributes("high_sample_rate_attrs"),
+                attrs=idex_attrs.get_variable_attributes(
+                    "high_sample_rate_attrs", check_schema=False
+                ),
             ),
         }
         expected_shapes = {
@@ -714,18 +722,3 @@ class RawDustEvent:
             coords=coords,
         )
         return dataset
-
-
-def get_idex_attrs() -> ImapCdfAttributes:
-    """
-    Load in CDF attributes for IDEX instrument.
-
-    Returns
-    -------
-    idex_attrs : ImapCdfAttributes
-        The IDEX L1a CDF attributes.
-    """
-    idex_attrs = ImapCdfAttributes()
-    idex_attrs.add_instrument_global_attrs("idex")
-    idex_attrs.add_instrument_variable_attrs("idex", "l1a")
-    return idex_attrs

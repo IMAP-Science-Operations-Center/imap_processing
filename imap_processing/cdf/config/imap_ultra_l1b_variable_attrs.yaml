@@ -64,6 +64,14 @@ default_float32_attrs: &default_float32
   VALIDMAX: 3.4028235e+38
   dtype: float32
 
+default_float64_attrs: &default_float64
+  <<: *default
+  FILLVAL: -1.0e31
+  FORMAT: F10.2
+  VALIDMIN: -1.7976931348623157e+308
+  VALIDMAX: 1.7976931348623157e+308
+  dtype: float64
+
 x_front:
   <<: *default_float32
   CATDESC: x front position

@@ -11,23 +11,24 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils.coordinates import CoordNames
+from imap_processing.ultra.l1c.ultra_l1c_pset_bins import get_energy_delta_minus_plus
 
 logger = logging.getLogger(__name__)
 logger.info("Importing ultra_l2 module")
 
 # Default properties for the Ultra L2 map
 DEFAULT_ULTRA_L2_MAP_STRUCTURE: ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap = (
-    ena_maps.AbstractSkyMap.from_dict(
+    ena_maps.AbstractSkyMap.from_properties_dict(
         {
             "sky_tiling_type": "HEALPIX",
             "spice_reference_frame": "ECLIPJ2000",
             "values_to_push_project": [
                 "counts",
-                "sensitivity",
-                "background_rates",
             ],
             "values_to_pull_project": [
                 "exposure_factor",
+                "sensitivity",
+                "background_rates",
             ],
             "nside": 32,
             "nested": False,
@@ -45,12 +46,12 @@ DEFAULT_L2_HEALPIX_NESTED = False
 # These variables must always be present in each L1C dataset
 REQUIRED_L1C_VARIABLES_PUSH = [
     "counts",
-    "sensitivity",
-    "background_rates",
-    "obs_date",
 ]
 REQUIRED_L1C_VARIABLES_PULL = [
     "exposure_factor",
+    "sensitivity",
+    "background_rates",
+    "obs_date",
 ]
 
 # These variables are projected to the map as the mean of pointing set pixels value,
@@ -190,9 +191,13 @@ def generate_ultra_healpix_skymap(
     # Add additional data variables to the map
     output_map_structure.values_to_push_project.extend(
         [
+            "num_pointing_set_pixel_members",
+        ]
+    )
+    output_map_structure.values_to_pull_project.extend(
+        [
             "obs_date",
             "pointing_set_exposure_times_solid_angle",
-            "num_pointing_set_pixel_members",
         ]
     )
 
@@ -270,8 +275,8 @@ def generate_ultra_healpix_skymap(
         skymap.data_1d["pointing_set_exposure_times_solid_angle"]
     )
 
-    # TODO: Ask Ultra team about background rates - I think they should increase when
-    # binned to larger pixels, as I've done here, but that was never explicitly stated
+    # Background rates must be scaled by the ratio of the solid angles of the
+    # map pixel / pointing set pixel
     skymap.data_1d["background_rates"] *= skymap.solid_angle / pointing_set.solid_angle
 
     # Get the energy bin widths from a PointingSet (they will all be the same)
@@ -466,14 +471,14 @@ def ultra_l2(
             )
 
     # Add the energy delta plus/minus to the map dataset
-    # TODO: Update these placeholders on energy deltas (our mean is the geometric mean,
-    # so it should have asymmetric deltas).
+    energy_delta_minus, energy_delta_plus = get_energy_delta_minus_plus()
     map_dataset.coords["energy_delta_minus"] = xr.DataArray(
-        (l1c_products[0]["energy_bin_delta"].values / 2),
+        energy_delta_minus,
         dims=(CoordNames.ENERGY_L2.value,),
     )
-    map_dataset.coords["energy_delta_plus"] = map_dataset["energy_delta_minus"].copy(
-        deep=True
+    map_dataset.coords["energy_delta_plus"] = xr.DataArray(
+        energy_delta_plus,
+        dims=(CoordNames.ENERGY_L2.value,),
     )
 
     # Add variable specific attributes to the map's data_vars and coords

@@ -21,10 +21,12 @@ from pathlib import Path
 from typing import final
 
 import imap_data_access
+import spiceypy
 import xarray as xr
 from imap_data_access import ScienceFilePath
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
+    SPICESource,
 )
 
 import imap_processing
@@ -51,6 +53,8 @@ from imap_processing.hit.l1b.hit_l1b import hit_l1b
 from imap_processing.hit.l2.hit_l2 import hit_l2
 from imap_processing.idex.idex_l1a import PacketParser
 from imap_processing.idex.idex_l1b import idex_l1b
+from imap_processing.idex.idex_l2a import idex_l2a
+from imap_processing.idex.idex_l2b import idex_l2b
 from imap_processing.lo.l1a import lo_l1a
 from imap_processing.lo.l1b import lo_l1b
 from imap_processing.lo.l1c import lo_l1c
@@ -431,7 +435,8 @@ class ProcessInstrument(ABC):
         Complete pre-processing.
 
         For this baseclass, pre-processing consists of downloading dependencies
-        for processing. Child classes can override this method to customize the
+        for processing and furnishing any spice kernels in the input
+        dependencies. Child classes can override this method to customize the
         pre-processing actions.
 
         Returns
@@ -442,6 +447,12 @@ class ProcessInstrument(ABC):
         dependencies = ProcessingInputCollection()
         dependencies.deserialize(self.dependency_str)
         dependencies.download_all_files()
+
+        # Furnish spice kernels
+        kernel_paths = dependencies.get_file_paths(data_type=SPICESource.SPICE.value)
+        logger.info(f"Furnishing kernels: {kernel_paths}")
+        spiceypy.furnsh([str(kernel_path.resolve()) for kernel_path in kernel_paths])
+
         return dependencies
 
     @abstractmethod
@@ -521,6 +532,9 @@ class ProcessInstrument(ABC):
             products.append(write_cdf(ds))
 
         self.upload_products(products)
+
+        logger.info("Clearing furnished SPICE kernels")
+        spiceypy.kclear()
 
 
 class Codice(ProcessInstrument):
@@ -787,25 +801,48 @@ class Idex(ProcessInstrument):
 
         dependency_list = dependencies.processing_input
         if self.data_level == "l1a":
-            if len(dependency_list) > 1:
+            if len(dependency_list) > 2:
                 raise ValueError(
                     f"Unexpected dependencies found for IDEX L1A:"
-                    f"{dependency_list}. Expected only one dependency."
+                    f"{dependency_list}. Expected only two dependency."
                 )
             # get l0 file
             science_files = dependencies.get_file_paths(source="idex")
             datasets = PacketParser(science_files[0]).data
         elif self.data_level == "l1b":
-            if len(dependency_list) > 1:
+            if len(dependency_list) > 3:
                 raise ValueError(
                     f"Unexpected dependencies found for IDEX L1B:"
-                    f"{dependency_list}. Expected only one science dependency."
+                    f"{dependency_list}. Expected only three dependencies."
                 )
             # get CDF file
             science_files = dependencies.get_file_paths(source="idex")
             # process data
             dependency = load_cdf(science_files[0])
             datasets = [idex_l1b(dependency)]
+        elif self.data_level == "l2a":
+            if len(dependency_list) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for IDEX L2A:"
+                    f"{dependency_list}. Expected only one dependency."
+                )
+            science_files = dependencies.get_file_paths(source="idex")
+            dependency = load_cdf(science_files[0])
+            datasets = [idex_l2a(dependency)]
+        elif self.data_level == "l2b":
+            if len(dependency_list) > 2:
+                raise ValueError(
+                    f"Unexpected dependencies found for IDEX L2B:"
+                    f"{dependency_list}. Expected only two dependency."
+                )
+            sci_files = dependencies.get_file_paths(
+                source="idex", descriptor="sci-1week"
+            )
+            dependency = load_cdf(sci_files[0])
+            # TODO update l2b to use hk files
+            # hk_files = dependencies.get_file_paths(source="idex", descriptor="evt")
+            # hk_dependency = [load_cdf(dep) for dep in hk_files]
+            datasets = [idex_l2b(dependency)]
         return datasets
 
 
@@ -861,8 +898,10 @@ class Lo(ProcessInstrument):
                 )
                 dataset = load_cdf(science_files[0])
                 data_dict[dataset.attrs["Logical_source"]] = dataset
-            # TODO: This is returning the wrong type
-            datasets = lo_l1c.lo_l1c(data_dict)
+                # TODO: add dependencies to S3 and dependency tree
+                #  setting to empty for now
+            anc_depedencies: list = []
+            datasets = lo_l1c.lo_l1c(data_dict, anc_depedencies)
 
         return datasets
 
@@ -898,7 +937,6 @@ class Mag(ProcessInstrument):
                     f"Unexpected dependencies found for MAG L1A:"
                     f"{dependency_list}. Expected only one dependency."
                 )
-            # TODO: Update this type
 
             datasets = mag_l1a(science_files[0])
 
@@ -1086,10 +1124,10 @@ class Swe(ProcessInstrument):
 
         dependency_list = dependencies.processing_input
         if self.data_level == "l1a":
-            if len(dependency_list) > 1:
+            if len(dependency_list) != 2:
                 raise ValueError(
                     f"Unexpected dependencies found for SWE L1A:"
-                    f"{dependency_list}. Expected only one dependency."
+                    f"{dependency_list}. Expected only two dependencies."
                 )
             science_files = dependencies.get_file_paths(source="swe")
             datasets = swe_l1a(str(science_files[0]))

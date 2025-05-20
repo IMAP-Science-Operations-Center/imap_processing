@@ -54,12 +54,24 @@ EXPECTED_ARRAY_SHAPES = [
     (77, 19, 12, 128),  # lo-nsw-angular
     (77,),  # hi-counters-aggregated
     (77, 12),  # hi-counters-singles
-    (77, 15, 4),  # hi-omni
+    (),  # hi-omni, shapes are specific to species
     (77, 8, 12, 12),  # hi-sectored
     (77,),  # hi-priority
     (77, 10000),  # lo-pha
-    (),  # hi-pha  # TODO: Need to implement
+    (77, 10000),  # hi-pha
 ]
+
+EXPECTED_HI_OMNI_ARRAY_SHAPES = {
+    "h": (308, 15),
+    "he3": (308, 15),
+    "he4": (308, 15),
+    "c": (308, 18),
+    "o": (308, 18),
+    "ne_mg_si": (308, 15),
+    "fe": (308, 18),
+    "uh": (308, 5),
+    "junk": (308, 1),
+}
 
 EXPECTED_NUM_VARIABLES = [
     0,  # hi-ialirt  # TODO: Need to implement
@@ -75,11 +87,11 @@ EXPECTED_NUM_VARIABLES = [
     9,  # lo-nsw-angular
     2 + len(constants.HI_COUNTERS_AGGREGATED_VARIABLE_NAMES),  # hi-counters-aggregated
     5,  # hi-counters-singles
-    10,  # hi-omni
+    11,  # hi-omni
     6,  # hi-sectored
     8,  # hi-priority
     80,  # lo-pha
-    0,  # hi-pha  # TODO: Need to implement
+    60,  # hi-pha
 ]
 
 # CoDICE-Hi products that have support variables to test
@@ -135,37 +147,47 @@ def test_l1a_data_array_shape(test_l1a_data, index):
         The index of the list to test
     """
 
+    descriptor = DESCRIPTORS[index]
     processed_dataset = test_l1a_data[index]
     expected_shape = EXPECTED_ARRAY_SHAPES[index]
 
     # Mark currently broken/unsupported datasets as expected to fail
     # TODO: Remove these once they are supported
-    if index in [0, 1, 17]:
+    if index in [0, 1]:
         pytest.xfail("Data product is currently unsupported")
 
-    # There are exceptions for some variables
-    for variable in processed_dataset:
-        # For variables with energy dimensions
-        if variable in ["energy_table", "acquisition_time_per_step"]:
-            assert processed_dataset[variable].data.shape == (128,)
-        # For "support" variables with epoch dimensions
-        elif variable in [
-            "rgfo_half_spin",
-            "nso_half_spin",
-            "sw_bias_gain_mode",
-            "st_bias_gain_mode",
-            "data_quality",
-            "spin_period",
-        ]:
-            assert processed_dataset[variable].data.shape == (
-                len(processed_dataset["epoch"].data),
+    # hi-omni data array shapes depend on the species
+    if descriptor == "hi-omni":
+        for variable in constants.HI_OMNI_VARIABLE_NAMES:
+            assert (
+                processed_dataset[variable].data.shape
+                == EXPECTED_HI_OMNI_ARRAY_SHAPES[variable]
             )
-        # For some direct event variables:
-        elif re.match(r"P[0-7]_(NumEvents|DataQuality)", variable):
-            assert processed_dataset[variable].data.shape == (77,)
-        # For nominal variables
-        else:
-            assert processed_dataset[variable].data.shape == expected_shape
+
+    else:
+        # There are exceptions for some variables
+        for variable in processed_dataset:
+            # For variables with energy dimensions
+            if variable in ["energy_table", "acquisition_time_per_step"]:
+                assert processed_dataset[variable].data.shape == (128,)
+            # For "support" variables with epoch dimensions
+            elif variable in [
+                "rgfo_half_spin",
+                "nso_half_spin",
+                "sw_bias_gain_mode",
+                "st_bias_gain_mode",
+                "data_quality",
+                "spin_period",
+            ]:
+                assert processed_dataset[variable].data.shape == (
+                    len(processed_dataset["epoch"].data),
+                )
+            # For some direct event variables:
+            elif re.match(r"P[0-7]_(NumEvents|DataQuality)", variable):
+                assert processed_dataset[variable].data.shape == (77,)
+            # For nominal variables
+            else:
+                assert processed_dataset[variable].data.shape == expected_shape
 
 
 @pytest.mark.parametrize("index", range(len(DESCRIPTORS)))
@@ -188,7 +210,7 @@ def test_l1a_logical_sources(test_l1a_data, index):
 
     # Mark currently broken/unsupported datasets as expected to fail
     # TODO: Remove these once they are supported
-    if index in [0, 1, 17]:
+    if index in [0, 1]:
         pytest.xfail("Data product is currently unsupported")
 
     # Write the dataset to a file to set the logical source attribute
@@ -216,7 +238,7 @@ def test_l1a_num_data_variables(test_l1a_data, index):
 
     # Mark currently broken/unsupported datasets as expected to fail
     # TODO: Remove these once they are supported
-    if index in [0, 1, 17]:
+    if index in [0, 1]:
         pytest.xfail("Data product is currently unsupported")
 
     assert len(processed_dataset) == EXPECTED_NUM_VARIABLES[index]
@@ -244,8 +266,10 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
     able_to_be_validated = [
         "hi-counters-aggregated",
         "hi-counters-singles",
+        "hi-omni",
         "hi-priority",
         "hi-sectored",
+        "hi-pha",
         "lo-counters-aggregated",
         "lo-counters-singles",
         "lo-sw-angular",
@@ -254,7 +278,7 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         "lo-nsw-priority",
         "lo-sw-species",
         "lo-nsw-species",
-        "lo_pha",
+        "lo-pha",
     ]
 
     if descriptor in able_to_be_validated:

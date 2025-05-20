@@ -50,6 +50,33 @@ def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray, np.ndarr
     return intervals, energy_midpoints, energy_bin_geometric_means
 
 
+def get_energy_delta_minus_plus() -> tuple[NDArray, NDArray]:
+    """
+    Calculate the energy_delta_minus and energy_delta_plus for use in the CDF.
+
+    Returns
+    -------
+    bins_energy_delta_minus : np.ndarray
+        Array of energy_delta_minus values.
+    bins_energy_delta_plus : np.ndarray
+        Array of energy_delta_plus values.
+
+    Notes
+    -----
+    Calculates as the following:
+    energy_delta_minus=abs(bin_geom_mean - bin_lower)
+    energy_delta_plus=abs(bin_upper - bin_geom_mean)
+    where bin_upper and bin_lower are the upper and lower bounds of the energy bins
+    and bin_geom_mean is the geometric mean of the energy bin.
+    """
+    bins, _, bin_geom_means = build_energy_bins()
+    bins_energy_delta_plus, bins_energy_delta_minus = [], []
+    for bin_edges, bin_geom_mean in zip(bins, bin_geom_means):
+        bins_energy_delta_plus.append(bin_edges[1] - bin_geom_mean)
+        bins_energy_delta_minus.append(bin_geom_mean - bin_edges[0])
+    return abs(np.array(bins_energy_delta_minus)), abs(np.array(bins_energy_delta_plus))
+
+
 def get_spacecraft_histogram(
     vhat: tuple[np.ndarray, np.ndarray, np.ndarray],
     energy: np.ndarray,
@@ -227,7 +254,7 @@ def get_helio_histogram(
     return hist, latitude, longitude, n_pix
 
 
-def get_background_rates(
+def get_spacecraft_background_rates(
     nside: int = 128,
 ) -> NDArray:
     """
@@ -246,9 +273,39 @@ def get_background_rates(
     Notes
     -----
     This is a placeholder.
+    TODO: background rates to be provided by IT.
     """
-    n_pix = hp.nside2npix(nside)
-    return np.zeros(n_pix)
+    npix = hp.nside2npix(nside)
+    _, energy_midpoints, _ = build_energy_bins()
+    background = np.zeros((len(energy_midpoints), npix))
+    return background
+
+
+def get_helio_background_rates(
+    nside: int = 128,
+) -> NDArray:
+    """
+    Calculate background rates.
+
+    Parameters
+    ----------
+    nside : int, optional
+        The nside parameter of the Healpix tessellation (default is 128).
+
+    Returns
+    -------
+    background_rates : np.ndarray
+        Array of background rates.
+
+    Notes
+    -----
+    This is a placeholder.
+    TODO: background rates to be provided by IT.
+    """
+    npix = hp.nside2npix(nside)
+    _, energy_midpoints, _ = build_energy_bins()
+    background = np.zeros((len(energy_midpoints), npix))
+    return background
 
 
 def get_spacecraft_exposure_times(constant_exposure: pandas.DataFrame) -> NDArray:
@@ -448,3 +505,93 @@ def grid_sensitivity(
     interpolated = interp_func(energy)
 
     return interpolated
+
+
+def get_helio_sensitivity(
+    time: np.ndarray,
+    efficiencies: pandas.DataFrame,
+    geometric_function: pandas.DataFrame,
+    nside: int = 128,
+    nested: bool = False,
+) -> NDArray:
+    """
+    Compute a 2D (Healpix index, energy) array of sensitivity in the helio frame.
+
+    Parameters
+    ----------
+    time : np.ndarray
+        Median time of pointing in et.
+    efficiencies : pandas.DataFrame
+        Efficiencies at different energy levels.
+    geometric_function : pandas.DataFrame
+        Geometric function.
+    nside : int, optional
+        The nside parameter of the Healpix tessellation (default is 128).
+    nested : bool, optional
+        Whether the Healpix tessellation is nested (default is False).
+
+    Returns
+    -------
+    helio_sensitivity : np.ndarray
+        A 2D array of shape (npix, n_energy_bins).
+
+    Notes
+    -----
+    These calculations are performed once per pointing.
+    """
+    # Get energy midpoints.
+    _, energy_midpoints, _ = build_energy_bins()
+
+    # Get sensitivity on the spacecraft grid
+    _, _, ra, dec = get_spacecraft_sensitivity(efficiencies, geometric_function)
+
+    # The Cartesian state vector representing the position and velocity of the
+    # IMAP spacecraft.
+    state = imap_state(time, ref_frame=SpiceFrame.IMAP_DPS)
+
+    # Extract the velocity part of the state vector
+    spacecraft_velocity = state[3:6]
+    # Convert (RA, Dec) angles into 3D unit vectors.
+    # Each unit vector represents a direction in the sky where the spacecraft observed
+    # and accumulated sensitivity.
+    unit_dirs = hp.ang2vec(ra, dec, lonlat=True).T  # Shape (N, 3)
+
+    # Initialize output array.
+    # Each row corresponds to a HEALPix pixel, and each column to an energy bin.
+    npix = hp.nside2npix(nside)
+    helio_sensitivity = np.zeros((npix, len(energy_midpoints)))
+
+    # Loop through energy bins and compute transformed sensitivity.
+    for i, energy in enumerate(energy_midpoints):
+        # Convert the midpoint energy to a velocity (km/s).
+        # Based on kinetic energy equation: E = 1/2 * m * v^2.
+        energy_velocity = (
+            np.sqrt(2 * energy * UltraConstants.KEV_J / UltraConstants.MASS_H) / 1e3
+        )
+
+        # Use Galilean Transform to transform the velocity wrt spacecraft
+        # to the velocity wrt heliosphere.
+        # energy_velocity * cartesian -> apply the magnitude of the velocity
+        # to every position on the grid in the despun grid.
+        helio_velocity = spacecraft_velocity.reshape(1, 3) + energy_velocity * unit_dirs
+
+        # Normalized vectors representing the direction of the heliocentric velocity.
+        helio_normalized = helio_velocity / np.linalg.norm(
+            helio_velocity, axis=1, keepdims=True
+        )
+
+        # Convert Cartesian heliocentric vectors into spherical coordinates.
+        # Result: azimuth (longitude) and elevation (latitude) in degrees.
+        helio_spherical = cartesian_to_spherical(helio_normalized)
+        az, el = helio_spherical[:, 1], helio_spherical[:, 2]
+
+        # Convert azimuth/elevation directions to HEALPix pixel indices.
+        hpix_idx = hp.ang2pix(nside, az, el, nest=nested, lonlat=True)
+        gridded_sensitivity = grid_sensitivity(efficiencies, geometric_function, energy)
+
+        # Accumulate sensitivity values into HEALPix pixels for this energy bin.
+        helio_sensitivity[:, i] = np.bincount(
+            hpix_idx, weights=gridded_sensitivity, minlength=npix
+        )
+
+    return helio_sensitivity

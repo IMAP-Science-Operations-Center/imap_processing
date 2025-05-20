@@ -10,10 +10,10 @@ data_max: &data_max 4096
 sample_rate_min: &sample_rate_min -130
 sample_rate_max: &sample_rate_max 130
 
-int_maxval: &int_maxval 9223372036854775807
 
 # <=== Base Attributes ===>
 string_base_attrs: &string_base
+  DEPEND_0: epoch
   CATDESC: " "
   FIELDNAM: " "
   FORMAT: A3
@@ -77,12 +77,14 @@ time_high_sample_rate_label:
   FIELDNAM: High Sample Rate Time
   FORMAT: A5
   VAR_TYPE: metadata
+  DEPEND_1: time_high_sample_rate_index
 
 time_low_sample_rate_label:
   CATDESC: Low sample rate time steps for a dust event.
   FIELDNAM: Low Sample Rate Time
   FORMAT: A5
   VAR_TYPE: metadata
+  DEPEND_1: time_low_sample_rate_index
 
 # <=== Instrument Setting Attributes ===>
 low_sample_rate_attrs:
@@ -119,7 +121,7 @@ time_high_sample_rate_index:
   CATDESC: High sampling rate time index
   FIELDNAM: High sample rate
   FILLVAL: *int_fillval
-  FORMAT: I3
+  FORMAT: I4
   LABLAXIS: Sample Rate
   SCALE_TYP: linear
   UNITS: " "

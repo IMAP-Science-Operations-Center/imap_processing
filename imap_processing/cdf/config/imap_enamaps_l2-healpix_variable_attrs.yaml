@@ -60,6 +60,12 @@ ena_intensity_stat_unc:
   LABL_PTR_1: energy_label
   LABL_PTR_2: pixel_index_label
 
+ena_intensity_sys_err:
+  DEPEND_1: energy
+  DEPEND_2: pixel_index
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: pixel_index_label
+
 sensitivity:
   DEPEND_1: energy
   DEPEND_2: pixel_index
@@ -77,6 +83,10 @@ obs_date:
   DEPEND_1: pixel_index
   LABL_PTR_1: pixel_index_label
 
+obs_date_range:
+  DEPEND_1: pixel_index
+  LABL_PTR_1: pixel_index_label
+
 exposure_factor_energy_dependent:
   DEPEND_1: energy
   DEPEND_2: pixel_index
@@ -88,3 +98,7 @@ obs_date_energy_dependent:
   DEPEND_2: pixel_index
   LABL_PTR_1: energy_label
   LABL_PTR_2: pixel_index_label
+
+solid_angle:
+  DEPEND_1: pixel_index
+  LABL_PTR_1: pixel_index_label

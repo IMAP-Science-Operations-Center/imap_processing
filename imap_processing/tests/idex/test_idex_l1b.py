@@ -78,7 +78,6 @@ def test_idex_cdf_file(l1b_dataset: xr.Dataset):
     """
 
     file_name = write_cdf(l1b_dataset)
-
     assert file_name.exists()
     assert file_name.name == "imap_idex_l1b_sci-1week_20231218_v999.cdf"
 
@@ -321,7 +320,7 @@ def test_validate_l1b_idex_data_variables(
                     np.testing.assert_array_almost_equal(
                         l1b_dataset[cdf_var].data,
                         l1b_example_data[var],
-                        decimal=1e-04,
+                        decimal=4,
                     ),
                     warning,
                 )
