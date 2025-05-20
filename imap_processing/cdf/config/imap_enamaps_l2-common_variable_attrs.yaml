@@ -55,14 +55,11 @@ energy_label:
 
 epoch_delta:
   <<: *default_int64
-  CATDESC: Time difference between the start and end of the exposure.
+  CATDESC: Number of nanoseconds covered by data included in this map product.
   FIELDNAM: epoch_delta
   UNITS: ns
   VAR_TYPE: support_data
   DISPLAY_TYPE: no_plot
-  DEPEND_0: epoch
-  dtype: int64
-  TIME_BASE: J2000
   TIME_SCALE: Terrestrial Time
 
 energy_delta_minus:

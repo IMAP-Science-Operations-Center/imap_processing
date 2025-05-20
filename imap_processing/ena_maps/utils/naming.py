@@ -8,6 +8,9 @@ from typing import Literal
 
 from imap_processing.spice.geometry import SpiceFrame
 
+# Set a constant number of days in a month to calculate the duration of maps
+DAYS_IN_MONTH = 28.5
+
 
 class MappableInstrumentShortName(Enum):
     """Enumeration of the short names of the ENA and other mappable instruments."""
@@ -133,12 +136,12 @@ def build_l2_map_descriptor(  # noqa: PLR0912
 
     # Handle duration
     if isinstance(duration, timedelta):
-        # Convert timedelta to a string representation of number of 28.5 day months
-        num_months = int(duration.days // 28.5)
+        # Convert timedelta to str representation of number of DAYS_IN_MONTH-day months
+        num_months = int(duration.days // DAYS_IN_MONTH)
         duration = f"{num_months}mo"
     elif isinstance(duration, int):
-        # Assume number of days and convert to 28.5-day months
-        duration = f"{int(duration // 28.5)}mo"
+        # Assume number of days and convert to DAYS_IN_MONTH-day months
+        duration = f"{int(duration // DAYS_IN_MONTH)}mo"
     elif isinstance(duration, str):
         pass
     # Replace 12mo with 1yr
@@ -169,7 +172,7 @@ def build_l2_map_descriptor(  # noqa: PLR0912
 
 def ns_to_duration_months(ns: int) -> int:
     """
-    Convert nanoseconds to months using 28.5 days per month approximation.
+    Convert nanoseconds to months using DAYS_IN_MONTH days per month approximation.
 
     Parameters
     ----------
@@ -186,7 +189,7 @@ def ns_to_duration_months(ns: int) -> int:
     This can be used to convert from the difference between two epochs in ns to the
     number of months between them.
 
-    This is a very simple estimate, which assumes that a month is 28.5 days and
+    This is a very simple estimate, which assumes that a month is DAYS_IN_MONTH days and
     floors the result.
 
     This successfully yields:
@@ -196,7 +199,7 @@ def ns_to_duration_months(ns: int) -> int:
     - 3 months for 91.3125 days (365.25/4) in ns
     """
     days = ns / (1e9 * 60 * 60 * 24)
-    months = days // 28.5
+    months = days // DAYS_IN_MONTH
     return int(months)
 
 
