@@ -1,5 +1,3 @@
-from datetime import timedelta
-
 import pytest
 
 from imap_processing.ena_maps.ena_maps import HealpixSkyMap, RectangularSkyMap
@@ -100,7 +98,7 @@ class TestNaming:
         assert parse_map_duration("12mo") == "1yr"
         assert parse_map_duration(365) == "1yr"
         assert parse_map_duration(200) == "6mo"
-        assert parse_map_duration(timedelta(days=60)) == "2mo"
+        assert parse_map_duration(60) == "2mo"
         with pytest.raises(ValueError, match="Invalid duration type."):
             parse_map_duration(["invalid", "duration"])
 
@@ -115,23 +113,6 @@ class TestNaming:
             parse_map_frame(SpiceFrame.IMAP_GLOWS)
         with pytest.raises(ValueError, match="Invalid frame"):
             parse_map_frame("invalid_frame")
-
-    def test_build_l2_map_descriptor_with_timedelta(
-        self,
-    ):
-        descriptor = MapDescriptor(
-            instrument=MappableInstrumentShortName.HI,
-            frame_descriptor="hf",
-            resolution_str="2deg",
-            duration=timedelta(days=60),
-            sensor="45",
-            principal_data="ena",
-            species="he",
-            survival_corrected="sp",
-            spin_phase="ram",
-            coordinate_system="hgi",
-        ).to_string()
-        assert descriptor == "h45-ena-he-hf-sp-ram-hgi-2deg-2mo"
 
     def test_build_l2_map_descriptor_with_int_duration(
         self,
@@ -242,7 +223,7 @@ class TestMapDescriptor:
             instrument=MappableInstrumentShortName.HI,
             frame_descriptor="hf",
             resolution_str="2deg",
-            duration=timedelta(days=60),
+            duration=60,
             sensor="45",
             principal_data="ena",
             species="he",
@@ -292,7 +273,7 @@ class TestMapDescriptor:
             instrument=MappableInstrumentShortName.HI,
             frame_descriptor="hf",
             resolution_str="2deg",
-            duration=timedelta(days=60),
+            duration=60,
             sensor="45",
             principal_data="ena",
             species="he",

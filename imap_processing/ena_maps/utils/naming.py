@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from typing import Literal, cast
 
@@ -137,33 +137,29 @@ def parse_instrument_descriptor(
 
 
 def parse_map_duration(
-    duration: str | int | timedelta,
+    duration: str | int,
 ) -> str:
     """
     Parse the duration into a string representation.
 
     Parameters
     ----------
-    duration : str | int | timedelta
+    duration : str | int
         The duration to parse. This can be a string in the format "1yr", "6mo", etc.,
-        an integer representing the number of days, or a timedelta object.
+        or an integer representing the number of days.
 
     Returns
     -------
     str
         The parsed duration string in the format "1yr", "6mo", etc.
     """
-    if isinstance(duration, timedelta):
-        # Convert timedelta to str representation of number of DAYS_IN_MONTH day months
-        num_months = int(duration.days // DAYS_IN_MONTH)
-        duration = f"{num_months}mo"
-    elif isinstance(duration, int):
+    if isinstance(duration, int):
         # Assume number of days and convert to DAYS_IN_MONTH-day months
         duration = f"{int(duration // DAYS_IN_MONTH)}mo"
     elif isinstance(duration, str):
         pass
     else:
-        raise ValueError("Invalid duration type. Must be str, int, or timedelta.")
+        raise ValueError("Invalid duration type. Must be str or int.")
     # Replace 12mo with 1yr
     if duration == "12mo":
         duration = "1yr"
@@ -277,7 +273,7 @@ class MapDescriptor:
     instrument: MappableInstrumentShortName
     frame_descriptor: _spice_frame_str_types | SpiceFrame
     resolution_str: str
-    duration: str | int | timedelta
+    duration: str | int
     sensor: _sensor_types = ""
     principal_data: str = "ena"
     species: str = "h"
