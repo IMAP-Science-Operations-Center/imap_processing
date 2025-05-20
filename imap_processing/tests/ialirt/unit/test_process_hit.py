@@ -6,9 +6,10 @@ from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.process_hit import (
     HIT_PREFIX_TO_RATE_TYPE,
     create_l1,
-    find_groups,
     process_hit,
 )
+from imap_processing.ialirt.utils.grouping import find_groups
+from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.utils import packet_file_to_datasets
 
 
@@ -54,6 +55,32 @@ def xarray_data(binary_packet_path, xtce_hit_path):
 
     xarray_data = packet_file_to_datasets(binary_packet_path, xtce_hit_path)[apid]
     return xarray_data
+
+
+@pytest.fixture
+def sc_xarray_data():
+    """Create xarray data for spacecraft packets."""
+    apid = 478
+    packet_path = (
+        imap_module_directory / "tests" / "ialirt" / "data" / "l0" / "apid_478.bin"
+    )
+    xtce_ialirt_path = (
+        imap_module_directory / "ialirt" / "packet_definitions" / "ialirt.xml"
+    )
+
+    xarray_data = packet_file_to_datasets(
+        packet_path, xtce_ialirt_path, use_derived_value=False
+    )[apid]
+
+    return xarray_data
+
+
+@pytest.mark.external_test_data
+def test_process_spacecraft_packet(sc_xarray_data):
+    """Tests Spacecraft Packet processing."""
+    hit_product = process_hit(sc_xarray_data)
+
+    assert len(hit_product[0].keys()) == 12
 
 
 def generate_prefixes(prefixes):
@@ -114,20 +141,26 @@ def test_prefixes():
     assert HIT_PREFIX_TO_RATE_TYPE["SLOW_RATE"] == expected_slow_rate
 
 
-def test_find_groups(xarray_data):
-    """Tests find_groups"""
-
-    filtered_data = find_groups(xarray_data)
-
-    np.testing.assert_array_equal(
-        filtered_data["hit_subcom"], np.tile(np.arange(60), 15)
-    )
-
-
 def test_create_l1(xarray_data):
     """Tests create_l1"""
 
-    filtered_data = find_groups(xarray_data)
+    # Add a dummy value to the hit_met variable.
+    xarray_data["sc_sclk_sec"] = xarray_data["hit_sc_tick"]
+    xarray_data["sc_sclk_sub_sec"] = (
+        ("epoch",),
+        np.zeros_like(xarray_data["hit_sc_tick"]),
+    )
+
+    # Subsecond time conversion specified in 7516-9054 GSW-FSW ICD.
+    # Value of SCLK subseconds, unsigned, (LSB = 1/256 sec)
+    met = calculate_time(
+        xarray_data["sc_sclk_sec"], xarray_data["sc_sclk_sub_sec"], 256
+    )
+
+    # Add required parameters.
+    xarray_data["met"] = met
+
+    filtered_data = find_groups(xarray_data, (0, 59), "hit_subcom", "met")
 
     fast_rate_1 = filtered_data["hit_fast_rate_1"][(filtered_data["group"] == 4).values]
     fast_rate_2 = filtered_data["hit_fast_rate_2"][(filtered_data["group"] == 4).values]
@@ -143,6 +176,13 @@ def test_create_l1(xarray_data):
 
 def test_process_hit(xarray_data, caplog):
     """Tests process_hit."""
+
+    # Add a dummy value to the hit_met variable.
+    xarray_data["sc_sclk_sec"] = xarray_data["hit_sc_tick"]
+    xarray_data["sc_sclk_sub_sec"] = (
+        ("epoch",),
+        np.zeros_like(xarray_data["hit_sc_tick"]),
+    )
 
     # Tests that it functions normally
     hit_product = process_hit(xarray_data)
