@@ -200,7 +200,7 @@ def _test_data_paths():
             / "ultra"
             / "data"
             / "l1"
-            / "IMAP-Ultra45_r1_L1_V0.csv",
+            / "IMAP-Ultra45_r1_L1_V0_shortened.csv",
         ),
         (
             "imap_ultra_l1b_45sensor-de_20240207_v999.cdf",
