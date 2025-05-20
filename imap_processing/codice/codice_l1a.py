@@ -137,15 +137,19 @@ class CoDICEL1aPipeline:
 
         self.raw_data = []
 
-        for packet_data, byte_count in zip(science_values, self.dataset.pkt_len.data):
-            # I-ALiRT data already has byte count cut-off applied, so treat
-            # it slightly differently
-            if self.config["dataset_name"] == "imap_codice_l1a_lo-ialirt":
+        # I-ALiRT data already has byte count cut-off applied, so treat
+        # it slightly differently
+        if self.config["dataset_name"] == "imap_codice_l1a_lo-ialirt":
+            for packet_data in science_values:
                 # Convert from binary string to byte object
                 # values = int(packet_data, 2).to_bytes(len(packet_data) // 8, byteorder='big')
-                values = packet_data
+                decompressed_values = decompress(packet_data, compression_algorithm)
+                self.raw_data.append(decompressed_values)
 
-            else:
+        else:
+            for packet_data, byte_count in zip(
+                science_values, self.dataset.byte_count.data
+            ):
                 # Convert from numpy array to byte object
                 values = ast.literal_eval(str(packet_data))
 
@@ -153,8 +157,8 @@ class CoDICEL1aPipeline:
                 # used as padding and are not needed
                 values = values[:byte_count]
 
-            decompressed_values = decompress(values, compression_algorithm)
-            self.raw_data.append(decompressed_values)
+                decompressed_values = decompress(values, compression_algorithm)
+                self.raw_data.append(decompressed_values)
 
     def define_coordinates(self) -> None:
         """
@@ -177,7 +181,13 @@ class CoDICEL1aPipeline:
         for name in coord_names:
             if name == "epoch":
                 values = self.calculate_epoch_values()
-            elif name in ["esa_step", "inst_az", "spin_sector"]:
+            elif name in [
+                "esa_step",
+                "inst_az",
+                "spin_sector",
+                "spin_sector_pairs",
+                "ssd_index",
+            ]:
                 values = np.arange(self.config["output_dims"][name])
             elif name == "spin_sector_pairs_label":
                 values = np.array(
@@ -1290,9 +1300,7 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
                 pipeline.dataset[field] = ("_", field_values[field.upper()])
 
             processed_dataset = pipeline.define_data_variables()
-
-            print(processed_dataset)
-            assert 1 == 0
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # hi-omni data
         elif apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
@@ -1317,9 +1325,9 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
 
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
-        # TODO: Still need to implement I-ALiRT data products
+        # TODO: Still need to implement hi-ialirt
         elif apid in [
-            CODICEAPID.COD_HI_PHA,
+            CODICEAPID.COD_HI_IAL,
         ]:
             logger.info("\tStill need to properly implement")
             processed_dataset = None
@@ -1342,11 +1350,11 @@ if __name__ == "__main__":
 
     # processed_datasets = process_codice_l1a(file_path, "001")
     process_codice_l1a(file_path)
-
-    # for dataset in processed_datasets:
-    #     if dataset is not None:
-    #         try:
-    #             filename = write_cdf(dataset)
-    #             print(filename)
-    #         except:
-    #             pass
+# #
+# #     # for dataset in processed_datasets:
+# #     #     if dataset is not None:
+# #     #         try:
+# #     #             filename = write_cdf(dataset)
+# #     #             print(filename)
+# #     #         except:
+# #     #             pass
