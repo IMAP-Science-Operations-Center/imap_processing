@@ -149,7 +149,8 @@ def de_dataset():
 @pytest.fixture
 def default_params():
     # Create the correct number of zeroed out parameters to create a HistogramL1B object
-
+    # Simulated kernels are valid for april 15, 2025-april 15 2026
+    # missing data half an hour around midnight - will throw error
     return {
         "histogram": np.zeros((200,)),
         "flight_software_version": 0,
@@ -375,8 +376,22 @@ def test_hist_l1b_unique_block_id(hist_dataset, default_params):
     assert test_l1b.unique_block_identifier == expected_output
 
 
-def test_hist_spice_output(default_params):
-    hist_data = HistogramL1B(**default_params)
+
+def test_hist_spice_output(default_params, furnish_kernels):
+    params = default_params
+    # 2026-01-01T15:00:00.125
+    params['imap_start_time'] = 504975603.125
+    params['glows_start_time'] = 504975603.125
+    kernels = [
+        "naif0012.tls",
+        "imap_sclk_0000.tsc",
+        "imap_wkcp.tf",
+        "imap_science_0001.tf",
+        "sim_1yr_imap_attitude.bc",
+        "sim_1yr_imap_pointing_frame.bc",
+    ]
+    with furnish_kernels(kernels):
+        hist_data = HistogramL1B(**params)
 
     # SPICE parameters:
     # self.spin_period_ground_average = np.double(-999.9)
@@ -390,13 +405,16 @@ def test_hist_spice_output(default_params):
     #         self.spacecraft_velocity_average = np.array([-999.9, -999.9, -999.9])
     #         self.spacecraft_velocity_std_dev = np.array([-999.9, -999.9, -999.9])
 
+
+
     # Assert that all these variables are the correct shape:
+
     assert hist_data.spin_period_ground_average.shape == (1,)
     assert hist_data.spin_period_ground_std_dev.shape == (1,)
     assert hist_data.position_angle_offset_average.shape == (1,)
     assert hist_data.position_angle_offset_std_dev.shape == (1,)
-    assert hist_data.spin_axis_orientation_std_dev.shape == (1,)
-    assert hist_data.spin_axis_orientation_average.shape == (1,)
+    assert hist_data.spin_axis_orientation_std_dev.shape == (2,)
+    assert hist_data.spin_axis_orientation_average.shape == (2,)
     assert hist_data.spacecraft_location_average.shape == (3,)
     assert hist_data.spacecraft_location_std_dev.shape == (3,)
     assert hist_data.spacecraft_velocity_average.shape == (3,)

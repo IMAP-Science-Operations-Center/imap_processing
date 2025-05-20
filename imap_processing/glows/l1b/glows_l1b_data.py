@@ -504,8 +504,8 @@ class HistogramL1B:
     spin_period_ground_std_dev: np.double = field(init=False)  # retrieved from SPICE?
     position_angle_offset_average: np.double = field(init=False)  # retrieved from SPICE
     position_angle_offset_std_dev: np.double = field(init=False)  # from SPICE
-    spin_axis_orientation_std_dev: np.double = field(init=False)  # from SPICE
-    spin_axis_orientation_average: np.double = field(init=False)  # retrieved from SPICE
+    spin_axis_orientation_std_dev: np.ndarray = field(init=False)  # from SPICE
+    spin_axis_orientation_average: np.ndarray = field(init=False)  # retrieved from SPICE
     spacecraft_location_average: np.ndarray = field(init=False)  # retrieved from SPIC
     spacecraft_location_std_dev: np.ndarray = field(init=False)  # retrieved from SPIC
     spacecraft_velocity_average: np.ndarray = field(init=False)  # retrieved from SPIC
@@ -547,16 +547,16 @@ class HistogramL1B:
         self.unique_block_identifier = seconds + subseconds
         # TODO: These pieces will need to be filled in from SPICE kernels. For now,
         #  they are placeholders. GLOWS example code has better placeholders if needed.
-        self.spin_period_ground_average = np.double(-999.9)
-        self.spin_period_ground_std_dev = np.double(-999.9)
-        self.position_angle_offset_average = np.double(-999.9)
-        self.position_angle_offset_std_dev = np.double(-999.9)
-        self.spin_axis_orientation_std_dev = np.double(-999.9)
-        self.spin_axis_orientation_average = np.double(-999.9)
-        self.spacecraft_location_average = np.array([-999.9, -999.9, -999.9])
-        self.spacecraft_location_std_dev = np.array([-999.9, -999.9, -999.9])
-        self.spacecraft_velocity_average = np.array([-999.9, -999.9, -999.9])
-        self.spacecraft_velocity_std_dev = np.array([-999.9, -999.9, -999.9])
+        # self.spin_period_ground_average = np.double(-999.9)
+        # self.spin_period_ground_std_dev = np.double(-999.9)
+        # self.position_angle_offset_average = np.double(-999.9)
+        # self.position_angle_offset_std_dev = np.double(-999.9)
+        # self.spin_axis_orientation_std_dev = np.double(-999.9)
+        # self.spin_axis_orientation_average = np.double(-999.9)
+        # self.spacecraft_location_average = np.array([-999.9, -999.9, -999.9])
+        # self.spacecraft_location_std_dev = np.array([-999.9, -999.9, -999.9])
+        # self.spacecraft_velocity_average = np.array([-999.9, -999.9, -999.9])
+        # self.spacecraft_velocity_std_dev = np.array([-999.9, -999.9, -999.9])
         # Will require some additional inputs
         self.imap_spin_angle_bin_cntr = np.zeros((3600,))
 
@@ -640,10 +640,10 @@ class HistogramL1B:
 
     def update_spice_parameters(self):
         et_start_time = sct_to_et(met_to_sclkticks(self.imap_start_time))
-        self.spin_axis_orientation_average = geometry.frame_transform(
+        self.spin_axis_orientation_average = geometry.cartesian_to_latitudinal(geometry.frame_transform(
             et_start_time, np.array([0, 0, 1]), SpiceFrame.IMAP_DPS, SpiceFrame.ECLIPJ2000
-        )
-        
+        ))
+        # TODO: retrieve spin period from spin data input (using repoint)
         self.spin_period_ground_average = np.double(-999.9)
         self.spin_period_ground_std_dev = np.double(-999.9)
         self.position_angle_offset_average = np.double(-999.9)
