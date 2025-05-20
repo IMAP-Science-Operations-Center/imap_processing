@@ -355,7 +355,10 @@ class MapDescriptor:
             sensor=sensor,
             principal_data=parts[1],
             species=parts[2],
-            frame_descriptor=parts[3],
+            frame_descriptor=cast(  # Cast to appease mypy
+                _spice_frame_str_types,
+                parse_map_frame(parts[3]),
+            ),
             survival_corrected=parts[4],
             spin_phase=parts[5],
             coordinate_system=parts[6],
