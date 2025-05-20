@@ -166,8 +166,7 @@ def test_transform_instrument_vectors_to_inertial(
 
     # Pick midpoint of first coverage interval
     et_start = ck_cover[0]
-    et_end = ck_cover[1]
-    et = (et_start + et_end) / 2.0
+    et = et_start + 10
 
     # Assume IMAP_MAG +X is boresight
     instrument_vector = np.array([[10.0, 2.0, 3.0]])
@@ -189,7 +188,7 @@ def test_transform_instrument_vectors_to_inertial(
         atol=1e-9,
     )
 
-    spin_phase = np.array([0.0])
+    spin_phase = np.array([120.0])
 
     v_manual = transform_instrument_vectors_to_inertial(
         instrument_vector,
