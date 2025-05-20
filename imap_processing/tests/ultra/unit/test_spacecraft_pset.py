@@ -74,7 +74,7 @@ def test_calculate_spacecraft_pset():
         test_l1b_de_dataset,  # placeholder for cullingmask_dataset
         "imap_ultra_l1c_45sensor-spacecraftpset",
     )
-    assert "healpix" in spacecraft_pset.coords
+    assert "pixel_index" in spacecraft_pset.coords
     assert "epoch" in spacecraft_pset.coords
     assert "energy_bin_geometric_mean" in spacecraft_pset.coords
 
