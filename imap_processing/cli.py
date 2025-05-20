@@ -26,6 +26,7 @@ import xarray as xr
 from imap_data_access import ScienceFilePath
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
+    ProcessingInputType,
     SPICESource,
 )
 
@@ -63,6 +64,7 @@ from imap_processing.mag.l1b.mag_l1b import mag_l1b
 from imap_processing.mag.l1c.mag_l1c import mag_l1c
 from imap_processing.mag.l2.mag_l2 import mag_l2
 from imap_processing.spacecraft import quaternions
+from imap_processing.spice.spin import get_spin_data
 from imap_processing.swapi.l1.swapi_l1 import swapi_l1
 from imap_processing.swapi.l2.swapi_l2 import swapi_l2
 from imap_processing.swapi.swapi_utils import read_swapi_lut_table
@@ -617,14 +619,27 @@ class Glows(ProcessInstrument):
             datasets = glows_l1a(science_files[0])
 
         if self.data_level == "l1b":
-            if len(dependency_list) > 1:
-                raise ValueError(
-                    f"Unexpected dependencies found for GLOWS L1B:"
-                    f"{dependency_list}. Expected at least one input dependency."
-                )
             science_files = dependencies.get_file_paths(source="glows")
+            spin_file = dependencies.get_processing_inputs(
+                input_type=ProcessingInputType.SPICE_FILE, source=SPICESource.SPIN.value
+            )
+            if len(spin_file) != 1:
+                raise ValueError(
+                    f"GLOWS L1B requires a spin file. Included files: {dependencies}"
+                )
+
+            if len(science_files) != 1:
+                raise ValueError(
+                    f"GLOWS L1B processing expects only one input science"
+                    f" file. Received: {science_files}"
+                )
+
+            spin_file_path = spin_file[0].imap_file_paths[0].construct_path()
+            spin_file_df = get_spin_data(spin_file_path)
+
             input_dataset = load_cdf(science_files[0])
-            datasets = [glows_l1b(input_dataset)]
+
+            datasets = [glows_l1b(input_dataset, spin_file_df)]
 
         if self.data_level == "l2":
             if len(dependency_list) > 1:

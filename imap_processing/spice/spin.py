@@ -1,8 +1,9 @@
 """Functions for retrieving spin-table data."""
 
+from __future__ import annotations
+
 import os
 from pathlib import Path
-from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -14,13 +15,20 @@ from imap_processing.spice.geometry import (
 )
 
 
-def get_spin_data() -> pd.DataFrame:
+def get_spin_data(path_to_spin_file: Path | None = None) -> pd.DataFrame:
     """
     Read spin file using environment variable and return spin data.
 
     SPIN_DATA_FILEPATH environment variable would be a fixed value.
     It could be s3 filepath that can be used to download the data
     through API or it could be path EFS or Batch volume mount path.
+
+    Parameters
+    ----------
+    path_to_spin_file : pathlib.Path or None
+        Path to the spin file. If None, the function will look for the
+        SPIN_DATA_FILEPATH environment variable. If the environment
+        variable is not set, a ValueError will be raised.
 
     Returns
     -------
@@ -39,11 +47,14 @@ def get_spin_data() -> pd.DataFrame:
             * `thruster_firing`: Boolean indicating whether thruster is firing.
     """
     spin_data_filepath = os.getenv("SPIN_DATA_FILEPATH")
-    if spin_data_filepath is not None:
+    if path_to_spin_file is None and spin_data_filepath is not None:
         path_to_spin_file = Path(spin_data_filepath)
-    else:
+    elif path_to_spin_file is None:
         # Handle the case where the environment variable is not set
-        raise ValueError("SPIN_DATA_FILEPATH environment variable is not set.")
+        raise ValueError(
+            "SPIN_DATA_FILEPATH environment variable is not set and no "
+            "filepath is provided."
+        )
 
     spin_df = pd.read_csv(
         path_to_spin_file,
@@ -68,7 +79,7 @@ def get_spin_data() -> pd.DataFrame:
     return spin_df
 
 
-def interpolate_spin_data(query_met_times: Union[float, npt.NDArray]) -> pd.DataFrame:
+def interpolate_spin_data(query_met_times: float | npt.NDArray) -> pd.DataFrame:
     """
     Interpolate spin table data to the queried MET times.
 
@@ -149,9 +160,9 @@ def interpolate_spin_data(query_met_times: Union[float, npt.NDArray]) -> pd.Data
 
 
 def get_spin_angle(
-    spin_phases: Union[float, npt.NDArray],
+    spin_phases: float | npt.NDArray,
     degrees: bool = False,
-) -> Union[float, npt.NDArray]:
+) -> float | npt.NDArray:
     """
     Convert spin_phases to radians or degrees.
 
@@ -184,8 +195,8 @@ def get_spin_angle(
 
 
 def get_spacecraft_spin_phase(
-    query_met_times: Union[float, npt.NDArray],
-) -> Union[float, npt.NDArray]:
+    query_met_times: float | npt.NDArray,
+) -> float | npt.NDArray:
     """
     Get the spacecraft spin phase for the input query times.
 
@@ -209,8 +220,8 @@ def get_spacecraft_spin_phase(
 
 
 def get_instrument_spin_phase(
-    query_met_times: Union[float, npt.NDArray], instrument: SpiceFrame
-) -> Union[float, npt.NDArray]:
+    query_met_times: float | npt.NDArray, instrument: SpiceFrame
+) -> float | npt.NDArray:
     """
     Get the instrument spin phase for the input query times.
 

@@ -3,6 +3,7 @@
 import dataclasses
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
@@ -10,7 +11,7 @@ from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.l1b.glows_l1b_data import DirectEventL1B, HistogramL1B
 
 
-def glows_l1b(input_dataset: xr.Dataset) -> xr.Dataset:
+def glows_l1b(input_dataset: xr.Dataset, spin_table: pd.DataFrame) -> xr.Dataset:
     """
     Will process the GLOWS L1B data and format the output datasets.
 
@@ -18,6 +19,9 @@ def glows_l1b(input_dataset: xr.Dataset) -> xr.Dataset:
     ----------
     input_dataset : xr.Dataset
         Dataset of input values.
+
+    spin_table : pd.DataFrame
+        DataFrame of spin table data.
 
     Returns
     -------
