@@ -75,6 +75,8 @@ def get_instrument_descriptor(
             sensor_string = "lc"
         elif instrument is MappableInstrumentShortName.HI:
             sensor_string = "ic"
+    else:
+        sensor_string = str(sensor)
 
     # Get the instrument descriptor (e.g. "u90", "h45", "ilo")
     instrument_descriptor = f"{instrument.value}{sensor_string}"

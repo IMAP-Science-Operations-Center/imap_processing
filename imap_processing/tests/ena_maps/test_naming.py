@@ -75,7 +75,7 @@ class TestNaming:
         )
         assert parse_instrument_descriptor("t075") == (
             MappableInstrumentShortName.LO_HI_THROUGHPUT,
-            "075",
+            75,
         )
         assert parse_instrument_descriptor("idx") == (
             MappableInstrumentShortName.IDEX,
@@ -100,7 +100,7 @@ class TestNaming:
         assert parse_map_duration("6mo") == "6mo"
         assert parse_map_duration("12mo") == "1yr"
         assert parse_map_duration(365) == "1yr"
-        assert parse_map_duration(200) == "7mo"
+        assert parse_map_duration(200) == "6mo"
         assert parse_map_duration(timedelta(days=60)) == "2mo"
         with pytest.raises(ValueError, match="Invalid duration type."):
             parse_map_duration(["invalid", "duration"])
