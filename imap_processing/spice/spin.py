@@ -13,6 +13,7 @@ from imap_processing.spice.geometry import (
     SpiceFrame,
     get_spacecraft_to_instrument_spin_phase_offset,
 )
+from imap_processing.spice.time import met_to_utc
 
 
 def get_spin_data(path_to_spin_file: Path | None = None) -> pd.DataFrame:
@@ -35,13 +36,23 @@ def get_spin_data(path_to_spin_file: Path | None = None) -> pd.DataFrame:
     spin_data : pandas.DataFrame
         Spin data. The DataFrame will have the following columns:
 
+            spin_number,
+            spin_start_sec,
+            spin_start_subsec,
+            spin_period_sec,
+            spin_period_valid,
+            spin_phas_valid,
+            spin_period_source,
+            thruster_firing
+
             * `spin_number`: Unique integer spin number.
             * `spin_start_sec`: MET seconds of spin start time.
             * `spin_start_subsec`: MET microseconds of spin start time.
             * `spin_start_met`: Floating point MET seconds of spin start.
+            * `spin_start_utc`: UTC string of spin start time.
             * `spin_period_sec`: Floating point spin period in seconds.
             * `spin_period_valid`: Boolean indicating whether spin period is valid.
-            * `spin_phas_valid`: Boolean indicating whether spin phase is valid.
+            * `spin_phase_valid`: Boolean indicating whether spin phase is valid.
             * `spin_period_source`: Source used for determining spin period.
             * `thruster_firing`: Boolean indicating whether thruster is firing.
     """
@@ -64,6 +75,7 @@ def get_spin_data(path_to_spin_file: Path | None = None) -> pd.DataFrame:
             "spin_start_subsec": int,
             "spin_period_sec": float,
             "spin_period_valid": bool,
+            "spin_phas_valid": bool,
             "spin_period_source": int,
             "thruster_firing": bool,
         },
@@ -73,6 +85,7 @@ def get_spin_data(path_to_spin_file: Path | None = None) -> pd.DataFrame:
     spin_df["spin_start_met"] = (
         spin_df["spin_start_sec"] + spin_df["spin_start_subsec"] / 1e6
     )
+    spin_df["spin_start_utc"] = met_to_utc(spin_df["spin_start_met"])
 
     return spin_df
 
