@@ -88,7 +88,7 @@ def ccsds_path_functional():
 
 @pytest.fixture
 def ccsds_path_startup():
-    """Returns the ccsds directory."""
+    """Returns the ccsds directory for imgparams."""
     return (
         imap_module_directory
         / "tests"

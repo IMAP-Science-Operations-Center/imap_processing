@@ -199,7 +199,7 @@ def _test_data_paths():
             / "tests"
             / "ultra"
             / "data"
-            / "l1"
+            / "l0"
             / "FM90_Startup_20230711T081655.CCSDS",
         ),
         (
