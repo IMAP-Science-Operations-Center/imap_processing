@@ -33,6 +33,7 @@ _sensor_types = int | Literal["45", "90", "combined", "ic", "lc", ""]
 # Must be specified separately for purpose of type checking vs comparison
 valid_spice_frame_strings = ["sf", "hf", "hk"]
 _spice_frame_str_types = Literal["sf", "hf", "hk"]
+_coord_frame_str_types = Literal["hae",]
 
 
 @dataclass
@@ -52,8 +53,9 @@ class MapDescriptor:
         or a SpiceFrame object.
     resolution_str : str
         The resolution string for the map (e.g. "nside128", "2deg").
-    duration : str
-        The duration of the map (e.g. "1yr", "6mo").
+    duration : str | int
+        The duration of the map (e.g. "1yr", "6mo") or an integer
+        representing the number of days.
     sensor : str, optional
         The sensor identifier (e.g. "45", "90", "combined", "").
         Default is "".
@@ -220,7 +222,7 @@ class MapDescriptor:
         return duration
 
     @staticmethod
-    def get_map_coord_frame(frame_str: str | Literal["hae",]) -> SpiceFrame:
+    def get_map_coord_frame(frame_str: _coord_frame_str_types) -> SpiceFrame:
         """
         Get the SpiceFrame object for a given frame string.
 
@@ -231,7 +233,7 @@ class MapDescriptor:
 
         Parameters
         ----------
-        frame_str : Literal["hae",]
+        frame_str : _coord_frame_str_types
             The frame string corresponding to the SpiceFrame object.
 
         Returns
@@ -454,7 +456,7 @@ def get_output_map_structure_from_descriptor_string(
         return ena_maps.RectangularSkyMap(
             spacing_deg=float(map_descriptor.resolution_str.split("deg")[0]),
             spice_frame=MapDescriptor.get_map_coord_frame(
-                map_descriptor.coordinate_system
+                cast(_coord_frame_str_types, map_descriptor.coordinate_system)
             ),
         )
     # If "nside" is in the resolution string, then this is a Healpix map
@@ -463,7 +465,7 @@ def get_output_map_structure_from_descriptor_string(
         return ena_maps.HealpixSkyMap(
             nside=int(map_descriptor.resolution_str.split("nside")[1]),
             spice_frame=MapDescriptor.get_map_coord_frame(
-                map_descriptor.coordinate_system
+                cast(_coord_frame_str_types, map_descriptor.coordinate_system)
             ),
         )
     else:
