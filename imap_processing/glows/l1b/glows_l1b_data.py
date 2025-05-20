@@ -2,6 +2,7 @@
 
 import dataclasses
 import json
+import math
 from dataclasses import InitVar, dataclass, field
 from pathlib import Path
 from typing import Optional
@@ -10,6 +11,9 @@ import numpy as np
 
 from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.utils.constants import TimeTuple
+from imap_processing.spice import geometry
+from imap_processing.spice.geometry import SpiceFrame
+from imap_processing.spice.time import met_to_ttj2000ns, met_to_sclkticks, sct_to_et
 
 
 class AncillaryParameters:
@@ -388,6 +392,9 @@ class HistogramL1B:
     IMPORTANT: The order of the fields inherited from L1A must match the order of the
     fields in the DataSet created in decom_glows.py.
 
+    This class describes one "block" of data, so values are averaged over the course
+    of the block.
+
     Attributes
     ----------
     histogram
@@ -403,7 +410,7 @@ class HistogramL1B:
     number_of_spins_per_block
         nblock
     unique_block_identifier
-        YYYY-MM-DDThh:mm:ss based on IMAP UTC time
+        J2000ns according to the IMAP time at the start of the block.
     number_of_bins_per_histogram
         nbin
     number_of_events
@@ -490,9 +497,7 @@ class HistogramL1B:
     imap_time_offset: np.double  # No conversion needed from l1a->l1b
     glows_start_time: np.double  # No conversion needed from l1a->l1b
     glows_time_offset: np.double  # No conversion needed from l1a->l1b
-    # unique_block_identifier: str = field(
-    #     init=False
-    # )  # Could be datetime TODO: Can't put a string in data
+    unique_block_identifier: np.int64 = field(init=False)
     imap_spin_angle_bin_cntr: np.ndarray = field(init=False)  # Same size as bins
     histogram_flag_array: np.ndarray = field(init=False)
     spin_period_ground_average: np.double = field(init=False)  # retrieved from SPICE?
@@ -537,7 +542,9 @@ class HistogramL1B:
             Encoded pulse length variance.
         """
         # self.histogram_flag_array = np.zeros((2,))
-
+        seconds = met_to_ttj2000ns(math.floor(self.imap_start_time))
+        subseconds = (self.imap_start_time % 1) * 1e9
+        self.unique_block_identifier = seconds + subseconds
         # TODO: These pieces will need to be filled in from SPICE kernels. For now,
         #  they are placeholders. GLOWS example code has better placeholders if needed.
         self.spin_period_ground_average = np.double(-999.9)
@@ -552,6 +559,8 @@ class HistogramL1B:
         self.spacecraft_velocity_std_dev = np.array([-999.9, -999.9, -999.9])
         # Will require some additional inputs
         self.imap_spin_angle_bin_cntr = np.zeros((3600,))
+
+        self.update_spice_parameters()
 
         # TODO: This should probably be an AWS file
         # TODO Pass in AncillaryParameters object instead of reading here.
@@ -628,3 +637,20 @@ class HistogramL1B:
         )
 
         return flags
+
+    def update_spice_parameters(self):
+        et_start_time = sct_to_et(met_to_sclkticks(self.imap_start_time))
+        self.spin_axis_orientation_average = geometry.frame_transform(
+            et_start_time, np.array([0, 0, 1]), SpiceFrame.IMAP_DPS, SpiceFrame.ECLIPJ2000
+        )
+        
+        self.spin_period_ground_average = np.double(-999.9)
+        self.spin_period_ground_std_dev = np.double(-999.9)
+        self.position_angle_offset_average = np.double(-999.9)
+        self.position_angle_offset_std_dev = np.double(-999.9)
+        self.spin_axis_orientation_std_dev = np.double(-999.9)
+        self.spacecraft_location_average = np.array([-999.9, -999.9, -999.9])
+        self.spacecraft_location_std_dev = np.array([-999.9, -999.9, -999.9])
+        self.spacecraft_velocity_average = np.array([-999.9, -999.9, -999.9])
+        self.spacecraft_velocity_std_dev = np.array([-999.9, -999.9, -999.9])
+

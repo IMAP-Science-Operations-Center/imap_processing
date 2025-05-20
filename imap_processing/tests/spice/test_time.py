@@ -22,7 +22,7 @@ from imap_processing.spice.time import (
 )
 
 
-@pytest.mark.parametrize("met", [1, np.arange(10)])
+@pytest.mark.parametrize("met", [1, 1.5, np.arange(10)])
 def test_met_to_sclkticks(met):
     """Test coverage for met_to_sclkticks."""
     # Tick duration is 20us as specified in imap_sclk_0000.tsc
@@ -47,6 +47,16 @@ def test_met_to_ttj2000ns(furnish_time_kernels):
     tt = met_to_ttj2000ns(met)
     assert tt.dtype == np.int64
     np.testing.assert_array_equal(tt, np.array(spicey_tt * 1e9))
+
+    # Test partial seconds/doubles
+    met += 0.5
+    spicey_tt = spicey_tt + 0.5
+    tt = met_to_ttj2000ns(met)
+
+    np.testing.assert_array_equal(tt, np.array(spicey_tt * 1e9))
+
+
+
 
 
 def test_ttj2000ns_to_et(furnish_time_kernels):

@@ -13,6 +13,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     DirectEventL1B,
     HistogramL1B,
 )
+from imap_processing.glows.utils.constants import TimeTuple
 
 
 @pytest.fixture
@@ -146,6 +147,36 @@ def de_dataset():
 
 
 @pytest.fixture
+def default_params():
+    # Create the correct number of zeroed out parameters to create a HistogramL1B object
+
+    return {
+        "histogram": np.zeros((200,)),
+        "flight_software_version": 0,
+        "seq_count_in_pkts_file": 0,
+        "first_spin_id": 0,
+        "last_spin_id": 0,
+        "flags_set_onboard": 0,
+        "is_generated_on_ground": 0,
+        "number_of_spins_per_block": 0,
+        "number_of_bins_per_histogram": 0,
+        "number_of_events": 0,
+        "filter_temperature_average": 0,
+        "filter_temperature_variance": 0,
+        "hv_voltage_average": 0,
+        "hv_voltage_variance": 0,
+        "spin_period_average": 0,
+        "spin_period_variance": 0,
+        "pulse_length_average": 0,
+        "pulse_length_variance": 0,
+        "imap_start_time": 1111111.11,
+        "imap_time_offset": 1111111.11,
+        "glows_start_time": 1111111.11,
+        "glows_time_offset": 1111111.11,
+    }
+
+
+@pytest.fixture
 def ancillary_dict():
     dictionary = {
         "description": "Table for conversion/decoding ancillary parameters collected "
@@ -185,8 +216,8 @@ def ancillary_dict():
     return dictionary
 
 
-def test_histogram_mapping():
-    time_val = 1111111.11
+def test_histogram_mapping(default_params):
+    time_val = 1111111
     # A = 2.318
     # B = 69.5454
     expected_temp = 100
@@ -195,35 +226,22 @@ def test_histogram_mapping():
     # For temp
     encoded_val = expected_temp * 2.318 + 69.5454
 
+    default_params["imap_start_time"] = time_val
+    default_params["imap_time_offset"] = time_val
+    default_params["glows_start_time"] = time_val
+    default_params["glows_time_offset"] = time_val
+
+    default_params["filter_temperature_average"] = encoded_val
+    default_params["filter_temperature_variance"] = encoded_val
+    default_params["hv_voltage_average"] = encoded_val
+    default_params["hv_voltage_variance"] = encoded_val
+    default_params["spin_period_average"] = encoded_val
+    default_params["spin_period_variance"] = encoded_val
+    default_params["pulse_length_average"] = encoded_val
+    default_params["pulse_length_variance"] = encoded_val
+
     # For now, testing types and number of inputs
-    output = tuple(
-        dataclasses.asdict(
-            HistogramL1B(
-                test_hists,
-                "test",
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                encoded_val,
-                encoded_val,
-                encoded_val,
-                encoded_val,
-                encoded_val,
-                encoded_val,
-                encoded_val,
-                encoded_val,
-                time_val,
-                time_val,
-                time_val,
-                time_val,
-            )
-        ).values()
-    )
+    output = tuple(dataclasses.asdict(HistogramL1B(**default_params)).values())
 
     assert output[18] == time_val
 
@@ -231,40 +249,8 @@ def test_histogram_mapping():
     assert output[10] - expected_temp < 0.1
 
 
-def test_process_histogram(hist_dataset):
-    time_val = np.single(1111111.11)
-    # A = 2.318
-    # B = 69.5454
-    expected_temp = 100
-
-    test_hists = np.zeros((200,))
-    # For temp
-    encoded_val = np.single(expected_temp * 2.318 + 69.5454)
-
-    test_l1b = HistogramL1B(
-        test_hists,
-        "test",
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        encoded_val,
-        encoded_val,
-        encoded_val,
-        encoded_val,
-        encoded_val,
-        encoded_val,
-        encoded_val,
-        encoded_val,
-        time_val,
-        time_val,
-        time_val,
-        time_val,
-    )
+def test_process_histogram(hist_dataset, default_params):
+    test_l1b = HistogramL1B(**default_params)
 
     output = process_histogram(hist_dataset)
     assert len(output) == len(dataclasses.asdict(test_l1b))
@@ -376,3 +362,42 @@ def test_generate_de_dataset(de_dataset):
     output_path = write_cdf(l1b_data)
 
     assert Path.exists(output_path)
+
+
+def test_hist_l1b_unique_block_id(hist_dataset, default_params):
+    imap_start_time = 54232215
+    imap_offset = 30
+    expected_output = np.array(TimeTuple(imap_start_time, imap_offset).to_j2000ns())
+    start_time = TimeTuple(imap_start_time, imap_offset).to_seconds()
+    default_params["imap_start_time"] = start_time
+
+    test_l1b = HistogramL1B(**default_params)
+    assert test_l1b.unique_block_identifier == expected_output
+
+
+def test_hist_spice_output(default_params):
+    hist_data = HistogramL1B(**default_params)
+
+    # SPICE parameters:
+    # self.spin_period_ground_average = np.double(-999.9)
+    #         self.spin_period_ground_std_dev = np.double(-999.9)
+    #         self.position_angle_offset_average = np.double(-999.9)
+    #         self.position_angle_offset_std_dev = np.double(-999.9)
+    #         self.spin_axis_orientation_std_dev = np.double(-999.9)
+    #         self.spin_axis_orientation_average = np.double(-999.9)
+    #         self.spacecraft_location_average = np.array([-999.9, -999.9, -999.9])
+    #         self.spacecraft_location_std_dev = np.array([-999.9, -999.9, -999.9])
+    #         self.spacecraft_velocity_average = np.array([-999.9, -999.9, -999.9])
+    #         self.spacecraft_velocity_std_dev = np.array([-999.9, -999.9, -999.9])
+
+    # Assert that all these variables are the correct shape:
+    assert hist_data.spin_period_ground_average.shape == (1,)
+    assert hist_data.spin_period_ground_std_dev.shape == (1,)
+    assert hist_data.position_angle_offset_average.shape == (1,)
+    assert hist_data.position_angle_offset_std_dev.shape == (1,)
+    assert hist_data.spin_axis_orientation_std_dev.shape == (1,)
+    assert hist_data.spin_axis_orientation_average.shape == (1,)
+    assert hist_data.spacecraft_location_average.shape == (3,)
+    assert hist_data.spacecraft_location_std_dev.shape == (3,)
+    assert hist_data.spacecraft_velocity_average.shape == (3,)
+    assert hist_data.spacecraft_velocity_std_dev.shape == (3,)

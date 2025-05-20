@@ -326,7 +326,7 @@ def generate_histogram_dataset(
     }
 
     for index, hist in enumerate(hist_l1a_list):
-        epoch_time = met_to_ttj2000ns(hist.imap_start_time.to_seconds())
+        epoch_time = hist.imap_start_time.to_j2000ns()
         hist_data[index] = hist.histogram
 
         support_data["flags_set_onboard"][1].append(hist.flags["flags_set_onboard"])

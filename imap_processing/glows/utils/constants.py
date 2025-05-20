@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from imap_processing.spice.time import met_to_ttj2000ns
+
 
 @dataclass(frozen=True)
 class TimeTuple:
@@ -47,6 +49,19 @@ class TimeTuple:
         return np.double(
             self.seconds + self.subseconds / GlowsConstants.SUBSECOND_LIMIT
         )
+
+    def to_j2000ns(self) -> np.int64:
+        """
+        Convert time tuple into J2000ns.
+
+        Returns
+        -------
+        j2000ns : numpy.int64
+            Time in nanoseconds since J2000 epoch.
+        """
+        coarse_j2000ns = np.int64(met_to_ttj2000ns(self.seconds))
+        fine_ns = np.int64(self.subseconds / GlowsConstants.SUBSECOND_LIMIT * 1e9)
+        return coarse_j2000ns + fine_ns
 
 
 @dataclass(frozen=True)
