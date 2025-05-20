@@ -30,6 +30,7 @@ class MappableInstrumentShortName(Enum):
 
 
 _sensor_types = int | Literal["45", "90", "combined", "ic", "lc", ""]
+valid_spice_frame_strings = ["sf", "hf", "hk"]
 _spice_frame_str_types = Literal["sf", "hf", "hk"]
 
 
@@ -199,7 +200,7 @@ def get_map_coord_frame(frame_str: str | Literal["hae",]) -> SpiceFrame:
 
 
 def parse_map_frame(
-    frame: _spice_frame_str_types | str,
+    frame: _spice_frame_str_types | SpiceFrame,
 ) -> str:
     """
     Parse the frame into a string representation.
@@ -224,7 +225,8 @@ def parse_map_frame(
             case _:
                 raise NotImplementedError(f"Frame {frame} is not yet implemented.")
     # Handle string frame
-    elif frame in ["sf", "hf", "hk"]:
+    elif frame in valid_spice_frame_strings:
+        # If the frame is a valid string, return it as is
         return frame
     else:
         raise ValueError(
@@ -244,7 +246,7 @@ class MapDescriptor:
     ----------
     instrument : MappableInstrumentShortName
         The short name of the instrument.
-    frame_descriptor : _spice_frame_str_types | str
+    frame_descriptor : _spice_frame_str_types | SpiceFrame
         The frame descriptor string. (e.g. "sf", "hf", "hk"),
         or a SpiceFrame object.
     resolution_str : str
