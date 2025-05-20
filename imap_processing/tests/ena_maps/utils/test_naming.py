@@ -8,10 +8,10 @@ from imap_processing.ena_maps.utils.naming import (
     MappableInstrumentShortName,
     build_friendly_date_descriptor,
     build_l2_map_descriptor,
-    ns_to_duration_months,
     get_instrument_descriptor,
     get_map_coord_frame,
     get_output_map_structure_from_descriptor_string,
+    ns_to_duration_months,
     parse_instrument_descriptor,
     parse_map_duration,
     parse_map_frame,
@@ -258,7 +258,7 @@ class TestMapDescriptor:
     def test_init_and_instrument_descriptor_hi45(self):
         md_h45 = MapDescriptor(
             instrument=MappableInstrumentShortName.HI,
-            frame="hf",
+            frame_descriptor="hf",
             resolution_str="2deg",
             duration=timedelta(days=60),
             sensor="45",
@@ -274,7 +274,7 @@ class TestMapDescriptor:
     def test_init_and_instrument_descriptor_lo_hi_throughput_075(self):
         md_lo_hi_075 = MapDescriptor(
             instrument=MappableInstrumentShortName.LO_HI_THROUGHPUT,
-            frame="sf",
+            frame_descriptor="sf",
             resolution_str="4deg",
             duration=120,
             sensor=75,
@@ -294,7 +294,7 @@ class TestMapDescriptor:
         descriptor_str = "h45-ena-he-hf-sp-ram-hae-2deg-2mo"
         md = MapDescriptor.from_string(descriptor_str)
         assert md.instrument == MappableInstrumentShortName.HI
-        assert md.frame == "hf"
+        assert md.frame_descriptor == "hf"
         assert md.resolution_str == "2deg"
         assert md.duration == "2mo"
         assert md.sensor == "45"
@@ -308,7 +308,7 @@ class TestMapDescriptor:
         # Test with Hi45
         md = MapDescriptor(
             instrument=MappableInstrumentShortName.HI,
-            frame="hf",
+            frame_descriptor="hf",
             resolution_str="2deg",
             duration=timedelta(days=60),
             sensor="45",
@@ -324,7 +324,7 @@ class TestMapDescriptor:
         # Test with Lo high-throughput 075
         md_lo_hi_075 = MapDescriptor(
             instrument=MappableInstrumentShortName.LO_HI_THROUGHPUT,
-            frame="sf",
+            frame_descriptor="sf",
             resolution_str="4deg",
             duration=120,
             sensor=75,
@@ -340,7 +340,7 @@ class TestMapDescriptor:
         # Test with Ultra combined and 365 days
         md_ultra_combined = MapDescriptor(
             instrument=MappableInstrumentShortName.ULTRA,
-            frame="sf",
+            frame_descriptor="sf",
             resolution_str="nside32",
             duration=365,
             sensor="combined",

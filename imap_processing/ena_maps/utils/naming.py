@@ -31,7 +31,7 @@ class MappableInstrumentShortName(Enum):
 
 def get_instrument_descriptor(
     instrument: MappableInstrumentShortName,
-    sensor: int | Literal["45", "90", "combined"] | str = "",
+    sensor: int | Literal["45", "90", "combined", ""] | str = "",
 ) -> str:
     """
     Get the instrument descriptor string for a given instrument and sensor (e.g. "u45").
@@ -139,12 +139,12 @@ def parse_map_duration(
         The parsed duration string in the format "1yr", "6mo", etc.
     """
     if isinstance(duration, timedelta):
-        # Convert timedelta to a string representation of number of 28.5 day months
-        num_months = int(duration.days // 28.5)
+        # Convert timedelta to str representation of number of DAYS_IN_MONTH day months
+        num_months = int(duration.days // DAYS_IN_MONTH)
         duration = f"{num_months}mo"
     elif isinstance(duration, int):
-        # Assume number of days and convert to 28.5-day months
-        duration = f"{int(duration // 28.5)}mo"
+        # Assume number of days and convert to DAYS_IN_MONTH-day months
+        duration = f"{int(duration // DAYS_IN_MONTH)}mo"
     elif isinstance(duration, str):
         pass
     else:
@@ -258,7 +258,7 @@ class MapDescriptor:
     """
 
     instrument: MappableInstrumentShortName
-    frame: str | SpiceFrame
+    frame_descriptor: str | SpiceFrame
     resolution_str: str
     duration: str | int | timedelta
     sensor: int | str = ""
@@ -279,7 +279,7 @@ class MapDescriptor:
         str
             The frame string representation.
         """
-        return parse_map_frame(self.frame)
+        return parse_map_frame(self.frame_descriptor)
 
     @property
     def duration_str(self) -> str:
@@ -338,7 +338,7 @@ class MapDescriptor:
             sensor=sensor,
             principal_data=parts[1],
             species=parts[2],
-            frame=parts[3],
+            frame_descriptor=parts[3],
             survival_corrected=parts[4],
             spin_phase=parts[5],
             coordinate_system=parts[6],
@@ -525,134 +525,6 @@ def ns_to_duration_months(ns: int) -> int:
     days = ns / (1e9 * 60 * 60 * 24)
     months = days // DAYS_IN_MONTH
     return int(months)
-
-
-@dataclass
-class MapDescriptor:
-    """
-    A class to represent a map descriptor for ENA maps.
-
-    This class provides methods to parse a map descriptor string and convert it
-    back into a string.
-
-    Attributes
-    ----------
-    instrument : MappableInstrumentShortName
-        The short name of the instrument.
-    frame_descriptor : str
-        The frame descriptor string. (e.g. "sf", "hf", "hk").
-    resolution_str : str
-        The resolution string for the map (e.g. "nside128", "2deg").
-    duration : str
-        The duration of the map (e.g. "1yr", "6mo").
-    sensor : str, optional
-        The sensor identifier (e.g. "45", "90", "combined", "").
-        Default is "".
-    principal_data : str, optional
-        The principal data type for the map (e.g. "ena", "spx", "isn").
-        Default is "ena".
-    species : str, optional
-        The species for the map (e.g. "h", "he", "o").
-        Default is "h".
-    survival_corrected : str, optional
-        Whether the map is survival probability corrected ("sp") or not ("nsp").
-        Default is "nsp".
-    spin_phase : str, optional
-        The spin phase for the map (e.g. "full", "ram", "anti").
-        Default is "full".
-    coordinate_system : str, optional
-        The coordinate system for the map (e.g. "hae", "hgi", "rc").
-        Default is "hae".
-    """
-
-    instrument: MappableInstrumentShortName
-    frame_descriptor: str
-    resolution_str: str
-    duration: str
-    sensor: int | str = ""
-    principal_data: str = "ena"
-    species: str = "h"
-    survival_corrected: str = "nsp"
-    spin_phase: str = "full"
-    coordinate_system: str = "hae"
-
-    @property
-    def instrument_descriptor(self) -> str:
-        """
-        Get the instrument descriptor string.
-
-        Returns
-        -------
-        str
-            The instrument descriptor string.
-        """
-        return get_instrument_descriptor(self.instrument, self.sensor)
-
-    @classmethod
-    def from_string(cls, map_descriptor: str) -> MapDescriptor:
-        """
-        Parse a map_descriptor string and return a MapDescriptor instance.
-
-        The map_descriptor string is expected to follow the format:
-        "instrument_descriptor-principal_data-species-frame_descriptor-...cont...
-        survival_corrected-spin_phase-coordinate_system-resolution_str-duration".
-
-        Parameters
-        ----------
-        map_descriptor : str
-            The map descriptor string to parse.
-
-        Returns
-        -------
-        MapDescriptor
-            An instance of the MapDescriptor class with parsed values.
-        """
-        parts = map_descriptor.split("-")
-        if len(parts) != 9:
-            raise ValueError(
-                f"Invalid map_descriptor format: {map_descriptor}. Expected 9 parts."
-            )
-        # Extract the instrument and sensor from the first part
-        instrument_sensor = parts[0]
-        instrument, sensor = parse_instrument_descriptor(instrument_sensor)
-
-        return cls(
-            instrument=instrument,
-            sensor=sensor,
-            principal_data=parts[1],
-            species=parts[2],
-            frame_descriptor=parts[3],
-            survival_corrected=parts[4],
-            spin_phase=parts[5],
-            coordinate_system=parts[6],
-            resolution_str=parts[7],
-            duration=parts[8],
-        )
-
-    def to_str(self) -> str:
-        """
-        Convert the MapDescriptor instance back into a map_descriptor string.
-
-        Returns
-        -------
-        str
-            The map_descriptor string in the format:
-            "instrument_descriptor-principal_data-species-frame_descriptor-...cont...
-            survival_corrected-spin_phase-coordinate_system-resolution_str-duration".
-        """
-        return "-".join(
-            [
-                self.instrument_descriptor,
-                self.principal_data,
-                self.species,
-                self.frame_descriptor,
-                self.survival_corrected,
-                self.spin_phase,
-                self.coordinate_system,
-                self.resolution_str,
-                self.duration,
-            ]
-        )
 
 
 def get_output_map_structure_from_descriptor_string(
