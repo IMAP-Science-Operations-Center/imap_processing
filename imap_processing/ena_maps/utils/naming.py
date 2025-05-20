@@ -30,7 +30,7 @@ class MappableInstrumentShortName(Enum):
 
 
 _sensor_types = int | Literal["45", "90", "combined", "ic", "lc", ""]
-_spice_frame_types = Literal["sf", "hf", "hk"]
+_spice_frame_str_types = Literal["sf", "hf", "hk"]
 
 
 def get_instrument_descriptor(
@@ -199,7 +199,7 @@ def get_map_coord_frame(frame_str: str | Literal["hae",]) -> SpiceFrame:
 
 
 def parse_map_frame(
-    frame: _spice_frame_types | str,
+    frame: _spice_frame_str_types | str,
 ) -> str:
     """
     Parse the frame into a string representation.
@@ -244,8 +244,9 @@ class MapDescriptor:
     ----------
     instrument : MappableInstrumentShortName
         The short name of the instrument.
-    frame : str
-        The frame descriptor string. (e.g. "sf", "hf", "hk").
+    frame_descriptor : _spice_frame_str_types | str
+        The frame descriptor string. (e.g. "sf", "hf", "hk"),
+        or a SpiceFrame object.
     resolution_str : str
         The resolution string for the map (e.g. "nside128", "2deg").
     duration : str
@@ -271,7 +272,7 @@ class MapDescriptor:
     """
 
     instrument: MappableInstrumentShortName
-    frame_descriptor: str | SpiceFrame
+    frame_descriptor: _spice_frame_str_types | SpiceFrame
     resolution_str: str
     duration: str | int | timedelta
     sensor: _sensor_types = ""
@@ -383,128 +384,6 @@ class MapDescriptor:
                 self.duration_str,
             ]
         )
-
-
-def build_l2_map_descriptor(
-    *,
-    # Basic parameters must always be passed in as keyword arguments
-    instrument: MappableInstrumentShortName,  # Updated to use the enum
-    frame: _spice_frame_types,
-    resolution_str: str,
-    duration: str | int | timedelta,
-    # The rest of the parameters have default values corresponding to the
-    # most general cases
-    sensor: _sensor_types = "",
-    principal_data: Literal["ena", "spx", "isn", "int", "drt"] = "ena",
-    species: Literal["h", "he", "o", "uv", "dust"] = "h",
-    survival_corrected: Literal["nsp", "sp"] = "nsp",
-    spin_phase: Literal["full", "ram", "anti"] = "full",
-    coordinate_system: Literal["hae", "hgi", "rc"] = "hae",
-) -> str:
-    """
-    Build a map descriptor string for the L2 ENA maps.
-
-    Example descriptor string and its meaning:
-    "h45-ena-h-hf-sp-ram-hae-6deg-3mo" is:
-    An IMAP-HI map made from data taken by HI's 45 degree sensor, of hydrogen ENAs,
-    in the heliospheric frame, survival probability corrected,
-    of counts in the ram direction, in heliocentric aries ecliptic coordinates,
-    with a pixel spacing of 6 degrees, with a duration of 3 months.
-
-    This function requires a large amount of information to be passed in, and will
-    likely be used indirectly by methods of a SkyMap object or similar.
-    On its own, it defines the standard for the map descriptor string.
-
-    Parameters
-    ----------
-    instrument : MappableInstrumentShortName
-        The instrument name. Instrument and sensor are combined to form the
-        instrument descriptor (e.g. "u90", "h45", "idx").
-    frame : _spice_frame_types
-        The frame of reference for the map.
-        sf: Spacecraft frame.
-        hf: Heliospheric frame.
-        hk: Heliospheric kinematic frame.
-    resolution_str : str
-        The resolution of the map as a string.
-        For Healpix maps, this is the nside value as "nside128", "nside32", etc.
-        For rectangular maps, this is the spacing in degrees as "2deg", "6deg", etc.
-    duration : str | int | timedelta
-        The duration of the map as a string, and integer number of days, or a timedelta.
-        The string should be in the format of "1yr", "6mo", "3mo", etc.
-    sensor : _sensor_types
-        The sensor number for the map. By default, this is "".
-        For LO, this should be a 3 character string or an integer
-        which will be converted to a 3 character string (90 --> "090").
-        For Hi and Ultra, this should be "45", "90", or "combined".
-        If "combined" is passed, the Hi sensor will be "ic"
-        and the Ultra sensor will be "lc".
-    principal_data : Literal["ena", "spx", "isn", "int", "drt"]
-        The principal data type for the map. By default, this is "ena".
-        ena: ENA Intensity.
-        spx: Spectral Index.
-        isn: ISN Count Rate.
-        int: GLOWS Intensity.
-        drt: IDEX Dust Rate.
-    species : Literal["h", "he", "o", "uv", "dust"]
-        The species for the map. By default, this is "h".
-        h: Hydrogen.
-        he: Helium.
-        o: Oxygen.
-        uv: UV.
-        dust: Dust.
-    survival_corrected : Literal["nsp", "sp"]
-        Whether the map is survival probability corrected ("sp") or not ("nsp").
-    spin_phase : Literal["full", "ram", "anti"]
-        The spin phase for the map. By default, this is "full".
-        full: Full spin.
-        ram: Ram direction only.
-        anti: Anti-ram direction only.
-    coordinate_system : Literal["hae", "hgi", "rc"]
-        The coordinate system for the map. By default, this is "hae".
-        hae: Heliocentric Aries Ecliptic.
-        Other options are hgi and rc.
-
-    Returns
-    -------
-    str
-        The map descriptor string.
-    """
-    instrument_descriptor = get_instrument_descriptor(instrument, sensor)
-    # Handle duration
-    if isinstance(duration, timedelta):
-        # Convert timedelta to str representation of number of DAYS_IN_MONTH-day months
-        num_months = int(duration.days // DAYS_IN_MONTH)
-        duration = f"{num_months}mo"
-    elif isinstance(duration, int):
-        # Assume number of days and convert to DAYS_IN_MONTH-day months
-        duration = f"{int(duration // DAYS_IN_MONTH)}mo"
-    elif isinstance(duration, str):
-        pass
-    # Replace 12mo with 1yr
-    if duration == "12mo":
-        duration = "1yr"
-
-    # Handle frame if passed in as a spice frame
-    if isinstance(frame, SpiceFrame):
-        match frame:
-            case SpiceFrame.IMAP_DPS:
-                frame_descriptor = "sf"
-            case SpiceFrame.ECLIPJ2000:
-                frame_descriptor = "hf"
-
-            # TODO: Handle other frames as required
-            case _:
-                raise NotImplementedError(f"Frame {frame} is not yet implemented.")
-    else:
-        frame_descriptor = frame
-
-    map_descriptor = (
-        f"{instrument_descriptor}-{principal_data}-{species}-{frame_descriptor}"
-        f"-{survival_corrected}-{spin_phase}-{coordinate_system}"
-        f"-{resolution_str}-{duration}"
-    )
-    return map_descriptor
 
 
 def ns_to_duration_months(ns: int) -> int:
