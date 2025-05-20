@@ -13,12 +13,13 @@ from imap_processing.lo.l1b.lo_l1b import (
     convert_start_end_acq_times,
     convert_tofs_to_eu,
     create_datasets,
-    get_avg_spin_durations,
+    get_avg_spin_durations_per_cycle,
     get_spin_angle,
     get_spin_start_times,
     identify_species,
     initialize_l1b_de,
     lo_l1b,
+    set_avg_spin_durations_per_event,
     set_bad_times,
     set_coincidence_type,
     set_each_event_epoch,
@@ -200,7 +201,7 @@ def test_get_avg_spin_durations():
     expected_avg_spin_durations = np.array([422.8, 423, 423.5]) / 28
 
     # Act
-    avg_spin_durations = get_avg_spin_durations(acq_start, acq_end)
+    avg_spin_durations = get_avg_spin_durations_per_cycle(acq_start, acq_end)
 
     # Assert
     np.testing.assert_array_equal(avg_spin_durations, expected_avg_spin_durations)
@@ -364,6 +365,25 @@ def test_set_event_met():
             epoch_expected,
             atol=1e-4,
         )
+
+
+def test_set_avg_spin_durations_per_event():
+    l1a_de = xr.Dataset(
+        {
+            "de_count": ("epoch", [2, 3]),
+        }
+    )
+    l1b_de = xr.Dataset(coords={"epoch": [0, 1, 2, 3, 4]})
+
+    avg_spin_durations = xr.DataArray([5, 10])
+
+    # Act
+    l1b_de = set_avg_spin_durations_per_event(l1a_de, l1b_de, avg_spin_durations)
+
+    # Assert
+    np.testing.assert_array_equal(
+        l1b_de["avg_spin_durations"].values, np.array([5, 5, 10, 10, 10])
+    )
 
 
 def test_calculate_tof1_for_golden_triples():
