@@ -36,7 +36,8 @@ class AncillaryCombiner:
     overridden.
 
     Some ancillary files can extend indefinitely. Therefore, the class requires the user
-    to provide an end time, which will
+    to provide an end time, which will be used to create the end of the dataset if
+    necessary.
 
     Parameters
     ----------
@@ -70,7 +71,6 @@ class AncillaryCombiner:
 
         self.expected_end_date = expected_end_date
 
-        # TODO NEXT STEP: WRITE SOME TESTS
         self.timestamped_data = []
         for file in ancillary_input.filename_list:
             self.timestamped_data.append(self.convert_to_timestamped_data(file))
