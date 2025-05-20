@@ -36,13 +36,12 @@ def get_spin_data(path_to_spin_file: Path | None = None) -> pd.DataFrame:
         Spin data. The DataFrame will have the following columns:
 
             * `spin_number`: Unique integer spin number.
-            * `spin_start_sec_sclk`: MET seconds of spin start time.
-            * `spin_start_subsec_sclk`: MET microseconds of spin start time.
+            * `spin_start_sec`: MET seconds of spin start time.
+            * `spin_start_subsec`: MET microseconds of spin start time.
             * `spin_start_met`: Floating point MET seconds of spin start.
-            * `spin_start_utc`: UTC string of spin start time.
             * `spin_period_sec`: Floating point spin period in seconds.
             * `spin_period_valid`: Boolean indicating whether spin period is valid.
-            * `spin_phase_valid`: Boolean indicating whether spin phase is valid.
+            * `spin_phas_valid`: Boolean indicating whether spin phase is valid.
             * `spin_period_source`: Source used for determining spin period.
             * `thruster_firing`: Boolean indicating whether thruster is firing.
     """
@@ -61,9 +60,8 @@ def get_spin_data(path_to_spin_file: Path | None = None) -> pd.DataFrame:
         comment="#",
         dtype={
             "spin_number": int,
-            "spin_start_sec_sclk": int,
-            "spin_start_subsec_sclk": int,
-            "spin_start_utc": str,
+            "spin_start_sec": int,
+            "spin_start_subsec": int,
             "spin_period_sec": float,
             "spin_period_valid": bool,
             "spin_period_source": int,
@@ -73,7 +71,7 @@ def get_spin_data(path_to_spin_file: Path | None = None) -> pd.DataFrame:
     # Combine spin_start_sec_sclk and spin_start_subsec_sclk to get the spin start
     # time in seconds. The spin start subseconds are in microseconds.
     spin_df["spin_start_met"] = (
-        spin_df["spin_start_sec_sclk"] + spin_df["spin_start_subsec_sclk"] / 1e6
+        spin_df["spin_start_sec"] + spin_df["spin_start_subsec"] / 1e6
     )
 
     return spin_df
