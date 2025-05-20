@@ -58,9 +58,12 @@ def xarray_data(binary_packet_path, xtce_hit_path):
 
 
 @pytest.mark.external_test_data
-def test_process_spacecraft_packet(sc_xarray_data, sc_packet_path):
+def test_process_spacecraft_packet(sc_packet_path):
     """Tests Spacecraft Packet processing."""
     packet_path, xtce_ialirt_path = sc_packet_path
+    sc_xarray_data = packet_file_to_datasets(
+        packet_path, xtce_ialirt_path, use_derived_value=False
+    )[478]
     hit_product = process_hit(sc_xarray_data)
 
     assert len(hit_product[0].keys()) == 12
