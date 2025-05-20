@@ -35,202 +35,6 @@ valid_spice_frame_strings = ["sf", "hf", "hk"]
 _spice_frame_str_types = Literal["sf", "hf", "hk"]
 
 
-def get_instrument_descriptor(
-    instrument: MappableInstrumentShortName,
-    sensor: _sensor_types = "",
-) -> str:
-    """
-    Get the instrument descriptor string for a given instrument and sensor (e.g. "u45").
-
-    Parameters
-    ----------
-    instrument : MappableInstrumentShortName
-        The short name Enum of the instrument.
-    sensor : _sensor_types, optional
-        The sensor identifier, by default "".
-
-    Returns
-    -------
-    str
-        The instrument descriptor string.
-        E.g. "u90", "u45", "ulc", "h45", "ilo", "t075".
-
-    Raises
-    ------
-    ValueError
-        If the sensor is an integer and the instrument is not LO.
-    """
-    # Handle sensor
-    # Lo may pass in an integer, which should be converted to a 3 character string
-    if isinstance(sensor, int):
-        if instrument in [
-            MappableInstrumentShortName.LO,
-            MappableInstrumentShortName.LO_HI_RES,
-            MappableInstrumentShortName.LO_HI_THROUGHPUT,
-        ]:
-            sensor_string = f"{sensor:03}"
-        else:
-            raise ValueError("Integer sensor values are only valid for LO instruments.")
-    # Hi and Ultra may be either "45", "90", or "combined", in which case
-    # Hi should get the sensor "ic" and Ultra should get the sensor "lc"
-    elif sensor == "combined":
-        if instrument is MappableInstrumentShortName.ULTRA:
-            sensor_string = "lc"
-        elif instrument is MappableInstrumentShortName.HI:
-            sensor_string = "ic"
-    else:
-        sensor_string = str(sensor)
-
-    # Get the instrument descriptor (e.g. "u90", "h45", "ilo")
-    instrument_descriptor = f"{instrument.value}{sensor_string}"
-    return instrument_descriptor
-
-
-def parse_instrument_descriptor(
-    instrument_descriptor: str,
-) -> tuple[MappableInstrumentShortName, _sensor_types]:
-    """
-    Parse the instrument descriptor string into instrument, sensor str reprs.
-
-    Parameters
-    ----------
-    instrument_descriptor : str
-        The instrument descriptor string to parse.
-
-    Returns
-    -------
-    tuple[str, _sensor_types]
-        A tuple containing the instrument short name and the sensor.
-
-    Raises
-    ------
-    ValueError
-        If the instrument descriptor format can't be parsed as a combined instrument or
-        as a regex match to the expected format.
-    """
-    # Default to no sensor
-    sensor: _sensor_types = ""
-
-    if instrument_descriptor.endswith("c"):
-        sensor = "combined"
-        instrument_short_name = instrument_descriptor[:-2]
-        instrument = MappableInstrumentShortName(instrument_short_name)
-    else:
-        # Do regex to get the instrument and sensor:
-        # The first 1 or 3 characters are the instrument short name
-        # if the last 2 or 3 characters are digits, then this is a sensor
-        # otherwise, the sensor is empty str
-        match = re.match(r"([a-z]{1,3})(\d{2,3})?", instrument_descriptor)
-        if match:
-            instrument_short_name = match.group(1)
-            sensor_match = str(match.group(2)) if match.group(2) else ""
-
-            # If sensor is 2 digits, it must be either 45 or 90
-            if sensor_match and len(sensor_match) == 2:
-                sensor = cast(_sensor_types, sensor_match)
-            # If sensor is 3 digits, convert to int
-            elif sensor_match and len(sensor_match) == 3:
-                sensor = int(sensor_match)
-            instrument = MappableInstrumentShortName(instrument_short_name)
-    instrument = MappableInstrumentShortName(instrument_short_name)
-    return instrument, sensor
-
-
-def parse_map_duration(
-    duration: str | int,
-) -> str:
-    """
-    Parse the duration into a string representation.
-
-    Parameters
-    ----------
-    duration : str | int
-        The duration to parse. This can be a string in the format "1yr", "6mo", etc.,
-        or an integer representing the number of days.
-
-    Returns
-    -------
-    str
-        The parsed duration string in the format "1yr", "6mo", etc.
-    """
-    if isinstance(duration, int):
-        # Assume number of days and convert to DAYS_IN_MONTH-day months
-        duration = f"{int(duration // DAYS_IN_MONTH)}mo"
-    elif isinstance(duration, str):
-        pass
-    else:
-        raise ValueError("Invalid duration type. Must be str or int.")
-    # Replace 12mo with 1yr
-    if duration == "12mo":
-        duration = "1yr"
-    return duration
-
-
-def get_map_coord_frame(frame_str: str | Literal["hae",]) -> SpiceFrame:
-    """
-    Get the SpiceFrame object for a given frame string.
-
-    This Frame is used for rotation from PSET coordinates to
-    SkyMap coordinates, and so is more analogous the the
-    coordinate frame component of the map descriptor string
-    than to the hf/sf/hk frame component.
-
-    Parameters
-    ----------
-    frame_str : Literal["hae",]
-        The frame string corresponding to the SpiceFrame object.
-
-    Returns
-    -------
-    SpiceFrame
-        The SpiceFrame object corresponding to the frame string.
-
-    Raises
-    ------
-    NotImplementedError
-        If the frame string is not recognized.
-    """
-    if frame_str == "hae":
-        return SpiceFrame.ECLIPJ2000
-    else:
-        raise NotImplementedError("Coordinate frame is not yet implemented.")
-
-
-def parse_map_frame(
-    frame: _spice_frame_str_types | SpiceFrame,
-) -> _spice_frame_str_types:
-    """
-    Parse the frame into a string representation.
-
-    Parameters
-    ----------
-    frame : str | SpiceFrame
-        The frame to parse. This can be a string in the format "sf", "hf", "hk", or
-        a SpiceFrame object.
-
-    Returns
-    -------
-    str
-        The parsed frame string.
-    """
-    if isinstance(frame, SpiceFrame):
-        match frame:
-            case SpiceFrame.IMAP_DPS.value:
-                return "sf"
-            case SpiceFrame.ECLIPJ2000.value:
-                return "hf"
-            case _:
-                raise NotImplementedError(f"Frame {frame} is not yet implemented.")
-    # Handle string frame
-    elif frame in valid_spice_frame_strings:
-        # If the frame is a valid string, return it as is
-        return frame
-    else:
-        raise ValueError(
-            f"Invalid frame: {frame}. Expected 'sf', 'hf', 'hk', or a SpiceFrame."
-        )
-
-
 @dataclass
 class MapDescriptor:
     """
@@ -281,6 +85,205 @@ class MapDescriptor:
     spin_phase: str = "full"
     coordinate_system: str = "hae"
 
+    # Methods for parsing and building parts of the map descriptor string
+    @staticmethod
+    def get_instrument_descriptor(
+        instrument: MappableInstrumentShortName,
+        sensor: _sensor_types = "",
+    ) -> str:
+        """
+        Get the instrument descriptor str for a given instrument + sensor (e.g. "u45").
+
+        Parameters
+        ----------
+        instrument : MappableInstrumentShortName
+            The short name Enum of the instrument.
+        sensor : _sensor_types, optional
+            The sensor identifier, by default "".
+
+        Returns
+        -------
+        str
+            The instrument descriptor string.
+            E.g. "u90", "u45", "ulc", "h45", "ilo", "t075".
+
+        Raises
+        ------
+        ValueError
+            If the sensor is an integer and the instrument is not LO.
+        """
+        # Handle sensor
+        # Lo may pass in an integer, which should be converted to a 3 character string
+        if isinstance(sensor, int):
+            if instrument in [
+                MappableInstrumentShortName.LO,
+                MappableInstrumentShortName.LO_HI_RES,
+                MappableInstrumentShortName.LO_HI_THROUGHPUT,
+            ]:
+                sensor_string = f"{sensor:03}"
+            else:
+                raise ValueError(
+                    "Integer sensor values are only valid for LO instruments."
+                )
+        # Hi and Ultra may be either "45", "90", or "combined", in which case
+        # Hi should get the sensor "ic" and Ultra should get the sensor "lc"
+        elif sensor == "combined":
+            if instrument is MappableInstrumentShortName.ULTRA:
+                sensor_string = "lc"
+            elif instrument is MappableInstrumentShortName.HI:
+                sensor_string = "ic"
+        else:
+            sensor_string = str(sensor)
+
+        # Get the instrument descriptor (e.g. "u90", "h45", "ilo")
+        instrument_descriptor = f"{instrument.value}{sensor_string}"
+        return instrument_descriptor
+
+    @staticmethod
+    def parse_instrument_descriptor(
+        instrument_descriptor: str,
+    ) -> tuple[MappableInstrumentShortName, _sensor_types]:
+        """
+        Parse the instrument descriptor string into instrument, sensor str reprs.
+
+        Parameters
+        ----------
+        instrument_descriptor : str
+            The instrument descriptor string to parse.
+
+        Returns
+        -------
+        tuple[str, _sensor_types]
+            A tuple containing the instrument short name and the sensor.
+
+        Raises
+        ------
+        ValueError
+            If the instrument descriptor format can't be parsed as a combined instrument
+             or as a regex match to the expected format.
+        """
+        # Default to no sensor
+        sensor: _sensor_types = ""
+
+        if instrument_descriptor.endswith("c"):
+            sensor = "combined"
+            instrument_short_name = instrument_descriptor[:-2]
+            instrument = MappableInstrumentShortName(instrument_short_name)
+        else:
+            # Do regex to get the instrument and sensor:
+            # The first 1 or 3 characters are the instrument short name
+            # if the last 2 or 3 characters are digits, then this is a sensor
+            # otherwise, the sensor is empty str
+            match = re.match(r"([a-z]{1,3})(\d{2,3})?", instrument_descriptor)
+            if match:
+                instrument_short_name = match.group(1)
+                sensor_match = str(match.group(2)) if match.group(2) else ""
+
+                # If sensor is 2 digits, it must be either 45 or 90
+                if sensor_match and len(sensor_match) == 2:
+                    sensor = cast(_sensor_types, sensor_match)
+                # If sensor is 3 digits, convert to int
+                elif sensor_match and len(sensor_match) == 3:
+                    sensor = int(sensor_match)
+                instrument = MappableInstrumentShortName(instrument_short_name)
+        instrument = MappableInstrumentShortName(instrument_short_name)
+        return instrument, sensor
+
+    @staticmethod
+    def parse_map_duration(
+        duration: str | int,
+    ) -> str:
+        """
+        Parse the duration into a string representation.
+
+        Parameters
+        ----------
+        duration : str | int
+            The duration to parse. This can be a string in the format "1yr", "6mo", etc.
+            or an integer representing the number of days.
+
+        Returns
+        -------
+        str
+            The parsed duration string in the format "1yr", "6mo", etc.
+        """
+        if isinstance(duration, int):
+            # Assume number of days and convert to DAYS_IN_MONTH-day months
+            duration = f"{int(duration // DAYS_IN_MONTH)}mo"
+        elif isinstance(duration, str):
+            pass
+        else:
+            raise ValueError("Invalid duration type. Must be str or int.")
+        # Replace 12mo with 1yr
+        if duration == "12mo":
+            duration = "1yr"
+        return duration
+
+    @staticmethod
+    def get_map_coord_frame(frame_str: str | Literal["hae",]) -> SpiceFrame:
+        """
+        Get the SpiceFrame object for a given frame string.
+
+        This Frame is used for rotation from PSET coordinates to
+        SkyMap coordinates, and so is more analogous the the
+        coordinate frame component of the map descriptor string
+        than to the hf/sf/hk frame component.
+
+        Parameters
+        ----------
+        frame_str : Literal["hae",]
+            The frame string corresponding to the SpiceFrame object.
+
+        Returns
+        -------
+        SpiceFrame
+            The SpiceFrame object corresponding to the frame string.
+
+        Raises
+        ------
+        NotImplementedError
+            If the frame string is not recognized.
+        """
+        if frame_str == "hae":
+            return SpiceFrame.ECLIPJ2000
+        else:
+            raise NotImplementedError("Coordinate frame is not yet implemented.")
+
+    @staticmethod
+    def parse_map_frame(
+        frame: _spice_frame_str_types | SpiceFrame,
+    ) -> _spice_frame_str_types:
+        """
+        Parse the frame into a string representation.
+
+        Parameters
+        ----------
+        frame : str | SpiceFrame
+            The frame to parse. This can be a string in the format "sf", "hf", "hk", or
+            a SpiceFrame object.
+
+        Returns
+        -------
+        str
+            The parsed frame string.
+        """
+        if isinstance(frame, SpiceFrame):
+            match frame:
+                case SpiceFrame.IMAP_DPS.value:
+                    return "sf"
+                case SpiceFrame.ECLIPJ2000.value:
+                    return "hf"
+                case _:
+                    raise NotImplementedError(f"Frame {frame} is not yet implemented.")
+        # Handle string frame
+        elif frame in valid_spice_frame_strings:
+            # If the frame is a valid string, return it as is
+            return frame
+        else:
+            raise ValueError(
+                f"Invalid frame: {frame}. Expected 'sf', 'hf', 'hk', or a SpiceFrame."
+            )
+
     # Quantities parsed into strings that will fit in the descriptor
     @property
     def frame_str(self) -> str:
@@ -292,7 +295,7 @@ class MapDescriptor:
         str
             The frame string representation.
         """
-        return parse_map_frame(self.frame_descriptor)
+        return MapDescriptor.parse_map_frame(self.frame_descriptor)
 
     @property
     def duration_str(self) -> str:
@@ -304,7 +307,7 @@ class MapDescriptor:
         str
             The duration string representation.
         """
-        return parse_map_duration(self.duration)
+        return MapDescriptor.parse_map_duration(self.duration)
 
     @property
     def instrument_descriptor(self) -> str:
@@ -316,7 +319,7 @@ class MapDescriptor:
         str
             The instrument descriptor string.
         """
-        return get_instrument_descriptor(self.instrument, self.sensor)
+        return MapDescriptor.get_instrument_descriptor(self.instrument, self.sensor)
 
     @classmethod
     def from_string(cls, map_descriptor: str) -> MapDescriptor:
@@ -344,14 +347,16 @@ class MapDescriptor:
             )
         # Extract the instrument and sensor from the first part
         instrument_sensor = parts[0]
-        instrument, sensor = parse_instrument_descriptor(instrument_sensor)
+        instrument, sensor = MapDescriptor.parse_instrument_descriptor(
+            instrument_sensor
+        )
 
         return cls(
             instrument=instrument,
             sensor=sensor,
             principal_data=parts[1],
             species=parts[2],
-            frame_descriptor=parse_map_frame(
+            frame_descriptor=MapDescriptor.parse_map_frame(
                 cast(_spice_frame_str_types, parts[3])  # Cast to appease mypy
             ),
             survival_corrected=parts[4],
@@ -448,14 +453,18 @@ def get_output_map_structure_from_descriptor_string(
     if "deg" in map_descriptor.resolution_str:
         return ena_maps.RectangularSkyMap(
             spacing_deg=float(map_descriptor.resolution_str.split("deg")[0]),
-            spice_frame=get_map_coord_frame(map_descriptor.coordinate_system),
+            spice_frame=MapDescriptor.get_map_coord_frame(
+                map_descriptor.coordinate_system
+            ),
         )
     # If "nside" is in the resolution string, then this is a Healpix map
     # (e.g., 'nside32')
     elif "nside" in map_descriptor.resolution_str:
         return ena_maps.HealpixSkyMap(
             nside=int(map_descriptor.resolution_str.split("nside")[1]),
-            spice_frame=get_map_coord_frame(map_descriptor.coordinate_system),
+            spice_frame=MapDescriptor.get_map_coord_frame(
+                map_descriptor.coordinate_system
+            ),
         )
     else:
         raise ValueError(

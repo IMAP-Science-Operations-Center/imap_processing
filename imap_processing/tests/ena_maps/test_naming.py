@@ -5,13 +5,8 @@ from imap_processing.ena_maps.utils.naming import (
     MapDescriptor,
     MappableInstrumentShortName,
     build_friendly_date_descriptor,
-    get_instrument_descriptor,
-    get_map_coord_frame,
     get_output_map_structure_from_descriptor_string,
     ns_to_duration_months,
-    parse_instrument_descriptor,
-    parse_map_duration,
-    parse_map_frame,
 )
 from imap_processing.spice.geometry import SpiceFrame
 
@@ -21,34 +16,34 @@ class TestNaming:
         self,
     ):
         assert (
-            get_instrument_descriptor(
+            MapDescriptor.get_instrument_descriptor(
                 instrument=MappableInstrumentShortName.HI,
                 sensor="45",
             )
             == "h45"
         )
         assert (
-            get_instrument_descriptor(
+            MapDescriptor.get_instrument_descriptor(
                 instrument=MappableInstrumentShortName.LO_HI_THROUGHPUT,
                 sensor=75,
             )
             == "t075"
         )
         assert (
-            get_instrument_descriptor(
+            MapDescriptor.get_instrument_descriptor(
                 instrument=MappableInstrumentShortName.IDEX,
                 sensor="",
             )
             == "idx"
         )
         assert (
-            get_instrument_descriptor(
+            MapDescriptor.get_instrument_descriptor(
                 instrument=MappableInstrumentShortName.ULTRA, sensor="90"
             )
             == "u90"
         )
         assert (
-            get_instrument_descriptor(
+            MapDescriptor.get_instrument_descriptor(
                 instrument=MappableInstrumentShortName.ULTRA,
                 sensor="combined",
             )
@@ -58,7 +53,7 @@ class TestNaming:
         with pytest.raises(
             ValueError, match="Integer sensor values are only valid for LO instruments."
         ):
-            get_instrument_descriptor(
+            MapDescriptor.get_instrument_descriptor(
                 instrument=MappableInstrumentShortName.HI,
                 sensor=123,
             )
@@ -66,53 +61,53 @@ class TestNaming:
     def test_parse_instrument_descriptor(
         self,
     ):
-        assert parse_instrument_descriptor("h45") == (
+        assert MapDescriptor.parse_instrument_descriptor("h45") == (
             MappableInstrumentShortName.HI,
             "45",
         )
-        assert parse_instrument_descriptor("t075") == (
+        assert MapDescriptor.parse_instrument_descriptor("t075") == (
             MappableInstrumentShortName.LO_HI_THROUGHPUT,
             75,
         )
-        assert parse_instrument_descriptor("idx") == (
+        assert MapDescriptor.parse_instrument_descriptor("idx") == (
             MappableInstrumentShortName.IDEX,
             "",
         )
-        assert parse_instrument_descriptor("u90") == (
+        assert MapDescriptor.parse_instrument_descriptor("u90") == (
             MappableInstrumentShortName.ULTRA,
             "90",
         )
-        assert parse_instrument_descriptor("ulc") == (
+        assert MapDescriptor.parse_instrument_descriptor("ulc") == (
             MappableInstrumentShortName.ULTRA,
             "combined",
         )
         with pytest.raises(
             ValueError, match="'abc' is not a valid MappableInstrumentShortName"
         ):
-            parse_instrument_descriptor("abc123456")
+            MapDescriptor.parse_instrument_descriptor("abc123456")
 
     def test_parse_map_duration(
         self,
     ):
-        assert parse_map_duration("6mo") == "6mo"
-        assert parse_map_duration("12mo") == "1yr"
-        assert parse_map_duration(365) == "1yr"
-        assert parse_map_duration(200) == "6mo"
-        assert parse_map_duration(60) == "2mo"
+        assert MapDescriptor.parse_map_duration("6mo") == "6mo"
+        assert MapDescriptor.parse_map_duration("12mo") == "1yr"
+        assert MapDescriptor.parse_map_duration(365) == "1yr"
+        assert MapDescriptor.parse_map_duration(200) == "6mo"
+        assert MapDescriptor.parse_map_duration(60) == "2mo"
         with pytest.raises(ValueError, match="Invalid duration type."):
-            parse_map_duration(["invalid", "duration"])
+            MapDescriptor.parse_map_duration(["invalid", "duration"])
 
     def test_parse_frame(
         self,
     ):
-        assert parse_map_frame("hf") == "hf"
-        assert parse_map_frame("sf") == "sf"
-        assert parse_map_frame(SpiceFrame.IMAP_DPS) == "sf"
-        assert parse_map_frame(SpiceFrame.ECLIPJ2000) == "hf"
+        assert MapDescriptor.parse_map_frame("hf") == "hf"
+        assert MapDescriptor.parse_map_frame("sf") == "sf"
+        assert MapDescriptor.parse_map_frame(SpiceFrame.IMAP_DPS) == "sf"
+        assert MapDescriptor.parse_map_frame(SpiceFrame.ECLIPJ2000) == "hf"
         with pytest.raises(NotImplementedError):
-            parse_map_frame(SpiceFrame.IMAP_GLOWS)
+            MapDescriptor.parse_map_frame(SpiceFrame.IMAP_GLOWS)
         with pytest.raises(ValueError, match="Invalid frame"):
-            parse_map_frame("invalid_frame")
+            MapDescriptor.parse_map_frame("invalid_frame")
 
     def test_build_l2_map_descriptor_with_int_duration(
         self,
@@ -184,11 +179,11 @@ class TestNaming:
         self,
     ):
         # Test with a string frame
-        assert get_map_coord_frame("hae") is SpiceFrame.ECLIPJ2000
+        assert MapDescriptor.get_map_coord_frame("hae") is SpiceFrame.ECLIPJ2000
 
         # Test with not implemented 'hgi'
         with pytest.raises(NotImplementedError):
-            get_map_coord_frame("hgi")
+            MapDescriptor.get_map_coord_frame("hgi")
 
     def test_get_output_map_structure_from_descriptor_string(self):
         descriptor_str_half_deg = "h45-ena-he-hf-sp-ram-hae-0.5deg-2mo"

@@ -32,6 +32,14 @@ class TestUltraL2:
 
     @pytest.fixture
     def _mock_multiple_psets(self, _setup_spice_kernels_list, furnish_kernels):
+        # Set the timestrs to be 6 months apart from the 0th to final pset
+        manual_timestrs = [
+            "2025-05-15T12:00:00",
+            "2025-07-15T12:00:00",
+            "2025-09-15T12:00:00",
+            "2025-11-15T12:00:00",
+        ]
+
         with furnish_kernels(self.required_kernel_names):
             self.ultra_psets = [
                 mock_l1c_pset_product_healpix(
@@ -40,7 +48,7 @@ class TestUltraL2:
                     width_scale=5,
                     counts_scaling_params=(50, 0.5),
                     peak_exposure=1000,
-                    timestr=f"2025-05-{4 * i + 1:02d}T12:00:00",
+                    timestr=manual_timestrs[i],
                     head=("90"),
                 )
                 for i, mid_latitude in enumerate(
@@ -89,7 +97,7 @@ class TestUltraL2:
 
         # Create the Healpix skymap in the desired frame.
         with furnish_kernels(self.required_kernel_names):
-            hp_skymap = ultra_l2.generate_ultra_healpix_skymap(
+            hp_skymap, _ = ultra_l2.generate_ultra_healpix_skymap(
                 ultra_l1c_psets=[
                     pset,
                 ],
@@ -159,7 +167,7 @@ class TestUltraL2:
             [],
         ):
             with furnish_kernels(self.required_kernel_names):
-                hp_skymap = ultra_l2.generate_ultra_healpix_skymap(
+                hp_skymap, pset_epochs = ultra_l2.generate_ultra_healpix_skymap(
                     ultra_l1c_psets=self.ultra_psets,
                     output_map_structure=ena_maps.AbstractSkyMap.from_properties_dict(
                         {
@@ -177,6 +185,7 @@ class TestUltraL2:
                         }
                     ),
                 )
+        assert len(pset_epochs) == len(self.ultra_psets)
 
         assert hp_skymap.nside == ultra_l2.DEFAULT_L2_HEALPIX_NSIDE
         assert hp_skymap.nested == ultra_l2.DEFAULT_L2_HEALPIX_NESTED
@@ -240,6 +249,7 @@ class TestUltraL2:
 
         assert map_dataset.attrs["HEALPix_nside"] == str(map_structure.nside)
         assert map_dataset.attrs["HEALPix_nest"] == str(map_structure.nested)
+        assert "6mo" in map_dataset.attrs["Logical_source"]
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
     def test_ultra_l2_rectangular(self, mock_data_dict, furnish_kernels):
@@ -443,6 +453,27 @@ class TestUltraL2:
             )
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
+    def test_ultra_l2_error_for_push_and_pull(
+        self, mock_data_dict, furnish_kernels, caplog
+    ):
+        map_structure = ena_maps.AbstractSkyMap.from_properties_dict(
+            {
+                "sky_tiling_type": "HEALPIX",
+                "spice_reference_frame": "ECLIPJ2000",
+                "values_to_push_project": ["counts", "exposure_factor"],
+                "values_to_pull_project": ["exposure_factor", "sensitivity"],
+                "nside": 16,
+                "nested": True,
+            }
+        )
+        # An error is expected when the same variable is in both the push/pull lists
+        with furnish_kernels(self.required_kernel_names):
+            with pytest.raises(ValueError, match="Some variables are present in both"):
+                ultra_l2.ultra_l2(
+                    data_dict=mock_data_dict,
+                    output_map_structure=map_structure,
+                )
+
     def test_ultra_l2_descriptor_rectmap(self, mock_data_dict, furnish_kernels):
         with furnish_kernels(self.required_kernel_names):
             output_map = ultra_l2.ultra_l2(
@@ -463,23 +494,3 @@ class TestUltraL2:
 
         assert output_map.attrs["Spice_reference_frame"] == "ECLIPJ2000"
         assert output_map.attrs["HEALPix_nside"] == "32"
-
-    @pytest.mark.usefixtures("_setup_spice_kernels_list")
-    def test_ultra_l2_error_for_push_and_pull(self, mock_data_dict, furnish_kernels):
-        map_structure = ena_maps.AbstractSkyMap.from_properties_dict(
-            {
-                "sky_tiling_type": "HEALPIX",
-                "spice_reference_frame": "ECLIPJ2000",
-                "values_to_push_project": ["counts", "exposure_factor"],
-                "values_to_pull_project": ["exposure_factor", "sensitivity"],
-                "nside": 16,
-                "nested": True,
-            }
-        )
-        # An error is expected when the same variable is in both the push/pull lists
-        with furnish_kernels(self.required_kernel_names):
-            with pytest.raises(ValueError, match="Some variables are present in both"):
-                ultra_l2.ultra_l2(
-                    data_dict=mock_data_dict,
-                    output_map_structure=map_structure,
-                )
