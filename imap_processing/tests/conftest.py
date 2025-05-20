@@ -235,7 +235,7 @@ def _test_data_paths():
             / "tests"
             / "ultra"
             / "data"
-            / "l1"
+            / "l0"
             / "imap_ultra_l0_raw_20250517_v001.pkts",
         ),
         (
