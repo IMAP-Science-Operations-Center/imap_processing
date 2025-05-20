@@ -12,7 +12,7 @@ from imap_processing.ena_maps import ena_maps
 from imap_processing.spice.geometry import SpiceFrame
 
 # Set a constant number of days in a month to calculate the duration of maps
-DAYS_IN_MONTH = 28.5
+DAYS_IN_MONTH = 30
 
 
 class MappableInstrumentShortName(Enum):
