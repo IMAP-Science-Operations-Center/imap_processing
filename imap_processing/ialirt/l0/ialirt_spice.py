@@ -120,7 +120,7 @@ def compute_total_rotation(
     total_rotations : NDArray
         Instrument to inertial rotation matrices (N, 3, 3).
     """
-    total_rotations = inertial_frames @ spin_rotations @ mount_matrix
+    total_rotations = mount_matrix @ spin_rotations @ inertial_frames
 
     return total_rotations
 
@@ -183,7 +183,10 @@ def transform_instrument_vectors_to_inertial(
 
     # Apply to instrument vectors
     vectors = np.array(
-        [spice.mxv(rot, vec) for rot, vec in zip(total_rotations, instrument_vectors)]
+        [
+            spice.mxv(rot.T.copy(), vec)
+            for rot, vec in zip(total_rotations, instrument_vectors)
+        ]
     )
 
     return vectors
