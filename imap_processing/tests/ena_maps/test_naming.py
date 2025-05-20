@@ -116,72 +116,55 @@ class TestNaming:
         with pytest.raises(ValueError, match="Invalid frame"):
             parse_map_frame("invalid_frame")
 
-    # def test_build_l2_map_descriptor_with_timedelta(
-    #     self,
-    # ):
-    #     descriptor = build_l2_map_descriptor(
-    #         instrument=MappableInstrumentShortName.HI,
-    #         frame="hf",
-    #         resolution_str="2deg",
-    #         duration=timedelta(days=60),
-    #         sensor="45",
-    #         principal_data="ena",
-    #         species="he",
-    #         survival_corrected="sp",
-    #         spin_phase="ram",
-    #         coordinate_system="hgi",
-    #     )
-    #     assert descriptor == "h45-ena-he-hf-sp-ram-hgi-2deg-2mo"
+    def test_build_l2_map_descriptor_with_timedelta(
+        self,
+    ):
+        descriptor = MapDescriptor(
+            instrument=MappableInstrumentShortName.HI,
+            frame_descriptor="hf",
+            resolution_str="2deg",
+            duration=timedelta(days=60),
+            sensor="45",
+            principal_data="ena",
+            species="he",
+            survival_corrected="sp",
+            spin_phase="ram",
+            coordinate_system="hgi",
+        ).to_string()
+        assert descriptor == "h45-ena-he-hf-sp-ram-hgi-2deg-2mo"
 
-    # def test_build_l2_map_descriptor_with_int_duration(
-    #     self,
-    # ):
-    #     descriptor = build_l2_map_descriptor(
-    #         instrument=MappableInstrumentShortName.LO_HI_THROUGHPUT,
-    #         frame="sf",
-    #         resolution_str="4deg",
-    #         duration=120,
-    #         sensor=75,
-    #         principal_data="ena",
-    #         species="o",
-    #         survival_corrected="nsp",
-    #         spin_phase="anti",
-    #         coordinate_system="rc",
-    #     )
-    #     assert descriptor == "t075-ena-o-sf-nsp-anti-rc-4deg-4mo"
+    def test_build_l2_map_descriptor_with_int_duration(
+        self,
+    ):
+        descriptor = MapDescriptor(
+            instrument=MappableInstrumentShortName.LO_HI_THROUGHPUT,
+            frame_descriptor="sf",
+            resolution_str="4deg",
+            duration=120,
+            sensor=75,
+            principal_data="ena",
+            species="o",
+            survival_corrected="nsp",
+            spin_phase="anti",
+            coordinate_system="rc",
+        ).to_string()
+        assert descriptor == "t075-ena-o-sf-nsp-anti-rc-4deg-4mo"
 
-    # def test_build_l2_map_descriptor_with_spice_frame(
-    #     self,
-    # ):
-    #     descriptor = build_l2_map_descriptor(
-    #         instrument=MappableInstrumentShortName.IDEX,
-    #         frame=SpiceFrame.IMAP_DPS,
-    #         resolution_str="nside32",
-    #         duration=365,
-    #         principal_data="drt",
-    #         species="dust",
-    #         survival_corrected="sp",
-    #         spin_phase="full",
-    #         coordinate_system="hae",
-    #     )
-    #     assert descriptor == "idx-drt-dust-sf-sp-full-hae-nside32-1yr"
-
-    # def test_build_l2_map_descriptor_invalid_frame(
-    #     self,
-    # ):
-    #     with pytest.raises(NotImplementedError):
-    #         build_l2_map_descriptor(
-    #             instrument=MappableInstrumentShortName.IDEX,
-    #             frame=SpiceFrame.IMAP_GLOWS,
-    #             resolution_str="4deg",
-    #             duration="6mo",
-    #             sensor="",
-    #             principal_data="ena",
-    #             species="uv",
-    #             survival_corrected="nsp",
-    #             spin_phase="ram",
-    #             coordinate_system="hgi",
-    #         )
+    def test_build_l2_map_descriptor_with_spice_frame(
+        self,
+    ):
+        descriptor = MapDescriptor(
+            instrument=MappableInstrumentShortName.IDEX,
+            frame_descriptor=SpiceFrame.IMAP_DPS,
+            resolution_str="nside32",
+            duration=365,
+            principal_data="drt",
+            species="dust",
+            survival_corrected="sp",
+            spin_phase="full",
+            coordinate_system="hae",
+        ).to_string()
+        assert descriptor == "idx-drt-dust-sf-sp-full-hae-nside32-1yr"
 
     # Parameterize over the start_datestring
     @pytest.mark.parametrize(
