@@ -421,6 +421,12 @@ def set_avg_spin_durations_per_event(
     """
     Set the average spin duration for each direct event.
 
+    The average spin duration for each cycle is repeated for the number of
+    direct event counts in the cycle. For example, if there are two Aggregated
+    Science Cycles with 2 events in the first cycle and 1 event in the second
+    cycle and the average spin duration for each cycle is duration1, duration2,
+    this will result in: [duration1, duration 1, duration2]
+
     Parameters
     ----------
     l1a_de : xarray.Dataset

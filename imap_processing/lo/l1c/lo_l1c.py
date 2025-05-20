@@ -277,7 +277,8 @@ def calculate_exposure_times(counts: xr.DataArray, l1b_de: xr.Dataset) -> xr.Dat
 
     result = binned_statistic_dd(
         data,
-        l1b_de["avg_spin_durations"].to_numpy(),
+        # exposure time equation from Lo Alg Document 10.1.1.4
+        4 * l1b_de["avg_spin_durations"].to_numpy() / 3600,
         statistic="mean",
         bins=[lon_edges, lat_edges, energy_edges],
     )

@@ -214,10 +214,10 @@ def test_calculate_exposure_times(l1b_de):
     counts = create_pset_counts(l1b_de)
     expected_exposure_times = np.full((1, 3600, 40, 7), np.nan)
     # Average of the exposure times for each bin
-    expected_exposure_times[0, 20, 20, 1] = np.mean([15.2, 14.9])
-    expected_exposure_times[0, 2000, 20, 4] = 15
-    expected_exposure_times[0, 3500, 20, 5] = 14.9
-    expected_exposure_times[0, 0, 20, 2] = 15.2
+    expected_exposure_times[0, 20, 20, 1] = 4 * np.mean([15.2, 14.9]) / 3600
+    expected_exposure_times[0, 2000, 20, 4] = 4 * 15 / 3600
+    expected_exposure_times[0, 3500, 20, 5] = 4 * 14.9 / 3600
+    expected_exposure_times[0, 0, 20, 2] = 4 * 15.2 / 2600
     # Act
     exposure_times = calculate_exposure_times(counts, l1b_de)
 
