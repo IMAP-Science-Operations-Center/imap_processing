@@ -54,7 +54,6 @@ CODICEAPID_MAPPING = {
     "hi-priority": CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES,
 }
 
-
 # Numerical constants
 SPIN_PERIOD_CONVERSION = 0.00032
 
@@ -451,6 +450,28 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     },
 }
 
+# Dictionary to define the bit structure of I-ALiRT data products
+IAL_BIT_STRUCTURE = {
+    "SHCOARSE": 32,
+    "PACKET_VERSION": 16,
+    "SPIN_PERIOD": 16,
+    "ACQ_START_SECONDS": 32,
+    "ACQ_START_SUBSECONDS": 20,
+    "SPARE_00": 8,
+    "ST_BIAS_GAIN_MODE": 2,
+    "SW_BIAS_GAIN_MODE": 2,
+    "TABLE_ID": 32,
+    "PLAN_ID": 16,
+    "PLAN_STEP": 4,
+    "VIEW_ID": 4,
+    "RGFO_HALF_SPIN": 6,
+    "NSO_HALF_SPIN": 6,
+    "SPARE_01": 1,
+    "SUSPECT": 1,
+    "COMPRESSION": 3,
+    "BYTE_COUNT": 23,
+}
+
 # Dictionary to define the bit structure of CoDICE-Lo direct events
 LO_DE_BIT_STRUCTURE = {
     "APDGain": 1,
@@ -472,7 +493,7 @@ LO_DE_BIT_STRUCTURE = {
 # These are defined in the "Views" tab of the "*-SCI-LUT-*.xml" spreadsheet that
 # largely defines CoDICE processing.
 LO_COMPRESSION_ID_LOOKUP = {
-    0: CoDICECompression.LOSSY_A_LOSSLESS,
+    0: CoDICECompression.PACK_24_BIT,
     1: CoDICECompression.LOSSY_B_LOSSLESS,
     2: CoDICECompression.LOSSY_B_LOSSLESS,
     3: CoDICECompression.LOSSY_A_LOSSLESS,
