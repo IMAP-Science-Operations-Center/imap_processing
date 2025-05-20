@@ -1,6 +1,7 @@
 """IMAP-Lo L1C Data Processing."""
 
 from dataclasses import Field
+from enum import Enum
 
 import numpy as np
 import pandas as pd
@@ -8,6 +9,21 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.spice.time import met_to_ttj2000ns
+
+
+class FilterType(str, Enum):
+    """
+    Enum for the filter types used in the PSET counts.
+
+    The filter types are used to filter the L1B Direct Event dataset
+    to only include the specified event types.
+    """
+
+    TRIPLES = "triples"
+    DOUBLES = "doubles"
+    HYDROGEN = "h"
+    OXYGEN = "o"
+    NONE = ""
 
 
 def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
@@ -38,6 +54,14 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
 
         l1b_goodtimes_only = filter_goodtimes(l1b_de, anc_dependencies)
         pset = initialize_pset(l1b_goodtimes_only, attr_mgr, logical_source)
+        pset["triples_counts"] = create_pset_counts(
+            l1b_goodtimes_only, FilterType.TRIPLES
+        )
+        pset["doubles_counts"] = create_pset_counts(
+            l1b_goodtimes_only, FilterType.DOUBLES
+        )
+        pset["h_counts"] = create_pset_counts(l1b_goodtimes_only, FilterType.HYDROGEN)
+        pset["o_counts"] = create_pset_counts(l1b_goodtimes_only, FilterType.OXYGEN)
     return [pset]
 
 
@@ -120,6 +144,101 @@ def filter_goodtimes(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
     filtered_epochs = l1b_de.sel(epoch=goodtimes_mask)
 
     return filtered_epochs
+
+
+def create_pset_counts(
+    de: xr.Dataset, filter: FilterType = FilterType.NONE
+) -> xr.DataArray:
+    """
+    Create the PSET counts for the L1B Direct Event dataset.
+
+    The counts are created by binning the data into 3600 longitude bins,
+    40 latitude bins, and 7 energy bins. The data is filtered to only
+    include counts based on the specified filter: "triples", "doubles", "h", or "o".
+
+    Parameters
+    ----------
+    de : xarray.Dataset
+        L1B Direct Event dataset.
+    filter : FilterType, optional
+        The event type to include in the counts.
+        Can be "triples", "doubles", "h", or "o".
+
+    Returns
+    -------
+    counts : xarray.DataArray
+        The counts for the specified filter.
+    """
+    filter_options = {
+        # triples coincidence types
+        FilterType.TRIPLES: ["111111", "111100", "111000"],
+        # doubles coincidence types
+        FilterType.DOUBLES: [
+            "110100",
+            "110000",
+            "101101",
+            "101100",
+            "101000",
+            "100100",
+            "100101",
+            "100000",
+            "011100",
+            "011000",
+            "010100",
+            "010101",
+            "010000",
+            "001100",
+            "001101",
+            "001000",
+        ],
+        # hydrogen species identifier
+        FilterType.HYDROGEN: "h",
+        # oxygen species identifier
+        FilterType.OXYGEN: "o",
+    }
+
+    # if the filter string is triples or doubles, filter using the coincidence type
+    if filter in {FilterType.TRIPLES, FilterType.DOUBLES}:
+        filter_idx = np.where(np.isin(de["coincidence_type"], filter_options[filter]))[
+            0
+        ]
+    # if the filter is h or o, filter using the species
+    elif filter in {FilterType.HYDROGEN, FilterType.OXYGEN}:
+        filter_idx = np.where(np.isin(de["species"], filter_options[filter]))[0]
+    else:
+        # if no filter is specified, use all data
+        filter_idx = np.arange(len(de["epoch"]))
+
+    # Filter the dataset using the filter index
+    de_filtered = de.isel(epoch=filter_idx)
+
+    # stack the filtered data into the 3D array
+    data = np.column_stack(
+        (
+            de_filtered["pointing_bin_lon"],
+            de_filtered["pointing_bin_lat"],
+            de_filtered["esa_step"],
+        )
+    )
+    # Create the histogram with 3600 longitude bins, 40 latitude bins, and 7 energy bins
+    lon_edges = np.arange(3601)
+    lat_edges = np.arange(41)
+    energy_edges = np.arange(8)
+
+    hist, edges = np.histogramdd(
+        data,
+        bins=[lon_edges, lat_edges, energy_edges],
+    )
+
+    # add a new axis of size 1 for the epoch
+    hist = hist[np.newaxis, :, :, :]
+
+    counts = xr.DataArray(
+        data=hist.astype(np.int16),
+        dims=["epoch", "lon_bins", "lat_bins", "energy_bins"],
+    )
+
+    return counts
 
 
 def create_datasets(

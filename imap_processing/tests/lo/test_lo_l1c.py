@@ -5,6 +5,8 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.lo.l1c.lo_l1c import (
+    FilterType,
+    create_pset_counts,
     filter_goodtimes,
     initialize_pset,
     lo_l1c,
@@ -59,6 +61,44 @@ def attr_mgr():
     attr_mgr_l1b.add_instrument_global_attrs(instrument="lo")
     attr_mgr_l1b.add_instrument_variable_attrs(instrument="lo", level="l1c")
     return attr_mgr_l1b
+
+
+@pytest.fixture
+def counts():
+    """Fixture for initial counts."""
+    return np.zeros((1, 3600, 40, 7))
+
+
+@pytest.fixture
+def h_counts(counts):
+    h = counts.copy()
+    h[0, 20, 20, 1] = 2
+    h[0, 2000, 20, 4] = 1
+    return h
+
+
+@pytest.fixture
+def o_counts(counts):
+    o = counts.copy()
+    o[0, 3500, 20, 5] = 1
+    o[0, 0, 20, 2] = 1
+    return o
+
+
+@pytest.fixture
+def triples_counts(counts):
+    triples = counts.copy()
+    triples[0, 20, 20, 1] = 2
+    triples[0, 0, 20, 2] = 1
+    return triples
+
+
+@pytest.fixture
+def doubles_counts(counts):
+    doubles = counts.copy()
+    doubles[0, 2000, 20, 4] = 1
+    doubles[0, 3500, 20, 5] = 1
+    return doubles
 
 
 def test_lo_l1c(l1b_de, anc_dependencies):
@@ -119,3 +159,50 @@ def test_filter_goodtimes(l1b_de, anc_dependencies):
 
     # Assert
     xr.testing.assert_equal(l1b_no_badtimes, l1b_de_no_badtimes_expected)
+
+
+def test_create_pset_counts(l1b_de):
+    # Arrange
+    expected_counts = np.zeros((1, 3600, 40, 7))
+    expected_counts[0, 20, 20, 1] = 2
+    expected_counts[0, 2000, 20, 4] = 1
+    expected_counts[0, 3500, 20, 5] = 1
+    expected_counts[0, 0, 20, 2] = 1
+
+    # Act
+    counts = create_pset_counts(l1b_de)
+
+    # Assert
+    np.testing.assert_array_equal(counts, expected_counts)
+
+
+def test_create_h_pset_counts(l1b_de, h_counts):
+    # Act
+    counts = create_pset_counts(l1b_de, FilterType.HYDROGEN)
+
+    # Assert
+    np.testing.assert_array_equal(counts, h_counts)
+
+
+def test_create_o_pset_counts(l1b_de, o_counts):
+    # Act
+    counts = create_pset_counts(l1b_de, FilterType.OXYGEN)
+
+    # Assert
+    np.testing.assert_array_equal(counts, o_counts)
+
+
+def test_create_triples_pset_counts(l1b_de, triples_counts):
+    # Act
+    counts = create_pset_counts(l1b_de, FilterType.TRIPLES)
+
+    # Assert
+    np.testing.assert_array_equal(counts, triples_counts)
+
+
+def test_create_doubles_pset_counts(l1b_de, doubles_counts):
+    # Act
+    counts = create_pset_counts(l1b_de, FilterType.DOUBLES)
+
+    # Assert
+    np.testing.assert_array_equal(counts, doubles_counts)

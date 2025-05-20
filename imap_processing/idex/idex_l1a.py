@@ -164,7 +164,9 @@ class PacketParser:
             np.arange(len(data["time_low_sample_rate"][0])),
             name="time_low_sample_rate_index",
             dims=["time_low_sample_rate_index"],
-            attrs=self.idex_attrs.get_variable_attributes("time_low_sample_rate_index"),
+            attrs=self.idex_attrs.get_variable_attributes(
+                "time_low_sample_rate_index", check_schema=False
+            ),
         )
 
         data["time_high_sample_rate_index"] = xr.DataArray(
@@ -172,7 +174,7 @@ class PacketParser:
             name="time_high_sample_rate_index",
             dims=["time_high_sample_rate_index"],
             attrs=self.idex_attrs.get_variable_attributes(
-                "time_high_sample_rate_index"
+                "time_high_sample_rate_index", check_schema=False
             ),
         )
         # NOTE: LABL_PTR_1 should be CDF_CHAR.
@@ -180,7 +182,9 @@ class PacketParser:
             data.time_low_sample_rate_index.values.astype(str),
             name="time_low_sample_rate_label",
             dims=["time_low_sample_rate_index"],
-            attrs=self.idex_attrs.get_variable_attributes("time_low_sample_rate_label"),
+            attrs=self.idex_attrs.get_variable_attributes(
+                "time_low_sample_rate_label", check_schema=False
+            ),
         )
 
         data["time_high_sample_rate_label"] = xr.DataArray(
@@ -188,7 +192,7 @@ class PacketParser:
             name="time_high_sample_rate_label",
             dims=["time_high_sample_rate_index"],
             attrs=self.idex_attrs.get_variable_attributes(
-                "time_high_sample_rate_label"
+                "time_high_sample_rate_label", check_schema=False
             ),
         )
 
@@ -674,7 +678,7 @@ class RawDustEvent:
                 name="epoch",
                 data=[self.impact_time],
                 dims=("epoch"),
-                attrs=idex_attrs.get_variable_attributes("epoch"),
+                attrs=idex_attrs.get_variable_attributes("epoch", check_schema=False),
             ),
         }
         sampling_rates = {
@@ -684,13 +688,17 @@ class RawDustEvent:
                     self._calc_low_sample_resolution(len(data_vars["Target_Low"][0]))
                 ],
                 dims=("epoch", "time_low_sample_rate_index"),
-                attrs=idex_attrs.get_variable_attributes("low_sample_rate_attrs"),
+                attrs=idex_attrs.get_variable_attributes(
+                    "low_sample_rate_attrs", check_schema=False
+                ),
             ),
             "time_high_sample_rate": xr.DataArray(
                 name="time_high_sample_rate",
                 data=[self._calc_high_sample_resolution(len(data_vars["TOF_Low"][0]))],
                 dims=("epoch", "time_high_sample_rate_index"),
-                attrs=idex_attrs.get_variable_attributes("high_sample_rate_attrs"),
+                attrs=idex_attrs.get_variable_attributes(
+                    "high_sample_rate_attrs", check_schema=False
+                ),
             ),
         }
         expected_shapes = {
