@@ -96,7 +96,7 @@ def test_main(mock_instrument):
         main()
 
 
-def test_parse_args_dependency_json_file(caplog):
+def test_parse_args_dependency_json_file(caplog, tmp_path):
     # Set caplog to capture all log levels
     caplog.set_level(logging.DEBUG)
     """Test imap_processing.cli.main() with --dependency as a JSON file path."""
@@ -116,7 +116,11 @@ def test_parse_args_dependency_json_file(caplog):
             ],
         },
     ]
-    test_json_dst = "test_cli_dependency_json.json"
+    test_json_filename = "imap_ultra_l2_test-dependency-json_20250520_v999.json"
+    test_json_dir = tmp_path / "imap/candence/ultra/l2/2025/05/"
+    test_json_dir.mkdir(parents=True, exist_ok=True)
+    test_json_dst = test_json_dir / test_json_filename
+
     with open(test_json_dst, "w") as f:
         f.write(json.dumps(test_json_content))
 

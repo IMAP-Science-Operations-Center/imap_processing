@@ -24,6 +24,7 @@ import imap_data_access
 import spiceypy
 import xarray as xr
 from imap_data_access import ScienceFilePath
+from imap_data_access.io import download
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
     SPICESource,
@@ -253,7 +254,8 @@ def _parse_args() -> argparse.Namespace:
         logger.info(
             f"Interpreting dependency argument as a JSON file: {args.dependency}"
         )
-        with open(args.dependency) as f:
+        dependency_filepath = download(args.dependency)
+        with open(dependency_filepath) as f:
             args.dependency = f.read()
 
     return args
