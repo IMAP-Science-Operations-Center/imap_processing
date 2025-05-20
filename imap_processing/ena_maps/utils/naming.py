@@ -30,6 +30,7 @@ class MappableInstrumentShortName(Enum):
 
 
 _sensor_types = int | Literal["45", "90", "combined", "ic", "lc", ""]
+# Must be specified separately for purpose of type checking vs comparison
 valid_spice_frame_strings = ["sf", "hf", "hk"]
 _spice_frame_str_types = Literal["sf", "hf", "hk"]
 
