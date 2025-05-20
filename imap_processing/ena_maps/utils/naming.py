@@ -30,6 +30,7 @@ class MappableInstrumentShortName(Enum):
 
 
 _sensor_types = int | Literal["45", "90", "combined", "ic", "lc", ""]
+_spice_frame_types = Literal["sf", "hf", "hk"]
 
 
 def get_instrument_descriptor(
@@ -198,7 +199,7 @@ def get_map_coord_frame(frame_str: str | Literal["hae",]) -> SpiceFrame:
 
 
 def parse_map_frame(
-    frame: SpiceFrame | Literal["sf", "hf", "hk"] | str,
+    frame: _spice_frame_types | str,
 ) -> str:
     """
     Parse the frame into a string representation.
@@ -388,7 +389,7 @@ def build_l2_map_descriptor(
     *,
     # Basic parameters must always be passed in as keyword arguments
     instrument: MappableInstrumentShortName,  # Updated to use the enum
-    frame: Literal["sf", "hf", "hk"] | SpiceFrame,
+    frame: _spice_frame_types,
     resolution_str: str,
     duration: str | int | timedelta,
     # The rest of the parameters have default values corresponding to the
@@ -419,7 +420,7 @@ def build_l2_map_descriptor(
     instrument : MappableInstrumentShortName
         The instrument name. Instrument and sensor are combined to form the
         instrument descriptor (e.g. "u90", "h45", "idx").
-    frame : Literal["sf", "hf", "hk"] | SpiceFrame
+    frame : _spice_frame_types
         The frame of reference for the map.
         sf: Spacecraft frame.
         hf: Heliospheric frame.
