@@ -353,9 +353,9 @@ def ultra_l2(
 
     Returns
     -------
-        list[xarray.Dataset,]
-            L2 output dataset containing map of the counts on the sky.
-            Wrapped in a list for consistency with other product levels.
+    list[xarray.Dataset,]
+        L2 output dataset containing map of the counts on the sky.
+        Wrapped in a list for consistency with other product levels.
     """
     if descriptor is not None:
         output_map_structure = naming.get_output_map_structure_from_descriptor_string(
