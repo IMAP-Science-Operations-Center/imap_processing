@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Literal
+from typing import Literal, cast
 
 from imap_processing.ena_maps import ena_maps
 from imap_processing.spice.geometry import SpiceFrame
@@ -29,9 +29,12 @@ class MappableInstrumentShortName(Enum):
     GLOWS = "glx"
 
 
+_sensor_types = int | Literal["45", "90", "combined", "ic", "lc", ""]
+
+
 def get_instrument_descriptor(
     instrument: MappableInstrumentShortName,
-    sensor: int | Literal["45", "90", "combined", ""] | str = "",
+    sensor: _sensor_types = "",
 ) -> str:
     """
     Get the instrument descriptor string for a given instrument and sensor (e.g. "u45").
@@ -40,7 +43,7 @@ def get_instrument_descriptor(
     ----------
     instrument : MappableInstrumentShortName
         The short name Enum of the instrument.
-    sensor : int | Literal["45", "90", "combined"] | str, optional
+    sensor : _sensor_types, optional
         The sensor identifier, by default "".
 
     Returns
@@ -62,25 +65,25 @@ def get_instrument_descriptor(
             MappableInstrumentShortName.LO_HI_RES,
             MappableInstrumentShortName.LO_HI_THROUGHPUT,
         ]:
-            sensor = f"{sensor:03}"
+            sensor_string = f"{sensor:03}"
         else:
             raise ValueError("Integer sensor values are only valid for LO instruments.")
     # Hi and Ultra may be either "45", "90", or "combined", in which case
     # Hi should get the sensor "ic" and Ultra should get the sensor "lc"
     elif sensor == "combined":
         if instrument is MappableInstrumentShortName.ULTRA:
-            sensor = "lc"
+            sensor_string = "lc"
         elif instrument is MappableInstrumentShortName.HI:
-            sensor = "ic"
+            sensor_string = "ic"
 
     # Get the instrument descriptor (e.g. "u90", "h45", "ilo")
-    instrument_descriptor = f"{instrument.value}{sensor}"
+    instrument_descriptor = f"{instrument.value}{sensor_string}"
     return instrument_descriptor
 
 
 def parse_instrument_descriptor(
     instrument_descriptor: str,
-) -> tuple[MappableInstrumentShortName, str]:
+) -> tuple[MappableInstrumentShortName, _sensor_types]:
     """
     Parse the instrument descriptor string into instrument, sensor str reprs.
 
@@ -91,7 +94,7 @@ def parse_instrument_descriptor(
 
     Returns
     -------
-    tuple[str, str]
+    tuple[str, _sensor_types]
         A tuple containing the instrument short name and the sensor.
 
     Raises
@@ -101,7 +104,7 @@ def parse_instrument_descriptor(
         as a regex match to the expected format.
     """
     # Default to no sensor
-    sensor = ""
+    sensor: _sensor_types = ""
 
     if instrument_descriptor.endswith("c"):
         sensor = "combined"
@@ -115,7 +118,14 @@ def parse_instrument_descriptor(
         match = re.match(r"([a-z]{1,3})(\d{2,3})?", instrument_descriptor)
         if match:
             instrument_short_name = match.group(1)
-            sensor = match.group(2) if match.group(2) else ""
+            sensor_match = str(match.group(2)) if match.group(2) else ""
+
+            # If sensor is 2 digits, it must be either 45 or 90
+            if sensor_match and len(sensor_match) == 2:
+                sensor = cast(_sensor_types, sensor_match)
+            # If sensor is 3 digits, convert to int
+            elif sensor_match and len(sensor_match) == 3:
+                sensor = int(sensor_match)
             instrument = MappableInstrumentShortName(instrument_short_name)
     instrument = MappableInstrumentShortName(instrument_short_name)
     return instrument, sensor
@@ -261,7 +271,7 @@ class MapDescriptor:
     frame_descriptor: str | SpiceFrame
     resolution_str: str
     duration: str | int | timedelta
-    sensor: int | str = ""
+    sensor: _sensor_types = ""
     principal_data: str = "ena"
     species: str = "h"
     survival_corrected: str = "nsp"
@@ -381,7 +391,7 @@ def build_l2_map_descriptor(
     duration: str | int | timedelta,
     # The rest of the parameters have default values corresponding to the
     # most general cases
-    sensor: int | Literal["45", "90", "combined", "ic", "lc", ""] | str = "",
+    sensor: _sensor_types = "",
     principal_data: Literal["ena", "spx", "isn", "int", "drt"] = "ena",
     species: Literal["h", "he", "o", "uv", "dust"] = "h",
     survival_corrected: Literal["nsp", "sp"] = "nsp",
@@ -419,7 +429,7 @@ def build_l2_map_descriptor(
     duration : str | int | timedelta
         The duration of the map as a string, and integer number of days, or a timedelta.
         The string should be in the format of "1yr", "6mo", "3mo", etc.
-    sensor : int | Literal["45", "90", "combined", "ic", "lc", ""] | str
+    sensor : _sensor_types
         The sensor number for the map. By default, this is "".
         For LO, this should be a 3 character string or an integer
         which will be converted to a 3 character string (90 --> "090").
