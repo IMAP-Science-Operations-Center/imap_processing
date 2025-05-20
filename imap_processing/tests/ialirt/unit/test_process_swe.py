@@ -77,24 +77,6 @@ def xarray_data(binary_packet_path, xtce_swe_path):
 
 
 @pytest.fixture
-def sc_xarray_data():
-    """Create xarray data for spacecraft packets."""
-    apid = 478
-    packet_path = (
-        imap_module_directory / "tests" / "ialirt" / "data" / "l0" / "apid_478.bin"
-    )
-    xtce_ialirt_path = (
-        imap_module_directory / "ialirt" / "packet_definitions" / "ialirt.xml"
-    )
-
-    xarray_data = packet_file_to_datasets(
-        packet_path, xtce_ialirt_path, use_derived_value=False
-    )[apid]
-
-    return xarray_data
-
-
-@pytest.fixture
 def fields_to_test():
     """Create a dictionary to convert names"""
     fields_to_test = {
@@ -155,6 +137,7 @@ def summed_half_cycle():
     return summed_half_cycle
 
 
+@pytest.mark.external_test_data
 @patch(
     "imap_processing.ialirt.l0.process_swe.read_in_flight_cal_data",
     return_value=pd.DataFrame(
@@ -171,9 +154,14 @@ def summed_half_cycle():
     ),
 )
 def test_process_spacecraft_packet(
-    mock_read_cal, swe_test_data, fields_to_test, sc_xarray_data
+    mock_read_cal, swe_test_data, fields_to_test, sc_packet_path
 ):
     """Test processing for spacecraft packet."""
+    packet_path, xtce_ialirt_path = sc_packet_path
+    sc_xarray_data = packet_file_to_datasets(
+        packet_path, xtce_ialirt_path, use_derived_value=False
+    )[478]
+
     in_flight_cal_file = (
         imap_module_directory
         / "tests/swe/lut/imap_swe_l1b-in-flight-cal_20240510_20260716_v000.csv"

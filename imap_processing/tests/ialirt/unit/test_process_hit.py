@@ -57,27 +57,10 @@ def xarray_data(binary_packet_path, xtce_hit_path):
     return xarray_data
 
 
-@pytest.fixture
-def sc_xarray_data():
-    """Create xarray data for spacecraft packets."""
-    apid = 478
-    packet_path = (
-        imap_module_directory / "tests" / "ialirt" / "data" / "l0" / "apid_478.bin"
-    )
-    xtce_ialirt_path = (
-        imap_module_directory / "ialirt" / "packet_definitions" / "ialirt.xml"
-    )
-
-    xarray_data = packet_file_to_datasets(
-        packet_path, xtce_ialirt_path, use_derived_value=False
-    )[apid]
-
-    return xarray_data
-
-
 @pytest.mark.external_test_data
-def test_process_spacecraft_packet(sc_xarray_data):
+def test_process_spacecraft_packet(sc_xarray_data, sc_packet_path):
     """Tests Spacecraft Packet processing."""
+    packet_path, xtce_ialirt_path = sc_packet_path
     hit_product = process_hit(sc_xarray_data)
 
     assert len(hit_product[0].keys()) == 12
