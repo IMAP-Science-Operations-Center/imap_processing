@@ -35,6 +35,13 @@ def imap_tests_path():
     return imap_module_directory / "tests"
 
 
+@pytest.fixture(autouse=True)
+def clear_spin_and_repoint_paths(monkeypatch):
+    """Clear the spin and repoint paths to avoid having test side effects."""
+    monkeypatch.setattr(spin, "_spin_table_paths", [])
+    monkeypatch.setattr(repoint, "_repoint_table_path", None)
+
+
 # Furnishing fixtures for testing kernels
 # ---------------------------------------
 @pytest.fixture(autouse=True)
