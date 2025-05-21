@@ -478,8 +478,12 @@ class TestUltraL2:
         with furnish_kernels(self.required_kernel_names):
             output_map = ultra_l2.ultra_l2(
                 data_dict=mock_data_dict,
-                descriptor="u90-ena-h-hf-nsp-full-hae-6deg-3mo",
+                descriptor="u90-ena-h-hf-nsp-full-hae-6deg-6mo",
             )[0]
+
+        assert (
+            output_map.attrs["Logical_source"] == "u90-ena-h-hf-nsp-full-hae-6deg-6mo"
+        )
 
         assert output_map.attrs["Spice_reference_frame"] == "ECLIPJ2000"
         assert output_map.attrs["Spacing_degrees"] == "6.0"
@@ -489,8 +493,13 @@ class TestUltraL2:
         with furnish_kernels(self.required_kernel_names):
             output_map = ultra_l2.ultra_l2(
                 data_dict=mock_data_dict,
-                descriptor="u90-ena-h-hf-nsp-full-hae-nside32-3mo",
+                descriptor="u90-ena-h-sf-nsp-full-hae-nside32-6mo",
             )[0]
 
+        assert "spacecraft" in output_map.attrs["Logical_source_description"]
+        assert (
+            output_map.attrs["Logical_source"]
+            == "u90-ena-h-sf-nsp-full-hae-nside32-6mo"
+        )
         assert output_map.attrs["Spice_reference_frame"] == "ECLIPJ2000"
         assert output_map.attrs["HEALPix_nside"] == "32"

@@ -35,6 +35,13 @@ valid_spice_frame_strings = ["sf", "hf", "hk"]
 _spice_frame_str_types = Literal["sf", "hf", "hk"]
 _coord_frame_str_types = Literal["hae",]
 
+# Mapping of inertial frames to their longer names used in logical source descriptors
+INERTIAL_FRAME_LONG_NAMES = {
+    "hf": "heliospheric",
+    "sf": "spacecraft",
+    "hk": "heliocentric kinetic",
+}
+
 
 @dataclass
 class MapDescriptor:
