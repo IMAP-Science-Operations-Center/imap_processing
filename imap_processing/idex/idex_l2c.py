@@ -13,7 +13,7 @@ Examples
     l0_file = "imap_processing/tests/idex/imap_idex_l0_sci_20231214_v001.pkts"
     l1a_data = PacketParser(l0_file)
     l1b_data = idex_l1b(l1a_data)
-    l1a_data = idex_l2a(l1b_data)
+    l2a_data = idex_l2a(l1b_data)
     l2b_data = idex_l2b(l2a_data)
     write_cdf(l2b_data)
 """
@@ -65,19 +65,14 @@ def idex_l2c(l2b_dataset: xr.Dataset) -> list[xr.Dataset]:
         l2b_dataset["epoch"].data[0:1].astype(np.int64),
         name="epoch",
         dims=["epoch"],
-        attrs=idex_attrs.get_variable_attributes("epoch", check_schema=False),
-    )
-    # Update metadata to indicate that epoch is left-edge of the reference time.
-    epoch.attrs["CATDESC"] = (
-        "Time, number of nanoseconds since J2000 with leap seconds"
-        " included. Represents the start (left-edge) of the "
-        "reference time."
+        attrs=idex_attrs.get_variable_attributes(
+            "epoch_collection_set", check_schema=False
+        ),
     )
     l2c_healpix_dataset = idex_healpix_map(l2b_dataset, epoch, idex_attrs)
     l2c_rectangular_dataset = idex_rectangular_map(l2b_dataset, epoch, idex_attrs)
 
     # TODO exposure time
-
     logger.info("IDEX L2C science data processing completed.")
     return [l2c_healpix_dataset, l2c_rectangular_dataset]
 
@@ -97,7 +92,7 @@ def idex_healpix_map(
     l1b_dataset : xarray.Dataset
         IDEX L2b dataset.
     epoch_da : xarray.DataArray
-        Epoch data array of size (1,).
+        Epoch data array of the collection. Size: (1,).
     idex_attrs : ImapCdfAttributes
         The attribute manager for this data level.
     nside : int
@@ -130,7 +125,7 @@ def idex_healpix_map(
     counts = np.histogram(hpix_idx, bins=n_pix, range=(0, n_pix))[0]
     # Add epoch dimension
     counts_da = xr.DataArray(
-        counts[np.newaxis, :].astype(int),
+        counts[np.newaxis, :].astype(np.uint16),
         name="counts",
         dims=("epoch", CoordNames.HEALPIX_INDEX.value),
         attrs=idex_attrs.get_variable_attributes("healpix_counts"),
@@ -176,7 +171,7 @@ def idex_rectangular_map(
     l1b_dataset : xarray.Dataset
         IDEX L2b dataset.
     epoch_da : xarray.DataArray
-        Epoch data array of size (1,).
+        Epoch data array of the collection. Size: (1,).
     idex_attrs : ImapCdfAttributes
         The attribute manager for this data level.
     spacing_deg : int
@@ -198,7 +193,7 @@ def idex_rectangular_map(
         longitude_wrapped, latitude, bins=[grid.az_bin_edges, grid.el_bin_edges]
     )
     counts_da = xr.DataArray(
-        counts[np.newaxis, :, :].astype(int),
+        counts[np.newaxis, :, :].astype(np.uint16),
         name="counts",
         dims=("epoch", "rectangular_lon_pixel", "rectangular_lat_pixel"),
         attrs=idex_attrs.get_variable_attributes("rectangular_counts"),

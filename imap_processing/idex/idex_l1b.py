@@ -361,7 +361,7 @@ def get_spice_data(
     )
     solar_lon = solar_longitude(et, degrees=True)
     # longitude and latitude
-    lon_and_lat = cartesian_to_spherical(idex_pointing)
+    lon_and_lat = cartesian_to_spherical(idex_pointing)[:, 1:]
 
     spice_data = {
         "ephemeris_position_x": ephemeris[:, 0],

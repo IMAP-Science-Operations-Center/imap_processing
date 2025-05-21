@@ -346,14 +346,14 @@ current_neg2p5v_bus:
 ephemeris_position_x:
   <<: *spice_base
   FIELDNAM: Position X
-  CATDESC: Cartesian coordinate X positions for the IMAP spacecraft in the ECLIPJ2000 frame.
+  CATDESC: Cartesian coord X positions for the IMAP spacecraft in the ECLIPJ2000 frame.
   LABLAXIS: Position X
   UNITS: km
 
 ephemeris_position_y:
   <<: *spice_base
   FIELDNAM: Position Y
-  CATDESC: Cartesian coordinate Y positions for the IMAP spacecraft in the ECLIPJ2000 frame.
+  CATDESC: Cartesian coord Y positions for the IMAP spacecraft in the ECLIPJ2000 frame.
   LABLAXIS: Position Y
   UNITS: km
 
@@ -389,13 +389,13 @@ longitude:
   <<: *spice_base
   VALIDMIN: 0
   FIELDNAM: Longitude
-  CATDESC: Longitude (spherical coordinate) of the dust event (IDEX pointing) as observed from Earth in the ECLIPJ2000 reference frame.
+  CATDESC: Longitude of the dust event as observed from Earth in the ECLIPJ2000 frame.
   LABLAXIS: Longitude
 
 latitude:
   <<: *spice_base
   FIELDNAM: Latitude
-  CATDESC: Latitude (spherical coordinate) of the dust event (IDEX pointing) as observed from Earth in the ECLIPJ2000 reference frame.
+  CATDESC: Latitude of the dust event as observed from Earth in the ECLIPJ2000 frame.
   LABLAXIS: Latitude
 
 spin_phase:
