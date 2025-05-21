@@ -960,19 +960,6 @@ def create_ialirt_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     # Group together packets of I-ALiRT data to form complete data sets
     grouped_data = group_ialirt_data(packets, data_field_range)
 
-    # The acquisition times for the grouped data are when a counter of 0
-    # is encountered
-    acquisition_times = packets.acquisition_time.data[
-        np.where(packets.counter.data == 0)
-    ]
-
-    # The first packet is bad
-    # TODO: Implement a more automated fix for throwing out bad packets
-    #       How do determine if a packet is bad?
-    #       Don't "start" the grouping until a counter of 0 is encountered?
-    grouped_data = grouped_data[1:]
-    acquisition_times = acquisition_times[1:]
-
     science_values, metadata_values = process_ialirt_data_streams(grouped_data)
 
     # Run the pipeline to create a dataset for the product
@@ -990,7 +977,7 @@ def create_ialirt_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     # Remove the old one (which has a value for every packet) and
     # replace with a new list which has one value per epoch
     pipeline.dataset = pipeline.dataset.drop_vars("acquisition_time")
-    pipeline.dataset["acquisition_time"] = ("_", acquisition_times)
+    pipeline.dataset["acquisition_time"] = ("_", metadata_values["SHCOARSE"])
 
     pipeline.define_coordinates()
 
@@ -1203,28 +1190,35 @@ def process_ialirt_data_streams(
 
     # Process each complete data stream
     for data_stream in grouped_data:
-        # Convert the data to binary
-        bit_string = "".join(f"{byte:08b}" for byte in data_stream)
+        try:
+            # Convert the data to binary
+            bit_string = "".join(f"{byte:08b}" for byte in data_stream)
 
-        # Separate the data into its individual fields
-        bit_position = 0
-        for field in constants.IAL_BIT_STRUCTURE:
-            # Convert from binary to integer
-            value = int(
-                bit_string[
-                    bit_position : bit_position + constants.IAL_BIT_STRUCTURE[field]
-                ],
-                2,
-            )
+            # Separate the data into its individual fields
+            bit_position = 0
+            for field in constants.IAL_BIT_STRUCTURE:
+                # Convert from binary to integer
+                value = int(
+                    bit_string[
+                        bit_position : bit_position + constants.IAL_BIT_STRUCTURE[field]
+                    ],
+                    2,
+                )
 
-            metadata_values[field].append(value)
-            bit_position += constants.IAL_BIT_STRUCTURE[field]
-            if field == "BYTE_COUNT":
-                byte_count = value * 8  # Convert from bytes to number of bits
+                # If we encounter an SHCOARSE of 0, the packet is bad
+                if field == "SHCOARSE" and value == 0:
+                    raise ValueError("Bad packet encountered")
 
-        # The rest is the data field, up to the byte count
-        data_field = bit_string[bit_position : bit_position + byte_count]
-        science_values.append(data_field)
+                metadata_values[field].append(value)
+                bit_position += constants.IAL_BIT_STRUCTURE[field]
+                if field == "BYTE_COUNT":
+                    byte_count = value * 8  # Convert from bytes to number of bits
+
+            # The rest is the data field, up to the byte count
+            data_field = bit_string[bit_position : bit_position + byte_count]
+            science_values.append(data_field)
+        except ValueError:
+            pass
 
     return science_values, metadata_values
 
