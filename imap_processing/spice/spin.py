@@ -95,6 +95,7 @@ def get_spin_data() -> pd.DataFrame:
         pd.read_csv(
             spin_table_path,
             comment="#",
+            index_col="spin_number",
             dtype={
                 "spin_number": int,
                 "spin_start_sec_sclk": int,
@@ -106,23 +107,23 @@ def get_spin_data() -> pd.DataFrame:
                 "thruster_firing": bool,
             },
         )
-        for spin_table_path in sorted(_spin_table_paths)
+        # Reversed sorting is used so that we get the desired result when
+        # combining dataframes below.
+        for spin_table_path in sorted(_spin_table_paths, reverse=True)
     ]
-    merged_df = reduce(
-        lambda left, right: pd.merge(
-            left, right, how="outer", on="spin_number", sort=True
-        ),
+    combined_df = reduce(
+        lambda left, right: left.combine_first(right),
         spin_dataframes,
     )
 
     # Combine spin_start_sec_sclk and spin_start_subsec_sclk to get the spin start
     # time in seconds. The spin start subseconds are in microseconds.
-    merged_df["spin_start_met"] = (
-        merged_df["spin_start_sec_sclk"] + merged_df["spin_start_subsec_sclk"] / 1e6
+    combined_df["spin_start_met"] = (
+        combined_df["spin_start_sec_sclk"] + combined_df["spin_start_subsec_sclk"] / 1e6
     )
 
-    _spin_df_cache[cache_key] = merged_df
-    return merged_df
+    _spin_df_cache[cache_key] = combined_df
+    return combined_df
 
 
 def interpolate_spin_data(query_met_times: Union[float, npt.NDArray]) -> pd.DataFrame:

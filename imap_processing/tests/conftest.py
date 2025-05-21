@@ -500,8 +500,8 @@ def _unset_metakernel_path(monkeypatch):
 def use_test_spin_data_csv(monkeypatch):
     """Monkeypatches `spin._spin_table_paths` to the input Path."""
 
-    def wrapped_set_spin_data_filepath(path: Path):
-        monkeypatch.setattr(spin, "_spin_table_paths", [path])
+    def wrapped_set_spin_data_filepath(paths: list[Path]):
+        monkeypatch.setattr(spin, "_spin_table_paths", paths)
 
     return wrapped_set_spin_data_filepath
 
@@ -538,7 +538,7 @@ def use_fake_spin_data_for_time(
         spin_df = generate_spin_data(start_met, end_met=end_met)
         spin_csv_file_path = tmp_path / "spin_data.spin.csv"
         spin_df.to_csv(spin_csv_file_path, index=False)
-        use_test_spin_data_csv(spin_csv_file_path)
+        use_test_spin_data_csv([spin_csv_file_path])
 
     return wrapped_set_spin_data_filepath
 

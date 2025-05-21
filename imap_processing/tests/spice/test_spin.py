@@ -13,7 +13,7 @@ from imap_processing.spice.geometry import SpiceFrame
 def fake_spin_data(spice_test_data_path, use_test_spin_data_csv):
     """Generate fake spin dataframe for testing"""
     fake_spin_path = spice_test_data_path / "fake_spin_data.csv"
-    use_test_spin_data_csv(fake_spin_path)
+    use_test_spin_data_csv([fake_spin_path])
     return fake_spin_path
 
 
@@ -38,7 +38,6 @@ def test_set_spin_table_paths(monkeypatch):
             15,
             [
                 [
-                    1,
                     15,
                     0,
                     "2024-04-11 00:00:15.000000",
@@ -56,7 +55,6 @@ def test_set_spin_table_paths(monkeypatch):
             np.array([15.1, 30.2]),
             [
                 [
-                    1,
                     15,
                     0,
                     "2024-04-11 00:00:15.000000",
@@ -69,7 +67,6 @@ def test_set_spin_table_paths(monkeypatch):
                     0.1 / 15,
                 ],
                 [
-                    2,
                     30,
                     0,
                     "2024-04-11 00:00:30.000000",
@@ -186,13 +183,12 @@ def test_get_spin_data(use_fake_spin_data_for_time):
     spin_data = spin.get_spin_data()
 
     (
-        np.testing.assert_array_equal(spin_data["spin_number"], np.arange(5761)),
+        np.testing.assert_array_equal(spin_data.index, np.arange(5761)),
         "One day should have 5,761 records of 15 seconds when including end_met.",
     )
     assert isinstance(spin_data, pd.DataFrame), "Return type must be pandas.DataFrame."
 
     assert set(spin_data.columns) == {
-        "spin_number",
         "spin_start_sec_sclk",
         "spin_start_subsec_sclk",
         "spin_start_utc",
@@ -203,6 +199,51 @@ def test_get_spin_data(use_fake_spin_data_for_time):
         "thruster_firing",
         "spin_start_met",
     }, "Spin data must have the specified fields."
+
+
+def test_get_spin_table_merge(tmp_path, use_test_spin_data_csv):
+    """Test that get_spin_table() merges spin tables correctly."""
+    columns = [
+        "spin_number",
+        "spin_start_sec_sclk",
+        "spin_start_subsec_sclk",
+        "spin_start_utc",
+        "spin_period_sec",
+        "spin_period_valid",
+        "spin_phase_valid",
+        "spin_phase_source",
+        "thruster_firing",
+    ]
+    # Table 1 is missing spin # 2
+    table1_data = [
+        [0, 0, 0, "2025-05-01 00:00:00.000", 15, 1, 1, 0, 0],
+        [1, 15, 0, "2025-05-01 00:00:15.000", 15, 1, 1, 0, 0],
+        [3, 45, 0, "2025-05-01 00:00:45.000", 15, 1, 1, 0, 0],
+        [4, 60, 0, "2025-05-01 00:01:00.000", 15, 1, 1, 0, 0],
+    ]
+    table1_path = tmp_path / "imap_2025_100_2025_101_01.spin.csv"
+    pd.DataFrame.from_records(table1_data, columns=columns, index=columns[0]).to_csv(
+        table1_path
+    )
+    # Table 2 fills in spin #2 and changes values for spin #3
+    table2_data = [
+        [2, 30, 0, "2025-05-01 00:00:30.000", 15.1, 1, 1, 0, 0],
+        [3, 45, 1e5, "2025-05-01 00:00:45.100", 14.9, 1, 1, 0, 0],
+        [5, 75, 0, "2025-05-01 00:01:15.000", 15, 1, 1, 0, 0],
+        [6, 90, 0, "2025-05-01 00:01:30.000", 15, 1, 1, 0, 0],
+    ]
+    table2_path = tmp_path / "imap_2025_101_2025_102_01.spin.csv"
+    pd.DataFrame.from_records(table2_data, columns=columns, index=columns[0]).to_csv(
+        table2_path
+    )
+    # Intentionally set table 2 as the first
+    use_test_spin_data_csv([table2_path, table1_path])
+    combined_df = spin.get_spin_data()
+    assert len(combined_df) == 7
+    # Check that table 2 fills missing spin #2
+    assert combined_df.iloc[2]["spin_start_sec_sclk"] == 30
+    # Check that table 2 overrides spin #3 values
+    assert combined_df.loc[3]["spin_start_subsec_sclk"] == table2_data[1][2]
 
 
 @pytest.mark.parametrize(
