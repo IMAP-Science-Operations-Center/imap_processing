@@ -20,7 +20,7 @@ from imap_processing.mag.l1b.mag_l1b import (
     retrieve_matrix_from_l1b_calibration,
     shift_time,
 )
-from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 
 logger = logging.getLogger(__name__)
 
@@ -390,6 +390,8 @@ def process_packet(
             {
                 # Start of the group.
                 "met": met.values.min(),
+                "utc": met_to_utc(met.values.min()),
+                "ttj2000ns": met_to_ttj2000ns(met.values.min()),
                 # Vectors.
                 "mag_4s_b_gse": [0, 0, 0],
                 "mag_4s_b_gsm": [0, 0, 0],

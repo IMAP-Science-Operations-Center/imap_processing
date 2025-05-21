@@ -7,6 +7,7 @@ import xarray as xr
 
 from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.ialirt.utils.time import calculate_time
+from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 
 logger = logging.getLogger(__name__)
 
@@ -167,6 +168,8 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
         hit_data.append(
             {
                 "met": met,
+                "utc": met_to_utc(met),
+                "ttj2000ns": met_to_ttj2000ns(met),
                 "hit_e_a_side_low_en": l1["IALRT_RATE_1"] + l1["IALRT_RATE_2"],
                 "hit_e_a_side_med_en": l1["IALRT_RATE_5"] + l1["IALRT_RATE_6"],
                 "hit_e_a_side_high_en": l1["IALRT_RATE_7"],

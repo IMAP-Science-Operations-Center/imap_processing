@@ -9,6 +9,7 @@ from numpy.typing import NDArray
 
 from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.ialirt.utils.time import calculate_time
+from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 from imap_processing.swe.l1a.swe_science import decompressed_counts
 from imap_processing.swe.l1b.swe_l1b import (
     deadtime_correction,
@@ -544,6 +545,8 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
         swe_data.append(
             {
                 "met": grouped["met"].min(),
+                "utc": met_to_utc(grouped["met"].min()),
+                "ttj2000ns": met_to_ttj2000ns(grouped["met"].min()),
                 **{
                     f"swe_normalized_counts_quarter_1_esa_{i}": val
                     for i, val in enumerate(summed_first)
