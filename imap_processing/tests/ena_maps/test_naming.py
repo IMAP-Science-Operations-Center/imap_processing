@@ -5,7 +5,6 @@ from imap_processing.ena_maps.utils.naming import (
     MapDescriptor,
     MappableInstrumentShortName,
     build_friendly_date_descriptor,
-    get_output_map_structure_from_descriptor_string,
     ns_to_duration_months,
 )
 from imap_processing.spice.geometry import SpiceFrame
@@ -175,9 +174,9 @@ class TestNaming:
 
     def test_get_output_map_structure_from_descriptor_string(self):
         descriptor_str_half_deg = "h45-ena-he-hf-sp-ram-hae-0.5deg-2mo"
-        output_map_structure_half_deg = get_output_map_structure_from_descriptor_string(
+        output_map_structure_half_deg = MapDescriptor.from_string(
             descriptor_str_half_deg
-        )
+        ).to_empty_map()
         assert isinstance(output_map_structure_half_deg, RectangularSkyMap)
         assert output_map_structure_half_deg.spacing_deg == 0.5
         assert (
@@ -185,9 +184,9 @@ class TestNaming:
         )
 
         descriptor_str_nside32 = "ulc-ena-h-sf-nsp-full-hae-nside32-1yr"
-        output_map_structure_nside32 = get_output_map_structure_from_descriptor_string(
+        output_map_structure_nside32 = MapDescriptor.from_string(
             descriptor_str_nside32
-        )
+        ).to_empty_map()
         assert isinstance(output_map_structure_nside32, HealpixSkyMap)
         assert output_map_structure_nside32.nside == 32
 
@@ -195,9 +194,9 @@ class TestNaming:
             ValueError,
             match="Could not interpret resolution string",
         ):
-            get_output_map_structure_from_descriptor_string(
+            MapDescriptor.from_string(
                 "ulc-ena-h-sf-nsp-full-hae-2abcd32-1yr"
-            )
+            ).to_empty_map()
 
 
 class TestMapDescriptor:

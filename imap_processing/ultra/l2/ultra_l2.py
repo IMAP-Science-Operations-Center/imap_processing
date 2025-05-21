@@ -11,8 +11,8 @@ from numpy.typing import NDArray
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
-from imap_processing.ena_maps.utils import naming
 from imap_processing.ena_maps.utils.coordinates import CoordNames
+from imap_processing.ena_maps.utils.naming import MapDescriptor, ns_to_duration_months
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import get_energy_delta_minus_plus
 
 logger = logging.getLogger(__name__)
@@ -358,9 +358,7 @@ def ultra_l2(
         Wrapped in a list for consistency with other product levels.
     """
     if descriptor is not None:
-        output_map_structure = naming.get_output_map_structure_from_descriptor_string(
-            descriptor
-        )
+        output_map_structure = MapDescriptor.from_string(descriptor).to_empty_map()
         logger.info(
             f"Using the provided descriptor '{descriptor}' to set the map structure."
             "\nThis will override any input map structure."
@@ -397,7 +395,7 @@ def ultra_l2(
     # TODO: replace 1 day in ns below with the actual end time of the last PSET.
     # Currently assumes the end time of the last PSET is 1 day after its start.
     map_duration_ns = (pset_epochs.max() + (86400 * 1e9)) - pset_epochs.min()
-    map_duration_months_int = naming.ns_to_duration_months(map_duration_ns)
+    map_duration_months_int = ns_to_duration_months(map_duration_ns)
     map_duration = f"{map_duration_months_int}mo"
 
     # Always add the common (non-tiling specific) attributes to the attr handler.

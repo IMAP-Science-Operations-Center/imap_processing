@@ -331,6 +331,48 @@ class MapDescriptor:
         else:
             raise NotImplementedError("Coordinate frame is not yet implemented.")
 
+    def to_empty_map(
+        self,
+    ) -> ena_maps.HealpixSkyMap | ena_maps.RectangularSkyMap:
+        """
+        Create an empty SkyMap structure from a MapDescriptor object.
+
+        Uses the map_spice_coord_frame to set the frame of the map.
+        If the resolution string contains "deg", then a rectangular map is
+        created with the specified spacing in degrees.
+        If it contains "nside", then a Healpix map is created with
+        the specified nside.
+
+        Returns
+        -------
+        ena_maps.HealpixSkyMap | ena_maps.RectangularSkyMap
+            The output map structure.
+
+        Raises
+        ------
+        ValueError
+            If the descriptor string is invalid.
+        """
+        # If "deg" is in the resolution string, then this is a rectangular map
+        # (e.g., '2deg')
+        if "deg" in self.resolution_str:
+            return ena_maps.RectangularSkyMap(
+                spacing_deg=float(self.resolution_str.split("deg")[0]),
+                spice_frame=self.map_spice_coord_frame,
+            )
+        # If "nside" is in the resolution string, then this is a Healpix map
+        # (e.g., 'nside32')
+        elif "nside" in self.resolution_str:
+            return ena_maps.HealpixSkyMap(
+                nside=int(self.resolution_str.split("nside")[1]),
+                spice_frame=self.map_spice_coord_frame,
+            )
+        else:
+            raise ValueError(
+                f"Could not interpret resolution string: {self.resolution_str} "
+                "as either a Healpix ('nside32') or rectangular map ('2deg')."
+            )
+
 
 def ns_to_duration_months(ns: int) -> int:
     """
@@ -363,50 +405,6 @@ def ns_to_duration_months(ns: int) -> int:
     days = ns / (1e9 * 60 * 60 * 24)
     months = days // DAYS_IN_MONTH
     return int(months)
-
-
-def get_output_map_structure_from_descriptor_string(
-    descriptor: str,
-) -> ena_maps.HealpixSkyMap | ena_maps.RectangularSkyMap:
-    """
-    Get the output map structure from a map descriptor string.
-
-    Parameters
-    ----------
-    descriptor : str
-        The map descriptor string.
-
-    Returns
-    -------
-    ena_maps.HealpixSkyMap | ena_maps.RectangularSkyMap
-        The output map structure.
-
-    Raises
-    ------
-    ValueError
-        If the descriptor string is invalid.
-    """
-    map_descriptor = MapDescriptor.from_string(descriptor)
-
-    # If "deg" is in the resolution string, then this is a rectangular map
-    # (e.g., '2deg')
-    if "deg" in map_descriptor.resolution_str:
-        return ena_maps.RectangularSkyMap(
-            spacing_deg=float(map_descriptor.resolution_str.split("deg")[0]),
-            spice_frame=map_descriptor.map_spice_coord_frame,
-        )
-    # If "nside" is in the resolution string, then this is a Healpix map
-    # (e.g., 'nside32')
-    elif "nside" in map_descriptor.resolution_str:
-        return ena_maps.HealpixSkyMap(
-            nside=int(map_descriptor.resolution_str.split("nside")[1]),
-            spice_frame=map_descriptor.map_spice_coord_frame,
-        )
-    else:
-        raise ValueError(
-            f"Could not interpret resolution string: {map_descriptor.resolution_str} "
-            "as either a Healpix ('nside32') or rectangular map ('2deg')."
-        )
 
 
 def build_friendly_date_descriptor(
