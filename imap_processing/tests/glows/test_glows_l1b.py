@@ -382,6 +382,9 @@ def test_hist_spice_output(default_params, furnish_kernels):
     # 2026-01-01T15:00:00.125
     params['imap_start_time'] = 504975603.125
     params['glows_start_time'] = 504975603.125
+    params['imap_time_offset'] = 200
+    params['glows_time_offset'] = 200
+
     kernels = [
         "naif0012.tls",
         "imap_sclk_0000.tsc",
@@ -409,10 +412,10 @@ def test_hist_spice_output(default_params, furnish_kernels):
 
     # Assert that all these variables are the correct shape:
 
-    assert hist_data.spin_period_ground_average.shape == (1,)
-    assert hist_data.spin_period_ground_std_dev.shape == (1,)
-    assert hist_data.position_angle_offset_average.shape == (1,)
-    assert hist_data.position_angle_offset_std_dev.shape == (1,)
+    assert isinstance(hist_data.spin_period_ground_average, np.float64)
+    assert isinstance(hist_data.spin_period_ground_std_dev, np.float64)
+    assert isinstance(hist_data.position_angle_offset_average, np.float64)
+    assert isinstance(hist_data.position_angle_offset_std_dev, np.float64)
     assert hist_data.spin_axis_orientation_std_dev.shape == (2,)
     assert hist_data.spin_axis_orientation_average.shape == (2,)
     assert hist_data.spacecraft_location_average.shape == (3,)

@@ -643,14 +643,30 @@ class HistogramL1B:
         self.spin_axis_orientation_average = geometry.cartesian_to_latitudinal(geometry.frame_transform(
             et_start_time, np.array([0, 0, 1]), SpiceFrame.IMAP_DPS, SpiceFrame.ECLIPJ2000
         ))
+
         # TODO: retrieve spin period from spin data input (using repoint)
         self.spin_period_ground_average = np.double(-999.9)
         self.spin_period_ground_std_dev = np.double(-999.9)
         self.position_angle_offset_average = np.double(-999.9)
         self.position_angle_offset_std_dev = np.double(-999.9)
-        self.spin_axis_orientation_std_dev = np.double(-999.9)
+        self.spin_axis_orientation_std_dev = self._calc_spin_axis_orientation_std_dev(et_start_time)
         self.spacecraft_location_average = np.array([-999.9, -999.9, -999.9])
         self.spacecraft_location_std_dev = np.array([-999.9, -999.9, -999.9])
         self.spacecraft_velocity_average = np.array([-999.9, -999.9, -999.9])
         self.spacecraft_velocity_std_dev = np.array([-999.9, -999.9, -999.9])
+
+    def _calc_spin_axis_orientation_std_dev(
+        self, start_time_et) -> np.ndarray:
+        time_offset_et = sct_to_et(met_to_sclkticks(self.imap_start_time + self.imap_time_offset))
+
+        time_range = np.arange(start_time_et, time_offset_et)
+
+        spin_axis_all_times = geometry.cartesian_to_latitudinal(geometry.frame_transform(time_range,
+            np.tile([0, 0, 1], (len(time_range), 1)), SpiceFrame.IMAP_DPS, SpiceFrame.IMAP_SPACECRAFT))
+
+        print(spin_axis_all_times.shape)
+        spin_axis_standard_dev = np.std(spin_axis_all_times, axis=0)
+        print(spin_axis_standard_dev.shape)
+        return spin_axis_standard_dev
+
 
