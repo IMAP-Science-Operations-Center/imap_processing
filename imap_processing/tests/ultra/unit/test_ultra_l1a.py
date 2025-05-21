@@ -147,7 +147,7 @@ def test_cdf_cmdtxt(ccsds_path_all_apids):
     test_data_path = write_cdf(data, istp=True)
 
     assert test_data_path.exists()
-    assert test_data_path.name == "imap_ultra_l1a_90sensor-cmdtext_20250517_v999.cdf"
+    assert test_data_path.name == "imap_ultra_l1a_90sensor-cmdtext_20260924_v999.cdf"
 
 
 @pytest.mark.external_test_data
