@@ -1,6 +1,7 @@
 """Functions for retrieving spin-table data."""
 
-import os
+import logging
+from functools import cache, reduce
 from pathlib import Path
 from typing import Union
 
@@ -13,14 +14,48 @@ from imap_processing.spice.geometry import (
     get_spacecraft_to_instrument_spin_phase_offset,
 )
 
+# Copy-on-write will be enabled by default in pandas 3.0
+# It is recommended to enable it now. See:
+# https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+pd.options.mode.copy_on_write = True
 
+logger = logging.getLogger(__name__)
+
+# Use a mutable module level attribute to store the location of spin files
+_spin_table_paths: list[Path] = []
+
+
+def set_spin_table_paths(paths: list[Path]) -> None:
+    """
+    Set the paths to input spin-table csv files.
+
+    Parameters
+    ----------
+    paths : list[Path]
+        List of paths to spin-table csv files that will be used to supply
+        spin-table data.
+    """
+    global _spin_table_paths  # noqa: PLW0603
+    # If paths is an empty list, do nothing
+    if not paths:
+        return
+    logger.info(
+        f"Using the following spin-tables in processing: {[p.name for p in paths]}"
+    )
+    _spin_table_paths = paths
+
+
+# This may be a slightly dangerous thing to do. get_spin_data is dependent on
+# the global attribute _spin_table_paths which could change between calls, though
+# it shouldn't. If it did, the cached return value would not accurately reflect
+# the tables pointed to by the _spin_table_paths attribute.
+@cache
 def get_spin_data() -> pd.DataFrame:
     """
-    Read spin file using environment variable and return spin data.
+    Read spin-tables and return spin data.
 
-    SPIN_DATA_FILEPATH environment variable would be a fixed value.
-    It could be s3 filepath that can be used to download the data
-    through API or it could be path EFS or Batch volume mount path.
+    The spin-tables to read are stored in the mutable module level attribute
+    named `spin_table_paths`.
 
     Returns
     -------
@@ -37,35 +72,54 @@ def get_spin_data() -> pd.DataFrame:
             * `spin_phase_valid`: Boolean indicating whether spin phase is valid.
             * `spin_period_source`: Source used for determining spin period.
             * `thruster_firing`: Boolean indicating whether thruster is firing.
-    """
-    spin_data_filepath = os.getenv("SPIN_DATA_FILEPATH")
-    if spin_data_filepath is not None:
-        path_to_spin_file = Path(spin_data_filepath)
-    else:
-        # Handle the case where the environment variable is not set
-        raise ValueError("SPIN_DATA_FILEPATH environment variable is not set.")
 
-    spin_df = pd.read_csv(
-        path_to_spin_file,
-        comment="#",
-        dtype={
-            "spin_number": int,
-            "spin_start_sec_sclk": int,
-            "spin_start_subsec_sclk": int,
-            "spin_start_utc": str,
-            "spin_period_sec": float,
-            "spin_period_valid": bool,
-            "spin_period_source": int,
-            "thruster_firing": bool,
-        },
+    Raises
+    ------
+    ValueError if no spin-table paths have been set.
+    """
+    if len(_spin_table_paths) == 0:
+        # Handle the case where the module attribute is not set
+        raise ValueError(
+            "Spin-table paths have not been defined in spin.py "
+            "module attribute spin_table_paths."
+        )
+
+    logger.debug(
+        f"Merging the following spin tables files: "
+        f"{[sp.name for sp in _spin_table_paths]}"
     )
+
+    spin_dataframes = [
+        pd.read_csv(
+            spin_table_path,
+            comment="#",
+            dtype={
+                "spin_number": int,
+                "spin_start_sec_sclk": int,
+                "spin_start_subsec_sclk": int,
+                "spin_start_utc": str,
+                "spin_period_sec": float,
+                "spin_period_valid": bool,
+                "spin_period_source": int,
+                "thruster_firing": bool,
+            },
+        )
+        for spin_table_path in sorted(_spin_table_paths)
+    ]
+    merged_df = reduce(
+        lambda left, right: pd.merge(
+            left, right, how="outer", on="spin_number", sort=True
+        ),
+        spin_dataframes,
+    )
+
     # Combine spin_start_sec_sclk and spin_start_subsec_sclk to get the spin start
     # time in seconds. The spin start subseconds are in microseconds.
-    spin_df["spin_start_met"] = (
-        spin_df["spin_start_sec_sclk"] + spin_df["spin_start_subsec_sclk"] / 1e6
+    merged_df["spin_start_met"] = (
+        merged_df["spin_start_sec_sclk"] + merged_df["spin_start_subsec_sclk"] / 1e6
     )
 
-    return spin_df
+    return merged_df
 
 
 def interpolate_spin_data(query_met_times: Union[float, npt.NDArray]) -> pd.DataFrame:

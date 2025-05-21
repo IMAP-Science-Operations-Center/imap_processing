@@ -29,7 +29,9 @@ from imap_data_access.io import download
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
     ProcessingInputType,
+    RepointInput,
     SPICESource,
+    SpinInput,
 )
 
 import imap_processing
@@ -69,7 +71,7 @@ from imap_processing.mag.l1b.mag_l1b import mag_l1b
 from imap_processing.mag.l1c.mag_l1c import mag_l1c
 from imap_processing.mag.l2.mag_l2 import mag_l2
 from imap_processing.spacecraft import quaternions
-from imap_processing.spice import pointing_frame
+from imap_processing.spice import pointing_frame, repoint, spin
 from imap_processing.swapi.l1.swapi_l1 import swapi_l1
 from imap_processing.swapi.l2.swapi_l2 import swapi_l2
 from imap_processing.swapi.swapi_utils import read_swapi_lut_table
@@ -471,8 +473,18 @@ class ProcessInstrument(ABC):
 
         # Furnish spice kernels
         kernel_paths = dependencies.get_file_paths(data_type=SPICESource.SPICE.value)
-        logger.info(f"Furnishing kernels: {kernel_paths}")
+        logger.info(f"Furnishing kernels: {[k.name for k in kernel_paths]}")
         spiceypy.furnsh([str(kernel_path.resolve()) for kernel_path in kernel_paths])
+
+        # Set spin table paths in mutable module attributes
+        spin.set_spin_table_paths(
+            dependencies.get_file_paths(data_type=SpinInput.data_type)
+        )
+
+        # Set repoint table path in mutable module attribute
+        repoint.set_repoint_table_paths(
+            dependencies.get_file_paths(data_type=RepointInput.data_type)
+        )
 
         return dependencies
 

@@ -1,7 +1,7 @@
 """Functions for retrieving repointing table data."""
 
 import logging
-import os
+from functools import cache
 from pathlib import Path
 from typing import Union
 
@@ -9,9 +9,45 @@ import numpy as np
 import pandas as pd
 from numpy import typing as npt
 
+# Copy-on-write will be enabled by default in pandas 3.0
+# It is recommended to enable it now. See:
+# https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+pd.options.mode.copy_on_write = True
+
 logger = logging.getLogger(__name__)
 
+_repoint_table_path: Path
 
+
+def set_repoint_table_paths(paths: list[Path]) -> None:
+    """
+    Set the paths to input repoint-table csv files.
+
+    Parameters
+    ----------
+    paths : list[Path]
+        List of paths to repoint-table csv files that will be used to supply
+        repoint-table data.
+
+    Raises
+    ------
+    ValueError if paths contains more than one repoint-table csv file path.
+    """
+    global _repoint_table_path  # noqa: PLW0603
+    # If paths is an empty list, do nothing
+    if not paths:
+        return
+    elif len(paths) >= 1:
+        raise ValueError("Cannot set repoint-table paths to more than one file.")
+    logger.info(f"Using the following repoint table in processing: {paths[0].name}")
+    _repoint_table_path = paths[0]
+
+
+# This may be a slightly dangerous thing to do. get_repoint_data is dependent on
+# the global attribute _repoint_table_paths which could change between calls, though
+# it shouldn't. If it did, the cached return value would not accurately reflect
+# the tables pointed to by the _repoint_table_paths attribute.
+@cache
 def get_repoint_data() -> pd.DataFrame:
     """
     Read repointing file using environment variable and return as dataframe.
@@ -42,16 +78,21 @@ def get_repoint_data() -> pd.DataFrame:
               Derived from `repoint_end_sec_sclk` and `repoint_end_subsec_sclk`.
             * `repoint_end_utc`: UTC time of repoint maneuver end time.
             * `repoint_id`: Unique ID number of each repoint maneuver.
-    """
-    repoint_data_filepath = os.getenv("REPOINT_DATA_FILEPATH")
-    if repoint_data_filepath is not None:
-        path_to_spin_file = Path(repoint_data_filepath)
-    else:
-        # Handle the case where the environment variable is not set
-        raise ValueError("REPOINT_DATA_FILEPATH environment variable is not set.")
 
-    logger.info(f"Reading repointing data from {path_to_spin_file}")
-    repoint_df = pd.read_csv(path_to_spin_file, comment="#")
+    Raises
+    ------
+    ValueError if no path to a repoint-table has been set.
+    """
+    if _repoint_table_path is None:
+        raise ValueError(
+            "No repoint-table path as been defined in repoint.py "
+            "module attribute repoint_table_path."
+        )
+
+    logger.debug(
+        f"Reading in the following repoint table file: {_repoint_table_path.name}"
+    )
+    repoint_df = pd.read_csv(_repoint_table_path, comment="#")
 
     # Compute times by combining seconds and subseconds fields
     repoint_df["repoint_start_met"] = (
