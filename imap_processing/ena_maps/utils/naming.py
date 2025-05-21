@@ -48,9 +48,8 @@ class MapDescriptor:
     ----------
     instrument : MappableInstrumentShortName
         The short name of the instrument.
-    frame_descriptor : _spice_frame_str_types | SpiceFrame
-        The frame descriptor string. (e.g. "sf", "hf", "hk"),
-        or a SpiceFrame object.
+    frame_descriptor : _spice_frame_str_types
+        The frame descriptor string. (e.g. "sf" for spacecraft frame, "hf", "hk").
     resolution_str : str
         The resolution string for the map (e.g. "nside128", "2deg").
     duration : str | int
@@ -77,7 +76,7 @@ class MapDescriptor:
     """
 
     instrument: MappableInstrumentShortName
-    frame_descriptor: _spice_frame_str_types | SpiceFrame
+    frame_descriptor: _spice_frame_str_types
     resolution_str: str
     duration: str | int
     sensor: _sensor_types = ""
@@ -86,6 +85,16 @@ class MapDescriptor:
     survival_corrected: str = "nsp"
     spin_phase: str = "full"
     coordinate_system: str = "hae"
+
+    def __post_init__(self) -> None:
+        """Parse input values into strings that will fit in the descriptor string."""
+        self.duration = MapDescriptor.parse_map_duration(self.duration)
+        self.instrument_descriptor = MapDescriptor.get_instrument_descriptor(
+            self.instrument, self.sensor
+        )
+        self.map_spice_coord_frame = self.get_map_coord_frame(
+            cast(_coord_frame_str_types, self.coordinate_system)
+        )
 
     @classmethod
     def from_string(cls, map_descriptor: str) -> MapDescriptor:
@@ -122,9 +131,9 @@ class MapDescriptor:
             sensor=sensor,
             principal_data=parts[1],
             species=parts[2],
-            frame_descriptor=MapDescriptor.parse_map_frame(
-                cast(_spice_frame_str_types, parts[3])  # Cast to appease mypy
-            ),
+            frame_descriptor=cast(
+                _spice_frame_str_types, parts[3]
+            ),  # Cast to appease mypy
             survival_corrected=parts[4],
             spin_phase=parts[5],
             coordinate_system=parts[6],
@@ -148,64 +157,13 @@ class MapDescriptor:
                 self.instrument_descriptor,
                 self.principal_data,
                 self.species,
-                self.frame_str,
+                self.frame_descriptor,
                 self.survival_corrected,
                 self.spin_phase,
                 self.coordinate_system,
                 self.resolution_str,
-                self.duration_str,
+                cast(str, self.duration),
             ]
-        )
-
-    # Quantities parsed into strings that will fit in the descriptor
-    @property
-    def frame_str(self) -> str:
-        """
-        Get the frame's string representation. See parse_map_frame().
-
-        Returns
-        -------
-        str
-            The frame string representation.
-        """
-        return MapDescriptor.parse_map_frame(self.frame_descriptor)
-
-    @property
-    def duration_str(self) -> str:
-        """
-        Get the duration's string representation. See parse_map_duration().
-
-        Returns
-        -------
-        str
-            The duration string representation.
-        """
-        return MapDescriptor.parse_map_duration(self.duration)
-
-    @property
-    def instrument_descriptor(self) -> str:
-        """
-        Get the instrument descriptor string.
-
-        Returns
-        -------
-        str
-            The instrument descriptor string.
-        """
-        return MapDescriptor.get_instrument_descriptor(self.instrument, self.sensor)
-
-    @property
-    def map_spice_coord_frame(self) -> SpiceFrame:
-        """
-        Get the SpiceFrame corresponding the coordinate system for use in a SkyMap.
-
-        Returns
-        -------
-        SpiceFrame
-            The SpiceFrame object corresponding to the coordinate system.
-        """
-        return self.get_map_coord_frame(
-            cast(_coord_frame_str_types, self.coordinate_system)
         )
 
     # Methods for parsing and building parts of the map descriptor string
@@ -372,41 +330,6 @@ class MapDescriptor:
             return SpiceFrame.ECLIPJ2000
         else:
             raise NotImplementedError("Coordinate frame is not yet implemented.")
-
-    @staticmethod
-    def parse_map_frame(
-        frame: _spice_frame_str_types | SpiceFrame,
-    ) -> _spice_frame_str_types:
-        """
-        Parse the frame into a string representation.
-
-        Parameters
-        ----------
-        frame : str | SpiceFrame
-            The frame to parse. This can be a string in the format "sf", "hf", "hk", or
-            a SpiceFrame object.
-
-        Returns
-        -------
-        str
-            The parsed frame string.
-        """
-        if isinstance(frame, SpiceFrame):
-            match frame:
-                case SpiceFrame.IMAP_DPS.value:
-                    return "sf"
-                case SpiceFrame.ECLIPJ2000.value:
-                    return "hf"
-                case _:
-                    raise NotImplementedError(f"Frame {frame} is not yet implemented.")
-        # Handle string frame
-        elif frame in valid_spice_frame_strings:
-            # If the frame is a valid string, return it as is
-            return frame
-        else:
-            raise ValueError(
-                f"Invalid frame: {frame}. Expected 'sf', 'hf', 'hk', or a SpiceFrame."
-            )
 
 
 def ns_to_duration_months(ns: int) -> int:

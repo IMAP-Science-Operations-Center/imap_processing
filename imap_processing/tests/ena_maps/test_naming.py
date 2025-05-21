@@ -97,18 +97,6 @@ class TestNaming:
         with pytest.raises(ValueError, match="Invalid duration type."):
             MapDescriptor.parse_map_duration(["invalid", "duration"])
 
-    def test_parse_frame(
-        self,
-    ):
-        assert MapDescriptor.parse_map_frame("hf") == "hf"
-        assert MapDescriptor.parse_map_frame("sf") == "sf"
-        assert MapDescriptor.parse_map_frame(SpiceFrame.IMAP_DPS) == "sf"
-        assert MapDescriptor.parse_map_frame(SpiceFrame.ECLIPJ2000) == "hf"
-        with pytest.raises(NotImplementedError):
-            MapDescriptor.parse_map_frame(SpiceFrame.IMAP_GLOWS)
-        with pytest.raises(ValueError, match="Invalid frame"):
-            MapDescriptor.parse_map_frame("invalid_frame")
-
     def test_build_l2_map_descriptor_with_int_duration(
         self,
     ):
@@ -122,16 +110,16 @@ class TestNaming:
             species="o",
             survival_corrected="nsp",
             spin_phase="anti",
-            coordinate_system="rc",
+            coordinate_system="hae",
         ).to_string()
-        assert descriptor == "t075-ena-o-sf-nsp-anti-rc-4deg-4mo"
+        assert descriptor == "t075-ena-o-sf-nsp-anti-hae-4deg-4mo"
 
     def test_build_l2_map_descriptor_with_spice_frame(
         self,
     ):
         descriptor = MapDescriptor(
             instrument=MappableInstrumentShortName.IDEX,
-            frame_descriptor=SpiceFrame.IMAP_DPS,
+            frame_descriptor="hk",
             resolution_str="nside32",
             duration=365,
             principal_data="drt",
@@ -140,7 +128,7 @@ class TestNaming:
             spin_phase="full",
             coordinate_system="hae",
         ).to_string()
-        assert descriptor == "idx-drt-dust-sf-sp-full-hae-nside32-1yr"
+        assert descriptor == "idx-drt-dust-hk-sp-full-hae-nside32-1yr"
 
     # Parameterize over the start_datestring
     @pytest.mark.parametrize(
@@ -224,26 +212,32 @@ class TestMapDescriptor:
             species="he",
             survival_corrected="sp",
             spin_phase="ram",
-            coordinate_system="hgi",
+            coordinate_system="hae",
         )
         assert md_h45.instrument == MappableInstrumentShortName.HI
         assert md_h45.instrument_descriptor == "h45"
+        assert md_h45.duration == "2mo"
+        assert md_h45.coordinate_system == "hae"
+        assert md_h45.map_spice_coord_frame == SpiceFrame.ECLIPJ2000
 
     def test_init_and_instrument_descriptor_lo_hi_throughput_075(self):
         md_lo_hi_075 = MapDescriptor(
             instrument=MappableInstrumentShortName.LO_HI_THROUGHPUT,
             frame_descriptor="sf",
             resolution_str="4deg",
-            duration=120,
+            duration=180,
             sensor=75,
             principal_data="ena",
             species="o",
             survival_corrected="nsp",
             spin_phase="anti",
-            coordinate_system="rc",
+            coordinate_system="hae",
         )
         assert md_lo_hi_075.instrument == MappableInstrumentShortName.LO_HI_THROUGHPUT
         assert md_lo_hi_075.instrument_descriptor == "t075"
+        assert md_lo_hi_075.duration == "6mo"
+        assert md_lo_hi_075.coordinate_system == "hae"
+        assert md_lo_hi_075.map_spice_coord_frame == SpiceFrame.ECLIPJ2000
 
     def test_from_string(
         self,
@@ -290,10 +284,10 @@ class TestMapDescriptor:
             species="o",
             survival_corrected="nsp",
             spin_phase="anti",
-            coordinate_system="rc",
+            coordinate_system="hae",
         )
         descriptor_str_lo_hi_075 = md_lo_hi_075.to_string()
-        assert descriptor_str_lo_hi_075 == "t075-ena-o-sf-nsp-anti-rc-4deg-4mo"
+        assert descriptor_str_lo_hi_075 == "t075-ena-o-sf-nsp-anti-hae-4deg-4mo"
 
         # Test with Ultra combined and 365 days
         md_ultra_combined = MapDescriptor(
