@@ -388,6 +388,7 @@ def process_packet(
         met = grouped_data["met"][(grouped_data["group"] == group).values]
         mag_data.append(
             {
+                "apid": 478,
                 # Start of the group.
                 "met": met.values.min(),
                 "utc": met_to_utc(met.values.min()),

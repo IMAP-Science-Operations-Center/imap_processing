@@ -544,6 +544,7 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
 
         swe_data.append(
             {
+                "apid": 478,
                 "met": grouped["met"].min(),
                 "utc": met_to_utc(grouped["met"].min()),
                 "ttj2000ns": met_to_ttj2000ns(grouped["met"].min()),
