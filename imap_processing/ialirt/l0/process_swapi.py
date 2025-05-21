@@ -1,6 +1,7 @@
 """Functions to support I-ALiRT SWAPI processing."""
 
 import logging
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -10,6 +11,7 @@ from scipy.special import erf
 from xarray import DataArray
 
 from imap_processing import imap_module_directory
+from imap_processing.ialirt.constants import IalirtSwapiConstants as Consts
 from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.swapi.l1.swapi_l1 import process_sweep_data
 from imap_processing.swapi.l2.swapi_l2 import TIME_PER_BIN
@@ -17,7 +19,55 @@ from imap_processing.swapi.l2.swapi_l2 import TIME_PER_BIN
 logger = logging.getLogger(__name__)
 
 
-def optimize_pseudo_parameters(count_rates: np.ndarray) -> dict[str, list[float]]:
+def count_rate(
+    energy_pass: float, speed: float, density: float, temp: float
+) -> float | np.ndarray:
+    """
+    Compute SWAPI count rate for provided energy passband, speed, density and temp.
+
+    This model for coincidence count rate was developed by the SWAPI instrument
+    science team, detailed on page 52 of the IMAP SWAPI Instrument Algorithms Document.
+
+    Parameters
+    ----------
+    energy_pass : float
+        Energy passband [eV].
+    speed : float
+        Bulk solar wind speed [km/s].
+    density : float
+        Proton density [cm^-3].
+    temp : float
+        Temperature [K].
+
+    Returns
+    -------
+    count_rate : float | np.ndarray
+        Particle coincidence count rate.
+    """
+    # thermal velocity of solar wind ions
+    thermal_velocity = np.sqrt(2 * Consts.boltz * temp / Consts.prot_mass)
+    beta = 1 / (thermal_velocity**2)
+    # convert energy to Joules
+    center_speed = np.sqrt(2 * energy_pass * 1.60218e-19 / Consts.prot_mass)
+    speed = speed * 1000  # convert km/s to m/s
+    density = density * 1e6  # convert 1/cm**3 -to 1/m**3
+
+    return (
+        (density * Consts.eff_area * (beta / np.pi) ** (3 / 2))
+        * (np.exp(-beta * (center_speed**2 + speed**2 - 2 * center_speed * speed)))
+        * np.sqrt(np.pi / (beta * speed * center_speed))
+        * erf(np.sqrt(beta * speed * center_speed) * (Consts.az_fov / 2))
+        * (
+            center_speed**4
+            * Consts.speed_ew
+            * np.arcsin(thermal_velocity / center_speed)
+        )
+    )
+
+
+def optimize_pseudo_parameters(
+    count_rates: np.ndarray, energy_passbands: Optional[np.ndarray] = None
+) -> (dict)[str, list[float]]:
     """
     Find the pseudo speed (u), density (n) and temperature (T) of solar wind.
 
@@ -27,6 +77,8 @@ def optimize_pseudo_parameters(count_rates: np.ndarray) -> dict[str, list[float]
     ----------
     count_rates : np.ndarray
         Particle coincidence count rates.
+    energy_passbands : np.ndarray, default None
+        Energy passbands, passed in only for testing purposes.
 
     Returns
     -------
@@ -34,63 +86,14 @@ def optimize_pseudo_parameters(count_rates: np.ndarray) -> dict[str, list[float]
         Dictionary containing the optimized speed, density, and temperature values for
         each sweep included in the input count_rates array.
     """
-    # Read in energy passbands
-    energy_data = pd.read_csv(
-        f"{imap_module_directory}/tests/ialirt/test_data/ialirt_test_data.csv"
-    )
-    energy_passbands = energy_data["Energy [eV/q]"].to_numpy()
-
-    def count_rate(
-        energy_pass: float, speed: float, density: float, temp: float
-    ) -> float | np.ndarray:
-        """
-        Compute SWAPI count rate for provided E_e, u, n, T.
-
-        Parameters
-        ----------
-        energy_pass : float
-            Energy passband [eV].
-        speed : float
-            Bulk solar wind speed [km/s].
-        density : float
-            Proton density [cm^-3].
-        temp : float
-            Temperature [K].
-
-        Returns
-        -------
-        count_rate : float | np.ndarray
-            Particle coincidence count rate.
-        """
-        # Scientific constants used in optimization model
-        boltz = 1.380649e-23  # Boltzmann constant, J/K
-        at_mass = 1.6605390666e-27  # atomic mass, kg
-        prot_mass = 1.007276466621 * at_mass  # mass of proton, kg
-        eff_area = 3.3e-5 * 1e-4  # effective area, meters squared
-        az_fov = np.deg2rad(30)  # azimuthal width of the field of view, radians
-        fwhm_width = 0.085  # FWHM of energy width
-        speed_energy_width = 0.5 * fwhm_width  # speed width of energy passband
-
-        # thermal velocity of solar wind ions
-        thermal_velocity = np.sqrt(2 * boltz * temp / prot_mass)
-        beta = 1 / (thermal_velocity**2)
-        # convert energy to Joules
-        center_speed = np.sqrt(2 * energy_pass * 1.60218e-19 / prot_mass)
-        speed = speed * 1000  # convert km/s to m/s
-        density = density * 1e6  # convert 1/cm**3 -to 1/m**3
-
-        return (
-            (density * eff_area * (beta / np.pi) ** (3 / 2))
-            * (np.exp(-beta * (center_speed**2 + speed**2 - 2 * center_speed * speed)))
-            * np.sqrt(np.pi / (beta * speed * center_speed))
-            * erf(np.sqrt(beta * speed * center_speed) * (az_fov / 2))
-            * (
-                center_speed**4
-                * speed_energy_width
-                * np.arcsin(thermal_velocity / center_speed)
-            )
+    if not energy_passbands.any():
+        # Read in energy passbands
+        energy_data = pd.read_csv(
+            f"{imap_module_directory}/tests/ialirt/test_data/ialirt_test_data.csv"
         )
+        energy_passbands = energy_data["Energy [eV/q]"].to_numpy()
 
+    # Initial guess pulled from page 52 of the IMAP SWAPI Instrument Algorithms Document
     initial_param_guess = np.array([550, 5.27, 1e5])
     solution_dict = {  # type: ignore
         "pseudo_speed": [],
@@ -98,20 +101,14 @@ def optimize_pseudo_parameters(count_rates: np.ndarray) -> dict[str, list[float]
         "pseudo_temperature": [],
     }
 
-    if count_rates.ndim > 1:
-        for sweep in np.arange(count_rates.shape[0]):
-            current_sweep_count_rates = count_rates[sweep, :]
-            sol = curve_fit(
-                count_rate,
-                energy_passbands,
-                current_sweep_count_rates,
-                initial_param_guess,
-            )
-            solution_dict["pseudo_speed"].append(sol[0][0])
-            solution_dict["pseudo_density"].append(sol[0][1])
-            solution_dict["pseudo_temperature"].append(sol[0][2])
-    else:
-        sol = curve_fit(count_rate, energy_passbands, count_rates, initial_param_guess)
+    for sweep in np.arange(count_rates.shape[0]):
+        current_sweep_count_rates = count_rates[sweep, :]
+        sol = curve_fit(
+            count_rate,
+            energy_passbands,
+            current_sweep_count_rates,
+            initial_param_guess,
+        )
         solution_dict["pseudo_speed"].append(sol[0][0])
         solution_dict["pseudo_density"].append(sol[0][1])
         solution_dict["pseudo_temperature"].append(sol[0][2])

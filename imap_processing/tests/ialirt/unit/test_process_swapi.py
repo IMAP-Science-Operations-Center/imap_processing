@@ -4,6 +4,7 @@ import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.process_swapi import (
+    count_rate,
     optimize_pseudo_parameters,
     process_swapi_ialirt,
 )
@@ -94,7 +95,15 @@ def test_process_swapi_ialirt(xarray_data):
 
     swapi_result = process_swapi_ialirt(xarray_data)
     assert swapi_result["met"] is not None
-    assert len(swapi_result["met"]) == len(swapi_result["pseudo_speed"])
+    assert len(swapi_result["met"]) == len(swapi_result["pseudo_temperature"])
+    assert len(swapi_result["pseudo_density"]) == len(swapi_result["pseudo_speed"])
+
+
+def test_count_rate():
+    """Use random realistic values to test for expected output of count_rate."""
+    actual_result = count_rate(1370, *[550, 5.27, 1e5])
+    expected_result = 621.0028766348703
+    assert actual_result == expected_result
 
 
 def test_optimize_parameters(xarray_data):
@@ -104,6 +113,14 @@ def test_optimize_parameters(xarray_data):
         f"{imap_module_directory}/tests/ialirt/test_data/ialirt_test_data.csv"
     )
     count_rates = energy_data["Count Rates [Hz]"].to_numpy()
-
+    count_rates = np.tile(count_rates, (2, 1))
     result = optimize_pseudo_parameters(count_rates)
-    assert result is not None
+
+    # Test values corresponding to this exact set and values of the test input.
+    expected_speed = [542.9522302014949, 542.9522302014949]
+    expected_density = [4.504282147321004, 4.504282147321004]
+    expected_temperature = [143238.45841298936, 143238.45841298936]
+
+    assert result["pseudo_speed"] == expected_speed
+    assert result["pseudo_density"] == expected_density
+    assert result["pseudo_temperature"] == expected_temperature
