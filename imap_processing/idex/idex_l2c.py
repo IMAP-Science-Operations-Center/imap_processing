@@ -60,13 +60,18 @@ def idex_l2c(l2b_dataset: xr.Dataset) -> list[xr.Dataset]:
     # create the attribute manager for this data level
     idex_attrs = get_idex_attrs("l2c")
     # Epoch should be the start of the collection period.
-    # TODO update metadata to indicate the collection period.
     # TODO should epoch be start of sci acquisition?
     epoch = xr.DataArray(
         l2b_dataset["epoch"].data[0:1].astype(np.int64),
         name="epoch",
         dims=["epoch"],
         attrs=idex_attrs.get_variable_attributes("epoch", check_schema=False),
+    )
+    # Update metadata to indicate that epoch is left-edge of the reference time.
+    epoch.attrs["CATDESC"] = (
+        "Time, number of nanoseconds since J2000 with leap seconds"
+        " included. Represents the start (left-edge) of the "
+        "reference time."
     )
     l2c_healpix_dataset = idex_healpix_map(l2b_dataset, epoch, idex_attrs)
     l2c_rectangular_dataset = idex_rectangular_map(l2b_dataset, epoch, idex_attrs)
