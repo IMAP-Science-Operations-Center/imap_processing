@@ -42,7 +42,7 @@ DESCRIPTORS = [
 
 EXPECTED_ARRAY_SHAPES = [
     (),  # hi-ialirt  # TODO: Need to implement
-    (),  # lo-ialirt  # TODO: Need to implement
+    (76, 1, 128),  # lo-ialirt
     (31778,),  # hskp
     (77, 6, 128),  # lo-counters-aggregated
     (77, 24, 6, 128),  # lo-counters-singles
@@ -75,7 +75,7 @@ EXPECTED_HI_OMNI_ARRAY_SHAPES = {
 
 EXPECTED_NUM_VARIABLES = [
     0,  # hi-ialirt  # TODO: Need to implement
-    0,  # lo-ialirt  # TODO: Need to implement
+    17,  # lo-ialirt
     139,  # hskp
     8 + len(constants.LO_COUNTERS_AGGREGATED_VARIABLE_NAMES),  # lo-counters-aggregated
     9,  # lo-counters-singles
@@ -114,6 +114,7 @@ CODICE_LO_PRODUCTS = [
     "lo-nsw-species",
     "lo-sw-angular",
     "lo-nsw-angular",
+    "lo-ialirt",
 ]
 
 
@@ -153,7 +154,7 @@ def test_l1a_data_array_shape(test_l1a_data, index):
 
     # Mark currently broken/unsupported datasets as expected to fail
     # TODO: Remove these once they are supported
-    if index in [0, 1]:
+    if index in [0]:
         pytest.xfail("Data product is currently unsupported")
 
     # hi-omni data array shapes depend on the species
@@ -210,7 +211,7 @@ def test_l1a_logical_sources(test_l1a_data, index):
 
     # Mark currently broken/unsupported datasets as expected to fail
     # TODO: Remove these once they are supported
-    if index in [0, 1]:
+    if index in [0]:
         pytest.xfail("Data product is currently unsupported")
 
     # Write the dataset to a file to set the logical source attribute
@@ -238,7 +239,7 @@ def test_l1a_num_data_variables(test_l1a_data, index):
 
     # Mark currently broken/unsupported datasets as expected to fail
     # TODO: Remove these once they are supported
-    if index in [0, 1]:
+    if index in [0]:
         pytest.xfail("Data product is currently unsupported")
 
     assert len(processed_dataset) == EXPECTED_NUM_VARIABLES[index]
@@ -279,6 +280,7 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         "lo-sw-species",
         "lo-nsw-species",
         "lo-pha",
+        "lo-ialirt",
     ]
 
     if descriptor in able_to_be_validated:

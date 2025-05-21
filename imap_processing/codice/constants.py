@@ -100,7 +100,7 @@ LO_NSW_SPECIES_VARIABLE_NAMES = [
     "heplus",
     "cnoplus",
 ]
-LO_IAL_VARIABLE_NAMES = [
+LO_IALIRT_VARIABLE_NAMES = [
     "heplusplus",
     "cplus5",
     "cplus6",
@@ -124,7 +124,7 @@ HI_PRIORITY_VARIABLE_NAMES = [
     "Priority5",
 ]
 HI_SECTORED_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
-HI_IAL_VARIABLE_NAMES = ["h"]
+HI_IALIRT_VARIABLE_NAMES = ["h"]
 
 # CDF variable names used for direct event data products
 HI_PHA_CDF_FIELDS = [
@@ -381,15 +381,18 @@ SECTORED_ENERGY_TABLE = {
 DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     CODICEAPID.COD_HI_IAL: {
         "dataset_name": "imap_codice_l1a_hi-ialirt",
-        "input_dims": {"spin_sector": 1, "esa_step": 128},
+        "energy_table": OMNI_ENERGY_TABLE,
+        "input_dims": {"esa_step": 15, "inst_az": 4},
         "instrument": "hi",
         "num_counters": 1,
-        "output_dims": {"spin_sector": 1, "esa_step": 128},
+        "num_spins": 4,
+        "output_dims": {"esa_step": 15, "inst_az": 4},
         "support_variables": [
             "data_quality",
             "spin_period",
+            "energy_h",
         ],
-        "variable_names": HI_IAL_VARIABLE_NAMES,
+        "variable_names": HI_IALIRT_VARIABLE_NAMES,
     },
     CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED: {
         "dataset_name": "imap_codice_l1a_hi-counters-aggregated",
@@ -489,7 +492,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
             "data_quality",
             "spin_period",
         ],
-        "variable_names": LO_IAL_VARIABLE_NAMES,
+        "variable_names": LO_IALIRT_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED: {
         "dataset_name": "imap_codice_l1a_lo-counters-aggregated",
