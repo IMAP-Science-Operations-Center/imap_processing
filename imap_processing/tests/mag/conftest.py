@@ -18,7 +18,7 @@ from imap_processing.spice.time import TTJ2000_EPOCH
 @pytest.fixture
 def mocks():
     with mock.patch(
-        "tools.ancillary.ancillary_dataset_combiner.AncillaryFilePath.construct_path"
+        "imap_processing.ancillary.ancillary_dataset_combiner.AncillaryFilePath.construct_path"
     ) as construct_path:
         mocks = {
             "construct_path": construct_path,
