@@ -87,6 +87,127 @@ class MapDescriptor:
     spin_phase: str = "full"
     coordinate_system: str = "hae"
 
+    @classmethod
+    def from_string(cls, map_descriptor: str) -> MapDescriptor:
+        """
+        Parse a map_descriptor string and return a MapDescriptor instance.
+
+        The map_descriptor string is expected to follow the format:
+        "instrument_descriptor-principal_data-species-frame-...cont...
+        survival_corrected-spin_phase-coordinate_system-resolution_str-duration".
+
+        Parameters
+        ----------
+        map_descriptor : str
+            The map descriptor string to parse.
+
+        Returns
+        -------
+        MapDescriptor
+            An instance of the MapDescriptor class with parsed values.
+        """
+        parts = map_descriptor.split("-")
+        if len(parts) != 9:
+            raise ValueError(
+                f"Invalid map_descriptor format: {map_descriptor}. Expected 9 parts."
+            )
+        # Extract the instrument and sensor from the first part
+        instrument_sensor = parts[0]
+        instrument, sensor = MapDescriptor.parse_instrument_descriptor(
+            instrument_sensor
+        )
+
+        return cls(
+            instrument=instrument,
+            sensor=sensor,
+            principal_data=parts[1],
+            species=parts[2],
+            frame_descriptor=MapDescriptor.parse_map_frame(
+                cast(_spice_frame_str_types, parts[3])  # Cast to appease mypy
+            ),
+            survival_corrected=parts[4],
+            spin_phase=parts[5],
+            coordinate_system=parts[6],
+            resolution_str=parts[7],
+            duration=parts[8],
+        )
+
+    def to_string(self) -> str:
+        """
+        Convert the MapDescriptor instance back into a map_descriptor string.
+
+        Returns
+        -------
+        str
+            The map_descriptor string in the format:
+            "instrument_descriptor-principal_data-species-frame-...cont...
+            survival_corrected-spin_phase-coordinate_system-resolution_str-duration".
+        """
+        return "-".join(
+            [
+                self.instrument_descriptor,
+                self.principal_data,
+                self.species,
+                self.frame_str,
+                self.survival_corrected,
+                self.spin_phase,
+                self.coordinate_system,
+                self.resolution_str,
+                self.duration_str,
+            ]
+        )
+
+    # Quantities parsed into strings that will fit in the descriptor
+    @property
+    def frame_str(self) -> str:
+        """
+        Get the frame's string representation. See parse_map_frame().
+
+        Returns
+        -------
+        str
+            The frame string representation.
+        """
+        return MapDescriptor.parse_map_frame(self.frame_descriptor)
+
+    @property
+    def duration_str(self) -> str:
+        """
+        Get the duration's string representation. See parse_map_duration().
+
+        Returns
+        -------
+        str
+            The duration string representation.
+        """
+        return MapDescriptor.parse_map_duration(self.duration)
+
+    @property
+    def instrument_descriptor(self) -> str:
+        """
+        Get the instrument descriptor string.
+
+        Returns
+        -------
+        str
+            The instrument descriptor string.
+        """
+        return MapDescriptor.get_instrument_descriptor(self.instrument, self.sensor)
+
+    @property
+    def map_spice_coord_frame(self) -> SpiceFrame:
+        """
+        Get the SpiceFrame corresponding the coordinate system for use in a SkyMap.
+
+        Returns
+        -------
+        SpiceFrame
+            The SpiceFrame object corresponding to the coordinate system.
+        """
+        return self.get_map_coord_frame(
+            cast(_coord_frame_str_types, self.coordinate_system)
+        )
+
     # Methods for parsing and building parts of the map descriptor string
     @staticmethod
     def get_instrument_descriptor(
@@ -128,7 +249,8 @@ class MapDescriptor:
                     "Integer sensor values are only valid for LO instruments."
                 )
         # Hi and Ultra may be either "45", "90", or "combined", in which case
-        # Hi should get the sensor "ic" and Ultra should get the sensor "lc"
+        # Hi should get the sensor "ic" and Ultra should get the sensor "lc".
+        # Thus the instrument_descriptor will be "hic"/"ulc" for combined Hi/Ultra.
         elif sensor == "combined":
             if instrument is MappableInstrumentShortName.ULTRA:
                 sensor_string = "lc"
@@ -286,113 +408,6 @@ class MapDescriptor:
                 f"Invalid frame: {frame}. Expected 'sf', 'hf', 'hk', or a SpiceFrame."
             )
 
-    # Quantities parsed into strings that will fit in the descriptor
-    @property
-    def frame_str(self) -> str:
-        """
-        Get the frame's string representation. See parse_map_frame().
-
-        Returns
-        -------
-        str
-            The frame string representation.
-        """
-        return MapDescriptor.parse_map_frame(self.frame_descriptor)
-
-    @property
-    def duration_str(self) -> str:
-        """
-        Get the duration's string representation. See parse_map_duration().
-
-        Returns
-        -------
-        str
-            The duration string representation.
-        """
-        return MapDescriptor.parse_map_duration(self.duration)
-
-    @property
-    def instrument_descriptor(self) -> str:
-        """
-        Get the instrument descriptor string.
-
-        Returns
-        -------
-        str
-            The instrument descriptor string.
-        """
-        return MapDescriptor.get_instrument_descriptor(self.instrument, self.sensor)
-
-    @classmethod
-    def from_string(cls, map_descriptor: str) -> MapDescriptor:
-        """
-        Parse a map_descriptor string and return a MapDescriptor instance.
-
-        The map_descriptor string is expected to follow the format:
-        "instrument_descriptor-principal_data-species-frame-...cont...
-        survival_corrected-spin_phase-coordinate_system-resolution_str-duration".
-
-        Parameters
-        ----------
-        map_descriptor : str
-            The map descriptor string to parse.
-
-        Returns
-        -------
-        MapDescriptor
-            An instance of the MapDescriptor class with parsed values.
-        """
-        parts = map_descriptor.split("-")
-        if len(parts) != 9:
-            raise ValueError(
-                f"Invalid map_descriptor format: {map_descriptor}. Expected 9 parts."
-            )
-        # Extract the instrument and sensor from the first part
-        instrument_sensor = parts[0]
-        instrument, sensor = MapDescriptor.parse_instrument_descriptor(
-            instrument_sensor
-        )
-
-        return cls(
-            instrument=instrument,
-            sensor=sensor,
-            principal_data=parts[1],
-            species=parts[2],
-            frame_descriptor=MapDescriptor.parse_map_frame(
-                cast(_spice_frame_str_types, parts[3])  # Cast to appease mypy
-            ),
-            survival_corrected=parts[4],
-            spin_phase=parts[5],
-            coordinate_system=parts[6],
-            resolution_str=parts[7],
-            duration=parts[8],
-        )
-
-    def to_string(self) -> str:
-        """
-        Convert the MapDescriptor instance back into a map_descriptor string.
-
-        Returns
-        -------
-        str
-            The map_descriptor string in the format:
-            "instrument_descriptor-principal_data-species-frame-...cont...
-            survival_corrected-spin_phase-coordinate_system-resolution_str-duration".
-        """
-        return "-".join(
-            [
-                self.instrument_descriptor,
-                self.principal_data,
-                self.species,
-                self.frame_str,
-                self.survival_corrected,
-                self.spin_phase,
-                self.coordinate_system,
-                self.resolution_str,
-                self.duration_str,
-            ]
-        )
-
 
 def ns_to_duration_months(ns: int) -> int:
     """
@@ -455,18 +470,14 @@ def get_output_map_structure_from_descriptor_string(
     if "deg" in map_descriptor.resolution_str:
         return ena_maps.RectangularSkyMap(
             spacing_deg=float(map_descriptor.resolution_str.split("deg")[0]),
-            spice_frame=MapDescriptor.get_map_coord_frame(
-                cast(_coord_frame_str_types, map_descriptor.coordinate_system)
-            ),
+            spice_frame=map_descriptor.map_spice_coord_frame,
         )
     # If "nside" is in the resolution string, then this is a Healpix map
     # (e.g., 'nside32')
     elif "nside" in map_descriptor.resolution_str:
         return ena_maps.HealpixSkyMap(
             nside=int(map_descriptor.resolution_str.split("nside")[1]),
-            spice_frame=MapDescriptor.get_map_coord_frame(
-                cast(_coord_frame_str_types, map_descriptor.coordinate_system)
-            ),
+            spice_frame=map_descriptor.map_spice_coord_frame,
         )
     else:
         raise ValueError(
