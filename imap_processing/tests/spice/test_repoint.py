@@ -4,14 +4,18 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing.spice.repoint import get_repoint_data, interpolate_repoint_data
+from imap_processing.spice.repoint import (
+    get_repoint_data,
+    interpolate_repoint_data,
+    set_repoint_table_paths,
+)
 
 
 @pytest.fixture
-def fake_repoint_data(monkeypatch, spice_test_data_path):
+def fake_repoint_data(spice_test_data_path):
     """Generate fake spin dataframe for testing"""
     fake_repoint_path = spice_test_data_path / "fake_repoint_data.csv"
-    monkeypatch.setenv("REPOINT_DATA_FILEPATH", str(fake_repoint_path))
+    set_repoint_table_paths([fake_repoint_path])
     return fake_repoint_path
 
 
@@ -34,9 +38,7 @@ def test_get_repoint_data(fake_repoint_data):
 
 def test_spin_data_no_table():
     """Test coverage for get_repoint_data function when the env var is not set."""
-    with pytest.raises(
-        ValueError, match="REPOINT_DATA_FILEPATH environment variable is not set."
-    ):
+    with pytest.raises(ValueError, match="No repoint-table path as been defined*"):
         get_repoint_data()
 
 

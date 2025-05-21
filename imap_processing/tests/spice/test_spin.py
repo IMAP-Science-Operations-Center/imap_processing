@@ -11,14 +11,15 @@ from imap_processing.spice.spin import (
     get_spin_angle,
     get_spin_data,
     interpolate_spin_data,
+    set_spin_table_paths,
 )
 
 
 @pytest.fixture
-def fake_spin_data(monkeypatch, spice_test_data_path):
+def fake_spin_data(spice_test_data_path):
     """Generate fake spin dataframe for testing"""
     fake_spin_path = spice_test_data_path / "fake_spin_data.csv"
-    monkeypatch.setenv("SPIN_DATA_FILEPATH", str(fake_spin_path))
+    set_spin_table_paths([fake_spin_path])
     return fake_spin_path
 
 

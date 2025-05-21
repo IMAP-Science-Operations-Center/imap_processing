@@ -16,7 +16,7 @@ pd.options.mode.copy_on_write = True
 
 logger = logging.getLogger(__name__)
 
-_repoint_table_path: Path
+_repoint_table_path: Path | None = None
 
 
 def set_repoint_table_paths(paths: list[Path]) -> None:
@@ -37,7 +37,7 @@ def set_repoint_table_paths(paths: list[Path]) -> None:
     # If paths is an empty list, do nothing
     if not paths:
         return
-    elif len(paths) >= 1:
+    elif len(paths) > 1:
         raise ValueError("Cannot set repoint-table paths to more than one file.")
     logger.info(f"Using the following repoint table in processing: {paths[0].name}")
     _repoint_table_path = paths[0]
