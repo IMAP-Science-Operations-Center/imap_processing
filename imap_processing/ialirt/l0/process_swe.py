@@ -535,13 +535,14 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
 
         swe_data.append(
             {
-                # Select times corresponding to energy level.
-                "met_first_half_cycle": times[[1, 0] * 4],
-                "met_second_half_cycle": times[[3, 2] * 4],
-                "normalized_counts_first_half_cycle": summed_first,
-                "normalized_counts_second_half_cycle": summed_second,
-                "bde_first_half_cycle": np.full(summed_first.shape, bde_first_half),
-                "bde_second_half_cycle": np.full(summed_second.shape, bde_second_half),
+                "met": np.concatenate([times[[1, 0] * 4], times[[3, 2] * 4]]),
+                "swe_normalized_counts": np.concatenate([summed_first, summed_second]),
+                "swe_counterstreaming_electrons": np.concatenate(
+                    [
+                        np.full(summed_first.shape, bde_first_half),
+                        np.full(summed_second.shape, bde_second_half),
+                    ]
+                ),
             }
         )
 

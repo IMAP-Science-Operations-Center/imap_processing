@@ -167,17 +167,17 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
         hit_data.append(
             {
                 "met": met,
-                "hit_lo_energy_e_A_side": l1["IALRT_RATE_1"] + l1["IALRT_RATE_2"],
-                "hit_medium_energy_e_A_side": l1["IALRT_RATE_5"] + l1["IALRT_RATE_6"],
-                "hit_high_energy_e_A_side": l1["IALRT_RATE_7"],
-                "hit_low_energy_e_B_side": l1["IALRT_RATE_11"] + l1["IALRT_RATE_12"],
-                "hit_medium_energy_e_B_side": l1["IALRT_RATE_15"] + l1["IALRT_RATE_16"],
-                "hit_high_energy_e_B_side": l1["IALRT_RATE_17"],
-                "hit_medium_energy_H_omni": l1["H_12_15"] + l1["H_15_70"],
-                "hit_high_energy_H_A_side": l1["IALRT_RATE_8"],
-                "hit_high_energy_H_B_side": l1["IALRT_RATE_18"],
-                "hit_low_energy_He_omni": l1["HE4_06_08"],
-                "hit_high_energy_He_omni": l1["HE4_15_70"],
+                "hit_e_a_side_low_en": l1["IALRT_RATE_1"] + l1["IALRT_RATE_2"],
+                "hit_e_a_side_med_en": l1["IALRT_RATE_5"] + l1["IALRT_RATE_6"],
+                "hit_e_a_side_high_en": l1["IALRT_RATE_7"],
+                "hit_e_b_side_low_en": l1["IALRT_RATE_11"] + l1["IALRT_RATE_12"],
+                "hit_e_b_side_med_en": l1["IALRT_RATE_15"] + l1["IALRT_RATE_16"],
+                "hit_e_b_side_high_en": l1["IALRT_RATE_17"],
+                "hit_h_omni_med_en": l1["H_12_15"] + l1["H_15_70"],
+                "hit_h_a_side_high_en": l1["IALRT_RATE_8"],
+                "hit_h_b_side_high_en": l1["IALRT_RATE_18"],
+                "hit_he_omni_low_en": l1["HE4_06_08"],
+                "hit_he_omni_high_en": l1["HE4_15_70"],
             }
         )
 

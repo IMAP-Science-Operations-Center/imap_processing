@@ -235,7 +235,7 @@ def test_process_packet(xarray_data, mag_test_data, calibration_dataset):
     xarray_data["sc_sclk_sec"] = xarray_data["mag_acq_tm_coarse"]
     xarray_data["sc_sclk_sub_sec"] = xarray_data["mag_acq_tm_fine"]
 
-    parsed_packets = process_packet(xarray_data, calibration_dataset)
+    _, parsed_packets = process_packet(xarray_data, calibration_dataset)
 
     for packet in parsed_packets:
         index = packet["pri_coarsetm"] == mag_test_data["PRI_COARSETM"]
@@ -264,7 +264,7 @@ def test_process_spacecraft_packet(
         packet_path, xtce_ialirt_path, use_derived_value=False
     )[478]
 
-    parsed_packets = process_packet(sc_xarray_data, calibration_dataset)
+    mag_data, parsed_packets = process_packet(sc_xarray_data, calibration_dataset)
 
     sequence = []
     for packet in parsed_packets:

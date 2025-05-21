@@ -288,7 +288,7 @@ def calculate_l1b(
 
 def process_packet(
     accumulated_data: xr.Dataset, calibration_dataset: xr.Dataset
-) -> list[dict]:
+) -> tuple[list[dict], list[dict]]:
     """
     Parse the MAG packets.
 
@@ -323,6 +323,7 @@ def process_packet(
     grouped_data = find_groups(accumulated_data, (0, 3), "pkt_counter", "met")
 
     unique_groups = np.unique(grouped_data["group"])
+    l1b_data = []
     mag_data = []
 
     for group in unique_groups:
@@ -381,6 +382,19 @@ def process_packet(
             }
         )
 
-        mag_data.append({**status_data, **science_data, **time_data})
+        l1b_data.append({**status_data, **science_data, **time_data})
 
-    return mag_data
+        # Placeholder for real data.
+        met = grouped_data["met"][(grouped_data["group"] == group).values]
+        mag_data.append(
+            {
+                "met": met.values,
+                "mag_4s_b_gse": np.full(met.shape, 0),
+                "mag_4s_b_gsm": np.full(met.shape, 0),
+                "mag_4s_b_rtn": np.full(met.shape, 0),
+                "mag_phi_4s_b_gsm": np.full(met.shape, 0),
+                "mag_theta_4s_b_gsm": np.full(met.shape, 0),
+            }
+        )
+
+    return mag_data, l1b_data

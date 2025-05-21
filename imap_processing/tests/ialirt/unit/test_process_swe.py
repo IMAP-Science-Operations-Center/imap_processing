@@ -161,6 +161,13 @@ def test_process_spacecraft_packet(
     sc_xarray_data = packet_file_to_datasets(
         packet_path, xtce_ialirt_path, use_derived_value=False
     )[478]
+    # Create fake data here since instrument data contains only zeros.
+    n = sc_xarray_data.dims["epoch"]
+    sc_xarray_data["swe_acq_sec"] = (
+        "epoch",
+        np.arange(462466219, 462466219 + n, dtype=np.uint32),
+    )
+    sc_xarray_data["swe_seq"] = ("epoch", np.arange(n) % 60)
 
     in_flight_cal_file = (
         imap_module_directory
@@ -169,7 +176,7 @@ def test_process_spacecraft_packet(
 
     swe_product = process_swe(sc_xarray_data, [in_flight_cal_file])
 
-    assert swe_product == []
+    assert len(swe_product[0].keys()) == 3
 
 
 def test_get_energy():
