@@ -181,12 +181,12 @@ def test_process_hit(xarray_data, caplog):
 
     hit_product = process_hit(subset)
 
-    assert hit_product[0]["hit_lo_energy_e_A_side"] == 4
-    assert hit_product[0]["hit_medium_energy_e_A_side"] == 4
-    assert hit_product[0]["hit_low_energy_e_B_side"] == 4
-    assert hit_product[0]["hit_high_energy_e_B_side"] == 2
-    assert hit_product[0]["hit_medium_energy_H_omni"] == 4
-    assert hit_product[0]["hit_high_energy_He_omni"] == 2
+    assert hit_product[0]["hit_e_a_side_low_en"] == 4
+    assert hit_product[0]["hit_e_a_side_med_en"] == 4
+    assert hit_product[0]["hit_e_b_side_low_en"] == 4
+    assert hit_product[0]["hit_e_b_side_high_en"] == 2
+    assert hit_product[0]["hit_e_b_side_med_en"] == 4
+    assert hit_product[0]["hit_he_omni_high_en"] == 2
 
     # Create a scrambled set of subcom values.
     xarray_data["hit_subcom"].values[indices[0] : indices[0] + 60] = [
