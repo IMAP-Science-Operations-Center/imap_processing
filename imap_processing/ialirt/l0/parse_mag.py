@@ -388,12 +388,14 @@ def process_packet(
         met = grouped_data["met"][(grouped_data["group"] == group).values]
         mag_data.append(
             {
-                "met": met.values,
-                "mag_4s_b_gse": np.full(met.shape, 0),
-                "mag_4s_b_gsm": np.full(met.shape, 0),
-                "mag_4s_b_rtn": np.full(met.shape, 0),
-                "mag_phi_4s_b_gsm": np.full(met.shape, 0),
-                "mag_theta_4s_b_gsm": np.full(met.shape, 0),
+                # Start of the group.
+                "met": met.values.min(),
+                # Vectors.
+                "mag_4s_b_gse": [0, 0, 0],
+                "mag_4s_b_gsm": [0, 0, 0],
+                "mag_4s_b_rtn": [0, 0, 0],
+                "mag_phi_4s_b_gsm": 0,
+                "mag_theta_4s_b_gsm": 0,
             }
         )
 

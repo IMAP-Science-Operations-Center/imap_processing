@@ -160,7 +160,7 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
         slow_rate = grouped_data["hit_slow_rate"][
             (grouped_data["group"] == group).values
         ]
-        met = int(grouped_data["hit_met"][(grouped_data["group"] == group).values][0])
+        met = int(grouped_data["met"][(grouped_data["group"] == group).values][0])
 
         l1 = create_l1(fast_rate_1, fast_rate_2, slow_rate)
 

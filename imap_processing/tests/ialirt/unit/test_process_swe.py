@@ -448,7 +448,10 @@ def test_process_swe(mock_read_cal, swe_test_data, fields_to_test):
     )
     swe_test_data.index.name = "epoch"
     ds = swe_test_data.to_xarray()
-    ds["src_seq_ctr"] = ("epoch", np.arange(len(ds["swe_shcoarse"])))
+    # Dummy data that mimics the spacecraft packet.
+    ds["src_seq_ctr"] = ("epoch", np.arange(len(ds["epoch"])))
+    ds["sc_sclk_sec"] = ("epoch", np.arange(len(ds["epoch"])))
+    ds["sc_sclk_sub_sec"] = ("epoch", np.arange(len(ds["epoch"])))
     in_flight_cal_file = (
         imap_module_directory
         / "tests/swe/lut/imap_swe_l1b-in-flight-cal_20240510_20260716_v000.csv"
