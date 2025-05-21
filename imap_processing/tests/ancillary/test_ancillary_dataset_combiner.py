@@ -17,7 +17,7 @@ from imap_processing.cdf.utils import load_cdf
 @pytest.fixture
 def mocks():
     with mock.patch(
-        "tools.ancillary.ancillary_dataset_combiner.cdf_to_xarray"
+        "imap_processing.ancillary.ancillary_dataset_combiner.cdf_to_xarray"
     ) as read_cdf:
         mocks = {
             "read_cdf": read_cdf,
