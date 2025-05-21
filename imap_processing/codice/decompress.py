@@ -100,27 +100,21 @@ def _apply_lzma_lossless(compressed_bytes: bytes) -> bytes:
     return lzma_decompressed_values
 
 
-def _apply_pack_24_bit(compressed_bits: str) -> NDArray[int]:
+def _apply_pack_24_bit(compressed_bytes: bytes) -> NDArray[int]:
     """
     Apply the pack 24 bit decompression algorithm.
 
     Parameters
     ----------
-    compressed_bits : str
-        The compressed bit stream.
+    compressed_bytes : bytes
+        The compressed byte stream.
 
     Returns
     -------
     decompressed_values : NDArray[int]
         The 24-bit decompressed values.
     """
-    # TODO: Ask joey if this is right
-    #       Starting with a binary string of length 3456
-    #       This is 9 species * 128 esa_steps # 3 (assuming bytes-per-int, for
-    #       24-bit). But the 3456 bit string is equivalent to 432 bytes, so the
-    #       math doesn't add up
-    # byte_stream = int(bit_string, 2).to_bytes(len(bit_string) // 8, byteorder='big')
-    decompressed_values = np.fromiter(compressed_bits, dtype=np.uint8).reshape(-1, 3)
+    decompressed_values = np.frombuffer(compressed_bytes, dtype=np.uint8).reshape(-1, 3)
     decompressed_values = np.array(
         [int.from_bytes(value, byteorder="big") for value in decompressed_values],
         dtype=np.uint32,
