@@ -442,6 +442,7 @@ class TestRectangularSkyMap:
         # innefficient, as it would require all the same, computationally intensive
         # operations to be repeated as this test
         rect_map_ds = rectangular_map.to_dataset()
+        assert "solid_angle" in rect_map_ds.data_vars
         assert "counts" in rect_map_ds.data_vars
         assert rect_map_ds["counts"].shape == (
             1,
@@ -464,6 +465,105 @@ class TestRectangularSkyMap:
                 rectangular_map.binning_grid_shape,
             ),
         )
+
+    @pytest.fixture
+    def mock_data_for_build_cdf_dataset(self):
+        """Setup Dataset to use as mock data from `to_dataset()` function."""
+        coord_sizes = {
+            CoordNames.TIME.value: 1,
+            CoordNames.ENERGY_L2.value: 5,
+            CoordNames.AZIMUTH_L2.value: 20,
+            CoordNames.ELEVATION_L2.value: 10,
+            "foo_coord": 2,
+        }
+        mock_dataset = xr.Dataset(
+            coords={
+                key: xr.DataArray(
+                    np.arange(value),
+                    name=key,
+                    dims=[key],
+                )
+                for key, value in coord_sizes.items()
+            }
+        )
+        # Add ena intensity variable
+        mock_dataset["ena_intensity"] = xr.DataArray(
+            np.ones(tuple(s for s in coord_sizes.values())[:-1]),
+            name="ena_intesity",
+            dims=[k for k in coord_sizes.keys()][:-1],
+        )
+        # Add one variable that is expected to get removed
+        mock_dataset["foo_var"] = xr.DataArray(
+            np.ones(tuple(s for s in coord_sizes.values())),
+            name="foo_var",
+            dims=[k for k in coord_sizes.keys()],
+        )
+        return mock_dataset
+
+    @mock.patch("imap_processing.ena_maps.ena_maps.RectangularSkyMap.to_dataset")
+    def test_build_cdf_dataset(self, mock_to_dataset, mock_data_for_build_cdf_dataset):
+        """Test coverage for the RectangularSkyMap.build_cdf_dataset method."""
+        # Set up the mock
+        mock_to_dataset.return_value = mock_data_for_build_cdf_dataset
+
+        skymap = ena_maps.RectangularSkyMap(6, geometry.SpiceFrame.ECLIPJ2000)
+        skymap.min_epoch = 10
+        skymap.max_epoch = 15
+        cdf_dataset = skymap.build_cdf_dataset(
+            "hi", "l2", "sf", "foo_descriptor", sensor="45"
+        )
+
+        # Check that expected var gets removed
+        assert "foo_var" not in cdf_dataset
+        # Check the epoch values
+        assert CoordNames.TIME.value in cdf_dataset
+        assert cdf_dataset[CoordNames.TIME.value].values[0] == skymap.min_epoch
+        assert f"{CoordNames.TIME.value}_delta" in cdf_dataset
+        assert (
+            cdf_dataset[f"{CoordNames.TIME.value}_delta"].values[0]
+            == skymap.max_epoch - skymap.min_epoch
+        )
+
+        assert CoordNames.ENERGY_L2.value in cdf_dataset
+        assert f"{CoordNames.ENERGY_L2.value}_delta_plus" in cdf_dataset
+        assert f"{CoordNames.ENERGY_L2.value}_delta_minus" in cdf_dataset
+        assert f"{CoordNames.ENERGY_L2.value}_label" in cdf_dataset
+
+        assert CoordNames.AZIMUTH_L2.value in cdf_dataset
+        assert f"{CoordNames.AZIMUTH_L2.value}_delta" in cdf_dataset
+        assert f"{CoordNames.AZIMUTH_L2.value}_label" in cdf_dataset
+
+        assert CoordNames.ELEVATION_L2.value in cdf_dataset
+        assert f"{CoordNames.ELEVATION_L2.value}_delta" in cdf_dataset
+        assert f"{CoordNames.ELEVATION_L2.value}_label" in cdf_dataset
+
+    @mock.patch("imap_processing.ena_maps.ena_maps.RectangularSkyMap.to_dataset")
+    def test_build_cdf_dataset_key_error(
+        self, mock_to_dataset, mock_data_for_build_cdf_dataset
+    ):
+        """Test build_cdf_dataset raising a KeyError."""
+        mock_dataset = mock_data_for_build_cdf_dataset
+        # Add ena intensity variable
+        mock_dataset["no_attrs_var"] = xr.DataArray(
+            np.ones(
+                tuple(s for s in mock_data_for_build_cdf_dataset.coords.sizes.values())[
+                    :-1
+                ]
+            ),
+            name="no_attrs_var",
+            dims=[k for k in mock_data_for_build_cdf_dataset.coords.sizes.keys()][:-1],
+        )
+        mock_to_dataset.return_value = mock_dataset
+
+        skymap = ena_maps.RectangularSkyMap(6, geometry.SpiceFrame.ECLIPJ2000)
+        skymap.min_epoch = 10
+        skymap.max_epoch = 15
+        with pytest.raises(
+            KeyError, match="Attributes for variable no_attrs_var not found"
+        ):
+            _ = skymap.build_cdf_dataset(
+                "hi", "l2", "sf", "foo_descriptor", sensor="45"
+            )
 
 
 class TestHealpixSkyMap:

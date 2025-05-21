@@ -8,6 +8,9 @@ from typing import Literal
 
 from imap_processing.spice.geometry import SpiceFrame
 
+# Set a constant number of days in a month to calculate the duration of maps
+DAYS_IN_MONTH = 28.5
+
 
 class MappableInstrumentShortName(Enum):
     """Enumeration of the short names of the ENA and other mappable instruments."""
@@ -133,12 +136,12 @@ def build_l2_map_descriptor(  # noqa: PLR0912
 
     # Handle duration
     if isinstance(duration, timedelta):
-        # Convert timedelta to a string representation of number of 28.5 day months
-        num_months = int(duration.days // 28.5)
+        # Convert timedelta to str representation of number of DAYS_IN_MONTH-day months
+        num_months = int(duration.days // DAYS_IN_MONTH)
         duration = f"{num_months}mo"
     elif isinstance(duration, int):
-        # Assume number of days and convert to 28.5-day months
-        duration = f"{int(duration // 28.5)}mo"
+        # Assume number of days and convert to DAYS_IN_MONTH-day months
+        duration = f"{int(duration // DAYS_IN_MONTH)}mo"
     elif isinstance(duration, str):
         pass
     # Replace 12mo with 1yr
@@ -165,6 +168,39 @@ def build_l2_map_descriptor(  # noqa: PLR0912
         f"-{resolution_str}-{duration}"
     )
     return map_descriptor
+
+
+def ns_to_duration_months(ns: int) -> int:
+    """
+    Convert nanoseconds to months using DAYS_IN_MONTH days per month approximation.
+
+    Parameters
+    ----------
+    ns : int
+        The number of nanoseconds to convert.
+
+    Returns
+    -------
+    int
+        The number of months, floored to the nearest integer.
+
+    Notes
+    -----
+    This can be used to convert from the difference between two epochs in ns to the
+    number of months between them.
+
+    This is a very simple estimate, which assumes that a month is DAYS_IN_MONTH days and
+    floors the result.
+
+    This successfully yields:
+    - 12 months for 365.25 days in ns
+    - 6 months for 182.625 days (365.25/2) in ns
+    - 4 months for 121.75 days (365.25/3) in ns
+    - 3 months for 91.3125 days (365.25/4) in ns
+    """
+    days = ns / (1e9 * 60 * 60 * 24)
+    months = days // DAYS_IN_MONTH
+    return int(months)
 
 
 def build_friendly_date_descriptor(

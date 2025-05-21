@@ -6,6 +6,7 @@ from imap_processing.ena_maps.utils.naming import (
     MappableInstrumentShortName,
     build_friendly_date_descriptor,
     build_l2_map_descriptor,
+    ns_to_duration_months,
 )
 from imap_processing.spice.geometry import SpiceFrame
 
@@ -88,3 +89,19 @@ def test_build_friendly_date_descriptor(start_datestring):
         duration_months=3,
     )
     assert friendly_date_descriptor == "202605m03"
+
+
+def test_ns_to_duration_months():
+    days_per_avg_year = 365.25
+    ns_per_day = 24 * 60 * 60 * 1e9
+
+    for fraction_of_year, expected_months in [
+        (1 / 2, 6),
+        (1 / 3, 4),
+        (1 / 4, 3),
+        (3 / 4, 9),
+    ]:
+        assert (
+            ns_to_duration_months(fraction_of_year * days_per_avg_year * ns_per_day)
+            == expected_months
+        )

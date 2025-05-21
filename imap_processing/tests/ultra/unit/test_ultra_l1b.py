@@ -136,9 +136,13 @@ def test_cdf_de(
     )
 
     l1b_de_dataset[0].attrs["Data_version"] = "v999"
+    l1b_de_dataset[0].attrs["Repointing"] = "repoint99999"
     test_data_path = write_cdf(l1b_de_dataset[0], istp=True)
     assert test_data_path.exists()
-    assert test_data_path.name == "imap_ultra_l1b_45sensor-de_20240207_v999.cdf"
+    assert (
+        test_data_path.name
+        == "imap_ultra_l1b_45sensor-de_20240207-repoint99999_v999.cdf"
+    )
 
 
 @pytest.mark.external_test_data
@@ -197,10 +201,12 @@ def test_cdf_extendedspin(use_fake_spin_data_for_time, faux_aux_dataset, rates_d
     l1b_extendedspin_dataset = ultra_l1b(data_dict)
     """Tests that CDF file is created and contains same attributes as xarray."""
     l1b_extendedspin_dataset[0].attrs["Data_version"] = "v999"
+    l1b_extendedspin_dataset[0].attrs["Repointing"] = "repoint99999"
     test_data_path = write_cdf(l1b_extendedspin_dataset[0], istp=True)
     assert test_data_path.exists()
     assert (
-        test_data_path.name == "imap_ultra_l1b_45sensor-extendedspin_20240207_v999.cdf"
+        test_data_path.name
+        == "imap_ultra_l1b_45sensor-extendedspin_20240207-repoint99999_v999.cdf"
     )
 
 
@@ -224,10 +230,12 @@ def test_cdf_cullingmask(use_fake_spin_data_for_time, faux_aux_dataset, rates_da
 
     l1b_extendedspin_dataset = ultra_l1b(data_dict)
     l1b_extendedspin_dataset[1].attrs["Data_version"] = "v999"
+    l1b_extendedspin_dataset[1].attrs["Repointing"] = "repoint99999"
     test_data_path = write_cdf(l1b_extendedspin_dataset[1], istp=True)
     assert test_data_path.exists()
     assert (
-        test_data_path.name == "imap_ultra_l1b_45sensor-cullingmask_20240207_v999.cdf"
+        test_data_path.name
+        == "imap_ultra_l1b_45sensor-cullingmask_20240207-repoint99999_v999.cdf"
     )
 
 
@@ -251,9 +259,13 @@ def test_cdf_badtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_datas
 
     l1b_extendedspin_dataset = ultra_l1b(data_dict)
     l1b_extendedspin_dataset[2].attrs["Data_version"] = "v999"
+    l1b_extendedspin_dataset[2].attrs["Repointing"] = "repoint99999"
     test_data_path = write_cdf(l1b_extendedspin_dataset[2], istp=True)
     assert test_data_path.exists()
-    assert test_data_path.name == "imap_ultra_l1b_45sensor-badtimes_20240207_v999.cdf"
+    assert (
+        test_data_path.name
+        == "imap_ultra_l1b_45sensor-badtimes_20240207-repoint99999_v999.cdf"
+    )
 
 
 def test_ultra_l1b_error(mock_data_l1a_rates_dict):

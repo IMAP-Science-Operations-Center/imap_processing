@@ -71,6 +71,14 @@ ena_intensity_stat_unc:
   LABL_PTR_2: longitude_label
   LABL_PTR_3: latitude_label
 
+ena_intensity_sys_err:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
 sensitivity:
   DEPEND_1: energy
   DEPEND_2: longitude
@@ -94,6 +102,12 @@ obs_date:
   LABL_PTR_1: longitude_label
   LABL_PTR_2: latitude_label
 
+obs_date_range:
+  DEPEND_1: longitude
+  DEPEND_2: latitude
+  LABL_PTR_1: longitude_label
+  LABL_PTR_2: latitude_label
+
 exposure_factor_energy_dependent:
   DEPEND_1: energy
   DEPEND_2: longitude
@@ -109,3 +123,9 @@ obs_date_energy_dependent:
   LABL_PTR_1: energy_label
   LABL_PTR_2: longitude_label
   LABL_PTR_3: latitude_label
+
+solid_angle:
+  DEPEND_1: longitude
+  DEPEND_2: latitude
+  LABL_PTR_1: longitude_label
+  LABL_PTR_2: latitude_label

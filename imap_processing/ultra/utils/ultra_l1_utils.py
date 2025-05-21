@@ -42,13 +42,13 @@ def create_dataset(
         }
         default_dimension = "spin_number"
     # L1c pset data products
-    elif "healpix" in data_dict:
+    elif "pixel_index" in data_dict:
         coords = {
-            "healpix": data_dict["healpix"],
+            "pixel_index": data_dict["pixel_index"],
             "energy_bin_geometric_mean": data_dict["energy_bin_geometric_mean"],
             "epoch": data_dict["epoch"],
         }
-        default_dimension = "healpix"
+        default_dimension = "pixel_index"
     # L1b de data product
     else:
         epoch_time = xr.DataArray(
@@ -90,7 +90,7 @@ def create_dataset(
 
     for key, data in data_dict.items():
         # Skip keys that are coordinates.
-        if key in ["epoch", "spin_number", "energy_bin_geometric_mean", "healpix"]:
+        if key in ["epoch", "spin_number", "energy_bin_geometric_mean", "pixel_index"]:
             continue
         elif key in velocity_keys:
             dataset[key] = xr.DataArray(
@@ -110,10 +110,10 @@ def create_dataset(
                 dims=["energy_bin_geometric_mean", "spin_number"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
-        elif key == "counts":
+        elif key in {"counts", "background_rates"}:
             dataset[key] = xr.DataArray(
                 data,
-                dims=["energy_bin_geometric_mean", "healpix"],
+                dims=["energy_bin_geometric_mean", "pixel_index"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         else:
