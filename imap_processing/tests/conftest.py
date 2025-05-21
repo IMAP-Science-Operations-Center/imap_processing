@@ -494,8 +494,7 @@ def use_test_spin_data_csv(monkeypatch):
     """Sets the SPIN_DATA_FILEPATH environment variable to input path."""
 
     def wrapped_set_spin_data_filepath(path: Path):
-        spin.set_spin_table_paths([path])
-        # monkeypatch.setenv("SPIN_DATA_FILEPATH", str(path))
+        monkeypatch.setattr(spin, "_spin_table_paths", [path])
 
     return wrapped_set_spin_data_filepath
 
@@ -632,8 +631,7 @@ def use_test_repoint_data_csv(monkeypatch):
     """Sets the REPOINT_DATA_FILEPATH environment variable to input path."""
 
     def wrapped_set_repoint_data_filepath(path: Path):
-        repoint.set_repoint_table_paths([path])
-        # monkeypatch.setenv("REPOINT_DATA_FILEPATH", str(path))
+        monkeypatch.setattr(repoint, "_repoint_table_path", path)
 
     return wrapped_set_repoint_data_filepath
 

@@ -1,26 +1,40 @@
 from contextlib import nullcontext as does_not_raise
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
 
+from imap_processing.spice import spin
 from imap_processing.spice.geometry import SpiceFrame
-from imap_processing.spice.spin import (
-    get_instrument_spin_phase,
-    get_spacecraft_spin_phase,
-    get_spin_angle,
-    get_spin_data,
-    interpolate_spin_data,
-    set_spin_table_paths,
-)
+
+
+@pytest.fixture(autouse=True)
+def clear_repoint_cache():
+    """Automatically clear get_repoint_data cache"""
+    spin.get_spin_data.cache_clear()
 
 
 @pytest.fixture
-def fake_spin_data(spice_test_data_path):
+def fake_spin_data(spice_test_data_path, use_test_spin_data_csv):
     """Generate fake spin dataframe for testing"""
     fake_spin_path = spice_test_data_path / "fake_spin_data.csv"
-    set_spin_table_paths([fake_spin_path])
+    use_test_spin_data_csv(fake_spin_path)
     return fake_spin_path
+
+
+def test_set_spin_table_paths(monkeypatch):
+    """Test coverage for set_spin_table_paths function."""
+    # Use monkeypatch here to make sure any side effects of calling the setter
+    # get undone after this test
+    monkeypatch.setattr(spin, "_spin_table_paths", [])
+    assert spin._spin_table_paths == []
+    spin_paths = [
+        Path("/path/to/fake_spin_data0.csv"),
+        Path("/path/to/fake_spin_data1.csv"),
+    ]
+    spin.set_spin_table_paths(spin_paths)
+    np.testing.assert_array_equal(spin._spin_table_paths, spin_paths)
 
 
 @pytest.mark.parametrize(
@@ -80,7 +94,7 @@ def fake_spin_data(spice_test_data_path):
 def test_interpolate_spin_data(query_met_times, expected, fake_spin_data):
     """Test interpolate_spin_data() with generated spin data."""
     # Call the function
-    spin_df = interpolate_spin_data(query_met_times=query_met_times)
+    spin_df = spin.interpolate_spin_data(query_met_times=query_met_times)
 
     # Test the value
     for i_row, row in enumerate(expected):
@@ -120,7 +134,7 @@ def test_interpolate_spin_data(query_met_times, expected, fake_spin_data):
 def test_get_spacecraft_spin_phase(query_met_times, expected, fake_spin_data):
     """Test get_spacecraft_spin_phase() with generated spin data."""
     # Call the function
-    spin_phases = get_spacecraft_spin_phase(query_met_times=query_met_times)
+    spin_phases = spin.get_spacecraft_spin_phase(query_met_times=query_met_times)
 
     # Test the returned type
     if isinstance(expected, float):
@@ -160,7 +174,7 @@ def test_get_spacecraft_spin_phase(query_met_times, expected, fake_spin_data):
 def test_get_spin_angle(spin_phases, degrees, expected, context):
     """Test get_spin_angle() with fake spin phases."""
     with context:
-        spin_angles = get_spin_angle(spin_phases, degrees=degrees)
+        spin_angles = spin.get_spin_angle(spin_phases, degrees=degrees)
         np.testing.assert_array_equal(spin_angles, expected)
 
 
@@ -168,14 +182,14 @@ def test_get_spin_angle(spin_phases, degrees, expected, context):
 def test_get_spacecraft_spin_phase_value_error(query_met_times, fake_spin_data):
     """Test get_spacecraft_spin_phase() for raising ValueError."""
     with pytest.raises(ValueError, match="Query times"):
-        _ = get_spacecraft_spin_phase(query_met_times)
+        _ = spin.get_spacecraft_spin_phase(query_met_times)
 
 
 @pytest.mark.usefixtures("use_fake_spin_data_for_time")
 def test_get_spin_data(use_fake_spin_data_for_time):
     """Test get_spin_data() with generated spin data."""
     use_fake_spin_data_for_time(453051323.0 - 56120)
-    spin_data = get_spin_data()
+    spin_data = spin.get_spin_data()
 
     (
         np.testing.assert_array_equal(spin_data["spin_number"], np.arange(5761)),
@@ -218,7 +232,7 @@ def test_get_instrument_spin_phase(instrument, fake_spin_data):
     """Test coverage for get_instrument_spin_phase()"""
     met_times = np.array([7.5, 30, 61, 75, 106, 121, 136])
     expected_nan_mask = np.array([False, False, True, False, True, True, False])
-    inst_phase = get_instrument_spin_phase(met_times, instrument)
+    inst_phase = spin.get_instrument_spin_phase(met_times, instrument)
     assert inst_phase.shape == met_times.shape
     np.testing.assert_array_equal(np.isnan(inst_phase), expected_nan_mask)
     assert np.logical_and(

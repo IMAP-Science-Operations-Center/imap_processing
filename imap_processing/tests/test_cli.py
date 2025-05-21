@@ -31,6 +31,7 @@ from imap_processing.cli import (
     _validate_args,
     main,
 )
+from imap_processing.spice import repoint, spin
 
 
 @pytest.fixture
@@ -492,7 +493,6 @@ def test_spice_kernel_handling(spice_test_data_path):
         mock.patch("imap_data_access.processing_input.download") as mock_download,
         mock.patch("imap_processing.cli.load_cdf"),
         mock.patch("imap_processing.cli.Hi.do_processing") as mock_do_processing,
-        # mock.patch("imap_processing.cli.ProcessInstrument.post_processing"),
         mock.patch("imap_processing.cli.write_cdf"),
         mock.patch("imap_processing.cli.ProcessInstrument.upload_products"),
     ):
@@ -509,6 +509,50 @@ def test_spice_kernel_handling(spice_test_data_path):
         instrument.process()
         # Verify that the furnished kernels get cleared in the post_processing method
         assert spiceypy.ktotal("ALL") == 0
+
+
+def test_spin_and_repoint_table_handling():
+    """Test ProcessInstrument.pre_processing setting of spin and repoint paths."""
+    dependency_obj = [
+        {"type": "science", "files": ["imap_hi_l2a_sensor45-de_20100105_v001.cdf"]},
+        {"type": "repoint", "files": ["imap_2010_104_01.repoint.csv"]},
+        {
+            "type": "spin",
+            "files": [
+                "imap_2025_104_2025_107_01.spin.csv",
+                "imap_2025_107_2025_112_01.spin.csv",
+            ],
+        },
+    ]
+    dependency_str = json.dumps(dependency_obj)
+
+    # Test that expected spin and repoint paths are set
+    def do_processing_side_effect(*args, **kwargs):
+        """Check that the expected kernels are furnished"""
+        assert repoint._repoint_table_path.name == dependency_obj[1]["files"][0]
+        np.testing.assert_array_equal(
+            dependency_obj[2]["files"], [p.name for p in spin._spin_table_paths]
+        )
+        return [xr.Dataset()]
+
+    with (
+        mock.patch("imap_data_access.processing_input.download"),
+        mock.patch("imap_processing.cli.load_cdf"),
+        mock.patch("imap_processing.cli.Hi.do_processing") as mock_do_processing,
+        mock.patch("imap_processing.cli.write_cdf"),
+        mock.patch("imap_processing.cli.ProcessInstrument.upload_products"),
+    ):
+        mock_do_processing.side_effect = do_processing_side_effect
+
+        instrument = Hi(
+            "l1b", "sensor45-de", dependency_str, "20100105", None, "v001", True
+        )
+        # Verify no paths are set
+        assert spin._spin_table_paths == []
+        assert repoint._repoint_table_path is None
+        # Verification that the expected paths are set is done in the
+        # do_processing_side_effect to ensure they are correct during processing
+        instrument.process()
 
 
 @mock.patch("imap_processing.cli.swe_l1a")
