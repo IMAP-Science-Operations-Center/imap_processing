@@ -390,7 +390,6 @@ hi-counters-singles-stssd:
     LABL_PTR_1: ssd_index
     UNITS: events
 
-# TODO: Double check this
 # hi-ialirt
 hi-ialirt-h:
     <<: *counters
@@ -400,6 +399,7 @@ hi-ialirt-h:
     DEPEND_2: inst_az
     LABL_PTR_1: esa_step
     LABL_PTR_2: inst_az
+    VALIDMAX: 16777216
 
 # hi-omni
 hi-omni-h:
@@ -1227,7 +1227,6 @@ lo-nsw-species-cnoplus:
     LABL_PTR_2: esa_step
 
 # lo-ialirt
-# TODO: Double check these
 lo-ialirt-heplusplus:
     <<: *counters
     CATDESC: He++ Sunward Species

@@ -187,6 +187,7 @@ class CoDICEL1aPipeline:
                 "inst_az",
                 "spin_sector",
                 "spin_sector_pairs",
+                "spin_sector_index",
                 "ssd_index",
             ]:
                 values = np.arange(self.config["output_dims"][name])
@@ -1420,21 +1421,3 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
         processed_datasets.append(processed_dataset)
 
     return processed_datasets
-
-
-if __name__ == "__main__":
-    from imap_processing import imap_module_directory
-
-    TEST_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"
-    file_path = TEST_DATA_PATH / "imap_codice_l0_raw_20241110_v001.pkts"
-
-    # processed_datasets = process_codice_l1a(file_path, "001")
-    process_codice_l1a(file_path)
-# #
-# #     # for dataset in processed_datasets:
-# #     #     if dataset is not None:
-# #     #         try:
-# #     #             filename = write_cdf(dataset)
-# #     #             print(filename)
-# #     #         except:
-# #     #             pass
