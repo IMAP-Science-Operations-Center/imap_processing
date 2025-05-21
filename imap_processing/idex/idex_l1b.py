@@ -370,8 +370,8 @@ def get_spice_data(
         "ephemeris_velocity_x": ephemeris[:, 3],
         "ephemeris_velocity_y": ephemeris[:, 4],
         "ephemeris_velocity_z": ephemeris[:, 5],
-        "longitude": lon_and_lat[:, 1],
-        "latitude": lon_and_lat[:, 2],
+        "longitude": lon_and_lat[:, 0],
+        "latitude": lon_and_lat[:, 1],
         "spin_phase": imap_spin_phase,
         "solar_longitude": solar_lon,
     }
