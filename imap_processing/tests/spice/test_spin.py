@@ -9,12 +9,6 @@ from imap_processing.spice import spin
 from imap_processing.spice.geometry import SpiceFrame
 
 
-@pytest.fixture(autouse=True)
-def clear_repoint_cache():
-    """Automatically clear get_repoint_data cache"""
-    spin.get_spin_data.cache_clear()
-
-
 @pytest.fixture
 def fake_spin_data(spice_test_data_path, use_test_spin_data_csv):
     """Generate fake spin dataframe for testing"""

@@ -9,12 +9,6 @@ import pytest
 from imap_processing.spice import repoint
 
 
-@pytest.fixture(autouse=True)
-def clear_repoint_cache():
-    """Automatically clear get_repoint_data cache"""
-    repoint.get_repoint_data.cache_clear()
-
-
 @pytest.fixture
 def fake_repoint_data(spice_test_data_path, use_test_repoint_data_csv):
     """Generate fake spin dataframe for testing"""

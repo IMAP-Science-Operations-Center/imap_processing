@@ -491,7 +491,7 @@ def _unset_metakernel_path(monkeypatch):
 
 @pytest.fixture
 def use_test_spin_data_csv(monkeypatch):
-    """Sets the SPIN_DATA_FILEPATH environment variable to input path."""
+    """Monkeypatches `spin._spin_table_paths` to the input Path."""
 
     def wrapped_set_spin_data_filepath(path: Path):
         monkeypatch.setattr(spin, "_spin_table_paths", [path])
@@ -628,7 +628,7 @@ def generate_spin_data():
 
 @pytest.fixture
 def use_test_repoint_data_csv(monkeypatch):
-    """Sets the REPOINT_DATA_FILEPATH environment variable to input path."""
+    """Monkeypatches repoint._repoint_table_path to point to the input path."""
 
     def wrapped_set_repoint_data_filepath(path: Path):
         monkeypatch.setattr(repoint, "_repoint_table_path", path)

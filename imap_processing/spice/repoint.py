@@ -1,7 +1,6 @@
 """Functions for retrieving repointing table data."""
 
 import logging
-from functools import cache
 from pathlib import Path
 from typing import Union
 
@@ -16,7 +15,10 @@ pd.options.mode.copy_on_write = True
 
 logger = logging.getLogger(__name__)
 
+# Use a mutable module level attribute to store the location of the repoint table
 _repoint_table_path: Path | None = None
+# cache repoint-table data to avoid reloading from disk every time
+_repoint_df_cache: dict[str, pd.DataFrame] = {}
 
 
 def set_repoint_table_paths(paths: list[Path]) -> None:
@@ -43,11 +45,6 @@ def set_repoint_table_paths(paths: list[Path]) -> None:
     _repoint_table_path = paths[0]
 
 
-# This may be a slightly dangerous thing to do. get_repoint_data is dependent on
-# the global attribute _repoint_table_paths which could change between calls, though
-# it shouldn't. If it did, the cached return value would not accurately reflect
-# the tables pointed to by the _repoint_table_paths attribute.
-@cache
 def get_repoint_data() -> pd.DataFrame:
     """
     Read repointing file using environment variable and return as dataframe.
@@ -92,6 +89,12 @@ def get_repoint_data() -> pd.DataFrame:
     logger.debug(
         f"Reading in the following repoint table file: {_repoint_table_path.name}"
     )
+
+    cache_key = str(_repoint_table_path.resolve())
+    if cache_key in _repoint_df_cache:
+        logger.debug("Returning cached repointing data")
+        return _repoint_df_cache[cache_key]
+
     repoint_df = pd.read_csv(_repoint_table_path, comment="#")
 
     # Compute times by combining seconds and subseconds fields
@@ -103,6 +106,7 @@ def get_repoint_data() -> pd.DataFrame:
         repoint_df["repoint_end_sec_sclk"] + repoint_df["repoint_end_subsec_sclk"] / 1e6
     )
 
+    _repoint_df_cache[cache_key] = repoint_df
     return repoint_df
 
 

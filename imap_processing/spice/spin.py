@@ -1,7 +1,7 @@
 """Functions for retrieving spin-table data."""
 
 import logging
-from functools import cache, reduce
+from functools import reduce
 from pathlib import Path
 from typing import Union
 
@@ -23,6 +23,8 @@ logger = logging.getLogger(__name__)
 
 # Use a mutable module level attribute to store the location of spin files
 _spin_table_paths: list[Path] = []
+# cache spin-table data to avoid reloading from disk every time
+_spin_df_cache: dict[str, pd.DataFrame] = {}
 
 
 def set_spin_table_paths(paths: list[Path]) -> None:
@@ -45,11 +47,6 @@ def set_spin_table_paths(paths: list[Path]) -> None:
     _spin_table_paths = paths
 
 
-# This may be a slightly dangerous thing to do. get_spin_data is dependent on
-# the global attribute _spin_table_paths which could change between calls, though
-# it shouldn't. If it did, the cached return value would not accurately reflect
-# the tables pointed to by the _spin_table_paths attribute.
-@cache
 def get_spin_data() -> pd.DataFrame:
     """
     Read spin-tables and return spin data.
@@ -89,6 +86,11 @@ def get_spin_data() -> pd.DataFrame:
         f"{[sp.name for sp in _spin_table_paths]}"
     )
 
+    cache_key = ",".join([str(sp.resolve()) for sp in _spin_table_paths])
+    if cache_key in _spin_df_cache:
+        logger.debug("Returning cached spin data")
+        return _spin_df_cache[cache_key]
+
     spin_dataframes = [
         pd.read_csv(
             spin_table_path,
@@ -119,6 +121,7 @@ def get_spin_data() -> pd.DataFrame:
         merged_df["spin_start_sec_sclk"] + merged_df["spin_start_subsec_sclk"] / 1e6
     )
 
+    _spin_df_cache[cache_key] = merged_df
     return merged_df
 
 
