@@ -34,6 +34,7 @@ from imap_data_access.processing_input import (
 
 import imap_processing
 from imap_processing._version import __version__, __version_tuple__  # noqa: F401
+from imap_processing.ancillary.ancillary_dataset_combiner import MagAncillaryCombiner
 from imap_processing.cdf.utils import load_cdf, write_cdf
 
 # TODO: change how we import things and also folder
@@ -75,7 +76,6 @@ from imap_processing.ultra.l1a import ultra_l1a
 from imap_processing.ultra.l1b import ultra_l1b
 from imap_processing.ultra.l1c import ultra_l1c
 from imap_processing.ultra.l2 import ultra_l2
-from tools.ancillary.ancillary_dataset_combiner import MagAncillaryCombiner
 
 logger = logging.getLogger(__name__)
 
