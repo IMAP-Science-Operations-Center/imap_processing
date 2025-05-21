@@ -2,7 +2,8 @@ import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
-from imap_processing.ena_maps import ena_maps
+from imap_processing.lo.l2 import lo_l2
+
 
 @pytest.fixture
 def pset():
@@ -11,15 +12,18 @@ def pset():
     )
     return dataset
 
+
 @pytest.mark.external_kernel
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_hflux_map(pset):
+    # Arrange
+    pset = {"imap_lo_l1c_pset": pset}
 
+    # Act
+    hflux_map = lo_l2.lo_l2(pset, [])
 
-    fields = ["h_counts", "exposure_time"]
-    for field in fields:
-        pset[field] = pset[field].transpose("epoch", "dim2", "dim0", "dim1")
-
-    print("PSET", pset.data_vars)
-
-    ena_maps.RectangularSkyMap()
+    hflux_map[0]["h_flux"].mean(dim=("epoch", "energy")).plot(
+        x="longitude",
+        y="latitude",
+    )
+    print(hflux_map)
