@@ -61,7 +61,7 @@ def ccsds_path_theta_0():
 
 
 @pytest.fixture
-def ccsds_path_hk():
+def ccsds_path_all_apids():
     """Returns the ccsds directory."""
     return (
         imap_module_directory
@@ -69,33 +69,7 @@ def ccsds_path_hk():
         / "ultra"
         / "data"
         / "l0"
-        / "imap_ultra_l0_raw_20250517_v001.pkts"
-    )
-
-
-@pytest.fixture
-def ccsds_path_functional():
-    """Returns the ccsds directory."""
-    return (
-        imap_module_directory
-        / "tests"
-        / "ultra"
-        / "data"
-        / "l0"
-        / "FM45_UltraFM45_Functional_2024-01-22T0105_20240122T010548.CCSDS"
-    )
-
-
-@pytest.fixture
-def ccsds_path_startup():
-    """Returns the ccsds directory for imgparams."""
-    return (
-        imap_module_directory
-        / "tests"
-        / "ultra"
-        / "data"
-        / "l0"
-        / "FM90_Startup_20230711T081655.CCSDS"
+        / "imap_ultra_l0_raw_20260924_v001.pkts"
     )
 
 

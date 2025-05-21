@@ -139,9 +139,9 @@ def test_cdf_hk(ccsds_path_theta_0):
 
 
 @pytest.mark.external_test_data
-def test_cdf_cmdtxt(ccsds_path_hk):
+def test_cdf_cmdtxt(ccsds_path_all_apids):
     """Tests that CDF file can be created."""
-    test_data = ultra_l1a(ccsds_path_hk, apid_input=939)
+    test_data = ultra_l1a(ccsds_path_all_apids, apid_input=939)
     data = test_data[0]
     data.attrs["Data_version"] = "v999"
     test_data_path = write_cdf(data, istp=True)
@@ -151,29 +151,29 @@ def test_cdf_cmdtxt(ccsds_path_hk):
 
 
 @pytest.mark.external_test_data
-def test_cdf_monitorlimits(ccsds_path_functional):
+def test_cdf_monitorlimits(ccsds_path_all_apids):
     """Tests that CDF file can be created."""
-    test_data = ultra_l1a(ccsds_path_functional, apid_input=873)
+    test_data = ultra_l1a(ccsds_path_all_apids, apid_input=937)
     data = test_data[0]
     data.attrs["Data_version"] = "v999"
     test_data_path = write_cdf(data, istp=True)
 
     assert test_data_path.exists()
     assert (
-        test_data_path.name == "imap_ultra_l1a_45sensor-monitorlimits_20240122_v999.cdf"
+        test_data_path.name == "imap_ultra_l1a_90sensor-monitorlimits_20260924_v999.cdf"
     )
 
 
 @pytest.mark.external_test_data
-def test_cdf_startup(ccsds_path_startup):
+def test_cdf_startup(ccsds_path_all_apids):
     """Tests that CDF file can be created."""
-    test_data = ultra_l1a(ccsds_path_startup, apid_input=941)
+    test_data = ultra_l1a(ccsds_path_all_apids, apid_input=941)
     data = test_data[0]
     data.attrs["Data_version"] = "v999"
     test_data_path = write_cdf(data, istp=True)
 
     assert test_data_path.exists()
-    assert test_data_path.name == "imap_ultra_l1a_90sensor-imgparams_20230711_v999.cdf"
+    assert test_data_path.name == "imap_ultra_l1a_90sensor-imgparams_20260924_v999.cdf"
 
 
 def test_get_event_id():
