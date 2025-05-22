@@ -596,7 +596,7 @@ def group_ialirt_data(packets: xr.Dataset, data_field_range: range) -> list[byte
 
     Parameters
     ----------
-    packets : xr.Dataset
+    packets : xarray.Dataset
         The dataset containing the I-ALiRT data packets.
     data_field_range : range
         The range of the individual data fields (15 or lo, 6 for hi).
