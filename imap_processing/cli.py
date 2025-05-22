@@ -692,8 +692,8 @@ class Hi(ProcessInstrument):
         elif self.data_level == "l2":
             science_paths = dependencies.get_file_paths(source="hi", data_type="l2")
             # TODO get ancillary paths
-            geometric_factors_path = None
-            esa_energies_path = None
+            geometric_factors_path = ""
+            esa_energies_path = ""
             datasets = hi_l2.hi_l2(
                 science_paths,
                 geometric_factors_path,
