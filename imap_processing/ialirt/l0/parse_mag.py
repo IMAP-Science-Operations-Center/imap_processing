@@ -1,6 +1,7 @@
 """Functions to support I-ALiRT MAG packet parsing."""
 
 import logging
+from decimal import Decimal
 from typing import Union
 
 import numpy as np
@@ -389,16 +390,14 @@ def process_packet(
         mag_data.append(
             {
                 "apid": 478,
-                # Start of the group.
-                "met": met.values.min(),
+                "met": int(met.values.min()),
                 "utc": met_to_utc(met.values.min()),
-                "ttj2000ns": met_to_ttj2000ns(met.values.min()),
-                # Vectors.
-                "mag_4s_b_gse": [0, 0, 0],
-                "mag_4s_b_gsm": [0, 0, 0],
-                "mag_4s_b_rtn": [0, 0, 0],
-                "mag_phi_4s_b_gsm": 0,
-                "mag_theta_4s_b_gsm": 0,
+                "ttj2000ns": int(met_to_ttj2000ns(met.values.min())),
+                "mag_4s_b_gse": [Decimal("0.0") for _ in range(3)],
+                "mag_4s_b_gsm": [Decimal("0.0") for _ in range(3)],
+                "mag_4s_b_rtn": [Decimal("0.0") for _ in range(3)],
+                "mag_phi_4s_b_gsm": Decimal("0.0"),
+                "mag_theta_4s_b_gsm": Decimal("0.0"),
             }
         )
 
