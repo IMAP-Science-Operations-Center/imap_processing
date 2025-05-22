@@ -34,7 +34,7 @@ def mock_microphonics_noise(time: np.ndarray) -> np.ndarray:
     return combined_sig
 
 
-def test_l2a_logical_source(l2a_dataset: xr.Dataset):
+def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset):
     """Tests that the ``idex_l2a`` function generates datasets
     with the expected logical source.
 
@@ -45,31 +45,12 @@ def test_l2a_logical_source(l2a_dataset: xr.Dataset):
     """
     expected_src = "imap_idex_l2a_sci-1week"
     assert l2a_dataset.attrs["Logical_source"] == expected_src
-
-
-def test_idex_cdf_file(l2a_dataset: xr.Dataset):
-    """Verify the CDF file can be created with no errors.
-
-    Parameters
-    ----------
-    l2a_dataset : xarray.Dataset
-        The dataset to test with
-    """
+    # Verify the CDF file can be created with no errors.
     l2a_dataset.attrs["Data_version"] = "v999"
     file_name = write_cdf(l2a_dataset)
     assert file_name.exists()
     assert file_name.name == "imap_idex_l2a_sci-1week_20231218_v999.cdf"
 
-
-def test_l2a_cdf_variables(l2a_dataset: xr.Dataset):
-    """Tests that the ``idex_l2a`` function generates datasets
-    with the expected variables.
-
-    Parameters
-    ----------
-    l2a_dataset : xr.Dataset
-        A ``xarray`` dataset containing the test data
-    """
     expected_vars = [
         "tof_snr",
         "tof_peak_kappa",
@@ -246,13 +227,12 @@ def test_analyze_peaks_warning(caplog):
     assert any(
         "Failed to fit EMG curve" in message for message in caplog.text.splitlines()
     )
-
-    # The fit_params and area_under_curve arrays should be zero
-    assert np.all(fit_params == 0)
-    assert np.all(area_under_curve == 0)
-    # chi-square and reduced chi-square values should all be np.nan
-    np.testing.assert_array_equal(chisqr, np.nan)
-    np.testing.assert_array_equal(chisqr, np.nan)
+    # The fit_params, area_under_curve, chi square and reduced chi square arrays should
+    # be zero
+    np.testing.assert_array_equal(chisqr, np.zeros(chisqr.shape))
+    np.testing.assert_array_equal(redchi, np.zeros(redchi.shape))
+    np.testing.assert_array_equal(fit_params, np.zeros(fit_params.shape))
+    np.testing.assert_array_equal(area_under_curve, np.zeros(area_under_curve.shape))
 
 
 def test_analyze_peaks_perfect_fits():
@@ -291,8 +271,8 @@ def test_analyze_peaks_perfect_fits():
         # Test that there is a value greater than zero at this index
         assert area_under_curve[mass] > 0
         # Test the goodness of fit
-        assert chisqr < 1e-20
-        assert redchi < 1e-20
+        assert np.all(chisqr < 1e-20)
+        assert np.all(redchi < 1e-20)
 
 
 def test_estimate_dust_mass_no_noise_removal():
