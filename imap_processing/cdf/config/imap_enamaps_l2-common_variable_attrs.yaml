@@ -33,15 +33,6 @@ default_float32_attrs: &default_float32
   VALIDMAX: 3.4028235e+38
   dtype: float32
 
-# Define epoch_delta attributes
-epoch_delta:
-  <<: *default_int64
-  CATDESC: Number of nanoseconds covered by data included in this map product.
-  DISPLAY_TYPE: no_plot
-  VALIDMIN: 0
-  VAR_TYPE: metadata
-  UNITS: ns
-
 # Define Coordinate(s) which are tiling-independent
 energy:
   <<: *default_float32
