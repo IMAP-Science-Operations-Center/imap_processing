@@ -9,7 +9,7 @@ For CoDICE, there are 4 forms of compression:
     | 4. Pack 24 bit compression (24-bit integers)
 
 Only one lossy option can be selected in cases of lossy + lossless compression.
-Thus, there are 7 possibl3 compression algorithms:
+Thus, there are 7 possible compression algorithms:
 
     | 0. No compression
     | 1. Lossy A only
