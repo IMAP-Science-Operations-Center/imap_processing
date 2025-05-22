@@ -70,18 +70,21 @@ peak_fit_parameter_labels:
   FIELDNAM: EMG Parameter Labels
   VAR_TYPE: metadata
   FORMAT: A8
+  DEPEND_1: peak_fit_parameter_index
 
 target_fit_parameter_labels:
   CATDESC: Labels for the target fit parameters (time_of_impact, constant_offset, amplitude, rise_time, discharge_time)
   FIELDNAM: Target Fit Parameter Labels
   VAR_TYPE: metadata
   FORMAT: A8
+  DEPEND_1: target_fit_parameter_index
 
 mass_labels:
   CATDESC: Labels for mass index values
   FIELDNAM: Mass Labels
   VAR_TYPE: metadata
   FORMAT: A8
+  DEPEND_1: mass_index
 
 # <=== Index Attributes ===>
 peak_fit_parameter_index:

@@ -404,8 +404,8 @@ spin_phase:
   FIELDNAM: Spin Phase
   CATDESC: IMAP Spin Phase
   LABLAXIS: Spin Phase
-  FORMAT: I8
-  FILLVAL: *int_fillval
+  FORMAT: F12.6
+  FILLVAL: *double_fillval
 
 solar_longitude:
   <<: *spice_base
