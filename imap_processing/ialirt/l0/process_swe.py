@@ -547,7 +547,7 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
             {
                 "apid": 478,
                 "met": int(grouped["met"].min()),
-                "utc": met_to_utc(grouped["met"].min()),
+                "utc": met_to_utc(grouped["met"].min()).split(".")[0],
                 "ttj2000ns": int(met_to_ttj2000ns(grouped["met"].min())),
                 **{
                     f"swe_normalized_counts_quarter_1_esa_{i}": Decimal(str(val))
