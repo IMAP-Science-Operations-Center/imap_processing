@@ -13,6 +13,8 @@ from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.ialirt.l0.process_codicelo import process_codicelo
 
+pytestmark = pytest.mark.external_test_data
+
 
 @pytest.fixture(scope="session")
 def codicelo_test_data():
