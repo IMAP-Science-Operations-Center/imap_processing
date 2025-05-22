@@ -128,7 +128,7 @@ def test_prefixes():
 
 
 def test_create_l1(xarray_data):
-    """Tests create_l1"""
+    """Tests create_l1() function."""
 
     # Add a dummy value to the hit_met variable.
     xarray_data["sc_sclk_sec"] = xarray_data["hit_sc_tick"]
