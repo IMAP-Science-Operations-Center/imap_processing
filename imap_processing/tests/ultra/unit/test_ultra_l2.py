@@ -247,6 +247,12 @@ class TestUltraL2:
                 output_map_structure=map_structure,
             )
 
+        assert (
+            map_dataset.attrs["Logical_source"]
+            == "u90-ena-h-unknown-nsp-full-hae-nside16-6mo"
+        )
+        assert "unknown frame" in map_dataset.attrs["Logical_source_description"]
+
         assert map_dataset.attrs["HEALPix_nside"] == str(map_structure.nside)
         assert map_dataset.attrs["HEALPix_nest"] == str(map_structure.nested)
         assert "6mo" in map_dataset.attrs["Logical_source"]
@@ -484,6 +490,7 @@ class TestUltraL2:
         assert (
             output_map.attrs["Logical_source"] == "u90-ena-h-hf-nsp-full-hae-6deg-6mo"
         )
+        assert "heliospheric frame" in output_map.attrs["Logical_source_description"]
 
         assert output_map.attrs["Spice_reference_frame"] == "ECLIPJ2000"
         assert output_map.attrs["Spacing_degrees"] == "6.0"
@@ -496,7 +503,7 @@ class TestUltraL2:
                 descriptor="u90-ena-h-sf-nsp-full-hae-nside32-6mo",
             )[0]
 
-        assert "spacecraft" in output_map.attrs["Logical_source_description"]
+        assert "spacecraft frame" in output_map.attrs["Logical_source_description"]
         assert (
             output_map.attrs["Logical_source"]
             == "u90-ena-h-sf-nsp-full-hae-nside32-6mo"
