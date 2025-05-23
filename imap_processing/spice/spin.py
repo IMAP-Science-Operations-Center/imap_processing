@@ -124,7 +124,7 @@ def _load_spin_data_with_cache(csv_paths: tuple[Path]) -> pd.DataFrame:
         spin_dataframes,
     )
     # Duplicate the index so that users can access "spin_numer" by name
-    combined_df["spin_number"] = combined_df.index
+    combined_df.insert(0, "spin_number", combined_df.index)
     # Combine spin_start_sec_sclk and spin_start_subsec_sclk to get the spin start
     # time in seconds. The spin start subseconds are in microseconds.
     combined_df["spin_start_met"] = (

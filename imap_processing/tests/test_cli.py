@@ -31,7 +31,7 @@ from imap_processing.cli import (
     _validate_args,
     main,
 )
-from imap_processing.spice import repoint, spin
+from imap_processing.spice import config as spice_config
 
 
 @pytest.fixture
@@ -529,9 +529,9 @@ def test_spin_and_repoint_table_handling():
     # Test that expected spin and repoint paths are set
     def do_processing_side_effect(*args, **kwargs):
         """Check that the expected kernels are furnished"""
-        assert repoint._repoint_table_path.name == dependency_obj[1]["files"][0]
+        assert spice_config._repoint_table_path.name == dependency_obj[1]["files"][0]
         np.testing.assert_array_equal(
-            dependency_obj[2]["files"], [p.name for p in spin._spin_table_paths]
+            dependency_obj[2]["files"], [p.name for p in spice_config._spin_table_paths]
         )
         return [xr.Dataset()]
 
@@ -548,8 +548,8 @@ def test_spin_and_repoint_table_handling():
             "l1b", "sensor45-de", dependency_str, "20100105", None, "v001", True
         )
         # Verify no paths are set
-        assert spin._spin_table_paths == []
-        assert repoint._repoint_table_path is None
+        assert spice_config._spin_table_paths == []
+        assert spice_config._repoint_table_path is None
         # Verification that the expected paths are set is done in the
         # do_processing_side_effect to ensure they are correct during processing
         instrument.process()

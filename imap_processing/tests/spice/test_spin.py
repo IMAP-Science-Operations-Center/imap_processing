@@ -38,6 +38,7 @@ def test_set_spin_table_paths(monkeypatch):
             15,
             [
                 [
+                    1,
                     15,
                     0,
                     "2024-04-11 00:00:15.000000",
@@ -55,6 +56,7 @@ def test_set_spin_table_paths(monkeypatch):
             np.array([15.1, 30.2]),
             [
                 [
+                    1,
                     15,
                     0,
                     "2024-04-11 00:00:15.000000",
@@ -67,6 +69,7 @@ def test_set_spin_table_paths(monkeypatch):
                     0.1 / 15,
                 ],
                 [
+                    2,
                     30,
                     0,
                     "2024-04-11 00:00:30.000000",
@@ -189,6 +192,7 @@ def test_get_spin_data(use_fake_spin_data_for_time):
     assert isinstance(spin_data, pd.DataFrame), "Return type must be pandas.DataFrame."
 
     assert set(spin_data.columns) == {
+        "spin_number",
         "spin_start_sec_sclk",
         "spin_start_subsec_sclk",
         "spin_start_utc",
