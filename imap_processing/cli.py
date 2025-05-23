@@ -499,13 +499,23 @@ class ProcessInstrument(ABC):
         raise NotImplementedError
 
     def post_processing(
-        self, processed_data: list[xr.Dataset], dependencies: ProcessingInputCollection
+        self,
+        processed_data: list[xr.Dataset | Path],
+        dependencies: ProcessingInputCollection,
     ) -> None:
         """
         Complete post-processing.
 
-        Default post-processing consists of writing the datasets to local storage
-        and then uploading those newly generated products to the IMAP SDC.
+        Default post-processing consists of the following:
+        For each xarray.Dataset:
+            1. Set `Data_version` global attribute.
+            2. Set `Repointing` global attribute for appropriate products.
+            3. Set `Start_date` global attribute.
+            4. Set `Parents` global attribute.
+            5. Write the xarray.Dataset to a local CDF file.
+        The resulting paths to CDF files as well as any Path included in the
+        `processed_data` input are then uploaded to the IMAP SDC.
+
         Child classes can override this method to customize the
         post-processing actions.
 
@@ -515,8 +525,9 @@ class ProcessInstrument(ABC):
 
         Parameters
         ----------
-        processed_data : list[xarray.Dataset]
-            A list of datasets (products) produced by do_processing method.
+        processed_data : list[xarray.Dataset | Path]
+            A list of datasets (products) and paths produced by the do_processing
+            method.
         dependencies : ProcessingInputCollection
             Object containing dependencies to process.
         """
@@ -544,12 +555,16 @@ class ProcessInstrument(ABC):
 
         products = []
         for ds in processed_data:
-            ds.attrs["Data_version"] = self.version
-            if self.repointing is not None:
-                ds.attrs["Repointing"] = self.repointing
-            ds.attrs["Start_date"] = self.start_date
-            ds.attrs["Parents"] = parent_files
-            products.append(write_cdf(ds))
+            if isinstance(ds, xr.Dataset):
+                ds.attrs["Data_version"] = self.version
+                if self.repointing is not None:
+                    ds.attrs["Repointing"] = self.repointing
+                ds.attrs["Start_date"] = self.start_date
+                ds.attrs["Parents"] = parent_files
+                products.append(write_cdf(ds))
+            else:
+                # A path to a product that was already written out
+                products.append(ds)
 
         self.upload_products(products)
 
@@ -1099,36 +1114,6 @@ class Spacecraft(ProcessInstrument):
             raise NotImplementedError(
                 f"Spacecraft processing not implemented for level {self.data_level}"
             )
-
-    def post_processing(
-        self,
-        processed_data: list[xr.Dataset | Path],
-        dependencies: ProcessingInputCollection,
-    ) -> None:
-        """
-        Customize post-process handling of Spacecraft data.
-
-        Override the base class post_processing method to handle pointing kernel
-        generation.
-
-        Parameters
-        ----------
-        processed_data : list[xarray.Dataset | Path]
-            A list of either datasets (products) produced by do_processing or
-            Paths to pointing_kernels that have been generated.
-        dependencies : ProcessingInputCollection
-            Object containing dependencies to process.
-        """
-        # If the datasets list contains a xr.Dataset, call the super method
-        if isinstance(processed_data[0], xr.Dataset):
-            super().post_processing(processed_data, dependencies)
-            return
-        # Otherwise, we need to upload the pointing attitude kennels
-        logger.info(
-            f"Uploading new pointing kernels to the SDC: "
-            f"{[p.name for p in processed_data]}"
-        )
-        self.upload_products(processed_data)
 
 
 class Swapi(ProcessInstrument):
