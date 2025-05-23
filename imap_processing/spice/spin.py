@@ -1,5 +1,6 @@
 """Functions for retrieving spin-table data."""
 
+import functools
 import logging
 from functools import reduce
 from pathlib import Path
@@ -9,6 +10,7 @@ import numpy as np
 import pandas as pd
 from numpy import typing as npt
 
+from imap_processing.spice import config
 from imap_processing.spice.geometry import (
     SpiceFrame,
     get_spacecraft_to_instrument_spin_phase_offset,
@@ -21,13 +23,8 @@ pd.options.mode.copy_on_write = True
 
 logger = logging.getLogger(__name__)
 
-# Use a mutable module level attribute to store the location of spin files
-_spin_table_paths: list[Path] = []
-# cache spin-table data to avoid reloading from disk every time
-_spin_df_cache: dict[str, pd.DataFrame] = {}
 
-
-def set_spin_table_paths(paths: list[Path]) -> None:
+def set_global_spin_table_paths(paths: list[Path]) -> None:
     """
     Set the paths to input spin-table csv files.
 
@@ -37,14 +34,13 @@ def set_spin_table_paths(paths: list[Path]) -> None:
         List of paths to spin-table csv files that will be used to supply
         spin-table data.
     """
-    global _spin_table_paths  # noqa: PLW0603
     # If paths is an empty list, do nothing
     if not paths:
         return
     logger.info(
         f"Using the following spin-tables in processing: {[p.name for p in paths]}"
     )
-    _spin_table_paths = paths
+    config._spin_table_paths = paths
 
 
 def get_spin_data() -> pd.DataFrame:
@@ -74,22 +70,34 @@ def get_spin_data() -> pd.DataFrame:
     ------
     ValueError if no spin-table paths have been set.
     """
-    if len(_spin_table_paths) == 0:
+    if config._spin_table_paths is None or len(config._spin_table_paths) == 0:
         # Handle the case where the module attribute is not set
         raise ValueError(
             "Spin-table paths have not been defined in spin.py "
             "module attribute spin_table_paths."
         )
 
-    logger.debug(
-        f"Merging the following spin tables files: "
-        f"{[sp.name for sp in _spin_table_paths]}"
-    )
+    return _load_spin_data_with_cache(tuple(config._spin_table_paths))
 
-    cache_key = ",".join([str(sp.resolve()) for sp in _spin_table_paths])
-    if cache_key in _spin_df_cache:
-        logger.debug("Returning cached spin data")
-        return _spin_df_cache[cache_key]
+
+@functools.cache
+def _load_spin_data_with_cache(csv_paths: tuple[Path]) -> pd.DataFrame:
+    """
+    Load spin-table data from csv files and combine them.
+
+    Parameters
+    ----------
+    csv_paths : tuple[Path]
+        Locations of spin-table csv files.
+
+    Returns
+    -------
+    combined_df: pandas.DataFrame
+        The dataframe containing all spin data.
+    """
+    logger.debug(
+        f"Merging the following spin tables files: {[sp.name for sp in csv_paths]}"
+    )
 
     spin_dataframes = [
         pd.read_csv(
@@ -109,20 +117,17 @@ def get_spin_data() -> pd.DataFrame:
         )
         # Reversed sorting is used so that we get the desired result when
         # combining dataframes below.
-        for spin_table_path in sorted(_spin_table_paths, reverse=True)
+        for spin_table_path in sorted(csv_paths, reverse=True)
     ]
     combined_df = reduce(
         lambda left, right: left.combine_first(right),
         spin_dataframes,
     )
-
     # Combine spin_start_sec_sclk and spin_start_subsec_sclk to get the spin start
     # time in seconds. The spin start subseconds are in microseconds.
     combined_df["spin_start_met"] = (
         combined_df["spin_start_sec_sclk"] + combined_df["spin_start_subsec_sclk"] / 1e6
     )
-
-    _spin_df_cache[cache_key] = combined_df
     return combined_df
 
 

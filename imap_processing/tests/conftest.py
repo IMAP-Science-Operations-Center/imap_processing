@@ -17,7 +17,7 @@ import requests
 import spiceypy
 
 from imap_processing import imap_module_directory
-from imap_processing.spice import repoint, spin
+from imap_processing.spice import config as spice_config
 from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns
 
 
@@ -38,8 +38,8 @@ def imap_tests_path():
 @pytest.fixture(autouse=True)
 def clear_spin_and_repoint_paths(monkeypatch):
     """Clear the spin and repoint paths to avoid having test side effects."""
-    monkeypatch.setattr(spin, "_spin_table_paths", [])
-    monkeypatch.setattr(repoint, "_repoint_table_path", None)
+    monkeypatch.setattr(spice_config, "_spin_table_paths", [])
+    monkeypatch.setattr(spice_config, "_repoint_table_path", None)
 
 
 # Furnishing fixtures for testing kernels
@@ -501,7 +501,7 @@ def use_test_spin_data_csv(monkeypatch):
     """Monkeypatches `spin._spin_table_paths` to the input Path."""
 
     def wrapped_set_spin_data_filepath(paths: list[Path]):
-        monkeypatch.setattr(spin, "_spin_table_paths", paths)
+        monkeypatch.setattr(spice_config, "_spin_table_paths", paths)
 
     return wrapped_set_spin_data_filepath
 
@@ -638,7 +638,7 @@ def use_test_repoint_data_csv(monkeypatch):
     """Monkeypatches repoint._repoint_table_path to point to the input path."""
 
     def wrapped_set_repoint_data_filepath(path: Path):
-        monkeypatch.setattr(repoint, "_repoint_table_path", path)
+        monkeypatch.setattr(spice_config, "_repoint_table_path", path)
 
     return wrapped_set_repoint_data_filepath
 

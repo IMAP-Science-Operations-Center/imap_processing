@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing.spice import repoint
+from imap_processing.spice import config, repoint
 
 
 @pytest.fixture
@@ -21,11 +21,11 @@ def test_set_repoint_table_paths(monkeypatch):
     """Test coverage for set_repoint_table_paths function."""
     # Use monkeypatch here to make sure any side effects of calling the setter
     # get undone after this test
-    monkeypatch.setattr(repoint, "_repoint_table_path", None)
+    monkeypatch.setattr(config, "_repoint_table_path", None)
     repoint_path = Path("/path/to/fake_repoint_data.csv")
-    assert repoint._repoint_table_path is None
-    repoint.set_repoint_table_paths([repoint_path])
-    assert repoint._repoint_table_path == repoint_path
+    assert config._repoint_table_path is None
+    repoint.set_global_repoint_table_paths([repoint_path])
+    assert config._repoint_table_path == repoint_path
 
 
 def test_get_repoint_data(fake_repoint_data):

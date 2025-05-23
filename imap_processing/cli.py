@@ -477,12 +477,12 @@ class ProcessInstrument(ABC):
         spiceypy.furnsh([str(kernel_path.resolve()) for kernel_path in kernel_paths])
 
         # Set spin table paths in mutable module attributes
-        spin.set_spin_table_paths(
+        spin.set_global_spin_table_paths(
             dependencies.get_file_paths(data_type=SpinInput.data_type)
         )
 
         # Set repoint table path in mutable module attribute
-        repoint.set_repoint_table_paths(
+        repoint.set_global_repoint_table_paths(
             dependencies.get_file_paths(data_type=RepointInput.data_type)
         )
 

@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing.spice import spin
+from imap_processing.spice import config, spin
 from imap_processing.spice.geometry import SpiceFrame
 
 
@@ -21,14 +21,14 @@ def test_set_spin_table_paths(monkeypatch):
     """Test coverage for set_spin_table_paths function."""
     # Use monkeypatch here to make sure any side effects of calling the setter
     # get undone after this test
-    monkeypatch.setattr(spin, "_spin_table_paths", [])
-    assert spin._spin_table_paths == []
+    monkeypatch.setattr(config, "_spin_table_paths", [])
+    assert config._spin_table_paths == []
     spin_paths = [
         Path("/path/to/fake_spin_data0.csv"),
         Path("/path/to/fake_spin_data1.csv"),
     ]
-    spin.set_spin_table_paths(spin_paths)
-    np.testing.assert_array_equal(spin._spin_table_paths, spin_paths)
+    spin.set_global_spin_table_paths(spin_paths)
+    np.testing.assert_array_equal(config._spin_table_paths, spin_paths)
 
 
 @pytest.mark.parametrize(

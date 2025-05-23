@@ -1,5 +1,6 @@
 """Functions for retrieving repointing table data."""
 
+import functools
 import logging
 from pathlib import Path
 from typing import Union
@@ -8,6 +9,8 @@ import numpy as np
 import pandas as pd
 from numpy import typing as npt
 
+from imap_processing.spice import config
+
 # Copy-on-write will be enabled by default in pandas 3.0
 # It is recommended to enable it now. See:
 # https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
@@ -15,47 +18,42 @@ pd.options.mode.copy_on_write = True
 
 logger = logging.getLogger(__name__)
 
-# Use a mutable module level attribute to store the location of the repoint table
-_repoint_table_path: Path | None = None
-# cache repoint-table data to avoid reloading from disk every time
-_repoint_df_cache: dict[str, pd.DataFrame] = {}
 
-
-def set_repoint_table_paths(paths: list[Path]) -> None:
+def set_global_repoint_table_paths(paths: list[Path]) -> None:
     """
-    Set the paths to input repoint-table csv files.
+    Set the path to input repoint-table csv file.
 
     Parameters
     ----------
     paths : list[Path]
         List of paths to repoint-table csv files that will be used to supply
-        repoint-table data.
+        repoint-table data. Note that although a list of Path objects is allowed,
+        only a list of length 0 or 1 is supported.
 
     Raises
     ------
     ValueError if paths contains more than one repoint-table csv file path.
     """
-    global _repoint_table_path  # noqa: PLW0603
     # If paths is an empty list, do nothing
     if not paths:
         return
     elif len(paths) > 1:
         raise ValueError("Cannot set repoint-table paths to more than one file.")
     logger.info(f"Using the following repoint table in processing: {paths[0].name}")
-    _repoint_table_path = paths[0]
+    config._repoint_table_path = paths[0]
 
 
 def get_repoint_data() -> pd.DataFrame:
     """
-    Read repointing file using environment variable and return as dataframe.
+    Read repointing file from the configured location and return as dataframe.
 
     Pointing and repointing nomenclature can be confusing. In this case,
     repoint is taken to mean a repoint maneuver. Thus, repoint_start and repoint_end
     are the times that bound when the spacecraft is performing a repointing maneuver.
     This is different from a pointing which is the time between repointing maneuvers.
 
-    REPOINT_DATA_FILEPATH environment variable should point to a local
-    file where the repointing csv file is located.
+    The repoint table location is stored in the global variable `_repoint_table_path`
+    in the imap_processing.spice.config module.
 
     Returns
     -------
@@ -80,22 +78,31 @@ def get_repoint_data() -> pd.DataFrame:
     ------
     ValueError if no path to a repoint-table has been set.
     """
-    if _repoint_table_path is None:
+    if config._repoint_table_path is None:
         raise ValueError(
             "No repoint-table path as been defined in repoint.py "
             "module attribute repoint_table_path."
         )
+    return _load_repoint_data_with_cache(config._repoint_table_path)
 
-    logger.debug(
-        f"Reading in the following repoint table file: {_repoint_table_path.name}"
-    )
 
-    cache_key = str(_repoint_table_path.resolve())
-    if cache_key in _repoint_df_cache:
-        logger.debug("Returning cached repointing data")
-        return _repoint_df_cache[cache_key]
+@functools.cache
+def _load_repoint_data_with_cache(csv_path: Path) -> pd.DataFrame:
+    """
+    Load repointing data from csv file.
 
-    repoint_df = pd.read_csv(_repoint_table_path, comment="#")
+    Parameters
+    ----------
+    csv_path : Path
+        Location of repointing csv file.
+
+    Returns
+    -------
+    repoint_df : pandas.DataFrame
+        See `get_repoint_data` documentation regarding dataframe contents.
+    """
+    logger.debug(f"Reading in the following repoint table file: {csv_path.name}")
+    repoint_df = pd.read_csv(csv_path, comment="#")
 
     # Compute times by combining seconds and subseconds fields
     repoint_df["repoint_start_met"] = (
@@ -105,8 +112,6 @@ def get_repoint_data() -> pd.DataFrame:
     repoint_df["repoint_end_met"] = (
         repoint_df["repoint_end_sec_sclk"] + repoint_df["repoint_end_subsec_sclk"] / 1e6
     )
-
-    _repoint_df_cache[cache_key] = repoint_df
     return repoint_df
 
 
