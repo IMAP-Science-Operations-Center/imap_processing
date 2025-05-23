@@ -24,7 +24,7 @@ PROCESSING_LEVELS = {
     "glows": ["l1a", "l1b", "l2"],
     "hi": ["l1a", "l1b", "l1c", "l2"],
     "hit": ["l1a", "l1b", "l2"],
-    "idex": ["l1a", "l1b", "l2a", "l2b"],
+    "idex": ["l1a", "l1b", "l2a", "l2b", "l2c"],
     "lo": ["l1a", "l1b", "l1c", "l2"],
     "mag": ["l1a", "l1b", "l1c", "l1d", "l2"],
     "spacecraft": ["l1a"],
