@@ -2,8 +2,6 @@ int_fillval: &int_fillval -9223372036854775808
 double_fillval: &double_fillval -1.0E+31
 int_maxval: &int_maxval 9223372036854775807
 
-data_max: &data_max 4095
-
 # <=== Base Attributes ===>
 fit_parameter_base: &fit_parameter_base
   UNITS: " "
@@ -30,7 +28,7 @@ impact_charge_base: &impact_charge_base
   DICT_KEY: SPASE>Particle>ParticleType:Dust>ParticleQuantity:Current>Qualifier:Derived # TODO quantity should be charge but there is no SPASE charge
 
 mass_estimate_base: &mass_estimate_base
-  UNITS: g
+  UNITS: u
   VALIDMIN: 0.0
   VALIDMAX: *int_maxval
   VAR_TYPE: data
@@ -73,8 +71,9 @@ peak_fit_parameter_labels:
   DEPEND_1: peak_fit_parameter_index
 
 target_fit_parameter_labels:
-  CATDESC: Labels for the target fit parameters (time_of_impact, constant_offset, amplitude, rise_time, discharge_time)
+  CATDESC: Labels for the target fit parameters.
   FIELDNAM: Target Fit Parameter Labels
+  VAR_NOTES: Parameters include time_of_impact, constant_offset, amplitude, rise_time, discharge_time.
   VAR_TYPE: metadata
   FORMAT: A8
   DEPEND_1: target_fit_parameter_index
@@ -220,7 +219,8 @@ mass_scale:
 
 target_low_fit_parameters:
   <<: *fit_parameter_base
-  CATDESC: Fitted parameters (time of impact, constant offset, amplitude, rise time, discharge time) for Target Low impact signal.
+  CATDESC: Fitted parameters for Target Low impact signal.
+  VAR_NOTES: Parameters include time of impact, constant offset, amplitude, rise time, discharge time.
   FIELDNAM: Target Low Fit Parameters
 
 target_low_impact_charge:
@@ -255,13 +255,14 @@ target_low_fit_results:
 
 target_high_fit_parameters:
   <<: *fit_parameter_base
-  CATDESC: Fitted parameters (time of impact, constant offset, amplitude, rise time, discharge time) for Target High impact signal.
+  CATDESC: Fitted parameters for Target High impact signal.
+  VAR_NOTES: Parameters include time of impact, constant offset, amplitude, rise time, discharge time.
   FIELDNAM: Target High Fit Parameters
 
 target_high_impact_charge:
   <<: *impact_charge_base
   LABLAXIS: Target High Impact Charge
-  CATDESC: Total charge from the dust impact on Target High channel derived from the fitted curve.
+  CATDESC: Charge from the dust impact on Target High derived from the fitted curve.
   FIELDNAM: Target High Impact Charge
 
 target_high_dust_mass_estimate:
@@ -273,7 +274,7 @@ target_high_dust_mass_estimate:
 target_high_chi_squared:
   <<: *chi_square_base
   LABLAXIS: Target High Chi Square
-  CATDESC: Reduced chi squared value for the Target High signal fit.
+  CATDESC: Chi squared value for the Target High signal fit.
   FIELDNAM: Chi Square (Target High)
 
 target_high_reduced_chi_squared:
@@ -290,13 +291,14 @@ target_high_fit_results:
 
 ion_grid_fit_parameters:
   <<: *fit_parameter_base
-  CATDESC: Fitted parameters (time of impact, constant offset, amplitude, rise time, discharge time) for Ion Grid impact signal.
+  CATDESC: Fitted parameters for Ion Grid impact signal.
+  VAR_NOTES: Parameters include time of impact, constant offset, amplitude, rise time, discharge time.
   FIELDNAM: Ion Grid Fit Parameters
 
 ion_grid_impact_charge:
   <<: *impact_charge_base
   LABLAXIS: Ion Grid Impact Charge
-  CATDESC: Total charge from the dust impact on Ion Grid channel derived from the fitted curve.
+  CATDESC: Charge from the dust impact on Ion Grid channel derived from the fitted curve.
   FIELDNAM: Ion Grid Impact Charge
 
 ion_grid_dust_mass_estimate:

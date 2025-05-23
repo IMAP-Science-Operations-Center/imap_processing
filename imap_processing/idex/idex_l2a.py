@@ -483,10 +483,11 @@ def analyze_peaks(
     # and the second is EMG fit parameters (mu, sigma, lambda) for peaks at that mass
     # area_under_emg: (500) array storing the area under each EMG peak at
     # corresponding mass.
-    fit_params = np.zeros((500, 3))
-    area_under_emg = np.zeros(500)
-    chisqrs = np.zeros(500)
-    redchis = np.zeros(500)
+    ion_mass_dim = 500
+    fit_params = np.zeros((ion_mass_dim, 3))
+    area_under_emg = np.zeros(ion_mass_dim)
+    chisqrs = np.zeros(ion_mass_dim)
+    redchis = np.zeros(ion_mass_dim)
     for peak in peaks_2d[event_num]:
         # Take a slice of 5 samples on either side of the peak
         start = max(0, peak - 5)

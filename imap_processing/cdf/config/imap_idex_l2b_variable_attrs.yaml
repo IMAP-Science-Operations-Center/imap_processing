@@ -15,7 +15,8 @@ impact_day_of_year:
     DICT_KEY: SPASE>SupportQuantity:Temporal,Qualifier:Array # TODO: review this
 
 spin_phase_quadrants:
-    CATDESC: The spacecraft spin phase at the time of detection. This is given in quadrants (0, 90, 180, 270).
+    CATDESC: The spacecraft spin phase at the time of detection.
+    VAR_NOTES: This is given in quadrants (0, 90, 180, 270).
     FIELDNAM: Spin Phase Quadrants
     LABLAXIS: Spin Phase Quadrants
     DEPEND_0: epoch
