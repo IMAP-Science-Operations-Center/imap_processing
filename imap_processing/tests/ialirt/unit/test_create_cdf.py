@@ -1,49 +1,58 @@
+"""Tests cdf based on structure of queried DynamoDB."""
+
 from decimal import Decimal
 
 import numpy as np
 
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.ialirt.utils.create_cdf import create_dataset_from_records
 
 
-def test_create_dataset_from_records_simple():
-    # Example records with two variables and coordinate fields
+def test_create_dataset():
+    """Tests create_dataset function."""
     records = [
-        {   "apid": 478,
+        {
+            "apid": 478,
             "met": 123,
             "utc": "2025-05-21T14:00:00",
             "ttj2000ns": Decimal("111000000000"),
             "hit_e_a_side_low_en": Decimal("1.0"),
+            "mag_4s_b_gse": [Decimal("0.1"), Decimal("0.2"), Decimal("0.3")],
         },
         {
             "apid": 478,
             "met": 124,
             "utc": "2025-05-21T15:00:00",
-            "ttj2000ns": Decimal("111000000000"),
+            "ttj2000ns": Decimal("222000000000"),
             "swe_normalized_counts_quarter_1_esa_0": Decimal("123"),
         },
     ]
 
     dataset = create_dataset_from_records(records)
 
-    # Coordinate checks
-    assert "epoch" in dataset.coords
-    assert dataset.dims["epoch"] == 2
+    assert (dataset["component"].values == ["vx", "vy", "vz"]).all()
 
-    # Variable checks
-    assert "swe_normalized_counts_quarter_1_esa_0" in dataset.variables
-    assert "hit_e_a_side_low_en" in dataset.variables
-
-    # Value checks
     np.testing.assert_allclose(
         dataset["swe_normalized_counts_quarter_1_esa_0"].values,
-        [np.nan, 0.123],
-        equal_nan=True,
+        [4294967295, 123],
     )
     np.testing.assert_allclose(
         dataset["hit_e_a_side_low_en"].values,
-        [1.0, np.nan],
-        equal_nan=True,
+        [1.0, 4294967295],
+    )
+    np.testing.assert_allclose(
+        dataset["mag_4s_b_gse"].isel(epoch=0).values,
+        [0.1, 0.2, 0.3],
+    )
+    np.testing.assert_allclose(
+        dataset["mag_4s_b_gse"].isel(epoch=1).values,
+        [-1.0e31, -1.0e31, -1.0e31],
     )
 
-    # ttj2000ns handling (optional: treat as variable or coordinate)
-    assert "ttj2000ns" in dataset.variables or "ttj2000ns" in dataset.coords
+    assert dataset["mag_4s_b_gse"].dims == ("epoch", "component")
+
+    # Tests that you can write to a cdf.
+    dataset.attrs["Data_version"] = "v001"
+    test_data_path = write_cdf(dataset, istp=True)
+
+    assert test_data_path.exists()
