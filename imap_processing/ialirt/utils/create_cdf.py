@@ -1,7 +1,4 @@
 """Creates cdf based on structure of queried DynamoDB."""
-
-# [{'apid': Decimal('478'), 'met': Decimal('111'), 'hit_e_a_side_low_en': Decimal('1.0')}, {'apid': Decimal('478'), 'met': Decimal('222'), 'swe_normalized_counts_quarter_1_esa_0': Decimal('0.123')}]
-
 from collections import defaultdict
 from decimal import Decimal
 
@@ -18,7 +15,7 @@ def create_dataset_from_records(records: list[dict]) -> xr.Dataset:
     Parameters
     ----------
     records : list of dict
-        Each dict must contain an 'epoch' field and variables starting with instrument prefix.
+       Output of querying DynamoDB.
 
     Returns
     -------
@@ -30,21 +27,28 @@ def create_dataset_from_records(records: list[dict]) -> xr.Dataset:
     cdf_manager.add_instrument_global_attrs("ialirt")
     cdf_manager.add_instrument_variable_attrs("ialirt", "l1")
 
-    # Collect all instrument-prefixed keys
+    INSTRUMENT_PREFIXES = ("swe", "hit", "mag", "codicelo", "codicehi", "swapi")
     instrument_keys = set()
-    for record in records:
-        instrument_keys.update(key for key in record if key.startswith("ialirt"))
 
-    # Convert to column-major format with default fills
+    for record in records:
+        instrument_keys.update(key for key in record if key.startswith(INSTRUMENT_PREFIXES))
+
+    # Convert to columns, add FILLVALS, and associate with datatype.
     data_dict = defaultdict(list)
-    for r in records:
+    for record in records:
         for key in instrument_keys:
-            val = r.get(key, np.nan)
-            if isinstance(val, Decimal):
-                val = float(val)
+            fillval = cdf_manager.get_variable_attributes(key).get("FILLVAL")
+            val = record.get(key, fillval)
+            if key == "swe_counterstreaming_electrons":
+                val = np.uint8(val)
+            elif key.startswith("hit") or key.startswith("swe"):
+                val = np.uint32(val)
+            else:
+                val = np.float32(val)
+
             data_dict[key].append(val)
 
-    # Convert to numpy arrays
+    # Convert to arrays
     for key in data_dict:
         data_dict[key] = np.array(data_dict[key])
 

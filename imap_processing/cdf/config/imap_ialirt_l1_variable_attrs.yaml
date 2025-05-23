@@ -73,42 +73,42 @@ default_float64_attrs: &default_float64
   dtype: float64
 
 hit_e_a_side_low_en:
-  <<: *default_float32
+  <<: *default_uint32
   CATDESC: Low energy (~300 keV) electrons (A-side)
   FIELDNAM: Low energy (~300 keV) electrons (A-side)
   LABLAXIS: hit_e_a_side_low_en
   UNITS: counts
 
 hit_e_a_side_med_en:
-  <<: *default_float32
+  <<: *default_uint32
   CATDESC: Medium energy (~3 MeV) electrons (A-side)
   FIELDNAM: Medium energy (~3 MeV) electrons (A-side)
   LABLAXIS: hit_e_a_side_med_en
   UNITS: counts
 
 hit_e_a_side_high_en:
-  <<: *default_float32
+  <<: *default_uint32
   CATDESC: High energy (>3 MeV) electrons (A-side)
   FIELDNAM: High energy (>3 MeV) electrons (A-side)
   LABLAXIS: hit_e_a_side_high_en
   UNITS: counts
 
 hit_e_b_side_low_en:
-  <<: *default_float32
+  <<: *default_uint32
   CATDESC: Low energy (~300 keV) electrons (B-side)
   FIELDNAM: Low energy (~300 keV) electrons (B-side)
   LABLAXIS: hit_e_b_side_low_en
   UNITS: counts
 
 hit_e_b_side_med_en:
-  <<: *default_float32
+  <<: *default_uint32
   CATDESC: Medium energy (~3 MeV) electrons (B-side)
   FIELDNAM: Medium energy (~3 MeV) electrons (B-side)
   LABLAXIS: hit_e_b_side_med_en
   UNITS: counts
 
 hit_e_b_side_high_en:
-  <<: *default_float32
+  <<: *default_uint32
   CATDESC: High energy (>3 MeV) electrons (B-side)
   FIELDNAM: High energy (>3 MeV) electrons (B-side)
   LABLAXIS: hit_e_b_side_high_en
@@ -122,21 +122,21 @@ hit_h_omni_med_en:
   UNITS: counts
 
 hit_h_a_side_high_en:
-  <<: *default_float32
+  <<: *default_uint32
   CATDESC: High energy (>70 MeV) protons (A-side)
   FIELDNAM: High energy (>70 MeV) protons (A-side)
   LABLAXIS: hit_h_a_side_high_en
   UNITS: counts
 
 hit_h_b_side_high_en:
-  <<: *default_float32
+  <<: *default_uint32
   CATDESC: High energy (>70 MeV) protons (B-side)
   FIELDNAM: High energy (>70 MeV) protons (B-side)
   LABLAXIS: hit_h_b_side_high_en
   UNITS: counts
 
 hit_he_omni_low_en:
-  <<: *default_float32
+  <<: *default_uint32
   CATDESC: Low energy (6–8 MeV/nuc) He (Omnidirectional)
   FIELDNAM: Low energy (6–8 MeV/nuc) He (Omnidirectional)
   LABLAXIS: hit_he_omni_low_en
@@ -359,3 +359,12 @@ swe_normalized_counts_quarter_2_esa_7:
   UNITS: Normalized counts
   VALIDMIN: 0
   VALIDMAX: 500000
+
+swe_counterstreaming_electrons:
+    <<: *default_uint8
+    CATDESC: Counterstreaming electrons
+    FIELDNAM: swe_counterstreaming_electrons
+    LABLAXIS: swe_counterstreaming_electrons
+    UNITS: ""
+    VALIDMIN: 0
+    VALIDMAX: 1

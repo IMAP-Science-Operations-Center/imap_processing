@@ -2,25 +2,28 @@ from decimal import Decimal
 
 import numpy as np
 
-from imap_processing.datasets.creator import create_dataset_from_records
+from imap_processing.ialirt.utils.create_cdf import create_dataset_from_records
 
 
 def test_create_dataset_from_records_simple():
     # Example records with two variables and coordinate fields
     records = [
-        {
-            "epoch": Decimal("111"),
+        {   "apid": 478,
+            "met": 123,
+            "utc": "2025-05-21T14:00:00",
             "ttj2000ns": Decimal("111000000000"),
             "hit_e_a_side_low_en": Decimal("1.0"),
         },
         {
-            "epoch": Decimal("222"),
-            "ttj2000ns": Decimal("222000000000"),
-            "swe_normalized_counts_quarter_1_esa_0": Decimal("0.123"),
+            "apid": 478,
+            "met": 124,
+            "utc": "2025-05-21T15:00:00",
+            "ttj2000ns": Decimal("111000000000"),
+            "swe_normalized_counts_quarter_1_esa_0": Decimal("123"),
         },
     ]
 
-    dataset = create_dataset_from_records(records, instrument_name="swe", level="l1a")
+    dataset = create_dataset_from_records(records)
 
     # Coordinate checks
     assert "epoch" in dataset.coords
