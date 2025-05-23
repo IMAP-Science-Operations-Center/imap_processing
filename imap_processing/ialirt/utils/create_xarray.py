@@ -1,4 +1,4 @@
-"""Creates cdf based on structure of queried DynamoDB."""
+"""Creates xarray based on structure of queried DynamoDB."""
 
 from collections import defaultdict
 
@@ -8,7 +8,7 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
 
-def create_dataset_from_records(records: list[dict]) -> xr.Dataset:
+def create_xarray_from_records(records: list[dict]) -> xr.Dataset:
     """
     Create dataset from a list of records.
 

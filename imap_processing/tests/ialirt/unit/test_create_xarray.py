@@ -1,11 +1,11 @@
-"""Tests cdf based on structure of queried DynamoDB."""
+"""Tests xarray based on structure of queried DynamoDB."""
 
 from decimal import Decimal
 
 import numpy as np
 
 from imap_processing.cdf.utils import write_cdf
-from imap_processing.ialirt.utils.create_cdf import create_dataset_from_records
+from imap_processing.ialirt.utils.create_xarray import create_xarray_from_records
 
 
 def test_create_dataset():
@@ -28,7 +28,7 @@ def test_create_dataset():
         },
     ]
 
-    dataset = create_dataset_from_records(records)
+    dataset = create_xarray_from_records(records)
 
     assert (dataset["component"].values == ["vx", "vy", "vz"]).all()
 
