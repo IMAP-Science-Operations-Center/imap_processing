@@ -838,10 +838,10 @@ class Idex(ProcessInstrument):
             science_files = dependencies.get_file_paths(source="idex")
             datasets = PacketParser(science_files[0]).data
         elif self.data_level == "l1b":
-            if len(dependency_list) != 2:
+            if len(dependency_list) != 3:
                 raise ValueError(
                     f"Unexpected dependencies found for IDEX L1B:"
-                    f"{dependency_list}. Expected only two dependencies."
+                    f"{dependency_list}. Expected only three dependencies."
                 )
             # get CDF file
             science_files = dependencies.get_file_paths(source="idex")
