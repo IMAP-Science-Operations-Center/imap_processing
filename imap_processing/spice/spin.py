@@ -30,7 +30,7 @@ def set_global_spin_table_paths(paths: list[Path]) -> None:
 
     Parameters
     ----------
-    paths : list[Path]
+    paths : list[pathlib.Path]
         List of paths to spin-table csv files that will be used to supply
         spin-table data.
     """
@@ -68,7 +68,8 @@ def get_spin_data() -> pd.DataFrame:
 
     Raises
     ------
-    ValueError if no spin-table paths have been set.
+    ValueError
+        If no spin-table paths have been set.
     """
     if config._spin_table_paths is None or len(config._spin_table_paths) == 0:
         # Handle the case where the module attribute is not set

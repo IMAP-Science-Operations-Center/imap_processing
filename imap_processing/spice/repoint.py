@@ -25,14 +25,15 @@ def set_global_repoint_table_paths(paths: list[Path]) -> None:
 
     Parameters
     ----------
-    paths : list[Path]
+    paths : list[pathlib.Path]
         List of paths to repoint-table csv files that will be used to supply
         repoint-table data. Note that although a list of Path objects is allowed,
         only a list of length 0 or 1 is supported.
 
     Raises
     ------
-    ValueError if paths contains more than one repoint-table csv file path.
+    ValueError
+        If paths contains more than one repoint-table csv file path.
     """
     # If paths is an empty list, do nothing
     if not paths:
@@ -76,7 +77,8 @@ def get_repoint_data() -> pd.DataFrame:
 
     Raises
     ------
-    ValueError if no path to a repoint-table has been set.
+    ValueError
+        If no path to a repoint-table has been set.
     """
     if config._repoint_table_path is None:
         raise ValueError(
