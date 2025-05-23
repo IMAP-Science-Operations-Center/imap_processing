@@ -28,7 +28,7 @@ impact_charge_base: &impact_charge_base
   DICT_KEY: SPASE>Particle>ParticleType:Dust>ParticleQuantity:Current>Qualifier:Derived # TODO quantity should be charge but there is no SPASE charge
 
 mass_estimate_base: &mass_estimate_base
-  UNITS: u
+  UNITS: amu
   VALIDMIN: 0.0
   VALIDMAX: *int_maxval
   VAR_TYPE: data
