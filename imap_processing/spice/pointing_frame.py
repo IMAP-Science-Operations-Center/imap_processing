@@ -1,7 +1,6 @@
 """Functions for retrieving repointing table data."""
 
 import logging
-import re
 import typing
 from collections.abc import Generator
 from contextlib import contextmanager
@@ -57,12 +56,12 @@ def generate_pointing_attitude_kernel(imap_attitude_ck: Path) -> list[Path]:
     # TODO: For now just use the input CK start/end dates. It is possible that
     #    the end date is incorrect b/c the repoint table determines the last
     #    segment in the pointing kernel.
-    input_file_parts = re.match(
-        SPICEFilePath.attitude_file_pattern, imap_attitude_ck.name
-    ).groupdict()
+    spice_file = SPICEFilePath(imap_attitude_ck.name)
     pointing_kernel_path = (
-        imap_attitude_ck.parent / f"imap_dps_{input_file_parts['start_year_doy']}_"
-        f"{input_file_parts['end_year_doy']}_{input_file_parts['version']}.ah.bc"
+        imap_attitude_ck.parent / f"imap_dps_"
+        f"{spice_file.spice_metadata['start_date'].strftime('%Y_%j')}_"
+        f"{spice_file.spice_metadata['end_date'].strftime('%Y_%j')}_"
+        f"{spice_file.spice_metadata['version']}.ah.bc"
     )
     write_pointing_frame_ck(
         pointing_kernel_path, pointing_segments, imap_attitude_ck.name
