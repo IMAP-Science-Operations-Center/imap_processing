@@ -10,7 +10,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
 def create_dataset_from_records(records: list[dict]) -> xr.Dataset:
     """
-    Create xarray.Dataset from a list of flat dictionaries, one per record.
+    Create dataset from a list of records.
 
     Parameters
     ----------
@@ -22,18 +22,17 @@ def create_dataset_from_records(records: list[dict]) -> xr.Dataset:
     dataset : xarray.Dataset
         Dataset in standard format.
     """
-    # Initialize CDF manager
     cdf_manager = ImapCdfAttributes()
     cdf_manager.add_instrument_global_attrs("ialirt")
     cdf_manager.add_instrument_variable_attrs("ialirt", "l1")
 
-    INSTRUMENT_PREFIXES = ("swe", "hit", "mag", "codicelo", "codicehi", "swapi")
+    instrument_prefixes = ("swe", "hit", "mag", "codicelo", "codicehi", "swapi")
     instrument_keys = set()
 
     for record in records:
-        instrument_keys.update(key for key in record if key.startswith(INSTRUMENT_PREFIXES))
+        instrument_keys.update(key for key in record if key.startswith(instrument_prefixes))
 
-    # Convert to columns, add FILLVALS, and associate with datatype.
+    # Convert to columns, add fillvals, and associate with datatype.
     data_dict = defaultdict(list)
     for record in records:
         for key in instrument_keys:
@@ -52,30 +51,24 @@ def create_dataset_from_records(records: list[dict]) -> xr.Dataset:
     for key in data_dict:
         data_dict[key] = np.array(data_dict[key])
 
-    # Handle epoch coordinate
-    epochs = [
-        float(r["epoch"]) if isinstance(r["epoch"], Decimal) else r["epoch"]
-        for r in records
-    ]
-    epoch_coord = xr.DataArray(
-        epochs,
+    ttj2000ns_values = []
+    for record in records:
+        ttj2000ns_values.append(np.int64(record["ttj2000ns"]))
+
+    epoch = xr.DataArray(
+        data=np.array(ttj2000ns_values, dtype=np.int64),
         name="epoch",
         dims=["epoch"],
         attrs=cdf_manager.get_variable_attributes("epoch"),
     )
+    component = xr.DataArray(
+        ["vx", "vy", "vz"],
+        name="component",
+        dims=["component"],
+        attrs=cdf_manager.get_variable_attributes("component"),
+    )
 
-    coords = {"epoch": epoch_coord}
-    default_dimension = "epoch"
-
-    # Add component dimension if any mag_ variables exist
-    if any(k.startswith("mag_") for k in instrument_keys):
-        component = xr.DataArray(
-            ["vx", "vy", "vz"],
-            name="component",
-            dims=["component"],
-            attrs=cdf_manager.get_variable_attributes("component"),
-        )
-        coords["component"] = component
+    coords = {"epoch": epoch, "component": component}
 
     dataset = xr.Dataset(
         coords=coords, attrs=cdf_manager.get_global_attributes("ialirt")
@@ -83,7 +76,7 @@ def create_dataset_from_records(records: list[dict]) -> xr.Dataset:
 
     for key in sorted(instrument_keys):
         data = data_dict[key]
-        dims = ["epoch", "component"] if key.startswith("mag_") else [default_dimension]
+        dims = ["epoch", "component"] if key.startswith("mag") else ["epoch"]
         dataset[key] = xr.DataArray(
             data,
             dims=dims,
