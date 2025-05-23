@@ -16,11 +16,6 @@ from imap_processing.spice.geometry import (
     get_spacecraft_to_instrument_spin_phase_offset,
 )
 
-# Copy-on-write will be enabled by default in pandas 3.0
-# It is recommended to enable it now. See:
-# https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
-pd.options.mode.copy_on_write = True
-
 logger = logging.getLogger(__name__)
 
 
