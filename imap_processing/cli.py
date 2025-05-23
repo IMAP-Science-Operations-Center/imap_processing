@@ -936,7 +936,7 @@ class Lo(ProcessInstrument):
 class Mag(ProcessInstrument):
     """Process MAG."""
 
-    def do_processing(
+    def do_processing(  # noqa: PLR0912
         self, dependencies: ProcessingInputCollection
     ) -> list[xr.Dataset]:
         """
@@ -956,10 +956,23 @@ class Mag(ProcessInstrument):
         datasets: list[xr.Dataset] = []
 
         dependency_list = dependencies.processing_input
-        science_files = dependencies.get_file_paths(source="mag")
+
+        # If the calibration files have no end date on them, we need to designate
+        # one. This ensures we have 3 days past the processing day in the
+        # calibration file.
+
+        if self.start_date is not None:
+            current_day = np.datetime64(
+                f"{self.start_date[:4]}-{self.start_date[4:6]}-{self.start_date[6:]}"
+            )
+            day_buffer = current_day + np.timedelta64(3, "D")
+        else:
+            raise ValueError("Start date is not set for MAG L2 processing.")
+
         if self.data_level == "l1a":
+            science_files = dependencies.get_file_paths(source="mag", data_type="l0")
             # File path is expected output file path
-            if len(dependency_list) > 1:
+            if len(science_files) != 1:
                 raise ValueError(
                     f"Unexpected dependencies found for MAG L1A:"
                     f"{dependency_list}. Expected only one dependency."
@@ -968,15 +981,29 @@ class Mag(ProcessInstrument):
             datasets = mag_l1a(science_files[0])
 
         if self.data_level == "l1b":
-            if len(dependency_list) > 1:
+            science_files = dependencies.get_file_paths(source="mag", data_type="l1a")
+            if len(science_files) != 1:
                 raise ValueError(
                     f"Unexpected dependencies found for MAG L1B:"
                     f"{dependency_list}. Expected only one dependency."
                 )
+
+            calibration = dependencies.get_processing_inputs(
+                descriptor="l1b-calibration"
+            )
+            if len(calibration) != 1:
+                raise ValueError(
+                    f"Missing required dependencies for MAG L1B. Need at least one"
+                    f"l1b-calibration-matrices file. Received: {dependencies}"
+                )
+
+            combined_calibration = MagAncillaryCombiner(calibration[0], day_buffer)
+
             input_data = load_cdf(science_files[0])
-            datasets = [mag_l1b(input_data)]
+            datasets = [mag_l1b(input_data, combined_calibration.combined_dataset)]
 
         if self.data_level == "l1c":
+            science_files = dependencies.get_file_paths(source="mag", data_type="l1b")
             input_data = [load_cdf(dep) for dep in science_files]
             # Input datasets can be in any order, and are validated within mag_l1c
             if len(input_data) == 1:
@@ -990,6 +1017,10 @@ class Mag(ProcessInstrument):
                 )
 
         if self.data_level == "l2":
+            science_files = dependencies.get_file_paths(source="mag", data_type="l1b")
+            science_files.extend(
+                dependencies.get_file_paths(source="mag", data_type="l1c")
+            )
             # TODO: Overwrite dependencies with versions from offsets file
             # TODO: Ensure that parent_files attribute works with that
             input_data = load_cdf(science_files[0])
@@ -1017,18 +1048,6 @@ class Mag(ProcessInstrument):
                     f"All ancillary dependencies: "
                     f"{anc_dependencies}"
                 )
-
-            # If the calibration files have no end date on them, we need to designate
-            # one. This ensures we have 3 days past the processing day in the
-            # calibration file.
-
-            if self.start_date is not None:
-                current_day = np.datetime64(
-                    f"{self.start_date[:4]}-{self.start_date[4:6]}-{self.start_date[6:]}"
-                )
-                day_buffer = current_day + np.timedelta64(3, "D")
-            else:
-                raise ValueError("Start date is not set for MAG L2 processing.")
 
             combined_calibration = MagAncillaryCombiner(calibration[0], day_buffer)
             offset_dataset = load_cdf(offsets[0].imap_file_paths[0].construct_path())

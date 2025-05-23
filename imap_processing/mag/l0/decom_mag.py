@@ -123,7 +123,9 @@ def generate_dataset(
         np.arange(vector_data.shape[1]),
         name="direction",
         dims=["direction"],
-        attrs=attribute_manager.get_variable_attributes("raw_direction_attrs"),
+        attrs=attribute_manager.get_variable_attributes(
+            "raw_direction_attrs", check_schema=False
+        ),
     )
     direction_label = xr.DataArray(
         direction.astype(str),
@@ -140,7 +142,7 @@ def generate_dataset(
         shcoarse_data,
         name="epoch",
         dims=["epoch"],
-        attrs=attribute_manager.get_variable_attributes("epoch"),
+        attrs=attribute_manager.get_variable_attributes("epoch", check_schema=False),
     )
     # TODO: raw vectors units
     raw_vectors = xr.DataArray(
