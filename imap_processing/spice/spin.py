@@ -115,14 +115,16 @@ def _load_spin_data_with_cache(csv_paths: tuple[Path]) -> pd.DataFrame:
                 "thruster_firing": bool,
             },
         )
-        # Reversed sorting is used so that we get the desired result when
-        # combining dataframes below.
+        # Reversed sorting is used so that the proper precedence is applied in
+        # the below use of DataFrame.combine_first()
         for spin_table_path in sorted(csv_paths, reverse=True)
     ]
     combined_df = reduce(
         lambda left, right: left.combine_first(right),
         spin_dataframes,
     )
+    # Duplicate the index so that users can access "spin_numer" by name
+    combined_df["spin_number"] = combined_df.index
     # Combine spin_start_sec_sclk and spin_start_subsec_sclk to get the spin start
     # time in seconds. The spin start subseconds are in microseconds.
     combined_df["spin_start_met"] = (
