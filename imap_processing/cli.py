@@ -68,6 +68,7 @@ from imap_processing.mag.l1b.mag_l1b import mag_l1b
 from imap_processing.mag.l1c.mag_l1c import mag_l1c
 from imap_processing.mag.l2.mag_l2 import mag_l2
 from imap_processing.spacecraft import quaternions
+from imap_processing.spice import pointing_frame
 from imap_processing.swapi.l1.swapi_l1 import swapi_l1
 from imap_processing.swapi.l2.swapi_l2 import swapi_l2
 from imap_processing.swapi.swapi_utils import read_swapi_lut_table
@@ -436,6 +437,7 @@ class ProcessInstrument(ABC):
         2. Do the data processing. The result of this step will usually be a list
         of new products (files).
         3. Post-processing actions such as uploading files to the IMAP SDC.
+        4. Final cleanup actions.
         """
         logger.info(f"IMAP Processing Version: {imap_processing._version.__version__}")
         logger.info(f"Processing {self.__class__.__name__} level {self.data_level}")
@@ -445,6 +447,7 @@ class ProcessInstrument(ABC):
         products = self.do_processing(dependencies)
         logger.info("Beginning postprocessing (uploading data products)")
         self.post_processing(products, dependencies)
+        self.cleanup()
         logger.info("Processing complete")
 
     def pre_processing(self) -> ProcessingInputCollection:
@@ -496,7 +499,7 @@ class ProcessInstrument(ABC):
         raise NotImplementedError
 
     def post_processing(
-        self, datasets: list[xr.Dataset], dependencies: ProcessingInputCollection
+        self, processed_data: list[xr.Dataset], dependencies: ProcessingInputCollection
     ) -> None:
         """
         Complete post-processing.
@@ -512,12 +515,12 @@ class ProcessInstrument(ABC):
 
         Parameters
         ----------
-        datasets : list[xarray.Dataset]
+        processed_data : list[xarray.Dataset]
             A list of datasets (products) produced by do_processing method.
         dependencies : ProcessingInputCollection
             Object containing dependencies to process.
         """
-        if len(datasets) == 0:
+        if len(processed_data) == 0:
             logger.info("No products to write to CDF file.")
             return
 
@@ -540,7 +543,7 @@ class ProcessInstrument(ABC):
         # If it is start_date, skip repointing in the output filename.
 
         products = []
-        for ds in datasets:
+        for ds in processed_data:
             ds.attrs["Data_version"] = self.version
             if self.repointing is not None:
                 ds.attrs["Repointing"] = self.repointing
@@ -550,6 +553,9 @@ class ProcessInstrument(ABC):
 
         self.upload_products(products)
 
+    @final
+    def cleanup(self) -> None:
+        """Cleanup from processing."""
         logger.info("Clearing furnished SPICE kernels")
         spiceypy.kclear()
 
@@ -1048,7 +1054,7 @@ class Spacecraft(ProcessInstrument):
 
     def do_processing(
         self, dependencies: ProcessingInputCollection
-    ) -> list[xr.Dataset]:
+    ) -> list[xr.Dataset | Path]:
         """
         Perform Spacecraft specific processing.
 
@@ -1059,25 +1065,70 @@ class Spacecraft(ProcessInstrument):
 
         Returns
         -------
-        datasets : xr.Dataset
-            Xr.Dataset of products.
+        datasets : list[xarray.Dataset | Path]
+            The list of processed products.
         """
         print(f"Processing Spacecraft {self.data_level}")
 
-        if self.data_level != "l1a":
+        if self.data_level == "l1a":
+            # File path is expected output file path
+            input_files = dependencies.get_file_paths(source="spacecraft")
+            if len(input_files) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for Spacecraft L1A: "
+                    f"{input_files}. Expected only one dependency."
+                )
+            datasets = list(quaternions.process_quaternions(input_files[0]))
+            return datasets
+        elif self.data_level == "spice":
+            spice_inputs = dependencies.get_file_paths(
+                data_type=SPICESource.SPICE.value
+            )
+            ah_paths = [path for path in spice_inputs if ".ah" in path.suffixes]
+            if len(ah_paths) != 1:
+                raise ValueError(
+                    f"Unexpected spice dependencies found for Spacecraft "
+                    f"pointing_kernel: {ah_paths}. Expected exactly one "
+                    f"attitude history file."
+                )
+            pointing_kernel_paths = pointing_frame.generate_pointing_attitude_kernel(
+                ah_paths[0]
+            )
+            return pointing_kernel_paths
+        else:
             raise NotImplementedError(
                 f"Spacecraft processing not implemented for level {self.data_level}"
             )
 
-        # File path is expected output file path
-        input_files = dependencies.get_file_paths(source="spacecraft")
-        if len(input_files) > 1:
-            raise ValueError(
-                f"Unexpected dependencies found for Spacecraft L1A: "
-                f"{input_files}. Expected only one dependency."
-            )
-        datasets = list(quaternions.process_quaternions(input_files[0]))
-        return datasets
+    def post_processing(
+        self,
+        processed_data: list[xr.Dataset | Path],
+        dependencies: ProcessingInputCollection,
+    ) -> None:
+        """
+        Customize post-process handling of Spacecraft data.
+
+        Override the base class post_processing method to handle pointing kernel
+        generation.
+
+        Parameters
+        ----------
+        processed_data : list[xarray.Dataset | Path]
+            A list of either datasets (products) produced by do_processing or
+            Paths to pointing_kernels that have been generated.
+        dependencies : ProcessingInputCollection
+            Object containing dependencies to process.
+        """
+        # If the datasets list contains a xr.Dataset, call the super method
+        if isinstance(processed_data[0], xr.Dataset):
+            super().post_processing(processed_data, dependencies)
+            return
+        # Otherwise, we need to upload the pointing attitude kennels
+        logger.info(
+            f"Uploading new pointing kernels to the SDC: "
+            f"{[p.name for p in processed_data]}"
+        )
+        self.upload_products(processed_data)
 
 
 class Swapi(ProcessInstrument):

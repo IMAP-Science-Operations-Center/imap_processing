@@ -314,6 +314,38 @@ def test_spacecraft(mock_spacecraft_l1a, mock_instrument_dependencies):
     assert mock_instrument_dependencies["mock_write_cdf"].call_count == 1
 
 
+@mock.patch(
+    "imap_processing.cli.pointing_frame.generate_pointing_attitude_kernel",
+    autospec=True,
+)
+def test_spacecraft_pointing_kernel(
+    mock_spacecraft_pointing, mock_instrument_dependencies
+):
+    """Test coverage for cli.Spacecraft class"""
+
+    dependency_str = (
+        '[{"type": "spice","files": ["naif0012.tls", '
+        '"imap_sclk_0005.tsc", "imap_2024_100_2024_111_05.ah.bc"]}]'
+    )
+    input_collection = ProcessingInputCollection()
+    input_collection.deserialize(dependency_str)
+    mocks = mock_instrument_dependencies
+    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
+    mocks["mock_download"].return_value = "file0"
+    mock_spacecraft_pointing.return_value = [
+        Path("imap_dps_2024_100_2024_111_05.ah.bc")
+    ]
+    mocks["mock_write_cdf"].side_effect = ["/path/to/file0"]
+    mocks["mock_pre_processing"].return_value = input_collection
+
+    instrument = Spacecraft(
+        "spice", "pointing_kernel", dependency_str, "20240410", "12345", "v005", False
+    )
+
+    instrument.process()
+    assert mock_spacecraft_pointing.call_count == 1
+
+
 @mock.patch("imap_processing.cli.ultra_l1a.ultra_l1a")
 def test_ultra_l1a(mock_ultra_l1a, mock_instrument_dependencies):
     """Test coverage for cli.Ultra class with l1a data level"""
