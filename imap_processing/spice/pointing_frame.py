@@ -253,7 +253,7 @@ def calculate_pointing_attitude_segments(
             "repoint_id"
         ]
         pointing_start_et = repoint_df.iloc[i_pointing]["repoint_end_et"]
-        pointing_end_et = repoint_df["repoint_start_et"][i_pointing + 1]
+        pointing_end_et = repoint_df.iloc[i_pointing + 1]["repoint_start_et"]
         logger.debug(
             f"Calculating pointing attitude for pointing "
             f"{pointing_segments[i_pointing]['pointing_id']} with time "
