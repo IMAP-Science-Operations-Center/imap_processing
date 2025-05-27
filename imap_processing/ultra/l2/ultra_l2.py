@@ -118,10 +118,10 @@ def get_variable_attributes_optional_energy_dependence(
     # These variables must get metadata with a different key if they are energy
     # dependent.
     if (variable_name in INCONSISTENTLY_ENERGY_DEPENDENT_VARIABLES) and (
-        (CoordNames.ENERGY_L2.value in variable_dims)
-        or (CoordNames.ENERGY_ULTRA_L1C.value in variable_dims)
+        (CoordNames.ENERGY_L2.value not in variable_dims)
+        and (CoordNames.ENERGY_ULTRA_L1C.value not in variable_dims)
     ):
-        variable_name = f"{variable_name}_energy_dependent"
+        variable_name = f"{variable_name}_energy_independent"
 
     metadata = cdf_attrs.get_variable_attributes(
         variable_name=variable_name,

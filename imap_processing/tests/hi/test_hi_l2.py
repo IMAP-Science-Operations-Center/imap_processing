@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.ena_maps.ena_maps import RectangularSkyMap
 from imap_processing.hi.l2.hi_l2 import (
     calculate_ena_intensity,
@@ -46,6 +47,8 @@ def test_hi_l2(hi_l1_test_data_path):
     np.testing.assert_array_equal(
         l2_dataset["ena_intensity"].dims, ["epoch", "energy", "longitude", "latitude"]
     )
+    # Test ISTP compliance by writing the CDF
+    write_cdf(l2_dataset, istp=True)
 
 
 @pytest.mark.external_test_data
