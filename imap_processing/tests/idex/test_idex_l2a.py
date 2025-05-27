@@ -46,7 +46,7 @@ def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset):
     expected_src = "imap_idex_l2a_sci-1week"
     assert l2a_dataset.attrs["Logical_source"] == expected_src
     # Verify the CDF file can be created with no errors.
-    l2a_dataset.attrs["Data_version"] = "v999"
+    l2a_dataset.attrs["Data_version"] = "999"
     file_name = write_cdf(l2a_dataset)
     assert file_name.exists()
     assert file_name.name == "imap_idex_l2a_sci-1week_20231218_v999.cdf"

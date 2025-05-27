@@ -168,7 +168,7 @@ def test_swe_l1b(mock_get_file_paths, l1b_validation_df):
     l1b_input = l1a_datasets[0]
 
     # Set these two as cli.py -> post_processing would have.
-    l1b_input.attrs["Data_version"] = "v002"
+    l1b_input.attrs["Data_version"] = "002"
     # write data to CDF
     l1a_cdf_filepath = write_cdf(l1b_input)
     assert l1a_cdf_filepath.name == "imap_swe_l1a_sci_20240510_v002.cdf"
@@ -204,7 +204,7 @@ def test_swe_l1b(mock_get_file_paths, l1b_validation_df):
     l1b_datasets = swe_l1b(dependencies)
 
     l1b_write_ds = l1b_datasets[0]
-    l1b_write_ds.attrs["Data_version"] = "v002"
+    l1b_write_ds.attrs["Data_version"] = "002"
 
     sci_l1b_filepath = write_cdf(l1b_write_ds)
 

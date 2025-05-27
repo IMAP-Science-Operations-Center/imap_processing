@@ -569,7 +569,7 @@ class ProcessInstrument(ABC):
         products = []
         for ds in processed_data:
             if isinstance(ds, xr.Dataset):
-                ds.attrs["Data_version"] = self.version
+                ds.attrs["Data_version"] = self.version[1:]  # Strip 'v' from version
                 if self.repointing is not None:
                     ds.attrs["Repointing"] = self.repointing
                 ds.attrs["Start_date"] = self.start_date

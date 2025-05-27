@@ -61,8 +61,8 @@ def test_l2c_attrs_and_vars(l2c_datasets: list[xr.Dataset], l1b_dataset: xr.Data
         "rectangular_lat_pixel": int(180 / IDEX_SPACING_DEG),
         "epoch": 1,
     }
-    healpix_ds.attrs["Data_version"] = "v999"
-    rect_ds.attrs["Data_version"] = "v999"
+    healpix_ds.attrs["Data_version"] = "999"
+    rect_ds.attrs["Data_version"] = "999"
     # Check the attributes of the dataset by writing to a CDF file
     hp_file_name = write_cdf(healpix_ds)
     rect_file_name = write_cdf(rect_ds)

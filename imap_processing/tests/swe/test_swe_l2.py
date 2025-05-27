@@ -262,7 +262,7 @@ def test_swe_l2(mock_get_file_paths, use_fake_spin_data_for_time):
     test_data_path = "tests/swe/l0_data/2024051010_SWE_SCIENCE_packet.bin"
     l1a_datasets = swe_l1a(imap_module_directory / test_data_path)
     l1a_ds = l1a_datasets[0]
-    l1a_ds.attrs["Data_version"] = "v000"
+    l1a_ds.attrs["Data_version"] = "000"
     l1a_cdf_filepath = write_cdf(l1a_ds)
     assert l1a_cdf_filepath.name == "imap_swe_l1a_sci_20240510_v000.cdf"
 
@@ -295,7 +295,7 @@ def test_swe_l2(mock_get_file_paths, use_fake_spin_data_for_time):
     eu_anc = AncillaryInput("imap_swe_eu-conversion_20240510_v000.csv")
     dependencies = ProcessingInputCollection(science_input, inflight_anc, eu_anc)
     l1b_dataset = swe_l1b(dependencies)[0]
-    l1b_dataset.attrs["Data_version"] = "v000"
+    l1b_dataset.attrs["Data_version"] = "000"
     l2_dataset = swe_l2(l1b_dataset)
 
     assert isinstance(l2_dataset, xr.Dataset)
@@ -325,6 +325,6 @@ def test_swe_l2(mock_get_file_paths, use_fake_spin_data_for_time):
     assert np.allclose(cal_factor, cal_factor[:, 0:1], rtol=1e-9, atol=0)
 
     # Write L2 to CDF
-    l2_dataset.attrs["Data_version"] = "v002"
+    l2_dataset.attrs["Data_version"] = "002"
     l2_cdf_filepath = write_cdf(l2_dataset)
     assert l2_cdf_filepath.name == "imap_swe_l2_sci_20240510_v002.cdf"
