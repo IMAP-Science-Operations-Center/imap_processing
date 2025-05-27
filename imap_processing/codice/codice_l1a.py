@@ -11,7 +11,6 @@ Notes
 
 from __future__ import annotations
 
-import ast
 import logging
 from pathlib import Path
 from typing import Any
@@ -94,7 +93,7 @@ class CoDICEL1aPipeline:
 
         On CoDICE, the epoch values are derived from the `acq_start_seconds` and
         `acq_start_subseconds` fields in the packet. The exception to this is
-        are the I-ALiRT packets, which use "acquisition_time".
+        the I-ALiRT packets, which use "acquisition_time".
 
         Note that the `acq_start_subseconds` field needs to be converted from
         microseconds to seconds.
@@ -104,17 +103,14 @@ class CoDICEL1aPipeline:
         epoch : NDArray[int]
             List of epoch values.
         """
-        if "ialirt" in self.config["dataset_name"]:
-            epoch = met_to_ttj2000ns(self.dataset["acquisition_time"])
-        else:
-            epoch = met_to_ttj2000ns(
-                self.dataset["acq_start_seconds"]
-                + self.dataset["acq_start_subseconds"] / 1e6
-            )
+        epoch = met_to_ttj2000ns(
+            self.dataset["acq_start_seconds"]
+            + self.dataset["acq_start_subseconds"] / 1e6
+        )
 
         return epoch
 
-    def decompress_data(self, science_values: list[str] | str) -> None:
+    def decompress_data(self, science_values: list[NDArray[str]] | list[str]) -> None:
         """
         Perform decompression on the data.
 
@@ -124,9 +120,9 @@ class CoDICEL1aPipeline:
 
         Parameters
         ----------
-        science_values : list[str] | str
-            A list of (or a single) byte string(s) representing the science
-            values of the data for each packet.
+        science_values : list[NDArray[str]] | list[str]
+            A list of byte strings (or bit strings, in the case of I-ALiRT)
+            representing the science values of the data for each packet.
         """
         # The compression algorithm depends on the instrument and view ID
         if self.config["instrument"] == "lo":
@@ -152,7 +148,7 @@ class CoDICEL1aPipeline:
                 science_values, self.dataset.byte_count.data
             ):
                 # Convert from numpy array to byte object
-                values = ast.literal_eval(str(packet_data))
+                values = eval(str(packet_data))
 
                 # Only use the values up to the byte count. Bytes after this are
                 # used as padding and are not needed
@@ -974,11 +970,13 @@ def create_ialirt_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     pipeline.decompress_data(science_values)
     pipeline.reshape_data()
 
-    # The calculate_epoch_values method needs an acquisition time attr
-    # Remove the old one (which has a value for every packet) and
-    # replace with a new list which has one value per epoch
-    pipeline.dataset = pipeline.dataset.drop_vars("acquisition_time")
-    pipeline.dataset["acquisition_time"] = ("_", metadata_values["SHCOARSE"])
+    # The calculate_epoch_values method needs acq_start_seconds and
+    # acq_start_subseconds attributes on the dataset
+    pipeline.dataset["acq_start_seconds"] = ("_", metadata_values["ACQ_START_SECONDS"])
+    pipeline.dataset["acq_start_subseconds"] = (
+        "_",
+        metadata_values["ACQ_START_SUBSECONDS"],
+    )
 
     pipeline.define_coordinates()
 
