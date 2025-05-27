@@ -74,6 +74,21 @@ def mag_l1a_dataset_generator(length):
 
 
 @pytest.fixture
+def mag_l1b_cal_dataset(mocks):
+    imap_dir = Path(__file__).parent
+    cal_path = Path(
+        imap_dir
+        / "validation"
+        / "calibration"
+        / "imap_mag_l1b-calibration_20240229_v001.cdf"
+    )
+    mocks["construct_path"].return_value = cal_path
+    processing = AncillaryInput(cal_path.name)
+    calibration_data = MagAncillaryCombiner(processing, "20251017").combined_dataset
+    return calibration_data
+
+
+@pytest.fixture
 def mag_test_l1b_calibration_data():
     imap_dir = Path(__file__).parent
     cal_file = (
@@ -83,7 +98,12 @@ def mag_test_l1b_calibration_data():
         / "imap_mag_l1b-calibration_20240229_v001.cdf"
     )
     calibration_data = load_cdf(cal_file)
-    return calibration_data
+    matrix_mago = calibration_data["MFOTOURFO"]
+    time_shift_mago = calibration_data["OTS"]
+    matrix_magi = calibration_data["MFITOURFI"]
+    time_shift_magi = calibration_data["ITS"]
+
+    return matrix_mago, time_shift_mago, matrix_magi, time_shift_magi
 
 
 @pytest.fixture
@@ -96,8 +116,7 @@ def mag_test_l2_data(mocks):
         / "imap_mag_l2-calibration-matrices_20251017_v004.cdf"
     )
     mocks["construct_path"].return_value = cal_path
-    processing = AncillaryInput(cal_path.name)
-    calibration_data = MagAncillaryCombiner(processing, "20251017").combined_dataset
+    calibration_data = MagAncillaryCombiner([cal_path], "20251017").combined_dataset
 
     offsets_data = load_cdf(
         imap_dir

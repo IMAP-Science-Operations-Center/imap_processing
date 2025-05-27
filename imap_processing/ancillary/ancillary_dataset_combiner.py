@@ -59,7 +59,9 @@ class AncillaryCombiner:
     time_variable = "epoch"
 
     def __init__(
-        self, ancillary_input: ProcessingInput, expected_end_date: np.datetime64 | str
+        self,
+        ancillary_input: ProcessingInput | list[Path],
+        expected_end_date: np.datetime64 | str,
     ):
         self.ancillary_input = ancillary_input
         if isinstance(expected_end_date, str):
@@ -72,8 +74,15 @@ class AncillaryCombiner:
         self.expected_end_date = expected_end_date
 
         self.timestamped_data = []
-        for file in ancillary_input.filename_list:
-            self.timestamped_data.append(self.convert_to_timestamped_data(file))
+        if isinstance(ancillary_input, ProcessingInput):
+            for file in ancillary_input.filename_list:
+                self.timestamped_data.append(self.convert_to_timestamped_data(file))
+        else:
+            for file in ancillary_input:
+                self.timestamped_data.append(
+                    self.convert_to_timestamped_data(file.name)
+                )
+
         self.combined_dataset = self._combine_input_datasets()
 
     def convert_to_timestamped_data(self, filename: str) -> TimestampedData:
@@ -132,6 +141,7 @@ class AncillaryCombiner:
         xr.Dataset
             The converted xarray dataset.
         """
+        print(f"converting filepath: {filepath}")
         return cdf_to_xarray(filepath)
 
     def _combine_input_datasets(self) -> xr.Dataset:
@@ -188,8 +198,13 @@ class AncillaryCombiner:
         # dimension, named like {datavar}_dim_0, {datavar}_dim_1, etc.
         for data_var in self.timestamped_data[0].dataset.data_vars:
             shape = self.timestamped_data[0].dataset[data_var].shape
+            var_type = self.timestamped_data[0].dataset[data_var].dtype
+            if issubclass(var_type.type, np.integer):
+                maxval = np.iinfo(var_type).max
+            else:
+                maxval = np.iinfo(np.int32).max
             output_dataset[data_var] = xr.DataArray(
-                np.full((len(epoch_data), *shape), np.iinfo(np.int32).max),
+                np.full((len(epoch_data), *shape), maxval, dtype=var_type),
                 dims=[self.time_variable]
                 + [f"{data_var}_dim_{i}" for i in range(len(shape))],
             )
@@ -238,6 +253,8 @@ class MagAncillaryCombiner(AncillaryCombiner):
     """
 
     def __init__(
-        self, ancillary_input: ProcessingInput, expected_end_date: np.datetime64 | str
+        self,
+        ancillary_input: ProcessingInput | list[Path],
+        expected_end_date: np.datetime64 | str,
     ):
         super().__init__(ancillary_input, expected_end_date)

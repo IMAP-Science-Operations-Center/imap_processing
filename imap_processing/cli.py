@@ -1000,7 +1000,9 @@ class Mag(ProcessInstrument):
             combined_calibration = MagAncillaryCombiner(calibration[0], day_buffer)
 
             input_data = load_cdf(science_files[0])
-            datasets = [mag_l1b(input_data, combined_calibration.combined_dataset)]
+            datasets = [
+                mag_l1b(input_data, current_day, combined_calibration.combined_dataset)
+            ]
 
         if self.data_level == "l1c":
             science_files = dependencies.get_file_paths(source="mag", data_type="l1b")
