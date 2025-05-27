@@ -10,7 +10,7 @@ default_attrs: &default
   UNITS: " "
 
 component:
-  CATDESC: Velocity components (vx, vy, vz)
+  CATDESC: Component direction (x, y, z)
   FIELDNAM: component
   LABLAXIS: component
   FORMAT: A3

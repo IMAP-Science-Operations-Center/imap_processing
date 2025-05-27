@@ -29,14 +29,33 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:
     instrument_prefixes = ("swe", "hit", "mag", "codicelo", "codicehi", "swapi")
     instrument_keys: set[str] = set()
 
+    # Collect all keys that start with the instrument prefixes.
     for record in records:
         instrument_keys.update(
             key for key in record if key.startswith(instrument_prefixes)
         )
 
-    # Convert to columns, add fillvals, and associate with datatype.
-    data_dict = defaultdict(list)
-    for record in records:
+    # Create empty dictionaries for each key.
+    n = len(records)
+    data_dict = {}
+    for key in instrument_keys:
+        attrs = cdf_manager.get_variable_attributes(key)
+        fillval = attrs.get("FILLVAL")
+        if key.startswith("mag"):
+            data_dict[key] = np.full((n, 3), fillval, dtype=np.float32)
+        elif key == "swe_counterstreaming_electrons":
+            data_dict[key] = np.full(n, fillval, dtype=np.uint8)
+        elif key.startswith(("hit", "swe")):
+            data_dict[key] = np.full(n, fillval, dtype=np.uint32)
+        else:
+            data_dict[key] = np.full(n, fillval, dtype=np.float32)
+
+    attrs = cdf_manager.get_variable_attributes("default_int64_attrs")
+    fillval = attrs.get("FILLVAL")
+    ttj2000ns_values = np.full(n, fillval, dtype=np.int64)
+
+    for i, record in enumerate(records):
+        ttj2000ns_values[i] = record["ttj2000ns"]
         for key in instrument_keys:
             fillval = cdf_manager.get_variable_attributes(key).get("FILLVAL")
             val = record.get(key, fillval)
@@ -45,27 +64,17 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:
             elif key.startswith("hit") or key.startswith("swe"):
                 val = np.uint32(val)
             elif key.startswith("mag"):
-                # If not empty
                 if isinstance(val, (list, tuple)):
                     val = [np.float32(direction) for direction in val]
-                # If empty
                 else:
                     val = [np.float32(fillval)] * 3
             else:
                 val = np.float32(val)
 
-            data_dict[key].append(val)
-
-    # Convert to arrays
-    for key in data_dict:
-        data_dict[key] = np.array(data_dict[key])
-
-    ttj2000ns_values = []
-    for record in records:
-        ttj2000ns_values.append(np.int64(record["ttj2000ns"]))
+            data_dict[key][i] = val
 
     epoch = xr.DataArray(
-        data=np.array(ttj2000ns_values, dtype=np.int64),
+        data=ttj2000ns_values,
         name="epoch",
         dims=["epoch"],
         attrs=cdf_manager.get_variable_attributes("epoch"),
