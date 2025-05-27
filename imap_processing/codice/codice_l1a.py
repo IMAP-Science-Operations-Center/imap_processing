@@ -104,13 +104,10 @@ class CoDICEL1aPipeline:
         epoch : NDArray[int]
             List of epoch values.
         """
-        if "ialirt" in self.config["dataset_name"]:
-            epoch = met_to_ttj2000ns(self.dataset["acquisition_time"])
-        else:
-            epoch = met_to_ttj2000ns(
-                self.dataset["acq_start_seconds"]
-                + self.dataset["acq_start_subseconds"] / 1e6
-            )
+        epoch = met_to_ttj2000ns(
+            self.dataset["acq_start_seconds"]
+            + self.dataset["acq_start_subseconds"] / 1e6
+        )
 
         return epoch
 
@@ -510,38 +507,51 @@ class CoDICEL1aPipeline:
 
         return centers, deltas
 
-    def reshape_binned_data(self, dataset):
-        """"""
+    def reshape_binned_data(self, dataset: xr.Dataset) -> dict[str, list]:
+        """
+        Reshape data arrays for binned datasets.
 
-        # hi-omni data gets reshaped a bit differently than other products,
-        # so we need to stray away from the nominal pipeline
-        stacked_data = np.stack(
-            [np.array(item, dtype=np.uint32) for item in self.raw_data]
-        )
+        Binned datasets get reshaped based on the number of species and their
+        corresponding number of energy bins. Additionally, the number of spins
+        during data acquisition are collapsed/summed which also needs to be taken
+        into account when reshaping into the correct dimensions.
 
+        Parameters
+        ----------
+        dataset : xarray.Dataset
+            ``xarray`` dataset for the data product.
+
+        Returns
+        -------
+        data : dict[str, list]
+            Data arrays for each species.
+        """
         # This will hold all of the data per-species and support variables,
         # ready to be put in a CDF file
         data: dict[str, list] = {}
         for species in self.config["energy_table"]:
             data[species] = []
-        data["epoch"] = []
-        data["spin_period"] = []
-        data["data_quality"] = []
+            data["epoch"] = []
+            data["spin_period"] = []
+            data["data_quality"] = []
 
         # Get the number of spins per species
         num_spins = self.config["num_spins"]
 
         # Iterate through each epoch's data and pull out the data for each
         # species
+        stacked_data = np.stack(
+            [np.array(item, dtype=np.uint32) for item in self.raw_data]
+        )
         for i, epoch in enumerate(stacked_data):
             current_epoch = dataset.epoch.data[i]
             position = 0
             for species in self.config["energy_table"]:
                 num_bins = (
-                        len(self.config["energy_table"][species]) - 1
+                    len(self.config["energy_table"][species]) - 1
                 )  # Subtracting one here since the table includes endpoints
                 species_data = (
-                    epoch[position: position + num_bins * self.config["num_spins"]]
+                    epoch[position : position + num_bins * self.config["num_spins"]]
                     .reshape(num_bins, num_spins)
                     .T
                 )
@@ -553,9 +563,11 @@ class CoDICEL1aPipeline:
                     # We only need one set of support variables in the CDF,
                     # so just iterate using one species for these
                     if species == "h":
-                        # For each spin, we add <spin_period>*<num_spins> to the epoch value
+                        # For each spin, we add <spin_period>*<num_spins> to the
+                        # epoch value
                         spin_period = (
-                                dataset.spin_period.data[i] * constants.SPIN_PERIOD_CONVERSION
+                            dataset.spin_period.data[i]
+                            * constants.SPIN_PERIOD_CONVERSION
                         )
                         epoch_value = current_epoch + np.int64(
                             (spin_period * num_spins) * 1e9  # Convert from s to ns
@@ -690,7 +702,9 @@ def group_ialirt_data(packets: xr.Dataset, data_field_range: range) -> list[byte
     return grouped_data
 
 
-def create_binned_dataset(apid: int, dataset: xr.Dataset) -> xr.Dataset:
+def create_binned_dataset(
+    apid: int, dataset: xr.Dataset, science_values: list[str]
+) -> xr.Dataset:
     """
     Create dataset for data that is binned by energy.
 
@@ -705,6 +719,8 @@ def create_binned_dataset(apid: int, dataset: xr.Dataset) -> xr.Dataset:
         The APID of the packet.
     dataset : xarray.Dataset
         The packets to process.
+    science_values : list[str]
+        The values of the "data" field of the dataset.
 
     Returns
     -------
@@ -713,9 +729,6 @@ def create_binned_dataset(apid: int, dataset: xr.Dataset) -> xr.Dataset:
     """
     # TODO: hi-sectored data product should be processed similar to hi-omni,
     #       so I should be able to use this method.
-
-    # Extract the data
-    science_values = [packet.data for packet in dataset.data]
 
     # Get the four "main" parameters for processing
     table_id, plan_id, plan_step, view_id = get_params(dataset)
@@ -968,46 +981,64 @@ def create_ialirt_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     # Group together packets of I-ALiRT data to form complete data sets
     grouped_data = group_ialirt_data(packets, data_field_range)
 
+    # Process each group to get the science data and corresponding metadata
     science_values, metadata_values = process_ialirt_data_streams(grouped_data)
 
-    # Run the pipeline to create a dataset for the product
-    pipeline = CoDICEL1aPipeline(
-        metadata_values["TABLE_ID"][0],
-        metadata_values["PLAN_ID"][0],
-        metadata_values["PLAN_STEP"][0],
-        metadata_values["VIEW_ID"][0],
-    )
-    pipeline.set_data_product_config(apid, packets)
-    pipeline.decompress_data(science_values)
-
+    # How data are processed is different for lo-iarlirt and hi-ialirt
     if apid == CODICEAPID.COD_HI_IAL:
-        data = pipeline.reshape_binned_data(packets)
-        print(data)
-        print(data)
+        # Set some necessary values and process as a binned dataset similar to
+        # a hi-omni data product
+        metadata_for_processing = [
+            "table_id",
+            "plan_id",
+            "plan_step",
+            "view_id",
+            "spin_period",
+            "suspect",
+        ]
+        for var in metadata_for_processing:
+            packets[var] = metadata_values[var.upper()]
+        dataset = create_binned_dataset(apid, packets, science_values)
+
     elif apid == CODICEAPID.COD_LO_IAL:
+        # Create a nominal instance of the pipeline and process similar to a
+        # lo-sw-species data product
+        pipeline = CoDICEL1aPipeline(
+            metadata_values["TABLE_ID"][0],
+            metadata_values["PLAN_ID"][0],
+            metadata_values["PLAN_STEP"][0],
+            metadata_values["VIEW_ID"][0],
+        )
+        pipeline.set_data_product_config(apid, packets)
+        pipeline.decompress_data(science_values)
         pipeline.reshape_data()
 
-    # The calculate_epoch_values method needs an acquisition time attr
-    # Remove the old one (which has a value for every packet) and
-    # replace with a new list which has one value per epoch
-    pipeline.dataset = pipeline.dataset.drop_vars("acquisition_time")
-    pipeline.dataset["acquisition_time"] = ("_", metadata_values["SHCOARSE"])
+        # The calculate_epoch_values method needs acq_start_seconds and
+        # acq_start_subseconds attributes on the dataset
+        pipeline.dataset["acq_start_seconds"] = (
+            "_",
+            metadata_values["ACQ_START_SECONDS"],
+        )
+        pipeline.dataset["acq_start_subseconds"] = (
+            "_",
+            metadata_values["ACQ_START_SUBSECONDS"],
+        )
 
-    pipeline.define_coordinates()
+        pipeline.define_coordinates()
 
-    # The dataset also needs the metadata that will be carried through
-    # to the final data product
-    for field in [
-        "spin_period",
-        "suspect",
-        "st_bias_gain_mode",
-        "sw_bias_gain_mode",
-        "rgfo_half_spin",
-        "nso_half_spin",
-    ]:
-        pipeline.dataset[field] = ("_", metadata_values[field.upper()])
+        # The dataset also needs the metadata that will be carried through
+        # to the final data product
+        for field in [
+            "spin_period",
+            "suspect",
+            "st_bias_gain_mode",
+            "sw_bias_gain_mode",
+            "rgfo_half_spin",
+            "nso_half_spin",
+        ]:
+            pipeline.dataset[field] = ("_", metadata_values[field.upper()])
 
-    dataset = pipeline.define_data_variables()
+        dataset = pipeline.define_data_variables()
 
     return dataset
 
@@ -1383,48 +1414,44 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
         dataset = datasets[apid]
         logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
 
-        # # Housekeeping data
-        # if apid == CODICEAPID.COD_NHK:
-        #     processed_dataset = create_hskp_dataset(dataset)
-        #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+        # Housekeeping data
+        if apid == CODICEAPID.COD_NHK:
+            processed_dataset = create_hskp_dataset(dataset)
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
-        # # Event data
-        # elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
-        #     processed_dataset = create_direct_event_dataset(apid, dataset)
-        #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+        # Event data
+        elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
+            processed_dataset = create_direct_event_dataset(apid, dataset)
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # I-ALiRT data
-        if apid in [CODICEAPID.COD_HI_IAL]:
+        elif apid in [CODICEAPID.COD_LO_IAL, CODICEAPID.COD_HI_IAL]:
             processed_dataset = create_ialirt_dataset(apid, dataset)
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
-        # # hi-omni data
-        # elif apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
-        #     processed_dataset = create_binned_dataset(apid, dataset)
-        #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+        # hi-omni data
+        elif apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
+            science_values = [packet.data for packet in dataset.data]
+            processed_dataset = create_binned_dataset(apid, dataset, science_values)
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
-        # # Everything else
-        # elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
-        #     # Extract the data
-        #     science_values = [packet.data for packet in dataset.data]
-        #
-        #     # Get the four "main" parameters for processing
-        #     table_id, plan_id, plan_step, view_id = get_params(dataset)
-        #
-        #     # Run the pipeline to create a dataset for the product
-        #     pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
-        #     pipeline.set_data_product_config(apid, dataset)
-        #     pipeline.decompress_data(science_values)
-        #     pipeline.reshape_data()
-        #     pipeline.define_coordinates()
-        #     processed_dataset = pipeline.define_data_variables()
-        #
-        #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
-        #
-        # # TODO: Still need to implement hi-ialirt
-        # elif apid == CODICEAPID.COD_HI_IAL:
-        #     logger.info("\tStill need to properly implement")
-        #     processed_dataset = None
+        # Everything else
+        elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
+            # Extract the data
+            science_values = [packet.data for packet in dataset.data]
+
+            # Get the four "main" parameters for processing
+            table_id, plan_id, plan_step, view_id = get_params(dataset)
+
+            # Run the pipeline to create a dataset for the product
+            pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
+            pipeline.set_data_product_config(apid, dataset)
+            pipeline.decompress_data(science_values)
+            pipeline.reshape_data()
+            pipeline.define_coordinates()
+            processed_dataset = pipeline.define_data_variables()
+
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # For APIDs that don't require processing
         else:
@@ -1434,12 +1461,3 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
         processed_datasets.append(processed_dataset)
 
     return processed_datasets
-
-if __name__ == "__main__":
-    from imap_processing import imap_module_directory
-
-    TEST_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"
-    file_path = TEST_DATA_PATH / "imap_codice_l0_raw_20241110_v001.pkts"
-
-    # processed_datasets = process_codice_l1a(file_path, "001")
-    process_codice_l1a(file_path)
