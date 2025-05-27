@@ -136,6 +136,9 @@ def generate_hi_map(
         )
     )
 
+    rect_map.data_1d["obs_date"].data = rect_map.data_1d["obs_date"].data.astype(
+        np.int64
+    )
     # TODO: Figure out how to compute obs_date_range (stddev of obs_date)
     rect_map.data_1d["obs_date_range"] = xr.zeros_like(rect_map.data_1d["obs_date"])
 
