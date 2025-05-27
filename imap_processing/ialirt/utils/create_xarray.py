@@ -1,7 +1,5 @@
 """Creates xarray based on structure of queried DynamoDB."""
 
-from collections import defaultdict
-
 import numpy as np
 import xarray as xr
 
@@ -54,24 +52,15 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:
     fillval = attrs.get("FILLVAL")
     ttj2000ns_values = np.full(n, fillval, dtype=np.int64)
 
+    # Populate the dictionaries.
     for i, record in enumerate(records):
         ttj2000ns_values[i] = record["ttj2000ns"]
-        for key in instrument_keys:
-            fillval = cdf_manager.get_variable_attributes(key).get("FILLVAL")
-            val = record.get(key, fillval)
-            if key == "swe_counterstreaming_electrons":
-                val = np.uint8(val)
-            elif key.startswith("hit") or key.startswith("swe"):
-                val = np.uint32(val)
-            elif key.startswith("mag"):
-                if isinstance(val, (list, tuple)):
-                    val = [np.float32(direction) for direction in val]
-                else:
-                    val = [np.float32(fillval)] * 3
-            else:
-                val = np.float32(val)
-
-            data_dict[key][i] = val
+        for key in record.keys():
+            if key.startswith("mag"):
+                val = record[key]
+                data_dict[key][i] = [direction for direction in val]
+            elif key in instrument_keys:
+                data_dict[key][i] = record[key]
 
     epoch = xr.DataArray(
         data=ttj2000ns_values,
@@ -80,7 +69,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:
         attrs=cdf_manager.get_variable_attributes("epoch"),
     )
     component = xr.DataArray(
-        ["vx", "vy", "vz"],
+        ["x", "y", "z"],
         name="component",
         dims=["component"],
         attrs=cdf_manager.get_variable_attributes("component"),
