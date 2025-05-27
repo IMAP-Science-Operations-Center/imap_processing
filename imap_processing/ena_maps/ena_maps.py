@@ -1275,8 +1275,14 @@ class RectangularSkyMap(AbstractSkyMap):
         # Set the variable attributes
         for var in [*cdf_ds.data_vars, *cdf_ds.coords]:
             try:
+                # Don't check schema on label or delta variables
+                ignore_schema_substrings = ["_label", "_delta"]
+                check_schema = (
+                    False if any(s in var for s in ignore_schema_substrings) else True
+                )
                 var_attrs = cdf_attrs.get_variable_attributes(
                     variable_name=var,
+                    check_schema=check_schema,
                 )
             except KeyError as e:
                 raise KeyError(
