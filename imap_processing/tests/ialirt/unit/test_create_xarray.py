@@ -30,7 +30,7 @@ def test_create_dataset():
 
     dataset = create_xarray_from_records(records)
 
-    assert (dataset["component"].values == ["vx", "vy", "vz"]).all()
+    assert (dataset["component"].values == ["x", "y", "z"]).all()
 
     np.testing.assert_allclose(
         dataset["swe_normalized_counts_quarter_1_esa_0"].values,
