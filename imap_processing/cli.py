@@ -29,7 +29,9 @@ from imap_data_access.io import download
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
     ProcessingInputType,
+    RepointInput,
     SPICESource,
+    SpinInput,
 )
 
 import imap_processing
@@ -60,6 +62,7 @@ from imap_processing.idex.idex_l1a import PacketParser
 from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.idex.idex_l2a import idex_l2a
 from imap_processing.idex.idex_l2b import idex_l2b
+from imap_processing.idex.idex_l2c import idex_l2c
 from imap_processing.lo.l1a import lo_l1a
 from imap_processing.lo.l1b import lo_l1b
 from imap_processing.lo.l1c import lo_l1c
@@ -68,6 +71,7 @@ from imap_processing.mag.l1b.mag_l1b import mag_l1b
 from imap_processing.mag.l1c.mag_l1c import mag_l1c
 from imap_processing.mag.l2.mag_l2 import mag_l2
 from imap_processing.spacecraft import quaternions
+from imap_processing.spice import pointing_frame, repoint, spin
 from imap_processing.swapi.l1.swapi_l1 import swapi_l1
 from imap_processing.swapi.l2.swapi_l2 import swapi_l2
 from imap_processing.swapi.swapi_utils import read_swapi_lut_table
@@ -436,6 +440,7 @@ class ProcessInstrument(ABC):
         2. Do the data processing. The result of this step will usually be a list
         of new products (files).
         3. Post-processing actions such as uploading files to the IMAP SDC.
+        4. Final cleanup actions.
         """
         logger.info(f"IMAP Processing Version: {imap_processing._version.__version__}")
         logger.info(f"Processing {self.__class__.__name__} level {self.data_level}")
@@ -445,6 +450,7 @@ class ProcessInstrument(ABC):
         products = self.do_processing(dependencies)
         logger.info("Beginning postprocessing (uploading data products)")
         self.post_processing(products, dependencies)
+        self.cleanup()
         logger.info("Processing complete")
 
     def pre_processing(self) -> ProcessingInputCollection:
@@ -467,8 +473,18 @@ class ProcessInstrument(ABC):
 
         # Furnish spice kernels
         kernel_paths = dependencies.get_file_paths(data_type=SPICESource.SPICE.value)
-        logger.info(f"Furnishing kernels: {kernel_paths}")
+        logger.info(f"Furnishing kernels: {[k.name for k in kernel_paths]}")
         spiceypy.furnsh([str(kernel_path.resolve()) for kernel_path in kernel_paths])
+
+        # Set spin table paths in mutable module attributes
+        spin.set_global_spin_table_paths(
+            dependencies.get_file_paths(data_type=SpinInput.data_type)
+        )
+
+        # Set repoint table path in mutable module attribute
+        repoint.set_global_repoint_table_paths(
+            dependencies.get_file_paths(data_type=RepointInput.data_type)
+        )
 
         return dependencies
 
@@ -496,13 +512,23 @@ class ProcessInstrument(ABC):
         raise NotImplementedError
 
     def post_processing(
-        self, datasets: list[xr.Dataset], dependencies: ProcessingInputCollection
+        self,
+        processed_data: list[xr.Dataset | Path],
+        dependencies: ProcessingInputCollection,
     ) -> None:
         """
         Complete post-processing.
 
-        Default post-processing consists of writing the datasets to local storage
-        and then uploading those newly generated products to the IMAP SDC.
+        Default post-processing consists of the following:
+        For each xarray.Dataset:
+            1. Set `Data_version` global attribute.
+            2. Set `Repointing` global attribute for appropriate products.
+            3. Set `Start_date` global attribute.
+            4. Set `Parents` global attribute.
+            5. Write the xarray.Dataset to a local CDF file.
+        The resulting paths to CDF files as well as any Path included in the
+        `processed_data` input are then uploaded to the IMAP SDC.
+
         Child classes can override this method to customize the
         post-processing actions.
 
@@ -512,12 +538,13 @@ class ProcessInstrument(ABC):
 
         Parameters
         ----------
-        datasets : list[xarray.Dataset]
-            A list of datasets (products) produced by do_processing method.
+        processed_data : list[xarray.Dataset | Path]
+            A list of datasets (products) and paths produced by the do_processing
+            method.
         dependencies : ProcessingInputCollection
             Object containing dependencies to process.
         """
-        if len(datasets) == 0:
+        if len(processed_data) == 0:
             logger.info("No products to write to CDF file.")
             return
 
@@ -540,16 +567,23 @@ class ProcessInstrument(ABC):
         # If it is start_date, skip repointing in the output filename.
 
         products = []
-        for ds in datasets:
-            ds.attrs["Data_version"] = self.version
-            if self.repointing is not None:
-                ds.attrs["Repointing"] = self.repointing
-            ds.attrs["Start_date"] = self.start_date
-            ds.attrs["Parents"] = parent_files
-            products.append(write_cdf(ds))
+        for ds in processed_data:
+            if isinstance(ds, xr.Dataset):
+                ds.attrs["Data_version"] = self.version[1:]  # Strip 'v' from version
+                if self.repointing is not None:
+                    ds.attrs["Repointing"] = self.repointing
+                ds.attrs["Start_date"] = self.start_date
+                ds.attrs["Parents"] = parent_files
+                products.append(write_cdf(ds))
+            else:
+                # A path to a product that was already written out
+                products.append(ds)
 
         self.upload_products(products)
 
+    @final
+    def cleanup(self) -> None:
+        """Cleanup from processing."""
         logger.info("Clearing furnished SPICE kernels")
         spiceypy.kclear()
 
@@ -837,7 +871,7 @@ class Idex(ProcessInstrument):
             science_files = dependencies.get_file_paths(source="idex")
             datasets = PacketParser(science_files[0]).data
         elif self.data_level == "l1b":
-            if len(dependency_list) > 3:
+            if len(dependency_list) != 3:
                 raise ValueError(
                     f"Unexpected dependencies found for IDEX L1B:"
                     f"{dependency_list}. Expected only three dependencies."
@@ -848,7 +882,7 @@ class Idex(ProcessInstrument):
             dependency = load_cdf(science_files[0])
             datasets = [idex_l1b(dependency)]
         elif self.data_level == "l2a":
-            if len(dependency_list) > 1:
+            if len(dependency_list) != 1:
                 raise ValueError(
                     f"Unexpected dependencies found for IDEX L2A:"
                     f"{dependency_list}. Expected only one dependency."
@@ -857,19 +891,29 @@ class Idex(ProcessInstrument):
             dependency = load_cdf(science_files[0])
             datasets = [idex_l2a(dependency)]
         elif self.data_level == "l2b":
-            if len(dependency_list) > 2:
+            if len(dependency_list) != 3:
                 raise ValueError(
                     f"Unexpected dependencies found for IDEX L2B:"
-                    f"{dependency_list}. Expected only two dependency."
+                    f"{dependency_list}. Expected only three dependencies."
                 )
             sci_files = dependencies.get_file_paths(
                 source="idex", descriptor="sci-1week"
             )
             dependency = load_cdf(sci_files[0])
-            # TODO update l2b to use hk files
-            # hk_files = dependencies.get_file_paths(source="idex", descriptor="evt")
-            # hk_dependency = [load_cdf(dep) for dep in hk_files]
-            datasets = [idex_l2b(dependency)]
+            hk_files = dependencies.get_file_paths(source="idex", descriptor="evt")
+            hk_dependencies = [load_cdf(dep) for dep in hk_files]
+            datasets = [idex_l2b(dependency, hk_dependencies)]
+        elif self.data_level == "l2c":
+            if len(dependency_list) != 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for IDEX L2C:"
+                    f"{dependency_list}. Expected only one dependency."
+                )
+            sci_files = dependencies.get_file_paths(
+                source="idex", descriptor="sci-1week"
+            )
+            dependency = load_cdf(sci_files[0])
+            datasets = idex_l2c(dependency)
         return datasets
 
 
@@ -1070,7 +1114,7 @@ class Spacecraft(ProcessInstrument):
 
     def do_processing(
         self, dependencies: ProcessingInputCollection
-    ) -> list[xr.Dataset]:
+    ) -> list[xr.Dataset | Path]:
         """
         Perform Spacecraft specific processing.
 
@@ -1081,25 +1125,40 @@ class Spacecraft(ProcessInstrument):
 
         Returns
         -------
-        datasets : xr.Dataset
-            Xr.Dataset of products.
+        datasets : list[xarray.Dataset | Path]
+            The list of processed products.
         """
         print(f"Processing Spacecraft {self.data_level}")
 
-        if self.data_level != "l1a":
+        if self.data_level == "l1a":
+            # File path is expected output file path
+            input_files = dependencies.get_file_paths(source="spacecraft")
+            if len(input_files) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for Spacecraft L1A: "
+                    f"{input_files}. Expected only one dependency."
+                )
+            datasets = list(quaternions.process_quaternions(input_files[0]))
+            return datasets
+        elif self.data_level == "spice":
+            spice_inputs = dependencies.get_file_paths(
+                data_type=SPICESource.SPICE.value
+            )
+            ah_paths = [path for path in spice_inputs if ".ah" in path.suffixes]
+            if len(ah_paths) != 1:
+                raise ValueError(
+                    f"Unexpected spice dependencies found for Spacecraft "
+                    f"pointing_kernel: {ah_paths}. Expected exactly one "
+                    f"attitude history file."
+                )
+            pointing_kernel_paths = pointing_frame.generate_pointing_attitude_kernel(
+                ah_paths[0]
+            )
+            return pointing_kernel_paths
+        else:
             raise NotImplementedError(
                 f"Spacecraft processing not implemented for level {self.data_level}"
             )
-
-        # File path is expected output file path
-        input_files = dependencies.get_file_paths(source="spacecraft")
-        if len(input_files) > 1:
-            raise ValueError(
-                f"Unexpected dependencies found for Spacecraft L1A: "
-                f"{input_files}. Expected only one dependency."
-            )
-        datasets = list(quaternions.process_quaternions(input_files[0]))
-        return datasets
 
 
 class Swapi(ProcessInstrument):
@@ -1127,30 +1186,22 @@ class Swapi(ProcessInstrument):
         dependency_list = dependencies.processing_input
         if self.data_level == "l1":
             # For science, we expect l0 raw file and L1 housekeeping file
-            if self.descriptor == "sci" and len(dependency_list) != 2:
+            if self.descriptor == "sci" and len(dependency_list) != 3:
                 raise ValueError(
                     f"Unexpected dependencies found for SWAPI L1 science:"
-                    f"{dependency_list}. Expected only two dependencies."
+                    f"{dependency_list}. Expected only three dependencies,"
+                    "HK, L0 and time kernels."
                 )
             # For housekeeping, we expect only L0 raw file
-            if self.descriptor == "hk" and len(dependency_list) != 1:
+            if self.descriptor == "hk" and len(dependency_list) != 2:
                 raise ValueError(
                     f"Unexpected dependencies found for SWAPI L1 housekeeping:"
-                    f"{dependency_list}. Expected only one dependency."
+                    f"{dependency_list}. Expected only two dependenccies,"
+                    "L0 and time kernels."
                 )
 
-            dependent_files = []
-            l0_files = dependencies.get_file_paths(descriptor="raw")
-            # TODO: handle multiples files as needed in the future
-            dependent_files.append(l0_files[0])
-
-            if self.descriptor == "sci":
-                # TODO: handle multiples files as needed in the future
-                hk_files = dependencies.get_file_paths(descriptor="hk")
-                dependent_files.append(hk_files[0])
-
             # process science or housekeeping data
-            datasets = swapi_l1(dependent_files)
+            datasets = swapi_l1(dependencies)
         elif self.data_level == "l2":
             if len(dependency_list) != 3:
                 raise ValueError(

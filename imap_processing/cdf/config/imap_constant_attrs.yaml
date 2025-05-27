@@ -18,13 +18,12 @@ epoch:
   TIME_SCALE: Terrestrial Time
   REFERENCE_POSITION: Rotating Earth Geoid
   RESOLUTION: ' '
-  DISPLAY_TYPE: time_series
+  DICT_KEY: "SPASE>Support>SupportQantity:Temporal"
 
 # <=== Data Variables ===>
 # Default Attrs for all metadata variables unless overridden
 metadata_attrs:
   DEPEND_0: epoch
-  DISPLAY_TYPE: 'no_plot'
   LABLAXIS: ' '
   FILLVAL: -9223372036854775808
   FORMAT: I19

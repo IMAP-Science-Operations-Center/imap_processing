@@ -1,6 +1,8 @@
 """Functions for retrieving spin-table data."""
 
-import os
+import functools
+import logging
+from functools import reduce
 from pathlib import Path
 from typing import Union
 
@@ -8,19 +10,40 @@ import numpy as np
 import pandas as pd
 from numpy import typing as npt
 
+from imap_processing.spice import config
 from imap_processing.spice.geometry import (
     SpiceFrame,
     get_spacecraft_to_instrument_spin_phase_offset,
 )
 
+logger = logging.getLogger(__name__)
+
+
+def set_global_spin_table_paths(paths: list[Path]) -> None:
+    """
+    Set the paths to input spin-table csv files.
+
+    Parameters
+    ----------
+    paths : list[pathlib.Path]
+        List of paths to spin-table csv files that will be used to supply
+        spin-table data.
+    """
+    # If paths is an empty list, do nothing
+    if not paths:
+        return
+    logger.info(
+        f"Using the following spin-tables in processing: {[p.name for p in paths]}"
+    )
+    config._spin_table_paths = paths
+
 
 def get_spin_data() -> pd.DataFrame:
     """
-    Read spin file using environment variable and return spin data.
+    Read spin-tables and return spin data.
 
-    SPIN_DATA_FILEPATH environment variable would be a fixed value.
-    It could be s3 filepath that can be used to download the data
-    through API or it could be path EFS or Batch volume mount path.
+    The spin-tables to read are stored in the mutable module level attribute
+    named `spin_table_paths`.
 
     Returns
     -------
@@ -37,35 +60,73 @@ def get_spin_data() -> pd.DataFrame:
             * `spin_phase_valid`: Boolean indicating whether spin phase is valid.
             * `spin_period_source`: Source used for determining spin period.
             * `thruster_firing`: Boolean indicating whether thruster is firing.
-    """
-    spin_data_filepath = os.getenv("SPIN_DATA_FILEPATH")
-    if spin_data_filepath is not None:
-        path_to_spin_file = Path(spin_data_filepath)
-    else:
-        # Handle the case where the environment variable is not set
-        raise ValueError("SPIN_DATA_FILEPATH environment variable is not set.")
 
-    spin_df = pd.read_csv(
-        path_to_spin_file,
-        comment="#",
-        dtype={
-            "spin_number": int,
-            "spin_start_sec_sclk": int,
-            "spin_start_subsec_sclk": int,
-            "spin_start_utc": str,
-            "spin_period_sec": float,
-            "spin_period_valid": bool,
-            "spin_period_source": int,
-            "thruster_firing": bool,
-        },
+    Raises
+    ------
+    ValueError
+        If no spin-table paths have been set.
+    """
+    if config._spin_table_paths is None or len(config._spin_table_paths) == 0:
+        # Handle the case where the module attribute is not set
+        raise ValueError(
+            "Spin-table paths have not been defined in spin.py "
+            "module attribute spin_table_paths."
+        )
+
+    return _load_spin_data_with_cache(tuple(config._spin_table_paths))
+
+
+@functools.cache
+def _load_spin_data_with_cache(csv_paths: tuple[Path]) -> pd.DataFrame:
+    """
+    Load spin-table data from csv files and combine them.
+
+    Parameters
+    ----------
+    csv_paths : tuple[Path]
+        Locations of spin-table csv files.
+
+    Returns
+    -------
+    combined_df: pandas.DataFrame
+        The dataframe containing all spin data.
+    """
+    logger.debug(
+        f"Merging the following spin tables files: {[sp.name for sp in csv_paths]}"
     )
+
+    spin_dataframes = [
+        pd.read_csv(
+            spin_table_path,
+            comment="#",
+            index_col="spin_number",
+            dtype={
+                "spin_number": int,
+                "spin_start_sec_sclk": int,
+                "spin_start_subsec_sclk": int,
+                "spin_start_utc": str,
+                "spin_period_sec": float,
+                "spin_period_valid": bool,
+                "spin_period_source": int,
+                "thruster_firing": bool,
+            },
+        )
+        # Reversed sorting is used so that the proper precedence is applied in
+        # the below use of DataFrame.combine_first()
+        for spin_table_path in sorted(csv_paths, reverse=True)
+    ]
+    combined_df = reduce(
+        lambda left, right: left.combine_first(right),
+        spin_dataframes,
+    )
+    # Duplicate the index so that users can access "spin_numer" by name
+    combined_df.insert(0, "spin_number", combined_df.index)
     # Combine spin_start_sec_sclk and spin_start_subsec_sclk to get the spin start
     # time in seconds. The spin start subseconds are in microseconds.
-    spin_df["spin_start_met"] = (
-        spin_df["spin_start_sec_sclk"] + spin_df["spin_start_subsec_sclk"] / 1e6
+    combined_df["spin_start_met"] = (
+        combined_df["spin_start_sec_sclk"] + combined_df["spin_start_subsec_sclk"] / 1e6
     )
-
-    return spin_df
+    return combined_df
 
 
 def interpolate_spin_data(query_met_times: Union[float, npt.NDArray]) -> pd.DataFrame:

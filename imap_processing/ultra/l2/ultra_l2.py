@@ -12,7 +12,11 @@ from numpy.typing import NDArray
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils.coordinates import CoordNames
-from imap_processing.ena_maps.utils.naming import MapDescriptor, ns_to_duration_months
+from imap_processing.ena_maps.utils.naming import (
+    INERTIAL_FRAME_LONG_NAMES,
+    MapDescriptor,
+    ns_to_duration_months,
+)
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import get_energy_delta_minus_plus
 
 logger = logging.getLogger(__name__)
@@ -357,12 +361,16 @@ def ultra_l2(
         L2 output dataset containing map of the counts on the sky.
         Wrapped in a list for consistency with other product levels.
     """
+    inertial_frame = "unknown"
     if descriptor is not None:
-        output_map_structure = MapDescriptor.from_string(descriptor).to_empty_map()
         logger.info(
             f"Using the provided descriptor '{descriptor}' to set the map structure."
             "\nThis will override any input map structure."
         )
+        map_descriptor = MapDescriptor.from_string(descriptor)
+        output_map_structure = map_descriptor.to_empty_map()
+        inertial_frame = map_descriptor.frame_descriptor
+    inertial_frame_long_name = INERTIAL_FRAME_LONG_NAMES.get(inertial_frame, "unknown")
 
     # Object which holds CDF attributes for the map
     cdf_attrs = ImapCdfAttributes()
@@ -454,6 +462,14 @@ def ultra_l2(
 
         map_dataset = rectangular_skymap.to_dataset()
 
+        # Reshape the solid_angle to have an epoch dimension at the start
+        map_dataset["solid_angle"] = map_dataset["solid_angle"].expand_dims(
+            {
+                CoordNames.TIME.value: 1,
+            },
+            axis=0,
+        )
+
         # Add longitude_delta, latitude_delta to the map dataset
         map_dataset["longitude_delta"] = rectangular_skymap.spacing_deg / 2
         map_dataset["latitude_delta"] = rectangular_skymap.spacing_deg / 2
@@ -464,12 +480,22 @@ def ultra_l2(
 
     # Get the global attributes, and then fill the sensor, tiling, etc. in the
     # format-able strings.
-    map_attrs.update(cdf_attrs.get_global_attributes("imap_ultra_l2_enamap-hf"))
+    map_attrs.update(cdf_attrs.get_global_attributes("imap_ultra_l2_enamap"))
     for key in ["Data_type", "Logical_source", "Logical_source_description"]:
         map_attrs[key] = map_attrs[key].format(
             sensor=ultra_sensor_number,
             tiling=output_map_structure.tiling_type.value.lower(),
             duration=map_duration,
+            resolution_string=(
+                f"{output_map_structure.spacing_deg:.0f}deg"
+                if (
+                    output_map_structure.tiling_type
+                    is ena_maps.SkyTilingType.RECTANGULAR
+                )
+                else f"nside{output_map_structure.nside}"
+            ),
+            inertial_frame_short_name=inertial_frame,
+            inertial_frame_long_name=inertial_frame_long_name,
         )
 
     # Always add the following attributes to the map
@@ -502,7 +528,7 @@ def ultra_l2(
     # Add epoch_delta
     map_dataset.coords["epoch_delta"] = xr.DataArray(
         [
-            map_duration_ns,
+            map_duration_ns.astype(np.int64),
         ],
         dims=(CoordNames.TIME.value,),
     )

@@ -1,6 +1,10 @@
+import json
+from unittest.mock import patch
+
 import numpy as np
 import pandas as pd
 import pytest
+from imap_data_access import ProcessingInputCollection
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import write_cdf
@@ -49,19 +53,60 @@ def lut_notes_table() -> pd.DataFrame:
     return df
 
 
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 def test_swapi_l2_cdf(
-    swapi_l0_test_data_path, esa_unit_conversion_table, lut_notes_table
+    mock_get_file_paths,
+    swapi_l0_test_data_path,
+    esa_unit_conversion_table,
+    lut_notes_table,
 ):
     """Test housekeeping processing and CDF file creation"""
     test_packet_file = swapi_l0_test_data_path / "imap_swapi_l0_raw_20240924_v001.pkts"
+
+    # Mock paths of files to be processed
+    def first_get_file_paths_side_effect(descriptor):
+        if descriptor == "raw":
+            return [test_packet_file]
+        elif descriptor == "hk":
+            return []
+        else:
+            raise ValueError(f"Unknown descriptor: {descriptor}")
+
+    mock_get_file_paths.side_effect = first_get_file_paths_side_effect
+    # Processing inputs
+    processing_input = [
+        {"type": "science", "files": ["imap_swapi_l0_raw_20240924_v001.pkts"]}
+    ]
+    collection_obj = ProcessingInputCollection()
+    collection_obj.deserialize(
+        json.dumps(processing_input),
+    )
     # Create HK CDF File
-    processed_hk_data = swapi_l1([test_packet_file])
+    processed_hk_data = swapi_l1(collection_obj)
     hk_cdf_filename = "imap_swapi_l1_hk_20240924_v999.cdf"
     hk_cdf_path = write_cdf(processed_hk_data[0])
     assert hk_cdf_path.name == hk_cdf_filename
 
+    # Mock paths of files to be processed
+    def second_get_file_paths_side_effect(descriptor):
+        if descriptor == "raw":
+            return [test_packet_file]
+        elif descriptor == "hk":
+            return [hk_cdf_path]
+        else:
+            raise ValueError(f"Unknown descriptor: {descriptor}")
+
+    mock_get_file_paths.side_effect = second_get_file_paths_side_effect
+    processing_input = [
+        {"type": "science", "files": ["imap_swapi_l0_raw_20240924_v001.pkts"]},
+        {"type": "science", "files": ["imap_swapi_l1_hk_20240924_v999.cdf"]},
+    ]
+    collection_obj = ProcessingInputCollection()
+    collection_obj.deserialize(
+        json.dumps(processing_input),
+    )
     # Create L1 CDF File
-    processed_sci_data = swapi_l1([test_packet_file, hk_cdf_path])
+    processed_sci_data = swapi_l1(collection_obj)
     cdf_filename = "imap_swapi_l1_sci_20240924_v999.cdf"
     cdf_path = write_cdf(processed_sci_data[0])
     assert cdf_path.name == cdf_filename
@@ -77,8 +122,8 @@ def test_swapi_l2_cdf(
 
     # Test uncertainty variables are as expected
     np.testing.assert_array_equal(
-        l2_dataset["swp_pcem_rate_err_plus"],
-        l1_dataset["swp_pcem_counts_err_plus"] / TIME_PER_BIN,
+        l2_dataset["swp_pcem_rate_stat_uncert_plus"],
+        l1_dataset["swp_pcem_counts_stat_uncert_plus"] / TIME_PER_BIN,
     )
 
 
@@ -164,11 +209,11 @@ def test_solve_full_sweep_energy(esa_unit_conversion_table, lut_notes_table):
 
     # Now, test that the last 9 fine energy values are as expected for first sweep.
     # I manually picked those values from LUT table.
-    expected_energy_values = np.array(
-        [17310, 17682, 18062, 18450, 18846, 19251, 19251, 19251, 19251]
+    expected_fine_energies = np.array(
+        [19251, 19251, 19251, 19251, 18846, 18450, 18062, 17682, 17310]
     )
 
-    assert np.all(sweeps_energy_value[0, -9:] == expected_energy_values)
+    assert np.all(sweeps_energy_value[0, -9:] == expected_fine_energies)
 
     # Test mismatch values for 9 fine steps x 4 steps.
     mismatch_value = [1]
@@ -187,18 +232,19 @@ def test_solve_full_sweep_energy(esa_unit_conversion_table, lut_notes_table):
         esa_lvl5_arr, esa_unit_conversion_table, lut_notes_table
     )
     assert sweeps_energy_value.shape == (1, 72)
-    assert sweeps_energy_value[0][63] == 19149
-    expected_energy_values = np.array(
+    # Last coarse energy value should be 107
+    assert sweeps_energy_value[0][62] == 107
+    expected_fine_energies = np.array(
         [
+            19251,
+            19251,
+            19251,
+            19251,
+            19251,
+            19251,
+            19251,
+            19251,
             19149,
-            19251,
-            19251,
-            19251,
-            19251,
-            19251,
-            19251,
-            19251,
-            19251,
         ]
     )
-    assert np.all(sweeps_energy_value[0, -9:] == expected_energy_values)
+    assert np.all(sweeps_energy_value[0, -9:] == expected_fine_energies)

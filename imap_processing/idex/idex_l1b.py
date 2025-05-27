@@ -141,7 +141,6 @@ def idex_l1b(l1a_dataset: xr.Dataset) -> xr.Dataset:
     )
 
     logger.info("IDEX L1B science data processing completed.")
-
     return l1b_dataset
 
 

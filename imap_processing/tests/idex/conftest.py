@@ -84,7 +84,7 @@ def l2a_dataset(l1b_dataset: xr.Dataset) -> xr.Dataset:
     return idex_l2a(l1b_dataset)
     idex_attrs = get_idex_attrs("l1b")
     spin_phase_angles = xr.DataArray(
-        np.random.randint(0, 360, len(decom_test_data_sci.epoch)),
+        np.random.randint(0, 360, len(l1b_dataset.epoch)),
         dims="epoch",
         attrs=idex_attrs.get_variable_attributes("spin_phase"),
     )

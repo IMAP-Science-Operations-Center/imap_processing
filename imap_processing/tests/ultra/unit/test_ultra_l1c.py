@@ -172,7 +172,7 @@ def test_calculate_spacecraft_pset_with_cdf():
     }
 
     output_datasets = ultra_l1c(data_dict)
-    output_datasets[0].attrs["Data_version"] = "v999"
+    output_datasets[0].attrs["Data_version"] = "999"
     output_datasets[0].attrs["Repointing"] = f"repoint{pointing + 1:05d}"
     test_data_path = write_cdf(output_datasets[0], istp=True)
 

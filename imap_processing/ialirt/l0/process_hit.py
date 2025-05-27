@@ -1,9 +1,14 @@
 """Functions to support HIT processing."""
 
 import logging
+from decimal import Decimal
 
 import numpy as np
 import xarray as xr
+
+from imap_processing.ialirt.utils.grouping import find_groups
+from imap_processing.ialirt.utils.time import calculate_time
+from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 
 logger = logging.getLogger(__name__)
 
@@ -60,55 +65,6 @@ HIT_PREFIX_TO_RATE_TYPE = {
         "HE4_15_70",
     ],
 }
-
-
-def find_groups(data: xr.Dataset) -> xr.Dataset:
-    """
-    Find all occurrences of the sequential set of 60 values 0-59.
-
-    If a value is missing, or we are starting/ending
-    in the middle of a sequence we do not count that as a valid group.
-
-    Parameters
-    ----------
-    data : xr.Dataset
-        HIT Dataset.
-
-    Returns
-    -------
-    grouped_data : xr.Dataset
-        Grouped data.
-    """
-    subcom_range = (0, 59)
-
-    data = data.sortby("hit_sc_tick", ascending=True)
-
-    # Use hit_subcom == 0 to define the beginning of the group.
-    # Find hit_sc_tick at this index and use it as the beginning time for the group.
-    start_sc_ticks = data["hit_sc_tick"][(data["hit_subcom"] == subcom_range[0])]
-    start_sc_tick = start_sc_ticks.min()
-    # Use hit_subcom == 59 to define the end of the group.
-    last_sc_ticks = data["hit_sc_tick"][([data["hit_subcom"] == subcom_range[-1]][-1])]
-    last_sc_tick = last_sc_ticks.max()
-
-    # Filter out data before the first subcom=0 and after the last subcom=59.
-    grouped_data = data.where(
-        (data["hit_sc_tick"] >= start_sc_tick) & (data["hit_sc_tick"] <= last_sc_tick),
-        drop=True,
-    )
-
-    # Assign labels based on the hit_sc_tick start times.
-    group_labels = np.searchsorted(
-        start_sc_ticks, grouped_data["hit_sc_tick"], side="right"
-    )
-    # Example:
-    # grouped_data.coords
-    # Coordinates:
-    #   * epoch    (epoch) int64 7kB 315922822184000000 ... 315923721184000000
-    #   * group    (group) int64 7kB 1 1 1 1 1 1 1 1 1 ... 15 15 15 15 15 15 15 15 15
-    grouped_data["group"] = ("group", group_labels)
-
-    return grouped_data
 
 
 def create_l1(
@@ -170,7 +126,17 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
         Dictionary final data product.
     """
     hit_data = []
-    grouped_data = find_groups(xarray_data)
+
+    # Subsecond time conversion specified in 7516-9054 GSW-FSW ICD.
+    # Value of SCLK subseconds, unsigned, (LSB = 1/256 sec)
+    met = calculate_time(
+        xarray_data["sc_sclk_sec"], xarray_data["sc_sclk_sub_sec"], 256
+    )
+
+    # Add required parameters.
+    xarray_data["met"] = met
+
+    grouped_data = find_groups(xarray_data, (0, 59), "hit_subcom", "met")
     unique_groups = np.unique(grouped_data["group"])
 
     for group in unique_groups:
@@ -196,24 +162,35 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
         slow_rate = grouped_data["hit_slow_rate"][
             (grouped_data["group"] == group).values
         ]
-        met = int(grouped_data["hit_met"][(grouped_data["group"] == group).values][0])
+        met = int(grouped_data["met"][(grouped_data["group"] == group).values][0])
 
         l1 = create_l1(fast_rate_1, fast_rate_2, slow_rate)
 
         hit_data.append(
             {
-                "met": met,
-                "hit_lo_energy_e_A_side": l1["IALRT_RATE_1"] + l1["IALRT_RATE_2"],
-                "hit_medium_energy_e_A_side": l1["IALRT_RATE_5"] + l1["IALRT_RATE_6"],
-                "hit_high_energy_e_A_side": l1["IALRT_RATE_7"],
-                "hit_low_energy_e_B_side": l1["IALRT_RATE_11"] + l1["IALRT_RATE_12"],
-                "hit_medium_energy_e_B_side": l1["IALRT_RATE_15"] + l1["IALRT_RATE_16"],
-                "hit_high_energy_e_B_side": l1["IALRT_RATE_17"],
-                "hit_medium_energy_H_omni": l1["H_12_15"] + l1["H_15_70"],
-                "hit_high_energy_H_A_side": l1["IALRT_RATE_8"],
-                "hit_high_energy_H_B_side": l1["IALRT_RATE_18"],
-                "hit_low_energy_He_omni": l1["HE4_06_08"],
-                "hit_high_energy_He_omni": l1["HE4_15_70"],
+                "apid": 478,
+                "met": int(met),
+                "utc": met_to_utc(met).split(".")[0],
+                "ttj2000ns": int(met_to_ttj2000ns(met)),
+                "hit_e_a_side_low_en": Decimal(
+                    str(l1["IALRT_RATE_1"] + l1["IALRT_RATE_2"])
+                ),
+                "hit_e_a_side_med_en": Decimal(
+                    str(l1["IALRT_RATE_5"] + l1["IALRT_RATE_6"])
+                ),
+                "hit_e_a_side_high_en": Decimal(str(l1["IALRT_RATE_7"])),
+                "hit_e_b_side_low_en": Decimal(
+                    str(l1["IALRT_RATE_11"] + l1["IALRT_RATE_12"])
+                ),
+                "hit_e_b_side_med_en": Decimal(
+                    str(l1["IALRT_RATE_15"] + l1["IALRT_RATE_16"])
+                ),
+                "hit_e_b_side_high_en": Decimal(str(l1["IALRT_RATE_17"])),
+                "hit_h_omni_med_en": Decimal(str(l1["H_12_15"] + l1["H_15_70"])),
+                "hit_h_a_side_high_en": Decimal(str(l1["IALRT_RATE_8"])),
+                "hit_h_b_side_high_en": Decimal(str(l1["IALRT_RATE_18"])),
+                "hit_he_omni_low_en": Decimal(str(l1["HE4_06_08"])),
+                "hit_he_omni_high_en": Decimal(str(l1["HE4_15_70"])),
             }
         )
 

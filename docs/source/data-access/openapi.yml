@@ -143,6 +143,14 @@ paths:
       operationId: query
       parameters:
         - in: query
+          name: table
+          description: |
+            The database table of interest (e.g. ``science`` or ``ancillary``) for the query to perform against.
+            The default option is the ``science`` table.
+          required: false
+          schema:
+            type: string
+        - in: query
           name: instrument
           description: |
             The instrument of interest (e.g. ``mag``). Supported instruments are listed
