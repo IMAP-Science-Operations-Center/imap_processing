@@ -401,6 +401,17 @@ hi-ialirt-h:
     LABL_PTR_2: inst_az
     VALIDMAX: 16777216
 
+hi-ialirt-energy_h:
+    <<: *hi_energies_default
+    CATDESC: Energy Table for h
+    DELTA_MINUS_VAR: energy_h_delta
+    DELTA_PLUS_VAR: energy_h_delta
+
+hi-ialirt-energy_h_delta:
+    <<: *hi_energies_default
+    CATDESC: Delta of energies for h
+    FIELDNAM: Delta Energy
+
 # hi-omni
 hi-omni-h:
     <<: *counters
