@@ -57,36 +57,34 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:
         attrs=cdf_manager.get_global_attributes("imap_ialirt_l1_realtime"),
     )
 
-    # Create empty dictionaries for each key.
-    data_dict = {}
+    # Create empty dataset for each key.
     for key in instrument_keys:
         attrs = cdf_manager.get_variable_attributes(key)
         fillval = attrs.get("FILLVAL")
         if key.startswith("mag"):
-            data_dict[key] = np.full((n, 3), fillval, dtype=np.float32)
+            data = np.full((n, 3), fillval, dtype=np.float32)
+            dims = ["epoch", "component"]
+            dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
         elif key == "swe_counterstreaming_electrons":
-            data_dict[key] = np.full(n, fillval, dtype=np.uint8)
+            data = np.full(n, fillval, dtype=np.uint8)
+            dims = ["epoch"]
+            dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
         elif key.startswith(("hit", "swe")):
-            data_dict[key] = np.full(n, fillval, dtype=np.uint32)
+            data = np.full(n, fillval, dtype=np.uint32)
+            dims = ["epoch"]
+            dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
         else:
-            data_dict[key] = np.full(n, fillval, dtype=np.float32)
+            data = np.full(n, fillval, dtype=np.float32)
+            dims = ["epoch"]
+            dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
 
-    # Populate the dictionaries.
+    # Populate the dataset variables
     for i, record in enumerate(records):
         for key in record.keys():
+            val = record[key]
             if key.startswith("mag"):
-                val = record[key]
-                data_dict[key][i] = [direction for direction in val]
+                dataset[key].data[i] = [direction for direction in val]
             elif key in instrument_keys:
-                data_dict[key][i] = record[key]
-
-    for key in sorted(instrument_keys):
-        data = data_dict[key]
-        dims = ["epoch", "component"] if key.startswith("mag") else ["epoch"]
-        dataset[key] = xr.DataArray(
-            data,
-            dims=dims,
-            attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
-        )
+                dataset[key].data[i] = val
 
     return dataset
