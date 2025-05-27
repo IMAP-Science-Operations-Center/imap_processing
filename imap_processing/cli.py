@@ -740,7 +740,7 @@ class Hi(ProcessInstrument):
                 )
             datasets = hi_l1c.hi_l1c(load_cdf(science_paths[0]), anc_paths[0])
         elif self.data_level == "l2":
-            science_paths = dependencies.get_file_paths(source="hi", data_type="l2")
+            science_paths = dependencies.get_file_paths(source="hi", data_type="l1c")
             # TODO get ancillary paths
             geometric_factors_path = ""
             esa_energies_path = ""
