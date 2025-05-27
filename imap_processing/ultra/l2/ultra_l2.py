@@ -462,14 +462,6 @@ def ultra_l2(
 
         map_dataset = rectangular_skymap.to_dataset()
 
-        # Reshape the solid_angle to have an epoch dimension at the start
-        map_dataset["solid_angle"] = map_dataset["solid_angle"].expand_dims(
-            {
-                CoordNames.TIME.value: 1,
-            },
-            axis=0,
-        )
-
         # Add longitude_delta, latitude_delta to the map dataset
         map_dataset["longitude_delta"] = rectangular_skymap.spacing_deg / 2
         map_dataset["latitude_delta"] = rectangular_skymap.spacing_deg / 2

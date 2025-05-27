@@ -1119,9 +1119,9 @@ class RectangularSkyMap(AbstractSkyMap):
             )
         # Add the solid angle variable to the data_1d Dataset
         self.data_1d["solid_angle"] = xr.DataArray(
-            self.solid_angle_points,
+            self.solid_angle_points[np.newaxis, :],
             name="solid_angle",
-            dims=[CoordNames.GENERIC_PIXEL.value],
+            dims=[CoordNames.TIME.value, CoordNames.GENERIC_PIXEL.value],
         )
         # Rewrap each data array in the data_1d to the original 2D grid shape
         rewrapped_data = {}
