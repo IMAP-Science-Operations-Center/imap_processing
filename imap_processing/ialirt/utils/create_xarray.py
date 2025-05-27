@@ -26,41 +26,17 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:
 
     instrument_prefixes = ("swe", "hit", "mag", "codicelo", "codicehi", "swapi")
     instrument_keys: set[str] = set()
-
-    # Collect all keys that start with the instrument prefixes.
-    for record in records:
-        instrument_keys.update(
-            key for key in record if key.startswith(instrument_prefixes)
-        )
-
-    # Create empty dictionaries for each key.
     n = len(records)
-    data_dict = {}
-    for key in instrument_keys:
-        attrs = cdf_manager.get_variable_attributes(key)
-        fillval = attrs.get("FILLVAL")
-        if key.startswith("mag"):
-            data_dict[key] = np.full((n, 3), fillval, dtype=np.float32)
-        elif key == "swe_counterstreaming_electrons":
-            data_dict[key] = np.full(n, fillval, dtype=np.uint8)
-        elif key.startswith(("hit", "swe")):
-            data_dict[key] = np.full(n, fillval, dtype=np.uint32)
-        else:
-            data_dict[key] = np.full(n, fillval, dtype=np.float32)
-
     attrs = cdf_manager.get_variable_attributes("default_int64_attrs")
     fillval = attrs.get("FILLVAL")
     ttj2000ns_values = np.full(n, fillval, dtype=np.int64)
 
-    # Populate the dictionaries.
+    # Collect all keys that start with the instrument prefixes.
     for i, record in enumerate(records):
         ttj2000ns_values[i] = record["ttj2000ns"]
-        for key in record.keys():
-            if key.startswith("mag"):
-                val = record[key]
-                data_dict[key][i] = [direction for direction in val]
-            elif key in instrument_keys:
-                data_dict[key][i] = record[key]
+        instrument_keys.update(
+            key for key in record if key.startswith(instrument_prefixes)
+        )
 
     epoch = xr.DataArray(
         data=ttj2000ns_values,
@@ -76,11 +52,33 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:
     )
 
     coords = {"epoch": epoch, "component": component}
-
     dataset = xr.Dataset(
         coords=coords,
         attrs=cdf_manager.get_global_attributes("imap_ialirt_l1_realtime"),
     )
+
+    # Create empty dictionaries for each key.
+    data_dict = {}
+    for key in instrument_keys:
+        attrs = cdf_manager.get_variable_attributes(key)
+        fillval = attrs.get("FILLVAL")
+        if key.startswith("mag"):
+            data_dict[key] = np.full((n, 3), fillval, dtype=np.float32)
+        elif key == "swe_counterstreaming_electrons":
+            data_dict[key] = np.full(n, fillval, dtype=np.uint8)
+        elif key.startswith(("hit", "swe")):
+            data_dict[key] = np.full(n, fillval, dtype=np.uint32)
+        else:
+            data_dict[key] = np.full(n, fillval, dtype=np.float32)
+
+    # Populate the dictionaries.
+    for i, record in enumerate(records):
+        for key in record.keys():
+            if key.startswith("mag"):
+                val = record[key]
+                data_dict[key][i] = [direction for direction in val]
+            elif key in instrument_keys:
+                data_dict[key][i] = record[key]
 
     for key in sorted(instrument_keys):
         data = data_dict[key]
