@@ -17,7 +17,6 @@ from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.mag.l1a.mag_l1a_data import TimeTuple
 from imap_processing.mag.l1b.mag_l1b import (
     calibrate_vector,
-    retrieve_matrix_from_l1b_calibration,
     shift_time,
 )
 from imap_processing.spice.time import met_to_ttj2000ns
@@ -251,11 +250,11 @@ def calculate_l1b(
     time_data : dict
         Time data.
     """
-    calibration_matrix_mago, time_shift_mago = retrieve_matrix_from_l1b_calibration(
-        calibration_dataset, is_mago=True
+    calibration_matrix_mago, time_shift_mago = (
+        retrieve_matrix_from_single_l1b_calibration(calibration_dataset, is_mago=True)
     )
-    calibration_matrix_magi, time_shift_magi = retrieve_matrix_from_l1b_calibration(
-        calibration_dataset, is_mago=False
+    calibration_matrix_magi, time_shift_magi = (
+        retrieve_matrix_from_single_l1b_calibration(calibration_dataset, is_mago=False)
     )
 
     # Get time values for each group.
@@ -384,3 +383,34 @@ def process_packet(
         mag_data.append({**status_data, **science_data, **time_data})
 
     return mag_data
+
+
+def retrieve_matrix_from_single_l1b_calibration(
+    calibration_dataset: xr.Dataset, is_mago: bool = True
+) -> tuple[xr.DataArray, xr.DataArray]:
+    """
+    Retrieve the calibration matrix and time shift from the calibration dataset.
+
+    Parameters
+    ----------
+    calibration_dataset : xarray.Dataset
+        The calibration dataset containing the calibration matrices and time shift.
+    is_mago : bool
+        Whether the calibration is for mago or magi. If True, it retrieves the mago
+        calibration matrix and time shift. If False, it retrieves the magi calibration
+        matrix and time shift.
+
+    Returns
+    -------
+    tuple[xr.DataArray, xr.DataArray]
+        The calibration matrix and time shift. These can be passed directly into
+        update_vector, calibrate_vector, and shift_time.
+    """
+    if is_mago:
+        calibration_matrix = calibration_dataset["MFOTOURFO"]
+        time_shift = calibration_dataset["OTS"]
+    else:
+        calibration_matrix = calibration_dataset["MFITOURFI"]
+        time_shift = calibration_dataset["ITS"]
+
+    return calibration_matrix, time_shift

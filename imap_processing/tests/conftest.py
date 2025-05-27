@@ -17,6 +17,7 @@ import requests
 import spiceypy
 
 from imap_processing import imap_module_directory
+from imap_processing.cdf.utils import load_cdf
 from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns
 
 
@@ -727,6 +728,26 @@ def use_fake_repoint_data_for_time(use_test_repoint_data_csv, tmpdir):
         use_test_repoint_data_csv(repoint_csv_file_path)
 
     return wrapped_repoint_data_filepath
+
+
+# Shared with i-alirt and mag tests
+@pytest.fixture
+def mag_test_l1b_calibration_data():
+    imap_dir = Path(__file__).parent
+    cal_file = (
+        imap_dir
+        / "mag"
+        / "validation"
+        / "calibration"
+        / "imap_mag_l1b-calibration_20240229_v001.cdf"
+    )
+    calibration_data = load_cdf(cal_file)
+    matrix_mago = calibration_data["MFOTOURFO"]
+    time_shift_mago = calibration_data["OTS"]
+    matrix_magi = calibration_data["MFITOURFI"]
+    time_shift_magi = calibration_data["ITS"]
+
+    return matrix_mago, time_shift_mago, matrix_magi, time_shift_magi
 
 
 if __name__ == "__main__":

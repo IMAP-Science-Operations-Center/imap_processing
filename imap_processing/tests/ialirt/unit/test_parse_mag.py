@@ -14,11 +14,9 @@ from imap_processing.ialirt.l0.parse_mag import (
     get_status_data,
     get_time,
     process_packet,
+    retrieve_matrix_from_single_l1b_calibration,
 )
 from imap_processing.mag.constants import MAX_FINE_TIME
-from imap_processing.mag.l1b.mag_l1b import (
-    retrieve_matrix_from_l1b_calibration,
-)
 from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.utils import packet_file_to_datasets
 
@@ -154,7 +152,12 @@ def grouped_data():
 def calibration_dataset():
     """Returns the calibration data."""
     calibration_dataset = load_cdf(
-        imap_module_directory / "mag" / "l1b" / "imap_calibration_mag_20240229_v01.cdf"
+        imap_module_directory
+        / "tests"
+        / "mag"
+        / "validation"
+        / "calibration"
+        / "imap_mag_l1b-calibration_20240229_v001.cdf"
     )
     return calibration_dataset
 
@@ -179,15 +182,10 @@ def test_get_status_data(xarray_data, mag_test_data):
         assert status_data[key] == matching_row[key.upper()].values[0]
 
 
-def test_get_time(grouped_data, calibration_dataset):
+def test_get_time(grouped_data, mag_test_l1b_calibration_data):
     """Tests the get_time function."""
-
-    calibration_matrix_mago, time_shift_mago = retrieve_matrix_from_l1b_calibration(
-        calibration_dataset, is_mago=True
-    )
-    calibration_matrix_magi, time_shift_magi = retrieve_matrix_from_l1b_calibration(
-        calibration_dataset, is_mago=False
-    )
+    time_shift_mago = mag_test_l1b_calibration_data[1]
+    time_shift_magi = mag_test_l1b_calibration_data[3]
 
     time_data = get_time(
         grouped_data, 1, np.array([0, 1, 2, 3]), time_shift_mago, time_shift_magi
@@ -307,7 +305,7 @@ def test_process_spacecraft_packet(
         # Timestamp check
         time_data_pri_met = float(row["pri_coarse"] + row["pri_fine"] / MAX_FINE_TIME)
         time_data_primary_ttj2000ns = met_to_ttj2000ns(time_data_pri_met)
-        _, time_shift_mago = retrieve_matrix_from_l1b_calibration(
+        _, time_shift_mago = retrieve_matrix_from_single_l1b_calibration(
             calibration_dataset, is_mago=True
         )
         primary_epoch = time_data_primary_ttj2000ns + time_shift_mago.data * 1e9
