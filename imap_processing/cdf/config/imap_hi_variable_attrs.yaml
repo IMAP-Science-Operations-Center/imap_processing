@@ -579,18 +579,21 @@ hi_pset_background_rates_uncertainty:
 hi_pset_spin_bin_label:
   CATDESC: Label spin angle bin
   FIELDNAM: Label spin angle bin
+  DEPEND_1: spin_angle_bin
   FORMAT: A4
   VAR_TYPE: metadata
 
 hi_pset_esa_energy_step_label:
   CATDESC: Label esa step
   FIELDNAM: Label esa step
+  DEPEND_1: esa_energy_step
   FORMAT: A4
   VAR_TYPE: metadata
 
 hi_pset_calibration_prod_label:
   CATDESC: Label calibration product
   FIELDNAM: Label calibration product
+  DEPEND_1: calibration_prod
   FORMAT: A4
   VAR_TYPE: metadata
 
