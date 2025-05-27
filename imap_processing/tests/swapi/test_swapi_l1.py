@@ -205,9 +205,12 @@ def test_swapi_l1_cdf(mock_get_file_paths, swapi_l0_test_data_path):
     )
     processed_data = swapi_l1(collection_obj)
     # hk cdf file
-    hk_cdf_filename = "imap_swapi_l1_hk_20240924_v999.cdf"
+    l1a_hk_cdf_filename = "imap_swapi_l1a_hk_20240924_v999.cdf"
     hk_cdf_path = write_cdf(processed_data[0])
-    assert hk_cdf_path.name == hk_cdf_filename
+    assert hk_cdf_path.name == l1a_hk_cdf_filename
+    l1b_hk_cdf_filename = "imap_swapi_l1b_hk_20240924_v999.cdf"
+    l1b_hk_cdf_path = write_cdf(processed_data[1])
+    assert l1b_hk_cdf_path.name == l1b_hk_cdf_filename
 
     # Mock paths of files to be processed
     def second_get_file_paths_side_effect(descriptor):
@@ -221,7 +224,7 @@ def test_swapi_l1_cdf(mock_get_file_paths, swapi_l0_test_data_path):
     mock_get_file_paths.side_effect = second_get_file_paths_side_effect
     processing_input = [
         {"type": "science", "files": ["imap_swapi_l0_raw_20240924_v001.pkts"]},
-        {"type": "science", "files": ["imap_swapi_l1_hk_20240924_v999.cdf"]},
+        {"type": "science", "files": ["imap_swapi_l1a_hk_20240924_v999.cdf"]},
     ]
     collection_obj = ProcessingInputCollection()
     collection_obj.deserialize(

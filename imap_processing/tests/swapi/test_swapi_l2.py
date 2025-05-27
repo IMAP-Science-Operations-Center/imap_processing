@@ -83,7 +83,7 @@ def test_swapi_l2_cdf(
     )
     # Create HK CDF File
     processed_hk_data = swapi_l1(collection_obj)
-    hk_cdf_filename = "imap_swapi_l1_hk_20240924_v999.cdf"
+    hk_cdf_filename = "imap_swapi_l1a_hk_20240924_v999.cdf"
     hk_cdf_path = write_cdf(processed_hk_data[0])
     assert hk_cdf_path.name == hk_cdf_filename
 
@@ -99,7 +99,7 @@ def test_swapi_l2_cdf(
     mock_get_file_paths.side_effect = second_get_file_paths_side_effect
     processing_input = [
         {"type": "science", "files": ["imap_swapi_l0_raw_20240924_v001.pkts"]},
-        {"type": "science", "files": ["imap_swapi_l1_hk_20240924_v999.cdf"]},
+        {"type": "science", "files": ["imap_swapi_l1a_hk_20240924_v999.cdf"]},
     ]
     collection_obj = ProcessingInputCollection()
     collection_obj.deserialize(

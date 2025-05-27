@@ -28,7 +28,7 @@ PROCESSING_LEVELS = {
     "lo": ["l1a", "l1b", "l1c", "l2"],
     "mag": ["l1a", "l1b", "l1c", "l1d", "l2"],
     "spacecraft": ["l1a", "spice"],
-    "swapi": ["l1", "l2", "l3a", "l3b"],
+    "swapi": ["l1a", "l1b", "l1", "l2", "l3a", "l3b"],
     "swe": ["l1a", "l1b", "l2"],
     "ultra": ["l1a", "l1b", "l1c", "l2"],
 }
