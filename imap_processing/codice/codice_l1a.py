@@ -148,7 +148,7 @@ class CoDICEL1aPipeline:
                 science_values, self.dataset.byte_count.data
             ):
                 # Convert from numpy array to byte object
-                values = eval(str(packet_data))
+                values = packet_data[()]
 
                 # Only use the values up to the byte count. Bytes after this are
                 # used as padding and are not needed
