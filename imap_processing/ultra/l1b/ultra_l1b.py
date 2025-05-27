@@ -52,8 +52,8 @@ def ultra_l1b(data_dict: dict) -> list[xr.Dataset]:
                 f"imap_ultra_l1a_{instrument_id}sensor-aux": data_dict[
                     f"imap_ultra_l1a_{instrument_id}sensor-aux"
                 ],
-                f"imap_ultra_l1a_{instrument_id}sensor-hk": data_dict[
-                    f"imap_ultra_l1a_{instrument_id}sensor-hk"
+                f"imap_ultra_l1a_{instrument_id}sensor-params": data_dict[
+                    f"imap_ultra_l1a_{instrument_id}sensor-params"
                 ],
                 f"imap_ultra_l1a_{instrument_id}sensor-rates": data_dict[
                     f"imap_ultra_l1a_{instrument_id}sensor-rates"
