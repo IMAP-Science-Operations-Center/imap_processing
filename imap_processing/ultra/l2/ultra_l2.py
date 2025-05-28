@@ -328,18 +328,23 @@ def generate_ultra_healpix_skymap(
             * delta_energy
         )
 
-        # Calculate the standard deviation of the observation date
+        # Calculate the standard deviation of the observation date as:
+        # sqrt((sum(obs_date^2) / N) - (sum(obs_date) / N)^2)
+        # where sum here refers to the projection process
+        # summing over N pset pixels across different psets
         skymap.data_1d["obs_date_range"] = (
-            abs(
+            (
                 (
                     skymap.data_1d["obs_date_squared_for_std"]
-                    / (skymap.data_1d["num_pointing_set_pixel_members"] - 1)
+                    / (skymap.data_1d["num_pointing_set_pixel_members"])
                 )
                 - (
-                    skymap.data_1d["obs_date_for_std"]
-                    / (skymap.data_1d["num_pointing_set_pixel_members"] - 1)
+                    (
+                        skymap.data_1d["obs_date_for_std"]
+                        / (skymap.data_1d["num_pointing_set_pixel_members"])
+                    )
+                    ** 2
                 )
-                ** 2
             )
             ** 0.5
         ).astype(np.int64)
