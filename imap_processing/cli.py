@@ -77,6 +77,7 @@ from imap_processing.swapi.l2.swapi_l2 import swapi_l2
 from imap_processing.swapi.swapi_utils import read_swapi_lut_table
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
+from imap_processing.swe.l2.swe_l2 import swe_l2
 from imap_processing.ultra.l1a import ultra_l1a
 from imap_processing.ultra.l1b import ultra_l1b
 from imap_processing.ultra.l1c import ultra_l1c
@@ -1254,6 +1255,7 @@ class Swe(ProcessInstrument):
                 raise ValueError(
                     f"Unexpected dependencies found for SWE L1A:"
                     f"{dependency_list}. Expected only two dependencies."
+                    "L0 data and time kernels."
                 )
             science_files = dependencies.get_file_paths(source="swe")
             datasets = swe_l1a(str(science_files[0]))
@@ -1261,10 +1263,12 @@ class Swe(ProcessInstrument):
             # we expect only one dataset to be returned.
 
         elif self.data_level == "l1b" and self.descriptor == "sci":
-            if len(dependency_list) != 4:
+            if len(dependency_list) != 5:
                 raise ValueError(
                     f"Unexpected dependencies found for SWE L1B:"
                     f"{dependency_list}. Expected exactly four dependencies."
+                    "L1A science, in-fligth cal, esa LUT, EU conversion and "
+                    "time kernels."
                 )
 
             science_files = dependencies.get_file_paths("swe", "sci")
@@ -1279,9 +1283,25 @@ class Swe(ProcessInstrument):
                 raise ValueError(
                     f"Unexpected dependencies found for SWE L1B HK:"
                     f"{dependency_list}. Expected exactly two dependencies."
+                    "L0 data and time kernels."
                 )
             # process data
             datasets = swe_l1b(dependencies)
+        elif self.data_level == "l2":
+            if len(dependency_list) != 2:
+                raise ValueError(
+                    f"Unexpected dependencies found for SWE L2:"
+                    f"{dependency_list}. Expected exactly two dependencies."
+                    "L1B science and spin data."
+                )
+            # process data
+            science_files = dependencies.get_file_paths(source="swe", descriptor="sci")
+            if len(science_files) > 1:
+                raise ValueError(
+                    "Multiple science files processing is not supported for SWE L2."
+                )
+            l1b_datasets = load_cdf(science_files[0])
+            datasets = [swe_l2(l1b_datasets)]
         else:
             print("Did not recognize data level. No processing done.")
 
