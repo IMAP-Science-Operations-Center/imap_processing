@@ -74,6 +74,8 @@ class CoDICEL1aPipeline:
         Retrieve the ESA sweep values.
     get_hi_energy_table_data(species)
         Retrieve energy table data for CoDICE-Hi products
+    reshape_binned_data(dataset)
+        Reshape data arrays for binned datasets.
     reshape_data()
         Reshape the data arrays based on the data product being made.
     set_data_product_config()
