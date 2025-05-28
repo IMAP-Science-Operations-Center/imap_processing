@@ -34,54 +34,72 @@ def lo_l2(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         # logical_source = "imap_lo_l2_hflux-spacecraft-uncorrected"
         pset = sci_dependencies["imap_lo_l1c_pset"]
 
-        pset = pset.rename_dims(
-            {"dim0": "longitude", "dim1": "latitude", "dim2": "energy"}
-        )
-
         # Put energy dim before longitude and latitude
+        # TODO: L1C data should be in this format already.
+        #  This is a workaround for the current L1C data format.
         for data_var in pset.data_vars:
-            if "dim2" in pset[data_var].dims:
+            if "energy" in pset[data_var].dims:
                 # move dim2 to before dim0 and dim1
                 pset[data_var] = pset[data_var].transpose(
                     "epoch", "energy", "longitude", "latitude"
                 )
 
-        pset["h_counts"] = xr.ones_like(pset["h_counts"])
-
         lo_rect_map = ena_maps.RectangularSkyMap(
             spacing_deg=6, spice_frame=geometry.SpiceFrame.ECLIPJ2000
         )
 
-        lo_hp_map = ena_maps.HealpixSkyMap(
-            nside=32,
-            spice_frame=geometry.SpiceFrame.ECLIPJ2000,
-        )
-
+        lo_pset = ena_maps.LoPointingSet(pset)
         lo_rect_map.project_pset_values_to_map(
-            pointing_set=ena_maps.LoPointingSet(pset),
+            pointing_set=lo_pset,
             value_keys=["h_counts", "exposure_time"],
             index_match_method=ena_maps.IndexMatchMethod.PUSH,
         )
-        lo_hp_map.project_pset_values_to_map(
-            pointing_set=ena_maps.LoPointingSet(pset),
-            value_keys=["h_counts", "exposure_time"],
-            index_match_method=ena_maps.IndexMatchMethod.PUSH,
-        )
+        # Add the hydrogen rates to the rectangular map dataset.
+        lo_rect_map.data_1d["h_rate"] = calculate_rates(lo_rect_map)
+        # Add the hydrogen flux to the rectangular map dataset.
+        lo_rect_map.data_1d["h_flux"] = calculate_flux(lo_rect_map)
+        return [lo_rect_map_ds]
 
-        lo_rect_map.data_1d["h_rate"] = (
-            lo_rect_map.data_1d["h_counts"] / lo_rect_map.data_1d["exposure_time"]
-        )
-        # temporary values. These will all come from ancillary data when
-        # the data is available.
-        geometric_factor = 1.0
-        efficiency_factor = 1.0
-        energy_dict = {1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7}
-        energies = np.array([energy_dict[i] for i in range(1, 8)])
-        energies = energies.reshape(1, 7, 1)
-        lo_rect_map.data_1d["h_flux"] = lo_rect_map.data_1d["h_rate"] / (
-            geometric_factor * energies * efficiency_factor
-        )
+def calculate_rates(lo_rect_map: xr.Dataset) -> xr.Dataset:
+        """
+        Calculate the rates for the rectangular map dataset.
 
-        lo_rect_map_ds = lo_rect_map.to_dataset()
+        Parameters
+        ----------
+        lo_rect_map : xr.Dataset
+            The hydrogen counts and exposure time.
 
-    return [lo_rect_map_ds]
+        Returns
+        -------
+        xr.Dataset
+            The calculated rates.
+        """
+        # Calculate the rates based on the h_counts and exposure_time
+        h_rate = llo_rect_map: xr.Dataset / lo_rect_map.data_1d["exposure_time"]
+        return h_rate
+
+
+def calculate_flux(lo_rect_map: xr.Dataset) -> xr.Dataset:
+    """
+    Calculate the flux from the hydrogen rate.
+
+    Parameters
+    ----------
+    h_rate : xr.Dataset
+        The hydrogen rates.
+
+    Returns
+    -------
+    xr.Dataset
+        The calculated flux.
+    """
+    # Temporary values. These will all come from ancillary data when
+    # the data is available and integrated.
+    geometric_factor = 1.0
+    efficiency_factor = 1.0
+    energy_dict = {1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7}
+    energies = np.array([energy_dict[i] for i in range(1, 8)])
+    energies = energies.reshape(1, 7, 1)
+
+    h_flux = lo_rect_map. / (geometric_factor * energies * efficiency_factor)
+    return h_flux
