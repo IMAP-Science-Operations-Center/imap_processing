@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="SWP">
-	<xtce:Header date="09/05/2025" version="1" author="IMAP SDC" source_file="TLM_SWP.xlsx" />
+	<xtce:Header date="09/05/2025" version="1" author="IMAP SDC" source_file="TLM_SWP.xlsx, commit: 2893c15b050" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="VERSION" signed="false">

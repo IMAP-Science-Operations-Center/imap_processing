@@ -758,7 +758,7 @@ def swapi_l1(dependencies: ProcessingInputCollection) -> xr.Dataset:
         logger.info(f"Processing HK data for {l0_files[0]}.")
         # Get L1A and L1B HK data.
         l1a_hk_data = l0_unpacked_dict[SWAPIAPID.SWP_HK]
-        l1b_hk_data = l0_unpacked_dict = packet_file_to_datasets(
+        l1b_hk_data = packet_file_to_datasets(
             l0_files[0], xtce_definition, use_derived_value=True
         )[SWAPIAPID.SWP_HK]
 
