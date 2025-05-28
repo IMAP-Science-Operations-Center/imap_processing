@@ -540,16 +540,13 @@ class CoDICEL1aPipeline:
 
         # Iterate through each epoch's data and pull out the data for each
         # species
-        stacked_data = np.stack(
-            [np.array(item, dtype=np.uint32) for item in self.raw_data]
-        )
+        stacked_data = np.array(self.raw_data, dtype=np.uint32)
         for i, epoch in enumerate(stacked_data):
             current_epoch = dataset.epoch.data[i]
             position = 0
             for species in self.config["energy_table"]:
-                num_bins = (
-                    len(self.config["energy_table"][species]) - 1
-                )  # Subtracting one here since the table includes endpoints
+                # Subtracting one here since the table includes endpoints
+                num_bins = len(self.config["energy_table"][species]) - 1
                 species_data = (
                     epoch[position : position + num_bins * self.config["num_spins"]]
                     .reshape(num_bins, num_spins)
