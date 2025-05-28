@@ -14,6 +14,7 @@ from imap_processing.ultra.l0.decom_ultra import (
 )
 from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_AUX,
+    ULTRA_CMD_TEXT,
     ULTRA_EVENTS,
     ULTRA_HK,
     ULTRA_RATES,
@@ -72,6 +73,7 @@ def ultra_l1a(packet_file: str, apid_input: Optional[int] = None) -> list[xr.Dat
             gattr_key = ULTRA_TOF.logical_source[ULTRA_TOF.apid.index(apid)]
         elif apid in ULTRA_RATES.apid:
             decom_ultra_dataset = process_ultra_rates(datasets_by_apid[apid])
+            decom_ultra_dataset = decom_ultra_dataset.drop_vars("fastdata_00")
             gattr_key = ULTRA_RATES.logical_source[ULTRA_RATES.apid.index(apid)]
         elif apid in ULTRA_EVENTS.apid:
             decom_ultra_dataset = process_ultra_events(datasets_by_apid[apid])
@@ -82,9 +84,21 @@ def ultra_l1a(packet_file: str, apid_input: Optional[int] = None) -> list[xr.Dat
         elif apid in ULTRA_HK.apid:
             decom_ultra_dataset = datasets_by_apid[apid]
             gattr_key = ULTRA_HK.logical_source[ULTRA_HK.apid.index(apid)]
+        elif apid in ULTRA_CMD_TEXT.apid:
+            decom_ultra_dataset = datasets_by_apid[apid]
+            decoded_strings = [
+                s.decode("ascii").rstrip("\x00")
+                for s in decom_ultra_dataset["text"].values
+            ]
+            decom_ultra_dataset = decom_ultra_dataset.drop_vars("text")
+            decom_ultra_dataset["text"] = xr.DataArray(
+                decoded_strings,
+                dims=["epoch"],
+                coords={"epoch": decom_ultra_dataset["epoch"]},
+            )
+            gattr_key = ULTRA_CMD_TEXT.logical_source[ULTRA_CMD_TEXT.apid.index(apid)]
         else:
             logger.error(f"APID {apid} not recognized.")
-            # TODO: here we can put other apids
             continue
 
         decom_ultra_dataset.attrs.update(attr_mgr.get_global_attributes(gattr_key))

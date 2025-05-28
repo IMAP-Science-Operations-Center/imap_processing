@@ -17,6 +17,7 @@ import requests
 import spiceypy
 
 from imap_processing import imap_module_directory
+from imap_processing.spice import config as spice_config
 from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns
 
 
@@ -32,6 +33,13 @@ def _set_global_config(monkeypatch, tmp_path):
 @pytest.fixture(scope="session")
 def imap_tests_path():
     return imap_module_directory / "tests"
+
+
+@pytest.fixture(autouse=True)
+def clear_spin_and_repoint_paths(monkeypatch):
+    """Clear the spin and repoint paths to avoid having test side effects."""
+    monkeypatch.setattr(spice_config, "_spin_table_paths", [])
+    monkeypatch.setattr(spice_config, "_repoint_table_path", None)
 
 
 # Furnishing fixtures for testing kernels
@@ -201,6 +209,15 @@ def _test_data_paths():
             / "data"
             / "l1"
             / "IMAP-Ultra45_r1_L1_V0_shortened.csv",
+        ),
+        (
+            "imap_ultra_l0_raw_20260924_v001.pkts",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "data"
+            / "l0"
+            / "imap_ultra_l0_raw_20260924_v001.pkts",
         ),
         (
             "imap_ultra_l1b_45sensor-de_20240207_v999.cdf",
@@ -481,17 +498,17 @@ def _unset_metakernel_path(monkeypatch):
 
 @pytest.fixture
 def use_test_spin_data_csv(monkeypatch):
-    """Sets the SPIN_DATA_FILEPATH environment variable to input path."""
+    """Monkeypatches `spin._spin_table_paths` to the input Path."""
 
-    def wrapped_set_spin_data_filepath(path: Path):
-        monkeypatch.setenv("SPIN_DATA_FILEPATH", str(path))
+    def wrapped_set_spin_data_filepath(paths: list[Path]):
+        monkeypatch.setattr(spice_config, "_spin_table_paths", paths)
 
     return wrapped_set_spin_data_filepath
 
 
 @pytest.fixture
 def use_fake_spin_data_for_time(
-    request, use_test_spin_data_csv, tmpdir, generate_spin_data
+    request, use_test_spin_data_csv, tmp_path, generate_spin_data
 ):
     """
     Generate and use fake spin data for testing.
@@ -519,9 +536,9 @@ def use_fake_spin_data_for_time(
             from start time.
         """
         spin_df = generate_spin_data(start_met, end_met=end_met)
-        spin_csv_file_path = tmpdir / "spin_data.spin.csv"
+        spin_csv_file_path = tmp_path / "spin_data.spin.csv"
         spin_df.to_csv(spin_csv_file_path, index=False)
-        use_test_spin_data_csv(spin_csv_file_path)
+        use_test_spin_data_csv([spin_csv_file_path])
 
     return wrapped_set_spin_data_filepath
 
@@ -618,10 +635,10 @@ def generate_spin_data():
 
 @pytest.fixture
 def use_test_repoint_data_csv(monkeypatch):
-    """Sets the REPOINT_DATA_FILEPATH environment variable to input path."""
+    """Monkeypatches repoint._repoint_table_path to point to the input path."""
 
     def wrapped_set_repoint_data_filepath(path: Path):
-        monkeypatch.setenv("REPOINT_DATA_FILEPATH", str(path))
+        monkeypatch.setattr(spice_config, "_repoint_table_path", path)
 
     return wrapped_set_repoint_data_filepath
 
@@ -677,7 +694,7 @@ def generate_repoint_data(
 
 
 @pytest.fixture
-def use_fake_repoint_data_for_time(use_test_repoint_data_csv, tmpdir):
+def use_fake_repoint_data_for_time(use_test_repoint_data_csv, tmp_path):
     """
     Generate and use fake spin data for testing.
 
@@ -713,7 +730,7 @@ def use_fake_repoint_data_for_time(use_test_repoint_data_csv, tmpdir):
             repoint_end_met=repoint_end_met,
             repoint_id_start=repoint_id_start,
         )
-        repoint_csv_file_path = tmpdir / "repoint_data.repointing.csv"
+        repoint_csv_file_path = tmp_path / "repoint_data.repointing.csv"
         repoint_df.to_csv(repoint_csv_file_path, index=False)
         use_test_repoint_data_csv(repoint_csv_file_path)
 

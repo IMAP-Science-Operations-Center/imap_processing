@@ -3939,8 +3939,7 @@ test2:
   DEPEND_0: epoch
 
 text:
-  <<: *default_float32
-  CATDESC: Text
+  CATDESC: Command text per packet
   FIELDNAM: text
   LABLAXIS: text
   UNITS: ' '

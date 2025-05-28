@@ -13,27 +13,9 @@ from imap_processing.cdf.utils import write_cdf
 from imap_processing.idex.idex_l1b import (
     get_spice_data,
     get_trigger_mode_and_level,
-    idex_l1b,
     unpack_instrument_settings,
 )
 from imap_processing.tests.idex import conftest
-from imap_processing.tests.idex.conftest import get_spice_data_side_effect_func
-
-
-@pytest.fixture
-@mock.patch("imap_processing.idex.idex_l1b.get_spice_data")
-def l1b_dataset(mock_get_spice_data, decom_test_data_sci: xr.Dataset) -> xr.Dataset:
-    """Return a ``xarray`` dataset containing test data.
-
-    Returns
-    -------
-    dataset : xr.Dataset
-        A ``xarray`` dataset containing the test data
-    """
-
-    mock_get_spice_data.side_effect = get_spice_data_side_effect_func
-    dataset = idex_l1b(decom_test_data_sci)
-    return dataset
 
 
 @pytest.fixture

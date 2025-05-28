@@ -11,9 +11,10 @@ from imap_processing.mag.l2.mag_l2_data import MagL2
 
 
 def mag_l2(
-    calibration_datasets: list[xr.Dataset],
+    calibration_dataset: xr.Dataset,
     offsets_dataset: xr.Dataset,
     input_data: xr.Dataset,
+    day_to_process: np.datetime64,
 ) -> list[xr.Dataset]:
     """
     Complete MAG L2 processing.
@@ -53,12 +54,15 @@ def mag_l2(
 
     Parameters
     ----------
-    calibration_datasets : list[xr.Dataset]
+    calibration_dataset : xr.Dataset
         Calibration ancillary file inputs.
     offsets_dataset : xr.Dataset
         Offset ancillary file input.
     input_data : xr.Dataset
         Input data from MAG L1C or L1B.
+    day_to_process : numpy.datetime64['D']
+        The 24 hour day to process. This should match the day of the input data and
+        the offset file.
 
     Returns
     -------
@@ -66,16 +70,16 @@ def mag_l2(
         List of xarray datasets ready to write to CDF file. Expected to be four outputs
         for different frames.
     """
-    # TODO we may need to combine multiple calibration datasets into one timeline.
-
     always_output_mago = configuration.ALWAYS_OUTPUT_MAGO
 
     # TODO Check that the input file matches the offsets file
-    if not np.array_equal(input_data["epoch"].data, offsets_dataset["epoch"].data):
-        raise ValueError("Input file and offsets file must have the same timestamps.")
+    # if not np.array_equal(input_data["epoch"].data, offsets_dataset["epoch"].data):
+    #     raise ValueError("Input file and offsets file must have the same timestamps.")
+
+    day: np.datetime64 = day_to_process.astype("datetime64[D]")
 
     calibration_matrix = retrieve_matrix_from_l2_calibration(
-        calibration_datasets, always_output_mago
+        calibration_dataset, day, always_output_mago
     )
 
     vectors = np.apply_along_axis(
@@ -85,7 +89,7 @@ def mag_l2(
         calibration_matrix=calibration_matrix,
     )
 
-    basic_test_data = MagL2(
+    input_data = MagL2(
         vectors[:, :3],  # level 2 vectors don't include range
         input_data["epoch"].data,
         input_data["vectors"].data[:, 3],
@@ -100,19 +104,22 @@ def mag_l2(
     attributes.add_instrument_global_attrs("mag")
     # temporarily point to l1c
     attributes.add_instrument_variable_attrs("mag", "l1c")
-    return [basic_test_data.generate_dataset(attributes)]
+    return [input_data.generate_dataset(attributes, day)]
 
 
 def retrieve_matrix_from_l2_calibration(
-    calibration_datasets: list[xr.Dataset], use_mago: bool = True
+    calibration_dataset: xr.Dataset, day: np.datetime64, use_mago: bool = True
 ) -> xr.DataArray:
     """
     Get the calibration matrix for the file.
 
     Parameters
     ----------
-    calibration_datasets : list[xr.Dataset]
-        Ancillary file inputs for calibration.
+    calibration_dataset : list[xr.Dataset]
+        Ancillary file inputs for calibration. Should consist of combined calibration
+        datasets such that each day in the range has a corresponding calibration matrix.
+    day : np.datetime64
+        Day of the calibration matrix to retrieve.
     use_mago : bool
         Use the MAGo calibration matrix. Default is True.
 
@@ -121,20 +128,9 @@ def retrieve_matrix_from_l2_calibration(
     np.ndarray
         Calibration matrix in the shape (3, 3, 4) to rotate vectors.
     """
-    # TODO: allow for multiple inputs
-    if isinstance(calibration_datasets, list):
-        calibration_dataset = calibration_datasets[0]
-        if len(calibration_datasets) > 1:
-            raise NotImplementedError
-    else:
-        calibration_dataset = calibration_datasets
-
     if use_mago:
-        calibration_data = calibration_dataset["URFTOORFO"]
+        calibration_data = calibration_dataset.sel(epoch=day)["URFTOORFO"]
     else:
-        calibration_data = calibration_dataset["URFTOORFI"]
-
-    # TODO will need to combine multiple files here
-    # TODO: Check validity of the calibration file?
+        calibration_data = calibration_dataset.sel(epoch=day)["URFTOORFI"]
 
     return calibration_data

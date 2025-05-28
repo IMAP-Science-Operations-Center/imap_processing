@@ -1,23 +1,36 @@
 """Test coverage for imap_processing.spice.repoint.py"""
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing.spice.repoint import get_repoint_data, interpolate_repoint_data
+from imap_processing.spice import config, repoint
 
 
 @pytest.fixture
-def fake_repoint_data(monkeypatch, spice_test_data_path):
+def fake_repoint_data(spice_test_data_path, use_test_repoint_data_csv):
     """Generate fake spin dataframe for testing"""
     fake_repoint_path = spice_test_data_path / "fake_repoint_data.csv"
-    monkeypatch.setenv("REPOINT_DATA_FILEPATH", str(fake_repoint_path))
+    use_test_repoint_data_csv(fake_repoint_path)
     return fake_repoint_path
+
+
+def test_set_repoint_table_paths(monkeypatch):
+    """Test coverage for set_repoint_table_paths function."""
+    # Use monkeypatch here to make sure any side effects of calling the setter
+    # get undone after this test
+    monkeypatch.setattr(config, "_repoint_table_path", None)
+    repoint_path = Path("/path/to/fake_repoint_data.csv")
+    assert config._repoint_table_path is None
+    repoint.set_global_repoint_table_paths([repoint_path])
+    assert config._repoint_table_path == repoint_path
 
 
 def test_get_repoint_data(fake_repoint_data):
     """Test coverage for get_repoint_data function."""
-    repoint_df = get_repoint_data()
+    repoint_df = repoint.get_repoint_data()
     assert isinstance(repoint_df, pd.DataFrame)
     assert set(repoint_df.columns) == {
         "repoint_start_sec_sclk",
@@ -32,12 +45,10 @@ def test_get_repoint_data(fake_repoint_data):
     }
 
 
-def test_spin_data_no_table():
-    """Test coverage for get_repoint_data function when the env var is not set."""
-    with pytest.raises(
-        ValueError, match="REPOINT_DATA_FILEPATH environment variable is not set."
-    ):
-        get_repoint_data()
+def test_repoint_data_no_table():
+    """Test coverage for get_repoint_data function when the path is not set."""
+    with pytest.raises(ValueError, match="No repoint-table path as been defined*"):
+        repoint.get_repoint_data()
 
 
 def test_interpolate_repoint_data(fake_repoint_data):
@@ -53,7 +64,7 @@ def test_interpolate_repoint_data(fake_repoint_data):
         "repoint_id": np.array([0, 0, 2]),
         "repoint_in_progress": np.array([True, False, False]),
     }
-    repoint_df = interpolate_repoint_data(query_times)
+    repoint_df = repoint.interpolate_repoint_data(query_times)
 
     for key, expected_array in expected_vals.items():
         np.testing.assert_array_equal(repoint_df[key].values, expected_array)
@@ -77,7 +88,7 @@ def test_interpolate_repoint_data_exceptions(query_times, match_str, fake_repoin
     # Test raising a ValueError when the query time is in between an end and the
     # next start time.
     with pytest.raises(ValueError, match=match_str):
-        _ = interpolate_repoint_data(query_times)
+        _ = repoint.interpolate_repoint_data(query_times)
 
 
 def test_interpolate_repoint_data_with_use_fake_fixture(use_fake_repoint_data_for_time):
@@ -87,7 +98,7 @@ def test_interpolate_repoint_data_with_use_fake_fixture(use_fake_repoint_data_fo
     _ = use_fake_repoint_data_for_time(repoint_start_times, repoint_id_start=10)
     # Query times are all start times concatenated with 16 minutes after each start time
     query_times = np.concat([repoint_start_times, repoint_start_times + 16 * 60])
-    repoint_df = interpolate_repoint_data(query_times)
+    repoint_df = repoint.interpolate_repoint_data(query_times)
 
     # Expected repoint_start_times are the seeded start times array repeated twice
     np.testing.assert_array_equal(

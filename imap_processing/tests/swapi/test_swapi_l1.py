@@ -1,6 +1,10 @@
+import json
+from unittest.mock import patch
+
 import numpy as np
 import pytest
 import xarray as xr
+from imap_data_access import ProcessingInputCollection
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import write_cdf
@@ -149,15 +153,15 @@ def test_process_swapi_science(decom_test_data):
     # Test dataset dimensions
     assert processed_data.sizes == {
         "epoch": 11,
-        "energy": 72,
-        "energy_label": 72,
+        "esa_step": 72,
+        "esa_step_label": 72,
     }
 
     assert processed_data["swp_pcem_counts"].shape == (11, 72)
     # Test that we calculated uncertainty correctly
     np.testing.assert_allclose(
         np.sqrt(processed_data["swp_pcem_counts"][0]),
-        processed_data["swp_pcem_counts_err_plus"][0],
+        processed_data["swp_pcem_counts_stat_uncert_plus"][0],
     )
 
     # make PLAN_ID data incorrect. Now processed data should have less sweeps
@@ -165,8 +169,8 @@ def test_process_swapi_science(decom_test_data):
     processed_data = process_swapi_science(ds_data, decom_test_data[SWAPIAPID.SWP_HK])
     assert processed_data.sizes == {
         "epoch": 10,
-        "energy": 72,
-        "energy_label": 72,
+        "esa_step": 72,
+        "esa_step_label": 72,
     }
 
     # Test CDF File
@@ -175,17 +179,56 @@ def test_process_swapi_science(decom_test_data):
     assert cdf_path.name == cdf_filename
 
 
-def test_swapi_l1_cdf(swapi_l0_test_data_path):
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_swapi_l1_cdf(mock_get_file_paths, swapi_l0_test_data_path):
     """Test housekeeping processing and CDF file creation"""
     test_packet_file = swapi_l0_test_data_path / "imap_swapi_l0_raw_20240924_v001.pkts"
-    processed_data = swapi_l1([test_packet_file])
+
+    # Mock paths of files to be processed
+    def first_get_file_paths_side_effect(descriptor):
+        if descriptor == "raw":
+            return [test_packet_file]
+        elif descriptor == "hk":
+            return []
+        else:
+            raise ValueError(f"Unknown descriptor: {descriptor}")
+
+    mock_get_file_paths.side_effect = first_get_file_paths_side_effect
+
+    # Processing inputs
+    processing_input = [
+        {"type": "science", "files": ["imap_swapi_l0_raw_20240924_v001.pkts"]}
+    ]
+    collection_obj = ProcessingInputCollection()
+    collection_obj.deserialize(
+        json.dumps(processing_input),
+    )
+    processed_data = swapi_l1(collection_obj)
     # hk cdf file
     hk_cdf_filename = "imap_swapi_l1_hk_20240924_v999.cdf"
-    # TODO: how to add ignore ISTP checks for HK data to cli.py
     hk_cdf_path = write_cdf(processed_data[0])
     assert hk_cdf_path.name == hk_cdf_filename
 
-    processed_data = swapi_l1([test_packet_file, hk_cdf_path])
+    # Mock paths of files to be processed
+    def second_get_file_paths_side_effect(descriptor):
+        if descriptor == "raw":
+            return [test_packet_file]
+        elif descriptor == "hk":
+            return [hk_cdf_path]
+        else:
+            raise ValueError(f"Unknown descriptor: {descriptor}")
+
+    mock_get_file_paths.side_effect = second_get_file_paths_side_effect
+    processing_input = [
+        {"type": "science", "files": ["imap_swapi_l0_raw_20240924_v001.pkts"]},
+        {"type": "science", "files": ["imap_swapi_l1_hk_20240924_v999.cdf"]},
+    ]
+    collection_obj = ProcessingInputCollection()
+    collection_obj.deserialize(
+        json.dumps(processing_input),
+    )
+
+    processed_data = swapi_l1(collection_obj)
 
     assert processed_data[0].attrs["Apid"] == f"{SWAPIAPID.SWP_SCI}"
 

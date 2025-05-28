@@ -219,14 +219,14 @@ def calculate_ena_intensity(
         ENA Intensity with statistical and systematic uncertainties.
     """
     # TODO: Implement geometric factor lookup
-    if geometric_factors_path is not None:
+    if geometric_factors_path:
         raise NotImplementedError
     geometric_factor = xr.DataArray(
         np.ones((map_ds["esa_energy_step"].size, map_ds["calibration_prod"].size)),
         coords=[map_ds["esa_energy_step"], map_ds["calibration_prod"]],
     )
     # TODO: Implement esa energies lookup
-    if esa_energies_path is not None:
+    if esa_energies_path:
         raise NotImplementedError
     esa_energy = xr.ones_like(map_ds["esa_energy_step"])
 

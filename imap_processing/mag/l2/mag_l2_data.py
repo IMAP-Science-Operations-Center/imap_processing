@@ -8,6 +8,10 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.mag.constants import DataMode
+from imap_processing.spice.time import (
+    et_to_ttj2000ns,
+    str_to_et,
+)
 
 
 class ValidFrames(Enum):
@@ -102,7 +106,7 @@ class MagL2:
         np.ndarray
             Array of magnitudes of the input vectors.
         """
-        return np.zeros(vectors.shape[0])  # type: ignore
+        return np.linalg.norm(vectors, axis=1)  # type: ignore
 
     @staticmethod
     def apply_offsets(vectors: np.ndarray, offsets: np.ndarray) -> np.ndarray:
@@ -167,22 +171,10 @@ class MagL2:
         shifted_timestamps = epoch + timedelta_ns
         return shifted_timestamps
 
-    def truncate_to_24h(self, timestamp: str) -> None:
-        """
-        Truncate all data to a 24 hour period.
-
-        24 hours is given by timestamp in the format YYYYmmdd.
-
-        Parameters
-        ----------
-        timestamp : str
-            Timestamp in the format YYYYMMDD.
-        """
-        pass
-
     def generate_dataset(
         self,
         attribute_manager: ImapCdfAttributes,
+        day: np.datetime64,
         frame: ValidFrames = ValidFrames.dsrf,
     ) -> xr.Dataset:
         """
@@ -195,6 +187,8 @@ class MagL2:
         ----------
         attribute_manager : ImapCdfAttributes
             CDF attributes object for the correct level.
+        day : np.datetime64
+         The 24 hour day to process, as a numpy datetime format.
         frame : ValidFrames
             SPICE reference frame to rotate the data into.
 
@@ -203,6 +197,8 @@ class MagL2:
         xr.Dataset
             Complete dataset ready to write to CDF file.
         """
+        self.truncate_to_24h(day)
+
         logical_source_id = f"imap_mag_l2_{self.data_mode.value.lower()}-{frame.name}"
         direction = xr.DataArray(
             np.arange(3),
@@ -286,3 +282,32 @@ class MagL2:
         output["magnitude"] = magnitude
 
         return output
+
+    def truncate_to_24h(self, timestamp: np.datetime64) -> None:
+        """
+        Truncate all data to a 24 hour period.
+
+        24 hours is given by timestamp in the format YYYYmmdd.
+
+        Parameters
+        ----------
+        timestamp : str
+            Timestamp in the format YYYYMMDD.
+        """
+        if self.epoch.shape[0] != self.vectors.shape[0]:
+            raise ValueError("Timestamps and vectors are not the same shape!")
+
+        start_timestamp_j2000 = et_to_ttj2000ns(str_to_et(str(timestamp)))
+        end_timestamp_j2000 = et_to_ttj2000ns(
+            str_to_et(str(timestamp + np.timedelta64(1, "D")))
+        )
+
+        day_start_index = np.searchsorted(self.epoch, start_timestamp_j2000)
+        day_end_index = np.searchsorted(self.epoch, end_timestamp_j2000)
+
+        self.epoch = self.epoch[day_start_index:day_end_index]
+        self.vectors = self.vectors[day_start_index:day_end_index, :]
+        self.range = self.range[day_start_index:day_end_index]
+        self.magnitude = self.magnitude[day_start_index:day_end_index]
+        self.quality_flags = self.quality_flags[day_start_index:day_end_index]
+        self.quality_bitmask = self.quality_bitmask[day_start_index:day_end_index]

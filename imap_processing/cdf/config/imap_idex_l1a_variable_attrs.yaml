@@ -16,6 +16,7 @@ string_base_attrs: &string_base
   DEPEND_0: epoch
   CATDESC: " "
   FIELDNAM: " "
+  FILLVAL: " "
   FORMAT: A3
   VAR_TYPE: metadata
 
@@ -111,7 +112,7 @@ time_low_sample_rate_index:
   FILLVAL: *int_fillval
   FORMAT: I3
   LABLAXIS: Sample Rate
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: " "
   VALIDMAX: 511
   VALIDMIN: 0
@@ -123,7 +124,7 @@ time_high_sample_rate_index:
   FILLVAL: *int_fillval
   FORMAT: I4
   LABLAXIS: Sample Rate
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: " "
   VALIDMAX: 8188
   VALIDMIN: 0

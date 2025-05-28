@@ -57,7 +57,7 @@ def setup_dataset(
         data=dataset["epoch"].data.copy(),
         name="epoch",
         dims="epoch",
-        attrs=idex_attrs.get_variable_attributes("epoch"),
+        attrs=idex_attrs.get_variable_attributes("epoch", check_schema=False),
     )
 
     new_dataset = xr.Dataset(coords={"epoch": epoch_da}, data_vars=data_vars)

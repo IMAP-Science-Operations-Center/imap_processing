@@ -9,6 +9,7 @@ from pathlib import Path
 
 import numpy as np
 import spiceypy
+from imap_data_access import SPICEFilePath
 from numpy.typing import NDArray
 
 from imap_processing.spice.geometry import SpiceFrame
@@ -33,6 +34,39 @@ POINTING_SEGMENT_DTYPE = np.dtype(
         ("pointing_id", np.uint32),
     ]
 )
+
+
+def generate_pointing_attitude_kernel(imap_attitude_ck: Path) -> list[Path]:
+    """
+    Generate pointing attitude kernel from input IMAP CK kernel.
+
+    Parameters
+    ----------
+    imap_attitude_ck : Path
+        Location of the IMAP attitude kernel from which to generate pointing
+        attitude.
+
+    Returns
+    -------
+    pointing_kernel_path : list[Path]
+        Location of the new pointing kernels.
+    """
+    pointing_segments = calculate_pointing_attitude_segments(imap_attitude_ck)
+    # get the start and end yyyy_doy strings
+    # TODO: For now just use the input CK start/end dates. It is possible that
+    #    the end date is incorrect b/c the repoint table determines the last
+    #    segment in the pointing kernel.
+    spice_file = SPICEFilePath(imap_attitude_ck.name)
+    pointing_kernel_path = (
+        imap_attitude_ck.parent / f"imap_dps_"
+        f"{spice_file.spice_metadata['start_date'].strftime('%Y_%j')}_"
+        f"{spice_file.spice_metadata['end_date'].strftime('%Y_%j')}_"
+        f"{spice_file.spice_metadata['version']}.ah.bc"
+    )
+    write_pointing_frame_ck(
+        pointing_kernel_path, pointing_segments, imap_attitude_ck.name
+    )
+    return [pointing_kernel_path]
 
 
 @contextmanager
@@ -218,7 +252,7 @@ def calculate_pointing_attitude_segments(
             "repoint_id"
         ]
         pointing_start_et = repoint_df.iloc[i_pointing]["repoint_end_et"]
-        pointing_end_et = repoint_df["repoint_start_et"][i_pointing + 1]
+        pointing_end_et = repoint_df.iloc[i_pointing + 1]["repoint_start_et"]
         logger.debug(
             f"Calculating pointing attitude for pointing "
             f"{pointing_segments[i_pointing]['pointing_id']} with time "

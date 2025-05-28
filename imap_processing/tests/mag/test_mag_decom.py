@@ -15,7 +15,7 @@ def cdf_attrs():
     test_attrs.add_instrument_global_attrs("mag")
     test_attrs.add_instrument_variable_attrs("mag", "l1a")
     # Default v001 expected when writing to file and re-loading
-    test_attrs.add_global_attribute("Data_version", "v001")
+    test_attrs.add_global_attribute("Data_version", "001")
     return test_attrs
 
 

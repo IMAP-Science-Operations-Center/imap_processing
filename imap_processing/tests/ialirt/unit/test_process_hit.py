@@ -6,9 +6,10 @@ from imap_processing import imap_module_directory
 from imap_processing.ialirt.l0.process_hit import (
     HIT_PREFIX_TO_RATE_TYPE,
     create_l1,
-    find_groups,
     process_hit,
 )
+from imap_processing.ialirt.utils.grouping import find_groups
+from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.utils import packet_file_to_datasets
 
 
@@ -54,6 +55,18 @@ def xarray_data(binary_packet_path, xtce_hit_path):
 
     xarray_data = packet_file_to_datasets(binary_packet_path, xtce_hit_path)[apid]
     return xarray_data
+
+
+@pytest.mark.external_test_data
+def test_process_spacecraft_packet(sc_packet_path):
+    """Tests Spacecraft Packet processing."""
+    packet_path, xtce_ialirt_path = sc_packet_path
+    sc_xarray_data = packet_file_to_datasets(
+        packet_path, xtce_ialirt_path, use_derived_value=False
+    )[478]
+    hit_product = process_hit(sc_xarray_data)
+
+    assert len(hit_product[0].keys()) == 15
 
 
 def generate_prefixes(prefixes):
@@ -114,20 +127,26 @@ def test_prefixes():
     assert HIT_PREFIX_TO_RATE_TYPE["SLOW_RATE"] == expected_slow_rate
 
 
-def test_find_groups(xarray_data):
-    """Tests find_groups"""
+def test_create_l1(xarray_data):
+    """Tests create_l1() function."""
 
-    filtered_data = find_groups(xarray_data)
-
-    np.testing.assert_array_equal(
-        filtered_data["hit_subcom"], np.tile(np.arange(60), 15)
+    # Add a dummy value to the hit_met variable.
+    xarray_data["sc_sclk_sec"] = xarray_data["hit_sc_tick"]
+    xarray_data["sc_sclk_sub_sec"] = (
+        ("epoch",),
+        np.zeros_like(xarray_data["hit_sc_tick"]),
     )
 
+    # Subsecond time conversion specified in 7516-9054 GSW-FSW ICD.
+    # Value of SCLK subseconds, unsigned, (LSB = 1/256 sec)
+    met = calculate_time(
+        xarray_data["sc_sclk_sec"], xarray_data["sc_sclk_sub_sec"], 256
+    )
 
-def test_create_l1(xarray_data):
-    """Tests create_l1"""
+    # Add required parameters.
+    xarray_data["met"] = met
 
-    filtered_data = find_groups(xarray_data)
+    filtered_data = find_groups(xarray_data, (0, 59), "hit_subcom", "met")
 
     fast_rate_1 = filtered_data["hit_fast_rate_1"][(filtered_data["group"] == 4).values]
     fast_rate_2 = filtered_data["hit_fast_rate_2"][(filtered_data["group"] == 4).values]
@@ -144,6 +163,13 @@ def test_create_l1(xarray_data):
 def test_process_hit(xarray_data, caplog):
     """Tests process_hit."""
 
+    # Add a dummy value to the hit_met variable.
+    xarray_data["sc_sclk_sec"] = xarray_data["hit_sc_tick"]
+    xarray_data["sc_sclk_sub_sec"] = (
+        ("epoch",),
+        np.zeros_like(xarray_data["hit_sc_tick"]),
+    )
+
     # Tests that it functions normally
     hit_product = process_hit(xarray_data)
     assert len(hit_product) == 15
@@ -155,12 +181,12 @@ def test_process_hit(xarray_data, caplog):
 
     hit_product = process_hit(subset)
 
-    assert hit_product[0]["hit_lo_energy_e_A_side"] == 4
-    assert hit_product[0]["hit_medium_energy_e_A_side"] == 4
-    assert hit_product[0]["hit_low_energy_e_B_side"] == 4
-    assert hit_product[0]["hit_high_energy_e_B_side"] == 2
-    assert hit_product[0]["hit_medium_energy_H_omni"] == 4
-    assert hit_product[0]["hit_high_energy_He_omni"] == 2
+    assert hit_product[0]["hit_e_a_side_low_en"] == 4
+    assert hit_product[0]["hit_e_a_side_med_en"] == 4
+    assert hit_product[0]["hit_e_b_side_low_en"] == 4
+    assert hit_product[0]["hit_e_b_side_high_en"] == 2
+    assert hit_product[0]["hit_e_b_side_med_en"] == 4
+    assert hit_product[0]["hit_he_omni_high_en"] == 2
 
     # Create a scrambled set of subcom values.
     xarray_data["hit_subcom"].values[indices[0] : indices[0] + 60] = [

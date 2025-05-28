@@ -6,6 +6,7 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.lo.l1c.lo_l1c import (
     FilterType,
+    calculate_exposure_times,
     create_pset_counts,
     filter_goodtimes,
     initialize_pset,
@@ -206,3 +207,23 @@ def test_create_doubles_pset_counts(l1b_de, doubles_counts):
 
     # Assert
     np.testing.assert_array_equal(counts, doubles_counts)
+
+
+def test_calculate_exposure_times(l1b_de):
+    # Arrange
+    counts = create_pset_counts(l1b_de)
+    expected_exposure_times = np.full((1, 3600, 40, 7), np.nan)
+    # Average of the exposure times for each bin
+    expected_exposure_times[0, 20, 20, 1] = 4 * np.mean([15.2, 14.9]) / 3600
+    expected_exposure_times[0, 2000, 20, 4] = 4 * 15 / 3600
+    expected_exposure_times[0, 3500, 20, 5] = 4 * 14.9 / 3600
+    expected_exposure_times[0, 0, 20, 2] = 4 * 15.2 / 2600
+    # Act
+    exposure_times = calculate_exposure_times(counts, l1b_de)
+
+    # Assert
+    np.testing.assert_allclose(
+        exposure_times,
+        expected_exposure_times,
+        atol=1e-2,
+    )

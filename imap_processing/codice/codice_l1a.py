@@ -11,7 +11,6 @@ Notes
 
 from __future__ import annotations
 
-import ast
 import logging
 from pathlib import Path
 from typing import Any
@@ -93,8 +92,7 @@ class CoDICEL1aPipeline:
         Calculate and return the values to be used for `epoch`.
 
         On CoDICE, the epoch values are derived from the `acq_start_seconds` and
-        `acq_start_subseconds` fields in the packet. The exception to this is
-        are the I-ALiRT packets, which use "acquisition_time".
+        `acq_start_subseconds` fields in the packet.
 
         Note that the `acq_start_subseconds` field needs to be converted from
         microseconds to seconds.
@@ -111,7 +109,7 @@ class CoDICEL1aPipeline:
 
         return epoch
 
-    def decompress_data(self, science_values: list[str] | str) -> None:
+    def decompress_data(self, science_values: list[NDArray[str]] | list[str]) -> None:
         """
         Perform decompression on the data.
 
@@ -121,9 +119,9 @@ class CoDICEL1aPipeline:
 
         Parameters
         ----------
-        science_values : list[str] | str
-            A list of (or a single) byte string(s) representing the science
-            values of the data for each packet.
+        science_values : list[NDArray[str]] | list[str]
+            A list of byte strings (or bit strings, in the case of I-ALiRT)
+            representing the science values of the data for each packet.
         """
         # The compression algorithm depends on the instrument and view ID
         if self.config["instrument"] == "lo":
@@ -149,7 +147,7 @@ class CoDICEL1aPipeline:
                 science_values, self.dataset.byte_count.data
             ):
                 # Convert from numpy array to byte object
-                values = ast.literal_eval(str(packet_data))
+                values = packet_data[()]
 
                 # Only use the values up to the byte count. Bytes after this are
                 # used as padding and are not needed

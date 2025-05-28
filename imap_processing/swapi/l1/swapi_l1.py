@@ -6,6 +6,7 @@ import logging
 import numpy as np
 import numpy.typing as npt
 import xarray as xr
+from imap_data_access.processing_input import ProcessingInputCollection
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
@@ -549,7 +550,7 @@ def process_swapi_science(
 
     swp_flags = xr.DataArray(
         quality_flags_data.astype(np.uint16),
-        dims=["epoch", "energy"],
+        dims=["epoch", "esa_step"],
         attrs=cdf_manager.get_variable_attributes("flags_default"),
     )
 
@@ -568,18 +569,18 @@ def process_swapi_science(
     )
 
     # There are 72 energy steps
-    energy = xr.DataArray(
+    esa_step = xr.DataArray(
         np.arange(72),
-        name="energy",
-        dims=["energy"],
-        attrs=cdf_manager.get_variable_attributes("energy", check_schema=False),
+        name="esa_step",
+        dims=["esa_step"],
+        attrs=cdf_manager.get_variable_attributes("esa_step", check_schema=False),
     )
     # LABL_PTR_1 should be CDF_CHAR.
-    energy_label = xr.DataArray(
-        energy.values.astype(str),
-        name="energy_label",
-        dims=["energy_label"],
-        attrs=cdf_manager.get_variable_attributes("energy_label", check_schema=False),
+    esa_step_label = xr.DataArray(
+        esa_step.values.astype(str),
+        name="esa_step_label",
+        dims=["esa_step_label"],
+        attrs=cdf_manager.get_variable_attributes("esa_step_label", check_schema=False),
     )
 
     # Add other global attributes
@@ -589,25 +590,25 @@ def process_swapi_science(
     dataset = xr.Dataset(
         coords={
             "epoch": epoch_time,
-            "energy": energy,
-            "energy_label": energy_label,
+            "esa_step": esa_step,
+            "esa_step_label": esa_step_label,
         },
         attrs=l1_global_attrs,
     )
 
     dataset["swp_pcem_counts"] = xr.DataArray(
         np.array(swp_pcem_counts, dtype=np.uint16),
-        dims=["epoch", "energy"],
+        dims=["epoch", "esa_step"],
         attrs=cdf_manager.get_variable_attributes("pcem_counts"),
     )
     dataset["swp_scem_counts"] = xr.DataArray(
         np.array(swp_scem_counts, dtype=np.uint16),
-        dims=["epoch", "energy"],
+        dims=["epoch", "esa_step"],
         attrs=cdf_manager.get_variable_attributes("scem_counts"),
     )
     dataset["swp_coin_counts"] = xr.DataArray(
         np.array(swp_coin_counts, dtype=np.uint16),
-        dims=["epoch", "energy"],
+        dims=["epoch", "esa_step"],
         attrs=cdf_manager.get_variable_attributes("coin_counts"),
     )
 
@@ -673,35 +674,35 @@ def process_swapi_science(
     # Above uncertaintly formula will change in the future.
     # Replace it with actual formula once SWAPI provides it.
     # Right now, we are using sqrt(count) as a placeholder
-    dataset["swp_pcem_counts_err_plus"] = xr.DataArray(
+    dataset["swp_pcem_counts_stat_uncert_plus"] = xr.DataArray(
         np.sqrt(swp_pcem_counts),
-        dims=["epoch", "energy"],
-        attrs=cdf_manager.get_variable_attributes("pcem_uncertainty"),
+        dims=["epoch", "esa_step"],
+        attrs=cdf_manager.get_variable_attributes("pcem_counts_uncertainty"),
     )
-    dataset["swp_pcem_counts_err_minus"] = xr.DataArray(
+    dataset["swp_pcem_counts_stat_uncert_minus"] = xr.DataArray(
         np.sqrt(swp_pcem_counts),
-        dims=["epoch", "energy"],
-        attrs=cdf_manager.get_variable_attributes("pcem_uncertainty"),
+        dims=["epoch", "esa_step"],
+        attrs=cdf_manager.get_variable_attributes("pcem_counts_uncertainty"),
     )
-    dataset["swp_scem_counts_err_plus"] = xr.DataArray(
+    dataset["swp_scem_counts_stat_uncert_plus"] = xr.DataArray(
         np.sqrt(swp_scem_counts),
-        dims=["epoch", "energy"],
-        attrs=cdf_manager.get_variable_attributes("scem_uncertainty"),
+        dims=["epoch", "esa_step"],
+        attrs=cdf_manager.get_variable_attributes("scem_counts_uncertainty"),
     )
-    dataset["swp_scem_counts_err_minus"] = xr.DataArray(
+    dataset["swp_scem_counts_stat_uncert_minus"] = xr.DataArray(
         np.sqrt(swp_scem_counts),
-        dims=["epoch", "energy"],
-        attrs=cdf_manager.get_variable_attributes("scem_uncertainty"),
+        dims=["epoch", "esa_step"],
+        attrs=cdf_manager.get_variable_attributes("scem_counts_uncertainty"),
     )
-    dataset["swp_coin_counts_err_plus"] = xr.DataArray(
+    dataset["swp_coin_counts_stat_uncert_plus"] = xr.DataArray(
         np.sqrt(swp_coin_counts),
-        dims=["epoch", "energy"],
-        attrs=cdf_manager.get_variable_attributes("coin_uncertainty"),
+        dims=["epoch", "esa_step"],
+        attrs=cdf_manager.get_variable_attributes("coin_counts_uncertainty"),
     )
-    dataset["swp_coin_counts_err_minus"] = xr.DataArray(
+    dataset["swp_coin_counts_stat_uncert_minus"] = xr.DataArray(
         np.sqrt(swp_coin_counts),
-        dims=["epoch", "energy"],
-        attrs=cdf_manager.get_variable_attributes("coin_uncertainty"),
+        dims=["epoch", "esa_step"],
+        attrs=cdf_manager.get_variable_attributes("coin_counts_uncertainty"),
     )
     # TODO: when SWAPI gives formula to calculate this scenario:
     # Compression of counts also contributes to the uncertainty.
@@ -710,13 +711,13 @@ def process_swapi_science(
     return dataset
 
 
-def swapi_l1(dependencies: list) -> xr.Dataset:
+def swapi_l1(dependencies: ProcessingInputCollection) -> xr.Dataset:
     """
     Will process SWAPI level 0 data to level 1.
 
     Parameters
     ----------
-    dependencies : list
+    dependencies : ProcessingInputCollection
         Input dependencies needed for L1 processing.
 
     Returns
@@ -727,33 +728,34 @@ def swapi_l1(dependencies: list) -> xr.Dataset:
     xtce_definition = (
         f"{imap_module_directory}/swapi/packet_definitions/swapi_packet_definition.xml"
     )
-    l0_unpacked_dict = {}
-    l1_hk_ds = None
-    for file_path in dependencies:
-        if file_path.suffix == ".pkts":
-            l0_unpacked_dict = packet_file_to_datasets(
-                file_path, xtce_definition, use_derived_value=False
+    l0_files = dependencies.get_file_paths(descriptor="raw")
+    if len(l0_files) != 1:
+        raise ValueError(
+            f"SWAPI processing expected one L0 file. Found {len(l0_files)}."
+        )
+
+    l0_unpacked_dict = packet_file_to_datasets(
+        l0_files[0], xtce_definition, use_derived_value=False
+    )
+
+    hk_files = dependencies.get_file_paths(descriptor="hk")
+    if hk_files and l0_unpacked_dict.get(SWAPIAPID.SWP_SCI, None) is not None:
+        logger.info(f"Processing SWAPI science data for {l0_files[0]}.")
+        # process science data.
+        # First read HK data.
+        hk_files = dependencies.get_file_paths(descriptor="hk")
+        if len(hk_files) != 1:
+            raise ValueError(
+                f"SWAPI SCI processing expected one L0 HK file. Found {len(hk_files)}."
             )
-        if file_path.suffix == ".cdf":
-            l1_hk_ds = load_cdf(file_path)
-
-    processed_data = []
-
-    # Right now, we only process SWP_HK and SWP_SCI.
-    # Other apId are not processed in this processing pipeline.
-
-    # Len of dependencies is 2 and l0_unpacked_dict[SWAPIAPID.SWP_HK] is not None
-    if (
-        len(dependencies) == 2
-        and l0_unpacked_dict.get(SWAPIAPID.SWP_SCI, None) is not None
-    ):
-        # process science data
+        l1_hk_ds = load_cdf(hk_files[0])
         sci_dataset = process_swapi_science(
             l0_unpacked_dict[SWAPIAPID.SWP_SCI], l1_hk_ds
         )
-        processed_data.append(sci_dataset)
+        return [sci_dataset]
 
-    elif len(dependencies) == 1 and l0_unpacked_dict[SWAPIAPID.SWP_HK]:
+    elif l0_unpacked_dict[SWAPIAPID.SWP_HK]:
+        logger.info(f"Processing HK data for {l0_files[0]}.")
         hk_ds = l0_unpacked_dict[SWAPIAPID.SWP_HK]
         # Add HK datalevel attrs
         imap_attrs = ImapCdfAttributes()
@@ -768,6 +770,7 @@ def swapi_l1(dependencies: list) -> xr.Dataset:
         # Add attrs to HK data variables
         for var_name in hk_ds.data_vars:
             hk_ds[var_name].attrs.update(hk_common_attrs)
-        processed_data.append(hk_ds)
+        return [hk_ds]
 
-    return processed_data
+    logger.warning(f"Unsupported SWAPI input data. {l0_unpacked_dict.keys()}")
+    return []

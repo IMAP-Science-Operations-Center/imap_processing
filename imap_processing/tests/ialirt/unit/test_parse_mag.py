@@ -94,24 +94,6 @@ def xarray_data(binary_packet_path, xtce_mag_path):
 
 
 @pytest.fixture
-def sc_xarray_data():
-    """Create xarray data for spacecraft packets."""
-    apid = 478
-    packet_path = (
-        imap_module_directory / "tests" / "ialirt" / "data" / "l0" / "apid_478.bin"
-    )
-    xtce_ialirt_path = (
-        imap_module_directory / "ialirt" / "packet_definitions" / "ialirt.xml"
-    )
-
-    xarray_data = packet_file_to_datasets(
-        packet_path, xtce_ialirt_path, use_derived_value=False
-    )[apid]
-
-    return xarray_data
-
-
-@pytest.fixture
 def grouped_data():
     """Creates grouped data for tests."""
     epoch = np.arange(12)
@@ -253,7 +235,7 @@ def test_process_packet(xarray_data, mag_test_data, calibration_dataset):
     xarray_data["sc_sclk_sec"] = xarray_data["mag_acq_tm_coarse"]
     xarray_data["sc_sclk_sub_sec"] = xarray_data["mag_acq_tm_fine"]
 
-    parsed_packets = process_packet(xarray_data, calibration_dataset)
+    _, parsed_packets = process_packet(xarray_data, calibration_dataset)
 
     for packet in parsed_packets:
         index = packet["pri_coarsetm"] == mag_test_data["PRI_COARSETM"]
@@ -274,10 +256,15 @@ def test_process_packet(xarray_data, mag_test_data, calibration_dataset):
 
 @pytest.mark.external_test_data
 def test_process_spacecraft_packet(
-    sc_xarray_data, mag_sc_test_data, calibration_dataset
+    mag_sc_test_data, calibration_dataset, sc_packet_path
 ):
     """Tests the parse_packet function."""
-    parsed_packets = process_packet(sc_xarray_data, calibration_dataset)
+    packet_path, xtce_ialirt_path = sc_packet_path
+    sc_xarray_data = packet_file_to_datasets(
+        packet_path, xtce_ialirt_path, use_derived_value=False
+    )[478]
+
+    mag_data, parsed_packets = process_packet(sc_xarray_data, calibration_dataset)
 
     sequence = []
     for packet in parsed_packets:
