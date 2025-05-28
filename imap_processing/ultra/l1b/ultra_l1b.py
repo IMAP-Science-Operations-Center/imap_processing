@@ -30,54 +30,55 @@ def ultra_l1b(data_dict: dict) -> list[xr.Dataset]:
     3. l1b extended, culling, badtimes created here
     """
     output_datasets = []
-    instrument_id = 45 if any("45" in key for key in data_dict.keys()) else 90
 
-    # L1b de data will be created if L1a de data is available
-    if f"imap_ultra_l1a_{instrument_id}sensor-de" in data_dict:
-        de_dataset = calculate_de(
-            data_dict[f"imap_ultra_l1a_{instrument_id}sensor-de"],
-            f"imap_ultra_l1b_{instrument_id}sensor-de",
-        )
-        output_datasets.append(de_dataset)
-    # L1b extended data will be created if L1a hk, rates,
-    # aux, params, and l1b de data are available
-    elif (
-        f"imap_ultra_l1b_{instrument_id}sensor-de" in data_dict
-        and f"imap_ultra_l1a_{instrument_id}sensor-rates" in data_dict
-        and f"imap_ultra_l1a_{instrument_id}sensor-aux" in data_dict
-        and f"imap_ultra_l1a_{instrument_id}sensor-params" in data_dict
-    ):
-        extendedspin_dataset = calculate_extendedspin(
-            {
-                f"imap_ultra_l1a_{instrument_id}sensor-aux": data_dict[
-                    f"imap_ultra_l1a_{instrument_id}sensor-aux"
-                ],
-                f"imap_ultra_l1a_{instrument_id}sensor-params": data_dict[
-                    f"imap_ultra_l1a_{instrument_id}sensor-params"
-                ],
-                f"imap_ultra_l1a_{instrument_id}sensor-rates": data_dict[
-                    f"imap_ultra_l1a_{instrument_id}sensor-rates"
-                ],
-                f"imap_ultra_l1b_{instrument_id}sensor-de": data_dict[
-                    f"imap_ultra_l1b_{instrument_id}sensor-de"
-                ],
-            },
-            f"imap_ultra_l1b_{instrument_id}sensor-extendedspin",
-            instrument_id,
-        )
-        cullingmask_dataset = calculate_cullingmask(
-            extendedspin_dataset,
-            f"imap_ultra_l1b_{instrument_id}sensor-cullingmask",
-        )
-        badtimes_dataset = calculate_badtimes(
-            extendedspin_dataset,
-            cullingmask_dataset["spin_number"].values,
-            f"imap_ultra_l1b_{instrument_id}sensor-badtimes",
-        )
-        output_datasets.extend(
-            [extendedspin_dataset, cullingmask_dataset, badtimes_dataset]
-        )
-    else:
-        raise ValueError("Data dictionary does not contain the expected keys.")
+    # Account for possibility of having 45 and 90 in dictionary.
+    for instrument_id in [45, 90]:
+        # L1b de data will be created if L1a de data is available
+        if f"imap_ultra_l1a_{instrument_id}sensor-de" in data_dict:
+            de_dataset = calculate_de(
+                data_dict[f"imap_ultra_l1a_{instrument_id}sensor-de"],
+                f"imap_ultra_l1b_{instrument_id}sensor-de",
+            )
+            output_datasets.append(de_dataset)
+        # L1b extended data will be created if L1a hk, rates,
+        # aux, params, and l1b de data are available
+        elif (
+            f"imap_ultra_l1b_{instrument_id}sensor-de" in data_dict
+            and f"imap_ultra_l1a_{instrument_id}sensor-rates" in data_dict
+            and f"imap_ultra_l1a_{instrument_id}sensor-aux" in data_dict
+            and f"imap_ultra_l1a_{instrument_id}sensor-params" in data_dict
+        ):
+            extendedspin_dataset = calculate_extendedspin(
+                {
+                    f"imap_ultra_l1a_{instrument_id}sensor-aux": data_dict[
+                        f"imap_ultra_l1a_{instrument_id}sensor-aux"
+                    ],
+                    f"imap_ultra_l1a_{instrument_id}sensor-params": data_dict[
+                        f"imap_ultra_l1a_{instrument_id}sensor-params"
+                    ],
+                    f"imap_ultra_l1a_{instrument_id}sensor-rates": data_dict[
+                        f"imap_ultra_l1a_{instrument_id}sensor-rates"
+                    ],
+                    f"imap_ultra_l1b_{instrument_id}sensor-de": data_dict[
+                        f"imap_ultra_l1b_{instrument_id}sensor-de"
+                    ],
+                },
+                f"imap_ultra_l1b_{instrument_id}sensor-extendedspin",
+                instrument_id,
+            )
+            cullingmask_dataset = calculate_cullingmask(
+                extendedspin_dataset,
+                f"imap_ultra_l1b_{instrument_id}sensor-cullingmask",
+            )
+            badtimes_dataset = calculate_badtimes(
+                extendedspin_dataset,
+                cullingmask_dataset["spin_number"].values,
+                f"imap_ultra_l1b_{instrument_id}sensor-badtimes",
+            )
+            output_datasets.extend(
+                [extendedspin_dataset, cullingmask_dataset, badtimes_dataset]
+            )
+    if not output_datasets:
+        raise ValueError("No matching L1A or L1B data found.")
 
     return output_datasets

@@ -1335,9 +1335,15 @@ class Ultra(ProcessInstrument):
                 )
             datasets = ultra_l1a.ultra_l1a(science_files[0])
         elif self.data_level == "l1b":
-            science_paths = dependencies.get_file_paths(source="ultra", data_type="l1a")
-            datasets = ultra_l1b.ultra_l1b(load_cdf(science_paths[0]))
-            print("hi")
+            data_dict = {}
+            for input_type in dependencies.processing_input:
+                science_files = dependencies.get_file_paths(
+                    source="ultra", descriptor=input_type.descriptor
+                )
+                if science_files:
+                    dataset = load_cdf(science_files[0])
+                    data_dict[dataset.attrs["Logical_source"]] = dataset
+            datasets = ultra_l1b.ultra_l1b(data_dict)
         elif self.data_level == "l1c":
             science_paths = dependencies.get_file_paths(source="ultra", data_type="l1b")
             anc_paths = dependencies.get_file_paths(data_type="ancillary")
