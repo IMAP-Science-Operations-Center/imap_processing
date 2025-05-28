@@ -1326,30 +1326,22 @@ class Ultra(ProcessInstrument):
         print(f"Processing IMAP-Ultra {self.data_level}")
         datasets: list[xr.Dataset] = []
 
-        dependency_list = dependencies.processing_input
         if self.data_level == "l1a":
-            # File path is expected output file path
-            if len(dependency_list) > 1:
-                raise ValueError(
-                    f"Unexpected dependencies found for ULTRA L1A:"
-                    f"{dependency_list}. Expected only one dependency."
-                )
             science_files = dependencies.get_file_paths(source="ultra")
+            if len(science_files) != 1:
+                raise ValueError(
+                    f"Unexpected science_files found for ULTRA L1A:"
+                    f"{science_files}. Expected only one dependency."
+                )
             datasets = ultra_l1a.ultra_l1a(science_files[0])
-
         elif self.data_level == "l1b":
-            data_dict = {}
-            for dep in dependency_list:
-                dataset = load_cdf(dep.imap_file_paths[0])
-                data_dict[dataset.attrs["Logical_source"]] = dataset
-            datasets = ultra_l1b.ultra_l1b(data_dict)
-
+            science_paths = dependencies.get_file_paths(source="ultra", data_type="l1a")
+            datasets = ultra_l1b.ultra_l1b(load_cdf(science_paths[0]))
+            print("hi")
         elif self.data_level == "l1c":
-            data_dict = {}
-            for dep in dependency_list:
-                dataset = load_cdf(dep.imap_file_paths[0])
-                data_dict[dataset.attrs["Logical_source"]] = dataset
-            datasets = ultra_l1c.ultra_l1c(data_dict)
+            science_paths = dependencies.get_file_paths(source="ultra", data_type="l1b")
+            anc_paths = dependencies.get_file_paths(data_type="ancillary")
+            datasets = ultra_l1c.ultra_l1c(load_cdf(science_paths[0]), anc_paths[0])
 
         elif self.data_level == "l2":
             all_pset_filepaths = dependencies.get_file_paths(
