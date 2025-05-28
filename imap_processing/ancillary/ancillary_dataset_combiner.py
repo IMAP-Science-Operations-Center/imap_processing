@@ -102,11 +102,7 @@ class AncillaryCombiner:
         TimestampedData
             The converted TimestampedData object.
         """
-        filepath = (
-            AncillaryFilePath(filename.name)
-            if isinstance(filename, Path)
-            else AncillaryFilePath(filename)
-        )
+        filepath = AncillaryFilePath(filename)
         dataset = self.convert_file_to_dataset(filepath.construct_path())
 
         # Convert start_date to np.datetime64
