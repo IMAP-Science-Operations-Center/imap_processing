@@ -629,7 +629,7 @@ def filter_full_cycle_data(
     return l1a_data
 
 
-def swe_l1b(dependencies: ProcessingInputCollection) -> xr.Dataset:
+def swe_l1b_science(dependencies: ProcessingInputCollection) -> xr.Dataset:
     """
     SWE l1b science processing.
 
@@ -642,7 +642,7 @@ def swe_l1b(dependencies: ProcessingInputCollection) -> xr.Dataset:
     Returns
     -------
     dataset : xarray.Dataset
-        Processed l1b data.
+        Processed l1b science data.
     """
     # Read science data
     science_files = dependencies.get_file_paths(descriptor="sci")
@@ -923,6 +923,30 @@ def swe_l1b(dependencies: ProcessingInputCollection) -> xr.Dataset:
         )
 
     logger.info("SWE L1b science processing completed")
+    return science_dataset
+
+
+def swe_l1b(dependencies: ProcessingInputCollection) -> list[xr.Dataset]:
+    """
+    SWE L1B processing.
+
+    Parameters
+    ----------
+    dependencies : ProcessingInputCollection
+        Object containing lists of dependencies that CLI dependency
+        parameter received.
+
+    Returns
+    -------
+    list[xr.Dataset]
+        List of processed datasets.
+    """
+    processed_datasets = []
+    has_science_data = dependencies.get_file_paths(descriptor="sci")
+    if has_science_data:
+        # Process science data to L1B
+        science_dataset = swe_l1b_science(dependencies)
+        processed_datasets.append(science_dataset)
 
     # Process HK data using L0 file
     l0_files = dependencies.get_file_paths(descriptor="raw")
@@ -931,7 +955,7 @@ def swe_l1b(dependencies: ProcessingInputCollection) -> xr.Dataset:
             f"{imap_module_directory}/swe/packet_definitions/swe_packet_definition.xml"
         )
         datasets_by_apid = packet_file_to_datasets(
-            l0_files, xtce_document, use_derived_value=True
+            l0_files[0], xtce_document, use_derived_value=True
         )
         if SWEAPID.SWE_APP_HK in datasets_by_apid:
             # Define minimal CDF attrs for the HK dataset
@@ -945,10 +969,16 @@ def swe_l1b(dependencies: ProcessingInputCollection) -> xr.Dataset:
             )
 
             l1b_hk_dataset = datasets_by_apid[SWEAPID.SWE_APP_HK]
+            # Update CDF attrs
             l1b_hk_dataset["epoch"].attrs.update(epoch_attrs)
+            l1b_hk_dataset.attrs.update(
+                imap_attrs.get_global_attributes("imap_swe_l1b_hk")
+            )
             for hk_var in l1b_hk_dataset.data_vars:
                 if isinstance(l1b_hk_dataset[hk_var].data[0], str):
                     l1b_hk_dataset[hk_var].attrs.update(hk_str_attrs)
                 else:
                     l1b_hk_dataset[hk_var].attrs.update(hk_attrs)
-    return [science_dataset, l1b_hk_dataset]
+            processed_datasets.append(l1b_hk_dataset)
+
+    return processed_datasets

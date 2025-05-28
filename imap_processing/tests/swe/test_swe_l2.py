@@ -284,6 +284,8 @@ def test_swe_l2(mock_get_file_paths, use_fake_spin_data_for_time):
                 imap_module_directory
                 / "tests/swe/lut/imap_swe_esa-lut_20250301_v000.csv"
             ]
+        elif descriptor == "raw":
+            return []
         else:
             raise ValueError(f"Unknown descriptor: {descriptor}")
 
