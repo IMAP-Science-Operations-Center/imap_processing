@@ -907,7 +907,13 @@ def create_hskp_dataset(packet: xr.Dataset) -> xr.Dataset:
         if variable in exclude_variables:
             continue
 
-        attrs = cdf_attrs.get_variable_attributes(variable)
+        # The housekeeping spin_period variable has different values than
+        # the spin_value attribute in other datasets, so it gets special
+        # treatment
+        if variable == "spin_period":
+            attrs = cdf_attrs.get_variable_attributes("spin_period_hskp")
+        else:
+            attrs = cdf_attrs.get_variable_attributes(variable)
 
         dataset[variable] = xr.DataArray(
             packet[variable].data, dims=["epoch"], attrs=attrs

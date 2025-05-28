@@ -1,30 +1,42 @@
-# TODO: There are several FILLVALs defined here that do not match standard
-#       convention (see https://imap-processing.readthedocs.io/en/latest/
-#       external-tools/cdf/cdf_requirements.html#fillval
-#       These should be updated.
+# <=== Useful Variables ===>
+int_fillval: &int_fillval -9223372036854775808
+uint8_fillval: &uint8_fillval 255
+uint16_fillval: &uint16_fillval 65535
+uint32_fillval: &uint32_fillval 4294967295
+real_fillval: &real_fillval -1.0e+31
+
+min_int: &min_int -9223372036854775808
+min_epoch: &min_epoch -315575942816000000
+
+max_int: &max_int 9223372036854775807
+max_uint8: &max_uint8 255
+max_uint16: &max_uint16 65535
+max_uint32: &max_uint32 4294967295
+max_epoch: &max_epoch 3155630469184000000
+
 
 # <=== Defaults ===>
 default_attrs: &default
     DEPEND_0: epoch
     DISPLAY_TYPE: no_plot
     FIELDNAM: " "
-    FILLVAL: -9223372036854775808
+    FILLVAL: *uint8_fillval
     FORMAT: I12
     SCALETYP: linear
     UNITS: dN
-    VALIDMIN: -9223372036854775808
-    VALIDMAX: 9223372036854775807
+    VALIDMIN: *min_int
+    VALIDMAX: *max_int
     VAR_TYPE: data
 
 hskp_attrs: &hskp_default
     <<: *default
-    DEPEND_0: epoch
+    FILLVAL: *uint8_fillval
     VAR_TYPE: support_data
 
 hi_energies_attrs: &hi_energies_default
     FIELDNAM: Energy Table
-    FILLVAL: -1.0e+30
-    FORMAT: F10.8
+    FILLVAL: *real_fillval
+    FORMAT: F10.7
     LABLAXIS: MeV/n
     SCALETYP: log
     UNITS: MeV/n
@@ -37,7 +49,7 @@ hi_priorities_attrs: &hi_priorities_default
     LABLAXIS: events
     UNITS: events
     VALIDMIN: 0
-    VALIDMAX: 16777216
+    VALIDMAX: *max_uint32
 
 
 # <=== Coordinates ===>
@@ -138,7 +150,7 @@ spin_sector_pairs_label:
 acquisition_time_per_step:
     CATDESC: Acquisition time for each step of energy
     FIELDNAM: Acquisition Time
-    FILLVAL: -1.0e+30
+    FILLVAL: *real_fillval
     FORMAT: F10.3
     LABLAXIS: Acquisition Time
     SCALETYP: linear
@@ -169,7 +181,7 @@ events_attrs: &events
     SCALETYP: linear
     UNITS: counts
     VALIDMIN: 0
-    VALIDMAX: 16777216  # max value for a signed 32-bit integer
+    VALIDMAX: *max_uint32
     VAR_TYPE: data
 
 data_quality:
@@ -399,7 +411,7 @@ hi-ialirt-h:
     DEPEND_2: inst_az
     LABL_PTR_1: esa_step
     LABL_PTR_2: inst_az
-    VALIDMAX: 16777216
+    VALIDMAX: *max_uint32
 
 # hi-omni
 hi-omni-h:
@@ -2038,6 +2050,7 @@ pkt_apid:
     <<: *hskp_default
     CATDESC: CCSDS Packet Application Process ID
     FIELDNAM: Packet APID
+    FILLVAL: *uint16_fillval
     LABLAXIS: PKT_APID
 
 seq_flgs:
@@ -2050,24 +2063,28 @@ src_seq_ctr:
     <<: *hskp_default
     CATDESC: CCSDS Packet Sequence Count (increments with each new packet)
     FIELDNAM: Packet Sequence Count
+    FILLVAL: *uint16_fillval
     LABLAXIS: SRC_SEQ_CTR
 
 pkt_len:
     <<: *hskp_default
     CATDESC: CCSDS Packet Length (number of bytes after Packet length minus 1)
     FIELDNAM: Packet Length
+    FILLVAL: *uint16_fillval
     LABLAXIS: PKT_LEN
 
 shcoarse:
     <<: *hskp_default
     CATDESC: Secondary Header - Whole-seconds part of SCLK
     FIELDNAM: S/C Time - Seconds
+    FILLVAL: *uint32_fillval
     LABLAXIS: SHCOARSE
 
 packet_version:
     <<: *hskp_default
     CATDESC: Packet Version
     FIELDNAM: Packet Version
+    FILLVAL: *uint16_fillval
     LABLAXIS: PACKET_VERSION
     VAR_NOTES: Packet version - this will be incremented each time the format of the packet changes.
 
@@ -2096,6 +2113,7 @@ last_opcode:
     <<: *hskp_default
     LABLAXIS: LAST_OPCODE
     FIELDNAM: Last executed opcode
+    FILLVAL: *uint16_fillval
     CATDESC: Opcode of the last executed command
 
 mode:
@@ -2179,34 +2197,46 @@ tlm_fifo_overrun_cnt:
     FIELDNAM: Number of Telemetry FIFO Overruns
     CATDESC: Number of Telemetry FIFO Overruns
 
+spin_period_hskp:
+    <<: *hskp_default
+    LABLAXIS: SPIN_PERIOD
+    FIELDNAM: Spin Period
+    FILLVAL: *uint16_fillval
+    CATDESC: Current Spin Period
+
 spin_bin_period:
     <<: *hskp_default
     LABLAXIS: SPIN_BIN_PERIOD
     FIELDNAM: Spin Bin Period
+    FILLVAL: *uint16_fillval
     CATDESC: Spin Bin Period
 
 spin_period_timer:
     <<: *hskp_default
     LABLAXIS: SPIN_PERIOD_TIMER
     FIELDNAM: Spin Period Timer
+    FILLVAL: *uint16_fillval
     CATDESC: Spin Period Timer
 
 spin_timestamp_seconds:
     <<: *hskp_default
     LABLAXIS: SPIN_TIMESTAMP_SECONDS
     FIELDNAM: Full-seconds timestamp of the most recent spin pulse
+    FILLVAL: *uint32_fillval
     CATDESC: Full-seconds timestamp of the most recent spin pulse
 
 spin_timestamp_subseconds:
     <<: *hskp_default
     LABLAXIS: SPIN_TIMESTAMP_SUBSECONDS
     FIELDNAM: Sub-seconds timestamp of the most recent spin pulse
+    FILLVAL: *uint32_fillval
     CATDESC: Sub-seconds timestamp of the most recent spin pulse
 
 spin_bin_index:
     <<: *hskp_default
     LABLAXIS: SPIN_BIN_INDEX
     FIELDNAM: Spin Bin Index
+    FILLVAL: *uint16_fillval
     CATDESC: Spin Bin Index
 
 optc_hv_cmd_err_cnt:
@@ -2315,103 +2345,120 @@ esaa_dac:
     <<: *hskp_default
     LABLAXIS: OPTICS_HV_DAC_ESA_A
     FIELDNAM: Optics HV - ESA A DAC
+    FILLVAL: *uint16_fillval
     CATDESC: Optics HV - ESA A DAC
 
 esab_dac:
     <<: *hskp_default
     LABLAXIS: OPTICS_HV_DAC_ESA_B
     FIELDNAM: Optics HV -  ESA B DAC
+    FILLVAL: *uint16_fillval
     CATDESC: Optics HV -  ESA B DAC
 
 iobulk_dac:
     <<: *hskp_default
     LABLAXIS: OPTICS_HV_DAC_IONBULK
     FIELDNAM: Optics HV - Ion Bulk DAC
+    FILLVAL: *uint16_fillval
     CATDESC: Optics HV - Ion Bulk DAC
 
 ssdo_dac:
     <<: *hskp_default
     LABLAXIS: SENSOR_HV_DAC_SSDO
     FIELDNAM: Sensor HV - SSDO Enable
+    FILLVAL: *uint16_fillval
     CATDESC: Sensor HV - SSDO Enable
 
 ssdb_dac:
     <<: *hskp_default
     LABLAXIS: SENSOR_HV_DAC_SSDB
     FIELDNAM: Sensor HV - SSD Bias Enable
+    FILLVAL: *uint16_fillval
     CATDESC: Sensor HV - SSD Bias Enable
 
 apdb_dac:
     <<: *hskp_default
     LABLAXIS: SENSOR_HV_DAC_APDB
     FIELDNAM: Sensor HV - ADP Bias Enable
+    FILLVAL: *uint16_fillval
     CATDESC: Sensor HV - ADP Bias Enable
 
 apdb2_dac:
     <<: *hskp_default
     LABLAXIS: SENSOR_HV_DAC_APDB2
     FIELDNAM: Sensor HV - ADP Bias 2 Enable
+    FILLVAL: *uint16_fillval
     CATDESC: Sensor HV - ADP Bias 2 Enable
 
 strmcp_dac:
     <<: *hskp_default
     LABLAXIS: SENSOR_HV_DAC_START_MCP
     FIELDNAM: Sensor HV - Start MCP DAC
+    FILLVAL: *uint16_fillval
     CATDESC: Sensor HV - Start MCP DAC
 
 stpmcp_dac:
     <<: *hskp_default
     LABLAXIS: SENSOR_HV_DAC_STOP_MCP
     FIELDNAM: Sensor HV - Stop MCP DAC
+    FILLVAL: *uint16_fillval
     CATDESC: Sensor HV - Stop MCP DAC
 
 stpog_dac:
     <<: *hskp_default
     LABLAXIS: SENSOR_HV_DAC_STOP_OPTICS_GRID
     FIELDNAM: Sensor HV - Stop Optics Grid DAC
+    FILLVAL: *uint16_fillval
     CATDESC: Sensor HV - Stop Optics Grid DAC
 
 sbulk_vmon:
     <<: *hskp_default
     LABLAXIS: SBULK_VMON
-    FIELDNAM: HVPS – V1 -- Sensor Bulk Voltage Monitor
-    CATDESC: HVPS – V1 -- Sensor Bulk Voltage Monitor
+    FIELDNAM: HVPS - V1 -- Sensor Bulk Voltage Monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: HVPS - V1 -- Sensor Bulk Voltage Monitor
 
 ssdo_vmon:
     <<: *hskp_default
     LABLAXIS: SSDO_VMON
-    FIELDNAM: HVPS – V2 -- SSD Optics Voltage Monitor
-    CATDESC: HVPS – V2 -- SSD Optics Voltage Monitor
+    FIELDNAM: HVPS - V2 -- SSD Optics Voltage Monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: HVPS - V2 -- SSD Optics Voltage Monitor
 
 ssdb_vmon:
     <<: *hskp_default
     LABLAXIS: SSDB_VMON
-    FIELDNAM: HVPS – V3 -- SSD Bias Voltage Monitor
-    CATDESC: HVPS – V3 -- SSD Bias Voltage Monitor
+    FIELDNAM: HVPS - V3 -- SSD Bias Voltage Monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: HVPS - V3 -- SSD Bias Voltage Monitor
 
 apdb1_vmon:
     <<: *hskp_default
     LABLAXIS: APDB1_VMON
-    FIELDNAM: HVPS – V4 -- APD1 Bias Voltage Monitor
-    CATDESC: HVPS – V4 -- APD1 Bias Voltage Monitor
+    FIELDNAM: HVPS - V4 -- APD1 Bias Voltage Monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: HVPS - V4 -- APD1 Bias Voltage Monitor
 
 apdb2_vmon:
     <<: *hskp_default
     LABLAXIS: APDB2_VMON
-    FIELDNAM: HVPS – V5 -- APD1 Bias Voltage Monitor
-    CATDESC: HVPS – V5 -- APD1 Bias Voltage Monitor
+    FIELDNAM: HVPS - V5 -- APD1 Bias Voltage Monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: HVPS - V5 -- APD1 Bias Voltage Monitor
 
 iobulk_vmon:
     <<: *hskp_default
     LABLAXIS: IOBULK_VMON
-    FIELDNAM: HVPS – V6 -- IO Bulk Voltage Monitor
-    CATDESC: HVPS – V6 -- IO Bulk Voltage Monitor
+    FIELDNAM: HVPS - V6 -- IO Bulk Voltage Monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: HVPS - V6 -- IO Bulk Voltage Monitor
 
 esaa_hi_vmon:
     <<: *hskp_default
     LABLAXIS: ESAA_HI_VMON
-    FIELDNAM: HVPS – V7 -- ESA A High Range Voltage Monitor
-    CATDESC: HVPS – V7 -- ESA A High Range Voltage Monitorf
+    FIELDNAM: HVPS - V7 -- ESA A High Range Voltage Monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: HVPS - V7 -- ESA A High Range Voltage Monitor
 
 spare_62:
     <<: *hskp_default
@@ -2422,32 +2469,37 @@ spare_62:
 strmcp_vmon:
     <<: *hskp_default
     LABLAXIS: STRMCP_VMON
-    FIELDNAM: HVPS – V9 -- Start MCP Voltage Monitor
-    CATDESC: HVPS – V9 -- Start MCP Voltage Monitor
+    FIELDNAM: HVPS - V9 -- Start MCP Voltage Monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: HVPS - V9 -- Start MCP Voltage Monitor
 
 stpmcp_vmon:
     <<: *hskp_default
     LABLAXIS: STPMCP_VMON
-    FIELDNAM: HVPS – V10 -- Stop MCP Voltage Monitor
-    CATDESC: HVPS – V10 -- Stop MCP Voltage Monitor
+    FIELDNAM: HVPS - V10 -- Stop MCP Voltage Monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: HVPS - V10 -- Stop MCP Voltage Monitor
 
 stpog_vmon:
     <<: *hskp_default
     LABLAXIS: STPOG_VMON
-    FIELDNAM: HVPS – V11 -- Stop Optics Grid Voltage Monitor
-    CATDESC: HVPS – V11 -- Stop Optics Grid Voltage Monitor
+    FIELDNAM: HVPS - V11 -- Stop Optics Grid Voltage Monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: HVPS - V11 -- Stop Optics Grid Voltage Monitor
 
 apdb1_imon:
     <<: *hskp_default
     LABLAXIS: APDB1_IMON
-    FIELDNAM: HVPS – V12 -- APD1 Bias Current Monitor
-    CATDESC: HVPS – V12 -- APD1 Bias Current Monitor
+    FIELDNAM: HVPS - V12 -- APD1 Bias Current Monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: HVPS - V12 -- APD1 Bias Current Monitor
 
 esab_hi_vmon:
     <<: *hskp_default
     LABLAXIS: ESAB_HI_VMON
-    FIELDNAM: HVPS – V13 -- ESA A High Range Voltage Monitor
-    CATDESC: HVPS – V13 -- ESA A High Range Voltage Monitor
+    FIELDNAM: HVPS - V13 -- ESA A High Range Voltage Monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: HVPS - V13 -- ESA A High Range Voltage Monitor
 
 spare_68:
     <<: *hskp_default
@@ -2458,182 +2510,212 @@ spare_68:
 apdb2_imon:
     <<: *hskp_default
     LABLAXIS: APDB2_IMON
-    FIELDNAM: HVPS – V15 -- APD2 Bias Current Monitor
-    CATDESC: HVPS – V15 -- APD2 Bias Current Monitor
+    FIELDNAM: HVPS - V15 -- APD2 Bias Current Monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: HVPS - V15 -- APD2 Bias Current Monitor
 
 ssdb_imon:
     <<: *hskp_default
     LABLAXIS: SSDB_IMON
-    FIELDNAM: HVPS – V16 -- SSD Bias Current Monitor
-    CATDESC: HVPS – V16 -- SSD Bias Current Monitor
+    FIELDNAM: HVPS - V16 -- SSD Bias Current Monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: HVPS - V16 -- SSD Bias Current Monitor
 
 stpmcp_imon:
     <<: *hskp_default
     LABLAXIS: STPMCP_IMON
-    FIELDNAM: HVPS – I1 -- Stop MCP Current Monitor
-    CATDESC: HVPS – I1 -- Stop MCP Current Monitor
+    FIELDNAM: HVPS - I1 -- Stop MCP Current Monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: HVPS - I1 -- Stop MCP Current Monitor
 
 iobulk_imon:
     <<: *hskp_default
     LABLAXIS: IOBULK_IMON
-    FIELDNAM: HVPS – I2 -- IO Bulk Current Monitor
-    CATDESC: HVPS – I2 -- IO Bulk Current Monitor
+    FIELDNAM: HVPS - I2 -- IO Bulk Current Monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: HVPS - I2 -- IO Bulk Current Monitor
 
 strmcp_imon:
     <<: *hskp_default
     LABLAXIS: STRMCP_IMON
-    FIELDNAM: HVPS – I3 -- Start MCP Current Monitor
-    CATDESC: HVPS – I3 -- Start MCP Current Monitor
+    FIELDNAM: HVPS - I3 -- Start MCP Current Monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: HVPS - I3 -- Start MCP Current Monitor
 
 mdm25p_14_t:
     <<: *hskp_default
     LABLAXIS: MDM25P_14_T
-    FIELDNAM: System Temperature 1 -- MDM25P – 14 Temperature
-    CATDESC: System Temperature 1 -- MDM25P – 14 Temperature
+    FIELDNAM: System Temperature 1 -- MDM25P - 14 Temperature
+    FILLVAL: *uint16_fillval
+    CATDESC: System Temperature 1 -- MDM25P - 14 Temperature
 
 mdm25p_15_t:
     <<: *hskp_default
     LABLAXIS: MDM25P_15_T
-    FIELDNAM: System Temperature 2 -- MDM25P – 15 Temperature
-    CATDESC: System Temperature 2 -- MDM25P – 15 Temperature
+    FIELDNAM: System Temperature 2 -- MDM25P - 15 Temperature
+    FILLVAL: *uint16_fillval
+    CATDESC: System Temperature 2 -- MDM25P - 15 Temperature
 
 mdm25p_16_t:
     <<: *hskp_default
     LABLAXIS: MDM25P_16_T
-    FIELDNAM: System Temperature 3 -- MDM25P – 16 Temperature
-    CATDESC: System Temperature 3 -- MDM25P – 16 Temperature
+    FIELDNAM: System Temperature 3 -- MDM25P - 16 Temperature
+    FILLVAL: *uint16_fillval
+    CATDESC: System Temperature 3 -- MDM25P - 16 Temperature
 
 mdm51p_27_t:
     <<: *hskp_default
     LABLAXIS: MDM51P_27_T
-    FIELDNAM: LO Temperature -- MDM51P – 27 Temperature
-    CATDESC: LO Temperature -- MDM51P – 27 Temperature
+    FIELDNAM: LO Temperature -- MDM51P - 27 Temperature
+    FILLVAL: *uint16_fillval
+    CATDESC: LO Temperature -- MDM51P - 27 Temperature
 
 io_hvps_t:
     <<: *hskp_default
     LABLAXIS: IO_HVPS_T
     FIELDNAM: HVPS Temperature -- IO-HVPS Temperature
+    FILLVAL: *uint16_fillval
     CATDESC: HVPS Temperature -- IO-HVPS Temperature
 
 lvps_12v_t:
     <<: *hskp_default
     LABLAXIS: LVPS_12V_T
-    FIELDNAM: LVPS Temperature 1 -- LVPS – 12V Temperature
-    CATDESC: LVPS Temperature 1 -- LVPS – 12V Temperature
+    FIELDNAM: LVPS Temperature 1 -- LVPS - 12V Temperature
+    FILLVAL: *uint16_fillval
+    CATDESC: LVPS Temperature 1 -- LVPS - 12V Temperature
 
 lvps_5v_t:
     <<: *hskp_default
     LABLAXIS: LVPS_5V_T
-    FIELDNAM: LVPS Temperature 2 -- LVPS – 5V Temperature
-    CATDESC: LVPS Temperature 2 -- LVPS – 5V Temperature
+    FIELDNAM: LVPS Temperature 2 -- LVPS - 5V Temperature
+    FILLVAL: *uint16_fillval
+    CATDESC: LVPS Temperature 2 -- LVPS - 5V Temperature
 
 lvps_3p3v_t:
     <<: *hskp_default
     LABLAXIS: LVPS_3P3V_T
-    FIELDNAM: LVPS Temperature 3 -- LVPS – +3.3V Temperature
-    CATDESC: LVPS Temperature 3 -- LVPS – +3.3V Temperature
+    FIELDNAM: LVPS Temperature 3 -- LVPS - +3.3V Temperature
+    FILLVAL: *uint16_fillval
+    CATDESC: LVPS Temperature 3 -- LVPS - +3.3V Temperature
 
 lvps_3p3v:
     <<: *hskp_default
     LABLAXIS: LVPS_3P3V
-    FIELDNAM: LVPS – Digital V1 -- LVPS – +3.3V
-    CATDESC: LVPS – Digital V1 -- LVPS – +3.3V
+    FIELDNAM: LVPS - Digital V1 -- LVPS - +3.3V
+    FILLVAL: *uint16_fillval
+    CATDESC: LVPS - Digital V1 -- LVPS - +3.3V
 
 lvps_5v:
     <<: *hskp_default
     LABLAXIS: LVPS_5V
-    FIELDNAM: LVPS – Digital V2 -- LVPS – +5V
-    CATDESC: LVPS – Digital V2 -- LVPS – +5V
+    FIELDNAM: LVPS - Digital V2 -- LVPS - +5V
+    FILLVAL: *uint16_fillval
+    CATDESC: LVPS - Digital V2 -- LVPS - +5V
 
 lvps_n5v:
     <<: *hskp_default
     LABLAXIS: LVPS_N5V
-    FIELDNAM: LVPS – Digital V3 -- LVPS – -5V
-    CATDESC: LVPS – Digital V3 -- LVPS – -5V
+    FIELDNAM: LVPS - Digital V3 -- LVPS - -5V
+    FILLVAL: *uint16_fillval
+    CATDESC: LVPS - Digital V3 -- LVPS - -5V
 
 lvps_12v:
     <<: *hskp_default
     LABLAXIS: LVPS_12V
-    FIELDNAM: LVPS – Digital V4 -- LVPS – +12V
-    CATDESC: LVPS – Digital V4 -- LVPS – +12V
+    FIELDNAM: LVPS - Digital V4 -- LVPS - +12V
+    FILLVAL: *uint16_fillval
+    CATDESC: LVPS - Digital V4 -- LVPS - +12V
 
 lvps_n12v:
     <<: *hskp_default
     LABLAXIS: LVPS_N12V
-    FIELDNAM: LVPS – Digital V5 -- LVPS – -12V
-    CATDESC: LVPS – Digital V5 -- LVPS – -12V
+    FIELDNAM: LVPS - Digital V5 -- LVPS - -12V
+    FILLVAL: *uint16_fillval
+    CATDESC: LVPS - Digital V5 -- LVPS - -12V
 
 lvps_3p3v_i:
     <<: *hskp_default
     LABLAXIS: LVPS_3P3V_I
-    FIELDNAM: LVPS – Digital I1 -- LVPS – +3.3V Current
-    CATDESC: LVPS – Digital I1 -- LVPS – +3.3V Current
+    FIELDNAM: LVPS - Digital I1 -- LVPS - +3.3V Current
+    FILLVAL: *uint16_fillval
+    CATDESC: LVPS - Digital I1 -- LVPS - +3.3V Current
 
 lvps_5v_i:
     <<: *hskp_default
     LABLAXIS: LVPS_5V_I
-    FIELDNAM: LVPS – Digital I2 -- LVPS – +5V Current
-    CATDESC: LVPS – Digital I2 -- LVPS – +5V Current
+    FIELDNAM: LVPS - Digital I2 -- LVPS - +5V Current
+    FILLVAL: *uint16_fillval
+    CATDESC: LVPS - Digital I2 -- LVPS - +5V Current
 
 lvps_n5v_i:
     <<: *hskp_default
     LABLAXIS: LVPS_N5V_I
-    FIELDNAM: LVPS – Digital I3 -- LVPS – -5V Current
-    CATDESC: LVPS – Digital I3 -- LVPS – -5V Current
+    FIELDNAM: LVPS - Digital I3 -- LVPS - -5V Current
+    FILLVAL: *uint16_fillval
+    CATDESC: LVPS - Digital I3 -- LVPS - -5V Current
 
 lvps_12v_i:
     <<: *hskp_default
     LABLAXIS: LVPS_12V_I
-    FIELDNAM: LVPS – Digital I4 -- LVPS – +12V Current
-    CATDESC: LVPS – Digital I4 -- LVPS – +12V Current
+    FIELDNAM: LVPS - Digital I4 -- LVPS - +12V Current
+    FILLVAL: *uint16_fillval
+    CATDESC: LVPS - Digital I4 -- LVPS - +12V Current
 
 lvps_n12v_i:
     <<: *hskp_default
     LABLAXIS: LVPS_N12V_I
-    FIELDNAM: LVPS – Digital I5 -- LVPS – -12V Current
-    CATDESC: LVPS – Digital I5 -- LVPS – -12V Current
+    FIELDNAM: LVPS - Digital I5 -- LVPS - -12V Current
+    FILLVAL: *uint16_fillval
+    CATDESC: LVPS - Digital I5 -- LVPS - -12V Current
 
 cdh_1p5v:
     <<: *hskp_default
     LABLAXIS: CDH_1P5V
-    FIELDNAM: CDH – + 1.5V
-    CATDESC: CDH – + 1.5V
+    FIELDNAM: CDH - + 1.5V
+    FILLVAL: *uint16_fillval
+    CATDESC: CDH - + 1.5V
 
 cdh_1p8v:
     <<: *hskp_default
     LABLAXIS: CDH_1P8V
-    FIELDNAM: CDH – +1.8V
-    CATDESC: CDH – +1.8V
+    FIELDNAM: CDH - +1.8V
+    FILLVAL: *uint16_fillval
+    CATDESC: CDH - +1.8V
 
 cdh_3p3v:
     <<: *hskp_default
     LABLAXIS: CDH_3P3V
-    FIELDNAM: CDH – +3.3V
-    CATDESC: CDH – +3.3V
+    FIELDNAM: CDH - +3.3V
+    FILLVAL: *uint16_fillval
+    CATDESC: CDH - +3.3V
 
 cdh_12v:
     <<: *hskp_default
     LABLAXIS: CDH_12V
-    FIELDNAM: CDH – +12V
-    CATDESC: CDH – +12V
+    FIELDNAM: CDH - +12V
+    FILLVAL: *uint16_fillval
+    CATDESC: CDH - +12V
 
 cdh_n12v:
     <<: *hskp_default
     LABLAXIS: CDH_N12V
-    FIELDNAM: CDH – -12V
-    CATDESC: CDH – -12V
+    FIELDNAM: CDH - -12V
+    FILLVAL: *uint16_fillval
+    CATDESC: CDH - -12V
 
 cdh_5v:
     <<: *hskp_default
     LABLAXIS: CDH_5V
-    FIELDNAM: CDH – +5V
-    CATDESC: CDH – +5V
+    FIELDNAM: CDH - +5V
+    FILLVAL: *uint16_fillval
+    CATDESC: CDH - +5V
 
 cdh_5v_adc:
     <<: *hskp_default
     LABLAXIS: CDH_5V_ADC
-    FIELDNAM: CDH – Analog Ref -- CDH – +5V ADC
-    CATDESC: CDH – Analog Ref -- CDH – +5V ADC
+    FIELDNAM: CDH - Analog Ref -- CDH - +5V ADC
+    FILLVAL: *uint16_fillval
+    CATDESC: CDH - Analog Ref -- CDH - +5V ADC
 
 tbd_hvps_1_if_err_cnt:
     <<: *hskp_default
@@ -2663,6 +2745,7 @@ tbd_macro_status:
     <<: *hskp_default
     LABLAXIS: TBD_MACRO_STATUS
     FIELDNAM: TBD - Placeholder for Macro status
+    FILLVAL: *uint32_fillval
     CATDESC: TBD - Placeholder for Macro status
 
 fdc_trigger_cnt_fsw:
@@ -2724,6 +2807,7 @@ fdc_last_trigger_id:
     <<: *hskp_default
     LABLAXIS: FDC_LAST_TRIGGER_ID
     FIELDNAM: Indicates the ID of the most recent FDC trigger
+    FILLVAL: *uint16_fillval
     CATDESC: Indicates the ID of the most recent FDC trigger
 
 fdc_last_trigger_action:
@@ -2736,6 +2820,7 @@ round_robin_index:
     <<: *hskp_default
     LABLAXIS: ROUND_ROBIN_INDEX
     FIELDNAM: Round Robin Parameter Report Index
+    FILLVAL: *uint32_fillval
     CATDESC: Index for Round Robin parameter reporting. See VAR_NOTES for more details.
     VAR_NOTES: Current index for the Round Robin parameter reporting.  The Round Robin mechanism reports one value from the Parameter Table each time this packet is generated.
 
@@ -2743,6 +2828,7 @@ round_robin_value:
     <<: *hskp_default
     LABLAXIS: ROUND_ROBIN_VALUE
     FIELDNAM: Round Robin Parameter Report Value
+    FILLVAL: *uint32_fillval
     CATDESC: Parameter value corresponding to the current Round_Robin_Index value.
 
 heater_control_state:
@@ -2778,127 +2864,148 @@ cpu_idle:
 cdh_processor_t:
     <<: *hskp_default
     LABLAXIS: CDH_PROCESSOR_T
-    FIELDNAM: CDH – Processor Temp monitor
-    CATDESC: CDH – Processor Temp monitor
+    FIELDNAM: CDH - Processor Temp monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: CDH - Processor Temp monitor
 
 cdh_1p8v_ldo_t:
     <<: *hskp_default
     LABLAXIS: CDH_1P8V_LDO_T
-    FIELDNAM: CDH – +1.8V LDO Temp monitor
-    CATDESC: CDH – +1.8V LDO Temp monitor
+    FIELDNAM: CDH - +1.8V LDO Temp monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: CDH - +1.8V LDO Temp monitor
 
 cdh_1p5v_ldo_t:
     <<: *hskp_default
     LABLAXIS: CDH_1P5V_LDO_T
-    FIELDNAM: CDH – +1.5V LDO Temp monitor
-    CATDESC: CDH – +1.5V LDO Temp monitor
+    FIELDNAM: CDH - +1.5V LDO Temp monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: CDH - +1.5V LDO Temp monitor
 
 cdh_sdram_t:
     <<: *hskp_default
     LABLAXIS: CDH_SDRAM_T
-    FIELDNAM: CDH – SDRAM Temp monitor
-    CATDESC: CDH – SDRAM Temp monitor
+    FIELDNAM: CDH - SDRAM Temp monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: CDH - SDRAM Temp monitor
 
 snsr_hvps_t:
     <<: *hskp_default
     LABLAXIS: SNSR_HVPS_T
-    FIELDNAM: CoDICE – Sensor HVPS Temp monitor
-    CATDESC: CoDICE – Sensor HVPS Temp monitor
+    FIELDNAM: CoDICE - Sensor HVPS Temp monitor
+    FILLVAL: *uint16_fillval
+    CATDESC: CoDICE - Sensor HVPS Temp monitor
 
 fee_apd_3p3_digital_v:
     <<: *hskp_default
     LABLAXIS: FEE_APD_3P3_DIGITAL_V
     FIELDNAM: FEE; APD Side +3.3V Digital
+    FILLVAL: *uint16_fillval
     CATDESC: FEE; APD Side +3.3V Digital
 
 fee_apd_5p0_analog_v:
     <<: *hskp_default
     LABLAXIS: FEE_APD_5P0_ANALOG_V
     FIELDNAM: FEE; APD Side +5.0V Analog
+    FILLVAL: *uint16_fillval
     CATDESC: FEE; APD Side +5.0V Analog
 
 fee_apd_t:
     <<: *hskp_default
     LABLAXIS: FEE_APD_T
     FIELDNAM: FEE; APD Side Temperature
+    FILLVAL: *uint16_fillval
     CATDESC: FEE; APD Side Temperature
 
 fee_apd_12p0_analog_v:
     <<: *hskp_default
     LABLAXIS: FEE_APD_12P0_ANALOG_V
     FIELDNAM: FEE; APD Side +12.0V Analog
+    FILLVAL: *uint16_fillval
     CATDESC: FEE; APD Side +12.0V Analog
 
 fee_apd_eb_temp_1_t:
     <<: *hskp_default
     LABLAXIS: FEE_APD_EB_TEMP_1_T
     FIELDNAM: FEE; AEB Temp Sensor 1
+    FILLVAL: *uint16_fillval
     CATDESC: FEE; AEB Temp Sensor 1
 
 fee_apd_eb_temp_2_t:
     <<: *hskp_default
     LABLAXIS: FEE_APD_EB_TEMP_2_T
     FIELDNAM: FEE; AEB Temp Sensor 2
+    FILLVAL: *uint16_fillval
     CATDESC: FEE; AEB Temp Sensor 2
 
 fee_apd_eb_temp_3_t:
     <<: *hskp_default
     LABLAXIS: FEE_APD_EB_TEMP_3_T
     FIELDNAM: FEE; AEB Temp Sensor 3
+    FILLVAL: *uint16_fillval
     CATDESC: FEE; AEB Temp Sensor 3
 
 fee_apd_eb_temp_4_t:
     <<: *hskp_default
     LABLAXIS: FEE_APD_EB_TEMP_4_T
     FIELDNAM: FEE; AEB Temp Sensor 4
+    FILLVAL: *uint16_fillval
     CATDESC: FEE; AEB Temp Sensor 4
 
 fee_ssd_3p3_digital_v:
     <<: *hskp_default
     LABLAXIS: FEE_SSD_3P3_DIGITAL_V
     FIELDNAM: FEE; SSD Side +3.3V Digital
+    FILLVAL: *uint16_fillval
     CATDESC: FEE; SSD Side +3.3V Digital
 
 fee_ssd_5p0_analog_v:
     <<: *hskp_default
     LABLAXIS: FEE_SSD_5P0_ANALOG_V
     FIELDNAM: FEE; SSD Side +5.0V Analog
+    FILLVAL: *uint16_fillval
     CATDESC: FEE; SSD Side +5.0V Analog
 
 fee_ssd_t:
     <<: *hskp_default
     LABLAXIS: FEE_SSD_T
     FIELDNAM: FEE; SSD Side Temperature
+    FILLVAL: *uint16_fillval
     CATDESC: FEE; SSD Side Temperature
 
 fee_ssd_12p0_analog_v:
     <<: *hskp_default
     LABLAXIS: FEE_SSD_12P0_ANALOG_V
     FIELDNAM: FEE; SSD Side +12.0V Analog
+    FILLVAL: *uint16_fillval
     CATDESC: FEE; SSD Side +12.0V Analog
 
 fee_ssd_eb_temp_1_t:
     <<: *hskp_default
     LABLAXIS: FEE_SSD_EB_TEMP_1_T
     FIELDNAM: FEE; SEB Temp Sensor 1
+    FILLVAL: *uint16_fillval
     CATDESC: FEE; SEB Temp Sensor 1
 
 fee_ssd_eb_temp_2_t:
     <<: *hskp_default
     LABLAXIS: FEE_SSD_EB_TEMP_2_T
     FIELDNAM: FEE; SEB Temp Sensor 2
+    FILLVAL: *uint16_fillval
     CATDESC: FEE; SEB Temp Sensor 2
 
 fee_ssd_eb_temp_3_t:
     <<: *hskp_default
     LABLAXIS: FEE_SSD_EB_TEMP_3_T
     FIELDNAM: FEE; SEB Temp Sensor 3
+    FILLVAL: *uint16_fillval
     CATDESC: FEE; SEB Temp Sensor 3
 
 fee_ssd_eb_temp_4_t:
     <<: *hskp_default
     LABLAXIS: FEE_SSD_EB_TEMP_4_T
     FIELDNAM: FEE; SEB Temp Sensor 4
+    FILLVAL: *uint16_fillval
     CATDESC: FEE; SEB Temp Sensor 4
 
 spare_6:
