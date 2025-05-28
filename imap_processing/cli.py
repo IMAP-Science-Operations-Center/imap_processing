@@ -1260,7 +1260,7 @@ class Swe(ProcessInstrument):
             # Right now, we only process science data. Therefore,
             # we expect only one dataset to be returned.
 
-        elif self.data_level == "l1b":
+        elif self.data_level == "l1b" and self.descriptor == "sci":
             if len(dependency_list) != 4:
                 raise ValueError(
                     f"Unexpected dependencies found for SWE L1B:"
@@ -1273,6 +1273,14 @@ class Swe(ProcessInstrument):
                     "Multiple science files processing is not supported for SWE L1B."
                 )
 
+            datasets = swe_l1b(dependencies)
+        elif self.data_level == "l1b" and self.descriptor == "hk":
+            if len(dependency_list) != 2:
+                raise ValueError(
+                    f"Unexpected dependencies found for SWE L1B HK:"
+                    f"{dependency_list}. Expected exactly two dependencies."
+                )
+            # process data
             datasets = swe_l1b(dependencies)
         else:
             print("Did not recognize data level. No processing done.")
