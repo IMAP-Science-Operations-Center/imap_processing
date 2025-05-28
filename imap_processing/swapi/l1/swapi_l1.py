@@ -777,7 +777,11 @@ def swapi_l1(dependencies: ProcessingInputCollection) -> xr.Dataset:
         # Add attrs to HK data variables
         for var_name in l1a_hk_data.data_vars:
             l1a_hk_data[var_name].attrs.update(hk_common_attrs)
-            # If HK L1B derived data is string, use string default attrs
+            # In L1B HK data, we derived data which can result some data to
+            # be string. Eg. SWP_HK.PCEM_SAFE raw value can be 0 or 1,
+            # but the derived value is 'OK' or 'ERR'. Therefore, we need to use
+            # different attributes for data variables with string values to be
+            # ISTP compliant.
             if isinstance(l1b_hk_data[var_name].data[0], str):
                 l1b_hk_data[var_name].attrs.update(
                     imap_attrs.get_variable_attributes("l1b_hk_string_attrs")
