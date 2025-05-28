@@ -74,18 +74,19 @@ class AncillaryCombiner:
         self.expected_end_date = expected_end_date
 
         self.timestamped_data = []
-        if isinstance(ancillary_input, ProcessingInput):
-            for file in ancillary_input.filename_list:
-                self.timestamped_data.append(self.convert_to_timestamped_data(file))
-        else:
-            for file in ancillary_input:
-                self.timestamped_data.append(
-                    self.convert_to_timestamped_data(file.name)
-                )
+
+        file_path_list = (
+            ancillary_input
+            if isinstance(ancillary_input, list)
+            else ancillary_input.filename_list
+        )
+
+        for file in file_path_list:
+            self.timestamped_data.append(self.convert_to_timestamped_data(file))
 
         self.combined_dataset = self._combine_input_datasets()
 
-    def convert_to_timestamped_data(self, filename: str) -> TimestampedData:
+    def convert_to_timestamped_data(self, filename: str | Path) -> TimestampedData:
         """
         Given an ancillary input, convert it to a TimestampedData object.
 
@@ -93,7 +94,7 @@ class AncillaryCombiner:
 
         Parameters
         ----------
-        filename : str
+        filename : str | Path
             The ancillary input to convert.
 
         Returns
@@ -101,7 +102,11 @@ class AncillaryCombiner:
         TimestampedData
             The converted TimestampedData object.
         """
-        filepath = AncillaryFilePath(filename)
+        filepath = (
+            AncillaryFilePath(filename.name)
+            if isinstance(filename, Path)
+            else AncillaryFilePath(filename)
+        )
         dataset = self.convert_file_to_dataset(filepath.construct_path())
 
         # Convert start_date to np.datetime64
@@ -141,7 +146,6 @@ class AncillaryCombiner:
         xr.Dataset
             The converted xarray dataset.
         """
-        print(f"converting filepath: {filepath}")
         return cdf_to_xarray(filepath)
 
     def _combine_input_datasets(self) -> xr.Dataset:
