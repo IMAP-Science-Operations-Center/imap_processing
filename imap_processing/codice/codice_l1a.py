@@ -165,17 +165,11 @@ class CoDICEL1aPipeline:
         """
         self.coords = {}
 
-        coord_names = ["epoch", *list(self.config["output_dims"].keys())]
-
-        # Include labels to the list of coordinates where appropriate
-        if self.config["dataset_name"] in [
-            "imap_codice_l1a_lo-counters-aggregated",
-            "imap_codice_l1a_lo-counters-singles",
-        ]:
-            coord_names.append("spin_sector_pairs_label")
-        if self.config["dataset_name"] in ["imap_codice_l1a_lo-sw-species"]:
-            coord_names.append("spin_sector_label")
-            coord_names.append("esa_step_label")
+        coord_names = [
+            "epoch",
+            *self.config["output_dims"].keys(),
+            *[key + "_label" for key in self.config["output_dims"].keys()],
+        ]
 
         # Define the values for the coordinates
         for name in coord_names:
@@ -204,7 +198,13 @@ class CoDICEL1aPipeline:
                     ]
                 )
                 dims = [name]
-            elif name in ["spin_sector_label", "esa_step_label"]:
+            elif name in [
+                "spin_sector_label",
+                "esa_step_label",
+                "inst_az_label",
+                "spin_sector_index_label",
+                "ssd_index_label",
+            ]:
                 key = name.split("_label")[0]
                 values = np.arange(self.config["output_dims"][key]).astype(str)
                 dims = [key]

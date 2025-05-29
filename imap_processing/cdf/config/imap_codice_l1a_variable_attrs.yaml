@@ -144,7 +144,19 @@ esa_step_label:
     FORMAT: A3
     VAR_TYPE: metadata
 
+inst_az_label:
+    CATDESC: Instrument Azimuth
+    FIELDNAM: Instrument Azimuth
+    FORMAT: A2
+    VAR_TYPE: metadata
+
 spin_sector_label:
+    CATDESC: Spin Sector
+    FIELDNAM: Spin Sector
+    FORMAT: A2
+    VAR_TYPE: metadata
+
+spin_sector_index_label:
     CATDESC: Spin Sector Index
     FIELDNAM: Spin Sector Index
     FORMAT: A2
@@ -154,6 +166,12 @@ spin_sector_pairs_label:
     CATDESC: Spin Sector Pairs
     FIELDNAM: Spin Sector Pairs
     FORMAT: A11
+    VAR_TYPE: metadata
+
+ssd_index_label:
+    CATDESC: SSD Index
+    FIELDNAM: SSD Index
+    FORMAT: A2
     VAR_TYPE: metadata
 
 # <=== Dataset Variable Attributes ===>
@@ -271,7 +289,7 @@ spin_period:
     DISPLAY_TYPE: time_series
     FIELDNAM: Spin Period
     FILLVAL: *real_fillval
-    FORMAT: F3.1
+    FORMAT: F4.2
     LABLAXIS: Spin Period
     SCALETYP: linear
     UNITS: s
@@ -1231,57 +1249,73 @@ lo-nsw-species-hplus:
     <<: *counters
     CATDESC: H+ Non-sunward Species
     FIELDNAM: NSW - H+
-    LABL_PTR_1: spin_sector
-    LABL_PTR_2: esa_step
+    DEPEND_1: spin_sector
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_label
+    LABL_PTR_2: esa_step_label
 
 lo-nsw-species-heplusplus:
     <<: *counters
     CATDESC: He++ Non-sunward Species
     FIELDNAM: NSW - He++
-    LABL_PTR_1: spin_sector
-    LABL_PTR_2: esa_step
+    DEPEND_1: spin_sector
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_label
+    LABL_PTR_2: esa_step_label
 
 lo-nsw-species-c:
     <<: *counters
     CATDESC: C Non-sunward Species
     FIELDNAM: NSW - C
-    LABL_PTR_1: spin_sector
-    LABL_PTR_2: esa_step
+    DEPEND_1: spin_sector
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_label
+    LABL_PTR_2: esa_step_label
 
 lo-nsw-species-o:
     <<: *counters
     CATDESC: O Non-sunward Species
     FIELDNAM: NSW - O
-    LABL_PTR_1: spin_sector
-    LABL_PTR_2: esa_step
+    DEPEND_1: spin_sector
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_label
+    LABL_PTR_2: esa_step_label
 
 lo-nsw-species-ne_si_mg:
     <<: *counters
     CATDESC: Ne-Si-Mg Non-sunward Species
     FIELDNAM: NSW - Ne_Si_Mg
-    LABL_PTR_1: spin_sector
-    LABL_PTR_2: esa_step
+    DEPEND_1: spin_sector
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_label
+    LABL_PTR_2: esa_step_label
 
 lo-nsw-species-fe:
     <<: *counters
     CATDESC: Fe Non-sunward Species
     FIELDNAM: NSW - Fe
-    LABL_PTR_1: spin_sector
-    LABL_PTR_2: esa_step
+    DEPEND_1: spin_sector
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_label
+    LABL_PTR_2: esa_step_label
 
 lo-nsw-species-heplus:
     <<: *counters
     CATDESC: He+ Non-sunward Species
     FIELDNAM: NSW - He+
-    LABL_PTR_1: spin_sector
-    LABL_PTR_2: esa_step
+    DEPEND_1: spin_sector
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_label
+    LABL_PTR_2: esa_step_label
 
 lo-nsw-species-cnoplus:
     <<: *counters
     CATDESC: CNO+ Non-sunward Species
     FIELDNAM: NSW - CNO+
-    LABL_PTR_1: spin_sector
-    LABL_PTR_2: esa_step
+    DEPEND_1: spin_sector
+    DEPEND_2: esa_step
+    LABL_PTR_1: spin_sector_label
+    LABL_PTR_2: esa_step_label
 
 # lo-ialirt
 lo-ialirt-heplusplus:
