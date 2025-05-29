@@ -417,6 +417,7 @@ class ProcessInstrument(ABC):
                     repointing=file_path.repointing,
                     version=file_path.version,
                     extension="cdf",
+                    table="science",
                 )
                 if existing_file:
                     raise ProcessInstrument.ImapFileExistsError(
