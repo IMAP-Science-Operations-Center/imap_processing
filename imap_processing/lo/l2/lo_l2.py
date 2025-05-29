@@ -5,7 +5,9 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
+from imap_processing.ena_maps.ena_maps import RectangularSkyMap
 from imap_processing.spice import geometry
+from imap_processing.spice.geometry import SpiceFrame
 
 
 def lo_l2(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
@@ -31,9 +33,43 @@ def lo_l2(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
 
     # if the dependencies are used to create Annotated Direct Events
     if "imap_lo_l1c_pset" in sci_dependencies:
-        # logical_source = "imap_lo_l2_hflux-spacecraft-uncorrected"
-        pset = sci_dependencies["imap_lo_l1c_pset"]
+        logical_source = "imap_lo_l2_l090-ena-h-sf-nsp-ram-hae-6deg-1yr"
+        psets = sci_dependencies["imap_lo_l1c_pset"]
 
+        # Create the rectangular sky map from the pointing set.
+        lo_rect_map = project_pset_to_rect_map(psets, spacing_deg=6, spice_frame=geometry.SpiceFrame.ECLIPJ2000)
+        # Add the hydrogen rates to the rectangular map dataset.
+        lo_rect_map.data_1d["h_rate"] = calculate_rates(lo_rect_map.data_1d["h_counts"], lo_rect_map.data_1d["exposure_time"])
+        # Add the hydrogen flux to the rectangular map dataset.
+        lo_rect_map.data_1d["h_flux"] = calculate_fluxes(lo_rect_map.data_1d["h_rate"])
+        # Create the dataset from the rectangular map.
+        lo_rect_map_ds = lo_rect_map.to_dataset()
+        # Add the attributes to the dataset.
+        lo_rect_map_ds.attrs.update(attr_mgr.get_global_attributes(logical_source))
+        return [lo_rect_map_ds]
+
+
+def project_pset_to_rect_map(psets: list[xr.Dataset], spacing_deg: int, spice_frame: SpiceFrame ) -> RectangularSkyMap:
+    """
+    Project the pointing set to a rectangular sky map.
+    This function is used to create a rectangular sky map from the pointing set
+    data in the L1C dataset.
+
+    Parameters
+    ----------
+    pset : list[xr.Dataset]
+        The pointing set data from the L1C dataset.
+    Returns
+    -------
+    RectangularSkyMap
+        The rectangular sky map created from the pointing set data.
+    """
+
+
+    lo_rect_map = ena_maps.RectangularSkyMap(
+        spacing_deg=spacing_deg, spice_frame=spice_frame,
+    )
+    for pset in psets:
         # Put energy dim before longitude and latitude
         # TODO: L1C data should be in this format already.
         #  This is a workaround for the current L1C data format.
@@ -44,53 +80,46 @@ def lo_l2(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
                     "epoch", "energy", "longitude", "latitude"
                 )
 
-        lo_rect_map = ena_maps.RectangularSkyMap(
-            spacing_deg=6, spice_frame=geometry.SpiceFrame.ECLIPJ2000
-        )
-
         lo_pset = ena_maps.LoPointingSet(pset)
         lo_rect_map.project_pset_values_to_map(
             pointing_set=lo_pset,
             value_keys=["h_counts", "exposure_time"],
             index_match_method=ena_maps.IndexMatchMethod.PUSH,
         )
-        # Add the hydrogen rates to the rectangular map dataset.
-        lo_rect_map.data_1d["h_rate"] = calculate_rates(lo_rect_map)
-        # Add the hydrogen flux to the rectangular map dataset.
-        lo_rect_map.data_1d["h_flux"] = calculate_flux(lo_rect_map)
-        return [lo_rect_map_ds]
+    return lo_rect_map
+def calculate_rates(counts : xr.DataArray, exposure_time : xr.DataArray) -> xr.DataArray:
+    """
+    Calculate the hydrogen rates from the counts and exposure time.
 
-def calculate_rates(lo_rect_map: xr.Dataset) -> xr.Dataset:
-        """
-        Calculate the rates for the rectangular map dataset.
+    Parameters
+    ----------
+    counts : xr.DataArray
+        The counts of hydrogen or oxygen ENAs.
+    exposure_time : xr.DataArray
+        The exposure time for the counts.
 
-        Parameters
-        ----------
-        lo_rect_map : xr.Dataset
-            The hydrogen counts and exposure time.
-
-        Returns
-        -------
-        xr.Dataset
-            The calculated rates.
-        """
-        # Calculate the rates based on the h_counts and exposure_time
-        h_rate = llo_rect_map: xr.Dataset / lo_rect_map.data_1d["exposure_time"]
-        return h_rate
+    Returns
+    -------
+    xr.DataArray
+        The calculated hydrogen rates.
+    """
+    # Calculate the rates based on the h_counts and exposure_time
+    rate = counts / exposure_time
+    return rate
 
 
-def calculate_flux(lo_rect_map: xr.Dataset) -> xr.Dataset:
+def calculate_fluxes(rates : xr.DataArray) -> xr.DataArray:
     """
     Calculate the flux from the hydrogen rate.
 
     Parameters
     ----------
-    h_rate : xr.Dataset
-        The hydrogen rates.
+    rate : xr.Dataset
+        The hydrogen or oxygen rates.
 
     Returns
     -------
-    xr.Dataset
+    xr.DataArray
         The calculated flux.
     """
     # Temporary values. These will all come from ancillary data when
@@ -101,5 +130,5 @@ def calculate_flux(lo_rect_map: xr.Dataset) -> xr.Dataset:
     energies = np.array([energy_dict[i] for i in range(1, 8)])
     energies = energies.reshape(1, 7, 1)
 
-    h_flux = lo_rect_map. / (geometric_factor * energies * efficiency_factor)
-    return h_flux
+    flux = rates / (geometric_factor * energies * efficiency_factor)
+    return flux

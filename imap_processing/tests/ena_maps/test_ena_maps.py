@@ -18,6 +18,7 @@ from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils import spatial_utils
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.spice import geometry
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -169,6 +170,72 @@ class TestHiPointingSet:
         rect_map.project_pset_values_to_map(hi_pset, ["counts", "exposure_factor"])
         assert rect_map.data_1d["counts"].max() > 0
 
+
+@pytest.fixture
+def lo_pset_ds():
+    h_counts = np.zeros((1, 3600, 40, 7))
+    h_counts[:, :, 0:10, :] = 1
+
+    exposure_time = np.full((1, 3600, 40, 7), .5)
+    dataset = xr.Dataset()
+    dataset["h_counts"] = xr.DataArray(
+        h_counts,
+        dims=("epoch", "longitude", "latitude", "energy"),
+        name="h_counts",
+    )
+    dataset["exposure_time"] = xr.DataArray(
+        exposure_time,
+        dims=("epoch", "longitude", "latitude", "energy"),
+        name="exposure_time",
+    )
+    dataset.coords["epoch"] = xr.DataArray(
+        [8.1794907049e17],
+        dims=["epoch"],
+        name="epoch",
+    )
+    dataset.coords["longitude"] = xr.DataArray(
+        [i for i in range(3600)],
+        dims=["longitude"],
+        name="longitude",
+    )
+    dataset.coords["latitude"] = xr.DataArray(
+        [i for i in range(40)],
+        dims=["latitude"],
+        name="latitude",
+    )
+    dataset.coords["energy"] = xr.DataArray(
+        [i for i in range(1, 8)],
+        dims=["energy"],
+        name="energy",
+    )
+    return dataset
+
+
+@pytest.mark.external_test_data
+class TestLoPointingSet:
+    """Test suite for LoPointingSet class."""
+
+    def test_init(self, lo_pset_ds):
+        """Test coverage for __init__ method."""
+        lo_pset = ena_maps.LoPointingSet(lo_pset_ds)
+        assert isinstance(lo_pset, ena_maps.LoPointingSet)
+        assert lo_pset.spice_reference_frame == geometry.SpiceFrame.IMAP_DPS
+        assert lo_pset.num_points == 144000
+        np.testing.assert_array_equal(lo_pset.az_el_points.shape, (144000, 2))
+
+        for var_name in ["exposure_time", "h_counts"]:
+            assert var_name in lo_pset.data
+
+    #TODO: write cdf test when CDF with dim names is available
+
+    def test_plays_nice_with_rectangular_sky_map(self, lo_pset_ds):
+        """Test that LoPointingSet works with RectangularSkyMap"""
+        lo_pset = ena_maps.LoPointingSet(lo_pset_ds)
+        rect_map = ena_maps.RectangularSkyMap(
+            spacing_deg=6, spice_frame=geometry.SpiceFrame.ECLIPJ2000
+        )
+        rect_map.project_pset_values_to_map(lo_pset, ["h_counts", "exposure_time"])
+        assert rect_map.data_1d["counts"].max() > 0
 
 class TestRectangularSkyMap:
     @pytest.fixture(autouse=True)
