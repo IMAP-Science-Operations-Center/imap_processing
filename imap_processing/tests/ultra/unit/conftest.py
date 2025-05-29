@@ -208,12 +208,12 @@ def faux_aux_dataset():
 
     test_aux_dataset = xr.Dataset(
         data_vars={
-            "TIMESPINSTART": ("epoch", spin_start_sec),
-            "TIMESPINSTARTSUB": ("epoch", spin_start_subsec),
-            "DURATION": ("epoch", spin_period_sec),
-            "SPINNUMBER": ("epoch", spin_number),
-            "TIMESPINDATA": ("epoch", spin_start_time),
-            "SPINPERIOD": ("epoch", spin_period_sec),
+            "timespinstart": ("epoch", spin_start_sec),
+            "timespinstartsub": ("epoch", spin_start_subsec),
+            "duration": ("epoch", spin_period_sec),
+            "spinnumber": ("epoch", spin_number),
+            "timespindata": ("epoch", spin_start_time),
+            "spinperiod": ("epoch", spin_period_sec),
         },
         coords={"epoch": ("epoch", epoch)},
     )

@@ -66,18 +66,25 @@ def ultra_l1b(data_dict: dict) -> list[xr.Dataset]:
                 f"imap_ultra_l1b_{instrument_id}sensor-extendedspin",
                 instrument_id,
             )
+            output_datasets.append(extendedspin_dataset)
+        elif f"imap_ultra_l1b_{instrument_id}sensor-extendedspin" in data_dict:
             cullingmask_dataset = calculate_cullingmask(
-                extendedspin_dataset,
+                data_dict[f"imap_ultra_l1b_{instrument_id}sensor-extendedspin"],
                 f"imap_ultra_l1b_{instrument_id}sensor-cullingmask",
             )
+            output_datasets.append(cullingmask_dataset)
+        elif (
+            f"imap_ultra_l1b_{instrument_id}sensor-extendedspin" in data_dict
+            and f"imap_ultra_l1b_{instrument_id}sensor-cullingmask" in data_dict
+        ):
             badtimes_dataset = calculate_badtimes(
-                extendedspin_dataset,
-                cullingmask_dataset["spin_number"].values,
+                data_dict[f"imap_ultra_l1b_{instrument_id}sensor-extendedspin"],
+                data_dict[f"imap_ultra_l1b_{instrument_id}sensor-cullingmask"][
+                    "spin_number"
+                ].values,
                 f"imap_ultra_l1b_{instrument_id}sensor-badtimes",
             )
-            output_datasets.extend(
-                [extendedspin_dataset, cullingmask_dataset, badtimes_dataset]
-            )
+            output_datasets.append(badtimes_dataset)
     if not output_datasets:
         raise ValueError("No matching L1A or L1B data found.")
 
