@@ -1266,7 +1266,7 @@ class Swe(ProcessInstrument):
             if len(dependency_list) != 5:
                 raise ValueError(
                     f"Unexpected dependencies found for SWE L1B:"
-                    f"{dependency_list}. Expected exactly four dependencies."
+                    f"{dependency_list}. Expected exactly five dependencies."
                     "L1A science, in-fligth cal, esa LUT, EU conversion and "
                     "time kernels."
                 )

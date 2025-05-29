@@ -938,7 +938,7 @@ def swe_l1b(dependencies: ProcessingInputCollection) -> list[xr.Dataset]:
 
     Returns
     -------
-    list[xr.Dataset]
+    list[xarray.Dataset]
         List of processed datasets.
     """
     processed_datasets = []
