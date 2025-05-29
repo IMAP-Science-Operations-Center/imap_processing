@@ -257,6 +257,18 @@ class TestUltraL2:
         assert map_dataset.attrs["HEALPix_nest"] == str(map_structure.nested)
         assert "6mo" in map_dataset.attrs["Logical_source"]
 
+        assert (
+            map_dataset["ena_intensity_sys_err"].shape
+            == map_dataset["ena_intensity"].shape
+        )
+        # TODO: Put in actual value for sys_err once implemented in ultra_l2 code.
+        np.testing.assert_allclose(
+            map_dataset["ena_intensity_sys_err"],
+            0,
+            rtol=0,
+            atol=1e-12,
+        )
+
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
     def test_ultra_l2_rectangular(self, mock_data_dict, furnish_kernels):
         rect_map_structure = ena_maps.AbstractSkyMap.from_properties_dict(

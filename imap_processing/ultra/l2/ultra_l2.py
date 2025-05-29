@@ -549,6 +549,12 @@ def ultra_l2(
                 name=f"{coord_var}_label",
             )
 
+    # Add systematic error as all zeros with shape matching statistical unc
+    # TODO: update once we have information from the instrument team
+    map_dataset["ena_intensity_sys_err"] = xr.zeros_like(
+        map_dataset["ena_intensity_stat_unc"],
+    )
+
     # Add epoch_delta
     map_dataset.coords["epoch_delta"] = xr.DataArray(
         [
