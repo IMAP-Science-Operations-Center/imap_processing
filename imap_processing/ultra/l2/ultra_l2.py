@@ -458,6 +458,16 @@ def ultra_l2(
                 dims=(CoordNames.GENERIC_PIXEL.value,),
             )
 
+        # Add solid angle to the map dataset with dims (epoch=1, pixel=num_points)
+        healpix_skymap.data_1d["solid_angle"] = xr.DataArray(
+            data=np.full(
+                shape=(1, healpix_skymap.num_points),
+                fill_value=healpix_skymap.solid_angle,
+                dtype=np.float32,
+            ),
+            dims=(CoordNames.TIME.value, CoordNames.GENERIC_PIXEL.value),
+        )
+
         map_dataset = healpix_skymap.to_dataset()
         # Add attributes related to the map
         map_attrs = {

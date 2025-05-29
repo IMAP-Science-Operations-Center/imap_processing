@@ -5,6 +5,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 import xarray as xr
+from astropy_healpix.healpy import nside2pixarea
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
@@ -268,6 +269,16 @@ class TestUltraL2:
             rtol=0,
             atol=1e-12,
         )
+
+        # Check solid angle values and metadata
+        np.testing.assert_allclose(
+            map_dataset["solid_angle"],
+            nside2pixarea(
+                map_structure.nside,
+                degrees=False,
+            ),
+        )
+        assert map_dataset["solid_angle"].attrs["UNITS"] == "sr"
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
     def test_ultra_l2_rectangular(self, mock_data_dict, furnish_kernels):
