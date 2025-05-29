@@ -106,7 +106,11 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
     energy = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     species_bin = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
     t2 = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
-    event_times = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
+    event_times = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    shape = (len(de_dataset["epoch"]), 3)
+    sc_velocity = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
+    sc_dps_velocity = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
+    helio_velocity = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
     spin_starts = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
     spin_period_sec = np.full(
         len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64
@@ -224,13 +228,21 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
 
     # Annotated Events.
     ultra_frame = getattr(SpiceFrame, f"IMAP_ULTRA_{sensor}")
-    sc_velocity, sc_dps_velocity, helio_velocity = get_annotated_particle_velocity(
-        event_times,
-        de_dict["direct_event_velocity"],
-        ultra_frame,
-        SpiceFrame.IMAP_DPS,
-        SpiceFrame.IMAP_SPACECRAFT,
-    )
+
+    # Account for counts=0 (event times have FILL value)
+    valid_events = event_times != FILLVAL_FLOAT32
+    if np.any(valid_events):
+        (
+            sc_velocity[valid_events],
+            sc_dps_velocity[valid_events],
+            helio_velocity[valid_events],
+        ) = get_annotated_particle_velocity(
+            event_times[valid_events],
+            de_dict["direct_event_velocity"][valid_events],
+            ultra_frame,
+            SpiceFrame.IMAP_DPS,
+            SpiceFrame.IMAP_SPACECRAFT,
+        )
 
     de_dict["velocity_sc"] = sc_velocity
     de_dict["velocity_dps_sc"] = sc_dps_velocity
