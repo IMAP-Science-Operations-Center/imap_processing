@@ -61,7 +61,7 @@ def test_flag_attitude(use_fake_spin_data_for_time, faux_aux_dataset):
 
     use_fake_spin_data_for_time(0, 15 * 147)
     quality_flags, spin_rates, spin_period, spin_start_time = flag_attitude(
-        faux_aux_dataset["SPINNUMBER"].values, faux_aux_dataset
+        faux_aux_dataset["spinnumber"].values, faux_aux_dataset
     )
 
     flag = ImapAttitudeUltraFlags(quality_flags[0])

@@ -110,7 +110,7 @@ def flag_attitude(
     )
 
     quality_flags = np.full(
-        spin_rates.shape, ImapAttitudeUltraFlags.NONE.value, dtype=np.uint16
+        spins.shape, ImapAttitudeUltraFlags.NONE.value, dtype=np.uint16
     )
     quality_flags[bad_spin_rate_indices] |= ImapAttitudeUltraFlags.SPINRATE.value
     mismatch_indices = compare_aux_univ_spin_table(aux_dataset, spins, spin_df)
