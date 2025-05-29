@@ -951,13 +951,11 @@ class Lo(ProcessInstrument):
             datasets = lo_l1a.lo_l1a(science_files[0])
 
         elif self.data_level == "l1b":
-            data_dict = {}
             # TODO: Check this and update with new features as needed.
-            for input_type in dependencies.processing_input:
-                science_files = dependencies.get_file_paths(
-                    source="lo", descriptor=input_type.descriptor
-                )
-                dataset = load_cdf(science_files[0])
+            data_dict = {}
+            science_files = dependencies.get_file_paths(source="lo")
+            for file in science_files:
+                dataset = load_cdf(file)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
             datasets = lo_l1b.lo_l1b(data_dict)
 
