@@ -140,12 +140,8 @@ def filter_goodtimes(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
     l1b_de : xarray.Dataset
         Filtered L1B Direct Event dataset.
     """
-    # Get the sweep table from the ancillary dependencies
-    goodtimes_table = next(
-        (item for item in anc_dependencies if "goodtimes" in str(item)), None
-    )
-    # sweep table is a dependency so this should always be in the list
-    goodtimes_table_df = pd.read_csv(goodtimes_table)
+    # the goodtimes are currently the only ancillary file needed for L1C processing
+    goodtimes_table_df = pd.read_csv(anc_dependencies[0])
 
     # convert goodtimes from MET to TTJ2000
     goodtimes_start = met_to_ttj2000ns(goodtimes_table_df["GoodTime_strt"])
