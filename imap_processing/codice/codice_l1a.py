@@ -753,7 +753,7 @@ def create_binned_dataset(
         np.array(data["epoch"], dtype=np.uint64),
         name="epoch",
         dims=["epoch"],
-        attrs=pipeline.cdf_attrs.get_variable_attributes("epoch"),
+        attrs=pipeline.cdf_attrs.get_variable_attributes("epoch", check_schema=False),
     )
     dataset = xr.Dataset(
         coords={"epoch": coord},
@@ -761,10 +761,11 @@ def create_binned_dataset(
     )
 
     # Add the data variables
+    descriptor = pipeline.config["dataset_name"].removeprefix("imap_codice_l1a_")
     for species in pipeline.config["energy_table"]:
         # Add the species data to the dataset
         values = np.array(data[species], dtype=np.uint32)
-        attrs = pipeline.cdf_attrs.get_variable_attributes(f"hi-omni-{species}")
+        attrs = pipeline.cdf_attrs.get_variable_attributes(f"{descriptor}-{species}")
         dims = ["epoch", f"energy_{species}"]
         dataset[species] = xr.DataArray(
             values,
@@ -853,13 +854,13 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
         epochs,
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch"),
+        attrs=cdf_attrs.get_variable_attributes("epoch", check_schema=False),
     )
     event_num = xr.DataArray(
         np.arange(10000),
         name="event_num",
         dims=["event_num"],
-        attrs=cdf_attrs.get_variable_attributes("event_num"),
+        attrs=cdf_attrs.get_variable_attributes("event_num", check_schema=False),
     )
 
     # Create the dataset to hold the data variables
