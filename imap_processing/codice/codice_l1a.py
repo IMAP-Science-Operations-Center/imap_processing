@@ -205,7 +205,7 @@ class CoDICEL1aPipeline:
                 "spin_sector_index_label",
                 "ssd_index_label",
             ]:
-                key = name.split("_label")[0]
+                key = name.removesuffix("_label")
                 values = np.arange(self.config["output_dims"][key]).astype(str)
                 dims = [key]
 

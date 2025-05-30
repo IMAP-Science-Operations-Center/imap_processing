@@ -11,6 +11,7 @@ min_epoch: &min_epoch -315575942816000000
 max_int: &max_int 9223372036854775807
 max_uint8: &max_uint8 255
 max_uint16: &max_uint16 65535
+max_uint24: &max_uint24 8388607
 max_uint32: &max_uint32 4294967295
 max_epoch: &max_epoch 3155630469184000000
 
@@ -20,7 +21,7 @@ default_attrs: &default
     DEPEND_0: epoch
     DISPLAY_TYPE: no_plot
     FIELDNAM: " "
-    FILLVAL: *uint8_fillval
+    FILLVAL: *int_fillval
     FORMAT: I12
     SCALETYP: linear
     UNITS: dN
@@ -1324,6 +1325,7 @@ lo-ialirt-heplusplus:
     FIELDNAM: SW - He++
     LABL_PTR_1: spin_sector
     LABL_PTR_2: esa_step
+    VALIDMAX: *max_uint24
 
 lo-ialirt-cplus5:
     <<: *counters
@@ -1331,6 +1333,7 @@ lo-ialirt-cplus5:
     FIELDNAM: SW - C+5
     LABL_PTR_1: spin_sector
     LABL_PTR_2: esa_step
+    VALIDMAX: *max_uint24
 
 lo-ialirt-cplus6:
     <<: *counters
@@ -1338,6 +1341,7 @@ lo-ialirt-cplus6:
     FIELDNAM: SW - C+6
     LABL_PTR_1: spin_sector
     LABL_PTR_2: esa_step
+    VALIDMAX: *max_uint24
 
 lo-ialirt-oplus6:
     <<: *counters
@@ -1345,6 +1349,7 @@ lo-ialirt-oplus6:
     FIELDNAM: SW - O+6
     LABL_PTR_1: spin_sector
     LABL_PTR_2: esa_step
+    VALIDMAX: *max_uint24
 
 lo-ialirt-oplus7:
     <<: *counters
@@ -1352,6 +1357,7 @@ lo-ialirt-oplus7:
     FIELDNAM: SW - O+7
     LABL_PTR_1: spin_sector
     LABL_PTR_2: esa_step
+    VALIDMAX: *max_uint24
 
 lo-ialirt-oplus8:
     <<: *counters
@@ -1359,6 +1365,7 @@ lo-ialirt-oplus8:
     FIELDNAM: SW - O+8
     LABL_PTR_1: spin_sector
     LABL_PTR_2: esa_step
+    VALIDMAX: *max_uint24
 
 lo-ialirt-mg:
     <<: *counters
@@ -1366,6 +1373,7 @@ lo-ialirt-mg:
     FIELDNAM: SW - Mg
     LABL_PTR_1: spin_sector
     LABL_PTR_2: esa_step
+    VALIDMAX: *max_uint24
 
 lo-ialirt-fe_loq:
     <<: *counters
@@ -1373,6 +1381,7 @@ lo-ialirt-fe_loq:
     FIELDNAM: SW - Fe lowQ
     LABL_PTR_1: spin_sector
     LABL_PTR_2: esa_step
+    VALIDMAX: *max_uint24
 
 lo-ialirt-fe_hiq:
     <<: *counters
@@ -1380,6 +1389,7 @@ lo-ialirt-fe_hiq:
     FIELDNAM: SW - Fe highQ
     LABL_PTR_1: spin_sector
     LABL_PTR_2: esa_step
+    VALIDMAX: *max_uint24
 
 # <=== Direct Events Attributes ===>
 P0_APD_ID:
