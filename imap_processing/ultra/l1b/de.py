@@ -34,7 +34,9 @@ FILLVAL_UINT8 = 255
 FILLVAL_FLOAT32 = -1.0e31
 
 
-def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
+def calculate_de(
+    de_dataset: xr.Dataset, name: str, ancillary_files: dict
+) -> xr.Dataset:
     """
     Create dataset with defined datatypes for Direct Event Data.
 
@@ -44,6 +46,8 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
         L1a dataset containing direct event data.
     name : str
         Name of the l1a dataset.
+    ancillary_files : dict
+        Calibration product configuration file.
 
     Returns
     -------
@@ -259,9 +263,7 @@ def calculate_de(de_dataset: xr.Dataset, name: str) -> xr.Dataset:
         de_dict["theta"],
     )
     de_dict["event_efficiency"] = get_efficiency(
-        de_dict["tof_energy"],
-        de_dict["phi"],
-        de_dict["theta"],
+        de_dict["tof_energy"], de_dict["phi"], de_dict["theta"], ancillary_files
     )
 
     dataset = create_dataset(de_dict, name, "l1b")

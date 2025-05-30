@@ -8,7 +8,7 @@ from imap_processing.ultra.l1b.de import calculate_de
 from imap_processing.ultra.l1b.extendedspin import calculate_extendedspin
 
 
-def ultra_l1b(data_dict: dict) -> list[xr.Dataset]:
+def ultra_l1b(data_dict: dict, ancillary_files: dict) -> list[xr.Dataset]:
     """
     Will process ULTRA L1A data into L1B CDF files at output_filepath.
 
@@ -16,6 +16,8 @@ def ultra_l1b(data_dict: dict) -> list[xr.Dataset]:
     ----------
     data_dict : dict
         The data itself and its dependent data.
+    ancillary_files : dict
+        Calibration product configuration file.
 
     Returns
     -------
@@ -38,6 +40,7 @@ def ultra_l1b(data_dict: dict) -> list[xr.Dataset]:
             de_dataset = calculate_de(
                 data_dict[f"imap_ultra_l1a_{instrument_id}sensor-de"],
                 f"imap_ultra_l1b_{instrument_id}sensor-de",
+                ancillary_files,
             )
             output_datasets.append(de_dataset)
         # L1b extended data will be created if L1a hk, rates,
