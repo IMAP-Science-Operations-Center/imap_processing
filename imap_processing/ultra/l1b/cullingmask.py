@@ -44,11 +44,25 @@ def calculate_cullingmask(extendedspin_dataset: xr.Dataset, name: str) -> xr.Dat
             == 0
         ).all(dim="energy_bin_geometric_mean")
     )
+    extendedspin_dataset = extendedspin_dataset.assign_coords(
+        epoch=("spin_number", extendedspin_dataset["epoch"].values)
+    )
     filtered_dataset = extendedspin_dataset.sel(
         spin_number=extendedspin_dataset["spin_number"][good_mask]
     )
 
-    cullingmask_dataset = create_dataset(filtered_dataset, name, "l1b")
+    data_dict = {
+        var: filtered_dataset[var].values for var in filtered_dataset.data_vars
+    }
+    data_dict.update(
+        {
+            coord: filtered_dataset.coords[coord].values
+            for coord in filtered_dataset.coords
+            if coord in ("spin_number", "energy_bin_geometric_mean", "epoch")
+        }
+    )
+
+    cullingmask_dataset = create_dataset(data_dict, name, "l1b")
 
     if cullingmask_dataset["spin_number"].size == 0:
         cullingmask_dataset = cullingmask_dataset.drop_dims("spin_number")

@@ -6,7 +6,7 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 
 
-def create_dataset(
+def create_dataset(  # noqa: PLR0912
     data_dict: dict,
     name: str,
     level: str,
@@ -35,9 +35,11 @@ def create_dataset(
     # L1b extended spin, badtimes, and cullingmask data products
     if "spin_number" in data_dict.keys():
         coords = {
-            "spin_number": data_dict["spin_number"],
-            "energy_bin_geometric_mean": data_dict["energy_bin_geometric_mean"],
-            # Start time aligns with the universal spin table
+            "spin_number": ("spin_number", data_dict["spin_number"]),
+            "energy_bin_geometric_mean": (
+                "energy_bin_geometric_mean",
+                data_dict["energy_bin_geometric_mean"],
+            ),
             "epoch": ("spin_number", np.asarray(data_dict["epoch"])),
         }
         default_dimension = "spin_number"
@@ -108,6 +110,12 @@ def create_dataset(
             dataset[key] = xr.DataArray(
                 data,
                 dims=["energy_bin_geometric_mean", "spin_number"],
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
+            )
+        elif key in ["spin_start_time", "spin_period", "spin_rate", "quality_attitude"]:
+            dataset[key] = xr.DataArray(
+                data,
+                dims=["spin_number"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         elif key in {"counts", "background_rates"}:
