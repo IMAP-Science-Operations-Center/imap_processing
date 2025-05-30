@@ -246,7 +246,7 @@ class TestLoPointingSet:
             spacing_deg=6, spice_frame=geometry.SpiceFrame.ECLIPJ2000
         )
         rect_map.project_pset_values_to_map(lo_pset, ["h_counts", "exposure_time"])
-        assert rect_map.data_1d["counts"].max() > 0
+        assert rect_map.data_1d["h_counts"].max() > 0
 
 
 class TestRectangularSkyMap:

@@ -54,6 +54,10 @@ def lo_l2(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         lo_rect_map_ds.h_flux.attrs.update(
             attr_mgr.get_variable_attributes("ena_intensity")
         )
+        lo_rect_map_ds.h_rate.attrs.update(attr_mgr.get_variable_attributes("ena_rate"))
+        lo_rect_map_ds.h_counts.attrs.update(
+            attr_mgr.get_variable_attributes("ena_count")
+        )
         lo_rect_map_ds.longitude.attrs.update(
             attr_mgr.get_variable_attributes("longitude")
         )

@@ -160,6 +160,28 @@ ena_intensity_sys_err:
   LABLAXIS: Non-Statistical Err
   DISPLAY_TYPE: image
 
+ena_rate:
+  <<: *default_float32
+  CATDESC: Mono-energetic ENA Rate.
+  FIELDNAM: Rate
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Rate
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+ena_count:
+  <<: *default_float32
+  CATDESC: Mono-energetic ENA Count.
+  FIELDNAM: Count
+  UNITS: counts
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Count
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
 sensitivity:
   <<: *default_float32
   CATDESC: Calibration/sensitivity factor calculated from multiple pointing sets.
