@@ -30,6 +30,7 @@ def lo_l2(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs(instrument="lo")
     attr_mgr.add_instrument_variable_attrs(instrument="enamaps", level="l2-common")
+    attr_mgr.add_instrument_variable_attrs(instrument="enamaps", level="l2-rectangular")
 
     # if the dependencies are used to create Annotated Direct Events
     if "imap_lo_l1c_pset" in sci_dependencies:
@@ -51,6 +52,12 @@ def lo_l2(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         # Add the attributes to the dataset.
         # TODO: Temp quick fix for SIT-4. Pull into function and test after SIT-4.
         lo_rect_map_ds.attrs.update(attr_mgr.get_global_attributes(logical_source))
+
+        # TODO: Lo is using different field names than what's in the attributes.
+        #  check if the Lo should use exposure factor instead of exposure time.
+        #  check if hydrogen and oxygen specific ena intensities should be added
+        #  to the attributes or if general ena intensities can be used or updated
+        #  in the code.
         lo_rect_map_ds.h_flux.attrs.update(
             attr_mgr.get_variable_attributes("ena_intensity")
         )
@@ -58,19 +65,9 @@ def lo_l2(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         lo_rect_map_ds.h_counts.attrs.update(
             attr_mgr.get_variable_attributes("ena_count")
         )
-        lo_rect_map_ds.longitude.attrs.update(
-            attr_mgr.get_variable_attributes("longitude")
-        )
-        lo_rect_map_ds.latitude.attrs.update(
-            attr_mgr.get_variable_attributes("latitude")
-        )
-        lo_rect_map_ds.solid_angle.attrs.update(
-            attr_mgr.get_variable_attributes("solid_angle")
-        )
         lo_rect_map_ds.exposure_time.attrs.update(
             attr_mgr.get_variable_attributes("exposure_factor")
         )
-        lo_rect_map_ds.energy.attrs.update(attr_mgr.get_variable_attributes("energy"))
 
     return [lo_rect_map_ds]
 

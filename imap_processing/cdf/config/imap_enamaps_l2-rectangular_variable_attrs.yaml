@@ -79,6 +79,22 @@ ena_intensity_sys_err:
   LABL_PTR_2: longitude_label
   LABL_PTR_3: latitude_label
 
+ena_rate:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+ena_count:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
 sensitivity:
   DEPEND_1: energy
   DEPEND_2: longitude
