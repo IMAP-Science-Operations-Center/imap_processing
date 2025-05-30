@@ -100,10 +100,16 @@ def create_dataset(  # noqa: PLR0912
                 dims=["epoch", "component"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
-        elif key in ("ena_rates_threshold", "energy_bin_delta"):
+        elif key in ("ena_rates_threshold"):
             dataset[key] = xr.DataArray(
                 data,
                 dims=["energy_bin_geometric_mean"],
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
+            )
+        elif key == "energy_bin_delta":
+            dataset[key] = xr.DataArray(
+                data,
+                dims=["energy_bin_geometric_mean", "epoch"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         elif key in rates_keys:
@@ -112,16 +118,16 @@ def create_dataset(  # noqa: PLR0912
                 dims=["energy_bin_geometric_mean", "spin_number"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
-        elif key in ["spin_start_time", "spin_period", "spin_rate", "quality_attitude"]:
+        elif key in {"latitude", "longitude", "exposure_factor"}:
             dataset[key] = xr.DataArray(
                 data,
-                dims=["spin_number"],
+                dims=["pixel_index", "epoch"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         elif key in {"counts", "background_rates", "sensitivity"}:
             dataset[key] = xr.DataArray(
                 data,
-                dims=["energy_bin_geometric_mean", "pixel_index"],
+                dims=["energy_bin_geometric_mean", "pixel_index", "epoch"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         else:
