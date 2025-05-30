@@ -955,7 +955,7 @@ def get_efficiency(
     theta_inst : NDArray
         Instrument-frame elevation angle for each event.
     ancillary_files : dict
-        Dictionary containing paths to ancillary files.
+        Ancillary files.
 
     Returns
     -------

@@ -17,7 +17,7 @@ def ultra_l1b(data_dict: dict, ancillary_files: dict) -> list[xr.Dataset]:
     data_dict : dict
         The data itself and its dependent data.
     ancillary_files : dict
-        Calibration product configuration file.
+        Ancillary files.
 
     Returns
     -------

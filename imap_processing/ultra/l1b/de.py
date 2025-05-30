@@ -47,7 +47,7 @@ def calculate_de(
     name : str
         Name of the l1a dataset.
     ancillary_files : dict
-        Calibration product configuration file.
+        Ancillary files.
 
     Returns
     -------

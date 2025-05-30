@@ -1340,14 +1340,24 @@ class Ultra(ProcessInstrument):
                 science_files = dependencies.get_file_paths(
                     source="ultra", descriptor=input_type.descriptor
                 )
-                if science_files:
+                if science_files and input_type.data_type != "ancillary":
                     dataset = load_cdf(science_files[0])
                     data_dict[dataset.attrs["Logical_source"]] = dataset
-            datasets = ultra_l1b.ultra_l1b(data_dict)
-        elif self.data_level == "l1c":
-            science_paths = dependencies.get_file_paths(source="ultra", data_type="l1b")
             anc_paths = dependencies.get_file_paths(data_type="ancillary")
-            datasets = ultra_l1c.ultra_l1c(load_cdf(science_paths[0]), anc_paths[0])
+            ancillary_files = {f.name: f for f in anc_paths}
+            datasets = ultra_l1b.ultra_l1b(data_dict, ancillary_files)
+        elif self.data_level == "l1c":
+            data_dict = {}
+            for input_type in dependencies.processing_input:
+                science_files = dependencies.get_file_paths(
+                    source="ultra", descriptor=input_type.descriptor
+                )
+                if science_files and input_type.data_type != "ancillary":
+                    dataset = load_cdf(science_files[0])
+                    data_dict[dataset.attrs["Logical_source"]] = dataset
+            anc_paths = dependencies.get_file_paths(data_type="ancillary")
+            ancillary_files = {f.name: f for f in anc_paths}
+            datasets = ultra_l1c.ultra_l1c(data_dict, ancillary_files)
 
         elif self.data_level == "l2":
             all_pset_filepaths = dependencies.get_file_paths(

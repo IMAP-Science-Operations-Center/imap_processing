@@ -216,7 +216,7 @@ def get_energy_efficiencies(ancillary_files: dict) -> pd.DataFrame:
     Parameters
     ----------
     ancillary_files : dict[Path]
-        Calibration product configuration file.
+        Ancillary files.
 
     Returns
     -------

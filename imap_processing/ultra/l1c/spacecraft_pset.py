@@ -22,6 +22,7 @@ def calculate_spacecraft_pset(
     extendedspin_dataset: xr.Dataset,
     cullingmask_dataset: xr.Dataset,
     name: str,
+    ancillary_files: dict,
 ) -> xr.Dataset:
     """
     Create dictionary with defined datatype for Pointing Set Grid Data.
@@ -36,6 +37,8 @@ def calculate_spacecraft_pset(
         Dataset containing cullingmask data.
     name : str
         Name of the dataset.
+    ancillary_files : dict
+        Ancillary files.
 
     Returns
     -------
@@ -64,7 +67,9 @@ def calculate_spacecraft_pset(
     # TODO: calculate sensitivity and interpolate based on energy.
 
     # Calculate exposure
-    constant_exposure = TEST_PATH / "ultra_90_dps_exposure.csv"
+    constant_exposure = ancillary_files[
+        "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv"
+    ]
     df_exposure = pd.read_csv(constant_exposure)
     exposure_pointing = get_spacecraft_exposure_times(df_exposure)
 
