@@ -619,15 +619,21 @@ class HiPointingSet(PointingSet):
         )
         self.spatial_coords = ("spin_angle_bin",)
 
+
 class LoPointingSet(PointingSet):
     """
-    # TODO: Document
-    # TODO: Use spatial_utils.az_el_grid instead of manually creating the lon/lat values
+    PointingSet object specific to Lo L1C PSet data.
 
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        Lo L1C pointing set data loaded in an xarray.DataArray.
     """
+
     def __init__(self, dataset: xr.Dataset):
         super().__init__(dataset, spice_reference_frame=geometry.SpiceFrame.IMAP_DPS)
-
+        # TODO: Use spatial_utils.az_el_grid instead of
+        #  manually creating the lon/lat values
         inferred_spacing_deg = 360 / dataset.longitude.size
         longitude_bin_centers = np.arange(
             0 + inferred_spacing_deg / 2, 360, inferred_spacing_deg
