@@ -118,7 +118,7 @@ def create_dataset(  # noqa: PLR0912
                 dims=["spin_number"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
-        elif key in {"counts", "background_rates"}:
+        elif key in {"counts", "background_rates", "sensitivity"}:
             dataset[key] = xr.DataArray(
                 data,
                 dims=["energy_bin_geometric_mean", "pixel_index"],

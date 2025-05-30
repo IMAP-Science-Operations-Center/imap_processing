@@ -48,7 +48,7 @@ exposure_factor:
   UNITS: seconds
 
 sensitivity:
-  <<: *default
+  <<: *default_float32
   CATDESC: Calibration/sensitivity factor.
   FIELDNAM: sensitivity
   LABLAXIS: sensitivity

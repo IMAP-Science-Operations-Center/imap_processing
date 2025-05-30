@@ -19,6 +19,7 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     get_spacecraft_histogram,
     get_spacecraft_sensitivity,
     grid_sensitivity,
+    interpolate_sensitivity,
 )
 
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
@@ -243,9 +244,12 @@ def test_get_spacecraft_sensitivity():
 
     assert np.allclose(result, expected_result, atol=1e-5)
 
-    # Check that out-of-bounds energy returns all NaNs
+    # Check that out-of-bounds energy returns all FILL values
     result = grid_sensitivity(df_efficiencies, df_geometric_function, 2.5)
-    assert np.isnan(result).all()
+    assert np.all(result == -1.0e31)
+
+    result = interpolate_sensitivity(df_efficiencies, df_geometric_function)
+    assert result.shape == (24, 196608)
 
 
 @pytest.mark.external_test_data

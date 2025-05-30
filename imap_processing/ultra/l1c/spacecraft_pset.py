@@ -4,17 +4,14 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     get_spacecraft_background_rates,
     get_spacecraft_exposure_times,
     get_spacecraft_histogram,
+    interpolate_sensitivity,
 )
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
-
-# TODO: This is a placeholder for the API lookup table directory.
-TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
 def calculate_spacecraft_pset(
@@ -64,7 +61,14 @@ def calculate_spacecraft_pset(
     # calculate background rates
     background_rates = get_spacecraft_background_rates()
 
-    # TODO: calculate sensitivity and interpolate based on energy.
+    efficiencies = ancillary_files[
+        "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv"
+    ]
+    geometric_function = ancillary_files["imap_ultra_l1c-90sensor-gf_20250101_v000.csv"]
+
+    df_efficiencies = pd.read_csv(efficiencies)
+    df_geometric_function = pd.read_csv(geometric_function)
+    sensitivity = interpolate_sensitivity(df_efficiencies, df_geometric_function)
 
     # Calculate exposure
     constant_exposure = ancillary_files[
@@ -83,6 +87,7 @@ def calculate_spacecraft_pset(
     pset_dict["exposure_factor"] = exposure_pointing
     pset_dict["pixel_index"] = healpix
     pset_dict["energy_bin_delta"] = np.diff(intervals, axis=1).squeeze()
+    pset_dict["sensitivity"] = sensitivity
 
     dataset = create_dataset(pset_dict, name, "l1c")
 
