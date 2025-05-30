@@ -13,6 +13,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils import spatial_utils
@@ -208,7 +209,9 @@ def lo_pset_ds():
         name="energy",
     )
 
-    print("DATASET", dataset)
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs(instrument="lo")
+    dataset.attrs = attr_mgr.get_global_attributes("imap_lo_l1c_pset")
 
     return dataset
 
@@ -218,7 +221,8 @@ def lo_pset_cdf_path(imap_tests_path):
     return imap_tests_path / "hi/data/l1/imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
 
 
-@pytest.mark.external_test_data
+@pytest.mark.external_kernel
+@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 class TestLoPointingSet:
     """Test suite for LoPointingSet class."""
 
@@ -233,12 +237,7 @@ class TestLoPointingSet:
         for var_name in ["exposure_time", "h_counts"]:
             assert var_name in lo_pset.data
 
-    # TODO: write cdf test when CDF with dim names is available
-    def test_from_cdf(self, lo_pset_ds):
-        """Test coverage for from_cdf method."""
-        lo_pset_cdf_path = write_cdf(lo_pset_ds, istp=False)
-        lo_pset = ena_maps.HiPointingSet(lo_pset_cdf_path)
-        assert isinstance(lo_pset, ena_maps.HiPointingSet)
+    # TODO: write cdf test when CDF is available to download for test
 
     def test_plays_nice_with_rectangular_sky_map(self, lo_pset_ds):
         """Test that LoPointingSet works with RectangularSkyMap"""
