@@ -36,10 +36,23 @@ def calculate_badtimes(
     culled_spins = np.setdiff1d(
         extendedspin_dataset["spin_number"].values, cullingmask_spins
     )
-
+    extendedspin_dataset = extendedspin_dataset.assign_coords(
+        epoch=("spin_number", extendedspin_dataset["epoch"].values)
+    )
     filtered_dataset = extendedspin_dataset.sel(spin_number=culled_spins)
 
-    badtimes_dataset = create_dataset(filtered_dataset, name, "l1b")
+    data_dict = {
+        var: filtered_dataset[var].values for var in filtered_dataset.data_vars
+    }
+    data_dict.update(
+        {
+            coord: filtered_dataset.coords[coord].values
+            for coord in filtered_dataset.coords
+            if coord in ("spin_number", "energy_bin_geometric_mean", "epoch")
+        }
+    )
+
+    badtimes_dataset = create_dataset(data_dict, name, "l1b")
 
     if badtimes_dataset["spin_number"].size == 0:
         badtimes_dataset = badtimes_dataset.drop_dims("spin_number")
