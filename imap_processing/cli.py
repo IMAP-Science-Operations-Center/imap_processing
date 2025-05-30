@@ -1069,11 +1069,11 @@ class Mag(ProcessInstrument):
             input_data = load_cdf(science_files[0])
 
             # We expect either a norm or a burst input descriptor.
-            offsets_desc = f"l2-offsets-{self.descriptor}"
+            offsets_desc = f"l2-{self.descriptor}-offsets"
             offsets = dependencies.get_processing_inputs(descriptor=offsets_desc)
 
             calibration = dependencies.get_processing_inputs(
-                descriptor="l2-calibration-matrices"
+                descriptor="l2-calibration"
             )
 
             if (

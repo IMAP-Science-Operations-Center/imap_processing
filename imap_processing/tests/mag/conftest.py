@@ -95,7 +95,7 @@ def mag_test_l2_data(mocks):
         imap_dir
         / "validation"
         / "calibration"
-        / "imap_mag_l2-calibration-matrices_20251017_v004.cdf"
+        / "imap_mag_l2-calibration_20251017_v004.cdf"
     )
     mocks["construct_path"].return_value = cal_path
     calibration_data = MagAncillaryCombiner([cal_path], "20251017").combined_dataset
@@ -104,7 +104,7 @@ def mag_test_l2_data(mocks):
         imap_dir
         / "validation"
         / "calibration"
-        / "imap_mag_l2-offsets-norm_20251017_20251017_v001.cdf"
+        / "imap_mag_l2-norm-offsets_20251017_20251017_v001.cdf"
     )
 
     return calibration_data, offsets_data

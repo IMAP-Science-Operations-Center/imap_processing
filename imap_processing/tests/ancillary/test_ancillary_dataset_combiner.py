@@ -35,7 +35,7 @@ def mag_calibration_dataset():
         / "mag"
         / "validation"
         / "calibration"
-        / "imap_mag_l2-calibration-matrices_20251017_v004.cdf"
+        / "imap_mag_l2-calibration_20251017_v004.cdf"
     )
     calibration_data = load_cdf(cal_file)
 
