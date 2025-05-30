@@ -1119,9 +1119,9 @@ class RectangularSkyMap(AbstractSkyMap):
             )
         # Add the solid angle variable to the data_1d Dataset
         self.data_1d["solid_angle"] = xr.DataArray(
-            self.solid_angle_points,
+            self.solid_angle_points[np.newaxis, :],
             name="solid_angle",
-            dims=[CoordNames.GENERIC_PIXEL.value],
+            dims=[CoordNames.TIME.value, CoordNames.GENERIC_PIXEL.value],
         )
         # Rewrap each data array in the data_1d to the original 2D grid shape
         rewrapped_data = {}
@@ -1275,8 +1275,14 @@ class RectangularSkyMap(AbstractSkyMap):
         # Set the variable attributes
         for var in [*cdf_ds.data_vars, *cdf_ds.coords]:
             try:
+                # Don't check schema on label or delta variables
+                ignore_schema_substrings = ["_label", "_delta"]
+                check_schema = (
+                    False if any(s in var for s in ignore_schema_substrings) else True
+                )
                 var_attrs = cdf_attrs.get_variable_attributes(
                     variable_name=var,
+                    check_schema=check_schema,
                 )
             except KeyError as e:
                 raise KeyError(

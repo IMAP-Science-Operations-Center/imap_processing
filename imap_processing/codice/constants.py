@@ -226,6 +226,27 @@ HI_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
 # and deltas of the bins, which then get stored in the CDF files for future use.
 # These are defined in the "Data Products - Hi" tab of the "*-SCI-LUT-*.xml"
 # spreadsheet that largely defines CoDICE processing.
+IALIRT_ENERGY_TABLE = {
+    "h": [
+        0.05,
+        0.070710678,
+        0.1,
+        0.141421356,
+        0.2,
+        0.282842712,
+        0.4,
+        0.565685425,
+        0.8,
+        1.13137085,
+        1.6,
+        2.2627417,
+        3.2,
+        4.5254834,
+        6.4,
+        9.050966799,
+    ],
+}
+
 OMNI_ENERGY_TABLE = {
     "h": [
         0.05,
@@ -381,7 +402,7 @@ SECTORED_ENERGY_TABLE = {
 DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     CODICEAPID.COD_HI_IAL: {
         "dataset_name": "imap_codice_l1a_hi-ialirt",
-        "energy_table": OMNI_ENERGY_TABLE,
+        "energy_table": IALIRT_ENERGY_TABLE,
         "input_dims": {"esa_step": 15, "inst_az": 4},
         "instrument": "hi",
         "num_counters": 1,

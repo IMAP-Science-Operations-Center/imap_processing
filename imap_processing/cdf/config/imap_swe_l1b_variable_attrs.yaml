@@ -300,3 +300,25 @@ cksum:
   FIELDNAM: Checksum
   FORMAT: I5
   VALIDMAX: 65535
+
+# <=== HK Variables ===>
+# L1B HK data attrs for data with string values
+l1b_hk_string_attrs:
+  CATDESC: Housekeeping derived data
+  FIELDNAM: Housekeeing Human Readable State
+  FORMAT: A80
+  VAR_TYPE: metadata
+  DEPEND_0: epoch
+
+l1b_hk_attrs:
+  CATDESC: SWE HK data
+  FIELDNAM: SWE Housekeeping Data
+  LABLAXIS: Values
+  DEPEND_0: epoch
+  FILLVAL: -9223372036854775808
+  FORMAT: I19
+  UNITS: ' '
+  VALIDMIN: 0
+  VALIDMAX: 9223372036854769664
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: time_series

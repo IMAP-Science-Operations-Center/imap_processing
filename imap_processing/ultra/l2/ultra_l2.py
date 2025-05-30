@@ -77,6 +77,8 @@ VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION = [
     "pointing_set_exposure_times_solid_angle",
     "num_pointing_set_pixel_members",
     "corrected_count_rate",
+    "obs_date_for_std",
+    "obs_date_squared_for_std",
 ]
 
 # These variables may or may not be energy dependent, depending on the
@@ -118,10 +120,10 @@ def get_variable_attributes_optional_energy_dependence(
     # These variables must get metadata with a different key if they are energy
     # dependent.
     if (variable_name in INCONSISTENTLY_ENERGY_DEPENDENT_VARIABLES) and (
-        (CoordNames.ENERGY_L2.value in variable_dims)
-        or (CoordNames.ENERGY_ULTRA_L1C.value in variable_dims)
+        (CoordNames.ENERGY_L2.value not in variable_dims)
+        and (CoordNames.ENERGY_ULTRA_L1C.value not in variable_dims)
     ):
-        variable_name = f"{variable_name}_energy_dependent"
+        variable_name = f"{variable_name}_energy_independent"
 
     metadata = cdf_attrs.get_variable_attributes(
         variable_name=variable_name,
@@ -200,6 +202,8 @@ def generate_ultra_healpix_skymap(
     output_map_structure.values_to_push_project.extend(
         [
             "num_pointing_set_pixel_members",
+            "obs_date_for_std",
+            "obs_date_squared_for_std",
         ]
     )
     output_map_structure.values_to_pull_project.extend(
@@ -254,6 +258,13 @@ def generate_ultra_healpix_skymap(
             fill_value=pointing_set.epoch,
             dtype=np.int64,
         )
+        pointing_set.data["obs_date_for_std"] = pointing_set.data["obs_date"].astype(
+            np.float64
+        )
+        pointing_set.data["obs_date_squared_for_std"] = (
+            pointing_set.data["obs_date_for_std"] ** 2
+        )
+
         # Add solid_angle * exposure of pointing set as data_var
         # so this quantity is projected to map pixels for use in weighted averaging
         pointing_set.data["pointing_set_exposure_times_solid_angle"] = (
@@ -316,6 +327,27 @@ def generate_ultra_healpix_skymap(
             * skymap.solid_angle
             * delta_energy
         )
+
+        # Calculate the standard deviation of the observation date as:
+        # sqrt((sum(obs_date^2) / N) - (sum(obs_date) / N)^2)
+        # where sum here refers to the projection process
+        # summing over N pset pixels across different psets
+        skymap.data_1d["obs_date_range"] = (
+            (
+                (
+                    skymap.data_1d["obs_date_squared_for_std"]
+                    / (skymap.data_1d["num_pointing_set_pixel_members"])
+                )
+                - (
+                    (
+                        skymap.data_1d["obs_date_for_std"]
+                        / (skymap.data_1d["num_pointing_set_pixel_members"])
+                    )
+                    ** 2
+                )
+            )
+            ** 0.5
+        ).astype(np.int64)
 
     # Drop the variables that are no longer needed
     skymap.data_1d = skymap.data_1d.drop_vars(
@@ -461,14 +493,6 @@ def ultra_l2(
                 )
 
         map_dataset = rectangular_skymap.to_dataset()
-
-        # Reshape the solid_angle to have an epoch dimension at the start
-        map_dataset["solid_angle"] = map_dataset["solid_angle"].expand_dims(
-            {
-                CoordNames.TIME.value: 1,
-            },
-            axis=0,
-        )
 
         # Add longitude_delta, latitude_delta to the map dataset
         map_dataset["longitude_delta"] = rectangular_skymap.spacing_deg / 2

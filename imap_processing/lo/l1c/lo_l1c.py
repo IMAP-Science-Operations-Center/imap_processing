@@ -67,6 +67,19 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         pset["exposure_time"] = calculate_exposure_times(
             full_counts, l1b_goodtimes_only
         )
+    pset.attrs = attr_mgr.get_global_attributes(logical_source)
+    # TODO: Temp fix before adding attribute variables.
+    #  CDF won't open if DEPEND_0 is not deleted currently.
+    del pset["epoch"].attrs["DEPEND_0"]
+
+    pset = pset.assign_coords(
+        {
+            "energy": np.arange(1, 8),
+            "longitude": np.arange(3600),
+            "latitude": np.arange(40),
+        }
+    )
+
     return [pset]
 
 
@@ -127,12 +140,8 @@ def filter_goodtimes(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
     l1b_de : xarray.Dataset
         Filtered L1B Direct Event dataset.
     """
-    # Get the sweep table from the ancillary dependencies
-    goodtimes_table = next(
-        (item for item in anc_dependencies if "goodtimes" in item), None
-    )
-    # sweep table is a dependency so this should always be in the list
-    goodtimes_table_df = pd.read_csv(goodtimes_table)
+    # the goodtimes are currently the only ancillary file needed for L1C processing
+    goodtimes_table_df = pd.read_csv(anc_dependencies[0])
 
     # convert goodtimes from MET to TTJ2000
     goodtimes_start = met_to_ttj2000ns(goodtimes_table_df["GoodTime_strt"])
@@ -220,9 +229,9 @@ def create_pset_counts(
     # stack the filtered data into the 3D array
     data = np.column_stack(
         (
+            de_filtered["esa_step"],
             de_filtered["pointing_bin_lon"],
             de_filtered["pointing_bin_lat"],
-            de_filtered["esa_step"],
         )
     )
     # Create the histogram with 3600 longitude bins, 40 latitude bins, and 7 energy bins
@@ -232,7 +241,7 @@ def create_pset_counts(
 
     hist, edges = np.histogramdd(
         data,
-        bins=[lon_edges, lat_edges, energy_edges],
+        bins=[energy_edges, lon_edges, lat_edges],
     )
 
     # add a new axis of size 1 for the epoch
@@ -240,7 +249,7 @@ def create_pset_counts(
 
     counts = xr.DataArray(
         data=hist.astype(np.int16),
-        dims=["epoch", "lon_bins", "lat_bins", "energy_bins"],
+        dims=["epoch", "energy", "longitude", "latitude"],
     )
 
     return counts
@@ -272,7 +281,7 @@ def calculate_exposure_times(counts: xr.DataArray, l1b_de: xr.Dataset) -> xr.Dat
     energy_edges = np.arange(8)
 
     data = np.column_stack(
-        (l1b_de["pointing_bin_lon"], l1b_de["pointing_bin_lat"], l1b_de["esa_step"])
+        (l1b_de["esa_step"], l1b_de["pointing_bin_lon"], l1b_de["pointing_bin_lat"])
     )
 
     result = binned_statistic_dd(
@@ -280,14 +289,14 @@ def calculate_exposure_times(counts: xr.DataArray, l1b_de: xr.Dataset) -> xr.Dat
         # exposure time equation from Lo Alg Document 10.1.1.4
         4 * l1b_de["avg_spin_durations"].to_numpy() / 3600,
         statistic="mean",
-        bins=[lon_edges, lat_edges, energy_edges],
+        bins=[energy_edges, lon_edges, lat_edges],
     )
 
     stat = result.statistic[np.newaxis, :, :, :]
 
     exposure_time = xr.DataArray(
         data=stat.astype(np.float16),
-        dims=["epoch", "lon_bins", "lat_bins", "energy_bins"],
+        dims=["epoch", "energy", "longitude", "latitude"],
     )
 
     return exposure_time

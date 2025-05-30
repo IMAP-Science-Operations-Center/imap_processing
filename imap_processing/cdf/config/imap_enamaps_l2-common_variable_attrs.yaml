@@ -162,7 +162,7 @@ sensitivity:
   DISPLAY_TYPE: image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:GeometricFactor,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
-exposure_factor: &exposure_factor_energy_independent
+exposure_factor: &exposure_factor
   <<: *default_float32
   CATDESC: Exact or approximate time over which counts are accumulated.
   FIELDNAM: Exposure Times
@@ -173,7 +173,7 @@ exposure_factor: &exposure_factor_energy_independent
   DISPLAY_TYPE: no_plot
   DICT_KEY: SPASE>TemporalDescription:Exposure,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
-obs_date: &obs_date_energy_independent
+obs_date: &obs_date
   <<: *default_int64
   datatype: int64
   CATDESC: Exposure time weighted mean collection date of data in a pixel.
@@ -195,15 +195,16 @@ obs_date_range:
   VAR_TYPE: data
   LABLAXIS: epoch
   DISPLAY_TYPE: image
+  TIME_SCALE: Terrestrial Time
 
 # These copied metadata vars will allow for variables
 # to be either energy-dependent or independent.
 # The tiling-specific YAML files will override the DEPENDs and LABL_PTRs.
-exposure_factor_energy_dependent:
-  <<: *exposure_factor_energy_independent
+exposure_factor_energy_independent:
+  <<: *exposure_factor
 
-obs_date_energy_dependent:
-  <<: *obs_date_energy_independent
+obs_date_energy_independent:
+  <<: *obs_date
 
 solid_angle:
   <<: *default_float32

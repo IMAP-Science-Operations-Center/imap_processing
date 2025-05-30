@@ -10,6 +10,7 @@ import pandas as pd
 import xarray as xr
 from imap_data_access.processing_input import ProcessingInputCollection
 
+from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.spice.time import met_to_ttj2000ns
@@ -20,7 +21,7 @@ from imap_processing.swe.utils.swe_utils import (
     combine_acquisition_time,
     read_lookup_table,
 )
-from imap_processing.utils import convert_raw_to_eu
+from imap_processing.utils import convert_raw_to_eu, packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
 
@@ -628,7 +629,7 @@ def filter_full_cycle_data(
     return l1a_data
 
 
-def swe_l1b(dependencies: ProcessingInputCollection) -> xr.Dataset:
+def swe_l1b_science(dependencies: ProcessingInputCollection) -> xr.Dataset:
     """
     SWE l1b science processing.
 
@@ -641,7 +642,7 @@ def swe_l1b(dependencies: ProcessingInputCollection) -> xr.Dataset:
     Returns
     -------
     dataset : xarray.Dataset
-        Processed l1b data.
+        Processed l1b science data.
     """
     # Read science data
     science_files = dependencies.get_file_paths(descriptor="sci")
@@ -872,8 +873,8 @@ def swe_l1b(dependencies: ProcessingInputCollection) -> xr.Dataset:
     #   4 rows --> metadata for each full cycle. Each element of 4 maps to
     #              metadata of one quarter cycle.
 
-    # Create the dataset
-    dataset = xr.Dataset(
+    # Create the science dataset
+    science_dataset = xr.Dataset(
         coords={
             "epoch": epoch_time,
             "esa_step": esa_step,
@@ -888,23 +889,23 @@ def swe_l1b(dependencies: ProcessingInputCollection) -> xr.Dataset:
         attrs=cdf_attrs.get_global_attributes("imap_swe_l1b_sci"),
     )
 
-    dataset["science_data"] = xr.DataArray(
+    science_dataset["science_data"] = xr.DataArray(
         count_rate,
         dims=["epoch", "esa_step", "spin_sector", "cem_id"],
         attrs=cdf_attrs.get_variable_attributes("science_data"),
     )
-    dataset["acquisition_time"] = xr.DataArray(
+    science_dataset["acquisition_time"] = xr.DataArray(
         acq_time,
         dims=["epoch", "esa_step", "spin_sector"],
         attrs=cdf_attrs.get_variable_attributes("acquisition_time"),
     )
-    dataset["acq_duration"] = xr.DataArray(
+    science_dataset["acq_duration"] = xr.DataArray(
         acq_duration,
         dims=["epoch", "esa_step", "spin_sector"],
         attrs=cdf_attrs.get_variable_attributes("acq_duration"),
     )
 
-    dataset["esa_energy"] = xr.DataArray(
+    science_dataset["esa_energy"] = xr.DataArray(
         esa_energies,
         dims=["epoch", "esa_step", "spin_sector"],
         attrs=cdf_attrs.get_variable_attributes("esa_energy"),
@@ -915,11 +916,69 @@ def swe_l1b(dependencies: ProcessingInputCollection) -> xr.Dataset:
         if key in ["science_data", "acq_duration"]:
             continue
         varname = key.lower()
-        dataset[varname] = xr.DataArray(
+        science_dataset[varname] = xr.DataArray(
             value.data.reshape(-1, swe_constants.N_QUARTER_CYCLES),
             dims=["epoch", "cycle"],
             attrs=cdf_attrs.get_variable_attributes(varname),
         )
 
     logger.info("SWE L1b science processing completed")
-    return [dataset]
+    return science_dataset
+
+
+def swe_l1b(dependencies: ProcessingInputCollection) -> list[xr.Dataset]:
+    """
+    SWE L1B processing.
+
+    Parameters
+    ----------
+    dependencies : ProcessingInputCollection
+        Object containing lists of dependencies that CLI dependency
+        parameter received.
+
+    Returns
+    -------
+    list[xarray.Dataset]
+        List of processed datasets.
+    """
+    processed_datasets = []
+    has_science_data = dependencies.get_file_paths(descriptor="sci")
+    if has_science_data:
+        # Process science data to L1B
+        science_dataset = swe_l1b_science(dependencies)
+        processed_datasets.append(science_dataset)
+
+    # Process HK data using L0 file
+    l0_files = dependencies.get_file_paths(descriptor="raw")
+    if l0_files:
+        xtce_document = (
+            f"{imap_module_directory}/swe/packet_definitions/swe_packet_definition.xml"
+        )
+        datasets_by_apid = packet_file_to_datasets(
+            l0_files[0], xtce_document, use_derived_value=True
+        )
+        if SWEAPID.SWE_APP_HK in datasets_by_apid:
+            # Define minimal CDF attrs for the HK dataset
+            imap_attrs = ImapCdfAttributes()
+            imap_attrs.add_instrument_global_attrs("swe")
+            imap_attrs.add_instrument_variable_attrs("swe", "l1b")
+            hk_attrs = imap_attrs.get_variable_attributes("l1b_hk_attrs")
+            hk_str_attrs = imap_attrs.get_variable_attributes("l1b_hk_string_attrs")
+            epoch_attrs = imap_attrs.get_variable_attributes(
+                "epoch", check_schema=False
+            )
+
+            l1b_hk_dataset = datasets_by_apid[SWEAPID.SWE_APP_HK]
+            # Update CDF attrs
+            l1b_hk_dataset["epoch"].attrs.update(epoch_attrs)
+            l1b_hk_dataset.attrs.update(
+                imap_attrs.get_global_attributes("imap_swe_l1b_hk")
+            )
+            for hk_var in l1b_hk_dataset.data_vars:
+                if isinstance(l1b_hk_dataset[hk_var].data[0], str):
+                    l1b_hk_dataset[hk_var].attrs.update(hk_str_attrs)
+                else:
+                    l1b_hk_dataset[hk_var].attrs.update(hk_attrs)
+            processed_datasets.append(l1b_hk_dataset)
+
+    return processed_datasets

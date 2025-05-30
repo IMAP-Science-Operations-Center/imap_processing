@@ -16,11 +16,17 @@ imap_swapi_l1_sci:
   Logical_source: imap_swapi_l1_sci
   Logical_source_description: IMAP SWAPI Instrument Level-1 Science Data
 
-imap_swapi_l1_hk:
+imap_swapi_l1a_hk:
   <<: *instrument_base
-  Data_type: L1_HK>Level-1B Housekeeping data
-  Logical_source: imap_swapi_l1_hk
-  Logical_source_description: IMAP SWAPI Instrument Level-1 Housekeeping Data
+  Data_type: L1A_HK>Level-1A Housekeeping data
+  Logical_source: imap_swapi_l1a_hk
+  Logical_source_description: IMAP SWAPI Instrument Level-1A Housekeeping Data
+
+imap_swapi_l1b_hk:
+  <<: *instrument_base
+  Data_type: L1B_HK>Level-1B Housekeeping data
+  Logical_source: imap_swapi_l1b_hk
+  Logical_source_description: IMAP SWAPI Instrument Level-1B Housekeeping Data
 
 imap_swapi_l2_sci:
   <<: *instrument_base

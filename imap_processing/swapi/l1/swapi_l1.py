@@ -748,29 +748,47 @@ def swapi_l1(dependencies: ProcessingInputCollection) -> xr.Dataset:
             raise ValueError(
                 f"SWAPI SCI processing expected one L0 HK file. Found {len(hk_files)}."
             )
-        l1_hk_ds = load_cdf(hk_files[0])
+        l1b_hk_ds = load_cdf(hk_files[0])
         sci_dataset = process_swapi_science(
-            l0_unpacked_dict[SWAPIAPID.SWP_SCI], l1_hk_ds
+            l0_unpacked_dict[SWAPIAPID.SWP_SCI], l1b_hk_ds
         )
         return [sci_dataset]
 
     elif l0_unpacked_dict[SWAPIAPID.SWP_HK]:
         logger.info(f"Processing HK data for {l0_files[0]}.")
-        hk_ds = l0_unpacked_dict[SWAPIAPID.SWP_HK]
-        # Add HK datalevel attrs
+        # Get L1A and L1B HK data.
+        l1a_hk_data = l0_unpacked_dict[SWAPIAPID.SWP_HK]
+        l1b_hk_data = packet_file_to_datasets(
+            l0_files[0], xtce_definition, use_derived_value=True
+        )[SWAPIAPID.SWP_HK]
+
+        # Add HK attrs to both L1A and L1B HK data
         imap_attrs = ImapCdfAttributes()
         imap_attrs.add_instrument_global_attrs("swapi")
         imap_attrs.add_instrument_variable_attrs(instrument="swapi", level=None)
-        hk_ds.attrs.update(imap_attrs.get_global_attributes("imap_swapi_l1_hk"))
+
+        l1a_hk_data.attrs.update(imap_attrs.get_global_attributes("imap_swapi_l1a_hk"))
+        l1b_hk_data.attrs.update(imap_attrs.get_global_attributes("imap_swapi_l1b_hk"))
         hk_common_attrs = imap_attrs.get_variable_attributes("hk_attrs")
-        hk_ds["epoch"].attrs.update(
+        l1a_hk_data["epoch"].attrs.update(
             imap_attrs.get_variable_attributes("epoch", check_schema=False)
         )
 
         # Add attrs to HK data variables
-        for var_name in hk_ds.data_vars:
-            hk_ds[var_name].attrs.update(hk_common_attrs)
-        return [hk_ds]
+        for var_name in l1a_hk_data.data_vars:
+            l1a_hk_data[var_name].attrs.update(hk_common_attrs)
+            # In L1B HK data, we derived data which can result some data to
+            # be string. Eg. SWP_HK.PCEM_SAFE raw value can be 0 or 1,
+            # but the derived value is 'OK' or 'ERR'. Therefore, we need to use
+            # different attributes for data variables with string values to be
+            # ISTP compliant.
+            if isinstance(l1b_hk_data[var_name].data[0], str):
+                l1b_hk_data[var_name].attrs.update(
+                    imap_attrs.get_variable_attributes("l1b_hk_string_attrs")
+                )
+            else:
+                l1b_hk_data[var_name].attrs.update(hk_common_attrs)
+        return [l1a_hk_data, l1b_hk_data]
 
     logger.warning(f"Unsupported SWAPI input data. {l0_unpacked_dict.keys()}")
     return []

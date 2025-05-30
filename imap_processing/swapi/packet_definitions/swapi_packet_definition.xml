@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="SWP">
-	<xtce:Header date="05/02/2025" version="1" author="IMAP SDC" source_file="TLM_SWP.xlsx" />
+	<xtce:Header date="09/05/2025" version="1" author="IMAP SDC" source_file="TLM_SWP.xlsx, commit: 2893c15b050" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="VERSION" signed="false">
@@ -197,8 +197,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.784111993082661" exponent="0" />
-							<xtce:Term coefficient="-2.641481148440142" exponent="1" />
+							<xtce:Term coefficient="0.8536045153778105" exponent="0" />
+							<xtce:Term coefficient="-2.640659645474425" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -207,8 +207,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="0.3392409365646927" exponent="0" />
-							<xtce:Term coefficient="2.640157732627925" exponent="1" />
+							<xtce:Term coefficient="0.3353377323464883" exponent="0" />
+							<xtce:Term coefficient="2.639151098340578" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -257,8 +257,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="-3.213239072749474" exponent="0" />
-							<xtce:Term coefficient="-0.2768281702136274" exponent="1" />
+							<xtce:Term coefficient="-6.985294508398312" exponent="0" />
+							<xtce:Term coefficient="-0.2839533727705322" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -267,8 +267,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="69.64215069080154" exponent="0" />
-							<xtce:Term coefficient="-0.308170409377625" exponent="1" />
+							<xtce:Term coefficient="58.79614883808286" exponent="0" />
+							<xtce:Term coefficient="-0.2955962271648258" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -325,7 +325,7 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="0" />
+							<xtce:Term coefficient="1.0" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -400,7 +400,7 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="-0.001821464429724529" exponent="0" />
+							<xtce:Term coefficient="0.001821464429724529" exponent="0" />
 							<xtce:Term coefficient="0.0148563058518021" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
@@ -410,8 +410,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="62.08471073457684" exponent="0" />
-							<xtce:Term coefficient="-0.01515976630152695" exponent="1" />
+							<xtce:Term coefficient="-0.009692036477526145" exponent="0" />
+							<xtce:Term coefficient="0.01515976630152695" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -457,12 +457,36 @@
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_HK.ESA_V" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="0.7328995176342232" exponent="0" />
-							<xtce:Term coefficient="-0.6002110155596884" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
+					<xtce:ContextCalibratorList>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="0" parameterRef="SWP_HK.ESA_V" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="2047" parameterRef="SWP_HK.ESA_V" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="0.7328995176342232" exponent="0" />
+									<xtce:Term coefficient="-0.6002110155596884" exponent="1" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="2048" parameterRef="SWP_HK.ESA_V" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="4095" parameterRef="SWP_HK.ESA_V" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="12292.97550071964" exponent="0" />
+									<xtce:Term coefficient="-6.003582784775521" exponent="1" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+					</xtce:ContextCalibratorList>
 				</xtce:IntegerDataEncoding>
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_HK.P2_5_V" signed="true">
@@ -518,7 +542,7 @@
 				<xtce:IntegerDataEncoding sizeInBits="5" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="7.8125e-07" exponent="1" />
+							<xtce:Term coefficient="0.78125" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -865,7 +889,7 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="1.0" exponent="0" />
+							<xtce:Term coefficient="1.0" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -894,8 +918,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="-30.0063752836787" exponent="0" />
-							<xtce:Term coefficient="-0.4269107500560838" exponent="1" />
+							<xtce:Term coefficient="-30.61649427962872" exponent="0" />
+							<xtce:Term coefficient="-0.4280400183093689" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -904,8 +928,8 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="signed">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="-101.0927208994075" exponent="0" />
-							<xtce:Term coefficient="-0.2013535930625734" exponent="1" />
+							<xtce:Term coefficient="-100.8243287975546" exponent="0" />
+							<xtce:Term coefficient="-0.201881204826273" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -939,12 +963,36 @@
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_SCI.ESA_LVL5" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="13" encoding="unsigned">
-					<xtce:DefaultCalibrator>
-						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="-2.154606659914435" exponent="0" />
-							<xtce:Term coefficient="0.2503956575681914" exponent="1" />
-						</xtce:PolynomialCalibrator>
-					</xtce:DefaultCalibrator>
+					<xtce:ContextCalibratorList>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="0" parameterRef="SWP_SCI.ESA_LVL5" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="4095" parameterRef="SWP_SCI.ESA_LVL5" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="-2.154606659914435" exponent="0" />
+									<xtce:Term coefficient="0.2503956575681914" exponent="1" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+						<xtce:ContextCalibrator>
+							<xtce:ContextMatch>
+								<xtce:ComparisonList>
+									<xtce:Comparison comparisonOperator="&gt;=" value="4096" parameterRef="SWP_SCI.ESA_LVL5" useCalibratedValue="false" />
+									<xtce:Comparison comparisonOperator="&lt;=" value="8191" parameterRef="SWP_SCI.ESA_LVL5" useCalibratedValue="false" />
+								</xtce:ComparisonList>
+							</xtce:ContextMatch>
+							<xtce:Calibrator>
+								<xtce:PolynomialCalibrator>
+									<xtce:Term coefficient="-10281.21885237313" exponent="0" />
+									<xtce:Term coefficient="2.505531522417014" exponent="1" />
+								</xtce:PolynomialCalibrator>
+							</xtce:Calibrator>
+						</xtce:ContextCalibrator>
+					</xtce:ContextCalibratorList>
 				</xtce:IntegerDataEncoding>
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWP_SCI.SPARE_2" signed="false">
@@ -1169,10 +1217,10 @@
 				<xtce:LongDescription>WHICH LUT IS IN USE</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PCEM_SAFE" parameterTypeRef="SWP_HK.PCEM_SAFE">
-				<xtce:LongDescription>IF THE CEM INTERRUPT OCCURS AND DIPPING THE SUPPLIES DOES NOT HELP WITHIN 3 (TBR) CONSECUTIVE SAMPLES THEN SWAPI IS SAFED.</xtce:LongDescription>
+				<xtce:LongDescription>INDICATES THE INSTRUMENT SAFED DUE TO PERSISTENT PCEM CURRENT INTERRUPT</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SCEM_SAFE" parameterTypeRef="SWP_HK.SCEM_SAFE">
-				<xtce:LongDescription>IF THE CEM INTERRUPT OCCURS AND DIPPING THE SUPPLIES DOES NOT HELP WITHIN 3 (TBR) CONSECUTIVE SAMPLES THEN SWAPI IS SAFED.</xtce:LongDescription>
+				<xtce:LongDescription>INDICATES THE INSTRUMENT SAFED DUE TO PERSISTENT SCEM CURRENT INTERRUPT</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.WDT_ST" parameterTypeRef="SWP_HK.WDT_ST">
 				<xtce:LongDescription>SWAPI HAS REBOOTED DUE TO A WATCHDOG EXPIRATION.</xtce:LongDescription>
@@ -1184,16 +1232,16 @@
 				<xtce:LongDescription>SWAPI HAS SAFED ITSELF.  THE CAUSE WOULD BE DUE TO ONE OF THE FOLLOWING STATUS BITS.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PCEM_RATE_ST" parameterTypeRef="SWP_HK.PCEM_RATE_ST">
-				<xtce:LongDescription>THE COUNT RATE THRESHOLD FOR THE PCEM COUNTER HAS BEEN EXCEEDED ONCE AND HAS CONTINUED TO BE EXCEEDED DESPITE MEASURES BY SWAPIFW. THE PCEM COUNT RATE THRESHOLD DEFAULTS TO TBD BUT CAN BE UPDATED WITH COMMAND TBD.</xtce:LongDescription>
+				<xtce:LongDescription>THE COUNT RATE THRESHOLD FOR THE PCEM COUNTER HAS BEEN EXCEEDED ONCE AND HAS CONTINUED TO BE EXCEEDED DESPITE MEASURES BY SWAPIFW. THE PCEM COUNT RATE THRESHOLD DEFAULTS TO 0XFFFF (~6MHZ) AND CAN BE UPDATED WITH COMMAND SWP_PCEM_CNT_LIM_SET</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SCEM_RATE_ST" parameterTypeRef="SWP_HK.SCEM_RATE_ST">
-				<xtce:LongDescription>THE COUNT RATE THRESHOLD FOR THE SCEM COUNTER HAS BEEN EXCEEDED ONCE AND HAS CONTINUED TO BE EXCEEDED DESPITE MEASURES BY SWAPIFW. THE SCEM COUNT RATE THRESHOLD DEFAULTS TO TBD BUT CAN BE UPDATED WITH COMMAND TBD.</xtce:LongDescription>
+				<xtce:LongDescription>THE COUNT RATE THRESHOLD FOR THE SCEM COUNTER HAS BEEN EXCEEDED ONCE AND HAS CONTINUED TO BE EXCEEDED DESPITE MEASURES BY SWAPIFW. THE SCEM COUNT RATE THRESHOLD DEFAULTS TO 0XFFFF (~6MHZ) AND CAN BE UPDATED WITH COMMAND SWP_SCEM_CNT_LIM_SET</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PCEM_I_ST" parameterTypeRef="SWP_HK.PCEM_I_ST">
-				<xtce:LongDescription>THE CURRENT THRESHOLD FOR THE PCEM HAS BEEN EXCEEDED ONCE AND HAS CONTINUED TO BE EXCEEDED DESPITE MEASURES BY SWAPIFW.  AN OVERCURRENT ON THE CEM'S COLLECTIVELY TRIPS AN INTERRUPT WHICH THE SWAPIFW HANDLES.  THE SWAPIFW ALSO COLLECTS THE PCEM CURRENT MONITOR FOR COMPARISON AT 1 HZ. THE CEM CURRENT RATE THRESHOLD DEFAULTS TO TBD BUT CAN BE UPDATED WITH COMMAND TBD.</xtce:LongDescription>
+				<xtce:LongDescription>THE CURRENT THRESHOLD FOR THE PCEM HAS BEEN EXCEEDED ONCE AND HAS CONTINUED TO BE EXCEEDED DESPITE MEASURES BY SWAPIFW.  AN OVERCURRENT ON THE CEM'S COLLECTIVELY TRIPS AN INTERRUPT WHICH THE SWAPIFW HANDLES.  THE SWAPIFW ALSO COLLECTS THE PCEM CURRENT MONITOR FOR COMPARISON AT 1 HZ. THE CEM CURRENT THRESHOLD DEFAULTS TO 0X7FE (EFFECTIVELY DISABLED) AND CAN BE UPDATED WITH COMMAND SWP_PCEM_I_LIM_SET</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.SCEM_I_ST" parameterTypeRef="SWP_HK.SCEM_I_ST">
-				<xtce:LongDescription>THE CURRENT THRESHOLD FOR THE SCEM HAS BEEN EXCEEDED ONCE AND HAS CONTINUED TO BE EXCEEDED DESPITE MEASURES BY SWAPIFW.  AN OVERCURRENT ON THE CEMS COLLECTIVELY TRIPS AN INTERRUPT WHICH THE SWAPIFW HANDLES.  THE SWAPIFW ALSO COLLECTS THE SCEM CURRENT MONITOR FOR COMPARISON AT 1 HZ. THE CEM CURRENT RATE THRESHOLD DEFAULTS TO TBD BUT CAN BE UPDATED WITH COMMAND TBD.</xtce:LongDescription>
+				<xtce:LongDescription>THE CURRENT THRESHOLD FOR THE SCEM HAS BEEN EXCEEDED ONCE AND HAS CONTINUED TO BE EXCEEDED DESPITE MEASURES BY SWAPIFW.  AN OVERCURRENT ON THE CEMS COLLECTIVELY TRIPS AN INTERRUPT WHICH THE SWAPIFW HANDLES.  THE SWAPIFW ALSO COLLECTS THE SCEM CURRENT MONITOR FOR COMPARISON AT 1 HZ. THE CEM CURRENT  THRESHOLD DEFAULTS TO 0X7FE (EFFECTIVELY DISABLED) AND CAN BE UPDATED WITH COMMAND SWP_SCEM_I_LIM_SET</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.PCEM_V_ST" parameterTypeRef="SWP_HK.PCEM_V_ST">
 				<xtce:LongDescription>THE VOLTAGE TOLERANCE FOR THE PCEM FOR ITS CURRENT SETTING HAS BEEN EXCEEDED. THE PCEM VOLTAGE TOLERANCE IS SET BY SWAPIFW AND CANNOT BE ALTERED BY COMMAND.</xtce:LongDescription>
@@ -1301,7 +1349,7 @@
 				<xtce:LongDescription>VOLT MON OF ANALOG GROUND.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.CEM_I" parameterTypeRef="SWP_HK.CEM_I">
-				<xtce:LongDescription>THE CURRENT LIMIT MONITOR FOR THE PCEM AND SCEM AT WHICH THE SWAPI SOFTWARE BRINGS DOWN THE PCEM AND SCEM BY TBD VOLTS FOR TBD SECONDS BEFORE THEY ARE BROUGHT BACK UP.</xtce:LongDescription>
+				<xtce:LongDescription>THE CURRENT LIMIT MONITOR FOR THE PCEM AND SCEM AT WHICH THE SWAPI SOFTWARE REDUCES THE PCEM AND SCEM VOLTAGE FOR A SHORT TIME.</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="SWP_HK.ESA_V" parameterTypeRef="SWP_HK.ESA_V">
 				<xtce:LongDescription>VOLT MON OF ELECTROSTATIC ANALYZER HIGH-VOLTAGE POWER SUPPLY.</xtce:LongDescription>

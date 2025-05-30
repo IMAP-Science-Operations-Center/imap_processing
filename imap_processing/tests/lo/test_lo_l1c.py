@@ -67,38 +67,38 @@ def attr_mgr():
 @pytest.fixture
 def counts():
     """Fixture for initial counts."""
-    return np.zeros((1, 3600, 40, 7))
+    return np.zeros((1, 7, 3600, 40))
 
 
 @pytest.fixture
 def h_counts(counts):
     h = counts.copy()
-    h[0, 20, 20, 1] = 2
-    h[0, 2000, 20, 4] = 1
+    h[0, 1, 20, 20] = 2
+    h[0, 4, 2000, 20] = 1
     return h
 
 
 @pytest.fixture
 def o_counts(counts):
     o = counts.copy()
-    o[0, 3500, 20, 5] = 1
-    o[0, 0, 20, 2] = 1
+    o[0, 5, 3500, 20] = 1
+    o[0, 2, 0, 20] = 1
     return o
 
 
 @pytest.fixture
 def triples_counts(counts):
     triples = counts.copy()
-    triples[0, 20, 20, 1] = 2
-    triples[0, 0, 20, 2] = 1
+    triples[0, 1, 20, 20] = 2
+    triples[0, 2, 0, 20] = 1
     return triples
 
 
 @pytest.fixture
 def doubles_counts(counts):
     doubles = counts.copy()
-    doubles[0, 2000, 20, 4] = 1
-    doubles[0, 3500, 20, 5] = 1
+    doubles[0, 4, 2000, 20] = 1
+    doubles[0, 5, 3500, 20] = 1
     return doubles
 
 
@@ -164,11 +164,11 @@ def test_filter_goodtimes(l1b_de, anc_dependencies):
 
 def test_create_pset_counts(l1b_de):
     # Arrange
-    expected_counts = np.zeros((1, 3600, 40, 7))
-    expected_counts[0, 20, 20, 1] = 2
-    expected_counts[0, 2000, 20, 4] = 1
-    expected_counts[0, 3500, 20, 5] = 1
-    expected_counts[0, 0, 20, 2] = 1
+    expected_counts = np.zeros((1, 7, 3600, 40))
+    expected_counts[0, 1, 20, 20] = 2
+    expected_counts[0, 4, 2000, 20] = 1
+    expected_counts[0, 5, 3500, 20] = 1
+    expected_counts[0, 2, 0, 20] = 1
 
     # Act
     counts = create_pset_counts(l1b_de)
@@ -212,12 +212,12 @@ def test_create_doubles_pset_counts(l1b_de, doubles_counts):
 def test_calculate_exposure_times(l1b_de):
     # Arrange
     counts = create_pset_counts(l1b_de)
-    expected_exposure_times = np.full((1, 3600, 40, 7), np.nan)
+    expected_exposure_times = np.full((1, 7, 3600, 40), np.nan)
     # Average of the exposure times for each bin
-    expected_exposure_times[0, 20, 20, 1] = 4 * np.mean([15.2, 14.9]) / 3600
-    expected_exposure_times[0, 2000, 20, 4] = 4 * 15 / 3600
-    expected_exposure_times[0, 3500, 20, 5] = 4 * 14.9 / 3600
-    expected_exposure_times[0, 0, 20, 2] = 4 * 15.2 / 2600
+    expected_exposure_times[0, 1, 20, 20] = 4 * np.mean([15.2, 14.9]) / 3600
+    expected_exposure_times[0, 4, 2000, 20] = 4 * 15 / 3600
+    expected_exposure_times[0, 5, 3500, 20] = 4 * 14.9 / 3600
+    expected_exposure_times[0, 2, 0, 20] = 4 * 15.2 / 2600
     # Act
     exposure_times = calculate_exposure_times(counts, l1b_de)
 

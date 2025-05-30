@@ -443,6 +443,11 @@ class TestRectangularSkyMap:
         # operations to be repeated as this test
         rect_map_ds = rectangular_map.to_dataset()
         assert "solid_angle" in rect_map_ds.data_vars
+        assert rect_map_ds.data_vars["solid_angle"].shape == (
+            1,
+            360 / skymap_spacing,
+            180 / skymap_spacing,
+        )
         assert "counts" in rect_map_ds.data_vars
         assert rect_map_ds["counts"].shape == (
             1,

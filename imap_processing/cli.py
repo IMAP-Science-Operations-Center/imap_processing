@@ -77,6 +77,7 @@ from imap_processing.swapi.l2.swapi_l2 import swapi_l2
 from imap_processing.swapi.swapi_utils import read_swapi_lut_table
 from imap_processing.swe.l1a.swe_l1a import swe_l1a
 from imap_processing.swe.l1b.swe_l1b import swe_l1b
+from imap_processing.swe.l2.swe_l2 import swe_l2
 from imap_processing.ultra.l1a import ultra_l1a
 from imap_processing.ultra.l1b import ultra_l1b
 from imap_processing.ultra.l1c import ultra_l1c
@@ -416,6 +417,7 @@ class ProcessInstrument(ABC):
                     repointing=file_path.repointing,
                     version=file_path.version,
                     extension="cdf",
+                    table="science",
                 )
                 if existing_file:
                     raise ProcessInstrument.ImapFileExistsError(
@@ -740,7 +742,7 @@ class Hi(ProcessInstrument):
                 )
             datasets = hi_l1c.hi_l1c(load_cdf(science_paths[0]), anc_paths[0])
         elif self.data_level == "l2":
-            science_paths = dependencies.get_file_paths(source="hi", data_type="l2")
+            science_paths = dependencies.get_file_paths(source="hi", data_type="l1c")
             # TODO get ancillary paths
             geometric_factors_path = ""
             esa_energies_path = ""
@@ -952,26 +954,21 @@ class Lo(ProcessInstrument):
 
         elif self.data_level == "l1b":
             data_dict = {}
-            # TODO: Check this and update with new features as needed.
-            for input_type in dependencies.processing_input:
-                science_files = dependencies.get_file_paths(
-                    source="lo", descriptor=input_type.descriptor
-                )
-                dataset = load_cdf(science_files[0])
+            science_files = dependencies.get_file_paths(source="lo", data_type="l1a")
+            for file in science_files:
+                dataset = load_cdf(file)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
             datasets = lo_l1b.lo_l1b(data_dict)
 
         elif self.data_level == "l1c":
             data_dict = {}
-            for input_type in dependencies.processing_input:
-                science_files = dependencies.get_file_paths(
-                    source="lo", descriptor=input_type.descriptor
-                )
-                dataset = load_cdf(science_files[0])
+            anc_depedencies: list = dependencies.get_file_paths(
+                source="lo", descriptor="goodtimes"
+            )
+            science_files = dependencies.get_file_paths(source="lo", descriptor="de")
+            for file in science_files:
+                dataset = load_cdf(file)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
-                # TODO: add dependencies to S3 and dependency tree
-                #  setting to empty for now
-            anc_depedencies: list = []
             datasets = lo_l1c.lo_l1c(data_dict, anc_depedencies)
 
         return datasets
@@ -1254,17 +1251,20 @@ class Swe(ProcessInstrument):
                 raise ValueError(
                     f"Unexpected dependencies found for SWE L1A:"
                     f"{dependency_list}. Expected only two dependencies."
+                    "L0 data and time kernels."
                 )
             science_files = dependencies.get_file_paths(source="swe")
             datasets = swe_l1a(str(science_files[0]))
             # Right now, we only process science data. Therefore,
             # we expect only one dataset to be returned.
 
-        elif self.data_level == "l1b":
-            if len(dependency_list) != 4:
+        elif self.data_level == "l1b" and self.descriptor == "sci":
+            if len(dependency_list) != 5:
                 raise ValueError(
                     f"Unexpected dependencies found for SWE L1B:"
-                    f"{dependency_list}. Expected exactly four dependencies."
+                    f"{dependency_list}. Expected exactly five dependencies."
+                    "L1A science, in-fligth cal, esa LUT, EU conversion and "
+                    "time kernels."
                 )
 
             science_files = dependencies.get_file_paths("swe", "sci")
@@ -1274,6 +1274,30 @@ class Swe(ProcessInstrument):
                 )
 
             datasets = swe_l1b(dependencies)
+        elif self.data_level == "l1b" and self.descriptor == "hk":
+            if len(dependency_list) != 2:
+                raise ValueError(
+                    f"Unexpected dependencies found for SWE L1B HK:"
+                    f"{dependency_list}. Expected exactly two dependencies."
+                    "L0 data and time kernels."
+                )
+            # process data
+            datasets = swe_l1b(dependencies)
+        elif self.data_level == "l2":
+            if len(dependency_list) != 2:
+                raise ValueError(
+                    f"Unexpected dependencies found for SWE L2:"
+                    f"{dependency_list}. Expected exactly two dependencies."
+                    "L1B science and spin data."
+                )
+            # process data
+            science_files = dependencies.get_file_paths(source="swe", descriptor="sci")
+            if len(science_files) > 1:
+                raise ValueError(
+                    "Multiple science files processing is not supported for SWE L2."
+                )
+            l1b_datasets = load_cdf(science_files[0])
+            datasets = [swe_l2(l1b_datasets)]
         else:
             print("Did not recognize data level. No processing done.")
 

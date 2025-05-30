@@ -1,3 +1,4 @@
+import json
 from unittest.mock import patch
 
 import numpy as np
@@ -191,6 +192,10 @@ def test_swe_l1b(mock_get_file_paths, l1b_validation_df):
                 imap_module_directory
                 / "tests/swe/lut/imap_swe_esa-lut_20250301_v000.csv"
             ]
+        elif descriptor == "raw":
+            return [
+                imap_module_directory / "tests/swe/l0_data/2024051010_SWE_HK_packet.bin"
+            ]
         else:
             raise ValueError(f"Unknown descriptor: {descriptor}")
 
@@ -214,6 +219,21 @@ def test_swe_l1b(mock_get_file_paths, l1b_validation_df):
     processed_science = l1b_cdf_dataset["science_data"].data
     validation_science = l1b_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
     np.testing.assert_allclose(processed_science, validation_science, rtol=1e-7)
+
+    # Test that HK CDF file is created
+    input = [
+        {
+            "type": "science",
+            "files": ["imap_swe_l0_raw_20240510_v999.pkts"],
+        }
+    ]
+    input_collection = ProcessingInputCollection()
+    input_collection.deserialize(json.dumps(input))
+
+    hk_datasets = swe_l1b(input_collection)
+    # Looks like HK data has some science data. That's why we use index 1.
+    l1b_hk_filepath = write_cdf(hk_datasets[1])
+    assert l1b_hk_filepath.name == "imap_swe_l1b_hk_20240510_v999.cdf"
 
 
 def test_count_rate():
