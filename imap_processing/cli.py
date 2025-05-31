@@ -1348,7 +1348,10 @@ class Ultra(ProcessInstrument):
             datasets = ultra_l1b.ultra_l1b(data_dict, ancillary_files)
         elif self.data_level == "l1c":
             data_dict = {}
+            has_spice = False
             for input_type in dependencies.processing_input:
+                if input_type.input_type == ProcessingInputType.SPICE_FILE:
+                    has_spice = True
                 science_files = dependencies.get_file_paths(
                     source="ultra", descriptor=input_type.descriptor
                 )
@@ -1357,7 +1360,7 @@ class Ultra(ProcessInstrument):
                     data_dict[dataset.attrs["Logical_source"]] = dataset
             anc_paths = dependencies.get_file_paths(data_type="ancillary")
             ancillary_files = {f.name: f for f in anc_paths}
-            datasets = ultra_l1c.ultra_l1c(data_dict, ancillary_files)
+            datasets = ultra_l1c.ultra_l1c(data_dict, ancillary_files, has_spice)
 
         elif self.data_level == "l2":
             all_pset_filepaths = dependencies.get_file_paths(
