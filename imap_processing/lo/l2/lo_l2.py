@@ -34,7 +34,7 @@ def lo_l2(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
 
     # if the dependencies are used to create Annotated Direct Events
     if "imap_lo_l1c_pset" in sci_dependencies:
-        logical_source = "imap_lo_l2_l090-ena-h-sf-nsp-ram-hae-6deg-1yr"
+        logical_source = "imap_lo_l2_l090-ena-h-sf-nsp-ram-hae-6deg-3mo"
         psets = sci_dependencies["imap_lo_l1c_pset"]
 
         # Create the rectangular sky map from the pointing set.
@@ -68,6 +68,68 @@ def lo_l2(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         lo_rect_map_ds.exposure_time.attrs.update(
             attr_mgr.get_variable_attributes("exposure_factor")
         )
+        lo_rect_map_ds.energy.attrs.update(attr_mgr.get_variable_attributes("energy"))
+        lo_rect_map_ds.solid_angle.attrs.update(
+            attr_mgr.get_variable_attributes("solid_angle")
+        )
+        lo_rect_map_ds.longitude.attrs.update(
+            attr_mgr.get_variable_attributes("longitude")
+        )
+        lo_rect_map_ds.latitude.attrs.update(
+            attr_mgr.get_variable_attributes("latitude")
+        )
+
+        lo_rect_map_ds = lo_rect_map_ds.assign_coords(
+            {
+                "energy_label": xr.DataArray(
+                    np.arange(1, 8).astype(str),
+                    name="energy_label",
+                    dims=["energy"],
+                    attrs=attr_mgr.get_variable_attributes(
+                        "energy_label", check_schema=False
+                    ),
+                )
+            }
+        )
+
+        lo_rect_map_ds = lo_rect_map_ds.assign_coords(
+            {
+                "longitude_label": xr.DataArray(
+                    lo_rect_map_ds["longitude"].values.astype(str),
+                    name="longitude_label",
+                    dims=["longitude"],
+                    attrs=attr_mgr.get_variable_attributes(
+                        "longitude_label", check_schema=False
+                    ),
+                )
+            }
+        )
+
+        lo_rect_map_ds = lo_rect_map_ds.assign_coords(
+            {
+                "latitude_label": xr.DataArray(
+                    lo_rect_map_ds["latitude"].values.astype(str),
+                    name="latitude_label",
+                    dims=["latitude"],
+                    attrs=attr_mgr.get_variable_attributes(
+                        "latitude_label", check_schema=False
+                    ),
+                )
+            }
+        )
+
+        lo_rect_map_ds = lo_rect_map_ds.assign_coords(
+            {
+                "energy_label": xr.DataArray(
+                    np.arange(1, 8).astype(str),
+                    name="energy_label",
+                    dims=["energy"],
+                    attrs=attr_mgr.get_variable_attributes(
+                        "energy_label", check_schema=False
+                    ),
+                )
+            }
+        )
 
     return [lo_rect_map_ds]
 
@@ -99,6 +161,7 @@ def project_pset_to_rect_map(
         spacing_deg=spacing_deg,
         spice_frame=spice_frame,
     )
+    print("PSET", psets)
     for pset in psets:
         # Put energy dim before longitude and latitude
         # TODO: L1C data should be in this format already.

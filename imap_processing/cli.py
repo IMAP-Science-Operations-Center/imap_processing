@@ -66,6 +66,7 @@ from imap_processing.idex.idex_l2c import idex_l2c
 from imap_processing.lo.l1a import lo_l1a
 from imap_processing.lo.l1b import lo_l1b
 from imap_processing.lo.l1c import lo_l1c
+from imap_processing.lo.l2 import lo_l2
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.mag.l1b.mag_l1b import mag_l1b
 from imap_processing.mag.l1c.mag_l1c import mag_l1c
@@ -962,15 +963,28 @@ class Lo(ProcessInstrument):
 
         elif self.data_level == "l1c":
             data_dict = {}
-            anc_depedencies: list = dependencies.get_file_paths(
+            anc_dependencies: list = dependencies.get_file_paths(
                 source="lo", descriptor="goodtimes"
             )
             science_files = dependencies.get_file_paths(source="lo", descriptor="de")
             for file in science_files:
                 dataset = load_cdf(file)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
-            datasets = lo_l1c.lo_l1c(data_dict, anc_depedencies)
+            datasets = lo_l1c.lo_l1c(data_dict, anc_dependencies)
 
+        elif self.data_level == "l2":
+            data_dict = {}
+            # TODO: Add ancillary descriptors when maps using them are
+            #  implemented.
+            anc_dependencies = dependencies.get_file_paths(
+                source="lo",
+            )
+            science_files = dependencies.get_file_paths(source="lo", descriptor="pset")
+            psets = []
+            for file in science_files:
+                psets.append(load_cdf(file))
+            data_dict[psets[0].attrs["Logical_source"]] = psets
+            datasets = lo_l2.lo_l2(data_dict, anc_dependencies)
         return datasets
 
 
