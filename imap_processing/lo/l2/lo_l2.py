@@ -84,18 +84,7 @@ def project_pset_to_rect_map(
         spacing_deg=spacing_deg,
         spice_frame=spice_frame,
     )
-    print("PSET", psets)
     for pset in psets:
-        # Put energy dim before longitude and latitude
-        # TODO: L1C data should be in this format already.
-        #  This is a workaround for the current L1C data format.
-        for data_var in pset.data_vars:
-            if "energy" in pset[data_var].dims:
-                # move dim2 to before dim0 and dim1
-                pset[data_var] = pset[data_var].transpose(
-                    "epoch", "energy", "longitude", "latitude"
-                )
-
         lo_pset = ena_maps.LoPointingSet(pset)
         lo_rect_map.project_pset_values_to_map(
             pointing_set=lo_pset,
@@ -156,7 +145,7 @@ def add_attributes(
     lo_map: xr.Dataset, attr_mgr: ImapCdfAttributes, logical_source: str
 ) -> xr.Dataset:
     """
-    Add attributes to the dataset.
+    Add attributes to the map dataset.
 
     Parameters
     ----------
@@ -181,6 +170,7 @@ def add_attributes(
     #  to the attributes or if general ena intensities can be used or updated
     #  in the code. This dictionary is temporary solution for SIT-4
     map_fields = {
+        "epoch": "epoch",
         "h_flux": "ena_intensity",
         "h_rate": "ena_rate",
         "h_counts": "ena_count",
@@ -199,7 +189,6 @@ def add_attributes(
             lo_map[field].attrs.update(
                 attr_mgr.get_variable_attributes(attr_name, check_schema=False)
             )
-            print(f"{field}: {lo_map[field].attrs}")
 
     labels = {
         "energy": np.arange(1, 8).astype(str),
