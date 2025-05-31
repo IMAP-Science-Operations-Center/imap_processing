@@ -239,40 +239,40 @@ def _test_data_paths():
             / "ultra-90_raw_event_data_shortened.csv",
         ),
         (
-            "Ultra_90_DPS_efficiencies_all.csv",
+            "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
             imap_module_directory
             / "tests"
             / "ultra"
             / "data"
             / "l1"
-            / "Ultra_90_DPS_efficiencies_all.csv",
+            / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
         ),
         (
-            "ultra_90_dps_gf.csv",
+            "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
             imap_module_directory
             / "tests"
             / "ultra"
             / "data"
             / "l1"
-            / "ultra_90_dps_gf.csv",
+            / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
         ),
         (
-            "ultra_90_dps_exposure.csv",
+            "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
             imap_module_directory
             / "tests"
             / "ultra"
             / "data"
             / "l1"
-            / "ultra_90_dps_exposure.csv",
+            / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
         ),
         (
-            "Ultra_efficiencies_45_combined_logistic_interpolation.csv",
+            "imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv",
             imap_module_directory
             / "tests"
             / "ultra"
             / "data"
             / "l1"
-            / "Ultra_efficiencies_45_combined_logistic_interpolation.csv",
+            / "imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv",
         ),
     ]
 

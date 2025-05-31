@@ -68,11 +68,22 @@ def test_calculate_spacecraft_pset():
         },
     )
 
+    path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
+    ancillary = {
+        "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv": path
+        / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
+        "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv": path
+        / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
+        "imap_ultra_l1c-90sensor-gf_20250101_v000.csv": path
+        / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
+    }
+
     spacecraft_pset = calculate_spacecraft_pset(
         test_l1b_de_dataset,
         test_l1b_de_dataset,  # placeholder for extendedspin_dataset
         test_l1b_de_dataset,  # placeholder for cullingmask_dataset
         "imap_ultra_l1c_45sensor-spacecraftpset",
+        ancillary,
     )
     assert "pixel_index" in spacecraft_pset.coords
     assert "epoch" in spacecraft_pset.coords
@@ -126,11 +137,22 @@ def test_calculate_spacecraft_pset_with_cdf():
         name = "imap_ultra_l1b_45sensor-de"
         dataset = create_dataset(de_dict, name, "l1b")
 
+        path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
+        ancillary = {
+            "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv": path
+            / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
+            "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv": path
+            / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
+            "imap_ultra_l1c-90sensor-gf_20250101_v000.csv": path
+            / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
+        }
+
         spacecraft_pset = calculate_spacecraft_pset(
             dataset,
             xr.Dataset(),  # placeholder for extendedspin_dataset
             xr.Dataset(),  # placeholder for cullingmask_dataset
             "imap_ultra_l1c_45sensor-spacecraftpset",
+            ancillary,
         )
         # TODO: validate with output histogram data once we have it in healpix.
         assert (
