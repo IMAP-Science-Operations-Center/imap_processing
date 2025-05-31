@@ -300,5 +300,7 @@ def test_ultra_l1b_error(mock_data_l1a_rates_dict):
         "imap_ultra_l1a_45sensor-rates"
     )
     ancillary_files = {}
-    with pytest.raises(ValueError, match="No matching L1A or L1B data found."):
+    with pytest.raises(
+        ValueError, match="Data dictionary does not contain the expected keys."
+    ):
         ultra_l1b(mock_data_l1a_rates_dict, ancillary_files)

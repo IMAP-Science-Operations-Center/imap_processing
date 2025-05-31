@@ -68,6 +68,6 @@ def ultra_l1c(
             )
             output_datasets = [spacecraft_pset]
     if not output_datasets:
-        raise ValueError("No matching L1A or L1B data found.")
+        raise ValueError("Data dictionary does not contain the expected keys.")
 
     return output_datasets

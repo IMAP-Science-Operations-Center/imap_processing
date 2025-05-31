@@ -89,6 +89,6 @@ def ultra_l1b(data_dict: dict, ancillary_files: dict) -> list[xr.Dataset]:
             )
             output_datasets.append(cullingmask_dataset)
     if not output_datasets:
-        raise ValueError("No matching L1A or L1B data found.")
+        raise ValueError("Data dictionary does not contain the expected keys.")
 
     return output_datasets
