@@ -225,19 +225,14 @@ def test_cdf_cullingmask(use_fake_spin_data_for_time, faux_aux_dataset, rates_da
     data_dict["imap_ultra_l1a_45sensor-aux"] = faux_aux_dataset
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
 
-    l1b_extendedspin_dataset = ultra_l1b(data_dict)
-    l1b_extendedspin_dataset[1].attrs["Data_version"] = "999"
-    l1b_extendedspin_dataset[1].attrs["Repointing"] = "repoint99999"
-    test_data_path = write_cdf(l1b_extendedspin_dataset[1], istp=True)
     ancillary_files = {}
     l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
 
-    ancillary_files = {}
     cullingmask_dataset = ultra_l1b(
         {"imap_ultra_l1b_45sensor-extendedspin": l1b_extendedspin_dataset[0]},
         ancillary_files,
     )
-    cullingmask_dataset[0].attrs["Data_version"] = "v999"
+    cullingmask_dataset[0].attrs["Data_version"] = "999"
     cullingmask_dataset[0].attrs["Repointing"] = "repoint99999"
     test_data_path = write_cdf(cullingmask_dataset[0], istp=True)
     assert test_data_path.exists()
@@ -264,10 +259,6 @@ def test_cdf_badtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_datas
     data_dict["imap_ultra_l1a_45sensor-aux"] = faux_aux_dataset
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
 
-    l1b_extendedspin_dataset = ultra_l1b(data_dict)
-    l1b_extendedspin_dataset[2].attrs["Data_version"] = "999"
-    l1b_extendedspin_dataset[2].attrs["Repointing"] = "repoint99999"
-    test_data_path = write_cdf(l1b_extendedspin_dataset[2], istp=True)
     ancillary_files = {}
     l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
 
@@ -284,7 +275,7 @@ def test_cdf_badtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_datas
         },
         ancillary_files,
     )
-    l1b_badtimes_dataset[0].attrs["Data_version"] = "v999"
+    l1b_badtimes_dataset[0].attrs["Data_version"] = "999"
     l1b_badtimes_dataset[0].attrs["Repointing"] = "repoint99999"
     test_data_path = write_cdf(l1b_badtimes_dataset[0], istp=True)
     assert test_data_path.exists()
