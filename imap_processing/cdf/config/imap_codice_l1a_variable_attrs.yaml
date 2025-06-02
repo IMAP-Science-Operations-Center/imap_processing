@@ -35,12 +35,10 @@ hskp_attrs: &hskp_default
     VAR_TYPE: support_data
 
 hi_energies_attrs: &hi_energies_default
-    DEPEND_0: epoch
     DISPLAY_TYPE: no_plot
     FIELDNAM: Energy Table
     FILLVAL: *real_fillval
     FORMAT: F10.7
-    LABLAXIS: MeV/n
     SCALETYP: log
     UNITS: MeV/n
     VALIDMIN: 0.05
@@ -147,6 +145,7 @@ ssd_index:
 # <=== Labels ===>
 esa_step_label:
     CATDESC: ESA Step
+    DEPEND_1: esa_step
     FIELDNAM: ESA Step
     FORMAT: A3
     VAR_TYPE: metadata
@@ -159,6 +158,7 @@ inst_az_label:
 
 spin_sector_label:
     CATDESC: Spin Sector
+    DEPEND_1: spin_sector
     FIELDNAM: Spin Sector
     FORMAT: A2
     VAR_TYPE: metadata
@@ -185,7 +185,7 @@ ssd_index_label:
 # The following are set in multiple data products
 acquisition_time_per_step:
     CATDESC: Acquisition time for each step of energy
-    DEPEND_0: esa_step
+    DEPEND_1: esa_step
     FIELDNAM: Acquisition Time
     FILLVAL: *real_fillval
     FORMAT: F10.3
@@ -249,7 +249,7 @@ direct_events_attrs: &direct_events
 
 energy_table:
     CATDESC: ElectroStatic Analyzer Energy Values
-    DEPEND_0: esa_step
+    DEPEND_1: esa_step
     FIELDNAM: Energy Table
     FORMAT: F12.6
     LABLAXIS: eV
