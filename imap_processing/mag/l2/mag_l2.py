@@ -15,6 +15,7 @@ def mag_l2(
     offsets_dataset: xr.Dataset,
     input_data: xr.Dataset,
     day_to_process: np.datetime64,
+    mode: DataMode = DataMode.NORM,
 ) -> list[xr.Dataset]:
     """
     Complete MAG L2 processing.
@@ -63,6 +64,9 @@ def mag_l2(
     day_to_process : numpy.datetime64['D']
         The 24 hour day to process. This should match the day of the input data and
         the offset file.
+    mode : DataMode
+        The data mode to process. Default is DataMode.NORM (normal mode).
+        Can also be DataMode.BURST for burst mode processing.
 
     Returns
     -------
@@ -96,7 +100,7 @@ def mag_l2(
         {},
         np.zeros(len(input_data["epoch"].data)),
         np.zeros(len(input_data["epoch"].data)),
-        DataMode.NORM,
+        mode,
         offsets=offsets_dataset["offsets"].data,
         timedelta=offsets_dataset["timedeltas"].data,
     )

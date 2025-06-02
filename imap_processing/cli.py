@@ -67,6 +67,7 @@ from imap_processing.lo.l1a import lo_l1a
 from imap_processing.lo.l1b import lo_l1b
 from imap_processing.lo.l1c import lo_l1c
 from imap_processing.lo.l2 import lo_l2
+from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.mag.l1b.mag_l1b import mag_l1b
 from imap_processing.mag.l1c.mag_l1c import mag_l1c
@@ -1082,8 +1083,10 @@ class Mag(ProcessInstrument):
             # TODO: Ensure that parent_files attribute works with that
             input_data = load_cdf(science_files[0])
 
+            descriptor_no_frame = str.split(self.descriptor, "-")[0]
+
             # We expect either a norm or a burst input descriptor.
-            offsets_desc = f"l2-{self.descriptor}-offsets"
+            offsets_desc = f"l2-{descriptor_no_frame}-offsets"
             offsets = dependencies.get_processing_inputs(descriptor=offsets_desc)
 
             calibration = dependencies.get_processing_inputs(
@@ -1115,6 +1118,7 @@ class Mag(ProcessInstrument):
                 offset_dataset,
                 input_data,
                 current_day,
+                mode=DataMode(descriptor_no_frame.upper()),
             )
 
         return datasets
