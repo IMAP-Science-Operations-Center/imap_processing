@@ -940,16 +940,15 @@ class Lo(ProcessInstrument):
         """
         print(f"Processing IMAP-Lo {self.data_level}")
         datasets: list[xr.Dataset] = []
-        dependency_list = dependencies.processing_input
         if self.data_level == "l1a":
             # L1A packet / products are 1 to 1. Should only have
             # one dependency file
-            if len(dependency_list) > 1:
+            science_files = dependencies.get_file_paths(source="lo", data_type="l0")
+            if len(science_files) > 1:
                 raise ValueError(
                     f"Unexpected dependencies found for IMAP-Lo L1A:"
-                    f"{dependency_list}. Expected only one dependency."
+                    f"{science_files}. Expected only one dependency."
                 )
-            science_files = dependencies.get_file_paths(source="lo")
             datasets = lo_l1a.lo_l1a(science_files[0])
 
         elif self.data_level == "l1b":
