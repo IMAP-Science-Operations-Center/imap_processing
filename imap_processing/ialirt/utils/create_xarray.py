@@ -4,6 +4,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.ialirt.utils.constants import IALIRT_KEYS
 
 
 def create_xarray_from_records(records: list[dict]) -> xr.Dataset:
@@ -24,8 +25,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:
     cdf_manager.add_instrument_global_attrs("ialirt")
     cdf_manager.add_instrument_variable_attrs("ialirt", "l1")
 
-    instrument_prefixes = ("swe", "hit", "mag", "codicelo", "codicehi", "swapi")
-    instrument_keys: set[str] = set()
+    instrument_keys: set[str] = set(IALIRT_KEYS)
     n = len(records)
     attrs = cdf_manager.get_variable_attributes("default_int64_attrs")
     fillval = attrs.get("FILLVAL")
@@ -34,9 +34,6 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:
     # Collect all keys that start with the instrument prefixes.
     for i, record in enumerate(records):
         ttj2000ns_values[i] = record["ttj2000ns"]
-        instrument_keys.update(
-            key for key in record if key.startswith(instrument_prefixes)
-        )
 
     epoch = xr.DataArray(
         data=ttj2000ns_values,
