@@ -43,7 +43,7 @@ def lo_l1b(dependencies: dict) -> list[Path]:
     # create the attribute manager to access L1A fillval attributes
     attr_mgr_l1a = ImapCdfAttributes()
     attr_mgr_l1a.add_instrument_variable_attrs(instrument="lo", level="l1a")
-
+    logger.info(f"\n Dependencies: {dependencies}\n")
     # if the dependencies are used to create Annotated Direct Events
     if "imap_lo_l1a_de" in dependencies and "imap_lo_l1a_spin" in dependencies:
         logger.info("\nProcessing IMAP-Lo L1B Direct Events...")
