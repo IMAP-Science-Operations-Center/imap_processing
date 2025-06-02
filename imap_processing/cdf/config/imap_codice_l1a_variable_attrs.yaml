@@ -48,11 +48,15 @@ hi_energies_attrs: &hi_energies_default
     VAR_TYPE: support_data
 
 hi_priorities_attrs: &hi_priorities_default
+    DEPEND_0: epoch
+    DISPLAY_TYPE: time_series
     FILLVAL: -1
-    LABLAXIS: events
+    FORMAT: I5
+    LABLAXIS: "events"
     UNITS: events
     VALIDMIN: 0
     VALIDMAX: *max_uint32
+    VAR_TYPE: data
 
 
 # <=== Coordinates ===>
@@ -335,81 +339,97 @@ hi-counters-aggregated-DCR:
     <<: *events
     CATDESC: Event B - Double Coincidence Rate (DCR)
     FIELDNAM: DCRs
+    LABLAXIS: "events"
 
 hi-counters-aggregated-STO:
     <<: *events
     CATDESC: Event C - Start Only (STO)
     FIELDNAM: Start Only
+    LABLAXIS: "events"
 
 hi-counters-aggregated-SPO:
     <<: *events
     CATDESC: Event D - Stop Only (SPO)
     FIELDNAM: Stop Only
+    LABLAXIS: "events"
 
 hi-counters-aggregated-Reserved1:
     <<: *events
     CATDESC: Reserved 1
     FIELDNAM: Reserved 1
+    LABLAXIS: "events"
 
 hi-counters-aggregated-MST:
     <<: *events
     CATDESC: Event H - Multi Start (MST)
     FIELDNAM: Multi Start
+    LABLAXIS: "events"
 
 hi-counters-aggregated-Reserved2:
     <<: *events
     CATDESC: Reserved 2
     FIELDNAM: Reserved 2
+    LABLAXIS: "events"
 
 hi-counters-aggregated-Reserved3:
     <<: *events
     CATDESC: Reserved 3
     FIELDNAM: Reserved 3
+    LABLAXIS: "events"
 
 hi-counters-aggregated-Reserved4:
     <<: *events
     CATDESC: Reserved 4
     FIELDNAM: Reserved 4
+    LABLAXIS: "events"
 
 hi-counters-aggregated-Reserved5:
     <<: *events
     CATDESC: Reserved 5
     FIELDNAM: Reserved 5
+    LABLAXIS: "events"
 
 hi-counters-aggregated-LowTOFCutoff:
     <<: *events
     CATDESC: Low TOF Cutoff
     FIELDNAM: Low TOF Cutoff
+    LABLAXIS: "events"
 
 hi-counters-aggregated-Reserved6:
     <<: *events
     CATDESC: Reserved 6
     FIELDNAM: Reserved 6
+    LABLAXIS: "events"
 
 hi-counters-aggregated-Reserved7:
     <<: *events
     CATDESC: Reserved 7
     FIELDNAM: Reserved 7
+    LABLAXIS: "events"
 
 hi-counters-aggregated-ASIC1FlagInvalid:
     <<: *events
     CATDESC: ASIC 1 Flag Invalid Count
     FIELDNAM: ASIC 1 Flag Invalid
+    LABLAXIS: "events"
 
 hi-counters-aggregated-ASIC2FlagInvalid:
     <<: *events
     CATDESC: ASIC 2 Flag Invalid Count
     FIELDNAM: ASIC 2 Flag Invalid
+    LABLAXIS: "events"
 
 hi-counters-aggregated-ASIC1ChannelInvalid:
     <<: *events
     CATDESC: ASIC 1 Channel Invalid Count
     FIELDNAM: ASIC 1 Channel Invalid
+    LABLAXIS: "events"
 
 hi-counters-aggregated-ASIC2ChannelInvalid:
     <<: *events
     CATDESC: ASIC 2 Channel Invalid Count
     FIELDNAM: ASIC 2 Channel Invalid
+    LABLAXIS: "events"
 
 # hi-counters-singles
 hi-counters-singles-tcr:
@@ -417,7 +437,7 @@ hi-counters-singles-tcr:
     CATDESC: Rates - Event A (TCR)
     FIELDNAM: Rates
     DEPEND_1: ssd_index
-    LABL_PTR_1: ssd_index
+    LABL_PTR_1: ssd_index_label
     UNITS: events
 
 hi-counters-singles-ssdo:
@@ -425,7 +445,7 @@ hi-counters-singles-ssdo:
     CATDESC: Rates - Event E (SSDO)
     FIELDNAM: Rates
     DEPEND_1: ssd_index
-    LABL_PTR_1: ssd_index
+    LABL_PTR_1: ssd_index_label
     UNITS: events
 
 hi-counters-singles-stssd:
@@ -433,7 +453,7 @@ hi-counters-singles-stssd:
     CATDESC: Rates - Event G (STSSD)
     FIELDNAM: Rates
     DEPEND_1: ssd_index
-    LABL_PTR_1: ssd_index
+    LABL_PTR_1: ssd_index_label
     UNITS: events
 
 # hi-ialirt
@@ -659,8 +679,8 @@ hi-sectored-h:
     DEPEND_2: ssd_index
     DEPEND_3: spin_sector_index
     LABL_PTR_1: energy_h
-    LABL_PTR_2: ssd_index
-    LABL_PTR_3: spin_sector_index
+    LABL_PTR_2: ssd_index_label
+    LABL_PTR_3: spin_sector_index_label
 
 hi-sectored-energy_h:
     <<: *hi_energies_default
@@ -681,8 +701,8 @@ hi-sectored-he3he4:
     DEPEND_2: ssd_index
     DEPEND_3: spin_sector_index
     LABL_PTR_1: energy_he3he4
-    LABL_PTR_2: ssd_index
-    LABL_PTR_3: spin_sector_index
+    LABL_PTR_2: ssd_index_label
+    LABL_PTR_3: spin_sector_index_label
 
 hi-sectored-energy_he3he4:
     <<: *hi_energies_default
@@ -703,8 +723,8 @@ hi-sectored-cno:
     DEPEND_2: ssd_index
     DEPEND_3: spin_sector_index
     LABL_PTR_1: energy_cno
-    LABL_PTR_2: ssd_index
-    LABL_PTR_3: spin_sector_index
+    LABL_PTR_2: ssd_index_label
+    LABL_PTR_3: spin_sector_index_label
 
 hi-sectored-energy_cno:
     <<: *hi_energies_default
@@ -725,8 +745,8 @@ hi-sectored-fe:
     DEPEND_2: ssd_index
     DEPEND_3: spin_sector_index
     LABL_PTR_1: energy_fe
-    LABL_PTR_2: ssd_index
-    LABL_PTR_3: spin_sector_index
+    LABL_PTR_2: ssd_index_label
+    LABL_PTR_3: spin_sector_index_label
 
 hi-sectored-energy_fe:
     <<: *hi_energies_default
@@ -747,7 +767,7 @@ lo-counters-aggregated-TCR:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-DCR:
     <<: *events
@@ -756,7 +776,7 @@ lo-counters-aggregated-DCR:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-TOFPlusAPD:
     <<: *events
@@ -765,7 +785,7 @@ lo-counters-aggregated-TOFPlusAPD:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-TOFOnly:
     <<: *events
@@ -774,7 +794,7 @@ lo-counters-aggregated-TOFOnly:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-PositionPlusAPD:
     <<: *events
@@ -783,7 +803,7 @@ lo-counters-aggregated-PositionPlusAPD:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-PositionOnly:
     <<: *events
@@ -792,7 +812,7 @@ lo-counters-aggregated-PositionOnly:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-STAorSTBPlusAPD:
     <<: *events
@@ -801,7 +821,7 @@ lo-counters-aggregated-STAorSTBPlusAPD:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-STAorSTBOnly:
     <<: *events
@@ -810,7 +830,7 @@ lo-counters-aggregated-STAorSTBOnly:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-Reserved1:
     <<: *events
@@ -819,7 +839,7 @@ lo-counters-aggregated-Reserved1:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-Reserved2:
     <<: *events
@@ -828,7 +848,7 @@ lo-counters-aggregated-Reserved2:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-SPOnly:
     <<: *events
@@ -837,7 +857,7 @@ lo-counters-aggregated-SPOnly:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-APDOnly:
     <<: *events
@@ -846,7 +866,7 @@ lo-counters-aggregated-APDOnly:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-LowTOFCutoff:
     <<: *events
@@ -855,7 +875,7 @@ lo-counters-aggregated-LowTOFCutoff:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-STA:
     <<: *events
@@ -864,7 +884,7 @@ lo-counters-aggregated-STA:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-STB:
     <<: *events
@@ -873,7 +893,7 @@ lo-counters-aggregated-STB:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-SP:
     <<: *events
@@ -882,7 +902,7 @@ lo-counters-aggregated-SP:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-TotalPositionCount:
     <<: *events
@@ -891,7 +911,7 @@ lo-counters-aggregated-TotalPositionCount:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-InvalidPositionCount:
     <<: *events
@@ -900,7 +920,7 @@ lo-counters-aggregated-InvalidPositionCount:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-ASIC1FlagInvalid:
     <<: *events
@@ -909,7 +929,7 @@ lo-counters-aggregated-ASIC1FlagInvalid:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-ASIC2FlagInvalid:
     <<: *events
@@ -918,7 +938,7 @@ lo-counters-aggregated-ASIC2FlagInvalid:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-ASIC1ChannelInvalid:
     <<: *events
@@ -927,7 +947,7 @@ lo-counters-aggregated-ASIC1ChannelInvalid:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-ASIC2ChannelInvalid:
     <<: *events
@@ -936,7 +956,7 @@ lo-counters-aggregated-ASIC2ChannelInvalid:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-TEC4TimeoutTOFNoPos:
     <<: *events
@@ -945,7 +965,7 @@ lo-counters-aggregated-TEC4TimeoutTOFNoPos:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-TEC4TimeoutPosNoTOF:
     <<: *events
@@ -954,7 +974,7 @@ lo-counters-aggregated-TEC4TimeoutPosNoTOF:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-TEC4TimeoutNoPosTOF:
     <<: *events
@@ -963,7 +983,7 @@ lo-counters-aggregated-TEC4TimeoutNoPosTOF:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-TEC5TimeoutTOFNoPos:
     <<: *events
@@ -972,7 +992,7 @@ lo-counters-aggregated-TEC5TimeoutTOFNoPos:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-TEC5TimeoutPosNoTOF:
     <<: *events
@@ -981,7 +1001,7 @@ lo-counters-aggregated-TEC5TimeoutPosNoTOF:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 lo-counters-aggregated-TEC5TimeoutNoPosTOF:
     <<: *events
@@ -990,7 +1010,7 @@ lo-counters-aggregated-TEC5TimeoutNoPosTOF:
     DEPEND_1: spin_sector_pairs
     DEPEND_2: esa_step
     LABL_PTR_1: spin_sector_pairs_label
-    LABL_PTR_2: esa_step
+    LABL_PTR_2: esa_step_label
 
 # lo-counters-singles
 lo-counters-singles-apd_singles:
@@ -1000,9 +1020,9 @@ lo-counters-singles-apd_singles:
     DEPEND_1: inst_az
     DEPEND_2: spin_sector_pairs
     DEPEND_3: esa_step
-    LABL_PTR_1: inst_az
+    LABL_PTR_1: inst_az_label
     LABL_PTR_2: spin_sector_pairs_label
-    LABL_PTR_3: esa_step
+    LABL_PTR_3: esa_step_label
 
 # lo-sw-angular
 lo-sw-angular-hplus:
@@ -1012,9 +1032,9 @@ lo-sw-angular-hplus:
     DEPEND_1: inst_az
     DEPEND_2: spin_sector
     DEPEND_3: esa_step
-    LABL_PTR_1: inst_az
-    LABL_PTR_2: spin_sector
-    LABL_PTR_3: esa_step
+    LABL_PTR_1: inst_az_label
+    LABL_PTR_2: spin_sector_label
+    LABL_PTR_3: esa_step_label
 
 lo-sw-angular-heplusplus:
     <<: *counters
@@ -1023,9 +1043,9 @@ lo-sw-angular-heplusplus:
     DEPEND_1: inst_az
     DEPEND_2: spin_sector
     DEPEND_3: esa_step
-    LABL_PTR_1: inst_az
-    LABL_PTR_2: spin_sector
-    LABL_PTR_3: esa_step
+    LABL_PTR_1: inst_az_label
+    LABL_PTR_2: spin_sector_label
+    LABL_PTR_3: esa_step_label
 
 lo-sw-angular-oplus6:
     <<: *counters
@@ -1034,9 +1054,9 @@ lo-sw-angular-oplus6:
     DEPEND_1: inst_az
     DEPEND_2: spin_sector
     DEPEND_3: esa_step
-    LABL_PTR_1: inst_az
-    LABL_PTR_2: spin_sector
-    LABL_PTR_3: esa_step
+    LABL_PTR_1: inst_az_label
+    LABL_PTR_2: spin_sector_label
+    LABL_PTR_3: esa_step_label
 
 lo-sw-angular-fe_loq:
     <<: *counters
@@ -1045,9 +1065,9 @@ lo-sw-angular-fe_loq:
     DEPEND_1: inst_az
     DEPEND_2: spin_sector
     DEPEND_3: esa_step
-    LABL_PTR_1: inst_az
-    LABL_PTR_2: spin_sector
-    LABL_PTR_3: esa_step
+    LABL_PTR_1: inst_az_label
+    LABL_PTR_2: spin_sector_label
+    LABL_PTR_3: esa_step_label
 
 lo-nsw-angular-heplusplus:
     <<: *counters
@@ -1056,60 +1076,74 @@ lo-nsw-angular-heplusplus:
     DEPEND_1: inst_az
     DEPEND_2: spin_sector
     DEPEND_3: esa_step
-    LABL_PTR_1: inst_az
-    LABL_PTR_2: spin_sector
-    LABL_PTR_3: esa_step
+    LABL_PTR_1: inst_az_label
+    LABL_PTR_2: spin_sector_label
+    LABL_PTR_3: esa_step_label
 
 # lo-sw-priority
 lo-sw-priority-p0_tcrs:
     <<: *counters
     CATDESC: Sunward Sector Triple Coincidence Pickup Ions Priority
+    DEPEND_1: spin_sector
+    DEPEND_2: esa_step
     FIELDNAM: SW Sector Triple Coincidence PUI's
-    LABL_PTR_1: spin_sector
-    LABL_PTR_2: esa_step
+    LABL_PTR_1: spin_sector_label
+    LABL_PTR_2: esa_step_label
 
 lo-sw-priority-p1_hplus:
     <<: *counters
     CATDESC: Sunward Sector H+ Priority
+    DEPEND_1: spin_sector
+    DEPEND_2: esa_step
     FIELDNAM: SW Sector H+
-    LABL_PTR_1: spin_sector
-    LABL_PTR_2: esa_step
+    LABL_PTR_1: spin_sector_label
+    LABL_PTR_2: esa_step_label
 
 lo-sw-priority-p2_heplusplus:
     <<: *counters
     CATDESC: Sunward Sector He++ Priority
+    DEPEND_1: spin_sector
+    DEPEND_2: esa_step
     FIELDNAM: SW Sector He++
-    LABL_PTR_1: spin_sector
-    LABL_PTR_2: esa_step
+    LABL_PTR_1: spin_sector_label
+    LABL_PTR_2: esa_step_label
 
 lo-sw-priority-p3_heavies:
     <<: *counters
     CATDESC: Sunward Sector High Charge State Heavies Priority
+    DEPEND_1: spin_sector
+    DEPEND_2: esa_step
     FIELDNAM: SW Sector High Charge State Heavies
-    LABL_PTR_1: spin_sector
-    LABL_PTR_2: esa_step
+    LABL_PTR_1: spin_sector_label
+    LABL_PTR_2: esa_step_label
 
 lo-sw-priority-p4_dcrs:
     <<: *counters
     CATDESC: Sunward Sector Double Coincidence Pickup Ions Priority
+    DEPEND_1: spin_sector
+    DEPEND_2: esa_step
     FIELDNAM: SW Sector Double Coincidence PUI's
-    LABL_PTR_1: spin_sector
-    LABL_PTR_2: esa_step
+    LABL_PTR_1: spin_sector_label
+    LABL_PTR_2: esa_step_label
 
 # lo-nsw-priority
 lo-nsw-priority-p5_heavies:
     <<: *counters
     CATDESC: Non-sunward Sector Heavies Priority
+    DEPEND_1: spin_sector
+    DEPEND_2: esa_step
     FIELDNAM: NSW Sector Heavies
-    LABL_PTR_1: spin_sector
-    LABL_PTR_2: esa_step
+    LABL_PTR_1: spin_sector_label
+    LABL_PTR_2: esa_step_label
 
 lo-nsw-priority-p6_hplus_heplusplus:
     <<: *counters
     CATDESC: Non-sunward H+ and He++ Priority
+    DEPEND_1: spin_sector
+    DEPEND_2: esa_step
     FIELDNAM: NSW H+ and He++
-    LABL_PTR_1: spin_sector
-    LABL_PTR_2: esa_step
+    LABL_PTR_1: spin_sector_label
+    LABL_PTR_2: esa_step_label
 
 # lo-sw-species
 lo-sw-species-hplus:
@@ -1449,6 +1483,7 @@ P0_DataQuality:
     <<: *direct_events
     CATDESC: Priority 0 Data Quality
     FIELDNAM: Priority 0 Data Quality
+    LABLAXIS: " "
     VALIDMAX: 1
 
 P0_EnergyStep:
@@ -1576,6 +1611,7 @@ P1_DataQuality:
     <<: *direct_events
     CATDESC: Priority 1 Data Quality
     FIELDNAM: Priority 1 Data Quality
+    LABLAXIS: " "
     VALIDMAX: 1
 
 P1_EnergyStep:
@@ -1703,6 +1739,7 @@ P2_DataQuality:
     <<: *direct_events
     CATDESC: Priority 2 Data Quality
     FIELDNAM: Priority 2 Data Quality
+    LABLAXIS: " "
     VALIDMAX: 1
 
 P2_EnergyStep:
@@ -1830,6 +1867,7 @@ P3_DataQuality:
     <<: *direct_events
     CATDESC: Priority 3 Data Quality
     FIELDNAM: Priority 3 Data Quality
+    LABLAXIS: " "
     VALIDMAX: 1
 
 P3_EnergyStep:
@@ -1957,6 +1995,7 @@ P4_DataQuality:
     <<: *direct_events
     CATDESC: Priority 4 Data Quality
     FIELDNAM: Priority 4 Data Quality
+    LABLAXIS: " "
     VALIDMAX: 1
 
 P4_EnergyStep:
@@ -2084,6 +2123,7 @@ P5_DataQuality:
     <<: *direct_events
     CATDESC: Priority 5 Data Quality
     FIELDNAM: Priority 5 Data Quality
+    LABLAXIS: " "
     VALIDMAX: 1
 
 P5_EnergyStep:
@@ -2211,6 +2251,7 @@ P6_DataQuality:
     <<: *direct_events
     CATDESC: Priority 6 Data Quality
     FIELDNAM: Priority 6 Data Quality
+    LABLAXIS: " "
     VALIDMAX: 1
 
 P6_EnergyStep:
@@ -2298,6 +2339,7 @@ P7_DataQuality:
     <<: *direct_events
     CATDESC: Priority 7 Data Quality
     FIELDNAM: Priority 7 Data Quality
+    LABLAXIS: " "
     VALIDMAX: 1
 
 P7_EnergyStep:
