@@ -214,7 +214,7 @@ class CoDICEL1aPipeline:
                 values,
                 name=name,
                 dims=dims,
-                attrs=self.cdf_attrs.get_variable_attributes(name),
+                attrs=self.cdf_attrs.get_variable_attributes(name, check_schema=False),
             )
 
             self.coords[name] = coord
@@ -370,13 +370,15 @@ class CoDICEL1aPipeline:
             if variable_name == "energy_table":
                 variable_data = self.get_energy_table()
                 dims = ["esa_step"]
-                attrs = self.cdf_attrs.get_variable_attributes("energy_table")
+                attrs = self.cdf_attrs.get_variable_attributes(
+                    "energy_table", check_schema=False
+                )
 
             elif variable_name == "acquisition_time_per_step":
                 variable_data = self.get_acquisition_times()
                 dims = ["esa_step"]
                 attrs = self.cdf_attrs.get_variable_attributes(
-                    "acquisition_time_per_step"
+                    "acquisition_time_per_step", check_schema=False
                 )
 
             # These variables can be gathered straight from the packet data
@@ -914,7 +916,7 @@ def create_hskp_dataset(packet: xr.Dataset) -> xr.Dataset:
         packet.epoch,
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch"),
+        attrs=cdf_attrs.get_variable_attributes("epoch", check_schema=False),
     )
 
     dataset = xr.Dataset(
