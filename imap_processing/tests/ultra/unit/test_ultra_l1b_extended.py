@@ -587,7 +587,7 @@ def test_get_efficiency():
 
     path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
     ancillary_files = {
-        "imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv": path
+        "l1b-45sensor-logistic-interpolation": path
         / "imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv"
     }
 

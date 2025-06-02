@@ -97,12 +97,11 @@ def test_ultra_l1c(mock_data_l1b_dict):
     """Tests that L1c data is created."""
     path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
     ancillary_files = {
-        "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv": path
+        "l1c-90sensor-dps-exposure": path
         / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
-        "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv": path
+        "l1c-90sensor-efficiencies": path
         / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
-        "imap_ultra_l1c-90sensor-gf_20250101_v000.csv": path
-        / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
+        "l1c-90sensor-gf": path / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
     }
 
     output_datasets = ultra_l1c(mock_data_l1b_dict, ancillary_files, has_spice=False)
@@ -184,12 +183,11 @@ def test_calculate_spacecraft_pset_with_cdf():
 
     path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
     ancillary_files = {
-        "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv": path
+        "l1c-90sensor-dps-exposure": path
         / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
-        "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv": path
+        "l1c-90sensor-efficiencies": path
         / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
-        "imap_ultra_l1c-90sensor-gf_20250101_v000.csv": path
-        / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
+        "l1c-90sensor-gf": path / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
     }
 
     output_datasets = ultra_l1c(data_dict, ancillary_files, has_spice=False)
