@@ -58,7 +58,6 @@ imap_codice_l1a_hi-pha:
 
 imap_codice_l1a_hi-ialirt:
     <<: *instrument_base
-    Data_level: 1A
     Data_type: L1A_hi-ialirt>Level-1A Hi I-ALiRT Data
     Logical_source: imap_codice_l1a_hi-ialirt
     Logical_source_description: IMAP Mission CoDICE Hi Level-1A I-ALiRT Data.
@@ -119,7 +118,6 @@ imap_codice_l1a_lo-pha:
 
 imap_codice_l1a_lo-ialirt:
     <<: *instrument_base
-    Data_level: 1A
     Data_type: L1A_lo-ialirt>Level-1A Lo I-ALiRT Data
     Logical_source: imap_codice_l1a_lo-ialirt
     Logical_source_description: IMAP Mission CoDICE Lo Level-1A I-ALiRT Data.
@@ -143,6 +141,12 @@ imap_codice_l1b_hi-counters-singles:
     Data_type: L1B_hi-counters-singles>Level-1B Hi Single Instrument Rates Data
     Logical_source: imap_codice_l1b_hi-counters-singles
     Logical_source_description: IMAP Mission CoDICE Hi Level-1B Single Instrument Rates Data.
+
+imap_codice_l1b_hi-ialirt:
+    <<: *instrument_base
+    Data_type: L1B_hi-ialirt>Level-1B Hi I-ALiRT Data
+    Logical_source: imap_codice_l1b_hi-ialirt
+    Logical_source_description: IMAP Mission CoDICE Hi Level-1B I-ALiRT Data.
 
 imap_codice_l1b_hi-omni:
     <<: *instrument_base
@@ -209,3 +213,9 @@ imap_codice_l1b_lo-nsw-species:
     Data_type: L1B_lo-nsw-species>Level-1B Lo Non-Sunward Species Rates Data
     Logical_source: imap_codice_l1b_lo-nsw-species
     Logical_source_description: IMAP Mission CoDICE Lo Level-1B Non-Sunward Species Rates Data.
+
+imap_codice_l1b_lo-ialirt:
+    <<: *instrument_base
+    Data_type: L1B_lo-ialirt>Level-1B Lo I-ALiRT Data
+    Logical_source: imap_codice_l1b_lo-ialirt
+    Logical_source_description: IMAP Mission CoDICE Lo Level-1B I-ALiRT Data.
