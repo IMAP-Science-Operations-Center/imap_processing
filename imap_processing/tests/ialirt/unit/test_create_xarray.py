@@ -24,7 +24,7 @@ def test_create_dataset():
             "met": 124,
             "utc": "2025-05-21T15:00:00",
             "ttj2000ns": Decimal("222000000000"),
-            "swe_normalized_counts_quarter_1_esa_0": Decimal("123"),
+            "swe_normalized_counts_half_1_esa_0": Decimal("123"),
         },
     ]
 
@@ -33,7 +33,7 @@ def test_create_dataset():
     assert (dataset["component"].values == ["x", "y", "z"]).all()
 
     np.testing.assert_allclose(
-        dataset["swe_normalized_counts_quarter_1_esa_0"].values,
+        dataset["swe_normalized_counts_half_1_esa_0"].values,
         [4294967295, 123],
     )
     np.testing.assert_allclose(
@@ -52,7 +52,7 @@ def test_create_dataset():
     assert dataset["mag_4s_b_gse"].dims == ("epoch", "component")
 
     # Tests that you can write to a cdf.
-    dataset.attrs["Data_version"] = "v001"
+    dataset.attrs["Data_version"] = "001"
     test_data_path = write_cdf(dataset, istp=True)
 
     assert test_data_path.exists()
