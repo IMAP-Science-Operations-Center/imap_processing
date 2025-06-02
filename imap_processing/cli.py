@@ -632,8 +632,7 @@ class Codice(ProcessInstrument):
                 )
             # process data
             science_files = dependencies.get_file_paths(source="codice")
-            dependency = load_cdf(science_files[0])
-            datasets = [codice_l1b.process_codice_l1b(dependency)]
+            datasets = [codice_l1b.process_codice_l1b(science_files[0])]
 
         return datasets
 
