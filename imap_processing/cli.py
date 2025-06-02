@@ -1335,33 +1335,44 @@ class Ultra(ProcessInstrument):
                 )
             datasets = ultra_l1a.ultra_l1a(science_files[0])
         elif self.data_level == "l1b":
-            data_dict = {}
-            for input_type in dependencies.processing_input:
-                science_files = dependencies.get_file_paths(
-                    source="ultra", descriptor=input_type.descriptor
-                )
-                if science_files and input_type.data_type != "ancillary":
-                    dataset = load_cdf(science_files[0])
-                    data_dict[dataset.attrs["Logical_source"]] = dataset
+            science_files = dependencies.get_file_paths(source="ultra", data_type="l1a")
+            l1a_dict = {
+                dataset.attrs["Logical_source"]: dataset
+                for dataset in [load_cdf(sci_file) for sci_file in science_files]
+            }
+            science_files = dependencies.get_file_paths(source="ultra", data_type="l1b")
+            l1b_dict = {
+                dataset.attrs["Logical_source"]: dataset
+                for dataset in [load_cdf(sci_file) for sci_file in science_files]
+            }
+            combined = {**l1a_dict, **l1b_dict}
             anc_paths = dependencies.get_file_paths(data_type="ancillary")
-            ancillary_files = {f.name: f for f in anc_paths}
-            datasets = ultra_l1b.ultra_l1b(data_dict, ancillary_files)
+            ancillary_files = {}
+            for path in anc_paths:
+                ancillary_files[path.stem.split("_")[2]] = path
+            datasets = ultra_l1b.ultra_l1b(combined, ancillary_files)
         elif self.data_level == "l1c":
-            data_dict = {}
-            has_spice = False
-            for input_type in dependencies.processing_input:
-                if input_type.input_type == ProcessingInputType.SPICE_FILE:
-                    has_spice = True
-                science_files = dependencies.get_file_paths(
-                    source="ultra", descriptor=input_type.descriptor
-                )
-                if science_files and input_type.data_type != "ancillary":
-                    dataset = load_cdf(science_files[0])
-                    data_dict[dataset.attrs["Logical_source"]] = dataset
+            science_files = dependencies.get_file_paths(source="ultra", data_type="l1a")
+            l1a_dict = {
+                dataset.attrs["Logical_source"]: dataset
+                for dataset in [load_cdf(sci_file) for sci_file in science_files]
+            }
+            science_files = dependencies.get_file_paths(source="ultra", data_type="l1b")
+            l1b_dict = {
+                dataset.attrs["Logical_source"]: dataset
+                for dataset in [load_cdf(sci_file) for sci_file in science_files]
+            }
+            combined = {**l1a_dict, **l1b_dict}
             anc_paths = dependencies.get_file_paths(data_type="ancillary")
-            ancillary_files = {f.name: f for f in anc_paths}
-            datasets = ultra_l1c.ultra_l1c(data_dict, ancillary_files, has_spice)
-
+            ancillary_files = {}
+            for path in anc_paths:
+                ancillary_files[path.stem.split("_")[2]] = path
+            spice_paths = dependencies.get_file_paths(data_type="spice")
+            if spice_paths:
+                has_spice = True
+            else:
+                has_spice = False
+            datasets = ultra_l1c.ultra_l1c(combined, ancillary_files, has_spice)
         elif self.data_level == "l2":
             all_pset_filepaths = dependencies.get_file_paths(
                 source="ultra", descriptor="pset"

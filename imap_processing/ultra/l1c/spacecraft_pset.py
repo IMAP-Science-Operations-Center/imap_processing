@@ -61,19 +61,15 @@ def calculate_spacecraft_pset(
     # calculate background rates
     background_rates = get_spacecraft_background_rates()
 
-    efficiencies = ancillary_files[
-        "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv"
-    ]
-    geometric_function = ancillary_files["imap_ultra_l1c-90sensor-gf_20250101_v000.csv"]
+    efficiencies = ancillary_files["l1c-90sensor-efficiencies"]
+    geometric_function = ancillary_files["l1c-90sensor-gf"]
 
     df_efficiencies = pd.read_csv(efficiencies)
     df_geometric_function = pd.read_csv(geometric_function)
     sensitivity = interpolate_sensitivity(df_efficiencies, df_geometric_function)
 
     # Calculate exposure
-    constant_exposure = ancillary_files[
-        "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv"
-    ]
+    constant_exposure = ancillary_files["l1c-90sensor-dps-exposure"]
     df_exposure = pd.read_csv(constant_exposure)
     exposure_pointing = get_spacecraft_exposure_times(df_exposure)
 
