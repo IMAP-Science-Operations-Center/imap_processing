@@ -1449,7 +1449,6 @@ P0_DataQuality:
     <<: *direct_events
     CATDESC: Priority 0 Data Quality
     FIELDNAM: Priority 0 Data Quality
-    LABL_PTR_1: event_num
     VALIDMAX: 1
 
 P0_EnergyStep:
@@ -1481,7 +1480,7 @@ P0_NumEvents:
     CATDESC: Priority 0 Number of Events
     FIELDNAM: Priority 0 Number of Events
     FILLVAL: 65535
-    LABLAXIS: unitless
+    LABLAXIS: " "
 
 P0_PHAType:
     <<: *direct_events
@@ -1577,7 +1576,6 @@ P1_DataQuality:
     <<: *direct_events
     CATDESC: Priority 1 Data Quality
     FIELDNAM: Priority 1 Data Quality
-    LABL_PTR_1: event_num
     VALIDMAX: 1
 
 P1_EnergyStep:
@@ -1609,7 +1607,7 @@ P1_NumEvents:
     CATDESC: Priority 1 Number of Events
     FIELDNAM: Priority 1 Number of Events
     FILLVAL: 65535
-    LABLAXIS: unitless
+    LABLAXIS: " "
 
 P1_PHAType:
     <<: *direct_events
@@ -1705,7 +1703,6 @@ P2_DataQuality:
     <<: *direct_events
     CATDESC: Priority 2 Data Quality
     FIELDNAM: Priority 2 Data Quality
-    LABL_PTR_1: event_num
     VALIDMAX: 1
 
 P2_EnergyStep:
@@ -1737,7 +1734,7 @@ P2_NumEvents:
     CATDESC: Priority 2 Number of Events
     FIELDNAM: Priority 2 Number of Events
     FILLVAL: 65535
-    LABLAXIS: unitless
+    LABLAXIS: " "
 
 P2_PHAType:
     <<: *direct_events
@@ -1833,7 +1830,6 @@ P3_DataQuality:
     <<: *direct_events
     CATDESC: Priority 3 Data Quality
     FIELDNAM: Priority 3 Data Quality
-    LABL_PTR_1: event_num
     VALIDMAX: 1
 
 P3_EnergyStep:
@@ -1865,7 +1861,7 @@ P3_NumEvents:
     CATDESC: Priority 3 Number of Events
     FIELDNAM: Priority 3 Number of Events
     FILLVAL: 65535
-    LABLAXIS: unitless
+    LABLAXIS: " "
 
 P3_PHAType:
     <<: *direct_events
@@ -1961,7 +1957,6 @@ P4_DataQuality:
     <<: *direct_events
     CATDESC: Priority 4 Data Quality
     FIELDNAM: Priority 4 Data Quality
-    LABL_PTR_1: event_num
     VALIDMAX: 1
 
 P4_EnergyStep:
@@ -1993,7 +1988,7 @@ P4_NumEvents:
     CATDESC: Priority 4 Number of Events
     FIELDNAM: Priority 4 Number of Events
     FILLVAL: 65535
-    LABLAXIS: unitless
+    LABLAXIS: " "
 
 P4_PHAType:
     <<: *direct_events
@@ -2089,7 +2084,6 @@ P5_DataQuality:
     <<: *direct_events
     CATDESC: Priority 5 Data Quality
     FIELDNAM: Priority 5 Data Quality
-    LABL_PTR_1: event_num
     VALIDMAX: 1
 
 P5_EnergyStep:
@@ -2121,7 +2115,7 @@ P5_NumEvents:
     CATDESC: Priority 5 Number of Events
     FIELDNAM: Priority 5 Number of Events
     FILLVAL: 65535
-    LABLAXIS: unitless
+    LABLAXIS: " "
 
 P5_PHAType:
     <<: *direct_events
@@ -2217,7 +2211,6 @@ P6_DataQuality:
     <<: *direct_events
     CATDESC: Priority 6 Data Quality
     FIELDNAM: Priority 6 Data Quality
-    LABL_PTR_1: event_num
     VALIDMAX: 1
 
 P6_EnergyStep:
@@ -2241,7 +2234,7 @@ P6_NumEvents:
     CATDESC: Priority 6 Number of Events
     FIELDNAM: Priority 6 Number of Events
     FILLVAL: 65535
-    LABLAXIS: unitless
+    LABLAXIS: " "
 
 P6_PHAType:
     <<: *direct_events
@@ -2305,7 +2298,6 @@ P7_DataQuality:
     <<: *direct_events
     CATDESC: Priority 7 Data Quality
     FIELDNAM: Priority 7 Data Quality
-    LABL_PTR_1: event_num
     VALIDMAX: 1
 
 P7_EnergyStep:
@@ -2329,7 +2321,7 @@ P7_NumEvents:
     CATDESC: Priority 7 Number of Events
     FIELDNAM: Priority 7 Number of Events
     FILLVAL: 65535
-    LABLAXIS: unitless
+    LABLAXIS: " "
 
 P7_PHAType:
     <<: *direct_events
