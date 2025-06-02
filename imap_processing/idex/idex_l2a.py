@@ -30,7 +30,8 @@ from scipy.stats import exponnorm
 
 from imap_processing import imap_module_directory
 from imap_processing.idex import idex_constants
-from imap_processing.idex.idex_l1a import get_idex_attrs
+from imap_processing.idex.idex_constants import SPICE_ARRAYS
+from imap_processing.idex.idex_utils import get_idex_attrs, setup_dataset
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,8 @@ def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
     l1b_dataset : xarray.Dataset
         The``xarray`` dataset containing the science data and supporting metadata.
     """
+    # Get attributes
+    idex_attrs = get_idex_attrs("l2a")
     logger.info(
         f"Running IDEX L2A processing on dataset: {l1b_dataset.attrs['Logical_source']}"
     )
@@ -87,10 +90,12 @@ def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
     masses = atomic_masses["Mass"]
     stretches, shifts, mass_scales = time_to_mass(tof_high.data, hs_time.data, masses)
 
+    # TODO use correct fillval
     mass_scales_da = xr.DataArray(
         name="mass_scale",
         data=mass_scales,
         dims=("epoch", "time_high_sample_rate_index"),
+        attrs=idex_attrs.get_variable_attributes("mass_scale"),
     )
     snr = calculate_snr(tof_high, hs_time)
     # Find peaks for each event. The peaks represent a TOF of an ion.
@@ -113,15 +118,42 @@ def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
             [],
         ],
         output_core_dims=[
-            ["mass", "peak_fit_parameters"],
-            ["mass"],
-            [],
-            [],
+            ["mass_index", "peak_fit_parameters_index"],
+            ["mass_index"],
+            ["mass_index"],
+            ["mass_index"],
         ],
         vectorize=True,
+        keep_attrs=True,
+    )
+    peak_fits_params.attrs = idex_attrs.get_variable_attributes(
+        "tof_peak_fit_parameters"
+    )
+    area_under_fits.attrs = idex_attrs.get_variable_attributes(
+        "tof_peak_area_under_fit"
+    )
+    fit_chisqr.attrs = idex_attrs.get_variable_attributes("tof_peak_chi_squared")
+    fit_redchi.attrs = idex_attrs.get_variable_attributes(
+        "tof_peak_reduced_chi_squared"
     )
 
-    l2a_dataset = l1b_dataset.copy()
+    area_under_fits.rename("tof_peak_area_under_fit")
+    peak_fits_params.rename("tof_peak_fit_parameters")
+    fit_chisqr.rename("tof_peak_chi_squared")
+    fit_redchi.rename("tof_peak_reduced_chi_squared")
+    # Create l2a Dataset
+    prefixes = ["time_low_sample", "time_high_sample"]
+    data_vars = {
+        "tof_peak_fit_parameters": peak_fits_params,
+        "tof_peak_area_under_fit": area_under_fits,
+        "mass_scale": mass_scales_da,
+        "tof_peak_chi_square": fit_chisqr,
+        "tof_peak_reduced_chi_square": fit_redchi,
+    }
+
+    l2a_dataset = setup_dataset(
+        l1b_dataset, prefixes + SPICE_ARRAYS, idex_attrs, data_vars
+    )
 
     for waveform in ["Target_Low", "Target_High", "Ion_Grid"]:
         # Get the dust mass estimates and fit results
@@ -134,7 +166,7 @@ def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
                 ["time_low_sample_rate_index"],
             ],
             output_core_dims=[
-                ["fit_parameters"],
+                ["target_fit_parameter_index"],
                 [],
                 [],
                 [],
@@ -142,30 +174,90 @@ def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
             ],
             vectorize=True,
             output_dtypes=[np.float64] * 6,
+            keep_attrs=True,
         )
         waveform_name = waveform.lower()
-        # Add variables
-        l2a_dataset[f"{waveform_name}_fit_parameters"] = fit_results[0]
-        l2a_dataset[f"{waveform_name}_fit_impact_charge"] = fit_results[1]
-        # TODO: convert charge to mass
-        l2a_dataset[f"{waveform_name}_fit_impact_mass_estimate"] = fit_results[1]
-        l2a_dataset[f"{waveform_name}_chi_squared"] = fit_results[2]
-        l2a_dataset[f"{waveform_name}_reduced_chi_squared"] = fit_results[3]
-        l2a_dataset[f"{waveform_name}_fit_results"] = fit_results[4]
+        output_vars = {
+            f"{waveform_name}_fit_parameters": fit_results[0],
+            f"{waveform_name}_impact_charge": fit_results[1],
+            f"{waveform_name}_dust_mass_estimate": fit_results[1],
+            # Same as impact_charge for now
+            f"{waveform_name}_chi_squared": fit_results[2],
+            f"{waveform_name}_reduced_chi_squared": fit_results[3],
+            f"{waveform_name}_fit_results": fit_results[4],
+        }
+        # Add variables to dataset with attrs
+        for name, data in output_vars.items():
+            l2a_dataset[name] = data
+            l2a_dataset[name].attrs = idex_attrs.get_variable_attributes(name)
 
-    l2a_dataset["tof_peak_fit_parameters"] = peak_fits_params
-    l2a_dataset["tof_peak_area_under_fit"] = area_under_fits
-    l2a_dataset["tof_peak_chi_square"] = fit_chisqr
-    l2a_dataset["tof_peak_reduced_chi_square"] = fit_redchi
-
-    l2a_dataset["tof_peak_kappa"] = xr.DataArray(kappa, dims=["epoch"])
-    l2a_dataset["tof_snr"] = xr.DataArray(snr, dims=["epoch"])
     l2a_dataset["mass"] = mass_scales_da
-    # Update global attributes
-    idex_attrs = get_idex_attrs()
-    l2a_dataset.attrs = idex_attrs.get_global_attributes("imap_idex_l2a_sci")
 
+    l2a_dataset["tof_peak_kappa"] = xr.DataArray(
+        kappa,
+        dims="epoch",
+        attrs=idex_attrs.get_variable_attributes("tof_peak_kappa"),
+    )
+    l2a_dataset["tof_snr"] = xr.DataArray(
+        snr,
+        dims="epoch",
+        attrs=idex_attrs.get_variable_attributes("tof_snr"),
+    )
+    # Add index and label arrays
+    l2a_dataset["mass_index"] = xr.DataArray(
+        name="mass_index",
+        data=np.arange(len(area_under_fits[0])),
+        dims="mass_index",
+        attrs=idex_attrs.get_variable_attributes("mass_index", check_schema=False),
+    )
+    l2a_dataset["peak_fit_parameter_index"] = xr.DataArray(
+        name="peak_fit_parameter_index",
+        data=np.arange(len(l2a_dataset["tof_peak_fit_parameters"][0][0])),
+        dims="peak_fit_parameter_index",
+        attrs=idex_attrs.get_variable_attributes(
+            "peak_fit_parameter_index", check_schema=False
+        ),
+    )
+    l2a_dataset["target_fit_parameter_index"] = xr.DataArray(
+        name="target_fit_parameter_index",
+        data=np.arange(5),
+        dims="target_fit_parameter_index",
+        attrs=idex_attrs.get_variable_attributes(
+            "target_fit_parameter_index", check_schema=False
+        ),
+    )
+    l2a_dataset["mass_labels"] = xr.DataArray(
+        name="mass_labels",
+        data=l2a_dataset.mass_index.astype(str),
+        dims="mass_index",
+        attrs=idex_attrs.get_variable_attributes("mass_labels", check_schema=False),
+    )
+    l2a_dataset["peak_fit_parameter_labels"] = xr.DataArray(
+        name="peak_fit_parameter_labels",
+        data=np.array(["mu", "sigma", "lambda"]),
+        dims="peak_fit_parameter_index",
+        attrs=idex_attrs.get_variable_attributes(
+            "peak_fit_parameter_labels", check_schema=False
+        ),
+    )
+    l2a_dataset["target_fit_parameter_labels"] = xr.DataArray(
+        name="target_fit_parameter_labels",
+        data=np.array(
+            [
+                "time_of_impact",
+                "constant_offset",
+                "amplitude",
+                "rise_time",
+                "discharge_time",
+            ]
+        ),
+        dims="target_fit_parameter_index",
+        attrs=idex_attrs.get_variable_attributes(
+            "target_fit_parameter_labels", check_schema=False
+        ),
+    )
     logger.info("IDEX L2A science data processing completed.")
+    l2a_dataset.attrs.update(idex_attrs.get_global_attributes("imap_idex_l2a_sci"))
     return l2a_dataset
 
 
@@ -358,7 +450,7 @@ def analyze_peaks(
     mass_scale: xr.DataArray,
     event_num: int,
     peaks_2d: np.ndarray,
-) -> tuple[NDArray, NDArray, float, float]:
+) -> tuple[NDArray, NDArray, NDArray, NDArray]:
     """
     Fit an EMG curve to the Time of Flight data around each peak.
 
@@ -391,8 +483,11 @@ def analyze_peaks(
     # and the second is EMG fit parameters (mu, sigma, lambda) for peaks at that mass
     # area_under_emg: (500) array storing the area under each EMG peak at
     # corresponding mass.
-    fit_params = np.zeros((500, 3))
-    area_under_emg = np.zeros(500)
+    ion_mass_dim = 500
+    fit_params = np.zeros((ion_mass_dim, 3))
+    area_under_emg = np.zeros(ion_mass_dim)
+    chisqrs = np.zeros(ion_mass_dim)
+    redchis = np.zeros(ion_mass_dim)
     for peak in peaks_2d[event_num]:
         # Take a slice of 5 samples on either side of the peak
         start = max(0, peak - 5)
@@ -432,10 +527,12 @@ def analyze_peaks(
         if idx < 500:
             fit_params[idx] = np.array([mu, sigma, lam])
             area_under_emg[idx] = area
+            chisqrs[idx] = chisqr
+            redchis[idx] = redchi
         else:
             logger.warning(f"Unable to find a slot for mass: {mass}. Discarding value.")
 
-    return fit_params, area_under_emg, chisqr, redchi
+    return fit_params, area_under_emg, chisqrs, redchis
 
 
 def fit_emg(

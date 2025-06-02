@@ -42,7 +42,9 @@ SPIN_PHASE_BIN_CENTERS = (SPIN_PHASE_BIN_EDGES[:-1] + SPIN_PHASE_BIN_EDGES[1:]) 
 logger = logging.getLogger(__name__)
 
 
-def hi_l1c(dependencies: list) -> list[xr.Dataset]:
+def hi_l1c(
+    de_dataset: xr.Dataset, calibration_prod_config_path: Path
+) -> list[xr.Dataset]:
     """
     High level IMAP-Hi l1c processing function.
 
@@ -53,8 +55,10 @@ def hi_l1c(dependencies: list) -> list[xr.Dataset]:
 
     Parameters
     ----------
-    dependencies : list
-        Input dependencies needed for l1c processing.
+    de_dataset : xarray.Dataset
+        IMAP-Hi l1b de product.
+    calibration_prod_config_path : Path
+        Calibration product configuration file.
 
     Returns
     -------
@@ -65,12 +69,7 @@ def hi_l1c(dependencies: list) -> list[xr.Dataset]:
 
     # TODO: I am not sure what the input for Goodtimes will be so for now,
     #    If the input is an xarray Dataset, do pset processing
-    if len(dependencies) == 2 and isinstance(dependencies[0], xr.Dataset):
-        l1c_dataset = generate_pset_dataset(*dependencies)
-    else:
-        raise NotImplementedError(
-            "Input dependencies not recognized for l1c pset processing."
-        )
+    l1c_dataset = generate_pset_dataset(de_dataset, calibration_prod_config_path)
 
     return [l1c_dataset]
 
@@ -115,21 +114,8 @@ def generate_pset_dataset(
     pset_dataset.update(pset_counts(pset_dataset.coords, config_df, de_dataset))
     # Calculate and add the exposure time to the pset_dataset
     pset_dataset.update(pset_exposure(pset_dataset.coords, de_dataset))
-
-    # TODO: The following section will go away as PSET algorithms to populate
-    #    these variables are written.
-    attr_mgr = ImapCdfAttributes()
-    attr_mgr.add_instrument_global_attrs("hi")
-    attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
-    for var_name in [
-        "background_rates",
-        "background_rates_uncertainty",
-    ]:
-        pset_dataset[var_name] = full_dataarray(
-            var_name,
-            attr_mgr.get_variable_attributes(f"hi_pset_{var_name}", check_schema=False),
-            pset_dataset.coords,
-        )
+    # Get the backgrounds
+    pset_dataset.update(pset_backgrounds(pset_dataset.coords))
 
     return pset_dataset
 
@@ -444,6 +430,41 @@ def get_tof_window_mask(
             tof_array == fill_vals[f"tof_{detector_pair}"],
         )
     return np.all(tof_in_window_mask, axis=0)
+
+
+def pset_backgrounds(pset_coords: dict[str, xr.DataArray]) -> dict[str, xr.DataArray]:
+    """
+    Calculate pointing set backgrounds and background uncertainties.
+
+    Parameters
+    ----------
+    pset_coords : dict[str, xr.DataArray]
+        The PSET coordinates from the xr.Dataset.
+
+    Returns
+    -------
+    dict[str, xr.DataArray]
+        Dictionary containing background_rates and background_rates_unc DataArrays
+        to be added to the PSET dataset.
+    """
+    # TODO: This is just a placeholder setting backgrounds to zero. The background
+    #    algorithm will be determined in flight.
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs("hi")
+    attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
+
+    return {
+        var_name: full_dataarray(
+            var_name,
+            attr_mgr.get_variable_attributes(f"hi_pset_{var_name}", check_schema=False),
+            pset_coords,
+            fill_value=fill_val,
+        )
+        for var_name, fill_val in [
+            ("background_rates", 0),
+            ("background_rates_uncertainty", 1),
+        ]
+    }
 
 
 def pset_exposure(

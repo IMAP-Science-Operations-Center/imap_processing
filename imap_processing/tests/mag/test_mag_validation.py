@@ -6,7 +6,7 @@ import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.cdf.utils import load_cdf
+from imap_processing.ancillary.ancillary_dataset_combiner import MagAncillaryCombiner
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.mag.l1a.mag_l1a_data import MagL1a, TimeTuple
 from imap_processing.mag.l1b.mag_l1b import mag_l1b
@@ -143,15 +143,28 @@ def test_mag_l1a_validation(test_number):
 
 
 @pytest.mark.parametrize(("test_number"), ["009", "010", "011", "012"])
-def test_mag_l1b_validation(test_number):
+def test_mag_l1b_validation(test_number, mocks):
     source_directory = Path(__file__).parent / "validation" / "L1b" / f"T{test_number}"
-    cdf_file = source_directory / f"mag-l1a-l1b-t{test_number}-cal.cdf"
-    calibration_input = None
-    if cdf_file.exists():
-        calibration_input = load_cdf(cdf_file)
+
+    # used in most tests
+    default_cal = (
+        Path(__file__).parent
+        / "validation"
+        / "calibration"
+        / "imap_mag_l1b-calibration_20240229_v002.cdf"
+    )
+    test_cal = (
+        source_directory / f"imap_mag_l1a-l1b-t{test_number}-cal_20240201_v001.cdf"
+    )
+
+    if test_cal.exists():
+        mocks["construct_path"].return_value = test_cal
+        combined = MagAncillaryCombiner([test_cal], np.datetime64("2025-03-01"))
+    else:
+        mocks["construct_path"].return_value = default_cal
+        combined = MagAncillaryCombiner([default_cal], np.datetime64("2025-03-01"))
 
     input_mag_l1a = pd.read_csv(source_directory / f"mag-l1a-l1b-t{test_number}-in.csv")
-
     mag_l1a_mago = mag_l1a_dataset_generator(len(input_mag_l1a.index))
     mag_l1a_magi = mag_l1a_dataset_generator(len(input_mag_l1a.index))
 
@@ -198,15 +211,15 @@ def test_mag_l1b_validation(test_number):
     mag_l1a_mago["compression_flags"].data = compression_flags
     mag_l1a_magi["compression_flags"].data = compression_flags
 
-    mago = mag_l1b(mag_l1a_mago, calibration_input)
-    magi = mag_l1b(mag_l1a_magi, calibration_input)
-
     expected_mago = pd.read_csv(
         source_directory / f"mag-l1a-l1b-t{test_number}-mago-out.csv"
     )
     expected_magi = pd.read_csv(
         source_directory / f"mag-l1a-l1b-t{test_number}-magi-out.csv"
     )
+    day = np.datetime64(expected_magi["t"].iloc[0]).astype("datetime64[D]")
+    mago = mag_l1b(mag_l1a_mago, day, combined.combined_dataset)
+    magi = mag_l1b(mag_l1a_magi, day, combined.combined_dataset)
 
     for index in expected_magi.index:
         assert np.allclose(

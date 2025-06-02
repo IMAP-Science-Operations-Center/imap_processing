@@ -104,7 +104,6 @@ def write_cdf(
     #       5 seconds due to 5 leap-second occurrences since the J2000 epoch.
     # TODO: Create a ttj2000_to_datetime function to handle this conversion
     start_date = dataset.attrs.get("Start_date", None)
-
     if start_date is None:
         # If no start time is included, then use the first epoch in the dataset
         dt64 = TTJ2000_EPOCH + dataset["epoch"].values[0].astype("timedelta64[ns]")
@@ -116,10 +115,11 @@ def write_cdf(
             "No Data_version attribute found in dataset. Using default v999.",
             stacklevel=2,
         )
-        version = "v999"
-    elif not re.match(r"v\d{3}", version):
+        version = "999"
+        dataset.attrs["Data_version"] = version
+    elif not re.match(r"\d{3}", version):
         raise ValueError(
-            f"The Data_version attribute {version} does not match expected format vXXX."
+            f"The Data_version attribute {version} does not match expected format XXX."
         )
 
     repointing = dataset.attrs.get("Repointing", None)
@@ -130,7 +130,7 @@ def write_cdf(
         data_level=data_level,
         descriptor=descriptor,
         start_time=start_date,
-        version=version,
+        version=f"v{version}",  # Ensure version is prefixed with 'v'
         repointing=repointing_int,
     )
     file_path = Path(science_file.construct_path())

@@ -7,7 +7,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
-    get_background_rates,
+    get_spacecraft_background_rates,
     get_spacecraft_exposure_times,
     get_spacecraft_histogram,
 )
@@ -59,7 +59,7 @@ def calculate_spacecraft_pset(
     healpix = np.arange(n_pix)
 
     # calculate background rates
-    background_rates = get_background_rates()
+    background_rates = get_spacecraft_background_rates()
 
     # TODO: calculate sensitivity and interpolate based on energy.
 
@@ -69,14 +69,14 @@ def calculate_spacecraft_pset(
     exposure_pointing = get_spacecraft_exposure_times(df_exposure)
 
     # For ISTP, epoch should be the center of the time bin.
-    pset_dict["epoch"] = de_dataset.epoch.data[0].astype(np.int64)
+    pset_dict["epoch"] = de_dataset.epoch.data[:1].astype(np.int64)
     pset_dict["counts"] = counts
     pset_dict["latitude"] = latitude
     pset_dict["longitude"] = longitude
     pset_dict["energy_bin_geometric_mean"] = energy_bin_geometric_means
     pset_dict["background_rates"] = background_rates
     pset_dict["exposure_factor"] = exposure_pointing
-    pset_dict["healpix"] = healpix
+    pset_dict["pixel_index"] = healpix
     pset_dict["energy_bin_delta"] = np.diff(intervals, axis=1).squeeze()
 
     dataset = create_dataset(pset_dict, name, "l1c")

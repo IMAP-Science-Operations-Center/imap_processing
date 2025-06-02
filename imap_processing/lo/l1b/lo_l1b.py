@@ -52,7 +52,9 @@ def lo_l1b(dependencies: dict) -> list[Path]:
         # Get the start and end times for each spin epoch
         acq_start, acq_end = convert_start_end_acq_times(spin_data)
         # Get the average spin durations for each epoch
-        avg_spin_durations = get_avg_spin_durations(acq_start, acq_end)
+        avg_spin_durations_per_cycle = get_avg_spin_durations_per_cycle(
+            acq_start, acq_end
+        )
         # get spin angle (0 - 360 degrees) for each DE
         spin_angle = get_spin_angle(l1a_de)
         # calculate and set the spin bin based on the spin angle
@@ -63,9 +65,15 @@ def lo_l1b(dependencies: dict) -> list[Path]:
         # get spin start times for each event
         spin_start_time = get_spin_start_times(l1a_de, l1b_de, spin_data, acq_end)
         # get the absolute met for each event
-        l1b_de = set_event_met(l1a_de, l1b_de, spin_start_time, avg_spin_durations)
+        l1b_de = set_event_met(
+            l1a_de, l1b_de, spin_start_time, avg_spin_durations_per_cycle
+        )
         # set the epoch for each event
         l1b_de = set_each_event_epoch(l1b_de)
+        # Set the average spin duration for each direct event
+        l1b_de = set_avg_spin_durations_per_event(
+            l1a_de, l1b_de, avg_spin_durations_per_cycle
+        )
         # calculate the TOF1 for golden triples
         # store in the l1a dataset to use in l1b calculations
         l1a_de = calculate_tof1_for_golden_triples(l1a_de)
@@ -167,7 +175,7 @@ def convert_start_end_acq_times(
     return (acq_start, acq_end)
 
 
-def get_avg_spin_durations(
+def get_avg_spin_durations_per_cycle(
     acq_start: xr.DataArray, acq_end: xr.DataArray
 ) -> xr.DataArray:
     """
@@ -187,8 +195,8 @@ def get_avg_spin_durations(
     """
     # Get the avg spin duration for each spin epoch
     # There are 28 spins per epoch (1 aggregated science cycle)
-    avg_spin_durations = (acq_end - acq_start) / 28
-    return avg_spin_durations
+    avg_spin_durations_per_cycle = (acq_end - acq_start) / 28
+    return avg_spin_durations_per_cycle
 
 
 def get_spin_angle(l1a_de: xr.Dataset) -> Union[np.ndarray[np.float64], Any]:
@@ -403,6 +411,42 @@ def set_each_event_epoch(l1b_de: xr.Dataset) -> xr.Dataset:
         met_to_ttj2000ns(l1b_de["event_met"].values),
         dims=["epoch"],
         # attrs=attr_mgr.get_variable_attributes("epoch")
+    )
+    return l1b_de
+
+
+def set_avg_spin_durations_per_event(
+    l1a_de: xr.Dataset, l1b_de: xr.Dataset, avg_spin_durations_per_cycle: xr.DataArray
+) -> xr.DataArray:
+    """
+    Set the average spin duration for each direct event.
+
+    The average spin duration for each cycle is repeated for the number of
+    direct event counts in the cycle. For example, if there are two Aggregated
+    Science Cycles with 2 events in the first cycle and 1 event in the second
+    cycle and the average spin duration for each cycle is duration1, duration2,
+    this will result in: [duration1, duration 1, duration2]
+
+    Parameters
+    ----------
+    l1a_de : xarray.Dataset
+        The L1A DE dataset.
+    l1b_de : xarray.Dataset
+        The L1B DE dataset.
+    avg_spin_durations_per_cycle : xarray.DataArray
+        The average spin duration for each spin epoch.
+
+    Returns
+    -------
+    l1b_de : xarray.Dataset
+        The L1B DE dataset with the average spin duration added.
+    """
+    # repeat the average spin durations for each cycle based on the direct event count
+    # to get an average spin duration for each direct event. This will be used in L1C
+    # to calculate the exposure time for each direct event.
+    l1b_de["avg_spin_durations"] = xr.DataArray(
+        np.repeat(avg_spin_durations_per_cycle.values, l1a_de["de_count"]),
+        dims=["epoch"],
     )
     return l1b_de
 

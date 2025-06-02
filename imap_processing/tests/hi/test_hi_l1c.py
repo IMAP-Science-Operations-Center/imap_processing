@@ -28,15 +28,9 @@ def hi_test_cal_prod_config_path(hi_l1_test_data_path):
 def test_hi_l1c(mock_generate_pset_dataset, hi_test_cal_prod_config_path):
     """Test coverage for hi_l1c function"""
     mock_generate_pset_dataset.return_value = xr.Dataset()
-    pset = hi_l1c.hi_l1c([xr.Dataset(), hi_test_cal_prod_config_path])[0]
+    pset = hi_l1c.hi_l1c(xr.Dataset(), hi_test_cal_prod_config_path)[0]
     # Empty attributes, global values get added in post-processing
     assert pset.attrs == {}
-
-
-def test_hi_l1c_not_implemented():
-    """Test coverage for hi_l1c function with unrecognized dependencies"""
-    with pytest.raises(NotImplementedError):
-        hi_l1c.hi_l1c([None, None])
 
 
 @pytest.mark.external_test_data
@@ -196,6 +190,32 @@ def test_get_tof_window_mask():
     expected_mask = np.array([True, False, False, False, False, False, True])
     window_mask = hi_l1c.get_tof_window_mask(synth_df, prod_config_row, fill_vals)
     np.testing.assert_array_equal(expected_mask, window_mask)
+
+
+def test_pset_backgrounds():
+    """Test coverage for pset_backgrounds function."""
+    # Create some fake coordinates to use
+    n_epoch = 1
+    n_energy = 9
+    n_cal_prod = 2
+    n_spin_bins = 3600
+    pset_coords = {
+        "epoch": xr.DataArray(np.arange(n_epoch)),
+        "esa_energy_step": xr.DataArray(np.arange(n_energy) + 1),
+        "calibration_prod": xr.DataArray(np.arange(n_cal_prod)),
+        "spin_angle_bin": xr.DataArray(np.arange(n_spin_bins)),
+    }
+    backgrounds_vars = hi_l1c.pset_backgrounds(pset_coords)
+    assert "background_rates" in backgrounds_vars
+    np.testing.assert_array_equal(
+        backgrounds_vars["background_rates"].data,
+        np.zeros((n_epoch, n_energy, n_cal_prod, n_spin_bins)),
+    )
+    assert "background_rates_uncertainty" in backgrounds_vars
+    np.testing.assert_array_equal(
+        backgrounds_vars["background_rates_uncertainty"].data,
+        np.ones((n_epoch, n_energy, n_cal_prod, n_spin_bins)),
+    )
 
 
 @mock.patch("imap_processing.hi.l1c.hi_l1c.get_spin_data", return_value=None)

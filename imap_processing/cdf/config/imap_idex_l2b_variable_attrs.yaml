@@ -1,0 +1,71 @@
+int_fillval: &int_fillval -9223372036854775808
+
+impact_day_of_year:
+    CATDESC: The day of the year when the impact occurred.
+    FIELDNAM: Impact Day of Year
+    LABLAXIS: Impact DOY
+    DEPEND_0: epoch
+    DISPLAY_TYPE: time_series
+    FILLVAL: *int_fillval
+    FORMAT: I3
+    VALIDMIN: 1
+    VALIDMAX: 366
+    VAR_TYPE: data
+    UNITS: days
+    DICT_KEY: SPASE>SupportQuantity:Temporal,Qualifier:Array # TODO: review this
+
+spin_phase_quadrants:
+    CATDESC: The spacecraft spin phase at the time of detection.
+    VAR_NOTES: This is given in quadrants (0, 90, 180, 270).
+    FIELDNAM: Spin Phase Quadrants
+    LABLAXIS: Spin Phase Quadrants
+    DEPEND_0: epoch
+    DISPLAY_TYPE: time_series
+    FILLVAL: *int_fillval
+    FORMAT: I3
+    VALIDMIN: 0
+    VALIDMAX: 270
+    VAR_TYPE: data
+    UNITS: degrees
+    DICT_KEY: SPASE>SupportQuantity:SpinPhase,Qualifier:Array # TODO: review this
+
+science_acquisition_messages:
+    CATDESC: The IDEX science acquisition start and stop messages.
+    FIELDNAM: Science Acquisition Messages
+    DEPEND_0: epoch_science_acquisition
+    FORMAT: A30
+    FILLVAL: " "
+    VAR_TYPE: metadata
+    DICT_KEY: SPASE>SupportQuantity:Housekeeping,Qualifier:Array
+
+science_acquisition_values:
+    CATDESC: Values indicating if the event is a science start (1) or stop (0).
+    FIELDNAM: Science Acquisition Value
+    DEPEND_0: epoch_science_acquisition
+    FILLVAL: *int_fillval
+    FORMAT: I1
+    VALIDMIN: 0
+    VALIDMAX: 1
+    UNITS: " "
+    VAR_TYPE: support_data
+    DICT_KEY: SPASE>SupportQuantity:Housekeeping,Qualifier:Array
+
+epoch_science_acquisition:
+    CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
+    FIELDNAM: Epoch Science Acquisition Time
+    LABLAXIS: Epoch Science Acquisition Time
+    FILLVAL: -9223372036854775808
+    FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
+    VALIDMIN: -9223372036854775808
+    VALIDMAX: 9223372036854775807
+    UNITS: ns
+    VAR_TYPE: support_data
+    SCALETYP: linear
+    MONOTON: INCREASE
+    TIME_BASE: J2000
+    TIME_SCALE: Terrestrial Time
+    CDF_DATA_TYPE: CDF_TIME_TT2000
+    REFERENCE_POSITION: Rotating Earth Geoid
+    RESOLUTION: ' '
+    DISPLAY_TYPE: time_series
+    DICT_KEY: SPASE>SupportQuantity:Temporal,Qualifier:Array

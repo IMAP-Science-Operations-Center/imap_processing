@@ -56,3 +56,4 @@ class CoDICECompression(IntEnum):
     LOSSLESS = 3
     LOSSY_A_LOSSLESS = 4
     LOSSY_B_LOSSLESS = 5
+    PACK_24_BIT = 6

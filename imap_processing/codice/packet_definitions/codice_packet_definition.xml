@@ -1737,6 +1737,7 @@
 					<xtce:Enumeration value="3" label="LOSSLESS_ONLY" />
 					<xtce:Enumeration value="4" label="LOSSY_A_LOSSLESS" />
 					<xtce:Enumeration value="5" label="LOSSY_B_LOSSLESS" />
+					<xtce:Enumeration value="6" label="24_BIT_PACKED" />
 				</xtce:EnumerationList>
 			</xtce:EnumeratedParameterType>
 			<xtce:IntegerParameterType name="COD_LO_SW_SPECIES_COUNTS.BYTE_COUNT" signed="false">

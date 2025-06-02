@@ -118,7 +118,7 @@ MANTISSA_BITS = 12
 EXPONENT_BITS = 4
 
 # Define sectorate angles
-DECLINATION_ANGLES = np.array(
+ZENITH_ANGLES = np.array(
     [11.25, 33.75, 56.25, 78.75, 101.25, 123.75, 146.25, 168.75], dtype=np.float32
 )
 AZIMUTH_ANGLES = np.array(

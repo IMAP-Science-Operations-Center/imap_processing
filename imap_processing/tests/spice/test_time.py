@@ -8,6 +8,8 @@ from imap_processing.spice import IMAP_SC_ID
 from imap_processing.spice.time import (
     TICK_DURATION,
     epoch_to_doy,
+    et_to_datetime64,
+    et_to_ttj2000ns,
     et_to_utc,
     met_to_datetime64,
     met_to_sclkticks,
@@ -66,6 +68,32 @@ def test_ttj2000ns_to_et(furnish_time_kernels):
     )
     j2000s = ttj2000ns_to_et(epoch)
     np.testing.assert_array_equal(j2000s, ets)
+
+
+def test_et_to_ttj2000ns(furnish_time_kernels):
+    """Test coverage for ttj2000ns_to_et function."""
+    # Use spice to come up with reasonable J2000 values
+    utc = "2025-09-23T00:00:00.000"
+    # Test single value input
+    et = spiceypy.str2et(utc)
+    epoch = int(spiceypy.unitim(et, "ET", "TT") * 1e9)
+    j2000ns = et_to_ttj2000ns(et)
+    assert j2000ns == epoch
+
+    # Test converting back
+    et_roundtrip = ttj2000ns_to_et(j2000ns)
+    assert et_roundtrip == et
+
+    # Test for bug when spiceypy tries to iterate over 0-d array returned by
+    # np.vectorize for the scalar case
+    assert not spiceypy.support_types.is_iterable(et)
+    # Test array input
+    ets = np.arange(et, et + 10000, 100)
+    epoch = np.array([spiceypy.unitim(et, "ET", "TT") * 1e9 for et in ets]).astype(
+        np.int64
+    )
+    j2000ns = et_to_ttj2000ns(ets)
+    np.testing.assert_array_equal(j2000ns, epoch)
 
 
 @pytest.mark.parametrize(
@@ -203,6 +231,15 @@ def test_et_to_utc(furnish_time_kernels):
     )
     actual_utc_array = et_to_utc(array_of_et)
     assert np.array_equal(expected_utc_array, actual_utc_array)
+
+
+def test_et_to_datetime(furnish_time_kernels):
+    et = 553333629.1837274
+    # Test single value input
+    expected_dt = np.datetime64("2017-07-14T19:46:00.000")
+
+    actual_dt = et_to_datetime64(et)
+    assert actual_dt == expected_dt
 
 
 def test_epoch_to_doy():

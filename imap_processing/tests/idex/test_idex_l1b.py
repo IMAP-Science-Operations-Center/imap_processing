@@ -13,27 +13,9 @@ from imap_processing.cdf.utils import write_cdf
 from imap_processing.idex.idex_l1b import (
     get_spice_data,
     get_trigger_mode_and_level,
-    idex_l1b,
     unpack_instrument_settings,
 )
 from imap_processing.tests.idex import conftest
-from imap_processing.tests.idex.conftest import get_spice_data_side_effect_func
-
-
-@pytest.fixture
-@mock.patch("imap_processing.idex.idex_l1b.get_spice_data")
-def l1b_dataset(mock_get_spice_data, decom_test_data_sci: xr.Dataset) -> xr.Dataset:
-    """Return a ``xarray`` dataset containing test data.
-
-    Returns
-    -------
-    dataset : xr.Dataset
-        A ``xarray`` dataset containing the test data
-    """
-
-    mock_get_spice_data.side_effect = get_spice_data_side_effect_func
-    dataset = idex_l1b(decom_test_data_sci)
-    return dataset
 
 
 @pytest.fixture
@@ -78,7 +60,6 @@ def test_idex_cdf_file(l1b_dataset: xr.Dataset):
     """
 
     file_name = write_cdf(l1b_dataset)
-
     assert file_name.exists()
     assert file_name.name == "imap_idex_l1b_sci-1week_20231218_v999.cdf"
 
@@ -321,7 +302,7 @@ def test_validate_l1b_idex_data_variables(
                     np.testing.assert_array_almost_equal(
                         l1b_dataset[cdf_var].data,
                         l1b_example_data[var],
-                        decimal=1e-04,
+                        decimal=4,
                     ),
                     warning,
                 )

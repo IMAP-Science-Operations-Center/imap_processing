@@ -1,6 +1,7 @@
 """Functions to support I-ALiRT MAG packet parsing."""
 
 import logging
+from decimal import Decimal
 from typing import Union
 
 import numpy as np
@@ -17,10 +18,9 @@ from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.mag.l1a.mag_l1a_data import TimeTuple
 from imap_processing.mag.l1b.mag_l1b import (
     calibrate_vector,
-    retrieve_matrix_from_l1b_calibration,
     shift_time,
 )
-from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 
 logger = logging.getLogger(__name__)
 
@@ -115,18 +115,21 @@ def extract_magnetic_vectors(science_values: xr.DataArray) -> dict:
         Magnetic vectors.
     """
     # Primary sensor:
-    pri_x = (int(science_values[0]) >> 8) & 0xFFFF
-    pri_y = ((int(science_values[0]) << 8) & 0xFF00) | (
-        (int(science_values[1]) >> 16) & 0xFF
-    )
-    pri_z = int(science_values[1]) & 0xFFFF
+    pri_x: np.int16 = np.uint16((int(science_values[0]) >> 8) & 0xFFFF).astype(np.int16)
+    pri_y: np.int16 = np.uint16(
+        ((int(science_values[0]) << 8) & 0xFF00)
+        | ((int(science_values[1]) >> 16) & 0xFF)
+    ).astype(np.int16)
+    pri_z: np.int16 = np.uint16(int(science_values[1]) & 0xFFFF).astype(np.int16)
 
     # Secondary sensor:
-    sec_x = (int(science_values[2]) >> 8) & 0xFFFF
-    sec_y = ((int(science_values[2]) << 8) & 0xFF00) | (
-        (int(science_values[3]) >> 16) & 0xFF
-    )
-    sec_z = int(science_values[3]) & 0xFFFF
+    sec_x: np.int16 = np.uint16((int(science_values[2]) >> 8) & 0xFFFF).astype(np.int16)
+    sec_y: np.int16 = np.uint16(
+        ((int(science_values[2]) << 8) & 0xFF00)
+        | ((int(science_values[3]) >> 16) & 0xFF)
+    ).astype(np.int16)
+
+    sec_z: np.int16 = np.uint16(int(science_values[3]) & 0xFFFF).astype(np.int16)
 
     vectors = {
         "pri_x": pri_x,
@@ -248,11 +251,11 @@ def calculate_l1b(
     time_data : dict
         Time data.
     """
-    calibration_matrix_mago, time_shift_mago = retrieve_matrix_from_l1b_calibration(
-        calibration_dataset, is_mago=True
+    calibration_matrix_mago, time_shift_mago = (
+        retrieve_matrix_from_single_l1b_calibration(calibration_dataset, is_mago=True)
     )
-    calibration_matrix_magi, time_shift_magi = retrieve_matrix_from_l1b_calibration(
-        calibration_dataset, is_mago=False
+    calibration_matrix_magi, time_shift_magi = (
+        retrieve_matrix_from_single_l1b_calibration(calibration_dataset, is_mago=False)
     )
 
     # Get time values for each group.
@@ -285,7 +288,7 @@ def calculate_l1b(
 
 def process_packet(
     accumulated_data: xr.Dataset, calibration_dataset: xr.Dataset
-) -> list[dict]:
+) -> tuple[list[dict], list[dict]]:
     """
     Parse the MAG packets.
 
@@ -306,22 +309,21 @@ def process_packet(
         f"{accumulated_data['mag_acq_tm_coarse'].max().values}."
     )
 
-    # Note that the fine time second is split into 65535.
-    time_seconds = calculate_time(
-        accumulated_data["mag_acq_tm_coarse"],
-        accumulated_data["mag_acq_tm_fine"],
-        65535,
+    # Subsecond time conversion specified in 7516-9054 GSW-FSW ICD.
+    # Value of SCLK subseconds, unsigned, (LSB = 1/256 sec)
+    met = calculate_time(
+        accumulated_data["sc_sclk_sec"], accumulated_data["sc_sclk_sub_sec"], 256
     )
 
     # Add required parameters.
-    accumulated_data["time_seconds"] = time_seconds
-    sorted_data = accumulated_data.sortby("time_seconds", ascending=True)
-    pkt_counter = get_pkt_counter(sorted_data["mag_status"])
-    sorted_data["pkt_counter"] = pkt_counter
+    accumulated_data["met"] = met
+    pkt_counter = get_pkt_counter(accumulated_data["mag_status"])
+    accumulated_data["pkt_counter"] = pkt_counter
 
-    grouped_data = find_groups(sorted_data, (0, 3), "pkt_counter", "time_seconds")
+    grouped_data = find_groups(accumulated_data, (0, 3), "pkt_counter", "met")
 
     unique_groups = np.unique(grouped_data["group"])
+    l1b_data = []
     mag_data = []
 
     for group in unique_groups:
@@ -334,7 +336,7 @@ def process_packet(
         ]
 
         if not np.array_equal(pkt_counter, np.arange(4)):
-            logger.warning(
+            logger.info(
                 f"Group {group} does not contain all values from 0 to "
                 f"3 without duplicates."
             )
@@ -342,6 +344,10 @@ def process_packet(
 
         # Get decoded status data.
         status_data = get_status_data(status_values, pkt_counter)
+
+        if status_data["pri_isvalid"] == 0 and status_data["sec_isvalid"] == 0:
+            logger.info(f"Group {group} contains no valid data for either sensor.")
+            continue
 
         # Get science values for each group.
         science_values = grouped_data["mag_data"][
@@ -358,6 +364,13 @@ def process_packet(
         )
 
         # Note: primary = MAGo, secondary = MAGi.
+        # Populate with a FILL value if either sensor is invalid,
+        # but not both.
+        if status_data["pri_isvalid"] == 0:
+            updated_vector_mago = np.full(4, -32768)
+        if status_data["sec_isvalid"] == 0:
+            updated_vector_magi = np.full(4, -32768)
+
         science_data.update(
             {
                 "calibrated_pri_x": updated_vector_mago[0],
@@ -369,6 +382,53 @@ def process_packet(
             }
         )
 
-        mag_data.append({**status_data, **science_data, **time_data})
+        l1b_data.append({**status_data, **science_data, **time_data})
 
-    return mag_data
+        # Placeholder for real data.
+        met = grouped_data["met"][(grouped_data["group"] == group).values]
+        mag_data.append(
+            {
+                "apid": 478,
+                "met": int(met.values.min()),
+                "utc": met_to_utc(met.values.min()).split(".")[0],
+                "ttj2000ns": int(met_to_ttj2000ns(met.values.min())),
+                "mag_4s_b_gse": [Decimal("0.0") for _ in range(3)],
+                "mag_4s_b_gsm": [Decimal("0.0") for _ in range(3)],
+                "mag_4s_b_rtn": [Decimal("0.0") for _ in range(3)],
+                "mag_phi_4s_b_gsm": Decimal("0.0"),
+                "mag_theta_4s_b_gsm": Decimal("0.0"),
+            }
+        )
+
+    return mag_data, l1b_data
+
+
+def retrieve_matrix_from_single_l1b_calibration(
+    calibration_dataset: xr.Dataset, is_mago: bool = True
+) -> tuple[xr.DataArray, xr.DataArray]:
+    """
+    Retrieve the calibration matrix and time shift from the calibration dataset.
+
+    Parameters
+    ----------
+    calibration_dataset : xarray.Dataset
+        The calibration dataset containing the calibration matrices and time shift.
+    is_mago : bool
+        Whether the calibration is for mago or magi. If True, it retrieves the mago
+        calibration matrix and time shift. If False, it retrieves the magi calibration
+        matrix and time shift.
+
+    Returns
+    -------
+    tuple[xr.DataArray, xr.DataArray]
+        The calibration matrix and time shift. These can be passed directly into
+        update_vector, calibrate_vector, and shift_time.
+    """
+    if is_mago:
+        calibration_matrix = calibration_dataset["MFOTOURFO"]
+        time_shift = calibration_dataset["OTS"]
+    else:
+        calibration_matrix = calibration_dataset["MFITOURFI"]
+        time_shift = calibration_dataset["ITS"]
+
+    return calibration_matrix, time_shift

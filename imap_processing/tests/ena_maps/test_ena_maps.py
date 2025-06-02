@@ -13,6 +13,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils import spatial_utils
@@ -152,6 +153,9 @@ class TestHiPointingSet:
         assert hi_pset.num_points == 3600
         np.testing.assert_array_equal(hi_pset.az_el_points.shape, (3600, 2))
 
+        for var_name in ["exposure_factor", "bg_rates", "bg_rates_unc"]:
+            assert var_name in hi_pset.data
+
     def test_from_cdf(self, hi_pset_cdf_path):
         """Test coverage for from_cdf method."""
         hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path)
@@ -163,8 +167,86 @@ class TestHiPointingSet:
         rect_map = ena_maps.RectangularSkyMap(
             spacing_deg=2, spice_frame=geometry.SpiceFrame.ECLIPJ2000
         )
-        rect_map.project_pset_values_to_map(hi_pset, ["counts", "exposure_times"])
+        rect_map.project_pset_values_to_map(hi_pset, ["counts", "exposure_factor"])
         assert rect_map.data_1d["counts"].max() > 0
+
+
+@pytest.fixture
+def lo_pset_ds():
+    h_counts = np.zeros((1, 3600, 40, 7))
+    h_counts[:, :, 0:10, :] = 1
+
+    exposure_time = np.full((1, 3600, 40, 7), 0.5)
+    dataset = xr.Dataset()
+    dataset["h_counts"] = xr.DataArray(
+        h_counts,
+        dims=("epoch", "longitude", "latitude", "energy"),
+        name="h_counts",
+    )
+    dataset["exposure_time"] = xr.DataArray(
+        exposure_time,
+        dims=("epoch", "longitude", "latitude", "energy"),
+        name="exposure_time",
+    )
+    dataset.coords["epoch"] = xr.DataArray(
+        [8.1794907049e17],
+        dims=["epoch"],
+        name="epoch",
+    )
+    dataset.coords["longitude"] = xr.DataArray(
+        [i for i in range(3600)],
+        dims=["longitude"],
+        name="longitude",
+    )
+    dataset.coords["latitude"] = xr.DataArray(
+        [i for i in range(40)],
+        dims=["latitude"],
+        name="latitude",
+    )
+    dataset.coords["energy"] = xr.DataArray(
+        [i for i in range(1, 8)],
+        dims=["energy"],
+        name="energy",
+    )
+
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs(instrument="lo")
+    dataset.attrs = attr_mgr.get_global_attributes("imap_lo_l1c_pset")
+
+    return dataset
+
+
+@pytest.fixture(scope="module")
+def lo_pset_cdf_path(imap_tests_path):
+    return imap_tests_path / "hi/data/l1/imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
+
+
+@pytest.mark.external_kernel
+@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
+class TestLoPointingSet:
+    """Test suite for LoPointingSet class."""
+
+    def test_init(self, lo_pset_ds):
+        """Test coverage for __init__ method."""
+        lo_pset = ena_maps.LoPointingSet(lo_pset_ds)
+        assert isinstance(lo_pset, ena_maps.LoPointingSet)
+        assert lo_pset.spice_reference_frame == geometry.SpiceFrame.IMAP_DPS
+        assert lo_pset.num_points == 144000
+        np.testing.assert_array_equal(lo_pset.az_el_points.shape, (144000, 2))
+
+        for var_name in ["exposure_time", "h_counts"]:
+            assert var_name in lo_pset.data
+
+    # TODO: write cdf test when CDF is available to download for test
+
+    def test_plays_nice_with_rectangular_sky_map(self, lo_pset_ds):
+        """Test that LoPointingSet works with RectangularSkyMap"""
+        lo_pset = ena_maps.LoPointingSet(lo_pset_ds)
+        rect_map = ena_maps.RectangularSkyMap(
+            spacing_deg=6, spice_frame=geometry.SpiceFrame.ECLIPJ2000
+        )
+        rect_map.project_pset_values_to_map(lo_pset, ["h_counts", "exposure_time"])
+        assert rect_map.data_1d["h_counts"].max() > 0
 
 
 class TestRectangularSkyMap:
@@ -261,14 +343,16 @@ class TestRectangularSkyMap:
         simple_summed_pset_counts_by_energy = np.zeros(
             shape=(
                 self.ultra_l1c_pset_products[0]["counts"].sizes[
-                    CoordNames.ENERGY_ULTRA.value
+                    CoordNames.ENERGY_ULTRA_L1C.value
                 ],
             )
         )
         for pset in self.ultra_l1c_pset_products:
             simple_summed_pset_counts_by_energy += pset["counts"].sum(
                 dim=[
-                    d for d in pset["counts"].dims if d != CoordNames.ENERGY_ULTRA.value
+                    d
+                    for d in pset["counts"].dims
+                    if d != CoordNames.ENERGY_ULTRA_L1C.value
                 ]
             )
 
@@ -276,7 +360,7 @@ class TestRectangularSkyMap:
             dim=[
                 d
                 for d in rectangular_map.data_1d["counts"].dims
-                if d != CoordNames.ENERGY_ULTRA.value
+                if d != CoordNames.ENERGY_ULTRA_L1C.value
             ]
         )
 
@@ -326,14 +410,16 @@ class TestRectangularSkyMap:
         simple_summed_pset_counts_by_energy = np.zeros(
             shape=(
                 self.rectangular_l1c_pset_products[0]["counts"].sizes[
-                    CoordNames.ENERGY_ULTRA.value
+                    CoordNames.ENERGY_ULTRA_L1C.value
                 ],
             )
         )
         for pset in self.rectangular_l1c_pset_products:
             simple_summed_pset_counts_by_energy += pset["counts"].sum(
                 dim=[
-                    d for d in pset["counts"].dims if d != CoordNames.ENERGY_ULTRA.value
+                    d
+                    for d in pset["counts"].dims
+                    if d != CoordNames.ENERGY_ULTRA_L1C.value
                 ]
             )
 
@@ -341,7 +427,7 @@ class TestRectangularSkyMap:
             dim=[
                 d
                 for d in rectangular_map.data_1d["counts"].dims
-                if d != CoordNames.ENERGY_ULTRA.value
+                if d != CoordNames.ENERGY_ULTRA_L1C.value
             ]
         )
 
@@ -435,16 +521,22 @@ class TestRectangularSkyMap:
         # innefficient, as it would require all the same, computationally intensive
         # operations to be repeated as this test
         rect_map_ds = rectangular_map.to_dataset()
+        assert "solid_angle" in rect_map_ds.data_vars
+        assert rect_map_ds.data_vars["solid_angle"].shape == (
+            1,
+            360 / skymap_spacing,
+            180 / skymap_spacing,
+        )
         assert "counts" in rect_map_ds.data_vars
         assert rect_map_ds["counts"].shape == (
             1,
-            rectangular_pset.data["counts"].sizes[CoordNames.ENERGY_ULTRA.value],
+            rectangular_pset.data["counts"].sizes[CoordNames.ENERGY_ULTRA_L1C.value],
             360 / skymap_spacing,
             180 / skymap_spacing,
         )
         assert rect_map_ds["counts"].dims == (
             CoordNames.TIME.value,
-            CoordNames.ENERGY_ULTRA.value,
+            CoordNames.ENERGY_ULTRA_L1C.value,
             CoordNames.AZIMUTH_L2.value,
             CoordNames.ELEVATION_L2.value,
         )
@@ -457,6 +549,105 @@ class TestRectangularSkyMap:
                 rectangular_map.binning_grid_shape,
             ),
         )
+
+    @pytest.fixture
+    def mock_data_for_build_cdf_dataset(self):
+        """Setup Dataset to use as mock data from `to_dataset()` function."""
+        coord_sizes = {
+            CoordNames.TIME.value: 1,
+            CoordNames.ENERGY_L2.value: 5,
+            CoordNames.AZIMUTH_L2.value: 20,
+            CoordNames.ELEVATION_L2.value: 10,
+            "foo_coord": 2,
+        }
+        mock_dataset = xr.Dataset(
+            coords={
+                key: xr.DataArray(
+                    np.arange(value),
+                    name=key,
+                    dims=[key],
+                )
+                for key, value in coord_sizes.items()
+            }
+        )
+        # Add ena intensity variable
+        mock_dataset["ena_intensity"] = xr.DataArray(
+            np.ones(tuple(s for s in coord_sizes.values())[:-1]),
+            name="ena_intesity",
+            dims=[k for k in coord_sizes.keys()][:-1],
+        )
+        # Add one variable that is expected to get removed
+        mock_dataset["foo_var"] = xr.DataArray(
+            np.ones(tuple(s for s in coord_sizes.values())),
+            name="foo_var",
+            dims=[k for k in coord_sizes.keys()],
+        )
+        return mock_dataset
+
+    @mock.patch("imap_processing.ena_maps.ena_maps.RectangularSkyMap.to_dataset")
+    def test_build_cdf_dataset(self, mock_to_dataset, mock_data_for_build_cdf_dataset):
+        """Test coverage for the RectangularSkyMap.build_cdf_dataset method."""
+        # Set up the mock
+        mock_to_dataset.return_value = mock_data_for_build_cdf_dataset
+
+        skymap = ena_maps.RectangularSkyMap(6, geometry.SpiceFrame.ECLIPJ2000)
+        skymap.min_epoch = 10
+        skymap.max_epoch = 15
+        cdf_dataset = skymap.build_cdf_dataset(
+            "hi", "l2", "sf", "foo_descriptor", sensor="45"
+        )
+
+        # Check that expected var gets removed
+        assert "foo_var" not in cdf_dataset
+        # Check the epoch values
+        assert CoordNames.TIME.value in cdf_dataset
+        assert cdf_dataset[CoordNames.TIME.value].values[0] == skymap.min_epoch
+        assert f"{CoordNames.TIME.value}_delta" in cdf_dataset
+        assert (
+            cdf_dataset[f"{CoordNames.TIME.value}_delta"].values[0]
+            == skymap.max_epoch - skymap.min_epoch
+        )
+
+        assert CoordNames.ENERGY_L2.value in cdf_dataset
+        assert f"{CoordNames.ENERGY_L2.value}_delta_plus" in cdf_dataset
+        assert f"{CoordNames.ENERGY_L2.value}_delta_minus" in cdf_dataset
+        assert f"{CoordNames.ENERGY_L2.value}_label" in cdf_dataset
+
+        assert CoordNames.AZIMUTH_L2.value in cdf_dataset
+        assert f"{CoordNames.AZIMUTH_L2.value}_delta" in cdf_dataset
+        assert f"{CoordNames.AZIMUTH_L2.value}_label" in cdf_dataset
+
+        assert CoordNames.ELEVATION_L2.value in cdf_dataset
+        assert f"{CoordNames.ELEVATION_L2.value}_delta" in cdf_dataset
+        assert f"{CoordNames.ELEVATION_L2.value}_label" in cdf_dataset
+
+    @mock.patch("imap_processing.ena_maps.ena_maps.RectangularSkyMap.to_dataset")
+    def test_build_cdf_dataset_key_error(
+        self, mock_to_dataset, mock_data_for_build_cdf_dataset
+    ):
+        """Test build_cdf_dataset raising a KeyError."""
+        mock_dataset = mock_data_for_build_cdf_dataset
+        # Add ena intensity variable
+        mock_dataset["no_attrs_var"] = xr.DataArray(
+            np.ones(
+                tuple(s for s in mock_data_for_build_cdf_dataset.coords.sizes.values())[
+                    :-1
+                ]
+            ),
+            name="no_attrs_var",
+            dims=[k for k in mock_data_for_build_cdf_dataset.coords.sizes.keys()][:-1],
+        )
+        mock_to_dataset.return_value = mock_dataset
+
+        skymap = ena_maps.RectangularSkyMap(6, geometry.SpiceFrame.ECLIPJ2000)
+        skymap.min_epoch = 10
+        skymap.max_epoch = 15
+        with pytest.raises(
+            KeyError, match="Attributes for variable no_attrs_var not found"
+        ):
+            _ = skymap.build_cdf_dataset(
+                "hi", "l2", "sf", "foo_descriptor", sensor="45"
+            )
 
 
 class TestHealpixSkyMap:
@@ -492,7 +683,7 @@ class TestHealpixSkyMap:
 
     @pytest.mark.parametrize(
         "nside",
-        [8, 16, 32],
+        [4, 8],
     )
     @pytest.mark.parametrize("nested", [True, False], ids=["nested", "ring"])
     def test_instantiate(self, nside, nested):
@@ -694,12 +885,14 @@ class TestHealpixSkyMap:
         assert "counts" in hp_map_ds.data_vars
         assert hp_map_ds["counts"].shape == (
             1,
-            mock_pset_input_frame.data["counts"].sizes[CoordNames.ENERGY_ULTRA.value],
+            mock_pset_input_frame.data["counts"].sizes[
+                CoordNames.ENERGY_ULTRA_L1C.value
+            ],
             hp_map.num_points,
         )
         assert hp_map_ds["counts"].dims == (
             CoordNames.TIME.value,
-            CoordNames.ENERGY_ULTRA.value,
+            CoordNames.ENERGY_ULTRA_L1C.value,
             CoordNames.HEALPIX_INDEX.value,
         )
         np.testing.assert_array_equal(
@@ -1151,10 +1344,12 @@ class TestAbstractSkyMap:
     def test_to_dict_and_from_dict(self, skymap_props_dict):
         """Test serialization to and from dictionary"""
         # Make a SkyMap from the original properties dict
-        skymap_from_dict = ena_maps.AbstractSkyMap.from_dict(skymap_props_dict)
+        skymap_from_dict = ena_maps.AbstractSkyMap.from_properties_dict(
+            skymap_props_dict
+        )
 
         # Use the SkyMap to create a new properties dict
-        dict_from_skymap = skymap_from_dict.to_dict()
+        dict_from_skymap = skymap_from_dict.to_properties_dict()
 
         assert (
             skymap_from_dict.spice_reference_frame
@@ -1234,13 +1429,15 @@ class TestAbstractSkyMap:
             temp_file_path_input = temp_file.name
 
         # Read the json file and create a new SkyMap from it
-        skymap_from_json = ena_maps.AbstractSkyMap.from_json(temp_file_path_input)
+        skymap_from_json = ena_maps.AbstractSkyMap.from_properties_json(
+            temp_file_path_input
+        )
 
         # Create json output from the SkyMap at a separate temporary file path
         temp_file_path_output = tempfile.NamedTemporaryFile(
             delete=False, suffix=".json", mode="w"
         ).name
-        skymap_from_json.to_json(json_path=temp_file_path_output)
+        skymap_from_json.to_properties_json(json_path=temp_file_path_output)
 
         assert skymap_from_json.spice_reference_frame == geometry.SpiceFrame.ECLIPJ2000
         assert skymap_from_json.tiling_type is ena_maps.SkyTilingType.HEALPIX

@@ -11,7 +11,6 @@ Notes
 
 from __future__ import annotations
 
-import ast
 import logging
 from pathlib import Path
 from typing import Any
@@ -65,6 +64,8 @@ class CoDICEL1aPipeline:
         Define and add the appropriate data variables to the dataset.
     define_dimensions()
         Define the dimensions of the data arrays for the final dataset.
+    define_energy_bins()
+        Define/add variables to the dataset that correspond to the energy bins.
     define_support_variables()
         Define and add 'support' CDF data variables to the dataset.
     get_acquisition_times()
@@ -73,6 +74,8 @@ class CoDICEL1aPipeline:
         Retrieve the ESA sweep values.
     get_hi_energy_table_data(species)
         Retrieve energy table data for CoDICE-Hi products
+    reshape_binned_data(dataset)
+        Reshape data arrays for binned datasets.
     reshape_data()
         Reshape the data arrays based on the data product being made.
     set_data_product_config()
@@ -91,9 +94,10 @@ class CoDICEL1aPipeline:
         Calculate and return the values to be used for `epoch`.
 
         On CoDICE, the epoch values are derived from the `acq_start_seconds` and
-        `acq_start_subseconds` fields in the packet. Note that the
-        `acq_start_subseconds` field needs to be converted from microseconds to
-        seconds
+        `acq_start_subseconds` fields in the packet.
+
+        Note that the `acq_start_subseconds` field needs to be converted from
+        microseconds to seconds.
 
         Returns
         -------
@@ -101,12 +105,13 @@ class CoDICEL1aPipeline:
             List of epoch values.
         """
         epoch = met_to_ttj2000ns(
-            self.dataset.acq_start_seconds + self.dataset.acq_start_subseconds / 1e6
+            self.dataset["acq_start_seconds"]
+            + self.dataset["acq_start_subseconds"] / 1e6
         )
 
         return epoch
 
-    def decompress_data(self, science_values: list[str]) -> None:
+    def decompress_data(self, science_values: list[NDArray[str]] | list[str]) -> None:
         """
         Perform decompression on the data.
 
@@ -116,9 +121,9 @@ class CoDICEL1aPipeline:
 
         Parameters
         ----------
-        science_values : list[str]
-            A list of byte strings representing the science values of the data
-            for each packet.
+        science_values : list[NDArray[str]] | list[str]
+            A list of byte strings (or bit strings, in the case of I-ALiRT)
+            representing the science values of the data for each packet.
         """
         # The compression algorithm depends on the instrument and view ID
         if self.config["instrument"] == "lo":
@@ -127,18 +132,31 @@ class CoDICEL1aPipeline:
             compression_algorithm = constants.HI_COMPRESSION_ID_LOOKUP[self.view_id]
 
         self.raw_data = []
-        for packet_data, byte_count in zip(
-            science_values, self.dataset.byte_count.data
-        ):
-            # Convert from numpy array to byte object
-            values = ast.literal_eval(str(packet_data))
 
-            # Only use the values up to the byte count. Bytes after this are
-            # used as padding and are not needed
-            values = values[:byte_count]
+        # I-ALiRT data already has byte count cut-off applied, so treat
+        # it slightly differently
+        if "ialirt" in self.config["dataset_name"]:
+            for packet_data in science_values:
+                # Convert from bit string to byte object
+                values = int(packet_data, 2).to_bytes(
+                    len(packet_data) // 8, byteorder="big"
+                )
+                decompressed_values = decompress(values, compression_algorithm)
+                self.raw_data.append(decompressed_values)
 
-            decompressed_values = decompress(values, compression_algorithm)
-            self.raw_data.append(decompressed_values)
+        else:
+            for packet_data, byte_count in zip(
+                science_values, self.dataset.byte_count.data
+            ):
+                # Convert from numpy array to byte object
+                values = packet_data[()]
+
+                # Only use the values up to the byte count. Bytes after this are
+                # used as padding and are not needed
+                values = values[:byte_count]
+
+                decompressed_values = decompress(values, compression_algorithm)
+                self.raw_data.append(decompressed_values)
 
     def define_coordinates(self) -> None:
         """
@@ -148,19 +166,17 @@ class CoDICEL1aPipeline:
         """
         self.coords = {}
 
-        coord_names = ["epoch", *list(self.config["output_dims"].keys())]
-
-        # These are labels unique to lo-counters products coordinates
-        if self.config["dataset_name"] in [
-            "imap_codice_l1a_lo-counters-aggregated",
-            "imap_codice_l1a_lo-counters-singles",
-        ]:
-            coord_names.append("spin_sector_pairs_label")
+        coord_names = [
+            "epoch",
+            *self.config["output_dims"].keys(),
+            *[key + "_label" for key in self.config["output_dims"].keys()],
+        ]
 
         # Define the values for the coordinates
         for name in coord_names:
             if name == "epoch":
                 values = self.calculate_epoch_values()
+                dims = [name]
             elif name in [
                 "esa_step",
                 "inst_az",
@@ -170,6 +186,7 @@ class CoDICEL1aPipeline:
                 "ssd_index",
             ]:
                 values = np.arange(self.config["output_dims"][name])
+                dims = [name]
             elif name == "spin_sector_pairs_label":
                 values = np.array(
                     [
@@ -181,11 +198,22 @@ class CoDICEL1aPipeline:
                         "150-180 deg",
                     ]
                 )
+                dims = [name]
+            elif name in [
+                "spin_sector_label",
+                "esa_step_label",
+                "inst_az_label",
+                "spin_sector_index_label",
+                "ssd_index_label",
+            ]:
+                key = name.removesuffix("_label")
+                values = np.arange(self.config["output_dims"][key]).astype(str)
+                dims = [key]
 
             coord = xr.DataArray(
                 values,
                 name=name,
-                dims=[name],
+                dims=dims,
                 attrs=self.cdf_attrs.get_variable_attributes(name),
             )
 
@@ -236,8 +264,9 @@ class CoDICEL1aPipeline:
 
             # However, CoDICE-Hi products use specific energy bins for the
             # energy dimension
-            # TODO: This will be expanded to all CoDICE-Hi products once I
-            #       can validate them. For now, just operate on hi-sectored
+            # TODO: This bit of code may no longer be needed once I can figure
+            #       out how to run hi-sectored product through the
+            #       create_binned_dataset function
             if self.config["dataset_name"] == "imap_codice_l1a_hi-sectored":
                 dims = [
                     f"energy_{variable_name}" if item == "esa_step" else item
@@ -257,10 +286,56 @@ class CoDICEL1aPipeline:
 
         # For CoDICE-Hi products, since energy dimension was replaced, we no
         # longer need the "esa_step" coordinate
-        # TODO: This will be expanded to all CoDICE-Hi products once I
-        #       can validate them. For now, just operate on hi-sectored
+        # TODO: This bit of code may no longer be needed once I can figure
+        #       out how to run hi-sectored product through the
+        #       create_binned_dataset function
         if self.config["dataset_name"] == "imap_codice_l1a_hi-sectored":
+            for species in self.config["energy_table"]:
+                dataset = self.define_energy_bins(dataset, species)
             dataset = dataset.drop_vars("esa_step")
+
+        return dataset
+
+    def define_energy_bins(self, dataset: xr.Dataset, species: str) -> xr.Dataset:
+        """
+        Define/add variables to the dataset that correspond to the energy bins.
+
+        For hi-omni and hi-sectored data products specifically, the L1a data
+        product contains the energy bin centers and deltas. This method
+        handles adding these bins as CDF variables and their attributes.
+
+        Parameters
+        ----------
+        dataset : xarray.Dataset
+            ``xarray`` dataset for the data product.
+        species : str
+            The species for which to add the energy bins (e.g. "he3").
+
+        Returns
+        -------
+        dataset : xarray.Dataset
+            ``xarray`` dataset for the data product, with added energy variables.
+        """
+        energy_bin_name = f"energy_{species}"
+        centers, deltas = self.get_hi_energy_table_data(
+            energy_bin_name.split("energy_")[-1]
+        )
+
+        # Add bin centers and deltas to the dataset
+        dataset[energy_bin_name] = xr.DataArray(
+            centers,
+            dims=[energy_bin_name],
+            attrs=self.cdf_attrs.get_variable_attributes(
+                f"{self.config['dataset_name'].split('_')[-1]}-{energy_bin_name}"
+            ),
+        )
+        dataset[f"{energy_bin_name}_delta"] = xr.DataArray(
+            deltas,
+            dims=[f"{energy_bin_name}_delta"],
+            attrs=self.cdf_attrs.get_variable_attributes(
+                f"{self.config['dataset_name'].split('_')[-1]}-{energy_bin_name}_delta"
+            ),
+        )
 
         return dataset
 
@@ -290,88 +365,52 @@ class CoDICEL1aPipeline:
             "st_bias_gain_mode",
         ]
 
-        hi_energy_table_variables = [
-            "energy_h",
-            "energy_he3",
-            "energy_he4",
-            "energy_c",
-            "energy_o",
-            "energy_ne_mg_si",
-            "energy_fe",
-            "energy_uh",
-            "energy_junk",
-            "energy_he3he4",
-            "energy_cno",
-        ]
-
         for variable_name in self.config["support_variables"]:
-            # CoDICE-Hi energy tables are treated differently because values
-            # are binned and we need to record the energies _and_ their deltas
-            if variable_name in hi_energy_table_variables:
-                centers, deltas = self.get_hi_energy_table_data(
-                    variable_name.split("energy_")[-1]
+            # These variables require reading in external tables
+            if variable_name == "energy_table":
+                variable_data = self.get_energy_table()
+                dims = ["esa_step"]
+                attrs = self.cdf_attrs.get_variable_attributes("energy_table")
+
+            elif variable_name == "acquisition_time_per_step":
+                variable_data = self.get_acquisition_times()
+                dims = ["esa_step"]
+                attrs = self.cdf_attrs.get_variable_attributes(
+                    "acquisition_time_per_step"
                 )
 
-                # Add bin centers and deltas to the dataset
-                dataset[variable_name] = xr.DataArray(
-                    centers,
-                    dims=[variable_name],
-                    attrs=self.cdf_attrs.get_variable_attributes(
-                        f"{self.config['dataset_name'].split('_')[-1]}-{variable_name}"
-                    ),
-                )
-                dataset[f"{variable_name}_delta"] = xr.DataArray(
-                    deltas,
-                    dims=[f"{variable_name}_delta"],
-                    attrs=self.cdf_attrs.get_variable_attributes(
-                        f"{self.config['dataset_name'].split('_')[-1]}-{variable_name}_delta"
-                    ),
-                )
+            # These variables can be gathered straight from the packet data
+            elif variable_name in packet_data_variables:
+                variable_data = self.dataset[variable_name].data
+                dims = ["epoch"]
+                attrs = self.cdf_attrs.get_variable_attributes(variable_name)
 
-            # Otherwise, support variable data can be gathered from nominal
-            # lookup tables or packet data
-            else:
-                # These variables require reading in external tables
-                if variable_name == "energy_table":
-                    variable_data = self.get_energy_table()
-                    dims = ["esa_step"]
-                    attrs = self.cdf_attrs.get_variable_attributes("energy_table")
+            # Data quality is named differently in packet data and needs to be
+            # treated slightly differently
+            elif variable_name == "data_quality":
+                if "hi-omni" in self.config["dataset_name"]:
+                    continue
+                variable_data = self.dataset.suspect.data
+                dims = ["epoch"]
+                attrs = self.cdf_attrs.get_variable_attributes("data_quality")
 
-                elif variable_name == "acquisition_time_per_step":
-                    variable_data = self.get_acquisition_times()
-                    dims = ["esa_step"]
-                    attrs = self.cdf_attrs.get_variable_attributes(
-                        "acquisition_time_per_step"
-                    )
+            # Spin period requires the application of a conversion factor
+            # See Table B.5 in the algorithm document
+            elif variable_name == "spin_period":
+                if "hi-omni" in self.config["dataset_name"]:
+                    continue
+                variable_data = (
+                    self.dataset.spin_period.data * constants.SPIN_PERIOD_CONVERSION
+                ).astype(np.float32)
+                dims = ["epoch"]
+                attrs = self.cdf_attrs.get_variable_attributes("spin_period")
 
-                # These variables can be gathered straight from the packet data
-                elif variable_name in packet_data_variables:
-                    variable_data = self.dataset[variable_name].data
-                    dims = ["epoch"]
-                    attrs = self.cdf_attrs.get_variable_attributes(variable_name)
-
-                # Data quality is named differently in packet data and needs to be
-                # treated slightly differently
-                elif variable_name == "data_quality":
-                    variable_data = self.dataset.suspect.data
-                    dims = ["epoch"]
-                    attrs = self.cdf_attrs.get_variable_attributes("data_quality")
-
-                # Spin period requires the application of a conversion factor
-                # See Table B.5 in the algorithm document
-                elif variable_name == "spin_period":
-                    variable_data = (
-                        self.dataset.spin_period.data * constants.SPIN_PERIOD_CONVERSION
-                    ).astype(np.float32)
-                    dims = ["epoch"]
-                    attrs = self.cdf_attrs.get_variable_attributes("spin_period")
-
-                # Add variable to the dataset
-                dataset[variable_name] = xr.DataArray(
-                    variable_data,
-                    dims=dims,
-                    attrs=attrs,
-                )
+            # Add variable to the dataset
+            dataset[variable_name] = xr.DataArray(
+                variable_data,
+                dims=dims,
+                attrs=attrs,
+            )
 
         return dataset
 
@@ -478,6 +517,79 @@ class CoDICEL1aPipeline:
 
         return centers, deltas
 
+    def reshape_binned_data(self, dataset: xr.Dataset) -> dict[str, list]:
+        """
+        Reshape data arrays for binned datasets.
+
+        Binned datasets get reshaped based on the number of species and their
+        corresponding number of energy bins. Additionally, the number of spins
+        during data acquisition are collapsed/summed which also needs to be taken
+        into account when reshaping into the correct dimensions.
+
+        Parameters
+        ----------
+        dataset : xarray.Dataset
+            ``xarray`` dataset for the data product.
+
+        Returns
+        -------
+        data : dict[str, list]
+            Data arrays for each species.
+        """
+        # This will hold all of the data per-species and support variables,
+        # ready to be put in a CDF file
+        data: dict[str, list] = {}
+        for species in self.config["energy_table"]:
+            data[species] = []
+            data["epoch"] = []
+            data["spin_period"] = []
+            data["data_quality"] = []
+
+        # Get the number of spins per species
+        num_spins = self.config["num_spins"]
+
+        # Iterate through each epoch's data and pull out the data for each
+        # species
+        stacked_data = np.array(self.raw_data, dtype=np.uint32)
+        for i, epoch in enumerate(stacked_data):
+            current_epoch = dataset.epoch.data[i]
+            position = 0
+            for species in self.config["energy_table"]:
+                # Subtracting one here since the table includes endpoints
+                num_bins = len(self.config["energy_table"][species]) - 1
+                species_data = (
+                    epoch[position : position + num_bins * self.config["num_spins"]]
+                    .reshape(num_bins, num_spins)
+                    .T
+                )
+
+                # Now pull out the data for each spin within the species data
+                for spin_data in species_data:
+                    data[species].append(spin_data)
+
+                    # We only need one set of support variables in the CDF,
+                    # so just iterate using one species for these
+                    if species == "h":
+                        # For each spin, we add <spin_period>*<num_spins> to the
+                        # epoch value
+                        spin_period = (
+                            dataset.spin_period.data[i]
+                            * constants.SPIN_PERIOD_CONVERSION
+                        )
+                        epoch_value = current_epoch + np.int64(
+                            (spin_period * num_spins) * 1e9  # Convert from s to ns
+                        )
+                        data["epoch"].append(epoch_value)
+                        current_epoch = epoch_value
+
+                        # Other support variables
+                        data["spin_period"].append(spin_period)
+                        data["data_quality"].append(dataset.suspect.data[i])
+
+                position += num_bins * num_spins
+
+        return data
+
     def reshape_data(self) -> None:
         """
         Reshape the data arrays based on the data product being made.
@@ -558,6 +670,130 @@ class CoDICEL1aPipeline:
         self.cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
 
 
+def group_ialirt_data(packets: xr.Dataset, data_field_range: range) -> list[bytearray]:
+    """
+    Group together the individual I-ALiRT data fields.
+
+    Parameters
+    ----------
+    packets : xarray.Dataset
+        The dataset containing the I-ALiRT data packets.
+    data_field_range : range
+        The range of the individual data fields (15 or lo, 6 for hi).
+
+    Returns
+    -------
+    grouped_data : list[bytearray]
+        The list of grouped I-ALiRT data.
+    """
+    current_data_stream = bytearray()
+    grouped_data = []
+
+    # When a counter value of 255 is encountered, this signifies the
+    # end of the data stream
+    for packet_num in range(0, len(packets.acquisition_time.data)):
+        counter = packets.counter.data[packet_num]
+        if counter != 255:
+            for field in data_field_range:
+                current_data_stream.extend(
+                    bytearray([packets[f"data_{field:02}"].data[packet_num]])
+                )
+        else:
+            # At this point, if there are data, the data stream is ready
+            # to be processed like an SW Species product (for lo) or an
+            # Omni Species product (for hi)
+            if len(current_data_stream) > 0:
+                grouped_data.append(current_data_stream)
+            current_data_stream = bytearray()
+
+    return grouped_data
+
+
+def create_binned_dataset(
+    apid: int, dataset: xr.Dataset, science_values: list[str]
+) -> xr.Dataset:
+    """
+    Create dataset for data that is binned by energy.
+
+    This applies to the ``hi-omni`` and ``hi-sectored`` datasets. In addition to
+    data for species (e.g. ``h``, ``c``, ``o``, etc.), we add CDF variables
+    for their respective energy bin centers and deltas (e.g. ``energy_h``,
+    ``energy_h_delta``, etc.)
+
+    Parameters
+    ----------
+    apid : int
+        The APID of the packet.
+    dataset : xarray.Dataset
+        The packets to process.
+    science_values : list[str]
+        The values of the "data" field of the dataset.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Xarray dataset containing the final processed dataset.
+    """
+    # TODO: hi-sectored data product should be processed similar to hi-omni,
+    #       so I should be able to use this method.
+
+    # Get the four "main" parameters for processing
+    table_id, plan_id, plan_step, view_id = get_params(dataset)
+
+    # Run some of the pipeline methods to set configs and decompress
+    # the data
+    pipeline = CoDICEL1aPipeline(table_id, plan_id, plan_step, view_id)
+    pipeline.set_data_product_config(apid, dataset)
+    pipeline.decompress_data(science_values)
+
+    data = pipeline.reshape_binned_data(dataset)
+
+    # Create the main dataset to hold all the variables
+    coord = xr.DataArray(
+        np.array(data["epoch"], dtype=np.uint64),
+        name="epoch",
+        dims=["epoch"],
+        attrs=pipeline.cdf_attrs.get_variable_attributes("epoch", check_schema=False),
+    )
+    dataset = xr.Dataset(
+        coords={"epoch": coord},
+        attrs=pipeline.cdf_attrs.get_global_attributes(pipeline.config["dataset_name"]),
+    )
+
+    # Add the data variables
+    descriptor = pipeline.config["dataset_name"].removeprefix("imap_codice_l1a_")
+    for species in pipeline.config["energy_table"]:
+        # Add the species data to the dataset
+        values = np.array(data[species], dtype=np.uint32)
+        attrs = pipeline.cdf_attrs.get_variable_attributes(f"{descriptor}-{species}")
+        dims = ["epoch", f"energy_{species}"]
+        dataset[species] = xr.DataArray(
+            values,
+            name=species,
+            dims=dims,
+            attrs=attrs,
+        )
+
+        # Add the energy bins to the dataset
+        dataset = pipeline.define_energy_bins(dataset, species)
+
+    # Add support variables to the dataset
+    dataset["spin_period"] = xr.DataArray(
+        np.array(data["spin_period"]),
+        name="spin_period",
+        dims=["epoch"],
+        attrs=pipeline.cdf_attrs.get_variable_attributes("spin_period"),
+    )
+    dataset["data_quality"] = xr.DataArray(
+        np.array(data["data_quality"]),
+        name="data_quality",
+        dims=["epoch"],
+        attrs=pipeline.cdf_attrs.get_variable_attributes("data_quality"),
+    )
+
+    return dataset
+
+
 def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     """
     Create dataset for direct event data.
@@ -582,42 +818,13 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     apid : int
         The APID of the packet.
     packets : xarray.Dataset
-        The packets to process..
+        The packets to process.
 
     Returns
     -------
     dataset : xarray.Dataset
         Xarray dataset containing the direct event data.
     """
-    # Set some useful variables unique to CoDICE-Lo and CoDICE-Hi
-    if apid == CODICEAPID.COD_LO_PHA:
-        num_priorities = 8
-        cdf_fields = [
-            "NumEvents",
-            "DataQuality",
-            "APDGain",
-            "APD_ID",
-            "APDEnergy",
-            "TOF",
-            "MultiFlag",
-            "PHAType",
-            "SpinAngle",
-            "EnergyStep",
-        ]
-    elif apid == CODICEAPID.COD_HI_PHA:
-        num_priorities = 6
-        cdf_fields = [
-            "NumEvents",
-            "DataQuality",
-            "SSDEnergy0,TOF",
-            "SSD_ID",
-            "ERGE",
-            "MultiFlag",
-            "Type",
-            "SpinAngle",
-            "SpinNumber",
-        ]
-
     # Group and decompress the data
     grouped_data = group_data(packets)
     decompressed_data = [
@@ -625,26 +832,35 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     ]
 
     # Reshape the packet data into CDF-ready variables
-    data = reshape_de_data(packets, decompressed_data, num_priorities)
+    data = reshape_de_data(packets, decompressed_data, apid)
 
     # Gather the CDF attributes
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
     cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
 
+    # Determine the epochs to use in the dataset, which are the epochs whenever
+    # there is a start of a segment and the priority is 0
+    epoch_indices = np.where(
+        ((packets.seq_flgs.data == 3) | (packets.seq_flgs.data == 1))
+        & (packets.priority.data == 0)
+    )[0]
+    acq_start_seconds = packets.acq_start_seconds[epoch_indices]
+    acq_start_subseconds = packets.acq_start_subseconds[epoch_indices]
+    epochs = met_to_ttj2000ns(acq_start_seconds + acq_start_subseconds / 1e6)
+
     # Define coordinates
-    # For epoch, we take the first epoch from each priority set
     epoch = xr.DataArray(
-        packets.epoch[::num_priorities],
+        epochs,
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch"),
+        attrs=cdf_attrs.get_variable_attributes("epoch", check_schema=False),
     )
     event_num = xr.DataArray(
         np.arange(10000),
         name="event_num",
         dims=["event_num"],
-        attrs=cdf_attrs.get_variable_attributes("event_num"),
+        attrs=cdf_attrs.get_variable_attributes("event_num", check_schema=False),
     )
 
     # Create the dataset to hold the data variables
@@ -658,8 +874,8 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     )
 
     # Create the CDF data variables for each Priority and Field
-    for i in range(num_priorities):
-        for field in cdf_fields:
+    for i in range(constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["num_priorities"]):
+        for field in constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["cdf_fields"]:
             variable_name = f"P{i}_{field}"
             attrs = cdf_attrs.get_variable_attributes(variable_name)
             if field in ["NumEvents", "DataQuality"]:
@@ -723,13 +939,152 @@ def create_hskp_dataset(packet: xr.Dataset) -> xr.Dataset:
         if variable in exclude_variables:
             continue
 
-        attrs = cdf_attrs.get_variable_attributes(variable)
+        # The housekeeping spin_period variable has different values than
+        # the spin_value attribute in other datasets, so it gets special
+        # treatment
+        if variable == "spin_period":
+            attrs = cdf_attrs.get_variable_attributes("spin_period_hskp")
+        else:
+            attrs = cdf_attrs.get_variable_attributes(variable)
 
         dataset[variable] = xr.DataArray(
             packet[variable].data, dims=["epoch"], attrs=attrs
         )
 
     return dataset
+
+
+def create_ialirt_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
+    """
+    Create dataset for lo- and hi-ialirt data.
+
+    I-ALiRT data are packed identically to regular science data
+    (``lo-sw-species`` for CoDICE-lo, and ``hi-omni`` for CoDICE-hi), except
+    for some slight differences in the metadata that are transmitted.
+    Additionally, data are transmitted in separate, individual single-byte
+    fields (there are 15 of these for CoDICE-lo and 6 for CoDICE-hi).
+
+    This function will process these I-ALiRT data while using some of the same
+    code used for processing the ``lo-sw-species`` and ``hi-omni`` L1a data
+    products.
+
+    Parameters
+    ----------
+    apid : int
+        The APID of the packet.
+    packets : xarray.Dataset
+        The packets to process.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Xarray dataset containing the direct event data.
+
+    References
+    ----------
+    See section 9.4 of the CoDICE algorithm document for further details.
+    """
+    # I-ALiRT packet data gets split up into multiple data fields,
+    # specific to lo- and hi-
+    # See sections 10.4.1 and 10.4.2 in the algorithm document
+    if apid == CODICEAPID.COD_LO_IAL:
+        data_field_range = range(0, 15)
+    elif apid == CODICEAPID.COD_HI_IAL:
+        data_field_range = range(0, 5)
+
+    # Group together packets of I-ALiRT data to form complete data sets
+    grouped_data = group_ialirt_data(packets, data_field_range)
+
+    # Process each group to get the science data and corresponding metadata
+    science_values, metadata_values = process_ialirt_data_streams(grouped_data)
+
+    # How data are processed is different for lo-iarlirt and hi-ialirt
+    if apid == CODICEAPID.COD_HI_IAL:
+        # Set some necessary values and process as a binned dataset similar to
+        # a hi-omni data product
+        metadata_for_processing = [
+            "table_id",
+            "plan_id",
+            "plan_step",
+            "view_id",
+            "spin_period",
+            "suspect",
+        ]
+        for var in metadata_for_processing:
+            packets[var] = metadata_values[var.upper()]
+        dataset = create_binned_dataset(apid, packets, science_values)
+
+    elif apid == CODICEAPID.COD_LO_IAL:
+        # Create a nominal instance of the pipeline and process similar to a
+        # lo-sw-species data product
+        pipeline = CoDICEL1aPipeline(
+            metadata_values["TABLE_ID"][0],
+            metadata_values["PLAN_ID"][0],
+            metadata_values["PLAN_STEP"][0],
+            metadata_values["VIEW_ID"][0],
+        )
+        pipeline.set_data_product_config(apid, packets)
+        pipeline.decompress_data(science_values)
+        pipeline.reshape_data()
+
+        # The calculate_epoch_values method needs acq_start_seconds and
+        # acq_start_subseconds attributes on the dataset
+        pipeline.dataset["acq_start_seconds"] = (
+            "_",
+            metadata_values["ACQ_START_SECONDS"],
+        )
+        pipeline.dataset["acq_start_subseconds"] = (
+            "_",
+            metadata_values["ACQ_START_SUBSECONDS"],
+        )
+
+        pipeline.define_coordinates()
+
+        # The dataset also needs the metadata that will be carried through
+        # to the final data product
+        for field in [
+            "spin_period",
+            "suspect",
+            "st_bias_gain_mode",
+            "sw_bias_gain_mode",
+            "rgfo_half_spin",
+            "nso_half_spin",
+        ]:
+            pipeline.dataset[field] = ("_", metadata_values[field.upper()])
+
+        dataset = pipeline.define_data_variables()
+
+    return dataset
+
+
+def get_de_metadata(packets: xr.Dataset, segment: int) -> bytes:
+    """
+    Gather and return packet metadata (From packet_version through byte_count).
+
+    Extract the metadata in the segmented direct event packet, which is then
+    used to construct the full data of the group of segments.
+
+    Parameters
+    ----------
+    packets : xarray.Dataset
+        The segmented direct event packet data.
+    segment : int
+        The index of the segment of interest.
+
+    Returns
+    -------
+    metadata : bytes
+        The compressed metadata for the segmented packet.
+    """
+    # String together the metadata fields and convert the data to a bytes obj
+    metadata_str = ""
+    for field, num_bits in constants.DE_METADATA_FIELDS.items():
+        metadata_str += f"{packets[field].data[segment]:0{num_bits}b}"
+    metadata_chunks = [metadata_str[i : i + 8] for i in range(0, len(metadata_str), 8)]
+    metadata_ints = [int(item, 2) for item in metadata_chunks]
+    metadata = bytes(metadata_ints)
+
+    return metadata
 
 
 def get_params(dataset: xr.Dataset) -> tuple[int, int, int, int]:
@@ -802,32 +1157,39 @@ def group_data(packets: xr.Dataset) -> list[bytes]:
     current_group = bytearray()  # Temporary storage for current group
     group_byte_count = None  # Temporary storage for current group byte count
 
-    for packet_data, group_code, byte_count in zip(
-        packets.event_data.data, packets.seq_flgs.data, packets.byte_count.data
-    ):
+    for segment in range(len(packets.event_data.data)):
+        packet_data = packets.event_data.data[segment]
+        group_code = packets.seq_flgs.data[segment]
+        byte_count = packets.byte_count.data[segment]
+
         # If the group code is 3, this means the data is not part of a group
         # and can be decompressed as-is
         if group_code == 3:
-            values_to_decompress = packet_data[:byte_count]
-            grouped_data.append(values_to_decompress)
+            grouped_data.append(packet_data[:byte_count])
 
         # If the group code is 1, this means the data is the first data in a
         # group. Also, set the byte count for the group
         elif group_code == 1:
             group_byte_count = byte_count
-            current_group = packet_data
+            current_group += packet_data
 
         # If the group code is 0, this means the data is part of the middle of
-        # the group
+        # the group.
         elif group_code == 0:
+            current_group += get_de_metadata(packets, segment)
             current_group += packet_data
 
         # If the group code is 2, this means the data is the last data in the
         # group
         elif group_code == 2:
+            current_group += get_de_metadata(packets, segment)
             current_group += packet_data
+
+            # The grouped data is now ready to be decompressed
             values_to_decompress = current_group[:group_byte_count]
             grouped_data.append(values_to_decompress)
+
+            # Reset the current group
             current_group = bytearray()
             group_byte_count = None
 
@@ -856,8 +1218,72 @@ def log_dataset_info(datasets: dict[int, xr.Dataset]) -> None:
         )
 
 
+def process_ialirt_data_streams(
+    grouped_data: list[bytearray],
+) -> tuple[list[str], dict[str, list[int]]]:
+    """
+    Process each I-ALiRT science data stream to extract individual data fields.
+
+    Each data stream is converted to binary so that each metadata and science
+    data field and their values can be separated out. These fields and values
+    eventually will be stored in CDF data/support variables.
+
+    Parameters
+    ----------
+    grouped_data : list[bytearray]
+        A list of grouped I-ALiRT data.
+
+    Returns
+    -------
+    science_values : list[str]
+        The science values / data array portion of the I-ALiRT data in the form
+        of a binary string.
+    metadata_values : dict[str, list[int]]
+        The extracted metadata fields and their values.
+    """
+    # Initialize placeholders for the processed data
+    science_values = []
+    metadata_values: dict[str, list[int]] = {}
+    for field in constants.IAL_BIT_STRUCTURE:
+        metadata_values[field] = []
+
+    # Process each complete data stream
+    for data_stream in grouped_data:
+        try:
+            # Convert the data to binary
+            bit_string = "".join(f"{byte:08b}" for byte in data_stream)
+
+            # Separate the data into its individual fields
+            bit_position = 0
+            for field in constants.IAL_BIT_STRUCTURE:
+                # Convert from binary to integer
+                value = int(
+                    bit_string[
+                        bit_position : bit_position + constants.IAL_BIT_STRUCTURE[field]
+                    ],
+                    2,
+                )
+
+                # If we encounter an SHCOARSE of 0, the packet is bad
+                if field == "SHCOARSE" and value == 0:
+                    raise ValueError("Bad packet encountered")
+
+                metadata_values[field].append(value)
+                bit_position += constants.IAL_BIT_STRUCTURE[field]
+                if field == "BYTE_COUNT":
+                    byte_count = value * 8  # Convert from bytes to number of bits
+
+            # The rest is the data field, up to the byte count
+            data_field = bit_string[bit_position : bit_position + byte_count]
+            science_values.append(data_field)
+        except ValueError:
+            pass
+
+    return science_values, metadata_values
+
+
 def reshape_de_data(
-    packets: xr.Dataset, decompressed_data: list[list[int]], num_priorities: int
+    packets: xr.Dataset, decompressed_data: list[list[int]], apid: int
 ) -> dict[str, np.ndarray]:
     """
     Reshape the decompressed direct event data into CDF-ready arrays.
@@ -869,9 +1295,9 @@ def reshape_de_data(
         and data quality.
     decompressed_data : list[list[int]]
         The decompressed data to reshape, in the format <epoch>[<priority>[<event>]].
-    num_priorities : int
-        The number of priorities in the data product (differs between CoDICE-Lo
-        and CoDICE-Hi).
+    apid : int
+        The APID of the packet, used primarily to determine if the data are from
+        CoDICE-Lo or CoDICE-Hi.
 
     Returns
     -------
@@ -882,23 +1308,37 @@ def reshape_de_data(
     # Dictionary to hold all the (soon to be restructured) direct event data
     data: dict[str, np.ndarray] = {}
 
+    # Extract some useful variables
+    num_priorities = constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["num_priorities"]
+    bit_structure = constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["bit_structure"]
+
     # Determine the number of epochs to help with data array initialization
     # There is one epoch per set of priorities
-    num_epochs = len(packets.epoch.data) // num_priorities
+    num_epochs = len(decompressed_data) // num_priorities
+
+    # Get num_events, data quality, and priorities data for beginning of segments
+    segment_starts = np.where(
+        (packets.seq_flgs.data == 3) | (packets.seq_flgs.data == 1)
+    )[0]
+    num_events_arr = packets.num_events.data[segment_starts]
+    data_quality_arr = packets.suspect.data[segment_starts]
+    priorities_arr = packets.priority.data[segment_starts]
 
     # Initialize data arrays for each priority and field to store the data
     # We also need arrays to hold number of events and data quality
     for priority_num in range(num_priorities):
-        for field in constants.LO_DE_BIT_STRUCTURE:
+        for field in bit_structure:
             if field not in ["Priority", "Spare"]:
                 data[f"P{priority_num}_{field}"] = np.full(
-                    (num_epochs, 10000), 255, dtype=np.uint16
+                    (num_epochs, 10000),
+                    bit_structure[field]["fillval"],
+                    dtype=bit_structure[field]["dtype"],
                 )
-        data[f"P{priority_num}_NumEvents"] = np.full(num_epochs, 255, dtype=np.uint16)
-        data[f"P{priority_num}_DataQuality"] = np.full(num_epochs, 255, dtype=np.uint16)
+        data[f"P{priority_num}_NumEvents"] = np.full(num_epochs, 65535, dtype=np.uint16)
+        data[f"P{priority_num}_DataQuality"] = np.full(num_epochs, 255, dtype=np.uint8)
 
     # decompressed_data is one large list of values of length
-    # (<number of epochs> * <8 priorities>)
+    # (<number of epochs> * <number of priorities>)
     # Chunk the data into each epoch
     for epoch_index in range(num_epochs):
         # Determine the starting and ending indices of the epoch
@@ -910,43 +1350,51 @@ def reshape_de_data(
 
         # The order of the priorities and data quality flags are unique to each
         # epoch and can be gathered from the packet data
-        priority_order = packets.priority[epoch_start:epoch_end].data
-        data_quality = packets.suspect[epoch_start:epoch_end].data
+        priority_order = priorities_arr[epoch_start:epoch_end]
+        data_quality = data_quality_arr[epoch_start:epoch_end]
 
         # For each epoch/priority combo, iterate over each event
         for i, priority_num in enumerate(priority_order):
             priority_data = epoch_data[i]
 
             # Number of events and data quality can be determined at this stage
-            num_events = len(priority_data) // num_priorities
+            num_events = num_events_arr[epoch_start:epoch_end][i]
             data[f"P{priority_num}_NumEvents"][epoch_index] = num_events
             data[f"P{priority_num}_DataQuality"][epoch_index] = data_quality[i]
 
             # Iterate over each event
             for event_index in range(num_events):
-                event_start = event_index * num_priorities
-                event_end = event_start + num_priorities
+                event_start = event_index * 8  # The 8 is for 8 bytes
+                event_end = event_start + 8
                 event = priority_data[event_start:event_end]
+
                 # Separate out each individual field from the bit string
                 # The fields are packed into the bit string in reverse order, so
                 # we need to back them out in reverse order
                 bit_string = (
                     f"{int.from_bytes(event, byteorder='big'):0{len(event) * 8}b}"
                 )
+
                 bit_position = 0
-                for field_name, bit_length in reversed(
-                    constants.LO_DE_BIT_STRUCTURE.items()
-                ):
+                for field_name, field_components in reversed(bit_structure.items()):
+                    # We don't need to carry Priority and Spare fields through
                     if field_name in ["Priority", "Spare"]:
-                        bit_position += bit_length
+                        bit_position += field_components["bit_length"]
                         continue
-                    value = int(bit_string[bit_position : bit_position + bit_length], 2)
+
+                    # Convert from binary to integer
+                    value = int(
+                        bit_string[
+                            bit_position : bit_position + field_components["bit_length"]
+                        ],
+                        2,
+                    )
+
+                    # Set the value into the data array
                     data[f"P{priority_num}_{field_name}"][epoch_index, event_index] = (
                         value
                     )
-                    bit_position += bit_length
-
-    # TODO: Implement specific np.dtype and fill_val per field
+                    bit_position += field_components["bit_length"]
 
     return data
 
@@ -986,14 +1434,20 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # Event data
-        elif apid == CODICEAPID.COD_LO_PHA:
+        elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
             processed_dataset = create_direct_event_dataset(apid, dataset)
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
-        # TODO: Still need to implement
-        elif apid == CODICEAPID.COD_HI_PHA:
-            logger.info("\tStill need to properly implement")
-            processed_dataset = None
+        # I-ALiRT data
+        elif apid in [CODICEAPID.COD_LO_IAL, CODICEAPID.COD_HI_IAL]:
+            processed_dataset = create_ialirt_dataset(apid, dataset)
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+
+        # hi-omni data
+        elif apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
+            science_values = [packet.data for packet in dataset.data]
+            processed_dataset = create_binned_dataset(apid, dataset, science_values)
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # Everything else
         elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
@@ -1012,14 +1466,6 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
             processed_dataset = pipeline.define_data_variables()
 
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
-
-        # TODO: Still need to implement I-ALiRT data products
-        elif apid in [
-            CODICEAPID.COD_HI_IAL,
-            CODICEAPID.COD_LO_IAL,
-        ]:
-            logger.info("\tStill need to properly implement")
-            processed_dataset = None
 
         # For APIDs that don't require processing
         else:

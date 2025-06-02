@@ -8,10 +8,12 @@ import pytest
 import xarray as xr
 from cdflib.xarray.xarray_to_cdf import ISTPError
 
-from imap_processing import imap_module_directory
+from imap_processing import decom, imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.idex.decode import _decode_sub_frame, read_bits, rice_decode
 from imap_processing.idex.idex_l1a import PacketParser
+from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.tests.idex.conftest import TEST_L0_FILE_SCI
 
 
 def test_idex_cdf_file(decom_test_data_sci: xr.Dataset):
@@ -81,6 +83,30 @@ def test_bad_cdf_file_data(decom_test_data_sci: xr.Dataset):
         write_cdf(decom_test_data_sci, istp=True, terminate_on_warning=True)
 
     del decom_test_data_sci["Bad_data"]
+
+
+def test_incomplete_event(caplog):
+    """Verify that a CDF is still produced if a packet is dropped.
+
+    The IDEX team requests that a warning be logged for incomplete events
+    (dropped packets) in the data, while still allowing the CDF to be created with
+    the remainder of the complete events.
+    """
+    xml = (
+        f"{imap_module_directory}/idex/packet_definitions/"
+        f"idex_science_packet_definition.xml"
+    )
+    caplog.at_level("WARNING")
+    packets = decom.decom_packets(TEST_L0_FILE_SCI, xml)
+    packets = packets[0:1] + packets[2:]
+    with mock.patch(
+        "imap_processing.idex.idex_l1a.decom_packets",
+        return_value=(packets, xr.Dataset(), xr.Dataset()),
+    ):
+        l1a_dataset = PacketParser(TEST_L0_FILE_SCI).data[0]
+    # Assert that all the events are present except for one.
+    assert len(l1a_dataset["epoch"]) == 13
+    assert "Missing packet for event number 1" in caplog.text
 
 
 def test_idex_tof_high_data_from_cdf(decom_test_data_sci: xr.Dataset):
@@ -292,27 +318,47 @@ def test_decode_sub_frame_psel_3():
     assert ints == [1, 2, 4, 1, 5]
 
 
-def test_cdf_creation_catlst(decom_test_data_catlst: xr.Dataset):
-    """Verify that a sample of the data can be written to a cdf without errors.
+def test_catlst_dataset(decom_test_data_catlst: list[xr.Dataset]):
+    """Verify that the dataset contains what we expect and can be written to a cdf.
 
     Parameters
     ----------
-    decom_test_data_catlst : xarray.Dataset
-        The dataset to test with
+    decom_test_data_catlst : list[xarray.Dataset]
+        The raw and derived (l1a and l1b) datasets to test with.
     """
-    filename = write_cdf(decom_test_data_catlst)
+    for ds in decom_test_data_catlst:
+        assert "shcoarse" in ds
+        assert "shfine" in ds
+        # Assert epoch is calculated using fine-grained clock ticks
+        expected_epoch = met_to_ttj2000ns(ds["shcoarse"] + ds["shfine"] * 20e-6)
+        np.testing.assert_array_equal(ds.epoch, expected_epoch)
+    # Assert that the dataset can be written to a CDF file
+    filename_l1a = write_cdf(decom_test_data_catlst[0])
+    assert filename_l1a.name == "imap_idex_l1a_catlst_20241206_v999.cdf"
 
-    assert filename.name == "imap_idex_l1a_catlst_20241206_v999.cdf"
+    filename_l1b = write_cdf(decom_test_data_catlst[1])
+    assert filename_l1b.name == "imap_idex_l1b_catlst_20241206_v999.cdf"
 
 
-def test_cdf_creation_evt(decom_test_data_evt: xr.Dataset):
-    """Verify that a sample of the data can be written to a cdf without errors.
+def test_evt_dataset(decom_test_data_evt: list[xr.Dataset]):
+    """Verify that the dataset contains what we expect and can be written to a cdf.
 
     Parameters
     ----------
-    decom_test_data_evt : xarray.Dataset
-        The dataset to test with
+    decom_test_data_evt : list[xarray.Dataset]
+        The raw and derived (l1a and l1b) datasets to test with.
     """
-    filename = write_cdf(decom_test_data_evt)
+    for ds in decom_test_data_evt:
+        assert "shcoarse" in ds
+        assert "shfine" in ds
+        # Assert epoch is calculated using fine grained clock ticks
+        expected_epoch = met_to_ttj2000ns(ds["shcoarse"] + ds["shfine"] * 20e-6)
+        np.testing.assert_array_equal(ds.epoch, expected_epoch)
+    assert decom_test_data_evt[0]["elid_evtpkt"][9] == 192
+    assert decom_test_data_evt[1]["elid_evtpkt"][9] == "SCI_STE"
+    # Assert that the dataset can be written to a CDF file
+    filename_l1a = write_cdf(decom_test_data_evt[0])
+    assert filename_l1a.name == "imap_idex_l1a_evt_20250108_v999.cdf"
 
-    assert filename.name == "imap_idex_l1a_evt_20250108_v999.cdf"
+    filename_l1b = write_cdf(decom_test_data_evt[1])
+    assert filename_l1b.name == "imap_idex_l1b_evt_20250108_v999.cdf"

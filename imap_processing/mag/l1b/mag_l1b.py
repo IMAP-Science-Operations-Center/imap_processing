@@ -7,15 +7,17 @@ import numpy as np
 import xarray as xr
 from xarray import Dataset
 
+from imap_processing.ancillary.ancillary_dataset_combiner import MagAncillaryCombiner
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import load_cdf
 from imap_processing.mag.constants import vectors_per_second_from_string
 
 logger = logging.getLogger(__name__)
 
 
 def mag_l1b(
-    input_dataset: xr.Dataset, calibration_dataset: xr.Dataset = None
+    input_dataset: xr.Dataset,
+    day_to_process: np.datetime64,
+    calibration_dataset: xr.Dataset,
 ) -> Dataset:
     """
     Will process MAG L1B data from L1A data.
@@ -24,6 +26,8 @@ def mag_l1b(
     ----------
     input_dataset : xr.Dataset
         The input dataset to process.
+    day_to_process : np.datetime64
+        The day to process, used for setting the date in the output dataset.
     calibration_dataset : xr.Dataset
         The calibration dataset containing calibration matrices and timeshift values for
         mago and magi.
@@ -34,14 +38,13 @@ def mag_l1b(
     output_dataset : xr.Dataset
         The processed dataset.
     """
-    # TODO:
-    # Read in calibration file
-
-    # TODO: This should definitely be loaded from AWS
     if calibration_dataset is None:
-        calibration_dataset = load_cdf(
-            Path(__file__).parent / "imap_calibration_mag_20240229_v01.cdf"
+        default_file = (
+            Path(__file__).parent / "imap_mag_l1b-calibration_20240229_v002.cdf"
         )
+        calibration_dataset = MagAncillaryCombiner(
+            [default_file], day_to_process + 3
+        ).combined_dataset
         logger.info("Using default test calibration file.")
 
     source = input_dataset.attrs["Logical_source"]
@@ -57,8 +60,24 @@ def mag_l1b(
     mag_attributes.add_instrument_variable_attrs("mag", "l1b")
     source = source.replace("l1a", "l1b")
 
+    if "mago" in source:
+        is_mago = True
+    elif "magi" in source:
+        is_mago = False
+    else:
+        raise ValueError(
+            f"Calibration matrix not found, invalid logical source "
+            f"{input_dataset.attrs['Logical_source']}"
+        )
+
+    # TODO: Check validity of time range for calibration
+    calibration_matrix, time_shift = retrieve_matrix_from_l1b_calibration(
+        calibration_dataset, day_to_process, is_mago
+    )
+    print(f"Using calibration matrix: {calibration_matrix}")
+
     output_dataset = mag_l1b_processing(
-        input_dataset, calibration_dataset, mag_attributes, source
+        input_dataset, calibration_matrix, time_shift, mag_attributes, source
     )
 
     return output_dataset
@@ -66,7 +85,8 @@ def mag_l1b(
 
 def mag_l1b_processing(
     input_dataset: xr.Dataset,
-    calibration_dataset: xr.Dataset,
+    calibration_matrix: xr.DataArray,
+    time_shift: xr.DataArray,
     mag_attributes: ImapCdfAttributes,
     logical_source: str,
 ) -> xr.Dataset:
@@ -84,38 +104,27 @@ def mag_l1b_processing(
     ----------
     input_dataset : xr.Dataset
         The input dataset to process.
-    calibration_dataset : xr.Dataset
+    calibration_matrix : xr.DataArray
         The calibration dataset containing calibration matrices and timeshift values for
         mago and magi.
+    time_shift : xr.DataArray
+        The time shift to apply for the given sensor. This should be one value and is
+        in seconds.
     mag_attributes : ImapCdfAttributes
         Attribute class for output CDF containing MAG L1B attributes.
     logical_source : str
-        The expected logical source of the output file. Should look something like:
-        imap_mag_l1b_norm-magi.
+        The logical source of the input dataset, used for setting the output dataset
+        attributes.
 
     Returns
     -------
     output_dataset : xr.Dataset
         L1b dataset.
     """
-    if "mago" in logical_source:
-        is_mago = True
-    elif "magi" in logical_source:
-        is_mago = False
-    else:
-        raise ValueError(
-            f"Calibration matrix not found, invalid logical source "
-            f"{input_dataset.attrs['Logical_source']}"
-        )
-
-    # TODO: Check validity of time range for calibration
-    calibration_matrix, time_shift = retrieve_matrix_from_l1b_calibration(
-        calibration_dataset, is_mago
-    )
-
     dims = [["direction"], ["compression"]]
     new_dims = [["direction"], ["compression"]]
 
+    # Calculate vectors
     l1b_fields = xr.apply_ufunc(
         update_vector,
         input_dataset["vectors"],
@@ -127,6 +136,7 @@ def mag_l1b_processing(
         kwargs={"calibration_matrix": calibration_matrix},
     )
 
+    # Calculate shifted time
     epoch_time = shift_time(input_dataset["epoch"], time_shift)
 
     # Update attributes and assemble dataset
@@ -212,7 +222,7 @@ def mag_l1b_processing(
 
 
 def retrieve_matrix_from_l1b_calibration(
-    calibration_dataset: xr.Dataset, is_mago: bool = True
+    calibration_dataset: xr.Dataset, day: np.datetime64, is_mago: bool = True
 ) -> tuple[xr.DataArray, xr.DataArray]:
     """
     Retrieve the calibration matrix and time shift from the calibration dataset.
@@ -221,6 +231,9 @@ def retrieve_matrix_from_l1b_calibration(
     ----------
     calibration_dataset : xarray.Dataset
         The calibration dataset containing the calibration matrices and time shift.
+    day : np.datetime64
+        The day to process, used for retrieving the correct day of data out of the
+        calibration.
     is_mago : bool
         Whether the calibration is for mago or magi. If True, it retrieves the mago
         calibration matrix and time shift. If False, it retrieves the magi calibration
@@ -232,12 +245,13 @@ def retrieve_matrix_from_l1b_calibration(
         The calibration matrix and time shift. These can be passed directly into
         update_vector, calibrate_vector, and shift_time.
     """
+    print(f"Finding data for day {day}")
     if is_mago:
-        calibration_matrix = calibration_dataset["MFOTOURFO"]
-        time_shift = calibration_dataset["OTS"]
+        calibration_matrix = calibration_dataset.sel(epoch=day)["MFOTOURFO"]
+        time_shift = calibration_dataset.sel(epoch=day)["OTS"]
     else:
-        calibration_matrix = calibration_dataset["MFITOURFI"]
-        time_shift = calibration_dataset["ITS"]
+        calibration_matrix = calibration_dataset.sel(epoch=day)["MFITOURFI"]
+        time_shift = calibration_dataset.sel(epoch=day)["ITS"]
 
     return calibration_matrix, time_shift
 

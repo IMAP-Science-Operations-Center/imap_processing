@@ -5,9 +5,11 @@ import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
+from imap_processing.idex.idex_constants import SPICE_ARRAYS
 from imap_processing.idex.idex_l1a import PacketParser
 from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.idex.idex_l2a import idex_l2a
+from imap_processing.idex.idex_utils import get_idex_attrs
 
 TEST_DATA_PATH = imap_module_directory / "tests" / "idex" / "test_data"
 
@@ -19,19 +21,6 @@ L1A_EXAMPLE_FILE = TEST_DATA_PATH / "idex_l1a_validation_file.h5"
 L1B_EXAMPLE_FILE = TEST_DATA_PATH / "idex_l1b_validation_file.h5"
 
 pytestmark = pytest.mark.external_test_data
-
-SPICE_ARRAYS = [
-    "ephemeris_position_x",
-    "ephemeris_position_y",
-    "ephemeris_position_z",
-    "ephemeris_velocity_x",
-    "ephemeris_velocity_y",
-    "ephemeris_velocity_z",
-    "right_ascension",
-    "declination",
-    "solar_longitude",
-    "spin_phase",
-]
 
 
 @pytest.fixture
@@ -48,26 +37,26 @@ def decom_test_data_sci() -> xr.Dataset:
 
 @pytest.fixture
 def decom_test_data_catlst() -> xr.Dataset:
-    """Return a ``xarray`` dataset containing the catalog list summary data.
+    """List of ``xarray`` datasets containing the raw and derived catalog list data.
 
     Returns
     -------
-    dataset : xarray.Dataset
-        A ``xarray`` dataset containing the catalog list summary data.
+    dataset : list[xarray.Dataset]
+        A list of ``xarray`` dataset containing the catalog list summary datasets.
     """
-    return PacketParser(TEST_L0_FILE_CATLST).data[0]
+    return PacketParser(TEST_L0_FILE_CATLST).data
 
 
 @pytest.fixture
 def decom_test_data_evt() -> xr.Dataset:
-    """Return a ``xarray`` dataset containing the event log data.
+    """List of ``xarray`` datasets containing the raw and derived event log data.
 
     Returns
     -------
-    dataset : xarray.Dataset
-        A ``xarray`` dataset containing the event log data.
+    dataset : list[xarray.Dataset]
+        A list of ``xarray`` datasets containing the event log datasets.
     """
-    return PacketParser(TEST_L0_FILE_EVT).data[0]
+    return PacketParser(TEST_L0_FILE_EVT).data
 
 
 @pytest.fixture
@@ -84,7 +73,7 @@ def l1a_example_data(_download_test_data):
 
 
 @pytest.fixture
-def l2a_dataset(decom_test_data_sci: xr.Dataset) -> xr.Dataset:
+def l2a_dataset(l1b_dataset: xr.Dataset) -> xr.Dataset:
     """Return a ``xarray`` dataset containing test data.
 
     Returns
@@ -92,8 +81,12 @@ def l2a_dataset(decom_test_data_sci: xr.Dataset) -> xr.Dataset:
     dataset : xr.Dataset
         A ``xarray`` dataset containing the test data
     """
+    return idex_l2a(l1b_dataset)
+    idex_attrs = get_idex_attrs("l1b")
     spin_phase_angles = xr.DataArray(
-        np.random.randint(0, 360, len(decom_test_data_sci.epoch))
+        np.random.randint(0, 360, len(l1b_dataset.epoch)),
+        dims="epoch",
+        attrs=idex_attrs.get_variable_attributes("spin_phase"),
     )
     with mock.patch(
         "imap_processing.idex.idex_l1b.get_spice_data",
@@ -116,10 +109,26 @@ def l1b_example_data(_download_test_data):
     return load_hdf_file(L1B_EXAMPLE_FILE)
 
 
+@pytest.fixture
+@mock.patch("imap_processing.idex.idex_l1b.get_spice_data")
+def l1b_dataset(mock_get_spice_data, decom_test_data_sci: xr.Dataset) -> xr.Dataset:
+    """Return a ``xarray`` dataset containing test data.
+
+    Returns
+    -------
+    dataset : xr.Dataset
+        A ``xarray`` dataset containing the test data
+    """
+
+    mock_get_spice_data.side_effect = get_spice_data_side_effect_func
+    dataset = idex_l1b(decom_test_data_sci)
+    return dataset
+
+
 def get_spice_data_side_effect_func(l1a_ds, idex_attrs):
     # Create a mock dictionary of spice arrays
 
-    return {
+    spice_data = {
         name: xr.DataArray(
             name=name,
             data=np.ones(len(l1a_ds["epoch"])),
@@ -128,6 +137,29 @@ def get_spice_data_side_effect_func(l1a_ds, idex_attrs):
         )
         for name in SPICE_ARRAYS
     }
+    spin_phase_angles = xr.DataArray(
+        name="spin_phase",
+        dims=["epoch"],
+        data=np.random.randint(0, 360, len(l1a_ds.epoch)),
+        attrs=idex_attrs.get_variable_attributes("spin_phase"),
+    )
+    longitude = xr.DataArray(
+        np.random.uniform(0, 360, len(l1a_ds.epoch)),
+        dims=["epoch"],
+        name="longitude",
+        attrs=idex_attrs.get_variable_attributes("longitude"),
+    )
+    latitude = xr.DataArray(
+        np.random.uniform(-90, 90, len(l1a_ds.epoch)),
+        dims=["epoch"],
+        name="latitude",
+        attrs=idex_attrs.get_variable_attributes("latitude"),
+    )
+    spice_data["spin_phase"] = spin_phase_angles
+    spice_data["latitude"] = latitude
+    spice_data["longitude"] = longitude
+
+    return spice_data
 
 
 def load_hdf_file(path: str) -> xr.Dataset:

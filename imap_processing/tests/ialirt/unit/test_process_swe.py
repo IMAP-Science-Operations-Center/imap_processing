@@ -137,6 +137,48 @@ def summed_half_cycle():
     return summed_half_cycle
 
 
+@pytest.mark.external_test_data
+@patch(
+    "imap_processing.ialirt.l0.process_swe.read_in_flight_cal_data",
+    return_value=pd.DataFrame(
+        {
+            "met_time": [453051300, 453051900],
+            "cem1": [1, 2],
+            "cem2": [1, 2],
+            "cem3": [1, 2],
+            "cem4": [1, 2],
+            "cem5": [1, 2],
+            "cem6": [1, 2],
+            "cem7": [1, 2],
+        }
+    ),
+)
+def test_process_spacecraft_packet(
+    mock_read_cal, swe_test_data, fields_to_test, sc_packet_path
+):
+    """Test processing for spacecraft packet."""
+    packet_path, xtce_ialirt_path = sc_packet_path
+    sc_xarray_data = packet_file_to_datasets(
+        packet_path, xtce_ialirt_path, use_derived_value=False
+    )[478]
+    # Create fake data here since instrument data contains only zeros.
+    n = sc_xarray_data.dims["epoch"]
+    sc_xarray_data["swe_acq_sec"] = (
+        "epoch",
+        np.arange(462466219, 462466219 + n, dtype=np.uint32),
+    )
+    sc_xarray_data["swe_seq"] = ("epoch", np.arange(n) % 60)
+
+    in_flight_cal_file = (
+        imap_module_directory
+        / "tests/swe/lut/imap_swe_l1b-in-flight-cal_20240510_20260716_v000.csv"
+    )
+
+    swe_product = process_swe(sc_xarray_data, [in_flight_cal_file])
+
+    assert len(swe_product[0].keys()) == 21
+
+
 def test_get_energy():
     """Tests get_alirt_energies function."""
     energies = get_ialirt_energies()
@@ -406,7 +448,10 @@ def test_process_swe(mock_read_cal, swe_test_data, fields_to_test):
     )
     swe_test_data.index.name = "epoch"
     ds = swe_test_data.to_xarray()
-    ds["src_seq_ctr"] = ("epoch", np.arange(len(ds["swe_shcoarse"])))
+    # Dummy data that mimics the spacecraft packet.
+    ds["src_seq_ctr"] = ("epoch", np.arange(len(ds["epoch"])))
+    ds["sc_sclk_sec"] = ("epoch", np.arange(len(ds["epoch"])))
+    ds["sc_sclk_sub_sec"] = ("epoch", np.arange(len(ds["epoch"])))
     in_flight_cal_file = (
         imap_module_directory
         / "tests/swe/lut/imap_swe_l1b-in-flight-cal_20240510_20260716_v000.csv"
