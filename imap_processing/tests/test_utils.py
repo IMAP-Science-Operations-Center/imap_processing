@@ -6,6 +6,7 @@ import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory, utils
+from imap_processing.ultra.utils.ultra_l1_utils import extract_data_dict
 
 
 def test_convert_raw_to_eu(tmp_path):
@@ -230,3 +231,31 @@ def test_packet_file_to_datasets_flat_definition():
     )
     with pytest.raises(ValueError, match="Packet fields do not match"):
         utils.packet_file_to_datasets(packet_files, packet_definition)
+
+
+def test_extract_data_dict():
+    """Test extract_data_dict function."""
+    data_vars = {
+        "field_a": (["spin_number"], np.array([1, 2, 3])),
+        "field_b": (["spin_number"], np.array([4, 5, 6])),
+    }
+    coords = {
+        "spin_number": np.array([0, 1, 2]),
+        "energy_bin_geometric_mean": np.array([10.0, 20.0, 30.0]),
+        "epoch": np.array(
+            ["2025-01-01", "2025-01-02", "2025-01-03"], dtype="datetime64[ns]"
+        ),
+    }
+    ds = xr.Dataset(data_vars=data_vars, coords=coords)
+
+    result = extract_data_dict(ds)
+
+    assert set(result.keys()) == {
+        "field_a",
+        "field_b",
+        "spin_number",
+        "energy_bin_geometric_mean",
+        "epoch",
+    }
+    np.testing.assert_array_equal(result["field_a"], np.array([1, 2, 3]))
+    np.testing.assert_array_equal(result["spin_number"], np.array([0, 1, 2]))

@@ -70,12 +70,11 @@ def test_calculate_spacecraft_pset():
 
     path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
     ancillary = {
-        "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv": path
+        "l1c-90sensor-dps-exposure": path
         / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
-        "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv": path
+        "l1c-90sensor-efficiencies": path
         / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
-        "imap_ultra_l1c-90sensor-gf_20250101_v000.csv": path
-        / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
+        "l1c-90sensor-gf": path / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
     }
 
     spacecraft_pset = calculate_spacecraft_pset(
@@ -139,12 +138,11 @@ def test_calculate_spacecraft_pset_with_cdf():
 
         path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
         ancillary = {
-            "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv": path
+            "l1c-90sensor-dps-exposure": path
             / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
-            "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv": path
+            "l1c-90sensor-efficiencies": path
             / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
-            "imap_ultra_l1c-90sensor-gf_20250101_v000.csv": path
-            / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
+            "l1c-90sensor-gf": path / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
         }
 
         spacecraft_pset = calculate_spacecraft_pset(

@@ -138,3 +138,28 @@ def create_dataset(  # noqa: PLR0912
             )
 
     return dataset
+
+
+def extract_data_dict(dataset: xr.Dataset) -> dict:
+    """
+    Convert variables and selected coordinates into a dictionary.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        The input xarray Dataset.
+
+    Returns
+    -------
+    data_dict : dict
+        Dictionary with data variables and selected coordinates.
+    """
+    data_dict = {var: dataset[var].values for var in dataset.data_vars}
+    data_dict.update(
+        {
+            coord: dataset.coords[coord].values
+            for coord in ("spin_number", "energy_bin_geometric_mean", "epoch")
+            if coord in dataset.coords
+        }
+    )
+    return data_dict

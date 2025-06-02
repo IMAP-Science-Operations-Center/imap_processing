@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
 
-from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
+from imap_processing.ultra.utils.ultra_l1_utils import create_dataset, extract_data_dict
 
 FILLVAL_UINT16 = 65535
 FILLVAL_FLOAT64 = -1.0e31
@@ -41,16 +41,7 @@ def calculate_badtimes(
     )
     filtered_dataset = extendedspin_dataset.sel(spin_number=culled_spins)
 
-    data_dict = {
-        var: filtered_dataset[var].values for var in filtered_dataset.data_vars
-    }
-    data_dict.update(
-        {
-            coord: filtered_dataset.coords[coord].values
-            for coord in filtered_dataset.coords
-            if coord in ("spin_number", "energy_bin_geometric_mean", "epoch")
-        }
-    )
+    data_dict = extract_data_dict(filtered_dataset)
 
     badtimes_dataset = create_dataset(data_dict, name, "l1b")
 

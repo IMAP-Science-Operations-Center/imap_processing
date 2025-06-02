@@ -87,7 +87,7 @@ def test_get_energy_efficiencies():
 
     path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
     ancillary_files = {
-        "imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv": path
+        "l1b-45sensor-logistic-interpolation": path
         / "imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv"
     }
     u45_efficiencies = get_energy_efficiencies(ancillary_files)
