@@ -675,6 +675,10 @@ L1B_DATA_PRODUCT_CONFIGURATIONS: dict[str, dict] = {
         "num_spin_sectors": 24,
         "num_spins": 16,
     },
+    "hi-ialirt": {
+        "num_spin_sectors": 24,
+        "num_spins": 4,
+    },
     "hi-omni": {
         "num_spin_sectors": 24,
         "num_spins": 4,
@@ -709,6 +713,9 @@ L1B_DATA_PRODUCT_CONFIGURATIONS: dict[str, dict] = {
         "num_spin_sectors": 12,
     },
     "lo-sw-species": {
+        "num_spin_sectors": 12,
+    },
+    "lo-ialirt": {
         "num_spin_sectors": 12,
     },
 }
