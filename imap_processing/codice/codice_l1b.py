@@ -9,16 +9,10 @@ from imap_processing.codice.codice_l1b import process_codice_l1b
 dataset = process_codice_l1b(l1a_filenanme)
 """
 
-# TODO: Some things to figure out with Joey:
-#       - Do any of the support variables need to be converted to rates?
-#         - No
-#       - How to convert hi-priority data product?
-#         - Need updated algorithm document
-#       - Do hi-omni and hi-sectored energy bins need to be converted?
-#         - No
+# TODO: Figure out how to convert hi-priority data product. Need an updated
+#       algorithm document that describes this.
 
 import logging
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -67,6 +61,7 @@ def convert_to_rates(
         "lo-sw-priority",
         "lo-nsw-species",
         "lo-sw-species",
+        "lo-ialirt",
     ]:
         rates_data = dataset[variable_name].data / (
             acq_times
@@ -79,6 +74,7 @@ def convert_to_rates(
         "hi-omni",
         "hi-priority",
         "hi-sectored",
+        "hi-ialirt",
     ]:
         rates_data = dataset[variable_name].data / (
             constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spin_sectors"]
@@ -118,8 +114,8 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
 
     # Direct event data products do not have a level L1B
     if descriptor in ["lo-pha", "hi-pha"]:
-        logger.warning("Encountered direct event data product. Skipping processing")
-        sys.exit()
+        logger.warning("Encountered direct event data product. Skipping L1b processing")
+        return None
 
     # Get the L1b CDF attributes
     cdf_attrs = ImapCdfAttributes()
@@ -134,6 +130,8 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
 
     # Determine which variables need to be converted from counts to rates
     # TODO: Figure out exactly which hskp variables need to be converted
+    # Housekeeping and binned datasets are treated a bit differently since
+    # not all variables need to be converted
     if descriptor == "hskp":
         data_variables = []
         support_variables = ["cmdexe", "cmdrjct"]
@@ -142,6 +140,9 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
         support_variables = []
     elif descriptor == "hi-omni":
         data_variables = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
+        support_variables = []
+    elif descriptor == "hi-ialirt":
+        data_variables = ["h"]
         support_variables = []
     else:
         data_variables = getattr(
@@ -163,8 +164,11 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
         elif variable_name in support_variables:
             cdf_attrs_key = variable_name
         l1b_dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
-            cdf_attrs_key
+            cdf_attrs_key, check_schema=False
         )
+
+    # TODO: Temporary workaround to avoid xarray_to_cdf error
+    l1b_dataset.epoch.attrs["DEPEND_0"] = " "
 
     logger.info(f"\nFinal data product:\n{l1b_dataset}\n")
 
