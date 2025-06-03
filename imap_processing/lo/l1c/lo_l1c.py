@@ -326,7 +326,7 @@ def create_datasets(
     #  and relative L1A DE time to calculate the absolute DE time,
     #  this epoch conversion will go away and the time in the DE dataclass
     #  can be used direction
-    epoch_converted_time = [met_to_ttj2000ns(1)]
+    epoch_converted_time = [1]
 
     # Create a data array for the epoch time
     # TODO: might need to update the attrs to use new YAML file
