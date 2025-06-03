@@ -38,10 +38,10 @@ hi_energies_attrs: &hi_energies_default
     DISPLAY_TYPE: no_plot
     FIELDNAM: Energy Table
     FILLVAL: *real_fillval
-    FORMAT: F10.7
+    FORMAT: F12.9
     SCALETYP: log
     UNITS: MeV/n
-    VALIDMIN: 0.05
+    VALIDMIN: 0.0
     VALIDMAX: 200.00
     VAR_TYPE: support_data
 
@@ -299,7 +299,7 @@ spin_period:
     DISPLAY_TYPE: time_series
     FIELDNAM: Spin Period
     FILLVAL: *real_fillval
-    FORMAT: F4.2
+    FORMAT: F10.3
     LABLAXIS: Spin Period
     SCALETYP: linear
     UNITS: s
