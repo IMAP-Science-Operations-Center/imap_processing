@@ -13,6 +13,7 @@ max_uint8: &max_uint8 255
 max_uint16: &max_uint16 65535
 max_uint24: &max_uint24 8388607
 max_uint32: &max_uint32 4294967295
+max_real: &max_real 1.0e+31
 max_epoch: &max_epoch 3155630469184000000
 
 
@@ -48,8 +49,8 @@ hi_energies_attrs: &hi_energies_default
 hi_priorities_attrs: &hi_priorities_default
     DEPEND_0: epoch
     DISPLAY_TYPE: time_series
-    FILLVAL: -1
-    FORMAT: I5
+    FILLVAL: *real_fillval
+    FORMAT: F10.5
     LABLAXIS: "events"
     UNITS: events
     VALIDMIN: 0
@@ -205,12 +206,12 @@ counters_attrs: &counters
     CATDESC: Fill in at creation
     DISPLAY_TYPE: time_series
     FIELDNAM: Fill in at creation
-    FILLVAL: *uint32_fillval
-    FORMAT: I7
+    FILLVAL: *real_fillval
+    FORMAT: F12.6
     SCALETYP: linear
     UNITS: counts
     VALIDMIN: 0
-    VALIDMAX: *max_uint32
+    VALIDMAX: *max_real
     VAR_TYPE: data
 
 events_attrs: &events
@@ -218,12 +219,12 @@ events_attrs: &events
     CATDESC: Fill in at creation
     DISPLAY_TYPE: time_series
     FIELDNAM: Fill in at creation
-    FILLVAL: -1
-    FORMAT: I8
+    FILLVAL: *real_fillval
+    FORMAT: F12.6
     SCALETYP: linear
     UNITS: counts
     VALIDMIN: 0
-    VALIDMAX: *max_uint32
+    VALIDMAX: *max_real
     VAR_TYPE: data
 
 data_quality:
