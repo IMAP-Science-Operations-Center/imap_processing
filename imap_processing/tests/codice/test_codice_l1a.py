@@ -206,7 +206,7 @@ def test_l1a_logical_sources(test_l1a_data, index):
 
     # Write the dataset to a file to set the logical source attribute
     filename = write_cdf(processed_dataset)
-    logger.info(f"Wrote CDF file to {filename}")
+    logger.warning(f"Wrote CDF file to {filename}")
 
     assert processed_dataset.attrs["Logical_source"] == expected_logical_source
 
