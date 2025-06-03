@@ -882,6 +882,15 @@ class TestHealpixSkyMap:
 
         # Convert to xarray Dataset and check the data is as expected
         hp_map_ds = hp_map.to_dataset()
+        assert "solid_angle" in hp_map_ds.data_vars
+        assert hp_map_ds.data_vars["solid_angle"].shape == (
+            1,
+            hp_map.num_points,
+        )
+        np.testing.assert_allclose(
+            hp_map_ds["solid_angle"].values,
+            hp.nside2pixarea(hp_map.nside, degrees=False),
+        )
         assert "counts" in hp_map_ds.data_vars
         assert hp_map_ds["counts"].shape == (
             1,
