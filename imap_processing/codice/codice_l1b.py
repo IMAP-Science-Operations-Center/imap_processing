@@ -110,7 +110,6 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
     # set some useful distinguishing variables
     dataset_name = l1a_dataset.attrs["Logical_source"].replace("_l1a_", "_l1b_")
     descriptor = dataset_name.removeprefix("imap_codice_l1b_")
-    apid = constants.CODICEAPID_MAPPING[descriptor]
 
     # Direct event data products do not have a level L1B
     if descriptor in ["lo-pha", "hi-pha"]:
@@ -133,42 +132,30 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
     # Housekeeping and binned datasets are treated a bit differently since
     # not all variables need to be converted
     if descriptor == "hskp":
-        data_variables = []
-        support_variables = ["cmdexe", "cmdrjct"]
+        # TODO: Check with Joey if any housekeeping data needs to be converted
+        variables_to_convert = []
     elif descriptor == "hi-sectored":
-        data_variables = ["h", "he3he4", "cno", "fe"]
-        support_variables = []
+        variables_to_convert = ["h", "he3he4", "cno", "fe"]
     elif descriptor == "hi-omni":
-        data_variables = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
-        support_variables = []
+        variables_to_convert = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
     elif descriptor == "hi-ialirt":
-        data_variables = ["h"]
-        support_variables = []
+        variables_to_convert = ["h"]
     else:
-        data_variables = getattr(
+        variables_to_convert = getattr(
             constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
         )
-        support_variables = constants.DATA_PRODUCT_CONFIGURATIONS[apid][
-            "support_variables"
-        ]
-    variables_to_convert = data_variables + support_variables
 
+    # Apply the conversion to rates
     for variable_name in variables_to_convert:
         l1b_dataset[variable_name].data = convert_to_rates(
             l1b_dataset, descriptor, variable_name
         )
 
         # Set the variable attributes
-        if variable_name in data_variables:
-            cdf_attrs_key = f"{descriptor}-{variable_name}"
-        elif variable_name in support_variables:
-            cdf_attrs_key = variable_name
+        cdf_attrs_key = f"{descriptor}-{variable_name}"
         l1b_dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
             cdf_attrs_key, check_schema=False
         )
-
-    # TODO: Temporary workaround to avoid xarray_to_cdf error
-    l1b_dataset.epoch.attrs["DEPEND_0"] = " "
 
     logger.info(f"\nFinal data product:\n{l1b_dataset}\n")
 
