@@ -45,7 +45,7 @@ def calculate_helio_pset(
     pset_dict["pixel_index"] = healpix
     pset_dict["energy_bin_geometric_mean"] = energy_bin_geometric_means
     pset_dict["exposure_factor"] = np.zeros(len(healpix), dtype=np.uint8)[
-        ..., np.newaxis
+        np.newaxis, ...
     ]
 
     dataset = create_dataset(pset_dict, name, "l1c")

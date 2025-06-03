@@ -14,6 +14,8 @@ from imap_processing.ultra.constants import UltraConstants
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+SPIN_DURATION = 15  # Default spin duration in seconds.
+
 
 def get_energy_histogram(
     spin_number: NDArray, energy: NDArray
@@ -62,7 +64,7 @@ def get_energy_histogram(
         if not np.any(matched_spins):
             # TODO: we might throw an exception here instead.
             logger.info(f"Unmatched spin number: {unique_spin_number[i]}")
-            spin_duration = 15  # Default to 15 seconds if no match found
+            spin_duration = SPIN_DURATION  # Default to 15 seconds if no match found
         else:
             spin_duration = spin_df.spin_period_sec[
                 spin_df.spin_number == unique_spin_number[i]

@@ -223,6 +223,7 @@ def get_energy_efficiencies(ancillary_files: dict) -> pd.DataFrame:
     lookup_table : DataFrame
         Efficiencies lookup table for a given sensor.
     """
+    # TODO: add sensor to input when new lookup tables are available.
     lookup_table = pd.read_csv(ancillary_files["l1b-45sensor-logistic-interpolation"])
 
     return lookup_table

@@ -46,9 +46,9 @@ def create_dataset(  # noqa: PLR0912
     # L1c pset data products
     elif "pixel_index" in data_dict:
         coords = {
+            "epoch": data_dict["epoch"],
             "pixel_index": data_dict["pixel_index"],
             "energy_bin_geometric_mean": data_dict["energy_bin_geometric_mean"],
-            "epoch": data_dict["epoch"],
         }
         default_dimension = "pixel_index"
     # L1b de data product
@@ -109,7 +109,7 @@ def create_dataset(  # noqa: PLR0912
         elif key == "energy_bin_delta":
             dataset[key] = xr.DataArray(
                 data,
-                dims=["energy_bin_geometric_mean", "epoch"],
+                dims=["epoch", "energy_bin_geometric_mean"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         elif key in rates_keys:
@@ -121,13 +121,13 @@ def create_dataset(  # noqa: PLR0912
         elif key in {"latitude", "longitude", "exposure_factor"}:
             dataset[key] = xr.DataArray(
                 data,
-                dims=["pixel_index", "epoch"],
+                dims=["epoch", "pixel_index"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         elif key in {"counts", "background_rates", "sensitivity"}:
             dataset[key] = xr.DataArray(
                 data,
-                dims=["energy_bin_geometric_mean", "pixel_index", "epoch"],
+                dims=["epoch", "energy_bin_geometric_mean", "pixel_index"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         else:

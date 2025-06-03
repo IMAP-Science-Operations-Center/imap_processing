@@ -75,17 +75,17 @@ def calculate_spacecraft_pset(
 
     # For ISTP, epoch should be the center of the time bin.
     pset_dict["epoch"] = de_dataset.epoch.data[:1].astype(np.int64)
-    pset_dict["counts"] = counts[..., np.newaxis]
-    pset_dict["latitude"] = latitude[..., np.newaxis]
-    pset_dict["longitude"] = longitude[..., np.newaxis]
+    pset_dict["counts"] = counts[np.newaxis, ...]
+    pset_dict["latitude"] = latitude[np.newaxis, ...]
+    pset_dict["longitude"] = longitude[np.newaxis, ...]
     pset_dict["energy_bin_geometric_mean"] = energy_bin_geometric_means
-    pset_dict["background_rates"] = background_rates[..., np.newaxis]
-    pset_dict["exposure_factor"] = exposure_pointing.to_numpy()[..., np.newaxis]
+    pset_dict["background_rates"] = background_rates[np.newaxis, ...]
+    pset_dict["exposure_factor"] = exposure_pointing.to_numpy()[np.newaxis, ...]
     pset_dict["pixel_index"] = healpix
     pset_dict["energy_bin_delta"] = np.diff(intervals, axis=1).squeeze()[
-        ..., np.newaxis
+        np.newaxis, ...
     ]
-    pset_dict["sensitivity"] = sensitivity[..., np.newaxis]
+    pset_dict["sensitivity"] = sensitivity[np.newaxis, ...]
 
     dataset = create_dataset(pset_dict, name, "l1c")
 
