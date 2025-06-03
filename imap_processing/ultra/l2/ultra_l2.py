@@ -84,7 +84,11 @@ VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION = [
 # These variables may or may not be energy dependent, depending on the
 # input data. They must be handled slightly differently when it comes to adding
 # metadata to the map dataset.
-INCONSISTENTLY_ENERGY_DEPENDENT_VARIABLES = ["obs_date", "exposure_factor"]
+INCONSISTENTLY_ENERGY_DEPENDENT_VARIABLES = [
+    "obs_date",
+    "exposure_factor",
+    "obs_date_range",
+]
 
 
 def get_variable_attributes_optional_energy_dependence(
