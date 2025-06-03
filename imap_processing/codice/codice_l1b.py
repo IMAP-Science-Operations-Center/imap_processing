@@ -37,7 +37,7 @@ def convert_to_rates(
 
     Parameters
     ----------
-    dataset : xr.Dataset
+    dataset : xarray.Dataset
         The L1b dataset containing the data to convert.
     descriptor : str
         The descriptor of the data product of interest.
