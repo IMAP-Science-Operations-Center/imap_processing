@@ -661,33 +661,32 @@ class Glows(ProcessInstrument):
         print(f"Processing GLOWS {self.data_level}")
         datasets: list[xr.Dataset] = []
 
-        dependency_list = dependencies.processing_input
         if self.data_level == "l1a":
-            if len(dependency_list) > 1:
-                raise ValueError(
-                    f"Unexpected dependencies found for GLOWS L1A:"
-                    f"{dependency_list}. Expected only one input dependency."
-                )
             science_files = dependencies.get_file_paths(source="glows")
+            if len(science_files) != 1:
+                raise ValueError(
+                    f"GLOWS L1A requires exactly one input science file, received: "
+                    f"{science_files}."
+                )
             datasets = glows_l1a(science_files[0])
 
         if self.data_level == "l1b":
-            if len(dependency_list) > 1:
-                raise ValueError(
-                    f"Unexpected dependencies found for GLOWS L1B:"
-                    f"{dependency_list}. Expected at least one input dependency."
-                )
             science_files = dependencies.get_file_paths(source="glows")
+            if len(science_files) != 1:
+                raise ValueError(
+                    f"GLOWS L1A requires exactly one input science file, received: "
+                    f"{science_files}."
+                )
             input_dataset = load_cdf(science_files[0])
             datasets = [glows_l1b(input_dataset)]
 
         if self.data_level == "l2":
-            if len(dependency_list) > 1:
-                raise ValueError(
-                    f"Unexpected dependencies found for GLOWS L2:"
-                    f"{dependency_list}. Expected only one input dependency."
-                )
             science_files = dependencies.get_file_paths(source="glows")
+            if len(science_files) != 1:
+                raise ValueError(
+                    f"GLOWS L1A requires exactly one input science file, received: "
+                    f"{science_files}."
+                )
             input_dataset = load_cdf(science_files[0])
             datasets = glows_l2(input_dataset)
 
