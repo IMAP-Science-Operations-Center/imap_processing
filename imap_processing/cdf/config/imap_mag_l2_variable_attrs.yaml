@@ -50,6 +50,7 @@ vector_attrs: &vectors_default
     LABL_PTR_1: direction_label
     FILLVAL: 9223372036854775807
     FORMAT: F12.5
+    DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:DSRF,CoordinateRepresentation:Cartesian"
 
 direction_attrs:
     <<: *default_coords
@@ -59,42 +60,11 @@ direction_attrs:
     VAR_TYPE: support_data
     DISPLAY_TYPE: time_series
     LABLAXIS: Magnetic field vector
+    DICT_KEY: SPASE>Support>SupportQuantity:Orientation
 
-compression_attrs:
-  <<: *default_coords
-  CATDESC: Data compression flag
-  FIELDNAM: Compression
-  LABLAXIS: Compressed
-  FORMAT: I2
-  VAR_TYPE: support_data
-  VALIDMAX: 21
-  VALIDMIN: 0
-  DISPLAY_TYPE: no_plot
 
-compression_flags_attrs:
-  <<: *support_default
-  CATDESC: Compression information per time stamp, includes a flag and the compression width
-  FIELDNAM: Compression information per time stamp
-  DEPEND_0: epoch
-  DEPEND_1: compression
-  FORMAT: I2
-  VALIDMAX: 21
-  VALIDMIN: 0
-  LABL_PTR_1: compression_label
-  DISPLAY_TYPE: no_plot
-
-compression:
-    <<: *support_default
-    CATDESC: Data compression flag
-    FIELDNAM: Data is compressed
-    LABLAXIS: Compressed
-    FILLVAL: 255
-    FORMAT: I1
-    VALIDMAX: 1
-    VALIDMIN: 0
-    DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
-
-compression_width:
+# TODO: Add magnitude and range attributes, remove this
+fill:
   <<: *support_default
   CATDESC: Compression bit width
   DEPEND_0: epoch
@@ -106,6 +76,7 @@ compression_width:
   UNITS: 'bits'
   VALIDMAX: 21
   VALIDMIN: 0
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 pri_sens:
     <<: *support_default
@@ -119,23 +90,6 @@ pri_sens:
     VALIDMIN: 0
     DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
 
-vecsec:
-    <<: *support_default
-    CATDESC: Vectors per second
-    FIELDNAM: Vectors per second
-    LABLAXIS: Vectors/sec
-    FILLVAL: 0
-    FORMAT: I3
-    UNITS: 'Hz'
-    VALIDMAX: 128
-    VALIDMIN: 1
-    DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
-
-vectors:
-    <<: *vectors_default
-    CATDESC: Magnetic field vectors with x y z and sensor range varying by time
-    FIELDNAM: Magnetic field
-    LABLAXIS: Magnetic field
 
 qf_bitmask:
   <<: *support_default
@@ -146,7 +100,7 @@ qf_bitmask:
   FORMAT: I3
   VALIDMAX: 255
   VALIDMIN: 0
-  DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 qf:
   <<: *support_default
@@ -157,4 +111,4 @@ qf:
   FORMAT: I1
   VALIDMAX: 1
   VALIDMIN: 0
-  DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality

@@ -253,14 +253,14 @@ class MagL2:
             name="range",
             dims=["epoch"],
             # TODO temp attrs
-            attrs=attribute_manager.get_variable_attributes("compression_width"),
+            attrs=attribute_manager.get_variable_attributes("fill"),
         )
 
         magnitude = xr.DataArray(
             self.magnitude,
             name="magnitude",
             dims=["epoch"],
-            attrs=attribute_manager.get_variable_attributes("compression_width"),
+            attrs=attribute_manager.get_variable_attributes("fill"),
         )
 
         global_attributes = (
