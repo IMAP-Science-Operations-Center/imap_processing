@@ -13,6 +13,7 @@ instrument_base: &instrument_base
     distributions and advance understanding of the acceleration of particles in the heliosphere.
   Instrument_type: Particles (space)
 
+
 # L1a
 imap_codice_l1a_hskp:
     <<: *instrument_base
@@ -219,3 +220,11 @@ imap_codice_l1b_lo-ialirt:
     Data_type: L1B_lo-ialirt>Level-1B Lo I-ALiRT Data
     Logical_source: imap_codice_l1b_lo-ialirt
     Logical_source_description: IMAP Mission CoDICE Lo Level-1B I-ALiRT Data.
+
+
+# L2
+imap_codice_l2_lo-direct-events:
+    <<: *instrument_base
+    Data_type: L2_lo-direct-events>Level-2 Lo Event Data
+    Logical_source: imap_codice_l2_lo-direct-events
+    Logical_source_description: IMAP Mission CoDICE Lo Level-2 Event Data.

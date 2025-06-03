@@ -19,6 +19,7 @@ products can be found below:
     codice_l0
     codice_l1a
     codice_l1b
+    codice_l2
 
 The modules below contain various utility classes and functions to support L0
 and L1a processing:
