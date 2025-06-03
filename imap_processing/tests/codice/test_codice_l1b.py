@@ -7,6 +7,8 @@ from imap_processing.codice.codice_l1b import process_codice_l1b
 
 from .conftest import TEST_L1A_FILES
 
+pytestmark = pytest.mark.external_test_data
+
 EXPECTED_LOGICAL_SOURCES = [
     "imap_codice_l1b_hi-counters-aggregated",
     "imap_codice_l1b_hi-counters-singles",
