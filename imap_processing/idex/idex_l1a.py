@@ -29,7 +29,7 @@ from imap_processing.idex.decode import rice_decode
 from imap_processing.idex.idex_constants import IDEXAPID
 from imap_processing.idex.idex_l0 import decom_packets
 from imap_processing.idex.idex_utils import get_idex_attrs
-from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.spice.time import et_to_utc, met_to_ttj2000ns, ttj2000ns_to_et
 from imap_processing.utils import convert_to_binary_string
 
 logger = logging.getLogger(__name__)
@@ -159,6 +159,7 @@ class PacketParser:
         data = xr.concat(processed_dust_impact_list, dim="epoch")
         data.attrs = self.idex_attrs.get_global_attributes("imap_idex_l1a_sci")
         data = data.sortby("epoch")
+        print(et_to_utc(ttj2000ns_to_et(data["epoch"])))
         # Add high and low sample rate coords
         data["time_low_sample_rate_index"] = xr.DataArray(
             np.arange(len(data["time_low_sample_rate"][0])),

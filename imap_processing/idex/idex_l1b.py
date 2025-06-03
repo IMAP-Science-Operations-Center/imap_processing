@@ -37,7 +37,7 @@ from imap_processing.spice.geometry import (
     solar_longitude,
 )
 from imap_processing.spice.spin import get_spacecraft_spin_phase, get_spin_angle
-from imap_processing.spice.time import ttj2000ns_to_et
+from imap_processing.spice.time import et_to_utc, ttj2000ns_to_et
 from imap_processing.utils import convert_raw_to_eu
 
 logger = logging.getLogger(__name__)
@@ -347,6 +347,7 @@ def get_spice_data(
     """
     # convert 'epoch' from nanoseconds to seconds since j2000
     et = ttj2000ns_to_et(l1a_dataset["epoch"].data)
+    print(et_to_utc(et))
     # Get 'shcoarse' (Mission Elapsed Time)
     met = l1a_dataset["shcoarse"].data
     # Get spacecraft spin phase in degrees
