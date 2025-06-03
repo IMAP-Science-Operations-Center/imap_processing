@@ -151,6 +151,13 @@ esa_step_label:
     FORMAT: A3
     VAR_TYPE: metadata
 
+event_num_label:
+    CATDESC: Event Number
+    DEPEND_1: event_num
+    FIELDNAM: Event Number
+    FORMAT: A5
+    VAR_TYPE: metadata
+
 inst_az_label:
     CATDESC: Instrument Azimuth
     DEPEND_1: inst_az
@@ -1464,7 +1471,7 @@ P0_APD_ID:
     CATDESC: Priority 0 APD ID
     DEPEND_1: event_num
     FIELDNAM: Priority 0 APD ID
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P0_APDEnergy:
@@ -1473,7 +1480,7 @@ P0_APDEnergy:
     DEPEND_1: event_num
     FIELDNAM: Priority 0 APD Energy
     FILLVAL: 65535
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 512
 
 P0_APDGain:
@@ -1481,7 +1488,7 @@ P0_APDGain:
     CATDESC: Priority 0 APD Gain
     DEPEND_1: event_num
     FIELDNAM: Priority 0 APD Gain
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1
 
 P0_DataQuality:
@@ -1496,7 +1503,7 @@ P0_EnergyStep:
     CATDESC: Priority 0 Energy Step
     DEPEND_1: event_num
     FIELDNAM: Priority 0 Energy Step
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 128
 
 P0_ERGE:
@@ -1504,7 +1511,7 @@ P0_ERGE:
     CATDESC: Priority 0 Energy Range
     DEPEND_1: event_num
     FIELDNAM: Priority 0 Energy Range
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 4
 
 P0_MultiFlag:
@@ -1512,7 +1519,7 @@ P0_MultiFlag:
     CATDESC: Priority 0 Multi Flag
     DEPEND_1: event_num
     FIELDNAM: Priority 0 Multi Flag
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1
 
 P0_NumEvents:
@@ -1527,7 +1534,7 @@ P0_PHAType:
     CATDESC: Priority 0 PHA Type
     DEPEND_1: event_num
     FIELDNAM: Priority 0 PHA Type
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 4
 
 P0_Position:
@@ -1535,7 +1542,7 @@ P0_Position:
     CATDESC: Priority 0 Position
     DEPEND_1: event_num
     FIELDNAM: Priority 0 Position
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P0_SpinAngle:
@@ -1543,7 +1550,7 @@ P0_SpinAngle:
     CATDESC: Priority 0 Spin Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 0 Spin Angle
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 128
 
 P0_SpinNumber:
@@ -1551,7 +1558,7 @@ P0_SpinNumber:
     CATDESC: Priority 0 Spin Number
     DEPEND_1: event_num
     FIELDNAM: Priority 0 Spin Number
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P0_SSD_ID:
@@ -1559,7 +1566,7 @@ P0_SSD_ID:
     CATDESC: Priority 0 SSD ID or Azimuth Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 0 SSD ID or Azimuth Angle
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P0_SSDEnergy:
@@ -1567,7 +1574,7 @@ P0_SSDEnergy:
     CATDESC: Priority 0 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 0 APD Energy
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 2048
 
 P0_TOF:
@@ -1576,7 +1583,7 @@ P0_TOF:
     DEPEND_1: event_num
     FIELDNAM: Priority 0 Time of Flight
     FILLVAL: 65535
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1024
 
 P0_Type:
@@ -1584,7 +1591,7 @@ P0_Type:
     CATDESC: Priority 0 Type
     DEPEND_1: event_num
     FIELDNAM: Priority 0 Type
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 3
 
 P1_APD_ID:
@@ -1592,7 +1599,7 @@ P1_APD_ID:
     CATDESC: Priority 1 APD ID
     DEPEND_1: event_num
     FIELDNAM: Priority 1 APD ID
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P1_APDEnergy:
@@ -1601,7 +1608,7 @@ P1_APDEnergy:
     DEPEND_1: event_num
     FIELDNAM: Priority 1 APD Energy
     FILLVAL: 65535
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 512
 
 P1_APDGain:
@@ -1609,7 +1616,7 @@ P1_APDGain:
     CATDESC: Priority 1 APD Gain
     DEPEND_1: event_num
     FIELDNAM: Priority 1 APD Gain
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1
 
 P1_DataQuality:
@@ -1624,7 +1631,7 @@ P1_EnergyStep:
     CATDESC: Priority 1 Energy Step
     DEPEND_1: event_num
     FIELDNAM: Priority 1 Energy Step
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 128
 
 P1_ERGE:
@@ -1632,7 +1639,7 @@ P1_ERGE:
     CATDESC: Priority 1 Energy Range
     DEPEND_1: event_num
     FIELDNAM: Priority 1 Energy Range
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 4
 
 P1_MultiFlag:
@@ -1640,7 +1647,7 @@ P1_MultiFlag:
     CATDESC: Priority 1 Multi Flag
     DEPEND_1: event_num
     FIELDNAM: Priority 1 Multi Flag
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1
 
 P1_NumEvents:
@@ -1655,7 +1662,7 @@ P1_PHAType:
     CATDESC: Priority 1 PHA Type
     DEPEND_1: event_num
     FIELDNAM: Priority 1 PHA Type
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 4
 
 P1_Position:
@@ -1663,7 +1670,7 @@ P1_Position:
     CATDESC: Priority 1 Position
     DEPEND_1: event_num
     FIELDNAM: Priority 1 Position
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P1_SpinAngle:
@@ -1671,7 +1678,7 @@ P1_SpinAngle:
     CATDESC: Priority 1 Spin Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 1 Spin Angle
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 128
 
 P1_SpinNumber:
@@ -1679,7 +1686,7 @@ P1_SpinNumber:
     CATDESC: Priority 1 Spin Number
     DEPEND_1: event_num
     FIELDNAM: Priority 1 Spin Number
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P1_SSD_ID:
@@ -1687,7 +1694,7 @@ P1_SSD_ID:
     CATDESC: Priority 1 SSD ID or Azimuth Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 1 SSD ID or Azimuth Angle
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P1_SSDEnergy:
@@ -1695,7 +1702,7 @@ P1_SSDEnergy:
     CATDESC: Priority 1 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 1 APD Energy
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 2048
 
 P1_TOF:
@@ -1704,7 +1711,7 @@ P1_TOF:
     DEPEND_1: event_num
     FIELDNAM: Priority 1 Time of Flight
     FILLVAL: 65535
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1024
 
 P1_Type:
@@ -1712,7 +1719,7 @@ P1_Type:
     CATDESC: Priority 1 Type
     DEPEND_1: event_num
     FIELDNAM: Priority 1 Type
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 3
 
 P2_APD_ID:
@@ -1720,7 +1727,7 @@ P2_APD_ID:
     CATDESC: Priority 2 APD ID
     DEPEND_1: event_num
     FIELDNAM: Priority 2 APD ID
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P2_APDEnergy:
@@ -1729,7 +1736,7 @@ P2_APDEnergy:
     DEPEND_1: event_num
     FIELDNAM: Priority 2 APD Energy
     FILLVAL: 65535
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 512
 
 P2_APDGain:
@@ -1737,7 +1744,7 @@ P2_APDGain:
     CATDESC: Priority 2 APD Gain
     DEPEND_1: event_num
     FIELDNAM: Priority 2 APD Gain
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1
 
 P2_DataQuality:
@@ -1752,7 +1759,7 @@ P2_EnergyStep:
     CATDESC: Priority 2 Energy Step
     DEPEND_1: event_num
     FIELDNAM: Priority 2 Energy Step
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 128
 
 P2_ERGE:
@@ -1760,7 +1767,7 @@ P2_ERGE:
     CATDESC: Priority 2 Energy Range
     DEPEND_1: event_num
     FIELDNAM: Priority 2 Energy Range
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 4
 
 P2_MultiFlag:
@@ -1768,7 +1775,7 @@ P2_MultiFlag:
     CATDESC: Priority 2 Multi Flag
     DEPEND_1: event_num
     FIELDNAM: Priority 2 Multi Flag
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1
 
 P2_NumEvents:
@@ -1783,7 +1790,7 @@ P2_PHAType:
     CATDESC: Priority 2 PHA Type
     DEPEND_1: event_num
     FIELDNAM: Priority 2 PHA Type
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 4
 
 P2_Position:
@@ -1791,7 +1798,7 @@ P2_Position:
     CATDESC: Priority 2 Position
     DEPEND_1: event_num
     FIELDNAM: Priority 2 Position
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P2_SpinAngle:
@@ -1799,7 +1806,7 @@ P2_SpinAngle:
     CATDESC: Priority 2 Spin Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 2 Spin Angle
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 128
 
 P2_SpinNumber:
@@ -1807,7 +1814,7 @@ P2_SpinNumber:
     CATDESC: Priority 2 Spin Number
     DEPEND_1: event_num
     FIELDNAM: Priority 2 Spin Number
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P2_SSD_ID:
@@ -1815,7 +1822,7 @@ P2_SSD_ID:
     CATDESC: Priority 2 SSD ID or Azimuth Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 2 SSD ID or Azimuth Angle
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P2_SSDEnergy:
@@ -1823,7 +1830,7 @@ P2_SSDEnergy:
     CATDESC: Priority 2 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 2 APD Energy
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 2048
 
 P2_TOF:
@@ -1832,7 +1839,7 @@ P2_TOF:
     DEPEND_1: event_num
     FIELDNAM: Priority 2 Time of Flight
     FILLVAL: 65535
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1024
 
 P2_Type:
@@ -1840,7 +1847,7 @@ P2_Type:
     CATDESC: Priority 2 Type
     DEPEND_1: event_num
     FIELDNAM: Priority 2 Type
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 3
 
 P3_APD_ID:
@@ -1848,7 +1855,7 @@ P3_APD_ID:
     CATDESC: Priority 3 APD ID
     DEPEND_1: event_num
     FIELDNAM: Priority 3 APD ID
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P3_APDEnergy:
@@ -1857,7 +1864,7 @@ P3_APDEnergy:
     DEPEND_1: event_num
     FIELDNAM: Priority 3 APD Energy
     FILLVAL: 65535
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 512
 
 P3_APDGain:
@@ -1865,7 +1872,7 @@ P3_APDGain:
     CATDESC: Priority 3 APD Gain
     DEPEND_1: event_num
     FIELDNAM: Priority 3 APD Gain
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1
 
 P3_DataQuality:
@@ -1880,7 +1887,7 @@ P3_EnergyStep:
     CATDESC: Priority 3 Energy Step
     DEPEND_1: event_num
     FIELDNAM: Priority 3 Energy Step
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 128
 
 P3_ERGE:
@@ -1888,7 +1895,7 @@ P3_ERGE:
     CATDESC: Priority 3 Energy Range
     DEPEND_1: event_num
     FIELDNAM: Priority 3 Energy Range
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 4
 
 P3_MultiFlag:
@@ -1896,7 +1903,7 @@ P3_MultiFlag:
     CATDESC: Priority 3 Multi Flag
     DEPEND_1: event_num
     FIELDNAM: Priority 3 Multi Flag
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1
 
 P3_NumEvents:
@@ -1911,7 +1918,7 @@ P3_PHAType:
     CATDESC: Priority 3 PHA Type
     DEPEND_1: event_num
     FIELDNAM: Priority 3 PHA Type
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 4
 
 P3_Position:
@@ -1919,7 +1926,7 @@ P3_Position:
     CATDESC: Priority 3 Position
     DEPEND_1: event_num
     FIELDNAM: Priority 3 Position
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P3_SpinAngle:
@@ -1927,7 +1934,7 @@ P3_SpinAngle:
     CATDESC: Priority 3 Spin Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 3 Spin Angle
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 128
 
 P3_SpinNumber:
@@ -1935,7 +1942,7 @@ P3_SpinNumber:
     CATDESC: Priority 3 Spin Number
     DEPEND_1: event_num
     FIELDNAM: Priority 3 Spin Number
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P3_SSD_ID:
@@ -1943,7 +1950,7 @@ P3_SSD_ID:
     CATDESC: Priority 3 SSD ID or Azimuth Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 3 SSD ID or Azimuth Angle
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P3_SSDEnergy:
@@ -1951,7 +1958,7 @@ P3_SSDEnergy:
     CATDESC: Priority 3 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 3 APD Energy
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 2048
 
 P3_TOF:
@@ -1960,7 +1967,7 @@ P3_TOF:
     DEPEND_1: event_num
     FIELDNAM: Priority 3 Time of Flight
     FILLVAL: 65535
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1024
 
 P3_Type:
@@ -1968,7 +1975,7 @@ P3_Type:
     CATDESC: Priority 3 Type
     DEPEND_1: event_num
     FIELDNAM: Priority 3 Type
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 3
 
 P4_APD_ID:
@@ -1976,7 +1983,7 @@ P4_APD_ID:
     CATDESC: Priority 4 APD ID
     DEPEND_1: event_num
     FIELDNAM: Priority 4 APD ID
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P4_APDEnergy:
@@ -1985,7 +1992,7 @@ P4_APDEnergy:
     DEPEND_1: event_num
     FIELDNAM: Priority 4 APD Energy
     FILLVAL: 65535
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 512
 
 P4_APDGain:
@@ -1993,7 +2000,7 @@ P4_APDGain:
     CATDESC: Priority 4 APD Gain
     DEPEND_1: event_num
     FIELDNAM: Priority 4 APD Gain
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1
 
 P4_DataQuality:
@@ -2008,7 +2015,7 @@ P4_EnergyStep:
     CATDESC: Priority 4 Energy Step
     DEPEND_1: event_num
     FIELDNAM: Priority 4 Energy Step
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 128
 
 P4_ERGE:
@@ -2016,7 +2023,7 @@ P4_ERGE:
     CATDESC: Priority 4 Energy Range
     DEPEND_1: event_num
     FIELDNAM: Priority 4 Energy Range
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 4
 
 P4_MultiFlag:
@@ -2024,7 +2031,7 @@ P4_MultiFlag:
     CATDESC: Priority 4 Multi Flag
     DEPEND_1: event_num
     FIELDNAM: Priority 4 Multi Flag
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1
 
 P4_NumEvents:
@@ -2039,7 +2046,7 @@ P4_PHAType:
     CATDESC: Priority 4 PHA Type
     DEPEND_1: event_num
     FIELDNAM: Priority 4 PHA Type
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 4
 
 P4_Position:
@@ -2047,7 +2054,7 @@ P4_Position:
     CATDESC: Priority 4 Position
     DEPEND_1: event_num
     FIELDNAM: Priority 4 Position
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P4_SpinAngle:
@@ -2055,7 +2062,7 @@ P4_SpinAngle:
     CATDESC: Priority 4 Spin Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 4 Spin Angle
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 128
 
 P4_SpinNumber:
@@ -2063,7 +2070,7 @@ P4_SpinNumber:
     CATDESC: Priority 4 Spin Number
     DEPEND_1: event_num
     FIELDNAM: Priority 4 Spin Number
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P4_SSD_ID:
@@ -2071,7 +2078,7 @@ P4_SSD_ID:
     CATDESC: Priority 4 SSD ID or Azimuth Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 4 SSD ID or Azimuth Angle
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P4_SSDEnergy:
@@ -2079,7 +2086,7 @@ P4_SSDEnergy:
     CATDESC: Priority 4 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 4 APD Energy
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 2048
 
 P4_TOF:
@@ -2088,7 +2095,7 @@ P4_TOF:
     DEPEND_1: event_num
     FIELDNAM: Priority 4 Time of Flight
     FILLVAL: 65535
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1024
 
 P4_Type:
@@ -2096,7 +2103,7 @@ P4_Type:
     CATDESC: Priority 4 Type
     DEPEND_1: event_num
     FIELDNAM: Priority 4 Type
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 3
 
 P5_APD_ID:
@@ -2104,7 +2111,7 @@ P5_APD_ID:
     CATDESC: Priority 5 APD ID
     DEPEND_1: event_num
     FIELDNAM: Priority 5 APD ID
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P5_APDEnergy:
@@ -2113,7 +2120,7 @@ P5_APDEnergy:
     DEPEND_1: event_num
     FIELDNAM: Priority 5 APD Energy
     FILLVAL: 65535
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 512
 
 P5_APDGain:
@@ -2121,7 +2128,7 @@ P5_APDGain:
     CATDESC: Priority 5 APD Gain
     DEPEND_1: event_num
     FIELDNAM: Priority 5 APD Gain
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1
 
 P5_DataQuality:
@@ -2136,7 +2143,7 @@ P5_EnergyStep:
     CATDESC: Priority 5 Energy Step
     DEPEND_1: event_num
     FIELDNAM: Priority 5 Energy Step
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 128
 
 P5_ERGE:
@@ -2144,7 +2151,7 @@ P5_ERGE:
     CATDESC: Priority 5 Energy Range
     DEPEND_1: event_num
     FIELDNAM: Priority 5 Energy Range
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 4
 
 P5_MultiFlag:
@@ -2152,7 +2159,7 @@ P5_MultiFlag:
     CATDESC: Priority 5 Multi Flag
     DEPEND_1: event_num
     FIELDNAM: Priority 5 Multi Flag
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1
 
 P5_NumEvents:
@@ -2167,7 +2174,7 @@ P5_PHAType:
     CATDESC: Priority 5 PHA Type
     DEPEND_1: event_num
     FIELDNAM: Priority 5 PHA Type
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 4
 
 P5_Position:
@@ -2175,7 +2182,7 @@ P5_Position:
     CATDESC: Priority 5 Position
     DEPEND_1: event_num
     FIELDNAM: Priority 5 Position
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P5_SpinAngle:
@@ -2183,7 +2190,7 @@ P5_SpinAngle:
     CATDESC: Priority 5 Spin Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 5 Spin Angle
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 128
 
 P5_SpinNumber:
@@ -2191,7 +2198,7 @@ P5_SpinNumber:
     CATDESC: Priority 5 Spin Number
     DEPEND_1: event_num
     FIELDNAM: Priority 5 Spin Number
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P5_SSD_ID:
@@ -2199,7 +2206,7 @@ P5_SSD_ID:
     CATDESC: Priority 5 SSD ID or Azimuth Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 5 SSD ID or Azimuth Angle
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P5_SSDEnergy:
@@ -2207,7 +2214,7 @@ P5_SSDEnergy:
     CATDESC: Priority 5 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 5 APD Energy
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 2048
 
 P5_TOF:
@@ -2216,7 +2223,7 @@ P5_TOF:
     DEPEND_1: event_num
     FIELDNAM: Priority 5 Time of Flight
     FILLVAL: 65535
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1024
 
 P5_Type:
@@ -2224,7 +2231,7 @@ P5_Type:
     CATDESC: Priority 5 Type
     DEPEND_1: event_num
     FIELDNAM: Priority 5 Type
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 3
 
 P6_APD_ID:
@@ -2232,7 +2239,7 @@ P6_APD_ID:
     CATDESC: Priority 6 APD ID
     DEPEND_1: event_num
     FIELDNAM: Priority 6 APD ID
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P6_APDEnergy:
@@ -2241,7 +2248,7 @@ P6_APDEnergy:
     DEPEND_1: event_num
     FIELDNAM: Priority 6 APD Energy
     FILLVAL: 65535
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 512
 
 P6_APDGain:
@@ -2249,7 +2256,7 @@ P6_APDGain:
     CATDESC: Priority 6 APD Gain
     DEPEND_1: event_num
     FIELDNAM: Priority 6 APD Gain
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1
 
 P6_DataQuality:
@@ -2264,7 +2271,7 @@ P6_EnergyStep:
     CATDESC: Priority 6 Energy Step
     DEPEND_1: event_num
     FIELDNAM: Priority 6 Energy Step
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 128
 
 P6_MultiFlag:
@@ -2272,7 +2279,7 @@ P6_MultiFlag:
     CATDESC: Priority 6 Multi Flag
     DEPEND_1: event_num
     FIELDNAM: Priority 6 Multi Flag
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1
 
 P6_NumEvents:
@@ -2287,7 +2294,7 @@ P6_PHAType:
     CATDESC: Priority 6 PHA Type
     DEPEND_1: event_num
     FIELDNAM: Priority 6 PHA Type
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 4
 
 P6_Position:
@@ -2295,7 +2302,7 @@ P6_Position:
     CATDESC: Priority 6 Position
     DEPEND_1: event_num
     FIELDNAM: Priority 6 Position
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P6_SpinAngle:
@@ -2303,7 +2310,7 @@ P6_SpinAngle:
     CATDESC: Priority 6 Spin Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 6 Spin Angle
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 128
 
 P6_TOF:
@@ -2312,7 +2319,7 @@ P6_TOF:
     DEPEND_1: event_num
     FIELDNAM: Priority 6 Time of Flight
     FILLVAL: 65535
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1024
 
 P7_APD_ID:
@@ -2320,7 +2327,7 @@ P7_APD_ID:
     CATDESC: Priority 7 APD ID
     DEPEND_1: event_num
     FIELDNAM: Priority 7 APD ID
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P7_APDEnergy:
@@ -2329,7 +2336,7 @@ P7_APDEnergy:
     DEPEND_1: event_num
     FIELDNAM: Priority 7 APD Energy
     FILLVAL: 65535
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 512
 
 P7_APDGain:
@@ -2337,7 +2344,7 @@ P7_APDGain:
     CATDESC: Priority 7 APD Gain
     DEPEND_1: event_num
     FIELDNAM: Priority 7 APD Gain
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1
 
 P7_DataQuality:
@@ -2352,7 +2359,7 @@ P7_EnergyStep:
     CATDESC: Priority 7 Energy Step
     DEPEND_1: event_num
     FIELDNAM: Priority 7 Energy Step
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 128
 
 P7_MultiFlag:
@@ -2360,7 +2367,7 @@ P7_MultiFlag:
     CATDESC: Priority 7 Multi Flag
     DEPEND_1: event_num
     FIELDNAM: Priority 7 Multi Flag
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1
 
 P7_NumEvents:
@@ -2375,7 +2382,7 @@ P7_PHAType:
     CATDESC: Priority 7 PHA Type
     DEPEND_1: event_num
     FIELDNAM: Priority 7 PHA Type
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 4
 
 P7_Position:
@@ -2383,7 +2390,7 @@ P7_Position:
     CATDESC: Priority 7 Position
     DEPEND_1: event_num
     FIELDNAM: Priority 7 Position
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 32
 
 P7_SpinAngle:
@@ -2391,7 +2398,7 @@ P7_SpinAngle:
     CATDESC: Priority 7 Spin Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 7 Spin Angle
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 128
 
 P7_TOF:
@@ -2400,7 +2407,7 @@ P7_TOF:
     DEPEND_1: event_num
     FIELDNAM: Priority 7 Time of Flight
     FILLVAL: 65535
-    LABL_PTR_1: event_num
+    LABL_PTR_1: event_num_label
     VALIDMAX: 1024
 
 # <=== CCSDS Header Attributes ===>
