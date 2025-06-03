@@ -107,7 +107,7 @@ def mag_l2(
     attributes = ImapCdfAttributes()
     attributes.add_instrument_global_attrs("mag")
     # temporarily point to l1c
-    attributes.add_instrument_variable_attrs("mag", "l1c")
+    attributes.add_instrument_variable_attrs("mag", "l2")
     return [input_data.generate_dataset(attributes, day)]
 
 
