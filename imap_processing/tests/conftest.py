@@ -160,6 +160,134 @@ def _test_data_paths():
             / "imap_codice_l1a_hi-pha_20241110193700_v0.0.0.cdf",
         ),
         (
+            "imap_codice_l1a_hi-counters-aggregated_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_hi-counters-aggregated_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_hi-counters-singles_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_hi-counters-singles_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_hi-ialirt_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_hi-ialirt_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_hi-omni_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_hi-omni_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_hi-priority_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_hi-priority_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_hi-sectored_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_hi-sectored_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_hskp_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_hskp_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_lo-counters-aggregated_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_lo-counters-aggregated_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_lo-counters-singles_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_lo-counters-singles_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_lo-ialirt_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_lo-ialirt_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_lo-nsw-angular_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_lo-nsw-angular_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_lo-nsw-priority_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_lo-nsw-priority_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_lo-nsw-species_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_lo-nsw-species_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_lo-sw-angular_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_lo-sw-angular_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_lo-sw-priority_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_lo-sw-priority_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_lo-sw-species_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_lo-sw-species_20241110_v999.cdf",
+        ),
+        (
             "imap_hi_l1a_45sensor-de_20250415_v999.cdf",
             imap_module_directory
             / "tests"
