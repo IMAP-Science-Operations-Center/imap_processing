@@ -192,6 +192,14 @@ def _test_data_paths():
             / "imap_codice_l1a_hi-omni_20241110_v999.cdf",
         ),
         (
+            "imap_codice_l1a_hi-pha_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_hi-pha_20241110_v999.cdf",
+        ),
+        (
             "imap_codice_l1a_hi-priority_20241110_v999.cdf",
             imap_module_directory
             / "tests"
@@ -262,6 +270,14 @@ def _test_data_paths():
             / "codice"
             / "data"
             / "imap_codice_l1a_lo-nsw-species_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_lo-pha_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_lo-pha_20241110_v999.cdf",
         ),
         (
             "imap_codice_l1a_lo-sw-angular_20241110_v999.cdf",
