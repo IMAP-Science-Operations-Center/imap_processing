@@ -228,3 +228,9 @@ imap_codice_l2_lo-direct-events:
     Data_type: L2_lo-direct-events>Level-2 Lo Event Data
     Logical_source: imap_codice_l2_lo-direct-events
     Logical_source_description: IMAP Mission CoDICE Lo Level-2 Event Data.
+
+imap_codice_l2_hi-direct-events:
+    <<: *instrument_base
+    Data_type: L2_hi-direct-events>Level-2 Hi Event Data
+    Logical_source: imap_codice_l2_hi-direct-events
+    Logical_source_description: IMAP Mission CoDICE Hi Level-2 Event Data.

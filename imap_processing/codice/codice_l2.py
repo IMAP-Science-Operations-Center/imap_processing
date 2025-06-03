@@ -52,6 +52,8 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
     #       thus this will eventually be removed.
     if descriptor == "lo-pha":
         dataset_name = dataset_name.replace("lo-pha", "lo-direct-events")
+    elif descriptor == "hi-pha":
+        dataset_name = dataset_name.replace("hi-pha", "hi-direct-events")
 
     # Use the L1 data product as a starting point for L2
     l2_dataset = l1_dataset.copy()
@@ -70,3 +72,38 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
     logger.info(f"\nFinal data product:\n{l2_dataset}\n")
 
     return l2_dataset
+
+
+if __name__ == "__main__":
+    from imap_processing import imap_module_directory
+    from imap_processing.cdf.utils import write_cdf
+
+    TEST_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"
+    file_paths = [
+        imap_module_directory
+        / "codice"
+        / "data"
+        / "imap"
+        / "codice"
+        / "l1a"
+        / "2024"
+        / "11"
+        / "imap_codice_l1a_lo-pha_20241110_v999.cdf",
+        imap_module_directory
+        / "codice"
+        / "data"
+        / "imap"
+        / "codice"
+        / "l1a"
+        / "2024"
+        / "11"
+        / "imap_codice_l1a_hi-pha_20241110_v999.cdf",
+    ]
+
+    for file_path in file_paths:
+        dataset = process_codice_l2(file_path)
+        if dataset is not None:
+            print("Writing the following dataset to a CDF:\n\n")
+            print(dataset)
+            filename = write_cdf(dataset)
+            print(filename)

@@ -866,6 +866,12 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
         dims=["event_num"],
         attrs=cdf_attrs.get_variable_attributes("event_num", check_schema=False),
     )
+    event_num_label = xr.DataArray(
+        np.arange(10000).astype(str),
+        name="event_num_label",
+        dims=["event_num"],
+        attrs=cdf_attrs.get_variable_attributes("event_num_label", check_schema=False),
+    )
 
     # Create the dataset to hold the data variables
     if apid == CODICEAPID.COD_LO_PHA:
@@ -873,7 +879,11 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     elif apid == CODICEAPID.COD_HI_PHA:
         attrs = cdf_attrs.get_global_attributes("imap_codice_l1a_hi-pha")
     dataset = xr.Dataset(
-        coords={"epoch": epoch, "event_num": event_num},
+        coords={
+            "epoch": epoch,
+            "event_num": event_num,
+            "event_num_label": event_num_label,
+        },
         attrs=attrs,
     )
 
@@ -1438,7 +1448,7 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # Event data
-        elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
+        if apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
             processed_dataset = create_direct_event_dataset(apid, dataset)
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
