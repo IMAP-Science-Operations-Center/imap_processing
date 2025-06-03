@@ -49,7 +49,7 @@ def convert_to_rates(
     rates_data : np.ndarray
         The converted data array.
     """
-    acq_times = dataset.epoch.data
+    # TODO: Temporary workaround to create CDFs for SIT-4. Revisit after SIT-4.
     acq_times = 1
 
     if descriptor in [
