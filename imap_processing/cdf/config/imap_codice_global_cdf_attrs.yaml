@@ -174,7 +174,7 @@ imap_codice_l1b_lo-counters-aggregated:
 
 imap_codice_l1b_lo-counters-singles:
     <<: *instrument_base
-    Data_type: L1B_lo-counters-aggregated>Level-1B Lo Single Instrument Rates Data
+    Data_type: L1B_lo-counters-singles>Level-1B Lo Single Instrument Rates Data
     Logical_source: imap_codice_l1b_lo-counters-singles
     Logical_source_description: IMAP Mission CoDICE Lo Level-1B Single Instrument Rates Data.
 
