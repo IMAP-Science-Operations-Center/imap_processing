@@ -1,3 +1,4 @@
+from pathlib import Path
 from imap_processing import imap_module_directory
 
 TEST_L0_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"
@@ -6,7 +7,7 @@ TEST_L0_FILE = TEST_L0_DATA_PATH / "imap_codice_l0_raw_20241110_v001.pkts"
 #     imap_module_directory / "tests" / "imap" / "codice" / "l1a" / "2024" / "11"
 # )
 
-TEST_L1A_DATA_PATH = (
+TEST_L1A_DATA_PATH = Path(
     "/home/runner/work/imap_processing/imap_processing/imap/codice/l1a/2024/11"
 )
 
