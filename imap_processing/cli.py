@@ -67,6 +67,7 @@ from imap_processing.lo.l1a import lo_l1a
 from imap_processing.lo.l1b import lo_l1b
 from imap_processing.lo.l1c import lo_l1c
 from imap_processing.lo.l2 import lo_l2
+from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.mag.l1b.mag_l1b import mag_l1b
 from imap_processing.mag.l1c.mag_l1c import mag_l1c
@@ -1091,8 +1092,10 @@ class Mag(ProcessInstrument):
             # TODO: Ensure that parent_files attribute works with that
             input_data = load_cdf(science_files[0])
 
+            descriptor_no_frame = str.split(self.descriptor, "-")[0]
+
             # We expect either a norm or a burst input descriptor.
-            offsets_desc = f"l2-{self.descriptor}-offsets"
+            offsets_desc = f"l2-{descriptor_no_frame}-offsets"
             offsets = dependencies.get_processing_inputs(descriptor=offsets_desc)
 
             calibration = dependencies.get_processing_inputs(
@@ -1124,6 +1127,7 @@ class Mag(ProcessInstrument):
                 offset_dataset,
                 input_data,
                 current_day,
+                mode=DataMode(descriptor_no_frame.upper()),
             )
 
         return datasets
@@ -1349,31 +1353,53 @@ class Ultra(ProcessInstrument):
         print(f"Processing IMAP-Ultra {self.data_level}")
         datasets: list[xr.Dataset] = []
 
-        dependency_list = dependencies.processing_input
         if self.data_level == "l1a":
-            # File path is expected output file path
-            if len(dependency_list) > 1:
-                raise ValueError(
-                    f"Unexpected dependencies found for ULTRA L1A:"
-                    f"{dependency_list}. Expected only one dependency."
-                )
             science_files = dependencies.get_file_paths(source="ultra")
+            if len(science_files) != 1:
+                raise ValueError(
+                    f"Unexpected science_files found for ULTRA L1A:"
+                    f"{science_files}. Expected only one dependency."
+                )
             datasets = ultra_l1a.ultra_l1a(science_files[0])
-
         elif self.data_level == "l1b":
-            data_dict = {}
-            for dep in dependency_list:
-                dataset = load_cdf(dep.imap_file_paths[0])
-                data_dict[dataset.attrs["Logical_source"]] = dataset
-            datasets = ultra_l1b.ultra_l1b(data_dict)
-
+            science_files = dependencies.get_file_paths(source="ultra", data_type="l1a")
+            l1a_dict = {
+                dataset.attrs["Logical_source"]: dataset
+                for dataset in [load_cdf(sci_file) for sci_file in science_files]
+            }
+            science_files = dependencies.get_file_paths(source="ultra", data_type="l1b")
+            l1b_dict = {
+                dataset.attrs["Logical_source"]: dataset
+                for dataset in [load_cdf(sci_file) for sci_file in science_files]
+            }
+            combined = {**l1a_dict, **l1b_dict}
+            anc_paths = dependencies.get_file_paths(data_type="ancillary")
+            ancillary_files = {}
+            for path in anc_paths:
+                ancillary_files[path.stem.split("_")[2]] = path
+            datasets = ultra_l1b.ultra_l1b(combined, ancillary_files)
         elif self.data_level == "l1c":
-            data_dict = {}
-            for dep in dependency_list:
-                dataset = load_cdf(dep.imap_file_paths[0])
-                data_dict[dataset.attrs["Logical_source"]] = dataset
-            datasets = ultra_l1c.ultra_l1c(data_dict)
-
+            science_files = dependencies.get_file_paths(source="ultra", data_type="l1a")
+            l1a_dict = {
+                dataset.attrs["Logical_source"]: dataset
+                for dataset in [load_cdf(sci_file) for sci_file in science_files]
+            }
+            science_files = dependencies.get_file_paths(source="ultra", data_type="l1b")
+            l1b_dict = {
+                dataset.attrs["Logical_source"]: dataset
+                for dataset in [load_cdf(sci_file) for sci_file in science_files]
+            }
+            combined = {**l1a_dict, **l1b_dict}
+            anc_paths = dependencies.get_file_paths(data_type="ancillary")
+            ancillary_files = {}
+            for path in anc_paths:
+                ancillary_files[path.stem.split("_")[2]] = path
+            spice_paths = dependencies.get_file_paths(data_type="spice")
+            if spice_paths:
+                has_spice = True
+            else:
+                has_spice = False
+            datasets = ultra_l1c.ultra_l1c(combined, ancillary_files, has_spice)
         elif self.data_level == "l2":
             all_pset_filepaths = dependencies.get_file_paths(
                 source="ultra", descriptor="pset"

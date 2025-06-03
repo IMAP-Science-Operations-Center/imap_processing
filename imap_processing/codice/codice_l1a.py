@@ -1448,7 +1448,7 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # Event data
-        if apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
+        elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
             processed_dataset = create_direct_event_dataset(apid, dataset)
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 

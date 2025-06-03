@@ -4,17 +4,14 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     get_spacecraft_background_rates,
     get_spacecraft_exposure_times,
     get_spacecraft_histogram,
+    interpolate_sensitivity,
 )
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
-
-# TODO: This is a placeholder for the API lookup table directory.
-TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
 def calculate_spacecraft_pset(
@@ -22,6 +19,7 @@ def calculate_spacecraft_pset(
     extendedspin_dataset: xr.Dataset,
     cullingmask_dataset: xr.Dataset,
     name: str,
+    ancillary_files: dict,
 ) -> xr.Dataset:
     """
     Create dictionary with defined datatype for Pointing Set Grid Data.
@@ -36,6 +34,8 @@ def calculate_spacecraft_pset(
         Dataset containing cullingmask data.
     name : str
         Name of the dataset.
+    ancillary_files : dict
+        Ancillary files.
 
     Returns
     -------
@@ -61,23 +61,31 @@ def calculate_spacecraft_pset(
     # calculate background rates
     background_rates = get_spacecraft_background_rates()
 
-    # TODO: calculate sensitivity and interpolate based on energy.
+    efficiencies = ancillary_files["l1c-90sensor-efficiencies"]
+    geometric_function = ancillary_files["l1c-90sensor-gf"]
+
+    df_efficiencies = pd.read_csv(efficiencies)
+    df_geometric_function = pd.read_csv(geometric_function)
+    sensitivity = interpolate_sensitivity(df_efficiencies, df_geometric_function)
 
     # Calculate exposure
-    constant_exposure = TEST_PATH / "ultra_90_dps_exposure.csv"
+    constant_exposure = ancillary_files["l1c-90sensor-dps-exposure"]
     df_exposure = pd.read_csv(constant_exposure)
     exposure_pointing = get_spacecraft_exposure_times(df_exposure)
 
     # For ISTP, epoch should be the center of the time bin.
     pset_dict["epoch"] = de_dataset.epoch.data[:1].astype(np.int64)
-    pset_dict["counts"] = counts
-    pset_dict["latitude"] = latitude
-    pset_dict["longitude"] = longitude
+    pset_dict["counts"] = counts[np.newaxis, ...]
+    pset_dict["latitude"] = latitude[np.newaxis, ...]
+    pset_dict["longitude"] = longitude[np.newaxis, ...]
     pset_dict["energy_bin_geometric_mean"] = energy_bin_geometric_means
-    pset_dict["background_rates"] = background_rates
-    pset_dict["exposure_factor"] = exposure_pointing
+    pset_dict["background_rates"] = background_rates[np.newaxis, ...]
+    pset_dict["exposure_factor"] = exposure_pointing.to_numpy()[np.newaxis, ...]
     pset_dict["pixel_index"] = healpix
-    pset_dict["energy_bin_delta"] = np.diff(intervals, axis=1).squeeze()
+    pset_dict["energy_bin_delta"] = np.diff(intervals, axis=1).squeeze()[
+        np.newaxis, ...
+    ]
+    pset_dict["sensitivity"] = sensitivity[np.newaxis, ...]
 
     dataset = create_dataset(pset_dict, name, "l1c")
 

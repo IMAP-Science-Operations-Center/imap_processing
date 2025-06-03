@@ -189,7 +189,7 @@ def process_ultra_events(ds: xr.Dataset) -> xr.Dataset:
     }
 
     # Add the event data to the expanded dataset.
-    for key in event_data_list[0]:
+    for key in EVENT_FIELD_RANGES:
         expanded_data[key] = np.array([event[key] for event in all_events])
 
     event_ids = get_event_id(expanded_data["shcoarse"])

@@ -65,7 +65,6 @@ ULTRA_HK = PacketProperties(
     apid=[
         866,
         867,
-        868,
         869,
         870,
         873,
@@ -74,7 +73,6 @@ ULTRA_HK = PacketProperties(
         877,
         930,
         931,
-        932,
         933,
         934,
         937,
@@ -85,7 +83,6 @@ ULTRA_HK = PacketProperties(
     logical_source=[
         "imap_ultra_l1a_45sensor-alarm",
         "imap_ultra_l1a_45sensor-memchecksum",
-        "imap_ultra_l1a_45sensor-memdump",
         "imap_ultra_l1a_45sensor-status",
         "imap_ultra_l1a_45sensor-bootstatus",
         "imap_ultra_l1a_45sensor-monitorlimits",
@@ -94,7 +91,6 @@ ULTRA_HK = PacketProperties(
         "imap_ultra_l1a_45sensor-imgparams",
         "imap_ultra_l1a_90sensor-alarm",
         "imap_ultra_l1a_90sensor-memchecksum",
-        "imap_ultra_l1a_90sensor-memdump",
         "imap_ultra_l1a_90sensor-status",
         "imap_ultra_l1a_90sensor-bootstatus",
         "imap_ultra_l1a_90sensor-monitorlimits",

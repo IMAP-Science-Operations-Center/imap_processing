@@ -1,5 +1,7 @@
 """Culls Events for ULTRA L1b."""
 
+import logging
+
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -8,6 +10,11 @@ from numpy.typing import NDArray
 from imap_processing.quality_flags import ImapAttitudeUltraFlags, ImapRatesUltraFlags
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+SPIN_DURATION = 15  # Default spin duration in seconds.
 
 
 def get_energy_histogram(
@@ -38,7 +45,8 @@ def get_energy_histogram(
     """
     spin_df = get_spin_data()
 
-    spin_edges = np.unique(spin_number)
+    unique_spin_number = np.unique(spin_number)
+    spin_edges = unique_spin_number.astype(np.uint16)
     spin_edges = np.append(spin_edges, spin_edges.max() + 1)
 
     # Counts per spin at each energy bin.
@@ -52,9 +60,17 @@ def get_energy_histogram(
 
     # Count rate per spin at each energy bin.
     for i in range(hist.shape[1]):
-        spin_duration = spin_df.spin_period_sec[spin_df.spin_number == i]
-        hist[:, i] /= spin_duration.values[0]
-        total_spin_duration += spin_duration.sum()
+        matched_spins = spin_df.spin_number == unique_spin_number[i]
+        if not np.any(matched_spins):
+            # TODO: we might throw an exception here instead.
+            logger.info(f"Unmatched spin number: {unique_spin_number[i]}")
+            spin_duration = SPIN_DURATION  # Default to 15 seconds if no match found
+        else:
+            spin_duration = spin_df.spin_period_sec[
+                spin_df.spin_number == unique_spin_number[i]
+            ].values[0]
+        hist[:, i] /= spin_duration
+        total_spin_duration += spin_duration
 
     mean_duration = total_spin_duration / hist.shape[1]
 
@@ -96,7 +112,7 @@ def flag_attitude(
     )
 
     quality_flags = np.full(
-        spin_rates.shape, ImapAttitudeUltraFlags.NONE.value, dtype=np.uint16
+        spins.shape, ImapAttitudeUltraFlags.NONE.value, dtype=np.uint16
     )
     quality_flags[bad_spin_rate_indices] |= ImapAttitudeUltraFlags.SPINRATE.value
     mismatch_indices = compare_aux_univ_spin_table(aux_dataset, spins, spin_df)
@@ -201,26 +217,42 @@ def compare_aux_univ_spin_table(
     mismatch_indices : np.ndarray
         Boolean array indicating which spins have mismatches.
     """
-    univ_mask = np.isin(spin_df["spin_number"].values, spins)
-    aux_mask = np.isin(aux_dataset["SPINNUMBER"].values, spins)
+    # Identify valid spin matches
+    univ_spins = spin_df["spin_number"].values
+    aux_spins = aux_dataset["spinnumber"].values
+    present_in_both = np.intersect1d(univ_spins, aux_spins)
 
-    filtered_univ = spin_df[univ_mask]
-    filtered_aux = {field: aux_dataset[field].values[aux_mask] for field in aux_dataset}
+    # Filter and align by spin number
+    df_univ = spin_df.set_index("spin_number").loc[present_in_both]
+    df_aux = (
+        pd.DataFrame({field: aux_dataset[field].values for field in aux_dataset})
+        .groupby("spinnumber", as_index=True)
+        .first()
+        .loc[present_in_both]
+    )
 
     mismatch_indices = np.zeros(len(spins), dtype=bool)
 
     fields_to_compare = [
-        ("TIMESPINSTART", "spin_start_sec_sclk"),
-        ("TIMESPINSTARTSUB", "spin_start_subsec_sclk"),
-        ("DURATION", "spin_period_sec"),
-        ("TIMESPINDATA", "spin_start_met"),
-        ("SPINPERIOD", "spin_period_sec"),
+        ("timespinstart", "spin_start_sec_sclk"),
+        ("timespinstartsub", "spin_start_subsec_sclk"),
+        ("duration", "spin_period_sec"),
+        ("timespindata", "spin_start_met"),
+        ("spinperiod", "spin_period_sec"),
     ]
 
+    # Compare fields
+    mismatch = np.zeros(len(df_aux), dtype=bool)
     for aux_field, spin_field in fields_to_compare:
-        aux_values = filtered_aux[aux_field]
-        spin_values = filtered_univ[spin_field].values
+        mismatch |= df_aux[aux_field].values != df_univ[spin_field].values
 
-        mismatch_indices |= aux_values != spin_values
+    # Get spin numbers where mismatch is True
+    mismatched_spin_numbers = present_in_both[mismatch]
+    # Find indices in `spins` that correspond to these mismatched spins
+    mismatch_indices[np.isin(spins, mismatched_spin_numbers)] = True
+
+    # Also flag any spins not present in the intersection
+    missing_spin_mask = ~np.isin(spins, present_in_both)
+    mismatch_indices[missing_spin_mask] = True
 
     return mismatch_indices
