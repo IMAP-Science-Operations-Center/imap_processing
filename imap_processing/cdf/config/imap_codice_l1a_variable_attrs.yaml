@@ -152,6 +152,7 @@ esa_step_label:
 
 inst_az_label:
     CATDESC: Instrument Azimuth
+    DEPEND_1: inst_az
     FIELDNAM: Instrument Azimuth
     FORMAT: A2
     VAR_TYPE: metadata
@@ -165,18 +166,21 @@ spin_sector_label:
 
 spin_sector_index_label:
     CATDESC: Spin Sector Index
+    DEPEND_1: spin_sector_index
     FIELDNAM: Spin Sector Index
     FORMAT: A2
     VAR_TYPE: metadata
 
 spin_sector_pairs_label:
     CATDESC: Spin Sector Pairs
+    DEPEND_1: spin_sector_pairs
     FIELDNAM: Spin Sector Pairs
     FORMAT: A11
     VAR_TYPE: metadata
 
 ssd_index_label:
     CATDESC: SSD Index
+    DEPEND_1: ssd_index
     FIELDNAM: SSD Index
     FORMAT: A2
     VAR_TYPE: metadata

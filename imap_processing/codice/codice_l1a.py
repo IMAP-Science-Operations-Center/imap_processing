@@ -292,7 +292,7 @@ class CoDICEL1aPipeline:
         if self.config["dataset_name"] == "imap_codice_l1a_hi-sectored":
             for species in self.config["energy_table"]:
                 dataset = self.define_energy_bins(dataset, species)
-            dataset = dataset.drop_vars("esa_step")
+            dataset = dataset.drop_vars(["esa_step", "esa_step_label"])
 
         return dataset
 
