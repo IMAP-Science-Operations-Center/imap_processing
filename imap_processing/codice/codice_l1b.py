@@ -63,9 +63,11 @@ def convert_to_rates(
         "lo-sw-species",
         "lo-ialirt",
     ]:
+        # Applying rate calculation described in section 10.2 of the algorithm
+        # document
         rates_data = dataset[variable_name].data / (
             acq_times
-            * 10e-6
+            * 1e-6  # Converting from microseconds to seconds
             * constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spin_sectors"]
         )
     elif descriptor in [
@@ -76,6 +78,8 @@ def convert_to_rates(
         "hi-sectored",
         "hi-ialirt",
     ]:
+        # Applying rate calculation described in section 10.1 of the algorithm
+        # document
         rates_data = dataset[variable_name].data / (
             constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spin_sectors"]
             * constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spins"]
