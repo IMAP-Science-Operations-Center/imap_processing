@@ -28,6 +28,7 @@ event_num:
     VALIDMIN: 0
     VALIDMAX: 10000
     VAR_TYPE: support_data
+    DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 # <=== Labels ===>
 event_num_label:
@@ -48,6 +49,7 @@ direct_events_attrs: &direct_events
     UNITS: unitless
     VALIDMIN: 0
     VALIDMAX: 10000
+    DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 P0_APD_ID:
     <<: *direct_events
@@ -80,6 +82,7 @@ P0_DataQuality:
     FIELDNAM: Priority 0 Data Quality
     LABLAXIS: " "
     VALIDMAX: 1
+    DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 P0_EnergyStep:
     <<: *direct_events
@@ -208,6 +211,7 @@ P1_DataQuality:
     FIELDNAM: Priority 1 Data Quality
     LABLAXIS: " "
     VALIDMAX: 1
+    DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 P1_EnergyStep:
     <<: *direct_events
@@ -336,6 +340,7 @@ P2_DataQuality:
     FIELDNAM: Priority 2 Data Quality
     LABLAXIS: " "
     VALIDMAX: 1
+    DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 P2_EnergyStep:
     <<: *direct_events
@@ -464,6 +469,7 @@ P3_DataQuality:
     FIELDNAM: Priority 3 Data Quality
     LABLAXIS: " "
     VALIDMAX: 1
+    DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 P3_EnergyStep:
     <<: *direct_events
@@ -592,6 +598,7 @@ P4_DataQuality:
     FIELDNAM: Priority 4 Data Quality
     LABLAXIS: " "
     VALIDMAX: 1
+    DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 P4_EnergyStep:
     <<: *direct_events
@@ -720,6 +727,7 @@ P5_DataQuality:
     FIELDNAM: Priority 5 Data Quality
     LABLAXIS: " "
     VALIDMAX: 1
+    DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 P5_EnergyStep:
     <<: *direct_events
@@ -848,6 +856,7 @@ P6_DataQuality:
     FIELDNAM: Priority 6 Data Quality
     LABLAXIS: " "
     VALIDMAX: 1
+    DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 P6_EnergyStep:
     <<: *direct_events
@@ -936,6 +945,7 @@ P7_DataQuality:
     FIELDNAM: Priority 7 Data Quality
     LABLAXIS: " "
     VALIDMAX: 1
+    DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 P7_EnergyStep:
     <<: *direct_events

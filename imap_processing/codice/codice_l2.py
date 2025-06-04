@@ -67,6 +67,12 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
     # Update the global attributes
     l2_dataset.attrs = cdf_attrs.get_global_attributes(dataset_name)
 
+    # Set the variable attributes
+    for variable_name in l2_dataset:
+        l2_dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
+            variable_name, check_schema=False
+        )
+
     # TODO: Add L2-specific algorithms/functionality here. For SIT-4, we can
     #       just keep the data as-is.
 
