@@ -614,35 +614,33 @@ class Codice(ProcessInstrument):
         print(f"Processing CoDICE {self.data_level}")
         datasets: list[xr.Dataset] = []
 
-        dependency_list = dependencies.processing_input
         if self.data_level == "l1a":
-            if len(dependency_list) != 1:
+            science_files = dependencies.get_file_paths(source="codice")
+            if len(science_files) != 1:
                 raise ValueError(
-                    f"Unexpected dependencies found for CoDICE L1a:"
-                    f"{dependency_list}. Expected only one dependency."
+                    f"CoDICE L1A requires exactly one input science file, received: "
+                    f"{science_files}."
                 )
             # process data
-            science_files = dependencies.get_file_paths(source="codice")
             datasets = codice_l1a.process_codice_l1a(science_files[0])
 
         if self.data_level == "l1b":
-            if len(dependency_list) != 1:
+            science_files = dependencies.get_file_paths(source="codice")
+            if len(science_files) != 1:
                 raise ValueError(
-                    f"Unexpected dependencies found for CoDICE L1b:"
-                    f"{dependency_list}. Expected only one dependency."
+                    f"CoDICE L1B requires exactly one input science file, received: "
+                    f"{science_files}."
                 )
             # process data
-            science_files = dependencies.get_file_paths(source="codice")
             datasets = [codice_l1b.process_codice_l1b(science_files[0])]
 
         if self.data_level == "l2":
-            if len(dependency_list) != 1:
-                raise ValueError(
-                    f"Unexpected dependencies found for CoDICE L2:"
-                    f"{dependency_list}. Expected only one dependency."
-                )
-            # process data
             science_files = dependencies.get_file_paths(source="codice")
+            if len(science_files) != 1:
+                raise ValueError(
+                    f"CoDICE L2 requires exactly one input science file, received: "
+                    f"{science_files}."
+                )
             datasets = [codice_l2.process_codice_l2(science_files[0])]
 
         return datasets
