@@ -952,6 +952,7 @@ class Lo(ProcessInstrument):
         elif self.data_level == "l1b":
             data_dict = {}
             science_files = dependencies.get_file_paths(source="lo", data_type="l1a")
+            logger.info(f"Science files for L1B: {science_files}")
             for file in science_files:
                 dataset = load_cdf(file)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
