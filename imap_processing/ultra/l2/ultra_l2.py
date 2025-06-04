@@ -84,7 +84,11 @@ VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION = [
 # These variables may or may not be energy dependent, depending on the
 # input data. They must be handled slightly differently when it comes to adding
 # metadata to the map dataset.
-INCONSISTENTLY_ENERGY_DEPENDENT_VARIABLES = ["obs_date", "exposure_factor"]
+INCONSISTENTLY_ENERGY_DEPENDENT_VARIABLES = [
+    "obs_date",
+    "exposure_factor",
+    "obs_date_range",
+]
 
 
 def get_variable_attributes_optional_energy_dependence(
@@ -457,7 +461,6 @@ def ultra_l2(
                 data=healpix_skymap.az_el_points[:, i],
                 dims=(CoordNames.GENERIC_PIXEL.value,),
             )
-
         map_dataset = healpix_skymap.to_dataset()
         # Add attributes related to the map
         map_attrs = {
@@ -548,6 +551,12 @@ def ultra_l2(
                 ],
                 name=f"{coord_var}_label",
             )
+
+    # Add systematic error as all zeros with shape matching statistical unc
+    # TODO: update once we have information from the instrument team
+    map_dataset["ena_intensity_sys_err"] = xr.zeros_like(
+        map_dataset["ena_intensity_stat_unc"],
+    )
 
     # Add epoch_delta
     map_dataset.coords["epoch_delta"] = xr.DataArray(

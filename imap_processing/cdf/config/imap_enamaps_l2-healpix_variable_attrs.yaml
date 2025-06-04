@@ -83,7 +83,7 @@ obs_date_energy_independent:
   DEPEND_1: pixel_index
   LABL_PTR_1: pixel_index_label
 
-obs_date_range:
+obs_date_range_energy_independent:
   DEPEND_1: pixel_index
   LABL_PTR_1: pixel_index_label
 

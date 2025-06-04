@@ -228,6 +228,9 @@ exposure_factor_energy_independent:
 obs_date_energy_independent:
   <<: *obs_date
 
+obs_date_range_energy_independent:
+  <<: *obs_date
+
 solid_angle:
   <<: *default_float32
   CATDESC: Solid angle subtended by each pixel.
