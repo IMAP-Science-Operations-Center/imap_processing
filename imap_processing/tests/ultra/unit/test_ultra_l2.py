@@ -69,6 +69,7 @@ class TestUltraL2:
     def mock_data_dict(self, _mock_multiple_psets):
         return {pset.attrs["Logical_file_id"]: pset for pset in self.ultra_psets}
 
+    @pytest.mark.parametrize("epoch_dim_for_energy_delta", [True, False])
     @pytest.mark.parametrize(
         ["map_frame", "rtol"],
         [
@@ -83,7 +84,7 @@ class TestUltraL2:
     )
     @pytest.mark.usefixtures("_mock_single_pset", "_setup_spice_kernels_list")
     def test_generate_ultra_healpix_skymap_single_pset(
-        self, map_frame, rtol, furnish_kernels
+        self, epoch_dim_for_energy_delta, map_frame, rtol, furnish_kernels
     ):
         # Avoid modifying the original pset
         pset = self.ultra_pset.copy(deep=True)
@@ -95,6 +96,11 @@ class TestUltraL2:
         pset["background_rates"].values = np.ones_like(pset["background_rates"].values)
         pset["sensitivity"].values = np.ones_like(pset["sensitivity"].values)
         pset["energy_bin_delta"].values = np.ones_like(pset["energy_bin_delta"].values)
+        if epoch_dim_for_energy_delta:
+            # add an extra dim to the start
+            pset["energy_bin_delta"] = pset["energy_bin_delta"].expand_dims(
+                {CoordNames.TIME.value: pset["epoch"].values}
+            )
 
         # Create the Healpix skymap in the desired frame.
         with furnish_kernels(self.required_kernel_names):
