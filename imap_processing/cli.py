@@ -616,7 +616,7 @@ class Codice(ProcessInstrument):
 
         dependency_list = dependencies.processing_input
         if self.data_level == "l1a":
-            if len(dependency_list) > 1:
+            if len(dependency_list) != 1:
                 raise ValueError(
                     f"Unexpected dependencies found for CoDICE L1a:"
                     f"{dependency_list}. Expected only one dependency."
@@ -626,7 +626,7 @@ class Codice(ProcessInstrument):
             datasets = codice_l1a.process_codice_l1a(science_files[0])
 
         if self.data_level == "l1b":
-            if len(dependency_list) > 1:
+            if len(dependency_list) != 1:
                 raise ValueError(
                     f"Unexpected dependencies found for CoDICE L1b:"
                     f"{dependency_list}. Expected only one dependency."
@@ -636,7 +636,7 @@ class Codice(ProcessInstrument):
             datasets = [codice_l1b.process_codice_l1b(science_files[0])]
 
         if self.data_level == "l2":
-            if len(dependency_list) > 1:
+            if len(dependency_list) != 1:
                 raise ValueError(
                     f"Unexpected dependencies found for CoDICE L2:"
                     f"{dependency_list}. Expected only one dependency."
