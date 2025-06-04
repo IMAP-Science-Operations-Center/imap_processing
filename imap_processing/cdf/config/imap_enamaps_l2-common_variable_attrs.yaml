@@ -150,6 +150,7 @@ ena_intensity_sys_err:
   VAR_TYPE: data
   LABLAXIS: Non-Statistical Err
   DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 ena_rate:
   <<: *default_float32
@@ -233,6 +234,7 @@ obs_date_range_energy_independent:
 
 solid_angle:
   <<: *default_float32
+  VAR_TYPE: support_data
   CATDESC: Solid angle subtended by each pixel.
   FIELDNAM: Solid Angle
   DEPEND_0: epoch
@@ -240,3 +242,4 @@ solid_angle:
   VAR_TYPE: data
   LABLAXIS: Solid Angle
   DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
