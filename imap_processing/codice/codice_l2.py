@@ -35,13 +35,14 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
     l2_dataset : xarray.Dataset
         The``xarray`` dataset containing the science data and supporting metadata.
     """
-    logger.info(f"\nProcessing {file_path}")
+    logger.info(f"Processing {file_path}")
 
     # Open the l1 file
     l1_dataset = load_cdf(file_path)
 
     # Use the logical source as a way to distinguish between data products and
     # set some useful distinguishing variables
+    # TODO: Could clean this up by using imap-data-access methods?
     dataset_name = l1_dataset.attrs["Logical_source"]
     data_level = dataset_name.removeprefix("imap_codice_").split("_")[0]
     descriptor = dataset_name.removeprefix(f"imap_codice_{data_level}_")
