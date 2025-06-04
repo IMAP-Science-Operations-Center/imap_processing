@@ -306,6 +306,10 @@ def generate_ultra_healpix_skymap(
 
     # Get the energy bin widths from a PointingSet (they will all be the same)
     delta_energy = pointing_set.data["energy_bin_delta"]
+    if CoordNames.TIME.value in delta_energy.dims:
+        delta_energy = delta_energy.mean(
+            dim=CoordNames.TIME.value,
+        )
 
     # Core calculations of ena_intensity and its statistical uncertainty for L2
     # Exposure time may contain 0s, producing NaNs in the corrected count rate
