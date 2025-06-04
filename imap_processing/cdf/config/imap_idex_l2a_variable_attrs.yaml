@@ -69,6 +69,7 @@ peak_fit_parameter_labels:
   VAR_TYPE: metadata
   FORMAT: A8
   DEPEND_1: peak_fit_parameter_index
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 target_fit_parameter_labels:
   CATDESC: Labels for the target fit parameters.
@@ -77,6 +78,7 @@ target_fit_parameter_labels:
   VAR_TYPE: metadata
   FORMAT: A8
   DEPEND_1: target_fit_parameter_index
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 mass_labels:
   CATDESC: Labels for mass index values
@@ -84,6 +86,7 @@ mass_labels:
   VAR_TYPE: metadata
   FORMAT: A8
   DEPEND_1: mass_index
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 # <=== Index Attributes ===>
 peak_fit_parameter_index:

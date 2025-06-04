@@ -85,6 +85,10 @@ def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset):
     cdf_vars = l2a_dataset.variables
     for var in expected_vars:
         assert var in cdf_vars
+    for var in l2a_dataset.data_vars:
+        assert "DICT_KEY" in l2a_dataset[var].attrs, (
+            f"Variable {var} is missing the DICT_KEY attribute for SPASE metadata."
+        )
 
 
 def test_time_to_mass_zero_lag():

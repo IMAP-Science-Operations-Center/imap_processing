@@ -349,6 +349,7 @@ ephemeris_position_x:
   CATDESC: Cartesian coord X positions for the IMAP spacecraft in the ECLIPJ2000 frame.
   LABLAXIS: Position X
   UNITS: km
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
 
 ephemeris_position_y:
   <<: *spice_base
@@ -356,6 +357,7 @@ ephemeris_position_y:
   CATDESC: Cartesian coord Y positions for the IMAP spacecraft in the ECLIPJ2000 frame.
   LABLAXIS: Position Y
   UNITS: km
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
 
 ephemeris_position_z:
   <<: *spice_base
@@ -363,6 +365,7 @@ ephemeris_position_z:
   CATDESC: Cartesian coordinate Z positions for the IMAP spacecraft in the ECLIPJ2000 frame.
   LABLAXIS: Position Z
   UNITS: km
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
 
 ephemeris_velocity_x:
   <<: *spice_base
@@ -370,6 +373,7 @@ ephemeris_velocity_x:
   CATDESC: Velocity X positions for the IMAP spacecraft in the ECLIPJ2000 frame.
   LABLAXIS: Velocity X
   UNITS: km/s
+  DICT_KEY: SPASE>Support>SupportQuantity:Velocity
 
 ephemeris_velocity_y:
   <<: *spice_base
@@ -377,6 +381,7 @@ ephemeris_velocity_y:
   CATDESC: Velocity Y positions for the IMAP spacecraft in the ECLIPJ2000 frame.
   LABLAXIS: Velocity Y
   UNITS: km/s
+  DICT_KEY: SPASE>Support>SupportQuantity:Velocity
 
 ephemeris_velocity_z:
   <<: *spice_base
@@ -384,6 +389,8 @@ ephemeris_velocity_z:
   CATDESC: Velocity Z positions for the IMAP spacecraft in the ECLIPJ2000 frame.
   LABLAXIS: Velocity Z
   UNITS: km/s
+  DICT_KEY: SPASE>Support>SupportQuantity:Velocity
+
 
 longitude:
   <<: *spice_base
@@ -408,6 +415,7 @@ spin_phase:
   LABLAXIS: Spin Phase
   FORMAT: F12.6
   FILLVAL: *double_fillval
+  DICT_KEY: SPASE>Support>SupportQuantity:SpinPhase
 
 solar_longitude:
   <<: *spice_base
@@ -415,4 +423,5 @@ solar_longitude:
   FIELDNAM: Solar Longitude
   CATDESC: Solar Longitude of the IMAP spacecraft
   LABLAXIS: Solar Longitude
+  DICT_KEY: SPASE>Support>SupportQuantity:Longitude
 

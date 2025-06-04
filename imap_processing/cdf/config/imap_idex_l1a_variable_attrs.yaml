@@ -80,6 +80,7 @@ time_high_sample_rate_label:
   FORMAT: A5
   VAR_TYPE: metadata
   DEPEND_1: time_high_sample_rate_index
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 time_low_sample_rate_label:
   CATDESC: Low sample rate time steps for a dust event.
@@ -87,6 +88,7 @@ time_low_sample_rate_label:
   FORMAT: A5
   VAR_TYPE: metadata
   DEPEND_1: time_low_sample_rate_index
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 # <=== Instrument Setting Attributes ===>
 low_sample_rate_attrs:

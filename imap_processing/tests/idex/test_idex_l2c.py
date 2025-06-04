@@ -74,6 +74,15 @@ def test_l2c_attrs_and_vars(l2c_datasets: list[xr.Dataset], l1b_dataset: xr.Data
         rect_file_name.name == "imap_idex_l2c_rectangular-map-1week_20231218_v999.cdf"
     )
 
+    for var in healpix_ds.data_vars:
+        assert "DICT_KEY" in healpix_ds[var].attrs, (
+            f"Variable {var} is missing the DICT_KEY attribute for SPASE metadata in."
+        )
+    for var in rect_ds.data_vars:
+        assert "DICT_KEY" in rect_ds[var].attrs, (
+            f"Variable {var} is missing the DICT_KEY attribute for SPASE metadata."
+        )
+
 
 def test_idex_healpix_map(l1b_dataset: xr.Dataset):
     """Test for idex_healpix_map function"""

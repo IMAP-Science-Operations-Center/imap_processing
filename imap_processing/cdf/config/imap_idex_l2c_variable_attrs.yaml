@@ -19,24 +19,28 @@ epoch_collection_set:
   REFERENCE_POSITION: Rotating Earth Geoid
   RESOLUTION: ' '
   DISPLAY_TYPE: time_series
+  DICT_KEY: SPASE>Support>SupportQantity:Temporal
 
 rectangular_lon_pixel_label:
   CATDESC: Longitude pixel index label for IDEX SkyMap.
   FIELDNAM: Longitude pixel label
   FORMAT: A5
   VAR_TYPE: metadata
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 rectangular_lat_pixel_label:
   CATDESC: Latitude pixel index label for IDEX SkyMap.
   FIELDNAM: Latitude pixel label
   FORMAT: A5
   VAR_TYPE: metadata
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 pixel_label:
   CATDESC: HEALPix pixel index  label for IDEX SkyMap.
   FIELDNAM: Pixel label
   FORMAT: A5
   VAR_TYPE: metadata
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 pixel_index:
   CATDESC: HEALPix pixel index for IDEX SkyMap
