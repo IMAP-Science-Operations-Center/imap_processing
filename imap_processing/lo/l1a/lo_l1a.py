@@ -103,6 +103,7 @@ def lo_l1a(dependency: Path) -> list[xr.Dataset]:
 
     good_apids = [LoAPID.ILO_SPIN, LoAPID.ILO_SCI_CNT, LoAPID.ILO_SCI_DE]
     logger.info(f"\nReturning datasets: {[LoAPID(apid) for apid in good_apids]}")
+    logger.info(f"DATASETS: {datasets_by_apid}")
     return [datasets_by_apid[good_apid] for good_apid in good_apids]
 
 
