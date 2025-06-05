@@ -12,6 +12,7 @@ dataset = process_codice_l2(l1_filename)
 import logging
 from pathlib import Path
 
+import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
@@ -75,6 +76,13 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
 
     # TODO: Add L2-specific algorithms/functionality here. For SIT-4, we can
     #       just keep the data as-is.
+
+    # Workaround to fix monitomically increasing epoch issue
+    epoch_attrs = cdf_attrs.get_variable_attributes("epoch", check_schema=False)
+    new_epoch_values = np.array([843543730220584064 + i for i in range(113)])
+    l2_dataset = l2_dataset.assign_coords(
+        epoch=("epoch", new_epoch_values, epoch_attrs)
+    )
 
     logger.info(f"\nFinal data product:\n{l2_dataset}\n")
 

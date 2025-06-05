@@ -207,13 +207,13 @@ HI_COUNTERS_AGGREGATED_ACTIVE_VARIABLES = {
     "Reserved3": False,
     "Reserved4": False,
     "Reserved5": False,
-    "LowTOFCutoff": False,
-    "Reserved6": False,
-    "Reserved7": False,
+    "LowTOFCutoff": True,
+    "Reserved6": True,
+    "Reserved7": True,
     "ASIC1FlagInvalid": True,
     "ASIC2FlagInvalid": True,
-    "ASIC1ChannelInvalid": False,
-    "ASIC2ChannelInvalid": False,
+    "ASIC1ChannelInvalid": True,
+    "ASIC2ChannelInvalid": True,
 }
 HI_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
     name
