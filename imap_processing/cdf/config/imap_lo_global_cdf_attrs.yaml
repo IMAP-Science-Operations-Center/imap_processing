@@ -77,8 +77,8 @@ imap_lo_l1c_pset:
   Logical_source: imap_lo_l1c_pset
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1C Data
 
-imap_lo_l2_l090-ena-h-sf-nsp-ram-hae-6deg-1yr:
+imap_lo_l2_l090-ena-h-sf-nsp-ram-hae-6deg-3mo:
     <<: *instrument_base
-    Data_type: L2_l090-ena-h-sf-nsp-ram-hae-6deg-1yr>Level-2 Low-Energy ENA Maps
-    Logical_source: imap_lo_l2_l090-ena-h-sf-nsp-ram-hae-6deg-1yr
+    Data_type: L2_l090-ena-h-sf-nsp-ram-hae-6deg-3mo>Level-2 Low-Energy ENA Maps
+    Logical_source: imap_lo_l2_l090-ena-h-sf-nsp-ram-hae-6deg-3mo
     Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-2 Low-Energy ENA Maps

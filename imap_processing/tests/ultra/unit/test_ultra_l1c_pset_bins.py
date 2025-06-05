@@ -19,6 +19,7 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     get_spacecraft_histogram,
     get_spacecraft_sensitivity,
     grid_sensitivity,
+    interpolate_sensitivity,
 )
 
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
@@ -164,7 +165,9 @@ def test_get_helio_background_rates():
 @pytest.mark.external_test_data
 def test_get_spacecraft_exposure_times():
     """Test get_spacecraft_exposure_times function."""
-    constant_exposure = TEST_PATH / "ultra_90_dps_exposure.csv"
+    constant_exposure = (
+        TEST_PATH / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv"
+    )
     df_exposure = pd.read_csv(constant_exposure)
     exposure_pointing = get_spacecraft_exposure_times(df_exposure)
     assert exposure_pointing.shape == (196608,)
@@ -186,7 +189,9 @@ def test_get_helio_exposure_times():
 
     mid_time = np.average([start_time, end_time])
 
-    constant_exposure = TEST_PATH / "ultra_90_dps_exposure.csv"
+    constant_exposure = (
+        TEST_PATH / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv"
+    )
     df_exposure = pd.read_csv(constant_exposure)
 
     helio_exposure = get_helio_exposure_times(mid_time, df_exposure)
@@ -207,8 +212,8 @@ def test_get_helio_exposure_times():
 def test_get_spacecraft_sensitivity():
     """Tests get_spacecraft_sensitivity function."""
     # TODO: remove below here with lookup table aux api
-    efficiencies = TEST_PATH / "Ultra_90_DPS_efficiencies_all.csv"
-    geometric_function = TEST_PATH / "ultra_90_dps_gf.csv"
+    efficiencies = TEST_PATH / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv"
+    geometric_function = TEST_PATH / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv"
 
     df_efficiencies = pd.read_csv(efficiencies)
     df_geometric_function = pd.read_csv(geometric_function)
@@ -243,9 +248,12 @@ def test_get_spacecraft_sensitivity():
 
     assert np.allclose(result, expected_result, atol=1e-5)
 
-    # Check that out-of-bounds energy returns all NaNs
+    # Check that out-of-bounds energy returns all FILL values
     result = grid_sensitivity(df_efficiencies, df_geometric_function, 2.5)
-    assert np.isnan(result).all()
+    assert np.all(result == -1.0e31)
+
+    result = interpolate_sensitivity(df_efficiencies, df_geometric_function)
+    assert result.shape == (24, 196608)
 
 
 @pytest.mark.external_test_data
@@ -255,8 +263,8 @@ def test_get_helio_sensitivity(monkeypatch):
     """Test get_helio_sensitivity function."""
 
     # Load test data
-    efficiencies = TEST_PATH / "Ultra_90_DPS_efficiencies_all.csv"
-    geometric_function = TEST_PATH / "ultra_90_dps_gf.csv"
+    efficiencies = TEST_PATH / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv"
+    geometric_function = TEST_PATH / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv"
     df_efficiencies = pd.read_csv(efficiencies)
     df_geometric_function = pd.read_csv(geometric_function)
 

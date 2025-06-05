@@ -85,6 +85,11 @@ def test_get_angular_profiles():
 def test_get_energy_efficiencies():
     """Tests function get_get_energy_efficiencies."""
 
-    u45_efficiencies = get_energy_efficiencies()
+    path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
+    ancillary_files = {
+        "l1b-45sensor-logistic-interpolation": path
+        / "imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv"
+    }
+    u45_efficiencies = get_energy_efficiencies(ancillary_files)
 
     assert u45_efficiencies.shape == (58081, 157)

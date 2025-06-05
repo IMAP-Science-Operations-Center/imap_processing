@@ -1155,7 +1155,7 @@ class RectangularSkyMap(AbstractSkyMap):
             )
         # Add the solid angle variable to the data_1d Dataset
         self.data_1d["solid_angle"] = xr.DataArray(
-            self.solid_angle_points[np.newaxis, :],
+            self.solid_angle_points[np.newaxis, :].astype(np.float32),
             name="solid_angle",
             dims=[CoordNames.TIME.value, CoordNames.GENERIC_PIXEL.value],
         )
@@ -1459,6 +1459,12 @@ class HealpixSkyMap(AbstractSkyMap):
                 {},
                 coords={**self.spatial_coords},
             )
+        # Add the solid angle variable to the data_1d Dataset
+        self.data_1d["solid_angle"] = xr.DataArray(
+            self.solid_angle_points[np.newaxis, :].astype(np.float32),
+            name="solid_angle",
+            dims=[CoordNames.TIME.value, CoordNames.GENERIC_PIXEL.value],
+        )
         # return the data_1d as is, but with the pixel coordinate
         # renamed to CoordNames.HEALPIX_INDEX.value
         return self.data_1d.rename(

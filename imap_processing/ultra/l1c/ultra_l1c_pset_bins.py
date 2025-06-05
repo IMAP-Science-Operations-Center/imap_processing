@@ -15,6 +15,7 @@ from imap_processing.spice.geometry import (
 from imap_processing.ultra.constants import UltraConstants
 
 # TODO: add species binning.
+FILLVAL_FLOAT32 = -1.0e31
 
 
 def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray, np.ndarray]:
@@ -478,8 +479,6 @@ def grid_sensitivity(
         Efficiencies at different energy levels.
     geometric_function : pandas.DataFrame
         Geometric function.
-        energy : np.ndarray
-        The particle energy.
     energy : float
         Energy to which we are interpolating.
 
@@ -503,8 +502,47 @@ def grid_sensitivity(
 
     # Interpolate to energy
     interpolated = interp_func(energy)
+    interpolated = np.where(np.isnan(interpolated), FILLVAL_FLOAT32, interpolated)
 
     return interpolated
+
+
+def interpolate_sensitivity(
+    efficiencies: pd.DataFrame,
+    geometric_function: pd.DataFrame,
+    nside: int = 128,
+) -> NDArray:
+    """
+    Interpolate the sensitivity and bin it in HEALPix space.
+
+    Parameters
+    ----------
+    efficiencies : pandas.DataFrame
+        Efficiencies at different energy levels.
+    geometric_function : pandas.DataFrame
+        Geometric function.
+    nside : int, optional
+        Healpix nside resolution (default is 128).
+
+    Returns
+    -------
+    interpolated_sensitivity : np.ndarray
+        Array of shape (n_energy_bins, n_healpix_pixels).
+    """
+    _, _, energy_bin_geometric_means = build_energy_bins()
+    npix = hp.nside2npix(nside)
+
+    interpolated_sensitivity = np.full(
+        (len(energy_bin_geometric_means), npix), FILLVAL_FLOAT32
+    )
+
+    for i, energy in enumerate(energy_bin_geometric_means):
+        pixel_sensitivity = grid_sensitivity(
+            efficiencies, geometric_function, energy
+        ).flatten()
+        interpolated_sensitivity[i, :] = pixel_sensitivity
+
+    return interpolated_sensitivity
 
 
 def get_helio_sensitivity(

@@ -19,24 +19,28 @@ epoch_collection_set:
   REFERENCE_POSITION: Rotating Earth Geoid
   RESOLUTION: ' '
   DISPLAY_TYPE: time_series
+  DICT_KEY: SPASE>Support>SupportQantity:Temporal
 
 rectangular_lon_pixel_label:
   CATDESC: Longitude pixel index label for IDEX SkyMap.
   FIELDNAM: Longitude pixel label
   FORMAT: A5
   VAR_TYPE: metadata
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 rectangular_lat_pixel_label:
   CATDESC: Latitude pixel index label for IDEX SkyMap.
   FIELDNAM: Latitude pixel label
   FORMAT: A5
   VAR_TYPE: metadata
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 pixel_label:
   CATDESC: HEALPix pixel index  label for IDEX SkyMap.
   FIELDNAM: Pixel label
   FORMAT: A5
   VAR_TYPE: metadata
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 pixel_index:
   CATDESC: HEALPix pixel index for IDEX SkyMap
@@ -77,10 +81,10 @@ rectangular_lat_pixel:
 counts: &counts
   CATDESC: Number of raw dust events for each pixel
   FIELDNAM: Dust Counts
-  FORMAT: I12
+  FORMAT: I20
   UNITS: counts
   VAR_TYPE: data
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   DEPEND_0: epoch
   VALIDMIN: 0
   VALIDMAX: *int_maxval
@@ -90,7 +94,7 @@ counts: &counts
 healpix_counts:
   <<: *counts
   DEPEND_1: pixel_index
-  LABL_PTR_1: pixel_label
+  LABLAXIS: Counts
 
 rectangular_counts:
   <<: *counts

@@ -34,7 +34,7 @@ def lo_l2(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
 
     # if the dependencies are used to create Annotated Direct Events
     if "imap_lo_l1c_pset" in sci_dependencies:
-        logical_source = "imap_lo_l2_l090-ena-h-sf-nsp-ram-hae-6deg-1yr"
+        logical_source = "imap_lo_l2_l090-ena-h-sf-nsp-ram-hae-6deg-3mo"
         psets = sci_dependencies["imap_lo_l1c_pset"]
 
         # Create the rectangular sky map from the pointing set.
@@ -50,23 +50,8 @@ def lo_l2(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         # Create the dataset from the rectangular map.
         lo_rect_map_ds = lo_rect_map.to_dataset()
         # Add the attributes to the dataset.
-        # TODO: Temp quick fix for SIT-4. Pull into function and test after SIT-4.
-        lo_rect_map_ds.attrs.update(attr_mgr.get_global_attributes(logical_source))
-
-        # TODO: Lo is using different field names than what's in the attributes.
-        #  check if the Lo should use exposure factor instead of exposure time.
-        #  check if hydrogen and oxygen specific ena intensities should be added
-        #  to the attributes or if general ena intensities can be used or updated
-        #  in the code.
-        lo_rect_map_ds.h_flux.attrs.update(
-            attr_mgr.get_variable_attributes("ena_intensity")
-        )
-        lo_rect_map_ds.h_rate.attrs.update(attr_mgr.get_variable_attributes("ena_rate"))
-        lo_rect_map_ds.h_counts.attrs.update(
-            attr_mgr.get_variable_attributes("ena_count")
-        )
-        lo_rect_map_ds.exposure_time.attrs.update(
-            attr_mgr.get_variable_attributes("exposure_factor")
+        lo_rect_map_ds = add_attributes(
+            lo_rect_map_ds, attr_mgr, logical_source=logical_source
         )
 
     return [lo_rect_map_ds]
@@ -100,16 +85,6 @@ def project_pset_to_rect_map(
         spice_frame=spice_frame,
     )
     for pset in psets:
-        # Put energy dim before longitude and latitude
-        # TODO: L1C data should be in this format already.
-        #  This is a workaround for the current L1C data format.
-        for data_var in pset.data_vars:
-            if "energy" in pset[data_var].dims:
-                # move dim2 to before dim0 and dim1
-                pset[data_var] = pset[data_var].transpose(
-                    "epoch", "energy", "longitude", "latitude"
-                )
-
         lo_pset = ena_maps.LoPointingSet(pset)
         lo_rect_map.project_pset_values_to_map(
             pointing_set=lo_pset,
@@ -164,3 +139,75 @@ def calculate_fluxes(rates: xr.DataArray) -> xr.DataArray:
 
     flux = rates / (geometric_factor * energies * efficiency_factor)
     return flux
+
+
+def add_attributes(
+    lo_map: xr.Dataset, attr_mgr: ImapCdfAttributes, logical_source: str
+) -> xr.Dataset:
+    """
+    Add attributes to the map dataset.
+
+    Parameters
+    ----------
+    lo_map : xr.Dataset
+        The dataset to add attributes to.
+    attr_mgr : ImapCdfAttributes
+        The attribute manager to use for adding attributes.
+    logical_source : str
+        The logical source for the dataset.
+
+    Returns
+    -------
+    xr.Dataset
+        The dataset with added attributes.
+    """
+    # Add the global attributes to the dataset.
+    lo_map.attrs.update(attr_mgr.get_global_attributes(logical_source))
+
+    # TODO: Lo is using different field names than what's in the attributes.
+    #  check if the Lo should use exposure factor instead of exposure time.
+    #  check if hydrogen and oxygen specific ena intensities should be added
+    #  to the attributes or if general ena intensities can be used or updated
+    #  in the code. This dictionary is temporary solution for SIT-4
+    map_fields = {
+        "epoch": "epoch",
+        "h_flux": "ena_intensity",
+        "h_rate": "ena_rate",
+        "h_counts": "ena_count",
+        "exposure_time": "exposure_factor",
+        "energy": "energy",
+        "solid_angle": "solid_angle",
+        "longitude": "longitude",
+        "latitude": "latitude",
+    }
+
+    # TODO: The mapping utility is supposed to handle at least some of these
+    #  attributes but is not working. Need to investigate this after SIT-4
+    # Add the attributes to the dataset variables.
+    for field, attr_name in map_fields.items():
+        if field in lo_map.data_vars or field in lo_map.coords:
+            lo_map[field].attrs.update(
+                attr_mgr.get_variable_attributes(attr_name, check_schema=False)
+            )
+
+    labels = {
+        "energy": np.arange(1, 8).astype(str),
+        "longitude": lo_map["longitude"].values.astype(str),
+        "latitude": lo_map["latitude"].values.astype(str),
+    }
+    # add the coordinate labels to the dataset
+    for dim, values in labels.items():
+        lo_map = lo_map.assign_coords(
+            {
+                f"{dim}_label": xr.DataArray(
+                    values,
+                    name=f"{dim}_label",
+                    dims=[dim],
+                    attrs=attr_mgr.get_variable_attributes(
+                        f"{dim}_label", check_schema=False
+                    ),
+                )
+            }
+        )
+
+    return lo_map

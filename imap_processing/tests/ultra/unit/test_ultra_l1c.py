@@ -95,7 +95,16 @@ def test_create_dataset(mock_data_l1c_dict):
 
 def test_ultra_l1c(mock_data_l1b_dict):
     """Tests that L1c data is created."""
-    output_datasets = ultra_l1c(mock_data_l1b_dict)
+    path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
+    ancillary_files = {
+        "l1c-90sensor-dps-exposure": path
+        / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
+        "l1c-90sensor-efficiencies": path
+        / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
+        "l1c-90sensor-gf": path / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
+    }
+
+    output_datasets = ultra_l1c(mock_data_l1b_dict, ancillary_files, has_spice=False)
 
     assert len(output_datasets) == 1
     assert (
@@ -113,10 +122,11 @@ def test_ultra_l1c_error(mock_data_l1b_dict):
     mock_data_l1b_dict["bad_key"] = mock_data_l1b_dict.pop(
         "imap_ultra_l1a_45sensor-histogram"
     )
+    ancillary_files = {}
     with pytest.raises(
         ValueError, match="Data dictionary does not contain the expected keys."
     ):
-        ultra_l1c(mock_data_l1b_dict)
+        ultra_l1c(mock_data_l1b_dict, ancillary_files, has_spice=False)
 
 
 @pytest.mark.external_test_data
@@ -171,7 +181,16 @@ def test_calculate_spacecraft_pset_with_cdf():
         "imap_ultra_l1b_45sensor-cullingmask": xr.Dataset(),  # placeholder
     }
 
-    output_datasets = ultra_l1c(data_dict)
+    path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
+    ancillary_files = {
+        "l1c-90sensor-dps-exposure": path
+        / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
+        "l1c-90sensor-efficiencies": path
+        / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
+        "l1c-90sensor-gf": path / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
+    }
+
+    output_datasets = ultra_l1c(data_dict, ancillary_files, has_spice=False)
     output_datasets[0].attrs["Data_version"] = "999"
     output_datasets[0].attrs["Repointing"] = f"repoint{pointing + 1:05d}"
     test_data_path = write_cdf(output_datasets[0], istp=True)

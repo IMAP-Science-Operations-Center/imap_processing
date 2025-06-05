@@ -25,6 +25,7 @@ longitude_delta:
   FORMAT: F12.6
   UNITS: degrees
   FIELDNAM: longitude delta
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 latitude_label:
   VAR_TYPE: metadata
@@ -40,6 +41,7 @@ latitude_delta:
   FORMAT: F12.6
   UNITS: degrees
   FIELDNAM: latitude delta
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 # All variables below override the initial attributes defined in the common ENA Map
 # attributes file, imap_enamaps_l2-common_variable_attrs.yaml

@@ -550,11 +550,11 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
                 "utc": met_to_utc(grouped["met"].min()).split(".")[0],
                 "ttj2000ns": int(met_to_ttj2000ns(grouped["met"].min())),
                 **{
-                    f"swe_normalized_counts_quarter_1_esa_{i}": Decimal(str(val))
+                    f"swe_normalized_counts_half_1_esa_{i}": Decimal(str(val))
                     for i, val in enumerate(summed_first)
                 },
                 **{
-                    f"swe_normalized_counts_quarter_2_esa_{i}": Decimal(str(val))
+                    f"swe_normalized_counts_half_2_esa_{i}": Decimal(str(val))
                     for i, val in enumerate(summed_second)
                 },
                 "swe_counterstreaming_electrons": max(bde_first_half, bde_second_half),

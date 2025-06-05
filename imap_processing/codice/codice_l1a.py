@@ -214,7 +214,7 @@ class CoDICEL1aPipeline:
                 values,
                 name=name,
                 dims=dims,
-                attrs=self.cdf_attrs.get_variable_attributes(name),
+                attrs=self.cdf_attrs.get_variable_attributes(name, check_schema=False),
             )
 
             self.coords[name] = coord
@@ -292,7 +292,7 @@ class CoDICEL1aPipeline:
         if self.config["dataset_name"] == "imap_codice_l1a_hi-sectored":
             for species in self.config["energy_table"]:
                 dataset = self.define_energy_bins(dataset, species)
-            dataset = dataset.drop_vars("esa_step")
+            dataset = dataset.drop_vars(["esa_step", "esa_step_label"])
 
         return dataset
 
@@ -326,14 +326,16 @@ class CoDICEL1aPipeline:
             centers,
             dims=[energy_bin_name],
             attrs=self.cdf_attrs.get_variable_attributes(
-                f"{self.config['dataset_name'].split('_')[-1]}-{energy_bin_name}"
+                f"{self.config['dataset_name'].split('_')[-1]}-{energy_bin_name}",
+                check_schema=False,
             ),
         )
         dataset[f"{energy_bin_name}_delta"] = xr.DataArray(
             deltas,
             dims=[f"{energy_bin_name}_delta"],
             attrs=self.cdf_attrs.get_variable_attributes(
-                f"{self.config['dataset_name'].split('_')[-1]}-{energy_bin_name}_delta"
+                f"{self.config['dataset_name'].split('_')[-1]}-{energy_bin_name}_delta",
+                check_schema=False,
             ),
         )
 
@@ -370,13 +372,15 @@ class CoDICEL1aPipeline:
             if variable_name == "energy_table":
                 variable_data = self.get_energy_table()
                 dims = ["esa_step"]
-                attrs = self.cdf_attrs.get_variable_attributes("energy_table")
+                attrs = self.cdf_attrs.get_variable_attributes(
+                    "energy_table", check_schema=False
+                )
 
             elif variable_name == "acquisition_time_per_step":
                 variable_data = self.get_acquisition_times()
                 dims = ["esa_step"]
                 attrs = self.cdf_attrs.get_variable_attributes(
-                    "acquisition_time_per_step"
+                    "acquisition_time_per_step", check_schema=False
                 )
 
             # These variables can be gathered straight from the packet data
@@ -753,7 +757,7 @@ def create_binned_dataset(
         np.array(data["epoch"], dtype=np.uint64),
         name="epoch",
         dims=["epoch"],
-        attrs=pipeline.cdf_attrs.get_variable_attributes("epoch"),
+        attrs=pipeline.cdf_attrs.get_variable_attributes("epoch", check_schema=False),
     )
     dataset = xr.Dataset(
         coords={"epoch": coord},
@@ -761,10 +765,11 @@ def create_binned_dataset(
     )
 
     # Add the data variables
+    descriptor = pipeline.config["dataset_name"].removeprefix("imap_codice_l1a_")
     for species in pipeline.config["energy_table"]:
         # Add the species data to the dataset
         values = np.array(data[species], dtype=np.uint32)
-        attrs = pipeline.cdf_attrs.get_variable_attributes(f"hi-omni-{species}")
+        attrs = pipeline.cdf_attrs.get_variable_attributes(f"{descriptor}-{species}")
         dims = ["epoch", f"energy_{species}"]
         dataset[species] = xr.DataArray(
             values,
@@ -853,13 +858,19 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
         epochs,
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch"),
+        attrs=cdf_attrs.get_variable_attributes("epoch", check_schema=False),
     )
     event_num = xr.DataArray(
         np.arange(10000),
         name="event_num",
         dims=["event_num"],
-        attrs=cdf_attrs.get_variable_attributes("event_num"),
+        attrs=cdf_attrs.get_variable_attributes("event_num", check_schema=False),
+    )
+    event_num_label = xr.DataArray(
+        np.arange(10000).astype(str),
+        name="event_num_label",
+        dims=["event_num"],
+        attrs=cdf_attrs.get_variable_attributes("event_num_label", check_schema=False),
     )
 
     # Create the dataset to hold the data variables
@@ -868,7 +879,11 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     elif apid == CODICEAPID.COD_HI_PHA:
         attrs = cdf_attrs.get_global_attributes("imap_codice_l1a_hi-pha")
     dataset = xr.Dataset(
-        coords={"epoch": epoch, "event_num": event_num},
+        coords={
+            "epoch": epoch,
+            "event_num": event_num,
+            "event_num_label": event_num_label,
+        },
         attrs=attrs,
     )
 
@@ -913,7 +928,7 @@ def create_hskp_dataset(packet: xr.Dataset) -> xr.Dataset:
         packet.epoch,
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch"),
+        attrs=cdf_attrs.get_variable_attributes("epoch", check_schema=False),
     )
 
     dataset = xr.Dataset(

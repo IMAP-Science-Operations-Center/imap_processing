@@ -663,6 +663,63 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     },
 }
 
+# Various configurations to support L1b processing of individual data products
+# Much of these are described in the algorithm document in chapter 11 ("Data
+# Level 1B")
+L1B_DATA_PRODUCT_CONFIGURATIONS: dict[str, dict] = {
+    "hi-counters-aggregated": {
+        "num_spin_sectors": 24,
+        "num_spins": 16,
+    },
+    "hi-counters-singles": {
+        "num_spin_sectors": 24,
+        "num_spins": 16,
+    },
+    "hi-ialirt": {
+        "num_spin_sectors": 24,
+        "num_spins": 4,
+    },
+    "hi-omni": {
+        "num_spin_sectors": 24,
+        "num_spins": 4,
+    },
+    "hi-priority": {  # TODO: Ask Joey to define these
+        "num_spin_sectors": 1,
+        "num_spins": 1,
+    },
+    "hi-sectored": {
+        "num_spin_sectors": 2,
+        "num_spins": 16,
+    },
+    "lo-counters-aggregated": {
+        "num_spin_sectors": 2,
+    },
+    "lo-counters-singles": {
+        "num_spin_sectors": 2,
+    },
+    "lo-nsw-angular": {
+        "num_spin_sectors": 1,
+    },
+    "lo-sw-angular": {
+        "num_spin_sectors": 1,
+    },
+    "lo-nsw-priority": {
+        "num_spin_sectors": 1,
+    },
+    "lo-sw-priority": {
+        "num_spin_sectors": 1,
+    },
+    "lo-nsw-species": {
+        "num_spin_sectors": 12,
+    },
+    "lo-sw-species": {
+        "num_spin_sectors": 12,
+    },
+    "lo-ialirt": {
+        "num_spin_sectors": 12,
+    },
+}
+
 # Various configurations to support processing of direct events data products
 # These are described in the algorithm document in chapter 10 ("Data Level 1A")
 DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {

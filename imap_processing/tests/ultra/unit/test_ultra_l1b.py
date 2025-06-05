@@ -128,7 +128,12 @@ def test_cdf_de(
 
     mock_get_annotated_particle_velocity.side_effect = side_effect_func
 
-    l1b_de_dataset = ultra_l1b(data_dict)
+    path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
+    ancillary_files = {
+        "l1b-45sensor-logistic-interpolation": path
+        / "imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv"
+    }
+    l1b_de_dataset = ultra_l1b(data_dict, ancillary_files)
 
     assert (
         l1b_de_dataset[0].attrs["Logical_source_description"]
@@ -158,27 +163,20 @@ def test_ultra_l1b_extendedspin(
         key: l1b_de_dataset
         for key in [
             "imap_ultra_l1b_45sensor-de",
-            "imap_ultra_l1a_45sensor-hk",
             "imap_ultra_l1a_45sensor-params",
         ]
     }
     data_dict["imap_ultra_l1a_45sensor-aux"] = faux_aux_dataset
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
 
-    l1b_extendedspin_dataset = ultra_l1b(data_dict)
+    ancillary_files = {}
+    l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
 
-    assert len(l1b_extendedspin_dataset) == 3
-
-    # Define the suffixes and prefix
-    prefix = "imap_ultra_l1b_45sensor"
-    suffixes = ["extendedspin", "cullingmask", "badtimes"]
-
-    for i in range(len(suffixes)):
-        expected_logical_source = f"{prefix}-{suffixes[i]}"
-        assert (
-            l1b_extendedspin_dataset[i].attrs["Logical_source"]
-            == expected_logical_source
-        )
+    assert len(l1b_extendedspin_dataset) == 1
+    assert (
+        l1b_extendedspin_dataset[0].attrs["Logical_source"]
+        == "imap_ultra_l1b_45sensor-extendedspin"
+    )
 
 
 @pytest.mark.external_test_data
@@ -191,14 +189,14 @@ def test_cdf_extendedspin(use_fake_spin_data_for_time, faux_aux_dataset, rates_d
         key: l1b_de_dataset
         for key in [
             "imap_ultra_l1b_45sensor-de",
-            "imap_ultra_l1a_45sensor-hk",
             "imap_ultra_l1a_45sensor-params",
         ]
     }
     data_dict["imap_ultra_l1a_45sensor-aux"] = faux_aux_dataset
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
 
-    l1b_extendedspin_dataset = ultra_l1b(data_dict)
+    ancillary_files = {}
+    l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
     """Tests that CDF file is created and contains same attributes as xarray."""
     l1b_extendedspin_dataset[0].attrs["Data_version"] = "999"
     l1b_extendedspin_dataset[0].attrs["Repointing"] = "repoint99999"
@@ -221,17 +219,22 @@ def test_cdf_cullingmask(use_fake_spin_data_for_time, faux_aux_dataset, rates_da
         key: l1b_de_dataset
         for key in [
             "imap_ultra_l1b_45sensor-de",
-            "imap_ultra_l1a_45sensor-hk",
             "imap_ultra_l1a_45sensor-params",
         ]
     }
     data_dict["imap_ultra_l1a_45sensor-aux"] = faux_aux_dataset
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
 
-    l1b_extendedspin_dataset = ultra_l1b(data_dict)
-    l1b_extendedspin_dataset[1].attrs["Data_version"] = "999"
-    l1b_extendedspin_dataset[1].attrs["Repointing"] = "repoint99999"
-    test_data_path = write_cdf(l1b_extendedspin_dataset[1], istp=True)
+    ancillary_files = {}
+    l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
+
+    cullingmask_dataset = ultra_l1b(
+        {"imap_ultra_l1b_45sensor-extendedspin": l1b_extendedspin_dataset[0]},
+        ancillary_files,
+    )
+    cullingmask_dataset[0].attrs["Data_version"] = "999"
+    cullingmask_dataset[0].attrs["Repointing"] = "repoint99999"
+    test_data_path = write_cdf(cullingmask_dataset[0], istp=True)
     assert test_data_path.exists()
     assert (
         test_data_path.name
@@ -250,17 +253,31 @@ def test_cdf_badtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_datas
         key: l1b_de_dataset
         for key in [
             "imap_ultra_l1b_45sensor-de",
-            "imap_ultra_l1a_45sensor-hk",
             "imap_ultra_l1a_45sensor-params",
         ]
     }
     data_dict["imap_ultra_l1a_45sensor-aux"] = faux_aux_dataset
     data_dict["imap_ultra_l1a_45sensor-rates"] = rates_dataset
 
-    l1b_extendedspin_dataset = ultra_l1b(data_dict)
-    l1b_extendedspin_dataset[2].attrs["Data_version"] = "999"
-    l1b_extendedspin_dataset[2].attrs["Repointing"] = "repoint99999"
-    test_data_path = write_cdf(l1b_extendedspin_dataset[2], istp=True)
+    ancillary_files = {}
+    l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
+
+    ancillary_files = {}
+    cullingmask_dataset = ultra_l1b(
+        {"imap_ultra_l1b_45sensor-extendedspin": l1b_extendedspin_dataset[0]},
+        ancillary_files,
+    )
+
+    l1b_badtimes_dataset = ultra_l1b(
+        {
+            "imap_ultra_l1b_45sensor-extendedspin": l1b_extendedspin_dataset[0],
+            "imap_ultra_l1b_45sensor-cullingmask": cullingmask_dataset[0],
+        },
+        ancillary_files,
+    )
+    l1b_badtimes_dataset[0].attrs["Data_version"] = "999"
+    l1b_badtimes_dataset[0].attrs["Repointing"] = "repoint99999"
+    test_data_path = write_cdf(l1b_badtimes_dataset[0], istp=True)
     assert test_data_path.exists()
     assert (
         test_data_path.name
@@ -273,7 +290,8 @@ def test_ultra_l1b_error(mock_data_l1a_rates_dict):
     mock_data_l1a_rates_dict["bad_key"] = mock_data_l1a_rates_dict.pop(
         "imap_ultra_l1a_45sensor-rates"
     )
+    ancillary_files = {}
     with pytest.raises(
         ValueError, match="Data dictionary does not contain the expected keys."
     ):
-        ultra_l1b(mock_data_l1a_rates_dict)
+        ultra_l1b(mock_data_l1a_rates_dict, ancillary_files)

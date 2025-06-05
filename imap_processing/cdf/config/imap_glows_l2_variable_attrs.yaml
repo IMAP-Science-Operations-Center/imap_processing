@@ -45,6 +45,7 @@ time_data_defaults: &time_data_defaults
   UNITS: N/A
   VALIDMIN: 0
   VALIDMAX: 0
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal
 
 lightcurve_defaults: &lightcurve_defaults
   <<: *support_data_defaults
@@ -65,11 +66,12 @@ bins_dim:
   FILLVAL: *max_uint16
   MONOTON: INCREASE
   SCALETYP: linear
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 flags_dim:
   <<: *default_attrs
   FILLVAL: 255
-  CATDESC: Flag index for daily-occurence counters of L1B flags
+  CATDESC: Flag index for daily-occurrence counters of L1B flags
   FIELDNAM: L1B flag index
   UNITS: ' '
   FORMAT: I2
@@ -77,6 +79,7 @@ flags_dim:
   VALIDMAX: 16
   VALIDMIN: 0
   VAR_TYPE: support_data
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 ecliptic_dim:
   <<: *default_attrs
@@ -90,6 +93,8 @@ ecliptic_dim:
   FILLVAL: 255
   VAR_TYPE: support_data
   FORMAT: I1
+  DICT_KEY: SPASE>Support>SupportQuantity:Orientation
+
 
 number_of_good_l1b_inputs:
   <<: *support_data_defaults
@@ -99,6 +104,7 @@ number_of_good_l1b_inputs:
   FILLVAL: *max_uint16
   FORMAT: I5
   VALIDMAX: 20000 # 3 days * 86400 s / 14.6 s rounded up
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 total_l1b_inputs:
   <<: *support_data_defaults
@@ -108,6 +114,7 @@ total_l1b_inputs:
   FILLVAL: *max_uint16
   FORMAT: I5
   VALIDMAX: 20000
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 identifier:
   <<: *support_data_defaults
@@ -117,6 +124,7 @@ identifier:
   FILLVAL: *max_uint32
   FORMAT: I5
   VALIDMAX: 99999
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal
 
 start_time:
   <<: *time_data_defaults
@@ -142,6 +150,7 @@ filter_temperature_average:
   VALIDMIN: -30.0
   VALIDMAX: 60.0
   UNITS: Celsius
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 filter_temperature_std_dev:
   <<: *support_data_defaults
@@ -153,6 +162,7 @@ filter_temperature_std_dev:
   VALIDMIN: 0.0
   VALIDMAX: 90.0
   UNITS: Celsius
+  DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
 
 hv_voltage_average:
   <<: *support_data_defaults
@@ -164,6 +174,7 @@ hv_voltage_average:
   VALIDMIN: 0.0
   VALIDMAX: 3500.0
   UNITS: V
+  DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
 
 hv_voltage_std_dev:
   <<: *support_data_defaults
@@ -175,6 +186,7 @@ hv_voltage_std_dev:
   VALIDMIN: 0.0
   VALIDMAX: 3500.0
   UNITS: V
+  DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
 
 spin_period_average:
   <<: *support_data_defaults
@@ -188,7 +200,7 @@ spin_period_average:
   UNITS: s
   VALIDMIN: 14.6
   VALIDMAX: 15.4
-  #VAR_TYPE: support_data
+  DICT_KEY: SPASE>Support>SupportQuantity:SpinPeriod
 
 spin_period_std_dev:
   <<: *support_data_defaults
@@ -200,6 +212,7 @@ spin_period_std_dev:
   UNITS: s
   VALIDMIN: 0.0
   VALIDMAX: 9.9
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 # TODO review these
 spin_period_ground_average:
@@ -214,7 +227,7 @@ spin_period_ground_average:
   UNITS: s
   VALIDMIN: 14.6
   VALIDMAX: 15.4
-  #VAR_TYPE: support_data
+  DICT_KEY: SPASE>Support>SupportQuantity:SpinPeriod
 
 spin_period_ground_std_dev:
   <<: *support_data_defaults
@@ -226,6 +239,7 @@ spin_period_ground_std_dev:
   UNITS: s
   VALIDMIN: 0.0
   VALIDMAX: 9.9
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 pulse_length_average:
   <<: *support_data_defaults
@@ -237,6 +251,7 @@ pulse_length_average:
   UNITS: us
   VALIDMIN: 0.0
   VALIDMAX: 12.75
+  DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
 
 pulse_length_std_dev:
   <<: *support_data_defaults
@@ -248,6 +263,7 @@ pulse_length_std_dev:
   UNITS: us
   VALIDMIN: 0.0
   VALIDMAX: 12.75
+  DICT_KEY: SPASE>Support>SupportQuantity:Housekeeping
 
 position_angle_offset_average:
   <<: *support_data_defaults
@@ -259,6 +275,7 @@ position_angle_offset_average:
   UNITS: degrees
   VALIDMIN: 0.0
   VALIDMAX: 360.0
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
 
 position_angle_offset_std_dev:
   <<: *support_data_defaults
@@ -270,6 +287,7 @@ position_angle_offset_std_dev:
   UNITS: degrees
   VALIDMIN: 0.0
   VALIDMAX: 360.0
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 spin_axis_orientation_average:
   <<: *support_data_defaults
@@ -281,6 +299,7 @@ spin_axis_orientation_average:
   UNITS: degrees
   VALIDMIN: -90.0
   VALIDMAX: 360.0
+  DICT_KEY: SPASE>Support>SupportQuantity:SpinPhase
 
 spin_axis_orientation_std_dev:
   <<: *support_data_defaults
@@ -292,6 +311,7 @@ spin_axis_orientation_std_dev:
   UNITS: degrees
   VALIDMIN: 0.0
   VALIDMAX: 360.0
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 spacecraft_location_average:
   <<: *support_data_defaults
@@ -305,6 +325,8 @@ spacecraft_location_average:
   UNITS: km
   VALIDMIN: -9.999999999E+8
   VALIDMAX: 9.999999999E+8
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
+
 
 spacecraft_location_std_dev:
   <<: *support_data_defaults
@@ -318,6 +340,7 @@ spacecraft_location_std_dev:
   UNITS: km
   VALIDMIN: 0.0
   VALIDMAX: 1.5E+7 # 50 km/s * 3 days * 86400 s < 1.5e7
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 spacecraft_velocity_average:
   <<: *support_data_defaults
@@ -331,6 +354,7 @@ spacecraft_velocity_average:
   UNITS: km/s
   VALIDMIN: -50.0
   VALIDMAX: 50.0
+  DICT_KEY: SPASE>Support>SupportQuantity:Velocity
 
 spacecraft_velocity_std_dev:
   <<: *support_data_defaults
@@ -344,6 +368,7 @@ spacecraft_velocity_std_dev:
   UNITS: km/s
   VALIDMIN: 0.0
   VALIDMAX: 9.9
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 bad_time_flag_occurrences:
   <<: *support_data_defaults
@@ -356,6 +381,7 @@ bad_time_flag_occurrences:
   FORMAT: I5
   VALIDMAX: 20000
   LABLAXIS: No. of cases
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 spin_angle:
   <<: *lightcurve_defaults
@@ -368,6 +394,7 @@ spin_angle:
   FORMAT: F7.3
   VALIDMIN: 0.0
   VALIDMAX: 360.0
+  DICT_KEY: SPASE>Support>SupportQuantity:SpinPhase
 
 photon_flux:
   <<: *lightcurve_defaults
@@ -380,6 +407,8 @@ photon_flux:
   FORMAT: F8.2
   VALIDMIN: 0.0
   VALIDMAX: 30000.0 # max 30000 cps in FDIR / from 1 to 3.37 cps-per-R
+  # SPASE data pulled from TWINS 1 LAD metadata
+  DICT_KEY: SPASE>Wave>WaveType:Electromagnetic,WaveQuantity:Intensity,Qualifier:Scalar
 
 raw_histograms:
   <<: *lightcurve_defaults
@@ -392,6 +421,7 @@ raw_histograms:
   FORMAT: I8
   VALIDMIN: 0
   VALIDMAX: 35000000 # max 30000 cps in FDIR * 3 days * 86400 s / 225 bins rounded up
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 exposure_times:
   <<: *lightcurve_defaults
@@ -404,6 +434,7 @@ exposure_times:
   FORMAT: F7.2
   VALIDMIN: 0.0
   VALIDMAX: 1200.0 # 3 days * 86400 s / 225 bins rounded up
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 flux_uncertainties:
   <<: *lightcurve_defaults
@@ -416,6 +447,7 @@ flux_uncertainties:
   FORMAT: F8.2
   VALIDMIN: 0.0
   VALIDMAX: 30000.0 # the same VALIDMAX as for photon_flux assumed
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 histogram_flag_array:
   <<: *lightcurve_defaults
@@ -428,6 +460,7 @@ histogram_flag_array:
   FORMAT: I2
   VALIDMIN: 0
   VALIDMAX: 15 # only 4 bits currently used
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 ecliptic_lon:
   <<: *lightcurve_defaults
@@ -440,6 +473,7 @@ ecliptic_lon:
   FORMAT: F7.3
   VALIDMIN: 0.0
   VALIDMAX: 360.0
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
 
 ecliptic_lat:
   <<: *lightcurve_defaults
@@ -452,6 +486,7 @@ ecliptic_lat:
   FORMAT: F7.3
   VALIDMIN: -90.0
   VALIDMAX: 90.0
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
 
 number_of_bins:
   <<: *support_data_defaults
@@ -464,6 +499,7 @@ number_of_bins:
   FORMAT: I4
   VALIDMIN: 225
   VALIDMAX: 3600
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 # M. Strumik comment: this variable is obsolete and should not be used
 raw_uncertainties:

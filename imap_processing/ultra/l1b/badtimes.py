@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
 
-from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
+from imap_processing.ultra.utils.ultra_l1_utils import create_dataset, extract_data_dict
 
 FILLVAL_UINT16 = 65535
 FILLVAL_FLOAT64 = -1.0e31
@@ -36,10 +36,14 @@ def calculate_badtimes(
     culled_spins = np.setdiff1d(
         extendedspin_dataset["spin_number"].values, cullingmask_spins
     )
-
+    extendedspin_dataset = extendedspin_dataset.assign_coords(
+        epoch=("spin_number", extendedspin_dataset["epoch"].values)
+    )
     filtered_dataset = extendedspin_dataset.sel(spin_number=culled_spins)
 
-    badtimes_dataset = create_dataset(filtered_dataset, name, "l1b")
+    data_dict = extract_data_dict(filtered_dataset)
+
+    badtimes_dataset = create_dataset(data_dict, name, "l1b")
 
     if badtimes_dataset["spin_number"].size == 0:
         badtimes_dataset = badtimes_dataset.drop_dims("spin_number")

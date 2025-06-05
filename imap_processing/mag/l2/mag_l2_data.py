@@ -222,7 +222,9 @@ class MagL2:
             self.epoch,
             name="epoch",
             dims=["epoch"],
-            attrs=attribute_manager.get_variable_attributes("epoch"),
+            attrs=attribute_manager.get_variable_attributes(
+                "epoch", check_schema=False
+            ),
         )
 
         vectors = xr.DataArray(
@@ -236,14 +238,14 @@ class MagL2:
             self.quality_flags,
             name="quality_flags",
             dims=["epoch"],
-            attrs=attribute_manager.get_variable_attributes("compression"),
+            attrs=attribute_manager.get_variable_attributes("qf_bitmask"),
         )
 
         quality_bitmask = xr.DataArray(
             self.quality_flags,
             name="quality_flags",
             dims=["epoch"],
-            attrs=attribute_manager.get_variable_attributes("compression"),
+            attrs=attribute_manager.get_variable_attributes("qf"),
         )
 
         rng = xr.DataArray(
@@ -251,14 +253,14 @@ class MagL2:
             name="range",
             dims=["epoch"],
             # TODO temp attrs
-            attrs=attribute_manager.get_variable_attributes("compression_width"),
+            attrs=attribute_manager.get_variable_attributes("fill"),
         )
 
         magnitude = xr.DataArray(
             self.magnitude,
             name="magnitude",
             dims=["epoch"],
-            attrs=attribute_manager.get_variable_attributes("compression_width"),
+            attrs=attribute_manager.get_variable_attributes("fill"),
         )
 
         global_attributes = (

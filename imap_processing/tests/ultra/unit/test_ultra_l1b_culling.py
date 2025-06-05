@@ -61,7 +61,7 @@ def test_flag_attitude(use_fake_spin_data_for_time, faux_aux_dataset):
 
     use_fake_spin_data_for_time(0, 15 * 147)
     quality_flags, spin_rates, spin_period, spin_start_time = flag_attitude(
-        faux_aux_dataset["SPINNUMBER"].values, faux_aux_dataset
+        faux_aux_dataset["spinnumber"].values, faux_aux_dataset
     )
 
     flag = ImapAttitudeUltraFlags(quality_flags[0])
@@ -104,7 +104,7 @@ def test_flag_spin(test_data):
 def test_compare_aux_univ_spin_table(use_fake_spin_data_for_time, faux_aux_dataset):
     """Tests compare_aux_univ_spin_table function."""
     use_fake_spin_data_for_time(0, 15 * 147)
-    spins = faux_aux_dataset["SPINNUMBER"].values
+    spins = faux_aux_dataset["spinnumber"].values
     spin_df = get_spin_data()
 
     result = compare_aux_univ_spin_table(faux_aux_dataset, spins, spin_df)

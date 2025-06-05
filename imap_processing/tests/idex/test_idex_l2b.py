@@ -74,6 +74,10 @@ def test_l2a_cdf_variables(l2b_dataset: xr.Dataset):
     cdf_vars = l2b_dataset.variables
     for var in expected_vars:
         assert var in cdf_vars
+    for var in l2b_dataset.data_vars:
+        assert "DICT_KEY" in l2b_dataset[var].attrs, (
+            f"Variable {var} is missing the DICT_KEY attribute for SPASE metadata."
+        )
 
 
 def test_round_spin_phases():
