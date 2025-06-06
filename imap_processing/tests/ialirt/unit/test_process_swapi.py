@@ -1,3 +1,5 @@
+from unittest import mock
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -56,6 +58,21 @@ def xarray_data(binary_packet_path, xtce_swapi_path):
     return xarray_data
 
 
+@pytest.fixture
+def ialirt_test_data():
+    """Extract test data for unit tests below."""
+
+    energy_data = pd.read_csv(
+        f"{imap_module_directory}/tests/ialirt/test_data/ialirt_test_data.csv"
+    )
+    count_rates = energy_data["Count Rates [Hz]"].to_numpy()
+    count_rates = np.tile(count_rates, (2, 1))
+    count_rates_errors = energy_data["Count Rates Error [Hz]"].to_numpy()
+    count_rates_errors = np.tile(count_rates_errors, (2, 1))
+
+    return [count_rates, count_rates_errors]
+
+
 def test_decom_packets(xarray_data, swapi_test_data):
     """Check that all instrument parameters are accounted for after decom."""
 
@@ -90,37 +107,57 @@ def test_decom_packets(xarray_data, swapi_test_data):
         )
 
 
-def test_process_swapi_ialirt(xarray_data):
-    """Test that the process_swapi_ialirt function returns expected keys."""
+@mock.patch("imap_processing.ialirt.l0.process_swapi.process_sweep_data")
+def test_process_swapi_ialirt(mock_process_sweep_data, xarray_data, ialirt_test_data):
+    """Test that the process_swapi_ialirt() function returns expected keys."""
+
+    mock_process_sweep_data.return_value = ialirt_test_data[0]
 
     swapi_result = process_swapi_ialirt(xarray_data)
-    assert swapi_result["met"] is not None
-    assert len(swapi_result["met"]) == len(swapi_result["pseudo_temperature"])
-    assert len(swapi_result["pseudo_density"]) == len(swapi_result["pseudo_speed"])
+
+    key_names = [
+        "apid",
+        "met",
+        "swapi_pseudo_proton_density",
+        "swapi_pseudo_proton_speed",
+        "swapi_pseudo_proton_temperature",
+    ]
+
+    for key in key_names:
+        assert swapi_result[0][key] is not None, (
+            f"The expected attribute {key} was not filled in the result dict."
+        )
 
 
 def test_count_rate():
-    """Use random realistic values to test for expected output of count_rate."""
+    """Use random realistic values to test for expected output of count_rate()."""
+
     actual_result = count_rate(1370, *[550, 5.27, 1e5])
     expected_result = 621.0028766348703
-    assert actual_result == expected_result
-
-
-def test_optimize_parameters(xarray_data):
-    """Test the optimize_pseudo_parameters function."""
-
-    energy_data = pd.read_csv(
-        f"{imap_module_directory}/tests/ialirt/test_data/ialirt_test_data.csv"
+    assert actual_result == expected_result, (
+        f"The actual result of count_rate()"
+        f" {actual_result} does not "
+        f"match the expected result "
+        f"{expected_result}."
     )
-    count_rates = energy_data["Count Rates [Hz]"].to_numpy()
-    count_rates = np.tile(count_rates, (2, 1))
-    result = optimize_pseudo_parameters(count_rates)
 
-    # Test values corresponding to this exact set and values of the test input.
-    expected_speed = [542.9522302014949, 542.9522302014949]
-    expected_density = [4.504282147321004, 4.504282147321004]
-    expected_temperature = [143238.45841298936, 143238.45841298936]
 
-    assert result["pseudo_speed"] == expected_speed
-    assert result["pseudo_density"] == expected_density
-    assert result["pseudo_temperature"] == expected_temperature
+def test_optimize_parameters(xarray_data, ialirt_test_data):
+    """Test that the optimize_pseudo_parameters() function works correctly."""
+
+    result = optimize_pseudo_parameters(*ialirt_test_data)
+
+    # Test output corresponding to this exact set of test inputs.
+    expected_speed = [550.2067500045512, 550.2067500045512]
+    expected_density = [15.964441588773008, 15.964441588773008]
+    expected_temperature = [101695.2160638631, 101695.2160638631]
+
+    assert result["pseudo_speed"] == expected_speed, (
+        "Pseudo speed did not match the expected result."
+    )
+    assert result["pseudo_density"] == expected_density, (
+        "Pseudo density did not match the expected result."
+    )
+    assert result["pseudo_temperature"] == expected_temperature, (
+        "Pseudo temperature did not match the expected result."
+    )
