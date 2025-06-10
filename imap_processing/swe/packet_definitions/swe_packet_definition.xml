@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="SWE">
-	<xtce:Header date="nan" version="nan" author="IMAP SDC" />
+	<xtce:Header date="nan" version="nan" author="IMAP SDC" source_file="TML_SWE.xlsx" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="VERSION" signed="false">
@@ -22,6 +22,715 @@
 				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="PKT_LEN" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.SHCOARSE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:EnumeratedParameterType name="SWE_APP_HK.APP_MODE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="OFF" />
+					<xtce:Enumeration value="1" label="BOOT " />
+					<xtce:Enumeration value="2" label="MAINT" />
+					<xtce:Enumeration value="3" label="LVENG" />
+					<xtce:Enumeration value="4" label="LVSCI" />
+					<xtce:Enumeration value="5" label="HVENG" />
+					<xtce:Enumeration value="6" label="HVSCI" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="SWE_APP_HK.SAFED" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="NOT_SAFED" />
+					<xtce:Enumeration value="1" label="SAFED" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.ITF_ERR_CNT" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.CMD_ACC_COUNT" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.CMD_REJ_COUNT" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:EnumeratedParameterType name="SWE_APP_HK.LAST_ACC_OPCODE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="SWE_NONE" />
+					<xtce:Enumeration value="1538" label="SWE_MEM_LOAD" />
+					<xtce:Enumeration value="1541" label="SWE_MEM_DUMP" />
+					<xtce:Enumeration value="1543" label="SWE_STOP_MEM_DUMP" />
+					<xtce:Enumeration value="1545" label="SWE_MEM_CSUM" />
+					<xtce:Enumeration value="52352" label="SWE_MRAM_WR" />
+					<xtce:Enumeration value="52353" label="SWE_MEM_COPY" />
+					<xtce:Enumeration value="52358" label="SWE_MEM_POKE" />
+					<xtce:Enumeration value="52359" label="SWE_MEM_PEEK" />
+					<xtce:Enumeration value="52363" label="SWE_EDAC" />
+					<xtce:Enumeration value="52364" label="SWE_INJECT_ERROR" />
+					<xtce:Enumeration value="53903" label="SWE_SET_MARKER" />
+					<xtce:Enumeration value="52367" label="SWE_NOOP" />
+					<xtce:Enumeration value="52368" label="SWE_RESET" />
+					<xtce:Enumeration value="52369" label="SWE_MODE" />
+					<xtce:Enumeration value="52374" label="SWE_POWER_OFF_REQUEST" />
+					<xtce:Enumeration value="52370" label="SWE_CLEAR" />
+					<xtce:Enumeration value="53904" label="SWE_SET_PARAMETER" />
+					<xtce:Enumeration value="52400" label="SWE_TLM_INT" />
+					<xtce:Enumeration value="53881" label="SWE_SENSOR_POWER" />
+					<xtce:Enumeration value="53882" label="SWE_HVPS_CTRL" />
+					<xtce:Enumeration value="53880" label="SWE_HV_BULK_CTRL" />
+					<xtce:Enumeration value="53883" label="SWE_HV_CEM_CTRL" />
+					<xtce:Enumeration value="53884" label="SWE_HV_ESA_CTRL" />
+					<xtce:Enumeration value="53885" label="SWE_HV_CEM_LEVEL" />
+					<xtce:Enumeration value="53886" label="SWE_HV_CEM_OP_LEVEL" />
+					<xtce:Enumeration value="53887" label="SWE_HV_CEM_RELA_LEVEL" />
+					<xtce:Enumeration value="53878" label="SWE_HV_CEM_RAMP" />
+					<xtce:Enumeration value="53888" label="SWE_HV_ESA_LEVEL_RANGE" />
+					<xtce:Enumeration value="53889" label="SWE_THRESH_LEVEL" />
+					<xtce:Enumeration value="53890" label="SWE_STIM_CTRL" />
+					<xtce:Enumeration value="53891" label="SWE_STIM_CONFIG" />
+					<xtce:Enumeration value="53892" label="SWE_MACRO_EXEC" />
+					<xtce:Enumeration value="53893" label="SWE_MACRO_ABORT" />
+					<xtce:Enumeration value="53896" label="SWE_ESA_TABLE" />
+					<xtce:Enumeration value="53897" label="SWE_ACQ_ESA_SETTLE" />
+					<xtce:Enumeration value="53898" label="SWE_ACQ_DWELL" />
+					<xtce:Enumeration value="53912" label="SWE_FDC_CONFIG" />
+					<xtce:Enumeration value="53916" label="SWE_SAFE_ME" />
+					<xtce:Enumeration value="52394" label="SWE_EVR" />
+					<xtce:Enumeration value="53902" label="SWE_EVR_TRIGGER" />
+					<xtce:Enumeration value="65278" label="SWE_TIME_AND_STATUS" />
+					<xtce:Enumeration value="45056" label="SWE_BOOT_NOOP" />
+					<xtce:Enumeration value="45057" label="SWE_BOOT_MODE_SET" />
+					<xtce:Enumeration value="45058" label="SWE_BOOT_MEM_DUMP" />
+					<xtce:Enumeration value="45059" label="SWE_BOOT_MEM_LOAD" />
+					<xtce:Enumeration value="45060" label="SWE_BOOT_MEM_CHECKSUM" />
+					<xtce:Enumeration value="45061" label="SWE_BOOT_JUMP" />
+					<xtce:Enumeration value="45062" label="SWE_BOOT_BOOT_IMG" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="SWE_APP_HK.HV_DISABLE_PLUG" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="NOT_INSERTED" />
+					<xtce:Enumeration value="1" label="INSERTED" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="SWE_APP_HK.HV_LIMIT_PLUG" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="NOT_INSERTED" />
+					<xtce:Enumeration value="1" label="INSERTED" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="SWE_APP_HK.HVPS_ENABLE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="DISABLED" />
+					<xtce:Enumeration value="1" label="ENABLED" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="SWE_APP_HK.HVPS_CEM_ENABLE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="DISABLED" />
+					<xtce:Enumeration value="1" label="ENABLED" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="SWE_APP_HK.HVPS_ESA_ENABLE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="DISABLED" />
+					<xtce:Enumeration value="1" label="ENABLED" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="SWE_APP_HK.HVPS_LOW_RANGE_ENABLE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="HIGH_RANGE" />
+					<xtce:Enumeration value="1" label="LOW_RANGE" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="SWE_APP_HK.HVPS_BULK_ENABLE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="DISABLED" />
+					<xtce:Enumeration value="1" label="ENABLED" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="SWE_APP_HK.SENSOR_P12A_N12A_CTRL" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="INACTIVE" />
+					<xtce:Enumeration value="1" label="ACTIVE" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="SWE_APP_HK.SENSOR_P5A_N5A_CTRL" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="INACTIVE" />
+					<xtce:Enumeration value="1" label="ACTIVE" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="SWE_APP_HK.SENSOR_P3P3D_P5D_CTRL" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="INACTIVE" />
+					<xtce:Enumeration value="1" label="ACTIVE" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.HVPS_ERROR_COUNT" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="6" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.HVPS_CEM_DAC" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="1.025641" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.HVPS_ESA_DAC" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.THRESHOLD" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.001221" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:EnumeratedParameterType name="SWE_APP_HK.STIM_ENABLE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="DISABLED" />
+					<xtce:Enumeration value="1" label="ENABLED" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.STIM_CONFIGURATION" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="15" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.HVPS_VBULK" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.51282" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.HVPS_VCEM" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-10.293289" exponent="0" />
+							<xtce:Term coefficient="1.337246" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.HVPS_VESA" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-0.34675825" exponent="0" />
+							<xtce:Term coefficient="0.36613489" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.HVPS_VESA_LOW_RANGE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-0.00520837" exponent="0" />
+							<xtce:Term coefficient="0.0075118" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.HVPS_ICEM" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="3.18221573e-07" exponent="0" />
+							<xtce:Term coefficient="8.9705625e-08" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.FEE_TEMP" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-901.0162972" exponent="0" />
+							<xtce:Term coefficient="5.253611004" exponent="1" />
+							<xtce:Term coefficient="-0.012925327" exponent="2" />
+							<xtce:Term coefficient="1.72856e-05" exponent="3" />
+							<xtce:Term coefficient="-1.33961e-08" exponent="4" />
+							<xtce:Term coefficient="6.01207e-12" exponent="5" />
+							<xtce:Term coefficient="-1.44925e-15" exponent="6" />
+							<xtce:Term coefficient="1.45122e-19" exponent="7" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.SENSOR_TEMP" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-901.0162972" exponent="0" />
+							<xtce:Term coefficient="5.253611004" exponent="1" />
+							<xtce:Term coefficient="-0.012925327" exponent="2" />
+							<xtce:Term coefficient="1.72856e-05" exponent="3" />
+							<xtce:Term coefficient="-1.33961e-08" exponent="4" />
+							<xtce:Term coefficient="6.01207e-12" exponent="5" />
+							<xtce:Term coefficient="-1.44925e-15" exponent="6" />
+							<xtce:Term coefficient="1.45122e-19" exponent="7" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.HVPS_TEMP" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-901.0162972" exponent="0" />
+							<xtce:Term coefficient="5.253611004" exponent="1" />
+							<xtce:Term coefficient="-0.012925327" exponent="2" />
+							<xtce:Term coefficient="1.72856e-05" exponent="3" />
+							<xtce:Term coefficient="-1.33961e-08" exponent="4" />
+							<xtce:Term coefficient="6.01207e-12" exponent="5" />
+							<xtce:Term coefficient="-1.44925e-15" exponent="6" />
+							<xtce:Term coefficient="1.45122e-19" exponent="7" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.LVPS_BACK_BOARD_TEMP" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-273.2" exponent="0" />
+							<xtce:Term coefficient="0.1444619083" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.LVPS_FRONT_BOARD_TEMP" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-273.2" exponent="0" />
+							<xtce:Term coefficient="0.1444619083" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.LVPS_MID_BOARD_TEMP" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-273.2" exponent="0" />
+							<xtce:Term coefficient="0.1444619083" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.LVPS_3_3V_VMON" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.001611" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.LVPS_5V_P_VMON" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.002441" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.LVPS_5V_N_VMON" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-0.002441" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.LVPS_12V_P_VMON" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.005859" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.LVPS_12V_N_VMON" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-0.005859" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.LVPS_3_3V_IMON" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.01344194" exponent="0" />
+							<xtce:Term coefficient="0.00092158" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.LVPS_5V_P_IMON" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-0.001708281" exponent="0" />
+							<xtce:Term coefficient="0.000488167" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.LVPS_5V_N_IMON" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.000461" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.LVPS_12V_P_IMON" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-0.003005379" exponent="0" />
+							<xtce:Term coefficient="0.000701694" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.LVPS_12V_N_IMON" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-0.047530631" exponent="0" />
+							<xtce:Term coefficient="0.00014083" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.CDH_PROCESSOR_TEMP" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-901.0162972" exponent="0" />
+							<xtce:Term coefficient="5.253611004" exponent="1" />
+							<xtce:Term coefficient="-0.012925327" exponent="2" />
+							<xtce:Term coefficient="1.72856e-05" exponent="3" />
+							<xtce:Term coefficient="-1.33961e-08" exponent="4" />
+							<xtce:Term coefficient="6.01207e-12" exponent="5" />
+							<xtce:Term coefficient="-1.44925e-15" exponent="6" />
+							<xtce:Term coefficient="1.45122e-19" exponent="7" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.CDH_1_8V_LDO_TEMP" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-901.0162972" exponent="0" />
+							<xtce:Term coefficient="5.253611004" exponent="1" />
+							<xtce:Term coefficient="-0.012925327" exponent="2" />
+							<xtce:Term coefficient="1.72856e-05" exponent="3" />
+							<xtce:Term coefficient="-1.33961e-08" exponent="4" />
+							<xtce:Term coefficient="6.01207e-12" exponent="5" />
+							<xtce:Term coefficient="-1.44925e-15" exponent="6" />
+							<xtce:Term coefficient="1.45122e-19" exponent="7" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.CDH_1_5V_LDO_TEMP" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-901.0162972" exponent="0" />
+							<xtce:Term coefficient="5.253611004" exponent="1" />
+							<xtce:Term coefficient="-0.012925327" exponent="2" />
+							<xtce:Term coefficient="1.72856e-05" exponent="3" />
+							<xtce:Term coefficient="-1.33961e-08" exponent="4" />
+							<xtce:Term coefficient="6.01207e-12" exponent="5" />
+							<xtce:Term coefficient="-1.44925e-15" exponent="6" />
+							<xtce:Term coefficient="1.45122e-19" exponent="7" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.CDH_SDRAM_TEMP" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-901.0162972" exponent="0" />
+							<xtce:Term coefficient="5.253611004" exponent="1" />
+							<xtce:Term coefficient="-0.012925327" exponent="2" />
+							<xtce:Term coefficient="1.72856e-05" exponent="3" />
+							<xtce:Term coefficient="-1.33961e-08" exponent="4" />
+							<xtce:Term coefficient="6.01207e-12" exponent="5" />
+							<xtce:Term coefficient="-1.44925e-15" exponent="6" />
+							<xtce:Term coefficient="1.45122e-19" exponent="7" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.CDH_1_5V_VMON" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.001221" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.CDH_1_8V_VMON" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.001221" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.CDH_3_3V_VMON" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.001221" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.CDH_12V_P_VMON" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.005897" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.CDH_12V_N_VMON" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="-0.005841" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.CDH_5V_VMON" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.002441" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.CDH_ANALOG_REF_VMON" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.002441" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.FDC_TRIGGER_CNT_FSW" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.FDC_TRIGGER_CNT_HVPS" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.FDC_TRIGGER_CNT_LVPS" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.FDC_TRIGGER_CNT_CDH" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.FDC_TRIGGER_CNT_SYSTEM" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.FDC_TRIGGER_CNT_SCIENCE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.FDC_LAST_TRIGGER_INDEX" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:EnumeratedParameterType name="SWE_APP_HK.FDC_LAST_TRIGGER_ACTION" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="REPORT_ONLY" />
+					<xtce:Enumeration value="1" label="SOFT_SAFE" />
+					<xtce:Enumeration value="2" label="HARD_SAFE" />
+					<xtce:Enumeration value="128" label="RESERVED" />
+					<xtce:Enumeration value="129" label="MACRO_1" />
+					<xtce:Enumeration value="130" label="MACRO_2" />
+					<xtce:Enumeration value="131" label="MACRO_3" />
+					<xtce:Enumeration value="132" label="MACRO_4" />
+					<xtce:Enumeration value="133" label="MACRO_5" />
+					<xtce:Enumeration value="134" label="MACRO_6" />
+					<xtce:Enumeration value="135" label="MACRO_7" />
+					<xtce:Enumeration value="136" label="MACRO_8" />
+					<xtce:Enumeration value="137" label="MACRO_9" />
+					<xtce:Enumeration value="138" label="MACRO_10" />
+					<xtce:Enumeration value="139" label="MACRO_11" />
+					<xtce:Enumeration value="140" label="MACRO_12" />
+					<xtce:Enumeration value="141" label="MACRO_13" />
+					<xtce:Enumeration value="142" label="MACRO_14" />
+					<xtce:Enumeration value="143" label="MACRO_15" />
+					<xtce:Enumeration value="144" label="MACRO_16" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="SWE_APP_HK.FDC_LAST_TRIGGER_MINMAX" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="MIN" />
+					<xtce:Enumeration value="1" label="MAX" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.MISSED_PPS_CNT" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="5" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:EnumeratedParameterType name="SWE_APP_HK.CMD_FIFO_OVERFLOW" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="NOT_OVERFLOWN" />
+					<xtce:Enumeration value="1" label="OVERFLOWN" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="SWE_APP_HK.TLM_FIFO_OVERFLOW" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="NOT_OVERFLOWN" />
+					<xtce:Enumeration value="1" label="OVERFLOWN" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.CPU_IDLE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.MARKER" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:EnumeratedParameterType name="SWE_APP_HK.ACTIVE_MACRO" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="5" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="NONE" />
+					<xtce:Enumeration value="1" label="MACRO_1" />
+					<xtce:Enumeration value="2" label="MACRO_2" />
+					<xtce:Enumeration value="3" label="MACRO_3" />
+					<xtce:Enumeration value="4" label="MACRO_4" />
+					<xtce:Enumeration value="5" label="MACRO_5" />
+					<xtce:Enumeration value="6" label="MACRO_6" />
+					<xtce:Enumeration value="7" label="MACRO_7" />
+					<xtce:Enumeration value="8" label="MACRO_8" />
+					<xtce:Enumeration value="9" label="MACRO_9" />
+					<xtce:Enumeration value="10" label="MACRO_10" />
+					<xtce:Enumeration value="11" label="MACRO_11" />
+					<xtce:Enumeration value="12" label="MACRO_12" />
+					<xtce:Enumeration value="13" label="MACRO_13" />
+					<xtce:Enumeration value="14" label="MACRO_14" />
+					<xtce:Enumeration value="15" label="MACRO_15" />
+					<xtce:Enumeration value="16" label="MACRO_16" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:EnumeratedParameterType name="SWE_APP_HK.ACTIVE_MACRO_TRIGGER" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="3" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="0" label="NONE" />
+					<xtce:Enumeration value="1" label="FDC_ADC" />
+					<xtce:Enumeration value="2" label="FDC_CEM_COUNT" />
+					<xtce:Enumeration value="3" label="REPOINT_FLAG_ON" />
+					<xtce:Enumeration value="4" label="REPOINT_FLAG_OFF" />
+					<xtce:Enumeration value="5" label="USER" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:IntegerParameterType name="SWE_APP_HK.CKSUM" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_CEM_RAW.SHCOARSE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_CEM_RAW.THRESHOLD_DAC" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned">
+					<xtce:DefaultCalibrator>
+						<xtce:PolynomialCalibrator>
+							<xtce:Term coefficient="0.001221" exponent="1" />
+						</xtce:PolynomialCalibrator>
+					</xtce:DefaultCalibrator>
+				</xtce:IntegerDataEncoding>
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_CEM_RAW.STIM_CFG_REG" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_CEM_RAW.CEM1_COUNTS_LATCHED" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_CEM_RAW.CEM2_COUNTS_LATCHED" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_CEM_RAW.CEM3_COUNTS_LATCHED" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_CEM_RAW.CEM4_COUNTS_LATCHED" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_CEM_RAW.CEM5_COUNTS_LATCHED" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_CEM_RAW.CEM6_COUNTS_LATCHED" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_CEM_RAW.CEM7_COUNTS_LATCHED" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_CEM_RAW.CEM1_COUNTS_LIVE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_CEM_RAW.CEM2_COUNTS_LIVE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_CEM_RAW.CEM3_COUNTS_LIVE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_CEM_RAW.CEM4_COUNTS_LIVE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_CEM_RAW.CEM5_COUNTS_LIVE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_CEM_RAW.CEM6_COUNTS_LIVE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_CEM_RAW.CEM7_COUNTS_LIVE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="SWE_CEM_RAW.CKSUM" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="SWE_SCIENCE.SHCOARSE" signed="false">
@@ -169,6 +878,309 @@
 			<xtce:Parameter name="PKT_LEN" parameterTypeRef="PKT_LEN">
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
 			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.SHCOARSE" parameterTypeRef="SWE_APP_HK.SHCOARSE">
+				<xtce:LongDescription>Mission elapsed time</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.APP_MODE" parameterTypeRef="SWE_APP_HK.APP_MODE">
+				<xtce:LongDescription>Operation Mode</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.SAFED" parameterTypeRef="SWE_APP_HK.SAFED">
+				<xtce:LongDescription>If instrument is safed
+'1' - Safed
+'0' - Not safed</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.ITF_ERR_CNT" parameterTypeRef="SWE_APP_HK.ITF_ERR_CNT">
+				<xtce:LongDescription>Error count for incoming ITF messages</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.CMD_ACC_COUNT" parameterTypeRef="SWE_APP_HK.CMD_ACC_COUNT">
+				<xtce:LongDescription>Commands which have successfully executed accumulation count</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.CMD_REJ_COUNT" parameterTypeRef="SWE_APP_HK.CMD_REJ_COUNT">
+				<xtce:LongDescription>Command reject count</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.LAST_ACC_OPCODE" parameterTypeRef="SWE_APP_HK.LAST_ACC_OPCODE">
+				<xtce:LongDescription>Last accepted opcode</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.HV_DISABLE_PLUG" parameterTypeRef="SWE_APP_HK.HV_DISABLE_PLUG">
+				<xtce:LongDescription>State of the external HV Disable Plug.
+‘1’ – Plug inserted
+‘0’ – Plug not inserted</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.HV_LIMIT_PLUG" parameterTypeRef="SWE_APP_HK.HV_LIMIT_PLUG">
+				<xtce:LongDescription>State of the external HV Disable Plug.
+‘1’ – Plug inserted
+‘0’ – Plug not inserted
+</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.HVPS_ENABLE" parameterTypeRef="SWE_APP_HK.HVPS_ENABLE">
+				<xtce:LongDescription>Master Enable.
+'1' - enabled
+'0' not enabled</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.HVPS_CEM_ENABLE" parameterTypeRef="SWE_APP_HK.HVPS_CEM_ENABLE">
+				<xtce:LongDescription>CEM Enable.
+'1' - enabled
+'0' -- not enabled</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.HVPS_ESA_ENABLE" parameterTypeRef="SWE_APP_HK.HVPS_ESA_ENABLE">
+				<xtce:LongDescription>ESA Disable
+‘1’ – ESA enabled
+‘0’ – ESA disabled
+</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.HVPS_LOW_RANGE_ENABLE" parameterTypeRef="SWE_APP_HK.HVPS_LOW_RANGE_ENABLE">
+				<xtce:LongDescription>ESA Low range select
+‘1’ – ESA low range
+‘0’ – ESA high range
+</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.HVPS_BULK_ENABLE" parameterTypeRef="SWE_APP_HK.HVPS_BULK_ENABLE">
+				<xtce:LongDescription>Enable 1.6kV bulk power supply.
+1 - enabled
+0 not enabled</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.SENSOR_P12A_N12A_CTRL" parameterTypeRef="SWE_APP_HK.SENSOR_P12A_N12A_CTRL">
+				<xtce:LongDescription>12V power supply status.
+1 -active
+0 inactive</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.SENSOR_P5A_N5A_CTRL" parameterTypeRef="SWE_APP_HK.SENSOR_P5A_N5A_CTRL">
+				<xtce:LongDescription>5V power supply status.
+1 -active
+0 inactive</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.SENSOR_P3P3D_P5D_CTRL" parameterTypeRef="SWE_APP_HK.SENSOR_P3P3D_P5D_CTRL">
+				<xtce:LongDescription>3.3V power supply status.
+1 -active
+0 inactive</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.HVPS_ERROR_COUNT" parameterTypeRef="SWE_APP_HK.HVPS_ERROR_COUNT">
+				<xtce:LongDescription>count of HVPS register read and write errors</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.HVPS_CEM_DAC" parameterTypeRef="SWE_APP_HK.HVPS_CEM_DAC">
+				<xtce:LongDescription>CEM Bias Adjust</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.HVPS_ESA_DAC" parameterTypeRef="SWE_APP_HK.HVPS_ESA_DAC">
+				<xtce:LongDescription>ESA Stepper Control. No conersation as high and low ranges use different values to convert</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.THRESHOLD" parameterTypeRef="SWE_APP_HK.THRESHOLD">
+				<xtce:LongDescription>CEM Front End Electronics Threshold</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.STIM_ENABLE" parameterTypeRef="SWE_APP_HK.STIM_ENABLE">
+				<xtce:LongDescription>STIM Enable
+'1': enabled
+'0': disabled</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.STIM_CONFIGURATION" parameterTypeRef="SWE_APP_HK.STIM_CONFIGURATION">
+				<xtce:LongDescription>STIM Configuration</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.HVPS_VBULK" parameterTypeRef="SWE_APP_HK.HVPS_VBULK">
+				<xtce:LongDescription>HVPS Bulk Voltage Monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.HVPS_VCEM" parameterTypeRef="SWE_APP_HK.HVPS_VCEM">
+				<xtce:LongDescription>HVPS CEM Voltage Monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.HVPS_VESA" parameterTypeRef="SWE_APP_HK.HVPS_VESA">
+				<xtce:LongDescription>HVPS ESA Voltage Monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.HVPS_VESA_LOW_RANGE" parameterTypeRef="SWE_APP_HK.HVPS_VESA_LOW_RANGE">
+				<xtce:LongDescription>HVPS ESA Lo range Voltage Monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.HVPS_ICEM" parameterTypeRef="SWE_APP_HK.HVPS_ICEM">
+				<xtce:LongDescription>HVPS CEM Current Monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.FEE_TEMP" parameterTypeRef="SWE_APP_HK.FEE_TEMP">
+				<xtce:LongDescription>FEE Temperature Monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.SENSOR_TEMP" parameterTypeRef="SWE_APP_HK.SENSOR_TEMP">
+				<xtce:LongDescription>Sensor Temperature Monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.HVPS_TEMP" parameterTypeRef="SWE_APP_HK.HVPS_TEMP">
+				<xtce:LongDescription>HVPS temperature Moniotor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.LVPS_BACK_BOARD_TEMP" parameterTypeRef="SWE_APP_HK.LVPS_BACK_BOARD_TEMP">
+				<xtce:LongDescription>LVPS temperature 1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.LVPS_FRONT_BOARD_TEMP" parameterTypeRef="SWE_APP_HK.LVPS_FRONT_BOARD_TEMP">
+				<xtce:LongDescription>LVPS temperature 2</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.LVPS_MID_BOARD_TEMP" parameterTypeRef="SWE_APP_HK.LVPS_MID_BOARD_TEMP">
+				<xtce:LongDescription>LVPS temperature 3</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.LVPS_3_3V_VMON" parameterTypeRef="SWE_APP_HK.LVPS_3_3V_VMON">
+				<xtce:LongDescription>3.3V voltage monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.LVPS_5V_P_VMON" parameterTypeRef="SWE_APP_HK.LVPS_5V_P_VMON">
+				<xtce:LongDescription>positive 5V voltage monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.LVPS_5V_N_VMON" parameterTypeRef="SWE_APP_HK.LVPS_5V_N_VMON">
+				<xtce:LongDescription>negative 5V voltage monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.LVPS_12V_P_VMON" parameterTypeRef="SWE_APP_HK.LVPS_12V_P_VMON">
+				<xtce:LongDescription>positive 12V voltage monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.LVPS_12V_N_VMON" parameterTypeRef="SWE_APP_HK.LVPS_12V_N_VMON">
+				<xtce:LongDescription>negative 12V voltage monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.LVPS_3_3V_IMON" parameterTypeRef="SWE_APP_HK.LVPS_3_3V_IMON">
+				<xtce:LongDescription>3.3V current monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.LVPS_5V_P_IMON" parameterTypeRef="SWE_APP_HK.LVPS_5V_P_IMON">
+				<xtce:LongDescription>positive 5V current monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.LVPS_5V_N_IMON" parameterTypeRef="SWE_APP_HK.LVPS_5V_N_IMON">
+				<xtce:LongDescription>negative 5V current monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.LVPS_12V_P_IMON" parameterTypeRef="SWE_APP_HK.LVPS_12V_P_IMON">
+				<xtce:LongDescription>positive 12V current monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.LVPS_12V_N_IMON" parameterTypeRef="SWE_APP_HK.LVPS_12V_N_IMON">
+				<xtce:LongDescription>negative 12V current monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.CDH_PROCESSOR_TEMP" parameterTypeRef="SWE_APP_HK.CDH_PROCESSOR_TEMP">
+				<xtce:LongDescription>CDH temp 1 to be added to FM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.CDH_1_8V_LDO_TEMP" parameterTypeRef="SWE_APP_HK.CDH_1_8V_LDO_TEMP">
+				<xtce:LongDescription>CDH temp 1 to be added to FM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.CDH_1_5V_LDO_TEMP" parameterTypeRef="SWE_APP_HK.CDH_1_5V_LDO_TEMP">
+				<xtce:LongDescription>CDH temp 1 to be added to FM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.CDH_SDRAM_TEMP" parameterTypeRef="SWE_APP_HK.CDH_SDRAM_TEMP">
+				<xtce:LongDescription>CDH temp 1 to be added to FM</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.CDH_1_5V_VMON" parameterTypeRef="SWE_APP_HK.CDH_1_5V_VMON">
+				<xtce:LongDescription>CDH 1.5V monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.CDH_1_8V_VMON" parameterTypeRef="SWE_APP_HK.CDH_1_8V_VMON">
+				<xtce:LongDescription>CDH 1.8V monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.CDH_3_3V_VMON" parameterTypeRef="SWE_APP_HK.CDH_3_3V_VMON">
+				<xtce:LongDescription>CDH 3.3V monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.CDH_12V_P_VMON" parameterTypeRef="SWE_APP_HK.CDH_12V_P_VMON">
+				<xtce:LongDescription>CDH positive 12V monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.CDH_12V_N_VMON" parameterTypeRef="SWE_APP_HK.CDH_12V_N_VMON">
+				<xtce:LongDescription>CDH negative 12V monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.CDH_5V_VMON" parameterTypeRef="SWE_APP_HK.CDH_5V_VMON">
+				<xtce:LongDescription>CDH 1.5V monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.CDH_ANALOG_REF_VMON" parameterTypeRef="SWE_APP_HK.CDH_ANALOG_REF_VMON">
+				<xtce:LongDescription>CDH analog reference monitor</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.FDC_TRIGGER_CNT_FSW" parameterTypeRef="SWE_APP_HK.FDC_TRIGGER_CNT_FSW">
+				<xtce:LongDescription>Count of FDC violations of the FSW category</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.FDC_TRIGGER_CNT_HVPS" parameterTypeRef="SWE_APP_HK.FDC_TRIGGER_CNT_HVPS">
+				<xtce:LongDescription>Count of FDC violations of the HVPS category</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.FDC_TRIGGER_CNT_LVPS" parameterTypeRef="SWE_APP_HK.FDC_TRIGGER_CNT_LVPS">
+				<xtce:LongDescription>Count of FDC violations of the LVPS category</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.FDC_TRIGGER_CNT_CDH" parameterTypeRef="SWE_APP_HK.FDC_TRIGGER_CNT_CDH">
+				<xtce:LongDescription>Count of FDC violations of the CDH category</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.FDC_TRIGGER_CNT_SYSTEM" parameterTypeRef="SWE_APP_HK.FDC_TRIGGER_CNT_SYSTEM">
+				<xtce:LongDescription>Count of FDC violations of the System category</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.FDC_TRIGGER_CNT_SCIENCE" parameterTypeRef="SWE_APP_HK.FDC_TRIGGER_CNT_SCIENCE">
+				<xtce:LongDescription>Count of FDC violations of the SCIENCE category</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.FDC_LAST_TRIGGER_INDEX" parameterTypeRef="SWE_APP_HK.FDC_LAST_TRIGGER_INDEX">
+				<xtce:LongDescription>Index of FDC rule in ENG LUT that triggered last violation</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.FDC_LAST_TRIGGER_ACTION" parameterTypeRef="SWE_APP_HK.FDC_LAST_TRIGGER_ACTION">
+				<xtce:LongDescription>Action taken to handle the last FDC violation</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.FDC_LAST_TRIGGER_MINMAX" parameterTypeRef="SWE_APP_HK.FDC_LAST_TRIGGER_MINMAX">
+				<xtce:LongDescription>Last FDC violation was breaching min or max limits
+'0' - min
+'1' - max</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.MISSED_PPS_CNT" parameterTypeRef="SWE_APP_HK.MISSED_PPS_CNT">
+				<xtce:LongDescription>Missed 1PPS count</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.CMD_FIFO_OVERFLOW" parameterTypeRef="SWE_APP_HK.CMD_FIFO_OVERFLOW">
+				<xtce:LongDescription>spacecraft command FIFO overflow
+'0' - not overflown
+'1' - overflown</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.TLM_FIFO_OVERFLOW" parameterTypeRef="SWE_APP_HK.TLM_FIFO_OVERFLOW">
+				<xtce:LongDescription>spacecraft telemetry FIFO overflow
+'0' - not overflown
+'1' - overflown</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.CPU_IDLE" parameterTypeRef="SWE_APP_HK.CPU_IDLE">
+				<xtce:LongDescription>Percentage of time FSW running idle/scrub time</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.MARKER" parameterTypeRef="SWE_APP_HK.MARKER">
+				<xtce:LongDescription>Marker value for user to write to for testing</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.ACTIVE_MACRO" parameterTypeRef="SWE_APP_HK.ACTIVE_MACRO">
+				<xtce:LongDescription>1 based macro ID of the macro currently being executed</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.ACTIVE_MACRO_TRIGGER" parameterTypeRef="SWE_APP_HK.ACTIVE_MACRO_TRIGGER">
+				<xtce:LongDescription>Trigger that started the macro (1 is FDC, 2 is spacecraft, 3 is user)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_APP_HK.CKSUM" parameterTypeRef="SWE_APP_HK.CKSUM">
+				<xtce:LongDescription>checksum</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_CEM_RAW.SHCOARSE" parameterTypeRef="SWE_CEM_RAW.SHCOARSE">
+				<xtce:LongDescription>Mission elapsed time</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_CEM_RAW.THRESHOLD_DAC" parameterTypeRef="SWE_CEM_RAW.THRESHOLD_DAC">
+				<xtce:LongDescription>DAC Threshold</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_CEM_RAW.STIM_CFG_REG" parameterTypeRef="SWE_CEM_RAW.STIM_CFG_REG">
+				<xtce:LongDescription>Stim Configuration Register</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_CEM_RAW.CEM1_COUNTS_LATCHED" parameterTypeRef="SWE_CEM_RAW.CEM1_COUNTS_LATCHED">
+				<xtce:LongDescription>CEM 1 latched Counts</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_CEM_RAW.CEM2_COUNTS_LATCHED" parameterTypeRef="SWE_CEM_RAW.CEM2_COUNTS_LATCHED">
+				<xtce:LongDescription>CEM 2 latched Counts</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_CEM_RAW.CEM3_COUNTS_LATCHED" parameterTypeRef="SWE_CEM_RAW.CEM3_COUNTS_LATCHED">
+				<xtce:LongDescription>CEM 3 latched Counts</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_CEM_RAW.CEM4_COUNTS_LATCHED" parameterTypeRef="SWE_CEM_RAW.CEM4_COUNTS_LATCHED">
+				<xtce:LongDescription>CEM 4 latched Counts</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_CEM_RAW.CEM5_COUNTS_LATCHED" parameterTypeRef="SWE_CEM_RAW.CEM5_COUNTS_LATCHED">
+				<xtce:LongDescription>CEM 5 latched Counts</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_CEM_RAW.CEM6_COUNTS_LATCHED" parameterTypeRef="SWE_CEM_RAW.CEM6_COUNTS_LATCHED">
+				<xtce:LongDescription>CEM 6 latched Counts</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_CEM_RAW.CEM7_COUNTS_LATCHED" parameterTypeRef="SWE_CEM_RAW.CEM7_COUNTS_LATCHED">
+				<xtce:LongDescription>CEM 7 latched Counts</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_CEM_RAW.CEM1_COUNTS_LIVE" parameterTypeRef="SWE_CEM_RAW.CEM1_COUNTS_LIVE">
+				<xtce:LongDescription>CEM 1 live Counts</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_CEM_RAW.CEM2_COUNTS_LIVE" parameterTypeRef="SWE_CEM_RAW.CEM2_COUNTS_LIVE">
+				<xtce:LongDescription>CEM 2 live Counts</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_CEM_RAW.CEM3_COUNTS_LIVE" parameterTypeRef="SWE_CEM_RAW.CEM3_COUNTS_LIVE">
+				<xtce:LongDescription>CEM 3 live Counts</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_CEM_RAW.CEM4_COUNTS_LIVE" parameterTypeRef="SWE_CEM_RAW.CEM4_COUNTS_LIVE">
+				<xtce:LongDescription>CEM 4 live Counts</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_CEM_RAW.CEM5_COUNTS_LIVE" parameterTypeRef="SWE_CEM_RAW.CEM5_COUNTS_LIVE">
+				<xtce:LongDescription>CEM 5 live Counts</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_CEM_RAW.CEM6_COUNTS_LIVE" parameterTypeRef="SWE_CEM_RAW.CEM6_COUNTS_LIVE">
+				<xtce:LongDescription>CEM 6 live Counts</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_CEM_RAW.CEM7_COUNTS_LIVE" parameterTypeRef="SWE_CEM_RAW.CEM7_COUNTS_LIVE">
+				<xtce:LongDescription>CEM 7 live Counts</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="SWE_CEM_RAW.CKSUM" parameterTypeRef="SWE_CEM_RAW.CKSUM">
+				<xtce:LongDescription>Packet Checksum</xtce:LongDescription>
+			</xtce:Parameter>
 			<xtce:Parameter name="SWE_SCIENCE.SHCOARSE" parameterTypeRef="SWE_SCIENCE.SHCOARSE">
 				<xtce:LongDescription>Mission elapsed time</xtce:LongDescription>
 			</xtce:Parameter>
@@ -266,6 +1278,114 @@ CEM7 - 8 bit counter
 					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
 					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
 					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="SWE_APP_HK">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="1330" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.APP_MODE" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.SAFED" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.ITF_ERR_CNT" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.CMD_ACC_COUNT" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.CMD_REJ_COUNT" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.LAST_ACC_OPCODE" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.HV_DISABLE_PLUG" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.HV_LIMIT_PLUG" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.HVPS_ENABLE" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.HVPS_CEM_ENABLE" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.HVPS_ESA_ENABLE" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.HVPS_LOW_RANGE_ENABLE" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.HVPS_BULK_ENABLE" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.SENSOR_P12A_N12A_CTRL" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.SENSOR_P5A_N5A_CTRL" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.SENSOR_P3P3D_P5D_CTRL" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.HVPS_ERROR_COUNT" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.HVPS_CEM_DAC" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.HVPS_ESA_DAC" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.THRESHOLD" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.STIM_ENABLE" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.STIM_CONFIGURATION" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.HVPS_VBULK" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.HVPS_VCEM" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.HVPS_VESA" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.HVPS_VESA_LOW_RANGE" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.HVPS_ICEM" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.FEE_TEMP" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.SENSOR_TEMP" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.HVPS_TEMP" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.LVPS_BACK_BOARD_TEMP" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.LVPS_FRONT_BOARD_TEMP" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.LVPS_MID_BOARD_TEMP" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.LVPS_3_3V_VMON" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.LVPS_5V_P_VMON" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.LVPS_5V_N_VMON" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.LVPS_12V_P_VMON" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.LVPS_12V_N_VMON" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.LVPS_3_3V_IMON" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.LVPS_5V_P_IMON" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.LVPS_5V_N_IMON" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.LVPS_12V_P_IMON" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.LVPS_12V_N_IMON" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.CDH_PROCESSOR_TEMP" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.CDH_1_8V_LDO_TEMP" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.CDH_1_5V_LDO_TEMP" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.CDH_SDRAM_TEMP" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.CDH_1_5V_VMON" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.CDH_1_8V_VMON" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.CDH_3_3V_VMON" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.CDH_12V_P_VMON" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.CDH_12V_N_VMON" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.CDH_5V_VMON" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.CDH_ANALOG_REF_VMON" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.FDC_TRIGGER_CNT_FSW" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.FDC_TRIGGER_CNT_HVPS" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.FDC_TRIGGER_CNT_LVPS" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.FDC_TRIGGER_CNT_CDH" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.FDC_TRIGGER_CNT_SYSTEM" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.FDC_TRIGGER_CNT_SCIENCE" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.FDC_LAST_TRIGGER_INDEX" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.FDC_LAST_TRIGGER_ACTION" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.FDC_LAST_TRIGGER_MINMAX" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.MISSED_PPS_CNT" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.CMD_FIFO_OVERFLOW" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.TLM_FIFO_OVERFLOW" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.CPU_IDLE" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.MARKER" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.ACTIVE_MACRO" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.ACTIVE_MACRO_TRIGGER" />
+					<xtce:ParameterRefEntry parameterRef="SWE_APP_HK.CKSUM" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="SWE_CEM_RAW">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="1334" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="SWE_CEM_RAW.SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="SWE_CEM_RAW.THRESHOLD_DAC" />
+					<xtce:ParameterRefEntry parameterRef="SWE_CEM_RAW.STIM_CFG_REG" />
+					<xtce:ParameterRefEntry parameterRef="SWE_CEM_RAW.CEM1_COUNTS_LATCHED" />
+					<xtce:ParameterRefEntry parameterRef="SWE_CEM_RAW.CEM2_COUNTS_LATCHED" />
+					<xtce:ParameterRefEntry parameterRef="SWE_CEM_RAW.CEM3_COUNTS_LATCHED" />
+					<xtce:ParameterRefEntry parameterRef="SWE_CEM_RAW.CEM4_COUNTS_LATCHED" />
+					<xtce:ParameterRefEntry parameterRef="SWE_CEM_RAW.CEM5_COUNTS_LATCHED" />
+					<xtce:ParameterRefEntry parameterRef="SWE_CEM_RAW.CEM6_COUNTS_LATCHED" />
+					<xtce:ParameterRefEntry parameterRef="SWE_CEM_RAW.CEM7_COUNTS_LATCHED" />
+					<xtce:ParameterRefEntry parameterRef="SWE_CEM_RAW.CEM1_COUNTS_LIVE" />
+					<xtce:ParameterRefEntry parameterRef="SWE_CEM_RAW.CEM2_COUNTS_LIVE" />
+					<xtce:ParameterRefEntry parameterRef="SWE_CEM_RAW.CEM3_COUNTS_LIVE" />
+					<xtce:ParameterRefEntry parameterRef="SWE_CEM_RAW.CEM4_COUNTS_LIVE" />
+					<xtce:ParameterRefEntry parameterRef="SWE_CEM_RAW.CEM5_COUNTS_LIVE" />
+					<xtce:ParameterRefEntry parameterRef="SWE_CEM_RAW.CEM6_COUNTS_LIVE" />
+					<xtce:ParameterRefEntry parameterRef="SWE_CEM_RAW.CEM7_COUNTS_LIVE" />
+					<xtce:ParameterRefEntry parameterRef="SWE_CEM_RAW.CKSUM" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="SWE_SCIENCE">

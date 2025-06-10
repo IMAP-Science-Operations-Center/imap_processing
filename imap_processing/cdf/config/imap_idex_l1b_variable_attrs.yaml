@@ -1,6 +1,5 @@
 int_fillval: &int_fillval -9223372036854775808
-
-max_uint16: &max_uint16 65535
+double_fillval: &double_fillval -1.0E31
 
 data_min: &data_min 0
 data_max: &data_max 4095
@@ -21,22 +20,22 @@ l1b_data_base: &l1b_data_base
   VALIDMAX: *data_max
   DISPLAY_TYPE: spectrogram
   DEPEND_0: epoch
-  FORMAT: I12
+  FORMAT: F12.6
   UNITS: pC
   VAR_TYPE: data
   CATDESC: ""
   FIELDNAM: ""
-  FILLVAL: *max_uint16
+  FILLVAL: *double_fillval
   LABLAXIS: ""
 
 l1b_tof_base: &l1b_tof_base
   <<: *l1b_data_base
-  DEPEND_1: time_high_sample_rate
+  DEPEND_1: time_high_sample_rate_index
   LABL_PTR_1: time_high_sample_rate_label
 
 l1b_target_base: &l1b_target_base
   <<: *l1b_data_base
-  DEPEND_1: time_low_sample_rate
+  DEPEND_1: time_low_sample_rate_index
   LABL_PTR_1: time_low_sample_rate_label
 
 trigger_base: &trigger_base
@@ -47,8 +46,6 @@ trigger_base: &trigger_base
 spice_base: &spice_base
   <<: *l1b_data_base
   VAR_TYPE: data
-  VALIDMIN: -180
-  VALIDMAX: 360
   DISPLAY_TYPE: time_series
   UNITS: Degrees
 
@@ -59,7 +56,7 @@ trigger_mode:
   CATDESC: Channel and mode that triggered the event
 
 trigger_level:
-  <<: *string_base
+  <<: *trigger_base
   FIELDNAM: Trigger Level
   CATDESC: Threshold signal level that triggered the event
 
@@ -176,6 +173,7 @@ current_1p9v_pol:
 
 temperature_1:
   <<: *trigger_base
+  FORMAT: F12.6
   FIELDNAM: ProcBd Temp1
   CATDESC: Temperature reading near high speed ADCs on Processor Board (ADC channel 2)
   LABLAXIS: Temperature
@@ -183,6 +181,7 @@ temperature_1:
 
 temperature_2:
   <<: *trigger_base
+  FORMAT: F12.6
   FIELDNAM: ProcBd Temp2
   CATDESC: Temperature reading near center of Processor Board (ADC channel 3)
   LABLAXIS: Temperature
@@ -286,7 +285,7 @@ voltage_pos5v_bus:
   LABLAXIS: Voltage
   UNITS: V
 
-current_3p3_bus:
+current_3p3v_bus:
   <<: *trigger_base
   FIELDNAM: P3.3_IMON
   CATDESC: Positive current reading on +3.3V bus on LVPS Board (ADC 1 channel 0)
@@ -347,16 +346,18 @@ current_neg2p5v_bus:
 ephemeris_position_x:
   <<: *spice_base
   FIELDNAM: Position X
-  CATDESC: Cartesian coordinate X positions for the IMAP spacecraft in the ECLIPJ2000 frame.
+  CATDESC: Cartesian coord X positions for the IMAP spacecraft in the ECLIPJ2000 frame.
   LABLAXIS: Position X
   UNITS: km
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
 
 ephemeris_position_y:
   <<: *spice_base
   FIELDNAM: Position Y
-  CATDESC: Cartesian coordinate Y positions for the IMAP spacecraft in the ECLIPJ2000 frame.
+  CATDESC: Cartesian coord Y positions for the IMAP spacecraft in the ECLIPJ2000 frame.
   LABLAXIS: Position Y
   UNITS: km
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
 
 ephemeris_position_z:
   <<: *spice_base
@@ -364,6 +365,7 @@ ephemeris_position_z:
   CATDESC: Cartesian coordinate Z positions for the IMAP spacecraft in the ECLIPJ2000 frame.
   LABLAXIS: Position Z
   UNITS: km
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
 
 ephemeris_velocity_x:
   <<: *spice_base
@@ -371,6 +373,7 @@ ephemeris_velocity_x:
   CATDESC: Velocity X positions for the IMAP spacecraft in the ECLIPJ2000 frame.
   LABLAXIS: Velocity X
   UNITS: km/s
+  DICT_KEY: SPASE>Support>SupportQuantity:Velocity
 
 ephemeris_velocity_y:
   <<: *spice_base
@@ -378,6 +381,7 @@ ephemeris_velocity_y:
   CATDESC: Velocity Y positions for the IMAP spacecraft in the ECLIPJ2000 frame.
   LABLAXIS: Velocity Y
   UNITS: km/s
+  DICT_KEY: SPASE>Support>SupportQuantity:Velocity
 
 ephemeris_velocity_z:
   <<: *spice_base
@@ -385,19 +389,23 @@ ephemeris_velocity_z:
   CATDESC: Velocity Z positions for the IMAP spacecraft in the ECLIPJ2000 frame.
   LABLAXIS: Velocity Z
   UNITS: km/s
+  DICT_KEY: SPASE>Support>SupportQuantity:Velocity
 
-right_ascension:
+
+longitude:
   <<: *spice_base
   VALIDMIN: 0
-  FIELDNAM: Right Ascension
-  CATDESC: Right ascension of the IMAP spacecraft position as observed from Earth in the ECLIPJ2000 reference frame.
-  LABLAXIS: Right Ascension
+  FIELDNAM: Longitude
+  CATDESC: Longitude of the dust event as observed from Earth in the ECLIPJ2000 frame.
+  LABLAXIS: Longitude
+  DICT_KEY: SPASE>Support>SupportQuantity:Longitude
 
-declination:
+latitude:
   <<: *spice_base
-  FIELDNAM: Declination
-  CATDESC: Declination of the IMAP spacecraft position as observed from Earth in the ECLIPJ2000 reference frame.
-  LABLAXIS: Declination
+  FIELDNAM: Latitude
+  CATDESC: Latitude of the dust event as observed from Earth in the ECLIPJ2000 frame.
+  LABLAXIS: Latitude
+  DICT_KEY: SPASE>Support>SupportQuantity:Latitude
 
 spin_phase:
   <<: *spice_base
@@ -405,6 +413,9 @@ spin_phase:
   FIELDNAM: Spin Phase
   CATDESC: IMAP Spin Phase
   LABLAXIS: Spin Phase
+  FORMAT: F12.6
+  FILLVAL: *double_fillval
+  DICT_KEY: SPASE>Support>SupportQuantity:SpinPhase
 
 solar_longitude:
   <<: *spice_base
@@ -412,4 +423,5 @@ solar_longitude:
   FIELDNAM: Solar Longitude
   CATDESC: Solar Longitude of the IMAP spacecraft
   LABLAXIS: Solar Longitude
+  DICT_KEY: SPASE>Support>SupportQuantity:Longitude
 

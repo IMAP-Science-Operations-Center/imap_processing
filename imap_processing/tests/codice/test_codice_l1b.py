@@ -3,25 +3,29 @@
 import pytest
 import xarray as xr
 
-from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice.codice_l1b import process_codice_l1b
 
 from .conftest import TEST_L1A_FILES
 
-EXPECTED_LOGICAL_SOURCE = [
-    "imap_codice_l1b_hskp",
+pytestmark = pytest.mark.external_test_data
+
+EXPECTED_LOGICAL_SOURCES = [
     "imap_codice_l1b_hi-counters-aggregated",
     "imap_codice_l1b_hi-counters-singles",
+    "imap_codice_l1b_hi-ialirt",
     "imap_codice_l1b_hi-omni",
+    "imap_codice_l1b_hi-priority",
     "imap_codice_l1b_hi-sectored",
+    "imap_codice_l1b_hskp",
     "imap_codice_l1b_lo-counters-aggregated",
     "imap_codice_l1b_lo-counters-singles",
-    "imap_codice_l1b_lo-sw-angular",
+    "imap_codice_l1b_lo-ialirt",
     "imap_codice_l1b_lo-nsw-angular",
-    "imap_codice_l1b_lo-sw-priority",
     "imap_codice_l1b_lo-nsw-priority",
-    "imap_codice_l1b_lo-sw-species",
     "imap_codice_l1b_lo-nsw-species",
+    "imap_codice_l1b_lo-sw-angular",
+    "imap_codice_l1b_lo-sw-priority",
+    "imap_codice_l1b_lo-sw-species",
 ]
 
 
@@ -34,18 +38,16 @@ def test_l1b_data(request) -> xr.Dataset:
     dataset : xr.Dataset
         A ``xarray`` dataset containing the test data
     """
-    input_dataset = load_cdf(request.param)
-    dataset = process_codice_l1b(input_dataset, data_version="001")
+    dataset = process_codice_l1b(request.param)
     return dataset
 
 
-@pytest.mark.skip("Awaiting proper implementation of L1B")
 @pytest.mark.parametrize(
     "test_l1b_data, expected_logical_source",
-    list(zip(TEST_L1A_FILES, EXPECTED_LOGICAL_SOURCE)),
+    list(zip(TEST_L1A_FILES, EXPECTED_LOGICAL_SOURCES)),
     indirect=["test_l1b_data"],
 )
-def test_l1b_cdf_filenames(test_l1b_data: xr.Dataset, expected_logical_source: str):
+def test_l1b_logical_sources(test_l1b_data: xr.Dataset, expected_logical_source: str):
     """Tests that the ``process_codice_l1b`` function generates datasets
     with the expected logical source.
 
@@ -53,7 +55,7 @@ def test_l1b_cdf_filenames(test_l1b_data: xr.Dataset, expected_logical_source: s
     ----------
     test_l1b_data : xr.Dataset
         A ``xarray`` dataset containing the test data
-    expected_filename : str
+    expected_logical_source : str
         The expected CDF filename
     """
 

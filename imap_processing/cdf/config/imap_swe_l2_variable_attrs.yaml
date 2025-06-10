@@ -1,0 +1,262 @@
+# <=== Coordinates ===>
+esa_step:
+  CATDESC: Energy step id in lookup table
+  FIELDNAM: Energy Step
+  FILLVAL: -9223370000000000000
+  FORMAT: I2
+  LABLAXIS: Energy Step
+  SCALE_TYP: linear
+  UNITS: " "
+  VALIDMAX: 23
+  VALIDMIN: 0
+  VAR_TYPE: support_data
+
+energy:
+  CATDESC: Energy of the particle in eV
+  FIELDNAM: Energy (eV)
+  FILLVAL: -9223370000000000000
+  FORMAT: E10.4
+  LABLAXIS: Energy
+  SCALE_TYP: linear
+  UNITS: eV
+  VALIDMAX: 6000.0
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
+
+spin_sector:
+  CATDESC: Spin sector. 30 measurements nominally
+  FIELDNAM: Spin Sector
+  FILLVAL: -9223370000000000000
+  FORMAT: I2
+  LABLAXIS: Spin Sector
+  SCALE_TYP: linear
+  UNITS: " "
+  VALIDMAX: 29
+  VALIDMIN: 0
+  VAR_TYPE: support_data
+
+inst_az:
+  CATDESC: Spin angle in instrument frame. Angle resolution is 12 degree nominally
+  FIELDNAM: Spin Angle
+  FILLVAL: -9223370000000000000
+  FORMAT: E10.4
+  LABLAXIS: Degree
+  SCALE_TYP: linear
+  UNITS: Degree
+  VALIDMAX: 359.999
+  VALIDMIN: 0.00
+  VAR_TYPE: support_data
+  VAR_NOTES: >
+    Bin CENTERS  - Assuming 0.5 sec measurements and a spin starting
+    at Angle=0, these are the angles at the middle of each measurement
+    bin.
+
+cem_id:
+  CATDESC: CEM detector number
+  FIELDNAM: CEM Number
+  FILLVAL: -9223370000000000000
+  FORMAT: I2
+  LABLAXIS: CEM Number
+  SCALE_TYP: linear
+  UNITS: " "
+  VALIDMAX: 6
+  VALIDMIN: 0
+  VAR_TYPE: support_data
+
+inst_el:
+  CATDESC: Angle of each CEM detector
+  FIELDNAM: Polar Angle
+  FILLVAL: -9223370000000000000
+  FORMAT: I4
+  LABLAXIS: Degree
+  SCALE_TYP: linear
+  UNITS: Degree
+  VALIDMAX: 65
+  VALIDMIN: -65
+  VAR_TYPE: support_data
+
+cycle:
+  CATDESC: Full cycle data takes 4 spins' data
+  FIELDNAM: Quarter Cycle
+  FILLVAL: -9223370000000000000
+  FORMAT: I2
+  LABLAXIS: Cycle
+  SCALE_TYP: linear
+  UNITS: " "
+  VALIDMAX: 3
+  VALIDMIN: 0
+  VAR_TYPE: support_data
+
+# <=== Label Attributes ===>
+# LABL_PTR_i expects VAR_TYPE of metadata with char data type
+esa_step_label:
+  CATDESC: Energy step id in lookup table
+  FIELDNAM: Energy Step ID
+  FORMAT: A2
+  VAR_TYPE: metadata
+
+spin_sector_label:
+  CATDESC: Spin sector. 30 measurements nominally
+  FIELDNAM: Measurement
+  FORMAT: A2
+  VAR_TYPE: metadata
+
+cem_id_label:
+  CATDESC: Data rates of each CEM detector
+  FIELDNAM: CEM Rates
+  FORMAT: A1
+  VAR_TYPE: metadata
+
+energy_label:
+  CATDESC: Energy of the particle in eV
+  FIELDNAM: Energy
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+inst_az_label:
+  CATDESC: Spin angle bins in instrument frame. Angle resolution is 12 degree nominally
+  FIELDNAM: Spin Angle
+  FORMAT: A3
+  VAR_TYPE: metadata
+
+inst_el_label:
+  CATDESC: Angle of each CEM detector
+  FIELDNAM: CEM Angle
+  FORMAT: A3
+  VAR_TYPE: metadata
+
+# <=== Data Variables ===>
+
+inst_az_spin_sector:
+  CATDESC: Spin angle organized by ESA step and spin sector
+  DEPEND_0: epoch
+  DEPEND_1: esa_step
+  DEPEND_2: spin_sector
+  LABL_PTR_1: esa_step_label
+  LABL_PTR_2: spin_sector_label
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: Spin Angle
+  FILLVAL: -1.0E+31
+  FORMAT: E10.5
+  UNITS: Degree
+  VALIDMAX: 359.99
+  VALIDMIN: 0.0
+  VAR_TYPE: data
+  DICT_KEY: SPASE>Support>SupportQuantity:SpinPhase,Qualifier:Array,CoordinateSystemName:SC,CoordinateRepresentation:Spherical
+
+phase_space_density_spin_sector:
+  CATDESC: Phase space density organized by ESA step and spin sector and CEM
+  DEPEND_0: epoch
+  DEPEND_1: esa_step
+  DEPEND_2: spin_sector
+  DEPEND_3: cem_id
+  LABL_PTR_1: esa_step_label
+  LABL_PTR_2: spin_sector_label
+  LABL_PTR_3: cem_id_label
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: Phase Space Density
+  FILLVAL: -1.0E+31
+  UNITS: s^3 / cm^6
+  FORMAT: E14.7
+  VALIDMAX: 0.000000000000001
+  VALIDMIN: 0.0
+  VAR_TYPE: data
+  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:PhaseSpaceDensity,Qualifier:Array
+
+
+phase_space_density:
+  CATDESC: Phase space density organized by energy (eV), spin angle, CEM angle
+  DEPEND_0: epoch
+  DEPEND_1: energy
+  DEPEND_2: inst_az
+  DEPEND_3: inst_el
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: inst_az_label
+  LABL_PTR_3: inst_el_label
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: Phase Space Density
+  FILLVAL: -1.0E+31
+  UNITS: s^3 / cm^6
+  FORMAT: E14.7
+  VALIDMAX: 1.0E-15
+  VALIDMIN: 0.0
+  VAR_TYPE: data
+  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:PhaseSpaceDensity,Qualifier:Array
+
+flux_spin_sector:
+  CATDESC: Number flux organized by ESA step and spin sector and CEM
+  DEPEND_0: epoch
+  DEPEND_1: esa_step
+  DEPEND_2: spin_sector
+  DEPEND_3: cem_id
+  LABL_PTR_1: esa_step_label
+  LABL_PTR_2: spin_sector_label
+  LABL_PTR_3: cem_id_label
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: Flux
+  FILLVAL: -1.0E+31
+  UNITS: 1 / (2 * eV * cm^2 * s * ster)
+  FORMAT: E14.7
+  VALIDMAX: 1.0E+9
+  VALIDMIN: 0.0
+  VAR_TYPE: data
+  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:NumberFlux,Qualifier:Array
+
+flux:
+  CATDESC: Number flux organized by energy (eV), spin angle, CEM angle
+  DEPEND_0: epoch
+  DEPEND_1: energy
+  DEPEND_2: inst_az
+  DEPEND_3: inst_el
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: inst_az_label
+  LABL_PTR_3: inst_el_label
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: Flux
+  FILLVAL: -1.0E+31
+  UNITS: 1 / (2 * eV * cm^2 * s * ster)
+  FORMAT: E14.7
+  VALIDMAX: 1.0E+9
+  VALIDMIN: 0.0
+  VAR_TYPE: data
+  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:NumberFlux,Qualifier:Array
+
+
+acquisition_time:
+  CATDESC: Acquisition time organized by ESA step and spin sector
+  DEPEND_0: epoch
+  DEPEND_1: esa_step
+  DEPEND_2: spin_sector
+  LABL_PTR_1: esa_step_label
+  LABL_PTR_2: spin_sector_label
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: Acquisition time by ESA step and spin sector
+  FILLVAL: -1.0E+31
+  FORMAT: E20.4
+  VALIDMAX: 9223372036854775807
+  VALIDMIN: 0
+  UNITS: sec
+  VAR_TYPE: support_data
+  VAR_NOTES: >
+    This stores the acquisition times of each measurement. This time is
+    calculated by combining ACQ_START_COARSE, ACQ_START_FINE,
+    acquisition duration and settle duration. It is center time of each
+    science measurement (each energy and angle step).
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Array
+
+acq_duration:
+  CATDESC: Acquisition duration
+  DEPEND_0: epoch
+  DEPEND_1: esa_step
+  DEPEND_2: spin_sector
+  LABL_PTR_1: esa_step_label
+  LABL_PTR_2: spin_sector_label
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: Acquisition Duration
+  FORMAT: I10
+  VALIDMIN: 0
+  VALIDMAX: 4290000000
+  FILLVAL: -9223372036854775808
+  UNITS: microseconds
+  VAR_TYPE: support_data
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Array

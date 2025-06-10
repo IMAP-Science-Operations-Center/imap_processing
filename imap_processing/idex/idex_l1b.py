@@ -9,8 +9,8 @@ Examples
     from imap_processing.idex.idex_l1b import idex_l1b
 
     l0_file = "imap_processing/tests/idex/imap_idex_l0_sci_20231214_v001.pkts"
-    l1a_data = PacketParser(l0_file, data_version)
-    l1b_data = idex_l1b(l1a_data, data_version)
+    l1a_data = PacketParser(l0_file)
+    l1b_data = idex_l1b(l1a_data)
     write_cdf(l1b_data)
 """
 
@@ -23,35 +23,39 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.idex.idex_constants import (
+    IDEX_EVENT_REFERENCE_FRAME,
+    ConversionFactors,
+)
+from imap_processing.idex.idex_utils import get_idex_attrs, setup_dataset
 from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
     cartesian_to_spherical,
-    get_spacecraft_spin_phase,
-    get_spin_angle,
     imap_state,
     instrument_pointing,
     solar_longitude,
 )
+from imap_processing.spice.spin import get_spacecraft_spin_phase, get_spin_angle
 from imap_processing.spice.time import ttj2000ns_to_et
 from imap_processing.utils import convert_raw_to_eu
 
 logger = logging.getLogger(__name__)
 
 
-class ConversionFactors(float, Enum):
-    """Enum class for conversion factor values."""
-
-    TOF_High = 2.89e-4
-    TOF_Low = 5.14e-4
-    TOF_Mid = 1.13e-2
-    Target_Low = 1.58e1
-    Target_High = 1.63e-1
-    Ion_Grid = 7.46e-4
-
-
 class TriggerMode(Enum):
-    """Enum class for conversion factor values."""
+    """
+    Enum class for data collection trigger Modes.
+
+    Attributes
+    ----------
+    Threshold : int
+        Mode 1 - Triggers when signal reaches the threshold value.
+    SinglePulse : int
+        Mode 2 - Triggers when a single pulse is detected.
+    DoublePulse : int
+        Mode 3 - Triggers when two pulses are detected.
+    """
 
     Threshold = 1
     SinglePulse = 2
@@ -77,7 +81,7 @@ class TriggerMode(Enum):
         return f"{channel.upper()}{TriggerMode(mode).name}"
 
 
-def idex_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+def idex_l1b(l1a_dataset: xr.Dataset) -> xr.Dataset:
     """
     Will process IDEX l1a data to create l1b data products.
 
@@ -85,8 +89,6 @@ def idex_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     ----------
     l1a_dataset : xarray.Dataset
         IDEX L1a dataset to process.
-    data_version : str
-        Version of the data product being created.
 
     Returns
     -------
@@ -98,10 +100,7 @@ def idex_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     )
 
     # create the attribute manager for this data level
-    idex_attrs = ImapCdfAttributes()
-    idex_attrs.add_instrument_global_attrs(instrument="idex")
-    idex_attrs.add_instrument_variable_attrs(instrument="idex", level="l1b")
-    idex_attrs.add_global_attribute("Data_version", data_version)
+    idex_attrs = get_idex_attrs("l1b")
 
     var_information_path = (
         f"{imap_module_directory}/idex/idex_variable_unpacking_and_eu_conversion.csv"
@@ -115,12 +114,6 @@ def idex_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
 
     waveforms_converted = convert_waveforms(l1a_dataset, idex_attrs)
 
-    epoch_da = xr.DataArray(
-        l1a_dataset["epoch"],
-        name="epoch",
-        dims=["epoch"],
-        attrs=idex_attrs.get_variable_attributes("epoch"),
-    )
     # Get spice data and save them as xr.DataArrays in the output. Spice data is not
     # used for calculations yet but are saved in the CDF for reference.
     spice_data = get_spice_data(l1a_dataset, idex_attrs)
@@ -135,31 +128,19 @@ def idex_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
         )
 
     # Create l1b Dataset
-    l1b_dataset = xr.Dataset(
-        coords={"epoch": epoch_da},
-        data_vars=processed_vars | waveforms_converted | trigger_settings | spice_data,
-        attrs=idex_attrs.get_global_attributes("imap_idex_l1b_sci"),
-    )
+    prefixes = ["shcoarse", "shfine", "time_high_sample", "time_low_sample"]
+    data_vars = processed_vars | waveforms_converted | trigger_settings | spice_data
+    l1b_dataset = setup_dataset(l1a_dataset, prefixes, idex_attrs, data_vars)
+    l1b_dataset.attrs = idex_attrs.get_global_attributes("imap_idex_l1b_sci")
+
     # Convert variables
     l1b_dataset = convert_raw_to_eu(
         l1b_dataset,
         conversion_table_path=var_information_path,
         packet_name="IDEX_SCI",
     )
-    prefixes = ["shcoarse", "shfine", "time_high_sample", "time_low_sample"]
-    vars_to_copy = [
-        var
-        for var in l1a_dataset.variables
-        if any(prefix in var for prefix in prefixes)
-    ]
-    # Copy arrays from the l1a_dataset that do not need l1b processing
-    for var in vars_to_copy:
-        l1b_dataset[var] = l1a_dataset[var].copy()
-
-    # TODO: Spice data?
 
     logger.info("IDEX L1B science data processing completed.")
-
     return l1b_dataset
 
 
@@ -175,7 +156,7 @@ def unpack_instrument_settings(
     ----------
     l1a_dataset : xarray.Dataset
         IDEX L1a dataset containing the 6 waveform arrays.
-    var_information_df : pd.DataFrame
+    var_information_df : pandas.DataFrame
         Pandas data frame that contains information about each variable
         (e.g., bit-size, starting bit, and padding). This is used to unpack raw
         telemetry data from the input dataset (`l1a_dataset`).
@@ -189,7 +170,9 @@ def unpack_instrument_settings(
         values are the unpacked xr.DataArrays.
     """
     telemetry_data = {}
-
+    # Unpack each instrument setting only once (remove duplicated rows for segmented
+    # polynomials)
+    var_information_df = var_information_df.drop_duplicates(subset=["mnemonic"])
     for _, row in var_information_df.iterrows():
         unpacked_name = row["mnemonic"]
 
@@ -295,10 +278,14 @@ def get_trigger_mode_and_level(
         # Bit-shift right 22 places and use a 10-bit mask to extract the level value.
         threshold_level = float((trigger_controls >> 22) & mask)
 
-        # If it is the high gain channel multiply the level by the conversion factor.
-        # TODO: determine why the idex team is only doing this for the high gain channel
+        # multiply the threshold level by the conversion factor.
         if gain_channel == "hg":
             threshold_level *= ConversionFactors["TOF_High"]
+        elif gain_channel == "mg":
+            threshold_level *= ConversionFactors["TOF_Mid"]
+        elif gain_channel == "lg":
+            threshold_level *= ConversionFactors["TOF_Low"]
+
         return mode_label, threshold_level
 
     for channel in channels:
@@ -365,15 +352,15 @@ def get_spice_data(
     # Get spacecraft spin phase in degrees
     spin_phase = get_spacecraft_spin_phase(query_met_times=met)
     imap_spin_phase = get_spin_angle(spin_phase, degrees=True)
-    # Get position and velocity of IMAP in ecliptic frame
+    # Get the position and velocity of IMAP in ecliptic frame
     ephemeris = imap_state(et, observer=SpiceBody.SUN)
-    # Get Idex pointing in the j2000 equatorial frame
+    # Get Idex pointing in the defined frame
     idex_pointing = instrument_pointing(
-        et, SpiceFrame.IMAP_IDEX, SpiceFrame.J2000, cartesian=True
+        et, SpiceFrame.IMAP_IDEX, IDEX_EVENT_REFERENCE_FRAME, cartesian=True
     )
     solar_lon = solar_longitude(et, degrees=True)
-
-    range_ra_and_dec = cartesian_to_spherical(idex_pointing)
+    # longitude and latitude
+    lon_and_lat = cartesian_to_spherical(idex_pointing)[:, 1:]
 
     spice_data = {
         "ephemeris_position_x": ephemeris[:, 0],
@@ -382,8 +369,8 @@ def get_spice_data(
         "ephemeris_velocity_x": ephemeris[:, 3],
         "ephemeris_velocity_y": ephemeris[:, 4],
         "ephemeris_velocity_z": ephemeris[:, 5],
-        "right_ascension": range_ra_and_dec[:, 1],
-        "declination": range_ra_and_dec[:, 2],
+        "longitude": lon_and_lat[:, 0],
+        "latitude": lon_and_lat[:, 1],
         "spin_phase": imap_spin_phase,
         "solar_longitude": solar_lon,
     }

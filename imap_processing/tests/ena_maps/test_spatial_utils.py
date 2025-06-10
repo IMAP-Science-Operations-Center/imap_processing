@@ -7,7 +7,7 @@ import pytest
 from imap_processing.ena_maps.utils import spatial_utils
 
 # Parameterize with spacings (degrees here):
-valid_spacings = [0.25, 0.5, 1, 5, 10, 20]
+valid_spacings = [0.25, 0.5, 1, 5, 6, 6.666666666666667, 10, 20]
 invalid_spacings = [0, -1, 11]
 invalid_spacings_match_str = [
     "Spacing must be positive valued, non-zero.",
@@ -26,20 +26,20 @@ def test_build_spatial_bins():
     )
 
     assert az_bin_edges[0] == 0
-    assert az_bin_edges[-1] == 2 * np.pi
+    assert az_bin_edges[-1] == 360
     assert len(az_bin_edges) == 721
 
-    assert el_bin_edges[0] == -np.pi / 2
-    assert el_bin_edges[-1] == np.pi / 2
+    assert el_bin_edges[0] == -90
+    assert el_bin_edges[-1] == 90
     assert len(el_bin_edges) == 361
 
     assert len(az_bin_midpoints) == 720
-    np.testing.assert_allclose(az_bin_midpoints[0], np.deg2rad(0.25), atol=1e-4)
-    np.testing.assert_allclose(az_bin_midpoints[-1], np.deg2rad(359.75), atol=1e-4)
+    np.testing.assert_allclose(az_bin_midpoints[0], 0.25, atol=1e-4)
+    np.testing.assert_allclose(az_bin_midpoints[-1], 359.75, atol=1e-4)
 
     assert len(el_bin_midpoints) == 360
-    np.testing.assert_allclose(el_bin_midpoints[0], np.deg2rad(-89.75), atol=1e-4)
-    np.testing.assert_allclose(el_bin_midpoints[-1], np.deg2rad(89.75), atol=1e-4)
+    np.testing.assert_allclose(el_bin_midpoints[0], -89.75, atol=1e-4)
+    np.testing.assert_allclose(el_bin_midpoints[-1], 89.75, atol=1e-4)
 
 
 @pytest.mark.parametrize("spacing", valid_spacings)
@@ -91,7 +91,7 @@ def test_rewrap_even_spaced_az_el_grid_1d(order):
     )
     rewrapped_grid_known_shape = spatial_utils.rewrap_even_spaced_az_el_grid(
         raveled_values,
-        shape=orig_shape,
+        grid_shape=orig_shape,
         order=order,
     )
 
@@ -102,19 +102,19 @@ def test_rewrap_even_spaced_az_el_grid_1d(order):
 @pytest.mark.parametrize("order", ["C", "F"])
 def test_rewrap_even_spaced_az_el_grid_2d(order):
     """Test rewrap_even_spaced_az_el_grid function, with extra axis."""
-    orig_shape = (360 * 12, 180 * 12, 5)
+    orig_shape = (5, 360 * 12, 180 * 12)
     orig_grid = np.fromfunction(lambda i, j, k: i**2 + j + k, orig_shape, dtype=int)
-    raveled_values = orig_grid.reshape(-1, 5, order=order)
+    raveled_values = orig_grid.reshape(5, -1, order=order)
     rewrapped_grid_infer_shape = spatial_utils.rewrap_even_spaced_az_el_grid(
         raveled_values,
         order=order,
     )
     rewrapped_grid_known_shape = spatial_utils.rewrap_even_spaced_az_el_grid(
         raveled_values,
-        shape=orig_shape,
+        grid_shape=orig_shape[-2:],
         order=order,
     )
-    assert raveled_values.shape == (360 * 12 * 180 * 12, 5)
+    assert raveled_values.shape == (5, 360 * 12 * 180 * 12)
     assert np.array_equal(rewrapped_grid_infer_shape, orig_grid)
     assert np.array_equal(rewrapped_grid_known_shape, orig_grid)
 
@@ -141,21 +141,17 @@ class TestAzElSkyGrid:
         )
         npt.assert_allclose(
             grid.az_bin_midpoints,
-            np.deg2rad(expected_azimuth_bin_midpoints_deg),
+            expected_azimuth_bin_midpoints_deg,
             atol=1e-11,
         )
         npt.assert_allclose(
             grid.el_bin_midpoints,
-            np.deg2rad(expected_elevation_bin_midpoints_deg),
+            expected_elevation_bin_midpoints_deg,
             atol=1e-11,
         )
 
         # Check bin edges in degrees, radians
         expected_az_bin_edges_deg = np.arange(0, 360 + spacing, spacing)
         expected_el_bin_edges_deg = np.arange(-90, 90 + spacing, spacing)
-        npt.assert_allclose(
-            grid.az_bin_edges, np.deg2rad(expected_az_bin_edges_deg), atol=1e-11
-        )
-        npt.assert_allclose(
-            grid.el_bin_edges, np.deg2rad(expected_el_bin_edges_deg), atol=1e-11
-        )
+        npt.assert_allclose(grid.az_bin_edges, expected_az_bin_edges_deg, atol=1e-11)
+        npt.assert_allclose(grid.el_bin_edges, expected_el_bin_edges_deg, atol=1e-11)

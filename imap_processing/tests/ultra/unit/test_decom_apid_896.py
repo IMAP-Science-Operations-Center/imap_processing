@@ -23,33 +23,92 @@ def test_image_raw_events_decom(
 ):
     """This function reads validation data and checks that decom data
     matches validation data for image rate packet"""
-    decom_ultra, _ = decom_test_data
+    decom_ultra = decom_test_data
 
     df = pd.read_csv(events_test_path, index_col="MET")
-    df.replace(-1, np.iinfo(np.int64).min, inplace=True)
 
-    np.testing.assert_array_equal(df.SID, decom_ultra["SID"])
-    np.testing.assert_array_equal(df["Spin"], decom_ultra["SPIN"])
-    np.testing.assert_array_equal(df["AbortFlag"], decom_ultra["ABORTFLAG"])
-    np.testing.assert_array_equal(df["StartDelay"], decom_ultra["STARTDELAY"])
-    np.testing.assert_array_equal(df["Count"], decom_ultra["COUNT"])
-    np.testing.assert_array_equal(df["CoinType"], decom_ultra["COIN_TYPE"])
-    np.testing.assert_array_equal(df["StartType"], decom_ultra["START_TYPE"])
-    np.testing.assert_array_equal(df["StopType"], decom_ultra["STOP_TYPE"])
-    np.testing.assert_array_equal(df["StartPosTDC"], decom_ultra["START_POS_TDC"])
-    np.testing.assert_array_equal(df["StopNorthTDC"], decom_ultra["STOP_NORTH_TDC"])
-    np.testing.assert_array_equal(df["StopEastTDC"], decom_ultra["STOP_EAST_TDC"])
-    np.testing.assert_array_equal(df["StopSouthTDC"], decom_ultra["STOP_SOUTH_TDC"])
-    np.testing.assert_array_equal(df["StopWestTDC"], decom_ultra["STOP_WEST_TDC"])
-    np.testing.assert_array_equal(df["CoinNorthTDC"], decom_ultra["COIN_NORTH_TDC"])
-    np.testing.assert_array_equal(df["CoinSouthTDC"], decom_ultra["COIN_SOUTH_TDC"])
+    # # Check all values of each column are as expected,
+    # except for those set to fill value
     np.testing.assert_array_equal(
-        df["CoinDiscreteTDC"], decom_ultra["COIN_DISCRETE_TDC"]
+        df["SID"].values[df["SID"].values != -1],
+        decom_ultra["sid"].values[df["SID"].values != -1],
     )
-    np.testing.assert_array_equal(df["EnergyOrPH"], decom_ultra["ENERGY_PH"])
-    np.testing.assert_array_equal(df["PulseWidth"], decom_ultra["PULSE_WIDTH"])
-    np.testing.assert_array_equal(df["PhaseAngle"], decom_ultra["PHASE_ANGLE"])
-    np.testing.assert_array_equal(df["Bin"], decom_ultra["BIN"])
+    np.testing.assert_array_equal(
+        df["Spin"].values[df["Spin"].values != -1],
+        decom_ultra["spin"].values[df["Spin"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["AbortFlag"].values[df["AbortFlag"].values != -1],
+        decom_ultra["abortflag"].values[df["AbortFlag"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["StartDelay"].values[df["StartDelay"].values != -1],
+        decom_ultra["startdelay"].values[df["StartDelay"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["Count"].values[df["Count"].values != -1],
+        decom_ultra["count"].values[df["Count"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["CoinType"].values[df["CoinType"].values != -1],
+        decom_ultra["coin_type"].values[df["CoinType"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["StartType"].values[df["StartType"].values != -1],
+        decom_ultra["start_type"].values[df["StartType"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["StopType"].values[df["StopType"].values != -1],
+        decom_ultra["stop_type"].values[df["StopType"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["StartPosTDC"].values[df["StartPosTDC"].values != -1],
+        decom_ultra["start_pos_tdc"].values[df["StartPosTDC"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["StopNorthTDC"].values[df["StopNorthTDC"].values != -1],
+        decom_ultra["stop_north_tdc"].values[df["StopNorthTDC"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["StopEastTDC"].values[df["StopEastTDC"].values != -1],
+        decom_ultra["stop_east_tdc"].values[df["StopEastTDC"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["StopSouthTDC"].values[df["StopSouthTDC"].values != -1],
+        decom_ultra["stop_south_tdc"].values[df["StopSouthTDC"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["StopWestTDC"].values[df["StopWestTDC"].values != -1],
+        decom_ultra["stop_west_tdc"].values[df["StopWestTDC"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["CoinNorthTDC"].values[df["CoinNorthTDC"].values != -1],
+        decom_ultra["coin_north_tdc"].values[df["CoinNorthTDC"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["CoinSouthTDC"].values[df["CoinSouthTDC"].values != -1],
+        decom_ultra["coin_south_tdc"].values[df["CoinSouthTDC"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["CoinDiscreteTDC"].values[df["CoinDiscreteTDC"].values != -1],
+        decom_ultra["coin_discrete_tdc"].values[df["CoinDiscreteTDC"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["EnergyOrPH"].values[df["EnergyOrPH"].values != -1],
+        decom_ultra["energy_ph"].values[df["EnergyOrPH"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["PulseWidth"].values[df["PulseWidth"].values != -1],
+        decom_ultra["pulse_width"].values[df["PulseWidth"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["PhaseAngle"].values[df["PhaseAngle"].values != -1],
+        decom_ultra["phase_angle"].values[df["PhaseAngle"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["Bin"].values[df["Bin"].values != -1],
+        decom_ultra["bin"].values[df["Bin"].values != -1],
+    )
 
 
 @pytest.mark.parametrize(
@@ -69,36 +128,124 @@ def test_image_raw_events_decom_flags(decom_test_data, events_test_path):
     """This function reads validation data and checks that decom data
     matches validation data for image rate packet"""
 
-    decom_ultra, _ = decom_test_data
+    # # Check all values of each column are as expected,
+    # except for those set to fill value
+    decom_ultra = decom_test_data
     df = pd.read_csv(events_test_path, index_col="MET")
-    df.replace(-1, np.iinfo(np.int64).min, inplace=True)
 
-    np.testing.assert_array_equal(df["CnT"], decom_ultra["EVENT_FLAG_CNT"])
-    np.testing.assert_array_equal(df["PHCmpSL"], decom_ultra["EVENT_FLAG_PHCMPSL"])
-    np.testing.assert_array_equal(df["PHCmpSR"], decom_ultra["EVENT_FLAG_PHCMPSR"])
-    np.testing.assert_array_equal(df["PHCmpCD"], decom_ultra["EVENT_FLAG_PHCMPCD"])
-    np.testing.assert_array_equal(df["SSDS7"], decom_ultra["SSD_FLAG_7"])
-    np.testing.assert_array_equal(df["SSDS6"], decom_ultra["SSD_FLAG_6"])
-    np.testing.assert_array_equal(df["SSDS5"], decom_ultra["SSD_FLAG_5"])
-    np.testing.assert_array_equal(df["SSDS4"], decom_ultra["SSD_FLAG_4"])
-    np.testing.assert_array_equal(df["SSDS3"], decom_ultra["SSD_FLAG_3"])
-    np.testing.assert_array_equal(df["SSDS2"], decom_ultra["SSD_FLAG_2"])
-    np.testing.assert_array_equal(df["SSDS1"], decom_ultra["SSD_FLAG_1"])
-    np.testing.assert_array_equal(df["SSDS0"], decom_ultra["SSD_FLAG_0"])
-    np.testing.assert_array_equal(df["CFDCoinTN"], decom_ultra["CFD_FLAG_COINTN"])
-    np.testing.assert_array_equal(df["CFDCoinBN"], decom_ultra["CFD_FLAG_COINBN"])
-    np.testing.assert_array_equal(df["CFDCoinTS"], decom_ultra["CFD_FLAG_COINTS"])
-    np.testing.assert_array_equal(df["CFDCoinBS"], decom_ultra["CFD_FLAG_COINBS"])
-    np.testing.assert_array_equal(df["CFDCoinD"], decom_ultra["CFD_FLAG_COIND"])
-    np.testing.assert_array_equal(df["CFDStartRF"], decom_ultra["CFD_FLAG_STARTRF"])
-    np.testing.assert_array_equal(df["CFDStartLF"], decom_ultra["CFD_FLAG_STARTLF"])
-    np.testing.assert_array_equal(df["CFDStartRP"], decom_ultra["CFD_FLAG_STARTRP"])
-    np.testing.assert_array_equal(df["CFDStartLP"], decom_ultra["CFD_FLAG_STARTLP"])
-    np.testing.assert_array_equal(df["CFDStopTN"], decom_ultra["CFD_FLAG_STOPTN"])
-    np.testing.assert_array_equal(df["CFDStopBN"], decom_ultra["CFD_FLAG_STOPBN"])
-    np.testing.assert_array_equal(df["CFDStopTE"], decom_ultra["CFD_FLAG_STOPTE"])
-    np.testing.assert_array_equal(df["CFDStopBE"], decom_ultra["CFD_FLAG_STOPBE"])
-    np.testing.assert_array_equal(df["CFDStopTS"], decom_ultra["CFD_FLAG_STOPTS"])
-    np.testing.assert_array_equal(df["CFDStopBS"], decom_ultra["CFD_FLAG_STOPBS"])
-    np.testing.assert_array_equal(df["CFDStopTW"], decom_ultra["CFD_FLAG_STOPTW"])
-    np.testing.assert_array_equal(df["CFDStopBW"], decom_ultra["CFD_FLAG_STOPBW"])
+    np.testing.assert_array_equal(
+        df["CnT"].values[df["CnT"].values != -1],
+        decom_ultra["event_flag_cnt"].values[df["CnT"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["PHCmpSL"].values[df["PHCmpSL"].values != -1],
+        decom_ultra["event_flag_phcmpsl"].values[df["PHCmpSL"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["PHCmpSR"].values[df["PHCmpSR"].values != -1],
+        decom_ultra["event_flag_phcmpsr"].values[df["PHCmpSR"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["PHCmpCD"].values[df["PHCmpCD"].values != -1],
+        decom_ultra["event_flag_phcmpcd"].values[df["PHCmpCD"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["SSDS7"].values[df["SSDS7"].values != -1],
+        decom_ultra["ssd_flag_7"].values[df["SSDS7"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["SSDS6"].values[df["SSDS6"].values != -1],
+        decom_ultra["ssd_flag_6"].values[df["SSDS6"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["SSDS5"].values[df["SSDS5"].values != -1],
+        decom_ultra["ssd_flag_5"].values[df["SSDS5"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["SSDS4"].values[df["SSDS4"].values != -1],
+        decom_ultra["ssd_flag_4"].values[df["SSDS4"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["SSDS3"].values[df["SSDS3"].values != -1],
+        decom_ultra["ssd_flag_3"].values[df["SSDS3"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["SSDS2"].values[df["SSDS2"].values != -1],
+        decom_ultra["ssd_flag_2"].values[df["SSDS2"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["SSDS1"].values[df["SSDS1"].values != -1],
+        decom_ultra["ssd_flag_1"].values[df["SSDS1"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["SSDS0"].values[df["SSDS0"].values != -1],
+        decom_ultra["ssd_flag_0"].values[df["SSDS0"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["CFDCoinTN"].values[df["CFDCoinTN"].values != -1],
+        decom_ultra["cfd_flag_cointn"].values[df["CFDCoinTN"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["CFDCoinBN"].values[df["CFDCoinBN"].values != -1],
+        decom_ultra["cfd_flag_coinbn"].values[df["CFDCoinBN"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["CFDCoinTS"].values[df["CFDCoinTS"].values != -1],
+        decom_ultra["cfd_flag_coints"].values[df["CFDCoinTS"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["CFDCoinBS"].values[df["CFDCoinBS"].values != -1],
+        decom_ultra["cfd_flag_coinbs"].values[df["CFDCoinBS"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["CFDCoinD"].values[df["CFDCoinD"].values != -1],
+        decom_ultra["cfd_flag_coind"].values[df["CFDCoinD"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["CFDStartRF"].values[df["CFDStartRF"].values != -1],
+        decom_ultra["cfd_flag_startrf"].values[df["CFDStartRF"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["CFDStartLF"].values[df["CFDStartLF"].values != -1],
+        decom_ultra["cfd_flag_startlf"].values[df["CFDStartLF"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["CFDStartRP"].values[df["CFDStartRP"].values != -1],
+        decom_ultra["cfd_flag_startrp"].values[df["CFDStartRP"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["CFDStartLP"].values[df["CFDStartLP"].values != -1],
+        decom_ultra["cfd_flag_startlp"].values[df["CFDStartLP"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["CFDStopTN"].values[df["CFDStopTN"].values != -1],
+        decom_ultra["cfd_flag_stoptn"].values[df["CFDStopTN"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["CFDStopBN"].values[df["CFDStopBN"].values != -1],
+        decom_ultra["cfd_flag_stopbn"].values[df["CFDStopBN"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["CFDStopTE"].values[df["CFDStopTE"].values != -1],
+        decom_ultra["cfd_flag_stopte"].values[df["CFDStopTE"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["CFDStopBE"].values[df["CFDStopBE"].values != -1],
+        decom_ultra["cfd_flag_stopbe"].values[df["CFDStopBE"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["CFDStopTS"].values[df["CFDStopTS"].values != -1],
+        decom_ultra["cfd_flag_stopts"].values[df["CFDStopTS"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["CFDStopBS"].values[df["CFDStopBS"].values != -1],
+        decom_ultra["cfd_flag_stopbs"].values[df["CFDStopBS"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["CFDStopTW"].values[df["CFDStopTW"].values != -1],
+        decom_ultra["cfd_flag_stoptw"].values[df["CFDStopTW"].values != -1],
+    )
+    np.testing.assert_array_equal(
+        df["CFDStopBW"].values[df["CFDStopBW"].values != -1],
+        decom_ultra["cfd_flag_stopbw"].values[df["CFDStopBW"].values != -1],
+    )

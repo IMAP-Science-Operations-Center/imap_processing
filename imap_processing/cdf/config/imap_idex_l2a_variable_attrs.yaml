@@ -1,0 +1,330 @@
+int_fillval: &int_fillval -9223372036854775808
+double_fillval: &double_fillval -1.0E+31
+int_maxval: &int_maxval 9223372036854775807
+
+# <=== Base Attributes ===>
+fit_parameter_base: &fit_parameter_base
+  UNITS: " "
+  VAR_TYPE: data
+  DEPEND_0: epoch
+  DEPEND_1: target_fit_parameter_index
+  LABL_PTR_1: target_fit_parameter_labels
+  VALIDMIN: 0
+  VALIDMAX: *int_maxval
+  FORMAT: F20.6
+  FILLVAL: *double_fillval
+  DISPLAY_TYPE: no_plot
+  DICT_KEY: SPASE>Particle>ParticleType:Dust>ParticleQuantity:Current>Qualifier:Fit # TODO quantity should be charge but there is no SPASE charge
+
+impact_charge_base: &impact_charge_base
+  UNITS: pC
+  VALIDMIN: *int_fillval
+  VALIDMAX: *int_maxval
+  VAR_TYPE: data
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FORMAT: F20.4
+  FILLVAL: *double_fillval
+  DICT_KEY: SPASE>Particle>ParticleType:Dust>ParticleQuantity:Current>Qualifier:Derived # TODO quantity should be charge but there is no SPASE charge
+
+mass_estimate_base: &mass_estimate_base
+  UNITS: amu
+  VALIDMIN: 0.0
+  VALIDMAX: *int_maxval
+  VAR_TYPE: data
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FORMAT: F20.4
+  FILLVAL: *double_fillval
+  DICT_KEY: SPASE>Particle>ParticleType:Dust>ParticleQuantity:Mass>Qualifier:Derived
+
+chi_square_base: &chi_square_base
+  UNITS: " "
+  VALIDMIN: 0.0
+  VALIDMAX: *int_maxval
+  VAR_TYPE: data
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FORMAT: F20.4
+  FILLVAL: *double_fillval
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
+
+fit_results_base: &fit_results_base
+  UNITS: pC
+  VALIDMIN: 0
+  VALIDMAX: *int_maxval
+  VAR_TYPE: data
+  DEPEND_0: epoch
+  DEPEND_1: time_low_sample_rate_index
+  LABL_PTR_1: time_low_sample_rate_label
+  DISPLAY_TYPE: spectrogram
+  FORMAT: F20.4
+  FILLVAL: *double_fillval
+  DICT_KEY: SPASE>Particle>ParticleType:Dust>ParticleQuantity:Current>Qualifier:Derived # TODO quantity should be charge but there is no SPASE charge
+
+# <=== LABL_PTR_i Attributes ===>
+peak_fit_parameter_labels:
+  CATDESC: Labels for EMG fit parameters (mu, sigma, lambda)
+  FIELDNAM: EMG Parameter Labels
+  VAR_TYPE: metadata
+  FORMAT: A8
+  DEPEND_1: peak_fit_parameter_index
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+target_fit_parameter_labels:
+  CATDESC: Labels for the target fit parameters.
+  FIELDNAM: Target Fit Parameter Labels
+  VAR_NOTES: Parameters include time_of_impact, constant_offset, amplitude, rise_time, discharge_time.
+  VAR_TYPE: metadata
+  FORMAT: A8
+  DEPEND_1: target_fit_parameter_index
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+mass_labels:
+  CATDESC: Labels for mass index values
+  FIELDNAM: Mass Labels
+  VAR_TYPE: metadata
+  FORMAT: A8
+  DEPEND_1: mass_index
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+# <=== Index Attributes ===>
+peak_fit_parameter_index:
+  CATDESC: Peak fit parameter index
+  FIELDNAM: Peak Fit Parameter Index
+  UNITS: " "
+  FORMAT: I2
+  VAR_TYPE: support_data
+  VALIDMIN: 0
+  VALIDMAX: 2
+  FILLVAL: *int_fillval
+  LABL_PTR_1: peak_fit_parameter_labels
+  DICT_KEY: SPASE>Support>SupportQuantity:Other # TODO what to do for indices?
+
+target_fit_parameter_index:
+  CATDESC: Target fit parameter index
+  FIELDNAM: Target Fit Parameter Index
+  UNITS: " "
+  FORMAT: I4
+  VAR_TYPE: support_data
+  VALIDMIN: 0
+  VALIDMAX: 4
+  FILLVAL: *int_fillval
+  LABL_PTR_1: target_fit_parameter_labels
+  DICT_KEY: SPASE>Support>SupportQuantity:Other # TODO what to do for indices?
+
+mass_index:
+  CATDESC: Mass index values from 1 to 500
+  FIELDNAM: Mass Index
+  UNITS: amu
+  FORMAT: I4
+  VAR_TYPE: support_data
+  SCALETYP: linear
+  LABLAXIS: Mass Index
+  VALIDMIN: 0
+  VALIDMAX: 500
+  FILLVAL: *int_fillval
+  LABL_PTR_1: mass_labels
+  DICT_KEY: SPASE>Support>SupportQuantity:Other # TODO what to do for indices?
+
+# <=== Data Attributes ===>
+
+tof_snr:
+  CATDESC: TOF High signal to noise ratio.
+  FIELDNAM: TOF Signal to Noise Ratio
+  UNITS: pC
+  VALIDMIN: 0.0
+  VALIDMAX: *int_maxval
+  VAR_TYPE: data
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FORMAT: F20.3
+  FILLVAL: *double_fillval
+  LABLAXIS: TOF High SNR
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
+
+tof_peak_kappa:
+  CATDESC: TOF High spectrum with x-axis converted from time to mass.
+  FIELDNAM: Mass Scale
+  UNITS: amu
+  VALIDMIN: 0.0
+  VALIDMAX: 1.0
+  VAR_TYPE: data
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FORMAT: F10.3
+  FILLVAL: *double_fillval
+  LABLAXIS: TOF High Kappa
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
+
+tof_peak_fit_parameters:
+  CATDESC: EMG fit parameters (mu, sigma, lambda) for TOF High peaks.
+  FIELDNAM: TOF Peak Fit Parameters
+  UNITS: " "
+  VAR_TYPE: support_data
+  DEPEND_0: epoch
+  DEPEND_1: mass_index
+  DEPEND_2: peak_fit_parameter_index
+  LABL_PTR_1: mass_labels
+  LABL_PTR_2: peak_fit_parameter_labels
+  VALIDMIN: 0
+  VALIDMAX: *int_maxval
+  LABLAXIS: TOF Peak Fit Parameters
+  FORMAT: F20.6
+  FILLVAL: *double_fillval
+  DISPLAY_TYPE: no_plot
+  DICT_KEY: SPASE>Particle>ParticleType:Ion>ParticleQuantity:Current>Qualifier:Fit # TODO quantity should be charge but there is no SPASE charge
+
+tof_peak_area_under_fit:
+  CATDESC: Area under the EMG curve for each mass peak.
+  FIELDNAM: TOF Peak Area
+  UNITS: " "
+  VAR_TYPE: data
+  DEPEND_0: epoch
+  DEPEND_1: mass_index
+  LABL_PTR_1: mass_labels
+  LABLAXIS: Area Under Peak
+  VALIDMIN: 0
+  VALIDMAX: *int_maxval
+  DISPLAY_TYPE: spectrogram
+  FORMAT: F20.6
+  FILLVAL: *double_fillval
+  DICT_KEY: SPASE>Particle>ParticleType:Ion>ParticleQuantity:Current>Qualifier:Integral # TODO quantity should be charge but there is no SPASE charge
+
+tof_peak_chi_squared:
+  <<: *chi_square_base
+  DEPEND_1: mass_index
+  LABL_PTR_1: mass_labels
+  CATDESC: Chi squared value for the TOF peak emg fits.
+  FIELDNAM: Chi Square (TOF peak fits))
+
+tof_peak_reduced_chi_squared:
+  <<: *chi_square_base
+  DEPEND_1: mass_index
+  LABL_PTR_1: mass_labels
+  CATDESC: Reduced chi squared value for the TOF peak emg fits.
+  FIELDNAM: Reduced Chi Square (TOF peak fits)
+
+mass_scale:
+  CATDESC: TOF High spectrum with x-axis converted from time to mass.
+  FIELDNAM: Mass Scale
+  UNITS: amu
+  VALIDMIN: 0.0
+  VALIDMAX: *int_maxval
+  FILLVAL: *double_fillval
+  VAR_TYPE: data
+  DEPEND_0: epoch
+  DEPEND_1: time_high_sample_rate_index
+  LABL_PTR_1: time_high_sample_rate_label
+  LABLAXIS: Mass Scale
+  DISPLAY_TYPE: spectrogram
+  FORMAT: F20.6
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal
+
+target_low_fit_parameters:
+  <<: *fit_parameter_base
+  CATDESC: Fitted parameters for Target Low impact signal.
+  VAR_NOTES: Parameters include time of impact, constant offset, amplitude, rise time, discharge time.
+  FIELDNAM: Target Low Fit Parameters
+
+target_low_impact_charge:
+  <<: *impact_charge_base
+  LABLAXIS: Target Low Impact Charge
+  CATDESC: Total charge from the dust impact on Target Low channel derived from the fitted curve.
+  FIELDNAM: Target Low Impact Charge
+
+target_low_dust_mass_estimate:
+  <<: *mass_estimate_base
+  LABLAXIS: Target Low Dust Mass Estimate
+  CATDESC: Estimated dust mass from Target Low signal based on impact charge.
+  FIELDNAM: Estimated Dust Mass (Target Low)
+
+target_low_chi_squared:
+  <<: *chi_square_base
+  LABLAXIS: Target Low Chi Square
+  CATDESC: Chi squared value for the Target Low signal fit.
+  FIELDNAM: Chi Square (Target Low)
+
+target_low_reduced_chi_squared:
+  <<: *chi_square_base
+  LABLAXIS: Target Low Reduced Chi Square
+  CATDESC: Reduced chi squared value for the Target Low signal fit.
+  FIELDNAM: Reduced Chi Square (Target Low)
+
+target_low_fit_results:
+  <<: *fit_results_base
+  LABLAXIS: Target Low Fit Results
+  CATDESC: Values of Target Low signal fit evaluated at each time point.
+  FIELDNAM: Target Low Fit results
+
+target_high_fit_parameters:
+  <<: *fit_parameter_base
+  CATDESC: Fitted parameters for Target High impact signal.
+  VAR_NOTES: Parameters include time of impact, constant offset, amplitude, rise time, discharge time.
+  FIELDNAM: Target High Fit Parameters
+
+target_high_impact_charge:
+  <<: *impact_charge_base
+  LABLAXIS: Target High Impact Charge
+  CATDESC: Charge from the dust impact on Target High derived from the fitted curve.
+  FIELDNAM: Target High Impact Charge
+
+target_high_dust_mass_estimate:
+  <<: *mass_estimate_base
+  LABLAXIS: Target High Dust Mass Estimate
+  CATDESC: Estimated dust mass from Target High signal based on impact charge.
+  FIELDNAM: Estimated Dust Mass (Target High)
+
+target_high_chi_squared:
+  <<: *chi_square_base
+  LABLAXIS: Target High Chi Square
+  CATDESC: Chi squared value for the Target High signal fit.
+  FIELDNAM: Chi Square (Target High)
+
+target_high_reduced_chi_squared:
+  <<: *chi_square_base
+  LABLAXIS: Target High Reduced Chi Square
+  CATDESC: Reduced chi squared value for the Target Low signal fit.
+  FIELDNAM: Reduced Chi Square (Target High)
+
+target_high_fit_results:
+  <<: *fit_results_base
+  LABLAXIS: Target High Fit Results
+  CATDESC: Values of Target High signal fit evaluated at each time point.
+  FIELDNAM: Target High Fit Results
+
+ion_grid_fit_parameters:
+  <<: *fit_parameter_base
+  CATDESC: Fitted parameters for Ion Grid impact signal.
+  VAR_NOTES: Parameters include time of impact, constant offset, amplitude, rise time, discharge time.
+  FIELDNAM: Ion Grid Fit Parameters
+
+ion_grid_impact_charge:
+  <<: *impact_charge_base
+  LABLAXIS: Ion Grid Impact Charge
+  CATDESC: Charge from the dust impact on Ion Grid channel derived from the fitted curve.
+  FIELDNAM: Ion Grid Impact Charge
+
+ion_grid_dust_mass_estimate:
+  <<: *mass_estimate_base
+  LABLAXIS: Ion Grid Dust Mass Estimate
+  CATDESC: Estimated dust mass from Ion Grid signal based on impact charge.
+  FIELDNAM: Estimated Dust Mass (Ion Grid)
+
+ion_grid_chi_squared:
+  <<: *chi_square_base
+  LABLAXIS: Ion Grid Chi Square
+  CATDESC: Chi squared value for the Ion Grid signal fit.
+  FIELDNAM: Chi Square (Ion Grid)
+
+ion_grid_reduced_chi_squared:
+  <<: *chi_square_base
+  LABLAXIS: Ion Grid Reduced Chi Square
+  CATDESC: Reduced chi squared value for the Ion Grid signal fit.
+  FIELDNAM: Reduced Chi Square (Ion Grid)
+
+ion_grid_fit_results:
+  <<: *fit_results_base
+  LABLAXIS: Ion Grid Fit Results
+  CATDESC: Values of Ion Grid signal fit evaluated at each time point.
+  FIELDNAM: Ion Grid Fit Results

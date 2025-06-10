@@ -18,10 +18,12 @@ class HIAPID(IntEnum):
     H45_APP_NHK = 754
     H45_SCI_CNT = 769
     H45_SCI_DE = 770
+    H45_DIAG_FEE = 772
 
     H90_APP_NHK = 818
     H90_SCI_CNT = 833
     H90_SCI_DE = 834
+    H90_DIAG_FEE = 836
 
     @property
     def sensor(self) -> str:
@@ -99,6 +101,7 @@ def full_dataarray(
     attrs: dict,
     coords: Optional[dict[str, xr.DataArray]] = None,
     shape: Optional[Union[int, Sequence[int]]] = None,
+    fill_value: Optional[float] = None,
 ) -> xr.DataArray:
     """
     Generate an empty xarray.DataArray with appropriate attributes.
@@ -113,10 +116,17 @@ def full_dataarray(
         Variable name.
     attrs : dict
         CDF variable attributes. Usually retrieved from ImapCdfAttributes.
-    coords : dict
-        Coordinate variables for the Dataset.
-    shape : int or tuple
-        Shape of ndarray data array to instantiate in the xarray.DataArray.
+    coords : dict, optional
+        Coordinate variables for the Dataset. This function will extract the
+        sizes of each dimension defined by the attributes dictionary to determine
+        the size of the DataArray to be created.
+    shape : int or tuple, optional
+        Shape of ndarray data array to instantiate in the xarray.DataArray. If
+        shape is provided, the DataArray created will have this shape regardless
+        of whether coordinates are provided or not.
+    fill_value : optional, float
+        Override the fill value that the DataArray will be filled with. If not
+        supplied, the "FILLVAL" value from `attrs` will be used.
 
     Returns
     -------
@@ -133,9 +143,11 @@ def full_dataarray(
         shape = [coords[k].data.size for k in dims]  # type: ignore
     if hasattr(shape, "__len__") and len(shape) > len(dims):
         dims.append("")
+    if fill_value is None:
+        fill_value = _attrs["FILLVAL"]
 
     data_array = xr.DataArray(
-        np.full(shape, _attrs["FILLVAL"], dtype=dtype),
+        np.full(shape, fill_value, dtype=dtype),
         name=name,
         dims=dims,
         attrs=_attrs,
@@ -145,7 +157,9 @@ def full_dataarray(
 
 def create_dataset_variables(
     variable_names: list[str],
-    variable_shape: Union[int, Sequence[int]],
+    variable_shape: Optional[Union[int, Sequence[int]]] = None,
+    coords: Optional[dict[str, xr.DataArray]] = None,
+    fill_value: Optional[float] = None,
     att_manager_lookup_str: str = "{0}",
 ) -> dict[str, xr.DataArray]:
     """
@@ -157,8 +171,18 @@ def create_dataset_variables(
     ----------
     variable_names : list[str]
         List of variable names to create.
-    variable_shape : tuple[int]
-        Shape of the new variables data ndarray.
+    variable_shape : int or sequence of int, optional
+        Shape of the new variables data ndarray. If not provided the shape will
+        attempt to be derived from the coords dictionary.
+    coords : dict, optional
+        Coordinate variables for the Dataset. If `variable_shape` is not provided
+        the dataset variables created will use this dictionary along with variable
+        attributes from the CdfAttributeManager to determine the shapes of the
+        dataset variables created.
+    fill_value : optional, number
+        Value to fill the new variables data arrays with. If not supplied,
+        the fill value is pulled from the CDF variable attributes "FILLVAL"
+        attribute.
     att_manager_lookup_str : str
         String defining how to build the string passed to the
         CdfAttributeManager in order to retrieve the CdfAttributes for each
@@ -181,5 +205,44 @@ def create_dataset_variables(
         attrs = attr_mgr.get_variable_attributes(
             att_manager_lookup_str.format(var), check_schema=False
         )
-        new_variables[var] = full_dataarray(var, attrs, shape=variable_shape)
+        new_variables[var] = full_dataarray(
+            var, attrs, shape=variable_shape, coords=coords, fill_value=fill_value
+        )
     return new_variables
+
+
+class CoincidenceBitmap(IntEnum):
+    """IntEnum class for coincidence type bitmap values."""
+
+    A = 2**3
+    B = 2**2
+    C1 = 2**1
+    C2 = 2**0
+
+    @staticmethod
+    def detector_hit_str_to_int(detector_hit_str: str) -> int:
+        """
+        Convert a detector hit string to a coincidence type integer value.
+
+        A detector hit string is a string containing all detectors that were hit
+        for a direct event. Possible detectors include: [A, B, C1, C2]. Converting
+        the detector hit string to a coincidence type integer value involves
+        summing the coincidence bitmap value for each detector hit. e.g. "AC1C2"
+        results in 2**3 + 2**1 + 2**0 = 11.
+
+        Parameters
+        ----------
+        detector_hit_str : str
+            The string containing the set of detectors hit.
+            e.g. "AC1C2".
+
+        Returns
+        -------
+        coincidence_type : int
+            The integer value of the coincidence type.
+        """
+        # Join all detector names with a pipe for use with regex
+        pattern = r"|".join(c.name for c in CoincidenceBitmap)
+        matches = re.findall(pattern, detector_hit_str)
+        # Sum the integer value assigned to the detector name for each match
+        return sum(CoincidenceBitmap[m] for m in matches)

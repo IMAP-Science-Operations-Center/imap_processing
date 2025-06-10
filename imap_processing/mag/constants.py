@@ -59,6 +59,31 @@ class PrimarySensor(Enum):
     MAGI = 1
 
 
+class VecSec(Enum):
+    """Enum for all valid vector rates (Vectors per second)."""
+
+    ONE_VEC_PER_S = 1
+    TWO_VECS_PER_S = 2
+    FOUR_VECS_PER_S = 4
+    EIGHT_VECS_PER_S = 8
+    SIXTEEN_VECS_PER_S = 16
+    THIRTY_TWO_VECS_PER_S = 32
+    SIXTY_FOUR_VECS_PER_S = 64
+    ONE_TWENTY_EIGHT_VECS_PER_S = 128
+
+
+# Possible sensor rates
+POSSIBLE_RATES = [e.value for e in VecSec]
+
+
+class ModeFlags(Enum):
+    """Enum for MAG mode flags: burst and normal (BURST + NORM)."""
+
+    NORM = 0
+    BURST = 1
+    MISSING = -1
+
+
 FIBONACCI_SEQUENCE = [
     1,
     2,
@@ -106,3 +131,29 @@ MAX_FINE_TIME = np.iinfo(np.uint16).max  # maximum 16 bit unsigned int
 AXIS_COUNT = 3
 RANGE_BIT_WIDTH = 2
 MAX_COMPRESSED_VECTOR_BITS = 60
+
+
+def vectors_per_second_from_string(vecsec_string: str) -> dict:
+    """
+    Extract the vectors per second from a string into a dictionary.
+
+    Dictionary format: {start_time: vecsec, start_time: vecsec}.
+
+    Parameters
+    ----------
+    vecsec_string : str
+        A string of the form "start:vecsec,start:vecsec" where start is the time in
+        nanoseconds and vecsec is the number of vectors per second.
+
+    Returns
+    -------
+    dict
+        A dictionary of the form {start_time: vecsec, start_time: vecsec}.
+    """
+    vecsec_dict = {}
+    vecsec_segments = vecsec_string.split(",")
+    for vecsec_segment in vecsec_segments:
+        start_time, vecsec = vecsec_segment.split(":")
+        vecsec_dict[int(start_time)] = int(vecsec)
+
+    return vecsec_dict

@@ -22,7 +22,7 @@ The explicit code interfaces and structure are described in the :ref:`code-docum
    :maxdepth: 1
 
    code-documentation/index
-   development-guide/index
+   development/index
    project-management/index
    external-tools/index
    data-access/index

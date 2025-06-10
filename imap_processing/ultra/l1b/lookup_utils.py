@@ -23,7 +23,21 @@ _BACK_POS_DF_ULTRA90 = pd.read_csv(
     BASE_PATH / "ultra90_back-pos-luts.csv", index_col="Index_offset"
 )
 _ENERGY_NORM_DF = pd.read_csv(BASE_PATH / "EgyNorm.mem.csv")
-_IMAGE_PARAMS_DF = pd.read_csv(BASE_PATH / "FM45_Startup1_ULTRA_IMGPARAMS_20240719.csv")
+_IMAGE_PARAMS_DF = {
+    "ultra45": pd.read_csv(BASE_PATH / "FM45_Startup1_ULTRA_IMGPARAMS_20240719.csv"),
+    "ultra90": pd.read_csv(BASE_PATH / "FM90_Startup1_ULTRA_IMGPARAMS_20240719.csv"),
+}
+
+_FWHM_TABLES = {
+    ("left", "ultra45"): pd.read_csv(BASE_PATH / "Angular_Profiles_FM45_LeftSlit.csv"),
+    ("right", "ultra45"): pd.read_csv(
+        BASE_PATH / "Angular_Profiles_FM45_RightSlit.csv"
+    ),
+    ("left", "ultra90"): pd.read_csv(BASE_PATH / "Angular_Profiles_FM90_LeftSlit.csv"),
+    ("right", "ultra90"): pd.read_csv(
+        BASE_PATH / "Angular_Profiles_FM90_RightSlit.csv"
+    ),
+}
 
 
 def get_y_adjust(dy_lut: np.ndarray) -> npt.NDArray:
@@ -32,7 +46,7 @@ def get_y_adjust(dy_lut: np.ndarray) -> npt.NDArray:
 
     Instead of using trigonometry, this function utilizes a 256-element lookup table
     to find the Y adjustment. For more details, refer to pages 37-38 of the
-    IMAP-Ultra Flight Software Specification document (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
@@ -56,7 +70,7 @@ def get_norm(dn: xr.DataArray, key: str, file_label: str) -> npt.NDArray:
     using lookup tables.
 
     Further description is available on pages 31-32 of the IMAP-Ultra Flight Software
-    Specification document (7523-9009_Rev_-.pdf). This will work for both Tp{key}Norm,
+    Specification document. This will work for both Tp{key}Norm,
     Bt{key}Norm. This is for getStopNorm and getCoinNorm.
 
     Parameters
@@ -92,7 +106,7 @@ def get_back_position(back_index: np.ndarray, key: str, file_label: str) -> npt.
     instead of linear equations is necessary. The computation will use different
     tables to accommodate variations between the top and bottom anodes.
     Further description is available on page 32 of the
-    IMAP-Ultra Flight Software Specification document (7523-9009_Rev_-.pdf).
+    IMAP-Ultra Flight Software Specification document.
 
     Parameters
     ----------
@@ -122,8 +136,8 @@ def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray) -> npt.NDArra
     Normalize composite energy per SSD using a lookup table.
 
     Further description is available on page 41 of the
-    IMAP-Ultra Flight Software Specification document
-    (7523-9009_Rev_-.pdf). Note : There are 8 SSDs containing
+    IMAP-Ultra Flight Software Specification document.
+    Note : There are 8 SSDs containing
     4096 composite energies each.
 
     Parameters
@@ -143,23 +157,73 @@ def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray) -> npt.NDArra
     return _ENERGY_NORM_DF["NormEnergy"].iloc[row_number]
 
 
-def get_image_params(image: str) -> np.float64:
+def get_image_params(image: str, sensor: str) -> np.float64:
     """
     Lookup table for image parameters.
 
     Further description is available starting on
     page 30 of the IMAP-Ultra Flight Software
-    Specification document (7523-9009_Rev_-.pdf).
+    Specification document.
 
     Parameters
     ----------
     image : str
         The column name to lookup in the CSV file, e.g., 'XFTLTOFF' or 'XFTRTOFF'.
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
 
     Returns
     -------
     value : np.float64
         Image parameter value from the CSV file.
     """
-    value: np.float64 = _IMAGE_PARAMS_DF[image].values[0]
+    lookup_table = _IMAGE_PARAMS_DF[sensor]
+    value: np.float64 = lookup_table[image].values[0]
     return value
+
+
+def get_angular_profiles(start_type: str, sensor: str) -> pd.DataFrame:
+    """
+    Lookup table for FWHM for theta and phi.
+
+    Further description is available starting on
+    page 18 of the Algorithm Document.
+
+    Parameters
+    ----------
+    start_type : str
+       Start Type: Left, Right.
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
+
+    Returns
+    -------
+    lookup_table : DataFrame
+        Angular profile lookup table for a given start_type and sensor.
+    """
+    lookup_table = _FWHM_TABLES[(start_type.lower(), sensor)]
+
+    return lookup_table
+
+
+def get_energy_efficiencies(ancillary_files: dict) -> pd.DataFrame:
+    """
+    Lookup table for efficiencies for theta and phi.
+
+    Further description is available starting on
+    page 18 of the Algorithm Document.
+
+    Parameters
+    ----------
+    ancillary_files : dict[Path]
+        Ancillary files.
+
+    Returns
+    -------
+    lookup_table : DataFrame
+        Efficiencies lookup table for a given sensor.
+    """
+    # TODO: add sensor to input when new lookup tables are available.
+    lookup_table = pd.read_csv(ancillary_files["l1b-45sensor-logistic-interpolation"])
+
+    return lookup_table

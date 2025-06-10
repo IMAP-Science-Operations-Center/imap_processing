@@ -9,6 +9,13 @@ default_attrs: &default
   VAR_TYPE: data
   UNITS: " "
 
+component:
+  CATDESC: Velocity components (vx, vy, vz)
+  FIELDNAM: component
+  LABLAXIS: component
+  FORMAT: A3
+  VAR_TYPE: metadata
+
 default_uint8_attrs: &default_uint8
   <<: *default
   FILLVAL: 255
@@ -51,11 +58,19 @@ default_int32_attrs: &default_int32
 
 default_float32_attrs: &default_float32
   <<: *default
-  FILLVAL: .NAN
+  FILLVAL: -1.0e31
   FORMAT: F12.6
   VALIDMIN: -3.4028235e+38
   VALIDMAX: 3.4028235e+38
   dtype: float32
+
+default_float64_attrs: &default_float64
+  <<: *default
+  FILLVAL: -1.0e31
+  FORMAT: F10.2
+  VALIDMIN: -1.7976931348623157e+308
+  VALIDMAX: 1.7976931348623157e+308
+  dtype: float64
 
 x_front:
   <<: *default_float32
@@ -94,10 +109,31 @@ x_coin:
 
 event_times:
   <<: *default_float32
-  CATDESC: time of event as calculated using aux and de l1a packets
+  CATDESC: time of event as calculated using Universal Spin Table and de l1a packets
   FIELDNAM: event_times
   LABLAXIS: event times
   UNITS: seconds
+
+spin_starts:
+  <<: *default_float32
+  CATDESC: time of spin from Universal Spin Table.
+  FIELDNAM: spin_starts
+  LABLAXIS: spin starts
+  UNITS: seconds
+
+phase_angle:
+  <<: *default_float32
+  CATDESC: Phase angle from the direct event packet in 1/2 degree increments (range is 0-719)
+  FIELDNAM: phase_angle
+  LABLAXIS: phase angle
+  UNITS: degrees
+
+spin:
+  <<: *default_uint32
+  CATDESC: Spin number.
+  FIELDNAM: spin_number
+  LABLAXIS: spin number
+  UNITS: " "
 
 tof_start_stop:
   <<: *default_float32
@@ -165,19 +201,31 @@ energy:
 
 tof_energy:
   <<: *default_float32
-  CATDESC: Energy measured using kinetic energy equation.
+  CATDESC: Energy measured using kinetic energy equation in the instrument frame.
+  FIELDNAM: energy
+  LABLAXIS: energy
+  UNITS: keV
+
+energy_spacecraft:
+  <<: *default_float32
+  CATDESC: Energy measured using kinetic energy equation in the despun spacecraft frame.
+  FIELDNAM: energy
+  LABLAXIS: energy
+  UNITS: keV
+
+energy_heliosphere:
+  <<: *default_float32
+  CATDESC: Energy measured using kinetic energy equation in the despun heliosphere frame.
   FIELDNAM: energy
   LABLAXIS: energy
   UNITS: keV
 
 species:
-  <<: *default
+  <<: *default_uint8
   DISPLAY_TYPE: no_plot
   CATDESC: Label species type.
   FIELDNAM: Label species type.
-  FILLVAL: "UNKNOWN"
-  FORMAT: A8
-  dtype: str
+  LABLAXIS: species
   UNITS: " "
 
 front_back_distance:
@@ -194,25 +242,55 @@ path_length:
   LABLAXIS: path_length
   UNITS: mm / 100
 
-azimuth:
+phi:
   <<: *default_float32
-  CATDESC: Azimuth.
-  FIELDNAM: azimuth
-  LABLAXIS: azimuth
-  UNITS: radians
+  CATDESC: Ultra instrument frame event phi (azimuth with range -90 -> 90).
+  FIELDNAM: phi
+  LABLAXIS: phi
+  UNITS: degrees
 
-elevation:
+theta:
   <<: *default_float32
-  CATDESC: Elevation.
-  FIELDNAM: elevation
-  LABLAXIS: elevation
-  UNITS: radians
+  CATDESC: Ultra instrument frame event theta (elevation with range -90 -> 90).
+  FIELDNAM: theta
+  LABLAXIS: theta
+  UNITS: degrees
+
+phi_fwhm:
+  <<: *default_float32
+  CATDESC: FWHM of the phi distribution.
+  FIELDNAM: phi_fwhm
+  LABLAXIS: phi fwhm
+  UNITS: degrees
+
+theta_fwhm:
+  <<: *default_float32
+  CATDESC: FWHM of the theta distribution.
+  FIELDNAM: phi_fwhm
+  LABLAXIS: phi fwhm
+  UNITS: degrees
 
 event_efficiency:
   <<: *default_float32
   CATDESC: Estimated event efficiency for this path through the instrument.
   FIELDNAM: event_efficiency
   LABLAXIS: event efficiency
+  UNITS: " "
+
+direct_event_unit_velocity:
+  <<: *default_float32
+  CATDESC: Unit vector of the direct event velocity in the instrument frame.
+  DEPEND_1: component
+  FIELDNAM: direct_event_unit_velocity
+  LABLAXIS: direct event unit velocity
+  UNITS: " "
+
+direct_event_unit_position:
+  <<: *default_float32
+  CATDESC: Unit vector of the direct event position in the instrument frame.
+  DEPEND_1: component
+  FIELDNAM: direct_event_unit_position
+  LABLAXIS: direct event unit position
   UNITS: " "
 
 velocity_sc:
@@ -249,14 +327,6 @@ de_event_met:
   VAR_TYPE: support_data
   SCALE_TYP: linear
 
-spin_number:
-  <<: *default
-  CATDESC: Spin number from Universal Spin Table.
-  FIELDNAM: spin_number
-  LABLAXIS: spin_number
-  # TODO: come back to format
-  UNITS: " "
-
 spin_start_time:
   <<: *default
   CATDESC: Spin start time from Universal Spin Table.
@@ -264,14 +334,23 @@ spin_start_time:
   LABLAXIS: spin start time
   # TODO: come back to format
   UNITS: s
+  DEPEND_0: spin_number
 
-avg_spin_period:
+spin_period:
   <<: *default
-  CATDESC: Average spin period from Universal Spin Table.
-  FIELDNAM: avg_spin_period
-  LABLAXIS: avg_spin_period
-  # TODO: come back to format
+  CATDESC: Spin period from Universal Spin Table.
+  FIELDNAM: spin_period
+  LABLAXIS: spin_period
   UNITS: s
+  DEPEND_0: spin_number
+
+spin_rate:
+  <<: *default
+  CATDESC: Spin rate from Universal Spin Table.
+  FIELDNAM: spin_rate
+  LABLAXIS: spin_rate
+  UNITS: rpm
+  DEPEND_0: spin_number
 
 rate_start_pulses:
   <<: *default
@@ -313,13 +392,32 @@ rate_rejected_events:
   # TODO: come back to format
   UNITS: 1/s
 
+# Extendedspin attributes
+ena_rates:
+  <<: *default_float32
+  CATDESC: Rates calculated from de packet.
+  FIELDNAM: ena_rates
+  LABLAXIS: ena_rates
+  DEPEND_0: spin_number
+  DEPEND_1: energy_bin_geometric_mean
+  UNITS: " "
+
+ena_rates_threshold:
+  <<: *default_float32
+  CATDESC: Rates threshold used for flagging data.
+  FIELDNAM: ena_rates_threshold
+  LABLAXIS: ena_rates_threshold
+  DEPEND_0: spin_number
+  DEPEND_1: energy_bin_geometric_mean
+  UNITS: " "
+
 quality_ena_rates:
   <<: *default_uint16
   CATDESC: Spin filter derived from Ultra ena rates. Bitwise flagging used to filter the spin.
   FIELDNAM: quality_ena_rates
   LABLAXIS: quality_ena_rates
   DEPEND_0: spin_number
-  DEPEND_1: median_rate_energy
+  DEPEND_1: energy_bin_geometric_mean
   UNITS: " "
 
 quality_attitude:
@@ -329,6 +427,7 @@ quality_attitude:
   LABLAXIS: quality attitude
   # TODO: come back to format
   UNITS: " "
+  DEPEND_0: spin_number
 
 quality_instruments:
   <<: *default_uint16

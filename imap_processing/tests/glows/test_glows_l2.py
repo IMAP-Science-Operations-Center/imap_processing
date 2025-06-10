@@ -10,7 +10,7 @@ from imap_processing.glows.l2.glows_l2 import (
 from imap_processing.glows.l2.glows_l2_data import DailyLightcurve
 
 
-@pytest.fixture()
+@pytest.fixture
 def l1b_hists():
     epoch = xr.DataArray(np.arange(4), name="epoch", dims=["epoch"])
     bins = xr.DataArray(np.arange(5), name="bins", dims=["bins"])
@@ -29,16 +29,10 @@ def l1b_hists():
 
 
 def test_glows_l2(l1b_hist_dataset):
-    l2 = glows_l2(l1b_hist_dataset, "v001")[0]
+    l2 = glows_l2(l1b_hist_dataset)[0]
     assert l2.attrs["Logical_source"] == "imap_glows_l2_hist"
 
     assert np.allclose(l2["filter_temperature_average"].values, [57.6], rtol=0.1)
-
-
-@pytest.mark.skip(reason="Spin table not yet complete")
-def test_split_by_observational_day(l1b_hist_dataset):
-    # TODO: Complete test when spin table is complete
-    raise NotImplementedError
 
 
 def test_filter_good_times():

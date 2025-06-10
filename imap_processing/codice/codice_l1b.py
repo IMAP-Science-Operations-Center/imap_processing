@@ -1,194 +1,166 @@
 """
 Perform CoDICE l1b processing.
 
-This module processes CoDICE l1a files and creates L1a data products.
+This module processes CoDICE l1a files and creates L1b data products.
 
 Notes
 -----
-from imap_processing.codice.codice_l0 import decom_packets
 from imap_processing.codice.codice_l1b import process_codice_l1b
-dataset = process_codice_l1b(l1a_file)
+dataset = process_codice_l1b(l1a_filenanme)
 """
 
-import logging
+# TODO: Figure out how to convert hi-priority data product. Need an updated
+#       algorithm document that describes this.
 
+import logging
+from pathlib import Path
+
+import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.cdf.utils import load_cdf
+from imap_processing.codice import constants
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# TODO: Fix ISTP compliance issues (revealed in SKTEditor)
 
-
-def create_hskp_dataset(
-    l1a_dataset: xr.Dataset, cdf_attrs: ImapCdfAttributes
-) -> xr.Dataset:
+def convert_to_rates(
+    dataset: xr.Dataset, descriptor: str, variable_name: str
+) -> np.ndarray:
     """
-    Create an ``xarray`` dataset for the housekeeping data.
+    Apply a conversion from counts to rates.
 
-    The dataset can then be written to a CDF file.
+    The formula for conversion from counts to rates is specific to each data
+    product, but is largely grouped by CoDICE-Lo and CoDICE-Hi products.
 
     Parameters
     ----------
-    l1a_dataset : xr.Dataset
-        The L1a dataset that is being processed.
-    cdf_attrs : ImapCdfAttributes
-        The CDF attributes for the dataset.
+    dataset : xarray.Dataset
+        The L1b dataset containing the data to convert.
+    descriptor : str
+        The descriptor of the data product of interest.
+    variable_name : str
+        The variable name to apply the conversion to.
 
     Returns
     -------
-    l1b_dataset : xarray.Dataset
-        The ``xarray`` dataset containing the science data and supporting metadata.
+    rates_data : np.ndarray
+        The converted data array.
     """
-    epoch = l1a_dataset.coords["epoch"]
-    l1b_dataset = xr.Dataset(
-        coords={"epoch": epoch},
-        attrs=cdf_attrs.get_global_attributes("imap_codice_l1b_hskp"),
-    )
-    for variable_name in l1a_dataset:
-        # Get the data array from the L1a data product
-        values = l1a_dataset[variable_name].values
+    # TODO: Temporary workaround to create CDFs for SIT-4. Revisit after SIT-4.
+    acq_times = 1
 
-        # Convert data array to "rates"
-        # TODO: For SIT-3, just convert value to float. Revisit after SIT-3.
-        variable_data_arr = values.astype(float)
-
-        # TODO: Change 'TBD' catdesc and fieldname
-        # Once packet definition files are re-generated, can get this info from
-        # something like this:
-        #    for key, value in (packet.header | packet.data).items():
-        #      fieldname = value.short_description
-        #      catdesc = value.short_description
-        # I am holding off making this change until I acquire updated housekeeping
-        # packets/validation data that match the latest telemetry definitions
-        attrs = cdf_attrs.get_variable_attributes("codice_support_attrs")
-        attrs["CATDESC"] = "TBD"
-        attrs["DEPEND_0"] = "epoch"
-        attrs["FIELDNAM"] = "TBD"
-        attrs["LABLAXIS"] = variable_name
-
-        # Put the new data array into the dataset
-        l1b_dataset[variable_name] = xr.DataArray(
-            variable_data_arr,
-            name=variable_name,
-            dims=["epoch"],
-            attrs=attrs,
+    if descriptor in [
+        "lo-counters-aggregated",
+        "lo-counters-singles",
+        "lo-nsw-angular",
+        "lo-sw-angular",
+        "lo-nsw-priority",
+        "lo-sw-priority",
+        "lo-nsw-species",
+        "lo-sw-species",
+        "lo-ialirt",
+    ]:
+        # Applying rate calculation described in section 10.2 of the algorithm
+        # document
+        rates_data = dataset[variable_name].data / (
+            acq_times
+            * 1e-6  # Converting from microseconds to seconds
+            * constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spin_sectors"]
         )
+    elif descriptor in [
+        "hi-counters-aggregated",
+        "hi-counters-singles",
+        "hi-omni",
+        "hi-priority",
+        "hi-sectored",
+        "hi-ialirt",
+    ]:
+        # Applying rate calculation described in section 10.1 of the algorithm
+        # document
+        rates_data = dataset[variable_name].data / (
+            constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spin_sectors"]
+            * constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spins"]
+            * acq_times
+        )
+    elif descriptor == "hskp":
+        rates_data = dataset[variable_name].data / acq_times
 
-    return l1b_dataset
-
-
-def create_science_dataset(
-    l1a_dataset: xr.Dataset, cdf_attrs: ImapCdfAttributes, dataset_name: str
-) -> xr.Dataset:
-    """
-    Create an ``xarray`` dataset for the science data.
-
-    The dataset can then be written to a CDF file.
-
-    Parameters
-    ----------
-    l1a_dataset : xr.Dataset
-        The L1a dataset that is being processed.
-    cdf_attrs : ImapCdfAttributes
-        The CDF attributes for the dataset.
-    dataset_name : str
-        The name that is used to construct the data variable name and reference
-        the CDF attributes (e.g. ``imap_codice_l1b_hi_omni``).
-
-    Returns
-    -------
-    l1b_dataset : xarray.Dataset
-        The ``xarray`` dataset containing the science data and supporting metadata.
-    """
-    # Retrieve the coordinates from the l1a dataset
-    epoch = l1a_dataset.coords["epoch"]
-    energy = l1a_dataset.coords["energy"]
-    energy_label = l1a_dataset.coords["energy_label"]
-
-    # Create empty l1b dataset
-    l1b_dataset = xr.Dataset(
-        coords={"epoch": epoch, "energy": energy, "energy_label": energy_label},
-        attrs=cdf_attrs.get_global_attributes(dataset_name),
-    )
-
-    # Get the data variables from l1a dataset
-    for variable_name in l1a_dataset:
-        if variable_name == "esa_sweep_values":
-            values = l1a_dataset["esa_sweep_values"]
-            l1b_dataset["esa_sweep_values"] = xr.DataArray(
-                values,
-                dims=["energy"],
-                attrs=cdf_attrs.get_variable_attributes("esa_sweep_attrs"),
-            )
-
-        elif variable_name == "acquisition_times":
-            values = l1a_dataset["acquisition_times"]
-            l1b_dataset["acquisition_times"] = xr.DataArray(
-                values,
-                dims=["energy"],
-                attrs=cdf_attrs.get_variable_attributes("acquisition_times_attrs"),
-            )
-
-        else:
-            # Get the data array from the L1a data product
-            values = l1a_dataset[variable_name].values
-
-            # Convert data array to "rates"
-            # TODO: For SIT-3, just convert value to float. Revisit after SIT-3.
-            variable_data_arr = values.astype(float)
-
-            # Put the new data array into the dataset
-            cdf_attrs_key = (
-                f"{dataset_name.split('imap_codice_l1b_')[-1]}-{variable_name}"
-            )
-            l1b_dataset[variable_name] = xr.DataArray(
-                variable_data_arr,
-                name=variable_name,
-                dims=["epoch", "energy"],
-                attrs=cdf_attrs.get_variable_attributes(cdf_attrs_key),
-            )
-
-    return l1b_dataset
+    return rates_data
 
 
-def process_codice_l1b(l1a_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+def process_codice_l1b(file_path: Path) -> xr.Dataset:
     """
     Will process CoDICE l1a data to create l1b data products.
 
     Parameters
     ----------
-    l1a_dataset : xarray.Dataset
-        CoDICE L1a dataset to process.
-    data_version : str
-        Version of the data product being created.
+    file_path : pathlib.Path
+        Path to the CoDICE L1a file to process.
 
     Returns
     -------
     l1b_dataset : xarray.Dataset
         The``xarray`` dataset containing the science data and supporting metadata.
     """
-    logger.info(f"\nProcessing {l1a_dataset.attrs['Logical_source']}.")
+    logger.info(f"\nProcessing {file_path}")
 
-    # Start constructing l1b dataset
+    # Open the l1a file
+    l1a_dataset = load_cdf(file_path)
+
+    # Use the logical source as a way to distinguish between data products and
+    # set some useful distinguishing variables
+    dataset_name = l1a_dataset.attrs["Logical_source"].replace("_l1a_", "_l1b_")
+    descriptor = dataset_name.removeprefix("imap_codice_l1b_")
+
+    # Direct event data products do not have a level L1B
+    if descriptor in ["lo-pha", "hi-pha"]:
+        logger.warning("Encountered direct event data product. Skipping L1b processing")
+        return None
+
+    # Get the L1b CDF attributes
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("codice")
     cdf_attrs.add_instrument_variable_attrs("codice", "l1b")
-    cdf_attrs.add_global_attribute("Data_version", data_version)
 
-    dataset_name = (
-        l1a_dataset.attrs["Logical_source"].replace("-", "_").replace("l1a", "l1b")
-    )
+    # Use the L1a data product as a starting point for L1b
+    l1b_dataset = l1a_dataset.copy()
 
-    if "hskp" in dataset_name:
-        l1b_dataset = create_hskp_dataset(l1a_dataset, cdf_attrs)
+    # Update the global attributes
+    l1b_dataset.attrs = cdf_attrs.get_global_attributes(dataset_name)
 
+    # Determine which variables need to be converted from counts to rates
+    # TODO: Figure out exactly which hskp variables need to be converted
+    # Housekeeping and binned datasets are treated a bit differently since
+    # not all variables need to be converted
+    if descriptor == "hskp":
+        # TODO: Check with Joey if any housekeeping data needs to be converted
+        variables_to_convert = []
+    elif descriptor == "hi-sectored":
+        variables_to_convert = ["h", "he3he4", "cno", "fe"]
+    elif descriptor == "hi-omni":
+        variables_to_convert = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
+    elif descriptor == "hi-ialirt":
+        variables_to_convert = ["h"]
     else:
-        l1b_dataset = create_science_dataset(l1a_dataset, cdf_attrs, dataset_name)
+        variables_to_convert = getattr(
+            constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
+        )
 
-    # Write the dataset to CDF
+    # Apply the conversion to rates
+    for variable_name in variables_to_convert:
+        l1b_dataset[variable_name].data = convert_to_rates(
+            l1b_dataset, descriptor, variable_name
+        )
+
+        # Set the variable attributes
+        cdf_attrs_key = f"{descriptor}-{variable_name}"
+        l1b_dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
+            cdf_attrs_key, check_schema=False
+        )
+
     logger.info(f"\nFinal data product:\n{l1b_dataset}\n")
 
     return l1b_dataset

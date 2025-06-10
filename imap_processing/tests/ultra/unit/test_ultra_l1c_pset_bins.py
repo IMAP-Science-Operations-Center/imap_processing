@@ -1,30 +1,38 @@
 "Tests pointing sets"
 
-import cdflib
+import astropy_healpix.healpy as hp
 import numpy as np
+import pandas as pd
 import pytest
-from cdflib import CDF
 
 from imap_processing import imap_module_directory
-from imap_processing.ena_maps.utils.spatial_utils import build_spatial_bins
+from imap_processing.ultra.l1c import ultra_l1c_pset_bins
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
+    get_energy_delta_minus_plus,
+    get_helio_background_rates,
     get_helio_exposure_times,
-    get_histogram,
-    get_pointing_frame_exposure_times,
-    get_pointing_frame_sensitivity,
+    get_helio_histogram,
+    get_helio_sensitivity,
+    get_spacecraft_background_rates,
+    get_spacecraft_exposure_times,
+    get_spacecraft_histogram,
+    get_spacecraft_sensitivity,
+    grid_sensitivity,
+    interpolate_sensitivity,
 )
 
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
+TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_data():
     """Test data fixture."""
     vx_sc = np.array([-186.5575, 508.5697, 508.5697, 508.5697])
     vy_sc = np.array([-707.5707, -516.0282, -516.0282, -516.0282])
     vz_sc = np.array([618.0569, 892.6931, 892.6931, 892.6931])
-    energy = np.array([3.384, 3.385, 200, 200])
+    energy = np.array([3.384, 3.385, 4.138, 4.138])
     v = np.column_stack((vx_sc, vy_sc, vz_sc))
 
     return v, energy
@@ -32,13 +40,13 @@ def test_data():
 
 def test_build_energy_bins():
     """Tests build_energy_bins function."""
-    energy_bin_edges, energy_midpoints = build_energy_bins()
-    energy_bin_start = [interval[0] for interval in energy_bin_edges]
-    energy_bin_end = [interval[1] for interval in energy_bin_edges]
+    intervals, energy_midpoints, energy_bin_geometric_means = build_energy_bins()
+    energy_bin_start = [interval[0] for interval in intervals]
+    energy_bin_end = [interval[1] for interval in intervals]
 
     assert energy_bin_start[0] == 0
     assert energy_bin_start[1] == 3.385
-    assert len(energy_bin_edges) == 24
+    assert len(intervals) == 24
     assert energy_midpoints[0] == (energy_bin_start[0] + energy_bin_end[0]) / 2
 
     # Comparison to expected values.
@@ -46,107 +54,245 @@ def test_build_energy_bins():
     np.testing.assert_allclose(energy_bin_start[-1], 279.810, atol=1e-4)
     np.testing.assert_allclose(energy_bin_end[-1], 341.989, atol=1e-4)
 
+    expected_geometric_means = np.sqrt(
+        np.array(energy_bin_start) * np.array(energy_bin_end)
+    )
+    np.testing.assert_allclose(
+        energy_bin_geometric_means, expected_geometric_means, atol=1e-4
+    )
 
-def test_get_histogram(test_data):
+
+def test_get_energy_delta_minus_plus(monkeypatch):
+    """Tests get_energy_delta_minus_plus function."""
+    # Mock fixed values for the energy bins - these are not the actual geometric means
+    mock_intervals = [(0, 1), (1, 5), (5, 20), (20, 1234)]
+    mock_midpoints = None
+    mock_geometric_means = np.array([0, 2, 7, 100])
+
+    expected_bins_energy_delta_plus = np.array([1, 3, 13, 1134])
+    expected_bins_energy_delta_minus = np.array([0, 1, 2, 80])
+
+    def mock_build_energy_bins():
+        return mock_intervals, mock_midpoints, mock_geometric_means
+
+    monkeypatch.setattr(
+        ultra_l1c_pset_bins, "build_energy_bins", mock_build_energy_bins
+    )
+
+    bins_energy_delta_minus, bins_energy_delta_plus = get_energy_delta_minus_plus()
+    assert np.array_equal(bins_energy_delta_plus, expected_bins_energy_delta_plus)
+    assert np.array_equal(bins_energy_delta_minus, expected_bins_energy_delta_minus)
+
+
+def test_get_spacecraft_histogram(test_data):
     """Tests get_histogram function."""
     v, energy = test_data
 
-    az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
-        np.rad2deg(angle_radians) for angle_radians in (build_spatial_bins())
+    energy_bin_edges, _, _ = build_energy_bins()
+    subset_energy_bin_edges = energy_bin_edges[:3]
+
+    hist, latitude, longitude, n_pix = get_spacecraft_histogram(
+        v, energy, subset_energy_bin_edges, nside=1
     )
-    energy_bin_edges, _ = build_energy_bins()
+    assert hist.shape == (len(subset_energy_bin_edges), hp.nside2npix(1))
+    assert n_pix == hp.nside2npix(1)
+    assert latitude.shape == (n_pix,)
+    assert longitude.shape == (n_pix,)
 
-    hist = get_histogram(v, energy, az_bin_edges, el_bin_edges, energy_bin_edges)
+    # Spot check that 2 counts are in the third energy bin
+    assert np.sum(hist[2, :]) == 2
 
-    assert hist.shape == (
-        len(az_bin_edges) - 1,
-        len(el_bin_edges) - 1,
-        len(energy_bin_edges),
+    # Test overlapping energy bins
+    overlapping_bins = [
+        (0.0, 3.385),
+        (2.5, 4.137),
+        (3.385, 5.057),
+    ]
+    hist, latitude, longitude, n_pix = get_spacecraft_histogram(
+        v, energy, overlapping_bins, nside=1
+    )
+    # Spot check that 3 counts are in the third energy bin
+    assert np.sum(hist[2, :]) == 3
+    assert n_pix == hp.nside2npix(1)
+    assert latitude.shape == (n_pix,)
+    assert longitude.shape == (n_pix,)
+
+
+def mock_imap_state(time, ref_frame):
+    # Position (0, 0, 0), exaggerated velocity to force visible transformation
+    return np.array([0, 0, 0, 0, 0, 0])
+
+
+def test_get_helio_histogram(monkeypatch, test_data):
+    """Tests get_helio_histogram function."""
+    v, energy = test_data
+
+    monkeypatch.setattr(ultra_l1c_pset_bins, "imap_state", mock_imap_state)
+
+    energy_bin_edges, _, _ = build_energy_bins()
+    subset_energy_bin_edges = energy_bin_edges[:3]
+
+    start_time = 829485054.185627
+    end_time = 829567884.185627
+
+    mid_time = np.average([start_time, end_time])
+
+    hist_helio, _, _, n_pix = get_helio_histogram(
+        mid_time, v, energy, subset_energy_bin_edges, nside=1
+    )
+
+    hist_sc, _, _, n_pix = get_spacecraft_histogram(
+        v, energy, subset_energy_bin_edges, nside=1
+    )
+
+    assert np.array_equal(hist_helio, hist_sc)
+
+
+def test_get_spacecraft_background_rates():
+    """Tests get_background_rates function."""
+    background_rates = get_spacecraft_background_rates(nside=128)
+    _, energy_midpoints, _ = build_energy_bins()
+    assert background_rates.shape == (len(energy_midpoints), hp.nside2npix(128))
+
+
+def test_get_helio_background_rates():
+    """Tests get_background_rates function."""
+    background_rates = get_helio_background_rates(nside=128)
+    _, energy_midpoints, _ = build_energy_bins()
+    assert background_rates.shape == (len(energy_midpoints), hp.nside2npix(128))
+
+
+@pytest.mark.external_test_data
+def test_get_spacecraft_exposure_times():
+    """Test get_spacecraft_exposure_times function."""
+    constant_exposure = (
+        TEST_PATH / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv"
+    )
+    df_exposure = pd.read_csv(constant_exposure)
+    exposure_pointing = get_spacecraft_exposure_times(df_exposure)
+    assert exposure_pointing.shape == (196608,)
+
+    np.testing.assert_allclose(
+        exposure_pointing.values[22684:22686],
+        np.array([1.035, 1.035]) * 5760,
+        atol=1e-6,
     )
 
 
-def test_get_pointing_frame_exposure_times():
-    """Tests get_pointing_frame_exposure_times function."""
-
-    constant_exposure = BASE_PATH / "dps_grid45_compressed.cdf"
-    spins_per_pointing = 5760
-    exposure = get_pointing_frame_exposure_times(
-        constant_exposure, spins_per_pointing, "45"
-    )
-
-    assert exposure.shape == (720, 360)
-    # Assert that the exposure time at the highest azimuth is
-    # 15s x spins per pointing.
-    assert np.array_equal(
-        exposure[:, 359], np.full_like(exposure[:, 359], spins_per_pointing * 15)
-    )
-    # Assert that the exposure time at the lowest azimuth is 0 (no exposure).
-    assert np.array_equal(exposure[:, 0], np.full_like(exposure[:, 359], 0.0))
-
-
-@pytest.mark.external_kernel()
+@pytest.mark.external_kernel
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_get_helio_exposure_times():
     """Tests get_helio_exposure_times function."""
 
-    constant_exposure = BASE_PATH / "dps_grid45_compressed.cdf"
+    start_time = 829485054.185627
+    end_time = 829567884.185627
+
+    mid_time = np.average([start_time, end_time])
+
+    constant_exposure = (
+        TEST_PATH / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv"
+    )
+    df_exposure = pd.read_csv(constant_exposure)
+
+    helio_exposure = get_helio_exposure_times(mid_time, df_exposure)
+
+    _, energy_midpoints, _ = build_energy_bins()
+
+    nside = 128
+    npix = hp.nside2npix(nside)
+    assert helio_exposure.shape == (npix, len(energy_midpoints))
+
+    total_input = np.sum(df_exposure["Exposure Time"].values)
+    total_output = np.sum(helio_exposure[:, 23])
+
+    assert np.allclose(total_input, total_output, atol=1e-6)
+
+
+@pytest.mark.external_test_data
+def test_get_spacecraft_sensitivity():
+    """Tests get_spacecraft_sensitivity function."""
+    # TODO: remove below here with lookup table aux api
+    efficiencies = TEST_PATH / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv"
+    geometric_function = TEST_PATH / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv"
+
+    df_efficiencies = pd.read_csv(efficiencies)
+    df_geometric_function = pd.read_csv(geometric_function)
+
+    sensitivity, energy_vals, right_ascension, declination = get_spacecraft_sensitivity(
+        df_efficiencies, df_geometric_function
+    )
+
+    assert sensitivity.shape == (df_efficiencies.shape[0], df_efficiencies.shape[1] - 2)
+    assert np.array_equal(energy_vals, np.arange(3.0, 80.5, 0.5))
+
+    df_efficiencies_test = pd.DataFrame(
+        {"3.0keV": [1.0, 2.0], "3.5keV": [3.0, 4.0], "4.0keV": [5.0, 6.0]}
+    )
+
+    df_geometric_function_test = pd.DataFrame({"Response": [0.1, 0.2]})
+
+    df_sensitivity_test = df_efficiencies_test.mul(
+        df_geometric_function_test["Response"], axis=0
+    )
+
+    expected_sensitivity = pd.DataFrame(
+        {"3.0keV": [0.1, 0.4], "3.5keV": [0.3, 0.8], "4.0keV": [0.5, 1.2]}
+    )
+
+    assert np.allclose(
+        df_sensitivity_test.to_numpy(), expected_sensitivity.to_numpy(), atol=1e-6
+    )
+
+    expected_result = sensitivity["3.0keV"].values
+    result = grid_sensitivity(df_efficiencies, df_geometric_function, 3.0)
+
+    assert np.allclose(result, expected_result, atol=1e-5)
+
+    # Check that out-of-bounds energy returns all FILL values
+    result = grid_sensitivity(df_efficiencies, df_geometric_function, 2.5)
+    assert np.all(result == -1.0e31)
+
+    result = interpolate_sensitivity(df_efficiencies, df_geometric_function)
+    assert result.shape == (24, 196608)
+
+
+@pytest.mark.external_test_data
+@pytest.mark.external_kernel
+@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
+def test_get_helio_sensitivity(monkeypatch):
+    """Test get_helio_sensitivity function."""
+
+    # Load test data
+    efficiencies = TEST_PATH / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv"
+    geometric_function = TEST_PATH / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv"
+    df_efficiencies = pd.read_csv(efficiencies)
+    df_geometric_function = pd.read_csv(geometric_function)
+
+    # Patch spacecraft velocity to be zero
+    monkeypatch.setattr(ultra_l1c_pset_bins, "imap_state", mock_imap_state)
+
+    # Define time
     start_time = 829485054.185627
     end_time = 829567884.185627
     mid_time = np.average([start_time, end_time])
 
-    with cdflib.CDF(constant_exposure) as cdf_file:
-        sc_exposure = cdf_file.varget("dps_grid45")
+    # Build energy bins and spacecraft-frame sensitivity
+    _, energy_midpoints, _ = build_energy_bins()
+    sc_sensitivity = []
+    for energy in energy_midpoints:
+        s = grid_sensitivity(df_efficiencies, df_geometric_function, energy)
+        sc_sensitivity.append(s)
+    sc_sensitivity = np.stack(sc_sensitivity, axis=1)  # shape: (npix, n_energy_bins)
 
-    exposure_3d = get_helio_exposure_times(mid_time, sc_exposure)
-
-    energy_bin_edges, energy_midpoints = build_energy_bins()
-    az_bin_edges, el_bin_edges, az_bin_midpoints, el_bin_midpoints = (
-        np.rad2deg(angle_radians) for angle_radians in (build_spatial_bins())
+    # Compute helio-frame sensitivity
+    helio_sensitivity = get_helio_sensitivity(
+        mid_time,
+        df_efficiencies,
+        df_geometric_function,
     )
 
-    assert exposure_3d.shape == (
-        len(el_bin_midpoints),
-        len(az_bin_midpoints),
-        len(energy_midpoints),
-    )
+    # Flatten and compare
+    flat_sc = np.nansum(sc_sensitivity, axis=0)
+    flat_helio = np.nansum(helio_sensitivity, axis=0)
 
-    cdf_files = [
-        ("dps_exposure_helio_45_E1.cdf", "dps_exposure_helio_45_E1"),
-        ("dps_exposure_helio_45_E12.cdf", "dps_exposure_helio_45_E12"),
-        ("dps_exposure_helio_45_E24.cdf", "dps_exposure_helio_45_E24"),
-    ]
-
-    cdf_directory = imap_module_directory / "tests" / "ultra" / "test_data" / "l1"
-
-    exposures = []
-
-    for file_name, var_name in cdf_files:
-        file_path = cdf_directory / file_name
-        with CDF(file_path) as cdf_file:
-            exposure_data = cdf_file.varget(var_name)
-            transposed_exposure = np.transpose(exposure_data, (2, 1, 0))
-            exposures.append(transposed_exposure)
-
-    assert np.array_equal(np.squeeze(exposures[0]), exposure_3d[:, :, 0])
-    assert np.array_equal(np.squeeze(exposures[1]), exposure_3d[:, :, 11])
-    assert np.array_equal(np.squeeze(exposures[2]), exposure_3d[:, :, 23])
-
-
-def test_get_pointing_frame_sensitivity():
-    """Tests get_pointing_frame_sensitivity function."""
-
-    # TODO: energy bins need to be modified from N=90 to N=24.
-    constant_sensitivity = BASE_PATH / "dps_sensitivity45.cdf"
-    spins_per_pointing = 5760
-    sensitivity = get_pointing_frame_sensitivity(
-        constant_sensitivity,
-        spins_per_pointing,
-        "45",
-    )
-
-    assert sensitivity.shape == (90, 720, 360)
-
-    with cdflib.CDF(constant_sensitivity) as cdf_file:
-        expected_sensitivity = cdf_file.varget("dps_sensitivity45") * spins_per_pointing
-
-    assert np.array_equal(sensitivity, expected_sensitivity)
+    np.testing.assert_allclose(flat_sc, flat_helio, atol=1e-5)

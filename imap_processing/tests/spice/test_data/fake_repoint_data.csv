@@ -1,0 +1,5 @@
+# This is a fake csv file for the sole purpose of testing repoint module functions
+repoint_start_sec_sclk,repoint_start_subsec_sclk,repoint_end_sec_sclk,repoint_end_subsec_sclk,repoint_start_utc,repoint_end_utc,repoint_id
+0,100000,5,100000,2025-04-10 00:00:00.000000,2025-04-10T00:00:05.000000,0
+15,200000,20,200000,2025-04-10 00:00:15.000000,2025-04-10T00:00:20.000000,1
+25,300000,30,300000,2025-04-10 00:00:25.000000,2025-04-10T00:00:30.000000,2

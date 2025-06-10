@@ -1,0 +1,245 @@
+# Define the non-tiling-specific variable attributes for the ENA maps.
+
+# The tiling-specific variables are supplemented/overridden in
+# both imap_enamaps_l2-healpix_variable_attrs.yaml,
+# and  imap_enamaps_l2-rectangular_variable_attrs.yaml.
+# An example of a completely tiling-specific variable is "longitude", which functions
+# completely differently between the HEALPix and rectangular tiled maps. As such,
+# "longitude" is entirely defined in the tiling-specific YAML files.
+# An example of a variable that has some tiling-specific attributes is "ena_intensity",
+# which has the same CATDESC, data_type, units, etc. regardless of the tiling, but
+# has different pixel-level DEPEND_N attributes.
+# The HEALPix-specific YAML file will supplement "ena_intensity"'s attributes
+# DEPEND_1 = energy, DEPEND_2 = pixel_index,
+# while the Rectangular-specific YAML file will supplement "ena_intensity"'s attributes with
+# DEPEND_1 = energy, DEPEND_2 = latitude, DEPEND_3 = longitude.
+
+default_int64_attrs: &default_int64
+  # Assumed values for all variable attrs unless overwritten
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: -9223372036854775808
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854775807
+  VAR_TYPE: data
+  UNITS: " "
+  FORMAT: I20
+  dtype: int64
+
+default_float32_attrs: &default_float32
+  FORMAT: F18.6
+  FILLVAL: -1.0e31
+  VALIDMIN: -3.4028235e+38
+  VALIDMAX: 3.4028235e+38
+  dtype: float32
+
+# Define Coordinate(s) which are tiling-independent
+energy:
+  <<: *default_float32
+  CATDESC: Geometric mean of energy bin.
+  FIELDNAM: energy_bin_geometric_mean
+  LABLAXIS: Energy bin geometric mean
+  UNITS: KeV
+  VAR_TYPE: support_data
+  SCALE_TYP: linear
+  # We might not have these set up yet
+  DELTA_MINUS_VAR: energy_delta_minus
+  DELTA_PLUS_VAR: energy_delta_plus
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Energy,Qualifier:Incident
+
+energy_label:
+  VAR_TYPE: metadata
+  CATDESC: Geometric mean of energy bin.
+  FIELDNAM: energy_bin_geometric_mean
+  FORMAT: A16
+  DEPEND_1: energy
+
+epoch_delta:
+  <<: *default_int64
+  CATDESC: Number of nanoseconds covered by data included in this map product.
+  FIELDNAM: epoch_delta
+  UNITS: ns
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: no_plot
+  TIME_SCALE: Terrestrial Time
+
+energy_delta_minus:
+  <<: *default_float32
+  VAR_TYPE: support_data
+  CATDESC: Difference between the energy bin center and lower edge.
+  LABLAXIS: energy
+  UNITS: KeV
+  FIELDNAM: energy_bin_delta_minus
+  DISPLAY_TYPE: no_plot
+  DEPEND_1: energy
+  LABL_PTR_1: energy_label
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Energy,Qualifier:Uncertainty
+
+energy_delta_plus:
+  <<: *default_float32
+  VAR_TYPE: support_data
+  CATDESC: Difference between the energy bin center and upper edge.
+  LABLAXIS: energy
+  UNITS: KeV
+  FIELDNAM: energy_bin_delta_plus
+  DISPLAY_TYPE: no_plot
+  DEPEND_1: energy
+  LABL_PTR_1: energy_label
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Energy,Qualifier:Uncertainty
+
+# These two coordinates will be treated differently in the
+# HEALPix and rectangular tilings. They will be substantially overridden
+# in the tiling-specific YAML files.
+longitude:
+  <<: *default_float32
+  CATDESC: Pixel center longitude in range [0, 360].
+  FIELDNAM: Longitude
+  LABLAXIS: Longitude
+  UNITS: degrees
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: no_plot
+  VALIDMIN: 0
+  VALIDMAX: 360
+  DICT_KEY: SPASE>Support>SupportQuantity:Orientation,Qualifier:DirectionAngle.AzimuthAngle,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+latitude:
+  <<: *default_float32
+  CATDESC: Pixel center latitude in range [-90, 90].
+  FIELDNAM: Latitude
+  LABLAXIS: Latitude
+  UNITS: degrees
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: no_plot
+  VALIDMIN: -90
+  VALIDMAX: 90
+  DICT_KEY: SPASE>Support>SupportQuantity:Orientation,Qualifier:DirectionAngle.ElevationAngle,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+# Define Data variables, but not their pixel-level DEPENDs
+# (e.g. pixel_index for HEALPix maps, longitude/latitude for rectangular maps).
+# Those are defined in the tiling specific YAML files.
+ena_intensity:
+  <<: *default_float32
+  CATDESC: Mono-energetic ENA intensity.
+  FIELDNAM: Intensity
+  UNITS: counts/(s * cm^2 * Sr * KeV)
+  DELTA_MINUS_VAR: ena_intensity_stat_unc
+  DELTA_PLUS_VAR: ena_intensity_stat_unc
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Intensity
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+ena_intensity_stat_unc:
+  <<: *default_float32
+  CATDESC: ENA intensity statistical uncertainty.
+  FIELDNAM: Intensity stat unc
+  UNITS: counts/(s * cm^2 * Sr * KeV)
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Statistical Unc
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+ena_intensity_sys_err:
+  <<: *default_float32
+  CATDESC: ENA intensity non-statistical error.
+  FIELDNAM: Intensity non-stat error
+  UNITS: counts/(s * cm^2 * Sr * KeV)
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Non-Statistical Err
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+ena_rate:
+  <<: *default_float32
+  CATDESC: Mono-energetic ENA Rate.
+  FIELDNAM: Rate
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Rate
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+ena_count:
+  <<: *default_float32
+  CATDESC: Mono-energetic ENA Count.
+  FIELDNAM: Count
+  UNITS: counts
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Count
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+sensitivity:
+  <<: *default_float32
+  CATDESC: Calibration/sensitivity factor calculated from multiple pointing sets.
+  FIELDNAM: sensitivity
+  UNITS: cm^-3
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: sensitivity
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:GeometricFactor,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+exposure_factor: &exposure_factor
+  <<: *default_float32
+  CATDESC: Exact or approximate time over which counts are accumulated.
+  FIELDNAM: Exposure Times
+  DEPEND_0: epoch
+  UNITS: s
+  VAR_TYPE: data
+  LABLAXIS: Exposure
+  DISPLAY_TYPE: no_plot
+  DICT_KEY: SPASE>TemporalDescription:Exposure,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+obs_date: &obs_date
+  <<: *default_int64
+  datatype: int64
+  CATDESC: Exposure time weighted mean collection date of data in a pixel.
+  FIELDNAM: J2000 Nanoseconds
+  UNITS: ns
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: epoch
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>TemporalDescription:TimeSpan,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+obs_date_range:
+  <<: *default_int64
+  datatype: int64
+  CATDESC: Standard deviation of the observation date.
+  FIELDNAM: Observation date range
+  UNITS: ns
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: epoch
+  DISPLAY_TYPE: image
+  TIME_SCALE: Terrestrial Time
+
+# These copied metadata vars will allow for variables
+# to be either energy-dependent or independent.
+# The tiling-specific YAML files will override the DEPENDs and LABL_PTRs.
+exposure_factor_energy_independent:
+  <<: *exposure_factor
+
+obs_date_energy_independent:
+  <<: *obs_date
+
+obs_date_range_energy_independent:
+  <<: *obs_date
+
+solid_angle:
+  <<: *default_float32
+  VAR_TYPE: support_data
+  CATDESC: Solid angle subtended by each pixel.
+  FIELDNAM: Solid Angle
+  DEPEND_0: epoch
+  UNITS: sr
+  VAR_TYPE: data
+  LABLAXIS: Solid Angle
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Support>SupportQuantity:Other

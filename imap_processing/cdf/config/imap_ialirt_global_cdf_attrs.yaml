@@ -1,0 +1,18 @@
+instrument_base: &instrument_base
+  Descriptor: IALiRT>IMAP I-ALiRT (IMAP Active Link in Real Time)
+  TEXT: >
+    The Interstellar Mapping and Acceleration Probe (IMAP) mission includes the Active Link
+    for Real-Time (I-ALiRT) system, which provides continuous, low-latency space weather data.
+    I-ALiRT broadcasts real-time measurements from IMAP via NASA’s Deep Space Network and
+    international ground stations. It has data from 5 of the IMAP instruments:
+    SWE (Solar Wind Electron), CoDICE (Compact Dual Ion Composition Experiment),
+    HIT (High-energy Ion Telescope), MAG (Magnetometer),
+    and SWAPI (Solar Wind and Pickup Ion).
+    See https://imap.princeton.edu for more details.
+  Instrument_type: "Multiple Instruments"
+
+imap_ialirt_l1_realtime:
+    <<: *instrument_base
+    Data_type: L1_REALTIME>Level-1 Realtime
+    Logical_source: imap_ialirt_l1_realtime
+    Logical_source_description: IMAP-IALiRT Instrument Level-1 Realtime Data.

@@ -37,7 +37,7 @@ class ENAFlags(FlagNameMixin):
     BADSPIN = 2**2  # bit 2, Bad spin
 
 
-class ImapAttitudeUltraFlags(FlagNameMixin):
+class ImapHkUltraFlags(FlagNameMixin):
     """IMAP Ultra flags."""
 
     NONE = CommonFlags.NONE
@@ -47,11 +47,20 @@ class ImapAttitudeUltraFlags(FlagNameMixin):
     FLAG1 = 2**3  # bit 3
 
 
+class ImapAttitudeUltraFlags(FlagNameMixin):
+    """IMAP Ultra flags."""
+
+    NONE = CommonFlags.NONE
+    SPINRATE = 2**0  # bit 0
+    AUXMISMATCH = 2**1  # bit 1 # aux packet does not match Universal Spin Table
+
+
 class ImapRatesUltraFlags(FlagNameMixin):
     """IMAP Ultra Rates flags."""
 
     NONE = CommonFlags.NONE
-    HIGHCOUNTS = 2**0  # bit 0
+    ZEROCOUNTS = 2**0  # bit 0
+    HIGHRATES = 2**1  # bit 1
 
 
 class ImapLoFlags(FlagNameMixin):

@@ -16,7 +16,7 @@ from imap_processing.mag.constants import (
     MAX_FINE_TIME,
     RANGE_BIT_WIDTH,
 )
-from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns
+from imap_processing.spice.time import met_to_ttj2000ns
 
 
 @dataclass
@@ -24,19 +24,20 @@ class TimeTuple:
     """
     Class for storing fine time/coarse time for MAG data.
 
-    Course time is mission SCLK in seconds. Fine time is 16bit unsigned sub-second
+    Coarse time is MET in seconds. Fine time is 16bit unsigned sub-second
     counter.
 
     Attributes
     ----------
     coarse_time : int
-        Coarse time in seconds.
+        Coarse time in seconds (MET).
     fine_time : int
-        Subsecond.
+        Subsecond counter, equal to fine_time/max_int16 seconds.
 
     Methods
     -------
     to_seconds()
+    to_j2000ns()
     """
 
     coarse_time: int
@@ -78,6 +79,19 @@ class TimeTuple:
             Time in seconds.
         """
         return float(self.coarse_time + self.fine_time / MAX_FINE_TIME)
+
+    def to_j2000ns(self) -> np.int64:
+        """
+        Convert time tuple into J2000ns.
+
+        Returns
+        -------
+        j2000ns : numpy.int64
+            Time in nanoseconds since J2000 epoch.
+        """
+        coarse_j2000ns = np.int64(met_to_ttj2000ns(self.coarse_time))
+        fine_ns = np.int64(self.fine_time / MAX_FINE_TIME * 1e9)
+        return coarse_j2000ns + fine_ns
 
 
 @dataclass
@@ -204,7 +218,7 @@ class MagL1a:
         Sequence number of the most recent packet added to the object
     missing_sequences : list[int]
         List of missing sequence numbers in the day
-    start_time : numpy.datetime64
+    start_time : numpy.int64
         Start time of the day, in ns since J2000 epoch
     compression_flags : np.ndarray
         Array of flags to indication compression and width for all timestamps in the
@@ -226,6 +240,7 @@ class MagL1a:
     decode_fib_zig_zag()
     twos_complement()
     update_compression_array()
+    vectors_per_second_attribute()
     """
 
     is_mago: bool
@@ -233,10 +248,10 @@ class MagL1a:
     shcoarse: int
     vectors: np.ndarray
     starting_packet: InitVar[MagL1aPacketProperties]
-    packet_definitions: dict[np.datetime64, MagL1aPacketProperties] = field(init=False)
+    packet_definitions: dict[np.int64, MagL1aPacketProperties] = field(init=False)
     most_recent_sequence: int = field(init=False)
     missing_sequences: list[int] = field(default_factory=list)
-    start_time: np.datetime64 = field(init=False)
+    start_time: np.int64 = field(init=False)
     compression_flags: np.ndarray | None = field(init=False, default=None)
 
     def __post_init__(self, starting_packet: MagL1aPacketProperties) -> None:
@@ -248,10 +263,7 @@ class MagL1a:
         starting_packet : MagL1aPacketProperties
             The packet properties for the first packet in the day, including start time.
         """
-        # TODO should this be from starting_packet
-        self.start_time = (TTJ2000_EPOCH + met_to_ttj2000ns(self.shcoarse)).astype(
-            "datetime64[D]"
-        )
+        self.start_time = np.int64(met_to_ttj2000ns(starting_packet.shcoarse))
         self.packet_definitions = {self.start_time: starting_packet}
         # most_recent_sequence is the sequence number of the packet used to initialize
         # the object
@@ -274,7 +286,8 @@ class MagL1a:
         vector_sequence = packet_properties.src_seq_ctr
 
         self.vectors = np.concatenate([self.vectors, additional_vectors])
-        self.packet_definitions[self.start_time] = packet_properties
+        start_time = np.int64(met_to_ttj2000ns(packet_properties.shcoarse))
+        self.packet_definitions[start_time] = packet_properties
 
         # Every additional packet should be the next one in the sequence, if not, add
         # the missing sequence(s) to the gap data
@@ -338,9 +351,7 @@ class MagL1a:
             cdf.utils.met_to_j2000ns.
         """
         timedelta = np.timedelta64(int(1 / vectors_per_sec * 1e9), "ns")
-        # TODO: validate that start_time from SHCOARSE is precise enough
-        start_time_ns = met_to_ttj2000ns(start_time.to_seconds())
-
+        start_time_ns = start_time.to_j2000ns()
         # Calculate time skips for each vector in ns
         times = np.reshape(
             np.arange(
@@ -357,7 +368,7 @@ class MagL1a:
 
     @staticmethod
     def process_vector_data(
-        vector_data: np.ndarray,
+        vector_data: np.ndarray | bytes,
         primary_count: int,
         secondary_count: int,
         compression: int,
@@ -616,7 +627,7 @@ class MagL1a:
             (expected_range_data_length - end_padding) * has_range_data_section
         )
 
-        # Cut off the first vector width and the end range data section if it exists.
+        # Cut off the first vector width and the range data section.
         vector_bits = bit_array[first_vector_width - 1 : end_vector]
 
         # Shift the bit array over one to the left, then sum them up. This is used to
@@ -668,10 +679,9 @@ class MagL1a:
                             primary_boundaries[-1] - primary_boundaries[-4]
                             > MAX_COMPRESSED_VECTOR_BITS
                         )
-                        or (
-                            vector_count == 2
-                            and primary_boundaries[-1] > MAX_COMPRESSED_VECTOR_BITS
-                        )
+                    ) or (
+                        vector_count == 2
+                        and primary_boundaries[-1] > MAX_COMPRESSED_VECTOR_BITS
                     ):
                         # Since we know how long each uncompressed vector is,
                         # we can determine the end of the primary vectors.
@@ -731,7 +741,7 @@ class MagL1a:
             primary_count,
             uncompressed_vector_size,
             compression_width,
-        )
+        )[0]
 
         # Secondary vector processing
         first_secondary_vector = MagL1a.unpack_one_vector(
@@ -747,8 +757,7 @@ class MagL1a:
         secondary_split_bits = np.split(
             vector_bits[: secondary_boundaries[-1]], secondary_boundaries[:-1]
         )[1:]
-
-        secondary_vectors = MagL1a._process_vector_section(
+        secondary_process_vectors = MagL1a._process_vector_section(
             vector_bits,
             secondary_split_bits,
             secondary_boundaries[-1],
@@ -757,25 +766,32 @@ class MagL1a:
             uncompressed_vector_size,
             compression_width,
         )
+        secondary_vectors = secondary_process_vectors[0]
+
+        # The range data length has 2 bits per vector, minus 2 for the uncompressed
+        # first vectors in the primary and secondary sensors.
+        # Then, the range data length is padded to the nearest 8 bits.
+        end_vector = ((secondary_process_vectors[1] + first_vector_width) + 7) // 8 * 8
 
         # If there is a range data section, it describes all the data, compressed or
         # uncompressed.
         if has_range_data_section:
+            range_bits = bit_array[end_vector:]
             primary_vectors = MagL1a.process_range_data_section(
-                bit_array[end_vector : end_vector + (primary_count - 1) * 2],
+                range_bits[: (primary_count - 1) * 2],
                 primary_vectors,
             )
             secondary_vectors = MagL1a.process_range_data_section(
-                bit_array[
-                    end_vector + (primary_count - 1) * 2 : end_vector
-                    + (primary_count + secondary_count - 2) * 2
+                range_bits[
+                    (primary_count - 1) * 2 : (primary_count + secondary_count - 2) * 2
                 ],
                 secondary_vectors,
             )
+
         return primary_vectors, secondary_vectors
 
     @staticmethod
-    def _process_vector_section(  # noqa: PLR0913
+    def _process_vector_section(
         vector_bits: np.ndarray,
         split_bits: list,
         last_index: int,
@@ -783,7 +799,7 @@ class MagL1a:
         vector_count: int,
         uncompressed_vector_size: int,
         compression_width: int,
-    ) -> np.ndarray:
+    ) -> tuple[np.ndarray, int]:
         """
         Generate a section of vector data, primary or secondary.
 
@@ -809,20 +825,33 @@ class MagL1a:
 
         Returns
         -------
-        numpy.ndarray
-            An array of processed vectors.
+        (numpy.ndarray, int)
+            A tuple consisting of: an array of processed vectors, and the index of the
+            end of the last vector. In a fully compressed case, this will be the same
+            as last_index.
         """
+        compressed_count = math.ceil(len(split_bits) / AXIS_COUNT) + 1
+        uncompressed_count = vector_count - compressed_count
+
+        # will have either 0 or 8 extra bits
+        # If we have more splits than vectors, we have included part of the range
+        # data section. Drop those values and update end_vector.
+        if len(split_bits) > (vector_count - 1) * AXIS_COUNT:
+            split_bits = split_bits[: (vector_count - 1) * AXIS_COUNT]
+            last_index -= 8
+
+        end = last_index + uncompressed_vector_size * uncompressed_count
+
         vector_diffs = list(map(MagL1a.decode_fib_zig_zag, split_bits))
+        # if we got more than the expected length, we may have gotten some of the range
+        # data section.
+
         vectors = MagL1a.convert_diffs_to_vectors(
             first_vector, vector_diffs, vector_count
         )
         # If we are missing any vectors from primary_split_bits, we know we have
         # uncompressed vectors to process.
-        compressed_count = math.ceil(len(split_bits) / AXIS_COUNT) + 1
-        uncompressed_count = vector_count - compressed_count
-
         if uncompressed_count:
-            end = last_index + uncompressed_vector_size * uncompressed_count
             uncompressed_vectors = vector_bits[last_index : end + 1]
 
             for i in range(uncompressed_count):
@@ -836,8 +865,11 @@ class MagL1a:
                 )
                 vectors[i + compressed_count] = decoded_vector
                 vectors[i + compressed_count][3] = vectors[0][3]
+            # If there is an extra byte, this is from the range data section.
+            if len(vector_bits[last_index:]) - end == 8:
+                end -= 8
 
-        return vectors
+        return (vectors, end)
 
     @staticmethod
     def process_range_data_section(
@@ -870,7 +902,6 @@ class MagL1a:
                 "Incorrect length for range_data, there should be two bits per vector, "
                 "excluding the first."
             )
-
         updated_vectors: np.ndarray = np.copy(vectors)
         range_str = "".join([str(i) for i in range_data])
         for i in range(len(vectors) - 1):
@@ -966,7 +997,7 @@ class MagL1a:
         """
         if np.any(vector_data > 1):
             raise ValueError(
-                "unpack_one_vector method is expecting an array of bits as" "input."
+                "unpack_one_vector method is expecting an array of bits as input."
             )
 
         if len(vector_data) != width * AXIS_COUNT + RANGE_BIT_WIDTH * has_range:
@@ -1060,3 +1091,29 @@ class MagL1a:
         value = int((value >> 1) ^ (-(value & 1)))
 
         return value
+
+    def vectors_per_second_attribute(self) -> str:
+        """
+        Generate a string describing the vectors per second.
+
+        Format is {start time}:{vectors per second},{start time}:{vectors per second}
+        where it's only included if vectors per second changes.
+
+        Returns
+        -------
+        output_str : str
+            Output string describing the vectors per second in all the packets.
+        """
+        output_str = ""
+        last_vectors_per_second = None
+        for _, packet in self.packet_definitions.items():
+            vecsec = packet.vectors_per_second
+            time: np.int64 = packet.start_time.to_j2000ns().astype(np.int64)
+            if vecsec != last_vectors_per_second:
+                if output_str == "":
+                    output_str = f"{time}:{vecsec}"
+                else:
+                    output_str += f",{time}:{vecsec}"
+                last_vectors_per_second = vecsec
+
+        return output_str

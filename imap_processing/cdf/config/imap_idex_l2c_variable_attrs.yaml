@@ -1,0 +1,104 @@
+int_fillval: &int_fillval -9223372036854775808
+int_maxval: &int_maxval 9223372036854775807
+double_fillval: &double_fillval -1.0E31
+
+epoch_collection_set:
+  CATDESC: Nanoseconds since J2000 with leap seconds. Start (left-edge) of reference time.
+  FIELDNAM: epoch
+  LABLAXIS: epoch
+  FILLVAL: -9223372036854775808
+  FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854775807
+  UNITS: ns
+  VAR_TYPE: support_data
+  SCALETYP: linear
+  MONOTON: INCREASE
+  TIME_BASE: J2000
+  TIME_SCALE: Terrestrial Time
+  REFERENCE_POSITION: Rotating Earth Geoid
+  RESOLUTION: ' '
+  DISPLAY_TYPE: time_series
+  DICT_KEY: SPASE>Support>SupportQantity:Temporal
+
+rectangular_lon_pixel_label:
+  CATDESC: Longitude pixel index label for IDEX SkyMap.
+  FIELDNAM: Longitude pixel label
+  FORMAT: A5
+  VAR_TYPE: metadata
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+rectangular_lat_pixel_label:
+  CATDESC: Latitude pixel index label for IDEX SkyMap.
+  FIELDNAM: Latitude pixel label
+  FORMAT: A5
+  VAR_TYPE: metadata
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+pixel_label:
+  CATDESC: HEALPix pixel index  label for IDEX SkyMap.
+  FIELDNAM: Pixel label
+  FORMAT: A5
+  VAR_TYPE: metadata
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+pixel_index:
+  CATDESC: HEALPix pixel index for IDEX SkyMap
+  FIELDNAM: HEALPix Index
+  FORMAT: I4
+  LABLAXIS: HEALPix Index
+  VAR_TYPE: support_data
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 768
+  FILLVAL: *int_fillval
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
+
+rectangular_lon_pixel:
+  CATDESC: Longitude pixel index for IDEX SkyMap
+  FIELDNAM: Rectangular Longitude Index
+  FORMAT: F12.6
+  LABLAXIS: Longitude Pixel
+  VAR_TYPE: support_data
+  UNITS: degrees
+  VALIDMIN: 0
+  VALIDMAX: 360
+  FILLVAL: *double_fillval
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
+
+rectangular_lat_pixel:
+  CATDESC: Latitude pixel index for IDEX SkyMap
+  FIELDNAM: Rectangular Latitude Index
+  FORMAT: F12.6
+  LABLAXIS: Latitude Pixel
+  VAR_TYPE: support_data
+  UNITS: degrees
+  VALIDMIN: -90
+  VALIDMAX: 90
+  FILLVAL: *double_fillval
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
+
+counts: &counts
+  CATDESC: Number of raw dust events for each pixel
+  FIELDNAM: Dust Counts
+  FORMAT: I20
+  UNITS: counts
+  VAR_TYPE: data
+  DISPLAY_TYPE: spectrogram
+  DEPEND_0: epoch
+  VALIDMIN: 0
+  VALIDMAX: *int_maxval
+  FILLVAL: *int_fillval
+  DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
+
+healpix_counts:
+  <<: *counts
+  DEPEND_1: pixel_index
+  LABLAXIS: Counts
+
+rectangular_counts:
+  <<: *counts
+  DEPEND_1: rectangular_lon_pixel
+  DEPEND_2: rectangular_lat_pixel
+  LABL_PTR_1: rectangular_lon_pixel_label
+  LABL_PTR_2: rectangular_lat_pixel_label

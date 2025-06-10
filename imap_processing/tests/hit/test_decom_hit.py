@@ -7,6 +7,7 @@ from imap_processing import imap_module_directory
 from imap_processing.hit.hit_utils import (
     HitAPID,
 )
+from imap_processing.hit.l0.constants import AZIMUTH_ANGLES, ZENITH_ANGLES
 from imap_processing.hit.l0.decom_hit import (
     assemble_science_frames,
     decom_hit,
@@ -20,7 +21,7 @@ from imap_processing.hit.l0.decom_hit import (
 from imap_processing.utils import packet_file_to_datasets
 
 
-@pytest.fixture()
+@pytest.fixture
 def sci_dataset():
     """Create a xarray dataset for testing from sample data."""
     packet_definition = (
@@ -79,7 +80,7 @@ def test_parse_count_rates(sci_dataset):
         "hdr_code_ok",
         "hdr_minute_cnt",
         "spare",
-        "livetime",
+        "livetime_counter",
         "num_trig",
         "num_reject",
         "num_acc_w_pha",
@@ -121,6 +122,9 @@ def test_parse_count_rates(sci_dataset):
     ]
     if count_rate_vars in list(sci_dataset.keys()):
         assert True
+
+    assert np.allclose(sci_dataset["zenith"].values, ZENITH_ANGLES)
+    assert np.allclose(sci_dataset["azimuth"].values, AZIMUTH_ANGLES)
 
 
 def test_is_sequential():
@@ -242,7 +246,7 @@ def test_decom_hit(sci_dataset):
         "hdr_heater_duty_cycle",
         "hdr_code_ok",
         "hdr_minute_cnt",
-        "livetime",
+        "livetime_counter",
         "num_trig",
         "num_reject",
         "num_acc_w_pha",

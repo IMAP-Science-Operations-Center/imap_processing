@@ -28,27 +28,19 @@ class TestENAMapMappingUtils:
         """Test coverage for bin_single_array_at_indices function w/ simple 2D input,
         Corresponding to an extra axis that is not spatially binned.
         """
-        # Binning will occur along axis 0 (combining 1, 2, 3 and 4, 5, 6 separately)
+        # Binning will occur along axis 1 seen below
+        # (combining 1, 2, 3 and 4, 5, 6 separately).
         value_array = np.array(
             [
-                [1, 4],
-                [2, 5],
-                [3, 6],
+                [1, 2, 3],
+                [4, 5, 6],
             ]
         )
         input_indices = np.array([0, 1, 2, 2])
         projection_indices = np.array([1, 0, 1, 6])
         projection_grid_shape = (7, 1)
         expected_projection_values = np.array(
-            [
-                [2, 5],
-                [4, 10],
-                [0, 0],
-                [0, 0],
-                [0, 0],
-                [0, 0],
-                [3, 6],
-            ]
+            [[2, 4, 0, 0, 0, 0, 3], [5, 10, 0, 0, 0, 0, 6]]
         )
         projection_values = map_utils.bin_single_array_at_indices(
             value_array,
@@ -76,7 +68,7 @@ class TestENAMapMappingUtils:
         extra_axis_size = 11  # Another axis which is not spatially binned, e.g. energy
         input_grid_size = np.prod(input_grid_shape)
         projection_grid_size = np.prod(projection_grid_shape)
-        value_array = np.random.rand(input_grid_size, extra_axis_size)
+        value_array = np.random.rand(extra_axis_size, input_grid_size)
         input_indices = np.random.randint(0, input_grid_size, size=1000)
         projection_indices = np.random.randint(0, projection_grid_size, size=1000)
         projection_values = map_utils.bin_single_array_at_indices(
@@ -90,16 +82,16 @@ class TestENAMapMappingUtils:
         np.testing.assert_equal(
             projection_values.shape,
             (
-                projection_grid_size,
                 extra_axis_size,
+                projection_grid_size,
             ),
         )
 
         # Create the expected projection values by summing the input values in a loop
         # This is different from the binning function, which uses np.bincount
-        expected_projection_values = np.zeros((projection_grid_size, extra_axis_size))
+        expected_projection_values = np.zeros((extra_axis_size, projection_grid_size))
         for ii, ip in zip(input_indices, projection_indices):
-            expected_projection_values[ip, :] += value_array[ii, :]
+            expected_projection_values[:, ip] += value_array[:, ii]
 
         np.testing.assert_allclose(projection_values, expected_projection_values)
 
@@ -117,7 +109,7 @@ class TestENAMapMappingUtils:
         extra_axes_sizes = np.full(num_extra_dims, 3, dtype=int).tolist()
         input_grid_size = np.prod(input_grid_shape)
         projection_grid_size = np.prod(projection_grid_shape)
-        value_array = np.random.rand(input_grid_size, *extra_axes_sizes)
+        value_array = np.random.rand(*extra_axes_sizes, input_grid_size)
         input_indices = np.random.randint(0, input_grid_size, size=1000)
         projection_indices = np.random.randint(0, projection_grid_size, size=1000)
         projection_values = map_utils.bin_single_array_at_indices(
@@ -130,14 +122,14 @@ class TestENAMapMappingUtils:
         # Explicitly check that the shape of the output is the same as projection grid
         np.testing.assert_equal(
             projection_values.shape,
-            (projection_grid_size, *extra_axes_sizes),
+            (*extra_axes_sizes, projection_grid_size),
         )
 
         # Create the expected projection values by summing the input values in a loop
         # This is different from the binning function, which uses np.bincount
-        expected_projection_values = np.zeros((projection_grid_size, *extra_axes_sizes))
+        expected_projection_values = np.zeros((*extra_axes_sizes, projection_grid_size))
         for ii, ip in zip(input_indices, projection_indices):
-            expected_projection_values[ip, ...] += value_array[ii, ...]
+            expected_projection_values[..., ip] += value_array[..., ii]
 
         np.testing.assert_allclose(projection_values, expected_projection_values)
 
@@ -155,28 +147,59 @@ class TestENAMapMappingUtils:
         scale_factor_1d = 1.5
         input_values_1d_2 = input_values_1d_1 * scale_factor_1d
 
-        # 2D input values. The second axis (different cols) will be summed independently
+        # 2D input values. The 0 axis (different rows) will be summed independently
         input_values_2d = np.array(
             [
-                [-0.5, 0, 0.5],
-                [1, 2, 3],
-                [4, 5, 6],
-                [7, 8, 9],
-                [0, 0, 0],
-                [0, 0, 0],
-                [0, 0, 0],
-                [0, 0, 0],
-                [0, 0, 0],
-                [0, 0, 0],
-                [0, 0, 0],
-                [0, 0, 0],
+                [
+                    -0.5,
+                    1,
+                    4,
+                    7,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                ],
+                [
+                    0,
+                    2,
+                    5,
+                    8,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                ],
+                [
+                    0.5,
+                    3,
+                    6,
+                    9,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                ],
             ]
         )
-        extra_axis_size_2d = input_values_2d.shape[1]
+
+        extra_axis_size_2d = input_values_2d.shape[0]
 
         # 3D input values
-        input_values_3d = np.zeros((input_values_2d.shape[0], 3, 3))
-        input_values_3d[:2] = np.array(
+        input_values_3d = np.zeros((3, 3, input_values_2d.shape[-1]))
+        input_values_3d[:, :, :2] = np.array(
             [
                 [
                     [1, 2, 3],
@@ -189,8 +212,8 @@ class TestENAMapMappingUtils:
                     [16, 17, 18],
                 ],
             ]
-        )
-        extra_axes_size_3d = input_values_3d.shape[1:]
+        ).transpose(1, 2, 0)
+        extra_axes_size_3d = input_values_3d.shape[:-1]
 
         # Set up the expected projection values
         expected_projection_values_1d_1 = np.zeros(projection_grid_shape).ravel()
@@ -199,13 +222,13 @@ class TestENAMapMappingUtils:
             expected_projection_values_1d_1 * scale_factor_1d
         )
         expected_projection_values_2d = np.zeros(
-            (np.prod(projection_grid_shape), extra_axis_size_2d)
+            (extra_axis_size_2d, np.prod(projection_grid_shape))
         )
-        expected_projection_values_2d[0, :] = np.array([11.5, 15, 18.5])
+        expected_projection_values_2d[:, 0] = np.array([11.5, 15, 18.5])
         expected_projection_values_3d = np.zeros(
-            (np.prod(projection_grid_shape), *extra_axes_size_3d)
+            (*extra_axes_size_3d, np.prod(projection_grid_shape))
         )
-        expected_projection_values_3d[0, :, :] = np.array(
+        expected_projection_values_3d[:, :, 0] = np.array(
             [
                 [11, 13, 15],
                 [17, 19, 21],

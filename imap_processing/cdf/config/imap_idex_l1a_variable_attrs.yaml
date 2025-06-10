@@ -10,18 +10,15 @@ data_max: &data_max 4096
 sample_rate_min: &sample_rate_min -130
 sample_rate_max: &sample_rate_max 130
 
-int_maxval: &int_maxval 9223372036854775807
 
 # <=== Base Attributes ===>
 string_base_attrs: &string_base
+  DEPEND_0: epoch
   CATDESC: " "
   FIELDNAM: " "
+  FILLVAL: " "
   FORMAT: A3
-  LABLAXIS: "none"
   VAR_TYPE: metadata
-  DISPLAY_TYPE: no_plot
-  DEPEND_0: epoch
-  UNITS: " "
 
 l1a_data_base: &l1a_data_base
   VALIDMIN: *data_min
@@ -38,12 +35,12 @@ l1a_data_base: &l1a_data_base
 
 l1a_tof_base: &l1a_tof_base
   <<: *l1a_data_base
-  DEPEND_1: time_high_sample_rate
+  DEPEND_1: time_high_sample_rate_index
   LABL_PTR_1: time_high_sample_rate_label
 
 l1a_target_base: &l1a_target_base
   <<: *l1a_data_base
-  DEPEND_1: time_low_sample_rate
+  DEPEND_1: time_low_sample_rate_index
   LABL_PTR_1: time_low_sample_rate_label
 
 sample_rate_base: &sample_rate_base
@@ -55,9 +52,10 @@ sample_rate_base: &sample_rate_base
   VALIDMAX: *sample_rate_max
   DEPEND_0: epoch
   FORMAT: F64.5
+  SCALETYP: linear
   LABLAXIS: Time
   UNITS: microseconds
-  VAR_TYPE: support_data # Not in attrs file
+  VAR_TYPE: data
   VAR_NOTES:  The number of microseconds since the event.
               0 is the start of data collection, negative
               numbers represent data collected prior to a dust event
@@ -81,12 +79,16 @@ time_high_sample_rate_label:
   FIELDNAM: High Sample Rate Time
   FORMAT: A5
   VAR_TYPE: metadata
+  DEPEND_1: time_high_sample_rate_index
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 time_low_sample_rate_label:
   CATDESC: Low sample rate time steps for a dust event.
   FIELDNAM: Low Sample Rate Time
   FORMAT: A5
   VAR_TYPE: metadata
+  DEPEND_1: time_low_sample_rate_index
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 # <=== Instrument Setting Attributes ===>
 low_sample_rate_attrs:
@@ -96,6 +98,8 @@ low_sample_rate_attrs:
   VAR_NOTES: The low sample rate in microseconds. Steps are approximately 1/4.025
              microseconds in duration. Used by the Ion_Grid, Target_Low, and
              Target_High variables.
+  DEPEND_1: time_low_sample_rate_index
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal
 
 high_sample_rate_attrs:
   <<:  *sample_rate_base
@@ -104,6 +108,8 @@ high_sample_rate_attrs:
   VAR_NOTES: The high sample rate in microseconds. Steps are approximately 1/260
     microseconds in duration. Used by the TOF_High, TOF_Mid, and
     TOF_Low variables.
+  DEPEND_1: time_high_sample_rate_index
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal
 
 time_low_sample_rate_index:
   CATDESC: Low sampling rate time index
@@ -111,23 +117,25 @@ time_low_sample_rate_index:
   FILLVAL: *int_fillval
   FORMAT: I3
   LABLAXIS: Sample Rate
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: " "
   VALIDMAX: 511
   VALIDMIN: 0
   VAR_TYPE: support_data
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 time_high_sample_rate_index:
   CATDESC: High sampling rate time index
-  FIELDNAM: Low sample rate
+  FIELDNAM: High sample rate
   FILLVAL: *int_fillval
-  FORMAT: I3
+  FORMAT: I4
   LABLAXIS: Sample Rate
-  SCALE_TYP: linear
+  SCALETYP: linear
   UNITS: " "
   VALIDMAX: 8188
   VALIDMIN: 0
   VAR_TYPE: support_data
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 tof_high_attrs:
   <<: *l1a_tof_base

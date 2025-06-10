@@ -4,11 +4,13 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.hit.l0.constants import (
+    AZIMUTH_ANGLES,
     COUNTS_DATA_STRUCTURE,
     EXPONENT_BITS,
     FLAG_PATTERN,
     FRAME_SIZE,
     MANTISSA_BITS,
+    ZENITH_ANGLES,
 )
 from imap_processing.utils import convert_to_binary_string
 
@@ -90,9 +92,20 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
         # Get dims for data variables (yaml file not created yet)
         if len(field_meta.shape) > 1:
             if "sectorates" in field:
-                # Reshape data to 8x15 for declination and azimuth look directions
+                # Reshape data to 15x8 for azimuth and zenith look directions
                 parsed_data = np.array(parsed_data).reshape((-1, *field_meta.shape))
-                dims = ["epoch", "declination", "azimuth"]
+                dims = ["epoch", "azimuth", "zenith"]
+                # Add angle values to coordinates
+                sci_dataset.coords["zenith"] = xr.DataArray(
+                    data=ZENITH_ANGLES,
+                    dims=["zenith"],
+                    name="zenith",
+                )
+                sci_dataset.coords["azimuth"] = xr.DataArray(
+                    data=AZIMUTH_ANGLES,
+                    dims=["azimuth"],
+                    name="azimuth",
+                )
             elif "sngrates" in field:
                 dims = ["epoch", "gain", f"{field}_index"]
         elif field_meta.shape[0] > 1:
@@ -100,13 +113,16 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
         else:
             dims = ["epoch"]
 
-        sci_dataset[field] = xr.DataArray(parsed_data, dims=dims, name=field)
+        sci_dataset[field] = xr.DataArray(
+            np.array(parsed_data, dtype=np.int64), dims=dims, name=field
+        )
         # Add dimensions to coordinates
-        # TODO: confirm that dtype int16 is correct
         for dim in dims:
             if dim not in sci_dataset.coords:
                 sci_dataset.coords[dim] = xr.DataArray(
-                    np.arange(sci_dataset.sizes[dim], dtype=np.int16),
+                    np.arange(sci_dataset.sizes[dim], dtype=np.int16)
+                    if dim == "gain"
+                    else np.arange(sci_dataset.sizes[dim], dtype=np.int32),
                     dims=[dim],
                     name=dim,
                 )

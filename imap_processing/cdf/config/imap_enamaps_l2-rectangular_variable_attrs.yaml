@@ -1,0 +1,157 @@
+# Define Rectangularly Tiled ENA Map values
+# The attributes in this file will be used to supplement/override the common
+# ENA map attributes defined in imap_enamaps_l2-common_variable_attrs.yaml
+
+default_float32_attrs: &default_float32
+  FORMAT: F12.6
+  FILLVAL: -1.0e31
+  VALIDMIN: -3.4028235e+38
+  VALIDMAX: 3.4028235e+38
+  dtype: float32
+
+# Define Coordinates specifically for Rectangular tiling
+
+longitude_label:
+  VAR_TYPE: metadata
+  CATDESC: Label variable for longitude.
+  FIELDNAM: longitude label
+  FORMAT: A8
+  DEPEND_1: longitude
+
+longitude_delta:
+  VAR_TYPE: metadata
+  dtype: float32
+  CATDESC: Half-width of longitude pixel
+  FORMAT: F12.6
+  UNITS: degrees
+  FIELDNAM: longitude delta
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+latitude_label:
+  VAR_TYPE: metadata
+  CATDESC: Label variable for latitude.
+  FIELDNAM: latitude label
+  FORMAT: A8
+  DEPEND_1: latitude
+
+latitude_delta:
+  VAR_TYPE: metadata
+  dtype: float32
+  CATDESC: Half-width of latitude pixel
+  FORMAT: F12.6
+  UNITS: degrees
+  FIELDNAM: latitude delta
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+# All variables below override the initial attributes defined in the common ENA Map
+# attributes file, imap_enamaps_l2-common_variable_attrs.yaml
+
+longitude:
+  DELTA_MINUS_VAR: longitude_delta
+  DELTA_PLUS_VAR: longitude_delta
+  SCALE_TYP: linear
+
+latitude:
+  DELTA_MINUS_VAR: latitude_delta
+  DELTA_PLUS_VAR: latitude_delta
+  SCALE_TYP: linear
+
+# Define Data variables
+ena_intensity:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+ena_intensity_stat_unc:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+ena_intensity_sys_err:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+ena_rate:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+ena_count:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+sensitivity:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+# These data variables will have an extra (energy) dimension
+# only if the energy dimension is present in the L1C data.
+# The default is energy-independent.
+exposure_factor_energy_independent:
+  DEPEND_1: longitude
+  DEPEND_2: latitude
+  LABL_PTR_1: longitude_label
+  LABL_PTR_2: latitude_label
+
+obs_date_energy_independent:
+  DEPEND_1: longitude
+  DEPEND_2: latitude
+  LABL_PTR_1: longitude_label
+  LABL_PTR_2: latitude_label
+
+obs_date_range_energy_independent:
+  DEPEND_1: longitude
+  DEPEND_2: latitude
+  LABL_PTR_1: longitude_label
+  LABL_PTR_2: latitude_label
+
+exposure_factor:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+obs_date:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+obs_date_range:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+solid_angle:
+  DEPEND_1: longitude
+  DEPEND_2: latitude
+  LABL_PTR_1: longitude_label
+  LABL_PTR_2: latitude_label

@@ -20,6 +20,7 @@ from imap_processing.lo.l0.utils.bit_decompression import (
     Decompress,
     decompress_int,
 )
+from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.utils import convert_to_binary_string
 
 logger = logging.getLogger(__name__)
@@ -82,8 +83,7 @@ def parse_histogram(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Data
     # initialize the starting bit for the sections of data
     section_start = 0
     # for each field type in the histogram data
-    for field in HIST_DATA_META:
-        data_meta = HIST_DATA_META[field]
+    for field, data_meta in HIST_DATA_META.items():
         # for each histogram binary string decompress
         # the data
         decompressed_data = [
@@ -409,6 +409,12 @@ def combine_segmented_packets(dataset: xr.Dataset) -> xr.Dataset:
     dataset.coords["epoch"] = dataset["epoch"].values[seg_starts]
     # drop any group of segmented epochs that aren't sequential
     dataset.coords["epoch"] = dataset["epoch"].values[valid_groups]
+    # Set met to the first segment start times for the valid groups.
+    # shcoarse will be retained as a per packet coordinate and met
+    # is used as the mission elapsed time for each segment
+    dataset["met"] = xr.DataArray(
+        dataset["shcoarse"].values[seg_starts][valid_groups], dims="epoch"
+    )
 
     return dataset
 
@@ -441,7 +447,7 @@ def find_valid_groups(
     return valid_groups
 
 
-def organize_spin_data(dataset: xr.Dataset) -> xr.Dataset:
+def organize_spin_data(dataset: xr.Dataset, attr_mgr: ImapCdfAttributes) -> xr.Dataset:
     """
     Organize the spin data for Lo.
 
@@ -453,6 +459,8 @@ def organize_spin_data(dataset: xr.Dataset) -> xr.Dataset:
     ----------
     dataset : xr.Dataset
         Lo spin data from packets_to_dataset function.
+    attr_mgr : ImapCdfAttributes
+        CDF attribute manager for Lo L1A.
 
     Returns
     -------
@@ -470,14 +478,29 @@ def organize_spin_data(dataset: xr.Dataset) -> xr.Dataset:
         "period_source_spin",
     ]
 
+    # Set epoch to the acq_start time
+    # acq_start_sec is in units of seconds
+    # acq_start_subsec is in units of microseconds
+    acq_start = dataset.acq_start_sec + (1e-6 * dataset.acq_start_subsec)
+    epoch = met_to_ttj2000ns(acq_start)
+    dataset = dataset.assign_coords(epoch=("epoch", epoch))
     for spin_field in spin_fields:
+        # Get the field attributes
+        field_attrs = attr_mgr.get_variable_attributes(spin_field, check_schema=False)
+        dtype = field_attrs.pop("dtype")
+
         packet_fields = [f"{spin_field}_{i}" for i in range(1, 29)]
         # Combine the spin data fields along a new dimension
         combined_spin_data = xr.concat(
-            [dataset[field] for field in packet_fields], dim="spin"
+            [dataset[field].astype(dtype) for field in packet_fields], dim="spin"
         )
+
         # Assign the combined data back to the dataset
-        dataset[spin_field] = combined_spin_data.transpose()
+        dataset[spin_field] = xr.DataArray(
+            combined_spin_data.transpose(),
+            dims=["epoch", "spin"],
+            attrs=field_attrs,
+        )
         # Drop the individual spin data fields
         dataset = dataset.drop_vars(packet_fields)
 

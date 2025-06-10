@@ -15,7 +15,7 @@ from imap_processing.mag.l1a.mag_l1a_data import (
 from imap_processing.spice.time import met_to_ttj2000ns
 
 
-@pytest.fixture()
+@pytest.fixture
 def uncompressed_vector_bytearray():
     input_data = np.array(
         [
@@ -225,7 +225,7 @@ def uncompressed_vector_bytearray():
     return input_data
 
 
-@pytest.fixture()
+@pytest.fixture
 def expected_vectors():
     primary_expected = np.array(
         [
@@ -272,7 +272,7 @@ def expected_vectors():
     return (primary_expected, secondary_expected)
 
 
-@pytest.fixture()
+@pytest.fixture
 def raw_compressed_vectors():
     # compressed vectors, without the first starting uncompressed vector.
     # 15 primary vectors and 15 secondary vectors, corresponding to most of
@@ -303,7 +303,7 @@ def test_different_vector_rates(
     uncompressed_vector_bytearray, expected_vectors, raw_compressed_vectors
 ):
     current_directory = Path(__file__).parent
-    test_file = current_directory / "mag_l1_test_data.pkts"
+    test_file = current_directory / "validation" / "mag_l1_test_data.pkts"
     # Test file contains only normal packets
     l0 = decom_packets(test_file)["norm"][0]
 
@@ -318,16 +318,14 @@ def test_different_vector_rates(
         )
     )
     l1 = process_packets([l0])
-    expected_day = np.datetime64("2023-11-30")
-
-    assert len(l1["magi"][expected_day].vectors) == 16
-    assert len(l1["mago"][expected_day].vectors) == 32
+    assert len(l1["magi"].vectors) == 16
+    assert len(l1["mago"].vectors) == 32
 
     assert np.array_equal(
-        l1["mago"][expected_day].vectors[:, :4],
+        l1["mago"].vectors[:, :4],
         np.concatenate((expected_vectors[0], expected_vectors[0])),
     )
-    assert np.array_equal(l1["magi"][expected_day].vectors[:, :4], expected_vectors[1])
+    assert np.array_equal(l1["magi"].vectors[:, :4], expected_vectors[1])
 
     # compressed data
     # Compression headers - indicating a 16 bit width and no range section
@@ -402,19 +400,20 @@ def test_padding_uncompressed(expected_vectors):
 
 def test_compare_validation_data():
     current_directory = Path(__file__).parent
-    test_file = current_directory / "mag_l1_test_data.pkts"
+    test_file = current_directory / "validation" / "mag_l1_test_data.pkts"
     # Test file contains only normal packets
     l0 = decom_packets(test_file)
     l1 = process_packets(l0["norm"])
     # Should have one day of data
-    expected_day = np.datetime64("2023-11-30")
-    l1_mago = l1["mago"][expected_day]
-    l1_magi = l1["magi"][expected_day]
+    l1_mago = l1["mago"]
+    l1_magi = l1["magi"]
 
     assert len(l1_mago.vectors) == 96
     assert len(l1_magi.vectors) == 96
 
-    validation_data = pd.read_csv(current_directory / "mag_l1a_test_output.csv")
+    validation_data = pd.read_csv(
+        current_directory / "validation" / "mag_l1a_test_output.csv"
+    )
 
     # Validation data does not have differing timestamps
     for index in validation_data.index:
@@ -482,6 +481,7 @@ def test_compressed_vector_data(expected_vectors, raw_compressed_vectors):
     expected_range_secondary = [3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 3, 1]
     # 16 bit width with range section
     headers = "01000010"
+    end_padding = "0000"
     input_data = np.array(
         [
             int(i)
@@ -491,6 +491,7 @@ def test_compressed_vector_data(expected_vectors, raw_compressed_vectors):
             + padding
             + range_primary
             + range_secondary
+            + end_padding
         ],
         dtype=np.uint8,
     )
@@ -509,7 +510,33 @@ def test_compressed_vector_data(expected_vectors, raw_compressed_vectors):
 
     assert primary_with_range.shape[0] == 16
     assert secondary_with_range.shape[0] == 16
+    assert np.array_equal(primary_with_range, primary_expected)
+    assert np.array_equal(secondary_with_range, secondary_expected)
 
+    # testing the case where a spare byte is included at the end.
+    end_padding = "000000000000"
+
+    input_data = np.array(
+        [
+            int(i)
+            for i in headers
+            + primary_compressed
+            + secondary_compressed
+            + padding
+            + range_primary
+            + range_secondary
+            + end_padding
+        ],
+        dtype=np.uint8,
+    )
+
+    input_data = np.packbits(input_data)
+    (primary_with_range, secondary_with_range) = MagL1a.process_compressed_vectors(
+        input_data, 16, 16
+    )
+
+    assert primary_with_range.shape[0] == 16
+    assert secondary_with_range.shape[0] == 16
     assert np.array_equal(primary_with_range, primary_expected)
     assert np.array_equal(secondary_with_range, secondary_expected)
 
@@ -852,9 +879,9 @@ def test_mag_l1a_data():
 
 def test_mag_l1a():
     current_directory = Path(__file__).parent
-    test_file = current_directory / "mag_l1_test_data.pkts"
+    test_file = current_directory / "validation" / "mag_l1_test_data.pkts"
 
-    output_data = mag_l1a(test_file, "v001")
+    output_data = mag_l1a(test_file)
 
     # Test data is one day's worth of NORM data, so it should return one raw, one MAGO
     # and one MAGI dataset
@@ -868,9 +895,6 @@ def test_mag_l1a():
     for data_type in [data.attrs["Logical_source"] for data in output_data]:
         assert data_type in expected_logical_source
 
-    for data in output_data:
-        assert data.attrs["Data_version"] == "v001"
-
     assert "vectors" in output_data[-1].variables.keys()
     assert "compression_flags" in output_data[-1].variables.keys()
 
@@ -879,6 +903,15 @@ def test_mag_l1a():
     assert (
         output_data[-1]["vectors"].data.shape[0]
         == output_data[-1]["compression_flags"].data.shape[0]
+    )
+
+    assert (
+        str(output_data[-1]["epoch"].data[0])
+        in output_data[-1].attrs["vectors_per_second"]
+    )
+    assert (
+        str(output_data[-2]["epoch"].data[0])
+        in output_data[-2].attrs["vectors_per_second"]
     )
 
 
@@ -890,3 +923,41 @@ def test_mag_packet_properties():
     )
 
     assert packet_properties.compression_width == 18
+
+
+def test_changing_vecsec():
+    packet_one = MagL1aPacketProperties(
+        1000,
+        TimeTuple(1000, 0),
+        2,  # 2 vectors per second
+        1,  # 2 seconds of data
+        0,
+        0,
+        1,
+        0,
+    )
+    packet_two = MagL1aPacketProperties(
+        2000,
+        TimeTuple(2000, 0),
+        8,  # 8 vectors per second
+        1,  # 2 seconds of data
+        1,
+        0,
+        1,
+        0,
+    )
+
+    four_vectors = np.full((4, 5), [1, 2, 3, 4, 2])
+    sixteen_vectors = np.full((16, 5), [1, 2, 3, 4, 2])
+
+    mag_l1a = MagL1a(True, 1, 1, four_vectors, packet_one)
+    mag_l1a.append_vectors(sixteen_vectors, packet_two)
+
+    assert mag_l1a.vectors.shape[0] == 20
+    assert len(mag_l1a.packet_definitions.keys()) == 2
+    expected = [2, 8]
+    for index, value in enumerate(mag_l1a.packet_definitions.values()):
+        assert expected[index] == value.vectors_per_second
+
+    assert ":2," in mag_l1a.vectors_per_second_attribute()
+    assert ":8" in mag_l1a.vectors_per_second_attribute()

@@ -6,6 +6,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.swe.utils import swe_constants
 from imap_processing.swe.utils.swe_utils import SWEAPID
 
 logger = logging.getLogger(__name__)
@@ -63,7 +64,7 @@ def decompressed_counts(cem_count: int) -> int:
     )
 
 
-def swe_science(l0_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
+def swe_science(l0_dataset: xr.Dataset) -> xr.Dataset:
     """
     SWE L1a science processing.
 
@@ -96,10 +97,6 @@ def swe_science(l0_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     l0_dataset : xarray.Dataset
         Raw packet data from SWE stored as an xarray dataset.
 
-    data_version : str
-        Data version for the 'Data_version' CDF attribute. This is the version of the
-        output file.
-
     Returns
     -------
     dataset : xarray.Dataset
@@ -119,7 +116,9 @@ def swe_science(l0_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     # 4. Reshape the data to 180 x 7
     raw_science_array = np.array(
         [
-            np.frombuffer(binary_string, dtype=np.uint8).reshape(180, 7)
+            np.frombuffer(binary_string, dtype=np.uint8).reshape(
+                180, swe_constants.N_CEMS
+            )
             for binary_string in l0_dataset["science_data"].values
         ]
     )
@@ -132,54 +131,55 @@ def swe_science(l0_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs("swe")
     cdf_attrs.add_instrument_variable_attrs("swe", "l1a")
-    cdf_attrs.add_global_attribute("Data_version", data_version)
 
     epoch_time = xr.DataArray(
         l0_dataset["epoch"],
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_attrs.get_variable_attributes("epoch"),
+        attrs=cdf_attrs.get_variable_attributes("epoch", check_schema=False),
     )
 
-    spin_angle = xr.DataArray(
+    spin_sector = xr.DataArray(
         np.arange(180),
-        name="spin_angle",
-        dims=["spin_angle"],
-        attrs=cdf_attrs.get_variable_attributes("spin_angle"),
+        name="spin_sector",
+        dims=["spin_sector"],
+        attrs=cdf_attrs.get_variable_attributes("spin_sector", check_schema=False),
     )
 
     # NOTE: LABL_PTR_1 should be CDF_CHAR.
-    spin_angle_label = xr.DataArray(
-        spin_angle.values.astype(str),
-        name="spin_angle_label",
-        dims=["spin_angle_label"],
-        attrs=cdf_attrs.get_variable_attributes("spin_angle_label"),
+    spin_sector_label = xr.DataArray(
+        spin_sector.values.astype(str),
+        name="spin_sector_label",
+        dims=["spin_sector"],
+        attrs=cdf_attrs.get_variable_attributes(
+            "spin_sector_label", check_schema=False
+        ),
     )
 
-    polar_angle = xr.DataArray(
-        np.arange(7),
-        name="polar_angle",
-        dims=["polar_angle"],
-        attrs=cdf_attrs.get_variable_attributes("polar_angle"),
+    cem_id = xr.DataArray(
+        np.arange(swe_constants.N_CEMS),
+        name="cem_id",
+        dims=["cem_id"],
+        attrs=cdf_attrs.get_variable_attributes("cem_id", check_schema=False),
     )
 
     # NOTE: LABL_PTR_2 should be CDF_CHAR.
-    polar_angle_label = xr.DataArray(
-        polar_angle.values.astype(str),
-        name="polar_angle_label",
-        dims=["polar_angle_label"],
-        attrs=cdf_attrs.get_variable_attributes("polar_angle_label"),
+    cem_id_label = xr.DataArray(
+        cem_id.values.astype(str),
+        name="cem_id_label",
+        dims=["cem_id"],
+        attrs=cdf_attrs.get_variable_attributes("cem_id_label", check_schema=False),
     )
 
     science_xarray = xr.DataArray(
         science_array,
-        dims=["epoch", "spin_angle", "polar_angle"],
+        dims=["epoch", "spin_sector", "cem_id"],
         attrs=cdf_attrs.get_variable_attributes("science_data"),
     )
 
     raw_science_xarray = xr.DataArray(
         raw_science_array,
-        dims=["epoch", "spin_angle", "polar_angle"],
+        dims=["epoch", "spin_sector", "cem_id"],
         attrs=cdf_attrs.get_variable_attributes("raw_counts"),
     )
 
@@ -190,10 +190,10 @@ def swe_science(l0_dataset: xr.Dataset, data_version: str) -> xr.Dataset:
     dataset = xr.Dataset(
         coords={
             "epoch": epoch_time,
-            "spin_angle": spin_angle,
-            "polar_angle": polar_angle,
-            "spin_angle_label": spin_angle_label,
-            "polar_angle_label": polar_angle_label,
+            "spin_sector": spin_sector,
+            "cem_id": cem_id,
+            "spin_sector_label": spin_sector_label,
+            "cem_id_label": cem_id_label,
         },
         attrs=l1a_global_attrs,
     )

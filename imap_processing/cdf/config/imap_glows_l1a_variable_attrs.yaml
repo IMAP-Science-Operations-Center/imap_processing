@@ -5,6 +5,12 @@ max_uint16: &max_uint16 65535
 min_epoch: &min_epoch -315575942816000000
 max_epoch: &max_epoch 3155630469184000000
 
+bins_label:
+  CATDESC: Histogram bin number
+  FIELDNAM: Bin number
+  FORMAT: A4
+  VAR_TYPE: metadata
+
 default_attrs: &default_attrs
   # TODO: Remove unneeded attributes once SAMMI is fixed
   RESOLUTION: ' '
@@ -63,7 +69,7 @@ direct_event_components_attrs:
 
 direct_events:
   <<:  *default_attrs
-  DEPEND_O: epoch
+  DEPEND_0: epoch
   DEPEND_1: within_the_second
   DEPEND_2: direct_event_components
   VALIDMIN: 0
@@ -82,10 +88,10 @@ histogram:
   CATDESC: Histogram of photon counts in scanning-circle bins
   DEPEND_0: epoch
   DEPEND_1: bins
+  LABL_PTR_1: bins_label
   FIELDNAM: Histogram of photon counts
   FORMAT: I4
   DISPLAY_TYPE: time_series
-  LABLAXIS: Counts
   FILL_VAL: *max_uint16
   UNITS: counts
   VAR_TYPE: data

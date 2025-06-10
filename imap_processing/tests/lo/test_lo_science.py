@@ -17,7 +17,7 @@ from imap_processing.lo.l0.lo_science import (
 from imap_processing.utils import convert_to_binary_string, packet_file_to_datasets
 
 
-@pytest.fixture()
+@pytest.fixture
 def fake_de_dataset():
     # binary packet fields
     count = "0000000000000010"  # 2
@@ -72,7 +72,7 @@ def fake_de_dataset():
     return dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def sample_data():
     xtce_file = imap_module_directory / "lo/packet_definitions/lo_xtce.xml"
     dependency = (
@@ -86,7 +86,7 @@ def sample_data():
     return datasets_by_apid
 
 
-@pytest.fixture()
+@pytest.fixture
 def segmented_pkts_fake_data():
     dataset = xr.Dataset(
         data_vars=dict(
@@ -116,17 +116,16 @@ def segmented_pkts_fake_data():
     return dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def fake_spin_data():
     dataset = xr.Dataset(
         data_vars=dict(
             num_completed=(["epoch"], np.array([0, 0])),
-            acq_start_sec=(["epoch"], np.array([0, 0])),
-            acq_start_subsec=(["epoch"], np.array([0, 0])),
-            acq_end_sec=(["epoch"], np.array([0, 0])),
-            acq_end_subsec=(["epoch"], np.array([0, 0])),
-        ),
-        coords=dict(epoch=(["epoch"], np.array([0, 1]))),
+            acq_start_sec=(["epoch"], np.array([1000000, 2000000])),
+            acq_start_subsec=(["epoch"], np.array([1000000, 2000000])),
+            acq_end_sec=(["epoch"], np.array([2000000, 3000000])),
+            acq_end_subsec=(["epoch"], np.array([2000000, 3000000])),
+        )
     )
     spin_fields = [
         "start_sec_spin",
@@ -149,16 +148,15 @@ def fake_spin_data():
     return dataset
 
 
-@pytest.fixture()
+@pytest.fixture
 def attr_mgr():
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs(instrument="lo")
     attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1a")
-    attr_mgr.add_global_attribute("Data_version", "v000")
     return attr_mgr
 
 
-@pytest.fixture()
+@pytest.fixture
 def initialized_dataset(fake_de_dataset, attr_mgr):
     fake_de_dataset.attrs["bit_pos"] = 0
     de_fields = [
@@ -262,6 +260,7 @@ def test_combine_segmented_packets(segmented_pkts_fake_data):
         ),
     )
     np.testing.assert_array_equal(dataset["epoch"].values, np.array([0, 10, 30]))
+    np.testing.assert_array_equal(dataset["met"].values, np.array([0, 10, 30]))
 
 
 def test_validate_parse_events(sample_data, attr_mgr):
@@ -302,16 +301,16 @@ def test_validate_parse_events(sample_data, attr_mgr):
     assert dataset["passes"].values == 8
 
 
-def test_organize_spin_data(fake_spin_data):
+def test_organize_spin_data(fake_spin_data, attr_mgr):
     # Arrange
     data_by_epoch_spin = np.arange(0, 56).reshape(2, 28)
     expected_dataset = xr.Dataset(
         data_vars=dict(
             num_completed=(["epoch"], np.array([0, 0])),
-            acq_start_sec=(["epoch"], np.array([0, 0])),
-            acq_start_subsec=(["epoch"], np.array([0, 0])),
-            acq_end_sec=(["epoch"], np.array([0, 0])),
-            acq_end_subsec=(["epoch"], np.array([0, 0])),
+            acq_start_sec=(["epoch"], np.array([1000000, 2000000])),
+            acq_start_subsec=(["epoch"], np.array([1000000, 2000000])),
+            acq_end_sec=(["epoch"], np.array([2000000, 3000000])),
+            acq_end_subsec=(["epoch"], np.array([2000000, 3000000])),
             start_sec_spin=(
                 ["epoch", "spin"],
                 np.array(data_by_epoch_spin),
@@ -341,11 +340,14 @@ def test_organize_spin_data(fake_spin_data):
                 np.array(data_by_epoch_spin),
             ),
         ),
-        coords=dict(epoch=(["epoch"], np.array([0, 1]))),
+        coords=dict(
+            # acq_start + 1e6 * acq_start_subsec converted to J2000 epoch
+            epoch=(["epoch"], np.array([316576067184000000, 317576068184000000]))
+        ),
     )
 
     # Act
-    organized_data = organize_spin_data(fake_spin_data)
+    organized_data = organize_spin_data(fake_spin_data, attr_mgr)
 
     # Assert
     xr.testing.assert_equal(organized_data, expected_dataset)

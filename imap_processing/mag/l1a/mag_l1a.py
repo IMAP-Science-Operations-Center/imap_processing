@@ -1,5 +1,7 @@
 """Methods for decomming packets, processing to level 1A, and writing CDFs for MAG."""
 
+from __future__ import annotations
+
 import dataclasses
 import logging
 from pathlib import Path
@@ -16,21 +18,24 @@ from imap_processing.mag.l1a.mag_l1a_data import (
     MagL1aPacketProperties,
     TimeTuple,
 )
-from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
 
 
-def mag_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
+def mag_l1a(packet_filepath: Path) -> list[xr.Dataset]:
     """
     Will process MAG L0 data into L1A CDF files at cdf_filepath.
+
+    For each packet file passed in, this will output between 2 and 6 CDF files.
+
+    Nominally, we expect raw, burst, and norm mode data for the mago and magi sensors.
+    It is possible to only have norm or burst mode, or to only have data from one
+    sensor.
 
     Parameters
     ----------
     packet_filepath : pathlib.Path
         Packet files for processing.
-    data_version : str
-        Data version to write to CDF files.
 
     Returns
     -------
@@ -42,15 +47,10 @@ def mag_l1a(packet_filepath: Path, data_version: str) -> list[xr.Dataset]:
     norm_data = packets["norm"]
     burst_data = packets["burst"]
 
-    input_files = [packet_filepath.name]
-
     # Create attribute manager and add MAG L1A attributes and global variables
     attribute_manager = ImapCdfAttributes()
     attribute_manager.add_instrument_global_attrs("mag")
-    attribute_manager.add_instrument_variable_attrs("mag", "l1")
-
-    attribute_manager.add_global_attribute("Data_version", data_version)
-    attribute_manager.add_global_attribute("Input_files", str(input_files))
+    attribute_manager.add_instrument_variable_attrs("mag", "l1a")
     attribute_manager.add_global_attribute(
         "Generation_date",
         np.datetime64(
@@ -97,17 +97,19 @@ def create_l1a(
 
     l1a = process_packets(packet_data)
 
-    # TODO: Rearrange generate_dataset to combine these two for loops
-    # Split into MAGo and MAGi
-    for _, mago in l1a["mago"].items():
-        logical_file_id = f"imap_mag_l1a_{data_mode.value.lower()}-mago"
-        norm_mago_output = generate_dataset(mago, logical_file_id, attribute_manager)
+    # given the processed packets in MagL1A classes, we can generate the MAGo and MAGi
+    # datasets. A given set of packets may have only mago or only magi.
+    logical_file_id = f"imap_mag_l1a_{data_mode.value.lower()}-mago"
+    if l1a["mago"] is not None:
+        norm_mago_output = generate_dataset(
+            l1a["mago"], logical_file_id, attribute_manager
+        )
         generated_datasets.append(norm_mago_output)
 
-    for _, magi in l1a["magi"].items():
-        logical_file_id = f"imap_mag_l1a_{data_mode.value.lower()}-magi"
+    logical_file_id = f"imap_mag_l1a_{data_mode.value.lower()}-magi"
+    if l1a["magi"] is not None:
         norm_magi_output = generate_dataset(
-            magi,
+            l1a["magi"],
             logical_file_id,
             attribute_manager,
         )
@@ -118,7 +120,7 @@ def create_l1a(
 
 def process_packets(
     mag_l0_list: list[MagL0],
-) -> dict[str, dict[np.datetime64, MagL1a]]:
+) -> dict[str, MagL1a | None]:
     """
     Given a list of MagL0 packets, process them into MagO and MagI L1A data classes.
 
@@ -132,14 +134,14 @@ def process_packets(
 
     Returns
     -------
-    packet_dict : dict[str, dict[numpy.datetime64, MagL1a]]
+    packet_dict : dict[str, MagL1a | None]
         Dictionary containing two keys: "mago" which points to a dictionary of mago
          MagL1A objects, and "magi" which points to a dictionary of magi MagL1A objects.
          Each dictionary has keys of days and values of MagL1A objects, so each day
          corresponds to one MagL1A object.
     """
-    magi = {}
-    mago = {}
+    magi = None
+    mago = None
 
     for mag_l0 in mag_l0_list:
         primary_start_time = TimeTuple(mag_l0.PRI_COARSETM, mag_l0.PRI_FNTM)
@@ -147,18 +149,6 @@ def process_packets(
 
         mago_is_primary = mag_l0.PRI_SENS == PrimarySensor.MAGO.value
 
-        primary_day = (
-            TTJ2000_EPOCH
-            + met_to_ttj2000ns(primary_start_time.to_seconds()).astype(
-                "timedelta64[ns]"
-            )
-        ).astype("datetime64[D]")
-        secondary_day = (
-            TTJ2000_EPOCH
-            + met_to_ttj2000ns(secondary_start_time.to_seconds()).astype(
-                "timedelta64[ns]"
-            )
-        ).astype("datetime64[D]")
         primary_packet_properties = MagL1aPacketProperties(
             mag_l0.SHCOARSE,
             primary_start_time,
@@ -181,7 +171,7 @@ def process_packets(
         # each sensor, we can calculate how much data is in this packet and where the
         # byte boundaries are.
         primary_vectors, secondary_vectors = MagL1a.process_vector_data(
-            mag_l0.VECTORS,  # type: ignore
+            mag_l0.VECTORS,
             primary_packet_properties.total_vectors,
             secondary_packet_data.total_vectors,
             mag_l0.COMPRESSION,
@@ -199,11 +189,9 @@ def process_packets(
         )
 
         # Sort primary and secondary into MAGo and MAGi by 24 hour chunks
-        mago_day = primary_day if mago_is_primary else secondary_day
-        magi_day = primary_day if not mago_is_primary else secondary_day
 
-        if mago_day not in mago:
-            mago[mago_day] = MagL1a(
+        if mago is None:
+            mago = MagL1a(
                 True,
                 mag_l0.MAGO_ACT,
                 mag_l0.SHCOARSE,
@@ -213,7 +201,7 @@ def process_packets(
                 primary_packet_properties if mago_is_primary else secondary_packet_data,
             )
         else:
-            mago[mago_day].append_vectors(
+            mago.append_vectors(
                 (
                     primary_timestamped_vectors
                     if mago_is_primary
@@ -222,8 +210,8 @@ def process_packets(
                 primary_packet_properties if mago_is_primary else secondary_packet_data,
             )
 
-        if magi_day not in magi:
-            magi[magi_day] = MagL1a(
+        if magi is None:
+            magi = MagL1a(
                 False,
                 mag_l0.MAGI_ACT,
                 mag_l0.SHCOARSE,
@@ -235,7 +223,7 @@ def process_packets(
                 else secondary_packet_data,
             )
         else:
-            magi[magi_day].append_vectors(
+            magi.append_vectors(
                 (
                     primary_timestamped_vectors
                     if not mago_is_primary
@@ -278,11 +266,6 @@ def generate_dataset(
     dataset : xarray.Dataset
         One xarray dataset with proper CDF attributes and shape containing MAG L1A data.
     """
-    # TODO: add:
-    # gaps_in_data global attr
-    # magl1avectordefinition data
-
-    # TODO: Just leave time in datetime64 type with vector as dtype object to avoid this
     # Get the timestamp from the end of the vector
     time_data = single_file_l1a.vectors[:, 4]
 
@@ -290,23 +273,25 @@ def generate_dataset(
         np.arange(2),
         name="compression",
         dims=["compression"],
-        attrs=attribute_manager.get_variable_attributes("compression_attrs"),
+        attrs=attribute_manager.get_variable_attributes(
+            "compression_attrs", check_schema=False
+        ),
     )
 
     direction = xr.DataArray(
         np.arange(4),
         name="direction",
         dims=["direction"],
-        attrs=attribute_manager.get_variable_attributes("direction_attrs"),
+        attrs=attribute_manager.get_variable_attributes(
+            "direction_attrs", check_schema=False
+        ),
     )
 
-    # TODO: Epoch here refers to the start of the sample. Confirm that this is
-    # what mag is expecting, and if it is, CATDESC needs to be updated.
     epoch_time = xr.DataArray(
         time_data,
         name="epoch",
         dims=["epoch"],
-        attrs=attribute_manager.get_variable_attributes("epoch"),
+        attrs=attribute_manager.get_variable_attributes("epoch", check_schema=False),
     )
 
     vectors = xr.DataArray(
@@ -340,6 +325,18 @@ def generate_dataset(
             "compression_label", check_schema=False
         ),
     )
+    global_attributes = attribute_manager.get_global_attributes(logical_file_id)
+    global_attributes["is_mago"] = str(bool(single_file_l1a.is_mago))
+    global_attributes["is_active"] = str(bool(single_file_l1a.is_active))
+    global_attributes["vectors_per_second"] = (
+        single_file_l1a.vectors_per_second_attribute()
+    )
+    # empty arrays are removed in cdflib
+    global_attributes["missing_sequences"] = (
+        single_file_l1a.missing_sequences
+        if single_file_l1a.missing_sequences
+        else "None"
+    )
 
     output = xr.Dataset(
         coords={
@@ -347,13 +344,12 @@ def generate_dataset(
             "direction": direction,
             "compression": compression,
         },
-        attrs=attribute_manager.get_global_attributes(logical_file_id),
+        attrs=global_attributes,
     )
+
     output["direction_label"] = direction_label
     output["compression_label"] = compression_label
     output["vectors"] = vectors
     output["compression_flags"] = compression_flags
-
-    # TODO: Put is_mago and active in the header
 
     return output

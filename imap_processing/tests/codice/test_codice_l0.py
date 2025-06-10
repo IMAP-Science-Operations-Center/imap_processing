@@ -1,32 +1,43 @@
-"""Tests the decommutation process for CoDICE CCSDS Packets. This also tests the
-unit conversion process for CoDICE housekeeping data."""
+"""Tests the decommutation process for CoDICE CCSDS Packets
 
-from pathlib import Path
+The tests within ensure that the test L0 data can be decommed and result in
+the expected APIDs, number of packets, and contain valid CCSDS header contents.
+"""
 
-import pandas as pd
 import pytest
 import xarray as xr
 
-from imap_processing import imap_module_directory
 from imap_processing.codice import codice_l0
-from imap_processing.codice.codice_l1a import create_hskp_dataset
-from imap_processing.utils import convert_raw_to_eu
+from imap_processing.codice.utils import CODICEAPID
 
-# Define the CCSDS header fields (which will be ignored in these tests)
-CCSDS_HEADER_FIELDS = [
-    "shcoarse",
-    "version",
-    "type",
-    "sec_hdr_flg",
-    "pkt_apid",
-    "seq_flgs",
-    "src_seq_ctr",
-    "pkt_len",
-]
+from .conftest import TEST_L0_FILE
+
+pytestmark = pytest.mark.external_test_data
+
+EXPECTED_RESULTS = {
+    CODICEAPID.COD_NHK: 31778,
+    CODICEAPID.COD_LO_IAL: 18917,
+    CODICEAPID.COD_LO_PHA: 616,
+    CODICEAPID.COD_LO_SW_PRIORITY_COUNTS: 77,
+    CODICEAPID.COD_LO_SW_SPECIES_COUNTS: 77,
+    CODICEAPID.COD_LO_NSW_SPECIES_COUNTS: 77,
+    CODICEAPID.COD_LO_SW_ANGULAR_COUNTS: 77,
+    CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS: 77,
+    CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS: 77,
+    CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED: 77,
+    CODICEAPID.COD_LO_INST_COUNTS_SINGLES: 77,
+    CODICEAPID.COD_HI_IAL: 18883,
+    CODICEAPID.COD_HI_PHA: 633,
+    CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED: 77,
+    CODICEAPID.COD_HI_INST_COUNTS_SINGLES: 77,
+    CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS: 77,
+    CODICEAPID.COD_HI_SECT_SPECIES_COUNTS: 77,
+    CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES: 77,
+}
 
 
 @pytest.fixture(scope="session")
-def decom_test_data() -> xr.Dataset:
+def decom_test_data(_download_test_data) -> xr.Dataset:
     """Read test data from file and return a decommutated housekeeping packet.
 
     Returns
@@ -35,116 +46,39 @@ def decom_test_data() -> xr.Dataset:
         A decommutated housekeeping packet
     """
 
-    packet_file = Path(
-        f"{imap_module_directory}/tests/codice/data/"
-        f"imap_codice_l0_raw_20241110_v001.pkts"
-    )
-
-    packet = codice_l0.decom_packets(packet_file)[1136]
+    packet = codice_l0.decom_packets(TEST_L0_FILE)
 
     return packet
 
 
-@pytest.fixture(scope="session")
-def validation_data() -> pd.core.frame.DataFrame:
-    """Read in validation data from the CSV file
+@pytest.mark.parametrize("apid", EXPECTED_RESULTS.keys())
+def test_ccsds_headers(decom_test_data: xr.Dataset, apid):
+    """Tests that the CCSDS headers are present in the decommed data"""
 
-    Returns
-    -------
-    validation_data : pandas.core.frame.DataFrame
-        The validation data read from the CSV, cleaned up and ready to compare
-        the decommutated packet with
-    """
-
-    # Read in the CSV file
-    validation_file = Path(
-        f"{imap_module_directory}/tests/codice/data/"
-        f"idle_export_raw.COD_NHK_20230822_122700.csv"
-    )
-    validation_data = pd.read_csv(validation_file, index_col="SHCOARSE")
-
-    if "timestamp" in validation_data.columns:
-        validation_data.drop(columns=["timestamp"], inplace=True, errors="ignore")
-
-    return validation_data
+    for ccsds_header_field in [
+        "shcoarse",
+        "version",
+        "type",
+        "sec_hdr_flg",
+        "pkt_apid",
+        "seq_flgs",
+        "src_seq_ctr",
+        "pkt_len",
+    ]:
+        assert ccsds_header_field in decom_test_data[apid]
 
 
-@pytest.mark.xfail(
-    reason="Need to update to validate against new validation CDFs. See issue #1154."
-)
-def test_eu_hskp_data(
-    decom_test_data: xr.Dataset,
-    validation_data: pd.core.frame.DataFrame,
+@pytest.mark.parametrize("apid", EXPECTED_RESULTS.keys())
+def test_expected_apids(decom_test_data: xr.Dataset, apid):
+    """Tests that the expected APIDs are present in the decommed data"""
+
+    assert apid in decom_test_data
+
+
+@pytest.mark.parametrize("apid, expected_num_packets", EXPECTED_RESULTS.items())
+def test_expected_total_packets(
+    decom_test_data: xr.Dataset, apid, expected_num_packets
 ):
-    """Compare the engineering unit (EU) housekeeping data to the validation data.
+    """Test if total packets in the decommed data is correct"""
 
-    Parameters
-    ----------
-    decom_test_data : xr.Dataset
-        The decommutated housekeeping packet
-    validation_data : pandas.core.frame.DataFrame
-        The validation data to compare against
-    """
-
-    l1a_hk_ds = create_hskp_dataset(decom_test_data, "001")
-    eu_hk_data = convert_raw_to_eu(
-        l1a_hk_ds,
-        imap_module_directory / "tests/codice/data/eu_unit_lookup_table.csv",
-        "P_COD_NHK",
-    )
-
-    validation_row = validation_data.loc[decom_test_data.shcoarse]
-
-    # Compare EU values of housekeeping data, skipping CCSDS header fields
-    for field in eu_hk_data:
-        # Skip header values
-        if field in CCSDS_HEADER_FIELDS:
-            continue
-
-        eu_values = getattr(eu_hk_data, field).data
-        validation_values = validation_row[field.upper()]
-
-        # Compare each individual element
-        for eu_val, validation_val in zip(eu_values, validation_values):
-            assert round(eu_val, 5) == round(validation_val, 5)
-
-
-@pytest.mark.xfail(
-    reason="Need to update to validate against new validation CDFs. See issue #1154."
-)
-def test_raw_hskp_data(
-    decom_test_data: xr.Dataset,
-    validation_data: pd.core.frame.DataFrame,
-):
-    """Compare the raw housekeeping data to the validation data.
-
-    Parameters
-    ----------
-    decom_test_data : xr.Dataset
-        The decommutated housekeeping packet
-    validation_data : pandas.core.frame.DataFrame
-        The validation data to compare against
-    """
-
-    validation_row = validation_data.loc[decom_test_data.shcoarse]
-
-    # Compare raw values of housekeeping data
-    for field in decom_test_data:
-        if field not in CCSDS_HEADER_FIELDS:
-            raw_values = getattr(decom_test_data, field).data
-            validation_values = validation_row[field.upper()]
-            for raw_value, validation_value in zip(raw_values, validation_values):
-                assert raw_value == validation_value
-
-
-def test_total_packets_in_data_file(decom_test_data: xr.Dataset):
-    """Test if total packets in data file is correct
-
-    Parameters
-    ----------
-    decom_test_data : xr.Dataset
-        The decommutated housekeeping packet
-    """
-
-    total_packets = 31778
-    assert len(decom_test_data.epoch) == total_packets
+    assert len(decom_test_data[apid].epoch) == expected_num_packets

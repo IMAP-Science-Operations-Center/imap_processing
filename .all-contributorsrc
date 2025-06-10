@@ -163,6 +163,36 @@
         "doc"
       ]
     }
+    {
+      "login": "lacoak21",
+      "name": "Luisa Coakley",
+      "avatar_url": "https://avatars.githubusercontent.com/u/48064300?v=4",
+      "profile": "https://github.com/lacoak21",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    }
+    {
+      "login": "nkerman",
+      "name": "Nat Kerman",
+      "avatar_url": "https://avatars.githubusercontent.com/u/13221946?v=4",
+      "profile": "https://github.com/nkerman",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    }
+    {
+      "login": "torimarbois",
+      "name": "Tori Marbois",
+      "avatar_url": "https://avatars.githubusercontent.com/u/65727848?v=4",
+      "profile": "https://github.com/torimarbois",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    }
   ],
   "contributorsPerLine": 7,
   "skipCi": true,

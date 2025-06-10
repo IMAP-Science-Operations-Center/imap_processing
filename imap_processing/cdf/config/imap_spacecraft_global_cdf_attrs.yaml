@@ -1,0 +1,18 @@
+Descriptor:
+  Spacecraft>IMAP Spacecraft Data
+TEXT: >
+  Spacecraft data includes all data collected by the IMAP spacecraft and
+  not specific to any one instrument. This includes quaternions from the
+  attitude control system.
+Instrument_type: Ephemeris
+
+# -------------- Product specific global attributes defined below --------------
+imap_spacecraft_l1a_quaternions:
+    Data_type: L1A_QUAT>Level-1A Quaternions
+    Logical_source: imap_spacecraft_l1a_quaternions
+    Logical_source_description: IMAP Quaternion Level-1A Data From the Spacecraft.
+
+imap_spacecraft_l1b_quaternions:
+    Data_type: L1B_QUAT>Level-1B Quaternions
+    Logical_source: imap_spacecraft_l1b_quaternions
+    Logical_source_description: IMAP Quaternion Level-1B Data From the Spacecraft.

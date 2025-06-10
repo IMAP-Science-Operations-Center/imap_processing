@@ -2,6 +2,7 @@
 
 import typing
 from collections.abc import Collection, Iterable
+from datetime import datetime
 from typing import Union
 
 import numpy as np
@@ -130,6 +131,32 @@ def ttj2000ns_to_et(tt_ns: npt.ArrayLike) -> npt.NDArray[float]:
 
 
 @typing.no_type_check
+@ensure_spice
+def et_to_ttj2000ns(et: npt.ArrayLike) -> npt.NDArray[float]:
+    """
+    Convert TDB J2000 epoch seconds to TT J2000 epoch nanoseconds.
+
+    Opposite of `ttj2000ns_to_et`.
+
+    Parameters
+    ----------
+    et : float, numpy.ndarray
+        Number of seconds since the J2000 epoch in the TDB timescale.
+
+    Returns
+    -------
+    numpy.ndarray[float]
+        Number of nanoseconds since the J2000 epoch in the TT timescale.
+    """
+    vectorized_unitim = _vectorize(
+        spiceypy.unitim, otypes=[float], excluded=["insys", "outsys"]
+    )
+    tt_s = vectorized_unitim(et, "ET", "TT")
+    tt_ns = np.asarray(tt_s, dtype=np.float64) * 1e9
+    return tt_ns
+
+
+@typing.no_type_check
 @ensure_spice(time_kernels_only=True)
 def met_to_utc(met: npt.ArrayLike, precision: int = 9) -> npt.NDArray[str]:
     """
@@ -151,7 +178,7 @@ def met_to_utc(met: npt.ArrayLike, precision: int = 9) -> npt.NDArray[str]:
         fractional seconds precision as specified by the precision keyword.
     """
     sclk_ticks = met_to_sclkticks(met)
-    et = _sct2e_wrapper(sclk_ticks)
+    et = sct_to_et(sclk_ticks)
     return spiceypy.et2utc(et, "ISOC", prec=precision)
 
 
@@ -174,9 +201,28 @@ def met_to_datetime64(
     return np.array(met_to_utc(met), dtype=np.datetime64)[()]
 
 
+def et_to_datetime64(
+    et: npt.ArrayLike,
+) -> Union[np.datetime64, npt.NDArray[np.datetime64]]:
+    """
+    Convert ET to numpy datetime64.
+
+    Parameters
+    ----------
+    et : float, numpy.ndarray
+        Number of seconds since the J2000 epoch in the TDB timescale.
+
+    Returns
+    -------
+    numpy.ndarray[str]
+        The mission elapsed time converted to numpy.datetime64.
+    """
+    return np.array(et_to_utc(et), dtype=np.datetime64)[()]
+
+
 @typing.no_type_check
 @ensure_spice
-def _sct2e_wrapper(
+def sct_to_et(
     sclk_ticks: Union[float, Collection[float]],
 ) -> Union[float, np.ndarray]:
     """
@@ -297,3 +343,26 @@ def et_to_utc(
         UTC time(s).
     """
     return spiceypy.et2utc(et, format_str, precision, utclen)
+
+
+def epoch_to_doy(epoch: np.ndarray) -> npt.NDArray:
+    """
+    Convert epoch times to day of year (1-365/366).
+
+    Parameters
+    ----------
+    epoch : xarray.DataArray
+        Time, number of nanoseconds since J2000 with leap seconds included.
+
+    Returns
+    -------
+    day_of_year : numpy.ndarray
+        Day of year (1-365/366) for each epoch value.
+    """
+    et = ttj2000ns_to_et(epoch.data)
+    # Get UTC time strings in ISO calendar format
+    time_strings = et_to_utc(et, "ISOC")
+    # Extract DOY from datetime
+    return np.array(
+        [datetime.fromisoformat(date).timetuple().tm_yday for date in time_strings]
+    )

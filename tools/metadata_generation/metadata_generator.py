@@ -95,12 +95,12 @@ def process_file(excel_path: Union[str, Path], output_folder: Path) -> None:
 
     dataset_metadata = {}
     variable_metadata = {}
-    for sheet_name in metadata_dict:
-        for variable in metadata_dict[sheet_name]:
+    for sheet_name, metadata_attrs in metadata_dict.items():
+        for variable, variable_attrs in metadata_attrs.items():
             if variable == "dataset_attrs":
-                dataset_metadata[sheet_name] = metadata_dict[sheet_name][variable]
+                dataset_metadata[sheet_name] = variable_attrs
             elif variable not in variable_metadata:
-                variable_metadata[variable] = metadata_dict[sheet_name][variable]
+                variable_metadata[variable] = variable_attrs
             # else:
             #     # Variable was already in the dictionary, ignoring for now
             #     # TODO: Do we want to ignore, update, warn?

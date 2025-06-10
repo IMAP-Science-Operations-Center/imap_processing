@@ -6,7 +6,7 @@ import re
 import time
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import cdflib
 import imap_data_access
@@ -17,7 +17,9 @@ import requests
 import spiceypy
 
 from imap_processing import imap_module_directory
-from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.cdf.utils import load_cdf
+from imap_processing.spice import config as spice_config
+from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns
 
 
 @pytest.fixture(autouse=True)
@@ -32,6 +34,13 @@ def _set_global_config(monkeypatch, tmp_path):
 @pytest.fixture(scope="session")
 def imap_tests_path():
     return imap_module_directory / "tests"
+
+
+@pytest.fixture(autouse=True)
+def clear_spin_and_repoint_paths(monkeypatch):
+    """Clear the spin and repoint paths to avoid having test side effects."""
+    monkeypatch.setattr(spice_config, "_spin_table_paths", [])
+    monkeypatch.setattr(spice_config, "_repoint_table_path", None)
 
 
 # Furnishing fixtures for testing kernels
@@ -55,7 +64,8 @@ def _download_external_kernels(spice_test_data_path):
     kernel_urls = [
         "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp",
         "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc",
-        "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/earth_1962_240827_2124_combined.bpc",
+        "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/"
+        "earth_1962_240827_2124_combined.bpc",
     ]
 
     for kernel_url in kernel_urls:
@@ -91,6 +101,328 @@ def _download_external_kernels(spice_test_data_path):
                     raise
 
 
+@pytest.fixture(scope="session")
+def _download_test_data():
+    _download_external_data(_test_data_paths())
+
+
+def _download_external_data(test_data_path_list):
+    """This fixture downloads externally-located test data files into a specific
+    location. The list of files and their storage locations are specified in
+    the `test_data_paths` parameter, which is a list of tuples; the zeroth
+    element being the source of the test file in the AWS S3 bucket, and the
+    first element being the location in which to store the downloaded file."""
+
+    logger = logging.getLogger(__name__)
+
+    api_path = "https://api.dev.imap-mission.com/download/test_data/"
+    for test_data_path in test_data_path_list:
+        source = api_path + test_data_path[0]
+        destination = test_data_path[1]
+
+        # Download the test data if necessary and write it to the appropriate
+        # directory
+        if not destination.exists():
+            response = requests.get(source, timeout=60)
+            if response.status_code == 200:
+                with open(destination, "wb") as file:
+                    file.write(response.content)
+                logger.info(f"Downloaded file: {source}")
+            else:
+                logger.error(f"Failed to download file: {response.status_code}")
+        else:
+            logger.info(f"File already exists: {destination}")
+
+
+def _test_data_paths():
+    """Defines a list of test data files to download from the AWS S3 bucket
+    and the corresponding location in which to store the downloaded file"""
+    test_data_path_list = [
+        (
+            "apid_478.bin",
+            imap_module_directory / "tests" / "ialirt" / "data" / "l0" / "apid_478.bin",
+        ),
+        (
+            "imap_codice_l0_raw_20241110_v001.pkts",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l0_raw_20241110_v001.pkts",
+        ),
+        (
+            "imap_codice_l1a_hi-pha_20241110193700_v0.0.0.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "validation"
+            / "imap_codice_l1a_hi-pha_20241110193700_v0.0.0.cdf",
+        ),
+        (
+            "imap_codice_l1a_hi-counters-aggregated_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_hi-counters-aggregated_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_hi-counters-singles_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_hi-counters-singles_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_hi-ialirt_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_hi-ialirt_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_hi-omni_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_hi-omni_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_hi-pha_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_hi-pha_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_hi-priority_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_hi-priority_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_hi-sectored_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_hi-sectored_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_hskp_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_hskp_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_lo-counters-aggregated_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_lo-counters-aggregated_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_lo-counters-singles_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_lo-counters-singles_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_lo-ialirt_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_lo-ialirt_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_lo-nsw-angular_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_lo-nsw-angular_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_lo-nsw-priority_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_lo-nsw-priority_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_lo-nsw-species_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_lo-nsw-species_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_lo-pha_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_lo-pha_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_lo-sw-angular_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_lo-sw-angular_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_lo-sw-priority_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_lo-sw-priority_20241110_v999.cdf",
+        ),
+        (
+            "imap_codice_l1a_lo-sw-species_20241110_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l1a_lo-sw-species_20241110_v999.cdf",
+        ),
+        (
+            "imap_hi_l1a_45sensor-de_20250415_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "hi"
+            / "data"
+            / "l1"
+            / "imap_hi_l1a_45sensor-de_20250415_v999.cdf",
+        ),
+        (
+            "imap_hi_l1b_45sensor-de_20250415_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "hi"
+            / "data"
+            / "l1"
+            / "imap_hi_l1b_45sensor-de_20250415_v999.cdf",
+        ),
+        (
+            "imap_hi_l1c_45sensor-pset_20250415_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "hi"
+            / "data"
+            / "l1"
+            / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf",
+        ),
+        (
+            "idex_l1a_validation_file.h5",
+            imap_module_directory
+            / "tests"
+            / "idex"
+            / "test_data"
+            / "idex_l1a_validation_file.h5",
+        ),
+        (
+            "idex_l1b_validation_file.h5",
+            imap_module_directory
+            / "tests"
+            / "idex"
+            / "test_data"
+            / "idex_l1b_validation_file.h5",
+        ),
+        (
+            "IMAP-Ultra45_r1_L1_V0_shortened.csv",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "data"
+            / "l1"
+            / "IMAP-Ultra45_r1_L1_V0_shortened.csv",
+        ),
+        (
+            "imap_ultra_l0_raw_20260924_v001.pkts",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "data"
+            / "l0"
+            / "imap_ultra_l0_raw_20260924_v001.pkts",
+        ),
+        (
+            "imap_ultra_l1b_45sensor-de_20240207_v999.cdf",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "data"
+            / "l1"
+            / "imap_ultra_l1b_45sensor-de_20240207_v999.cdf",
+        ),
+        (
+            "ultra-90_raw_event_data_shortened.csv",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "data"
+            / "l1"
+            / "ultra-90_raw_event_data_shortened.csv",
+        ),
+        (
+            "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "data"
+            / "l1"
+            / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
+        ),
+        (
+            "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "data"
+            / "l1"
+            / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
+        ),
+        (
+            "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "data"
+            / "l1"
+            / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
+        ),
+        (
+            "imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv",
+            imap_module_directory
+            / "tests"
+            / "ultra"
+            / "data"
+            / "l1"
+            / "imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv",
+        ),
+    ]
+
+    return test_data_path_list
+
+
 def pytest_collection_modifyitems(items):
     """
     The use of this hook allows modification of test `Items` after tests have
@@ -101,6 +433,7 @@ def pytest_collection_modifyitems(items):
     | pytest mark         | fixture added              |
     +=====================+============================+
     | external_kernel     | _download_external_kernels |
+    | external_test_data  | _download_test_data        |
     | use_test_metakernel | use_test_metakernel        |
     +---------------------+----------------------------+
 
@@ -108,13 +441,19 @@ def pytest_collection_modifyitems(items):
     -----
     See the following link for details about this function, also known as a
     pytest hook:
-    https://docs.pytest.org/en/stable/reference/reference.html#pytest.hookspec.pytest_collection_modifyitems
+    https://docs.pytest.org/en/stable/reference/reference.html#
+    pytest.hookspec.pytest_collection_modifyitems
     """
+    markers_to_fixtures = {
+        "external_kernel": "_download_external_kernels",
+        "external_test_data": "_download_test_data",
+        "use_test_metakernel": "use_test_metakernel",
+    }
+
     for item in items:
-        if item.get_closest_marker("external_kernel") is not None:
-            item.fixturenames.append("_download_external_kernels")
-        if item.get_closest_marker("use_test_metakernel") is not None:
-            item.fixturenames.append("use_test_metakernel")
+        for marker, fixture in markers_to_fixtures.items():
+            if item.get_closest_marker(marker) is not None:
+                item.fixturenames.append(fixture)
 
 
 @pytest.fixture(scope="session")
@@ -122,7 +461,7 @@ def spice_test_data_path(imap_tests_path):
     return imap_tests_path / "spice/test_data"
 
 
-@pytest.fixture()
+@pytest.fixture
 def furnish_time_kernels(spice_test_data_path):
     """Furnishes (temporarily) the testing LSK and SCLK"""
     spiceypy.kclear()
@@ -134,7 +473,7 @@ def furnish_time_kernels(spice_test_data_path):
     spiceypy.kclear()
 
 
-@pytest.fixture()
+@pytest.fixture
 def furnish_sclk(spice_test_data_path):
     """Furnishes (temporarily) the SCLK for JPSS stored in the package data directory"""
     test_sclk = spice_test_data_path / "imap_sclk_0000.tsc"
@@ -143,7 +482,7 @@ def furnish_sclk(spice_test_data_path):
     spiceypy.kclear()
 
 
-@pytest.fixture()
+@pytest.fixture
 def furnish_kernels(spice_test_data_path):
     """Return a function that will furnish an arbitrary list of kernels."""
 
@@ -245,7 +584,7 @@ def session_test_metakernel(monkeypatch_session, tmpdir_factory, spice_test_data
     spiceypy.kclear()
 
 
-@pytest.fixture()
+@pytest.fixture
 def use_test_metakernel(
     request, monkeypatch, spice_test_data_path, session_test_metakernel
 ):
@@ -295,26 +634,26 @@ def use_test_metakernel(
     spiceypy.kclear()
 
 
-@pytest.fixture()
+@pytest.fixture
 def _unset_metakernel_path(monkeypatch):
     """Temporarily unsets the SPICE_METAKERNEL environment variable"""
     if os.getenv("SPICE_METAKERNEL", None) is not None:
         monkeypatch.delenv("SPICE_METAKERNEL")
 
 
-@pytest.fixture()
+@pytest.fixture
 def use_test_spin_data_csv(monkeypatch):
-    """Sets the SPIN_DATA_FILEPATH environment variable to input path."""
+    """Monkeypatches `spin._spin_table_paths` to the input Path."""
 
-    def wrapped_set_spin_data_filepath(path: Path):
-        monkeypatch.setenv("SPIN_DATA_FILEPATH", str(path))
+    def wrapped_set_spin_data_filepath(paths: list[Path]):
+        monkeypatch.setattr(spice_config, "_spin_table_paths", paths)
 
     return wrapped_set_spin_data_filepath
 
 
-@pytest.fixture()
+@pytest.fixture
 def use_fake_spin_data_for_time(
-    request, use_test_spin_data_csv, tmpdir, generate_spin_data
+    request, use_test_spin_data_csv, tmp_path, generate_spin_data
 ):
     """
     Generate and use fake spin data for testing.
@@ -342,14 +681,14 @@ def use_fake_spin_data_for_time(
             from start time.
         """
         spin_df = generate_spin_data(start_met, end_met=end_met)
-        spin_csv_file_path = tmpdir / "spin_data.spin.csv"
+        spin_csv_file_path = tmp_path / "spin_data.spin.csv"
         spin_df.to_csv(spin_csv_file_path, index=False)
-        use_test_spin_data_csv(spin_csv_file_path)
+        use_test_spin_data_csv([spin_csv_file_path])
 
     return wrapped_set_spin_data_filepath
 
 
-@pytest.fixture()
+@pytest.fixture
 def generate_spin_data():
     def make_data(start_met: float, end_met: Optional[float] = None) -> pd.DataFrame:
         """
@@ -357,8 +696,9 @@ def generate_spin_data():
         Spin table contains the following fields:
             (
             spin_number,
-            spin_start_sec,
-            spin_start_subsec,
+            spin_start_sec_sclk,
+            spin_start_subsec_sclk,
+            spin_start_utc,
             spin_period_sec,
             spin_period_valid,
             spin_phase_valid,
@@ -386,18 +726,25 @@ def generate_spin_data():
             end_met = start_met + 86400
 
         # Create spin start second data of 15 seconds increment
-        spin_start_sec = np.arange(np.floor(start_met), end_met + 1, 15)
-        spin_start_subsec = int((start_met - spin_start_sec[0]) * 1000)
+        spin_start_met = np.arange(start_met, end_met + 1, 15)
+        spin_start_sec = np.floor(spin_start_met).astype(int)
+        spin_start_subsec = int((start_met - spin_start_sec[0]) * 1e6)
+
+        # Calculate UTC times without spice (accepting ~5 second inaccuracy)
+        spin_start_dt64 = TTJ2000_EPOCH + (spin_start_met * 1e9).astype(
+            "timedelta64[ns]"
+        )
 
         nspins = len(spin_start_sec)
 
         spin_df = pd.DataFrame.from_dict(
             {
                 "spin_number": np.arange(nspins, dtype=np.uint32),
-                "spin_start_sec": spin_start_sec,
-                "spin_start_subsec": np.full(
+                "spin_start_sec_sclk": spin_start_sec,
+                "spin_start_subsec_sclk": np.full(
                     nspins, spin_start_subsec, dtype=np.uint32
                 ),
+                "spin_start_utc": np.datetime_as_string(spin_start_dt64, unit="us"),
                 "spin_period_sec": np.full(nspins, 15.0, dtype=np.float32),
                 "spin_period_valid": np.ones(nspins, dtype=np.uint8),
                 "spin_phase_valid": np.ones(nspins, dtype=np.uint8),
@@ -407,7 +754,7 @@ def generate_spin_data():
         )
 
         # Convert spin_start_sec to datetime to set repointing times flags
-        spin_start_dates = met_to_ttj2000ns(spin_start_sec + spin_start_subsec / 1000)
+        spin_start_dates = met_to_ttj2000ns(spin_start_sec + spin_start_subsec / 1e6)
         spin_start_dates = cdflib.cdfepoch.to_datetime(spin_start_dates)
 
         # Convert DatetimeIndex to Series for using .dt accessor
@@ -429,3 +776,133 @@ def generate_spin_data():
         return spin_df
 
     return make_data
+
+
+@pytest.fixture
+def use_test_repoint_data_csv(monkeypatch):
+    """Monkeypatches repoint._repoint_table_path to point to the input path."""
+
+    def wrapped_set_repoint_data_filepath(path: Path):
+        monkeypatch.setattr(spice_config, "_repoint_table_path", path)
+
+    return wrapped_set_repoint_data_filepath
+
+
+def generate_repoint_data(
+    repoint_start_met: Union[float, np.ndarray],
+    repoint_end_met: Optional[Union[float, np.ndarray]] = None,
+    repoint_id_start: Optional[int] = 0,
+) -> pd.DataFrame:
+    """
+    Generate a repoint dataframe for the star/end times provided.
+
+    Parameters
+    ----------
+    repoint_start_met : float, np.ndarray
+            Provides the repoint start time(s) in Mission Elapsed Time (MET).
+    repoint_end_met : float, np.ndarray, optional
+        Provides the repoint end time(s) in MET. If not provided, end times
+        will be 15 minutes after start times.
+    repoint_id_start : int, optional
+        Provides the starting repoint id number of the first repoint in the
+        generated data.
+
+    Returns
+    -------
+    repoint_df : pd.DataFrame
+        Repoint dataframe with start and end repoint times provided and incrementing
+        repoint_ids starting at 1.
+    """
+    repoint_start_times = np.array(repoint_start_met)
+    if repoint_end_met is None:
+        repoint_end_met = repoint_start_times + 15 * 60
+    # Calculate UTC times without spice (accepting ~5 second inaccuracy)
+    repoint_start_dt64 = TTJ2000_EPOCH + (repoint_start_times * 1e9).astype(
+        "timedelta64[ns]"
+    )
+    repoint_end_dt64 = TTJ2000_EPOCH + (repoint_end_met * 1e9).astype("timedelta64[ns]")
+    repoint_df = pd.DataFrame.from_dict(
+        {
+            "repoint_start_sec_sclk": repoint_start_times.astype(int),
+            "repoint_start_subsec_sclk": ((repoint_start_times % 1.0) * 1e6).astype(
+                int
+            ),
+            "repoint_start_utc": np.datetime_as_string(repoint_start_dt64, unit="us"),
+            "repoint_end_sec_sclk": repoint_end_met.astype(int),
+            "repoint_end_subsec_sclk": ((repoint_end_met % 1.0) * 1e6).astype(int),
+            "repoint_end_utc": np.datetime_as_string(repoint_end_dt64, unit="us"),
+            "repoint_id": np.arange(repoint_start_times.size, dtype=int)
+            + repoint_id_start,
+        }
+    )
+    return repoint_df
+
+
+@pytest.fixture
+def use_fake_repoint_data_for_time(use_test_repoint_data_csv, tmp_path):
+    """
+    Generate and use fake spin data for testing.
+
+    Returns
+    -------
+    callable
+        Returns a callable function that takes start_met and optionally n_repoints
+        as inputs, generates fake repoint data, writes the data to a csv file,
+        and sets the REPOINT_DATA_FILEPATH environment variable to point to the
+        fake repoint data file.
+    """
+
+    def wrapped_repoint_data_filepath(
+        repoint_start_met: Union[float, np.ndarray],
+        repoint_end_met: Optional[Union[float, np.ndarray]] = None,
+        repoint_id_start: Optional[int] = 0,
+    ) -> pd.DataFrame:
+        """
+        Generate and use fake repoint data for testing.
+        Parameters
+        ----------
+        repoint_start_met : float, np.ndarray
+            Provides the repoint start time(s) in Mission Elapsed Time (MET).
+        repoint_end_met : float, np.ndarray
+            Provides the repoint end time(s) in MET. If not provided, end times
+            will be 15 minutes after start times.
+        repoint_id_start : int, optional
+            Provides the starting repoint id number of the first repoint in the
+            generated data.
+        """
+        repoint_df = generate_repoint_data(
+            repoint_start_met,
+            repoint_end_met=repoint_end_met,
+            repoint_id_start=repoint_id_start,
+        )
+        repoint_csv_file_path = tmp_path / "repoint_data.repointing.csv"
+        repoint_df.to_csv(repoint_csv_file_path, index=False)
+        use_test_repoint_data_csv(repoint_csv_file_path)
+
+    return wrapped_repoint_data_filepath
+
+
+# Shared with i-alirt and mag tests
+@pytest.fixture
+def mag_test_l1b_calibration_data():
+    imap_dir = Path(__file__).parent
+    cal_file = (
+        imap_dir
+        / "mag"
+        / "validation"
+        / "calibration"
+        / "imap_mag_l1b-calibration_20240229_v001.cdf"
+    )
+    calibration_data = load_cdf(cal_file)
+    matrix_mago = calibration_data["MFOTOURFO"]
+    time_shift_mago = calibration_data["OTS"]
+    matrix_magi = calibration_data["MFITOURFI"]
+    time_shift_magi = calibration_data["ITS"]
+
+    return matrix_mago, time_shift_mago, matrix_magi, time_shift_magi
+
+
+if __name__ == "__main__":
+    # This is to enable downloading files easier by letting us
+    # run this file directly
+    _download_external_data(_test_data_paths())

@@ -1,0 +1,104 @@
+# Define Healpix Tiled ENA Map values
+# The attributes in this file will be used to supplement/override the common
+# ENA map attributes defined in imap_enamaps_l2-common_variable_attrs.yaml
+
+default_float32_attrs: &default_float32
+  FORMAT: F12.6
+  FILLVAL: -1.0e31
+  VALIDMIN: -3.4028235e+38
+  VALIDMAX: 3.4028235e+38
+  dtype: float32
+
+# Define Coordinates specifically for Healpix tiling
+pixel_index:
+  # Max number of pixels in Healpix style map which can fit into a 32-bit integer
+  # is with Healpix nside parameter = 16384, npix = 3221225472. Use the max of uint32
+  # as the fill value for the pixel index.
+  dtype: uint32
+  FILLVAL: 4294967295
+  VALIDMIN: 0
+  VALIDMAX: 3221225472
+  FORMAT: I12
+  CATDESC: Healpix index corresponding to the bin center.
+  FIELDNAM: pixel_index
+  LABLAXIS: "HEALPix #"
+  UNITS: " "
+  VAR_TYPE: support_data
+
+pixel_index_label:
+  VAR_TYPE: metadata
+  CATDESC: Healpix index corresponding to the bin center.
+  FIELDNAM: pixel_index
+  FORMAT: A10
+  DEPEND_1: pixel_index
+
+# All variables below override the initial attributes defined in the common ENA Map
+# attributes file, imap_enamaps_l2-common_variable_attrs.yaml
+
+# Define Non-dimension Coordinates
+# (longitude, latitude are not dimension coordinates for healpix tiling, but rather
+# describe the lon/lat coordinate of the Healpix pixel center)
+longitude:
+  DEPEND_1: pixel_index
+  LABL_PTR_1: pixel_index_label
+
+latitude:
+  DEPEND_1: pixel_index
+  LABL_PTR_1: pixel_index_label
+
+# Define Data variables
+ena_intensity:
+  DEPEND_1: energy
+  DEPEND_2: pixel_index
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: pixel_index_label
+  DISPLAY_TYPE: image
+
+ena_intensity_stat_unc:
+  DEPEND_1: energy
+  DEPEND_2: pixel_index
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: pixel_index_label
+
+ena_intensity_sys_err:
+  DEPEND_1: energy
+  DEPEND_2: pixel_index
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: pixel_index_label
+
+sensitivity:
+  DEPEND_1: energy
+  DEPEND_2: pixel_index
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: pixel_index_label
+
+# These data variables will have an extra (energy) dimension
+# only if the energy dimension is present in the L1C data.
+# The default is energy-independent.
+exposure_factor_energy_independent:
+  DEPEND_1: pixel_index
+  LABL_PTR_1: pixel_index_label
+
+obs_date_energy_independent:
+  DEPEND_1: pixel_index
+  LABL_PTR_1: pixel_index_label
+
+obs_date_range_energy_independent:
+  DEPEND_1: pixel_index
+  LABL_PTR_1: pixel_index_label
+
+exposure_factor:
+  DEPEND_1: energy
+  DEPEND_2: pixel_index
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: pixel_index_label
+
+obs_date:
+  DEPEND_1: energy
+  DEPEND_2: pixel_index
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: pixel_index_label
+
+solid_angle:
+  DEPEND_1: pixel_index
+  LABL_PTR_1: pixel_index_label

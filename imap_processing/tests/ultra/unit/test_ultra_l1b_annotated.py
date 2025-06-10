@@ -10,7 +10,7 @@ from imap_processing.ultra.l1b.ultra_l1b_annotated import (
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def kernels(spice_test_data_path):
     """List SPICE kernels."""
     required_kernels = [
@@ -28,7 +28,7 @@ def kernels(spice_test_data_path):
     return kernels
 
 
-@pytest.mark.external_kernel()
+@pytest.mark.external_kernel
 def test_get_particle_velocity(spice_test_data_path, kernels):
     """Tests get_particle_velocity function."""
     spiceypy.furnsh(kernels)
