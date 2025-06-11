@@ -2,8 +2,12 @@ import numpy as np
 import pandas as pd
 
 from imap_processing.cdf.utils import write_cdf
-from imap_processing.hi.hi_l1a import create_de_dataset, hi_l1a, parse_direct_events
-from imap_processing.hi.histogram import unpack_hist_counter
+from imap_processing.hi.hi_l1a import (
+    create_de_dataset,
+    hi_l1a,
+    parse_direct_events,
+    unpack_hist_counter,
+)
 from imap_processing.hi.utils import HIAPID
 
 
