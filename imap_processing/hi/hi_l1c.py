@@ -14,7 +14,7 @@ from numpy._typing import NDArray
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import parse_filename_like
-from imap_processing.hi.l1a.science_direct_event import (
+from imap_processing.hi.science_direct_event import (
     DE_CLOCK_TICK_S,
     HALF_CLOCK_TICK_S,
 )

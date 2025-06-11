@@ -1,6 +1,6 @@
 import numpy as np
 
-from imap_processing.hi.l1a.science_direct_event import (
+from imap_processing.hi.science_direct_event import (
     create_dataset,
     parse_direct_events,
 )

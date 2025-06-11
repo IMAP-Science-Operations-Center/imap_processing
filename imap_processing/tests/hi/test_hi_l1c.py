@@ -11,9 +11,9 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf, write_cdf
-from imap_processing.hi.l1a.science_direct_event import DE_CLOCK_TICK_S
-from imap_processing.hi.l1c import hi_l1c
-from imap_processing.hi.l1c.hi_l1c import CalibrationProductConfig
+from imap_processing.hi import hi_l1c
+from imap_processing.hi.hi_l1c import CalibrationProductConfig
+from imap_processing.hi.science_direct_event import DE_CLOCK_TICK_S
 from imap_processing.hi.utils import HIAPID, CoincidenceBitmap
 
 
@@ -24,7 +24,7 @@ def hi_test_cal_prod_config_path(hi_l1_test_data_path):
     )
 
 
-@mock.patch("imap_processing.hi.l1c.hi_l1c.generate_pset_dataset")
+@mock.patch("imap_processing.hi.hi_l1c.generate_pset_dataset")
 def test_hi_l1c(mock_generate_pset_dataset, hi_test_cal_prod_config_path):
     """Test coverage for hi_l1c function"""
     mock_generate_pset_dataset.return_value = xr.Dataset()
@@ -97,7 +97,7 @@ def test_empty_pset_dataset():
 
 @pytest.mark.parametrize("sensor_str", ["90sensor", "45sensor"])
 @mock.patch("imap_processing.spice.geometry.frame_transform")
-@mock.patch("imap_processing.hi.l1c.hi_l1c.frame_transform")
+@mock.patch("imap_processing.hi.hi_l1c.frame_transform")
 def test_pset_geometry(mock_frame_transform, mock_geom_frame_transform, sensor_str):
     """Test coverage for pset_geometry function"""
     # pset_geometry uses both frame_transform and frame_transform_az_el. By mocking
@@ -218,10 +218,10 @@ def test_pset_backgrounds():
     )
 
 
-@mock.patch("imap_processing.hi.l1c.hi_l1c.get_spin_data", return_value=None)
-@mock.patch("imap_processing.hi.l1c.hi_l1c.get_instrument_spin_phase")
-@mock.patch("imap_processing.hi.l1c.hi_l1c.get_de_clock_ticks_for_esa_step")
-@mock.patch("imap_processing.hi.l1c.hi_l1c.find_second_de_packet_data")
+@mock.patch("imap_processing.hi.hi_l1c.get_spin_data", return_value=None)
+@mock.patch("imap_processing.hi.hi_l1c.get_instrument_spin_phase")
+@mock.patch("imap_processing.hi.hi_l1c.get_de_clock_ticks_for_esa_step")
+@mock.patch("imap_processing.hi.hi_l1c.find_second_de_packet_data")
 def test_pset_exposure(
     mock_find_second_de_packet_data,
     mock_de_clock_ticks,

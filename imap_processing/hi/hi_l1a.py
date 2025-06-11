@@ -8,8 +8,8 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.hi.l1a.histogram import create_dataset as hist_create_dataset
-from imap_processing.hi.l1a.science_direct_event import science_direct_event
+from imap_processing.hi.histogram import create_dataset as hist_create_dataset
+from imap_processing.hi.science_direct_event import science_direct_event
 from imap_processing.hi.utils import HIAPID
 from imap_processing.utils import packet_file_to_datasets
 

@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 
 from imap_processing.cdf.utils import write_cdf
-from imap_processing.hi.l1a.hi_l1a import hi_l1a
-from imap_processing.hi.l1a.histogram import unpack_hist_counter
+from imap_processing.hi.hi_l1a import hi_l1a
+from imap_processing.hi.histogram import unpack_hist_counter
 from imap_processing.hi.utils import HIAPID
 
 
