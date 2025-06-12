@@ -19,7 +19,7 @@ from imap_processing.spice.geometry import SpiceFrame
 
 
 def test_hi_l1b_hk(hi_l0_test_data_path):
-    """Test coverage for imap_processing.hi.hi_l1b.hi_l1b() with
+    """Test coverage for imap_processing.hi.hi_l1b() with
     housekeeping L1A as input"""
     # TODO: once things are more stable, check in an L1A HK file as test data
     bin_data_path = hi_l0_test_data_path / "H90_NHK_20241104.bin"
@@ -35,7 +35,7 @@ def test_hi_l1b_hk(hi_l0_test_data_path):
 def test_hi_l1b_de(
     hi_l1_test_data_path, spice_test_data_path, use_fake_spin_data_for_time
 ):
-    """Test coverage for imap_processing.hi.hi_l1b.hi_l1b() with
+    """Test coverage for imap_processing.hi_l1b.hi_l1b() with
     direct events L1A as input"""
     # Start MET time of spin for simulated input data is 482372988
     use_fake_spin_data_for_time(482372987.999)

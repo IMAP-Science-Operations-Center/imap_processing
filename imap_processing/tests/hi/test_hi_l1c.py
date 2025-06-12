@@ -12,8 +12,8 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.hi import hi_l1c
+from imap_processing.hi.hi_l1a import DE_CLOCK_TICK_S
 from imap_processing.hi.hi_l1c import CalibrationProductConfig
-from imap_processing.hi.science_direct_event import DE_CLOCK_TICK_S
 from imap_processing.hi.utils import HIAPID, CoincidenceBitmap
 
 
