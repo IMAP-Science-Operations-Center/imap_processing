@@ -150,27 +150,106 @@ def test_sum_livetime_10min():
 
 def test_subset_data_for_sectored_counts():
     """Test the subset_data_for_sectored_counts function."""
-    # Create a sample L1A counts dataset
-    l1a_counts_dataset = xr.Dataset(
-        {
-            "hdr_minute_cnt": ("epoch", np.arange(105, 135)),
-            "h_sectored_counts": ("epoch", np.arange(0, 30)),
-            "he4_sectored_counts": ("epoch", np.arange(0, 30)),
-        },
-    )
+
+    def create_l1a_counts_dataset(hdr_minute_cnt_values):
+        """Helper to create L1A counts dataset."""
+        return xr.Dataset(
+            {
+                "hdr_minute_cnt": ("epoch", hdr_minute_cnt_values),
+                "h_sectored_counts": ("epoch", np.arange(len(hdr_minute_cnt_values))),
+                "he4_sectored_counts": ("epoch", np.arange(len(hdr_minute_cnt_values))),
+            },
+        )
+
+    def validate_subset(l1a_counts_dataset, livetime):
+        """Helper to validate the subset results."""
+        subset_dataset, subset_livetime = subset_data_for_sectored_counts(
+            l1a_counts_dataset, livetime
+        )
+        assert subset_dataset.sizes["epoch"] == 10
+        assert len(subset_livetime["epoch"]) == 10
+        assert np.all(subset_dataset["hdr_minute_cnt"].values % 10 == np.arange(10))
 
     # Create a sample livetime data array
     livetime = xr.DataArray(np.arange(1.0, 31.0, dtype=np.float32), dims=["epoch"])
 
-    # Call the function
-    subset_dataset, subset_livetime = subset_data_for_sectored_counts(
-        l1a_counts_dataset, livetime
-    )
+    # Test with partial data at the start and end of the dataset
+    l1a_counts_dataset = create_l1a_counts_dataset(np.arange(105, 135))
+    validate_subset(l1a_counts_dataset, livetime)
 
-    # Check the results
-    assert subset_dataset.sizes["epoch"] == 10
-    assert len(subset_livetime["epoch"]) == 10
-    assert np.all(subset_dataset["hdr_minute_cnt"].values % 10 == np.arange(10))
+    # Test with partial data in the middle of the dataset
+    l1a_counts_dataset = create_l1a_counts_dataset(
+        [
+            100,
+            101,
+            102,
+            103,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            120,
+            121,
+            122,
+            123,
+            124,
+            130,
+            131,
+            132,
+            133,
+            134,
+            135,
+            136,
+            137,
+            138,
+            139,
+        ]
+    )
+    validate_subset(l1a_counts_dataset, livetime)
+
+    # Test with partial data at the start, middle, and end of the dataset
+    l1a_counts_dataset = create_l1a_counts_dataset(
+        [
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116,
+            117,
+            118,
+            119,
+            120,
+            121,
+            122,
+            130,
+            131,
+            132,
+            133,
+            134,
+            135,
+            136,
+            137,
+            138,
+            139,
+            140,
+            141,
+        ]
+    )
+    validate_subset(l1a_counts_dataset, livetime)
 
 
 def test_process_summed_rates_data(l1a_counts_dataset, livetime):

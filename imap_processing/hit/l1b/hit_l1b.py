@@ -366,7 +366,8 @@ def subset_data_for_sectored_counts(
     A set of sectored data starts with hydrogen and ends with iron and correspond to
     the mod 10 values 0-9. The livetime values from the previous 10 minutes are used
     to calculate the rates for each set since those counts are transmitted 10 minutes
-    after they were collected.
+    after they were collected. Therefore, only complete sets of sectored counts where
+    livetime from the previous 10 minutes are available are included in the output.
 
     Parameters
     ----------
