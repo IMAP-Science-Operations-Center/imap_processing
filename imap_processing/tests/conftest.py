@@ -15,6 +15,7 @@ import pandas as pd
 import pytest
 import requests
 import spiceypy
+from external_test_data_config import EXTERNAL_TEST_DATA
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
@@ -103,10 +104,10 @@ def _download_external_kernels(spice_test_data_path):
 
 @pytest.fixture(scope="session")
 def _download_test_data():
-    _download_external_data(_test_data_paths())
+    _download_external_data()
 
 
-def _download_external_data(test_data_path_list):
+def _download_external_data():
     """This fixture downloads externally-located test data files into a specific
     location. The list of files and their storage locations are specified in
     the `test_data_paths` parameter, which is a list of tuples; the zeroth
@@ -116,7 +117,7 @@ def _download_external_data(test_data_path_list):
     logger = logging.getLogger(__name__)
 
     api_path = "https://api.dev.imap-mission.com/download/test_data/"
-    for test_data_path in test_data_path_list:
+    for test_data_path in EXTERNAL_TEST_DATA:
         source = api_path + test_data_path[0]
         destination = test_data_path[1]
 
@@ -132,295 +133,6 @@ def _download_external_data(test_data_path_list):
                 logger.error(f"Failed to download file: {response.status_code}")
         else:
             logger.info(f"File already exists: {destination}")
-
-
-def _test_data_paths():
-    """Defines a list of test data files to download from the AWS S3 bucket
-    and the corresponding location in which to store the downloaded file"""
-    test_data_path_list = [
-        (
-            "apid_478.bin",
-            imap_module_directory / "tests" / "ialirt" / "data" / "l0" / "apid_478.bin",
-        ),
-        (
-            "imap_codice_l0_raw_20241110_v001.pkts",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "imap_codice_l0_raw_20241110_v001.pkts",
-        ),
-        (
-            "imap_codice_l1a_hi-pha_20241110193700_v0.0.0.cdf",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "validation"
-            / "imap_codice_l1a_hi-pha_20241110193700_v0.0.0.cdf",
-        ),
-        (
-            "imap_codice_l1a_hi-counters-aggregated_20241110_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "imap_codice_l1a_hi-counters-aggregated_20241110_v999.cdf",
-        ),
-        (
-            "imap_codice_l1a_hi-counters-singles_20241110_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "imap_codice_l1a_hi-counters-singles_20241110_v999.cdf",
-        ),
-        (
-            "imap_codice_l1a_hi-ialirt_20241110_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "imap_codice_l1a_hi-ialirt_20241110_v999.cdf",
-        ),
-        (
-            "imap_codice_l1a_hi-omni_20241110_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "imap_codice_l1a_hi-omni_20241110_v999.cdf",
-        ),
-        (
-            "imap_codice_l1a_hi-pha_20241110_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "imap_codice_l1a_hi-pha_20241110_v999.cdf",
-        ),
-        (
-            "imap_codice_l1a_hi-priority_20241110_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "imap_codice_l1a_hi-priority_20241110_v999.cdf",
-        ),
-        (
-            "imap_codice_l1a_hi-sectored_20241110_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "imap_codice_l1a_hi-sectored_20241110_v999.cdf",
-        ),
-        (
-            "imap_codice_l1a_hskp_20241110_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "imap_codice_l1a_hskp_20241110_v999.cdf",
-        ),
-        (
-            "imap_codice_l1a_lo-counters-aggregated_20241110_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "imap_codice_l1a_lo-counters-aggregated_20241110_v999.cdf",
-        ),
-        (
-            "imap_codice_l1a_lo-counters-singles_20241110_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "imap_codice_l1a_lo-counters-singles_20241110_v999.cdf",
-        ),
-        (
-            "imap_codice_l1a_lo-ialirt_20241110_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "imap_codice_l1a_lo-ialirt_20241110_v999.cdf",
-        ),
-        (
-            "imap_codice_l1a_lo-nsw-angular_20241110_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "imap_codice_l1a_lo-nsw-angular_20241110_v999.cdf",
-        ),
-        (
-            "imap_codice_l1a_lo-nsw-priority_20241110_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "imap_codice_l1a_lo-nsw-priority_20241110_v999.cdf",
-        ),
-        (
-            "imap_codice_l1a_lo-nsw-species_20241110_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "imap_codice_l1a_lo-nsw-species_20241110_v999.cdf",
-        ),
-        (
-            "imap_codice_l1a_lo-pha_20241110_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "imap_codice_l1a_lo-pha_20241110_v999.cdf",
-        ),
-        (
-            "imap_codice_l1a_lo-sw-angular_20241110_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "imap_codice_l1a_lo-sw-angular_20241110_v999.cdf",
-        ),
-        (
-            "imap_codice_l1a_lo-sw-priority_20241110_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "imap_codice_l1a_lo-sw-priority_20241110_v999.cdf",
-        ),
-        (
-            "imap_codice_l1a_lo-sw-species_20241110_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "imap_codice_l1a_lo-sw-species_20241110_v999.cdf",
-        ),
-        (
-            "imap_hi_l1a_45sensor-de_20250415_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "hi"
-            / "data"
-            / "l1"
-            / "imap_hi_l1a_45sensor-de_20250415_v999.cdf",
-        ),
-        (
-            "imap_hi_l1b_45sensor-de_20250415_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "hi"
-            / "data"
-            / "l1"
-            / "imap_hi_l1b_45sensor-de_20250415_v999.cdf",
-        ),
-        (
-            "imap_hi_l1c_45sensor-pset_20250415_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "hi"
-            / "data"
-            / "l1"
-            / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf",
-        ),
-        (
-            "idex_l1a_validation_file.h5",
-            imap_module_directory
-            / "tests"
-            / "idex"
-            / "test_data"
-            / "idex_l1a_validation_file.h5",
-        ),
-        (
-            "idex_l1b_validation_file.h5",
-            imap_module_directory
-            / "tests"
-            / "idex"
-            / "test_data"
-            / "idex_l1b_validation_file.h5",
-        ),
-        (
-            "IMAP-Ultra45_r1_L1_V0_shortened.csv",
-            imap_module_directory
-            / "tests"
-            / "ultra"
-            / "data"
-            / "l1"
-            / "IMAP-Ultra45_r1_L1_V0_shortened.csv",
-        ),
-        (
-            "imap_ultra_l0_raw_20260924_v001.pkts",
-            imap_module_directory
-            / "tests"
-            / "ultra"
-            / "data"
-            / "l0"
-            / "imap_ultra_l0_raw_20260924_v001.pkts",
-        ),
-        (
-            "imap_ultra_l1b_45sensor-de_20240207_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "ultra"
-            / "data"
-            / "l1"
-            / "imap_ultra_l1b_45sensor-de_20240207_v999.cdf",
-        ),
-        (
-            "ultra-90_raw_event_data_shortened.csv",
-            imap_module_directory
-            / "tests"
-            / "ultra"
-            / "data"
-            / "l1"
-            / "ultra-90_raw_event_data_shortened.csv",
-        ),
-        (
-            "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
-            imap_module_directory
-            / "tests"
-            / "ultra"
-            / "data"
-            / "l1"
-            / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
-        ),
-        (
-            "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
-            imap_module_directory
-            / "tests"
-            / "ultra"
-            / "data"
-            / "l1"
-            / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
-        ),
-        (
-            "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
-            imap_module_directory
-            / "tests"
-            / "ultra"
-            / "data"
-            / "l1"
-            / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
-        ),
-        (
-            "imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv",
-            imap_module_directory
-            / "tests"
-            / "ultra"
-            / "data"
-            / "l1"
-            / "imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv",
-        ),
-    ]
-
-    return test_data_path_list
 
 
 def pytest_collection_modifyitems(items):
@@ -905,4 +617,4 @@ def mag_test_l1b_calibration_data():
 if __name__ == "__main__":
     # This is to enable downloading files easier by letting us
     # run this file directly
-    _download_external_data(_test_data_paths())
+    _download_external_data()
