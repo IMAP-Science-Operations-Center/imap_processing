@@ -10,6 +10,16 @@ from imap_processing.hi.hi_l1a import (
 )
 from imap_processing.hi.utils import HIAPID
 
+VALIDATION_TO_TEST_COLUMN_MAP = {
+    "PHVERNO": "version",
+    "PHTYPE": "type",
+    "PHSHF": "sec_hdr_flg",
+    "PHAPID": "pkt_apid",
+    "PHGROUPF": "seq_flgs",
+    "PHSEQCNT": "src_seq_ctr",
+    "PHDLEN": "pkt_len",
+}
+
 
 def test_sci_de_decom(hi_l0_test_data_path):
     """Test science direct event data"""
@@ -40,19 +50,11 @@ def test_diag_fee_decom(hi_l0_test_data_path):
     validation_df = pd.read_csv(
         hi_l0_test_data_path / "H45_diag_fee_20250208_verify.csv"
     )
-    val_to_test_map = {
-        "PHVERNO": "version",
-        "PHTYPE": "type",
-        "PHSHF": "sec_hdr_flg",
-        "PHAPID": "pkt_apid",
-        "PHGROUPF": "seq_flgs",
-        "PHSEQCNT": "src_seq_ctr",
-        "PHDLEN": "pkt_len",
-    }
+
     for col_name, series in validation_df.items():
         if col_name == "timestamp":
             continue
-        ds_var_name = val_to_test_map.get(col_name, col_name.lower())
+        ds_var_name = VALIDATION_TO_TEST_COLUMN_MAP.get(col_name, col_name.lower())
         np.testing.assert_array_equal(series.values, dataset[ds_var_name].data)
 
 
@@ -65,14 +67,26 @@ def test_app_nhk_decom(hi_l0_test_data_path):
 
     assert np.unique(processed_data[0]["pkt_apid"].values) == HIAPID.H90_APP_NHK.value
     assert processed_data[0].attrs["Logical_source"] == "imap_hi_l1a_90sensor-hk"
-    # TODO: compare with validation data once we have it. Issue: #1184
 
     # Write CDF
     cem_raw_cdf_filepath = write_cdf(processed_data[0], istp=False)
-
-    # TODO: ask Vivek about this date mismatch between the file name
-    # and the data. May get resolved when we have good sample data.
     assert cem_raw_cdf_filepath.name == "imap_hi_l1a_90sensor-hk_20241105_v999.cdf"
+
+    validation_df = pd.read_csv(hi_l0_test_data_path / "H90_NHK_20241104_verify.csv")
+    for col_name, series in validation_df.items():
+        # No timestamp column in dataset
+        # The original binary sample data delivered was missing the last byte of
+        # each packet. This was due to a configuration of the recording software.
+        # Tim Plummer "fixed" the data by appending an empty byte to each packet.
+        # This means that the CKSUM values will not match the validation csv.
+        if col_name in ["timestamp", "CKSUM"]:
+            continue
+        ds_var_name = VALIDATION_TO_TEST_COLUMN_MAP.get(col_name, col_name.lower())
+        np.testing.assert_array_equal(
+            series.values,
+            processed_data[0][ds_var_name].data,
+            err_msg=f"Validation of {col_name} failed",
+        )
 
 
 def test_app_hist_decom(hi_l0_test_data_path):

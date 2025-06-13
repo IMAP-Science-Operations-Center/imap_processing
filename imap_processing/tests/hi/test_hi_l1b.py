@@ -21,7 +21,6 @@ from imap_processing.spice.geometry import SpiceFrame
 def test_hi_l1b_hk(hi_l0_test_data_path):
     """Test coverage for imap_processing.hi.hi_l1b() with
     housekeeping L1A as input"""
-    # TODO: once things are more stable, check in an L1A HK file as test data
     bin_data_path = hi_l0_test_data_path / "H90_NHK_20241104.bin"
 
     l1b_datasets = hi_l1b(bin_data_path)
