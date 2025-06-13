@@ -394,7 +394,14 @@ def subset_data_for_sectored_counts(
 
     # Filter out start indices that are less than or equal to the bin size
     # since the previous 10 minutes are needed for calculating rates
-    start_indices = start_indices[start_indices >= bin_size]
+    if start_indices.size == 0:
+        logger.error(
+            "No data to process - valid start indices not found for "
+            "complete sectored counts."
+        )
+        raise ValueError("No valid start indices found for complete sectored counts.")
+    else:
+        start_indices = start_indices[start_indices >= bin_size]
 
     # Subset data to include only complete sets of sectored counts
     data_indices = np.concatenate(

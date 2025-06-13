@@ -251,6 +251,13 @@ def test_subset_data_for_sectored_counts():
     )
     validate_subset(l1a_counts_dataset, livetime)
 
+    # Test with only partial data in the dataset
+    l1a_counts_dataset = create_l1a_counts_dataset(np.arange(100, 160, 2))
+    with pytest.raises(
+        ValueError, match="No valid start indices found for complete sectored counts."
+    ):
+        subset_data_for_sectored_counts(l1a_counts_dataset, livetime)
+
 
 def test_process_summed_rates_data(l1a_counts_dataset, livetime):
     """Test the variables in the summed rates dataset"""
