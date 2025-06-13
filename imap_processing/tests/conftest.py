@@ -15,12 +15,12 @@ import pandas as pd
 import pytest
 import requests
 import spiceypy
-from external_test_data_config import EXTERNAL_TEST_DATA
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.spice import config as spice_config
 from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns
+from imap_processing.tests.external_test_data_config import EXTERNAL_TEST_DATA
 
 
 @pytest.fixture(autouse=True)
