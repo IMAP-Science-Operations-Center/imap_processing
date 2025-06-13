@@ -1,6 +1,6 @@
 from imap_processing import imap_module_directory
 
-# ruff: noqa
+# ruff: noqa: E501
 EXTERNAL_TEST_DATA = [
 
     # CoDICE
