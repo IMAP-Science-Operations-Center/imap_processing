@@ -2,7 +2,8 @@ from imap_processing import imap_module_directory
 
 # ruff: noqa
 EXTERNAL_TEST_DATA = [
-    ("apid_478.bin", imap_module_directory / "tests" / "ialirt" / "data" / "l0" / "apid_478.bin"),
+
+    # CoDICE
     ("imap_codice_l0_raw_20241110_v001.pkts", imap_module_directory / "tests" / "codice" / "data" / "imap_codice_l0_raw_20241110_v001.pkts"),
     ("imap_codice_l1a_hi-pha_20241110193700_v0.0.0.cdf", imap_module_directory / "tests" / "codice" / "data" / "validation" / "imap_codice_l1a_hi-pha_20241110193700_v0.0.0.cdf"),
     ("imap_codice_l1a_hi-counters-aggregated_20241110_v999.cdf", imap_module_directory / "tests" / "codice" / "data" / "imap_codice_l1a_hi-counters-aggregated_20241110_v999.cdf"),
@@ -23,12 +24,21 @@ EXTERNAL_TEST_DATA = [
     ("imap_codice_l1a_lo-sw-angular_20241110_v999.cdf", imap_module_directory / "tests" / "codice" / "data" / "imap_codice_l1a_lo-sw-angular_20241110_v999.cdf"),
     ("imap_codice_l1a_lo-sw-priority_20241110_v999.cdf", imap_module_directory / "tests" / "codice" / "data" / "imap_codice_l1a_lo-sw-priority_20241110_v999.cdf"),
     ("imap_codice_l1a_lo-sw-species_20241110_v999.cdf", imap_module_directory / "tests" / "codice" / "data" / "imap_codice_l1a_lo-sw-species_20241110_v999.cdf"),
+
+    # Hi
     ("imap_hi_l1a_45sensor-de_20250415_v999.cdf", imap_module_directory / "tests" / "hi" / "data" / "l1" / "imap_hi_l1a_45sensor-de_20250415_v999.cdf"),
     ("imap_hi_l1b_45sensor-de_20250415_v999.cdf", imap_module_directory / "tests" / "hi" / "data" / "l1" / "imap_hi_l1b_45sensor-de_20250415_v999.cdf"),
     ("imap_hi_l1c_45sensor-pset_20250415_v999.cdf", imap_module_directory / "tests" / "hi" / "data" / "l1" / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"),
+
+    # I-ALiRT
+    ("apid_478.bin", imap_module_directory / "tests" / "ialirt" / "data" / "l0" / "apid_478.bin"),
+
+    # IDEX
     ("idex_l1a_validation_file.h5", imap_module_directory / "tests" / "idex" / "test_data" / "idex_l1a_validation_file.h5"),
     ("idex_l1b_validation_file.h5", imap_module_directory / "tests" / "idex" / "test_data" / "idex_l1b_validation_file.h5"),
     ("IMAP-Ultra45_r1_L1_V0_shortened.csv", imap_module_directory / "tests" / "ultra" / "data" / "l1" / "IMAP-Ultra45_r1_L1_V0_shortened.csv"),
+
+    # Ultra
     ("imap_ultra_l0_raw_20260924_v001.pkts", imap_module_directory / "tests" / "ultra" / "data" / "l0" / "imap_ultra_l0_raw_20260924_v001.pkts"),
     ("imap_ultra_l1b_45sensor-de_20240207_v999.cdf", imap_module_directory / "tests" / "ultra" / "data" / "l1" / "imap_ultra_l1b_45sensor-de_20240207_v999.cdf"),
     ("ultra-90_raw_event_data_shortened.csv", imap_module_directory / "tests" / "ultra" / "data" / "l1" / "ultra-90_raw_event_data_shortened.csv"),
