@@ -59,6 +59,18 @@ def xarray_data(binary_packet_path, xtce_swapi_path):
 
 
 @pytest.fixture
+@pytest.mark.external_test_data
+def sc_xarray_data(sc_packet_path):
+    """Extract spacecraft packet for testing."""
+
+    packet_path, xtce_ialirt_path = sc_packet_path
+    sc_xarray_data = packet_file_to_datasets(
+        packet_path, xtce_ialirt_path, use_derived_value=False
+    )[478]
+    return sc_xarray_data
+
+
+@pytest.fixture
 def ialirt_test_data():
     """Extract test data for unit tests below."""
 
@@ -108,16 +120,30 @@ def test_decom_packets(xarray_data, swapi_test_data):
 
 
 @mock.patch("imap_processing.ialirt.l0.process_swapi.process_sweep_data")
-def test_process_swapi_ialirt(mock_process_sweep_data, xarray_data, ialirt_test_data):
+def test_process_swapi_ialirt(
+    mock_process_sweep_data, xarray_data, ialirt_test_data, sc_xarray_data
+):
     """Test that the process_swapi_ialirt() function returns expected keys."""
 
     mock_process_sweep_data.return_value = ialirt_test_data[0]
+
+    # Adding necessary time variables from spacecraft packet
+    xarray_data = xarray_data.assign(sc_sclk_sec=sc_xarray_data["sc_sclk_sec"])
+    xarray_data["sc_sclk_sec"].data = sc_xarray_data["sc_sclk_sec"][
+        0 : xarray_data["swapi_flag"].shape[0]
+    ].data
+    xarray_data = xarray_data.assign(sc_sclk_sub_sec=sc_xarray_data["sc_sclk_sub_sec"])
+    xarray_data["sc_sclk_sub_sec"].data = sc_xarray_data["sc_sclk_sub_sec"][
+        0 : xarray_data["swapi_flag"].shape[0]
+    ].data
 
     swapi_result = process_swapi_ialirt(xarray_data)
 
     key_names = [
         "apid",
         "met",
+        "utc",
+        "ttj2000ns",
         "swapi_pseudo_proton_density",
         "swapi_pseudo_proton_speed",
         "swapi_pseudo_proton_temperature",
@@ -161,3 +187,37 @@ def test_optimize_parameters(xarray_data, ialirt_test_data):
     assert result["pseudo_temperature"] == expected_temperature, (
         "Pseudo temperature did not match the expected result."
     )
+
+
+def test_process_spacecraft_packet(sc_xarray_data):
+    """Tests spacecraft packet processing."""
+
+    # Case 1: Not fixing the sequence number attribute, which is all zeros.
+    swapi_product = process_swapi_ialirt(sc_xarray_data)
+    assert swapi_product == [{}]
+
+    # Case 2: Overwriting swapi_seq_number to be an acceptable array of numbers.
+    # Calculate how many times to tile the sequence to reach length of sc packet
+    target_length = sc_xarray_data["swapi_seq_number"].shape[0]
+    base_sequence = np.arange(12)
+    repeat_times = (target_length // len(base_sequence)) + 1  # Over-repeat
+
+    # Tile the sequence and truncate to target_length
+    extended_data = np.tile(base_sequence, repeat_times)[:target_length]
+    sc_xarray_data["swapi_seq_number"].data = extended_data
+
+    swapi_product1 = process_swapi_ialirt(sc_xarray_data)
+    key_names = [
+        "apid",
+        "met",
+        "utc",
+        "ttj2000ns",
+        "swapi_pseudo_proton_density",
+        "swapi_pseudo_proton_speed",
+        "swapi_pseudo_proton_temperature",
+    ]
+
+    for key in key_names:
+        assert swapi_product1[0][key] is not None, (
+            f"The expected attribute {key} was not filled in the result dict."
+        )

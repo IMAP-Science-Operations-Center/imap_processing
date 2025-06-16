@@ -13,6 +13,7 @@ from scipy.special import erf
 from imap_processing import imap_module_directory
 from imap_processing.ialirt.constants import IalirtSwapiConstants as Consts
 from imap_processing.ialirt.utils.grouping import find_groups
+from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 from imap_processing.swapi.l1.swapi_l1 import process_sweep_data
 from imap_processing.swapi.l2.swapi_l2 import TIME_PER_BIN
@@ -155,13 +156,31 @@ def process_swapi_ialirt(unpacked_data: xr.Dataset) -> list[dict]:
 
     sci_dataset = unpacked_data.sortby("epoch", ascending=True)
 
-    grouped_dataset = find_groups(sci_dataset, (0, 11), "swapi_seq_number", "swapi_acq")
+    met = calculate_time(
+        sci_dataset["sc_sclk_sec"], sci_dataset["sc_sclk_sub_sec"], 256
+    )
+
+    # Add required parameters.
+    sci_dataset["met"] = met
+    met_values = []
+
+    grouped_dataset = find_groups(sci_dataset, (0, 11), "swapi_seq_number", "met")
+
+    if grouped_dataset.group.size == 0:
+        logger.warning(
+            "There was an issue with the SWAPI grouping process, returning empty data."
+        )
+        return [{}]
 
     for group in np.unique(grouped_dataset["group"]):
         # Sequence values for the group should be 0-11 with no duplicates.
         seq_values = grouped_dataset["swapi_seq_number"][
             (grouped_dataset["group"] == group)
         ]
+
+        met_values.append(
+            int(grouped_dataset["met"][(grouped_dataset["group"] == group).values][0])
+        )
 
         # Ensure no duplicates and all values from 0 to 11 are present
         if not np.array_equal(seq_values.astype(int), np.arange(12)):
@@ -170,16 +189,6 @@ def process_swapi_ialirt(unpacked_data: xr.Dataset) -> list[dict]:
                 f"11 without duplicates."
             )
             continue
-
-    total_packets = len(grouped_dataset["swapi_seq_number"].data)
-
-    # It takes 12 sequence data to make one full SWAPI sweep
-    total_sequence = 12
-    total_full_sweeps = total_packets // total_sequence
-
-    met_values = grouped_dataset["swapi_shcoarse"].data.reshape(total_full_sweeps, 12)[
-        :, 0
-    ]
 
     raw_coin_count = process_sweep_data(grouped_dataset, "swapi_coin_cnt")
     raw_coin_rate = raw_coin_count / TIME_PER_BIN
