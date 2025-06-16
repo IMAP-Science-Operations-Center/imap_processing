@@ -1,4 +1,4 @@
-"""Functions to support I-ALiRT CoDICE Lo processing."""
+"""Functions to support I-ALiRT CoDICE processing."""
 
 import logging
 
@@ -9,7 +9,7 @@ from imap_processing.codice.codice_l1a import create_ialirt_dataset
 logger = logging.getLogger(__name__)
 
 
-def process_codicelo(dataset: xr.Dataset) -> list[dict]:
+def process_codice(dataset: xr.Dataset) -> list[dict]:
     """
     Create final data products.
 
@@ -20,7 +20,7 @@ def process_codicelo(dataset: xr.Dataset) -> list[dict]:
 
     Returns
     -------
-    codicelo_data : list[dict]
+    codice_data : list[dict]
         Dictionary of final data product.
 
     Notes
@@ -32,10 +32,14 @@ def process_codicelo(dataset: xr.Dataset) -> list[dict]:
     - Calculate the public data products
     """
     apid = dataset.pkt_apid.data[0]
-    codicelo_data = create_ialirt_dataset(apid, dataset)
+    codice_data = create_ialirt_dataset(apid, dataset)
 
     # TODO: calculate rates
+    #       This will be done in codice.codice_l1b
+
     # TODO: calculate L2 CoDICE pseudodensities
+    #       This will be done in codice.codice_l2
+
     # TODO: calculate the public data products
 
-    return codicelo_data
+    return codice_data
