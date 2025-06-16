@@ -59,7 +59,6 @@ def xarray_data(binary_packet_path, xtce_swapi_path):
 
 
 @pytest.fixture
-@pytest.mark.external_test_data
 def sc_xarray_data(sc_packet_path):
     """Extract spacecraft packet for testing."""
 
@@ -119,6 +118,7 @@ def test_decom_packets(xarray_data, swapi_test_data):
         )
 
 
+@pytest.mark.external_test_data
 @mock.patch("imap_processing.ialirt.l0.process_swapi.process_sweep_data")
 def test_process_swapi_ialirt(
     mock_process_sweep_data, xarray_data, ialirt_test_data, sc_xarray_data
@@ -189,6 +189,7 @@ def test_optimize_parameters(xarray_data, ialirt_test_data):
     )
 
 
+@pytest.mark.external_test_data
 def test_process_spacecraft_packet(sc_xarray_data):
     """Tests spacecraft packet processing."""
 
