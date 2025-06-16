@@ -116,8 +116,9 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
         else:
             dims = ["epoch"]
 
+        dtype = np.int8 if field == "hdr_dynamic_threshold_state" else np.int64
         sci_dataset[field] = xr.DataArray(
-            np.array(parsed_data, dtype=np.int64), dims=dims, name=field
+            np.array(parsed_data, dtype=dtype), dims=dims, name=field
         )
         # Add dimensions to coordinates
         for dim in dims:
