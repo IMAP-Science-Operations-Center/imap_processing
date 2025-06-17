@@ -72,18 +72,6 @@ default_float64_attrs: &default_float64
   VALIDMAX: 1.7976931348623157e+308
   dtype: float64
 
-
-  # Final I-ALiRT data product fields
-  CODICE_LO_IAL_DATA_FIELDS = [
-  "c_over_o_abundance",
-  "mg_over_o_abundance",
-  "fe_over_o_abundance",
-  "c_plus_6_over_c_plus_5_ratio",
-  "o_plus_7_over_o_plus_6_ratio",
-  "fe_low_over_fe_high_ratio",
-]
-  CODICE_HI_IAL_DATA_FIELDS = ["h"]
-
 codicehi_h:
   <<: *default_float32
   CATDESC: H intensities in 15 energy ranges and binned into 4 azimuths and 4 spin angle bins
