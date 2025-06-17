@@ -72,6 +72,81 @@ default_float64_attrs: &default_float64
   VALIDMAX: 1.7976931348623157e+308
   dtype: float64
 
+
+  # Final I-ALiRT data product fields
+  CODICE_LO_IAL_DATA_FIELDS = [
+  "c_over_o_abundance",
+  "mg_over_o_abundance",
+  "fe_over_o_abundance",
+  "c_plus_6_over_c_plus_5_ratio",
+  "o_plus_7_over_o_plus_6_ratio",
+  "fe_low_over_fe_high_ratio",
+]
+  CODICE_HI_IAL_DATA_FIELDS = ["h"]
+
+codicehi_h:
+  <<: *default_float32
+  CATDESC: H intensities in 15 energy ranges and binned into 4 azimuths and 4 spin angle bins
+  FIELDNAM: H intensities
+  LABLAXIS: H
+  UNITS: "# / cm2-sr-s- MeV"
+  VALIDMIN: 0
+  VALIDMAX: 100000000.0
+
+codicelo_c_over_o_abundance:
+  <<: *default_float32
+  CATDESC: C/O abundance ratio
+  FIELDNAM: C/O abundance ratio
+  LABLAXIS: C/O
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 100000000.0
+
+codicelo_mg_over_o_abundance:
+  <<: *default_float32
+  CATDESC: Mg/O abundance ratio
+  FIELDNAM: Mg/O abundance ratio
+  LABLAXIS: Mg/O
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 100000000.0
+
+codicelo_fe_over_o_abundance:
+  <<: *default_float32
+  CATDESC: Fe/O abundance ratio
+  FIELDNAM: Fe/O abundance ratio
+  LABLAXIS: Fe/O
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 100000000.0
+
+codicelo_c_plus_6_over_c_plus_5_ratio:
+  <<: *default_float32
+  CATDESC: C+6/C+5 charge state ratio
+  FIELDNAM: C+6/C+5 charge state ratio
+  LABLAXIS: C+6/C+5
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 100000000.0
+
+codicelo_o_plus_7_over_o_plus_6_ratio:
+  <<: *default_float32
+  CATDESC: O+7/O+6 charge state ratio
+  FIELDNAM: O+7/O+6 charge state ratio
+  LABLAXIS: O+7/O+6
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 100000000.0
+
+codicelo_fe_low_over_fe_high_ratio:
+  <<: *default_float32
+  CATDESC: Fe low/Fe high charge state ratio
+  FIELDNAM: Fe low/Fe high charge state ratio
+  LABLAXIS: Fe low/Fe high
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 100000000.0
+
 hit_e_a_side_low_en:
   <<: *default_uint32
   CATDESC: Low energy (~300 keV) electrons (A-side)
