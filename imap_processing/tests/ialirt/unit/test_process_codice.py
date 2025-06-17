@@ -17,12 +17,7 @@ pytestmark = pytest.mark.external_test_data
 @pytest.fixture(scope="session")
 def l0_test_file():
     return Path(
-        imap_module_directory
-        / "tests"
-        / "ialirt"
-        / "data"
-        / "l0"
-        / "iois_1_packets_2025_181_15_42_30.bin"
+        imap_module_directory / "tests" / "ialirt" / "data" / "l0" / "apid_478.bin"
     )
 
 
