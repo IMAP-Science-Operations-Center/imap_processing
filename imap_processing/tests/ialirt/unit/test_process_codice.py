@@ -1,6 +1,7 @@
 """Tests for the ``process_codice`` module.
 
-See tests.codice.test_codice_l1a for more unit tests related to this code.
+See tests.codice.test_codice_l[1a|1b|2] for more unit tests related to this
+code.
 """
 
 from pathlib import Path
