@@ -168,7 +168,7 @@ def test_count_rate():
     )
 
 
-@pytest.skip
+@pytest.mark.skip(reason="Differences between scipy versions.")
 def test_optimize_parameters(xarray_data, ialirt_test_data):
     """Test that the optimize_pseudo_parameters() function works correctly."""
 
