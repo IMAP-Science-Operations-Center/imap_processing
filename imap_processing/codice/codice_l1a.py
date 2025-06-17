@@ -687,7 +687,7 @@ def group_ialirt_data(
     data_field_range : range
         The range of the individual data fields (15 or lo, 6 for hi).
     prefix : str
-        The prefix used to index the data (i.e. ``cod_lo`` or ``cod_hi``.
+        The prefix used to index the data (i.e. ``cod_lo`` or ``cod_hi``).
 
     Returns
     -------
