@@ -66,96 +66,134 @@ h_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nuc. for H
   FIELDNAM: H Energy
+  DELTA_MINUS_VAR: h_energy_delta_minus
+  DELTA_PLUS_VAR: h_energy_delta_plus
 
 he3_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nuc. for He3
   FIELDNAM: He3 Energy
+  DELTA_MINUS_VAR: he3_energy_delta_minus
+  DELTA_PLUS_VAR: he3_energy_delta_plus
 
 he4_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nuc. for He4
   FIELDNAM: He4 Energy
+  DELTA_MINUS_VAR: he4_energy_delta_minus
+  DELTA_PLUS_VAR: he4_energy_delta_plus
 
 he_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nuc. for He
   FIELDNAM: He Energy
+  DELTA_MINUS_VAR: he_energy_delta_minus
+  DELTA_PLUS_VAR: he_energy_delta_plus
 
 c_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nuc. for C
   FIELDNAM: C Energy
+  DELTA_MINUS_VAR: c_energy_delta_minus
+  DELTA_PLUS_VAR: c_energy_delta_plus
 
 n_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nuc. for N
   FIELDNAM: N Energy
+  DELTA_MINUS_VAR: n_energy_delta_minus
+  DELTA_PLUS_VAR: n_energy_delta_plus
 
 o_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nuc. for O
   FIELDNAM: O Energy
+  DELTA_MINUS_VAR: o_energy_delta_minus
+  DELTA_PLUS_VAR: o_energy_delta_plus
 
 ne_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nuc. for Ne
   FIELDNAM: Ne Energy
+  DELTA_MINUS_VAR: ne_energy_delta_minus
+  DELTA_PLUS_VAR: ne_energy_delta_plus
 
 na_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nuc. for Na
   FIELDNAM: Na Energy
+  DELTA_MINUS_VAR: na_energy_delta_minus
+  DELTA_PLUS_VAR: na_energy_delta_plus
 
 mg_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nuc. for Mg
   FIELDNAM: Mg Energy
+  DELTA_MINUS_VAR: mg_energy_delta_minus
+  DELTA_PLUS_VAR: mg_energy_delta_plus
 
 si_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nuc. for Si
   FIELDNAM: Si Energy
+  DELTA_MINUS_VAR: si_energy_delta_minus
+  DELTA_PLUS_VAR: si_energy_delta_plus
 
 s_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nuc. for S
   FIELDNAM: S Energy
+  DELTA_MINUS_VAR: s_energy_delta_minus
+  DELTA_PLUS_VAR: s_energy_delta_plus
 
 al_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nuc. for Al
   FIELDNAM: Al Energy
+  DELTA_MINUS_VAR: al_energy_delta_minus
+  DELTA_PLUS_VAR: al_energy_delta_plus
 
 ar_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nuc. for Ar
   FIELDNAM: Ar Energy
+  DELTA_MINUS_VAR: ar_energy_delta_minus
+  DELTA_PLUS_VAR: ar_energy_delta_plus
 
 ca_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nuc. for Ca
   FIELDNAM: Ca Energy
+  DELTA_MINUS_VAR: ca_energy_delta_minus
+  DELTA_PLUS_VAR: ca_energy_delta_plus
 
 fe_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nuc. for Fe
   FIELDNAM: Fe Energy
+  DELTA_MINUS_VAR: fe_energy_delta_minus
+  DELTA_PLUS_VAR: fe_energy_delta_plus
 
 ni_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nuc. for Ni
   FIELDNAM: Ni Energy
+  DELTA_MINUS_VAR: ni_energy_delta_minus
+  DELTA_PLUS_VAR: ni_energy_delta_plus
 
 nemgsi_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nuc. for NeMgSi
   FIELDNAM: NeMgSi Energy
+  DELTA_MINUS_VAR: nemgsi_energy_delta_minus
+  DELTA_PLUS_VAR: nemgsi_energy_delta_plus
 
 cno_energy_mean:
   <<: *default_energy
   CATDESC: Geometric mean energy per nuc. for CNO
   FIELDNAM: CNO Energy
+  DELTA_MINUS_VAR: cno_energy_delta_minus
+  DELTA_PLUS_VAR: cno_energy_delta_plus
 
 
 # <=== Labels ===>
