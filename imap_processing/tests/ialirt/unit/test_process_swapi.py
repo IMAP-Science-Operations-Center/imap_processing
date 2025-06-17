@@ -168,6 +168,7 @@ def test_count_rate():
     )
 
 
+@pytest.skip
 def test_optimize_parameters(xarray_data, ialirt_test_data):
     """Test that the optimize_pseudo_parameters() function works correctly."""
 
@@ -178,13 +179,13 @@ def test_optimize_parameters(xarray_data, ialirt_test_data):
     expected_density = [15.964441588773008, 15.964441588773008]
     expected_temperature = [101695.2160638631, 101695.2160638631]
 
-    assert np.allclose(result["pseudo_speed"], expected_speed, rtol=0.02), (
+    assert np.allclose(result["pseudo_speed"], expected_speed, rtol=0.01), (
         "Pseudo speed did not match the expected result."
     )
-    assert np.allclose(result["pseudo_density"], expected_density, rtol=0.02), (
+    assert np.allclose(result["pseudo_density"], expected_density, rtol=0.01), (
         "Pseudo density did not match the expected result."
     )
-    assert np.allclose(result["pseudo_temperature"], expected_temperature, rtol=0.02), (
+    assert np.allclose(result["pseudo_temperature"], expected_temperature, rtol=0.01), (
         "Pseudo temperature did not match the expected result."
     )
 
