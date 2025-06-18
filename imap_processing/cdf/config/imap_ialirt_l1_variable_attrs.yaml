@@ -76,7 +76,7 @@ codicehi_h:
   <<: *default_float32
   CATDESC: H intensities in 15 energy ranges and binned into 4 azimuths and 4 spin angle bins
   FIELDNAM: H intensities
-  LABLAXIS: H
+  LABLAXIS: Diff. Intensity
   UNITS: "# / cm2-sr-s- MeV"
   VALIDMIN: 0
   VALIDMAX: 100000000.0
@@ -84,8 +84,8 @@ codicehi_h:
 codicelo_c_over_o_abundance:
   <<: *default_float32
   CATDESC: C/O abundance ratio
-  FIELDNAM: C/O abundance ratio
-  LABLAXIS: C/O
+  FIELDNAM: C/O
+  LABLAXIS: ratio
   UNITS: " "
   VALIDMIN: 0
   VALIDMAX: 100000000.0
@@ -93,8 +93,8 @@ codicelo_c_over_o_abundance:
 codicelo_mg_over_o_abundance:
   <<: *default_float32
   CATDESC: Mg/O abundance ratio
-  FIELDNAM: Mg/O abundance ratio
-  LABLAXIS: Mg/O
+  FIELDNAM: Mg/O
+  LABLAXIS: ratio
   UNITS: " "
   VALIDMIN: 0
   VALIDMAX: 100000000.0
@@ -102,8 +102,8 @@ codicelo_mg_over_o_abundance:
 codicelo_fe_over_o_abundance:
   <<: *default_float32
   CATDESC: Fe/O abundance ratio
-  FIELDNAM: Fe/O abundance ratio
-  LABLAXIS: Fe/O
+  FIELDNAM: Fe/O
+  LABLAXIS: ratio
   UNITS: " "
   VALIDMIN: 0
   VALIDMAX: 100000000.0
@@ -111,8 +111,8 @@ codicelo_fe_over_o_abundance:
 codicelo_c_plus_6_over_c_plus_5_ratio:
   <<: *default_float32
   CATDESC: C+6/C+5 charge state ratio
-  FIELDNAM: C+6/C+5 charge state ratio
-  LABLAXIS: C+6/C+5
+  FIELDNAM: C+6/C+5
+  LABLAXIS: ratio
   UNITS: " "
   VALIDMIN: 0
   VALIDMAX: 100000000.0
@@ -120,8 +120,8 @@ codicelo_c_plus_6_over_c_plus_5_ratio:
 codicelo_o_plus_7_over_o_plus_6_ratio:
   <<: *default_float32
   CATDESC: O+7/O+6 charge state ratio
-  FIELDNAM: O+7/O+6 charge state ratio
-  LABLAXIS: O+7/O+6
+  FIELDNAM: O+7/O+6
+  LABLAXIS: ratio
   UNITS: " "
   VALIDMIN: 0
   VALIDMAX: 100000000.0
@@ -129,8 +129,8 @@ codicelo_o_plus_7_over_o_plus_6_ratio:
 codicelo_fe_low_over_fe_high_ratio:
   <<: *default_float32
   CATDESC: Fe low/Fe high charge state ratio
-  FIELDNAM: Fe low/Fe high charge state ratio
-  LABLAXIS: Fe low/Fe high
+  FIELDNAM: Fe low/Fe high
+  LABLAXIS: ratio
   UNITS: " "
   VALIDMIN: 0
   VALIDMAX: 100000000.0

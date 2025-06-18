@@ -1,6 +1,7 @@
 """Functions to support I-ALiRT CoDICE processing."""
 
 import logging
+from decimal import Decimal
 from typing import Any
 
 import xarray as xr
@@ -10,6 +11,8 @@ from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 
 logger = logging.getLogger(__name__)
+
+FILLVAL_FLOAT32 = Decimal(str(-1.0e31))
 
 
 def process_codice(
@@ -76,13 +79,13 @@ def process_codice(
         # Add in CoDICE-Lo specific data
         cod_lo_epoch_data = epoch_data.copy()
         for field in constants.CODICE_LO_IAL_DATA_FIELDS:
-            cod_lo_epoch_data[f"codicelo_{field}"] = -1.0e31
+            cod_lo_epoch_data[f"codicelo_{field}"] = FILLVAL_FLOAT32
         cod_lo_data.append(cod_lo_epoch_data)
 
         # Add in CoDICE-Hi specific data
         cod_hi_epoch_data = epoch_data.copy()
         for field in constants.CODICE_HI_IAL_DATA_FIELDS:
-            cod_hi_epoch_data[f"codicehi_{field}"] = -1.0e31
+            cod_hi_epoch_data[f"codicehi_{field}"] = FILLVAL_FLOAT32
         cod_hi_data.append(cod_hi_epoch_data)
 
     return cod_lo_data, cod_hi_data
