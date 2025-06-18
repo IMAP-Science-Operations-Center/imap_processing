@@ -403,13 +403,20 @@ def subset_data_for_sectored_counts(
     else:
         start_indices = start_indices[start_indices >= bin_size]
 
-    # Subset data to include only complete sets of sectored counts
+    # Subset data for complete sets of sectored counts.
+    # Each set of sectored counts is 10 minutes long, so we take the indices
+    # starting from the start indices and extend to the bin size of 10.
+    # This creates a 1D array of indices that correspond to the complete
+    # sets of sectored counts which is used to filter the L1A dataset and
+    # create the L1B sectored rates dataset.
     data_indices = np.concatenate(
         [np.arange(idx, idx + bin_size) for idx in start_indices]
     )
     l1b_sectored_rates_dataset = l1a_counts_dataset.isel(epoch=data_indices)
 
-    # Subset livetime staggered from sectored counts by 10 minutes
+    # Subset livetime values corresponding to the previous 10 minutes
+    # for each start index. This ensures the livetime data aligns correctly
+    # with the sectored counts for rate calculations.
     livetime_indices = np.concatenate(
         [np.arange(idx - bin_size, idx) for idx in start_indices]
     )
