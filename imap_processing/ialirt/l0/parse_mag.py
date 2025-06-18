@@ -389,7 +389,7 @@ def process_packet(
         mag_data.append(
             {
                 "apid": 478,
-                "met": int(met.values.min()),
+                "met_in_utc": int(met.values.min()),
                 "utc": met_to_utc(met.values.min()).split(".")[0],
                 "ttj2000ns": int(met_to_ttj2000ns(met.values.min())),
                 "mag_4s_b_gse": [Decimal("0.0") for _ in range(3)],

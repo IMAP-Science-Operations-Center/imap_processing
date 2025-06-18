@@ -169,7 +169,7 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
         hit_data.append(
             {
                 "apid": 478,
-                "met": int(met),
+                "met_in_utc": int(met),
                 "utc": met_to_utc(met).split(".")[0],
                 "ttj2000ns": int(met_to_ttj2000ns(met)),
                 "hit_e_a_side_low_en": Decimal(
