@@ -202,8 +202,8 @@ def process_swapi_ialirt(unpacked_data: xr.Dataset) -> list[dict]:
         swapi_data.append(
             {
                 "apid": 478,
-                "met_in_utc": met_values[entry],
-                "utc": met_to_utc(met_values[entry]).split(".")[0],
+                "met": met_values[entry],
+                "met_in_utc": met_to_utc(met_values[entry]).split(".")[0],
                 "ttj2000ns": int(met_to_ttj2000ns(met_values[entry])),
                 "swapi_pseudo_proton_speed": Decimal(solution["pseudo_speed"][entry]),
                 "swapi_pseudo_proton_density": Decimal(

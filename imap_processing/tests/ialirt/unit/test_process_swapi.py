@@ -142,7 +142,7 @@ def test_process_swapi_ialirt(
     key_names = [
         "apid",
         "met",
-        "utc",
+        "met_in_utc",
         "ttj2000ns",
         "swapi_pseudo_proton_density",
         "swapi_pseudo_proton_speed",
@@ -212,7 +212,7 @@ def test_process_spacecraft_packet(sc_xarray_data):
     key_names = [
         "apid",
         "met",
-        "utc",
+        "met_in_utc",
         "ttj2000ns",
         "swapi_pseudo_proton_density",
         "swapi_pseudo_proton_speed",
