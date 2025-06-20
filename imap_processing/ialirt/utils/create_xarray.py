@@ -48,7 +48,42 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         attrs=cdf_manager.get_variable_attributes("component"),
     )
 
-    coords = {"epoch": epoch, "component": component}
+    esa_step = xr.DataArray(
+        data=np.arange(8, dtype=np.uint8),
+        name="esa_step",
+        dims=["esa_step"],
+        attrs=cdf_manager.get_variable_attributes("esa_step"),
+    )
+
+    energy_ranges = xr.DataArray(
+        data=np.arange(15, dtype=np.uint8),
+        name="energy_ranges",
+        dims=["energy_ranges"],
+        attrs=cdf_manager.get_variable_attributes("energy_ranges"),
+    )
+
+    azimuth = xr.DataArray(
+        data=np.arange(4, dtype=np.uint8),
+        name="azimuth",
+        dims=["azimuth"],
+        attrs=cdf_manager.get_variable_attributes("azimuth"),
+    )
+
+    spin_angle_bin = xr.DataArray(
+        data=np.arange(4, dtype=np.uint8),
+        name="spin_angle_bin",
+        dims=["spin_angle_bin"],
+        attrs=cdf_manager.get_variable_attributes("spin_angle_bin"),
+    )
+
+    coords = {
+        "epoch": epoch,
+        "component": component,
+        "esa_step": esa_step,
+        "energy_ranges": energy_ranges,
+        "azimuth": azimuth,
+        "spin_angle_bin": spin_angle_bin,
+    }
     dataset = xr.Dataset(
         coords=coords,
         attrs=cdf_manager.get_global_attributes("imap_ialirt_l1_realtime"),
@@ -64,7 +99,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
             dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
         elif key.startswith("codicehi"):
             data = np.full((n, 15, 4, 4), fillval, dtype=np.float32)
-            dims = ["epoch", "energy", "azimuth", "spin_angle"]
+            dims = ["epoch", "energy", "azimuth", "spin_angle_bin"]
             dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
         elif key == "swe_counterstreaming_electrons":
             data = np.full(n, fillval, dtype=np.uint8)

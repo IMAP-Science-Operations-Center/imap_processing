@@ -37,20 +37,20 @@ energy_ranges:
     VAR_TYPE: metadata
     UNITS: " "
 
-azimuths:
-    CATDESC: CoDICE-Hi azimuths
-    FIELDNAM: energy_ranges
-    LABLAXIS: energy_ranges
+azimuth:
+    CATDESC: CoDICE-Hi azimuth
+    FIELDNAM: azimuth
+    LABLAXIS: azimuth
     FORMAT: I3
     VALIDMIN: 0
     VALIDMAX: 4
     VAR_TYPE: metadata
     UNITS: " "
 
-spin_angle_bins:
-    CATDESC: CoDICE-Hi spin_angle_bins
-    FIELDNAM: spin_angle_bins
-    LABLAXIS: spin_angle_bins
+spin_angle_bin:
+    CATDESC: CoDICE-Hi spin_angle_bin
+    FIELDNAM: spin_angle_bin
+    LABLAXIS: spin_angle_bin
     FORMAT: I3
     VALIDMIN: 0
     VALIDMAX: 4
@@ -122,8 +122,8 @@ codicehi_h:
   VALIDMIN: 0
   VALIDMAX: 100000000.0
   DEPEND_1: energy_ranges
-  DEPEND_2: azimuths
-  DEPEND_3: spin_angle_bins
+  DEPEND_2: azimuth
+  DEPEND_3: spin_angle_bin
 
 codicelo_c_over_o_abundance:
   <<: *default_float32
