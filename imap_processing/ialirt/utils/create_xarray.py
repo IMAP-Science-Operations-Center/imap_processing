@@ -39,41 +39,41 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         data=ttj2000ns_values,
         name="epoch",
         dims=["epoch"],
-        attrs=cdf_manager.get_variable_attributes("epoch"),
+        attrs=cdf_manager.get_variable_attributes("epoch", check_schema=False),
     )
     component = xr.DataArray(
         ["x", "y", "z"],
         name="component",
         dims=["component"],
-        attrs=cdf_manager.get_variable_attributes("component"),
+        attrs=cdf_manager.get_variable_attributes("component", check_schema=False),
     )
 
     esa_step = xr.DataArray(
         data=np.arange(8, dtype=np.uint8),
         name="esa_step",
         dims=["esa_step"],
-        attrs=cdf_manager.get_variable_attributes("esa_step"),
+        attrs=cdf_manager.get_variable_attributes("esa_step", check_schema=False),
     )
 
     energy_ranges = xr.DataArray(
         data=np.arange(15, dtype=np.uint8),
         name="energy_ranges",
         dims=["energy_ranges"],
-        attrs=cdf_manager.get_variable_attributes("energy_ranges"),
+        attrs=cdf_manager.get_variable_attributes("energy_ranges", check_schema=False),
     )
 
     azimuth = xr.DataArray(
         data=np.arange(4, dtype=np.uint8),
         name="azimuth",
         dims=["azimuth"],
-        attrs=cdf_manager.get_variable_attributes("azimuth"),
+        attrs=cdf_manager.get_variable_attributes("azimuth", check_schema=False),
     )
 
     spin_angle_bin = xr.DataArray(
         data=np.arange(4, dtype=np.uint8),
         name="spin_angle_bin",
         dims=["spin_angle_bin"],
-        attrs=cdf_manager.get_variable_attributes("spin_angle_bin"),
+        attrs=cdf_manager.get_variable_attributes("spin_angle_bin", check_schema=False),
     )
 
     coords = {
@@ -91,7 +91,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
 
     # Create empty dataset for each key.
     for key in instrument_keys:
-        attrs = cdf_manager.get_variable_attributes(key)
+        attrs = cdf_manager.get_variable_attributes(key, check_schema=False)
         fillval = attrs.get("FILLVAL")
         if key.startswith("mag"):
             data = np.full((n, 3), fillval, dtype=np.float32)

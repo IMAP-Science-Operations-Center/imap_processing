@@ -57,14 +57,16 @@ def create_dataset(  # noqa: PLR0912
             data_dict["epoch"],
             name="epoch",
             dims=["epoch"],
-            attrs=cdf_manager.get_variable_attributes("epoch"),
+            attrs=cdf_manager.get_variable_attributes("epoch", check_schema=False),
         )
         if "sensor-de" in name:
             component = xr.DataArray(
                 ["vx", "vy", "vz"],
                 name="component",
                 dims=["component"],
-                attrs=cdf_manager.get_variable_attributes("component"),
+                attrs=cdf_manager.get_variable_attributes(
+                    "component", check_schema=False
+                ),
             )
             coords = {"epoch": epoch_time, "component": component}
         else:
