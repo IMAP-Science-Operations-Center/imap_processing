@@ -487,175 +487,175 @@ livetime_counter:
 
 num_trig:
   <<: *default_counts
-  CATDESC: Raw number of triggers per integration
+  CATDESC: Raw number of triggers
   FIELDNAM: num_trig
   DELTA_MINUS_VAR: num_trig_stat_uncert_minus
   DELTA_PLUS_VAR: num_trig_stat_uncert_plus
 
 num_reject:
   <<: *default_counts
-  CATDESC: Raw number of rejects per integration
+  CATDESC: Raw number of rejected events
   FIELDNAM: num_reject
   DELTA_MINUS_VAR: num_reject_stat_uncert_minus
   DELTA_PLUS_VAR: num_reject_stat_uncert_plus
 
 num_acc_w_pha:
   <<: *default_counts
-  CATDESC: Raw number of accepted events with PHA data per integration
+  CATDESC: Raw number of accepted events with PHA data
   FIELDNAM: num_acc_w_pha
   DELTA_MINUS_VAR: num_acc_w_pha_stat_uncert_minus
   DELTA_PLUS_VAR: num_acc_w_pha_stat_uncert_plus
 
 num_acc_no_pha:
   <<: *default_counts
-  CATDESC: Raw number of events without PHA data per integration
+  CATDESC: Raw number of events without PHA data
   FIELDNAM: num_acc_no_pha
   DELTA_MINUS_VAR: num_acc_no_pha_stat_uncert_minus
   DELTA_PLUS_VAR: num_acc_no_pha_stat_uncert_plus
 
 num_haz_trig:
   <<: *default_counts
-  CATDESC: Raw number of hazard triggers per integration
+  CATDESC: Raw number of events triggered with a hazard condition
   FIELDNAM: num_haz_trig
   DELTA_MINUS_VAR: num_haz_trig_stat_uncert_minus
   DELTA_PLUS_VAR: num_haz_trig_stat_uncert_plus
 
 num_haz_reject:
   <<: *default_counts
-  CATDESC: Raw number of rejected events with hazard per integration
+  CATDESC: Raw number of events rejected for hazard condition
   FIELDNAM: num_haz_reject
   DELTA_MINUS_VAR: num_haz_reject_stat_uncert_minus
   DELTA_PLUS_VAR: num_haz_reject_stat_uncert_plus
 
 num_haz_acc_w_pha:
   <<: *default_counts
-  CATDESC: Raw number of accepted hazard events with PHA data per integration
+  CATDESC: Raw number of events with hazard condition with PHA data
   FIELDNAM: num_haz_acc_w_pha
   DELTA_MINUS_VAR: num_haz_acc_w_pha_stat_uncert_minus
   DELTA_PLUS_VAR: num_haz_acc_w_pha_stat_uncert_plus
 
 num_haz_acc_no_pha:
   <<: *default_counts
-  CATDESC: Raw number of hazard events without PHA data per integration
+  CATDESC: Raw number of events accepted with hazard condition without PHA data
   FIELDNAM: num_haz_acc_no_pha
   DELTA_MINUS_VAR: num_haz_acc_no_pha_stat_uncert_minus
   DELTA_PLUS_VAR: num_haz_acc_no_pha_stat_uncert_plus
 
 nread:
   <<: *default_counts
-  CATDESC: Raw number of events read per integration
+  CATDESC: Raw number of events read from event FIFO
   FIELDNAM: nread
   DELTA_MINUS_VAR: nread_stat_uncert_minus
   DELTA_PLUS_VAR: nread_stat_uncert_plus
 
 nhazard:
   <<: *default_counts
-  CATDESC: Raw number of hazard events per integration
+  CATDESC: Raw number of events rejected for Hazard condition
   FIELDNAM: nhazard
   DELTA_MINUS_VAR: nhazard_stat_uncert_minus
   DELTA_PLUS_VAR: nhazard_stat_uncert_plus
 
 nadcstim:
   <<: *default_counts
-  CATDESC: Raw number of ADC-stim events per integration
+  CATDESC: Raw number of ADC-calibration STIM events
   FIELDNAM: nadcstim
   DELTA_MINUS_VAR: nadcstim_stat_uncert_minus
   DELTA_PLUS_VAR: nadcstim_stat_uncert_plus
 
 nodd:
   <<: *default_counts
-  CATDESC: Raw number of odd events per integration
+  CATDESC: Raw number of odd events
   FIELDNAM: nodd
   DELTA_MINUS_VAR: nodd_stat_uncert_minus
   DELTA_PLUS_VAR: nodd_stat_uncert_plus
 
 noddfix:
   <<: *default_counts
-  CATDESC: Raw number of fixed odd events per integration
+  CATDESC: Raw number of fixed odd events
   FIELDNAM: noddfix
   DELTA_MINUS_VAR: noddfix_stat_uncert_minus
   DELTA_PLUS_VAR: noddfix_stat_uncert_plus
 
 nmulti:
   <<: *default_counts
-  CATDESC: Raw number of events with multiple hits in a single detector per integration
+  CATDESC: Raw number of events with multiple hits in relevant layers
   FIELDNAM: nmulti
   DELTA_MINUS_VAR: nmulti_stat_uncert_minus
   DELTA_PLUS_VAR: nmulti_stat_uncert_plus
 
 nmultifix:
   <<: *default_counts
-  CATDESC: Raw number of multi events that were fixed per integration
+  CATDESC: Raw number of fix multi events
   FIELDNAM: nmultifix
   DELTA_MINUS_VAR: nmultifix_stat_uncert_minus
   DELTA_PLUS_VAR: nmultifix_stat_uncert_plus
 
 nbadtraj:
   <<: *default_counts
-  CATDESC: Raw number of bad trajectory events per integration
+  CATDESC: Raw number of events rejected for inconsistent/bad trajectory
   FIELDNAM: nbadtraj
   DELTA_MINUS_VAR: nbadtraj_stat_uncert_minus
   DELTA_PLUS_VAR: nbadtraj_stat_uncert_plus
 
 nl2:
   <<: *default_counts
-  CATDESC: Raw number of nl2 events per integration
+  CATDESC: Raw number of events sorted into L12 event category
   FIELDNAM: nl2
   DELTA_MINUS_VAR: nl2_stat_uncert_minus
   DELTA_PLUS_VAR: nl2_stat_uncert_plus
 
 nl3:
   <<: *default_counts
-  CATDESC: Raw number of nl3 events per integration
+  CATDESC: Raw number of events sorted into L123 event category
   FIELDNAM: nl3
   DELTA_MINUS_VAR: nl3_stat_uncert_minus
   DELTA_PLUS_VAR: nl3_stat_uncert_plus
 
 nl4:
   <<: *default_counts
-  CATDESC: Raw number of nl4 events per integration
+  CATDESC: Raw number of events sorted into L1423 event category
   FIELDNAM: nl4
   DELTA_MINUS_VAR: nl4_stat_uncert_minus
   DELTA_PLUS_VAR: nl4_stat_uncert_plus
 
 npen:
   <<: *default_counts
-  CATDESC: Raw number of npen events per integration
+  CATDESC: Raw number of events sorted into PEN event category
   FIELDNAM: npen
   DELTA_MINUS_VAR: npen_stat_uncert_minus
   DELTA_PLUS_VAR: npen_stat_uncert_plus
 
 nformat:
   <<: *default_counts
-  CATDESC: Raw number of nformat events per integration
+  CATDESC: Raw number of events handled by the telemetry event formatter
   FIELDNAM: nformat
   DELTA_MINUS_VAR: nformat_stat_uncert_minus
   DELTA_PLUS_VAR: nformat_stat_uncert_plus
 
 naside:
   <<: *default_counts
-  CATDESC: Raw number of naside events per integration
+  CATDESC: Raw number of events the software assumed were A-side events
   FIELDNAM: naside
   DELTA_MINUS_VAR: naside_stat_uncert_minus
   DELTA_PLUS_VAR: naside_stat_uncert_plus
 
 nbside:
   <<: *default_counts
-  CATDESC: Raw number of nbside events per integration
+  CATDESC: Raw number of events the software assumed were B-side events
   FIELDNAM: nbside
   DELTA_MINUS_VAR: nbside_stat_uncert_minus
   DELTA_PLUS_VAR: nbside_stat_uncert_plus
 
 nerror:
   <<: *default_counts
-  CATDESC: Raw number of nerror events per integration
+  CATDESC: Raw number of events that caused a processing error
   FIELDNAM: nerror
   DELTA_MINUS_VAR: nerror_stat_uncert_minus
   DELTA_PLUS_VAR: nerror_stat_uncert_plus
 
 nbadtags:
   <<: *default_counts
-  CATDESC: Raw number of nbadtags per integration
+  CATDESC: Raw number of events with bad tags from onboard event-processing
   FIELDNAM: nbadtags
   DELTA_MINUS_VAR: nbadtags_stat_uncert_minus
   DELTA_PLUS_VAR: nbadtags_stat_uncert_plus
@@ -1452,6 +1452,12 @@ nbadtags_stat_uncert_minus:
   CATDESC: Minus statistical uncertainty for number of bad tags
   FIELDNAM: nbadtags uncertainty
 
+# PHA dataset variables
+pha_raw:
+  DEPEND_0: epoch
+  CATDESC: Raw instrument pulse height analyzer data.  Further processed in HIT L3 data.
+  VAR_TYPE: ignore_data
+  DISPLAY_TYPE: no_plot
 
 # Housekeeping dataset variables
 fsw_version_a:
@@ -1846,4 +1852,5 @@ ebox_p2d0vd:
   CATDESC: +2.0VD Ebox (Digital)
   FIELDNAM: +2.0VD Ebox (Digital)
   LABLAXIS: +2.0VD Ebox
+
 
