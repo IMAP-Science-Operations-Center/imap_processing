@@ -176,7 +176,7 @@ def test_process_spacecraft_packet(
 
     swe_product = process_swe(sc_xarray_data, [in_flight_cal_file])
 
-    assert len(swe_product[0].keys()) == 21
+    assert len(swe_product[0].keys()) == 7
 
 
 def test_get_energy():
