@@ -86,7 +86,9 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     # Populate the dataset variables
     for i, record in enumerate(records):
         for key, val in record.items():
-            if key.startswith("mag"):
+            if key in ["apid", "met", "met_in_utc", "ttj2000ns"]:
+                continue
+            elif key.startswith("mag"):
                 dataset[key].data[i, :] = val
             elif key.startswith("swe_normalized_counts"):
                 dataset[key].data[i, :] = val
