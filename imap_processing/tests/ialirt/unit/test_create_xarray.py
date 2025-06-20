@@ -54,7 +54,7 @@ def test_create_dataset():
             "apid": 478,
             "met": 123456789,
             "met_in_utc": "2025-06-20T08:00:00",
-            "ttj2000ns": 123456789000000,
+            "ttj2000ns": 123456789000001,
             # Only MAG is present
             "mag_4s_b_gse": [Decimal("0.0"), Decimal("0.0"), Decimal("0.0")],
             "mag_4s_b_gsm": [Decimal("0.0"), Decimal("0.0"), Decimal("0.0")],
@@ -66,7 +66,7 @@ def test_create_dataset():
             "apid": 478,
             "met": 123456789,
             "met_in_utc": "2025-06-20T08:00:00",
-            "ttj2000ns": 123456789000000,
+            "ttj2000ns": 123456789000002,
             # Only SWAPI is present
             "swapi_pseudo_proton_speed": Decimal("0.0"),
             "swapi_pseudo_proton_density": Decimal("0.0"),
@@ -110,7 +110,12 @@ def test_create_dataset():
     assert dataset["mag_4s_b_gse"].dims == ("epoch", "component")
     assert dataset["swe_normalized_counts_half_1"].dims == ("epoch", "esa_step")
     assert dataset["swe_normalized_counts_half_2"].dims == ("epoch", "esa_step")
-    assert dataset["codicehi_h"].dims == ("epoch", "energy", "azimuth", "spin_angle")
+    assert dataset["codicehi_h"].dims == (
+        "epoch",
+        "energy",
+        "azimuth",
+        "spin_angle_bin",
+    )
 
     # Tests that you can write to a cdf.
     dataset.attrs["Data_version"] = "001"
