@@ -62,6 +62,16 @@ def test_create_dataset():
             "mag_phi_4s_b_gsm": Decimal("0.0"),
             "mag_theta_4s_b_gsm": Decimal("0.0"),
         },
+        {
+            "apid": 478,
+            "met": 123456789,
+            "met_in_utc": "2025-06-20T08:00:00",
+            "ttj2000ns": 123456789000000,
+            # Only SWAPI is present
+            "swapi_pseudo_proton_speed": Decimal("0.0"),
+            "swapi_pseudo_proton_density": Decimal("0.0"),
+            "swapi_pseudo_proton_temperature": Decimal("0.0"),
+        },
     ]
 
     dataset = create_xarray_from_records(records)
@@ -79,7 +89,7 @@ def test_create_dataset():
     )
     np.testing.assert_allclose(
         dataset["hit_e_a_side_low_en"].values,
-        [0, 4294967295],
+        [0, 4294967295, 4294967295],
     )
     np.testing.assert_allclose(
         dataset["mag_4s_b_gse"].isel(epoch=0).values,
