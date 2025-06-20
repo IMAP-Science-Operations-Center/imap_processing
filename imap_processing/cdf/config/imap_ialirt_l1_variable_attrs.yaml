@@ -215,147 +215,21 @@ swapi_pseudo_proton_temperature:
   VALIDMAX: 50000000.0
 
 # SWE Normalized Counts, First Half Cycle
-swe_normalized_counts_half_1_esa_0:
+swe_normalized_counts_half_1:
   <<: *default_uint32
   CATDESC: Normalized electron counts (Half Cycle 1, ESA step 0)
-  FIELDNAM: swe_normalized_counts_half_1_esa_0
+  FIELDNAM: swe_normalized_counts_half_1
   LABLAXIS: swe_norm_cts_q1_esa0
   UNITS: Normalized counts
   VALIDMIN: 0
   VALIDMAX: 500000
 
-swe_normalized_counts_half_1_esa_1:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 1, ESA step 1)
-  FIELDNAM: swe_normalized_counts_half_1_esa_1
-  LABLAXIS: swe_norm_cts_q1_esa1
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_1_esa_2:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 1, ESA step 2)
-  FIELDNAM: swe_normalized_counts_half_1_esa_2
-  LABLAXIS: swe_norm_cts_q1_esa2
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_1_esa_3:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 1, ESA step 3)
-  FIELDNAM: swe_normalized_counts_half_1_esa_3
-  LABLAXIS: swe_norm_cts_q1_esa3
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_1_esa_4:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 1, ESA step 4)
-  FIELDNAM: swe_normalized_counts_half_1_esa_4
-  LABLAXIS: swe_norm_cts_q1_esa4
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_1_esa_5:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 1, ESA step 5)
-  FIELDNAM: swe_normalized_counts_half_1_esa_5
-  LABLAXIS: swe_norm_cts_q1_esa5
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_1_esa_6:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 1, ESA step 6)
-  FIELDNAM: swe_normalized_counts_half_1_esa_6
-  LABLAXIS: swe_norm_cts_q1_esa6
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_1_esa_7:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 1, ESA step 7)
-  FIELDNAM: swe_normalized_counts_half_1_esa_7
-  LABLAXIS: swe_norm_cts_q1_esa7
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
 # SWE Normalized Counts, Second Half Cycle
-swe_normalized_counts_half_2_esa_0:
+swe_normalized_counts_half_2:
   <<: *default_uint32
   CATDESC: Normalized electron counts (Half Cycle 2, ESA step 0)
-  FIELDNAM: swe_normalized_counts_half_2_esa_0
+  FIELDNAM: swe_normalized_counts_half_2
   LABLAXIS: swe_norm_cts_q2_esa0
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_2_esa_1:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 2, ESA step 1)
-  FIELDNAM: swe_normalized_counts_half_2_esa_1
-  LABLAXIS: swe_norm_cts_q2_esa1
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_2_esa_2:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 2, ESA step 2)
-  FIELDNAM: swe_normalized_counts_half_2_esa_2
-  LABLAXIS: swe_norm_cts_q2_esa2
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_2_esa_3:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 2, ESA step 3)
-  FIELDNAM: swe_normalized_counts_half_2_esa_3
-  LABLAXIS: swe_norm_cts_q2_esa3
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_2_esa_4:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 2, ESA step 4)
-  FIELDNAM: swe_normalized_counts_half_2_esa_4
-  LABLAXIS: swe_norm_cts_q2_esa4
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_2_esa_5:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 2, ESA step 5)
-  FIELDNAM: swe_normalized_counts_half_2_esa_5
-  LABLAXIS: swe_norm_cts_q2_esa5
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_2_esa_6:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 2, ESA step 6)
-  FIELDNAM: swe_normalized_counts_half_2_esa_6
-  LABLAXIS: swe_norm_cts_q2_esa6
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_2_esa_7:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 2, ESA step 7)
-  FIELDNAM: swe_normalized_counts_half_2_esa_7
-  LABLAXIS: swe_norm_cts_q2_esa7
   UNITS: Normalized counts
   VALIDMIN: 0
   VALIDMAX: 500000
