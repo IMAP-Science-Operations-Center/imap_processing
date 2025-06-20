@@ -89,7 +89,7 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
         if all(x not in field for x in ["hdr", "spare", "pha"]):
             parsed_data = np.vectorize(decompress_rates_16_to_32)(parsed_data)
 
-        # Get dims for data variables (yaml file not created yet)
+        # Get dims for data variables
         if len(field_meta.shape) > 1:
             if "sectorates" in field:
                 # Reshape data to 15x8 for azimuth and zenith look directions

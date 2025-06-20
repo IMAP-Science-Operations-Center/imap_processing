@@ -351,28 +351,41 @@ def test_process_standard_rates_data(l1a_counts_dataset, livetime):
         "dynamic_threshold_state",
     }
 
-    valid_coords = [
+    valid_coords = {
         "epoch",
         "gain",
+        "gain_label",
         "sngrates_index",
+        "sngrates_index_label",
         "coinrates_index",
+        "coinrates_index_label",
         "pbufrates_index",
+        "pbufrates_index_label",
         "l2fgrates_index",
+        "l2fgrates_index_label",
         "l2bgrates_index",
+        "l2bgrates_index_label",
         "l3fgrates_index",
+        "l3fgrates_index_label",
         "l3bgrates_index",
+        "l3bgrates_index_label",
         "penfgrates_index",
+        "penfgrates_index_label",
         "penbgrates_index",
+        "penbgrates_index_label",
         "ialirtrates_index",
+        "ialirtrates_index_label",
         "l4fgrates_index",
+        "l4fgrates_index_label",
         "l4bgrates_index",
-    ]
+        "l4bgrates_index_label",
+    }
 
     # Check that the dataset has the correct variables
     assert valid_data_vars == set(l1b_standard_rates_dataset.data_vars.keys()), (
         "Data variables mismatch"
     )
-    assert valid_coords == list(l1b_standard_rates_dataset.coords), (
+    assert valid_coords == set(l1b_standard_rates_dataset.coords), (
         "Coordinates mismatch"
     )
 
@@ -387,15 +400,23 @@ def test_process_sectored_rates_data(l1a_counts_dataset, livetime):
     # Check that a xarray dataset is returned
     assert isinstance(l1b_sectored_rates_dataset, xr.Dataset)
 
+    # Define the data variables that should be present in the dataset
     valid_coords = {
         "epoch",
         "zenith",
+        "zenith_label",
         "azimuth",
+        "azimuth_label",
         "h_energy_mean",
+        "h_energy_mean_label",
         "he4_energy_mean",
+        "he4_energy_mean_label",
         "cno_energy_mean",
+        "cno_energy_mean_label",
         "nemgsi_energy_mean",
+        "nemgsi_energy_mean_label",
         "fe_energy_mean",
+        "fe_energy_mean_label",
     }
 
     # Check that the dataset has the correct coords and variables

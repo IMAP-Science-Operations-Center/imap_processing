@@ -687,13 +687,20 @@ def test_process_macropixel_intensity(
 
     valid_coords = {
         "epoch",
-        "azimuth",
         "zenith",
+        "zenith_label",
+        "azimuth",
+        "azimuth_label",
         "h_energy_mean",
+        "h_energy_mean_label",
         "he4_energy_mean",
+        "he4_energy_mean_label",
         "cno_energy_mean",
+        "cno_energy_mean_label",
         "nemgsi_energy_mean",
+        "nemgsi_energy_mean_label",
         "fe_energy_mean",
+        "fe_energy_mean_label",
     }
 
     # Check that the dataset has the correct coords and variables

@@ -279,39 +279,38 @@ def process_science(
     # Calculate uncertainties for count rates
     count_rates_dataset = calculate_uncertainties(count_rates_dataset)
 
-    # Logical sources for the two products.
-    logical_sources = ["imap_hit_l1a_counts", "imap_hit_l1a_direct-events"]
+    l1a_datasets: dict = {
+        "imap_hit_l1a_counts": count_rates_dataset,
+        "imap_hit_l1a_direct-events": pha_raw_dataset,
+    }
 
-    datasets = []
     # Update attributes and dimensions
-    for ds, logical_source in zip(
-        [count_rates_dataset, pha_raw_dataset], logical_sources
-    ):
+    for logical_source, ds in l1a_datasets.items():
         ds.attrs = attr_mgr.get_global_attributes(logical_source)
 
-        # TODO: Add CDF attributes to yaml once they're defined for L1A science data
         # Assign attributes and dimensions to each data array in the Dataset
         for field in ds.data_vars.keys():
             try:
-                # Create a dict of dimensions using the DEPEND_I keys in the
-                # attributes
-                dims = {
-                    key: value
-                    for key, value in attr_mgr.get_variable_attributes(field).items()
-                    if "DEPEND" in key
-                }
                 ds[field].attrs = attr_mgr.get_variable_attributes(field)
-                ds[field].assign_coords(dims)
             except KeyError:
                 print(f"Field {field} not found in attribute manager.")
                 logger.warning(f"Field {field} not found in attribute manager.")
 
-        # Skip schema check for epoch to prevent attr_mgr from adding the
-        # DEPEND_0 attribute which isn't required for epoch
-        ds.epoch.attrs = attr_mgr.get_variable_attributes("epoch", check_schema=False)
-
-        datasets.append(ds)
+        # check_schema=False to avoid attr_mgr adding stuff dimensions don't need
+        for dim in ds.dims:
+            ds[dim].attrs = attr_mgr.get_variable_attributes(dim, check_schema=False)
+            # TODO: should labels be added as coordinates? Check with SPDF
+            if dim != "epoch":
+                label_array = xr.DataArray(
+                    ds[dim].values.astype(str),
+                    name=f"{dim}_label",
+                    dims=[dim],
+                    attrs=attr_mgr.get_variable_attributes(
+                        f"{dim}_label", check_schema=False
+                    ),
+                )
+                ds.coords[f"{dim}_label"] = label_array
 
         logger.info(f"HIT L1A dataset created for {logical_source}")
 
-    return datasets
+    return list(l1a_datasets.values())
