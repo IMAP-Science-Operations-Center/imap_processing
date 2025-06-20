@@ -24,7 +24,7 @@ def test_create_dataset():
             "met": 124,
             "utc": "2025-05-21T15:00:00",
             "ttj2000ns": Decimal("222000000000"),
-            "swe_normalized_counts_half_1_esa_0": Decimal("123"),
+            "swe_normalized_counts_half_1": Decimal("123"),
         },
     ]
 

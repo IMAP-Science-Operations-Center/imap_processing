@@ -7,7 +7,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ialirt.utils.constants import IALIRT_KEYS
 
 
-def create_xarray_from_records(records: list[dict]) -> xr.Dataset:
+def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0912
     """
     Create dataset from a list of records.
 
@@ -62,11 +62,19 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:
             data = np.full((n, 3), fillval, dtype=np.float32)
             dims = ["epoch", "component"]
             dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
+        elif key.startswith("codicehi"):
+            data = np.full((n, 15, 4, 4), fillval, dtype=np.float32)
+            dims = ["epoch", "energy", "azimuth", "spin_angle"]
+            dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
         elif key == "swe_counterstreaming_electrons":
             data = np.full(n, fillval, dtype=np.uint8)
             dims = ["epoch"]
             dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
-        elif key.startswith(("hit", "swe")):
+        elif key.startswith("swe"):
+            data = np.full((n, 8), fillval, dtype=np.uint32)
+            dims = ["epoch", "esa_step"]
+            dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
+        elif key.startswith("hit"):
             data = np.full(n, fillval, dtype=np.uint32)
             dims = ["epoch"]
             dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
@@ -77,11 +85,14 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:
 
     # Populate the dataset variables
     for i, record in enumerate(records):
-        for key in record.keys():
-            val = record[key]
+        for key, val in record.items():
             if key.startswith("mag"):
-                dataset[key].data[i] = [direction for direction in val]
-            elif key in instrument_keys:
+                dataset[key].data[i, :] = val
+            elif key.startswith("swe_normalized_counts"):
+                dataset[key].data[i, :] = val
+            elif key.startswith("codicehi"):
+                dataset[key].data[i, :, :, :] = val
+            else:
                 dataset[key].data[i] = val
 
     return dataset
