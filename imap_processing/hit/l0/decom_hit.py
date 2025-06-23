@@ -314,7 +314,9 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
         )
 
     # Add new data variables to the dataset and update epoch coordinate
-    sci_dataset.coords["epoch"] = xr.DataArray(epoch_per_science_frame, dims=["epoch"])
+    sci_dataset.coords["epoch"] = xr.DataArray(
+        np.array(epoch_per_science_frame, dtype=np.int64), dims=["epoch"]
+    )
     sci_dataset["count_rates_raw"] = xr.DataArray(
         count_rates, dims=["epoch"], name="count_rates_raw"
     )
