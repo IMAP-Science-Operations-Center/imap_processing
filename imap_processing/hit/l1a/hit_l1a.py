@@ -13,7 +13,11 @@ from imap_processing.hit.hit_utils import (
     get_datasets_by_apid,
     process_housekeeping_data,
 )
-from imap_processing.hit.l0.constants import MOD_10_MAPPING
+from imap_processing.hit.l0.constants import (
+    AZIMUTH_ANGLES,
+    MOD_10_MAPPING,
+    ZENITH_ANGLES,
+)
 from imap_processing.hit.l0.decom_hit import decom_hit
 
 logger = logging.getLogger(__name__)
@@ -104,12 +108,16 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> xr.Dataset:
     hdr_min_count_mod_10 = updated_dataset.hdr_minute_cnt.values % 10
 
     # Reference mod 10 mapping to initialize data structure for species and
-    # energy ranges and add 15x8 arrays with fill values for each science frame.
+    # energy ranges and add arrays with fill values for each science frame.
     num_frames = len(hdr_min_count_mod_10)
     data_by_species_and_energy_range = {
         key: {
             **value,
-            "counts": np.full((num_frames, 15, 8), fill_value=fillval, dtype=np.int64),
+            "counts": np.full(
+                (num_frames, len(AZIMUTH_ANGLES), len(ZENITH_ANGLES)),
+                fill_value=fillval,
+                dtype=np.int64,
+            ),
         }
         for key, value in MOD_10_MAPPING.items()
     }
