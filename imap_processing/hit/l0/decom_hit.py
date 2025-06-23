@@ -297,7 +297,7 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
     # Extract data per science frame and organize by L1A data products
     count_rates = []
     pha = []
-    epoch_per_science_frame = np.array([])
+    epoch_per_science_frame = []
     for idx in starting_indices:
         # Data from 20 packets in a science frame
         science_data_frame = science_data[idx : idx + FRAME_SIZE]
@@ -306,14 +306,12 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
         # Last 14 packets contain pulse height event data in binary
         pha.append("".join(science_data_frame[6:]))
         # Get the mean epoch in the frame to use as the data collection time
-        epoch_per_science_frame = np.append(
-            epoch_per_science_frame,
-            np.mean([epoch_data[idx], epoch_data[idx + FRAME_SIZE - 1]]),
+        epoch_per_science_frame.append(
+            np.mean([epoch_data[idx], epoch_data[idx + FRAME_SIZE - 1]])
         )
 
     # Add new data variables to the dataset and update epoch coordinate
-    sci_dataset = sci_dataset.drop_vars("epoch")
-    sci_dataset.coords["epoch"] = epoch_per_science_frame
+    sci_dataset.coords["epoch"] = xr.DataArray(epoch_per_science_frame, dims=["epoch"])
     sci_dataset["count_rates_raw"] = xr.DataArray(
         count_rates, dims=["epoch"], name="count_rates_raw"
     )
