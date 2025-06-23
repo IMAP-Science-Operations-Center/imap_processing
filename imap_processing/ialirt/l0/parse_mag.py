@@ -390,7 +390,7 @@ def process_packet(
             {
                 "apid": 478,
                 "met": int(met.values.min()),
-                "utc": met_to_utc(met.values.min()).split(".")[0],
+                "met_in_utc": met_to_utc(met.values.min()).split(".")[0],
                 "ttj2000ns": int(met_to_ttj2000ns(met.values.min())),
                 "mag_4s_b_gse": [Decimal("0.0") for _ in range(3)],
                 "mag_4s_b_gsm": [Decimal("0.0") for _ in range(3)],

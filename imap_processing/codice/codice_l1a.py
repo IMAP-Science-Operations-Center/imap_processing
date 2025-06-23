@@ -674,7 +674,9 @@ class CoDICEL1aPipeline:
         self.cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
 
 
-def group_ialirt_data(packets: xr.Dataset, data_field_range: range) -> list[bytearray]:
+def group_ialirt_data(
+    packets: xr.Dataset, data_field_range: range, prefix: str
+) -> list[bytearray]:
     """
     Group together the individual I-ALiRT data fields.
 
@@ -684,6 +686,8 @@ def group_ialirt_data(packets: xr.Dataset, data_field_range: range) -> list[byte
         The dataset containing the I-ALiRT data packets.
     data_field_range : range
         The range of the individual data fields (15 or lo, 6 for hi).
+    prefix : str
+        The prefix used to index the data (i.e. ``cod_lo`` or ``cod_hi``).
 
     Returns
     -------
@@ -693,14 +697,28 @@ def group_ialirt_data(packets: xr.Dataset, data_field_range: range) -> list[byte
     current_data_stream = bytearray()
     grouped_data = []
 
+    # Workaround to get this function working for both I-ALiRT spacecraft
+    # data and CoDICE-specific I-ALiRT test data from Joey
+    # TODO: Once CoDICE I-ALiRT processing is more established, we can probably
+    #       do away with processing the test data from Joey and just use the
+    #       I-ALiRT data that is constructed closer to what we expect in-flight.
+    if hasattr(packets, "acquisition_time"):
+        time_key = "acquisition_time"
+        counter_key = "counter"
+        data_key = "data"
+    else:
+        time_key = f"{prefix}_acq"
+        counter_key = f"{prefix}_counter"
+        data_key = f"{prefix}_data"
+
     # When a counter value of 255 is encountered, this signifies the
     # end of the data stream
-    for packet_num in range(0, len(packets.acquisition_time.data)):
-        counter = packets.counter.data[packet_num]
+    for packet_num in range(0, len(packets[time_key].data)):
+        counter = packets[counter_key].data[packet_num]
         if counter != 255:
             for field in data_field_range:
                 current_data_stream.extend(
-                    bytearray([packets[f"data_{field:02}"].data[packet_num]])
+                    bytearray([packets[f"{data_key}_{field:02}"].data[packet_num]])
                 )
         else:
             # At this point, if there are data, the data stream is ready
@@ -1003,72 +1021,79 @@ def create_ialirt_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     # See sections 10.4.1 and 10.4.2 in the algorithm document
     if apid == CODICEAPID.COD_LO_IAL:
         data_field_range = range(0, 15)
+        prefix = "cod_lo"
     elif apid == CODICEAPID.COD_HI_IAL:
         data_field_range = range(0, 5)
+        prefix = "cod_hi"
 
     # Group together packets of I-ALiRT data to form complete data sets
-    grouped_data = group_ialirt_data(packets, data_field_range)
+    grouped_data = group_ialirt_data(packets, data_field_range, prefix)
 
-    # Process each group to get the science data and corresponding metadata
-    science_values, metadata_values = process_ialirt_data_streams(grouped_data)
+    if grouped_data:
+        # Process each group to get the science data and corresponding metadata
+        science_values, metadata_values = process_ialirt_data_streams(grouped_data)
 
-    # How data are processed is different for lo-iarlirt and hi-ialirt
-    if apid == CODICEAPID.COD_HI_IAL:
-        # Set some necessary values and process as a binned dataset similar to
-        # a hi-omni data product
-        metadata_for_processing = [
-            "table_id",
-            "plan_id",
-            "plan_step",
-            "view_id",
-            "spin_period",
-            "suspect",
-        ]
-        for var in metadata_for_processing:
-            packets[var] = metadata_values[var.upper()]
-        dataset = create_binned_dataset(apid, packets, science_values)
+        # How data are processed is different for lo-iarlirt and hi-ialirt
+        if apid == CODICEAPID.COD_HI_IAL:
+            # Set some necessary values and process as a binned dataset similar to
+            # a hi-omni data product
+            metadata_for_processing = [
+                "table_id",
+                "plan_id",
+                "plan_step",
+                "view_id",
+                "spin_period",
+                "suspect",
+            ]
+            for var in metadata_for_processing:
+                packets[var] = metadata_values[var.upper()]
+            dataset = create_binned_dataset(apid, packets, science_values)
 
-    elif apid == CODICEAPID.COD_LO_IAL:
-        # Create a nominal instance of the pipeline and process similar to a
-        # lo-sw-species data product
-        pipeline = CoDICEL1aPipeline(
-            metadata_values["TABLE_ID"][0],
-            metadata_values["PLAN_ID"][0],
-            metadata_values["PLAN_STEP"][0],
-            metadata_values["VIEW_ID"][0],
-        )
-        pipeline.set_data_product_config(apid, packets)
-        pipeline.decompress_data(science_values)
-        pipeline.reshape_data()
+        elif apid == CODICEAPID.COD_LO_IAL:
+            # Create a nominal instance of the pipeline and process similar to a
+            # lo-sw-species data product
+            pipeline = CoDICEL1aPipeline(
+                metadata_values["TABLE_ID"][0],
+                metadata_values["PLAN_ID"][0],
+                metadata_values["PLAN_STEP"][0],
+                metadata_values["VIEW_ID"][0],
+            )
+            pipeline.set_data_product_config(apid, packets)
+            pipeline.decompress_data(science_values)
+            pipeline.reshape_data()
 
-        # The calculate_epoch_values method needs acq_start_seconds and
-        # acq_start_subseconds attributes on the dataset
-        pipeline.dataset["acq_start_seconds"] = (
-            "_",
-            metadata_values["ACQ_START_SECONDS"],
-        )
-        pipeline.dataset["acq_start_subseconds"] = (
-            "_",
-            metadata_values["ACQ_START_SUBSECONDS"],
-        )
+            # The calculate_epoch_values method needs acq_start_seconds and
+            # acq_start_subseconds attributes on the dataset
+            pipeline.dataset["acq_start_seconds"] = (
+                "_",
+                metadata_values["ACQ_START_SECONDS"],
+            )
+            pipeline.dataset["acq_start_subseconds"] = (
+                "_",
+                metadata_values["ACQ_START_SUBSECONDS"],
+            )
 
-        pipeline.define_coordinates()
+            pipeline.define_coordinates()
 
-        # The dataset also needs the metadata that will be carried through
-        # to the final data product
-        for field in [
-            "spin_period",
-            "suspect",
-            "st_bias_gain_mode",
-            "sw_bias_gain_mode",
-            "rgfo_half_spin",
-            "nso_half_spin",
-        ]:
-            pipeline.dataset[field] = ("_", metadata_values[field.upper()])
+            # The dataset also needs the metadata that will be carried through
+            # to the final data product
+            for field in [
+                "spin_period",
+                "suspect",
+                "st_bias_gain_mode",
+                "sw_bias_gain_mode",
+                "rgfo_half_spin",
+                "nso_half_spin",
+            ]:
+                pipeline.dataset[field] = ("_", metadata_values[field.upper()])
 
-        dataset = pipeline.define_data_variables()
+            dataset = pipeline.define_data_variables()
 
-    return dataset
+        return dataset
+
+    else:
+        logger.warning("No I-ALiRT data found")
+        return None
 
 
 def get_de_metadata(packets: xr.Dataset, segment: int) -> bytes:
