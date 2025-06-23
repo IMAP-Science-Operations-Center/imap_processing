@@ -310,7 +310,7 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
         pha.append("".join(science_data_frame[6:]))
         # Get the mean epoch in the frame to use as the data collection time
         epoch_per_science_frame.append(
-            np.mean([epoch_data[idx], epoch_data[idx + FRAME_SIZE - 1]])
+            calculate_epoch_mean(epoch_data, idx, FRAME_SIZE)
         )
 
     # Add new data variables to the dataset and update epoch coordinate
@@ -378,6 +378,31 @@ def decompress_rates_16_to_32(packed: int) -> int:
         decompressed_int = packed
 
     return decompressed_int
+
+
+def calculate_epoch_mean(
+    epoch_data: np.ndarray, idx: int, frame_size: int
+) -> np.floating:
+    """
+    Calculate the mean epoch for a science frame.
+
+    This function is used to get the center collection time for science data.
+
+    Parameters
+    ----------
+    epoch_data : np.ndarray
+        Array of epoch values for every science packet.
+    idx : int
+        Starting index of the science frame.
+    frame_size : int
+        Number of packets in the science frame.
+
+    Returns
+    -------
+    float
+        Mean epoch value for the science frame.
+    """
+    return np.mean([epoch_data[idx], epoch_data[idx + frame_size - 1]])
 
 
 def decom_hit(sci_dataset: xr.Dataset) -> xr.Dataset:
