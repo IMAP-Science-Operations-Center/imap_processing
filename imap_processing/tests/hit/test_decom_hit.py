@@ -200,6 +200,8 @@ def test_assemble_science_frames(sci_dataset):
     updated_dataset = assemble_science_frames(updated_dataset)
     assert "count_rates_raw" in updated_dataset
     assert "pha_raw" in updated_dataset
+    assert "epoch" in updated_dataset.dims
+    assert updated_dataset.epoch.shape == updated_dataset.count_rates_raw.shape
 
 
 @pytest.mark.parametrize(
