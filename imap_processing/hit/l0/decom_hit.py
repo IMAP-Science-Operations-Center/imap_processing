@@ -305,10 +305,13 @@ def assemble_science_frames(sci_dataset: xr.Dataset) -> xr.Dataset:
         count_rates.append("".join(science_data_frame[:6]))
         # Last 14 packets contain pulse height event data in binary
         pha.append("".join(science_data_frame[6:]))
-        # Get first packet's epoch for the science frame
-        epoch_per_science_frame = np.append(epoch_per_science_frame, epoch_data[idx])
+        # Get the mean epoch in the frame to use as the data collection time
+        epoch_per_science_frame = np.append(
+            epoch_per_science_frame,
+            np.mean([epoch_data[idx], epoch_data[idx + FRAME_SIZE - 1]]),
+        )
 
-    # Add new data variables to the dataset
+    # Add new data variables to the dataset and update epoch coordinate
     sci_dataset = sci_dataset.drop_vars("epoch")
     sci_dataset.coords["epoch"] = epoch_per_science_frame
     sci_dataset["count_rates_raw"] = xr.DataArray(
