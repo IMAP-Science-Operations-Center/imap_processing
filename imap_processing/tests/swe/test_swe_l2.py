@@ -255,7 +255,9 @@ def test_put_data_into_angle_bins():
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 @pytest.mark.usefixtures("use_fake_spin_data_for_time")
-def test_swe_l2(mock_get_file_paths, use_fake_spin_data_for_time):
+def test_swe_l2(
+    mock_get_file_paths, use_fake_spin_data_for_time, l2_sector_validation_df
+):
     """Test L2 processing."""
     data_start_time = 453051293.099714
     data_end_time = 453070000.0
@@ -332,3 +334,21 @@ def test_swe_l2(mock_get_file_paths, use_fake_spin_data_for_time):
     l2_dataset.attrs["Data_version"] = "002"
     l2_cdf_filepath = write_cdf(l2_dataset)
     assert l2_cdf_filepath.name == "imap_swe_l2_sci_20240510_v002.cdf"
+
+    print(l2_sector_validation_df.shape)
+    validation_science = l2_sector_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
+    print(
+        "Validation data shape: ",
+        validation_science.data.shape,
+        "L2 dataset shape: ",
+        l2_dataset["phase_space_density_spin_sector"].data.shape,
+    )
+    print("validation_science: ", validation_science[-1, -1, -1, :])
+    print(
+        "L2 dataset: ",
+        l2_dataset["phase_space_density_spin_sector"].data[-1, -1, -1, :],
+    )
+    # np.testing.assert_allclose(
+    #     l2_dataset["phase_space_density_spin_sector"].data,
+    #     validation_science,
+    # )

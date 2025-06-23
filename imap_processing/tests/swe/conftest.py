@@ -107,3 +107,36 @@ def l1b_validation_df():
     # Fill NaNs with the previous value
     df["shcoarse"] = df["shcoarse"].ffill()
     return df
+
+
+@pytest.fixture(scope="session")
+def l2_sector_validation_df():
+    """Read validation data from file"""
+    l1_val_path = imap_module_directory / "tests/swe/l2_validation"
+    filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_v0.dat"
+
+    # Define column names for validation data
+    column_names = [
+        "shcoarse",
+        "cem_1",
+        "cem_2",
+        "cem_3",
+        "cem_4",
+        "cem_5",
+        "cem_6",
+        "cem_7",
+    ]
+
+    # Read the data, specifying na_values and delimiter
+    df = pd.read_csv(
+        l1_val_path / filename,
+        skiprows=14,  # Skip the first 10 rows of comments
+        sep=r"\s*,\s*",  # Regex to handle spaces and commas as delimiters
+        names=column_names,
+        na_values=["", " "],  # Treat empty strings or spaces as NaN
+        engine="python",
+    )
+
+    # Fill NaNs with the previous value
+    df["shcoarse"] = df["shcoarse"].ffill()
+    return df
