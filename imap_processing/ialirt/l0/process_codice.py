@@ -72,7 +72,7 @@ def process_codice(
         epoch_data = {
             "apid": int(dataset.pkt_apid[epoch].data),
             "met": met,
-            "utc": utc,
+            "met_to_utc": utc,
             "ttj2000ns": ttj2000ns,
         }
 
