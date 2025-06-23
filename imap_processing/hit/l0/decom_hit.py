@@ -205,9 +205,12 @@ def update_ccsds_header_dims(sci_dataset: xr.Dataset) -> xr.Dataset:
     it will be updated later in the process to represent
     time per science frame, so another time dimension is
     needed for the ccsds header fields.This function
-    updates the dimension for these fields to use sc_tick
-    instead of epoch. sc_tick is the time the packet was
-    created.
+    updates the dimension for all data vars to use sc_tick
+    instead of epoch. It also temporarily sets sc_tick as the
+    dimension for the epoch coordinate (to be updated later
+    in the assemble_science_frames function).
+
+    Note: sc_tick is the time the packet was created.
 
     Parameters
     ----------
