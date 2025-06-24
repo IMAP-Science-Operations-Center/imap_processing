@@ -64,7 +64,8 @@ class HiConstants:
     TOF3_TICK_DUR = 0.5  # 0.5 ns
 
     # These values are stored in the TOF telemetry when the TOF timer
-    # does not have valid data.
+    # does not have valid data. See IMAP-Hi Algorithm Document Section
+    # 2.2.5 Annotated Direct Events
     TOF1_BAD_VALUES = (511,)
     TOF2_BAD_VALUES = (511,)
     TOF3_BAD_VALUES = (1023,)
