@@ -170,7 +170,7 @@ def process_swapi_ialirt(unpacked_data: xr.Dataset) -> list[dict]:
         logger.warning(
             "There was an issue with the SWAPI grouping process, returning empty data."
         )
-        return [{}]
+        return []
 
     for group in np.unique(grouped_dataset["group"]):
         # Sequence values for the group should be 0-11 with no duplicates.
@@ -202,7 +202,7 @@ def process_swapi_ialirt(unpacked_data: xr.Dataset) -> list[dict]:
         swapi_data.append(
             {
                 "apid": 478,
-                "met": met_values[entry],
+                "met": int(met_values[entry]),
                 "met_in_utc": met_to_utc(met_values[entry]).split(".")[0],
                 "ttj2000ns": int(met_to_ttj2000ns(met_values[entry])),
                 "swapi_pseudo_proton_speed": Decimal(solution["pseudo_speed"][entry]),
