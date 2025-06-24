@@ -196,7 +196,7 @@ def test_process_spacecraft_packet(sc_xarray_data):
 
     # Case 1: Not fixing the sequence number attribute, which is all zeros.
     swapi_product = process_swapi_ialirt(sc_xarray_data)
-    assert swapi_product == [{}]
+    assert swapi_product == []
 
     # Case 2: Overwriting swapi_seq_number to be an acceptable array of numbers.
     # Calculate how many times to tile the sequence to reach length of sc packet
