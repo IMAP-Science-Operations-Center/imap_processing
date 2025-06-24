@@ -343,10 +343,14 @@ def test_swe_l2(
         "L2 dataset shape: ",
         l2_dataset["phase_space_density_spin_sector"].data.shape,
     )
-    print("validation_science: ", validation_science[-1, -1, -1, :])
+    print("validation data: ", validation_science[-1, -1, -1, :])
     print(
-        "L2 dataset: ",
+        "phase_space_density_spin_sector data: ",
         l2_dataset["phase_space_density_spin_sector"].data[-1, -1, -1, :],
+    )
+    print(
+        "flux spin sector: ",
+        l2_dataset["flux_spin_sector"].data[-1, -1, -1, :],
     )
     # np.testing.assert_allclose(
     #     l2_dataset["phase_space_density_spin_sector"].data,
