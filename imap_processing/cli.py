@@ -1122,6 +1122,11 @@ class Mag(ProcessInstrument):
                 mode=DataMode(descriptor_no_frame.upper()),
             )
 
+        for ds in datasets:
+            if not np.all(ds['epoch'].values[1:] > ds['epoch'].values[:-1]):
+                print("ERROR: NOT MONOTONICALLY INCREASING!!!!")
+
+
         return datasets
 
 
