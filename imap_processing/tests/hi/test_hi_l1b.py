@@ -59,16 +59,16 @@ def synthetic_trigger_id_and_tof_data():
     # -----|-------|-------------------------------
     #   0  |   0   | Non-event not recorded
     #   1  |   0   | Can't trigger c2 only
-    #   2  |   2   | trigger_id = 3, tof_3 invalid
-    #   3  |   2   | trigger_id = 3, tof_3 valid
-    #   4  |   2   | trigger_id = 2, no valid tofs
+    #   2  |   1   | trigger_id = 3, tof_3 invalid
+    #   3  |   1   | trigger_id = 3, tof_3 valid
+    #   4  |   1   | trigger_id = 2, no valid tofs
     #   5  |   0   | B and C2 not possible?
-    #   6  |   4   | trigger_id = 2 OR 3, tof_2 valid
-    #   7  |   4   | trigger_id = 2 OR 3, tof_2/3 valid
-    #   8  |   2   | trigger_id = 3, no valid tofs
+    #   6  |   2   | trigger_id = 2 OR 3, tof_2 valid
+    #   7  |   2   | trigger_id = 2 OR 3, tof_2/3 valid
+    #   8  |   1   | trigger_id = 3, no valid tofs
     #   9  |   0   | A and C2 not possible?
-    #  10  |   3   | trigger_id = 1, tof_2 OR trigger_id = 3, tof_1
-    #  11  |   3   | trigger_id = 1, tof_2/3, OR trigger_id = 3, tof_1/3
+    #  10  |   2   | trigger_id = 1, tof_2 OR trigger_id = 3, tof_1
+    #  11  |   2   | trigger_id = 1, tof_2/3, OR trigger_id = 3, tof_1/3
     #  12  |   2   | trigger_id = 1 OR 2, tof_1
     #  13  |   0   | A/B and C2 not possible?
     #  14  |   3   | trigger_id = 1 OR 2 OR 3, tof_1/2
@@ -102,7 +102,7 @@ def synthetic_trigger_id_and_tof_data():
         },
         data_vars=data_vars,
     )
-    expected_histogram = np.array([0, 0, 2, 2, 2, 0, 4, 4, 2, 0, 3, 3, 2, 0, 3, 3])
+    expected_histogram = np.array([0, 0, 1, 1, 1, 0, 2, 2, 1, 0, 2, 2, 2, 0, 3, 3])
     return synthetic_l1a_ds, expected_histogram
 
 

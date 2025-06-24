@@ -65,8 +65,8 @@ class HiConstants:
 
     # These values are stored in the TOF telemetry when the TOF timer
     # does not have valid data.
-    TOF1_BAD_VALUES = (511, 1023)
-    TOF2_BAD_VALUES = (1023,)
+    TOF1_BAD_VALUES = (511,)
+    TOF2_BAD_VALUES = (511,)
     TOF3_BAD_VALUES = (1023,)
 
 
