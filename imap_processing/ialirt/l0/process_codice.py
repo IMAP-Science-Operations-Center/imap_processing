@@ -79,13 +79,13 @@ def process_codice(
         # Add in CoDICE-Lo specific data
         cod_lo_epoch_data = epoch_data.copy()
         for field in constants.CODICE_LO_IAL_DATA_FIELDS:
-            cod_lo_epoch_data[f"codicelo_{field}"] = FILLVAL_FLOAT32
+            cod_lo_epoch_data[f"codicelo_{field}"] = []
         cod_lo_data.append(cod_lo_epoch_data)
 
         # Add in CoDICE-Hi specific data
         cod_hi_epoch_data = epoch_data.copy()
         for field in constants.CODICE_HI_IAL_DATA_FIELDS:
-            cod_hi_epoch_data[f"codicehi_{field}"] = FILLVAL_FLOAT32
+            cod_hi_epoch_data[f"codicehi_{field}"] = []
         cod_hi_data.append(cod_hi_epoch_data)
 
     return cod_lo_data, cod_hi_data
