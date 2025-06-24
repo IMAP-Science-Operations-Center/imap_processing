@@ -117,8 +117,11 @@ def _download_external_data():
     logger = logging.getLogger(__name__)
 
     api_path = "https://api.dev.imap-mission.com/download/test_data/"
-    for source_filename, destination in EXTERNAL_TEST_DATA:
+    for source_filename, destination_path in EXTERNAL_TEST_DATA:
         source = api_path + source_filename
+        destination = (
+            Path(f"{imap_module_directory}/tests") / destination_path / source_filename
+        )
 
         # Download the test data if necessary and write it to the appropriate
         # directory
