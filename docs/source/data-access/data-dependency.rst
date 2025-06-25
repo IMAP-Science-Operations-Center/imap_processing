@@ -45,8 +45,8 @@ meaning, what future files need this file in order to complete processing. For e
 the L1A file, and therefore MAG L1B may be ready to begin processing.
 
 Then, for each anticipated job, the batch starter process checks to see if all the upstream dependencies are met. Although we know we have one of the upstream dependencies for an expected job,
-it's possible that there are other required dependencies that have not yet arrived. If we are missing required dependencies, then the system skip processing and waits for the missing files to arrive.
-Once missing file has arrived, it will trigger the same process, but all the required dependencies will be ready, and therefore processing job will be started.
+it's possible that there are other required dependencies that have not yet arrived. If we are missing any required dependencies, then the system does not kick off the processing job.
+When the missing file arrives, it will trigger the same process of checking for all upstream dependencies. This time all required dependencies will be found and the processing job will be started.
 
 For example, SWAPI L3 requires both SWAPI L2 files and MAG L1D (previously called L2pre) files. The SWAPI L2 job and the MAG L1D job are run independently, so there is no guarantee that they will finish
 at the same time. Let's assume that the MAG L1D job finishes first, since it is the lower level. When that file arrives, one of the downstream dependencies is going to be the SWAPI L3 processing.
