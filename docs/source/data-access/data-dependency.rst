@@ -154,7 +154,7 @@ Relationship
   Triggers processing on file ingestion or a reprocessing event.
 
 - **HARD_NO_TRIGGER**
-  Required data file, but it's assumed to already exist. It doesn't trigger
+  Required data file. However, a new version of this file doesn't trigger
   processing on file ingestion.
   *Example:* leapseconds kernel or frame kernel that doesn't change often.
 
