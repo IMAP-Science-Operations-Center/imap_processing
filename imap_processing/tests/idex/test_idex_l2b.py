@@ -5,18 +5,17 @@ import pytest
 import xarray as xr
 from numpy.testing import assert_array_equal
 
-from imap_processing.cdf.utils import write_cdf
+from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.idex.idex_l2b import (
+    bin_spin_phases,
     get_science_acquisition_timestamps,
     idex_l2b,
-    round_spin_phases,
 )
+from imap_processing.tests.idex.conftest import L1B_EVT_CDF
 
 
 @pytest.fixture
-def l2b_dataset(
-    l2a_dataset: xr.Dataset, decom_test_data_evt: list[xr.Dataset]
-) -> xr.Dataset:
+def l2b_dataset(l2a_dataset: xr.Dataset) -> xr.Dataset:
     """Return a ``xarray`` dataset containing test data.
 
     Returns
@@ -24,7 +23,10 @@ def l2b_dataset(
     dataset : xr.Dataset
         A ``xarray`` dataset containing the test data
     """
-    dataset = idex_l2b(l2a_dataset, [decom_test_data_evt[1], decom_test_data_evt[1]])
+    l1b_evt_dataset = load_cdf(L1B_EVT_CDF)
+    dataset = idex_l2b(
+        [l2a_dataset, l2a_dataset], [l1b_evt_dataset, l1b_evt_dataset]
+    )  # decom_test_data_evt[1]])
     return dataset
 
 
@@ -37,14 +39,14 @@ def test_l2b_logical_source_and_cdf(l2b_dataset: xr.Dataset):
     l2b_dataset : xr.Dataset
         A ``xarray`` dataset containing the test data
     """
-    expected_src = "imap_idex_l2b_sci-1week"
+    expected_src = "imap_idex_l2b_sci-1mo"
     assert l2b_dataset.attrs["Logical_source"] == expected_src
     # Verify the CDF file can be created with no errors.
     l2b_dataset.attrs["Data_version"] = "999"
     file_name = write_cdf(l2b_dataset)
 
     assert file_name.exists()
-    assert file_name.name == "imap_idex_l2b_sci-1week_20231218_v999.cdf"
+    assert file_name.name == "imap_idex_l2b_sci-1mo_20251017_v999.cdf"
 
 
 def test_l2a_cdf_variables(l2b_dataset: xr.Dataset):
@@ -58,17 +60,11 @@ def test_l2a_cdf_variables(l2b_dataset: xr.Dataset):
     """
     expected_vars = [
         "epoch",
-        "science_acquisition_messages",
-        "epoch_science_acquisition",
-        "science_acquisition_values",
         "impact_day_of_year",
-        "spin_phase_quadrants",
-        "target_low_impact_charge",
-        "target_low_dust_mass_estimate",
-        "target_high_impact_charge",
-        "target_high_dust_mass_estimate",
-        "ion_grid_impact_charge",
-        "ion_grid_dust_mass_estimate",
+        "counts_by_charge",
+        "counts_by_mass",
+        "rate_by_charge",
+        "rate_by_mass",
     ]
 
     cdf_vars = l2b_dataset.variables
@@ -80,32 +76,33 @@ def test_l2a_cdf_variables(l2b_dataset: xr.Dataset):
         )
 
 
-def test_round_spin_phases():
-    """Tests that round_spin_phases() produces expected results."""
-    spin_phase_angles = xr.DataArray([90, 1, 10, 200, 359, 179, 100])
-    expected_quadrants = [90, 0, 0, 180, 0, 180, 90]
+def test_bin_spin_phases():
+    """Tests that bin_spin_phases() produces expected results."""
+    # Spin Phase -> 4 bins [315°-45°,45°-135°,135°-225°, 225°-315°]
+    spin_phase_angles = xr.DataArray([314, 315, 316, 90, 1, 10, 200, 359, 179, 100])
+    expected_bins = [4, 1, 1, 2, 1, 1, 3, 1, 3, 2]
 
-    spin_quadrants = round_spin_phases(spin_phase_angles)
-    assert_array_equal(spin_quadrants, expected_quadrants)
+    spin_quadrants = bin_spin_phases(spin_phase_angles)
+    assert_array_equal(spin_quadrants, expected_bins)
 
     # Test with a larger number of random values
     spin_phase_angles = np.random.randint(0, 360, 1000)
-    spin_quadrants = round_spin_phases(spin_phase_angles)
+    spin_quadrants = bin_spin_phases(spin_phase_angles)
     unique_quadrants = np.unique(spin_quadrants)
-    assert set(unique_quadrants) == {0, 90, 180, 270}
+    assert set(unique_quadrants) == {1, 2, 3, 4}
 
-    # Test values that are exactly halfway between quadrants
-    spin_quadrants = round_spin_phases(np.array([45, 135, 225, 315]))
-    assert_array_equal(spin_quadrants, [90, 180, 270, 0])
+    # Test values that are exactly on bin edges
+    spin_quadrants = bin_spin_phases(np.array([315, 45, 135, 225]))
+    assert_array_equal(spin_quadrants, [1, 2, 3, 4])
 
 
-def test_round_spin_phases_warning(caplog):
-    """Tests that round_spin_phases() logs expected out of range warning."""
+def test_bin_spin_phases_warning(caplog):
+    """Tests that bin_spin_phases() logs expected out of range warning."""
     # The last value in the array should trigger a warning since it is >=360.
     spin_phase_angles = xr.DataArray([90, 1, 10, 200, 360])
 
     with caplog.at_level("WARNING"):
-        round_spin_phases(spin_phase_angles)
+        bin_spin_phases(spin_phase_angles)
 
     assert (
         f"Spin phase angles, {spin_phase_angles.data} "

@@ -5,11 +5,10 @@ import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
+from imap_processing.cdf.utils import load_cdf
 from imap_processing.idex.idex_constants import SPICE_ARRAYS
 from imap_processing.idex.idex_l1a import PacketParser
 from imap_processing.idex.idex_l1b import idex_l1b
-from imap_processing.idex.idex_l2a import idex_l2a
-from imap_processing.idex.idex_utils import get_idex_attrs
 
 TEST_DATA_PATH = imap_module_directory / "tests" / "idex" / "test_data"
 
@@ -19,6 +18,9 @@ TEST_L0_FILE_CATLST = TEST_DATA_PATH / "imap_idex_l0_raw_20241206_v001.pkts"  # 
 
 L1A_EXAMPLE_FILE = TEST_DATA_PATH / "idex_l1a_validation_file.h5"
 L1B_EXAMPLE_FILE = TEST_DATA_PATH / "idex_l1b_validation_file.h5"
+
+L2A_CDF = TEST_DATA_PATH / "imap_idex_l2a_sci-1week_20251017_v001.cdf"
+L1B_EVT_CDF = TEST_DATA_PATH / "imap_idex_l1b_evt_20250108_v001.cdf"
 
 pytestmark = pytest.mark.external_test_data
 
@@ -81,19 +83,8 @@ def l2a_dataset(l1b_dataset: xr.Dataset) -> xr.Dataset:
     dataset : xr.Dataset
         A ``xarray`` dataset containing the test data
     """
-    return idex_l2a(l1b_dataset)
-    idex_attrs = get_idex_attrs("l1b")
-    spin_phase_angles = xr.DataArray(
-        np.random.randint(0, 360, len(l1b_dataset.epoch)),
-        dims="epoch",
-        attrs=idex_attrs.get_variable_attributes("spin_phase"),
-    )
-    with mock.patch(
-        "imap_processing.idex.idex_l1b.get_spice_data",
-        return_value={"spin_phase": spin_phase_angles},
-    ):
-        dataset = idex_l2a(idex_l1b(decom_test_data_sci))
-    return dataset
+    l2a_dataset = load_cdf(L2A_CDF)
+    return l2a_dataset
 
 
 @pytest.fixture

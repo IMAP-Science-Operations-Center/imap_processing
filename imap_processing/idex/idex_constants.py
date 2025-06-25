@@ -46,6 +46,11 @@ NS_TO_S = 1e-9
 # Microseconds to seconds conversion
 US_TO_S = 1e-6
 
+# Seconds in a day
+SECONDS_IN_DAY = 86400
+# fg to kg conversion factor
+FG_TO_KG = 1e-15
+
 TARGET_HIGH_FREQUENCY_CUTOFF = 100
 
 TARGET_NOISE_FREQUENCY = 7000
