@@ -123,6 +123,9 @@ def _download_external_data():
             Path(f"{imap_module_directory}/tests") / destination_path / source_filename
         )
 
+        # Create parent directories if they don't exist
+        destination.parent.mkdir(parents=True, exist_ok=True)
+
         # Download the test data if necessary and write it to the appropriate
         # directory
         if not destination.exists():
