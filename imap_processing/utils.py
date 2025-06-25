@@ -347,6 +347,26 @@ def packet_file_to_datasets(
             coords={"epoch": time_data},
         )
         ds = ds.sortby("epoch")
+        # We may get duplicate packets within the packet file if packets were
+        # ingested multiple times by the POC. We want to drop packets where
+        # apid, epoch, and src_seq_ctr are the same.
+
+        # xarray only supports dropping duplicates by index, so we instead go
+        # to pandas multi-index dataframe to identify the unique positions
+        unique_indices = (
+            ds[["src_seq_ctr"]]
+            .to_dataframe()
+            .reset_index()
+            .drop_duplicates()
+            .index.values
+        )
+        nduplicates = len(ds["epoch"]) - len(unique_indices)
+        if nduplicates != 0:
+            logger.warning(
+                f"Found [{nduplicates}] duplicate packets for APID {apid}. "
+                "Dropping duplicate packets and continuing processing."
+            )
+            ds = ds.isel(epoch=unique_indices)
 
         # Strip any leading characters before "." from the field names which was due
         # to the packet_name being a part of the variable name in the XTCE definition
