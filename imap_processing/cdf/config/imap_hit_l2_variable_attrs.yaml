@@ -4,22 +4,22 @@ default_particle_attrs: &default_particle
   VAR_TYPE: data
   DISPLAY_TYPE: spectrogram
   FILLVAL: -1.00E+31
-  VALIDMIN: 0
-  VALIDMAX: 10000000000
+  VALIDMIN: 0.0
+  VALIDMAX: 10000000000.0
   FORMAT: F14.3
   UNITS: 1/(cm^2 s MeV/nuc sr)
   SCALE_TYP: log
   SCALEMIN: 0.0001
-  SCALEMAX: 1000
+  SCALEMAX: 1000.0
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
 
 default_energy_attrs: &default_energy
   VAR_TYPE: support_data
   LABLAXIS: Energy
   FILLVAL: -1.00E+31
-  VALIDMIN: 0
-  VALIDMAX: 1000
-  FORMAT: F5.1
+  VALIDMIN: 0.0
+  VALIDMAX: 1000.0
+  FORMAT: F6.1
   UNITS: MeV/nuc
   SCALE_TYP: log
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Characteristic
@@ -31,8 +31,8 @@ default_energy_delta_attrs: &default_energy_delta
 default_uncertainty_attrs: &default_uncertainty
   DEPEND_0: epoch
   VAR_TYPE: support_data
-  VALIDMIN: 0
-  VALIDMAX: 10000000000
+  VALIDMIN: 0.0
+  VALIDMAX: 10000000000.0
   FILLVAL: -1.00E+31
   FORMAT: F14.3
   UNITS: 1/(cm^2 s MeV/nuc sr)
@@ -41,8 +41,8 @@ default_uncertainty_attrs: &default_uncertainty
 default_angle_attrs: &default_angle
   VAR_TYPE: support_data
   FILLVAL: -1.00E+31
-  VALIDMIN: 0
-  VALIDMAX: 1000
+  VALIDMIN: 0.0
+  VALIDMAX: 1000.0
   FORMAT: F12.2
   UNITS: Deg
   SCALE_TYP: linear
@@ -1610,8 +1610,8 @@ cno_macropixel_intensity:
   LABL_PTR_2: azimuth_label
   LABL_PTR_3: zenith_label
   FIELDNAM: CNO Intensity Macropixel
-  DELTA_MINUS_VAR: c_total_uncert_plus
-  DELTA_PLUS_VAR: c_total_uncert_minus
+  DELTA_MINUS_VAR: cno_total_uncert_plus
+  DELTA_PLUS_VAR: cno_total_uncert_minus
 
 nemgsi_macropixel_intensity:
   <<: *default_particle
@@ -1642,25 +1642,25 @@ fe_macropixel_intensity:
 # Energy Delta Variables
 cno_energy_delta_plus:
   <<: *default_energy_delta
-  DEPEND_0: cno_energy_mean
+  DEPEND_1: cno_energy_mean
   CATDESC: C, N, O energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
   FIELDNAM: CNO energy delta plus
 
 cno_energy_delta_minus:
   <<: *default_energy_delta
-  DEPEND_0: cno_energy_mean
+  DEPEND_1: cno_energy_mean
   CATDESC: C, N, O energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
   FIELDNAM: CNO energy delta minus
 
 nemgsi_energy_delta_plus:
     <<: *default_energy_delta
-    DEPEND_0: nemgsi_energy_mean
+    DEPEND_1: nemgsi_energy_mean
     CATDESC: Ne, Mg, Si energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
     FIELDNAM: NeMgSi energy delta plus
 
 nemgsi_energy_delta_minus:
     <<: *default_energy_delta
-    DEPEND_0: nemgsi_energy_mean
+    DEPEND_1: nemgsi_energy_mean
     CATDESC: Ne, Mg, Si energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
     FIELDNAM: NeMgSi energy delta minus
 
