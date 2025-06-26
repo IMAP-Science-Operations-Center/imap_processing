@@ -199,7 +199,7 @@ def test_add_cdf_attributes():
         assert f"{dim}_attr" in result[dim].attrs
         assert f"{dim}_label" in result.coords
         assert f"{f'{dim}_label'}_attr" in result[f"{dim}_label"].attrs
-        assert list(result[f"{dim}_label"].dims) == [dim]
+        assert list(result[f"{dim}_label"].dims) == [f"{dim}_label"]
 
 
 def test_load_ancillary_data():
