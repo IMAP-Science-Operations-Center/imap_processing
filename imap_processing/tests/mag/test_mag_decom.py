@@ -147,3 +147,22 @@ def test_comparison():
         **attrs,
     )
     assert l0_mismatch != l0_match
+
+
+def test_duplicate_packets(tmpdir):
+    current_directory = Path(__file__).parent
+    packet_file = current_directory / "validation" / "mag_l0_test_data.pkts"
+    # Write the file out twice to double the number of binary packets in
+    # a new file for testing
+    with open(two_files := tmpdir / "two_files.pkts", "wb") as f:
+        with open(packet_file, "rb") as original_file:
+            data = original_file.read()
+            f.write(data)
+            f.write(data)
+
+    packets = decom_packets(str(packet_file))
+    one_file = packets["burst"] + packets["norm"]
+
+    packets = decom_packets(str(two_files))
+    two_file = packets["burst"] + packets["norm"]
+    assert len(two_file) == len(one_file)
