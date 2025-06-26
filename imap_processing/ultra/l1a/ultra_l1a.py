@@ -74,14 +74,12 @@ def ultra_l1a(packet_file: str, apid_input: Optional[int] = None) -> list[xr.Dat
             decom_ultra_dataset = process_ultra_tof(datasets_by_apid[apid])
             gattr_key = ULTRA_TOF.logical_source[ULTRA_TOF.apid.index(apid)]
         elif apid in ULTRA_RATES.apid:
-            compressed_name = "fastdata_00"
             decom_ultra_dataset = process_ultra_rates(datasets_by_apid[apid])
-            decom_ultra_dataset = decom_ultra_dataset.drop_vars(compressed_name)
+            decom_ultra_dataset = decom_ultra_dataset.drop_vars("fastdata_00")
             gattr_key = ULTRA_RATES.logical_source[ULTRA_RATES.apid.index(apid)]
         elif apid in ULTRA_ENERGY_RATES.apid:
-            compressed_name = "ratedata"
             decom_ultra_dataset = process_ultra_energy_rates(datasets_by_apid[apid])
-            decom_ultra_dataset = decom_ultra_dataset.drop_vars(compressed_name)
+            decom_ultra_dataset = decom_ultra_dataset.drop_vars("ratedata")
             gattr_key = ULTRA_ENERGY_RATES.logical_source[
                 ULTRA_ENERGY_RATES.apid.index(apid)
             ]

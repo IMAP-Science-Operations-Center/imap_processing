@@ -262,8 +262,8 @@ def process_ultra_energy_rates(ds: xr.Dataset) -> xr.Dataset:
     """
     decom_data = defaultdict(list)
 
-    for fastdata in ds["ratedata"]:
-        raw_binary_string = convert_to_binary_string(fastdata.item())
+    for rate in ds["ratedata"]:
+        raw_binary_string = convert_to_binary_string(rate.item())
         decompressed_data = decompress_binary(
             raw_binary_string,
             cast(int, ULTRA_ENERGY_RATES.width),
