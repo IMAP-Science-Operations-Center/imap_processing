@@ -137,7 +137,7 @@ def add_cdf_attributes(
             label_array = xr.DataArray(
                 dataset[dim].values.astype(str),
                 name=f"{dim}_label",
-                dims=[dim],
+                dims=[f"{dim}_label"],
                 attrs=attr_mgr.get_variable_attributes(
                     f"{dim}_label", check_schema=False
                 ),
