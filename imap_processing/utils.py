@@ -15,48 +15,6 @@ from imap_processing.spice.time import met_to_ttj2000ns
 logger = logging.getLogger(__name__)
 
 
-def sort_by_time(packets: list, time_key: str) -> list:
-    """
-    Sort packets by specified key.
-
-    Parameters
-    ----------
-    packets : list
-        Decom data packets.
-    time_key : str
-        Key to sort by. Must be a key in the packets data dictionary.
-        e.g. "SHCOARSE" or "MET_TIME" or "ACQ_START_COARSE".
-
-    Returns
-    -------
-    sorted_packets : list
-        Sorted packets.
-    """
-    sorted_packets = sorted(packets, key=lambda x: x[time_key])
-    return sorted_packets
-
-
-def group_by_apid(packets: list) -> dict:
-    """
-    Group data by apid.
-
-    Parameters
-    ----------
-    packets : list
-        Packet list.
-
-    Returns
-    -------
-    grouped_packets : dict
-        Grouped data by apid.
-    """
-    grouped_packets: dict[list] = collections.defaultdict(list)
-    for packet in packets:
-        apid = packet["PKT_APID"]
-        grouped_packets.setdefault(apid, []).append(packet)
-    return grouped_packets
-
-
 def convert_raw_to_eu(
     dataset: xr.Dataset,
     conversion_table_path: str,
