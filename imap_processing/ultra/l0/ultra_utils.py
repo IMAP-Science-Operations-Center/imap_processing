@@ -40,6 +40,18 @@ ULTRA_RATES = PacketProperties(
     len_array=48,
     mantissa_bit_length=12,
 )
+ULTRA_ENERGY_RATES = PacketProperties(
+    apid=[882, 946],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-energy-rates",
+        "imap_ultra_l1a_90sensor-energy-rates",
+    ],
+    addition_to_logical_desc="Image Rates",
+    width=5,
+    block=16,
+    len_array=11,
+    mantissa_bit_length=12,
+)
 ULTRA_TOF = PacketProperties(
     apid=[883, 947],
     logical_source=[
@@ -321,6 +333,32 @@ RATES_KEYS = [
     # "processed_events",
     # Discarded events.
     # "discarded_events"
+]
+
+
+ENERGY_RATES_KEYS = [
+    # SSD0 Energy LED
+    "ssd0_energy_led",
+    # SSD1 Energy LED
+    "ssd1_energy_led",
+    # SSD2 Energy LED
+    "ssd2_energy_led",
+    # SSD3 Energy LED
+    "ssd3_energy_led",
+    # SSD4 Energy LED
+    "ssd4_energy_led",
+    # SSD5 Energy LED
+    "ssd5_energy_led",
+    # SSD6 Energy LED
+    "ssd6_energy_led",
+    # SSD7 Energy LED
+    "ssd7_energy_led",
+    # Event Active Time
+    "event_active_time",
+    # FIFO Valid Events
+    "fifo_valid_events",
+    # Processed Events
+    "processed_events",
 ]
 
 

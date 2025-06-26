@@ -8,6 +8,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ultra.l0.decom_ultra import (
+    process_ultra_energy_rates,
     process_ultra_events,
     process_ultra_rates,
     process_ultra_tof,
@@ -15,6 +16,7 @@ from imap_processing.ultra.l0.decom_ultra import (
 from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_AUX,
     ULTRA_CMD_TEXT,
+    ULTRA_ENERGY_RATES,
     ULTRA_EVENTS,
     ULTRA_HK,
     ULTRA_RATES,
@@ -72,9 +74,17 @@ def ultra_l1a(packet_file: str, apid_input: Optional[int] = None) -> list[xr.Dat
             decom_ultra_dataset = process_ultra_tof(datasets_by_apid[apid])
             gattr_key = ULTRA_TOF.logical_source[ULTRA_TOF.apid.index(apid)]
         elif apid in ULTRA_RATES.apid:
+            compressed_name = "fastdata_00"
             decom_ultra_dataset = process_ultra_rates(datasets_by_apid[apid])
-            decom_ultra_dataset = decom_ultra_dataset.drop_vars("fastdata_00")
+            decom_ultra_dataset = decom_ultra_dataset.drop_vars(compressed_name)
             gattr_key = ULTRA_RATES.logical_source[ULTRA_RATES.apid.index(apid)]
+        elif apid in ULTRA_ENERGY_RATES.apid:
+            compressed_name = "ratedata"
+            decom_ultra_dataset = process_ultra_energy_rates(datasets_by_apid[apid])
+            decom_ultra_dataset = decom_ultra_dataset.drop_vars(compressed_name)
+            gattr_key = ULTRA_ENERGY_RATES.logical_source[
+                ULTRA_ENERGY_RATES.apid.index(apid)
+            ]
         elif apid in ULTRA_EVENTS.apid:
             decom_ultra_dataset = process_ultra_events(datasets_by_apid[apid])
             gattr_key = ULTRA_EVENTS.logical_source[ULTRA_EVENTS.apid.index(apid)]

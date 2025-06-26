@@ -83,6 +83,78 @@ sid:
   UNITS: " "
   DEPEND_0: epoch
 
+ssd0_energy_led:
+  <<: *default_uint32
+  CATDESC: SSD0 Energy LED.
+  FIELDNAM: ssd0_energy_led
+  LABLAXIS: ssd0 energy led
+  UNITS: " "
+  DEPEND_0: epoch
+
+ssd1_energy_led:
+  <<: *default_uint32
+  CATDESC: SSD1 Energy LED.
+  FIELDNAM: ssd1_energy_led
+  LABLAXIS: ssd1 energy led
+  UNITS: " "
+  DEPEND_0: epoch
+
+ssd2_energy_led:
+  <<: *default_uint32
+  CATDESC: SSD2 Energy LED.
+  FIELDNAM: ssd2_energy_led
+  LABLAXIS: ssd2 energy led
+  UNITS: " "
+  DEPEND_0: epoch
+
+ssd3_energy_led:
+  <<: *default_uint32
+  CATDESC: SSD3 Energy LED.
+  FIELDNAM: ssd3_energy_led
+  LABLAXIS: ssd3 energy led
+  UNITS: " "
+  DEPEND_0: epoch
+
+ssd4_energy_led:
+  <<: *default_uint32
+  CATDESC: SSD4 Energy LED.
+  FIELDNAM: ssd4_energy_led
+  LABLAXIS: ssd4 energy led
+  UNITS: " "
+  DEPEND_0: epoch
+
+ssd5_energy_led:
+  <<: *default_uint32
+  CATDESC: SSD5 Energy LED.
+  FIELDNAM: ssd5_energy_led
+  LABLAXIS: ssd5 energy led
+  UNITS: " "
+  DEPEND_0: epoch
+
+ssd6_energy_led:
+  <<: *default_uint32
+  CATDESC: SSD6 Energy LED.
+  FIELDNAM: ssd6_energy_led
+  LABLAXIS: ssd6 energy led
+  UNITS: " "
+  DEPEND_0: epoch
+
+ssd7_energy_led:
+  <<: *default_uint32
+  CATDESC: SSD7 Energy LED.
+  FIELDNAM: ssd7_energy_led
+  LABLAXIS: ssd7 energy led
+  UNITS: " "
+  DEPEND_0: epoch
+
+processed_events:
+  <<: *default_uint32
+  CATDESC: Processed Events.
+  FIELDNAM: processed_events
+  LABLAXIS: processed events
+  UNITS: " "
+  DEPEND_0: epoch
+
 spin:
   <<: *default_uint32
   CATDESC: Spin number.

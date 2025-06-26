@@ -15,8 +15,10 @@ from imap_processing.ultra.l0.decom_tools import (
     read_image_raw_events_binary,
 )
 from imap_processing.ultra.l0.ultra_utils import (
+    ENERGY_RATES_KEYS,
     EVENT_FIELD_RANGES,
     RATES_KEYS,
+    ULTRA_ENERGY_RATES,
     ULTRA_RATES,
     ULTRA_TOF,
 )
@@ -237,6 +239,41 @@ def process_ultra_rates(ds: xr.Dataset) -> xr.Dataset:
 
         for index in range(cast(int, ULTRA_RATES.len_array)):
             decom_data[RATES_KEYS[index]].append(decompressed_data[index])
+
+    for key, values in decom_data.items():
+        ds[key] = xr.DataArray(np.array(values), dims=["epoch"])
+
+    return ds
+
+
+def process_ultra_energy_rates(ds: xr.Dataset) -> xr.Dataset:
+    """
+    Unpack and decode Ultra ENERGY RATES packets.
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+       Energy rates dataset.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Dataset containing the decoded and decompressed data.
+    """
+    decom_data = defaultdict(list)
+
+    for fastdata in ds["ratedata"]:
+        raw_binary_string = convert_to_binary_string(fastdata.item())
+        decompressed_data = decompress_binary(
+            raw_binary_string,
+            cast(int, ULTRA_ENERGY_RATES.width),
+            cast(int, ULTRA_ENERGY_RATES.block),
+            cast(int, ULTRA_ENERGY_RATES.len_array),
+            cast(int, ULTRA_ENERGY_RATES.mantissa_bit_length),
+        )
+
+        for index in range(cast(int, ULTRA_ENERGY_RATES.len_array)):
+            decom_data[ENERGY_RATES_KEYS[index]].append(decompressed_data[index])
 
     for key, values in decom_data.items():
         ds[key] = xr.DataArray(np.array(values), dims=["epoch"])
