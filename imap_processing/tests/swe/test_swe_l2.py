@@ -346,15 +346,15 @@ def test_swe_l2(
         for cycle in np.arange(len(sector_psd_data)):
             for esa_idx in np.arange(swe_constants.N_ESA_STEPS):
                 for angle_idx in np.arange(swe_constants.N_ANGLE_BINS):
-                    # if val_zero_indices.size != psd_zero_indices.size:
-                    print(
-                        f"Cycle {cycle}, ESA {esa_idx:02d}, Angle {angle_idx:02d}: "
-                        "Validation data: "
-                        f"{np.array2string(validation_science[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}, "
-                        "L2 PSD data: "
-                        f"{np.array2string(l2_dataset['phase_space_density_spin_sector'].data[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}",
-                        file=f,
-                    )
+                    if cycle == 5:
+                        print(
+                            f"Cycle {cycle}, ESA {esa_idx:02d}, Angle {angle_idx:02d}: "
+                            "Validation data: "
+                            f"{np.array2string(validation_science[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}, "
+                            "L2 PSD data: "
+                            f"{np.array2string(l2_dataset['phase_space_density_spin_sector'].data[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}",
+                            file=f,
+                        )
 
     print("------binned validation data--------")
     bin_val = l2_binned_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
@@ -366,15 +366,15 @@ def test_swe_l2(
         for cycle in np.arange(len(bin_psd_data)):
             for esa_idx in np.arange(swe_constants.N_ESA_STEPS):
                 for angle_idx in np.arange(swe_constants.N_ANGLE_BINS):
-                    # if val_zero_indices.size != psd_zero_indices.size:
-                    print(
-                        f"Cycle {cycle}, ESA {esa_idx:02d}, Angle {angle_idx:02d}: "
-                        "Validation data: "
-                        f"{np.array2string(bin_val[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}, "
-                        "L2 PSD data: "
-                        f"{np.array2string(bin_psd_data[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}",
-                        file=f,
-                    )
+                    if cycle == 5:
+                        print(
+                            f"Cycle {cycle}, ESA {esa_idx:02d}, Angle {angle_idx:02d}: "
+                            "Validation data: "
+                            f"{np.array2string(bin_val[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}, "
+                            "L2 PSD data: "
+                            f"{np.array2string(bin_psd_data[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}",
+                            file=f,
+                        )
 
     # -----------------------------------------------------------
     # ;;; V_ESA steps in Volts (email to Tenzin on 23 Sept 2024):
