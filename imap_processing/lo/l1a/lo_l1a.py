@@ -51,74 +51,59 @@ def lo_l1a(dependency: Path) -> list[xr.Dataset]:
     attr_mgr.add_instrument_global_attrs(instrument="lo")
     attr_mgr.add_instrument_variable_attrs(instrument="lo", level="l1a")
 
+    datasets_to_return = []
+
     if LoAPID.ILO_SPIN in datasets_by_apid:
         logger.info(
             f"\nProcessing {LoAPID(LoAPID.ILO_SPIN).name} "
             f"packet (APID: {LoAPID.ILO_SPIN.value})"
         )
         logical_source = "imap_lo_l1a_spin"
-        datasets_by_apid[LoAPID.ILO_SPIN] = organize_spin_data(
-            datasets_by_apid[LoAPID.ILO_SPIN], attr_mgr
-        )
-
-        datasets_by_apid[LoAPID.ILO_SPIN] = add_dataset_attrs(
-            datasets_by_apid[LoAPID.ILO_SPIN], attr_mgr, logical_source
-        )
+        ds = datasets_by_apid[LoAPID.ILO_SPIN]
+        ds = organize_spin_data(ds, attr_mgr)
+        ds = add_dataset_attrs(ds, attr_mgr, logical_source)
+        datasets_to_return.append(ds)
     if LoAPID.ILO_SCI_CNT in datasets_by_apid:
         logger.info(
             f"\nProcessing {LoAPID(LoAPID.ILO_SCI_CNT).name} "
             f"packet (APID: {LoAPID.ILO_SCI_CNT.value})"
         )
         logical_source = "imap_lo_l1a_histogram"
-        datasets_by_apid[LoAPID.ILO_SCI_CNT] = parse_histogram(
-            datasets_by_apid[LoAPID.ILO_SCI_CNT], attr_mgr
-        )
-        datasets_by_apid[LoAPID.ILO_SCI_CNT] = add_dataset_attrs(
-            datasets_by_apid[LoAPID.ILO_SCI_CNT], attr_mgr, logical_source
-        )
+        ds = datasets_by_apid[LoAPID.ILO_SCI_CNT]
+        ds = parse_histogram(ds, attr_mgr)
+        ds = add_dataset_attrs(ds, attr_mgr, logical_source)
+        datasets_to_return.append(ds)
     if LoAPID.ILO_SCI_DE in datasets_by_apid:
         logger.info(
             f"\nProcessing {LoAPID(LoAPID.ILO_SCI_DE).name} "
             f"packet (APID: {LoAPID.ILO_SCI_DE.value})"
         )
         logical_source = "imap_lo_l1a_de"
-        datasets_by_apid[LoAPID.ILO_SCI_DE]["data"] = xr.DataArray(
-            [
-                convert_to_binary_string(data)
-                for data in datasets_by_apid[LoAPID.ILO_SCI_DE]["data"].values
-            ],
-            dims=datasets_by_apid[LoAPID.ILO_SCI_DE]["data"].dims,
-            attrs=datasets_by_apid[LoAPID.ILO_SCI_DE]["data"].attrs,
+        ds = datasets_by_apid[LoAPID.ILO_SCI_DE]
+        # Process the "data" array into a string
+        ds["data"] = xr.DataArray(
+            [convert_to_binary_string(data) for data in ds["data"].values],
+            dims=ds["data"].dims,
+            attrs=ds["data"].attrs,
         )
 
-        datasets_by_apid[LoAPID.ILO_SCI_DE] = combine_segmented_packets(
-            datasets_by_apid[LoAPID.ILO_SCI_DE]
-        )
-
-        datasets_by_apid[LoAPID.ILO_SCI_DE] = parse_events(
-            datasets_by_apid[LoAPID.ILO_SCI_DE], attr_mgr
-        )
-        datasets_by_apid[LoAPID.ILO_SCI_DE] = add_dataset_attrs(
-            datasets_by_apid[LoAPID.ILO_SCI_DE], attr_mgr, logical_source
-        )
+        ds = combine_segmented_packets(ds)
+        ds = parse_events(ds, attr_mgr)
+        ds = add_dataset_attrs(ds, attr_mgr, logical_source)
+        datasets_to_return.append(ds)
     if LoAPID.ILO_STAR in datasets_by_apid:
         logger.info(
             f"\nProcessing {LoAPID(LoAPID.ILO_STAR).name} "
             f"packet (APID: {LoAPID.ILO_STAR.value})"
         )
-        datasets_by_apid[LoAPID.ILO_STAR] = process_star_sensor(
-            datasets_by_apid[LoAPID.ILO_STAR]
-        )
+        logical_source = "imap_lo_l1a_star"
+        ds = datasets_by_apid[LoAPID.ILO_STAR]
+        ds = process_star_sensor(ds)
+        ds = add_dataset_attrs(ds, attr_mgr, logical_source)
+        datasets_to_return.append(ds)
 
-    good_apids = [
-        LoAPID.ILO_SPIN,
-        LoAPID.ILO_SCI_CNT,
-        LoAPID.ILO_SCI_DE,
-        LoAPID.ILO_STAR,
-    ]
-    apids_with_data = [apid for apid in good_apids if apid in datasets_by_apid]
-    logger.info(f"\nReturning datasets: {[LoAPID(apid) for apid in apids_with_data]}")
-    return [datasets_by_apid[apid] for apid in apids_with_data]
+    logger.info(f"Returning [{len(datasets_to_return)}] datasets")
+    return datasets_to_return
 
 
 def add_dataset_attrs(
