@@ -328,9 +328,9 @@ def test_swe_l2(
 
     rate = l1b_dataset.science_data.to_numpy()
     psd = l2_dataset.phase_space_density_spin_sector.to_numpy()
-    rate = rate[2, :, :, 3]  # nonzero counts at all energy & spin
+    second_cycle_rate = rate[2, :, :, 3]  # nonzero counts at all energy & spin
     psd = psd[2, :, :, 3]
-    cal_factor = psd / rate  # same CEM, should be constant at a given energy
+    cal_factor = psd / second_cycle_rate  # same CEM, should be constant at a given energy
     assert np.allclose(cal_factor, cal_factor[:, 0:1], rtol=1e-9, atol=0)
 
     # Write L2 to CDF
@@ -340,23 +340,29 @@ def test_swe_l2(
 
     sector_psd_data = l2_dataset["phase_space_density_spin_sector"].data
     validation_science = l2_sector_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
+    esa_energy = l1b_dataset["esa_energy"].data
     with open("sector_val.txt", "w") as f:
         # check that we have correct zero values in same places
         # of validation data and science data
         for cycle in np.arange(len(sector_psd_data)):
             for esa_idx in np.arange(swe_constants.N_ESA_STEPS):
                 for angle_idx in np.arange(swe_constants.N_ANGLE_BINS):
-                    if cycle == 5:
+                    if cycle > 1:
                         print(
                             f"Cycle {cycle}, ESA {esa_idx:02d}, Angle {angle_idx:02d}: "
                             "Validation data: "
                             f"{np.array2string(validation_science[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}, "
+                            # "L1B rate: "
+                            # f"{np.array2string(rate[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}, "
+                            # "ESA energy: "
+                            # f"{np.array2string(esa_energy[cycle], separator=',', max_line_width=np.inf)}, "
                             "L2 PSD data: "
                             f"{np.array2string(l2_dataset['phase_space_density_spin_sector'].data[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}",
                             file=f,
                         )
 
-    print("------binned validation data--------")
+    np.testing.assert_allclose(sector_psd_data, validation_science, rtol=1e-6)
+    # print("------binned validation data--------")
     bin_val = l2_binned_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
     bin_psd_data = l2_dataset["phase_space_density"].data
 
