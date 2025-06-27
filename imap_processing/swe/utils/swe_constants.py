@@ -12,7 +12,7 @@ N_QUARTER_CYCLE_STEPS = 180
 MICROSECONDS_IN_SECOND = 1e6
 
 # TODO: add these to instrument status summary
-ENERGY_CONVERSION_FACTOR = 4.76
+ENERGY_CONVERSION_FACTOR = 4.75
 # 7 CEMs geometric factors in cm^2 sr eV/eV units.
 GEOMETRIC_FACTORS = np.array(
     [
@@ -26,12 +26,12 @@ GEOMETRIC_FACTORS = np.array(
     ]
 )
 
-ELECTRON_MASS = 9.10938e-31  # kg
+ELECTRON_MASS = 9.10938356e-31  # kg
 
 # See doc string of calculate_phase_space_density() for more details.
 VELOCITY_CONVERSION_FACTOR = 1.237e31
 # See doc string of calculate_flux() for more details.
-FLUX_CONVERSION_FACTOR = 6.197e30
+FLUX_CONVERSION_FACTOR = 6.187e30
 
 CEM_DETECTORS_ANGLE = np.array([-63, -42, -21, 0, 21, 42, 63])
 
