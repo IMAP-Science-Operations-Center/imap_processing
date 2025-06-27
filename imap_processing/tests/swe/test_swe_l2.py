@@ -340,74 +340,54 @@ def test_swe_l2(
 
     sector_psd_data = l2_dataset["phase_space_density_spin_sector"].data
     validation_science = l2_sector_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
-    esa_energy = l1b_dataset["esa_energy"].data
-    with open("sector_val.txt", "w") as f:
-        # check that we have correct zero values in same places
-        # of validation data and science data
-        for cycle in np.arange(len(sector_psd_data)):
-            for esa_idx in np.arange(swe_constants.N_ESA_STEPS):
-                for angle_idx in np.arange(swe_constants.N_ANGLE_BINS):
-                    if cycle > 1:
-                        print(
-                            f"Cycle {cycle}, ESA {esa_idx:02d}, Angle {angle_idx:02d}: "
-                            "Validation data: "
-                            f"{np.array2string(validation_science[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}, "
-                            # "L1B rate: "
-                            # f"{np.array2string(rate[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}, "
-                            # "ESA energy: "
-                            # f"{np.array2string(esa_energy[cycle], separator=',', max_line_width=np.inf)}, "
-                            "L2 Sector PSD data: "
-                            f"{np.array2string(l2_dataset['phase_space_density_spin_sector'].data[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}",
-                            file=f,
-                        )
+    # esa_energy = l1b_dataset["esa_energy"].data
+    # with open("sector_val.txt", "w") as f:
+    #     # check that we have correct zero values in same places
+    #     # of validation data and science data
+    #     for cycle in np.arange(len(sector_psd_data)):
+    #         for esa_idx in np.arange(swe_constants.N_ESA_STEPS):
+    #             for angle_idx in np.arange(swe_constants.N_ANGLE_BINS):
+    #                 if cycle > 1:
+    #                     print(
+    #                         f"Cycle {cycle}, ESA {esa_idx:02d}, Angle {angle_idx:02d}: "
+    #                         "Validation data: "
+    #                         f"{np.array2string(validation_science[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}, "
+    #                         # "L1B rate: "
+    #                         # f"{np.array2string(rate[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}, "
+    #                         # "ESA energy: "
+    #                         # f"{np.array2string(esa_energy[cycle], separator=',', max_line_width=np.inf)}, "
+    #                         "L2 Sector PSD data: "
+    #                         f"{np.array2string(l2_dataset['phase_space_density_spin_sector'].data[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}",
+    #                         file=f,
+    #                     )
 
     np.testing.assert_allclose(sector_psd_data, validation_science, rtol=1e-6)
-    # print("------binned validation data--------")
-    bin_val = l2_binned_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
-    bin_psd_data = l2_dataset["phase_space_density"].data
 
-    with open("bin_val.txt", "w") as f:
-        # check that we have correct zero values in same places
-        # of validation data and science data
-        for cycle in np.arange(len(bin_psd_data)):
-            for esa_idx in np.arange(swe_constants.N_ESA_STEPS):
-                for angle_idx in np.arange(swe_constants.N_ANGLE_BINS):
-                    if cycle == 5:
-                        print(
-                            f"Cycle {cycle}, ESA {esa_idx:02d}, Angle {angle_idx:02d}: "
-                            "Validation data: "
-                            f"{np.array2string(bin_val[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}, "
-                            "L2 PSD data: "
-                            f"{np.array2string(bin_psd_data[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}",
-                            file=f,
-                        )
+    # # print("------binned validation data--------")
+    # bin_val = l2_binned_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
+    # bin_psd_data = l2_dataset["phase_space_density"].data
 
-    # -----------------------------------------------------------
-    # ;;; V_ESA steps in Volts (email to Tenzin on 23 Sept 2024):
-    # vesa = [0.56, 0.78, 1.08, 1.51, 2.1, 2.92, 4.06, 5.64, $
-    #         7.85, 10.92, 15.19, 21.13, 29.39, 40.88, 56.87, 79.10, $
-    #         110.03, 153.05, 212.89, 296.14, 411.93, 572.99, 797.03, 1108.66]
+    # Instrument spin phase starts as 153 for SWE because that's the offset angle from
+    # SC angle 0.
+    # [153.96563959 175.97704697 177.96554375 199.97695112 201.9654479
+    # 223.97685528 225.96535206 247.97675943 249.96525621 271.97666359
+    # 273.96515894 295.97656775 297.9650631  319.97647047 321.96496725
+    # 343.97637463 345.96487141   7.97627878   9.96477556  31.97618294
+    # 33.96467972  55.97608709  57.96458387  79.97599125  81.96448803
+    # 103.9758954  105.96439219 127.97579956 129.96429491 151.97570372]
 
-    # ;;; The following code was used to calculate phase space density and flux
-    # ;;; Convert V_ESA to energy in eV (email to Tenzin on 23 Sept 2024):
-    # nrg = double(vesa) * 4.76
-
-    # ;;; Electron mass:
-    # m_e = 9.10938e-31
-
-    # ;;; SWE G (email to Tenzin on 23 Sept 2024):
-    # g = [435.0e-6,599.0e-6,808.0e-6,781.0e-6,876.0e-6,548.0e-6,432.0e-6]
-
-    # ;;; particle velocity = sqrt(2*E/m)
-    # vel4 = 1.237e31 * nrg * nrg
-
-    # Then I calculated phase space density as:
-    #     Phase space density = 2.0 * count_rate[j,m,n,t] / (g[j] * vel4[m])
-
-    # And flux as:
-    #  Flux = 6.197e30 * Phase space density * nrg[m]
-    # -------------------------------------------------------
-    # np.testing.assert_allclose(
-    #     sector_psd_data,
-    #     validation_science,
-    # )
+    # with open("bin_val.txt", "w") as f:
+    #     # check that we have correct zero values in same places
+    #     # of validation data and science data
+    #     for cycle in np.arange(len(bin_psd_data)):
+    #         for esa_idx in np.arange(swe_constants.N_ESA_STEPS):
+    #             for angle_idx in np.arange(swe_constants.N_ANGLE_BINS):
+    #                 if cycle == 5:
+    #                     print(
+    #                         f"Cycle {cycle}, ESA {esa_idx:02d}, Angle {angle_idx:02d}: "
+    #                         "Validation data: "
+    #                         f"{np.array2string(bin_val[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}, "
+    #                         "L2 PSD data: "
+    #                         f"{np.array2string(bin_psd_data[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}",
+    #                         file=f,
+    #                     )
