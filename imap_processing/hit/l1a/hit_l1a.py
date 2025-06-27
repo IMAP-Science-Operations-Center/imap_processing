@@ -297,12 +297,18 @@ def process_science(
         ds.attrs = attr_mgr.get_global_attributes(logical_source)
 
         # Assign attributes and dimensions to each data array in the Dataset
-        for field in ds.data_vars.keys():
+        for var in ds.data_vars.keys():
             try:
-                ds[field].attrs = attr_mgr.get_variable_attributes(field)
+                if "energy_delta" in var:
+                    # skip schema check to avoid DEPEND_0 being added unnecessarily
+                    ds[var].attrs = attr_mgr.get_variable_attributes(
+                        var, check_schema=False
+                    )
+                else:
+                    ds[var].attrs = attr_mgr.get_variable_attributes(var)
             except KeyError:
-                print(f"Field {field} not found in attribute manager.")
-                logger.warning(f"Field {field} not found in attribute manager.")
+                print(f"Field {var} not found in attribute manager.")
+                logger.warning(f"Field {var} not found in attribute manager.")
 
         # check_schema=False to avoid attr_mgr adding stuff dimensions don't need
         for dim in ds.dims:
