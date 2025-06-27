@@ -43,7 +43,7 @@ def decom_packets(packet_file_path: str | Path) -> dict[str, list[MagL0]]:
 
     packet_definition = definitions.XtcePacketDefinition(xtce_document)
 
-    # We use a set for de-duplication, but we also keep a list to keep objects in order.
+    # Store in a dict for de-duplication. Only the keys are returned as a list.
     norm_dict: dict[MagL0, None] = {}
     burst_dict: dict[MagL0, None] = {}
 
