@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <xtce:SpaceSystem xmlns:xtce="http://www.omg.org/space/xtce" name="H45">
-	<xtce:Header date="2024-11-26 00:00:00" version="1" author="IMAP SDC" source_file="TLM_H45_H90_20241126.xlsx" />
+	<xtce:Header date="29/04/2025" version="1.2" author="IMAP SDC" source_file="TLM_H45_H90_20250429.xlsx" />
 	<xtce:TelemetryMetaData>
 		<xtce:ParameterTypeSet>
 			<xtce:IntegerParameterType name="VERSION" signed="false">
@@ -22,6 +22,56 @@
 				<xtce:IntegerDataEncoding sizeInBits="14" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="PKT_LEN" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="H45_MEMDMP.SHCOARSE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="H45_MEMDMP.PACKET_VERSION" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="H45_MEMDMP.SPARE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:EnumeratedParameterType name="H45_MEMDMP.MEMORY_ID" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="16777217" label="MIMEM_RAW" />
+					<xtce:Enumeration value="33554434" label="MIPROM" />
+					<xtce:Enumeration value="67108868" label="MIMRAM" />
+					<xtce:Enumeration value="134217736" label="MISDRAM_CPU" />
+					<xtce:Enumeration value="285212688" label="MISDRAM_SCI" />
+					<xtce:Enumeration value="591733573" label="MICDH_FPGA" />
+					<xtce:Enumeration value="301989920" label="MIHVPSBD1" />
+					<xtce:Enumeration value="335544384" label="MIHVPSBD2" />
+					<xtce:Enumeration value="402653312" label="MIFEEFPGA" />
+					<xtce:Enumeration value="570425856" label="MISCRATCH" />
+					<xtce:Enumeration value="587203328" label="MICPU" />
+					<xtce:Enumeration value="2050814831" label="MIENG_LUT_PRI" />
+					<xtce:Enumeration value="2116893225" label="MIENG_LUT_RED" />
+					<xtce:Enumeration value="1160045761" label="MIENG_LUT_RAM" />
+					<xtce:Enumeration value="763219379" label="MISCI_LUT_PRI" />
+					<xtce:Enumeration value="1973595935" label="MISCI_LUT_RED" />
+					<xtce:Enumeration value="1517368615" label="MISCI_LUT_RAM" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:IntegerParameterType name="H45_MEMDMP.START_ADDRESS" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="H45_MEMDMP.NUM_BYTES" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:BinaryParameterType name="H45_MEMDMP.DUMP_DATA">
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:DynamicValue>
+							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
+							<xtce:LinearAdjustment slope="8" intercept="-168" />
+						</xtce:DynamicValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+			<xtce:IntegerParameterType name="H45_MEMDMP.CKSUM" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="H45_APP_NHK.SHCOARSE" signed="false">
@@ -970,16 +1020,16 @@
 			<xtce:IntegerParameterType name="H45_SCI_DE.SPARE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="20" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="H45_SCI_DE.META_BITMASK" signed="false">
+			<xtce:IntegerParameterType name="H45_SCI_DE.SPARE1" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="H45_SCI_DE.ESA_STEP_NUM" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="H45_SCI_DE.META_SUBSECONDS" signed="false">
+			<xtce:IntegerParameterType name="H45_SCI_DE.ESA_STEP_MILLISECONDS" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="H45_SCI_DE.META_SECONDS" signed="false">
+			<xtce:IntegerParameterType name="H45_SCI_DE.ESA_STEP_SECONDS" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="H45_SCI_DE.DE_TOF">
@@ -1271,6 +1321,56 @@
 			<xtce:IntegerParameterType name="H45_DIAG_FEE.CKSUM" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
 			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="H90_MEMDMP.SHCOARSE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="H90_MEMDMP.PACKET_VERSION" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="H90_MEMDMP.SPARE" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:EnumeratedParameterType name="H90_MEMDMP.MEMORY_ID" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+				<xtce:EnumerationList>
+					<xtce:Enumeration value="16777217" label="MIMEM_RAW" />
+					<xtce:Enumeration value="33554434" label="MIPROM" />
+					<xtce:Enumeration value="67108868" label="MIMRAM" />
+					<xtce:Enumeration value="134217736" label="MISDRAM_CPU" />
+					<xtce:Enumeration value="285212688" label="MISDRAM_SCI" />
+					<xtce:Enumeration value="591733573" label="MICDH_FPGA" />
+					<xtce:Enumeration value="301989920" label="MIHVPSBD1" />
+					<xtce:Enumeration value="335544384" label="MIHVPSBD2" />
+					<xtce:Enumeration value="402653312" label="MIFEEFPGA" />
+					<xtce:Enumeration value="570425856" label="MISCRATCH" />
+					<xtce:Enumeration value="587203328" label="MICPU" />
+					<xtce:Enumeration value="2050814831" label="MIENG_LUT_PRI" />
+					<xtce:Enumeration value="2116893225" label="MIENG_LUT_RED" />
+					<xtce:Enumeration value="1160045761" label="MIENG_LUT_RAM" />
+					<xtce:Enumeration value="763219379" label="MISCI_LUT_PRI" />
+					<xtce:Enumeration value="1973595935" label="MISCI_LUT_RED" />
+					<xtce:Enumeration value="1517368615" label="MISCI_LUT_RAM" />
+				</xtce:EnumerationList>
+			</xtce:EnumeratedParameterType>
+			<xtce:IntegerParameterType name="H90_MEMDMP.START_ADDRESS" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="H90_MEMDMP.NUM_BYTES" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
+			</xtce:IntegerParameterType>
+			<xtce:BinaryParameterType name="H90_MEMDMP.DUMP_DATA">
+				<xtce:BinaryDataEncoding bitOrder="mostSignificantBitFirst">
+					<xtce:SizeInBits>
+						<xtce:DynamicValue>
+							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
+							<xtce:LinearAdjustment slope="8" intercept="-168" />
+						</xtce:DynamicValue>
+					</xtce:SizeInBits>
+				</xtce:BinaryDataEncoding>
+			</xtce:BinaryParameterType>
+			<xtce:IntegerParameterType name="H90_MEMDMP.CKSUM" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="H90_APP_NHK.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
@@ -1386,7 +1486,7 @@
 				<xtce:IntegerDataEncoding sizeInBits="12" encoding="unsigned">
 					<xtce:DefaultCalibrator>
 						<xtce:PolynomialCalibrator>
-							<xtce:Term coefficient="2.243589743589744" exponent="1" />
+							<xtce:Term coefficient="2.243589744" exponent="1" />
 						</xtce:PolynomialCalibrator>
 					</xtce:DefaultCalibrator>
 				</xtce:IntegerDataEncoding>
@@ -2216,16 +2316,16 @@
 			<xtce:IntegerParameterType name="H90_SCI_DE.SPARE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="20" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="H90_SCI_DE.META_BITMASK" signed="false">
+			<xtce:IntegerParameterType name="H90_SCI_DE.SPARE1" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="2" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="H90_SCI_DE.ESA_STEP_NUM" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="4" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="H90_SCI_DE.META_SUBSECONDS" signed="false">
+			<xtce:IntegerParameterType name="H90_SCI_DE.ESA_STEP_MILLISECONDS" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="10" encoding="unsigned" />
 			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="H90_SCI_DE.META_SECONDS" signed="false">
+			<xtce:IntegerParameterType name="H90_SCI_DE.ESA_STEP_SECONDS" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="H90_SCI_DE.DE_TOF">
@@ -2540,6 +2640,28 @@
 			<xtce:Parameter name="PKT_LEN" parameterTypeRef="PKT_LEN">
 				<xtce:LongDescription>CCSDS Packet Length (number of bytes after Packet length minus 1)</xtce:LongDescription>
 			</xtce:Parameter>
+			<xtce:Parameter name="H45_MEMDMP.SHCOARSE" parameterTypeRef="H45_MEMDMP.SHCOARSE" shortDescription="MISSION ELAPSED TIME">
+				<xtce:LongDescription>MISSION ELAPSED TIME</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="H45_MEMDMP.PACKET_VERSION" parameterTypeRef="H45_MEMDMP.PACKET_VERSION" shortDescription="PACKET VERSION">
+				<xtce:LongDescription>PACKET VERSION - THIS WILL BE INCREMENTED EACH TIME THE FORMAT OF THE PACKET CHANGES.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="H45_MEMDMP.SPARE" parameterTypeRef="H45_MEMDMP.SPARE" shortDescription="SPARE FOR ALIGNMENT">
+				<xtce:LongDescription>SPARE FOR ALIGNMENT</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="H45_MEMDMP.MEMORY_ID" parameterTypeRef="H45_MEMDMP.MEMORY_ID" shortDescription="MEMORY ID">
+				<xtce:LongDescription>MEMORY DEVICE/TYPE IDENTIFIER.  INDICATES THE SOURCE FOR THE DATA INCLUDED IN THE DATA FIELD</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="H45_MEMDMP.START_ADDRESS" parameterTypeRef="H45_MEMDMP.START_ADDRESS" shortDescription="START ADDRESS">
+				<xtce:LongDescription>START ADDRESS WITHIN THE DEVICE</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="H45_MEMDMP.NUM_BYTES" parameterTypeRef="H45_MEMDMP.NUM_BYTES" shortDescription="NUMBER OF BYTES IN THE DATA FIELD">
+				<xtce:LongDescription>NUMBER OF BYTES INCLUDED IN THE DATA FIELD (NOT INCLUDING PAD BYTES AND THE PACKET CHECKSUM)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="H45_MEMDMP.DUMP_DATA" parameterTypeRef="H45_MEMDMP.DUMP_DATA" shortDescription="DUMP DATA">
+				<xtce:LongDescription>DUMPED DATA.  SINCE THIS IS A VARIABLE LENGTH FIELD IT WILL ALSO ENCOMPASS ANY PAD BYTES AND THE PACKET CHECKSUM.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="H45_MEMDMP.CKSUM" parameterTypeRef="H45_MEMDMP.CKSUM" shortDescription="CHECKSUM" />
 			<xtce:Parameter name="H45_APP_NHK.SHCOARSE" parameterTypeRef="H45_APP_NHK.SHCOARSE" shortDescription="MISSION ELAPSED TIME">
 				<xtce:LongDescription>MISSION ELAPSED TIME</xtce:LongDescription>
 			</xtce:Parameter>
@@ -2894,23 +3016,24 @@
 MOS SIGNIFICANT BIT IS ALSO THE HIGHEST SPIN</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="H45_SCI_DE.SPARE" parameterTypeRef="H45_SCI_DE.SPARE" shortDescription="SPARE" />
-			<xtce:Parameter name="H45_SCI_DE.META_BITMASK" parameterTypeRef="H45_SCI_DE.META_BITMASK" shortDescription="META_BITMASK IS ALWAYS 0" />
-			<xtce:Parameter name="H45_SCI_DE.ESA_STEP_NUM" parameterTypeRef="H45_SCI_DE.ESA_STEP_NUM" shortDescription="ESA STEP NUMBER" />
-			<xtce:Parameter name="H45_SCI_DE.META_SUBSECONDS" parameterTypeRef="H45_SCI_DE.META_SUBSECONDS" shortDescription="META EVENT FINE CLOCK TICKS" />
-			<xtce:Parameter name="H45_SCI_DE.META_SECONDS" parameterTypeRef="H45_SCI_DE.META_SECONDS" shortDescription="META EVENT COARSE CLOKC TICKS" />
-			<xtce:Parameter name="H45_SCI_DE.DE_TOF" parameterTypeRef="H45_SCI_DE.DE_TOF" shortDescription="VARIABLE LENGTH FIELD FOR DIRECT EVENT TOF DATA. MAX SIZE 665X48 BITS.">
+			<xtce:Parameter name="H45_SCI_DE.SPARE1" parameterTypeRef="H45_SCI_DE.SPARE1" shortDescription="MORE SPARE" />
+			<xtce:Parameter name="H45_SCI_DE.ESA_STEP_NUM" parameterTypeRef="H45_SCI_DE.ESA_STEP_NUM" shortDescription="ONE BASED ESA STEP NUMBER THE PACKET'S DATA CORESPONDS TO">
+				<xtce:LongDescription>ESA STEP NUMBER WHEN THE DATA IS COLLECTED STARTING AT 1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="H45_SCI_DE.ESA_STEP_MILLISECONDS" parameterTypeRef="H45_SCI_DE.ESA_STEP_MILLISECONDS" shortDescription="MILLISECOND PART OF START TIME OF ESA STEP THE PACKET DATA IS FOR">
+				<xtce:LongDescription>TIMESTAMP OF ESA STEP STARTING TIME, MILLISECONDS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="H45_SCI_DE.ESA_STEP_SECONDS" parameterTypeRef="H45_SCI_DE.ESA_STEP_SECONDS" shortDescription="SECOND PART OF START TIME OF ESA STEP THE PACKET DATA IS FOR">
+				<xtce:LongDescription>TIMESTAMP OF ESA STEP STARTING TIME, SECONDS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="H45_SCI_DE.DE_TOF" parameterTypeRef="H45_SCI_DE.DE_TOF" shortDescription="VARIABLE LENGTH FIELD FOR DIRECT EVENT TOF DATA. MAX SIZE 664X48 BITS.">
 				<xtce:LongDescription>DIRECT EVENT TOF DATA.
-LENGTH IS VARIABLE.  MAX IS 665 X 48 BITS
+LENGTH IS VARIABLE.  MAX IS 664 X 48 BITS
 START_BITMASK_DATA - 2 BITS (TA=1, TB=2, TC1=3, META=0)
-IF START_BITMASK != 0
 DE_TAG - 16 BITS
 TOF_1 - 10 BITS
 TOF_2 - 10 BITS
-TOF_3 - 10 BITS
-IF START_BIT_MASK == 0:
-ESA_STEP_NUM - 4 BITS
-MET_SUBSECONDS - 10 BITS
-MET_SECONDS - 32 BITS</xtce:LongDescription>
+TOF_3 - 10 BITS</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="H45_SCI_DE.CKSUM" parameterTypeRef="H45_SCI_DE.CKSUM" shortDescription="PACKET CHECKSUM" />
 			<xtce:Parameter name="H45_DIAG_FEE.SHCOARSE" parameterTypeRef="H45_DIAG_FEE.SHCOARSE" shortDescription="MISSION ELAPSED TIME" />
@@ -3005,6 +3128,28 @@ MET_SECONDS - 32 BITS</xtce:LongDescription>
 			<xtce:Parameter name="H45_DIAG_FEE.FEE_RECV_CMD_COUNT" parameterTypeRef="H45_DIAG_FEE.FEE_RECV_CMD_COUNT" shortDescription="SHOWS HOW MANY COMMANDS ARE RECEIVED FROM THE FEE FROM THE C&amp;DH FPGA" />
 			<xtce:Parameter name="H45_DIAG_FEE.SPARE" parameterTypeRef="H45_DIAG_FEE.SPARE" shortDescription="SPARE FIELD" />
 			<xtce:Parameter name="H45_DIAG_FEE.CKSUM" parameterTypeRef="H45_DIAG_FEE.CKSUM" shortDescription="PACKET CHECKSUM" />
+			<xtce:Parameter name="H90_MEMDMP.SHCOARSE" parameterTypeRef="H90_MEMDMP.SHCOARSE" shortDescription="MISSION ELAPSED TIME">
+				<xtce:LongDescription>MISSION ELAPSED TIME</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="H90_MEMDMP.PACKET_VERSION" parameterTypeRef="H90_MEMDMP.PACKET_VERSION" shortDescription="PACKET VERSION">
+				<xtce:LongDescription>PACKET VERSION - THIS WILL BE INCREMENTED EACH TIME THE FORMAT OF THE PACKET CHANGES.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="H90_MEMDMP.SPARE" parameterTypeRef="H90_MEMDMP.SPARE" shortDescription="SPARE FOR ALIGNMENT">
+				<xtce:LongDescription>SPARE FOR ALIGNMENT</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="H90_MEMDMP.MEMORY_ID" parameterTypeRef="H90_MEMDMP.MEMORY_ID" shortDescription="MEMORY ID">
+				<xtce:LongDescription>MEMORY DEVICE/TYPE IDENTIFIER.  INDICATES THE SOURCE FOR THE DATA INCLUDED IN THE DATA FIELD</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="H90_MEMDMP.START_ADDRESS" parameterTypeRef="H90_MEMDMP.START_ADDRESS" shortDescription="START ADDRESS">
+				<xtce:LongDescription>START ADDRESS WITHIN THE DEVICE</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="H90_MEMDMP.NUM_BYTES" parameterTypeRef="H90_MEMDMP.NUM_BYTES" shortDescription="NUMBER OF BYTES IN THE DATA FIELD">
+				<xtce:LongDescription>NUMBER OF BYTES INCLUDED IN THE DATA FIELD (NOT INCLUDING PAD BYTES AND THE PACKET CHECKSUM)</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="H90_MEMDMP.DUMP_DATA" parameterTypeRef="H90_MEMDMP.DUMP_DATA" shortDescription="DUMP DATA">
+				<xtce:LongDescription>DUMPED DATA.  SINCE THIS IS A VARIABLE LENGTH FIELD IT WILL ALSO ENCOMPASS ANY PAD BYTES AND THE PACKET CHECKSUM.</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="H90_MEMDMP.CKSUM" parameterTypeRef="H90_MEMDMP.CKSUM" shortDescription="CHECKSUM" />
 			<xtce:Parameter name="H90_APP_NHK.SHCOARSE" parameterTypeRef="H90_APP_NHK.SHCOARSE" shortDescription="MISSION ELAPSED TIME">
 				<xtce:LongDescription>MISSION ELAPSED TIME</xtce:LongDescription>
 			</xtce:Parameter>
@@ -3359,23 +3504,24 @@ MET_SECONDS - 32 BITS</xtce:LongDescription>
 MOS SIGNIFICANT BIT IS ALSO THE HIGHEST SPIN</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="H90_SCI_DE.SPARE" parameterTypeRef="H90_SCI_DE.SPARE" shortDescription="SPARE" />
-			<xtce:Parameter name="H90_SCI_DE.META_BITMASK" parameterTypeRef="H90_SCI_DE.META_BITMASK" shortDescription="META_BITMASK IS ALWAYS 0" />
-			<xtce:Parameter name="H90_SCI_DE.ESA_STEP_NUM" parameterTypeRef="H90_SCI_DE.ESA_STEP_NUM" shortDescription="ESA STEP NUMBER" />
-			<xtce:Parameter name="H90_SCI_DE.META_SUBSECONDS" parameterTypeRef="H90_SCI_DE.META_SUBSECONDS" shortDescription="META EVENT FINE CLOCK TICKS" />
-			<xtce:Parameter name="H90_SCI_DE.META_SECONDS" parameterTypeRef="H90_SCI_DE.META_SECONDS" shortDescription="META EVENT COARSE CLOKC TICKS" />
-			<xtce:Parameter name="H90_SCI_DE.DE_TOF" parameterTypeRef="H90_SCI_DE.DE_TOF" shortDescription="VARIABLE LENGTH FIELD FOR DIRECT EVENT TOF DATA. MAX SIZE 665X48 BITS.">
+			<xtce:Parameter name="H90_SCI_DE.SPARE1" parameterTypeRef="H90_SCI_DE.SPARE1" shortDescription="MORE SPARE" />
+			<xtce:Parameter name="H90_SCI_DE.ESA_STEP_NUM" parameterTypeRef="H90_SCI_DE.ESA_STEP_NUM" shortDescription="ONE BASED ESA STEP NUMBER THE PACKET'S DATA CORESPONDS TO">
+				<xtce:LongDescription>ESA STEP NUMBER WHEN THE DATA IS COLLECTED STARTING AT 1</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="H90_SCI_DE.ESA_STEP_MILLISECONDS" parameterTypeRef="H90_SCI_DE.ESA_STEP_MILLISECONDS" shortDescription="MILLISECOND PART OF START TIME OF ESA STEP THE PACKET DATA IS FOR">
+				<xtce:LongDescription>TIMESTAMP OF ESA STEP STARTING TIME, MILLISECONDS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="H90_SCI_DE.ESA_STEP_SECONDS" parameterTypeRef="H90_SCI_DE.ESA_STEP_SECONDS" shortDescription="SECOND PART OF START TIME OF ESA STEP THE PACKET DATA IS FOR">
+				<xtce:LongDescription>TIMESTAMP OF ESA STEP STARTING TIME, SECONDS</xtce:LongDescription>
+			</xtce:Parameter>
+			<xtce:Parameter name="H90_SCI_DE.DE_TOF" parameterTypeRef="H90_SCI_DE.DE_TOF" shortDescription="VARIABLE LENGTH FIELD FOR DIRECT EVENT TOF DATA. MAX SIZE 664X48 BITS.">
 				<xtce:LongDescription>DIRECT EVENT TOF DATA.
-LENGTH IS VARIABLE.  MAX IS 665 X 48 BITS
+LENGTH IS VARIABLE.  MAX IS 664 X 48 BITS
 START_BITMASK_DATA - 2 BITS (TA=1, TB=2, TC1=3, META=0)
-IF START_BITMASK != 0
 DE_TAG - 16 BITS
 TOF_1 - 10 BITS
 TOF_2 - 10 BITS
-TOF_3 - 10 BITS
-IF START_BIT_MASK == 0:
-ESA_STEP_NUM - 4 BITS
-MET_SUBSECONDS - 10 BITS
-MET_SECONDS - 32 BITS</xtce:LongDescription>
+TOF_3 - 10 BITS</xtce:LongDescription>
 			</xtce:Parameter>
 			<xtce:Parameter name="H90_SCI_DE.CKSUM" parameterTypeRef="H90_SCI_DE.CKSUM" shortDescription="PACKET CHECKSUM" />
 			<xtce:Parameter name="H90_DIAG_FEE.SHCOARSE" parameterTypeRef="H90_DIAG_FEE.SHCOARSE" shortDescription="MISSION ELAPSED TIME" />
@@ -3481,6 +3627,23 @@ MET_SECONDS - 32 BITS</xtce:LongDescription>
 					<xtce:ParameterRefEntry parameterRef="SEQ_FLGS" />
 					<xtce:ParameterRefEntry parameterRef="SRC_SEQ_CTR" />
 					<xtce:ParameterRefEntry parameterRef="PKT_LEN" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="H45_MEMDMP">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="740" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="H45_MEMDMP.SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="H45_MEMDMP.PACKET_VERSION" />
+					<xtce:ParameterRefEntry parameterRef="H45_MEMDMP.SPARE" />
+					<xtce:ParameterRefEntry parameterRef="H45_MEMDMP.MEMORY_ID" />
+					<xtce:ParameterRefEntry parameterRef="H45_MEMDMP.START_ADDRESS" />
+					<xtce:ParameterRefEntry parameterRef="H45_MEMDMP.NUM_BYTES" />
+					<xtce:ParameterRefEntry parameterRef="H45_MEMDMP.DUMP_DATA" />
+					<xtce:ParameterRefEntry parameterRef="H45_MEMDMP.CKSUM" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="H45_APP_NHK">
@@ -3627,10 +3790,10 @@ MET_SECONDS - 32 BITS</xtce:LongDescription>
 					<xtce:ParameterRefEntry parameterRef="H45_SCI_DE.LAST_SPIN_NUM" />
 					<xtce:ParameterRefEntry parameterRef="H45_SCI_DE.SPIN_INVALIDS" />
 					<xtce:ParameterRefEntry parameterRef="H45_SCI_DE.SPARE" />
-					<xtce:ParameterRefEntry parameterRef="H45_SCI_DE.META_BITMASK" />
+					<xtce:ParameterRefEntry parameterRef="H45_SCI_DE.SPARE1" />
 					<xtce:ParameterRefEntry parameterRef="H45_SCI_DE.ESA_STEP_NUM" />
-					<xtce:ParameterRefEntry parameterRef="H45_SCI_DE.META_SUBSECONDS" />
-					<xtce:ParameterRefEntry parameterRef="H45_SCI_DE.META_SECONDS" />
+					<xtce:ParameterRefEntry parameterRef="H45_SCI_DE.ESA_STEP_MILLISECONDS" />
+					<xtce:ParameterRefEntry parameterRef="H45_SCI_DE.ESA_STEP_SECONDS" />
 					<xtce:ParameterRefEntry parameterRef="H45_SCI_DE.DE_TOF" />
 					<xtce:ParameterRefEntry parameterRef="H45_SCI_DE.CKSUM" />
 				</xtce:EntryList>
@@ -3734,6 +3897,23 @@ MET_SECONDS - 32 BITS</xtce:LongDescription>
 					<xtce:ParameterRefEntry parameterRef="H45_DIAG_FEE.FEE_RECV_CMD_COUNT" />
 					<xtce:ParameterRefEntry parameterRef="H45_DIAG_FEE.SPARE" />
 					<xtce:ParameterRefEntry parameterRef="H45_DIAG_FEE.CKSUM" />
+				</xtce:EntryList>
+			</xtce:SequenceContainer>
+			<xtce:SequenceContainer name="H90_MEMDMP">
+				<xtce:BaseContainer containerRef="CCSDSPacket">
+					<xtce:RestrictionCriteria>
+						<xtce:Comparison parameterRef="PKT_APID" value="804" useCalibratedValue="false" />
+					</xtce:RestrictionCriteria>
+				</xtce:BaseContainer>
+				<xtce:EntryList>
+					<xtce:ParameterRefEntry parameterRef="H90_MEMDMP.SHCOARSE" />
+					<xtce:ParameterRefEntry parameterRef="H90_MEMDMP.PACKET_VERSION" />
+					<xtce:ParameterRefEntry parameterRef="H90_MEMDMP.SPARE" />
+					<xtce:ParameterRefEntry parameterRef="H90_MEMDMP.MEMORY_ID" />
+					<xtce:ParameterRefEntry parameterRef="H90_MEMDMP.START_ADDRESS" />
+					<xtce:ParameterRefEntry parameterRef="H90_MEMDMP.NUM_BYTES" />
+					<xtce:ParameterRefEntry parameterRef="H90_MEMDMP.DUMP_DATA" />
+					<xtce:ParameterRefEntry parameterRef="H90_MEMDMP.CKSUM" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="H90_APP_NHK">
@@ -3880,10 +4060,10 @@ MET_SECONDS - 32 BITS</xtce:LongDescription>
 					<xtce:ParameterRefEntry parameterRef="H90_SCI_DE.LAST_SPIN_NUM" />
 					<xtce:ParameterRefEntry parameterRef="H90_SCI_DE.SPIN_INVALIDS" />
 					<xtce:ParameterRefEntry parameterRef="H90_SCI_DE.SPARE" />
-					<xtce:ParameterRefEntry parameterRef="H90_SCI_DE.META_BITMASK" />
+					<xtce:ParameterRefEntry parameterRef="H90_SCI_DE.SPARE1" />
 					<xtce:ParameterRefEntry parameterRef="H90_SCI_DE.ESA_STEP_NUM" />
-					<xtce:ParameterRefEntry parameterRef="H90_SCI_DE.META_SUBSECONDS" />
-					<xtce:ParameterRefEntry parameterRef="H90_SCI_DE.META_SECONDS" />
+					<xtce:ParameterRefEntry parameterRef="H90_SCI_DE.ESA_STEP_MILLISECONDS" />
+					<xtce:ParameterRefEntry parameterRef="H90_SCI_DE.ESA_STEP_SECONDS" />
 					<xtce:ParameterRefEntry parameterRef="H90_SCI_DE.DE_TOF" />
 					<xtce:ParameterRefEntry parameterRef="H90_SCI_DE.CKSUM" />
 				</xtce:EntryList>

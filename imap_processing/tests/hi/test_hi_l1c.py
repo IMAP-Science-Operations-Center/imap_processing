@@ -19,9 +19,7 @@ from imap_processing.hi.utils import HIAPID, CoincidenceBitmap
 
 @pytest.fixture(scope="module")
 def hi_test_cal_prod_config_path(hi_l1_test_data_path):
-    return (
-        hi_l1_test_data_path / "imap_his_pset-calibration-prod-config_20240101_v001.csv"
-    )
+    return hi_l1_test_data_path / "imap_hi_90sensor-cal-prod_20240101_v001.csv"
 
 
 @mock.patch("imap_processing.hi.hi_l1c.generate_pset_dataset")

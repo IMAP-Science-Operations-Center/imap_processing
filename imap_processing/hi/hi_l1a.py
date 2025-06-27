@@ -170,8 +170,8 @@ def finish_de_dataset(packets_data: xr.Dataset) -> xr.Dataset:
         "last_spin_num": "last_spin_num",
         "spin_invalids": "spin_invalids",
         "esa_step_num": "esa_step",
-        "meta_seconds": "meta_seconds",
-        "meta_subseconds": "meta_subseconds",
+        "esa_step_seconds": "esa_step_seconds",
+        "esa_step_milliseconds": "esa_step_milliseconds",
     }.items():
         de_data_dict[to_key] = packets_data[from_key].data
 
@@ -228,8 +228,8 @@ def create_de_dataset(de_data_dict: dict[str, npt.ArrayLike]) -> xr.Dataset:
 
     # Compute the meta-event MET in seconds
     meta_event_met = (
-        np.array(de_data_dict["meta_seconds"]).astype(np.float64)
-        + np.array(de_data_dict["meta_subseconds"]) * MILLISECOND_TO_S
+        np.array(de_data_dict["esa_step_seconds"]).astype(np.float64)
+        + np.array(de_data_dict["esa_step_milliseconds"]) * MILLISECOND_TO_S
     )
     # Compute the MET of each event in seconds
     # event MET = meta_event_met + de_clock
