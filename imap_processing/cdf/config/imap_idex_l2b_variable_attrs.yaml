@@ -111,6 +111,7 @@ rate_by_charge:
     FILLVAL: *double_fillval
     DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
 
+
 rate_by_mass:
     <<: *base_mass
     CATDESC: Count rate per day by mass and spin phase.
@@ -155,7 +156,11 @@ rate_calculation_quality_flags:
   LABLAXIS: Quality Flag
   DEPEND_0: epoch
   DISPLAY_TYPE: time_series
+<<<<<<< HEAD
   FILLVAL: 255
+=======
+  FILLVAL: -128
+>>>>>>> ad860486 (add more testing for l2b. Add quality flag array.)
   FORMAT: I1
   VALIDMIN: 0
   VALIDMAX: 1
