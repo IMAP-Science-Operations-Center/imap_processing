@@ -17,7 +17,6 @@ default_uint8_attrs: &default_uint8
   FORMAT: I3
   VALIDMIN: 0
   VALIDMAX: 255
-  dtype: uint8
 
 default_uint16_attrs: &default_uint16
   <<: *default
@@ -25,7 +24,6 @@ default_uint16_attrs: &default_uint16
   FORMAT: I5
   VALIDMIN: 0
   VALIDMAX: 65535
-  dtype: uint16
 
 default_uint32_attrs: &default_uint32
   <<: *default
@@ -33,7 +31,6 @@ default_uint32_attrs: &default_uint32
   FORMAT: I10
   VALIDMIN: 0
   VALIDMAX: 4294967295
-  dtype: uint32
 
 default_hk_attrs: &default_hk
   <<: *default
@@ -57,18 +54,24 @@ default_counts_attrs: &default_counts
   SCALETYP: log
 
 default_counts_support_attrs: &default_counts_support
-  <<: *default
   DISPLAY_TYPE: no_plot
   VAR_TYPE: support_data
   FILLVAL: -1.00E+31
   VALIDMIN: 0
   VALIDMAX: 1000
+  UNITS: ' '
+  SCALETYP: linear
 
 default_index_attrs: &default_index
-  <<: *default_uint32
-  DISPLAY_TYPE: no_plot
-  VAR_TYPE: support_data
-  VALIDMAX: 1000
+   DISPLAY_TYPE: no_plot
+   VAR_TYPE: support_data
+   VALIDMIN: 0
+   VALIDMAX: 1000
+   FILLVAL: 4294967295
+   FORMAT: I10
+   UNITS: ' '
+   SCALETYP: linear
+
 
 default_energy_attrs: &default_energy
   VAR_TYPE: support_data
@@ -78,7 +81,7 @@ default_energy_attrs: &default_energy
   VALIDMIN: 0
   VALIDMAX: 1000
   FORMAT: F5.1
-  UNITS: MeV
+  UNITS: MeV/nuc
   SCALE_TYP: log
 
 default_uncertainty_attrs: &default_uncertainty
@@ -94,15 +97,18 @@ default_uncertainty_attrs: &default_uncertainty
 
 # <=== Coordinates ===>
 sc_tick:
-  <<: *default_uint32
   CATDESC: Raw spacecraft tick time per integration
   FIELDNAM: Spacecraft Tick
   LABLAXIS: sc_tick
   FORMAT: I10
   VAR_TYPE: support_data
   DISPLAY_TYPE: no_plot
+  VALIDMIN: 0
+  VALIDMAX: 4294967295
+  FILLVAL: 4294967295
   UNITS: ''
   SCALETYP: linear
+
 
 # Counts Dataset Coordinates
 zenith:
@@ -772,8 +778,8 @@ l4bgrates:
 
 sectorates:
   <<: *default_counts
-  DEPEND_1: zenith
-  DEPEND_2: azimuth
+  DEPEND_1: azimuth
+  DEPEND_2: zenith
   CATDESC: Raw sectored rates per integration
   FIELDNAM: Sectored rates
   LABL_PTR_1: azimuth_label
@@ -783,56 +789,66 @@ sectorates:
 
 h_sectored_counts:
   <<: *default_counts
-  DEPEND_1: zenith
-  DEPEND_2: azimuth
   CATDESC: Raw H sectored counts per integration
   FIELDNAM: H sectored counts
-  LABL_PTR_1: azimuth_label
-  LABL_PTR_2: zenith_label
+  DEPEND_1: h_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: h_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
   DELTA_MINUS_VAR: h_sectored_counts_stat_uncert_minus
   DELTA_PLUS_VAR: h_sectored_counts_stat_uncert_plus
 
 he4_sectored_counts:
   <<: *default_counts
-  DEPEND_1: zenith
-  DEPEND_2: azimuth
   CATDESC: Raw He4 sectored counts per integration
   FIELDNAM: He4 sectored counts
-  LABL_PTR_1: azimuth_label
-  LABL_PTR_2: zenith_label
+  DEPEND_1: he4_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: he4_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
   DELTA_MINUS_VAR: he4_sectored_counts_stat_uncert_minus
   DELTA_PLUS_VAR: he4_sectored_counts_stat_uncert_plus
 
 cno_sectored_counts:
   <<: *default_counts
-  DEPEND_1: zenith
-  DEPEND_2: azimuth
   CATDESC: Raw C, N, O sectored counts per integration
   FIELDNAM: C, N, O sectored counts
-  LABL_PTR_1: azimuth_label
-  LABL_PTR_2: zenith_label
+  DEPEND_1: cno_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: cno_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
   DELTA_MINUS_VAR: cno_sectored_counts_stat_uncert_minus
   DELTA_PLUS_VAR: cno_sectored_counts_stat_uncert_plus
 
 nemgsi_sectored_counts:
   <<: *default_counts
-  DEPEND_1: zenith
-  DEPEND_2: azimuth
   CATDESC: Raw Ne, Mg, Si sectored counts per integration
   FIELDNAM: Ne, Mg, Si sectored counts
-  LABL_PTR_1: azimuth_label
-  LABL_PTR_2: zenith_label
+  DEPEND_1: nemgsi_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: nemgsi_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
   DELTA_MINUS_VAR: nemgsi_sectored_counts_stat_uncert_minus
   DELTA_PLUS_VAR: nemgsi_sectored_counts_stat_uncert_plus
 
 fe_sectored_counts:
   <<: *default_counts
-  DEPEND_1: zenith
-  DEPEND_2: azimuth
   CATDESC: Raw Fe sectored counts per integration
   FIELDNAM: Fe sectored counts
-  LABL_PTR_1: azimuth_label
-  LABL_PTR_2: zenith_label
+  DEPEND_1: fe_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: fe_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
   DELTA_MINUS_VAR: fe_sectored_counts_stat_uncert_minus
   DELTA_PLUS_VAR: fe_sectored_counts_stat_uncert_plus
 
@@ -902,23 +918,19 @@ sectorates_stat_uncert_plus:
   <<: *default_uncertainty
   CATDESC: Plus statistical uncertainty for sector rates
   FIELDNAM: Sectored Rates Uncertainty
-  DEPEND_1: h_energy_mean
-  DEPEND_2: azimuth
-  DEPEND_3: zenith
-  LABL_PTR_1: h_energy_mean_label
-  LABL_PTR_2: azimuth_label
-  LABL_PTR_3: zenith_label
+  DEPEND_1: azimuth
+  DEPEND_2: zenith
+  LABL_PTR_1: azimuth_label
+  LABL_PTR_2: zenith_label
 
 sectorates_stat_uncert_minus:
   <<: *default_uncertainty
   CATDESC: Minus statistical uncertainty for sector rates
   FIELDNAM: Sectored Rates Uncertainty
-  DEPEND_1: h_energy_mean
-  DEPEND_2: azimuth
-  DEPEND_3: zenith
-  LABL_PTR_1: h_energy_mean_label
-  LABL_PTR_2: azimuth_label
-  LABL_PTR_3: zenith_label
+  DEPEND_1: azimuth
+  DEPEND_2: zenith
+  LABL_PTR_1: azimuth_label
+  LABL_PTR_2: zenith_label
 
 h_sectored_counts_stat_uncert_plus:
   <<: *default_uncertainty
@@ -1034,19 +1046,19 @@ sngrates_stat_uncert_plus:
   <<: *default_uncertainty
   CATDESC: Plus statistical uncertainty for single rates
   FIELDNAM: sngrates uncertainty
-  DEPEND_1: sngrates_index
-  DEPEND_2: gain
-  LABL_PTR_1: sngrates_index_label
-  LABL_PTR_2: gain_label
+  DEPEND_1: gain
+  DEPEND_2: sngrates_index
+  LABL_PTR_1: gain_label
+  LABL_PTR_2: sngrates_index_label
 
 sngrates_stat_uncert_minus:
   <<: *default_uncertainty
   CATDESC: Minus statistical uncertainty for single rates
   FIELDNAM: sngrates uncertainty
-  DEPEND_1: sngrates_index
-  DEPEND_2: gain
-  LABL_PTR_1: sngrates_index_label
-  LABL_PTR_2: gain_label
+  DEPEND_1: gain
+  DEPEND_2: sngrates_index
+  LABL_PTR_1: gain_label
+  LABL_PTR_2: sngrates_index_label
 
 coinrates_stat_uncert_plus:
   <<: *default_uncertainty
