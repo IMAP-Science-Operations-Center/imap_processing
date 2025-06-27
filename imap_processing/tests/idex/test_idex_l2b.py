@@ -6,12 +6,21 @@ import xarray as xr
 from numpy.testing import assert_array_equal
 
 from imap_processing.cdf.utils import load_cdf, write_cdf
+from imap_processing.idex.idex_constants import FG_TO_KG, SECONDS_IN_DAY
 from imap_processing.idex.idex_l2b import (
+    CHARGE_BIN_EDGES,
+    MASS_BIN_EDGES,
+    SPIN_PHASE_BIN_EDGES,
     bin_spin_phases,
+    compute_counts_by_charge_and_mass,
+    compute_rates_by_charge_and_mass,
+    get_science_acquisition_on_percentage,
     get_science_acquisition_timestamps,
     idex_l2b,
 )
 from imap_processing.tests.idex.conftest import L1B_EVT_CDF
+
+ONE_DAY_NS = 86400000000000
 
 
 @pytest.fixture
@@ -24,9 +33,15 @@ def l2b_dataset(l2a_dataset: xr.Dataset) -> xr.Dataset:
         A ``xarray`` dataset containing the test data
     """
     l1b_evt_dataset = load_cdf(L1B_EVT_CDF)
-    dataset = idex_l2b(
-        [l2a_dataset, l2a_dataset], [l1b_evt_dataset, l1b_evt_dataset]
-    )  # decom_test_data_evt[1]])
+    l1b_evt_dataset2 = (
+        l1b_evt_dataset.copy()
+    )  # Add a second dataset with different epoch values for testing
+    l2a_dataset2 = (
+        l2a_dataset.copy()
+    )  # Add a second dataset with different epoch values for testing
+    l1b_evt_dataset2["epoch"] = l1b_evt_dataset2["epoch"] + ONE_DAY_NS
+    l2a_dataset2["epoch"] = l2a_dataset2["epoch"] + ONE_DAY_NS
+    dataset = idex_l2b([l2a_dataset, l2a_dataset2], [l1b_evt_dataset, l1b_evt_dataset2])
     return dataset
 
 
@@ -130,3 +145,195 @@ def test_science_acquisition_times(decom_test_data_evt: list[xr.Dataset]):
 
     # assert the values are correct
     np.testing.assert_array_equal(vals, [1, 0])
+
+
+def test_get_science_acquisition_on_percentage(decom_test_data_evt: list[xr.Dataset]):
+    """Test the function that calculates the percentage of uptime."""
+    on_percentages = get_science_acquisition_on_percentage(decom_test_data_evt[1])
+    # We expect 1 DOY and 100% uptime for the science acquisition.
+    assert len(on_percentages) == 1
+    # The DOY should be 8 for this test dataset.
+    assert on_percentages[8] < 1  # The uptime should be less than 1%
+
+    evt_ds = decom_test_data_evt[1].copy()
+    evt_ds_shifted = evt_ds.copy()
+    evt_ds_shifted["epoch"] = evt_ds["epoch"] + ONE_DAY_NS
+    combined_ds = xr.concat([evt_ds, evt_ds_shifted], dim="epoch")
+    # expect a second DOY.
+    on_percentages = get_science_acquisition_on_percentage(combined_ds)
+    # We expect 2 DOYs
+    assert len(on_percentages) == 2
+    # The uptime should be less than 1% for both
+    assert on_percentages[8] < 1
+    assert on_percentages[9] < 1  # The uptime should be less than 1%
+
+
+def test_compute_counts_by_charge_and_mass():
+    """Test the compute_counts_by_charge_and_mass function."""
+
+    # Create a mock l2a_dataset
+    epochs = np.array([1, 1, 2, 2, 3, 4])
+    epochs = epochs * ONE_DAY_NS
+
+    # Create a test dataset. There should be 1 in the first 5 impact charge bins
+    # and mass bins all in the first spin phase bin. The test should be zero. This
+    # should be the same for each epoch except the second epoch which has 2 counts in
+    # the first 5 mass and impact charge bins.
+    l2a_dataset = xr.Dataset(
+        {
+            "epoch": epochs,
+            "target_low_dust_mass_estimate": ((MASS_BIN_EDGES / FG_TO_KG)[:6] + 1e-5),
+            "target_low_impact_charge": CHARGE_BIN_EDGES[:6],
+            "spin_phase": np.full((6,), 0),
+        }
+    )
+
+    # Unique days of year
+    epoch_doy_unique = np.unique(epochs / ONE_DAY_NS).astype(int) + 1
+
+    counts_by_charge, counts_by_mass, daily_epoch = compute_counts_by_charge_and_mass(
+        l2a_dataset, epoch_doy_unique
+    )
+
+    expected_shape = (
+        len(epoch_doy_unique),
+        len(CHARGE_BIN_EDGES),
+        len(SPIN_PHASE_BIN_EDGES) - 1,
+    )
+    # Check shapes
+    assert counts_by_charge.shape == expected_shape
+    assert counts_by_mass.shape == expected_shape
+
+    # Check that the counts are correctly binned
+    expected_array = np.zeros(expected_shape)
+    # Add ones where we expect counts
+    expected_array[0, 1:3, 0] = 1
+    expected_array[1, 3:5, 0] = 1
+    expected_array[2, 5, 0] = 1
+    expected_array[3, 6, 0] = 1
+    # assert that the counts are as expected
+    np.testing.assert_array_equal(counts_by_charge, expected_array)
+    np.testing.assert_array_equal(counts_by_mass, expected_array)
+
+
+def test_compute_counts_by_charge_and_mass_out_of_bounds():
+    """Test the compute_counts_by_charge_and_mass function.
+
+    Test when there are mass and charge values out of the expected bin edges"""
+
+    # Create a mock l2a_dataset
+    epochs = np.array([1, 2])
+    epochs = epochs * ONE_DAY_NS
+
+    # Create a test dataset with values that are out of the expected bin edges.
+    l2a_dataset = xr.Dataset(
+        {
+            "epoch": epochs,
+            "target_low_dust_mass_estimate": np.array(
+                [MASS_BIN_EDGES[0] - 1e-05, MASS_BIN_EDGES[-1] + 1e-05]
+            )
+            / FG_TO_KG,
+            "target_low_impact_charge": np.array(
+                [CHARGE_BIN_EDGES[0] - 1e-05, CHARGE_BIN_EDGES[-1] + 1e-05]
+            ),
+            "spin_phase": np.full((6,), 0),
+        }
+    )
+
+    # Unique days of year
+    epoch_doy_unique = np.unique(epochs / ONE_DAY_NS).astype(int) + 1
+
+    counts_by_charge, counts_by_mass, daily_epoch = compute_counts_by_charge_and_mass(
+        l2a_dataset, epoch_doy_unique
+    )
+
+    expected_shape = (
+        len(epoch_doy_unique),
+        len(CHARGE_BIN_EDGES),
+        len(SPIN_PHASE_BIN_EDGES) - 1,
+    )
+    # Check shapes
+    assert counts_by_charge.shape == expected_shape
+    assert counts_by_mass.shape == expected_shape
+
+    # Check that the counts are correctly binned
+    expected_array = np.zeros(expected_shape)
+    # Add ones where we expect counts
+    expected_array[0, 0, 0] = 1
+    expected_array[1, len(CHARGE_BIN_EDGES) - 1, 0] = 1
+    # assert that the counts are as expected
+    np.testing.assert_array_equal(counts_by_charge, expected_array)
+    np.testing.assert_array_equal(counts_by_mass, expected_array)
+
+
+def test_compute_rates_by_charge_and_mass():
+    """Test the compute_rates_by_charge_and_mass function."""
+    # Mock example inputs
+    day_counts = np.full((len(CHARGE_BIN_EDGES), len(SPIN_PHASE_BIN_EDGES) - 1), 1.0)
+    counts_by_charge = np.stack(
+        [day_counts, day_counts + 1, day_counts + 2, day_counts + 2]
+    )
+    counts_by_mass = counts_by_charge
+    # Mock DOY values for the epochs
+    epoch_doy = np.array([1, 2, 3, 4])
+    # Mock daily idex uptime percentages
+    daily_on_percentage = {1: 50.0, 2: 25.0, 3: 0.05, 4: 0.0}
+    # Compute the rates by charge and mass
+    rate_by_charge, rate_by_mass, quality_flags = compute_rates_by_charge_and_mass(
+        counts_by_charge, counts_by_mass, epoch_doy, daily_on_percentage
+    )
+
+    # Check shapes
+    expected_shape = counts_by_mass.shape
+    np.testing.assert_equal(rate_by_charge.shape, expected_shape)
+    np.testing.assert_equal(rate_by_mass.shape, expected_shape)
+
+    # Assert all quality flags are 1.
+    np.testing.assert_array_equal(quality_flags, np.ones_like(quality_flags))
+    # assert day 1 rates are as expected
+    np.testing.assert_equal(rate_by_charge[0], 1 / (SECONDS_IN_DAY / 2))
+    np.testing.assert_equal(rate_by_mass[0], 1 / (SECONDS_IN_DAY / 2))
+    # assert day 2 rates are as expected
+    np.testing.assert_equal(rate_by_charge[1], 2 / (SECONDS_IN_DAY / 4))
+    np.testing.assert_equal(rate_by_mass[1], 2 / (SECONDS_IN_DAY / 4))
+    # assert day 3 rates are as expected
+    np.testing.assert_equal(rate_by_charge[2], 3 / (SECONDS_IN_DAY / 2000))
+    np.testing.assert_equal(rate_by_mass[2], 3 / (SECONDS_IN_DAY / 2000))
+    # assert day 4 rates are as expected
+    np.testing.assert_equal(rate_by_charge[3], -1.0)
+    np.testing.assert_equal(rate_by_mass[3], -1.0)
+
+
+def test_compute_rates_by_charge_and_mass_missing_acquisition_time(caplog):
+    """Test that the function throws an error for missing data."""
+    caplog.at_level("WARNING")
+    # Mock example inputs
+    counts_by_charge = np.ones(
+        (2, len(CHARGE_BIN_EDGES), len(SPIN_PHASE_BIN_EDGES) - 1)
+    )
+    counts_by_mass = counts_by_charge
+    # Mock DOY values for the epochs
+    epoch_doy = np.array([1, 2])
+    # Mock daily idex uptime percentages. Purposefully leave out day 2 to simulate
+    # missing acquisition times
+    daily_on_percentage = {1: 100.0}
+    # Compute the rates by charge and mass and assert there is a warning in the logs.
+    rate_by_charge, rate_by_mass, quality_flags = compute_rates_by_charge_and_mass(
+        counts_by_charge, counts_by_mass, epoch_doy, daily_on_percentage
+    )
+    assert (
+        "Missing science acquisition uptime percentages for day(s) of year: [2]."
+        in caplog.text
+    )
+
+    # All rates by charge and mass should be -1.0 at epoch 2
+    np.testing.assert_array_equal(
+        rate_by_charge[1], np.full(rate_by_charge[1].shape, -1.0)
+    )
+    np.testing.assert_array_equal(
+        rate_by_charge[1], np.full(rate_by_charge[1].shape, -1.0)
+    )
+
+    # Assert that quality flags are 0 for the missing acquisition time
+    assert quality_flags[0] == 1
+    assert quality_flags[1] == 0

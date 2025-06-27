@@ -1,6 +1,6 @@
 int_fillval: &int_fillval -9223372036854775808
 int_maxval: &int_maxval 9223372036854775807
-
+double_fillval: &double_fillval -1.0E31
 
 # Label attributes
 mass_labels:
@@ -44,7 +44,7 @@ mass_bins:
 
 spin_phase_bins:
     CATDESC: The spacecraft spin phase at the time of detection
-    VAR_NOTES: This is given in 4 bins [315°-45°,45°-135°,135°-225°, 225°-315°]
+    VAR_NOTES: This is given in 4 bins [315-45, 45-135, 135-225, 225-315] degrees.
     FIELDNAM: Spin Phase Bins
     LABLAXIS: Spin Phase Bins
     VAR_TYPE: support_data
@@ -108,13 +108,16 @@ rate_by_charge:
     CATDESC: Count rate per day by impact charge and spin phase.
     FIELDNAM: Rate by Charge
     UNITS: day^-1
+    FILLVAL: *double_fillval
     DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
+
 
 rate_by_mass:
     <<: *base_mass
     CATDESC: Count rate per day by mass and spin phase.
     FIELDNAM: Rate by Mass
     UNITS: day^-1
+    FILLVAL: *double_fillval
     DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
 
 counts_by_charge:
@@ -147,3 +150,17 @@ impact_day_of_year:
     VAR_TYPE: data
     UNITS: days
     DICT_KEY: SPASE>SupportQuantity:Temporal,Qualifier:Array
+
+rate_calculation_quality_flags:
+  CATDESC: Quality flag for rate calculation (1 = good, 0 = insufficient IDEX uptime data)
+  FIELDNAM: Rate Quality Flag
+  LABLAXIS: Quality Flag
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: -128
+  FORMAT: I1
+  VALIDMIN: 0
+  VALIDMAX: 1
+  VAR_TYPE: data
+  UNITS: " "
+  DICT_KEY: SPASE>SupportQuantity:QualityFlag,Qualifier:Array
