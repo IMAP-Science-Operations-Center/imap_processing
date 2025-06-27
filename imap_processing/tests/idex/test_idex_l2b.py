@@ -64,7 +64,7 @@ def test_l2b_logical_source_and_cdf(l2b_dataset: xr.Dataset):
     assert file_name.name == "imap_idex_l2b_sci-1mo_20251017_v999.cdf"
 
 
-def test_l2a_cdf_variables(l2b_dataset: xr.Dataset):
+def test_l2b_cdf_variables(l2b_dataset: xr.Dataset):
     """Tests that the ``idex_l2a`` function generates datasets
     with the expected variables.
 
