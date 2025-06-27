@@ -45,8 +45,8 @@ def test_l2c_attrs_and_vars(l2c_datasets: list[xr.Dataset], l1b_dataset: xr.Data
     """
     healpix_ds = l2c_datasets[0]
     rect_ds = l2c_datasets[1]
-    assert healpix_ds.attrs["Logical_source"] == "imap_idex_l2c_healpix-map-1week"
-    assert rect_ds.attrs["Logical_source"] == "imap_idex_l2c_rectangular-map-1week"
+    assert healpix_ds.attrs["Logical_source"] == "imap_idex_l2c_healpix-map-1mo"
+    assert rect_ds.attrs["Logical_source"] == "imap_idex_l2c_rectangular-map-1mo"
     # The total counts in the map should be equal to the number of dust events
     # in the l1b_dataset
     np.testing.assert_allclose(healpix_ds["counts"].sum(), len(l1b_dataset.epoch))
@@ -67,12 +67,10 @@ def test_l2c_attrs_and_vars(l2c_datasets: list[xr.Dataset], l1b_dataset: xr.Data
     hp_file_name = write_cdf(healpix_ds)
     rect_file_name = write_cdf(rect_ds)
     assert hp_file_name.exists()
-    assert hp_file_name.name == "imap_idex_l2c_healpix-map-1week_20231218_v999.cdf"
+    assert hp_file_name.name == "imap_idex_l2c_healpix-map-1mo_20231218_v999.cdf"
 
     assert rect_file_name.exists()
-    assert (
-        rect_file_name.name == "imap_idex_l2c_rectangular-map-1week_20231218_v999.cdf"
-    )
+    assert rect_file_name.name == "imap_idex_l2c_rectangular-map-1mo_20231218_v999.cdf"
 
     for var in healpix_ds.data_vars:
         assert "DICT_KEY" in healpix_ds[var].attrs, (
