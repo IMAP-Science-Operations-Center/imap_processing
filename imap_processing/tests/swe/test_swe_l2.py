@@ -356,7 +356,7 @@ def test_swe_l2(
                             # f"{np.array2string(rate[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}, "
                             # "ESA energy: "
                             # f"{np.array2string(esa_energy[cycle], separator=',', max_line_width=np.inf)}, "
-                            "L2 PSD data: "
+                            "L2 Sector PSD data: "
                             f"{np.array2string(l2_dataset['phase_space_density_spin_sector'].data[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}",
                             file=f,
                         )

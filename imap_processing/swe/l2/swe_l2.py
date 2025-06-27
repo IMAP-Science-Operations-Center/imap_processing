@@ -448,11 +448,15 @@ def swe_l2(l1b_dataset: xr.Dataset) -> xr.Dataset:
         query_met_times=l1b_dataset["acquisition_time"].data.ravel(),
         instrument=SpiceFrame.IMAP_SWE,
     )
+    print(l1b_dataset["acquisition_time"].data.shape)
+
 
     # Convert spin phase to spin angle in degrees.
     inst_spin_angle = get_spin_angle(inst_spin_phase, degrees=True).reshape(
         -1, swe_constants.N_ESA_STEPS, swe_constants.N_ANGLE_SECTORS
     )
+    print(f"inst_spin_angle shape: {inst_spin_angle.shape}")
+    print(f"inst_spin_angle values: {inst_spin_angle[0, 1, :]}")
 
     # Save spin angle in dataset per SWE request.
     dataset["inst_az_spin_sector"] = xr.DataArray(
@@ -463,6 +467,8 @@ def swe_l2(l1b_dataset: xr.Dataset) -> xr.Dataset:
     )
 
     spin_angle_bins_indices = find_angle_bin_indices(inst_spin_angle)
+    # print(spin_angle_bins_indices.shape)
+    # print(        f"Spin angle bins indices: {spin_angle_bins_indices[5, :, :]}, ")
 
     # Put flux data in its spin angle bins using the indices.
     flux_binned_data = put_data_into_angle_bins(flux, spin_angle_bins_indices)
