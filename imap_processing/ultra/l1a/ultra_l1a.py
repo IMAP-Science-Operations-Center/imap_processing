@@ -86,13 +86,13 @@ def ultra_l1a(packet_file: str, apid_input: Optional[int] = None) -> list[xr.Dat
                 ULTRA_ENERGY_RATES.apid.index(apid)
             ]
         elif apid in ULTRA_EVENTS.apid:
-            decom_ultra_dataset = process_ultra_events(datasets_by_apid[apid])
+            decom_ultra_dataset = process_ultra_events(datasets_by_apid[apid], apid)
             gattr_key = ULTRA_EVENTS.logical_source[ULTRA_EVENTS.apid.index(apid)]
             # Add coordinate attributes
             attrs = attr_mgr.get_variable_attributes("event_id")
             decom_ultra_dataset.coords["event_id"].attrs.update(attrs)
         elif apid in ULTRA_ENERGY_EVENTS.apid:
-            decom_ultra_dataset = process_ultra_energy_events(datasets_by_apid[apid])
+            decom_ultra_dataset = process_ultra_events(datasets_by_apid[apid], apid)
             gattr_key = ULTRA_ENERGY_EVENTS.logical_source[
                 ULTRA_ENERGY_EVENTS.apid.index(apid)
             ]

@@ -8,6 +8,7 @@ from imap_processing.cdf.utils import write_cdf
 from imap_processing.ultra.l0.decom_ultra import get_event_id
 from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_AUX,
+    ULTRA_ENERGY_EVENTS,
     ULTRA_ENERGY_RATES,
     ULTRA_EVENTS,
     ULTRA_RATES,
@@ -135,6 +136,20 @@ def test_cdf_events(ccsds_path_theta_0):
     assert (
         test_data_path.name
         == "imap_ultra_l1a_45sensor-de_20240207-repoint99999_v999.cdf"
+    )
+
+
+def test_cdf_energy_events(ccsds_path_functional):
+    """Tests that CDF file can be created."""
+    test_data = ultra_l1a(ccsds_path_functional, apid_input=ULTRA_ENERGY_EVENTS.apid[0])
+    test_data[0].attrs["Data_version"] = "999"
+    test_data[0].attrs["Repointing"] = "repoint99999"
+    test_data_path = write_cdf(test_data[0], istp=True)
+
+    assert test_data_path.exists()
+    assert (
+        test_data_path.name
+        == "imap_ultra_l1a_45sensor-energy-de_20240122-repoint99999_v999.cdf"
     )
 
 

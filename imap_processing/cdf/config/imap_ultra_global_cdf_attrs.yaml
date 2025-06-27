@@ -68,6 +68,18 @@ imap_ultra_l1a_90sensor-de:
     Logical_source: imap_ultra_l1a_90sensor-de
     Logical_source_description: IMAP-Ultra Instrument Level-1A Direct Event Data.
 
+imap_ultra_l1a_45sensor-energy-de:
+    <<: *instrument_base
+    Data_type: L1A_ENERGY_DE>Level-1A Energy Direct Event
+    Logical_source: imap_ultra_l1a_45sensor-energy-de
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Energy Direct Event Data.
+
+imap_ultra_l1a_90sensor-energy-de:
+    <<: *instrument_base
+    Data_type: L1A_ENERGY_DE>Level-1A EnergyDirect Event
+    Logical_source: imap_ultra_l1a_90sensor-energy-de
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Energy Direct Event Data.
+
 imap_ultra_l1b_45sensor-de:
     <<: *instrument_base
     Data_type: L1B_45Sensor-DE>Level-1B Direct Events for Ultra45

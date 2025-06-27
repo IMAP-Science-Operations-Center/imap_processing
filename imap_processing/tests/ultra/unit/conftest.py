@@ -13,6 +13,7 @@ from imap_processing.ultra.l0.decom_ultra import (
 )
 from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_AUX,
+    ULTRA_ENERGY_EVENTS,
     ULTRA_ENERGY_RATES,
     ULTRA_EVENTS,
     ULTRA_RATES,
@@ -172,17 +173,19 @@ def decom_test_data(request, xtce_path):
 
     strategy_dict = {
         ULTRA_TOF.apid[0]: process_ultra_tof,
+        ULTRA_ENERGY_EVENTS.apid[0]: process_ultra_events,
         ULTRA_EVENTS.apid[0]: process_ultra_events,
         ULTRA_RATES.apid[0]: process_ultra_rates,
         ULTRA_ENERGY_RATES.apid[0]: process_ultra_energy_rates,
         ULTRA_TOF.apid[1]: process_ultra_tof,
+        ULTRA_ENERGY_EVENTS.apid[1]: process_ultra_events,
         ULTRA_EVENTS.apid[1]: process_ultra_events,
         ULTRA_RATES.apid[1]: process_ultra_rates,
         ULTRA_ENERGY_RATES.apid[1]: process_ultra_energy_rates,
     }
 
     process_function = strategy_dict.get(apid, lambda *args: False)
-    data_packet_xarray = process_function(datasets_by_apid[apid])
+    data_packet_xarray = process_function(datasets_by_apid[apid], apid)
 
     return data_packet_xarray
 
