@@ -8,6 +8,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ultra.l0.decom_ultra import (
+    process_ultra_energy_events,
     process_ultra_energy_rates,
     process_ultra_events,
     process_ultra_rates,
@@ -16,6 +17,7 @@ from imap_processing.ultra.l0.decom_ultra import (
 from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_AUX,
     ULTRA_CMD_TEXT,
+    ULTRA_ENERGY_EVENTS,
     ULTRA_ENERGY_RATES,
     ULTRA_EVENTS,
     ULTRA_HK,
@@ -86,6 +88,14 @@ def ultra_l1a(packet_file: str, apid_input: Optional[int] = None) -> list[xr.Dat
         elif apid in ULTRA_EVENTS.apid:
             decom_ultra_dataset = process_ultra_events(datasets_by_apid[apid])
             gattr_key = ULTRA_EVENTS.logical_source[ULTRA_EVENTS.apid.index(apid)]
+            # Add coordinate attributes
+            attrs = attr_mgr.get_variable_attributes("event_id")
+            decom_ultra_dataset.coords["event_id"].attrs.update(attrs)
+        elif apid in ULTRA_ENERGY_EVENTS.apid:
+            decom_ultra_dataset = process_ultra_energy_events(datasets_by_apid[apid])
+            gattr_key = ULTRA_ENERGY_EVENTS.logical_source[
+                ULTRA_ENERGY_EVENTS.apid.index(apid)
+            ]
             # Add coordinate attributes
             attrs = attr_mgr.get_variable_attributes("event_id")
             decom_ultra_dataset.coords["event_id"].attrs.update(attrs)

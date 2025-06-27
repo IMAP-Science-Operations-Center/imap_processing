@@ -73,6 +73,18 @@ ULTRA_EVENTS = PacketProperties(
     len_array=None,
     mantissa_bit_length=None,
 )
+ULTRA_ENERGY_EVENTS = PacketProperties(
+    apid=[897, 961],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-energy-de",
+        "imap_ultra_l1a_90sensor-energy-de",
+    ],
+    addition_to_logical_desc="Single Energy Events",
+    width=None,
+    block=None,
+    len_array=None,
+    mantissa_bit_length=None,
+)
 ULTRA_HK = PacketProperties(
     apid=[
         866,
@@ -216,6 +228,18 @@ EVENT_FIELD_RANGES = {
     "bin": (148, 156),
     # Phase Angle
     "phase_angle": (156, 166),
+}
+
+# Module-level constant for event field ranges
+ENERGY_EVENT_FIELD_RANGES = {
+    # Stop Type
+    "stop_type": (0, 4),
+    # Energy/Pulse Height
+    "energy_ph": (5, 17),
+    # Pulse Width
+    "pulse_width": (18, 29),
+    # Bin
+    "bin": (30, 34),
 }
 
 
