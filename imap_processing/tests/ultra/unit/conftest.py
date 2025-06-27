@@ -178,6 +178,7 @@ def decom_test_data(request, xtce_path):
         ULTRA_TOF.apid[1]: process_ultra_tof,
         ULTRA_EVENTS.apid[1]: process_ultra_events,
         ULTRA_RATES.apid[1]: process_ultra_rates,
+        ULTRA_ENERGY_RATES.apid[1]: process_ultra_energy_rates,
     }
 
     process_function = strategy_dict.get(apid, lambda *args: False)
