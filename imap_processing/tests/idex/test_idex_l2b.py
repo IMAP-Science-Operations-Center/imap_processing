@@ -6,15 +6,12 @@ import xarray as xr
 from numpy.testing import assert_array_equal
 
 from imap_processing.cdf.utils import load_cdf, write_cdf
-<<<<<<< HEAD
 from imap_processing.idex.idex_constants import (
     FG_TO_KG,
     NANOSECONDS_IN_DAY,
     SECONDS_IN_DAY,
 )
-=======
 from imap_processing.idex.idex_constants import FG_TO_KG, SECONDS_IN_DAY
->>>>>>> ad860486 (add more testing for l2b. Add quality flag array.)
 from imap_processing.idex.idex_l2b import (
     CHARGE_BIN_EDGES,
     MASS_BIN_EDGES,
@@ -47,13 +44,8 @@ def l2b_dataset(l2a_dataset: xr.Dataset) -> xr.Dataset:
     l2a_dataset2 = (
         l2a_dataset.copy()
     )  # Add a second dataset with different epoch values for testing
-<<<<<<< HEAD
     l1b_evt_dataset2["epoch"] = l1b_evt_dataset2["epoch"] + NANOSECONDS_IN_DAY
     l2a_dataset2["epoch"] = l2a_dataset2["epoch"] + NANOSECONDS_IN_DAY
-=======
-    l1b_evt_dataset2["epoch"] = l1b_evt_dataset2["epoch"] + ONE_DAY_NS
-    l2a_dataset2["epoch"] = l2a_dataset2["epoch"] + ONE_DAY_NS
->>>>>>> ad860486 (add more testing for l2b. Add quality flag array.)
     dataset = idex_l2b([l2a_dataset, l2a_dataset2], [l1b_evt_dataset, l1b_evt_dataset2])
     return dataset
 
@@ -163,7 +155,6 @@ def test_science_acquisition_times(decom_test_data_evt: list[xr.Dataset]):
 def test_get_science_acquisition_on_percentage(decom_test_data_evt: list[xr.Dataset]):
     """Test the function that calculates the percentage of uptime."""
     on_percentages = get_science_acquisition_on_percentage(decom_test_data_evt[1])
-<<<<<<< HEAD
     # We expect 1 DOY and ~87% uptime for the science acquisition.
     assert len(on_percentages) == 1
     # The DOY should be 8 for this test dataset.
@@ -172,16 +163,6 @@ def test_get_science_acquisition_on_percentage(decom_test_data_evt: list[xr.Data
     evt_ds = decom_test_data_evt[1].copy()
     evt_ds_shifted = evt_ds.copy()
     evt_ds_shifted["epoch"] = evt_ds["epoch"] + NANOSECONDS_IN_DAY
-=======
-    # We expect 1 DOY and 100% uptime for the science acquisition.
-    assert len(on_percentages) == 1
-    # The DOY should be 8 for this test dataset.
-    assert on_percentages[8] < 1  # The uptime should be less than 1%
-
-    evt_ds = decom_test_data_evt[1].copy()
-    evt_ds_shifted = evt_ds.copy()
-    evt_ds_shifted["epoch"] = evt_ds["epoch"] + ONE_DAY_NS
->>>>>>> ad860486 (add more testing for l2b. Add quality flag array.)
     combined_ds = xr.concat([evt_ds, evt_ds_shifted], dim="epoch")
     # expect a second DOY.
     on_percentages = get_science_acquisition_on_percentage(combined_ds)
@@ -197,11 +178,7 @@ def test_compute_counts_by_charge_and_mass():
 
     # Create a mock l2a_dataset
     epochs = np.array([1, 1, 2, 2, 3, 4])
-<<<<<<< HEAD
     epochs = epochs * NANOSECONDS_IN_DAY
-=======
-    epochs = epochs * ONE_DAY_NS
->>>>>>> ad860486 (add more testing for l2b. Add quality flag array.)
 
     # Create a test dataset. There should be 1 in the first 5 impact charge bins
     # and mass bins all in the first spin phase bin. The test should be zero. This
@@ -217,11 +194,7 @@ def test_compute_counts_by_charge_and_mass():
     )
 
     # Unique days of year
-<<<<<<< HEAD
     epoch_doy_unique = np.unique(epochs / NANOSECONDS_IN_DAY).astype(int) + 1
-=======
-    epoch_doy_unique = np.unique(epochs / ONE_DAY_NS).astype(int) + 1
->>>>>>> ad860486 (add more testing for l2b. Add quality flag array.)
 
     counts_by_charge, counts_by_mass, daily_epoch = compute_counts_by_charge_and_mass(
         l2a_dataset, epoch_doy_unique
@@ -255,11 +228,7 @@ def test_compute_counts_by_charge_and_mass_out_of_bounds():
 
     # Create a mock l2a_dataset
     epochs = np.array([1, 2])
-<<<<<<< HEAD
     epochs = epochs * NANOSECONDS_IN_DAY
-=======
-    epochs = epochs * ONE_DAY_NS
->>>>>>> ad860486 (add more testing for l2b. Add quality flag array.)
 
     # Create a test dataset with values that are out of the expected bin edges.
     l2a_dataset = xr.Dataset(
@@ -277,11 +246,7 @@ def test_compute_counts_by_charge_and_mass_out_of_bounds():
     )
 
     # Unique days of year
-<<<<<<< HEAD
     epoch_doy_unique = np.unique(epochs / NANOSECONDS_IN_DAY).astype(int) + 1
-=======
-    epoch_doy_unique = np.unique(epochs / ONE_DAY_NS).astype(int) + 1
->>>>>>> ad860486 (add more testing for l2b. Add quality flag array.)
 
     counts_by_charge, counts_by_mass, daily_epoch = compute_counts_by_charge_and_mass(
         l2a_dataset, epoch_doy_unique
@@ -370,13 +335,7 @@ def test_compute_rates_by_charge_and_mass_missing_acquisition_time(caplog):
     np.testing.assert_array_equal(
         rate_by_charge[1], np.full(rate_by_charge[1].shape, -1.0)
     )
-<<<<<<< HEAD
     np.testing.assert_array_equal(rate_by_mass[1], np.full(rate_by_mass[1].shape, -1.0))
-=======
-    np.testing.assert_array_equal(
-        rate_by_charge[1], np.full(rate_by_charge[1].shape, -1.0)
-    )
->>>>>>> ad860486 (add more testing for l2b. Add quality flag array.)
 
     # Assert that quality flags are 0 for the missing acquisition time
     assert quality_flags[0] == 1
