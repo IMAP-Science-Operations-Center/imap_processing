@@ -16,4 +16,3 @@ The L0 code to decommutate the CCSDS packet data can be found below.
     :recursive:
 
     l0.utils
-    l0.data_classes
