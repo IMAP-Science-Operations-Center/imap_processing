@@ -31,7 +31,7 @@ ELECTRON_MASS = 9.10938e-31  # kg
 # See doc string of calculate_phase_space_density() for more details.
 VELOCITY_CONVERSION_FACTOR = 1.237e31
 # See doc string of calculate_flux() for more details.
-FLUX_CONVERSION_FACTOR = 6.187e30
+FLUX_CONVERSION_FACTOR = 6.197e30
 
 CEM_DETECTORS_ANGLE = np.array([-63, -42, -21, 0, 21, 42, 63])
 

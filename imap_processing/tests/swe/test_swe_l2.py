@@ -256,7 +256,10 @@ def test_put_data_into_angle_bins():
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 @pytest.mark.usefixtures("use_fake_spin_data_for_time")
 def test_swe_l2(
-    mock_get_file_paths, use_fake_spin_data_for_time, l2_sector_validation_df
+    mock_get_file_paths,
+    use_fake_spin_data_for_time,
+    l2_sector_validation_df,
+    l2_binned_validation_df,
 ):
     """Test L2 processing."""
     data_start_time = 453051293.099714
@@ -343,15 +346,57 @@ def test_swe_l2(
         "L2 dataset shape: ",
         l2_dataset["phase_space_density_spin_sector"].data.shape,
     )
-    print("validation data: ", validation_science[-1, -1, -1, :])
+    print("val data: ", validation_science[-1, -1, -1, :])
     print(
-        "phase_space_density_spin_sector data: ",
+        "psd data: ",
         l2_dataset["phase_space_density_spin_sector"].data[-1, -1, -1, :],
     )
-    print(
-        "flux spin sector: ",
-        l2_dataset["flux_spin_sector"].data[-1, -1, -1, :],
-    )
+
+    print("------binned validation data--------")
+    bin_val = l2_binned_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
+    bin_l2 = l2_dataset["phase_space_density"].data
+
+    with open("bin_val.txt", "w") as f:
+        # check that we have correct zero values in same places
+        # of validation data and science data
+        for cycle in np.arange(len(l2_dataset["phase_space_density"].data)):
+            for esa_idx in np.arange(swe_constants.N_ESA_STEPS):
+                for angle_idx in np.arange(swe_constants.N_ANGLE_BINS):
+                    # if val_zero_indices.size != psd_zero_indices.size:
+                    print(
+                        f"Cycle {cycle}, ESA {esa_idx:02d}, Angle {angle_idx:02d}: "
+                        "Validation data: "
+                        f"{np.array2string(bin_val[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}, "
+                        "L2 PSD data: "
+                        f"{np.array2string(bin_l2[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}",
+                        file=f,
+                    )
+
+    # -----------------------------------------------------------
+    # ;;; V_ESA steps in Volts (email to Tenzin on 23 Sept 2024):
+    # vesa = [0.56, 0.78, 1.08, 1.51, 2.1, 2.92, 4.06, 5.64, $
+    #         7.85, 10.92, 15.19, 21.13, 29.39, 40.88, 56.87, 79.10, $
+    #         110.03, 153.05, 212.89, 296.14, 411.93, 572.99, 797.03, 1108.66]
+
+    # ;;; The following code was used to calculate phase space density and flux
+    # ;;; Convert V_ESA to energy in eV (email to Tenzin on 23 Sept 2024):
+    # nrg = double(vesa) * 4.76
+
+    # ;;; Electron mass:
+    # m_e = 9.10938e-31
+
+    # ;;; SWE G (email to Tenzin on 23 Sept 2024):
+    # g = [435.0e-6,599.0e-6,808.0e-6,781.0e-6,876.0e-6,548.0e-6,432.0e-6]
+
+    # ;;; particle velocity = sqrt(2*E/m)
+    # vel4 = 1.237e31 * nrg * nrg
+
+    # Then I calculated phase space density as:
+    #     Phase space density = 2.0 * count_rate[j,m,n,t] / (g[j] * vel4[m])
+
+    # And flux as:
+    #  Flux = 6.197e30 * Phase space density * nrg[m]
+    # -------------------------------------------------------
     # np.testing.assert_allclose(
     #     l2_dataset["phase_space_density_spin_sector"].data,
     #     validation_science,
