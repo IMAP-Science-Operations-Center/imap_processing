@@ -15,6 +15,7 @@ from imap_processing.lo.l0.lo_science import (
     parse_events,
     parse_histogram,
 )
+from imap_processing.lo.l0.lo_star_sensor import process_star_sensor
 from imap_processing.utils import convert_to_binary_string, packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
@@ -100,10 +101,24 @@ def lo_l1a(dependency: Path) -> list[xr.Dataset]:
         datasets_by_apid[LoAPID.ILO_SCI_DE] = add_dataset_attrs(
             datasets_by_apid[LoAPID.ILO_SCI_DE], attr_mgr, logical_source
         )
+    if LoAPID.ILO_STAR in datasets_by_apid:
+        logger.info(
+            f"\nProcessing {LoAPID(LoAPID.ILO_STAR).name} "
+            f"packet (APID: {LoAPID.ILO_STAR.value})"
+        )
+        datasets_by_apid[LoAPID.ILO_STAR] = process_star_sensor(
+            datasets_by_apid[LoAPID.ILO_STAR]
+        )
 
-    good_apids = [LoAPID.ILO_SPIN, LoAPID.ILO_SCI_CNT, LoAPID.ILO_SCI_DE]
-    logger.info(f"\nReturning datasets: {[LoAPID(apid) for apid in good_apids]}")
-    return [datasets_by_apid[good_apid] for good_apid in good_apids]
+    good_apids = [
+        LoAPID.ILO_SPIN,
+        LoAPID.ILO_SCI_CNT,
+        LoAPID.ILO_SCI_DE,
+        LoAPID.ILO_STAR,
+    ]
+    apids_with_data = [apid for apid in good_apids if apid in datasets_by_apid]
+    logger.info(f"\nReturning datasets: {[LoAPID(apid) for apid in apids_with_data]}")
+    return [datasets_by_apid[apid] for apid in apids_with_data]
 
 
 def add_dataset_attrs(
