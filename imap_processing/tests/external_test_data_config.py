@@ -63,6 +63,8 @@ EXTERNAL_TEST_DATA = [
     ("IMAP-Ultra45_r1_L1_V0_shortened.csv", "ultra/data/l1/"),
 
     # Ultra
+    ("ultra45_raw_sc_ultranrgrates_FM45_UltraFM45_Functional_"
+     "2024-01-22T0105_20240122T010548.csv", "ultra/data/l0/"),
     ("imap_ultra_l0_raw_20260924_v001.pkts", "ultra/data/l0/"),
     ("imap_ultra_l1b_45sensor-de_20240207_v999.cdf", "ultra/data/l1/"),
     ("ultra-90_raw_event_data_shortened.csv", "ultra/data/l1/"),
