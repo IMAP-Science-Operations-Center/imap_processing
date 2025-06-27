@@ -14,6 +14,8 @@ def test_lo_l1a():
         "imap_lo_l1a_spin",
         "imap_lo_l1a_histogram",
         "imap_lo_l1a_de",
+        "imap_lo_l1a_star",
+        "imap_lo_l1b_prostar",
     ]
     output_dataset = lo_l1a(dependency)
 

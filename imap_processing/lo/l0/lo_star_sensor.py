@@ -14,9 +14,9 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def process_star_sensor(ds: xr.Dataset) -> xr.Dataset:
+def unpack_star_sensor(ds: xr.Dataset) -> xr.Dataset:
     """
-    Process Lo star sensor data.
+    Unpack Lo star sensor data.
 
     Parameters
     ----------
@@ -34,16 +34,37 @@ def process_star_sensor(ds: xr.Dataset) -> xr.Dataset:
     buffer = b"".join(ds["data_compressed"].values)
     data = np.frombuffer(buffer, dtype=np.uint8).reshape(-1, 720)
 
-    # Now decompress from 8 -> 12 bits using the decompression tables
-    decompression = DECOMPRESSION_TABLES[Decompress.DECOMPRESS8TO12].astype(np.uint16)
-    # Use the mean value column (2)
-    data = decompression[data, 2]
-
     # There is already a variable called "count" in the dataset that
     # came with the packet
-    ds["data_count"] = xr.DataArray(np.arange(720), dims="data_count")
-    # Create a new DataArray with dimensions (epoch, count)
-    ds["data"] = xr.DataArray(data, dims=("epoch", "data_count"))
+    ds["data_index"] = xr.DataArray(np.arange(720), dims="data_index")
+    ds["data"] = xr.DataArray(data, dims=("epoch", "data_index"))
     # Remove the original compressed data field
     ds = ds.drop_vars("data_compressed")
+    return ds
+
+
+def process_star_sensor(ds: xr.Dataset) -> xr.Dataset:
+    """
+    Process Lo star sensor data.
+
+    Parameters
+    ----------
+    ds : xr.Dataset
+        The packet dataset containing Lo star sensor data.
+
+    Returns
+    -------
+    xr.Dataset
+        Processed dataset with unpacked and decompressed data.
+    """
+    # Decompress from 8 -> 12 bits using the decompression tables
+    decompression = DECOMPRESSION_TABLES[Decompress.DECOMPRESS8TO12].astype(np.uint16)
+
+    # Use the mean value column (2)
+    ds["data"].values = decompression[ds["data"].values, 2]
+
+    # We don't want the original l1a ccsds variables, only data
+    vars_to_drop = [x for x in ds.data_vars if x != "data"]
+    ds = ds.drop_vars(vars_to_drop)
+
     return ds
