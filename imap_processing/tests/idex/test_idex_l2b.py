@@ -330,9 +330,7 @@ def test_compute_rates_by_charge_and_mass_missing_acquisition_time(caplog):
     np.testing.assert_array_equal(
         rate_by_charge[1], np.full(rate_by_charge[1].shape, -1.0)
     )
-    np.testing.assert_array_equal(
-        rate_by_charge[1], np.full(rate_by_charge[1].shape, -1.0)
-    )
+    np.testing.assert_array_equal(rate_by_mass[1], np.full(rate_by_mass[1].shape, -1.0))
 
     # Assert that quality flags are 0 for the missing acquisition time
     assert quality_flags[0] == 1
