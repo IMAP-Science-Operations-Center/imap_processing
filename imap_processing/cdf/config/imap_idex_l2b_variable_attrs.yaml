@@ -156,11 +156,7 @@ rate_calculation_quality_flags:
   LABLAXIS: Quality Flag
   DEPEND_0: epoch
   DISPLAY_TYPE: time_series
-<<<<<<< HEAD
   FILLVAL: 255
-=======
-  FILLVAL: -128
->>>>>>> ad860486 (add more testing for l2b. Add quality flag array.)
   FORMAT: I1
   VALIDMIN: 0
   VALIDMAX: 1

@@ -317,11 +317,7 @@ def compute_rates_by_charge_and_mass(
     # Initialize an array to hold quality flags for each epoch. A quality flag of 0
     # indicates that there was no science acquisition data for that epoch, and the rate
     # is not valid. A quality flag of 1 indicates that the rate is valid.
-<<<<<<< HEAD
     rate_quality_flags = np.ones(epoch_doy.shape, dtype=np.uint8)
-=======
-    rate_quality_flags = np.ones(epoch_doy.shape, dtype=np.int8)
->>>>>>> ad860486 (add more testing for l2b. Add quality flag array.)
 
     # Get percentages in order of epoch_doy. Log any missing days.
     epoch_doy_percent_on = np.array(
@@ -465,7 +461,6 @@ def get_science_acquisition_on_percentage(evt_dataset: xr.Dataset) -> dict:
     # Track total and 'on' durations per day
     daily_totals: collections.defaultdict = defaultdict(timedelta)
     daily_on: collections.defaultdict = defaultdict(timedelta)
-<<<<<<< HEAD
     # Convert epoch event times to datetime
     dates = et_to_datetime64(ttj2000ns_to_et(evt_time)).astype(datetime)
     # Simulate an event at the start of the first day.
@@ -477,23 +472,6 @@ def get_science_acquisition_on_percentage(evt_dataset: xr.Dataset) -> dict:
     evt_values = np.insert(evt_values, 0, state_at_start)
     for i in range(len(dates)):
         start = dates[i]
-=======
-    # TODO what happens if start is not beginning of the day?
-    # TODO The first Day might be missing some total duration or on time before the
-    # Start of the first event. This causes an inaccurate rate for the first day.
-    for i in range(len(evt_time)):
-        # Convert epoch event times to datetime
-        dates = et_to_datetime64(ttj2000ns_to_et(evt_time)).astype(datetime)
-        start = dates[i]
-        if i == len(dates) - 1:
-            # If this is the last event, set the "end" value the end of the day.
-            end = (start + timedelta(days=1)).replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
-        else:
-            # Otherwise, use the next event time as the end time.
-            end = dates[i + 1]
->>>>>>> ad860486 (add more testing for l2b. Add quality flag array.)
         state = evt_values[i]
         if i == len(dates) - 1:
             # If this is the last event, set the "end" value the end of the day.

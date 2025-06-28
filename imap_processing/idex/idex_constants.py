@@ -46,6 +46,7 @@ NS_TO_S = 1e-9
 # Microseconds to seconds conversion
 US_TO_S = 1e-6
 
+ONE_DAY_NS = 86400000000000
 # Seconds in a day
 SECONDS_IN_DAY = 86400
 # Nanoseconds in day
