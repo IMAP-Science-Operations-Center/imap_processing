@@ -157,8 +157,8 @@ rate_calculation_quality_flags:
   LABLAXIS: Quality Flag
   DEPEND_0: epoch
   DISPLAY_TYPE: time_series
-  FILLVAL: -128
-  FORMAT: I1
+  FILLVAL: 255
+  FORMAT: U1
   VALIDMIN: 0
   VALIDMAX: 1
   VAR_TYPE: data

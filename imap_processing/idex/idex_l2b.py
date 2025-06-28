@@ -257,20 +257,22 @@ def compute_counts_by_charge_and_mass(
         # Convert units
         mass_vals = FG_TO_KG * np.array(mass_vals)
         # Bin masses
-        mass_bins = np.array(np.digitize(mass_vals, bins=MASS_BIN_EDGES))
+        binned_mass = np.array(np.digitize(mass_vals, bins=MASS_BIN_EDGES))
         # Bin charges
-        charge_bins = np.array(np.digitize(charge_vals, bins=CHARGE_BIN_EDGES))
+        binned_charge = np.array(np.digitize(charge_vals, bins=CHARGE_BIN_EDGES))
         # Bin spin phases
-        spin_phase_bins = bin_spin_phases(spin_phase_angles)
+        binned_spin_phase = bin_spin_phases(spin_phase_angles)
         # If the values in the array are beyond the bounds of bins, 0 or len(bins) it is
         # returned as such. In this case, the desired result is to place the values
         # beyond the last bin into the last bin and keep the values below the first bin.
-        charge_bins[charge_bins == len(CHARGE_BIN_EDGES)] = len(CHARGE_BIN_EDGES) - 1
-        mass_bins[mass_bins == len(MASS_BIN_EDGES)] = len(MASS_BIN_EDGES) - 1
+        binned_charge[binned_charge == len(CHARGE_BIN_EDGES)] = (
+            len(CHARGE_BIN_EDGES) - 1
+        )
+        binned_mass[binned_mass == len(MASS_BIN_EDGES)] = len(MASS_BIN_EDGES) - 1
 
         # Count dust events for each spin phase and mass bin or charge bin.
         for mass_bin, charge_bin, spin_phase_bin in zip(
-            mass_bins, charge_bins, spin_phase_bins
+            binned_mass, binned_charge, binned_spin_phase
         ):
             counts_by_mass[i, mass_bin, spin_phase_bin - 1] += 1
             counts_by_charge[i, charge_bin, spin_phase_bin - 1] += 1
@@ -310,7 +312,7 @@ def compute_rates_by_charge_and_mass(
     # Initialize an array to hold quality flags for each epoch. A quality flag of 0
     # indicates that there was no science acquisition data for that epoch, and the rate
     # is not valid. A quality flag of 1 indicates that the rate is valid.
-    rate_quality_flags = np.ones(epoch_doy.shape, dtype=np.int8)
+    rate_quality_flags = np.ones(epoch_doy.shape, dtype=np.uint8)
 
     # Get percentages in order of epoch_doy. Log any missing days.
     epoch_doy_percent_on = np.array(
@@ -452,13 +454,18 @@ def get_science_acquisition_on_percentage(evt_dataset: xr.Dataset) -> dict:
     # Track total and 'on' durations per day
     daily_totals: collections.defaultdict = defaultdict(timedelta)
     daily_on: collections.defaultdict = defaultdict(timedelta)
-    # TODO what happens if start is not beginning of the day?
-    # TODO The first Day might be missing some total duration or on time before the
-    # Start of the first event. This causes an inaccurate rate for the first day.
-    for i in range(len(evt_time)):
-        # Convert epoch event times to datetime
-        dates = et_to_datetime64(ttj2000ns_to_et(evt_time)).astype(datetime)
+    # Convert epoch event times to datetime
+    dates = et_to_datetime64(ttj2000ns_to_et(evt_time)).astype(datetime)
+    # Simulate an event at the start of the first day.
+    start_of_first_day = dates[0].replace(hour=0, minute=0, second=0, microsecond=0)
+    # Assume that the state at the start of the day is the opposite of what the first
+    # state is.
+    state_at_start = 0 if evt_values[0] == 1 else 1
+    dates = np.insert(dates, 0, start_of_first_day)
+    evt_values = np.insert(evt_values, 0, state_at_start)
+    for i in range(len(dates)):
         start = dates[i]
+        state = evt_values[i]
         if i == len(dates) - 1:
             # If this is the last event, set the "end" value the end of the day.
             end = (start + timedelta(days=1)).replace(
@@ -467,7 +474,6 @@ def get_science_acquisition_on_percentage(evt_dataset: xr.Dataset) -> dict:
         else:
             # Otherwise, use the next event time as the end time.
             end = dates[i + 1]
-        state = evt_values[i]
 
         # Split time span by day boundaries
         current = start

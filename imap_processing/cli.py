@@ -906,6 +906,8 @@ class Idex(ProcessInstrument):
             )
             sci_dependencies = [load_cdf(f) for f in sci_files]
             hk_files = dependencies.get_file_paths(source="idex", descriptor="evt")
+            # Remove duplicate housekeeping files
+            hk_files = list(set(hk_files))
             hk_dependencies = [load_cdf(dep) for dep in hk_files]
             datasets = [idex_l2b(sci_dependencies, hk_dependencies)]
         elif self.data_level == "l2c":
