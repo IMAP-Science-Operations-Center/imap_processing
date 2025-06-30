@@ -10,7 +10,7 @@ from imap_processing import imap_module_directory
     [
         pytest.param(
             {
-                "apid": 898,
+                "apid": 900,
                 "filename": "FM45_UltraFM45Extra_TV_Tests_"
                 "2024-01-22T0930_20240122T093008.CCSDS",
             }
@@ -23,16 +23,16 @@ def test_image_raw_events_decom(decom_test_data, ccsds_path_events, xtce_path):
     """This function reads validation data and checks that decom data
     matches validation data for image rate packet"""
     filename = (
-        "ultra45_raw_sc_imgpriority1evnt_FM45_UltraFM45Extra_TV_Tests_"
+        "ultra45_raw_sc_imgpriority3evnt_FM45_UltraFM45Extra_TV_Tests_"
         "2024-01-22T0930_20240122T093008.csv"
     )
-    priority_1_events_test_path = (
+    priority_3_events_test_path = (
         imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
     )
 
     decom_ultra = decom_test_data
 
-    df = pd.read_csv(priority_1_events_test_path, index_col="MET")
+    df = pd.read_csv(priority_3_events_test_path, index_col="MET")
 
     # # Check all values of each column are as expected,
     # except for those set to fill value
