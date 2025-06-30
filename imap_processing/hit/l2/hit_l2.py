@@ -312,10 +312,7 @@ def calculate_intensities_for_a_species(
         The updated dataset with intensities calculated for the given species.
     """
     updated_ds = l2_dataset.copy()
-    # Get the dynamic threshold state for the species variable and update the data type
-    updated_ds["dynamic_threshold_state"] = updated_ds[
-        "dynamic_threshold_state"
-    ].astype(np.int8)
+    # Get the dynamic threshold state for the species variable
     dynamic_threshold_states = updated_ds["dynamic_threshold_state"].values
     unique_states = np.unique(dynamic_threshold_states)
     species_name = (
