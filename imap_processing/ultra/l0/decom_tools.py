@@ -259,7 +259,7 @@ def read_image_raw_events_binary(
         Event data.
     """
     binary = convert_to_binary_string(event_data)
-    length = max(end for _, (_, end) in field_ranges.items())
+    length = max(end for (_, end) in field_ranges.values())
     # bits per event
     event_length = length if count else 0
     event_data_list = []

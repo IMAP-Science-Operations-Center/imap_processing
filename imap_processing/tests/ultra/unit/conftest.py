@@ -173,16 +173,15 @@ def decom_test_data(request, xtce_path):
 
     strategy_dict = {
         ULTRA_TOF.apid[0]: lambda ds, _: process_ultra_tof(ds),
-        ULTRA_ENERGY_EVENTS.apid[0]: process_ultra_events,
-        ULTRA_EVENTS.apid[0]: process_ultra_events,
-        ULTRA_RATES.apid[0]: lambda ds, _: process_ultra_rates(ds),
         ULTRA_TOF.apid[1]: lambda ds, _: process_ultra_tof(ds),
-        ULTRA_ENERGY_RATES.apid[0]: process_ultra_energy_rates,
-        ULTRA_TOF.apid[1]: process_ultra_tof,
-        ULTRA_ENERGY_EVENTS.apid[1]: process_ultra_events,
-        ULTRA_EVENTS.apid[1]: process_ultra_events,
+        ULTRA_ENERGY_EVENTS.apid[0]: lambda ds, _: process_ultra_events(ds),
+        ULTRA_ENERGY_EVENTS.apid[1]: lambda ds, _: process_ultra_events(ds),
+        ULTRA_EVENTS.apid[0]: lambda ds, _: process_ultra_events(ds),
+        ULTRA_EVENTS.apid[1]: lambda ds, _: process_ultra_events(ds),
+        ULTRA_RATES.apid[0]: lambda ds, _: process_ultra_rates(ds),
         ULTRA_RATES.apid[1]: lambda ds, _: process_ultra_rates(ds),
-        ULTRA_ENERGY_RATES.apid[1]: process_ultra_energy_rates,
+        ULTRA_ENERGY_RATES.apid[0]: lambda ds, _: process_ultra_energy_rates(ds),
+        ULTRA_ENERGY_RATES.apid[1]: lambda ds, _: process_ultra_energy_rates(ds),
     }
 
     process_function = strategy_dict.get(apid, lambda *args: False)

@@ -19,8 +19,8 @@ from imap_processing.ultra.l0.ultra_utils import (
     ENERGY_RATES_KEYS,
     EVENT_FIELD_RANGES,
     RATES_KEYS,
-    ULTRA_ENERGY_RATES,
     ULTRA_ENERGY_EVENTS,
+    ULTRA_ENERGY_RATES,
     ULTRA_EVENTS,
     ULTRA_RATES,
     ULTRA_TOF,
@@ -162,7 +162,7 @@ def process_ultra_events(ds: xr.Dataset, apid: int) -> xr.Dataset:
     elif apid in ULTRA_ENERGY_EVENTS.apid:
         field_ranges = ENERGY_EVENT_FIELD_RANGES
     else:
-        logger.error(f"APID {apid} not recognized for Ultra events processing.")
+        raise ValueError(f"APID {apid} not recognized for Ultra events processing.")
 
     all_events = []
     all_indices = []
