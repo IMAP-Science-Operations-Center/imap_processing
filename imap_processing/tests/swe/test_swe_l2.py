@@ -262,7 +262,7 @@ def test_swe_l2(
     l2_binned_validation_df,
 ):
     """Test L2 processing."""
-    data_start_time = 453051293.099714
+    data_start_time = 453051293.0
     data_end_time = 453070000.0
     use_fake_spin_data_for_time(data_start_time, data_end_time)
 
