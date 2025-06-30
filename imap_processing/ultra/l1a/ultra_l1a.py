@@ -20,6 +20,10 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_ENERGY_RATES,
     ULTRA_EVENTS,
     ULTRA_HK,
+    ULTRA_PRI_1_EVENTS,
+    ULTRA_PRI_2_EVENTS,
+    ULTRA_PRI_3_EVENTS,
+    ULTRA_PRI_4_EVENTS,
     ULTRA_RATES,
     ULTRA_TOF,
 )
@@ -62,6 +66,14 @@ def ultra_l1a(packet_file: str, apid_input: Optional[int] = None) -> list[xr.Dat
     else:
         apids = list(datasets_by_apid.keys())
 
+    all_event_apids = set(
+        ULTRA_EVENTS.apid
+        + ULTRA_PRI_1_EVENTS.apid
+        + ULTRA_PRI_2_EVENTS.apid
+        + ULTRA_PRI_3_EVENTS.apid
+        + ULTRA_PRI_4_EVENTS.apid
+    )
+
     # Update dataset global attributes
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs("ultra")
@@ -84,7 +96,8 @@ def ultra_l1a(packet_file: str, apid_input: Optional[int] = None) -> list[xr.Dat
             gattr_key = ULTRA_ENERGY_RATES.logical_source[
                 ULTRA_ENERGY_RATES.apid.index(apid)
             ]
-        elif apid in ULTRA_EVENTS.apid:
+        elif apid in all_event_apids:
+            # TODO fix the logical source!
             decom_ultra_dataset = process_ultra_events(datasets_by_apid[apid], apid)
             gattr_key = ULTRA_EVENTS.logical_source[ULTRA_EVENTS.apid.index(apid)]
             # Add coordinate attributes
