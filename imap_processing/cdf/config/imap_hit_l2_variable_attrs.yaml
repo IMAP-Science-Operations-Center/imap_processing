@@ -212,115 +212,115 @@ azimuth_label:
 h_energy_mean_label:
   CATDESC: Geometric mean energy per nucleon for H
   FIELDNAM: H Energy
-  FORMAT: A5
+  FORMAT: A6
   VAR_TYPE: metadata
 
 he3_energy_mean_label:
   CATDESC: Geometric mean energy per nucleon for He3
   FIELDNAM: He3 Energy
-  FORMAT: A5
+  FORMAT: A6
   VAR_TYPE: metadata
 
 he4_energy_mean_label:
   CATDESC: Geometric mean energy per nucleon for He4
   FIELDNAM: He4 Energy
-  FORMAT: A5
+  FORMAT: A6
   VAR_TYPE: metadata
 
 he_energy_mean_label:
   CATDESC: Geometric mean energy per nucleon for He
   FIELDNAM: He Energy
-  FORMAT: A5
+  FORMAT: A6
   VAR_TYPE: metadata
 
 c_energy_mean_label:
   CATDESC: Geometric mean energy per nucleon for C
   FIELDNAM: C Energy
-  FORMAT: A5
+  FORMAT: A6
   VAR_TYPE: metadata
 
 n_energy_mean_label:
   CATDESC: Geometric mean energy per nucleon for N
   FIELDNAM: N Energy
-  FORMAT: A5
+  FORMAT: A6
   VAR_TYPE: metadata
 
 o_energy_mean_label:
   CATDESC: Geometric mean energy per nucleon for O
   FIELDNAM: O Energy
-  FORMAT: A5
+  FORMAT: A6
   VAR_TYPE: metadata
 
 ne_energy_mean_label:
   CATDESC: Geometric mean energy per nucleon for Ne
   FIELDNAM: Ne Energy
-  FORMAT: A5
+  FORMAT: A6
   VAR_TYPE: metadata
 
 na_energy_mean_label:
   CATDESC: Geometric mean energy per nucleon for Na
   FIELDNAM: Na Energy
-  FORMAT: A5
+  FORMAT: A6
   VAR_TYPE: metadata
 
 mg_energy_mean_label:
   CATDESC: Geometric mean energy per nucleon for Mg
   FIELDNAM: Mg Energy
-  FORMAT: A5
+  FORMAT: A6
   VAR_TYPE: metadata
 
 si_energy_mean_label:
   CATDESC: Geometric mean energy per nucleon for Si
   FIELDNAM: Si Energy
-  FORMAT: A5
+  FORMAT: A6
   VAR_TYPE: metadata
 
 s_energy_mean_label:
   CATDESC: Geometric mean energy per nucleon for S
   FIELDNAM: S Energy
-  FORMAT: A5
+  FORMAT: A6
   VAR_TYPE: metadata
 
 al_energy_mean_label:
   CATDESC: Geometric mean energy per nucleon for Al
   FIELDNAM: Al Energy
-  FORMAT: A5
+  FORMAT: A6
   VAR_TYPE: metadata
 
 ar_energy_mean_label:
   CATDESC: Geometric mean energy per nucleon for Ar
   FIELDNAM: Ar Energy
-  FORMAT: A5
+  FORMAT: A6
   VAR_TYPE: metadata
 
 ca_energy_mean_label:
   CATDESC: Geometric mean energy per nucleon for Ca
   FIELDNAM: Ca Energy
-  FORMAT: A5
+  FORMAT: A6
   VAR_TYPE: metadata
 
 fe_energy_mean_label:
   CATDESC: Geometric mean energy per nucleon for Fe
   FIELDNAM: Fe Energy
-  FORMAT: A5
+  FORMAT: A6
   VAR_TYPE: metadata
 
 ni_energy_mean_label:
   CATDESC: Geometric mean energy per nucleon for Ni
   FIELDNAM: Ni Energy
-  FORMAT: A5
+  FORMAT: A6
   VAR_TYPE: metadata
 
 nemgsi_energy_mean_label:
   CATDESC: Geometric mean energy per nucleon for NeMgSi
   FIELDNAM: NeMgSi Energy
-  FORMAT: A5
+  FORMAT: A6
   VAR_TYPE: metadata
 
 cno_energy_mean_label:
   CATDESC: Geometric mean energy per nucleon for CNO
   FIELDNAM: CNO Energy
-  FORMAT: A5
+  FORMAT: A6
   VAR_TYPE: metadata
 
 # <=== Data Variables ===>
