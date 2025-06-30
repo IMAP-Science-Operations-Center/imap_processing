@@ -85,6 +85,54 @@ ULTRA_ENERGY_EVENTS = PacketProperties(
     len_array=None,
     mantissa_bit_length=None,
 )
+ULTRA_PRI_1_EVENTS = PacketProperties(
+    apid=[898, 962],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-pri-1-de",
+        "imap_ultra_l1a_90sensor-pri-1-de",
+    ],
+    addition_to_logical_desc="Primary 1 Events",
+    width=None,
+    block=None,
+    len_array=None,
+    mantissa_bit_length=None,
+)
+ULTRA_PRI_2_EVENTS = PacketProperties(
+    apid=[899, 963],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-pri-2-de",
+        "imap_ultra_l1a_90sensor-pri-2-de",
+    ],
+    addition_to_logical_desc="Primary 2 Events",
+    width=None,
+    block=None,
+    len_array=None,
+    mantissa_bit_length=None,
+)
+ULTRA_PRI_3_EVENTS = PacketProperties(
+    apid=[900, 964],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-pri-3-de",
+        "imap_ultra_l1a_90sensor-pri-3-de",
+    ],
+    addition_to_logical_desc="Primary 3 Events",
+    width=None,
+    block=None,
+    len_array=None,
+    mantissa_bit_length=None,
+)
+ULTRA_PRI_4_EVENTS = PacketProperties(
+    apid=[901, 965],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-pri-4-de",
+        "imap_ultra_l1a_90sensor-pri-4-de",
+    ],
+    addition_to_logical_desc="Primary 4 Events",
+    width=None,
+    block=None,
+    len_array=None,
+    mantissa_bit_length=None,
+)
 ULTRA_HK = PacketProperties(
     apid=[
         866,

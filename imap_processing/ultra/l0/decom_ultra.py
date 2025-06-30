@@ -22,6 +22,10 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_ENERGY_EVENTS,
     ULTRA_ENERGY_RATES,
     ULTRA_EVENTS,
+    ULTRA_PRI_1_EVENTS,
+    ULTRA_PRI_2_EVENTS,
+    ULTRA_PRI_3_EVENTS,
+    ULTRA_PRI_4_EVENTS,
     ULTRA_RATES,
     ULTRA_TOF,
 )
@@ -157,7 +161,14 @@ def process_ultra_events(ds: xr.Dataset, apid: int) -> xr.Dataset:
     ds : xarray.Dataset
         Dataset containing the decoded and decompressed data.
     """
-    if apid in ULTRA_EVENTS.apid:
+    all_event_apids = set(
+        ULTRA_EVENTS.apid
+        + ULTRA_PRI_1_EVENTS.apid
+        + ULTRA_PRI_2_EVENTS.apid
+        + ULTRA_PRI_3_EVENTS.apid
+        + ULTRA_PRI_4_EVENTS.apid
+    )
+    if apid in all_event_apids:
         field_ranges = EVENT_FIELD_RANGES
     elif apid in ULTRA_ENERGY_EVENTS.apid:
         field_ranges = ENERGY_EVENT_FIELD_RANGES
