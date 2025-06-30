@@ -107,6 +107,19 @@ def ccsds_path_functional():
 
 
 @pytest.fixture
+def ccsds_path_extra():
+    """Returns the ccsds directory."""
+    return (
+        imap_module_directory
+        / "tests"
+        / "ultra"
+        / "data"
+        / "l0"
+        / "FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.CCSDS"
+    )
+
+
+@pytest.fixture
 def xtce_path():
     """Returns the xtce image rates directory."""
     return (

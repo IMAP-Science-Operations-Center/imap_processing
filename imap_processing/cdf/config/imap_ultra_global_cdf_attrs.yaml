@@ -80,6 +80,54 @@ imap_ultra_l1a_90sensor-energy-de:
     Logical_source: imap_ultra_l1a_90sensor-energy-de
     Logical_source_description: IMAP-Ultra Instrument Level-1A Energy Direct Event Data.
 
+imap_ultra_l1a_45sensor-priority-1-de:
+    <<: *instrument_base
+    Data_type: L1A_PRIORITY_1_DE>Level-1A Priority 1 Direct Event
+    Logical_source: imap_ultra_l1a_45sensor-priority-1-de
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 1 Direct Event Data.
+
+imap_ultra_l1a_90sensor-priority-1-de:
+    <<: *instrument_base
+    Data_type: L1A_PRIORITY_1_DE>Level-1A Priority 1 Direct Event
+    Logical_source: imap_ultra_l1a_90sensor-priority-1-de
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 1 Direct Event Data.
+
+imap_ultra_l1a_45sensor-priority-2-de:
+    <<: *instrument_base
+    Data_type: L1A_PRIORITY_2_DE>Level-1A Priority 2 Direct Event
+    Logical_source: imap_ultra_l1a_45sensor-priority-2-de
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 2 Direct Event Data.
+
+imap_ultra_l1a_90sensor-priority-2-de:
+    <<: *instrument_base
+    Data_type: L1A_PRIORITY_2_DE>Level-1A Priority 2 Direct Event
+    Logical_source: imap_ultra_l1a_90sensor-priority-2-de
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 2 Direct Event Data.
+
+imap_ultra_l1a_45sensor-priority-3-de:
+    <<: *instrument_base
+    Data_type: L1A_PRIORITY_3_DE>Level-1A Priority 3 Direct Event
+    Logical_source: imap_ultra_l1a_45sensor-priority-3-de
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 3 Direct Event Data.
+
+imap_ultra_l1a_90sensor-priority-3-de:
+    <<: *instrument_base
+    Data_type: L1A_PRIORITY_3_DE>Level-1A Priority 3 Direct Event
+    Logical_source: imap_ultra_l1a_90sensor-priority-3-de
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 3 Direct Event Data.
+
+imap_ultra_l1a_45sensor-priority-4-de:
+    <<: *instrument_base
+    Data_type: L1A_PRIORITY_4_DE>Level-1A Priority 4 Direct Event
+    Logical_source: imap_ultra_l1a_45sensor-priority-4-de
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 4 Direct Event Data.
+
+imap_ultra_l1a_90sensor-priority-4-de:
+    <<: *instrument_base
+    Data_type: L1A_PRIORITY_4_DE>Level-1A Priority 4 Direct Event
+    Logical_source: imap_ultra_l1a_90sensor-priority-4-de
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 4 Direct Event Data.
+
 imap_ultra_l1b_45sensor-de:
     <<: *instrument_base
     Data_type: L1B_45Sensor-DE>Level-1B Direct Events for Ultra45
