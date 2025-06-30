@@ -15,7 +15,7 @@ from imap_processing.lo.l0.lo_science import (
     parse_events,
     parse_histogram,
 )
-from imap_processing.lo.l0.lo_star_sensor import process_star_sensor, unpack_star_sensor
+from imap_processing.lo.l0.lo_star_sensor import process_star_sensor
 from imap_processing.utils import convert_to_binary_string, packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
@@ -98,16 +98,9 @@ def lo_l1a(dependency: Path) -> list[xr.Dataset]:
         )
         logical_source = "imap_lo_l1a_star"
         ds = datasets_by_apid[LoAPID.ILO_STAR]
-        ds = unpack_star_sensor(ds)
+        ds = process_star_sensor(ds)
         ds = add_dataset_attrs(ds, attr_mgr, logical_source)
         datasets_to_return.append(ds)
-
-        # Also create l1b at the same time
-        logical_source_l1b = "imap_lo_l1b_prostar"
-        ds_l1b = ds.copy(deep=True)
-        ds_l1b = process_star_sensor(ds_l1b)
-        ds_l1b.attrs.update(attr_mgr.get_global_attributes(logical_source_l1b))
-        datasets_to_return.append(ds_l1b)
 
     logger.info(f"Returning [{len(datasets_to_return)}] datasets")
     return datasets_to_return
