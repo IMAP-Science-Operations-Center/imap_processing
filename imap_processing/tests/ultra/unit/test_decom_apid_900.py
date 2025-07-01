@@ -2,36 +2,20 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing import imap_module_directory
+from imap_processing.ultra.l0.decom_ultra import process_ultra_events
+from imap_processing.ultra.l0.ultra_utils import ULTRA_PRI_3_EVENTS
+from imap_processing.utils import packet_file_to_datasets
 
 
-@pytest.mark.parametrize(
-    "decom_test_data",
-    [
-        pytest.param(
-            {
-                "apid": 900,
-                "filename": "FM45_UltraFM45Extra_TV_Tests_"
-                "2024-01-22T0930_20240122T093008.CCSDS",
-            }
-        )
-    ],
-    indirect=True,
-)
 @pytest.mark.external_test_data
-def test_image_raw_events_decom(decom_test_data, xtce_path):
+def test_image_raw_events_decom(xtce_path, priority_3_test_path, ccsds_path_extra):
     """This function reads validation data and checks that decom data
     matches validation data for image rate packet"""
-    filename = (
-        "ultra45_raw_sc_imgpriority3evnt_FM45_UltraFM45Extra_TV_Tests_"
-        "2024-01-22T0930_20240122T093008.csv"
+    datasets_by_apid = packet_file_to_datasets(ccsds_path_extra, xtce_path)
+    decom_ultra = process_ultra_events(
+        datasets_by_apid[ULTRA_PRI_3_EVENTS.apid[0]], ULTRA_PRI_3_EVENTS.apid[0]
     )
-    priority_3_events_test_path = (
-        imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
-    )
-
-    decom_ultra = decom_test_data
-    df = pd.read_csv(priority_3_events_test_path, index_col="MET")
+    df = pd.read_csv(priority_3_test_path, index_col="MET")
 
     vars_to_compare = {
         "SID": "sid",

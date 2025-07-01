@@ -173,6 +173,46 @@ def energy_spectra_test_path():
 
 
 @pytest.fixture
+def priority_1_test_path():
+    """Returns the xtce image rates test data directory."""
+    filename = (
+        "ultra45_raw_sc_imgpriority1evnt_FM45_UltraFM45Extra_TV_Tests_"
+        "2024-01-22T0930_20240122T093008.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
+def priority_2_test_path():
+    """Returns the xtce image rates test data directory."""
+    filename = (
+        "ultra45_raw_sc_imgpriority2evnt_FM45_UltraFM45Extra_TV_Tests_"
+        "2024-01-22T0930_20240122T093008.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
+def priority_3_test_path():
+    """Returns the xtce image rates test data directory."""
+    filename = (
+        "ultra45_raw_sc_imgpriority3evnt_FM45_UltraFM45Extra_TV_Tests_"
+        "2024-01-22T0930_20240122T093008.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
+def priority_4_test_path():
+    """Returns the xtce image rates test data directory."""
+    filename = (
+        "ultra45_raw_sc_imgpriority4evnt_FM45_UltraFM45Extra_TV_Tests_"
+        "2024-01-22T0930_20240122T093008.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
 def aux_test_path():
     """Returns the xtce auxiliary test data directory."""
     filename = (
