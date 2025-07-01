@@ -149,15 +149,16 @@ def swapi_l2(
     # Copy over only certain variables from L1 to L2 dataset
     l1_data_keys = [
         "epoch",
+        "esa_lvl5",
         "esa_step",
         "esa_step_label",
-        "swp_l1a_flags",
-        "sweep_table",
-        "plan_id",
-        "lut_choice",
-        "fpga_type",
         "fpga_rev",
-        "esa_lvl5",
+        "fpga_type",
+        "lut_choice",
+        "plan_id",
+        "sci_start_time",
+        "sweep_table",
+        "swp_l1a_flags",
     ]
     l2_dataset = l1_dataset[l1_data_keys]
 
