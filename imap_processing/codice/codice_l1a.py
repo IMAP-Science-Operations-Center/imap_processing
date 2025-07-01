@@ -89,7 +89,7 @@ class CoDICEL1aPipeline:
         self.plan_step = plan_step
         self.view_id = view_id
 
-    def calculate_epoch_values(self) -> NDArray[int]:
+    def calculate_epoch_values(self) -> tuple[NDArray[int], NDArray[int], NDArray[int]]:
         """
         Calculate and return the values to be used for `epoch`.
 
@@ -102,14 +102,31 @@ class CoDICEL1aPipeline:
         Returns
         -------
         epoch : NDArray[int]
-            List of epoch values.
+            List of centered epoch values.
+        epoch_delta_minus: NDArray[int]
+            List of values that represent the length of time from acquisition
+            start to the center of the acquisition time bin.
+        epoch_delta_plus: NDArray[int]
+            List of values that represent the length of time from the center of
+            the acquisition time bin to the end of acquisition.
         """
-        epoch = met_to_ttj2000ns(
+        # First calculate an epoch value based on the acquisition start
+        acq_start = met_to_ttj2000ns(
             self.dataset["acq_start_seconds"]
             + self.dataset["acq_start_subseconds"] / 1e6
         )
 
-        return epoch
+        # Apply correction to center the epoch bin
+        epoch = (acq_start[:-1] + acq_start[1:]) / 2
+        epoch_delta_minus = epoch - acq_start[:-1]
+        epoch_delta_plus = acq_start[1:] - epoch
+
+        # The end values are calculated differently
+        epoch = np.concatenate([epoch, [acq_start[-1]]])
+        epoch_delta_minus = np.concatenate([epoch_delta_minus, [epoch_delta_minus[-1]]])
+        epoch_delta_plus = np.concatenate([epoch_delta_plus, [epoch_delta_plus[-1]]])
+
+        return epoch, epoch_delta_minus, epoch_delta_plus
 
     def decompress_data(self, science_values: list[NDArray[str]] | list[str]) -> None:
         """
@@ -167,17 +184,28 @@ class CoDICEL1aPipeline:
         self.coords = {}
 
         coord_names = [
-            "epoch",
             *self.config["output_dims"].keys(),
             *[key + "_label" for key in self.config["output_dims"].keys()],
         ]
 
+        # Define epoch coordinates
+        epochs, epoch_delta_minus, epoch_delta_plus = self.calculate_epoch_values()
+        for name, var in [
+            ("epoch", epochs),
+            ("epoch_delta_minus", epoch_delta_minus),
+            ("epoch_delta_plus", epoch_delta_plus),
+        ]:
+            coord = xr.DataArray(
+                var,
+                name=name,
+                dims=[name],
+                attrs=self.cdf_attrs.get_variable_attributes(name, check_schema=False),
+            )
+            self.coords[name] = var
+
         # Define the values for the coordinates
         for name in coord_names:
-            if name == "epoch":
-                values = self.calculate_epoch_values()
-                dims = [name]
-            elif name in [
+            if name in [
                 "esa_step",
                 "inst_az",
                 "spin_sector",
