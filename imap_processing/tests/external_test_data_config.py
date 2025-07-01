@@ -63,13 +63,14 @@ EXTERNAL_TEST_DATA = [
     ("IMAP-Ultra45_r1_L1_V0_shortened.csv", "ultra/data/l1/"),
 
     # Ultra
+    ("FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.CCSDS", "ultra/data/l0/"),
     ("ultra45_raw_sc_rawnrgevnt_19840122_00.csv", "ultra/data/l0/"),
     ("ultra45_raw_sc_imgpriority1evnt_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv", "ultra/data/l0/"),
-    ("ultra45_raw_sc_ultranrgrates_FM45_UltraFM45_Functional_"
-     "2024-01-22T0105_20240122T010548.csv", "ultra/data/l0/"),
     ("ultra45_raw_sc_imgpriority2evnt_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv", "ultra/data/l0/"),
     ("ultra45_raw_sc_imgpriority3evnt_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv", "ultra/data/l0/"),
     ("ultra45_raw_sc_imgpriority4evnt_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv", "ultra/data/l0/"),
+    ("ultra45_raw_sc_ultranrgrates_FM45_UltraFM45_Functional_"
+     "2024-01-22T0105_20240122T010548.csv", "ultra/data/l0/"),
     ("imap_ultra_l0_raw_20260924_v001.pkts", "ultra/data/l0/"),
     ("imap_ultra_l1b_45sensor-de_20240207_v999.cdf", "ultra/data/l1/"),
     ("ultra-90_raw_event_data_shortened.csv", "ultra/data/l1/"),
