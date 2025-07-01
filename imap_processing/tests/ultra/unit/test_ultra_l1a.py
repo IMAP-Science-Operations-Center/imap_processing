@@ -222,6 +222,7 @@ def test_cdf_pri_4_events(ccsds_path_extra):
     )
 
 
+@pytest.mark.external_test_data
 def test_cdf_energy_spectra(ccsds_path_startup):
     """Tests that CDF file can be created."""
     test_data = ultra_l1a(ccsds_path_startup, apid_input=ULTRA_ENERGY_SPECTRA.apid[1])
