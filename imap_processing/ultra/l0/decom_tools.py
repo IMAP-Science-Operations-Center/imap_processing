@@ -53,15 +53,15 @@ def log_decompression(value: int, mantissa_bit_length: int) -> int:
     """
     Perform logarithmic decompression on an integer.
 
-    Supports both 16-bit and 8-bit formats based on the specified
+    Supports 16-bit, 10-bit, and 8-bit formats based on the specified
     mantissa bit length.
 
     Parameters
     ----------
     value : int
-        An integer comprised of a 4-bit exponent followed by a variable-length mantissa.
+        An integer comprised of an exponent followed by a mantissa.
     mantissa_bit_length : int
-        The bit length of the mantissa (default is 12 for 16-bit format).
+        The bit length of the mantissa.
 
     Returns
     -------
@@ -72,6 +72,9 @@ def log_decompression(value: int, mantissa_bit_length: int) -> int:
     if mantissa_bit_length == 12:
         base_value = 4096
         mantissa_mask = 0xFFF
+    elif mantissa_bit_length == 5:
+        base_value = 32
+        mantissa_mask = 0x1F
     elif mantissa_bit_length == 4:
         base_value = 16
         mantissa_mask = 0x0F

@@ -7,6 +7,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.ultra.l0.decom_ultra import (
     process_ultra_energy_rates,
+    process_ultra_energy_spectra,
     process_ultra_events,
     process_ultra_rates,
     process_ultra_tof,
@@ -15,6 +16,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_AUX,
     ULTRA_ENERGY_EVENTS,
     ULTRA_ENERGY_RATES,
+    ULTRA_ENERGY_SPECTRA,
     ULTRA_EVENTS,
     ULTRA_PRI_1_EVENTS,
     ULTRA_PRI_2_EVENTS,
@@ -107,6 +109,19 @@ def ccsds_path_functional():
 
 
 @pytest.fixture
+def ccsds_path_startup():
+    """Returns the ccsds directory."""
+    return (
+        imap_module_directory
+        / "tests"
+        / "ultra"
+        / "data"
+        / "l0"
+        / "FM90_Startup_20230711T081655.CCSDS"
+    )
+
+
+@pytest.fixture
 def ccsds_path_extra():
     """Returns the ccsds directory."""
     return (
@@ -147,6 +162,13 @@ def energy_rates_test_path():
         "ultra45_raw_sc_ultranrgrates_FM45_UltraFM45_Functional"
         "_2024-01-22T0105_20240122T010548.csv"
     )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
+def energy_spectra_test_path():
+    """Returns the xtce image rates test data directory."""
+    filename = "ultra90_raw_sc_ultraenergyspctr_FM90_Startup_20230711T081655.csv"
     return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
 
@@ -207,6 +229,8 @@ def decom_test_data(request, xtce_path):
         ULTRA_RATES.apid[1]: lambda ds, apid: process_ultra_rates(ds),
         ULTRA_ENERGY_RATES.apid[0]: lambda ds, apid: process_ultra_energy_rates(ds),
         ULTRA_ENERGY_RATES.apid[1]: lambda ds, apid: process_ultra_energy_rates(ds),
+        ULTRA_ENERGY_SPECTRA.apid[0]: lambda ds, apid: process_ultra_energy_spectra(ds),
+        ULTRA_ENERGY_SPECTRA.apid[1]: lambda ds, apid: process_ultra_energy_spectra(ds),
     }
 
     process_function = strategy_dict.get(apid, lambda *args: False)

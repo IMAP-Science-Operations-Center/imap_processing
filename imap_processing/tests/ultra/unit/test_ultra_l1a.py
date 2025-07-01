@@ -10,6 +10,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_AUX,
     ULTRA_ENERGY_EVENTS,
     ULTRA_ENERGY_RATES,
+    ULTRA_ENERGY_SPECTRA,
     ULTRA_EVENTS,
     ULTRA_PRI_1_EVENTS,
     ULTRA_PRI_2_EVENTS,
@@ -218,6 +219,20 @@ def test_cdf_pri_4_events(ccsds_path_extra):
     assert (
         test_data_path.name
         == "imap_ultra_l1a_45sensor-priority-4-de_20240122-repoint99999_v999.cdf"
+    )
+
+
+def test_cdf_energy_spectra(ccsds_path_startup):
+    """Tests that CDF file can be created."""
+    test_data = ultra_l1a(ccsds_path_startup, apid_input=ULTRA_ENERGY_SPECTRA.apid[1])
+    test_data[0].attrs["Data_version"] = "999"
+    test_data[0].attrs["Repointing"] = "repoint99999"
+    test_data_path = write_cdf(test_data[0], istp=True)
+
+    assert test_data_path.exists()
+    assert (
+        test_data_path.name
+        == "imap_ultra_l1a_90sensor-energy-spectra_20230711-repoint99999_v999.cdf"
     )
 
 

@@ -46,11 +46,23 @@ ULTRA_ENERGY_RATES = PacketProperties(
         "imap_ultra_l1a_45sensor-energy-rates",
         "imap_ultra_l1a_90sensor-energy-rates",
     ],
-    addition_to_logical_desc="Image Rates",
+    addition_to_logical_desc="Energy Rates",
     width=5,
     block=16,
     len_array=11,
     mantissa_bit_length=12,
+)
+ULTRA_ENERGY_SPECTRA = PacketProperties(
+    apid=[889, 953],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-energy-spectra",
+        "imap_ultra_l1a_90sensor-energy-spectra",
+    ],
+    addition_to_logical_desc="Energy Spectra",
+    width=4,
+    block=16,
+    len_array=1,
+    mantissa_bit_length=5,
 )
 ULTRA_TOF = PacketProperties(
     apid=[883, 947],
@@ -432,6 +444,11 @@ ENERGY_RATES_KEYS = [
     "fifo_valid_events",
     # Processed Events
     "processed_events",
+]
+
+ENERGY_SPECTRA_KEYS = [
+    # Sum of the 8 SSDs
+    "ssd_sum",
 ]
 
 

@@ -9,6 +9,7 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ultra.l0.decom_ultra import (
     process_ultra_energy_rates,
+    process_ultra_energy_spectra,
     process_ultra_events,
     process_ultra_rates,
     process_ultra_tof,
@@ -18,6 +19,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_CMD_TEXT,
     ULTRA_ENERGY_EVENTS,
     ULTRA_ENERGY_RATES,
+    ULTRA_ENERGY_SPECTRA,
     ULTRA_EVENTS,
     ULTRA_HK,
     ULTRA_PRI_1_EVENTS,
@@ -107,6 +109,12 @@ def ultra_l1a(packet_file: str, apid_input: Optional[int] = None) -> list[xr.Dat
             # Add coordinate attributes
             attrs = attr_mgr.get_variable_attributes("event_id")
             decom_ultra_dataset.coords["event_id"].attrs.update(attrs)
+        elif apid in ULTRA_ENERGY_SPECTRA.apid:
+            decom_ultra_dataset = process_ultra_energy_spectra(datasets_by_apid[apid])
+            decom_ultra_dataset = decom_ultra_dataset.drop_vars("compdata")
+            gattr_key = ULTRA_ENERGY_SPECTRA.logical_source[
+                ULTRA_ENERGY_SPECTRA.apid.index(apid)
+            ]
         elif apid in ULTRA_HK.apid:
             decom_ultra_dataset = datasets_by_apid[apid]
             gattr_key = ULTRA_HK.logical_source[ULTRA_HK.apid.index(apid)]

@@ -56,6 +56,18 @@ imap_ultra_l1a_90sensor-energy-rates:
     Logical_source: imap_ultra_l1a_90sensor-energy-rates
     Logical_source_description: IMAP-Ultra Instrument Level-1A Energy Rates Data.
 
+imap_ultra_l1a_45sensor-energy-spectra:
+    <<: *instrument_base
+    Data_type: L1A_Energy_Spectra>Level-1A Energy Spectra
+    Logical_source: imap_ultra_l1a_45sensor-energy-spectra
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Energy Spectra Data.
+
+imap_ultra_l1a_90sensor-energy-spectra:
+    <<: *instrument_base
+    Data_type: L1A_Energy_Spectra>Level-1A Energy Spectra
+    Logical_source: imap_ultra_l1a_90sensor-energy-spectra
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Energy Spectra Data.
+
 imap_ultra_l1a_45sensor-de:
     <<: *instrument_base
     Data_type: L1A_DE>Level-1A Direct Event

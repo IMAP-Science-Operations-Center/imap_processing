@@ -83,6 +83,14 @@ sid:
   UNITS: " "
   DEPEND_0: epoch
 
+ssd_sum:
+  <<: *default_uint32
+  CATDESC: SSD Energy Sum.
+  FIELDNAM: ssd_sum
+  LABLAXIS: ssd energy sum
+  UNITS: " "
+  DEPEND_0: epoch
+
 ssd0_energy_led:
   <<: *default_uint32
   CATDESC: SSD0 Energy LED.
