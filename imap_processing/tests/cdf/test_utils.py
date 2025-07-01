@@ -68,6 +68,17 @@ def test_load_cdf(test_dataset):
             assert attr not in data_array.attrs
 
 
+def test_load_cdf_extra_kwargs(test_dataset):
+    """Test that load_cdf passes the correct extra kwargs to xarray_to_cdf"""
+    # Write the dataset to a CDF to be used to test the load function
+    file_path = write_cdf(test_dataset)
+    with mock.patch(
+        "imap_processing.cdf.utils.cdf_to_xarray", autospec=True
+    ) as mock_cdf_to_xarray:
+        load_cdf(file_path, to_datetime=False)
+        assert mock_cdf_to_xarray.call_args.kwargs["to_datetime"] is False
+
+
 def test_write_cdf(test_dataset):
     """Tests the ``write_cdf`` function.
 

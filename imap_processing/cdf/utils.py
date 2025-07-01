@@ -44,7 +44,7 @@ def load_cdf(
     if isinstance(file_path, imap_data_access.ImapFilePath):
         file_path = file_path.construct_path()
 
-    dataset = cdf_to_xarray(file_path, kwargs)
+    dataset = cdf_to_xarray(file_path, **kwargs)
 
     # cdf_to_xarray converts single-value attributes to lists
     # convert these back to single values where applicable
