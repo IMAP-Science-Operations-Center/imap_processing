@@ -34,7 +34,7 @@ from imap_processing.utils import packet_file_to_datasets
 logger = logging.getLogger(__name__)
 
 
-def ultra_l1a(packet_file: str, apid_input: Optional[int] = None) -> list[xr.Dataset]:
+def ultra_l1a(packet_file: str, apid_input: Optional[int] = None) -> list[xr.Dataset]:  # noqa: PLR0912
     """
     Will process ULTRA L0 data into L1A CDF files at output_filepath.
 

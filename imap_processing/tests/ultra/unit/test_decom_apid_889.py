@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing import imap_module_directory
 from imap_processing.ultra.l0.decom_ultra import process_ultra_energy_spectra
 from imap_processing.ultra.l0.ultra_utils import (
     ENERGY_SPECTRA_KEYS,
@@ -14,19 +13,11 @@ from imap_processing.utils import packet_file_to_datasets
 
 
 @pytest.mark.external_test_data
-def test_energy_spectra_decom(xtce_path, energy_spectra_test_path):
+def test_energy_spectra_decom(xtce_path, energy_spectra_test_path, ccsds_path_startup):
     """This function reads validation data and checks that decom data
     matches validation data for image rate packet"""
-    ccsds_path = (
-        imap_module_directory
-        / "tests"
-        / "ultra"
-        / "data"
-        / "l0"
-        / "FM90_Startup_20230711T081655.CCSDS"
-    )
 
-    datasets_by_apid = packet_file_to_datasets(ccsds_path, xtce_path)
+    datasets_by_apid = packet_file_to_datasets(ccsds_path_startup, xtce_path)
     decom_ultra = process_ultra_energy_spectra(
         datasets_by_apid[ULTRA_ENERGY_SPECTRA.apid[1]]
     )
