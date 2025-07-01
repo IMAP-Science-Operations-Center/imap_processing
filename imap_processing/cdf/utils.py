@@ -44,6 +44,10 @@ def load_cdf(
     if isinstance(file_path, imap_data_access.ImapFilePath):
         file_path = file_path.construct_path()
 
+    # By default, do not convert epoch to datetime64. This ensures that the
+    # round-trip of writing and then loading a cdf keeps the dataset the same.
+    if "to_datetime" not in kwargs:
+        kwargs["to_datetime"] = False  # type: ignore
     dataset = cdf_to_xarray(file_path, **kwargs)
 
     # cdf_to_xarray converts single-value attributes to lists
