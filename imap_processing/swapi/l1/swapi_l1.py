@@ -631,7 +631,7 @@ def process_swapi_science(
         dims=["epoch"],
         attrs=cdf_manager.get_variable_attributes("plan_id"),
     )
-    # Store start time of L3 purposes per SWAPI requests
+    # Store start time for L3 purposes per SWAPI requests
     dataset["sci_start_time"] = xr.DataArray(
         good_sweep_sci["epoch"].data.reshape(total_full_sweeps, 12)[:, 0],
         name="sci_start_time",
