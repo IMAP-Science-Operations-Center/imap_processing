@@ -24,10 +24,7 @@ def test_image_raw_energy_events_decom(decom_test_data, ccsds_path_events, xtce_
     """This function reads validation data and checks that decom data
     matches validation data for the packet"""
 
-    filename = (
-        "ultra45_raw_sc_rawnrgevnt_FM45_UltraFM45_Functional_"
-        "2024-01-22T0105_20240122T010548.csv"
-    )
+    filename = "ultra45_raw_sc_rawnrgevnt_19840122_00.csv"
     energy_events_test_path = (
         imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
     )

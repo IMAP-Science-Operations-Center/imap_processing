@@ -239,7 +239,9 @@ ENERGY_EVENT_FIELD_RANGES = {
     # Pulse Width
     "pulse_width": (16, 27),
     # Bin
-    "bin": (27, 33),
+    "bin": (27, 31),
+    # Phase Angle
+    "phase_angle": (31, 41),
 }
 
 
