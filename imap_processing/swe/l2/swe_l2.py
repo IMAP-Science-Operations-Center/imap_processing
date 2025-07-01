@@ -132,7 +132,7 @@ def calculate_flux(
 
 
 def put_data_into_angle_bins(
-    data: np.ndarray, angle_bin_indices: npt.NDArray[np.int_]
+    data: np.ndarray, angle_bin_indices: npt.NDArray[np.int_], is_unc: bool = False
 ) -> npt.NDArray:
     """
     Put data in its angle bins.
@@ -142,10 +142,11 @@ def put_data_into_angle_bins(
     full cycle, it assigns data to the corresponding angle bin
     based on the provided indices.
 
-    Since multiple data points may fall into the same angle bin,
-    the function accumulates values and computes the average across
-    all 7 CEMs, ensuring that each bin contains a representative
-    mean value while maintaining the 7 CEM structure.
+    Since multiple data points can fall into the same angle bin,
+    this function assigns each data point to its bin and sums
+    the values within that bin. If the data is uncertainty data,
+    it computes the combined uncertainty for the bin; otherwise,
+    it calculates the averages.
 
     Parameters
     ----------
@@ -155,6 +156,10 @@ def put_data_into_angle_bins(
     angle_bin_indices : numpy.ndarray
         Indices of angle bins to put data in. Shape:
         (full_cycle_data, N_ESA_STEPS, N_ANGLE_BINS).
+    is_unc : bool
+        Whether data is uncertainty data or not. If yes, sqrt(sum(data)).
+        Otherwise, find mean of data.
+        Default to False.
 
     Returns
     -------
@@ -177,8 +182,15 @@ def put_data_into_angle_bins(
     time_indices = np.arange(data.shape[0])[:, None, None]
     energy_indices = np.arange(swe_constants.N_ESA_STEPS)[None, :, None]
 
-    # Use np.add.at() to accumulate values into bins
+    # Use np.add.at() to put values into bins and add values in the bins into one.
     np.add.at(binned_data, (time_indices, energy_indices, angle_bin_indices), data)
+
+    if is_unc:
+        # Calculate new uncertainty of each bin data(s).
+        # Per SWE instruction:
+        #   At L1B, 'data' is result from sqrt(counts). Now in L2, average
+        #   uncertainty data using this formula sqrt(sum(binned_data)).
+        return np.sqrt(binned_data)
 
     # Count occurrences in each bin to compute the mean.
     # Ensure float dtype for division
@@ -417,6 +429,16 @@ def swe_l2(l1b_dataset: xr.Dataset) -> xr.Dataset:
         name="phase_space_density",
         dims=["epoch", "energy", "inst_az", "inst_el"],
         attrs=cdf_attributes.get_variable_attributes("phase_space_density"),
+    )
+    # Put uncertainty data into its spin angle bins and calculate new uncertainty
+    counts_stat_uncert_binned = put_data_into_angle_bins(
+        l1b_dataset["counts_stat_uncert"].data, spin_angle_bins_indices, is_unc=True
+    )
+    dataset["counts_stat_uncert"] = xr.DataArray(
+        counts_stat_uncert_binned,
+        name="counts_stat_uncert",
+        dims=["epoch", "energy", "inst_az", "inst_el"],
+        attrs=cdf_attributes.get_variable_attributes("counts_stat_uncert"),
     )
 
     return dataset
