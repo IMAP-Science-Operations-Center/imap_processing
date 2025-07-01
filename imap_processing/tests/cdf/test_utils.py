@@ -1,5 +1,7 @@
 """Tests for the ``cdf.utils`` module."""
 
+from unittest import mock
+
 import imap_data_access
 import numpy as np
 import pytest
@@ -106,6 +108,21 @@ def test_repoint_start_date(test_dataset):
     test_dataset.attrs["Repointing"] = "12345"
     output_file_path = write_cdf(test_dataset)
     assert "imap_swe_l1a_sci_20001212-repoint12345_v001.cdf" in output_file_path.name
+
+
+def test_write_cdf_extra_cdf_kwargs(test_dataset):
+    """Test the kwargs passed to cdflib.xarray.xarray_to_cdf by write_cdf()"""
+    with mock.patch(
+        "imap_processing.cdf.utils.xarray_to_cdf", autospec=True
+    ) as xarray_to_cdf:
+        write_cdf(test_dataset)
+        assert xarray_to_cdf.call_args.kwargs["terminate_on_warning"] is False
+        assert xarray_to_cdf.call_args.kwargs["compression"] == 6
+        test_dataset.attrs["Logical_source"] = "imap_swe_l2_sci"
+        write_cdf(test_dataset, compression=9)
+        assert xarray_to_cdf.call_args.kwargs["terminate_on_warning"] is True
+        assert xarray_to_cdf.call_args.kwargs["istp"] is True
+        assert xarray_to_cdf.call_args.kwargs["compression"] == 9
 
 
 @pytest.mark.parametrize(

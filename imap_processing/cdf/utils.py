@@ -154,6 +154,8 @@ def write_cdf(
             extra_cdf_kwargs["terminate_on_warning"] = True  # type: ignore
         if "istp" not in extra_cdf_kwargs:
             extra_cdf_kwargs["istp"] = True  # type: ignore
+    if "compression" not in extra_cdf_kwargs:
+        extra_cdf_kwargs["compression"] = 6  # type: ignore
 
     xarray_to_cdf(dataset, str(file_path), **extra_cdf_kwargs)
     return file_path
