@@ -16,27 +16,73 @@ TIME_PER_BIN = 0.167  # seconds
 
 
 def solve_full_sweep_energy(
-    esa_lvl5_data: np.ndarray, esa_table_df: pd.DataFrame, lut_notes_df: pd.DataFrame
+    esa_lvl5_data: np.ndarray,
+    sweep_table: np.ndarray,
+    esa_table_df: pd.DataFrame,
+    lut_notes_df: pd.DataFrame,
+    data_time: npt.NDArray[np.datetime64],
 ) -> npt.NDArray:
     """
     Calculate the energy of each full sweep data.
+
+    Get the fixed energy values for steps 0-62 using the
+    esa_table_df information. It's important to ensure
+    that the correct fixed energy values are selected for
+    the specified time, as the sweep table can contain
+    different values depending on the operational phase
+    (e.g., I+T, pre-launch, post-launch). There may be
+    more fixed energy added in the future. TODO: add
+    document section once SWAPI document is updated.
+
+    Now, find the last 9 fine energy values using steps
+    noted in the section x in the algorithm document.
 
     Parameters
     ----------
     esa_lvl5_data : numpy.ndarray
         The L1 data input.
+    sweep_table : numpy.ndarray
+        Sweep table information.
     esa_table_df : pandas.DataFrame
         The ESA unit conversion table that contains first 63 energies.
     lut_notes_df : pandas.DataFrame
         The LUT notes table that contains the last 9 fine energies.
+    data_time : numpy.ndarray
+        The collection time of the data.
 
     Returns
     -------
     energy : numpy.ndarray
         The energy of each full sweep data.
     """
-    # Read 0 - 62 energy steps' fixed energy value
-    fixed_energy_values = esa_table_df["Energy"].values[:63]
+    # Convert timestamp from string to datetime
+    # and to the same format as data_time
+    esa_table_df["timestamp"] = pd.to_datetime(
+        esa_table_df["timestamp"], format="%m/%d/%Y %H:%M"
+    )
+    esa_table_df["timestamp"] = esa_table_df["timestamp"].to_numpy(
+        dtype="datetime64[ns]"
+    )
+
+    first_63_energies = []
+
+    for time, sweep_id in zip(data_time, sweep_table):
+        # Find the sweep's ESA data for the given time and sweep_id
+        subset = esa_table_df[
+            (esa_table_df["timestamp"] <= time) & (esa_table_df["Sweep #"] == sweep_id)
+        ]
+        if subset.empty:
+            first_63_energies.append(np.full(63, np.nan, dtype=np.float64))
+            continue
+
+        # Subset data can contain multiple 72 energy values with last 9 fine energies
+        # with 'Solve' value. We need to sort by time and ESA step to maintain correct
+        # order. Then take the last group of 72 steps values and select first 63
+        # values only.
+        subset = subset.sort_values(["timestamp", "ESA Step #"])
+        grouped = subset["Energy"].values.reshape(-1, 72)
+        first_63 = grouped[-1, :63]
+        first_63_energies.append(first_63)
 
     # Find last 9 fine energy values of all sweeps data
     # -------------------------------------------------
@@ -96,13 +142,9 @@ def solve_full_sweep_energy(
     # order it should be in:
     #  [64, 65, 66, 67, 68, 69, 70, 71, 72]
     energy_values = np.flip(energy_values, axis=1)
-    # Expand to match the number of rows in energy_values
-    first_63_values = np.tile(
-        fixed_energy_values, (energy_values.shape[0], 1)
-    )  # (epoch, 63)
 
     # Append the first_63_values in front of energy_values
-    sweeps_energy_value = np.hstack((first_63_values, energy_values))
+    sweeps_energy_value = np.hstack([first_63_energies, energy_values])
 
     return sweeps_energy_value
 
@@ -169,8 +211,10 @@ def swapi_l2(
     esa_lvl5_hex = np.vectorize(lambda x: format(x, "X"))(l1_dataset["esa_lvl5"].values)
     esa_energy = solve_full_sweep_energy(
         esa_lvl5_hex,
+        l1_dataset["sweep_table"].data,
         esa_table_df=esa_table_df,
         lut_notes_df=lut_notes_df,
+        data_time=np.array(l1_dataset["epoch"].data, dtype="datetime64[ns]"),
     )
 
     l2_dataset["swp_esa_energy"] = xr.DataArray(
