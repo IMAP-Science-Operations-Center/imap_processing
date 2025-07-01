@@ -448,7 +448,6 @@ def swe_l2(l1b_dataset: xr.Dataset) -> xr.Dataset:
         query_met_times=l1b_dataset["acquisition_time"].data.flatten(),
         instrument=SpiceFrame.IMAP_SWE,
     )
-    np.savetxt("spin_phase.csv", l1b_dataset["acquisition_time"].data[5], delimiter=",", fmt="%.3f")
     np.savetxt("acq_times.csv", l1b_dataset["acquisition_time"].data[5], delimiter=",", fmt="%.3f")
 
     # Convert spin phase to spin angle in degrees.
