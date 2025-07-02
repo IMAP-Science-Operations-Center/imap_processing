@@ -330,7 +330,9 @@ def test_swe_l2(
     psd = l2_dataset.phase_space_density_spin_sector.to_numpy()
     second_cycle_rate = rate[2, :, :, 3]  # nonzero counts at all energy & spin
     psd = psd[2, :, :, 3]
-    cal_factor = psd / second_cycle_rate  # same CEM, should be constant at a given energy
+    cal_factor = (
+        psd / second_cycle_rate
+    )  # same CEM, should be constant at a given energy
     assert np.allclose(cal_factor, cal_factor[:, 0:1], rtol=1e-9, atol=0)
 
     # Write L2 to CDF
@@ -363,9 +365,9 @@ def test_swe_l2(
 
     np.testing.assert_allclose(sector_psd_data, validation_science, rtol=1e-6)
 
-    # # print("------binned validation data--------")
-    # bin_val = l2_binned_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
-    # bin_psd_data = l2_dataset["phase_space_density"].data
+    # print("------binned validation data--------")
+    bin_val = l2_binned_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
+    bin_psd_data = l2_dataset["phase_space_density"].data
 
     # Instrument spin phase starts as 153 for SWE because that's the offset angle from
     # SC angle 0.
@@ -376,18 +378,23 @@ def test_swe_l2(
     # 33.96467972  55.97608709  57.96458387  79.97599125  81.96448803
     # 103.9758954  105.96439219 127.97579956 129.96429491 151.97570372]
 
-    # with open("bin_val.txt", "w") as f:
-    #     # check that we have correct zero values in same places
-    #     # of validation data and science data
-    #     for cycle in np.arange(len(bin_psd_data)):
-    #         for esa_idx in np.arange(swe_constants.N_ESA_STEPS):
-    #             for angle_idx in np.arange(swe_constants.N_ANGLE_BINS):
-    #                 if cycle == 5:
-    #                     print(
-    #                         f"Cycle {cycle}, ESA {esa_idx:02d}, Angle {angle_idx:02d}: "
-    #                         "Validation data: "
-    #                         f"{np.array2string(bin_val[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}, "
-    #                         "L2 PSD data: "
-    #                         f"{np.array2string(bin_psd_data[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}",
-    #                         file=f,
-    #                     )
+    # np.testing.assert_allclose(bin_psd_data, bin_val, rtol=1e-6)
+    with open("bin_val.txt", "w") as f:
+        # check that we have correct zero values in same places
+        # of validation data and science data
+        for cycle in np.arange(len(bin_psd_data)):
+            for esa_idx in np.arange(swe_constants.N_ESA_STEPS):
+                for angle_idx in np.arange(swe_constants.N_ANGLE_BINS):
+                    # if cycle == 5:
+                    #     np.testing.assert_allclose(bin_psd_data[cycle], bin_val[cycle], rtol=1e-6)
+                    l2_data = bin_psd_data[cycle, esa_idx, angle_idx]
+                    val_data = bin_val[cycle, esa_idx, angle_idx]
+                    if np.all(l2_data != val_data):
+                        print(
+                            f"Cycle {cycle}, ESA {esa_idx:02d}, Angle {angle_idx:02d}: "
+                            "Validation data: "
+                            f"{np.array2string(bin_val[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}, "
+                            "L2 PSD data: "
+                            f"{np.array2string(bin_psd_data[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}",
+                            file=f,
+                        )
