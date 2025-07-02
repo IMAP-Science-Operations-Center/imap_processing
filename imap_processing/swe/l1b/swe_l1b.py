@@ -762,7 +762,7 @@ def swe_l1b_science(dependencies: ProcessingInputCollection) -> xr.Dataset:
     count_rate = convert_counts_to_rate(inflight_applied_count, acq_duration)
 
     # Statistical uncertainty is sqrt(decompressed counts)
-    # TODO: Update this if SWE like to include deatime correciton. 
+    # TODO: Update this if SWE like to include deadtime correciton.
     counts_stat_uncert = np.sqrt(populated_data["science_data"])
 
     # Store ESA energies of full cycle for L2 purposes.
