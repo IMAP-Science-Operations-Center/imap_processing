@@ -258,6 +258,36 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         )
 
 
+@pytest.mark.parametrize("index", range(len(DESCRIPTORS)))
+def test_l1a_validate_epoch_values(test_l1a_data, index):
+    """Tests that the epoch values in the generated data products match the
+    validation data.
+
+    Parameters
+    ----------
+    test_l1a_data : list[xarray.Dataset]
+        A list of ``xarray`` datasets containing the test data
+    index : int
+        The index of the list to test
+    """
+
+    descriptor = DESCRIPTORS[index]
+    dataset = test_l1a_data[index]
+    validation_dataset = load_cdf(VALIDATION_DATA[index])
+
+    if descriptor in ["hskp", "hi-ialirt", "hi-omni"]:
+        pytest.xfail(
+            f"Awaiting implementation of proper epoch calculation for {descriptor}"
+        )
+
+    # TODO: One new L1a validation is used, this probably can be tweaked for
+    #       even lower tolerance, and we can add checks for epoch_delta_minus
+    #       and epoch_delta_plus
+    np.testing.assert_allclose(
+        dataset.epoch.data, validation_dataset.Epoch.data, rtol=1e-6, atol=0
+    )
+
+
 def test_l1a_validate_hskp_data(test_l1a_data):
     """Tests that the L1a housekeeping data is valid"""
 
