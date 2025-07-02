@@ -10,6 +10,7 @@ from imap_processing.ultra.l0.decom_ultra import (
     process_ultra_energy_rates,
     process_ultra_energy_spectra,
     process_ultra_events,
+    process_ultra_macros_checksum,
     process_ultra_rates,
     process_ultra_tof,
 )
@@ -20,6 +21,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_ENERGY_RATES,
     ULTRA_ENERGY_SPECTRA,
     ULTRA_EVENTS,
+    ULTRA_MACROS_CHECKSUM,
     ULTRA_PRI_1_EVENTS,
     ULTRA_PRI_2_EVENTS,
     ULTRA_PRI_3_EVENTS,
@@ -269,6 +271,12 @@ def decom_test_data(request, xtce_path):
         ULTRA_ENERGY_EVENTS.apid[1]: lambda ds, apid: process_ultra_events(ds, apid),
         ULTRA_EVENTS.apid[0]: lambda ds, apid: process_ultra_events(ds, apid),
         ULTRA_EVENTS.apid[1]: lambda ds, apid: process_ultra_events(ds, apid),
+        ULTRA_MACROS_CHECKSUM.apid[0]: lambda ds, apid: process_ultra_macros_checksum(
+            ds
+        ),
+        ULTRA_MACROS_CHECKSUM.apid[1]: lambda ds, apid: process_ultra_macros_checksum(
+            ds
+        ),
         ULTRA_PRI_1_EVENTS.apid[0]: lambda ds, apid: process_ultra_events(ds, apid),
         ULTRA_PRI_1_EVENTS.apid[1]: lambda ds, apid: process_ultra_events(ds, apid),
         ULTRA_PRI_2_EVENTS.apid[0]: lambda ds, apid: process_ultra_events(ds, apid),
