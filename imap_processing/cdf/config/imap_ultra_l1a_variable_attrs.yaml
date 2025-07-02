@@ -1212,6 +1212,7 @@ alarmid:
   DEPEND_0: epoch
 
 arguments:
+  <<: *default_uint8
   CATDESC: Arguments
   FIELDNAM: arguments
   LABLAXIS: arguments

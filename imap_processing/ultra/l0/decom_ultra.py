@@ -361,17 +361,28 @@ def process_ultra_cmd_echo(ds: xr.Dataset) -> xr.Dataset:
     dataset : xarray.Dataset
         Dataset containing the decoded and decompressed data.
     """
-    arguments = []
     descriptions = []
 
-    for opcode, arg in zip(ds["opcode"].values, ds["args"].values):
-        opcode_hex = f"0x{opcode:02x}"
-        arg_hex = [f"0x{b:02x}" for b in arg]
-        arguments.append(" ".join([opcode_hex, *arg_hex]))
+    fill = 0xFF
+    max_len = 10
+    arg_array = np.full((len(ds["epoch"]), max_len), fill, dtype=np.uint8)
+
+    for i, arg in enumerate(ds["args"].values):
+        # Converts to the numeric representations of each byte.
+        arg_array[i, : len(arg)] = np.frombuffer(arg, dtype=np.uint8)
 
     # Default to "FILL" for unlisted values
     for result in ds["result"].values:
         descriptions.append(CMD_ECHO_MAP.get(result, "FILL"))
+
+    ds["arguments"] = xr.DataArray(
+        arg_array,
+        dims=["epoch", "arg_index"],
+        coords={
+            "epoch": ds["epoch"],
+            "arg_index": np.arange(10),
+        },
+    )
 
     ds["result_description"] = xr.DataArray(
         np.array(descriptions),
@@ -379,11 +390,6 @@ def process_ultra_cmd_echo(ds: xr.Dataset) -> xr.Dataset:
         coords={"epoch": ds["epoch"]},
     )
 
-    ds["arguments"] = xr.DataArray(
-        arguments,
-        dims=["epoch"],
-        coords={"epoch": ds["epoch"]},
-    )
     ds = ds.drop_vars(["args", "result"])
 
     return ds

@@ -28,7 +28,14 @@ def test_process_cmd_echo(decom_test_data, cmd_echo_test_path):
         df.Result, decom_ultra["result_description"].values.flatten()
     )
     np.testing.assert_array_equal(df.Opcode, decom_ultra["opcode"].values.flatten())
-    actual_arg = np.char.strip(df.Arguments.values.astype(str))
-    expected_arg = np.char.strip(decom_ultra["arguments"].values.astype(str).flatten())
 
-    np.testing.assert_array_equal(actual_arg, expected_arg)
+    for i, (row, opcode) in enumerate(
+        zip(decom_ultra["arguments"].values, decom_ultra["opcode"].values)
+    ):
+        expected_arg = df.Arguments.values[i].strip()
+        expected_len = len(expected_arg.split())
+
+        full_row = np.insert(row, 0, opcode)[:expected_len]
+        hex_string = " ".join(f"0x{b:02x}" for b in full_row)
+
+        assert hex_string == expected_arg
