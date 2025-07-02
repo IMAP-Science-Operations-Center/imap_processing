@@ -397,23 +397,34 @@ def process_ultra_cmd_echo(ds: xr.Dataset) -> xr.Dataset:
 
 def process_ultra_macros_checksum(ds: xr.Dataset) -> xr.Dataset:
     """
-    Unpack and decode Ultra ENERGY RATES packets.
+    Unpack and decode Ultra MACROS CHECKSUM packets.
 
     Parameters
     ----------
     ds : xarray.Dataset
-       Energy rates dataset.
+        Dataset containing macro checksums.
 
     Returns
     -------
     dataset : xarray.Dataset
-        Dataset containing the decoded and decompressed data.
+        Dataset with unpacked and decoded checksum values.
     """
-    decom_data = defaultdict(list)
+    checksums = []
+    fill = np.iinfo(np.uint16).max
 
     for checksum in ds["checksums"]:
         checksum_bytes = checksum.item()
-        uint16_array = np.frombuffer(checksum_bytes, dtype=">u2")
-        print("hi")
+        arr = np.frombuffer(checksum_bytes, dtype=">u2")
+        checksums.append(arr)
+
+    checksum_array = np.array(checksums)
+    checksum_array[:, -1] = fill
+
+    ds["checksum"] = xr.DataArray(
+        checksum_array,
+        dims=["epoch", "checksum_index"],
+        coords={"epoch": ds["epoch"], "checksum_index": np.arange(256)},
+    )
+    ds = ds.drop_vars(["checksums"])
 
     return ds

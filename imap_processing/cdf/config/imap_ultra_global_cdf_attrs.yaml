@@ -299,13 +299,13 @@ imap_ultra_l1a_90sensor-bootstatus:
 imap_ultra_l1a_45sensor-macroschecksum:
     <<: *instrument_base
     Data_type: L1A_45Sensor-MacroChecksum>Level-1A Macro Checksum for Ultra45
-    Logical_source: imap_ultra_l1a_45sensor-macrochecksum
+    Logical_source: imap_ultra_l1a_45sensor-macroschecksum
     Logical_source_description: IMAP-Ultra Instrument Level-1A Macro Checksum Data for Ultra45.
 
 imap_ultra_l1a_90sensor-macroschecksum:
     <<: *instrument_base
     Data_type: L1A_90Sensor-MacroChecksum>Level-1A Macro Checksum for Ultra90
-    Logical_source: imap_ultra_l1a_90sensor-macrochecksum
+    Logical_source: imap_ultra_l1a_90sensor-macroschecksum
     Logical_source_description: IMAP-Ultra Instrument Level-1A Macro Checksum Data for Ultra90.
 
 imap_ultra_l1a_45sensor-macrodump:

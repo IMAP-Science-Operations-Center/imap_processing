@@ -1371,6 +1371,14 @@ cause:
   UNITS: ' '
   DEPEND_0: epoch
 
+checksum:
+  <<: *default_uint16
+  CATDESC: Checksums
+  FIELDNAM: checksums
+  LABLAXIS: checksums
+  UNITS: ' '
+  DEPEND_0: epoch
+
 checksums:
   <<: *default_float32
   CATDESC: Checksums

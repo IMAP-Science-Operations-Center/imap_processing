@@ -256,6 +256,16 @@ def cmd_echo_test_path():
 
 
 @pytest.fixture
+def macrochecksum_test_path():
+    """Returns the xtce auxiliary test data directory."""
+    filename = (
+        "ultra45_raw_hk_macrochecksumrpt_FM45_UltraFM45_Functional_"
+        "2024-01-22T0105_20240122T010548.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
 def decom_test_data(request, xtce_path):
     """Read test data from file"""
     apid = request.param["apid"]
