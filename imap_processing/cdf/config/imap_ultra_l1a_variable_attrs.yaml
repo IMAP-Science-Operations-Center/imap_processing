@@ -2787,7 +2787,6 @@ macroblocks:
   DEPEND_0: epoch
 
 macrodata:
-  <<: *default_float32
   CATDESC: Macrodata
   FIELDNAM: macrodata
   LABLAXIS: macrodata

@@ -117,6 +117,20 @@ def test_cdf_energy_rates(ccsds_path_functional):
     )
 
 
+def test_cdf_macrodump(ccsds_path_functional):
+    """Tests that CDF file can be created."""
+    test_data = ultra_l1a(ccsds_path_functional, apid_input=871)
+    test_data[0].attrs["Data_version"] = "999"
+    test_data[0].attrs["Repointing"] = "repoint99999"
+    test_data_path = write_cdf(test_data[0], istp=True)
+
+    assert test_data_path.exists()
+    assert (
+        test_data_path.name
+        == "imap_ultra_l1a_45sensor-macrodump_20240122-repoint99999_v999.cdf"
+    )
+
+
 def test_cdf_tof(ccsds_path_theta_0):
     """Tests that CDF file can be created."""
     test_data = ultra_l1a(ccsds_path_theta_0, apid_input=ULTRA_TOF.apid[0])
@@ -206,7 +220,7 @@ def test_cdf_pri_3_events(ccsds_path_extra):
     )
 
 
-@pytest.mark.external_test_data
+@pytest.mark.external_test_dataf
 def test_cdf_pri_4_events(ccsds_path_extra):
     """Tests that CDF file can be created."""
     test_data = ultra_l1a(ccsds_path_extra, apid_input=ULTRA_PRI_4_EVENTS.apid[0])
