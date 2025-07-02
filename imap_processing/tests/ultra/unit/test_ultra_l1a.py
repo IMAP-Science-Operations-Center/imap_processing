@@ -234,7 +234,7 @@ def test_cdf_pri_3_events(ccsds_path_extra):
     )
 
 
-@pytest.mark.external_test_dataf
+@pytest.mark.external_test_data
 def test_cdf_pri_4_events(ccsds_path_extra):
     """Tests that CDF file can be created."""
     test_data = ultra_l1a(ccsds_path_extra, apid_input=ULTRA_PRI_4_EVENTS.apid[0])
