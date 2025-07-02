@@ -14,9 +14,11 @@ from imap_processing.spice.spin import get_instrument_spin_phase, get_spin_angle
 from imap_processing.swe.utils import swe_constants
 
 
-def calculate_phase_space_density(l1b_dataset: xr.Dataset) -> npt.NDArray:
+def calculate_phase_space_density(
+    data: np.ndarray, particle_energy_data: np.ndarray
+) -> npt.NDArray:
     """
-    Convert counts to phase space density.
+    Convert counts or uncertainty data to phase space density.
 
     Calculate phase space density is represented by this symbol, fv.
     Its unit is s^3/ (cm^6 * ster).
@@ -49,8 +51,11 @@ def calculate_phase_space_density(l1b_dataset: xr.Dataset) -> npt.NDArray:
 
     Parameters
     ----------
-    l1b_dataset : xarray.Dataset
-        The L1B dataset to process.
+    data : numpy.ndarray
+        The data to process. Two expected inputs are counts or uncertainty data.
+    particle_energy_data : numpy.ndarray
+        The energy values in eV. This is the energy values from the
+        "esa_energy" variable in the L1B dataset.
 
     Returns
     -------
@@ -58,18 +63,15 @@ def calculate_phase_space_density(l1b_dataset: xr.Dataset) -> npt.NDArray:
         Phase space density. We need to call this phase space density because
         there will be density in L3 processing.
     """
-    # Get energy values.
-    particle_energy_data = l1b_dataset["esa_energy"].values
-
     # Calculate phase space density using formula:
-    #   2 * (C/tau) / (G * 1.237e31 * eV^2)
+    #   2 * ((C/tau) or uncertainty data) / (G * 1.237e31 * eV^2)
     # See doc string for more details.
-    density = (2 * l1b_dataset["science_data"]) / (
+    density = (2 * data) / (
         swe_constants.GEOMETRIC_FACTORS[np.newaxis, np.newaxis, np.newaxis, :]
         * swe_constants.VELOCITY_CONVERSION_FACTOR
         * particle_energy_data[:, :, :, np.newaxis] ** 2
     )
-    phase_space_density = density.data
+    phase_space_density = density
 
     return phase_space_density
 
@@ -114,7 +116,7 @@ def calculate_flux(
     Parameters
     ----------
     phase_space_density : numpy.ndarray
-        The phase space density.
+        The phase space density of counts or uncertainty data.
     esa_energy : numpy.ndarray
         The energy values in eV.
 
@@ -182,15 +184,30 @@ def put_data_into_angle_bins(
     time_indices = np.arange(data.shape[0])[:, None, None]
     energy_indices = np.arange(swe_constants.N_ESA_STEPS)[None, :, None]
 
-    # Use np.add.at() to put values into bins and add values in the bins into one.
-    np.add.at(binned_data, (time_indices, energy_indices, angle_bin_indices), data)
-
     if is_unc:
-        # Calculate new uncertainty of each bin data(s).
+        # Calculate new uncertainty of each uncertainty data in the bins.
         # Per SWE instruction:
         #   At L1B, 'data' is result from sqrt(counts). Now in L2, average
-        #   uncertainty data using this formula sqrt(sum(binned_data)).
+        #   uncertainty data using this formula:
+        #   sqrt(
+        #       sum(
+        #           (unc_1) ** 2 + (unc_2) ** 2 + ... + (unc_n) ** 2
+        #       )
+        #   )
+        # TODO: SWE want to add more defined formula based on spin data and
+        # counts uncertainty from it in the future.
+
+        # Use np.add.at() to put values into bins and add values in the bins into one.
+        # Here, we are applying power of 2 to each data point before summing them.
+        np.add.at(
+            binned_data,
+            (time_indices, energy_indices, angle_bin_indices),
+            data**2,
+        )
         return np.sqrt(binned_data)
+
+    # Use np.add.at() to put values into bins and add values in the bins into one.
+    np.add.at(binned_data, (time_indices, energy_indices, angle_bin_indices), data)
 
     # Count occurrences in each bin to compute the mean.
     # Ensure float dtype for division
@@ -355,7 +372,9 @@ def swe_l2(l1b_dataset: xr.Dataset) -> xr.Dataset:
     # Calculate phase space density and flux. Store data in shape
     # (epoch, esa_step, spin_sector, cem_id). This is for L3 purposes.
     ############################################################
-    phase_space_density = calculate_phase_space_density(l1b_dataset)
+    phase_space_density = calculate_phase_space_density(
+        l1b_dataset["science_data"].data, l1b_dataset["esa_energy"].data
+    )
     dataset["phase_space_density_spin_sector"] = xr.DataArray(
         phase_space_density,
         name="phase_space_density_spin_sector",
@@ -430,15 +449,36 @@ def swe_l2(l1b_dataset: xr.Dataset) -> xr.Dataset:
         dims=["epoch", "energy", "inst_az", "inst_el"],
         attrs=cdf_attributes.get_variable_attributes("phase_space_density"),
     )
-    # Put uncertainty data into its spin angle bins and calculate new uncertainty
-    counts_stat_uncert_binned = put_data_into_angle_bins(
-        l1b_dataset["counts_stat_uncert"].data, spin_angle_bins_indices, is_unc=True
-    )
-    dataset["counts_stat_uncert"] = xr.DataArray(
-        counts_stat_uncert_binned,
-        name="counts_stat_uncert",
-        dims=["epoch", "energy", "inst_az", "inst_el"],
-        attrs=cdf_attributes.get_variable_attributes("counts_stat_uncert"),
-    )
 
+    #######################################################
+    # Calculate flux and phase space density of uncertainty data.
+    # Put uncertainty data in its angle bins.
+    #######################################################
+    # Calculate phase space density for uncertainty data.
+    phase_space_density_uncert = calculate_phase_space_density(
+        l1b_dataset["counts_stat_uncert"].data, l1b_dataset["esa_energy"].data
+    )
+    # Put uncertainty data into its spin angle bins and calculate new uncertainty
+    phase_space_density_uncert = put_data_into_angle_bins(
+        phase_space_density_uncert, spin_angle_bins_indices, is_unc=True
+    )
+    dataset["psd_stat_uncert"] = xr.DataArray(
+        phase_space_density_uncert,
+        name="psd_stat_uncert",
+        dims=["epoch", "esa_step", "spin_sector", "cem_id"],
+        attrs=cdf_attributes.get_variable_attributes("psd_stat_uncert"),
+    )
+    # Calculate flux for uncertainty data.
+    flux_uncert = calculate_flux(
+        phase_space_density_uncert, l1b_dataset["esa_energy"].data
+    )
+    flux_uncert = put_data_into_angle_bins(
+        flux_uncert, spin_angle_bins_indices, is_unc=True
+    )
+    dataset["flux_stat_uncert"] = xr.DataArray(
+        flux_uncert,
+        name="flux_stat_uncert",
+        dims=["epoch", "esa_step", "spin_sector", "cem_id"],
+        attrs=cdf_attributes.get_variable_attributes("flux_stat_uncert"),
+    )
     return dataset
