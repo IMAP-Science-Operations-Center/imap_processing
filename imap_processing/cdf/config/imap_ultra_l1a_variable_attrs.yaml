@@ -1564,7 +1564,6 @@ diagnosticmode:
   DEPEND_0: epoch
 
 dumpdata:
-  <<: *default_float32
   CATDESC: Dumpdata
   FIELDNAM: dumpdata
   LABLAXIS: dumpdata
