@@ -280,7 +280,7 @@ def test_l1a_validate_epoch_values(test_l1a_data, index):
             f"Awaiting implementation of proper epoch calculation for {descriptor}"
         )
 
-    # TODO: One new L1a validation is used, this probably can be tweaked for
+    # TODO: Once new L1a validation is used, this probably can be tweaked for
     #       even lower tolerance, and we can add checks for epoch_delta_minus
     #       and epoch_delta_plus
     np.testing.assert_allclose(

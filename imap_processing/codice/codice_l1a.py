@@ -162,7 +162,7 @@ class CoDICEL1aPipeline:
                 dims=[name],
                 attrs=self.cdf_attrs.get_variable_attributes(name, check_schema=False),
             )
-            self.coords[name] = var
+            self.coords[name] = coord
 
         # Define the values for the coordinates
         for name in coord_names:
@@ -697,7 +697,7 @@ def calculate_epoch_values(
     acq_start = met_to_ttj2000ns(acq_start_seconds + acq_start_subseconds / 1e6)
 
     # Apply correction to center the epoch bin
-    epoch = (acq_start[:-1] + acq_start[1:]) / 2
+    epoch = ((acq_start[:-1] + acq_start[1:]) / 2).astype(int)
     epoch_delta_minus = epoch - acq_start[:-1]
     epoch_delta_plus = acq_start[1:] - epoch
 
