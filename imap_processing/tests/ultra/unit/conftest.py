@@ -6,6 +6,7 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.ultra.l0.decom_ultra import (
+    process_ultra_cmd_echo,
     process_ultra_energy_rates,
     process_ultra_energy_spectra,
     process_ultra_events,
@@ -14,6 +15,7 @@ from imap_processing.ultra.l0.decom_ultra import (
 )
 from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_AUX,
+    ULTRA_CMD_ECHO,
     ULTRA_ENERGY_EVENTS,
     ULTRA_ENERGY_RATES,
     ULTRA_ENERGY_SPECTRA,
@@ -136,7 +138,7 @@ def ccsds_path_extra():
 
 @pytest.fixture
 def xtce_path():
-    """Returns the xtce image rates directory."""
+    """Returns the xtce directory."""
     return (
         imap_module_directory
         / "ultra"
@@ -157,7 +159,7 @@ def rates_test_path():
 
 @pytest.fixture
 def energy_rates_test_path():
-    """Returns the xtce image rates test data directory."""
+    """Returns the xtce test data directory."""
     filename = (
         "ultra45_raw_sc_ultranrgrates_FM45_UltraFM45_Functional"
         "_2024-01-22T0105_20240122T010548.csv"
@@ -167,14 +169,14 @@ def energy_rates_test_path():
 
 @pytest.fixture
 def energy_spectra_test_path():
-    """Returns the xtce image rates test data directory."""
+    """Returns the xtce test data directory."""
     filename = "ultra90_raw_sc_ultraenergyspctr_FM90_Startup_20230711T081655.csv"
     return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
 
 @pytest.fixture
 def priority_1_test_path():
-    """Returns the xtce image rates test data directory."""
+    """Returns the xtce test data directory."""
     filename = (
         "ultra45_raw_sc_imgpriority1evnt_FM45_UltraFM45Extra_TV_Tests_"
         "2024-01-22T0930_20240122T093008.csv"
@@ -184,7 +186,7 @@ def priority_1_test_path():
 
 @pytest.fixture
 def priority_2_test_path():
-    """Returns the xtce image rates test data directory."""
+    """Returns the xtce test data directory."""
     filename = (
         "ultra45_raw_sc_imgpriority2evnt_FM45_UltraFM45Extra_TV_Tests_"
         "2024-01-22T0930_20240122T093008.csv"
@@ -194,7 +196,7 @@ def priority_2_test_path():
 
 @pytest.fixture
 def priority_3_test_path():
-    """Returns the xtce image rates test data directory."""
+    """Returns the xtce test data directory."""
     filename = (
         "ultra45_raw_sc_imgpriority3evnt_FM45_UltraFM45Extra_TV_Tests_"
         "2024-01-22T0930_20240122T093008.csv"
@@ -204,7 +206,7 @@ def priority_3_test_path():
 
 @pytest.fixture
 def priority_4_test_path():
-    """Returns the xtce image rates test data directory."""
+    """Returns the xtce test data directory."""
     filename = (
         "ultra45_raw_sc_imgpriority4evnt_FM45_UltraFM45Extra_TV_Tests_"
         "2024-01-22T0930_20240122T093008.csv"
@@ -223,7 +225,7 @@ def aux_test_path():
 
 @pytest.fixture
 def events_test_path():
-    """Returns the xtce auxiliary test data directory."""
+    """Returns the xtce test data directory."""
     filename = (
         "ultra45_raw_sc_ultrarawimgevent_FM45_7P_Phi00_BeamCal_"
         "LinearScan_phi004_theta-001_20230821T121304.csv"
@@ -233,10 +235,20 @@ def events_test_path():
 
 @pytest.fixture
 def tof_test_path():
-    """Returns the xtce auxiliary test data directory."""
+    """Returns the xtce test data directory."""
     filename = (
         "ultra45_raw_sc_enaphxtofhangimg_FM45_TV_Cycle6_Hot_Ops_"
         "Front212_20240124T063837.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
+def cmd_echo_test_path():
+    """Returns the xtce test data directory."""
+    filename = (
+        "ultra45_raw_hk_ultracmdecho_FM45_UltraFM45_Functional_"
+        "2024-01-22T0105_20240122T010548.csv"
     )
     return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
@@ -271,6 +283,8 @@ def decom_test_data(request, xtce_path):
         ULTRA_ENERGY_RATES.apid[1]: lambda ds, apid: process_ultra_energy_rates(ds),
         ULTRA_ENERGY_SPECTRA.apid[0]: lambda ds, apid: process_ultra_energy_spectra(ds),
         ULTRA_ENERGY_SPECTRA.apid[1]: lambda ds, apid: process_ultra_energy_spectra(ds),
+        ULTRA_CMD_ECHO.apid[0]: lambda ds, apid: process_ultra_cmd_echo(ds),
+        ULTRA_CMD_ECHO.apid[1]: lambda ds, apid: process_ultra_cmd_echo(ds),
     }
 
     process_function = strategy_dict.get(apid, lambda *args: False)

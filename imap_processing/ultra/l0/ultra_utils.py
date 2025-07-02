@@ -203,7 +203,21 @@ ULTRA_CMD_TEXT = PacketProperties(
     len_array=None,
     mantissa_bit_length=None,
 )
-
+ULTRA_CMD_ECHO = PacketProperties(
+    apid=[
+        865,
+        929,
+    ],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-cmdecho",
+        "imap_ultra_l1a_90sensor-cmdecho",
+    ],
+    addition_to_logical_desc="Command echo",
+    width=None,
+    block=None,
+    len_array=None,
+    mantissa_bit_length=None,
+)
 
 # Module-level constant for event field ranges
 EVENT_FIELD_RANGES = {
@@ -450,6 +464,23 @@ ENERGY_SPECTRA_KEYS = [
     # Sum of the 8 SSDs
     "ssd_sum",
 ]
+
+# Map of command echo fields
+CMD_ECHO_MAP = {
+    0x00: "No error command executed",
+    0x01: "No error command appended to macro",
+    0x02: "Unknown opcode or insufficient arguments",
+    0x03: "Bad argument",
+    0x04: "Cannot run macro; no contexts",
+    0x05: "Cannot be used outside of a macro",
+    0x06: "Macro compilation error",
+    0x07: "Macro not killed (not running?)",
+    0x08: "Cannot boot program; bad checksum",
+    0x09: "Cannot restore macros; bad checksum",
+    0x0A: "Cannot load memory; write disabled",
+    0x10: "HV goal greater than limit",
+    0x11: "Shutter deployment disabled",
+}
 
 
 def parse_event(event_binary: str, field_ranges: dict) -> dict:

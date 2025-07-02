@@ -1211,6 +1211,13 @@ alarmid:
   UNITS: ' '
   DEPEND_0: epoch
 
+arguments:
+  CATDESC: Arguments
+  FIELDNAM: arguments
+  LABLAXIS: arguments
+  UNITS: ' '
+  DEPEND_0: epoch
+
 aux:
   <<: *default_float32
   CATDESC: Aux
@@ -3023,6 +3030,13 @@ result:
   CATDESC: Result
   FIELDNAM: result
   LABLAXIS: result
+  UNITS: ' '
+  DEPEND_0: epoch
+
+result_description:
+  CATDESC: Result description
+  FIELDNAM: result_description
+  LABLAXIS: result description
   UNITS: ' '
   DEPEND_0: epoch
 

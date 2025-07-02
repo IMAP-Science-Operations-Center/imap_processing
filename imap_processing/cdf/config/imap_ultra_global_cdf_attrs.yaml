@@ -236,6 +236,18 @@ imap_ultra_l1a_90sensor-alarm:
     Logical_source: imap_ultra_l1a_90sensor-alarm
     Logical_source_description: IMAP-Ultra Instrument Level-1A Alarm Data for Ultra90.
 
+imap_ultra_l1a_45sensor-cmdecho:
+    <<: *instrument_base
+    Data_type: L1A_CMDECHO>Level-1A Command Echo
+    Logical_source: imap_ultra_l1a_45sensor-cmdecho
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Command Echo Data.
+
+imap_ultra_l1a_90sensor-cmdecho:
+    <<: *instrument_base
+    Data_type: L1A_CMDECHO>Level-1A Command Echo
+    Logical_source: imap_ultra_l1a_90sensor-cmdecho
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Command Echo Data.
+
 imap_ultra_l1a_45sensor-memchecksum:
     <<: *instrument_base
     Data_type: L1A_45Sensor-MemChecksum>Level-1A Memory Checksum for Ultra45

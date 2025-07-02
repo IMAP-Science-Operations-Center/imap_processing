@@ -264,6 +264,17 @@ def test_cdf_cmdtxt(ccsds_path_all_apids):
     assert test_data_path.name == "imap_ultra_l1a_90sensor-cmdtext_20260924_v999.cdf"
 
 
+def test_cdf_cmdecho(ccsds_path_functional):
+    """Tests that CDF file can be created."""
+    test_data = ultra_l1a(ccsds_path_functional, apid_input=865)
+    data = test_data[0]
+    data.attrs["Data_version"] = "999"
+    test_data_path = write_cdf(data, istp=True)
+
+    assert test_data_path.exists()
+    assert test_data_path.name == "imap_ultra_l1a_45sensor-cmdecho_20240122_v999.cdf"
+
+
 @pytest.mark.external_test_data
 def test_cdf_monitorlimits(ccsds_path_all_apids):
     """Tests that CDF file can be created."""

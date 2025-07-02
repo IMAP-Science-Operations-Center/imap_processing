@@ -8,6 +8,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ultra.l0.decom_ultra import (
+    process_ultra_cmd_echo,
     process_ultra_energy_rates,
     process_ultra_energy_spectra,
     process_ultra_events,
@@ -16,6 +17,7 @@ from imap_processing.ultra.l0.decom_ultra import (
 )
 from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_AUX,
+    ULTRA_CMD_ECHO,
     ULTRA_CMD_TEXT,
     ULTRA_ENERGY_EVENTS,
     ULTRA_ENERGY_RATES,
@@ -133,6 +135,9 @@ def ultra_l1a(  # noqa: PLR0912
                 coords={"epoch": decom_ultra_dataset["epoch"]},
             )
             gattr_key = ULTRA_CMD_TEXT.logical_source[ULTRA_CMD_TEXT.apid.index(apid)]
+        elif apid in ULTRA_CMD_ECHO.apid:
+            decom_ultra_dataset = process_ultra_cmd_echo(datasets_by_apid[apid])
+            gattr_key = ULTRA_CMD_ECHO.logical_source[ULTRA_CMD_ECHO.apid.index(apid)]
         else:
             logger.error(f"APID {apid} not recognized.")
             continue
