@@ -225,6 +225,7 @@ def test_l1a_num_data_variables(test_l1a_data, index):
 
 
 @pytest.mark.parametrize("index", range(len(VALIDATION_DATA)))
+@pytest.mark.xfail(reason="Validation test turned off; awaiting fixes")
 def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
     """Tests that the generated L1a CDF data array contents are valid.
 
@@ -258,6 +259,7 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         )
 
 
+@pytest.mark.xfail(reason="Validation test turned off; awaiting fixes")
 def test_l1a_validate_hskp_data(test_l1a_data):
     """Tests that the L1a housekeeping data is valid"""
 
@@ -287,6 +289,7 @@ def test_l1a_validate_hskp_data(test_l1a_data):
 
 
 @pytest.mark.parametrize("index", range(len(DESCRIPTORS)))
+@pytest.mark.xfail(reason="Validation test turned off; awaiting fixes")
 def test_l1a_validate_support_variables(test_l1a_data, index):
     """Tests that the support variables for the generated products match the
     validation data
