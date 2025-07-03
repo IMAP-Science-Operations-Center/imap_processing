@@ -59,7 +59,6 @@ def calculate_de(
 
     # Define epoch and spin.
     de_dict["epoch"] = de_dataset["epoch"].data
-    # TODO
     de_dict["spin"] = de_dataset["spin"].data
 
     # Add already populated fields.
@@ -128,7 +127,7 @@ def calculate_de(
         f"ultra{sensor}",
     )
     start_type[valid_indices] = de_dataset["start_type"].data[valid_indices]
-    # TODO
+
     (
         event_times[valid_indices],
         spin_starts[valid_indices],

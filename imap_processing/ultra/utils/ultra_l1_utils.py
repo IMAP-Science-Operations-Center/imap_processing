@@ -137,7 +137,6 @@ def create_dataset(  # noqa: PLR0912
                 dims=["epoch", "energy_bin_geometric_mean", "pixel_index"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
-            print("hi")
         else:
             dataset[key] = xr.DataArray(
                 data,
