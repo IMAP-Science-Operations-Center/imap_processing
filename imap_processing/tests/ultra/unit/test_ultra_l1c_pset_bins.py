@@ -174,10 +174,10 @@ def test_get_helio_exposure_times():
 
     nside = 128
     npix = hp.nside2npix(nside)
-    assert helio_exposure.shape == (npix, len(energy_midpoints))
+    assert helio_exposure.shape == (len(energy_midpoints), npix)
 
     total_input = np.sum(df_exposure["Exposure Time"].values)
-    total_output = np.sum(helio_exposure[:, 23])
+    total_output = np.sum(helio_exposure[23, :])
 
     assert np.allclose(total_input, total_output, atol=1e-6)
 
@@ -256,7 +256,7 @@ def test_get_helio_sensitivity(monkeypatch):
     for energy in energy_midpoints:
         s = grid_sensitivity(df_efficiencies, df_geometric_function, energy)
         sc_sensitivity.append(s)
-    sc_sensitivity = np.stack(sc_sensitivity, axis=1)  # shape: (npix, n_energy_bins)
+    sc_sensitivity = np.stack(sc_sensitivity, axis=1).T  # shape: (n_energy_bins, npix)
 
     # Compute helio-frame sensitivity
     helio_sensitivity = get_helio_sensitivity(
