@@ -697,11 +697,13 @@ def calculate_epoch_values(
     acq_start = met_to_ttj2000ns(acq_start_seconds + acq_start_subseconds / 1e6)
 
     # Apply correction to center the epoch bin
-    epoch = ((acq_start[:-1] + acq_start[1:]) / 2).astype(int)
+    epoch = (acq_start[:-1] + acq_start[1:]) // 2
     epoch_delta_minus = epoch - acq_start[:-1]
     epoch_delta_plus = acq_start[1:] - epoch
 
-    # The end values are calculated differently
+    # Since the centers and deltas are determined by averaging sequential bins,
+    # the last elements must be calculated differently. For this, we just use
+    # the last acquisition start and the previous deltas
     epoch = np.concatenate([epoch, [acq_start[-1]]])
     epoch_delta_minus = np.concatenate([epoch_delta_minus, [epoch_delta_minus[-1]]])
     epoch_delta_plus = np.concatenate([epoch_delta_plus, [epoch_delta_plus[-1]]])
