@@ -66,12 +66,11 @@ def calculate_phase_space_density(
     # Calculate phase space density using formula:
     #   2 * ((C/tau) or uncertainty data) / (G * 1.237e31 * eV^2)
     # See doc string for more details.
-    density = (2 * data) / (
+    phase_space_density = (2 * data) / (
         swe_constants.GEOMETRIC_FACTORS[np.newaxis, np.newaxis, np.newaxis, :]
         * swe_constants.VELOCITY_CONVERSION_FACTOR
         * particle_energy_data[:, :, :, np.newaxis] ** 2
     )
-    phase_space_density = density
 
     return phase_space_density
 
@@ -133,35 +132,26 @@ def calculate_flux(
     return flux
 
 
-def put_data_into_angle_bins(
-    data: np.ndarray, angle_bin_indices: npt.NDArray[np.int_], is_unc: bool = False
+def put_uncertainty_into_angle_bins(
+    data: np.ndarray, angle_bin_indices: npt.NDArray[np.int_]
 ) -> npt.NDArray:
     """
-    Put data in its angle bins.
+    Put uncertainty data in its angle bins.
 
-    This function bins SWE data into 30 predefined angle bins
-    while preserving the original energy step structure. For each
-    full cycle, it assigns data to the corresponding angle bin
-    based on the provided indices.
+    This function bins uncertainty data into 30 predefined angle bins
+    while preserving the original energy step structure.
 
     Since multiple data points can fall into the same angle bin,
-    this function assigns each data point to its bin and sums
-    the values within that bin. If the data is uncertainty data,
-    it computes the combined uncertainty for the bin; otherwise,
-    it calculates the averages.
+    this function computes the combined uncertainty for the bin.
 
     Parameters
     ----------
     data : numpy.ndarray
-        Data to put in bins. Shape:
+        Uncertainty data to put in bins. Shape:
         (full_cycle_data, N_ESA_STEPS, N_ANGLE_BINS, N_CEMS).
     angle_bin_indices : numpy.ndarray
         Indices of angle bins to put data in. Shape:
         (full_cycle_data, N_ESA_STEPS, N_ANGLE_BINS).
-    is_unc : bool
-        Whether data is uncertainty data or not. If yes, sqrt(sum(data)).
-        Otherwise, find mean of data.
-        Default to False.
 
     Returns
     -------
@@ -184,27 +174,71 @@ def put_data_into_angle_bins(
     time_indices = np.arange(data.shape[0])[:, None, None]
     energy_indices = np.arange(swe_constants.N_ESA_STEPS)[None, :, None]
 
-    if is_unc:
-        # Calculate new uncertainty of each uncertainty data in the bins.
-        # Per SWE instruction:
-        #   At L1B, 'data' is result from sqrt(counts). Now in L2, average
-        #   uncertainty data using this formula:
-        #   sqrt(
-        #       sum(
-        #           (unc_1) ** 2 + (unc_2) ** 2 + ... + (unc_n) ** 2
-        #       )
-        #   )
-        # TODO: SWE want to add more defined formula based on spin data and
-        # counts uncertainty from it in the future.
+    # Calculate new uncertainty of each uncertainty data in the bins.
+    # Per SWE instruction:
+    #   At L1B, 'data' is result from sqrt(counts). Now in L2, average
+    #   uncertainty data using this formula:
+    #   sqrt(
+    #       sum(
+    #           (unc_1) ** 2 + (unc_2) ** 2 + ... + (unc_n) ** 2
+    #       )
+    #   )
+    # TODO: SWE want to add more defined formula based on spin data and
+    # counts uncertainty from it in the future.
 
-        # Use np.add.at() to put values into bins and add values in the bins into one.
-        # Here, we are applying power of 2 to each data point before summing them.
-        np.add.at(
-            binned_data,
-            (time_indices, energy_indices, angle_bin_indices),
-            data**2,
-        )
-        return np.sqrt(binned_data)
+    # Use np.add.at() to put values into bins and add values in the bins into one.
+    # Here, we are applying power of 2 to each data point before summing them.
+    np.add.at(
+        binned_data,
+        (time_indices, energy_indices, angle_bin_indices),
+        data**2,
+    )
+    return np.sqrt(binned_data)
+
+
+def put_data_into_angle_bins(
+    data: np.ndarray, angle_bin_indices: npt.NDArray[np.int_]
+) -> npt.NDArray:
+    """
+    Put data in its angle bins.
+
+    This function bins SWE data into 30 predefined angle bins
+    while preserving the original energy step structure. For each
+    full cycle, it assigns data to the corresponding angle bin
+    based on the provided indices.
+
+    Since multiple data points can fall into the same angle bin,
+    this function computes the combined averages.
+
+    Parameters
+    ----------
+    data : numpy.ndarray
+        Data to put in bins. Shape:
+        (full_cycle_data, N_ESA_STEPS, N_ANGLE_BINS, N_CEMS).
+    angle_bin_indices : numpy.ndarray
+        Indices of angle bins to put data in. Shape:
+        (full_cycle_data, N_ESA_STEPS, N_ANGLE_BINS).
+
+    Returns
+    -------
+    numpy.ndarray
+        Data in bins. Shape:
+        (full_cycle_data, N_ESA_STEPS, N_ANGLE_BINS, N_CEMS).
+    """
+    # Initialize with zeros instead of NaN because np.add.at() does not
+    # work with nan values. It results in nan + value = nan
+    binned_data = np.zeros(
+        (
+            data.shape[0],
+            swe_constants.N_ESA_STEPS,
+            swe_constants.N_ANGLE_BINS,
+            swe_constants.N_CEMS,
+        ),
+        dtype=np.float64,
+    )
+
+    time_indices = np.arange(data.shape[0])[:, None, None]
+    energy_indices = np.arange(swe_constants.N_ESA_STEPS)[None, :, None]
 
     # Use np.add.at() to put values into bins and add values in the bins into one.
     np.add.at(binned_data, (time_indices, energy_indices, angle_bin_indices), data)
@@ -459,8 +493,8 @@ def swe_l2(l1b_dataset: xr.Dataset) -> xr.Dataset:
         l1b_dataset["counts_stat_uncert"].data, l1b_dataset["esa_energy"].data
     )
     # Put uncertainty data into its spin angle bins and calculate new uncertainty
-    phase_space_density_uncert = put_data_into_angle_bins(
-        phase_space_density_uncert, spin_angle_bins_indices, is_unc=True
+    phase_space_density_uncert = put_uncertainty_into_angle_bins(
+        phase_space_density_uncert, spin_angle_bins_indices
     )
     dataset["psd_stat_uncert"] = xr.DataArray(
         phase_space_density_uncert,
@@ -472,9 +506,7 @@ def swe_l2(l1b_dataset: xr.Dataset) -> xr.Dataset:
     flux_uncert = calculate_flux(
         phase_space_density_uncert, l1b_dataset["esa_energy"].data
     )
-    flux_uncert = put_data_into_angle_bins(
-        flux_uncert, spin_angle_bins_indices, is_unc=True
-    )
+    flux_uncert = put_uncertainty_into_angle_bins(flux_uncert, spin_angle_bins_indices)
     dataset["flux_stat_uncert"] = xr.DataArray(
         flux_uncert,
         name="flux_stat_uncert",
