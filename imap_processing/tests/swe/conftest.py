@@ -113,7 +113,7 @@ def l1b_validation_df():
 def l2_sector_validation_df():
     """Read validation data from file"""
     l1_val_path = imap_module_directory / "tests/swe/l2_validation"
-    filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_v0B.dat"
+    filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_v0B_15.dat"
 
     # Define column names for validation data
     column_names = [
@@ -146,7 +146,7 @@ def l2_sector_validation_df():
 def l2_binned_validation_df():
     """Read validation data from file"""
     l1_val_path = imap_module_directory / "tests/swe/l2_validation"
-    filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v0B.dat"
+    filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v1E_15.dat"
 
     # Define column names for validation data
     column_names = [
