@@ -40,7 +40,6 @@ VALIDATION_DATA = [
     TEST_DATA_PATH / "validation" / "imap_codice_l1a_lo-counters-aggregated_20241110193900_v0.0.2.cdf",
     TEST_DATA_PATH / "validation" / "imap_codice_l1a_lo-counters-singles_20241110193900_v0.0.2.cdf",
     TEST_DATA_PATH / "validation" / "imap_codice_l1a_lo-direct-events_20241110193900_v0.0.2.cdf",
-    TEST_DATA_PATH / "validation" / "imap_codice_l1a_lo-ialirt_20240625000000_v0.0.2.cdf",
     TEST_DATA_PATH / "validation" / "imap_codice_l1a_lo-ialirt_20241110193900_v0.0.2.cdf",
     TEST_DATA_PATH / "validation" / "imap_codice_l1a_lo-nsw-angular_20241110193900_v0.0.2.cdf",
     TEST_DATA_PATH / "validation" / "imap_codice_l1a_lo-nsw-priority_20241110193900_v0.0.2.cdf",
