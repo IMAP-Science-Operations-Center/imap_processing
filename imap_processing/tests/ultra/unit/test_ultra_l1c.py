@@ -200,3 +200,78 @@ def test_calculate_spacecraft_pset_with_cdf():
         test_data_path.name
         == "imap_ultra_l1c_45sensor-spacecraftpset_20250415-repoint00001_v999.cdf"
     )
+
+
+@pytest.mark.external_test_data
+@pytest.mark.external_kernel
+@ensure_spice
+@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
+def test_calculate_helio_pset_with_cdf():
+    """Tests ultra_l1c function with imported test data."""
+
+    df = pd.read_csv(TEST_PATH / "IMAP-Ultra45_r1_L1_V0_shortened.csv")
+
+    # Select a single pointing number
+    pointing = 0
+    df_subset = df[df["pointing_number"] == pointing].copy()
+
+    de_dict = {}
+
+    de_dict["epoch"] = df_subset["epoch"].values
+    # Fake SCLK in seconds that matches SPICE.
+    de_dict["event_times"] = np.full(len(df_subset), 2.41187e13)
+    species_bin = np.full(len(df_subset), 1, dtype=np.uint8)
+
+    # PosYSlit is True for left (start_type = 1)
+    # PosYSlit is False for right (start_type = 2)
+    start_type = np.where(df_subset["PosYSlit"].values, 1, 2)
+    d, yf = get_front_y_position(start_type, df_subset["StopY"].values * 100)
+    tof_tenths_ns = df_subset["TOF"].values * 10000
+    v, _, _ = get_de_velocity(
+        (df_subset["StartX"].values * 100, yf),
+        (df_subset["StopX"].values * 100, df_subset["StopY"].values * 100),
+        d,
+        tof_tenths_ns,
+    )
+    de_dict["direct_event_velocity"] = v.astype(np.float32)
+
+    ultra_frame = SpiceFrame.IMAP_ULTRA_45
+    _, _, helio_dps_velocity = get_annotated_particle_velocity(
+        df_subset["tdb"].values,
+        de_dict["direct_event_velocity"],
+        ultra_frame,
+        SpiceFrame.IMAP_DPS,
+        SpiceFrame.IMAP_SPACECRAFT,
+    )
+
+    de_dict["velocity_dps_helio"] = helio_dps_velocity
+    de_dict["energy_heliosphere"] = get_de_energy_kev(helio_dps_velocity, species_bin)
+
+    name = "imap_ultra_l1b_45sensor-de"
+    dataset = create_dataset(de_dict, name, "l1b")
+
+    data_dict = {
+        "imap_ultra_l1b_45sensor-de": dataset,
+        "imap_ultra_l1b_45sensor-extendedspin": xr.Dataset(),  # placeholder
+        "imap_ultra_l1b_45sensor-cullingmask": xr.Dataset(),  # placeholder
+    }
+
+    path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
+    ancillary_files = {
+        "l1c-90sensor-dps-exposure": path
+        / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
+        "l1c-90sensor-efficiencies": path
+        / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
+        "l1c-90sensor-gf": path / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
+    }
+
+    output_datasets = ultra_l1c(data_dict, ancillary_files, has_spice=True)
+    output_datasets[0].attrs["Data_version"] = "999"
+    output_datasets[0].attrs["Repointing"] = f"repoint{pointing + 1:05d}"
+    test_data_path = write_cdf(output_datasets[0], istp=True)
+
+    assert test_data_path.exists()
+    assert (
+        test_data_path.name
+        == "imap_ultra_l1c_45sensor-heliopset_20250415-repoint00001_v999.cdf"
+    )
