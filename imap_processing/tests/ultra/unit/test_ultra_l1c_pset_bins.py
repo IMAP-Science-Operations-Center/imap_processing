@@ -12,7 +12,6 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     get_energy_delta_minus_plus,
     get_helio_background_rates,
     get_helio_exposure_times,
-    get_helio_histogram,
     get_helio_sensitivity,
     get_spacecraft_background_rates,
     get_spacecraft_exposure_times,
@@ -121,31 +120,6 @@ def test_get_spacecraft_histogram(test_data):
 def mock_imap_state(time, ref_frame):
     # Position (0, 0, 0), exaggerated velocity to force visible transformation
     return np.array([0, 0, 0, 0, 0, 0])
-
-
-def test_get_helio_histogram(monkeypatch, test_data):
-    """Tests get_helio_histogram function."""
-    v, energy = test_data
-
-    monkeypatch.setattr(ultra_l1c_pset_bins, "imap_state", mock_imap_state)
-
-    energy_bin_edges, _, _ = build_energy_bins()
-    subset_energy_bin_edges = energy_bin_edges[:3]
-
-    start_time = 829485054.185627
-    end_time = 829567884.185627
-
-    mid_time = np.average([start_time, end_time])
-
-    hist_helio, _, _, n_pix = get_helio_histogram(
-        mid_time, v, energy, subset_energy_bin_edges, nside=1
-    )
-
-    hist_sc, _, _, n_pix = get_spacecraft_histogram(
-        v, energy, subset_energy_bin_edges, nside=1
-    )
-
-    assert np.array_equal(hist_helio, hist_sc)
 
 
 def test_get_spacecraft_background_rates():
