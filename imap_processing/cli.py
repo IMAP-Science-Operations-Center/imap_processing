@@ -1123,7 +1123,9 @@ class Mag(ProcessInstrument):
             )
 
         for ds in datasets:
-            if not np.all(ds["epoch"].values[1:] > ds["epoch"].values[:-1]):
+            if "raw" not in ds.attrs["Logical_source"] and not np.all(
+                ds["epoch"].values[1:] > ds["epoch"].values[:-1]
+            ):
                 raise ValueError(
                     "Timestamps for output file are not monotonically increasing."
                 )
