@@ -54,8 +54,6 @@ class CoDICEL1aPipeline:
 
     Methods
     -------
-    calculate_epoch_values()
-        Calculate and return the values to be used for `epoch`.
     decompress_data(science_values)
         Perform decompression on the data.
     define_coordinates()
@@ -88,28 +86,6 @@ class CoDICEL1aPipeline:
         self.plan_id = plan_id
         self.plan_step = plan_step
         self.view_id = view_id
-
-    def calculate_epoch_values(self) -> NDArray[int]:
-        """
-        Calculate and return the values to be used for `epoch`.
-
-        On CoDICE, the epoch values are derived from the `acq_start_seconds` and
-        `acq_start_subseconds` fields in the packet.
-
-        Note that the `acq_start_subseconds` field needs to be converted from
-        microseconds to seconds.
-
-        Returns
-        -------
-        epoch : NDArray[int]
-            List of epoch values.
-        """
-        epoch = met_to_ttj2000ns(
-            self.dataset["acq_start_seconds"]
-            + self.dataset["acq_start_subseconds"] / 1e6
-        )
-
-        return epoch
 
     def decompress_data(self, science_values: list[NDArray[str]] | list[str]) -> None:
         """
@@ -167,17 +143,30 @@ class CoDICEL1aPipeline:
         self.coords = {}
 
         coord_names = [
-            "epoch",
             *self.config["output_dims"].keys(),
             *[key + "_label" for key in self.config["output_dims"].keys()],
         ]
 
+        # Define epoch coordinates
+        epochs, epoch_delta_minus, epoch_delta_plus = calculate_epoch_values(
+            self.dataset.acq_start_seconds, self.dataset.acq_start_subseconds
+        )
+        for name, var in [
+            ("epoch", epochs),
+            ("epoch_delta_minus", epoch_delta_minus),
+            ("epoch_delta_plus", epoch_delta_plus),
+        ]:
+            coord = xr.DataArray(
+                var,
+                name=name,
+                dims=[name],
+                attrs=self.cdf_attrs.get_variable_attributes(name, check_schema=False),
+            )
+            self.coords[name] = coord
+
         # Define the values for the coordinates
         for name in coord_names:
-            if name == "epoch":
-                values = self.calculate_epoch_values()
-                dims = [name]
-            elif name in [
+            if name in [
                 "esa_step",
                 "inst_az",
                 "spin_sector",
@@ -674,6 +663,54 @@ class CoDICEL1aPipeline:
         self.cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
 
 
+def calculate_epoch_values(
+    acq_start_seconds: xr.DataArray, acq_start_subseconds: xr.DataArray
+) -> tuple[NDArray[int], NDArray[int], NDArray[int]]:
+    """
+    Calculate and return the values to be used for `epoch`.
+
+    On CoDICE, the epoch values are derived from the `acq_start_seconds` and
+    `acq_start_subseconds` fields in the packet.
+
+    Note that the `acq_start_subseconds` field needs to be converted from
+    microseconds to seconds.
+
+    Parameters
+    ----------
+    acq_start_seconds : xarray.DataArray
+        The acquisition times to calculate the epoch values from.
+    acq_start_subseconds : xarray.DataArray
+        The subseconds portion of the acquisition times.
+
+    Returns
+    -------
+    epoch : NDArray[int]
+        List of centered epoch values.
+    epoch_delta_minus: NDArray[int]
+        List of values that represent the length of time from acquisition
+        start to the center of the acquisition time bin.
+    epoch_delta_plus: NDArray[int]
+        List of values that represent the length of time from the center of
+        the acquisition time bin to the end of acquisition.
+    """
+    # First calculate an epoch value based on the acquisition start
+    acq_start = met_to_ttj2000ns(acq_start_seconds + acq_start_subseconds / 1e6)
+
+    # Apply correction to center the epoch bin
+    epoch = (acq_start[:-1] + acq_start[1:]) // 2
+    epoch_delta_minus = epoch - acq_start[:-1]
+    epoch_delta_plus = acq_start[1:] - epoch
+
+    # Since the centers and deltas are determined by averaging sequential bins,
+    # the last elements must be calculated differently. For this, we just use
+    # the last acquisition start and the previous deltas
+    epoch = np.concatenate([epoch, [acq_start[-1]]])
+    epoch_delta_minus = np.concatenate([epoch_delta_minus, [epoch_delta_minus[-1]]])
+    epoch_delta_plus = np.concatenate([epoch_delta_plus, [epoch_delta_plus[-1]]])
+
+    return epoch, epoch_delta_minus, epoch_delta_plus
+
+
 def group_ialirt_data(
     packets: xr.Dataset, data_field_range: range, prefix: str
 ) -> list[bytearray]:
@@ -777,6 +814,8 @@ def create_binned_dataset(
         dims=["epoch"],
         attrs=pipeline.cdf_attrs.get_variable_attributes("epoch", check_schema=False),
     )
+    # TODO: Figure out how to calculate epoch centers and deltas and store them
+    #       in variables here
     dataset = xr.Dataset(
         coords={"epoch": coord},
         attrs=pipeline.cdf_attrs.get_global_attributes(pipeline.config["dataset_name"]),
@@ -869,7 +908,11 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     )[0]
     acq_start_seconds = packets.acq_start_seconds[epoch_indices]
     acq_start_subseconds = packets.acq_start_subseconds[epoch_indices]
-    epochs = met_to_ttj2000ns(acq_start_seconds + acq_start_subseconds / 1e6)
+
+    # Calculate epoch variables
+    epochs, epochs_delta_minus, epochs_delta_plus = calculate_epoch_values(
+        acq_start_seconds, acq_start_subseconds
+    )
 
     # Define coordinates
     epoch = xr.DataArray(
@@ -877,6 +920,20 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
         name="epoch",
         dims=["epoch"],
         attrs=cdf_attrs.get_variable_attributes("epoch", check_schema=False),
+    )
+    epoch_delta_minus = xr.DataArray(
+        epochs_delta_minus,
+        name="epoch_delta_minus",
+        dims=["epoch_delta_minus"],
+        attrs=cdf_attrs.get_variable_attributes(
+            "epoch_delta_minus", check_schema=False
+        ),
+    )
+    epoch_delta_plus = xr.DataArray(
+        epochs_delta_plus,
+        name="epoch_delta_plus",
+        dims=["epoch_delta_plus"],
+        attrs=cdf_attrs.get_variable_attributes("epoch_delta_plus", check_schema=False),
     )
     event_num = xr.DataArray(
         np.arange(10000),
@@ -899,6 +956,8 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     dataset = xr.Dataset(
         coords={
             "epoch": epoch,
+            "epoch_delta_minus": epoch_delta_minus,
+            "epoch_delta_plus": epoch_delta_plus,
             "event_num": event_num,
             "event_num_label": event_num_label,
         },

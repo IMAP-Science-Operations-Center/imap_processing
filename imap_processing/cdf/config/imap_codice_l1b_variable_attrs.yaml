@@ -59,6 +59,30 @@ hi_priorities_attrs: &hi_priorities_default
 
 
 # <=== Coordinates ===>
+epoch_delta_minus:
+    CATDESC: Time from acquisition start to acquisition center
+    FIELDNAM: epoch_delta_minus
+    FILLVAL: *int_fillval
+    FORMAT: I18
+    LABLAXIS: epoch_delta_minus
+    SCALETYP: linear
+    UNITS: ns
+    VALIDMIN: *min_int
+    VALIDMAX: *max_int
+    VAR_TYPE: support_data
+
+epoch_delta_plus:
+    CATDESC: Time from acquisition center to acquisition end
+    FIELDNAM: epoch_delta_plus
+    FILLVAL: *int_fillval
+    FORMAT: I18
+    LABLAXIS: epoch_delta_plus
+    SCALETYP: linear
+    UNITS: ns
+    VALIDMIN: *min_int
+    VALIDMAX: *max_int
+    VAR_TYPE: support_data
+
 esa_step:
     CATDESC: Energy per charge (E/q) sweeping step
     FIELDNAM: Energy Index
