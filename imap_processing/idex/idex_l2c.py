@@ -58,8 +58,19 @@ def idex_l2c(l2b_datasets: list[xr.Dataset]) -> xr.Dataset:
         "rate_by_mass_map",
         "epoch",
         "impact_day_of_year",
+        "impact_charge_bins",
+        "mass_bins",
     ]
-    l2c_dataset = setup_dataset(l2b_dataset, arrays_to_copy, idex_attrs)
+    # Labels do not get concatenated, so we need to copy them over again
+    # from the first l2b dataset
+    labels = [
+        "charge_labels",
+        "mass_labels",
+        "rectangular_lon_pixel_label",
+        "rectangular_lat_pixel_label",
+    ]
+    arrays_to_add = {label: l2b_datasets[0][label] for label in labels}
+    l2c_dataset = setup_dataset(l2b_dataset, arrays_to_copy, idex_attrs, arrays_to_add)
     # Create the Healpix dataset
     map_attrs = {
         "sky_tiling_type": SkyTilingType.RECTANGULAR.value,
@@ -68,6 +79,5 @@ def idex_l2c(l2b_datasets: list[xr.Dataset]) -> xr.Dataset:
     } | idex_attrs.get_global_attributes("imap_idex_l2c_sci-rectangular")
 
     l2c_dataset.attrs.update(map_attrs)
-    print(l2c_dataset)
     logger.info("IDEX L2C science data processing completed.")
     return l2c_dataset

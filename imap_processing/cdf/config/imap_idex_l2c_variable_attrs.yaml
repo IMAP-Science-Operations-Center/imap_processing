@@ -1,0 +1,30 @@
+# Label attributes
+mass_labels:
+  CATDESC: Labels for mass bins
+  FIELDNAM: Mass Bin Labels
+  VAR_TYPE: metadata
+  FORMAT: A8
+  DEPEND_1: mass_bins
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+charge_labels:
+  CATDESC: Labels for impact charge bins
+  FIELDNAM: Impact Charge Bin Labels
+  VAR_TYPE: metadata
+  FORMAT: A8
+  DEPEND_1: impact_charge_bins
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+rectangular_lon_pixel_label:
+  CATDESC: Longitude pixel index label for IDEX SkyMap.
+  FIELDNAM: Longitude pixel label
+  FORMAT: A5
+  VAR_TYPE: metadata
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+rectangular_lat_pixel_label:
+  CATDESC: Latitude pixel index label for IDEX SkyMap.
+  FIELDNAM: Latitude pixel label
+  FORMAT: A5
+  VAR_TYPE: metadata
+  DICT_KEY: SPASE>Support>SupportQuantity:Other

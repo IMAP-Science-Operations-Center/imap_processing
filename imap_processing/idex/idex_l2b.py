@@ -232,7 +232,7 @@ def idex_l2b(
         "counts_by_charge": xr.DataArray(
             name="counts_by_charge",
             data=counts_by_charge.astype(np.int64),
-            dims=("epoch", "charge_bins", "spin_phase_bins"),
+            dims=("epoch", "impact_charge_bins", "spin_phase_bins"),
             attrs=idex_attrs.get_variable_attributes("counts_by_charge"),
         ),
         "counts_by_mass": xr.DataArray(
@@ -244,7 +244,7 @@ def idex_l2b(
         "rate_by_charge": xr.DataArray(
             name="rate_by_charge",
             data=rate_by_charge,
-            dims=("epoch", "charge_bins", "spin_phase_bins"),
+            dims=("epoch", "impact_charge_bins", "spin_phase_bins"),
             attrs=idex_attrs.get_variable_attributes("rate_by_charge"),
         ),
         "rate_by_mass": xr.DataArray(
@@ -258,7 +258,7 @@ def idex_l2b(
             data=counts_by_charge_map.astype(np.int64),
             dims=(
                 "epoch",
-                "charge_bins",
+                "impact_charge_bins",
                 "rectangular_lon_pixel",
                 "rectangular_lat_pixel",
             ),
@@ -269,7 +269,7 @@ def idex_l2b(
             data=counts_by_mass_map.astype(np.int64),
             dims=(
                 "epoch",
-                "charge_bins",
+                "impact_charge_bins",
                 "rectangular_lon_pixel",
                 "rectangular_lat_pixel",
             ),
@@ -280,7 +280,7 @@ def idex_l2b(
             data=rate_by_charge_map,
             dims=(
                 "epoch",
-                "charge_bins",
+                "impact_charge_bins",
                 "rectangular_lon_pixel",
                 "rectangular_lat_pixel",
             ),
@@ -291,7 +291,7 @@ def idex_l2b(
             data=rate_by_mass_map,
             dims=(
                 "epoch",
-                "charge_bins",
+                "impact_charge_bins",
                 "rectangular_lon_pixel",
                 "rectangular_lat_pixel",
             ),

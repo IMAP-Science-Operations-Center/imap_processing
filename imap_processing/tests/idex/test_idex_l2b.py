@@ -1,11 +1,10 @@
 """Tests the L2b processing for IDEX data"""
 
 import numpy as np
-import pytest
 import xarray as xr
 from numpy.testing import assert_array_equal
 
-from imap_processing.cdf.utils import load_cdf, write_cdf
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.idex.idex_constants import (
     FG_TO_KG,
     NANOSECONDS_IN_DAY,
@@ -22,33 +21,7 @@ from imap_processing.idex.idex_l2b import (
     compute_rates_by_charge_and_mass,
     get_science_acquisition_on_percentage,
     get_science_acquisition_timestamps,
-    idex_l2b,
 )
-from imap_processing.tests.idex.conftest import L1B_EVT_CDF
-
-ONE_DAY_NS = 86400000000000
-
-
-@pytest.fixture
-def l2b_dataset(l2a_dataset: xr.Dataset) -> xr.Dataset:
-    """Return a ``xarray`` dataset containing test data.
-
-    Returns
-    -------
-    dataset : xr.Dataset
-        A ``xarray`` dataset containing the test data
-    """
-    l1b_evt_dataset = load_cdf(L1B_EVT_CDF)
-    l1b_evt_dataset2 = (
-        l1b_evt_dataset.copy()
-    )  # Add a second dataset with different epoch values for testing
-    l2a_dataset2 = (
-        l2a_dataset.copy()
-    )  # Add a second dataset with different epoch values for testing
-    l1b_evt_dataset2["epoch"] = l1b_evt_dataset2["epoch"] + NANOSECONDS_IN_DAY
-    l2a_dataset2["epoch"] = l2a_dataset2["epoch"] + NANOSECONDS_IN_DAY
-    dataset = idex_l2b([l2a_dataset, l2a_dataset2], [l1b_evt_dataset, l1b_evt_dataset2])
-    return dataset
 
 
 def test_l2b_logical_source_and_cdf(l2b_dataset: xr.Dataset):
