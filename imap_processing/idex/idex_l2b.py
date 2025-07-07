@@ -355,7 +355,7 @@ def compute_counts_by_charge_and_mass(
             len(SKY_GRID.el_bin_edges) - 1,
         ),
     )
-    daily_epoch = np.zeros(len(epoch_doy_unique))
+    daily_epoch = np.zeros(len(epoch_doy_unique), dtype=np.float64)
     for i in range(len(epoch_doy_unique)):
         doy = epoch_doy_unique[i]
         # Get the indices for the current day
