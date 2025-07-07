@@ -415,7 +415,7 @@ def process_ultra_macros_checksum(ds: xr.Dataset) -> xr.Dataset:
     n_epochs = ds.sizes["epoch"]
     max_len = 256
 
-    checksum_array = np.full((n_epochs, max_len), fill, dtype=packed_dtype)
+    checksum_array = np.full((n_epochs, max_len), fill)
 
     for i, checksum in enumerate(ds["checksums"]):
         checksum_array[i, :] = np.frombuffer(checksum.item(), dtype=packed_dtype)
