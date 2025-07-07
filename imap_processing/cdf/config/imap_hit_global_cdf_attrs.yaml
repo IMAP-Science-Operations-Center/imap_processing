@@ -70,7 +70,7 @@ imap_hit_l2_summed-intensity:
 
 imap_hit_l2_macropixel-intensity:
     <<: *instrument_base
-    Data_type: L2_macro-pixel-intensity>Level-2 Macro Pixel Intensity
+    Data_type: L2_macropixel-intensity>Level-2 Macro Pixel Intensity
     Logical_source: imap_hit_l2_macropixel-intensity
     Logical_source_description: IMAP Mission HIT Instrument Level-2 Macro Pixel Intensity Data.
 

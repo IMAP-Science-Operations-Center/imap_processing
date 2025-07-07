@@ -53,15 +53,15 @@ def log_decompression(value: int, mantissa_bit_length: int) -> int:
     """
     Perform logarithmic decompression on an integer.
 
-    Supports both 16-bit and 8-bit formats based on the specified
+    Supports 16-bit, 10-bit, and 8-bit formats based on the specified
     mantissa bit length.
 
     Parameters
     ----------
     value : int
-        An integer comprised of a 4-bit exponent followed by a variable-length mantissa.
+        An integer comprised of an exponent followed by a mantissa.
     mantissa_bit_length : int
-        The bit length of the mantissa (default is 12 for 16-bit format).
+        The bit length of the mantissa.
 
     Returns
     -------
@@ -72,6 +72,9 @@ def log_decompression(value: int, mantissa_bit_length: int) -> int:
     if mantissa_bit_length == 12:
         base_value = 4096
         mantissa_mask = 0xFFF
+    elif mantissa_bit_length == 5:
+        base_value = 32
+        mantissa_mask = 0x1F
     elif mantissa_bit_length == 4:
         base_value = 16
         mantissa_mask = 0x0F
@@ -239,6 +242,7 @@ def decompress_image(
 def read_image_raw_events_binary(
     event_data: bytes,
     count: int,
+    field_ranges: dict,
 ) -> NDArray:
     """
     Convert contents of binary string 'EVENTDATA' into values.
@@ -249,6 +253,8 @@ def read_image_raw_events_binary(
         Event data.
     count : int
         Number of events.
+    field_ranges : dict
+        Field ranges for the event data.
 
     Returns
     -------
@@ -256,15 +262,16 @@ def read_image_raw_events_binary(
         Event data.
     """
     binary = convert_to_binary_string(event_data)
-    # 166 bits per event
-    event_length = 166 if count else 0
+    length = max(end for (_, end) in field_ranges.values())
+    # bits per event
+    event_length = length if count else 0
     event_data_list = []
 
     # For all packets with event data, parses the binary string
     for i in range(count):
         start_index = i * event_length
         event_binary = binary[start_index : start_index + event_length]
-        parsed_event = parse_event(event_binary)
+        parsed_event = parse_event(event_binary, field_ranges)
         event_data_list.append(parsed_event)
 
     return np.array(event_data_list)

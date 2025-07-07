@@ -558,8 +558,11 @@ def process_swapi_science(
     # Step 3: Create xarray.Dataset
     # ===================================================================
 
-    # epoch time. Should be same dimension as number of good sweeps
-    epoch_values = good_sweep_sci["epoch"].data.reshape(total_full_sweeps, 12)[:, 0]
+    # epoch time. Should be same dimension as number of good sweeps.
+    # Use center time for epoch to line up with mission requests. Center time
+    # of SWAPI is time of 7th packet(aka SEQ_NUMBER == 6) creation time at the
+    # beginning of 7th packet.
+    epoch_values = good_sweep_sci["epoch"].data.reshape(total_full_sweeps, 12)[:, 6]
 
     epoch_time = xr.DataArray(
         epoch_values,
@@ -627,6 +630,13 @@ def process_swapi_science(
         name="plan_id",
         dims=["epoch"],
         attrs=cdf_manager.get_variable_attributes("plan_id"),
+    )
+    # Store start time for L3 purposes per SWAPI requests
+    dataset["sci_start_time"] = xr.DataArray(
+        good_sweep_sci["epoch"].data.reshape(total_full_sweeps, 12)[:, 0],
+        name="sci_start_time",
+        dims=["epoch"],
+        attrs=cdf_manager.get_variable_attributes("sci_start_time"),
     )
     # Add ESA_LVL5 for L2 and L3 purposes.
     # We need to store ESA_LVL5 at SEQ_NUMBER==11

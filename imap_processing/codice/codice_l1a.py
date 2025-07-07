@@ -54,8 +54,6 @@ class CoDICEL1aPipeline:
 
     Methods
     -------
-    calculate_epoch_values()
-        Calculate and return the values to be used for `epoch`.
     decompress_data(science_values)
         Perform decompression on the data.
     define_coordinates()
@@ -88,28 +86,6 @@ class CoDICEL1aPipeline:
         self.plan_id = plan_id
         self.plan_step = plan_step
         self.view_id = view_id
-
-    def calculate_epoch_values(self) -> NDArray[int]:
-        """
-        Calculate and return the values to be used for `epoch`.
-
-        On CoDICE, the epoch values are derived from the `acq_start_seconds` and
-        `acq_start_subseconds` fields in the packet.
-
-        Note that the `acq_start_subseconds` field needs to be converted from
-        microseconds to seconds.
-
-        Returns
-        -------
-        epoch : NDArray[int]
-            List of epoch values.
-        """
-        epoch = met_to_ttj2000ns(
-            self.dataset["acq_start_seconds"]
-            + self.dataset["acq_start_subseconds"] / 1e6
-        )
-
-        return epoch
 
     def decompress_data(self, science_values: list[NDArray[str]] | list[str]) -> None:
         """
@@ -167,17 +143,30 @@ class CoDICEL1aPipeline:
         self.coords = {}
 
         coord_names = [
-            "epoch",
             *self.config["output_dims"].keys(),
             *[key + "_label" for key in self.config["output_dims"].keys()],
         ]
 
+        # Define epoch coordinates
+        epochs, epoch_delta_minus, epoch_delta_plus = calculate_epoch_values(
+            self.dataset.acq_start_seconds, self.dataset.acq_start_subseconds
+        )
+        for name, var in [
+            ("epoch", epochs),
+            ("epoch_delta_minus", epoch_delta_minus),
+            ("epoch_delta_plus", epoch_delta_plus),
+        ]:
+            coord = xr.DataArray(
+                var,
+                name=name,
+                dims=[name],
+                attrs=self.cdf_attrs.get_variable_attributes(name, check_schema=False),
+            )
+            self.coords[name] = coord
+
         # Define the values for the coordinates
         for name in coord_names:
-            if name == "epoch":
-                values = self.calculate_epoch_values()
-                dims = [name]
-            elif name in [
+            if name in [
                 "esa_step",
                 "inst_az",
                 "spin_sector",
@@ -674,7 +663,57 @@ class CoDICEL1aPipeline:
         self.cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
 
 
-def group_ialirt_data(packets: xr.Dataset, data_field_range: range) -> list[bytearray]:
+def calculate_epoch_values(
+    acq_start_seconds: xr.DataArray, acq_start_subseconds: xr.DataArray
+) -> tuple[NDArray[int], NDArray[int], NDArray[int]]:
+    """
+    Calculate and return the values to be used for `epoch`.
+
+    On CoDICE, the epoch values are derived from the `acq_start_seconds` and
+    `acq_start_subseconds` fields in the packet.
+
+    Note that the `acq_start_subseconds` field needs to be converted from
+    microseconds to seconds.
+
+    Parameters
+    ----------
+    acq_start_seconds : xarray.DataArray
+        The acquisition times to calculate the epoch values from.
+    acq_start_subseconds : xarray.DataArray
+        The subseconds portion of the acquisition times.
+
+    Returns
+    -------
+    epoch : NDArray[int]
+        List of centered epoch values.
+    epoch_delta_minus: NDArray[int]
+        List of values that represent the length of time from acquisition
+        start to the center of the acquisition time bin.
+    epoch_delta_plus: NDArray[int]
+        List of values that represent the length of time from the center of
+        the acquisition time bin to the end of acquisition.
+    """
+    # First calculate an epoch value based on the acquisition start
+    acq_start = met_to_ttj2000ns(acq_start_seconds + acq_start_subseconds / 1e6)
+
+    # Apply correction to center the epoch bin
+    epoch = (acq_start[:-1] + acq_start[1:]) // 2
+    epoch_delta_minus = epoch - acq_start[:-1]
+    epoch_delta_plus = acq_start[1:] - epoch
+
+    # Since the centers and deltas are determined by averaging sequential bins,
+    # the last elements must be calculated differently. For this, we just use
+    # the last acquisition start and the previous deltas
+    epoch = np.concatenate([epoch, [acq_start[-1]]])
+    epoch_delta_minus = np.concatenate([epoch_delta_minus, [epoch_delta_minus[-1]]])
+    epoch_delta_plus = np.concatenate([epoch_delta_plus, [epoch_delta_plus[-1]]])
+
+    return epoch, epoch_delta_minus, epoch_delta_plus
+
+
+def group_ialirt_data(
+    packets: xr.Dataset, data_field_range: range, prefix: str
+) -> list[bytearray]:
     """
     Group together the individual I-ALiRT data fields.
 
@@ -684,6 +723,8 @@ def group_ialirt_data(packets: xr.Dataset, data_field_range: range) -> list[byte
         The dataset containing the I-ALiRT data packets.
     data_field_range : range
         The range of the individual data fields (15 or lo, 6 for hi).
+    prefix : str
+        The prefix used to index the data (i.e. ``cod_lo`` or ``cod_hi``).
 
     Returns
     -------
@@ -693,14 +734,28 @@ def group_ialirt_data(packets: xr.Dataset, data_field_range: range) -> list[byte
     current_data_stream = bytearray()
     grouped_data = []
 
+    # Workaround to get this function working for both I-ALiRT spacecraft
+    # data and CoDICE-specific I-ALiRT test data from Joey
+    # TODO: Once CoDICE I-ALiRT processing is more established, we can probably
+    #       do away with processing the test data from Joey and just use the
+    #       I-ALiRT data that is constructed closer to what we expect in-flight.
+    if hasattr(packets, "acquisition_time"):
+        time_key = "acquisition_time"
+        counter_key = "counter"
+        data_key = "data"
+    else:
+        time_key = f"{prefix}_acq"
+        counter_key = f"{prefix}_counter"
+        data_key = f"{prefix}_data"
+
     # When a counter value of 255 is encountered, this signifies the
     # end of the data stream
-    for packet_num in range(0, len(packets.acquisition_time.data)):
-        counter = packets.counter.data[packet_num]
+    for packet_num in range(0, len(packets[time_key].data)):
+        counter = packets[counter_key].data[packet_num]
         if counter != 255:
             for field in data_field_range:
                 current_data_stream.extend(
-                    bytearray([packets[f"data_{field:02}"].data[packet_num]])
+                    bytearray([packets[f"{data_key}_{field:02}"].data[packet_num]])
                 )
         else:
             # At this point, if there are data, the data stream is ready
@@ -759,6 +814,8 @@ def create_binned_dataset(
         dims=["epoch"],
         attrs=pipeline.cdf_attrs.get_variable_attributes("epoch", check_schema=False),
     )
+    # TODO: Figure out how to calculate epoch centers and deltas and store them
+    #       in variables here
     dataset = xr.Dataset(
         coords={"epoch": coord},
         attrs=pipeline.cdf_attrs.get_global_attributes(pipeline.config["dataset_name"]),
@@ -851,7 +908,11 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     )[0]
     acq_start_seconds = packets.acq_start_seconds[epoch_indices]
     acq_start_subseconds = packets.acq_start_subseconds[epoch_indices]
-    epochs = met_to_ttj2000ns(acq_start_seconds + acq_start_subseconds / 1e6)
+
+    # Calculate epoch variables
+    epochs, epochs_delta_minus, epochs_delta_plus = calculate_epoch_values(
+        acq_start_seconds, acq_start_subseconds
+    )
 
     # Define coordinates
     epoch = xr.DataArray(
@@ -859,6 +920,20 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
         name="epoch",
         dims=["epoch"],
         attrs=cdf_attrs.get_variable_attributes("epoch", check_schema=False),
+    )
+    epoch_delta_minus = xr.DataArray(
+        epochs_delta_minus,
+        name="epoch_delta_minus",
+        dims=["epoch_delta_minus"],
+        attrs=cdf_attrs.get_variable_attributes(
+            "epoch_delta_minus", check_schema=False
+        ),
+    )
+    epoch_delta_plus = xr.DataArray(
+        epochs_delta_plus,
+        name="epoch_delta_plus",
+        dims=["epoch_delta_plus"],
+        attrs=cdf_attrs.get_variable_attributes("epoch_delta_plus", check_schema=False),
     )
     event_num = xr.DataArray(
         np.arange(10000),
@@ -881,6 +956,8 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     dataset = xr.Dataset(
         coords={
             "epoch": epoch,
+            "epoch_delta_minus": epoch_delta_minus,
+            "epoch_delta_plus": epoch_delta_plus,
             "event_num": event_num,
             "event_num_label": event_num_label,
         },
@@ -1003,72 +1080,79 @@ def create_ialirt_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     # See sections 10.4.1 and 10.4.2 in the algorithm document
     if apid == CODICEAPID.COD_LO_IAL:
         data_field_range = range(0, 15)
+        prefix = "cod_lo"
     elif apid == CODICEAPID.COD_HI_IAL:
         data_field_range = range(0, 5)
+        prefix = "cod_hi"
 
     # Group together packets of I-ALiRT data to form complete data sets
-    grouped_data = group_ialirt_data(packets, data_field_range)
+    grouped_data = group_ialirt_data(packets, data_field_range, prefix)
 
-    # Process each group to get the science data and corresponding metadata
-    science_values, metadata_values = process_ialirt_data_streams(grouped_data)
+    if grouped_data:
+        # Process each group to get the science data and corresponding metadata
+        science_values, metadata_values = process_ialirt_data_streams(grouped_data)
 
-    # How data are processed is different for lo-iarlirt and hi-ialirt
-    if apid == CODICEAPID.COD_HI_IAL:
-        # Set some necessary values and process as a binned dataset similar to
-        # a hi-omni data product
-        metadata_for_processing = [
-            "table_id",
-            "plan_id",
-            "plan_step",
-            "view_id",
-            "spin_period",
-            "suspect",
-        ]
-        for var in metadata_for_processing:
-            packets[var] = metadata_values[var.upper()]
-        dataset = create_binned_dataset(apid, packets, science_values)
+        # How data are processed is different for lo-iarlirt and hi-ialirt
+        if apid == CODICEAPID.COD_HI_IAL:
+            # Set some necessary values and process as a binned dataset similar to
+            # a hi-omni data product
+            metadata_for_processing = [
+                "table_id",
+                "plan_id",
+                "plan_step",
+                "view_id",
+                "spin_period",
+                "suspect",
+            ]
+            for var in metadata_for_processing:
+                packets[var] = metadata_values[var.upper()]
+            dataset = create_binned_dataset(apid, packets, science_values)
 
-    elif apid == CODICEAPID.COD_LO_IAL:
-        # Create a nominal instance of the pipeline and process similar to a
-        # lo-sw-species data product
-        pipeline = CoDICEL1aPipeline(
-            metadata_values["TABLE_ID"][0],
-            metadata_values["PLAN_ID"][0],
-            metadata_values["PLAN_STEP"][0],
-            metadata_values["VIEW_ID"][0],
-        )
-        pipeline.set_data_product_config(apid, packets)
-        pipeline.decompress_data(science_values)
-        pipeline.reshape_data()
+        elif apid == CODICEAPID.COD_LO_IAL:
+            # Create a nominal instance of the pipeline and process similar to a
+            # lo-sw-species data product
+            pipeline = CoDICEL1aPipeline(
+                metadata_values["TABLE_ID"][0],
+                metadata_values["PLAN_ID"][0],
+                metadata_values["PLAN_STEP"][0],
+                metadata_values["VIEW_ID"][0],
+            )
+            pipeline.set_data_product_config(apid, packets)
+            pipeline.decompress_data(science_values)
+            pipeline.reshape_data()
 
-        # The calculate_epoch_values method needs acq_start_seconds and
-        # acq_start_subseconds attributes on the dataset
-        pipeline.dataset["acq_start_seconds"] = (
-            "_",
-            metadata_values["ACQ_START_SECONDS"],
-        )
-        pipeline.dataset["acq_start_subseconds"] = (
-            "_",
-            metadata_values["ACQ_START_SUBSECONDS"],
-        )
+            # The calculate_epoch_values method needs acq_start_seconds and
+            # acq_start_subseconds attributes on the dataset
+            pipeline.dataset["acq_start_seconds"] = (
+                "_",
+                metadata_values["ACQ_START_SECONDS"],
+            )
+            pipeline.dataset["acq_start_subseconds"] = (
+                "_",
+                metadata_values["ACQ_START_SUBSECONDS"],
+            )
 
-        pipeline.define_coordinates()
+            pipeline.define_coordinates()
 
-        # The dataset also needs the metadata that will be carried through
-        # to the final data product
-        for field in [
-            "spin_period",
-            "suspect",
-            "st_bias_gain_mode",
-            "sw_bias_gain_mode",
-            "rgfo_half_spin",
-            "nso_half_spin",
-        ]:
-            pipeline.dataset[field] = ("_", metadata_values[field.upper()])
+            # The dataset also needs the metadata that will be carried through
+            # to the final data product
+            for field in [
+                "spin_period",
+                "suspect",
+                "st_bias_gain_mode",
+                "sw_bias_gain_mode",
+                "rgfo_half_spin",
+                "nso_half_spin",
+            ]:
+                pipeline.dataset[field] = ("_", metadata_values[field.upper()])
 
-        dataset = pipeline.define_data_variables()
+            dataset = pipeline.define_data_variables()
 
-    return dataset
+        return dataset
+
+    else:
+        logger.warning("No I-ALiRT data found")
+        return None
 
 
 def get_de_metadata(packets: xr.Dataset, segment: int) -> bytes:

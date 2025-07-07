@@ -27,11 +27,11 @@ def hi_l2(
 
     Parameters
     ----------
-    psets : list of str or Path
+    psets : list of str or pathlib.Path
         List of input PSETs to make a map from.
-    geometric_factors_path : str or Path
+    geometric_factors_path : str or pathlib.Path
         Where to get the geometric factors from.
-    esa_energies_path : str or Path
+    esa_energies_path : str or pathlib.Path
         Where to get the energies from.
     descriptor : str
         Output filename descriptor. Contains full configuration for the options
@@ -39,7 +39,7 @@ def hi_l2(
 
     Returns
     -------
-    l2_dataset : list[xr.Dataset]
+    l2_dataset : list[xarray.Dataset]
         Level 2 IMAP-Hi dataset ready to be written to a CDF file.
     """
     # TODO: parse descriptor to determine map configuration
@@ -77,19 +77,19 @@ def generate_hi_map(
 
     Parameters
     ----------
-    psets : list of str or Path
+    psets : list of str or pathlib.Path
         List of input PSETs to make a map from.
-    geometric_factors_path : str or Path
+    geometric_factors_path : str or pathlib.Path
         Where to get the geometric factors from.
-    esa_energies_path : str or Path
+    esa_energies_path : str or pathlib.Path
         Where to get the energies from.
-    cg_corrected : bool, optional
+    cg_corrected : bool, Optional
         Whether to apply Compton-Getting correction to the energies. Defaults to
         False.
-    direction : str, optional
+    direction : str, Optional
         Apply filtering to PSET data include ram or anti-ram or full spin data.
         Defaults to "full".
-    map_spacing : int, optional
+    map_spacing : int, Optional
         Pixel spacing, in degrees, of the output map in degrees. Defaults to 4.
 
     Returns
@@ -209,11 +209,11 @@ def calculate_ena_intensity(
 
     Parameters
     ----------
-    map_ds : xr.Dataset
+    map_ds : xarray.Dataset
         Map dataset that has ena_signal_rate fields calculated.
-    geometric_factors_path : str or Path
+    geometric_factors_path : str or pathlib.Path
         Where to get the geometric factors from.
-    esa_energies_path : str or Path
+    esa_energies_path : str or pathlib.Path
         Where to get the energies from.
 
     Returns

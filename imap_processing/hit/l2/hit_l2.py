@@ -134,18 +134,15 @@ def add_cdf_attributes(
         dataset[dim].attrs = attr_mgr.get_variable_attributes(dim, check_schema=False)
         # TODO: should labels be added as coordinates? Check with SPDF
         if dim != "epoch":
-            dataset = dataset.assign_coords(
-                {
-                    f"{dim}_label": xr.DataArray(
-                        dataset[dim].values.astype(str),
-                        name=f"{dim}_label",
-                        dims=[dim],
-                        attrs=attr_mgr.get_variable_attributes(
-                            f"{dim}_label", check_schema=False
-                        ),
-                    )
-                }
+            label_array = xr.DataArray(
+                dataset[dim].values.astype(str),
+                name=f"{dim}_label",
+                dims=[f"{dim}_label"],
+                attrs=attr_mgr.get_variable_attributes(
+                    f"{dim}_label", check_schema=False
+                ),
             )
+            dataset.coords[f"{dim}_label"] = label_array
 
     return dataset
 
@@ -315,6 +312,7 @@ def calculate_intensities_for_a_species(
         The updated dataset with intensities calculated for the given species.
     """
     updated_ds = l2_dataset.copy()
+    # Get the dynamic threshold state for the species variable
     dynamic_threshold_states = updated_ds["dynamic_threshold_state"].values
     unique_states = np.unique(dynamic_threshold_states)
     species_name = (

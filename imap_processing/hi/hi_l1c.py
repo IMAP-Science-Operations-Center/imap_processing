@@ -14,7 +14,7 @@ from numpy._typing import NDArray
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import parse_filename_like
-from imap_processing.hi.l1a.science_direct_event import (
+from imap_processing.hi.hi_l1a import (
     DE_CLOCK_TICK_S,
     HALF_CLOCK_TICK_S,
 )
@@ -57,7 +57,7 @@ def hi_l1c(
     ----------
     de_dataset : xarray.Dataset
         IMAP-Hi l1b de product.
-    calibration_prod_config_path : Path
+    calibration_prod_config_path : pathlib.Path
         Calibration product configuration file.
 
     Returns
@@ -84,7 +84,7 @@ def generate_pset_dataset(
     ----------
     de_dataset : xarray.Dataset
         IMAP-Hi l1b de product.
-    calibration_prod_config_path : Path
+    calibration_prod_config_path : pathlib.Path
         Calibration product configuration file.
 
     Returns
@@ -306,16 +306,16 @@ def pset_counts(
 
     Parameters
     ----------
-    pset_coords : dict[str, xr.DataArray]
-        The PSET coordinates from the xr.Dataset.
-    config_df : pd.DataFrame
+    pset_coords : dict[str, xarray.DataArray]
+        The PSET coordinates from the xarray.Dataset.
+    config_df : pandas.DataFrame
         The calibration product configuration dataframe.
-    l1b_de_dataset : xr.Dataset
+    l1b_de_dataset : xarray.Dataset
         The L1B dataset for the pointing being processed.
 
     Returns
     -------
-    dict[str, xr.DataArray]
+    dict[str, xarray.DataArray]
         Dictionary containing new exposure_times DataArray to be added to the PSET
         dataset.
     """
@@ -396,10 +396,10 @@ def get_tof_window_mask(
 
     Parameters
     ----------
-    de_df : pd.DataFrame
+    de_df : pandas.DataFrame
         The Direct Event dataframe for the DEs to filter based on the TOF
         windows.
-    prod_config_row : namedtuple
+    prod_config_row : NamedTuple
         A single row of the prod config dataframe represented as a named tuple.
     fill_vals : dict
         A dictionary containing the fill values used in the input DE TOF
@@ -438,12 +438,12 @@ def pset_backgrounds(pset_coords: dict[str, xr.DataArray]) -> dict[str, xr.DataA
 
     Parameters
     ----------
-    pset_coords : dict[str, xr.DataArray]
-        The PSET coordinates from the xr.Dataset.
+    pset_coords : dict[str, xarray.DataArray]
+        The PSET coordinates from the xarray.Dataset.
 
     Returns
     -------
-    dict[str, xr.DataArray]
+    dict[str, xarray.DataArray]
         Dictionary containing background_rates and background_rates_unc DataArrays
         to be added to the PSET dataset.
     """
@@ -475,14 +475,14 @@ def pset_exposure(
 
     Parameters
     ----------
-    pset_coords : dict[str, xr.DataArray]
-        The PSET coordinates from the xr.Dataset.
-    l1b_de_dataset : xr.Dataset
+    pset_coords : dict[str, xarray.DataArray]
+        The PSET coordinates from the xarray.Dataset.
+    l1b_de_dataset : xarray.Dataset
         The L1B dataset for the pointing being processed.
 
     Returns
     -------
-    dict[str, xr.DataArray]
+    dict[str, xarray.DataArray]
         Dictionary containing new exposure_times DataArray to be added to the PSET
         dataset.
     """
@@ -552,12 +552,12 @@ def find_second_de_packet_data(l1b_dataset: xr.Dataset) -> xr.Dataset:
 
     Parameters
     ----------
-    l1b_dataset : xr.Dataset
+    l1b_dataset : xarray.Dataset
         The L1B Direct Event Dataset for the current pointing.
 
     Returns
     -------
-    reduced_dataset : xr.Dataset
+    reduced_dataset : xarray.Dataset
         A dataset containing only the entries for the second packet at an ESA step.
     """
     epoch_dataset = l1b_dataset.drop_dims("event_met")
@@ -606,7 +606,7 @@ def get_de_clock_ticks_for_esa_step(
     ----------
     ccsds_met : float
         The CCSDS MET of the second packet in a DE packet pair.
-    spin_df : pd.DataFrame
+    spin_df : pandas.DataFrame
         Universal spin table dataframe.
 
     Returns
@@ -760,7 +760,7 @@ class CalibrationProductConfig:
 
         Parameters
         ----------
-        path : Path
+        path : pathlib.Path
             Location of the Calibration Product configuration CSV file.
 
         Returns

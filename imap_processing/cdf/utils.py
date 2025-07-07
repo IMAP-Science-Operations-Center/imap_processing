@@ -44,7 +44,11 @@ def load_cdf(
     if isinstance(file_path, imap_data_access.ImapFilePath):
         file_path = file_path.construct_path()
 
-    dataset = cdf_to_xarray(file_path, kwargs)
+    # By default, do not convert epoch to datetime64. This ensures that the
+    # round-trip of writing and then loading a cdf keeps the dataset the same.
+    if "to_datetime" not in kwargs:
+        kwargs["to_datetime"] = False  # type: ignore
+    dataset = cdf_to_xarray(file_path, **kwargs)
 
     # cdf_to_xarray converts single-value attributes to lists
     # convert these back to single values where applicable
@@ -154,6 +158,8 @@ def write_cdf(
             extra_cdf_kwargs["terminate_on_warning"] = True  # type: ignore
         if "istp" not in extra_cdf_kwargs:
             extra_cdf_kwargs["istp"] = True  # type: ignore
+    if "compression" not in extra_cdf_kwargs:
+        extra_cdf_kwargs["compression"] = 6  # type: ignore
 
     xarray_to_cdf(dataset, str(file_path), **extra_cdf_kwargs)
     return file_path

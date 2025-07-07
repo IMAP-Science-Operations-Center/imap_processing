@@ -1,7 +1,6 @@
 """Functions to support I-ALiRT SWE processing."""
 
 import logging
-from decimal import Decimal
 
 import numpy as np
 import pandas as pd
@@ -547,16 +546,10 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
             {
                 "apid": 478,
                 "met": int(grouped["met"].min()),
-                "utc": met_to_utc(grouped["met"].min()).split(".")[0],
+                "met_in_utc": met_to_utc(grouped["met"].min()).split(".")[0],
                 "ttj2000ns": int(met_to_ttj2000ns(grouped["met"].min())),
-                **{
-                    f"swe_normalized_counts_half_1_esa_{i}": Decimal(str(val))
-                    for i, val in enumerate(summed_first)
-                },
-                **{
-                    f"swe_normalized_counts_half_2_esa_{i}": Decimal(str(val))
-                    for i, val in enumerate(summed_second)
-                },
+                "swe_normalized_counts_half_1_esa": [int(val) for val in summed_first],
+                "swe_normalized_counts_half_2_esa": [int(val) for val in summed_second],
                 "swe_counterstreaming_electrons": max(bde_first_half, bde_second_half),
             }
         )

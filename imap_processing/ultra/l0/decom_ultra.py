@@ -15,8 +15,19 @@ from imap_processing.ultra.l0.decom_tools import (
     read_image_raw_events_binary,
 )
 from imap_processing.ultra.l0.ultra_utils import (
+    CMD_ECHO_MAP,
+    ENERGY_EVENT_FIELD_RANGES,
+    ENERGY_RATES_KEYS,
     EVENT_FIELD_RANGES,
     RATES_KEYS,
+    ULTRA_ENERGY_EVENTS,
+    ULTRA_ENERGY_RATES,
+    ULTRA_ENERGY_SPECTRA,
+    ULTRA_EVENTS,
+    ULTRA_PRI_1_EVENTS,
+    ULTRA_PRI_2_EVENTS,
+    ULTRA_PRI_3_EVENTS,
+    ULTRA_PRI_4_EVENTS,
     ULTRA_RATES,
     ULTRA_TOF,
 )
@@ -136,7 +147,7 @@ def get_event_id(shcoarse: NDArray) -> NDArray:
     return np.array(event_ids, dtype=np.int64)
 
 
-def process_ultra_events(ds: xr.Dataset) -> xr.Dataset:
+def process_ultra_events(ds: xr.Dataset, apid: int) -> xr.Dataset:
     """
     Unpack and decode Ultra EVENTS packets.
 
@@ -144,12 +155,28 @@ def process_ultra_events(ds: xr.Dataset) -> xr.Dataset:
     ----------
     ds : xarray.Dataset
         Events dataset.
+    apid : int
+        APID of the events dataset.
 
     Returns
     -------
     ds : xarray.Dataset
         Dataset containing the decoded and decompressed data.
     """
+    all_event_apids = set(
+        ULTRA_EVENTS.apid
+        + ULTRA_PRI_1_EVENTS.apid
+        + ULTRA_PRI_2_EVENTS.apid
+        + ULTRA_PRI_3_EVENTS.apid
+        + ULTRA_PRI_4_EVENTS.apid
+    )
+    if apid in all_event_apids:
+        field_ranges = EVENT_FIELD_RANGES
+    elif apid in ULTRA_ENERGY_EVENTS.apid:
+        field_ranges = ENERGY_EVENT_FIELD_RANGES
+    else:
+        raise ValueError(f"APID {apid} not recognized for Ultra events processing.")
+
     all_events = []
     all_indices = []
 
@@ -160,7 +187,7 @@ def process_ultra_events(ds: xr.Dataset) -> xr.Dataset:
         field: attrs.get_variable_attributes(field).get(
             "FILLVAL", np.iinfo(np.int64).min
         )
-        for field in EVENT_FIELD_RANGES
+        for field in field_ranges
     }
 
     counts = ds["count"].values
@@ -173,7 +200,9 @@ def process_ultra_events(ds: xr.Dataset) -> xr.Dataset:
         else:
             # Here there are multiple images in a single packet,
             # so we need to loop through each image and decompress it.
-            event_data_list = read_image_raw_events_binary(eventdata_array[i], count)
+            event_data_list = read_image_raw_events_binary(
+                eventdata_array[i], count, field_ranges
+            )
             all_events.extend(event_data_list)
             # Keep track of how many times does the event occurred at this epoch.
             all_indices.extend([i] * count)
@@ -189,7 +218,7 @@ def process_ultra_events(ds: xr.Dataset) -> xr.Dataset:
     }
 
     # Add the event data to the expanded dataset.
-    for key in EVENT_FIELD_RANGES:
+    for key in field_ranges:
         expanded_data[key] = np.array([event[key] for event in all_events])
 
     event_ids = get_event_id(expanded_data["shcoarse"])
@@ -240,5 +269,127 @@ def process_ultra_rates(ds: xr.Dataset) -> xr.Dataset:
 
     for key, values in decom_data.items():
         ds[key] = xr.DataArray(np.array(values), dims=["epoch"])
+
+    return ds
+
+
+def process_ultra_energy_rates(ds: xr.Dataset) -> xr.Dataset:
+    """
+    Unpack and decode Ultra ENERGY RATES packets.
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+       Energy rates dataset.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Dataset containing the decoded and decompressed data.
+    """
+    decom_data = defaultdict(list)
+
+    for rate in ds["ratedata"]:
+        raw_binary_string = convert_to_binary_string(rate.item())
+        decompressed_data = decompress_binary(
+            raw_binary_string,
+            cast(int, ULTRA_ENERGY_RATES.width),
+            cast(int, ULTRA_ENERGY_RATES.block),
+            cast(int, ULTRA_ENERGY_RATES.len_array),
+            cast(int, ULTRA_ENERGY_RATES.mantissa_bit_length),
+        )
+
+        for index in range(cast(int, ULTRA_ENERGY_RATES.len_array)):
+            decom_data[ENERGY_RATES_KEYS[index]].append(decompressed_data[index])
+
+    for key, values in decom_data.items():
+        ds[key] = xr.DataArray(np.array(values), dims=["epoch"])
+
+    return ds
+
+
+def process_ultra_energy_spectra(ds: xr.Dataset) -> xr.Dataset:
+    """
+    Unpack and decode Ultra ENERGY SPECTRA packets.
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+       Energy rates dataset.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Dataset containing the decoded and decompressed data.
+    """
+    energy_spectra = []
+
+    for rate in ds["compdata"]:
+        raw_binary_string = convert_to_binary_string(rate.item())
+        decompressed_data = decompress_binary(
+            raw_binary_string,
+            cast(int, ULTRA_ENERGY_SPECTRA.width),
+            cast(int, ULTRA_ENERGY_SPECTRA.block),
+            cast(int, ULTRA_ENERGY_SPECTRA.len_array),
+            cast(int, ULTRA_ENERGY_SPECTRA.mantissa_bit_length),
+        )
+
+        energy_spectra.append(decompressed_data)
+
+    energy_spectra = np.array(energy_spectra)
+
+    ds["ssd_sum"] = xr.DataArray(
+        energy_spectra,
+        dims=["epoch", "energyspectrastate"],
+        coords={"epoch": ds["epoch"], "energyspectrastate": np.arange(16)},
+    )
+
+    return ds
+
+
+def process_ultra_cmd_echo(ds: xr.Dataset) -> xr.Dataset:
+    """
+    Unpack and decode Ultra CMD ECHO packets.
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+       Energy rates dataset.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Dataset containing the decoded and decompressed data.
+    """
+    descriptions = []
+
+    fill = 0xFF
+    max_len = 10
+    arg_array = np.full((len(ds["epoch"]), max_len), fill, dtype=np.uint8)
+
+    for i, arg in enumerate(ds["args"].values):
+        # Converts to the numeric representations of each byte.
+        arg_array[i, : len(arg)] = np.frombuffer(arg, dtype=np.uint8)
+
+    # Default to "FILL" for unlisted values
+    for result in ds["result"].values:
+        descriptions.append(CMD_ECHO_MAP.get(result, "FILL"))
+
+    ds["arguments"] = xr.DataArray(
+        arg_array,
+        dims=["epoch", "arg_index"],
+        coords={
+            "epoch": ds["epoch"],
+            "arg_index": np.arange(10),
+        },
+    )
+
+    ds["result_description"] = xr.DataArray(
+        np.array(descriptions),
+        dims=["epoch"],
+        coords={"epoch": ds["epoch"]},
+    )
+
+    ds = ds.drop_vars(["args", "result"])
 
     return ds

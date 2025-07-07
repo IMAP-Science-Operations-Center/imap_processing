@@ -150,27 +150,113 @@ def test_sum_livetime_10min():
 
 def test_subset_data_for_sectored_counts():
     """Test the subset_data_for_sectored_counts function."""
-    # Create a sample L1A counts dataset
-    l1a_counts_dataset = xr.Dataset(
-        {
-            "hdr_minute_cnt": ("epoch", np.arange(105, 135)),
-            "h_sectored_counts": ("epoch", np.arange(0, 30)),
-            "he4_sectored_counts": ("epoch", np.arange(0, 30)),
-        },
-    )
+
+    def create_l1a_counts_dataset(hdr_minute_cnt_values):
+        """Helper to create L1A counts dataset."""
+        return xr.Dataset(
+            {
+                "hdr_minute_cnt": ("epoch", hdr_minute_cnt_values),
+                "h_sectored_counts": ("epoch", np.arange(len(hdr_minute_cnt_values))),
+                "he4_sectored_counts": ("epoch", np.arange(len(hdr_minute_cnt_values))),
+            },
+        )
+
+    def validate_subset(l1a_counts_dataset, livetime):
+        """Helper to validate the subset results."""
+        subset_dataset, subset_livetime = subset_data_for_sectored_counts(
+            l1a_counts_dataset, livetime
+        )
+        assert subset_dataset.sizes["epoch"] == 10
+        assert len(subset_livetime["epoch"]) == 10
+        assert np.all(subset_dataset["hdr_minute_cnt"].values % 10 == np.arange(10))
 
     # Create a sample livetime data array
     livetime = xr.DataArray(np.arange(1.0, 31.0, dtype=np.float32), dims=["epoch"])
 
-    # Call the function
-    subset_dataset, subset_livetime = subset_data_for_sectored_counts(
-        l1a_counts_dataset, livetime
-    )
+    # Test with partial data at the start and end of the dataset
+    l1a_counts_dataset = create_l1a_counts_dataset(np.arange(105, 135))
+    validate_subset(l1a_counts_dataset, livetime)
 
-    # Check the results
-    assert subset_dataset.sizes["epoch"] == 10
-    assert len(subset_livetime["epoch"]) == 10
-    assert np.all(subset_dataset["hdr_minute_cnt"].values % 10 == np.arange(10))
+    # Test with partial data in the middle of the dataset
+    l1a_counts_dataset = create_l1a_counts_dataset(
+        [
+            100,
+            101,
+            102,
+            103,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            120,
+            121,
+            122,
+            123,
+            124,
+            130,
+            131,
+            132,
+            133,
+            134,
+            135,
+            136,
+            137,
+            138,
+            139,
+        ]
+    )
+    validate_subset(l1a_counts_dataset, livetime)
+
+    # Test with partial data at the start, middle, and end of the dataset
+    l1a_counts_dataset = create_l1a_counts_dataset(
+        [
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116,
+            117,
+            118,
+            119,
+            120,
+            121,
+            122,
+            130,
+            131,
+            132,
+            133,
+            134,
+            135,
+            136,
+            137,
+            138,
+            139,
+            140,
+            141,
+        ]
+    )
+    validate_subset(l1a_counts_dataset, livetime)
+
+    # Test with only partial data in the dataset
+    l1a_counts_dataset = create_l1a_counts_dataset(np.arange(100, 160, 2))
+    with pytest.raises(
+        ValueError, match="No valid start indices found for complete sectored counts."
+    ):
+        subset_data_for_sectored_counts(l1a_counts_dataset, livetime)
 
 
 def test_process_summed_rates_data(l1a_counts_dataset, livetime):
@@ -265,28 +351,41 @@ def test_process_standard_rates_data(l1a_counts_dataset, livetime):
         "dynamic_threshold_state",
     }
 
-    valid_coords = [
+    valid_coords = {
         "epoch",
         "gain",
+        "gain_label",
         "sngrates_index",
+        "sngrates_index_label",
         "coinrates_index",
+        "coinrates_index_label",
         "pbufrates_index",
+        "pbufrates_index_label",
         "l2fgrates_index",
+        "l2fgrates_index_label",
         "l2bgrates_index",
+        "l2bgrates_index_label",
         "l3fgrates_index",
+        "l3fgrates_index_label",
         "l3bgrates_index",
+        "l3bgrates_index_label",
         "penfgrates_index",
+        "penfgrates_index_label",
         "penbgrates_index",
+        "penbgrates_index_label",
         "ialirtrates_index",
+        "ialirtrates_index_label",
         "l4fgrates_index",
+        "l4fgrates_index_label",
         "l4bgrates_index",
-    ]
+        "l4bgrates_index_label",
+    }
 
     # Check that the dataset has the correct variables
     assert valid_data_vars == set(l1b_standard_rates_dataset.data_vars.keys()), (
         "Data variables mismatch"
     )
-    assert valid_coords == list(l1b_standard_rates_dataset.coords), (
+    assert valid_coords == set(l1b_standard_rates_dataset.coords), (
         "Coordinates mismatch"
     )
 
@@ -301,15 +400,23 @@ def test_process_sectored_rates_data(l1a_counts_dataset, livetime):
     # Check that a xarray dataset is returned
     assert isinstance(l1b_sectored_rates_dataset, xr.Dataset)
 
+    # Define the data variables that should be present in the dataset
     valid_coords = {
         "epoch",
         "zenith",
+        "zenith_label",
         "azimuth",
+        "azimuth_label",
         "h_energy_mean",
+        "h_energy_mean_label",
         "he4_energy_mean",
+        "he4_energy_mean_label",
         "cno_energy_mean",
+        "cno_energy_mean_label",
         "nemgsi_energy_mean",
+        "nemgsi_energy_mean_label",
         "fe_energy_mean",
+        "fe_energy_mean_label",
     }
 
     # Check that the dataset has the correct coords and variables

@@ -1,0 +1,408 @@
+Epoch,MET,Type,SequenceCount,Macro,Result,Opcode,Arguments
+2024-022T01:05:48.000, 443599587,CommandEcho,0,UPLINK,No error command executed,29,0x1d 0x00 0x01
+2024-022T01:06:00.000, 443599599,CommandEcho,1,UPLINK,No error command executed,26,0x1a 0x01 0x00
+2024-022T01:06:05.000, 443599604,CommandEcho,2,UPLINK,No error command executed,20,0x14 0x00 0x00 0x00 0x00 0x00 0x02 0x00 0x00 0xaa 0x55
+2024-022T01:06:09.000, 443599608,CommandEcho,3,UPLINK,No error command executed,21,0x15 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x02
+2024-022T01:06:15.000, 443599614,CommandEcho,4,UPLINK,No error command executed,19,0x13 0x00 0x00 0x00 0x00 0x00 0x5f 0x00 0x00 0x00 0x02
+2024-022T01:06:19.000, 443599618,CommandEcho,5,UPLINK,No error command executed,21,0x15 0x00 0x5f 0x00 0x00 0x00 0x00 0x00 0x02
+2024-022T01:06:25.000, 443599624,CommandEcho,6,UPLINK,No error command executed,26,0x1a 0x00 0x00
+2024-022T01:06:37.000, 443599636,CommandEcho,0,UPLINK,No error command executed,33,0x21 0x2d 0x41 0x6e 0x61 0x6c 0x6f 0x67 0x20 0x54 0x72
+2024-022T01:07:25.000, 443599684,CommandEcho,1,UPLINK,No error command executed,25,0x19 0x01 0x00
+2024-022T01:07:35.000, 443599694,CommandEcho,2,UPLINK,No error command executed,36,0x24 0x01 0x2c
+2024-022T01:07:39.000, 443599698,CommandEcho,3,UPLINK,No error command executed,27,0x1b 0x01 0x00
+2024-022T01:07:44.000, 443599703,CommandEcho,4,UPLINK,No error command executed,18,0x12 0x00 0x45 0x00 0x00 0x80 0x00
+2024-022T01:07:48.000, 443599707,CommandEcho,5,UPLINK,No error command executed,18,0x12 0x00 0x46 0x00 0x00 0x80 0x00
+2024-022T01:07:52.000, 443599711,CommandEcho,6,UPLINK,No error command executed,18,0x12 0x00 0x47 0x00 0x00 0x52 0xba
+2024-022T01:07:56.000, 443599715,CommandEcho,7,UPLINK,No error command executed,18,0x12 0x00 0x48 0x00 0x00 0x80 0x00
+2024-022T01:08:00.000, 443599719,CommandEcho,8,UPLINK,No error command executed,18,0x12 0x00 0x49 0x00 0x00 0x60 0x00
+2024-022T01:08:04.000, 443599723,CommandEcho,9,UPLINK,No error command executed,18,0x12 0x00 0x40 0x00 0x00 0x7a 0xe2
+2024-022T01:08:08.000, 443599727,CommandEcho,10,UPLINK,No error command executed,18,0x12 0x00 0x41 0x00 0x00 0x7a 0xe2
+2024-022T01:08:12.000, 443599731,CommandEcho,11,UPLINK,No error command executed,18,0x12 0x00 0x42 0x00 0x00 0x7a 0xe2
+2024-022T01:08:25.000, 443599744,CommandEcho,12,UPLINK,No error command executed,3,0x03 0x00 0xff
+2024-022T01:08:41.000, 443599760,CommandEcho,13,UPLINK,No error command executed,33,0x21 0x3e 0x53 0x65 0x63 0x74 0x69 0x6f 0x6e 0x20 0x4d
+2024-022T01:08:41.000, 443599760,CommandEcho,14,UPLINK,No error command executed,4,0x04 0xff 0x00
+2024-022T01:08:42.000, 443599761,CommandEcho,15,UPLINK,No error command appended to macro,28,0x1c 0x00 0x00
+2024-022T01:08:43.000, 443599762,CommandEcho,16,UPLINK,No error command executed,7,0x07
+2024-022T01:08:47.000, 443599766,CommandEcho,17,UPLINK,No error command executed,3,0x03 0x00 0xff
+2024-022T01:08:51.000, 443599770,CommandEcho,18,UPLINK,No error command executed,13,0x0d 0xff 0xff
+2024-022T01:09:00.000, 443599779,CommandEcho,19,UPLINK,No error command executed,15,0x0f 0xff 0x00
+2024-022T01:09:00.000, 443599779,CommandEcho,20,MACRO,No error command executed,28,0x1c 0x00 0x00
+2024-022T01:09:00.000, 443599779,CommandEcho,21,MACRO,No error command executed,6,0x06
+2024-022T01:09:05.000, 443599784,CommandEcho,22,UPLINK,No error command executed,33,0x21 0x36 0x53 0x65 0x63 0x74 0x69 0x6f 0x6e 0x20 0x4d
+2024-022T01:09:11.000, 443599790,CommandEcho,23,UPLINK,No error command executed,14,0x0e
+2024-022T01:09:16.000, 443599795,CommandEcho,24,UPLINK,No error command executed,3,0x03 0x00 0xff
+2024-022T01:09:41.000, 443599820,CommandEcho,25,UPLINK,No error command executed,14,0x0e
+2024-022T01:09:43.000, 443599822,CommandEcho,26,UPLINK,No error command executed,33,0x21 0x3e 0x53 0x65 0x63 0x74 0x69 0x6f 0x6e 0x20 0x45
+2024-022T01:09:44.000, 443599823,CommandEcho,27,UPLINK,No error command executed,64,0x40 0x00 0x00
+2024-022T01:09:45.000, 443599824,CommandEcho,28,UPLINK,No error command executed,15,0x0f 0x28 0x00
+2024-022T01:09:45.000, 443599824,CommandEcho,29,MACRO,No error command executed,33,0x21 0x14 0x55 0x4c 0x54 0x52 0x41 0x20 0x41 0x75 0x74
+2024-022T01:09:45.000, 443599824,CommandEcho,30,MACRO,No error command executed,27,0x1b 0x01 0x00
+2024-022T01:09:45.000, 443599824,CommandEcho,31,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x00 0x95 0x00
+2024-022T01:09:45.000, 443599824,CommandEcho,32,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x01 0xa3 0x00
+2024-022T01:09:45.000, 443599824,CommandEcho,33,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x02 0xa5 0x00
+2024-022T01:09:45.000, 443599824,CommandEcho,34,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x03 0xb5 0x00
+2024-022T01:09:45.000, 443599824,CommandEcho,35,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x04 0x1d 0x00
+2024-022T01:09:45.000, 443599824,CommandEcho,36,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x05 0x3c 0x00
+2024-022T01:09:45.000, 443599824,CommandEcho,37,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x06 0x28 0x00
+2024-022T01:09:45.000, 443599824,CommandEcho,38,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x07 0x5f 0x00
+2024-022T01:09:45.000, 443599824,CommandEcho,39,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x08 0x19 0x00
+2024-022T01:09:45.000, 443599824,CommandEcho,40,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x09 0x7d 0x00
+2024-022T01:09:45.000, 443599824,CommandEcho,41,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:09:46.000, 443599825,CommandEcho,42,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x0a 0x04 0x00
+2024-022T01:09:46.000, 443599825,CommandEcho,43,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x0b 0x6a 0x00
+2024-022T01:09:46.000, 443599825,CommandEcho,44,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x0c 0x05 0x00
+2024-022T01:09:46.000, 443599825,CommandEcho,45,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x0d 0xb4 0x00
+2024-022T01:09:46.000, 443599825,CommandEcho,46,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x0e 0x05 0x00
+2024-022T01:09:46.000, 443599825,CommandEcho,47,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x0f 0xb4 0x00
+2024-022T01:09:46.000, 443599825,CommandEcho,48,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x10 0x0e 0x00
+2024-022T01:09:46.000, 443599825,CommandEcho,49,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x11 0x3a 0x00
+2024-022T01:09:46.000, 443599825,CommandEcho,50,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x12 0x02 0x00
+2024-022T01:09:46.000, 443599825,CommandEcho,51,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x13 0x9e 0x00
+2024-022T01:09:46.000, 443599825,CommandEcho,52,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:09:47.000, 443599826,CommandEcho,53,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x14 0x02 0x00
+2024-022T01:09:47.000, 443599826,CommandEcho,54,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x15 0x9e 0x00
+2024-022T01:09:47.000, 443599826,CommandEcho,55,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x16 0x76 0x00
+2024-022T01:09:47.000, 443599826,CommandEcho,56,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x17 0x9b 0x00
+2024-022T01:09:47.000, 443599826,CommandEcho,57,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x18 0x6d 0x00
+2024-022T01:09:47.000, 443599826,CommandEcho,58,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x19 0x76 0x00
+2024-022T01:09:47.000, 443599826,CommandEcho,59,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x1a 0x00 0x00
+2024-022T01:09:47.000, 443599826,CommandEcho,60,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x1b 0x08 0x00
+2024-022T01:09:47.000, 443599826,CommandEcho,61,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x1c 0x80 0x00
+2024-022T01:09:47.000, 443599826,CommandEcho,62,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x1d 0xa9 0x00
+2024-022T01:09:47.000, 443599826,CommandEcho,63,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:09:48.000, 443599827,CommandEcho,64,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x1e 0x00 0x00
+2024-022T01:09:48.000, 443599827,CommandEcho,65,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x1f 0x38 0x00
+2024-022T01:09:48.000, 443599827,CommandEcho,66,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x20 0x00 0x00
+2024-022T01:09:48.000, 443599827,CommandEcho,67,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x21 0x70 0x00
+2024-022T01:09:48.000, 443599827,CommandEcho,68,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x22 0x00 0x00
+2024-022T01:09:48.000, 443599827,CommandEcho,69,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x23 0x70 0x00
+2024-022T01:09:48.000, 443599827,CommandEcho,70,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x24 0x00 0x00
+2024-022T01:09:48.000, 443599827,CommandEcho,71,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x25 0xad 0x00
+2024-022T01:09:48.000, 443599827,CommandEcho,72,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x26 0x00 0x00
+2024-022T01:09:48.000, 443599827,CommandEcho,73,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x27 0x8f 0x00
+2024-022T01:09:48.000, 443599827,CommandEcho,74,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x28 0x00 0x00
+2024-022T01:09:48.000, 443599827,CommandEcho,75,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x29 0x8f 0x00
+2024-022T01:09:48.000, 443599827,CommandEcho,76,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:09:48.000, 443599827,CommandEcho,77,MACRO,No error command executed,1,0x01
+2024-022T01:09:48.000, 443599827,CommandEcho,78,MACRO,No error command executed,6,0x06
+2024-022T01:09:49.000, 443599828,CommandEcho,79,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x2a 0x00 0x00
+2024-022T01:09:49.000, 443599828,CommandEcho,80,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x2b 0x27 0x00
+2024-022T01:09:49.000, 443599828,CommandEcho,81,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x2c 0x00 0x00
+2024-022T01:09:49.000, 443599828,CommandEcho,82,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x2d 0x20 0x00
+2024-022T01:09:49.000, 443599828,CommandEcho,83,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x2e 0x00 0x00
+2024-022T01:09:49.000, 443599828,CommandEcho,84,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x2f 0x44 0x00
+2024-022T01:09:49.000, 443599828,CommandEcho,85,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x30 0x00 0x00
+2024-022T01:09:49.000, 443599828,CommandEcho,86,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x31 0x5d 0x00
+2024-022T01:09:49.000, 443599828,CommandEcho,87,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x32 0x00 0x00
+2024-022T01:09:49.000, 443599828,CommandEcho,88,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x33 0x54 0x00
+2024-022T01:09:49.000, 443599828,CommandEcho,89,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x34 0x00 0x00
+2024-022T01:09:49.000, 443599828,CommandEcho,90,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x35 0x54 0x00
+2024-022T01:09:49.000, 443599828,CommandEcho,91,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:09:50.000, 443599829,CommandEcho,92,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x36 0x00 0x00
+2024-022T01:09:50.000, 443599829,CommandEcho,93,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x37 0x57 0x00
+2024-022T01:09:50.000, 443599829,CommandEcho,94,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x38 0x6e 0x00
+2024-022T01:09:50.000, 443599829,CommandEcho,95,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x39 0x77 0x00
+2024-022T01:09:50.000, 443599829,CommandEcho,96,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x3a 0xb0 0x00
+2024-022T01:09:50.000, 443599829,CommandEcho,97,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x3b 0xea 0x00
+2024-022T01:09:50.000, 443599829,CommandEcho,98,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x3c 0x5c 0x00
+2024-022T01:09:50.000, 443599829,CommandEcho,99,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x3d 0x99 0x00
+2024-022T01:09:50.000, 443599829,CommandEcho,100,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x3e 0x00 0x00
+2024-022T01:09:50.000, 443599829,CommandEcho,101,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x3f 0x0a 0x00
+2024-022T01:09:50.000, 443599829,CommandEcho,102,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x40 0x00 0x00
+2024-022T01:09:50.000, 443599829,CommandEcho,103,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x41 0x0a 0x00
+2024-022T01:09:50.000, 443599829,CommandEcho,104,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:09:51.000, 443599830,CommandEcho,105,UPLINK,No error command executed,15,0x0f 0x2b 0x00
+2024-022T01:09:51.000, 443599830,CommandEcho,106,MACRO,No error command executed,6,0x06
+2024-022T01:09:51.000, 443599830,CommandEcho,107,MACRO,No error command executed,33,0x21 0x19 0x55 0x4c 0x54 0x52 0x41 0x20 0x53 0x74 0x61
+2024-022T01:09:51.000, 443599830,CommandEcho,108,MACRO,No error command executed,24,0x18 0x01 0x02 0x00 0x12 0x00 0x51
+2024-022T01:09:51.000, 443599830,CommandEcho,109,MACRO,No error command executed,24,0x18 0x01 0x02 0x00 0x14 0x01 0x45
+2024-022T01:09:51.000, 443599830,CommandEcho,110,MACRO,No error command executed,24,0x18 0x01 0x02 0x00 0x16 0x51 0x05
+2024-022T01:09:51.000, 443599830,CommandEcho,111,MACRO,No error command executed,24,0x18 0x01 0x02 0x00 0x18 0x22 0xff
+2024-022T01:09:51.000, 443599830,CommandEcho,112,MACRO,No error command executed,24,0x18 0x01 0x01 0x00 0x10 0xe6 0x00
+2024-022T01:09:51.000, 443599830,CommandEcho,113,MACRO,No error command executed,81,0x51 0x01 0x00
+2024-022T01:09:51.000, 443599830,CommandEcho,114,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:09:52.000, 443599831,CommandEcho,115,MACRO,No error command executed,81,0x51 0x01 0x01
+2024-022T01:09:52.000, 443599831,CommandEcho,116,MACRO,No error command executed,6,0x06
+2024-022T01:09:56.000, 443599835,CommandEcho,117,UPLINK,No error command executed,15,0x0f 0x32 0x00
+2024-022T01:09:56.000, 443599835,CommandEcho,118,UPLINK,No error command executed,15,0x0f 0x37 0x00
+2024-022T01:09:56.000, 443599835,CommandEcho,119,MACRO,No error command executed,33,0x21 0x22 0x55 0x4c 0x54 0x52 0x41 0x20 0x2d 0x32 0x35
+2024-022T01:09:56.000, 443599835,CommandEcho,120,MACRO,No error command executed,79,0x4f 0x59 0x00
+2024-022T01:09:56.000, 443599835,CommandEcho,121,MACRO,No error command executed,79,0x4f 0x62 0x01
+2024-022T01:09:56.000, 443599835,CommandEcho,122,MACRO,No error command executed,79,0x4f 0x65 0x02
+2024-022T01:09:56.000, 443599835,CommandEcho,123,MACRO,No error command executed,79,0x4f 0x5d 0x03
+2024-022T01:09:56.000, 443599835,CommandEcho,124,MACRO,No error command executed,79,0x4f 0x5d 0x04
+2024-022T01:09:56.000, 443599835,CommandEcho,125,MACRO,No error command executed,79,0x4f 0x7b 0x05
+2024-022T01:09:56.000, 443599835,CommandEcho,126,MACRO,No error command executed,79,0x4f 0x5a 0x06
+2024-022T01:09:56.000, 443599835,CommandEcho,127,MACRO,No error command executed,79,0x4f 0x5a 0x07
+2024-022T01:09:56.000, 443599835,CommandEcho,128,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:09:56.000, 443599835,CommandEcho,129,MACRO,No error command executed,33,0x21 0x1e 0x55 0x4c 0x54 0x52 0x41 0x20 0x2d 0x32 0x35
+2024-022T01:09:56.000, 443599835,CommandEcho,130,MACRO,No error command executed,24,0x18 0x01 0x02 0x00 0x1a 0x07 0x9c
+2024-022T01:09:56.000, 443599835,CommandEcho,131,MACRO,No error command executed,24,0x18 0x01 0x02 0x00 0x1c 0x07 0xa6
+2024-022T01:09:56.000, 443599835,CommandEcho,132,MACRO,No error command executed,24,0x18 0x01 0x02 0x00 0x1e 0x07 0xa4
+2024-022T01:09:56.000, 443599835,CommandEcho,133,MACRO,No error command executed,24,0x18 0x01 0x02 0x00 0x20 0x07 0x9c
+2024-022T01:09:56.000, 443599835,CommandEcho,134,MACRO,No error command executed,24,0x18 0x01 0x02 0x00 0x22 0x07 0xa0
+2024-022T01:09:56.000, 443599835,CommandEcho,135,MACRO,No error command executed,24,0x18 0x01 0x02 0x00 0x24 0x07 0xb6
+2024-022T01:09:56.000, 443599835,CommandEcho,136,MACRO,No error command executed,24,0x18 0x01 0x02 0x00 0x26 0x07 0x99
+2024-022T01:09:56.000, 443599835,CommandEcho,137,MACRO,No error command executed,24,0x18 0x01 0x02 0x00 0x28 0x07 0x9d
+2024-022T01:09:56.000, 443599835,CommandEcho,138,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:09:57.000, 443599836,CommandEcho,139,UPLINK,No error command executed,81,0x51 0x00 0x00
+2024-022T01:09:57.000, 443599836,CommandEcho,140,MACRO,No error command executed,6,0x06
+2024-022T01:09:57.000, 443599836,CommandEcho,141,MACRO,No error command executed,6,0x06
+2024-022T01:09:58.000, 443599837,CommandEcho,142,UPLINK,No error command executed,76,0x4c 0x00 0x06
+2024-022T01:09:59.000, 443599838,CommandEcho,143,UPLINK,No error command executed,29,0x1d 0x00 0x01
+2024-022T01:10:01.000, 443599840,CommandEcho,144,UPLINK,No error command executed,36,0x24 0x0e 0x10
+2024-022T01:10:14.000, 443599853,CommandEcho,145,UPLINK,No error command executed,92,0x5c 0x00 0x00
+2024-022T01:10:24.000, 443599863,CommandEcho,146,UPLINK,No error command executed,92,0x5c 0x01 0x00
+2024-022T01:10:34.000, 443599873,CommandEcho,147,UPLINK,No error command executed,93,0x5d 0x04 0x00
+2024-022T01:10:37.000, 443599876,CommandEcho,148,UPLINK,No error command executed,93,0x5d 0x04 0x01
+2024-022T01:10:43.000, 443599882,CommandEcho,149,UPLINK,No error command executed,33,0x21 0x24 0x41 0x6e 0x61 0x6c 0x6f 0x67 0x20 0x54 0x72
+2024-022T01:10:55.000, 443599894,CommandEcho,150,UPLINK,No error command executed,81,0x51 0x01 0x00
+2024-022T01:10:56.000, 443599895,CommandEcho,151,MACRO,No error command executed,1,0x01
+2024-022T01:10:56.000, 443599895,CommandEcho,152,MACRO,No error command executed,6,0x06
+2024-022T01:11:00.000, 443599899,CommandEcho,153,UPLINK,No error command executed,33,0x21 0x21 0x41 0x6e 0x61 0x6c 0x6f 0x67 0x20 0x54 0x72
+2024-022T01:11:13.000, 443599912,CommandEcho,154,UPLINK,No error command executed,33,0x21 0x15 0x53 0x65 0x63 0x74 0x69 0x6f 0x6e 0x20 0x45
+2024-022T01:11:14.000, 443599913,CommandEcho,155,UPLINK,No error command executed,24,0x18 0x01 0x01 0x00 0x3c 0x03 0x00
+2024-022T01:11:15.000, 443599914,CommandEcho,156,UPLINK,No error command executed,24,0x18 0x01 0x01 0x00 0x3d 0x03 0x00
+2024-022T01:11:16.000, 443599915,CommandEcho,157,UPLINK,No error command executed,97,0x61 0x01 0x01 0x01 0x00
+2024-022T01:11:17.000, 443599916,CommandEcho,158,UPLINK,No error command executed,86,0x56 0x01 0x00
+2024-022T01:11:18.000, 443599917,CommandEcho,159,UPLINK,No error command executed,87,0x57 0x01 0x01
+2024-022T01:11:19.000, 443599918,CommandEcho,160,UPLINK,No error command executed,88,0x58 0x5a 0x02
+2024-022T01:11:20.000, 443599919,CommandEcho,161,UPLINK,No error command executed,33,0x21 0x24 0x53 0x65 0x63 0x74 0x69 0x6f 0x6e 0x20 0x45
+2024-022T01:11:21.000, 443599920,CommandEcho,162,UPLINK,No error command executed,25,0x19 0x00 0x00
+2024-022T01:11:31.000, 443599930,CommandEcho,163,UPLINK,No error command executed,24,0x18 0x00 0x01 0x00 0x0c 0x04 0x00
+2024-022T01:11:31.000, 443599930,CommandEcho,164,UPLINK,No error command executed,25,0x19 0x00 0x00
+2024-022T01:11:43.000, 443599942,CommandEcho,165,UPLINK,No error command executed,33,0x21 0x2b 0x53 0x65 0x63 0x74 0x69 0x6f 0x6e 0x20 0x45
+2024-022T01:11:45.000, 443599944,CommandEcho,166,UPLINK,No error command executed,65,0x41 0x46 0x00
+2024-022T01:11:46.000, 443599945,CommandEcho,167,UPLINK,No error command executed,64,0x40 0x0a 0x00
+2024-022T01:12:01.000, 443599960,CommandEcho,168,UPLINK,No error command executed,33,0x21 0x22 0x41 0x6e 0x61 0x6c 0x6f 0x67 0x20 0x54 0x72
+2024-022T01:12:14.000, 443599973,CommandEcho,169,UPLINK,No error command executed,33,0x21 0x33 0x53 0x65 0x63 0x74 0x69 0x6f 0x6e 0x20 0x45
+2024-022T01:12:15.000, 443599974,CommandEcho,170,UPLINK,No error command executed,64,0x40 0x46 0x00
+2024-022T01:13:43.000, 443600062,CommandEcho,171,UPLINK,No error command executed,33,0x21 0x27 0x41 0x6e 0x61 0x6c 0x6f 0x67 0x20 0x54 0x72
+2024-022T01:14:00.000, 443600079,CommandEcho,172,UPLINK,No error command executed,33,0x21 0x46 0x53 0x65 0x63 0x74 0x69 0x6f 0x6e 0x20 0x45
+2024-022T01:14:00.000, 443600079,CommandEcho,173,UPLINK,No error command executed,77,0x4d 0x32 0x01
+2024-022T01:14:00.000, 443600079,CommandEcho,174,UPLINK,No error command executed,75,0x4b 0x00 0x06 0x04 0x03 0x02 0x01 0x05 0x00
+2024-022T01:14:00.000, 443600079,CommandEcho,175,UPLINK,No error command executed,76,0x4c 0x01 0x06
+2024-022T01:14:39.000, 443600118,CommandEcho,176,UPLINK,No error command executed,77,0x4d 0xc8 0x01
+2024-022T01:15:18.000, 443600157,CommandEcho,177,UPLINK,No error command executed,77,0x4d 0x32 0x01
+2024-022T01:15:22.000, 443600161,CommandEcho,178,UPLINK,No error command executed,79,0x4f 0xff 0x00
+2024-022T01:15:26.000, 443600165,CommandEcho,179,UPLINK,No error command executed,79,0x4f 0xff 0x01
+2024-022T01:15:30.000, 443600169,CommandEcho,180,UPLINK,No error command executed,79,0x4f 0xff 0x02
+2024-022T01:15:34.000, 443600173,CommandEcho,181,UPLINK,No error command executed,79,0x4f 0xff 0x03
+2024-022T01:15:38.000, 443600177,CommandEcho,182,UPLINK,No error command executed,79,0x4f 0xff 0x04
+2024-022T01:15:42.000, 443600181,CommandEcho,183,UPLINK,No error command executed,79,0x4f 0xff 0x05
+2024-022T01:15:46.000, 443600185,CommandEcho,184,UPLINK,No error command executed,79,0x4f 0xff 0x06
+2024-022T01:15:50.000, 443600189,CommandEcho,185,UPLINK,No error command executed,79,0x4f 0xff 0x07
+2024-022T01:16:13.000, 443600212,CommandEcho,186,UPLINK,No error command executed,33,0x21 0x31 0x53 0x65 0x63 0x74 0x69 0x6f 0x6e 0x20 0x54
+2024-022T01:16:15.000, 443600214,CommandEcho,187,UPLINK,No error command executed,14,0x0e
+2024-022T01:16:17.000, 443600216,CommandEcho,188,UPLINK,No error command executed,33,0x21 0x3b 0x53 0x65 0x63 0x74 0x69 0x6f 0x6e 0x20 0x54
+2024-022T01:16:17.000, 443600216,CommandEcho,189,UPLINK,No error command executed,15,0x0f 0x28 0x00
+2024-022T01:16:17.000, 443600216,CommandEcho,190,MACRO,No error command executed,33,0x21 0x14 0x55 0x4c 0x54 0x52 0x41 0x20 0x41 0x75 0x74
+2024-022T01:16:17.000, 443600216,CommandEcho,191,MACRO,No error command executed,27,0x1b 0x01 0x00
+2024-022T01:16:17.000, 443600216,CommandEcho,192,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x00 0x95 0x00
+2024-022T01:16:17.000, 443600216,CommandEcho,193,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x01 0xa3 0x00
+2024-022T01:16:17.000, 443600216,CommandEcho,194,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x02 0xa5 0x00
+2024-022T01:16:17.000, 443600216,CommandEcho,195,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x03 0xb5 0x00
+2024-022T01:16:17.000, 443600216,CommandEcho,196,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x04 0x1d 0x00
+2024-022T01:16:17.000, 443600216,CommandEcho,197,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x05 0x3c 0x00
+2024-022T01:16:17.000, 443600216,CommandEcho,198,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x06 0x28 0x00
+2024-022T01:16:17.000, 443600216,CommandEcho,199,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x07 0x5f 0x00
+2024-022T01:16:17.000, 443600216,CommandEcho,200,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x08 0x19 0x00
+2024-022T01:16:17.000, 443600216,CommandEcho,201,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x09 0x7d 0x00
+2024-022T01:16:17.000, 443600216,CommandEcho,202,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:16:18.000, 443600217,CommandEcho,203,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x0a 0x04 0x00
+2024-022T01:16:18.000, 443600217,CommandEcho,204,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x0b 0x6a 0x00
+2024-022T01:16:18.000, 443600217,CommandEcho,205,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x0c 0x05 0x00
+2024-022T01:16:18.000, 443600217,CommandEcho,206,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x0d 0xb4 0x00
+2024-022T01:16:18.000, 443600217,CommandEcho,207,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x0e 0x05 0x00
+2024-022T01:16:18.000, 443600217,CommandEcho,208,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x0f 0xb4 0x00
+2024-022T01:16:18.000, 443600217,CommandEcho,209,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x10 0x0e 0x00
+2024-022T01:16:18.000, 443600217,CommandEcho,210,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x11 0x3a 0x00
+2024-022T01:16:18.000, 443600217,CommandEcho,211,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x12 0x02 0x00
+2024-022T01:16:18.000, 443600217,CommandEcho,212,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x13 0x9e 0x00
+2024-022T01:16:18.000, 443600217,CommandEcho,213,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:16:19.000, 443600218,CommandEcho,214,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x14 0x02 0x00
+2024-022T01:16:19.000, 443600218,CommandEcho,215,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x15 0x9e 0x00
+2024-022T01:16:19.000, 443600218,CommandEcho,216,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x16 0x76 0x00
+2024-022T01:16:19.000, 443600218,CommandEcho,217,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x17 0x9b 0x00
+2024-022T01:16:19.000, 443600218,CommandEcho,218,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x18 0x6d 0x00
+2024-022T01:16:19.000, 443600218,CommandEcho,219,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x19 0x76 0x00
+2024-022T01:16:19.000, 443600218,CommandEcho,220,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x1a 0x00 0x00
+2024-022T01:16:19.000, 443600218,CommandEcho,221,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x1b 0x08 0x00
+2024-022T01:16:19.000, 443600218,CommandEcho,222,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x1c 0x80 0x00
+2024-022T01:16:19.000, 443600218,CommandEcho,223,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x1d 0xa9 0x00
+2024-022T01:16:19.000, 443600218,CommandEcho,224,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:16:20.000, 443600219,CommandEcho,225,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x1e 0x00 0x00
+2024-022T01:16:20.000, 443600219,CommandEcho,226,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x1f 0x38 0x00
+2024-022T01:16:20.000, 443600219,CommandEcho,227,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x20 0x00 0x00
+2024-022T01:16:20.000, 443600219,CommandEcho,228,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x21 0x70 0x00
+2024-022T01:16:20.000, 443600219,CommandEcho,229,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x22 0x00 0x00
+2024-022T01:16:20.000, 443600219,CommandEcho,230,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x23 0x70 0x00
+2024-022T01:16:20.000, 443600219,CommandEcho,231,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x24 0x00 0x00
+2024-022T01:16:20.000, 443600219,CommandEcho,232,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x25 0xad 0x00
+2024-022T01:16:20.000, 443600219,CommandEcho,233,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x26 0x00 0x00
+2024-022T01:16:20.000, 443600219,CommandEcho,234,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x27 0x8f 0x00
+2024-022T01:16:20.000, 443600219,CommandEcho,235,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x28 0x00 0x00
+2024-022T01:16:20.000, 443600219,CommandEcho,236,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x29 0x8f 0x00
+2024-022T01:16:20.000, 443600219,CommandEcho,237,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:16:21.000, 443600220,CommandEcho,238,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x2a 0x00 0x00
+2024-022T01:16:21.000, 443600220,CommandEcho,239,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x2b 0x27 0x00
+2024-022T01:16:21.000, 443600220,CommandEcho,240,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x2c 0x00 0x00
+2024-022T01:16:21.000, 443600220,CommandEcho,241,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x2d 0x20 0x00
+2024-022T01:16:21.000, 443600220,CommandEcho,242,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x2e 0x00 0x00
+2024-022T01:16:21.000, 443600220,CommandEcho,243,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x2f 0x44 0x00
+2024-022T01:16:21.000, 443600220,CommandEcho,244,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x30 0x00 0x00
+2024-022T01:16:21.000, 443600220,CommandEcho,245,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x31 0x5d 0x00
+2024-022T01:16:21.000, 443600220,CommandEcho,246,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x32 0x00 0x00
+2024-022T01:16:21.000, 443600220,CommandEcho,247,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x33 0x54 0x00
+2024-022T01:16:21.000, 443600220,CommandEcho,248,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x34 0x00 0x00
+2024-022T01:16:21.000, 443600220,CommandEcho,249,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x35 0x54 0x00
+2024-022T01:16:21.000, 443600220,CommandEcho,250,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:16:22.000, 443600221,CommandEcho,251,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x36 0x00 0x00
+2024-022T01:16:22.000, 443600221,CommandEcho,252,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x37 0x57 0x00
+2024-022T01:16:22.000, 443600221,CommandEcho,253,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x38 0x6e 0x00
+2024-022T01:16:22.000, 443600221,CommandEcho,254,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x39 0x77 0x00
+2024-022T01:16:22.000, 443600221,CommandEcho,255,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x3a 0xb0 0x00
+2024-022T01:16:22.000, 443600221,CommandEcho,256,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x3b 0xea 0x00
+2024-022T01:16:22.000, 443600221,CommandEcho,257,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x3c 0x5c 0x00
+2024-022T01:16:22.000, 443600221,CommandEcho,258,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x3d 0x99 0x00
+2024-022T01:16:22.000, 443600221,CommandEcho,259,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x3e 0x00 0x00
+2024-022T01:16:22.000, 443600221,CommandEcho,260,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x3f 0x0a 0x00
+2024-022T01:16:22.000, 443600221,CommandEcho,261,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x40 0x00 0x00
+2024-022T01:16:22.000, 443600221,CommandEcho,262,MACRO,No error command executed,24,0x18 0x00 0x01 0x00 0x41 0x0a 0x00
+2024-022T01:16:22.000, 443600221,CommandEcho,263,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:16:23.000, 443600222,CommandEcho,264,UPLINK,No error command executed,15,0x0f 0x2b 0x00
+2024-022T01:16:23.000, 443600222,CommandEcho,265,MACRO,No error command executed,6,0x06
+2024-022T01:16:23.000, 443600222,CommandEcho,266,MACRO,No error command executed,33,0x21 0x19 0x55 0x4c 0x54 0x52 0x41 0x20 0x53 0x74 0x61
+2024-022T01:16:23.000, 443600222,CommandEcho,267,MACRO,No error command executed,24,0x18 0x01 0x02 0x00 0x12 0x00 0x51
+2024-022T01:16:23.000, 443600222,CommandEcho,268,MACRO,No error command executed,24,0x18 0x01 0x02 0x00 0x14 0x01 0x45
+2024-022T01:16:23.000, 443600222,CommandEcho,269,MACRO,No error command executed,24,0x18 0x01 0x02 0x00 0x16 0x51 0x05
+2024-022T01:16:23.000, 443600222,CommandEcho,270,MACRO,No error command executed,24,0x18 0x01 0x02 0x00 0x18 0x22 0xff
+2024-022T01:16:23.000, 443600222,CommandEcho,271,MACRO,No error command executed,24,0x18 0x01 0x01 0x00 0x10 0xe6 0x00
+2024-022T01:16:23.000, 443600222,CommandEcho,272,MACRO,No error command executed,81,0x51 0x01 0x00
+2024-022T01:16:23.000, 443600222,CommandEcho,273,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:16:24.000, 443600223,CommandEcho,274,MACRO,No error command executed,81,0x51 0x01 0x01
+2024-022T01:16:24.000, 443600223,CommandEcho,275,MACRO,No error command executed,6,0x06
+2024-022T01:16:28.000, 443600227,CommandEcho,276,UPLINK,No error command executed,15,0x0f 0x32 0x00
+2024-022T01:16:28.000, 443600227,CommandEcho,277,UPLINK,No error command executed,15,0x0f 0x3c 0x00
+2024-022T01:16:28.000, 443600227,CommandEcho,278,MACRO,No error command executed,33,0x21 0x22 0x55 0x4c 0x54 0x52 0x41 0x20 0x2d 0x32 0x35
+2024-022T01:16:28.000, 443600227,CommandEcho,279,MACRO,No error command executed,79,0x4f 0x59 0x00
+2024-022T01:16:28.000, 443600227,CommandEcho,280,MACRO,No error command executed,79,0x4f 0x62 0x01
+2024-022T01:16:28.000, 443600227,CommandEcho,281,MACRO,No error command executed,79,0x4f 0x65 0x02
+2024-022T01:16:28.000, 443600227,CommandEcho,282,MACRO,No error command executed,79,0x4f 0x5d 0x03
+2024-022T01:16:28.000, 443600227,CommandEcho,283,MACRO,No error command executed,79,0x4f 0x5d 0x04
+2024-022T01:16:28.000, 443600227,CommandEcho,284,MACRO,No error command executed,79,0x4f 0x7b 0x05
+2024-022T01:16:28.000, 443600227,CommandEcho,285,MACRO,No error command executed,79,0x4f 0x5a 0x06
+2024-022T01:16:28.000, 443600227,CommandEcho,286,MACRO,No error command executed,79,0x4f 0x5a 0x07
+2024-022T01:16:28.000, 443600227,CommandEcho,287,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:16:28.000, 443600227,CommandEcho,288,MACRO,No error command executed,33,0x21 0x1f 0x55 0x4c 0x54 0x52 0x41 0x20 0x2d 0x32 0x35
+2024-022T01:16:28.000, 443600227,CommandEcho,289,MACRO,No error command executed,82,0x52 0x00 0x02 0x01 0x00
+2024-022T01:16:28.000, 443600227,CommandEcho,290,MACRO,No error command executed,82,0x52 0x00 0x03 0x03 0x00
+2024-022T01:16:28.000, 443600227,CommandEcho,291,MACRO,No error command executed,82,0x52 0x00 0x05 0x00 0x00
+2024-022T01:16:28.000, 443600227,CommandEcho,292,MACRO,No error command executed,82,0x52 0x00 0x03 0x02 0x00
+2024-022T01:16:28.000, 443600227,CommandEcho,293,MACRO,No error command executed,82,0x52 0x00 0x03 0x04 0x00
+2024-022T01:16:28.000, 443600227,CommandEcho,294,MACRO,No error command executed,82,0x52 0x00 0x03 0x06 0x00
+2024-022T01:16:28.000, 443600227,CommandEcho,295,MACRO,No error command executed,82,0x52 0x00 0x01 0x08 0x00
+2024-022T01:16:28.000, 443600227,CommandEcho,296,MACRO,No error command executed,82,0x52 0x00 0x05 0x05 0x00
+2024-022T01:16:28.000, 443600227,CommandEcho,297,MACRO,No error command executed,82,0x52 0x00 0x04 0x07 0x00
+2024-022T01:16:28.000, 443600227,CommandEcho,298,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:16:29.000, 443600228,CommandEcho,299,UPLINK,No error command executed,29,0x1d 0x00 0x01
+2024-022T01:16:29.000, 443600228,CommandEcho,300,UPLINK,No error command executed,36,0x24 0x0e 0x10
+2024-022T01:16:29.000, 443600228,CommandEcho,301,MACRO,No error command executed,6,0x06
+2024-022T01:16:29.000, 443600228,CommandEcho,302,MACRO,No error command executed,82,0x52 0x00 0x06 0x09 0x00
+2024-022T01:16:29.000, 443600228,CommandEcho,303,MACRO,No error command executed,82,0x52 0x00 0x05 0x0d 0x00
+2024-022T01:16:29.000, 443600228,CommandEcho,304,MACRO,No error command executed,82,0x52 0x00 0x03 0x0b 0x00
+2024-022T01:16:29.000, 443600228,CommandEcho,305,MACRO,No error command executed,82,0x52 0x00 0x05 0x0f 0x00
+2024-022T01:16:29.000, 443600228,CommandEcho,306,MACRO,No error command executed,82,0x52 0x00 0x03 0x0a 0x00
+2024-022T01:16:29.000, 443600228,CommandEcho,307,MACRO,No error command executed,82,0x52 0x00 0x03 0x0e 0x00
+2024-022T01:16:29.000, 443600228,CommandEcho,308,MACRO,No error command executed,82,0x52 0x00 0x03 0x0c 0x00
+2024-022T01:16:29.000, 443600228,CommandEcho,309,MACRO,No error command executed,82,0x52 0x00 0x04 0x10 0x00
+2024-022T01:16:29.000, 443600228,CommandEcho,310,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:16:30.000, 443600229,CommandEcho,311,UPLINK,No error command executed,81,0x51 0x00 0x01
+2024-022T01:16:30.000, 443600229,CommandEcho,312,MACRO,No error command executed,83,0x53 0xfe 0x00
+2024-022T01:16:30.000, 443600229,CommandEcho,313,MACRO,No error command executed,83,0x53 0xfe 0x01
+2024-022T01:16:30.000, 443600229,CommandEcho,314,MACRO,No error command executed,83,0x53 0xfe 0x02
+2024-022T01:16:30.000, 443600229,CommandEcho,315,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:16:31.000, 443600230,CommandEcho,316,UPLINK,No error command executed,81,0x51 0x01 0x00
+2024-022T01:16:31.000, 443600230,CommandEcho,317,MACRO,No error command executed,80,0x50 0x00 0xc8 0x00 0x00
+2024-022T01:16:31.000, 443600230,CommandEcho,318,MACRO,No error command executed,80,0x50 0x00 0xc8 0x01 0x00
+2024-022T01:16:31.000, 443600230,CommandEcho,319,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:16:32.000, 443600231,CommandEcho,320,MACRO,No error command executed,6,0x06
+2024-022T01:16:33.000, 443600232,CommandEcho,321,UPLINK,No error command executed,86,0x56 0x00 0x00
+2024-022T01:16:33.000, 443600232,CommandEcho,322,UPLINK,No error command executed,24,0x18 0x01 0x01 0x00 0x3c 0x03 0x00
+2024-022T01:16:33.000, 443600232,CommandEcho,323,UPLINK,No error command executed,87,0x57 0x01 0x00
+2024-022T01:16:33.000, 443600232,CommandEcho,324,UPLINK,No error command executed,88,0x58 0x50 0x00
+2024-022T01:16:33.000, 443600232,CommandEcho,325,UPLINK,No error command executed,97,0x61 0x01 0x01 0x01 0x00
+2024-022T01:16:34.000, 443600233,CommandEcho,326,UPLINK,No error command executed,24,0x18 0x01 0x01 0x00 0x30 0x01 0x00
+2024-022T01:16:34.000, 443600233,CommandEcho,327,UPLINK,No error command executed,24,0x18 0x01 0x01 0x00 0x31 0x00 0x00
+2024-022T01:16:34.000, 443600233,CommandEcho,328,UPLINK,No error command executed,24,0x18 0x01 0x01 0x00 0x2d 0x00 0x00
+2024-022T01:16:34.000, 443600233,CommandEcho,329,UPLINK,No error command executed,24,0x18 0x01 0x01 0x00 0x2e 0x00 0x00
+2024-022T01:16:34.000, 443600233,CommandEcho,330,UPLINK,No error command executed,24,0x18 0x01 0x01 0x00 0x2f 0x01 0x00
+2024-022T01:16:34.000, 443600233,CommandEcho,331,UPLINK,No error command executed,24,0x18 0x01 0x01 0x00 0x36 0x00 0x00
+2024-022T01:16:34.000, 443600233,CommandEcho,332,UPLINK,No error command executed,24,0x18 0x01 0x01 0x00 0x2c 0x01 0x00
+2024-022T01:16:34.000, 443600233,CommandEcho,333,UPLINK,No error command executed,24,0x18 0x01 0x01 0x00 0x2b 0x00 0x00
+2024-022T01:16:34.000, 443600233,CommandEcho,334,UPLINK,No error command executed,25,0x19 0x01 0x00
+2024-022T01:16:36.000, 443600235,CommandEcho,335,UPLINK,No error command executed,76,0x4c 0x00 0x00
+2024-022T01:16:36.000, 443600235,CommandEcho,336,UPLINK,No error command executed,76,0x4c 0x00 0x01
+2024-022T01:16:36.000, 443600235,CommandEcho,337,UPLINK,No error command executed,76,0x4c 0x00 0x02
+2024-022T01:16:36.000, 443600235,CommandEcho,338,UPLINK,No error command executed,76,0x4c 0x00 0x03
+2024-022T01:16:36.000, 443600235,CommandEcho,339,UPLINK,No error command executed,76,0x4c 0x00 0x04
+2024-022T01:16:36.000, 443600235,CommandEcho,340,UPLINK,No error command executed,76,0x4c 0x00 0x05
+2024-022T01:16:36.000, 443600235,CommandEcho,341,UPLINK,No error command executed,76,0x4c 0x00 0x06
+2024-022T01:16:36.000, 443600235,CommandEcho,342,UPLINK,No error command executed,77,0x4d 0x23 0x00
+2024-022T01:16:36.000, 443600235,CommandEcho,343,UPLINK,No error command executed,75,0x4b 0x00 0x05 0x05 0x05 0x05 0x05 0x05 0x00
+2024-022T01:17:00.000, 443600259,CommandEcho,344,UPLINK,No error command executed,33,0x21 0x24 0x41 0x6e 0x61 0x6c 0x6f 0x67 0x20 0x54 0x72
+2024-022T01:17:13.000, 443600272,CommandEcho,345,UPLINK,No error command executed,81,0x51 0x01 0x01
+2024-022T01:17:18.000, 443600277,CommandEcho,346,UPLINK,No error command executed,33,0x21 0x26 0x41 0x6e 0x61 0x6c 0x6f 0x67 0x20 0x54 0x72
+2024-022T01:17:42.000, 443600301,CommandEcho,347,UPLINK,No error command executed,77,0x4d 0x28 0x00
+2024-022T01:17:46.000, 443600305,CommandEcho,348,UPLINK,No error command executed,76,0x4c 0x01 0x00
+2024-022T01:17:50.000, 443600309,CommandEcho,349,UPLINK,No error command executed,76,0x4c 0x01 0x01
+2024-022T01:17:54.000, 443600313,CommandEcho,350,UPLINK,No error command executed,76,0x4c 0x01 0x02
+2024-022T01:17:58.000, 443600317,CommandEcho,351,UPLINK,No error command executed,76,0x4c 0x01 0x03
+2024-022T01:18:02.000, 443600321,CommandEcho,352,UPLINK,No error command executed,76,0x4c 0x01 0x04
+2024-022T01:18:06.000, 443600325,CommandEcho,353,UPLINK,No error command executed,76,0x4c 0x01 0x05
+2024-022T01:18:47.000, 443600366,CommandEcho,354,UPLINK,No error command executed,15,0x0f 0x3c 0x00
+2024-022T01:18:47.000, 443600366,CommandEcho,355,MACRO,No error command executed,33,0x21 0x1f 0x55 0x4c 0x54 0x52 0x41 0x20 0x2d 0x32 0x35
+2024-022T01:18:47.000, 443600366,CommandEcho,356,MACRO,No error command executed,82,0x52 0x00 0x02 0x01 0x00
+2024-022T01:18:47.000, 443600366,CommandEcho,357,MACRO,No error command executed,82,0x52 0x00 0x03 0x03 0x00
+2024-022T01:18:47.000, 443600366,CommandEcho,358,MACRO,No error command executed,82,0x52 0x00 0x05 0x00 0x00
+2024-022T01:18:47.000, 443600366,CommandEcho,359,MACRO,No error command executed,82,0x52 0x00 0x03 0x02 0x00
+2024-022T01:18:47.000, 443600366,CommandEcho,360,MACRO,No error command executed,82,0x52 0x00 0x03 0x04 0x00
+2024-022T01:18:47.000, 443600366,CommandEcho,361,MACRO,No error command executed,82,0x52 0x00 0x03 0x06 0x00
+2024-022T01:18:47.000, 443600366,CommandEcho,362,MACRO,No error command executed,82,0x52 0x00 0x01 0x08 0x00
+2024-022T01:18:47.000, 443600366,CommandEcho,363,MACRO,No error command executed,82,0x52 0x00 0x05 0x05 0x00
+2024-022T01:18:47.000, 443600366,CommandEcho,364,MACRO,No error command executed,82,0x52 0x00 0x04 0x07 0x00
+2024-022T01:18:47.000, 443600366,CommandEcho,365,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:18:48.000, 443600367,CommandEcho,366,MACRO,No error command executed,82,0x52 0x00 0x06 0x09 0x00
+2024-022T01:18:48.000, 443600367,CommandEcho,367,MACRO,No error command executed,82,0x52 0x00 0x05 0x0d 0x00
+2024-022T01:18:48.000, 443600367,CommandEcho,368,MACRO,No error command executed,82,0x52 0x00 0x03 0x0b 0x00
+2024-022T01:18:48.000, 443600367,CommandEcho,369,MACRO,No error command executed,82,0x52 0x00 0x05 0x0f 0x00
+2024-022T01:18:48.000, 443600367,CommandEcho,370,MACRO,No error command executed,82,0x52 0x00 0x03 0x0a 0x00
+2024-022T01:18:48.000, 443600367,CommandEcho,371,MACRO,No error command executed,82,0x52 0x00 0x03 0x0e 0x00
+2024-022T01:18:48.000, 443600367,CommandEcho,372,MACRO,No error command executed,82,0x52 0x00 0x03 0x0c 0x00
+2024-022T01:18:48.000, 443600367,CommandEcho,373,MACRO,No error command executed,82,0x52 0x00 0x04 0x10 0x00
+2024-022T01:18:48.000, 443600367,CommandEcho,374,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:18:49.000, 443600368,CommandEcho,375,MACRO,No error command executed,83,0x53 0xfe 0x00
+2024-022T01:18:49.000, 443600368,CommandEcho,376,MACRO,No error command executed,83,0x53 0xfe 0x01
+2024-022T01:18:49.000, 443600368,CommandEcho,377,MACRO,No error command executed,83,0x53 0xfe 0x02
+2024-022T01:18:49.000, 443600368,CommandEcho,378,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:18:50.000, 443600369,CommandEcho,379,MACRO,No error command executed,80,0x50 0x00 0xc8 0x00 0x00
+2024-022T01:18:50.000, 443600369,CommandEcho,380,MACRO,No error command executed,80,0x50 0x00 0xc8 0x01 0x00
+2024-022T01:18:50.000, 443600369,CommandEcho,381,MACRO,No error command executed,5,0x05 0x00 0x01
+2024-022T01:18:51.000, 443600370,CommandEcho,382,MACRO,No error command executed,6,0x06
+2024-022T01:18:52.000, 443600371,CommandEcho,383,UPLINK,No error command executed,82,0x52 0x01 0xff 0x05 0x00
+2024-022T01:18:52.000, 443600371,CommandEcho,384,UPLINK,No error command executed,82,0x52 0x01 0xff 0x07 0x00
+2024-022T01:18:52.000, 443600371,CommandEcho,385,UPLINK,No error command executed,82,0x52 0x01 0xff 0x0a 0x00
+2024-022T01:18:52.000, 443600371,CommandEcho,386,UPLINK,No error command executed,82,0x52 0x01 0xff 0x0e 0x00
+2024-022T01:18:52.000, 443600371,CommandEcho,387,UPLINK,No error command executed,82,0x52 0x01 0xff 0x10 0x00
+2024-022T01:18:52.000, 443600371,CommandEcho,388,UPLINK,No error command executed,82,0x52 0x01 0xff 0x0c 0x00
+2024-022T01:18:52.000, 443600371,CommandEcho,389,UPLINK,No error command executed,82,0x52 0x01 0xff 0x00 0x00
+2024-022T01:18:52.000, 443600371,CommandEcho,390,UPLINK,No error command executed,82,0x52 0x01 0xff 0x02 0x00
+2024-022T01:18:52.000, 443600371,CommandEcho,391,UPLINK,No error command executed,77,0x4d 0x32 0x00
+2024-022T01:18:53.000, 443600372,CommandEcho,392,UPLINK,No error command executed,76,0x4c 0x01 0x00
+2024-022T01:18:53.000, 443600372,CommandEcho,393,UPLINK,No error command executed,76,0x4c 0x01 0x02
+2024-022T01:18:53.000, 443600372,CommandEcho,394,UPLINK,No error command executed,76,0x4c 0x01 0x03
+2024-022T01:18:53.000, 443600372,CommandEcho,395,UPLINK,No error command executed,76,0x4c 0x01 0x04
+2024-022T01:18:53.000, 443600372,CommandEcho,396,UPLINK,No error command executed,76,0x4c 0x01 0x05
+2024-022T01:18:53.000, 443600372,CommandEcho,397,UPLINK,No error command executed,76,0x4c 0x00 0x06
+2024-022T01:18:53.000, 443600372,CommandEcho,398,UPLINK,No error command executed,76,0x4c 0x00 0x01
+2024-022T01:18:55.000, 443600374,CommandEcho,399,UPLINK,No error command executed,75,0x4b 0x00 0x00 0x05 0x05 0x05 0x05 0x00 0x00

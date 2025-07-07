@@ -10,6 +10,7 @@ from imap_processing.hit.hit_utils import (
 from imap_processing.hit.l0.constants import AZIMUTH_ANGLES, ZENITH_ANGLES
 from imap_processing.hit.l0.decom_hit import (
     assemble_science_frames,
+    calculate_epoch_mean,
     decom_hit,
     decompress_rates_16_to_32,
     get_valid_starting_indices,
@@ -200,6 +201,22 @@ def test_assemble_science_frames(sci_dataset):
     updated_dataset = assemble_science_frames(updated_dataset)
     assert "count_rates_raw" in updated_dataset
     assert "pha_raw" in updated_dataset
+    assert "epoch" in updated_dataset.dims
+    assert updated_dataset.epoch.shape == updated_dataset.count_rates_raw.shape
+
+
+@pytest.mark.parametrize(
+    "epoch_data, idx, frame_size, expected",
+    [
+        (np.array([100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]), 2, 4, 450),
+        (np.array([100, 200, 300, 400]), 0, 4, 250),  # Frame size equals data length
+        (np.array([100, 200, 300, 400]), 1, 2, 250),  # Smaller frame size
+    ],
+)
+def test_calculate_epoch_mean(epoch_data, idx, frame_size, expected):
+    """Test the calculate_epoch_mean function with various cases."""
+    result = calculate_epoch_mean(epoch_data, idx, frame_size)
+    assert result == expected
 
 
 @pytest.mark.parametrize(

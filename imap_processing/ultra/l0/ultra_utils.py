@@ -40,6 +40,30 @@ ULTRA_RATES = PacketProperties(
     len_array=48,
     mantissa_bit_length=12,
 )
+ULTRA_ENERGY_RATES = PacketProperties(
+    apid=[882, 946],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-energy-rates",
+        "imap_ultra_l1a_90sensor-energy-rates",
+    ],
+    addition_to_logical_desc="Energy Rates",
+    width=5,
+    block=16,
+    len_array=11,
+    mantissa_bit_length=12,
+)
+ULTRA_ENERGY_SPECTRA = PacketProperties(
+    apid=[889, 953],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-energy-spectra",
+        "imap_ultra_l1a_90sensor-energy-spectra",
+    ],
+    addition_to_logical_desc="Energy Spectra",
+    width=4,
+    block=16,
+    len_array=1,
+    mantissa_bit_length=5,
+)
 ULTRA_TOF = PacketProperties(
     apid=[883, 947],
     logical_source=[
@@ -61,20 +85,84 @@ ULTRA_EVENTS = PacketProperties(
     len_array=None,
     mantissa_bit_length=None,
 )
+ULTRA_ENERGY_EVENTS = PacketProperties(
+    apid=[897, 961],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-energy-de",
+        "imap_ultra_l1a_90sensor-energy-de",
+    ],
+    addition_to_logical_desc="Single Energy Events",
+    width=None,
+    block=None,
+    len_array=None,
+    mantissa_bit_length=None,
+)
+ULTRA_PRI_1_EVENTS = PacketProperties(
+    apid=[898, 962],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-priority-1-de",
+        "imap_ultra_l1a_90sensor-priority-1-de",
+    ],
+    addition_to_logical_desc="Primary 1 Events",
+    width=None,
+    block=None,
+    len_array=None,
+    mantissa_bit_length=None,
+)
+ULTRA_PRI_2_EVENTS = PacketProperties(
+    apid=[899, 963],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-priority-2-de",
+        "imap_ultra_l1a_90sensor-priority-2-de",
+    ],
+    addition_to_logical_desc="Primary 2 Events",
+    width=None,
+    block=None,
+    len_array=None,
+    mantissa_bit_length=None,
+)
+ULTRA_PRI_3_EVENTS = PacketProperties(
+    apid=[900, 964],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-priority-3-de",
+        "imap_ultra_l1a_90sensor-priority-3-de",
+    ],
+    addition_to_logical_desc="Primary 3 Events",
+    width=None,
+    block=None,
+    len_array=None,
+    mantissa_bit_length=None,
+)
+ULTRA_PRI_4_EVENTS = PacketProperties(
+    apid=[901, 965],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-priority-4-de",
+        "imap_ultra_l1a_90sensor-priority-4-de",
+    ],
+    addition_to_logical_desc="Primary 4 Events",
+    width=None,
+    block=None,
+    len_array=None,
+    mantissa_bit_length=None,
+)
 ULTRA_HK = PacketProperties(
     apid=[
         866,
         867,
+        868,
         869,
         870,
+        871,
         873,
         874,
         876,
         877,
         930,
         931,
+        932,
         933,
         934,
+        935,
         937,
         938,
         940,
@@ -83,16 +171,20 @@ ULTRA_HK = PacketProperties(
     logical_source=[
         "imap_ultra_l1a_45sensor-alarm",
         "imap_ultra_l1a_45sensor-memchecksum",
+        "imap_ultra_l1a_45sensor-memdump",
         "imap_ultra_l1a_45sensor-status",
         "imap_ultra_l1a_45sensor-bootstatus",
+        "imap_ultra_l1a_45sensor-macrodump",
         "imap_ultra_l1a_45sensor-monitorlimits",
         "imap_ultra_l1a_45sensor-params",
         "imap_ultra_l1a_45sensor-scauto",
         "imap_ultra_l1a_45sensor-imgparams",
         "imap_ultra_l1a_90sensor-alarm",
         "imap_ultra_l1a_90sensor-memchecksum",
+        "imap_ultra_l1a_90sensor-memdump",
         "imap_ultra_l1a_90sensor-status",
         "imap_ultra_l1a_90sensor-bootstatus",
+        "imap_ultra_l1a_90sensor-macrodump",
         "imap_ultra_l1a_90sensor-monitorlimits",
         "imap_ultra_l1a_90sensor-params",
         "imap_ultra_l1a_90sensor-scauto",
@@ -119,7 +211,21 @@ ULTRA_CMD_TEXT = PacketProperties(
     len_array=None,
     mantissa_bit_length=None,
 )
-
+ULTRA_CMD_ECHO = PacketProperties(
+    apid=[
+        865,
+        929,
+    ],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-cmdecho",
+        "imap_ultra_l1a_90sensor-cmdecho",
+    ],
+    addition_to_logical_desc="Command echo",
+    width=None,
+    block=None,
+    len_array=None,
+    mantissa_bit_length=None,
+)
 
 # Module-level constant for event field ranges
 EVENT_FIELD_RANGES = {
@@ -204,6 +310,20 @@ EVENT_FIELD_RANGES = {
     "bin": (148, 156),
     # Phase Angle
     "phase_angle": (156, 166),
+}
+
+# Module-level constant for event field ranges
+ENERGY_EVENT_FIELD_RANGES = {
+    # Stop Type
+    "stop_type": (0, 4),
+    # Energy/Pulse Height
+    "energy_ph": (4, 16),
+    # Pulse Width
+    "pulse_width": (16, 27),
+    # Bin
+    "bin": (27, 31),
+    # Phase Angle
+    "phase_angle": (31, 41),
 }
 
 
@@ -323,8 +443,55 @@ RATES_KEYS = [
     # "discarded_events"
 ]
 
+ENERGY_RATES_KEYS = [
+    # SSD0 Energy LED
+    "ssd0_energy_led",
+    # SSD1 Energy LED
+    "ssd1_energy_led",
+    # SSD2 Energy LED
+    "ssd2_energy_led",
+    # SSD3 Energy LED
+    "ssd3_energy_led",
+    # SSD4 Energy LED
+    "ssd4_energy_led",
+    # SSD5 Energy LED
+    "ssd5_energy_led",
+    # SSD6 Energy LED
+    "ssd6_energy_led",
+    # SSD7 Energy LED
+    "ssd7_energy_led",
+    # Event Active Time
+    "event_active_time",
+    # FIFO Valid Events
+    "fifo_valid_events",
+    # Processed Events
+    "processed_events",
+]
 
-def parse_event(event_binary: str) -> dict:
+ENERGY_SPECTRA_KEYS = [
+    # Sum of the 8 SSDs
+    "ssd_sum",
+]
+
+# Map of command echo fields
+CMD_ECHO_MAP = {
+    0x00: "No error command executed",
+    0x01: "No error command appended to macro",
+    0x02: "Unknown opcode or insufficient arguments",
+    0x03: "Bad argument",
+    0x04: "Cannot run macro; no contexts",
+    0x05: "Cannot be used outside of a macro",
+    0x06: "Macro compilation error",
+    0x07: "Macro not killed (not running?)",
+    0x08: "Cannot boot program; bad checksum",
+    0x09: "Cannot restore macros; bad checksum",
+    0x0A: "Cannot load memory; write disabled",
+    0x10: "HV goal greater than limit",
+    0x11: "Shutter deployment disabled",
+}
+
+
+def parse_event(event_binary: str, field_ranges: dict) -> dict:
     """
     Parse a binary string representing a single event.
 
@@ -332,6 +499,8 @@ def parse_event(event_binary: str) -> dict:
     ----------
     event_binary : str
         Event binary string.
+    field_ranges : dict
+        The field ranges for the event data.
 
     Returns
     -------
@@ -339,7 +508,7 @@ def parse_event(event_binary: str) -> dict:
         Dict of the fields for a single event.
     """
     fields_dict = {}
-    for field, (start, end) in EVENT_FIELD_RANGES.items():
+    for field, (start, end) in field_ranges.items():
         field_value = int(event_binary[start:end], 2)
         fields_dict[field] = field_value
     return fields_dict

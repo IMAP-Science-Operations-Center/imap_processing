@@ -31,6 +31,9 @@ class MagL0:
     """
     Data class for MAG Level 0 data.
 
+    No attributes should be updated after creation. This class acts as a snapshot of the
+    packet data, and is read-only.
+
     Attributes
     ----------
     ccsds_header: CcsdsData
@@ -116,3 +119,46 @@ class MagL0:
 
         self.PRI_VECSEC = 2**self.PRI_VECSEC
         self.SEC_VECSEC = 2**self.SEC_VECSEC
+
+    def __eq__(self, other: object) -> bool:
+        """
+        Compare two MagL0 objects for equality.
+
+        Two objects are said to be equal if the SHCOARSE, APID, and SRC_SEQ_CTR are
+        equal.
+
+        Parameters
+        ----------
+        other : object
+            The other MagL0 object to compare against.
+
+        Returns
+        -------
+        bool
+            True if the objects are equal, False otherwise.
+        """
+        if not isinstance(other, MagL0):
+            return NotImplemented
+
+        return (
+            self.SHCOARSE == other.SHCOARSE
+            and self.ccsds_header.PKT_APID == other.ccsds_header.PKT_APID
+            and self.ccsds_header.SRC_SEQ_CTR == other.ccsds_header.SRC_SEQ_CTR
+        )
+
+    def __hash__(self) -> int:
+        """
+        Return a hash of the MagL0 object for use in sets.
+
+        Returns
+        -------
+        int
+            The hash value of the MagL0 object.
+        """
+        return hash(
+            (
+                self.SHCOARSE,
+                self.ccsds_header.PKT_APID,
+                self.ccsds_header.SRC_SEQ_CTR,
+            )
+        )

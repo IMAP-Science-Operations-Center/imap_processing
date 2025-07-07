@@ -1,12 +1,16 @@
+from dataclasses import fields
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 
+from imap_processing.ccsds.ccsds_data import CcsdsData
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l0.decom_mag import decom_packets, generate_dataset
+from imap_processing.mag.l0.mag_l0_data import MagL0, Mode
 
 
 @pytest.fixture
@@ -118,3 +122,47 @@ def test_mag_raw_cdf_generation(cdf_attrs):
 
     input_xarray = load_cdf(output)
     assert input_xarray.attrs.keys() == burst_data.attrs.keys()
+
+
+def test_comparison():
+    l0_args = [f.name for f in fields(MagL0)][2:-1]
+    values = np.zeros(len(l0_args), dtype=int)
+    attrs = dict(zip(l0_args, values))
+    attrs["VECTORS"] = np.array([1.0, 2.0, 3.0, 4.0])
+    attrs["SHCOARSE"] = 1234
+    l0_match = MagL0(
+        CcsdsData({"PKT_APID": Mode.NORMAL, "SRC_SEQ_CTR": 1, "PKT_LEN": 100}),
+        **attrs,
+    )
+
+    attrs["VECTORS"] = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+    l0_match_2 = MagL0(
+        CcsdsData({"PKT_APID": Mode.NORMAL, "SRC_SEQ_CTR": 1, "PKT_LEN": 100}), **attrs
+    )
+
+    assert l0_match == l0_match_2
+
+    l0_mismatch = MagL0(
+        CcsdsData({"PKT_APID": Mode.NORMAL, "SRC_SEQ_CTR": 2, "PKT_LEN": 100}),
+        **attrs,
+    )
+    assert l0_mismatch != l0_match
+
+
+def test_duplicate_packets(tmpdir):
+    current_directory = Path(__file__).parent
+    packet_file = current_directory / "validation" / "mag_l0_test_data.pkts"
+    # Write the file out twice to double the number of binary packets in
+    # a new file for testing
+    with open(two_files := tmpdir / "two_files.pkts", "wb") as f:
+        with open(packet_file, "rb") as original_file:
+            data = original_file.read()
+            f.write(data)
+            f.write(data)
+
+    packets = decom_packets(str(packet_file))
+    one_file = packets["burst"] + packets["norm"]
+
+    packets = decom_packets(str(two_files))
+    two_file = packets["burst"] + packets["norm"]
+    assert len(two_file) == len(one_file)

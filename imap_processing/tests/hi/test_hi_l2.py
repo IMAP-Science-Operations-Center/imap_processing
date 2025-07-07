@@ -6,7 +6,7 @@ import xarray as xr
 
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.ena_maps.ena_maps import RectangularSkyMap
-from imap_processing.hi.l2.hi_l2 import (
+from imap_processing.hi.hi_l2 import (
     calculate_ena_intensity,
     calculate_ena_signal_rates,
     generate_hi_map,

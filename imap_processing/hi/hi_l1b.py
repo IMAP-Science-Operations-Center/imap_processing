@@ -11,7 +11,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import parse_filename_like
-from imap_processing.hi.l1a.science_direct_event import HALF_CLOCK_TICK_S
+from imap_processing.hi.hi_l1a import HALF_CLOCK_TICK_S
 from imap_processing.hi.utils import (
     HIAPID,
     CoincidenceBitmap,
@@ -169,8 +169,8 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
             "pkt_len",
             "last_spin_num",
             "spin_invalids",
-            "meta_seconds",
-            "meta_subseconds",
+            "esa_step_seconds",
+            "esa_step_milliseconds",
             "tof_1",
             "tof_2",
             "tof_3",

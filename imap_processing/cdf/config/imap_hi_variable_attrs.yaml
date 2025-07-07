@@ -161,21 +161,21 @@ hi_de_spin_invalids:
 hi_de_esa_step:
   <<: *hi_esa_step
 
-hi_de_meta_seconds:
+hi_de_esa_step_seconds:
   <<: *default_uint32
-  CATDESC: Coarse mission elapsed time (MET) of last meta-event
+  CATDESC: Coarse mission elapsed time (MET) of when the ESA was stepped
   DISPLAY_TYPE: time_series
-  FIELDNAM: Coarse Meta-event MET
-  LABLAXIS: Coarse Meta MET
+  FIELDNAM: Coarse ESA step MET
+  LABLAXIS: Coarse ESA step MET
   UNITS: seconds
   VAR_TYPE: support_data
 
-hi_de_meta_subseconds:
+hi_de_esa_step_milliseconds:
   <<: *default_uint16
-  CATDESC: Fine mission elapsed time (MET) of last meta-event
+  CATDESC: Fine mission elapsed time (MET) of when the ESA was stepped
   DISPLAY_TYPE: time_series
-  FIELDNAM: Fine Meta-event MET
-  LABLAXIS: Fine Meta MET
+  FIELDNAM: Fine ESA step MET
+  LABLAXIS: Fine ESA step MET
   UNITS: ms
   VAR_TYPE: support_data
 

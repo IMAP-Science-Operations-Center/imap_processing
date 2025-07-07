@@ -43,8 +43,9 @@ def decom_packets(packet_file_path: str | Path) -> dict[str, list[MagL0]]:
 
     packet_definition = definitions.XtcePacketDefinition(xtce_document)
 
-    norm_data = []
-    burst_data = []
+    # Store in a dict for de-duplication. Only the keys are returned as a list.
+    norm_dict: dict[MagL0, None] = {}
+    burst_dict: dict[MagL0, None] = {}
 
     with open(packet_file_path, "rb") as binary_data:
         mag_packets = packet_definition.packet_generator(binary_data)
@@ -53,12 +54,14 @@ def decom_packets(packet_file_path: str | Path) -> dict[str, list[MagL0]]:
             apid = packet["PKT_APID"]
             if apid in (Mode.BURST, Mode.NORMAL):
                 values = [item.raw_value for item in packet.user_data.values()]
+                mag_l0 = MagL0(CcsdsData(packet.header), *values)
                 if apid == Mode.NORMAL:
-                    norm_data.append(MagL0(CcsdsData(packet.header), *values))
-                else:
-                    burst_data.append(MagL0(CcsdsData(packet.header), *values))
+                    if mag_l0 not in norm_dict:
+                        norm_dict[mag_l0] = None
+                elif mag_l0 not in burst_dict:
+                    burst_dict[mag_l0] = None
 
-    return {"norm": norm_data, "burst": burst_data}
+    return {"norm": list(norm_dict.keys()), "burst": list(burst_dict.keys())}
 
 
 def generate_dataset(

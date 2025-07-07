@@ -222,6 +222,35 @@ def test_packet_file_to_datasets(use_derived_value, expected_mode):
     np.testing.assert_array_equal(np.unique(data["mode"].data), expected_mode)
 
 
+def test_packet_file_to_datasets_duplicates(tmpdir, caplog):
+    """
+    Test that all datatypes aren't all int64 and that we get
+    uint8/uint16 from header items as expected.
+
+    Test that we get multiple apids in the output.
+    """
+    test_file = "tests/swapi/l0_data/imap_swapi_l0_raw_20240924_v001.pkts"
+    packet_file = imap_module_directory / test_file
+
+    # Write the file out twice to double the number of binary packets in
+    # a new file for testing
+    with open(two_files := tmpdir / "two_files.pkts", "wb") as f:
+        with open(packet_file, "rb") as original_file:
+            data = original_file.read()
+            f.write(data)
+            f.write(data)
+
+    packet_definition = (
+        imap_module_directory / "swapi/packet_definitions/swapi_packet_definition.xml"
+    )
+    ds_two_files = utils.packet_file_to_datasets(two_files, packet_definition)
+    ds_one_file = utils.packet_file_to_datasets(packet_file, packet_definition)
+    assert len(ds_two_files[1188]["epoch"]) == len(ds_one_file[1188]["epoch"])
+    assert len(ds_two_files[1188]["epoch"]) == 153
+
+    assert "Dropping duplicate packets" in caplog.records[0].message
+
+
 def test_packet_file_to_datasets_flat_definition():
     test_file = "tests/idex/test_data/imap_idex_l0_raw_20231218_v001.pkts"
     packet_files = imap_module_directory / test_file

@@ -15,6 +15,47 @@ component:
   LABLAXIS: component
   FORMAT: A3
   VAR_TYPE: metadata
+  UNITS: " "
+
+esa_step:
+  CATDESC: ESA step number
+  FIELDNAM: esa_step
+  LABLAXIS: esa_step
+  FORMAT: I2
+  VALIDMIN: 0
+  VALIDMAX: 7
+  VAR_TYPE: metadata
+  UNITS: " "
+
+energy_ranges:
+    CATDESC: CoDICE-Hi energy ranges
+    FIELDNAM: energy_ranges
+    LABLAXIS: energy_ranges
+    FORMAT: I3
+    VALIDMIN: 0
+    VALIDMAX: 14
+    VAR_TYPE: metadata
+    UNITS: " "
+
+azimuth:
+    CATDESC: CoDICE-Hi azimuth
+    FIELDNAM: azimuth
+    LABLAXIS: azimuth
+    FORMAT: I3
+    VALIDMIN: 0
+    VALIDMAX: 4
+    VAR_TYPE: metadata
+    UNITS: " "
+
+spin_angle_bin:
+    CATDESC: CoDICE-Hi spin_angle_bin
+    FIELDNAM: spin_angle_bin
+    LABLAXIS: spin_angle_bin
+    FORMAT: I3
+    VALIDMIN: 0
+    VALIDMAX: 4
+    VAR_TYPE: metadata
+    UNITS: " "
 
 default_uint8_attrs: &default_uint8
   <<: *default
@@ -71,6 +112,72 @@ default_float64_attrs: &default_float64
   VALIDMIN: -1.7976931348623157e+308
   VALIDMAX: 1.7976931348623157e+308
   dtype: float64
+
+codicehi_h:
+  <<: *default_float32
+  CATDESC: H intensities in 15 energy ranges and binned into 4 azimuths and 4 spin angle bins
+  FIELDNAM: H intensities
+  LABLAXIS: Diff. Intensity
+  UNITS: "# / cm2-sr-s- MeV"
+  VALIDMIN: 0
+  VALIDMAX: 100000000.0
+  DEPEND_1: energy_ranges
+  DEPEND_2: azimuth
+  DEPEND_3: spin_angle_bin
+
+codicelo_c_over_o_abundance:
+  <<: *default_float32
+  CATDESC: C/O abundance ratio
+  FIELDNAM: C/O
+  LABLAXIS: ratio
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 100000000.0
+
+codicelo_mg_over_o_abundance:
+  <<: *default_float32
+  CATDESC: Mg/O abundance ratio
+  FIELDNAM: Mg/O
+  LABLAXIS: ratio
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 100000000.0
+
+codicelo_fe_over_o_abundance:
+  <<: *default_float32
+  CATDESC: Fe/O abundance ratio
+  FIELDNAM: Fe/O
+  LABLAXIS: ratio
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 100000000.0
+
+codicelo_c_plus_6_over_c_plus_5_ratio:
+  <<: *default_float32
+  CATDESC: C+6/C+5 charge state ratio
+  FIELDNAM: C+6/C+5
+  LABLAXIS: ratio
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 100000000.0
+
+codicelo_o_plus_7_over_o_plus_6_ratio:
+  <<: *default_float32
+  CATDESC: O+7/O+6 charge state ratio
+  FIELDNAM: O+7/O+6
+  LABLAXIS: ratio
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 100000000.0
+
+codicelo_fe_low_over_fe_high_ratio:
+  <<: *default_float32
+  CATDESC: Fe low/Fe high charge state ratio
+  FIELDNAM: Fe low/Fe high
+  LABLAXIS: ratio
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 100000000.0
 
 hit_e_a_side_low_en:
   <<: *default_uint32
@@ -215,150 +322,26 @@ swapi_pseudo_proton_temperature:
   VALIDMAX: 50000000.0
 
 # SWE Normalized Counts, First Half Cycle
-swe_normalized_counts_half_1_esa_0:
+swe_normalized_counts_half_1:
   <<: *default_uint32
   CATDESC: Normalized electron counts (Half Cycle 1, ESA step 0)
-  FIELDNAM: swe_normalized_counts_half_1_esa_0
+  FIELDNAM: swe_normalized_counts_half_1
   LABLAXIS: swe_norm_cts_q1_esa0
   UNITS: Normalized counts
   VALIDMIN: 0
   VALIDMAX: 500000
-
-swe_normalized_counts_half_1_esa_1:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 1, ESA step 1)
-  FIELDNAM: swe_normalized_counts_half_1_esa_1
-  LABLAXIS: swe_norm_cts_q1_esa1
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_1_esa_2:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 1, ESA step 2)
-  FIELDNAM: swe_normalized_counts_half_1_esa_2
-  LABLAXIS: swe_norm_cts_q1_esa2
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_1_esa_3:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 1, ESA step 3)
-  FIELDNAM: swe_normalized_counts_half_1_esa_3
-  LABLAXIS: swe_norm_cts_q1_esa3
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_1_esa_4:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 1, ESA step 4)
-  FIELDNAM: swe_normalized_counts_half_1_esa_4
-  LABLAXIS: swe_norm_cts_q1_esa4
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_1_esa_5:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 1, ESA step 5)
-  FIELDNAM: swe_normalized_counts_half_1_esa_5
-  LABLAXIS: swe_norm_cts_q1_esa5
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_1_esa_6:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 1, ESA step 6)
-  FIELDNAM: swe_normalized_counts_half_1_esa_6
-  LABLAXIS: swe_norm_cts_q1_esa6
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_1_esa_7:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 1, ESA step 7)
-  FIELDNAM: swe_normalized_counts_half_1_esa_7
-  LABLAXIS: swe_norm_cts_q1_esa7
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
+  DEPEND_1: esa_step
 
 # SWE Normalized Counts, Second Half Cycle
-swe_normalized_counts_half_2_esa_0:
+swe_normalized_counts_half_2:
   <<: *default_uint32
   CATDESC: Normalized electron counts (Half Cycle 2, ESA step 0)
-  FIELDNAM: swe_normalized_counts_half_2_esa_0
+  FIELDNAM: swe_normalized_counts_half_2
   LABLAXIS: swe_norm_cts_q2_esa0
   UNITS: Normalized counts
   VALIDMIN: 0
   VALIDMAX: 500000
-
-swe_normalized_counts_half_2_esa_1:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 2, ESA step 1)
-  FIELDNAM: swe_normalized_counts_half_2_esa_1
-  LABLAXIS: swe_norm_cts_q2_esa1
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_2_esa_2:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 2, ESA step 2)
-  FIELDNAM: swe_normalized_counts_half_2_esa_2
-  LABLAXIS: swe_norm_cts_q2_esa2
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_2_esa_3:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 2, ESA step 3)
-  FIELDNAM: swe_normalized_counts_half_2_esa_3
-  LABLAXIS: swe_norm_cts_q2_esa3
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_2_esa_4:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 2, ESA step 4)
-  FIELDNAM: swe_normalized_counts_half_2_esa_4
-  LABLAXIS: swe_norm_cts_q2_esa4
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_2_esa_5:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 2, ESA step 5)
-  FIELDNAM: swe_normalized_counts_half_2_esa_5
-  LABLAXIS: swe_norm_cts_q2_esa5
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_2_esa_6:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 2, ESA step 6)
-  FIELDNAM: swe_normalized_counts_half_2_esa_6
-  LABLAXIS: swe_norm_cts_q2_esa6
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-
-swe_normalized_counts_half_2_esa_7:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 2, ESA step 7)
-  FIELDNAM: swe_normalized_counts_half_2_esa_7
-  LABLAXIS: swe_norm_cts_q2_esa7
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
+  DEPEND_1: esa_step
 
 swe_counterstreaming_electrons:
     <<: *default_uint8

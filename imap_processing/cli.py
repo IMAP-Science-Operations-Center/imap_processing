@@ -51,10 +51,7 @@ from imap_processing.codice import codice_l1a, codice_l1b, codice_l2
 from imap_processing.glows.l1a.glows_l1a import glows_l1a
 from imap_processing.glows.l1b.glows_l1b import glows_l1b
 from imap_processing.glows.l2.glows_l2 import glows_l2
-from imap_processing.hi.l1a import hi_l1a
-from imap_processing.hi.l1b import hi_l1b
-from imap_processing.hi.l1c import hi_l1c
-from imap_processing.hi.l2 import hi_l2
+from imap_processing.hi import hi_l1a, hi_l1b, hi_l1c, hi_l2
 from imap_processing.hit.l1a.hit_l1a import hit_l1a
 from imap_processing.hit.l1b.hit_l1b import hit_l1b
 from imap_processing.hit.l2.hit_l2 import hit_l2
@@ -1125,6 +1122,13 @@ class Mag(ProcessInstrument):
                 mode=DataMode(descriptor_no_frame.upper()),
             )
 
+        for ds in datasets:
+            if "raw" not in ds.attrs["Logical_source"] and not np.all(
+                ds["epoch"].values[1:] > ds["epoch"].values[:-1]
+            ):
+                raise ValueError(
+                    "Timestamps for output file are not monotonically increasing."
+                )
         return datasets
 
 

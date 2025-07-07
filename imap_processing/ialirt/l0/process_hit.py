@@ -1,7 +1,6 @@
 """Functions to support HIT processing."""
 
 import logging
-from decimal import Decimal
 
 import numpy as np
 import xarray as xr
@@ -170,27 +169,19 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
             {
                 "apid": 478,
                 "met": int(met),
-                "utc": met_to_utc(met).split(".")[0],
+                "met_in_utc": met_to_utc(met).split(".")[0],
                 "ttj2000ns": int(met_to_ttj2000ns(met)),
-                "hit_e_a_side_low_en": Decimal(
-                    str(l1["IALRT_RATE_1"] + l1["IALRT_RATE_2"])
-                ),
-                "hit_e_a_side_med_en": Decimal(
-                    str(l1["IALRT_RATE_5"] + l1["IALRT_RATE_6"])
-                ),
-                "hit_e_a_side_high_en": Decimal(str(l1["IALRT_RATE_7"])),
-                "hit_e_b_side_low_en": Decimal(
-                    str(l1["IALRT_RATE_11"] + l1["IALRT_RATE_12"])
-                ),
-                "hit_e_b_side_med_en": Decimal(
-                    str(l1["IALRT_RATE_15"] + l1["IALRT_RATE_16"])
-                ),
-                "hit_e_b_side_high_en": Decimal(str(l1["IALRT_RATE_17"])),
-                "hit_h_omni_med_en": Decimal(str(l1["H_12_15"] + l1["H_15_70"])),
-                "hit_h_a_side_high_en": Decimal(str(l1["IALRT_RATE_8"])),
-                "hit_h_b_side_high_en": Decimal(str(l1["IALRT_RATE_18"])),
-                "hit_he_omni_low_en": Decimal(str(l1["HE4_06_08"])),
-                "hit_he_omni_high_en": Decimal(str(l1["HE4_15_70"])),
+                "hit_e_a_side_low_en": int(l1["IALRT_RATE_1"] + l1["IALRT_RATE_2"]),
+                "hit_e_a_side_med_en": int(l1["IALRT_RATE_5"] + l1["IALRT_RATE_6"]),
+                "hit_e_a_side_high_en": int(l1["IALRT_RATE_7"]),
+                "hit_e_b_side_low_en": int(l1["IALRT_RATE_11"] + l1["IALRT_RATE_12"]),
+                "hit_e_b_side_med_en": int(l1["IALRT_RATE_15"] + l1["IALRT_RATE_16"]),
+                "hit_e_b_side_high_en": int(l1["IALRT_RATE_17"]),
+                "hit_h_omni_med_en": int(l1["H_12_15"] + l1["H_15_70"]),
+                "hit_h_a_side_high_en": int(l1["IALRT_RATE_8"]),
+                "hit_h_b_side_high_en": int(l1["IALRT_RATE_18"]),
+                "hit_he_omni_low_en": int(l1["HE4_06_08"]),
+                "hit_he_omni_high_en": int(l1["HE4_15_70"]),
             }
         )
 

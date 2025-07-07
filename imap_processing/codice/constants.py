@@ -158,6 +158,17 @@ LO_PHA_VARIABLE_NAMES = [
     f"P{n}_{field}" for n in range(8) for field in LO_PHA_CDF_FIELDS
 ]
 
+# Final I-ALiRT data product fields
+CODICE_LO_IAL_DATA_FIELDS = [
+    "c_over_o_abundance",
+    "mg_over_o_abundance",
+    "fe_over_o_abundance",
+    "c_plus_6_over_c_plus_5_ratio",
+    "o_plus_7_over_o_plus_6_ratio",
+    "fe_low_over_fe_high_ratio",
+]
+CODICE_HI_IAL_DATA_FIELDS = ["h"]
+
 # lo- and hi-counters-aggregated data product variables are dynamically
 # determined based on the number of active counters
 # TODO: Try to convince Joey to move to lower case variable names with
@@ -207,13 +218,13 @@ HI_COUNTERS_AGGREGATED_ACTIVE_VARIABLES = {
     "Reserved3": False,
     "Reserved4": False,
     "Reserved5": False,
-    "LowTOFCutoff": True,
-    "Reserved6": True,
-    "Reserved7": True,
+    "LowTOFCutoff": False,
+    "Reserved6": False,
+    "Reserved7": False,
     "ASIC1FlagInvalid": True,
     "ASIC2FlagInvalid": True,
-    "ASIC1ChannelInvalid": True,
-    "ASIC2ChannelInvalid": True,
+    "ASIC1ChannelInvalid": False,
+    "ASIC2ChannelInvalid": False,
 }
 HI_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
     name
