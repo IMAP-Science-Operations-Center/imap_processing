@@ -270,6 +270,7 @@ def compute_counts_by_charge_and_mass(
         )
         binned_mass[binned_mass == len(MASS_BIN_EDGES)] = len(MASS_BIN_EDGES) - 1
 
+        # TODO use np.histogramdd to compute the counts by charge and mass.
         # Count dust events for each spin phase and mass bin or charge bin.
         for mass_bin, charge_bin, spin_phase_bin in zip(
             binned_mass, binned_charge, binned_spin_phase
