@@ -25,6 +25,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_path_length,
     get_ph_tof_and_back_positions,
     get_phi_theta,
+    get_spin_number,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
 )
@@ -59,7 +60,10 @@ def calculate_de(
 
     # Define epoch and spin.
     de_dict["epoch"] = de_dataset["epoch"].data
-    de_dict["spin"] = de_dataset["spin"].data
+    spin_number = get_spin_number(
+        de_dataset["shcoarse"].values, de_dataset["spin"].values
+    )
+    de_dict["spin"] = spin_number
 
     # Add already populated fields.
     keys = [
@@ -133,7 +137,7 @@ def calculate_de(
         spin_starts[valid_indices],
         spin_period_sec[valid_indices],
     ) = get_eventtimes(
-        de_dataset["spin"].data[valid_indices],
+        de_dict["spin"][valid_indices],
         de_dataset["phase_angle"].data[valid_indices],
     )
 

@@ -28,6 +28,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_path_length,
     get_ph_tof_and_back_positions,
     get_phi_theta,
+    get_spin_number,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
     interpolate_fwhm,
@@ -466,6 +467,25 @@ def test_get_phi_theta(test_fixture):
 
     np.testing.assert_allclose(phi, expected_phi, atol=1e-03, rtol=0)
     np.testing.assert_allclose(theta, expected_theta, atol=1e-03, rtol=0)
+
+
+def test_get_spin_number(test_fixture, use_fake_spin_data_for_time):
+    """Tests that get_spin_number assigns the correct spin number."""
+    df_filt, _, _, de_dataset = test_fixture
+
+    # Simulate a spin table from MET = 0 to MET = 141*15 seconds
+    use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
+
+    # Convert shcoarse (time) to MET relative to first value
+    # Take off first partial spin.
+    de_met = de_dataset["shcoarse"].values[19::] - de_dataset["shcoarse"].values[19]
+    de_spin = de_dataset["spin"].values[19::]
+
+    spin_number = get_spin_number(de_met, de_spin)
+    # First spin number is 128.
+    expected_spin_number = de_spin - 128
+
+    assert np.array_equal(spin_number, expected_spin_number)
 
 
 def test_get_eventtimes(test_fixture, use_fake_spin_data_for_time):

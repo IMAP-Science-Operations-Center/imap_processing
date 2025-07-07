@@ -805,6 +805,55 @@ def get_phi_theta(
     return np.degrees(phi), np.degrees(theta)
 
 
+def get_spin_number(de_met: NDArray, de_spin: NDArray) -> NDArray:
+    """
+    Get the spin number.
+
+    Parameters
+    ----------
+    de_met : NDArray
+        Mission elapsed time.
+    de_spin : NDArray
+        Spin number 0-255.
+
+    Returns
+    -------
+    assigned_spin_number : NDArray
+        Spin number for DE data product.
+    """
+    spin_df = get_spin_data()
+
+    # Get de sorting indices based on time.
+    sort_idx = np.argsort(de_met)
+    de_met_sorted = de_met[sort_idx]
+    de_spin_sorted = de_spin[sort_idx]
+
+    # Determine the indices of new spins.
+    is_new_spin = np.concatenate([[True], de_spin_sorted[1:] != de_spin_sorted[:-1]])
+    spin_start_indices = np.where(is_new_spin)[0]
+    spin_end_indices = np.append(spin_start_indices[1:], len(de_met_sorted))
+
+    assigned_spin_number_sorted = np.empty_like(de_spin_sorted)
+
+    spin_start_mets = spin_df["spin_start_met"].values
+    spin_numbers = spin_df["spin_number"].values
+
+    # Assign each group based on median time.
+    for start, end in zip(spin_start_indices, spin_end_indices):
+        # Get median time for the spin.
+        median_time = np.median(de_met_sorted[start:end])
+        spin_idx = np.searchsorted(spin_start_mets, median_time, side="right") - 1
+        # Handle edge cases.
+        spin_idx = np.clip(spin_idx, 0, len(spin_numbers) - 1)
+        assigned_spin_number_sorted[start:end] = spin_numbers[spin_idx]
+
+    # Undo the sort to match original order.
+    assigned_spin_number = np.empty_like(assigned_spin_number_sorted)
+    assigned_spin_number[sort_idx] = assigned_spin_number_sorted
+
+    return assigned_spin_number
+
+
 def get_eventtimes(
     spin: NDArray, phase_angle: NDArray
 ) -> tuple[NDArray, NDArray, NDArray]:
