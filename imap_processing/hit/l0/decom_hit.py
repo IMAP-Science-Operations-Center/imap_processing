@@ -124,9 +124,9 @@ def parse_count_rates(sci_dataset: xr.Dataset) -> None:
         for dim in dims:
             if dim not in sci_dataset.coords:
                 sci_dataset.coords[dim] = xr.DataArray(
-                    np.arange(sci_dataset.sizes[dim], dtype=np.int16)
+                    np.arange(sci_dataset.sizes[dim], dtype=np.uint16)
                     if dim == "gain"
-                    else np.arange(sci_dataset.sizes[dim], dtype=np.int32),
+                    else np.arange(sci_dataset.sizes[dim], dtype=np.uint32),
                     dims=[dim],
                     name=dim,
                 )

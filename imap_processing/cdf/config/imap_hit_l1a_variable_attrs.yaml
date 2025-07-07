@@ -460,7 +460,7 @@ hdr_leak_conv:
   LABLAXIS: Value
   UNITS: ''
 
-hdr_heavy_duty_cycle:
+hdr_heater_duty_cycle:
   <<: *default_counts
   CATDESC: Raw header heavy duty cycle per integration
   FIELDNAM: hdr_heavy_duty_cycle
