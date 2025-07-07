@@ -31,7 +31,7 @@ def test_macrochecksum_decom(
     df_checksums.replace("FILL", 65535, inplace=True)
     df_checksums = df_checksums.astype(np.uint16)
 
-    actual_checksums = decom_test_data["checksum"].values
-    expected_checksums = df_checksums.to_numpy(dtype=np.uint16)
+    actual_checksums = decom_test_data["checksum"][0]
+    expected_checksums = df_checksums.iloc[0].values
 
     np.testing.assert_array_equal(actual_checksums, expected_checksums)

@@ -409,21 +409,21 @@ def process_ultra_macros_checksum(ds: xr.Dataset) -> xr.Dataset:
     dataset : xarray.Dataset
         Dataset with unpacked and decoded checksum values.
     """
-    checksums = []
-    fill = np.iinfo(np.uint16).max
+    # big endian uint16
+    packed_dtype = np.dtype(">u2")
+    fill = np.iinfo(packed_dtype).max
+    n_epochs = ds.sizes["epoch"]
+    max_len = 256
 
-    for checksum in ds["checksums"]:
-        checksum_bytes = checksum.item()
-        arr = np.frombuffer(checksum_bytes, dtype=">u2")
-        checksums.append(arr)
+    checksum_array = np.full((n_epochs, max_len), fill, dtype=packed_dtype)
 
-    checksum_array = np.array(checksums)
-    checksum_array[:, -1] = fill
+    for i, checksum in enumerate(ds["checksums"]):
+        checksum_array[i, :] = np.frombuffer(checksum.item(), dtype=packed_dtype)
 
     ds["checksum"] = xr.DataArray(
         checksum_array,
         dims=["epoch", "checksum_index"],
-        coords={"epoch": ds["epoch"], "checksum_index": np.arange(256)},
+        coords={"epoch": ds["epoch"], "checksum_index": np.arange(max_len)},
     )
     ds = ds.drop_vars(["checksums"])
 
