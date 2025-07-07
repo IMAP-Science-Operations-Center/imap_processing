@@ -158,7 +158,7 @@ rate_calculation_quality_flags:
   DEPEND_0: epoch
   DISPLAY_TYPE: time_series
   FILLVAL: 255
-  FORMAT: U1
+  FORMAT: I1
   VALIDMIN: 0
   VALIDMAX: 1
   VAR_TYPE: data
