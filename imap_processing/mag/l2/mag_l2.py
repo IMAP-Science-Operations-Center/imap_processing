@@ -77,8 +77,8 @@ def mag_l2(
     always_output_mago = configuration.ALWAYS_OUTPUT_MAGO
 
     # TODO Check that the input file matches the offsets file
-    # if not np.array_equal(input_data["epoch"].data, offsets_dataset["epoch"].data):
-    #     raise ValueError("Input file and offsets file must have the same timestamps.")
+    if not np.array_equal(input_data["epoch"].data, offsets_dataset["epoch"].data):
+        raise ValueError("Input file and offsets file must have the same timestamps.")
 
     day: np.datetime64 = day_to_process.astype("datetime64[D]")
 

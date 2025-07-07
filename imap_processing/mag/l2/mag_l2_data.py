@@ -7,7 +7,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.mag.constants import DataMode
+from imap_processing.mag.constants import FILLVAL, DataMode
 from imap_processing.spice.time import (
     et_to_ttj2000ns,
     str_to_et,
@@ -136,10 +136,8 @@ class MagL2:
 
         offset_vectors: np.ndarray = vectors[:, :3] + offsets
 
-        # TODO: CDF files don't have NaNs. Emailed MAG to ask what this will look like.
-        # Any values where offsets is nan must also be nan
-        offset_vectors[np.isnan(offsets).any(axis=1)] = np.nan
-
+        # Any values where offsets is FILLVAL must also be FILLVAL
+        offset_vectors[(offsets == FILLVAL).any(axis=1), :] = FILLVAL
         return offset_vectors
 
     @staticmethod
@@ -298,7 +296,6 @@ class MagL2:
         """
         if self.epoch.shape[0] != self.vectors.shape[0]:
             raise ValueError("Timestamps and vectors are not the same shape!")
-
         start_timestamp_j2000 = et_to_ttj2000ns(str_to_et(str(timestamp)))
         end_timestamp_j2000 = et_to_ttj2000ns(
             str_to_et(str(timestamp + np.timedelta64(1, "D")))
