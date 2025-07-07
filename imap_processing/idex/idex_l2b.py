@@ -207,6 +207,10 @@ def idex_l2b(
         data_vars=vars,
         attrs=idex_attrs.get_global_attributes("imap_idex_l2b_sci"),
     )
+    # Copy longitude and latitude from the l2a dataset
+    l2b_dataset["longitude"] = l2a_dataset["longitude"].copy()
+    l2b_dataset["latitude"] = l2a_dataset["latitude"].copy()
+
     logger.info("IDEX L2B science data processing completed.")
 
     return l2b_dataset
@@ -410,7 +414,7 @@ def get_science_acquisition_timestamps(
         evt_dataset["el3par_evtpkt"].data[sc_indices] << 8
         | evt_dataset["el4par_evtpkt"].data[sc_indices]
     )
-    epochs = evt_dataset["epoch"][sc_indices]
+    epochs = evt_dataset["epoch"][sc_indices].data
     # Now the state change values and check if it is either a science
     # acquisition start or science acquisition stop event.
     for v1, v2, epoch in zip(val1, val2, epochs):
