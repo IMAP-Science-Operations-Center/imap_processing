@@ -59,7 +59,9 @@ def test_calculate_phase_space_density():
             ),
         }
     )
-    phase_space_density = calculate_phase_space_density(l1b_dataset)
+    phase_space_density = calculate_phase_space_density(
+        l1b_dataset["science_data"].data, l1b_dataset["esa_energy"].data
+    )
     assert phase_space_density.shape == (
         total_sweeps,
         swe_constants.N_ESA_STEPS,
@@ -83,7 +85,7 @@ def test_calculate_phase_space_density():
         ),
         expected_calculated_density,
     )
-    np.testing.assert_array_equal(phase_space_density[0].data, expected_density)
+    np.testing.assert_array_equal(phase_space_density[0], expected_density)
 
 
 def test_calculate_flux():

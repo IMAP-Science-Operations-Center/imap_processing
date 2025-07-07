@@ -1211,6 +1211,14 @@ alarmid:
   UNITS: ' '
   DEPEND_0: epoch
 
+arguments:
+  <<: *default_uint8
+  CATDESC: Arguments
+  FIELDNAM: arguments
+  LABLAXIS: arguments
+  UNITS: ' '
+  DEPEND_0: epoch
+
 aux:
   <<: *default_float32
   CATDESC: Aux
@@ -1564,7 +1572,6 @@ diagnosticmode:
   DEPEND_0: epoch
 
 dumpdata:
-  <<: *default_float32
   CATDESC: Dumpdata
   FIELDNAM: dumpdata
   LABLAXIS: dumpdata
@@ -2787,7 +2794,6 @@ macroblocks:
   DEPEND_0: epoch
 
 macrodata:
-  <<: *default_float32
   CATDESC: Macrodata
   FIELDNAM: macrodata
   LABLAXIS: macrodata
@@ -3023,6 +3029,13 @@ result:
   CATDESC: Result
   FIELDNAM: result
   LABLAXIS: result
+  UNITS: ' '
+  DEPEND_0: epoch
+
+result_description:
+  CATDESC: Result description
+  FIELDNAM: result_description
+  LABLAXIS: result description
   UNITS: ' '
   DEPEND_0: epoch
 

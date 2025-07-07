@@ -15,6 +15,7 @@ from imap_processing.ultra.l0.decom_tools import (
     read_image_raw_events_binary,
 )
 from imap_processing.ultra.l0.ultra_utils import (
+    CMD_ECHO_MAP,
     ENERGY_EVENT_FIELD_RANGES,
     ENERGY_RATES_KEYS,
     EVENT_FIELD_RANGES,
@@ -342,5 +343,53 @@ def process_ultra_energy_spectra(ds: xr.Dataset) -> xr.Dataset:
         dims=["epoch", "energyspectrastate"],
         coords={"epoch": ds["epoch"], "energyspectrastate": np.arange(16)},
     )
+
+    return ds
+
+
+def process_ultra_cmd_echo(ds: xr.Dataset) -> xr.Dataset:
+    """
+    Unpack and decode Ultra CMD ECHO packets.
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+       Energy rates dataset.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Dataset containing the decoded and decompressed data.
+    """
+    descriptions = []
+
+    fill = 0xFF
+    max_len = 10
+    arg_array = np.full((len(ds["epoch"]), max_len), fill, dtype=np.uint8)
+
+    for i, arg in enumerate(ds["args"].values):
+        # Converts to the numeric representations of each byte.
+        arg_array[i, : len(arg)] = np.frombuffer(arg, dtype=np.uint8)
+
+    # Default to "FILL" for unlisted values
+    for result in ds["result"].values:
+        descriptions.append(CMD_ECHO_MAP.get(result, "FILL"))
+
+    ds["arguments"] = xr.DataArray(
+        arg_array,
+        dims=["epoch", "arg_index"],
+        coords={
+            "epoch": ds["epoch"],
+            "arg_index": np.arange(10),
+        },
+    )
+
+    ds["result_description"] = xr.DataArray(
+        np.array(descriptions),
+        dims=["epoch"],
+        coords={"epoch": ds["epoch"]},
+    )
+
+    ds = ds.drop_vars(["args", "result"])
 
     return ds
