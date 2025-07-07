@@ -69,8 +69,10 @@ def idex_l2c(l2b_datasets: list[xr.Dataset]) -> xr.Dataset:
         "rectangular_lon_pixel_label",
         "rectangular_lat_pixel_label",
     ]
-    arrays_to_add = {label: l2b_datasets[0][label] for label in labels}
-    l2c_dataset = setup_dataset(l2b_dataset, arrays_to_copy, idex_attrs, arrays_to_add)
+    l2c_dataset = setup_dataset(l2b_dataset, arrays_to_copy, idex_attrs)
+    l2c_dataset = l2c_dataset.assign(
+        {label: l2b_datasets[0][label] for label in labels}
+    )
     # Create the Healpix dataset
     map_attrs = {
         "sky_tiling_type": SkyTilingType.RECTANGULAR.value,
