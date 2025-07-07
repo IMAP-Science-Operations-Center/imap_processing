@@ -85,11 +85,11 @@ SPICE_ARRAYS = [
 
 # Default IDEX Healpix parameters
 # Used in IDEX l2c processing
-IDEX_HEALPIX_NSIDE = 8
+IDEX_HEALPIX_NSIDE = 10
 IDEX_HEALPIX_NESTED = False
 # Default IDEX Rectangular parameters
 # Used in IDEX l2c processing
-IDEX_SPACING_DEG = 4  # TODO
+IDEX_SPACING_DEG = 6
 
 # Define the pointing reference frame for IDEX
 IDEX_EVENT_REFERENCE_FRAME = SpiceFrame.ECLIPJ2000
