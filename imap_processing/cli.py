@@ -896,10 +896,10 @@ class Idex(ProcessInstrument):
             dependency = load_cdf(science_files[0])
             datasets = [idex_l2a(dependency)]
         elif self.data_level == "l2b":
-            if len(dependency_list) != 3:
+            if len(dependency_list) < 3 or len(dependency_list) > 4:
                 raise ValueError(
                     f"Unexpected dependencies found for IDEX L2B:"
-                    f"{dependency_list}. Expected only three dependencies."
+                    f"{dependency_list}. Expected three or four dependencies."
                 )
             sci_files = dependencies.get_file_paths(
                 source="idex", descriptor="sci-1week"
