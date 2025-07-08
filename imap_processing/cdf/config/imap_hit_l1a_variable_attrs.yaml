@@ -50,7 +50,6 @@ default_counts_attrs: &default_counts
   VALIDMIN: 0
   VALIDMAX: 10000000000
   UNITS: counts
-  LABLAXIS: Counts
   SCALETYP: log
 
 default_counts_support_attrs: &default_counts_support
@@ -133,78 +132,91 @@ gain:
   FIELDNAM: gain
   LABLAXIS: Gain
   FORMAT: I1
+  FILLVAL: 65535
 
 sngrates_index:
   <<: *default_index
   CATDESC: Single rates index
   FIELDNAM: sngrates_index
   LABLAXIS: sngrates index
+  FILLVAL: 4294967295
 
 coinrates_index:
   <<: *default_index
   CATDESC: Coincidence rates index
   FIELDNAM: coinrates_index
   LABLAXIS: coinrates index
+  FILLVAL: 4294967295
 
 pbufrates_index:
   <<: *default_index
   CATDESC: Priority buffer rates index
   FIELDNAM: pbufrates_index
   LABLAXIS: pbufrates index
+  FILLVAL: 4294967295
 
 l2fgrates_index:
   <<: *default_index
   CATDESC: Range 2 foreground rates index
   FIELDNAM: l2fgrates_index
   LABLAXIS: l2fgrates index
+  FILLVAL: 4294967295
 
 l2bgrates_index:
   <<: *default_index
   CATDESC: Range 2 background rates index
   FIELDNAM: l2bgrates_index
   LABLAXIS: l2bgrates index
+  FILLVAL: 4294967295
 
 l3fgrates_index:
   <<: *default_index
   CATDESC: Range 3 foreground rates index
   FIELDNAM: l3fgrates index
   LABLAXIS: l3fgrates index
+  FILLVAL: 4294967295
 
 l3bgrates_index:
   <<: *default_index
   CATDESC: Range 3 background rates index
   FIELDNAM: l3bgrates index
   LABLAXIS: l3bgrates index
+  FILLVAL: 4294967295
 
 penfgrates_index:
   <<: *default_index
   CATDESC: Range 4 foreground rates index
   FIELDNAM: penfgrates index
   LABLAXIS: penfgrates index
+  FILLVAL: 4294967295
 
 penbgrates_index:
   <<: *default_index
   CATDESC: Range 4 background rates index
   FIELDNAM: penbgrates index
   LABLAXIS: penbgrates index
+  FILLVAL: 4294967295
 
 ialirtrates_index:
   <<: *default_index
   CATDESC: ialirtrates index
   FIELDNAM: ialirtrates index
   LABLAXIS: ialirtrates index
+  FILLVAL: 4294967295
 
 l4fgrates_index:
   <<: *default_index
   CATDESC: L4 ions foreground rates index
   FIELDNAM: l4fgrates index
   LABLAXIS: l4fgrates index
+  FILLVAL: 4294967295
 
 l4bgrates_index:
   <<: *default_index
   CATDESC: L4 ions background rates index
   FIELDNAM: l4bgrates index
   LABLAXIS: l4bgrates index
+  FILLVAL: 4294967295
 
 h_energy_mean:
   <<: *default_energy
@@ -485,16 +497,19 @@ hdr_minute_cnt:
   <<: *default_counts
   CATDESC: Raw header minute count per integration
   FIELDNAM: hdr_minute_cnt
+  LABLAXIS: Counts
 
 livetime_counter:
   <<: *default_counts
   CATDESC: Raw livetime counter per integration
   FIELDNAM: livetime_counter
+  LABLAXIS: Counts
 
 num_trig:
   <<: *default_counts
   CATDESC: Raw number of triggers
   FIELDNAM: num_trig
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: num_trig_stat_uncert_minus
   DELTA_PLUS_VAR: num_trig_stat_uncert_plus
 
@@ -502,6 +517,7 @@ num_reject:
   <<: *default_counts
   CATDESC: Raw number of rejected events
   FIELDNAM: num_reject
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: num_reject_stat_uncert_minus
   DELTA_PLUS_VAR: num_reject_stat_uncert_plus
 
@@ -509,6 +525,7 @@ num_acc_w_pha:
   <<: *default_counts
   CATDESC: Raw number of accepted events with PHA data
   FIELDNAM: num_acc_w_pha
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: num_acc_w_pha_stat_uncert_minus
   DELTA_PLUS_VAR: num_acc_w_pha_stat_uncert_plus
 
@@ -516,6 +533,7 @@ num_acc_no_pha:
   <<: *default_counts
   CATDESC: Raw number of events without PHA data
   FIELDNAM: num_acc_no_pha
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: num_acc_no_pha_stat_uncert_minus
   DELTA_PLUS_VAR: num_acc_no_pha_stat_uncert_plus
 
@@ -523,6 +541,7 @@ num_haz_trig:
   <<: *default_counts
   CATDESC: Raw number of events triggered with a hazard condition
   FIELDNAM: num_haz_trig
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: num_haz_trig_stat_uncert_minus
   DELTA_PLUS_VAR: num_haz_trig_stat_uncert_plus
 
@@ -530,6 +549,7 @@ num_haz_reject:
   <<: *default_counts
   CATDESC: Raw number of events rejected for hazard condition
   FIELDNAM: num_haz_reject
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: num_haz_reject_stat_uncert_minus
   DELTA_PLUS_VAR: num_haz_reject_stat_uncert_plus
 
@@ -537,6 +557,7 @@ num_haz_acc_w_pha:
   <<: *default_counts
   CATDESC: Raw number of events with hazard condition with PHA data
   FIELDNAM: num_haz_acc_w_pha
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: num_haz_acc_w_pha_stat_uncert_minus
   DELTA_PLUS_VAR: num_haz_acc_w_pha_stat_uncert_plus
 
@@ -544,6 +565,7 @@ num_haz_acc_no_pha:
   <<: *default_counts
   CATDESC: Raw number of events accepted with hazard condition without PHA data
   FIELDNAM: num_haz_acc_no_pha
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: num_haz_acc_no_pha_stat_uncert_minus
   DELTA_PLUS_VAR: num_haz_acc_no_pha_stat_uncert_plus
 
@@ -551,6 +573,7 @@ nread:
   <<: *default_counts
   CATDESC: Raw number of events read from event FIFO
   FIELDNAM: nread
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nread_stat_uncert_minus
   DELTA_PLUS_VAR: nread_stat_uncert_plus
 
@@ -558,6 +581,7 @@ nhazard:
   <<: *default_counts
   CATDESC: Raw number of events rejected for Hazard condition
   FIELDNAM: nhazard
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nhazard_stat_uncert_minus
   DELTA_PLUS_VAR: nhazard_stat_uncert_plus
 
@@ -565,6 +589,7 @@ nadcstim:
   <<: *default_counts
   CATDESC: Raw number of ADC-calibration STIM events
   FIELDNAM: nadcstim
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nadcstim_stat_uncert_minus
   DELTA_PLUS_VAR: nadcstim_stat_uncert_plus
 
@@ -572,6 +597,7 @@ nodd:
   <<: *default_counts
   CATDESC: Raw number of odd events
   FIELDNAM: nodd
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nodd_stat_uncert_minus
   DELTA_PLUS_VAR: nodd_stat_uncert_plus
 
@@ -579,6 +605,7 @@ noddfix:
   <<: *default_counts
   CATDESC: Raw number of fixed odd events
   FIELDNAM: noddfix
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: noddfix_stat_uncert_minus
   DELTA_PLUS_VAR: noddfix_stat_uncert_plus
 
@@ -586,6 +613,7 @@ nmulti:
   <<: *default_counts
   CATDESC: Raw number of events with multiple hits in relevant layers
   FIELDNAM: nmulti
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nmulti_stat_uncert_minus
   DELTA_PLUS_VAR: nmulti_stat_uncert_plus
 
@@ -593,6 +621,7 @@ nmultifix:
   <<: *default_counts
   CATDESC: Raw number of fix multi events
   FIELDNAM: nmultifix
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nmultifix_stat_uncert_minus
   DELTA_PLUS_VAR: nmultifix_stat_uncert_plus
 
@@ -600,6 +629,7 @@ nbadtraj:
   <<: *default_counts
   CATDESC: Raw number of events rejected for inconsistent/bad trajectory
   FIELDNAM: nbadtraj
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nbadtraj_stat_uncert_minus
   DELTA_PLUS_VAR: nbadtraj_stat_uncert_plus
 
@@ -607,6 +637,7 @@ nl2:
   <<: *default_counts
   CATDESC: Raw number of events sorted into L12 event category
   FIELDNAM: nl2
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nl2_stat_uncert_minus
   DELTA_PLUS_VAR: nl2_stat_uncert_plus
 
@@ -614,6 +645,7 @@ nl3:
   <<: *default_counts
   CATDESC: Raw number of events sorted into L123 event category
   FIELDNAM: nl3
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nl3_stat_uncert_minus
   DELTA_PLUS_VAR: nl3_stat_uncert_plus
 
@@ -621,6 +653,7 @@ nl4:
   <<: *default_counts
   CATDESC: Raw number of events sorted into L1423 event category
   FIELDNAM: nl4
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nl4_stat_uncert_minus
   DELTA_PLUS_VAR: nl4_stat_uncert_plus
 
@@ -628,6 +661,7 @@ npen:
   <<: *default_counts
   CATDESC: Raw number of events sorted into PEN event category
   FIELDNAM: npen
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: npen_stat_uncert_minus
   DELTA_PLUS_VAR: npen_stat_uncert_plus
 
@@ -635,6 +669,7 @@ nformat:
   <<: *default_counts
   CATDESC: Raw number of events handled by the telemetry event formatter
   FIELDNAM: nformat
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nformat_stat_uncert_minus
   DELTA_PLUS_VAR: nformat_stat_uncert_plus
 
@@ -642,6 +677,7 @@ naside:
   <<: *default_counts
   CATDESC: Raw number of events the software assumed were A-side events
   FIELDNAM: naside
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: naside_stat_uncert_minus
   DELTA_PLUS_VAR: naside_stat_uncert_plus
 
@@ -649,6 +685,7 @@ nbside:
   <<: *default_counts
   CATDESC: Raw number of events the software assumed were B-side events
   FIELDNAM: nbside
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nbside_stat_uncert_minus
   DELTA_PLUS_VAR: nbside_stat_uncert_plus
 
@@ -656,6 +693,7 @@ nerror:
   <<: *default_counts
   CATDESC: Raw number of events that caused a processing error
   FIELDNAM: nerror
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nerror_stat_uncert_minus
   DELTA_PLUS_VAR: nerror_stat_uncert_plus
 
@@ -663,6 +701,7 @@ nbadtags:
   <<: *default_counts
   CATDESC: Raw number of events with bad tags from onboard event-processing
   FIELDNAM: nbadtags
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nbadtags_stat_uncert_minus
   DELTA_PLUS_VAR: nbadtags_stat_uncert_plus
 
