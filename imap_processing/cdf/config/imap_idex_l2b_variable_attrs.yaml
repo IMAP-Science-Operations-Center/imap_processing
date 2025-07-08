@@ -52,7 +52,7 @@ spin_phase_bins:
     FILLVAL: *int_fillval
     FORMAT: I4
     VALIDMIN: 0
-    VALIDMAX: 10
+    VALIDMAX: 3
     LABL_PTR_1: spin_phase_labels
     UNITS: " "
     DICT_KEY: SPASE>SupportQuantity:SpinPhase,Qualifier:Array
@@ -111,7 +111,6 @@ rate_by_charge:
     FILLVAL: *double_fillval
     DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
 
-
 rate_by_mass:
     <<: *base_mass
     CATDESC: Count rate per day by mass and spin phase.
@@ -135,7 +134,6 @@ counts_by_mass:
     FORMAT: I8
     UNITS: counts
     DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
-
 
 impact_day_of_year:
     CATDESC: The unique day of the years when dust impacts occurred.

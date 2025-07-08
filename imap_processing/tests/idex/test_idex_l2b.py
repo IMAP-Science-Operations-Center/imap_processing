@@ -97,7 +97,7 @@ def test_bin_spin_phases():
     """Tests that bin_spin_phases() produces expected results."""
     # Spin Phase -> 4 bins [315°-45°,45°-135°,135°-225°, 225°-315°]
     spin_phase_angles = xr.DataArray([314, 315, 316, 90, 1, 10, 200, 359, 179, 100])
-    expected_bins = [4, 1, 1, 2, 1, 1, 3, 1, 3, 2]
+    expected_bins = [3, 0, 0, 1, 0, 0, 2, 0, 2, 1]
 
     spin_quadrants = bin_spin_phases(spin_phase_angles)
     assert_array_equal(spin_quadrants, expected_bins)
@@ -106,11 +106,11 @@ def test_bin_spin_phases():
     spin_phase_angles = np.random.randint(0, 360, 1000)
     spin_quadrants = bin_spin_phases(spin_phase_angles)
     unique_quadrants = np.unique(spin_quadrants)
-    assert set(unique_quadrants) == {1, 2, 3, 4}
+    assert set(unique_quadrants) == {0, 1, 2, 3}
 
     # Test values that are exactly on bin edges
     spin_quadrants = bin_spin_phases(np.array([315, 45, 135, 225]))
-    assert_array_equal(spin_quadrants, [1, 2, 3, 4])
+    assert_array_equal(spin_quadrants, [0, 1, 2, 3])
 
 
 def test_bin_spin_phases_warning(caplog):

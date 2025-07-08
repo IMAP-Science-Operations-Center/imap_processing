@@ -279,8 +279,8 @@ def compute_counts_by_charge_and_mass(
         for mass_bin, charge_bin, spin_phase_bin in zip(
             binned_mass, binned_charge, binned_spin_phase
         ):
-            counts_by_mass[i, mass_bin, spin_phase_bin - 1] += 1
-            counts_by_charge[i, charge_bin, spin_phase_bin - 1] += 1
+            counts_by_mass[i, mass_bin, spin_phase_bin] += 1
+            counts_by_charge[i, charge_bin, spin_phase_bin] += 1
 
     return counts_by_charge, counts_by_mass, daily_epoch
 
@@ -374,6 +374,8 @@ def bin_spin_phases(spin_phases: xr.DataArray) -> np.ndarray:
     shifted_spin_phases = (spin_phases + 45) % 360
     # Use np.digitize to find the bin index for each spin phase.
     bin_indices = np.digitize(shifted_spin_phases, SPIN_PHASE_BIN_EDGES, right=False)
+    # Shift bins to be zero-based.
+    bin_indices -= 1
     return np.asarray(bin_indices)
 
 
