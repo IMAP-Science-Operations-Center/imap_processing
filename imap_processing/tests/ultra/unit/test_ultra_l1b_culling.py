@@ -118,8 +118,18 @@ def test_flag_rates(test_data):
     quality_flags, spin, energy, _ = flag_rates(spin_number, energy, 1)
     threshold = get_n_sigma(expected_counts / 15, 15, 1)
 
-    # At the first energy level were the rates > threshold and the counts > threshold?
-    assert np.array_equal(quality_flags[expected_counts == 0], np.array([2, 4, 2, 4]))
+    expected_quality_flags = np.full(
+        (len(UltraConstants.CULLING_ENERGY_BIN_EDGES) - 1, len(np.unique(spin))),
+        ImapRatesUltraFlags.NONE.value,
+        dtype=np.uint16,
+    )
+    expected_quality_flags[:, 0] |= ImapRatesUltraFlags.FIRSTSPIN.value
+    expected_quality_flags[:, -1] |= ImapRatesUltraFlags.LASTSPIN.value
+
+    assert np.array_equal(
+        quality_flags[expected_counts == 0],
+        expected_quality_flags[expected_counts == 0],
+    )
     high_rates_flag = quality_flags[expected_counts / 15 > threshold[:, np.newaxis]]
     assert np.all(
         high_rates_flag
