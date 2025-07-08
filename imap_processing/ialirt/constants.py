@@ -1,6 +1,7 @@
 """Module for constants and useful shared classes used in I-ALiRT processing."""
 
 from dataclasses import dataclass
+from typing import NamedTuple
 
 import numpy as np
 
@@ -36,3 +37,19 @@ class IalirtSwapiConstants:
     az_fov = np.deg2rad(30)  # azimuthal width of the field of view, radians
     fwhm_width = 0.085  # FWHM of energy width
     speed_ew = 0.5 * fwhm_width  # speed width of energy passband
+
+
+class StationProperties(NamedTuple):
+    """Class that represents properties of ground stations."""
+
+    longitude: float  # longitude in degrees
+    latitude: float  # latitude in degrees
+    altitude: float  # altitude in kilometers
+
+
+# Define StationProperties instances
+KIEL = StationProperties(
+    longitude=-71.41,  # longitude in degrees
+    latitude=-33.94,  # latitude in degrees
+    altitude=0.157,  # altitude in kilometers
+)
