@@ -23,8 +23,8 @@ TEST_L1A_FILES = [
 ]
 
 TEST_L2_FILES = [
-    TEST_DATA_PATH / "imap_codice_l1a_hi-pha_20241110_v999.cdf",
-    TEST_DATA_PATH / "imap_codice_l1a_lo-pha_20241110_v999.cdf",
+    TEST_DATA_PATH / "imap_codice_l1a_hi-direct-events_20241110_v999.cdf",
+    TEST_DATA_PATH / "imap_codice_l1a_lo-direct-events_20241110_v999.cdf",
 ]
 
 # ruff: noqa

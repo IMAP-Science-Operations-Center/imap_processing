@@ -51,10 +51,10 @@ imap_codice_l1a_hi-sectored:
     Logical_source: imap_codice_l1a_hi-sectored
     Logical_source_description: IMAP Mission CoDICE Hi Level-1A Sectored Data.
 
-imap_codice_l1a_hi-pha:
+imap_codice_l1a_hi-direct-events:
     <<: *instrument_base
-    Data_type: L1A_hi-pha>Level-1A Hi Event Data
-    Logical_source: imap_codice_l1a_hi-pha
+    Data_type: L1A_hi-direct-events>Level-1A Hi Event Data
+    Logical_source: imap_codice_l1a_hi-direct-events
     Logical_source_description: IMAP Mission CoDICE Hi Level-1A Event Data.
 
 imap_codice_l1a_hi-ialirt:
@@ -111,10 +111,10 @@ imap_codice_l1a_lo-nsw-species:
     Logical_source: imap_codice_l1a_lo-nsw-species
     Logical_source_description: IMAP Mission CoDICE Lo Level-1A Non-Sunward Species Counts Data.
 
-imap_codice_l1a_lo-pha:
+imap_codice_l1a_lo-direct-events:
     <<: *instrument_base
-    Data_type: L1A_lo-pha>Level-1A Lo Event Data
-    Logical_source: imap_codice_l1a_lo-pha
+    Data_type: L1A_lo-direct-events>Level-1A Lo Event Data
+    Logical_source: imap_codice_l1a_lo-direct-events
     Logical_source_description: IMAP Mission CoDICE Lo Level-1A Event Data.
 
 imap_codice_l1a_lo-ialirt:
