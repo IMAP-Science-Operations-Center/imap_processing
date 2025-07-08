@@ -367,7 +367,7 @@ def test_swe_l2(
 
     # print("------binned validation data--------")
     bin_val = l2_binned_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
-    bin_psd_data = l2_dataset["phase_space_density"].data
+    bin_psd_data = l2_dataset["flux"].data
 
     # Instrument spin phase starts as 153 for SWE because that's the offset angle from
     # SC angle 0.
