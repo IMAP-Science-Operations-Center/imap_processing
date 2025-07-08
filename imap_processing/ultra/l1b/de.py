@@ -116,9 +116,7 @@ def calculate_de(
     sc_dps_velocity = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
     helio_velocity = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
     spin_starts = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
-    spin_period_sec = np.full(
-        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64
-    )
+
     start_type = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
 
     xf[valid_indices] = get_front_x_position(
@@ -131,7 +129,7 @@ def calculate_de(
     (
         event_times[valid_indices],
         spin_starts[valid_indices],
-        spin_period_sec[valid_indices],
+        _,
     ) = get_eventtimes(
         de_dataset["spin"].data[valid_indices],
         de_dataset["phase_angle"].data[valid_indices],
@@ -202,7 +200,6 @@ def calculate_de(
     de_dict["x_front"] = xf.astype(np.float32)
     de_dict["event_times"] = event_times
     de_dict["spin_starts"] = spin_starts
-    de_dict["spin_period"] = spin_period_sec
     de_dict["y_front"] = yf
     de_dict["x_back"] = xb
     de_dict["y_back"] = yb

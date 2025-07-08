@@ -7,7 +7,12 @@ import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
 
-from imap_processing.quality_flags import ImapAttitudeUltraFlags, ImapRatesUltraFlags
+from imap_processing.quality_flags import (
+    ImapAttitudeUltraFlags,
+    ImapHkUltraFlags,
+    ImapInstrumentUltraFlags,
+    ImapRatesUltraFlags,
+)
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
 
@@ -121,6 +126,48 @@ def flag_attitude(
     return quality_flags, spin_rates, spin_period, spin_starttime
 
 
+def flag_hk(spin_number: NDArray) -> NDArray:
+    """
+    Flag data based on hk.
+
+    Parameters
+    ----------
+    spin_number : NDArray
+        Spin number at each direct event.
+
+    Returns
+    -------
+    quality_flags : NDArray
+        Quality flags..
+    """
+    spins = np.unique(spin_number)  # Get unique spins
+    quality_flags = np.full(spins.shape, ImapHkUltraFlags.NONE.value, dtype=np.uint16)
+
+    return quality_flags
+
+
+def flag_imap_instruments(spin_number: NDArray) -> NDArray:
+    """
+    Flag data based on other IMAP instruments.
+
+    Parameters
+    ----------
+    spin_number : NDArray
+        Spin number at each direct event.
+
+    Returns
+    -------
+    quality_flags : NDArray
+        Quality flags..
+    """
+    spins = np.unique(spin_number)  # Get unique spins
+    quality_flags = np.full(
+        spins.shape, ImapInstrumentUltraFlags.NONE.value, dtype=np.uint16
+    )
+
+    return quality_flags
+
+
 def get_n_sigma(count_rates: NDArray, mean_duration: float, sigma: int = 6) -> NDArray:
     """
     Calculate the threshold for the HIGHRATES flag.
@@ -149,7 +196,7 @@ def get_n_sigma(count_rates: NDArray, mean_duration: float, sigma: int = 6) -> N
     return threshold
 
 
-def flag_spin(
+def flag_rates(
     spin_number: NDArray, energy: NDArray, sigma: int = 6
 ) -> tuple[NDArray, NDArray, NDArray, NDArray]:
     """
@@ -182,8 +229,6 @@ def flag_spin(
         count_rates.shape, ImapRatesUltraFlags.NONE.value, dtype=np.uint16
     )
 
-    # Zero counts/spin/energy level
-    quality_flags[counts == 0] |= ImapRatesUltraFlags.ZEROCOUNTS.value
     threshold = get_n_sigma(count_rates, duration, sigma=sigma)
 
     bin_edges = np.array(UltraConstants.CULLING_ENERGY_BIN_EDGES)
@@ -193,6 +238,10 @@ def flag_spin(
     # Indices where the counts exceed the threshold
     indices_n_sigma = count_rates > threshold[:, np.newaxis]
     quality_flags[indices_n_sigma] |= ImapRatesUltraFlags.HIGHRATES.value
+
+    # Flags the first and last spin
+    quality_flags[:, 0] |= ImapRatesUltraFlags.FIRSTSPIN.value
+    quality_flags[:, -1] |= ImapRatesUltraFlags.LASTSPIN.value
 
     return quality_flags, spin, energy_midpoints, threshold
 

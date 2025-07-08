@@ -4,12 +4,19 @@ import numpy as np
 import pytest
 
 from imap_processing import imap_module_directory
-from imap_processing.quality_flags import ImapAttitudeUltraFlags, ImapRatesUltraFlags
+from imap_processing.quality_flags import (
+    ImapAttitudeUltraFlags,
+    ImapHkUltraFlags,
+    ImapInstrumentUltraFlags,
+    ImapRatesUltraFlags,
+)
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.ultra_l1b_culling import (
     compare_aux_univ_spin_table,
     flag_attitude,
-    flag_spin,
+    flag_hk,
+    flag_imap_instruments,
+    flag_rates,
     get_energy_histogram,
     get_n_sigma,
     get_spin_data,
@@ -86,19 +93,38 @@ def test_get_n_sigma():
     np.testing.assert_allclose(mean + std_dev * 6, threshold[0], atol=1e-2, rtol=0)
 
 
-def test_flag_spin(test_data):
-    """Tests flag_spin function."""
+def test_flag_hk(test_data):
+    """Tests flag_hk function."""
+
+    spin_number, _, _ = test_data
+    hk_qf = flag_hk(spin_number)
+
+    assert np.all(hk_qf == ImapHkUltraFlags.NONE.value)
+
+
+def test_flag_imap_instruments(test_data):
+    """Tests flag_imap_instruments function."""
+
+    spin_number, _, _ = test_data
+    hk_qf = flag_imap_instruments(spin_number)
+
+    assert np.all(hk_qf == ImapInstrumentUltraFlags.NONE.value)
+
+
+def test_flag_rates(test_data):
+    """Tests flag_rates function."""
 
     spin_number, energy, expected_counts = test_data
-    quality_flags, spin, energy, _ = flag_spin(spin_number, energy, 1)
+    quality_flags, spin, energy, _ = flag_rates(spin_number, energy, 1)
     threshold = get_n_sigma(expected_counts / 15, 15, 1)
 
     # At the first energy level were the rates > threshold and the counts > threshold?
-    assert np.all(
-        quality_flags[expected_counts == 0] == ImapRatesUltraFlags.ZEROCOUNTS.value
-    )
+    assert np.array_equal(quality_flags[expected_counts == 0], np.array([2, 4, 2, 4]))
     high_rates_flag = quality_flags[expected_counts / 15 > threshold[:, np.newaxis]]
-    assert np.all(high_rates_flag == ImapRatesUltraFlags.HIGHRATES.value)
+    assert np.all(
+        high_rates_flag
+        == ImapRatesUltraFlags.HIGHRATES.value | ImapRatesUltraFlags.FIRSTSPIN.value
+    )
 
 
 def test_compare_aux_univ_spin_table(use_fake_spin_data_for_time, faux_aux_dataset):

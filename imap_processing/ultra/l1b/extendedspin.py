@@ -5,7 +5,9 @@ import xarray as xr
 
 from imap_processing.ultra.l1b.ultra_l1b_culling import (
     flag_attitude,
-    flag_spin,
+    flag_hk,
+    flag_imap_instruments,
+    flag_rates,
     get_energy_histogram,
 )
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
@@ -37,7 +39,7 @@ def calculate_extendedspin(
     de_dataset = dict_datasets[f"imap_ultra_l1b_{instrument_id}sensor-de"]
 
     extendedspin_dict = {}
-    rates_qf, spin, energy_midpoints, n_sigma_per_energy = flag_spin(
+    rates_qf, spin, energy_midpoints, n_sigma_per_energy = flag_rates(
         de_dataset["spin"].values,
         de_dataset["energy"].values,
     )
@@ -47,6 +49,10 @@ def calculate_extendedspin(
     attitude_qf, spin_rates, spin_period, spin_starttime = flag_attitude(
         de_dataset["spin"].values, aux_dataset
     )
+    # TODO: We will add to this later
+    hk_qf = flag_hk(de_dataset["spin"].values)
+    inst_qf = flag_imap_instruments(de_dataset["spin"].values)
+
     # Get the first epoch for each spin.
     mask = xr.DataArray(np.isin(de_dataset["spin"], spin), dims="epoch")
     filtered_dataset = de_dataset.where(mask, drop=True)
@@ -65,6 +71,8 @@ def calculate_extendedspin(
     extendedspin_dict["spin_rate"] = spin_rates
     extendedspin_dict["quality_attitude"] = attitude_qf
     extendedspin_dict["quality_ena_rates"] = rates_qf
+    extendedspin_dict["quality_hk"] = hk_qf
+    extendedspin_dict["quality_instruments"] = inst_qf
 
     extendedspin_dataset = create_dataset(extendedspin_dict, name, "l1b")
 
