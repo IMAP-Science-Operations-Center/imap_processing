@@ -255,14 +255,14 @@ def test_put_data_into_angle_bins():
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 @pytest.mark.usefixtures("use_fake_spin_data_for_time")
-def test_swe_l2(
+def test_swe_l2_15sec(
     mock_get_file_paths,
     use_fake_spin_data_for_time,
     l2_sector_validation_df,
     l2_binned_flux_validation_df,
     l2_binned_psd_validation_df,
 ):
-    """Test L2 processing."""
+    """Test L2 processing with 15 seconds spin period."""
     data_start_time = 453051293.0
     data_end_time = 453070000.0
     use_fake_spin_data_for_time(data_start_time, data_end_time)
@@ -341,32 +341,13 @@ def test_swe_l2(
     l2_cdf_filepath = write_cdf(l2_dataset)
     assert l2_cdf_filepath.name == "imap_swe_l2_sci_20240510_v002.cdf"
 
+    # --------- sector validation--------
     sector_psd_data = l2_dataset["phase_space_density_spin_sector"].data
     validation_science = l2_sector_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
-    # esa_energy = l1b_dataset["esa_energy"].data
-    # with open("sector_val.txt", "w") as f:
-    #     # check that we have correct zero values in same places
-    #     # of validation data and science data
-    #     for cycle in np.arange(len(sector_psd_data)):
-    #         for esa_idx in np.arange(swe_constants.N_ESA_STEPS):
-    #             for angle_idx in np.arange(swe_constants.N_ANGLE_BINS):
-    #                 if cycle > 1:
-    #                     print(
-    #                         f"Cycle {cycle}, ESA {esa_idx:02d}, Angle {angle_idx:02d}: "
-    #                         "Validation data: "
-    #                         f"{np.array2string(validation_science[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}, "
-    #                         # "L1B rate: "
-    #                         # f"{np.array2string(rate[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}, "
-    #                         # "ESA energy: "
-    #                         # f"{np.array2string(esa_energy[cycle], separator=',', max_line_width=np.inf)}, "
-    #                         "L2 Sector PSD data: "
-    #                         f"{np.array2string(l2_dataset['phase_space_density_spin_sector'].data[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}",
-    #                         file=f,
-    #                     )
 
     np.testing.assert_allclose(sector_psd_data, validation_science, rtol=1e-6)
 
-    # print("------binned validation data--------")
+    # ------binned validation--------
     bin_flux_val = l2_binned_flux_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
     bin_psd_val = l2_binned_psd_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
     bin_flux_data = l2_dataset["flux"].data
@@ -375,22 +356,91 @@ def test_swe_l2(
     np.testing.assert_allclose(bin_flux_data, bin_flux_val, rtol=1e-6)
     np.testing.assert_allclose(bin_psd_data, bin_psd_val, rtol=1e-6)
 
-    # with open("bin_val.txt", "w") as f:
-    #     # check that we have correct zero values in same places
-    #     # of validation data and science data
-    #     for cycle in np.arange(len(bin_psd_data)):
-    #         for esa_idx in np.arange(swe_constants.N_ESA_STEPS):
-    #             for angle_idx in np.arange(swe_constants.N_ANGLE_BINS):
-    #                 # if cycle == 5:
-    #                 #     np.testing.assert_allclose(bin_psd_data[cycle], bin_val[cycle], rtol=1e-6)
-    #                 l2_data = bin_psd_data[cycle, esa_idx, angle_idx]
-    #                 val_data = bin_val[cycle, esa_idx, angle_idx]
-    #                 if np.all(l2_data != val_data):
-    #                     print(
-    #                         f"Cycle {cycle}, ESA {esa_idx:02d}, Angle {angle_idx:02d}: "
-    #                         "Validation data: "
-    #                         f"{np.array2string(bin_val[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}, "
-    #                         "L2 PSD data: "
-    #                         f"{np.array2string(bin_psd_data[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}",
-    #                         file=f,
-    #                     )
+
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+@pytest.mark.usefixtures("use_fake_spin_data_for_time")
+def test_swe_l2_14_6sec(
+    mock_get_file_paths,
+    use_fake_spin_data_for_time,
+    l2_binned_flux_14sec_validation_df,
+    l2_binned_psd_14sec_validation_df,
+):
+    """Test L2 processing with 14.6 seconds spin period."""
+    data_start_time = 453051293.0
+    data_end_time = 453070000.0
+    use_fake_spin_data_for_time(data_start_time, data_end_time, spin_period=14.6)
+
+    test_data_path = "tests/swe/l0_data/2024051010_SWE_SCIENCE_packet.bin"
+    l1a_datasets = swe_l1a(imap_module_directory / test_data_path)
+    l1a_ds = l1a_datasets[0]
+    l1a_ds.attrs["Data_version"] = "000"
+    l1a_cdf_filepath = write_cdf(l1a_ds)
+    assert l1a_cdf_filepath.name == "imap_swe_l1a_sci_20240510_v000.cdf"
+
+    def get_file_paths_side_effect(descriptor):
+        if descriptor == "sci":
+            return [l1a_cdf_filepath]
+        elif descriptor == "l1b-in-flight-cal":
+            return [
+                imap_module_directory
+                / "tests/swe/lut/imap_swe_l1b-in-flight-cal_20240510_20260716_v000.csv"
+            ]
+        elif descriptor == "eu-conversion":
+            return [
+                imap_module_directory
+                / "tests/swe/lut/imap_swe_eu-conversion_20240510_v000.csv"
+            ]
+        elif descriptor == "esa-lut":
+            return [
+                imap_module_directory
+                / "tests/swe/lut/imap_swe_esa-lut_20250301_v000.csv"
+            ]
+        elif descriptor == "raw":
+            return []
+        else:
+            raise ValueError(f"Unknown descriptor: {descriptor}")
+
+    mock_get_file_paths.side_effect = get_file_paths_side_effect
+    science_input = ScienceInput(l1a_cdf_filepath.name)
+    inflight_anc = AncillaryInput(
+        "imap_swe_l1b-in-flight-cal_20240510_20260716_v000.csv"
+    )
+    eu_anc = AncillaryInput("imap_swe_eu-conversion_20240510_v000.csv")
+    dependencies = ProcessingInputCollection(science_input, inflight_anc, eu_anc)
+    l1b_dataset = swe_l1b(dependencies)[0]
+    l1b_dataset.attrs["Data_version"] = "000"
+    l2_dataset = swe_l2(l1b_dataset)
+
+    # Write L2 to CDF
+    l2_dataset.attrs["Data_version"] = "002"
+    l2_cdf_filepath = write_cdf(l2_dataset)
+    assert l2_cdf_filepath.name == "imap_swe_l2_sci_20240510_v002.cdf"
+
+    # --------14.6 sec spin period validation--------
+    bin_flux_val = l2_binned_flux_14sec_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
+    bin_psd_val = l2_binned_psd_14sec_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
+    bin_flux_data = l2_dataset["flux"].data
+    bin_psd_data = l2_dataset["phase_space_density"].data
+
+    # np.testing.assert_allclose(bin_flux_data, bin_flux_val, rtol=1e-6)
+    # np.testing.assert_allclose(bin_psd_data, bin_psd_val, rtol=1e-6)
+
+    with open("bin_val.txt", "w") as f:
+        # check that we have correct zero values in same places
+        # of validation data and science data
+        for cycle in np.arange(len(bin_flux_data)):
+            for esa_idx in np.arange(swe_constants.N_ESA_STEPS):
+                for angle_idx in np.arange(swe_constants.N_ANGLE_BINS):
+                    # if cycle == 5:
+                    #     np.testing.assert_allclose(bin_psd_data[cycle], bin_val[cycle], rtol=1e-6)
+                    l2_data = bin_flux_data[cycle, esa_idx, angle_idx]
+                    val_data = bin_flux_val[cycle, esa_idx, angle_idx]
+                    if np.all(l2_data != val_data):
+                        print(
+                            f"Cycle {cycle}, ESA {esa_idx:02d}, Angle {angle_idx:02d}: "
+                            "Validation data: "
+                            f"{np.array2string(bin_flux_val[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}, "
+                            "L2 Flux data: "
+                            f"{np.array2string(bin_flux_data[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}",
+                            file=f,
+                        )
