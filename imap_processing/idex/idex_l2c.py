@@ -49,7 +49,11 @@ def idex_l2c(l2b_datasets: list[xr.Dataset]) -> xr.Dataset:
     logger.info("Running IDEX L2C processing")
     # create the attribute manager for this data level
     idex_attrs = get_idex_attrs("l2c")
-    l2b_dataset = xr.concat(l2b_datasets, "epoch")
+    # Concat the list of l2b datasets into a single dataset
+    # Only concat the variables that have "epoch" as a dimension
+    l2b_dataset = xr.concat(
+        l2b_datasets, "epoch", data_vars="minimal", coords="minimal"
+    )
 
     arrays_to_copy = [
         "counts_by_charge_map",
@@ -60,20 +64,15 @@ def idex_l2c(l2b_datasets: list[xr.Dataset]) -> xr.Dataset:
         "impact_day_of_year",
         "impact_charge_bins",
         "mass_bins",
-    ]
-    # Labels do not get concatenated, so we need to copy them over again
-    # from the first l2b dataset
-    labels = [
         "charge_labels",
         "mass_labels",
         "rectangular_lon_pixel_label",
         "rectangular_lat_pixel_label",
     ]
+
     l2c_dataset = setup_dataset(l2b_dataset, arrays_to_copy, idex_attrs)
-    l2c_dataset = l2c_dataset.assign(
-        {label: l2b_datasets[0][label] for label in labels}
-    )
-    # Create the Healpix dataset
+
+    # Add map attributes
     map_attrs = {
         "sky_tiling_type": SkyTilingType.RECTANGULAR.value,
         "Spacing_degrees": str(IDEX_SPACING_DEG),
