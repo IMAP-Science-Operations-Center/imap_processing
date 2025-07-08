@@ -273,7 +273,7 @@ def idex_l2b(
             data=counts_by_mass_map.astype(np.int64),
             dims=(
                 "epoch",
-                "impact_charge_bins",
+                "mass_bins",
                 "rectangular_lon_pixel",
                 "rectangular_lat_pixel",
             ),
@@ -295,7 +295,7 @@ def idex_l2b(
             data=rate_by_mass_map,
             dims=(
                 "epoch",
-                "impact_charge_bins",
+                "mass_bins",
                 "rectangular_lon_pixel",
                 "rectangular_lat_pixel",
             ),
@@ -336,25 +336,26 @@ def compute_counts_by_charge_and_mass(
     # Initialize arrays to hold counts.
     # There should be 4 spin phase bins, 11 charge bins, and 11 mass bins.
     # The first bin for charge and mass is for values below the first bin edge.
-    epoch_by_mass_shape = (len(epoch_doy_unique), len(CHARGE_BIN_EDGES))
     counts_by_charge = np.zeros(
-        (*epoch_by_mass_shape, len(SPIN_PHASE_BIN_EDGES) - 1),
+        (len(epoch_doy_unique), len(CHARGE_BIN_EDGES), len(SPIN_PHASE_BIN_EDGES) - 1),
     )
     counts_by_mass = np.zeros(
-        (*epoch_by_mass_shape, len(SPIN_PHASE_BIN_EDGES) - 1),
+        (len(epoch_doy_unique), len(MASS_BIN_EDGES), len(SPIN_PHASE_BIN_EDGES) - 1),
     )
     # Initialize arrays to hold count maps. There should be 60 longitude bins,
     # 30 latitude bins, 11 charge bins, and 11 mass bins.
     counts_by_charge_map = np.zeros(
         (
-            *epoch_by_mass_shape,
+            len(epoch_doy_unique),
+            len(CHARGE_BIN_EDGES),
             len(LON_BINS_EDGES) - 1,
             len(LAT_BINS_EDGES) - 1,
         ),
     )
     counts_by_mass_map = np.zeros(
         (
-            *epoch_by_mass_shape,
+            len(epoch_doy_unique),
+            len(MASS_BIN_EDGES),
             len(LON_BINS_EDGES) - 1,
             len(LAT_BINS_EDGES) - 1,
         ),

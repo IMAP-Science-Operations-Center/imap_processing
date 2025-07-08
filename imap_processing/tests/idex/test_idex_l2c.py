@@ -42,7 +42,7 @@ def test_l2c_attrs_and_vars(l2c_dataset: xr.Dataset, l2a_dataset: xr.Dataset):
         l2c_dataset["counts_by_charge_map"].sum(), len(l2a_dataset.epoch) * 2
     )
     np.testing.assert_allclose(
-        l2c_dataset["counts_by_charge_map"].sum(), len(l2a_dataset.epoch) * 2
+        l2c_dataset["counts_by_mass_map"].sum(), len(l2a_dataset.epoch) * 2
     )
     assert l2c_dataset.sizes == {
         "epoch": 2,
