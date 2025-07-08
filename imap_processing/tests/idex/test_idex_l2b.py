@@ -10,7 +10,6 @@ from imap_processing.idex.idex_constants import (
     NANOSECONDS_IN_DAY,
     SECONDS_IN_DAY,
 )
-from imap_processing.idex.idex_constants import FG_TO_KG, SECONDS_IN_DAY
 from imap_processing.idex.idex_l2b import (
     CHARGE_BIN_EDGES,
     MASS_BIN_EDGES,
@@ -240,7 +239,7 @@ def test_compute_counts_by_charge_and_mass_out_of_bounds():
             ),
             "spin_phase": np.full((6,), 0),
             "longitude": np.array([0, 365]),
-            "latitude": np.array([-90, 89]),
+            "latitude": np.array([-90, 90]),
         }
     )
 
@@ -276,9 +275,7 @@ def test_compute_counts_by_charge_and_mass_out_of_bounds():
     expected_array[1, len(CHARGE_BIN_EDGES) - 1, 0] = 1
     # Add ones where we expect counts for the map
     expected_map_array[0, 0, 0, 0] = 1
-    expected_map_array[
-        1, len(CHARGE_BIN_EDGES) - 1, 0, len(SKY_GRID.el_bin_edges) - 2
-    ] = 1
+    expected_map_array[1, len(CHARGE_BIN_EDGES) - 1, 0, 29] = 1
     # assert that the counts are as expected
     np.testing.assert_array_equal(counts_by_charge, expected_array)
     np.testing.assert_array_equal(counts_by_mass, expected_array)

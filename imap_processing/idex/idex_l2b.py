@@ -75,6 +75,10 @@ SPIN_PHASE_BIN_EDGES = np.array([0, 90, 180, 270, 360])
 
 # Get the rectangular map grid with the specified spacing
 SKY_GRID = AzElSkyGrid(IDEX_SPACING_DEG)
+LON_BINS_EDGES = SKY_GRID.az_bin_edges
+LAT_BINS_EDGES = SKY_GRID.el_bin_edges
+# Add one to the last bin edge to include the last bin (90 degrees)
+LAT_BINS_EDGES[-1] += 1
 
 
 def idex_l2b(
@@ -344,15 +348,15 @@ def compute_counts_by_charge_and_mass(
     counts_by_charge_map = np.zeros(
         (
             *epoch_by_mass_shape,
-            len(SKY_GRID.az_bin_edges) - 1,
-            len(SKY_GRID.el_bin_edges) - 1,
+            len(LON_BINS_EDGES) - 1,
+            len(LAT_BINS_EDGES) - 1,
         ),
     )
     counts_by_mass_map = np.zeros(
         (
             *epoch_by_mass_shape,
-            len(SKY_GRID.az_bin_edges) - 1,
-            len(SKY_GRID.el_bin_edges) - 1,
+            len(LON_BINS_EDGES) - 1,
+            len(LAT_BINS_EDGES) - 1,
         ),
     )
     daily_epoch = np.zeros(len(epoch_doy_unique), dtype=np.float64)
@@ -381,8 +385,9 @@ def compute_counts_by_charge_and_mass(
         # Bin spin phases
         binned_spin_phase = bin_spin_phases(spin_phase_angles)
         # Bin longitude and latitude into the rectangular grid.
-        binned_longitude = np.array(np.digitize(longitude, bins=SKY_GRID.az_bin_edges))
-        binned_latitude = np.array(np.digitize(latitude, bins=SKY_GRID.el_bin_edges))
+        binned_longitude = np.array(np.digitize(longitude, bins=LON_BINS_EDGES))
+        # Latitude should be binned with the right edge included. 90 is a valid latitude
+        binned_latitude = np.array(np.digitize(latitude, bins=LAT_BINS_EDGES))
         # If the values in the array are beyond the bounds of bins, 0 or len(bins) it is
         # returned as such. In this case, the desired result is to place the values
         # beyond the last bin into the last bin and keep the values below the first bin.
@@ -523,7 +528,7 @@ def bin_spin_phases(spin_phases: xr.DataArray) -> np.ndarray:
             f"phase angle range, [0, 360)."
         )
     # Shift spin phases by +45° so that the first bin starts at 0°.
-    # Use mod to wrap values > 360 to 0.
+    # Use mod to wrap values >= 360 to 0.
     shifted_spin_phases = (spin_phases + 45) % 360
     # Use np.digitize to find the bin index for each spin phase.
     bin_indices = np.digitize(shifted_spin_phases, SPIN_PHASE_BIN_EDGES, right=False)
