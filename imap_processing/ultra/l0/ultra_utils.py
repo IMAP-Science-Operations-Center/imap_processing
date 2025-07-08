@@ -97,6 +97,18 @@ ULTRA_ENERGY_EVENTS = PacketProperties(
     len_array=None,
     mantissa_bit_length=None,
 )
+ULTRA_MACROS_CHECKSUM = PacketProperties(
+    apid=[872, 936],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-macroschecksum",
+        "imap_ultra_l1a_90sensor-macroschecksum",
+    ],
+    addition_to_logical_desc="Macros Checksum",
+    width=None,
+    block=None,
+    len_array=None,
+    mantissa_bit_length=None,
+)
 ULTRA_PRI_1_EVENTS = PacketProperties(
     apid=[898, 962],
     logical_source=[

@@ -1,7 +1,142 @@
 int_fillval: &int_fillval -9223372036854775808
+int_maxval: &int_maxval 9223372036854775807
+double_fillval: &double_fillval -1.0E31
+
+# Label attributes
+mass_labels:
+  CATDESC: Labels for mass bins
+  FIELDNAM: Mass Bin Labels
+  VAR_TYPE: metadata
+  FORMAT: A8
+  DEPEND_1: mass_bins
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+charge_labels:
+  CATDESC: Labels for impact charge bins
+  FIELDNAM: Impact Charge Bin Labels
+  VAR_TYPE: metadata
+  FORMAT: A8
+  DEPEND_1: impact_charge_bins
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+spin_phase_labels:
+    CATDESC: Labels for spin phase bins
+    FIELDNAM: Spin Phase Bin Labels
+    VAR_TYPE: metadata
+    FORMAT: A8
+    DEPEND_1: spin_phase_bins
+    DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+# Index attributes
+mass_bins:
+  CATDESC: Log-spaced mass bins
+  FIELDNAM: Mass Bins
+  UNITS: " "
+  FORMAT: I4
+  VAR_TYPE: support_data
+  SCALETYP: linear
+  LABLAXIS: Mass Bins
+  VALIDMIN: 0
+  VALIDMAX: 10
+  FILLVAL: *int_fillval
+  LABL_PTR_1: mass_labels
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+spin_phase_bins:
+    CATDESC: The spacecraft spin phase at the time of detection
+    VAR_NOTES: This is given in 4 bins [315-45, 45-135, 135-225, 225-315] degrees.
+    FIELDNAM: Spin Phase Bins
+    LABLAXIS: Spin Phase Bins
+    VAR_TYPE: support_data
+    SCALETYP: linear
+    FILLVAL: *int_fillval
+    FORMAT: I4
+    VALIDMIN: 0
+    VALIDMAX: 3
+    LABL_PTR_1: spin_phase_labels
+    UNITS: " "
+    DICT_KEY: SPASE>SupportQuantity:SpinPhase,Qualifier:Array
+
+impact_charge_bins:
+    CATDESC: Log-spaced impact charge bins
+    VAR_NOTES: Impact Charge Bins
+    FIELDNAM: Impact Charge Bins
+    LABLAXIS: Impact Charge Bins
+    VAR_TYPE: support_data
+    SCALETYP: linear
+    FILLVAL: *int_fillval
+    FORMAT: I4
+    VALIDMIN: 0
+    VALIDMAX: 10
+    LABL_PTR_1: spin_phase_labels
+    UNITS: " "
+    DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+# Base attributes for charge and mass variables
+base_charge: &base_charge
+    CATDESC: " "
+    FIELDNAM: " "
+    DEPEND_0: epoch
+    DEPEND_1: impact_charge_bins
+    DEPEND_2: spin_phase_bins
+    LABL_PTR_1: charge_labels
+    LABL_PTR_2: spin_phase_labels
+    DISPLAY_TYPE: spectrogram
+    VAR_TYPE: data
+    FILLVAL: *int_fillval
+    FORMAT: E10.3
+    VALIDMIN: -1
+    VALIDMAX: *int_maxval
+
+base_mass: &base_mass
+    CATDESC: " "
+    FIELDNAM: " "
+    DEPEND_0: epoch
+    DEPEND_1: mass_bins
+    DEPEND_2: spin_phase_bins
+    LABL_PTR_1: mass_labels
+    LABL_PTR_2: spin_phase_labels
+    DISPLAY_TYPE: spectrogram
+    VAR_TYPE: data
+    FILLVAL: *int_fillval
+    FORMAT: E10.3
+    VALIDMIN: 0.0
+    VALIDMAX: *int_maxval
+
+rate_by_charge:
+    <<: *base_charge
+    CATDESC: Count rate per day by impact charge and spin phase.
+    FIELDNAM: Rate by Charge
+    UNITS: day^-1
+    FILLVAL: *double_fillval
+    DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
+
+rate_by_mass:
+    <<: *base_mass
+    CATDESC: Count rate per day by mass and spin phase.
+    FIELDNAM: Rate by Mass
+    UNITS: day^-1
+    FILLVAL: *double_fillval
+    DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
+
+counts_by_charge:
+    <<: *base_charge
+    CATDESC: Count by impact charge and spin phase.
+    FIELDNAM: Counts by Charge
+    FORMAT: I8
+    UNITS: counts
+    DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
+
+counts_by_mass:
+    <<: *base_mass
+    CATDESC: Count by mass and spin phase.
+    FIELDNAM: Counts by Mass
+    FORMAT: I8
+    UNITS: counts
+    DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
 
 impact_day_of_year:
-    CATDESC: The day of the year when the impact occurred.
+    CATDESC: The unique day of the years when dust impacts occurred.
     FIELDNAM: Impact Day of Year
     LABLAXIS: Impact DOY
     DEPEND_0: epoch
@@ -12,60 +147,18 @@ impact_day_of_year:
     VALIDMAX: 366
     VAR_TYPE: data
     UNITS: days
-    DICT_KEY: SPASE>SupportQuantity:Temporal,Qualifier:Array # TODO: review this
-
-spin_phase_quadrants:
-    CATDESC: The spacecraft spin phase at the time of detection.
-    VAR_NOTES: This is given in quadrants (0, 90, 180, 270).
-    FIELDNAM: Spin Phase Quadrants
-    LABLAXIS: Spin Phase Quadrants
-    DEPEND_0: epoch
-    DISPLAY_TYPE: time_series
-    FILLVAL: *int_fillval
-    FORMAT: I3
-    VALIDMIN: 0
-    VALIDMAX: 270
-    VAR_TYPE: data
-    UNITS: degrees
-    DICT_KEY: SPASE>SupportQuantity:SpinPhase,Qualifier:Array # TODO: review this
-
-science_acquisition_messages:
-    CATDESC: The IDEX science acquisition start and stop messages.
-    FIELDNAM: Science Acquisition Messages
-    DEPEND_0: epoch_science_acquisition
-    FORMAT: A30
-    FILLVAL: " "
-    VAR_TYPE: metadata
-    DICT_KEY: SPASE>SupportQuantity:Housekeeping,Qualifier:Array
-
-science_acquisition_values:
-    CATDESC: Values indicating if the event is a science start (1) or stop (0).
-    FIELDNAM: Science Acquisition Value
-    DEPEND_0: epoch_science_acquisition
-    FILLVAL: *int_fillval
-    FORMAT: I1
-    VALIDMIN: 0
-    VALIDMAX: 1
-    UNITS: " "
-    VAR_TYPE: support_data
-    DICT_KEY: SPASE>SupportQuantity:Housekeeping,Qualifier:Array
-
-epoch_science_acquisition:
-    CATDESC: Time, number of nanoseconds since J2000 with leap seconds included
-    FIELDNAM: Epoch Science Acquisition Time
-    LABLAXIS: Epoch Science Acquisition Time
-    FILLVAL: -9223372036854775808
-    FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
-    VALIDMIN: -9223372036854775808
-    VALIDMAX: 9223372036854775807
-    UNITS: ns
-    VAR_TYPE: support_data
-    SCALETYP: linear
-    MONOTON: INCREASE
-    TIME_BASE: J2000
-    TIME_SCALE: Terrestrial Time
-    CDF_DATA_TYPE: CDF_TIME_TT2000
-    REFERENCE_POSITION: Rotating Earth Geoid
-    RESOLUTION: ' '
-    DISPLAY_TYPE: time_series
     DICT_KEY: SPASE>SupportQuantity:Temporal,Qualifier:Array
+
+rate_calculation_quality_flags:
+  CATDESC: Quality flag for rate calculation (1 = good, 0 = insufficient IDEX uptime data)
+  FIELDNAM: Rate Quality Flag
+  LABLAXIS: Quality Flag
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: 255
+  FORMAT: I1
+  VALIDMIN: 0
+  VALIDMAX: 1
+  VAR_TYPE: data
+  UNITS: " "
+  DICT_KEY: SPASE>SupportQuantity:QualityFlag,Qualifier:Array

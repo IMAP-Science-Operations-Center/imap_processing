@@ -10,6 +10,7 @@ from imap_processing.ultra.l0.decom_ultra import (
     process_ultra_energy_rates,
     process_ultra_energy_spectra,
     process_ultra_events,
+    process_ultra_macros_checksum,
     process_ultra_rates,
     process_ultra_tof,
 )
@@ -20,6 +21,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_ENERGY_RATES,
     ULTRA_ENERGY_SPECTRA,
     ULTRA_EVENTS,
+    ULTRA_MACROS_CHECKSUM,
     ULTRA_PRI_1_EVENTS,
     ULTRA_PRI_2_EVENTS,
     ULTRA_PRI_3_EVENTS,
@@ -254,6 +256,16 @@ def cmd_echo_test_path():
 
 
 @pytest.fixture
+def macrochecksum_test_path():
+    """Returns the xtce auxiliary test data directory."""
+    filename = (
+        "ultra45_raw_hk_macrochecksumrpt_FM45_UltraFM45_Functional_"
+        "2024-01-22T0105_20240122T010548.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
 def decom_test_data(request, xtce_path):
     """Read test data from file"""
     apid = request.param["apid"]
@@ -269,6 +281,12 @@ def decom_test_data(request, xtce_path):
         ULTRA_ENERGY_EVENTS.apid[1]: lambda ds, apid: process_ultra_events(ds, apid),
         ULTRA_EVENTS.apid[0]: lambda ds, apid: process_ultra_events(ds, apid),
         ULTRA_EVENTS.apid[1]: lambda ds, apid: process_ultra_events(ds, apid),
+        ULTRA_MACROS_CHECKSUM.apid[0]: lambda ds, apid: process_ultra_macros_checksum(
+            ds
+        ),
+        ULTRA_MACROS_CHECKSUM.apid[1]: lambda ds, apid: process_ultra_macros_checksum(
+            ds
+        ),
         ULTRA_PRI_1_EVENTS.apid[0]: lambda ds, apid: process_ultra_events(ds, apid),
         ULTRA_PRI_1_EVENTS.apid[1]: lambda ds, apid: process_ultra_events(ds, apid),
         ULTRA_PRI_2_EVENTS.apid[0]: lambda ds, apid: process_ultra_events(ds, apid),

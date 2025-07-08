@@ -896,27 +896,26 @@ class Idex(ProcessInstrument):
             dependency = load_cdf(science_files[0])
             datasets = [idex_l2a(dependency)]
         elif self.data_level == "l2b":
-            if len(dependency_list) != 3:
+            if len(dependency_list) < 3 or len(dependency_list) > 4:
                 raise ValueError(
                     f"Unexpected dependencies found for IDEX L2B:"
-                    f"{dependency_list}. Expected only three dependencies."
+                    f"{dependency_list}. Expected three or four dependencies."
                 )
             sci_files = dependencies.get_file_paths(
                 source="idex", descriptor="sci-1week"
             )
-            dependency = load_cdf(sci_files[0])
+            sci_dependencies = [load_cdf(f) for f in sci_files]
             hk_files = dependencies.get_file_paths(source="idex", descriptor="evt")
-            hk_dependencies = [load_cdf(dep) for dep in hk_files]
-            datasets = [idex_l2b(dependency, hk_dependencies)]
+            # Remove duplicate housekeeping files
+            hk_dependencies = [load_cdf(dep) for dep in list(set(hk_files))]
+            datasets = [idex_l2b(sci_dependencies, hk_dependencies)]
         elif self.data_level == "l2c":
             if len(dependency_list) != 1:
                 raise ValueError(
                     f"Unexpected dependencies found for IDEX L2C:"
                     f"{dependency_list}. Expected only one dependency."
                 )
-            sci_files = dependencies.get_file_paths(
-                source="idex", descriptor="sci-1week"
-            )
+            sci_files = dependencies.get_file_paths(source="idex", descriptor="sci-1mo")
             dependency = load_cdf(sci_files[0])
             datasets = idex_l2c(dependency)
         return datasets
