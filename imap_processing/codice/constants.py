@@ -39,7 +39,7 @@ APIDS_FOR_SCIENCE_PROCESSING = [
 CODICEAPID_MAPPING = {
     "hskp": CODICEAPID.COD_NHK,
     "lo-ialirt": CODICEAPID.COD_LO_IAL,
-    "lo-pha": CODICEAPID.COD_LO_PHA,
+    "lo-direct-events": CODICEAPID.COD_LO_PHA,
     "lo-sw-priority": CODICEAPID.COD_LO_SW_PRIORITY_COUNTS,
     "lo-sw-species": CODICEAPID.COD_LO_SW_SPECIES_COUNTS,
     "lo-nsw-species": CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
@@ -49,7 +49,7 @@ CODICEAPID_MAPPING = {
     "lo-counters-aggregated": CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED,
     "lo-counters-singles": CODICEAPID.COD_LO_INST_COUNTS_SINGLES,
     "hi-ialirt": CODICEAPID.COD_HI_IAL,
-    "hi-pha": CODICEAPID.COD_HI_PHA,
+    "hi-direct-events": CODICEAPID.COD_HI_PHA,
     "hi-counters-aggregated": CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED,
     "hi-counters-singles": CODICEAPID.COD_HI_INST_COUNTS_SINGLES,
     "hi-omni": CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS,
@@ -127,7 +127,7 @@ HI_SECTORED_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
 HI_IALIRT_VARIABLE_NAMES = ["h"]
 
 # CDF variable names used for direct event data products
-HI_PHA_CDF_FIELDS = [
+HI_DE_CDF_FIELDS = [
     "NumEvents",
     "DataQuality",
     "SSDEnergy",
@@ -139,10 +139,8 @@ HI_PHA_CDF_FIELDS = [
     "SpinAngle",
     "SpinNumber",
 ]
-HI_PHA_VARIABLE_NAMES = [
-    f"P{n}_{field}" for n in range(6) for field in HI_PHA_CDF_FIELDS
-]
-LO_PHA_CDF_FIELDS = [
+HI_DE_VARIABLE_NAMES = [f"P{n}_{field}" for n in range(6) for field in HI_DE_CDF_FIELDS]
+LO_DE_CDF_FIELDS = [
     "NumEvents",
     "DataQuality",
     "APDGain",
@@ -154,9 +152,7 @@ LO_PHA_CDF_FIELDS = [
     "SpinAngle",
     "EnergyStep",
 ]
-LO_PHA_VARIABLE_NAMES = [
-    f"P{n}_{field}" for n in range(8) for field in LO_PHA_CDF_FIELDS
-]
+LO_DE_VARIABLE_NAMES = [f"P{n}_{field}" for n in range(8) for field in LO_DE_CDF_FIELDS]
 
 # Final I-ALiRT data product fields
 CODICE_LO_IAL_DATA_FIELDS = [
@@ -788,7 +784,7 @@ DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
                 "fillval": np.iinfo(np.uint8).max,
             },
         },
-        "cdf_fields": HI_PHA_CDF_FIELDS,
+        "cdf_fields": HI_DE_CDF_FIELDS,
     },
     CODICEAPID.COD_LO_PHA: {
         "num_priorities": 8,
@@ -849,7 +845,7 @@ DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
                 "fillval": np.iinfo(np.uint8).max,
             },
         },
-        "cdf_fields": LO_PHA_CDF_FIELDS,
+        "cdf_fields": LO_DE_CDF_FIELDS,
     },
 }
 

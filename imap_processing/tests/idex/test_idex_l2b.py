@@ -1,11 +1,10 @@
 """Tests the L2b processing for IDEX data"""
 
 import numpy as np
-import pytest
 import xarray as xr
 from numpy.testing import assert_array_equal
 
-from imap_processing.cdf.utils import load_cdf, write_cdf
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.idex.idex_constants import (
     FG_TO_KG,
     NANOSECONDS_IN_DAY,
@@ -14,37 +13,14 @@ from imap_processing.idex.idex_constants import (
 from imap_processing.idex.idex_l2b import (
     CHARGE_BIN_EDGES,
     MASS_BIN_EDGES,
+    SKY_GRID,
     SPIN_PHASE_BIN_EDGES,
     bin_spin_phases,
     compute_counts_by_charge_and_mass,
     compute_rates_by_charge_and_mass,
     get_science_acquisition_on_percentage,
     get_science_acquisition_timestamps,
-    idex_l2b,
 )
-from imap_processing.tests.idex.conftest import L1B_EVT_CDF
-
-
-@pytest.fixture
-def l2b_dataset(l2a_dataset: xr.Dataset) -> xr.Dataset:
-    """Return a ``xarray`` dataset containing test data.
-
-    Returns
-    -------
-    dataset : xr.Dataset
-        A ``xarray`` dataset containing the test data
-    """
-    l1b_evt_dataset = load_cdf(L1B_EVT_CDF)
-    l1b_evt_dataset2 = (
-        l1b_evt_dataset.copy()
-    )  # Add a second dataset with different epoch values for testing
-    l2a_dataset2 = (
-        l2a_dataset.copy()
-    )  # Add a second dataset with different epoch values for testing
-    l1b_evt_dataset2["epoch"] = l1b_evt_dataset2["epoch"] + NANOSECONDS_IN_DAY
-    l2a_dataset2["epoch"] = l2a_dataset2["epoch"] + NANOSECONDS_IN_DAY
-    dataset = idex_l2b([l2a_dataset, l2a_dataset2], [l1b_evt_dataset, l1b_evt_dataset2])
-    return dataset
 
 
 def test_l2b_logical_source_and_cdf(l2b_dataset: xr.Dataset):
@@ -82,6 +58,10 @@ def test_l2b_cdf_variables(l2b_dataset: xr.Dataset):
         "counts_by_mass",
         "rate_by_charge",
         "rate_by_mass",
+        "counts_by_charge_map",
+        "counts_by_mass_map",
+        "rate_by_charge_map",
+        "rate_by_mass_map",
     ]
 
     cdf_vars = l2b_dataset.variables
@@ -187,14 +167,16 @@ def test_compute_counts_by_charge_and_mass():
             "target_low_dust_mass_estimate": ((MASS_BIN_EDGES / FG_TO_KG)[:6] + 1e-5),
             "target_low_impact_charge": CHARGE_BIN_EDGES[:6],
             "spin_phase": np.full((6,), 0),
+            "longitude": np.full(6, 5),
+            "latitude": np.full(6, 0),
         }
     )
 
     # Unique days of year
     epoch_doy_unique = np.unique(epochs / NANOSECONDS_IN_DAY).astype(int) + 1
 
-    counts_by_charge, counts_by_mass, daily_epoch = compute_counts_by_charge_and_mass(
-        l2a_dataset, epoch_doy_unique
+    counts_by_charge, counts_by_mass, charge_map, mass_map, daily_epoch = (
+        compute_counts_by_charge_and_mass(l2a_dataset, epoch_doy_unique)
     )
 
     expected_shape = (
@@ -202,20 +184,37 @@ def test_compute_counts_by_charge_and_mass():
         len(CHARGE_BIN_EDGES),
         len(SPIN_PHASE_BIN_EDGES) - 1,
     )
+    expected_map_shape = (
+        len(epoch_doy_unique),
+        len(CHARGE_BIN_EDGES),
+        len(SKY_GRID.az_bin_edges) - 1,
+        len(SKY_GRID.el_bin_edges) - 1,
+    )
     # Check shapes
     assert counts_by_charge.shape == expected_shape
     assert counts_by_mass.shape == expected_shape
+    assert charge_map.shape == expected_map_shape
+    assert mass_map.shape == expected_map_shape
 
     # Check that the counts are correctly binned
     expected_array = np.zeros(expected_shape)
+    expected_map_array = np.zeros(expected_map_shape)
     # Add ones where we expect counts
     expected_array[0, 1:3, 0] = 1
     expected_array[1, 3:5, 0] = 1
     expected_array[2, 5, 0] = 1
     expected_array[3, 6, 0] = 1
+    # Add ones where we expect counts for the map
+    expected_map_array[0, 1:3, 0, 15] = 1
+    expected_map_array[1, 3:5, 0, 15] = 1
+    expected_map_array[2, 5, 0, 15] = 1
+    expected_map_array[3, 6, 0, 15] = 1
     # assert that the counts are as expected
     np.testing.assert_array_equal(counts_by_charge, expected_array)
     np.testing.assert_array_equal(counts_by_mass, expected_array)
+    # assert that the counts are as expected for the map
+    np.testing.assert_array_equal(charge_map, expected_map_array)
+    np.testing.assert_array_equal(mass_map, expected_map_array)
 
 
 def test_compute_counts_by_charge_and_mass_out_of_bounds():
@@ -239,14 +238,16 @@ def test_compute_counts_by_charge_and_mass_out_of_bounds():
                 [CHARGE_BIN_EDGES[0] - 1e-05, CHARGE_BIN_EDGES[-1] + 1e-05]
             ),
             "spin_phase": np.full((6,), 0),
+            "longitude": np.array([0, 365]),
+            "latitude": np.array([-90, 90]),
         }
     )
 
     # Unique days of year
     epoch_doy_unique = np.unique(epochs / NANOSECONDS_IN_DAY).astype(int) + 1
 
-    counts_by_charge, counts_by_mass, daily_epoch = compute_counts_by_charge_and_mass(
-        l2a_dataset, epoch_doy_unique
+    counts_by_charge, counts_by_mass, charge_map, mass_map, daily_epoch = (
+        compute_counts_by_charge_and_mass(l2a_dataset, epoch_doy_unique)
     )
 
     expected_shape = (
@@ -254,56 +255,100 @@ def test_compute_counts_by_charge_and_mass_out_of_bounds():
         len(CHARGE_BIN_EDGES),
         len(SPIN_PHASE_BIN_EDGES) - 1,
     )
+    expected_map_shape = (
+        len(epoch_doy_unique),
+        len(CHARGE_BIN_EDGES),
+        len(SKY_GRID.az_bin_edges) - 1,
+        len(SKY_GRID.el_bin_edges) - 1,
+    )
     # Check shapes
     assert counts_by_charge.shape == expected_shape
     assert counts_by_mass.shape == expected_shape
+    assert charge_map.shape == expected_map_shape
+    assert mass_map.shape == expected_map_shape
 
     # Check that the counts are correctly binned
     expected_array = np.zeros(expected_shape)
+    expected_map_array = np.zeros(expected_map_shape)
     # Add ones where we expect counts
     expected_array[0, 0, 0] = 1
     expected_array[1, len(CHARGE_BIN_EDGES) - 1, 0] = 1
+    # Add ones where we expect counts for the map
+    expected_map_array[0, 0, 0, 0] = 1
+    expected_map_array[1, len(CHARGE_BIN_EDGES) - 1, 0, 29] = 1
     # assert that the counts are as expected
     np.testing.assert_array_equal(counts_by_charge, expected_array)
     np.testing.assert_array_equal(counts_by_mass, expected_array)
+    np.testing.assert_array_equal(charge_map, expected_map_array)
+    np.testing.assert_array_equal(mass_map, expected_map_array)
 
 
 def test_compute_rates_by_charge_and_mass():
     """Test the compute_rates_by_charge_and_mass function."""
     # Mock example inputs
     day_counts = np.full((len(CHARGE_BIN_EDGES), len(SPIN_PHASE_BIN_EDGES) - 1), 1.0)
+    day_counts_map = np.full(
+        (
+            len(CHARGE_BIN_EDGES),
+            len(SKY_GRID.az_bin_edges) - 1,
+            len(SKY_GRID.el_bin_edges) - 1,
+        ),
+        1.0,
+    )
     counts_by_charge = np.stack(
         [day_counts, day_counts + 1, day_counts + 2, day_counts + 2]
     )
     counts_by_mass = counts_by_charge
+    counts_by_mass_map = np.stack(
+        [day_counts_map, day_counts_map + 1, day_counts_map + 2, day_counts_map + 2]
+    )
+    counts_by_charge_map = counts_by_mass_map
     # Mock DOY values for the epochs
     epoch_doy = np.array([1, 2, 3, 4])
     # Mock daily idex uptime percentages
     daily_on_percentage = {1: 50.0, 2: 25.0, 3: 0.05, 4: 0.0}
     # Compute the rates by charge and mass
-    rate_by_charge, rate_by_mass, quality_flags = compute_rates_by_charge_and_mass(
-        counts_by_charge, counts_by_mass, epoch_doy, daily_on_percentage
+    rate_by_charge, rate_by_mass, charge_map, mass_map, quality_flags = (
+        compute_rates_by_charge_and_mass(
+            counts_by_charge,
+            counts_by_mass,
+            counts_by_charge_map,
+            counts_by_mass_map,
+            epoch_doy,
+            daily_on_percentage,
+        )
     )
 
     # Check shapes
     expected_shape = counts_by_mass.shape
+    expected_map_shape = counts_by_mass_map.shape
     np.testing.assert_equal(rate_by_charge.shape, expected_shape)
     np.testing.assert_equal(rate_by_mass.shape, expected_shape)
+    np.testing.assert_equal(charge_map.shape, expected_map_shape)
+    np.testing.assert_equal(mass_map.shape, expected_map_shape)
 
     # Assert all quality flags are 1.
     np.testing.assert_array_equal(quality_flags, np.ones_like(quality_flags))
     # assert day 1 rates are as expected
     np.testing.assert_equal(rate_by_charge[0], 1 / (SECONDS_IN_DAY / 2))
     np.testing.assert_equal(rate_by_mass[0], 1 / (SECONDS_IN_DAY / 2))
+    np.testing.assert_equal(charge_map[0], 1 / (SECONDS_IN_DAY / 2))
+    np.testing.assert_equal(mass_map[0], 1 / (SECONDS_IN_DAY / 2))
     # assert day 2 rates are as expected
     np.testing.assert_equal(rate_by_charge[1], 2 / (SECONDS_IN_DAY / 4))
     np.testing.assert_equal(rate_by_mass[1], 2 / (SECONDS_IN_DAY / 4))
+    np.testing.assert_equal(charge_map[1], 2 / (SECONDS_IN_DAY / 4))
+    np.testing.assert_equal(mass_map[1], 2 / (SECONDS_IN_DAY / 4))
     # assert day 3 rates are as expected
     np.testing.assert_equal(rate_by_charge[2], 3 / (SECONDS_IN_DAY / 2000))
     np.testing.assert_equal(rate_by_mass[2], 3 / (SECONDS_IN_DAY / 2000))
+    np.testing.assert_equal(charge_map[2], 3 / (SECONDS_IN_DAY / 2000))
+    np.testing.assert_equal(mass_map[2], 3 / (SECONDS_IN_DAY / 2000))
     # assert day 4 rates are as expected
     np.testing.assert_equal(rate_by_charge[3], -1.0)
     np.testing.assert_equal(rate_by_mass[3], -1.0)
+    np.testing.assert_equal(charge_map[3], -1.0)
+    np.testing.assert_equal(mass_map[3], -1.0)
 
 
 def test_compute_rates_by_charge_and_mass_missing_acquisition_time(caplog):
@@ -314,14 +359,30 @@ def test_compute_rates_by_charge_and_mass_missing_acquisition_time(caplog):
         (2, len(CHARGE_BIN_EDGES), len(SPIN_PHASE_BIN_EDGES) - 1)
     )
     counts_by_mass = counts_by_charge
+    counts_by_charge_map = np.ones(
+        (
+            2,
+            len(CHARGE_BIN_EDGES),
+            len(SKY_GRID.az_bin_edges) - 1,
+            len(SKY_GRID.el_bin_edges) - 1,
+        )
+    )
+    counts_by_mass_map = counts_by_charge_map
     # Mock DOY values for the epochs
     epoch_doy = np.array([1, 2])
     # Mock daily idex uptime percentages. Purposefully leave out day 2 to simulate
     # missing acquisition times
     daily_on_percentage = {1: 100.0}
     # Compute the rates by charge and mass and assert there is a warning in the logs.
-    rate_by_charge, rate_by_mass, quality_flags = compute_rates_by_charge_and_mass(
-        counts_by_charge, counts_by_mass, epoch_doy, daily_on_percentage
+    rate_by_charge, rate_by_mass, rate_mass_map, rate_charge_map, quality_flags = (
+        compute_rates_by_charge_and_mass(
+            counts_by_charge,
+            counts_by_mass,
+            counts_by_charge_map,
+            counts_by_mass_map,
+            epoch_doy,
+            daily_on_percentage,
+        )
     )
     assert (
         "Missing science acquisition uptime percentages for day(s) of year: [2]."

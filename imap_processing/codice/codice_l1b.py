@@ -116,7 +116,7 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
     descriptor = dataset_name.removeprefix("imap_codice_l1b_")
 
     # Direct event data products do not have a level L1B
-    if descriptor in ["lo-pha", "hi-pha"]:
+    if descriptor in ["lo-direct-events", "hi-direct-events"]:
         logger.warning("Encountered direct event data product. Skipping L1b processing")
         return None
 
