@@ -145,6 +145,9 @@ ULTRA_MACROS_CHECKSUM = PacketProperties(
     addition_to_logical_desc="Macros Checksum",
     width=None,
     block=None,
+    image_panes=None,
+    pixel_window_rows=None,
+    pixel_window_columns=None,
     len_array=None,
     mantissa_bit_length=None,
 )
