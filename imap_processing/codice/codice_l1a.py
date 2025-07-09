@@ -143,8 +143,8 @@ class CoDICEL1aPipeline:
         self.coords = {}
 
         coord_names = [
-            *self.config["output_dims"].keys(),
-            *[key + "_label" for key in self.config["output_dims"].keys()],
+            *self.config["input_dims"].keys(),
+            *[key + "_label" for key in self.config["input_dims"].keys()],
         ]
 
         # Define epoch coordinates
@@ -174,7 +174,7 @@ class CoDICEL1aPipeline:
                 "spin_sector_index",
                 "ssd_index",
             ]:
-                values = np.arange(self.config["output_dims"][name])
+                values = np.arange(self.config["input_dims"][name])
                 dims = [name]
             elif name == "spin_sector_pairs_label":
                 values = np.array(
@@ -196,7 +196,7 @@ class CoDICEL1aPipeline:
                 "ssd_index_label",
             ]:
                 key = name.removesuffix("_label")
-                values = np.arange(self.config["output_dims"][key]).astype(str)
+                values = np.arange(self.config["input_dims"][key]).astype(str)
                 dims = [key]
 
             coord = xr.DataArray(
@@ -230,8 +230,8 @@ class CoDICEL1aPipeline:
         # Stack the data so that it is easier to reshape and iterate over
         all_data = np.stack(self.data)
 
-        # The dimension of all_data is something like (epoch, num_counters,
-        # num_energy_steps, num_positions, num_spin_sectors) (or may be slightly
+        # The dimension of all_data is something like (epoch, num_energy_steps,
+        # num_positions, num_spin_sectors, num_counters) (or may be slightly
         # different depending on the data product). In any case, iterate over
         # the num_counters dimension to isolate the data for each counter so
         # each counter's data can be placed in a separate CDF data variable.
@@ -239,7 +239,7 @@ class CoDICEL1aPipeline:
             range(all_data.shape[1]), self.config["variable_names"]
         ):
             # Extract the counter data
-            counter_data = all_data[:, counter, ...]
+            counter_data = all_data[..., counter]
 
             # Get the CDF attributes
             descriptor = self.config["dataset_name"].split("imap_codice_l1a_")[-1]
@@ -249,7 +249,9 @@ class CoDICEL1aPipeline:
             # For most products, the final CDF dimensions always has "epoch" as
             # the first dimension followed by the dimensions for the specific
             # data product
-            dims = ["epoch", *list(self.config["output_dims"].keys())]
+            dims = ["epoch", *list(self.config["input_dims"].keys())]
+            print(descriptor)
+            print(dims)
 
             # However, CoDICE-Hi products use specific energy bins for the
             # energy dimension
@@ -589,8 +591,8 @@ class CoDICEL1aPipeline:
 
         These data need to be divided up by species or priorities (or
         what I am calling "counters" as a general term), and re-arranged into
-        4D arrays representing dimensions such as time, spin sectors, positions,
-        and energies (depending on the data product).
+        multidimensional arrays representing dimensions such as time,
+        spin sectors, positions, and energies (depending on the data product).
 
         However, the existence and order of these dimensions can vary depending
         on the specific data product, so we define this in the "input_dims"
@@ -603,30 +605,19 @@ class CoDICEL1aPipeline:
         self.data = []
 
         # First reshape the data based on how it is written to the data array of
-        # the packet data. The number of counters is the first dimension / axis,
-        # with the exception of lo-counters-aggregated which is treated slightly
-        # differently
-        if self.config["dataset_name"] != "imap_codice_l1a_lo-counters-aggregated":
-            reshape_dims = (
-                self.config["num_counters"],
-                *self.config["input_dims"].values(),
-            )
-        else:
-            reshape_dims = (
-                *self.config["input_dims"].values(),
-                self.config["num_counters"],
-            )
+        # the packet data. The number of counters is the last dimension / axis.
+        reshape_dims = (
+            *self.config["input_dims"].values(),
+            self.config["num_counters"],
+        )
 
         # Then, transpose the data based on how the dimensions should be written
         # to the CDF file. Since this is specific to each data product, we need
         # to determine this dynamically based on the "output_dims" config.
         # Again, lo-counters-aggregated is treated slightly differently
         input_keys = ["num_counters", *self.config["input_dims"].keys()]
-        output_keys = ["num_counters", *self.config["output_dims"].keys()]
-        if self.config["dataset_name"] != "imap_codice_l1a_lo-counters-aggregated":
-            transpose_axes = [input_keys.index(dim) for dim in output_keys]
-        else:
-            transpose_axes = [1, 2, 0]  # [esa_step, spin_sector_pairs, num_counters]
+        output_keys = ["num_counters", *self.config["input_dims"].keys()]
+        transpose_axes = [input_keys.index(dim) for dim in output_keys]
 
         for packet_data in self.raw_data:
             reshaped_packet_data = np.array(packet_data, dtype=np.uint32).reshape(
@@ -1540,7 +1531,7 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
         elif apid in [CODICEAPID.COD_LO_IAL, CODICEAPID.COD_HI_IAL]:
             processed_dataset = create_ialirt_dataset(apid, dataset)
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
-
+        #
         # hi-omni data
         elif apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
             science_values = [packet.data for packet in dataset.data]

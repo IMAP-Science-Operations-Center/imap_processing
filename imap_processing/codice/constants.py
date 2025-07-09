@@ -405,8 +405,6 @@ SECTORED_ENERGY_TABLE = {
     "fe": [0.0125, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2],
 }
 
-# TODO: Possibly move to consistent order of dimensions with other instruments
-#       TBD after discussion with Joey and at the Science Team Meeting in Feb
 # Various configurations to support processing of individual data products
 # Much of these are described in the algorithm document in chapter 10 ("Data
 # Level 1A")
@@ -510,10 +508,10 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     },
     CODICEAPID.COD_LO_IAL: {
         "dataset_name": "imap_codice_l1a_lo-ialirt",
-        "input_dims": {"spin_sector": 1, "esa_step": 128},
+        "input_dims": {"esa_step": 128, "spin_sector": 1},
         "instrument": "lo",
         "num_counters": 9,
-        "output_dims": {"spin_sector": 1, "esa_step": 128},
+        "output_dims": {"esa_step": 128, "spin_sector": 1},
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -533,7 +531,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
         "num_counters": len(
             LO_COUNTERS_AGGREGATED_VARIABLE_NAMES
         ),  # The number of counters depends on the number of active counters
-        "output_dims": {"spin_sector_pairs": 6, "esa_step": 128},
+        "output_dims": {"esa_step": 128, "spin_sector_pairs": 6},
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -551,7 +549,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
         "input_dims": {"esa_step": 128, "inst_az": 24, "spin_sector_pairs": 6},
         "instrument": "lo",
         "num_counters": 1,
-        "output_dims": {"inst_az": 24, "spin_sector_pairs": 6, "esa_step": 128},
+        "output_dims": {"esa_step": 128, "inst_az": 24, "spin_sector_pairs": 6},
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -569,7 +567,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
         "input_dims": {"esa_step": 128, "inst_az": 5, "spin_sector": 12},
         "instrument": "lo",
         "num_counters": 4,
-        "output_dims": {"inst_az": 5, "spin_sector": 12, "esa_step": 128},
+        "output_dims": {"esa_step": 128, "inst_az": 5, "spin_sector": 12},
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -587,7 +585,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
         "input_dims": {"esa_step": 128, "inst_az": 19, "spin_sector": 12},
         "instrument": "lo",
         "num_counters": 1,
-        "output_dims": {"inst_az": 19, "spin_sector": 12, "esa_step": 128},
+        "output_dims": {"esa_step": 128, "inst_az": 19, "spin_sector": 12},
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -605,7 +603,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
         "input_dims": {"esa_step": 128, "spin_sector": 12},
         "instrument": "lo",
         "num_counters": 5,
-        "output_dims": {"spin_sector": 12, "esa_step": 128},
+        "output_dims": {"esa_step": 128, "spin_sector": 12},
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -623,7 +621,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
         "input_dims": {"esa_step": 128, "spin_sector": 12},
         "instrument": "lo",
         "num_counters": 2,
-        "output_dims": {"spin_sector": 12, "esa_step": 128},
+        "output_dims": {"esa_step": 128, "spin_sector": 12},
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -641,7 +639,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
         "input_dims": {"esa_step": 128, "spin_sector": 1},
         "instrument": "lo",
         "num_counters": 16,
-        "output_dims": {"spin_sector": 1, "esa_step": 128},
+        "output_dims": {"esa_step": 128, "spin_sector": 1},
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -659,7 +657,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
         "input_dims": {"esa_step": 128, "spin_sector": 1},
         "instrument": "lo",
         "num_counters": 8,
-        "output_dims": {"spin_sector": 1, "esa_step": 128},
+        "output_dims": {"esa_step": 128, "spin_sector": 1},
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
