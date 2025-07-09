@@ -478,8 +478,12 @@ def test_get_spin_number(test_fixture, use_fake_spin_data_for_time):
 
     # Convert shcoarse (time) to MET relative to first value
     # Take off first partial spin.
-    de_met = de_dataset["shcoarse"].values[19::] - de_dataset["shcoarse"].values[19]
-    de_spin = de_dataset["spin"].values[19::]
+    first_spin_index = 19
+    de_met = (
+        de_dataset["shcoarse"].values[first_spin_index:]
+        - de_dataset["shcoarse"].values[first_spin_index]
+    )
+    de_spin = de_dataset["spin"].values[first_spin_index:]
 
     spin_number = get_spin_number(de_met, de_spin)
     # First spin number is 128.
