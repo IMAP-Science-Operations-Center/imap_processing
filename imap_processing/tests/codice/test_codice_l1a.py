@@ -260,6 +260,56 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
 
 
 @pytest.mark.parametrize("index", range(len(DESCRIPTORS)))
+def test_l1a_validate_dimensions(test_l1a_data, index):
+    """Tests that the dimensions of the data are in the expected order.
+
+    Parameters
+    ----------
+    test_l1a_data : list[xarray.Dataset]
+        A list of ``xarray`` datasets containing the test data
+    index : int
+        The index of the list to test
+    """
+
+    descriptor = DESCRIPTORS[index]
+    dataset = test_l1a_data[index]
+
+    # This is the expected order of dimensions. Not all of these appear in every
+    # data product, but for those that do appear, they should be in this order.
+    expected_dims_order = [
+        "epoch",
+        "esa_step",
+        "inst_az",
+        "spin_sector",
+        "spin_sector_pairs",
+        "ssd_index",
+    ]
+
+    # We don't need to check hskp, direct events, or binned datasets since they
+    # are not multidimensional
+    if descriptor not in [
+        "hskp",
+        "lo-direct-events",
+        "hi-direct-events",
+        "hi-omni",
+        "hi-ialirt",
+        "hi-sectored",
+    ]:
+        # Get the variables that have dimensions that need to be checked
+        counters = getattr(
+            constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
+        )
+
+        # Ensure that, of the dimensions in the particular variable, they occur
+        # in the expected order.
+        for counter in counters:
+            positions = [
+                expected_dims_order.index(dim) for dim in dataset[counter].dims
+            ]
+            assert positions == sorted(positions)
+
+
+@pytest.mark.parametrize("index", range(len(DESCRIPTORS)))
 @pytest.mark.xfail(reason="Validation test turned off; awaiting fixes")
 def test_l1a_validate_epoch_values(test_l1a_data, index):
     """Tests that the epoch values in the generated data products match the

@@ -236,7 +236,7 @@ class CoDICEL1aPipeline:
         # the num_counters dimension to isolate the data for each counter so
         # each counter's data can be placed in a separate CDF data variable.
         for counter, variable_name in zip(
-            range(all_data.shape[1]), self.config["variable_names"]
+            range(all_data.shape[-1]), self.config["variable_names"]
         ):
             # Extract the counter data
             counter_data = all_data[..., counter]
