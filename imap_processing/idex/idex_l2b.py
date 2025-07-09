@@ -342,8 +342,8 @@ def compute_counts_by_charge_and_mass(
     counts_by_mass = np.zeros(
         (len(epoch_doy_unique), len(MASS_BIN_EDGES), len(SPIN_PHASE_BIN_EDGES) - 1),
     )
-    # Initialize arrays to hold count maps. There should be 60 longitude bins,
-    # 30 latitude bins, 11 charge bins, and 11 mass bins.
+    # Initialize arrays to hold count maps. Each map is a 3 or 4D array with shape
+    # (epoch, 11 [charge or mass], 60 [longitude bins], 30 [latitude bins]).
     counts_by_charge_map = np.zeros(
         (
             len(epoch_doy_unique),
@@ -420,6 +420,34 @@ def compute_counts_by_charge_and_mass(
     )
 
 
+def compute_rates(
+    counts: np.ndarray, epoch_doy_percent_on: np.ndarray, non_zero_inds: np.ndarray
+) -> np.ndarray:
+    """
+    Compute the count rates given the percent uptime of IDEX.
+
+    Parameters
+    ----------
+    counts : np.ndarray
+        Count values for the dust events.
+    epoch_doy_percent_on : np.ndarray
+        Percentage of time science acquisition was on for each day of the year.
+    non_zero_inds : np.ndarray
+        Indices of the days with non-zero science acquisition percentage.
+
+    Returns
+    -------
+    np.ndarray
+        Count rates.
+    """
+    while len(epoch_doy_percent_on.shape) < len(counts.shape):
+        epoch_doy_percent_on = np.expand_dims(epoch_doy_percent_on, axis=-1)
+
+    return counts[non_zero_inds] / (
+        0.01 * epoch_doy_percent_on[non_zero_inds] * SECONDS_IN_DAY
+    )
+
+
 def compute_rates_by_charge_and_mass(
     counts_by_charge: np.ndarray,
     counts_by_mass: np.ndarray,
@@ -479,25 +507,17 @@ def compute_rates_by_charge_and_mass(
     # acquisition time.
     non_zero_inds = np.where(epoch_doy_percent_on > 0)[0]
     # Compute rates only for days with non-zero science acquisition percentage
-    rate_by_charge[non_zero_inds] = counts_by_charge[non_zero_inds] / (
-        0.01
-        * epoch_doy_percent_on[non_zero_inds, np.newaxis, np.newaxis]
-        * SECONDS_IN_DAY
+    rate_by_charge[non_zero_inds] = compute_rates(
+        counts_by_charge, epoch_doy_percent_on, non_zero_inds
     )
-    rate_by_mass[non_zero_inds] = counts_by_mass[non_zero_inds] / (
-        0.01
-        * epoch_doy_percent_on[non_zero_inds, np.newaxis, np.newaxis]
-        * SECONDS_IN_DAY
+    rate_by_mass[non_zero_inds] = compute_rates(
+        counts_by_mass, epoch_doy_percent_on, non_zero_inds
     )
-    rate_by_charge_map[non_zero_inds] = counts_by_charge_map[non_zero_inds] / (
-        0.01
-        * epoch_doy_percent_on[non_zero_inds, np.newaxis, np.newaxis, np.newaxis]
-        * SECONDS_IN_DAY
+    rate_by_charge_map[non_zero_inds] = compute_rates(
+        counts_by_charge_map, epoch_doy_percent_on, non_zero_inds
     )
-    rate_by_mass_map[non_zero_inds] = counts_by_mass_map[non_zero_inds] / (
-        0.01
-        * epoch_doy_percent_on[non_zero_inds, np.newaxis, np.newaxis, np.newaxis]
-        * SECONDS_IN_DAY
+    rate_by_mass_map[non_zero_inds] = compute_rates(
+        counts_by_mass_map, epoch_doy_percent_on, non_zero_inds
     )
 
     return (

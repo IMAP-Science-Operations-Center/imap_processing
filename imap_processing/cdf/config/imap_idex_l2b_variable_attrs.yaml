@@ -86,8 +86,8 @@ impact_charge_bins:
     DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 rectangular_lon_pixel:
-  CATDESC: Longitude pixel index for IDEX SkyMap
-  FIELDNAM: Rectangular Longitude Index
+  CATDESC: Longitude pixel center for IDEX SkyMap
+  FIELDNAM: Rectangular Longitude Center
   FORMAT: F12.6
   LABLAXIS: Longitude Pixel
   VAR_TYPE: support_data
@@ -98,8 +98,8 @@ rectangular_lon_pixel:
   DICT_KEY: SPASE>Support>SupportQuantity:Positional
 
 rectangular_lat_pixel:
-  CATDESC: Latitude pixel index for IDEX SkyMap
-  FIELDNAM: Rectangular Latitude Index
+  CATDESC: Latitude pixel center for IDEX SkyMap
+  FIELDNAM: Rectangular Latitude Center
   FORMAT: F12.6
   LABLAXIS: Latitude Pixel
   VAR_TYPE: support_data
