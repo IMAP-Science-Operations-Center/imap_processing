@@ -196,7 +196,7 @@ class MagL2:
         self.truncate_to_24h(day)
 
         logical_source_id = (
-            f"imap_mag_l2_{self.data_mode.value.lower()}-{self.frame.name}"
+            f"imap_mag_l2_{self.data_mode.value.lower()}-{self.frame.name.lower()}"
         )
         direction = xr.DataArray(
             np.arange(3),
