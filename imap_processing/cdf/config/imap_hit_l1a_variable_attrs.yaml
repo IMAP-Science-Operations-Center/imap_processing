@@ -12,14 +12,21 @@ default_attrs: &default
   SCALETYP: linear
 
 default_uint8_attrs: &default_uint8
-  <<: *default
+  DISPLAY_TYPE: time_series
+  VAR_TYPE: data
+  UNITS: ' '
+  SCALETYP: linear
   FILLVAL: 255
   FORMAT: I3
   VALIDMIN: 0
   VALIDMAX: 255
 
 default_uint16_attrs: &default_uint16
-  <<: *default
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  VAR_TYPE: data
+  UNITS: ' '
+  SCALETYP: linear
   FILLVAL: 65535
   FORMAT: I5
   VALIDMIN: 0
@@ -399,7 +406,7 @@ version:
   FIELDNAM: CCSDS version
   LABLAXIS: Value
   VAR_TYPE: support_data
-  DEPEND_0: sc_tick
+  DEPEND_1: sc_tick
 
 type:
   <<: *default_uint8
@@ -407,7 +414,7 @@ type:
   FIELDNAM: CCSDS type
   LABLAXIS: Value
   VAR_TYPE: support_data
-  DEPEND_0: sc_tick
+  DEPEND_1: sc_tick
 
 sec_hdr_flg:
   <<: *default_uint8
@@ -415,7 +422,7 @@ sec_hdr_flg:
   FIELDNAM: CCSDS secondary header flag
   LABLAXIS: Value
   VAR_TYPE: support_data
-  DEPEND_0: sc_tick
+  DEPEND_1: sc_tick
 
 pkt_apid:
   <<: *default_uint16
@@ -423,7 +430,7 @@ pkt_apid:
   FIELDNAM: CCSDS APID
   LABLAXIS: Value
   VAR_TYPE: support_data
-  DEPEND_0: sc_tick
+  DEPEND_1: sc_tick
 
 seq_flgs:
   <<: *default_uint8
@@ -431,7 +438,7 @@ seq_flgs:
   FIELDNAM: CCSDS sequence flags
   LABLAXIS: Value
   VAR_TYPE: support_data
-  DEPEND_0: sc_tick
+  DEPEND_1: sc_tick
 
 src_seq_ctr:
   <<: *default_uint16
@@ -439,7 +446,7 @@ src_seq_ctr:
   FIELDNAM: CCSDS sequence counter
   LABLAXIS: Value
   VAR_TYPE: support_data
-  DEPEND_0: sc_tick
+  DEPEND_1: sc_tick
 
 pkt_len:
   <<: *default_uint16
@@ -447,7 +454,7 @@ pkt_len:
   FIELDNAM: CCSDS packet length
   LABLAXIS: Value
   VAR_TYPE: support_data
-  DEPEND_0: sc_tick
+  DEPEND_1: sc_tick
 
 # Counts dataset variables
 hdr_frame_version:
@@ -458,12 +465,12 @@ hdr_frame_version:
   UNITS: ''
 
 hdr_dynamic_threshold_state:
-  <<: *default_counts
+  <<: *default_uint8
+  DEPEND_0: epoch
   CATDESC: Raw header dynamic threshold state per integration
   FIELDNAM: hdr_dynamic_threshold_state
   LABLAXIS: State
   UNITS: state
-  VALIDMAX: 3
 
 hdr_leak_conv:
   <<: *default_counts
