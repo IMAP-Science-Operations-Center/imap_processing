@@ -29,7 +29,7 @@ def generate_coverage(
         Coverage for each station.
     """
     duration_seconds = 24 * 60 * 60  # 86400 seconds in 24 hours
-    time_step = 300  # 1 hr in seconds
+    time_step = 3600  # 1 hr in seconds
 
     stations = {
         "Kiel": KIEL,
