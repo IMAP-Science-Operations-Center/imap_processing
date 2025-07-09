@@ -31,7 +31,8 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_PRI_3_EVENTS,
     ULTRA_PRI_4_EVENTS,
     ULTRA_RATES,
-    ULTRA_TOF,
+    ULTRA_TOF_HIGH_ANGULAR,
+    ULTRA_TOF_HIGH_ENERGY,
 )
 from imap_processing.utils import packet_file_to_datasets
 
@@ -96,9 +97,20 @@ def ultra_l1a(  # noqa: PLR0912
         if apid in ULTRA_AUX.apid:
             decom_ultra_dataset = datasets_by_apid[apid]
             gattr_key = ULTRA_AUX.logical_source[ULTRA_AUX.apid.index(apid)]
-        elif apid in ULTRA_TOF.apid:
-            decom_ultra_dataset = process_ultra_tof(datasets_by_apid[apid])
-            gattr_key = ULTRA_TOF.logical_source[ULTRA_TOF.apid.index(apid)]
+        elif apid in ULTRA_TOF_HIGH_ANGULAR.apid:
+            decom_ultra_dataset = process_ultra_tof(
+                datasets_by_apid[apid], ULTRA_TOF_HIGH_ANGULAR
+            )
+            gattr_key = ULTRA_TOF_HIGH_ANGULAR.logical_source[
+                ULTRA_TOF_HIGH_ANGULAR.apid.index(apid)
+            ]
+        elif apid in ULTRA_TOF_HIGH_ENERGY.apid:
+            decom_ultra_dataset = process_ultra_tof(
+                datasets_by_apid[apid], ULTRA_TOF_HIGH_ENERGY
+            )
+            gattr_key = ULTRA_TOF_HIGH_ENERGY.logical_source[
+                ULTRA_TOF_HIGH_ENERGY.apid.index(apid)
+            ]
         elif apid in ULTRA_RATES.apid:
             decom_ultra_dataset = process_ultra_rates(datasets_by_apid[apid])
             decom_ultra_dataset = decom_ultra_dataset.drop_vars("fastdata_00")

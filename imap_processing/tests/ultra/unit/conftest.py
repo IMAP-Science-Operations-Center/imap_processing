@@ -27,7 +27,8 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_PRI_3_EVENTS,
     ULTRA_PRI_4_EVENTS,
     ULTRA_RATES,
-    ULTRA_TOF,
+    ULTRA_TOF_HIGH_ANGULAR,
+    ULTRA_TOF_HIGH_ENERGY,
 )
 from imap_processing.ultra.l1a.ultra_l1a import ultra_l1a
 from imap_processing.utils import packet_file_to_datasets
@@ -87,7 +88,7 @@ def ccsds_path_all_apids():
 
 
 @pytest.fixture
-def ccsds_path_tof():
+def ccsds_path_tof_high_angular():
     """Returns the ccsds directory."""
     return (
         imap_module_directory
@@ -96,6 +97,19 @@ def ccsds_path_tof():
         / "data"
         / "l0"
         / "FM45_TV_Cycle6_Hot_Ops_Front212_20240124T063837.CCSDS"
+    )
+
+
+@pytest.fixture
+def ccsds_path_tof_high_energy():
+    """Returns the ccsds directory."""
+    return (
+        imap_module_directory
+        / "tests"
+        / "ultra"
+        / "data"
+        / "l0"
+        / "FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.CCSDS"
     )
 
 
@@ -236,11 +250,21 @@ def events_test_path():
 
 
 @pytest.fixture
-def tof_test_path():
+def tof_high_angular_test_path():
     """Returns the xtce test data directory."""
     filename = (
         "ultra45_raw_sc_enaphxtofhangimg_FM45_TV_Cycle6_Hot_Ops_"
         "Front212_20240124T063837.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
+def tof_high_energy_test_path():
+    """Returns the xtce test data directory."""
+    filename = (
+        "ultra45_raw_sc_enaphxtofhnrgimg_FM45_UltraFM45Extra_TV_Tests_"
+        "2024-01-22T0930_20240122T093008.csv"
     )
     return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
@@ -275,8 +299,18 @@ def decom_test_data(request, xtce_path):
     datasets_by_apid = packet_file_to_datasets(ccsds_path, xtce_path)
 
     strategy_dict = {
-        ULTRA_TOF.apid[0]: lambda ds, apid: process_ultra_tof(ds),
-        ULTRA_TOF.apid[1]: lambda ds, apid: process_ultra_tof(ds),
+        ULTRA_TOF_HIGH_ANGULAR.apid[0]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_TOF_HIGH_ANGULAR
+        ),
+        ULTRA_TOF_HIGH_ANGULAR.apid[1]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_TOF_HIGH_ANGULAR
+        ),
+        ULTRA_TOF_HIGH_ENERGY.apid[0]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_TOF_HIGH_ENERGY
+        ),
+        ULTRA_TOF_HIGH_ENERGY.apid[1]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_TOF_HIGH_ENERGY
+        ),
         ULTRA_ENERGY_EVENTS.apid[0]: lambda ds, apid: process_ultra_events(ds, apid),
         ULTRA_ENERGY_EVENTS.apid[1]: lambda ds, apid: process_ultra_events(ds, apid),
         ULTRA_EVENTS.apid[0]: lambda ds, apid: process_ultra_events(ds, apid),
