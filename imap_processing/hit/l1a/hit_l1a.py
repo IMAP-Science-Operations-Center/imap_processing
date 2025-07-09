@@ -299,7 +299,16 @@ def process_science(
         # Assign attributes and dimensions to each data array in the Dataset
         for var in ds.data_vars.keys():
             try:
-                if "energy_delta" in var:
+                if var in {
+                    "energy_delta",
+                    "pkt_len",
+                    "version",
+                    "type",
+                    "src_seq_ctr",
+                    "seq_flgs",
+                    "pkt_apid",
+                    "sec_hdr_flg",
+                }:
                     # skip schema check to avoid DEPEND_0 being added unnecessarily
                     ds[var].attrs = attr_mgr.get_variable_attributes(
                         var, check_schema=False
@@ -314,7 +323,7 @@ def process_science(
         for dim in ds.dims:
             ds[dim].attrs = attr_mgr.get_variable_attributes(dim, check_schema=False)
             # TODO: should labels be added as coordinates? Check with SPDF
-            if dim not in {"epoch", "sc_tick"}:
+            if dim not in {"epoch"}:
                 label_array = xr.DataArray(
                     ds[dim].values.astype(str),
                     name=f"{dim}_label",
