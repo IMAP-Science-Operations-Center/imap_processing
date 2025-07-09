@@ -1515,7 +1515,7 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
         elif apid in [CODICEAPID.COD_LO_IAL, CODICEAPID.COD_HI_IAL]:
             processed_dataset = create_ialirt_dataset(apid, dataset)
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
-        #
+
         # hi-omni data
         elif apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
             science_values = [packet.data for packet in dataset.data]
