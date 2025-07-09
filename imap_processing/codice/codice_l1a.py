@@ -593,37 +593,23 @@ class CoDICEL1aPipeline:
         spin sectors, positions, and energies (depending on the data product).
 
         However, the existence and order of these dimensions can vary depending
-        on the specific data product, so we define this in the "input_dims"
-        and "output_dims" values configuration dictionary; the "input_dims"
-        defines how the dimensions are written into the packet data, while
-        "output_dims" defines how the dimensions should be written to the final
-        CDF product.
+        on the specific data product, so we define this in the "dims" key of the
+        configuration dictionary.
         """
         # This will contain the reshaped data for all counters
         self.data = []
 
-        # First reshape the data based on how it is written to the data array of
+        # Reshape the data based on how it is written to the data array of
         # the packet data. The number of counters is the last dimension / axis.
         reshape_dims = (
             *self.config["dims"].values(),
             self.config["num_counters"],
         )
-
-        # Then, transpose the data based on how the dimensions should be written
-        # to the CDF file. Since this is specific to each data product, we need
-        # to determine this dynamically based on the "output_dims" config.
-        # Again, lo-counters-aggregated is treated slightly differently
-        input_keys = ["num_counters", *self.config["dims"].keys()]
-        output_keys = ["num_counters", *self.config["dims"].keys()]
-        transpose_axes = [input_keys.index(dim) for dim in output_keys]
-
         for packet_data in self.raw_data:
             reshaped_packet_data = np.array(packet_data, dtype=np.uint32).reshape(
                 reshape_dims
             )
-            reshaped_cdf_data = np.transpose(reshaped_packet_data, axes=transpose_axes)
-
-            self.data.append(reshaped_cdf_data)
+            self.data.append(reshaped_packet_data)
 
         # No longer need to keep the raw data around
         del self.raw_data
