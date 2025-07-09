@@ -215,9 +215,7 @@ def furnish_kernels(spice_test_data_path):
 
 @pytest.fixture(scope="session")
 def monkeypatch_session():
-    from _pytest.monkeypatch import MonkeyPatch
-
-    m = MonkeyPatch()
+    m = pytest.MonkeyPatch()
     yield m
     m.undo()
 

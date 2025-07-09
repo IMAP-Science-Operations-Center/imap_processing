@@ -35,8 +35,8 @@ DESCRIPTORS = [
     "hi-omni",
     "hi-sectored",
     "hi-priority",
-    "lo-pha",
-    "hi-pha",
+    "lo-direct-events",
+    "hi-direct-events",
 ]
 
 EXPECTED_ARRAY_SHAPES = [
@@ -56,8 +56,8 @@ EXPECTED_ARRAY_SHAPES = [
     (),  # hi-omni, shapes are specific to species
     (77, 8, 12, 12),  # hi-sectored
     (77,),  # hi-priority
-    (77, 10000),  # lo-pha
-    (77, 10000),  # hi-pha
+    (77, 10000),  # lo-direct-events
+    (77, 10000),  # hi-direct-events
 ]
 
 EXPECTED_HI_OMNI_ARRAY_SHAPES = {
@@ -89,8 +89,8 @@ EXPECTED_NUM_VARIABLES = [
     11,  # hi-omni
     6,  # hi-sectored
     8,  # hi-priority
-    80,  # lo-pha
-    60,  # hi-pha
+    80,  # lo-direct-events
+    60,  # hi-direct-events
 ]
 
 # CoDICE-Hi products that have support variables to test

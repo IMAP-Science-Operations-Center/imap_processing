@@ -106,7 +106,7 @@ class MagL2:
         np.ndarray
             Array of magnitudes of the input vectors.
         """
-        return np.linalg.norm(vectors, axis=1)  # type: ignore
+        return np.linalg.norm(vectors, axis=1)
 
     @staticmethod
     def apply_offsets(vectors: np.ndarray, offsets: np.ndarray) -> np.ndarray:
