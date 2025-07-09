@@ -34,7 +34,6 @@ def test_tof_high_energy_decom(decom_test_data, tof_high_energy_test_path):
     np.testing.assert_array_equal(
         df.StartDelay, decom_ultra["startdelay"].values.flatten()
     )
-    # assert json.loads(df["P00s"].values[0])[0] == decom_ultra["p00"][0][0]
 
     for count in df.index.get_level_values("SequenceCount").values:
         df_data = df[
