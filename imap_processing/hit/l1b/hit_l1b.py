@@ -108,13 +108,13 @@ def process_science_data(
     # Process counts data to L1B datasets
     l1b_datasets: dict = {}
     l1b_datasets["imap_hit_l1b_standard-rates"] = process_standard_rates_data(
-        l1a_counts_dataset, livetime
+        l1a_counts_dataset.copy(deep=True), livetime
     )
     l1b_datasets["imap_hit_l1b_summed-rates"] = process_summed_rates_data(
-        l1a_counts_dataset, livetime
+        l1a_counts_dataset.copy(deep=True), livetime
     )
     l1b_datasets["imap_hit_l1b_sectored-rates"] = process_sectored_rates_data(
-        l1a_counts_dataset, livetime
+        l1a_counts_dataset.copy(deep=True), livetime
     )
 
     # Update attributes and dimensions
