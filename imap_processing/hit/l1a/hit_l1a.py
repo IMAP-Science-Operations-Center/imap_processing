@@ -299,8 +299,7 @@ def process_science(
         # Assign attributes and dimensions to each data array in the Dataset
         for var in ds.data_vars.keys():
             try:
-                if var in {
-                    "energy_delta",
+                if "energy_delta" in var or var in {
                     "pkt_len",
                     "version",
                     "type",

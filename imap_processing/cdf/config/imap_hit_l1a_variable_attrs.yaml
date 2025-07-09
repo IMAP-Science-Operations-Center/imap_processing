@@ -22,7 +22,6 @@ default_uint8_attrs: &default_uint8
   VALIDMAX: 255
 
 default_uint16_attrs: &default_uint16
-  DEPEND_0: epoch
   DISPLAY_TYPE: time_series
   VAR_TYPE: data
   UNITS: ' '
@@ -277,6 +276,12 @@ adc_channels_label:
   VAR_TYPE: metadata
 
 # Counts Dataset Labels
+sc_tick_label:
+    CATDESC: Raw spacecraft tick time per integration
+    FIELDNAM: Spacecraft Tick
+    FORMAT: A10
+    VAR_TYPE: metadata
+
 zenith_label:
   CATDESC: Angle from the spin axis (0 deg.) to anti-spin axis (180 deg.) in 8 bins
   FIELDNAM: Zenith Angle
