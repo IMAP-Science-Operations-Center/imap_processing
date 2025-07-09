@@ -29,7 +29,7 @@ def generate_coverage(
         Coverage for each station.
     """
     duration_seconds = 24 * 60 * 60  # 86400 seconds in 24 hours
-    time_step = 3600  # 1 hr in seconds
+    time_step = 300  # 1 hr in seconds
 
     stations = {
         "Kiel": KIEL,
@@ -42,9 +42,9 @@ def generate_coverage(
     time_range = np.arange(start_et_input, stop_et_input, time_step)
     total_visible_mask = np.zeros(time_range.shape, dtype=bool)
 
-    for station_name, (lon, lat, alt) in stations.items():
+    for station_name, (lon, lat, alt, min_elevation) in stations.items():
         azimuth, elevation = calculate_azimuth_and_elevation(lon, lat, alt, time_range)
-        visible = elevation > 0
+        visible = elevation > min_elevation
         total_visible_mask |= visible
         time_utc = et_to_utc(time_range[visible], format_str="ISOC")
 

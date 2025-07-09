@@ -45,11 +45,13 @@ class StationProperties(NamedTuple):
     longitude: float  # longitude in degrees
     latitude: float  # latitude in degrees
     altitude: float  # altitude in kilometers
+    min_elevation_deg: float  # minimum elevation angle in degrees
 
 
-# Define StationProperties instances
+# TODO: Verify longitude, latitude, altitude.
 KIEL = StationProperties(
-    longitude=-71.41,  # longitude in degrees
-    latitude=-33.94,  # latitude in degrees
-    altitude=0.157,  # altitude in kilometers
+    longitude=10.122,  # degrees East
+    latitude=54.339,  # degrees North
+    altitude=0.043,  # approx 43 meters
+    min_elevation_deg=10,  # 10 degrees is the requirement
 )
