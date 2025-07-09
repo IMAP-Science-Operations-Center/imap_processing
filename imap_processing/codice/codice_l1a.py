@@ -950,9 +950,9 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
 
     # Create the dataset to hold the data variables
     if apid == CODICEAPID.COD_LO_PHA:
-        attrs = cdf_attrs.get_global_attributes("imap_codice_l1a_lo-pha")
+        attrs = cdf_attrs.get_global_attributes("imap_codice_l1a_lo-direct-events")
     elif apid == CODICEAPID.COD_HI_PHA:
-        attrs = cdf_attrs.get_global_attributes("imap_codice_l1a_hi-pha")
+        attrs = cdf_attrs.get_global_attributes("imap_codice_l1a_hi-direct-events")
     dataset = xr.Dataset(
         coords={
             "epoch": epoch,
