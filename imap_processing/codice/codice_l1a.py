@@ -143,8 +143,8 @@ class CoDICEL1aPipeline:
         self.coords = {}
 
         coord_names = [
-            *self.config["input_dims"].keys(),
-            *[key + "_label" for key in self.config["input_dims"].keys()],
+            *self.config["dims"].keys(),
+            *[key + "_label" for key in self.config["dims"].keys()],
         ]
 
         # Define epoch coordinates
@@ -174,7 +174,7 @@ class CoDICEL1aPipeline:
                 "spin_sector_index",
                 "ssd_index",
             ]:
-                values = np.arange(self.config["input_dims"][name])
+                values = np.arange(self.config["dims"][name])
                 dims = [name]
             elif name == "spin_sector_pairs_label":
                 values = np.array(
@@ -196,7 +196,7 @@ class CoDICEL1aPipeline:
                 "ssd_index_label",
             ]:
                 key = name.removesuffix("_label")
-                values = np.arange(self.config["input_dims"][key]).astype(str)
+                values = np.arange(self.config["dims"][key]).astype(str)
                 dims = [key]
 
             coord = xr.DataArray(
@@ -249,9 +249,7 @@ class CoDICEL1aPipeline:
             # For most products, the final CDF dimensions always has "epoch" as
             # the first dimension followed by the dimensions for the specific
             # data product
-            dims = ["epoch", *list(self.config["input_dims"].keys())]
-            print(descriptor)
-            print(dims)
+            dims = ["epoch", *list(self.config["dims"].keys())]
 
             # However, CoDICE-Hi products use specific energy bins for the
             # energy dimension
@@ -607,7 +605,7 @@ class CoDICEL1aPipeline:
         # First reshape the data based on how it is written to the data array of
         # the packet data. The number of counters is the last dimension / axis.
         reshape_dims = (
-            *self.config["input_dims"].values(),
+            *self.config["dims"].values(),
             self.config["num_counters"],
         )
 
@@ -615,8 +613,8 @@ class CoDICEL1aPipeline:
         # to the CDF file. Since this is specific to each data product, we need
         # to determine this dynamically based on the "output_dims" config.
         # Again, lo-counters-aggregated is treated slightly differently
-        input_keys = ["num_counters", *self.config["input_dims"].keys()]
-        output_keys = ["num_counters", *self.config["input_dims"].keys()]
+        input_keys = ["num_counters", *self.config["dims"].keys()]
+        output_keys = ["num_counters", *self.config["dims"].keys()]
         transpose_axes = [input_keys.index(dim) for dim in output_keys]
 
         for packet_data in self.raw_data:

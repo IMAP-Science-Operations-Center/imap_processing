@@ -41,16 +41,16 @@ DESCRIPTORS = [
 
 EXPECTED_ARRAY_SHAPES = [
     (304, 15),  # hi-ialirt
-    (76, 1, 128),  # lo-ialirt
+    (76, 128, 1),  # lo-ialirt
     (31778,),  # hskp
-    (77, 6, 128),  # lo-counters-aggregated
-    (77, 24, 6, 128),  # lo-counters-singles
-    (77, 12, 128),  # lo-sw-priority
-    (77, 12, 128),  # lo-nsw-priority
-    (77, 1, 128),  # lo-sw-species
-    (77, 1, 128),  # lo-nsw-species
-    (77, 5, 12, 128),  # lo-sw-angular
-    (77, 19, 12, 128),  # lo-nsw-angular
+    (77, 128, 6),  # lo-counters-aggregated
+    (77, 128, 24, 6),  # lo-counters-singles
+    (77, 128, 12),  # lo-sw-priority
+    (77, 128, 12),  # lo-nsw-priority
+    (77, 128, 1),  # lo-sw-species
+    (77, 128, 1),  # lo-nsw-species
+    (77, 128, 5, 12),  # lo-sw-angular
+    (77, 128, 19, 12),  # lo-nsw-angular
     (77,),  # hi-counters-aggregated
     (77, 12),  # hi-counters-singles
     (),  # hi-omni, shapes are specific to species
