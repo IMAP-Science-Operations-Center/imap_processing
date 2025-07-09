@@ -473,23 +473,15 @@ def test_get_spin_number(test_fixture, use_fake_spin_data_for_time):
     """Tests that get_spin_number assigns the correct spin number."""
     df_filt, _, _, de_dataset = test_fixture
 
-    # Simulate a spin table from MET = 0 to MET = 141*15 seconds
-    use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
+    # Simulate a spin table from MET = 0 to MET = 500*15 seconds
+    use_fake_spin_data_for_time(start_met=0, end_met=500 * 15)
 
-    # Convert shcoarse (time) to MET relative to first value
-    # Take off first partial spin.
-    first_spin_index = 19
-    de_met = (
-        de_dataset["shcoarse"].values[first_spin_index:]
-        - de_dataset["shcoarse"].values[first_spin_index]
-    )
-    de_spin = de_dataset["spin"].values[first_spin_index:]
+    de_met = np.array([0, 0, 5760, 5760, 5760, 5760, 5760, 5760])
+    de_spin = np.array([128, 128, 129, 129, 130, 130, 131, 131], dtype=np.uint8)
 
     spin_number = get_spin_number(de_met, de_spin)
-    # First spin number is 128.
-    expected_spin_number = de_spin - 128
 
-    assert np.array_equal(spin_number, expected_spin_number)
+    assert np.array_equal(spin_number & 0xFF, de_spin)
 
 
 def test_get_eventtimes(test_fixture, use_fake_spin_data_for_time):

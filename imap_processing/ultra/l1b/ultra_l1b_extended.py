@@ -833,19 +833,22 @@ def get_spin_number(de_met: NDArray, de_spin: NDArray) -> NDArray:
     spin_start_indices = np.where(is_new_spin)[0]
     spin_end_indices = np.append(spin_start_indices[1:], len(de_met_sorted))
 
-    assigned_spin_number_sorted = np.empty_like(de_spin_sorted)
-
     spin_start_mets = spin_df["spin_start_met"].values
     spin_numbers = spin_df["spin_number"].values
+    assigned_spin_number_sorted = np.empty(de_spin_sorted.shape, dtype=np.uint32)
+    # Take last 8 bits of spin numbers.
+    possible_spins = spin_numbers & 0xFF
 
     # Assign each group based on median time.
     for start, end in zip(spin_start_indices, spin_end_indices):
-        # Get median time for the spin.
-        median_time = np.median(de_met_sorted[start:end])
-        spin_idx = np.searchsorted(spin_start_mets, median_time, side="right") - 1
-        # Handle edge cases.
-        spin_idx = np.clip(spin_idx, 0, len(spin_numbers) - 1)
-        assigned_spin_number_sorted[start:end] = spin_numbers[spin_idx]
+        # Get possible times to match to universal spin table.
+        possible_times = spin_start_mets[possible_spins == de_spin_sorted[start]]
+        # Get nearest time for matching spins.
+        nearest_idx = np.abs(possible_times - de_met_sorted[start]).argmin()
+        nearest_value = possible_times[nearest_idx]
+        assigned_spin_number_sorted[start:end] = spin_numbers[
+            spin_start_mets == nearest_value
+        ]
 
     # Undo the sort to match original order.
     assigned_spin_number = np.empty_like(assigned_spin_number_sorted)
