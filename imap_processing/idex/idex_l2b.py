@@ -77,8 +77,6 @@ SPIN_PHASE_BIN_EDGES = np.array([0, 90, 180, 270, 360])
 SKY_GRID = AzElSkyGrid(IDEX_SPACING_DEG)
 LON_BINS_EDGES = SKY_GRID.az_bin_edges
 LAT_BINS_EDGES = SKY_GRID.el_bin_edges
-# Add one to the last bin edge to include the last bin (90 degrees)
-LAT_BINS_EDGES[-1] += 1
 
 
 def idex_l2b(
@@ -377,18 +375,21 @@ def compute_counts_by_charge_and_mass(
         # Make sure longitude values are in the range [0, 360)
         longitude = np.mod(l2a_dataset["longitude"].data[current_day_indices], 360)
         latitude = l2a_dataset["latitude"].data[current_day_indices]
+        # Clip latitude values to the range [-90, 89]
+        # np.digitize does not include the right edge, so we clip to 89.
+        latitude = np.clip(np.atleast_1d(latitude), -90, 89)
         # Convert units
-        mass_vals = FG_TO_KG * np.array(mass_vals)
+        mass_vals = FG_TO_KG * np.atleast_1d(mass_vals)
         # Bin masses
-        binned_mass = np.array(np.digitize(mass_vals, bins=MASS_BIN_EDGES))
+        binned_mass = np.asarray(np.digitize(mass_vals, bins=MASS_BIN_EDGES))
         # Bin charges
-        binned_charge = np.array(np.digitize(charge_vals, bins=CHARGE_BIN_EDGES))
+        binned_charge = np.asarray(np.digitize(charge_vals, bins=CHARGE_BIN_EDGES))
         # Bin spin phases
         binned_spin_phase = bin_spin_phases(spin_phase_angles)
         # Bin longitude and latitude into the rectangular grid.
-        binned_longitude = np.array(np.digitize(longitude, bins=LON_BINS_EDGES))
+        binned_longitude = np.asarray(np.digitize(longitude, bins=LON_BINS_EDGES))
         # Latitude should be binned with the right edge included. 90 is a valid latitude
-        binned_latitude = np.array(np.digitize(latitude, bins=LAT_BINS_EDGES))
+        binned_latitude = np.asarray(np.digitize(latitude, bins=LAT_BINS_EDGES))
         # If the values in the array are beyond the bounds of bins, 0 or len(bins) it is
         # returned as such. In this case, the desired result is to place the values
         # beyond the last bin into the last bin and keep the values below the first bin.
