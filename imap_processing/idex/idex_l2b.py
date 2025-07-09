@@ -375,9 +375,6 @@ def compute_counts_by_charge_and_mass(
         # Make sure longitude values are in the range [0, 360)
         longitude = np.mod(l2a_dataset["longitude"].data[current_day_indices], 360)
         latitude = l2a_dataset["latitude"].data[current_day_indices]
-        # Clip latitude values to the range [-90, 89]
-        # np.digitize does not include the right edge, so we clip to 89.
-        latitude = np.clip(np.atleast_1d(latitude), -90, 89)
         # Convert units
         mass_vals = FG_TO_KG * np.atleast_1d(mass_vals)
         # Bin masses
@@ -390,13 +387,13 @@ def compute_counts_by_charge_and_mass(
         binned_longitude = np.asarray(np.digitize(longitude, bins=LON_BINS_EDGES))
         # Latitude should be binned with the right edge included. 90 is a valid latitude
         binned_latitude = np.asarray(np.digitize(latitude, bins=LAT_BINS_EDGES))
+        # Clip latitude value above the right edge to be in the last bin
+        binned_latitude = np.clip(binned_latitude, 1, len(LAT_BINS_EDGES) - 1)
         # If the values in the array are beyond the bounds of bins, 0 or len(bins) it is
         # returned as such. In this case, the desired result is to place the values
         # beyond the last bin into the last bin and keep the values below the first bin.
-        binned_charge[binned_charge == len(CHARGE_BIN_EDGES)] = (
-            len(CHARGE_BIN_EDGES) - 1
-        )
-        binned_mass[binned_mass == len(MASS_BIN_EDGES)] = len(MASS_BIN_EDGES) - 1
+        binned_charge = np.clip(binned_charge, 0, len(CHARGE_BIN_EDGES) - 1)
+        binned_mass = np.clip(binned_mass, 0, len(MASS_BIN_EDGES) - 1)
 
         # Count dust events for each spin phase, mass bin, charge bin, and bin into
         # a rectangular grid
