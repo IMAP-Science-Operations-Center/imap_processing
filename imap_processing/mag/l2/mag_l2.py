@@ -7,7 +7,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.mag import imap_mag_sdc_configuration_v001 as configuration
 from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l1b.mag_l1b import calibrate_vector
-from imap_processing.mag.l2.mag_l2_data import MagL2
+from imap_processing.mag.l2.mag_l2_data import MagL2, ValidFrames
 
 
 def mag_l2(
@@ -93,7 +93,7 @@ def mag_l2(
         calibration_matrix=calibration_matrix,
     )
 
-    input_data = MagL2(
+    l2_data = MagL2(
         vectors[:, :3],  # level 2 vectors don't include range
         input_data["epoch"].data,
         input_data["vectors"].data[:, 3],
@@ -106,9 +106,13 @@ def mag_l2(
     )
     attributes = ImapCdfAttributes()
     attributes.add_instrument_global_attrs("mag")
-    # temporarily point to l1c
     attributes.add_instrument_variable_attrs("mag", "l2")
-    return [input_data.generate_dataset(attributes, day)]
+
+    imap_srf = l2_data.generate_dataset(attributes, day)
+    l2_data.rotate_frame(ValidFrames.DSRF)
+    imap_dsrf = l2_data.generate_dataset(attributes, day)
+
+    return [imap_dsrf, imap_srf]
 
 
 def retrieve_matrix_from_l2_calibration(
