@@ -33,6 +33,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_RATES,
     ULTRA_TOF_HIGH_ANGULAR,
     ULTRA_TOF_HIGH_ENERGY,
+    ULTRA_TOF_HIGH_TIME,
 )
 from imap_processing.utils import packet_file_to_datasets
 
@@ -110,6 +111,13 @@ def ultra_l1a(  # noqa: PLR0912
             )
             gattr_key = ULTRA_TOF_HIGH_ENERGY.logical_source[
                 ULTRA_TOF_HIGH_ENERGY.apid.index(apid)
+            ]
+        elif apid in ULTRA_TOF_HIGH_TIME.apid:
+            decom_ultra_dataset = process_ultra_tof(
+                datasets_by_apid[apid], ULTRA_TOF_HIGH_TIME
+            )
+            gattr_key = ULTRA_TOF_HIGH_TIME.logical_source[
+                ULTRA_TOF_HIGH_TIME.apid.index(apid)
             ]
         elif apid in ULTRA_RATES.apid:
             decom_ultra_dataset = process_ultra_rates(datasets_by_apid[apid])

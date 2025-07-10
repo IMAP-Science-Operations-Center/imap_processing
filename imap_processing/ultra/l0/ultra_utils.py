@@ -19,9 +19,14 @@ class PacketProperties(NamedTuple):
     ]  # Length of the array to be decompressed (could be None).
     mantissa_bit_length: Union[int, None]  # used to determine the level of
     # precision that can be recovered from compressed data (could be None).
-    image_panes: Union[int, None] = None  # number of images
-    pixel_window_rows: Union[int, None] = None  # number of rows in each image
-    pixel_window_columns: Union[int, None] = None  # number of columns in each image
+    image_panes: Union[int, None] = None
+    # number of images. See table 11 in the FSSD.
+    pixel_window_rows: Union[int, None] = None
+    # number of rows in each image. See table 49 in the FSSD.
+    pixel_window_columns: Union[int, None] = None
+    # number of columns in each image. See table 49 in the FSSD.
+    planes_per_packet: Union[int, None] = None
+    # number of planes in each packet. See table 52 in the FSSD.
 
 
 # Define PacketProperties instances directly in the module namespace
@@ -79,6 +84,7 @@ ULTRA_TOF_HIGH_ANGULAR = PacketProperties(
     image_panes=8,
     pixel_window_rows=54,
     pixel_window_columns=180,
+    planes_per_packet=1,
     len_array=None,
     mantissa_bit_length=4,
 )
@@ -94,9 +100,28 @@ ULTRA_TOF_HIGH_ENERGY = PacketProperties(
     image_panes=28,
     pixel_window_rows=27,
     pixel_window_columns=90,
+    planes_per_packet=1,
     len_array=None,
     mantissa_bit_length=4,
 )
+
+ULTRA_TOF_HIGH_TIME = PacketProperties(
+    apid=[885, 949],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-time",
+        "imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-time",
+    ],
+    addition_to_logical_desc="Time of Flight High Time Images",
+    width=4,
+    block=15,
+    image_panes=8,
+    pixel_window_rows=18,
+    pixel_window_columns=60,
+    planes_per_packet=2,
+    len_array=None,
+    mantissa_bit_length=4,
+)
+
 ULTRA_EVENTS = PacketProperties(
     apid=[896, 960],
     logical_source=["imap_ultra_l1a_45sensor-de", "imap_ultra_l1a_90sensor-de"],

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing.ultra.l0.ultra_utils import ULTRA_TOF_HIGH_ENERGY
+from imap_processing.ultra.l0.ultra_utils import ULTRA_TOF_HIGH_TIME
 
 
 @pytest.mark.parametrize(
@@ -12,7 +12,7 @@ from imap_processing.ultra.l0.ultra_utils import ULTRA_TOF_HIGH_ENERGY
     [
         pytest.param(
             {
-                "apid": ULTRA_TOF_HIGH_ENERGY.apid[0],
+                "apid": ULTRA_TOF_HIGH_TIME.apid[0],
                 "filename": "FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_"
                 "20240122T093008.CCSDS",
             }
@@ -21,12 +21,12 @@ from imap_processing.ultra.l0.ultra_utils import ULTRA_TOF_HIGH_ENERGY
     indirect=True,
 )
 @pytest.mark.external_test_data
-def test_tof_high_energy_decom(decom_test_data, ccsds_path_extra):
+def test_tof_high_time_decom(decom_test_data, tof_high_time_test_path):
     """This function reads validation data and checks that decom data
     matches validation data for image rate packet"""
 
     decom_ultra = decom_test_data
-    df = pd.read_csv(ccsds_path_extra, index_col="SequenceCount")
+    df = pd.read_csv(tof_high_time_test_path, index_col="SequenceCount")
 
     np.testing.assert_array_equal(df.Spin, decom_ultra["spin"].values.flatten())
     np.testing.assert_array_equal(
