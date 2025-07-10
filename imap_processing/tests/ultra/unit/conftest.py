@@ -300,15 +300,15 @@ def decom_test_data(request, xtce_path):
         ULTRA_TOF_HIGH_ANGULAR.apid[0]: lambda ds, apid: process_ultra_tof(
             ds, ULTRA_TOF_HIGH_ANGULAR
         ),
-        # ULTRA_TOF_HIGH_ANGULAR.apid[1]: lambda ds, apid: process_ultra_tof(
-        #     ds, ULTRA_TOF_HIGH_ANGULAR
-        # ),
+        ULTRA_TOF_HIGH_ANGULAR.apid[1]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_TOF_HIGH_ANGULAR
+        ),
         ULTRA_TOF_HIGH_ENERGY.apid[0]: lambda ds, apid: process_ultra_tof(
             ds, ULTRA_TOF_HIGH_ENERGY
         ),
-        # ULTRA_TOF_HIGH_ENERGY.apid[1]: lambda ds, apid: process_ultra_tof(
-        #     ds, ULTRA_TOF_HIGH_ENERGY
-        # ),
+        ULTRA_TOF_HIGH_ENERGY.apid[1]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_TOF_HIGH_ENERGY
+        ),
         ULTRA_TOF_HIGH_TIME.apid[0]: lambda ds, apid: process_ultra_tof(
             ds, ULTRA_TOF_HIGH_TIME
         ),
