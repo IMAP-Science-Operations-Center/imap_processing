@@ -87,7 +87,7 @@ default_energy_attrs: &default_energy
   VALIDMAX: 1000
   FORMAT: F6.1
   UNITS: MeV/nuc
-  SCALE_TYP: log
+  SCALETYP: log
 
 default_uncertainty_attrs: &default_uncertainty
   DEPEND_0: epoch
@@ -98,7 +98,7 @@ default_uncertainty_attrs: &default_uncertainty
   FILLVAL: -1.00E+31
   FORMAT: F15.3
   UNITS: counts
-  SCALE_TYP: log
+  SCALETYP: log
 
 # <=== Coordinates ===>
 sc_tick:
