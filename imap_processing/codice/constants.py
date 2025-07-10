@@ -39,7 +39,7 @@ APIDS_FOR_SCIENCE_PROCESSING = [
 CODICEAPID_MAPPING = {
     "hskp": CODICEAPID.COD_NHK,
     "lo-ialirt": CODICEAPID.COD_LO_IAL,
-    "lo-pha": CODICEAPID.COD_LO_PHA,
+    "lo-direct-events": CODICEAPID.COD_LO_PHA,
     "lo-sw-priority": CODICEAPID.COD_LO_SW_PRIORITY_COUNTS,
     "lo-sw-species": CODICEAPID.COD_LO_SW_SPECIES_COUNTS,
     "lo-nsw-species": CODICEAPID.COD_LO_NSW_SPECIES_COUNTS,
@@ -49,7 +49,7 @@ CODICEAPID_MAPPING = {
     "lo-counters-aggregated": CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED,
     "lo-counters-singles": CODICEAPID.COD_LO_INST_COUNTS_SINGLES,
     "hi-ialirt": CODICEAPID.COD_HI_IAL,
-    "hi-pha": CODICEAPID.COD_HI_PHA,
+    "hi-direct-events": CODICEAPID.COD_HI_PHA,
     "hi-counters-aggregated": CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED,
     "hi-counters-singles": CODICEAPID.COD_HI_INST_COUNTS_SINGLES,
     "hi-omni": CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS,
@@ -100,6 +100,17 @@ LO_NSW_SPECIES_VARIABLE_NAMES = [
     "heplus",
     "cnoplus",
 ]
+LO_IALIRT_VARIABLE_NAMES = [
+    "heplusplus",
+    "cplus5",
+    "cplus6",
+    "oplus6",
+    "oplus7",
+    "oplus8",
+    "mg",
+    "fe_loq",
+    "fe_hiq",
+]
 
 # CDF variable names used for hi data products
 HI_COUNTERS_SINGLES_VARIABLE_NAMES = ["tcr", "ssdo", "stssd"]
@@ -113,9 +124,10 @@ HI_PRIORITY_VARIABLE_NAMES = [
     "Priority5",
 ]
 HI_SECTORED_VARIABLE_NAMES = ["h", "he3he4", "cno", "fe"]
+HI_IALIRT_VARIABLE_NAMES = ["h"]
 
 # CDF variable names used for direct event data products
-HI_PHA_CDF_FIELDS = [
+HI_DE_CDF_FIELDS = [
     "NumEvents",
     "DataQuality",
     "SSDEnergy",
@@ -127,10 +139,8 @@ HI_PHA_CDF_FIELDS = [
     "SpinAngle",
     "SpinNumber",
 ]
-HI_PHA_VARIABLE_NAMES = [
-    f"P{n}_{field}" for n in range(6) for field in HI_PHA_CDF_FIELDS
-]
-LO_PHA_CDF_FIELDS = [
+HI_DE_VARIABLE_NAMES = [f"P{n}_{field}" for n in range(6) for field in HI_DE_CDF_FIELDS]
+LO_DE_CDF_FIELDS = [
     "NumEvents",
     "DataQuality",
     "APDGain",
@@ -142,9 +152,18 @@ LO_PHA_CDF_FIELDS = [
     "SpinAngle",
     "EnergyStep",
 ]
-LO_PHA_VARIABLE_NAMES = [
-    f"P{n}_{field}" for n in range(8) for field in LO_PHA_CDF_FIELDS
+LO_DE_VARIABLE_NAMES = [f"P{n}_{field}" for n in range(8) for field in LO_DE_CDF_FIELDS]
+
+# Final I-ALiRT data product fields
+CODICE_LO_IAL_DATA_FIELDS = [
+    "c_over_o_abundance",
+    "mg_over_o_abundance",
+    "fe_over_o_abundance",
+    "c_plus_6_over_c_plus_5_ratio",
+    "o_plus_7_over_o_plus_6_ratio",
+    "fe_low_over_fe_high_ratio",
 ]
+CODICE_HI_IAL_DATA_FIELDS = ["h"]
 
 # lo- and hi-counters-aggregated data product variables are dynamically
 # determined based on the number of active counters
@@ -214,6 +233,27 @@ HI_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
 # and deltas of the bins, which then get stored in the CDF files for future use.
 # These are defined in the "Data Products - Hi" tab of the "*-SCI-LUT-*.xml"
 # spreadsheet that largely defines CoDICE processing.
+IALIRT_ENERGY_TABLE = {
+    "h": [
+        0.05,
+        0.070710678,
+        0.1,
+        0.141421356,
+        0.2,
+        0.282842712,
+        0.4,
+        0.565685425,
+        0.8,
+        1.13137085,
+        1.6,
+        2.2627417,
+        3.2,
+        4.5254834,
+        6.4,
+        9.050966799,
+    ],
+}
+
 OMNI_ENERGY_TABLE = {
     "h": [
         0.05,
@@ -367,6 +407,21 @@ SECTORED_ENERGY_TABLE = {
 # Much of these are described in the algorithm document in chapter 10 ("Data
 # Level 1A")
 DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
+    CODICEAPID.COD_HI_IAL: {
+        "dataset_name": "imap_codice_l1a_hi-ialirt",
+        "energy_table": IALIRT_ENERGY_TABLE,
+        "input_dims": {"esa_step": 15, "inst_az": 4},
+        "instrument": "hi",
+        "num_counters": 1,
+        "num_spins": 4,
+        "output_dims": {"esa_step": 15, "inst_az": 4},
+        "support_variables": [
+            "data_quality",
+            "spin_period",
+            "energy_h",
+        ],
+        "variable_names": HI_IALIRT_VARIABLE_NAMES,
+    },
     CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED: {
         "dataset_name": "imap_codice_l1a_hi-counters-aggregated",
         "input_dims": {},
@@ -448,6 +503,24 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
             "energy_fe",
         ],
         "variable_names": HI_SECTORED_VARIABLE_NAMES,
+    },
+    CODICEAPID.COD_LO_IAL: {
+        "dataset_name": "imap_codice_l1a_lo-ialirt",
+        "input_dims": {"spin_sector": 1, "esa_step": 128},
+        "instrument": "lo",
+        "num_counters": 9,
+        "output_dims": {"spin_sector": 1, "esa_step": 128},
+        "support_variables": [
+            "energy_table",
+            "acquisition_time_per_step",
+            "rgfo_half_spin",
+            "nso_half_spin",
+            "sw_bias_gain_mode",
+            "st_bias_gain_mode",
+            "data_quality",
+            "spin_period",
+        ],
+        "variable_names": LO_IALIRT_VARIABLE_NAMES,
     },
     CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED: {
         "dataset_name": "imap_codice_l1a_lo-counters-aggregated",
@@ -597,6 +670,63 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     },
 }
 
+# Various configurations to support L1b processing of individual data products
+# Much of these are described in the algorithm document in chapter 11 ("Data
+# Level 1B")
+L1B_DATA_PRODUCT_CONFIGURATIONS: dict[str, dict] = {
+    "hi-counters-aggregated": {
+        "num_spin_sectors": 24,
+        "num_spins": 16,
+    },
+    "hi-counters-singles": {
+        "num_spin_sectors": 24,
+        "num_spins": 16,
+    },
+    "hi-ialirt": {
+        "num_spin_sectors": 24,
+        "num_spins": 4,
+    },
+    "hi-omni": {
+        "num_spin_sectors": 24,
+        "num_spins": 4,
+    },
+    "hi-priority": {  # TODO: Ask Joey to define these
+        "num_spin_sectors": 1,
+        "num_spins": 1,
+    },
+    "hi-sectored": {
+        "num_spin_sectors": 2,
+        "num_spins": 16,
+    },
+    "lo-counters-aggregated": {
+        "num_spin_sectors": 2,
+    },
+    "lo-counters-singles": {
+        "num_spin_sectors": 2,
+    },
+    "lo-nsw-angular": {
+        "num_spin_sectors": 1,
+    },
+    "lo-sw-angular": {
+        "num_spin_sectors": 1,
+    },
+    "lo-nsw-priority": {
+        "num_spin_sectors": 1,
+    },
+    "lo-sw-priority": {
+        "num_spin_sectors": 1,
+    },
+    "lo-nsw-species": {
+        "num_spin_sectors": 12,
+    },
+    "lo-sw-species": {
+        "num_spin_sectors": 12,
+    },
+    "lo-ialirt": {
+        "num_spin_sectors": 12,
+    },
+}
+
 # Various configurations to support processing of direct events data products
 # These are described in the algorithm document in chapter 10 ("Data Level 1A")
 DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
@@ -654,7 +784,7 @@ DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
                 "fillval": np.iinfo(np.uint8).max,
             },
         },
-        "cdf_fields": HI_PHA_CDF_FIELDS,
+        "cdf_fields": HI_DE_CDF_FIELDS,
     },
     CODICEAPID.COD_LO_PHA: {
         "num_priorities": 8,
@@ -715,8 +845,31 @@ DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
                 "fillval": np.iinfo(np.uint8).max,
             },
         },
-        "cdf_fields": LO_PHA_CDF_FIELDS,
+        "cdf_fields": LO_DE_CDF_FIELDS,
     },
+}
+
+# Define the packet fields needed to be stored in segmented data and their
+# corresponding bit lengths for direct event data products
+IAL_BIT_STRUCTURE = {
+    "SHCOARSE": 32,
+    "PACKET_VERSION": 16,
+    "SPIN_PERIOD": 16,
+    "ACQ_START_SECONDS": 32,
+    "ACQ_START_SUBSECONDS": 20,
+    "SPARE_00": 8,
+    "ST_BIAS_GAIN_MODE": 2,
+    "SW_BIAS_GAIN_MODE": 2,
+    "TABLE_ID": 32,
+    "PLAN_ID": 16,
+    "PLAN_STEP": 4,
+    "VIEW_ID": 4,
+    "RGFO_HALF_SPIN": 6,
+    "NSO_HALF_SPIN": 6,
+    "SPARE_01": 1,
+    "SUSPECT": 1,
+    "COMPRESSION": 3,
+    "BYTE_COUNT": 23,
 }
 
 # Define the packet fields needed to be stored in segmented data and their
@@ -742,7 +895,7 @@ DE_METADATA_FIELDS = {
 # These are defined in the "Views" tab of the "*-SCI-LUT-*.xml" spreadsheet that
 # largely defines CoDICE processing.
 LO_COMPRESSION_ID_LOOKUP = {
-    0: CoDICECompression.LOSSY_A_LOSSLESS,
+    0: CoDICECompression.PACK_24_BIT,
     1: CoDICECompression.LOSSY_B_LOSSLESS,
     2: CoDICECompression.LOSSY_B_LOSSLESS,
     3: CoDICECompression.LOSSY_A_LOSSLESS,

@@ -1,5 +1,3 @@
-# TODO: add attributes for science packets
-
 # <=== Defaults ===>
 # Default values for variable attrs unless overwritten
 default_attrs: &default
@@ -20,7 +18,6 @@ default_uint8_attrs: &default_uint8
   VALIDMIN: 0
   VALIDMAX: 255
   dtype: uint8
-  DEPEND_0: sc_tick
 
 default_uint16_attrs: &default_uint16
   <<: *default
@@ -29,7 +26,6 @@ default_uint16_attrs: &default_uint16
   VALIDMIN: 0
   VALIDMAX: 65535
   dtype: uint16
-  DEPEND_0: sc_tick
 
 default_uint32_attrs: &default_uint32
   <<: *default
@@ -39,63 +35,342 @@ default_uint32_attrs: &default_uint32
   VALIDMAX: 4294967295
   dtype: uint32
 
-default_int64_attrs: &default_int64
-  <<: *default
-  FILLVAL: -9223372036854775808
-  FORMAT: I20
-  VALIDMIN: -9223372036854775808
-  VALIDMAX: 9223372036854775807
-  dtype: int64
-
-default_int32_attrs: &default_int32
-  <<: *default
-  FILLVAL: -2147483648
-  FORMAT: I10
-  VALIDMIN: -2147483648
-  VALIDMAX: 2147483647
-  dtype: int32
-
-default_float32_attrs: &default_float32
-  <<: *default
-  FILLVAL: .NAN
-  FORMAT: F10.2
-  VALIDMIN: -3.4028235e+38
-  VALIDMAX: 3.4028235e+38
-  dtype: float32
-
-hk_support_attrs: &hk_support_default
-  <<: *default
-  DISPLAY_TYPE: no_plot
-  VAR_TYPE: ignore_data
-
-hk_default_attrs: &hk_default
+default_hk_attrs: &default_hk
   <<: *default
   VALIDMAX: 4095
   FORMAT: I4
 
+default_hk_support_attrs: &default_hk_support
+  <<: *default
+  DISPLAY_TYPE: no_plot
+  VAR_TYPE: ignore_data
+
+default_counts_attrs: &default_counts
+  <<: *default
+  DISPLAY_TYPE: time_series
+  VAR_TYPE: data
+  FORMAT: I10
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  UNITS: counts
+  LABLAXIS: Counts
+  SCALETYP: log
+
+default_counts_support_attrs: &default_counts_support
+  <<: *default
+  DISPLAY_TYPE: no_plot
+  VAR_TYPE: support_data
+  FILLVAL: -1.00E+31
+  VALIDMIN: 0
+  VALIDMAX: 1000
+
+default_index_attrs: &default_index
+  <<: *default_uint32
+  DISPLAY_TYPE: no_plot
+  VAR_TYPE: support_data
+  VALIDMAX: 1000
+
+default_energy_attrs: &default_energy
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: no_plot
+  LABLAXIS: Energy
+  FILLVAL: -1.00E+31
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FORMAT: F5.1
+  UNITS: MeV
+  SCALE_TYP: log
+
+default_uncertainty_attrs: &default_uncertainty
+  DEPEND_0: epoch
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: no_plot
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1.00E+31
+  FORMAT: F9.3
+  UNITS: counts
+  SCALE_TYP: log
+
 # <=== Coordinates ===>
-adc_channels:   # adc_channels is a dependency for leak_i data variable
+sc_tick:
+  <<: *default_uint32
+  CATDESC: Raw spacecraft tick time per integration
+  FIELDNAM: Spacecraft Tick
+  LABLAXIS: sc_tick
+  FORMAT: I10
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: no_plot
+  UNITS: ''
+  SCALETYP: linear
+
+# Counts Dataset Coordinates
+zenith:
+  <<: *default_counts_support
+  CATDESC: Angle from the spin axis (0 deg.) to anti-spin axis (180 deg.) in 8 bins
+  FIELDNAM: Zenith
+  LABLAXIS: Zenith
+  FORMAT: F5.1
+  UNITS: deg
+
+azimuth:
+  <<: *default_counts_support
+  CATDESC: Spin angle in 15 bins (0 deg. is zero of spin phase)
+  FIELDNAM: Azimuth
+  LABLAXIS: Azimuth
+  FORMAT: F5.1
+  UNITS: Deg
+
+gain:
+  <<: *default_counts_support
+  CATDESC: Single rates gain. 0=low, 1=high
+  FIELDNAM: gain
+  LABLAXIS: Gain
+  FORMAT: I1
+
+sngrates_index:
+  <<: *default_index
+  CATDESC: Single rates index
+  FIELDNAM: sngrates_index
+  LABLAXIS: sngrates index
+
+coinrates_index:
+  <<: *default_index
+  CATDESC: Coincidence rates index
+  FIELDNAM: coinrates_index
+  LABLAXIS: coinrates index
+
+pbufrates_index:
+  <<: *default_index
+  CATDESC: Priority buffer rates index
+  FIELDNAM: pbufrates_index
+  LABLAXIS: pbufrates index
+
+l2fgrates_index:
+  <<: *default_index
+  CATDESC: Range 2 foreground rates index
+  FIELDNAM: l2fgrates_index
+  LABLAXIS: l2fgrates index
+
+l2bgrates_index:
+  <<: *default_index
+  CATDESC: Range 2 background rates index
+  FIELDNAM: l2bgrates_index
+  LABLAXIS: l2bgrates index
+
+l3fgrates_index:
+  <<: *default_index
+  CATDESC: Range 3 foreground rates index
+  FIELDNAM: l3fgrates index
+  LABLAXIS: l3fgrates index
+
+l3bgrates_index:
+  <<: *default_index
+  CATDESC: Range 3 background rates index
+  FIELDNAM: l3bgrates index
+  LABLAXIS: l3bgrates index
+
+penfgrates_index:
+  <<: *default_index
+  CATDESC: Range 4 foreground rates index
+  FIELDNAM: penfgrates index
+  LABLAXIS: penfgrates index
+
+penbgrates_index:
+  <<: *default_index
+  CATDESC: Range 4 background rates index
+  FIELDNAM: penbgrates index
+  LABLAXIS: penbgrates index
+
+ialirtrates_index:
+  <<: *default_index
+  CATDESC: ialirtrates index
+  FIELDNAM: ialirtrates index
+  LABLAXIS: ialirtrates index
+
+l4fgrates_index:
+  <<: *default_index
+  CATDESC: L4 ions foreground rates index
+  FIELDNAM: l4fgrates index
+  LABLAXIS: l4fgrates index
+
+l4bgrates_index:
+  <<: *default_index
+  CATDESC: L4 ions background rates index
+  FIELDNAM: l4bgrates index
+  LABLAXIS: l4bgrates index
+
+h_energy_mean:
+  <<: *default_energy
+  CATDESC: H sectored geometric mean energy
+  FIELDNAM: H energy mean
+  DELTA_MINUS_VAR: h_energy_delta_minus
+  DELTA_PLUS_VAR: h_energy_delta_plus
+
+he4_energy_mean:
+  <<: *default_energy
+  CATDESC: He4 sectored geometric mean energy
+  FIELDNAM: He4 energy mean
+
+cno_energy_mean:
+  <<: *default_energy
+  CATDESC: C, N, O sectored geometric mean energy
+  FIELDNAM: C, N, O energy mean
+
+nemgsi_energy_mean:
+  <<: *default_energy
+  CATDESC: Ne, Mg, Si sectored geometric mean energy
+  FIELDNAM: Ne, Mg, Si energy mean
+
+fe_energy_mean:
+  <<: *default_energy
+  CATDESC: Fe sectored geometric mean energy
+  FIELDNAM: Fe energy mean
+
+
+# Housekeeping Dataset Coordinates
+adc_channels:
   DISPLAY_TYPE: no_plot
   FILLVAL: -9223372036854775808
   UNITS: ' '
   SCALETYP: linear
   VALIDMIN: 0
   VALIDMAX: 63
-  VAR_TYPE: metadata
+  VAR_TYPE: support data
   CATDESC: ADC Channel
   FIELDNAM: ADC Channel
   LABLAXIS: Channel
   FORMAT: I2
 
-# <=== Label Attributes ===>
-# LABL_PTR_i expects VAR_TYPE of metadata with char data type
 
+# <=== Label Attributes ===>
+# Housekeeping Labels
 adc_channels_label:
   CATDESC: Analog Digital Converter Channels
   FIELDNAM: ADC Channels
   FORMAT: A2
   VAR_TYPE: metadata
 
+# Counts Dataset Labels
+zenith_label:
+  CATDESC: Angle from the spin axis (0 deg.) to anti-spin axis (180 deg.) in 8 bins
+  FIELDNAM: Zenith Angle
+  FORMAT: A6
+  VAR_TYPE: metadata
+
+azimuth_label:
+  CATDESC: Spin angle in 15 bins (0 deg. is zero of spin phase)
+  FIELDNAM: Azimuth Angle
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+gain_label:
+  CATDESC: Single rates gain. 0=low, 1=high
+  FIELDNAM: Gain
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+sngrates_index_label:
+  CATDESC: Single rates index
+  FIELDNAM: SNGRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+coinrates_index_label:
+  CATDESC: Coincidence rates index
+  FIELDNAM: COINRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+pbufrates_index_label:
+  CATDESC: Priority buffer rates index
+  FIELDNAM: PBUFRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+l2fgrates_index_label:
+  CATDESC: Range 2 foreground rates index
+  FIELDNAM: L2FGRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+l2bgrates_index_label:
+  CATDESC: Range 2 background rates index
+  FIELDNAM: L2BGRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+l3fgrates_index_label:
+  CATDESC: Range 3 foreground rates index
+  FIELDNAM: L2FGRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+l3bgrates_index_label:
+  CATDESC: Range 3 background rates index
+  FIELDNAM: L3BGRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+penfgrates_index_label:
+  CATDESC: Range 4 foreground rates index
+  FIELDNAM: PENFGRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+penbgrates_index_label:
+  CATDESC: Range 4 background rates index
+  FIELDNAM: PENBGRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+ialirtrates_index_label:
+  CATDESC: ialirtrates index
+  FIELDNAM: IALIRTRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+l4fgrates_index_label:
+  CATDESC: L4 ions foreground rates index
+  FIELDNAM: L4FGRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+l4bgrates_index_label:
+  CATDESC: L4 ions background rates index
+  FIELDNAM: L4BGRATES Index
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+h_energy_mean_label:
+  CATDESC: Geometric mean energy for H
+  FIELDNAM: H Energy
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+he4_energy_mean_label:
+  CATDESC: Geometric mean energy for He4
+  FIELDNAM: He4 Energy
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+nemgsi_energy_mean_label:
+  CATDESC: Geometric mean energy for NeMgSi
+  FIELDNAM: NeMgSi Energy
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+cno_energy_mean_label:
+  CATDESC: Geometric mean energy for CNO
+  FIELDNAM: CNO Energy
+  FORMAT: A5
+  VAR_TYPE: metadata
+
+fe_energy_mean_label:
+  CATDESC: Geometric mean energy for Fe
+  FIELDNAM: Fe Energy
+  FORMAT: A5
+  VAR_TYPE: metadata
 
 # <=== Data Variable Attributes ===>
 
@@ -104,54 +379,1089 @@ version:
   <<: *default_uint8
   CATDESC: CCSDS packet version number
   FIELDNAM: CCSDS version
+  LABLAXIS: Value
   VAR_TYPE: support_data
+  DEPEND_0: sc_tick
 
 type:
   <<: *default_uint8
   CATDESC: CCSDS packet type
   FIELDNAM: CCSDS type
+  LABLAXIS: Value
   VAR_TYPE: support_data
+  DEPEND_0: sc_tick
 
 sec_hdr_flg:
   <<: *default_uint8
   CATDESC: CCSDS secondary header flag
   FIELDNAM: CCSDS secondary header flag
+  LABLAXIS: Value
   VAR_TYPE: support_data
+  DEPEND_0: sc_tick
 
 pkt_apid:
   <<: *default_uint16
   CATDESC: CCSDS application process ID
   FIELDNAM: CCSDS APID
+  LABLAXIS: Value
   VAR_TYPE: support_data
+  DEPEND_0: sc_tick
 
 seq_flgs:
   <<: *default_uint8
   CATDESC: CCSDS sequence flags
   FIELDNAM: CCSDS sequence flags
+  LABLAXIS: Value
   VAR_TYPE: support_data
+  DEPEND_0: sc_tick
 
 src_seq_ctr:
   <<: *default_uint16
   CATDESC: CCSDS source sequence counter
   FIELDNAM: CCSDS sequence counter
+  LABLAXIS: Value
   VAR_TYPE: support_data
+  DEPEND_0: sc_tick
 
 pkt_len:
   <<: *default_uint16
   CATDESC: CCSDS packet length
   FIELDNAM: CCSDS packet length
+  LABLAXIS: Value
   VAR_TYPE: support_data
+  DEPEND_0: sc_tick
 
-sc_tick:
-  <<: *default_uint32
-  CATDESC: CCSDS secondary header - Spacecraft Tick
-  FIELDNAM: Spacecraft Tick
-  VAR_TYPE: support_data
+# Counts dataset variables
+hdr_frame_version:
+  <<: *default_counts
+  CATDESC: Raw header frame version per integration
+  FIELDNAM: hdr_frame_version
+  LABLAXIS: Value
+  UNITS: ''
 
+hdr_dynamic_threshold_state:
+  <<: *default_counts
+  CATDESC: Raw header dynamic threshold state per integration
+  FIELDNAM: hdr_dynamic_threshold_state
+  LABLAXIS: State
+  UNITS: state
+  VALIDMAX: 3
 
-# Housekeeping variables
+hdr_leak_conv:
+  <<: *default_counts
+  CATDESC: Raw header leak conversion per integration
+  FIELDNAM: hdr_leak_conv
+  LABLAXIS: Value
+  UNITS: ''
+
+hdr_heavy_duty_cycle:
+  <<: *default_counts
+  CATDESC: Raw header heavy duty cycle per integration
+  FIELDNAM: hdr_heavy_duty_cycle
+  LABLAXIS: Value
+  UNITS: ''
+
+hdr_code_ok:
+  <<: *default_counts
+  CATDESC: Raw header code ok per integration
+  FIELDNAM: hdr_code_ok
+  LABLAXIS: Value
+  UNITS: ''
+
+hdr_unit_num:
+  <<: *default_counts
+  CATDESC: Raw header unit number per integration
+  FIELDNAM: hdr_unit_num
+  LABLAXIS: Value
+  UNITS: ''
+
+hdr_minute_cnt:
+  <<: *default_counts
+  CATDESC: Raw header minute count per integration
+  FIELDNAM: hdr_minute_cnt
+
+livetime_counter:
+  <<: *default_counts
+  CATDESC: Raw livetime counter per integration
+  FIELDNAM: livetime_counter
+
+num_trig:
+  <<: *default_counts
+  CATDESC: Raw number of triggers
+  FIELDNAM: num_trig
+  DELTA_MINUS_VAR: num_trig_stat_uncert_minus
+  DELTA_PLUS_VAR: num_trig_stat_uncert_plus
+
+num_reject:
+  <<: *default_counts
+  CATDESC: Raw number of rejected events
+  FIELDNAM: num_reject
+  DELTA_MINUS_VAR: num_reject_stat_uncert_minus
+  DELTA_PLUS_VAR: num_reject_stat_uncert_plus
+
+num_acc_w_pha:
+  <<: *default_counts
+  CATDESC: Raw number of accepted events with PHA data
+  FIELDNAM: num_acc_w_pha
+  DELTA_MINUS_VAR: num_acc_w_pha_stat_uncert_minus
+  DELTA_PLUS_VAR: num_acc_w_pha_stat_uncert_plus
+
+num_acc_no_pha:
+  <<: *default_counts
+  CATDESC: Raw number of events without PHA data
+  FIELDNAM: num_acc_no_pha
+  DELTA_MINUS_VAR: num_acc_no_pha_stat_uncert_minus
+  DELTA_PLUS_VAR: num_acc_no_pha_stat_uncert_plus
+
+num_haz_trig:
+  <<: *default_counts
+  CATDESC: Raw number of events triggered with a hazard condition
+  FIELDNAM: num_haz_trig
+  DELTA_MINUS_VAR: num_haz_trig_stat_uncert_minus
+  DELTA_PLUS_VAR: num_haz_trig_stat_uncert_plus
+
+num_haz_reject:
+  <<: *default_counts
+  CATDESC: Raw number of events rejected for hazard condition
+  FIELDNAM: num_haz_reject
+  DELTA_MINUS_VAR: num_haz_reject_stat_uncert_minus
+  DELTA_PLUS_VAR: num_haz_reject_stat_uncert_plus
+
+num_haz_acc_w_pha:
+  <<: *default_counts
+  CATDESC: Raw number of events with hazard condition with PHA data
+  FIELDNAM: num_haz_acc_w_pha
+  DELTA_MINUS_VAR: num_haz_acc_w_pha_stat_uncert_minus
+  DELTA_PLUS_VAR: num_haz_acc_w_pha_stat_uncert_plus
+
+num_haz_acc_no_pha:
+  <<: *default_counts
+  CATDESC: Raw number of events accepted with hazard condition without PHA data
+  FIELDNAM: num_haz_acc_no_pha
+  DELTA_MINUS_VAR: num_haz_acc_no_pha_stat_uncert_minus
+  DELTA_PLUS_VAR: num_haz_acc_no_pha_stat_uncert_plus
+
+nread:
+  <<: *default_counts
+  CATDESC: Raw number of events read from event FIFO
+  FIELDNAM: nread
+  DELTA_MINUS_VAR: nread_stat_uncert_minus
+  DELTA_PLUS_VAR: nread_stat_uncert_plus
+
+nhazard:
+  <<: *default_counts
+  CATDESC: Raw number of events rejected for Hazard condition
+  FIELDNAM: nhazard
+  DELTA_MINUS_VAR: nhazard_stat_uncert_minus
+  DELTA_PLUS_VAR: nhazard_stat_uncert_plus
+
+nadcstim:
+  <<: *default_counts
+  CATDESC: Raw number of ADC-calibration STIM events
+  FIELDNAM: nadcstim
+  DELTA_MINUS_VAR: nadcstim_stat_uncert_minus
+  DELTA_PLUS_VAR: nadcstim_stat_uncert_plus
+
+nodd:
+  <<: *default_counts
+  CATDESC: Raw number of odd events
+  FIELDNAM: nodd
+  DELTA_MINUS_VAR: nodd_stat_uncert_minus
+  DELTA_PLUS_VAR: nodd_stat_uncert_plus
+
+noddfix:
+  <<: *default_counts
+  CATDESC: Raw number of fixed odd events
+  FIELDNAM: noddfix
+  DELTA_MINUS_VAR: noddfix_stat_uncert_minus
+  DELTA_PLUS_VAR: noddfix_stat_uncert_plus
+
+nmulti:
+  <<: *default_counts
+  CATDESC: Raw number of events with multiple hits in relevant layers
+  FIELDNAM: nmulti
+  DELTA_MINUS_VAR: nmulti_stat_uncert_minus
+  DELTA_PLUS_VAR: nmulti_stat_uncert_plus
+
+nmultifix:
+  <<: *default_counts
+  CATDESC: Raw number of fix multi events
+  FIELDNAM: nmultifix
+  DELTA_MINUS_VAR: nmultifix_stat_uncert_minus
+  DELTA_PLUS_VAR: nmultifix_stat_uncert_plus
+
+nbadtraj:
+  <<: *default_counts
+  CATDESC: Raw number of events rejected for inconsistent/bad trajectory
+  FIELDNAM: nbadtraj
+  DELTA_MINUS_VAR: nbadtraj_stat_uncert_minus
+  DELTA_PLUS_VAR: nbadtraj_stat_uncert_plus
+
+nl2:
+  <<: *default_counts
+  CATDESC: Raw number of events sorted into L12 event category
+  FIELDNAM: nl2
+  DELTA_MINUS_VAR: nl2_stat_uncert_minus
+  DELTA_PLUS_VAR: nl2_stat_uncert_plus
+
+nl3:
+  <<: *default_counts
+  CATDESC: Raw number of events sorted into L123 event category
+  FIELDNAM: nl3
+  DELTA_MINUS_VAR: nl3_stat_uncert_minus
+  DELTA_PLUS_VAR: nl3_stat_uncert_plus
+
+nl4:
+  <<: *default_counts
+  CATDESC: Raw number of events sorted into L1423 event category
+  FIELDNAM: nl4
+  DELTA_MINUS_VAR: nl4_stat_uncert_minus
+  DELTA_PLUS_VAR: nl4_stat_uncert_plus
+
+npen:
+  <<: *default_counts
+  CATDESC: Raw number of events sorted into PEN event category
+  FIELDNAM: npen
+  DELTA_MINUS_VAR: npen_stat_uncert_minus
+  DELTA_PLUS_VAR: npen_stat_uncert_plus
+
+nformat:
+  <<: *default_counts
+  CATDESC: Raw number of events handled by the telemetry event formatter
+  FIELDNAM: nformat
+  DELTA_MINUS_VAR: nformat_stat_uncert_minus
+  DELTA_PLUS_VAR: nformat_stat_uncert_plus
+
+naside:
+  <<: *default_counts
+  CATDESC: Raw number of events the software assumed were A-side events
+  FIELDNAM: naside
+  DELTA_MINUS_VAR: naside_stat_uncert_minus
+  DELTA_PLUS_VAR: naside_stat_uncert_plus
+
+nbside:
+  <<: *default_counts
+  CATDESC: Raw number of events the software assumed were B-side events
+  FIELDNAM: nbside
+  DELTA_MINUS_VAR: nbside_stat_uncert_minus
+  DELTA_PLUS_VAR: nbside_stat_uncert_plus
+
+nerror:
+  <<: *default_counts
+  CATDESC: Raw number of events that caused a processing error
+  FIELDNAM: nerror
+  DELTA_MINUS_VAR: nerror_stat_uncert_minus
+  DELTA_PLUS_VAR: nerror_stat_uncert_plus
+
+nbadtags:
+  <<: *default_counts
+  CATDESC: Raw number of events with bad tags from onboard event-processing
+  FIELDNAM: nbadtags
+  DELTA_MINUS_VAR: nbadtags_stat_uncert_minus
+  DELTA_PLUS_VAR: nbadtags_stat_uncert_plus
+
+sngrates:
+  <<: *default_counts
+  DEPEND_1: gain
+  DEPEND_2: sngrates_index
+  CATDESC: Raw single rates per integration
+  FIELDNAM: sngrates
+  LABL_PTR_1: sngrates_index_label
+  LABL_PTR_2: gain_label
+  DELTA_MINUS_VAR: sngrates_stat_uncert_minus
+  DELTA_PLUS_VAR: sngrates_stat_uncert_plus
+
+coinrates:
+  <<: *default_counts
+  DEPEND_1: coinrates_index
+  CATDESC: Raw coincidence rates per integration
+  FIELDNAM: coinrates
+  LABL_PTR_1: coinrates_index_label
+  DELTA_MINUS_VAR: coinrates_stat_uncert_minus
+  DELTA_PLUS_VAR: coinrates_stat_uncert_plus
+
+pbufrates:
+  <<: *default_counts
+  DEPEND_1: pbufrates_index
+  CATDESC: Raw priority buffer rates per integration
+  FIELDNAM: pbufrates
+  LABL_PTR_1: pbufrates_index_label
+  DELTA_MINUS_VAR: pbufrates_stat_uncert_minus
+  DELTA_PLUS_VAR: pbufrates_stat_uncert_plus
+
+l2fgrates:
+  <<: *default_counts
+  DEPEND_1: l2fgrates_index
+  CATDESC: Raw range 2 foreground rates per integration
+  FIELDNAM: l2fgrates
+  LABL_PTR_1: l2fgrates_index_label
+  DELTA_MINUS_VAR: l2fgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: l2fgrates_stat_uncert_plus
+
+l2bgrates:
+  <<: *default_counts
+  DEPEND_1: l2bgrates_index
+  CATDESC: Raw range 2 background rates per integration
+  FIELDNAM: l2bgrates
+  LABL_PTR_1: l2bgrates_index_label
+  DELTA_MINUS_VAR: l2bgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: l2bgrates_stat_uncert_plus
+
+l3fgrates:
+  <<: *default_counts
+  DEPEND_1: l3fgrates_index
+  CATDESC: Raw range 3 foreground rates per integration
+  FIELDNAM: l3fgrates
+  LABL_PTR_1: l3fgrates_index_label
+  DELTA_MINUS_VAR: l3fgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: l3fgrates_stat_uncert_plus
+
+l3bgrates:
+  <<: *default_counts
+  DEPEND_1: l3bgrates_index
+  CATDESC: Raw range 3 background rates per integration
+  FIELDNAM: l3bgrates
+  LABL_PTR_1: l3bgrates_index_label
+  DELTA_MINUS_VAR: l3bgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: l3bgrates_stat_uncert_plus
+
+penfgrates:
+  <<: *default_counts
+  DEPEND_1: penfgrates_index
+  CATDESC: Raw range 4 foreground rates per integration
+  FIELDNAM: penfgrates
+  LABL_PTR_1: penfgrates_index_label
+  DELTA_MINUS_VAR: penfgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: penfgrates_stat_uncert_plus
+
+penbgrates:
+  <<: *default_counts
+  DEPEND_1: penbgrates_index
+  CATDESC: Raw range 4 background rates per integration
+  FIELDNAM: penbgrates
+  LABL_PTR_1: penbgrates_index_label
+  DELTA_MINUS_VAR: penbgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: penbgrates_stat_uncert_plus
+
+ialirtrates:
+  <<: *default_counts
+  DEPEND_1: ialirtrates_index
+  CATDESC: Raw ialirtrates per integration
+  FIELDNAM: ialirtrates
+  LABL_PTR_1: ialirtrates_index_label
+  DELTA_MINUS_VAR: ialirtrates_stat_uncert_minus
+  DELTA_PLUS_VAR: ialirtrates_stat_uncert_plus
+
+l4fgrates:
+  <<: *default_counts
+  DEPEND_1: l4fgrates_index
+  CATDESC: Raw L4 ions foreground rates per integration
+  FIELDNAM: l4fgrates
+  LABL_PTR_1: l4fgrates_index_label
+  DELTA_MINUS_VAR: l4fgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: l4fgrates_stat_uncert_plus
+
+l4bgrates:
+  <<: *default_counts
+  DEPEND_1: l4bgrates_index
+  CATDESC: Raw L4 ions background rates per integration
+  FIELDNAM: l4bgrates
+  LABL_PTR_1: l4bgrates_index_label
+  DELTA_MINUS_VAR: l4bgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: l4bgrates_stat_uncert_plus
+
+sectorates:
+  <<: *default_counts
+  DEPEND_1: zenith
+  DEPEND_2: azimuth
+  CATDESC: Raw sectored rates per integration
+  FIELDNAM: Sectored rates
+  LABL_PTR_1: azimuth_label
+  LABL_PTR_2: zenith_label
+  DELTA_MINUS_VAR: sectorates_stat_uncert_minus
+  DELTA_PLUS_VAR: sectorates_stat_uncert_plus
+
+h_sectored_counts:
+  <<: *default_counts
+  DEPEND_1: zenith
+  DEPEND_2: azimuth
+  CATDESC: Raw H sectored counts per integration
+  FIELDNAM: H sectored counts
+  LABL_PTR_1: azimuth_label
+  LABL_PTR_2: zenith_label
+  DELTA_MINUS_VAR: h_sectored_counts_stat_uncert_minus
+  DELTA_PLUS_VAR: h_sectored_counts_stat_uncert_plus
+
+he4_sectored_counts:
+  <<: *default_counts
+  DEPEND_1: zenith
+  DEPEND_2: azimuth
+  CATDESC: Raw He4 sectored counts per integration
+  FIELDNAM: He4 sectored counts
+  LABL_PTR_1: azimuth_label
+  LABL_PTR_2: zenith_label
+  DELTA_MINUS_VAR: he4_sectored_counts_stat_uncert_minus
+  DELTA_PLUS_VAR: he4_sectored_counts_stat_uncert_plus
+
+cno_sectored_counts:
+  <<: *default_counts
+  DEPEND_1: zenith
+  DEPEND_2: azimuth
+  CATDESC: Raw C, N, O sectored counts per integration
+  FIELDNAM: C, N, O sectored counts
+  LABL_PTR_1: azimuth_label
+  LABL_PTR_2: zenith_label
+  DELTA_MINUS_VAR: cno_sectored_counts_stat_uncert_minus
+  DELTA_PLUS_VAR: cno_sectored_counts_stat_uncert_plus
+
+nemgsi_sectored_counts:
+  <<: *default_counts
+  DEPEND_1: zenith
+  DEPEND_2: azimuth
+  CATDESC: Raw Ne, Mg, Si sectored counts per integration
+  FIELDNAM: Ne, Mg, Si sectored counts
+  LABL_PTR_1: azimuth_label
+  LABL_PTR_2: zenith_label
+  DELTA_MINUS_VAR: nemgsi_sectored_counts_stat_uncert_minus
+  DELTA_PLUS_VAR: nemgsi_sectored_counts_stat_uncert_plus
+
+fe_sectored_counts:
+  <<: *default_counts
+  DEPEND_1: zenith
+  DEPEND_2: azimuth
+  CATDESC: Raw Fe sectored counts per integration
+  FIELDNAM: Fe sectored counts
+  LABL_PTR_1: azimuth_label
+  LABL_PTR_2: zenith_label
+  DELTA_MINUS_VAR: fe_sectored_counts_stat_uncert_minus
+  DELTA_PLUS_VAR: fe_sectored_counts_stat_uncert_plus
+
+# Counts energy delta variables
+h_energy_delta_plus:
+  <<: *default_energy
+  DEPEND_1: h_energy_mean
+  CATDESC: H energy delta plus (maximum bin energy minus geometric mean)
+  FIELDNAM: H energy delta plus
+
+h_energy_delta_minus:
+  <<: *default_energy
+  DEPEND_1: h_energy_mean
+  CATDESC: H energy delta minus (geometric mean minus minimum bin energy)
+  FIELDNAM: H energy delta minus
+
+he4_energy_delta_plus:
+  <<: *default_energy
+  DEPEND_1: he4_energy_mean
+  CATDESC: He4 energy delta plus (maximum bin energy minus geometric mean)
+  FIELDNAM: He4 energy delta plus
+
+he4_energy_delta_minus:
+  <<: *default_energy
+  DEPEND_1: he4_energy_mean
+  CATDESC: He4 energy delta minus (geometric mean minus minimum bin energy)
+  FIELDNAM: He4 energy delta minus
+
+cno_energy_delta_plus:
+  <<: *default_energy
+  DEPEND_1: cno_energy_mean
+  CATDESC: C, N, O energy delta plus (maximum bin energy minus geometric mean)
+  FIELDNAM: C, N, O energy delta plus
+
+cno_energy_delta_minus:
+  <<: *default_energy
+  DEPEND_1: cno_energy_mean
+  CATDESC: C, N, O energy delta minus (geometric mean minus minimum bin energy)
+  FIELDNAM: C, N, O energy delta minus
+
+nemgsi_energy_delta_plus:
+  <<: *default_energy
+  DEPEND_1: nemgsi_energy_mean
+  CATDESC: Ne, Mg, Si energy delta plus (maximum bin energy minus geometric mean)
+  FIELDNAM: Ne, Mg, Si energy delta plus
+
+nemgsi_energy_delta_minus:
+  <<: *default_energy
+  DEPEND_1: nemgsi_energy_mean
+  CATDESC: Ne, Mg, Si energy delta minus (geometric mean minus minimum bin energy)
+  FIELDNAM: Ne, Mg, Si energy delta minus
+
+fe_energy_delta_plus:
+  <<: *default_energy
+  DEPEND_1: fe_energy_mean
+  CATDESC: Fe energy delta plus (maximum bin energy minus geometric mean)
+  FIELDNAM: Fe energy delta plus
+
+fe_energy_delta_minus:
+  <<: *default_energy
+  DEPEND_1: fe_energy_mean
+  CATDESC: Fe energy delta minus (geometric mean minus minimum bin energy)
+  FIELDNAM: Fe energy delta minus
+
+# Counts uncertainty variables
+sectorates_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for sector rates
+  FIELDNAM: Sectored Rates Uncertainty
+  DEPEND_1: h_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: h_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+sectorates_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for sector rates
+  FIELDNAM: Sectored Rates Uncertainty
+  DEPEND_1: h_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: h_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+h_sectored_counts_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for H
+  FIELDNAM: H Uncertainty
+  DEPEND_1: h_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: h_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+h_sectored_counts_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for H
+  FIELDNAM: H Uncertainty
+  DEPEND_1: h_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: h_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+he4_sectored_counts_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for He4
+  FIELDNAM: He4 Uncertainty
+  DEPEND_1: he4_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: he4_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+he4_sectored_counts_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for He4
+  FIELDNAM: He4 Uncertainty
+  DEPEND_1: he4_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: he4_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+cno_sectored_counts_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for C, N, O
+  FIELDNAM: CNO Uncertainty
+  DEPEND_1: cno_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: cno_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+cno_sectored_counts_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for C, N, O
+  FIELDNAM: CNO Uncertainty
+  DEPEND_1: cno_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: cno_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+nemgsi_sectored_counts_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for Ne, Mg, Si
+  FIELDNAM: NeMgSi Uncertainty
+  DEPEND_1: nemgsi_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: nemgsi_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+nemgsi_sectored_counts_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for Ne, Mg, Si
+  FIELDNAM: NeMgSi Uncertainty
+  DEPEND_1: nemgsi_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: nemgsi_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+fe_sectored_counts_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for Fe
+  FIELDNAM: Fe Uncertainty
+  DEPEND_1: fe_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: fe_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+fe_sectored_counts_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for Fe
+  FIELDNAM: Fe Uncertainty
+  DEPEND_1: fe_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: fe_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+sngrates_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for single rates
+  FIELDNAM: sngrates uncertainty
+  DEPEND_1: sngrates_index
+  DEPEND_2: gain
+  LABL_PTR_1: sngrates_index_label
+  LABL_PTR_2: gain_label
+
+sngrates_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for single rates
+  FIELDNAM: sngrates uncertainty
+  DEPEND_1: sngrates_index
+  DEPEND_2: gain
+  LABL_PTR_1: sngrates_index_label
+  LABL_PTR_2: gain_label
+
+coinrates_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for coincidence rates
+  FIELDNAM: coinrates uncertainty
+  DEPEND_1: coinrates_index
+  LABL_PTR_1: coinrates_index_label
+
+coinrates_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for coincidence rates
+  FIELDNAM: coinrates uncertainty
+  DEPEND_1: coinrates_index
+  LABL_PTR_1: coinrates_index_label
+
+pbufrates_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for priority buffer rates
+  FIELDNAM: pbufrates uncertainty
+  DEPEND_1: pbufrates_index
+  LABL_PTR_1: pbufrates_index_label
+
+pbufrates_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for priority buffer rates
+  FIELDNAM: pbufrates uncertainty
+  DEPEND_1: pbufrates_index
+  LABL_PTR_1: pbufrates_index_label
+
+l2fgrates_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for range 2 foreground rates
+  FIELDNAM: l2fgrates uncertainty
+  DEPEND_1: l2fgrates_index
+  LABL_PTR_1: l2fgrates_index_label
+
+l2fgrates_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for range 2 foreground rates
+  FIELDNAM: l2fgrates uncertainty
+  DEPEND_1: l2fgrates_index
+  LABL_PTR_1: l2fgrates_index_label
+
+l2bgrates_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for range 2 background rates
+  FIELDNAM: l2bgrates uncertainty
+  DEPEND_1: l2bgrates_index
+  LABL_PTR_1: l2bgrates_index_label
+
+l2bgrates_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for range 2 background rates
+  FIELDNAM: l2bgrates uncertainty
+  DEPEND_1: l2bgrates_index
+  LABL_PTR_1: l2bgrates_index_label
+
+l3fgrates_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for range 3 foreground rates
+  FIELDNAM: l3fgrates uncertainty
+  DEPEND_1: l3fgrates_index
+  LABL_PTR_1: l3fgrates_index_label
+
+l3fgrates_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for range 3 foreground rates
+  FIELDNAM: l3fgrates uncertainty
+  DEPEND_1: l3fgrates_index
+  LABL_PTR_1: l3fgrates_index_label
+
+l3bgrates_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for range 3 background rates
+  FIELDNAM: l3bgrates uncertainty
+  DEPEND_1: l3bgrates_index
+  LABL_PTR_1: l3bgrates_index_label
+
+l3bgrates_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for range 3 background rates
+  FIELDNAM: l3bgrates uncertainty
+  DEPEND_1: l3bgrates_index
+  LABL_PTR_1: l3bgrates_index_label
+
+penfgrates_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for range 4 foreground rates
+  FIELDNAM: penfgrates uncertainty
+  DEPEND_1: penfgrates_index
+  LABL_PTR_1: penfgrates_index_label
+
+penfgrates_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for range 4 foreground rates
+  FIELDNAM: penfgrates uncertainty
+  DEPEND_1: penfgrates_index
+  LABL_PTR_1: penfgrates_index_label
+
+penbgrates_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for range 4 background rates
+  FIELDNAM: penbgrates uncertainty
+  DEPEND_1: penbgrates_index
+  LABL_PTR_1: penbgrates_index_label
+
+penbgrates_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for range 4 background rates
+  FIELDNAM: penbgrates uncertainty
+  DEPEND_1: penbgrates_index
+  LABL_PTR_1: penbgrates_index_label
+
+ialirtrates_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for ialirtrates
+  FIELDNAM: ialirtrates uncertainty
+  DEPEND_1: ialirtrates_index
+  LABL_PTR_1: ialirtrates_index_label
+
+ialirtrates_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for ialirtrates
+  FIELDNAM: ialirtrates uncertainty
+  DEPEND_1: ialirtrates_index
+  LABL_PTR_1: ialirtrates_index_label
+
+l4fgrates_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for L4 ions foreground rates
+  FIELDNAM: l4fgrates uncertainty
+  DEPEND_1: l4fgrates_index
+  LABL_PTR_1: l4fgrates_index_label
+
+l4fgrates_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for L4 ions foreground rates
+  FIELDNAM: l4fgrates uncertainty
+  DEPEND_1: l4fgrates_index
+  LABL_PTR_1: l4fgrates_index_label
+
+l4bgrates_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for L4 ions background rates
+  FIELDNAM: l4bgrates uncertainty
+  DEPEND_1: l4bgrates_index
+  LABL_PTR_1: l4bgrates_index_label
+
+l4bgrates_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for L4 ions background rates
+  FIELDNAM: l4bgrates uncertainty
+  DEPEND_1: l4bgrates_index
+  LABL_PTR_1: l4bgrates_index_label
+
+num_trig_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of triggers
+  FIELDNAM: num_trig uncertainty
+
+num_trig_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of triggers
+  FIELDNAM: num_trig uncertainty
+
+num_reject_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of rejects
+  FIELDNAM: num_reject uncertainty
+
+num_reject_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of rejects
+  FIELDNAM: num_reject uncertainty
+
+num_acc_w_pha_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of accepted events with PHA data
+  FIELDNAM: num_acc_w_pha uncertainty
+
+num_acc_w_pha_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of accepted events with PHA data
+  FIELDNAM: num_acc_w_pha uncertainty
+
+num_acc_no_pha_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of events without PHA data
+  FIELDNAM: num_acc_no_pha uncertainty
+
+num_acc_no_pha_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of events without PHA data
+  FIELDNAM: num_acc_no_pha uncertainty
+
+num_haz_trig_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of hazard triggers
+  FIELDNAM: num_haz_trig uncertainty
+
+num_haz_trig_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of hazard triggers
+  FIELDNAM: num_haz_trig uncertainty
+
+num_haz_reject_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of rejected events with hazard
+  FIELDNAM: num_haz_reject uncertainty
+
+num_haz_reject_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of rejected events with hazard
+  FIELDNAM: num_haz_reject uncertainty
+
+num_haz_acc_w_pha_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of accepted hazard events with PHA data
+  FIELDNAM: num_haz_acc_w_pha uncertainty
+
+num_haz_acc_w_pha_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of accepted hazard events with PHA data
+  FIELDNAM: num_haz_acc_w_pha uncertainty
+
+num_haz_acc_no_pha_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of hazard events without PHA data
+  FIELDNAM: num_haz_acc_no_pha uncertainty
+
+num_haz_acc_no_pha_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of hazard events without PHA data
+  FIELDNAM: num_haz_acc_no_pha uncertainty
+
+nread_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of events read
+  FIELDNAM: nread uncertainty
+
+nread_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of events read
+  FIELDNAM: nread uncertainty
+
+nhazard_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of hazard events
+  FIELDNAM: nhazard uncertainty
+
+nhazard_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of hazard events
+  FIELDNAM: nhazard uncertainty
+
+nadcstim_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of ADC-stim events
+  FIELDNAM: nadcstim uncertainty
+
+nadcstim_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of ADC-stim events
+  FIELDNAM: nadcstim uncertainty
+
+nodd_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of odd events
+  FIELDNAM: nodd uncertainty
+
+nodd_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of odd events
+  FIELDNAM: nodd uncertainty
+
+noddfix_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of fixed odd events
+  FIELDNAM: noddfix uncertainty
+
+noddfix_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of fixed odd events
+  FIELDNAM: noddfix uncertainty
+
+nmulti_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of events with multiple hits
+  FIELDNAM: nmulti uncertainty
+
+nmulti_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of events with multiple hits
+  FIELDNAM: nmulti uncertainty
+
+nmultifix_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of fixed multiple hits
+  FIELDNAM: nmultifix uncertainty
+
+nmultifix_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of fixed multiple hits
+  FIELDNAM: nmultifix uncertainty
+
+nbadtraj_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of bad trajectory events
+  FIELDNAM: nbadtraj uncertainty
+
+nbadtraj_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of bad trajectory events
+  FIELDNAM: nbadtraj uncertainty
+
+nl2_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of L2 events
+  FIELDNAM: nl2 uncertainty
+
+nl2_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of L2 events
+  FIELDNAM: nl2 uncertainty
+
+nl3_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of L3 events
+  FIELDNAM: nl3 uncertainty
+
+nl3_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of L3 events
+  FIELDNAM: nl3 uncertainty
+
+nl4_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of L4 events
+  FIELDNAM: nl4 uncertainty
+
+nl4_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of L4 events
+  FIELDNAM: nl4 uncertainty
+
+npen_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of pen events
+  FIELDNAM: npen uncertainty
+
+npen_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of pen events
+  FIELDNAM: npen uncertainty
+
+nformat_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of format events
+  FIELDNAM: nformat uncertainty
+
+nformat_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of format events
+  FIELDNAM: nformat uncertainty
+
+naside_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of A-side events
+  FIELDNAM: naside uncertainty
+
+naside_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of A-side events
+  FIELDNAM: naside uncertainty
+
+nbside_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of B-side events
+  FIELDNAM: nbside uncertainty
+
+nbside_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of B-side events
+  FIELDNAM: nbside uncertainty
+
+nerror_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of error events
+  FIELDNAM: nerror uncertainty
+
+nerror_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of error events
+  FIELDNAM: nerror uncertainty
+
+nbadtags_stat_uncert_plus:
+  <<: *default_uncertainty
+  CATDESC: Plus statistical uncertainty for number of bad tags
+  FIELDNAM: nbadtags uncertainty
+
+nbadtags_stat_uncert_minus:
+  <<: *default_uncertainty
+  CATDESC: Minus statistical uncertainty for number of bad tags
+  FIELDNAM: nbadtags uncertainty
+
+# PHA dataset variables
+pha_raw:
+  DEPEND_0: epoch
+  CATDESC: Raw instrument pulse height analyzer data.  Further processed in HIT L3 data.
+  VAR_TYPE: ignore_data
+  DISPLAY_TYPE: no_plot
+
+# Housekeeping dataset variables
 fsw_version_a:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 63
   CATDESC: Flight Software Version Number (A.B.C bits)
   FIELDNAM: Flight Software Version Number A
@@ -159,7 +1469,7 @@ fsw_version_a:
   FORMAT: I2
 
 fsw_version_b:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 63
   CATDESC: Flight Software Version Number (A.B.C bits)
   FIELDNAM: Flight Software Version Number B
@@ -167,7 +1477,7 @@ fsw_version_b:
   FORMAT: I2
 
 fsw_version_c:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 63
   CATDESC: Flight Software Version Number (A.B.C bits)
   FIELDNAM: Flight Software Version Number C
@@ -175,7 +1485,7 @@ fsw_version_c:
   FORMAT: I2
 
 num_good_cmds:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 255
   CATDESC: Number of Good Commands
   FIELDNAM: Number of Good Commands
@@ -183,7 +1493,7 @@ num_good_cmds:
   FORMAT: I3
 
 last_good_cmd:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 255
   CATDESC: Last Good Command
   FIELDNAM: Last Good Command
@@ -191,7 +1501,7 @@ last_good_cmd:
   FORMAT: I3
 
 last_good_seq_num:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 255
   CATDESC: Last Good Sequence Number
   FIELDNAM: Last Good Sequence Number
@@ -199,7 +1509,7 @@ last_good_seq_num:
   FORMAT: I3
 
 num_bad_cmds:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 255
   CATDESC: Number of Bad Commands
   FIELDNAM: Number of Bad Commands
@@ -207,7 +1517,7 @@ num_bad_cmds:
   FORMAT: I3
 
 last_bad_cmd:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 255
   CATDESC: Last Bad Command
   FIELDNAM: Last Bad Command
@@ -215,7 +1525,7 @@ last_bad_cmd:
   FORMAT: I3
 
 last_bad_seq_num:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 255
   CATDESC: Last Bad Sequence Number
   FIELDNAM: Last Bad Sequence Number
@@ -223,7 +1533,7 @@ last_bad_seq_num:
   FORMAT: I3
 
 fee_running:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 1
   CATDESC: State - FEE Running (1) or Reset (0)
   FIELDNAM: FEE Running (1) or Reset (0)
@@ -231,7 +1541,7 @@ fee_running:
   FORMAT: I1
 
 mram_disabled:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 1
   CATDESC: State - MRAM Disabled (1) or Enabled (0)
   FIELDNAM: MRAM Disabled (1) or Enabled (0)
@@ -239,7 +1549,7 @@ mram_disabled:
   FORMAT: I1
 
 enable_50khz:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 1
   CATDESC: State - 50kHz Enabled (1) or Disabled (0)
   FIELDNAM: 50kHz Enabled (1) or Disabled (0)
@@ -247,7 +1557,7 @@ enable_50khz:
   FORMAT: I1
 
 enable_hvps:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 1
   CATDESC: State - HVPS Enabled (1) or Disabled (0)
   FIELDNAM: HVPS Enabled (1) or Disabled (0)
@@ -255,7 +1565,7 @@ enable_hvps:
   FORMAT: I1
 
 table_status:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 1
   CATDESC: State - Table Status OK (1) or Error (0)
   FIELDNAM: Table Status OK (1) or Error (0)
@@ -263,7 +1573,7 @@ table_status:
   FORMAT: I1
 
 heater_control:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 2
   CATDESC: State - Heater Control (0=None, 1=Pri, 2=Sec)
   FIELDNAM: Heater Control (0=None, 1=Pri, 2=Sec)
@@ -271,7 +1581,7 @@ heater_control:
   FORMAT: I1
 
 adc_mode:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 3
   CATDESC: State - ADC Mode (0=quiet, 1=normal, 2=adcstim, 3=adcThreshold)
   FIELDNAM: ADC Mode (0=quiet, 1=normal, 2=adcstim, 3=adcThreshold)
@@ -279,7 +1589,7 @@ adc_mode:
   FORMAT: I1
 
 mode:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 3
   CATDESC: State - Mode (0=Boot, 1=Maintenance, 2=Standby, 3=Science)
   FIELDNAM: Mode (0=Boot, 1=Maintenance, 2=Standby, 3=Science)
@@ -287,7 +1597,7 @@ mode:
   FORMAT: I1
 
 dyn_thresh_lvl:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 3
   CATDESC: Dynamic Threshold Level (0-3)
   FIELDNAM: Dynamic Threshold Level (0-3)
@@ -295,7 +1605,7 @@ dyn_thresh_lvl:
   FORMAT: I1
 
 num_evnt_last_hk:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 4294967295
   CATDESC: Number of Events Since Last HK Update
   FIELDNAM: Number of Events Since Last HK Update
@@ -303,7 +1613,7 @@ num_evnt_last_hk:
   FORMAT: I10
 
 num_errors:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 255
   CATDESC: Number of Errors
   FIELDNAM: Number of Errors
@@ -311,7 +1621,7 @@ num_errors:
   FORMAT: I3
 
 last_error_num:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 255
   CATDESC: State - Last Error Number
   FIELDNAM: Last Error Number
@@ -319,7 +1629,7 @@ last_error_num:
   FORMAT: I3
 
 code_checksum:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 65535
   CATDESC: Code Checksum
   FIELDNAM: Code Checksum
@@ -327,7 +1637,7 @@ code_checksum:
   FORMAT: I5
 
 spin_period_short:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 65535
   CATDESC: Spin Period Short at T=0
   FIELDNAM: Spin Period Short at T=0
@@ -335,7 +1645,7 @@ spin_period_short:
   FORMAT: I5
 
 spin_period_long:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 65535
   CATDESC: Spin Period Long at T=0
   FIELDNAM: Spin Period Long at T=0
@@ -343,7 +1653,7 @@ spin_period_long:
   FORMAT: I5
 
 leak_i:
-  <<: *hk_support_default
+  <<: *default_hk_support
   DEPEND_1: adc_channels
   CATDESC: Leakage Current [I]
   FIELDNAM: Leakage Current [I]
@@ -352,7 +1662,7 @@ leak_i:
   FORMAT: I19
 
 phasic_stat:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 1
   CATDESC: State - Phasic Status
   FIELDNAM: Phasic Status
@@ -360,7 +1670,7 @@ phasic_stat:
   FORMAT: I1
 
 active_heater:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 1
   CATDESC: State - Active Heater
   FIELDNAM: Active Heater
@@ -368,7 +1678,7 @@ active_heater:
   FORMAT: I1
 
 heater_on:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 1
   CATDESC: State - Heater On/Off
   FIELDNAM: Heater On/Off
@@ -376,7 +1686,7 @@ heater_on:
   FORMAT: I1
 
 test_pulser_on:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 1
   CATDESC: State - Test Pulser On/Off
   FIELDNAM: Test Pulser On/Off
@@ -384,7 +1694,7 @@ test_pulser_on:
   FORMAT: I1
 
 dac0_enable:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 1
   CATDESC: State - DAC 0 Enable
   FIELDNAM: DAC 0 Enable
@@ -392,7 +1702,7 @@ dac0_enable:
   FORMAT: I1
 
 dac1_enable:
-  <<: *hk_support_default
+  <<: *default_hk_support
   VALIDMAX: 1
   CATDESC: State - DAC 1 Enable
   FIELDNAM: DAC 1 Enable
@@ -400,146 +1710,147 @@ dac1_enable:
   FORMAT: I1
 
 preamp_l234a:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: Preamp L234A
   FIELDNAM: Preamp L234A
   LABLAXIS: Preamp L234A
 
 preamp_l1a:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: Preamp L1A
   FIELDNAM: Preamp L1A
   LABLAXIS: Preamp L1A
 
 preamp_l1b:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: Preamp L1B
   FIELDNAM: Preamp L1B
   LABLAXIS: Preamp L1B
 
 preamp_l234b:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: Preamp L234B
   FIELDNAM: Preamp L234B
   LABLAXIS: Preamp L234B
 
 temp0:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: FEE LDO Regulator Mounted on the Board Next to the Low-dropout Regulator
   FIELDNAM: FEE LDO Regulator
   LABLAXIS: Temp0
 
 temp1:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: Primary Heater Mounted on the Board Next to the Primary Heater Circuit
   FIELDNAM: Primary Heater
   LABLAXIS: Temp1
 
 temp2:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: FEE FPGA Mounted on the Board Next to the FPGA
   FIELDNAM: FEE FPGA
   LABLAXIS: Temp2
 
 temp3:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: Secondary Heater
   FIELDNAM: Secondary Heater
   LABLAXIS: Temp3
 
 analog_temp:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: Chassis Temp Mounted on the Analog Board Close to Thermostats, Heaters, and Chassis
   FIELDNAM: Analog Temp
   LABLAXIS: Analog temp
 
 hvps_temp:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: Board Temp Mounted Inside Faraday Cage in Middle of Board Near Connector Side
   FIELDNAM: Board Temp
   LABLAXIS: HVPS temp
 
 idpu_temp:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: LDO Temp Mounted on Top of the Low-dropout Regulator
   FIELDNAM: LDO Temp
   LABLAXIS: IDPU temp
 
 lvps_temp:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: Board Temp Mounted in the Middle of Board on Opposite Side of Hottest Component
   FIELDNAM: Board Temp
   LABLAXIS: LVPS temp
 
 ebox_3d4vd:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: 3.4VD Ebox (Digital)
   FIELDNAM: 3.4VD Ebox (Digital)
   LABLAXIS: 3.4VD Ebox
 
 ebox_5d1vd:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: 5.1VD Ebox (Digital)
   FIELDNAM: 5.1VD Ebox (Digital)
   LABLAXIS: 5.1VD Ebox
 
 ebox_p12va:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: +12VA Ebox (Analog)
   FIELDNAM: +12VA Ebox (Analog)
   LABLAXIS: +12VA Ebox
 
 ebox_m12va:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: -12VA Ebox (Analog)
   FIELDNAM: -12VA Ebox (Analog)
   LABLAXIS: -12VA Ebox
 
 ebox_p5d7va:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: +5.7VA Ebox (Analog)
   FIELDNAM: +5.7VA Ebox (Analog)
   LABLAXIS: +5.7VA Ebox
 
 ebox_m5d7va:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: -5.7VA Ebox (Analog)
   FIELDNAM: -5.7VA Ebox (Analog)
   LABLAXIS: -5.7VA Ebox
 
 ref_p5v:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: +5V ref
   FIELDNAM: +5V ref
   LABLAXIS: +5V ref
 
 l1ab_bias:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: L1A/B Bias
   FIELDNAM: L1A/B Bias
   LABLAXIS: L1A/B Bias
 
 l2ab_bias:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: L2A/B Bias
   FIELDNAM: L2A/B Bias
   LABLAXIS: L2A/B Bias
 
 l34a_bias:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: L3/4A Bias
   FIELDNAM: L3/4A Bias
   LABLAXIS: L3/4A Bias
 
 l34b_bias:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: L3/4B Bias
   FIELDNAM: L3/4B Bias
   LABLAXIS: L3/4B Bias
 
 ebox_p2d0vd:
-  <<: *hk_default
+  <<: *default_hk
   CATDESC: +2.0VD Ebox (Digital)
   FIELDNAM: +2.0VD Ebox (Digital)
   LABLAXIS: +2.0VD Ebox
+
 

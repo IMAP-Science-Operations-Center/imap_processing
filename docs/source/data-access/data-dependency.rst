@@ -24,7 +24,7 @@ to add exceptions or new requirements on a per-instrument or per-level basis.
 
 .. note::
     This document, and our tooling, uses the terms "upstream dependencies" and "downstream dependencies" to describe the relationships between files. A "downstream dependency" for a given file
-    means that the current file is required for processing of the downstream files - so, for example, an L2 file is a downstream dependency of an L1 file. An "upstream dependency" is the opposite,
+    means that the current file is required for processing of the downstream files. For example, an L2 file is a downstream dependency of an L1 file. An "upstream dependency" is the opposite,
     describing a file which is required to begin processing the current file. For example, an L1 file is an upstream dependency of an L2 file.
 
 Detailed Description of File Processing
@@ -45,8 +45,8 @@ meaning, what future files need this file in order to complete processing. For e
 the L1A file, and therefore MAG L1B may be ready to begin processing.
 
 Then, for each anticipated job, the batch starter process checks to see if all the upstream dependencies are met. Although we know we have one of the upstream dependencies for an expected job,
-it's possible that there are other required dependencies that have not yet arrived. If we are missing required dependencies, then the system stops processing and waits for the missing files to arrive.
-Once missing file has arrived, it will trigger the same process, but all the required dependencies will be ready, and therefore processing can continue.
+it's possible that there are other required dependencies that have not yet arrived. If we are missing any required dependencies, then the system does not kick off the processing job.
+When the missing file arrives, it will trigger the same process of checking for all upstream dependencies. This time all required dependencies will be found and the processing job will be started.
 
 For example, SWAPI L3 requires both SWAPI L2 files and MAG L1D (previously called L2pre) files. The SWAPI L2 job and the MAG L1D job are run independently, so there is no guarantee that they will finish
 at the same time. Let's assume that the MAG L1D job finishes first, since it is the lower level. When that file arrives, one of the downstream dependencies is going to be the SWAPI L3 processing.
@@ -57,33 +57,129 @@ Therefore, processing for SWAPI L3 can begin.
 The status of different files is recorded in the status tracking table. This table records the status of each anticipated output file as "in progress", "complete", or "failed." Through this,
 we can track processing for specific files and determine if a file exists quickly.
 
-Data Dependency Database Table
-------------------------------
+Dependency Config File
+----------------------
 
 How does the SDC track which files are dependent on others? In order to decide what the downstream or upstream dependencies of a file are, and what the nature of those dependencies are, we
-need some way to request the upstream or downstream dependencies of a given file. The current dependencies between instruments are recorded in `Galaxy <https://lasp.colorado.edu/galaxy/display/IMAP/Dependency+Between+Instrument+-+Diagram>`_.
+need some way to request the upstream or downstream dependencies of a given file. The current dependencies between instruments are recorded in `sds-data-manager Repo <https://github.com/IMAP-Science-Operations-Center/sds-data-manager/blob/dev/sds_data_manager/lambda_code/SDSCode/pipeline_lambdas/dependency_config.csv>`_.
 
-We handle this using a SQL database. All of our databases are described in detail `here <https://lasp.colorado.edu/galaxy/display/IMAP/SDC+Database+Tables>`_.
+We handle and track dependencies using a CSV config file that acts like a database. This CSV config file expects a specific format, and is used to determine the upstream and downstream dependencies of each file.
 
-The database has the following structure:
+The CSV config has the following structure:
 
-========== ===== ========== ===================== ================ ===================== ======================== ======================
-instrument level descriptor dependency_instrument dependency_level dependency_descriptor relationship_description DOWNSTREAM or UPSTREAM
-========== ===== ========== ===================== ================ ===================== ======================== ======================
-mag        l1a   norm-mago  mag                   l0               raw                   HARD                     UPSTREAM
-mag        l1a   norm-mago  mag                   l1b              norm-mago             HARD                     DOWNSTREAM
-mag        l1a   norm-magi  mag                   l1b              norm-magi             HARD                     DOWNSTREAM
-mag        l1d   norm       swapi                 l3               sci                   HARD                     DOWNSTREAM
-swapi      l2    sci        swapi                 l3               sci                   HARD                     DOWNSTREAM
+=====================  =================  ==================  =================  ====================  =====================  =========================  ================
+primary_source         primary_data_type  primary_descriptor  dependent_source   dependent_data_type   dependent_descriptor   relationship               dependency_type
+=====================  =================  ==================  =================  ====================  =====================  =========================  ================
+mag                    l1a                norm-mago           mag                l1b                   norm-mago              HARD                       DOWNSTREAM
+mag                    l1a                norm-magi           mag                l1b                   norm-magi              HARD                       DOWNSTREAM
+mag                    l1d                norm                swapi              l3                    sci                    HARD                       DOWNSTREAM
+swapi                  l2                 sci                 swapi              l3                    sci                    HARD                       DOWNSTREAM
+idex                   l0                 raw                 idex               l1a                   all                    HARD                       DOWNSTREAM
+leapseconds            spice              historical          idex               l1a                   all                    HARD_NO_TRIGGER            DOWNSTREAM
+spacecraft_clock       spice              historical          idex               l1a                   all                    HARD_NO_TRIGGER            DOWNSTREAM
+hi                     l1a                45sensor-de         hi                 l1b                   45sensor-de            HARD                       DOWNSTREAM
+plantary_epehemeris    spice              historical          hi                 l1b                   45sensor-de            HARD_NO_TRIGGER            DOWNSTREAM
+imap_frames            spice              historical          hi                 l1b                   45sensor-de            HARD_NO_TRIGGER            DOWNSTREAM
+attitude               spice              historical          hi                 l1b                   45sensor-de            HARD                       DOWNSTREAM
+spin                   spin               historical          hi                 l1b                   45sensor-de            HARD_NO_TRIGGER            DOWNSTREAM
+repoint                repoint            historical          hi                 l1b                   45sensor-de            HARD_NO_TRIGGER            DOWNSTREAM
+=====================  =================  ==================  =================  ====================  =====================  =========================  ================
 
-========== ===== ========== ===================== ================ ===================== ======================== ======================
+Valid Values for Dependency Config
+-----------------------------------
+
+Primary Source
+~~~~~~~~~~~~~~~~~~
+
+Primary source can be one of the following:
+
+.. _imap-data-init: https://github.com/IMAP-Science-Operations-Center/imap-data-access/blob/main/imap_data_access/__init__.py
+.. _imap-data-validation: https://github.com/IMAP-Science-Operations-Center/imap-data-access/blob/main/imap_data_access/file_validation.py
+
+- IMAP instrument name listed in the ``VALID_INSTRUMENTS`` dictionary in this file:
+  `imap-data-access Repo <imap-data-init_>`_
+
+- SPICE data type listed in the ``_SPICE_DIR_MAPPING`` dictionary in this file:
+  `imap-data-access validation file <imap-data-validation_>`_
+
+
+Primary Data Type
+~~~~~~~~~~~~~~~~~~~~
+
+Primary data type can be one of the following:
+
+- IMAP data level listed in the ``VALID_DATALEVELS`` dictionary in this file:
+  `imap-data-access Repo <imap-data-init_>`_
+
+- ``spice``
+
+- ``spin``
+
+- ``repoint``
+
+- ``ancillary``
+
+Primary descriptor
+~~~~~~~~~~~~~~~~~~~~
+
+Primary descriptor can be one of the following:
+
+- For science or ancillary data, the descriptors are defined by the instrument and SDC.
+
+- For ``spice`` data types, ``historical`` and ``best`` are the valid descriptors.
+
+- For ``spin`` and ``repoint`` data types, ``historical`` is the only valid descriptor.
+
+
+
+Dependent Source
+~~~~~~~~~~~~~~~~~~~
+
+Same as primary_source, but for the dependent file.
+
+Dependent Data Type
+~~~~~~~~~~~~~~~~~~~~
+
+Same as primary_data_type, but for the dependent file.
+
+Dependent Descriptor
+~~~~~~~~~~~~~~~~~~~~
+
+Same as primary_descriptor, but for the dependent file.
+
+Relationship
+~~~~~~~~~~~~~~~~~~~
+
+- **HARD**
+  Triggers processing on file ingestion or a reprocessing event.
+
+- **HARD_NO_TRIGGER**
+  Required data file. However, a new version of this file doesn't trigger
+  processing on file ingestion.
+  *Example:* leapseconds kernel or frame kernel that doesn't change often.
+
+- **SOFT_TRIGGER**
+  A "nice to have" data file that **can trigger** processing on ingestion
+  for downstream dependencies.
+  Recommended only for ancillary or SPICE data files, because this may cause
+  unwanted reprocessing behavior.
+  *Example:* a calibration file that **does** significantly affect output and
+  should cause reprocessing of past data falling within the updated time range.
+
+- **SOFT_NO_TRIGGER**
+  A "nice to have" file that **does not trigger** processing on ingestion.
+  *Example:* calibration files with minor updates that you still want included
+  in processing for current and future data products.
 
 Dependency Types
-----------------
+~~~~~~~~~~~~~~~~~~~
 
-Right now, we only have HARD dependencies. This means that upstream processing is blocked on the existence of dependent files. However, we have also have requirements for SOFT dependencies - where
-processing should use the file if it exists, but can continue without it. This is a future feature. The relationship description column exists so we can define specific relationships between
-files.
+- **DOWNSTREAM**
+  This is a downstream dependency, meaning that job to kick off when this file arrives.
 
-This can also include information on reprocessing rules.
-
+- **UPSTREAM**
+  This is an upstream dependency. This means that upstream processing is blocked on
+  the existence of dependent files, meaning that a file required to kick off processing for
+  current file. NOTE: In the dependency config file, we only specify downstream dependencies.
+  Then in the dependency lambda at run time, it will determine the upstream dependencies
+  based on the downstream dependencies.

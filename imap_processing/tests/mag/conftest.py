@@ -1,15 +1,29 @@
 """Shared modules for MAG tests"""
 
 from pathlib import Path
+from unittest import mock
 
 import numpy as np
 import pytest
 import xarray as xr
+from imap_data_access.processing_input import AncillaryInput
 
+from imap_processing.ancillary.ancillary_dataset_combiner import MagAncillaryCombiner
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.mag.constants import VecSec
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.spice.time import TTJ2000_EPOCH
+
+
+@pytest.fixture
+def mocks():
+    with mock.patch(
+        "imap_processing.ancillary.ancillary_dataset_combiner.AncillaryFilePath.construct_path"
+    ) as construct_path:
+        mocks = {
+            "construct_path": construct_path,
+        }
+        yield mocks
 
 
 @pytest.fixture
@@ -60,34 +74,37 @@ def mag_l1a_dataset_generator(length):
 
 
 @pytest.fixture
-def mag_test_l1b_calibration_data():
+def mag_l1b_cal_dataset(mocks):
     imap_dir = Path(__file__).parent
-    cal_file = (
+    cal_path = Path(
         imap_dir
         / "validation"
         / "calibration"
         / "imap_mag_l1b-calibration_20240229_v001.cdf"
     )
-    calibration_data = load_cdf(cal_file)
+    mocks["construct_path"].return_value = cal_path
+    processing = AncillaryInput(cal_path.name)
+    calibration_data = MagAncillaryCombiner(processing, "20251017").combined_dataset
     return calibration_data
 
 
 @pytest.fixture
-def mag_test_l2_data():
+def mag_test_l2_data(mocks):
     imap_dir = Path(__file__).parent
-    cal_file = (
+    cal_path = (
         imap_dir
         / "validation"
         / "calibration"
-        / "imap_mag_l2-calibration-matrices_20251017_v004.cdf"
+        / "imap_mag_l2-calibration_20251017_v004.cdf"
     )
-    calibration_data = load_cdf(cal_file)
+    mocks["construct_path"].return_value = cal_path
+    calibration_data = MagAncillaryCombiner([cal_path], "20251017").combined_dataset
 
     offsets_data = load_cdf(
         imap_dir
         / "validation"
         / "calibration"
-        / "imap_mag_l2-offsets-norm_20251017_20251017_v001.cdf"
+        / "imap_mag_l2-norm-offsets_20251017_20251017_v001.cdf"
     )
 
     return calibration_data, offsets_data

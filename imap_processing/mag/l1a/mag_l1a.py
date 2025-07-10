@@ -291,7 +291,7 @@ def generate_dataset(
         time_data,
         name="epoch",
         dims=["epoch"],
-        attrs=attribute_manager.get_variable_attributes("epoch"),
+        attrs=attribute_manager.get_variable_attributes("epoch", check_schema=False),
     )
 
     vectors = xr.DataArray(

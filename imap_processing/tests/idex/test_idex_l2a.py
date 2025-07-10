@@ -1,11 +1,15 @@
 """Tests the L2a processing for IDEX data"""
 
+from unittest import mock
+
 import numpy as np
+import pytest
 import xarray as xr
 from scipy.stats import exponnorm
 
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.idex import idex_constants
+from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.idex.idex_l2a import (
     BaselineNoiseTime,
     analyze_peaks,
@@ -15,10 +19,34 @@ from imap_processing.idex.idex_l2a import (
     chi_square,
     estimate_dust_mass,
     fit_impact,
+    idex_l2a,
     remove_signal_noise,
     sine_fit,
     time_to_mass,
 )
+from imap_processing.idex.idex_utils import get_idex_attrs
+
+
+@pytest.fixture
+def l2a_dataset(l1b_dataset: xr.Dataset, decom_test_data_sci) -> xr.Dataset:
+    """Return a ``xarray`` dataset containing test data.
+    Returns
+    -------
+    dataset : xr.Dataset
+        A ``xarray`` dataset containing the test data
+    """
+    idex_attrs = get_idex_attrs("l1b")
+    spin_phase_angles = xr.DataArray(
+        np.random.randint(0, 360, len(l1b_dataset.epoch)),
+        dims="epoch",
+        attrs=idex_attrs.get_variable_attributes("spin_phase"),
+    )
+    with mock.patch(
+        "imap_processing.idex.idex_l1b.get_spice_data",
+        return_value={"spin_phase": spin_phase_angles},
+    ):
+        dataset = idex_l2a(idex_l1b(decom_test_data_sci))
+    return dataset
 
 
 def mock_microphonics_noise(time: np.ndarray) -> np.ndarray:
@@ -34,7 +62,7 @@ def mock_microphonics_noise(time: np.ndarray) -> np.ndarray:
     return combined_sig
 
 
-def test_l2a_logical_source(l2a_dataset: xr.Dataset):
+def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset):
     """Tests that the ``idex_l2a`` function generates datasets
     with the expected logical source.
 
@@ -45,32 +73,12 @@ def test_l2a_logical_source(l2a_dataset: xr.Dataset):
     """
     expected_src = "imap_idex_l2a_sci-1week"
     assert l2a_dataset.attrs["Logical_source"] == expected_src
-
-
-def test_idex_cdf_file(l2a_dataset: xr.Dataset):
-    """Verify the CDF file can be created with no errors.
-
-    Parameters
-    ----------
-    l2a_dataset : xarray.Dataset
-        The dataset to test with
-    """
-    # TODO attrs are missing data version
-    l2a_dataset.attrs["Data_version"] = "v999"
+    # Verify the CDF file can be created with no errors.
+    l2a_dataset.attrs["Data_version"] = "999"
     file_name = write_cdf(l2a_dataset)
     assert file_name.exists()
     assert file_name.name == "imap_idex_l2a_sci-1week_20231218_v999.cdf"
 
-
-def test_l2a_cdf_variables(l2a_dataset: xr.Dataset):
-    """Tests that the ``idex_l2a`` function generates datasets
-    with the expected variables.
-
-    Parameters
-    ----------
-    l2a_dataset : xr.Dataset
-        A ``xarray`` dataset containing the test data
-    """
     expected_vars = [
         "tof_snr",
         "tof_peak_kappa",
@@ -105,6 +113,10 @@ def test_l2a_cdf_variables(l2a_dataset: xr.Dataset):
     cdf_vars = l2a_dataset.variables
     for var in expected_vars:
         assert var in cdf_vars
+    for var in l2a_dataset.data_vars:
+        assert "DICT_KEY" in l2a_dataset[var].attrs, (
+            f"Variable {var} is missing the DICT_KEY attribute for SPASE metadata."
+        )
 
 
 def test_time_to_mass_zero_lag():
@@ -247,13 +259,12 @@ def test_analyze_peaks_warning(caplog):
     assert any(
         "Failed to fit EMG curve" in message for message in caplog.text.splitlines()
     )
-
-    # The fit_params and area_under_curve arrays should be zero
-    assert np.all(fit_params == 0)
-    assert np.all(area_under_curve == 0)
-    # chi-square and reduced chi-square values should all be np.nan
-    np.testing.assert_array_equal(chisqr, np.nan)
-    np.testing.assert_array_equal(chisqr, np.nan)
+    # The fit_params, area_under_curve, chi square and reduced chi square arrays should
+    # be zero
+    np.testing.assert_array_equal(chisqr, np.zeros(chisqr.shape))
+    np.testing.assert_array_equal(redchi, np.zeros(redchi.shape))
+    np.testing.assert_array_equal(fit_params, np.zeros(fit_params.shape))
+    np.testing.assert_array_equal(area_under_curve, np.zeros(area_under_curve.shape))
 
 
 def test_analyze_peaks_perfect_fits():
@@ -292,8 +303,8 @@ def test_analyze_peaks_perfect_fits():
         # Test that there is a value greater than zero at this index
         assert area_under_curve[mass] > 0
         # Test the goodness of fit
-        assert chisqr < 1e-20
-        assert redchi < 1e-20
+        assert np.all(chisqr < 1e-20)
+        assert np.all(redchi < 1e-20)
 
 
 def test_estimate_dust_mass_no_noise_removal():

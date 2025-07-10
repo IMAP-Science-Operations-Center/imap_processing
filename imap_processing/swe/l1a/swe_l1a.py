@@ -58,13 +58,13 @@ def swe_l1a(packet_file: str) -> xr.Dataset:
 
     if SWEAPID.SWE_APP_HK in datasets_by_apid:
         logger.info("Processing SWE housekeeping data.")
-        hk_ds = datasets_by_apid[SWEAPID.SWE_APP_HK]
-        hk_ds.attrs.update(imap_attrs.get_global_attributes("imap_swe_l1a_hk"))
-        hk_ds["epoch"].attrs.update(epoch_attrs)
+        l1a_hk_ds = datasets_by_apid[SWEAPID.SWE_APP_HK]
+        l1a_hk_ds.attrs.update(imap_attrs.get_global_attributes("imap_swe_l1a_hk"))
+        l1a_hk_ds["epoch"].attrs.update(epoch_attrs)
         # Add attrs to HK data variables
-        for var_name in hk_ds.data_vars:
-            hk_ds[var_name].attrs.update(non_science_attrs)
-        processed_data.append(hk_ds)
+        for var_name in l1a_hk_ds.data_vars:
+            l1a_hk_ds[var_name].attrs.update(non_science_attrs)
+        processed_data.append(l1a_hk_ds)
 
     if SWEAPID.SWE_CEM_RAW in datasets_by_apid:
         logger.info("Processing SWE CEM raw data.")

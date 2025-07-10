@@ -1,0 +1,114 @@
+# <=== Label Attributes ===>
+# LABL_PTR_i expects VAR_TYPE of metadata with char data type.
+default_attrs: &default
+  # Assumed values for all variable attrs unless overwritten
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: -9223372036854775808
+  FORMAT: I12
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854775807
+  VAR_TYPE: data
+  UNITS: ' '
+
+default_coords: &default_coords
+  # Assumed values for all coordinate attrs unless overwritten
+  FORMAT: F2.4  # Float with 4 digits
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: time_series
+  FILLVAL: -9223372036854775808
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854775807
+  UNITS: counts
+
+mag_support_attrs: &support_default
+    <<: *default
+    VAR_TYPE: support_data
+    DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+mag_metadata_attrs: &metadata_default
+    <<: *default
+    VAR_TYPE: metadata
+
+direction_label:
+  CATDESC: magnetic field vector data
+  FIELDNAM: Magnetic Field Vector
+  FORMAT: A3
+  VAR_TYPE: metadata
+
+compression_label:
+  CATDESC: Compression and width
+  FIELDNAM: Compression and width
+  FORMAT: A2
+  VAR_TYPE: metadata
+
+vector_attrs: &vectors_default
+    <<: *default
+    CATDESC: Magnetic field vectors with x y z varying by time
+    DEPEND_1: direction
+    FIELDNAM: Magnetic Field Vector
+    LABL_PTR_1: direction_label
+    FILLVAL: 9223372036854775807
+    FORMAT: F12.5
+    DICT_KEY: "SPASE>Field>FieldQuantity:Magnetic,Qualifier:Vector,CoordinateSystemName:DSRF,CoordinateRepresentation:Cartesian"
+
+direction_attrs:
+    <<: *default_coords
+    CATDESC: Magnetic field vector
+    FIELDNAM: \[xyz\] magnetic field vector
+    FORMAT: I3
+    VAR_TYPE: support_data
+    DISPLAY_TYPE: time_series
+    LABLAXIS: Magnetic field vector
+    DICT_KEY: SPASE>Support>SupportQuantity:Orientation
+
+
+# TODO: Add magnitude and range attributes, remove this
+fill:
+  <<: *support_default
+  CATDESC: Compression bit width
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Compressed data bit width
+  LABLAXIS: Bit width
+  FILLVAL: 255
+  FORMAT: I2
+  UNITS: 'bits'
+  VALIDMAX: 21
+  VALIDMIN: 0
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+pri_sens:
+    <<: *support_default
+    CATDESC: Indicates the primary sensor. 0 is MAGo, 1 is MAGi
+    FIELDNAM: Primary Sensor
+    LABLAXIS: Primary Sensor
+    FILLVAL: 255
+    FORMAT: I1
+    UNITS: ' '
+    VALIDMAX: 1
+    VALIDMIN: 0
+    DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode
+
+
+qf_bitmask:
+  <<: *support_default
+  CATDESC: Eight-bit Data quality bitmask
+  FIELDNAM: Quality Flag
+  LABLAXIS: QF
+  FILLVAL: 255
+  FORMAT: I3
+  VALIDMAX: 255
+  VALIDMIN: 0
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
+
+qf:
+  <<: *support_default
+  CATDESC: Data quality flag
+  FIELDNAM: Quality Flag
+  LABLAXIS: QF
+  FILLVAL: 255
+  FORMAT: I1
+  VALIDMAX: 1
+  VALIDMIN: 0
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality

@@ -1,6 +1,7 @@
 """Functions to support I-ALiRT MAG packet parsing."""
 
 import logging
+from decimal import Decimal
 from typing import Union
 
 import numpy as np
@@ -17,10 +18,9 @@ from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.mag.l1a.mag_l1a_data import TimeTuple
 from imap_processing.mag.l1b.mag_l1b import (
     calibrate_vector,
-    retrieve_matrix_from_l1b_calibration,
     shift_time,
 )
-from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 
 logger = logging.getLogger(__name__)
 
@@ -251,11 +251,11 @@ def calculate_l1b(
     time_data : dict
         Time data.
     """
-    calibration_matrix_mago, time_shift_mago = retrieve_matrix_from_l1b_calibration(
-        calibration_dataset, is_mago=True
+    calibration_matrix_mago, time_shift_mago = (
+        retrieve_matrix_from_single_l1b_calibration(calibration_dataset, is_mago=True)
     )
-    calibration_matrix_magi, time_shift_magi = retrieve_matrix_from_l1b_calibration(
-        calibration_dataset, is_mago=False
+    calibration_matrix_magi, time_shift_magi = (
+        retrieve_matrix_from_single_l1b_calibration(calibration_dataset, is_mago=False)
     )
 
     # Get time values for each group.
@@ -288,7 +288,7 @@ def calculate_l1b(
 
 def process_packet(
     accumulated_data: xr.Dataset, calibration_dataset: xr.Dataset
-) -> list[dict]:
+) -> tuple[list[dict], list[dict]]:
     """
     Parse the MAG packets.
 
@@ -323,6 +323,7 @@ def process_packet(
     grouped_data = find_groups(accumulated_data, (0, 3), "pkt_counter", "met")
 
     unique_groups = np.unique(grouped_data["group"])
+    l1b_data = []
     mag_data = []
 
     for group in unique_groups:
@@ -381,6 +382,53 @@ def process_packet(
             }
         )
 
-        mag_data.append({**status_data, **science_data, **time_data})
+        l1b_data.append({**status_data, **science_data, **time_data})
 
-    return mag_data
+        # Placeholder for real data.
+        met = grouped_data["met"][(grouped_data["group"] == group).values]
+        mag_data.append(
+            {
+                "apid": 478,
+                "met": int(met.values.min()),
+                "met_in_utc": met_to_utc(met.values.min()).split(".")[0],
+                "ttj2000ns": int(met_to_ttj2000ns(met.values.min())),
+                "mag_4s_b_gse": [Decimal("0.0") for _ in range(3)],
+                "mag_4s_b_gsm": [Decimal("0.0") for _ in range(3)],
+                "mag_4s_b_rtn": [Decimal("0.0") for _ in range(3)],
+                "mag_phi_4s_b_gsm": Decimal("0.0"),
+                "mag_theta_4s_b_gsm": Decimal("0.0"),
+            }
+        )
+
+    return mag_data, l1b_data
+
+
+def retrieve_matrix_from_single_l1b_calibration(
+    calibration_dataset: xr.Dataset, is_mago: bool = True
+) -> tuple[xr.DataArray, xr.DataArray]:
+    """
+    Retrieve the calibration matrix and time shift from the calibration dataset.
+
+    Parameters
+    ----------
+    calibration_dataset : xarray.Dataset
+        The calibration dataset containing the calibration matrices and time shift.
+    is_mago : bool
+        Whether the calibration is for mago or magi. If True, it retrieves the mago
+        calibration matrix and time shift. If False, it retrieves the magi calibration
+        matrix and time shift.
+
+    Returns
+    -------
+    tuple[xr.DataArray, xr.DataArray]
+        The calibration matrix and time shift. These can be passed directly into
+        update_vector, calibrate_vector, and shift_time.
+    """
+    if is_mago:
+        calibration_matrix = calibration_dataset["MFOTOURFO"]
+        time_shift = calibration_dataset["OTS"]
+    else:
+        calibration_matrix = calibration_dataset["MFITOURFI"]
+        time_shift = calibration_dataset["ITS"]
+
+    return calibration_matrix, time_shift

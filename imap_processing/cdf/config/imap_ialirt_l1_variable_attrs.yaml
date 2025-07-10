@@ -1,0 +1,353 @@
+default_attrs: &default
+  # Assumed values for all variable attrs unless overwritten
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: -9223372036854775808
+  FORMAT: I12
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854775807
+  VAR_TYPE: data
+  UNITS: " "
+
+component:
+  CATDESC: Component direction (x, y, z)
+  FIELDNAM: component
+  LABLAXIS: component
+  FORMAT: A3
+  VAR_TYPE: metadata
+  UNITS: " "
+
+esa_step:
+  CATDESC: ESA step number
+  FIELDNAM: esa_step
+  LABLAXIS: esa_step
+  FORMAT: I2
+  VALIDMIN: 0
+  VALIDMAX: 7
+  VAR_TYPE: metadata
+  UNITS: " "
+
+energy_ranges:
+    CATDESC: CoDICE-Hi energy ranges
+    FIELDNAM: energy_ranges
+    LABLAXIS: energy_ranges
+    FORMAT: I3
+    VALIDMIN: 0
+    VALIDMAX: 14
+    VAR_TYPE: metadata
+    UNITS: " "
+
+azimuth:
+    CATDESC: CoDICE-Hi azimuth
+    FIELDNAM: azimuth
+    LABLAXIS: azimuth
+    FORMAT: I3
+    VALIDMIN: 0
+    VALIDMAX: 4
+    VAR_TYPE: metadata
+    UNITS: " "
+
+spin_angle_bin:
+    CATDESC: CoDICE-Hi spin_angle_bin
+    FIELDNAM: spin_angle_bin
+    LABLAXIS: spin_angle_bin
+    FORMAT: I3
+    VALIDMIN: 0
+    VALIDMAX: 4
+    VAR_TYPE: metadata
+    UNITS: " "
+
+default_uint8_attrs: &default_uint8
+  <<: *default
+  FILLVAL: 255
+  FORMAT: I3
+  VALIDMIN: 0
+  VALIDMAX: 255
+  dtype: uint8
+
+default_uint16_attrs: &default_uint16
+  <<: *default
+  FILLVAL: 65535
+  FORMAT: I5
+  VALIDMIN: 0
+  VALIDMAX: 65535
+  dtype: uint16
+
+default_uint32_attrs: &default_uint32
+  <<: *default
+  FILLVAL: 4294967295
+  FORMAT: I10
+  VALIDMIN: 0
+  VALIDMAX: 4294967295
+  dtype: uint32
+
+default_int64_attrs: &default_int64
+  <<: *default
+  FILLVAL: -9223372036854775808
+  FORMAT: I20
+  VALIDMIN: -9223372036854775808
+  VALIDMAX: 9223372036854775807
+  dtype: int64
+
+default_int32_attrs: &default_int32
+  <<: *default
+  FILLVAL: -2147483648
+  FORMAT: I10
+  VALIDMIN: -2147483648
+  VALIDMAX: 2147483647
+  dtype: int32
+
+default_float32_attrs: &default_float32
+  <<: *default
+  FILLVAL: -1.0e31
+  FORMAT: F12.6
+  VALIDMIN: -3.4028235e+38
+  VALIDMAX: 3.4028235e+38
+  dtype: float32
+
+default_float64_attrs: &default_float64
+  <<: *default
+  FILLVAL: -1.0e31
+  FORMAT: F10.2
+  VALIDMIN: -1.7976931348623157e+308
+  VALIDMAX: 1.7976931348623157e+308
+  dtype: float64
+
+codicehi_h:
+  <<: *default_float32
+  CATDESC: H intensities in 15 energy ranges and binned into 4 azimuths and 4 spin angle bins
+  FIELDNAM: H intensities
+  LABLAXIS: Diff. Intensity
+  UNITS: "# / cm2-sr-s- MeV"
+  VALIDMIN: 0
+  VALIDMAX: 100000000.0
+  DEPEND_1: energy_ranges
+  DEPEND_2: azimuth
+  DEPEND_3: spin_angle_bin
+
+codicelo_c_over_o_abundance:
+  <<: *default_float32
+  CATDESC: C/O abundance ratio
+  FIELDNAM: C/O
+  LABLAXIS: ratio
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 100000000.0
+
+codicelo_mg_over_o_abundance:
+  <<: *default_float32
+  CATDESC: Mg/O abundance ratio
+  FIELDNAM: Mg/O
+  LABLAXIS: ratio
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 100000000.0
+
+codicelo_fe_over_o_abundance:
+  <<: *default_float32
+  CATDESC: Fe/O abundance ratio
+  FIELDNAM: Fe/O
+  LABLAXIS: ratio
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 100000000.0
+
+codicelo_c_plus_6_over_c_plus_5_ratio:
+  <<: *default_float32
+  CATDESC: C+6/C+5 charge state ratio
+  FIELDNAM: C+6/C+5
+  LABLAXIS: ratio
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 100000000.0
+
+codicelo_o_plus_7_over_o_plus_6_ratio:
+  <<: *default_float32
+  CATDESC: O+7/O+6 charge state ratio
+  FIELDNAM: O+7/O+6
+  LABLAXIS: ratio
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 100000000.0
+
+codicelo_fe_low_over_fe_high_ratio:
+  <<: *default_float32
+  CATDESC: Fe low/Fe high charge state ratio
+  FIELDNAM: Fe low/Fe high
+  LABLAXIS: ratio
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 100000000.0
+
+hit_e_a_side_low_en:
+  <<: *default_uint32
+  CATDESC: Low energy (~300 keV) electrons (A-side)
+  FIELDNAM: Low energy (~300 keV) electrons (A-side)
+  LABLAXIS: hit_e_a_side_low_en
+  UNITS: counts
+
+hit_e_a_side_med_en:
+  <<: *default_uint32
+  CATDESC: Medium energy (~3 MeV) electrons (A-side)
+  FIELDNAM: Medium energy (~3 MeV) electrons (A-side)
+  LABLAXIS: hit_e_a_side_med_en
+  UNITS: counts
+
+hit_e_a_side_high_en:
+  <<: *default_uint32
+  CATDESC: High energy (>3 MeV) electrons (A-side)
+  FIELDNAM: High energy (>3 MeV) electrons (A-side)
+  LABLAXIS: hit_e_a_side_high_en
+  UNITS: counts
+
+hit_e_b_side_low_en:
+  <<: *default_uint32
+  CATDESC: Low energy (~300 keV) electrons (B-side)
+  FIELDNAM: Low energy (~300 keV) electrons (B-side)
+  LABLAXIS: hit_e_b_side_low_en
+  UNITS: counts
+
+hit_e_b_side_med_en:
+  <<: *default_uint32
+  CATDESC: Medium energy (~3 MeV) electrons (B-side)
+  FIELDNAM: Medium energy (~3 MeV) electrons (B-side)
+  LABLAXIS: hit_e_b_side_med_en
+  UNITS: counts
+
+hit_e_b_side_high_en:
+  <<: *default_uint32
+  CATDESC: High energy (>3 MeV) electrons (B-side)
+  FIELDNAM: High energy (>3 MeV) electrons (B-side)
+  LABLAXIS: hit_e_b_side_high_en
+  UNITS: counts
+
+hit_h_omni_med_en:
+  <<: *default_uint32
+  CATDESC: Medium energy (12–70 MeV) protons (Omnidirectional)
+  FIELDNAM: Medium energy (12–70 MeV) protons (Omnidirectional)
+  LABLAXIS: hit_h_omni_med_en
+  UNITS: counts
+
+hit_h_a_side_high_en:
+  <<: *default_uint32
+  CATDESC: High energy (>70 MeV) protons (A-side)
+  FIELDNAM: High energy (>70 MeV) protons (A-side)
+  LABLAXIS: hit_h_a_side_high_en
+  UNITS: counts
+
+hit_h_b_side_high_en:
+  <<: *default_uint32
+  CATDESC: High energy (>70 MeV) protons (B-side)
+  FIELDNAM: High energy (>70 MeV) protons (B-side)
+  LABLAXIS: hit_h_b_side_high_en
+  UNITS: counts
+
+hit_he_omni_low_en:
+  <<: *default_uint32
+  CATDESC: Low energy (6–8 MeV/nuc) He (Omnidirectional)
+  FIELDNAM: Low energy (6–8 MeV/nuc) He (Omnidirectional)
+  LABLAXIS: hit_he_omni_low_en
+  UNITS: counts
+
+hit_he_omni_high_en:
+  <<: *default_uint32
+  CATDESC: High energy (15–70 MeV/nuc) He (Omnidirectional)
+  FIELDNAM: High energy (15–70 MeV/nuc) He (Omnidirectional)
+  LABLAXIS: hit_he_omni_high_en
+  UNITS: counts
+
+mag_4s_b_gse:
+  <<: *default_float32
+  CATDESC: Magnetic field vector in GSE coordinates
+  FIELDNAM: mag_4s_b_gse
+  LABLAXIS: mag_4s_b_gse
+  UNITS: nT
+  DEPEND_1: component
+
+mag_4s_b_gsm:
+  <<: *default_float32
+  CATDESC: Magnetic field vector in GSM coordinates
+  FIELDNAM: mag_4s_b_gsm
+  LABLAXIS: mag_4s_b_gsm
+  UNITS: nT
+  DEPEND_1: component
+
+mag_4s_b_rtn:
+  <<: *default_float32
+  CATDESC: Magnetic field vector in RTN coordinates
+  FIELDNAM: mag_4s_b_rtn
+  LABLAXIS: mag_4s_b_rtn
+  UNITS: nT
+  DEPEND_1: component
+
+mag_phi_4s_b_gsm:
+  <<: *default_float32
+  CATDESC: Azimuth angle (φ) of the magnetic field in GSM coordinates
+  FIELDNAM: mag_phi_4s_b_gsm
+  LABLAXIS: mag_phi_4s_b_gsm
+  UNITS: degrees
+
+mag_theta_4s_b_gsm:
+  <<: *default_float32
+  CATDESC: Elevation angle (θ) of the magnetic field in GSM coordinates
+  FIELDNAM: mag_theta_4s_b_gsm
+  LABLAXIS: mag_theta_4s_b_gsm
+  UNITS: degrees
+
+swapi_pseudo_proton_density:
+  <<: *default_float32
+  CATDESC: Pseudo density of solar wind protons
+  FIELDNAM: swapi_pseudo_proton_density
+  LABLAXIS: swapi_pseudo_proton_density
+  UNITS: 1/cm^3
+  VALIDMIN: 0.0
+  VALIDMAX: 1000.0
+
+swapi_pseudo_proton_speed:
+  <<: *default_float32
+  CATDESC: Pseudo speed of solar wind protons in solar inertial frame
+  FIELDNAM: swapi_pseudo_proton_speed
+  LABLAXIS: swapi_pseudo_proton_speed
+  UNITS: km/sec
+  VALIDMIN: 0.0
+  VALIDMAX: 10000.0
+
+swapi_pseudo_proton_temperature:
+  <<: *default_float32
+  CATDESC: Pseudo temperature of solar wind protons in plasma frame
+  FIELDNAM: swapi_pseudo_proton_temperature
+  LABLAXIS: swapi_pseudo_proton_temperature
+  UNITS: Kelvin
+  VALIDMIN: 0.0
+  VALIDMAX: 50000000.0
+
+# SWE Normalized Counts, First Half Cycle
+swe_normalized_counts_half_1:
+  <<: *default_uint32
+  CATDESC: Normalized electron counts (Half Cycle 1, ESA step 0)
+  FIELDNAM: swe_normalized_counts_half_1
+  LABLAXIS: swe_norm_cts_q1_esa0
+  UNITS: Normalized counts
+  VALIDMIN: 0
+  VALIDMAX: 500000
+  DEPEND_1: esa_step
+
+# SWE Normalized Counts, Second Half Cycle
+swe_normalized_counts_half_2:
+  <<: *default_uint32
+  CATDESC: Normalized electron counts (Half Cycle 2, ESA step 0)
+  FIELDNAM: swe_normalized_counts_half_2
+  LABLAXIS: swe_norm_cts_q2_esa0
+  UNITS: Normalized counts
+  VALIDMIN: 0
+  VALIDMAX: 500000
+  DEPEND_1: esa_step
+
+swe_counterstreaming_electrons:
+    <<: *default_uint8
+    CATDESC: Counterstreaming electrons
+    FIELDNAM: swe_counterstreaming_electrons
+    LABLAXIS: swe_counterstreaming_electrons
+    UNITS: ""
+    VALIDMIN: 0
+    VALIDMAX: 1

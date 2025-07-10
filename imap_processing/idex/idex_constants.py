@@ -3,6 +3,8 @@
 from dataclasses import dataclass
 from enum import Enum, IntEnum
 
+from imap_processing.spice.geometry import SpiceFrame
+
 
 class IDEXAPID(IntEnum):
     """Create ENUM for apid."""
@@ -44,6 +46,13 @@ NS_TO_S = 1e-9
 # Microseconds to seconds conversion
 US_TO_S = 1e-6
 
+# Seconds in a day
+SECONDS_IN_DAY = 86400
+# Nanoseconds in day
+NANOSECONDS_IN_DAY = SECONDS_IN_DAY * int(1e9)
+# fg to kg conversion factor
+FG_TO_KG = 1e-15
+
 TARGET_HIGH_FREQUENCY_CUTOFF = 100
 
 TARGET_NOISE_FREQUENCY = 7000
@@ -67,8 +76,23 @@ SPICE_ARRAYS = [
     "ephemeris_velocity_x",
     "ephemeris_velocity_y",
     "ephemeris_velocity_z",
-    "right_ascension",
-    "declination",
+    "longitude",
+    "latitude",
     "solar_longitude",
     "spin_phase",
 ]
+
+# Default IDEX Rectangular parameters
+# Used in IDEX l2c processing
+IDEX_SPACING_DEG = 6
+
+# Define the pointing reference frame for IDEX
+IDEX_EVENT_REFERENCE_FRAME = SpiceFrame.ECLIPJ2000
+
+
+class IDEXEvtAcquireCodes(IntEnum):
+    """Create ENUM for event message ints that signify science acquire events."""
+
+    ACQSETUP = 2
+    ACQ = 3
+    CHILL = 5

@@ -100,7 +100,9 @@ COUNTS_DATA_STRUCTURE = {
     "penfgrates": HITPacking(16, 528, (33,)),  # range 4 foreground rates
     "penbgrates": HITPacking(16, 240, (15,)),  # range 4 background rates
     "ialirtrates": HITPacking(16, 320, (20,)),  # ialirt rates
-    "sectorates": HITPacking(16, 1920, (15, 8)),  # sectored rates
+    "sectorates": HITPacking(
+        16, 1920, (8, 15)
+    ),  # sectored rates (8 zenith angles, 15 azimuth angles)
     "l4fgrates": HITPacking(16, 768, (48,)),  # all range foreground rates
     "l4bgrates": HITPacking(16, 384, (24,)),  # all range foreground rates
 }

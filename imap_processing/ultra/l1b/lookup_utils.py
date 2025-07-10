@@ -206,23 +206,24 @@ def get_angular_profiles(start_type: str, sensor: str) -> pd.DataFrame:
     return lookup_table
 
 
-def get_energy_efficiencies() -> pd.DataFrame:
+def get_energy_efficiencies(ancillary_files: dict) -> pd.DataFrame:
     """
     Lookup table for efficiencies for theta and phi.
 
     Further description is available starting on
     page 18 of the Algorithm Document.
 
+    Parameters
+    ----------
+    ancillary_files : dict[Path]
+        Ancillary files.
+
     Returns
     -------
     lookup_table : DataFrame
         Efficiencies lookup table for a given sensor.
     """
-    # TODO: Move this out of tests directory once we have the aux api
-    # TODO: ultra90 efficiencies
-    path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
-    lookup_table = pd.read_csv(
-        path / "Ultra_efficiencies_45_combined_logistic_interpolation.csv"
-    )
+    # TODO: add sensor to input when new lookup tables are available.
+    lookup_table = pd.read_csv(ancillary_files["l1b-45sensor-logistic-interpolation"])
 
     return lookup_table

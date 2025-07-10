@@ -941,9 +941,7 @@ def get_fwhm(
 
 
 def get_efficiency(
-    energy: NDArray,
-    phi_inst: NDArray,
-    theta_inst: NDArray,
+    energy: NDArray, phi_inst: NDArray, theta_inst: NDArray, ancillary_files: dict
 ) -> NDArray:
     """
     Interpolate efficiency values for each event.
@@ -956,13 +954,15 @@ def get_efficiency(
         Instrument-frame azimuth angle for each event.
     theta_inst : NDArray
         Instrument-frame elevation angle for each event.
+    ancillary_files : dict
+        Ancillary files.
 
     Returns
     -------
     efficiency : NDArray
         Interpolated efficiency values.
     """
-    lookup_table = get_energy_efficiencies()
+    lookup_table = get_energy_efficiencies(ancillary_files)
 
     theta_vals = np.sort(lookup_table["theta (deg)"].unique())
     phi_vals = np.sort(lookup_table["phi (deg)"].unique())

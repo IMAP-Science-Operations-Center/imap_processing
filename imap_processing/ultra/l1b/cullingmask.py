@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.quality_flags import ImapAttitudeUltraFlags, ImapRatesUltraFlags
-from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
+from imap_processing.ultra.utils.ultra_l1_utils import create_dataset, extract_data_dict
 
 FILLVAL_UINT16 = 65535
 FILLVAL_FLOAT64 = -1.0e31
@@ -44,11 +44,16 @@ def calculate_cullingmask(extendedspin_dataset: xr.Dataset, name: str) -> xr.Dat
             == 0
         ).all(dim="energy_bin_geometric_mean")
     )
+    extendedspin_dataset = extendedspin_dataset.assign_coords(
+        epoch=("spin_number", extendedspin_dataset["epoch"].values)
+    )
     filtered_dataset = extendedspin_dataset.sel(
         spin_number=extendedspin_dataset["spin_number"][good_mask]
     )
 
-    cullingmask_dataset = create_dataset(filtered_dataset, name, "l1b")
+    data_dict = extract_data_dict(filtered_dataset)
+
+    cullingmask_dataset = create_dataset(data_dict, name, "l1b")
 
     if cullingmask_dataset["spin_number"].size == 0:
         cullingmask_dataset = cullingmask_dataset.drop_dims("spin_number")

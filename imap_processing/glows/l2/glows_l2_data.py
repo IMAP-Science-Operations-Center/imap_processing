@@ -34,8 +34,6 @@ class DailyLightcurve:
         ecliptic latitude of bin centers [deg]
     number_of_bins : int
         number of bins in lightcurve
-    raw_uncertainties : numpy.ndarray
-        statistical uncertainties for raw histograms (sqrt of self.raw_histograms)
     l1b_data : xarray.Dataset
         L1B data filtered by good times, good angles, and good bins.
     """
@@ -52,7 +50,6 @@ class DailyLightcurve:
     ecliptic_lon: np.ndarray = field(init=False)
     ecliptic_lat: np.ndarray = field(init=False)
     number_of_bins: int = field(init=False)
-    raw_uncertainties: np.ndarray = field(init=False)
     l1b_data: InitVar[xr.Dataset]
 
     def __post_init__(self, l1b_data: xr.Dataset) -> None:
@@ -76,14 +73,14 @@ class DailyLightcurve:
         self.exposure_times = self.calculate_exposure_times(
             l1b_data, exposure_times_per_timestamp
         )
-        self.raw_uncertainties = np.sqrt(self.raw_histograms)
+        raw_uncertainties = np.sqrt(self.raw_histograms)
         self.photon_flux = np.zeros(len(self.raw_histograms))
         self.flux_uncertainties = np.zeros(len(self.raw_histograms))
 
         # TODO: Only where exposure counts != 0
         if len(self.exposure_times) != 0:
             self.photon_flux = self.raw_histograms / self.exposure_times
-            self.flux_uncertainties = self.raw_uncertainties / self.exposure_times
+            self.flux_uncertainties = raw_uncertainties / self.exposure_times
 
         # TODO: Average this, or should they all be the same?
         self.spin_angle = np.average(l1b_data["imap_spin_angle_bin_cntr"].data, axis=0)
@@ -135,7 +132,7 @@ class DailyLightcurve:
             Sum of valid histograms across all timestamps.
         """
         histograms[histograms == -1] = 0
-        return np.sum(histograms, axis=0)
+        return np.sum(histograms, axis=0, dtype=np.int64)
 
 
 @dataclass

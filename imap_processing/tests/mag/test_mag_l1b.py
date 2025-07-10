@@ -29,9 +29,11 @@ def test_mag_processing(mag_test_l1b_calibration_data):
     mag_attributes = ImapCdfAttributes()
     mag_attributes.add_instrument_global_attrs("mag")
     mag_attributes.add_instrument_variable_attrs("mag", "l1b")
+
     mag_l1b = mag_l1b_processing(
         mag_l1a_dataset,
-        mag_test_l1b_calibration_data,
+        mag_test_l1b_calibration_data[0],
+        mag_test_l1b_calibration_data[1],
         mag_attributes,
         "imap_mag_l1b_norm-mago",
     )
@@ -50,7 +52,8 @@ def test_mag_processing(mag_test_l1b_calibration_data):
 
     mag_l1b = mag_l1b_processing(
         mag_l1a_dataset,
-        mag_test_l1b_calibration_data,
+        mag_test_l1b_calibration_data[2],
+        mag_test_l1b_calibration_data[3],
         mag_attributes,
         "imap_mag_l1b_norm-magi",
     )
@@ -62,47 +65,69 @@ def test_mag_processing(mag_test_l1b_calibration_data):
     assert mag_l1b["vectors"].values.shape == mag_l1a_dataset["vectors"].values.shape
 
 
-def test_mag_attributes():
+def test_mag_attributes(mag_l1b_cal_dataset):
     mag_l1a_dataset = mag_l1a_dataset_generator(20)
 
     mag_l1a_dataset.attrs["Logical_source"] = ["imap_mag_l1a_norm-mago"]
 
-    output = mag_l1b(mag_l1a_dataset)
+    output = mag_l1b(mag_l1a_dataset, np.datetime64("2024-03-01"), mag_l1b_cal_dataset)
     assert output.attrs["Logical_source"] == "imap_mag_l1b_norm-mago"
 
     mag_l1a_dataset.attrs["Logical_source"] = ["imap_mag_l1a_burst-magi"]
 
-    output = mag_l1b(mag_l1a_dataset)
+    output = mag_l1b(mag_l1a_dataset, np.datetime64("2024-03-01"), mag_l1b_cal_dataset)
     assert output.attrs["Logical_source"] == "imap_mag_l1b_burst-magi"
 
 
-def test_cdf_output():
+def test_cdf_output(mag_l1b_cal_dataset):
     l1a_cdf = load_cdf(
         Path(__file__).parent
         / "validation"
         / "imap_mag_l1a_norm-magi_20251017_v001.cdf"
     )
-    l1b_dataset = mag_l1b(l1a_cdf)
+    l1b_dataset = mag_l1b(l1a_cdf, np.datetime64("2024-03-01"), mag_l1b_cal_dataset)
 
     output_path = write_cdf(l1b_dataset)
 
     assert Path.exists(output_path)
 
 
-def test_mag_compression_scale():
+def test_mag_compression_scale(mag_l1b_cal_dataset):
     mag_l1a_dataset = mag_l1a_dataset_generator(20)
-
     test_calibration = np.array(
         [
-            [2.2972202, 0.0, 0.0],
-            [0.00348625, 2.23802879, 0.0],
-            [-0.00250788, -0.00888437, 2.24950008],
+            [
+                [2.2972202, 0.0, 0.0, 0],
+                [0.00348625, 2.23802879, 0.0, 0],
+                [-0.00250788, -0.00888437, 2.24950008, 0],
+            ],
+            [
+                [2.2972202, 0.0, 0.0, 0],
+                [0.00348625, 2.23802879, 0.0, 0],
+                [-0.00250788, -0.00888437, 2.24950008, 0],
+            ],
+            [
+                [2.2972202, 0.0, 0.0, 0],
+                [0.00348625, 2.23802879, 0.0, 0],
+                [-0.00250788, -0.00888437, 2.24950008, 0],
+            ],
         ]
     )
-    mag_l1a_dataset["vectors"][0, :] = np.array([1, 1, 1, 0])
-    mag_l1a_dataset["vectors"][1, :] = np.array([1, 1, 1, 0])
-    mag_l1a_dataset["vectors"][2, :] = np.array([1, 1, 1, 0])
-    mag_l1a_dataset["vectors"][3, :] = np.array([1, 1, 1, 0])
+    test_ts = np.array(0)
+    test_cal_dataset = xr.Dataset(
+        coords={"epoch": np.array(["2024-03-01"], dtype="datetime64[ns]")}
+    )
+    test_cal_dataset["MFOTOURFO"] = xr.DataArray(
+        np.zeros((1, 3, 3, 4)), dims=["epoch", "row", "column", "range"]
+    )
+    test_cal_dataset["MFOTOURFO"].data[0, :, :, :] = test_calibration
+    test_cal_dataset["OTS"] = xr.DataArray(np.zeros((1,)), dims=["epoch"])
+    test_cal_dataset["OTS"].data[0] = test_ts
+
+    mag_l1a_dataset["vectors"][0, :] = np.array([1.0, 1.0, 1.0, 0])
+    mag_l1a_dataset["vectors"][1, :] = np.array([1.0, 1.0, 1.0, 0])
+    mag_l1a_dataset["vectors"][2, :] = np.array([1.0, 1.0, 1.0, 0])
+    mag_l1a_dataset["vectors"][3, :] = np.array([1.0, 1.0, 1.0, 0])
 
     mag_l1a_dataset["compression_flags"][0, :] = np.array([1, 16], dtype=np.int8)
     mag_l1a_dataset["compression_flags"][1, :] = np.array([0, 0], dtype=np.int8)
@@ -110,9 +135,9 @@ def test_mag_compression_scale():
     mag_l1a_dataset["compression_flags"][3, :] = np.array([1, 14], dtype=np.int8)
 
     mag_l1a_dataset.attrs["Logical_source"] = ["imap_mag_l1a_norm-mago"]
-    output = mag_l1b(mag_l1a_dataset)
+    output = mag_l1b(mag_l1a_dataset, np.datetime64("2024-03-01"), test_cal_dataset)
 
-    calibrated_vectors = np.matmul(test_calibration, np.array([1, 1, 1]))
+    calibrated_vectors = np.matmul(test_calibration[0, :, 0], np.array([1, 1, 1]))
     # 16 bit width is the standard
     assert np.allclose(output["vectors"].data[0][:3], calibrated_vectors)
     # uncompressed data is uncorrected
@@ -184,12 +209,15 @@ def test_calibrate_vector():
     assert np.allclose(cal_vector, expected_vector, atol=1e-9)
 
 
-def test_l1a_to_l1b(validation_l1a):
+def test_l1a_to_l1b(validation_l1a, mag_l1b_cal_dataset):
     # Convert l1a input validation packet file to l1b
     with pytest.raises(ValueError, match="Raw L1A"):
-        mag_l1b(validation_l1a[0])
+        mag_l1b(validation_l1a[0], np.datetime64("2024-03-01"), mag_l1b_cal_dataset)
 
-    l1b = [mag_l1b(i) for i in validation_l1a[1:]]
+    l1b = [
+        mag_l1b(i, np.datetime64("2024-03-01"), mag_l1b_cal_dataset)
+        for i in validation_l1a[1:]
+    ]
 
     assert len(l1b) == len(validation_l1a) - 1
 

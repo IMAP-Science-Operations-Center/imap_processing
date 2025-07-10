@@ -346,16 +346,18 @@ current_neg2p5v_bus:
 ephemeris_position_x:
   <<: *spice_base
   FIELDNAM: Position X
-  CATDESC: Cartesian coordinate X positions for the IMAP spacecraft in the ECLIPJ2000 frame.
+  CATDESC: Cartesian coord X positions for the IMAP spacecraft in the ECLIPJ2000 frame.
   LABLAXIS: Position X
   UNITS: km
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
 
 ephemeris_position_y:
   <<: *spice_base
   FIELDNAM: Position Y
-  CATDESC: Cartesian coordinate Y positions for the IMAP spacecraft in the ECLIPJ2000 frame.
+  CATDESC: Cartesian coord Y positions for the IMAP spacecraft in the ECLIPJ2000 frame.
   LABLAXIS: Position Y
   UNITS: km
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
 
 ephemeris_position_z:
   <<: *spice_base
@@ -363,6 +365,7 @@ ephemeris_position_z:
   CATDESC: Cartesian coordinate Z positions for the IMAP spacecraft in the ECLIPJ2000 frame.
   LABLAXIS: Position Z
   UNITS: km
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
 
 ephemeris_velocity_x:
   <<: *spice_base
@@ -370,6 +373,7 @@ ephemeris_velocity_x:
   CATDESC: Velocity X positions for the IMAP spacecraft in the ECLIPJ2000 frame.
   LABLAXIS: Velocity X
   UNITS: km/s
+  DICT_KEY: SPASE>Support>SupportQuantity:Velocity
 
 ephemeris_velocity_y:
   <<: *spice_base
@@ -377,6 +381,7 @@ ephemeris_velocity_y:
   CATDESC: Velocity Y positions for the IMAP spacecraft in the ECLIPJ2000 frame.
   LABLAXIS: Velocity Y
   UNITS: km/s
+  DICT_KEY: SPASE>Support>SupportQuantity:Velocity
 
 ephemeris_velocity_z:
   <<: *spice_base
@@ -384,19 +389,23 @@ ephemeris_velocity_z:
   CATDESC: Velocity Z positions for the IMAP spacecraft in the ECLIPJ2000 frame.
   LABLAXIS: Velocity Z
   UNITS: km/s
+  DICT_KEY: SPASE>Support>SupportQuantity:Velocity
 
-right_ascension:
+
+longitude:
   <<: *spice_base
   VALIDMIN: 0
-  FIELDNAM: Right Ascension
-  CATDESC: Right ascension of the IMAP spacecraft position as observed from Earth in the ECLIPJ2000 reference frame.
-  LABLAXIS: Right Ascension
+  FIELDNAM: Longitude
+  CATDESC: Longitude of the dust event as observed from Earth in the ECLIPJ2000 frame.
+  LABLAXIS: Longitude
+  DICT_KEY: SPASE>Support>SupportQuantity:Longitude
 
-declination:
+latitude:
   <<: *spice_base
-  FIELDNAM: Declination
-  CATDESC: Declination of the IMAP spacecraft position as observed from Earth in the ECLIPJ2000 reference frame.
-  LABLAXIS: Declination
+  FIELDNAM: Latitude
+  CATDESC: Latitude of the dust event as observed from Earth in the ECLIPJ2000 frame.
+  LABLAXIS: Latitude
+  DICT_KEY: SPASE>Support>SupportQuantity:Latitude
 
 spin_phase:
   <<: *spice_base
@@ -404,8 +413,9 @@ spin_phase:
   FIELDNAM: Spin Phase
   CATDESC: IMAP Spin Phase
   LABLAXIS: Spin Phase
-  FORMAT: I8
-  FILLVAL: *int_fillval
+  FORMAT: F12.6
+  FILLVAL: *double_fillval
+  DICT_KEY: SPASE>Support>SupportQuantity:SpinPhase
 
 solar_longitude:
   <<: *spice_base
@@ -413,4 +423,5 @@ solar_longitude:
   FIELDNAM: Solar Longitude
   CATDESC: Solar Longitude of the IMAP spacecraft
   LABLAXIS: Solar Longitude
+  DICT_KEY: SPASE>Support>SupportQuantity:Longitude
 

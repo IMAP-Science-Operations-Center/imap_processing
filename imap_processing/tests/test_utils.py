@@ -6,6 +6,7 @@ import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory, utils
+from imap_processing.ultra.utils.ultra_l1_utils import extract_data_dict
 
 
 def test_convert_raw_to_eu(tmp_path):
@@ -221,6 +222,35 @@ def test_packet_file_to_datasets(use_derived_value, expected_mode):
     np.testing.assert_array_equal(np.unique(data["mode"].data), expected_mode)
 
 
+def test_packet_file_to_datasets_duplicates(tmpdir, caplog):
+    """
+    Test that all datatypes aren't all int64 and that we get
+    uint8/uint16 from header items as expected.
+
+    Test that we get multiple apids in the output.
+    """
+    test_file = "tests/swapi/l0_data/imap_swapi_l0_raw_20240924_v001.pkts"
+    packet_file = imap_module_directory / test_file
+
+    # Write the file out twice to double the number of binary packets in
+    # a new file for testing
+    with open(two_files := tmpdir / "two_files.pkts", "wb") as f:
+        with open(packet_file, "rb") as original_file:
+            data = original_file.read()
+            f.write(data)
+            f.write(data)
+
+    packet_definition = (
+        imap_module_directory / "swapi/packet_definitions/swapi_packet_definition.xml"
+    )
+    ds_two_files = utils.packet_file_to_datasets(two_files, packet_definition)
+    ds_one_file = utils.packet_file_to_datasets(packet_file, packet_definition)
+    assert len(ds_two_files[1188]["epoch"]) == len(ds_one_file[1188]["epoch"])
+    assert len(ds_two_files[1188]["epoch"]) == 153
+
+    assert "Dropping duplicate packets" in caplog.records[0].message
+
+
 def test_packet_file_to_datasets_flat_definition():
     test_file = "tests/idex/test_data/imap_idex_l0_raw_20231218_v001.pkts"
     packet_files = imap_module_directory / test_file
@@ -230,3 +260,31 @@ def test_packet_file_to_datasets_flat_definition():
     )
     with pytest.raises(ValueError, match="Packet fields do not match"):
         utils.packet_file_to_datasets(packet_files, packet_definition)
+
+
+def test_extract_data_dict():
+    """Test extract_data_dict function."""
+    data_vars = {
+        "field_a": (["spin_number"], np.array([1, 2, 3])),
+        "field_b": (["spin_number"], np.array([4, 5, 6])),
+    }
+    coords = {
+        "spin_number": np.array([0, 1, 2]),
+        "energy_bin_geometric_mean": np.array([10.0, 20.0, 30.0]),
+        "epoch": np.array(
+            ["2025-01-01", "2025-01-02", "2025-01-03"], dtype="datetime64[ns]"
+        ),
+    }
+    ds = xr.Dataset(data_vars=data_vars, coords=coords)
+
+    result = extract_data_dict(ds)
+
+    assert set(result.keys()) == {
+        "field_a",
+        "field_b",
+        "spin_number",
+        "energy_bin_geometric_mean",
+        "epoch",
+    }
+    np.testing.assert_array_equal(result["field_a"], np.array([1, 2, 3]))
+    np.testing.assert_array_equal(result["spin_number"], np.array([0, 1, 2]))

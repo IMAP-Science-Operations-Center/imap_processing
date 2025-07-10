@@ -5,11 +5,11 @@ import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
-from imap_processing.idex.idex_constants import SPICE_ARRAYS
+from imap_processing.cdf.utils import load_cdf
+from imap_processing.idex.idex_constants import NANOSECONDS_IN_DAY, SPICE_ARRAYS
 from imap_processing.idex.idex_l1a import PacketParser
 from imap_processing.idex.idex_l1b import idex_l1b
-from imap_processing.idex.idex_l2a import idex_l2a
-from imap_processing.idex.idex_utils import get_idex_attrs
+from imap_processing.idex.idex_l2b import idex_l2b
 
 TEST_DATA_PATH = imap_module_directory / "tests" / "idex" / "test_data"
 
@@ -19,6 +19,9 @@ TEST_L0_FILE_CATLST = TEST_DATA_PATH / "imap_idex_l0_raw_20241206_v001.pkts"  # 
 
 L1A_EXAMPLE_FILE = TEST_DATA_PATH / "idex_l1a_validation_file.h5"
 L1B_EXAMPLE_FILE = TEST_DATA_PATH / "idex_l1b_validation_file.h5"
+
+L2A_CDF = TEST_DATA_PATH / "imap_idex_l2a_sci-1week_20251017_v001.cdf"
+L1B_EVT_CDF = TEST_DATA_PATH / "imap_idex_l1b_evt_20250108_v001.cdf"
 
 pytestmark = pytest.mark.external_test_data
 
@@ -73,7 +76,7 @@ def l1a_example_data(_download_test_data):
 
 
 @pytest.fixture
-def l2a_dataset(decom_test_data_sci: xr.Dataset) -> xr.Dataset:
+def l2a_dataset(l1b_dataset: xr.Dataset) -> xr.Dataset:
     """Return a ``xarray`` dataset containing test data.
 
     Returns
@@ -81,18 +84,8 @@ def l2a_dataset(decom_test_data_sci: xr.Dataset) -> xr.Dataset:
     dataset : xr.Dataset
         A ``xarray`` dataset containing the test data
     """
-    idex_attrs = get_idex_attrs("l1b")
-    spin_phase_angles = xr.DataArray(
-        np.random.randint(0, 360, len(decom_test_data_sci.epoch)),
-        dims="epoch",
-        attrs=idex_attrs.get_variable_attributes("spin_phase"),
-    )
-    with mock.patch(
-        "imap_processing.idex.idex_l1b.get_spice_data",
-        return_value={"spin_phase": spin_phase_angles},
-    ):
-        dataset = idex_l2a(idex_l1b(decom_test_data_sci))
-    return dataset
+    l2a_dataset = load_cdf(L2A_CDF)
+    return l2a_dataset
 
 
 @pytest.fixture
@@ -108,10 +101,48 @@ def l1b_example_data(_download_test_data):
     return load_hdf_file(L1B_EXAMPLE_FILE)
 
 
+@pytest.fixture
+@mock.patch("imap_processing.idex.idex_l1b.get_spice_data")
+def l1b_dataset(mock_get_spice_data, decom_test_data_sci: xr.Dataset) -> xr.Dataset:
+    """Return a ``xarray`` dataset containing test data.
+
+    Returns
+    -------
+    dataset : xr.Dataset
+        A ``xarray`` dataset containing the test data
+    """
+
+    mock_get_spice_data.side_effect = get_spice_data_side_effect_func
+    dataset = idex_l1b(decom_test_data_sci)
+    return dataset
+
+
+@pytest.fixture
+def l2b_dataset(l2a_dataset: xr.Dataset) -> xr.Dataset:
+    """Return a ``xarray`` dataset containing test data.
+
+    Returns
+    -------
+    dataset : xr.Dataset
+        A ``xarray`` dataset containing the test data
+    """
+    l1b_evt_dataset = load_cdf(L1B_EVT_CDF)
+    l1b_evt_dataset2 = (
+        l1b_evt_dataset.copy()
+    )  # Add a second dataset with different epoch values for testing
+    l2a_dataset2 = (
+        l2a_dataset.copy()
+    )  # Add a second dataset with different epoch values for testing
+    l1b_evt_dataset2["epoch"] = l1b_evt_dataset2["epoch"] + NANOSECONDS_IN_DAY
+    l2a_dataset2["epoch"] = l2a_dataset2["epoch"] + NANOSECONDS_IN_DAY
+    dataset = idex_l2b([l2a_dataset, l2a_dataset2], [l1b_evt_dataset, l1b_evt_dataset2])
+    return dataset
+
+
 def get_spice_data_side_effect_func(l1a_ds, idex_attrs):
     # Create a mock dictionary of spice arrays
 
-    return {
+    spice_data = {
         name: xr.DataArray(
             name=name,
             data=np.ones(len(l1a_ds["epoch"])),
@@ -120,6 +151,29 @@ def get_spice_data_side_effect_func(l1a_ds, idex_attrs):
         )
         for name in SPICE_ARRAYS
     }
+    spin_phase_angles = xr.DataArray(
+        name="spin_phase",
+        dims=["epoch"],
+        data=np.random.randint(0, 360, len(l1a_ds.epoch)),
+        attrs=idex_attrs.get_variable_attributes("spin_phase"),
+    )
+    longitude = xr.DataArray(
+        np.random.uniform(0, 360, len(l1a_ds.epoch)),
+        dims=["epoch"],
+        name="longitude",
+        attrs=idex_attrs.get_variable_attributes("longitude"),
+    )
+    latitude = xr.DataArray(
+        np.random.uniform(-90, 90, len(l1a_ds.epoch)),
+        dims=["epoch"],
+        name="latitude",
+        attrs=idex_attrs.get_variable_attributes("latitude"),
+    )
+    spice_data["spin_phase"] = spin_phase_angles
+    spice_data["latitude"] = latitude
+    spice_data["longitude"] = longitude
+
+    return spice_data
 
 
 def load_hdf_file(path: str) -> xr.Dataset:

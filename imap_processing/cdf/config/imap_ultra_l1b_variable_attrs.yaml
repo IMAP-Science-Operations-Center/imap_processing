@@ -334,6 +334,7 @@ spin_start_time:
   LABLAXIS: spin start time
   # TODO: come back to format
   UNITS: s
+  DEPEND_0: spin_number
 
 spin_period:
   <<: *default
@@ -341,6 +342,7 @@ spin_period:
   FIELDNAM: spin_period
   LABLAXIS: spin_period
   UNITS: s
+  DEPEND_0: spin_number
 
 spin_rate:
   <<: *default
@@ -348,6 +350,7 @@ spin_rate:
   FIELDNAM: spin_rate
   LABLAXIS: spin_rate
   UNITS: rpm
+  DEPEND_0: spin_number
 
 rate_start_pulses:
   <<: *default
@@ -424,6 +427,7 @@ quality_attitude:
   LABLAXIS: quality attitude
   # TODO: come back to format
   UNITS: " "
+  DEPEND_0: spin_number
 
 quality_instruments:
   <<: *default_uint16

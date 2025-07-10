@@ -13,6 +13,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils import spatial_utils
@@ -168,6 +169,84 @@ class TestHiPointingSet:
         )
         rect_map.project_pset_values_to_map(hi_pset, ["counts", "exposure_factor"])
         assert rect_map.data_1d["counts"].max() > 0
+
+
+@pytest.fixture
+def lo_pset_ds():
+    h_counts = np.zeros((1, 3600, 40, 7))
+    h_counts[:, :, 0:10, :] = 1
+
+    exposure_time = np.full((1, 3600, 40, 7), 0.5)
+    dataset = xr.Dataset()
+    dataset["h_counts"] = xr.DataArray(
+        h_counts,
+        dims=("epoch", "longitude", "latitude", "energy"),
+        name="h_counts",
+    )
+    dataset["exposure_time"] = xr.DataArray(
+        exposure_time,
+        dims=("epoch", "longitude", "latitude", "energy"),
+        name="exposure_time",
+    )
+    dataset.coords["epoch"] = xr.DataArray(
+        [8.1794907049e17],
+        dims=["epoch"],
+        name="epoch",
+    )
+    dataset.coords["longitude"] = xr.DataArray(
+        [i for i in range(3600)],
+        dims=["longitude"],
+        name="longitude",
+    )
+    dataset.coords["latitude"] = xr.DataArray(
+        [i for i in range(40)],
+        dims=["latitude"],
+        name="latitude",
+    )
+    dataset.coords["energy"] = xr.DataArray(
+        [i for i in range(1, 8)],
+        dims=["energy"],
+        name="energy",
+    )
+
+    attr_mgr = ImapCdfAttributes()
+    attr_mgr.add_instrument_global_attrs(instrument="lo")
+    dataset.attrs = attr_mgr.get_global_attributes("imap_lo_l1c_pset")
+
+    return dataset
+
+
+@pytest.fixture(scope="module")
+def lo_pset_cdf_path(imap_tests_path):
+    return imap_tests_path / "hi/data/l1/imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
+
+
+@pytest.mark.external_kernel
+@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
+class TestLoPointingSet:
+    """Test suite for LoPointingSet class."""
+
+    def test_init(self, lo_pset_ds):
+        """Test coverage for __init__ method."""
+        lo_pset = ena_maps.LoPointingSet(lo_pset_ds)
+        assert isinstance(lo_pset, ena_maps.LoPointingSet)
+        assert lo_pset.spice_reference_frame == geometry.SpiceFrame.IMAP_DPS
+        assert lo_pset.num_points == 144000
+        np.testing.assert_array_equal(lo_pset.az_el_points.shape, (144000, 2))
+
+        for var_name in ["exposure_time", "h_counts"]:
+            assert var_name in lo_pset.data
+
+    # TODO: write cdf test when CDF is available to download for test
+
+    def test_plays_nice_with_rectangular_sky_map(self, lo_pset_ds):
+        """Test that LoPointingSet works with RectangularSkyMap"""
+        lo_pset = ena_maps.LoPointingSet(lo_pset_ds)
+        rect_map = ena_maps.RectangularSkyMap(
+            spacing_deg=6, spice_frame=geometry.SpiceFrame.ECLIPJ2000
+        )
+        rect_map.project_pset_values_to_map(lo_pset, ["h_counts", "exposure_time"])
+        assert rect_map.data_1d["h_counts"].max() > 0
 
 
 class TestRectangularSkyMap:
@@ -443,6 +522,11 @@ class TestRectangularSkyMap:
         # operations to be repeated as this test
         rect_map_ds = rectangular_map.to_dataset()
         assert "solid_angle" in rect_map_ds.data_vars
+        assert rect_map_ds.data_vars["solid_angle"].shape == (
+            1,
+            360 / skymap_spacing,
+            180 / skymap_spacing,
+        )
         assert "counts" in rect_map_ds.data_vars
         assert rect_map_ds["counts"].shape == (
             1,
@@ -798,6 +882,15 @@ class TestHealpixSkyMap:
 
         # Convert to xarray Dataset and check the data is as expected
         hp_map_ds = hp_map.to_dataset()
+        assert "solid_angle" in hp_map_ds.data_vars
+        assert hp_map_ds.data_vars["solid_angle"].shape == (
+            1,
+            hp_map.num_points,
+        )
+        np.testing.assert_allclose(
+            hp_map_ds["solid_angle"].values,
+            hp.nside2pixarea(hp_map.nside, degrees=False),
+        )
         assert "counts" in hp_map_ds.data_vars
         assert hp_map_ds["counts"].shape == (
             1,

@@ -415,6 +415,13 @@ def interpolate_gaps(
             f"difference between gap start and burst start: "
             f"{gap_timeline[0] - burst_epochs[burst_start]}"
         )
+
+        short = (gap_timeline >= burst_epochs[burst_start]) & (
+            gap_timeline <= burst_epochs[burst_gap_end]
+        )
+        if len(gap_timeline) != (short).sum():
+            print(f"Chopping timeline from {len(gap_timeline)} to {short.sum()}")
+
         # Limit timestamps to only include the areas with burst data
         gap_timeline = gap_timeline[
             (
@@ -573,7 +580,7 @@ def find_gaps(timeline_data: np.ndarray, vectors_per_second: int) -> np.ndarray:
     diffs = abs(np.diff(timeline_data))
     # 3.5e7 == 7.5% of 0.5s in nanoseconds, a common gap. In the future, this number
     # will be calculated from the expected gap.
-    gap_index = np.asarray(diffs - expected_gap > 3.5e7).nonzero()[0]
+    gap_index = np.asarray(diffs - expected_gap > expected_gap * 0.075).nonzero()[0]
     output: np.ndarray = np.zeros((len(gap_index), 3))
 
     for index, gap in enumerate(gap_index):

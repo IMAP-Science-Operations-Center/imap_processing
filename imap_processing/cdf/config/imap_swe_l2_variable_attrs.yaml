@@ -221,6 +221,45 @@ flux:
   VAR_TYPE: data
   DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:NumberFlux,Qualifier:Array
 
+psd_stat_uncert:
+  CATDESC: Phase space density statistical uncertainty
+  FIELDNAM: Phase Space Density Stats Uncertainty
+  DEPEND_0: epoch
+  DEPEND_1: esa_step
+  DEPEND_2: spin_sector
+  DEPEND_3: cem_id
+  LABL_PTR_1: esa_step_label
+  LABL_PTR_2: spin_sector_label
+  LABL_PTR_3: cem_id_label
+  DISPLAY_TYPE: spectrogram
+  FILLVAL: -1.0000000E+31
+  FORMAT: E19.5
+  UNITS: counts
+  VALIDMIN: 0.0
+  VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
+  VAR_TYPE: data
+  SCALETYP: linear
+  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:Counts,Qualifier:Uncertainty
+
+flux_stat_uncert:
+  CATDESC: Flux statistical uncertainty
+  FIELDNAM: Flux Stats Uncertainty
+  DEPEND_0: epoch
+  DEPEND_1: esa_step
+  DEPEND_2: spin_sector
+  DEPEND_3: cem_id
+  LABL_PTR_1: esa_step_label
+  LABL_PTR_2: spin_sector_label
+  LABL_PTR_3: cem_id_label
+  DISPLAY_TYPE: spectrogram
+  FILLVAL: -1.0000000E+31
+  FORMAT: E19.5
+  UNITS: counts
+  VALIDMIN: 0.0
+  VALIDMAX: 1.7976931348623157e+308 # TODO: find actual value
+  VAR_TYPE: data
+  SCALETYP: linear
+  DICT_KEY: SPASE>Particle>ParticleType:Electron,ParticleQuantity:Counts,Qualifier:Uncertainty
 
 acquisition_time:
   CATDESC: Acquisition time organized by ESA step and spin sector

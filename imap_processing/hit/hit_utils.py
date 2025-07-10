@@ -368,8 +368,8 @@ def add_energy_variables(
     """
     updated_ds = dataset.copy()
 
-    energy_mean = np.mean(
-        np.array([energy_min_values, energy_max_values]), axis=0
+    energy_mean = np.round(
+        np.mean(np.array([energy_min_values, energy_max_values]), axis=0), 3
     ).astype(np.float32)
 
     updated_ds[f"{particle}_energy_mean"] = xr.DataArray(

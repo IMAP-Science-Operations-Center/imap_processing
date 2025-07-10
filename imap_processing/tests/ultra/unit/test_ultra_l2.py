@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 from unittest.mock import patch
 
 import numpy as np
 import pytest
 import xarray as xr
+from astropy_healpix.healpy import nside2pixarea
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
@@ -66,6 +69,7 @@ class TestUltraL2:
     def mock_data_dict(self, _mock_multiple_psets):
         return {pset.attrs["Logical_file_id"]: pset for pset in self.ultra_psets}
 
+    @pytest.mark.parametrize("epoch_dim_for_energy_delta", [True, False])
     @pytest.mark.parametrize(
         ["map_frame", "rtol"],
         [
@@ -80,7 +84,7 @@ class TestUltraL2:
     )
     @pytest.mark.usefixtures("_mock_single_pset", "_setup_spice_kernels_list")
     def test_generate_ultra_healpix_skymap_single_pset(
-        self, map_frame, rtol, furnish_kernels
+        self, epoch_dim_for_energy_delta, map_frame, rtol, furnish_kernels
     ):
         # Avoid modifying the original pset
         pset = self.ultra_pset.copy(deep=True)
@@ -92,6 +96,11 @@ class TestUltraL2:
         pset["background_rates"].values = np.ones_like(pset["background_rates"].values)
         pset["sensitivity"].values = np.ones_like(pset["sensitivity"].values)
         pset["energy_bin_delta"].values = np.ones_like(pset["energy_bin_delta"].values)
+        if epoch_dim_for_energy_delta:
+            # add an extra dim to the start
+            pset["energy_bin_delta"] = pset["energy_bin_delta"].expand_dims(
+                {CoordNames.TIME.value: pset["epoch"].values}
+            )
 
         # Create the Healpix skymap in the desired frame.
         with furnish_kernels(self.required_kernel_names):
@@ -245,9 +254,37 @@ class TestUltraL2:
                 output_map_structure=map_structure,
             )
 
+        assert (
+            map_dataset.attrs["Logical_source"]
+            == "imap_ultra_l2_u90-ena-h-unknown-nsp-full-hae-nside16-6mo"
+        )
+        assert "unknown frame" in map_dataset.attrs["Logical_source_description"]
+
         assert map_dataset.attrs["HEALPix_nside"] == str(map_structure.nside)
         assert map_dataset.attrs["HEALPix_nest"] == str(map_structure.nested)
         assert "6mo" in map_dataset.attrs["Logical_source"]
+
+        assert (
+            map_dataset["ena_intensity_sys_err"].shape
+            == map_dataset["ena_intensity"].shape
+        )
+        # TODO: Put in actual value for sys_err once implemented in ultra_l2 code.
+        np.testing.assert_allclose(
+            map_dataset["ena_intensity_sys_err"],
+            0,
+            rtol=0,
+            atol=1e-12,
+        )
+
+        # Check solid angle values and metadata
+        np.testing.assert_allclose(
+            map_dataset["solid_angle"],
+            nside2pixarea(
+                map_structure.nside,
+                degrees=False,
+            ),
+        )
+        assert map_dataset["solid_angle"].attrs["UNITS"] == "sr"
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
     def test_ultra_l2_rectangular(self, mock_data_dict, furnish_kernels):
@@ -471,3 +508,35 @@ class TestUltraL2:
                     data_dict=mock_data_dict,
                     output_map_structure=map_structure,
                 )
+
+    def test_ultra_l2_descriptor_rectmap(self, mock_data_dict, furnish_kernels):
+        with furnish_kernels(self.required_kernel_names):
+            output_map = ultra_l2.ultra_l2(
+                data_dict=mock_data_dict,
+                descriptor="u90-ena-h-hf-nsp-full-hae-6deg-6mo",
+            )[0]
+
+        assert (
+            output_map.attrs["Logical_source"]
+            == "imap_ultra_l2_u90-ena-h-hf-nsp-full-hae-6deg-6mo"
+        )
+        assert "heliospheric frame" in output_map.attrs["Logical_source_description"]
+
+        assert output_map.attrs["Spice_reference_frame"] == "ECLIPJ2000"
+        assert output_map.attrs["Spacing_degrees"] == "6.0"
+
+    @pytest.mark.usefixtures("_setup_spice_kernels_list")
+    def test_ultra_l2_descriptor_hpmap(self, mock_data_dict, furnish_kernels):
+        with furnish_kernels(self.required_kernel_names):
+            output_map = ultra_l2.ultra_l2(
+                data_dict=mock_data_dict,
+                descriptor="u90-ena-h-sf-nsp-full-hae-nside32-6mo",
+            )[0]
+
+        assert "spacecraft frame" in output_map.attrs["Logical_source_description"]
+        assert (
+            output_map.attrs["Logical_source"]
+            == "imap_ultra_l2_u90-ena-h-sf-nsp-full-hae-nside32-6mo"
+        )
+        assert output_map.attrs["Spice_reference_frame"] == "ECLIPJ2000"
+        assert output_map.attrs["HEALPix_nside"] == "32"

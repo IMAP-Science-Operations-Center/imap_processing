@@ -120,8 +120,8 @@ def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
         output_core_dims=[
             ["mass_index", "peak_fit_parameters_index"],
             ["mass_index"],
-            [],
-            [],
+            ["mass_index"],
+            ["mass_index"],
         ],
         vectorize=True,
         keep_attrs=True,
@@ -192,8 +192,6 @@ def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
             l2a_dataset[name].attrs = idex_attrs.get_variable_attributes(name)
 
     l2a_dataset["mass"] = mass_scales_da
-    # Update global attributes
-    l2a_dataset.attrs = idex_attrs.get_global_attributes("imap_idex_l2a_sci")
 
     l2a_dataset["tof_peak_kappa"] = xr.DataArray(
         kappa,
@@ -452,7 +450,7 @@ def analyze_peaks(
     mass_scale: xr.DataArray,
     event_num: int,
     peaks_2d: np.ndarray,
-) -> tuple[NDArray, NDArray, float, float]:
+) -> tuple[NDArray, NDArray, NDArray, NDArray]:
     """
     Fit an EMG curve to the Time of Flight data around each peak.
 
@@ -485,8 +483,11 @@ def analyze_peaks(
     # and the second is EMG fit parameters (mu, sigma, lambda) for peaks at that mass
     # area_under_emg: (500) array storing the area under each EMG peak at
     # corresponding mass.
-    fit_params = np.zeros((500, 3))
-    area_under_emg = np.zeros(500)
+    ion_mass_dim = 500
+    fit_params = np.zeros((ion_mass_dim, 3))
+    area_under_emg = np.zeros(ion_mass_dim)
+    chisqrs = np.zeros(ion_mass_dim)
+    redchis = np.zeros(ion_mass_dim)
     for peak in peaks_2d[event_num]:
         # Take a slice of 5 samples on either side of the peak
         start = max(0, peak - 5)
@@ -526,10 +527,12 @@ def analyze_peaks(
         if idx < 500:
             fit_params[idx] = np.array([mu, sigma, lam])
             area_under_emg[idx] = area
+            chisqrs[idx] = chisqr
+            redchis[idx] = redchi
         else:
             logger.warning(f"Unable to find a slot for mass: {mass}. Discarding value.")
 
-    return fit_params, area_under_emg, chisqr, redchi
+    return fit_params, area_under_emg, chisqrs, redchis
 
 
 def fit_emg(

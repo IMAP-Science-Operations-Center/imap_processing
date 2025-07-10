@@ -6,15 +6,29 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.ultra.l0.decom_ultra import (
+    process_ultra_cmd_echo,
+    process_ultra_energy_rates,
+    process_ultra_energy_spectra,
     process_ultra_events,
+    process_ultra_macros_checksum,
     process_ultra_rates,
     process_ultra_tof,
 )
 from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_AUX,
+    ULTRA_CMD_ECHO,
+    ULTRA_ENERGY_EVENTS,
+    ULTRA_ENERGY_RATES,
+    ULTRA_ENERGY_SPECTRA,
     ULTRA_EVENTS,
+    ULTRA_MACROS_CHECKSUM,
+    ULTRA_PRI_1_EVENTS,
+    ULTRA_PRI_2_EVENTS,
+    ULTRA_PRI_3_EVENTS,
+    ULTRA_PRI_4_EVENTS,
     ULTRA_RATES,
-    ULTRA_TOF,
+    ULTRA_TOF_HIGH_ANGULAR,
+    ULTRA_TOF_HIGH_ENERGY,
 )
 from imap_processing.ultra.l1a.ultra_l1a import ultra_l1a
 from imap_processing.utils import packet_file_to_datasets
@@ -61,7 +75,20 @@ def ccsds_path_theta_0():
 
 
 @pytest.fixture
-def ccsds_path_tof():
+def ccsds_path_all_apids():
+    """Returns the ccsds directory."""
+    return (
+        imap_module_directory
+        / "tests"
+        / "ultra"
+        / "data"
+        / "l0"
+        / "imap_ultra_l0_raw_20260924_v001.pkts"
+    )
+
+
+@pytest.fixture
+def ccsds_path_tof_high_angular():
     """Returns the ccsds directory."""
     return (
         imap_module_directory
@@ -74,8 +101,60 @@ def ccsds_path_tof():
 
 
 @pytest.fixture
+def ccsds_path_tof_high_energy():
+    """Returns the ccsds directory."""
+    return (
+        imap_module_directory
+        / "tests"
+        / "ultra"
+        / "data"
+        / "l0"
+        / "FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.CCSDS"
+    )
+
+
+@pytest.fixture
+def ccsds_path_functional():
+    """Returns the ccsds directory."""
+    return (
+        imap_module_directory
+        / "tests"
+        / "ultra"
+        / "data"
+        / "l0"
+        / "FM45_UltraFM45_Functional_2024-01-22T0105_20240122T010548.CCSDS"
+    )
+
+
+@pytest.fixture
+def ccsds_path_startup():
+    """Returns the ccsds directory."""
+    return (
+        imap_module_directory
+        / "tests"
+        / "ultra"
+        / "data"
+        / "l0"
+        / "FM90_Startup_20230711T081655.CCSDS"
+    )
+
+
+@pytest.fixture
+def ccsds_path_extra():
+    """Returns the ccsds directory."""
+    return (
+        imap_module_directory
+        / "tests"
+        / "ultra"
+        / "data"
+        / "l0"
+        / "FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.CCSDS"
+    )
+
+
+@pytest.fixture
 def xtce_path():
-    """Returns the xtce image rates directory."""
+    """Returns the xtce directory."""
     return (
         imap_module_directory
         / "ultra"
@@ -95,6 +174,63 @@ def rates_test_path():
 
 
 @pytest.fixture
+def energy_rates_test_path():
+    """Returns the xtce test data directory."""
+    filename = (
+        "ultra45_raw_sc_ultranrgrates_FM45_UltraFM45_Functional"
+        "_2024-01-22T0105_20240122T010548.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
+def energy_spectra_test_path():
+    """Returns the xtce test data directory."""
+    filename = "ultra90_raw_sc_ultraenergyspctr_FM90_Startup_20230711T081655.csv"
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
+def priority_1_test_path():
+    """Returns the xtce test data directory."""
+    filename = (
+        "ultra45_raw_sc_imgpriority1evnt_FM45_UltraFM45Extra_TV_Tests_"
+        "2024-01-22T0930_20240122T093008.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
+def priority_2_test_path():
+    """Returns the xtce test data directory."""
+    filename = (
+        "ultra45_raw_sc_imgpriority2evnt_FM45_UltraFM45Extra_TV_Tests_"
+        "2024-01-22T0930_20240122T093008.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
+def priority_3_test_path():
+    """Returns the xtce test data directory."""
+    filename = (
+        "ultra45_raw_sc_imgpriority3evnt_FM45_UltraFM45Extra_TV_Tests_"
+        "2024-01-22T0930_20240122T093008.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
+def priority_4_test_path():
+    """Returns the xtce test data directory."""
+    filename = (
+        "ultra45_raw_sc_imgpriority4evnt_FM45_UltraFM45Extra_TV_Tests_"
+        "2024-01-22T0930_20240122T093008.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
 def aux_test_path():
     """Returns the xtce auxiliary test data directory."""
     filename = (
@@ -105,7 +241,7 @@ def aux_test_path():
 
 @pytest.fixture
 def events_test_path():
-    """Returns the xtce auxiliary test data directory."""
+    """Returns the xtce test data directory."""
     filename = (
         "ultra45_raw_sc_ultrarawimgevent_FM45_7P_Phi00_BeamCal_"
         "LinearScan_phi004_theta-001_20230821T121304.csv"
@@ -114,11 +250,41 @@ def events_test_path():
 
 
 @pytest.fixture
-def tof_test_path():
-    """Returns the xtce auxiliary test data directory."""
+def tof_high_angular_test_path():
+    """Returns the xtce test data directory."""
     filename = (
         "ultra45_raw_sc_enaphxtofhangimg_FM45_TV_Cycle6_Hot_Ops_"
         "Front212_20240124T063837.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
+def tof_high_energy_test_path():
+    """Returns the xtce test data directory."""
+    filename = (
+        "ultra45_raw_sc_enaphxtofhnrgimg_FM45_UltraFM45Extra_TV_Tests_"
+        "2024-01-22T0930_20240122T093008.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
+def cmd_echo_test_path():
+    """Returns the xtce test data directory."""
+    filename = (
+        "ultra45_raw_hk_ultracmdecho_FM45_UltraFM45_Functional_"
+        "2024-01-22T0105_20240122T010548.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
+def macrochecksum_test_path():
+    """Returns the xtce auxiliary test data directory."""
+    filename = (
+        "ultra45_raw_hk_macrochecksumrpt_FM45_UltraFM45_Functional_"
+        "2024-01-22T0105_20240122T010548.csv"
     )
     return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
@@ -133,16 +299,48 @@ def decom_test_data(request, xtce_path):
     datasets_by_apid = packet_file_to_datasets(ccsds_path, xtce_path)
 
     strategy_dict = {
-        ULTRA_TOF.apid[0]: process_ultra_tof,
-        ULTRA_EVENTS.apid[0]: process_ultra_events,
-        ULTRA_RATES.apid[0]: process_ultra_rates,
-        ULTRA_TOF.apid[1]: process_ultra_tof,
-        ULTRA_EVENTS.apid[1]: process_ultra_events,
-        ULTRA_RATES.apid[1]: process_ultra_rates,
+        ULTRA_TOF_HIGH_ANGULAR.apid[0]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_TOF_HIGH_ANGULAR
+        ),
+        ULTRA_TOF_HIGH_ANGULAR.apid[1]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_TOF_HIGH_ANGULAR
+        ),
+        ULTRA_TOF_HIGH_ENERGY.apid[0]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_TOF_HIGH_ENERGY
+        ),
+        ULTRA_TOF_HIGH_ENERGY.apid[1]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_TOF_HIGH_ENERGY
+        ),
+        ULTRA_ENERGY_EVENTS.apid[0]: lambda ds, apid: process_ultra_events(ds, apid),
+        ULTRA_ENERGY_EVENTS.apid[1]: lambda ds, apid: process_ultra_events(ds, apid),
+        ULTRA_EVENTS.apid[0]: lambda ds, apid: process_ultra_events(ds, apid),
+        ULTRA_EVENTS.apid[1]: lambda ds, apid: process_ultra_events(ds, apid),
+        ULTRA_MACROS_CHECKSUM.apid[0]: lambda ds, apid: process_ultra_macros_checksum(
+            ds
+        ),
+        ULTRA_MACROS_CHECKSUM.apid[1]: lambda ds, apid: process_ultra_macros_checksum(
+            ds
+        ),
+        ULTRA_PRI_1_EVENTS.apid[0]: lambda ds, apid: process_ultra_events(ds, apid),
+        ULTRA_PRI_1_EVENTS.apid[1]: lambda ds, apid: process_ultra_events(ds, apid),
+        ULTRA_PRI_2_EVENTS.apid[0]: lambda ds, apid: process_ultra_events(ds, apid),
+        ULTRA_PRI_2_EVENTS.apid[1]: lambda ds, apid: process_ultra_events(ds, apid),
+        ULTRA_PRI_3_EVENTS.apid[0]: lambda ds, apid: process_ultra_events(ds, apid),
+        ULTRA_PRI_3_EVENTS.apid[1]: lambda ds, apid: process_ultra_events(ds, apid),
+        ULTRA_PRI_4_EVENTS.apid[0]: lambda ds, apid: process_ultra_events(ds, apid),
+        ULTRA_PRI_4_EVENTS.apid[1]: lambda ds, apid: process_ultra_events(ds, apid),
+        ULTRA_RATES.apid[0]: lambda ds, apid: process_ultra_rates(ds),
+        ULTRA_RATES.apid[1]: lambda ds, apid: process_ultra_rates(ds),
+        ULTRA_ENERGY_RATES.apid[0]: lambda ds, apid: process_ultra_energy_rates(ds),
+        ULTRA_ENERGY_RATES.apid[1]: lambda ds, apid: process_ultra_energy_rates(ds),
+        ULTRA_ENERGY_SPECTRA.apid[0]: lambda ds, apid: process_ultra_energy_spectra(ds),
+        ULTRA_ENERGY_SPECTRA.apid[1]: lambda ds, apid: process_ultra_energy_spectra(ds),
+        ULTRA_CMD_ECHO.apid[0]: lambda ds, apid: process_ultra_cmd_echo(ds),
+        ULTRA_CMD_ECHO.apid[1]: lambda ds, apid: process_ultra_cmd_echo(ds),
     }
 
     process_function = strategy_dict.get(apid, lambda *args: False)
-    data_packet_xarray = process_function(datasets_by_apid[apid])
+    data_packet_xarray = process_function(datasets_by_apid[apid], apid)
 
     return data_packet_xarray
 
@@ -195,12 +393,12 @@ def faux_aux_dataset():
 
     test_aux_dataset = xr.Dataset(
         data_vars={
-            "TIMESPINSTART": ("epoch", spin_start_sec),
-            "TIMESPINSTARTSUB": ("epoch", spin_start_subsec),
-            "DURATION": ("epoch", spin_period_sec),
-            "SPINNUMBER": ("epoch", spin_number),
-            "TIMESPINDATA": ("epoch", spin_start_time),
-            "SPINPERIOD": ("epoch", spin_period_sec),
+            "timespinstart": ("epoch", spin_start_sec),
+            "timespinstartsub": ("epoch", spin_start_subsec),
+            "duration": ("epoch", spin_period_sec),
+            "spinnumber": ("epoch", spin_number),
+            "timespindata": ("epoch", spin_start_time),
+            "spinperiod": ("epoch", spin_period_sec),
         },
         coords={"epoch": ("epoch", epoch)},
     )

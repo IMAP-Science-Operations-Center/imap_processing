@@ -1,64 +1,29 @@
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
 
-from imap_processing import imap_module_directory
+from imap_processing.ancillary.ancillary_dataset_combiner import MagAncillaryCombiner
 from imap_processing.cdf.utils import load_cdf
+from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.mag.l1a.mag_l1a_data import MagL1a, TimeTuple
 from imap_processing.mag.l1b.mag_l1b import mag_l1b
 from imap_processing.mag.l1c.mag_l1c import mag_l1c
+from imap_processing.mag.l2.mag_l2 import mag_l2
 from imap_processing.spice.time import (
     TTJ2000_EPOCH,
+    et_to_ttj2000ns,
     str_to_et,
     ttj2000ns_to_et,
 )
-from imap_processing.tests.conftest import _download_external_data
 from imap_processing.tests.mag.conftest import (
     mag_generate_l1b_from_csv,
     mag_l1a_dataset_generator,
 )
-
-
-@pytest.fixture(scope="module")
-def _mag_download_data():
-    _download_external_data(mag_remote_test_data_paths())
-
-
-def mag_remote_test_data_paths():
-    mag_dir = imap_module_directory / "tests" / "mag" / "validation"
-    api_path = "https://api.dev.imap-mission.com/download/test_data/"
-    test_paths = [
-        (
-            api_path + "mag-l1b-l1c-t013-magi-burst-in.csv",
-            mag_dir / "L1c" / "T013" / "mag-l1b-l1c-t013-magi-burst-in.csv",
-        ),
-        (
-            api_path + "mag-l1b-l1c-t013-mago-burst-in.csv",
-            mag_dir / "L1c" / "T013" / "mag-l1b-l1c-t013-mago-burst-in.csv",
-        ),
-        (
-            api_path + "mag-l1b-l1c-t014-mago-burst-in.csv",
-            mag_dir / "L1c" / "T014" / "mag-l1b-l1c-t014-mago-burst-in.csv",
-        ),
-        (
-            api_path + "mag-l1b-l1c-t014-magi-burst-in.csv",
-            mag_dir / "L1c" / "T014" / "mag-l1b-l1c-t014-magi-burst-in.csv",
-        ),
-        (
-            api_path + "mag-l1b-l1c-t015-mago-burst-in.csv",
-            mag_dir / "L1c" / "T015" / "mag-l1b-l1c-t015-mago-burst-in.csv",
-        ),
-        (
-            api_path + "mag-l1b-l1c-t016-mago-burst-in.csv",
-            mag_dir / "L1c" / "T016" / "mag-l1b-l1c-t016-mago-burst-in.csv",
-        ),
-    ]
-
-    return test_paths
 
 
 @pytest.mark.parametrize(
@@ -143,15 +108,28 @@ def test_mag_l1a_validation(test_number):
 
 
 @pytest.mark.parametrize(("test_number"), ["009", "010", "011", "012"])
-def test_mag_l1b_validation(test_number):
+def test_mag_l1b_validation(test_number, mocks):
     source_directory = Path(__file__).parent / "validation" / "L1b" / f"T{test_number}"
-    cdf_file = source_directory / f"mag-l1a-l1b-t{test_number}-cal.cdf"
-    calibration_input = None
-    if cdf_file.exists():
-        calibration_input = load_cdf(cdf_file)
+
+    # used in most tests
+    default_cal = (
+        Path(__file__).parent
+        / "validation"
+        / "calibration"
+        / "imap_mag_l1b-calibration_20240229_v002.cdf"
+    )
+    test_cal = (
+        source_directory / f"imap_mag_l1a-l1b-t{test_number}-cal_20240201_v001.cdf"
+    )
+
+    if test_cal.exists():
+        mocks["construct_path"].return_value = test_cal
+        combined = MagAncillaryCombiner([test_cal], np.datetime64("2025-03-01"))
+    else:
+        mocks["construct_path"].return_value = default_cal
+        combined = MagAncillaryCombiner([default_cal], np.datetime64("2025-03-01"))
 
     input_mag_l1a = pd.read_csv(source_directory / f"mag-l1a-l1b-t{test_number}-in.csv")
-
     mag_l1a_mago = mag_l1a_dataset_generator(len(input_mag_l1a.index))
     mag_l1a_magi = mag_l1a_dataset_generator(len(input_mag_l1a.index))
 
@@ -198,15 +176,15 @@ def test_mag_l1b_validation(test_number):
     mag_l1a_mago["compression_flags"].data = compression_flags
     mag_l1a_magi["compression_flags"].data = compression_flags
 
-    mago = mag_l1b(mag_l1a_mago, calibration_input)
-    magi = mag_l1b(mag_l1a_magi, calibration_input)
-
     expected_mago = pd.read_csv(
         source_directory / f"mag-l1a-l1b-t{test_number}-mago-out.csv"
     )
     expected_magi = pd.read_csv(
         source_directory / f"mag-l1a-l1b-t{test_number}-magi-out.csv"
     )
+    day = np.datetime64(expected_magi["t"].iloc[0]).astype("datetime64[D]")
+    mago = mag_l1b(mag_l1a_mago, day, combined.combined_dataset)
+    magi = mag_l1b(mag_l1a_magi, day, combined.combined_dataset)
 
     for index in expected_magi.index:
         assert np.allclose(
@@ -281,7 +259,7 @@ def test_mag_l1b_validation(test_number):
 @pytest.mark.xfail(reason="All L1C edge cases are not yet complete")
 @pytest.mark.parametrize(("test_number"), ["013", "014", "015", "016"])
 @pytest.mark.parametrize(("sensor"), ["mago", "magi"])
-@pytest.mark.usefixtures("_mag_download_data")
+@pytest.mark.usefixtures("_download_test_data")
 def test_mag_l1c_validation(test_number, sensor):
     # We expect tests 013 and 014 to pass. 015 and 016 are not yet complete.
     # timestamp = (
@@ -336,6 +314,84 @@ def test_mag_l1c_validation(test_number, sensor):
         expected_time = np.datetime64(expected_output["t"].iloc[index])
         l1c_time = TTJ2000_EPOCH + l1c["epoch"].data[index].astype("timedelta64[ns]")
         assert expected_time - l1c_time < np.timedelta64(500, "ms")
+
+
+@pytest.mark.parametrize(("test_number", "mode"), [("021", "burst"), ("022", "norm")])
+@pytest.mark.usefixtures("_download_test_data")
+def test_mag_l2_validation(test_number, mode):
+    source_directory = Path(__file__).parent / "validation" / "L2" / f"T{test_number}"
+    magi_in = source_directory / f"mag-l1bc-l2-t{test_number}-mago-{mode}-in.csv"
+
+    # Generate L1B files
+    magi = mag_generate_l1b_from_csv(pd.read_csv(magi_in), f"imap_mag_l1b_{mode}-magi")
+
+    file = source_directory / "imap_mag_l2-calibration-matrices_20250506_v005.cdf"
+
+    # Mock AncillaryFilePath.construct_path() to point to source_directory
+    with patch("imap_data_access.AncillaryFilePath.construct_path", return_value=file):
+        # Use MagAncillaryCombiner to create calibration dataset from input file
+        calibration_dataset = MagAncillaryCombiner(
+            [file],
+            np.datetime64("2025-05-07"),
+        ).combined_dataset
+
+    # Get offsets dataset out of the validation directory
+    offsets_dataset = load_cdf(
+        source_directory / f"imap_mag_l2_{mode}-offsets_20250506_v006.cdf"
+    )
+
+    offsets_dataset = offsets_dataset.assign_coords(epoch=magi["epoch"])
+
+    # Run the L2 processing
+    l2 = mag_l2(
+        calibration_dataset,
+        offsets_dataset,
+        magi,
+        np.datetime64("2025-05-06"),
+        DataMode[mode.upper()],
+    )[0]
+
+    # Compare to expected output
+    output_file = source_directory / f"imap_mag_l2_{mode}_20250506_v007.csv"
+
+    expected_output = pd.read_csv(output_file)
+    expected_output["epoch"] = pd.to_datetime(expected_output["epoch"])
+    # Expected output timestamps are in UTC which means the timestamps include
+    # leapseconds.
+    # Subtract 5 seconds from epoch to account for leap seconds
+    expected_output["epoch"] = expected_output["epoch"] - pd.Timedelta(seconds=5)
+
+    # Truncate expected output to only include time after 2025-05-06T00:00:00
+    expected_output = expected_output[
+        expected_output["epoch"] >= np.datetime64("2025-05-06T00:00:00")
+    ]
+
+    for index in range(len(expected_output)):
+        expected_time = et_to_ttj2000ns(
+            str_to_et(str(expected_output["epoch"].iloc[index]))
+        )
+        l2_time = l2["epoch"].data[index]
+
+        assert abs(expected_time - l2_time) < 200000
+
+        assert np.allclose(
+            expected_output["x"].iloc[index],
+            l2["vectors"].data[index][0],
+            atol=1e-5,
+            rtol=0,
+        )
+        assert np.allclose(
+            expected_output["y"].iloc[index],
+            l2["vectors"].data[index][1],
+            atol=1e-5,
+            rtol=0,
+        )
+        assert np.allclose(
+            expected_output["z"].iloc[index],
+            l2["vectors"].data[index][2],
+            atol=1e-5,
+            rtol=0,
+        )
 
 
 def get_vecsec(test_number, sensor, mode):

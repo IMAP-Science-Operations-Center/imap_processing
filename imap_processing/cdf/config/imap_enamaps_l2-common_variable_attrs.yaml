@@ -33,15 +33,6 @@ default_float32_attrs: &default_float32
   VALIDMAX: 3.4028235e+38
   dtype: float32
 
-# Define epoch_delta attributes
-epoch_delta:
-  <<: *default_int64
-  CATDESC: Number of nanoseconds covered by data included in this map product.
-  DISPLAY_TYPE: no_plot
-  VALIDMIN: 0
-  VAR_TYPE: metadata
-  UNITS: ns
-
 # Define Coordinate(s) which are tiling-independent
 energy:
   <<: *default_float32
@@ -159,6 +150,29 @@ ena_intensity_sys_err:
   VAR_TYPE: data
   LABLAXIS: Non-Statistical Err
   DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+ena_rate:
+  <<: *default_float32
+  CATDESC: Mono-energetic ENA Rate.
+  FIELDNAM: Rate
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Rate
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+ena_count:
+  <<: *default_float32
+  CATDESC: Mono-energetic ENA Count.
+  FIELDNAM: Count
+  UNITS: counts
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Count
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 sensitivity:
   <<: *default_float32
@@ -171,7 +185,7 @@ sensitivity:
   DISPLAY_TYPE: image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:GeometricFactor,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
-exposure_factor: &exposure_factor_energy_independent
+exposure_factor: &exposure_factor
   <<: *default_float32
   CATDESC: Exact or approximate time over which counts are accumulated.
   FIELDNAM: Exposure Times
@@ -182,7 +196,7 @@ exposure_factor: &exposure_factor_energy_independent
   DISPLAY_TYPE: no_plot
   DICT_KEY: SPASE>TemporalDescription:Exposure,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
-obs_date: &obs_date_energy_independent
+obs_date: &obs_date
   <<: *default_int64
   datatype: int64
   CATDESC: Exposure time weighted mean collection date of data in a pixel.
@@ -204,18 +218,23 @@ obs_date_range:
   VAR_TYPE: data
   LABLAXIS: epoch
   DISPLAY_TYPE: image
+  TIME_SCALE: Terrestrial Time
 
 # These copied metadata vars will allow for variables
 # to be either energy-dependent or independent.
 # The tiling-specific YAML files will override the DEPENDs and LABL_PTRs.
-exposure_factor_energy_dependent:
-  <<: *exposure_factor_energy_independent
+exposure_factor_energy_independent:
+  <<: *exposure_factor
 
-obs_date_energy_dependent:
-  <<: *obs_date_energy_independent
+obs_date_energy_independent:
+  <<: *obs_date
+
+obs_date_range_energy_independent:
+  <<: *obs_date
 
 solid_angle:
   <<: *default_float32
+  VAR_TYPE: support_data
   CATDESC: Solid angle subtended by each pixel.
   FIELDNAM: Solid Angle
   DEPEND_0: epoch
@@ -223,3 +242,4 @@ solid_angle:
   VAR_TYPE: data
   LABLAXIS: Solid Angle
   DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Support>SupportQuantity:Other

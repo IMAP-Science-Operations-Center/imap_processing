@@ -1,5 +1,6 @@
 """IMAP-Lo L1B Data Processing."""
 
+import logging
 from dataclasses import Field
 from pathlib import Path
 from typing import Any, Union
@@ -16,6 +17,9 @@ from imap_processing.lo.l1b.tof_conversions import (
 )
 from imap_processing.spice.geometry import SpiceFrame, instrument_pointing
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 def lo_l1b(dependencies: dict) -> list[Path]:
@@ -39,9 +43,10 @@ def lo_l1b(dependencies: dict) -> list[Path]:
     # create the attribute manager to access L1A fillval attributes
     attr_mgr_l1a = ImapCdfAttributes()
     attr_mgr_l1a.add_instrument_variable_attrs(instrument="lo", level="l1a")
-
+    logger.info(f"\n Dependencies: {list(dependencies.keys())}\n")
     # if the dependencies are used to create Annotated Direct Events
     if "imap_lo_l1a_de" in dependencies and "imap_lo_l1a_spin" in dependencies:
+        logger.info("\nProcessing IMAP-Lo L1B Direct Events...")
         logical_source = "imap_lo_l1b_de"
         # get the dependency dataset for l1b direct events
         l1a_de = dependencies["imap_lo_l1a_de"]

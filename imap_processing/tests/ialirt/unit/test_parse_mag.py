@@ -14,11 +14,9 @@ from imap_processing.ialirt.l0.parse_mag import (
     get_status_data,
     get_time,
     process_packet,
+    retrieve_matrix_from_single_l1b_calibration,
 )
 from imap_processing.mag.constants import MAX_FINE_TIME
-from imap_processing.mag.l1b.mag_l1b import (
-    retrieve_matrix_from_l1b_calibration,
-)
 from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.utils import packet_file_to_datasets
 
@@ -94,24 +92,6 @@ def xarray_data(binary_packet_path, xtce_mag_path):
 
 
 @pytest.fixture
-def sc_xarray_data():
-    """Create xarray data for spacecraft packets."""
-    apid = 478
-    packet_path = (
-        imap_module_directory / "tests" / "ialirt" / "data" / "l0" / "apid_478.bin"
-    )
-    xtce_ialirt_path = (
-        imap_module_directory / "ialirt" / "packet_definitions" / "ialirt.xml"
-    )
-
-    xarray_data = packet_file_to_datasets(
-        packet_path, xtce_ialirt_path, use_derived_value=False
-    )[apid]
-
-    return xarray_data
-
-
-@pytest.fixture
 def grouped_data():
     """Creates grouped data for tests."""
     epoch = np.arange(12)
@@ -154,7 +134,12 @@ def grouped_data():
 def calibration_dataset():
     """Returns the calibration data."""
     calibration_dataset = load_cdf(
-        imap_module_directory / "mag" / "l1b" / "imap_calibration_mag_20240229_v01.cdf"
+        imap_module_directory
+        / "tests"
+        / "mag"
+        / "validation"
+        / "calibration"
+        / "imap_mag_l1b-calibration_20240229_v001.cdf"
     )
     return calibration_dataset
 
@@ -179,15 +164,10 @@ def test_get_status_data(xarray_data, mag_test_data):
         assert status_data[key] == matching_row[key.upper()].values[0]
 
 
-def test_get_time(grouped_data, calibration_dataset):
+def test_get_time(grouped_data, mag_test_l1b_calibration_data):
     """Tests the get_time function."""
-
-    calibration_matrix_mago, time_shift_mago = retrieve_matrix_from_l1b_calibration(
-        calibration_dataset, is_mago=True
-    )
-    calibration_matrix_magi, time_shift_magi = retrieve_matrix_from_l1b_calibration(
-        calibration_dataset, is_mago=False
-    )
+    time_shift_mago = mag_test_l1b_calibration_data[1]
+    time_shift_magi = mag_test_l1b_calibration_data[3]
 
     time_data = get_time(
         grouped_data, 1, np.array([0, 1, 2, 3]), time_shift_mago, time_shift_magi
@@ -253,7 +233,7 @@ def test_process_packet(xarray_data, mag_test_data, calibration_dataset):
     xarray_data["sc_sclk_sec"] = xarray_data["mag_acq_tm_coarse"]
     xarray_data["sc_sclk_sub_sec"] = xarray_data["mag_acq_tm_fine"]
 
-    parsed_packets = process_packet(xarray_data, calibration_dataset)
+    _, parsed_packets = process_packet(xarray_data, calibration_dataset)
 
     for packet in parsed_packets:
         index = packet["pri_coarsetm"] == mag_test_data["PRI_COARSETM"]
@@ -274,10 +254,15 @@ def test_process_packet(xarray_data, mag_test_data, calibration_dataset):
 
 @pytest.mark.external_test_data
 def test_process_spacecraft_packet(
-    sc_xarray_data, mag_sc_test_data, calibration_dataset
+    mag_sc_test_data, calibration_dataset, sc_packet_path
 ):
     """Tests the parse_packet function."""
-    parsed_packets = process_packet(sc_xarray_data, calibration_dataset)
+    packet_path, xtce_ialirt_path = sc_packet_path
+    sc_xarray_data = packet_file_to_datasets(
+        packet_path, xtce_ialirt_path, use_derived_value=False
+    )[478]
+
+    mag_data, parsed_packets = process_packet(sc_xarray_data, calibration_dataset)
 
     sequence = []
     for packet in parsed_packets:
@@ -307,7 +292,7 @@ def test_process_spacecraft_packet(
         # Timestamp check
         time_data_pri_met = float(row["pri_coarse"] + row["pri_fine"] / MAX_FINE_TIME)
         time_data_primary_ttj2000ns = met_to_ttj2000ns(time_data_pri_met)
-        _, time_shift_mago = retrieve_matrix_from_l1b_calibration(
+        _, time_shift_mago = retrieve_matrix_from_single_l1b_calibration(
             calibration_dataset, is_mago=True
         )
         primary_epoch = time_data_primary_ttj2000ns + time_shift_mago.data * 1e9

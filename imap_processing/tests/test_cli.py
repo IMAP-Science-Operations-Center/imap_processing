@@ -12,6 +12,7 @@ import pytest
 import spiceypy
 import xarray as xr
 from imap_data_access.processing_input import (
+    AncillaryInput,
     ProcessingInputCollection,
     ScienceInput,
     SPICEInput,
@@ -22,6 +23,7 @@ from imap_processing.cli import (
     Glows,
     Hi,
     Hit,
+    Idex,
     ProcessInstrument,
     Spacecraft,
     Swe,
@@ -30,6 +32,7 @@ from imap_processing.cli import (
     _validate_args,
     main,
 )
+from imap_processing.spice import config as spice_config
 
 
 @pytest.fixture
@@ -232,21 +235,38 @@ def test_repointing_file_creation(mock_instrument_dependencies):
 
 
 @pytest.mark.parametrize(
-    "data_level, science_input, n_prods",
+    "data_level, science_input, anc_input, n_prods",
     [
-        ("l1a", ["imap_hi_l0_raw_20231212_v001.pkts"], 2),
-        ("l1b", ["imap_hi_l1a_90sensor-de_20241105_v001.cdf"], 1),
-        ("l1b", ["imap_hi_l0_raw_20231212_v001.pkts"], 2),
-        ("l1c", ["imap_hi_l1b_45sensor-de_20250415_v001.cdf"], 1),
+        ("l1a", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
+        ("l1b", ["imap_hi_l1a_90sensor-de_20241105_v001.cdf"], [], 1),
+        ("l1b", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
+        (
+            "l1c",
+            ["imap_hi_l1b_45sensor-de_20250415_v001.cdf"],
+            ["imap_hi_calibration-prod-config_20240101_v001.csv"],
+            1,
+        ),
+        (
+            "l2",
+            [
+                "imap_hi_l1c_90sensor-pset_20250415_v001.cdf",
+                "imap_hi_l1c_90sensor-pset_20250416_v001.cdf",
+            ],
+            [],
+            1,
+        ),
     ],
 )
-def test_hi_l1(mock_instrument_dependencies, data_level, science_input, n_prods):
+def test_hi(
+    mock_instrument_dependencies, data_level, science_input, anc_input, n_prods
+):
     """Test coverage for cli.Hi class"""
     mocks = mock_instrument_dependencies
     mocks["mock_write_cdf"].side_effect = ["/path/to/file0"] * n_prods
     mocks["mock_load_cdf"].return_value = xr.Dataset()
     input_collection = ProcessingInputCollection(
-        *[ScienceInput(file) for file in science_input]
+        *[ScienceInput(file) for file in science_input],
+        *[AncillaryInput(file) for file in anc_input],
     )
     mocks["mock_pre_processing"].return_value = input_collection
 
@@ -294,6 +314,38 @@ def test_spacecraft(mock_spacecraft_l1a, mock_instrument_dependencies):
     instrument.process()
     assert mock_spacecraft_l1a.call_count == 1
     assert mock_instrument_dependencies["mock_write_cdf"].call_count == 1
+
+
+@mock.patch(
+    "imap_processing.cli.pointing_frame.generate_pointing_attitude_kernel",
+    autospec=True,
+)
+def test_spacecraft_pointing_kernel(
+    mock_spacecraft_pointing, mock_instrument_dependencies
+):
+    """Test coverage for cli.Spacecraft class"""
+
+    dependency_str = (
+        '[{"type": "spice","files": ["naif0012.tls", '
+        '"imap_sclk_0005.tsc", "imap_2024_100_2024_111_05.ah.bc"]}]'
+    )
+    input_collection = ProcessingInputCollection()
+    input_collection.deserialize(dependency_str)
+    mocks = mock_instrument_dependencies
+    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
+    mocks["mock_download"].return_value = "file0"
+    mock_spacecraft_pointing.return_value = [
+        Path("imap_dps_2024_100_2024_111_05.ah.bc")
+    ]
+    mocks["mock_write_cdf"].side_effect = ["/path/to/file0"]
+    mocks["mock_pre_processing"].return_value = input_collection
+
+    instrument = Spacecraft(
+        "spice", "pointing_kernel", dependency_str, "20240410", "12345", "v005", False
+    )
+
+    instrument.process()
+    assert mock_spacecraft_pointing.call_count == 1
 
 
 @mock.patch("imap_processing.cli.ultra_l1a.ultra_l1a")
@@ -385,6 +437,29 @@ def test_ultra_l2(mock_ultra_l2, mock_instrument_dependencies):
     assert mock_instrument_dependencies["mock_write_cdf"].call_count == 1
 
 
+@mock.patch("imap_processing.cli.idex_l2b")
+def test_idex_l2b(mock_idex_l2b, mock_instrument_dependencies):
+    """Test coverage for cli.Idex class with l2b data level"""
+    mocks = mock_instrument_dependencies
+    mock_idex_l2b.return_value = xr.Dataset()
+    mocks["mock_write_cdf"].side_effect = ["/path/to/product0"]
+    input_collection = ProcessingInputCollection(
+        ScienceInput("imap_idex_l1b_evt_20251015_v002.cdf"),
+        ScienceInput("imap_idex_l2a_sci-1week_20251017_v018.cdf"),
+        SPICEInput("naif0012.tls", "imap_sclk_0000.tsc"),
+    )
+    mocks["mock_pre_processing"].return_value = input_collection
+
+    dependency_str = input_collection.serialize()
+    instrument = Idex(
+        "l2b", "sci-1mo", dependency_str, "20100105", "20100101", "v001", False
+    )
+
+    instrument.process()
+    assert mock_idex_l2b.call_count == 1
+    assert mock_instrument_dependencies["mock_write_cdf"].call_count == 1
+
+
 @mock.patch("imap_processing.cli.hit_l1a")
 def test_hit_l1a(mock_hit_l1a, mock_instrument_dependencies):
     """Test coverage for cli.Hit class with l1a data level"""
@@ -442,7 +517,6 @@ def test_spice_kernel_handling(spice_test_data_path):
         mock.patch("imap_data_access.processing_input.download") as mock_download,
         mock.patch("imap_processing.cli.load_cdf"),
         mock.patch("imap_processing.cli.Hi.do_processing") as mock_do_processing,
-        # mock.patch("imap_processing.cli.ProcessInstrument.post_processing"),
         mock.patch("imap_processing.cli.write_cdf"),
         mock.patch("imap_processing.cli.ProcessInstrument.upload_products"),
     ):
@@ -459,6 +533,50 @@ def test_spice_kernel_handling(spice_test_data_path):
         instrument.process()
         # Verify that the furnished kernels get cleared in the post_processing method
         assert spiceypy.ktotal("ALL") == 0
+
+
+def test_spin_and_repoint_table_handling():
+    """Test ProcessInstrument.pre_processing setting of spin and repoint paths."""
+    dependency_obj = [
+        {"type": "science", "files": ["imap_hi_l2a_sensor45-de_20100105_v001.cdf"]},
+        {"type": "repoint", "files": ["imap_2010_104_01.repoint.csv"]},
+        {
+            "type": "spin",
+            "files": [
+                "imap_2025_104_2025_107_01.spin.csv",
+                "imap_2025_107_2025_112_01.spin.csv",
+            ],
+        },
+    ]
+    dependency_str = json.dumps(dependency_obj)
+
+    # Test that expected spin and repoint paths are set
+    def do_processing_side_effect(*args, **kwargs):
+        """Check that the expected kernels are furnished"""
+        assert spice_config._repoint_table_path.name == dependency_obj[1]["files"][0]
+        np.testing.assert_array_equal(
+            dependency_obj[2]["files"], [p.name for p in spice_config._spin_table_paths]
+        )
+        return [xr.Dataset()]
+
+    with (
+        mock.patch("imap_data_access.processing_input.download"),
+        mock.patch("imap_processing.cli.load_cdf"),
+        mock.patch("imap_processing.cli.Hi.do_processing") as mock_do_processing,
+        mock.patch("imap_processing.cli.write_cdf"),
+        mock.patch("imap_processing.cli.ProcessInstrument.upload_products"),
+    ):
+        mock_do_processing.side_effect = do_processing_side_effect
+
+        instrument = Hi(
+            "l1b", "sensor45-de", dependency_str, "20100105", None, "v001", True
+        )
+        # Verify no paths are set
+        assert spice_config._spin_table_paths == []
+        assert spice_config._repoint_table_path is None
+        # Verification that the expected paths are set is done in the
+        # do_processing_side_effect to ensure they are correct during processing
+        instrument.process()
 
 
 @mock.patch("imap_processing.cli.swe_l1a")

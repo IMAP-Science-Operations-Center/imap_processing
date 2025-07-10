@@ -1,8 +1,12 @@
 """Test coverage for imap_processing.spice.repoint.py"""
 
+from pathlib import Path
+from unittest import mock
+
 import numpy as np
 import pytest
 import spiceypy
+from imap_data_access import SPICEInput
 
 from imap_processing.spice import IMAP_SC_ID
 from imap_processing.spice.geometry import SpiceFrame
@@ -11,6 +15,7 @@ from imap_processing.spice.pointing_frame import (
     _average_quaternions,
     _create_rotation_matrix,
     calculate_pointing_attitude_segments,
+    generate_pointing_attitude_kernel,
     write_pointing_frame_ck,
 )
 from imap_processing.spice.time import TICK_DURATION
@@ -48,6 +53,27 @@ def et_times(pointing_frame_kernels):
     )
 
     return et_times
+
+
+@mock.patch(
+    "imap_processing.spice.pointing_frame.write_pointing_frame_ck", autospec=True
+)
+@mock.patch(
+    "imap_processing.spice.pointing_frame.calculate_pointing_attitude_segments",
+    autospec=True,
+    return_value=None,
+)
+def test_generate_pointing_attitude_kernel(mock_gen_attitude_segments, mock_write_ck):
+    """Test coverage for generate_pointing_attitude_kernel function."""
+    start_date = "2024_111"
+    end_date = "2024_222"
+    version = "02"
+    ck_path = Path(f"/bogus/file/path/imap_{start_date}_{end_date}_{version}.ah.bc")
+    pointing_ck_path = generate_pointing_attitude_kernel(ck_path)[0]
+    assert pointing_ck_path.name == f"imap_dps_{start_date}_{end_date}_{version}.ah.bc"
+    # Verify that file is valid pointing_attitude kernel with imap-data-access
+    spice_input = SPICEInput(pointing_ck_path.name)
+    assert spice_input.source[0] == "pointing_attitude"
 
 
 @pytest.mark.parametrize(

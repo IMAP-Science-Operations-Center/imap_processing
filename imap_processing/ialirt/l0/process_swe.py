@@ -8,6 +8,8 @@ import xarray as xr
 from numpy.typing import NDArray
 
 from imap_processing.ialirt.utils.grouping import find_groups
+from imap_processing.ialirt.utils.time import calculate_time
+from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 from imap_processing.swe.l1a.swe_science import decompressed_counts
 from imap_processing.swe.l1b.swe_l1b import (
     deadtime_correction,
@@ -462,6 +464,14 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
         accumulated_data["swe_acq_sec"], accumulated_data["swe_acq_sub"]
     )
     accumulated_data["time_seconds"] = time_seconds
+    # Subsecond time conversion specified in 7516-9054 GSW-FSW ICD.
+    # Value of SCLK subseconds, unsigned, (LSB = 1/256 sec)
+    met = calculate_time(
+        accumulated_data["sc_sclk_sec"], accumulated_data["sc_sclk_sub_sec"], 256
+    )
+
+    # Add required parameters.
+    accumulated_data["met"] = met
 
     # Get total full cycle data available for processing.
     # There are 60 packets in a set so (0, 59) is the range.
@@ -531,17 +541,16 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
         # Sum over CEMs (axis=1) and azimuths (axis=2)
         summed_first = normalized_first_half.sum(axis=(1, 2))
         summed_second = normalized_second_half.sum(axis=(1, 2))
-        times = np.unique(grouped["time_seconds"].values)
 
         swe_data.append(
             {
-                # Select times corresponding to energy level.
-                "met_first_half_cycle": times[[1, 0] * 4],
-                "met_second_half_cycle": times[[3, 2] * 4],
-                "normalized_counts_first_half_cycle": summed_first,
-                "normalized_counts_second_half_cycle": summed_second,
-                "bde_first_half_cycle": np.full(summed_first.shape, bde_first_half),
-                "bde_second_half_cycle": np.full(summed_second.shape, bde_second_half),
+                "apid": 478,
+                "met": int(grouped["met"].min()),
+                "met_in_utc": met_to_utc(grouped["met"].min()).split(".")[0],
+                "ttj2000ns": int(met_to_ttj2000ns(grouped["met"].min())),
+                "swe_normalized_counts_half_1_esa": [int(val) for val in summed_first],
+                "swe_normalized_counts_half_2_esa": [int(val) for val in summed_second],
+                "swe_counterstreaming_electrons": max(bde_first_half, bde_second_half),
             }
         )
 

@@ -15,10 +15,21 @@ from imap_processing.ultra.l0.decom_tools import (
     read_image_raw_events_binary,
 )
 from imap_processing.ultra.l0.ultra_utils import (
+    CMD_ECHO_MAP,
+    ENERGY_EVENT_FIELD_RANGES,
+    ENERGY_RATES_KEYS,
     EVENT_FIELD_RANGES,
     RATES_KEYS,
+    ULTRA_ENERGY_EVENTS,
+    ULTRA_ENERGY_RATES,
+    ULTRA_ENERGY_SPECTRA,
+    ULTRA_EVENTS,
+    ULTRA_PRI_1_EVENTS,
+    ULTRA_PRI_2_EVENTS,
+    ULTRA_PRI_3_EVENTS,
+    ULTRA_PRI_4_EVENTS,
     ULTRA_RATES,
-    ULTRA_TOF,
+    PacketProperties,
 )
 from imap_processing.utils import convert_to_binary_string
 
@@ -26,7 +37,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def process_ultra_tof(ds: xr.Dataset) -> xr.Dataset:
+def process_ultra_tof(ds: xr.Dataset, packet_props: PacketProperties) -> xr.Dataset:
     """
     Unpack and decode Ultra TOF packets.
 
@@ -34,6 +45,9 @@ def process_ultra_tof(ds: xr.Dataset) -> xr.Dataset:
     ----------
     ds : xarray.Dataset
         TOF dataset.
+    packet_props : PacketProperties
+        Information that defines properties of the packet including the pixel window
+        dimensions of images and number of image panes.
 
     Returns
     -------
@@ -42,14 +56,22 @@ def process_ultra_tof(ds: xr.Dataset) -> xr.Dataset:
     """
     scalar_keys = [key for key in ds.data_vars if key not in ("packetdata", "sid")]
 
+    image_panes = packet_props.image_panes
+    rows = packet_props.pixel_window_rows
+    cols = packet_props.pixel_window_columns
+
+    if image_panes is None or rows is None or cols is None:
+        raise ValueError(
+            "Packet properties must specify pixel window dimensions, "
+            "width bit, and image panes for this packet type."
+        )
+
     decom_data: defaultdict[str, list[np.ndarray]] = defaultdict(list)
     decom_data["packetdata"] = []
     valid_epoch = []
-    width = cast(int, ULTRA_TOF.width)
-    mantissa_bit_length = cast(int, ULTRA_TOF.mantissa_bit_length)
 
     for val, group in ds.groupby("epoch"):
-        if set(group["sid"].values) >= set(range(8)):
+        if set(group["sid"].values) >= set(range(image_panes)):
             valid_epoch.append(val)
             group.sortby("sid")
 
@@ -57,13 +79,12 @@ def process_ultra_tof(ds: xr.Dataset) -> xr.Dataset:
                 decom_data[key].append(group[key].values)
 
             image = []
-            for i in range(8):
+            for i in range(image_panes):
                 binary = convert_to_binary_string(group["packetdata"].values[i])
                 decompressed = decompress_image(
                     group["p00"].values[i],
                     binary,
-                    width,
-                    mantissa_bit_length,
+                    packet_props,
                 )
                 image.append(decompressed)
 
@@ -76,9 +97,9 @@ def process_ultra_tof(ds: xr.Dataset) -> xr.Dataset:
 
     coords = {
         "epoch": np.array(valid_epoch, dtype=np.uint64),
-        "sid": xr.DataArray(np.arange(8), dims=["sid"], name="sid"),
-        "row": xr.DataArray(np.arange(54), dims=["row"], name="row"),
-        "column": xr.DataArray(np.arange(180), dims=["column"], name="column"),
+        "sid": xr.DataArray(np.arange(image_panes), dims=["sid"], name="sid"),
+        "row": xr.DataArray(np.arange(rows), dims=["row"], name="row"),
+        "column": xr.DataArray(np.arange(cols), dims=["column"], name="column"),
     }
 
     dataset = xr.Dataset(coords=coords)
@@ -136,7 +157,7 @@ def get_event_id(shcoarse: NDArray) -> NDArray:
     return np.array(event_ids, dtype=np.int64)
 
 
-def process_ultra_events(ds: xr.Dataset) -> xr.Dataset:
+def process_ultra_events(ds: xr.Dataset, apid: int) -> xr.Dataset:
     """
     Unpack and decode Ultra EVENTS packets.
 
@@ -144,12 +165,28 @@ def process_ultra_events(ds: xr.Dataset) -> xr.Dataset:
     ----------
     ds : xarray.Dataset
         Events dataset.
+    apid : int
+        APID of the events dataset.
 
     Returns
     -------
     ds : xarray.Dataset
         Dataset containing the decoded and decompressed data.
     """
+    all_event_apids = set(
+        ULTRA_EVENTS.apid
+        + ULTRA_PRI_1_EVENTS.apid
+        + ULTRA_PRI_2_EVENTS.apid
+        + ULTRA_PRI_3_EVENTS.apid
+        + ULTRA_PRI_4_EVENTS.apid
+    )
+    if apid in all_event_apids:
+        field_ranges = EVENT_FIELD_RANGES
+    elif apid in ULTRA_ENERGY_EVENTS.apid:
+        field_ranges = ENERGY_EVENT_FIELD_RANGES
+    else:
+        raise ValueError(f"APID {apid} not recognized for Ultra events processing.")
+
     all_events = []
     all_indices = []
 
@@ -160,7 +197,7 @@ def process_ultra_events(ds: xr.Dataset) -> xr.Dataset:
         field: attrs.get_variable_attributes(field).get(
             "FILLVAL", np.iinfo(np.int64).min
         )
-        for field in EVENT_FIELD_RANGES
+        for field in field_ranges
     }
 
     counts = ds["count"].values
@@ -173,7 +210,9 @@ def process_ultra_events(ds: xr.Dataset) -> xr.Dataset:
         else:
             # Here there are multiple images in a single packet,
             # so we need to loop through each image and decompress it.
-            event_data_list = read_image_raw_events_binary(eventdata_array[i], count)
+            event_data_list = read_image_raw_events_binary(
+                eventdata_array[i], count, field_ranges
+            )
             all_events.extend(event_data_list)
             # Keep track of how many times does the event occurred at this epoch.
             all_indices.extend([i] * count)
@@ -189,7 +228,7 @@ def process_ultra_events(ds: xr.Dataset) -> xr.Dataset:
     }
 
     # Add the event data to the expanded dataset.
-    for key in event_data_list[0]:
+    for key in field_ranges:
         expanded_data[key] = np.array([event[key] for event in all_events])
 
     event_ids = get_event_id(expanded_data["shcoarse"])
@@ -240,5 +279,162 @@ def process_ultra_rates(ds: xr.Dataset) -> xr.Dataset:
 
     for key, values in decom_data.items():
         ds[key] = xr.DataArray(np.array(values), dims=["epoch"])
+
+    return ds
+
+
+def process_ultra_energy_rates(ds: xr.Dataset) -> xr.Dataset:
+    """
+    Unpack and decode Ultra ENERGY RATES packets.
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+       Energy rates dataset.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Dataset containing the decoded and decompressed data.
+    """
+    decom_data = defaultdict(list)
+
+    for rate in ds["ratedata"]:
+        raw_binary_string = convert_to_binary_string(rate.item())
+        decompressed_data = decompress_binary(
+            raw_binary_string,
+            cast(int, ULTRA_ENERGY_RATES.width),
+            cast(int, ULTRA_ENERGY_RATES.block),
+            cast(int, ULTRA_ENERGY_RATES.len_array),
+            cast(int, ULTRA_ENERGY_RATES.mantissa_bit_length),
+        )
+
+        for index in range(cast(int, ULTRA_ENERGY_RATES.len_array)):
+            decom_data[ENERGY_RATES_KEYS[index]].append(decompressed_data[index])
+
+    for key, values in decom_data.items():
+        ds[key] = xr.DataArray(np.array(values), dims=["epoch"])
+
+    return ds
+
+
+def process_ultra_energy_spectra(ds: xr.Dataset) -> xr.Dataset:
+    """
+    Unpack and decode Ultra ENERGY SPECTRA packets.
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+       Energy rates dataset.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Dataset containing the decoded and decompressed data.
+    """
+    energy_spectra = []
+
+    for rate in ds["compdata"]:
+        raw_binary_string = convert_to_binary_string(rate.item())
+        decompressed_data = decompress_binary(
+            raw_binary_string,
+            cast(int, ULTRA_ENERGY_SPECTRA.width),
+            cast(int, ULTRA_ENERGY_SPECTRA.block),
+            cast(int, ULTRA_ENERGY_SPECTRA.len_array),
+            cast(int, ULTRA_ENERGY_SPECTRA.mantissa_bit_length),
+        )
+
+        energy_spectra.append(decompressed_data)
+
+    energy_spectra = np.array(energy_spectra)
+
+    ds["ssd_sum"] = xr.DataArray(
+        energy_spectra,
+        dims=["epoch", "energyspectrastate"],
+        coords={"epoch": ds["epoch"], "energyspectrastate": np.arange(16)},
+    )
+
+    return ds
+
+
+def process_ultra_cmd_echo(ds: xr.Dataset) -> xr.Dataset:
+    """
+    Unpack and decode Ultra CMD ECHO packets.
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+       Energy rates dataset.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Dataset containing the decoded and decompressed data.
+    """
+    descriptions = []
+
+    fill = 0xFF
+    max_len = 10
+    arg_array = np.full((len(ds["epoch"]), max_len), fill, dtype=np.uint8)
+
+    for i, arg in enumerate(ds["args"].values):
+        # Converts to the numeric representations of each byte.
+        arg_array[i, : len(arg)] = np.frombuffer(arg, dtype=np.uint8)
+
+    # Default to "FILL" for unlisted values
+    for result in ds["result"].values:
+        descriptions.append(CMD_ECHO_MAP.get(result, "FILL"))
+
+    ds["arguments"] = xr.DataArray(
+        arg_array,
+        dims=["epoch", "arg_index"],
+        coords={
+            "epoch": ds["epoch"],
+            "arg_index": np.arange(10),
+        },
+    )
+
+    ds["result_description"] = xr.DataArray(
+        np.array(descriptions),
+        dims=["epoch"],
+        coords={"epoch": ds["epoch"]},
+    )
+
+    ds = ds.drop_vars(["args", "result"])
+
+    return ds
+
+
+def process_ultra_macros_checksum(ds: xr.Dataset) -> xr.Dataset:
+    """
+    Unpack and decode Ultra MACROS CHECKSUM packets.
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+        Dataset containing macro checksums.
+
+    Returns
+    -------
+    dataset : xarray.Dataset
+        Dataset with unpacked and decoded checksum values.
+    """
+    # big endian uint16
+    packed_dtype = np.dtype(">u2")
+    fill = np.iinfo(packed_dtype).max
+    n_epochs = ds.sizes["epoch"]
+    max_len = 256
+
+    checksum_array = np.full((n_epochs, max_len), fill)
+
+    for i, checksum in enumerate(ds["checksums"]):
+        checksum_array[i, :] = np.frombuffer(checksum.item(), dtype=packed_dtype)
+
+    ds["checksum"] = xr.DataArray(
+        checksum_array,
+        dims=["epoch", "checksum_index"],
+        coords={"epoch": ds["epoch"], "checksum_index": np.arange(max_len)},
+    )
+    ds = ds.drop_vars(["checksums"])
 
     return ds

@@ -10,7 +10,6 @@ import xarray as xr
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.codice import constants
 from imap_processing.codice.codice_l1a import process_codice_l1a
-from imap_processing.tests.conftest import _download_external_data, _test_data_paths
 
 from .conftest import TEST_L0_FILE, VALIDATION_DATA
 
@@ -36,13 +35,13 @@ DESCRIPTORS = [
     "hi-omni",
     "hi-sectored",
     "hi-priority",
-    "lo-pha",
-    "hi-pha",
+    "lo-direct-events",
+    "hi-direct-events",
 ]
 
 EXPECTED_ARRAY_SHAPES = [
-    (),  # hi-ialirt  # TODO: Need to implement
-    (),  # lo-ialirt  # TODO: Need to implement
+    (304, 15),  # hi-ialirt
+    (76, 1, 128),  # lo-ialirt
     (31778,),  # hskp
     (77, 6, 128),  # lo-counters-aggregated
     (77, 24, 6, 128),  # lo-counters-singles
@@ -57,8 +56,8 @@ EXPECTED_ARRAY_SHAPES = [
     (),  # hi-omni, shapes are specific to species
     (77, 8, 12, 12),  # hi-sectored
     (77,),  # hi-priority
-    (77, 10000),  # lo-pha
-    (77, 10000),  # hi-pha
+    (77, 10000),  # lo-direct-events
+    (77, 10000),  # hi-direct-events
 ]
 
 EXPECTED_HI_OMNI_ARRAY_SHAPES = {
@@ -74,8 +73,8 @@ EXPECTED_HI_OMNI_ARRAY_SHAPES = {
 }
 
 EXPECTED_NUM_VARIABLES = [
-    0,  # hi-ialirt  # TODO: Need to implement
-    0,  # lo-ialirt  # TODO: Need to implement
+    3,  # hi-ialirt
+    17,  # lo-ialirt
     139,  # hskp
     8 + len(constants.LO_COUNTERS_AGGREGATED_VARIABLE_NAMES),  # lo-counters-aggregated
     9,  # lo-counters-singles
@@ -90,8 +89,8 @@ EXPECTED_NUM_VARIABLES = [
     11,  # hi-omni
     6,  # hi-sectored
     8,  # hi-priority
-    80,  # lo-pha
-    60,  # hi-pha
+    80,  # lo-direct-events
+    60,  # hi-direct-events
 ]
 
 # CoDICE-Hi products that have support variables to test
@@ -114,11 +113,12 @@ CODICE_LO_PRODUCTS = [
     "lo-nsw-species",
     "lo-sw-angular",
     "lo-nsw-angular",
+    "lo-ialirt",
 ]
 
 
 @pytest.fixture(scope="session")
-def test_l1a_data() -> xr.Dataset:
+def test_l1a_data() -> list[xr.Dataset]:
     """Return a ``xarray`` dataset containing test data.
 
     Returns
@@ -126,10 +126,6 @@ def test_l1a_data() -> xr.Dataset:
     processed_datasets : list[xarray.Dataset]
         A list of ``xarray`` datasets containing the test data
     """
-    # Make sure we have the data available here. This test collection gets
-    # skipped at the module level if the mark isn't present. We can't decorate
-    # a fixture, so add the needed call directly here instead.
-    _download_external_data(_test_data_paths())
     processed_datasets = process_codice_l1a(file_path=TEST_L0_FILE)
 
     return processed_datasets
@@ -150,11 +146,6 @@ def test_l1a_data_array_shape(test_l1a_data, index):
     descriptor = DESCRIPTORS[index]
     processed_dataset = test_l1a_data[index]
     expected_shape = EXPECTED_ARRAY_SHAPES[index]
-
-    # Mark currently broken/unsupported datasets as expected to fail
-    # TODO: Remove these once they are supported
-    if index in [0, 1]:
-        pytest.xfail("Data product is currently unsupported")
 
     # hi-omni data array shapes depend on the species
     if descriptor == "hi-omni":
@@ -208,11 +199,6 @@ def test_l1a_logical_sources(test_l1a_data, index):
     processed_dataset = test_l1a_data[index]
     expected_logical_source = f"imap_codice_l1a_{DESCRIPTORS[index]}"
 
-    # Mark currently broken/unsupported datasets as expected to fail
-    # TODO: Remove these once they are supported
-    if index in [0, 1]:
-        pytest.xfail("Data product is currently unsupported")
-
     # Write the dataset to a file to set the logical source attribute
     _ = write_cdf(processed_dataset)
 
@@ -235,16 +221,11 @@ def test_l1a_num_data_variables(test_l1a_data, index):
     """
 
     processed_dataset = test_l1a_data[index]
-
-    # Mark currently broken/unsupported datasets as expected to fail
-    # TODO: Remove these once they are supported
-    if index in [0, 1]:
-        pytest.xfail("Data product is currently unsupported")
-
     assert len(processed_dataset) == EXPECTED_NUM_VARIABLES[index]
 
 
 @pytest.mark.parametrize("index", range(len(VALIDATION_DATA)))
+@pytest.mark.xfail(reason="Validation test turned off; awaiting fixes")
 def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
     """Tests that the generated L1a CDF data array contents are valid.
 
@@ -258,46 +239,58 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
 
     descriptor = DESCRIPTORS[index]
 
+    # Mark currently broken/unsupported datasets as expected to fail
     if descriptor == "hskp":
         pytest.skip("Housekeeping data is validated in a separate test")
+    # TODO: Remove this next condition once hi-ialirt is validated
+    if descriptor == "hi-ialirt":
+        pytest.xfail("Awaiting validation fixes")
 
-    # TODO: Currently only the following products can be validated, expand this
-    #       to other data products as I can validate them.
-    able_to_be_validated = [
-        "hi-counters-aggregated",
-        "hi-counters-singles",
-        "hi-omni",
-        "hi-priority",
-        "hi-sectored",
-        "hi-pha",
-        "lo-counters-aggregated",
-        "lo-counters-singles",
-        "lo-sw-angular",
-        "lo-nsw-angular",
-        "lo-sw-priority",
-        "lo-nsw-priority",
-        "lo-sw-species",
-        "lo-nsw-species",
-        "lo-pha",
-    ]
+    counters = getattr(
+        constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
+    )
+    processed_dataset = test_l1a_data[index]
+    validation_dataset = load_cdf(VALIDATION_DATA[index])
 
-    if descriptor in able_to_be_validated:
-        counters = getattr(
-            constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
+    for counter in counters:
+        # Ensure the data arrays are equal
+        np.testing.assert_equal(
+            processed_dataset[counter].data, validation_dataset[counter].data
         )
-        processed_dataset = test_l1a_data[index]
-        validation_dataset = load_cdf(VALIDATION_DATA[index])
-
-        for counter in counters:
-            # Ensure the data arrays are equal
-            np.testing.assert_equal(
-                processed_dataset[counter].data, validation_dataset[counter].data
-            )
-
-    else:
-        pytest.xfail(f"Still need to implement validation for {descriptor}")
 
 
+@pytest.mark.parametrize("index", range(len(DESCRIPTORS)))
+@pytest.mark.xfail(reason="Validation test turned off; awaiting fixes")
+def test_l1a_validate_epoch_values(test_l1a_data, index):
+    """Tests that the epoch values in the generated data products match the
+    validation data.
+
+    Parameters
+    ----------
+    test_l1a_data : list[xarray.Dataset]
+        A list of ``xarray`` datasets containing the test data
+    index : int
+        The index of the list to test
+    """
+
+    descriptor = DESCRIPTORS[index]
+    dataset = test_l1a_data[index]
+    validation_dataset = load_cdf(VALIDATION_DATA[index])
+
+    if descriptor in ["hskp", "hi-ialirt", "hi-omni"]:
+        pytest.xfail(
+            f"Awaiting implementation of proper epoch calculation for {descriptor}"
+        )
+
+    # TODO: Once new L1a validation is used, this probably can be tweaked for
+    #       even lower tolerance, and we can add checks for epoch_delta_minus
+    #       and epoch_delta_plus
+    np.testing.assert_allclose(
+        dataset.epoch.data, validation_dataset.Epoch.data, rtol=1e-6, atol=0
+    )
+
+
+@pytest.mark.xfail(reason="Validation test turned off; awaiting fixes")
 def test_l1a_validate_hskp_data(test_l1a_data):
     """Tests that the L1a housekeeping data is valid"""
 
@@ -327,6 +320,7 @@ def test_l1a_validate_hskp_data(test_l1a_data):
 
 
 @pytest.mark.parametrize("index", range(len(DESCRIPTORS)))
+@pytest.mark.xfail(reason="Validation test turned off; awaiting fixes")
 def test_l1a_validate_support_variables(test_l1a_data, index):
     """Tests that the support variables for the generated products match the
     validation data

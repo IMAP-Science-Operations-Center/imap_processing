@@ -158,7 +158,7 @@ class PacketParser:
         ]
         data = xr.concat(processed_dust_impact_list, dim="epoch")
         data.attrs = self.idex_attrs.get_global_attributes("imap_idex_l1a_sci")
-
+        data = data.sortby("epoch")
         # Add high and low sample rate coords
         data["time_low_sample_rate_index"] = xr.DataArray(
             np.arange(len(data["time_low_sample_rate"][0])),

@@ -89,6 +89,13 @@ def solve_full_sweep_energy(
 
     energy_values = lut_notes_df["Energy"].values[fine_energy_indices]
 
+    # In above steps, we were calculating energy for these energy steps
+    # in this order:
+    #   [72, 71, 70, 69, 68, 67, 66, 65, 64]
+    # Now, we need to reverse the order of these energy steps to match the
+    # order it should be in:
+    #  [64, 65, 66, 67, 68, 69, 70, 71, 72]
+    energy_values = np.flip(energy_values, axis=1)
     # Expand to match the number of rows in energy_values
     first_63_values = np.tile(
         fixed_energy_values, (energy_values.shape[0], 1)
@@ -142,15 +149,16 @@ def swapi_l2(
     # Copy over only certain variables from L1 to L2 dataset
     l1_data_keys = [
         "epoch",
-        "energy",
-        "energy_label",
-        "swp_l1a_flags",
-        "sweep_table",
-        "plan_id",
-        "lut_choice",
-        "fpga_type",
-        "fpga_rev",
         "esa_lvl5",
+        "esa_step",
+        "esa_step_label",
+        "fpga_rev",
+        "fpga_type",
+        "lut_choice",
+        "plan_id",
+        "sci_start_time",
+        "sweep_table",
+        "swp_l1a_flags",
     ]
     l2_dataset = l1_dataset[l1_data_keys]
 
@@ -168,7 +176,7 @@ def swapi_l2(
     l2_dataset["swp_esa_energy"] = xr.DataArray(
         esa_energy,
         name="esa_energy",
-        dims=["epoch", "energy"],
+        dims=["epoch", "esa_step"],
         attrs=cdf_manager.get_variable_attributes("esa_energy"),
     )
 
@@ -190,43 +198,43 @@ def swapi_l2(
     l2_dataset["swp_coin_rate"].attrs = cdf_manager.get_variable_attributes("coin_rate")
 
     # update uncertainty
-    l2_dataset["swp_pcem_rate_err_plus"] = (
-        l1_dataset["swp_pcem_counts_err_plus"] / TIME_PER_BIN
+    l2_dataset["swp_pcem_rate_stat_uncert_plus"] = (
+        l1_dataset["swp_pcem_counts_stat_uncert_plus"] / TIME_PER_BIN
     )
-    l2_dataset["swp_pcem_rate_err_minus"] = (
-        l1_dataset["swp_pcem_counts_err_minus"] / TIME_PER_BIN
+    l2_dataset["swp_pcem_rate_stat_uncert_minus"] = (
+        l1_dataset["swp_pcem_counts_stat_uncert_minus"] / TIME_PER_BIN
     )
-    l2_dataset["swp_scem_rate_err_plus"] = (
-        l1_dataset["swp_scem_counts_err_plus"] / TIME_PER_BIN
+    l2_dataset["swp_scem_rate_stat_uncert_plus"] = (
+        l1_dataset["swp_scem_counts_stat_uncert_plus"] / TIME_PER_BIN
     )
-    l2_dataset["swp_scem_rate_err_minus"] = (
-        l1_dataset["swp_scem_counts_err_minus"] / TIME_PER_BIN
+    l2_dataset["swp_scem_rate_stat_uncert_minus"] = (
+        l1_dataset["swp_scem_counts_stat_uncert_minus"] / TIME_PER_BIN
     )
-    l2_dataset["swp_coin_rate_err_plus"] = (
-        l1_dataset["swp_coin_counts_err_plus"] / TIME_PER_BIN
+    l2_dataset["swp_coin_rate_stat_uncert_plus"] = (
+        l1_dataset["swp_coin_counts_stat_uncert_plus"] / TIME_PER_BIN
     )
-    l2_dataset["swp_coin_rate_err_minus"] = (
-        l1_dataset["swp_coin_counts_err_minus"] / TIME_PER_BIN
+    l2_dataset["swp_coin_rate_stat_uncert_minus"] = (
+        l1_dataset["swp_coin_counts_stat_uncert_minus"] / TIME_PER_BIN
     )
     # update attrs
-    l2_dataset["swp_pcem_rate_err_plus"].attrs = cdf_manager.get_variable_attributes(
-        "pcem_uncertainty"
-    )
-    l2_dataset["swp_pcem_rate_err_minus"].attrs = cdf_manager.get_variable_attributes(
-        "pcem_uncertainty"
-    )
-    l2_dataset["swp_scem_rate_err_plus"].attrs = cdf_manager.get_variable_attributes(
-        "scem_uncertainty"
-    )
-    l2_dataset["swp_scem_rate_err_minus"].attrs = cdf_manager.get_variable_attributes(
-        "scem_uncertainty"
-    )
-    l2_dataset["swp_coin_rate_err_plus"].attrs = cdf_manager.get_variable_attributes(
-        "coin_uncertainty"
-    )
-    l2_dataset["swp_coin_rate_err_minus"].attrs = cdf_manager.get_variable_attributes(
-        "coin_uncertainty"
-    )
+    l2_dataset[
+        "swp_pcem_rate_stat_uncert_plus"
+    ].attrs = cdf_manager.get_variable_attributes("pcem_rate_uncertainty")
+    l2_dataset[
+        "swp_pcem_rate_stat_uncert_minus"
+    ].attrs = cdf_manager.get_variable_attributes("pcem_rate_uncertainty")
+    l2_dataset[
+        "swp_scem_rate_stat_uncert_plus"
+    ].attrs = cdf_manager.get_variable_attributes("scem_rate_uncertainty")
+    l2_dataset[
+        "swp_scem_rate_stat_uncert_minus"
+    ].attrs = cdf_manager.get_variable_attributes("scem_rate_uncertainty")
+    l2_dataset[
+        "swp_coin_rate_stat_uncert_plus"
+    ].attrs = cdf_manager.get_variable_attributes("coin_rate_uncertainty")
+    l2_dataset[
+        "swp_coin_rate_stat_uncert_minus"
+    ].attrs = cdf_manager.get_variable_attributes("coin_rate_uncertainty")
 
     # TODO: add thruster firing flag
     # TODO: add other flags

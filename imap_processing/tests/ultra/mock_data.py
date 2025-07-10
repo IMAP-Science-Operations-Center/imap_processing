@@ -387,7 +387,7 @@ def mock_l1c_pset_product_healpix(
         attrs={
             "Logical_file_id": logical_file_id,
             "Logical_source": logical_source,
-            "Data_version": "v001",
+            "Data_version": "001",
         },
     )
 

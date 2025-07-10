@@ -620,6 +620,42 @@ class HiPointingSet(PointingSet):
         self.spatial_coords = ("spin_angle_bin",)
 
 
+class LoPointingSet(PointingSet):
+    """
+    PointingSet object specific to Lo L1C PSet data.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        Lo L1C pointing set data loaded in an xarray.DataArray.
+    """
+
+    def __init__(self, dataset: xr.Dataset):
+        super().__init__(dataset, spice_reference_frame=geometry.SpiceFrame.IMAP_DPS)
+        # TODO: Use spatial_utils.az_el_grid instead of
+        #  manually creating the lon/lat values
+        inferred_spacing_deg = 360 / dataset.longitude.size
+        longitude_bin_centers = np.arange(
+            0 + inferred_spacing_deg / 2, 360, inferred_spacing_deg
+        )
+        latitude_bin_centers = np.arange(
+            -2 + inferred_spacing_deg / 2, 2, inferred_spacing_deg
+        )
+
+        # Could be wrong about the order here
+        longitude_grid, latitude_grid = np.meshgrid(
+            longitude_bin_centers,
+            latitude_bin_centers,
+            indexing="ij",
+        )
+
+        longitude = longitude_grid.ravel()
+        latitude = latitude_grid.ravel()
+
+        self.az_el_points = np.column_stack((longitude, latitude))
+        self.spatial_coords = ("longitude", "latitude")
+
+
 # Define the Map classes
 class AbstractSkyMap(ABC):
     """
@@ -1119,9 +1155,9 @@ class RectangularSkyMap(AbstractSkyMap):
             )
         # Add the solid angle variable to the data_1d Dataset
         self.data_1d["solid_angle"] = xr.DataArray(
-            self.solid_angle_points,
+            self.solid_angle_points[np.newaxis, :].astype(np.float32),
             name="solid_angle",
-            dims=[CoordNames.GENERIC_PIXEL.value],
+            dims=[CoordNames.TIME.value, CoordNames.GENERIC_PIXEL.value],
         )
         # Rewrap each data array in the data_1d to the original 2D grid shape
         rewrapped_data = {}
@@ -1275,8 +1311,14 @@ class RectangularSkyMap(AbstractSkyMap):
         # Set the variable attributes
         for var in [*cdf_ds.data_vars, *cdf_ds.coords]:
             try:
+                # Don't check schema on label or delta variables
+                ignore_schema_substrings = ["_label", "_delta"]
+                check_schema = (
+                    False if any(s in var for s in ignore_schema_substrings) else True
+                )
                 var_attrs = cdf_attrs.get_variable_attributes(
                     variable_name=var,
+                    check_schema=check_schema,
                 )
             except KeyError as e:
                 raise KeyError(
@@ -1417,6 +1459,12 @@ class HealpixSkyMap(AbstractSkyMap):
                 {},
                 coords={**self.spatial_coords},
             )
+        # Add the solid angle variable to the data_1d Dataset
+        self.data_1d["solid_angle"] = xr.DataArray(
+            self.solid_angle_points[np.newaxis, :].astype(np.float32),
+            name="solid_angle",
+            dims=[CoordNames.TIME.value, CoordNames.GENERIC_PIXEL.value],
+        )
         # return the data_1d as is, but with the pixel coordinate
         # renamed to CoordNames.HEALPIX_INDEX.value
         return self.data_1d.rename(

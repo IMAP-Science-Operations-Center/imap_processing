@@ -64,9 +64,10 @@ class HiConstants:
     TOF3_TICK_DUR = 0.5  # 0.5 ns
 
     # These values are stored in the TOF telemetry when the TOF timer
-    # does not have valid data.
-    TOF1_BAD_VALUES = (511, 1023)
-    TOF2_BAD_VALUES = (1023,)
+    # does not have valid data. See IMAP-Hi Algorithm Document Section
+    # 2.2.5 Annotated Direct Events
+    TOF1_BAD_VALUES = (511,)
+    TOF2_BAD_VALUES = (511,)
     TOF3_BAD_VALUES = (1023,)
 
 
@@ -116,15 +117,15 @@ def full_dataarray(
         Variable name.
     attrs : dict
         CDF variable attributes. Usually retrieved from ImapCdfAttributes.
-    coords : dict, optional
+    coords : dict, Optional
         Coordinate variables for the Dataset. This function will extract the
         sizes of each dimension defined by the attributes dictionary to determine
         the size of the DataArray to be created.
-    shape : int or tuple, optional
+    shape : int or tuple, Optional
         Shape of ndarray data array to instantiate in the xarray.DataArray. If
         shape is provided, the DataArray created will have this shape regardless
         of whether coordinates are provided or not.
-    fill_value : optional, float
+    fill_value : Optional, float
         Override the fill value that the DataArray will be filled with. If not
         supplied, the "FILLVAL" value from `attrs` will be used.
 
@@ -171,15 +172,15 @@ def create_dataset_variables(
     ----------
     variable_names : list[str]
         List of variable names to create.
-    variable_shape : int or sequence of int, optional
+    variable_shape : int or Sequence of int, Optional
         Shape of the new variables data ndarray. If not provided the shape will
         attempt to be derived from the coords dictionary.
-    coords : dict, optional
+    coords : dict, Optional
         Coordinate variables for the Dataset. If `variable_shape` is not provided
         the dataset variables created will use this dictionary along with variable
         attributes from the CdfAttributeManager to determine the shapes of the
         dataset variables created.
-    fill_value : optional, number
+    fill_value : Optional, float
         Value to fill the new variables data arrays with. If not supplied,
         the fill value is pulled from the CDF variable attributes "FILLVAL"
         attribute.

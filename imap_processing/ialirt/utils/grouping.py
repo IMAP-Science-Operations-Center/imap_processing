@@ -85,11 +85,17 @@ def find_groups(
     start_times = sorted_data[time_name][
         (sorted_data[sequence_name] == sequence_range[0])
     ]
-    start_time = start_times.min()
     # Use max sequence_range to define the end of the group.
     end_times = sorted_data[time_name][
         ([sorted_data[sequence_name] == sequence_range[-1]][-1])
     ]
+    # If no matching start or end times, return empty dataset
+    if start_times.size == 0 or end_times.size == 0:
+        empty = sorted_data.isel(epoch=[])
+        empty = empty.assign_coords(group=("epoch", np.empty(0, dtype=int)))
+        return empty
+
+    start_time = start_times.min()
     end_time = end_times.max()
 
     # Filter data before the sequence_range=0

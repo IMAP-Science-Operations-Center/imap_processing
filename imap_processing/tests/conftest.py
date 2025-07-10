@@ -17,7 +17,10 @@ import requests
 import spiceypy
 
 from imap_processing import imap_module_directory
+from imap_processing.cdf.utils import load_cdf
+from imap_processing.spice import config as spice_config
 from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns
+from imap_processing.tests.external_test_data_config import EXTERNAL_TEST_DATA
 
 
 @pytest.fixture(autouse=True)
@@ -32,6 +35,13 @@ def _set_global_config(monkeypatch, tmp_path):
 @pytest.fixture(scope="session")
 def imap_tests_path():
     return imap_module_directory / "tests"
+
+
+@pytest.fixture(autouse=True)
+def clear_spin_and_repoint_paths(monkeypatch):
+    """Clear the spin and repoint paths to avoid having test side effects."""
+    monkeypatch.setattr(spice_config, "_spin_table_paths", [])
+    monkeypatch.setattr(spice_config, "_repoint_table_path", None)
 
 
 # Furnishing fixtures for testing kernels
@@ -94,10 +104,10 @@ def _download_external_kernels(spice_test_data_path):
 
 @pytest.fixture(scope="session")
 def _download_test_data():
-    _download_external_data(_test_data_paths())
+    _download_external_data()
 
 
-def _download_external_data(test_data_path_list):
+def _download_external_data():
     """This fixture downloads externally-located test data files into a specific
     location. The list of files and their storage locations are specified in
     the `test_data_paths` parameter, which is a list of tuples; the zeroth
@@ -107,9 +117,14 @@ def _download_external_data(test_data_path_list):
     logger = logging.getLogger(__name__)
 
     api_path = "https://api.dev.imap-mission.com/download/test_data/"
-    for test_data_path in test_data_path_list:
-        source = api_path + test_data_path[0]
-        destination = test_data_path[1]
+    for source_filename, destination_path in EXTERNAL_TEST_DATA:
+        source = api_path + source_filename
+        destination = (
+            Path(f"{imap_module_directory}/tests") / destination_path / source_filename
+        )
+
+        # Create parent directories if they don't exist
+        destination.parent.mkdir(parents=True, exist_ok=True)
 
         # Download the test data if necessary and write it to the appropriate
         # directory
@@ -123,142 +138,6 @@ def _download_external_data(test_data_path_list):
                 logger.error(f"Failed to download file: {response.status_code}")
         else:
             logger.info(f"File already exists: {destination}")
-
-
-def _test_data_paths():
-    """Defines a list of test data files to download from the AWS S3 bucket
-    and the corresponding location in which to store the downloaded file"""
-    test_data_path_list = [
-        (
-            "apid_478.bin",
-            imap_module_directory / "tests" / "ialirt" / "data" / "l0" / "apid_478.bin",
-        ),
-        (
-            "imap_codice_l0_raw_20241110_v001.pkts",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "imap_codice_l0_raw_20241110_v001.pkts",
-        ),
-        (
-            "imap_codice_l1a_hi-pha_20241110193700_v0.0.0.cdf",
-            imap_module_directory
-            / "tests"
-            / "codice"
-            / "data"
-            / "validation"
-            / "imap_codice_l1a_hi-pha_20241110193700_v0.0.0.cdf",
-        ),
-        (
-            "imap_hi_l1a_45sensor-de_20250415_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "hi"
-            / "data"
-            / "l1"
-            / "imap_hi_l1a_45sensor-de_20250415_v999.cdf",
-        ),
-        (
-            "imap_hi_l1b_45sensor-de_20250415_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "hi"
-            / "data"
-            / "l1"
-            / "imap_hi_l1b_45sensor-de_20250415_v999.cdf",
-        ),
-        (
-            "imap_hi_l1c_45sensor-pset_20250415_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "hi"
-            / "data"
-            / "l1"
-            / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf",
-        ),
-        (
-            "idex_l1a_validation_file.h5",
-            imap_module_directory
-            / "tests"
-            / "idex"
-            / "test_data"
-            / "idex_l1a_validation_file.h5",
-        ),
-        (
-            "idex_l1b_validation_file.h5",
-            imap_module_directory
-            / "tests"
-            / "idex"
-            / "test_data"
-            / "idex_l1b_validation_file.h5",
-        ),
-        (
-            "IMAP-Ultra45_r1_L1_V0_shortened.csv",
-            imap_module_directory
-            / "tests"
-            / "ultra"
-            / "data"
-            / "l1"
-            / "IMAP-Ultra45_r1_L1_V0_shortened.csv",
-        ),
-        (
-            "imap_ultra_l1b_45sensor-de_20240207_v999.cdf",
-            imap_module_directory
-            / "tests"
-            / "ultra"
-            / "data"
-            / "l1"
-            / "imap_ultra_l1b_45sensor-de_20240207_v999.cdf",
-        ),
-        (
-            "ultra-90_raw_event_data_shortened.csv",
-            imap_module_directory
-            / "tests"
-            / "ultra"
-            / "data"
-            / "l1"
-            / "ultra-90_raw_event_data_shortened.csv",
-        ),
-        (
-            "Ultra_90_DPS_efficiencies_all.csv",
-            imap_module_directory
-            / "tests"
-            / "ultra"
-            / "data"
-            / "l1"
-            / "Ultra_90_DPS_efficiencies_all.csv",
-        ),
-        (
-            "ultra_90_dps_gf.csv",
-            imap_module_directory
-            / "tests"
-            / "ultra"
-            / "data"
-            / "l1"
-            / "ultra_90_dps_gf.csv",
-        ),
-        (
-            "ultra_90_dps_exposure.csv",
-            imap_module_directory
-            / "tests"
-            / "ultra"
-            / "data"
-            / "l1"
-            / "ultra_90_dps_exposure.csv",
-        ),
-        (
-            "Ultra_efficiencies_45_combined_logistic_interpolation.csv",
-            imap_module_directory
-            / "tests"
-            / "ultra"
-            / "data"
-            / "l1"
-            / "Ultra_efficiencies_45_combined_logistic_interpolation.csv",
-        ),
-    ]
-
-    return test_data_path_list
 
 
 def pytest_collection_modifyitems(items):
@@ -336,9 +215,7 @@ def furnish_kernels(spice_test_data_path):
 
 @pytest.fixture(scope="session")
 def monkeypatch_session():
-    from _pytest.monkeypatch import MonkeyPatch
-
-    m = MonkeyPatch()
+    m = pytest.MonkeyPatch()
     yield m
     m.undo()
 
@@ -481,17 +358,17 @@ def _unset_metakernel_path(monkeypatch):
 
 @pytest.fixture
 def use_test_spin_data_csv(monkeypatch):
-    """Sets the SPIN_DATA_FILEPATH environment variable to input path."""
+    """Monkeypatches `spin._spin_table_paths` to the input Path."""
 
-    def wrapped_set_spin_data_filepath(path: Path):
-        monkeypatch.setenv("SPIN_DATA_FILEPATH", str(path))
+    def wrapped_set_spin_data_filepath(paths: list[Path]):
+        monkeypatch.setattr(spice_config, "_spin_table_paths", paths)
 
     return wrapped_set_spin_data_filepath
 
 
 @pytest.fixture
 def use_fake_spin_data_for_time(
-    request, use_test_spin_data_csv, tmpdir, generate_spin_data
+    request, use_test_spin_data_csv, tmp_path, generate_spin_data
 ):
     """
     Generate and use fake spin data for testing.
@@ -519,9 +396,9 @@ def use_fake_spin_data_for_time(
             from start time.
         """
         spin_df = generate_spin_data(start_met, end_met=end_met)
-        spin_csv_file_path = tmpdir / "spin_data.spin.csv"
+        spin_csv_file_path = tmp_path / "spin_data.spin.csv"
         spin_df.to_csv(spin_csv_file_path, index=False)
-        use_test_spin_data_csv(spin_csv_file_path)
+        use_test_spin_data_csv([spin_csv_file_path])
 
     return wrapped_set_spin_data_filepath
 
@@ -618,10 +495,10 @@ def generate_spin_data():
 
 @pytest.fixture
 def use_test_repoint_data_csv(monkeypatch):
-    """Sets the REPOINT_DATA_FILEPATH environment variable to input path."""
+    """Monkeypatches repoint._repoint_table_path to point to the input path."""
 
     def wrapped_set_repoint_data_filepath(path: Path):
-        monkeypatch.setenv("REPOINT_DATA_FILEPATH", str(path))
+        monkeypatch.setattr(spice_config, "_repoint_table_path", path)
 
     return wrapped_set_repoint_data_filepath
 
@@ -677,7 +554,7 @@ def generate_repoint_data(
 
 
 @pytest.fixture
-def use_fake_repoint_data_for_time(use_test_repoint_data_csv, tmpdir):
+def use_fake_repoint_data_for_time(use_test_repoint_data_csv, tmp_path):
     """
     Generate and use fake spin data for testing.
 
@@ -713,14 +590,34 @@ def use_fake_repoint_data_for_time(use_test_repoint_data_csv, tmpdir):
             repoint_end_met=repoint_end_met,
             repoint_id_start=repoint_id_start,
         )
-        repoint_csv_file_path = tmpdir / "repoint_data.repointing.csv"
+        repoint_csv_file_path = tmp_path / "repoint_data.repointing.csv"
         repoint_df.to_csv(repoint_csv_file_path, index=False)
         use_test_repoint_data_csv(repoint_csv_file_path)
 
     return wrapped_repoint_data_filepath
 
 
+# Shared with i-alirt and mag tests
+@pytest.fixture
+def mag_test_l1b_calibration_data():
+    imap_dir = Path(__file__).parent
+    cal_file = (
+        imap_dir
+        / "mag"
+        / "validation"
+        / "calibration"
+        / "imap_mag_l1b-calibration_20240229_v001.cdf"
+    )
+    calibration_data = load_cdf(cal_file)
+    matrix_mago = calibration_data["MFOTOURFO"]
+    time_shift_mago = calibration_data["OTS"]
+    matrix_magi = calibration_data["MFITOURFI"]
+    time_shift_magi = calibration_data["ITS"]
+
+    return matrix_mago, time_shift_mago, matrix_magi, time_shift_magi
+
+
 if __name__ == "__main__":
     # This is to enable downloading files easier by letting us
     # run this file directly
-    _download_external_data(_test_data_paths())
+    _download_external_data()

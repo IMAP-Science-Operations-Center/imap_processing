@@ -11,8 +11,12 @@ from numpy.typing import NDArray
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
-from imap_processing.ena_maps.utils import naming
 from imap_processing.ena_maps.utils.coordinates import CoordNames
+from imap_processing.ena_maps.utils.naming import (
+    INERTIAL_FRAME_LONG_NAMES,
+    MapDescriptor,
+    ns_to_duration_months,
+)
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import get_energy_delta_minus_plus
 
 logger = logging.getLogger(__name__)
@@ -73,12 +77,18 @@ VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION = [
     "pointing_set_exposure_times_solid_angle",
     "num_pointing_set_pixel_members",
     "corrected_count_rate",
+    "obs_date_for_std",
+    "obs_date_squared_for_std",
 ]
 
 # These variables may or may not be energy dependent, depending on the
 # input data. They must be handled slightly differently when it comes to adding
 # metadata to the map dataset.
-INCONSISTENTLY_ENERGY_DEPENDENT_VARIABLES = ["obs_date", "exposure_factor"]
+INCONSISTENTLY_ENERGY_DEPENDENT_VARIABLES = [
+    "obs_date",
+    "exposure_factor",
+    "obs_date_range",
+]
 
 
 def get_variable_attributes_optional_energy_dependence(
@@ -114,10 +124,10 @@ def get_variable_attributes_optional_energy_dependence(
     # These variables must get metadata with a different key if they are energy
     # dependent.
     if (variable_name in INCONSISTENTLY_ENERGY_DEPENDENT_VARIABLES) and (
-        (CoordNames.ENERGY_L2.value in variable_dims)
-        or (CoordNames.ENERGY_ULTRA_L1C.value in variable_dims)
+        (CoordNames.ENERGY_L2.value not in variable_dims)
+        and (CoordNames.ENERGY_ULTRA_L1C.value not in variable_dims)
     ):
-        variable_name = f"{variable_name}_energy_dependent"
+        variable_name = f"{variable_name}_energy_independent"
 
     metadata = cdf_attrs.get_variable_attributes(
         variable_name=variable_name,
@@ -196,6 +206,8 @@ def generate_ultra_healpix_skymap(
     output_map_structure.values_to_push_project.extend(
         [
             "num_pointing_set_pixel_members",
+            "obs_date_for_std",
+            "obs_date_squared_for_std",
         ]
     )
     output_map_structure.values_to_pull_project.extend(
@@ -250,6 +262,13 @@ def generate_ultra_healpix_skymap(
             fill_value=pointing_set.epoch,
             dtype=np.int64,
         )
+        pointing_set.data["obs_date_for_std"] = pointing_set.data["obs_date"].astype(
+            np.float64
+        )
+        pointing_set.data["obs_date_squared_for_std"] = (
+            pointing_set.data["obs_date_for_std"] ** 2
+        )
+
         # Add solid_angle * exposure of pointing set as data_var
         # so this quantity is projected to map pixels for use in weighted averaging
         pointing_set.data["pointing_set_exposure_times_solid_angle"] = (
@@ -287,6 +306,10 @@ def generate_ultra_healpix_skymap(
 
     # Get the energy bin widths from a PointingSet (they will all be the same)
     delta_energy = pointing_set.data["energy_bin_delta"]
+    if CoordNames.TIME.value in delta_energy.dims:
+        delta_energy = delta_energy.mean(
+            dim=CoordNames.TIME.value,
+        )
 
     # Core calculations of ena_intensity and its statistical uncertainty for L2
     # Exposure time may contain 0s, producing NaNs in the corrected count rate
@@ -313,6 +336,27 @@ def generate_ultra_healpix_skymap(
             * delta_energy
         )
 
+        # Calculate the standard deviation of the observation date as:
+        # sqrt((sum(obs_date^2) / N) - (sum(obs_date) / N)^2)
+        # where sum here refers to the projection process
+        # summing over N pset pixels across different psets
+        skymap.data_1d["obs_date_range"] = (
+            (
+                (
+                    skymap.data_1d["obs_date_squared_for_std"]
+                    / (skymap.data_1d["num_pointing_set_pixel_members"])
+                )
+                - (
+                    (
+                        skymap.data_1d["obs_date_for_std"]
+                        / (skymap.data_1d["num_pointing_set_pixel_members"])
+                    )
+                    ** 2
+                )
+            )
+            ** 0.5
+        ).astype(np.int64)
+
     # Drop the variables that are no longer needed
     skymap.data_1d = skymap.data_1d.drop_vars(
         VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION,
@@ -327,6 +371,7 @@ def ultra_l2(
         ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap
     ) = DEFAULT_ULTRA_L2_MAP_STRUCTURE,
     *,
+    descriptor: str | None = None,
     store_subdivision_depth: bool = False,
 ) -> list[xr.Dataset]:
     """
@@ -338,7 +383,11 @@ def ultra_l2(
         Dict mapping l1c product identifiers to paths/Datasets containing l1c psets.
     output_map_structure : ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap, optional
         Empty SkyMap structure providing the properties of the map to be generated.
+        If a descriptor is provided, this will be ignored.
         Defaults to DEFAULT_ULTRA_L2_MAP_STRUCTURE defined in this module.
+    descriptor : str | None, optional
+        A descriptor to set the output map structure
+        If provided, this overrides the default output_map_structure parameter.
     store_subdivision_depth : bool, optional
         If True, the subdivision depth required to calculate each rectangular pixel
         value will be added to the map dataset.
@@ -352,6 +401,17 @@ def ultra_l2(
         L2 output dataset containing map of the counts on the sky.
         Wrapped in a list for consistency with other product levels.
     """
+    inertial_frame = "unknown"
+    if descriptor is not None:
+        logger.info(
+            f"Using the provided descriptor '{descriptor}' to set the map structure."
+            "\nThis will override any input map structure."
+        )
+        map_descriptor = MapDescriptor.from_string(descriptor)
+        output_map_structure = map_descriptor.to_empty_map()
+        inertial_frame = map_descriptor.frame_descriptor
+    inertial_frame_long_name = INERTIAL_FRAME_LONG_NAMES.get(inertial_frame, "unknown")
+
     # Object which holds CDF attributes for the map
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs(instrument="ultra")
@@ -383,7 +443,7 @@ def ultra_l2(
     # TODO: replace 1 day in ns below with the actual end time of the last PSET.
     # Currently assumes the end time of the last PSET is 1 day after its start.
     map_duration_ns = (pset_epochs.max() + (86400 * 1e9)) - pset_epochs.min()
-    map_duration_months_int = naming.ns_to_duration_months(map_duration_ns)
+    map_duration_months_int = ns_to_duration_months(map_duration_ns)
     map_duration = f"{map_duration_months_int}mo"
 
     # Always add the common (non-tiling specific) attributes to the attr handler.
@@ -405,7 +465,6 @@ def ultra_l2(
                 data=healpix_skymap.az_el_points[:, i],
                 dims=(CoordNames.GENERIC_PIXEL.value,),
             )
-
         map_dataset = healpix_skymap.to_dataset()
         # Add attributes related to the map
         map_attrs = {
@@ -452,12 +511,22 @@ def ultra_l2(
 
     # Get the global attributes, and then fill the sensor, tiling, etc. in the
     # format-able strings.
-    map_attrs.update(cdf_attrs.get_global_attributes("imap_ultra_l2_enamap-hf"))
+    map_attrs.update(cdf_attrs.get_global_attributes("imap_ultra_l2_enamap"))
     for key in ["Data_type", "Logical_source", "Logical_source_description"]:
         map_attrs[key] = map_attrs[key].format(
             sensor=ultra_sensor_number,
             tiling=output_map_structure.tiling_type.value.lower(),
             duration=map_duration,
+            resolution_string=(
+                f"{output_map_structure.spacing_deg:.0f}deg"
+                if (
+                    output_map_structure.tiling_type
+                    is ena_maps.SkyTilingType.RECTANGULAR
+                )
+                else f"nside{output_map_structure.nside}"
+            ),
+            inertial_frame_short_name=inertial_frame,
+            inertial_frame_long_name=inertial_frame_long_name,
         )
 
     # Always add the following attributes to the map
@@ -487,10 +556,16 @@ def ultra_l2(
                 name=f"{coord_var}_label",
             )
 
+    # Add systematic error as all zeros with shape matching statistical unc
+    # TODO: update once we have information from the instrument team
+    map_dataset["ena_intensity_sys_err"] = xr.zeros_like(
+        map_dataset["ena_intensity_stat_unc"],
+    )
+
     # Add epoch_delta
     map_dataset.coords["epoch_delta"] = xr.DataArray(
         [
-            map_duration_ns,
+            map_duration_ns.astype(np.int64),
         ],
         dims=(CoordNames.TIME.value,),
     )

@@ -4726,13 +4726,13 @@
 			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_TIME.SPIN" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
 			</xtce:IntegerParameterType>
+			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_TIME.ABORTFLAG" signed="false">
+				<xtce:IntegerDataEncoding sizeInBits="1" encoding="unsigned" />
+			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_TIME.STARTDELAY" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="15" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_TIME.P00" signed="false">
-				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
-			</xtce:IntegerParameterType>
-			<xtce:IntegerParameterType name="U45_IMG_ENA_PHXTOF_HI_TIME.ABORTFLAG" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
 			</xtce:IntegerParameterType>
 			<xtce:BinaryParameterType name="U45_IMG_ENA_PHXTOF_HI_TIME.PACKETDATA">

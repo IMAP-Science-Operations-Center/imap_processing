@@ -44,7 +44,11 @@ def load_cdf(
     if isinstance(file_path, imap_data_access.ImapFilePath):
         file_path = file_path.construct_path()
 
-    dataset = cdf_to_xarray(file_path, kwargs)
+    # By default, do not convert epoch to datetime64. This ensures that the
+    # round-trip of writing and then loading a cdf keeps the dataset the same.
+    if "to_datetime" not in kwargs:
+        kwargs["to_datetime"] = False  # type: ignore
+    dataset = cdf_to_xarray(file_path, **kwargs)
 
     # cdf_to_xarray converts single-value attributes to lists
     # convert these back to single values where applicable
@@ -115,10 +119,11 @@ def write_cdf(
             "No Data_version attribute found in dataset. Using default v999.",
             stacklevel=2,
         )
-        version = "v999"
-    elif not re.match(r"v\d{3}", version):
+        version = "999"
+        dataset.attrs["Data_version"] = version
+    elif not re.match(r"\d{3}", version):
         raise ValueError(
-            f"The Data_version attribute {version} does not match expected format vXXX."
+            f"The Data_version attribute {version} does not match expected format XXX."
         )
 
     repointing = dataset.attrs.get("Repointing", None)
@@ -129,7 +134,7 @@ def write_cdf(
         data_level=data_level,
         descriptor=descriptor,
         start_time=start_date,
-        version=version,
+        version=f"v{version}",  # Ensure version is prefixed with 'v'
         repointing=repointing_int,
     )
     file_path = Path(science_file.construct_path())
@@ -153,6 +158,8 @@ def write_cdf(
             extra_cdf_kwargs["terminate_on_warning"] = True  # type: ignore
         if "istp" not in extra_cdf_kwargs:
             extra_cdf_kwargs["istp"] = True  # type: ignore
+    if "compression" not in extra_cdf_kwargs:
+        extra_cdf_kwargs["compression"] = 6  # type: ignore
 
     xarray_to_cdf(dataset, str(file_path), **extra_cdf_kwargs)
     return file_path
