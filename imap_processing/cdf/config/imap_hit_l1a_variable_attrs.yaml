@@ -85,7 +85,7 @@ default_energy_attrs: &default_energy
   FILLVAL: -1.00E+31
   VALIDMIN: 0
   VALIDMAX: 1000
-  FORMAT: F5.1
+  FORMAT: F6.1
   UNITS: MeV/nuc
   SCALE_TYP: log
 
@@ -96,7 +96,7 @@ default_uncertainty_attrs: &default_uncertainty
   VALIDMIN: 0
   VALIDMAX: 10000000000
   FILLVAL: -1.00E+31
-  FORMAT: F9.3
+  FORMAT: F15.3
   UNITS: counts
   SCALE_TYP: log
 
@@ -111,7 +111,7 @@ sc_tick:
   VALIDMIN: 0
   VALIDMAX: 4294967295
   FILLVAL: 4294967295
-  UNITS: ''
+  UNITS: ' '
   SCALETYP: linear
 
 
@@ -121,7 +121,7 @@ zenith:
   CATDESC: Angle from the spin axis (0 deg.) to anti-spin axis (180 deg.) in 8 bins
   FIELDNAM: Zenith
   LABLAXIS: Zenith
-  FORMAT: F5.1
+  FORMAT: F12.2
   UNITS: deg
 
 azimuth:
@@ -129,7 +129,7 @@ azimuth:
   CATDESC: Spin angle in 15 bins (0 deg. is zero of spin phase)
   FIELDNAM: Azimuth
   LABLAXIS: Azimuth
-  FORMAT: F5.1
+  FORMAT: F12.2
   UNITS: Deg
 
 gain:
@@ -137,7 +137,7 @@ gain:
   CATDESC: Single rates gain. 0=low, 1=high
   FIELDNAM: gain
   LABLAXIS: Gain
-  FORMAT: I1
+  FORMAT: I10
   FILLVAL: 65535
 
 sngrates_index:
@@ -467,7 +467,7 @@ hdr_frame_version:
   CATDESC: Raw header frame version per integration
   FIELDNAM: hdr_frame_version
   LABLAXIS: Value
-  UNITS: ''
+  UNITS: ' '
 
 hdr_dynamic_threshold_state:
   <<: *default_uint8
@@ -482,28 +482,28 @@ hdr_leak_conv:
   CATDESC: Raw header leak conversion per integration
   FIELDNAM: hdr_leak_conv
   LABLAXIS: Value
-  UNITS: ''
+  UNITS: ' '
 
 hdr_heater_duty_cycle:
   <<: *default_counts
   CATDESC: Raw header heavy duty cycle per integration
   FIELDNAM: hdr_heavy_duty_cycle
   LABLAXIS: Value
-  UNITS: ''
+  UNITS: ' '
 
 hdr_code_ok:
   <<: *default_counts
   CATDESC: Raw header code ok per integration
   FIELDNAM: hdr_code_ok
   LABLAXIS: Value
-  UNITS: ''
+  UNITS: ' '
 
 hdr_unit_num:
   <<: *default_counts
   CATDESC: Raw header unit number per integration
   FIELDNAM: hdr_unit_num
   LABLAXIS: Value
-  UNITS: ''
+  UNITS: ' '
 
 hdr_minute_cnt:
   <<: *default_counts
@@ -723,8 +723,8 @@ sngrates:
   DEPEND_2: sngrates_index
   CATDESC: Raw single rates per integration
   FIELDNAM: sngrates
-  LABL_PTR_1: sngrates_index_label
-  LABL_PTR_2: gain_label
+  LABL_PTR_1: gain_label
+  LABL_PTR_2: sngrates_index_label
   DELTA_MINUS_VAR: sngrates_stat_uncert_minus
   DELTA_PLUS_VAR: sngrates_stat_uncert_plus
 
