@@ -20,6 +20,7 @@ from imap_processing.ultra.l0.ultra_utils import ULTRA_TOF_HIGH_ENERGY
     ],
     indirect=True,
 )
+@pytest.mark.external_test_data
 def test_tof_high_energy_decom(decom_test_data, tof_high_energy_test_path):
     """This function reads validation data and checks that decom data
     matches validation data for image rate packet"""
