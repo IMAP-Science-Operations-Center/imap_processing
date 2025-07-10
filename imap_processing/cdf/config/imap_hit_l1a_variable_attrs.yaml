@@ -226,29 +226,29 @@ l4bgrates_index:
 
 h_energy_mean:
   <<: *default_energy
-  CATDESC: H sectored geometric mean energy
+  CATDESC: H sectored geometric mean energy per nucleon
   FIELDNAM: H energy mean
   DELTA_MINUS_VAR: h_energy_delta_minus
   DELTA_PLUS_VAR: h_energy_delta_plus
 
 he4_energy_mean:
   <<: *default_energy
-  CATDESC: He4 sectored geometric mean energy
+  CATDESC: He4 sectored geometric mean energy per nucleon
   FIELDNAM: He4 energy mean
 
 cno_energy_mean:
   <<: *default_energy
-  CATDESC: C, N, O sectored geometric mean energy
+  CATDESC: C, N, O sectored geometric mean energy per nucleon
   FIELDNAM: C, N, O energy mean
 
 nemgsi_energy_mean:
   <<: *default_energy
-  CATDESC: Ne, Mg, Si sectored geometric mean energy
+  CATDESC: Ne, Mg, Si sectored geometric mean energy per nucleon
   FIELDNAM: Ne, Mg, Si energy mean
 
 fe_energy_mean:
   <<: *default_energy
-  CATDESC: Fe sectored geometric mean energy
+  CATDESC: Fe sectored geometric mean energy per nucleon
   FIELDNAM: Fe energy mean
 
 
@@ -373,31 +373,31 @@ l4bgrates_index_label:
   VAR_TYPE: metadata
 
 h_energy_mean_label:
-  CATDESC: Geometric mean energy for H
+  CATDESC: Geometric mean energy per nucleon for H
   FIELDNAM: H Energy
   FORMAT: A5
   VAR_TYPE: metadata
 
 he4_energy_mean_label:
-  CATDESC: Geometric mean energy for He4
+  CATDESC: Geometric mean energy per nucleon for He4
   FIELDNAM: He4 Energy
   FORMAT: A5
   VAR_TYPE: metadata
 
 nemgsi_energy_mean_label:
-  CATDESC: Geometric mean energy for NeMgSi
+  CATDESC: Geometric mean energy per nucleon for NeMgSi
   FIELDNAM: NeMgSi Energy
   FORMAT: A5
   VAR_TYPE: metadata
 
 cno_energy_mean_label:
-  CATDESC: Geometric mean energy for CNO
+  CATDESC: Geometric mean energy per nucleon for CNO
   FIELDNAM: CNO Energy
   FORMAT: A5
   VAR_TYPE: metadata
 
 fe_energy_mean_label:
-  CATDESC: Geometric mean energy for Fe
+  CATDESC: Geometric mean energy per nucleon for Fe
   FIELDNAM: Fe Energy
   FORMAT: A5
   VAR_TYPE: metadata
@@ -907,61 +907,61 @@ fe_sectored_counts:
 h_energy_delta_plus:
   <<: *default_energy
   DEPEND_1: h_energy_mean
-  CATDESC: H energy delta plus (maximum bin energy minus geometric mean)
+  CATDESC: H energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
   FIELDNAM: H energy delta plus
 
 h_energy_delta_minus:
   <<: *default_energy
   DEPEND_1: h_energy_mean
-  CATDESC: H energy delta minus (geometric mean minus minimum bin energy)
+  CATDESC: H energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
   FIELDNAM: H energy delta minus
 
 he4_energy_delta_plus:
   <<: *default_energy
   DEPEND_1: he4_energy_mean
-  CATDESC: He4 energy delta plus (maximum bin energy minus geometric mean)
+  CATDESC: He4 energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
   FIELDNAM: He4 energy delta plus
 
 he4_energy_delta_minus:
   <<: *default_energy
   DEPEND_1: he4_energy_mean
-  CATDESC: He4 energy delta minus (geometric mean minus minimum bin energy)
+  CATDESC: He4 energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
   FIELDNAM: He4 energy delta minus
 
 cno_energy_delta_plus:
   <<: *default_energy
   DEPEND_1: cno_energy_mean
-  CATDESC: C, N, O energy delta plus (maximum bin energy minus geometric mean)
+  CATDESC: C, N, O energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
   FIELDNAM: C, N, O energy delta plus
 
 cno_energy_delta_minus:
   <<: *default_energy
   DEPEND_1: cno_energy_mean
-  CATDESC: C, N, O energy delta minus (geometric mean minus minimum bin energy)
+  CATDESC: C, N, O energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
   FIELDNAM: C, N, O energy delta minus
 
 nemgsi_energy_delta_plus:
   <<: *default_energy
   DEPEND_1: nemgsi_energy_mean
-  CATDESC: Ne, Mg, Si energy delta plus (maximum bin energy minus geometric mean)
+  CATDESC: Ne, Mg, Si energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
   FIELDNAM: Ne, Mg, Si energy delta plus
 
 nemgsi_energy_delta_minus:
   <<: *default_energy
   DEPEND_1: nemgsi_energy_mean
-  CATDESC: Ne, Mg, Si energy delta minus (geometric mean minus minimum bin energy)
+  CATDESC: Ne, Mg, Si energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
   FIELDNAM: Ne, Mg, Si energy delta minus
 
 fe_energy_delta_plus:
   <<: *default_energy
   DEPEND_1: fe_energy_mean
-  CATDESC: Fe energy delta plus (maximum bin energy minus geometric mean)
+  CATDESC: Fe energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
   FIELDNAM: Fe energy delta plus
 
 fe_energy_delta_minus:
   <<: *default_energy
   DEPEND_1: fe_energy_mean
-  CATDESC: Fe energy delta minus (geometric mean minus minimum bin energy)
+  CATDESC: Fe energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
   FIELDNAM: Fe energy delta minus
 
 # Counts uncertainty variables
