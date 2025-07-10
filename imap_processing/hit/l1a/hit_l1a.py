@@ -322,7 +322,7 @@ def process_science(
         for dim in ds.dims:
             ds[dim].attrs = attr_mgr.get_variable_attributes(dim, check_schema=False)
             # TODO: should labels be added as coordinates? Check with SPDF
-            if dim not in {"epoch"}:
+            if dim != "epoch":
                 label_array = xr.DataArray(
                     ds[dim].values.astype(str),
                     name=f"{dim}_label",
