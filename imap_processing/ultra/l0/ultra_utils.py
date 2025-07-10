@@ -10,18 +10,18 @@ class PacketProperties(NamedTuple):
     logical_source: list  # List of logical sources
     addition_to_logical_desc: str  # Description of the logical source
     width: Union[int, None]  # Width of binary data (could be None).
-    # The following are important for decompressing the images and
-    # a description is available on page 171 of IMAP-Ultra Flight
-    # Software Specification document (7523-9009_Rev_-.pdf).
+    # Block, image_panes, pixel_window_rows, and pixel_window_columns are important for
+    # decompressing the images and a description is available on page 171 of IMAP-Ultra
+    # Flight Software Specification document (7523-9009_Rev_-.pdf).
     block: Union[int, None]  # Number of values in each block (could be None).
-    image_panes: Union[int, None]  # number of images
-    pixel_window_rows: Union[int, None]  # number of rows in each image
-    pixel_window_columns: Union[int, None]  # number of columns in each image
     len_array: Union[
         int, None
     ]  # Length of the array to be decompressed (could be None).
     mantissa_bit_length: Union[int, None]  # used to determine the level of
     # precision that can be recovered from compressed data (could be None).
+    image_panes: Union[int, None] = None  # number of images
+    pixel_window_rows: Union[int, None] = None  # number of rows in each image
+    pixel_window_columns: Union[int, None] = None  # number of columns in each image
 
 
 # Define PacketProperties instances directly in the module namespace
@@ -31,9 +31,6 @@ ULTRA_AUX = PacketProperties(
     addition_to_logical_desc="Auxiliary",
     width=None,
     block=None,
-    image_panes=None,
-    pixel_window_rows=None,
-    pixel_window_columns=None,
     len_array=None,
     mantissa_bit_length=None,
 )
@@ -43,9 +40,6 @@ ULTRA_RATES = PacketProperties(
     addition_to_logical_desc="Image Rates",
     width=5,
     block=16,
-    image_panes=None,
-    pixel_window_rows=None,
-    pixel_window_columns=None,
     len_array=48,
     mantissa_bit_length=12,
 )
@@ -58,9 +52,6 @@ ULTRA_ENERGY_RATES = PacketProperties(
     addition_to_logical_desc="Energy Rates",
     width=5,
     block=16,
-    image_panes=None,
-    pixel_window_rows=None,
-    pixel_window_columns=None,
     len_array=11,
     mantissa_bit_length=12,
 )
@@ -73,9 +64,6 @@ ULTRA_ENERGY_SPECTRA = PacketProperties(
     addition_to_logical_desc="Energy Spectra",
     width=4,
     block=16,
-    image_panes=None,
-    pixel_window_rows=None,
-    pixel_window_columns=None,
     len_array=1,
     mantissa_bit_length=5,
 )
@@ -115,9 +103,6 @@ ULTRA_EVENTS = PacketProperties(
     addition_to_logical_desc="Single Events",
     width=None,
     block=None,
-    image_panes=None,
-    pixel_window_rows=None,
-    pixel_window_columns=None,
     len_array=None,
     mantissa_bit_length=None,
 )
@@ -130,9 +115,6 @@ ULTRA_ENERGY_EVENTS = PacketProperties(
     addition_to_logical_desc="Single Energy Events",
     width=None,
     block=None,
-    image_panes=None,
-    pixel_window_rows=None,
-    pixel_window_columns=None,
     len_array=None,
     mantissa_bit_length=None,
 )
@@ -145,9 +127,6 @@ ULTRA_MACROS_CHECKSUM = PacketProperties(
     addition_to_logical_desc="Macros Checksum",
     width=None,
     block=None,
-    image_panes=None,
-    pixel_window_rows=None,
-    pixel_window_columns=None,
     len_array=None,
     mantissa_bit_length=None,
 )
@@ -160,9 +139,6 @@ ULTRA_PRI_1_EVENTS = PacketProperties(
     addition_to_logical_desc="Primary 1 Events",
     width=None,
     block=None,
-    image_panes=None,
-    pixel_window_rows=None,
-    pixel_window_columns=None,
     len_array=None,
     mantissa_bit_length=None,
 )
@@ -175,9 +151,6 @@ ULTRA_PRI_2_EVENTS = PacketProperties(
     addition_to_logical_desc="Primary 2 Events",
     width=None,
     block=None,
-    image_panes=None,
-    pixel_window_rows=None,
-    pixel_window_columns=None,
     len_array=None,
     mantissa_bit_length=None,
 )
@@ -190,9 +163,6 @@ ULTRA_PRI_3_EVENTS = PacketProperties(
     addition_to_logical_desc="Primary 3 Events",
     width=None,
     block=None,
-    image_panes=None,
-    pixel_window_rows=None,
-    pixel_window_columns=None,
     len_array=None,
     mantissa_bit_length=None,
 )
@@ -205,9 +175,6 @@ ULTRA_PRI_4_EVENTS = PacketProperties(
     addition_to_logical_desc="Primary 4 Events",
     width=None,
     block=None,
-    image_panes=None,
-    pixel_window_rows=None,
-    pixel_window_columns=None,
     len_array=None,
     mantissa_bit_length=None,
 )
@@ -259,9 +226,6 @@ ULTRA_HK = PacketProperties(
     addition_to_logical_desc="Housekeeping",
     width=None,
     block=None,
-    image_panes=None,
-    pixel_window_rows=None,
-    pixel_window_columns=None,
     len_array=None,
     mantissa_bit_length=None,
 )
@@ -277,9 +241,6 @@ ULTRA_CMD_TEXT = PacketProperties(
     addition_to_logical_desc="Housekeeping with binary data",
     width=None,
     block=None,
-    image_panes=None,
-    pixel_window_rows=None,
-    pixel_window_columns=None,
     len_array=None,
     mantissa_bit_length=None,
 )
@@ -295,9 +256,6 @@ ULTRA_CMD_ECHO = PacketProperties(
     addition_to_logical_desc="Command echo",
     width=None,
     block=None,
-    image_panes=None,
-    pixel_window_rows=None,
-    pixel_window_columns=None,
     len_array=None,
     mantissa_bit_length=None,
 )

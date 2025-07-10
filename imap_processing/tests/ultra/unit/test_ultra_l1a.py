@@ -60,6 +60,7 @@ def test_xarray_tof_high_angular(ccsds_path_theta_0):
     assert (specific_epoch_data == test_data[0]["packetdata"][0][0]).all()
 
 
+@pytest.mark.external_test_data
 def test_xarray_tof_high_energy(ccsds_path_tof_high_energy):
     """This function checks that a xarray was
     successfully created from the decom_ultra_tof data."""
@@ -174,6 +175,7 @@ def test_cdf_tof_high_angular(ccsds_path_theta_0):
     )
 
 
+@pytest.mark.external_test_data
 def test_cdf_tof_high_energy(ccsds_path_tof_high_energy):
     """Tests that CDF file can be created."""
     test_data = ultra_l1a(
