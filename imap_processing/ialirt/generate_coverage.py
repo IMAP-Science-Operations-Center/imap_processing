@@ -4,7 +4,7 @@ import logging
 
 import numpy as np
 
-from imap_processing.ialirt.constants import KIEL
+from imap_processing.ialirt.constants import STATIONS
 from imap_processing.ialirt.process_ephemeris import calculate_azimuth_and_elevation
 from imap_processing.spice.time import et_to_utc, str_to_et
 
@@ -32,7 +32,7 @@ def generate_coverage(
     time_step = 3600  # 1 hr in seconds
 
     stations = {
-        "Kiel": KIEL,
+        "Kiel": STATIONS["Kiel"],
     }
     coverage_dict = {}
 

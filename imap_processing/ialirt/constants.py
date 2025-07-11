@@ -49,9 +49,11 @@ class StationProperties(NamedTuple):
 
 
 # TODO: Verify longitude, latitude, altitude.
-KIEL = StationProperties(
-    longitude=10.122,  # degrees East
-    latitude=54.339,  # degrees North
-    altitude=0.043,  # approx 43 meters
-    min_elevation_deg=10,  # 10 degrees is the requirement
-)
+STATIONS = {
+    "Kiel": StationProperties(
+        longitude=10.122,  # degrees East
+        latitude=54.339,  # degrees North
+        altitude=0.043,  # approx 43 meters
+        min_elevation_deg=10,  # 10 degrees is the requirement
+    )
+}
