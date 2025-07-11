@@ -632,7 +632,7 @@ def process_summed_intensity(
             summed_intensity_dataset = add_total_uncertainties(
                 summed_intensity_dataset, var
             )
-            # Expand the variable name to include standard intensity
+            # Expand the variable name to include summed intensity
             summed_intensity_dataset = summed_intensity_dataset.rename(
                 {var: f"{var}_summed_intensity"}
             )
