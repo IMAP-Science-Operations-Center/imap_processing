@@ -9,6 +9,7 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     flag_imap_instruments,
     flag_rates,
     get_energy_histogram,
+    get_pulses_per_spin,
 )
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
@@ -36,6 +37,7 @@ def calculate_extendedspin(
         Dataset containing the data.
     """
     aux_dataset = dict_datasets[f"imap_ultra_l1a_{instrument_id}sensor-aux"]
+    rates_dataset = dict_datasets[f"imap_ultra_l1a_{instrument_id}sensor-rates"]
     de_dataset = dict_datasets[f"imap_ultra_l1b_{instrument_id}sensor-de"]
 
     extendedspin_dict = {}
@@ -59,6 +61,9 @@ def calculate_extendedspin(
     _, first_indices = np.unique(filtered_dataset["spin"].values, return_index=True)
     first_epochs = filtered_dataset["epoch"].values[first_indices]
 
+    # Get the number of pulses per spin.
+    start_per_spin, stop_per_spin, coin_per_spin = get_pulses_per_spin(rates_dataset)
+
     # These will be the coordinates.
     extendedspin_dict["epoch"] = first_epochs
     extendedspin_dict["spin_number"] = spin
@@ -69,6 +74,9 @@ def calculate_extendedspin(
     extendedspin_dict["spin_start_time"] = spin_starttime
     extendedspin_dict["spin_period"] = spin_period
     extendedspin_dict["spin_rate"] = spin_rates
+    extendedspin_dict["start_pulses_per_spin"] = start_per_spin
+    extendedspin_dict["stop_pulses_per_spin"] = stop_per_spin
+    extendedspin_dict["coin_pulses_per_spin"] = coin_per_spin
     extendedspin_dict["quality_attitude"] = attitude_qf
     extendedspin_dict["quality_ena_rates"] = rates_qf
     extendedspin_dict["quality_hk"] = hk_qf

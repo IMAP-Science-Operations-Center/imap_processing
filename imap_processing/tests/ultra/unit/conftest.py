@@ -158,6 +158,15 @@ def rates_test_path():
 
 
 @pytest.fixture
+def rates_l1_test_path():
+    filename = (
+        "FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50_theta-0.00_"
+        "ULTRA_ImageBasicRates_20240207T102740_.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l1" / filename
+
+
+@pytest.fixture
 def energy_rates_test_path():
     """Returns the xtce test data directory."""
     filename = (

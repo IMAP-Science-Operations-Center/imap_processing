@@ -400,10 +400,37 @@ ena_rates:
   <<: *default_float32
   CATDESC: Rates calculated from de packet.
   FIELDNAM: ena_rates
-  LABLAXIS: ena_rates
+  LABLAXIS: ena rates
   DEPEND_0: epoch
   DEPEND_1: spin_number
   DEPEND_2: energy_bin_geometric_mean
+  UNITS: " "
+
+start_pulses_per_spin:
+  <<: *default_float32
+  CATDESC: Total start pulses per spin.
+  FIELDNAM: start_pulses_per_spin
+  LABLAXIS: start pulses per spin
+  DEPEND_0: epoch
+  DEPEND_1: spin_number
+  UNITS: " "
+
+stop_pulses_per_spin:
+  <<: *default_float32
+  CATDESC: Total start pulses per spin.
+  FIELDNAM: stop_pulses_per_spin
+  LABLAXIS: stop pulses per spin
+  DEPEND_0: epoch
+  DEPEND_1: spin_number
+  UNITS: " "
+
+coin_pulses_per_spin:
+  <<: *default_float32
+  CATDESC: Total coincidence pulses per spin.
+  FIELDNAM: coin_pulses_per_spin
+  LABLAXIS: coin_pulses_per_spin
+  DEPEND_0: epoch
+  DEPEND_1: spin_number
   UNITS: " "
 
 ena_rates_threshold:

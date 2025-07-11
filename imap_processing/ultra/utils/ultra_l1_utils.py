@@ -91,6 +91,7 @@ def create_dataset(  # noqa: PLR0912
         "ena_rates_threshold",
         "quality_ena_rates",
     }
+    rates_pulse_keys = {"start_per_spin", "stop_per_spin", "coin_per_spin"}
 
     for key, data in data_dict.items():
         # Skip keys that are coordinates.
@@ -112,6 +113,12 @@ def create_dataset(  # noqa: PLR0912
             dataset[key] = xr.DataArray(
                 data,
                 dims=["epoch", "energy_bin_geometric_mean"],
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
+            )
+        elif key in rates_pulse_keys:
+            dataset[key] = xr.DataArray(
+                data,
+                dims=["spin_number"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         elif key in rates_keys:

@@ -1,6 +1,7 @@
 """Tests Culling for ULTRA L1b."""
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from imap_processing import imap_module_directory
@@ -19,6 +20,8 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     flag_rates,
     get_energy_histogram,
     get_n_sigma,
+    get_pulses_per_spin,
+    get_spin_and_duration,
     get_spin_data,
 )
 
@@ -147,3 +150,73 @@ def test_compare_aux_univ_spin_table(use_fake_spin_data_for_time, faux_aux_datas
     expected = np.array([False] * 14 + [True])
 
     assert np.all(result == expected)
+
+
+def test_get_duration(rates_l1_test_path, use_fake_spin_data_for_time):
+    """Tests get_duration function."""
+    use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
+
+    df = pd.read_csv(rates_l1_test_path)
+
+    met = df["TimeTag"].values - df["TimeTag"].values[0]
+    spin = df["Spin"].values
+    spin_number, duration = get_spin_and_duration(met, spin)
+
+    assert np.array_equal(spin, spin_number)
+    assert np.all(duration == 15)
+
+
+def test_get_pulses(rates_l1_test_path, use_fake_spin_data_for_time):
+    """Tests get_pulses_per_spin function."""
+    df = pd.read_csv(rates_l1_test_path)
+
+    # Simulate a spin table from MET = 0 to MET = 141 * 15 seconds
+    use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
+
+    pulse_dict = {
+        # Stop pulses
+        "stop_tn": df["StopTopNorthCFD"].values,
+        "stop_bn": df["StopBottomNorthCFD"].values,
+        "stop_te": df["StopTopEastCFD"].values,
+        "stop_be": df["StopBottomEastCFD"].values,
+        "stop_ts": df["StopTopSouthCFD"].values,
+        "stop_bs": df["StopBottomSouthCFD"].values,
+        "stop_tw": df["StopTopWestCFD"].values,
+        "stop_bw": df["StopBottomWestCFD"].values,
+        # Start pulses
+        "start_rf": df["StartRightFullCFD"].values,
+        "start_lf": df["StartLeftFullCFD"].values,
+        # Coincidence pulses
+        "coin_tn": df["CoinTopNorthCFD"].values,
+        "coin_bn": df["CoinBottomNorthCFD"].values,
+        "coin_ts": df["CoinTopSouthCFD"].values,
+        "coin_bs": df["CoinBottomSouthCFD"].values,
+        # Additional info
+        "shcoarse": df["TimeTag"].values,
+        "spin": df["Spin"].values,
+    }
+
+    start_per_spin, stop_per_spin, coin_per_spin = get_pulses_per_spin(pulse_dict)
+    unique_spins = np.unique(pulse_dict["spin"])
+
+    start_pulses_total = pulse_dict["start_rf"] + pulse_dict["start_lf"]
+    stop_pulses_total = np.max(
+        np.stack([v for k, v in pulse_dict.items() if k.startswith("stop_t")], axis=1),
+        axis=1,
+    ) + np.max(
+        np.stack([v for k, v in pulse_dict.items() if k.startswith("stop_b")], axis=1),
+        axis=1,
+    )
+    coin_pulses_total = np.max(
+        np.stack([v for k, v in pulse_dict.items() if k.startswith("coin_t")], axis=1),
+        axis=1,
+    ) + np.max(
+        np.stack([v for k, v in pulse_dict.items() if k.startswith("coin_b")], axis=1),
+        axis=1,
+    )
+
+    for i, spin in enumerate(unique_spins):
+        mask = pulse_dict["spin"] == spin
+        assert np.isclose(start_per_spin[i], np.sum(start_pulses_total[mask]))
+        assert np.isclose(stop_per_spin[i], np.sum(stop_pulses_total[mask]))
+        assert np.isclose(coin_per_spin[i], np.sum(coin_pulses_total[mask]))
