@@ -315,7 +315,6 @@ def process_science(
                 else:
                     ds[var].attrs = attr_mgr.get_variable_attributes(var)
             except KeyError:
-                print(f"Field {var} not found in attribute manager.")
                 logger.warning(f"Field {var} not found in attribute manager.")
 
         # check_schema=False to avoid attr_mgr adding stuff dimensions don't need
