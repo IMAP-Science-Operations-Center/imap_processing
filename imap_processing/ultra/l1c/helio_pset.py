@@ -69,7 +69,7 @@ def calculate_helio_pset(
 
     df_efficiencies = pd.read_csv(efficiencies)
     df_geometric_function = pd.read_csv(geometric_function)
-    mid_time = sct_to_et(de_dataset["event_times"].data.median())
+    mid_time = sct_to_et(np.median(de_dataset["event_times"].data))
     sensitivity = get_helio_sensitivity(
         mid_time,
         df_efficiencies,
