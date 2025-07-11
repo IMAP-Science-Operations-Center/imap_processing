@@ -132,12 +132,11 @@ def add_cdf_attributes(
     # check_schema=False to avoid attr_mgr adding stuff dimensions don't need
     for dim in dataset.dims:
         dataset[dim].attrs = attr_mgr.get_variable_attributes(dim, check_schema=False)
-        # TODO: should labels be added as coordinates? Check with SPDF
         if dim != "epoch":
             label_array = xr.DataArray(
                 dataset[dim].values.astype(str),
                 name=f"{dim}_label",
-                dims=[f"{dim}_label"],
+                dims=[dim],
                 attrs=attr_mgr.get_variable_attributes(
                     f"{dim}_label", check_schema=False
                 ),
