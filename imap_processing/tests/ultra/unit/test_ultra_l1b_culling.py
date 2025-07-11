@@ -90,7 +90,7 @@ def test_get_n_sigma():
     assert np.all(threshold >= 3 / 15)
     mean = np.mean(counts[0] / 15)
     squared_differences = (counts[0] / 15 - mean) ** 2
-    variance = np.mean(squared_differences)
+    variance = np.sum(squared_differences) / (counts.shape[1] - 1)
     std_dev = np.sqrt(variance)
 
     np.testing.assert_allclose(mean + std_dev * 6, threshold[0], atol=1e-2, rtol=0)

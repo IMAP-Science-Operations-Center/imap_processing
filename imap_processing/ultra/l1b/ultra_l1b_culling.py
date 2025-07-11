@@ -398,9 +398,7 @@ def get_pulses_per_spin(rates: xr.Dataset) -> tuple[NDArray, NDArray, NDArray]:
     coin_per_spin : NDArray
         Total coincidence pulses per spin.
     """
-    spin_number, duration = get_spin_and_duration(
-        rates["shcoarse"].values, rates["spin"].values
-    )
+    spin_number, duration = get_spin_and_duration(rates["shcoarse"], rates["spin"])
 
     # Top coin pulses
     top_coin_pulses = np.stack(
