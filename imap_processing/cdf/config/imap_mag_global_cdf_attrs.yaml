@@ -98,3 +98,17 @@ imap_mag_l2_burst-dsrf:
   Logical_source: imap_mag_l2_burst-dsrf
   Logical_source_description: IMAP Mission Burst Rate Instrument Level-2 Data in
     Despun Spacecraft Reference Frame.
+
+imap_mag_l2_norm-srf:
+    <<: *default
+    Data_type: L2_norm-srf>Level 2 normal rate data in SRF
+    Logical_source: imap_mag_l2_norm-srf
+    Logical_source_description: IMAP Mission Normal Rate Instrument Level-2 Data in
+        Spacecraft Reference Frame.
+
+imap_mag_l2_burst-srf:
+    <<: *default
+    Data_type: L2_burst-srf>Level 2 burst rate data in SRF
+    Logical_source: imap_mag_l2_burst-srf
+    Logical_source_description: IMAP Mission Burst Rate Instrument Level-2 Data in
+        Spacecraft Reference Frame.

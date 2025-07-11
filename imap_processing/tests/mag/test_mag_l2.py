@@ -1,11 +1,19 @@
+from unittest.mock import patch
+
 import numpy as np
 import pytest
 import xarray as xr
 
 from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l2.mag_l2 import mag_l2, retrieve_matrix_from_l2_calibration
-from imap_processing.mag.l2.mag_l2_data import MagL2
-from imap_processing.spice.time import et_to_datetime64, et_to_utc, ttj2000ns_to_et
+from imap_processing.mag.l2.mag_l2_data import MagL2, ValidFrames
+from imap_processing.spice.time import (
+    et_to_datetime64,
+    et_to_ttj2000ns,
+    et_to_utc,
+    str_to_et,
+    ttj2000ns_to_et,
+)
 from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
 
 
@@ -28,9 +36,16 @@ def test_mag_l2(norm_dataset, mag_test_l2_data):
     calibration_dataset = mag_test_l2_data[0]
 
     offset_dataset = mag_test_l2_data[1]
-    l2 = mag_l2(
-        calibration_dataset, offset_dataset, norm_dataset, np.datetime64("2025-10-17")
-    )
+    with patch(
+        "imap_processing.mag.l2.mag_l2_data.frame_transform",
+        side_effect=lambda *args, **kwargs: args[1],
+    ):
+        l2 = mag_l2(
+            calibration_dataset,
+            offset_dataset,
+            norm_dataset,
+            np.datetime64("2025-10-17"),
+        )
     assert "vectors" in l2[0].data_vars
 
 
@@ -109,6 +124,50 @@ def test_error_raises(mag_test_l2_data):
             dataset,
             np.datetime64("2025-10-17"),
         )
+
+
+def test_midnight_boundary(norm_dataset):
+    day = np.datetime64("2025-10-17").astype("datetime64[D]")
+
+    # Shift timestamps to include midnight in the day and span 2 days
+    shifted_timestamps = norm_dataset["epoch"].data - 1.08e13  # 3 hours in ns
+    shifted_timestamps = shifted_timestamps + 2496981986944
+
+    midnight = et_to_ttj2000ns(str_to_et("2025-10-17T00:00:00"))
+
+    l2 = MagL2(
+        norm_dataset["vectors"].data[:, :3],
+        shifted_timestamps,
+        norm_dataset["vectors"].data[:, 3],
+        {},
+        np.zeros(len(norm_dataset["epoch"].data)),
+        np.zeros(len(norm_dataset["epoch"].data)),
+        DataMode.NORM,
+        offsets=np.zeros((len(norm_dataset["epoch"].data), 3)),
+        timedelta=np.zeros(len(norm_dataset["epoch"].data)),
+    )
+
+    l2.truncate_to_24h(day)
+
+    # Midnight should be included in the start of the day
+    assert l2.epoch[0] == midnight
+
+    l2 = MagL2(
+        norm_dataset["vectors"].data[:, :3],
+        shifted_timestamps,
+        norm_dataset["vectors"].data[:, 3],
+        {},
+        np.zeros(len(norm_dataset["epoch"].data)),
+        np.zeros(len(norm_dataset["epoch"].data)),
+        DataMode.NORM,
+        offsets=np.zeros((len(norm_dataset["epoch"].data), 3)),
+        timedelta=np.zeros(len(norm_dataset["epoch"].data)),
+    )
+
+    l2.truncate_to_24h(day - 1)
+
+    # midnight not included in previous day
+    assert midnight not in l2.epoch
 
 
 @pytest.mark.parametrize(
@@ -270,3 +329,28 @@ def test_retrieve_matrix_from_l2_calibration(is_mago, data_var):
         example_calibration_dataset.sel(epoch=test_day)[data_var].data,
         calibration_matrix,
     )
+
+
+def test_spice_returns(norm_dataset):
+    l2 = MagL2(
+        norm_dataset["vectors"].data[:, :3],
+        norm_dataset["epoch"],
+        norm_dataset["vectors"].data[:, 3],
+        {},
+        np.zeros(len(norm_dataset["epoch"].data)),
+        np.zeros(len(norm_dataset["epoch"].data)),
+        DataMode.NORM,
+        offsets=np.zeros((len(norm_dataset["epoch"].data), 3)),
+        timedelta=np.zeros(len(norm_dataset["epoch"].data)),
+    )
+
+    assert l2.frame.name == "SRF"
+
+    with patch(
+        "imap_processing.mag.l2.mag_l2_data.frame_transform",
+        return_value=np.full(l2.vectors.shape, [-1, -1, -1]),
+    ):
+        l2.rotate_frame(ValidFrames.DSRF)
+
+        assert not np.array_equal(l2.vectors, norm_dataset["vectors"].data[:, :3])
+        assert np.array_equal(l2.vectors[0], [-1, -1, -1])

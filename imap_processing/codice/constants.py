@@ -401,8 +401,6 @@ SECTORED_ENERGY_TABLE = {
     "fe": [0.0125, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2],
 }
 
-# TODO: Possibly move to consistent order of dimensions with other instruments
-#       TBD after discussion with Joey and at the Science Team Meeting in Feb
 # Various configurations to support processing of individual data products
 # Much of these are described in the algorithm document in chapter 10 ("Data
 # Level 1A")
@@ -410,11 +408,10 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     CODICEAPID.COD_HI_IAL: {
         "dataset_name": "imap_codice_l1a_hi-ialirt",
         "energy_table": IALIRT_ENERGY_TABLE,
-        "input_dims": {"esa_step": 15, "inst_az": 4},
+        "dims": {"esa_step": 15, "inst_az": 4},
         "instrument": "hi",
         "num_counters": 1,
         "num_spins": 4,
-        "output_dims": {"esa_step": 15, "inst_az": 4},
         "support_variables": [
             "data_quality",
             "spin_period",
@@ -424,45 +421,39 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     },
     CODICEAPID.COD_HI_INST_COUNTS_AGGREGATED: {
         "dataset_name": "imap_codice_l1a_hi-counters-aggregated",
-        "input_dims": {},
+        "dims": {},
         "instrument": "hi",
         "num_counters": len(
             HI_COUNTERS_AGGREGATED_VARIABLE_NAMES
         ),  # The number of counters depends on the number of active counters
-        "output_dims": {},
         "support_variables": ["data_quality", "spin_period"],
         "variable_names": HI_COUNTERS_AGGREGATED_VARIABLE_NAMES,
     },
     CODICEAPID.COD_HI_INST_COUNTS_SINGLES: {
         "dataset_name": "imap_codice_l1a_hi-counters-singles",
-        "input_dims": {
+        "dims": {
             "ssd_index": 12,
         },
         "instrument": "hi",
         "num_counters": 3,
-        "output_dims": {
-            "ssd_index": 12,
-        },
         "support_variables": ["data_quality", "spin_period"],
         "variable_names": HI_COUNTERS_SINGLES_VARIABLE_NAMES,
     },
     CODICEAPID.COD_HI_INST_COUNTS_PRIORITIES: {
         "dataset_name": "imap_codice_l1a_hi-priority",
-        "input_dims": {},
+        "dims": {},
         "instrument": "hi",
         "num_counters": 6,
-        "output_dims": {},
         "support_variables": ["data_quality", "spin_period"],
         "variable_names": HI_PRIORITY_VARIABLE_NAMES,
     },
     CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS: {
         "dataset_name": "imap_codice_l1a_hi-omni",
         "energy_table": OMNI_ENERGY_TABLE,
-        "input_dims": {"esa_step": 15, "inst_az": 4},
+        "dims": {"esa_step": 15, "inst_az": 4},
         "instrument": "hi",
         "num_counters": 8,
         "num_spins": 4,
-        "output_dims": {"esa_step": 15, "inst_az": 4},
         "support_variables": [
             "data_quality",
             "spin_period",
@@ -481,7 +472,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     CODICEAPID.COD_HI_SECT_SPECIES_COUNTS: {
         "dataset_name": "imap_codice_l1a_hi-sectored",
         "energy_table": SECTORED_ENERGY_TABLE,
-        "input_dims": {
+        "dims": {
             "esa_step": 8,
             "ssd_index": 12,
             "spin_sector_index": 12,
@@ -489,11 +480,6 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
         "instrument": "hi",
         "num_counters": 4,
         "num_spins": 16,
-        "output_dims": {
-            "esa_step": 8,
-            "ssd_index": 12,
-            "spin_sector_index": 12,
-        },
         "support_variables": [
             "data_quality",
             "spin_period",
@@ -506,10 +492,9 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     },
     CODICEAPID.COD_LO_IAL: {
         "dataset_name": "imap_codice_l1a_lo-ialirt",
-        "input_dims": {"spin_sector": 1, "esa_step": 128},
+        "dims": {"esa_step": 128, "spin_sector": 1},
         "instrument": "lo",
         "num_counters": 9,
-        "output_dims": {"spin_sector": 1, "esa_step": 128},
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -524,12 +509,11 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     },
     CODICEAPID.COD_LO_INST_COUNTS_AGGREGATED: {
         "dataset_name": "imap_codice_l1a_lo-counters-aggregated",
-        "input_dims": {"esa_step": 128, "spin_sector_pairs": 6},
+        "dims": {"esa_step": 128, "spin_sector_pairs": 6},
         "instrument": "lo",
         "num_counters": len(
             LO_COUNTERS_AGGREGATED_VARIABLE_NAMES
         ),  # The number of counters depends on the number of active counters
-        "output_dims": {"spin_sector_pairs": 6, "esa_step": 128},
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -544,10 +528,9 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     },
     CODICEAPID.COD_LO_INST_COUNTS_SINGLES: {
         "dataset_name": "imap_codice_l1a_lo-counters-singles",
-        "input_dims": {"esa_step": 128, "inst_az": 24, "spin_sector_pairs": 6},
+        "dims": {"esa_step": 128, "inst_az": 24, "spin_sector_pairs": 6},
         "instrument": "lo",
         "num_counters": 1,
-        "output_dims": {"inst_az": 24, "spin_sector_pairs": 6, "esa_step": 128},
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -562,10 +545,9 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     },
     CODICEAPID.COD_LO_SW_ANGULAR_COUNTS: {
         "dataset_name": "imap_codice_l1a_lo-sw-angular",
-        "input_dims": {"esa_step": 128, "inst_az": 5, "spin_sector": 12},
+        "dims": {"esa_step": 128, "inst_az": 5, "spin_sector": 12},
         "instrument": "lo",
         "num_counters": 4,
-        "output_dims": {"inst_az": 5, "spin_sector": 12, "esa_step": 128},
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -580,10 +562,9 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     },
     CODICEAPID.COD_LO_NSW_ANGULAR_COUNTS: {
         "dataset_name": "imap_codice_l1a_lo-nsw-angular",
-        "input_dims": {"esa_step": 128, "inst_az": 19, "spin_sector": 12},
+        "dims": {"esa_step": 128, "inst_az": 19, "spin_sector": 12},
         "instrument": "lo",
         "num_counters": 1,
-        "output_dims": {"inst_az": 19, "spin_sector": 12, "esa_step": 128},
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -598,10 +579,9 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     },
     CODICEAPID.COD_LO_SW_PRIORITY_COUNTS: {
         "dataset_name": "imap_codice_l1a_lo-sw-priority",
-        "input_dims": {"esa_step": 128, "spin_sector": 12},
+        "dims": {"esa_step": 128, "spin_sector": 12},
         "instrument": "lo",
         "num_counters": 5,
-        "output_dims": {"spin_sector": 12, "esa_step": 128},
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -616,10 +596,9 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     },
     CODICEAPID.COD_LO_NSW_PRIORITY_COUNTS: {
         "dataset_name": "imap_codice_l1a_lo-nsw-priority",
-        "input_dims": {"esa_step": 128, "spin_sector": 12},
+        "dims": {"esa_step": 128, "spin_sector": 12},
         "instrument": "lo",
         "num_counters": 2,
-        "output_dims": {"spin_sector": 12, "esa_step": 128},
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -634,10 +613,9 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     },
     CODICEAPID.COD_LO_SW_SPECIES_COUNTS: {
         "dataset_name": "imap_codice_l1a_lo-sw-species",
-        "input_dims": {"esa_step": 128, "spin_sector": 1},
+        "dims": {"esa_step": 128, "spin_sector": 1},
         "instrument": "lo",
         "num_counters": 16,
-        "output_dims": {"spin_sector": 1, "esa_step": 128},
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -652,10 +630,9 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
     },
     CODICEAPID.COD_LO_NSW_SPECIES_COUNTS: {
         "dataset_name": "imap_codice_l1a_lo-nsw-species",
-        "input_dims": {"esa_step": 128, "spin_sector": 1},
+        "dims": {"esa_step": 128, "spin_sector": 1},
         "instrument": "lo",
         "num_counters": 8,
-        "output_dims": {"spin_sector": 1, "esa_step": 128},
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",

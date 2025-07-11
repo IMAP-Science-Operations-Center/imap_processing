@@ -10,15 +10,18 @@ class PacketProperties(NamedTuple):
     logical_source: list  # List of logical sources
     addition_to_logical_desc: str  # Description of the logical source
     width: Union[int, None]  # Width of binary data (could be None).
+    # Block, image_panes, pixel_window_rows, and pixel_window_columns are important for
+    # decompressing the images and a description is available on page 171 of IMAP-Ultra
+    # Flight Software Specification document (7523-9009_Rev_-.pdf).
     block: Union[int, None]  # Number of values in each block (could be None).
-    # This is important for decompressing the images and
-    # a description is available on page 171 of IMAP-Ultra Flight
-    # Software Specification document (7523-9009_Rev_-.pdf).
     len_array: Union[
         int, None
     ]  # Length of the array to be decompressed (could be None).
     mantissa_bit_length: Union[int, None]  # used to determine the level of
     # precision that can be recovered from compressed data (could be None).
+    image_panes: Union[int, None] = None  # number of images
+    pixel_window_rows: Union[int, None] = None  # number of rows in each image
+    pixel_window_columns: Union[int, None] = None  # number of columns in each image
 
 
 # Define PacketProperties instances directly in the module namespace
@@ -64,15 +67,33 @@ ULTRA_ENERGY_SPECTRA = PacketProperties(
     len_array=1,
     mantissa_bit_length=5,
 )
-ULTRA_TOF = PacketProperties(
+ULTRA_TOF_HIGH_ANGULAR = PacketProperties(
     apid=[883, 947],
     logical_source=[
         "imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-ang",
         "imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-ang",
     ],
-    addition_to_logical_desc="Time of Flight Images",
+    addition_to_logical_desc="Time of Flight High Angular Images",
     width=4,
     block=15,
+    image_panes=8,
+    pixel_window_rows=54,
+    pixel_window_columns=180,
+    len_array=None,
+    mantissa_bit_length=4,
+)
+ULTRA_TOF_HIGH_ENERGY = PacketProperties(
+    apid=[884, 948],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-nrg",
+        "imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-nrg",
+    ],
+    addition_to_logical_desc="Time of Flight High Energy Images",
+    width=4,
+    block=15,
+    image_panes=28,
+    pixel_window_rows=27,
+    pixel_window_columns=90,
     len_array=None,
     mantissa_bit_length=4,
 )

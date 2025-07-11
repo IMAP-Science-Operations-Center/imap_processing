@@ -32,6 +32,18 @@ imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-ang:
     Logical_source: imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-ang
     Logical_source_description: IMAP-Ultra Instrument Level-1A PHxTOF Hi Angular Data.
 
+imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-nrg:
+    <<: *instrument_base
+    Data_type: L1A_Histogram>Level-1A TOF
+    Logical_source: imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-nrg
+    Logical_source_description: IMAP-Ultra Instrument Level-1A PHxTOF Hi Energy Data.
+
+imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-nrg:
+    <<: *instrument_base
+    Data_type: L1A_Histogram>Level-1A TOF
+    Logical_source: imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-nrg
+    Logical_source_description: IMAP-Ultra Instrument Level-1A PHxTOF Hi Energy Data.
+
 imap_ultra_l1a_45sensor-rates:
     <<: *instrument_base
     Data_type: L1A_Rates>Level-1A Rates

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from imap_processing.ultra.l0.ultra_utils import ULTRA_TOF_HIGH_ANGULAR
+from imap_processing.ultra.l0.ultra_utils import ULTRA_TOF_HIGH_ENERGY
 
 
 @pytest.mark.parametrize(
@@ -12,19 +12,21 @@ from imap_processing.ultra.l0.ultra_utils import ULTRA_TOF_HIGH_ANGULAR
     [
         pytest.param(
             {
-                "apid": ULTRA_TOF_HIGH_ANGULAR.apid[0],
-                "filename": "FM45_TV_Cycle6_Hot_Ops_Front212_20240124T063837.CCSDS",
+                "apid": ULTRA_TOF_HIGH_ENERGY.apid[0],
+                "filename": "FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_"
+                "20240122T093008.CCSDS",
             }
         )
     ],
     indirect=True,
 )
-def test_tof_high_angular_decom(decom_test_data, tof_high_angular_test_path):
+@pytest.mark.external_test_data
+def test_tof_high_energy_decom(decom_test_data, tof_high_energy_test_path):
     """This function reads validation data and checks that decom data
     matches validation data for image rate packet"""
 
     decom_ultra = decom_test_data
-    df = pd.read_csv(tof_high_angular_test_path, index_col="SequenceCount")
+    df = pd.read_csv(tof_high_energy_test_path, index_col="SequenceCount")
 
     np.testing.assert_array_equal(df.Spin, decom_ultra["spin"].values.flatten())
     np.testing.assert_array_equal(
@@ -33,12 +35,11 @@ def test_tof_high_angular_decom(decom_test_data, tof_high_angular_test_path):
     np.testing.assert_array_equal(
         df.StartDelay, decom_ultra["startdelay"].values.flatten()
     )
-    assert json.loads(df["P00s"].values[0])[0] == decom_ultra["p00"][0][0]
 
     for count in df.index.get_level_values("SequenceCount").values:
-        df_data = df[df.index.get_level_values("SequenceCount") == count].Images.values[
-            0
-        ]
+        df_data = df[
+            df.index.get_level_values("SequenceCount") == count
+        ].UltraImage.values[0]
         rows, cols = np.where(decom_ultra["src_seq_ctr"] == count)
         decom_data = decom_ultra["packetdata"][rows[0]][cols[0]]
         df_data_array = np.array(json.loads(df_data)[0])

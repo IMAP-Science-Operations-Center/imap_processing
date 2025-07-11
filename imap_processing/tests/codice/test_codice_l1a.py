@@ -41,16 +41,16 @@ DESCRIPTORS = [
 
 EXPECTED_ARRAY_SHAPES = [
     (304, 15),  # hi-ialirt
-    (76, 1, 128),  # lo-ialirt
+    (76, 128, 1),  # lo-ialirt
     (31778,),  # hskp
-    (77, 6, 128),  # lo-counters-aggregated
-    (77, 24, 6, 128),  # lo-counters-singles
-    (77, 12, 128),  # lo-sw-priority
-    (77, 12, 128),  # lo-nsw-priority
-    (77, 1, 128),  # lo-sw-species
-    (77, 1, 128),  # lo-nsw-species
-    (77, 5, 12, 128),  # lo-sw-angular
-    (77, 19, 12, 128),  # lo-nsw-angular
+    (77, 128, 6),  # lo-counters-aggregated
+    (77, 128, 24, 6),  # lo-counters-singles
+    (77, 128, 12),  # lo-sw-priority
+    (77, 128, 12),  # lo-nsw-priority
+    (77, 128, 1),  # lo-sw-species
+    (77, 128, 1),  # lo-nsw-species
+    (77, 128, 5, 12),  # lo-sw-angular
+    (77, 128, 19, 12),  # lo-nsw-angular
     (77,),  # hi-counters-aggregated
     (77, 12),  # hi-counters-singles
     (),  # hi-omni, shapes are specific to species
@@ -257,6 +257,56 @@ def test_l1a_validate_data_arrays(test_l1a_data: xr.Dataset, index):
         np.testing.assert_equal(
             processed_dataset[counter].data, validation_dataset[counter].data
         )
+
+
+@pytest.mark.parametrize("index", range(len(DESCRIPTORS)))
+def test_l1a_validate_dimensions(test_l1a_data, index):
+    """Tests that the dimensions of the data are in the expected order.
+
+    Parameters
+    ----------
+    test_l1a_data : list[xarray.Dataset]
+        A list of ``xarray`` datasets containing the test data
+    index : int
+        The index of the list to test
+    """
+
+    descriptor = DESCRIPTORS[index]
+    dataset = test_l1a_data[index]
+
+    # This is the expected order of dimensions. Not all of these appear in every
+    # data product, but for those that do appear, they should be in this order.
+    expected_dims_order = [
+        "epoch",
+        "esa_step",
+        "inst_az",
+        "spin_sector",
+        "spin_sector_pairs",
+        "ssd_index",
+    ]
+
+    # We don't need to check hskp, direct events, or binned datasets since they
+    # are not multidimensional
+    if descriptor not in [
+        "hskp",
+        "lo-direct-events",
+        "hi-direct-events",
+        "hi-omni",
+        "hi-ialirt",
+        "hi-sectored",
+    ]:
+        # Get the variables that have dimensions that need to be checked
+        counters = getattr(
+            constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
+        )
+
+        # Ensure that, of the dimensions in the particular variable, they occur
+        # in the expected order.
+        for counter in counters:
+            positions = [
+                expected_dims_order.index(dim) for dim in dataset[counter].dims
+            ]
+            assert positions == sorted(positions)
 
 
 @pytest.mark.parametrize("index", range(len(DESCRIPTORS)))

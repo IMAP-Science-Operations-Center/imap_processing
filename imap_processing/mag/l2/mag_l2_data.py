@@ -7,7 +7,8 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.mag.constants import DataMode
+from imap_processing.mag.constants import FILLVAL, DataMode
+from imap_processing.spice.geometry import SpiceFrame, frame_transform
 from imap_processing.spice.time import (
     et_to_ttj2000ns,
     str_to_et,
@@ -17,10 +18,9 @@ from imap_processing.spice.time import (
 class ValidFrames(Enum):
     """SPICE reference frames for output."""
 
-    dsrf = "dsrf"
-    srf = "srf"
-    rtn = "rtn"
-    gse = "gse"
+    DSRF = SpiceFrame.IMAP_DPS
+    SRF = SpiceFrame.IMAP_SPACECRAFT
+    # TODO: include RTN and GSE as valid frames
 
 
 @dataclass
@@ -65,6 +65,7 @@ class MagL2:
     is_l1d: bool = False
     offsets: InitVar[np.ndarray] = None
     timedelta: InitVar[np.ndarray] = None
+    frame: ValidFrames = ValidFrames.SRF
 
     def __post_init__(self, offsets: np.ndarray, timedelta: np.ndarray) -> None:
         """
@@ -136,10 +137,8 @@ class MagL2:
 
         offset_vectors: np.ndarray = vectors[:, :3] + offsets
 
-        # TODO: CDF files don't have NaNs. Emailed MAG to ask what this will look like.
-        # Any values where offsets is nan must also be nan
-        offset_vectors[np.isnan(offsets).any(axis=1)] = np.nan
-
+        # Any values where offsets is FILLVAL must also be FILLVAL
+        offset_vectors[(offsets == FILLVAL).any(axis=1), :] = FILLVAL
         return offset_vectors
 
     @staticmethod
@@ -175,7 +174,6 @@ class MagL2:
         self,
         attribute_manager: ImapCdfAttributes,
         day: np.datetime64,
-        frame: ValidFrames = ValidFrames.dsrf,
     ) -> xr.Dataset:
         """
         Generate an xarray dataset from the dataclass.
@@ -189,8 +187,6 @@ class MagL2:
             CDF attributes object for the correct level.
         day : np.datetime64
          The 24 hour day to process, as a numpy datetime format.
-        frame : ValidFrames
-            SPICE reference frame to rotate the data into.
 
         Returns
         -------
@@ -199,7 +195,9 @@ class MagL2:
         """
         self.truncate_to_24h(day)
 
-        logical_source_id = f"imap_mag_l2_{self.data_mode.value.lower()}-{frame.name}"
+        logical_source_id = (
+            f"imap_mag_l2_{self.data_mode.value.lower()}-{self.frame.name.lower()}"
+        )
         direction = xr.DataArray(
             np.arange(3),
             name="direction",
@@ -298,7 +296,6 @@ class MagL2:
         """
         if self.epoch.shape[0] != self.vectors.shape[0]:
             raise ValueError("Timestamps and vectors are not the same shape!")
-
         start_timestamp_j2000 = et_to_ttj2000ns(str_to_et(str(timestamp)))
         end_timestamp_j2000 = et_to_ttj2000ns(
             str_to_et(str(timestamp + np.timedelta64(1, "D")))
@@ -313,3 +310,21 @@ class MagL2:
         self.magnitude = self.magnitude[day_start_index:day_end_index]
         self.quality_flags = self.quality_flags[day_start_index:day_end_index]
         self.quality_bitmask = self.quality_bitmask[day_start_index:day_end_index]
+
+    def rotate_frame(self, end_frame: ValidFrames) -> None:
+        """
+        Rotate the vector data in the class to the output frame.
+
+        Parameters
+        ----------
+        end_frame : ValidFrames
+            The frame to rotate the data to. Must be one of the ValidFrames enum
+            values.
+        """
+        self.vectors = frame_transform(
+            self.epoch,
+            self.vectors,
+            from_frame=self.frame.value,
+            to_frame=end_frame.value,
+        )
+        self.frame = end_frame

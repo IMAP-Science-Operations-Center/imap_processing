@@ -18,7 +18,8 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_PRI_3_EVENTS,
     ULTRA_PRI_4_EVENTS,
     ULTRA_RATES,
-    ULTRA_TOF,
+    ULTRA_TOF_HIGH_ANGULAR,
+    ULTRA_TOF_HIGH_ENERGY,
 )
 from imap_processing.ultra.l1a.ultra_l1a import (
     ultra_l1a,
@@ -47,10 +48,25 @@ def test_xarray_rates(ccsds_path_theta_0):
     assert (specific_epoch_data == test_data[0]["start_rf"][0]).all()
 
 
-def test_xarray_tof(ccsds_path_theta_0):
+def test_xarray_tof_high_angular(ccsds_path_theta_0):
     """This function checks that a xarray was
     successfully created from the decom_ultra_tof data."""
-    test_data = ultra_l1a(ccsds_path_theta_0, apid_input=ULTRA_TOF.apid[0])
+    test_data = ultra_l1a(ccsds_path_theta_0, apid_input=ULTRA_TOF_HIGH_ANGULAR.apid[0])
+
+    # Spot check metadata data and attributes
+    specific_epoch_data = test_data[0].sel(epoch=test_data[0].epoch[0], sid=0)[
+        "packetdata"
+    ]
+    assert (specific_epoch_data == test_data[0]["packetdata"][0][0]).all()
+
+
+@pytest.mark.external_test_data
+def test_xarray_tof_high_energy(ccsds_path_tof_high_energy):
+    """This function checks that a xarray was
+    successfully created from the decom_ultra_tof data."""
+    test_data = ultra_l1a(
+        ccsds_path_tof_high_energy, apid_input=ULTRA_TOF_HIGH_ENERGY.apid[0]
+    )
 
     # Spot check metadata data and attributes
     specific_epoch_data = test_data[0].sel(epoch=test_data[0].epoch[0], sid=0)[
@@ -146,9 +162,9 @@ def test_cdf_memdump(ccsds_path_functional):
     )
 
 
-def test_cdf_tof(ccsds_path_theta_0):
+def test_cdf_tof_high_angular(ccsds_path_theta_0):
     """Tests that CDF file can be created."""
-    test_data = ultra_l1a(ccsds_path_theta_0, apid_input=ULTRA_TOF.apid[0])
+    test_data = ultra_l1a(ccsds_path_theta_0, apid_input=ULTRA_TOF_HIGH_ANGULAR.apid[0])
     test_data[0].attrs["Data_version"] = "999"
     test_data[0].attrs["Repointing"] = "repoint99999"
     test_data_path = write_cdf(test_data[0], istp=True)
@@ -156,6 +172,22 @@ def test_cdf_tof(ccsds_path_theta_0):
     assert (
         test_data_path.name == "imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-ang_"
         "20240207-repoint99999_v999.cdf"
+    )
+
+
+@pytest.mark.external_test_data
+def test_cdf_tof_high_energy(ccsds_path_tof_high_energy):
+    """Tests that CDF file can be created."""
+    test_data = ultra_l1a(
+        ccsds_path_tof_high_energy, apid_input=ULTRA_TOF_HIGH_ENERGY.apid[0]
+    )
+    test_data[0].attrs["Data_version"] = "999"
+    test_data[0].attrs["Repointing"] = "repoint99999"
+    test_data_path = write_cdf(test_data[0], istp=True)
+    assert test_data_path.exists()
+    assert (
+        test_data_path.name == "imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-nrg_"
+        "20240122-repoint99999_v999.cdf"
     )
 
 
