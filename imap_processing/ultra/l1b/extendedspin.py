@@ -13,6 +13,8 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
 )
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
+FILLVAL_UINT16 = 65535
+
 
 def calculate_extendedspin(
     dict_datasets: dict[str, xr.Dataset],
@@ -77,6 +79,12 @@ def calculate_extendedspin(
     extendedspin_dict["start_pulses_per_spin"] = start_per_spin
     extendedspin_dict["stop_pulses_per_spin"] = stop_per_spin
     extendedspin_dict["coin_pulses_per_spin"] = coin_per_spin
+    # TODO: this will be used to track rejected events in each
+    #  spin based on quality flags in de l1b data.
+    extendedspin_dict["rejected_events_per_spin"] = np.full_like(
+        spin, FILLVAL_UINT16, dtype=np.uint16
+    )
+
     extendedspin_dict["quality_attitude"] = attitude_qf
     extendedspin_dict["quality_ena_rates"] = rates_qf
     extendedspin_dict["quality_hk"] = hk_qf

@@ -433,6 +433,15 @@ coin_pulses_per_spin:
   DEPEND_1: spin_number
   UNITS: " "
 
+rejected_events_per_spin:
+  <<: *default_uint16
+  CATDESC: Rejected events per spin.
+  FIELDNAM: rejected_events_per_spin
+  LABLAXIS: rejected events per spin
+  DEPEND_0: epoch
+  DEPEND_1: spin_number
+  UNITS: " "
+
 ena_rates_threshold:
   <<: *default_float32
   CATDESC: Rates threshold used for flagging data.
