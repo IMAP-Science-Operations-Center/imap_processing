@@ -106,16 +106,17 @@ def process_science_data(
     livetime = livetime.rename("livetime")
 
     # Process counts data to L1B datasets
-    l1b_datasets: dict = {}
-    l1b_datasets["imap_hit_l1b_standard-rates"] = process_standard_rates_data(
-        l1a_counts_dataset.copy(deep=True), livetime
-    )
-    l1b_datasets["imap_hit_l1b_summed-rates"] = process_summed_rates_data(
-        l1a_counts_dataset.copy(deep=True), livetime
-    )
-    l1b_datasets["imap_hit_l1b_sectored-rates"] = process_sectored_rates_data(
-        l1a_counts_dataset.copy(deep=True), livetime
-    )
+    l1b_datasets: dict = {
+        "imap_hit_l1b_standard-rates": process_standard_rates_data(
+            l1a_counts_dataset, livetime
+        ),
+        "imap_hit_l1b_summed-rates": process_summed_rates_data(
+            l1a_counts_dataset, livetime
+        ),
+        "imap_hit_l1b_sectored-rates": process_sectored_rates_data(
+            l1a_counts_dataset, livetime
+        ),
+    }
 
     # Update attributes and dimensions
     for logical_source, dataset in l1b_datasets.items():
