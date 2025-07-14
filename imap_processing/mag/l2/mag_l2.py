@@ -108,6 +108,8 @@ def mag_l2(
     attributes.add_instrument_global_attrs("mag")
     attributes.add_instrument_variable_attrs("mag", "l2")
 
+    # Rotate from the MAG frame into the SRF frame
+    l2_data.rotate_frame(ValidFrames.SRF)
     imap_srf = l2_data.generate_dataset(attributes, day)
     l2_data.rotate_frame(ValidFrames.DSRF)
     imap_dsrf = l2_data.generate_dataset(attributes, day)

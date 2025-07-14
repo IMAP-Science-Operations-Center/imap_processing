@@ -18,6 +18,7 @@ from imap_processing.spice.time import (
 class ValidFrames(Enum):
     """SPICE reference frames for output."""
 
+    MAG = SpiceFrame.IMAP_MAG
     DSRF = SpiceFrame.IMAP_DPS
     SRF = SpiceFrame.IMAP_SPACECRAFT
     # TODO: include RTN and GSE as valid frames
@@ -65,7 +66,7 @@ class MagL2:
     is_l1d: bool = False
     offsets: InitVar[np.ndarray] = None
     timedelta: InitVar[np.ndarray] = None
-    frame: ValidFrames = ValidFrames.SRF
+    frame: ValidFrames = ValidFrames.MAG
 
     def __post_init__(self, offsets: np.ndarray, timedelta: np.ndarray) -> None:
         """

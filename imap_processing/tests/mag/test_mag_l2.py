@@ -344,13 +344,13 @@ def test_spice_returns(norm_dataset):
         timedelta=np.zeros(len(norm_dataset["epoch"].data)),
     )
 
-    assert l2.frame.name == "SRF"
+    assert l2.frame.name == "MAG"
 
     with patch(
         "imap_processing.mag.l2.mag_l2_data.frame_transform",
         return_value=np.full(l2.vectors.shape, [-1, -1, -1]),
     ):
         l2.rotate_frame(ValidFrames.DSRF)
-
+        assert l2.frame.name == "DSRF"
         assert not np.array_equal(l2.vectors, norm_dataset["vectors"].data[:, :3])
         assert np.array_equal(l2.vectors[0], [-1, -1, -1])
