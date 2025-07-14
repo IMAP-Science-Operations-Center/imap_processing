@@ -56,19 +56,24 @@ def process_ultra_tof(ds: xr.Dataset, packet_props: PacketProperties) -> xr.Data
     """
     scalar_keys = [key for key in ds.data_vars if key not in ("packetdata", "sid")]
 
-    image_panes = packet_props.image_panes
+    image_planes = packet_props.image_planes
     rows = packet_props.pixel_window_rows
     cols = packet_props.pixel_window_columns
-    planes_per_packet = packet_props.planes_per_packet
+    planes_per_packet = packet_props.image_planes_per_packet
 
-    if image_panes is None or rows is None or cols is None or planes_per_packet is None:
+    if (
+        image_planes is None
+        or rows is None
+        or cols is None
+        or planes_per_packet is None
+    ):
         raise ValueError(
             "Packet properties must specify pixel window dimensions, "
-            "width bit, image panes, and planes per packet for this packet type."
+            "width bit, image planes, and image planes per packet for this packet type."
         )
     # Calculate the number of image packets based on the number of image panes and
     # planes per packet.
-    num_image_packets = int(image_panes / planes_per_packet)
+    num_image_packets = image_planes // planes_per_packet
 
     decom_data: defaultdict[str, list[np.ndarray]] = defaultdict(list)
     decom_data["packetdata"] = []
@@ -76,7 +81,7 @@ def process_ultra_tof(ds: xr.Dataset, packet_props: PacketProperties) -> xr.Data
 
     for val, group in ds.groupby("epoch"):
         if set(group["sid"].values) >= set(
-            np.arange(0, image_panes, planes_per_packet)
+            np.arange(0, image_planes, planes_per_packet)
         ):
             valid_epoch.append(val)
             group.sortby("sid")

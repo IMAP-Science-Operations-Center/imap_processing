@@ -21,12 +21,12 @@ from imap_processing.ultra.l0.ultra_utils import ULTRA_TOF_HIGH_ENERGY
     indirect=True,
 )
 @pytest.mark.external_test_data
-def test_tof_high_energy_decom(decom_test_data, ccsds_path_extra):
+def test_tof_high_energy_decom(decom_test_data, tof_high_energy_test_path):
     """This function reads validation data and checks that decom data
     matches validation data for image rate packet"""
 
     decom_ultra = decom_test_data
-    df = pd.read_csv(ccsds_path_extra, index_col="SequenceCount")
+    df = pd.read_csv(tof_high_energy_test_path, index_col="SequenceCount")
 
     np.testing.assert_array_equal(df.Spin, decom_ultra["spin"].values.flatten())
     np.testing.assert_array_equal(
