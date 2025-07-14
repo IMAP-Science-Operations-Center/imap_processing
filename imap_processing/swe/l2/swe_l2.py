@@ -443,18 +443,26 @@ def swe_l2(l1b_dataset: xr.Dataset) -> xr.Dataset:
     # center time of acquisition time of each science measurement which
     # is necessary to accurately determine the center angle of the data.
 
+    flatten_acquisition_time = l1b_dataset["acquisition_time"].data.flatten()
+    np.savetxt("acq_times_flatten.csv", flatten_acquisition_time, delimiter=",", fmt="%.3f")
+    reshaped_acquisition_time = flatten_acquisition_time.reshape(
+        -1, swe_constants.N_ESA_STEPS, swe_constants.N_ANGLE_SECTORS
+    )
+    np.savetxt("acq_times_reshaped.csv", reshaped_acquisition_time[0], delimiter=",", fmt="%.3f")
+    # print(f"acquisition_time shape: {reshaped_ac
+    # print(f"acquisition_time shape: {l1b_dataset['acquisition
     # Calculate spin phase
     inst_spin_phase = get_instrument_spin_phase(
         query_met_times=l1b_dataset["acquisition_time"].data.flatten(),
         instrument=SpiceFrame.IMAP_SWE,
     )
-    np.savetxt("acq_times.csv", l1b_dataset["acquisition_time"].data[5], delimiter=",", fmt="%.3f")
+    np.savetxt("acq_times.csv", l1b_dataset["acquisition_time"].data[0], delimiter=",", fmt="%.3f")
 
     # Convert spin phase to spin angle in degrees.
     inst_spin_angle = get_spin_angle(inst_spin_phase, degrees=True).reshape(
         -1, swe_constants.N_ESA_STEPS, swe_constants.N_ANGLE_SECTORS
     )
-    np.savetxt("spin_angle.csv", inst_spin_angle[5], delimiter=",", fmt="%.3f")
+    np.savetxt("spin_angle.csv", inst_spin_angle[0], delimiter=",", fmt="%.3f")
     # print(f"inst_spin_angle shape: {inst_spin_angle.shape}")
 
     # Save spin angle in dataset per SWE request.
@@ -466,7 +474,7 @@ def swe_l2(l1b_dataset: xr.Dataset) -> xr.Dataset:
     )
 
     spin_angle_bins_indices = find_angle_bin_indices(inst_spin_angle)
-    np.savetxt("spin_angle_bins.csv", spin_angle_bins_indices[5], delimiter=",", fmt="%d")
+    np.savetxt("spin_angle_bins.csv", spin_angle_bins_indices.flatten(), delimiter=",", fmt="%d")
     # print(spin_angle_bins_indices.shape)
     # print(        f"Spin angle bins indices: {spin_angle_bins_indices[5, :, :]}, ")
 

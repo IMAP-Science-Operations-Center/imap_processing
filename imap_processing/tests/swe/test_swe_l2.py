@@ -364,6 +364,7 @@ def test_swe_l2_14_6sec(
     use_fake_spin_data_for_time,
     l2_binned_flux_14sec_validation_df,
     l2_binned_psd_14sec_validation_df,
+    angle_bins,
 ):
     """Test L2 processing with 14.6 seconds spin period."""
     data_start_time = 453051293.0
@@ -444,3 +445,7 @@ def test_swe_l2_14_6sec(
                             f"{np.array2string(bin_flux_data[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}",
                             file=f,
                         )
+
+    first_cycle_angles = angle_bins.values[:, 1].reshape(6, 24, 30)
+    np.savetxt("val_spin_angle.csv", first_cycle_angles[0], delimiter=",", fmt="%.3f")
+

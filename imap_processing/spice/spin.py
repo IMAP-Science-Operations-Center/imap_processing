@@ -190,6 +190,11 @@ def interpolate_spin_data(query_met_times: Union[float, npt.NDArray]) -> pd.Data
     spin_phases = (query_met_times - out_df["spin_start_met"].values) / out_df[
         "spin_period_sec"
     ].values
+    print("spin start sec: ", out_df["spin_start_sec_sclk"].values[0])
+    # print("spin start met:", out_df["spin_start_met"].values[648:720])
+    # # print("spin start sec:", out_df["spin_start_sec_sclk"].values[0])
+    # print("input start time:", query_met_times[648:720])
+    # np.savetxt("acq_times.csv", l1b_dataset["acquisition_time"].data[0], delimiter=",", fmt="%.3f")
 
     # Check for invalid spin phase using below checks:
     # 1. Check that the spin phase is in valid range, [0, 1).
@@ -197,6 +202,8 @@ def interpolate_spin_data(query_met_times: Union[float, npt.NDArray]) -> pd.Data
     #   spin_period_valid columns.
     invalid_spin_phase_range = (spin_phases < 0) | (spin_phases >= 1)
 
+    # TODO: add optional to filter this if this flag means
+    # that repointing is happening. otherwise, then keep
     invalid_spins = (out_df["spin_phase_valid"].values == 0) | (
         out_df["spin_period_valid"].values == 0
     )

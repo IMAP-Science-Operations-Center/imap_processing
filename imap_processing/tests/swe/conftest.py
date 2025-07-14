@@ -271,3 +271,30 @@ def l2_binned_psd_14sec_validation_df():
     # Fill NaNs with the previous value
     df["shcoarse"] = df["shcoarse"].ffill()
     return df
+
+@pytest.fixture(scope="session")
+def angle_bins():
+    """Read validation data from file"""
+    l1_val_path = imap_module_directory / "tests/swe/l2_validation"
+    filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_angles_v0G_14.6[96].dat"
+
+    # Define column names for validation data
+    column_names = [
+        "shcoarse",
+        "angle",
+        "bin",
+    ]
+
+    # Read the data, specifying na_values and delimiter
+    df = pd.read_csv(
+        l1_val_path / filename,
+        skiprows=15,  # Skip the first n rows of comments
+        sep=r"\s*,\s*",  # Regex to handle spaces and commas as delimiters
+        names=column_names,
+        na_values=["", " "],  # Treat empty strings or spaces as NaN
+        engine="python",
+    )
+
+    # Fill NaNs with the previous value
+    df["shcoarse"] = df["shcoarse"].ffill()
+    return df

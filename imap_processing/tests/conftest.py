@@ -368,7 +368,7 @@ def use_test_spin_data_csv(monkeypatch):
 
 @pytest.fixture
 def use_fake_spin_data_for_time(
-    request, use_test_spin_data_csv, tmp_path, generate_spin_data
+    request, use_test_spin_data_csv, tmp_path, generate_spin_data, spin_period=15.0
 ):
     """
     Generate and use fake spin data for testing.
