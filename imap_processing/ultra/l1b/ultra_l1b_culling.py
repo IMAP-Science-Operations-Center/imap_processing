@@ -337,7 +337,7 @@ def get_spin_and_duration(met: NDArray, spin: NDArray) -> tuple[NDArray, NDArray
     packet_spin_sorted = spin[sort_idx]
     # Here we are finding the start and end indices of each spin in the sorted array.
     is_new_spin = np.concatenate(
-        [[True], packet_spin_sorted[1:] != packet_spin_sorted[:-1]]
+        [[True], packet_spin_sorted.values[1:] != packet_spin_sorted.values[:-1]]
     )
     spin_start_indices = np.where(is_new_spin)[0]
     spin_end_indices = np.append(spin_start_indices[1:], len(packet_met_sorted))
@@ -360,9 +360,11 @@ def get_spin_and_duration(met: NDArray, spin: NDArray) -> tuple[NDArray, NDArray
     for start, end in zip(spin_start_indices, spin_end_indices):
         # Now that we have the possible spins from the Universal Spin Table,
         # we match the times of those spins to the nearest times in the DE data.
-        possible_times = spin_start_mets[possible_spins == packet_spin_sorted[start]]
+        possible_times = spin_start_mets[
+            possible_spins == packet_spin_sorted.values[start]
+        ]
         # Get nearest time for matching spins.
-        nearest_idx = np.abs(possible_times - packet_met_sorted[start]).argmin()
+        nearest_idx = np.abs(possible_times - packet_met_sorted.values[start]).argmin()
         nearest_value = possible_times[nearest_idx]
         assigned_spin_number_sorted[start:end] = spin_numbers[
             spin_start_mets == nearest_value

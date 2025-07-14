@@ -158,8 +158,8 @@ def test_get_duration(rates_l1_test_path, use_fake_spin_data_for_time):
 
     df = pd.read_csv(rates_l1_test_path)
 
-    met = df["TimeTag"].values - df["TimeTag"].values[0]
-    spin = df["Spin"].values
+    met = df["TimeTag"] - df["TimeTag"].values[0]
+    spin = df["Spin"]
     spin_number, duration = get_spin_and_duration(met, spin)
 
     assert np.array_equal(spin, spin_number)
@@ -175,25 +175,25 @@ def test_get_pulses(rates_l1_test_path, use_fake_spin_data_for_time):
 
     pulse_dict = {
         # Stop pulses
-        "stop_tn": df["StopTopNorthCFD"].values,
-        "stop_bn": df["StopBottomNorthCFD"].values,
-        "stop_te": df["StopTopEastCFD"].values,
-        "stop_be": df["StopBottomEastCFD"].values,
-        "stop_ts": df["StopTopSouthCFD"].values,
-        "stop_bs": df["StopBottomSouthCFD"].values,
-        "stop_tw": df["StopTopWestCFD"].values,
-        "stop_bw": df["StopBottomWestCFD"].values,
+        "stop_tn": df["StopTopNorthCFD"],
+        "stop_bn": df["StopBottomNorthCFD"],
+        "stop_te": df["StopTopEastCFD"],
+        "stop_be": df["StopBottomEastCFD"],
+        "stop_ts": df["StopTopSouthCFD"],
+        "stop_bs": df["StopBottomSouthCFD"],
+        "stop_tw": df["StopTopWestCFD"],
+        "stop_bw": df["StopBottomWestCFD"],
         # Start pulses
-        "start_rf": df["StartRightFullCFD"].values,
-        "start_lf": df["StartLeftFullCFD"].values,
+        "start_rf": df["StartRightFullCFD"],
+        "start_lf": df["StartLeftFullCFD"],
         # Coincidence pulses
-        "coin_tn": df["CoinTopNorthCFD"].values,
-        "coin_bn": df["CoinBottomNorthCFD"].values,
-        "coin_ts": df["CoinTopSouthCFD"].values,
-        "coin_bs": df["CoinBottomSouthCFD"].values,
+        "coin_tn": df["CoinTopNorthCFD"],
+        "coin_bn": df["CoinBottomNorthCFD"],
+        "coin_ts": df["CoinTopSouthCFD"],
+        "coin_bs": df["CoinBottomSouthCFD"],
         # Additional info
-        "shcoarse": df["TimeTag"].values,
-        "spin": df["Spin"].values,
+        "shcoarse": df["TimeTag"],
+        "spin": df["Spin"],
     }
 
     start_per_spin, stop_per_spin, coin_per_spin = get_pulses_per_spin(pulse_dict)
