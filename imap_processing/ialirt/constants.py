@@ -48,12 +48,12 @@ class StationProperties(NamedTuple):
     min_elevation_deg: float  # minimum elevation angle in degrees
 
 
-# TODO: Verify longitude, latitude, altitude.
+# Verified by Kiel Observatory staff.
 STATIONS = {
     "Kiel": StationProperties(
-        longitude=10.122,  # degrees East
-        latitude=54.339,  # degrees North
-        altitude=0.043,  # approx 43 meters
-        min_elevation_deg=10,  # 10 degrees is the requirement
+        longitude=10.1808,  # degrees East
+        latitude=54.2632,  # degrees North
+        altitude=0.1,  # approx 100 meters
+        min_elevation_deg=5,  # 5 degrees is the requirement
     )
 }
