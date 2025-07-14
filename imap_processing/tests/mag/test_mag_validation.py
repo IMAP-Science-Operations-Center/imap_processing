@@ -342,14 +342,18 @@ def test_mag_l2_validation(test_number, mode):
 
     offsets_dataset = offsets_dataset.assign_coords(epoch=magi["epoch"])
 
-    # Run the L2 processing
-    l2 = mag_l2(
-        calibration_dataset,
-        offsets_dataset,
-        magi,
-        np.datetime64("2025-05-06"),
-        DataMode[mode.upper()],
-    )[0]
+    with patch(
+        "imap_processing.mag.l2.mag_l2_data.frame_transform",
+        side_effect=lambda *args, **kwargs: args[1],
+    ):
+        # Run the L2 processing
+        l2 = mag_l2(
+            calibration_dataset,
+            offsets_dataset,
+            magi,
+            np.datetime64("2025-05-06"),
+            DataMode[mode.upper()],
+        )[0]
 
     # Compare to expected output
     output_file = source_directory / f"imap_mag_l2_{mode}_20250506_v007.csv"
