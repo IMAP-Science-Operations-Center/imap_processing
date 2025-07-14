@@ -85,6 +85,8 @@ EXTERNAL_TEST_DATA = [
     ("imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv", "ultra/data/l1/"),
     ("imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv",
      "ultra/data/l1/"),
+    ("imap_ultra_l1b-sensor-gf-blades_20250101_v000.csv", "ultra/data/l1/"),
+    ("imap_ultra_l1b-sensor-gf-noblades_20250101_v000.csv", "ultra/data/l1/"),
 
     # MAG
     ("mag-l1b-l1c-t013-magi-burst-in.csv",

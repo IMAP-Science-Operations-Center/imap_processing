@@ -131,7 +131,11 @@ def test_cdf_de(
     path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
     ancillary_files = {
         "l1b-45sensor-logistic-interpolation": path
-        / "imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv"
+        / "imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv",
+        "l1b-sensor-gf-noblades": path
+        / "imap_ultra_l1b-sensor-gf-noblades_20250101_v000.csv",
+        "l1b-sensor-gf-blades": path
+        / "imap_ultra_l1b-sensor-gf-blades_20250101_v000.csv",
     }
     l1b_de_dataset = ultra_l1b(data_dict, ancillary_files)
 
