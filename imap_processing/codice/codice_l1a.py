@@ -194,9 +194,7 @@ class CoDICEL1aPipeline:
                 elif self.config["dataset_name"] == "imap_codice_l1a_lo-sw-angular":
                     values = ["1", "2", "3", "23", "24"]
                 else:
-                    values = np.arange(self.config["output_dims"]["inst_az"]).astype(
-                        str
-                    )
+                    values = np.arange(self.config["dims"]["inst_az"]).astype(str)
                 dims = ["inst_az"]
             elif name in [
                 "spin_sector_label",
