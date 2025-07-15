@@ -73,7 +73,7 @@ def process_ultra_tof(ds: xr.Dataset, packet_props: PacketProperties) -> xr.Data
         )
     # Calculate the number of image packets based on the number of image panes and
     # planes per packet.
-    num_image_packets = image_planes // planes_per_packet
+    num_image_packets = max(1, image_planes // planes_per_packet)
 
     decom_data: defaultdict[str, list[np.ndarray]] = defaultdict(list)
     decom_data["packetdata"] = []
@@ -90,6 +90,7 @@ def process_ultra_tof(ds: xr.Dataset, packet_props: PacketProperties) -> xr.Data
                 decom_data[key].append(group[key].values)
 
             image = []
+            # If num_image_packets is 0 we still need to process the first image packet.
             for i in range(num_image_packets):
                 binary = convert_to_binary_string(group["packetdata"].values[i])
                 decompressed = decompress_image(

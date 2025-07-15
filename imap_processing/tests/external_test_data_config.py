@@ -74,6 +74,7 @@ EXTERNAL_TEST_DATA = [
     ("ultra45_raw_sc_imgpriority4evnt_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv", "ultra/data/l0/"),
     ("ultra45_raw_sc_ultranrgrates_FM45_UltraFM45_Functional_"
      "2024-01-22T0105_20240122T010548.csv", "ultra/data/l0/"),
+    ("ultra45_raw_sc_ionexhtimeimg_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv", "ultra/data/l0/"),
     ("ultra45_raw_sc_ultraenaphxtofhtimeresimg_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv", "ultra/data/l0/"),
     ("ultra45_raw_sc_enaextofhangimg_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv", "ultra/data/l0/"),
     ("imap_ultra_l0_raw_20260924_v001.pkts", "ultra/data/l0/"),

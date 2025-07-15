@@ -24,6 +24,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_ENERGY_RATES,
     ULTRA_ENERGY_SPECTRA,
     ULTRA_EVENTS,
+    ULTRA_EXTOF_HIGH_TIME,
     ULTRA_EXTOF_HIGH_ANGULAR,
     ULTRA_HK,
     ULTRA_MACROS_CHECKSUM,
@@ -97,6 +98,7 @@ def ultra_l1a(  # noqa: PLR0912
             ULTRA_PHXTOF_HIGH_ENERGY,
             ULTRA_PHXTOF_HIGH_TIME,
             ULTRA_EXTOF_HIGH_ANGULAR,
+            ULTRA_EXTOF_HIGH_TIME,
         ]
         for apid in group.apid
     }

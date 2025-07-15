@@ -21,6 +21,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_ENERGY_RATES,
     ULTRA_ENERGY_SPECTRA,
     ULTRA_EVENTS,
+    ULTRA_EXTOF_HIGH_TIME,
     ULTRA_EXTOF_HIGH_ANGULAR,
     ULTRA_MACROS_CHECKSUM,
     ULTRA_PHXTOF_HIGH_ANGULAR,
@@ -279,6 +280,16 @@ def extof_high_angular_test_path():
 
 
 @pytest.fixture
+def extof_high_time_test_path():
+    """Returns the xtce test data directory."""
+    filename = (
+        "ultra45_raw_sc_ionexhtimeimg_FM45_UltraFM45Extra_TV_Tests_"
+        "2024-01-22T0930_20240122T093008.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
+
+
+@pytest.fixture
 def cmd_echo_test_path():
     """Returns the xtce test data directory."""
     filename = (
@@ -331,6 +342,12 @@ def decom_test_data(request, xtce_path):
         ),
         ULTRA_EXTOF_HIGH_ANGULAR.apid[1]: lambda ds, apid: process_ultra_tof(
             ds, ULTRA_EXTOF_HIGH_ANGULAR
+        ),
+        ULTRA_EXTOF_HIGH_TIME.apid[0]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_EXTOF_HIGH_TIME
+        ),
+        ULTRA_EXTOF_HIGH_TIME.apid[1]: lambda ds, apid: process_ultra_tof(
+            ds, ULTRA_EXTOF_HIGH_TIME
         ),
         ULTRA_ENERGY_EVENTS.apid[0]: lambda ds, apid: process_ultra_events(ds, apid),
         ULTRA_ENERGY_EVENTS.apid[1]: lambda ds, apid: process_ultra_events(ds, apid),

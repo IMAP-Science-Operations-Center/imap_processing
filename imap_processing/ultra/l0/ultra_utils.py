@@ -138,6 +138,22 @@ ULTRA_EXTOF_HIGH_ANGULAR = PacketProperties(
     mantissa_bit_length=4,
 )
 
+ULTRA_EXTOF_HIGH_TIME = PacketProperties(
+    apid=[888, 952],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-histogram-ena-extof-hi-time",
+        "imap_ultra_l1a_90sensor-histogram-ena-extof-hi-time",
+    ],
+    addition_to_logical_desc="Energy By Time of Flight High Time Images",
+    width=4,
+    block=15,
+    image_planes=4,
+    pixel_window_rows=9,
+    pixel_window_columns=30,
+    image_planes_per_packet=8,
+    len_array=None,
+    mantissa_bit_length=4,
+)
 ULTRA_EVENTS = PacketProperties(
     apid=[896, 960],
     logical_source=["imap_ultra_l1a_45sensor-de", "imap_ultra_l1a_90sensor-de"],
