@@ -29,6 +29,8 @@ class SpiceBody(IntEnum):
     IMAP_SPACECRAFT = -43000
     # IMAP Pointing Frame (Despun) as defined in imap_science_0001.tf
     IMAP_DPS = -43901
+    IMAP_GSE = -43916
+    IMAP_GSM = -43917
     # Standard NAIF bodies
     SOLAR_SYSTEM_BARYCENTER = spiceypy.bodn2c("SOLAR_SYSTEM_BARYCENTER")
     SUN = spiceypy.bodn2c("SUN")
@@ -46,6 +48,8 @@ class SpiceFrame(IntEnum):
     IMAP_DPS = -43901
     # IMAP specific as defined in imap_wkcp.tf
     IMAP_SPACECRAFT = -43000
+    IMAP_GSE = -43916
+    IMAP_GSM = -43917
     IMAP_LO_BASE = -43100
     IMAP_LO_STAR_SENSOR = -43103
     IMAP_LO = -43105
