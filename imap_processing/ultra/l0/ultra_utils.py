@@ -72,13 +72,13 @@ ULTRA_ENERGY_SPECTRA = PacketProperties(
     len_array=1,
     mantissa_bit_length=5,
 )
-ULTRA_TOF_HIGH_ANGULAR = PacketProperties(
+ULTRA_PHXTOF_HIGH_ANGULAR = PacketProperties(
     apid=[883, 947],
     logical_source=[
         "imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-ang",
         "imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-ang",
     ],
-    addition_to_logical_desc="Time of Flight High Angular Images",
+    addition_to_logical_desc="Pulse Height Time of Flight High Angular Images",
     width=4,
     block=15,
     image_planes=8,
@@ -88,13 +88,13 @@ ULTRA_TOF_HIGH_ANGULAR = PacketProperties(
     len_array=None,
     mantissa_bit_length=4,
 )
-ULTRA_TOF_HIGH_ENERGY = PacketProperties(
+ULTRA_PHXTOF_HIGH_ENERGY = PacketProperties(
     apid=[884, 948],
     logical_source=[
         "imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-nrg",
         "imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-nrg",
     ],
-    addition_to_logical_desc="Time of Flight High Energy Images",
+    addition_to_logical_desc="Pulse Height By Time of Flight High Energy Images",
     width=4,
     block=15,
     image_planes=28,
@@ -105,7 +105,7 @@ ULTRA_TOF_HIGH_ENERGY = PacketProperties(
     mantissa_bit_length=4,
 )
 
-ULTRA_TOF_HIGH_TIME = PacketProperties(
+ULTRA_PHXTOF_HIGH_TIME = PacketProperties(
     apid=[885, 949],
     logical_source=[
         "imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-time",
@@ -115,6 +115,22 @@ ULTRA_TOF_HIGH_TIME = PacketProperties(
     width=4,
     block=15,
     image_planes=8,
+    pixel_window_rows=18,
+    pixel_window_columns=60,
+    image_planes_per_packet=2,
+    len_array=None,
+    mantissa_bit_length=4,
+)
+ULTRA_EXTOF_HIGH_ANGULAR = PacketProperties(
+    apid=[886, 949],
+    logical_source=[
+        "imap_ultra_l1a_45sensor-histogram-ena-extof-hi-ang",
+        "imap_ultra_l1a_90sensor-histogram-ena-extof-hi-ang",
+    ],
+    addition_to_logical_desc="Energy By Time of Flight High Angular Images",
+    width=4,
+    block=15,
+    image_planes=12,
     pixel_window_rows=18,
     pixel_window_columns=60,
     image_planes_per_packet=2,

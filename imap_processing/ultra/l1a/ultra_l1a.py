@@ -24,16 +24,17 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_ENERGY_RATES,
     ULTRA_ENERGY_SPECTRA,
     ULTRA_EVENTS,
+    ULTRA_EXTOF_HIGH_ANGULAR,
     ULTRA_HK,
     ULTRA_MACROS_CHECKSUM,
+    ULTRA_PHXTOF_HIGH_ANGULAR,
+    ULTRA_PHXTOF_HIGH_ENERGY,
+    ULTRA_PHXTOF_HIGH_TIME,
     ULTRA_PRI_1_EVENTS,
     ULTRA_PRI_2_EVENTS,
     ULTRA_PRI_3_EVENTS,
     ULTRA_PRI_4_EVENTS,
     ULTRA_RATES,
-    ULTRA_TOF_HIGH_ANGULAR,
-    ULTRA_TOF_HIGH_ENERGY,
-    ULTRA_TOF_HIGH_TIME,
 )
 from imap_processing.utils import packet_file_to_datasets
 
@@ -89,6 +90,17 @@ def ultra_l1a(  # noqa: PLR0912
         for i, apid in enumerate(group.apid)
     }
 
+    all_l1a_image_apids = {
+        apid: group
+        for group in [
+            ULTRA_PHXTOF_HIGH_ANGULAR,
+            ULTRA_PHXTOF_HIGH_ENERGY,
+            ULTRA_PHXTOF_HIGH_TIME,
+            ULTRA_EXTOF_HIGH_ANGULAR,
+        ]
+        for apid in group.apid
+    }
+
     # Update dataset global attributes
     attr_mgr = ImapCdfAttributes()
     attr_mgr.add_instrument_global_attrs("ultra")
@@ -98,27 +110,12 @@ def ultra_l1a(  # noqa: PLR0912
         if apid in ULTRA_AUX.apid:
             decom_ultra_dataset = datasets_by_apid[apid]
             gattr_key = ULTRA_AUX.logical_source[ULTRA_AUX.apid.index(apid)]
-        elif apid in ULTRA_TOF_HIGH_ANGULAR.apid:
+        elif apid in all_l1a_image_apids:
+            packet_props = all_l1a_image_apids[apid]
             decom_ultra_dataset = process_ultra_tof(
-                datasets_by_apid[apid], ULTRA_TOF_HIGH_ANGULAR
+                datasets_by_apid[apid], packet_props
             )
-            gattr_key = ULTRA_TOF_HIGH_ANGULAR.logical_source[
-                ULTRA_TOF_HIGH_ANGULAR.apid.index(apid)
-            ]
-        elif apid in ULTRA_TOF_HIGH_ENERGY.apid:
-            decom_ultra_dataset = process_ultra_tof(
-                datasets_by_apid[apid], ULTRA_TOF_HIGH_ENERGY
-            )
-            gattr_key = ULTRA_TOF_HIGH_ENERGY.logical_source[
-                ULTRA_TOF_HIGH_ENERGY.apid.index(apid)
-            ]
-        elif apid in ULTRA_TOF_HIGH_TIME.apid:
-            decom_ultra_dataset = process_ultra_tof(
-                datasets_by_apid[apid], ULTRA_TOF_HIGH_TIME
-            )
-            gattr_key = ULTRA_TOF_HIGH_TIME.logical_source[
-                ULTRA_TOF_HIGH_TIME.apid.index(apid)
-            ]
+            gattr_key = packet_props.logical_source[packet_props.apid.index(apid)]
         elif apid in ULTRA_RATES.apid:
             decom_ultra_dataset = process_ultra_rates(datasets_by_apid[apid])
             decom_ultra_dataset = decom_ultra_dataset.drop_vars("fastdata_00")
