@@ -383,8 +383,9 @@ def use_fake_spin_data_for_time(
     """
 
     def wrapped_set_spin_data_filepath(
-        start_met: float, end_met: Optional[int] = None,
-        spin_period: Optional[float] = 15.0
+        start_met: float,
+        end_met: Optional[int] = None,
+        spin_period: Optional[float] = 15.0,
     ) -> pd.DataFrame:
         """
         Generate and use fake spin data for testing.
@@ -398,7 +399,9 @@ def use_fake_spin_data_for_time(
         spin_period : float, optional
             Provides the spin period in seconds. Default is 15.0 seconds.
         """
-        spin_df = generate_spin_data(start_met, end_met=end_met, spin_period=spin_period)
+        spin_df = generate_spin_data(
+            start_met, end_met=end_met, spin_period=spin_period
+        )
         spin_csv_file_path = tmp_path / "spin_data.spin.csv"
         spin_df.to_csv(spin_csv_file_path, index=False)
         spin_df.to_csv("spin_data.spin.csv", index=False)
@@ -409,7 +412,11 @@ def use_fake_spin_data_for_time(
 
 @pytest.fixture
 def generate_spin_data():
-    def make_data(start_met: float, end_met: Optional[float] = None, spin_period: Optional[float] = None) -> pd.DataFrame:
+    def make_data(
+        start_met: float,
+        end_met: Optional[float] = None,
+        spin_period: Optional[float] = None,
+    ) -> pd.DataFrame:
         """
         Generate a spin table CSV covering one or more days.
         Spin table contains the following fields:
@@ -449,7 +456,7 @@ def generate_spin_data():
         # Create spin start second data of 15 seconds increment
         spin_start_met = np.arange(start_met, end_met + 1, spin_period)
         spin_start_sec = np.floor(spin_start_met).astype(int)
-        spin_start_subsec = int((start_met - spin_start_sec[0]) * 1e6)
+        spin_start_subsec = ((spin_start_met - spin_start_sec) * 1e6).astype(int)
 
         # Calculate UTC times without spice (accepting ~5 second inaccuracy)
         spin_start_dt64 = TTJ2000_EPOCH + (spin_start_met * 1e9).astype(
