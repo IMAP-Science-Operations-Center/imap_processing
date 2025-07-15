@@ -12,8 +12,8 @@ from imap_processing.ultra.l0.ultra_utils import (
     ULTRA_ENERGY_RATES,
     ULTRA_ENERGY_SPECTRA,
     ULTRA_EVENTS,
-    ULTRA_EXTOF_HIGH_TIME,
     ULTRA_EXTOF_HIGH_ANGULAR,
+    ULTRA_EXTOF_HIGH_TIME,
     ULTRA_MACROS_CHECKSUM,
     ULTRA_PHXTOF_HIGH_ANGULAR,
     ULTRA_PHXTOF_HIGH_ENERGY,
@@ -243,7 +243,7 @@ def test_cdf_phxtof_high_time(ccsds_path_extra):
     assert test_data_path.exists()
     assert (
         test_data_path.name == "imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-time_"
-         "20240122-repoint99999_v999.cdf"
+        "20240122-repoint99999_v999.cdf"
     )
 
 
