@@ -420,6 +420,7 @@ def test_swe_l2_14_6sec(
     bin_flux_val = l2_binned_flux_14sec_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
     bin_psd_val = l2_binned_psd_14sec_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
     bin_flux_data = l2_dataset["flux"].data
+    print(f"binned_data in test ", bin_flux_data[2, 0, 3])  # Debugging line to check binned data
     bin_psd_data = l2_dataset["phase_space_density"].data
 
     # np.testing.assert_allclose(bin_flux_data, bin_flux_val, rtol=1e-6)
@@ -433,19 +434,17 @@ def test_swe_l2_14_6sec(
                 for angle_idx in np.arange(swe_constants.N_ANGLE_BINS):
                     # if cycle == 5:
                     #     np.testing.assert_allclose(bin_psd_data[cycle], bin_val[cycle], rtol=1e-6)
-                    l2_data = bin_flux_data[cycle, esa_idx, angle_idx]
-                    val_data = bin_flux_val[cycle, esa_idx, angle_idx]
-                    try:
-                        np.testing.assert_allclose(
-                            l2_data, val_data, rtol=1e-6,
-                        )
-                    except AssertionError:
+                    l2_data = bin_psd_data[cycle, esa_idx, angle_idx]
+                    val_data = bin_psd_val[cycle, esa_idx, angle_idx]
+                    if np.all(l2_data != val_data):
+                        if cycle == 2 and esa_idx == 0 and angle_idx == 3:
+                            print(l2_data, val_data)
                         print(
                             f"Cycle {cycle}, ESA {esa_idx:02d}, Angle {angle_idx:02d}: "
                             "Validation data: "
-                            f"{np.array2string(bin_flux_val[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}, "
+                            f"{np.array2string(val_data, separator=' ', max_line_width=np.inf)}, "
                             "L2 Flux data: "
-                            f"{np.array2string(bin_flux_data[cycle, esa_idx, angle_idx], separator=' ', max_line_width=np.inf)}",
+                            f"{np.array2string(l2_data, separator=' ', max_line_width=np.inf)}",
                             file=f,
                         )
 
