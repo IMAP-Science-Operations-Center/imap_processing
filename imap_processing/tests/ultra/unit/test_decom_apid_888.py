@@ -23,7 +23,7 @@ from imap_processing.ultra.l0.ultra_utils import (
     indirect=True,
 )
 @pytest.mark.external_test_data
-def test_tof_high_time_decom(decom_test_data, extof_high_time_test_path):
+def test_extof_high_time_decom(decom_test_data, extof_high_time_test_path):
     """This function reads validation data and checks that decom data
     matches validation data for image rate packet"""
 
