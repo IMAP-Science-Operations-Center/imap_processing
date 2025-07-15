@@ -266,7 +266,7 @@ def add_cdf_attributes(
 
     Returns
     -------
-    xr.Dataset
+    xarray.Dataset
         The updated dataset with attributes and dimension labels.
     """
     dataset.attrs = attr_mgr.get_global_attributes(logical_source)
