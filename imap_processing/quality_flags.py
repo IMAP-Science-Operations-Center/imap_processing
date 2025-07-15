@@ -59,8 +59,15 @@ class ImapRatesUltraFlags(FlagNameMixin):
     """IMAP Ultra Rates flags."""
 
     NONE = CommonFlags.NONE
-    ZEROCOUNTS = 2**0  # bit 0
-    HIGHRATES = 2**1  # bit 1
+    HIGHRATES = 2**0  # bit 0
+    FIRSTSPIN = 2**1  # bit 1
+    LASTSPIN = 2**2  # bit 2
+
+
+class ImapInstrumentUltraFlags(FlagNameMixin):
+    """IMAP Ultra flags using other instruments."""
+
+    NONE = CommonFlags.NONE
 
 
 class ImapLoFlags(FlagNameMixin):

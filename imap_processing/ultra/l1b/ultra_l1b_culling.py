@@ -7,7 +7,12 @@ import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
 
-from imap_processing.quality_flags import ImapAttitudeUltraFlags, ImapRatesUltraFlags
+from imap_processing.quality_flags import (
+    ImapAttitudeUltraFlags,
+    ImapHkUltraFlags,
+    ImapInstrumentUltraFlags,
+    ImapRatesUltraFlags,
+)
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
 
@@ -121,6 +126,48 @@ def flag_attitude(
     return quality_flags, spin_rates, spin_period, spin_starttime
 
 
+def flag_hk(spin_number: NDArray) -> NDArray:
+    """
+    Flag data based on hk.
+
+    Parameters
+    ----------
+    spin_number : NDArray
+        Spin number at each direct event.
+
+    Returns
+    -------
+    quality_flags : NDArray
+        Quality flags..
+    """
+    spins = np.unique(spin_number)  # Get unique spins
+    quality_flags = np.full(spins.shape, ImapHkUltraFlags.NONE.value, dtype=np.uint16)
+
+    return quality_flags
+
+
+def flag_imap_instruments(spin_number: NDArray) -> NDArray:
+    """
+    Flag data based on other IMAP instruments.
+
+    Parameters
+    ----------
+    spin_number : NDArray
+        Spin number at each direct event.
+
+    Returns
+    -------
+    quality_flags : NDArray
+        Quality flags..
+    """
+    spins = np.unique(spin_number)  # Get unique spins
+    quality_flags = np.full(
+        spins.shape, ImapInstrumentUltraFlags.NONE.value, dtype=np.uint16
+    )
+
+    return quality_flags
+
+
 def get_n_sigma(count_rates: NDArray, mean_duration: float, sigma: int = 6) -> NDArray:
     """
     Calculate the threshold for the HIGHRATES flag.
@@ -140,7 +187,8 @@ def get_n_sigma(count_rates: NDArray, mean_duration: float, sigma: int = 6) -> N
     threshold : NDArray
         Threshold for applying HIGHRATES flag.
     """
-    sigma_per_energy = np.std(count_rates, axis=1)
+    # Take the Sample Standard Deviation.
+    sigma_per_energy = np.std(count_rates, axis=1, ddof=1)
     n_sigma_per_energy = sigma * sigma_per_energy
     mean_per_energy = np.mean(count_rates, axis=1)
     # Must have a HIGHRATES threshold of at least 3 counts per spin.
@@ -149,7 +197,7 @@ def get_n_sigma(count_rates: NDArray, mean_duration: float, sigma: int = 6) -> N
     return threshold
 
 
-def flag_spin(
+def flag_rates(
     spin_number: NDArray, energy: NDArray, sigma: int = 6
 ) -> tuple[NDArray, NDArray, NDArray, NDArray]:
     """
@@ -182,8 +230,6 @@ def flag_spin(
         count_rates.shape, ImapRatesUltraFlags.NONE.value, dtype=np.uint16
     )
 
-    # Zero counts/spin/energy level
-    quality_flags[counts == 0] |= ImapRatesUltraFlags.ZEROCOUNTS.value
     threshold = get_n_sigma(count_rates, duration, sigma=sigma)
 
     bin_edges = np.array(UltraConstants.CULLING_ENERGY_BIN_EDGES)
@@ -193,6 +239,10 @@ def flag_spin(
     # Indices where the counts exceed the threshold
     indices_n_sigma = count_rates > threshold[:, np.newaxis]
     quality_flags[indices_n_sigma] |= ImapRatesUltraFlags.HIGHRATES.value
+
+    # Flags the first and last spin
+    quality_flags[:, 0] |= ImapRatesUltraFlags.FIRSTSPIN.value
+    quality_flags[:, -1] |= ImapRatesUltraFlags.LASTSPIN.value
 
     return quality_flags, spin, energy_midpoints, threshold
 
@@ -256,3 +306,134 @@ def compare_aux_univ_spin_table(
     mismatch_indices[missing_spin_mask] = True
 
     return mismatch_indices
+
+
+# TODO: Make this a common util since it is being used for the de and rates packets.
+def get_spin_and_duration(met: NDArray, spin: NDArray) -> tuple[NDArray, NDArray]:
+    """
+    Get the spin number and duration.
+
+    Parameters
+    ----------
+    met : NDArray
+        Mission elapsed time.
+    spin : NDArray
+        Spin number 0-255.
+
+    Returns
+    -------
+    assigned_spin_number : NDArray
+        Spin number for packet data product.
+    """
+    # Packet data.
+    # Since the spin number in the direct events packet
+    # is only 8 bits it goes from 0-255.
+    # Within a pointing that means we will always have duplicate spin numbers.
+    # In other words, different spins will be represented by the same spin number.
+    # Just to make certain that we won't accidentally combine
+    # multiple spins we need to sort by time here.
+    sort_idx = np.argsort(met)
+    packet_met_sorted = met[sort_idx]
+    packet_spin_sorted = spin[sort_idx]
+    # Here we are finding the start and end indices of each spin in the sorted array.
+    is_new_spin = np.concatenate(
+        [[True], packet_spin_sorted.values[1:] != packet_spin_sorted.values[:-1]]
+    )
+    spin_start_indices = np.where(is_new_spin)[0]
+    spin_end_indices = np.append(spin_start_indices[1:], len(packet_met_sorted))
+
+    # Universal Spin Table.
+    spin_df = get_spin_data()
+    # Retrieve the met values of the start of the spin.
+    spin_start_mets = spin_df["spin_start_met"].values
+    # Retrieve the corresponding spin numbers.
+    spin_numbers = spin_df["spin_number"].values
+    spin_period_sec = spin_df["spin_period_sec"].values
+    assigned_spin_number_sorted = np.empty(packet_spin_sorted.shape, dtype=np.uint32)
+    assigned_spin_duration_sorted = np.empty(packet_spin_sorted.shape, dtype=np.float32)
+    # These last 8 bits are the same as the spin number in the DE packet.
+    # So this will give us choices of which spins are
+    # available to assign to the packet data.
+    possible_spins = spin_numbers & 0xFF
+
+    # Assign each group based on time.
+    for start, end in zip(spin_start_indices, spin_end_indices):
+        # Now that we have the possible spins from the Universal Spin Table,
+        # we match the times of those spins to the nearest times in the DE data.
+        possible_times = spin_start_mets[
+            possible_spins == packet_spin_sorted.values[start]
+        ]
+        # Get nearest time for matching spins.
+        nearest_idx = np.abs(possible_times - packet_met_sorted.values[start]).argmin()
+        nearest_value = possible_times[nearest_idx]
+        assigned_spin_number_sorted[start:end] = spin_numbers[
+            spin_start_mets == nearest_value
+        ]
+        assigned_spin_duration_sorted[start:end] = spin_period_sec[
+            spin_start_mets == nearest_value
+        ]
+
+    # Undo the sort to match original order.
+    assigned_spin_number = np.empty_like(assigned_spin_number_sorted)
+    assigned_spin_number[sort_idx] = assigned_spin_number_sorted
+    assigned_duration = np.empty_like(assigned_spin_duration_sorted)
+    assigned_duration[sort_idx] = assigned_spin_duration_sorted
+
+    return assigned_spin_number, assigned_duration
+
+
+def get_pulses_per_spin(rates: xr.Dataset) -> tuple[NDArray, NDArray, NDArray]:
+    """
+    Get the total number of pulses per spin.
+
+    Parameters
+    ----------
+    rates : xr.Dataset
+        Rates dataset.
+
+    Returns
+    -------
+    start_per_spin : NDArray
+        Total start pulses per spin.
+    stop_per_spin : NDArray
+        Total stop pulses per spin.
+    coin_per_spin : NDArray
+        Total coincidence pulses per spin.
+    """
+    spin_number, duration = get_spin_and_duration(rates["shcoarse"], rates["spin"])
+
+    # Top coin pulses
+    top_coin_pulses = np.stack(
+        [v for k, v in rates.items() if k.startswith("coin_t")], axis=1
+    )
+    max_top_coin_pulse = np.max(top_coin_pulses, axis=1)
+
+    # Bottom coin pulses
+    bottom_coin_pulses = np.stack(
+        [v for k, v in rates.items() if k.startswith("coin_b")], axis=1
+    )
+    max_bottom_coin_pulse = np.max(bottom_coin_pulses, axis=1)
+
+    # Top stop pulses
+    top_stop_pulses = np.stack(
+        [v for k, v in rates.items() if k.startswith("stop_t")], axis=1
+    )
+    max_top_stop_pulse = np.max(top_stop_pulses, axis=1)
+
+    # Bottom stop pulses
+    bottom_stop_pulses = np.stack(
+        [v for k, v in rates.items() if k.startswith("stop_b")], axis=1
+    )
+    max_bottom_stop_pulse = np.max(bottom_stop_pulses, axis=1)
+
+    stop_pulses = max_top_stop_pulse + max_bottom_stop_pulse
+    start_pulses = rates["start_rf"] + rates["start_lf"]
+    coin_pulses = max_top_coin_pulse + max_bottom_coin_pulse
+
+    unique_spins, spin_idx = np.unique(spin_number, return_inverse=True)
+
+    start_per_spin = np.bincount(spin_idx, weights=start_pulses)
+    stop_per_spin = np.bincount(spin_idx, weights=stop_pulses)
+    coin_per_spin = np.bincount(spin_idx, weights=coin_pulses)
+
+    return start_per_spin, stop_per_spin, coin_per_spin

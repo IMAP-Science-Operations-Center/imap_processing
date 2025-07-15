@@ -334,7 +334,8 @@ spin_start_time:
   LABLAXIS: spin start time
   # TODO: come back to format
   UNITS: s
-  DEPEND_0: spin_number
+  DEPEND_0: epoch
+  DEPEND_1: spin_number
 
 spin_period:
   <<: *default
@@ -342,7 +343,8 @@ spin_period:
   FIELDNAM: spin_period
   LABLAXIS: spin_period
   UNITS: s
-  DEPEND_0: spin_number
+  DEPEND_0: epoch
+  DEPEND_1: spin_number
 
 spin_rate:
   <<: *default
@@ -350,7 +352,8 @@ spin_rate:
   FIELDNAM: spin_rate
   LABLAXIS: spin_rate
   UNITS: rpm
-  DEPEND_0: spin_number
+  DEPEND_0: epoch
+  DEPEND_1: spin_number
 
 rate_start_pulses:
   <<: *default
@@ -397,9 +400,46 @@ ena_rates:
   <<: *default_float32
   CATDESC: Rates calculated from de packet.
   FIELDNAM: ena_rates
-  LABLAXIS: ena_rates
-  DEPEND_0: spin_number
-  DEPEND_1: energy_bin_geometric_mean
+  LABLAXIS: ena rates
+  DEPEND_0: epoch
+  DEPEND_1: spin_number
+  DEPEND_2: energy_bin_geometric_mean
+  UNITS: " "
+
+start_pulses_per_spin:
+  <<: *default_float32
+  CATDESC: Total start pulses per spin.
+  FIELDNAM: start_pulses_per_spin
+  LABLAXIS: start pulses per spin
+  DEPEND_0: epoch
+  DEPEND_1: spin_number
+  UNITS: " "
+
+stop_pulses_per_spin:
+  <<: *default_float32
+  CATDESC: Total start pulses per spin.
+  FIELDNAM: stop_pulses_per_spin
+  LABLAXIS: stop pulses per spin
+  DEPEND_0: epoch
+  DEPEND_1: spin_number
+  UNITS: " "
+
+coin_pulses_per_spin:
+  <<: *default_float32
+  CATDESC: Total coincidence pulses per spin.
+  FIELDNAM: coin_pulses_per_spin
+  LABLAXIS: coin_pulses_per_spin
+  DEPEND_0: epoch
+  DEPEND_1: spin_number
+  UNITS: " "
+
+rejected_events_per_spin:
+  <<: *default_uint16
+  CATDESC: Rejected events per spin.
+  FIELDNAM: rejected_events_per_spin
+  LABLAXIS: rejected events per spin
+  DEPEND_0: epoch
+  DEPEND_1: spin_number
   UNITS: " "
 
 ena_rates_threshold:
@@ -407,8 +447,9 @@ ena_rates_threshold:
   CATDESC: Rates threshold used for flagging data.
   FIELDNAM: ena_rates_threshold
   LABLAXIS: ena_rates_threshold
-  DEPEND_0: spin_number
-  DEPEND_1: energy_bin_geometric_mean
+  DEPEND_0: epoch
+  DEPEND_1: spin_number
+  DEPEND_2: energy_bin_geometric_mean
   UNITS: " "
 
 quality_ena_rates:
@@ -416,8 +457,9 @@ quality_ena_rates:
   CATDESC: Spin filter derived from Ultra ena rates. Bitwise flagging used to filter the spin.
   FIELDNAM: quality_ena_rates
   LABLAXIS: quality_ena_rates
-  DEPEND_0: spin_number
-  DEPEND_1: energy_bin_geometric_mean
+  DEPEND_0: epoch
+  DEPEND_1: spin_number
+  DEPEND_2: energy_bin_geometric_mean
   UNITS: " "
 
 quality_attitude:
@@ -427,7 +469,9 @@ quality_attitude:
   LABLAXIS: quality attitude
   # TODO: come back to format
   UNITS: " "
-  DEPEND_0: spin_number
+  DEPEND_0: epoch
+  DEPEND_1: spin_number
+  DEPEND_2: energy_bin_geometric_mean
 
 quality_instruments:
   <<: *default_uint16
@@ -436,3 +480,17 @@ quality_instruments:
   LABLAXIS: quality instruments
   # TODO: come back to format
   UNITS: " "
+  DEPEND_0: epoch
+  DEPEND_1: spin_number
+  DEPEND_2: energy_bin_geometric_mean
+
+quality_hk:
+  <<: *default_uint16
+  CATDESC: Spin filter derived from housekeeping data. Bitwise flagging used to filter the spin.
+  FIELDNAM: quality_hk
+  LABLAXIS: quality hk
+  # TODO: come back to format
+  UNITS: " "
+  DEPEND_0: epoch
+  DEPEND_1: spin_number
+  DEPEND_2: energy_bin_geometric_mean

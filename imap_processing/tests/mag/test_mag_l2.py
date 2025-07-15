@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l2.mag_l2 import mag_l2, retrieve_matrix_from_l2_calibration
 from imap_processing.mag.l2.mag_l2_data import MagL2, ValidFrames
@@ -340,3 +341,35 @@ def test_spice_returns(norm_dataset):
         assert l2.frame.name == "DSRF"
         assert not np.array_equal(l2.vectors, norm_dataset["vectors"].data[:, :3])
         assert np.array_equal(l2.vectors[0], [-1, -1, -1])
+
+
+def test_qf(norm_dataset):
+    qf = np.zeros(len(norm_dataset["epoch"].data), dtype=int)
+    qf[1:4] = 1
+
+    qf_bitmask = np.zeros(len(norm_dataset["epoch"].data), dtype=int)
+    qf_bitmask[2] = 1
+    qf_bitmask[5:8] = 2
+    l2 = MagL2(
+        norm_dataset["vectors"].data[:, :3],
+        norm_dataset["epoch"],
+        norm_dataset["vectors"].data[:, 3],
+        {},
+        qf,
+        qf_bitmask,
+        DataMode.NORM,
+        offsets=np.zeros((len(norm_dataset["epoch"].data), 3)),
+        timedelta=np.zeros(len(norm_dataset["epoch"].data)),
+    )
+
+    l2.frame = ValidFrames.SRF
+    attributes = ImapCdfAttributes()
+    attributes.add_instrument_global_attrs("mag")
+    attributes.add_instrument_variable_attrs("mag", "l2")
+
+    output = l2.generate_dataset(attributes, np.datetime64("2025-10-17"))
+
+    assert "quality_flags" in output.data_vars
+    assert "quality_bitmask" in output.data_vars
+    assert np.array_equal(output["quality_flags"].data, qf)
+    assert np.array_equal(output["quality_bitmask"].data, qf_bitmask)

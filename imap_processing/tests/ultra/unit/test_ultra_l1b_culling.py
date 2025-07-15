@@ -1,17 +1,27 @@
 """Tests Culling for ULTRA L1b."""
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from imap_processing import imap_module_directory
-from imap_processing.quality_flags import ImapAttitudeUltraFlags, ImapRatesUltraFlags
+from imap_processing.quality_flags import (
+    ImapAttitudeUltraFlags,
+    ImapHkUltraFlags,
+    ImapInstrumentUltraFlags,
+    ImapRatesUltraFlags,
+)
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.ultra_l1b_culling import (
     compare_aux_univ_spin_table,
     flag_attitude,
-    flag_spin,
+    flag_hk,
+    flag_imap_instruments,
+    flag_rates,
     get_energy_histogram,
     get_n_sigma,
+    get_pulses_per_spin,
+    get_spin_and_duration,
     get_spin_data,
 )
 
@@ -80,25 +90,54 @@ def test_get_n_sigma():
     assert np.all(threshold >= 3 / 15)
     mean = np.mean(counts[0] / 15)
     squared_differences = (counts[0] / 15 - mean) ** 2
-    variance = np.mean(squared_differences)
+    variance = np.sum(squared_differences) / (counts.shape[1] - 1)
     std_dev = np.sqrt(variance)
 
     np.testing.assert_allclose(mean + std_dev * 6, threshold[0], atol=1e-2, rtol=0)
 
 
-def test_flag_spin(test_data):
-    """Tests flag_spin function."""
+def test_flag_hk(test_data):
+    """Tests flag_hk function."""
+
+    spin_number, _, _ = test_data
+    hk_qf = flag_hk(spin_number)
+
+    assert np.all(hk_qf == ImapHkUltraFlags.NONE.value)
+
+
+def test_flag_imap_instruments(test_data):
+    """Tests flag_imap_instruments function."""
+
+    spin_number, _, _ = test_data
+    hk_qf = flag_imap_instruments(spin_number)
+
+    assert np.all(hk_qf == ImapInstrumentUltraFlags.NONE.value)
+
+
+def test_flag_rates(test_data):
+    """Tests flag_rates function."""
 
     spin_number, energy, expected_counts = test_data
-    quality_flags, spin, energy, _ = flag_spin(spin_number, energy, 1)
+    quality_flags, spin, energy, _ = flag_rates(spin_number, energy, 1)
     threshold = get_n_sigma(expected_counts / 15, 15, 1)
 
-    # At the first energy level were the rates > threshold and the counts > threshold?
-    assert np.all(
-        quality_flags[expected_counts == 0] == ImapRatesUltraFlags.ZEROCOUNTS.value
+    expected_quality_flags = np.full(
+        (len(UltraConstants.CULLING_ENERGY_BIN_EDGES) - 1, len(np.unique(spin))),
+        ImapRatesUltraFlags.NONE.value,
+        dtype=np.uint16,
+    )
+    expected_quality_flags[:, 0] |= ImapRatesUltraFlags.FIRSTSPIN.value
+    expected_quality_flags[:, -1] |= ImapRatesUltraFlags.LASTSPIN.value
+
+    assert np.array_equal(
+        quality_flags[expected_counts == 0],
+        expected_quality_flags[expected_counts == 0],
     )
     high_rates_flag = quality_flags[expected_counts / 15 > threshold[:, np.newaxis]]
-    assert np.all(high_rates_flag == ImapRatesUltraFlags.HIGHRATES.value)
+    assert np.all(
+        high_rates_flag
+        == ImapRatesUltraFlags.HIGHRATES.value | ImapRatesUltraFlags.FIRSTSPIN.value
+    )
 
 
 def test_compare_aux_univ_spin_table(use_fake_spin_data_for_time, faux_aux_dataset):
@@ -111,3 +150,73 @@ def test_compare_aux_univ_spin_table(use_fake_spin_data_for_time, faux_aux_datas
     expected = np.array([False] * 14 + [True])
 
     assert np.all(result == expected)
+
+
+def test_get_duration(rates_l1_test_path, use_fake_spin_data_for_time):
+    """Tests get_duration function."""
+    use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
+
+    df = pd.read_csv(rates_l1_test_path)
+
+    met = df["TimeTag"] - df["TimeTag"].values[0]
+    spin = df["Spin"]
+    spin_number, duration = get_spin_and_duration(met, spin)
+
+    assert np.array_equal(spin, spin_number)
+    assert np.all(duration == 15)
+
+
+def test_get_pulses(rates_l1_test_path, use_fake_spin_data_for_time):
+    """Tests get_pulses_per_spin function."""
+    df = pd.read_csv(rates_l1_test_path)
+
+    # Simulate a spin table from MET = 0 to MET = 141 * 15 seconds
+    use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
+
+    pulse_dict = {
+        # Stop pulses
+        "stop_tn": df["StopTopNorthCFD"],
+        "stop_bn": df["StopBottomNorthCFD"],
+        "stop_te": df["StopTopEastCFD"],
+        "stop_be": df["StopBottomEastCFD"],
+        "stop_ts": df["StopTopSouthCFD"],
+        "stop_bs": df["StopBottomSouthCFD"],
+        "stop_tw": df["StopTopWestCFD"],
+        "stop_bw": df["StopBottomWestCFD"],
+        # Start pulses
+        "start_rf": df["StartRightFullCFD"],
+        "start_lf": df["StartLeftFullCFD"],
+        # Coincidence pulses
+        "coin_tn": df["CoinTopNorthCFD"],
+        "coin_bn": df["CoinBottomNorthCFD"],
+        "coin_ts": df["CoinTopSouthCFD"],
+        "coin_bs": df["CoinBottomSouthCFD"],
+        # Additional info
+        "shcoarse": df["TimeTag"],
+        "spin": df["Spin"],
+    }
+
+    start_per_spin, stop_per_spin, coin_per_spin = get_pulses_per_spin(pulse_dict)
+    unique_spins = np.unique(pulse_dict["spin"])
+
+    start_pulses_total = pulse_dict["start_rf"] + pulse_dict["start_lf"]
+    stop_pulses_total = np.max(
+        np.stack([v for k, v in pulse_dict.items() if k.startswith("stop_t")], axis=1),
+        axis=1,
+    ) + np.max(
+        np.stack([v for k, v in pulse_dict.items() if k.startswith("stop_b")], axis=1),
+        axis=1,
+    )
+    coin_pulses_total = np.max(
+        np.stack([v for k, v in pulse_dict.items() if k.startswith("coin_t")], axis=1),
+        axis=1,
+    ) + np.max(
+        np.stack([v for k, v in pulse_dict.items() if k.startswith("coin_b")], axis=1),
+        axis=1,
+    )
+
+    for i, spin in enumerate(unique_spins):
+        mask = pulse_dict["spin"] == spin
+        assert np.isclose(start_per_spin[i], np.sum(start_pulses_total[mask]))
+        assert np.isclose(stop_per_spin[i], np.sum(stop_pulses_total[mask]))
+        assert np.isclose(coin_per_spin[i], np.sum(coin_pulses_total[mask]))

@@ -137,8 +137,8 @@ class MagL2L1dBase:
         )
 
         quality_bitmask = xr.DataArray(
-            self.quality_flags,
-            name="quality_flags",
+            self.quality_bitmask,
+            name="quality_bitmask",
             dims=["epoch"],
             attrs=attribute_manager.get_variable_attributes("qf"),
         )

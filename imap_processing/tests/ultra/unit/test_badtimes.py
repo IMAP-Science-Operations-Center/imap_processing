@@ -23,12 +23,8 @@ def test_calculate_badtimes():
         dtype=np.uint16,
     )
 
-    quality_ena_rates[:, 0] |= ImapRatesUltraFlags.ZEROCOUNTS.value
-    quality_ena_rates[0, 1] |= ImapRatesUltraFlags.ZEROCOUNTS.value
     quality_ena_rates[0, 2] |= ImapRatesUltraFlags.HIGHRATES.value
-    quality_ena_rates[0, 3] |= (
-        ImapRatesUltraFlags.ZEROCOUNTS.value | ImapRatesUltraFlags.HIGHRATES.value
-    )
+    quality_ena_rates[0, 3] |= ImapRatesUltraFlags.HIGHRATES.value
 
     ds = xr.Dataset(
         {
@@ -71,7 +67,7 @@ def test_calculate_badtimes_empty():
 
     quality_ena_rates = np.full(
         (len(energy_bins), len(spin_numbers)),
-        ImapRatesUltraFlags.ZEROCOUNTS.value | ImapRatesUltraFlags.HIGHRATES.value,
+        ImapRatesUltraFlags.HIGHRATES.value,
         dtype=np.uint16,
     )
 
