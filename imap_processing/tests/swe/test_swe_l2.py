@@ -364,7 +364,6 @@ def test_swe_l2_14_6sec(
     use_fake_spin_data_for_time,
     l2_binned_flux_14sec_validation_df,
     l2_binned_psd_14sec_validation_df,
-    angle_bins,
 ):
     """Test L2 processing with 14.6 seconds spin period."""
     data_start_time = 453051293.0
@@ -436,7 +435,11 @@ def test_swe_l2_14_6sec(
                     #     np.testing.assert_allclose(bin_psd_data[cycle], bin_val[cycle], rtol=1e-6)
                     l2_data = bin_flux_data[cycle, esa_idx, angle_idx]
                     val_data = bin_flux_val[cycle, esa_idx, angle_idx]
-                    if np.all(l2_data != val_data):
+                    try:
+                        np.testing.assert_allclose(
+                            l2_data, val_data, rtol=1e-6,
+                        )
+                    except AssertionError:
                         print(
                             f"Cycle {cycle}, ESA {esa_idx:02d}, Angle {angle_idx:02d}: "
                             "Validation data: "
@@ -446,6 +449,4 @@ def test_swe_l2_14_6sec(
                             file=f,
                         )
 
-    first_cycle_angles = angle_bins.values[:, 1].reshape(6, 24, 30)
-    np.savetxt("val_spin_angle.csv", first_cycle_angles[0], delimiter=",", fmt="%.3f")
 
