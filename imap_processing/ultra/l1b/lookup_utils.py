@@ -7,6 +7,7 @@ import xarray as xr
 from numpy.typing import NDArray
 
 from imap_processing import imap_module_directory
+from imap_processing.quality_flags import ImapDEUltraFlags
 
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
 
@@ -231,7 +232,11 @@ def get_energy_efficiencies(ancillary_files: dict) -> pd.DataFrame:
 
 
 def get_geometric_factor(
-    ancillary_files: dict, filename: str, phi: NDArray, theta: NDArray
+    ancillary_files: dict,
+    filename: str,
+    phi: NDArray,
+    theta: NDArray,
+    quality_flag: NDArray,
 ) -> tuple[NDArray, NDArray]:
     """
     Lookup table for geometric factor using nearest neighbor.
@@ -246,6 +251,8 @@ def get_geometric_factor(
         Azimuth angles in degrees.
     theta : NDArray
         Elevation angles in degrees.
+    quality_flag : NDArray
+        Quality flag to set when geometric factor is zero.
 
     Returns
     -------
@@ -272,5 +279,10 @@ def get_geometric_factor(
 
     # Fetch geometric factor values at nearest (phi, theta) pairs
     geometric_factor = gf_table[phi_idx, theta_idx]
+
+    if filename == "l1b-sensor-gf-noblades":
+        quality_flag[geometric_factor == 0] |= ImapDEUltraFlags.NOBLADESFOV.value
+    if filename == "l1b-sensor-gf-blades":
+        quality_flag[geometric_factor == 0] |= ImapDEUltraFlags.BLADESFOV.value
 
     return geometric_factor

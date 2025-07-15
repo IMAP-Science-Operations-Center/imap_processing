@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 
 from imap_processing import imap_module_directory
+from imap_processing.quality_flags import ImapDEUltraFlags
 from imap_processing.ultra.l1b.lookup_utils import (
     get_angular_profiles,
     get_back_position,
@@ -107,8 +108,12 @@ def test_get_geometric_function():
     }
     phi = np.array([-65, -64, -39, -1.3, 0, 1.3, 39, 64, 65])
     theta = np.array([-65, -64, -39, -1.3, 0, 1.3, 39, 64, 65])
-    gf = get_geometric_factor(ancillary_files, "l1b-sensor-gf-noblades", phi, theta)
+    quality_flags = np.full(phi.shape, ImapDEUltraFlags.NONE.value, dtype=np.uint16)
+    gf = get_geometric_factor(
+        ancillary_files, "l1b-sensor-gf-noblades", phi, theta, quality_flags
+    )
 
     assert np.array_equal(
         gf, np.array([0, 0, 0.13713, 0.1792, 0.35507, 0.1792, 0.13713, 0, 0])
     )
+    assert np.array_equal(quality_flags, np.array([2, 2, 0, 0, 0, 0, 0, 2, 2]))
