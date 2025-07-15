@@ -13,6 +13,7 @@ QUALITY_FLAG_FILTERS: dict[str, list[FlagNameMixin]] = {
     ],
     "quality_ena_rates": [
         ImapRatesUltraFlags.HIGHRATES,
+        ImapRatesUltraFlags.FIRSTSPIN,
         ImapRatesUltraFlags.LASTSPIN,
     ],
 }
