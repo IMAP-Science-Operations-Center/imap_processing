@@ -26,7 +26,7 @@ class ValidFrames(Enum):
 
 
 @dataclass(kw_only=True)
-class MagL2L1DBase:
+class MagL2L1dBase:
     """
     Base class for MAG L2 and L1D data.
 
@@ -311,7 +311,7 @@ class MagL2L1DBase:
 
 
 @dataclass(kw_only=True)
-class MagL2(MagL2L1DBase):
+class MagL2(MagL2L1dBase):
     """
     Dataclass for MAG L2 data.
 

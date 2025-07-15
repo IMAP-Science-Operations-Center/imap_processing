@@ -17,21 +17,6 @@ from imap_processing.spice.time import (
 from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
 
 
-@pytest.fixture
-def norm_dataset(mag_test_l2_data):
-    offsets = mag_test_l2_data[1]
-    dataset = mag_l1a_dataset_generator(3504)
-    epoch_vals = offsets["epoch"].data
-    vectors_per_second_attr = "0:2,4000000000:4"
-    dataset.attrs["vectors_per_second"] = vectors_per_second_attr
-    dataset["epoch"] = epoch_vals
-    dataset.attrs["Logical_source"] = "imap_mag_l1c_norm-mago"
-    vectors = np.array([[i, i, i, 2] for i in range(1, 3505)])
-    dataset["vectors"].data = vectors
-
-    return dataset
-
-
 def test_mag_l2(norm_dataset, mag_test_l2_data):
     calibration_dataset = mag_test_l2_data[0]
 
