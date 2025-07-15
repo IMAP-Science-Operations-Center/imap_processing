@@ -1,6 +1,7 @@
 """Decommutates Ultra CCSDS packets."""
 
 import logging
+import math
 from collections import defaultdict
 from typing import cast
 
@@ -73,10 +74,9 @@ def process_ultra_tof(ds: xr.Dataset, packet_props: PacketProperties) -> xr.Data
         )
     # Calculate the number of image packets based on the number of image panes and
     # planes per packet.
-    # There may be a case where there is only one image packet that contains less than
-    # the planes per packet. This is handled by ensuring that the number of packets is
-    # at least 1.
-    num_image_packets = max(1, image_planes // planes_per_packet)
+    # There may be cases where the last packet has fewer planes than the
+    # planes_per_packet, to account for this, we use ceiling division.
+    num_image_packets = math.ceil(image_planes / planes_per_packet)
 
     decom_data: defaultdict[str, list[np.ndarray]] = defaultdict(list)
     decom_data["packetdata"] = []
