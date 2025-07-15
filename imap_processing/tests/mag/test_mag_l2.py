@@ -53,13 +53,13 @@ def test_offset_application(norm_dataset, mag_test_l2_data):
     # Test against zeros
     offsets = mag_test_l2_data[1]
     output = MagL2(
-        norm_dataset["vectors"].data[:, :3],
-        norm_dataset["epoch"].data,
-        norm_dataset["vectors"].data[:, 3],
-        {},
-        None,
-        None,
-        None,
+        vectors=norm_dataset["vectors"].data[:, :3],
+        epoch=norm_dataset["epoch"].data,
+        range=norm_dataset["vectors"].data[:, 3],
+        global_attributes={},
+        quality_flags=None,
+        quality_bitmask=None,
+        data_mode=DataMode.NORM,
         offsets=offsets["offsets"].data,
         timedelta=offsets["timedeltas"].data,
     )
@@ -85,13 +85,13 @@ def test_offset_application(norm_dataset, mag_test_l2_data):
     expected_timeshift[2] = expected_timeshift[2] + 1
 
     output = MagL2(
-        norm_dataset["vectors"].data[:, :3],
-        norm_dataset["epoch"].data,
-        norm_dataset["vectors"].data[:, 3],
-        {},
-        None,
-        None,
-        None,
+        vectors=norm_dataset["vectors"].data[:, :3],
+        epoch=norm_dataset["epoch"].data,
+        range=norm_dataset["vectors"].data[:, 3],
+        global_attributes={},
+        quality_flags=None,
+        quality_bitmask=None,
+        data_mode=None,
         offsets=new_offsets,
         timedelta=new_timeshift,
     )
@@ -136,13 +136,13 @@ def test_midnight_boundary(norm_dataset):
     midnight = et_to_ttj2000ns(str_to_et("2025-10-17T00:00:00"))
 
     l2 = MagL2(
-        norm_dataset["vectors"].data[:, :3],
-        shifted_timestamps,
-        norm_dataset["vectors"].data[:, 3],
-        {},
-        np.zeros(len(norm_dataset["epoch"].data)),
-        np.zeros(len(norm_dataset["epoch"].data)),
-        DataMode.NORM,
+        vectors=norm_dataset["vectors"].data[:, :3],
+        epoch=shifted_timestamps,
+        range=norm_dataset["vectors"].data[:, 3],
+        global_attributes={},
+        quality_flags=np.zeros(len(norm_dataset["epoch"].data)),
+        quality_bitmask=np.zeros(len(norm_dataset["epoch"].data)),
+        data_mode=DataMode.NORM,
         offsets=np.zeros((len(norm_dataset["epoch"].data), 3)),
         timedelta=np.zeros(len(norm_dataset["epoch"].data)),
     )
@@ -153,13 +153,13 @@ def test_midnight_boundary(norm_dataset):
     assert l2.epoch[0] == midnight
 
     l2 = MagL2(
-        norm_dataset["vectors"].data[:, :3],
-        shifted_timestamps,
-        norm_dataset["vectors"].data[:, 3],
-        {},
-        np.zeros(len(norm_dataset["epoch"].data)),
-        np.zeros(len(norm_dataset["epoch"].data)),
-        DataMode.NORM,
+        vectors=norm_dataset["vectors"].data[:, :3],
+        epoch=shifted_timestamps,
+        range=norm_dataset["vectors"].data[:, 3],
+        global_attributes={},
+        quality_flags=np.zeros(len(norm_dataset["epoch"].data)),
+        quality_bitmask=np.zeros(len(norm_dataset["epoch"].data)),
+        data_mode=DataMode.NORM,
         offsets=np.zeros((len(norm_dataset["epoch"].data), 3)),
         timedelta=np.zeros(len(norm_dataset["epoch"].data)),
     )
@@ -185,16 +185,17 @@ def test_timestamp_truncation(
     day = np.datetime64("2025-10-17").astype("datetime64[D]")
     shifted_timestamps = norm_dataset["epoch"].data + time_shift
     l2 = MagL2(
-        norm_dataset["vectors"].data[:, :3],
-        shifted_timestamps,
-        norm_dataset["vectors"].data[:, 3],
-        {},
-        np.zeros(len(norm_dataset["epoch"].data)),
-        np.zeros(len(norm_dataset["epoch"].data)),
-        DataMode.NORM,
+        vectors=norm_dataset["vectors"].data[:, :3],
+        epoch=shifted_timestamps,
+        range=norm_dataset["vectors"].data[:, 3],
+        global_attributes={},
+        quality_flags=np.zeros(len(norm_dataset["epoch"].data)),
+        quality_bitmask=np.zeros(len(norm_dataset["epoch"].data)),
+        data_mode=DataMode.NORM,
         offsets=np.zeros((len(norm_dataset["epoch"].data), 3)),
         timedelta=np.zeros(len(norm_dataset["epoch"].data)),
     )
+
     first_epoch_val = np.array(et_to_utc(ttj2000ns_to_et(l2.epoch[0]))).astype(
         "datetime64[D]"
     )
@@ -333,13 +334,13 @@ def test_retrieve_matrix_from_l2_calibration(is_mago, data_var):
 
 def test_spice_returns(norm_dataset):
     l2 = MagL2(
-        norm_dataset["vectors"].data[:, :3],
-        norm_dataset["epoch"],
-        norm_dataset["vectors"].data[:, 3],
-        {},
-        np.zeros(len(norm_dataset["epoch"].data)),
-        np.zeros(len(norm_dataset["epoch"].data)),
-        DataMode.NORM,
+        vectors=norm_dataset["vectors"].data[:, :3],
+        epoch=norm_dataset["epoch"].data,
+        range=norm_dataset["vectors"].data[:, 3],
+        global_attributes={},
+        quality_flags=np.zeros(len(norm_dataset["epoch"].data)),
+        quality_bitmask=np.zeros(len(norm_dataset["epoch"].data)),
+        data_mode=DataMode.NORM,
         offsets=np.zeros((len(norm_dataset["epoch"].data), 3)),
         timedelta=np.zeros(len(norm_dataset["epoch"].data)),
     )
