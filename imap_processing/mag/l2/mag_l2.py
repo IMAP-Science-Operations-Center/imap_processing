@@ -98,7 +98,7 @@ def mag_l2(
         input_data["epoch"].data,
         input_data["vectors"].data[:, 3],
         {},
-        offsets_dataset["quality_flags"].data,
+        offsets_dataset["quality_flag"].data,
         offsets_dataset["quality_bitmask"].data,
         mode,
         offsets=offsets_dataset["offsets"].data,

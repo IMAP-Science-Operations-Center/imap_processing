@@ -309,7 +309,6 @@ class MagL2:
         self.range = self.range[day_start_index:day_end_index]
         self.magnitude = self.magnitude[day_start_index:day_end_index]
         self.quality_flags = self.quality_flags[day_start_index:day_end_index]
-
         self.quality_bitmask = self.quality_bitmask[day_start_index:day_end_index]
 
     def rotate_frame(self, end_frame: ValidFrames) -> None:
