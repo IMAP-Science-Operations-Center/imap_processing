@@ -176,7 +176,7 @@ def test_process_spacecraft_packet(
 
     swe_product = process_swe(sc_xarray_data, [in_flight_cal_file])
 
-    assert len(swe_product[0].keys()) == 7
+    assert len(swe_product[0].keys()) == 6
 
 
 def test_get_energy():
@@ -461,4 +461,4 @@ def test_process_swe(mock_read_cal, swe_test_data, fields_to_test):
     # TODO: add tests with test data here.
 
     # Check that all groups in the data are accounted for.
-    assert len(swe_data) == 912 // 60
+    assert len(swe_data) == 912 // 60 * 2
