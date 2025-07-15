@@ -95,11 +95,11 @@ def add_cdf_attributes(
 
     Parameters
     ----------
-    dataset : xr.Dataset
+    dataset : xarray.Dataset
         The dataset to update.
     logical_source : str
         The logical source of the dataset.
-    attr_mgr : AttributeManager
+    attr_mgr : ImapCdfAttributes
         The attribute manager to retrieve attributes.
 
     Returns
