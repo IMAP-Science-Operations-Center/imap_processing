@@ -241,8 +241,8 @@ class MagL2:
         )
 
         quality_bitmask = xr.DataArray(
-            self.quality_flags,
-            name="quality_flags",
+            self.quality_bitmask,
+            name="quality_bitmask",
             dims=["epoch"],
             attrs=attribute_manager.get_variable_attributes("qf"),
         )
@@ -304,12 +304,12 @@ class MagL2:
 
         day_start_index = np.searchsorted(self.epoch, start_timestamp_j2000)
         day_end_index = np.searchsorted(self.epoch, end_timestamp_j2000)
-
         self.epoch = self.epoch[day_start_index:day_end_index]
         self.vectors = self.vectors[day_start_index:day_end_index, :]
         self.range = self.range[day_start_index:day_end_index]
         self.magnitude = self.magnitude[day_start_index:day_end_index]
         self.quality_flags = self.quality_flags[day_start_index:day_end_index]
+
         self.quality_bitmask = self.quality_bitmask[day_start_index:day_end_index]
 
     def rotate_frame(self, end_frame: ValidFrames) -> None:
