@@ -113,7 +113,7 @@ def test_get_geometric_function():
         ancillary_files, "l1b-sensor-gf-noblades", phi, theta, quality_flags
     )
 
-    assert np.array_equal(
+    np.testing.assert_array_equal(
         gf, np.array([0, 0, 0.13713, 0.1792, 0.35507, 0.1792, 0.13713, 0, 0])
     )
-    assert np.array_equal(quality_flags, np.array([2, 2, 0, 0, 0, 0, 0, 2, 2]))
+    np.testing.assert_array_equal(quality_flags, np.array([2, 2, 0, 0, 0, 0, 0, 2, 2]))

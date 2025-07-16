@@ -280,6 +280,7 @@ def get_geometric_factor(
     # Fetch geometric factor values at nearest (phi, theta) pairs
     geometric_factor = gf_table[phi_idx, theta_idx]
 
+    # If the geometric factor is zero it means that the instrument is out of the FOV.
     if filename == "l1b-sensor-gf-noblades":
         quality_flag[geometric_factor == 0] |= ImapDEUltraFlags.NOBLADESFOV.value
     if filename == "l1b-sensor-gf-blades":
