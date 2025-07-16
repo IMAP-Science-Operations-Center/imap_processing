@@ -121,7 +121,7 @@ ULTRA_PHXTOF_HIGH_TIME = PacketProperties(
     mantissa_bit_length=4,
 )
 ULTRA_EXTOF_HIGH_ANGULAR = PacketProperties(
-    apid=[886, 949],
+    apid=[886, 950],
     logical_source=[
         "imap_ultra_l1a_45sensor-histogram-ena-extof-hi-ang",
         "imap_ultra_l1a_90sensor-histogram-ena-extof-hi-ang",
