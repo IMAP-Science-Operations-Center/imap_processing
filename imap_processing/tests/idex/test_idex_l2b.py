@@ -181,12 +181,12 @@ def test_compute_counts_by_charge_and_mass():
 
     expected_shape = (
         len(epoch_doy_unique),
-        len(CHARGE_BIN_EDGES),
+        len(CHARGE_BIN_EDGES) - 1,
         len(SPIN_PHASE_BIN_EDGES) - 1,
     )
     expected_map_shape = (
         len(epoch_doy_unique),
-        len(CHARGE_BIN_EDGES),
+        len(CHARGE_BIN_EDGES) - 1,
         len(SKY_GRID.az_bin_edges) - 1,
         len(SKY_GRID.el_bin_edges) - 1,
     )
@@ -200,15 +200,15 @@ def test_compute_counts_by_charge_and_mass():
     expected_array = np.zeros(expected_shape)
     expected_map_array = np.zeros(expected_map_shape)
     # Add ones where we expect counts
-    expected_array[0, 1:3, 0] = 1
-    expected_array[1, 3:5, 0] = 1
-    expected_array[2, 5, 0] = 1
-    expected_array[3, 6, 0] = 1
+    expected_array[0, 0:2, 0] = 1
+    expected_array[1, 2:4, 0] = 1
+    expected_array[2, 4, 0] = 1
+    expected_array[3, 5, 0] = 1
     # Add ones where we expect counts for the map
-    expected_map_array[0, 1:3, 0, 15] = 1
-    expected_map_array[1, 3:5, 0, 15] = 1
-    expected_map_array[2, 5, 0, 15] = 1
-    expected_map_array[3, 6, 0, 15] = 1
+    expected_map_array[0, 0:2, 0, 15] = 1
+    expected_map_array[1, 2:4, 0, 15] = 1
+    expected_map_array[2, 4, 0, 15] = 1
+    expected_map_array[3, 5, 0, 15] = 1
     # assert that the counts are as expected
     np.testing.assert_array_equal(counts_by_charge, expected_array)
     np.testing.assert_array_equal(counts_by_mass, expected_array)
@@ -252,12 +252,12 @@ def test_compute_counts_by_charge_and_mass_out_of_bounds():
 
     expected_shape = (
         len(epoch_doy_unique),
-        len(CHARGE_BIN_EDGES),
+        len(CHARGE_BIN_EDGES) - 1,
         len(SPIN_PHASE_BIN_EDGES) - 1,
     )
     expected_map_shape = (
         len(epoch_doy_unique),
-        len(CHARGE_BIN_EDGES),
+        len(CHARGE_BIN_EDGES) - 1,
         len(SKY_GRID.az_bin_edges) - 1,
         len(SKY_GRID.el_bin_edges) - 1,
     )
@@ -272,10 +272,10 @@ def test_compute_counts_by_charge_and_mass_out_of_bounds():
     expected_map_array = np.zeros(expected_map_shape)
     # Add ones where we expect counts
     expected_array[0, 0, 0] = 1
-    expected_array[1, len(CHARGE_BIN_EDGES) - 1, 0] = 1
+    expected_array[1, len(CHARGE_BIN_EDGES) - 2, 0] = 1
     # Add ones where we expect counts for the map
     expected_map_array[0, 0, 0, 0] = 1
-    expected_map_array[1, len(CHARGE_BIN_EDGES) - 1, 0, 29] = 1
+    expected_map_array[1, len(CHARGE_BIN_EDGES) - 2, 0, 29] = 1
     # assert that the counts are as expected
     np.testing.assert_array_equal(counts_by_charge, expected_array)
     np.testing.assert_array_equal(counts_by_mass, expected_array)

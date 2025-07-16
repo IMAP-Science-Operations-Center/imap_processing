@@ -133,8 +133,8 @@ def idex_l2b(
         daily_on_percentage,
     )
     # Create l2b Dataset
-    charge_bins = np.arange(len(CHARGE_BIN_EDGES))
-    mass_bins = np.arange(len(CHARGE_BIN_EDGES))
+    charge_bins = np.arange(len(CHARGE_BIN_EDGES) - 1)
+    mass_bins = np.arange(len(CHARGE_BIN_EDGES) - 1)
     spin_phase_bins = np.arange(len(SPIN_PHASE_BIN_EDGES) - 1)
     epoch = xr.DataArray(
         name="epoch",
@@ -332,20 +332,24 @@ def compute_counts_by_charge_and_mass(
         for each dataset, and a 1D array of daily epoch values.
     """
     # Initialize arrays to hold counts.
-    # There should be 4 spin phase bins, 11 charge bins, and 11 mass bins.
+    # There should be 4 spin phase bins, 10 charge bins, and 10 mass bins.
     # The first bin for charge and mass is for values below the first bin edge.
     counts_by_charge = np.zeros(
-        (len(epoch_doy_unique), len(CHARGE_BIN_EDGES), len(SPIN_PHASE_BIN_EDGES) - 1),
+        (
+            len(epoch_doy_unique),
+            len(CHARGE_BIN_EDGES) - 1,
+            len(SPIN_PHASE_BIN_EDGES) - 1,
+        ),
     )
     counts_by_mass = np.zeros(
-        (len(epoch_doy_unique), len(MASS_BIN_EDGES), len(SPIN_PHASE_BIN_EDGES) - 1),
+        (len(epoch_doy_unique), len(MASS_BIN_EDGES) - 1, len(SPIN_PHASE_BIN_EDGES) - 1),
     )
     # Initialize arrays to hold count maps. Each map is a 3 or 4D array with shape
-    # (epoch, 11 [charge or mass], 60 [longitude bins], 30 [latitude bins]).
+    # (epoch, 10 [charge or mass], 60 [longitude bins], 30 [latitude bins]).
     counts_by_charge_map = np.zeros(
         (
             len(epoch_doy_unique),
-            len(CHARGE_BIN_EDGES),
+            len(CHARGE_BIN_EDGES) - 1,
             len(LON_BINS_EDGES) - 1,
             len(LAT_BINS_EDGES) - 1,
         ),
@@ -353,7 +357,7 @@ def compute_counts_by_charge_and_mass(
     counts_by_mass_map = np.zeros(
         (
             len(epoch_doy_unique),
-            len(MASS_BIN_EDGES),
+            len(MASS_BIN_EDGES) - 1,
             len(LON_BINS_EDGES) - 1,
             len(LAT_BINS_EDGES) - 1,
         ),
@@ -391,9 +395,9 @@ def compute_counts_by_charge_and_mass(
         binned_latitude = np.clip(binned_latitude, 1, len(LAT_BINS_EDGES) - 1)
         # If the values in the array are beyond the bounds of bins, 0 or len(bins) it is
         # returned as such. In this case, the desired result is to place the values
-        # beyond the last bin into the last bin and keep the values below the first bin.
-        binned_charge = np.clip(binned_charge, 0, len(CHARGE_BIN_EDGES) - 1)
-        binned_mass = np.clip(binned_mass, 0, len(MASS_BIN_EDGES) - 1)
+        # beyond the first or last bin into the first or last bin, respectively.
+        binned_charge = np.clip(binned_charge, 1, len(CHARGE_BIN_EDGES) - 1)
+        binned_mass = np.clip(binned_mass, 1, len(MASS_BIN_EDGES) - 1)
 
         # Count dust events for each spin phase, mass bin, charge bin, and bin into
         # a rectangular grid
@@ -404,10 +408,10 @@ def compute_counts_by_charge_and_mass(
             binned_longitude,
             binned_latitude,
         ):
-            counts_by_mass[i, mass_bin, spin_phase_bin] += 1
-            counts_by_charge[i, charge_bin, spin_phase_bin] += 1
-            counts_by_mass_map[i, mass_bin, lon_bin - 1, lat_bin - 1] += 1
-            counts_by_charge_map[i, charge_bin, lon_bin - 1, lat_bin - 1] += 1
+            counts_by_mass[i, mass_bin - 1, spin_phase_bin] += 1
+            counts_by_charge[i, charge_bin - 1, spin_phase_bin] += 1
+            counts_by_mass_map[i, mass_bin - 1, lon_bin - 1, lat_bin - 1] += 1
+            counts_by_charge_map[i, charge_bin - 1, lon_bin - 1, lat_bin - 1] += 1
 
     return (
         counts_by_charge,
