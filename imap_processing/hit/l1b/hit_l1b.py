@@ -17,6 +17,7 @@ from imap_processing.hit.l1b.constants import (
     FILLVAL_FLOAT32,
     FILLVAL_INT64,
     LIVESTIM_PULSES,
+    SECTORS,
     SUMMED_PARTICLE_ENERGY_RANGE_MAPPING,
 )
 
@@ -445,7 +446,10 @@ def process_sectored_rates_data(
 
     Sectored counts data is transmitted 10 minutes after they are collected.
     To calculate rates, the sectored counts over 10 minutes need to be divided by
-    the sum of livetime values from the previous 10 minutes.
+    the sum of livetime values from the previous 10 minutes multiplied by a factor
+    15 to account for the different inclination sectors (a single spacecraft
+    rotation is split into 15 inclination ranges). See equation 11 in the algorithm
+    document.
 
     Parameters
     ----------
@@ -461,10 +465,7 @@ def process_sectored_rates_data(
     xr.Dataset
         The processed L1B sectored rates dataset.
     """
-    # TODO
-    #  -filter by epoch values in day being processed.
-    #   middle epoch (or mod 5 value for 6th frame)
-    #  -consider refactoring calculate_rates function to handle sectored rates
+    # TODO - consider refactoring calculate_rates function to handle sectored rates
 
     # Define particles and coordinates
     particles = ["h", "he4", "cno", "nemgsi", "fe"]
@@ -521,7 +522,7 @@ def process_sectored_rates_data(
             rates = xr.DataArray(
                 np.where(
                     counts != FILLVAL_INT64,
-                    (counts / livetime_10min_reshaped).astype(np.float32),
+                    (counts / (SECTORS * livetime_10min_reshaped)).astype(np.float32),
                     FILLVAL_FLOAT32,
                 ),
                 dims=l1a_counts_dataset[var].dims,
