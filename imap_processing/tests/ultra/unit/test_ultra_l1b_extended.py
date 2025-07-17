@@ -6,7 +6,6 @@ import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.spice.spin import get_spin_data
-from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import get_angular_profiles
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     CoinType,
@@ -437,20 +436,12 @@ def test_determine_species(test_fixture):
         "SSD",
     )
 
-    h_indices_ph = np.where(species_bin_ph == 1)[0]
-    ctof_indices_ph = np.where(
-        (df_ph["cTOF"].astype("float") > UltraConstants.CTOF_SPECIES_MIN)
-        & (df_ph["cTOF"].astype("float") < UltraConstants.CTOF_SPECIES_MAX)
-    )[0]
-
-    h_indices_ssd = np.where(species_bin_ssd == 1)[0]
-    ctof_indices_ssd = np.where(
-        (df_ssd["cTOF"].astype("float") > UltraConstants.CTOF_SPECIES_MIN)
-        & (df_ssd["cTOF"].astype("float") < UltraConstants.CTOF_SPECIES_MAX)
-    )[0]
-
-    np.testing.assert_array_equal(h_indices_ph, ctof_indices_ph)
-    np.testing.assert_array_equal(h_indices_ssd, ctof_indices_ssd)
+    np.testing.assert_array_equal(
+        species_bin_ph, np.full(len(df_ph), 1, dtype=np.uint8)
+    )
+    np.testing.assert_array_equal(
+        species_bin_ssd, np.full(len(df_ssd), 1, dtype=np.uint8)
+    )
 
 
 def test_get_phi_theta(test_fixture):
@@ -615,9 +606,9 @@ def test_get_efficiency():
     np.testing.assert_allclose(efficiency, expected_efficiency, atol=1e-03, rtol=0)
 
 
-def test_determine_ebin_ph(yf_fixture):
+def test_determine_ebin_ph(test_fixture):
     """Tests determine_ebin_ph function."""
-    df_filt, _, _ = yf_fixture
+    df_filt, _, _, _ = test_fixture
     df_ph = df_filt[df_filt["StopType"].isin(StopType.PH.value)]
 
     bin = determine_ebin_pulse_height(
@@ -632,9 +623,9 @@ def test_determine_ebin_ph(yf_fixture):
     )
 
 
-def test_determine_ebin_ssd(yf_fixture):
+def test_determine_ebin_ssd(test_fixture):
     """Tests determine_ebin_ssd function."""
-    df_filt, _, _ = yf_fixture
+    df_filt, _, _, _ = test_fixture
     df_ssd = df_filt[df_filt["StopType"].isin(StopType.SSD.value)]
 
     bin = determine_ebin_ssd(
