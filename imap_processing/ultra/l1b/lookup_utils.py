@@ -280,10 +280,14 @@ def get_geometric_factor(
     # Fetch geometric factor values at nearest (phi, theta) pairs
     geometric_factor = gf_table[phi_idx, theta_idx]
 
-    # If the geometric factor is zero it means that the instrument is out of the FOV.
-    if filename == "l1b-sensor-gf-noblades":
-        quality_flag[geometric_factor == 0] |= ImapDEUltraFlags.NOBLADESFOV.value
-    if filename == "l1b-sensor-gf-blades":
-        quality_flag[geometric_factor == 0] |= ImapDEUltraFlags.BLADESFOV.value
+    phi_rad = np.deg2rad(phi)
+    numerator = 5.0 * np.cos(phi_rad)
+    denominator = 1 + 2.80 * np.cos(phi_rad)
+    # Equation 19 in the Ultra Algorithm Document.
+    theta_nom = np.arctan(numerator / denominator)
+    theta_nom = np.rad2deg(theta_nom)
+
+    outside_fov = np.abs(theta) > theta_nom
+    quality_flag[outside_fov] |= ImapDEUltraFlags.FOV.value
 
     return geometric_factor

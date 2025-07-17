@@ -41,8 +41,7 @@ class ImapDEUltraFlags(FlagNameMixin):
     """IMAP Ultra flags."""
 
     NONE = CommonFlags.NONE
-    BLADESFOV = 2**0  # bit 0
-    NOBLADESFOV = 2**1  # bit 1
+    FOV = 2**0  # bit 0
 
 
 class ImapHkUltraFlags(FlagNameMixin):
