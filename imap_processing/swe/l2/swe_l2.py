@@ -244,7 +244,7 @@ def put_data_into_angle_bins(
     np.add.at(binned_data, (time_indices, energy_indices, angle_bin_indices), data)
     print("data ", data[2, 0, 1], data[2, 0, 4])  # Debugging line to check binned data
     print("binned_data ", binned_data[2, 0, 3])  # Debugging line to check binned data
-    print(f"bin indces ", angle_bin_indices[2, 0])  # Debugging line to check bin indices
+    print("bin indces ", angle_bin_indices[2, 0])  # Debugging line to check bin indices
     # Count occurrences in each bin to compute the mean.
     # Ensure float dtype for division
     bin_counts = np.zeros_like(binned_data, dtype=float)
@@ -252,9 +252,11 @@ def put_data_into_angle_bins(
 
     # Compute the mean. Replace zero counts with NaN to indicate no data in the bin
     # because zero physical counts could be valid data.
-    bin_counts[bin_counts == 0] = np.nan
+    bin_counts[bin_counts == 0] = 0
     binned_data /= bin_counts
-    print(f"binned_data after division ", binned_data[2, 0, 3])  # Debugging line to check binned data
+    print(
+        "binned_data after division ", binned_data[2, 0, 3]
+    )  # Debugging line to check binned data
     return binned_data
 
 
@@ -491,7 +493,9 @@ def swe_l2(l1b_dataset: xr.Dataset) -> xr.Dataset:
     phase_space_density_binned_data = put_data_into_angle_bins(
         phase_space_density, spin_angle_bins_indices
     )
-    print(f"binned_data after function ", flux_binned_data[2, 0, 3])  # Debugging line to check binned data
+    print(
+        "binned_data after function ", flux_binned_data[2, 0, 3]
+    )  # Debugging line to check binned data
 
     dataset["phase_space_density"] = xr.DataArray(
         phase_space_density_binned_data,

@@ -207,11 +207,12 @@ def l2_binned_psd_validation_df():
     df["shcoarse"] = df["shcoarse"].ffill()
     return df
 
+
 @pytest.fixture(scope="session")
 def l2_binned_flux_14sec_validation_df():
     """Read validation data from file"""
     l1_val_path = imap_module_directory / "tests/swe/l2_validation"
-    filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v1G_14_6.dat"
+    filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v1H_14_6.dat"
 
     # Define column names for validation data
     column_names = [
@@ -244,7 +245,7 @@ def l2_binned_flux_14sec_validation_df():
 def l2_binned_psd_14sec_validation_df():
     """Read validation data from file"""
     l1_val_path = imap_module_directory / "tests/swe/l2_validation"
-    filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v0G_14_6.dat"
+    filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v0H_14_6.dat"
 
     # Define column names for validation data
     column_names = [

@@ -417,35 +417,25 @@ def test_swe_l2_14_6sec(
     assert l2_cdf_filepath.name == "imap_swe_l2_sci_20240510_v002.cdf"
 
     # --------14.6 sec spin period validation--------
-    bin_flux_val = l2_binned_flux_14sec_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
+    bin_flux_val = l2_binned_flux_14sec_validation_df.values[:, 1:].reshape(
+        6, 24, 30, 7
+    )
     bin_psd_val = l2_binned_psd_14sec_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
     bin_flux_data = l2_dataset["flux"].data
-    print(f"binned_data in test ", bin_flux_data[2, 0, 3])  # Debugging line to check binned data
+    print(
+        "binned_data in test ", bin_flux_data[2, 0, 3]
+    )  # Debugging line to check binned data
     bin_psd_data = l2_dataset["phase_space_density"].data
 
-    # np.testing.assert_allclose(bin_flux_data, bin_flux_val, rtol=1e-6)
-    # np.testing.assert_allclose(bin_psd_data, bin_psd_val, rtol=1e-6)
+    # Since L2 stores nan in bins where there is no data, we need to first mask places where
+    # there is no data in validation data.
+    nan_mask = ~np.isnan(bin_flux_data)
+    non_nan_data = bin_flux_data[nan_mask]
+    non_nan_val = bin_flux_val[nan_mask]
+    np.testing.assert_allclose(non_nan_data, non_nan_val, rtol=1e-6)
 
-    with open("bin_val.txt", "w") as f:
-        # check that we have correct zero values in same places
-        # of validation data and science data
-        for cycle in np.arange(len(bin_flux_data)):
-            for esa_idx in np.arange(swe_constants.N_ESA_STEPS):
-                for angle_idx in np.arange(swe_constants.N_ANGLE_BINS):
-                    # if cycle == 5:
-                    #     np.testing.assert_allclose(bin_psd_data[cycle], bin_val[cycle], rtol=1e-6)
-                    l2_data = bin_psd_data[cycle, esa_idx, angle_idx]
-                    val_data = bin_psd_val[cycle, esa_idx, angle_idx]
-                    if np.all(l2_data != val_data):
-                        if cycle == 2 and esa_idx == 0 and angle_idx == 3:
-                            print(l2_data, val_data)
-                        print(
-                            f"Cycle {cycle}, ESA {esa_idx:02d}, Angle {angle_idx:02d}: "
-                            "Validation data: "
-                            f"{np.array2string(val_data, separator=' ', max_line_width=np.inf)}, "
-                            "L2 Flux data: "
-                            f"{np.array2string(l2_data, separator=' ', max_line_width=np.inf)}",
-                            file=f,
-                        )
-
-
+    # Test that binned PSD data matches validation data
+    nan_mask = ~np.isnan(bin_psd_data)
+    non_nan_data = bin_psd_data[nan_mask]
+    non_nan_val = bin_psd_val[nan_mask]
+    np.testing.assert_allclose(non_nan_data, non_nan_val, rtol=1e-6)
