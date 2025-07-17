@@ -117,7 +117,7 @@ def mag_test_l1d_data(mocks):
             imap_dir
             / "validation"
             / "calibration"
-            / "imap_mag_ialirt-calibration_20250627_v007.cdf"
+            / "imap_mag_l1d-calibration_20250101_v003.cdf"
     )
     mocks["construct_path"].return_value = cal_path
     calibration_data = MagAncillaryCombiner([cal_path], "20251017").combined_dataset
