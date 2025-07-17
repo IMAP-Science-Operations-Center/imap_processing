@@ -420,15 +420,14 @@ def test_swe_l2_14_6sec(
     bin_flux_val = l2_binned_flux_14sec_validation_df.values[:, 1:].reshape(
         6, 24, 30, 7
     )
-    bin_psd_val = l2_binned_psd_14sec_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
     bin_flux_data = l2_dataset["flux"].data
-    print(
-        "binned_data in test ", bin_flux_data[2, 0, 3]
-    )  # Debugging line to check binned data
+
+    bin_psd_val = l2_binned_psd_14sec_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
     bin_psd_data = l2_dataset["phase_space_density"].data
 
-    # Since L2 stores nan in bins where there is no data, we need to first mask places where
-    # there is no data in validation data.
+    # Since L2 processed data stores nan in bins where there is no data
+    # but validation data stores 0.0 in those same bins,
+    # we need to find non-nan data to compare.
     nan_mask = ~np.isnan(bin_flux_data)
     non_nan_data = bin_flux_data[nan_mask]
     non_nan_val = bin_flux_val[nan_mask]

@@ -111,7 +111,7 @@ def l1b_validation_df():
 
 @pytest.fixture(scope="session")
 def l2_sector_validation_df():
-    """Read validation data from file"""
+    """Validation for phase_space_density_spin_sector variable in L2 data"""
     l1_val_path = imap_module_directory / "tests/swe/l2_validation"
     filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_v0B_15.dat"
 
@@ -144,7 +144,10 @@ def l2_sector_validation_df():
 
 @pytest.fixture(scope="session")
 def l2_binned_flux_validation_df():
-    """Read validation data from file"""
+    """Validation data for flux variable in L2 data.
+
+    This is for 15 spin period data.
+    """
     l1_val_path = imap_module_directory / "tests/swe/l2_validation"
     filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v1F_15.dat"
 
@@ -177,7 +180,10 @@ def l2_binned_flux_validation_df():
 
 @pytest.fixture(scope="session")
 def l2_binned_psd_validation_df():
-    """Read validation data from file"""
+    """Validation for phase_space_density variable in L2 data
+
+    This is for 15 spin period data.
+    """
     l1_val_path = imap_module_directory / "tests/swe/l2_validation"
     filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v0F_15.dat"
 
@@ -210,7 +216,10 @@ def l2_binned_psd_validation_df():
 
 @pytest.fixture(scope="session")
 def l2_binned_flux_14sec_validation_df():
-    """Read validation data from file"""
+    """Validation data for flux variable in L2 data
+
+    This is for 14.6 spin period data.
+    """
     l1_val_path = imap_module_directory / "tests/swe/l2_validation"
     filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v1H_14_6.dat"
 
@@ -243,7 +252,10 @@ def l2_binned_flux_14sec_validation_df():
 
 @pytest.fixture(scope="session")
 def l2_binned_psd_14sec_validation_df():
-    """Read validation data from file"""
+    """Validation data for phase_space_density variable in L2 data.
+
+    This is for 14.6 spin period data.
+    """
     l1_val_path = imap_module_directory / "tests/swe/l2_validation"
     filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v0H_14_6.dat"
 

@@ -404,7 +404,6 @@ def use_fake_spin_data_for_time(
         )
         spin_csv_file_path = tmp_path / "spin_data.spin.csv"
         spin_df.to_csv(spin_csv_file_path, index=False)
-        spin_df.to_csv("spin_data.spin.csv", index=False)
         use_test_spin_data_csv([spin_csv_file_path])
 
     return wrapped_set_spin_data_filepath

@@ -242,9 +242,7 @@ def put_data_into_angle_bins(
 
     # Use np.add.at() to put values into bins and add values in the bins into one.
     np.add.at(binned_data, (time_indices, energy_indices, angle_bin_indices), data)
-    print("data ", data[2, 0, 1], data[2, 0, 4])  # Debugging line to check binned data
-    print("binned_data ", binned_data[2, 0, 3])  # Debugging line to check binned data
-    print("bin indces ", angle_bin_indices[2, 0])  # Debugging line to check bin indices
+
     # Count occurrences in each bin to compute the mean.
     # Ensure float dtype for division
     bin_counts = np.zeros_like(binned_data, dtype=float)
@@ -252,11 +250,9 @@ def put_data_into_angle_bins(
 
     # Compute the mean. Replace zero counts with NaN to indicate no data in the bin
     # because zero physical counts could be valid data.
-    bin_counts[bin_counts == 0] = 0
+    bin_counts[bin_counts == 0] = np.nan
     binned_data /= bin_counts
-    print(
-        "binned_data after division ", binned_data[2, 0, 3]
-    )  # Debugging line to check binned data
+
     return binned_data
 
 
@@ -457,12 +453,6 @@ def swe_l2(l1b_dataset: xr.Dataset) -> xr.Dataset:
     inst_spin_angle = get_spin_angle(inst_spin_phase, degrees=True).reshape(
         -1, swe_constants.N_ESA_STEPS, swe_constants.N_ANGLE_SECTORS
     )
-    np.savetxt(
-        "spin_angle.csv",
-        inst_spin_angle[2],
-        delimiter=",",
-        fmt="%f",
-    )
 
     # Save spin angle in dataset per SWE request.
     dataset["inst_az_spin_sector"] = xr.DataArray(
@@ -473,12 +463,6 @@ def swe_l2(l1b_dataset: xr.Dataset) -> xr.Dataset:
     )
 
     spin_angle_bins_indices = find_angle_bin_indices(inst_spin_angle)
-    np.savetxt(
-        "spin_angle_bins.csv",
-        spin_angle_bins_indices[2],
-        delimiter=",",
-        fmt="%d",
-    )
 
     # Put flux data in its spin angle bins using the indices.
     flux_binned_data = put_data_into_angle_bins(flux, spin_angle_bins_indices)
@@ -493,9 +477,6 @@ def swe_l2(l1b_dataset: xr.Dataset) -> xr.Dataset:
     phase_space_density_binned_data = put_data_into_angle_bins(
         phase_space_density, spin_angle_bins_indices
     )
-    print(
-        "binned_data after function ", flux_binned_data[2, 0, 3]
-    )  # Debugging line to check binned data
 
     dataset["phase_space_density"] = xr.DataArray(
         phase_space_density_binned_data,

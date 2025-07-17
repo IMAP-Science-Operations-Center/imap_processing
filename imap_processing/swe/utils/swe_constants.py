@@ -26,7 +26,7 @@ GEOMETRIC_FACTORS = np.array(
     ]
 )
 
-ELECTRON_MASS = 9.10938e-31  # kg
+ELECTRON_MASS = 9.10938356e-31  # kg
 
 # See doc string of calculate_phase_space_density() for more details.
 VELOCITY_CONVERSION_FACTOR = 1.237e31
