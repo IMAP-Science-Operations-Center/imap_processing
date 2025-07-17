@@ -111,6 +111,10 @@ def flag_attitude(
 
     spin_period = spin_df.loc[spin_df.spin_number.isin(spins), "spin_period_sec"]
     spin_starttime = spin_df.loc[spin_df.spin_number.isin(spins), "spin_start_met"]
+    spin_phase_valid = spin_df.loc[spin_df.spin_number.isin(spins), "spin_phase_valid"]
+    spin_period_valid = spin_df.loc[
+        spin_df.spin_number.isin(spins), "spin_period_valid"
+    ]
     spin_rates = 60 / spin_period  # 60 seconds in a minute
     bad_spin_rate_indices = (spin_rates < UltraConstants.CULLING_RPM_MIN) | (
         spin_rates > UltraConstants.CULLING_RPM_MAX
@@ -122,6 +126,14 @@ def flag_attitude(
     quality_flags[bad_spin_rate_indices] |= ImapAttitudeUltraFlags.SPINRATE.value
     mismatch_indices = compare_aux_univ_spin_table(aux_dataset, spins, spin_df)
     quality_flags[mismatch_indices] |= ImapAttitudeUltraFlags.AUXMISMATCH.value
+
+    # Spin phase validity flag
+    phase_invalid_indices = spin_phase_valid == 0
+    quality_flags[phase_invalid_indices] |= ImapAttitudeUltraFlags.SPINPHASE.value
+
+    # Spin period validity flag
+    period_invalid_indices = ~spin_period_valid
+    quality_flags[period_invalid_indices] |= ImapAttitudeUltraFlags.SPINPERIOD.value
 
     return quality_flags, spin_rates, spin_period, spin_starttime
 

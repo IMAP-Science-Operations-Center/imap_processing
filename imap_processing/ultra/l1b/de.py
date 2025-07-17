@@ -12,6 +12,8 @@ from imap_processing.ultra.l1b.ultra_l1b_annotated import (
 )
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     StopType,
+    determine_ebin_pulse_height,
+    determine_ebin_ssd,
     determine_species,
     get_coincidence_positions,
     get_ctof,
@@ -114,6 +116,7 @@ def calculate_de(
     ctof = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     magnitude_v = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     energy = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    e_bin = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
     species_bin = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
     t2 = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     event_times = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
@@ -168,6 +171,9 @@ def calculate_de(
         (xb[ph_indices], yb[ph_indices]),
         d[ph_indices],
     )
+    e_bin[ph_indices] = determine_ebin_pulse_height(
+        energy[ph_indices], tof[ph_indices], r[ph_indices]
+    )
     species_bin[ph_indices] = determine_species(tof[ph_indices], r[ph_indices], "PH")
     etof[ph_indices], xc[ph_indices] = get_coincidence_positions(
         de_dataset.isel(epoch=ph_indices), t2[ph_indices], f"ultra{sensor}"
@@ -197,6 +203,9 @@ def calculate_de(
         (xf[ssd_indices], yf[ssd_indices]),
         (xb[ssd_indices], yb[ssd_indices]),
         d[ssd_indices],
+    )
+    e_bin[ssd_indices] = determine_ebin_ssd(
+        energy[ssd_indices], tof[ssd_indices], r[ssd_indices]
     )
     species_bin[ssd_indices] = determine_species(
         tof[ssd_indices], r[ssd_indices], "SSD"
@@ -234,6 +243,7 @@ def calculate_de(
 
     de_dict["tof_energy"] = get_de_energy_kev(v, species_bin)
     de_dict["energy"] = energy
+    de_dict["ebin"] = e_bin
     de_dict["species"] = species_bin
 
     # Annotated Events.

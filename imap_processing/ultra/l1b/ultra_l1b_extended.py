@@ -575,6 +575,7 @@ def get_de_energy_kev(v: np.ndarray, species: np.ndarray) -> NDArray:
     index_hydrogen = np.where(species == 1)
     energy = np.full_like(v2, np.nan)
 
+    # TODO: we will calculate the energies of the different species here.
     # 1/2 mv^2 in Joules, convert to keV
     energy[index_hydrogen] = (
         0.5 * UltraConstants.MASS_H * v2[index_hydrogen] * UltraConstants.J_KEV
@@ -760,14 +761,9 @@ def determine_species(tof: np.ndarray, path_length: np.ndarray, type: str) -> ND
     """
     # Event TOF normalization to Z axis
     ctof, _ = get_ctof(tof, path_length, type)
-    # Initialize bin array
-    species_bin = np.full(len(ctof), 255, dtype=np.uint8)
-
-    # Assign Species 1 ("H") to bins where cTOF is within the specified range
-    species_bin[
-        (ctof > UltraConstants.CTOF_SPECIES_MIN)
-        & (ctof < UltraConstants.CTOF_SPECIES_MAX)
-    ] = 1
+    # Assign Species 1 ("H") to bins
+    # TODO: this is a placeholder for future species assignments.
+    species_bin = np.full(len(ctof), 1, dtype=np.uint8)
 
     return species_bin
 
@@ -1044,3 +1040,92 @@ def get_efficiency(
     )
 
     return interpolator((theta_inst, phi_inst, energy))
+
+
+def determine_ebin_pulse_height(
+    energy: np.ndarray, tof: np.ndarray, path_length: np.ndarray
+) -> NDArray:
+    """
+    Determine the species for pulse-height events.
+
+    Species is determined from the particle energy and velocity.
+    For velocity, the particle TOF is normalized with respect
+    to a fixed distance dmin between the front and back detectors.
+    The normalized TOF is termed the corrected TOF (ctof).
+    Particle species are determined from
+    the energy and ctof using a lookup table.
+
+    Further description is available on pages 42-44 of
+    IMAP-Ultra Flight Software Specification document
+    (7523-9009_Rev_-.pdf).
+
+    Parameters
+    ----------
+    energy : np.ndarray
+        Energy from the PH event (keV).
+    tof : np.ndarray
+        Time of flight of the PH event (tenths of a nanosecond).
+    path_length : np.ndarray
+        Path length (r) (hundredths of a millimeter).
+
+    Returns
+    -------
+    bin : np.array
+        Species bin.
+    """
+    # PH event TOF normalization to Z axis
+    ctof = get_ctof(tof, path_length, type="PH")
+    # TODO: need lookup tables
+    # placeholder
+    ebin = np.full(len(ctof), 255, dtype=np.uint8)
+
+    return ebin
+
+
+def determine_ebin_ssd(
+    energy: np.ndarray, tof: np.ndarray, path_length: np.ndarray
+) -> NDArray:
+    """
+    Determine the species for SSD events.
+
+    Species is determined from the particle's energy and velocity.
+    For velocity, the particle's TOF is normalized with respect
+    to a fixed distance dmin between the front and back detectors.
+    For SSD events, an adjustment is also made to the path length
+    to account for the shorter distances that such events
+    travel to reach the detector. The normalized TOF is termed
+    the corrected tof (ctof). Particle species are determined from
+    the energy and cTOF using a lookup table.
+
+    Further description is available on pages 42-44 of
+    IMAP-Ultra Flight Software Specification document
+    (7523-9009_Rev_-.pdf).
+
+    Parameters
+    ----------
+    energy : np.ndarray
+        Energy from the SSD event (keV).
+    tof : np.ndarray
+        Time of flight of the SSD event (tenths of a nanosecond).
+    path_length : np.ndarray
+        Path length (r) (hundredths of a millimeter).
+
+    Returns
+    -------
+    bin : np.ndarray
+        Species bin.
+    """
+    # SSD event TOF normalization to Z axis
+    ctof = get_ctof(tof, path_length, type="SSD")
+
+    ebin = np.full(len(ctof), 255, dtype=np.uint8)  # placeholder
+
+    # TODO: get these lookup tables
+    # if r < get_image_params("PathSteepThresh"):
+    #     # bin = ExTOFSpeciesSteep[energy, ctof]
+    # elif r < get_image_params("PathMediumThresh"):
+    #     # bin = ExTOFSpeciesMedium[energy, ctof]
+    # else:
+    #     # bin = ExTOFSpeciesFlat[energy, ctof]
+
+    return ebin

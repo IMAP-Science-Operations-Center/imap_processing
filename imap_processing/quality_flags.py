@@ -52,7 +52,6 @@ class ImapHkUltraFlags(FlagNameMixin):
     INF = CommonFlags.INF  # bit 0
     NEG = CommonFlags.NEG  # bit 1
     BADSPIN = ENAFlags.BADSPIN  # bit 2
-    FLAG1 = 2**3  # bit 3
 
 
 class ImapAttitudeUltraFlags(FlagNameMixin):
@@ -61,6 +60,8 @@ class ImapAttitudeUltraFlags(FlagNameMixin):
     NONE = CommonFlags.NONE
     SPINRATE = 2**0  # bit 0
     AUXMISMATCH = 2**1  # bit 1 # aux packet does not match Universal Spin Table
+    SPINPHASE = 2**2  # bit 2 # spin phase flagged by Universal Spin Table
+    SPINPERIOD = 2**3  # bit 3 # spin period flagged by Universal Spin Table
 
 
 class ImapRatesUltraFlags(FlagNameMixin):
@@ -70,6 +71,7 @@ class ImapRatesUltraFlags(FlagNameMixin):
     HIGHRATES = 2**0  # bit 0
     FIRSTSPIN = 2**1  # bit 1
     LASTSPIN = 2**2  # bit 2
+    PARTIALSPIN = 2**2  # bit 2
 
 
 class ImapInstrumentUltraFlags(FlagNameMixin):

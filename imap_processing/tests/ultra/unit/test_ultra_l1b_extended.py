@@ -13,6 +13,8 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     StartType,
     StopType,
     calculate_etof_xc,
+    determine_ebin_pulse_height,
+    determine_ebin_ssd,
     determine_species,
     get_coincidence_positions,
     get_ctof,
@@ -611,3 +613,37 @@ def test_get_efficiency():
     expected_efficiency = np.array([0.0593281, 0.21803386, 0.0593281, 0.0628940])
 
     np.testing.assert_allclose(efficiency, expected_efficiency, atol=1e-03, rtol=0)
+
+
+def test_determine_ebin_ph(yf_fixture):
+    """Tests determine_ebin_ph function."""
+    df_filt, _, _ = yf_fixture
+    df_ph = df_filt[df_filt["StopType"].isin(StopType.PH.value)]
+
+    bin = determine_ebin_pulse_height(
+        df_ph["Energy"].astype("float").to_numpy(),
+        df_ph["TOF"].astype("float").to_numpy(),
+        df_ph["r"].astype("float").to_numpy(),
+    )
+
+    # TODO: add in bin values.
+    np.testing.assert_allclose(
+        bin, np.full(len(bin), 255, dtype=np.uint8), atol=1e-05, rtol=0
+    )
+
+
+def test_determine_ebin_ssd(yf_fixture):
+    """Tests determine_ebin_ssd function."""
+    df_filt, _, _ = yf_fixture
+    df_ssd = df_filt[df_filt["StopType"].isin(StopType.SSD.value)]
+
+    bin = determine_ebin_ssd(
+        df_ssd["Energy"].astype("float").to_numpy(),
+        df_ssd["TOF"].astype("float").to_numpy(),
+        df_ssd["r"].astype("float").to_numpy(),
+    )
+
+    # TODO: add in bin values.
+    np.testing.assert_allclose(
+        bin, np.full(len(bin), 255, dtype=np.uint8), atol=1e-05, rtol=0
+    )
