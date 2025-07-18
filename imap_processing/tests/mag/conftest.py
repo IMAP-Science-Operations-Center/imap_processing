@@ -114,15 +114,16 @@ def mag_test_l2_data(mocks):
 def mag_test_l1d_data(mocks):
     imap_dir = Path(__file__).parent
     cal_path = (
-            imap_dir
-            / "validation"
-            / "calibration"
-            / "imap_mag_l1d-calibration_20250101_v003.cdf"
+        imap_dir
+        / "validation"
+        / "calibration"
+        / "imap_mag_l1d-calibration_20250101_v003.cdf"
     )
     mocks["construct_path"].return_value = cal_path
     calibration_data = MagAncillaryCombiner([cal_path], "20251017").combined_dataset
 
     return calibration_data
+
 
 def mag_generate_l1b_from_csv(df, logical_source):
     length = len(df.index)

@@ -3,9 +3,9 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.mag.constants import DataMode
-from imap_processing.mag.l1d.mag_l1d_data import MagL1d
+from imap_processing.mag.l1d.mag_l1d_data import MagL1d, MagL1dConfiguration
 from imap_processing.mag.l2.mag_l2 import retrieve_matrix_from_l2_calibration
-from imap_processing.mag.l2.mag_l2_data import MagL2L1dBase, ValidFrames
+from imap_processing.mag.l2.mag_l2_data import ValidFrames
 
 
 def mag_l1d(
@@ -16,16 +16,10 @@ def mag_l1d(
     input_mago_burst: xr.Dataset = None,
     input_magi_burst: xr.Dataset = None,
 ) -> list[xr.Dataset]:
-
     day: np.datetime64 = day_to_process.astype("datetime64[D]")
 
-    calibration_matrix_mago = retrieve_matrix_from_l2_calibration(
-        calibration_dataset, day, use_mago=True
-    )
-
-    calibration_matrix_magi = retrieve_matrix_from_l2_calibration(
-        calibration_dataset, day, use_mago=False
-    )
+    # Read configuration out of file
+    config = MagL1dConfiguration(calibration_dataset, day)
 
     # Only the first 3 components are used for L1d
     mago_vectors = input_mago_norm["vectors"].data[:, :3]
@@ -41,9 +35,7 @@ def mag_l1d(
         data_mode=DataMode.NORM,
         magi_vectors=magi_vectors,
         magi_range=input_magi_norm["vectors"].data[:, 3],
-        offsets=calibration_dataset["offsets"].data,
-        mago_calibration=calibration_matrix_mago,
-        magi_calibration=calibration_matrix_magi,
+        config=config
     )
 
     # TODO: L1D attributes
@@ -52,7 +44,5 @@ def mag_l1d(
     attributes.add_instrument_variable_attrs("mag", "l2")
     l1d_norm.rotate_frame(ValidFrames.SRF)
 
-    output_dataset = l1d_norm.generate_dataset(
-        attributes, day_to_process
-    )
+    output_dataset = l1d_norm.generate_dataset(attributes, day_to_process)
     return [output_dataset]
