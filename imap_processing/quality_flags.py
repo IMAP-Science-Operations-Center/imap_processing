@@ -51,6 +51,7 @@ class ImapHkUltraFlags(FlagNameMixin):
     INF = CommonFlags.INF  # bit 0
     NEG = CommonFlags.NEG  # bit 1
     BADSPIN = ENAFlags.BADSPIN  # bit 2
+    FLAG1 = 2**3  # bit 3
 
 
 class ImapAttitudeUltraFlags(FlagNameMixin):
