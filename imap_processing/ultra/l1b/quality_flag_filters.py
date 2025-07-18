@@ -6,6 +6,7 @@ from imap_processing.quality_flags import (
 )
 
 QUALITY_FLAG_FILTERS: dict[str, list[FlagNameMixin]] = {
+    "quality_attitude": [],
     "quality_ena_rates": [
         ImapRatesUltraFlags.FIRSTSPIN,
         ImapRatesUltraFlags.LASTSPIN,
