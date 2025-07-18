@@ -1,4 +1,3 @@
-from matplotlib import pyplot as plt
 from unittest.mock import patch
 
 import numpy as np
@@ -8,7 +7,6 @@ import xarray as xr
 from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l1d.mag_l1d import mag_l1d
 from imap_processing.mag.l1d.mag_l1d_data import MagL1d, MagL1dConfiguration
-from imap_processing.mag.l2.mag_l2 import retrieve_matrix_from_l2_calibration
 from imap_processing.mag.l2.mag_l2_data import ValidFrames
 from imap_processing.tests.mag.conftest import mag_l1a_dataset_generator
 
@@ -63,13 +61,16 @@ def mag_l1d_test_class(mag_test_l1d_data, norm_dataset):
 
 
 def test_mag_l1d(mag_test_l1d_data, norm_dataset):
-    with patch(
-                  "imap_processing.mag.l2.mag_l2_data.frame_transform",
-                  side_effect=lambda *args, **kwargs: args[1]
-              ), patch(
-                  "imap_processing.mag.l1d.mag_l1d_data.MagL1d.calculate_spin_offsets",
-                  side_effect=lambda *args, **kwargs: None
-              ):
+    with (
+        patch(
+            "imap_processing.mag.l2.mag_l2_data.frame_transform",
+            side_effect=lambda *args, **kwargs: args[1],
+        ),
+        patch(
+            "imap_processing.mag.l1d.mag_l1d_data.MagL1d.calculate_spin_offsets",
+            side_effect=lambda *args, **kwargs: None,
+        ),
+    ):
         l1d = mag_l1d(
             mag_test_l1d_data,
             norm_dataset,
@@ -80,12 +81,12 @@ def test_mag_l1d(mag_test_l1d_data, norm_dataset):
 
 
 def test_offset_vector():
-    test_vector = [1.0, 2.0, 3.0, 0]
     # offsets are a vector of shape (2, 4, 3)
+    raise NotImplementedError
 
 
 def test_calculate_spin_offsets(
-        mag_l1d_test_class, fake_mag_spin_data, furnish_kernels
+    mag_l1d_test_class, fake_mag_spin_data, furnish_kernels
 ):
     x_vectors = np.arange(1, 156)
     y_vectors = np.arange(156, 1, -1)
@@ -107,20 +108,28 @@ def test_calculate_spin_offsets(
         offsets = mag_l1d_test_class.calculate_spin_offsets()
 
     expected_epochs = [15, 45, 90, 150]
-    assert np.array_equal(offsets['epoch'].data, expected_epochs)
+    assert np.array_equal(offsets["epoch"].data, expected_epochs)
 
     # pull out the valid full spins from the test data (last few are fudging to get a
     # chunk from 150-155)
-    valid_spins = [[15, 30], [30, 45], [45, 60], [75, 90], [90, 105], [135, 150],
-                   [150, 155], [155, 155]]
+    valid_spins = [
+        [15, 30],
+        [30, 45],
+        [45, 60],
+        [75, 90],
+        [90, 105],
+        [135, 150],
+        [150, 155],
+        [155, 155],
+    ]
 
     expected_x_avg = []
     expected_y_avg = []
     for index in range(0, len(valid_spins), 2):
-        x_spin = x_vectors[valid_spins[index][0]: valid_spins[index + 1][1]]
+        x_spin = x_vectors[valid_spins[index][0] : valid_spins[index + 1][1]]
 
         expected_x_avg.append(np.nanmean(x_spin))
-        y_spin = y_vectors[valid_spins[index][0]: valid_spins[index + 1][1]]
+        y_spin = y_vectors[valid_spins[index][0] : valid_spins[index + 1][1]]
         expected_y_avg.append(np.nanmean(y_spin))
 
     np.testing.assert_allclose(offsets["x_offset"].data, expected_x_avg)
@@ -144,18 +153,25 @@ def test_apply_spin_offsets(mag_l1d_test_class, fake_mag_spin_data, furnish_kern
     offset_dataset["x_offset"] = xr.DataArray([1, 2, 3, 4])
     offset_dataset["y_offset"] = xr.DataArray([-1, -2, -3, -4])
 
-    expected_output = np.concatenate((np.full((45, 3), [-1, 1, 0]),
-                                     np.full((45, 3), [-2, 2, 0]),
-                                        np.full((65, 3), [-3, 3, 0])), axis=0)
-    print(expected_output.shape)
+    expected_output = np.concatenate(
+        (
+            np.full((45, 3), [-1, 1, 0]),
+            np.full((45, 3), [-2, 2, 0]),
+            np.full((65, 3), [-3, 3, 0]),
+        ),
+        axis=0,
+    )
 
     mag_l1d_test_class.spin_offsets = offset_dataset
     output_vectors = mag_l1d_test_class.apply_spin_offsets(mag_l1d_test_class.vectors)
 
     assert mag_l1d_test_class.vectors.shape == expected_output.shape
+    assert np.array_equal(output_vectors, expected_output)
 
-    print(output_vectors)
-    print('=====')
-    print(expected_output)
+    # Check that the spin average application factor is being applied
+    offset_dataset["x_offset"].data = offset_dataset["x_offset"].data * 2
+    offset_dataset["y_offset"].data = offset_dataset["y_offset"].data * 2
 
+    mag_l1d_test_class.config.spin_average_application_factor = 0.5
+    output_vectors = mag_l1d_test_class.apply_spin_offsets(mag_l1d_test_class.vectors)
     assert np.array_equal(output_vectors, expected_output)
