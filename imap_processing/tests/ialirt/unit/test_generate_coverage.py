@@ -75,3 +75,52 @@ def test_use_outages(furnish_kernels):
     )
 
     np.testing.assert_array_equal(coverage_dict["Kiel_time"], expected)
+
+
+@pytest.mark.external_kernel
+def test_dsn(furnish_kernels):
+    """
+    Test that outages are properly used.
+    """
+    # Note: tested this code with the Sun and achieved expected
+    # results ~12 hours of coverage from horizon to horizon.
+    kernels = [
+        "naif0012.tls",
+        "pck00011.tpc",
+        "de440s.bsp",
+        "imap_spk_demo.bsp",
+        "earth_1962_240827_2124_combined.bpc",
+    ]
+
+    dsn = {
+        "DSS-75": [
+            ("2026-09-22T11:50:00.00Z", "2026-09-22T14:10:00Z"),
+        ]
+    }
+
+    outages = {
+        "DSS-75": [
+            ("2026-09-22T13:50:00.00Z", "2026-09-22T14:10:00Z"),
+        ],
+    }
+
+    with furnish_kernels(kernels):
+        coverage_dict = generate_coverage(
+            "2026-09-22T00:00:00Z", outages=outages, dsn=dsn
+        )
+
+    dsn_expected = np.array(["2026-09-22T12:00:00.000", "2026-09-22T13:00:00.000"])
+    kiel_expected = np.array(
+        [
+            "2026-09-22T07:00:00.000",
+            "2026-09-22T08:00:00.000",
+            "2026-09-22T09:00:00.000",
+            "2026-09-22T10:00:00.000",
+            "2026-09-22T11:00:00.000",
+            "2026-09-22T15:00:00.000",
+            "2026-09-22T16:00:00.000",
+        ]
+    )
+
+    np.testing.assert_array_equal(coverage_dict["Kiel_time"], kiel_expected)
+    np.testing.assert_array_equal(coverage_dict["DSS-75_time"], dsn_expected)
