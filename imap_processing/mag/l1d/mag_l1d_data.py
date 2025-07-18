@@ -6,9 +6,11 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.mag.constants import FILLVAL, DataMode
+from imap_processing.mag.l1c.interpolation_methods import linear
 from imap_processing.mag.l2.mag_l2 import retrieve_matrix_from_l2_calibration
 from imap_processing.mag.l2.mag_l2_data import MagL2L1dBase, ValidFrames
 from imap_processing.spice import spin
+from imap_processing.spice.geometry import frame_transform
 
 
 @dataclass
@@ -46,6 +48,8 @@ class MagL1dConfiguration:
         The spin average application factor for the correct day.
     gradiometer_factor : np.ndarray
         The gradiometer factor for the correct day. Should be size (3,).
+    apply_gradiometry : bool
+        Whether to apply gradiometry or not. Default is True.
     """
 
     offsets: np.ndarray
@@ -55,6 +59,7 @@ class MagL1dConfiguration:
     quality_flag_threshold: np.float64
     spin_average_application_factor: np.float64
     gradiometer_factor: np.ndarray
+    apply_gradiometry: bool = True
 
     def __init__(self, calibration_dataset: xr.Dataset, day: np.datetime64) -> None:
         """
@@ -124,6 +129,8 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         The MAGi vectors, shape (N, 3).
     magi_range : np.ndarray
         The MAGi range values, shape (N,).
+    magi_epoch : np.ndarray
+        The MAGi epoch values, shape (N,).
     config : MagL1dConfiguration
         The configuration for L1d processing, including calibration matrices and
         offsets. This is generated from the input ancillary file and the
@@ -136,6 +143,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
     # TODO magi epoch
     magi_vectors: np.ndarray
     magi_range: np.ndarray
+    magi_epoch: np.ndarray
     config: MagL1dConfiguration
     spin_offsets: xr.Dataset = None
 
@@ -150,18 +158,56 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             self.config.magi_calibration,
             self.config.offsets,
         )
-
-        # Before gradiometry mode, we want to convert to the spacecraft frame
+        # We need to be in SRF for the spin offsets application and calculation
         self.rotate_frame(ValidFrames.SRF)
 
         if self.spin_offsets is None and self.data_mode == DataMode.NORM:
             self.spin_offsets = self.calculate_spin_offsets()
 
-        self.vectors = self.apply_spin_offsets(self.vectors)
-        self.magi_vectors = self.apply_spin_offsets(self.magi_vectors)
+        self.vectors = self.apply_spin_offsets(
+            self.spin_offsets,
+            self.epoch,
+            self.vectors,
+            self.config.spin_average_application_factor,
+        )
+        self.magi_vectors = self.apply_spin_offsets(
+            self.spin_offsets,
+            self.magi_epoch,
+            self.magi_vectors,
+            self.config.spin_average_application_factor,
+        )
+
+        # we need to be in DSRF for the gradiometry offsets calculation and application
+        self.rotate_frame(ValidFrames.DSRF)
+
+        if self.config.apply_gradiometry:
+            self.gradiometry_offsets = self.calculate_gradiometry_offsets(
+                self.vectors, self.epoch, self.magi_vectors, self.magi_epoch
+            )
 
         self.magnitude = MagL2L1dBase.calculate_magnitude(vectors=self.vectors)
         self.is_l1d = True
+
+    def rotate_frame(self, end_frame: ValidFrames) -> None:
+        """
+        Rotate the vectors to the desired frame.
+
+        Rotates both the mago vectors (self.vectors) and the magi vectors
+        (self.magi_vectors), then set self.frame to end_frame.
+
+        Parameters
+        ----------
+        end_frame : ValidFrames
+            The frame to rotate to. Should be one of the ValidFrames enum.
+        """
+        start_frame = self.frame
+        super().rotate_frame(end_frame)
+        self.magi_vectors = frame_transform(
+            self.magi_epoch,
+            self.magi_vectors,
+            from_frame=start_frame.value,
+            to_frame=end_frame.value,
+        )
 
     def _calibrate_and_offset_vectors(
         self,
@@ -357,7 +403,13 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         """
         return self.spin_offsets
 
-    def apply_spin_offsets(self, vectors: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def apply_spin_offsets(
+        spin_offsets: xr.Dataset,
+        epoch: np.ndarray,
+        vectors: np.ndarray,
+        spin_average_application_factor: np.float64,
+    ) -> np.ndarray:
         """
         Apply the spin offsets to the input vectors.
 
@@ -373,33 +425,39 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
 
         Parameters
         ----------
+        spin_offsets : xr.Dataset
+            The spin offsets dataset.
+        epoch : np.ndarray
+            The epoch values for the input vectors, shape (N,).
         vectors : np.ndarray
             The input vectors to apply offsets to, shape (N, 3). Can be Mago, magi,
             burst or norm. The same offsets file is applied to all.
+        spin_average_application_factor : np.float64
+            The spin average application factor from the configuration file.
 
         Returns
         -------
         np.ndarray
             The output vectors with spin offsets applied, shape (N, 3).
         """
-        if self.spin_offsets is None:
+        if spin_offsets is None:
             raise ValueError("No spin offsets calculated to apply.")
 
         output_vectors = np.full(vectors.shape, FILLVAL, dtype=np.int64)
 
-        for index in range(self.spin_offsets["epoch"].data.shape[0] - 1):
-            timestamp = self.spin_offsets["epoch"].data[index]
+        for index in range(spin_offsets["epoch"].data.shape[0] - 1):
+            timestamp = spin_offsets["epoch"].data[index]
             # for the first timestamp, catch all the beginning vectors
             if index == 0:
-                timestamp = self.epoch[0]
+                timestamp = epoch[0]
 
-            end_timestamp = self.spin_offsets["epoch"].data[index + 1]
+            end_timestamp = spin_offsets["epoch"].data[index + 1]
 
             # for the last timestamp, catch all the ending vectors
-            if index + 2 >= len(self.spin_offsets["epoch"].data):
-                end_timestamp = self.epoch[-1] + 1
+            if index + 2 >= len(spin_offsets["epoch"].data):
+                end_timestamp = epoch[-1] + 1
 
-            mask = (self.epoch >= timestamp) & (self.epoch < end_timestamp)
+            mask = (epoch >= timestamp) & (epoch < end_timestamp)
 
             mask = mask & (vectors[:, 0] != FILLVAL)
 
@@ -408,17 +466,65 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
 
             # TODO: should vectors be a float?
             x_offset = (
-                self.spin_offsets["x_offset"].data[index]
-                * self.config.spin_average_application_factor
+                spin_offsets["x_offset"].data[index] * spin_average_application_factor
             )
             y_offset = (
-                self.spin_offsets["y_offset"].data[index]
-                * self.config.spin_average_application_factor
+                spin_offsets["y_offset"].data[index] * spin_average_application_factor
             )
 
-            output_vectors[mask, 0] = self.vectors[mask, 0] - x_offset
-            output_vectors[mask, 1] = self.vectors[mask, 1] - y_offset
+            output_vectors[mask, 0] = vectors[mask, 0] - x_offset
+            output_vectors[mask, 1] = vectors[mask, 1] - y_offset
 
         output_vectors[:, 2] = vectors[:, 2]
 
         return output_vectors
+
+    @staticmethod
+    def calculate_gradiometry_offsets(
+        mago_vectors: np.ndarray,
+        mago_epoch: np.ndarray,
+        magi_vectors: np.ndarray,
+        magi_epoch: np.ndarray,
+    ) -> xr.Dataset:
+        """
+        Calculate the gradiometry offsets between MAGo and MAGi.
+
+        This uses linear interpolation to align the MAGi data to the MAGo timestamps,
+        then calculates the difference between the two sensors on each axis.
+
+        All vectors must be in the DSRF frame before starting.
+
+        Static method that can be used by i-ALiRT.
+
+        Parameters
+        ----------
+        mago_vectors : np.ndarray
+            The MAGo vectors, shape (N, 3).
+        mago_epoch : np.ndarray
+            The MAGo epoch values, shape (N,).
+        magi_vectors : np.ndarray
+            The MAGi vectors, shape (N, 3).
+        magi_epoch : np.ndarray
+            The MAGi epoch values, shape (N,).
+
+        Returns
+        -------
+        xr.Dataset
+            The gradiometer offsets dataset, with variables:
+            - epoch: the timestamp of the MAGo data
+            - gradiometer_offsets: the offset values (MAGi - MAGo) for each axis
+        """
+        aligned_magi = linear(
+            magi_vectors,
+            magi_epoch,
+            mago_epoch,
+        )
+
+        diff = aligned_magi - mago_vectors
+
+        grad_epoch = xr.DataArray(mago_epoch, dims=["epoch"])
+        direction = xr.DataArray(["x", "y", "z"], dims=["axis"])
+        grad_ds = xr.Dataset(coords={"epoch": grad_epoch, "direction": direction})
+        grad_ds["gradiometer_offsets"] = xr.DataArray(diff, dims=["epoch", "direction"])
+
+        return grad_ds

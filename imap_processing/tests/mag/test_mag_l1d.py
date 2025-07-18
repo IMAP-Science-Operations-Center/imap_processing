@@ -137,16 +137,10 @@ def test_calculate_spin_offsets(
 
 
 def test_apply_spin_offsets(mag_l1d_test_class, fake_mag_spin_data, furnish_kernels):
-    x_vectors = np.zeros(155)
-    y_vectors = np.zeros(155)
-    z_vectors = np.zeros(155)
+    vectors = np.zeros((155, 3))
+    epoch = np.arange(155) * 1e9
 
-    mag_l1d_test_class.vectors[:, 0] = x_vectors
-    mag_l1d_test_class.vectors[:, 1] = y_vectors
-    mag_l1d_test_class.vectors[:, 2] = z_vectors
-    mag_l1d_test_class.frame = ValidFrames.SRF
-
-    mag_l1d_test_class.config.spin_count_calibration = 2
+    spin_average_application_factor = 2.0
 
     offset_dataset = xr.Dataset()
     offset_dataset["epoch"] = xr.DataArray([15, 45, 90, 150])
@@ -162,8 +156,9 @@ def test_apply_spin_offsets(mag_l1d_test_class, fake_mag_spin_data, furnish_kern
         axis=0,
     )
 
-    mag_l1d_test_class.spin_offsets = offset_dataset
-    output_vectors = mag_l1d_test_class.apply_spin_offsets(mag_l1d_test_class.vectors)
+    output_vectors = MagL1d.apply_spin_offsets(
+        offset_dataset, epoch, vectors, spin_average_application_factor
+    )
 
     assert mag_l1d_test_class.vectors.shape == expected_output.shape
     assert np.array_equal(output_vectors, expected_output)
@@ -172,6 +167,22 @@ def test_apply_spin_offsets(mag_l1d_test_class, fake_mag_spin_data, furnish_kern
     offset_dataset["x_offset"].data = offset_dataset["x_offset"].data * 2
     offset_dataset["y_offset"].data = offset_dataset["y_offset"].data * 2
 
-    mag_l1d_test_class.config.spin_average_application_factor = 0.5
-    output_vectors = mag_l1d_test_class.apply_spin_offsets(mag_l1d_test_class.vectors)
+    output_vectors = MagL1d.apply_spin_offsets(offset_dataset, epoch, vectors, 0.5)
     assert np.array_equal(output_vectors, expected_output)
+
+
+def test_calculate_gradiometry_offsets():
+    mago_vectors = np.ones((10, 3)) * 10
+    mago_epoch = np.arange(10) * 1e9
+
+    magi_vectors = np.ones((10, 3)) * 5
+    magi_epoch = mago_epoch + 500
+
+    grad_ds = MagL1d.calculate_gradiometry_offsets(
+        mago_vectors, mago_epoch, magi_vectors, magi_epoch
+    )
+
+    assert np.array_equal(grad_ds["epoch"].data, mago_epoch)
+    assert np.array_equal(grad_ds["gradiometer_offsets"].data.shape, mago_vectors.shape)
+
+    assert np.allclose(grad_ds["gradiometer_offsets"].data, np.full((10, 3), -5.0))
