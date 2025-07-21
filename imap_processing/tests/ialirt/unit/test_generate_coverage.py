@@ -19,11 +19,8 @@ def test_generate_coverage(furnish_kernels):
     # Note: tested this code with the Sun and achieved expected
     # results ~12 hours of coverage from horizon to horizon.
     kernels = [
-        "naif0012.tls",
         "pck00011.tpc",
         "de440s.bsp",
-        "imap_spk_demo.bsp",
-        "earth_1962_240827_2124_combined.bpc",
     ]
     with furnish_kernels(kernels):
         coverage_dict = generate_coverage("2026-09-22T00:00:00Z")
@@ -46,11 +43,8 @@ def test_use_outages(furnish_kernels):
     # Note: tested this code with the Sun and achieved expected
     # results ~12 hours of coverage from horizon to horizon.
     kernels = [
-        "naif0012.tls",
         "pck00011.tpc",
         "de440s.bsp",
-        "imap_spk_demo.bsp",
-        "earth_1962_240827_2124_combined.bpc",
     ]
 
     outages = {
@@ -88,11 +82,8 @@ def test_dsn(furnish_kernels):
     # Note: tested this code with the Sun and achieved expected
     # results ~12 hours of coverage from horizon to horizon.
     kernels = [
-        "naif0012.tls",
         "pck00011.tpc",
         "de440s.bsp",
-        "imap_spk_demo.bsp",
-        "earth_1962_240827_2124_combined.bpc",
     ]
 
     dsn = {
