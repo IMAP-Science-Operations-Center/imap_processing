@@ -12,23 +12,6 @@ from imap_processing.quality_flags import ImapDEUltraFlags
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
 
 _YADJUST_DF = pd.read_csv(BASE_PATH / "yadjust.csv").set_index("dYLUT")
-_TDC_NORM_DF_ULTRA45 = pd.read_csv(
-    BASE_PATH / "ultra45_tdc_norm.csv", header=1, index_col="Index"
-)
-_TDC_NORM_DF_ULTRA90 = pd.read_csv(
-    BASE_PATH / "ultra90_tdc_norm.csv", header=1, index_col="Index"
-)
-_BACK_POS_DF_ULTRA45 = pd.read_csv(
-    BASE_PATH / "ultra45_back-pos-luts.csv", index_col="Index_offset"
-)
-_BACK_POS_DF_ULTRA90 = pd.read_csv(
-    BASE_PATH / "ultra90_back-pos-luts.csv", index_col="Index_offset"
-)
-_ENERGY_NORM_DF = pd.read_csv(BASE_PATH / "EgyNorm.mem.csv")
-_IMAGE_PARAMS_DF = {
-    "ultra45": pd.read_csv(BASE_PATH / "FM45_Startup1_ULTRA_IMGPARAMS_20240719.csv"),
-    "ultra90": pd.read_csv(BASE_PATH / "FM90_Startup1_ULTRA_IMGPARAMS_20240719.csv"),
-}
 
 
 def get_y_adjust(dy_lut: np.ndarray) -> npt.NDArray:
@@ -52,7 +35,9 @@ def get_y_adjust(dy_lut: np.ndarray) -> npt.NDArray:
     return _YADJUST_DF["dYAdj"].iloc[dy_lut].values
 
 
-def get_norm(dn: xr.DataArray, key: str, file_label: str) -> npt.NDArray:
+def get_norm(
+    dn: xr.DataArray, key: str, file_label: str, ancillary_files: dict
+) -> npt.NDArray:
     """
     Correct mismatches between the stop Time to Digital Converters (TDCs).
 
@@ -73,6 +58,8 @@ def get_norm(dn: xr.DataArray, key: str, file_label: str) -> npt.NDArray:
         BtSpNNorm, BtSpSNorm, BtSpENorm, or BtSpWNorm.
     file_label : str
         Instrument (ultra45 or ultra90).
+    ancillary_files : dict[Path]
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
@@ -80,16 +67,22 @@ def get_norm(dn: xr.DataArray, key: str, file_label: str) -> npt.NDArray:
         Normalized DNs.
     """
     if file_label == "ultra45":
-        tdc_norm_df = _TDC_NORM_DF_ULTRA45
+        tdc_norm_df = pd.read_csv(
+            ancillary_files["l1b-45sensor-tdc-norm-lookup"], header=1, index_col="Index"
+        )
     else:
-        tdc_norm_df = _TDC_NORM_DF_ULTRA90
+        tdc_norm_df = pd.read_csv(
+            ancillary_files["l1b-90sensor-tdc-norm-lookup"], header=1, index_col="Index"
+        )
 
     dn_norm = tdc_norm_df[key].iloc[dn].values
 
     return dn_norm
 
 
-def get_back_position(back_index: np.ndarray, key: str, file_label: str) -> npt.NDArray:
+def get_back_position(
+    back_index: np.ndarray, key: str, file_label: str, ancillary_files: dict
+) -> npt.NDArray:
     """
     Convert normalized TDC values using lookup tables.
 
@@ -108,6 +101,8 @@ def get_back_position(back_index: np.ndarray, key: str, file_label: str) -> npt.
         XBkTp, YBkTp, XBkBt, or YBkBt.
     file_label : str
         Instrument (ultra45 or ultra90).
+    ancillary_files : dict[Path]
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
@@ -115,14 +110,20 @@ def get_back_position(back_index: np.ndarray, key: str, file_label: str) -> npt.
         Converted DNs to Units of hundredths of a millimeter.
     """
     if file_label == "ultra45":
-        back_pos_df = _BACK_POS_DF_ULTRA45
+        back_pos_df = pd.read_csv(
+            ancillary_files["l1b-45sensor-back-pos-lookup"], index_col="Index_offset"
+        )
     else:
-        back_pos_df = _BACK_POS_DF_ULTRA90
+        back_pos_df = pd.read_csv(
+            ancillary_files["l1b-90sensor-back-pos-lookup"], index_col="Index_offset"
+        )
 
     return back_pos_df[key].values[back_index]
 
 
-def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray) -> npt.NDArray:
+def get_energy_norm(
+    ssd: np.ndarray, composite_energy: np.ndarray, ancillary_files: dict
+) -> npt.NDArray:
     """
     Normalize composite energy per SSD using a lookup table.
 
@@ -137,6 +138,8 @@ def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray) -> npt.NDArra
         Acts as index 1.
     composite_energy : np.ndarray
         Acts as index 2.
+    ancillary_files : dict[Path]
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
@@ -144,11 +147,11 @@ def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray) -> npt.NDArra
         Normalized composite energy.
     """
     row_number = ssd * 4096 + composite_energy
+    norm_lookup = pd.read_csv(ancillary_files["l1b-egynorm-lookup"])
+    return norm_lookup["NormEnergy"].iloc[row_number]
 
-    return _ENERGY_NORM_DF["NormEnergy"].iloc[row_number]
 
-
-def get_image_params(image: str, sensor: str) -> np.float64:
+def get_image_params(image: str, sensor: str, ancillary_files: dict) -> np.float64:
     """
     Lookup table for image parameters.
 
@@ -162,13 +165,19 @@ def get_image_params(image: str, sensor: str) -> np.float64:
         The column name to lookup in the CSV file, e.g., 'XFTLTOFF' or 'XFTRTOFF'.
     sensor : str
         Sensor name: "ultra45" or "ultra90".
+    ancillary_files : dict[Path]
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
     value : np.float64
         Image parameter value from the CSV file.
     """
-    lookup_table = _IMAGE_PARAMS_DF[sensor]
+    if sensor == "ultra45":
+        lookup_table = pd.read_csv(ancillary_files["l1b-45sensor-imgparams-lookup"])
+    else:
+        lookup_table = pd.read_csv(ancillary_files["l1b-90sensor-imgparams-lookup"])
+
     value: np.float64 = lookup_table[image].values[0]
     return value
 
@@ -196,7 +205,7 @@ def get_angular_profiles(
     lookup_table : DataFrame
         Angular profile lookup table for a given start_type and sensor.
     """
-    lut_descriptor = f"{sensor[-2:]}sensor-{start_type.lower()}slit-lookup"
+    lut_descriptor = f"l1b-{sensor[-2:]}sensor-{start_type.lower()}slit-lookup"
     lookup_table = pd.read_csv(ancillary_files[lut_descriptor])
 
     return lookup_table
