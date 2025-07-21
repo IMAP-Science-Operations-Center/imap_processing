@@ -1075,7 +1075,10 @@ class Mag(ProcessInstrument):
                     f"{dependencies}. Expected one or two dependencies."
                 )
         if self.data_level == "l1d":
-            science_files = dependencies.get_file_paths(source="mag", data_type="l1b")
+            science_files = dependencies.get_file_paths(source="mag", data_type="l1c")
+            science_files.extend(
+                dependencies.get_file_paths(source="mag", data_type="l1b")
+            )
             input_data = [load_cdf(dep) for dep in science_files]
             calibration = dependencies.get_processing_inputs(
                 descriptor="l1d-calibration"

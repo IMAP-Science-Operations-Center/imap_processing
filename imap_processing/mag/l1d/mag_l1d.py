@@ -43,7 +43,6 @@ def mag_l1d(
     input_mago_norm = None
     input_magi_burst = None
     input_mago_burst = None
-
     for dataset in science_data:
         source = dataset.attrs.get("Logical_source", "")
         if "norm-magi" in source:
