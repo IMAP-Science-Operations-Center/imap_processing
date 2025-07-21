@@ -28,8 +28,8 @@ def test_generate_coverage(furnish_kernels):
     with furnish_kernels(kernels):
         coverage_dict = generate_coverage("2026-09-22T00:00:00Z")
 
-    start = datetime.strptime(coverage_dict["Kiel_time"][0], "%Y-%m-%dT%H:%M:%S.%f")
-    end = datetime.strptime(coverage_dict["Kiel_time"][-1], "%Y-%m-%dT%H:%M:%S.%f")
+    start = datetime.strptime(coverage_dict["Kiel"][0], "%Y-%m-%dT%H:%M:%S.%f")
+    end = datetime.strptime(coverage_dict["Kiel"][-1], "%Y-%m-%dT%H:%M:%S.%f")
 
     duration = end - start
     hours = duration.total_seconds() / 3600
@@ -77,7 +77,7 @@ def test_use_outages(furnish_kernels):
         ]
     )
 
-    np.testing.assert_array_equal(coverage_dict["Kiel_time"], expected)
+    np.testing.assert_array_equal(coverage_dict["Kiel"], expected)
 
 
 @pytest.mark.external_kernel
