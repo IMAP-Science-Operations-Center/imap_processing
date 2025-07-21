@@ -351,13 +351,13 @@ def test_qf(norm_dataset):
     qf_bitmask[2] = 1
     qf_bitmask[5:8] = 2
     l2 = MagL2(
-        norm_dataset["vectors"].data[:, :3],
-        norm_dataset["epoch"],
-        norm_dataset["vectors"].data[:, 3],
-        {},
-        qf,
-        qf_bitmask,
-        DataMode.NORM,
+        vectors=norm_dataset["vectors"].data[:, :3],
+        epoch=norm_dataset["epoch"],
+        range=norm_dataset["vectors"].data[:, 3],
+        global_attributes={},
+        quality_flags=qf,
+        quality_bitmask=qf_bitmask,
+        data_mode=DataMode.NORM,
         offsets=np.zeros((len(norm_dataset["epoch"].data), 3)),
         timedelta=np.zeros(len(norm_dataset["epoch"].data)),
     )
