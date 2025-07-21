@@ -1074,7 +1074,7 @@ def determine_ebin_pulse_height(
         Species bin.
     """
     # PH event TOF normalization to Z axis
-    ctof = get_ctof(tof, path_length, type="PH")
+    ctof, _ = get_ctof(tof, path_length, type="PH")
     # TODO: need lookup tables
     # placeholder
     ebin = np.full(len(ctof), 255, dtype=np.uint8)
@@ -1116,7 +1116,7 @@ def determine_ebin_ssd(
         Species bin.
     """
     # SSD event TOF normalization to Z axis
-    ctof = get_ctof(tof, path_length, type="SSD")
+    ctof, _ = get_ctof(tof, path_length, type="SSD")
 
     ebin = np.full(len(ctof), 255, dtype=np.uint8)  # placeholder
 
