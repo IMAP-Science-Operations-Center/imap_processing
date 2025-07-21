@@ -243,8 +243,8 @@ class MagL2L1dBase:
         Parameters
         ----------
         vectors : np.ndarray
-            Array of vectors to apply the calibration to. Should be of shape (n, 3) where n
-            is the number of vectors.
+            Array of vectors to apply the calibration to. Should be of shape (n, 3)
+            where n is the number of vectors.
         calibration_matrix : np.ndarray
             Calibration matrix to apply to the vectors. Should be of shape (3, 3).
 
