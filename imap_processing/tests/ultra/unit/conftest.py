@@ -470,6 +470,7 @@ def faux_aux_dataset():
     return test_aux_dataset
 
 
+@pytest.mark.external_test_data
 @pytest.fixture
 def ancillary_files():
     """Fixture to return ancillary files."""
