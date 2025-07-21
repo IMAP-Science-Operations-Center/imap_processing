@@ -118,7 +118,7 @@ def test_frame_transform(et_strings, position, from_frame, to_frame, furnish_ker
         "naif0012.tls",
         "imap_sclk_0000.tsc",
         "imap_wkcp.tf",
-        "imap_science_0001.tf",
+        "imap_science_100.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
     ]
@@ -241,7 +241,7 @@ def test_get_rotation_matrix(furnish_kernels):
     kernels = [
         "naif0012.tls",
         "imap_wkcp.tf",
-        "imap_science_0001.tf",
+        "imap_science_100.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
     ]
@@ -263,7 +263,7 @@ def test_instrument_pointing(furnish_kernels):
     kernels = [
         "naif0012.tls",
         "imap_wkcp.tf",
-        "imap_science_0001.tf",
+        "imap_science_100.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
     ]
