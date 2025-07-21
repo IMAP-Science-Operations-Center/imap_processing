@@ -528,3 +528,43 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         grad_ds["gradiometer_offsets"] = xr.DataArray(diff, dims=["epoch", "direction"])
 
         return grad_ds
+
+    @staticmethod
+    def apply_gradiometry_offsets(
+        gradiometry_offsets: xr.Dataset,
+        vectors: np.ndarray,
+        gradiometer_factor: np.ndarray,
+    ) -> np.ndarray:
+        """
+        Apply the gradiometry offsets to the input vectors.
+
+        Gradiometry epoch and vectors epoch should align (i.e. the vectors should be
+        from mago).
+
+        The vectors should be in the DSRF frame.
+
+        Parameters
+        ----------
+        gradiometry_offsets : xr.Dataset
+            The gradiometry offsets dataset, as output by calculate_gradiometry_offsets.
+        vectors : np.ndarray
+            The input vectors to apply offsets to, shape (N, 3). Should be on the same
+            epoch as the gradiometry offsets.
+        gradiometer_factor : np.ndarray
+            A (3,3) element matrix to scale and rotate the gradiometer offsets.
+
+        Returns
+        -------
+        np.ndarray
+            The output vectors with gradiometry offsets applied, shape (N, 3).
+        """
+        offset_value = gradiometry_offsets["gradiometer_offsets"].data
+        offset_value = np.apply_along_axis(
+            np.dot,
+            1,
+            offset_value,
+            gradiometer_factor,
+        )
+
+        print(offset_value.shape)
+        return vectors - offset_value

@@ -21,21 +21,20 @@ def fake_mag_spin_data(spice_test_data_path, use_test_spin_data_csv):
 
 @pytest.fixture
 def norm_dataset(mag_test_l2_data):
-    offsets = mag_test_l2_data[1]
-    dataset = mag_l1a_dataset_generator(3504)
-    epoch_vals = offsets["epoch"].data
+    dataset = mag_l1a_dataset_generator(165)
+    epoch_vals = np.arange(165)
     vectors_per_second_attr = "0:2,4000000000:4"
     dataset.attrs["vectors_per_second"] = vectors_per_second_attr
     dataset["epoch"] = epoch_vals
     dataset.attrs["Logical_source"] = "imap_mag_l1c_norm-mago"
-    vectors = np.array([[i, i, i, 2] for i in range(1, 3505)])
+    vectors = np.array([[i, i, i, 2] for i in range(1, 166)])
     dataset["vectors"].data = vectors
 
     return dataset
 
 
 @pytest.fixture
-def mag_l1d_test_class(mag_test_l1d_data, norm_dataset):
+def mag_l1d_test_class(mag_test_l1d_data):
     fake_data = mag_l1a_dataset_generator(155)
 
     day = np.datetime64("2025-10-17")
@@ -48,9 +47,10 @@ def mag_l1d_test_class(mag_test_l1d_data, norm_dataset):
     l1d.epoch = fake_data["epoch"].data
     l1d.range = fake_data["vectors"].data[:, 3]
     l1d.global_attributes = {}
-    l1d.quality_flags = np.zeros(len(norm_dataset["epoch"].data))
-    l1d.quality_bitmask = np.zeros(len(norm_dataset["epoch"].data))
+    l1d.quality_flags = np.zeros(len(fake_data["epoch"].data))
+    l1d.quality_bitmask = np.zeros(len(fake_data["epoch"].data))
     l1d.data_mode = DataMode.BURST
+    l1d.magi_epoch = fake_data["epoch"].data
     l1d.magi_vectors = fake_data["vectors"].data[:, :3]
     l1d.magi_range = fake_data["vectors"].data[:, 3]
     l1d.config = config
@@ -60,15 +60,19 @@ def mag_l1d_test_class(mag_test_l1d_data, norm_dataset):
     return l1d
 
 
-def test_mag_l1d(mag_test_l1d_data, norm_dataset):
+def test_mag_l1d(mag_test_l1d_data, norm_dataset, furnish_kernels, fake_mag_spin_data):
+    kernels = [
+        "sim_1yr_imap_pointing_frame.bc",
+    ]
     with (
+        furnish_kernels(kernels),
         patch(
-            "imap_processing.mag.l2.mag_l2_data.frame_transform",
+            "imap_processing.mag.l1d.mag_l1d_data.frame_transform",
             side_effect=lambda *args, **kwargs: args[1],
         ),
         patch(
-            "imap_processing.mag.l1d.mag_l1d_data.MagL1d.calculate_spin_offsets",
-            side_effect=lambda *args, **kwargs: None,
+            "imap_processing.mag.l2.mag_l2_data.frame_transform",
+            side_effect=lambda *args, **kwargs: args[1],
         ),
     ):
         l1d = mag_l1d(
@@ -77,12 +81,30 @@ def test_mag_l1d(mag_test_l1d_data, norm_dataset):
             norm_dataset,
             np.datetime64("2025-10-17"),
         )
+
+    assert len(l1d) == 8
     assert "vectors" in l1d[0].data_vars
 
 
 def test_offset_vector():
     # offsets are a vector of shape (2, 4, 3)
-    raise NotImplementedError
+    offsets = np.array(
+        [
+            [[1, 1, 1], [2, 2, 2], [3, 3, 3], [4, 4, 4]],
+            [[-1, -1, -1], [-2, -2, -2], [-3, -3, -3], [-4, -4, -4]],
+        ]
+    )
+    test_vector = np.array([1, 2, 3, 3])
+
+    expected_vector = [-3, -2, -1, 3]
+    output_vector = MagL1d.offset_vector(test_vector, offsets, False)
+
+    assert np.array_equal(expected_vector, output_vector)
+
+    test_vector = np.array([1, 2, 3, 0])
+    expected_vector = [2, 3, 4, 0]
+    output_vector = MagL1d.offset_vector(test_vector, offsets, True)
+    assert np.array_equal(expected_vector, output_vector)
 
 
 def test_calculate_spin_offsets(
@@ -138,9 +160,9 @@ def test_calculate_spin_offsets(
 
 def test_apply_spin_offsets(mag_l1d_test_class, fake_mag_spin_data, furnish_kernels):
     vectors = np.zeros((155, 3))
-    epoch = np.arange(155) * 1e9
+    epoch = np.arange(155)
 
-    spin_average_application_factor = 2.0
+    spin_average_application_factor = 1.0
 
     offset_dataset = xr.Dataset()
     offset_dataset["epoch"] = xr.DataArray([15, 45, 90, 150])
@@ -186,3 +208,18 @@ def test_calculate_gradiometry_offsets():
     assert np.array_equal(grad_ds["gradiometer_offsets"].data.shape, mago_vectors.shape)
 
     assert np.allclose(grad_ds["gradiometer_offsets"].data, np.full((10, 3), -5.0))
+
+
+def test_apply_gradiometry_offsets():
+    vectors = np.ones((5, 3)) * 10
+    epoch = np.arange(5) * 1e9
+    offset_dataset = xr.Dataset()
+    offset_dataset["epoch"] = xr.DataArray(epoch)
+    offset_dataset["gradiometer_offsets"] = xr.DataArray(np.full((5, 3), [1, 1, 2]))
+
+    gradiometer_factor = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+    output = MagL1d.apply_gradiometry_offsets(
+        offset_dataset, vectors, gradiometer_factor
+    )
+
+    assert np.allclose(output[0] - vectors[0], np.dot([-1, -1, -2], gradiometer_factor))

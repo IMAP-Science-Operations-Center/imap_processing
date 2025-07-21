@@ -80,4 +80,5 @@ def mag_l1d(
     l1d_norm.rotate_frame(ValidFrames.SRF)
 
     output_dataset = l1d_norm.generate_dataset(attributes, day_to_process)
+    # TODO: Output ancillary files
     return [output_dataset]
