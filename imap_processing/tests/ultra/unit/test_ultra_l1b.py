@@ -136,6 +136,10 @@ def test_cdf_de(
         / "imap_ultra_l1b-sensor-gf-noblades_20250101_v000.csv",
         "l1b-sensor-gf-blades": path
         / "imap_ultra_l1b-sensor-gf-blades_20250101_v000.csv",
+        "45sensor-leftslit-lookup": path
+        / "imap_ultra_l1b-45sensor-leftslit-lookup_20250101_v000.csv",
+        "45sensor-rightslit-lookup": path
+        / "imap_ultra_l1b-45sensor-rightslit-lookup_20250101_v000.csv",
     }
     l1b_de_dataset = ultra_l1b(data_dict, ancillary_files)
 

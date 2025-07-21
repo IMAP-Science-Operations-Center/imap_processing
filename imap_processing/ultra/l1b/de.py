@@ -277,6 +277,7 @@ def calculate_de(
         de_dict["tof_energy"],
         de_dict["phi"],
         de_dict["theta"],
+        ancillary_files,
     )
     de_dict["event_efficiency"] = get_efficiency(
         de_dict["tof_energy"], de_dict["phi"], de_dict["theta"], ancillary_files

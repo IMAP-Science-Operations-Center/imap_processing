@@ -30,17 +30,6 @@ _IMAGE_PARAMS_DF = {
     "ultra90": pd.read_csv(BASE_PATH / "FM90_Startup1_ULTRA_IMGPARAMS_20240719.csv"),
 }
 
-_FWHM_TABLES = {
-    ("left", "ultra45"): pd.read_csv(BASE_PATH / "Angular_Profiles_FM45_LeftSlit.csv"),
-    ("right", "ultra45"): pd.read_csv(
-        BASE_PATH / "Angular_Profiles_FM45_RightSlit.csv"
-    ),
-    ("left", "ultra90"): pd.read_csv(BASE_PATH / "Angular_Profiles_FM90_LeftSlit.csv"),
-    ("right", "ultra90"): pd.read_csv(
-        BASE_PATH / "Angular_Profiles_FM90_RightSlit.csv"
-    ),
-}
-
 
 def get_y_adjust(dy_lut: np.ndarray) -> npt.NDArray:
     """
@@ -184,7 +173,9 @@ def get_image_params(image: str, sensor: str) -> np.float64:
     return value
 
 
-def get_angular_profiles(start_type: str, sensor: str) -> pd.DataFrame:
+def get_angular_profiles(
+    start_type: str, sensor: str, ancillary_files: dict
+) -> pd.DataFrame:
     """
     Lookup table for FWHM for theta and phi.
 
@@ -197,13 +188,16 @@ def get_angular_profiles(start_type: str, sensor: str) -> pd.DataFrame:
        Start Type: Left, Right.
     sensor : str
         Sensor name: "ultra45" or "ultra90".
+    ancillary_files : dict[Path]
+        Ancillary files.
 
     Returns
     -------
     lookup_table : DataFrame
         Angular profile lookup table for a given start_type and sensor.
     """
-    lookup_table = _FWHM_TABLES[(start_type.lower(), sensor)]
+    lut_descriptor = f"{sensor[-2:]}sensor-{start_type.lower()}slit-lookup"
+    lookup_table = pd.read_csv(ancillary_files[lut_descriptor])
 
     return lookup_table
 

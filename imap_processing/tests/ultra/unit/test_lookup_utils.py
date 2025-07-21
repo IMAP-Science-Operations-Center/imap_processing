@@ -1,3 +1,5 @@
+from unittest import mock
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -16,6 +18,7 @@ from imap_processing.ultra.l1b.lookup_utils import (
 )
 
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
+TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
 def test_get_y_adjust():
@@ -76,11 +79,20 @@ def test_get_image_params():
 def test_get_angular_profiles():
     """Tests function get_image_params."""
 
-    u45_left = get_angular_profiles("left", "ultra45")
-    u45_right = get_angular_profiles("right", "ultra45")
+    ancillary_files = {
+        "45sensor-leftslit-lookup": "test1.csv",
+        "45sensor-rightslit-lookup": "test2.csv",
+        "90sensor-leftslit-lookup": "test3.csv",
+        "90sensor-rightslit-lookup": "test4.csv",
+    }
+    with mock.patch(
+        "imap_processing.ultra.l1b.lookup_utils.pd.read_csv"
+    ) as mock_read_csv:
+        get_angular_profiles("left", "ultra45", ancillary_files)
+        mock_read_csv.assert_called_with("test1.csv")
 
-    assert u45_left.shape == (525, 7)
-    assert u45_right.shape == (525, 7)
+        get_angular_profiles("right", "ultra45", ancillary_files)
+        mock_read_csv.assert_called_with("test2.csv")
 
 
 @pytest.mark.external_test_data

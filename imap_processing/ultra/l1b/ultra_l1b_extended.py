@@ -954,6 +954,7 @@ def get_fwhm(
     energy: NDArray,
     phi_inst: NDArray,
     theta_inst: NDArray,
+    ancillary_files: dict,
 ) -> tuple[NDArray, NDArray]:
     """
     Interpolate phi and theta FWHM values for each event based on start type.
@@ -970,6 +971,8 @@ def get_fwhm(
         Instrument-frame azimuth angle for each event.
     theta_inst : NDArray
         Instrument-frame elevation angle for each event.
+    ancillary_files : dict
+        Ancillary files containing lookup tables for angular profiles.
 
     Returns
     -------
@@ -980,8 +983,8 @@ def get_fwhm(
     """
     phi_interp = np.full_like(phi_inst, np.nan, dtype=np.float64)
     theta_interp = np.full_like(theta_inst, np.nan, dtype=np.float64)
-    lt_table = get_angular_profiles("left", sensor)
-    rt_table = get_angular_profiles("right", sensor)
+    lt_table = get_angular_profiles("left", sensor, ancillary_files)
+    rt_table = get_angular_profiles("right", sensor, ancillary_files)
 
     # Left start type
     idx_left = start_type == StartType.Left.value
