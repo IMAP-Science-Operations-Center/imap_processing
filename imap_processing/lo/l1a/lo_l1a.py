@@ -101,6 +101,33 @@ def lo_l1a(dependency: Path) -> list[xr.Dataset]:
         ds = process_star_sensor(ds)
         ds = add_dataset_attrs(ds, attr_mgr, logical_source)
         datasets_to_return.append(ds)
+    if LoAPID.ILO_DIAG_PCC in datasets_by_apid:
+        logger.info(
+            f"\nProcessing {LoAPID(LoAPID.ILO_DIAG_PCC).name} "
+            f"packet (APID: {LoAPID.ILO_DIAG_PCC.value})"
+        )
+        logical_source = "imap_lo_l1a_pcc"
+        ds = datasets_by_apid[LoAPID.ILO_DIAG_PCC]
+        ds = add_dataset_attrs(ds, attr_mgr, logical_source)
+        datasets_to_return.append(ds)
+    if LoAPID.ILO_APP_NHK in datasets_by_apid:
+        logger.info(
+            f"\nProcessing {LoAPID(LoAPID.ILO_APP_NHK).name} "
+            f"packet (APID: {LoAPID.ILO_APP_NHK.value})"
+        )
+        logical_source = "imap_lo_l1a_nhk"
+        ds = datasets_by_apid[LoAPID.ILO_APP_NHK]
+        ds = add_dataset_attrs(ds, attr_mgr, logical_source)
+        datasets_to_return.append(ds)
+    if LoAPID.ILO_APP_SHK in datasets_by_apid:
+        logger.info(
+            f"\nProcessing {LoAPID(LoAPID.ILO_APP_SHK).name} "
+            f"packet (APID: {LoAPID.ILO_APP_SHK.value})"
+        )
+        logical_source = "imap_lo_l1a_shk"
+        ds = datasets_by_apid[LoAPID.ILO_APP_SHK]
+        ds = add_dataset_attrs(ds, attr_mgr, logical_source)
+        datasets_to_return.append(ds)
 
     logger.info(f"Returning [{len(datasets_to_return)}] datasets")
     return datasets_to_return
