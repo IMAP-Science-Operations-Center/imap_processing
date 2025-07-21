@@ -134,7 +134,13 @@ def format_coverage_summary(coverage_dict: dict, start_time: str) -> str:
     output_string : str
         Formatted coverage summary string.
     """
-    all_stations = ALL_STATIONS
+    # Include all known stations,
+    # plus any new ones that appear in coverage_dict.
+    all_stations = ALL_STATIONS + [
+        station
+        for station in coverage_dict.keys()
+        if station not in ALL_STATIONS and station != "total_coverage_percent"
+    ]
 
     # Collect all times to build the rows.
     all_times = []
