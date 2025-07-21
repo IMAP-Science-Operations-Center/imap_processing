@@ -5,7 +5,10 @@ from datetime import datetime
 import numpy as np
 import pytest
 
-from imap_processing.ialirt.generate_coverage import generate_coverage
+from imap_processing.ialirt.generate_coverage import (
+    format_coverage_summary,
+    generate_coverage,
+)
 
 
 @pytest.mark.external_kernel
@@ -80,7 +83,7 @@ def test_use_outages(furnish_kernels):
 @pytest.mark.external_kernel
 def test_dsn(furnish_kernels):
     """
-    Test that outages are properly used.
+    Test that outages are properly used and formatted properly.
     """
     # Note: tested this code with the Sun and achieved expected
     # results ~12 hours of coverage from horizon to horizon.
@@ -122,5 +125,13 @@ def test_dsn(furnish_kernels):
         ]
     )
 
-    np.testing.assert_array_equal(coverage_dict["Kiel_time"], kiel_expected)
-    np.testing.assert_array_equal(coverage_dict["DSS-75_time"], dsn_expected)
+    np.testing.assert_array_equal(coverage_dict["Kiel"], kiel_expected)
+    np.testing.assert_array_equal(coverage_dict["DSS-75"], dsn_expected)
+
+    output = format_coverage_summary(coverage_dict, "2026-09-22T00:00:00Z")
+
+    assert "# I-ALiRT Coverage Summary" in output
+    assert "Time (UTC)" in output
+    assert "2026-09-22T07:00:00.000" in output  # Kiel coverage row
+    assert "2026-09-22T12:00:00.000" in output  # DSS-75 coverage row
+    assert "Total Coverage Percent: 37.5%" in output

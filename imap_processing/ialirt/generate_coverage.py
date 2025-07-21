@@ -11,7 +11,8 @@ from imap_processing.spice.time import et_to_utc, str_to_et
 # Logger setup
 logger = logging.getLogger(__name__)
 
-ALL_STATIONS = list(STATIONS.keys()) + ["DSS-55", "DSS-56", "DSS-74", "DSS-75"]
+# TODO: get a list of all potential DSN stations.
+ALL_STATIONS = [*STATIONS.keys(), "DSS-55", "DSS-56", "DSS-74", "DSS-75"]
 
 
 def generate_coverage(
@@ -118,17 +119,33 @@ def generate_coverage(
 
 
 def format_coverage_summary(coverage_dict: dict, start_time: str) -> str:
-    """Convert coverage_dict to a formatted I-ALiRT coverage summary table."""
-    all_stations = ALL_STATIONS  # Always show all
+    """
+    Build the output dictionary containing coverage time for each station.
 
-    # Collect all times
+    Parameters
+    ----------
+    coverage_dict : dict
+        Coverage for each station, keyed by station name with arrays of UTC times.
+    start_time : str
+        Start time in UTC.
+
+    Returns
+    -------
+    output_string : str
+        Formatted coverage summary string.
+    """
+    all_stations = ALL_STATIONS
+
+    # Collect all times to build the rows.
     all_times = []
-    for s in all_stations:
-        all_times.extend(list(coverage_dict.get(s, [])))
+    for station in all_stations:
+        all_times.extend(list(coverage_dict.get(station, [])))
     all_times = sorted(set(all_times))
 
     # Build header
     timestamp_width = 26
+    line_length = timestamp_width + (9 * len(all_stations))
+
     lines = []
     lines.append("# I-ALiRT Coverage Summary")
     lines.append(f"# Generated: {start_time}")
@@ -138,24 +155,23 @@ def format_coverage_summary(coverage_dict: dict, start_time: str) -> str:
         f"{'Time (UTC)':<{timestamp_width}}"
         + "   ".join(f"{s:<6}" for s in all_stations)
     )
-    lines.append("-" * (timestamp_width + 7 * len(all_stations)))
+    lines.append("-" * line_length)
 
-    # Convert station arrays to sets for fast lookup
-    station_time_sets = {
-        s: set(map(str, coverage_dict.get(s, []))) for s in all_stations
-    }
-
-    # Build rows
-    for t in all_times:
-        row = [t]
+    for time in all_times:
+        row = [time]
         for station in all_stations:
-            row.append("1" if t in station_time_sets[station] else "0")
-        lines.append(f"{row[0]:<26}" + "   ".join(f"{val:<6}" for val in row[1:]))
+            times = coverage_dict.get(station, [])
+            row.append("1" if time in times else "0")
+        lines.append(
+            f"{row[0]:<{timestamp_width}}" + "   ".join(f"{val:<6}" for val in row[1:])
+        )
 
     # Total coverage
-    lines.append("-" * (21 + 7 * len(all_stations)))
+    lines.append("-" * line_length)
     lines.append(
         f"Total Coverage Percent: {coverage_dict['total_coverage_percent']:.1f}%"
     )
 
-    return "\n".join(lines)
+    output_string = "\n".join(lines)
+
+    return output_string
