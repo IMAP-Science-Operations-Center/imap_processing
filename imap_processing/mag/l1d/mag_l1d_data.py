@@ -140,7 +140,8 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         calculated during processing if in NORM mode.
     """
 
-    # TODO magi epoch
+    # TODO Quality flags
+    # TODO generate and output ancillary files
     magi_vectors: np.ndarray
     magi_range: np.ndarray
     magi_epoch: np.ndarray

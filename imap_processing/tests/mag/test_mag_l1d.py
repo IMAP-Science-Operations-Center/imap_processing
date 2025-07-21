@@ -61,6 +61,13 @@ def mag_l1d_test_class(mag_test_l1d_data):
 
 
 def test_mag_l1d(mag_test_l1d_data, norm_dataset, furnish_kernels, fake_mag_spin_data):
+    norm_magi = norm_dataset.copy()
+    norm_magi.attrs["Logical_source"] = "imap_mag_l1c_norm-magi"
+    burst_magi = norm_dataset.copy()
+    burst_magi.attrs["Logical_source"] = "imap_mag_l1c_burst-magi"
+    burst_mago = norm_dataset.copy()
+    burst_mago.attrs["Logical_source"] = "imap_mag_l1c_burst-mago"
+
     kernels = [
         "sim_1yr_imap_pointing_frame.bc",
     ]
@@ -76,13 +83,12 @@ def test_mag_l1d(mag_test_l1d_data, norm_dataset, furnish_kernels, fake_mag_spin
         ),
     ):
         l1d = mag_l1d(
+            [norm_dataset, norm_magi, burst_magi, burst_mago],
             mag_test_l1d_data,
-            norm_dataset,
-            norm_dataset,
             np.datetime64("2025-10-17"),
         )
 
-    assert len(l1d) == 8
+    assert len(l1d) == 4
     assert "vectors" in l1d[0].data_vars
 
 
