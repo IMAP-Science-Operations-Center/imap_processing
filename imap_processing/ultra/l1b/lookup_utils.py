@@ -4,8 +4,10 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import xarray as xr
+from numpy.typing import NDArray
 
 from imap_processing import imap_module_directory
+from imap_processing.quality_flags import ImapDEUltraFlags
 
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
 
@@ -227,3 +229,61 @@ def get_energy_efficiencies(ancillary_files: dict) -> pd.DataFrame:
     lookup_table = pd.read_csv(ancillary_files["l1b-45sensor-logistic-interpolation"])
 
     return lookup_table
+
+
+def get_geometric_factor(
+    ancillary_files: dict,
+    filename: str,
+    phi: NDArray,
+    theta: NDArray,
+    quality_flag: NDArray,
+) -> tuple[NDArray, NDArray]:
+    """
+    Lookup table for geometric factor using nearest neighbor.
+
+    Parameters
+    ----------
+    ancillary_files : dict[Path]
+        Ancillary files.
+    filename : str
+        Name of the file in ancillary_files to use.
+    phi : NDArray
+        Azimuth angles in degrees.
+    theta : NDArray
+        Elevation angles in degrees.
+    quality_flag : NDArray
+        Quality flag to set when geometric factor is zero.
+
+    Returns
+    -------
+    geometric_factor : NDArray
+        Geometric factor.
+    """
+    gf_table = pd.read_csv(
+        ancillary_files[filename], header=None, skiprows=6, nrows=301
+    ).to_numpy(dtype=float)
+    theta_table = pd.read_csv(
+        ancillary_files[filename], header=None, skiprows=308, nrows=301
+    ).to_numpy(dtype=float)
+    phi_table = pd.read_csv(
+        ancillary_files[filename], header=None, skiprows=610, nrows=301
+    ).to_numpy(dtype=float)
+
+    # Assume uniform grids: extract 1D arrays from first row/col
+    theta_vals = theta_table[0, :]  # columns represent theta
+    phi_vals = phi_table[:, 0]  # rows represent phi
+
+    # Find nearest index in table for each input value
+    phi_idx = np.abs(phi_vals[:, None] - phi).argmin(axis=0)
+    theta_idx = np.abs(theta_vals[:, None] - theta).argmin(axis=0)
+
+    # Fetch geometric factor values at nearest (phi, theta) pairs
+    geometric_factor = gf_table[phi_idx, theta_idx]
+
+    # If the geometric factor is zero it means that the instrument is out of the FOV.
+    if filename == "l1b-sensor-gf-noblades":
+        quality_flag[geometric_factor == 0] |= ImapDEUltraFlags.NOBLADESFOV.value
+    if filename == "l1b-sensor-gf-blades":
+        quality_flag[geometric_factor == 0] |= ImapDEUltraFlags.BLADESFOV.value
+
+    return geometric_factor

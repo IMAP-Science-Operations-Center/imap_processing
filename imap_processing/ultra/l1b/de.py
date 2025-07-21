@@ -4,7 +4,9 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.utils import parse_filename_like
+from imap_processing.quality_flags import ImapDEUltraFlags
 from imap_processing.spice.geometry import SpiceFrame
+from imap_processing.ultra.l1b.lookup_utils import get_geometric_factor
 from imap_processing.ultra.l1b.ultra_l1b_annotated import (
     get_annotated_particle_velocity,
 )
@@ -25,6 +27,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_path_length,
     get_ph_tof_and_back_positions,
     get_phi_theta,
+    get_spin_number,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
 )
@@ -59,7 +62,10 @@ def calculate_de(
 
     # Define epoch and spin.
     de_dict["epoch"] = de_dataset["epoch"].data
-    de_dict["spin"] = de_dataset["spin"].data
+    spin_number = get_spin_number(
+        de_dataset["shcoarse"].values, de_dataset["spin"].values
+    )
+    de_dict["spin"] = spin_number
 
     # Add already populated fields.
     keys = [
@@ -118,6 +124,9 @@ def calculate_de(
     spin_starts = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
 
     start_type = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
+    quality_flags = np.full(
+        de_dataset["epoch"].shape, ImapDEUltraFlags.NONE.value, dtype=np.uint16
+    )
 
     xf[valid_indices] = get_front_x_position(
         de_dataset["start_type"].data[valid_indices],
@@ -131,7 +140,7 @@ def calculate_de(
         spin_starts[valid_indices],
         _,
     ) = get_eventtimes(
-        de_dataset["spin"].data[valid_indices],
+        de_dict["spin"][valid_indices],
         de_dataset["phase_angle"].data[valid_indices],
     )
 
@@ -262,6 +271,21 @@ def calculate_de(
     de_dict["event_efficiency"] = get_efficiency(
         de_dict["tof_energy"], de_dict["phi"], de_dict["theta"], ancillary_files
     )
+    de_dict["geometric_factor_blades"] = get_geometric_factor(
+        ancillary_files,
+        "l1b-sensor-gf-blades",
+        de_dict["phi"],
+        de_dict["theta"],
+        quality_flags,
+    )
+    de_dict["geometric_factor_noblades"] = get_geometric_factor(
+        ancillary_files,
+        "l1b-sensor-gf-noblades",
+        de_dict["phi"],
+        de_dict["theta"],
+        quality_flags,
+    )
+    de_dict["quality_fov"] = quality_flags
 
     dataset = create_dataset(de_dict, name, "l1b")
 

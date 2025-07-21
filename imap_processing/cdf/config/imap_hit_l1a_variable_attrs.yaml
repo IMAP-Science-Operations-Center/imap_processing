@@ -12,20 +12,24 @@ default_attrs: &default
   SCALETYP: linear
 
 default_uint8_attrs: &default_uint8
-  <<: *default
+  DISPLAY_TYPE: time_series
+  VAR_TYPE: data
+  UNITS: ' '
+  SCALETYP: linear
   FILLVAL: 255
   FORMAT: I3
   VALIDMIN: 0
   VALIDMAX: 255
-  dtype: uint8
 
 default_uint16_attrs: &default_uint16
-  <<: *default
+  DISPLAY_TYPE: time_series
+  VAR_TYPE: data
+  UNITS: ' '
+  SCALETYP: linear
   FILLVAL: 65535
   FORMAT: I5
   VALIDMIN: 0
   VALIDMAX: 65535
-  dtype: uint16
 
 default_uint32_attrs: &default_uint32
   <<: *default
@@ -33,7 +37,6 @@ default_uint32_attrs: &default_uint32
   FORMAT: I10
   VALIDMIN: 0
   VALIDMAX: 4294967295
-  dtype: uint32
 
 default_hk_attrs: &default_hk
   <<: *default
@@ -53,22 +56,27 @@ default_counts_attrs: &default_counts
   VALIDMIN: 0
   VALIDMAX: 10000000000
   UNITS: counts
-  LABLAXIS: Counts
   SCALETYP: log
 
 default_counts_support_attrs: &default_counts_support
-  <<: *default
   DISPLAY_TYPE: no_plot
   VAR_TYPE: support_data
   FILLVAL: -1.00E+31
   VALIDMIN: 0
   VALIDMAX: 1000
+  UNITS: ' '
+  SCALETYP: linear
 
 default_index_attrs: &default_index
-  <<: *default_uint32
-  DISPLAY_TYPE: no_plot
-  VAR_TYPE: support_data
-  VALIDMAX: 1000
+   DISPLAY_TYPE: no_plot
+   VAR_TYPE: support_data
+   VALIDMIN: 0
+   VALIDMAX: 1000
+   FILLVAL: 4294967295
+   FORMAT: I10
+   UNITS: ' '
+   SCALETYP: linear
+
 
 default_energy_attrs: &default_energy
   VAR_TYPE: support_data
@@ -77,9 +85,9 @@ default_energy_attrs: &default_energy
   FILLVAL: -1.00E+31
   VALIDMIN: 0
   VALIDMAX: 1000
-  FORMAT: F5.1
-  UNITS: MeV
-  SCALE_TYP: log
+  FORMAT: F6.1
+  UNITS: MeV/nuc
+  SCALETYP: log
 
 default_uncertainty_attrs: &default_uncertainty
   DEPEND_0: epoch
@@ -88,21 +96,24 @@ default_uncertainty_attrs: &default_uncertainty
   VALIDMIN: 0
   VALIDMAX: 10000000000
   FILLVAL: -1.00E+31
-  FORMAT: F9.3
+  FORMAT: F15.3
   UNITS: counts
-  SCALE_TYP: log
+  SCALETYP: log
 
 # <=== Coordinates ===>
 sc_tick:
-  <<: *default_uint32
   CATDESC: Raw spacecraft tick time per integration
   FIELDNAM: Spacecraft Tick
   LABLAXIS: sc_tick
   FORMAT: I10
   VAR_TYPE: support_data
   DISPLAY_TYPE: no_plot
-  UNITS: ''
+  VALIDMIN: 0
+  VALIDMAX: 4294967295
+  FILLVAL: 4294967295
+  UNITS: ' '
   SCALETYP: linear
+
 
 # Counts Dataset Coordinates
 zenith:
@@ -110,7 +121,7 @@ zenith:
   CATDESC: Angle from the spin axis (0 deg.) to anti-spin axis (180 deg.) in 8 bins
   FIELDNAM: Zenith
   LABLAXIS: Zenith
-  FORMAT: F5.1
+  FORMAT: F12.2
   UNITS: deg
 
 azimuth:
@@ -118,7 +129,7 @@ azimuth:
   CATDESC: Spin angle in 15 bins (0 deg. is zero of spin phase)
   FIELDNAM: Azimuth
   LABLAXIS: Azimuth
-  FORMAT: F5.1
+  FORMAT: F12.2
   UNITS: Deg
 
 gain:
@@ -126,105 +137,118 @@ gain:
   CATDESC: Single rates gain. 0=low, 1=high
   FIELDNAM: gain
   LABLAXIS: Gain
-  FORMAT: I1
+  FORMAT: I10
+  FILLVAL: 65535
 
 sngrates_index:
   <<: *default_index
   CATDESC: Single rates index
   FIELDNAM: sngrates_index
   LABLAXIS: sngrates index
+  FILLVAL: 4294967295
 
 coinrates_index:
   <<: *default_index
   CATDESC: Coincidence rates index
   FIELDNAM: coinrates_index
   LABLAXIS: coinrates index
+  FILLVAL: 4294967295
 
 pbufrates_index:
   <<: *default_index
   CATDESC: Priority buffer rates index
   FIELDNAM: pbufrates_index
   LABLAXIS: pbufrates index
+  FILLVAL: 4294967295
 
 l2fgrates_index:
   <<: *default_index
   CATDESC: Range 2 foreground rates index
   FIELDNAM: l2fgrates_index
   LABLAXIS: l2fgrates index
+  FILLVAL: 4294967295
 
 l2bgrates_index:
   <<: *default_index
   CATDESC: Range 2 background rates index
   FIELDNAM: l2bgrates_index
   LABLAXIS: l2bgrates index
+  FILLVAL: 4294967295
 
 l3fgrates_index:
   <<: *default_index
   CATDESC: Range 3 foreground rates index
   FIELDNAM: l3fgrates index
   LABLAXIS: l3fgrates index
+  FILLVAL: 4294967295
 
 l3bgrates_index:
   <<: *default_index
   CATDESC: Range 3 background rates index
   FIELDNAM: l3bgrates index
   LABLAXIS: l3bgrates index
+  FILLVAL: 4294967295
 
 penfgrates_index:
   <<: *default_index
   CATDESC: Range 4 foreground rates index
   FIELDNAM: penfgrates index
   LABLAXIS: penfgrates index
+  FILLVAL: 4294967295
 
 penbgrates_index:
   <<: *default_index
   CATDESC: Range 4 background rates index
   FIELDNAM: penbgrates index
   LABLAXIS: penbgrates index
+  FILLVAL: 4294967295
 
 ialirtrates_index:
   <<: *default_index
   CATDESC: ialirtrates index
   FIELDNAM: ialirtrates index
   LABLAXIS: ialirtrates index
+  FILLVAL: 4294967295
 
 l4fgrates_index:
   <<: *default_index
   CATDESC: L4 ions foreground rates index
   FIELDNAM: l4fgrates index
   LABLAXIS: l4fgrates index
+  FILLVAL: 4294967295
 
 l4bgrates_index:
   <<: *default_index
   CATDESC: L4 ions background rates index
   FIELDNAM: l4bgrates index
   LABLAXIS: l4bgrates index
+  FILLVAL: 4294967295
 
 h_energy_mean:
   <<: *default_energy
-  CATDESC: H sectored geometric mean energy
+  CATDESC: H sectored geometric mean energy per nucleon
   FIELDNAM: H energy mean
   DELTA_MINUS_VAR: h_energy_delta_minus
   DELTA_PLUS_VAR: h_energy_delta_plus
 
 he4_energy_mean:
   <<: *default_energy
-  CATDESC: He4 sectored geometric mean energy
+  CATDESC: He4 sectored geometric mean energy per nucleon
   FIELDNAM: He4 energy mean
 
 cno_energy_mean:
   <<: *default_energy
-  CATDESC: C, N, O sectored geometric mean energy
+  CATDESC: C, N, O sectored geometric mean energy per nucleon
   FIELDNAM: C, N, O energy mean
 
 nemgsi_energy_mean:
   <<: *default_energy
-  CATDESC: Ne, Mg, Si sectored geometric mean energy
+  CATDESC: Ne, Mg, Si sectored geometric mean energy per nucleon
   FIELDNAM: Ne, Mg, Si energy mean
 
 fe_energy_mean:
   <<: *default_energy
-  CATDESC: Fe sectored geometric mean energy
+  CATDESC: Fe sectored geometric mean energy per nucleon
   FIELDNAM: Fe energy mean
 
 
@@ -252,6 +276,12 @@ adc_channels_label:
   VAR_TYPE: metadata
 
 # Counts Dataset Labels
+sc_tick_label:
+    CATDESC: Raw spacecraft tick time per integration
+    FIELDNAM: Spacecraft Tick
+    FORMAT: A10
+    VAR_TYPE: metadata
+
 zenith_label:
   CATDESC: Angle from the spin axis (0 deg.) to anti-spin axis (180 deg.) in 8 bins
   FIELDNAM: Zenith Angle
@@ -343,31 +373,31 @@ l4bgrates_index_label:
   VAR_TYPE: metadata
 
 h_energy_mean_label:
-  CATDESC: Geometric mean energy for H
+  CATDESC: Geometric mean energy per nucleon for H
   FIELDNAM: H Energy
   FORMAT: A5
   VAR_TYPE: metadata
 
 he4_energy_mean_label:
-  CATDESC: Geometric mean energy for He4
+  CATDESC: Geometric mean energy per nucleon for He4
   FIELDNAM: He4 Energy
   FORMAT: A5
   VAR_TYPE: metadata
 
 nemgsi_energy_mean_label:
-  CATDESC: Geometric mean energy for NeMgSi
+  CATDESC: Geometric mean energy per nucleon for NeMgSi
   FIELDNAM: NeMgSi Energy
   FORMAT: A5
   VAR_TYPE: metadata
 
 cno_energy_mean_label:
-  CATDESC: Geometric mean energy for CNO
+  CATDESC: Geometric mean energy per nucleon for CNO
   FIELDNAM: CNO Energy
   FORMAT: A5
   VAR_TYPE: metadata
 
 fe_energy_mean_label:
-  CATDESC: Geometric mean energy for Fe
+  CATDESC: Geometric mean energy per nucleon for Fe
   FIELDNAM: Fe Energy
   FORMAT: A5
   VAR_TYPE: metadata
@@ -381,7 +411,7 @@ version:
   FIELDNAM: CCSDS version
   LABLAXIS: Value
   VAR_TYPE: support_data
-  DEPEND_0: sc_tick
+  DEPEND_1: sc_tick
 
 type:
   <<: *default_uint8
@@ -389,7 +419,7 @@ type:
   FIELDNAM: CCSDS type
   LABLAXIS: Value
   VAR_TYPE: support_data
-  DEPEND_0: sc_tick
+  DEPEND_1: sc_tick
 
 sec_hdr_flg:
   <<: *default_uint8
@@ -397,7 +427,7 @@ sec_hdr_flg:
   FIELDNAM: CCSDS secondary header flag
   LABLAXIS: Value
   VAR_TYPE: support_data
-  DEPEND_0: sc_tick
+  DEPEND_1: sc_tick
 
 pkt_apid:
   <<: *default_uint16
@@ -405,7 +435,7 @@ pkt_apid:
   FIELDNAM: CCSDS APID
   LABLAXIS: Value
   VAR_TYPE: support_data
-  DEPEND_0: sc_tick
+  DEPEND_1: sc_tick
 
 seq_flgs:
   <<: *default_uint8
@@ -413,7 +443,7 @@ seq_flgs:
   FIELDNAM: CCSDS sequence flags
   LABLAXIS: Value
   VAR_TYPE: support_data
-  DEPEND_0: sc_tick
+  DEPEND_1: sc_tick
 
 src_seq_ctr:
   <<: *default_uint16
@@ -421,7 +451,7 @@ src_seq_ctr:
   FIELDNAM: CCSDS sequence counter
   LABLAXIS: Value
   VAR_TYPE: support_data
-  DEPEND_0: sc_tick
+  DEPEND_1: sc_tick
 
 pkt_len:
   <<: *default_uint16
@@ -429,7 +459,7 @@ pkt_len:
   FIELDNAM: CCSDS packet length
   LABLAXIS: Value
   VAR_TYPE: support_data
-  DEPEND_0: sc_tick
+  DEPEND_1: sc_tick
 
 # Counts dataset variables
 hdr_frame_version:
@@ -437,58 +467,61 @@ hdr_frame_version:
   CATDESC: Raw header frame version per integration
   FIELDNAM: hdr_frame_version
   LABLAXIS: Value
-  UNITS: ''
+  UNITS: ' '
 
 hdr_dynamic_threshold_state:
-  <<: *default_counts
+  <<: *default_uint8
+  DEPEND_0: epoch
   CATDESC: Raw header dynamic threshold state per integration
   FIELDNAM: hdr_dynamic_threshold_state
   LABLAXIS: State
   UNITS: state
-  VALIDMAX: 3
 
 hdr_leak_conv:
   <<: *default_counts
   CATDESC: Raw header leak conversion per integration
   FIELDNAM: hdr_leak_conv
   LABLAXIS: Value
-  UNITS: ''
+  UNITS: ' '
 
-hdr_heavy_duty_cycle:
+hdr_heater_duty_cycle:
   <<: *default_counts
   CATDESC: Raw header heavy duty cycle per integration
   FIELDNAM: hdr_heavy_duty_cycle
   LABLAXIS: Value
-  UNITS: ''
+  UNITS: ' '
 
 hdr_code_ok:
   <<: *default_counts
   CATDESC: Raw header code ok per integration
   FIELDNAM: hdr_code_ok
   LABLAXIS: Value
-  UNITS: ''
+  UNITS: ' '
 
 hdr_unit_num:
   <<: *default_counts
   CATDESC: Raw header unit number per integration
   FIELDNAM: hdr_unit_num
   LABLAXIS: Value
-  UNITS: ''
+  UNITS: ' '
 
 hdr_minute_cnt:
   <<: *default_counts
   CATDESC: Raw header minute count per integration
   FIELDNAM: hdr_minute_cnt
+  LABLAXIS: Counts
 
 livetime_counter:
   <<: *default_counts
   CATDESC: Raw livetime counter per integration
   FIELDNAM: livetime_counter
+  LABLAXIS: Counts
 
 num_trig:
   <<: *default_counts
   CATDESC: Raw number of triggers
   FIELDNAM: num_trig
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: num_trig_stat_uncert_minus
   DELTA_PLUS_VAR: num_trig_stat_uncert_plus
 
@@ -496,6 +529,7 @@ num_reject:
   <<: *default_counts
   CATDESC: Raw number of rejected events
   FIELDNAM: num_reject
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: num_reject_stat_uncert_minus
   DELTA_PLUS_VAR: num_reject_stat_uncert_plus
 
@@ -503,6 +537,7 @@ num_acc_w_pha:
   <<: *default_counts
   CATDESC: Raw number of accepted events with PHA data
   FIELDNAM: num_acc_w_pha
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: num_acc_w_pha_stat_uncert_minus
   DELTA_PLUS_VAR: num_acc_w_pha_stat_uncert_plus
 
@@ -510,6 +545,7 @@ num_acc_no_pha:
   <<: *default_counts
   CATDESC: Raw number of events without PHA data
   FIELDNAM: num_acc_no_pha
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: num_acc_no_pha_stat_uncert_minus
   DELTA_PLUS_VAR: num_acc_no_pha_stat_uncert_plus
 
@@ -517,6 +553,7 @@ num_haz_trig:
   <<: *default_counts
   CATDESC: Raw number of events triggered with a hazard condition
   FIELDNAM: num_haz_trig
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: num_haz_trig_stat_uncert_minus
   DELTA_PLUS_VAR: num_haz_trig_stat_uncert_plus
 
@@ -524,6 +561,7 @@ num_haz_reject:
   <<: *default_counts
   CATDESC: Raw number of events rejected for hazard condition
   FIELDNAM: num_haz_reject
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: num_haz_reject_stat_uncert_minus
   DELTA_PLUS_VAR: num_haz_reject_stat_uncert_plus
 
@@ -531,6 +569,7 @@ num_haz_acc_w_pha:
   <<: *default_counts
   CATDESC: Raw number of events with hazard condition with PHA data
   FIELDNAM: num_haz_acc_w_pha
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: num_haz_acc_w_pha_stat_uncert_minus
   DELTA_PLUS_VAR: num_haz_acc_w_pha_stat_uncert_plus
 
@@ -538,6 +577,7 @@ num_haz_acc_no_pha:
   <<: *default_counts
   CATDESC: Raw number of events accepted with hazard condition without PHA data
   FIELDNAM: num_haz_acc_no_pha
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: num_haz_acc_no_pha_stat_uncert_minus
   DELTA_PLUS_VAR: num_haz_acc_no_pha_stat_uncert_plus
 
@@ -545,6 +585,7 @@ nread:
   <<: *default_counts
   CATDESC: Raw number of events read from event FIFO
   FIELDNAM: nread
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nread_stat_uncert_minus
   DELTA_PLUS_VAR: nread_stat_uncert_plus
 
@@ -552,6 +593,7 @@ nhazard:
   <<: *default_counts
   CATDESC: Raw number of events rejected for Hazard condition
   FIELDNAM: nhazard
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nhazard_stat_uncert_minus
   DELTA_PLUS_VAR: nhazard_stat_uncert_plus
 
@@ -559,6 +601,7 @@ nadcstim:
   <<: *default_counts
   CATDESC: Raw number of ADC-calibration STIM events
   FIELDNAM: nadcstim
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nadcstim_stat_uncert_minus
   DELTA_PLUS_VAR: nadcstim_stat_uncert_plus
 
@@ -566,6 +609,7 @@ nodd:
   <<: *default_counts
   CATDESC: Raw number of odd events
   FIELDNAM: nodd
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nodd_stat_uncert_minus
   DELTA_PLUS_VAR: nodd_stat_uncert_plus
 
@@ -573,6 +617,7 @@ noddfix:
   <<: *default_counts
   CATDESC: Raw number of fixed odd events
   FIELDNAM: noddfix
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: noddfix_stat_uncert_minus
   DELTA_PLUS_VAR: noddfix_stat_uncert_plus
 
@@ -580,6 +625,7 @@ nmulti:
   <<: *default_counts
   CATDESC: Raw number of events with multiple hits in relevant layers
   FIELDNAM: nmulti
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nmulti_stat_uncert_minus
   DELTA_PLUS_VAR: nmulti_stat_uncert_plus
 
@@ -587,6 +633,7 @@ nmultifix:
   <<: *default_counts
   CATDESC: Raw number of fix multi events
   FIELDNAM: nmultifix
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nmultifix_stat_uncert_minus
   DELTA_PLUS_VAR: nmultifix_stat_uncert_plus
 
@@ -594,6 +641,7 @@ nbadtraj:
   <<: *default_counts
   CATDESC: Raw number of events rejected for inconsistent/bad trajectory
   FIELDNAM: nbadtraj
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nbadtraj_stat_uncert_minus
   DELTA_PLUS_VAR: nbadtraj_stat_uncert_plus
 
@@ -601,6 +649,7 @@ nl2:
   <<: *default_counts
   CATDESC: Raw number of events sorted into L12 event category
   FIELDNAM: nl2
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nl2_stat_uncert_minus
   DELTA_PLUS_VAR: nl2_stat_uncert_plus
 
@@ -608,6 +657,7 @@ nl3:
   <<: *default_counts
   CATDESC: Raw number of events sorted into L123 event category
   FIELDNAM: nl3
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nl3_stat_uncert_minus
   DELTA_PLUS_VAR: nl3_stat_uncert_plus
 
@@ -615,6 +665,7 @@ nl4:
   <<: *default_counts
   CATDESC: Raw number of events sorted into L1423 event category
   FIELDNAM: nl4
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nl4_stat_uncert_minus
   DELTA_PLUS_VAR: nl4_stat_uncert_plus
 
@@ -622,6 +673,7 @@ npen:
   <<: *default_counts
   CATDESC: Raw number of events sorted into PEN event category
   FIELDNAM: npen
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: npen_stat_uncert_minus
   DELTA_PLUS_VAR: npen_stat_uncert_plus
 
@@ -629,6 +681,7 @@ nformat:
   <<: *default_counts
   CATDESC: Raw number of events handled by the telemetry event formatter
   FIELDNAM: nformat
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nformat_stat_uncert_minus
   DELTA_PLUS_VAR: nformat_stat_uncert_plus
 
@@ -636,6 +689,7 @@ naside:
   <<: *default_counts
   CATDESC: Raw number of events the software assumed were A-side events
   FIELDNAM: naside
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: naside_stat_uncert_minus
   DELTA_PLUS_VAR: naside_stat_uncert_plus
 
@@ -643,6 +697,7 @@ nbside:
   <<: *default_counts
   CATDESC: Raw number of events the software assumed were B-side events
   FIELDNAM: nbside
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nbside_stat_uncert_minus
   DELTA_PLUS_VAR: nbside_stat_uncert_plus
 
@@ -650,6 +705,7 @@ nerror:
   <<: *default_counts
   CATDESC: Raw number of events that caused a processing error
   FIELDNAM: nerror
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nerror_stat_uncert_minus
   DELTA_PLUS_VAR: nerror_stat_uncert_plus
 
@@ -657,6 +713,7 @@ nbadtags:
   <<: *default_counts
   CATDESC: Raw number of events with bad tags from onboard event-processing
   FIELDNAM: nbadtags
+  LABLAXIS: Counts
   DELTA_MINUS_VAR: nbadtags_stat_uncert_minus
   DELTA_PLUS_VAR: nbadtags_stat_uncert_plus
 
@@ -666,8 +723,8 @@ sngrates:
   DEPEND_2: sngrates_index
   CATDESC: Raw single rates per integration
   FIELDNAM: sngrates
-  LABL_PTR_1: sngrates_index_label
-  LABL_PTR_2: gain_label
+  LABL_PTR_1: gain_label
+  LABL_PTR_2: sngrates_index_label
   DELTA_MINUS_VAR: sngrates_stat_uncert_minus
   DELTA_PLUS_VAR: sngrates_stat_uncert_plus
 
@@ -772,8 +829,8 @@ l4bgrates:
 
 sectorates:
   <<: *default_counts
-  DEPEND_1: zenith
-  DEPEND_2: azimuth
+  DEPEND_1: azimuth
+  DEPEND_2: zenith
   CATDESC: Raw sectored rates per integration
   FIELDNAM: Sectored rates
   LABL_PTR_1: azimuth_label
@@ -783,56 +840,66 @@ sectorates:
 
 h_sectored_counts:
   <<: *default_counts
-  DEPEND_1: zenith
-  DEPEND_2: azimuth
   CATDESC: Raw H sectored counts per integration
   FIELDNAM: H sectored counts
-  LABL_PTR_1: azimuth_label
-  LABL_PTR_2: zenith_label
+  DEPEND_1: h_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: h_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
   DELTA_MINUS_VAR: h_sectored_counts_stat_uncert_minus
   DELTA_PLUS_VAR: h_sectored_counts_stat_uncert_plus
 
 he4_sectored_counts:
   <<: *default_counts
-  DEPEND_1: zenith
-  DEPEND_2: azimuth
   CATDESC: Raw He4 sectored counts per integration
   FIELDNAM: He4 sectored counts
-  LABL_PTR_1: azimuth_label
-  LABL_PTR_2: zenith_label
+  DEPEND_1: he4_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: he4_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
   DELTA_MINUS_VAR: he4_sectored_counts_stat_uncert_minus
   DELTA_PLUS_VAR: he4_sectored_counts_stat_uncert_plus
 
 cno_sectored_counts:
   <<: *default_counts
-  DEPEND_1: zenith
-  DEPEND_2: azimuth
   CATDESC: Raw C, N, O sectored counts per integration
   FIELDNAM: C, N, O sectored counts
-  LABL_PTR_1: azimuth_label
-  LABL_PTR_2: zenith_label
+  DEPEND_1: cno_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: cno_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
   DELTA_MINUS_VAR: cno_sectored_counts_stat_uncert_minus
   DELTA_PLUS_VAR: cno_sectored_counts_stat_uncert_plus
 
 nemgsi_sectored_counts:
   <<: *default_counts
-  DEPEND_1: zenith
-  DEPEND_2: azimuth
   CATDESC: Raw Ne, Mg, Si sectored counts per integration
   FIELDNAM: Ne, Mg, Si sectored counts
-  LABL_PTR_1: azimuth_label
-  LABL_PTR_2: zenith_label
+  DEPEND_1: nemgsi_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: nemgsi_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
   DELTA_MINUS_VAR: nemgsi_sectored_counts_stat_uncert_minus
   DELTA_PLUS_VAR: nemgsi_sectored_counts_stat_uncert_plus
 
 fe_sectored_counts:
   <<: *default_counts
-  DEPEND_1: zenith
-  DEPEND_2: azimuth
   CATDESC: Raw Fe sectored counts per integration
   FIELDNAM: Fe sectored counts
-  LABL_PTR_1: azimuth_label
-  LABL_PTR_2: zenith_label
+  DEPEND_1: fe_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  LABL_PTR_1: fe_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
   DELTA_MINUS_VAR: fe_sectored_counts_stat_uncert_minus
   DELTA_PLUS_VAR: fe_sectored_counts_stat_uncert_plus
 
@@ -840,61 +907,61 @@ fe_sectored_counts:
 h_energy_delta_plus:
   <<: *default_energy
   DEPEND_1: h_energy_mean
-  CATDESC: H energy delta plus (maximum bin energy minus geometric mean)
+  CATDESC: H energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
   FIELDNAM: H energy delta plus
 
 h_energy_delta_minus:
   <<: *default_energy
   DEPEND_1: h_energy_mean
-  CATDESC: H energy delta minus (geometric mean minus minimum bin energy)
+  CATDESC: H energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
   FIELDNAM: H energy delta minus
 
 he4_energy_delta_plus:
   <<: *default_energy
   DEPEND_1: he4_energy_mean
-  CATDESC: He4 energy delta plus (maximum bin energy minus geometric mean)
+  CATDESC: He4 energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
   FIELDNAM: He4 energy delta plus
 
 he4_energy_delta_minus:
   <<: *default_energy
   DEPEND_1: he4_energy_mean
-  CATDESC: He4 energy delta minus (geometric mean minus minimum bin energy)
+  CATDESC: He4 energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
   FIELDNAM: He4 energy delta minus
 
 cno_energy_delta_plus:
   <<: *default_energy
   DEPEND_1: cno_energy_mean
-  CATDESC: C, N, O energy delta plus (maximum bin energy minus geometric mean)
+  CATDESC: C, N, O energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
   FIELDNAM: C, N, O energy delta plus
 
 cno_energy_delta_minus:
   <<: *default_energy
   DEPEND_1: cno_energy_mean
-  CATDESC: C, N, O energy delta minus (geometric mean minus minimum bin energy)
+  CATDESC: C, N, O energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
   FIELDNAM: C, N, O energy delta minus
 
 nemgsi_energy_delta_plus:
   <<: *default_energy
   DEPEND_1: nemgsi_energy_mean
-  CATDESC: Ne, Mg, Si energy delta plus (maximum bin energy minus geometric mean)
+  CATDESC: Ne, Mg, Si energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
   FIELDNAM: Ne, Mg, Si energy delta plus
 
 nemgsi_energy_delta_minus:
   <<: *default_energy
   DEPEND_1: nemgsi_energy_mean
-  CATDESC: Ne, Mg, Si energy delta minus (geometric mean minus minimum bin energy)
+  CATDESC: Ne, Mg, Si energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
   FIELDNAM: Ne, Mg, Si energy delta minus
 
 fe_energy_delta_plus:
   <<: *default_energy
   DEPEND_1: fe_energy_mean
-  CATDESC: Fe energy delta plus (maximum bin energy minus geometric mean)
+  CATDESC: Fe energy per nucleon delta plus (maximum bin energy per nuc. minus geometric mean)
   FIELDNAM: Fe energy delta plus
 
 fe_energy_delta_minus:
   <<: *default_energy
   DEPEND_1: fe_energy_mean
-  CATDESC: Fe energy delta minus (geometric mean minus minimum bin energy)
+  CATDESC: Fe energy per nucleon delta minus (geometric mean minus minimum bin energy per nuc.)
   FIELDNAM: Fe energy delta minus
 
 # Counts uncertainty variables
@@ -902,23 +969,19 @@ sectorates_stat_uncert_plus:
   <<: *default_uncertainty
   CATDESC: Plus statistical uncertainty for sector rates
   FIELDNAM: Sectored Rates Uncertainty
-  DEPEND_1: h_energy_mean
-  DEPEND_2: azimuth
-  DEPEND_3: zenith
-  LABL_PTR_1: h_energy_mean_label
-  LABL_PTR_2: azimuth_label
-  LABL_PTR_3: zenith_label
+  DEPEND_1: azimuth
+  DEPEND_2: zenith
+  LABL_PTR_1: azimuth_label
+  LABL_PTR_2: zenith_label
 
 sectorates_stat_uncert_minus:
   <<: *default_uncertainty
   CATDESC: Minus statistical uncertainty for sector rates
   FIELDNAM: Sectored Rates Uncertainty
-  DEPEND_1: h_energy_mean
-  DEPEND_2: azimuth
-  DEPEND_3: zenith
-  LABL_PTR_1: h_energy_mean_label
-  LABL_PTR_2: azimuth_label
-  LABL_PTR_3: zenith_label
+  DEPEND_1: azimuth
+  DEPEND_2: zenith
+  LABL_PTR_1: azimuth_label
+  LABL_PTR_2: zenith_label
 
 h_sectored_counts_stat_uncert_plus:
   <<: *default_uncertainty
@@ -1034,19 +1097,19 @@ sngrates_stat_uncert_plus:
   <<: *default_uncertainty
   CATDESC: Plus statistical uncertainty for single rates
   FIELDNAM: sngrates uncertainty
-  DEPEND_1: sngrates_index
-  DEPEND_2: gain
-  LABL_PTR_1: sngrates_index_label
-  LABL_PTR_2: gain_label
+  DEPEND_1: gain
+  DEPEND_2: sngrates_index
+  LABL_PTR_1: gain_label
+  LABL_PTR_2: sngrates_index_label
 
 sngrates_stat_uncert_minus:
   <<: *default_uncertainty
   CATDESC: Minus statistical uncertainty for single rates
   FIELDNAM: sngrates uncertainty
-  DEPEND_1: sngrates_index
-  DEPEND_2: gain
-  LABL_PTR_1: sngrates_index_label
-  LABL_PTR_2: gain_label
+  DEPEND_1: gain
+  DEPEND_2: sngrates_index
+  LABL_PTR_1: gain_label
+  LABL_PTR_2: sngrates_index_label
 
 coinrates_stat_uncert_plus:
   <<: *default_uncertainty

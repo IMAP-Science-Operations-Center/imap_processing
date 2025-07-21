@@ -256,6 +256,20 @@ theta:
   LABLAXIS: theta
   UNITS: degrees
 
+geometric_factor_blades:
+  <<: *default_float32
+  CATDESC: Ultra sensitive area within the field of view.
+  FIELDNAM: geometric_function_blades
+  LABLAXIS: geometric function blades
+  UNITS: " "
+
+geometric_factor_noblades:
+  <<: *default_float32
+  CATDESC: Ultra sensitive area within the field of regard.
+  FIELDNAM: geometric_function_noblades
+  LABLAXIS: geometric function noblades
+  UNITS: " "
+
 phi_fwhm:
   <<: *default_float32
   CATDESC: FWHM of the phi distribution.
@@ -494,3 +508,11 @@ quality_hk:
   DEPEND_0: epoch
   DEPEND_1: spin_number
   DEPEND_2: energy_bin_geometric_mean
+
+quality_fov:
+  <<: *default_uint16
+  CATDESC: Quality flag for direct event for events outside of the FOV.
+  FIELDNAM: quality_fov
+  LABLAXIS: quality fov
+  # TODO: come back to format
+  UNITS: " "

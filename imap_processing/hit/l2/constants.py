@@ -169,7 +169,7 @@ STANDARD_PARTICLE_ENERGY_RANGE_MAPPING = {
         {"energy_min": 5.0, "energy_max": 6.0, "R2": [59], "R3": [], "R4": []},
         {"energy_min": 6.0, "energy_max": 8.0, "R2": [60], "R3": [63], "R4": []},
         {"energy_min": 8.0, "energy_max": 10.0, "R2": [61], "R3": [64], "R4": []},
-        {"energy_min": 10.0, "energy_max": 12.0, "R2": [], "R3": [65], "R4": []},
+        {"energy_min": 10.0, "energy_max": 12.0, "R2": [62], "R3": [65], "R4": []},
         {"energy_min": 12.0, "energy_max": 15.0, "R2": [], "R3": [66], "R4": []},
         {"energy_min": 15.0, "energy_max": 21.0, "R2": [], "R3": [67], "R4": []},
         {"energy_min": 21.0, "energy_max": 27.0, "R2": [], "R3": [68], "R4": []},
