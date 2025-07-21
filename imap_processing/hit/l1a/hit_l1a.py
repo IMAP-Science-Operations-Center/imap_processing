@@ -245,6 +245,69 @@ def calculate_uncertainties(dataset: xr.Dataset) -> xr.Dataset:
     return dataset
 
 
+def add_cdf_attributes(
+    dataset: xr.Dataset, logical_source: str, attr_mgr: ImapCdfAttributes
+) -> xr.Dataset:
+    """
+    Add attributes to the dataset.
+
+    This function adds attributes to the dataset variables and dimensions.
+    It also adds dimension labels as coordinates to the dataset.The attributes
+    are defined in a YAML file and retrieved by the attribute manager.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        The dataset to update.
+    logical_source : str
+        The logical source of the dataset.
+    attr_mgr : ImapCdfAttributes
+        The attribute manager to retrieve attributes.
+
+    Returns
+    -------
+    xarray.Dataset
+        The updated dataset with attributes and dimension labels.
+    """
+    dataset.attrs = attr_mgr.get_global_attributes(logical_source)
+
+    # Assign attributes and dimensions to each data array in the Dataset
+    for var in dataset.data_vars.keys():
+        try:
+            if "energy_delta" in var or var in {
+                "pkt_len",
+                "version",
+                "type",
+                "src_seq_ctr",
+                "seq_flgs",
+                "pkt_apid",
+                "sec_hdr_flg",
+            }:
+                # skip schema check to avoid DEPEND_0 being added unnecessarily
+                dataset[var].attrs = attr_mgr.get_variable_attributes(
+                    var, check_schema=False
+                )
+            else:
+                dataset[var].attrs = attr_mgr.get_variable_attributes(var)
+        except KeyError:
+            logger.warning(f"Field {var} not found in attribute manager.")
+
+    # check_schema=False to avoid attr_mgr adding stuff dimensions don't need
+    for dim in dataset.dims:
+        dataset[dim].attrs = attr_mgr.get_variable_attributes(dim, check_schema=False)
+        if dim != "epoch":
+            label_array = xr.DataArray(
+                dataset[dim].values.astype(str),
+                name=f"{dim}_label",
+                dims=[dim],
+                attrs=attr_mgr.get_variable_attributes(
+                    f"{dim}_label", check_schema=False
+                ),
+            )
+            dataset.coords[f"{dim}_label"] = label_array
+    return dataset
+
+
 def process_science(
     dataset: xr.Dataset, attr_mgr: ImapCdfAttributes
 ) -> list[xr.Dataset]:
@@ -294,30 +357,7 @@ def process_science(
 
     # Update attributes and dimensions
     for logical_source, ds in l1a_datasets.items():
-        ds.attrs = attr_mgr.get_global_attributes(logical_source)
-
-        # Assign attributes and dimensions to each data array in the Dataset
-        for field in ds.data_vars.keys():
-            try:
-                ds[field].attrs = attr_mgr.get_variable_attributes(field)
-            except KeyError:
-                print(f"Field {field} not found in attribute manager.")
-                logger.warning(f"Field {field} not found in attribute manager.")
-
-        # check_schema=False to avoid attr_mgr adding stuff dimensions don't need
-        for dim in ds.dims:
-            ds[dim].attrs = attr_mgr.get_variable_attributes(dim, check_schema=False)
-            # TODO: should labels be added as coordinates? Check with SPDF
-            if dim != "epoch":
-                label_array = xr.DataArray(
-                    ds[dim].values.astype(str),
-                    name=f"{dim}_label",
-                    dims=[dim],
-                    attrs=attr_mgr.get_variable_attributes(
-                        f"{dim}_label", check_schema=False
-                    ),
-                )
-                ds.coords[f"{dim}_label"] = label_array
+        l1a_datasets[logical_source] = add_cdf_attributes(ds, logical_source, attr_mgr)
 
         logger.info(f"HIT L1A dataset created for {logical_source}")
 

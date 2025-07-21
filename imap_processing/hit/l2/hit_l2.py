@@ -95,11 +95,11 @@ def add_cdf_attributes(
 
     Parameters
     ----------
-    dataset : xr.Dataset
+    dataset : xarray.Dataset
         The dataset to update.
     logical_source : str
         The logical source of the dataset.
-    attr_mgr : AttributeManager
+    attr_mgr : ImapCdfAttributes
         The attribute manager to retrieve attributes.
 
     Returns
@@ -132,12 +132,11 @@ def add_cdf_attributes(
     # check_schema=False to avoid attr_mgr adding stuff dimensions don't need
     for dim in dataset.dims:
         dataset[dim].attrs = attr_mgr.get_variable_attributes(dim, check_schema=False)
-        # TODO: should labels be added as coordinates? Check with SPDF
         if dim != "epoch":
             label_array = xr.DataArray(
                 dataset[dim].values.astype(str),
                 name=f"{dim}_label",
-                dims=[f"{dim}_label"],
+                dims=[dim],
                 attrs=attr_mgr.get_variable_attributes(
                     f"{dim}_label", check_schema=False
                 ),
@@ -633,7 +632,7 @@ def process_summed_intensity(
             summed_intensity_dataset = add_total_uncertainties(
                 summed_intensity_dataset, var
             )
-            # Expand the variable name to include standard intensity
+            # Expand the variable name to include summed intensity
             summed_intensity_dataset = summed_intensity_dataset.rename(
                 {var: f"{var}_summed_intensity"}
             )

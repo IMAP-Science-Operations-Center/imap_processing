@@ -1,3 +1,5 @@
+from unittest.mock import Mock
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -9,6 +11,7 @@ from imap_processing.hit.hit_utils import (
     get_datasets_by_apid,
 )
 from imap_processing.hit.l1a.hit_l1a import (
+    add_cdf_attributes,
     calculate_uncertainties,
     decom_hit,
     hit_l1a,
@@ -124,6 +127,49 @@ def test_calculate_uncertainties():
     )
     assert "version_stat_uncert_plus" not in result
     assert "version_stat_uncert_minus" not in result
+
+
+def test_add_cdf_attributes():
+    """Test the add_cdf_attributes function."""
+    # Create a dataset with multiple variable name patterns
+    dataset = xr.Dataset(
+        {
+            "var": (["dim1", "dim2"], np.ones((2, 2))),
+            "uncert_var": (["dim1", "dim2"], np.ones((2, 2))),
+            "energy_var": (["dim1"], np.ones(2)),
+        },
+        coords={"dim1": [10, 20], "dim2": [1, 2]},
+    )
+
+    # Logical source to test macropixel logic
+    logical_source = "test_logical_source"
+
+    # Create a mock attribute manager
+    attr_mgr = Mock()
+    attr_mgr.get_global_attributes.return_value = {"Global_attr": "Test Dataset"}
+
+    def fake_get_variable_attributes(name, check_schema=True):
+        return {f"{name}_attr": "value", "check_schema": check_schema}
+
+    attr_mgr.get_variable_attributes.side_effect = fake_get_variable_attributes
+
+    # Run the function
+    result = add_cdf_attributes(dataset, logical_source, attr_mgr)
+
+    # 1. Global attributes
+    assert result.attrs["Global_attr"] == "Test Dataset"
+
+    # 2. Variable attributes
+    assert "var_attr" in result["var"].attrs
+    assert "uncert_var_attr" in result["uncert_var"].attrs
+    assert "energy_var_attr" in result["energy_var"].attrs
+
+    # 3. Dimension attributes and labels
+    for dim in ["dim1", "dim2"]:
+        assert f"{dim}_attr" in result[dim].attrs
+        assert f"{dim}_label" in result.coords
+        assert f"{f'{dim}_label'}_attr" in result[f"{dim}_label"].attrs
+        assert list(result[f"{dim}_label"].dims) == [f"{dim}"]
 
 
 def test_validate_l1a_housekeeping_data(hk_packet_filepath):

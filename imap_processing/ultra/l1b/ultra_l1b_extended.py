@@ -805,6 +805,68 @@ def get_phi_theta(
     return np.degrees(phi), np.degrees(theta)
 
 
+def get_spin_number(de_met: NDArray, de_spin: NDArray) -> NDArray:
+    """
+    Get the spin number.
+
+    Parameters
+    ----------
+    de_met : NDArray
+        Mission elapsed time.
+    de_spin : NDArray
+        Spin number 0-255.
+
+    Returns
+    -------
+    assigned_spin_number : NDArray
+        Spin number for DE data product.
+    """
+    # DE packet data.
+    # Since the spin number in the direct events packet
+    # is only 8 bits it goes from 0-255.
+    # Within a pointing that means we will always have duplicate spin numbers.
+    # In other words, different spins will be represented by the same spin number.
+    # Just to make certain that we won't accidentally combine
+    # multiple spins we need to sort by time here.
+    sort_idx = np.argsort(de_met)
+    de_met_sorted = de_met[sort_idx]
+    de_spin_sorted = de_spin[sort_idx]
+    # Here we are finding the start and end indices of each spin in the sorted array.
+    is_new_spin = np.concatenate([[True], de_spin_sorted[1:] != de_spin_sorted[:-1]])
+    spin_start_indices = np.where(is_new_spin)[0]
+    spin_end_indices = np.append(spin_start_indices[1:], len(de_met_sorted))
+
+    # Universal Spin Table.
+    spin_df = get_spin_data()
+    # Retrieve the met values of the start of the spin.
+    spin_start_mets = spin_df["spin_start_met"].values
+    # Retrieve the corresponding spin numbers.
+    spin_numbers = spin_df["spin_number"].values
+    assigned_spin_number_sorted = np.empty(de_spin_sorted.shape, dtype=np.uint32)
+    # These last 8 bits are the same as the spin number in the DE packet.
+    # So this will give us choices of which spins are
+    # available to assign to the DE data.
+    possible_spins = spin_numbers & 0xFF
+
+    # Assign each group based on time.
+    for start, end in zip(spin_start_indices, spin_end_indices):
+        # Now that we have the possible spins from the Universal Spin Table,
+        # we match the times of those spins to the nearest times in the DE data.
+        possible_times = spin_start_mets[possible_spins == de_spin_sorted[start]]
+        # Get nearest time for matching spins.
+        nearest_idx = np.abs(possible_times - de_met_sorted[start]).argmin()
+        nearest_value = possible_times[nearest_idx]
+        assigned_spin_number_sorted[start:end] = spin_numbers[
+            spin_start_mets == nearest_value
+        ]
+
+    # Undo the sort to match original order.
+    assigned_spin_number = np.empty_like(assigned_spin_number_sorted)
+    assigned_spin_number[sort_idx] = assigned_spin_number_sorted
+
+    return assigned_spin_number
+
+
 def get_eventtimes(
     spin: NDArray, phase_angle: NDArray
 ) -> tuple[NDArray, NDArray, NDArray]:

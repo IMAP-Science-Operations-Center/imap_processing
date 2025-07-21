@@ -8,7 +8,7 @@ default_particle_attrs: &default_particle
   VALIDMAX: 10000000000.0
   FORMAT: F14.3
   UNITS: 1/(cm^2 s MeV/nuc sr)
-  SCALE_TYP: log
+  SCALETYP: log
   SCALEMIN: 0.0001
   SCALEMAX: 1000.0
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
@@ -21,7 +21,7 @@ default_energy_attrs: &default_energy
   VALIDMAX: 1000.0
   FORMAT: F6.1
   UNITS: MeV/nuc
-  SCALE_TYP: log
+  SCALETYP: log
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Characteristic
 
 default_energy_delta_attrs: &default_energy_delta
@@ -45,7 +45,7 @@ default_angle_attrs: &default_angle
   VALIDMAX: 1000.0
   FORMAT: F12.2
   UNITS: Deg
-  SCALE_TYP: linear
+  SCALETYP: linear
 
 # <=== Coordinates ===>
 zenith:
@@ -337,7 +337,7 @@ dynamic_threshold_state:
   DISPLAY_TYPE: time_series
   FORMAT: I1
   UNITS: " "
-  SCALE_TYP: linear
+  SCALETYP: linear
   SCALEMIN: 0
   SCALEMAX: 1000
   DICT_KEY: SPASE>Support>SupportQuantity:InstrumentMode

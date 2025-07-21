@@ -3,11 +3,13 @@ import pandas as pd
 import pytest
 
 from imap_processing import imap_module_directory
+from imap_processing.quality_flags import ImapDEUltraFlags
 from imap_processing.ultra.l1b.lookup_utils import (
     get_angular_profiles,
     get_back_position,
     get_energy_efficiencies,
     get_energy_norm,
+    get_geometric_factor,
     get_image_params,
     get_norm,
     get_y_adjust,
@@ -93,3 +95,25 @@ def test_get_energy_efficiencies():
     u45_efficiencies = get_energy_efficiencies(ancillary_files)
 
     assert u45_efficiencies.shape == (58081, 157)
+
+
+@pytest.mark.external_test_data
+def test_get_geometric_function():
+    """Tests function get_get_energy_efficiencies."""
+
+    path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
+    ancillary_files = {
+        "l1b-sensor-gf-noblades": path
+        / "imap_ultra_l1b-sensor-gf-noblades_20250101_v000.csv"
+    }
+    phi = np.array([-65, -64, -39, -1.3, 0, 1.3, 39, 64, 65])
+    theta = np.array([-65, -64, -39, -1.3, 0, 1.3, 39, 64, 65])
+    quality_flags = np.full(phi.shape, ImapDEUltraFlags.NONE.value, dtype=np.uint16)
+    gf = get_geometric_factor(
+        ancillary_files, "l1b-sensor-gf-noblades", phi, theta, quality_flags
+    )
+
+    np.testing.assert_array_equal(
+        gf, np.array([0, 0, 0.13713, 0.1792, 0.35507, 0.1792, 0.13713, 0, 0])
+    )
+    np.testing.assert_array_equal(quality_flags, np.array([2, 2, 0, 0, 0, 0, 0, 2, 2]))
