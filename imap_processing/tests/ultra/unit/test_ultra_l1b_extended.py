@@ -54,6 +54,7 @@ def test_fixture(de_dataset, events_fsw_comparison_theta_0):
     return df_filt, d, yf, de_dataset
 
 
+@pytest.mark.external_test_data
 def test_get_front_x_position(test_fixture, ancillary_files):
     """Tests get_front_x_position function."""
 
@@ -91,6 +92,7 @@ def test_get_path_length(test_fixture):
     assert r == pytest.approx(df_filt["r"].astype("float"), abs=1e-5)
 
 
+@pytest.mark.external_test_data
 def test_get_ph_tof_and_back_positions(test_fixture, ancillary_files):
     """Tests get_ph_tof_and_back_positions function."""
 
@@ -113,6 +115,7 @@ def test_get_ph_tof_and_back_positions(test_fixture, ancillary_files):
     )
 
 
+@pytest.mark.external_test_data
 def test_get_ssd_back_position_and_tof_offset(
     test_fixture, events_fsw_comparison_theta_0, ancillary_files
 ):
@@ -155,6 +158,7 @@ def test_get_ssd_back_position_and_tof_offset(
     assert np.all(ssd_number_rt <= 7), "Values in ssd_number_rt out of range."
 
 
+@pytest.mark.external_test_data
 def test_get_coincidence_positions(test_fixture, ancillary_files):
     """Tests get_coincidence_positions function."""
     df_filt, _, _, de_dataset = test_fixture
@@ -179,6 +183,7 @@ def test_get_coincidence_positions(test_fixture, ancillary_files):
     )
 
 
+@pytest.mark.external_test_data
 def test_calculate_etof_xc(test_fixture, ancillary_files):
     """Tests calculate_etof_xc function."""
     df_filt, _, _, de_dataset = test_fixture
@@ -304,6 +309,7 @@ def test_get_de_velocity(test_fixture):
     )
 
 
+@pytest.mark.external_test_data
 def test_get_ssd_tof(test_fixture, ancillary_files):
     """Tests get_ssd_tof function."""
     df_filt, _, _, de_dataset = test_fixture
@@ -348,6 +354,7 @@ def test_get_de_energy_kev(test_fixture):
     np.testing.assert_allclose(actual_energy, expected_energy, atol=1e-01, rtol=0)
 
 
+@pytest.mark.external_test_data
 def test_get_energy_ssd(test_fixture, ancillary_files):
     """Tests get_energy_ssd function."""
     df_filt, _, _, de_dataset = test_fixture
@@ -361,6 +368,7 @@ def test_get_energy_ssd(test_fixture, ancillary_files):
     assert np.array_equal(test_energy, energy)
 
 
+@pytest.mark.external_test_data
 def test_get_energy_pulse_height(test_fixture, ancillary_files):
     """Tests get_energy_ssd function."""
     df_filt, _, _, de_dataset = test_fixture
@@ -517,6 +525,7 @@ def test_get_eventtimes(test_fixture, use_fake_spin_data_for_time):
     assert event_times_max == event_times.max()
 
 
+@pytest.mark.external_test_data
 def test_interpolate_fwhm(ancillary_files):
     """Tests interpolate_fwhm function."""
 
@@ -547,6 +556,7 @@ def test_interpolate_fwhm(ancillary_files):
     assert theta_interp.size == 0
 
 
+@pytest.mark.external_test_data
 def test_get_fwhm(ancillary_files):
     """Tests get_fwhm function."""
 

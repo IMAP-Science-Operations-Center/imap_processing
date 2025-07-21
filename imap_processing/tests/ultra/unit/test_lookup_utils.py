@@ -33,6 +33,7 @@ def test_get_y_adjust():
     assert res == yadjust_df["dYAdj"][8]
 
 
+@pytest.mark.external_test_data
 def test_get_stop_norm(ancillary_files):
     """Tests function get_stop_norm."""
 
@@ -47,6 +48,7 @@ def test_get_stop_norm(ancillary_files):
     assert stop_norm == tdc_norm_df["SpE"][378]
 
 
+@pytest.mark.external_test_data
 def test_get_back_position(ancillary_files):
     """Tests function get_back_position."""
 
@@ -61,6 +63,7 @@ def test_get_back_position(ancillary_files):
     assert dn_converted == back_pos_df["XBkBt"].iloc[-2000]
 
 
+@pytest.mark.external_test_data
 def test_get_egy_norm(ancillary_files):
     """Tests function get_egy_norm."""
 
@@ -74,6 +77,7 @@ def test_get_egy_norm(ancillary_files):
     assert int(norm_composite_energy) == egy_norm_df.iloc[2 * 4096 + 2]["NormEnergy"]
 
 
+@pytest.mark.external_test_data
 def test_get_image_params(ancillary_files):
     """Tests function get_image_params."""
     image_params = get_image_params("XFTLTOFF", "ultra45", ancillary_files)
