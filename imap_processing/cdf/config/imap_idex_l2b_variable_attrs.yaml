@@ -157,7 +157,7 @@ base_mass_map: &base_mass_map
 rate_by_charge:
     <<: *base_charge
     CATDESC: Count rate per day by impact charge and spin phase.
-    FIELDNAM: Rate by Charge
+    FIELDNAM: Rate (day^-1) by Charge
     UNITS: day^-1
     FILLVAL: *double_fillval
     DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
@@ -165,7 +165,7 @@ rate_by_charge:
 rate_by_charge_map:
     <<: *base_charge_map
     CATDESC: Count rate per day by impact charge, longitude, and latitude.
-    FIELDNAM: Rate by Charge Map
+    FIELDNAM: Rate (day^-1) by Charge Map
     UNITS: day^-1
     FILLVAL: *double_fillval
     DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
@@ -173,7 +173,7 @@ rate_by_charge_map:
 rate_by_mass:
     <<: *base_mass
     CATDESC: Count rate per day by mass and spin phase.
-    FIELDNAM: Rate by Mass
+    FIELDNAM: Rate (day^-1) by Mass
     UNITS: day^-1
     FILLVAL: *double_fillval
     DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
@@ -181,7 +181,7 @@ rate_by_mass:
 rate_by_mass_map:
     <<: *base_mass_map
     CATDESC: Count rate per day by mass, longitude, and latitude.
-    FIELDNAM: Rate by Mass Map
+    FIELDNAM: Rate (day^-1) by Mass Map
     UNITS: day^-1
     FILLVAL: *double_fillval
     DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
