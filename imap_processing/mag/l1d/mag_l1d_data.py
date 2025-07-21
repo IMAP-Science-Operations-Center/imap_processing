@@ -1,3 +1,4 @@
+# mypy: disable-error-code="unused-ignore"
 """Data classes for MAG L1D processing."""
 
 from dataclasses import dataclass
@@ -98,7 +99,7 @@ class MagL1dConfiguration:
 
 
 @dataclass(kw_only=True)
-class MagL1d(MagL2L1dBase):  # type: ignore[misc,unused-ignore]
+class MagL1d(MagL2L1dBase):  # type: ignore[misc]
     """
     Class for handling IMAP MAG L1d data.
 
@@ -331,7 +332,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc,unused-ignore]
             )
 
         # TODO: get the spin numbers which correspond to the epoch values for output
-        sc_spin_phase = spin.get_spacecraft_spin_phase(self.epoch)
+        sc_spin_phase = spin.get_spacecraft_spin_phase(self.epoch)  # type: ignore[index]
         # mark vectors as nan where they are nan in sc_spin_phase
         vectors = self.vectors.copy().astype(np.float64)
 
