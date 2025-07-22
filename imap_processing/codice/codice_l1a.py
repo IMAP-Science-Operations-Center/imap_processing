@@ -405,7 +405,7 @@ class CoDICEL1aPipeline:
                 dims = ["epoch"]
                 attrs = self.cdf_attrs.get_variable_attributes("spin_period")
 
-            # THe k-factor is a constant that maps voltages to energies
+            # The k-factor is a constant that maps voltages to energies
             elif variable_name == "k_factor":
                 variable_data = np.array([constants.K_FACTOR], dtype=np.float32)
                 dims = [""]

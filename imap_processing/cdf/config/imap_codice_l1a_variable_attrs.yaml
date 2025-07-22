@@ -295,7 +295,7 @@ energy_table:
     VAR_TYPE: support_data
 
 k_factor:
-    CATDESC: K Factor
+    CATDESC: K Factor constant that is used to convert voltages to energies
     FIELDNAM: K Factor
     FORMAT: F5.2
     LABLAXIS: K Factor
