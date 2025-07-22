@@ -21,6 +21,7 @@ BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
+@pytest.mark.external_test_data
 def test_get_y_adjust(ancillary_files):
     """Tests function get_y_adjust."""
 
