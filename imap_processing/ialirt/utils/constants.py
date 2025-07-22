@@ -61,10 +61,8 @@ IALIRT_KEYS = [
     "swapi_pseudo_proton_speed",
     # Pseudo temperature of solar wind protons in plasma frame
     "swapi_pseudo_proton_temperature",
-    # SWE Normalized Counts - Half Cycle 1
-    "swe_normalized_counts_half_1",
-    # SWE Normalized Counts - Half Cycle 2
-    "swe_normalized_counts_half_2",
+    # SWE Normalized Counts
+    "swe_normalized_counts",
     # SWE Counterstreaming flag
     "swe_counterstreaming_electrons",
 ]

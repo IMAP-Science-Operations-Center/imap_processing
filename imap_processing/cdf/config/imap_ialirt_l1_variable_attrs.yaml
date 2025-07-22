@@ -375,23 +375,12 @@ swapi_pseudo_proton_temperature:
   VALIDMIN: 0.0
   VALIDMAX: 50000000.0
 
-# SWE Normalized Counts, First Half Cycle
-swe_normalized_counts_half_1:
+# SWE Normalized Counts
+swe_normalized_counts:
   <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 1, ESA step 0)
-  FIELDNAM: swe_normalized_counts_half_1
-  LABLAXIS: swe_norm_cts_q1_esa0
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-  DEPEND_1: esa_step
-
-# SWE Normalized Counts, Second Half Cycle
-swe_normalized_counts_half_2:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 2, ESA step 0)
-  FIELDNAM: swe_normalized_counts_half_2
-  LABLAXIS: swe_norm_cts_q2_esa0
+  CATDESC: Normalized electron counts
+  FIELDNAM: swe_normalized_counts
+  LABLAXIS: swe_normalized_counts
   UNITS: Normalized counts
   VALIDMIN: 0
   VALIDMAX: 500000

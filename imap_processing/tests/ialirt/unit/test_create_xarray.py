@@ -17,8 +17,7 @@ def test_create_dataset():
             "met": 123456789,
             "met_in_utc": "2025-06-20T08:00:00",
             "ttj2000ns": 123456789000000,
-            "swe_normalized_counts_half_1": [Decimal("0.0") for _ in range(8)],
-            "swe_normalized_counts_half_2": [Decimal("0.0") for _ in range(8)],
+            "swe_normalized_counts": [Decimal("0.0") for _ in range(8)],
             "swe_counterstreaming_electrons": Decimal("0.0"),
             "swapi_pseudo_proton_speed": Decimal("0.0"),
             "swapi_pseudo_proton_density": Decimal("0.0"),
@@ -89,11 +88,11 @@ def test_create_dataset():
     npt.assert_array_equal(dataset["esa_step"].values, np.arange(8))
 
     npt.assert_array_equal(
-        dataset["swe_normalized_counts_half_1"].values[0],
+        dataset["swe_normalized_counts"].values[0],
         np.zeros(8, dtype=np.uint32),
     )
     npt.assert_array_equal(
-        dataset["swe_normalized_counts_half_1"].values[1],
+        dataset["swe_normalized_counts"].values[1],
         np.full(8, 4294967295, dtype=np.uint32),
     )
     np.testing.assert_allclose(
@@ -117,8 +116,7 @@ def test_create_dataset():
     npt.assert_array_equal(dataset["codice_hi_h"].isel(epoch=1).values, expected_fill)
 
     assert dataset["mag_b_gse"].dims == ("epoch", "component")
-    assert dataset["swe_normalized_counts_half_1"].dims == ("epoch", "esa_step")
-    assert dataset["swe_normalized_counts_half_2"].dims == ("epoch", "esa_step")
+    assert dataset["swe_normalized_counts"].dims == ("epoch", "esa_step")
     assert dataset["codice_hi_h"].dims == (
         "epoch",
         "codice_hi_h_energy_ranges",
