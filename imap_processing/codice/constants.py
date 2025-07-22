@@ -59,7 +59,7 @@ CODICEAPID_MAPPING = {
 
 # Numerical constants
 SPIN_PERIOD_CONVERSION = 0.00032
-K_FACTOR = 5.76
+K_FACTOR = 5.76  # This is used to convert voltages to energies in L2
 
 # CDF variable names used for lo data products
 LO_COUNTERS_SINGLES_VARIABLE_NAMES = ["apd_singles"]
