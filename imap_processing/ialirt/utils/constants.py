@@ -37,16 +37,24 @@ IALIRT_KEYS = [
     "hit_he_omni_low_en",
     # High energy (15 to 70 MeV/nuc) He (Omnidirectional)
     "hit_he_omni_high_en",
+    # MAG instrument epoch
+    "mag_epoch",
     # Magnetic field vector in GSE coordinates
-    "mag_4s_b_gse",
+    "mag_b_gse",
     # Magnetic field vector in GSM coordinates
-    "mag_4s_b_gsm",
+    "mag_b_gsm",
     # Magnetic field vector in RTN coordinates
-    "mag_4s_b_rtn",
+    "mag_b_rtn",
+    # Magnitude of the magnetic field vector
+    "mag_b_magnitude",
     # Azimuth angle (φ) of the magnetic field in GSM coordinates
-    "mag_phi_4s_b_gsm",
+    "mag_phi_b_gsm",
     # Elevation angle (θ) of the magnetic field in GSM coordinates
-    "mag_theta_4s_b_gsm",
+    "mag_theta_b_gsm",
+    # Azimuth angle (φ) of the magnetic field in GSE coordinates
+    "mag_phi_b_gse",
+    # Elevation angle (θ) of the magnetic field in GSE coordinates
+    "mag_theta_b_gse",
     # Pseudo density of solar wind protons
     "swapi_pseudo_proton_density",
     # Pseudo speed of solar wind protons in solar inertial frame

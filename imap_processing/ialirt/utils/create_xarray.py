@@ -48,6 +48,13 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         attrs=cdf_manager.get_variable_attributes("component", check_schema=False),
     )
 
+    rtn_component = xr.DataArray(
+        ["radial", "tangential", "normal"],
+        name="rtn_component",
+        dims=["rtn_component"],
+        attrs=cdf_manager.get_variable_attributes("rtn_component", check_schema=False),
+    )
+
     esa_step = xr.DataArray(
         data=np.arange(8, dtype=np.uint8),
         name="esa_step",
@@ -79,6 +86,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     coords = {
         "epoch": epoch,
         "component": component,
+        "rtn_component": rtn_component,
         "esa_step": esa_step,
         "energy_ranges": energy_ranges,
         "azimuth": azimuth,
@@ -93,9 +101,13 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     for key in instrument_keys:
         attrs = cdf_manager.get_variable_attributes(key, check_schema=False)
         fillval = attrs.get("FILLVAL")
-        if key.startswith("mag"):
+        if key in ["mag_b_gse", "mag_b_gsm"]:
             data = np.full((n, 3), fillval, dtype=np.float32)
             dims = ["epoch", "component"]
+            dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
+        elif key == "mag_b_rtn":
+            data = np.full((n, 3), fillval, dtype=np.float32)
+            dims = ["epoch", "rtn_component"]
             dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
         elif key.startswith("codicehi"):
             data = np.full((n, 15, 4, 4), fillval, dtype=np.float32)
@@ -123,7 +135,7 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         for key, val in record.items():
             if key in ["apid", "met", "met_in_utc", "ttj2000ns"]:
                 continue
-            elif key.startswith("mag"):
+            elif key in ["mag_b_gse", "mag_b_gsm", "mag_b_rtn"]:
                 dataset[key].data[i, :] = val
             elif key.startswith("swe_normalized_counts"):
                 dataset[key].data[i, :] = val

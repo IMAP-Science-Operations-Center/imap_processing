@@ -17,6 +17,14 @@ component:
   VAR_TYPE: metadata
   UNITS: " "
 
+rtn_component:
+  CATDESC: Component direction (radial, tangential, normal)
+  FIELDNAM: component
+  LABLAXIS: component
+  FORMAT: A3
+  VAR_TYPE: metadata
+  UNITS: " "
+
 esa_step:
   CATDESC: ESA step number
   FIELDNAM: esa_step
@@ -256,43 +264,89 @@ hit_he_omni_high_en:
   LABLAXIS: hit_he_omni_high_en
   UNITS: counts
 
-mag_4s_b_gse:
+mag_epoch:
+  <<: *default_float32
+  CATDESC: MAG instrument epoch
+  FIELDNAM: mag_epoch
+  LABLAXIS: mag_epoch
+  UNITS: ns
+  VALIDMIN: 0.0
+  VALIDMAX: 9223372036854775807
+
+mag_b_gse:
   <<: *default_float32
   CATDESC: Magnetic field vector in GSE coordinates
-  FIELDNAM: mag_4s_b_gse
-  LABLAXIS: mag_4s_b_gse
+  FIELDNAM: mag_b_gse
+  LABLAXIS: mag_b_gse
   UNITS: nT
   DEPEND_1: component
+  VALIDMIN: -65000
+  VALIDMAX: 65000
 
-mag_4s_b_gsm:
+mag_b_gsm:
   <<: *default_float32
   CATDESC: Magnetic field vector in GSM coordinates
-  FIELDNAM: mag_4s_b_gsm
-  LABLAXIS: mag_4s_b_gsm
+  FIELDNAM: mag_b_gsm
+  LABLAXIS: mag_b_gsm
   UNITS: nT
   DEPEND_1: component
+  VALIDMIN: -65000
+  VALIDMAX: 65000
 
-mag_4s_b_rtn:
+mag_b_rtn:
   <<: *default_float32
   CATDESC: Magnetic field vector in RTN coordinates
-  FIELDNAM: mag_4s_b_rtn
-  LABLAXIS: mag_4s_b_rtn
+  FIELDNAM: mag_b_rtn
+  LABLAXIS: mag_b_rtn
   UNITS: nT
-  DEPEND_1: component
+  DEPEND_1: rtn_component
+  VALIDMIN: -65000
+  VALIDMAX: 65000
 
-mag_phi_4s_b_gsm:
+mag_b_magnitude:
+  <<: *default_float32
+  CATDESC: Magnitude of the magnetic field vector
+  FIELDNAM: mag_b_magnitude
+  LABLAXIS: mag_b_magnitude
+  UNITS: nT
+  VALIDMIN: 0
+  VALIDMAX: 65000
+
+mag_phi_b_gsm:
   <<: *default_float32
   CATDESC: Azimuth angle (φ) of the magnetic field in GSM coordinates
-  FIELDNAM: mag_phi_4s_b_gsm
-  LABLAXIS: mag_phi_4s_b_gsm
+  FIELDNAM: mag_phi_b_gsm
+  LABLAXIS: mag_phi_b_gsm
   UNITS: degrees
+  VALIDMIN: 0
+  VALIDMAX: 360
 
-mag_theta_4s_b_gsm:
+mag_theta_b_gsm:
   <<: *default_float32
   CATDESC: Elevation angle (θ) of the magnetic field in GSM coordinates
-  FIELDNAM: mag_theta_4s_b_gsm
-  LABLAXIS: mag_theta_4s_b_gsm
+  FIELDNAM: mag_theta_b_gsm
+  LABLAXIS: mag_theta_b_gsm
   UNITS: degrees
+  VALIDMIN: -90
+  VALIDMAX: 90
+
+mag_phi_b_gse:
+  <<: *default_float32
+  CATDESC: Azimuth angle (φ) of the magnetic field in GSE coordinates
+  FIELDNAM: mag_phi_b_gse
+  LABLAXIS: mag_phi_b_gse
+  UNITS: degrees
+  VALIDMIN: 0
+  VALIDMAX: 360
+
+mag_theta_b_gse:
+  <<: *default_float32
+  CATDESC: Elevation angle (θ) of the magnetic field in GSE coordinates
+  FIELDNAM: mag_theta_b_gse
+  LABLAXIS: mag_theta_b_gse
+  UNITS: degrees
+  VALIDMIN: -90
+  VALIDMAX: 90
 
 swapi_pseudo_proton_density:
   <<: *default_float32
