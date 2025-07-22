@@ -1,7 +1,7 @@
 # mypy: disable-error-code="unused-ignore"
 """Data classes for MAG L1D processing."""
 
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass
 
 import numpy as np
 import xarray as xr
@@ -33,7 +33,7 @@ class MagL1dConfiguration:
 
     Attributes
     ----------
-    offsets : np.ndarray
+    calibration_offsets : np.ndarray
         The offsets for the correct day. Should be size (2, 4, 3) where the first index
         is 0 for MAGo and 1 for MAGi, the second index is the range (0-3), and the
         third index is the axis (0-2).
@@ -53,7 +53,7 @@ class MagL1dConfiguration:
         Whether to apply gradiometry or not. Default is True.
     """
 
-    offsets: np.ndarray
+    calibration_offsets: np.ndarray
     mago_calibration: np.ndarray
     magi_calibration: np.ndarray
     spin_count_calibration: int
@@ -83,7 +83,7 @@ class MagL1dConfiguration:
         self.magi_calibration = retrieve_matrix_from_l2_calibration(
             calibration_dataset, day, use_mago=False
         )
-        self.offsets = calibration_dataset.sel(epoch=day)["offsets"].data
+        self.calibration_offsets = calibration_dataset.sel(epoch=day)["offsets"].data
         self.spin_count_calibration = calibration_dataset.sel(epoch=day)[
             "number_of_spins"
         ].data
@@ -139,6 +139,9 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
     spin_offsets : xr.Dataset, optional
         The spin offsets dataset, if already calculated. If not provided, it will be
         calculated during processing if in NORM mode.
+    day : np.datetime64
+        The day we are processing, in np.datetime64[D] format. This is used to
+        truncate the data to exactly 24 hours.
     """
 
     # TODO Quality flags
@@ -148,17 +151,28 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
     magi_epoch: np.ndarray
     config: MagL1dConfiguration
     spin_offsets: xr.Dataset = None
+    day: InitVar[np.datetime64]
 
-    def __post_init__(self) -> None:
+    def __post_init__(self, day: np.datetime64) -> None:
         """
         Run all processing steps to generate L1d data.
 
         This updates class variables to match L1D outputs.
+
+        Parameters
+        ----------
+        day : np.datetime64
+            The day we are processing, in np.datetime64[D] format. This is used to
+            truncate the data to exactly 24 hours.
         """
+        # set the magnitude before truncating
+        self.magnitude = np.zeros(self.vectors.shape[0], dtype=np.float64)  # type: ignore[has-type]
+        self.truncate_to_24h(day)
+
         self.vectors, self.magi_vectors = self._calibrate_and_offset_vectors(
             self.config.mago_calibration,
             self.config.magi_calibration,
-            self.config.offsets,
+            self.config.calibration_offsets,
         )
         # We need to be in SRF for the spin offsets application and calculation
         self.rotate_frame(ValidFrames.SRF)
@@ -185,6 +199,9 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         if self.config.apply_gradiometry:
             self.gradiometry_offsets = self.calculate_gradiometry_offsets(
                 self.vectors, self.epoch, self.magi_vectors, self.magi_epoch
+            )
+            self.vectors = self.apply_gradiometry_offsets(
+                self.gradiometry_offsets, self.vectors, self.config.gradiometer_factor
             )
 
         self.magnitude = MagL2L1dBase.calculate_magnitude(vectors=self.vectors)
@@ -253,7 +270,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         )
 
         mago_vectors = np.apply_along_axis(
-            func1d=self.offset_vector,
+            func1d=self.apply_calibration_offset_single_vector,
             axis=1,
             arr=mago_vectors,
             offsets=offsets,
@@ -261,7 +278,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         )
 
         magi_vectors = np.apply_along_axis(
-            func1d=self.offset_vector,
+            func1d=self.apply_calibration_offset_single_vector,
             axis=1,
             arr=magi_vectors,
             offsets=offsets,
@@ -271,7 +288,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         return mago_vectors[:, :3], magi_vectors[:, :3]
 
     @staticmethod
-    def offset_vector(
+    def apply_calibration_offset_single_vector(
         input_vector: np.ndarray, offsets: np.ndarray, is_magi: bool = False
     ) -> np.ndarray:
         """
@@ -568,5 +585,4 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             gradiometer_factor,
         )
 
-        print(offset_value.shape)
         return vectors - offset_value

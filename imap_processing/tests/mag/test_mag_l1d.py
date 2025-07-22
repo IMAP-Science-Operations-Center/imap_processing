@@ -37,7 +37,7 @@ def norm_dataset(mag_test_l2_data):
 def mag_l1d_test_class(mag_test_l1d_data):
     fake_data = mag_l1a_dataset_generator(155)
 
-    day = np.datetime64("2025-10-17")
+    day = np.datetime64("2000-01-01")
     config = MagL1dConfiguration(mag_test_l1d_data, day)
 
     # Skip post-init processing
@@ -85,7 +85,7 @@ def test_mag_l1d(mag_test_l1d_data, norm_dataset, furnish_kernels, fake_mag_spin
         l1d = mag_l1d(
             [norm_dataset, norm_magi, burst_magi, burst_mago],
             mag_test_l1d_data,
-            np.datetime64("2025-10-17"),
+            np.datetime64("2000-01-01"),
         )
 
     assert len(l1d) == 4
@@ -103,13 +103,17 @@ def test_offset_vector():
     test_vector = np.array([1, 2, 3, 3])
 
     expected_vector = [-3, -2, -1, 3]
-    output_vector = MagL1d.offset_vector(test_vector, offsets, False)
+    output_vector = MagL1d.apply_calibration_offset_single_vector(
+        test_vector, offsets, False
+    )
 
     assert np.array_equal(expected_vector, output_vector)
 
     test_vector = np.array([1, 2, 3, 0])
     expected_vector = [2, 3, 4, 0]
-    output_vector = MagL1d.offset_vector(test_vector, offsets, True)
+    output_vector = MagL1d.apply_calibration_offset_single_vector(
+        test_vector, offsets, True
+    )
     assert np.array_equal(expected_vector, output_vector)
 
 

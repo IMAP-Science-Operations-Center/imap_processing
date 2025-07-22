@@ -92,6 +92,7 @@ def mag_l1d(
         magi_range=input_magi_norm["vectors"].data[:, 3],
         magi_epoch=input_magi_norm["epoch"].data,
         config=config,
+        day=day,
     )
 
     l1d_norm.rotate_frame(ValidFrames.SRF)
@@ -119,6 +120,7 @@ def mag_l1d(
             magi_epoch=input_magi_burst["epoch"].data,
             config=config,
             spin_offsets=l1d_norm.spin_offsets,
+            day=day,
         )
         l1d_burst.rotate_frame(ValidFrames.SRF)
         burst_srf_dataset = l1d_burst.generate_dataset(attributes, day_to_process)
