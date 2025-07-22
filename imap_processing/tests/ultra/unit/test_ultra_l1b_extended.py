@@ -39,7 +39,7 @@ TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
 @pytest.fixture
-def test_fixture(de_dataset, events_fsw_comparison_theta_0):
+def test_fixture(de_dataset, events_fsw_comparison_theta_0, ancillary_files):
     """Fixture to compute and return yf and related data."""
     # Remove start_type with fill values
     de_dataset = de_dataset.where(de_dataset["start_type"] != 255, drop=True)
@@ -48,7 +48,9 @@ def test_fixture(de_dataset, events_fsw_comparison_theta_0):
     df_filt = df[df["StartType"] != -1]
 
     d, yf = get_front_y_position(
-        de_dataset["start_type"].data, df_filt.Yb.values.astype("float")
+        de_dataset["start_type"].data,
+        df_filt.Yb.values.astype("float"),
+        ancillary_files,
     )
 
     return df_filt, d, yf, de_dataset
@@ -70,7 +72,7 @@ def test_get_front_x_position(test_fixture, ancillary_files):
     assert xf == pytest.approx(df_filt["Xf"].astype("float"), 1e-5)
 
 
-def test_get_front_y_position(test_fixture):
+def test_get_front_y_position(test_fixture, ancillary_files):
     """Tests get_front_y_position function."""
     df_filt, d, yf, _ = test_fixture
 

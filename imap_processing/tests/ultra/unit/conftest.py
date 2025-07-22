@@ -493,4 +493,5 @@ def ancillary_files():
         "l1b-45sensor-back-pos-lookup": path
         / "imap_ultra_l1b-45sensor-back-pos-lookup_20250101_v000.csv",
         "l1b-egynorm-lookup": path / "imap_ultra_l1b-egynorm-lookup_20250101_v000.csv",
+        "l1b-yadjust-lookup": path / "imap_ultra_l1b-yadjust-lookup_20250101_v001.csv",
     }

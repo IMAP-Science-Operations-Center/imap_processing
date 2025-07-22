@@ -153,7 +153,7 @@ def calculate_de(
         get_ph_tof_and_back_positions(de_dataset, xf, f"ultra{sensor}", ancillary_files)
     )
     d[ph_indices], yf[ph_indices] = get_front_y_position(
-        de_dataset["start_type"].data[ph_indices], yb[ph_indices]
+        de_dataset["start_type"].data[ph_indices], yb[ph_indices], ancillary_files
     )
     energy[ph_indices] = get_energy_pulse_height(
         de_dataset["stop_type"].data[ph_indices],
@@ -196,7 +196,7 @@ def calculate_de(
     xb[ssd_indices] = np.zeros(len(ssd_indices))
     etof[ssd_indices] = np.zeros(len(ssd_indices))
     d[ssd_indices], yf[ssd_indices] = get_front_y_position(
-        de_dataset["start_type"].data[ssd_indices], yb[ssd_indices]
+        de_dataset["start_type"].data[ssd_indices], yb[ssd_indices], ancillary_files
     )
     energy[ssd_indices] = get_energy_ssd(de_dataset, ssd_number, ancillary_files)
     r[ssd_indices] = get_path_length(

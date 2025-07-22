@@ -21,14 +21,14 @@ BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
-def test_get_y_adjust():
+def test_get_y_adjust(ancillary_files):
     """Tests function get_y_adjust."""
 
-    yadjust_path = BASE_PATH / "yadjust.csv"
+    yadjust_path = TEST_PATH / "imap_ultra_l1b-yadjust-lookup_20250101_v001.csv"
     yadjust_df = pd.read_csv(yadjust_path).set_index("dYLUT")
 
     array = np.array([8])
-    res = get_y_adjust(array)
+    res = get_y_adjust(array, ancillary_files)
 
     assert res == yadjust_df["dYAdj"][8]
 

@@ -90,7 +90,9 @@ def get_front_x_position(
     return xf
 
 
-def get_front_y_position(start_type: ndarray, yb: ndarray) -> tuple[ndarray, ndarray]:
+def get_front_y_position(
+    start_type: ndarray, yb: ndarray, ancillary_files: dict
+) -> tuple[ndarray, ndarray]:
     """
     Compute the adjustments for the front y position and distance front to back.
 
@@ -104,6 +106,8 @@ def get_front_y_position(start_type: ndarray, yb: ndarray) -> tuple[ndarray, nda
         Start Type: 1=Left, 2=Right.
     yb : np.array
         Y back position in hundredths of a millimeter.
+    ancillary_files : dict[Path]
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
@@ -127,7 +131,7 @@ def get_front_y_position(start_type: ndarray, yb: ndarray) -> tuple[ndarray, nda
         + 0.5
     )
     # y adjustment in mm
-    y_adjust_left = get_y_adjust(dy_lut_left) / 100
+    y_adjust_left = get_y_adjust(dy_lut_left, ancillary_files) / 100
     # hundredths of a millimeter
     yf[index_left] = (UltraConstants.YF_ESTIMATE_LEFT - y_adjust_left) * 100
     # distance adjustment in mm
@@ -143,7 +147,7 @@ def get_front_y_position(start_type: ndarray, yb: ndarray) -> tuple[ndarray, nda
         + 0.5
     )
     # y adjustment in mm
-    y_adjust_right = get_y_adjust(dy_lut_right) / 100
+    y_adjust_right = get_y_adjust(dy_lut_right, ancillary_files) / 100
     # hundredths of a millimeter
     yf[index_right] = (UltraConstants.YF_ESTIMATE_RIGHT + y_adjust_right) * 100
     # distance adjustment in mm

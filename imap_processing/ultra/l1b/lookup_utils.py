@@ -6,15 +6,10 @@ import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
 
-from imap_processing import imap_module_directory
 from imap_processing.quality_flags import ImapDEUltraFlags
 
-BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
 
-_YADJUST_DF = pd.read_csv(BASE_PATH / "yadjust.csv").set_index("dYLUT")
-
-
-def get_y_adjust(dy_lut: np.ndarray) -> npt.NDArray:
+def get_y_adjust(dy_lut: np.ndarray, ancillary_files: dict) -> npt.NDArray:
     """
     Adjust the front yf position based on the particle's trajectory.
 
@@ -26,13 +21,16 @@ def get_y_adjust(dy_lut: np.ndarray) -> npt.NDArray:
     ----------
     dy_lut : np.ndarray
         Change in y direction used for the lookup table (mm).
+    ancillary_files : dict[Path]
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
     yadj : np.ndarray
         Y adjustment (mm).
     """
-    return _YADJUST_DF["dYAdj"].iloc[dy_lut].values
+    yadjust_df = pd.read_csv(ancillary_files["l1b-yadjust-lookup"]).set_index("dYLUT")
+    return yadjust_df["dYAdj"].iloc[dy_lut].values
 
 
 def get_norm(
