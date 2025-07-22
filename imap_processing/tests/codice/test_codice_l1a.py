@@ -74,16 +74,16 @@ EXPECTED_HI_OMNI_ARRAY_SHAPES = {
 
 EXPECTED_NUM_VARIABLES = [
     3,  # hi-ialirt
-    17,  # lo-ialirt
+    18,  # lo-ialirt
     139,  # hskp
-    8 + len(constants.LO_COUNTERS_AGGREGATED_VARIABLE_NAMES),  # lo-counters-aggregated
-    9,  # lo-counters-singles
-    13,  # lo-sw-priority
-    10,  # lo-nsw-priority
-    24,  # lo-sw-species
-    16,  # lo-nsw-species
-    12,  # lo-sw-angular
-    9,  # lo-nsw-angular
+    9 + len(constants.LO_COUNTERS_AGGREGATED_VARIABLE_NAMES),  # lo-counters-aggregated
+    10,  # lo-counters-singles
+    14,  # lo-sw-priority
+    11,  # lo-nsw-priority
+    25,  # lo-sw-species
+    17,  # lo-nsw-species
+    13,  # lo-sw-angular
+    10,  # lo-nsw-angular
     2 + len(constants.HI_COUNTERS_AGGREGATED_VARIABLE_NAMES),  # hi-counters-aggregated
     5,  # hi-counters-singles
     11,  # hi-omni
@@ -176,6 +176,9 @@ def test_l1a_data_array_shape(test_l1a_data, index):
             # For some direct event variables:
             elif re.match(r"P[0-7]_(NumEvents|DataQuality)", variable):
                 assert processed_dataset[variable].data.shape == (77,)
+            # For the k-factor
+            elif variable == "k_factor":
+                assert processed_dataset[variable].data.shape == (1,)
             # For nominal variables
             else:
                 assert processed_dataset[variable].data.shape == expected_shape
