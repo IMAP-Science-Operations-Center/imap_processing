@@ -1508,29 +1508,30 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
         dataset = datasets[apid]
         logger.info(f"\nProcessing {CODICEAPID(apid).name} packet")
 
-        # Housekeeping data
-        if apid == CODICEAPID.COD_NHK:
-            processed_dataset = create_hskp_dataset(dataset)
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
-
-        # Event data
-        elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
-            processed_dataset = create_direct_event_dataset(apid, dataset)
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
-
-        # I-ALiRT data
-        elif apid in [CODICEAPID.COD_LO_IAL, CODICEAPID.COD_HI_IAL]:
-            processed_dataset = create_ialirt_dataset(apid, dataset)
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
-
-        # hi-omni data
-        elif apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
-            science_values = [packet.data for packet in dataset.data]
-            processed_dataset = create_binned_dataset(apid, dataset, science_values)
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+        # # Housekeeping data
+        # if apid == CODICEAPID.COD_NHK:
+        #     processed_dataset = create_hskp_dataset(dataset)
+        #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+        #
+        # # Event data
+        # elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
+        #     processed_dataset = create_direct_event_dataset(apid, dataset)
+        #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+        #
+        # # I-ALiRT data
+        # elif apid in [CODICEAPID.COD_LO_IAL, CODICEAPID.COD_HI_IAL]:
+        #     processed_dataset = create_ialirt_dataset(apid, dataset)
+        #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+        #
+        # # hi-omni data
+        # elif apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
+        #     science_values = [packet.data for packet in dataset.data]
+        #     processed_dataset = create_binned_dataset(apid, dataset, science_values)
+        #     logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # Everything else
-        elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
+        #elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
+        if apid == CODICEAPID.COD_LO_SW_ANGULAR_COUNTS:
             # Extract the data
             science_values = [packet.data for packet in dataset.data]
 
@@ -1545,6 +1546,8 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
             pipeline.define_coordinates()
             processed_dataset = pipeline.define_data_variables()
 
+            print(processed_dataset.hplus.data[0].sum())
+
             logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # For APIDs that don't require processing
@@ -1555,3 +1558,22 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
         processed_datasets.append(processed_dataset)
 
     return processed_datasets
+
+if __name__ == "__main__":
+    from imap_processing import imap_module_directory
+
+    TEST_DATA_PATH = imap_module_directory / "tests" / "codice" / "data"
+    file_path = TEST_DATA_PATH / "imap_codice_l0_raw_20241110_v001.pkts"
+    from imap_processing.cdf.utils import write_cdf
+
+    processed_datasets = process_codice_l1a(file_path)
+
+    filenames = []
+    for dataset in processed_datasets:
+        if dataset is not None:
+            try:
+                filename = write_cdf(dataset)
+                print(f"Created file: {filename}")
+                filenames.append(filename)
+            except error as e:
+                print(e)
