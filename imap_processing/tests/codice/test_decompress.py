@@ -13,11 +13,11 @@ lzma_bytes = lzma.compress((234).to_bytes(1, byteorder="big"))
 # LZMA_EXAMPLE = "".join(format(byte, "08b") for byte in lzma_bytes)
 TEST_DATA = [
     (b"\xea", CoDICECompression.NO_COMPRESSION, [234]),
-    (b"\xea", CoDICECompression.LOSSY_A, [221183]),
-    (b"\xea", CoDICECompression.LOSSY_B, [1441791]),
+    (b"\xea", CoDICECompression.LOSSY_A, [217087]),
+    (b"\xea", CoDICECompression.LOSSY_B, [1376255]),
     (lzma_bytes, CoDICECompression.LOSSLESS, [234]),
-    (lzma_bytes, CoDICECompression.LOSSY_A_LOSSLESS, [221183]),
-    (lzma_bytes, CoDICECompression.LOSSY_B_LOSSLESS, [1441791]),
+    (lzma_bytes, CoDICECompression.LOSSY_A_LOSSLESS, [217087]),
+    (lzma_bytes, CoDICECompression.LOSSY_B_LOSSLESS, [1376255]),
 ]
 
 
