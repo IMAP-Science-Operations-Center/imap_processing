@@ -1,4 +1,4 @@
-"""Tests coverage for ultra_l1b_annotated.py"""
+"""Tests for annotated events."""
 
 import numpy as np
 import pytest
