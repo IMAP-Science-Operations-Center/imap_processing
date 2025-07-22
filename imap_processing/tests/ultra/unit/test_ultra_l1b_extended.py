@@ -38,6 +38,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
+@pytest.mark.external_test_data
 @pytest.fixture
 def test_fixture(de_dataset, events_fsw_comparison_theta_0, ancillary_files):
     """Fixture to compute and return yf and related data."""
@@ -72,6 +73,7 @@ def test_get_front_x_position(test_fixture, ancillary_files):
     assert xf == pytest.approx(df_filt["Xf"].astype("float"), 1e-5)
 
 
+@pytest.mark.external_test_data
 def test_get_front_y_position(test_fixture, ancillary_files):
     """Tests get_front_y_position function."""
     df_filt, d, yf, _ = test_fixture
