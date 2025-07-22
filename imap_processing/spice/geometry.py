@@ -36,7 +36,7 @@ class SpiceBody(IntEnum):
 
 
 class SpiceFrame(IntEnum):
-    """Enum containing SPICE IDs for reference frames, defined in imap_wkcp.tf."""
+    """SPICE IDs for reference frames in imap_wkcp.tf and imap_science_xxx.tf."""
 
     # Standard SPICE Frames
     J2000 = spiceypy.irfnum("J2000")
@@ -60,6 +60,29 @@ class SpiceFrame(IntEnum):
     IMAP_HIT = -43500
     IMAP_IDEX = -43700
     IMAP_GLOWS = -43750
+
+    # IMAP Science Frames (new additions from imap_science_xxx.tf)
+    IMAP_OMD = -43900
+    IMAP_DPS = -43901
+    IMAP_EARTHFIXED = -43910
+    IMAP_ECLIPDATE = -43911
+    IMAP_MDI = -43912
+    IMAP_MDR = -43913
+    IMAP_GMC = -43914
+    IMAP_GEI = -43915
+    IMAP_GSE = -43916
+    IMAP_GSM = -43917
+    IMAP_SMD = -43918
+    IMAP_RTN = -43920
+    IMAP_HCI = -43921  # HGI_J2K
+    IMAP_HCD = -43922  # HGI_D
+    IMAP_HGC = -43923  # HGS_D
+    IMAP_HAE = -43924
+    IMAP_HAED = -43925
+    IMAP_HEE = -43926
+    IMAP_HRE = -43927
+    IMAP_HNU = -43928
+    IMAP_GCS = -43929
 
 
 BORESIGHT_LOOKUP = {
