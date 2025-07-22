@@ -2,19 +2,19 @@
 
 IALIRT_KEYS = [
     # H intensities in 15 energy ranges and binned into 4 azimuths and 4 spin angle bins
-    "codicehi_h",
+    "codice_hi_h",
     # C/O abundance ratio
-    "codicelo_c_over_o_abundance",
+    "codice_lo_c_over_o_abundance",
     # Mg/O abundance ratio
-    "codicelo_mg_over_o_abundance",
+    "codice_lo_mg_over_o_abundance",
     # Fe/O abundance ratio
-    "codicelo_fe_over_o_abundance",
+    "codice_lo_fe_over_o_abundance",
     # C+6/C+5 charge state ratio
-    "codicelo_c_plus_6_over_c_plus_5_ratio",
+    "codice_lo_c_plus_6_over_c_plus_5_ratio",
     # O+7/O+6 charge state ratio
-    "codicelo_o_plus_7_over_o_plus_6_ratio",
+    "codice_lo_o_plus_7_over_o_plus_6_ratio",
     # Fe low/Fe high charge state ratio
-    "codicelo_fe_low_over_fe_high_ratio",
+    "codice_lo_fe_low_over_fe_high_ratio",
     # Low energy (~300 keV) electrons (A-side)
     "hit_e_a_side_low_en",
     # Medium energy (~3 MeV) electrons (A-side)

@@ -35,30 +35,30 @@ esa_step:
   VAR_TYPE: metadata
   UNITS: " "
 
-energy_ranges:
+codice_hi_h_energy_ranges:
     CATDESC: CoDICE-Hi energy ranges
-    FIELDNAM: energy_ranges
-    LABLAXIS: energy_ranges
+    FIELDNAM: codice_hi_h_energy_ranges
+    LABLAXIS: codice_hi_h_energy_ranges
     FORMAT: I3
     VALIDMIN: 0
     VALIDMAX: 14
     VAR_TYPE: metadata
     UNITS: " "
 
-azimuth:
-    CATDESC: CoDICE-Hi azimuth
-    FIELDNAM: azimuth
-    LABLAXIS: azimuth
+codice_hi_h_elevation:
+    CATDESC: CoDICE-Hi elevation
+    FIELDNAM: codice_hi_h_elevation
+    LABLAXIS: codice_hi_h_elevation
     FORMAT: I3
     VALIDMIN: 0
     VALIDMAX: 4
     VAR_TYPE: metadata
     UNITS: " "
 
-spin_angle_bin:
-    CATDESC: CoDICE-Hi spin_angle_bin
-    FIELDNAM: spin_angle_bin
-    LABLAXIS: spin_angle_bin
+codice_hi_h_spin_angle:
+    CATDESC: CoDICE-Hi spin_angle
+    FIELDNAM: codice_hi_h_spin_angle
+    LABLAXIS: codice_hi_h_spin_angle
     FORMAT: I3
     VALIDMIN: 0
     VALIDMAX: 4
@@ -121,7 +121,7 @@ default_float64_attrs: &default_float64
   VALIDMAX: 1.7976931348623157e+308
   dtype: float64
 
-codicehi_h:
+codice_hi_h:
   <<: *default_float32
   CATDESC: H intensities in 15 energy ranges and binned into 4 azimuths and 4 spin angle bins
   FIELDNAM: H intensities
@@ -129,11 +129,11 @@ codicehi_h:
   UNITS: "# / cm2-sr-s- MeV"
   VALIDMIN: 0
   VALIDMAX: 100000000.0
-  DEPEND_1: energy_ranges
-  DEPEND_2: azimuth
-  DEPEND_3: spin_angle_bin
+  DEPEND_1: codice_hi_h_energy_ranges
+  DEPEND_2: codice_hi_h_elevation
+  DEPEND_3: codice_hi_h_spin_angle
 
-codicelo_c_over_o_abundance:
+codice_lo_c_over_o_abundance:
   <<: *default_float32
   CATDESC: C/O abundance ratio
   FIELDNAM: C/O
@@ -142,7 +142,7 @@ codicelo_c_over_o_abundance:
   VALIDMIN: 0
   VALIDMAX: 100000000.0
 
-codicelo_mg_over_o_abundance:
+codice_lo_mg_over_o_abundance:
   <<: *default_float32
   CATDESC: Mg/O abundance ratio
   FIELDNAM: Mg/O
@@ -151,7 +151,7 @@ codicelo_mg_over_o_abundance:
   VALIDMIN: 0
   VALIDMAX: 100000000.0
 
-codicelo_fe_over_o_abundance:
+codice_lo_fe_over_o_abundance:
   <<: *default_float32
   CATDESC: Fe/O abundance ratio
   FIELDNAM: Fe/O
@@ -160,7 +160,7 @@ codicelo_fe_over_o_abundance:
   VALIDMIN: 0
   VALIDMAX: 100000000.0
 
-codicelo_c_plus_6_over_c_plus_5_ratio:
+codice_lo_c_plus_6_over_c_plus_5_ratio:
   <<: *default_float32
   CATDESC: C+6/C+5 charge state ratio
   FIELDNAM: C+6/C+5
@@ -169,7 +169,7 @@ codicelo_c_plus_6_over_c_plus_5_ratio:
   VALIDMIN: 0
   VALIDMAX: 100000000.0
 
-codicelo_o_plus_7_over_o_plus_6_ratio:
+codice_lo_o_plus_7_over_o_plus_6_ratio:
   <<: *default_float32
   CATDESC: O+7/O+6 charge state ratio
   FIELDNAM: O+7/O+6
@@ -178,7 +178,7 @@ codicelo_o_plus_7_over_o_plus_6_ratio:
   VALIDMIN: 0
   VALIDMAX: 100000000.0
 
-codicelo_fe_low_over_fe_high_ratio:
+codice_lo_fe_low_over_fe_high_ratio:
   <<: *default_float32
   CATDESC: Fe low/Fe high charge state ratio
   FIELDNAM: Fe low/Fe high
