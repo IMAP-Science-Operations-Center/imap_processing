@@ -82,6 +82,7 @@ def test_get_front_y_position(test_fixture, ancillary_files):
     assert d == pytest.approx(df_filt["d"].astype("float"), abs=1e-5)
 
 
+@pytest.mark.external_test_data
 def test_get_path_length(test_fixture):
     """Tests get_path_length function."""
 
@@ -238,6 +239,7 @@ def test_calculate_etof_xc(test_fixture, ancillary_files):
     )
 
 
+@pytest.mark.external_test_data
 def test_get_de_velocity(test_fixture):
     """Tests get_de_velocity function."""
     df_filt, _, _, _ = test_fixture
@@ -327,6 +329,7 @@ def test_get_ssd_tof(test_fixture, ancillary_files):
     )
 
 
+@pytest.mark.external_test_data
 def test_get_de_energy_kev(test_fixture):
     """Tests get_de_energy_kev function."""
     df_filt, _, _, _ = test_fixture
@@ -397,6 +400,7 @@ def test_get_energy_pulse_height(test_fixture, ancillary_files):
     assert np.array_equal(test_energy, energy[ph_indices])
 
 
+@pytest.mark.external_test_data
 def test_get_ctof(test_fixture):
     """Tests get_ctof function."""
     df_filt, _, _, _ = test_fixture
@@ -432,6 +436,7 @@ def test_get_ctof(test_fixture):
     )
 
 
+@pytest.mark.external_test_data
 def test_determine_species(test_fixture):
     """Tests determine_species function."""
     df_filt, _, _, _ = test_fixture
@@ -457,6 +462,7 @@ def test_determine_species(test_fixture):
     )
 
 
+@pytest.mark.external_test_data
 def test_get_phi_theta(test_fixture):
     """Tests get_phi_theta function."""
     df_filt, d, _, _ = test_fixture
@@ -475,6 +481,7 @@ def test_get_phi_theta(test_fixture):
     np.testing.assert_allclose(theta, expected_theta, atol=1e-03, rtol=0)
 
 
+@pytest.mark.external_test_data
 def test_get_spin_number(test_fixture, use_fake_spin_data_for_time):
     """Tests that get_spin_number assigns the correct spin number."""
     df_filt, _, _, de_dataset = test_fixture
@@ -490,6 +497,7 @@ def test_get_spin_number(test_fixture, use_fake_spin_data_for_time):
     assert np.array_equal(spin_number & 0xFF, de_spin)
 
 
+@pytest.mark.external_test_data
 def test_get_eventtimes(test_fixture, use_fake_spin_data_for_time):
     """Tests get_eventtimes function."""
     df_filt, _, _, de_dataset = test_fixture
@@ -622,6 +630,7 @@ def test_get_efficiency():
     np.testing.assert_allclose(efficiency, expected_efficiency, atol=1e-03, rtol=0)
 
 
+@pytest.mark.external_test_data
 def test_determine_ebin_ph(test_fixture):
     """Tests determine_ebin_ph function."""
     df_filt, _, _, _ = test_fixture
@@ -639,6 +648,7 @@ def test_determine_ebin_ph(test_fixture):
     )
 
 
+@pytest.mark.external_test_data
 def test_determine_ebin_ssd(test_fixture):
     """Tests determine_ebin_ssd function."""
     df_filt, _, _, _ = test_fixture
