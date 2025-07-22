@@ -26,7 +26,7 @@ rtn_component:
   UNITS: " "
 
 esa_step:
-  CATDESC: ESA step number
+  CATDESC: ESA step number. The nominal central energies for the 8 i-ALiRT channels are 100.4, 140, 194, 270, 376, 523, 727, and 1011 eV.
   FIELDNAM: esa_step
   LABLAXIS: esa_step
   FORMAT: I2
