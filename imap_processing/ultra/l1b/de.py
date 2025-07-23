@@ -162,6 +162,7 @@ def calculate_de(
         yb[ph_indices],
         f"ultra{sensor}",
         ancillary_files,
+        quality_flags[ph_indices],
     )
     r[ph_indices] = get_path_length(
         (xf[ph_indices], yf[ph_indices]),

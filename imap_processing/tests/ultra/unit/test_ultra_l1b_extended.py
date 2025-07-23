@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 from imap_processing import imap_module_directory
+from imap_processing.quality_flags import ImapDEUltraFlags
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.l1b.lookup_utils import get_angular_profiles
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
@@ -386,6 +387,7 @@ def test_get_energy_pulse_height(test_fixture, ancillary_files):
 
     test_xb = df_filt["Xb"].astype("float").values
     test_yb = df_filt["Yb"].astype("float").values
+    quality_flags = np.full(test_xb.shape, ImapDEUltraFlags.NONE.value, dtype=np.uint16)
 
     energy = get_energy_pulse_height(
         de_dataset["stop_type"].data,
@@ -394,7 +396,14 @@ def test_get_energy_pulse_height(test_fixture, ancillary_files):
         test_yb,
         "ultra45",
         ancillary_files,
+        quality_flags,
     )
+
+    # # TODO: Energy without luts
+    # ph_correct_top = get_ph_corrected(
+    #     "ultra45", "tp", ancillary_files, xlut, ylut, quality_flags
+    # )
+
     test_energy = df_ph["Energy"].astype("float")
 
     assert np.array_equal(test_energy, energy[ph_indices])

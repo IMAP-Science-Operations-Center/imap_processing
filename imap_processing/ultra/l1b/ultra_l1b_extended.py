@@ -20,6 +20,7 @@ from imap_processing.ultra.l1b.lookup_utils import (
     get_energy_norm,
     get_image_params,
     get_norm,
+    get_ph_corrected,
     get_y_adjust,
 )
 
@@ -639,6 +640,7 @@ def get_energy_pulse_height(
     yb: np.ndarray,
     sensor: str,
     ancillary_files: dict,
+    quality_flags: NDArray,
 ) -> NDArray[np.float64]:
     """
     Calculate the pulse-height energy.
@@ -663,6 +665,8 @@ def get_energy_pulse_height(
         Sensor name.
     ancillary_files : dict[Path]
         Ancillary files containing the lookup tables.
+    quality_flags : NDArray
+        Quality flag to set when there is an outlier.
 
     Returns
     -------
@@ -684,16 +688,32 @@ def get_energy_pulse_height(
     xlut[indices_bottom] = (xb[indices_bottom] / 100 + 50 + 25 / 2) * 20 / 50  # mm
     ylut[indices_bottom] = (yb[indices_bottom] / 100 + 82 / 2) * 32 / 82  # mm
 
-    # TODO: waiting on these lookup tables: SpTpPHCorr, SpBtPHCorr
-    energy_ph[indices_top] = energy[indices_top] - get_image_params(
-        "SPTPPHOFF", sensor, ancillary_files
-    )  # * SpTpPHCorr[
-    # xlut[indices_top], ylut[indices_top]] / 1024
+    ph_correction_top = get_ph_corrected(
+        "ultra45",
+        "tp",
+        ancillary_files,
+        np.round(xlut[indices_top]),
+        np.round(ylut[indices_top]),
+        quality_flags[indices_top],
+    )
+    ph_correction_bottom = get_ph_corrected(
+        "ultra45",
+        "bt",
+        ancillary_files,
+        np.round(xlut[indices_bottom]),
+        np.round(ylut[indices_bottom]),
+        quality_flags[indices_bottom],
+    )
 
-    energy_ph[indices_bottom] = energy[indices_bottom] - get_image_params(
-        "SPBTPHOFF", sensor, ancillary_files
-    )  # * SpBtPHCorr[
-    # xlut[indices_bottom], ylut[indices_bottom]] / 1024
+    energy_ph[indices_top] = (
+        energy[indices_top]
+        - get_image_params("SPTPPHOFF", sensor, ancillary_files) * ph_correction_top
+    )
+
+    energy_ph[indices_bottom] = (
+        energy[indices_bottom]
+        - get_image_params("SPBTPHOFF", sensor, ancillary_files) * ph_correction_bottom
+    )
 
     return energy_ph
 
@@ -1141,7 +1161,7 @@ def determine_ebin_pulse_height(
 
 
 def determine_ebin_ssd(
-    energy: np.ndarray, tof: np.ndarray, path_length: np.ndarray, sensor: str,
+    energy: np.ndarray, tof: np.ndarray, path_length: np.ndarray
 ) -> NDArray:
     """
     Determine the species for SSD events.
@@ -1179,9 +1199,9 @@ def determine_ebin_ssd(
     ebin = np.full(len(ctof), 255, dtype=np.uint8)  # placeholder
 
     # TODO: get these lookup tables
-    # if path_length < get_image_params("PathSteepThresh", sensor):
+    # if r < get_image_params("PathSteepThresh"):
     #     # bin = ExTOFSpeciesSteep[energy, ctof]
-    # elif path_length < get_image_params("PathMediumThresh", sensor):
+    # elif r < get_image_params("PathMediumThresh"):
     #     # bin = ExTOFSpeciesMedium[energy, ctof]
     # else:
     #     # bin = ExTOFSpeciesFlat[energy, ctof]

@@ -494,4 +494,12 @@ def ancillary_files():
         / "imap_ultra_l1b-45sensor-back-pos-lookup_20250101_v000.csv",
         "l1b-egynorm-lookup": path / "imap_ultra_l1b-egynorm-lookup_20250101_v000.csv",
         "l1b-yadjust-lookup": path / "imap_ultra_l1b-yadjust-lookup_20250101_v001.csv",
+        "l1b-45sensor-sptpphcorr": path
+        / "imap_ultra_l1b-45sensor-sptpphcorr_20250101_v000.csv",
+        "l1b-45sensor-spbtphcorr": path
+        / "imap_ultra_l1b-45sensor-spbtphcorr_20250101_v000.csv",
+        "l1b-90sensor-sptpphcorr": path
+        / "imap_ultra_l1b-90sensor-sptpphcorr_20250101_v000.csv",
+        "l1b-90sensor-spbtphcorr": path
+        / "imap_ultra_l1b-90sensor-spbtphcorr_20250101_v000.csv",
     }
