@@ -105,7 +105,7 @@ def _load_spin_data_with_cache(csv_paths: tuple[Path]) -> pd.DataFrame:
                 "spin_number": int,
                 "spin_start_sec_sclk": int,
                 "spin_start_subsec_sclk": int,
-                # "spin_start_utc": str,
+                "spin_start_utc": str,
                 "spin_period_sec": float,
                 "spin_period_valid": bool,
                 "spin_period_source": int,
