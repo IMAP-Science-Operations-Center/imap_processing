@@ -15,6 +15,7 @@ from imap_processing.spice.geometry import (
     SpiceFrame,
     get_spacecraft_to_instrument_spin_phase_offset,
 )
+from imap_processing.spice.time import met_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +105,7 @@ def _load_spin_data_with_cache(csv_paths: tuple[Path]) -> pd.DataFrame:
                 "spin_number": int,
                 "spin_start_sec_sclk": int,
                 "spin_start_subsec_sclk": int,
-                "spin_start_utc": str,
+                # "spin_start_utc": str,
                 "spin_period_sec": float,
                 "spin_period_valid": bool,
                 "spin_period_source": int,
@@ -126,54 +127,77 @@ def _load_spin_data_with_cache(csv_paths: tuple[Path]) -> pd.DataFrame:
     combined_df["spin_start_met"] = (
         combined_df["spin_start_sec_sclk"] + combined_df["spin_start_subsec_sclk"] / 1e6
     )
+    # Convert MET to TTJ2000ns for direct use with MAG data
+    combined_df["spin_start_ttj2000ns"] = met_to_ttj2000ns(
+        combined_df["spin_start_met"]
+    )
     return combined_df
 
 
-def interpolate_spin_data(query_met_times: Union[float, npt.NDArray]) -> pd.DataFrame:
+def interpolate_spin_data(
+    query_times: Union[float, npt.NDArray], time_format: str = "met"
+) -> pd.DataFrame:
     """
-    Interpolate spin table data to the queried MET times.
+    Interpolate spin table data to the queried times.
 
     All columns in the spin table csv file are interpolated to the previous
     table entry. A sc_spin_phase column is added that is the computed spacecraft
-    spin phase at the queried MET times. Note that spin phase is by definition,
+    spin phase at the queried times. Note that spin phase is by definition,
     in the interval [0, 1) where 1 is equivalent to 360 degrees.
 
     Parameters
     ----------
-    query_met_times : float or np.ndarray
-        Query times in Mission Elapsed Time (MET).
+    query_times : float or np.ndarray
+        Query times in the specified format.
+    time_format : str
+        Time format of query_times. Either "met" for Mission Elapsed Time
+        or "j2000ns" for nanoseconds since J2000.
 
     Returns
     -------
     spin_df : pandas.DataFrame
-        Spin table data interpolated for each queried MET time. In addition to
+        Spin table data interpolated for each queried time. In addition to
         the columns output from :py:func:`get_spin_data`, the `sc_spin_phase`
-        column is added and is uniquely computed for each queried MET time.
+        column is added and is uniquely computed for each queried time.
     """
     spin_df = get_spin_data()
 
-    # Ensure query_met_times is an array
-    query_met_times = np.asarray(query_met_times)
-    is_scalar = query_met_times.ndim == 0
+    # Ensure query_times is an array
+    query_times = np.asarray(query_times)
+    is_scalar = query_times.ndim == 0
     if is_scalar:
         # Force scalar to array because np.asarray() will not
         # convert scalar to array
-        query_met_times = np.atleast_1d(query_met_times)
+        query_times = np.atleast_1d(query_times)
+
+    # Select appropriate time column based on format
+    if time_format == "j2000ns":
+        spin_time_col = "spin_start_ttj2000ns"
+        query_spin_times = query_times
+    elif time_format == "met":
+        spin_time_col = "spin_start_met"
+        query_spin_times = query_times
+    else:
+        raise ValueError(
+            f"Unsupported time_format: {time_format}. Use 'met' or 'j2000ns'."
+        )
 
     # Make sure input times are within the bounds of spin data
-    spin_df_start_time = spin_df["spin_start_met"].values[0]
+    spin_df_start_time = spin_df[spin_time_col].values[0]
     spin_df_end_time = (
-        spin_df["spin_start_met"].values[-1] + spin_df["spin_period_sec"].values[-1]
+        spin_df[spin_time_col].values[-1] + spin_df["spin_period_sec"].values[-1] * 1e9
+        if time_format == "j2000ns"
+        else spin_df[spin_time_col].values[-1] + spin_df["spin_period_sec"].values[-1]
     )
-    input_start_time = query_met_times.min()
-    input_end_time = query_met_times.max()
+    input_start_time = query_spin_times.min()
+    input_end_time = query_spin_times.max()
     if input_start_time < spin_df_start_time or input_end_time >= spin_df_end_time:
         raise ValueError(
-            f"Query times, {query_met_times} are outside of the spin data range, "
+            f"Query times, {query_times} are outside of the spin data range, "
             f"{spin_df_start_time, spin_df_end_time}."
         )
 
-    # Find all spin time that are less or equal to query_met_times.
+    # Find all spin time that are less or equal to query_times.
     # To do that, use side right, a[i-1] <= v < a[i], in the searchsorted.
     # Eg.
     # >>> df['a']
@@ -181,15 +205,22 @@ def interpolate_spin_data(query_met_times: Union[float, npt.NDArray]) -> pd.Data
     # >>> np.searchsorted(df['a'], [0, 13, 15, 32, 70], side='right')
     # array([1, 1, 2, 3, 5])
     last_spin_indices = (
-        np.searchsorted(spin_df["spin_start_met"], query_met_times, side="right") - 1
+        np.searchsorted(spin_df[spin_time_col], query_spin_times, side="right") - 1
     )
     # Generate a dataframe with one row per query time
     out_df = spin_df.iloc[last_spin_indices]
 
     # Calculate spin phase
-    spin_phases = (query_met_times - out_df["spin_start_met"].values) / out_df[
-        "spin_period_sec"
-    ].values
+    if time_format == "j2000ns":
+        # Convert spin period to nanoseconds and calculate phase
+        spin_phases = (query_spin_times - out_df[spin_time_col].values) / (
+            out_df["spin_period_sec"].values * 1e9
+        )
+    else:
+        # MET time calculation (original logic)
+        spin_phases = (query_spin_times - out_df[spin_time_col].values) / out_df[
+            "spin_period_sec"
+        ].values
 
     # Check for invalid spin phase using below checks:
     # 1. Check that the spin phase is in valid range, [0, 1).
@@ -263,8 +294,34 @@ def get_spacecraft_spin_phase(
     spin_phase : float or np.ndarray
         Spin phase for the input query times.
     """
-    spin_df = interpolate_spin_data(query_met_times)
+    spin_df = interpolate_spin_data(query_met_times, time_format="met")
     if np.asarray(query_met_times).ndim == 0:
+        return spin_df["sc_spin_phase"].values[0]
+    return spin_df["sc_spin_phase"].values
+
+
+def get_spacecraft_spin_phase_j2000ns(
+    query_j2000ns_times: Union[float, npt.NDArray],
+) -> Union[float, npt.NDArray]:
+    """
+    Get the spacecraft spin phase for the input query times in J2000ns format.
+
+    Formula to calculate spin phase:
+        spin_phase = (query_j2000ns_times - spin_start_ttj2000ns) /
+        (spin_period_sec * 1e9)
+
+    Parameters
+    ----------
+    query_j2000ns_times : float or np.ndarray
+        Query times in nanoseconds since J2000.
+
+    Returns
+    -------
+    spin_phase : float or np.ndarray
+        Spin phase for the input query times.
+    """
+    spin_df = interpolate_spin_data(query_j2000ns_times, time_format="j2000ns")
+    if np.asarray(query_j2000ns_times).ndim == 0:
         return spin_df["sc_spin_phase"].values[0]
     return spin_df["sc_spin_phase"].values
 
