@@ -1141,7 +1141,7 @@ def determine_ebin_pulse_height(
 
 
 def determine_ebin_ssd(
-    energy: np.ndarray, tof: np.ndarray, path_length: np.ndarray
+    energy: np.ndarray, tof: np.ndarray, path_length: np.ndarray, sensor: str,
 ) -> NDArray:
     """
     Determine the species for SSD events.
@@ -1179,9 +1179,9 @@ def determine_ebin_ssd(
     ebin = np.full(len(ctof), 255, dtype=np.uint8)  # placeholder
 
     # TODO: get these lookup tables
-    # if r < get_image_params("PathSteepThresh"):
+    # if path_length < get_image_params("PathSteepThresh", sensor):
     #     # bin = ExTOFSpeciesSteep[energy, ctof]
-    # elif r < get_image_params("PathMediumThresh"):
+    # elif path_length < get_image_params("PathMediumThresh", sensor):
     #     # bin = ExTOFSpeciesMedium[energy, ctof]
     # else:
     #     # bin = ExTOFSpeciesFlat[energy, ctof]
