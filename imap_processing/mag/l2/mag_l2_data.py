@@ -243,15 +243,15 @@ class MagL2L1dBase:
         Parameters
         ----------
         vectors : np.ndarray
-            Array of vectors to apply the calibration to. Should be of shape (n, 3)
-            where n is the number of vectors.
+            Array of vectors to apply the calibration to, including x,y,z and range.
+            Should be of shape (n, 4) where n is the number of vectors.
         calibration_matrix : np.ndarray
-            Calibration matrix to apply to the vectors. Should be of shape (3, 3).
+            Calibration matrix to apply to the vectors. Should be of shape (3, 3, 4).
 
         Returns
         -------
         np.ndarray
-            Array of calibrated vectors. Should be of shape (n, 3).
+            Array of calibrated vectors. Should be of shape (n, 4).
         """
         calibrated_vectors = np.apply_along_axis(
             func1d=calibrate_vector,
@@ -369,7 +369,7 @@ class MagL2(MagL2L1dBase):
         if vectors.shape[0] != offsets.shape[0]:
             raise ValueError("Vectors and offsets must have the same length.")
 
-        offset_vectors: np.ndarray = vectors[:, :3] + offsets
+        offset_vectors: np.ndarray = vectors + offsets
 
         # Any values where offsets is FILLVAL must also be FILLVAL
         offset_vectors[(offsets == FILLVAL).any(axis=1), :] = FILLVAL

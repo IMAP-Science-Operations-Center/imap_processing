@@ -313,9 +313,9 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         """
         # Offsets are in shape (sensor, range, axis)
         updated_vector = input_vector.copy().astype(np.int64)
-        range = int(input_vector[3])
+        rng = int(input_vector[3])
         x_y_z = input_vector[:3]
-        updated_vector[:3] = x_y_z - offsets[int(is_magi), range, :]
+        updated_vector[:3] = x_y_z - offsets[int(is_magi), rng, :]
         return updated_vector
 
     def calculate_spin_offsets(self) -> xr.Dataset:
