@@ -130,5 +130,24 @@ def mag_l1d(
         output_datasets.append(burst_srf_dataset)
         output_datasets.append(burst_dsrf_dataset)
 
-    # TODO: Output ancillary files
+    # Output ancillary files
+    # Add spin offsets dataset from normal mode processing
+    if l1d_norm.spin_offsets is not None:
+        spin_offset_dataset = l1d_norm.generate_spin_offset_dataset()
+        spin_offset_dataset.attrs["Logical_source"] = "imap_mag_l1d-spin-offsets"
+        output_datasets.append(spin_offset_dataset)
+    
+    # Add gradiometry offsets dataset if gradiometry was applied
+    if l1d_norm.config.apply_gradiometry and hasattr(l1d_norm, 'gradiometry_offsets'):
+        gradiometry_dataset = l1d_norm.gradiometry_offsets.copy()
+        gradiometry_dataset.attrs["Logical_source"] = "imap_mag_l1d-gradiometry-offsets-norm"
+        output_datasets.append(gradiometry_dataset)
+        
+        # Also add burst gradiometry offsets if burst data was processed
+        if input_mago_burst is not None and input_magi_burst is not None:
+            if hasattr(l1d_burst, 'gradiometry_offsets'):
+                burst_gradiometry_dataset = l1d_burst.gradiometry_offsets.copy()
+                burst_gradiometry_dataset.attrs["Logical_source"] = "imap_mag_l1d-gradiometry-offsets-burst"
+                output_datasets.append(burst_gradiometry_dataset)
+    
     return output_datasets

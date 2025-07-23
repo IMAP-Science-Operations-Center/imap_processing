@@ -74,7 +74,6 @@ def mag_l1b(
     calibration_matrix, time_shift = retrieve_matrix_from_l1b_calibration(
         calibration_dataset, day_to_process, is_mago
     )
-    print(f"Using calibration matrix: {calibration_matrix}")
 
     output_dataset = mag_l1b_processing(
         input_dataset, calibration_matrix, time_shift, mag_attributes, source
@@ -248,7 +247,6 @@ def retrieve_matrix_from_l1b_calibration(
         The calibration matrix and time shift. These can be passed directly into
         update_vector, calibrate_vector, and shift_time.
     """
-    print(f"Finding data for day {day}")
     if is_mago:
         calibration_matrix = calibration_dataset.sel(epoch=day)["MFOTOURFO"]
         time_shift = calibration_dataset.sel(epoch=day)["OTS"]
