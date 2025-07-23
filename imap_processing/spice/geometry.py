@@ -27,7 +27,7 @@ class SpiceBody(IntEnum):
     # A subset of IMAP Specific bodies as defined in imap_wkcp.tf
     IMAP = -43
     IMAP_SPACECRAFT = -43000
-    # IMAP Pointing Frame (Despun) as defined in imap_science_100.tf
+    # IMAP Pointing Frame (Despun) as defined in imap_science_xxx.tf
     IMAP_DPS = -43901
     # Standard NAIF bodies
     SOLAR_SYSTEM_BARYCENTER = spiceypy.bodn2c("SOLAR_SYSTEM_BARYCENTER")
@@ -42,7 +42,7 @@ class SpiceFrame(IntEnum):
     J2000 = spiceypy.irfnum("J2000")
     ECLIPJ2000 = spiceypy.irfnum("ECLIPJ2000")
     ITRF93 = 13000
-    # IMAP Pointing Frame (Despun) as defined in imap_science_100.tf
+    # IMAP Pointing Frame (Despun) as defined in imap_science_xxx.tf
     IMAP_DPS = -43901
     # IMAP specific as defined in imap_wkcp.tf
     IMAP_SPACECRAFT = -43000
@@ -63,7 +63,6 @@ class SpiceFrame(IntEnum):
 
     # IMAP Science Frames (new additions from imap_science_xxx.tf)
     IMAP_OMD = -43900
-    IMAP_DPS = -43901
     IMAP_EARTHFIXED = -43910
     IMAP_ECLIPDATE = -43911
     IMAP_MDI = -43912
