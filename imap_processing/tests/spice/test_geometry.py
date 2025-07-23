@@ -239,6 +239,7 @@ def test_frame_transform_az_el_same_frame(spice_frame):
     np.testing.assert_allclose(result, az_el_points)
 
 
+@pytest.mark.external_kernel
 def test_get_rotation_matrix(furnish_kernels):
     """Test coverage for get_rotation_matrix()."""
     kernels = [
@@ -247,6 +248,7 @@ def test_get_rotation_matrix(furnish_kernels):
         "imap_science_100.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
+        "de440s.bsp",
     ]
     with furnish_kernels(kernels):
         et = spiceypy.utc2et("2025-09-30T12:00:00.000")
