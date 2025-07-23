@@ -342,6 +342,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             - x_offset: the x offset values
             - y_offset: the y offset values
         """
+        # TODO: include spins that are not valid in the spin counting
         # This needs to only happen for NM data
         if self.data_mode != DataMode.NORM and self.frame != ValidFrames.SRF:
             raise ValueError(
@@ -371,6 +372,29 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         # find the places spins start while skipping over invalid or missing data
         # (marked as nan by get_spacecraft_spin_phase)
         spin_starts = np.sort(np.concatenate((spin_starts, nan_to_number)))
+
+        # Get the expected spin period from the spin table
+        # Convert to nanoseconds to match epoch
+        spin_data = spin.get_spin_data()
+        # Use the median spin period as the expected value
+        expected_spin = np.median(spin_data["spin_period_sec"]) * 1e9
+        # find nan gaps that contain more than one spin
+        for nan_gap_index in range(len(nan_to_number)):
+            existing_index = nan_gap_index
+            start_gap = nan_to_number[nan_gap_index]
+            # find the number immediately after start_gap in spin_starts
+            next_spin_start_indices = np.where(spin_starts > start_gap)[0]
+            if len(next_spin_start_indices) > 0:
+                next_spin_start = next_spin_start_indices[0]
+                number_of_spins = (
+                    self.epoch[next_spin_start] - self.epoch[start_gap]
+                ) // expected_spin
+                while number_of_spins > 1:
+                    estimated_start = self.epoch[next_spin_start] + expected_spin
+                    new_spin_index = (np.abs(self.epoch - estimated_start)).argmin()
+                    np.insert(spin_starts, existing_index, new_spin_index)
+                    existing_index += 1
+                    number_of_spins -= 1
 
         chunk_start = 0
         offset_epochs = []

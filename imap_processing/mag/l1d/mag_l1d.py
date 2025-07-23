@@ -72,8 +72,9 @@ def mag_l1d(
     mago_vectors = input_mago_norm["vectors"].data[:, :3]
     magi_vectors = input_magi_norm["vectors"].data[:, :3]
 
-    # TODO: verify that MAGO is primary sensor for all vectors before applying
-    #  gradiometry
+    # Verify that MAGO is primary sensor for all vectors before applying gradiometry
+    if not input_mago_norm.attrs.get("all_vectors_primary", 1):
+        config.apply_gradiometry = False
 
     # TODO: L1D attributes
     attributes = ImapCdfAttributes()

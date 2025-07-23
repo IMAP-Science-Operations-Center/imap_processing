@@ -182,6 +182,9 @@ def mag_l1b_processing(
     try:
         global_attributes["is_mago"] = input_dataset.attrs["is_mago"]
         global_attributes["is_active"] = input_dataset.attrs["is_active"]
+        global_attributes["all_vectors_primary"] = input_dataset.attrs[
+            "all_vectors_primary"
+        ]
         global_attributes["vectors_per_second"] = timeshift_vectors_per_second(
             input_dataset.attrs["vectors_per_second"], time_shift
         )

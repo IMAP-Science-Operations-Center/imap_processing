@@ -233,3 +233,50 @@ def test_apply_gradiometry_offsets():
     )
 
     assert np.allclose(output[0] - vectors[0], np.dot([-1, -1, -2], gradiometer_factor))
+
+
+def test_skip_gradiometry(
+    norm_dataset, furnish_kernels, mag_test_l1d_data, fake_mag_spin_data
+):
+    # Set up test data with all_vectors_primary = 0 for MAGO dataset
+    norm_magi = norm_dataset.copy()
+    norm_magi.attrs["Logical_source"] = "imap_mag_l1c_norm-magi"
+    burst_magi = norm_dataset.copy()
+    burst_magi.attrs["Logical_source"] = "imap_mag_l1c_burst-magi"
+    burst_mago = norm_dataset.copy()
+    burst_mago.attrs["Logical_source"] = "imap_mag_l1c_burst-mago"
+
+    # Set all_vectors_primary = 0 for MAGO dataset to disable gradiometry
+    norm_dataset.attrs["all_vectors_primary"] = 0
+    norm_magi.attrs["all_vectors_primary"] = 1  # MAGI doesn't matter for this check
+    burst_mago.attrs["all_vectors_primary"] = 0
+    burst_magi.attrs["all_vectors_primary"] = 1
+
+    kernels = ["sim_1yr_imap_pointing_frame.bc"]
+
+    with (
+        furnish_kernels(kernels),
+        patch(
+            "imap_processing.mag.l1d.mag_l1d_data.frame_transform",
+            side_effect=lambda *args, **kwargs: args[1],
+        ),
+        patch(
+            "imap_processing.mag.l2.mag_l2_data.frame_transform",
+            side_effect=lambda *args, **kwargs: args[1],
+        ),
+        patch.object(MagL1d, "calculate_gradiometry_offsets") as mock_calc,
+        patch.object(MagL1d, "apply_gradiometry_offsets") as mock_apply,
+    ):
+        l1d = mag_l1d(
+            [norm_dataset, norm_magi, burst_magi, burst_mago],
+            mag_test_l1d_data,
+            np.datetime64("2000-01-01"),
+        )
+
+        # Verify the gradiometry methods were never called
+        mock_calc.assert_not_called()
+        mock_apply.assert_not_called()
+
+        # Optional: Verify we still get valid output datasets
+        assert len(l1d) == 4  # Should still return 4 datasets (norm/burst + SRF/DSRF)
+        assert "vectors" in l1d[0].data_vars
