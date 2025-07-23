@@ -27,7 +27,7 @@ def xtce_excel_file(tmp_path):
     packets = {"packetName": ["TEST_PACKET", "TEST_PACKET2"], "apIdHex": ["0x1", "0xF"]}
 
     test_packet1 = {
-        "packetName": ["TEST_PACKET"] * 16,
+        "packetName": ["TEST_PACKET"] * 17,
         "mnemonic": [
             "PHVERNO",
             "PHTYPE",
@@ -45,8 +45,9 @@ def xtce_excel_file(tmp_path):
             "VAR_FLOAT",
             "VAR_STATE",
             "VAR_SEGMENTED",
+            "VAR_STRING",
         ],
-        "lengthInBits": [3, 1, 1, 11, 2, 14, 16, 32, 2, 4, 5, 10000, 3, 32, 1, 8],
+        "lengthInBits": [3, 1, 1, 11, 2, 14, 16, 32, 2, 4, 5, 10000, 3, 32, 1, 8, 32],
         "dataType": [
             "UINT",
             "UINT",
@@ -64,6 +65,7 @@ def xtce_excel_file(tmp_path):
             "FLOAT",
             "UINT",
             "UINT",
+            "STRING",
         ],
         "convertAs": [
             "NONE",
@@ -82,8 +84,10 @@ def xtce_excel_file(tmp_path):
             "NONE",
             "STATE",
             "ANALOG",
+            "NONE",
         ],
         "units": [
+            "DN",
             "DN",
             "DN",
             "DN",
@@ -118,6 +122,7 @@ def xtce_excel_file(tmp_path):
             "Float data",
             "State data",
             "Segmented polynomial conversion",
+            "String data type",
         ],
     }
 
@@ -241,7 +246,7 @@ def test_generated_xml(xtce_excel_file):
 
     expected_file = Path(__file__).parent / "test_data/expected_output.xml"
     # Uncomment this line if you want to re-create the expected output file
-    # generator.to_xml(expected_file)
+    generator.to_xml(expected_file)
     with open(output_file) as f, open(expected_file) as f_expected:
         assert f.read() == f_expected.read()
 
