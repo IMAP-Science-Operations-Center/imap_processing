@@ -57,7 +57,7 @@ class MagL1dConfiguration:
     mago_calibration: np.ndarray
     magi_calibration: np.ndarray
     spin_count_calibration: int
-    quality_flag_threshold: np.float64
+    quality_flag_threshold: float
     spin_average_application_factor: np.float64
     gradiometer_factor: np.ndarray
     apply_gradiometry: bool = True
@@ -198,7 +198,11 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
 
         if self.config.apply_gradiometry:
             self.gradiometry_offsets = self.calculate_gradiometry_offsets(
-                self.vectors, self.epoch, self.magi_vectors, self.magi_epoch
+                self.vectors,
+                self.epoch,
+                self.magi_vectors,
+                self.magi_epoch,
+                self.config.quality_flag_threshold,
             )
             self.vectors = self.apply_gradiometry_offsets(
                 self.gradiometry_offsets, self.vectors, self.config.gradiometer_factor
@@ -528,6 +532,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         mago_epoch: np.ndarray,
         magi_vectors: np.ndarray,
         magi_epoch: np.ndarray,
+        quality_flag_threshold: float = np.inf,
     ) -> xr.Dataset:
         """
         Calculate the gradiometry offsets between MAGo and MAGi.
@@ -549,6 +554,10 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             The MAGi vectors, shape (N, 3).
         magi_epoch : np.ndarray
             The MAGi epoch values, shape (N,).
+        quality_flag_threshold : np.float64, optional
+            Threshold for quality flags. If the magnitude of gradiometer offset
+            exceeds this threshold, quality flag will be set. Default is np.inf
+            (no quality flags set).
 
         Returns
         -------
@@ -556,6 +565,8 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             The gradiometer offsets dataset, with variables:
             - epoch: the timestamp of the MAGo data
             - gradiometer_offsets: the offset values (MAGi - MAGo) for each axis
+            - gradiometer_offset_magnitude: magnitude of the offset vector
+            - quality_flags: quality flags (1 if magnitude > threshold, 0 otherwise)
         """
         aligned_magi = linear(
             magi_vectors,
@@ -565,10 +576,20 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
 
         diff = aligned_magi - mago_vectors
 
+        # Calculate magnitude of gradiometer offset for each vector
+        magnitude = np.linalg.norm(diff, axis=1)
+
+        # Set quality flags: 0 = good data (below threshold), 1 = bad data
+        quality_flags = (magnitude > quality_flag_threshold).astype(int)
+
         grad_epoch = xr.DataArray(mago_epoch, dims=["epoch"])
         direction = xr.DataArray(["x", "y", "z"], dims=["axis"])
         grad_ds = xr.Dataset(coords={"epoch": grad_epoch, "direction": direction})
         grad_ds["gradiometer_offsets"] = xr.DataArray(diff, dims=["epoch", "direction"])
+        grad_ds["gradiometer_offset_magnitude"] = xr.DataArray(
+            magnitude, dims=["epoch"]
+        )
+        grad_ds["quality_flags"] = xr.DataArray(quality_flags, dims=["epoch"])
 
         return grad_ds
 

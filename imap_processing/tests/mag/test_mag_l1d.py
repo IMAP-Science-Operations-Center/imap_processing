@@ -216,8 +216,18 @@ def test_calculate_gradiometry_offsets():
 
     assert np.array_equal(grad_ds["epoch"].data, mago_epoch)
     assert np.array_equal(grad_ds["gradiometer_offsets"].data.shape, mago_vectors.shape)
-
     assert np.allclose(grad_ds["gradiometer_offsets"].data, np.full((10, 3), -5.0))
+
+    # Test new fields
+    expected_magnitude = np.linalg.norm(np.full((10, 3), -5.0), axis=1)
+    assert np.allclose(grad_ds["gradiometer_offset_magnitude"].data, expected_magnitude)
+    assert np.array_equal(
+        grad_ds["quality_flags"].data, np.zeros(10)
+    )  # All below default threshold
+
+    # Test shapes
+    assert grad_ds["gradiometer_offset_magnitude"].data.shape == (10,)
+    assert grad_ds["quality_flags"].data.shape == (10,)
 
 
 def test_apply_gradiometry_offsets():
@@ -233,6 +243,34 @@ def test_apply_gradiometry_offsets():
     )
 
     assert np.allclose(output[0] - vectors[0], np.dot([-1, -1, -2], gradiometer_factor))
+
+
+def test_quality_flags_with_threshold():
+    """Test that quality flags are set correctly when magnitude exceeds threshold."""
+    mago_vectors = np.array(
+        [[10, 10, 10], [10, 10, 10], [1, 1, 1], [1, 1, 1], [10, 10, 10]]
+    )
+    mago_epoch = np.arange(5) * 1e9
+
+    magi_vectors = np.array([[5, 5, 5], [5, 5, 5], [0, 0, 0], [0, 0, 0], [5, 5, 5]])
+    magi_epoch = mago_epoch + 500
+
+    # Set threshold so that only the large differences trigger quality flags
+    # Magnitude for [5,5,5] difference is ~8.66, for [1,1,1] difference is ~1.73
+    quality_threshold = 5.0
+
+    grad_ds = MagL1d.calculate_gradiometry_offsets(
+        mago_vectors, mago_epoch, magi_vectors, magi_epoch, quality_threshold
+    )
+
+    # First, second, and fifth vectors should exceed threshold (magnitude ~8.66)
+    # Third and fourth vectors should not exceed threshold (magnitude ~1.73)
+    expected_flags = np.array([1, 1, 0, 0, 1])
+    assert np.array_equal(grad_ds["quality_flags"].data, expected_flags)
+
+    # Test shapes for 5 vectors
+    assert grad_ds["gradiometer_offset_magnitude"].data.shape == (5,)
+    assert grad_ds["quality_flags"].data.shape == (5,)
 
 
 def test_skip_gradiometry(
