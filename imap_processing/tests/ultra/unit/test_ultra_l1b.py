@@ -103,7 +103,10 @@ def test_create_de_dataset(mock_data_l1b_de_dict):
 @pytest.mark.external_test_data
 @mock.patch("imap_processing.ultra.l1b.de.get_annotated_particle_velocity")
 def test_cdf_de(
-    mock_get_annotated_particle_velocity, de_dataset, use_fake_spin_data_for_time
+    mock_get_annotated_particle_velocity,
+    de_dataset,
+    use_fake_spin_data_for_time,
+    ancillary_files,
 ):
     """Tests that CDF file is created and contains same attributes as xarray."""
 
@@ -128,15 +131,6 @@ def test_cdf_de(
 
     mock_get_annotated_particle_velocity.side_effect = side_effect_func
 
-    path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
-    ancillary_files = {
-        "l1b-45sensor-logistic-interpolation": path
-        / "imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv",
-        "l1b-sensor-gf-noblades": path
-        / "imap_ultra_l1b-sensor-gf-noblades_20250101_v000.csv",
-        "l1b-sensor-gf-blades": path
-        / "imap_ultra_l1b-sensor-gf-blades_20250101_v000.csv",
-    }
     l1b_de_dataset = ultra_l1b(data_dict, ancillary_files)
 
     assert (

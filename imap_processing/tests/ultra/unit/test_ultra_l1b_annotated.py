@@ -1,4 +1,4 @@
-"""Tests coverage for ultra_l1b_annotated.py"""
+"""Tests for annotated events."""
 
 import numpy as np
 import pytest
@@ -14,7 +14,7 @@ from imap_processing.ultra.l1b.ultra_l1b_annotated import (
 def kernels(spice_test_data_path):
     """List SPICE kernels."""
     required_kernels = [
-        "imap_science_0001.tf",
+        "imap_science_100.tf",
         "imap_sclk_0000.tsc",
         "sim_1yr_imap_attitude.bc",
         "imap_wkcp.tf",

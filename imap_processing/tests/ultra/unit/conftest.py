@@ -468,3 +468,30 @@ def faux_aux_dataset():
     )
 
     return test_aux_dataset
+
+
+@pytest.mark.external_test_data
+@pytest.fixture
+def ancillary_files():
+    """Fixture to return ancillary files."""
+    path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
+    return {
+        "l1b-45sensor-logistic-interpolation": path
+        / "imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv",
+        "l1b-sensor-gf-noblades": path
+        / "imap_ultra_l1b-sensor-gf-noblades_20250101_v000.csv",
+        "l1b-sensor-gf-blades": path
+        / "imap_ultra_l1b-sensor-gf-blades_20250101_v000.csv",
+        "l1b-45sensor-leftslit-lookup": path
+        / "imap_ultra_l1b-45sensor-leftslit-lookup_20250101_v000.csv",
+        "l1b-45sensor-rightslit-lookup": path
+        / "imap_ultra_l1b-45sensor-rightslit-lookup_20250101_v000.csv",
+        "l1b-45sensor-imgparams-lookup": path
+        / "imap_ultra_l1b-45sensor-imgparams-lookup_20250101_v000.csv",
+        "l1b-45sensor-tdc-norm-lookup": path
+        / "imap_ultra_l1b-45sensor-tdc-norm-lookup_20250101_v000.csv",
+        "l1b-45sensor-back-pos-lookup": path
+        / "imap_ultra_l1b-45sensor-back-pos-lookup_20250101_v000.csv",
+        "l1b-egynorm-lookup": path / "imap_ultra_l1b-egynorm-lookup_20250101_v000.csv",
+        "l1b-yadjust-lookup": path / "imap_ultra_l1b-yadjust-lookup_20250101_v001.csv",
+    }

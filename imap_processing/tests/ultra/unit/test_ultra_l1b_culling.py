@@ -80,6 +80,20 @@ def test_flag_attitude(use_fake_spin_data_for_time, faux_aux_dataset):
     assert np.all(spin_rates == 60 / spin_period)
     assert np.all(np.diff(spin_start_time) == 15)
 
+    spins = np.unique(faux_aux_dataset["spinnumber"].values)  # Get unique spins
+    spin_df = get_spin_data()
+    spin_phase_valid = spin_df.loc[spin_df.spin_number.isin(spins), "spin_phase_valid"]
+    spin_period_valid = spin_df.loc[
+        spin_df.spin_number.isin(spins), "spin_period_valid"
+    ]
+
+    assert np.all(
+        quality_flags[spin_phase_valid == 0] & ImapAttitudeUltraFlags.SPINPHASE.value
+    )
+    assert np.all(
+        quality_flags[~spin_period_valid] & ImapAttitudeUltraFlags.SPINPERIOD.value
+    )
+
 
 def test_get_n_sigma():
     """Tests get_six_sigma function."""

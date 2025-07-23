@@ -28,7 +28,7 @@ def pointing_frame_kernels(spice_test_data_path):
         "naif0012.tls",
         "imap_sclk_0000.tsc",
         "imap_wkcp.tf",
-        "imap_science_0001.tf",
+        "imap_science_100.tf",
         "imap_sim_ck_2hr_2secsampling_with_nutation.bc",
     ]
     kernels = [str(spice_test_data_path / kernel) for kernel in required_kernels]

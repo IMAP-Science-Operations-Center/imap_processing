@@ -88,6 +88,13 @@ EXTERNAL_TEST_DATA = [
      "ultra/data/l1/"),
     ("imap_ultra_l1b-sensor-gf-blades_20250101_v000.csv", "ultra/data/l1/"),
     ("imap_ultra_l1b-sensor-gf-noblades_20250101_v000.csv", "ultra/data/l1/"),
+    ("imap_ultra_l1b-45sensor-leftslit-lookup_20250101_v000.csv", "ultra/data/l1/"),
+    ("imap_ultra_l1b-45sensor-rightslit-lookup_20250101_v000.csv", "ultra/data/l1/"),
+    ("imap_ultra_l1b-45sensor-imgparams-lookup_20250101_v000.csv", "ultra/data/l1/"),
+    ("imap_ultra_l1b-45sensor-tdc-norm-lookup_20250101_v000.csv", "ultra/data/l1/"),
+    ("imap_ultra_l1b-45sensor-back-pos-lookup_20250101_v000.csv", "ultra/data/l1/"),
+    ("imap_ultra_l1b-egynorm-lookup_20250101_v000.csv", "ultra/data/l1/"),
+    ("imap_ultra_l1b-yadjust-lookup_20250101_v001.csv", "ultra/data/l1/"),
 
     # MAG
     ("mag-l1b-l1c-t013-magi-burst-in.csv",

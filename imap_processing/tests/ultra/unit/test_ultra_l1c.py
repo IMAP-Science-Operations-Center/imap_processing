@@ -133,7 +133,7 @@ def test_ultra_l1c_error(mock_data_l1b_dict):
 @pytest.mark.external_kernel
 @ensure_spice
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_calculate_spacecraft_pset_with_cdf():
+def test_calculate_spacecraft_pset_with_cdf(ancillary_files):
     """Tests ultra_l1c function with imported test data."""
 
     df = pd.read_csv(TEST_PATH / "IMAP-Ultra45_r1_L1_V0_shortened.csv")
@@ -150,7 +150,9 @@ def test_calculate_spacecraft_pset_with_cdf():
     # PosYSlit is True for left (start_type = 1)
     # PosYSlit is False for right (start_type = 2)
     start_type = np.where(df_subset["PosYSlit"].values, 1, 2)
-    d, yf = get_front_y_position(start_type, df_subset["StopY"].values * 100)
+    d, yf = get_front_y_position(
+        start_type, df_subset["StopY"].values * 100, ancillary_files
+    )
     tof_tenths_ns = df_subset["TOF"].values * 10000
     v, _, _ = get_de_velocity(
         (df_subset["StartX"].values * 100, yf),
@@ -206,7 +208,7 @@ def test_calculate_spacecraft_pset_with_cdf():
 @pytest.mark.external_kernel
 @ensure_spice
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_calculate_helio_pset_with_cdf():
+def test_calculate_helio_pset_with_cdf(ancillary_files):
     """Tests ultra_l1c function with imported test data."""
 
     df = pd.read_csv(TEST_PATH / "IMAP-Ultra45_r1_L1_V0_shortened.csv")
@@ -225,7 +227,9 @@ def test_calculate_helio_pset_with_cdf():
     # PosYSlit is True for left (start_type = 1)
     # PosYSlit is False for right (start_type = 2)
     start_type = np.where(df_subset["PosYSlit"].values, 1, 2)
-    d, yf = get_front_y_position(start_type, df_subset["StopY"].values * 100)
+    d, yf = get_front_y_position(
+        start_type, df_subset["StopY"].values * 100, ancillary_files
+    )
     tof_tenths_ns = df_subset["TOF"].values * 10000
     v, _, _ = get_de_velocity(
         (df_subset["StartX"].values * 100, yf),

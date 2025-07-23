@@ -200,7 +200,7 @@ def calculate_pointing_attitude_segments(
     - Latest NAIF leapseconds kernel (naif0012.tls)
     - The latest IMAP sclk (imap_sclk_NNNN.tsc)
     - The latest IMAP frame kernel (imap_wkcp.tf)
-    - IMAP DPS frame kernel (imap_science_0001.tf)
+    - IMAP DPS frame kernel (imap_science_100.tf)
     - IMAP historical attitude kernel from which the pointing frame kernel will
     be generated.
     """
