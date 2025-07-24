@@ -346,22 +346,17 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             - x_offset: the x offset values
             - y_offset: the y offset values
         """
-        # TODO: include spins that are not valid in the spin counting
         # This needs to only happen for NM data
         if self.data_mode != DataMode.NORM and self.frame != ValidFrames.SRF:
             raise ValueError(
                 "Spin offsets can only be calculated in NORM mode and SRF frame."
             )
 
-        # TODO: get the spin numbers which correspond to the epoch values for output
         sc_spin_phase: np.ndarray = spin.get_spacecraft_spin_phase(self.epoch)  # type: ignore
         # mark vectors as nan where they are nan in sc_spin_phase
         vectors = self.vectors.copy().astype(np.float64)
 
         vectors[np.isnan(sc_spin_phase), :] = np.nan
-
-        # TODO: currently fully skipping spins with no valid data (not including
-        #  them in the averaging OR IN SPIN COUNTING!) is this correct?
 
         # first timestamp where spin phase is less than the previous value
         # this is when the spin crosses zero
@@ -418,8 +413,16 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             chunk_vectors = self.vectors[chunk_indices[0] : chunk_indices[-1]]
             chunk_epoch = self.epoch[chunk_indices[0] : chunk_indices[-1]]
 
+            # Check if more than half of the chunk data is NaN before processing
+            x_valid_count = np.sum(~np.isnan(chunk_vectors[:, 0]))
+            y_valid_count = np.sum(~np.isnan(chunk_vectors[:, 1]))
+            total_points = len(chunk_vectors)
+            
+            # Skip chunk if more than half of x or y data is NaN
+            if x_valid_count <= total_points / 2 or y_valid_count <= total_points / 2:
+                continue
+
             # average the x and y axes (z is fixed, as the spin axis)
-            # TODO: is z the correct axis here?
             avg_x = np.nanmean(chunk_vectors[:, 0])
             avg_y = np.nanmean(chunk_vectors[:, 1])
 
@@ -428,6 +431,9 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
                 x_avg.append(avg_x)
                 y_avg.append(avg_y)
 
+        # TODO: add to spin_offsets: Each row should include the start and end
+        # validity times of the chunk, the start and end spin counters used for each chunk calculation,
+        # two components of the in-plane offsets
         spin_epoch_dataarray = xr.DataArray(np.array(offset_epochs))
 
         spin_offsets = xr.Dataset(coords={"epoch": spin_epoch_dataarray})
