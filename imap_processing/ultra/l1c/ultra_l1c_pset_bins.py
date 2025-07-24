@@ -220,7 +220,7 @@ def get_deadtime_correction_factors(sectored_rates_ds: xr.Dataset) -> xr.DataArr
 
     Returns
     -------
-    dead_time_ratio : xarray.DataArray
+    dead_time_ratio : numpy.ndarray
         Dead time correction factor for each sector.
     """
     # Compute the correction factor at each sector
@@ -230,7 +230,7 @@ def get_deadtime_correction_factors(sectored_rates_ds: xr.Dataset) -> xr.DataArr
     )
 
     start_full = sectored_rates_ds.start_rf + sectored_rates_ds.start_lf
-    b = a * np.exp(start_full * 1e-7 * 5)
+    b = a * np.exp((start_full) * 1e-7 * 5)
 
     coin_stop_nd = (
         sectored_rates_ds.coin_tn
@@ -267,8 +267,8 @@ def get_sectored_rates(rates_ds: xr.Dataset, params_ds: xr.Dataset) -> xr.Datase
     # sector mode. At the normal 15-second spin period, each 24° sector takes ~1 second.
 
     # This means that data was collected as a function of spin allowing for fine grained
-    # rate analysis.
-    sector_mode_start_inds = np.where(params_ds["imageratescadence"] == 3)[0]
+    # rate analysis at different spin phases.
+    sector_mode_start_inds = np.where(params_ds.imageratescadence == 3)[0]
     # get the sector mode start and stop indices
     sector_mode_stop_inds = sector_mode_start_inds + 1
     # get the sector mode start and stop times
