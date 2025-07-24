@@ -17,10 +17,10 @@ component:
   VAR_TYPE: metadata
   UNITS: " "
 
-rtn_component:
+RTN_component:
   CATDESC: Component direction (radial, tangential, normal)
-  FIELDNAM: component
-  LABLAXIS: component
+  FIELDNAM: RTN_component
+  LABLAXIS: RTN_component
   FORMAT: A3
   VAR_TYPE: metadata
   UNITS: " "
@@ -273,77 +273,77 @@ mag_epoch:
   VALIDMIN: 0.0
   VALIDMAX: 9223372036854775807
 
-mag_b_gse:
+mag_B_GSE:
   <<: *default_float32
   CATDESC: Magnetic field vector in GSE coordinates
-  FIELDNAM: mag_b_gse
-  LABLAXIS: mag_b_gse
+  FIELDNAM: mag_B_GSE
+  LABL_PTR_1: component
   UNITS: nT
   DEPEND_1: component
   VALIDMIN: -65000
   VALIDMAX: 65000
 
-mag_b_gsm:
+mag_B_GSM:
   <<: *default_float32
   CATDESC: Magnetic field vector in GSM coordinates
-  FIELDNAM: mag_b_gsm
-  LABLAXIS: mag_b_gsm
+  FIELDNAM: mag_B_GSM
+  LABL_PTR_1: component
   UNITS: nT
   DEPEND_1: component
   VALIDMIN: -65000
   VALIDMAX: 65000
 
-mag_b_rtn:
+mag_B_RTN:
   <<: *default_float32
   CATDESC: Magnetic field vector in RTN coordinates
-  FIELDNAM: mag_b_rtn
-  LABLAXIS: mag_b_rtn
+  FIELDNAM: mag_B_RTN
+  LABL_PTR_1: RTN_component
   UNITS: nT
-  DEPEND_1: rtn_component
+  DEPEND_1: RTN_component
   VALIDMIN: -65000
   VALIDMAX: 65000
 
-mag_b_magnitude:
+mag_B_magnitude:
   <<: *default_float32
   CATDESC: Magnitude of the magnetic field vector
-  FIELDNAM: mag_b_magnitude
-  LABLAXIS: mag_b_magnitude
+  FIELDNAM: mag_B_magnitude
+  LABLAXIS: "|B|"
   UNITS: nT
   VALIDMIN: 0
   VALIDMAX: 65000
 
-mag_phi_b_gsm:
+mag_phi_B_GSM:
   <<: *default_float32
   CATDESC: Azimuth angle (φ) of the magnetic field in GSM coordinates
-  FIELDNAM: mag_phi_b_gsm
-  LABLAXIS: mag_phi_b_gsm
+  FIELDNAM: mag_phi_B_GSM
+  LABLAXIS: mag_phi_B_GSM
   UNITS: degrees
   VALIDMIN: 0
   VALIDMAX: 360
 
-mag_theta_b_gsm:
+mag_theta_B_GSM:
   <<: *default_float32
   CATDESC: Elevation angle (θ) of the magnetic field in GSM coordinates
-  FIELDNAM: mag_theta_b_gsm
-  LABLAXIS: mag_theta_b_gsm
+  FIELDNAM: mag_theta_B_GSM
+  LABLAXIS: mag_theta_B_GSM
   UNITS: degrees
   VALIDMIN: -90
   VALIDMAX: 90
 
-mag_phi_b_gse:
+mag_phi_B_GSE:
   <<: *default_float32
   CATDESC: Azimuth angle (φ) of the magnetic field in GSE coordinates
-  FIELDNAM: mag_phi_b_gse
-  LABLAXIS: mag_phi_b_gse
+  FIELDNAM: mag_phi_B_GSE
+  LABLAXIS: mag_phi_B_GSE
   UNITS: degrees
   VALIDMIN: 0
   VALIDMAX: 360
 
-mag_theta_b_gse:
+mag_theta_B_GSE:
   <<: *default_float32
   CATDESC: Elevation angle (θ) of the magnetic field in GSE coordinates
-  FIELDNAM: mag_theta_b_gse
-  LABLAXIS: mag_theta_b_gse
+  FIELDNAM: mag_theta_B_GSE
+  LABLAXIS: mag_theta_B_GSE
   UNITS: degrees
   VALIDMIN: -90
   VALIDMAX: 90

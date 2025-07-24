@@ -40,21 +40,21 @@ IALIRT_KEYS = [
     # MAG instrument epoch
     "mag_epoch",
     # Magnetic field vector in GSE coordinates
-    "mag_b_gse",
+    "mag_B_GSE",
     # Magnetic field vector in GSM coordinates
-    "mag_b_gsm",
+    "mag_B_GSM",
     # Magnetic field vector in RTN coordinates
-    "mag_b_rtn",
+    "mag_B_RTN",
     # Magnitude of the magnetic field vector
-    "mag_b_magnitude",
+    "mag_B_magnitude",
     # Azimuth angle (φ) of the magnetic field in GSM coordinates
-    "mag_phi_b_gsm",
+    "mag_phi_B_GSM",
     # Elevation angle (θ) of the magnetic field in GSM coordinates
-    "mag_theta_b_gsm",
+    "mag_theta_B_GSM",
     # Azimuth angle (φ) of the magnetic field in GSE coordinates
-    "mag_phi_b_gse",
+    "mag_phi_B_GSE",
     # Elevation angle (θ) of the magnetic field in GSE coordinates
-    "mag_theta_b_gse",
+    "mag_theta_B_GSE",
     # Pseudo density of solar wind protons
     "swapi_pseudo_proton_density",
     # Pseudo speed of solar wind protons in solar inertial frame

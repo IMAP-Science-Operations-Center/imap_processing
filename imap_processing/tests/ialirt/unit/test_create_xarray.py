@@ -34,14 +34,14 @@ def test_create_dataset():
             "hit_he_omni_low_en": Decimal("0.0"),
             "hit_he_omni_high_en": Decimal("0.0"),
             "mag_epoch": Decimal("0.0"),
-            "mag_b_gse": [Decimal("0.0"), Decimal("0.0"), Decimal("0.0")],
-            "mag_b_gsm": [Decimal("0.0"), Decimal("0.0"), Decimal("0.0")],
-            "mag_b_rtn": [Decimal("0.0"), Decimal("0.0"), Decimal("0.0")],
-            "mag_b_magnitude": Decimal("0.0"),
-            "mag_phi_b_gsm": Decimal("0.0"),
-            "mag_theta_b_gsm": Decimal("0.0"),
-            "mag_phi_b_gse": Decimal("0.0"),
-            "mag_theta_b_gse": Decimal("0.0"),
+            "mag_B_GSE": [Decimal("0.0"), Decimal("0.0"), Decimal("0.0")],
+            "mag_B_GSM": [Decimal("0.0"), Decimal("0.0"), Decimal("0.0")],
+            "mag_B_RTN": [Decimal("0.0"), Decimal("0.0"), Decimal("0.0")],
+            "mag_B_magnitude": Decimal("0.0"),
+            "mag_phi_B_GSM": Decimal("0.0"),
+            "mag_theta_B_GSM": Decimal("0.0"),
+            "mag_phi_B_GSE": Decimal("0.0"),
+            "mag_theta_B_GSE": Decimal("0.0"),
             "codice_lo_c_over_o_abundance": Decimal("0.0"),
             "codice_lo_mg_over_o_abundance": Decimal("0.0"),
             "codice_lo_fe_over_o_abundance": Decimal("0.0"),
@@ -60,14 +60,14 @@ def test_create_dataset():
             "ttj2000ns": 123456789000001,
             # Only MAG is present
             "mag_epoch": Decimal("0.0"),
-            "mag_b_gse": [Decimal("0.0"), Decimal("0.0"), Decimal("0.0")],
-            "mag_b_gsm": [Decimal("0.0"), Decimal("0.0"), Decimal("0.0")],
-            "mag_b_rtn": [Decimal("0.0"), Decimal("0.0"), Decimal("0.0")],
-            "mag_b_magnitude": Decimal("0.0"),
-            "mag_phi_b_gsm": Decimal("0.0"),
-            "mag_theta_b_gsm": Decimal("0.0"),
-            "mag_phi_b_gse": Decimal("0.0"),
-            "mag_theta_b_gse": Decimal("0.0"),
+            "mag_B_GSE": [Decimal("0.0"), Decimal("0.0"), Decimal("0.0")],
+            "mag_B_GSM": [Decimal("0.0"), Decimal("0.0"), Decimal("0.0")],
+            "mag_B_RTN": [Decimal("0.0"), Decimal("0.0"), Decimal("0.0")],
+            "mag_B_magnitude": Decimal("0.0"),
+            "mag_phi_B_GSM": Decimal("0.0"),
+            "mag_theta_B_GSM": Decimal("0.0"),
+            "mag_phi_B_GSE": Decimal("0.0"),
+            "mag_theta_B_GSE": Decimal("0.0"),
         },
         {
             "apid": 478,
@@ -84,7 +84,7 @@ def test_create_dataset():
     dataset = create_xarray_from_records(records)
 
     assert (dataset["component"].values == ["x", "y", "z"]).all()
-    assert (dataset["rtn_component"].values == ["radial", "tangential", "normal"]).all()
+    assert (dataset["RTN_component"].values == ["radial", "tangential", "normal"]).all()
     npt.assert_array_equal(dataset["esa_step"].values, np.arange(8))
 
     npt.assert_array_equal(
@@ -100,11 +100,11 @@ def test_create_dataset():
         [0, 4294967295, 4294967295],
     )
     np.testing.assert_allclose(
-        dataset["mag_b_gse"].isel(epoch=0).values,
+        dataset["mag_B_GSE"].isel(epoch=0).values,
         [0, 0, 0],
     )
     np.testing.assert_allclose(
-        dataset["mag_b_gse"].isel(epoch=1).values,
+        dataset["mag_B_GSE"].isel(epoch=1).values,
         [0, 0, 0],
     )
 
@@ -115,7 +115,7 @@ def test_create_dataset():
 
     npt.assert_array_equal(dataset["codice_hi_h"].isel(epoch=1).values, expected_fill)
 
-    assert dataset["mag_b_gse"].dims == ("epoch", "component")
+    assert dataset["mag_B_GSE"].dims == ("epoch", "component")
     assert dataset["swe_normalized_counts"].dims == ("epoch", "esa_step")
     assert dataset["codice_hi_h"].dims == (
         "epoch",
