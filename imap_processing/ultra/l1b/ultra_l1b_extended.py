@@ -714,17 +714,18 @@ def get_energy_pulse_height(
     ph_correction[indices_bottom] = ph_correction_bottom / 1024
 
     energy_ph[indices_top] = (
-        energy[indices_top]
-        - get_image_params("SPTPPHOFF", sensor, ancillary_files)
+        (energy[indices_top] - get_image_params("SPTPPHOFF", sensor, ancillary_files))
         * ph_correction_top
         / 1024
     )
 
     energy_ph[indices_bottom] = (
-        energy[indices_bottom]
-        - get_image_params("SPBTPHOFF", sensor, ancillary_files)
+        (
+            energy[indices_bottom]
+            - get_image_params("SPBTPHOFF", sensor, ancillary_files)
+        )
         * ph_correction_bottom
-        / 1024
+        / 1024.0
     )
 
     return energy_ph, ph_correction
