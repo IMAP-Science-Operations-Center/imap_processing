@@ -4,6 +4,7 @@ import astropy_healpix.healpy as hp
 import numpy as np
 import pandas
 import pandas as pd
+import xarray as xr
 from numpy.typing import NDArray
 from scipy.interpolate import interp1d
 
@@ -205,7 +206,98 @@ def get_helio_background_rates(
     return background
 
 
-def get_spacecraft_exposure_times(constant_exposure: pandas.DataFrame) -> NDArray:
+def get_deadtime_correction_factors(sectored_rates_ds: xr.Dataset) -> xr.DataArray:
+    """
+    Compute the dead time correction factor at each sector.
+
+    Further description is available in section 3.4.3 of the IMAP-Ultra Algorithm
+    Document.
+
+    Parameters
+    ----------
+    sectored_rates_ds : xarray.Dataset
+        Dataset containing sector mode image rates data.
+
+    Returns
+    -------
+    dead_time_ratio : numpy.ndarray
+        Dead time correction factor for each sector.
+    """
+    # Compute the correction factor at each sector
+    a = sectored_rates_ds.fifo_valid_events / (
+        1
+        - (sectored_rates_ds.event_active_time + 2 * sectored_rates_ds.start_pos) * 1e-7
+    )
+
+    start_full = sectored_rates_ds.start_rf + sectored_rates_ds.start_lf
+    b = a * np.exp((start_full) * 1e-7 * 5)
+
+    coin_stop_nd = (
+        sectored_rates_ds.coin_tn
+        + sectored_rates_ds.coin_bn
+        - sectored_rates_ds.stop_tn
+        - sectored_rates_ds.stop_bn
+    )
+
+    corrected_valid_events = b * np.exp(1e-7 * 8 * coin_stop_nd)
+
+    # Compute dead time ratio
+    dead_time_ratios = sectored_rates_ds.fifo_valid_events / corrected_valid_events
+
+    return dead_time_ratios
+
+
+def get_sectored_rates(rates_ds: xr.Dataset, params_ds: xr.Dataset) -> xr.Dataset:
+    """
+    Filter rates dataset to only include sector mode data.
+
+    Parameters
+    ----------
+    rates_ds : xarray.Dataset
+        Dataset containing image rates data.
+    params_ds : xarray.Dataset
+        Dataset containing image parameters data.
+
+    Returns
+    -------
+    rates : xarray.Dataset
+        Rates dataset with only the sector mode data.
+    """
+    # Find indices in which the parameters dataset, indicates that ULTRA was in
+    # sector mode. At the normal 15-second spin period, each 24° sector takes ~1 second.
+
+    # This means that data was collected as a function of spin allowing for fine grained
+    # rate analysis at different spin phases.
+    sector_mode_start_inds = np.where(params_ds.imageratescadence == 3)[0]
+    # get the sector mode start and stop indices
+    sector_mode_stop_inds = sector_mode_start_inds + 1
+    # get the sector mode start and stop times
+    mode_3_start = params_ds["epoch"].values[sector_mode_start_inds]
+
+    # if the last mode is a sector mode, we can assume that the sector data goes through
+    # the end of the dataset, so we append np.inf to the end of the last time range.
+    if sector_mode_stop_inds[-1] == len(params_ds["epoch"]):
+        mode_3_end = np.append(
+            params_ds["epoch"].values[sector_mode_stop_inds[:-1]], np.inf
+        )
+    else:
+        mode_3_end = params_ds["epoch"].values[sector_mode_stop_inds]
+
+    # Build a list of conditions for each sector mode time range
+    conditions = [
+        (rates_ds["epoch"] >= start) & (rates_ds["epoch"] < end)
+        for start, end in zip(mode_3_start, mode_3_end)
+    ]
+
+    sector_mode_mask = np.logical_or.reduce(conditions)
+    return rates_ds.isel(epoch=sector_mode_mask)
+
+
+def get_spacecraft_exposure_times(
+    constant_exposure: pandas.DataFrame,
+    rates_dataset: xr.Dataset,
+    params_dataset: xr.Dataset,
+) -> NDArray:
     """
     Compute exposure times for HEALPix pixels.
 
@@ -213,6 +305,10 @@ def get_spacecraft_exposure_times(constant_exposure: pandas.DataFrame) -> NDArra
     ----------
     constant_exposure : pandas.DataFrame
         Exposure data.
+    rates_dataset : xarray.Dataset
+        Dataset containing image rates data.
+    params_dataset : xarray.Dataset
+        Dataset containing image parameters data.
 
     Returns
     -------
@@ -221,6 +317,10 @@ def get_spacecraft_exposure_times(constant_exposure: pandas.DataFrame) -> NDArra
         Healpix tessellation of the sky
         in the pointing (dps) frame.
     """
+    sectored_rates = get_sectored_rates(rates_dataset, params_dataset)
+    get_deadtime_correction_factors(sectored_rates)
+    # TODO: calculate the deadtime correction function
+    # TODO: Apply the deadtime correction to the exposure times
     # TODO: use the universal spin table and
     #  universal pointing table here to determine actual number of spins
     exposure_pointing = (
