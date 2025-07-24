@@ -420,6 +420,16 @@ def events_fsw_comparison_theta_0():
 
 
 @pytest.fixture
+def events_fsw_comparison_theta_0_revised():
+    """FSW test data."""
+    filename = (
+        "ultra45_raw_sc_ultrarawimg_withFSWccs_FM45_40P_Phi28p5_"
+        "BeamCal_LinearScan_phi2850_theta-000_20240207T102740_revised20250724.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l1" / filename
+
+
+@pytest.fixture
 def de_dataset(ccsds_path_theta_0, xtce_path):
     """L1A test data"""
     test_data = ultra_l1a(ccsds_path_theta_0, apid_input=ULTRA_EVENTS.apid[0])

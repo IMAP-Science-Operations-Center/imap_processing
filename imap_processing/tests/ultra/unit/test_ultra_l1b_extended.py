@@ -377,9 +377,13 @@ def test_get_energy_ssd(test_fixture, ancillary_files):
 
 
 @pytest.mark.external_test_data
-def test_get_energy_pulse_height(test_fixture, ancillary_files):
+def test_get_energy_pulse_height(
+    test_fixture, ancillary_files, events_fsw_comparison_theta_0_revised
+):
     """Tests get_energy_ssd function."""
     df_filt, _, _, de_dataset = test_fixture
+    df = pd.read_csv(events_fsw_comparison_theta_0_revised)
+    df_filt = df[df["StartType"] != -1]
     df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
     ph_indices = np.nonzero(
         np.isin(de_dataset["stop_type"], [StopType.Top.value, StopType.Bottom.value])
@@ -399,11 +403,9 @@ def test_get_energy_pulse_height(test_fixture, ancillary_files):
         quality_flags,
     )
 
-    reconstructed_energy = energy[ph_indices] + 580 * (ph_correction[ph_indices] - 1)
-
     test_energy = df_ph["Energy"].astype("float")
 
-    np.testing.assert_allclose(test_energy.to_numpy(), reconstructed_energy, atol=1e-2)
+    np.testing.assert_allclose(test_energy.to_numpy(), energy[ph_indices], atol=1e-2)
 
     flagged_indices = np.nonzero(quality_flags != ImapDEUltraFlags.NONE.value)[0]
 
