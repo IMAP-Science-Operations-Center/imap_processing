@@ -120,6 +120,7 @@ def test_offset_vector():
 def test_calculate_spin_offsets(
     mag_l1d_test_class, fake_mag_spin_data, furnish_kernels
 ):
+    # Expected to fail, need to merge spice fix
     x_vectors = np.arange(1, 156)
     y_vectors = np.arange(156, 1, -1)
     mag_l1d_test_class.vectors[:, 0] = x_vectors
@@ -139,30 +140,16 @@ def test_calculate_spin_offsets(
     with furnish_kernels(kernels):
         offsets = mag_l1d_test_class.calculate_spin_offsets()
 
-    expected_epochs = [15, 45, 90, 150]
+    expected_epochs = [15, 45, 75, 105, 135]
     assert np.array_equal(offsets["epoch"].data, expected_epochs)
 
-    # pull out the valid full spins from the test data (last few are fudging to get a
-    # chunk from 150-155)
-    valid_spins = [
-        [15, 30],
-        [30, 45],
-        [45, 60],
-        [75, 90],
-        [90, 105],
-        [135, 150],
-        [150, 155],
-        [155, 155],
-    ]
-
+    indices_to_average = [[15, 45], [45, 75], [75, 105], [105, 135], [135, 155]]
     expected_x_avg = []
     expected_y_avg = []
-    for index in range(0, len(valid_spins), 2):
-        x_spin = x_vectors[valid_spins[index][0] : valid_spins[index + 1][1]]
 
-        expected_x_avg.append(np.nanmean(x_spin))
-        y_spin = y_vectors[valid_spins[index][0] : valid_spins[index + 1][1]]
-        expected_y_avg.append(np.nanmean(y_spin))
+    for start_index, end_index in indices_to_average:
+        expected_x_avg.append(np.nanmean(x_vectors[start_index:end_index]))
+        expected_y_avg.append(np.nanmean(y_vectors[start_index:end_index]))
 
     np.testing.assert_allclose(offsets["x_offset"].data, expected_x_avg)
     np.testing.assert_allclose(offsets["y_offset"].data, expected_y_avg)

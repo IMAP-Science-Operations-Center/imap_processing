@@ -410,11 +410,9 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         # this is when the spin crosses zero
         spin_starts = np.where(np.diff(sc_spin_phase) < 0)[0] + 1
 
-        # if the value switches from nan to a number, that is also a spin start (for an
-        # invalid spin)
-        nan_to_number = (
-            np.where(np.isnan(sc_spin_phase[:-1]) & ~np.isnan(sc_spin_phase[1:]))[0] + 1
-        )
+        # if the value switches from nan to a number, or from a number to nan, that
+        # is also a spin start
+        nan_to_number = np.where(np.diff(np.isnan(sc_spin_phase)) != 0)[0] + 1
 
         # find the places spins start while skipping over invalid or missing data
         # (marked as nan by get_spacecraft_spin_phase)
@@ -425,23 +423,29 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         spin_data = spin.get_spin_data()
         # Use the median spin period as the expected value
         expected_spin = np.median(spin_data["spin_period_sec"]) * 1e9
-        # find nan gaps that contain more than one spin
-        for nan_gap_index in range(len(nan_to_number)):
-            existing_index = nan_gap_index
-            start_gap = nan_to_number[nan_gap_index]
-            # find the number immediately after start_gap in spin_starts
-            next_spin_start_indices = np.where(spin_starts > start_gap)[0]
-            if len(next_spin_start_indices) > 0:
-                next_spin_start = next_spin_start_indices[0]
-                number_of_spins = (
-                    self.epoch[next_spin_start] - self.epoch[start_gap]
-                ) // expected_spin
-                while number_of_spins > 1:
-                    estimated_start = self.epoch[next_spin_start] + expected_spin
+
+        paired_nans = nan_to_number.reshape(-1, 2)
+
+        for start_of_gap, end_of_gap in paired_nans:
+            # in nan_to_number, we have the start and end for every nan gap
+            # if this gap spans more than 1 spin period, we need to insert
+            # additional spin_starts into spin_starts.
+
+            gap_start_time = self.epoch[start_of_gap]
+            gap_end_time = self.epoch[end_of_gap]
+
+            # Calculate the number of spins in this gap
+            number_of_spins = int((gap_end_time - gap_start_time) // expected_spin)
+            if number_of_spins > 1:
+                # Insert new spin starts into spin_starts
+                for i in range(1, number_of_spins):
+                    estimated_start = gap_start_time + i * expected_spin
                     new_spin_index = (np.abs(self.epoch - estimated_start)).argmin()
-                    np.insert(spin_starts, existing_index, new_spin_index)
-                    existing_index += 1
-                    number_of_spins -= 1
+
+                    spin_starts = np.append(spin_starts, new_spin_index)
+                    print(f"Inserting new spin start {estimated_start}")
+
+        spin_starts = np.sort(spin_starts)
 
         chunk_start = 0
         offset_epochs = []
