@@ -295,6 +295,17 @@ energy_table:
     VALIDMAX: 14100.0
     VAR_TYPE: support_data
 
+k_factor:
+    CATDESC: K Factor constant that is used to convert voltages to energies
+    FIELDNAM: K Factor
+    FORMAT: F5.2
+    LABLAXIS: K Factor
+    SCALETYP: linear
+    UNITS: " "
+    VALIDMIN: 1.0
+    VALIDMAX: 100.0
+    VAR_TYPE: support_data
+
 nso_half_spin:
     <<: *default
     CATDESC: When No Scan Operation (NSO) was activated

@@ -13,3 +13,4 @@ class LoAPID(IntEnum):
     ILO_SCI_DE = 706  # Science direct event data
     ILO_STAR = 707  # Science star sensor data, every spin
     ILO_SPIN = 708  # Spin information for each science cycle (28 spins)
+    ILO_DIAG_PCC = 725  # Diagnostic pivot platform information

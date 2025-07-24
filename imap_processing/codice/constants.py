@@ -59,6 +59,7 @@ CODICEAPID_MAPPING = {
 
 # Numerical constants
 SPIN_PERIOD_CONVERSION = 0.00032
+K_FACTOR = 5.76  # This is used to convert voltages to energies in L2
 
 # CDF variable names used for lo data products
 LO_COUNTERS_SINGLES_VARIABLE_NAMES = ["apd_singles"]
@@ -504,6 +505,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
             "st_bias_gain_mode",
             "data_quality",
             "spin_period",
+            "k_factor",
         ],
         "variable_names": LO_IALIRT_VARIABLE_NAMES,
     },
@@ -523,6 +525,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
             "st_bias_gain_mode",
             "data_quality",
             "spin_period",
+            "k_factor",
         ],
         "variable_names": LO_COUNTERS_AGGREGATED_VARIABLE_NAMES,
     },
@@ -540,6 +543,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
             "st_bias_gain_mode",
             "data_quality",
             "spin_period",
+            "k_factor",
         ],
         "variable_names": LO_COUNTERS_SINGLES_VARIABLE_NAMES,
     },
@@ -557,6 +561,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
             "st_bias_gain_mode",
             "data_quality",
             "spin_period",
+            "k_factor",
         ],
         "variable_names": LO_SW_ANGULAR_VARIABLE_NAMES,
     },
@@ -574,6 +579,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
             "st_bias_gain_mode",
             "data_quality",
             "spin_period",
+            "k_factor",
         ],
         "variable_names": LO_NSW_ANGULAR_VARIABLE_NAMES,
     },
@@ -591,6 +597,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
             "st_bias_gain_mode",
             "data_quality",
             "spin_period",
+            "k_factor",
         ],
         "variable_names": LO_SW_PRIORITY_VARIABLE_NAMES,
     },
@@ -608,6 +615,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
             "st_bias_gain_mode",
             "data_quality",
             "spin_period",
+            "k_factor",
         ],
         "variable_names": LO_NSW_PRIORITY_VARIABLE_NAMES,
     },
@@ -625,6 +633,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
             "st_bias_gain_mode",
             "data_quality",
             "spin_period",
+            "k_factor",
         ],
         "variable_names": LO_SW_SPECIES_VARIABLE_NAMES,
     },
@@ -642,6 +651,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
             "st_bias_gain_mode",
             "data_quality",
             "spin_period",
+            "k_factor",
         ],
         "variable_names": LO_NSW_SPECIES_VARIABLE_NAMES,
     },
