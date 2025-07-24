@@ -405,6 +405,10 @@ def test_get_energy_pulse_height(test_fixture, ancillary_files):
 
     np.testing.assert_allclose(test_energy.to_numpy(), reconstructed_energy, atol=1e-2)
 
+    flagged_indices = np.nonzero(quality_flags != ImapDEUltraFlags.NONE.value)[0]
+
+    assert flagged_indices.size == 0
+
 
 @pytest.mark.external_test_data
 def test_get_ctof(test_fixture):

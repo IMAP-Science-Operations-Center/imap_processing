@@ -691,22 +691,24 @@ def get_energy_pulse_height(
     xlut[indices_bottom] = (xb[indices_bottom] / 100 + 50 + 25 / 2) * 20 / 50  # mm
     ylut[indices_bottom] = (yb[indices_bottom] / 100 + 82 / 2) * 32 / 82  # mm
 
-    ph_correction_top = get_ph_corrected(
+    ph_correction_top, updated_flags_top = get_ph_corrected(
         "ultra45",
         "tp",
         ancillary_files,
         np.round(xlut[indices_top]),
         np.round(ylut[indices_top]),
-        quality_flags[indices_top],
+        quality_flags[indices_top].copy(),
     )
-    ph_correction_bottom = get_ph_corrected(
+    quality_flags[indices_top] = updated_flags_top
+    ph_correction_bottom, updated_flags_bottom = get_ph_corrected(
         "ultra45",
         "bt",
         ancillary_files,
         np.round(xlut[indices_bottom]),
         np.round(ylut[indices_bottom]),
-        quality_flags[indices_bottom],
+        quality_flags[indices_bottom].copy(),
     )
+    quality_flags[indices_bottom] = updated_flags_bottom
 
     ph_correction[indices_top] = ph_correction_top / 1024
     ph_correction[indices_bottom] = ph_correction_bottom / 1024

@@ -301,7 +301,7 @@ def get_ph_corrected(
     xlut: NDArray,
     ylut: NDArray,
     quality_flag: NDArray,
-) -> NDArray:
+) -> tuple[NDArray, NDArray]:
     """
     PH correction for stop anodes, top and bottom.
 
@@ -327,6 +327,8 @@ def get_ph_corrected(
     -------
     ph_correction : NDArray
         Correction for pulse height.
+    quality_flag : NDArray
+        Quality flag updated with PH correction flags.
     """
     ph_correct = pd.read_csv(
         ancillary_files[f"l1b-{sensor[-2:]}sensor-sp{location}phcorr"], header=None
@@ -345,4 +347,4 @@ def get_ph_corrected(
 
     ph_correction = ph_correct_array[ylut_clamped, xlut_clamped]
 
-    return ph_correction
+    return ph_correction, quality_flag
