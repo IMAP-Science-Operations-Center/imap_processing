@@ -641,7 +641,7 @@ def get_energy_pulse_height(
     sensor: str,
     ancillary_files: dict,
     quality_flags: NDArray,
-) -> NDArray[np.float64]:
+) -> tuple[NDArray, NDArray]:
     """
     Calculate the pulse-height energy.
 
@@ -681,6 +681,9 @@ def get_energy_pulse_height(
     ylut = np.zeros(len(stop_type), dtype=np.float64)
     energy_ph = np.zeros(len(stop_type), dtype=np.float64)
 
+    # Full-length correction arrays
+    ph_correction = np.zeros(len(stop_type), dtype=np.float64)
+
     # Stop type 1
     xlut[indices_top] = (xb[indices_top] / 100 - 25 / 2) * 20 / 50  # mm
     ylut[indices_top] = (yb[indices_top] / 100 + 82 / 2) * 32 / 82  # mm
@@ -705,17 +708,24 @@ def get_energy_pulse_height(
         quality_flags[indices_bottom],
     )
 
+    ph_correction[indices_top] = ph_correction_top / 1024
+    ph_correction[indices_bottom] = ph_correction_bottom / 1024
+
     energy_ph[indices_top] = (
         energy[indices_top]
-        - get_image_params("SPTPPHOFF", sensor, ancillary_files) * ph_correction_top
+        - get_image_params("SPTPPHOFF", sensor, ancillary_files)
+        * ph_correction_top
+        / 1024
     )
 
     energy_ph[indices_bottom] = (
         energy[indices_bottom]
-        - get_image_params("SPBTPHOFF", sensor, ancillary_files) * ph_correction_bottom
+        - get_image_params("SPBTPHOFF", sensor, ancillary_files)
+        * ph_correction_bottom
+        / 1024
     )
 
-    return energy_ph
+    return energy_ph, ph_correction
 
 
 def get_energy_ssd(

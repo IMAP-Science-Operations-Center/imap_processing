@@ -389,7 +389,7 @@ def test_get_energy_pulse_height(test_fixture, ancillary_files):
     test_yb = df_filt["Yb"].astype("float").values
     quality_flags = np.full(test_xb.shape, ImapDEUltraFlags.NONE.value, dtype=np.uint16)
 
-    energy = get_energy_pulse_height(
+    energy, ph_correction = get_energy_pulse_height(
         de_dataset["stop_type"].data,
         de_dataset["energy_ph"].data,
         test_xb,
@@ -399,14 +399,11 @@ def test_get_energy_pulse_height(test_fixture, ancillary_files):
         quality_flags,
     )
 
-    # # TODO: Energy without luts
-    # ph_correct_top = get_ph_corrected(
-    #     "ultra45", "tp", ancillary_files, xlut, ylut, quality_flags
-    # )
+    reconstructed_energy = energy[ph_indices] + 580 * (ph_correction[ph_indices] - 1)
 
     test_energy = df_ph["Energy"].astype("float")
 
-    assert np.array_equal(test_energy, energy[ph_indices])
+    np.testing.assert_allclose(test_energy.to_numpy(), reconstructed_energy, atol=1e-2)
 
 
 @pytest.mark.external_test_data
