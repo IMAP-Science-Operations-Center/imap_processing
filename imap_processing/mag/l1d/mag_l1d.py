@@ -9,7 +9,7 @@ from imap_processing.mag.l1d.mag_l1d_data import MagL1d, MagL1dConfiguration
 from imap_processing.mag.l2.mag_l2_data import ValidFrames
 
 
-def mag_l1d(
+def mag_l1d(  # noqa: PLR0912
     science_data: list[xr.Dataset],
     calibration_dataset: xr.Dataset,
     day_to_process: np.datetime64,
@@ -45,16 +45,18 @@ def mag_l1d(
     input_mago_burst = None
     for dataset in science_data:
         source = dataset.attrs.get("Logical_source", "")
-        if "norm-magi" in source:
-            input_magi_norm = dataset
-        elif "norm-mago" in source:
-            input_mago_norm = dataset
-        elif "burst-magi" in source:
-            input_magi_burst = dataset
-        elif "burst-mago" in source:
-            input_mago_burst = dataset
-        else:
-            raise ValueError(f"Input data has invalid logical source {source}")
+        ins_mode = source.split("_")[-1]
+        match ins_mode:
+            case "norm-magi":
+                input_magi_norm = dataset
+            case "norm-mago":
+                input_mago_norm = dataset
+            case "burst-magi":
+                input_magi_burst = dataset
+            case "burst-mago":
+                input_mago_burst = dataset
+            case _:
+                raise ValueError(f"Input data has invalid logical source {source}")
 
     if input_magi_norm is None or input_mago_norm is None:
         raise ValueError(
@@ -96,6 +98,9 @@ def mag_l1d(
         day=day,
     )
 
+    # Nominally, this is expected to create MAGO data. However, if the configuration
+    # setting for always_output_mago is set to False, it will create MAGI data.
+
     l1d_norm.rotate_frame(ValidFrames.SRF)
     norm_srf_dataset = l1d_norm.generate_dataset(attributes, day_to_process)
     l1d_norm.rotate_frame(ValidFrames.DSRF)
@@ -136,18 +141,22 @@ def mag_l1d(
         spin_offset_dataset = l1d_norm.generate_spin_offset_dataset()
         spin_offset_dataset.attrs["Logical_source"] = "imap_mag_l1d-spin-offsets"
         output_datasets.append(spin_offset_dataset)
-    
+
     # Add gradiometry offsets dataset if gradiometry was applied
-    if l1d_norm.config.apply_gradiometry and hasattr(l1d_norm, 'gradiometry_offsets'):
+    if l1d_norm.config.apply_gradiometry and hasattr(l1d_norm, "gradiometry_offsets"):
         gradiometry_dataset = l1d_norm.gradiometry_offsets.copy()
-        gradiometry_dataset.attrs["Logical_source"] = "imap_mag_l1d-gradiometry-offsets-norm"
+        gradiometry_dataset.attrs["Logical_source"] = (
+            "imap_mag_l1d-gradiometry-offsets-norm"
+        )
         output_datasets.append(gradiometry_dataset)
-        
+
         # Also add burst gradiometry offsets if burst data was processed
         if input_mago_burst is not None and input_magi_burst is not None:
-            if hasattr(l1d_burst, 'gradiometry_offsets'):
+            if hasattr(l1d_burst, "gradiometry_offsets"):
                 burst_gradiometry_dataset = l1d_burst.gradiometry_offsets.copy()
-                burst_gradiometry_dataset.attrs["Logical_source"] = "imap_mag_l1d-gradiometry-offsets-burst"
+                burst_gradiometry_dataset.attrs["Logical_source"] = (
+                    "imap_mag_l1d-gradiometry-offsets-burst"
+                )
                 output_datasets.append(burst_gradiometry_dataset)
-    
+
     return output_datasets

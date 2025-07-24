@@ -6,6 +6,8 @@ from dataclasses import InitVar, dataclass
 import numpy as np
 import xarray as xr
 
+from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.mag import imap_mag_sdc_configuration_v001 as configuration
 from imap_processing.mag.constants import FILLVAL, DataMode
 from imap_processing.mag.l1c.interpolation_methods import linear
 from imap_processing.mag.l2.mag_l2 import retrieve_matrix_from_l2_calibration
@@ -144,8 +146,6 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         truncate the data to exactly 24 hours.
     """
 
-    # TODO Quality flags
-    # TODO generate and output ancillary files
     magi_vectors: np.ndarray
     magi_range: np.ndarray
     magi_epoch: np.ndarray
@@ -182,7 +182,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
 
         self.vectors = self.apply_spin_offsets(
             self.spin_offsets,
-            self.epoch,
+            self.epoch,  # type: ignore[has-type]
             self.vectors,
             self.config.spin_average_application_factor,
         )
@@ -199,7 +199,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         if self.config.apply_gradiometry:
             self.gradiometry_offsets = self.calculate_gradiometry_offsets(
                 self.vectors,
-                self.epoch,
+                self.epoch,  # type: ignore[has-type]
                 self.magi_vectors,
                 self.magi_epoch,
                 self.config.quality_flag_threshold,
@@ -210,6 +210,54 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
 
         self.magnitude = MagL2L1dBase.calculate_magnitude(vectors=self.vectors)
         self.is_l1d = True
+
+    def generate_dataset(
+        self,
+        attribute_manager: ImapCdfAttributes,
+        day: np.datetime64,
+    ) -> xr.Dataset:
+        """
+        Generate an xarray dataset from the dataclass.
+
+        This overrides the parent method to conditionally swap MAGO/MAGI data
+        based on the always_output_mago configuration setting.
+
+        Parameters
+        ----------
+        attribute_manager : ImapCdfAttributes
+            CDF attributes object for the correct level.
+        day : np.datetime64
+            The 24 hour day to process, as a numpy datetime format.
+
+        Returns
+        -------
+        xr.Dataset
+            Complete dataset ready to write to CDF file.
+        """
+        always_output_mago = configuration.ALWAYS_OUTPUT_MAGO
+
+        if not always_output_mago:
+            # Swap vectors and epochs to use MAGI data instead of MAGO
+            original_vectors: np.ndarray = self.vectors.copy()
+            original_epoch: np.ndarray = self.epoch.copy()  # type: ignore[has-type]
+            original_range: np.ndarray = self.range.copy()  # type: ignore[has-type]
+
+            self.vectors = self.magi_vectors  # type: ignore[no-redef]
+            self.epoch = self.magi_epoch  # type: ignore[no-redef]
+            self.range = self.magi_range  # type: ignore[no-redef]
+
+            # Call parent generate_dataset method
+            dataset = super().generate_dataset(attribute_manager, day)
+
+            # Restore original vectors for any further processing
+            self.vectors = original_vectors
+            self.epoch = original_epoch
+            self.range = original_range
+        else:
+            # Use MAGO data (default behavior)
+            dataset = super().generate_dataset(attribute_manager, day)
+
+        return dataset
 
     def rotate_frame(self, end_frame: ValidFrames) -> None:
         """
@@ -316,7 +364,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             The offset vector, shape (4,) where the last element is unchanged.
         """
         # Offsets are in shape (sensor, range, axis)
-        updated_vector = input_vector.copy().astype(np.int64)
+        updated_vector = input_vector.copy()
         rng = int(input_vector[3])
         x_y_z = input_vector[:3]
         updated_vector[:3] = x_y_z - offsets[int(is_magi), rng, :]
@@ -399,11 +447,17 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         offset_epochs = []
         x_avg = []
         y_avg = []
+        validity_start_times = []
+        validity_end_times = []
+        start_spin_counters = []
+        end_spin_counters = []
+
         while chunk_start < len(spin_starts):
             # Take self.spin_count_calibration number of spins and put them into a chunk
             chunk_indices = spin_starts[
                 chunk_start : chunk_start + self.config.spin_count_calibration + 1
             ]
+            chunk_start_idx = chunk_start
             chunk_start = chunk_start + self.config.spin_count_calibration
 
             # If we are in the end of the chunk, just grab all remaining data
@@ -414,10 +468,10 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             chunk_epoch = self.epoch[chunk_indices[0] : chunk_indices[-1]]
 
             # Check if more than half of the chunk data is NaN before processing
-            x_valid_count = np.sum(~np.isnan(chunk_vectors[:, 0]))
-            y_valid_count = np.sum(~np.isnan(chunk_vectors[:, 1]))
+            x_valid_count: int = int(np.sum(~np.isnan(chunk_vectors[:, 0])))
+            y_valid_count: int = int(np.sum(~np.isnan(chunk_vectors[:, 1])))
             total_points = len(chunk_vectors)
-            
+
             # Skip chunk if more than half of x or y data is NaN
             if x_valid_count <= total_points / 2 or y_valid_count <= total_points / 2:
                 continue
@@ -431,15 +485,37 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
                 x_avg.append(avg_x)
                 y_avg.append(avg_y)
 
-        # TODO: add to spin_offsets: Each row should include the start and end
-        # validity times of the chunk, the start and end spin counters used for each chunk calculation,
-        # two components of the in-plane offsets
+                # Add validity time range for this chunk
+                validity_start_times.append(chunk_epoch[0])
+                validity_end_times.append(chunk_epoch[-1])
+
+                # Add spin counter information
+                start_spin_counters.append(chunk_start_idx)
+                end_spin_counters.append(
+                    min(
+                        chunk_start_idx + self.config.spin_count_calibration - 1,
+                        len(spin_starts) - 1,
+                    )
+                )
+
         spin_epoch_dataarray = xr.DataArray(np.array(offset_epochs))
 
         spin_offsets = xr.Dataset(coords={"epoch": spin_epoch_dataarray})
 
         spin_offsets["x_offset"] = xr.DataArray(np.array(x_avg), dims=["epoch"])
         spin_offsets["y_offset"] = xr.DataArray(np.array(y_avg), dims=["epoch"])
+        spin_offsets["validity_start_time"] = xr.DataArray(
+            np.array(validity_start_times), dims=["epoch"]
+        )
+        spin_offsets["validity_end_time"] = xr.DataArray(
+            np.array(validity_end_times), dims=["epoch"]
+        )
+        spin_offsets["start_spin_counter"] = xr.DataArray(
+            np.array(start_spin_counters), dims=["epoch"]
+        )
+        spin_offsets["end_spin_counter"] = xr.DataArray(
+            np.array(end_spin_counters), dims=["epoch"]
+        )
 
         return spin_offsets
 
@@ -496,7 +572,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         if spin_offsets is None:
             raise ValueError("No spin offsets calculated to apply.")
 
-        output_vectors = np.full(vectors.shape, FILLVAL, dtype=np.int64)
+        output_vectors = np.full(vectors.shape, FILLVAL, dtype=np.float64)
 
         for index in range(spin_offsets["epoch"].data.shape[0] - 1):
             timestamp = spin_offsets["epoch"].data[index]
@@ -517,7 +593,6 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             if not np.any(mask):
                 continue
 
-            # TODO: should vectors be a float?
             x_offset = (
                 spin_offsets["x_offset"].data[index] * spin_average_application_factor
             )

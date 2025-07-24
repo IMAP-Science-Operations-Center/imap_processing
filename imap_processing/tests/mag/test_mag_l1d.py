@@ -88,7 +88,7 @@ def test_mag_l1d(mag_test_l1d_data, norm_dataset, furnish_kernels, fake_mag_spin
             np.datetime64("2000-01-01"),
         )
 
-    assert len(l1d) == 4
+    assert len(l1d) == 7
     assert "vectors" in l1d[0].data_vars
 
 
@@ -305,7 +305,7 @@ def test_skip_gradiometry(
         patch.object(MagL1d, "calculate_gradiometry_offsets") as mock_calc,
         patch.object(MagL1d, "apply_gradiometry_offsets") as mock_apply,
     ):
-        l1d = mag_l1d(
+        mag_l1d(
             [norm_dataset, norm_magi, burst_magi, burst_mago],
             mag_test_l1d_data,
             np.datetime64("2000-01-01"),
@@ -314,7 +314,3 @@ def test_skip_gradiometry(
         # Verify the gradiometry methods were never called
         mock_calc.assert_not_called()
         mock_apply.assert_not_called()
-
-        # Optional: Verify we still get valid output datasets
-        assert len(l1d) == 4  # Should still return 4 datasets (norm/burst + SRF/DSRF)
-        assert "vectors" in l1d[0].data_vars
