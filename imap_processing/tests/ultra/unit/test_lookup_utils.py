@@ -139,12 +139,16 @@ def test_get_ph_corrected(ancillary_files):
     # Should be between 1 and 32 (0 and 31)
     xlut = np.array([0, 10, 31, 32])
     # Should be between 1 and 20 (0 and 19)
-    ylut = np.array([0, 10, 19, 20])
+    ylut = np.array([3, 10, 19, 32])
     quality_flags = np.full(xlut.shape, ImapDEUltraFlags.NONE.value, dtype=np.uint16)
-    ph_correct_top = get_ph_corrected(
+    ph_correct_top, quality_flags = get_ph_corrected(
         "ultra45", "tp", ancillary_files, xlut, ylut, quality_flags
     )
 
     np.testing.assert_array_equal(
-        ph_correct_top, np.array([1676.568274, 1001.839137, 3214.786627, 3214.786627])
+        ph_correct_top, np.array([1429.143693, 1001.839137, 2667.220492, 3214.786627])
+    )
+    np.testing.assert_array_equal(
+        quality_flags,
+        np.array([0, 0, 2, 2]),
     )

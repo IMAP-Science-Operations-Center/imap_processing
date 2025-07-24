@@ -685,10 +685,10 @@ def get_energy_pulse_height(
     ph_correction = np.zeros(len(stop_type), dtype=np.float64)
 
     # Stop type 1
-    xlut[indices_top] = (xb[indices_top] / 100 - 25 / 2) * 20 / 50  # mm
+    xlut[indices_top] = (xb[indices_top] / 100 - 24.5 / 2) * 20 / 50  # mm
     ylut[indices_top] = (yb[indices_top] / 100 + 82 / 2) * 32 / 82  # mm
     # Stop type 2
-    xlut[indices_bottom] = (xb[indices_bottom] / 100 + 50 + 25 / 2) * 20 / 50  # mm
+    xlut[indices_bottom] = (xb[indices_bottom] / 100 + 50 + 24.5 / 2) * 20 / 50  # mm
     ylut[indices_bottom] = (yb[indices_bottom] / 100 + 82 / 2) * 32 / 82  # mm
 
     ph_correction_top, updated_flags_top = get_ph_corrected(

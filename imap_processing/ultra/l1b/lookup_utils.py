@@ -335,7 +335,7 @@ def get_ph_corrected(
     )
     ph_correct_array = ph_correct.to_numpy()
 
-    max_y, max_x = ph_correct_array.shape[0] - 1, ph_correct_array.shape[1] - 1
+    max_x, max_y = ph_correct_array.shape[0] - 1, ph_correct_array.shape[1] - 1
 
     # Clamp indices to nearest valid value
     xlut_clamped = np.clip(xlut.astype(int), 0, max_x)
@@ -345,6 +345,6 @@ def get_ph_corrected(
     flagged_mask = (xlut != xlut_clamped) | (ylut != ylut_clamped)
     quality_flag[flagged_mask] |= ImapDEUltraFlags.PHCORR.value
 
-    ph_correction = ph_correct_array[ylut_clamped, xlut_clamped]
+    ph_correction = ph_correct_array[xlut_clamped, ylut_clamped]
 
     return ph_correction, quality_flag

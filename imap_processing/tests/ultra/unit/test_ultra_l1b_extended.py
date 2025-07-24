@@ -407,7 +407,7 @@ def test_get_energy_pulse_height(test_fixture, ancillary_files):
 
     flagged_indices = np.nonzero(quality_flags != ImapDEUltraFlags.NONE.value)[0]
 
-    assert flagged_indices.size == 0
+    assert flagged_indices.size == 99
 
 
 @pytest.mark.external_test_data
