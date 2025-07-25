@@ -9,6 +9,7 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.ialirt.l0.parse_mag import (
     calculate_l1b,
+    calibrate_and_offset_vectors,
     extract_magnetic_vectors,
     get_pkt_counter,
     get_status_data,
@@ -298,3 +299,33 @@ def test_process_spacecraft_packet(
         primary_epoch = time_data_primary_ttj2000ns + time_shift_mago.data * 1e9
 
         assert packet["primary_epoch"] == primary_epoch
+
+
+def test_calibrate_and_offset_vectors(ialirt_mag_test_l1d_data):
+    """Tests calibrate_and_offset_vectors function."""
+
+    # MAGo and MAGi raw counts
+    mago_vectors = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+    magi_vectors = np.array([[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]])
+
+    # Range values (mago is 0 to 1, magi is 2 to 3)
+    # Range values (0 to 3) represent MAG gain setting
+    mago_range = np.array([0, 1])
+    magi_range = np.array([2, 3])
+
+    # Calibration and offsets from ancillary cdf
+    mago_calibration = ialirt_mag_test_l1d_data["URFTOORFO"][0]
+    magi_calibration = ialirt_mag_test_l1d_data["URFTOORFI"][0]
+    offsets = ialirt_mag_test_l1d_data["offsets"][0]
+
+    mago_out = calibrate_and_offset_vectors(
+        mago_vectors, mago_range, mago_calibration, offsets, is_magi=False
+    )
+    magi_out = calibrate_and_offset_vectors(
+        magi_vectors, magi_range, magi_calibration, offsets, is_magi=True
+    )
+
+    # Every offset is zero.
+    # For every range (0 to 3), the 3 by 3 calibration matrix is the identity matrix.
+    np.testing.assert_allclose(mago_out, mago_vectors)
+    np.testing.assert_allclose(magi_out, magi_vectors)

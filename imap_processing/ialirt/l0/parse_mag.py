@@ -20,6 +20,7 @@ from imap_processing.mag.l1b.mag_l1b import (
     calibrate_vector,
     shift_time,
 )
+from imap_processing.mag.l1d.mag_l1d_data import MagL1d, MagL2L1dBase
 from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 
 logger = logging.getLogger(__name__)
@@ -284,6 +285,56 @@ def calculate_l1b(
     updated_vector_magi = calibrate_vector(input_vector_magi, calibration_matrix_magi)
 
     return updated_vector_mago, updated_vector_magi, time_data
+
+
+def calibrate_and_offset_vectors(
+    vectors: np.ndarray,
+    range_vals: np.ndarray,
+    calibration: np.ndarray,
+    offsets: np.ndarray,
+    is_magi: bool = False,
+) -> np.ndarray:
+    """
+    Apply calibration and offsets to magnetic vectors.
+
+    Parameters
+    ----------
+    vectors : np.ndarray
+        Raw magnetic vectors, shape (n, 3).
+    range_vals : np.ndarray
+        Range indices for each vector, shape (n). Values 0–3.
+    calibration : np.ndarray
+        Calibration matrix, shape (3, 3, 4).
+    offsets : np.ndarray
+        Offsets array, shape (2, 4, 3) where:
+        - index 0 = MAGo, 1 = MAGi
+        - second index = range (0–3)
+        - third index = axis (x, y, z)
+    is_magi : bool, optional
+        True if applying to MAGi data, False for MAGo.
+
+    Returns
+    -------
+    calibrated_and_offset_vectors : np.ndarray
+        Calibrated and offset vectors, shape (n, 3).
+    """
+    # Append range as 4th column
+    vec_plus_range = np.concatenate((vectors, range_vals[:, np.newaxis]), axis=1)
+
+    # Apply calibration matrix -> (n,4)
+    calibrated = MagL2L1dBase.apply_calibration(vec_plus_range, calibration)
+
+    # Apply offsets per vector
+    # vec shape (4)
+    # offsets shape (2, 4, 3) where first index is 0 for MAGo and 1 for MAGi
+    calibrated = np.array(
+        [
+            MagL1d.apply_calibration_offset_single_vector(vec, offsets, is_magi=is_magi)
+            for vec in calibrated
+        ]
+    )
+
+    return calibrated[:, :3]
 
 
 def process_packet(
