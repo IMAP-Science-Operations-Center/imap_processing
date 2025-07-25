@@ -26,7 +26,7 @@ imap_hit_l1a_counts:
 imap_hit_l1a_counts_sectored:
     <<: *instrument_base
     Data_type: L1A_counts>Level-1A Sectored Counts
-    Logical_source: imap_hit_l1a_sectored_counts
+    Logical_source: imap_hit_l1a_counts_sectored
     Logical_source_description: IMAP Mission HIT Instrument Level-1A Sectored Count Rates Data.
 
 imap_hit_l1a_direct-events:
