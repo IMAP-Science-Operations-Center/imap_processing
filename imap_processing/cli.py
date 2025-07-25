@@ -797,7 +797,7 @@ class Hit(ProcessInstrument):
                 )
             # process data to L1A products
             science_files = dependencies.get_file_paths(source="hit", descriptor="raw")
-            datasets = hit_l1a(science_files[0])
+            datasets = hit_l1a(science_files[0], self.start_date)
 
         elif self.data_level == "l1b":
             data_dict = {}
