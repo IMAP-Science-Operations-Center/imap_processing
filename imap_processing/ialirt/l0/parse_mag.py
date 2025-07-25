@@ -20,7 +20,8 @@ from imap_processing.mag.l1b.mag_l1b import (
     calibrate_vector,
     shift_time,
 )
-from imap_processing.mag.l1d.mag_l1d_data import MagL1d, MagL2L1dBase
+from imap_processing.mag.l1d.mag_l1d_data import MagL1d
+from imap_processing.mag.l2.mag_l2_data import MagL2L1dBase
 from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 
 logger = logging.getLogger(__name__)
