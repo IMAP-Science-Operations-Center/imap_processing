@@ -70,11 +70,12 @@ def hit_l1a(packet_file: str, packet_date: Optional[str]) -> list[xr.Dataset]:
         # Process l1a data products
         if HitAPID.HIT_HSKP in datasets_by_apid:
             logger.info("Creating HIT L1A housekeeping dataset")
-            l1a_datasets.append(
-                process_housekeeping_data(
-                    datasets_by_apid[HitAPID.HIT_HSKP], attr_mgr, "imap_hit_l1a_hk"
-                )
+            hk_dataset = process_housekeeping_data(
+                datasets_by_apid[HitAPID.HIT_HSKP], attr_mgr, "imap_hit_l1a_hk"
             )
+            # filter the housekeeping dataset to the processing day
+            hk_dataset = filter_dataset_to_processing_day(hk_dataset, packet_date)
+            l1a_datasets.append(hk_dataset)
         if HitAPID.HIT_SCIENCE in datasets_by_apid:
             l1a_datasets.extend(
                 process_science(
