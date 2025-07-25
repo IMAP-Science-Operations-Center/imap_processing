@@ -14,6 +14,7 @@ from imap_processing.hit.l1a.hit_l1a import (
     add_cdf_attributes,
     calculate_uncertainties,
     decom_hit,
+    filter_dataset_to_processing_day,
     hit_l1a,
     subcom_sectorates,
 )
@@ -172,6 +173,59 @@ def test_add_cdf_attributes():
         assert list(result[f"{dim}_label"].dims) == [f"{dim}"]
 
 
+def test_filter_dataset_to_processing_day():
+    # Create a mock dataset
+    epoch_values = np.array(
+        [
+            316008024684000000,  # 2010-01-05T23:59:18.500
+            316008084684000000,  # 2010-01-06T00:10:18.500
+            316094424684000000,  # 2010-01-06T23:59:18.500
+            316094484684000000,  # 2010-01-07T00:10:18.500
+        ]
+    )
+
+    sc_tick_values = np.array(
+        [
+            431999,  # 2010-01-05T23:59:59.000000000
+            432002,  # 2010-01-06T00:00:02.000000000
+            518399,  # 2010-01-06T23:59:59.000000000
+            518402,  # 2010-01-07T00:00:02.000000000
+        ]
+    )
+
+    dataset = xr.Dataset(
+        {
+            "var1": (["epoch"], np.arange(len(epoch_values))),
+            "var2": (["sc_tick"], np.arange(len(sc_tick_values)) * 2),
+        },
+        coords={
+            "epoch": epoch_values,
+            "sc_tick": sc_tick_values,
+        },
+    )
+
+    # Define the packet date
+    packet_date = "20100106"
+
+    # Call the function
+    filtered_dataset = filter_dataset_to_processing_day(
+        dataset, packet_date, sc_tick=True
+    )
+
+    # Assert the filtered dataset contains only data within the processing day
+    expected_epochs = np.array(
+        [
+            316008084684000000,  # 2010-01-06T00:10:18.500
+            316094424684000000,  # 2010-01-06T23:59:18.500
+        ]
+    )
+    assert np.array_equal(filtered_dataset["epoch"].values, expected_epochs)
+
+    # Assert the sc_tick values are filtered correctly
+    expected_sc_ticks = np.array([432002, 518399])
+    assert np.array_equal(filtered_dataset["sc_tick"].values, expected_sc_ticks)
+
+
 def test_validate_l1a_housekeeping_data(hk_packet_filepath):
     """Validate the housekeeping dataset created by the L1A processing.
 
@@ -183,7 +237,7 @@ def test_validate_l1a_housekeeping_data(hk_packet_filepath):
     hk_packet_filepath : str
         File path to housekeeping ccsds file
     """
-    datasets = hit_l1a(hk_packet_filepath)
+    datasets = hit_l1a(hk_packet_filepath, "20100105")
     hk_dataset = None
     for dataset in datasets:
         if dataset.attrs["Logical_source"] == "imap_hit_l1a_hk":
@@ -269,7 +323,7 @@ def test_validate_l1a_counts_data(sci_packet_filepath, validation_data):
     """
 
     # Process the sample data
-    processed_datasets = hit_l1a(sci_packet_filepath)
+    processed_datasets = hit_l1a(sci_packet_filepath, packet_date="20100105")
     l1a_counts_data = processed_datasets[0]
 
     # Prepare validation data for comparison with processed data
@@ -306,18 +360,22 @@ def test_hit_l1a(hk_packet_filepath, sci_packet_filepath):
         Path to ccsds file for science data
     """
     for packet_filepath in [hk_packet_filepath, sci_packet_filepath]:
-        processed_datasets = hit_l1a(packet_filepath)
+        processed_datasets = hit_l1a(packet_filepath, packet_date="20100105")
         assert isinstance(processed_datasets, list)
         assert all(isinstance(ds, xr.Dataset) for ds in processed_datasets)
         if packet_filepath == hk_packet_filepath:
             assert len(processed_datasets) == 1
             assert processed_datasets[0].attrs["Logical_source"] == "imap_hit_l1a_hk"
         else:
-            assert len(processed_datasets) == 2
+            assert len(processed_datasets) == 3
             assert (
                 processed_datasets[0].attrs["Logical_source"] == "imap_hit_l1a_counts"
             )
             assert (
                 processed_datasets[1].attrs["Logical_source"]
+                == "imap_hit_l1a_counts_sectored"
+            )
+            assert (
+                processed_datasets[2].attrs["Logical_source"]
                 == "imap_hit_l1a_direct-events"
             )
