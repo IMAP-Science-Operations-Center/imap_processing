@@ -9,6 +9,7 @@ from imap_processing.spice.time import (
     TICK_DURATION,
     epoch_to_doy,
     et_to_datetime64,
+    et_to_met,
     et_to_ttj2000ns,
     et_to_utc,
     met_to_datetime64,
@@ -19,6 +20,7 @@ from imap_processing.spice.time import (
     sct_to_ttj2000s,
     str_to_et,
     ttj2000ns_to_et,
+    ttj2000ns_to_met,
 )
 
 
@@ -253,3 +255,41 @@ def test_epoch_to_doy():
 
     # Assert that every calculated DOY is equal to the DOY extracted from the string.
     assert np.all(doy == expected_doy)
+
+
+def test_et_to_met(furnish_time_kernels):
+    """Test coverage for et_to_met function."""
+    utc = "2026-01-01T00:00:00.125"
+    et = spiceypy.str2et(utc)
+    sclk_ticks = spiceypy.sce2c(IMAP_SC_ID, et)
+    expected_met = sclk_ticks * TICK_DURATION
+
+    # Test single value
+    met = et_to_met(et)
+    assert isinstance(met, float)
+    np.testing.assert_almost_equal(met, expected_met)
+
+    # Test array
+    et_array = np.array([et, et + 100, et + 200])
+    expected_met_array = np.array(
+        [spiceypy.sce2c(IMAP_SC_ID, et_val) * TICK_DURATION for et_val in et_array]
+    )
+    met_array = et_to_met(et_array)
+    np.testing.assert_array_almost_equal(met_array, expected_met_array)
+
+
+def test_ttj2000ns_to_met(furnish_time_kernels):
+    """Test coverage for ttj2000ns_to_met function."""
+    # Test roundtrip: MET -> TTJ2000ns -> MET
+    original_met = 1000.0
+    ttj2000ns = met_to_ttj2000ns(original_met)
+    roundtrip_met = ttj2000ns_to_met(ttj2000ns)
+
+    # Should get back to original MET (within floating point precision)
+    np.testing.assert_almost_equal(roundtrip_met, original_met)
+
+    # Test array input
+    met_array = np.array([1000.0, 2000.0, 3000.0])
+    ttj2000ns_array = met_to_ttj2000ns(met_array)
+    roundtrip_met_array = ttj2000ns_to_met(ttj2000ns_array)
+    np.testing.assert_array_almost_equal(roundtrip_met_array, met_array)

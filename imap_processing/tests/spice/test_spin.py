@@ -1,6 +1,5 @@
 from contextlib import nullcontext as does_not_raise
 from pathlib import Path
-from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -89,19 +88,20 @@ def test_set_spin_table_paths(monkeypatch):
         ),  # Array test
     ],
 )
-@patch("imap_processing.spice.spin.met_to_ttj2000ns")
-def test_interpolate_spin_data(
-    mock_met_to_ttj2000ns, query_met_times, expected, fake_spin_data
-):
+def test_interpolate_spin_data(query_met_times, expected, fake_spin_data):
     """Test interpolate_spin_data() with generated spin data."""
-    # Mock met_to_ttj2000ns to return MET * 1e9 for predictable testing
-    mock_met_to_ttj2000ns.side_effect = lambda x: x * 1e9
-
     # Call the function
     spin_df = spin.interpolate_spin_data(query_met_times)
 
+    # Remove the ttj2000ns column from expected since we're not adding it anymore
+    expected_without_ttj2000ns = []
+    for row in expected:
+        # Remove index 10 (spin_start_ttj2000ns column)
+        new_row = row[:10] + row[11:]
+        expected_without_ttj2000ns.append(new_row)
+
     # Test the value
-    for i_row, row in enumerate(expected):
+    for i_row, row in enumerate(expected_without_ttj2000ns):
         pd.testing.assert_series_equal(
             spin_df.iloc[i_row], pd.Series(row), check_index=False, check_names=False
         )
@@ -190,14 +190,8 @@ def test_get_spacecraft_spin_phase_value_error(query_met_times, fake_spin_data):
 
 
 @pytest.mark.usefixtures("use_fake_spin_data_for_time")
-@patch("imap_processing.spice.spin.met_to_ttj2000ns")
-def test_get_spin_data(
-    mock_met_to_ttj2000ns, use_fake_spin_data_for_time, furnish_time_kernels
-):
+def test_get_spin_data(use_fake_spin_data_for_time, furnish_time_kernels):
     """Test get_spin_data() with generated spin data."""
-    # Mock met_to_ttj2000ns to return MET * 1e9 for predictable testing
-    mock_met_to_ttj2000ns.side_effect = lambda x: x * 1e9
-
     use_fake_spin_data_for_time(453051323.0 - 56120)
     spin_data = spin.get_spin_data()
 
@@ -218,7 +212,6 @@ def test_get_spin_data(
         "spin_period_source",
         "thruster_firing",
         "spin_start_met",
-        "spin_start_ttj2000ns",  # New column added
     }
     assert set(spin_data.columns) == expected_columns, (
         "Spin data must have the specified fields."
@@ -297,84 +290,3 @@ def test_get_instrument_spin_phase(instrument, fake_spin_data):
     assert np.logical_and(
         0 <= inst_phase[~expected_nan_mask], inst_phase[~expected_nan_mask] < 1
     ).all()
-
-
-@pytest.mark.parametrize(
-    "query_times, time_format, expected_phases",
-    [
-        # Test MET format
-        (15.0, "met", 0.0),
-        (np.array([15.1, 30.2]), "met", np.array([0.1 / 15, 0.2 / 15])),
-        # Test J2000ns format (using simple conversion: MET * 1e9)
-        (15.0 * 1e9, "j2000ns", 0.0),
-        (np.array([15.1, 30.2]) * 1e9, "j2000ns", np.array([0.1 / 15, 0.2 / 15])),
-        # Test invalid cases with J2000ns
-        (106.0 * 1e9, "j2000ns", np.nan),
-    ],
-)
-def test_interpolate_spin_data_time_formats(
-    query_times, time_format, expected_phases, fake_spin_data, furnish_time_kernels
-):
-    """Test interpolate_spin_data() with different time formats and edge cases."""
-    with patch(
-        "imap_processing.spice.spin.met_to_ttj2000ns", side_effect=lambda x: x * 1e9
-    ):
-        spin_df = spin.interpolate_spin_data(query_times, time_format=time_format)
-        np.testing.assert_array_almost_equal(
-            spin_df["sc_spin_phase"].values, expected_phases
-        )
-
-
-def test_interpolate_spin_data_compatibility_and_errors(
-    fake_spin_data, furnish_time_kernels
-):
-    """Test backward compatibility, error handling, and consistency for time formats."""
-    with patch(
-        "imap_processing.spice.spin.met_to_ttj2000ns", side_effect=lambda x: x * 1e9
-    ):
-        query_met_times = np.array([15.1, 30.2])
-
-        # Test backward compatibility
-        spin_df_explicit = spin.interpolate_spin_data(
-            query_met_times, time_format="met"
-        )
-        spin_df_default = spin.interpolate_spin_data(query_met_times)
-        pd.testing.assert_frame_equal(spin_df_explicit, spin_df_default)
-
-        # Test invalid time format
-        with pytest.raises(ValueError, match="Unsupported time_format"):
-            spin.interpolate_spin_data(15.0, time_format="invalid")
-
-        # Test out-of-bounds error for J2000ns (use a valid time that's out of
-        # spin data range)
-        with pytest.raises(ValueError, match="Query times"):
-            spin.interpolate_spin_data(1000.0 * 1e9, time_format="j2000ns")
-
-        # Test consistency between formats
-        met_time = 15.5
-        j2000ns_time = met_time * 1e9  # Use mock conversion directly
-        spin_df_met = spin.interpolate_spin_data(met_time, time_format="met")
-        spin_df_j2000ns = spin.interpolate_spin_data(
-            j2000ns_time, time_format="j2000ns"
-        )
-        np.testing.assert_almost_equal(
-            spin_df_met["sc_spin_phase"].values[0],
-            spin_df_j2000ns["sc_spin_phase"].values[0],
-        )
-
-
-def test_get_spacecraft_spin_phase_j2000ns(fake_spin_data, furnish_time_kernels):
-    """Test get_spacecraft_spin_phase_j2000ns() function."""
-    with patch(
-        "imap_processing.spice.spin.met_to_ttj2000ns", side_effect=lambda x: x * 1e9
-    ):
-        # Test scalar and array inputs
-        scalar_result = spin.get_spacecraft_spin_phase_j2000ns(15.0 * 1e9)
-        assert isinstance(scalar_result, float)
-        np.testing.assert_almost_equal(scalar_result, 0.0)
-
-        # Test array input with valid and invalid cases
-        j2000ns_times = np.array([15.1, 30.1, 106.0]) * 1e9
-        expected = np.array([0.1 / 15, 0.1 / 15, np.nan])
-        spin_phases = spin.get_spacecraft_spin_phase_j2000ns(j2000ns_times)
-        np.testing.assert_array_almost_equal(spin_phases, expected)
