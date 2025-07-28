@@ -19,9 +19,9 @@ def generate_coverage(
     start_time: str,
     outages: dict | None = None,
     dsn: dict | None = None,
-) -> dict[str, np.ndarray]:
+) -> tuple[dict, dict]:
     """
-    Build the output dictionary containing coverage time for each station.
+    Build the output dictionary containing coverage and outage time for each station.
 
     Parameters
     ----------
@@ -34,8 +34,10 @@ def generate_coverage(
 
     Returns
     -------
-    coverage_dict: dict
-        Coverage for each station.
+    coverage_dict : dict
+        Visibility times per station.
+    outage_dict : dict
+        Outage times per station.
     """
     duration_seconds = 24 * 60 * 60  # 86400 seconds in 24 hours
     time_step = 3600  # 1 hr in seconds
@@ -44,6 +46,7 @@ def generate_coverage(
         "Kiel": STATIONS["Kiel"],
     }
     coverage_dict = {}
+    outage_dict = {}
 
     start_et_input = str_to_et(start_time)
     stop_et_input = start_et_input + duration_seconds
@@ -64,18 +67,22 @@ def generate_coverage(
         azimuth, elevation = calculate_azimuth_and_elevation(lon, lat, alt, time_range)
         visible = elevation > min_elevation
 
+        outage_mask = np.zeros(time_range.shape, dtype=bool)
         if outages and station_name in outages:
             for start, end in outages[station_name]:
                 start_et = str_to_et(start)
                 end_et = str_to_et(end)
-                visible[(time_range >= start_et) & (time_range <= end_et)] = False
+                outage_mask |= (time_range >= start_et) & (time_range <= end_et)
 
+        visible[outage_mask] = False
         # DSN contacts block other stations
         visible[dsn_outage_mask] = False
         total_visible_mask |= visible
-        time_utc = et_to_utc(time_range[visible], format_str="ISOC")
 
-        coverage_dict[f"{station_name}"] = time_utc
+        coverage_dict[station_name] = et_to_utc(time_range[visible], format_str="ISOC")
+        outage_dict[station_name] = et_to_utc(
+            time_range[outage_mask], format_str="ISOC"
+        )
 
     # --- DSN Stations ---
     if dsn:
@@ -87,17 +94,21 @@ def generate_coverage(
                 dsn_visible_mask |= (time_range >= start_et) & (time_range <= end_et)
 
             # Apply DSN outages if present
+            outage_mask = np.zeros(time_range.shape, dtype=bool)
             if outages and dsn_station in outages:
                 for start, end in outages[dsn_station]:
                     start_et = str_to_et(start)
                     end_et = str_to_et(end)
-                    dsn_visible_mask[
-                        (time_range >= start_et) & (time_range <= end_et)
-                    ] = False
+                    outage_mask |= (time_range >= start_et) & (time_range <= end_et)
 
+            dsn_visible_mask[outage_mask] = False
             total_visible_mask |= dsn_visible_mask
+
             coverage_dict[f"{dsn_station}"] = et_to_utc(
                 time_range[dsn_visible_mask], format_str="ISOC"
+            )
+            outage_dict[f"{dsn_station}"] = et_to_utc(
+                time_range[outage_mask], format_str="ISOC"
             )
 
     # Total coverage percentage
@@ -106,19 +117,17 @@ def generate_coverage(
     ) * 100
     coverage_dict["total_coverage_percent"] = total_coverage_percent
 
-    all_stations = list(stations.keys()) + (list(dsn.keys()) if dsn else [])
-    logger.info(
-        f"Calculated station time coverage for stations: {', '.join(all_stations)}."
-    )
-
-    # Ensure all stations are in the coverage_dict, even if no visibility
+    # Ensure all stations are present in both dicts
     for station in ALL_STATIONS:
         coverage_dict.setdefault(station, np.array([], dtype="<U23"))
+        outage_dict.setdefault(station, np.array([], dtype="<U23"))
 
-    return coverage_dict
+    return coverage_dict, outage_dict
 
 
-def format_coverage_summary(coverage_dict: dict, start_time: str) -> str:
+def format_coverage_summary(
+    coverage_dict: dict, outage_dict: dict, start_time: str
+) -> str:
     """
     Build the output dictionary containing coverage time for each station.
 
@@ -126,6 +135,8 @@ def format_coverage_summary(coverage_dict: dict, start_time: str) -> str:
     ----------
     coverage_dict : dict
         Coverage for each station, keyed by station name with arrays of UTC times.
+    outage_dict : dict
+        Outage times for each station, keyed by station name with arrays of UTC times.
     start_time : str
         Start time in UTC.
 
@@ -142,11 +153,14 @@ def format_coverage_summary(coverage_dict: dict, start_time: str) -> str:
         if station not in ALL_STATIONS and station != "total_coverage_percent"
     ]
 
-    # Collect all times to build the rows.
-    all_times = []
-    for station in all_stations:
-        all_times.extend(list(coverage_dict.get(station, [])))
-    all_times = sorted(set(all_times))
+    duration_seconds = 24 * 60 * 60  # 86400 seconds in 24 hours
+    time_step = 3600  # 1 hr in seconds
+
+    start_et_input = str_to_et(start_time)
+    stop_et_input = start_et_input + duration_seconds
+
+    time_range = np.arange(start_et_input, stop_et_input, time_step)
+    all_times = et_to_utc(time_range, format_str="ISOC")
 
     # Build header
     timestamp_width = 26
@@ -166,8 +180,14 @@ def format_coverage_summary(coverage_dict: dict, start_time: str) -> str:
     for time in all_times:
         row = [time]
         for station in all_stations:
-            times = coverage_dict.get(station, [])
-            row.append("1" if time in times else "0")
+            visible_times = coverage_dict.get(station, [])
+            outage_times = outage_dict.get(station, [])
+            if time in outage_times:
+                row.append("X")
+            elif time in visible_times:
+                row.append("1")
+            else:
+                row.append("0")
         lines.append(
             f"{row[0]:<{timestamp_width}}" + "   ".join(f"{val:<6}" for val in row[1:])
         )

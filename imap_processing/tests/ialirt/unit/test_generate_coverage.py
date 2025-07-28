@@ -23,7 +23,7 @@ def test_generate_coverage(furnish_kernels):
         "de440s.bsp",
     ]
     with furnish_kernels(kernels):
-        coverage_dict = generate_coverage("2026-09-22T00:00:00Z")
+        coverage_dict, outage_dict = generate_coverage("2026-09-22T00:00:00Z")
 
     start = datetime.strptime(coverage_dict["Kiel"][0], "%Y-%m-%dT%H:%M:%S.%f")
     end = datetime.strptime(coverage_dict["Kiel"][-1], "%Y-%m-%dT%H:%M:%S.%f")
@@ -56,7 +56,7 @@ def test_use_outages(furnish_kernels):
     }
 
     with furnish_kernels(kernels):
-        coverage_dict = generate_coverage("2026-09-22T00:00:00Z", outages)
+        coverage_dict, outage_dict = generate_coverage("2026-09-22T00:00:00Z", outages)
 
     expected = np.array(
         [
@@ -70,8 +70,10 @@ def test_use_outages(furnish_kernels):
             "2026-09-22T16:00:00.000",
         ]
     )
+    expected_outages = np.array(["2026-09-22T12:00:00.000", "2026-09-22T14:00:00.000"])
 
     np.testing.assert_array_equal(coverage_dict["Kiel"], expected)
+    np.testing.assert_array_equal(outage_dict["Kiel"], expected_outages)
 
 
 @pytest.mark.external_kernel
@@ -99,7 +101,7 @@ def test_dsn(furnish_kernels):
     }
 
     with furnish_kernels(kernels):
-        coverage_dict = generate_coverage(
+        coverage_dict, outage_dict = generate_coverage(
             "2026-09-22T00:00:00Z", outages=outages, dsn=dsn
         )
 
@@ -119,7 +121,7 @@ def test_dsn(furnish_kernels):
     np.testing.assert_array_equal(coverage_dict["Kiel"], kiel_expected)
     np.testing.assert_array_equal(coverage_dict["DSS-75"], dsn_expected)
 
-    output = format_coverage_summary(coverage_dict, "2026-09-22T00:00:00Z")
+    output = format_coverage_summary(coverage_dict, outage_dict, "2026-09-22T00:00:00Z")
 
     assert "# I-ALiRT Coverage Summary" in output
     assert "Time (UTC)" in output
