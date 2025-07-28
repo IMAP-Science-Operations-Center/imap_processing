@@ -10,7 +10,10 @@ from scipy.stats import binned_statistic_dd
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.spice.time import met_to_ttj2000ns
-
+from imap_processing.spice.spin import (
+    get_spin_data,
+)
+from imap_processing.spice.repoint import get_repoint_data
 
 class FilterType(str, Enum):
     """
@@ -56,6 +59,7 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         l1b_goodtimes_only = filter_goodtimes(l1b_de, anc_dependencies)
         pset = initialize_pset(l1b_goodtimes_only, attr_mgr, logical_source)
         full_counts = create_pset_counts(l1b_goodtimes_only)
+        start_spin_number, end_spin_number = get_spin_numbers(l1b_goodtimes_only)
         pset["triples_counts"] = create_pset_counts(
             l1b_goodtimes_only, FilterType.TRIPLES
         )
@@ -254,6 +258,27 @@ def create_pset_counts(
 
     return counts
 
+def get_spin_numbers(l1b_de: xr.Dataset) -> tuple[int, int]:
+    """
+    Get the start and end spin numbers from the L1B Direct Event dataset.
+
+    The spin numbers are used to identify the start and end of the
+    pointing periods in the dataset.
+
+    Parameters
+    ----------
+    l1b_de : xarray.Dataset
+        L1B Direct Event dataset.
+
+    Returns
+    -------
+    tuple[int, int]
+        The start and end spin numbers.
+    """
+    repoint_df = get_repoint_data()
+    print(repoint_df.info())
+
+    #return start_spin_number, end_spin_number
 
 def calculate_exposure_times(counts: xr.DataArray, l1b_de: xr.Dataset) -> xr.DataArray:
     """

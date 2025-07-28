@@ -4,6 +4,7 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.spice.time import t
 from imap_processing.lo.l1c.lo_l1c import (
     FilterType,
     calculate_exposure_times,
@@ -11,6 +12,7 @@ from imap_processing.lo.l1c.lo_l1c import (
     filter_goodtimes,
     initialize_pset,
     lo_l1c,
+    get_spin_numbers
 )
 
 
@@ -207,6 +209,25 @@ def test_create_doubles_pset_counts(l1b_de, doubles_counts):
 
     # Assert
     np.testing.assert_array_equal(counts, doubles_counts)
+
+def test_get_spin_numbers(l1b_de, use_fake_repoint_data_for_time, use_fake_spin_data_for_time):
+    # Arrange
+    expected_spin_numbers = np.array([1, 2, 3, 4, 5])
+    repoint_start_times = np.array([7.9794907049e17, 7.9794907153e17, 7.9794907254e17, 7.9794907354e17, 7.9794907454e17])
+    use_fake_repoint_data_for_time(
+        np.array([7.9794907049e17, 7.9794907153e17, 7.9794907254e17, 7.9794907354e17, 7.9794907454e17]),
+        np.array([7.9794907050e17, 7.9794907154e17, 7.9794907255e17, 7.9794907355e17, 7.9794907455e17]),
+        np.array([1, 2, 3, 4, 5])
+    )
+    #use_fake_spin_data_for_time(
+    #    np.array([7.9794907049e17, 7.9794907153e17, 7.9794907254e17, 7.9794907354e17, 7.9794907454e17]),
+    #)
+
+    # Act
+    spin_numbers = get_spin_numbers(l1b_de)
+
+    # Assert
+    np.testing.assert_array_equal(spin_numbers, expected_spin_numbers)
 
 
 def test_calculate_exposure_times(l1b_de):
