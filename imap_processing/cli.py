@@ -68,6 +68,7 @@ from imap_processing.mag.constants import DataMode
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
 from imap_processing.mag.l1b.mag_l1b import mag_l1b
 from imap_processing.mag.l1c.mag_l1c import mag_l1c
+from imap_processing.mag.l1d.mag_l1d import mag_l1d
 from imap_processing.mag.l2.mag_l2 import mag_l2
 from imap_processing.spacecraft import quaternions
 from imap_processing.spice import pointing_frame, repoint, spin
@@ -1073,6 +1074,21 @@ class Mag(ProcessInstrument):
                     f"Invalid dependencies found for MAG L1C:"
                     f"{dependencies}. Expected one or two dependencies."
                 )
+        if self.data_level == "l1d":
+            science_files = dependencies.get_file_paths(source="mag", data_type="l1c")
+            science_files.extend(
+                dependencies.get_file_paths(source="mag", data_type="l1b")
+            )
+            input_data = [load_cdf(dep) for dep in science_files]
+            calibration = dependencies.get_processing_inputs(
+                descriptor="l1d-calibration"
+            )
+            combined_calibration = MagAncillaryCombiner(calibration[0], day_buffer)
+            datasets = mag_l1d(
+                input_data,
+                combined_calibration.combined_dataset,
+                current_day,
+            )
 
         if self.data_level == "l2":
             science_files = dependencies.get_file_paths(source="mag", data_type="l1b")

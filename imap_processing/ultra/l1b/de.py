@@ -155,13 +155,14 @@ def calculate_de(
     d[ph_indices], yf[ph_indices] = get_front_y_position(
         de_dataset["start_type"].data[ph_indices], yb[ph_indices], ancillary_files
     )
-    energy[ph_indices] = get_energy_pulse_height(
+    energy[ph_indices], _ = get_energy_pulse_height(
         de_dataset["stop_type"].data[ph_indices],
         de_dataset["energy_ph"].data[ph_indices],
         xb[ph_indices],
         yb[ph_indices],
         f"ultra{sensor}",
         ancillary_files,
+        quality_flags[ph_indices],
     )
     r[ph_indices] = get_path_length(
         (xf[ph_indices], yf[ph_indices]),

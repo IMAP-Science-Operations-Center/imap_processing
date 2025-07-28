@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 from imap_processing import imap_module_directory
+from imap_processing.quality_flags import ImapDEUltraFlags
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.l1b.lookup_utils import get_angular_profiles
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
@@ -376,9 +377,13 @@ def test_get_energy_ssd(test_fixture, ancillary_files):
 
 
 @pytest.mark.external_test_data
-def test_get_energy_pulse_height(test_fixture, ancillary_files):
+def test_get_energy_pulse_height(
+    test_fixture, ancillary_files, events_fsw_comparison_theta_0_revised
+):
     """Tests get_energy_ssd function."""
     df_filt, _, _, de_dataset = test_fixture
+    df = pd.read_csv(events_fsw_comparison_theta_0_revised)
+    df_filt = df[df["StartType"] != -1]
     df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
     ph_indices = np.nonzero(
         np.isin(de_dataset["stop_type"], [StopType.Top.value, StopType.Bottom.value])
@@ -386,18 +391,25 @@ def test_get_energy_pulse_height(test_fixture, ancillary_files):
 
     test_xb = df_filt["Xb"].astype("float").values
     test_yb = df_filt["Yb"].astype("float").values
+    quality_flags = np.full(test_xb.shape, ImapDEUltraFlags.NONE.value, dtype=np.uint16)
 
-    energy = get_energy_pulse_height(
+    energy, ph_correction = get_energy_pulse_height(
         de_dataset["stop_type"].data,
         de_dataset["energy_ph"].data,
         test_xb,
         test_yb,
         "ultra45",
         ancillary_files,
+        quality_flags,
     )
+
     test_energy = df_ph["Energy"].astype("float")
 
-    assert np.array_equal(test_energy, energy[ph_indices])
+    np.testing.assert_allclose(test_energy.to_numpy(), energy[ph_indices], atol=1e-2)
+
+    flagged_indices = np.nonzero(quality_flags != ImapDEUltraFlags.NONE.value)[0]
+
+    assert flagged_indices.size == 99
 
 
 @pytest.mark.external_test_data

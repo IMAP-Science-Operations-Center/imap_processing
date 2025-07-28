@@ -20,6 +20,7 @@ from imap_processing.ultra.l1b.lookup_utils import (
     get_energy_norm,
     get_image_params,
     get_norm,
+    get_ph_corrected,
     get_y_adjust,
 )
 
@@ -639,7 +640,8 @@ def get_energy_pulse_height(
     yb: np.ndarray,
     sensor: str,
     ancillary_files: dict,
-) -> NDArray[np.float64]:
+    quality_flags: NDArray,
+) -> tuple[NDArray, NDArray]:
     """
     Calculate the pulse-height energy.
 
@@ -663,6 +665,8 @@ def get_energy_pulse_height(
         Sensor name.
     ancillary_files : dict[Path]
         Ancillary files containing the lookup tables.
+    quality_flags : NDArray
+        Quality flag to set when there is an outlier.
 
     Returns
     -------
@@ -677,25 +681,54 @@ def get_energy_pulse_height(
     ylut = np.zeros(len(stop_type), dtype=np.float64)
     energy_ph = np.zeros(len(stop_type), dtype=np.float64)
 
+    # Full-length correction arrays
+    ph_correction = np.zeros(len(stop_type), dtype=np.float64)
+
     # Stop type 1
-    xlut[indices_top] = (xb[indices_top] / 100 - 25 / 2) * 20 / 50  # mm
+    xlut[indices_top] = (xb[indices_top] / 100 - 24.5 / 2) * 20 / 50  # mm
     ylut[indices_top] = (yb[indices_top] / 100 + 82 / 2) * 32 / 82  # mm
     # Stop type 2
-    xlut[indices_bottom] = (xb[indices_bottom] / 100 + 50 + 25 / 2) * 20 / 50  # mm
+    xlut[indices_bottom] = (xb[indices_bottom] / 100 + 50 + 24.5 / 2) * 20 / 50  # mm
     ylut[indices_bottom] = (yb[indices_bottom] / 100 + 82 / 2) * 32 / 82  # mm
 
-    # TODO: waiting on these lookup tables: SpTpPHCorr, SpBtPHCorr
-    energy_ph[indices_top] = energy[indices_top] - get_image_params(
-        "SPTPPHOFF", sensor, ancillary_files
-    )  # * SpTpPHCorr[
-    # xlut[indices_top], ylut[indices_top]] / 1024
+    ph_correction_top, updated_flags_top = get_ph_corrected(
+        "ultra45",
+        "tp",
+        ancillary_files,
+        np.round(xlut[indices_top]),
+        np.round(ylut[indices_top]),
+        quality_flags[indices_top].copy(),
+    )
+    quality_flags[indices_top] = updated_flags_top
+    ph_correction_bottom, updated_flags_bottom = get_ph_corrected(
+        "ultra45",
+        "bt",
+        ancillary_files,
+        np.round(xlut[indices_bottom]),
+        np.round(ylut[indices_bottom]),
+        quality_flags[indices_bottom].copy(),
+    )
+    quality_flags[indices_bottom] = updated_flags_bottom
 
-    energy_ph[indices_bottom] = energy[indices_bottom] - get_image_params(
-        "SPBTPHOFF", sensor, ancillary_files
-    )  # * SpBtPHCorr[
-    # xlut[indices_bottom], ylut[indices_bottom]] / 1024
+    ph_correction[indices_top] = ph_correction_top / 1024
+    ph_correction[indices_bottom] = ph_correction_bottom / 1024
 
-    return energy_ph
+    energy_ph[indices_top] = (
+        (energy[indices_top] - get_image_params("SPTPPHOFF", sensor, ancillary_files))
+        * ph_correction_top
+        / 1024
+    )
+
+    energy_ph[indices_bottom] = (
+        (
+            energy[indices_bottom]
+            - get_image_params("SPBTPHOFF", sensor, ancillary_files)
+        )
+        * ph_correction_bottom
+        / 1024.0
+    )
+
+    return energy_ph, ph_correction
 
 
 def get_energy_ssd(

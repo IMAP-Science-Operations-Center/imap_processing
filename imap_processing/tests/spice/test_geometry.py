@@ -157,6 +157,9 @@ def test_frame_transform(et_strings, position, from_frame, to_frame, furnish_ker
         SpiceFrame.IMAP_DPS,
         SpiceFrame.IMAP_SPACECRAFT,
         SpiceFrame.ECLIPJ2000,
+        SpiceFrame.IMAP_GSE,
+        SpiceFrame.IMAP_GSM,
+        SpiceFrame.IMAP_RTN,
     ],
 )
 @pytest.mark.parametrize(
@@ -236,6 +239,7 @@ def test_frame_transform_az_el_same_frame(spice_frame):
     np.testing.assert_allclose(result, az_el_points)
 
 
+@pytest.mark.external_kernel
 def test_get_rotation_matrix(furnish_kernels):
     """Test coverage for get_rotation_matrix()."""
     kernels = [
@@ -244,6 +248,7 @@ def test_get_rotation_matrix(furnish_kernels):
         "imap_science_100.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
+        "de440s.bsp",
     ]
     with furnish_kernels(kernels):
         et = spiceypy.utc2et("2025-09-30T12:00:00.000")
@@ -257,6 +262,10 @@ def test_get_rotation_matrix(furnish_kernels):
             np.arange(10) + et, SpiceFrame.IMAP_IDEX, SpiceFrame.IMAP_SPACECRAFT
         )
         assert rotation.shape == (10, 3, 3)
+        rotation = get_rotation_matrix(
+            et, SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.IMAP_GSE
+        )
+        assert rotation.shape == (3, 3)
 
 
 def test_instrument_pointing(furnish_kernels):

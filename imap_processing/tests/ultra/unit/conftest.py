@@ -420,6 +420,16 @@ def events_fsw_comparison_theta_0():
 
 
 @pytest.fixture
+def events_fsw_comparison_theta_0_revised():
+    """FSW test data."""
+    filename = (
+        "ultra45_raw_sc_ultrarawimg_withFSWccs_FM45_40P_Phi28p5_"
+        "BeamCal_LinearScan_phi2850_theta-000_20240207T102740_revised20250724.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l1" / filename
+
+
+@pytest.fixture
 def de_dataset(ccsds_path_theta_0, xtce_path):
     """L1A test data"""
     test_data = ultra_l1a(ccsds_path_theta_0, apid_input=ULTRA_EVENTS.apid[0])
@@ -494,4 +504,12 @@ def ancillary_files():
         / "imap_ultra_l1b-45sensor-back-pos-lookup_20250101_v000.csv",
         "l1b-egynorm-lookup": path / "imap_ultra_l1b-egynorm-lookup_20250101_v000.csv",
         "l1b-yadjust-lookup": path / "imap_ultra_l1b-yadjust-lookup_20250101_v001.csv",
+        "l1b-45sensor-sptpphcorr": path
+        / "imap_ultra_l1b-45sensor-sptpphcorr_20250101_v000.csv",
+        "l1b-45sensor-spbtphcorr": path
+        / "imap_ultra_l1b-45sensor-spbtphcorr_20250101_v000.csv",
+        "l1b-90sensor-sptpphcorr": path
+        / "imap_ultra_l1b-90sensor-sptpphcorr_20250101_v000.csv",
+        "l1b-90sensor-spbtphcorr": path
+        / "imap_ultra_l1b-90sensor-spbtphcorr_20250101_v000.csv",
     }

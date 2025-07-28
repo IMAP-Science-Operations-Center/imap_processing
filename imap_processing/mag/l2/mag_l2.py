@@ -6,7 +6,6 @@ import xarray as xr
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.mag import imap_mag_sdc_configuration_v001 as configuration
 from imap_processing.mag.constants import DataMode
-from imap_processing.mag.l1b.mag_l1b import calibrate_vector
 from imap_processing.mag.l2.mag_l2_data import MagL2, ValidFrames
 
 
@@ -86,24 +85,24 @@ def mag_l2(
         calibration_dataset, day, always_output_mago
     )
 
-    vectors = np.apply_along_axis(
-        func1d=calibrate_vector,
-        axis=1,
-        arr=input_data["vectors"].data,
-        calibration_matrix=calibration_matrix,
+    cal_vectors = MagL2.apply_calibration(
+        vectors=input_data["vectors"].data, calibration_matrix=calibration_matrix
     )
+    # level 2 vectors don't include range
+    vectors = cal_vectors[:, :3]
 
     l2_data = MagL2(
-        vectors[:, :3],  # level 2 vectors don't include range
-        input_data["epoch"].data,
-        input_data["vectors"].data[:, 3],
-        {},
-        offsets_dataset["quality_flag"].data,
-        offsets_dataset["quality_bitmask"].data,
-        mode,
+        vectors=vectors,
+        epoch=input_data["epoch"].data,
+        range=input_data["vectors"].data[:, 3],
+        global_attributes={},
+        quality_flags=offsets_dataset["quality_flag"].data,
+        quality_bitmask=offsets_dataset["quality_bitmask"].data,
+        data_mode=mode,
         offsets=offsets_dataset["offsets"].data,
         timedelta=offsets_dataset["timedeltas"].data,
     )
+
     attributes = ImapCdfAttributes()
     attributes.add_instrument_global_attrs("mag")
     attributes.add_instrument_variable_attrs("mag", "l2")

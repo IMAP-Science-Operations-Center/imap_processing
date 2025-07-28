@@ -42,6 +42,7 @@ class ImapDEUltraFlags(FlagNameMixin):
 
     NONE = CommonFlags.NONE
     FOV = 2**0  # bit 0
+    PHCORR = 2**1  # bit 1
 
 
 class ImapHkUltraFlags(FlagNameMixin):
