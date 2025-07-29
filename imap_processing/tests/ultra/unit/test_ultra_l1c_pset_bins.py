@@ -4,15 +4,18 @@ import astropy_healpix.healpy as hp
 import numpy as np
 import pandas as pd
 import pytest
+import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c import ultra_l1c_pset_bins
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
+    get_deadtime_correction_factors,
     get_energy_delta_minus_plus,
     get_helio_background_rates,
     get_helio_exposure_times,
     get_helio_sensitivity,
+    get_sectored_rates,
     get_spacecraft_background_rates,
     get_spacecraft_exposure_times,
     get_spacecraft_histogram,
@@ -134,6 +137,57 @@ def test_get_helio_background_rates():
     background_rates = get_helio_background_rates(nside=128)
     _, energy_midpoints, _ = build_energy_bins()
     assert background_rates.shape == (len(energy_midpoints), hp.nside2npix(128))
+
+
+def test_get_sectored_rates():
+    """Tests get_sectored_rates function."""
+
+    # Simulate a test rates dataset.
+    epoch = 60
+    test_l1a_rates_dataset = xr.Dataset(
+        {
+            "test_data": (["epoch"], np.arange(epoch)),
+        },
+    )
+    # Sector mode (image rates cadence = 3) happens 3 times a day (per pointing).
+    # each time the mode changes, it is recorded in the params packet.
+    # Create a test params dataset that simulates the mode changing to 3, 3 times.
+    modes = np.tile(np.array([1, 3]), 3)
+    test_l1a_params_dataset = xr.Dataset(
+        {
+            "imageratescadence": (["epoch"], modes),
+        },
+        coords={"epoch": ("epoch", np.arange(0, epoch, epoch / len(modes)))},
+    )
+    sectored_rates = get_sectored_rates(test_l1a_rates_dataset, test_l1a_params_dataset)
+    np.testing.assert_array_equal(
+        sectored_rates["test_data"].data,
+        np.hstack([np.arange(10, 20), np.arange(30, 40), np.arange(50, 60)]),
+    )
+
+
+def test_get_deadtime_correction_factors():
+    """Tests get_deadtime_correction_factors function."""
+    # Simulate a test sectored rates dataset.
+    epoch = 10
+    sectored_rates_ds = xr.Dataset(
+        {
+            "fifo_valid_events": (["epoch"], np.random.randint(100, 200, epoch)),
+            "event_active_time": (["epoch"], np.random.uniform(0, 10, epoch)),
+            "start_pos": (["epoch"], np.random.randint(0, 5, epoch)),
+            "start_rf": (["epoch"], np.random.randint(0, 5, epoch)),
+            "start_lf": (["epoch"], np.random.randint(0, 5, epoch)),
+            "coin_tn": (["epoch"], np.random.randint(0, 5, epoch)),
+            "coin_bn": (["epoch"], np.random.randint(0, 5, epoch)),
+            "stop_tn": (["epoch"], np.random.randint(0, 5, epoch)),
+            "stop_bn": (["epoch"], np.random.randint(0, 5, epoch)),
+        }
+    )
+    deadtime_correction_factors = get_deadtime_correction_factors(sectored_rates_ds)
+    assert deadtime_correction_factors.shape == (sectored_rates_ds.sizes["epoch"],)
+    assert np.all(
+        (deadtime_correction_factors >= 0) & (deadtime_correction_factors <= 1)
+    )
 
 
 @pytest.mark.external_test_data

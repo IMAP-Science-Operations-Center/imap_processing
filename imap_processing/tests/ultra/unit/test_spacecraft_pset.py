@@ -108,7 +108,7 @@ def test_calculate_spacecraft_pset(ccsds_path_all_apids, ccsds_path_theta_0):
         test_l1b_de_dataset,  # placeholder for cullingmask_dataset
         test_l1a_rates_dataset,
         test_l1a_params_dataset,
-        "imap_ultra_1c_45sensor-spacecraftpset",
+        "imap_ultra_l1c_45sensor-spacecraftpset",
         ancillary,
     )
     assert "pixel_index" in spacecraft_pset.coords
