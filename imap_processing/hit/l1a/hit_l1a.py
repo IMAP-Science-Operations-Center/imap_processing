@@ -18,6 +18,7 @@ from imap_processing.hit.hit_utils import (
 from imap_processing.hit.l0.constants import (
     AZIMUTH_ANGLES,
     MOD_10_MAPPING,
+    MOD_10_PATTERN,
     ZENITH_ANGLES,
 )
 from imap_processing.hit.l0.decom_hit import decom_hit
@@ -128,6 +129,7 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> xr.Dataset:
             "sectorates": sci_dataset["sectorates"],
             "hdr_minute_cnt": sci_dataset["hdr_minute_cnt"],
             "livetime_counter": sci_dataset["livetime_counter"],
+            "hdr_dynamic_threshold_state": sci_dataset["hdr_dynamic_threshold_state"],
         },
         coords={"epoch": sci_dataset["epoch"]},
     )
@@ -336,7 +338,7 @@ def add_cdf_attributes(
     return dataset
 
 
-def find_complete_mod10_sets(mod_vals: np.ndarray, window_size: int = 10) -> np.ndarray:
+def find_complete_mod10_sets(mod_vals: np.ndarray) -> np.ndarray:
     """
     Find start indices where mod_vals matches [0,1,...,9] pattern.
 
@@ -344,24 +346,29 @@ def find_complete_mod10_sets(mod_vals: np.ndarray, window_size: int = 10) -> np.
     ----------
     mod_vals : np.ndarray
         1D array of mod 10 values from the hdr_minute_cnt field in the L1A counts data.
-    window_size : int, optional
-        The size of the sliding window to match the pattern. Default is 10.
 
     Returns
     -------
     np.ndarray
         Indices in mod_vals where the complete pattern [0, 1, ..., 9] starts.
     """
-    pattern = np.arange(window_size)
+    window_size = len(MOD_10_PATTERN)
+
+    if mod_vals.size < window_size:
+        logger.warning(
+            "Mod 10 array is smaller than the required window size for "
+            "pattern matching."
+        )
+        return np.array([], dtype=int)
     # Use sliding windows to find pattern matches
     sw_view = np.lib.stride_tricks.sliding_window_view(mod_vals, window_size)
-    matches = np.all(sw_view == pattern, axis=1)
+    matches = np.all(sw_view == MOD_10_PATTERN, axis=1)
     return np.where(matches)[0]
 
 
 def subset_sectored_counts(
     sectored_counts_dataset: xr.Dataset, packet_date: str
-) -> tuple[xr.Dataset, np.ndarray]:
+) -> xr.Dataset:
     """
     Subset data for complete sets of sectored counts and corresponding livetime values.
 
@@ -381,9 +388,9 @@ def subset_sectored_counts(
 
     Returns
     -------
-    tuple[xr.Dataset, np.ndarray]
-        Dataset of complete sectored counts and mean epoch values
-        for the complete sets of sectored counts.
+    xr.Dataset
+        A dataset of complete sectored counts and corresponding livetime values
+        for the processing day.
     """
     # TODO: Update to use fill values for partial frames rather than drop them
 
@@ -395,7 +402,7 @@ def subset_sectored_counts(
 
     # Identify 10-minute intervals of complete sectored counts.
     bin_size = 10
-    mod_10 = sectored_counts_dataset.hdr_minute_cnt.values % 10
+    mod_10: np.ndarray = sectored_counts_dataset.hdr_minute_cnt.values % 10
     start_indices = find_complete_mod10_sets(mod_10)
 
     # Filter out start indices that are less than or equal to the bin size
@@ -428,13 +435,17 @@ def subset_sectored_counts(
         bin_size,
     )
 
+    # Filter dataset for data in the processing day
+
+    # Trim the sectored data to epoch_per_complete_set values in the processing day
     filtered_dataset = filter_dataset_to_processing_day(
         complete_sectored_counts_dataset, packet_date, epoch_per_complete_set
     )
 
-    # Trim livetime to the size of the filtered dataset but shifted 10 minutes earlier.
+    # Trim livetime to the size of the sectored data but shifted 10 minutes earlier.
     filtered_dataset = subset_livetime(filtered_dataset)
-    return filtered_dataset, epoch_per_complete_set
+
+    return filtered_dataset
 
 
 def update_livetime_coord(sectored_dataset: xr.Dataset) -> xr.Dataset:
@@ -486,12 +497,23 @@ def subset_livetime(dataset: xr.Dataset) -> xr.Dataset:
     xarray.Dataset
         The updated dataset with trimmed livetime data.
     """
-    # Get index positions of epoch[0] and epoch[-1] in epoch_livetime
     epoch_vals = dataset["epoch"].values
-    livetime_vals = dataset["epoch_livetime"].values
+    epoch_livetime_vals = dataset["epoch_livetime"].values
 
-    start_idx = np.where(livetime_vals == epoch_vals[0])[0][0]
-    end_idx = np.where(livetime_vals == epoch_vals[-1])[0][0]
+    if not epoch_vals.size:
+        logger.error("Epoch values are empty. Cannot proceed with livetime subsetting.")
+        raise ValueError("Epoch values are empty.")
+
+    # Get index positions of epoch[0] and epoch[-1] in epoch_livetime
+    start_idx = np.where(epoch_livetime_vals == epoch_vals[0])[0][0]
+    end_idx = np.where(epoch_livetime_vals == epoch_vals[-1])[0][0]
+
+    if start_idx < 10:
+        logger.error(
+            "Start or end indices for livetime are less than 10. "
+            "This indicates that the dataset is too small to shift livetime correctly."
+        )
+        raise ValueError("Start or end indices for livetime are out of range.")
 
     # Compute shifted indices
     start_trimmed = max(start_idx - 10, 0)
@@ -587,17 +609,16 @@ def process_science(
     sectored_dataset = subcom_sectorates(sci_dataset)
 
     # Subset sectored data for complete sets (10 min intervals covering all species)
-    sectored_dataset, major_frame_epochs = subset_sectored_counts(
-        sectored_dataset, packet_date
-    )
+    sectored_dataset = subset_sectored_counts(sectored_dataset, packet_date)
 
     # TODO:
     #  - headers are values per packet rather than frame. Do these need to align
     #    with the science frames?
-    #    For instance, the mean epoch for a frame that spans midngight might contain
-    #    packets from the previous day and filtering sc_tick by processing day will
+    #    For instance, the mean epoch for a frame that spans midnight might contain
+    #    packets from the previous day but filtering sc_tick by processing day will
     #    exclude those packets. Is this an issue?
-    #  - add headers to sectored dataset?
+    #  - include ccsds headers in sectored dataset?
+    #  - drop sectorates from standard dataset?
 
     # Filter the science dataset to only include data from the processing day
     sci_dataset = filter_dataset_to_processing_day(
