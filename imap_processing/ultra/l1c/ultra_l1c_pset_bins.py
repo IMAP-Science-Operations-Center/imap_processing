@@ -220,7 +220,7 @@ def get_deadtime_correction_factors(sectored_rates_ds: xr.Dataset) -> xr.DataArr
 
     Returns
     -------
-    dead_time_ratio : numpy.ndarray
+    dead_time_ratio : xarray.DataArray
         Dead time correction factor for each sector.
     """
     # Compute the correction factor at each sector

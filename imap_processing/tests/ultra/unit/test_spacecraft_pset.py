@@ -23,11 +23,10 @@ from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
-@pytest.mark.external_test_data
 @pytest.mark.external_kernel
 @ensure_spice
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_calculate_spacecraft_pset(ccsds_path_all_apids, ccsds_path_theta_0):
+def test_calculate_spacecraft_pset():
     """Tests calculate_spacecraft_pset function."""
     # This is just setting up the data so that it is in the format of l1b_de_dataset.
     test_path = TEST_PATH / "ultra-90_raw_event_data_shortened.csv"
