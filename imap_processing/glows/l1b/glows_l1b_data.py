@@ -7,9 +7,217 @@ from pathlib import Path
 from typing import Optional
 
 import numpy as np
+import xarray as xr
 
 from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.utils.constants import TimeTuple
+from imap_processing.spice.time import met_to_datetime64
+
+
+@dataclass
+class PipelineSettings:  # numpydoc ignore=PR02
+    """
+    GLOWS L1B Pipeline Settings for controlling bad-angle and bad-time flag processing.
+
+    This class extracts pipeline settings from the JSON configuration file processed
+    through GlowsAncillaryCombiner.
+
+    Based on Section 3.12 of the GLOWS algorithm document, the pipeline settings
+    file contains parameters for the ground-processing pipeline including thresholds,
+    bad-time flags to be activated, bad-angle flags to be activated, and other
+    processing controls.
+
+    Parameters
+    ----------
+    pipeline_dataset : xr.Dataset
+        Dataset from GlowsAncillaryCombiner.combined_dataset containing the
+        pipeline settings data extracted from the JSON file.
+
+    Attributes
+    ----------
+    active_bad_angle_flags : list[bool]
+        Binary mask determining which of the 4 bad-angle flags are active:
+        [is_close_to_uv_source, is_inside_excluded_region,
+         is_excluded_by_instr_team, is_suspected_transient]
+        Default: All flags set to True (all active).
+
+    active_bad_time_flags : list[bool]
+        Binary mask determining which bad-time flags from onboard processing
+        should be used for quality control to identify "good time" L1B blocks.
+
+    sunrise_offset : float
+        Offset in hours to adjust sunrise time relative to onboard settings
+        for fine-tuning the day/night boundary determination.
+
+    sunset_offset : float
+        Offset in hours to adjust sunset time relative to onboard settings
+        for fine-tuning the day/night boundary determination.
+
+    processing_thresholds : dict
+        Various thresholds and parameters for ground processing pipeline
+        that control sensitivity and quality criteria for L1B data processing.
+
+    Notes
+    -----
+    Usage example:
+
+    .. code-block:: python
+
+        # Create combiner for pipeline settings file
+        pipeline_combiner = GlowsAncillaryCombiner(pipeline_settings_files, end_date)
+
+        # Create PipelineSettings object
+        pipeline_settings = PipelineSettings(pipeline_combiner.combined_dataset)
+
+        # Use the settings
+        if pipeline_settings.active_bad_angle_flags[0]:  # is_close_to_uv_source
+            # Process UV source exclusions
+            pass
+    """
+
+    pipeline_dataset: InitVar[xr.Dataset]
+
+    # Extracted pipeline settings attributes
+    active_bad_angle_flags: list[bool] = field(init=False)
+    active_bad_time_flags: list[bool] = field(init=False)
+    sunrise_offset: float = field(init=False)
+    sunset_offset: float = field(init=False)
+    processing_thresholds: dict = field(init=False)
+
+    def __post_init__(self, pipeline_dataset: xr.Dataset) -> None:
+        """
+        Extract pipeline settings from the dataset.
+
+        Parameters
+        ----------
+        pipeline_dataset : xr.Dataset
+            Dataset containing pipeline settings data variables.
+        """
+        # Extract active bad-angle flags (default to all True if not present)
+        if "active_bad_angle_flags" in pipeline_dataset.data_vars:
+            self.active_bad_angle_flags = list(
+                pipeline_dataset["active_bad_angle_flags"].values
+            )
+        else:
+            # Default: all 4 bad-angle flags are active
+            self.active_bad_angle_flags = [True, True, True, True]
+
+        # Extract active bad-time flags (default to all True if not present)
+        if "active_bad_time_flags" in pipeline_dataset.data_vars:
+            self.active_bad_time_flags = list(
+                pipeline_dataset["active_bad_time_flags"].values
+            )
+        else:
+            # Default: assume all bad-time flags are active
+            self.active_bad_time_flags = [True] * 16  # Typical number of bad-time flags
+
+        # Extract sunrise/sunset offsets (default to 0.0 if not present)
+        self.sunrise_offset = float(pipeline_dataset.get("sunrise_offset", 0.0))
+        self.sunset_offset = float(pipeline_dataset.get("sunset_offset", 0.0))
+
+        # Extract processing thresholds (collect all threshold-related variables)
+        self.processing_thresholds = {}
+        for var_name in pipeline_dataset.data_vars:
+            if "threshold" in var_name.lower() or "limit" in var_name.lower():
+                self.processing_thresholds[var_name] = pipeline_dataset[var_name].item()
+
+
+@dataclass
+class AncillaryExclusions:
+    """
+    Organize input ancillary files for GLOWS L1B bad-angle flag processing.
+
+    This class holds the four types of ancillary datasets required for computing
+    bad-angle flags in GLOWS L1B histogram processing. All datasets should be
+    obtained from the GlowsAncillaryCombiner.combined_dataset property after
+    processing the respective ancillary files.
+
+    Attributes
+    ----------
+    excluded_regions : xr.Dataset
+        Dataset containing excluded sky regions with ecliptic coordinates.
+        Expected structure from GlowsAncillaryCombiner:
+        - 'ecliptic_longitude_deg': DataArray with dimension ('epoch', 'region')
+        - 'ecliptic_latitude_deg': DataArray with dimension ('epoch', 'region')
+
+    uv_sources : xr.Dataset
+        Dataset containing UV sources (stars) with coordinates and masking radii.
+        Expected structure from GlowsAncillaryCombiner:
+        - 'object_name': DataArray with dimension ('epoch', 'source')
+        - 'ecliptic_longitude_deg': DataArray with dimension ('epoch', 'source')
+        - 'ecliptic_latitude_deg': DataArray with dimension ('epoch', 'source')
+        - 'angular_radius_for_masking': DataArray with dimension ('epoch', 'source')
+
+    suspected_transients : xr.Dataset
+        Dataset containing suspected transient signals with time-based masks.
+        Expected structure from GlowsAncillaryCombiner:
+        - 'l1b_unique_block_identifier', dimensions ('epoch', 'time_block')
+        - 'histogram_mask_array', dimensions ('epoch', 'time_block')
+
+    exclusions_by_instr_team : xr.Dataset
+        Dataset containing manual exclusions by instrument team with time-based masks.
+        Expected structure from GlowsAncillaryCombiner:
+        - 'l1b_unique_block_identifier', dimensions ('epoch', 'time_block')
+        - 'histogram_mask_array', dimensions ('epoch', 'time_block')
+
+    Notes
+    -----
+    Usage example:
+
+    .. code-block:: python
+
+        # Create combiners for each ancillary file type
+        excluded_regions_combiner = GlowsAncillaryCombiner(
+            excluded_regions_files, end_date)
+        uv_sources_combiner = GlowsAncillaryCombiner(uv_sources_files, end_date)
+        suspected_transients_combiner = GlowsAncillaryCombiner(
+            suspected_transients_files, end_date)
+        exclusions_combiner = GlowsAncillaryCombiner(exclusions_files, end_date)
+
+        # Create AncillaryExclusions object
+        exclusions = AncillaryExclusions(
+            excluded_regions=excluded_regions_combiner.combined_dataset,
+            uv_sources=uv_sources_combiner.combined_dataset,
+            suspected_transients=suspected_transients_combiner.combined_dataset,
+            exclusions_by_instr_team=exclusions_combiner.combined_dataset
+        )
+
+        # Filter for a specific day using limit_by_day method
+        day_exclusions = exclusions.limit_by_day(np.datetime64('2025-09-23'))
+    """
+
+    excluded_regions: xr.Dataset
+    uv_sources: xr.Dataset
+    suspected_transients: xr.Dataset
+    exclusions_by_instr_team: xr.Dataset
+
+    def limit_by_day(self, day: np.datetime64) -> "AncillaryExclusions":
+        """
+        Return a new AncillaryExclusions object with data filtered for a specified day.
+
+        This method does not mutate the original object and can be called multiple times
+        with different days.
+
+        Parameters
+        ----------
+        day : np.datetime64
+            The day to filter data for.
+
+        Returns
+        -------
+        AncillaryExclusions
+            New instance with data filtered for the specified day.
+        """
+        return AncillaryExclusions(
+            excluded_regions=self.excluded_regions.sel(epoch=day, method="nearest"),
+            uv_sources=self.uv_sources.sel(epoch=day, method="nearest"),
+            suspected_transients=self.suspected_transients.sel(
+                epoch=day, method="nearest"
+            ),
+            exclusions_by_instr_team=self.exclusions_by_instr_team.sel(
+                epoch=day, method="nearest"
+            ),
+        )
 
 
 class AncillaryParameters:
@@ -506,6 +714,8 @@ class HistogramL1B:
     spacecraft_velocity_average: np.ndarray = field(init=False)  # retrieved from SPIC
     spacecraft_velocity_std_dev: np.ndarray = field(init=False)  # retrieved from SPIC
     flags: np.ndarray = field(init=False)
+    ancillary_exclusions: InitVar[AncillaryExclusions]
+    ancillary_parameters: InitVar[AncillaryParameters]
     # TODO:
     # - Determine a good way to output flags as "human readable"
     # - Add spice pieces
@@ -519,6 +729,8 @@ class HistogramL1B:
         hv_voltage_variance: np.double,
         spin_period_variance: np.double,
         pulse_length_variance: np.double,
+        ancillary_exclusions: AncillaryExclusions,
+        ancillary_parameters: AncillaryParameters,
     ) -> None:
         """
         Will process data.
@@ -535,8 +747,13 @@ class HistogramL1B:
             Encoded spin period variance.
         pulse_length_variance : numpy.double
             Encoded pulse length variance.
+        ancillary_exclusions : AncillaryExclusions
+            Ancillary exclusions data for bad-angle flag processing.
+        ancillary_parameters : AncillaryParameters
+            Ancillary parameters for decoding histogram data.
         """
         # self.histogram_flag_array = np.zeros((2,))
+        day = met_to_datetime64(self.imap_start_time)
 
         # TODO: These pieces will need to be filled in from SPICE kernels. For now,
         #  they are placeholders. GLOWS example code has better placeholders if needed.
@@ -555,38 +772,40 @@ class HistogramL1B:
 
         # TODO: This should probably be an AWS file
         # TODO Pass in AncillaryParameters object instead of reading here.
-        with open(
-            Path(__file__).parents[1] / "ancillary" / "l1b_conversion_table_v001.json"
-        ) as f:
-            self.ancillary_parameters = AncillaryParameters(json.loads(f.read()))
 
-        self.filter_temperature_average = self.ancillary_parameters.decode(
+        self.filter_temperature_average = ancillary_parameters.decode(
             "filter_temperature", self.filter_temperature_average
         )
-        self.filter_temperature_std_dev = self.ancillary_parameters.decode_std_dev(
+        self.filter_temperature_std_dev = ancillary_parameters.decode_std_dev(
             "filter_temperature", filter_temperature_variance
         )
 
-        self.hv_voltage_average = self.ancillary_parameters.decode(
+        self.hv_voltage_average = ancillary_parameters.decode(
             "hv_voltage", self.hv_voltage_average
         )
-        self.hv_voltage_std_dev = self.ancillary_parameters.decode_std_dev(
+        self.hv_voltage_std_dev = ancillary_parameters.decode_std_dev(
             "hv_voltage", hv_voltage_variance
         )
-        self.spin_period_average = self.ancillary_parameters.decode(
+        self.spin_period_average = ancillary_parameters.decode(
             "spin_period", self.spin_period_average
         )
-        self.spin_period_std_dev = self.ancillary_parameters.decode_std_dev(
+        self.spin_period_std_dev = ancillary_parameters.decode_std_dev(
             "spin_period", spin_period_variance
         )
-        self.pulse_length_average = self.ancillary_parameters.decode(
+        self.pulse_length_average = ancillary_parameters.decode(
             "pulse_length", self.pulse_length_average
         )
-        self.pulse_length_std_dev = self.ancillary_parameters.decode_std_dev(
+        self.pulse_length_std_dev = ancillary_parameters.decode_std_dev(
             "pulse_length", pulse_length_variance
         )
 
-        self.histogram_flag_array = np.zeros((4, 3600), dtype=np.uint8)
+        # get the data for the correct day
+        day_exclusions = ancillary_exclusions.limit_by_day(day)
+
+        # Initialize histogram flag array: [is_close_to_uv_source,
+        # is_inside_excluded_region, is_excluded_by_instr_team,
+        # is_suspected_transient] x 3600 bins
+        self.histogram_flag_array = self._compute_histogram_flag_array(day_exclusions)
         # self.unique_block_identifier = np.datetime_as_string(
         #     np.datetime64(int(self.imap_start_time), "ns"), "s"
         # )
@@ -628,3 +847,28 @@ class HistogramL1B:
         )
 
         return flags
+
+    def _compute_histogram_flag_array(
+        self, exclusions: AncillaryExclusions
+    ) -> np.ndarray:
+        """
+        Compute the histogram flag array for bad-angle flags.
+
+        Creates a (4, 3600) array where each row represents a different flag type:
+        - Row 0: is_close_to_uv_source
+        - Row 1: is_inside_excluded_region
+        - Row 2: is_excluded_by_instr_team
+        - Row 3: is_suspected_transient
+
+        Parameters
+        ----------
+        exclusions : AncillaryExclusions
+            Ancillary exclusions data filtered for the current day.
+
+        Returns
+        -------
+        np.ndarray
+            Array of shape (4, 3600) with bad-angle flags for each bin.
+        """
+        # TODO: fill out once spice data is available
+        return np.zeros((4, 3600), dtype=np.uint8)

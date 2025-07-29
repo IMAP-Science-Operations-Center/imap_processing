@@ -1,5 +1,6 @@
 from pathlib import Path
 from unittest import mock
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -8,6 +9,7 @@ from imap_data_access.processing_input import AncillaryInput
 
 from imap_processing.ancillary.ancillary_dataset_combiner import (
     AncillaryCombiner,
+    GlowsAncillaryCombiner,
     MagAncillaryCombiner,
     TimestampedData,
 )
@@ -40,6 +42,14 @@ def mag_calibration_dataset():
     calibration_data = load_cdf(cal_file)
 
     return calibration_data
+
+
+@pytest.fixture
+def glows_ancillary_filepath():
+    imap_dir = Path(__file__).parent.parent.parent.parent
+    filepath = imap_dir / "imap_processing" / "glows" / "ancillary"
+
+    return filepath
 
 
 @pytest.fixture
@@ -203,3 +213,87 @@ def test_no_end_date(mocks, mag_calibration_dataset):
     assert np.array_equal(
         output.combined_dataset["input_file_version"].data, expected_versions
     )
+
+
+def test_glows_excluded_regions_combiner(glows_ancillary_filepath):
+    file_path = (
+        glows_ancillary_filepath
+        / "imap_glows_map-of-excluded-regions_20250923_v002.dat"
+    )
+
+    # Test the convert_file_to_dataset method directly
+    combiner = GlowsAncillaryCombiner(
+        [], "20250925"
+    )  # Empty list to avoid file parsing
+    dataset = combiner.convert_file_to_dataset(file_path)
+
+    print(dataset)
+    assert dataset is not None
+    assert "ecliptic_longitude_deg" in dataset.data_vars
+    assert "ecliptic_latitude_deg" in dataset.data_vars
+    assert dataset["ecliptic_longitude_deg"].dims == ("region",)
+    assert dataset["ecliptic_latitude_deg"].dims == ("region",)
+
+
+def test_glows_uv_sources_combiner(glows_ancillary_filepath):
+    file_path = (
+        glows_ancillary_filepath / "imap_glows_map-of-uv-sources_20250923_v002.dat"
+    )
+
+    # Test the convert_file_to_dataset method directly
+    combiner = GlowsAncillaryCombiner(
+        [], "20250925"
+    )  # Empty list to avoid file parsing
+    dataset = combiner.convert_file_to_dataset(file_path)
+
+    assert dataset is not None
+    assert "object_name" in dataset.data_vars
+    assert "ecliptic_longitude_deg" in dataset.data_vars
+    assert "ecliptic_latitude_deg" in dataset.data_vars
+    assert "angular_radius_for_masking" in dataset.data_vars
+    assert dataset["object_name"].dims == ("source",)
+
+
+def test_glows_suspected_transients_combiner(glows_ancillary_filepath):
+    file_path = (
+        glows_ancillary_filepath / "imap_glows_suspected-transients_20250923_v002.dat"
+    )
+
+    # Test the convert_file_to_dataset method directly
+    combiner = GlowsAncillaryCombiner(
+        [], "20250925"
+    )  # Empty list to avoid file parsing
+    dataset = combiner.convert_file_to_dataset(file_path)
+
+    assert dataset is not None
+    assert "l1b_unique_block_identifier" in dataset.data_vars
+    assert "histogram_mask_array" in dataset.data_vars
+    assert dataset["l1b_unique_block_identifier"].dims == ("time_block",)
+
+
+def test_glows_exclusions_by_instr_team_combiner(glows_ancillary_filepath):
+    file_path = (
+        glows_ancillary_filepath
+        / "imap_glows_exclusions-by-instr-team_20250923_v002.dat"
+    )
+
+    # Test the convert_file_to_dataset method directly
+    combiner = GlowsAncillaryCombiner(
+        [], "20250925"
+    )  # Empty list to avoid file parsing
+    dataset = combiner.convert_file_to_dataset(file_path)
+
+    assert dataset is not None
+    assert "l1b_unique_block_identifier" in dataset.data_vars
+    assert "histogram_mask_array" in dataset.data_vars
+    assert dataset["l1b_unique_block_identifier"].dims == ("time_block",)
+
+    # Test with mocked construct_path to simulate full file path workflow
+    with patch(
+        "imap_data_access.AncillaryFilePath.construct_path", return_value=str(file_path)
+    ):
+        combiner = GlowsAncillaryCombiner(
+            ["imap_glows_exclusions-by-instr-team_20250923_v002.dat"], "20250925"
+        )
+        assert len(combiner.timestamped_data) == 1
+        assert combiner.timestamped_data[0].version == "v002"
