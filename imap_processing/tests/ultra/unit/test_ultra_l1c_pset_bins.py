@@ -189,13 +189,15 @@ def test_get_deadtime_correction_factors():
 
 
 @pytest.mark.external_test_data
-def test_get_spacecraft_exposure_times():
+def test_get_spacecraft_exposure_times(deadtime_datasets):
     """Test get_spacecraft_exposure_times function."""
     constant_exposure = (
         TEST_PATH / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv"
     )
     df_exposure = pd.read_csv(constant_exposure)
-    exposure_pointing = get_spacecraft_exposure_times(df_exposure)
+    exposure_pointing = get_spacecraft_exposure_times(
+        df_exposure, deadtime_datasets["rates"], deadtime_datasets["params"]
+    )
     assert exposure_pointing.shape == (196608,)
 
     np.testing.assert_allclose(
