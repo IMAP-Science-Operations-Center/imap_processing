@@ -1,3 +1,5 @@
+import json
+import tempfile
 from pathlib import Path
 from unittest import mock
 from unittest.mock import patch
@@ -297,3 +299,154 @@ def test_glows_exclusions_by_instr_team_combiner(glows_ancillary_filepath):
         )
         assert len(combiner.timestamped_data) == 1
         assert combiner.timestamped_data[0].version == "v002"
+
+
+def test_ancillary_combiner_empty_input():
+    """Test AncillaryCombiner with empty input list."""
+    combiner = AncillaryCombiner([], "20251031")
+    assert len(combiner.timestamped_data) == 0
+    assert len(combiner.combined_dataset.data_vars) == 0
+
+
+def test_ancillary_combiner_string_date():
+    """Test AncillaryCombiner with string date format."""
+    with mock.patch(
+        "imap_processing.ancillary.ancillary_dataset_combiner.cdf_to_xarray"
+    ) as mock_cdf:
+        mock_dataset = xr.Dataset({"test_var": ([], 42)})
+        mock_cdf.return_value = mock_dataset
+
+        input_files = ["imap_mag_l2-calibration-matrices_20251017_v001.cdf"]
+        combiner = AncillaryCombiner(input_files, "20251031")  # String date
+
+        assert combiner.expected_end_date == np.datetime64("2025-10-31")
+
+
+def test_dataset_with_epoch_dimension_error(mocks, mag_calibration_dataset):
+    """Test error when input dataset has epoch dimension."""
+    # Create a dataset with epoch dimension
+    dataset_with_epoch = mag_calibration_dataset.copy()
+    dataset_with_epoch = dataset_with_epoch.expand_dims("epoch")
+
+    mocks["read_cdf"].return_value = dataset_with_epoch
+
+    input_example = AncillaryInput(
+        "imap_mag_l2-calibration-matrices_20251017_v001.cdf",
+    )
+
+    with pytest.raises(ValueError, match="input dataset has epoch dimension"):
+        AncillaryCombiner(input_example, "20251031")
+
+
+def test_glows_json_file_processing():
+    """Test GLOWS JSON file processing."""
+    # Create a temporary JSON file
+    json_data = {
+        "active_bad_angle_flags": [True, False, True, False],
+        "active_bad_time_flags": [True, True, False],
+        "sunrise_offset": 0.5,
+        "sunset_offset": -0.3,
+        "thresholds": {"uv_source_limit": 5.0, "excluded_region_limit": 10.0},
+        "simple_value": 42,
+    }
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump(json_data, f)
+        temp_path = f.name
+
+    try:
+        combiner = GlowsAncillaryCombiner([], "20250925")
+        dataset = combiner.convert_json_to_dataset(temp_path)
+
+        # Check that JSON data was converted properly
+        assert "active_bad_angle_flags" in dataset.data_vars
+        assert "active_bad_time_flags" in dataset.data_vars
+        assert "sunrise_offset" in dataset.data_vars
+        assert "sunset_offset" in dataset.data_vars
+        assert "thresholds_uv_source_limit" in dataset.data_vars
+        assert "thresholds_excluded_region_limit" in dataset.data_vars
+        assert "simple_value" in dataset.data_vars
+
+        # Check values
+        assert list(dataset["active_bad_angle_flags"].values) == [
+            True,
+            False,
+            True,
+            False,
+        ]
+        assert float(dataset["sunrise_offset"].values) == 0.5
+        assert float(dataset["thresholds_uv_source_limit"].values) == 5.0
+
+    finally:
+        Path(temp_path).unlink()
+
+
+def test_glows_unknown_file_type():
+    """Test error for unknown GLOWS file type."""
+    with tempfile.NamedTemporaryFile(suffix=".unknown", delete=False) as f:
+        temp_path = f.name
+
+    try:
+        combiner = GlowsAncillaryCombiner([], "20250925")
+        with pytest.raises(ValueError, match="Unknown GLOWS ancillary file type"):
+            combiner.convert_file_to_dataset(temp_path)
+    finally:
+        Path(temp_path).unlink()
+
+
+def test_convert_json_with_nested_lists():
+    """Test JSON conversion with nested lists and complex structures."""
+    json_data = {
+        "list_data": [1, 2, 3, 4],
+        "nested_dict": {"inner_list": [10, 20, 30], "inner_scalar": 99},
+        "tuple_data": (5, 6, 7),
+    }
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump(json_data, f)
+        temp_path = f.name
+
+    try:
+        combiner = AncillaryCombiner([], "20251031")
+        dataset = combiner.convert_json_to_dataset(temp_path)
+
+        # Check list handling
+        assert "list_data" in dataset.data_vars
+        assert list(dataset["list_data"].values) == [1, 2, 3, 4]
+        assert dataset["list_data"].dims == ("element",)
+
+        # Check nested dict flattening
+        assert "nested_dict_inner_list" in dataset.data_vars
+        assert "nested_dict_inner_scalar" in dataset.data_vars
+        assert list(dataset["nested_dict_inner_list"].values) == [10, 20, 30]
+        assert dataset["nested_dict_inner_list"].dims == ("element",)
+        assert dataset["nested_dict_inner_scalar"].dims == ()
+
+    finally:
+        Path(temp_path).unlink()
+
+
+def test_glows_ancillary_combiner_with_processing_input():
+    """Test GlowsAncillaryCombiner with ProcessingInput instead of list."""
+    input_files = AncillaryInput("imap_glows_map-of-excluded-regions_20250923_v002.dat")
+
+    with patch("imap_data_access.AncillaryFilePath.construct_path") as mock_path:
+        # Create a temporary excluded regions file
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".dat", delete=False) as f:
+            f.write("# longitude latitude\n")
+            f.write("10.0 20.0\n")
+            f.write("30.0 40.0\n")
+            temp_path = f.name
+
+        try:
+            mock_path.return_value = temp_path
+            combiner = GlowsAncillaryCombiner(input_files, "20250925")
+
+            assert len(combiner.timestamped_data) == 1
+            assert (
+                "ecliptic_longitude_deg"
+                in combiner.timestamped_data[0].dataset.data_vars
+            )
+
+        finally:
+            Path(temp_path).unlink()
