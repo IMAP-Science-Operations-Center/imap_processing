@@ -636,7 +636,7 @@ def process_science(
     sectored_count_rates_dataset = calculate_uncertainties(sectored_dataset)
 
     l1a_datasets: dict = {
-        "imap_hit_l1a_counts": count_rates_dataset,
+        "imap_hit_l1a_counts_standard": count_rates_dataset,
         "imap_hit_l1a_counts_sectored": sectored_count_rates_dataset,
         "imap_hit_l1a_direct-events": pha_raw_dataset,
     }
