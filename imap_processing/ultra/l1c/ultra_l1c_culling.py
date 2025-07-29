@@ -15,7 +15,7 @@ from imap_processing.spice.geometry import (
 def compute_culling_mask(
     et: NDArray,
     keepout_radius_km: float,
-    observer=SpiceBody.EARTH,
+    observer: SpiceBody = SpiceBody.EARTH,
     nside: int = 128,
     nested: bool = False,
 ) -> NDArray:
@@ -25,7 +25,7 @@ def compute_culling_mask(
 
     Parameters
     ----------
-    et : np.ndarray
+    et : NDArray
         Ephemeris times in TDB seconds past J2000.
     keepout_radius_km : float
         Radius (in km) within which HEALPix pixels will be excluded.
@@ -47,15 +47,20 @@ def compute_culling_mask(
 
     # Compute IMAP to Earth position in the pointing frame.
     state = imap_state(et, ref_frame=SpiceFrame.IMAP_DPS, observer=observer)
-    position = -state[:, :3]  # Flip to get vector from IMAP to Earth
+    # Flip to get vector from IMAP to Earth
+    # position.shape = (len(et), 3)
+    position = -state[:, :3]
 
     # Distance from IMAP to target (e.g. Earth) (km):
+    # distance.shape = (len(et),)
     distance = np.linalg.norm(position, axis=1)  # shape (len(et),)
 
     # Calculate the keepout angle (radians).
+    # keepout_angle.shape = (len(et),)
     keepout_angle = np.arcsin(keepout_radius_km / distance)  # radians
 
     # Calculate the direction from IMAP to Earth. (shape: [N, 3])
+    # unit_target_vecs.shape = (len(et), 3)
     unit_target_vecs = position / distance[:, np.newaxis]
 
     # Calculate the direction of the HEALPix pixels. (shape: [npix, 3])
