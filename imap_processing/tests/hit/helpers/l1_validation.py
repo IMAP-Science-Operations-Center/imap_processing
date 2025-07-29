@@ -334,24 +334,30 @@ def compare_data(
         Fields to skip in comparison
     """
     for field in expected_data.columns:
-        if field not in [
-            "sc_tick_by_frame",
-            "species",
-            "energy_bin",
-        ]:
-            assert field in actual_data.data_vars.keys(), (
-                f"Field {field} not found in actual data variables"
-            )
         if field not in skip:
-            for frame in range(expected_data.shape[0]):
-                if field == "species":
-                    # Compare sectored rates data using species and energy index.
-                    # which are only present in the validation data. In the actual
-                    # data, sectored rates are organized by species in 4D arrays.
-                    #    i.e. h_sectored_counts has shape
-                    #         (epoch, h_energy_index, azimuth, zenith).
-                    # species and energy index are used to find the correct
-                    # array of sectored rate data from the actual data for comparison.
+            # Check if the field is in the expected data
+            if field not in ["sc_tick_by_frame", "species"]:
+                assert field in actual_data.data_vars.keys(), (
+                    f"Field {field} not found in actual data variables"
+                )
+            if field == "sc_tick_by_frame":
+                # Get the sc_tick values for each frame in the actual data
+                # to compare with the validation data
+                sc_tick = actual_data.sc_tick.values
+                sc_tick_by_frame = sc_tick[::20]
+                assert np.array_equal(sc_tick_by_frame, expected_data[field].values), (
+                    f"Mismatch in {field}"
+                )
+            if field == "species" and "sectored" in actual_data.Logical_source:
+                # Compare sectored rates data using species and energy index.
+                # which are only present in the validation data. In the actual
+                # data, sectored rates are organized by species in 4D arrays.
+                #    i.e. h_sectored_counts has shape
+                #         (epoch, h_energy_index, azimuth, zenith).
+                # species and energy index are used to find the correct
+                # array of sectored rate data from the actual data for comparison.
+                # Check frame by frame
+                for frame in range(expected_data.shape[0]):
                     species = expected_data[field][frame]
                     energy_bin = expected_data["energy_bin"][frame]
                     if "sectorates_stat_uncert_plus" in expected_data.columns:
@@ -387,20 +393,12 @@ def compare_data(
                             err_msg=f"Mismatch in {species}_sectored_counts at"
                             f"frame {frame}, energy_bin {energy_bin}",
                         )
-                elif field == "sc_tick_by_frame":
-                    # Get the sc_tick values for each frame in the actual data
-                    # to compare with the validation data
-                    sc_tick = actual_data.sc_tick.values
-                    sc_tick_by_frame = sc_tick[::20]
-                    assert np.array_equal(
-                        sc_tick_by_frame[frame], expected_data[field][frame]
-                    ), f"Mismatch in {field} at frame {frame}"
-
-                else:
+                # For all other fields, compare the data arrays directly
+                if field != "species":
                     np.testing.assert_allclose(
-                        actual_data[field][frame].data,
-                        expected_data[field][frame],
+                        actual_data[field].values,
+                        expected_data[field].values,
                         rtol=1e-7,
                         atol=1e-8,
-                        err_msg=f"Mismatch in {field} at frame {frame}",
+                        err_msg=f"Mismatch in {field}",
                     )
