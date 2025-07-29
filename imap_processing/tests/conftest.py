@@ -453,7 +453,7 @@ def generate_spin_data():
             end_met = start_met + 86400
 
         # Create spin start second data of 15 seconds increment
-        spin_start_met = np.arange(start_met, end_met + 1, spin_period)
+        spin_start_met = np.arange(start_met, end_met + 0.001, spin_period)
         spin_start_sec = np.floor(spin_start_met).astype(int)
         spin_start_subsec = ((spin_start_met - spin_start_sec) * 1e6).astype(int)
 

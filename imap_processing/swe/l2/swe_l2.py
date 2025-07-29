@@ -477,7 +477,6 @@ def swe_l2(l1b_dataset: xr.Dataset) -> xr.Dataset:
     phase_space_density_binned_data = put_data_into_angle_bins(
         phase_space_density, spin_angle_bins_indices
     )
-
     dataset["phase_space_density"] = xr.DataArray(
         phase_space_density_binned_data,
         name="phase_space_density",

@@ -36,12 +36,26 @@ def decom_test_data_derived():
     return datasets_by_apid[SWEAPID.SWE_SCIENCE]
 
 
+def read_validation_df(val_filepath, column_names, skiprows):
+    """Read and return validation dataframe from file."""
+    df = pd.read_csv(
+        val_filepath,
+        skiprows=skiprows,
+        sep=r"\s*,\s*",
+        names=column_names,
+        na_values=["", " "],
+        engine="python",
+    )
+    df["shcoarse"] = df["shcoarse"].ffill()
+    return df
+
+
 @pytest.fixture(scope="session")
 def l1a_validation_df():
     """Read validation data from file"""
     l1_val_path = imap_module_directory / "tests/swe/l1_validation"
     filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L1A.dat"
-
+    l1a_val_path = l1_val_path / filename
     # Define column names for validation data
     column_names = [
         "shcoarse",
@@ -61,19 +75,7 @@ def l1a_validation_df():
         "decom_cnt_cem_7",
     ]
 
-    # Read the data, specifying na_values and delimiter
-    df = pd.read_csv(
-        l1_val_path / filename,
-        skiprows=10,  # Skip the first 10 rows of comments
-        sep=r"\s*,\s*",  # Regex to handle spaces and commas as delimiters
-        names=column_names,
-        na_values=["", " "],  # Treat empty strings or spaces as NaN
-        engine="python",
-    )
-
-    # Fill NaNs with the previous value
-    df["shcoarse"] = df["shcoarse"].ffill()
-    return df
+    return read_validation_df(l1a_val_path, column_names, skiprows=10)
 
 
 @pytest.fixture(scope="session")
@@ -81,7 +83,7 @@ def l1b_validation_df():
     """Read validation data from file"""
     l1_val_path = imap_module_directory / "tests/swe/l1_validation"
     filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L1B_v3.dat"
-
+    l1b_val_path = l1_val_path / filename
     # Define column names for validation data
     column_names = [
         "shcoarse",
@@ -94,27 +96,15 @@ def l1b_validation_df():
         "cem_7",
     ]
 
-    # Read the data, specifying na_values and delimiter
-    df = pd.read_csv(
-        l1_val_path / filename,
-        skiprows=12,  # Skip the first 10 rows of comments
-        sep=r"\s*,\s*",  # Regex to handle spaces and commas as delimiters
-        names=column_names,
-        na_values=["", " "],  # Treat empty strings or spaces as NaN
-        engine="python",
-    )
-
-    # Fill NaNs with the previous value
-    df["shcoarse"] = df["shcoarse"].ffill()
-    return df
+    return read_validation_df(l1b_val_path, column_names, skiprows=12)
 
 
 @pytest.fixture(scope="session")
 def l2_sector_validation_df():
     """Validation for phase_space_density_spin_sector variable in L2 data"""
-    l1_val_path = imap_module_directory / "tests/swe/l2_validation"
+    l2_sector_val = imap_module_directory / "tests/swe/l2_validation"
     filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_v0B_15.dat"
-
+    l2_val_path = l2_sector_val / filename
     # Define column names for validation data
     column_names = [
         "shcoarse",
@@ -127,19 +117,7 @@ def l2_sector_validation_df():
         "cem_7",
     ]
 
-    # Read the data, specifying na_values and delimiter
-    df = pd.read_csv(
-        l1_val_path / filename,
-        skiprows=14,  # Skip the first n rows of comments
-        sep=r"\s*,\s*",  # Regex to handle spaces and commas as delimiters
-        names=column_names,
-        na_values=["", " "],  # Treat empty strings or spaces as NaN
-        engine="python",
-    )
-
-    # Fill NaNs with the previous value
-    df["shcoarse"] = df["shcoarse"].ffill()
-    return df
+    return read_validation_df(l2_val_path, column_names, skiprows=14)
 
 
 @pytest.fixture(scope="session")
@@ -148,9 +126,9 @@ def l2_binned_flux_validation_df():
 
     This is for 15 spin period data.
     """
-    l1_val_path = imap_module_directory / "tests/swe/l2_validation"
+    l2_val_path = imap_module_directory / "tests/swe/l2_validation"
     filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v1F_15.dat"
-
+    l2_val_path = l2_val_path / filename
     # Define column names for validation data
     column_names = [
         "shcoarse",
@@ -163,19 +141,7 @@ def l2_binned_flux_validation_df():
         "cem_7",
     ]
 
-    # Read the data, specifying na_values and delimiter
-    df = pd.read_csv(
-        l1_val_path / filename,
-        skiprows=13,  # Skip the first n rows of comments
-        sep=r"\s*,\s*",  # Regex to handle spaces and commas as delimiters
-        names=column_names,
-        na_values=["", " "],  # Treat empty strings or spaces as NaN
-        engine="python",
-    )
-
-    # Fill NaNs with the previous value
-    df["shcoarse"] = df["shcoarse"].ffill()
-    return df
+    return read_validation_df(l2_val_path, column_names, skiprows=13)
 
 
 @pytest.fixture(scope="session")
@@ -184,9 +150,10 @@ def l2_binned_psd_validation_df():
 
     This is for 15 spin period data.
     """
-    l1_val_path = imap_module_directory / "tests/swe/l2_validation"
+    l2_binned_psd_val_path = imap_module_directory / "tests/swe/l2_validation"
     filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v0F_15.dat"
 
+    l2_val_path = l2_binned_psd_val_path / filename
     # Define column names for validation data
     column_names = [
         "shcoarse",
@@ -199,19 +166,7 @@ def l2_binned_psd_validation_df():
         "cem_7",
     ]
 
-    # Read the data, specifying na_values and delimiter
-    df = pd.read_csv(
-        l1_val_path / filename,
-        skiprows=13,  # Skip the first n rows of comments
-        sep=r"\s*,\s*",  # Regex to handle spaces and commas as delimiters
-        names=column_names,
-        na_values=["", " "],  # Treat empty strings or spaces as NaN
-        engine="python",
-    )
-
-    # Fill NaNs with the previous value
-    df["shcoarse"] = df["shcoarse"].ffill()
-    return df
+    return read_validation_df(l2_val_path, column_names, skiprows=13)
 
 
 @pytest.fixture(scope="session")
@@ -220,9 +175,9 @@ def l2_binned_flux_14sec_validation_df():
 
     This is for 14.6 spin period data.
     """
-    l1_val_path = imap_module_directory / "tests/swe/l2_validation"
+    l2_val_path = imap_module_directory / "tests/swe/l2_validation"
     filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v1H_14_6.dat"
-
+    l2_val_path = l2_val_path / filename
     # Define column names for validation data
     column_names = [
         "shcoarse",
@@ -235,19 +190,7 @@ def l2_binned_flux_14sec_validation_df():
         "cem_7",
     ]
 
-    # Read the data, specifying na_values and delimiter
-    df = pd.read_csv(
-        l1_val_path / filename,
-        skiprows=13,  # Skip the first n rows of comments
-        sep=r"\s*,\s*",  # Regex to handle spaces and commas as delimiters
-        names=column_names,
-        na_values=["", " "],  # Treat empty strings or spaces as NaN
-        engine="python",
-    )
-
-    # Fill NaNs with the previous value
-    df["shcoarse"] = df["shcoarse"].ffill()
-    return df
+    return read_validation_df(l2_val_path, column_names, skiprows=13)
 
 
 @pytest.fixture(scope="session")
@@ -256,9 +199,9 @@ def l2_binned_psd_14sec_validation_df():
 
     This is for 14.6 spin period data.
     """
-    l1_val_path = imap_module_directory / "tests/swe/l2_validation"
+    l2_val_path = imap_module_directory / "tests/swe/l2_validation"
     filename = "swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v0H_14_6.dat"
-
+    l2_val_path = l2_val_path / filename
     # Define column names for validation data
     column_names = [
         "shcoarse",
@@ -271,16 +214,4 @@ def l2_binned_psd_14sec_validation_df():
         "cem_7",
     ]
 
-    # Read the data, specifying na_values and delimiter
-    df = pd.read_csv(
-        l1_val_path / filename,
-        skiprows=13,  # Skip the first n rows of comments
-        sep=r"\s*,\s*",  # Regex to handle spaces and commas as delimiters
-        names=column_names,
-        na_values=["", " "],  # Treat empty strings or spaces as NaN
-        engine="python",
-    )
-
-    # Fill NaNs with the previous value
-    df["shcoarse"] = df["shcoarse"].ffill()
-    return df
+    return read_validation_df(l2_val_path, column_names, skiprows=13)
