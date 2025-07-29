@@ -127,7 +127,7 @@ def generate_coverage(
 
 def format_coverage_summary(
     coverage_dict: dict, outage_dict: dict, start_time: str
-) -> str:
+) -> dict:
     """
     Build the output dictionary containing coverage time for each station.
 
@@ -142,8 +142,8 @@ def format_coverage_summary(
 
     Returns
     -------
-    output_string : str
-        Formatted coverage summary string.
+    output_dict : dict
+        Formatted coverage summary.
     """
     # Include all known stations,
     # plus any new ones that appear in coverage_dict.
@@ -162,42 +162,27 @@ def format_coverage_summary(
     time_range = np.arange(start_et_input, stop_et_input, time_step)
     all_times = et_to_utc(time_range, format_str="ISOC")
 
-    # Build header
-    timestamp_width = 26
-    line_length = timestamp_width + (9 * len(all_stations))
-
-    lines = []
-    lines.append("# I-ALiRT Coverage Summary")
-    lines.append(f"# Generated: {start_time}")
-    lines.append(f"# Stations: {', '.join(all_stations)}")
-    lines.append("# Time format: UTC (ISOC)")
-    lines.append(
-        f"{'Time (UTC)':<{timestamp_width}}"
-        + "   ".join(f"{s:<6}" for s in all_stations)
-    )
-    lines.append("-" * line_length)
-
+    data_rows = []
     for time in all_times:
-        row = [time]
+        row = {"time": time}
         for station in all_stations:
             visible_times = coverage_dict.get(station, [])
             outage_times = outage_dict.get(station, [])
             if time in outage_times:
-                row.append("X")
+                row[station] = "X"
             elif time in visible_times:
-                row.append("1")
+                row[station] = "1"
             else:
-                row.append("0")
-        lines.append(
-            f"{row[0]:<{timestamp_width}}" + "   ".join(f"{val:<6}" for val in row[1:])
-        )
+                row[station] = "0"
+        data_rows.append(row)
 
-    # Total coverage
-    lines.append("-" * line_length)
-    lines.append(
-        f"Total Coverage Percent: {coverage_dict['total_coverage_percent']:.1f}%"
-    )
+    output_dict = {
+        "summary": "I-ALiRT Coverage Summary",
+        "generated": start_time,
+        "time_format": "UTC (ISOC)",
+        "stations": all_stations,
+        "total_coverage_percent": round(coverage_dict["total_coverage_percent"], 1),
+        "data": data_rows,
+    }
 
-    output_string = "\n".join(lines)
-
-    return output_string
+    return output_dict
