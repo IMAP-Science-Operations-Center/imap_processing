@@ -38,7 +38,7 @@ def compute_culling_mask(
 
     Returns
     -------
-    mask : np.ndarray
+    mask : NDArray
         Boolean array of shape (len(et), npix).
     """
 
@@ -63,17 +63,21 @@ def compute_culling_mask(
     # unit_target_vecs.shape = (len(et), 3)
     unit_target_vecs = position / distance[:, np.newaxis]
 
-    # Calculate the direction of the HEALPix pixels. (shape: [npix, 3])
-    pixel_vecs = hp.pix2vec(nside, np.arange(npix), nest=nested)
-    pixel_vecs = np.vstack(pixel_vecs).T
+    # Get pixel unit vectors pointing from the center of the
+    # HEALPix sphere to the center of each pixel on the sky.
+    pixel_vecs = np.column_stack(hp.pix2vec(nside, np.arange(npix), nest=nested))  # shape: (npix, 3)
 
-    # Calculate distance from pixel to Earth.
+    # cos(theta) where theta is the separation angle between:
+    # (1) vector from IMAP to Earth
+    # (2) vector from IMAP to HEALPix pixel center
+    # If theta is within the keepout angle, then the pixel is culled.
     cos_sep = np.dot(unit_target_vecs, pixel_vecs.T)  # shape (N, npix)
     cos_sep = np.clip(cos_sep, -1.0, 1.0)
-    # Angular separation in radians
-    sep_angle = np.arccos(cos_sep)  # shape (N, npix)
+    # Get theta here.
+    sep_angle = np.arccos(cos_sep)
 
     # Exclude pixels within the keepout angle.
+    # mask.shape = (len(et), npix)
     mask = sep_angle > keepout_angle[:, np.newaxis]
 
     return mask
