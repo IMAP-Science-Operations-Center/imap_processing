@@ -16,7 +16,7 @@ from imap_processing.spice.time import str_to_et
 
 @pytest.mark.external_kernel
 @pytest.mark.usefixtures("_unset_metakernel_path")
-def test_compute_culling_mask(furnish_kernels):
+def test_compute_culling_mask(furnish_kernels, spice_test_data_path):
     """Tests compute_culling_mask function."""
 
     PLANET_RADII_KM = {
@@ -38,11 +38,12 @@ def test_compute_culling_mask(furnish_kernels):
 
     keepout_radius_km = 30 * PLANET_RADII_KM["EARTH"]
 
-    et_start = str_to_et("2025-11-28T00:00:00")
-    et_end = et_start + 24 * 60 * 60  # 24 hours
+    # Corresponds to 2025-11-28T00:00:00
+    et_start = 817561854.185627
+    et_end = 817644684.1856259  # 24 hours
     step_seconds = 1800
     et_steps = np.arange(et_start, et_end + step_seconds, step_seconds)
-    et_steps = np.array([797949054.185627])
+    et_steps = np.array([817561854.185627])
 
     spiceypy.kclear()
 
