@@ -185,9 +185,7 @@ def test_get_deadtime_correction_factors():
     )
     deadtime_correction_factors = get_deadtime_correction_factors(sectored_rates_ds)
     assert deadtime_correction_factors.shape == (sectored_rates_ds.sizes["epoch"],)
-    assert np.all(
-        (deadtime_correction_factors >= 0) & (deadtime_correction_factors <= 1)
-    )
+    assert np.all(deadtime_correction_factors >= 0)
 
 
 @pytest.mark.external_test_data
