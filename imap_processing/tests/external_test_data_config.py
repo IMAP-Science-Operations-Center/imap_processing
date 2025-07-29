@@ -141,7 +141,7 @@ EXTERNAL_TEST_DATA = [
     (
         "mag-l1bc-l2-t021-magi-burst-in.csv",
         "mag/validation/L2/T021/",
-    )
+    ),
 
     # SWE
     ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L1A.dat", "swe/l1_validation/"),
