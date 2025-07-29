@@ -1,13 +1,12 @@
 """Culling for ULTRA L1c."""
 
-import numpy as np
 import astropy_healpix.healpy as hp
+import numpy as np
 from numpy.typing import NDArray
 
-
 from imap_processing.spice.geometry import (
-    SpiceFrame,
     SpiceBody,
+    SpiceFrame,
     imap_state,
 )
 
@@ -20,8 +19,7 @@ def compute_culling_mask(
     nested: bool = False,
 ) -> NDArray:
     """
-    Compute a boolean mask for HEALPix pixels that are within a keep-out radius
-    of the target body (e.g., Earth) in the spacecraft pointing frame.
+    Compute a mask for HEALPix pixels within a keep-out radius of the target body.
 
     Parameters
     ----------
@@ -41,7 +39,6 @@ def compute_culling_mask(
     mask : NDArray
         Boolean array of shape (len(et), npix).
     """
-
     # Compute number of HEALPix pixels
     npix = hp.nside2npix(nside)
 
@@ -65,9 +62,11 @@ def compute_culling_mask(
 
     # Get pixel unit vectors pointing from the center of the
     # HEALPix sphere to the center of each pixel on the sky.
-    pixel_vecs = np.column_stack(hp.pix2vec(nside, np.arange(npix), nest=nested))  # shape: (npix, 3)
+    pixel_vecs = np.column_stack(
+        hp.pix2vec(nside, np.arange(npix), nest=nested)
+    )  # shape: (npix, 3)
 
-    # cos(theta) where theta is the separation angle between:
+    # Returns cos(theta) where theta is the separation angle between:
     # (1) vector from IMAP to Earth
     # (2) vector from IMAP to HEALPix pixel center
     # If theta is within the keepout angle, then the pixel is culled.
