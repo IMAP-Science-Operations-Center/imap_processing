@@ -22,6 +22,8 @@ from imap_processing.swe.l2.swe_l2 import (
 )
 from imap_processing.swe.utils import swe_constants
 
+pytestmark = pytest.mark.external_test_data
+
 
 @patch(
     "imap_processing.swe.utils.swe_constants.GEOMETRIC_FACTORS",
