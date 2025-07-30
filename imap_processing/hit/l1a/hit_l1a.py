@@ -45,7 +45,8 @@ def hit_l1a(packet_file: str, packet_date: Optional[str]) -> list[xr.Dataset]:
     packet_file : str
         Path to the CCSDS data packet file.
     packet_date : str, optional
-        The date of the packet data in 'YYYYMMDD' format. This is used to filter.
+        The date of the packet data in 'YYYYMMDD' format. This is used to filter
+        data to the correct processing day since L0 will have a buffer around midnight.
 
     Returns
     -------
@@ -63,10 +64,6 @@ def hit_l1a(packet_file: str, packet_date: Optional[str]) -> list[xr.Dataset]:
         attr_mgr = get_attribute_manager("l1a")
 
         l1a_datasets = []
-
-        # TODO:
-        #  -how does packet file with a buffer affect housekeeping?
-        #   Filter housekeeping by the packet date
 
         # Process l1a data products
         if HitAPID.HIT_HSKP in datasets_by_apid:
@@ -612,12 +609,11 @@ def process_science(
     sectored_dataset = subset_sectored_counts(sectored_dataset, packet_date)
 
     # TODO:
-    #  - headers are values per packet rather than frame. Do these need to align
+    #  - headers are values per packet rather than per frame. Do these need to align
     #    with the science frames?
     #    For instance, the mean epoch for a frame that spans midnight might contain
     #    packets from the previous day but filtering sc_tick by processing day will
     #    exclude those packets. Is this an issue?
-    #  - include ccsds headers in sectored dataset?
     #  - drop sectorates from standard dataset?
 
     # Filter the science dataset to only include data from the processing day
@@ -648,20 +644,3 @@ def process_science(
         logger.info(f"HIT L1A dataset created for {logical_source}")
 
     return list(l1a_datasets.values())
-
-
-if __name__ == "__main__":
-    from imap_processing import imap_module_directory
-
-    # L0 file path
-    packet_file = (
-        imap_module_directory / "tests/hit/test_data/hit_l1a_sample_2_nu_v4.ccsds"
-    )
-
-    start_date = "20100106"
-
-    datasets = hit_l1a(packet_file, start_date)
-
-    # counts = datasets[0]
-    # print(counts)
-    # print(counts.data_vars)
