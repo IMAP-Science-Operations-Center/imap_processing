@@ -1,8 +1,11 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.swe.l1a.swe_science import decompressed_counts, swe_science
+
+pytestmark = pytest.mark.external_test_data
 
 
 def test_number_of_packets(decom_test_data):

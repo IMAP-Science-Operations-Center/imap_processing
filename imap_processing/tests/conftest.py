@@ -368,7 +368,7 @@ def use_test_spin_data_csv(monkeypatch):
 
 @pytest.fixture
 def use_fake_spin_data_for_time(
-    request, use_test_spin_data_csv, tmp_path, generate_spin_data
+    request, use_test_spin_data_csv, tmp_path, generate_spin_data, spin_period=15.0
 ):
     """
     Generate and use fake spin data for testing.
@@ -383,7 +383,9 @@ def use_fake_spin_data_for_time(
     """
 
     def wrapped_set_spin_data_filepath(
-        start_met: float, end_met: Optional[int] = None
+        start_met: float,
+        end_met: Optional[int] = None,
+        spin_period: Optional[float] = 15.0,
     ) -> pd.DataFrame:
         """
         Generate and use fake spin data for testing.
@@ -394,8 +396,12 @@ def use_fake_spin_data_for_time(
         end_met : int
             Provides the end time in MET. If not provided, default to one day
             from start time.
+        spin_period : float, optional
+            Provides the spin period in seconds. Default is 15.0 seconds.
         """
-        spin_df = generate_spin_data(start_met, end_met=end_met)
+        spin_df = generate_spin_data(
+            start_met, end_met=end_met, spin_period=spin_period
+        )
         spin_csv_file_path = tmp_path / "spin_data.spin.csv"
         spin_df.to_csv(spin_csv_file_path, index=False)
         use_test_spin_data_csv([spin_csv_file_path])
@@ -405,7 +411,11 @@ def use_fake_spin_data_for_time(
 
 @pytest.fixture
 def generate_spin_data():
-    def make_data(start_met: float, end_met: Optional[float] = None) -> pd.DataFrame:
+    def make_data(
+        start_met: float,
+        end_met: Optional[float] = None,
+        spin_period: Optional[float] = None,
+    ) -> pd.DataFrame:
         """
         Generate a spin table CSV covering one or more days.
         Spin table contains the following fields:
@@ -431,6 +441,8 @@ def generate_spin_data():
         end_met : float
             Provides the end time in MET. If not provided, default to one day
             from start time.
+        spin_period : float, optional
+            Provides the spin period in seconds. Default is 15.0 seconds.
         Returns
         -------
         spin_df : pd.DataFrame
@@ -441,9 +453,9 @@ def generate_spin_data():
             end_met = start_met + 86400
 
         # Create spin start second data of 15 seconds increment
-        spin_start_met = np.arange(start_met, end_met + 1, 15)
+        spin_start_met = np.arange(start_met, end_met + 0.001, spin_period)
         spin_start_sec = np.floor(spin_start_met).astype(int)
-        spin_start_subsec = int((start_met - spin_start_sec[0]) * 1e6)
+        spin_start_subsec = ((spin_start_met - spin_start_sec) * 1e6).astype(int)
 
         # Calculate UTC times without spice (accepting ~5 second inaccuracy)
         spin_start_dt64 = TTJ2000_EPOCH + (spin_start_met * 1e9).astype(
@@ -460,7 +472,7 @@ def generate_spin_data():
                     nspins, spin_start_subsec, dtype=np.uint32
                 ),
                 "spin_start_utc": np.datetime_as_string(spin_start_dt64, unit="us"),
-                "spin_period_sec": np.full(nspins, 15.0, dtype=np.float32),
+                "spin_period_sec": np.full(nspins, spin_period, dtype=np.float32),
                 "spin_period_valid": np.ones(nspins, dtype=np.uint8),
                 "spin_phase_valid": np.ones(nspins, dtype=np.uint8),
                 "spin_period_source": np.zeros(nspins, dtype=np.uint8),

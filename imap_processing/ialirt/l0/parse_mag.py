@@ -444,11 +444,16 @@ def process_packet(
                 "met": int(met.values.min()),
                 "met_in_utc": met_to_utc(met.values.min()).split(".")[0],
                 "ttj2000ns": int(met_to_ttj2000ns(met.values.min())),
-                "mag_4s_b_gse": [Decimal("0.0") for _ in range(3)],
-                "mag_4s_b_gsm": [Decimal("0.0") for _ in range(3)],
-                "mag_4s_b_rtn": [Decimal("0.0") for _ in range(3)],
-                "mag_phi_4s_b_gsm": Decimal("0.0"),
-                "mag_theta_4s_b_gsm": Decimal("0.0"),
+                # TODO: Placeholder for mag_epoch
+                "mag_epoch": int(met.values.min()),
+                "mag_B_GSE": [Decimal("0.0") for _ in range(3)],
+                "mag_B_GSM": [Decimal("0.0") for _ in range(3)],
+                "mag_B_RTN": [Decimal("0.0") for _ in range(3)],
+                "mag_B_magnitude": Decimal("0.0"),
+                "mag_phi_B_GSM": Decimal("0.0"),
+                "mag_theta_B_GSM": Decimal("0.0"),
+                "mag_phi_B_GSE": Decimal("0.0"),
+                "mag_theta_B_GSE": Decimal("0.0"),
             }
         )
 

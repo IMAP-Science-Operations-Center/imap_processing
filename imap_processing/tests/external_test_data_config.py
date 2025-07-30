@@ -141,5 +141,14 @@ EXTERNAL_TEST_DATA = [
     (
         "mag-l1bc-l2-t021-magi-burst-in.csv",
         "mag/validation/L2/T021/",
-    )
+    ),
+
+    # SWE
+    ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L1A.dat", "swe/l1_validation/"),
+    ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L1B_v3.dat", "swe/l1_validation/"),
+    ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_v0B_15.dat", "swe/l2_validation/"),
+    ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v1F_15.dat", "swe/l2_validation/"),
+    ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v0F_15.dat", "swe/l2_validation/"),
+    ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v1H_14_6.dat", "swe/l2_validation/"),
+    ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v0H_14_6.dat", "swe/l2_validation/"),
 ]  # fmt: skip
