@@ -229,7 +229,6 @@ def test_glows_excluded_regions_combiner(glows_ancillary_filepath):
     )  # Empty list to avoid file parsing
     dataset = combiner.convert_file_to_dataset(file_path)
 
-    print(dataset)
     assert dataset is not None
     assert "ecliptic_longitude_deg" in dataset.data_vars
     assert "ecliptic_latitude_deg" in dataset.data_vars
@@ -413,13 +412,13 @@ def test_convert_json_with_nested_lists():
         # Check list handling
         assert "list_data" in dataset.data_vars
         assert list(dataset["list_data"].values) == [1, 2, 3, 4]
-        assert dataset["list_data"].dims == ("element",)
+        assert dataset["list_data"].dims == ("dim_list_data",)
 
         # Check nested dict flattening
         assert "nested_dict_inner_list" in dataset.data_vars
         assert "nested_dict_inner_scalar" in dataset.data_vars
         assert list(dataset["nested_dict_inner_list"].values) == [10, 20, 30]
-        assert dataset["nested_dict_inner_list"].dims == ("element",)
+        assert dataset["nested_dict_inner_list"].dims == ("dim_nested_dict_inner_list",)
         assert dataset["nested_dict_inner_scalar"].dims == ()
 
     finally:
@@ -432,7 +431,12 @@ def test_glows_ancillary_combiner_with_processing_input():
 
     with patch("imap_data_access.AncillaryFilePath.construct_path") as mock_path:
         # Create a temporary excluded regions file
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".dat", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            suffix=".dat",
+            prefix="imap_glows_map-of-excluded-regions",
+            delete=False,
+        ) as f:
             f.write("# longitude latitude\n")
             f.write("10.0 20.0\n")
             f.write("30.0 40.0\n")

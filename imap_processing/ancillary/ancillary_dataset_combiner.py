@@ -145,7 +145,8 @@ class AncillaryCombiner:
         """
         return cdf_to_xarray(filepath)
 
-    def convert_json_to_dataset(self, filepath: str | Path) -> xr.Dataset:
+    @staticmethod
+    def convert_json_to_dataset(filepath: str | Path) -> xr.Dataset:
         """
         Read a JSON file and convert it to an xarray Dataset.
 
@@ -168,23 +169,27 @@ class AncillaryCombiner:
 
         # Convert JSON data to xarray Dataset with appropriate structure
         # Each top-level key becomes a data variable
+
+        # The structure of the dictionary is {<variable_name>: (dims, data)}
+        # For the lists, we specify the dimension names. For scalars, pass in [].
         data_vars = {}
         for key, value in json_data.items():
             if isinstance(value, (list, tuple)):
                 # Handle arrays/lists
-                data_vars[key] = (["element"], value)
+                data_vars[key] = ([f"dim_{key}"], value)
             elif isinstance(value, dict):
                 # Handle nested dictionaries by flattening with underscore
                 for subkey, subvalue in value.items():
                     flat_key = f"{key}_{subkey}"
                     if isinstance(subvalue, (list, tuple)):
-                        data_vars[flat_key] = (["element"], subvalue)
+                        data_vars[flat_key] = ([f"dim_{flat_key}"], subvalue)
                     else:
                         data_vars[flat_key] = ([], subvalue)
             else:
                 # Handle scalar values
                 data_vars[key] = ([], value)
 
+        print(data_vars)
         return xr.Dataset(data_vars)
 
     def _combine_input_datasets(self) -> xr.Dataset:  # noqa: PLR0912
