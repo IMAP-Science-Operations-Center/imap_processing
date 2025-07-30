@@ -167,6 +167,16 @@ def test_get_sectored_rates():
         sectored_rates["test_data"].data,
         np.hstack([np.arange(10, 20), np.arange(30, 40), np.arange(50, 60)]),
     )
+    # Test with one mode shift in the middle of the dataset.
+    modes = np.array([1, 3, 1])
+    test_l1a_params_dataset = xr.Dataset(
+        {
+            "imageratescadence": (["epoch"], modes),
+        },
+        coords={"epoch": ("epoch", np.arange(0, epoch, epoch / len(modes)))},
+    )
+    sectored_rates = get_sectored_rates(test_l1a_rates_dataset, test_l1a_params_dataset)
+    np.testing.assert_array_equal(sectored_rates["test_data"].data, np.arange(20, 40))
 
     # Test with one mode shift in the middle of the dataset.
     modes = np.array([1, 3, 1])
