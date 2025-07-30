@@ -48,7 +48,6 @@ def test_set_spin_table_paths(monkeypatch):
                     0,
                     False,
                     15.0,
-                    15.0 * 1e9,  # spin_start_ttj2000ns (mock value)
                     0.0,
                 ]
             ],
@@ -67,7 +66,6 @@ def test_set_spin_table_paths(monkeypatch):
                     0,
                     False,
                     15.0,
-                    15.0 * 1e9,  # spin_start_ttj2000ns (mock value)
                     0.1 / 15,
                 ],
                 [
@@ -81,7 +79,6 @@ def test_set_spin_table_paths(monkeypatch):
                     0,
                     False,
                     30.0,
-                    30.0 * 1e9,  # spin_start_ttj2000ns (mock value)
                     0.2 / 15,
                 ],
             ],
@@ -91,17 +88,10 @@ def test_set_spin_table_paths(monkeypatch):
 def test_interpolate_spin_data(query_met_times, expected, fake_spin_data):
     """Test interpolate_spin_data() with generated spin data."""
     # Call the function
-    spin_df = spin.interpolate_spin_data(query_met_times)
-
-    # Remove the ttj2000ns column from expected since we're not adding it anymore
-    expected_without_ttj2000ns = []
-    for row in expected:
-        # Remove index 10 (spin_start_ttj2000ns column)
-        new_row = row[:10] + row[11:]
-        expected_without_ttj2000ns.append(new_row)
+    spin_df = spin.interpolate_spin_data(query_met_times=query_met_times)
 
     # Test the value
-    for i_row, row in enumerate(expected_without_ttj2000ns):
+    for i_row, row in enumerate(expected):
         pd.testing.assert_series_equal(
             spin_df.iloc[i_row], pd.Series(row), check_index=False, check_names=False
         )
@@ -190,7 +180,7 @@ def test_get_spacecraft_spin_phase_value_error(query_met_times, fake_spin_data):
 
 
 @pytest.mark.usefixtures("use_fake_spin_data_for_time")
-def test_get_spin_data(use_fake_spin_data_for_time, furnish_time_kernels):
+def test_get_spin_data(use_fake_spin_data_for_time):
     """Test get_spin_data() with generated spin data."""
     use_fake_spin_data_for_time(453051323.0 - 56120)
     spin_data = spin.get_spin_data()
@@ -201,7 +191,7 @@ def test_get_spin_data(use_fake_spin_data_for_time, furnish_time_kernels):
     )
     assert isinstance(spin_data, pd.DataFrame), "Return type must be pandas.DataFrame."
 
-    expected_columns = {
+    assert set(spin_data.columns) == {
         "spin_number",
         "spin_start_sec_sclk",
         "spin_start_subsec_sclk",
@@ -212,10 +202,7 @@ def test_get_spin_data(use_fake_spin_data_for_time, furnish_time_kernels):
         "spin_period_source",
         "thruster_firing",
         "spin_start_met",
-    }
-    assert set(spin_data.columns) == expected_columns, (
-        "Spin data must have the specified fields."
-    )
+    }, "Spin data must have the specified fields."
 
 
 def test_get_spin_table_merge(tmp_path, use_test_spin_data_csv):
