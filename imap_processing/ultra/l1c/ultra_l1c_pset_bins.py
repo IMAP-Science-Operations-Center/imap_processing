@@ -9,12 +9,12 @@ from numpy.typing import NDArray
 from scipy import interpolate
 from scipy.interpolate import PchipInterpolator, interp1d
 
-from imap_processing.spice import spin
 from imap_processing.spice.geometry import (
     SpiceFrame,
     cartesian_to_spherical,
     imap_state,
 )
+from imap_processing.spice.spin import get_spacecraft_spin_phase
 from imap_processing.ultra.constants import UltraConstants
 
 # TODO: add species binning.
@@ -316,23 +316,22 @@ def get_deadtime_interpolator(
     scipy.interpolate.PchipInterpolator
         Interpolating function for dead time ratios.
     """
-    # Get the spin phase at the middle time of each sector, corresponding to the dead
-    # time ratio.
-    middle_sector_query_mets = []
-    for i in range(len(timestamps)):
-        if i == len(timestamps) - 1:
-            # If we are at the last timestamp, we cannot calculate the middle time
-            # TODO: handle this case properly
-            middle_sector_query_mets.append(timestamps[i])
-        else:
-            middle_sector_query_mets.append(timestamps[i] + timestamps[i + 1] / 2)
-
-    spin_phases = spin.get_spacecraft_spin_phase(np.array(middle_sector_query_mets))
-
+    # Get the spin phase at the start of each sector rate measurement
+    spin_phases = get_spacecraft_spin_phase(np.array(timestamps))
+    # Assume the sectored rate data is evenly spaced in time, and find the middle spin
+    # phase value for each sector.
+    spin_phases_centered = (spin_phases[:-1] + spin_phases[1:]) / 2
+    # Assume the last sector is nominal because we dont have enough data to determine
+    # the spin phase at the end of the last sector.
+    # TODO: is this assumption valid?
+    # Add the last spin phase value + half of a nominal sector.
+    spin_phases_centered = np.append(spin_phases_centered, spin_phases[-1] + (1 / 180))
     # Create a dataset with spin phases and dead time ratios
     deadtime_by_spin_phase = xr.Dataset(
         {"deadtime_ratio": deadtime_ratios},
-        coords={"spin_phase": xr.DataArray(np.array(spin_phases), dims="epoch")},
+        coords={
+            "spin_phase": xr.DataArray(np.array(spin_phases_centered), dims="epoch")
+        },
     )
 
     # Sort the dataset by spin phase (ascending order)
@@ -341,7 +340,6 @@ def get_deadtime_interpolator(
     # TODO: skip NaN values in the median calculation?
     deadtime_medians = deadtime_by_spin_phase.groupby("spin_phase").median(skipna=True)
 
-    # TODO: handle NaN values in the dead time ratios. DO we raise error?
     if np.any(np.isnan(deadtime_medians["deadtime_ratio"].values)):
         raise ValueError(
             "Dead time ratios contain NaN values, cannot create interpolator."

@@ -204,25 +204,26 @@ def test_get_deadtime_interpolator():
     deadtime_ratios = xr.DataArray(
         np.random.uniform(0.1, 1.0, num_deadtimes), dims=["epoch"]
     )
+    spin_phases = np.random.random(deadtime_ratios.shape)
     with mock.patch(
-        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.spice.spin.get_spacecraft_spin_phase"
+        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_spacecraft_spin_phase"
     ) as mock_spin_phases:
-        mock_spin_phases.return_value = np.random.randint(0, 360, deadtime_ratios.shape)
+        mock_spin_phases.return_value = spin_phases
         interpolator = get_deadtime_interpolator(
             deadtime_ratios, np.ones_like(deadtime_ratios)
         )
     assert callable(interpolator)
-    deadtime = interpolator(359)
+    deadtime = interpolator(0.9)
     assert (deadtime >= 0) & (deadtime < 1)
 
+    # Assert value error is raised for NaN values
     with mock.patch(
-        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.spice.spin.get_spacecraft_spin_phase"
+        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_spacecraft_spin_phase"
     ) as mock_spin_phases:
-        mock_spin_phases.return_value = np.random.randint(0, 360, deadtime_ratios.shape)
-        # Test with nans
+        mock_spin_phases.return_value = spin_phases
         with pytest.raises(
             ValueError,
-            "Dead time ratios contain NaN values, cannot create interpolator.",
+            match="Dead time ratios contain NaN values, cannot create interpolator.",
         ):
             get_deadtime_interpolator(
                 np.nan * deadtime_ratios, np.ones_like(deadtime_ratios)
