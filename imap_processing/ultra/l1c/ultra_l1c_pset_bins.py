@@ -317,8 +317,9 @@ def get_spacecraft_exposure_times(
         Healpix tessellation of the sky
         in the pointing (dps) frame.
     """
-    sectored_rates = get_sectored_rates(rates_dataset, params_dataset)
-    get_deadtime_correction_factors(sectored_rates)
+    # TODO: uncomment these lines when the deadtime correction is implemented
+    # sectored_rates = get_sectored_rates(rates_dataset, params_dataset)
+    # get_deadtime_correction_factors(sectored_rates)
     # TODO: calculate the deadtime correction function
     # TODO: Apply the deadtime correction to the exposure times
     # TODO: use the universal spin table and

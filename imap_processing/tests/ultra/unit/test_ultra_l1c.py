@@ -133,7 +133,7 @@ def test_ultra_l1c_error(mock_data_l1b_dict):
 @pytest.mark.external_kernel
 @ensure_spice
 @pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_calculate_spacecraft_pset_with_cdf(ancillary_files):
+def test_calculate_spacecraft_pset_with_cdf(ancillary_files, deadtime_datasets):
     """Tests ultra_l1c function with imported test data."""
 
     df = pd.read_csv(TEST_PATH / "IMAP-Ultra45_r1_L1_V0_shortened.csv")
@@ -181,6 +181,8 @@ def test_calculate_spacecraft_pset_with_cdf(ancillary_files):
         "imap_ultra_l1b_45sensor-de": dataset,
         "imap_ultra_l1b_45sensor-extendedspin": xr.Dataset(),  # placeholder
         "imap_ultra_l1b_45sensor-cullingmask": xr.Dataset(),  # placeholder
+        "imap_ultra_45sensor-rates": deadtime_datasets["rates"],
+        "imap_ultra_45sensor-params": deadtime_datasets["params"],
     }
 
     path = imap_module_directory / "tests" / "ultra" / "data" / "l1"

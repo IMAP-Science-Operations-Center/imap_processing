@@ -164,6 +164,16 @@ def test_get_sectored_rates():
         sectored_rates["test_data"].data,
         np.hstack([np.arange(10, 20), np.arange(30, 40), np.arange(50, 60)]),
     )
+    # Test with one mode shift in the middle of the dataset.
+    modes = np.array([1, 3, 1])
+    test_l1a_params_dataset = xr.Dataset(
+        {
+            "imageratescadence": (["epoch"], modes),
+        },
+        coords={"epoch": ("epoch", np.arange(0, epoch, epoch / len(modes)))},
+    )
+    sectored_rates = get_sectored_rates(test_l1a_rates_dataset, test_l1a_params_dataset)
+    np.testing.assert_array_equal(sectored_rates["test_data"].data, np.arange(20, 40))
 
 
 def test_get_deadtime_correction_factors():
@@ -194,10 +204,10 @@ def test_get_spacecraft_exposure_times(deadtime_datasets):
     constant_exposure = (
         TEST_PATH / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv"
     )
+    rates = deadtime_datasets["rates"]
+    params = deadtime_datasets["params"]
     df_exposure = pd.read_csv(constant_exposure)
-    exposure_pointing = get_spacecraft_exposure_times(
-        df_exposure, deadtime_datasets["rates"], deadtime_datasets["params"]
-    )
+    exposure_pointing = get_spacecraft_exposure_times(df_exposure, rates, params)
     assert exposure_pointing.shape == (196608,)
 
     np.testing.assert_allclose(
