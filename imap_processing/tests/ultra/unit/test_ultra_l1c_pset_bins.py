@@ -1,5 +1,7 @@
 "Tests pointing sets"
 
+from unittest import mock
+
 import astropy_healpix.healpy as hp
 import numpy as np
 import pandas as pd
@@ -10,7 +12,8 @@ from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c import ultra_l1c_pset_bins
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
-    get_deadtime_correction_factors,
+    get_deadtime_interpolator,
+    get_deadtime_ratios,
     get_energy_delta_minus_plus,
     get_helio_background_rates,
     get_helio_exposure_times,
@@ -166,7 +169,7 @@ def test_get_sectored_rates():
     )
 
 
-def test_get_deadtime_correction_factors():
+def test_get_deadtime_ratios():
     """Tests get_deadtime_correction_factors function."""
     # Simulate a test sectored rates dataset.
     epoch = 10
@@ -183,9 +186,47 @@ def test_get_deadtime_correction_factors():
             "stop_bn": (["epoch"], np.random.randint(0, 5, epoch)),
         }
     )
-    deadtime_correction_factors = get_deadtime_correction_factors(sectored_rates_ds)
+    deadtime_correction_factors = get_deadtime_ratios(sectored_rates_ds)
     assert deadtime_correction_factors.shape == (sectored_rates_ds.sizes["epoch"],)
     assert np.all(deadtime_correction_factors >= 0)
+
+
+def test_get_deadtime_interpolator():
+    """Tests get_deadtime_correction_factors function."""
+
+    sector_rate_seconds = 20 * 60  # 20 minutes in seconds
+    num_sectors = 3  # Number of sectors per pointing
+    num_spins = sector_rate_seconds * num_sectors / 15  # 15 seconds per spin
+    num_deadtimes = int(
+        num_spins * 15
+    )  # 15 sectors per spin. One deadtime ratio per sector
+
+    deadtime_ratios = xr.DataArray(
+        np.random.uniform(0.1, 1.0, num_deadtimes), dims=["epoch"]
+    )
+    with mock.patch(
+        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.spice.spin.get_spacecraft_spin_phase"
+    ) as mock_spin_phases:
+        mock_spin_phases.return_value = np.random.randint(0, 360, deadtime_ratios.shape)
+        interpolator = get_deadtime_interpolator(
+            deadtime_ratios, np.ones_like(deadtime_ratios)
+        )
+    assert callable(interpolator)
+    deadtime = interpolator(359)
+    assert (deadtime >= 0) & (deadtime < 1)
+
+    with mock.patch(
+        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.spice.spin.get_spacecraft_spin_phase"
+    ) as mock_spin_phases:
+        mock_spin_phases.return_value = np.random.randint(0, 360, deadtime_ratios.shape)
+        # Test with nans
+        with pytest.raises(
+            ValueError,
+            "Dead time ratios contain NaN values, cannot create interpolator.",
+        ):
+            get_deadtime_interpolator(
+                np.nan * deadtime_ratios, np.ones_like(deadtime_ratios)
+            )
 
 
 @pytest.mark.external_test_data

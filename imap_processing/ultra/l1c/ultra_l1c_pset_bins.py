@@ -6,8 +6,10 @@ import pandas
 import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
-from scipy.interpolate import interp1d
+from scipy import interpolate
+from scipy.interpolate import PchipInterpolator, interp1d
 
+from imap_processing.spice import spin
 from imap_processing.spice.geometry import (
     SpiceFrame,
     cartesian_to_spherical,
@@ -206,12 +208,15 @@ def get_helio_background_rates(
     return background
 
 
-def get_deadtime_correction_factors(sectored_rates_ds: xr.Dataset) -> xr.DataArray:
+def get_deadtime_ratios(sectored_rates_ds: xr.Dataset) -> xr.DataArray:
     """
-    Compute the dead time correction factor at each sector.
+    Compute the dead time ratio at each sector.
 
-    Further description is available in section 3.4.3 of the IMAP-Ultra Algorithm
-    Document.
+    A reduction in exposure time (duty cycle) is caused by the flight hardware listening
+    for coincidence events that never occur, due to singles starts predominantly from UV
+    radiation. The static exposure time for a given Pointing should be reduced by this
+    spatially dependent exposure time reduction factor (the dead time). Further
+    description is available in section 3.4.3 of the IMAP-Ultra Algorithm Document.
 
     Parameters
     ----------
@@ -291,6 +296,60 @@ def get_sectored_rates(rates_ds: xr.Dataset, params_ds: xr.Dataset) -> xr.Datase
 
     sector_mode_mask = np.logical_or.reduce(conditions)
     return rates_ds.isel(epoch=sector_mode_mask)
+
+
+def get_deadtime_interpolator(
+    deadtime_ratios: xr.DataArray, timestamps: xr.DataArray
+) -> PchipInterpolator:
+    """
+    Create PCHIP function for dead time ratio vs spin phase.
+
+    Parameters
+    ----------
+    deadtime_ratios : xarray.DataArray
+        Dead time ratios for each sector.
+    timestamps : xarray.DataArray
+        Epoch values corresponding to the dead time ratios.
+
+    Returns
+    -------
+    scipy.interpolate.PchipInterpolator
+        Interpolating function for dead time ratios.
+    """
+    # Get the spin phase at the middle time of each sector, corresponding to the dead
+    # time ratio.
+    middle_sector_query_mets = []
+    for i in range(len(timestamps)):
+        if i == len(timestamps) - 1:
+            # If we are at the last timestamp, we cannot calculate the middle time
+            # TODO: handle this case properly
+            middle_sector_query_mets.append(timestamps[i])
+        else:
+            middle_sector_query_mets.append(timestamps[i] + timestamps[i + 1] / 2)
+
+    spin_phases = spin.get_spacecraft_spin_phase(np.array(middle_sector_query_mets))
+
+    # Create a dataset with spin phases and dead time ratios
+    deadtime_by_spin_phase = xr.Dataset(
+        {"deadtime_ratio": deadtime_ratios},
+        coords={"spin_phase": xr.DataArray(np.array(spin_phases), dims="epoch")},
+    )
+
+    # Sort the dataset by spin phase (ascending order)
+    deadtime_by_spin_phase = deadtime_by_spin_phase.sortby("spin_phase")
+    # Group by spin phase and calculate the median dead time ratio for each phase
+    # TODO: skip NaN values in the median calculation?
+    deadtime_medians = deadtime_by_spin_phase.groupby("spin_phase").median(skipna=True)
+
+    # TODO: handle NaN values in the dead time ratios. DO we raise error?
+    if np.any(np.isnan(deadtime_medians["deadtime_ratio"].values)):
+        raise ValueError(
+            "Dead time ratios contain NaN values, cannot create interpolator."
+        )
+    # Return a PCHIP interpolator for the dead time ratios
+    return interpolate.PchipInterpolator(
+        deadtime_medians["spin_phase"].values, deadtime_medians["deadtime_ratio"].values
+    )
 
 
 def get_spacecraft_exposure_times(
