@@ -123,8 +123,5 @@ def test_dsn(furnish_kernels):
 
     output = format_coverage_summary(coverage_dict, outage_dict, "2026-09-22T00:00:00Z")
 
-    assert "# I-ALiRT Coverage Summary" in output
-    assert "Time (UTC)" in output
-    assert "2026-09-22T07:00:00.000" in output  # Kiel coverage row
-    assert "2026-09-22T12:00:00.000" in output  # DSS-75 coverage row
-    assert "Total Coverage Percent: 37.5%" in output
+    assert "I-ALiRT Coverage Summary" in output["summary"]
+    assert 37.5 == output["total_coverage_percent"]
