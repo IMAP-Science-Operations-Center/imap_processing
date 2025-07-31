@@ -378,7 +378,7 @@ def subset_sectored_counts(
 
     Parameters
     ----------
-    sectored_counts_dataset : xr.Dataset
+    sectored_counts_dataset : xarray.Dataset
         The sectored counts dataset.
 
     packet_date : str
@@ -386,7 +386,7 @@ def subset_sectored_counts(
 
     Returns
     -------
-    xr.Dataset
+    xarray.Dataset
         A dataset of complete sectored counts and corresponding livetime values
         for the processing day.
     """
@@ -535,14 +535,14 @@ def filter_dataset_to_processing_day(
         The dataset to filter.
     packet_date : str
         The date of the packet data in 'YYYYMMDD' format.
-    epoch_array : np.ndarray, optional
+    epoch_array : np.ndarray
         An array of epoch values to filter by. If not provided,
         the dataset's epoch will be used. This is used for sectored
         counts data where an array of mean epoch values for major frames
         (10 minute intervals) is used to filter the dataset to ensure
         that major frames that span midnight, but belong to the processing
         day, are included.
-    sc_tick : bool, optional
+    sc_tick : bool
         If true, the dataset's sc_tick will be used to filter data as well.
         This ensures that the ccsds headers that use sc_tick as a coordinate,
         instead of epoch, also corresponds to the processing day.
