@@ -18,7 +18,7 @@ import re
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import final, Optional
+from typing import final
 
 import imap_data_access
 import numpy as np
