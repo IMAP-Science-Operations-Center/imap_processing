@@ -18,7 +18,7 @@ import re
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import final
+from typing import final, Optional
 
 import imap_data_access
 import numpy as np
@@ -517,7 +517,7 @@ class ProcessInstrument(ABC):
         self,
         processed_data: list[xr.Dataset | Path],
         dependencies: ProcessingInputCollection,
-    ) -> None:
+    ) -> Optional[list[Path]]:
         """
         Complete post-processing.
 
@@ -582,6 +582,7 @@ class ProcessInstrument(ABC):
                 products.append(ds)
 
         self.upload_products(products)
+        return products
 
     @final
     def cleanup(self) -> None:

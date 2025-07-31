@@ -234,6 +234,29 @@ def test_repointing_file_creation(mock_instrument_dependencies):
     )
 
 
+def test_post_processing_returns_path_to_written_cdf(mock_instrument_dependencies):
+    test_datasets = [xr.Dataset({}, attrs={"cdf_filename": "file0"})]
+    input_collection = ProcessingInputCollection(
+        ScienceInput("imap_glows_l0_raw_20230822-repoint00001_v001.pkts")
+    )
+    dependency_str = (
+        '[{"type": "science","files": '
+        '["imap_glows_l0_raw_20230822-repoint00001_v001.pkts"]}]'
+    )
+    instrument = Glows(
+        "l1a", "hist", dependency_str, None, "repoint00002", "v001", False
+    )
+
+    expected_path = "/path/to/file0"
+    mock_instrument_dependencies["mock_write_cdf"].side_effect = [expected_path]
+
+    # Call the method that uses write_cdf
+    returned_path = instrument.post_processing(test_datasets, input_collection)
+
+    # Assert that post_processing returned the path to the CDF written in write_cdf
+    assert returned_path == [expected_path]
+
+
 @pytest.mark.parametrize(
     "data_level, science_input, anc_input, n_prods",
     [
