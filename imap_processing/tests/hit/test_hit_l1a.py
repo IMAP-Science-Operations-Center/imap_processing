@@ -748,6 +748,9 @@ def test_validate_l1a_counts_data(sci_packet_filepath, validation_data):
 
     skip_sectored_fields = [
         *skip_fields,
+        "sectorates",
+        "sectorates_stat_uncert_plus",
+        "sectorates_stat_uncert_minus",
         "h_sectored_counts",
         "h_energy_delta_minus",
         "h_energy_delta_plus",
@@ -780,9 +783,6 @@ def test_validate_l1a_counts_data(sci_packet_filepath, validation_data):
         *skip_standard_fields,
         *skip_sectored_fields,
         "hdr_minute_cnt",
-        "sectorates",
-        "sectorates_stat_uncert_plus",
-        "sectorates_stat_uncert_minus",
     ]
 
     # drop livetime counter from skip_livetime list

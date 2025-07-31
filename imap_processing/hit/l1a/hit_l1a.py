@@ -59,7 +59,7 @@ def hit_l1a(packet_file: Path, packet_date: Optional[str]) -> list[xr.Dataset]:
         raise ValueError("Packet date cannot be None.")
     else:
         # Unpack ccsds file to xarray datasets
-        datasets_by_apid = get_datasets_by_apid(packet_file)
+        datasets_by_apid = get_datasets_by_apid(str(packet_file))
 
         # Create the attribute manager for this data level
         attr_mgr = get_attribute_manager("l1a")
@@ -615,7 +615,6 @@ def process_science(
     #    For instance, the mean epoch for a frame that spans midnight might contain
     #    packets from the previous day but filtering sc_tick by processing day will
     #    exclude those packets. Is this an issue?
-    #  - drop sectorates from standard dataset?
 
     # Filter the science dataset to only include data from the processing day
     sci_dataset = filter_dataset_to_processing_day(
@@ -626,7 +625,7 @@ def process_science(
     pha_raw_dataset = xr.Dataset(
         {"pha_raw": sci_dataset["pha_raw"]}, coords={"epoch": sci_dataset["epoch"]}
     )
-    count_rates_dataset = sci_dataset.drop_vars("pha_raw")
+    count_rates_dataset = sci_dataset.drop_vars(["pha_raw", "sectorates"])
 
     # Calculate uncertainties for count rates
     count_rates_dataset = calculate_uncertainties(count_rates_dataset)
