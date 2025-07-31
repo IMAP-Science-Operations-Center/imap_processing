@@ -258,13 +258,11 @@ def test_post_processing_returns_path_to_written_cdf(mock_instrument_dependencie
 
 
 def test_post_processing_returns_empty_list_if_invoked_with_no_data(
-        mock_instrument_dependencies
+    mock_instrument_dependencies,
 ):
     test_datasets = []
     input_collection = ProcessingInputCollection()
-    instrument = Glows(
-        "l1a", "hist", "", None, "repoint00002", "v001", False
-    )
+    instrument = Glows("l1a", "hist", "", None, "repoint00002", "v001", False)
 
     # Call the method that uses write_cdf
     returned_products = instrument.post_processing(test_datasets, input_collection)
