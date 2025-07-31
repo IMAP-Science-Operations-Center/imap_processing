@@ -348,3 +348,39 @@ def get_ph_corrected(
     ph_correction = ph_correct_array[xlut_clamped, ylut_clamped]
 
     return ph_correction, quality_flag
+
+
+def get_ebins(
+    lut: str,
+    energy: NDArray,
+    ctof: NDArray,
+    ancillary_files: dict,
+) -> NDArray:
+    """
+    Get energy bins from the lookup table.
+
+    Parameters
+    ----------
+    lut : str
+        Lookup table name, e.g., "l1b-tofxpht".
+    energy : np.ndarray
+        Energy from the event (keV).
+    ctof : np.ndarray
+        Corrected TOF (tenths of a ns).
+    ancillary_files : dict[Path]
+        Ancillary files.
+
+    Returns
+    -------
+    ebins : NDArray
+        Energy bins from the lookup table.
+    """
+    with open(ancillary_files[lut]) as f:
+        all_lines = f.readlines()
+        pixel_text = "".join(all_lines[4:])
+
+    lut_array = np.fromstring(pixel_text, sep=" ", dtype=int).reshape((2048, 4096))
+
+    ebins = lut_array[2048 - energy, ctof]
+
+    return ebins
