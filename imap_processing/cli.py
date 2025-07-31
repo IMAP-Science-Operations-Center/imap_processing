@@ -545,8 +545,13 @@ class ProcessInstrument(ABC):
             method.
         dependencies : ProcessingInputCollection
             Object containing dependencies to process.
+
+        Returns
+        -------
+        list[Path]
+        List of paths to CDF files produced.
         """
-        products = []
+        products: list[Path] = []
 
         if len(processed_data) == 0:
             logger.info("No products to write to CDF file.")

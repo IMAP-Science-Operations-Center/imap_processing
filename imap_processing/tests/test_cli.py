@@ -257,7 +257,9 @@ def test_post_processing_returns_path_to_written_cdf(mock_instrument_dependencie
     assert returned_path == [expected_path]
 
 
-def test_post_processing_returns_empty_list_if_invoked_with_no_data(mock_instrument_dependencies):
+def test_post_processing_returns_empty_list_if_invoked_with_no_data(
+        mock_instrument_dependencies
+):
     test_datasets = []
     input_collection = ProcessingInputCollection()
     instrument = Glows(
