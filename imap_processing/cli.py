@@ -549,7 +549,7 @@ class ProcessInstrument(ABC):
         Returns
         -------
         list[Path]
-        List of paths to CDF files produced.
+            List of paths to CDF files produced.
         """
         products: list[Path] = []
 
