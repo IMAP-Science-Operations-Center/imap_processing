@@ -3,7 +3,7 @@
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 import xarray as xr
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 fillval = -9223372036854775808
 
 
-def hit_l1a(packet_file: Path, packet_date: Optional[str]) -> list[xr.Dataset]:
+def hit_l1a(packet_file: Path, packet_date: Union[str, Path]) -> list[xr.Dataset]:
     """
     Will process HIT L0 data into L1A data products.
 
@@ -73,7 +73,7 @@ def hit_l1a(packet_file: Path, packet_date: Optional[str]) -> list[xr.Dataset]:
                 datasets_by_apid[HitAPID.HIT_HSKP], attr_mgr, "imap_hit_l1a_hk"
             )
             # filter the housekeeping dataset to the processing day
-            hk_dataset = filter_dataset_to_processing_day(hk_dataset, packet_date)
+            hk_dataset = filter_dataset_to_processing_day(hk_dataset, str(packet_date))
             l1a_datasets.append(hk_dataset)
         if HitAPID.HIT_SCIENCE in datasets_by_apid:
             l1a_datasets.extend(
