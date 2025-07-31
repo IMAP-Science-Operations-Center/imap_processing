@@ -16,6 +16,7 @@ from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
     get_angular_profiles,
     get_back_position,
+    get_ebins,
     get_energy_efficiencies,
     get_energy_norm,
     get_image_params,
@@ -1134,7 +1135,7 @@ def get_efficiency(
 
 
 def determine_ebin_pulse_height(
-    energy: np.ndarray, tof: np.ndarray, path_length: np.ndarray
+    energy: np.ndarray, tof: np.ndarray, path_length: np.ndarray, ancillary_files: dict
 ) -> NDArray:
     """
     Determine the species for pulse-height events.
@@ -1158,6 +1159,8 @@ def determine_ebin_pulse_height(
         Time of flight of the PH event (tenths of a nanosecond).
     path_length : np.ndarray
         Path length (r) (hundredths of a millimeter).
+    ancillary_files : dict
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
@@ -1166,11 +1169,9 @@ def determine_ebin_pulse_height(
     """
     # PH event TOF normalization to Z axis
     ctof, _ = get_ctof(tof, path_length, type="PH")
-    # TODO: need lookup tables
-    # placeholder
-    ebin = np.full(len(ctof), 255, dtype=np.uint8)
+    ebins = get_ebins("l1b-tofxph", energy, ctof, ancillary_files)
 
-    return ebin
+    return ebins
 
 
 def determine_ebin_ssd(

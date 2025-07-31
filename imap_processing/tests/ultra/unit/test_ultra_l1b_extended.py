@@ -643,20 +643,21 @@ def test_get_efficiency():
 
 
 @pytest.mark.external_test_data
-def test_determine_ebin_ph(test_fixture):
+def test_determine_ebin_ph(events_fsw_comparison_theta_0_revised, ancillary_files):
     """Tests determine_ebin_ph function."""
-    df_filt, _, _, _ = test_fixture
-    df_ph = df_filt[df_filt["StopType"].isin(StopType.PH.value)]
+    df = pd.read_csv(events_fsw_comparison_theta_0_revised)
+    df_filt = df[df["StartType"] != -1]
+    df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
 
-    bin = determine_ebin_pulse_height(
+    ebins = determine_ebin_pulse_height(
         df_ph["Energy"].astype("float").to_numpy(),
         df_ph["TOF"].astype("float").to_numpy(),
         df_ph["r"].astype("float").to_numpy(),
+        ancillary_files,
     )
 
-    # TODO: add in bin values.
     np.testing.assert_allclose(
-        bin, np.full(len(bin), 255, dtype=np.uint8), atol=1e-05, rtol=0
+        ebins, df_ph["ComputedBin"].astype(float).astype(int), atol=1e-05
     )
 
 

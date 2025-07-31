@@ -101,6 +101,13 @@ EXTERNAL_TEST_DATA = [
     ("imap_ultra_l1b-90sensor-spbtphcorr_20250101_v000.csv", "ultra/data/l1/"),
     ("ultra45_raw_sc_ultrarawimg_withFSWccs_FM45_40P_Phi28p5_BeamCal_LinearScan_"
      "phi2850_theta-000_20240207T102740_revised20250724.csv", "ultra/data/l1/"),
+    ("imap_ultra_l1b-45sensor-tofxeflat_20250101_v000.pgm", "ultra/data/l1/"),
+    ("imap_ultra_l1b-45sensor-tofxemedium_20250101_v000.pgm", "ultra/data/l1/"),
+    ("imap_ultra_l1b-45sensor-tofxesteep_20250101_v000.pgm", "ultra/data/l1/"),
+    ("imap_ultra_l1b-90sensor-tofxeflat_20250101_v000.pgm", "ultra/data/l1/"),
+    ("imap_ultra_l1b-90sensor-tofxemedium_20250101_v000.pgm", "ultra/data/l1/"),
+    ("imap_ultra_l1b-90sensor-tofxesteep_20250101_v000.pgm", "ultra/data/l1/"),
+    ("imap_ultra_l1b-tofxph_20250101_v000.pgm","ultra/data/l1/"),
 
     # MAG
     ("mag-l1b-l1c-t013-magi-burst-in.csv",

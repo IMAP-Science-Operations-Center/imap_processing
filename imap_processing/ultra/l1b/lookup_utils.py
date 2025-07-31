@@ -8,6 +8,8 @@ from numpy.typing import NDArray
 
 from imap_processing.quality_flags import ImapDEUltraFlags
 
+FILLVAL_UINT8 = 255
+
 
 def get_y_adjust(dy_lut: np.ndarray, ancillary_files: dict) -> npt.NDArray:
     """
@@ -363,9 +365,9 @@ def get_ebins(
     ----------
     lut : str
         Lookup table name, e.g., "l1b-tofxpht".
-    energy : np.ndarray
+    energy : NDArray
         Energy from the event (keV).
-    ctof : np.ndarray
+    ctof : NDArray
         Corrected TOF (tenths of a ns).
     ancillary_files : dict[Path]
         Ancillary files.
@@ -380,7 +382,17 @@ def get_ebins(
         pixel_text = "".join(all_lines[4:])
 
     lut_array = np.fromstring(pixel_text, sep=" ", dtype=int).reshape((2048, 4096))
+    energy_lookup = (2048 - np.floor(energy)).astype(int)
+    ctof_lookup = np.floor(ctof).astype(int)
 
-    ebins = lut_array[2048 - energy, ctof]
+    ebins = np.full(energy.shape, FILLVAL_UINT8, dtype=np.uint8)
+    valid = (
+        (energy_lookup >= 0)
+        & (energy_lookup < 2048)
+        & (ctof_lookup >= 0)
+        & (ctof_lookup < 4096)
+    )
+
+    ebins[valid] = lut_array[energy_lookup[valid], ctof_lookup[valid]]
 
     return ebins
