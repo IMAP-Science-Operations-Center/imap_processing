@@ -257,6 +257,20 @@ def test_post_processing_returns_path_to_written_cdf(mock_instrument_dependencie
     assert returned_path == [expected_path]
 
 
+def test_post_processing_returns_empty_list_if_invoked_with_no_data(mock_instrument_dependencies):
+    test_datasets = []
+    input_collection = ProcessingInputCollection()
+    instrument = Glows(
+        "l1a", "hist", "", None, "repoint00002", "v001", False
+    )
+
+    # Call the method that uses write_cdf
+    returned_products = instrument.post_processing(test_datasets, input_collection)
+
+    # Assert that post_processing returned the path to the CDF written in write_cdf
+    assert returned_products == []
+
+
 @pytest.mark.parametrize(
     "data_level, science_input, anc_input, n_prods",
     [
