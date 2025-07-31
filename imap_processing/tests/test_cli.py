@@ -120,7 +120,7 @@ def test_parse_args_dependency_json_file(caplog, tmp_path):
         },
     ]
     test_json_filename = "imap_ultra_l2_test-dependency-json_20250520_v999.json"
-    test_json_dir = tmp_path / "imap/cadence/ultra/l2/2025/05/"
+    test_json_dir = tmp_path / "imap/dependency/ultra/l2/2025/05/"
     test_json_dir.mkdir(parents=True, exist_ok=True)
     test_json_dst = test_json_dir / test_json_filename
 
