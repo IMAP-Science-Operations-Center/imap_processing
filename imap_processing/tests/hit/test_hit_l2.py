@@ -56,8 +56,8 @@ def dependencies(sci_packet_filepath, packet_date):
     for l1a_dataset in l1a_datasets:
         l1a_data_dict = {}
         if l1a_dataset.attrs["Logical_source"] in [
-            "imap_hit_l1a_counts_standard",
-            "imap_hit_l1a_counts_sectored",
+            "imap_hit_l1a_counts-standard",
+            "imap_hit_l1a_counts-sectored",
         ]:
             l1a_data_dict[l1a_dataset.attrs["Logical_source"]] = l1a_dataset
         l1b_datasets = hit_l1b(l1a_data_dict)

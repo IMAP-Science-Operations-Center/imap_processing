@@ -831,11 +831,11 @@ def test_hit_l1a(hk_packet_filepath, sci_packet_filepath):
             assert len(processed_datasets) == 3
             assert (
                 processed_datasets[0].attrs["Logical_source"]
-                == "imap_hit_l1a_counts_standard"
+                == "imap_hit_l1a_counts-standard"
             )
             assert (
                 processed_datasets[1].attrs["Logical_source"]
-                == "imap_hit_l1a_counts_sectored"
+                == "imap_hit_l1a_counts-sectored"
             )
             assert (
                 processed_datasets[2].attrs["Logical_source"]

@@ -63,15 +63,15 @@ def hit_l1b(dependencies: dict) -> list[xr.Dataset]:
                 )
             )
             logger.info("HIT L1B housekeeping dataset created")
-    if "imap_hit_l1a_counts_standard" in dependencies:
+    if "imap_hit_l1a_counts-standard" in dependencies:
         # Process science data to L1B datasets
-        l1a_counts_dataset = dependencies["imap_hit_l1a_counts_standard"]
+        l1a_counts_dataset = dependencies["imap_hit_l1a_counts-standard"]
         l1b_datasets.extend(process_science_data(l1a_counts_dataset, attr_mgr))
         logger.info("HIT L1B science datasets created")
 
-    if "imap_hit_l1a_counts_sectored" in dependencies:
+    if "imap_hit_l1a_counts-sectored" in dependencies:
         # Process science data to L1B datasets
-        l1a_counts_dataset = dependencies["imap_hit_l1a_counts_sectored"]
+        l1a_counts_dataset = dependencies["imap_hit_l1a_counts-sectored"]
         l1b_datasets.extend(process_science_data(l1a_counts_dataset, attr_mgr))
         logger.info("HIT L1B science datasets created")
 
@@ -114,7 +114,7 @@ def process_science_data(
 
     l1b_datasets = {}
 
-    if "imap_hit_l1a_counts_standard" in l1a_counts_dataset.attrs["Logical_source"]:
+    if "imap_hit_l1a_counts-standard" in l1a_counts_dataset.attrs["Logical_source"]:
         # Process counts data to L1B datasets
         l1b_datasets.update(
             {
@@ -126,7 +126,7 @@ def process_science_data(
                 ),
             }
         )
-    elif "imap_hit_l1a_counts_sectored" in l1a_counts_dataset.attrs["Logical_source"]:
+    elif "imap_hit_l1a_counts-sectored" in l1a_counts_dataset.attrs["Logical_source"]:
         # Process counts data to L1B datasets
         l1b_datasets.update(
             {

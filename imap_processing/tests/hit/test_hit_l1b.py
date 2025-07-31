@@ -141,7 +141,7 @@ def test_sum_livetime_10min():
 def test_process_summed_rates_data(dependencies):
     """Test the variables in the summed rates dataset"""
 
-    l1a_counts_dataset = dependencies["imap_hit_l1a_counts_standard"]
+    l1a_counts_dataset = dependencies["imap_hit_l1a_counts-standard"]
     livetime = xr.DataArray(l1a_counts_dataset["livetime_counter"] / 270)
     l1b_summed_rates_dataset = process_summed_rates_data(l1a_counts_dataset, livetime)
 
@@ -185,7 +185,7 @@ def test_process_summed_rates_data(dependencies):
 def test_process_standard_rates_data(dependencies):
     """Test the variables in the standard rates dataset"""
 
-    l1a_counts_dataset = dependencies["imap_hit_l1a_counts_standard"]
+    l1a_counts_dataset = dependencies["imap_hit_l1a_counts-standard"]
     livetime = xr.DataArray(l1a_counts_dataset["livetime_counter"] / 270)
     l1b_standard_rates_dataset = process_standard_rates_data(
         l1a_counts_dataset, livetime
@@ -277,7 +277,7 @@ def test_process_standard_rates_data(dependencies):
 def test_process_sectored_rates_data(dependencies):
     """Test the variables in the sectored rates dataset"""
 
-    l1a_counts_dataset = dependencies["imap_hit_l1a_counts_sectored"]
+    l1a_counts_dataset = dependencies["imap_hit_l1a_counts-sectored"]
     livetime = xr.DataArray(l1a_counts_dataset["livetime_counter"] / 270)
     l1b_sectored_rates_dataset = process_sectored_rates_data(
         l1a_counts_dataset, livetime
