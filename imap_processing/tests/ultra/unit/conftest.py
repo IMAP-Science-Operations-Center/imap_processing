@@ -512,6 +512,19 @@ def ancillary_files():
         / "imap_ultra_l1b-90sensor-sptpphcorr_20250101_v000.csv",
         "l1b-90sensor-spbtphcorr": path
         / "imap_ultra_l1b-90sensor-spbtphcorr_20250101_v000.csv",
+        "l1b-45sensor-tofxeflat": path
+        / "imap_ultra_l1b-45sensor-tofxeflat_20250101_v000.pgm",
+        "l1b-45sensor-tofxemedium": path
+        / "imap_ultra_l1b-45sensor-tofxemedium_20250101_v000.pgm",
+        "l1b-45sensor-tofxesteep": path
+        / "imap_ultra_l1b-45sensor-tofxesteep_20250101_v000.pgm",
+        "l1b-90sensor-tofxeflat": path
+        / "imap_ultra_l1b-90sensor-tofxeflat_20250101_v000.pgm",
+        "l1b-90sensor-tofxemediu": path
+        / "imap_ultra_l1b-90sensor-tofxemedium_20250101_v000.pgm",
+        "l1b-90sensor-tofxesteep": path
+        / "imap_ultra_l1b-90sensor-tofxesteep_20250101_v000.pgm",
+        "l1b-tofxph": path / "imap_ultra_l1b-tofxph_20250101_v000.pgm",
     }
 
 
