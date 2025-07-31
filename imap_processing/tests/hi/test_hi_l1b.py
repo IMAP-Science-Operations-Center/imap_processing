@@ -3,6 +3,7 @@
 from unittest import mock
 
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 
@@ -12,9 +13,14 @@ from imap_processing.hi.hi_l1b import (
     compute_hae_coordinates,
     de_esa_energy_step,
     de_nominal_bin_and_spin_phase,
+    get_esa_to_esa_energy_step_lut,
     hi_l1b,
 )
-from imap_processing.hi.utils import CoincidenceBitmap, HiConstants
+from imap_processing.hi.utils import (
+    CoincidenceBitmap,
+    EsaEnergyStepLookupTable,
+    HiConstants,
+)
 from imap_processing.spice.geometry import SpiceFrame
 
 
@@ -254,3 +260,221 @@ def test_de_esa_energy_step():
     np.testing.assert_array_equal(
         esa_energy_step_var["esa_energy_step"].values, fake_dataset.esa_step.values
     )
+
+
+class TestGetEsaToEsaEnergyStepLut:
+    """Test suite for get_esa_to_esa_energy_step_lut function."""
+
+    def setup_method(self):
+        """Set up test fixtures before each test method."""
+        # Mock the EsaEnergyStepLookupTable class
+        self.mock_lut = mock.Mock(spec=EsaEnergyStepLookupTable())
+
+        # Sample ESA energies lookup table
+        self.esa_energies_lut = pd.DataFrame(
+            {
+                "inner_esa_voltage": [-100.0, -200.0, -300.0],
+                "outer_esa_voltage": [50.0, 100.0, 150.0],
+                "inner_esa_delta_v": [5.0, 5.0, 5.0],
+                "outer_esa_delta_v": [2.5, 2.5, 2.5],
+                "esa_energy_step": [1, 2, 3],
+            }
+        )
+
+    def create_mock_dataset(
+        self, op_modes, esa_steps, inner_esa_values, outer_esa_values, shcoarse_values
+    ):
+        """Helper method to create mock L1B housekeeping dataset."""
+        return xr.Dataset(
+            {
+                "op_mode": (["epoch"], op_modes),
+                "sci_esa_step": (["epoch"], esa_steps),
+                "inner_esa_hi": (["epoch"], inner_esa_values),
+                "outer_esa": (["epoch"], outer_esa_values),
+                "shcoarse": (["epoch"], shcoarse_values),
+            }
+        )
+
+    @mock.patch("imap_processing.hi.hi_l1b.EsaEnergyStepLookupTable")
+    def test_basic_functionality_single_hvsci_segment(self, mock_lut_class):
+        """Test basic functionality with a single HVSCI segment."""
+        mock_lut_class.return_value = self.mock_lut
+
+        # Create test data with single HVSCI segment
+        l1b_hk_ds = self.create_mock_dataset(
+            op_modes=["HVSCI", "HVSCI", "HVSCI", "HVSCI"],
+            esa_steps=[1, 1, 2, 2],
+            inner_esa_values=[
+                -98.0,
+                -102.0,
+                -198.0,
+                -202.0,
+            ],  # Should match steps 1 and 2
+            outer_esa_values=[49.0, 51.0, 99.0, 101.0],
+            shcoarse_values=[1000, 1001, 1002, 1003],
+        )
+
+        result = get_esa_to_esa_energy_step_lut(l1b_hk_ds, self.esa_energies_lut)
+
+        # Verify LUT was instantiated
+        mock_lut_class.assert_called_once()
+
+        # Verify add_entry was called for each ESA step
+        assert self.mock_lut.add_entry.call_count == 2
+
+        # Check the calls made to add_entry
+        calls = self.mock_lut.add_entry.call_args_list
+
+        # First call should be for esa_step 1
+        assert calls[0][0] == (
+            1000,
+            1003,
+            1,
+            1,
+        )  # start_time, end_time, esa_step, esa_energy_step
+
+        # Second call should be for esa_step 2
+        assert calls[1][0] == (1000, 1003, 2, 2)
+
+        assert result == self.mock_lut
+
+    @mock.patch("imap_processing.hi.hi_l1b.EsaEnergyStepLookupTable")
+    def test_multiple_hvsci_segments(self, mock_lut_class):
+        """Test with multiple separate HVSCI segments."""
+        mock_lut_class.return_value = self.mock_lut
+
+        l1b_hk_ds = self.create_mock_dataset(
+            op_modes=["OTHER", "HVSCI", "HVSCI", "OTHER", "HVSCI", "HVSCI"],
+            esa_steps=[1, 1, 1, 2, 2, 2],
+            inner_esa_values=[-100.0, -98.0, -102.0, -200.0, -198.0, -202.0],
+            outer_esa_values=[50.0, 49.0, 51.0, 100.0, 99.0, 101.0],
+            shcoarse_values=[1000, 1001, 1002, 1003, 1004, 1005],
+        )
+
+        _ = get_esa_to_esa_energy_step_lut(l1b_hk_ds, self.esa_energies_lut)
+
+        # Should have 2 calls to add_entry (one for each segment)
+        assert self.mock_lut.add_entry.call_count == 2
+
+        calls = self.mock_lut.add_entry.call_args_list
+        # First segment: indices 1-2, esa_step 1
+        assert calls[0][0] == (1001, 1002, 1, 1)
+        # Second segment: indices 4-5, esa_step 2
+        assert calls[1][0] == (1004, 1005, 2, 2)
+
+    @mock.patch("imap_processing.hi.hi_l1b.EsaEnergyStepLookupTable")
+    def test_no_hvsci_segments(self, mock_lut_class):
+        """Test with no HVSCI segments."""
+        mock_lut_class.return_value = self.mock_lut
+
+        l1b_hk_ds = self.create_mock_dataset(
+            op_modes=["OTHER", "LVSCI", "LVSCI"],
+            esa_steps=[1, 2, 3],
+            inner_esa_values=[-100.0, -200.0, -300.0],
+            outer_esa_values=[50.0, 100.0, 150.0],
+            shcoarse_values=[1000, 1001, 1002],
+        )
+
+        result = get_esa_to_esa_energy_step_lut(l1b_hk_ds, self.esa_energies_lut)
+
+        # No add_entry calls should be made
+        self.mock_lut.add_entry.assert_not_called()
+        assert result == self.mock_lut
+
+    @mock.patch("imap_processing.hi.hi_l1b.EsaEnergyStepLookupTable")
+    @mock.patch("imap_processing.hi.hi_l1b.logger")
+    def test_no_voltage_match_found(self, mock_logger, mock_lut_class):
+        """Test when no matching ESA energy is found."""
+        mock_lut_class.return_value = self.mock_lut
+
+        l1b_hk_ds = self.create_mock_dataset(
+            op_modes=["HVSCI", "HVSCI"],
+            esa_steps=[1, 1],
+            inner_esa_values=[-500.0, -500.0],  # No match in lookup table
+            outer_esa_values=[500.0, 500.0],
+            shcoarse_values=[1000, 1001],
+        )
+
+        _ = get_esa_to_esa_energy_step_lut(l1b_hk_ds, self.esa_energies_lut)
+
+        # Should log critical error
+        mock_logger.critical.assert_called_once()
+        assert (
+            "No esa_energy_step matches found" in mock_logger.critical.call_args[0][0]
+        )
+
+        # No add_entry should be called
+        self.mock_lut.add_entry.assert_not_called()
+
+    @mock.patch("imap_processing.hi.hi_l1b.EsaEnergyStepLookupTable")
+    @mock.patch("imap_processing.hi.hi_l1b.logger")
+    def test_multiple_voltage_matches_found(self, mock_logger, mock_lut_class):
+        """Test when multiple matching ESA energies are found."""
+        mock_lut_class.return_value = self.mock_lut
+
+        # Create lookup table with overlapping voltage ranges
+        overlapping_lut = pd.DataFrame(
+            {
+                "inner_esa_voltage": [-100.0, -102.0],  # Overlapping ranges
+                "outer_esa_voltage": [50.0, 52.0],
+                "inner_esa_delta_v": [10.0, 10.0],  # Large deltas create overlap
+                "outer_esa_delta_v": [10.0, 10.0],
+                "esa_energy_step": [1, 2],
+            }
+        )
+
+        l1b_hk_ds = self.create_mock_dataset(
+            op_modes=["HVSCI", "HVSCI"],
+            esa_steps=[1, 1],
+            inner_esa_values=[-101.0, -101.0],  # Matches both rows
+            outer_esa_values=[51.0, 51.0],
+            shcoarse_values=[1000, 1001],
+        )
+
+        _ = get_esa_to_esa_energy_step_lut(l1b_hk_ds, overlapping_lut)
+
+        # Should log critical error for multiple matches
+        mock_logger.critical.assert_called_once()
+        assert (
+            "Multiple esa_energy_step matches found"
+            in mock_logger.critical.call_args[0][0]
+        )
+
+        # No add_entry should be called
+        self.mock_lut.add_entry.assert_not_called()
+
+    @mock.patch("imap_processing.hi.hi_l1b.EsaEnergyStepLookupTable")
+    def test_single_data_point_segment(self, mock_lut_class):
+        """Test with HVSCI segment containing only one data point."""
+        mock_lut_class.return_value = self.mock_lut
+
+        l1b_hk_ds = self.create_mock_dataset(
+            op_modes=["HVSCI"],
+            esa_steps=[1],
+            inner_esa_values=[-100.0],
+            outer_esa_values=[50.0],
+            shcoarse_values=[1000],
+        )
+
+        _ = get_esa_to_esa_energy_step_lut(l1b_hk_ds, self.esa_energies_lut)
+
+        # Should still work with single data point
+        self.mock_lut.add_entry.assert_called_once_with(1000, 1000, 1, 1)
+
+    @mock.patch("imap_processing.hi.hi_l1b.EsaEnergyStepLookupTable")
+    def test_esa_step_not_in_segment(self, mock_lut_class):
+        """Test when an ESA step doesn't appear in a particular HVSCI segment."""
+        mock_lut_class.return_value = self.mock_lut
+
+        l1b_hk_ds = self.create_mock_dataset(
+            op_modes=["OTHER", "HVSCI", "HVSCI", "OTHER"],
+            esa_steps=[1, 2, 2, 1],  # ESA step 1 not in HVSCI segment
+            inner_esa_values=[-100.0, -198.0, -202.0, -100.0],
+            outer_esa_values=[50.0, 99.0, 101.0, 50.0],
+            shcoarse_values=[1000, 1001, 1002, 1003],
+        )
+
+        _ = get_esa_to_esa_energy_step_lut(l1b_hk_ds, self.esa_energies_lut)
+
+        # Only ESA step 2 should be processed (it's the only one in HVSCI segment)
+        self.mock_lut.add_entry.assert_called_once_with(1001, 1002, 2, 2)

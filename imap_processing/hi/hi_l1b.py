@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Union
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from imap_processing import imap_module_directory
@@ -15,6 +16,7 @@ from imap_processing.hi.hi_l1a import HALF_CLOCK_TICK_S
 from imap_processing.hi.utils import (
     HIAPID,
     CoincidenceBitmap,
+    EsaEnergyStepLookupTable,
     HiConstants,
     create_dataset_variables,
     parse_sensor_number,
@@ -27,7 +29,7 @@ from imap_processing.spice.spin import (
     get_instrument_spin_phase,
     get_spacecraft_spin_phase,
 )
-from imap_processing.spice.time import met_to_sclkticks, sct_to_et
+from imap_processing.spice.time import met_to_sclkticks, met_to_utc, sct_to_et
 from imap_processing.utils import packet_file_to_datasets
 
 
@@ -387,7 +389,7 @@ def compute_hae_coordinates(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
     return new_vars
 
 
-def de_esa_energy_step(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
+def de_esa_energy_step(l1b_de_ds: xr.Dataset) -> dict[str, xr.DataArray]:
     """
     Compute esa_energy_step for each direct event.
 
@@ -397,7 +399,7 @@ def de_esa_energy_step(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
 
     Parameters
     ----------
-    dataset : xarray.Dataset
+    l1b_de_ds : xarray.Dataset
         The partial L1B dataset.
 
     Returns
@@ -407,10 +409,101 @@ def de_esa_energy_step(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
     """
     new_vars = create_dataset_variables(
         ["esa_energy_step"],
-        len(dataset.epoch),
+        len(l1b_de_ds.epoch),
         att_manager_lookup_str="hi_de_{0}",
     )
+
     # TODO: Implement this algorithm
-    new_vars["esa_energy_step"].values = dataset.esa_step.values
+    new_vars["esa_energy_step"].values = l1b_de_ds.esa_step.values
 
     return new_vars
+
+
+def get_esa_to_esa_energy_step_lut(
+    l1b_hk_ds: xr.Dataset, esa_energies_lut: pd.DataFrame
+) -> EsaEnergyStepLookupTable:
+    """
+    Generate a lookup table that associates an esa_step to an esa_energy_step.
+
+    Parameters
+    ----------
+    l1b_hk_ds : xarray.Dataset
+        L1B housekeeping dataset.
+    esa_energies_lut : pandas.DataFrame
+        Esa energies lookup table derived from ancillary file.
+
+    Returns
+    -------
+    esa_energy_step_lut : EsaEnergyStepLookupTable
+        A lookup table object that can be used to query by MET time and esa_step
+        for the associated esa_energy_step values.
+
+    Notes
+    -----
+    Algorithm definition in section 2.1.2 of IMAP Hi Algorithm Document.
+    """
+    # Instantiate a lookup table object
+    esa_energy_step_lut = EsaEnergyStepLookupTable()
+    # Get the set of esa_steps visited
+    esa_steps = list(sorted(set(l1b_hk_ds["sci_esa_step"].data)))
+    # Break into contiguous segments where op_mode == "HVSCI"
+    padded_mask = np.pad(
+        l1b_hk_ds["op_mode"].data == "HVSCI", (1, 1), constant_values=False
+    )
+    mode_changes = np.diff(padded_mask.astype(int))
+    hsvsci_starts = np.nonzero(mode_changes == 1)[0]
+    hsvsci_ends = np.nonzero(mode_changes == -1)[0]
+    for i_start, i_end in zip(hsvsci_starts, hsvsci_ends):
+        contiguous_hvsci_ds = l1b_hk_ds.isel(dict(epoch=slice(i_start, i_end)))
+        # Find median inner and outer ESA voltages for each ESA step
+        for esa_step in esa_steps:
+            single_esa_ds = contiguous_hvsci_ds.where(
+                contiguous_hvsci_ds["sci_esa_step"] == esa_step, drop=True
+            )
+            if len(single_esa_ds["epoch"].data) == 0:
+                logger.debug(
+                    f"No instances of sci_esa_step == {esa_step} "
+                    f"present in contiguous HVSCI block with interval: "
+                    f"({met_to_utc(contiguous_hvsci_ds['shcoarse'].data[[0, -1]])})"
+                )
+                continue
+            median_inner_esa = np.median(single_esa_ds["inner_esa_hi"].data)
+            median_outer_esa = np.median(single_esa_ds["outer_esa"].data)
+            # Match median voltages to ESA Energies LUT
+            inner_voltage_match = (
+                np.abs(median_inner_esa - esa_energies_lut["inner_esa_voltage"])
+                <= esa_energies_lut["inner_esa_delta_v"]
+            )
+            outer_voltage_match = (
+                np.abs(median_outer_esa - esa_energies_lut["outer_esa_voltage"])
+                <= esa_energies_lut["outer_esa_delta_v"]
+            )
+            matching_esa_energy = esa_energies_lut[
+                np.logical_and(inner_voltage_match, outer_voltage_match)
+            ]
+            if len(matching_esa_energy) != 1:
+                if len(matching_esa_energy) == 0:
+                    logger.critical(
+                        f"No esa_energy_step matches found for esa_step "
+                        f"{esa_step} during interval: "
+                        f"({met_to_utc(single_esa_ds['shcoarse'].data[[0, -1]])}) "
+                        f"with median esa voltages: "
+                        f"{median_inner_esa}, {median_outer_esa}."
+                    )
+                if len(matching_esa_energy) > 1:
+                    logger.critical(
+                        f"Multiple esa_energy_step matches found for esa_step "
+                        f"{esa_step} during interval: "
+                        f"({met_to_utc(single_esa_ds['shcoarse'].data[[0, -1]])}) "
+                        f"with median esa voltages: "
+                        f"{median_inner_esa}, {median_outer_esa}."
+                    )
+                continue
+            # Set LUT to matching esa_energy_step for time range
+            esa_energy_step_lut.add_entry(
+                contiguous_hvsci_ds["shcoarse"].data[0],
+                contiguous_hvsci_ds["shcoarse"].data[-1],
+                esa_step,
+                matching_esa_energy["esa_energy_step"].values[0],
+            )
+    return esa_energy_step_lut
