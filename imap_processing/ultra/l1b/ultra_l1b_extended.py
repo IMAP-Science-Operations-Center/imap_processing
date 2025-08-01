@@ -27,6 +27,8 @@ from imap_processing.ultra.l1b.lookup_utils import (
 
 logger = logging.getLogger(__name__)
 
+FILLVAL_UINT8 = 255
+
 
 class StartType(Enum):
     """Start Type: 1=Left, 2=Right."""
@@ -1169,13 +1171,19 @@ def determine_ebin_pulse_height(
     """
     # PH event TOF normalization to Z axis
     ctof, _ = get_ctof(tof, path_length, type="PH")
-    ebins = get_ebins("l1b-tofxph", energy, ctof, ancillary_files)
+
+    ebins = np.full(path_length.shape, FILLVAL_UINT8, dtype=np.uint8)
+    ebins = get_ebins("l1b-tofxph", energy, ctof, ebins, ancillary_files)
 
     return ebins
 
 
 def determine_ebin_ssd(
-    energy: np.ndarray, tof: np.ndarray, path_length: np.ndarray
+    energy: np.ndarray,
+    tof: np.ndarray,
+    path_length: np.ndarray,
+    sensor: str,
+    ancillary_files: dict,
 ) -> NDArray:
     """
     Determine the species for SSD events.
@@ -1201,6 +1209,10 @@ def determine_ebin_ssd(
         Time of flight of the SSD event (tenths of a nanosecond).
     path_length : np.ndarray
         Path length (r) (hundredths of a millimeter).
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
+    ancillary_files : dict
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
@@ -1210,7 +1222,39 @@ def determine_ebin_ssd(
     # SSD event TOF normalization to Z axis
     ctof, _ = get_ctof(tof, path_length, type="SSD")
 
-    ebin = np.full(len(ctof), 255, dtype=np.uint8)  # placeholder
+    ebins = np.full(path_length.shape, FILLVAL_UINT8, dtype=np.uint8)
+
+    steep_mask = path_length < get_image_params(
+        "PathSteepThresh", sensor, ancillary_files
+    )
+    medium_mask = (
+        path_length >= get_image_params("PathSteepThresh", sensor, ancillary_files)
+    ) & (path_length < get_image_params("PathMediumThresh", sensor, ancillary_files))
+    flat_mask = path_length >= get_image_params(
+        "PathMediumThresh", sensor, ancillary_files
+    )
+
+    ebins[steep_mask] = get_ebins(
+        f"l1b-{sensor[5::]}sensor-tofxesteep",
+        energy[steep_mask],
+        ctof[steep_mask],
+        ebins[steep_mask],
+        ancillary_files,
+    )
+    ebins[medium_mask] = get_ebins(
+        f"l1b-{sensor[5::]}sensor-tofxemedium",
+        energy[medium_mask],
+        ctof[medium_mask],
+        ebins[medium_mask],
+        ancillary_files,
+    )
+    ebins[flat_mask] = get_ebins(
+        f"l1b-{sensor[5::]}sensor-tofxeflat",
+        energy[flat_mask],
+        ctof[flat_mask],
+        ebins[flat_mask],
+        ancillary_files,
+    )
 
     # TODO: get these lookup tables
     # if r < get_image_params("PathSteepThresh"):
@@ -1220,4 +1264,4 @@ def determine_ebin_ssd(
     # else:
     #     # bin = ExTOFSpeciesFlat[energy, ctof]
 
-    return ebin
+    return ebins

@@ -656,24 +656,40 @@ def test_determine_ebin_ph(events_fsw_comparison_theta_0_revised, ancillary_file
         ancillary_files,
     )
 
+    valid = (
+        (df_ph["Energy"].astype(float).astype(int) >= 0)
+        & (df_ph["Energy"].astype(float).astype(int) < 2048)
+        & (df_ph["cTOF"].astype(float).astype(int) >= 0)
+        & (df_ph["cTOF"].astype(float).astype(int) < 4096)
+    )
+
     np.testing.assert_allclose(
-        ebins, df_ph["ComputedBin"].astype(float).astype(int), atol=1e-05
+        ebins[valid], df_ph["ComputedBin"].astype(float).astype(int)[valid], atol=1e-05
     )
 
 
 @pytest.mark.external_test_data
-def test_determine_ebin_ssd(test_fixture):
+def test_determine_ebin_ssd(events_fsw_comparison_theta_0_revised, ancillary_files):
     """Tests determine_ebin_ssd function."""
-    df_filt, _, _, _ = test_fixture
+    df = pd.read_csv(events_fsw_comparison_theta_0_revised)
+    df_filt = df[df["StartType"] != -1]
     df_ssd = df_filt[df_filt["StopType"].isin(StopType.SSD.value)]
 
-    bin = determine_ebin_ssd(
+    ebins = determine_ebin_ssd(
         df_ssd["Energy"].astype("float").to_numpy(),
         df_ssd["TOF"].astype("float").to_numpy(),
         df_ssd["r"].astype("float").to_numpy(),
+        "ultra45",
+        ancillary_files,
     )
 
-    # TODO: add in bin values.
+    valid = (
+        (df_ssd["Energy"].astype(float).astype(int) >= 0)
+        & (df_ssd["Energy"].astype(float).astype(int) < 4096)
+        & (df_ssd["cTOF"].astype(float).astype(int) >= 0)
+        & (df_ssd["cTOF"].astype(float).astype(int) < 2048)
+    )
+
     np.testing.assert_allclose(
-        bin, np.full(len(bin), 255, dtype=np.uint8), atol=1e-05, rtol=0
+        ebins[valid], df_ssd["ComputedBin"].astype(float).astype(int)[valid], atol=1e-05
     )

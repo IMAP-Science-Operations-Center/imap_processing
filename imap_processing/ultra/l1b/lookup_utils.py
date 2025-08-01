@@ -8,8 +8,6 @@ from numpy.typing import NDArray
 
 from imap_processing.quality_flags import ImapDEUltraFlags
 
-FILLVAL_UINT8 = 255
-
 
 def get_y_adjust(dy_lut: np.ndarray, ancillary_files: dict) -> npt.NDArray:
     """
@@ -356,6 +354,7 @@ def get_ebins(
     lut: str,
     energy: NDArray,
     ctof: NDArray,
+    ebins: NDArray,
     ancillary_files: dict,
 ) -> NDArray:
     """
@@ -369,6 +368,8 @@ def get_ebins(
         Energy from the event (keV).
     ctof : NDArray
         Corrected TOF (tenths of a ns).
+    ebins : NDArray
+        Energy bins to fill with values.
     ancillary_files : dict[Path]
         Ancillary files.
 
@@ -382,17 +383,25 @@ def get_ebins(
         pixel_text = "".join(all_lines[4:])
 
     lut_array = np.fromstring(pixel_text, sep=" ", dtype=int).reshape((2048, 4096))
-    energy_lookup = (2048 - np.floor(energy)).astype(int)
-    ctof_lookup = np.floor(ctof).astype(int)
-
-    ebins = np.full(energy.shape, FILLVAL_UINT8, dtype=np.uint8)
-    valid = (
-        (energy_lookup >= 0)
-        & (energy_lookup < 2048)
-        & (ctof_lookup >= 0)
-        & (ctof_lookup < 4096)
-    )
-
-    ebins[valid] = lut_array[energy_lookup[valid], ctof_lookup[valid]]
+    if lut == "l1b-tofxph":
+        energy_lookup = (2048 - np.floor(energy)).astype(int)
+        ctof_lookup = np.floor(ctof).astype(int)
+        valid = (
+            (energy_lookup >= 0)
+            & (energy_lookup < 2048)
+            & (ctof_lookup >= 0)
+            & (ctof_lookup < 4096)
+        )
+        ebins[valid] = lut_array[energy_lookup[valid], ctof_lookup[valid]]
+    else:
+        energy_lookup = np.floor(energy).astype(int)
+        ctof_lookup = (2048 - np.floor(ctof)).astype(int)
+        valid = (
+            (energy_lookup >= 0)
+            & (energy_lookup < 4096)
+            & (ctof_lookup >= 0)
+            & (ctof_lookup < 2048)
+        )
+        ebins[valid] = lut_array[ctof_lookup[valid], energy_lookup[valid]]
 
     return ebins
