@@ -108,9 +108,7 @@ nitpick_ignore_regex = [
     (r"py:.*", r".*RectangularSkyMap.*"),
     (r"py:.*", r".*.lo.l0.utils.*"),
     (r"py:.*", r".*.lo.l0.data_classes.*"),
-    (r"py:.*", r".*.hi.*.CoincidenceBitmap.*"),
-    (r"py:.*", r".*.hi.hi_l1b.TriggerId.*"),
-    (r"py:.*", r".*.hi.hi_l1c.CalibrationProductConfig.*"),
+    (r"py:.*", r".*.hi.*.[A-Z][a-zA-Z]*.*"),  # match any hi CamelCase class
     (r"py:.*", r".*.hit.l0.utils.*"),
     (r"py:.*", r".*.hit.l0.data_classes.*"),
     (r"py:.*", r".*.hit.l1a.*"),
