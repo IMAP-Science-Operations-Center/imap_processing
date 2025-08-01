@@ -34,6 +34,8 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
     interpolate_fwhm,
+    is_back_tof_valid,
+    is_coin_ph_valid,
 )
 
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
@@ -697,3 +699,43 @@ def test_determine_ebin_ssd(events_fsw_comparison_theta_0_revised, ancillary_fil
     np.testing.assert_allclose(
         ebins[valid], df_ssd["ComputedBin"].astype(float).astype(int)[valid], atol=1e-05
     )
+
+
+@pytest.mark.external_test_data
+def test_is_back_tof_valid(test_fixture, ancillary_files):
+    """Tests is_back_tof_valid function."""
+    df_filt, _, _, de_dataset = test_fixture
+    df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
+
+    _, _, _, _, tofx, tofy = get_ph_tof_and_back_positions(
+        de_dataset, df_filt.Xf.astype("float").values, "ultra45", ancillary_files
+    )
+
+    valid = is_back_tof_valid(
+        tofx,
+        tofy,
+        df_ph["StopType"].astype(int),
+        "ultra45",
+        ancillary_files,
+    )
+    back_tof_valid_bool = df_ph["BackTOFValid"].astype(int).astype(bool).values
+
+    np.testing.assert_equal(back_tof_valid_bool, valid)
+
+
+def test_is_coin_ph_valid(test_fixture, ancillary_files):
+    """Tests is_coin_ph_valid function."""
+    df_filt, _, _, de_dataset = test_fixture
+    df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
+
+    valid = is_coin_ph_valid(
+        df_ph["eTOF"].astype(float).values,
+        df_ph["Xc"].astype(float).values,
+        df_ph["Xb"].astype(float).values,
+        "ultra45",
+        ancillary_files,
+    )
+    coin_ph_valid_bool = df_ph["CoinPHValid"].astype(int).astype(bool).values
+    valid = np.asarray(valid, dtype=bool)
+
+    np.testing.assert_equal(coin_ph_valid_bool, valid)

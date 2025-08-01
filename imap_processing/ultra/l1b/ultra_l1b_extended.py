@@ -164,7 +164,7 @@ def get_front_y_position(
 
 def get_ph_tof_and_back_positions(
     de_dataset: xarray.Dataset, xf: np.ndarray, sensor: str, ancillary_files: dict
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Calculate back xb, yb position and tof.
 
@@ -281,7 +281,7 @@ def get_ph_tof_and_back_positions(
         stop_type_bottom
     ] / 10 * get_image_params("XFTTOF", sensor, ancillary_files)
 
-    return tof, t2, xb, yb
+    return tof, t2, xb, yb, tofx, tofy
 
 
 def get_path_length(
@@ -1269,3 +1269,112 @@ def determine_ebin_ssd(
     )
 
     return ebins
+
+
+def is_back_tof_valid(
+    tofx: NDArray,
+    tofy: NDArray,
+    stop_type: NDArray,
+    sensor: str,
+    ancillary_files: dict,
+) -> NDArray:
+    """
+    Determine whether back TOF is valid based on stop type.
+
+    Parameters
+    ----------
+    tofx : NDArray
+        TOF in X direction (tenths of a nanosecond).
+    tofy : NDArray
+        TOF in Y direction (tenths of a nanosecond).
+    stop_type : NDArray
+        Stop type: 1=Top, 2=Bottom.
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
+    ancillary_files : dict
+        Ancillary files for lookup.
+
+    Returns
+    -------
+    valid_mask : NDArray
+        Boolean array indicating whether back TOF is valid.
+
+    Notes
+    -----
+    From page 33 of the IMAP-Ultra Flight Software Specification document.
+    """
+    diff = tofy - tofx
+
+    top_mask = stop_type == StopType.Top.value
+    bottom_mask = stop_type == StopType.Bottom.value
+
+    valid = np.zeros_like(diff, dtype=bool)
+
+    diff_tp_min = get_image_params("TOFDiffTpMin", sensor, ancillary_files)
+    diff_tp_max = get_image_params("TOFDiffTpMax", sensor, ancillary_files)
+    diff_bt_min = get_image_params("TOFDiffBtMin", sensor, ancillary_files)
+    diff_bt_max = get_image_params("TOFDiffBtMax", sensor, ancillary_files)
+
+    valid[top_mask] = (diff[top_mask] >= diff_tp_min) & (diff[top_mask] <= diff_tp_max)
+    valid[bottom_mask] = (diff[bottom_mask] >= diff_bt_min) & (
+        diff[bottom_mask] <= diff_bt_max
+    )
+
+    return valid
+
+
+def is_coin_ph_valid(
+    etof: NDArray,
+    xc: NDArray,
+    xb: NDArray,
+    sensor: str,
+    ancillary_files: dict,
+) -> NDArray:
+    """
+    Determine whether Coincidence-PH data are valid.
+
+    This is based on thresholds defined in the IMAP-Ultra Flight Software Specification
+    (see page 36).
+
+    Parameters
+    ----------
+    etof : NDArray
+        Electron TOF (tenths of a nanosecond).
+    xc : NDArray
+        Coincidence X position (hundredths of a mm).
+    xb : NDArray
+        Back X position (hundredths of a mm).
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
+    ancillary_files : dict
+        Ancillary files for lookup.
+
+    Returns
+    -------
+    valid_mask : NDArray
+        Boolean array indicating Coin-PH validity.
+
+    Notes
+    -----
+    Logic derived from page 36 of the IMAP-Ultra Flight Software Specification document.
+    """
+    etof_min = get_image_params("eTOFMin", sensor, ancillary_files)
+    etof_max = get_image_params("eTOFMax", sensor, ancillary_files)
+
+    etof_valid = (etof >= etof_min) & (etof <= etof_max)
+
+    diff_x = xc - xb
+    etof_offset1 = get_image_params("eTOFOff1", sensor, ancillary_files)
+    etof_offset2 = get_image_params("eTOFOff2", sensor, ancillary_files)
+    etof_slope1 = get_image_params("eTOFSlope1", sensor, ancillary_files)
+    etof_slope2 = get_image_params("eTOFSlope2", sensor, ancillary_files)
+
+    t1 = (etof - etof_offset1) * etof_slope1 / 1024
+    t2 = (etof - etof_offset2) * etof_slope2 / 1024
+
+    condition_1 = (diff_x >= t1) & (diff_x <= t2)
+    condition_2 = (diff_x >= -t2) & (diff_x <= -t1)
+
+    spatial_valid = condition_1 | condition_2
+
+    return etof_valid & spatial_valid
