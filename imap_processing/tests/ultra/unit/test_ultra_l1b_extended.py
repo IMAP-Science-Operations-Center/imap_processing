@@ -106,7 +106,7 @@ def test_get_ph_tof_and_back_positions(test_fixture, ancillary_files):
 
     df_filt, _, _, de_dataset = test_fixture
 
-    ph_tof, _, ph_xb, ph_yb = get_ph_tof_and_back_positions(
+    ph_tof, _, ph_xb, ph_yb, _, _ = get_ph_tof_and_back_positions(
         de_dataset, df_filt.Xf.astype("float").values, "ultra45", ancillary_files
     )
 
@@ -171,7 +171,7 @@ def test_get_coincidence_positions(test_fixture, ancillary_files):
     """Tests get_coincidence_positions function."""
     df_filt, _, _, de_dataset = test_fixture
     # Get particle tof (t2).
-    _, t2, _, _ = get_ph_tof_and_back_positions(
+    _, t2, _, _, _, _ = get_ph_tof_and_back_positions(
         de_dataset, df_filt.Xf.astype("float").values, "ultra45", ancillary_files
     )
 
@@ -196,7 +196,7 @@ def test_calculate_etof_xc(test_fixture, ancillary_files):
     """Tests calculate_etof_xc function."""
     df_filt, _, _, de_dataset = test_fixture
     # Get particle tof (t2).
-    _, t2, _, _ = get_ph_tof_and_back_positions(
+    _, t2, _, _, _, _ = get_ph_tof_and_back_positions(
         de_dataset, df_filt.Xf.astype("float").values, "ultra45", ancillary_files
     )
     # Filter based on STOP_TYPE.
