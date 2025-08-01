@@ -1160,15 +1160,15 @@ def determine_ebin_pulse_height(
 
     Parameters
     ----------
-    energy : np.ndarray
+    energy : NDArray
         Energy from the PH event (keV).
-    tof : np.ndarray
+    tof : NDArray
         Time of flight of the PH event (tenths of a nanosecond).
-    path_length : np.ndarray
+    path_length : NDArray
         Path length (r) (hundredths of a millimeter).
-    backtofvalid : np.ndarray
+    backtofvalid : NDArray
         Boolean array indicating if the back TOF is valid.
-    coinphvalid : np.ndarray
+    coinphvalid : NDArray
         Boolean array indicating if the Coincidence PH is valid.
     ancillary_files : dict
         Ancillary files containing the lookup tables.
@@ -1191,9 +1191,9 @@ def determine_ebin_pulse_height(
 
 
 def determine_ebin_ssd(
-    energy: np.ndarray,
-    tof: np.ndarray,
-    path_length: np.ndarray,
+    energy: NDArray,
+    tof: NDArray,
+    path_length: NDArray,
     sensor: str,
     ancillary_files: dict,
 ) -> NDArray:
@@ -1215,11 +1215,11 @@ def determine_ebin_ssd(
 
     Parameters
     ----------
-    energy : np.ndarray
+    energy : NDArray
         Energy from the SSD event (keV).
-    tof : np.ndarray
+    tof : NDArray
         Time of flight of the SSD event (tenths of a nanosecond).
-    path_length : np.ndarray
+    path_length : NDArray
         Path length (r) (hundredths of a millimeter).
     sensor : str
         Sensor name: "ultra45" or "ultra90".
@@ -1228,7 +1228,7 @@ def determine_ebin_ssd(
 
     Returns
     -------
-    bin : np.ndarray
+    bin : NDArray
         Species bin.
     """
     # SSD event TOF normalization to Z axis
@@ -1267,13 +1267,5 @@ def determine_ebin_ssd(
         ebins[flat_mask],
         ancillary_files,
     )
-
-    # TODO: get these lookup tables
-    # if r < get_image_params("PathSteepThresh"):
-    #     # bin = ExTOFSpeciesSteep[energy, ctof]
-    # elif r < get_image_params("PathMediumThresh"):
-    #     # bin = ExTOFSpeciesMedium[energy, ctof]
-    # else:
-    #     # bin = ExTOFSpeciesFlat[energy, ctof]
 
     return ebins
