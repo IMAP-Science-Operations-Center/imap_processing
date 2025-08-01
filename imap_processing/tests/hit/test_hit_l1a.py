@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import Mock
 
 import numpy as np
@@ -35,13 +36,13 @@ from imap_processing.tests.hit.helpers.l1_validation import (
 @pytest.fixture(scope="module")
 def hk_packet_filepath():
     """Set path to test data file"""
-    return imap_module_directory / "tests/hit/test_data/hskp_sample.ccsds"
+    return Path(imap_module_directory / "tests/hit/test_data/hskp_sample.ccsds")
 
 
 @pytest.fixture(scope="module")
 def sci_packet_filepath():
     """Set path to test data file"""
-    return imap_module_directory / "tests/hit/test_data/sci_sample.ccsds"
+    return Path(imap_module_directory / "tests/hit/test_data/sci_sample.ccsds")
 
 
 @pytest.fixture(scope="module")
@@ -826,10 +827,10 @@ def test_hit_l1a(hk_packet_filepath, sci_packet_filepath):
 
     Parameters
     ----------
-    hk_packet_filepath : str
-        Path to ccsds file for housekeeping data
-    sci_packet_filepath : str
-        Path to ccsds file for science data
+    hk_packet_filepath : Path
+        File path to ccsds file for housekeeping data
+    sci_packet_filepath : Path
+        File path to ccsds file for science data
     """
     for packet_filepath in [hk_packet_filepath, sci_packet_filepath]:
         processed_datasets = hit_l1a(packet_filepath, packet_date="20100105")
@@ -852,3 +853,9 @@ def test_hit_l1a(hk_packet_filepath, sci_packet_filepath):
                 processed_datasets[2].attrs["Logical_source"]
                 == "imap_hit_l1a_direct-events"
             )
+
+    # Assert that ValueError is raised when packet_date is None
+    with pytest.raises(
+        ValueError, match="Packet date is required for processing L1A data."
+    ):
+        hit_l1a(packet_filepath, "")
