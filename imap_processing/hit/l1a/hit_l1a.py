@@ -55,8 +55,7 @@ def hit_l1a(packet_file: Path, packet_date: Union[str, Path]) -> list[xr.Dataset
         List of Datasets of L1A processed data.
     """
     if not packet_date:
-        logger.error("Packet date is required for processing L1A data.")
-        raise ValueError("Packet date cannot be None.")
+        raise ValueError("Packet date is required for processing L1A data.")
     else:
         # Unpack ccsds file to xarray datasets
         datasets_by_apid = get_datasets_by_apid(str(packet_file))
@@ -406,11 +405,10 @@ def subset_sectored_counts(
     # Filter out start indices that are less than or equal to the bin size
     # since the previous 10 minutes are needed for calculating rates
     if start_indices.size == 0:
-        logger.error(
+        raise ValueError(
             "No data to process - valid start indices not found for "
             "complete sectored counts."
         )
-        raise ValueError("No valid start indices found for complete sectored counts.")
     else:
         start_indices = start_indices[start_indices >= bin_size]
 
@@ -450,10 +448,16 @@ def update_livetime_coord(sectored_dataset: xr.Dataset) -> xr.Dataset:
     """
     Update livetime_counter to use a new epoch coordinate.
 
+    Assign a new epoch coordinate to the `livetime_counter` variable.
+    This new coordinate is aligned with the original `epoch` dimension,
+    ensuring that `livetime_counter` remains unaffected when the original
+    `epoch` dimension is filtered for complete sets in `subset_sectored_counts`
+    function.
+
     Parameters
     ----------
     sectored_dataset : xarray.Dataset
-        The dataset containing sectored counts and livetime data.
+        The dataset containing sectored counts and livetime_counter data.
 
     Returns
     -------
@@ -495,25 +499,26 @@ def subset_livetime(dataset: xr.Dataset) -> xr.Dataset:
     xarray.Dataset
         The updated dataset with trimmed livetime data.
     """
+    # epoch values are per science frame which is 1 minute
     epoch_vals = dataset["epoch"].values
     epoch_livetime_vals = dataset["epoch_livetime"].values
 
     if not epoch_vals.size:
-        logger.error("Epoch values are empty. Cannot proceed with livetime subsetting.")
-        raise ValueError("Epoch values are empty.")
+        raise ValueError(
+            "Epoch values are empty. Cannot proceed with livetime subsetting."
+        )
 
     # Get index positions of epoch[0] and epoch[-1] in epoch_livetime
     start_idx = np.where(epoch_livetime_vals == epoch_vals[0])[0][0]
     end_idx = np.where(epoch_livetime_vals == epoch_vals[-1])[0][0]
 
     if start_idx < 10:
-        logger.error(
-            "Start or end indices for livetime are less than 10. "
-            "This indicates that the dataset is too small to shift livetime correctly."
+        raise ValueError(
+            "Start index for livetime is less than 10. This indicates that the "
+            "dataset is too small to shift livetime correctly."
         )
-        raise ValueError("Start or end indices for livetime are out of range.")
 
-    # Compute shifted indices
+    # Compute shifted indices by 10 minutes
     start_trimmed = max(start_idx - 10, 0)
     end_trimmed = max(end_idx - 10, 0)
 

@@ -183,7 +183,10 @@ def test_subset_livetime():
             "epoch_livetime": np.array([0, 1, 2]),
         },
     )
-    with pytest.raises(ValueError, match="Epoch values are empty."):
+    with pytest.raises(
+        ValueError,
+        match="Epoch values are empty. Cannot proceed with livetime subsetting.",
+    ):
         subset_livetime(dataset)
 
     # Test case 3: Not enough livetime values, the function should raise a ValueError
@@ -197,7 +200,9 @@ def test_subset_livetime():
         },
     )
     with pytest.raises(
-        ValueError, match="Start or end indices for livetime are out of range."
+        ValueError,
+        match="Start index for livetime is less than 10. This indicates that the "
+        "dataset is too small to shift livetime correctly.",
     ):
         subset_livetime(dataset)
 
@@ -486,7 +491,9 @@ def test_subset_sectored_counts():
     # Test with only partial data in the dataset
     l1a_counts_dataset = create_l1a_counts_dataset(np.arange(100, 160, 2))
     with pytest.raises(
-        ValueError, match="No valid start indices found for complete sectored counts."
+        ValueError,
+        match="No data to process - valid start indices not found for "
+        "complete sectored counts.",
     ):
         subset_sectored_counts(l1a_counts_dataset, packet_date="20100106")
 
@@ -593,27 +600,40 @@ def test_validate_l1a_counts_data(sci_packet_filepath, validation_data):
     validation_data : pd.DataFrame
         Preloaded validation data
     """
+    # TODO: consider parameterization to test both the instrument
+    #  file and fake data file
+
     # Prepare validation data for comparison with processed data
     validation_data = prepare_counts_validation_data(validation_data)
 
-    # Copy the validation data for sectored and livetime validation
+    # Copy the validation data for sectored data validation.
     # The first complete set of sectored data with sufficient livetime
-    # data available is from the index 17 to -4.
+    # data available is from index 17 to -4. Slice the validation data.
     sectored_validation_data = validation_data.iloc[17:-4].copy().reset_index(drop=True)
 
     # The corresponding livetime values for the sectored data is from index 7 to -14
     # (i.e. 10 minutes before the first complete set of sectored data).
-    livetime_validation_data = validation_data.iloc[7:-14].copy().reset_index(drop=True)
+    livetime_validation_data = (
+        validation_data[["livetime_counter"]].iloc[7:-14].copy().reset_index(drop=True)
+    )
+
+    # NOTE: slicing indices are specific to the sci_sample_raw.csv validation file
 
     # Process the sample data into datasets to be validated
     processed_datasets = hit_l1a(sci_packet_filepath, packet_date="20100105")
     standard_counts_data = processed_datasets[0]
     sectored_counts_data = processed_datasets[1]
 
-    # Fields to skip in comparison. CCSDS headers plus others.
-    # The CCSDS header fields contain data per packet in the dataset, but the
-    # validation data has one value per science frame.
-    skip_fields = [
+    # The validation data contains all science data variables for both
+    # standard and sectored datasets. When comparing each dataset to the
+    # validation data, a list of variables to skip in the comparison is
+    # provided. This is to avoid comparing variables that are not present
+    # in the dataset or are not relevant for the comparison. Variables to
+    # skip in comparison also includes CCSDS headers the datasets contain
+    # data per packet, but the validation data contains one value per
+    # science frame (20 packets)
+
+    skip_vars = [
         "version",
         "type",
         "sec_hdr_flg",
@@ -624,8 +644,7 @@ def test_validate_l1a_counts_data(sci_packet_filepath, validation_data):
         "energy_bin",
     ]
 
-    skip_standard_fields = [
-        *skip_fields,
+    skip_standard_vars = [
         "hdr_unit_num",
         "hdr_frame_version",
         "hdr_leak_conv",
@@ -746,8 +765,7 @@ def test_validate_l1a_counts_data(sci_packet_filepath, validation_data):
         "sc_tick_by_frame",
     ]
 
-    skip_sectored_fields = [
-        *skip_fields,
+    skip_sectored_vars = [
         "sectorates",
         "sectorates_stat_uncert_plus",
         "sectorates_stat_uncert_minus",
@@ -779,34 +797,27 @@ def test_validate_l1a_counts_data(sci_packet_filepath, validation_data):
         "species",
     ]
 
-    skip_combined_fields = [
-        *skip_standard_fields,
-        *skip_sectored_fields,
-        "hdr_minute_cnt",
-    ]
-
-    # drop livetime counter from skip_livetime list
-    skip_combined_fields.remove("livetime_counter")
-
-    # Compare processed standard data to validation data
+    # Compare processed standard data to validation data skipping
+    # ccsds headers and sectored data vars
     compare_data(
         expected_data=validation_data,
         actual_data=standard_counts_data,
-        skip=skip_sectored_fields,
+        skip=[*skip_vars, *skip_sectored_vars],
     )
 
-    # Compare processed sectored data to validation data
+    # Compare processed sectored data to validation data skipping
+    # ccsds headers and standard data vars
     compare_data(
         expected_data=sectored_validation_data,
         actual_data=sectored_counts_data,
-        skip=skip_standard_fields,
+        skip=[*skip_vars, *skip_standard_vars],
     )
 
-    # Compare processed sectored livetime data to validation data
+    # Compare processed livetime data for sectored data to validation data
     compare_data(
         expected_data=livetime_validation_data,
         actual_data=sectored_counts_data,
-        skip=skip_combined_fields,
+        skip=[],
     )
 
 
