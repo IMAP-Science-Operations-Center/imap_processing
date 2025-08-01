@@ -8,8 +8,6 @@ from typing import Any, Callable, Optional, Union, overload
 import spiceypy
 from spiceypy.utils.exceptions import SpiceyError
 
-from imap_processing import imap_module_directory
-
 logger = logging.getLogger(__name__)
 
 
@@ -138,11 +136,8 @@ def ensure_spice(
             except SpiceyError as spicey_err:
                 try:
                     # Step 2.
-                    if os.getenv("SPICE_METAKERNEL"):
-                        metakernel_path = os.getenv("SPICE_METAKERNEL")
-                        spiceypy.furnsh(metakernel_path)
-                    else:
-                        furnish_time_kernel()
+                    metakernel_path = os.getenv("SPICE_METAKERNEL")
+                    spiceypy.furnsh(metakernel_path)
                 except KeyError:
                     # TODO: An additional step that was used on EMUS was to get
                     #  a custom metakernel from the SDC API based on an input
@@ -174,14 +169,3 @@ def ensure_spice(
         return _decorator(__func)
     else:
         return _decorator
-
-
-def furnish_time_kernel() -> None:
-    """Furnish the time kernels."""
-    spice_test_data_path = imap_module_directory / "tests/spice/test_data"
-
-    # TODO: we need to load these kernels from EFS volumen that is
-    # mounted to batch volume and extend this to generate metakernell
-    # which is TBD.
-    spiceypy.furnsh(str(spice_test_data_path / "imap_sclk_0000.tsc"))
-    spiceypy.furnsh(str(spice_test_data_path / "naif0012.tls"))
