@@ -32,6 +32,8 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_spin_number,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
+    is_back_tof_valid,
+    is_coin_ph_valid,
 )
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
@@ -149,7 +151,7 @@ def calculate_de(
     )
 
     # Pulse height
-    tof[ph_indices], t2[ph_indices], xb[ph_indices], yb[ph_indices] = (
+    tof[ph_indices], t2[ph_indices], xb[ph_indices], yb[ph_indices], _, _ = (
         get_ph_tof_and_back_positions(de_dataset, xf, f"ultra{sensor}", ancillary_files)
     )
     d[ph_indices], yf[ph_indices] = get_front_y_position(
@@ -174,14 +176,32 @@ def calculate_de(
         (xb[ph_indices], yb[ph_indices]),
         d[ph_indices],
     )
-    e_bin[ph_indices] = determine_ebin_pulse_height(
-        energy[ph_indices], tof[ph_indices], r[ph_indices]
-    )
     species_bin[ph_indices] = determine_species(tof[ph_indices], r[ph_indices], "PH")
     etof[ph_indices], xc[ph_indices] = get_coincidence_positions(
         de_dataset.isel(epoch=ph_indices),
         t2[ph_indices],
         f"ultra{sensor}",
+        ancillary_files,
+    )
+    backtofvalid = is_back_tof_valid(
+        de_dataset,
+        xf,
+        "ultra45",
+        ancillary_files,
+    )
+    coinphvalid = is_coin_ph_valid(
+        etof[ph_indices],
+        xc[ph_indices],
+        xb[ph_indices],
+        "ultra45",
+        ancillary_files,
+    )
+    e_bin[ph_indices] = determine_ebin_pulse_height(
+        energy[ph_indices],
+        tof[ph_indices],
+        r[ph_indices],
+        backtofvalid,
+        coinphvalid,
         ancillary_files,
     )
     ctof[ph_indices], magnitude_v[ph_indices] = get_ctof(
@@ -211,7 +231,11 @@ def calculate_de(
         d[ssd_indices],
     )
     e_bin[ssd_indices] = determine_ebin_ssd(
-        energy[ssd_indices], tof[ssd_indices], r[ssd_indices]
+        energy[ssd_indices],
+        tof[ssd_indices],
+        r[ssd_indices],
+        f"ultra{sensor}",
+        ancillary_files,
     )
     species_bin[ssd_indices] = determine_species(
         tof[ssd_indices], r[ssd_indices], "SSD"

@@ -1182,7 +1182,7 @@ def determine_ebin_pulse_height(
     ctof, _ = get_ctof(tof, path_length, type="PH")
 
     ebins = np.full(path_length.shape, FILLVAL_UINT8, dtype=np.uint8)
-    valid = (backtofvalid == 1) & (coinphvalid == 1)
+    valid = backtofvalid & coinphvalid
     ebins[valid] = get_ebins(
         "l1b-tofxph", energy[valid], ctof[valid], ebins[valid], ancillary_files
     )
@@ -1272,9 +1272,8 @@ def determine_ebin_ssd(
 
 
 def is_back_tof_valid(
-    tofx: NDArray,
-    tofy: NDArray,
-    stop_type: NDArray,
+    de_dataset: xarray.Dataset,
+    xf: NDArray,
     sensor: str,
     ancillary_files: dict,
 ) -> NDArray:
@@ -1283,12 +1282,11 @@ def is_back_tof_valid(
 
     Parameters
     ----------
-    tofx : NDArray
-        TOF in X direction (tenths of a nanosecond).
-    tofy : NDArray
-        TOF in Y direction (tenths of a nanosecond).
-    stop_type : NDArray
-        Stop type: 1=Top, 2=Bottom.
+    de_dataset : xarray.Dataset
+        Data in xarray format.
+    xf : NDArray
+        X front position in (hundredths of a millimeter).
+        Has same length as de_dataset.
     sensor : str
         Sensor name: "ultra45" or "ultra90".
     ancillary_files : dict
@@ -1303,10 +1301,18 @@ def is_back_tof_valid(
     -----
     From page 33 of the IMAP-Ultra Flight Software Specification document.
     """
+    _, _, _, _, tofx, tofy = get_ph_tof_and_back_positions(
+        de_dataset, xf, "ultra45", ancillary_files
+    )
     diff = tofy - tofx
 
-    top_mask = stop_type == StopType.Top.value
-    bottom_mask = stop_type == StopType.Bottom.value
+    indices = np.nonzero(
+        np.isin(de_dataset["stop_type"], [StopType.Top.value, StopType.Bottom.value])
+    )[0]
+    de_ph = de_dataset.isel(epoch=indices)
+
+    top_mask = de_ph["stop_type"] == StopType.Top.value
+    bottom_mask = de_ph["stop_type"] == StopType.Bottom.value
 
     valid = np.zeros_like(diff, dtype=bool)
 

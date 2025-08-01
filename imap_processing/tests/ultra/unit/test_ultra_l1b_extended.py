@@ -655,8 +655,8 @@ def test_determine_ebin_ph(events_fsw_comparison_theta_0_revised, ancillary_file
         df_ph["Energy"].astype("float").to_numpy(),
         df_ph["TOF"].astype("float").to_numpy(),
         df_ph["r"].astype("float").to_numpy(),
-        df_ph["BackTOFValid"].astype("float").to_numpy(),
-        df_ph["CoinPHValid"].astype("float").to_numpy(),
+        df_ph["BackTOFValid"].astype(bool).values,
+        df_ph["CoinPHValid"].astype(bool).values,
         ancillary_files,
     )
 
@@ -707,14 +707,9 @@ def test_is_back_tof_valid(test_fixture, ancillary_files):
     df_filt, _, _, de_dataset = test_fixture
     df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
 
-    _, _, _, _, tofx, tofy = get_ph_tof_and_back_positions(
-        de_dataset, df_filt.Xf.astype("float").values, "ultra45", ancillary_files
-    )
-
     valid = is_back_tof_valid(
-        tofx,
-        tofy,
-        df_ph["StopType"].astype(int),
+        de_dataset,
+        df_filt.Xf.astype("float").values,
         "ultra45",
         ancillary_files,
     )
