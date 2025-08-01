@@ -265,7 +265,7 @@ def get_test_kernels_to_load(template_path, kernel_dir_path):
                     break
                 else:
                     slash_positions = np.array(
-                        [m.start() for m in re.finditer("/", kernel)]
+                        [m.start() for m in re.finditer(re.escape(os.path.sep), kernel)]
                     )
                     stop_idx = (
                         slash_positions[slash_positions < max_line_length - 1].max() + 1
