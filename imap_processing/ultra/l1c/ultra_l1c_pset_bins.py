@@ -325,7 +325,7 @@ def get_deadtime_interpolator(
     # the spin phase at the end of the last sector.
     # TODO: is this assumption valid?
     # Add the last spin phase value + half of a nominal sector.
-    spin_phases_centered = np.append(spin_phases_centered, spin_phases[-1] + (1 / 180))
+    spin_phases_centered = np.append(spin_phases_centered, spin_phases[-1] + (1 / 30))
     # Create a dataset with spin phases and dead time ratios
     deadtime_by_spin_phase = xr.Dataset(
         {"deadtime_ratio": deadtime_ratios},
