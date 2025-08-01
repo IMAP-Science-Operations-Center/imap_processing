@@ -18,8 +18,6 @@ import numpy.typing as npt
 import spiceypy
 from numpy.typing import NDArray
 
-from imap_processing.spice.kernels import ensure_spice
-
 
 class SpiceBody(IntEnum):
     """Enum containing SPICE IDs for bodies that we use."""
@@ -100,8 +98,6 @@ BORESIGHT_LOOKUP = {
 }
 
 
-@typing.no_type_check
-@ensure_spice
 def imap_state(
     et: Union[np.ndarray, float],
     ref_frame: SpiceFrame = SpiceFrame.ECLIPJ2000,
@@ -298,8 +294,6 @@ def frame_transform_az_el(
     return to_frame_az_el[..., 1:3]
 
 
-@typing.no_type_check
-@ensure_spice
 def get_rotation_matrix(
     et: Union[float, npt.NDArray],
     from_frame: SpiceFrame,

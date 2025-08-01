@@ -160,7 +160,7 @@ def test_met_to_datetime64(furnish_time_kernels, utc):
 
 
 @pytest.mark.parametrize("sclk_ticks", [0.0, np.arange(10)])
-def test_sct_to_et(sclk_ticks):
+def test_sct_to_et(sclk_ticks, furnish_time_kernels):
     """Test for `sct_to_et` function."""
     et = sct_to_et(sclk_ticks)
     if isinstance(sclk_ticks, float):
@@ -170,7 +170,7 @@ def test_sct_to_et(sclk_ticks):
 
 
 @pytest.mark.parametrize("sclk_ticks", [0.0, np.arange(10)])
-def test_sct_to_ttj2000s(sclk_ticks):
+def test_sct_to_ttj2000s(sclk_ticks, furnish_time_kernels):
     """Test for `sct_to_ttj2000s` function."""
     tt = sct_to_ttj2000s(sclk_ticks)
     if isinstance(sclk_ticks, float):
@@ -244,7 +244,7 @@ def test_et_to_datetime(furnish_time_kernels):
     assert actual_dt == expected_dt
 
 
-def test_epoch_to_doy():
+def test_epoch_to_doy(furnish_time_kernels):
     """Tests that epoch_to_doy() produces expected doys."""
     epoch = 756196488384840064
     et = epoch * 1e-9

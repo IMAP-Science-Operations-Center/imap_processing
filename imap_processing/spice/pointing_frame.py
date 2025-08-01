@@ -1,7 +1,6 @@
 """Functions for retrieving repointing table data."""
 
 import logging
-import typing
 from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -13,7 +12,6 @@ from imap_data_access import SPICEFilePath
 from numpy.typing import NDArray
 
 from imap_processing.spice.geometry import SpiceFrame
-from imap_processing.spice.kernels import ensure_spice
 from imap_processing.spice.repoint import get_repoint_data
 from imap_processing.spice.time import (
     TICK_DURATION,
@@ -164,8 +162,6 @@ def write_pointing_frame_ck(
             )
 
 
-@typing.no_type_check
-@ensure_spice
 def calculate_pointing_attitude_segments(
     ck_path: Path,
 ) -> NDArray:
@@ -292,8 +288,6 @@ def calculate_pointing_attitude_segments(
     return pointing_segments
 
 
-@typing.no_type_check
-@ensure_spice
 def _average_quaternions(et_times: np.ndarray) -> NDArray:
     """
     Average the quaternions.
