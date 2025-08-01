@@ -197,6 +197,8 @@ def process_histogram(
         "spacecraft_location_std_dev": ["ecliptic"],
         "spacecraft_velocity_average": ["ecliptic"],
         "spacecraft_velocity_std_dev": ["ecliptic"],
+        "spin_axis_orientation_average": ["ecliptic"],
+        "spin_axis_orientation_std_dev": ["ecliptic"],
         "flags": ["flag_dim"],
     }
 

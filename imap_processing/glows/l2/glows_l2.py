@@ -216,6 +216,8 @@ def create_l2_dataset(
         "spacecraft_location_std_dev",
         "spacecraft_velocity_average",
         "spacecraft_velocity_std_dev",
+        "spin_axis_orientation_average",
+        "spin_axis_orientation_std_dev",
     ]
 
     for key, value in dataclasses.asdict(histogram_l2).items():
