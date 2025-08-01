@@ -22,8 +22,8 @@ def l0_test_file():
     )
 
 
-@pytest.fixture(scope="session")
-def test_datasets(l0_test_file):
+@pytest.fixture
+def test_datasets(l0_test_file, furnish_time_kernels):
     xtce_packet_definition = Path(
         imap_module_directory / "ialirt" / "packet_definitions" / "ialirt.xml"
     )

@@ -19,6 +19,7 @@ def test_calculate_doppler(furnish_kernels):
     observation_time = 843307269.1823885  # "2026-09-22T00:00:00.000"
 
     kernels = [
+        "naif0012.tls",
         "pck00011.tpc",
         "imap_spk_demo.bsp",
         "de440s.bsp",
@@ -28,14 +29,14 @@ def test_calculate_doppler(furnish_kernels):
         doppler_result = process_ephemeris.calculate_doppler(
             longitude, latitude, altitude, observation_time
         )
-    assert doppler_result is not None
+        assert doppler_result is not None
 
-    # test array of observation times
-    time_endpoints = ("2026 SEP 22 00:00:00", "2026 SEP 22 23:59:59")
-    time_interval = int(1e3)  # seconds between data points
-    observation_time = np.arange(
-        str_to_et(time_endpoints[0]), str_to_et(time_endpoints[1]), time_interval
-    )
+        # test array of observation times
+        time_endpoints = ("2026 SEP 22 00:00:00", "2026 SEP 22 23:59:59")
+        time_interval = int(1e3)  # seconds between data points
+        observation_time = np.arange(
+            str_to_et(time_endpoints[0]), str_to_et(time_endpoints[1]), time_interval
+        )
     with furnish_kernels(kernels):
         doppler_result = process_ephemeris.calculate_doppler(
             longitude, latitude, altitude, observation_time
@@ -75,8 +76,10 @@ def test_calculate_azimuth_and_elevation(furnish_kernels):
     observation_time = 805794429.1837295  # "2025-07-14T19:46:00.000"
 
     kernels = [
+        "naif0012.tls",
         "pck00011.tpc",
         "de440s.bsp",
+        "imap_spk_demo.bsp",
     ]
     with furnish_kernels(kernels):
         azimuth_result, elevation_result = (
@@ -84,14 +87,14 @@ def test_calculate_azimuth_and_elevation(furnish_kernels):
                 longitude, latitude, altitude, observation_time
             )
         )
-    assert azimuth_result, elevation_result is not None
+        assert azimuth_result, elevation_result is not None
 
-    # test array of observation times
-    time_endpoints = ("2026 SEP 22 00:00:00", "2026 SEP 22 23:59:59")
-    time_interval = int(1e3)  # seconds between data points
-    observation_time = np.arange(
-        str_to_et(time_endpoints[0]), str_to_et(time_endpoints[1]), time_interval
-    )
+        # test array of observation times
+        time_endpoints = ("2026 SEP 22 00:00:00", "2026 SEP 22 23:59:59")
+        time_interval = int(1e3)  # seconds between data points
+        observation_time = np.arange(
+            str_to_et(time_endpoints[0]), str_to_et(time_endpoints[1]), time_interval
+        )
     with furnish_kernels(kernels):
         azimuth_result, elevation_result = (
             process_ephemeris.calculate_azimuth_and_elevation(
@@ -126,12 +129,12 @@ def test_build_output(furnish_kernels):
             longitude, latitude, altitude, time_endpoints, time_interval
         )
 
-    for key_name in ["azimuth", "elevation", "time", "doppler"]:
-        assert key_name in output_dict.keys()
-        assert len(output_dict[key_name]) == len(
-            np.arange(
-                str_to_et(time_endpoints[0]),
-                str_to_et(time_endpoints[1]),
-                time_interval,
+        for key_name in ["azimuth", "elevation", "time", "doppler"]:
+            assert key_name in output_dict.keys()
+            assert len(output_dict[key_name]) == len(
+                np.arange(
+                    str_to_et(time_endpoints[0]),
+                    str_to_et(time_endpoints[1]),
+                    time_interval,
+                )
             )
-        )
