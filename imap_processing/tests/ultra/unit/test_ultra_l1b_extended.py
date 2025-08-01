@@ -718,6 +718,7 @@ def test_is_back_tof_valid(test_fixture, ancillary_files):
     np.testing.assert_equal(back_tof_valid_bool, valid)
 
 
+@pytest.mark.external_test_data
 def test_is_coin_ph_valid(test_fixture, ancillary_files):
     """Tests is_coin_ph_valid function."""
     df_filt, _, _, de_dataset = test_fixture
