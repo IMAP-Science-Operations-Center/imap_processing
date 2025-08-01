@@ -337,7 +337,6 @@ def get_deadtime_interpolator(
     # Sort the dataset by spin phase (ascending order)
     deadtime_by_spin_phase = deadtime_by_spin_phase.sortby("spin_phase")
     # Group by spin phase and calculate the median dead time ratio for each phase
-    # TODO: skip NaN values in the median calculation?
     deadtime_medians = deadtime_by_spin_phase.groupby("spin_phase").median(skipna=True)
 
     if np.any(np.isnan(deadtime_medians["deadtime_ratio"].values)):
