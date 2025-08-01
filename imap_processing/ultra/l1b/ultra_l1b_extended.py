@@ -1137,7 +1137,12 @@ def get_efficiency(
 
 
 def determine_ebin_pulse_height(
-    energy: np.ndarray, tof: np.ndarray, path_length: np.ndarray, ancillary_files: dict
+    energy: NDArray,
+    tof: NDArray,
+    path_length: NDArray,
+    backtofvalid: NDArray,
+    coinphvalid: NDArray,
+    ancillary_files: dict,
 ) -> NDArray:
     """
     Determine the species for pulse-height events.
@@ -1161,6 +1166,10 @@ def determine_ebin_pulse_height(
         Time of flight of the PH event (tenths of a nanosecond).
     path_length : np.ndarray
         Path length (r) (hundredths of a millimeter).
+    backtofvalid : np.ndarray
+        Boolean array indicating if the back TOF is valid.
+    coinphvalid : np.ndarray
+        Boolean array indicating if the Coincidence PH is valid.
     ancillary_files : dict
         Ancillary files containing the lookup tables.
 
@@ -1173,7 +1182,10 @@ def determine_ebin_pulse_height(
     ctof, _ = get_ctof(tof, path_length, type="PH")
 
     ebins = np.full(path_length.shape, FILLVAL_UINT8, dtype=np.uint8)
-    ebins = get_ebins("l1b-tofxph", energy, ctof, ebins, ancillary_files)
+    valid = (backtofvalid == 1) & (coinphvalid == 1)
+    ebins[valid] = get_ebins(
+        "l1b-tofxph", energy[valid], ctof[valid], ebins[valid], ancillary_files
+    )
 
     return ebins
 

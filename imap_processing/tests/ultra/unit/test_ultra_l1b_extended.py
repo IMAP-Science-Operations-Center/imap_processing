@@ -653,6 +653,8 @@ def test_determine_ebin_ph(events_fsw_comparison_theta_0_revised, ancillary_file
         df_ph["Energy"].astype("float").to_numpy(),
         df_ph["TOF"].astype("float").to_numpy(),
         df_ph["r"].astype("float").to_numpy(),
+        df_ph["BackTOFValid"].astype("float").to_numpy(),
+        df_ph["CoinPHValid"].astype("float").to_numpy(),
         ancillary_files,
     )
 
@@ -661,6 +663,8 @@ def test_determine_ebin_ph(events_fsw_comparison_theta_0_revised, ancillary_file
         & (df_ph["Energy"].astype(float).astype(int) < 2048)
         & (df_ph["cTOF"].astype(float).astype(int) >= 0)
         & (df_ph["cTOF"].astype(float).astype(int) < 4096)
+        & (df_ph["BackTOFValid"].astype(float) == 1)
+        & (df_ph["CoinPHValid"].astype(float) == 1)
     )
 
     np.testing.assert_allclose(
