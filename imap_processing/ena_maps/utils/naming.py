@@ -33,7 +33,7 @@ _sensor_types = int | Literal["45", "90", "combined", "ic", "lc", ""]
 # Must be specified separately for purpose of type checking vs comparison
 valid_spice_frame_strings = ["sf", "hf", "hk"]
 _spice_frame_str_types = Literal["sf", "hf", "hk"]
-_coord_frame_str_types = Literal["hae",]
+_coord_frame_str_types = Literal["hae", "hre", "hnu", "gcs"]
 
 # Mapping of inertial frames to their longer names used in logical source descriptors
 INERTIAL_FRAME_LONG_NAMES = {
@@ -335,6 +335,12 @@ class MapDescriptor:
         """
         if frame_str == "hae":
             return SpiceFrame.ECLIPJ2000
+        elif frame_str == "hre":
+            return SpiceFrame.IMAP_HRE
+        elif frame_str == "hnu":
+            return SpiceFrame.IMAP_HNU
+        elif frame_str == "gcs":
+            return SpiceFrame.IMAP_GCS
         else:
             raise NotImplementedError("Coordinate frame is not yet implemented.")
 
