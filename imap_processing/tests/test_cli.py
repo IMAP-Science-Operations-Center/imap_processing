@@ -38,17 +38,19 @@ from imap_processing.spice import config as spice_config
 @pytest.fixture(autouse=True)
 def clear_spice_kernels():
     """Fixture to clear SPICE kernels before each test."""
-    global_kernels = []
-    for i in range(spiceypy.ktotal("all")):
-        data = spiceypy.kdata(i, "all")
-        if data[1] == "META" or data[2] == "":
-            global_kernels.append(data[0])
-    try:
-        spiceypy.kclear()
+    # global_kernels = []
+    # for i in range(spiceypy.ktotal("all")):
+    #     data = spiceypy.kdata(i, "all")
+    #     if data[1] == "META" or data[2] == "":
+    #         global_kernels.append(data[0])
+    # try:
+    #     spiceypy.kclear()
+    #     yield
+    # finally:
+    #     spiceypy.kclear()
+    #     spiceypy.furnsh(global_kernels)
+    with spiceypy.KernelPool([]):
         yield
-    finally:
-        spiceypy.kclear()
-        spiceypy.furnsh(global_kernels)
 
 
 @pytest.fixture
@@ -690,6 +692,3 @@ def test_post_processing(
         "naif0012.tls",
         "imap_sclk_0001.tsc",
     ]
-    # Clear pool for next test and furnish global kernels
-    # spiceypy.kclear()
-    # spiceypy.furnsh()

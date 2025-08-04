@@ -433,7 +433,7 @@ def test_l1a_validate_support_variables(test_l1a_data, index):
             )
 
 
-def test_l1a_multiple_packets(imap_simple_sim_metakernel):
+def test_l1a_multiple_packets():
     """Tests that an input L0 file containing multiple APIDs can be processed."""
 
     processed_datasets = process_codice_l1a(file_path=TEST_L0_FILE)

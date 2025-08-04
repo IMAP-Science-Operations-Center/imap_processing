@@ -145,7 +145,7 @@ def calibration_dataset():
     return calibration_dataset
 
 
-def test_get_pkt_counter(xarray_data, imap_simple_sim_metakernel):
+def test_get_pkt_counter(xarray_data):
     """Tests the get_pkt_counter function."""
     status_values = xarray_data["mag_status"].values
     pkt_counter = get_pkt_counter(status_values)

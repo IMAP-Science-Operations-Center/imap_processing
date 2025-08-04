@@ -21,7 +21,7 @@ from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.spice import geometry
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True, scope="module")
 def setup_all_pset_products(ultra_l1c_pset_datasets, rectangular_l1c_pset_datasets):
     """
     Setup fixture data once for all tests.
