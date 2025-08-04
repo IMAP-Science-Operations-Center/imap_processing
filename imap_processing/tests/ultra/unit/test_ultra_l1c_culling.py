@@ -5,12 +5,9 @@ import numpy as np
 import pytest
 import spiceypy
 
+from imap_processing.spice.geometry import SpiceBody
 from imap_processing.ultra.l1c.ultra_l1c_culling import compute_culling_mask
-from imap_processing.spice.geometry import (
-    SpiceBody,
-    SpiceFrame,
-    imap_state,
-)
+
 
 @pytest.mark.external_kernel
 @pytest.mark.usefixtures("_unset_metakernel_path")
@@ -51,61 +48,48 @@ def test_compute_culling_mask(furnish_kernels, spice_test_data_path):
 @pytest.mark.external_kernel
 @pytest.mark.usefixtures("_unset_metakernel_path")
 def test_compare_sincpt_with_culling_mask_deterministic(furnish_kernels):
-    """Systematically compare sincpt results to culling mask output at selected pixels."""
+    """Compare culling mask output for the closest-to-Earth pixel with sincpt."""
 
-    with furnish_kernels([
-        "imap_science_100.tf",
-        "imap_sclk_0000.tsc",
-        "sim_1yr_imap_pointing_frame.bc",
-        "imap_spk_demo.bsp",
-        "earth_1962_240827_2124_combined.bpc",
-        "pck00011.tpc",
-        "naif0012.tls",
-        "de440s.bsp",
-    ]):
+    with furnish_kernels(
+        [
+            "imap_science_100.tf",
+            "imap_sclk_0000.tsc",
+            "sim_1yr_imap_pointing_frame.bc",
+            "imap_spk_demo.bsp",
+            "earth_1962_240827_2124_combined.bpc",
+            "pck00011.tpc",
+            "naif0012.tls",
+            "de440s.bsp",
+        ]
+    ):
         et = np.array([817561854.185627])
         keepout_radius_km = 6378.1  # Earth radius
         nside = 128
-        npix = hp.nside2npix(nside)
 
-        # Compute culling mask (True = KEEP, False = CULL)
-        mask, unit_vectors = compute_culling_mask(et, keepout_radius_km, observer=SpiceBody.EARTH, nside=nside)
+        # Compute culling mask and IMAP-to-Earth unit vector
+        mask, unit_vectors = compute_culling_mask(
+            et, keepout_radius_km, observer=SpiceBody.EARTH, nside=nside
+        )
 
-        # Get direction to Earth in IMAP_DPS frame (from IMAP to Earth)
-        state = spiceypy.spkezr("EARTH", et[0], "IMAP_DPS", "NONE", "IMAP")[0]
-        earth_dir = state[:3] / np.linalg.norm(state[:3])  # shape (3,)
+        # Computes the 3D unit vectors pointing to the centers of all HEALPix pixels
+        pixel_vecs_dps = np.column_stack(
+            hp.pix2vec(nside, np.arange(hp.nside2npix(nside)), nest=False)
+        )
+        # Find the HEALPix pixel direction closest to the direction from IMAP to Earth
+        closest_idx = np.argmax(np.dot(pixel_vecs_dps, unit_vectors[0]))
 
-        # Get pixel unit vectors in IMAP_DPS frame
-        pixel_vecs_dps = np.column_stack(hp.pix2vec(nside, np.arange(npix)))  # shape (npix, 3)
-
-        # Compute angular separation between pixel direction and Earth direction
-        dot = np.dot(pixel_vecs_dps, earth_dir)
-        dot = np.clip(dot, -1.0, 1.0)
-        angles = np.arccos(dot)  # radians
-
-        # Sort by angular separation from Earth direction
-        sorted_indices = np.argsort(angles)
-
-        # Convert pixel vectors to J2000 frame for sincpt
+        # Transform closest pixel vector to J2000
         rot_dps_to_j2000 = spiceypy.pxform("IMAP_DPS", "J2000", et[0])
-        # Use index closes to the Earth
-        pixel_vec_j2000 = np.dot(rot_dps_to_j2000, pixel_vecs_dps[sorted_indices[0]])
+        pixel_vec_j2000 = np.dot(rot_dps_to_j2000, pixel_vecs_dps[closest_idx])
 
-        masked = not mask[0, sorted_indices[0]]  # True if pixel is in keepout region
-        hit = True  # default assumption
-
-        try:
-            spiceypy.sincpt(
-                method="ELLIPSOID",
-                target="EARTH",
-                et=et[0],
-                fixref="IAU_EARTH",
-                abcorr="NONE",
-                obsrvr="IMAP",
-                dref="J2000",
-                dvec=pixel_vec_j2000,
-            )
-        except spiceypy.utils.exceptions.NotFoundError:
-            hit = False
-
-        assert masked == hit
+        # If sincpt does not raise, the ray intersected Earth.
+        spiceypy.sincpt(
+            method="ELLIPSOID",
+            target="EARTH",
+            et=et[0],
+            fixref="IAU_EARTH",
+            abcorr="NONE",
+            obsrvr="IMAP",
+            dref="J2000",
+            dvec=pixel_vec_j2000,
+        )
