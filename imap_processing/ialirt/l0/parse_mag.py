@@ -20,9 +20,16 @@ from imap_processing.mag.l1b.mag_l1b import (
     calibrate_vector,
     shift_time,
 )
+from imap_processing.mag.l1c.interpolation_methods import linear
 from imap_processing.mag.l1d.mag_l1d_data import MagL1d
 from imap_processing.mag.l2.mag_l2_data import MagL2L1dBase
+from imap_processing.spice.geometry import SpiceFrame, frame_transform
 from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
+
+# Range values (mago is 0 to 1, magi is 2 to 3)
+# Range values (0 to 3) represent MAG gain setting
+MAGO_RANGE = np.array([0, 1])
+MAGI_RANGE = np.array([2, 3])
 
 logger = logging.getLogger(__name__)
 
@@ -290,7 +297,6 @@ def calculate_l1b(
 
 def calibrate_and_offset_vectors(
     vectors: np.ndarray,
-    range_vals: np.ndarray,
     calibration: np.ndarray,
     offsets: np.ndarray,
     is_magi: bool = False,
@@ -302,8 +308,6 @@ def calibrate_and_offset_vectors(
     ----------
     vectors : np.ndarray
         Raw magnetic vectors, shape (n, 3).
-    range_vals : np.ndarray
-        Range indices for each vector, shape (n). Values 0–3.
     calibration : np.ndarray
         Calibration matrix, shape (3, 3, 4).
     offsets : np.ndarray
@@ -319,6 +323,11 @@ def calibrate_and_offset_vectors(
     calibrated_and_offset_vectors : np.ndarray
         Calibrated and offset vectors, shape (n, 3).
     """
+    if is_magi:
+        range_vals = MAGI_RANGE
+    else:
+        range_vals = MAGO_RANGE
+
     # Append range as 4th column
     vec_plus_range = np.concatenate((vectors, range_vals[:, np.newaxis]), axis=1)
 
@@ -374,6 +383,95 @@ def apply_gradiometry_correction(
     mago_corrected = MagL1d.apply_gradiometry_offsets(
         gradiometry_offsets, mago_vector_eclipj2000, gradiometer_factor
     )
+    magnitude = np.linalg.norm(mago_corrected, axis=1)
+
+    return mago_corrected, magnitude
+
+
+def calculate_l1d(
+    time_data,
+    vector_mago: np.ndarray,
+    vector_magi: np.ndarray,
+    calibration: np.ndarray,
+    offsets: np.ndarray,
+    gradiometer_factor: np.ndarray,
+):
+    """
+    Apply calibration and offsets to magnetic vectors.
+
+    Parameters
+    ----------
+    time_data : dict
+        Coarse and fine time for Primary and Secondary Sensors.
+    vector_mago : numpy.ndarray
+        Mago vector, shape (n, 3).
+    vector_magi : numpy.ndarray
+        Magi vector, shape (n, 3).
+    calibration : np.ndarray
+        Calibration matrix, shape (3, 3, 4).
+    offsets : np.ndarray
+        Offsets array, shape (2, 4, 3) where:
+        - index 0 = MAGo, 1 = MAGi
+        - second index = range (0–3)
+        - third index = axis (x, y, z)
+    gradiometer_factor : np.ndarray
+            A (3,3) element matrix to scale and rotate the gradiometer offsets.
+    is_magi : bool, optional
+        True if applying to MAGi data, False for MAGo.
+
+    Returns
+    -------
+    mago_corrected : np.ndarray
+        The output vectors with gradiometry offsets applied, shape (N, 3).
+    magnitude : np.ndarray
+        The magnitude of the corrected MAGo vectors, shape (N,).
+    """
+    # Apply calibration and offsets.
+    mago_calibrate_and_offset = calibrate_and_offset_vectors(
+        vector_mago, calibration, offsets, is_magi=False
+    )
+    magi_calibrate_and_offset = calibrate_and_offset_vectors(
+        vector_magi, calibration, offsets, is_magi=True
+    )
+
+    # Transform to DSRF (IMAP_DPS) frame.
+    mago_vector_dsrf = frame_transform(
+        time_data["primary_epoch"],
+        mago_calibrate_and_offset,
+        from_frame=SpiceFrame.IMAP_MAG,  # SRF
+        to_frame=SpiceFrame.IMAP_DPS,  # DSRF
+    )
+
+    magi_vector_dsrf = frame_transform(
+        time_data["secondary_epoch"],
+        magi_calibrate_and_offset,
+        from_frame=SpiceFrame.IMAP_MAG,  # SRF
+        to_frame=SpiceFrame.IMAP_DPS,  # DSRF
+    )
+
+    # Use linear interpolation to align the MAGi data to the MAGo timestamps,
+    # then calculate the difference between the two sensors on each axis.
+    aligned_magi_dsrf = linear(
+        magi_vector_dsrf,
+        time_data["secondary_epoch"],
+        time_data["primary_epoch"],
+    )
+
+    # Compute gradiometry offset (MAGi - MAGo)
+    offset_value = aligned_magi_dsrf - mago_vector_dsrf
+
+    # Apply gradiometer factor
+    offset_value = np.apply_along_axis(
+        np.dot,
+        1,
+        offset_value,
+        gradiometer_factor,
+    )
+
+    # Subtract offsets from MAGo data
+    mago_corrected = mago_vector_dsrf - offset_value
+
+    # Compute magnitude
     magnitude = np.linalg.norm(mago_corrected, axis=1)
 
     return mago_corrected, magnitude
