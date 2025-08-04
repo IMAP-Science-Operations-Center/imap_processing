@@ -7,8 +7,8 @@ base_charge: &base_charge
     CATDESC: " "
     FIELDNAM: " "
     DEPEND_0: epoch
-    DEPEND_1: impact_charge_bins
-    DEPEND_2: spin_phase_bins
+    DEPEND_1: impact_charge
+    DEPEND_2: spin_phase
     LABL_PTR_1: charge_labels
     LABL_PTR_2: spin_phase_labels
     DISPLAY_TYPE: spectrogram
@@ -22,8 +22,8 @@ base_mass: &base_mass
     CATDESC: " "
     FIELDNAM: " "
     DEPEND_0: epoch
-    DEPEND_1: mass_bins
-    DEPEND_2: spin_phase_bins
+    DEPEND_1: mass
+    DEPEND_2: spin_phase
     LABL_PTR_1: mass_labels
     LABL_PTR_2: spin_phase_labels
     DISPLAY_TYPE: spectrogram
@@ -63,7 +63,6 @@ rectangular_lat_pixel_label:
   DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 # Vars
-
 rectangular_lon_pixel:
   CATDESC: Longitude pixel center for IDEX SkyMap
   FIELDNAM: Rectangular Longitude Center
@@ -91,7 +90,7 @@ rectangular_lat_pixel:
 rate_by_charge_map:
     <<: *base_charge_map
     CATDESC: Count rate per day by impact charge, longitude, and latitude.
-    FIELDNAM: Rate by Charge Map
+    FIELDNAM: Rate (day^-1) by Charge Map
     UNITS: day^-1
     FILLVAL: *double_fillval
     DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
@@ -115,7 +114,7 @@ counts_by_mass_map:
 rate_by_mass_map:
     <<: *base_mass_map
     CATDESC: Count rate per day by mass, longitude, and latitude.
-    FIELDNAM: Rate by Mass Map
+    FIELDNAM: Rate (day^-1) by Mass Map
     UNITS: day^-1
     FILLVAL: *double_fillval
     DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
