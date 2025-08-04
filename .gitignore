@@ -175,6 +175,9 @@ cython_debug/
 # VSCode
 .vscode/
 
+# Top-level data directory (downloaded/generated data files)
+/data/
+
 # Ignore specific SPICE kernels that get downloaded from NAIF automatically for tests
 # marked with @pytest.mark.external_kernel
 **/de440*.bsp
