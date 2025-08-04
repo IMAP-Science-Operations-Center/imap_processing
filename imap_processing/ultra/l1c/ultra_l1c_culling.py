@@ -17,7 +17,7 @@ def compute_culling_mask(
     observer: SpiceBody = SpiceBody.EARTH,
     nside: int = 128,
     nested: bool = False,
-) -> NDArray:
+) -> tuple[NDArray, NDArray]:
     """
     Compute a mask for HEALPix pixels within a keep-out radius of the target body.
 
@@ -32,12 +32,15 @@ def compute_culling_mask(
     nside : int, optional
         HEALPix NSIDE resolution. Default is 128.
     nested : bool, optional
-        Whether to use NESTED indexing (default is RING).
+        Whether to use NESTED indexing.
 
     Returns
     -------
-    mask : NDArray
+    mask : tuple[NDArray, NDArray]
         Boolean array of shape (len(et), npix).
+    unit_target_vecs : NDArray
+        Unit vectors from IMAP to the target body
+        (e.g., Earth), shape (len(et), 3).
     """
     # Compute number of HEALPix pixels
     npix = hp.nside2npix(nside)
@@ -79,4 +82,4 @@ def compute_culling_mask(
     # mask.shape = (len(et), npix)
     mask = sep_angle > keepout_angle[:, np.newaxis]
 
-    return mask
+    return mask, unit_target_vecs
