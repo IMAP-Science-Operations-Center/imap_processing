@@ -9,7 +9,7 @@ from imap_processing.tests.ultra.mock_data import (
 )
 
 
-@pytest.fixture  # (scope="module")
+@pytest.fixture
 def ultra_l1c_pset_datasets(imap_ena_sim_metakernel):
     """Make fake L1C Ultra PSET products on a HEALPix tiling for testing"""
     l1c_nside = 32
@@ -30,7 +30,7 @@ def ultra_l1c_pset_datasets(imap_ena_sim_metakernel):
     }
 
 
-@pytest.fixture  # (scope="session")
+@pytest.fixture
 def rectangular_l1c_pset_datasets(imap_ena_sim_metakernel):
     """Make fake L1C Ultra PSET products on a rectangular tiling for testing"""
     l1c_spacing_deg = 4

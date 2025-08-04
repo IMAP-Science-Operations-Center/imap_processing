@@ -15,7 +15,7 @@ from imap_processing.utils import packet_file_to_datasets
 pytestmark = pytest.mark.external_test_data
 
 
-@pytest.fixture  # (scope="session")
+@pytest.fixture
 def l0_test_file():
     return Path(
         imap_module_directory / "tests" / "ialirt" / "data" / "l0" / "apid_478.bin"
