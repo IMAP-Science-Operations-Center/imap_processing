@@ -44,7 +44,7 @@ TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 @pytest.mark.external_test_data
 @pytest.fixture
 def test_fixture(de_dataset, events_fsw_comparison_theta_0, ancillary_files):
-    """Fixture to compute and return yf and related data."""
+    """Fixture to compute and yf and related data."""
     # Remove start_type with fill values
     de_dataset = de_dataset.where(de_dataset["start_type"] != 255, drop=True)
 
