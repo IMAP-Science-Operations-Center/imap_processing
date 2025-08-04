@@ -191,6 +191,15 @@ cython_debug/
 **/tests/codice/data/
 **/tests/swe/l1_validation/
 **/tests/swe/l2_validation/
+**/tests/ultra/test_data/l1/
+
+# Ultra data/l1 directory (mostly external files with whitelisted exceptions)
+**/tests/ultra/data/l1/
+# Whitelist regular test files in ultra/data/l1/
+!**/tests/ultra/data/l1/FM45_40P_Phi28p5_BeamCal_LinearScan_phi28.50_theta-0.00_ULTRA_ImageBasicRates_20240207T102740_.csv
+!**/tests/ultra/data/l1/dps_exposure_helio_45_E1.cdf
+!**/tests/ultra/data/l1/dps_exposure_helio_45_E12.cdf
+!**/tests/ultra/data/l1/dps_exposure_helio_45_E24.cdf
 
 # Specific external test data files in mixed-content directories
 # MAG validation test files (external data mixed with regular test files)
@@ -232,24 +241,3 @@ cython_debug/
 **/tests/ultra/data/l0/ultra45_raw_sc_enaextofhangimg_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv
 **/tests/ultra/data/l0/ultra45_raw_sc_ionextofhnrgimg_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv
 **/tests/ultra/data/l0/imap_ultra_l0_raw_20260924_v001.pkts
-**/tests/ultra/data/l1/imap_ultra_l1b_45sensor-de_20240207_v999.cdf
-**/tests/ultra/data/l1/ultra-90_raw_event_data_shortened.csv
-**/tests/ultra/data/l1/imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv
-**/tests/ultra/data/l1/imap_ultra_l1c-90sensor-gf_20250101_v000.csv
-**/tests/ultra/data/l1/imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv
-**/tests/ultra/data/l1/imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv
-**/tests/ultra/data/l1/imap_ultra_l1b-sensor-gf-blades_20250101_v000.csv
-**/tests/ultra/data/l1/imap_ultra_l1b-sensor-gf-noblades_20250101_v000.csv
-**/tests/ultra/data/l1/imap_ultra_l1b-45sensor-leftslit-lookup_20250101_v000.csv
-**/tests/ultra/data/l1/imap_ultra_l1b-45sensor-rightslit-lookup_20250101_v000.csv
-**/tests/ultra/data/l1/imap_ultra_l1b-45sensor-imgparams-lookup_20250101_v000.csv
-**/tests/ultra/data/l1/imap_ultra_l1b-45sensor-tdc-norm-lookup_20250101_v000.csv
-**/tests/ultra/data/l1/imap_ultra_l1b-45sensor-back-pos-lookup_20250101_v000.csv
-**/tests/ultra/data/l1/imap_ultra_l1b-egynorm-lookup_20250101_v000.csv
-**/tests/ultra/data/l1/imap_ultra_l1b-yadjust-lookup_20250101_v001.csv
-**/tests/ultra/data/l1/imap_ultra_l1b-45sensor-sptpphcorr_20250101_v000.csv
-**/tests/ultra/data/l1/imap_ultra_l1b-45sensor-spbtphcorr_20250101_v000.csv
-**/tests/ultra/data/l1/imap_ultra_l1b-90sensor-sptpphcorr_20250101_v000.csv
-**/tests/ultra/data/l1/imap_ultra_l1b-90sensor-spbtphcorr_20250101_v000.csv
-**/tests/ultra/data/l1/ultra45_raw_sc_ultrarawimg_withFSWccs_FM45_40P_Phi28p5_BeamCal_LinearScan_phi2850_theta-000_20240207T102740_revised20250724.csv
-**/tests/ultra/data/l1/IMAP-Ultra45_r1_L1_V0_shortened.csv
