@@ -82,14 +82,16 @@ def test_compare_sincpt_with_culling_mask_deterministic(furnish_kernels):
         rot_dps_to_j2000 = spiceypy.pxform("IMAP_DPS", "J2000", et[0])
         pixel_vec_j2000 = np.dot(rot_dps_to_j2000, pixel_vecs_dps[closest_idx])
 
-        # If sincpt does not raise, the ray intersected Earth.
-        spiceypy.sincpt(
-            method="ELLIPSOID",
-            target="EARTH",
-            et=et[0],
-            fixref="IAU_EARTH",
-            abcorr="NONE",
-            obsrvr="IMAP",
-            dref="J2000",
-            dvec=pixel_vec_j2000,
-        )
+        with spiceypy.no_found_check():
+            result = spiceypy.sincpt(
+                method="ELLIPSOID",
+                target="EARTH",
+                et=et[0],
+                fixref="IAU_EARTH",
+                abcorr="NONE",
+                obsrvr="IMAP",
+                dref="J2000",
+                dvec=pixel_vec_j2000,
+            )
+
+        assert result[-1]  # Check if the ray intersects Earth
