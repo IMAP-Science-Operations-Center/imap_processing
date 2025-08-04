@@ -175,20 +175,22 @@ cython_debug/
 # VSCode
 .vscode/
 
-# Data that is downloaded
-data/
-test_data/
-
 # Ignore specific SPICE kernels that get downloaded from NAIF automatically for tests
 # marked with @pytest.mark.external_kernel
 **/de440*.bsp
 **/pck0001*.tpc
 **/earth_*_combined.bpc
 
-# Ignore external test data files downloaded for MAG and SWE validation tests
-# marked with @pytest.mark.external_test_data
+# Ignore external test data files downloaded for instrument validation tests
+# marked with @pytest.mark.external_test_data (see external_test_data_config.py)
 
-# MAG validation test files
+# Directories containing ONLY external test data
+**/tests/codice/data/
+**/tests/swe/l1_validation/
+**/tests/swe/l2_validation/
+
+# Specific external test data files in mixed-content directories
+# MAG validation test files (external data mixed with regular test files)
 **/tests/mag/validation/L1c/T013/mag-l1b-l1c-t013-magi-burst-in.csv
 **/tests/mag/validation/L1c/T013/mag-l1b-l1c-t013-mago-burst-in.csv
 **/tests/mag/validation/L1c/T014/mag-l1b-l1c-t014-mago-burst-in.csv
@@ -200,11 +202,51 @@ test_data/
 **/tests/mag/validation/L2/T021/imap_mag_l2_burst-offsets_20250506_v006.cdf
 **/tests/mag/validation/L2/T021/mag-l1bc-l2-t021-magi-burst-in.csv
 
-# SWE validation test files
-**/tests/swe/l1_validation/swe_l0_unpacked-data_20240510_v001_VALIDATION_L1A.dat
-**/tests/swe/l1_validation/swe_l0_unpacked-data_20240510_v001_VALIDATION_L1B_v3.dat
-**/tests/swe/l2_validation/swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_v0B_15.dat
-**/tests/swe/l2_validation/swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v1F_15.dat
-**/tests/swe/l2_validation/swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v0F_15.dat
-**/tests/swe/l2_validation/swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v1H_14_6.dat
-**/tests/swe/l2_validation/swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v0H_14_6.dat
+# Hi external test data files (external data mixed with regular test files)
+**/tests/hi/data/l1/imap_hi_l1a_45sensor-de_20250415_v999.cdf
+**/tests/hi/data/l1/imap_hi_l1b_45sensor-de_20250415_v999.cdf
+**/tests/hi/data/l1/imap_hi_l1c_45sensor-pset_20250415_v999.cdf
+
+# I-ALiRT external test data files
+**/tests/ialirt/data/l0/apid_478.bin
+
+# IDEX external test data files
+**/tests/idex/test_data/idex_l1a_validation_file.h5
+**/tests/idex/test_data/idex_l1b_validation_file.h5
+
+# Ultra external test data files (external data mixed with regular test files)
+**/tests/ultra/data/l0/FM90_Startup_20230711T081655.CCSDS
+**/tests/ultra/data/l0/FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.CCSDS
+**/tests/ultra/data/l0/ultra45_raw_sc_rawnrgevnt_19840122_00.csv
+**/tests/ultra/data/l0/ultra45_raw_sc_enaphxtofhnrgimg_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv
+**/tests/ultra/data/l0/ultra45_raw_sc_imgpriority1evnt_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv
+**/tests/ultra/data/l0/ultra45_raw_sc_imgpriority2evnt_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv
+**/tests/ultra/data/l0/ultra45_raw_sc_imgpriority3evnt_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv
+**/tests/ultra/data/l0/ultra45_raw_sc_imgpriority4evnt_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv
+**/tests/ultra/data/l0/ultra45_raw_sc_ultranrgrates_FM45_UltraFM45_Functional_2024-01-22T0105_20240122T010548.csv
+**/tests/ultra/data/l0/ultra45_raw_sc_ionexhtimeimg_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv
+**/tests/ultra/data/l0/ultra45_raw_sc_ultraenaphxtofhtimeresimg_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv
+**/tests/ultra/data/l0/ultra45_raw_sc_enaextofhangimg_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv
+**/tests/ultra/data/l0/ultra45_raw_sc_ionextofhnrgimg_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv
+**/tests/ultra/data/l0/imap_ultra_l0_raw_20260924_v001.pkts
+**/tests/ultra/data/l1/imap_ultra_l1b_45sensor-de_20240207_v999.cdf
+**/tests/ultra/data/l1/ultra-90_raw_event_data_shortened.csv
+**/tests/ultra/data/l1/imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv
+**/tests/ultra/data/l1/imap_ultra_l1c-90sensor-gf_20250101_v000.csv
+**/tests/ultra/data/l1/imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv
+**/tests/ultra/data/l1/imap_ultra_l1b-45sensor-logistic-interpolation_20250101_v000.csv
+**/tests/ultra/data/l1/imap_ultra_l1b-sensor-gf-blades_20250101_v000.csv
+**/tests/ultra/data/l1/imap_ultra_l1b-sensor-gf-noblades_20250101_v000.csv
+**/tests/ultra/data/l1/imap_ultra_l1b-45sensor-leftslit-lookup_20250101_v000.csv
+**/tests/ultra/data/l1/imap_ultra_l1b-45sensor-rightslit-lookup_20250101_v000.csv
+**/tests/ultra/data/l1/imap_ultra_l1b-45sensor-imgparams-lookup_20250101_v000.csv
+**/tests/ultra/data/l1/imap_ultra_l1b-45sensor-tdc-norm-lookup_20250101_v000.csv
+**/tests/ultra/data/l1/imap_ultra_l1b-45sensor-back-pos-lookup_20250101_v000.csv
+**/tests/ultra/data/l1/imap_ultra_l1b-egynorm-lookup_20250101_v000.csv
+**/tests/ultra/data/l1/imap_ultra_l1b-yadjust-lookup_20250101_v001.csv
+**/tests/ultra/data/l1/imap_ultra_l1b-45sensor-sptpphcorr_20250101_v000.csv
+**/tests/ultra/data/l1/imap_ultra_l1b-45sensor-spbtphcorr_20250101_v000.csv
+**/tests/ultra/data/l1/imap_ultra_l1b-90sensor-sptpphcorr_20250101_v000.csv
+**/tests/ultra/data/l1/imap_ultra_l1b-90sensor-spbtphcorr_20250101_v000.csv
+**/tests/ultra/data/l1/ultra45_raw_sc_ultrarawimg_withFSWccs_FM45_40P_Phi28p5_BeamCal_LinearScan_phi2850_theta-000_20240207T102740_revised20250724.csv
+**/tests/ultra/data/l1/IMAP-Ultra45_r1_L1_V0_shortened.csv
