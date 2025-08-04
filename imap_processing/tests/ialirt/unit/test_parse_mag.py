@@ -79,7 +79,7 @@ def mag_sc_test_data():
 
 
 @pytest.fixture
-def xarray_data(binary_packet_path, xtce_mag_path, furnish_time_kernels):
+def xarray_data(binary_packet_path, xtce_mag_path):
     """Create xarray data for multiple packets."""
     apid = 1001
 
@@ -165,7 +165,7 @@ def test_get_status_data(xarray_data, mag_test_data):
         assert status_data[key] == matching_row[key.upper()].values[0]
 
 
-def test_get_time(grouped_data, mag_test_l1b_calibration_data, furnish_time_kernels):
+def test_get_time(grouped_data, mag_test_l1b_calibration_data):
     """Tests the get_time function."""
     time_shift_mago = mag_test_l1b_calibration_data[1]
     time_shift_magi = mag_test_l1b_calibration_data[3]
@@ -255,7 +255,7 @@ def test_process_packet(xarray_data, mag_test_data, calibration_dataset):
 
 @pytest.mark.external_test_data
 def test_process_spacecraft_packet(
-    mag_sc_test_data, calibration_dataset, sc_packet_path, furnish_time_kernels
+    mag_sc_test_data, calibration_dataset, sc_packet_path
 ):
     """Tests the parse_packet function."""
     packet_path, xtce_ialirt_path = sc_packet_path

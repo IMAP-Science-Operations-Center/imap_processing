@@ -66,7 +66,7 @@ def swe_test_data():
 
 
 @pytest.fixture
-def xarray_data(binary_packet_path, xtce_swe_path, furnish_time_kernels):
+def xarray_data(binary_packet_path, xtce_swe_path):
     """Create xarray data"""
     apid = 1360
 
@@ -154,7 +154,7 @@ def summed_half_cycle():
     ),
 )
 def test_process_spacecraft_packet(
-    mock_read_cal, swe_test_data, fields_to_test, sc_packet_path, furnish_time_kernels
+    mock_read_cal, swe_test_data, fields_to_test, sc_packet_path
 ):
     """Test processing for spacecraft packet."""
     packet_path, xtce_ialirt_path = sc_packet_path
@@ -441,9 +441,7 @@ def test_polar_check_counterstreaming():
         }
     ),
 )
-def test_process_swe(
-    mock_read_cal, swe_test_data, fields_to_test, furnish_time_kernels
-):
+def test_process_swe(mock_read_cal, swe_test_data, fields_to_test):
     """Test processing for swe."""
     swe_test_data = swe_test_data.rename(
         columns={v: k for k, v in fields_to_test.items()}

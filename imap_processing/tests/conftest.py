@@ -42,17 +42,6 @@ def clear_spin_and_repoint_paths(monkeypatch):
     monkeypatch.setattr(spice_config, "_repoint_table_path", None)
 
 
-# Furnishing fixtures for testing kernels
-# ---------------------------------------
-@pytest.fixture(autouse=True)
-def _autoclear_spice():
-    """Automatically clears out all SPICE remnants after every single test to
-    prevent the kernel pool from interfering with future tests. Option autouse
-    ensures this is run after every test."""
-    yield
-    spiceypy.kclear()
-
-
 @pytest.fixture(scope="session")
 def _download_external_kernels(spice_test_data_path):
     """This fixture downloads externally-located kernels into the tests/spice/test_data
@@ -174,7 +163,7 @@ def spice_test_data_path(imap_tests_path):
     return imap_tests_path / "spice/test_data"
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True, scope="session")
 def furnish_time_kernels(spice_test_data_path):
     """Furnishes (temporarily) the testing LSK and SCLK"""
     spiceypy.kclear()
@@ -216,7 +205,6 @@ def use_fake_spin_data_for_time(
     use_test_spin_data_csv,
     tmp_path,
     generate_spin_data,
-    furnish_time_kernels,
     spin_period=15.0,
 ):
     """

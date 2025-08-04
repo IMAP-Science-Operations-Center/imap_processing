@@ -7,7 +7,7 @@ IALIRT_PACKET_LENGTH = 1464
 
 
 @pytest.mark.external_test_data
-def test_generate_xarray(furnish_time_kernels):
+def test_generate_xarray():
     """Checks that xarray data is properly generated."""
 
     apid = 478

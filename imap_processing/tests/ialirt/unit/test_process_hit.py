@@ -49,7 +49,7 @@ def hit_test_data():
 
 
 @pytest.fixture
-def xarray_data(binary_packet_path, xtce_hit_path, furnish_time_kernels):
+def xarray_data(binary_packet_path, xtce_hit_path):
     """Create xarray data"""
     apid = 1253
 
@@ -58,7 +58,7 @@ def xarray_data(binary_packet_path, xtce_hit_path, furnish_time_kernels):
 
 
 @pytest.mark.external_test_data
-def test_process_spacecraft_packet(sc_packet_path, furnish_time_kernels):
+def test_process_spacecraft_packet(sc_packet_path):
     """Tests Spacecraft Packet processing."""
     packet_path, xtce_ialirt_path = sc_packet_path
     sc_xarray_data = packet_file_to_datasets(

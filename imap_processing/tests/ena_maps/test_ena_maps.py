@@ -21,7 +21,7 @@ from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.spice import geometry
 
 
-@pytest.fixture(autouse=True, scope="module")
+@pytest.fixture(autouse=True)
 def setup_all_pset_products(ultra_l1c_pset_datasets, rectangular_l1c_pset_datasets):
     """
     Setup fixture data once for all tests.
@@ -222,7 +222,7 @@ def lo_pset_cdf_path(imap_tests_path):
 
 
 @pytest.mark.external_kernel
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
+@pytest.mark.usefixtures("imap_ena_sim_metakernel")
 class TestLoPointingSet:
     """Test suite for LoPointingSet class."""
 

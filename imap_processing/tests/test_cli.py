@@ -35,6 +35,22 @@ from imap_processing.cli import (
 from imap_processing.spice import config as spice_config
 
 
+@pytest.fixture(autouse=True)
+def clear_spice_kernels():
+    """Fixture to clear SPICE kernels before each test."""
+    global_kernels = []
+    for i in range(spiceypy.ktotal("all")):
+        data = spiceypy.kdata(i, "all")
+        if data[1] == "META" or data[2] == "":
+            global_kernels.append(data[0])
+    try:
+        spiceypy.kclear()
+        yield
+    finally:
+        spiceypy.kclear()
+        spiceypy.furnsh(global_kernels)
+
+
 @pytest.fixture
 def mock_instrument_dependencies():
     with (
@@ -99,6 +115,7 @@ def test_main(mock_instrument):
         main()
 
 
+@pytest.mark.usefixtures("furnish_kernels")
 def test_parse_args_dependency_json_file(caplog, tmp_path):
     # Set caplog to capture all log levels
     caplog.set_level(logging.DEBUG)
@@ -151,6 +168,7 @@ def test_parse_args_dependency_json_file(caplog, tmp_path):
         )
 
 
+@pytest.mark.usefixtures("furnish_kernels")
 @pytest.mark.parametrize(
     "instrument, data_level, start_date, repointing, raises_value_error",
     [
@@ -179,6 +197,7 @@ def test_validate_args(
         _validate_args(args)
 
 
+@pytest.mark.usefixtures("furnish_kernels")
 @mock.patch("imap_processing.cli.codice_l1a.process_codice_l1a")
 def test_codice(mock_codice_l1a, mock_instrument_dependencies):
     """Test coverage for cli.CoDICE class"""
@@ -206,6 +225,7 @@ def test_codice(mock_codice_l1a, mock_instrument_dependencies):
     assert mock_instrument_dependencies["mock_write_cdf"].call_count == 1
 
 
+@pytest.mark.usefixtures("furnish_kernels")
 def test_repointing_file_creation(mock_instrument_dependencies):
     test_datasets = [xr.Dataset({}, attrs={"cdf_filename": "file0"})]
     input_collection = ProcessingInputCollection(
@@ -234,6 +254,7 @@ def test_repointing_file_creation(mock_instrument_dependencies):
     )
 
 
+@pytest.mark.usefixtures("furnish_kernels")
 def test_post_processing_returns_path_to_written_cdf(mock_instrument_dependencies):
     test_datasets = [xr.Dataset({}, attrs={"cdf_filename": "file0"})]
     input_collection = ProcessingInputCollection(
@@ -257,6 +278,7 @@ def test_post_processing_returns_path_to_written_cdf(mock_instrument_dependencie
     assert returned_path == [expected_path]
 
 
+@pytest.mark.usefixtures("furnish_kernels")
 def test_post_processing_returns_empty_list_if_invoked_with_no_data(
     mock_instrument_dependencies,
 ):
@@ -271,6 +293,7 @@ def test_post_processing_returns_empty_list_if_invoked_with_no_data(
     assert returned_products == []
 
 
+@pytest.mark.usefixtures("furnish_kernels")
 @pytest.mark.parametrize(
     "data_level, science_input, anc_input, n_prods",
     [
@@ -325,6 +348,7 @@ def test_hi(
         assert mock_instrument_dependencies["mock_write_cdf"].call_count == n_prods
 
 
+@pytest.mark.usefixtures("furnish_kernels")
 @mock.patch("imap_processing.cli.quaternions.process_quaternions", autospec=True)
 def test_spacecraft(mock_spacecraft_l1a, mock_instrument_dependencies):
     """Test coverage for cli.Spacecraft class"""
@@ -353,6 +377,7 @@ def test_spacecraft(mock_spacecraft_l1a, mock_instrument_dependencies):
     assert mock_instrument_dependencies["mock_write_cdf"].call_count == 1
 
 
+@pytest.mark.usefixtures("furnish_kernels")
 @mock.patch(
     "imap_processing.cli.pointing_frame.generate_pointing_attitude_kernel",
     autospec=True,
@@ -385,6 +410,7 @@ def test_spacecraft_pointing_kernel(
     assert mock_spacecraft_pointing.call_count == 1
 
 
+@pytest.mark.usefixtures("furnish_kernels")
 @mock.patch("imap_processing.cli.ultra_l1a.ultra_l1a")
 def test_ultra_l1a(mock_ultra_l1a, mock_instrument_dependencies):
     """Test coverage for cli.Ultra class with l1a data level"""
@@ -408,6 +434,7 @@ def test_ultra_l1a(mock_ultra_l1a, mock_instrument_dependencies):
     assert mock_instrument_dependencies["mock_write_cdf"].call_count == 2
 
 
+@pytest.mark.usefixtures("furnish_kernels")
 @mock.patch("imap_processing.cli.ultra_l1b.ultra_l1b")
 def test_ultra_l1b(mock_ultra_l1b, mock_instrument_dependencies):
     """Test coverage for cli.Ultra class with l1b data level"""
@@ -428,6 +455,7 @@ def test_ultra_l1b(mock_ultra_l1b, mock_instrument_dependencies):
     assert mock_instrument_dependencies["mock_write_cdf"].call_count == 2
 
 
+@pytest.mark.usefixtures("furnish_kernels")
 @mock.patch("imap_processing.cli.ultra_l1c.ultra_l1c")
 def test_ultra_l1c(mock_ultra_l1c, mock_instrument_dependencies):
     """Test coverage for cli.Ultra class with l1c data level"""
@@ -446,6 +474,7 @@ def test_ultra_l1c(mock_ultra_l1c, mock_instrument_dependencies):
     assert mock_instrument_dependencies["mock_write_cdf"].call_count == 2
 
 
+@pytest.mark.usefixtures("furnish_kernels")
 @mock.patch("imap_processing.cli.ultra_l2.ultra_l2")
 def test_ultra_l2(mock_ultra_l2, mock_instrument_dependencies):
     """Test coverage for cli.Ultra class with l2 data level"""
@@ -474,6 +503,7 @@ def test_ultra_l2(mock_ultra_l2, mock_instrument_dependencies):
     assert mock_instrument_dependencies["mock_write_cdf"].call_count == 1
 
 
+@pytest.mark.usefixtures("furnish_kernels")
 @mock.patch("imap_processing.cli.idex_l2b")
 def test_idex_l2b(mock_idex_l2b, mock_instrument_dependencies):
     """Test coverage for cli.Idex class with l2b data level"""
@@ -497,6 +527,7 @@ def test_idex_l2b(mock_idex_l2b, mock_instrument_dependencies):
     assert mock_instrument_dependencies["mock_write_cdf"].call_count == 1
 
 
+@pytest.mark.usefixtures("furnish_kernels")
 @mock.patch("imap_processing.cli.hit_l1a")
 def test_hit_l1a(mock_hit_l1a, mock_instrument_dependencies):
     """Test coverage for cli.Hit class with l1a data level"""
@@ -520,8 +551,7 @@ def test_hit_l1a(mock_hit_l1a, mock_instrument_dependencies):
     assert mock_instrument_dependencies["mock_write_cdf"].call_count == 2
 
 
-@pytest.mark.usefixtures("_unset_metakernel_path")
-def test_spice_kernel_handling(spice_test_data_path):
+def test_spice_kernel_handling(spice_test_data_path, clear_spice_kernels):
     """Test coverage for ProcessInstrument.pre_processing method()."""
     kernels_to_furnish = ["naif0012.tls", "imap_sclk_0000.tsc"]
     dependency_obj = [
@@ -572,6 +602,7 @@ def test_spice_kernel_handling(spice_test_data_path):
         assert spiceypy.ktotal("ALL") == 0
 
 
+@pytest.mark.usefixtures("furnish_kernels")
 def test_spin_and_repoint_table_handling():
     """Test ProcessInstrument.pre_processing setting of spin and repoint paths."""
     dependency_obj = [
@@ -616,6 +647,7 @@ def test_spin_and_repoint_table_handling():
         instrument.process()
 
 
+@pytest.mark.usefixtures("furnish_kernels")
 @mock.patch("imap_processing.cli.swe_l1a")
 @pytest.mark.parametrize(
     "query_return, expected_error",
@@ -675,3 +707,6 @@ def test_post_processing(
         "naif0012.tls",
         "imap_sclk_0001.tsc",
     ]
+    # Clear pool for next test and furnish global kernels
+    # spiceypy.kclear()
+    # spiceypy.furnsh()

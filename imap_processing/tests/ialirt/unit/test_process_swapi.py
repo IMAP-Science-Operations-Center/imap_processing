@@ -49,7 +49,7 @@ def swapi_test_data():
 
 
 @pytest.fixture
-def xarray_data(binary_packet_path, xtce_swapi_path, furnish_time_kernels):
+def xarray_data(binary_packet_path, xtce_swapi_path):
     """Create SWAPI xarray dataset for testing."""
 
     xarray_data = packet_file_to_datasets(
@@ -59,7 +59,7 @@ def xarray_data(binary_packet_path, xtce_swapi_path, furnish_time_kernels):
 
 
 @pytest.fixture
-def sc_xarray_data(sc_packet_path, furnish_time_kernels):
+def sc_xarray_data(sc_packet_path):
     """Extract spacecraft packet for testing."""
 
     packet_path, xtce_ialirt_path = sc_packet_path

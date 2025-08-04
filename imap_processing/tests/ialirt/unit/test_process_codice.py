@@ -15,7 +15,7 @@ from imap_processing.utils import packet_file_to_datasets
 pytestmark = pytest.mark.external_test_data
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture  # (scope="session")
 def l0_test_file():
     return Path(
         imap_module_directory / "tests" / "ialirt" / "data" / "l0" / "apid_478.bin"
@@ -23,7 +23,7 @@ def l0_test_file():
 
 
 @pytest.fixture
-def test_datasets(l0_test_file, furnish_time_kernels):
+def test_datasets(l0_test_file):
     xtce_packet_definition = Path(
         imap_module_directory / "ialirt" / "packet_definitions" / "ialirt.xml"
     )
