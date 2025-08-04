@@ -6,7 +6,11 @@ import pytest
 import spiceypy
 
 from imap_processing.ultra.l1c.ultra_l1c_culling import compute_culling_mask
-
+from imap_processing.spice.geometry import (
+    SpiceBody,
+    SpiceFrame,
+    imap_state,
+)
 
 @pytest.mark.external_kernel
 @pytest.mark.usefixtures("_unset_metakernel_path")
@@ -34,7 +38,7 @@ def test_compute_culling_mask(furnish_kernels, spice_test_data_path):
     spiceypy.kclear()
 
     with furnish_kernels(kernels):
-        mask = compute_culling_mask(et_steps, keepout_radius_km)
+        mask, _ = compute_culling_mask(et_steps, keepout_radius_km)
 
     assert mask.shape[0] == len(et_steps)
     assert mask.shape[1] == hp.nside2npix(128)
@@ -44,66 +48,64 @@ def test_compute_culling_mask(furnish_kernels, spice_test_data_path):
     assert np.any(mask)
 
 
-import pytest
-
-
 @pytest.mark.external_kernel
 @pytest.mark.usefixtures("_unset_metakernel_path")
-def test_sincpt_hits_and_misses(furnish_kernels):
-    """Test that sincpt finds an Earth intercept when pointed directly at Earth,
-    and fails when slightly off-axis."""
+def test_compare_sincpt_with_culling_mask_deterministic(furnish_kernels):
+    """Systematically compare sincpt results to culling mask output at selected pixels."""
 
-    with furnish_kernels(
-        [
-            "imap_science_100.tf",
-            "imap_sclk_0000.tsc",
-            "sim_1yr_imap_pointing_frame.bc",
-            "imap_spk_demo.bsp",
-            "earth_1962_240827_2124_combined.bpc",
-            "pck00011.tpc",
-            "naif0012.tls",
-            "de440s.bsp",
-        ]
-    ):
-        et = 817561854.185627
+    with furnish_kernels([
+        "imap_science_100.tf",
+        "imap_sclk_0000.tsc",
+        "sim_1yr_imap_pointing_frame.bc",
+        "imap_spk_demo.bsp",
+        "earth_1962_240827_2124_combined.bpc",
+        "pck00011.tpc",
+        "naif0012.tls",
+        "de440s.bsp",
+    ]):
+        et = np.array([817561854.185627])
+        keepout_radius_km = 6378.1  # Earth radius
+        nside = 128
+        npix = hp.nside2npix(nside)
 
-        # Earth direction from IMAP in J2000
-        state, _ = spiceypy.spkezr("EARTH", et, "J2000", "NONE", "IMAP")
-        earth_vec = state[:3] / np.linalg.norm(state[:3])
+        # Compute culling mask (True = KEEP, False = CULL)
+        mask, unit_vectors = compute_culling_mask(et, keepout_radius_km, observer=SpiceBody.EARTH, nside=nside)
 
-        # Direct hit
+        # Get direction to Earth in IMAP_DPS frame (from IMAP to Earth)
+        state = spiceypy.spkezr("EARTH", et[0], "IMAP_DPS", "NONE", "IMAP")[0]
+        earth_dir = state[:3] / np.linalg.norm(state[:3])  # shape (3,)
+
+        # Get pixel unit vectors in IMAP_DPS frame
+        pixel_vecs_dps = np.column_stack(hp.pix2vec(nside, np.arange(npix)))  # shape (npix, 3)
+
+        # Compute angular separation between pixel direction and Earth direction
+        dot = np.dot(pixel_vecs_dps, earth_dir)
+        dot = np.clip(dot, -1.0, 1.0)
+        angles = np.arccos(dot)  # radians
+
+        # Sort by angular separation from Earth direction
+        sorted_indices = np.argsort(angles)
+
+        # Convert pixel vectors to J2000 frame for sincpt
+        rot_dps_to_j2000 = spiceypy.pxform("IMAP_DPS", "J2000", et[0])
+        # Use index closes to the Earth
+        pixel_vec_j2000 = np.dot(rot_dps_to_j2000, pixel_vecs_dps[sorted_indices[0]])
+
+        masked = not mask[0, sorted_indices[0]]  # True if pixel is in keepout region
+        hit = True  # default assumption
+
         try:
             spiceypy.sincpt(
                 method="ELLIPSOID",
                 target="EARTH",
-                et=et,
+                et=et[0],
                 fixref="IAU_EARTH",
                 abcorr="NONE",
                 obsrvr="IMAP",
                 dref="J2000",
-                dvec=earth_vec,
+                dvec=pixel_vec_j2000,
             )
-            hit = True
         except spiceypy.utils.exceptions.NotFoundError:
             hit = False
 
-        assert hit, "Expected sincpt to return a hit for direct Earth vector"
-
-        # Off-axis miss (~1 degree away)
-        off_axis_vec = spiceypy.vrotv(earth_vec, [0, 1, 0], np.radians(1.0))
-        try:
-            spiceypy.sincpt(
-                method="ELLIPSOID",
-                target="EARTH",
-                et=et,
-                fixref="IAU_EARTH",
-                abcorr="NONE",
-                obsrvr="IMAP",
-                dref="J2000",
-                dvec=off_axis_vec,
-            )
-            hit_off = True
-        except spiceypy.utils.exceptions.NotFoundError:
-            hit_off = False
-
-        assert not hit_off, "Expected sincpt to miss Earth when vector is 1° off-axis"
+        assert masked == hit
