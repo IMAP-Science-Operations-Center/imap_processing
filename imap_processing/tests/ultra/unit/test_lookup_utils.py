@@ -161,6 +161,8 @@ def test_get_ebins(ancillary_files):
 
     energy = np.array([618, 4])
     ctof = np.array([73, 24])
-    ebins = get_ebins("l1b-tofxph", energy, ctof, ancillary_files)
+    fillval_uint8 = 255
+    ebins = np.full(energy.shape, fillval_uint8, dtype=np.uint8)
+    ebins = get_ebins("l1b-tofxph", energy, ctof, ebins, ancillary_files)
 
     np.testing.assert_array_equal(ebins, np.array([15, 19]))
