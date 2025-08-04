@@ -925,7 +925,7 @@ class Idex(ProcessInstrument):
                 )
             sci_files = dependencies.get_file_paths(source="idex", descriptor="sci-1mo")
             dependencies = [load_cdf(f) for f in sci_files]
-            datasets = [idex_l2c(dependencies)]
+            datasets = idex_l2c(dependencies)
         return datasets
 
 

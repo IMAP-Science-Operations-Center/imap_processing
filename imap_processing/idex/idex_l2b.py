@@ -17,8 +17,9 @@ Examples
     l1a_data, l1a_evt_data, l1b_evt_data = PacketParser(l0_file)
     l1b_data = idex_l1b(l1a_data)
     l1a_data = idex_l2a(l1b_data)
-    l2b_data = idex_l2b(l2a_data, [evt_data])
-    write_cdf(l2b_data)
+    l2b_and_l2c_datasets = idex_l2b(l2a_data, [evt_data])
+    write_cdf(l2b_and_l2c_datasets[0])
+    write_cdf(l2b_and_l2c_datasets[1])
 """
 
 import collections
@@ -29,9 +30,11 @@ from datetime import datetime, timedelta
 import numpy as np
 import xarray as xr
 
+from imap_processing.ena_maps.ena_maps import SkyTilingType
 from imap_processing.ena_maps.utils.spatial_utils import AzElSkyGrid
 from imap_processing.idex.idex_constants import (
     FG_TO_KG,
+    IDEX_EVENT_REFERENCE_FRAME,
     IDEX_SPACING_DEG,
     SECONDS_IN_DAY,
     IDEXEvtAcquireCodes,
@@ -81,9 +84,12 @@ LAT_BINS_EDGES = SKY_GRID.el_bin_edges
 
 def idex_l2b(
     l2a_datasets: list[xr.Dataset], evt_datasets: list[xr.Dataset]
-) -> xr.Dataset:
+) -> list[xr.Dataset]:
     """
-    Will process IDEX l2a data to create l2b data products.
+    Will process IDEX l2a data to create l2b and l2c data products.
+
+    IDEX L2B processing creates L2b and L2c at the same time because L2c needs no
+    additional dependencies and is a natural extension of L2b processing.
 
     Parameters
     ----------
@@ -94,16 +100,19 @@ def idex_l2b(
 
     Returns
     -------
-    l2b_dataset : xarray.Dataset
-        The``xarray`` dataset containing the science data and supporting metadata.
+    list[xarray.Dataset]
+        The``xarray`` datasets containing the l2b and l2c science data and supporting
+        metadata.
     """
     logger.info(
-        f"Running IDEX L2B processing on datasets: "
-        f"{[ds.attrs['Logical_source'] for ds in l2a_datasets]}"
+        "Running IDEX L2B and L2C processing on L2a datasets. NOTE: L2C datasets are "
+        "processed at the same time as L2B datasets because L2C needs no additional "
+        "dependencies."
     )
 
     # create the attribute manager for this data level
-    idex_attrs = get_idex_attrs("l2b")
+    idex_l2b_attrs = get_idex_attrs("l2b")
+    idex_l2c_attrs = get_idex_attrs("l2c")
     evt_dataset = xr.concat(evt_datasets, dim="epoch")
 
     # Concat all the l2a datasets together
@@ -136,68 +145,68 @@ def idex_l2b(
     charge_bins = np.arange(len(CHARGE_BIN_EDGES) - 1)
     mass_bins = np.arange(len(CHARGE_BIN_EDGES) - 1)
     spin_phase_bins = np.arange(len(SPIN_PHASE_BIN_EDGES) - 1)
+
+    # Define xarrays that are shared between l2b and l2c
     epoch = xr.DataArray(
         name="epoch",
         data=daily_epoch,
         dims="epoch",
-        attrs=idex_attrs.get_variable_attributes("epoch", check_schema=False),
+        attrs=idex_l2b_attrs.get_variable_attributes("epoch", check_schema=False),
     )
-    data_vars = {
-        "impact_day_of_year": xr.DataArray(
-            name="impact_day_of_year",
-            data=epoch_doy_unique,
-            dims="epoch",
-            attrs=idex_attrs.get_variable_attributes("impact_day_of_year"),
+    spin_phase_bins_da = xr.DataArray(
+        name="spin_phase",
+        data=spin_phase_bins,
+        dims="spin_phase",
+        attrs=idex_l2c_attrs.get_variable_attributes(
+            "spin_phase_bins", check_schema=False
         ),
+    )
+    spin_phase_labels = xr.DataArray(
+        name="spin_phase_labels",
+        data=spin_phase_bins.astype(str),
+        dims="spin_phase",
+        attrs=idex_l2b_attrs.get_variable_attributes(
+            "spin_phase_labels", check_schema=False
+        ),
+    )
+    impact_day_of_year = xr.DataArray(
+        name="impact_day_of_year",
+        data=epoch_doy_unique,
+        dims="epoch",
+        attrs=idex_l2b_attrs.get_variable_attributes("impact_day_of_year"),
+    )
+    l2b_vars = {
+        "impact_day_of_year": impact_day_of_year,
         "rate_calculation_quality_flags": xr.DataArray(
             name="rate_calculation_quality_flags",
             data=rate_quality_flags,
             dims="epoch",
-            attrs=idex_attrs.get_variable_attributes("rate_calculation_quality_flags"),
+            attrs=idex_l2b_attrs.get_variable_attributes(
+                "rate_calculation_quality_flags"
+            ),
         ),
         "charge_labels": xr.DataArray(
             name="impact_charge_labels",
             data=charge_bins.astype(str),
             dims="impact_charge",
-            attrs=idex_attrs.get_variable_attributes(
+            attrs=idex_l2b_attrs.get_variable_attributes(
                 "charge_labels", check_schema=False
             ),
         ),
-        "spin_phase_labels": xr.DataArray(
-            name="spin_phase_labels",
-            data=spin_phase_bins.astype(str),
-            dims="spin_phase",
-            attrs=idex_attrs.get_variable_attributes(
-                "spin_phase_labels", check_schema=False
-            ),
-        ),
+        "spin_phase_labels": spin_phase_labels,
         "mass_labels": xr.DataArray(
             name="mass_labels",
             data=mass_bins.astype(str),
             dims="mass",
-            attrs=idex_attrs.get_variable_attributes("mass_labels", check_schema=False),
-        ),
-        "rectangular_lon_pixel_label": xr.DataArray(
-            name="rectangular_lon_pixel_label",
-            data=SKY_GRID.az_bin_midpoints.astype(str),
-            dims="rectangular_lon_pixel",
-            attrs=idex_attrs.get_variable_attributes(
-                "rectangular_lon_pixel_label", check_schema=False
-            ),
-        ),
-        "rectangular_lat_pixel_label": xr.DataArray(
-            name="rectangular_lat_pixel_label",
-            data=SKY_GRID.el_bin_midpoints.astype(str),
-            dims="rectangular_lat_pixel",
-            attrs=idex_attrs.get_variable_attributes(
-                "rectangular_lat_pixel_label", check_schema=False
+            attrs=idex_l2b_attrs.get_variable_attributes(
+                "mass_labels", check_schema=False
             ),
         ),
         "impact_charge": xr.DataArray(
             name="impact_charge",
             data=charge_bins,
             dims="impact_charge",
-            attrs=idex_attrs.get_variable_attributes(
+            attrs=idex_l2b_attrs.get_variable_attributes(
                 "impact_charge", check_schema=False
             ),
         ),
@@ -205,19 +214,59 @@ def idex_l2b(
             name="mass",
             data=mass_bins,
             dims="mass",
-            attrs=idex_attrs.get_variable_attributes("mass", check_schema=False),
+            attrs=idex_l2b_attrs.get_variable_attributes("mass", check_schema=False),
         ),
-        "spin_phase": xr.DataArray(
-            name="spin_phase",
-            data=spin_phase_bins,
-            dims="spin_phase",
-            attrs=idex_attrs.get_variable_attributes("spin_phase", check_schema=False),
+        "spin_phase_bins": spin_phase_bins,
+        "counts_by_charge": xr.DataArray(
+            name="counts_by_charge",
+            data=counts_by_charge.astype(np.int64),
+            dims=("epoch", "impact_charge", "spin_phase"),
+            attrs=idex_l2b_attrs.get_variable_attributes("counts_by_charge"),
         ),
+        "counts_by_mass": xr.DataArray(
+            name="counts_by_mass",
+            data=counts_by_mass.astype(np.int64),
+            dims=("epoch", "mass", "spin_phase"),
+            attrs=idex_l2b_attrs.get_variable_attributes("counts_by_mass"),
+        ),
+        "rate_by_charge": xr.DataArray(
+            name="rate_by_charge",
+            data=rate_by_charge,
+            dims=("epoch", "impact_charge", "spin_phase"),
+            attrs=idex_l2b_attrs.get_variable_attributes("rate_by_charge"),
+        ),
+        "rate_by_mass": xr.DataArray(
+            name="rate_by_mass",
+            data=rate_by_mass,
+            dims=("epoch", "mass", "spin_phase"),
+            attrs=idex_l2b_attrs.get_variable_attributes("rate_by_mass"),
+        ),
+    }
+    l2c_vars = {
+        "impact_day_of_year": impact_day_of_year,
+        "rectangular_lon_pixel_label": xr.DataArray(
+            name="rectangular_lon_pixel_label",
+            data=SKY_GRID.az_bin_midpoints.astype(str),
+            dims="rectangular_lon_pixel",
+            attrs=idex_l2c_attrs.get_variable_attributes(
+                "rectangular_lon_pixel_label", check_schema=False
+            ),
+        ),
+        "spin_phase_labels": spin_phase_labels,
+        "rectangular_lat_pixel_label": xr.DataArray(
+            name="rectangular_lat_pixel_label",
+            data=SKY_GRID.el_bin_midpoints.astype(str),
+            dims="rectangular_lat_pixel",
+            attrs=idex_l2c_attrs.get_variable_attributes(
+                "rectangular_lat_pixel_label", check_schema=False
+            ),
+        ),
+        "spin_phase_bins": spin_phase_bins,
         "rectangular_lon_pixel": xr.DataArray(
             name="rectangular_lon_pixel",
             data=SKY_GRID.az_bin_midpoints,
             dims="rectangular_lon_pixel",
-            attrs=idex_attrs.get_variable_attributes(
+            attrs=idex_l2c_attrs.get_variable_attributes(
                 "rectangular_lon_pixel", check_schema=False
             ),
         ),
@@ -225,33 +274,9 @@ def idex_l2b(
             name="rectangular_lat_pixel",
             data=SKY_GRID.el_bin_midpoints,
             dims="rectangular_lat_pixel",
-            attrs=idex_attrs.get_variable_attributes(
+            attrs=idex_l2c_attrs.get_variable_attributes(
                 "rectangular_lat_pixel", check_schema=False
             ),
-        ),
-        "counts_by_charge": xr.DataArray(
-            name="counts_by_charge",
-            data=counts_by_charge.astype(np.int64),
-            dims=("epoch", "impact_charge", "spin_phase"),
-            attrs=idex_attrs.get_variable_attributes("counts_by_charge"),
-        ),
-        "counts_by_mass": xr.DataArray(
-            name="counts_by_mass",
-            data=counts_by_mass.astype(np.int64),
-            dims=("epoch", "mass", "spin_phase"),
-            attrs=idex_attrs.get_variable_attributes("counts_by_mass"),
-        ),
-        "rate_by_charge": xr.DataArray(
-            name="rate_by_charge",
-            data=rate_by_charge,
-            dims=("epoch", "impact_charge", "spin_phase"),
-            attrs=idex_attrs.get_variable_attributes("rate_by_charge"),
-        ),
-        "rate_by_mass": xr.DataArray(
-            name="rate_by_mass",
-            data=rate_by_mass,
-            dims=("epoch", "mass", "spin_phase"),
-            attrs=idex_attrs.get_variable_attributes("rate_by_mass"),
         ),
         "counts_by_charge_map": xr.DataArray(
             name="counts_by_charge_map",
@@ -262,7 +287,7 @@ def idex_l2b(
                 "rectangular_lon_pixel",
                 "rectangular_lat_pixel",
             ),
-            attrs=idex_attrs.get_variable_attributes("counts_by_charge_map"),
+            attrs=idex_l2c_attrs.get_variable_attributes("counts_by_charge_map"),
         ),
         "counts_by_mass_map": xr.DataArray(
             name="counts_by_mass_map",
@@ -273,7 +298,7 @@ def idex_l2b(
                 "rectangular_lon_pixel",
                 "rectangular_lat_pixel",
             ),
-            attrs=idex_attrs.get_variable_attributes("counts_by_mass_map"),
+            attrs=idex_l2c_attrs.get_variable_attributes("counts_by_mass_map"),
         ),
         "rate_by_charge_map": xr.DataArray(
             name="rate_by_charge_map",
@@ -284,7 +309,7 @@ def idex_l2b(
                 "rectangular_lon_pixel",
                 "rectangular_lat_pixel",
             ),
-            attrs=idex_attrs.get_variable_attributes("rate_by_charge_map"),
+            attrs=idex_l2c_attrs.get_variable_attributes("rate_by_charge_map"),
         ),
         "rate_by_mass_map": xr.DataArray(
             name="rate_by_mass_map",
@@ -295,18 +320,32 @@ def idex_l2b(
                 "rectangular_lon_pixel",
                 "rectangular_lat_pixel",
             ),
-            attrs=idex_attrs.get_variable_attributes("rate_by_mass_map"),
+            attrs=idex_l2c_attrs.get_variable_attributes("rate_by_mass_map"),
         ),
     }
     l2b_dataset = xr.Dataset(
         coords={"epoch": epoch},
-        data_vars=data_vars,
-        attrs=idex_attrs.get_global_attributes("imap_idex_l2b_sci"),
+        data_vars=l2b_vars,
+        attrs=idex_l2b_attrs.get_global_attributes("imap_idex_l2b_sci"),
+    )
+    l2c_dataset = xr.Dataset(
+        coords={"epoch": epoch},
+        data_vars=l2c_vars,
+        attrs=idex_l2c_attrs.get_global_attributes("imap_idex_l2c_sci"),
     )
 
-    logger.info("IDEX L2B science data processing completed.")
+    # Add map attributes
+    map_attrs = {
+        "sky_tiling_type": SkyTilingType.RECTANGULAR.value,
+        "Spacing_degrees": str(IDEX_SPACING_DEG),
+        "Spice_reference_frame": IDEX_EVENT_REFERENCE_FRAME.name,
+    } | idex_l2c_attrs.get_global_attributes("imap_idex_l2c_sci-rectangular")
 
-    return l2b_dataset
+    l2c_dataset.attrs.update(map_attrs)
+
+    logger.info("IDEX L2B and L2C science data processing completed.")
+
+    return [l2b_dataset, l2c_dataset]
 
 
 def compute_counts_by_charge_and_mass(

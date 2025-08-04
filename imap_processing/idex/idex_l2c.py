@@ -49,6 +49,7 @@ def idex_l2c(l2b_datasets: list[xr.Dataset]) -> xr.Dataset:
     logger.info("Running IDEX L2C processing")
     # create the attribute manager for this data level
     idex_attrs = get_idex_attrs("l2c")
+
     # Concat the list of l2b datasets into a single dataset
     # Only concat the variables that have "epoch" as a dimension
     l2b_dataset = xr.concat(

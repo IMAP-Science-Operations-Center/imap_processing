@@ -6,10 +6,9 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
-from imap_processing.idex.idex_constants import NANOSECONDS_IN_DAY, SPICE_ARRAYS
+from imap_processing.idex.idex_constants import SPICE_ARRAYS
 from imap_processing.idex.idex_l1a import PacketParser
 from imap_processing.idex.idex_l1b import idex_l1b
-from imap_processing.idex.idex_l2b import idex_l2b
 
 TEST_DATA_PATH = imap_module_directory / "tests" / "idex" / "test_data"
 
@@ -114,28 +113,6 @@ def l1b_dataset(mock_get_spice_data, decom_test_data_sci: xr.Dataset) -> xr.Data
 
     mock_get_spice_data.side_effect = get_spice_data_side_effect_func
     dataset = idex_l1b(decom_test_data_sci)
-    return dataset
-
-
-@pytest.fixture
-def l2b_dataset(l2a_dataset: xr.Dataset) -> xr.Dataset:
-    """Return a ``xarray`` dataset containing test data.
-
-    Returns
-    -------
-    dataset : xr.Dataset
-        A ``xarray`` dataset containing the test data
-    """
-    l1b_evt_dataset = load_cdf(L1B_EVT_CDF)
-    l1b_evt_dataset2 = (
-        l1b_evt_dataset.copy()
-    )  # Add a second dataset with different epoch values for testing
-    l2a_dataset2 = (
-        l2a_dataset.copy()
-    )  # Add a second dataset with different epoch values for testing
-    l1b_evt_dataset2["epoch"] = l1b_evt_dataset2["epoch"] + NANOSECONDS_IN_DAY
-    l2a_dataset2["epoch"] = l2a_dataset2["epoch"] + NANOSECONDS_IN_DAY
-    dataset = idex_l2b([l2a_dataset, l2a_dataset2], [l1b_evt_dataset, l1b_evt_dataset2])
     return dataset
 
 
