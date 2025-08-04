@@ -288,7 +288,7 @@ class RawDustEvent:
 
     Parameters
     ----------
-    header_packet : space_packet_parser.packets.CCSDSPacket
+    header_packet : space_packet_parser.SpacePacket
         The FPGA metadata event header.
 
     Attributes
@@ -340,7 +340,7 @@ class RawDustEvent:
     MAX_HIGH_BLOCKS = 16
     MAX_LOW_BLOCKS = 64
 
-    def __init__(self, header_packet: space_packet_parser.packets.CCSDSPacket) -> None:
+    def __init__(self, header_packet: space_packet_parser.SpacePacket) -> None:
         """
         Initialize a raw dust event, with an FPGA Header Packet from IDEX.
 
@@ -352,7 +352,7 @@ class RawDustEvent:
 
         Parameters
         ----------
-        header_packet : space_packet_parser.packets.CCSDSPacket
+        header_packet : space_packet_parser.SpacePacket
             The FPGA metadata event header.
         """
         # Calculate the impact time in seconds since epoch
@@ -371,8 +371,8 @@ class RawDustEvent:
         # Iterate through every telemetry item not in the header and pull out the values
         self.telemetry_items = {
             key.lower(): val
-            for key, val in header_packet.items()
-            if key not in header_packet.header.keys()
+            for i, (key, val) in enumerate(header_packet.items())
+            if i > 6  # Skip first 7 header items
         }
 
         logger.debug(
@@ -420,7 +420,7 @@ class RawDustEvent:
             logger.warning("Unknown science type received: [%s]", scitype)
 
     def _set_sample_trigger_times(
-        self, packet: space_packet_parser.packets.CCSDSPacket
+        self, packet: space_packet_parser.SpacePacket
     ) -> None:
         """
         Calculate the actual sample trigger time.
@@ -430,7 +430,7 @@ class RawDustEvent:
 
         Parameters
         ----------
-        packet : space_packet_parser.packets.CCSDSPacket
+        packet : space_packet_parser.SpacePacket
             The IDEX FPGA header packet info.
 
         Notes
@@ -590,15 +590,13 @@ class RawDustEvent:
         )
         return time_high_sample_rate_data
 
-    def _populate_bit_strings(
-        self, packet: space_packet_parser.packets.CCSDSPacket
-    ) -> None:
+    def _populate_bit_strings(self, packet: space_packet_parser.SpacePacket) -> None:
         """
         Parse IDEX data packets to populate bit strings.
 
         Parameters
         ----------
-        packet : space_packet_parser.packets.CCSDSPacket
+        packet : space_packet_parser.SpacePacket
             A single science data packet for one of the 6.
             IDEX observables.
         """

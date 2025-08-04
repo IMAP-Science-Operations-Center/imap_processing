@@ -3,7 +3,7 @@
 from enum import Enum
 from pathlib import Path
 
-from space_packet_parser import definitions
+import space_packet_parser as spp
 
 from imap_processing import imap_module_directory
 from imap_processing.ccsds.ccsds_data import CcsdsData
@@ -49,7 +49,7 @@ def decom_packets(
         f"{imap_module_directory}/glows/packet_definitions/GLX_COMBINED.xml"
     )
 
-    packet_definition = definitions.XtcePacketDefinition(xtce_document)
+    packet_definition = spp.load_xtce(xtce_document)
 
     histdata = []
     dedata = []
@@ -57,24 +57,32 @@ def decom_packets(
     filename = packet_file_path.name
 
     with open(packet_file_path, "rb") as binary_data:
-        glows_packets = packet_definition.packet_generator(binary_data)
-
-        for packet in glows_packets:
+        for binary_packet in spp.ccsds_generator(binary_data):
+            packet = packet_definition.parse_bytes(binary_packet)
             apid = packet["PKT_APID"]
             # Do something with the packet data
             if apid == GlowsParams.HIST_APID.value:
-                values = [item.raw_value for item in packet.user_data.values()]
-                hist_l0 = HistogramL0(
-                    __version__, filename, CcsdsData(packet.header), *values
-                )
+                values = [
+                    item.raw_value for i, item in enumerate(packet.values()) if i > 6
+                ]
+                header = {
+                    key: value
+                    for i, (key, value) in enumerate(packet.items())
+                    if i <= 6
+                }
+                hist_l0 = HistogramL0(__version__, filename, CcsdsData(header), *values)
                 histdata.append(hist_l0)
 
             if apid == GlowsParams.DE_APID.value:
-                values = [item.raw_value for item in packet.user_data.values()]
-
-                de_l0 = DirectEventL0(
-                    __version__, filename, CcsdsData(packet.header), *values
-                )
+                values = [
+                    item.raw_value for i, item in enumerate(packet.values()) if i > 6
+                ]
+                header = {
+                    key: value
+                    for i, (key, value) in enumerate(packet.items())
+                    if i <= 6
+                }
+                de_l0 = DirectEventL0(__version__, filename, CcsdsData(header), *values)
                 dedata.append(de_l0)
 
         return histdata, dedata

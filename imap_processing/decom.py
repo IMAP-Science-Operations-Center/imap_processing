@@ -5,9 +5,13 @@ This module contains a common function that can be used by multiple instruments
 to decommutate CCSDS packet data using a given XTCE packet definition.
 """
 
+import logging
 from pathlib import Path
 
-from space_packet_parser import definitions
+import space_packet_parser as spp
+from space_packet_parser.exceptions import UnrecognizedPacketTypeError
+
+logger = logging.getLogger(__name__)
 
 
 def decom_packets(packet_file: str | Path, xtce_packet_definition: str | Path) -> list:
@@ -29,8 +33,15 @@ def decom_packets(packet_file: str | Path, xtce_packet_definition: str | Path) -
     list
         List of all the unpacked data.
     """
-    packet_definition = definitions.XtcePacketDefinition(xtce_packet_definition)
+    packet_definition = spp.load_xtce(xtce_packet_definition)
 
     with open(packet_file, "rb") as binary_data:
-        packet_generator = packet_definition.packet_generator(binary_data)
-        return list(packet_generator)
+        packets = []
+        for binary_packet in spp.ccsds_generator(binary_data):
+            try:
+                packets.append(packet_definition.parse_bytes(binary_packet))
+            except UnrecognizedPacketTypeError as e:
+                # Log the error and continue processing other packets
+                logger.debug(e)
+                continue
+        return packets

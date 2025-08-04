@@ -6,8 +6,10 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import space_packet_parser as spp
 import xarray as xr
-from space_packet_parser import definitions, encodings, parameters
+from space_packet_parser.exceptions import UnrecognizedPacketTypeError
+from space_packet_parser.xtce import definitions, encodings, parameter_types
 
 from imap_processing.spice.time import met_to_ttj2000ns
 
@@ -158,11 +160,11 @@ def _get_minimum_numpy_datatype(  # noqa: PLR0912 - Too many branches
     datatype : str
         The minimum datatype.
     """
-    data_encoding = definition.named_parameters[name].parameter_type.encoding
+    data_encoding = definition.parameters[name].parameter_type.encoding
 
     if use_derived_value and isinstance(
-        definition.named_parameters[name].parameter_type,
-        parameters.EnumeratedParameterType,
+        definition.parameters[name].parameter_type,
+        parameter_types.EnumeratedParameterType,
     ):
         # We don't have a way of knowing what is enumerated,
         # let numpy infer the datatype
@@ -254,11 +256,18 @@ def packet_file_to_datasets(
     variable_mapping: dict[int, set] = dict()
 
     # Set up the parser from the input packet definition
-    packet_definition = definitions.XtcePacketDefinition(xtce_packet_definition)
+    packet_definition = spp.load_xtce(xtce_packet_definition)
 
     with open(packet_file, "rb") as binary_data:
-        packet_generator = packet_definition.packet_generator(binary_data)
-        for packet in packet_generator:
+        for binary_packet in spp.ccsds_generator(binary_data):
+            try:
+                packet = packet_definition.parse_bytes(binary_packet)
+            except UnrecognizedPacketTypeError as e:
+                # NOTE: Not all of our definitions have all of the APIDs
+                #       we may encounter, so we only want to process ones
+                #       we can actual parse.
+                logger.debug(e)
+                continue
             apid = packet["PKT_APID"]
             if apid not in data_dict:
                 # This is the first packet for this APID
@@ -274,10 +283,7 @@ def packet_file_to_datasets(
                     f"got: {packet.keys()}"
                 )
 
-            # TODO: Do we want to give an option to remove the header content?
-            packet_content = packet.user_data | packet.header
-
-            for key, value in packet_content.items():
+            for key, value in packet.items():
                 val = value if use_derived_value else value.raw_value
                 data_dict[apid][key].append(val)
                 if key not in datatype_mapping[apid]:
@@ -289,8 +295,15 @@ def packet_file_to_datasets(
     dataset_by_apid = {}
 
     for apid, data in data_dict.items():
-        # The time key is always the first key in the data dictionary on IMAP
-        time_key = next(iter(data.keys()))
+        # The time key is the secondary header, right after the primary header
+        # in the data dictionary on IMAP (8th key overall)
+        try:
+            time_key = list(data.keys())[7]
+        except IndexError:
+            logger.debug(
+                f"Could not determine time key for APID {apid}, skipping dataset."
+            )
+            continue
         # Convert to J2000 time and use that as our primary dimension
         time_data = met_to_ttj2000ns(data[time_key])
         ds = xr.Dataset(
