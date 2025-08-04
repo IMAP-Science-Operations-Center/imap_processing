@@ -4,34 +4,34 @@ double_fillval: &double_fillval -1.0E31
 
 # Base attributes for charge and mass variables
 base_charge: &base_charge
-    CATDESC: " "
-    FIELDNAM: " "
-    DEPEND_0: epoch
-    DEPEND_1: impact_charge
-    DEPEND_2: spin_phase
-    LABL_PTR_1: charge_labels
-    LABL_PTR_2: spin_phase_labels
-    DISPLAY_TYPE: spectrogram
-    VAR_TYPE: data
-    FILLVAL: *int_fillval
-    FORMAT: E10.3
-    VALIDMIN: -1
-    VALIDMAX: *int_maxval
+  CATDESC: " "
+  FIELDNAM: " "
+  DEPEND_0: epoch
+  DEPEND_1: impact_charge
+  DEPEND_2: spin_phase
+  LABL_PTR_1: charge_labels
+  LABL_PTR_2: spin_phase_labels
+  DISPLAY_TYPE: spectrogram
+  VAR_TYPE: data
+  FILLVAL: *int_fillval
+  FORMAT: E10.3
+  VALIDMIN: -1
+  VALIDMAX: *int_maxval
 
 base_mass: &base_mass
-    CATDESC: " "
-    FIELDNAM: " "
-    DEPEND_0: epoch
-    DEPEND_1: mass
-    DEPEND_2: spin_phase
-    LABL_PTR_1: mass_labels
-    LABL_PTR_2: spin_phase_labels
-    DISPLAY_TYPE: spectrogram
-    VAR_TYPE: data
-    FILLVAL: *int_fillval
-    FORMAT: E10.3
-    VALIDMIN: 0.0
-    VALIDMAX: *int_maxval
+  CATDESC: " "
+  FIELDNAM: " "
+  DEPEND_0: epoch
+  DEPEND_1: mass
+  DEPEND_2: spin_phase
+  LABL_PTR_1: mass_labels
+  LABL_PTR_2: spin_phase_labels
+  DISPLAY_TYPE: spectrogram
+  VAR_TYPE: data
+  FILLVAL: *int_fillval
+  FORMAT: E10.3
+  VALIDMIN: 0.0
+  VALIDMAX: *int_maxval
 
 base_charge_map: &base_charge_map
   <<: *base_charge
@@ -88,12 +88,12 @@ rectangular_lat_pixel:
   DICT_KEY: SPASE>Support>SupportQuantity:Positional
 
 rate_by_charge_map:
-    <<: *base_charge_map
-    CATDESC: Count rate per day by impact charge, longitude, and latitude.
-    FIELDNAM: Rate (day^-1) by Charge Map
-    UNITS: day^-1
-    FILLVAL: *double_fillval
-    DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
+  <<: *base_charge_map
+  CATDESC: Count rate per day by impact charge, longitude, and latitude.
+  FIELDNAM: Rate (day^-1) by Charge Map
+  UNITS: day^-1
+  FILLVAL: *double_fillval
+  DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
 
 counts_by_charge_map:
   <<: *base_charge_map
@@ -104,17 +104,17 @@ counts_by_charge_map:
   DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
 
 counts_by_mass_map:
-    <<: *base_mass_map
-    CATDESC: Count by mass, longitude, and latitude.
-    FIELDNAM: Counts by Mass Map
-    FORMAT: I8
-    UNITS: counts
-    DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
+  <<: *base_mass_map
+  CATDESC: Count by mass, longitude, and latitude.
+  FIELDNAM: Counts by Mass Map
+  FORMAT: I8
+  UNITS: counts
+  DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
 
 rate_by_mass_map:
-    <<: *base_mass_map
-    CATDESC: Count rate per day by mass, longitude, and latitude.
-    FIELDNAM: Rate (day^-1) by Mass Map
-    UNITS: day^-1
-    FILLVAL: *double_fillval
-    DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
+  <<: *base_mass_map
+  CATDESC: Count rate per day by mass, longitude, and latitude.
+  FIELDNAM: Rate (day^-1) by Mass Map
+  UNITS: day^-1
+  FILLVAL: *double_fillval
+  DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
