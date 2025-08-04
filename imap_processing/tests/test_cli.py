@@ -6,6 +6,7 @@ import shutil
 import sys
 from pathlib import Path
 from unittest import mock
+from unittest.mock import Mock, sentinel
 
 import numpy as np
 import pytest
@@ -24,6 +25,7 @@ from imap_processing.cli import (
     Hi,
     Hit,
     Idex,
+    Lo,
     ProcessInstrument,
     Spacecraft,
     Swe,
@@ -323,6 +325,47 @@ def test_hi(
         instrument.process()
         assert mock_hi.call_count == 1
         assert mock_instrument_dependencies["mock_write_cdf"].call_count == n_prods
+
+
+@mock.patch("imap_processing.cli.lo_l2.lo_l2", autospec=True)
+def test_lo_l2(mock_lo_l2, mock_instrument_dependencies):
+    mocks = mock_instrument_dependencies
+
+    descriptor = "some-ena-map-descriptor"
+
+    mock_loaded_pset_1 = Mock(attrs={"Logical_source": "some_pset_logical_source"})
+    pset_file_paths = [
+        "imap_lo_l1c_pset_20250415_v001.cdf",
+        "imap_lo_l1c_pset_20250416_v001.cdf",
+    ]
+
+    processing_input = ProcessingInputCollection(
+        *[ScienceInput(file_path) for file_path in pset_file_paths],
+    )
+
+    mocks["mock_load_cdf"].side_effect = [mock_loaded_pset_1, sentinel.loaded_pset_2]
+    mocks["mock_pre_processing"].return_value = processing_input
+
+    output_l2_dataset = xr.Dataset()
+    mock_lo_l2.return_value = [output_l2_dataset]
+
+    instrument = Lo(
+        "l2",
+        descriptor,
+        processing_input.serialize(),
+        "20250415",
+        "20250715",
+        "v005",
+        False,
+    )
+    instrument.process()
+
+    mock_lo_l2.assert_called_once_with(
+        {"some_pset_logical_source": [mock_loaded_pset_1, sentinel.loaded_pset_2]},
+        [],
+        descriptor,
+    )
+    mocks["mock_write_cdf"].assert_called_once_with(output_l2_dataset)
 
 
 @mock.patch("imap_processing.cli.quaternions.process_quaternions", autospec=True)

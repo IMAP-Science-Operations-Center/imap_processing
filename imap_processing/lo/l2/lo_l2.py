@@ -5,12 +5,13 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
-from imap_processing.ena_maps.ena_maps import RectangularSkyMap
-from imap_processing.spice import geometry
-from imap_processing.spice.geometry import SpiceFrame
+from imap_processing.ena_maps.ena_maps import AbstractSkyMap
+from imap_processing.ena_maps.utils.naming import MapDescriptor
 
 
-def lo_l2(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
+def lo_l2(
+    sci_dependencies: dict, anc_dependencies: list, descriptor: str
+) -> list[xr.Dataset]:
     """
     Will process IMAP-Lo L1C data into Le CDF data products.
 
@@ -20,6 +21,8 @@ def lo_l2(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         Dictionary of datasets needed for L2 data product creation in xarray Datasets.
     anc_dependencies : list
         Ancillary files needed for L2 data product creation.
+    descriptor : str
+        The map descriptor to be produced.
 
     Returns
     -------
@@ -38,9 +41,7 @@ def lo_l2(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         psets = sci_dependencies["imap_lo_l1c_pset"]
 
         # Create the rectangular sky map from the pointing set.
-        lo_rect_map = project_pset_to_rect_map(
-            psets, spacing_deg=6, spice_frame=geometry.SpiceFrame.ECLIPJ2000
-        )
+        lo_rect_map = project_pset_to_sky_map(psets, descriptor)
         # Add the hydrogen rates to the rectangular map dataset.
         lo_rect_map.data_1d["h_rate"] = calculate_rates(
             lo_rect_map.data_1d["h_counts"], lo_rect_map.data_1d["exposure_time"]
@@ -57,9 +58,7 @@ def lo_l2(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
     return [lo_rect_map_ds]
 
 
-def project_pset_to_rect_map(
-    psets: list[xr.Dataset], spacing_deg: int, spice_frame: SpiceFrame
-) -> RectangularSkyMap:
+def project_pset_to_sky_map(psets: list[xr.Dataset], descriptor: str) -> AbstractSkyMap:
     """
     Project the pointing set to a rectangular sky map.
 
@@ -70,28 +69,26 @@ def project_pset_to_rect_map(
     ----------
     psets : list[xr.Dataset]
         List of pointing sets in xarray Dataset format.
-    spacing_deg : int
-        The spacing in degrees for the rectangular sky map.
-    spice_frame : SpiceFrame
-        The SPICE frame to use for the rectangular sky map projection.
+    descriptor : str
+        The map descriptor for the map to be produced,
+        contains details about the map projection.
 
     Returns
     -------
     RectangularSkyMap
-        The rectangular sky map created from the pointing set data.
+        The sky map created from the pointing set data.
     """
-    lo_rect_map = ena_maps.RectangularSkyMap(
-        spacing_deg=spacing_deg,
-        spice_frame=spice_frame,
-    )
+    map_descriptor = MapDescriptor.from_string(descriptor)
+    output_map = map_descriptor.to_empty_map()
+
     for pset in psets:
         lo_pset = ena_maps.LoPointingSet(pset)
-        lo_rect_map.project_pset_values_to_map(
+        output_map.project_pset_values_to_map(
             pointing_set=lo_pset,
             value_keys=["h_counts", "exposure_time"],
             index_match_method=ena_maps.IndexMatchMethod.PUSH,
         )
-    return lo_rect_map
+    return output_map
 
 
 def calculate_rates(counts: xr.DataArray, exposure_time: xr.DataArray) -> xr.DataArray:

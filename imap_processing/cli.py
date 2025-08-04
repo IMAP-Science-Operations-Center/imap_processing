@@ -985,15 +985,13 @@ class Lo(ProcessInstrument):
             data_dict = {}
             # TODO: Add ancillary descriptors when maps using them are
             #  implemented.
-            anc_dependencies = dependencies.get_file_paths(
-                source="lo",
-            )
+            anc_dependencies = []
             science_files = dependencies.get_file_paths(source="lo", descriptor="pset")
             psets = []
             for file in science_files:
                 psets.append(load_cdf(file))
             data_dict[psets[0].attrs["Logical_source"]] = psets
-            datasets = lo_l2.lo_l2(data_dict, anc_dependencies)
+            datasets = lo_l2.lo_l2(data_dict, anc_dependencies, self.descriptor)
         return datasets
 
 
