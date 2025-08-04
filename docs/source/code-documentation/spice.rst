@@ -22,7 +22,6 @@ table data.
     :recursive:
 
     geometry
-    kernels
     repoint
     spin
     time
