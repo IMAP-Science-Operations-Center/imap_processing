@@ -362,7 +362,7 @@ def test_filter_dataset_to_processing_day():
 
     # Call the function
     filtered_dataset = filter_dataset_to_processing_day(
-        dataset, packet_date, sc_tick=True
+        dataset, packet_date, epoch_vals=epoch_values, sc_tick=True
     )
 
     # Assert the filtered dataset contains only data within the processing day

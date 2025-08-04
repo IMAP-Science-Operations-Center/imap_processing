@@ -116,24 +116,17 @@ def process_science_data(
 
     if "imap_hit_l1a_counts-standard" in l1a_counts_dataset.attrs["Logical_source"]:
         # Process counts data to L1B datasets
-        l1b_datasets.update(
-            {
-                "imap_hit_l1b_standard-rates": process_standard_rates_data(
-                    l1a_counts_dataset, livetime
-                ),
-                "imap_hit_l1b_summed-rates": process_summed_rates_data(
-                    l1a_counts_dataset, livetime
-                ),
-            }
+        l1b_datasets["imap_hit_l1b_standard-rates"] = process_standard_rates_data(
+            l1a_counts_dataset, livetime
+        )
+
+        l1b_datasets["imap_hit_l1b_summed-rates"] = process_summed_rates_data(
+            l1a_counts_dataset, livetime
         )
     elif "imap_hit_l1a_counts-sectored" in l1a_counts_dataset.attrs["Logical_source"]:
         # Process counts data to L1B datasets
-        l1b_datasets.update(
-            {
-                "imap_hit_l1b_sectored-rates": process_sectored_rates_data(
-                    l1a_counts_dataset, livetime
-                )
-            }
+        l1b_datasets["imap_hit_l1b_sectored-rates"] = process_sectored_rates_data(
+            l1a_counts_dataset, livetime
         )
 
     # Update attributes and dimensions

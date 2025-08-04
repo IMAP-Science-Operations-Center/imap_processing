@@ -789,11 +789,12 @@ class Hit(ProcessInstrument):
 
         dependency_list = dependencies.processing_input
         if self.data_level == "l1a":
-            # 1 science file and 2 spice files
+            # Two inputs - L0 and SPICE
             if len(dependency_list) > 2:
                 raise ValueError(
                     f"Unexpected dependencies found for HIT L1A:"
-                    f"{dependency_list}. Expected only 2 dependencies."
+                    f"{dependency_list}. Expected only 2 dependencies, "
+                    f"L0 and time kernels."
                 )
             # process data to L1A products
             science_files = dependencies.get_file_paths(source="hit", descriptor="raw")
