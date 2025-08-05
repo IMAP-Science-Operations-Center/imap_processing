@@ -338,6 +338,47 @@ def calibrate_and_offset_vectors(
     return calibrated[:, :3]
 
 
+def apply_gradiometry_correction(
+    mago_vector_eclipj2000: np.ndarray,
+    magi_vector_eclipj2000: np.ndarray,
+    time_data: dict,
+    gradiometer_factor: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Align MAGi to MAGo timestamps and apply gradiometry correction.
+
+    Parameters
+    ----------
+    mago_vector_eclipj2000 : np.ndarray
+        MAGo vectors in inertial frame, shape (N, 3).
+    magi_vector_eclipj2000 : np.ndarray
+        MAGi vectors in inertial frame, shape (M, 3).
+    time_data : dict
+        Coarse and fine time for Primary and Secondary Sensors.
+    gradiometer_factor : np.ndarray
+        3-element vector used to project gradiometry offset, shape (3,).
+
+    Returns
+    -------
+    mago_corrected : np.ndarray
+        Corrected MAGo vectors in inertial frame, shape (N, 3).
+    magnitude : np.ndarray
+        Magnitude of corrected MAGo vectors, shape (N,).
+    """
+    gradiometry_offsets = MagL1d.calculate_gradiometry_offsets(
+        mago_vector_eclipj2000,
+        time_data["primary_epoch"],
+        magi_vector_eclipj2000,
+        time_data["secondary_epoch"],
+    )
+    mago_corrected = MagL1d.apply_gradiometry_offsets(
+        gradiometry_offsets, mago_vector_eclipj2000, gradiometer_factor
+    )
+    magnitude = np.linalg.norm(mago_corrected, axis=1)
+
+    return mago_corrected, magnitude
+
+
 def process_packet(
     accumulated_data: xr.Dataset, calibration_dataset: xr.Dataset
 ) -> tuple[list[dict], list[dict]]:
