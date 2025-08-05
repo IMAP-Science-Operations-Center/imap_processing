@@ -447,6 +447,10 @@ def get_esa_to_esa_energy_step_lut(
     # Get the set of esa_steps visited
     esa_steps = list(sorted(set(l1b_hk_ds["sci_esa_step"].data)))
     # Break into contiguous segments where op_mode == "HVSCI"
+    # Pad the boolean array `op_mode == HVSCI` with False values on each end.
+    # This treats starting or ending in HVSCI mode as a transition in the next
+    # step where np.diff is used to find op_mode transitions into and out of
+    # HVSCI
     padded_mask = np.pad(
         l1b_hk_ds["op_mode"].data == "HVSCI", (1, 1), constant_values=False
     )
