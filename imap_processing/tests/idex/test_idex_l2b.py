@@ -228,6 +228,7 @@ def test_compute_counts_by_charge_and_mass():
     # and mass bins all in the first spin phase bin. The test should be zero. This
     # should be the same for each epoch except the second epoch which has 2 counts in
     # the first 5 mass and impact charge bins.
+
     l2a_dataset = xr.Dataset(
         {
             "epoch": epochs,
