@@ -514,13 +514,18 @@ hi-ialirt-h:
 hi-ialirt-energy_h:
     <<: *hi_energies_default
     CATDESC: Energy Table for h
-    DELTA_MINUS_VAR: energy_h_delta
-    DELTA_PLUS_VAR: energy_h_delta
+    DELTA_MINUS_VAR: energy_h_minus
+    DELTA_PLUS_VAR: energy_h_plus
 
-hi-ialirt-energy_h_delta:
+hi-ialirt-energy_h_minus:
     <<: *hi_energies_default
-    CATDESC: Delta of energies for h
-    FIELDNAM: Delta Energy
+    CATDESC: Energy Table Minus Value for h
+    FIELDNAM: Energy Delta Minus
+
+hi-ialirt-energy_h_plus:
+    <<: *hi_energies_default
+    CATDESC: Energy Table Plus Value for h
+    FIELDNAM: Energy Delta Plus
 
 # hi-omni
 hi-omni-h:
@@ -533,13 +538,18 @@ hi-omni-h:
 hi-omni-energy_h:
     <<: *hi_energies_default
     CATDESC: Energy Table for h
-    DELTA_MINUS_VAR: energy_h_delta
-    DELTA_PLUS_VAR: energy_h_delta
+    DELTA_MINUS_VAR: energy_h_minus
+    DELTA_PLUS_VAR: energy_h_plus
 
-hi-omni-energy_h_delta:
+hi-omni-energy_h_minus:
     <<: *hi_energies_default
-    CATDESC: Delta of energies for h
-    FIELDNAM: Delta Energy
+    CATDESC: Energy Table Minus Value for h
+    FIELDNAM: Energy Delta Minus
+
+hi-omni-energy_h_plus:
+    <<: *hi_energies_default
+    CATDESC: Energy Table Plus Value for h
+    FIELDNAM: Energy Delta Plus
 
 hi-omni-he3:
     <<: *counters
@@ -551,13 +561,18 @@ hi-omni-he3:
 hi-omni-energy_he3:
     <<: *hi_energies_default
     CATDESC: Energy Table for he3
-    DELTA_MINUS_VAR: energy_he3_delta
-    DELTA_PLUS_VAR: energy_he3_delta
+    DELTA_MINUS_VAR: energy_he3_minus
+    DELTA_PLUS_VAR: energy_he3_plus
 
-hi-omni-energy_he3_delta:
+hi-omni-energy_he3_minus:
     <<: *hi_energies_default
-    CATDESC: Delta of energies for he3
-    FIELDNAM: Delta Energy
+    CATDESC: Energy Table Minus Value for he3
+    FIELDNAM: Energy Delta Minus
+
+hi-omni-energy_he3_plus:
+    <<: *hi_energies_default
+    CATDESC: Energy Table Plus Value for he3
+    FIELDNAM: Energy Delta Plus
 
 hi-omni-he4:
     <<: *counters
@@ -569,13 +584,18 @@ hi-omni-he4:
 hi-omni-energy_he4:
     <<: *hi_energies_default
     CATDESC: Energy Table for he4
-    DELTA_MINUS_VAR: energy_he4_delta
-    DELTA_PLUS_VAR: energy_he4_delta
+    DELTA_MINUS_VAR: energy_he4_minus
+    DELTA_PLUS_VAR: energy_he4_plus
 
-hi-omni-energy_he4_delta:
+hi-omni-energy_he4_minus:
     <<: *hi_energies_default
-    CATDESC: Delta of energies for he4
-    FIELDNAM: Delta Energy
+    CATDESC: Energy Table Minus Value for he4
+    FIELDNAM: Energy Delta Minus
+
+hi-omni-energy_he4_plus:
+    <<: *hi_energies_default
+    CATDESC: Energy Table Plus Value for he4
+    FIELDNAM: Energy Delta Plus
 
 hi-omni-c:
     <<: *counters
@@ -587,13 +607,18 @@ hi-omni-c:
 hi-omni-energy_c:
     <<: *hi_energies_default
     CATDESC: Energy Table for c
-    DELTA_MINUS_VAR: energy_c_delta
-    DELTA_PLUS_VAR: energy_c_delta
+    DELTA_MINUS_VAR: energy_c_minus
+    DELTA_PLUS_VAR: energy_c_plus
 
-hi-omni-energy_c_delta:
+hi-omni-energy_c_minus:
     <<: *hi_energies_default
-    CATDESC: Delta of energies for c
-    FIELDNAM: Delta Energy
+    CATDESC: Energy Table Minus Value for c
+    FIELDNAM: Energy Delta Minus
+
+hi-omni-energy_c_plus:
+    <<: *hi_energies_default
+    CATDESC: Energy Table Plus Value for c
+    FIELDNAM: Energy Delta Plus
 
 hi-omni-o:
     <<: *counters
@@ -605,13 +630,18 @@ hi-omni-o:
 hi-omni-energy_o:
     <<: *hi_energies_default
     CATDESC: Energy Table for o
-    DELTA_MINUS_VAR: energy_o_delta
-    DELTA_PLUS_VAR: energy_o_delta
+    DELTA_MINUS_VAR: energy_o_minus
+    DELTA_PLUS_VAR: energy_o_plus
 
-hi-omni-energy_o_delta:
+hi-omni-energy_o_minus:
     <<: *hi_energies_default
-    CATDESC: Delta of energies for o
-    FIELDNAM: Delta Energy
+    CATDESC: Energy Table Minus Value for o
+    FIELDNAM: Energy Delta Minus
+
+hi-omni-energy_o_plus:
+    <<: *hi_energies_default
+    CATDESC: Energy Table Plus Value for o
+    FIELDNAM: Energy Delta Plus
 
 hi-omni-ne_mg_si:
     <<: *counters
@@ -623,13 +653,18 @@ hi-omni-ne_mg_si:
 hi-omni-energy_ne_mg_si:
     <<: *hi_energies_default
     CATDESC: Energy Table for ne_mg_si
-    DELTA_MINUS_VAR: energy_ne_mg_si_delta
-    DELTA_PLUS_VAR: energy_ne_mg_si_delta
+    DELTA_MINUS_VAR: energy_ne_mg_si_minus
+    DELTA_PLUS_VAR: energy_ne_mg_si_plus
 
-hi-omni-energy_ne_mg_si_delta:
+hi-omni-energy_ne_mg_si_minus:
     <<: *hi_energies_default
-    CATDESC: Delta of energies for ne_mg_si
-    FIELDNAM: Delta Energy
+    CATDESC: Energy Table Minus Value for ne_mg_si
+    FIELDNAM: Energy Delta Minus
+
+hi-omni-energy_ne_mg_si_plus:
+    <<: *hi_energies_default
+    CATDESC: Energy Table Plus Value for ne_mg_si
+    FIELDNAM: Energy Delta Plus
 
 hi-omni-fe:
     <<: *counters
@@ -641,13 +676,18 @@ hi-omni-fe:
 hi-omni-energy_fe:
     <<: *hi_energies_default
     CATDESC: Energy Table for fe
-    DELTA_MINUS_VAR: energy_fe_delta
-    DELTA_PLUS_VAR: energy_fe_delta
+    DELTA_MINUS_VAR: energy_fe_minus
+    DELTA_PLUS_VAR: energy_fe_plus
 
-hi-omni-energy_fe_delta:
+hi-omni-energy_fe_minus:
     <<: *hi_energies_default
-    CATDESC: Delta of energies for fe
-    FIELDNAM: Delta Energy
+    CATDESC: Energy Table Minus Value for fe
+    FIELDNAM: Energy Delta Minus
+
+hi-omni-energy_fe_plus:
+    <<: *hi_energies_default
+    CATDESC: Energy Table Plus Value for fe
+    FIELDNAM: Energy Delta Plus
 
 hi-omni-uh:
     <<: *counters
@@ -659,13 +699,18 @@ hi-omni-uh:
 hi-omni-energy_uh:
     <<: *hi_energies_default
     CATDESC: Energy Table for uh
-    DELTA_MINUS_VAR: energy_uh_delta
-    DELTA_PLUS_VAR: energy_uh_delta
+    DELTA_MINUS_VAR: energy_uh_minus
+    DELTA_PLUS_VAR: energy_uh_plus
 
-hi-omni-energy_uh_delta:
+hi-omni-energy_uh_minus:
     <<: *hi_energies_default
-    CATDESC: Delta of energies for uh
-    FIELDNAM: Delta Energy
+    CATDESC: Energy Table Minus Value for uh
+    FIELDNAM: Energy Delta Minus
+
+hi-omni-energy_uh_plus:
+    <<: *hi_energies_default
+    CATDESC: Energy Table Plus Value for uh
+    FIELDNAM: Energy Delta Plus
 
 hi-omni-junk:
     <<: *counters
@@ -677,13 +722,18 @@ hi-omni-junk:
 hi-omni-energy_junk:
     <<: *hi_energies_default
     CATDESC: Energy Table for junk
-    DELTA_MINUS_VAR: energy_junk_delta
-    DELTA_PLUS_VAR: energy_junk_delta
+    DELTA_MINUS_VAR: energy_junk_minus
+    DELTA_PLUS_VAR: energy_junk_plus
 
-hi-omni-energy_junk_delta:
+hi-omni-energy_junk_minus:
     <<: *hi_energies_default
-    CATDESC: Delta of energies for junk
-    FIELDNAM: Delta Energy
+    CATDESC: Energy Table Minus Value for junk
+    FIELDNAM: Energy Delta Minus
+
+hi-omni-energy_junk_plus:
+    <<: *hi_energies_default
+    CATDESC: Energy Table Plus Value for junk
+    FIELDNAM: Energy Delta Plus
 
 # hi-priority
 hi-priority-Priority0:
@@ -731,13 +781,18 @@ hi-sectored-h:
 hi-sectored-energy_h:
     <<: *hi_energies_default
     CATDESC: Energy Table for H
-    DELTA_MINUS_VAR: energy_h_delta
-    DELTA_PLUS_VAR: energy_h_delta
+    DELTA_MINUS_VAR: energy_h_minus
+    DELTA_PLUS_VAR: energy_h_plus
 
-hi-sectored-energy_h_delta:
+hi-sectored-energy_h_minus:
     <<: *hi_energies_default
-    CATDESC: Delta of energies for H
-    FIELDNAM: Delta Energy
+    CATDESC: Energy Table Minus Value for h
+    FIELDNAM: Energy Delta Minus
+
+hi-sectored-energy_h_plus:
+    <<: *hi_energies_default
+    CATDESC: Energy Table Plus Value for h
+    FIELDNAM: Energy Delta Plus
 
 hi-sectored-he3he4:
     <<: *counters
@@ -753,13 +808,18 @@ hi-sectored-he3he4:
 hi-sectored-energy_he3he4:
     <<: *hi_energies_default
     CATDESC: Energy Table for He3He4
-    DELTA_MINUS_VAR: energy_he3he4_delta
-    DELTA_PLUS_VAR: energy_he3he4_delta
+    DELTA_MINUS_VAR: energy_he3he4_minus
+    DELTA_PLUS_VAR: energy_he3he4_plus
 
-hi-sectored-energy_he3he4_delta:
+hi-sectored-energy_he3he4_minus:
     <<: *hi_energies_default
-    CATDESC: Delta of energies for He3He4
-    FIELDNAM: Delta Energy
+    CATDESC: Energy Table Minus Value for he3he4
+    FIELDNAM: Energy Delta Minus
+
+hi-sectored-energy_he3he3_plus:
+    <<: *hi_energies_default
+    CATDESC: Energy Table Plus Value for he3he3
+    FIELDNAM: Energy Delta Plus
 
 hi-sectored-cno:
     <<: *counters
@@ -775,13 +835,18 @@ hi-sectored-cno:
 hi-sectored-energy_cno:
     <<: *hi_energies_default
     CATDESC: Energy Table for CNO
-    DELTA_MINUS_VAR: energy_cno_delta
-    DELTA_PLUS_VAR: energy_cno_delta
+    DELTA_MINUS_VAR: energy_cno_minus
+    DELTA_PLUS_VAR: energy_cno_plus
 
-hi-sectored-energy_cno_delta:
+hi-sectored-energy_cno_minus:
     <<: *hi_energies_default
-    CATDESC: Delta of energies for CNO
-    FIELDNAM: Delta Energy
+    CATDESC: Energy Table Minus Value for cno
+    FIELDNAM: Energy Delta Minus
+
+hi-sectored-energy_cno_plus:
+    <<: *hi_energies_default
+    CATDESC: Energy Table Plus Value for cno
+    FIELDNAM: Energy Delta Plus
 
 hi-sectored-fe:
     <<: *counters
@@ -797,13 +862,18 @@ hi-sectored-fe:
 hi-sectored-energy_fe:
     <<: *hi_energies_default
     CATDESC: Energy Table for Fe
-    DELTA_MINUS_VAR: energy_fe_delta
-    DELTA_PLUS_VAR: energy_fe_delta
+    DELTA_MINUS_VAR: energy_fe_minus
+    DELTA_PLUS_VAR: energy_fe_plus
 
-hi-sectored-energy_fe_delta:
+hi-sectored-energy_fe_minus:
     <<: *hi_energies_default
-    CATDESC: Delta of energies for Fe
-    FIELDNAM: Delta Energy
+    CATDESC: Energy Table Minus Value for fe
+    FIELDNAM: Energy Delta Minus
+
+hi-sectored-energy_fe_plus:
+    <<: *hi_energies_default
+    CATDESC: Energy Table Plus Value for fe
+    FIELDNAM: Energy Delta Plus
 
 # lo-counters-aggregated
 lo-counters-aggregated-TCR:
