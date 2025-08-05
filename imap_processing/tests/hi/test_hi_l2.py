@@ -1,6 +1,6 @@
 """Test coverage for imap_processing.hi.l2.hi_l2.py"""
 
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pytest
@@ -62,11 +62,12 @@ def test_hi_l2_uses_descriptor_to_setup_map(
 ):
     pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
     descriptor_str = "h90-ena-h-sf-nsp-full-hnu-2deg-3mo"
+    rect_map = Mock(spec=RectangularSkyMap)
+    mock_generate_hi_map.return_value = rect_map
 
     _ = hi_l2([pset_path], None, None, descriptor_str)[0]
 
     output_map = mock_generate_hi_map.call_args.kwargs["output_map"]
-    rect_map = mock_generate_hi_map.return_value
 
     assert output_map.spice_reference_frame == SpiceFrame.IMAP_HNU
     assert output_map.spacing_deg == 2.0
