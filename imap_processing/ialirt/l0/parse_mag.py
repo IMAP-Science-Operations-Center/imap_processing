@@ -7,6 +7,9 @@ from typing import Union
 import numpy as np
 import xarray as xr
 
+from imap_processing.ialirt.l0.ialirt_spice import (
+    transform_instrument_vectors_to_inertial,
+)
 from imap_processing.ialirt.l0.mag_l0_ialirt_data import (
     Packet0,
     Packet1,
@@ -20,10 +23,8 @@ from imap_processing.mag.l1b.mag_l1b import (
     calibrate_vector,
     shift_time,
 )
-from imap_processing.mag.l1c.interpolation_methods import linear
 from imap_processing.mag.l1d.mag_l1d_data import MagL1d
 from imap_processing.mag.l2.mag_l2_data import MagL2L1dBase
-from imap_processing.spice.geometry import SpiceFrame, frame_transform
 from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 
 # Range values (mago is 0 to 1, magi is 2 to 3)
@@ -396,85 +397,51 @@ def calculate_l1d(
     offsets: np.ndarray,
     gradiometer_factor: np.ndarray,
 ):
+def transform_to_inertial(
+    sc_spin_phase_rad: np.ndarray,
+    sc_inertial_right: np.ndarray,
+    sc_inertial_decline: np.ndarray,
+    mag_vector: np.ndarray,
+) -> np.ndarray:
     """
-    Apply calibration and offsets to magnetic vectors.
+    Transform vector to ECLIPJ2000.
 
     Parameters
     ----------
-    time_data : dict
-        Coarse and fine time for Primary and Secondary Sensors.
-    vector_mago : numpy.ndarray
-        Mago vector, shape (n, 3).
-    vector_magi : numpy.ndarray
-        Magi vector, shape (n, 3).
-    calibration : np.ndarray
-        Calibration matrix, shape (3, 3, 4).
-    offsets : np.ndarray
-        Offsets array, shape (2, 4, 3) where:
-        - index 0 = MAGo, 1 = MAGi
-        - second index = range (0–3)
-        - third index = axis (x, y, z)
-    gradiometer_factor : np.ndarray
-            A (3,3) element matrix to scale and rotate the gradiometer offsets.
-    is_magi : bool, optional
-        True if applying to MAGi data, False for MAGo.
+    sc_spin_phase_rad : numpy.ndarray
+        Spin phase for 4 packets 0 to 2π radians, shape (4).
+    sc_inertial_right : numpy.ndarray
+        Inertial right ascension for 4 packets 0 to 2π radians, shape (4).
+    sc_inertial_decline : numpy.ndarray
+        Inertial right ascension for 4 packets -π/2 to π/2 radians, shape (4).
+    mag_vector : numpy.ndarray
+        Vector, shape (3).
 
     Returns
     -------
-    mago_corrected : np.ndarray
-        The output vectors with gradiometry offsets applied, shape (N, 3).
-    magnitude : np.ndarray
-        The magnitude of the corrected MAGo vectors, shape (N,).
+    mean_vector : np.ndarray
+        Average rotated vector in ECLIPJ2000 frame, shape (3,).
+
+    Notes
+    -----
+    The MAG vectors are calculated based on 4 packets,
+    each of which contains its own spin phase,
+    inertial right ascension, and inertial decline.
     """
-    # Apply calibration and offsets.
-    mago_calibrate_and_offset = calibrate_and_offset_vectors(
-        vector_mago, calibration, offsets, is_magi=False
-    )
-    magi_calibrate_and_offset = calibrate_and_offset_vectors(
-        vector_magi, calibration, offsets, is_magi=True
-    )
+    # Expand to shape (4, 3) to match spin phase samples
+    v_stack = np.tile(mag_vector, (len(sc_spin_phase_rad), 1))
 
-    # Transform to DSRF (IMAP_DPS) frame.
-    mago_vector_dsrf = frame_transform(
-        time_data["primary_epoch"],
-        mago_calibrate_and_offset,
-        from_frame=SpiceFrame.IMAP_MAG,  # SRF
-        to_frame=SpiceFrame.IMAP_DPS,  # DSRF
+    # Transform each into ECLIPJ2000
+    vector_inertial = transform_instrument_vectors_to_inertial(
+        v_stack,
+        spin_phase=np.degrees(sc_spin_phase_rad),  # shape (4,)
+        sc_inertial_right=np.degrees(sc_inertial_right),  # shape (4,)
+        sc_inertial_decline=np.degrees(sc_inertial_decline),  # shape (4,)
     )
 
-    magi_vector_dsrf = frame_transform(
-        time_data["secondary_epoch"],
-        magi_calibrate_and_offset,
-        from_frame=SpiceFrame.IMAP_MAG,  # SRF
-        to_frame=SpiceFrame.IMAP_DPS,  # DSRF
-    )
+    mean_vector = np.mean(vector_inertial, axis=0)
 
-    # Use linear interpolation to align the MAGi data to the MAGo timestamps,
-    # then calculate the difference between the two sensors on each axis.
-    aligned_magi_dsrf = linear(
-        magi_vector_dsrf,
-        time_data["secondary_epoch"],
-        time_data["primary_epoch"],
-    )
-
-    # Compute gradiometry offset (MAGi - MAGo)
-    offset_value = aligned_magi_dsrf - mago_vector_dsrf
-
-    # Apply gradiometer factor
-    offset_value = np.apply_along_axis(
-        np.dot,
-        1,
-        offset_value,
-        gradiometer_factor,
-    )
-
-    # Subtract offsets from MAGo data
-    mago_corrected = mago_vector_dsrf - offset_value
-
-    # Compute magnitude
-    magnitude = np.linalg.norm(mago_corrected, axis=1)
-
-    return mago_corrected, magnitude
+    return mean_vector
 
 
 def process_packet(

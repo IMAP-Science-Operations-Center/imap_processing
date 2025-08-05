@@ -18,6 +18,7 @@ from imap_processing.ialirt.l0.parse_mag import (
     get_time,
     process_packet,
     retrieve_matrix_from_single_l1b_calibration,
+    transform_to_inertial,
 )
 from imap_processing.mag.constants import MAX_FINE_TIME
 from imap_processing.spice.time import met_to_ttj2000ns
@@ -368,3 +369,30 @@ def test_apply_gradiometry_correction(ialirt_mag_test_l1d_data):
 
     expected_magnitude = np.sqrt(np.sum(mago_corrected**2, axis=1))
     np.testing.assert_array_equal(magnitude, expected_magnitude)
+
+
+@pytest.mark.external_kernel
+@pytest.mark.usefixtures("_unset_metakernel_path")
+def test_transform_to_inertial(furnish_kernels, spice_test_data_path):
+    """Test transform_to_inertial over multiple spin phases."""
+
+    kernels = ["imap_wkcp.tf"]
+
+    # Use a fixed spin axis pointing at +Z (RA=0, Dec=90)
+    ra = np.array([0.0, 0.0, 0.0, 0.0])
+    dec = np.array([90.0, 90.0, 90.0, 90.0])
+    spin_phase = np.array([0.0, 90.0, 180.0, 270.0])  # degrees
+
+    # Unit vector pointing along +X in instrument frame
+    mag_vector = np.array([1.0, 0.0, 0.0])
+
+    with furnish_kernels(kernels):
+        v_avg = transform_to_inertial(
+            sc_spin_phase_deg=spin_phase,
+            sc_inertial_right=ra,
+            sc_inertial_decline=dec,
+            mag_vector=mag_vector,
+        )
+
+    # Near zero vector in X and Y since it spans a full rotation.
+    np.testing.assert_allclose(v_avg, np.zeros(3), atol=1e-8)
