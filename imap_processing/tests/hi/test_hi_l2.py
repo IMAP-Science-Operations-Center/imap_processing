@@ -79,24 +79,30 @@ def test_hi_l2_uses_descriptor_to_setup_map(
     )
 
 
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 @pytest.mark.external_test_data
-def test_genarate_hi_map(hi_l1_test_data_path):
+def test_genarate_hi_map(hi_l1_test_data_path, furnish_kernels):
     """Test coverage for genarate_hi_map()"""
-    pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
 
-    rectangular_sky_map = RectangularSkyMap(
-        spacing_deg=6, spice_frame=SpiceFrame.IMAP_GCS
-    )
-    sky_map = generate_hi_map(
-        [pset_path],
-        None,
-        None,
-        rectangular_sky_map,
-        cg_corrected=False,
-        direction="full",
-    )
+    kernels = [
+        "imap_sclk_0000.tsc",
+        "imap_science_100.tf",
+        "naif0012.tls",
+        "imap_spk_demo.bsp",
+    ]
+    with furnish_kernels(kernels):
+        pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
 
+        rectangular_sky_map = RectangularSkyMap(
+            spacing_deg=6, spice_frame=SpiceFrame.IMAP_GCS
+        )
+        sky_map = generate_hi_map(
+            [pset_path],
+            None,
+            None,
+            rectangular_sky_map,
+            cg_corrected=False,
+            direction="full",
+        )
     assert isinstance(sky_map, RectangularSkyMap)
     assert sky_map.spacing_deg == 6
     assert sky_map.spice_reference_frame == SpiceFrame.IMAP_GCS

@@ -91,13 +91,19 @@ def test_project_pset_to_rect_map(pset):
 
 
 @pytest.mark.external_kernel
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_project_pset_to_healpix_map(pset):
+def test_project_pset_to_healpix_map(pset, furnish_kernels):
     # Arrange
     descriptor = "l090-ena-h-sf-nsp-ram-hnu-nside2-3mo"
-
-    # Act
-    lo_rect_map = project_pset_to_sky_map([pset], descriptor)
+    kernels = [
+        "imap_sclk_0000.tsc",
+        "imap_science_100.tf",
+        "naif0012.tls",
+        "imap_spk_demo.bsp",
+        "sim_1yr_imap_pointing_frame.bc",
+    ]
+    with furnish_kernels(kernels):
+        # Act
+        lo_rect_map = project_pset_to_sky_map([pset], descriptor)
 
     # Assert
     assert isinstance(lo_rect_map, HealpixSkyMap)
