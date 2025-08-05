@@ -406,7 +406,7 @@ def transform_to_inertial(
     sc_inertial_right : numpy.ndarray
         Inertial right ascension for 4 packets 0 to 2π radians, shape (4).
     sc_inertial_decline : numpy.ndarray
-        Inertial right ascension for 4 packets -π/2 to π/2 radians, shape (4).
+        Inertial declination for 4 packets -π/2 to π/2 radians, shape (4).
     mag_vector : numpy.ndarray
         Vector, shape (3).
 

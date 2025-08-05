@@ -393,10 +393,10 @@ def test_transform_to_inertial(furnish_kernels, spice_test_data_path):
 
     with furnish_kernels(kernels):
         v_avg = transform_to_inertial(
-            sc_spin_phase_deg=spin_phase,
-            sc_inertial_right=ra,
-            sc_inertial_decline=dec,
-            mag_vector=mag_vector,
+            np.radians(spin_phase),
+            ra,
+            dec,
+            mag_vector,
         )
 
     # Near zero vector in X and Y since it spans a full rotation.
