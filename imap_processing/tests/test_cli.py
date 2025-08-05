@@ -38,17 +38,6 @@ from imap_processing.spice import config as spice_config
 @pytest.fixture(autouse=True)
 def clear_spice_kernels():
     """Fixture to clear SPICE kernels before each test."""
-    # global_kernels = []
-    # for i in range(spiceypy.ktotal("all")):
-    #     data = spiceypy.kdata(i, "all")
-    #     if data[1] == "META" or data[2] == "":
-    #         global_kernels.append(data[0])
-    # try:
-    #     spiceypy.kclear()
-    #     yield
-    # finally:
-    #     spiceypy.kclear()
-    #     spiceypy.furnsh(global_kernels)
     with spiceypy.KernelPool([]):
         yield
 
