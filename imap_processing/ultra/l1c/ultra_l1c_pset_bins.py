@@ -317,8 +317,8 @@ def get_deadtime_interpolator(
         Interpolating function for dead time ratios.
     """
     # Get the spin phase at the start of each sector rate measurement
-    spin_phases = get_spin_angle(
-        get_spacecraft_spin_phase(np.array(timestamps)), degrees=True
+    spin_phases = np.asarray(
+        get_spin_angle(get_spacecraft_spin_phase(np.array(timestamps)), degrees=True)
     )
     # Assume the sectored rate data is evenly spaced in time, and find the middle spin
     # phase value for each sector.
