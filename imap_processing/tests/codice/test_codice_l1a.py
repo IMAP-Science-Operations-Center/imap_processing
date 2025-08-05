@@ -45,12 +45,12 @@ EXPECTED_ARRAY_SHAPES = [
     (31778,),  # hskp
     (77, 128, 6),  # lo-counters-aggregated
     (77, 128, 24, 6),  # lo-counters-singles
-    (77, 128, 12),  # lo-sw-priority
-    (77, 128, 12),  # lo-nsw-priority
+    (77, 128, 24),  # lo-sw-priority
+    (77, 128, 24),  # lo-nsw-priority
     (77, 128, 1),  # lo-sw-species
     (77, 128, 1),  # lo-nsw-species
-    (77, 128, 5, 12),  # lo-sw-angular
-    (77, 128, 19, 12),  # lo-nsw-angular
+    (77, 128, 5, 24),  # lo-sw-angular
+    (77, 128, 19, 24),  # lo-nsw-angular
     (77,),  # hi-counters-aggregated
     (77, 12),  # hi-counters-singles
     (),  # hi-omni, shapes are specific to species
