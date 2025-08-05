@@ -47,51 +47,6 @@ ATTR_MGR.add_instrument_global_attrs("hi")
 ATTR_MGR.add_instrument_variable_attrs(instrument="hi", level=None)
 
 
-def hi_l1b(dependency: Union[str, Path, xr.Dataset]) -> list[xr.Dataset]:
-    """
-    High level IMAP-HI L1B processing function.
-
-    Parameters
-    ----------
-    dependency : str or xarray.Dataset
-        Path to L0 file or L1A dataset to process.
-
-    Returns
-    -------
-    l1b_dataset : list[xarray.Dataset]
-        Processed xarray datasets.
-    """
-    # Housekeeping processing
-    if isinstance(dependency, (Path, str)):
-        logger.info(f"Running Hi L1B processing on file: {dependency}")
-        l1b_datasets = housekeeping(dependency)
-    elif isinstance(dependency, xr.Dataset):
-        l1a_dataset = dependency
-        logger.info(
-            f"Running Hi L1B processing on dataset: "
-            f"{l1a_dataset.attrs['Logical_source']}"
-        )
-        logical_source_parts = parse_filename_like(l1a_dataset.attrs["Logical_source"])
-        # TODO: apid is not currently stored in all L1A data but should be.
-        #    Use apid to determine what L1B processing function to call
-
-        # DE processing
-        if logical_source_parts["descriptor"].endswith("de"):
-            l1b_datasets = [annotate_direct_events(l1a_dataset)]
-            l1b_datasets[0].attrs["Logical_source"] = (
-                l1b_datasets[0]
-                .attrs["Logical_source"]
-                .format(sensor=logical_source_parts["sensor"])
-            )
-        else:
-            raise NotImplementedError(
-                f"No Hi L1B processing defined for file type: "
-                f"{l1a_dataset.attrs['Logical_source']}"
-            )
-
-    return l1b_datasets
-
-
 def housekeeping(packet_file_path: Union[str, Path]) -> list[xr.Dataset]:
     """
     Will process IMAP raw data to l1b housekeeping dataset.
@@ -110,6 +65,7 @@ def housekeeping(packet_file_path: Union[str, Path]) -> list[xr.Dataset]:
     processed_data : list[xarray.Dataset]
         Housekeeping datasets with engineering units.
     """
+    logger.info(f"Running Hi L1B processing on file: {packet_file_path}")
     packet_def_file = (
         imap_module_directory / "hi/packet_definitions/TLM_HI_COMBINED_SCI.xml"
     )
@@ -139,33 +95,46 @@ def housekeeping(packet_file_path: Union[str, Path]) -> list[xr.Dataset]:
     return datasets
 
 
-def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
+def annotate_direct_events(
+    l1a_de_dataset: xr.Dataset, l1b_hk_dataset: xr.Dataset, esa_energies_anc: Path
+) -> list[xr.Dataset]:
     """
     Perform Hi L1B processing on direct event data.
 
     Parameters
     ----------
-    l1a_dataset : xarray.Dataset
+    l1a_de_dataset : xarray.Dataset
         L1A direct event data.
+    l1b_hk_dataset : xarray.Dataset
+        L1B housekeeping data coincident with the L1A DE data.
+    esa_energies_anc : Path
+        Location of the esa-energies ancillary csv file.
 
     Returns
     -------
-    l1b_dataset : xarray.Dataset
-        L1B direct event data.
+    l1b_datasets : list[xarray.Dataset]
+        List containing exactly one L1B direct event dataset.
     """
-    l1b_dataset = l1a_dataset.copy()
-    l1b_dataset.update(de_esa_energy_step(l1b_dataset))
-    l1b_dataset.update(compute_coincidence_type_and_tofs(l1b_dataset))
-    l1b_dataset.update(de_nominal_bin_and_spin_phase(l1b_dataset))
-    l1b_dataset.update(compute_hae_coordinates(l1b_dataset))
-    l1b_dataset.update(
+    logger.info(
+        f"Running Hi L1B processing on dataset: "
+        f"{l1a_de_dataset.attrs['Logical_source']}"
+    )
+
+    l1b_de_dataset = l1a_de_dataset.copy()
+    l1b_de_dataset.update(
+        de_esa_energy_step(l1b_de_dataset, l1b_hk_dataset, esa_energies_anc)
+    )
+    l1b_de_dataset.update(compute_coincidence_type_and_tofs(l1b_de_dataset))
+    l1b_de_dataset.update(de_nominal_bin_and_spin_phase(l1b_de_dataset))
+    l1b_de_dataset.update(compute_hae_coordinates(l1b_de_dataset))
+    l1b_de_dataset.update(
         create_dataset_variables(
             ["quality_flag"],
-            l1b_dataset["event_met"].size,
+            l1b_de_dataset["event_met"].size,
             att_manager_lookup_str="hi_de_{0}",
         )
     )
-    l1b_dataset = l1b_dataset.drop_vars(
+    l1b_de_dataset = l1b_de_dataset.drop_vars(
         [
             "src_seq_ctr",
             "pkt_len",
@@ -181,8 +150,13 @@ def annotate_direct_events(l1a_dataset: xr.Dataset) -> xr.Dataset:
     )
 
     de_global_attrs = ATTR_MGR.get_global_attributes("imap_hi_l1b_de_attrs")
-    l1b_dataset.attrs.update(**de_global_attrs)
-    return l1b_dataset
+    l1b_de_dataset.attrs.update(**de_global_attrs)
+
+    logical_source_parts = parse_filename_like(l1a_de_dataset.attrs["Logical_source"])
+    l1b_de_dataset.attrs["Logical_source"] = l1b_de_dataset.attrs[
+        "Logical_source"
+    ].format(sensor=logical_source_parts["sensor"])
+    return [l1b_de_dataset]
 
 
 def compute_coincidence_type_and_tofs(
@@ -389,7 +363,9 @@ def compute_hae_coordinates(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
     return new_vars
 
 
-def de_esa_energy_step(l1b_de_ds: xr.Dataset) -> dict[str, xr.DataArray]:
+def de_esa_energy_step(
+    l1b_de_ds: xr.Dataset, l1b_hk_ds: xr.Dataset, esa_energies_anc: Path
+) -> dict[str, xr.DataArray]:
     """
     Compute esa_energy_step for each direct event.
 
@@ -401,6 +377,10 @@ def de_esa_energy_step(l1b_de_ds: xr.Dataset) -> dict[str, xr.DataArray]:
     ----------
     l1b_de_ds : xarray.Dataset
         The partial L1B dataset.
+    l1b_hk_ds : xarray.Dataset
+        L1B housekeeping data coincident with the L1A DE data.
+    esa_energies_anc : Path
+        Location of the esa-energies ancillary csv file.
 
     Returns
     -------
@@ -413,8 +393,14 @@ def de_esa_energy_step(l1b_de_ds: xr.Dataset) -> dict[str, xr.DataArray]:
         att_manager_lookup_str="hi_de_{0}",
     )
 
-    # TODO: Implement this algorithm
-    new_vars["esa_energy_step"].values = l1b_de_ds.esa_step.values
+    # Get the LUT object using the HK data and esa-energies ancillary csv
+    esa_energies_lut = pd.read_csv(esa_energies_anc, comment="#")
+    esa_to_esa_energy_step_lut = get_esa_to_esa_energy_step_lut(
+        l1b_hk_ds, esa_energies_lut
+    )
+    new_vars["esa_energy_step"].values = esa_to_esa_energy_step_lut.query(
+        l1b_de_ds["ccsds_met"].data, l1b_de_ds["esa_step"].data
+    )
 
     return new_vars
 

@@ -9,12 +9,13 @@ import xarray as xr
 
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.hi.hi_l1b import (
+    annotate_direct_events,
     compute_coincidence_type_and_tofs,
     compute_hae_coordinates,
     de_esa_energy_step,
     de_nominal_bin_and_spin_phase,
     get_esa_to_esa_energy_step_lut,
-    hi_l1b,
+    housekeeping,
 )
 from imap_processing.hi.utils import (
     CoincidenceBitmap,
@@ -29,14 +30,16 @@ def test_hi_l1b_hk(hi_l0_test_data_path):
     housekeeping L1A as input"""
     bin_data_path = hi_l0_test_data_path / "H90_NHK_20241104.bin"
 
-    l1b_datasets = hi_l1b(bin_data_path)
+    l1b_datasets = housekeeping(bin_data_path)
     assert len(l1b_datasets) == 1
     assert l1b_datasets[0].attrs["Logical_source"] == "imap_hi_l1b_90sensor-hk"
 
 
 @pytest.mark.external_kernel
 @pytest.mark.external_test_data
+@mock.patch("imap_processing.hi.hi_l1b.get_esa_to_esa_energy_step_lut")
 def test_hi_l1b_de(
+    mock_get_esa_lut,
     hi_l1_test_data_path,
     spice_test_data_path,
     use_fake_spin_data_for_time,
@@ -44,15 +47,23 @@ def test_hi_l1b_de(
 ):
     """Test coverage for imap_processing.hi_l1b.hi_l1b() with
     direct events L1A as input"""
+    # Mock the esa LUT object to map esa_step to the same esa_energy_step value
+    mock_esa_lut = mock.MagicMock(spec=EsaEnergyStepLookupTable())
+    mock_esa_lut.query.side_effect = lambda a, b: b
+    mock_get_esa_lut.return_value = mock_esa_lut
+
     # Start MET time of spin for simulated input data is 482372988
     use_fake_spin_data_for_time(482372987.999)
     l1a_test_file_path = (
         hi_l1_test_data_path / "imap_hi_l1a_45sensor-de_20250415_v999.cdf"
     )
+    esa_energies_csv = (
+        hi_l1_test_data_path / "imap_hi_90sensor-esa-energies_20240101_v001.csv"
+    )
     # Process using test data
     l1a_dataset = load_cdf(l1a_test_file_path)
 
-    l1b_datasets = hi_l1b(l1a_dataset)
+    l1b_datasets = annotate_direct_events(l1a_dataset, xr.Dataset(), esa_energies_csv)
     assert len(l1b_datasets) == 1
     assert l1b_datasets[0].attrs["Logical_source"] == "imap_hi_l1b_45sensor-de"
     assert len(l1b_datasets[0].data_vars) == 15
@@ -245,20 +256,28 @@ def test_compute_hae_coordinates(mock_instrument_pointing, sensor_number):
     np.testing.assert_allclose(new_vars["hae_longitude"].values, sensor_number)
 
 
-def test_de_esa_energy_step():
+@mock.patch("imap_processing.hi.hi_l1b.pd.read_csv")
+@mock.patch("imap_processing.hi.hi_l1b.get_esa_to_esa_energy_step_lut")
+def test_de_esa_energy_step(mock_get_esa_lut, mock_read_csv):
     """Test coverage for de_esa_energy_step function."""
+    mock_esa_lut = mock.MagicMock(spec=EsaEnergyStepLookupTable())
+    mock_esa_lut.query.side_effect = lambda a, b: np.arange(len(a))[::-1] % 9
+    mock_get_esa_lut.return_value = mock_esa_lut
+
     n_epoch = 20
     fake_dataset = xr.Dataset(
         coords={
             "epoch": xr.DataArray(np.arange(n_epoch), name="epoch", dims=["epoch"])
         },
-        data_vars={"esa_step": xr.DataArray(np.arange(n_epoch) % 9, dims=["epoch"])},
+        data_vars={
+            "ccsds_met": xr.DataArray(np.arange(n_epoch) % 9, dims=["epoch"]),
+            "esa_step": xr.DataArray(np.arange(n_epoch), dims=["epoch"]),
+        },
     )
-    esa_energy_step_var = de_esa_energy_step(fake_dataset)
-    # TODO: The below check is for the temporary implementation and should be
-    #    removed when the function is update.
+    esa_energy_step_var = de_esa_energy_step(fake_dataset, xr.Dataset(), "Fake path")
+
     np.testing.assert_array_equal(
-        esa_energy_step_var["esa_energy_step"].values, fake_dataset.esa_step.values
+        esa_energy_step_var["esa_energy_step"].values, np.arange(n_epoch)[::-1] % 9
     )
 
 
