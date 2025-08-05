@@ -37,6 +37,13 @@ from imap_processing.cli import (
 from imap_processing.spice import config as spice_config
 
 
+@pytest.fixture(autouse=True)
+def clear_spice_kernels():
+    """Fixture to clear SPICE kernels before each test."""
+    with spiceypy.KernelPool([]):
+        yield
+
+
 @pytest.fixture
 def mock_instrument_dependencies():
     with (
@@ -563,8 +570,7 @@ def test_hit_l1a(mock_hit_l1a, mock_instrument_dependencies):
     assert mock_instrument_dependencies["mock_write_cdf"].call_count == 2
 
 
-@pytest.mark.usefixtures("_unset_metakernel_path")
-def test_spice_kernel_handling(spice_test_data_path):
+def test_spice_kernel_handling(spice_test_data_path, clear_spice_kernels):
     """Test coverage for ProcessInstrument.pre_processing method()."""
     kernels_to_furnish = ["naif0012.tls", "imap_sclk_0000.tsc"]
     dependency_obj = [

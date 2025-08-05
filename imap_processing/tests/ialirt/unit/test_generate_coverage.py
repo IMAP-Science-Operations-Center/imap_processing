@@ -18,10 +18,7 @@ def test_generate_coverage(furnish_kernels):
     """
     # Note: tested this code with the Sun and achieved expected
     # results ~12 hours of coverage from horizon to horizon.
-    kernels = [
-        "pck00011.tpc",
-        "de440s.bsp",
-    ]
+    kernels = ["naif0012.tls", "pck00011.tpc", "de440s.bsp", "imap_spk_demo.bsp"]
     with furnish_kernels(kernels):
         coverage_dict, outage_dict = generate_coverage("2026-09-22T00:00:00Z")
 
@@ -42,10 +39,7 @@ def test_use_outages(furnish_kernels):
     """
     # Note: tested this code with the Sun and achieved expected
     # results ~12 hours of coverage from horizon to horizon.
-    kernels = [
-        "pck00011.tpc",
-        "de440s.bsp",
-    ]
+    kernels = ["naif0012.tls", "pck00011.tpc", "de440s.bsp", "imap_spk_demo.bsp"]
 
     outages = {
         "Kiel": [
@@ -84,8 +78,10 @@ def test_dsn(furnish_kernels):
     # Note: tested this code with the Sun and achieved expected
     # results ~12 hours of coverage from horizon to horizon.
     kernels = [
+        "naif0012.tls",
         "pck00011.tpc",
         "de440s.bsp",
+        "imap_spk_demo.bsp",
     ]
 
     dsn = {
@@ -105,23 +101,25 @@ def test_dsn(furnish_kernels):
             "2026-09-22T00:00:00Z", outages=outages, dsn=dsn
         )
 
-    dsn_expected = np.array(["2026-09-22T12:00:00.000", "2026-09-22T13:00:00.000"])
-    kiel_expected = np.array(
-        [
-            "2026-09-22T07:00:00.000",
-            "2026-09-22T08:00:00.000",
-            "2026-09-22T09:00:00.000",
-            "2026-09-22T10:00:00.000",
-            "2026-09-22T11:00:00.000",
-            "2026-09-22T15:00:00.000",
-            "2026-09-22T16:00:00.000",
-        ]
-    )
+        dsn_expected = np.array(["2026-09-22T12:00:00.000", "2026-09-22T13:00:00.000"])
+        kiel_expected = np.array(
+            [
+                "2026-09-22T07:00:00.000",
+                "2026-09-22T08:00:00.000",
+                "2026-09-22T09:00:00.000",
+                "2026-09-22T10:00:00.000",
+                "2026-09-22T11:00:00.000",
+                "2026-09-22T15:00:00.000",
+                "2026-09-22T16:00:00.000",
+            ]
+        )
 
-    np.testing.assert_array_equal(coverage_dict["Kiel"], kiel_expected)
-    np.testing.assert_array_equal(coverage_dict["DSS-75"], dsn_expected)
+        np.testing.assert_array_equal(coverage_dict["Kiel"], kiel_expected)
+        np.testing.assert_array_equal(coverage_dict["DSS-75"], dsn_expected)
 
-    output = format_coverage_summary(coverage_dict, outage_dict, "2026-09-22T00:00:00Z")
+        output = format_coverage_summary(
+            coverage_dict, outage_dict, "2026-09-22T00:00:00Z"
+        )
 
-    assert "I-ALiRT Coverage Summary" in output["summary"]
-    assert 37.5 == output["total_coverage_percent"]
+        assert "I-ALiRT Coverage Summary" in output["summary"]
+        assert 37.5 == output["total_coverage_percent"]

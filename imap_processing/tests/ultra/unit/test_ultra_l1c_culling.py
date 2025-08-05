@@ -10,7 +10,6 @@ from imap_processing.ultra.l1c.ultra_l1c_culling import compute_culling_mask
 
 
 @pytest.mark.external_kernel
-@pytest.mark.usefixtures("_unset_metakernel_path")
 def test_compute_culling_mask(furnish_kernels, spice_test_data_path):
     """Tests compute_culling_mask function."""
 
@@ -22,6 +21,8 @@ def test_compute_culling_mask(furnish_kernels, spice_test_data_path):
         "imap_science_100.tf",
         "sim_1yr_imap_pointing_frame.bc",
         "imap_spk_demo.bsp",
+        "imap_sclk_0000.tsc",
+        "naif0012.tls",
     ]
 
     keepout_radius_km = 30 * planet_radii_km["EARTH"]
@@ -46,7 +47,6 @@ def test_compute_culling_mask(furnish_kernels, spice_test_data_path):
 
 
 @pytest.mark.external_kernel
-@pytest.mark.usefixtures("_unset_metakernel_path")
 def test_compare_sincpt_with_culling_mask_deterministic(furnish_kernels):
     """Compare culling mask output for the closest-to-Earth pixel with sincpt."""
 

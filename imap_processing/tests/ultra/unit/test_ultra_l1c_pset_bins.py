@@ -261,8 +261,7 @@ def test_get_spacecraft_exposure_times(deadtime_datasets):
 
 
 @pytest.mark.external_kernel
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_get_helio_exposure_times():
+def test_get_helio_exposure_times(imap_ena_sim_metakernel):
     """Tests get_helio_exposure_times function."""
 
     start_time = 829485054.185627
@@ -339,8 +338,7 @@ def test_get_spacecraft_sensitivity():
 
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_get_helio_sensitivity(monkeypatch):
+def test_get_helio_sensitivity(monkeypatch, imap_ena_sim_metakernel):
     """Test get_helio_sensitivity function."""
 
     # Load test data

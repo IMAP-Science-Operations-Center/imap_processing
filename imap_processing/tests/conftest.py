@@ -1,8 +1,6 @@
 """Global pytest configuration for the package."""
 
 import logging
-import os
-import re
 import time
 from contextlib import contextmanager
 from pathlib import Path
@@ -42,17 +40,6 @@ def clear_spin_and_repoint_paths(monkeypatch):
     """Clear the spin and repoint paths to avoid having test side effects."""
     monkeypatch.setattr(spice_config, "_spin_table_paths", [])
     monkeypatch.setattr(spice_config, "_repoint_table_path", None)
-
-
-# Furnishing fixtures for testing kernels
-# ---------------------------------------
-@pytest.fixture(autouse=True)
-def _autoclear_spice():
-    """Automatically clears out all SPICE remnants after every single test to
-    prevent the kernel pool from interfering with future tests. Option autouse
-    ensures this is run after every test."""
-    yield
-    spiceypy.kclear()
 
 
 @pytest.fixture(scope="session")
@@ -151,7 +138,6 @@ def pytest_collection_modifyitems(items):
     +=====================+============================+
     | external_kernel     | _download_external_kernels |
     | external_test_data  | _download_test_data        |
-    | use_test_metakernel | use_test_metakernel        |
     +---------------------+----------------------------+
 
     Notes
@@ -164,7 +150,6 @@ def pytest_collection_modifyitems(items):
     markers_to_fixtures = {
         "external_kernel": "_download_external_kernels",
         "external_test_data": "_download_test_data",
-        "use_test_metakernel": "use_test_metakernel",
     }
 
     for item in items:
@@ -178,7 +163,7 @@ def spice_test_data_path(imap_tests_path):
     return imap_tests_path / "spice/test_data"
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True, scope="session")
 def furnish_time_kernels(spice_test_data_path):
     """Furnishes (temporarily) the testing LSK and SCLK"""
     spiceypy.kclear()
@@ -191,17 +176,23 @@ def furnish_time_kernels(spice_test_data_path):
 
 
 @pytest.fixture
-def furnish_sclk(spice_test_data_path):
-    """Furnishes (temporarily) the SCLK for JPSS stored in the package data directory"""
-    test_sclk = spice_test_data_path / "imap_sclk_0000.tsc"
-    spiceypy.furnsh(str(test_sclk))
-    yield test_sclk
-    spiceypy.kclear()
-
-
-@pytest.fixture
 def furnish_kernels(spice_test_data_path):
-    """Return a function that will furnish an arbitrary list of kernels."""
+    """
+    Return a function to use as a context manager to furnish a list of kernels.
+
+    Kernel files are assumed to exist in the tests/spice/test_data directory.
+
+    Examples
+    --------
+    >>> def test_spicey_function(furnish_kernels):
+    >>>     kernels_to_furnish = [
+    >>>         "naif0012.tls",
+    >>>         "kernel_0.tm",
+    >>>         "kernel_1.bsp",
+    >>>     ]
+    >>>     with furnish_kernels(kernels_to_furnish):
+    >>>         result = spicey_function()
+    """
 
     @contextmanager
     def furnish_kernels(kernels: list[Path]):
@@ -211,149 +202,6 @@ def furnish_kernels(spice_test_data_path):
             yield pool
 
     return furnish_kernels
-
-
-@pytest.fixture(scope="session")
-def monkeypatch_session():
-    m = pytest.MonkeyPatch()
-    yield m
-    m.undo()
-
-
-def make_metakernel_from_kernels(metakernel, kernels):
-    """Helper function that writes a test metakernel from a list of filenames"""
-    with open(metakernel, "w") as mk:
-        mk.writelines(
-            [
-                "\n",
-                "\\begintext\n",
-                "\n",
-                "This is a temporary metakernel for imap_processing"
-                " unit and integration testing.\n",
-                "\n",
-                "\\begindata\n",
-                "\n",
-                "KERNELS_TO_LOAD = (\n",
-            ]
-        )
-        # Put single quotes around every kernel name
-        kernels_with_quotes = ["    '" + kern + "'" for kern in kernels]
-        # Add a comma and EOL to the end of each kernel path except the last.
-        formatted_kernels = [kern + ",\n" for kern in kernels_with_quotes[0:-1]]
-        # Add ')' to the last kernel
-        formatted_kernels.append(kernels_with_quotes[-1] + "\n)\n\n")
-        mk.writelines(formatted_kernels)
-
-
-def get_test_kernels_to_load(template_path, kernel_dir_path):
-    """
-    Helper function for grabbing a list of kernel filenames from the test
-    metakernel template. This is necessary in order to get absolute paths on
-    any system. Formats the absolute paths using the test data path fixture
-    value.
-    """
-    kernels_to_load = []
-    max_line_length = 80
-    with open(template_path) as mk:
-        for k in mk:
-            kernel = k.rstrip("\n").format(
-                **{"SPICE_TEST_DATA_PATH": str(kernel_dir_path.absolute())}
-            )
-            while len(kernel) > 0:
-                if len(kernel) <= max_line_length:
-                    kernels_to_load.append(kernel)
-                    break
-                else:
-                    slash_positions = np.array(
-                        [m.start() for m in re.finditer("/", kernel)]
-                    )
-                    stop_idx = (
-                        slash_positions[slash_positions < max_line_length - 1].max() + 1
-                    )
-                    kernels_to_load.append(kernel[0:stop_idx] + "+")
-                    kernel = kernel[stop_idx:]
-    return kernels_to_load
-
-
-@pytest.fixture(scope="session", autouse=True)
-def session_test_metakernel(monkeypatch_session, tmpdir_factory, spice_test_data_path):
-    """Generate a metakernel from the template metakernel by injecting the local
-    path into the metakernel and set the SPICE_METAKERNEL environment variable.
-
-    Notes
-    -----
-    - This fixture needs to `scope=session` so that the SPICE_METAKERNEL
-    environment variable is available for other fixtures that require time
-    conversions using spiceypy.
-    - No furnishing of kernels occur as part of this fixture. This allows other
-    fixtures with lesser scope or individual tests to override the environment
-    variable as needed. Use the `metakernel_path_not_set` fixture in tests that
-    need to override the environment variable.
-    """
-    template_path = spice_test_data_path / "imap_simple_metakernel.template"
-    kernels_to_load = get_test_kernels_to_load(template_path, spice_test_data_path)
-    metakernel_path = tmpdir_factory.mktemp("spice") / "imap_2024_v001.tm"
-    make_metakernel_from_kernels(metakernel_path, kernels_to_load)
-    monkeypatch_session.setenv("SPICE_METAKERNEL", str(metakernel_path))
-    yield str(metakernel_path)
-    spiceypy.kclear()
-
-
-@pytest.fixture
-def use_test_metakernel(
-    request, monkeypatch, spice_test_data_path, session_test_metakernel
-):
-    """
-    Generate a metakernel and set SPICE_METAKERNEL environment variable.
-
-    This fixture generates a metakernel in the directory pointed to by
-    `imap_data_access.config["DATA_DIR"]` and sets the SPICE_METAKERNEL
-    environment variable to point to it for use by the `@ensure_spice` decorator.
-    The default metekernel is named "imap_simple_metakernel.template". Other
-    metakerels can be specified by marking the test with metakernel. See
-    examples below.
-
-    Parameters
-    ----------
-    request : fixture
-    monkeypatch : fixture
-    spice_test_data_path : fixture
-    session_test_metakernel : fixture
-
-    Yields
-    ------
-    metakernel_path : Path
-
-    Examples
-    --------
-    1. Use the default metakernel template
-        >>> def test_my_spicey_func(use_test_metakernel):
-        ...     pass
-
-    2. Specify a different metakernel template
-        >>> @pytest.mark.use_test_metakernel("other_template_mk.template")
-        ... def test_my_spicey_func():
-        ...     pass
-    """
-    marker = request.node.get_closest_marker("use_test_metakernel")
-    if marker is None:
-        yield session_test_metakernel
-    else:
-        template_name = marker.args[0]
-        template_path = spice_test_data_path / template_name
-        metakernel_path = imap_data_access.config["DATA_DIR"] / "imap_2024_v001.tm"
-        kernels_to_load = get_test_kernels_to_load(template_path, spice_test_data_path)
-        make_metakernel_from_kernels(metakernel_path, kernels_to_load)
-        monkeypatch.setenv("SPICE_METAKERNEL", str(metakernel_path))
-        yield str(metakernel_path)
-    spiceypy.kclear()
-
-
-@pytest.fixture
-def _unset_metakernel_path(monkeypatch):
-    """Temporarily unsets the SPICE_METAKERNEL environment variable"""
-    if os.getenv("SPICE_METAKERNEL", None) is not None:
-        monkeypatch.delenv("SPICE_METAKERNEL")
 
 
 @pytest.fixture
@@ -368,7 +216,11 @@ def use_test_spin_data_csv(monkeypatch):
 
 @pytest.fixture
 def use_fake_spin_data_for_time(
-    request, use_test_spin_data_csv, tmp_path, generate_spin_data, spin_period=15.0
+    request,
+    use_test_spin_data_csv,
+    tmp_path,
+    generate_spin_data,
+    spin_period=15.0,
 ):
     """
     Generate and use fake spin data for testing.
@@ -607,6 +459,36 @@ def use_fake_repoint_data_for_time(use_test_repoint_data_csv, tmp_path):
         use_test_repoint_data_csv(repoint_csv_file_path)
 
     return wrapped_repoint_data_filepath
+
+
+@pytest.fixture
+def imap_ena_sim_metakernel(furnish_kernels):
+    kernels = [
+        "imap_sclk_0000.tsc",
+        "naif0012.tls",
+        "imap_spk_demo.bsp",
+        "sim_1yr_imap_attitude.bc",
+        "imap_wkcp.tf",
+        "de440s.bsp",
+        "imap_science_100.tf",
+        "sim_1yr_imap_pointing_frame.bc",
+    ]
+    with furnish_kernels(kernels) as k:
+        yield k
+
+
+@pytest.fixture
+def imap_ialirt_sim_metakernel(furnish_kernels):
+    kernels = ["imap_wkcp.tf"]
+    with furnish_kernels(kernels) as k:
+        yield k
+
+
+@pytest.fixture
+def imap_simple_sim_metakernel(furnish_kernels):
+    kernels = ["imap_sclk_0000.tsc", "naif0012.tls", "imap_spk_demo.bsp"]
+    with furnish_kernels(kernels) as k:
+        yield k
 
 
 # Shared with i-alirt and mag tests

@@ -75,8 +75,7 @@ def attr_mgr():
 
 
 @pytest.mark.external_kernel
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_project_pset_to_rect_map(pset):
+def test_project_pset_to_rect_map(pset, imap_ena_sim_metakernel):
     # Arrange
     descriptor = "l090-ena-h-sf-nsp-ram-hae-6deg-3mo"
 
@@ -113,8 +112,7 @@ def test_project_pset_to_healpix_map(pset, furnish_kernels):
 
 
 @pytest.mark.external_kernel
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_calculate_rates():
+def test_calculate_rates(imap_ena_sim_metakernel):
     # Arrange
     counts = np.zeros((1, 7, 1800))
     counts[0, 0, 0] = 1
@@ -153,8 +151,7 @@ def test_calculate_fluxes():
 
 
 @pytest.mark.external_kernel
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_lo_l2(pset):
+def test_lo_l2(pset, imap_ena_sim_metakernel):
     # Arrange
     pset = {"imap_lo_l1c_pset": [pset]}
     descriptor = "l090-ena-h-sf-nsp-ram-hae-6deg-3mo"

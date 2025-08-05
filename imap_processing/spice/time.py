@@ -10,7 +10,6 @@ import numpy.typing as npt
 import spiceypy
 
 from imap_processing.spice import IMAP_SC_ID
-from imap_processing.spice.kernels import ensure_spice
 
 TICK_DURATION = 2e-5  # 20 microseconds as defined in imap_sclk_0000.tsc
 
@@ -103,7 +102,6 @@ def met_to_ttj2000ns(
 
 
 @typing.no_type_check
-@ensure_spice
 def ttj2000ns_to_et(tt_ns: npt.ArrayLike) -> npt.NDArray[float]:
     """
     Convert TT J2000 epoch nanoseconds to TDB J2000 epoch seconds.
@@ -131,7 +129,6 @@ def ttj2000ns_to_et(tt_ns: npt.ArrayLike) -> npt.NDArray[float]:
 
 
 @typing.no_type_check
-@ensure_spice
 def et_to_ttj2000ns(et: npt.ArrayLike) -> npt.NDArray[float]:
     """
     Convert TDB J2000 epoch seconds to TT J2000 epoch nanoseconds.
@@ -157,7 +154,6 @@ def et_to_ttj2000ns(et: npt.ArrayLike) -> npt.NDArray[float]:
 
 
 @typing.no_type_check
-@ensure_spice(time_kernels_only=True)
 def met_to_utc(met: npt.ArrayLike, precision: int = 9) -> npt.NDArray[str]:
     """
     Convert mission elapsed time (MET) to UTC.
@@ -221,7 +217,6 @@ def et_to_datetime64(
 
 
 @typing.no_type_check
-@ensure_spice
 def et_to_met(
     et: Union[float, Collection[float]],
 ) -> Union[float, np.ndarray]:
@@ -272,7 +267,6 @@ def ttj2000ns_to_met(
 
 
 @typing.no_type_check
-@ensure_spice
 def sct_to_et(
     sclk_ticks: Union[float, Collection[float]],
 ) -> Union[float, np.ndarray]:
@@ -298,7 +292,6 @@ def sct_to_et(
 
 
 @typing.no_type_check
-@ensure_spice
 def sct_to_ttj2000s(
     sclk_ticks: Union[float, Iterable[float]],
 ) -> Union[float, np.ndarray]:
@@ -330,7 +323,6 @@ def sct_to_ttj2000s(
 
 
 @typing.no_type_check
-@ensure_spice
 def str_to_et(
     time_str: Union[str, Iterable[str]],
 ) -> Union[float, np.ndarray]:
@@ -356,7 +348,6 @@ def str_to_et(
 
 
 @typing.no_type_check
-@ensure_spice
 def et_to_utc(
     et: Union[float, Iterable[float]],
     format_str: str = "ISOC",
