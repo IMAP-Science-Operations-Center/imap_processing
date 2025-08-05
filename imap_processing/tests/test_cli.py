@@ -478,8 +478,8 @@ def test_ultra_l2(mock_ultra_l2, mock_instrument_dependencies):
 def test_idex_l2b(mock_idex_l2b, mock_instrument_dependencies):
     """Test coverage for cli.Idex class with l2b data level"""
     mocks = mock_instrument_dependencies
-    mock_idex_l2b.return_value = xr.Dataset()
-    mocks["mock_write_cdf"].side_effect = ["/path/to/product0"]
+    mock_idex_l2b.return_value = [xr.Dataset(), xr.Dataset()]
+    mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
     input_collection = ProcessingInputCollection(
         ScienceInput("imap_idex_l1b_evt_20251015_v002.cdf"),
         ScienceInput("imap_idex_l2a_sci-1week_20251017_v018.cdf"),
@@ -489,12 +489,12 @@ def test_idex_l2b(mock_idex_l2b, mock_instrument_dependencies):
 
     dependency_str = input_collection.serialize()
     instrument = Idex(
-        "l2b", "sci-1mo", dependency_str, "20100105", "20100101", "v001", False
+        "l2b", "all", dependency_str, "20100105", "20100101", "v001", False
     )
 
     instrument.process()
     assert mock_idex_l2b.call_count == 1
-    assert mock_instrument_dependencies["mock_write_cdf"].call_count == 1
+    assert mock_instrument_dependencies["mock_write_cdf"].call_count == 2
 
 
 @mock.patch("imap_processing.cli.hit_l1a")

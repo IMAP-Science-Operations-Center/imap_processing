@@ -59,7 +59,6 @@ from imap_processing.idex.idex_l1a import PacketParser
 from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.idex.idex_l2a import idex_l2a
 from imap_processing.idex.idex_l2b import idex_l2b
-from imap_processing.idex.idex_l2c import idex_l2c
 from imap_processing.lo.l1a import lo_l1a
 from imap_processing.lo.l1b import lo_l1b
 from imap_processing.lo.l1c import lo_l1c
@@ -916,16 +915,7 @@ class Idex(ProcessInstrument):
             hk_files = dependencies.get_file_paths(source="idex", descriptor="evt")
             # Remove duplicate housekeeping files
             hk_dependencies = [load_cdf(dep) for dep in list(set(hk_files))]
-            datasets = [idex_l2b(sci_dependencies, hk_dependencies)]
-        elif self.data_level == "l2c":
-            if len(dependency_list) != 1:
-                raise ValueError(
-                    f"Unexpected dependencies found for IDEX L2C:"
-                    f"{dependency_list}. Expected only one dependency."
-                )
-            sci_files = dependencies.get_file_paths(source="idex", descriptor="sci-1mo")
-            dependencies = [load_cdf(f) for f in sci_files]
-            datasets = idex_l2c(dependencies)
+            datasets = idex_l2b(sci_dependencies, hk_dependencies)
         return datasets
 
 
