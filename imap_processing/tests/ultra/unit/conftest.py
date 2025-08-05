@@ -497,9 +497,9 @@ def ancillary_files():
         "l1b-45sensor-rightslit-lookup": path
         / "imap_ultra_l1b-45sensor-rightslit-lookup_20250101_v000.csv",
         "l1b-45sensor-imgparams-lookup": path
-        / "imap_ultra_l1b-45sensor-imgparams-lookup_20250101_v000.csv",
+        / "imap_ultra_l1b-45sensor-imgparams-lookup_20250101_v001.csv",
         "l1b-90sensor-imgparams-lookup": path
-        / "imap_ultra_l1b-90sensor-imgparams-lookup_20250101_v000.csv",
+        / "imap_ultra_l1b-90sensor-imgparams-lookup_20250101_v001.csv",
         "l1b-45sensor-tdc-norm-lookup": path
         / "imap_ultra_l1b-45sensor-tdc-norm-lookup_20250101_v000.csv",
         "l1b-45sensor-back-pos-lookup": path
