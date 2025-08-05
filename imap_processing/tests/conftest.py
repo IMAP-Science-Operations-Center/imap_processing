@@ -177,7 +177,22 @@ def furnish_time_kernels(spice_test_data_path):
 
 @pytest.fixture
 def furnish_kernels(spice_test_data_path):
-    """Return a function that will furnish an arbitrary list of kernels."""
+    """
+    Return a function to use as a context manager to furnish a list of kernels.
+
+    Kernel files are assumed to exist in the tests/spice/test_data directory.
+
+    Examples
+    --------
+    >>> def test_spicey_function(furnish_kernels):
+    >>>     kernels_to_furnish = [
+    >>>         "naif0012.tls",
+    >>>         "kernel_0.tm",
+    >>>         "kernel_1.bsp",
+    >>>     ]
+    >>>     with furnish_kernels(kernels_to_furnish):
+    >>>         result = spicey_function()
+    """
 
     @contextmanager
     def furnish_kernels(kernels: list[Path]):
