@@ -21,6 +21,8 @@ def test_compute_culling_mask(furnish_kernels, spice_test_data_path):
         "imap_science_100.tf",
         "sim_1yr_imap_pointing_frame.bc",
         "imap_spk_demo.bsp",
+        "imap_sclk_0000.tsc",
+        "naif0012.tls",
     ]
 
     keepout_radius_km = 30 * planet_radii_km["EARTH"]
