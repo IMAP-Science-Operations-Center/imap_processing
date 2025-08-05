@@ -307,6 +307,7 @@ def calibrate_and_offset_vectors(
         Raw magnetic vectors, shape (n, 3).
     range_vals : np.ndarray
         Range indices for each vector, shape (n). Values 0–3.
+        Expected value for mago will be [0,1] and magi will be [2,3].
     calibration : np.ndarray
         Calibration matrix, shape (3, 3, 4).
     offsets : np.ndarray
