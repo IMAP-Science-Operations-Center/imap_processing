@@ -363,37 +363,11 @@ def compute_counts_by_charge_and_mass(
         dataset, Two 4D arrays containing counts by charge or mass, and by lon and lat
         for each dataset, and a 1D array of daily epoch values.
     """
-    # Initialize arrays to hold counts.
-    # There should be 4 spin phase bins, 10 charge bins, and 10 mass bins.
-    # The first bin for charge and mass is for values below the first bin edge.
-    counts_by_charge = np.zeros(
-        (
-            len(epoch_doy_unique),
-            len(CHARGE_BIN_EDGES) - 1,
-            len(SPIN_PHASE_BIN_EDGES) - 1,
-        ),
-    )
-    counts_by_mass = np.zeros(
-        (len(epoch_doy_unique), len(MASS_BIN_EDGES) - 1, len(SPIN_PHASE_BIN_EDGES) - 1),
-    )
-    # Initialize arrays to hold count maps. Each map is a 3 or 4D array with shape
-    # (epoch, 10 [charge or mass], 60 [longitude bins], 30 [latitude bins]).
-    counts_by_charge_map = np.zeros(
-        (
-            len(epoch_doy_unique),
-            len(CHARGE_BIN_EDGES) - 1,
-            len(LON_BINS_EDGES) - 1,
-            len(LAT_BINS_EDGES) - 1,
-        ),
-    )
-    counts_by_mass_map = np.zeros(
-        (
-            len(epoch_doy_unique),
-            len(MASS_BIN_EDGES) - 1,
-            len(LON_BINS_EDGES) - 1,
-            len(LAT_BINS_EDGES) - 1,
-        ),
-    )
+    # Initialize lists to hold counts.
+    counts_by_charge = []
+    counts_by_mass = []
+    counts_by_charge_map = []
+    counts_by_mass_map = []
     daily_epoch = np.zeros(len(epoch_doy_unique), dtype=np.float64)
     for i in range(len(epoch_doy_unique)):
         doy = epoch_doy_unique[i]
@@ -413,43 +387,44 @@ def compute_counts_by_charge_and_mass(
         latitude = l2a_dataset["latitude"].data[current_day_indices]
         # Convert units
         mass_vals = FG_TO_KG * np.atleast_1d(mass_vals)
-        # Bin masses
-        binned_mass = np.asarray(np.digitize(mass_vals, bins=MASS_BIN_EDGES))
-        # Bin charges
-        binned_charge = np.asarray(np.digitize(charge_vals, bins=CHARGE_BIN_EDGES))
         # Bin spin phases
         binned_spin_phase = bin_spin_phases(spin_phase_angles)
-        # Bin longitude and latitude into the rectangular grid.
-        binned_longitude = np.asarray(np.digitize(longitude, bins=LON_BINS_EDGES))
+        # Clip arrays to ensure that the values are within the valid range of bins.
         # Latitude should be binned with the right edge included. 90 is a valid latitude
-        binned_latitude = np.asarray(np.digitize(latitude, bins=LAT_BINS_EDGES))
-        # Clip latitude value above the right edge to be in the last bin
-        binned_latitude = np.clip(binned_latitude, 1, len(LAT_BINS_EDGES) - 1)
-        # If the values in the array are beyond the bounds of bins, 0 or len(bins) it is
-        # returned as such. In this case, the desired result is to place the values
-        # beyond the first or last bin into the first or last bin, respectively.
-        binned_charge = np.clip(binned_charge, 1, len(CHARGE_BIN_EDGES) - 1)
-        binned_mass = np.clip(binned_mass, 1, len(MASS_BIN_EDGES) - 1)
+        latitude = np.clip(latitude, -90, 90)
+        mass_vals = np.clip(mass_vals, MASS_BIN_EDGES[0], MASS_BIN_EDGES[-1])
+        charge_vals = np.clip(charge_vals, CHARGE_BIN_EDGES[0], CHARGE_BIN_EDGES[-1])
 
-        # Count dust events for each spin phase, mass bin, charge bin, and bin into
-        # a rectangular grid
-        for mass_bin, charge_bin, spin_phase_bin, lon_bin, lat_bin in zip(
-            binned_mass,
-            binned_charge,
-            binned_spin_phase,
-            binned_longitude,
-            binned_latitude,
-        ):
-            counts_by_mass[i, mass_bin - 1, spin_phase_bin] += 1
-            counts_by_charge[i, charge_bin - 1, spin_phase_bin] += 1
-            counts_by_mass_map[i, mass_bin - 1, lon_bin - 1, lat_bin - 1] += 1
-            counts_by_charge_map[i, charge_bin - 1, lon_bin - 1, lat_bin - 1] += 1
+        counts_by_mass.append(
+            np.histogramdd(
+                np.column_stack([mass_vals, binned_spin_phase]),
+                bins=[MASS_BIN_EDGES, np.arange(5)],
+            )[0]
+        )
+        counts_by_charge.append(
+            np.histogramdd(
+                np.column_stack([charge_vals, binned_spin_phase]),
+                bins=[CHARGE_BIN_EDGES, np.arange(5)],
+            )[0]
+        )
+        counts_by_mass_map.append(
+            np.histogramdd(
+                np.column_stack([mass_vals, longitude, latitude]),
+                bins=[MASS_BIN_EDGES, LON_BINS_EDGES, LAT_BINS_EDGES],
+            )[0]
+        )
+        counts_by_charge_map.append(
+            np.histogramdd(
+                np.column_stack([charge_vals, longitude, latitude]),
+                bins=[CHARGE_BIN_EDGES, LON_BINS_EDGES, LAT_BINS_EDGES],
+            )[0]
+        )
 
     return (
-        counts_by_charge,
-        counts_by_mass,
-        counts_by_charge_map,
-        counts_by_mass_map,
+        np.stack(counts_by_charge),
+        np.stack(counts_by_mass),
+        np.stack(counts_by_charge_map),
+        np.stack(counts_by_mass_map),
         daily_epoch,
     )
 
