@@ -60,9 +60,9 @@ def lo_l2(
 
 def project_pset_to_sky_map(psets: list[xr.Dataset], descriptor: str) -> AbstractSkyMap:
     """
-    Project the pointing set to a rectangular sky map.
+    Project the pointing set to a sky map.
 
-    This function is used to create a rectangular sky map from the pointing set
+    This function is used to create a sky map from the pointing set
     data in the L1C dataset.
 
     Parameters
@@ -75,7 +75,7 @@ def project_pset_to_sky_map(psets: list[xr.Dataset], descriptor: str) -> Abstrac
 
     Returns
     -------
-    RectangularSkyMap
+    AbstractSkyMap
         The sky map created from the pointing set data.
     """
     map_descriptor = MapDescriptor.from_string(descriptor)

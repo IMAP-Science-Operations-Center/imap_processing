@@ -10,6 +10,7 @@ import xarray as xr
 from imap_processing.ena_maps.ena_maps import (
     AbstractSkyMap,
     HiPointingSet,
+    RectangularSkyMap,
 )
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 
@@ -61,6 +62,12 @@ def hi_l2(
 
     # Get the map dataset with variables/coordinates in the correct shape
     # TODO get the correct descriptor and frame
+
+    if not isinstance(rect_map, RectangularSkyMap):
+        raise NotImplementedError("HEALPix map output not supported for Hi")
+    if not isinstance(map_descriptor.sensor, str):
+        raise NotImplementedError("Sensor must be 45 or 90")
+
     l2_ds = rect_map.build_cdf_dataset(
         "hi",
         "l2",
@@ -81,7 +88,7 @@ def generate_hi_map(
     direction: Literal["ram", "anti-ram", "full"] = "full",
 ) -> AbstractSkyMap:
     """
-    Project Hi PSET data into a rectangular sky map.
+    Project Hi PSET data into a sky map.
 
     Parameters
     ----------
@@ -103,7 +110,7 @@ def generate_hi_map(
 
     Returns
     -------
-    sky_map : RectangularSkyMap
+    sky_map : AbstractSkyMap
         The sky map with all the PSET data projected into the map.
     """
     # TODO: Implement Compton-Getting correction
@@ -156,7 +163,7 @@ def generate_hi_map(
     )
     # Set the energy_step_delta values
     # TODO: get the correct energy delta values (they are set to NaN) in
-    #    rect_map.build_cdf_dataset()
+    #    output_map.build_cdf_dataset()
 
     output_map.data_1d = output_map.data_1d.drop("esa_energy_step_label")
 
