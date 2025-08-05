@@ -202,7 +202,7 @@ class CoDICEL1aPipeline:
                 decompressed_values = decompress(values, compression_algorithm)
                 self.raw_data.append(decompressed_values)
 
-    def define_coordinates(self) -> None:  # noqa: PLR0912
+    def define_coordinates(self) -> None:  # noqa: PLR0912 (too many branches)
         """
         Create ``xr.DataArrays`` for the coords needed in the final dataset.
 
