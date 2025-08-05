@@ -518,7 +518,10 @@ class CoDICEL1aPipeline:
             getattr(constants, f"{data_product}_ENERGY_TABLE")[species]
         )
 
-        # Find the centers and deltas of the energy bins
+        # Find the geometric centers and deltas of the energy bins
+        # The delta minus is the difference between the center of the bin
+        # and the 'left edge' of the bin. The delta plus is the difference
+        # between the 'right edge' of the bin and the center of the bin
         centers = np.sqrt(energy_table[:-1] * energy_table[1:])
         deltas_minus = centers - energy_table[:-1]
         deltas_plus = energy_table[1:] - centers
