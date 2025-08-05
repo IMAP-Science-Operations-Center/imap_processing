@@ -27,11 +27,6 @@ from imap_processing.mag.l1d.mag_l1d_data import MagL1d
 from imap_processing.mag.l2.mag_l2_data import MagL2L1dBase
 from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 
-# Range values (mago is 0 to 1, magi is 2 to 3)
-# Range values (0 to 3) represent MAG gain setting
-MAGO_RANGE = np.array([0, 1])
-MAGI_RANGE = np.array([2, 3])
-
 logger = logging.getLogger(__name__)
 
 
@@ -298,6 +293,7 @@ def calculate_l1b(
 
 def calibrate_and_offset_vectors(
     vectors: np.ndarray,
+    range_vals: np.ndarray,
     calibration: np.ndarray,
     offsets: np.ndarray,
     is_magi: bool = False,
@@ -309,6 +305,8 @@ def calibrate_and_offset_vectors(
     ----------
     vectors : np.ndarray
         Raw magnetic vectors, shape (n, 3).
+    range_vals : np.ndarray
+        Range indices for each vector, shape (n). Values 0–3.
     calibration : np.ndarray
         Calibration matrix, shape (3, 3, 4).
     offsets : np.ndarray
@@ -324,11 +322,6 @@ def calibrate_and_offset_vectors(
     calibrated_and_offset_vectors : np.ndarray
         Calibrated and offset vectors, shape (n, 3).
     """
-    if is_magi:
-        range_vals = MAGI_RANGE
-    else:
-        range_vals = MAGO_RANGE
-
     # Append range as 4th column
     vec_plus_range = np.concatenate((vectors, range_vals[:, np.newaxis]), axis=1)
 
