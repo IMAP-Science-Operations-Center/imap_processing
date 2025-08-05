@@ -224,7 +224,7 @@ def test_get_deadtime_interpolator():
             deadtime_ratios, np.ones_like(deadtime_ratios)
         )
     assert callable(interpolator)
-    deadtime = interpolator(0.9)
+    deadtime = interpolator(180)
     assert (deadtime >= 0) & (deadtime < 1)
 
     # Assert value error is raised for NaN values

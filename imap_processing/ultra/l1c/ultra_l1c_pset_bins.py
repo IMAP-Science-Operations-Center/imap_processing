@@ -14,7 +14,7 @@ from imap_processing.spice.geometry import (
     cartesian_to_spherical,
     imap_state,
 )
-from imap_processing.spice.spin import get_spacecraft_spin_phase
+from imap_processing.spice.spin import get_spacecraft_spin_phase, get_spin_angle
 from imap_processing.ultra.constants import UltraConstants
 
 # TODO: add species binning.
@@ -317,15 +317,22 @@ def get_deadtime_interpolator(
         Interpolating function for dead time ratios.
     """
     # Get the spin phase at the start of each sector rate measurement
-    spin_phases = get_spacecraft_spin_phase(np.array(timestamps))
+    spin_phases = get_spin_angle(
+        get_spacecraft_spin_phase(np.array(timestamps)), degrees=True
+    )
     # Assume the sectored rate data is evenly spaced in time, and find the middle spin
     # phase value for each sector.
+    # The center spin phase is the closest / most accurate spin phase.
+    # There are 24 spin phases per sector so the nominal middle sector spin phases
+    # would be: array([ 12., 36., ..., 300., 324.]) for 15 sectors.
     spin_phases_centered = (spin_phases[:-1] + spin_phases[1:]) / 2
     # Assume the last sector is nominal because we dont have enough data to determine
     # the spin phase at the end of the last sector.
     # TODO: is this assumption valid?
     # Add the last spin phase value + half of a nominal sector.
-    spin_phases_centered = np.append(spin_phases_centered, spin_phases[-1] + (1 / 30))
+    spin_phases_centered = np.append(spin_phases_centered, spin_phases[-1] + 12)
+    # Wrap any spin phases > 360 back to [0, 360]
+    spin_phases_centered = spin_phases_centered % 360
     # Create a dataset with spin phases and dead time ratios
     deadtime_by_spin_phase = xr.Dataset(
         {"deadtime_ratio": deadtime_ratios},
