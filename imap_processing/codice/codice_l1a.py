@@ -207,6 +207,9 @@ class CoDICEL1aPipeline:
         Create ``xr.DataArrays`` for the coords needed in the final dataset.
 
         The coordinates for the dataset depend on the data product being made.
+
+        # TODO: Split this function up or simplify it to avoid too many branches
+        #       error.
         """
         self.coords = {}
 
