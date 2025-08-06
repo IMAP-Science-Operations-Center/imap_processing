@@ -383,14 +383,6 @@ def apply_gradiometry_correction(
     return mago_corrected, magnitude
 
 
-def calculate_l1d(
-    time_data,
-    vector_mago: np.ndarray,
-    vector_magi: np.ndarray,
-    calibration: np.ndarray,
-    offsets: np.ndarray,
-    gradiometer_factor: np.ndarray,
-):
 def transform_to_inertial(
     sc_spin_phase_rad: np.ndarray,
     sc_inertial_right: np.ndarray,
