@@ -46,7 +46,8 @@ def hit_l1a(packet_file: Path, packet_date: Union[str, None]) -> list[xr.Dataset
         Path to the CCSDS data packet file.
     packet_date : str
         The date of the packet data in 'YYYYMMDD' format. This is used to filter
-        data to the correct processing day since L0 will have a buffer around midnight.
+        data to the correct processing day since L0 will have a 20-minute
+        buffer before and after the processing day.
 
     Returns
     -------
