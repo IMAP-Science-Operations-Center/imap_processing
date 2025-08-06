@@ -377,7 +377,6 @@ def test_apply_gradiometry_correction(ialirt_mag_test_l1d_data):
 
 
 @pytest.mark.external_kernel
-@pytest.mark.usefixtures("_unset_metakernel_path")
 def test_transform_to_inertial(furnish_kernels, spice_test_data_path):
     """Test transform_to_inertial over multiple spin phases."""
 

@@ -25,6 +25,10 @@ from imap_processing.mag.l1b.mag_l1b import (
 )
 from imap_processing.mag.l1d.mag_l1d_data import MagL1d
 from imap_processing.mag.l2.mag_l2_data import MagL2L1dBase
+from imap_processing.spice.geometry import (
+    cartesian_to_spherical,
+    spherical_to_cartesian,
+)
 from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 
 logger = logging.getLogger(__name__)
@@ -425,12 +429,50 @@ def transform_to_inertial(
     each of which contains its own spin phase,
     inertial right ascension, and inertial decline.
     """
+    if target_time < attitude_time.min() or target_time > attitude_time.max():
+        logger.warning(
+            f"target_time {target_time} is outside attitude_time bounds "
+            f"[{attitude_time.min()}, {attitude_time.max()}]; using edge values."
+        )
+
+    # Get sort order based on attitude_time
+    sort_idx = np.argsort(attitude_time)
+
+    # Sort all arrays accordingly
+    attitude_time = attitude_time[sort_idx]
+    sc_spin_phase_rad = sc_spin_phase_rad[sort_idx]
+    sc_inertial_right = sc_inertial_right[sort_idx]
+    sc_inertial_decline = sc_inertial_decline[sort_idx]
+
     # Interpolate spin phase, RA, and Dec at target_time
-    spin_phase_deg = np.degrees(
-        np.interp(target_time, attitude_time, sc_spin_phase_rad)
+    # Convert RA/Dec to unit cartesian vectors
+    spherical_coords = np.stack(
+        [
+            np.ones_like(sc_inertial_right),
+            np.degrees(sc_inertial_right),
+            np.degrees(sc_inertial_decline),
+        ],
+        axis=-1,
     )
-    ra_deg = np.degrees(np.interp(target_time, attitude_time, sc_inertial_right))
-    dec_deg = np.degrees(np.interp(target_time, attitude_time, sc_inertial_decline))
+    vecs = spherical_to_cartesian(spherical_coords)
+
+    # Interpolate in Cartesian space
+    vx = np.interp(target_time, attitude_time, vecs[:, 0])
+    vy = np.interp(target_time, attitude_time, vecs[:, 1])
+    vz = np.interp(target_time, attitude_time, vecs[:, 2])
+    v_interp = np.array([vx, vy, vz])
+    # Normalize vector so that its magnitude is 1.
+    v_interp /= np.linalg.norm(v_interp)
+
+    # Convert back to spherical
+    ra_dec = cartesian_to_spherical(v_interp)
+    ra_deg = ra_dec[1]
+    dec_deg = ra_dec[2]
+
+    # Account for discontinuities in spin phase.
+    spin_phase_unwrapped = np.unwrap(sc_spin_phase_rad)
+    spin_phase_interp = np.interp(target_time, attitude_time, spin_phase_unwrapped)
+    spin_phase_deg = np.degrees(spin_phase_interp) % 360
 
     # Transform each into ECLIPJ2000
     inertial_vector = transform_instrument_vectors_to_inertial(
