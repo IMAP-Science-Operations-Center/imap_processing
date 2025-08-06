@@ -391,13 +391,19 @@ def test_transform_to_inertial(furnish_kernels, spice_test_data_path):
     # Unit vector pointing along +X in instrument frame
     mag_vector = np.array([1.0, 0.0, 0.0])
 
+    attitude_time = np.array([1000.0, 1010.0, 1020.0, 1030.0])
+    target_time = 1015.0  # halfway between 90° and 180° spin phase
+
     with furnish_kernels(kernels):
-        v_avg = transform_to_inertial(
+        result = transform_to_inertial(
             np.radians(spin_phase),
-            ra,
-            dec,
+            np.radians(ra),
+            np.radians(dec),
+            attitude_time,
+            target_time,
             mag_vector,
         )
 
-    # Near zero vector in X and Y since it spans a full rotation.
-    np.testing.assert_allclose(v_avg, np.zeros(3), atol=1e-8)
+    # With spin phase halfway between 90 and 180, vector should be pointing at 135.
+    expected_vector = np.array([-np.sqrt(2) / 2, np.sqrt(2) / 2, 0.0])
+    np.testing.assert_allclose(result, expected_vector, atol=1e-05)

@@ -395,6 +395,8 @@ def transform_to_inertial(
     sc_spin_phase_rad: np.ndarray,
     sc_inertial_right: np.ndarray,
     sc_inertial_decline: np.ndarray,
+    attitude_time: np.ndarray,
+    target_time: float,
     mag_vector: np.ndarray,
 ) -> np.ndarray:
     """
@@ -408,13 +410,22 @@ def transform_to_inertial(
         Inertial right ascension for 4 packets 0 to 2π radians, shape (4).
     sc_inertial_decline : numpy.ndarray
         Inertial declination for 4 packets -π/2 to π/2 radians, shape (4).
+    attitude_time : np.ndarray
+        Timestamps for the 4 packets.
+        Example: test_met = grouped_data["met"][
+                 (grouped_data["group"] == group).values].
+        ttj2000ns = met_to_ttj2000ns(test_met.values).
+    target_time : float
+        Time at which to apply the transformation.
+        Will be primary_epoch (mago vector) or secondary_epoch (magi vector).
+        Example: time_data['primary_epoch'].
     mag_vector : numpy.ndarray
         Vector, shape (3).
 
     Returns
     -------
-    mean_vector : np.ndarray
-        Average rotated vector in ECLIPJ2000 frame, shape (3,).
+    inertial_vector : np.ndarray
+        Transformed vector in the ECLIPJ2000 frame, shape (3,).
 
     Notes
     -----
@@ -422,20 +433,22 @@ def transform_to_inertial(
     each of which contains its own spin phase,
     inertial right ascension, and inertial decline.
     """
-    # Expand to shape (4, 3) to match spin phase samples
-    v_stack = np.tile(mag_vector, (len(sc_spin_phase_rad), 1))
+    # Interpolate spin phase, RA, and Dec at target_time
+    spin_phase_deg = np.degrees(
+        np.interp(target_time, attitude_time, sc_spin_phase_rad)
+    )
+    ra_deg = np.degrees(np.interp(target_time, attitude_time, sc_inertial_right))
+    dec_deg = np.degrees(np.interp(target_time, attitude_time, sc_inertial_decline))
 
     # Transform each into ECLIPJ2000
-    vector_inertial = transform_instrument_vectors_to_inertial(
-        v_stack,
-        spin_phase=np.degrees(sc_spin_phase_rad),  # shape (4,)
-        sc_inertial_right=np.degrees(sc_inertial_right),  # shape (4,)
-        sc_inertial_decline=np.degrees(sc_inertial_decline),  # shape (4,)
-    )
+    inertial_vector = transform_instrument_vectors_to_inertial(
+        np.asarray(mag_vector).reshape(1, 3),
+        np.array([spin_phase_deg]),
+        np.array([ra_deg]),
+        np.array([dec_deg]),
+    )[0]
 
-    mean_vector = np.mean(vector_inertial, axis=0)
-
-    return mean_vector
+    return inertial_vector
 
 
 def process_packet(
