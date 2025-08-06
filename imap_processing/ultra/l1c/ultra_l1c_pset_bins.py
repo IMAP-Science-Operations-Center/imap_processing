@@ -4,14 +4,17 @@ import astropy_healpix.healpy as hp
 import numpy as np
 import pandas
 import pandas as pd
+import xarray as xr
 from numpy.typing import NDArray
-from scipy.interpolate import interp1d
+from scipy import interpolate
+from scipy.interpolate import PchipInterpolator, interp1d
 
 from imap_processing.spice.geometry import (
     SpiceFrame,
     cartesian_to_spherical,
     imap_state,
 )
+from imap_processing.spice.spin import get_spacecraft_spin_phase, get_spin_angle
 from imap_processing.ultra.constants import UltraConstants
 
 # TODO: add species binning.
@@ -205,7 +208,159 @@ def get_helio_background_rates(
     return background
 
 
-def get_spacecraft_exposure_times(constant_exposure: pandas.DataFrame) -> NDArray:
+def get_deadtime_ratios(sectored_rates_ds: xr.Dataset) -> xr.DataArray:
+    """
+    Compute the dead time ratio at each sector.
+
+    A reduction in exposure time (duty cycle) is caused by the flight hardware listening
+    for coincidence events that never occur, due to singles starts predominantly from UV
+    radiation. The static exposure time for a given Pointing should be reduced by this
+    spatially dependent exposure time reduction factor (the dead time). Further
+    description is available in section 3.4.3 of the IMAP-Ultra Algorithm Document.
+
+    Parameters
+    ----------
+    sectored_rates_ds : xarray.Dataset
+        Dataset containing sector mode image rates data.
+
+    Returns
+    -------
+    dead_time_ratio : xarray.DataArray
+        Dead time correction factor for each sector.
+    """
+    # Compute the correction factor at each sector
+    a = sectored_rates_ds.fifo_valid_events / (
+        1
+        - (sectored_rates_ds.event_active_time + 2 * sectored_rates_ds.start_pos) * 1e-7
+    )
+
+    start_full = sectored_rates_ds.start_rf + sectored_rates_ds.start_lf
+    b = a * np.exp(start_full * 1e-7 * 5)
+
+    coin_stop_nd = (
+        sectored_rates_ds.coin_tn
+        + sectored_rates_ds.coin_bn
+        - sectored_rates_ds.stop_tn
+        - sectored_rates_ds.stop_bn
+    )
+
+    corrected_valid_events = b * np.exp(1e-7 * 8 * coin_stop_nd)
+
+    # Compute dead time ratio
+    dead_time_ratios = sectored_rates_ds.fifo_valid_events / corrected_valid_events
+
+    return dead_time_ratios
+
+
+def get_sectored_rates(rates_ds: xr.Dataset, params_ds: xr.Dataset) -> xr.Dataset:
+    """
+    Filter rates dataset to only include sector mode data.
+
+    Parameters
+    ----------
+    rates_ds : xarray.Dataset
+        Dataset containing image rates data.
+    params_ds : xarray.Dataset
+        Dataset containing image parameters data.
+
+    Returns
+    -------
+    rates : xarray.Dataset
+        Rates dataset with only the sector mode data.
+    """
+    # Find indices in which the parameters dataset, indicates that ULTRA was in
+    # sector mode. At the normal 15-second spin period, each 24° sector takes ~1 second.
+
+    # This means that data was collected as a function of spin allowing for fine grained
+    # rate analysis.
+    sector_mode_start_inds = np.where(params_ds["imageratescadence"] == 3)[0]
+    # get the sector mode start and stop indices
+    sector_mode_stop_inds = sector_mode_start_inds + 1
+    # get the sector mode start and stop times
+    mode_3_start = params_ds["epoch"].values[sector_mode_start_inds]
+
+    # if the last mode is a sector mode, we can assume that the sector data goes through
+    # the end of the dataset, so we append np.inf to the end of the last time range.
+    if sector_mode_stop_inds[-1] == len(params_ds["epoch"]):
+        mode_3_end = np.append(
+            params_ds["epoch"].values[sector_mode_stop_inds[:-1]], np.inf
+        )
+    else:
+        mode_3_end = params_ds["epoch"].values[sector_mode_stop_inds]
+
+    # Build a list of conditions for each sector mode time range
+    conditions = [
+        (rates_ds["epoch"] >= start) & (rates_ds["epoch"] < end)
+        for start, end in zip(mode_3_start, mode_3_end)
+    ]
+
+    sector_mode_mask = np.logical_or.reduce(conditions)
+    return rates_ds.isel(epoch=sector_mode_mask)
+
+
+def get_deadtime_interpolator(
+    deadtime_ratios: xr.DataArray, timestamps: xr.DataArray
+) -> PchipInterpolator:
+    """
+    Create PCHIP function for dead time ratio vs spin phase.
+
+    Parameters
+    ----------
+    deadtime_ratios : xarray.DataArray
+        Dead time ratios for each sector.
+    timestamps : xarray.DataArray
+        Epoch values corresponding to the dead time ratios.
+
+    Returns
+    -------
+    scipy.interpolate.PchipInterpolator
+        Interpolating function for dead time ratios.
+    """
+    # Get the spin phase at the start of each sector rate measurement
+    spin_phases = np.asarray(
+        get_spin_angle(get_spacecraft_spin_phase(np.array(timestamps)), degrees=True)
+    )
+    # Assume the sectored rate data is evenly spaced in time, and find the middle spin
+    # phase value for each sector.
+    # The center spin phase is the closest / most accurate spin phase.
+    # There are 24 spin phases per sector so the nominal middle sector spin phases
+    # would be: array([ 12., 36., ..., 300., 324.]) for 15 sectors.
+    spin_phases_centered = (spin_phases[:-1] + spin_phases[1:]) / 2
+    # Assume the last sector is nominal because we dont have enough data to determine
+    # the spin phase at the end of the last sector.
+    # TODO: is this assumption valid?
+    # Add the last spin phase value + half of a nominal sector.
+    spin_phases_centered = np.append(spin_phases_centered, spin_phases[-1] + 12)
+    # Wrap any spin phases > 360 back to [0, 360]
+    spin_phases_centered = spin_phases_centered % 360
+    # Create a dataset with spin phases and dead time ratios
+    deadtime_by_spin_phase = xr.Dataset(
+        {"deadtime_ratio": deadtime_ratios},
+        coords={
+            "spin_phase": xr.DataArray(np.array(spin_phases_centered), dims="epoch")
+        },
+    )
+
+    # Sort the dataset by spin phase (ascending order)
+    deadtime_by_spin_phase = deadtime_by_spin_phase.sortby("spin_phase")
+    # Group by spin phase and calculate the median dead time ratio for each phase
+    deadtime_medians = deadtime_by_spin_phase.groupby("spin_phase").median(skipna=True)
+
+    if np.any(np.isnan(deadtime_medians["deadtime_ratio"].values)):
+        raise ValueError(
+            "Dead time ratios contain NaN values, cannot create interpolator."
+        )
+    # Return a PCHIP interpolator for the dead time ratios
+    return interpolate.PchipInterpolator(
+        deadtime_medians["spin_phase"].values, deadtime_medians["deadtime_ratio"].values
+    )
+
+
+def get_spacecraft_exposure_times(
+    constant_exposure: pandas.DataFrame,
+    rates_dataset: xr.Dataset,
+    params_dataset: xr.Dataset,
+) -> NDArray:
     """
     Compute exposure times for HEALPix pixels.
 
@@ -213,6 +368,10 @@ def get_spacecraft_exposure_times(constant_exposure: pandas.DataFrame) -> NDArra
     ----------
     constant_exposure : pandas.DataFrame
         Exposure data.
+    rates_dataset : xarray.Dataset
+        Dataset containing image rates data.
+    params_dataset : xarray.Dataset
+        Dataset containing image parameters data.
 
     Returns
     -------
@@ -221,6 +380,11 @@ def get_spacecraft_exposure_times(constant_exposure: pandas.DataFrame) -> NDArra
         Healpix tessellation of the sky
         in the pointing (dps) frame.
     """
+    # TODO: uncomment these lines when the deadtime correction is implemented
+    # sectored_rates = get_sectored_rates(rates_dataset, params_dataset)
+    # get_deadtime_correction_factors(sectored_rates)
+    # TODO: calculate the deadtime correction function
+    # TODO: Apply the deadtime correction to the exposure times
     # TODO: use the universal spin table and
     #  universal pointing table here to determine actual number of spins
     exposure_pointing = (

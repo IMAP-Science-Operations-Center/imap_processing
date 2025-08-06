@@ -8,7 +8,6 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.spice.geometry import SpiceFrame
-from imap_processing.spice.kernels import ensure_spice
 from imap_processing.ultra.l1b.ultra_l1b_annotated import (
     get_annotated_particle_velocity,
 )
@@ -23,11 +22,8 @@ from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
-@pytest.mark.external_test_data
 @pytest.mark.external_kernel
-@ensure_spice
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_calculate_spacecraft_pset():
+def test_calculate_spacecraft_pset(deadtime_datasets, imap_ena_sim_metakernel):
     """Tests calculate_spacecraft_pset function."""
     # This is just setting up the data so that it is in the format of l1b_de_dataset.
     test_path = TEST_PATH / "ultra-90_raw_event_data_shortened.csv"
@@ -81,6 +77,8 @@ def test_calculate_spacecraft_pset():
         test_l1b_de_dataset,
         test_l1b_de_dataset,  # placeholder for extendedspin_dataset
         test_l1b_de_dataset,  # placeholder for cullingmask_dataset
+        deadtime_datasets["rates"],
+        deadtime_datasets["params"],
         "imap_ultra_l1c_45sensor-spacecraftpset",
         ancillary,
     )
@@ -91,9 +89,9 @@ def test_calculate_spacecraft_pset():
 
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
-@ensure_spice
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_calculate_spacecraft_pset_with_cdf(ancillary_files):
+def test_calculate_spacecraft_pset_with_cdf(
+    ancillary_files, deadtime_datasets, imap_ena_sim_metakernel
+):
     """Tests calculate_spacecraft_pset function with imported test data."""
 
     df = pd.read_csv(TEST_PATH / "IMAP-Ultra45_r1_L1_V0_shortened.csv")
@@ -151,6 +149,8 @@ def test_calculate_spacecraft_pset_with_cdf(ancillary_files):
             dataset,
             xr.Dataset(),  # placeholder for extendedspin_dataset
             xr.Dataset(),  # placeholder for cullingmask_dataset
+            deadtime_datasets["rates"],
+            deadtime_datasets["params"],
             "imap_ultra_l1c_45sensor-spacecraftpset",
             ancillary,
         )

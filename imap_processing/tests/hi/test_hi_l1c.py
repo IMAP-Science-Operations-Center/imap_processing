@@ -33,9 +33,11 @@ def test_hi_l1c(mock_generate_pset_dataset, hi_test_cal_prod_config_path):
 
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_generate_pset_dataset(
-    hi_l1_test_data_path, hi_test_cal_prod_config_path, use_fake_spin_data_for_time
+    hi_l1_test_data_path,
+    hi_test_cal_prod_config_path,
+    use_fake_spin_data_for_time,
+    imap_ena_sim_metakernel,
 ):
     """Test coverage for generate_pset_dataset function"""
     use_fake_spin_data_for_time(482372987.999)

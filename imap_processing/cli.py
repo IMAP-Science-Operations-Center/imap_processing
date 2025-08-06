@@ -520,7 +520,7 @@ class ProcessInstrument(ABC):
         self,
         processed_data: list[xr.Dataset | Path],
         dependencies: ProcessingInputCollection,
-    ) -> None:
+    ) -> list[Path]:
         """
         Complete post-processing.
 
@@ -548,10 +548,17 @@ class ProcessInstrument(ABC):
             method.
         dependencies : ProcessingInputCollection
             Object containing dependencies to process.
+
+        Returns
+        -------
+        list[Path]
+            List of paths to CDF files produced.
         """
+        products: list[Path] = []
+
         if len(processed_data) == 0:
             logger.info("No products to write to CDF file.")
-            return
+            return products
 
         logger.info("Writing products to local storage")
 
@@ -571,7 +578,6 @@ class ProcessInstrument(ABC):
         # start_date.
         # If it is start_date, skip repointing in the output filename.
 
-        products = []
         for ds in processed_data:
             if isinstance(ds, xr.Dataset):
                 ds.attrs["Data_version"] = self.version[1:]  # Strip 'v' from version
@@ -585,6 +591,7 @@ class ProcessInstrument(ABC):
                 products.append(ds)
 
         self.upload_products(products)
+        return products
 
     @final
     def cleanup(self) -> None:

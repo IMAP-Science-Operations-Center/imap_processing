@@ -46,8 +46,8 @@ def test_l2c_attrs_and_vars(l2c_dataset: xr.Dataset, l2a_dataset: xr.Dataset):
     )
     assert l2c_dataset.sizes == {
         "epoch": 2,
-        "impact_charge_bins": 11,
-        "mass_bins": 11,
+        "impact_charge": 10,
+        "mass": 10,
         "rectangular_lon_pixel": int(360 / IDEX_SPACING_DEG),
         "rectangular_lat_pixel": int(180 / IDEX_SPACING_DEG),
     }

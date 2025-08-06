@@ -4,28 +4,28 @@ double_fillval: &double_fillval -1.0E31
 
 # Label attributes
 mass_labels:
-  CATDESC: Labels for mass bins
-  FIELDNAM: Mass Bin Labels
+  CATDESC: Labels for Mass (kg)
+  FIELDNAM: Mass (kg)
   VAR_TYPE: metadata
   FORMAT: A8
-  DEPEND_1: mass_bins
+  DEPEND_1: mass
   DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 charge_labels:
-  CATDESC: Labels for impact charge bins
-  FIELDNAM: Impact Charge Bin Labels
+  CATDESC: Labels for Impact Charge (fC)
+  FIELDNAM: Impact Charge (fC)
   VAR_TYPE: metadata
   FORMAT: A8
-  DEPEND_1: impact_charge_bins
+  DEPEND_1: impact_charge
   DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 spin_phase_labels:
-    CATDESC: Labels for spin phase bins
-    FIELDNAM: Spin Phase Bin Labels
-    VAR_TYPE: metadata
-    FORMAT: A8
-    DEPEND_1: spin_phase_bins
-    DICT_KEY: SPASE>Support>SupportQuantity:Other
+  CATDESC: Labels for Spin Phase (deg)
+  FIELDNAM: Spin Phase (deg)
+  VAR_TYPE: metadata
+  FORMAT: A8
+  DEPEND_1: spin_phase
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 rectangular_lon_pixel_label:
   CATDESC: Longitude pixel index label for IDEX SkyMap.
@@ -40,26 +40,27 @@ rectangular_lat_pixel_label:
   FORMAT: A5
   VAR_TYPE: metadata
   DICT_KEY: SPASE>Support>SupportQuantity:Other
+
 # Index attributes
-mass_bins:
-  CATDESC: Log-spaced mass bins
-  FIELDNAM: Mass Bins
-  UNITS: " "
+mass:
+  CATDESC: Log-spaced mass
+  FIELDNAM: Mass (kg)
+  UNITS: kg
   FORMAT: I4
   VAR_TYPE: support_data
-  SCALETYP: linear
-  LABLAXIS: Mass Bins
+  SCALETYP: log
+  LABLAXIS: Mass (kg)
   VALIDMIN: 0
   VALIDMAX: 10
-  FILLVAL: *int_fillval
+  FILLVAL: *double_fillval
   LABL_PTR_1: mass_labels
   DICT_KEY: SPASE>Support>SupportQuantity:Other
 
-spin_phase_bins:
+spin_phase:
     CATDESC: The spacecraft spin phase at the time of detection
     VAR_NOTES: This is given in 4 bins [315-45, 45-135, 135-225, 225-315] degrees.
-    FIELDNAM: Spin Phase Bins
-    LABLAXIS: Spin Phase Bins
+    FIELDNAM: Spin Phase (deg)
+    LABLAXIS: Spin Phase (deg)
     VAR_TYPE: support_data
     SCALETYP: linear
     FILLVAL: *int_fillval
@@ -67,22 +68,21 @@ spin_phase_bins:
     VALIDMIN: 0
     VALIDMAX: 3
     LABL_PTR_1: spin_phase_labels
-    UNITS: " "
+    UNITS: deg
     DICT_KEY: SPASE>SupportQuantity:SpinPhase,Qualifier:Array
 
-impact_charge_bins:
-    CATDESC: Log-spaced impact charge bins
-    VAR_NOTES: Impact Charge Bins
-    FIELDNAM: Impact Charge Bins
-    LABLAXIS: Impact Charge Bins
+impact_charge:
+    CATDESC: Log-spaced impact charge
+    FIELDNAM: Impact Charge (fC)
+    LABLAXIS: Impact Charge (fC)
     VAR_TYPE: support_data
-    SCALETYP: linear
+    SCALETYP: log
     FILLVAL: *int_fillval
     FORMAT: I4
     VALIDMIN: 0
     VALIDMAX: 10
     LABL_PTR_1: spin_phase_labels
-    UNITS: " "
+    UNITS: fC
     DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 rectangular_lon_pixel:
@@ -114,8 +114,8 @@ base_charge: &base_charge
     CATDESC: " "
     FIELDNAM: " "
     DEPEND_0: epoch
-    DEPEND_1: impact_charge_bins
-    DEPEND_2: spin_phase_bins
+    DEPEND_1: impact_charge
+    DEPEND_2: spin_phase
     LABL_PTR_1: charge_labels
     LABL_PTR_2: spin_phase_labels
     DISPLAY_TYPE: spectrogram
@@ -129,8 +129,8 @@ base_mass: &base_mass
     CATDESC: " "
     FIELDNAM: " "
     DEPEND_0: epoch
-    DEPEND_1: mass_bins
-    DEPEND_2: spin_phase_bins
+    DEPEND_1: mass
+    DEPEND_2: spin_phase
     LABL_PTR_1: mass_labels
     LABL_PTR_2: spin_phase_labels
     DISPLAY_TYPE: spectrogram
@@ -157,7 +157,7 @@ base_mass_map: &base_mass_map
 rate_by_charge:
     <<: *base_charge
     CATDESC: Count rate per day by impact charge and spin phase.
-    FIELDNAM: Rate by Charge
+    FIELDNAM: Rate (day^-1) by Charge
     UNITS: day^-1
     FILLVAL: *double_fillval
     DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
@@ -165,7 +165,7 @@ rate_by_charge:
 rate_by_charge_map:
     <<: *base_charge_map
     CATDESC: Count rate per day by impact charge, longitude, and latitude.
-    FIELDNAM: Rate by Charge Map
+    FIELDNAM: Rate (day^-1) by Charge Map
     UNITS: day^-1
     FILLVAL: *double_fillval
     DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
@@ -173,7 +173,7 @@ rate_by_charge_map:
 rate_by_mass:
     <<: *base_mass
     CATDESC: Count rate per day by mass and spin phase.
-    FIELDNAM: Rate by Mass
+    FIELDNAM: Rate (day^-1) by Mass
     UNITS: day^-1
     FILLVAL: *double_fillval
     DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
@@ -181,7 +181,7 @@ rate_by_mass:
 rate_by_mass_map:
     <<: *base_mass_map
     CATDESC: Count rate per day by mass, longitude, and latitude.
-    FIELDNAM: Rate by Mass Map
+    FIELDNAM: Rate (day^-1) by Mass Map
     UNITS: day^-1
     FILLVAL: *double_fillval
     DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array

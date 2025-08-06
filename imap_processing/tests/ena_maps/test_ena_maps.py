@@ -222,7 +222,7 @@ def lo_pset_cdf_path(imap_tests_path):
 
 
 @pytest.mark.external_kernel
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
+@pytest.mark.usefixtures("imap_ena_sim_metakernel")
 class TestLoPointingSet:
     """Test suite for LoPointingSet class."""
 

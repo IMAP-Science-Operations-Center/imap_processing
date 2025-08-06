@@ -30,9 +30,11 @@ def test_hi_l1b_hk(hi_l0_test_data_path):
 
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
 def test_hi_l1b_de(
-    hi_l1_test_data_path, spice_test_data_path, use_fake_spin_data_for_time
+    hi_l1_test_data_path,
+    spice_test_data_path,
+    use_fake_spin_data_for_time,
+    imap_ena_sim_metakernel,
 ):
     """Test coverage for imap_processing.hi_l1b.hi_l1b() with
     direct events L1A as input"""

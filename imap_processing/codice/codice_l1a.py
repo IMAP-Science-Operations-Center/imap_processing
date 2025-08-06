@@ -313,7 +313,7 @@ class CoDICEL1aPipeline:
             ``xarray`` dataset for the data product, with added energy variables.
         """
         energy_bin_name = f"energy_{species}"
-        centers, deltas = self.get_hi_energy_table_data(
+        centers, deltas_minus, deltas_plus = self.get_hi_energy_table_data(
             energy_bin_name.split("energy_")[-1]
         )
 
@@ -326,11 +326,19 @@ class CoDICEL1aPipeline:
                 check_schema=False,
             ),
         )
-        dataset[f"{energy_bin_name}_delta"] = xr.DataArray(
-            deltas,
-            dims=[f"{energy_bin_name}_delta"],
+        dataset[f"{energy_bin_name}_minus"] = xr.DataArray(
+            deltas_minus,
+            dims=[f"{energy_bin_name}_minus"],
             attrs=self.cdf_attrs.get_variable_attributes(
-                f"{self.config['dataset_name'].split('_')[-1]}-{energy_bin_name}_delta",
+                f"{self.config['dataset_name'].split('_')[-1]}-{energy_bin_name}_minus",
+                check_schema=False,
+            ),
+        )
+        dataset[f"{energy_bin_name}_plus"] = xr.DataArray(
+            deltas_plus,
+            dims=[f"{energy_bin_name}_plus"],
+            attrs=self.cdf_attrs.get_variable_attributes(
+                f"{self.config['dataset_name'].split('_')[-1]}-{energy_bin_name}_plus",
                 check_schema=False,
             ),
         )
@@ -488,7 +496,7 @@ class CoDICEL1aPipeline:
 
     def get_hi_energy_table_data(
         self, species: str
-    ) -> tuple[NDArray[float], NDArray[float]]:
+    ) -> tuple[NDArray[float], NDArray[float], NDArray[float]]:
         """
         Retrieve energy table data for CoDICE-Hi products.
 
@@ -506,22 +514,25 @@ class CoDICEL1aPipeline:
         -------
         centers : NDArray[float]
             An array whose values represent the centers of the energy bins.
-        deltas : NDArray[float]
-            An array whose values represent the deltas of the energy bins.
+        deltas_minus : NDArray[float]
+            An array whose values represent the minus deltas of the energy bins.
+        deltas_plus : NDArray[float]
+            An array whose values represent the plus deltas of the energy bins.
         """
         data_product = self.config["dataset_name"].split("-")[-1].upper()
-        energy_table = getattr(constants, f"{data_product}_ENERGY_TABLE")[species]
-
-        # Find the centers and deltas of the energy bins
-        centers = np.array(
-            [
-                (energy_table[i] + energy_table[i + 1]) / 2
-                for i in range(len(energy_table) - 1)
-            ]
+        energy_table = np.array(
+            getattr(constants, f"{data_product}_ENERGY_TABLE")[species]
         )
-        deltas = energy_table[1:] - centers
 
-        return centers, deltas
+        # Find the geometric centers and deltas of the energy bins
+        # The delta minus is the difference between the center of the bin
+        # and the 'left edge' of the bin. The delta plus is the difference
+        # between the 'right edge' of the bin and the center of the bin
+        centers = np.sqrt(energy_table[:-1] * energy_table[1:])
+        deltas_minus = centers - energy_table[:-1]
+        deltas_plus = energy_table[1:] - centers
+
+        return centers, deltas_minus, deltas_plus
 
     def reshape_binned_data(self, dataset: xr.Dataset) -> dict[str, list]:
         """

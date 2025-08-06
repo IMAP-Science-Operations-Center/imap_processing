@@ -33,7 +33,7 @@ def test_met_to_sclkticks(met):
     np.testing.assert_array_equal(ticks, expected)
 
 
-def test_met_to_ttj2000ns(furnish_time_kernels):
+def test_met_to_ttj2000ns():
     """Test coverage for met_to_ttj2000ns function."""
     utc = "2026-01-01T00:00:00.125"
     et = spiceypy.str2et(utc)
@@ -51,7 +51,7 @@ def test_met_to_ttj2000ns(furnish_time_kernels):
     np.testing.assert_array_equal(tt, np.array(spicey_tt * 1e9))
 
 
-def test_ttj2000ns_to_et(furnish_time_kernels):
+def test_ttj2000ns_to_et():
     """Test coverage for ttj2000ns_to_et function."""
     # Use spice to come up with reasonable J2000 values
     utc = "2025-09-23T00:00:00.000"
@@ -72,7 +72,7 @@ def test_ttj2000ns_to_et(furnish_time_kernels):
     np.testing.assert_array_equal(j2000s, ets)
 
 
-def test_et_to_ttj2000ns(furnish_time_kernels):
+def test_et_to_ttj2000ns():
     """Test coverage for ttj2000ns_to_et function."""
     # Use spice to come up with reasonable J2000 values
     utc = "2025-09-23T00:00:00.000"
@@ -112,7 +112,7 @@ def test_et_to_ttj2000ns(furnish_time_kernels):
         ),
     ],
 )
-def test_met_to_utc(furnish_time_kernels, expected_utc, precision):
+def test_met_to_utc(expected_utc, precision):
     """Test coverage for met_to_utc function."""
     if isinstance(expected_utc, list):
         et_arr = spiceypy.str2et(expected_utc)
@@ -136,7 +136,7 @@ def test_met_to_utc(furnish_time_kernels, expected_utc, precision):
         ],
     ],
 )
-def test_met_to_datetime64(furnish_time_kernels, utc):
+def test_met_to_datetime64(utc):
     """Test coverage for met_to_datetime64 function."""
     if isinstance(utc, list):
         expected_dt64 = np.array([np.datetime64(utc_str) for utc_str in utc])
@@ -160,7 +160,9 @@ def test_met_to_datetime64(furnish_time_kernels, utc):
 
 
 @pytest.mark.parametrize("sclk_ticks", [0.0, np.arange(10)])
-def test_sct_to_et(sclk_ticks):
+def test_sct_to_et(
+    sclk_ticks,
+):
     """Test for `sct_to_et` function."""
     et = sct_to_et(sclk_ticks)
     if isinstance(sclk_ticks, float):
@@ -170,7 +172,9 @@ def test_sct_to_et(sclk_ticks):
 
 
 @pytest.mark.parametrize("sclk_ticks", [0.0, np.arange(10)])
-def test_sct_to_ttj2000s(sclk_ticks):
+def test_sct_to_ttj2000s(
+    sclk_ticks,
+):
     """Test for `sct_to_ttj2000s` function."""
     tt = sct_to_ttj2000s(sclk_ticks)
     if isinstance(sclk_ticks, float):
@@ -179,7 +183,7 @@ def test_sct_to_ttj2000s(sclk_ticks):
         assert len(tt) == len(sclk_ticks)
 
 
-def test_str_to_et(furnish_time_kernels):
+def test_str_to_et():
     """Test coverage for string to et conversion function."""
     utc = "2017-07-14T19:46:00"
     # Test single value input
@@ -214,7 +218,7 @@ def test_str_to_et(furnish_time_kernels):
     assert np.array_equal(expected_et_array, actual_et_array)
 
 
-def test_et_to_utc(furnish_time_kernels):
+def test_et_to_utc():
     """Test coverage for et to utc conversion function."""
     et = 553333629.1837274
     # Test single value input
@@ -235,7 +239,7 @@ def test_et_to_utc(furnish_time_kernels):
     assert np.array_equal(expected_utc_array, actual_utc_array)
 
 
-def test_et_to_datetime(furnish_time_kernels):
+def test_et_to_datetime():
     et = 553333629.1837274
     # Test single value input
     expected_dt = np.datetime64("2017-07-14T19:46:00.000")
@@ -257,7 +261,7 @@ def test_epoch_to_doy():
     assert np.all(doy == expected_doy)
 
 
-def test_et_to_met(furnish_time_kernels):
+def test_et_to_met():
     """Test coverage for et_to_met function."""
     utc = "2026-01-01T00:00:00.125"
     et = spiceypy.str2et(utc)
@@ -278,7 +282,7 @@ def test_et_to_met(furnish_time_kernels):
     np.testing.assert_array_almost_equal(met_array, expected_met_array)
 
 
-def test_ttj2000ns_to_met(furnish_time_kernels):
+def test_ttj2000ns_to_met():
     """Test coverage for ttj2000ns_to_met function."""
     # Test roundtrip: MET -> TTJ2000ns -> MET
     original_met = 1000.0

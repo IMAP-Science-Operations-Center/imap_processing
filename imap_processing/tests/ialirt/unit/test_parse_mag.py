@@ -4,10 +4,12 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
+from scipy.interpolate import make_interp_spline
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.ialirt.l0.parse_mag import (
+    apply_gradiometry_correction,
     calculate_l1b,
     calibrate_and_offset_vectors,
     extract_magnetic_vectors,
@@ -16,6 +18,7 @@ from imap_processing.ialirt.l0.parse_mag import (
     get_time,
     process_packet,
     retrieve_matrix_from_single_l1b_calibration,
+    transform_to_inertial,
 )
 from imap_processing.mag.constants import MAX_FINE_TIME
 from imap_processing.spice.time import met_to_ttj2000ns
@@ -329,3 +332,77 @@ def test_calibrate_and_offset_vectors(ialirt_mag_test_l1d_data):
     # For every range (0 to 3), the 3 by 3 calibration matrix is the identity matrix.
     np.testing.assert_allclose(mago_out, mago_vectors)
     np.testing.assert_allclose(magi_out, magi_vectors)
+
+
+def test_apply_gradiometry_correction(ialirt_mag_test_l1d_data):
+    """Tests apply_gradiometry_correction function."""
+
+    gradiometer_factor = ialirt_mag_test_l1d_data["gradiometer_factor"]
+
+    # MAGo and MAGi vectors.
+    mago_vector_eclipj2000 = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+    magi_vector_eclipj2000 = np.array([[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]])
+
+    time_data = {
+        "primary_epoch": np.array([1.0, 2.0]),
+        "secondary_epoch": np.array([3.0, 4.0]),
+    }
+
+    mago_corrected, magnitude = apply_gradiometry_correction(
+        mago_vector_eclipj2000, magi_vector_eclipj2000, time_data, gradiometer_factor
+    )
+
+    spline = make_interp_spline(
+        time_data["secondary_epoch"], magi_vector_eclipj2000, k=1
+    )
+    interpolated_vectors = spline(time_data["primary_epoch"])
+
+    # Spot check.
+    np.testing.assert_array_equal(
+        interpolated_vectors, np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+    )
+    offset = interpolated_vectors - mago_vector_eclipj2000
+
+    offset_value = np.apply_along_axis(
+        np.dot,
+        1,
+        offset,
+        gradiometer_factor,
+    )
+    expected_mago_corrected = mago_vector_eclipj2000 - offset_value
+    np.testing.assert_array_equal(mago_corrected, expected_mago_corrected)
+
+    expected_magnitude = np.sqrt(np.sum(mago_corrected**2, axis=1))
+    np.testing.assert_array_equal(magnitude, expected_magnitude)
+
+
+@pytest.mark.external_kernel
+def test_transform_to_inertial(furnish_kernels, spice_test_data_path):
+    """Test transform_to_inertial over multiple spin phases."""
+
+    kernels = ["imap_wkcp.tf"]
+
+    # Use a fixed spin axis pointing at +Z (RA=0, Dec=90)
+    ra = np.array([0.0, 0.0, 0.0, 0.0])
+    dec = np.array([90.0, 90.0, 90.0, 90.0])
+    spin_phase = np.array([0.0, 90.0, 180.0, 270.0])  # degrees
+
+    # Unit vector pointing along +X in instrument frame
+    mag_vector = np.array([1.0, 0.0, 0.0])
+
+    attitude_time = np.array([1000.0, 1010.0, 1020.0, 1030.0])
+    target_time = 1015.0  # halfway between 90° and 180° spin phase
+
+    with furnish_kernels(kernels):
+        result = transform_to_inertial(
+            np.radians(spin_phase),
+            np.radians(ra),
+            np.radians(dec),
+            attitude_time,
+            target_time,
+            mag_vector,
+        )
+
+    # With spin phase halfway between 90 and 180, vector should be pointing at 135.
+    expected_vector = np.array([-np.sqrt(2) / 2, np.sqrt(2) / 2, 0.0])
+    np.testing.assert_allclose(result, expected_vector, atol=1e-05)
