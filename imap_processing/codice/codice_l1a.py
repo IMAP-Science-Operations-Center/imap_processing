@@ -124,6 +124,8 @@ class CoDICEL1aPipeline:
         # appropriate pixel orientation. The combination of the pixel
         # orientation and the azimuth determine which spin sector the data
         # gets stored in.
+        # TODO: All these nested for-loops are bad. Try to find a better
+        #       solution.
         for i, epoch_data in enumerate(self.data):
             for energy_index in range(num_energies):
                 pixel_orientation = constants.PIXEL_ORIENTATIONS[energy_index]
