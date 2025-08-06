@@ -106,7 +106,7 @@ def test_get_ph_tof_and_back_positions(test_fixture, ancillary_files):
 
     df_filt, _, _, de_dataset = test_fixture
 
-    ph_tof, _, ph_xb, ph_yb, _, _ = get_ph_tof_and_back_positions(
+    ph_result = get_ph_tof_and_back_positions(
         de_dataset, df_filt.Xf.astype("float").values, "ultra45", ancillary_files
     )
 
@@ -116,10 +116,10 @@ def test_get_ph_tof_and_back_positions(test_fixture, ancillary_files):
 
     selected_rows = df_filt.iloc[ph_indices]
 
-    np.testing.assert_array_equal(ph_xb, selected_rows["Xb"].astype("float"))
-    np.testing.assert_array_equal(ph_yb, selected_rows["Yb"].astype("float"))
+    np.testing.assert_array_equal(ph_result.xb, selected_rows["Xb"].astype("float"))
+    np.testing.assert_array_equal(ph_result.yb, selected_rows["Yb"].astype("float"))
     np.testing.assert_allclose(
-        ph_tof, selected_rows["TOF"].astype("float"), atol=1e-5, rtol=0
+        ph_result.tof, selected_rows["TOF"].astype("float"), atol=1e-5, rtol=0
     )
 
 
@@ -171,7 +171,7 @@ def test_get_coincidence_positions(test_fixture, ancillary_files):
     """Tests get_coincidence_positions function."""
     df_filt, _, _, de_dataset = test_fixture
     # Get particle tof (t2).
-    _, t2, _, _, _, _ = get_ph_tof_and_back_positions(
+    ph_result = get_ph_tof_and_back_positions(
         de_dataset, df_filt.Xf.astype("float").values, "ultra45", ancillary_files
     )
 
@@ -183,7 +183,9 @@ def test_get_coincidence_positions(test_fixture, ancillary_files):
     rows = df_filt.iloc[indices]
 
     # Get coincidence position and eTOF.
-    etof, xc = get_coincidence_positions(de_filtered, t2, "ultra45", ancillary_files)
+    etof, xc = get_coincidence_positions(
+        de_filtered, ph_result.t2, "ultra45", ancillary_files
+    )
 
     np.testing.assert_allclose(xc, rows["Xc"].astype("float"), atol=1e-4, rtol=0)
     np.testing.assert_allclose(
@@ -196,7 +198,7 @@ def test_calculate_etof_xc(test_fixture, ancillary_files):
     """Tests calculate_etof_xc function."""
     df_filt, _, _, de_dataset = test_fixture
     # Get particle tof (t2).
-    _, t2, _, _, _, _ = get_ph_tof_and_back_positions(
+    ph_result = get_ph_tof_and_back_positions(
         de_dataset, df_filt.Xf.astype("float").values, "ultra45", ancillary_files
     )
     # Filter based on STOP_TYPE.
@@ -219,10 +221,10 @@ def test_calculate_etof_xc(test_fixture, ancillary_files):
 
     # Calculate for Top and Bottom
     etof_top, xc_top = calculate_etof_xc(
-        de_top, t2[index_top], "ultra45", "TP", ancillary_files
+        de_top, ph_result.t2[index_top], "ultra45", "TP", ancillary_files
     )
     etof_bottom, xc_bottom = calculate_etof_xc(
-        de_bottom, t2[index_bottom], "ultra45", "BT", ancillary_files
+        de_bottom, ph_result.t2[index_bottom], "ultra45", "BT", ancillary_files
     )
 
     # Assertions for Top

@@ -2,6 +2,7 @@
 
 # TODO: Come back and add in FSW logic.
 import logging
+from collections import namedtuple
 from enum import Enum
 
 import numpy as np
@@ -51,6 +52,9 @@ class CoinType(Enum):
 
     Top = 1
     Bottom = 2
+
+
+PHTOFResult = namedtuple("PHTOFResult", ["tof", "t2", "xb", "yb", "tofx", "tofy"])
 
 
 def get_front_x_position(
@@ -164,7 +168,7 @@ def get_front_y_position(
 
 def get_ph_tof_and_back_positions(
     de_dataset: xarray.Dataset, xf: np.ndarray, sensor: str, ancillary_files: dict
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+) -> PHTOFResult:
     """
     Calculate back xb, yb position and tof.
 
@@ -199,6 +203,10 @@ def get_ph_tof_and_back_positions(
         Back positions in x direction (hundredths of a millimeter).
     yb : np.array
         Back positions in y direction (hundredths of a millimeter).
+    tofx : np.array
+        X front position tof offset (tenths of a nanosecond).
+    tofy : np.array
+        Y front position tof offset (tenths of a nanosecond).
     """
     indices = np.nonzero(
         np.isin(de_dataset["stop_type"], [StopType.Top.value, StopType.Bottom.value])
@@ -281,7 +289,7 @@ def get_ph_tof_and_back_positions(
         stop_type_bottom
     ] / 10 * get_image_params("XFTTOF", sensor, ancillary_files)
 
-    return tof, t2, xb, yb, tofx, tofy
+    return PHTOFResult(tof=tof, t2=t2, xb=xb, yb=yb, tofx=tofx, tofy=tofy)
 
 
 def get_path_length(
@@ -1235,16 +1243,14 @@ def determine_ebin_ssd(
     ctof, _ = get_ctof(tof, path_length, type="SSD")
 
     ebins = np.full(path_length.shape, FILLVAL_UINT8, dtype=np.uint8)
+    steep_path_length = get_image_params("PathSteepThresh", sensor, ancillary_files)
+    medium_path_length = get_image_params("PathMediumThresh", sensor, ancillary_files)
 
-    steep_mask = path_length < get_image_params(
-        "PathSteepThresh", sensor, ancillary_files
+    steep_mask = path_length < steep_path_length
+    medium_mask = (path_length >= steep_path_length) & (
+        path_length < medium_path_length
     )
-    medium_mask = (
-        path_length >= get_image_params("PathSteepThresh", sensor, ancillary_files)
-    ) & (path_length < get_image_params("PathMediumThresh", sensor, ancillary_files))
-    flat_mask = path_length >= get_image_params(
-        "PathMediumThresh", sensor, ancillary_files
-    )
+    flat_mask = path_length >= medium_path_length
 
     ebins[steep_mask] = get_ebins(
         f"l1b-{sensor[5::]}sensor-tofxesteep",

@@ -383,6 +383,8 @@ def get_ebins(
         pixel_text = "".join(all_lines[4:])
 
     lut_array = np.fromstring(pixel_text, sep=" ", dtype=int).reshape((2048, 4096))
+    # Note that the LUT is indexed [energy, ctof] for l1b-tofxph
+    # and [ctof, energy] for everything else.
     if lut == "l1b-tofxph":
         energy_lookup = (2048 - np.floor(energy)).astype(int)
         ctof_lookup = np.floor(ctof).astype(int)

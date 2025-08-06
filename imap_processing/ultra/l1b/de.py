@@ -151,9 +151,13 @@ def calculate_de(
     )
 
     # Pulse height
-    tof[ph_indices], t2[ph_indices], xb[ph_indices], yb[ph_indices], _, _ = (
-        get_ph_tof_and_back_positions(de_dataset, xf, f"ultra{sensor}", ancillary_files)
+    ph_result = get_ph_tof_and_back_positions(
+        de_dataset, xf, f"ultra{sensor}", ancillary_files
     )
+    tof = ph_result.tof[ph_indices]
+    t2 = ph_result.t2[ph_indices]
+    xb = ph_result.xb[ph_indices]
+    yb = ph_result.yb[ph_indices]
     d[ph_indices], yf[ph_indices] = get_front_y_position(
         de_dataset["start_type"].data[ph_indices], yb[ph_indices], ancillary_files
     )
@@ -186,14 +190,14 @@ def calculate_de(
     backtofvalid = is_back_tof_valid(
         de_dataset,
         xf,
-        "ultra45",
+        f"ultra{sensor}",
         ancillary_files,
     )
     coinphvalid = is_coin_ph_valid(
         etof[ph_indices],
         xc[ph_indices],
         xb[ph_indices],
-        "ultra45",
+        f"ultra{sensor}",
         ancillary_files,
     )
     e_bin[ph_indices] = determine_ebin_pulse_height(
