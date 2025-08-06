@@ -9,11 +9,10 @@ import xarray as xr
 from scipy.stats import binned_statistic_dd
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.spice.time import met_to_ttj2000ns
-from imap_processing.spice.spin import (
-    get_spin_data,
-)
 from imap_processing.spice.repoint import get_repoint_data
+from imap_processing.spice.spin import get_spin_data
+from imap_processing.spice.time import met_to_ttj2000ns
+
 
 class FilterType(str, Enum):
     """
@@ -258,6 +257,7 @@ def create_pset_counts(
 
     return counts
 
+
 def get_spin_numbers(l1b_de: xr.Dataset) -> tuple[int, int]:
     """
     Get the start and end spin numbers from the L1B Direct Event dataset.
@@ -276,9 +276,42 @@ def get_spin_numbers(l1b_de: xr.Dataset) -> tuple[int, int]:
         The start and end spin numbers.
     """
     repoint_df = get_repoint_data()
-    print(repoint_df.info())
+    spin_df = get_spin_data()
 
-    #return start_spin_number, end_spin_number
+    # Convert repoint end MET to TTJ2000NS
+    repoint_df["repoint_end_ttj2000ns"] = met_to_ttj2000ns(repoint_df["repoint_end_met"])
+    repoint_df["repoint_start_ttj2000ns"] = met_to_ttj2000ns(repoint_df["repoint_start_met"])
+    print()
+    print(repoint_df.head())
+    # Convert spin start MET to TTJ2000NS
+    spin_df["spin_start_ttj2000ns"] = met_to_ttj2000ns(spin_df["spin_start_met"])
+
+    first_epoch = l1b_de["epoch"][0].item()
+    last_epoch = l1b_de["epoch"][-1].item()
+    # Find the repoint interval that contains first_epoch
+    repoint_mask_first = (
+            (repoint_df["repoint_end_ttj2000ns"] <= first_epoch)
+            & (repoint_df["repoint_start_ttj2000ns"].shift(-1) >= first_epoch)
+    )
+    #TODO: getting first idx is confusing, should only have 1
+    repoint_first_idx = repoint_mask_first.idxmax() if repoint_mask_first.any() else None
+    repoint_end_time = repoint_df["repoint_end_ttj2000ns"].iloc[
+        repoint_first_idx] if repoint_first_idx is not None else None
+
+    print(f"Repoint end time: {repoint_end_time}")
+    print(f"First epoch: {first_epoch}")
+
+    spin_mask = (
+        (spin_df["spin_start_ttj2000ns"] <= repoint_end_time) &
+        (spin_df["spin_start_ttj2000ns"].shift(-1) > repoint_end_time)
+    )
+    spin_idx = spin_mask.idxmax() if spin_mask.any() else None
+    start_spin_number = spin_df["spin_number"].iloc[spin_idx] if spin_idx is not None else None
+
+    print(f"Start spin number: {start_spin_number}")
+
+    # return start_spin_number, end_spin_number
+
 
 def calculate_exposure_times(counts: xr.DataArray, l1b_de: xr.Dataset) -> xr.DataArray:
     """

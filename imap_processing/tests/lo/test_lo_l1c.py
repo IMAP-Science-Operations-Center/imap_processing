@@ -4,15 +4,15 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.spice.time import t
+from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.lo.l1c.lo_l1c import (
     FilterType,
     calculate_exposure_times,
     create_pset_counts,
     filter_goodtimes,
+    get_spin_numbers,
     initialize_pset,
     lo_l1c,
-    get_spin_numbers
 )
 
 
@@ -49,6 +49,38 @@ def l1b_de():
     )
     return l1b_de
 
+@pytest.fixture
+def spin_met():
+    met = np.array([511000000, 511000001, 511000002, 511000003, 511000004])
+    return met
+@pytest.fixture
+def l1b_de_spin(spin_met):
+
+
+    l1b_de = xr.Dataset(
+        {
+            "pointing_bin_lon": ("epoch", [20, 0, 20, 2000, 3500]),
+            "pointing_bin_lat": ("epoch", [20, 20, 20, 20, 20]),
+            "esa_step": ("epoch", [1, 2, 1, 4, 5]),
+            "coincidence_type": (
+                "epoch",
+                [
+                    "111111",
+                    "111100",
+                    "111000",
+                    "110100",
+                    "110000",
+                ],
+            ),
+            "species": ("epoch", ["h", "o", "h", "h", "o"]),
+            "spin_cycle": ("epoch", [1, 2, 3, 4, 5]),
+            "avg_spin_durations": ("epoch", [15.2, 15.2, 14.9, 15, 14.9]),
+        },
+        coords={
+            "epoch": met_to_ttj2000ns(spin_met),
+        },
+    )
+    return l1b_de
 
 @pytest.fixture
 def anc_dependencies():
@@ -210,21 +242,19 @@ def test_create_doubles_pset_counts(l1b_de, doubles_counts):
     # Assert
     np.testing.assert_array_equal(counts, doubles_counts)
 
-def test_get_spin_numbers(l1b_de, use_fake_repoint_data_for_time, use_fake_spin_data_for_time):
+
+def test_get_spin_numbers(
+    l1b_de_spin, spin_met,  use_fake_repoint_data_for_time, use_fake_spin_data_for_time
+):
     # Arrange
+
+    use_fake_spin_data_for_time(spin_met[0])
+    use_fake_repoint_data_for_time(spin_met)
+
     expected_spin_numbers = np.array([1, 2, 3, 4, 5])
-    repoint_start_times = np.array([7.9794907049e17, 7.9794907153e17, 7.9794907254e17, 7.9794907354e17, 7.9794907454e17])
-    use_fake_repoint_data_for_time(
-        np.array([7.9794907049e17, 7.9794907153e17, 7.9794907254e17, 7.9794907354e17, 7.9794907454e17]),
-        np.array([7.9794907050e17, 7.9794907154e17, 7.9794907255e17, 7.9794907355e17, 7.9794907455e17]),
-        np.array([1, 2, 3, 4, 5])
-    )
-    #use_fake_spin_data_for_time(
-    #    np.array([7.9794907049e17, 7.9794907153e17, 7.9794907254e17, 7.9794907354e17, 7.9794907454e17]),
-    #)
 
     # Act
-    spin_numbers = get_spin_numbers(l1b_de)
+    spin_numbers = get_spin_numbers(l1b_de_spin)
 
     # Assert
     np.testing.assert_array_equal(spin_numbers, expected_spin_numbers)
