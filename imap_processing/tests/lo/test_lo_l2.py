@@ -85,7 +85,7 @@ def test_project_pset_to_rect_map(pset, imap_ena_sim_metakernel):
     # Assert
     assert isinstance(lo_rect_map, RectangularSkyMap)
     assert lo_rect_map.spacing_deg == 6
-    assert lo_rect_map.spice_reference_frame == geometry.SpiceFrame.ECLIPJ2000
+    assert lo_rect_map.spice_reference_frame == geometry.SpiceFrame.IMAP_HAE
     assert lo_rect_map.num_points == 1800
 
 

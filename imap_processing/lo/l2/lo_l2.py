@@ -5,7 +5,7 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
-from imap_processing.ena_maps.ena_maps import AbstractSkyMap
+from imap_processing.ena_maps.ena_maps import AbstractSkyMap, RectangularSkyMap
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 
 
@@ -40,16 +40,19 @@ def lo_l2(
         logical_source = "imap_lo_l2_l090-ena-h-sf-nsp-ram-hae-6deg-3mo"
         psets = sci_dependencies["imap_lo_l1c_pset"]
 
-        # Create the rectangular sky map from the pointing set.
-        lo_rect_map = project_pset_to_sky_map(psets, descriptor)
+        # Create an AbstractSkyMap (Rectangular or HEALPIX) from the pointing set
+        lo_sky_map = project_pset_to_sky_map(psets, descriptor)
+        if not isinstance(lo_sky_map, RectangularSkyMap):
+            raise NotImplementedError("HEALPix map output not supported for Lo")
+
         # Add the hydrogen rates to the rectangular map dataset.
-        lo_rect_map.data_1d["h_rate"] = calculate_rates(
-            lo_rect_map.data_1d["h_counts"], lo_rect_map.data_1d["exposure_time"]
+        lo_sky_map.data_1d["h_rate"] = calculate_rates(
+            lo_sky_map.data_1d["h_counts"], lo_sky_map.data_1d["exposure_time"]
         )
         # Add the hydrogen flux to the rectangular map dataset.
-        lo_rect_map.data_1d["h_flux"] = calculate_fluxes(lo_rect_map.data_1d["h_rate"])
+        lo_sky_map.data_1d["h_flux"] = calculate_fluxes(lo_sky_map.data_1d["h_rate"])
         # Create the dataset from the rectangular map.
-        lo_rect_map_ds = lo_rect_map.to_dataset()
+        lo_rect_map_ds = lo_sky_map.to_dataset()
         # Add the attributes to the dataset.
         lo_rect_map_ds = add_attributes(
             lo_rect_map_ds, attr_mgr, logical_source=logical_source

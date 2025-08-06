@@ -334,7 +334,7 @@ class MapDescriptor:
             If the frame string is not recognized.
         """
         if frame_str == "hae":
-            return SpiceFrame.ECLIPJ2000
+            return SpiceFrame.IMAP_HAE
         elif frame_str == "hre":
             return SpiceFrame.IMAP_HRE
         elif frame_str == "hnu":

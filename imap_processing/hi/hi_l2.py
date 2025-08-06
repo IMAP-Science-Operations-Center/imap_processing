@@ -51,7 +51,7 @@ def hi_l2(
     cg_corrected = False
     map_descriptor = MapDescriptor.from_string(descriptor)
 
-    rect_map = generate_hi_map(
+    sky_map = generate_hi_map(
         psets,
         geometric_factors_path,
         esa_energies_path,
@@ -63,12 +63,15 @@ def hi_l2(
     # Get the map dataset with variables/coordinates in the correct shape
     # TODO get the correct descriptor and frame
 
-    if not isinstance(rect_map, RectangularSkyMap):
+    if not isinstance(sky_map, RectangularSkyMap):
         raise NotImplementedError("HEALPix map output not supported for Hi")
     if not isinstance(map_descriptor.sensor, str):
-        raise NotImplementedError("Sensor must be 45 or 90")
+        raise ValueError(
+            "Invalid map_descriptor. Sensor attribute must be of type str "
+            "and be either '45' or '90'"
+        )
 
-    l2_ds = rect_map.build_cdf_dataset(
+    l2_ds = sky_map.build_cdf_dataset(
         "hi",
         "l2",
         map_descriptor.frame_descriptor,
