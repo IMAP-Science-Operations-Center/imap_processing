@@ -369,10 +369,6 @@ def de_esa_energy_step(
     """
     Compute esa_energy_step for each direct event.
 
-    TODO: For now this function just returns the esa_step from the input dataset.
-        Eventually, it will take L1B housekeeping data and determine the esa
-        energy steps from that data.
-
     Parameters
     ----------
     l1b_de_ds : xarray.Dataset
@@ -457,7 +453,12 @@ def get_esa_to_esa_energy_step_lut(
                     f"({met_to_utc(contiguous_hvsci_ds['shcoarse'].data[[0, -1]])})"
                 )
                 continue
-            median_inner_esa = np.median(single_esa_ds["inner_esa_hi"].data)
+            inner_esa_voltage = np.where(
+                single_esa_ds["inner_esa_state"].data == "LO",
+                single_esa_ds["inner_esa_lo"].data,
+                single_esa_ds["inner_esa_hi"].data,
+            )
+            median_inner_esa = np.median(inner_esa_voltage)
             median_outer_esa = np.median(single_esa_ds["outer_esa"].data)
             # Match median voltages to ESA Energies LUT
             inner_voltage_match = (

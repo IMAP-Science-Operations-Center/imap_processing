@@ -38,15 +38,14 @@ def test_hi_l1b_hk(hi_l0_test_data_path):
 @pytest.mark.external_kernel
 @pytest.mark.external_test_data
 @mock.patch("imap_processing.hi.hi_l1b.get_esa_to_esa_energy_step_lut")
-def test_hi_l1b_de(
+def test_hi_annotate_direct_events(
     mock_get_esa_lut,
     hi_l1_test_data_path,
-    spice_test_data_path,
     use_fake_spin_data_for_time,
     imap_ena_sim_metakernel,
 ):
-    """Test coverage for imap_processing.hi_l1b.hi_l1b() with
-    direct events L1A as input"""
+    """Test coverage for imap_processing.hi_l1b.annotate_direct_events() with
+    direct events L1A as input and spice kernel coverage."""
     # Mock the esa LUT object to map esa_step to the same esa_energy_step value
     mock_esa_lut = mock.MagicMock(spec=EsaEnergyStepLookupTable())
     mock_esa_lut.query.side_effect = lambda a, b: b
@@ -66,6 +65,44 @@ def test_hi_l1b_de(
     l1b_datasets = annotate_direct_events(l1a_dataset, xr.Dataset(), esa_energies_csv)
     assert len(l1b_datasets) == 1
     assert l1b_datasets[0].attrs["Logical_source"] == "imap_hi_l1b_45sensor-de"
+    assert len(l1b_datasets[0].data_vars) == 15
+
+
+@mock.patch("imap_processing.hi.hi_l1b.instrument_pointing")
+def test_hi_l1b_with_hk(
+    mock_instrument_pointing, hi_l1_test_data_path, use_fake_spin_data_for_time
+):
+    """Test imap_processing.hi_l1b.annotate_direct_events() with a
+    coincident de and hk dataset but mocked spice."""
+    # Mock instrument pointing to return zeros since we don't have spice kernels
+    # for this time.
+    mock_instrument_pointing.side_effect = lambda et, frame_a, frame_b: np.zeros(
+        (len(et), 3)
+    )
+
+    l1a_de_file_path = (
+        hi_l1_test_data_path / "imap_hi_l1a_90sensor-de_20241105-repoint00099_v001.cdf"
+    )
+    l1b_hk_file_path = (
+        hi_l1_test_data_path / "imap_hi_l1b_90sensor-hk_20241105-repoint00099_v001.cdf"
+    )
+    esa_energies_csv = (
+        hi_l1_test_data_path / "imap_hi_90sensor-esa-energies_20240101_v001.csv"
+    )
+    # Process using test data
+    l1a_dataset = load_cdf(l1a_de_file_path)
+    hk_dataset = load_cdf(l1b_hk_file_path)
+    # Cross-cal data used a 15 second spin period. Calculate start time of first
+    # spin
+    spin_start_met = (
+        l1a_dataset["esa_step_seconds"].data[0].astype(float)
+        + l1a_dataset["esa_step_milliseconds"].data[0].astype(float) / 1000
+    )
+    use_fake_spin_data_for_time(spin_start_met)
+
+    l1b_datasets = annotate_direct_events(l1a_dataset, hk_dataset, esa_energies_csv)
+    assert len(l1b_datasets) == 1
+    assert l1b_datasets[0].attrs["Logical_source"] == "imap_hi_l1b_90sensor-de"
     assert len(l1b_datasets[0].data_vars) == 15
 
 
@@ -301,14 +338,23 @@ class TestGetEsaToEsaEnergyStepLut:
         )
 
     def create_mock_dataset(
-        self, op_modes, esa_steps, inner_esa_values, outer_esa_values, shcoarse_values
+        self,
+        op_modes,
+        esa_steps,
+        inner_esa_state,
+        inner_esa_hi,
+        inner_esa_lo,
+        outer_esa_values,
+        shcoarse_values,
     ):
         """Helper method to create mock L1B housekeeping dataset."""
         return xr.Dataset(
             {
                 "op_mode": (["epoch"], op_modes),
                 "sci_esa_step": (["epoch"], esa_steps),
-                "inner_esa_hi": (["epoch"], inner_esa_values),
+                "inner_esa_state": (["epoch"], inner_esa_state),
+                "inner_esa_hi": (["epoch"], inner_esa_hi),
+                "inner_esa_lo": (["epoch"], inner_esa_lo),
                 "outer_esa": (["epoch"], outer_esa_values),
                 "shcoarse": (["epoch"], shcoarse_values),
             }
@@ -323,12 +369,14 @@ class TestGetEsaToEsaEnergyStepLut:
         l1b_hk_ds = self.create_mock_dataset(
             op_modes=["HVSCI", "HVSCI", "HVSCI", "HVSCI"],
             esa_steps=[1, 1, 2, 2],
-            inner_esa_values=[
+            inner_esa_state=["HI", "HI", "HI", "HI"],
+            inner_esa_hi=[
                 -98.0,
                 -102.0,
                 -198.0,
                 -202.0,
             ],  # Should match steps 1 and 2
+            inner_esa_lo=[0, 0, 0, 0],
             outer_esa_values=[49.0, 51.0, 99.0, 101.0],
             shcoarse_values=[1000, 1001, 1002, 1003],
         )
@@ -365,7 +413,9 @@ class TestGetEsaToEsaEnergyStepLut:
         l1b_hk_ds = self.create_mock_dataset(
             op_modes=["OTHER", "HVSCI", "HVSCI", "OTHER", "HVSCI", "HVSCI"],
             esa_steps=[1, 1, 1, 2, 2, 2],
-            inner_esa_values=[-100.0, -98.0, -102.0, -200.0, -198.0, -202.0],
+            inner_esa_state=["LO", "LO", "LO", "LO", "LO", "LO"],
+            inner_esa_hi=[0, 0, 0, 0, 0, 0],
+            inner_esa_lo=[-100.0, -98.0, -102.0, -200.0, -198.0, -202.0],
             outer_esa_values=[50.0, 49.0, 51.0, 100.0, 99.0, 101.0],
             shcoarse_values=[1000, 1001, 1002, 1003, 1004, 1005],
         )
@@ -389,7 +439,9 @@ class TestGetEsaToEsaEnergyStepLut:
         l1b_hk_ds = self.create_mock_dataset(
             op_modes=["OTHER", "LVSCI", "LVSCI"],
             esa_steps=[1, 2, 3],
-            inner_esa_values=[-100.0, -200.0, -300.0],
+            inner_esa_state=["HI", "HI", "HI"],
+            inner_esa_hi=[-100.0, -200.0, -300.0],
+            inner_esa_lo=[-100.0, -200.0, -300.0],
             outer_esa_values=[50.0, 100.0, 150.0],
             shcoarse_values=[1000, 1001, 1002],
         )
@@ -409,7 +461,9 @@ class TestGetEsaToEsaEnergyStepLut:
         l1b_hk_ds = self.create_mock_dataset(
             op_modes=["HVSCI", "HVSCI"],
             esa_steps=[1, 1],
-            inner_esa_values=[-500.0, -500.0],  # No match in lookup table
+            inner_esa_state=["HI", "LO"],
+            inner_esa_hi=[-500.0, -500.0],  # No match in lookup table
+            inner_esa_lo=[-500.0, -500.0],
             outer_esa_values=[500.0, 500.0],
             shcoarse_values=[1000, 1001],
         )
@@ -445,7 +499,9 @@ class TestGetEsaToEsaEnergyStepLut:
         l1b_hk_ds = self.create_mock_dataset(
             op_modes=["HVSCI", "HVSCI"],
             esa_steps=[1, 1],
-            inner_esa_values=[-101.0, -101.0],  # Matches both rows
+            inner_esa_state=["HI", "LO"],
+            inner_esa_hi=[-101.0, 0],  # Matches both rows
+            inner_esa_lo=[0, -101.0],  # Matches both rows
             outer_esa_values=[51.0, 51.0],
             shcoarse_values=[1000, 1001],
         )
@@ -470,7 +526,9 @@ class TestGetEsaToEsaEnergyStepLut:
         l1b_hk_ds = self.create_mock_dataset(
             op_modes=["HVSCI"],
             esa_steps=[1],
-            inner_esa_values=[-100.0],
+            inner_esa_state=["HI"],
+            inner_esa_hi=[-100.0],
+            inner_esa_lo=[-100.0],
             outer_esa_values=[50.0],
             shcoarse_values=[1000],
         )
@@ -488,7 +546,9 @@ class TestGetEsaToEsaEnergyStepLut:
         l1b_hk_ds = self.create_mock_dataset(
             op_modes=["OTHER", "HVSCI", "HVSCI", "OTHER"],
             esa_steps=[1, 2, 2, 1],  # ESA step 1 not in HVSCI segment
-            inner_esa_values=[-100.0, -198.0, -202.0, -100.0],
+            inner_esa_state=["HI", "HI", "HI", "HI"],
+            inner_esa_hi=[-100.0, -198.0, -202.0, -100.0],
+            inner_esa_lo=[0, 0, 0, 0],
             outer_esa_values=[50.0, 99.0, 101.0, 50.0],
             shcoarse_values=[1000, 1001, 1002, 1003],
         )
