@@ -99,7 +99,7 @@ class CoDICEL1aPipeline:
         # Determine the appropriate dimensions for the despun data
         num_energies = self.config["dims"]["esa_step"]
         num_spin_sectors = self.config["dims"]["spin_sector"]
-        num_spins = self.config["dims"]["spin_sector"] * 2
+        num_spins = num_spin_sectors * 2
         num_counters = self.config["num_counters"]
         num_positions = self.config["dims"].get(
             "inst_az"
@@ -118,7 +118,7 @@ class CoDICEL1aPipeline:
 
         # Placeholder for finalized despun data
         self.data: list[np.ndarray]  # Needed to appease mypy
-        self.despun_data = [np.zeros(despun_dims) for _ in range(len(self.data))]
+        despun_data = [np.zeros(despun_dims) for _ in range(len(self.data))]
 
         # Iterate over the energy and spin sector indices, and determine the
         # appropriate pixel orientation. The combination of the pixel
@@ -129,31 +129,30 @@ class CoDICEL1aPipeline:
                 pixel_orientation = constants.PIXEL_ORIENTATIONS[energy_index]
                 for spin_sector_index in range(num_spin_sectors):
                     for azimuth_index in range(num_spins):
-                        if pixel_orientation == "A" and azimuth_index <= 12:
+                        if pixel_orientation == "A" and azimuth_index < 12:
                             despun_spin_sector = spin_sector_index
-                        elif pixel_orientation == "A" and azimuth_index > 12:
+                        elif pixel_orientation == "A" and azimuth_index >= 12:
                             despun_spin_sector = spin_sector_index + 12
-                        elif pixel_orientation == "B" and azimuth_index <= 12:
+                        elif pixel_orientation == "B" and azimuth_index < 12:
                             despun_spin_sector = spin_sector_index + 12
-                        elif pixel_orientation == "B" and azimuth_index > 12:
+                        elif pixel_orientation == "B" and azimuth_index >= 12:
                             despun_spin_sector = spin_sector_index
 
                         if "angular" in self.config["dataset_name"]:
                             spin_data = epoch_data[
                                 energy_index, :, spin_sector_index, :
-                            ]
-                            self.despun_data[i][
-                                energy_index, :, despun_spin_sector, :
-                            ] = spin_data
+                            ]  # (5, 4)
+                            despun_data[i][energy_index, :, despun_spin_sector, :] = (
+                                spin_data
+                            )
                         elif "priority" in self.config["dataset_name"]:
                             spin_data = epoch_data[energy_index, spin_sector_index, :]
-                            self.despun_data[i][energy_index, despun_spin_sector, :] = (
+                            despun_data[i][energy_index, despun_spin_sector, :] = (
                                 spin_data
                             )
 
         # Replace original data
-        self.data = self.despun_data
-        del self.despun_data
+        self.data = despun_data
 
     def decompress_data(self, science_values: list[NDArray[str]] | list[str]) -> None:
         """
