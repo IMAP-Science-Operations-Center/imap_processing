@@ -154,10 +154,10 @@ def calculate_de(
     ph_result = get_ph_tof_and_back_positions(
         de_dataset, xf, f"ultra{sensor}", ancillary_files
     )
-    tof = ph_result.tof[ph_indices]
-    t2 = ph_result.t2[ph_indices]
-    xb = ph_result.xb[ph_indices]
-    yb = ph_result.yb[ph_indices]
+    tof[ph_indices] = ph_result.tof
+    t2[ph_indices] = ph_result.t2
+    xb[ph_indices] = ph_result.xb
+    yb[ph_indices] = ph_result.yb
     d[ph_indices], yf[ph_indices] = get_front_y_position(
         de_dataset["start_type"].data[ph_indices], yb[ph_indices], ancillary_files
     )
