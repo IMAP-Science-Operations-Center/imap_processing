@@ -52,7 +52,6 @@ def _download_external_kernels(spice_test_data_path):
     kernel_urls = [
         "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp",
         "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc",
-        "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/",
         "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/earth_latest_high_prec.bpc",
     ]
 
