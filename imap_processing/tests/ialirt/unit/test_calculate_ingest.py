@@ -1,4 +1,4 @@
-"""Test processEphemeris functions."""
+"""Test calculate_ingest functions."""
 
 from datetime import datetime, timedelta
 
@@ -16,11 +16,17 @@ def test_find_tcp_connections():
     """ Test the find_tcp_connections function.
     """
     filename = "flight_iois_1.log.2025-212T16_55_27.531613"
+    # File creation time minus 1 hr.
+    timestamp_str = filename.split(".")[2]
+    timestamp_str = timestamp_str.replace("_", ":")
+    start_of_time = datetime.strptime(timestamp_str, "%Y-%jT%H:%M:%S") - timedelta(hours=1)
+    end_of_time = start_of_time
+
     # TODO: put this in lambda.
     with open(TEST_PATH / filename, encoding="utf-8") as f:
         lines = f.readlines()
 
-    test = find_tcp_connections(filename, lines, "Kiel")
+    test = find_tcp_connections(start_of_time, end_of_time, lines, "Kiel")
 
     # 2025/212-16:33:03.247
     time_0 = datetime(2025, 7, 31, 16, 33, 3, 247000)
@@ -89,7 +95,9 @@ def test_format_ingest_data():
 
         current_time += timedelta(seconds=1)
 
-    data = format_ingest_data(filenames, log_lines)
+    filenames = sorted(filenames)
+
+    data = format_ingest_data(filenames[0], filenames[-1], log_lines)
 
     assert data["packet_ingest"][0] == "2025-07-31T08:00:00"
     assert data["packet_ingest"][-1] == "2025-07-31T15:00:00"

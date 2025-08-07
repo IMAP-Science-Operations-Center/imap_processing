@@ -2,11 +2,9 @@
 
 import logging
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from imap_processing.ialirt.constants import STATIONS
-from imap_processing.ialirt.process_ephemeris import calculate_azimuth_and_elevation
-from imap_processing.spice.time import et_to_utc, str_to_et
 
 # Logger setup
 logger = logging.getLogger(__name__)
@@ -14,7 +12,7 @@ logger = logging.getLogger(__name__)
 ALL_STATIONS = [*STATIONS.keys()]
 
 
-def find_tcp_connections(first_filename, last_filename, lines, partner):
+def find_tcp_connections(start_of_time, end_of_time, lines, partner):
     """
     Find connection time ranges for Kiel ground station from log lines.
 
@@ -24,16 +22,6 @@ def find_tcp_connections(first_filename, last_filename, lines, partner):
     """
     connection_ranges = []
     current_start = None
-
-    # File creation time minus 1 hr.
-    first_timestamp_str = first_filename.split(".")[2]
-    first_timestamp_str = first_timestamp_str.replace("_", ":")
-    start_of_time = datetime.strptime(first_timestamp_str, "%Y-%jT%H:%M:%S") - timedelta(hours=1)
-
-    # File creation time.
-    last_timestamp_str = last_filename.split(".")[2]
-    last_timestamp_str = last_timestamp_str.replace("_", ":")
-    end_of_time = datetime.strptime(last_timestamp_str, "%Y-%jT%H:%M:%S")
 
     for line in lines:
         if f"{partner} antenna partner connection is up." in line:
@@ -93,14 +81,30 @@ def format_ingest_data(first_filename, last_filename, all_lines):
         and global packet ingest timestamps.
     """
 
+    # File creation time minus 1 hr.
+    first_timestamp_str = first_filename.split(".")[2]
+    first_timestamp_str = first_timestamp_str.replace("_", ":")
+    start_of_time = datetime.strptime(first_timestamp_str, "%Y-%jT%H:%M:%S") - timedelta(hours=1)
+
+    # File creation time.
+    last_timestamp_str = last_filename.split(".")[2]
+    last_timestamp_str = last_timestamp_str.replace("_", ":")
+    end_of_time = datetime.strptime(last_timestamp_str, "%Y-%jT%H:%M:%S")
+
     formatted = {
+        "summary": "I-ALiRT Real-time Ingest Summary",
+        "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "time_format": "UTC (ISOC)",
+        "stations": ALL_STATIONS,
+        "time_range": [start_of_time.isoformat(), end_of_time.isoformat()],  # Overall time range of the data
         "packet_ingest": [],  # Global packet ingest times
-        "tcp": {},            # Per-station TCP connection windows
+        "tcp": {station: [] for station in ALL_STATIONS},            # Per-station TCP connection windows
     }
 
     # TCP connection data for each station
     for station in ALL_STATIONS:
-        tcp_ranges = find_tcp_connections(first_filename, last_filename, all_lines, station)
+        tcp_ranges = find_tcp_connections(start_of_time, end_of_time,
+                                                                      all_lines, station)
         formatted["tcp"][station] = [
             {"start": start.isoformat(), "end": end.isoformat()}
             for start, end in tcp_ranges
