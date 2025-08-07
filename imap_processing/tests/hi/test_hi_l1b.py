@@ -68,6 +68,7 @@ def test_hi_annotate_direct_events(
     assert len(l1b_datasets[0].data_vars) == 15
 
 
+@pytest.mark.external_test_data
 @mock.patch("imap_processing.hi.hi_l1b.instrument_pointing")
 def test_annotate_direct_events_with_hk(
     mock_instrument_pointing, hi_l1_test_data_path, use_fake_spin_data_for_time
