@@ -52,6 +52,8 @@ EXTERNAL_TEST_DATA = [
     # Hi
     ("imap_hi_l1a_45sensor-de_20250415_v999.cdf", "hi/data/l1/"),
     ("imap_hi_l1b_45sensor-de_20250415_v999.cdf", "hi/data/l1/"),
+    ("imap_hi_l1b_90sensor-hk_20241105-repoint00099_v001.cdf", "hi/data/l1/"),
+    ("imap_hi_l1a_90sensor-de_20241105-repoint00099_v001.cdf", "hi/data/l1/"),
     ("imap_hi_l1c_45sensor-pset_20250415_v999.cdf", "hi/data/l1/"),
 
     # I-ALiRT

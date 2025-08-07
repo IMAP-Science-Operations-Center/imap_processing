@@ -69,7 +69,7 @@ def test_hi_annotate_direct_events(
 
 
 @mock.patch("imap_processing.hi.hi_l1b.instrument_pointing")
-def test_hi_l1b_with_hk(
+def test_annotate_direct_events_with_hk(
     mock_instrument_pointing, hi_l1_test_data_path, use_fake_spin_data_for_time
 ):
     """Test imap_processing.hi_l1b.annotate_direct_events() with a
