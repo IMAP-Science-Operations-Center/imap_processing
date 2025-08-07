@@ -279,19 +279,30 @@ def test_post_processing_returns_empty_list_if_invoked_with_no_data(
 
 
 @pytest.mark.parametrize(
-    "data_level, science_input, anc_input, n_prods",
+    "data_level, function_name, science_input, anc_input, n_prods",
     [
-        ("l1a", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
-        ("l1b", ["imap_hi_l1a_90sensor-de_20241105_v001.cdf"], [], 1),
-        ("l1b", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
+        ("l1a", "hi_l1a", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
+        (
+            "l1b",
+            "annotate_direct_events",
+            [
+                "imap_hi_l1a_90sensor-de_20241105_v001.cdf",
+                "imap_hi_l1b_90sensor-hk_20241105_v001.cdf",
+            ],
+            ["imap_hi_90sensor-esa-energies_20240101_v001.csv"],
+            1,
+        ),
+        ("l1b", "housekeeping", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
         (
             "l1c",
+            "hi_l1c",
             ["imap_hi_l1b_45sensor-de_20250415_v001.cdf"],
             ["imap_hi_calibration-prod-config_20240101_v001.csv"],
             1,
         ),
         (
             "l2",
+            "hi_l2",
             [
                 "imap_hi_l1c_90sensor-pset_20250415_v001.cdf",
                 "imap_hi_l1c_90sensor-pset_20250416_v001.cdf",
@@ -302,7 +313,12 @@ def test_post_processing_returns_empty_list_if_invoked_with_no_data(
     ],
 )
 def test_hi(
-    mock_instrument_dependencies, data_level, science_input, anc_input, n_prods
+    mock_instrument_dependencies,
+    data_level,
+    function_name,
+    science_input,
+    anc_input,
+    n_prods,
 ):
     """Test coverage for cli.Hi class"""
     mocks = mock_instrument_dependencies
@@ -317,7 +333,7 @@ def test_hi(
     # patch autospec=True makes this test confirm that the function call in cli.py
     # matches the mocked function signature.
     with mock.patch(
-        f"imap_processing.cli.hi_{data_level}.hi_{data_level}", autospec=True
+        f"imap_processing.cli.hi_{data_level}.{function_name}", autospec=True
     ) as mock_hi:
         mock_hi.return_value = [xr.Dataset()] * n_prods
         dependency_str = (

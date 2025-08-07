@@ -557,3 +557,49 @@ class TestGetEsaToEsaEnergyStepLut:
 
         # Only ESA step 2 should be processed (it's the only one in HVSCI segment)
         self.mock_lut.add_entry.assert_called_once_with(1001, 1002, 2, 2)
+
+    @pytest.mark.external_test_data
+    def test_cal_data(self, hi_l1_test_data_path):
+        """Test with calibration data."""
+        l1b_hk_ds = load_cdf(
+            hi_l1_test_data_path
+            / "imap_hi_l1b_90sensor-hk_20241105-repoint00099_v001.cdf"
+        )
+        # Create a esa energies pandas DataFrame
+        esa_energies_lut_data = {
+            "esa_energy_step": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            "nominal_central_energy": [
+                np.nan,
+                0.50,
+                0.75,
+                1.10,
+                1.65,
+                2.50,
+                3.75,
+                5.70,
+                8.52,
+                12.8,
+            ],
+            "inner_esa_voltage": [
+                0,
+                -472,
+                -713,
+                -1010,
+                -1524,
+                -2060,
+                -2870,
+                -4107,
+                -5908,
+                -8625,
+            ],
+            "inner_esa_delta_v": [25, 25, 25, 25, 25, 25, 25, 25, 25, 25],
+            "outer_esa_voltage": [0, 122, 164, 213, 270, 718, 1232, 2034, 3185, 4911],
+            "outer_esa_delta_v": [25, 25, 25, 25, 25, 25, 25, 25, 25, 25],
+        }
+        esa_energies_lut = pd.DataFrame(esa_energies_lut_data)
+
+        lut = get_esa_to_esa_energy_step_lut(l1b_hk_ds, esa_energies_lut)
+
+        # Check the generated lookup table
+        # We expect 1 dataframe entry per esa step in the range [1, 9]
+        np.testing.assert_array_equal(lut.df["esa_step"].values, np.arange(9) + 1)

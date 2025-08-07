@@ -737,10 +737,18 @@ class Hi(ProcessInstrument):
         elif self.data_level == "l1b":
             l0_files = dependencies.get_file_paths(source="hi", descriptor="raw")
             if l0_files:
-                datasets = hi_l1b.hi_l1b(l0_files[0])
+                datasets = hi_l1b.housekeeping(l0_files[0])
             else:
-                l1a_files = dependencies.get_file_paths(source="hi", data_type="l1a")
-                datasets = hi_l1b.hi_l1b(load_cdf(l1a_files[0]))
+                l1a_de_file = dependencies.get_file_paths(
+                    source="hi", data_type="l1a", descriptor="de"
+                )[0]
+                l1b_hk_file = dependencies.get_file_paths(
+                    source="hi", data_type="l1b", descriptor="hk"
+                )[0]
+                esa_energies_csv = dependencies.get_file_paths(data_type="ancillary")[0]
+                datasets = hi_l1b.annotate_direct_events(
+                    load_cdf(l1a_de_file), load_cdf(l1b_hk_file), esa_energies_csv
+                )
         elif self.data_level == "l1c":
             science_paths = dependencies.get_file_paths(source="hi", data_type="l1b")
             if len(science_paths) != 1:
