@@ -52,17 +52,39 @@ def dependencies(sci_packet_filepath, packet_date):
     """Get dependencies for L2 processing"""
     # Create dictionary of dependencies
     data_dict = {}
+    # Get L1A datasets
     l1a_datasets = hit_l1a.hit_l1a(sci_packet_filepath, packet_date)
-    for l1a_dataset in l1a_datasets:
-        l1a_data_dict = {}
-        if l1a_dataset.attrs["Logical_source"] in [
-            "imap_hit_l1a_counts-standard",
-            "imap_hit_l1a_counts-sectored",
-        ]:
-            l1a_data_dict[l1a_dataset.attrs["Logical_source"]] = l1a_dataset
-        l1b_datasets = hit_l1b(l1a_data_dict)
-        for l1b_dataset in l1b_datasets:
-            data_dict[l1b_dataset.attrs["Logical_source"]] = l1b_dataset
+
+    # Get L1B datasets from L1A datasets
+    for dataset in l1a_datasets:
+        if dataset.attrs["Logical_source"] == "imap_hit_l1a_counts-standard":
+            l1b_dataset = hit_l1b(
+                {
+                    "logical_source": dataset.attrs["Logical_source"],
+                    "data": dataset,
+                    "output_descriptor": "standard-rates",
+                }
+            )
+            data_dict[l1b_dataset[0].attrs["Logical_source"]] = l1b_dataset[0]
+
+            l1b_dataset = hit_l1b(
+                {
+                    "logical_source": dataset.attrs["Logical_source"],
+                    "data": dataset,
+                    "output_descriptor": "summed-rates",
+                }
+            )
+            data_dict[l1b_dataset[0].attrs["Logical_source"]] = l1b_dataset[0]
+
+        elif dataset.attrs["Logical_source"] == "imap_hit_l1a_counts-sectored":
+            l1b_dataset = hit_l1b(
+                {
+                    "logical_source": dataset.attrs["Logical_source"],
+                    "data": dataset,
+                    "output_descriptor": "sectored-rates",
+                }
+            )
+            data_dict[l1b_dataset[0].attrs["Logical_source"]] = l1b_dataset[0]
     return data_dict
 
 

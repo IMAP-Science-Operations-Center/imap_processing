@@ -49,20 +49,44 @@ def packet_date():
 def dependencies(packet_filepath, sci_packet_filepath, packet_date):
     """Get dependencies for L1B processing"""
     # Create dictionary of dependencies and add CCSDS packet file
-    data_dict = {"imap_hit_l0_raw": packet_filepath}
+    dependency_dict = {
+        "hk": {
+            "logical_source": "imap_hit_l0_raw",
+            "data": packet_filepath,
+            "output_descriptor": "hk",
+        }
+    }
     # Add L1A datasets
     l1a_datasets = hit_l1a.hit_l1a(packet_filepath, packet_date)
     # TODO: Remove this when HIT provides a packet file with all apids.
     l1a_datasets.extend(hit_l1a.hit_l1a(sci_packet_filepath, packet_date))
+    # Add L1A datasets to the data_dict
     for dataset in l1a_datasets:
-        data_dict[dataset.attrs["Logical_source"]] = dataset
-    return data_dict
+        if dataset.attrs["Logical_source"] == "imap_hit_l1a_counts-standard":
+            dependency_dict["standard-rates"] = {
+                "logical_source": dataset.attrs["Logical_source"],
+                "data": dataset,
+                "output_descriptor": "standard-rates",
+            }
+            dependency_dict["summed-rates"] = {
+                "logical_source": dataset.attrs["Logical_source"],
+                "data": dataset,
+                "output_descriptor": "summed-rates",
+            }
+        elif dataset.attrs["Logical_source"] == "imap_hit_l1a_counts-sectored":
+            dependency_dict["sectored-rates"] = {
+                "data": dataset,
+                "output_descriptor": "sectored-rates",
+                "logical_source": dataset.attrs["Logical_source"],
+            }
+
+    return dependency_dict
 
 
 @pytest.fixture
 def l1b_hk_dataset(dependencies):
     """Get the housekeeping dataset"""
-    datasets = hit_l1b(dependencies)
+    datasets = hit_l1b(dependencies["hk"])
     for dataset in datasets:
         if dataset.attrs["Logical_source"] == "imap_hit_l1b_hk":
             return dataset
@@ -71,7 +95,7 @@ def l1b_hk_dataset(dependencies):
 @pytest.fixture
 def l1b_standard_rates_dataset(dependencies):
     """Get the standard rates dataset"""
-    datasets = hit_l1b(dependencies)
+    datasets = hit_l1b(dependencies["standard-rates"])
     for dataset in datasets:
         if dataset.attrs["Logical_source"] == "imap_hit_l1b_standard-rates":
             return dataset
@@ -141,7 +165,7 @@ def test_sum_livetime_10min():
 def test_process_summed_rates_data(dependencies):
     """Test the variables in the summed rates dataset"""
 
-    l1a_counts_dataset = dependencies["imap_hit_l1a_counts-standard"]
+    l1a_counts_dataset = dependencies["summed-rates"]["data"]
     livetime = xr.DataArray(l1a_counts_dataset["livetime_counter"] / 270)
     l1b_summed_rates_dataset = process_summed_rates_data(l1a_counts_dataset, livetime)
 
@@ -185,7 +209,7 @@ def test_process_summed_rates_data(dependencies):
 def test_process_standard_rates_data(dependencies):
     """Test the variables in the standard rates dataset"""
 
-    l1a_counts_dataset = dependencies["imap_hit_l1a_counts-standard"]
+    l1a_counts_dataset = dependencies["standard-rates"]["data"]
     livetime = xr.DataArray(l1a_counts_dataset["livetime_counter"] / 270)
     l1b_standard_rates_dataset = process_standard_rates_data(
         l1a_counts_dataset, livetime
@@ -277,7 +301,7 @@ def test_process_standard_rates_data(dependencies):
 def test_process_sectored_rates_data(dependencies):
     """Test the variables in the sectored rates dataset"""
 
-    l1a_counts_dataset = dependencies["imap_hit_l1a_counts-sectored"]
+    l1a_counts_dataset = dependencies["sectored-rates"]["data"]
     livetime = xr.DataArray(l1a_counts_dataset["livetime_counter"] / 270)
     l1b_sectored_rates_dataset = process_sectored_rates_data(
         l1a_counts_dataset, livetime
@@ -538,27 +562,33 @@ def test_hit_l1b_missing_apid(sci_packet_filepath):
     """
     # Create a dependency dictionary with a science CCSDS packet file
     # excluding the housekeeping apid
-    dependency = {"imap_hit_l0_raw": sci_packet_filepath}
-    datasets = hit_l1b(dependency)
-    assert len(datasets) == 0
+    dependency = {
+        "data": sci_packet_filepath,
+        "output_descriptor": "hk",
+        "logical_source": "imap_hit_l0_raw",
+    }
+
+    dataset = hit_l1b(dependency)
+    assert len(dataset) == 0
 
 
-def test_hit_l1b(dependencies):
+@pytest.mark.parametrize(
+    "dependency_key, expected_logical_source",
+    [
+        ("hk", "imap_hit_l1b_hk"),
+        ("standard-rates", "imap_hit_l1b_standard-rates"),
+        ("summed-rates", "imap_hit_l1b_summed-rates"),
+        ("sectored-rates", "imap_hit_l1b_sectored-rates"),
+    ],
+)
+def test_hit_l1b(dependencies, dependency_key, expected_logical_source):
     """Test creating L1B CDF files
-
-    Creates a list of xarray datasets for each L1B product
 
     Parameters
     ----------
     dependencies : dict
-        Dictionary of L1A datasets and CCSDS packet file path
+        Dictionary of L1B products and their dependencies.
     """
-    datasets = hit_l1b(dependencies)
-
-    assert len(datasets) == 4
-    for dataset in datasets:
-        assert isinstance(dataset, xr.Dataset)
-    assert datasets[0].attrs["Logical_source"] == "imap_hit_l1b_hk"
-    assert datasets[1].attrs["Logical_source"] == "imap_hit_l1b_standard-rates"
-    assert datasets[2].attrs["Logical_source"] == "imap_hit_l1b_summed-rates"
-    assert datasets[3].attrs["Logical_source"] == "imap_hit_l1b_sectored-rates"
+    dataset = hit_l1b(dependencies.get(dependency_key))
+    assert isinstance(dataset[0], xr.Dataset)
+    assert dataset[0].attrs["Logical_source"] == expected_logical_source
