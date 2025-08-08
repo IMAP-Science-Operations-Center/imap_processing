@@ -767,10 +767,8 @@ def swe_l1b_science(dependencies: ProcessingInputCollection) -> xr.Dataset:
 
     # Store ESA energies of full cycle for L2 purposes.
     esa_energies = get_esa_energy_pattern(esa_lut_files[0])
-    # Repeat energies to be in the same shape as the science data
-    esa_energies = np.repeat(esa_energies, total_packets // 4).reshape(
-        -1, swe_constants.N_ESA_STEPS, swe_constants.N_ANGLE_SECTORS
-    )
+    # Repeat the (24, 30) energy pattern n_cycles times along a new first axis
+    esa_energies = np.repeat(esa_energies[np.newaxis, :, :], total_packets // 4, axis=0)
     # Convert voltage to electron energy in eV by apply conversion factor
     esa_energies = esa_energies * swe_constants.ENERGY_CONVERSION_FACTOR
     # ------------------------------------------------------------------

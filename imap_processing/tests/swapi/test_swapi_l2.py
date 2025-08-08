@@ -7,7 +7,7 @@ import pytest
 from imap_data_access import ProcessingInputCollection
 
 from imap_processing import imap_module_directory
-from imap_processing.cdf.utils import write_cdf
+from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.swapi.l1.swapi_l1 import swapi_l1
 from imap_processing.swapi.l2.swapi_l2 import (
     TIME_PER_BIN,
@@ -29,7 +29,7 @@ def esa_unit_conversion_table() -> pd.DataFrame:
     """
     esa_file_path = (
         imap_module_directory
-        / "tests/swapi/lut/imap_swapi_esa-unit-conversion_20250211_v000.csv"
+        / "tests/swapi/lut/imap_swapi_esa-unit-conversion_20250626_v001.csv"
     )
     df = read_swapi_lut_table(esa_file_path)
     return df
@@ -46,7 +46,7 @@ def lut_notes_table() -> pd.DataFrame:
         The LUT notes table.
     """
     lut_notes_file_path = (
-        imap_module_directory / "tests/swapi/lut/imap_swapi_lut-notes_20250211_v000.csv"
+        imap_module_directory / "tests/swapi/lut/imap_swapi_lut-notes_20250626_v006.csv"
     )
     df = read_swapi_lut_table(lut_notes_file_path)
 
@@ -111,7 +111,7 @@ def test_swapi_l2_cdf(
     cdf_path = write_cdf(processed_sci_data[0])
     assert cdf_path.name == cdf_filename
 
-    l1_dataset = processed_sci_data[0]
+    l1_dataset = load_cdf(cdf_path)
     l2_dataset = swapi_l2(
         l1_dataset,
         esa_table_df=esa_unit_conversion_table,
@@ -125,17 +125,35 @@ def test_swapi_l2_cdf(
         l2_dataset["swp_pcem_rate_stat_uncert_plus"],
         l1_dataset["swp_pcem_counts_stat_uncert_plus"] / TIME_PER_BIN,
     )
+    # Since L2 data's date is before any date in ESA unit conversion table,
+    # check that it returns nan in first 63 energy steps
+    assert np.isnan(l2_dataset["swp_esa_energy"].values[0, :63]).all()
+    # Check fine steps
+    fine_energies = [
+        4290.0,
+        4199.0,
+        4109.0,
+        4020.0,
+        3934.0,
+        3850.0,
+        3767.0,
+        3687.0,
+        3608.0,
+    ]
+    assert np.all(l2_dataset["swp_esa_energy"].values[0, -9:] == fine_energies)
 
 
 def test_solve_full_sweep_energy(esa_unit_conversion_table, lut_notes_table):
     """Test the solve_full_sweep_energy function"""
     # Find 9 fine energies for unique ESA_LVL5 values
-    esa_lvl5_arr = [7778, 5673, 4973, 4311]
+    esa_lvl5_arr = [4663]
+    sweep_table = [0]
+    data_time = [np.datetime64("2025-02-24T00:00:00", "ns")]
     esa_lvl5_hex = np.vectorize(lambda x: format(x, "X"))(esa_lvl5_arr)
     sweeps_energy_value = solve_full_sweep_energy(
-        esa_lvl5_hex, esa_unit_conversion_table, lut_notes_table
+        esa_lvl5_hex, sweep_table, esa_unit_conversion_table, lut_notes_table, data_time
     )
-    assert sweeps_energy_value.shape == (4, 72)
+    assert sweeps_energy_value.shape == (1, 72)
 
     # First check that first 63 values are same as the fixed energy values.
     fixed_energy_values = np.array(
@@ -210,10 +228,83 @@ def test_solve_full_sweep_energy(esa_unit_conversion_table, lut_notes_table):
     # Now, test that the last 9 fine energy values are as expected for first sweep.
     # I manually picked those values from LUT table.
     expected_fine_energies = np.array(
-        [19251, 19251, 19251, 19251, 18846, 18450, 18062, 17682, 17310]
+        [3220.0, 3151.0, 3083.0, 3017.0, 2953.0, 2889.0, 2827.0, 2767.0, 2707.0]
     )
-
     assert np.all(sweeps_energy_value[0, -9:] == expected_fine_energies)
+
+    # Test that we get different values for date later than 2025-05-19
+    data_time = [np.datetime64("2025-05-20T00:00:00", "ns")]
+    sweeps_energy_value = solve_full_sweep_energy(
+        esa_lvl5_hex, sweep_table, esa_unit_conversion_table, lut_notes_table, data_time
+    )
+    new_fixed_energy_values = np.array(
+        [
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1201.466213,
+            1131.97314,
+            1038.004216,
+            951.8359709,
+            872.8208434,
+            800.3650292,
+            733.9240176,
+            672.9984993,
+            617.1306146,
+            565.9005123,
+            518.9231943,
+            475.8456225,
+            436.3440658,
+            400.1216672,
+            366.9062125,
+            336.4480852,
+            308.5183902,
+            282.9072338,
+            259.4221462,
+            237.8866352,
+            218.13886,
+            200.0304145,
+            183.4252123,
+            168.1984643,
+            154.2357401,
+            141.432109,
+            129.6913506,
+            118.9252324,
+            109.0528461,
+            100,
+        ]
+    )
+    assert np.all(sweeps_energy_value[:, :63] == new_fixed_energy_values)
 
     # Test mismatch values for 9 fine steps x 4 steps.
     mismatch_value = [1]
@@ -221,30 +312,9 @@ def test_solve_full_sweep_energy(esa_unit_conversion_table, lut_notes_table):
         ValueError, match="These ESA_LVL5 values not found in lut-notes table"
     ):
         solve_full_sweep_energy(
-            np.array(mismatch_value), esa_unit_conversion_table, lut_notes_table
+            np.array(mismatch_value),
+            [0],
+            esa_unit_conversion_table,
+            lut_notes_table,
+            data_time,
         )
-
-    # Check for value that should return 0 index's energy value.
-    # Same as before, I picked values from lut notes table that would
-    # result in 0 index.
-    esa_lvl5_arr = np.array([format(8168, "X")])
-    sweeps_energy_value = solve_full_sweep_energy(
-        esa_lvl5_arr, esa_unit_conversion_table, lut_notes_table
-    )
-    assert sweeps_energy_value.shape == (1, 72)
-    # Last coarse energy value should be 107
-    assert sweeps_energy_value[0][62] == 107
-    expected_fine_energies = np.array(
-        [
-            19251,
-            19251,
-            19251,
-            19251,
-            19251,
-            19251,
-            19251,
-            19251,
-            19149,
-        ]
-    )
-    assert np.all(sweeps_energy_value[0, -9:] == expected_fine_energies)

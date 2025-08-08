@@ -35,6 +35,13 @@ from imap_processing.cli import (
 from imap_processing.spice import config as spice_config
 
 
+@pytest.fixture(autouse=True)
+def clear_spice_kernels():
+    """Fixture to clear SPICE kernels before each test."""
+    with spiceypy.KernelPool([]):
+        yield
+
+
 @pytest.fixture
 def mock_instrument_dependencies():
     with (
@@ -120,7 +127,7 @@ def test_parse_args_dependency_json_file(caplog, tmp_path):
         },
     ]
     test_json_filename = "imap_ultra_l2_test-dependency-json_20250520_v999.json"
-    test_json_dir = tmp_path / "imap/cadence/ultra/l2/2025/05/"
+    test_json_dir = tmp_path / "imap/dependency/ultra/l2/2025/05/"
     test_json_dir.mkdir(parents=True, exist_ok=True)
     test_json_dst = test_json_dir / test_json_filename
 
@@ -234,20 +241,68 @@ def test_repointing_file_creation(mock_instrument_dependencies):
     )
 
 
+def test_post_processing_returns_path_to_written_cdf(mock_instrument_dependencies):
+    test_datasets = [xr.Dataset({}, attrs={"cdf_filename": "file0"})]
+    input_collection = ProcessingInputCollection(
+        ScienceInput("imap_glows_l0_raw_20230822-repoint00001_v001.pkts")
+    )
+    dependency_str = (
+        '[{"type": "science","files": '
+        '["imap_glows_l0_raw_20230822-repoint00001_v001.pkts"]}]'
+    )
+    instrument = Glows(
+        "l1a", "hist", dependency_str, None, "repoint00002", "v001", False
+    )
+
+    expected_path = "/path/to/file0"
+    mock_instrument_dependencies["mock_write_cdf"].side_effect = [expected_path]
+
+    # Call the method that uses write_cdf
+    returned_path = instrument.post_processing(test_datasets, input_collection)
+
+    # Assert that post_processing returned the path to the CDF written in write_cdf
+    assert returned_path == [expected_path]
+
+
+def test_post_processing_returns_empty_list_if_invoked_with_no_data(
+    mock_instrument_dependencies,
+):
+    test_datasets = []
+    input_collection = ProcessingInputCollection()
+    instrument = Glows("l1a", "hist", "", None, "repoint00002", "v001", False)
+
+    # Call the method that uses write_cdf
+    returned_products = instrument.post_processing(test_datasets, input_collection)
+
+    # Assert that post_processing returned the path to the CDF written in write_cdf
+    assert returned_products == []
+
+
 @pytest.mark.parametrize(
-    "data_level, science_input, anc_input, n_prods",
+    "data_level, function_name, science_input, anc_input, n_prods",
     [
-        ("l1a", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
-        ("l1b", ["imap_hi_l1a_90sensor-de_20241105_v001.cdf"], [], 1),
-        ("l1b", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
+        ("l1a", "hi_l1a", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
+        (
+            "l1b",
+            "annotate_direct_events",
+            [
+                "imap_hi_l1a_90sensor-de_20241105_v001.cdf",
+                "imap_hi_l1b_90sensor-hk_20241105_v001.cdf",
+            ],
+            ["imap_hi_90sensor-esa-energies_20240101_v001.csv"],
+            1,
+        ),
+        ("l1b", "housekeeping", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
         (
             "l1c",
+            "hi_l1c",
             ["imap_hi_l1b_45sensor-de_20250415_v001.cdf"],
             ["imap_hi_calibration-prod-config_20240101_v001.csv"],
             1,
         ),
         (
             "l2",
+            "hi_l2",
             [
                 "imap_hi_l1c_90sensor-pset_20250415_v001.cdf",
                 "imap_hi_l1c_90sensor-pset_20250416_v001.cdf",
@@ -258,7 +313,12 @@ def test_repointing_file_creation(mock_instrument_dependencies):
     ],
 )
 def test_hi(
-    mock_instrument_dependencies, data_level, science_input, anc_input, n_prods
+    mock_instrument_dependencies,
+    data_level,
+    function_name,
+    science_input,
+    anc_input,
+    n_prods,
 ):
     """Test coverage for cli.Hi class"""
     mocks = mock_instrument_dependencies
@@ -273,7 +333,7 @@ def test_hi(
     # patch autospec=True makes this test confirm that the function call in cli.py
     # matches the mocked function signature.
     with mock.patch(
-        f"imap_processing.cli.hi_{data_level}.hi_{data_level}", autospec=True
+        f"imap_processing.cli.hi_{data_level}.{function_name}", autospec=True
     ) as mock_hi:
         mock_hi.return_value = [xr.Dataset()] * n_prods
         dependency_str = (
@@ -441,8 +501,8 @@ def test_ultra_l2(mock_ultra_l2, mock_instrument_dependencies):
 def test_idex_l2b(mock_idex_l2b, mock_instrument_dependencies):
     """Test coverage for cli.Idex class with l2b data level"""
     mocks = mock_instrument_dependencies
-    mock_idex_l2b.return_value = xr.Dataset()
-    mocks["mock_write_cdf"].side_effect = ["/path/to/product0"]
+    mock_idex_l2b.return_value = [xr.Dataset(), xr.Dataset()]
+    mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
     input_collection = ProcessingInputCollection(
         ScienceInput("imap_idex_l1b_evt_20251015_v002.cdf"),
         ScienceInput("imap_idex_l2a_sci-1week_20251017_v018.cdf"),
@@ -452,12 +512,12 @@ def test_idex_l2b(mock_idex_l2b, mock_instrument_dependencies):
 
     dependency_str = input_collection.serialize()
     instrument = Idex(
-        "l2b", "sci-1mo", dependency_str, "20100105", "20100101", "v001", False
+        "l2b", "all", dependency_str, "20100105", "20100101", "v001", False
     )
 
     instrument.process()
     assert mock_idex_l2b.call_count == 1
-    assert mock_instrument_dependencies["mock_write_cdf"].call_count == 1
+    assert mock_instrument_dependencies["mock_write_cdf"].call_count == 2
 
 
 @mock.patch("imap_processing.cli.hit_l1a")
@@ -483,8 +543,7 @@ def test_hit_l1a(mock_hit_l1a, mock_instrument_dependencies):
     assert mock_instrument_dependencies["mock_write_cdf"].call_count == 2
 
 
-@pytest.mark.usefixtures("_unset_metakernel_path")
-def test_spice_kernel_handling(spice_test_data_path):
+def test_spice_kernel_handling(spice_test_data_path, clear_spice_kernels):
     """Test coverage for ProcessInstrument.pre_processing method()."""
     kernels_to_furnish = ["naif0012.tls", "imap_sclk_0000.tsc"]
     dependency_obj = [

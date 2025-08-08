@@ -22,6 +22,8 @@ from imap_processing.swe.l2.swe_l2 import (
 )
 from imap_processing.swe.utils import swe_constants
 
+pytestmark = pytest.mark.external_test_data
+
 
 @patch(
     "imap_processing.swe.utils.swe_constants.GEOMETRIC_FACTORS",
@@ -255,9 +257,15 @@ def test_put_data_into_angle_bins():
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 @pytest.mark.usefixtures("use_fake_spin_data_for_time")
-def test_swe_l2(mock_get_file_paths, use_fake_spin_data_for_time):
-    """Test L2 processing."""
-    data_start_time = 453051293.099714
+def test_swe_l2_15sec(
+    mock_get_file_paths,
+    use_fake_spin_data_for_time,
+    l2_sector_validation_df,
+    l2_binned_flux_validation_df,
+    l2_binned_psd_validation_df,
+):
+    """Test L2 processing with 15 seconds spin period."""
+    data_start_time = 453051293.0
     data_end_time = 453070000.0
     use_fake_spin_data_for_time(data_start_time, data_end_time)
 
@@ -323,12 +331,112 @@ def test_swe_l2(mock_get_file_paths, use_fake_spin_data_for_time):
 
     rate = l1b_dataset.science_data.to_numpy()
     psd = l2_dataset.phase_space_density_spin_sector.to_numpy()
-    rate = rate[2, :, :, 3]  # nonzero counts at all energy & spin
+    second_cycle_rate = rate[2, :, :, 3]  # nonzero counts at all energy & spin
     psd = psd[2, :, :, 3]
-    cal_factor = psd / rate  # same CEM, should be constant at a given energy
+    cal_factor = (
+        psd / second_cycle_rate
+    )  # same CEM, should be constant at a given energy
     assert np.allclose(cal_factor, cal_factor[:, 0:1], rtol=1e-9, atol=0)
 
     # Write L2 to CDF
     l2_dataset.attrs["Data_version"] = "002"
     l2_cdf_filepath = write_cdf(l2_dataset)
     assert l2_cdf_filepath.name == "imap_swe_l2_sci_20240510_v002.cdf"
+
+    # --------- sector validation--------
+    sector_psd_data = l2_dataset["phase_space_density_spin_sector"].data
+    validation_science = l2_sector_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
+
+    np.testing.assert_allclose(sector_psd_data, validation_science, rtol=1e-6)
+
+    # ------binned validation--------
+    bin_flux_val = l2_binned_flux_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
+    bin_psd_val = l2_binned_psd_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
+    bin_flux_data = l2_dataset["flux"].data
+    bin_psd_data = l2_dataset["phase_space_density"].data
+
+    np.testing.assert_allclose(bin_flux_data, bin_flux_val, rtol=1e-6)
+    np.testing.assert_allclose(bin_psd_data, bin_psd_val, rtol=1e-6)
+
+
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+@pytest.mark.usefixtures("use_fake_spin_data_for_time")
+def test_swe_l2_14_6sec(
+    mock_get_file_paths,
+    use_fake_spin_data_for_time,
+    l2_binned_flux_14sec_validation_df,
+    l2_binned_psd_14sec_validation_df,
+):
+    """Test L2 processing with 14.6 seconds spin period."""
+    data_start_time = 453051293.0
+    data_end_time = 453070000.0
+    use_fake_spin_data_for_time(data_start_time, data_end_time, spin_period=14.6)
+
+    test_data_path = "tests/swe/l0_data/2024051010_SWE_SCIENCE_packet.bin"
+    l1a_datasets = swe_l1a(imap_module_directory / test_data_path)
+    l1a_ds = l1a_datasets[0]
+    l1a_ds.attrs["Data_version"] = "000"
+    l1a_cdf_filepath = write_cdf(l1a_ds)
+    assert l1a_cdf_filepath.name == "imap_swe_l1a_sci_20240510_v000.cdf"
+
+    def get_file_paths_side_effect(descriptor):
+        if descriptor == "sci":
+            return [l1a_cdf_filepath]
+        elif descriptor == "l1b-in-flight-cal":
+            return [
+                imap_module_directory
+                / "tests/swe/lut/imap_swe_l1b-in-flight-cal_20240510_20260716_v000.csv"
+            ]
+        elif descriptor == "eu-conversion":
+            return [
+                imap_module_directory
+                / "tests/swe/lut/imap_swe_eu-conversion_20240510_v000.csv"
+            ]
+        elif descriptor == "esa-lut":
+            return [
+                imap_module_directory
+                / "tests/swe/lut/imap_swe_esa-lut_20250301_v000.csv"
+            ]
+        elif descriptor == "raw":
+            return []
+        else:
+            raise ValueError(f"Unknown descriptor: {descriptor}")
+
+    mock_get_file_paths.side_effect = get_file_paths_side_effect
+    science_input = ScienceInput(l1a_cdf_filepath.name)
+    inflight_anc = AncillaryInput(
+        "imap_swe_l1b-in-flight-cal_20240510_20260716_v000.csv"
+    )
+    eu_anc = AncillaryInput("imap_swe_eu-conversion_20240510_v000.csv")
+    dependencies = ProcessingInputCollection(science_input, inflight_anc, eu_anc)
+    l1b_dataset = swe_l1b(dependencies)[0]
+    l1b_dataset.attrs["Data_version"] = "000"
+    l2_dataset = swe_l2(l1b_dataset)
+
+    # Write L2 to CDF
+    l2_dataset.attrs["Data_version"] = "002"
+    l2_cdf_filepath = write_cdf(l2_dataset)
+    assert l2_cdf_filepath.name == "imap_swe_l2_sci_20240510_v002.cdf"
+
+    # --------14.6 sec spin period validation--------
+    bin_flux_val = l2_binned_flux_14sec_validation_df.values[:, 1:].reshape(
+        6, 24, 30, 7
+    )
+    bin_flux_data = l2_dataset["flux"].data
+
+    bin_psd_val = l2_binned_psd_14sec_validation_df.values[:, 1:].reshape(6, 24, 30, 7)
+    bin_psd_data = l2_dataset["phase_space_density"].data
+
+    # Since L2 processed data stores nan in bins where there is no data
+    # but validation data stores 0.0 in those same bins,
+    # we need to find non-nan data to compare.
+    nan_mask = ~np.isnan(bin_flux_data)
+    non_nan_data = bin_flux_data[nan_mask]
+    non_nan_val = bin_flux_val[nan_mask]
+    np.testing.assert_allclose(non_nan_data, non_nan_val, rtol=1e-6)
+
+    # Test that binned PSD data matches validation data
+    nan_mask = ~np.isnan(bin_psd_data)
+    non_nan_data = bin_psd_data[nan_mask]
+    non_nan_val = bin_psd_val[nan_mask]
+    np.testing.assert_allclose(non_nan_data, non_nan_val, rtol=1e-6)

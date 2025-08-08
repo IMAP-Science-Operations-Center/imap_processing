@@ -12,6 +12,8 @@ from imap_processing.ultra.l1b.ultra_l1b_annotated import (
 )
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     StopType,
+    determine_ebin_pulse_height,
+    determine_ebin_ssd,
     determine_species,
     get_coincidence_positions,
     get_ctof,
@@ -30,6 +32,8 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_spin_number,
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
+    is_back_tof_valid,
+    is_coin_ph_valid,
 )
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
@@ -114,6 +118,7 @@ def calculate_de(
     ctof = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     magnitude_v = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     energy = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    e_bin = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
     species_bin = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
     t2 = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     event_times = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
@@ -132,6 +137,7 @@ def calculate_de(
         de_dataset["start_type"].data[valid_indices],
         de_dataset["start_pos_tdc"].data[valid_indices],
         f"ultra{sensor}",
+        ancillary_files,
     )
     start_type[valid_indices] = de_dataset["start_type"].data[valid_indices]
 
@@ -145,18 +151,24 @@ def calculate_de(
     )
 
     # Pulse height
-    tof[ph_indices], t2[ph_indices], xb[ph_indices], yb[ph_indices] = (
-        get_ph_tof_and_back_positions(de_dataset, xf, f"ultra{sensor}")
+    ph_result = get_ph_tof_and_back_positions(
+        de_dataset, xf, f"ultra{sensor}", ancillary_files
     )
+    tof[ph_indices] = ph_result.tof
+    t2[ph_indices] = ph_result.t2
+    xb[ph_indices] = ph_result.xb
+    yb[ph_indices] = ph_result.yb
     d[ph_indices], yf[ph_indices] = get_front_y_position(
-        de_dataset["start_type"].data[ph_indices], yb[ph_indices]
+        de_dataset["start_type"].data[ph_indices], yb[ph_indices], ancillary_files
     )
-    energy[ph_indices] = get_energy_pulse_height(
+    energy[ph_indices], _ = get_energy_pulse_height(
         de_dataset["stop_type"].data[ph_indices],
         de_dataset["energy_ph"].data[ph_indices],
         xb[ph_indices],
         yb[ph_indices],
         f"ultra{sensor}",
+        ancillary_files,
+        quality_flags[ph_indices],
     )
     r[ph_indices] = get_path_length(
         (xf[ph_indices], yf[ph_indices]),
@@ -170,24 +182,48 @@ def calculate_de(
     )
     species_bin[ph_indices] = determine_species(tof[ph_indices], r[ph_indices], "PH")
     etof[ph_indices], xc[ph_indices] = get_coincidence_positions(
-        de_dataset.isel(epoch=ph_indices), t2[ph_indices], f"ultra{sensor}"
+        de_dataset.isel(epoch=ph_indices),
+        t2[ph_indices],
+        f"ultra{sensor}",
+        ancillary_files,
+    )
+    backtofvalid = is_back_tof_valid(
+        de_dataset,
+        xf,
+        f"ultra{sensor}",
+        ancillary_files,
+    )
+    coinphvalid = is_coin_ph_valid(
+        etof[ph_indices],
+        xc[ph_indices],
+        xb[ph_indices],
+        f"ultra{sensor}",
+        ancillary_files,
+    )
+    e_bin[ph_indices] = determine_ebin_pulse_height(
+        energy[ph_indices],
+        tof[ph_indices],
+        r[ph_indices],
+        backtofvalid,
+        coinphvalid,
+        ancillary_files,
     )
     ctof[ph_indices], magnitude_v[ph_indices] = get_ctof(
         tof[ph_indices], r[ph_indices], "PH"
     )
 
     # SSD
-    tof[ssd_indices] = get_ssd_tof(de_dataset, xf, f"ultra{sensor}")
+    tof[ssd_indices] = get_ssd_tof(de_dataset, xf, f"ultra{sensor}", ancillary_files)
     yb[ssd_indices], _, ssd_number = get_ssd_back_position_and_tof_offset(
-        de_dataset, f"ultra{sensor}"
+        de_dataset, f"ultra{sensor}", ancillary_files
     )
     xc[ssd_indices] = np.zeros(len(ssd_indices))
     xb[ssd_indices] = np.zeros(len(ssd_indices))
     etof[ssd_indices] = np.zeros(len(ssd_indices))
     d[ssd_indices], yf[ssd_indices] = get_front_y_position(
-        de_dataset["start_type"].data[ssd_indices], yb[ssd_indices]
+        de_dataset["start_type"].data[ssd_indices], yb[ssd_indices], ancillary_files
     )
-    energy[ssd_indices] = get_energy_ssd(de_dataset, ssd_number)
+    energy[ssd_indices] = get_energy_ssd(de_dataset, ssd_number, ancillary_files)
     r[ssd_indices] = get_path_length(
         (xf[ssd_indices], yf[ssd_indices]),
         (xb[ssd_indices], yb[ssd_indices]),
@@ -197,6 +233,13 @@ def calculate_de(
         (xf[ssd_indices], yf[ssd_indices]),
         (xb[ssd_indices], yb[ssd_indices]),
         d[ssd_indices],
+    )
+    e_bin[ssd_indices] = determine_ebin_ssd(
+        energy[ssd_indices],
+        tof[ssd_indices],
+        r[ssd_indices],
+        f"ultra{sensor}",
+        ancillary_files,
     )
     species_bin[ssd_indices] = determine_species(
         tof[ssd_indices], r[ssd_indices], "SSD"
@@ -234,6 +277,7 @@ def calculate_de(
 
     de_dict["tof_energy"] = get_de_energy_kev(v, species_bin)
     de_dict["energy"] = energy
+    de_dict["ebin"] = e_bin
     de_dict["species"] = species_bin
 
     # Annotated Events.
@@ -267,6 +311,7 @@ def calculate_de(
         de_dict["tof_energy"],
         de_dict["phi"],
         de_dict["theta"],
+        ancillary_files,
     )
     de_dict["event_efficiency"] = get_efficiency(
         de_dict["tof_energy"], de_dict["phi"], de_dict["theta"], ancillary_files

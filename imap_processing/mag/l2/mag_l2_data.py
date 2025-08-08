@@ -8,6 +8,7 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.mag.constants import FILLVAL, DataMode
+from imap_processing.mag.l1b.mag_l1b import calibrate_vector
 from imap_processing.spice.geometry import SpiceFrame, frame_transform
 from imap_processing.spice.time import (
     et_to_ttj2000ns,
@@ -24,20 +25,23 @@ class ValidFrames(Enum):
     # TODO: include RTN and GSE as valid frames
 
 
-@dataclass
-class MagL2:
+@dataclass(kw_only=True)
+class MagL2L1dBase:
     """
-    Dataclass for MAG L2 data.
+    Base class for MAG L2 and L1D data.
 
-    Since L2 and L1D should have the same structure, this can be used for either level.
+    Since these two data levels output identical files, and share some methods, this
+    superclass captures the tools in common, while allowing each subclass to define
+    individual attributes and algorithms.
 
-    Some of the methods are also static, so they can be used in i-ALiRT processing.
+    May also be extended for I-ALiRT.
 
     Attributes
     ----------
     vectors: np.ndarray
         Magnetic field vectors of size (n, 3) where n is the number of vectors.
-        Describes (x, y, z) components of the magnetic field.
+        Describes (x, y, z) components of the magnetic field. This field is the output
+        vectors, which are nominally from the MAGo sensor.
     epoch: np.ndarray
         Time of each vector in J2000 seconds. Should be of length n.
     range: np.ndarray
@@ -49,10 +53,8 @@ class MagL2:
     quality_bitmask: np.ndarray
         Quality bitmask for each vector. Should be of length n. Copied from offset
         file in L2, marked as good always in L1D.
-    magnitude: np.ndarray
-        Magnitude of each vector. Should be of length n. Calculated from L2 vectors.
-    is_l1d: bool
-        Flag to indicate if the data is L1D. Defaults to False.
+    frame:
+        The reference frame of the input vectors. Starts as the MAG instrument frame.
     """
 
     vectors: np.ndarray
@@ -63,113 +65,7 @@ class MagL2:
     quality_bitmask: np.ndarray
     data_mode: DataMode
     magnitude: np.ndarray = field(init=False)
-    is_l1d: bool = False
-    offsets: InitVar[np.ndarray] = None
-    timedelta: InitVar[np.ndarray] = None
     frame: ValidFrames = ValidFrames.MAG
-
-    def __post_init__(self, offsets: np.ndarray, timedelta: np.ndarray) -> None:
-        """
-        Calculate the magnitude of the vectors after initialization.
-
-        Parameters
-        ----------
-        offsets : np.ndarray
-            Offsets to apply to the vectors. Should be of shape (n, 3) where n is the
-            number of vectors.
-        timedelta : np.ndarray
-            Time deltas to shift the timestamps by. Should be of length n.
-            Given in seconds.
-        """
-        if offsets is not None:
-            self.vectors = self.apply_offsets(self.vectors, offsets)
-        if timedelta is not None:
-            self.epoch = self.shift_timestamps(self.epoch, timedelta)
-
-        self.magnitude = self.calculate_magnitude(self.vectors)
-
-    @staticmethod
-    def calculate_magnitude(
-        vectors: np.ndarray,
-    ) -> np.ndarray:
-        """
-        Given a list of vectors (x, y, z), calculate the magnitude of each vector.
-
-        For an input list of vectors of size (n, 3) returns a list of magnitudes of
-        size (n,).
-
-        Parameters
-        ----------
-        vectors : np.ndarray
-            Array of vectors to calculate the magnitude of.
-
-        Returns
-        -------
-        np.ndarray
-            Array of magnitudes of the input vectors.
-        """
-        return np.linalg.norm(vectors, axis=1)
-
-    @staticmethod
-    def apply_offsets(vectors: np.ndarray, offsets: np.ndarray) -> np.ndarray:
-        """
-        Apply the offsets to the vectors by adding them together.
-
-        These offsets are used to shift the vectors in the x, y, and z directions.
-        They can either be provided through a custom offsets datafile, or calculated
-        using a gradiometry algorithm.
-
-        Parameters
-        ----------
-        vectors : np.ndarray
-            Array of vectors to apply the offsets to. Should be of shape (n, 3) where n
-            is the number of vectors.
-        offsets : np.ndarray
-            Array of offsets to apply to the vectors. Should be of shape (n, 3) where n
-            is the number of vectors.
-
-        Returns
-        -------
-        np.ndarray
-            Array of vectors with offsets applied. Should be of shape (n, 3).
-        """
-        if vectors.shape[0] != offsets.shape[0]:
-            raise ValueError("Vectors and offsets must have the same length.")
-
-        offset_vectors: np.ndarray = vectors[:, :3] + offsets
-
-        # Any values where offsets is FILLVAL must also be FILLVAL
-        offset_vectors[(offsets == FILLVAL).any(axis=1), :] = FILLVAL
-        return offset_vectors
-
-    @staticmethod
-    def shift_timestamps(epoch: np.ndarray, timedelta: np.ndarray) -> np.ndarray:
-        """
-        Shift the timestamps by the given timedelta.
-
-        If timedelta is positive, the epochs are shifted forward in time.
-
-        Parameters
-        ----------
-        epoch : np.ndarray
-            Array of timestamps to shift. Should be of length n.
-        timedelta : np.ndarray
-            Array of time deltas to shift the timestamps by. Should be the same length
-            as epoch. Given in seconds.
-
-        Returns
-        -------
-        np.ndarray
-            Shifted timestamps.
-        """
-        if epoch.shape[0] != timedelta.shape[0]:
-            raise ValueError(
-                "Input Epoch and offsets timedeltas must be the same length."
-            )
-
-        timedelta_ns = timedelta * 1e9
-        shifted_timestamps = epoch + timedelta_ns
-        return shifted_timestamps
 
     def generate_dataset(
         self,
@@ -304,12 +200,96 @@ class MagL2:
 
         day_start_index = np.searchsorted(self.epoch, start_timestamp_j2000)
         day_end_index = np.searchsorted(self.epoch, end_timestamp_j2000)
+
         self.epoch = self.epoch[day_start_index:day_end_index]
         self.vectors = self.vectors[day_start_index:day_end_index, :]
         self.range = self.range[day_start_index:day_end_index]
         self.magnitude = self.magnitude[day_start_index:day_end_index]
         self.quality_flags = self.quality_flags[day_start_index:day_end_index]
         self.quality_bitmask = self.quality_bitmask[day_start_index:day_end_index]
+
+    @staticmethod
+    def calculate_magnitude(
+        vectors: np.ndarray,
+    ) -> np.ndarray:
+        """
+        Given a list of vectors (x, y, z), calculate the magnitude of each vector.
+
+        For an input list of vectors of size (n, 3) returns a list of magnitudes of
+        size (n,).
+
+        Parameters
+        ----------
+        vectors : np.ndarray
+            Array of vectors to calculate the magnitude of.
+
+        Returns
+        -------
+        np.ndarray
+            Array of magnitudes of the input vectors.
+        """
+        return np.linalg.norm(vectors, axis=1)
+
+    @staticmethod
+    def apply_calibration(
+        vectors: np.ndarray, calibration_matrix: np.ndarray
+    ) -> np.ndarray:
+        """
+        Apply the calibration matrix to the vectors.
+
+        This works by repeatedly calling the function calibrate_vector on the vectors
+        input.
+
+        Parameters
+        ----------
+        vectors : np.ndarray
+            Array of vectors to apply the calibration to, including x,y,z and range.
+            Should be of shape (n, 4) where n is the number of vectors.
+        calibration_matrix : np.ndarray
+            Calibration matrix to apply to the vectors. Should be of shape (3, 3, 4).
+
+        Returns
+        -------
+        np.ndarray
+            Array of calibrated vectors. Should be of shape (n, 4).
+        """
+        calibrated_vectors = np.apply_along_axis(
+            func1d=calibrate_vector,
+            axis=1,
+            arr=vectors,
+            calibration_matrix=calibration_matrix,
+        )
+
+        return calibrated_vectors
+
+    @staticmethod
+    def shift_timestamps(epoch: np.ndarray, timedelta: np.ndarray) -> np.ndarray:
+        """
+        Shift the timestamps by the given timedelta.
+
+        If timedelta is positive, the epochs are shifted forward in time.
+
+        Parameters
+        ----------
+        epoch : np.ndarray
+            Array of timestamps to shift. Should be of length n.
+        timedelta : np.ndarray
+            Array of time deltas to shift the timestamps by. Should be the same length
+            as epoch. Given in seconds.
+
+        Returns
+        -------
+        np.ndarray
+            Shifted timestamps.
+        """
+        if epoch.shape[0] != timedelta.shape[0]:
+            raise ValueError(
+                "Input Epoch and offsets timedeltas must be the same length."
+            )
+
+        timedelta_ns = timedelta * 1e9
+        shifted_timestamps = epoch + timedelta_ns
+        return shifted_timestamps
 
     def rotate_frame(self, end_frame: ValidFrames) -> None:
         """
@@ -328,3 +308,69 @@ class MagL2:
             to_frame=end_frame.value,
         )
         self.frame = end_frame
+
+
+@dataclass(kw_only=True)
+class MagL2(MagL2L1dBase):
+    """
+    Dataclass for MAG L2 data.
+
+    Since L2 and L1D should have the same structure, this can be used for either level.
+
+    Some of the methods are also static, so they can be used in i-ALiRT processing.
+    """
+
+    offsets: InitVar[np.ndarray] = None
+    timedelta: InitVar[np.ndarray] = None
+
+    def __post_init__(self, offsets: np.ndarray, timedelta: np.ndarray) -> None:
+        """
+        Calculate the magnitude of the vectors after initialization.
+
+        Parameters
+        ----------
+        offsets : np.ndarray
+            Offsets to apply to the vectors. Should be of shape (n, 3) where n is the
+            number of vectors.
+        timedelta : np.ndarray
+            Time deltas to shift the timestamps by. Should be of length n.
+            Given in seconds.
+        """
+        if offsets is not None:
+            self.vectors = self.apply_offsets(self.vectors, offsets)
+        if timedelta is not None:
+            self.epoch = self.shift_timestamps(self.epoch, timedelta)
+
+        self.magnitude = self.calculate_magnitude(self.vectors)
+
+    @staticmethod
+    def apply_offsets(vectors: np.ndarray, offsets: np.ndarray) -> np.ndarray:
+        """
+        Apply the offsets to the vectors by adding them together.
+
+        These offsets are used to shift the vectors in the x, y, and z directions.
+        They can either be provided through a custom offsets datafile, or calculated
+        using a gradiometry algorithm.
+
+        Parameters
+        ----------
+        vectors : np.ndarray
+            Array of vectors to apply the offsets to. Should be of shape (n, 3) where n
+            is the number of vectors.
+        offsets : np.ndarray
+            Array of offsets to apply to the vectors. Should be of shape (n, 3) where n
+            is the number of vectors.
+
+        Returns
+        -------
+        np.ndarray
+            Array of vectors with offsets applied. Should be of shape (n, 3).
+        """
+        if vectors.shape[0] != offsets.shape[0]:
+            raise ValueError("Vectors and offsets must have the same length.")
+
+        offset_vectors: np.ndarray = vectors + offsets
+
+        # Any values where offsets is FILLVAL must also be FILLVAL
+        offset_vectors[(offsets == FILLVAL).any(axis=1), :] = FILLVAL
+        return offset_vectors

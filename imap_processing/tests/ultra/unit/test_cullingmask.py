@@ -41,7 +41,7 @@ def test_calculate_cullingmask_attitude():
 
     result_ds = calculate_cullingmask(ds, name="imap_ultra_l1b_45sensor-cullingmask")
 
-    np.testing.assert_array_equal(result_ds["spin_number"].values, np.array([0]))
+    np.testing.assert_array_equal(result_ds["spin_number"].values, np.array([0, 1]))
 
 
 def test_calculate_cullingmask_rates():
@@ -60,8 +60,8 @@ def test_calculate_cullingmask_rates():
         dtype=np.uint16,
     )
 
-    quality_ena_rates[0, 2] |= ImapRatesUltraFlags.HIGHRATES.value
-    quality_ena_rates[0, 3] |= ImapRatesUltraFlags.HIGHRATES.value
+    quality_ena_rates[0, 0] |= ImapRatesUltraFlags.FIRSTSPIN.value
+    quality_ena_rates[0, 3] |= ImapRatesUltraFlags.LASTSPIN.value
 
     ds = xr.Dataset(
         {
@@ -81,7 +81,7 @@ def test_calculate_cullingmask_rates():
 
     result_ds = calculate_cullingmask(ds, name="imap_ultra_l1b_45sensor-cullingmask")
 
-    expected_spins = np.array([0, 1])
+    expected_spins = np.array([1, 2])
     np.testing.assert_array_equal(result_ds["spin_number"].values, expected_spins)
 
 
@@ -98,7 +98,7 @@ def test_calculate_cullingmask_empty():
 
     quality_ena_rates = np.full(
         (len(energy_bins), len(spin_numbers)),
-        ImapRatesUltraFlags.HIGHRATES.value,
+        ImapRatesUltraFlags.FIRSTSPIN.value,
         dtype=np.uint16,
     )
 

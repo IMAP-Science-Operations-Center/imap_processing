@@ -110,6 +110,21 @@ def mag_test_l2_data(mocks):
     return calibration_data, offsets_data
 
 
+@pytest.fixture
+def mag_test_l1d_data(mocks):
+    imap_dir = Path(__file__).parent
+    cal_path = (
+        imap_dir
+        / "validation"
+        / "calibration"
+        / "imap_mag_l1d-calibration_20000101_v003.cdf"
+    )
+    mocks["construct_path"].return_value = cal_path
+    calibration_data = MagAncillaryCombiner([cal_path], "20000101").combined_dataset
+
+    return calibration_data
+
+
 def mag_generate_l1b_from_csv(df, logical_source):
     length = len(df.index)
     dataset = mag_l1a_dataset_generator(length)
@@ -149,3 +164,18 @@ def generate_test_epoch(
     )
 
     return output
+
+
+@pytest.fixture
+def norm_dataset(mag_test_l2_data):
+    offsets = mag_test_l2_data[1]
+    dataset = mag_l1a_dataset_generator(3504)
+    epoch_vals = offsets["epoch"].data
+    vectors_per_second_attr = "0:2,4000000000:4"
+    dataset.attrs["vectors_per_second"] = vectors_per_second_attr
+    dataset["epoch"] = epoch_vals
+    dataset.attrs["Logical_source"] = "imap_mag_l1c_norm-mago"
+    vectors = np.array([[i, i, i, 2] for i in range(1, 3505)])
+    dataset["vectors"].data = vectors
+
+    return dataset

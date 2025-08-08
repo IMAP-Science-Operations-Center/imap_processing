@@ -17,8 +17,16 @@ component:
   VAR_TYPE: metadata
   UNITS: " "
 
+RTN_component:
+  CATDESC: Component direction (radial, tangential, normal)
+  FIELDNAM: RTN_component
+  LABLAXIS: RTN_component
+  FORMAT: A3
+  VAR_TYPE: metadata
+  UNITS: " "
+
 esa_step:
-  CATDESC: ESA step number
+  CATDESC: ESA step number. The nominal central energies for the 8 i-ALiRT channels are 100.4, 140, 194, 270, 376, 523, 727, and 1011 eV.
   FIELDNAM: esa_step
   LABLAXIS: esa_step
   FORMAT: I2
@@ -27,30 +35,30 @@ esa_step:
   VAR_TYPE: metadata
   UNITS: " "
 
-energy_ranges:
+codice_hi_h_energy_ranges:
     CATDESC: CoDICE-Hi energy ranges
-    FIELDNAM: energy_ranges
-    LABLAXIS: energy_ranges
+    FIELDNAM: codice_hi_h_energy_ranges
+    LABLAXIS: codice_hi_h_energy_ranges
     FORMAT: I3
     VALIDMIN: 0
     VALIDMAX: 14
     VAR_TYPE: metadata
     UNITS: " "
 
-azimuth:
-    CATDESC: CoDICE-Hi azimuth
-    FIELDNAM: azimuth
-    LABLAXIS: azimuth
+codice_hi_h_elevation:
+    CATDESC: CoDICE-Hi elevation
+    FIELDNAM: codice_hi_h_elevation
+    LABLAXIS: codice_hi_h_elevation
     FORMAT: I3
     VALIDMIN: 0
     VALIDMAX: 4
     VAR_TYPE: metadata
     UNITS: " "
 
-spin_angle_bin:
-    CATDESC: CoDICE-Hi spin_angle_bin
-    FIELDNAM: spin_angle_bin
-    LABLAXIS: spin_angle_bin
+codice_hi_h_spin_angle:
+    CATDESC: CoDICE-Hi spin_angle
+    FIELDNAM: codice_hi_h_spin_angle
+    LABLAXIS: codice_hi_h_spin_angle
     FORMAT: I3
     VALIDMIN: 0
     VALIDMAX: 4
@@ -113,7 +121,7 @@ default_float64_attrs: &default_float64
   VALIDMAX: 1.7976931348623157e+308
   dtype: float64
 
-codicehi_h:
+codice_hi_h:
   <<: *default_float32
   CATDESC: H intensities in 15 energy ranges and binned into 4 azimuths and 4 spin angle bins
   FIELDNAM: H intensities
@@ -121,11 +129,11 @@ codicehi_h:
   UNITS: "# / cm2-sr-s- MeV"
   VALIDMIN: 0
   VALIDMAX: 100000000.0
-  DEPEND_1: energy_ranges
-  DEPEND_2: azimuth
-  DEPEND_3: spin_angle_bin
+  DEPEND_1: codice_hi_h_energy_ranges
+  DEPEND_2: codice_hi_h_elevation
+  DEPEND_3: codice_hi_h_spin_angle
 
-codicelo_c_over_o_abundance:
+codice_lo_c_over_o_abundance:
   <<: *default_float32
   CATDESC: C/O abundance ratio
   FIELDNAM: C/O
@@ -134,7 +142,7 @@ codicelo_c_over_o_abundance:
   VALIDMIN: 0
   VALIDMAX: 100000000.0
 
-codicelo_mg_over_o_abundance:
+codice_lo_mg_over_o_abundance:
   <<: *default_float32
   CATDESC: Mg/O abundance ratio
   FIELDNAM: Mg/O
@@ -143,7 +151,7 @@ codicelo_mg_over_o_abundance:
   VALIDMIN: 0
   VALIDMAX: 100000000.0
 
-codicelo_fe_over_o_abundance:
+codice_lo_fe_over_o_abundance:
   <<: *default_float32
   CATDESC: Fe/O abundance ratio
   FIELDNAM: Fe/O
@@ -152,7 +160,7 @@ codicelo_fe_over_o_abundance:
   VALIDMIN: 0
   VALIDMAX: 100000000.0
 
-codicelo_c_plus_6_over_c_plus_5_ratio:
+codice_lo_c_plus_6_over_c_plus_5_ratio:
   <<: *default_float32
   CATDESC: C+6/C+5 charge state ratio
   FIELDNAM: C+6/C+5
@@ -161,7 +169,7 @@ codicelo_c_plus_6_over_c_plus_5_ratio:
   VALIDMIN: 0
   VALIDMAX: 100000000.0
 
-codicelo_o_plus_7_over_o_plus_6_ratio:
+codice_lo_o_plus_7_over_o_plus_6_ratio:
   <<: *default_float32
   CATDESC: O+7/O+6 charge state ratio
   FIELDNAM: O+7/O+6
@@ -170,7 +178,7 @@ codicelo_o_plus_7_over_o_plus_6_ratio:
   VALIDMIN: 0
   VALIDMAX: 100000000.0
 
-codicelo_fe_low_over_fe_high_ratio:
+codice_lo_fe_low_over_fe_high_ratio:
   <<: *default_float32
   CATDESC: Fe low/Fe high charge state ratio
   FIELDNAM: Fe low/Fe high
@@ -256,43 +264,89 @@ hit_he_omni_high_en:
   LABLAXIS: hit_he_omni_high_en
   UNITS: counts
 
-mag_4s_b_gse:
+mag_epoch:
+  <<: *default_float32
+  CATDESC: MAG instrument epoch
+  FIELDNAM: mag_epoch
+  LABLAXIS: mag_epoch
+  UNITS: ns
+  VALIDMIN: 0.0
+  VALIDMAX: 9223372036854775807
+
+mag_B_GSE:
   <<: *default_float32
   CATDESC: Magnetic field vector in GSE coordinates
-  FIELDNAM: mag_4s_b_gse
-  LABLAXIS: mag_4s_b_gse
+  FIELDNAM: mag_B_GSE
+  LABL_PTR_1: component
   UNITS: nT
   DEPEND_1: component
+  VALIDMIN: -65000
+  VALIDMAX: 65000
 
-mag_4s_b_gsm:
+mag_B_GSM:
   <<: *default_float32
   CATDESC: Magnetic field vector in GSM coordinates
-  FIELDNAM: mag_4s_b_gsm
-  LABLAXIS: mag_4s_b_gsm
+  FIELDNAM: mag_B_GSM
+  LABL_PTR_1: component
   UNITS: nT
   DEPEND_1: component
+  VALIDMIN: -65000
+  VALIDMAX: 65000
 
-mag_4s_b_rtn:
+mag_B_RTN:
   <<: *default_float32
   CATDESC: Magnetic field vector in RTN coordinates
-  FIELDNAM: mag_4s_b_rtn
-  LABLAXIS: mag_4s_b_rtn
+  FIELDNAM: mag_B_RTN
+  LABL_PTR_1: RTN_component
   UNITS: nT
-  DEPEND_1: component
+  DEPEND_1: RTN_component
+  VALIDMIN: -65000
+  VALIDMAX: 65000
 
-mag_phi_4s_b_gsm:
+mag_B_magnitude:
+  <<: *default_float32
+  CATDESC: Magnitude of the magnetic field vector
+  FIELDNAM: mag_B_magnitude
+  LABLAXIS: "|B|"
+  UNITS: nT
+  VALIDMIN: 0
+  VALIDMAX: 65000
+
+mag_phi_B_GSM:
   <<: *default_float32
   CATDESC: Azimuth angle (φ) of the magnetic field in GSM coordinates
-  FIELDNAM: mag_phi_4s_b_gsm
-  LABLAXIS: mag_phi_4s_b_gsm
+  FIELDNAM: mag_phi_B_GSM
+  LABLAXIS: mag_phi_B_GSM
   UNITS: degrees
+  VALIDMIN: 0
+  VALIDMAX: 360
 
-mag_theta_4s_b_gsm:
+mag_theta_B_GSM:
   <<: *default_float32
   CATDESC: Elevation angle (θ) of the magnetic field in GSM coordinates
-  FIELDNAM: mag_theta_4s_b_gsm
-  LABLAXIS: mag_theta_4s_b_gsm
+  FIELDNAM: mag_theta_B_GSM
+  LABLAXIS: mag_theta_B_GSM
   UNITS: degrees
+  VALIDMIN: -90
+  VALIDMAX: 90
+
+mag_phi_B_GSE:
+  <<: *default_float32
+  CATDESC: Azimuth angle (φ) of the magnetic field in GSE coordinates
+  FIELDNAM: mag_phi_B_GSE
+  LABLAXIS: mag_phi_B_GSE
+  UNITS: degrees
+  VALIDMIN: 0
+  VALIDMAX: 360
+
+mag_theta_B_GSE:
+  <<: *default_float32
+  CATDESC: Elevation angle (θ) of the magnetic field in GSE coordinates
+  FIELDNAM: mag_theta_B_GSE
+  LABLAXIS: mag_theta_B_GSE
+  UNITS: degrees
+  VALIDMIN: -90
+  VALIDMAX: 90
 
 swapi_pseudo_proton_density:
   <<: *default_float32
@@ -321,23 +375,12 @@ swapi_pseudo_proton_temperature:
   VALIDMIN: 0.0
   VALIDMAX: 50000000.0
 
-# SWE Normalized Counts, First Half Cycle
-swe_normalized_counts_half_1:
+# SWE Normalized Counts
+swe_normalized_counts:
   <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 1, ESA step 0)
-  FIELDNAM: swe_normalized_counts_half_1
-  LABLAXIS: swe_norm_cts_q1_esa0
-  UNITS: Normalized counts
-  VALIDMIN: 0
-  VALIDMAX: 500000
-  DEPEND_1: esa_step
-
-# SWE Normalized Counts, Second Half Cycle
-swe_normalized_counts_half_2:
-  <<: *default_uint32
-  CATDESC: Normalized electron counts (Half Cycle 2, ESA step 0)
-  FIELDNAM: swe_normalized_counts_half_2
-  LABLAXIS: swe_norm_cts_q2_esa0
+  CATDESC: Normalized electron counts
+  FIELDNAM: swe_normalized_counts
+  LABLAXIS: swe_normalized_counts
   UNITS: Normalized counts
   VALIDMIN: 0
   VALIDMAX: 500000

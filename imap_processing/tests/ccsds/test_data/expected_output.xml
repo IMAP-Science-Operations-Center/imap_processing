@@ -48,7 +48,7 @@
 					<xtce:SizeInBits>
 						<xtce:DynamicValue>
 							<xtce:ParameterInstanceRef parameterRef="PKT_LEN" />
-							<xtce:LinearAdjustment slope="8" intercept="-79" />
+							<xtce:LinearAdjustment slope="8" intercept="-111" />
 						</xtce:DynamicValue>
 					</xtce:SizeInBits>
 				</xtce:BinaryDataEncoding>
@@ -102,6 +102,15 @@
 					</xtce:ContextCalibratorList>
 				</xtce:IntegerDataEncoding>
 			</xtce:IntegerParameterType>
+			<xtce:StringParameterType name="TEST_PACKET.VAR_STRING">
+				<xtce:StringDataEncoding>
+					<xtce:SizeInBits>
+						<xtce:Fixed>
+							<xtce:FixedValue>32</xtce:FixedValue>
+						</xtce:Fixed>
+					</xtce:SizeInBits>
+				</xtce:StringDataEncoding>
+			</xtce:StringParameterType>
 			<xtce:IntegerParameterType name="TEST_PACKET2.SHCOARSE" signed="false">
 				<xtce:IntegerDataEncoding sizeInBits="32" encoding="unsigned" />
 			</xtce:IntegerParameterType>
@@ -158,6 +167,9 @@
 			<xtce:Parameter name="TEST_PACKET.VAR_SEGMENTED" parameterTypeRef="TEST_PACKET.VAR_SEGMENTED">
 				<xtce:LongDescription>Segmented polynomial conversion</xtce:LongDescription>
 			</xtce:Parameter>
+			<xtce:Parameter name="TEST_PACKET.VAR_STRING" parameterTypeRef="TEST_PACKET.VAR_STRING">
+				<xtce:LongDescription>String data type</xtce:LongDescription>
+			</xtce:Parameter>
 			<xtce:Parameter name="TEST_PACKET2.SHCOARSE" parameterTypeRef="TEST_PACKET2.SHCOARSE">
 				<xtce:LongDescription>Mission elapsed time</xtce:LongDescription>
 			</xtce:Parameter>
@@ -193,6 +205,7 @@
 					<xtce:ParameterRefEntry parameterRef="TEST_PACKET.VAR_FLOAT" />
 					<xtce:ParameterRefEntry parameterRef="TEST_PACKET.VAR_STATE" />
 					<xtce:ParameterRefEntry parameterRef="TEST_PACKET.VAR_SEGMENTED" />
+					<xtce:ParameterRefEntry parameterRef="TEST_PACKET.VAR_STRING" />
 				</xtce:EntryList>
 			</xtce:SequenceContainer>
 			<xtce:SequenceContainer name="TEST_PACKET2">

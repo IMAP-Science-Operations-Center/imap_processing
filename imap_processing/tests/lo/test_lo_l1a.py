@@ -15,10 +15,13 @@ def test_lo_l1a():
         "imap_lo_l1a_histogram",
         "imap_lo_l1a_de",
         "imap_lo_l1a_star",
+        "imap_lo_l1a_nhk",
+        "imap_lo_l1b_nhk",
     ]
     output_dataset = lo_l1a(dependency)
 
     # Assert
+    assert len(output_dataset) == len(expected_logical_source)
     for dataset, logical_source in zip(output_dataset, expected_logical_source):
         assert logical_source == dataset.attrs["Logical_source"]
 

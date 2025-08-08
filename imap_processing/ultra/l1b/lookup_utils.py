@@ -6,43 +6,10 @@ import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
 
-from imap_processing import imap_module_directory
 from imap_processing.quality_flags import ImapDEUltraFlags
 
-BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
 
-_YADJUST_DF = pd.read_csv(BASE_PATH / "yadjust.csv").set_index("dYLUT")
-_TDC_NORM_DF_ULTRA45 = pd.read_csv(
-    BASE_PATH / "ultra45_tdc_norm.csv", header=1, index_col="Index"
-)
-_TDC_NORM_DF_ULTRA90 = pd.read_csv(
-    BASE_PATH / "ultra90_tdc_norm.csv", header=1, index_col="Index"
-)
-_BACK_POS_DF_ULTRA45 = pd.read_csv(
-    BASE_PATH / "ultra45_back-pos-luts.csv", index_col="Index_offset"
-)
-_BACK_POS_DF_ULTRA90 = pd.read_csv(
-    BASE_PATH / "ultra90_back-pos-luts.csv", index_col="Index_offset"
-)
-_ENERGY_NORM_DF = pd.read_csv(BASE_PATH / "EgyNorm.mem.csv")
-_IMAGE_PARAMS_DF = {
-    "ultra45": pd.read_csv(BASE_PATH / "FM45_Startup1_ULTRA_IMGPARAMS_20240719.csv"),
-    "ultra90": pd.read_csv(BASE_PATH / "FM90_Startup1_ULTRA_IMGPARAMS_20240719.csv"),
-}
-
-_FWHM_TABLES = {
-    ("left", "ultra45"): pd.read_csv(BASE_PATH / "Angular_Profiles_FM45_LeftSlit.csv"),
-    ("right", "ultra45"): pd.read_csv(
-        BASE_PATH / "Angular_Profiles_FM45_RightSlit.csv"
-    ),
-    ("left", "ultra90"): pd.read_csv(BASE_PATH / "Angular_Profiles_FM90_LeftSlit.csv"),
-    ("right", "ultra90"): pd.read_csv(
-        BASE_PATH / "Angular_Profiles_FM90_RightSlit.csv"
-    ),
-}
-
-
-def get_y_adjust(dy_lut: np.ndarray) -> npt.NDArray:
+def get_y_adjust(dy_lut: np.ndarray, ancillary_files: dict) -> npt.NDArray:
     """
     Adjust the front yf position based on the particle's trajectory.
 
@@ -54,16 +21,21 @@ def get_y_adjust(dy_lut: np.ndarray) -> npt.NDArray:
     ----------
     dy_lut : np.ndarray
         Change in y direction used for the lookup table (mm).
+    ancillary_files : dict[Path]
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
     yadj : np.ndarray
         Y adjustment (mm).
     """
-    return _YADJUST_DF["dYAdj"].iloc[dy_lut].values
+    yadjust_df = pd.read_csv(ancillary_files["l1b-yadjust-lookup"]).set_index("dYLUT")
+    return yadjust_df["dYAdj"].iloc[dy_lut].values
 
 
-def get_norm(dn: xr.DataArray, key: str, file_label: str) -> npt.NDArray:
+def get_norm(
+    dn: xr.DataArray, key: str, file_label: str, ancillary_files: dict
+) -> npt.NDArray:
     """
     Correct mismatches between the stop Time to Digital Converters (TDCs).
 
@@ -84,6 +56,8 @@ def get_norm(dn: xr.DataArray, key: str, file_label: str) -> npt.NDArray:
         BtSpNNorm, BtSpSNorm, BtSpENorm, or BtSpWNorm.
     file_label : str
         Instrument (ultra45 or ultra90).
+    ancillary_files : dict[Path]
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
@@ -91,16 +65,22 @@ def get_norm(dn: xr.DataArray, key: str, file_label: str) -> npt.NDArray:
         Normalized DNs.
     """
     if file_label == "ultra45":
-        tdc_norm_df = _TDC_NORM_DF_ULTRA45
+        tdc_norm_df = pd.read_csv(
+            ancillary_files["l1b-45sensor-tdc-norm-lookup"], header=1, index_col="Index"
+        )
     else:
-        tdc_norm_df = _TDC_NORM_DF_ULTRA90
+        tdc_norm_df = pd.read_csv(
+            ancillary_files["l1b-90sensor-tdc-norm-lookup"], header=1, index_col="Index"
+        )
 
     dn_norm = tdc_norm_df[key].iloc[dn].values
 
     return dn_norm
 
 
-def get_back_position(back_index: np.ndarray, key: str, file_label: str) -> npt.NDArray:
+def get_back_position(
+    back_index: np.ndarray, key: str, file_label: str, ancillary_files: dict
+) -> npt.NDArray:
     """
     Convert normalized TDC values using lookup tables.
 
@@ -119,6 +99,8 @@ def get_back_position(back_index: np.ndarray, key: str, file_label: str) -> npt.
         XBkTp, YBkTp, XBkBt, or YBkBt.
     file_label : str
         Instrument (ultra45 or ultra90).
+    ancillary_files : dict[Path]
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
@@ -126,14 +108,20 @@ def get_back_position(back_index: np.ndarray, key: str, file_label: str) -> npt.
         Converted DNs to Units of hundredths of a millimeter.
     """
     if file_label == "ultra45":
-        back_pos_df = _BACK_POS_DF_ULTRA45
+        back_pos_df = pd.read_csv(
+            ancillary_files["l1b-45sensor-back-pos-lookup"], index_col="Index_offset"
+        )
     else:
-        back_pos_df = _BACK_POS_DF_ULTRA90
+        back_pos_df = pd.read_csv(
+            ancillary_files["l1b-90sensor-back-pos-lookup"], index_col="Index_offset"
+        )
 
     return back_pos_df[key].values[back_index]
 
 
-def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray) -> npt.NDArray:
+def get_energy_norm(
+    ssd: np.ndarray, composite_energy: np.ndarray, ancillary_files: dict
+) -> npt.NDArray:
     """
     Normalize composite energy per SSD using a lookup table.
 
@@ -148,6 +136,8 @@ def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray) -> npt.NDArra
         Acts as index 1.
     composite_energy : np.ndarray
         Acts as index 2.
+    ancillary_files : dict[Path]
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
@@ -155,11 +145,11 @@ def get_energy_norm(ssd: np.ndarray, composite_energy: np.ndarray) -> npt.NDArra
         Normalized composite energy.
     """
     row_number = ssd * 4096 + composite_energy
+    norm_lookup = pd.read_csv(ancillary_files["l1b-egynorm-lookup"])
+    return norm_lookup["NormEnergy"].iloc[row_number]
 
-    return _ENERGY_NORM_DF["NormEnergy"].iloc[row_number]
 
-
-def get_image_params(image: str, sensor: str) -> np.float64:
+def get_image_params(image: str, sensor: str, ancillary_files: dict) -> np.float64:
     """
     Lookup table for image parameters.
 
@@ -173,18 +163,26 @@ def get_image_params(image: str, sensor: str) -> np.float64:
         The column name to lookup in the CSV file, e.g., 'XFTLTOFF' or 'XFTRTOFF'.
     sensor : str
         Sensor name: "ultra45" or "ultra90".
+    ancillary_files : dict[Path]
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
     value : np.float64
         Image parameter value from the CSV file.
     """
-    lookup_table = _IMAGE_PARAMS_DF[sensor]
+    if sensor == "ultra45":
+        lookup_table = pd.read_csv(ancillary_files["l1b-45sensor-imgparams-lookup"])
+    else:
+        lookup_table = pd.read_csv(ancillary_files["l1b-90sensor-imgparams-lookup"])
+
     value: np.float64 = lookup_table[image].values[0]
     return value
 
 
-def get_angular_profiles(start_type: str, sensor: str) -> pd.DataFrame:
+def get_angular_profiles(
+    start_type: str, sensor: str, ancillary_files: dict
+) -> pd.DataFrame:
     """
     Lookup table for FWHM for theta and phi.
 
@@ -197,13 +195,16 @@ def get_angular_profiles(start_type: str, sensor: str) -> pd.DataFrame:
        Start Type: Left, Right.
     sensor : str
         Sensor name: "ultra45" or "ultra90".
+    ancillary_files : dict[Path]
+        Ancillary files.
 
     Returns
     -------
     lookup_table : DataFrame
         Angular profile lookup table for a given start_type and sensor.
     """
-    lookup_table = _FWHM_TABLES[(start_type.lower(), sensor)]
+    lut_descriptor = f"l1b-{sensor[-2:]}sensor-{start_type.lower()}slit-lookup"
+    lookup_table = pd.read_csv(ancillary_files[lut_descriptor])
 
     return lookup_table
 
@@ -280,10 +281,129 @@ def get_geometric_factor(
     # Fetch geometric factor values at nearest (phi, theta) pairs
     geometric_factor = gf_table[phi_idx, theta_idx]
 
-    # If the geometric factor is zero it means that the instrument is out of the FOV.
-    if filename == "l1b-sensor-gf-noblades":
-        quality_flag[geometric_factor == 0] |= ImapDEUltraFlags.NOBLADESFOV.value
-    if filename == "l1b-sensor-gf-blades":
-        quality_flag[geometric_factor == 0] |= ImapDEUltraFlags.BLADESFOV.value
+    phi_rad = np.deg2rad(phi)
+    numerator = 5.0 * np.cos(phi_rad)
+    denominator = 1 + 2.80 * np.cos(phi_rad)
+    # Equation 19 in the Ultra Algorithm Document.
+    theta_nom = np.arctan(numerator / denominator)
+    theta_nom = np.rad2deg(theta_nom)
+
+    outside_fov = np.abs(theta) > theta_nom
+    quality_flag[outside_fov] |= ImapDEUltraFlags.FOV.value
 
     return geometric_factor
+
+
+def get_ph_corrected(
+    sensor: str,
+    location: str,
+    ancillary_files: dict,
+    xlut: NDArray,
+    ylut: NDArray,
+    quality_flag: NDArray,
+) -> tuple[NDArray, NDArray]:
+    """
+    PH correction for stop anodes, top and bottom.
+
+    Further description is available starting on
+    page 207 of the Ultra Flight Software Document.
+
+    Parameters
+    ----------
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
+    location : str
+        Location: "tp" or "bt".
+    ancillary_files : dict[Path]
+        Ancillary files.
+    xlut : NDArray
+        X lookup index for PH correction.
+    ylut : NDArray
+        Y lookup index for PH correction.
+    quality_flag : NDArray
+        Quality flag to set when there is an outlier.
+
+    Returns
+    -------
+    ph_correction : NDArray
+        Correction for pulse height.
+    quality_flag : NDArray
+        Quality flag updated with PH correction flags.
+    """
+    ph_correct = pd.read_csv(
+        ancillary_files[f"l1b-{sensor[-2:]}sensor-sp{location}phcorr"], header=None
+    )
+    ph_correct_array = ph_correct.to_numpy()
+
+    max_x, max_y = ph_correct_array.shape[0] - 1, ph_correct_array.shape[1] - 1
+
+    # Clamp indices to nearest valid value
+    xlut_clamped = np.clip(xlut.astype(int), 0, max_x)
+    ylut_clamped = np.clip(ylut.astype(int), 0, max_y)
+
+    # Flag where clamping occurred
+    flagged_mask = (xlut != xlut_clamped) | (ylut != ylut_clamped)
+    quality_flag[flagged_mask] |= ImapDEUltraFlags.PHCORR.value
+
+    ph_correction = ph_correct_array[xlut_clamped, ylut_clamped]
+
+    return ph_correction, quality_flag
+
+
+def get_ebins(
+    lut: str,
+    energy: NDArray,
+    ctof: NDArray,
+    ebins: NDArray,
+    ancillary_files: dict,
+) -> NDArray:
+    """
+    Get energy bins from the lookup table.
+
+    Parameters
+    ----------
+    lut : str
+        Lookup table name, e.g., "l1b-tofxpht".
+    energy : NDArray
+        Energy from the event (keV).
+    ctof : NDArray
+        Corrected TOF (tenths of a ns).
+    ebins : NDArray
+        Energy bins to fill with values.
+    ancillary_files : dict[Path]
+        Ancillary files.
+
+    Returns
+    -------
+    ebins : NDArray
+        Energy bins from the lookup table.
+    """
+    with open(ancillary_files[lut]) as f:
+        all_lines = f.readlines()
+        pixel_text = "".join(all_lines[4:])
+
+    lut_array = np.fromstring(pixel_text, sep=" ", dtype=int).reshape((2048, 4096))
+    # Note that the LUT is indexed [energy, ctof] for l1b-tofxph
+    # and [ctof, energy] for everything else.
+    if lut == "l1b-tofxph":
+        energy_lookup = (2048 - np.floor(energy)).astype(int)
+        ctof_lookup = np.floor(ctof).astype(int)
+        valid = (
+            (energy_lookup >= 0)
+            & (energy_lookup < 2048)
+            & (ctof_lookup >= 0)
+            & (ctof_lookup < 4096)
+        )
+        ebins[valid] = lut_array[energy_lookup[valid], ctof_lookup[valid]]
+    else:
+        energy_lookup = np.floor(energy).astype(int)
+        ctof_lookup = (2048 - np.floor(ctof)).astype(int)
+        valid = (
+            (energy_lookup >= 0)
+            & (energy_lookup < 4096)
+            & (ctof_lookup >= 0)
+            & (ctof_lookup < 2048)
+        )
+        ebins[valid] = lut_array[ctof_lookup[valid], energy_lookup[valid]]
+
+    return ebins

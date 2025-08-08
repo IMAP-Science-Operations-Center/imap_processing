@@ -6,7 +6,6 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.spice.geometry import SpiceFrame
-from imap_processing.spice.kernels import ensure_spice
 from imap_processing.ultra.l1b.ultra_l1b_annotated import (
     get_annotated_particle_velocity,
 )
@@ -131,9 +130,9 @@ def test_ultra_l1c_error(mock_data_l1b_dict):
 
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
-@ensure_spice
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_calculate_spacecraft_pset_with_cdf():
+def test_calculate_spacecraft_pset_with_cdf(
+    ancillary_files, deadtime_datasets, imap_ena_sim_metakernel
+):
     """Tests ultra_l1c function with imported test data."""
 
     df = pd.read_csv(TEST_PATH / "IMAP-Ultra45_r1_L1_V0_shortened.csv")
@@ -150,7 +149,9 @@ def test_calculate_spacecraft_pset_with_cdf():
     # PosYSlit is True for left (start_type = 1)
     # PosYSlit is False for right (start_type = 2)
     start_type = np.where(df_subset["PosYSlit"].values, 1, 2)
-    d, yf = get_front_y_position(start_type, df_subset["StopY"].values * 100)
+    d, yf = get_front_y_position(
+        start_type, df_subset["StopY"].values * 100, ancillary_files
+    )
     tof_tenths_ns = df_subset["TOF"].values * 10000
     v, _, _ = get_de_velocity(
         (df_subset["StartX"].values * 100, yf),
@@ -179,6 +180,8 @@ def test_calculate_spacecraft_pset_with_cdf():
         "imap_ultra_l1b_45sensor-de": dataset,
         "imap_ultra_l1b_45sensor-extendedspin": xr.Dataset(),  # placeholder
         "imap_ultra_l1b_45sensor-cullingmask": xr.Dataset(),  # placeholder
+        "imap_ultra_45sensor-rates": deadtime_datasets["rates"],
+        "imap_ultra_45sensor-params": deadtime_datasets["params"],
     }
 
     path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
@@ -204,9 +207,7 @@ def test_calculate_spacecraft_pset_with_cdf():
 
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
-@ensure_spice
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_calculate_helio_pset_with_cdf():
+def test_calculate_helio_pset_with_cdf(ancillary_files, imap_ena_sim_metakernel):
     """Tests ultra_l1c function with imported test data."""
 
     df = pd.read_csv(TEST_PATH / "IMAP-Ultra45_r1_L1_V0_shortened.csv")
@@ -225,7 +226,9 @@ def test_calculate_helio_pset_with_cdf():
     # PosYSlit is True for left (start_type = 1)
     # PosYSlit is False for right (start_type = 2)
     start_type = np.where(df_subset["PosYSlit"].values, 1, 2)
-    d, yf = get_front_y_position(start_type, df_subset["StopY"].values * 100)
+    d, yf = get_front_y_position(
+        start_type, df_subset["StopY"].values * 100, ancillary_files
+    )
     tof_tenths_ns = df_subset["TOF"].values * 10000
     v, _, _ = get_de_velocity(
         (df_subset["StartX"].values * 100, yf),

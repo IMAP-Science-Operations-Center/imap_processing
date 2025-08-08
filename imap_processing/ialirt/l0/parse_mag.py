@@ -7,6 +7,9 @@ from typing import Union
 import numpy as np
 import xarray as xr
 
+from imap_processing.ialirt.l0.ialirt_spice import (
+    transform_instrument_vectors_to_inertial,
+)
 from imap_processing.ialirt.l0.mag_l0_ialirt_data import (
     Packet0,
     Packet1,
@@ -19,6 +22,12 @@ from imap_processing.mag.l1a.mag_l1a_data import TimeTuple
 from imap_processing.mag.l1b.mag_l1b import (
     calibrate_vector,
     shift_time,
+)
+from imap_processing.mag.l1d.mag_l1d_data import MagL1d
+from imap_processing.mag.l2.mag_l2_data import MagL2L1dBase
+from imap_processing.spice.geometry import (
+    cartesian_to_spherical,
+    spherical_to_cartesian,
 )
 from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 
@@ -286,6 +295,196 @@ def calculate_l1b(
     return updated_vector_mago, updated_vector_magi, time_data
 
 
+def calibrate_and_offset_vectors(
+    vectors: np.ndarray,
+    range_vals: np.ndarray,
+    calibration: np.ndarray,
+    offsets: np.ndarray,
+    is_magi: bool = False,
+) -> np.ndarray:
+    """
+    Apply calibration and offsets to magnetic vectors.
+
+    Parameters
+    ----------
+    vectors : np.ndarray
+        Raw magnetic vectors, shape (n, 3).
+    range_vals : np.ndarray
+        Range indices for each vector, shape (n). Values 0–3.
+        Expected value for mago will be [0,1] and magi will be [2,3].
+    calibration : np.ndarray
+        Calibration matrix, shape (3, 3, 4).
+    offsets : np.ndarray
+        Offsets array, shape (2, 4, 3) where:
+        - index 0 = MAGo, 1 = MAGi
+        - second index = range (0–3)
+        - third index = axis (x, y, z)
+    is_magi : bool, optional
+        True if applying to MAGi data, False for MAGo.
+
+    Returns
+    -------
+    calibrated_and_offset_vectors : np.ndarray
+        Calibrated and offset vectors, shape (n, 3).
+    """
+    # Append range as 4th column
+    vec_plus_range = np.concatenate((vectors, range_vals[:, np.newaxis]), axis=1)
+
+    # Apply calibration matrix -> (n,4)
+    calibrated = MagL2L1dBase.apply_calibration(vec_plus_range, calibration)
+
+    # Apply offsets per vector
+    # vec shape (4)
+    # offsets shape (2, 4, 3) where first index is 0 for MAGo and 1 for MAGi
+    calibrated = np.array(
+        [
+            MagL1d.apply_calibration_offset_single_vector(vec, offsets, is_magi=is_magi)
+            for vec in calibrated
+        ]
+    )
+
+    return calibrated[:, :3]
+
+
+def apply_gradiometry_correction(
+    mago_vector_eclipj2000: np.ndarray,
+    magi_vector_eclipj2000: np.ndarray,
+    time_data: dict,
+    gradiometer_factor: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Align MAGi to MAGo timestamps and apply gradiometry correction.
+
+    Parameters
+    ----------
+    mago_vector_eclipj2000 : np.ndarray
+        MAGo vectors in inertial frame, shape (N, 3).
+    magi_vector_eclipj2000 : np.ndarray
+        MAGi vectors in inertial frame, shape (M, 3).
+    time_data : dict
+        Coarse and fine time for Primary and Secondary Sensors.
+    gradiometer_factor : np.ndarray
+        3-element vector used to project gradiometry offset, shape (3,).
+
+    Returns
+    -------
+    mago_corrected : np.ndarray
+        Corrected MAGo vectors in inertial frame, shape (N, 3).
+    magnitude : np.ndarray
+        Magnitude of corrected MAGo vectors, shape (N,).
+    """
+    gradiometry_offsets = MagL1d.calculate_gradiometry_offsets(
+        mago_vector_eclipj2000,
+        time_data["primary_epoch"],
+        magi_vector_eclipj2000,
+        time_data["secondary_epoch"],
+    )
+    mago_corrected = MagL1d.apply_gradiometry_offsets(
+        gradiometry_offsets, mago_vector_eclipj2000, gradiometer_factor
+    )
+    magnitude = np.linalg.norm(mago_corrected, axis=1)
+
+    return mago_corrected, magnitude
+
+
+def transform_to_inertial(
+    sc_spin_phase_rad: np.ndarray,
+    sc_inertial_right: np.ndarray,
+    sc_inertial_decline: np.ndarray,
+    attitude_time: np.ndarray,
+    target_time: float,
+    mag_vector: np.ndarray,
+) -> np.ndarray:
+    """
+    Transform vector to ECLIPJ2000.
+
+    Parameters
+    ----------
+    sc_spin_phase_rad : numpy.ndarray
+        Spin phase for 4 packets 0 to 2π radians, shape (4).
+    sc_inertial_right : numpy.ndarray
+        Inertial right ascension for 4 packets 0 to 2π radians, shape (4).
+    sc_inertial_decline : numpy.ndarray
+        Inertial declination for 4 packets -π/2 to π/2 radians, shape (4).
+    attitude_time : np.ndarray
+        Timestamps for the 4 packets.
+        Example: test_met = grouped_data["met"][
+                 (grouped_data["group"] == group).values].
+        ttj2000ns = met_to_ttj2000ns(test_met.values).
+    target_time : float
+        Time at which to apply the transformation.
+        Will be primary_epoch (mago vector) or secondary_epoch (magi vector).
+        Example: time_data['primary_epoch'].
+    mag_vector : numpy.ndarray
+        Vector, shape (3).
+
+    Returns
+    -------
+    inertial_vector : np.ndarray
+        Transformed vector in the ECLIPJ2000 frame, shape (3,).
+
+    Notes
+    -----
+    The MAG vectors are calculated based on 4 packets,
+    each of which contains its own spin phase,
+    inertial right ascension, and inertial decline.
+    """
+    if target_time < attitude_time.min() or target_time > attitude_time.max():
+        logger.warning(
+            f"target_time {target_time} is outside attitude_time bounds "
+            f"[{attitude_time.min()}, {attitude_time.max()}]; using edge values."
+        )
+
+    # Get sort order based on attitude_time
+    sort_idx = np.argsort(attitude_time)
+
+    # Sort all arrays accordingly
+    attitude_time = attitude_time[sort_idx]
+    sc_spin_phase_rad = sc_spin_phase_rad[sort_idx]
+    sc_inertial_right = sc_inertial_right[sort_idx]
+    sc_inertial_decline = sc_inertial_decline[sort_idx]
+
+    # Interpolate spin phase, RA, and Dec at target_time
+    # Convert RA/Dec to unit cartesian vectors
+    spherical_coords = np.stack(
+        [
+            np.ones_like(sc_inertial_right),
+            np.degrees(sc_inertial_right),
+            np.degrees(sc_inertial_decline),
+        ],
+        axis=-1,
+    )
+    vecs = spherical_to_cartesian(spherical_coords)
+
+    # Interpolate in Cartesian space
+    vx = np.interp(target_time, attitude_time, vecs[:, 0])
+    vy = np.interp(target_time, attitude_time, vecs[:, 1])
+    vz = np.interp(target_time, attitude_time, vecs[:, 2])
+    v_interp = np.array([vx, vy, vz])
+    # Normalize vector so that its magnitude is 1.
+    v_interp /= np.linalg.norm(v_interp)
+
+    # Convert back to spherical
+    ra_dec = cartesian_to_spherical(v_interp)
+    ra_deg = ra_dec[1]
+    dec_deg = ra_dec[2]
+
+    # Account for discontinuities in spin phase.
+    spin_phase_unwrapped = np.unwrap(sc_spin_phase_rad)
+    spin_phase_interp = np.interp(target_time, attitude_time, spin_phase_unwrapped)
+    spin_phase_deg = np.degrees(spin_phase_interp) % 360
+
+    # Transform each into ECLIPJ2000
+    inertial_vector = transform_instrument_vectors_to_inertial(
+        np.asarray(mag_vector).reshape(1, 3),
+        np.array([spin_phase_deg]),
+        np.array([ra_deg]),
+        np.array([dec_deg]),
+    )[0]
+
+    return inertial_vector
+
+
 def process_packet(
     accumulated_data: xr.Dataset, calibration_dataset: xr.Dataset
 ) -> tuple[list[dict], list[dict]]:
@@ -392,11 +591,16 @@ def process_packet(
                 "met": int(met.values.min()),
                 "met_in_utc": met_to_utc(met.values.min()).split(".")[0],
                 "ttj2000ns": int(met_to_ttj2000ns(met.values.min())),
-                "mag_4s_b_gse": [Decimal("0.0") for _ in range(3)],
-                "mag_4s_b_gsm": [Decimal("0.0") for _ in range(3)],
-                "mag_4s_b_rtn": [Decimal("0.0") for _ in range(3)],
-                "mag_phi_4s_b_gsm": Decimal("0.0"),
-                "mag_theta_4s_b_gsm": Decimal("0.0"),
+                # TODO: Placeholder for mag_epoch
+                "mag_epoch": int(met.values.min()),
+                "mag_B_GSE": [Decimal("0.0") for _ in range(3)],
+                "mag_B_GSM": [Decimal("0.0") for _ in range(3)],
+                "mag_B_RTN": [Decimal("0.0") for _ in range(3)],
+                "mag_B_magnitude": Decimal("0.0"),
+                "mag_phi_B_GSM": Decimal("0.0"),
+                "mag_theta_B_GSM": Decimal("0.0"),
+                "mag_phi_B_GSE": Decimal("0.0"),
+                "mag_theta_B_GSE": Decimal("0.0"),
             }
         )
 

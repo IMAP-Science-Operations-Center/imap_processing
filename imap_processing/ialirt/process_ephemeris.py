@@ -15,15 +15,12 @@ import spiceypy
 from numpy import ndarray
 
 from imap_processing.spice.geometry import SpiceBody, SpiceFrame, imap_state
-from imap_processing.spice.kernels import ensure_spice
 from imap_processing.spice.time import et_to_utc, str_to_et
 
 # Logger setup
 logger = logging.getLogger(__name__)
 
 
-@typing.no_type_check
-@ensure_spice
 def latitude_longitude_to_ecef(
     longitude: float, latitude: float, altitude: float
 ) -> ndarray:
@@ -68,7 +65,6 @@ def latitude_longitude_to_ecef(
 
 
 @typing.no_type_check
-@ensure_spice
 def calculate_azimuth_and_elevation(
     longitude: float,
     latitude: float,

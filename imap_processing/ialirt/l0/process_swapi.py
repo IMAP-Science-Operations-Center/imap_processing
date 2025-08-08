@@ -96,7 +96,7 @@ def optimize_pseudo_parameters(
         # Read in energy passbands
         energy_data = pd.read_csv(
             f"{imap_module_directory}/tests/swapi/lut/imap_swapi_esa-unit"
-            f"-conversion_20250211_v000.csv"
+            f"-conversion_20250626_v001.csv"
         )
         energy_passbands = (
             energy_data["Energy"][0:63]

@@ -10,7 +10,6 @@ import numpy.typing as npt
 import spiceypy
 
 from imap_processing.spice import IMAP_SC_ID
-from imap_processing.spice.kernels import ensure_spice
 
 TICK_DURATION = 2e-5  # 20 microseconds as defined in imap_sclk_0000.tsc
 
@@ -103,7 +102,6 @@ def met_to_ttj2000ns(
 
 
 @typing.no_type_check
-@ensure_spice
 def ttj2000ns_to_et(tt_ns: npt.ArrayLike) -> npt.NDArray[float]:
     """
     Convert TT J2000 epoch nanoseconds to TDB J2000 epoch seconds.
@@ -131,7 +129,6 @@ def ttj2000ns_to_et(tt_ns: npt.ArrayLike) -> npt.NDArray[float]:
 
 
 @typing.no_type_check
-@ensure_spice
 def et_to_ttj2000ns(et: npt.ArrayLike) -> npt.NDArray[float]:
     """
     Convert TDB J2000 epoch seconds to TT J2000 epoch nanoseconds.
@@ -157,7 +154,6 @@ def et_to_ttj2000ns(et: npt.ArrayLike) -> npt.NDArray[float]:
 
 
 @typing.no_type_check
-@ensure_spice(time_kernels_only=True)
 def met_to_utc(met: npt.ArrayLike, precision: int = 9) -> npt.NDArray[str]:
     """
     Convert mission elapsed time (MET) to UTC.
@@ -221,7 +217,56 @@ def et_to_datetime64(
 
 
 @typing.no_type_check
-@ensure_spice
+def et_to_met(
+    et: Union[float, Collection[float]],
+) -> Union[float, np.ndarray]:
+    """
+    Convert ephemeris time to mission elapsed time (MET).
+
+    This function converts ET to spacecraft clock ticks and then to MET seconds.
+    This is the inverse of the MET to ET conversion process.
+
+    Parameters
+    ----------
+    et : Union[float, Collection[float]]
+        Input ephemeris time value(s) to be converted to MET.
+
+    Returns
+    -------
+    met: np.ndarray
+        Mission elapsed time in seconds.
+    """
+    vectorized_sce2c = _vectorize(spiceypy.sce2c, otypes=[float], excluded=[0])
+    sclk_ticks = vectorized_sce2c(IMAP_SC_ID, et)
+    met = np.asarray(sclk_ticks, dtype=float) * TICK_DURATION
+    return met
+
+
+def ttj2000ns_to_met(
+    tt_ns: npt.ArrayLike,
+) -> npt.NDArray[float]:
+    """
+    Convert terrestrial time nanoseconds since J2000 to mission elapsed time (MET).
+
+    This is the inverse of met_to_ttj2000ns. The conversion process is:
+    TTJ2000ns -> ET -> MET
+
+    Parameters
+    ----------
+    tt_ns : float, numpy.ndarray
+        Number of nanoseconds since the J2000 epoch in the TT timescale.
+
+    Returns
+    -------
+    numpy.ndarray[float]
+        The mission elapsed time in seconds.
+    """
+    et = ttj2000ns_to_et(tt_ns)
+    met = et_to_met(et)
+    return met
+
+
+@typing.no_type_check
 def sct_to_et(
     sclk_ticks: Union[float, Collection[float]],
 ) -> Union[float, np.ndarray]:
@@ -247,7 +292,6 @@ def sct_to_et(
 
 
 @typing.no_type_check
-@ensure_spice
 def sct_to_ttj2000s(
     sclk_ticks: Union[float, Iterable[float]],
 ) -> Union[float, np.ndarray]:
@@ -279,7 +323,6 @@ def sct_to_ttj2000s(
 
 
 @typing.no_type_check
-@ensure_spice
 def str_to_et(
     time_str: Union[str, Iterable[str]],
 ) -> Union[float, np.ndarray]:
@@ -305,7 +348,6 @@ def str_to_et(
 
 
 @typing.no_type_check
-@ensure_spice
 def et_to_utc(
     et: Union[float, Iterable[float]],
     format_str: str = "ISOC",

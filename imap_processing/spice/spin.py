@@ -197,6 +197,10 @@ def interpolate_spin_data(query_met_times: Union[float, npt.NDArray]) -> pd.Data
     #   spin_period_valid columns.
     invalid_spin_phase_range = (spin_phases < 0) | (spin_phases >= 1)
 
+    # TODO: add optional to filter this if this flag means
+    # that repointing is happening. otherwise, then keep it.
+    # This needs to be discussed and receive guidance at
+    # the project level.
     invalid_spins = (out_df["spin_phase_valid"].values == 0) | (
         out_df["spin_period_valid"].values == 0
     )

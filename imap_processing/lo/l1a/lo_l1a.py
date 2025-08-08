@@ -45,6 +45,11 @@ def lo_l1a(dependency: Path) -> list[xr.Dataset]:
         xtce_packet_definition=xtce_file.resolve(),
         use_derived_value=False,
     )
+    datasets_by_apid_derived = packet_file_to_datasets(
+        packet_file=dependency.resolve(),
+        xtce_packet_definition=xtce_file.resolve(),
+        use_derived_value=True,
+    )
 
     # create the attribute manager for this data level
     attr_mgr = ImapCdfAttributes()
@@ -99,6 +104,45 @@ def lo_l1a(dependency: Path) -> list[xr.Dataset]:
         logical_source = "imap_lo_l1a_star"
         ds = datasets_by_apid[LoAPID.ILO_STAR]
         ds = process_star_sensor(ds)
+        ds = add_dataset_attrs(ds, attr_mgr, logical_source)
+        datasets_to_return.append(ds)
+    if LoAPID.ILO_DIAG_PCC in datasets_by_apid:
+        logger.info(
+            f"\nProcessing {LoAPID(LoAPID.ILO_DIAG_PCC).name} "
+            f"packet (APID: {LoAPID.ILO_DIAG_PCC.value})"
+        )
+        logical_source = "imap_lo_l1a_pcc"
+        ds = datasets_by_apid[LoAPID.ILO_DIAG_PCC]
+        ds = add_dataset_attrs(ds, attr_mgr, logical_source)
+        datasets_to_return.append(ds)
+    if LoAPID.ILO_APP_NHK in datasets_by_apid:
+        logger.info(
+            f"\nProcessing {LoAPID(LoAPID.ILO_APP_NHK).name} "
+            f"packet (APID: {LoAPID.ILO_APP_NHK.value})"
+        )
+        logical_source = "imap_lo_l1a_nhk"
+        ds = datasets_by_apid[LoAPID.ILO_APP_NHK]
+        ds = add_dataset_attrs(ds, attr_mgr, logical_source)
+        datasets_to_return.append(ds)
+
+        # Engineering units conversion
+        logical_source = "imap_lo_l1b_nhk"
+        ds = datasets_by_apid_derived[LoAPID.ILO_APP_NHK]
+        ds = add_dataset_attrs(ds, attr_mgr, logical_source)
+        datasets_to_return.append(ds)
+    if LoAPID.ILO_APP_SHK in datasets_by_apid:
+        logger.info(
+            f"\nProcessing {LoAPID(LoAPID.ILO_APP_SHK).name} "
+            f"packet (APID: {LoAPID.ILO_APP_SHK.value})"
+        )
+        logical_source = "imap_lo_l1a_shk"
+        ds = datasets_by_apid[LoAPID.ILO_APP_SHK]
+        ds = add_dataset_attrs(ds, attr_mgr, logical_source)
+        datasets_to_return.append(ds)
+
+        # Engineering units conversion
+        logical_source = "imap_lo_l1b_shk"
+        ds = datasets_by_apid_derived[LoAPID.ILO_APP_SHK]
         ds = add_dataset_attrs(ds, attr_mgr, logical_source)
         datasets_to_return.append(ds)
 
