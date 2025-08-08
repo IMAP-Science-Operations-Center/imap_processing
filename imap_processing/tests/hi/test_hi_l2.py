@@ -41,6 +41,7 @@ def empty_rectangular_map_dataset() -> xr.Dataset:
 
 
 @pytest.mark.external_test_data
+@pytest.mark.external_kernel
 def test_hi_l2(hi_l1_test_data_path, imap_ena_sim_metakernel):
     """Integration type test for hi_l2()"""
     pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
