@@ -820,7 +820,11 @@ class Hit(ProcessInstrument):
             l1a_files = dependencies.get_file_paths(source="hit", data_type="l1a")
             if len(l0_files) == 1:
                 # Add path to CCSDS file to process housekeeping
-                data_dict["imap_hit_l0_raw"] = l0_files[0]
+                data_dict = {
+                    "logical_source": "imap_hit_l0_raw",
+                    "data": l0_files[0],
+                    "descriptor": self.descriptor,
+                }
             else:
                 # 1 science file
                 if len(l1a_files) > 1:
@@ -830,7 +834,14 @@ class Hit(ProcessInstrument):
                     )
                 # Add L1A dataset to process science data
                 l1a_dataset = load_cdf(l1a_files[0])
-                data_dict[l1a_dataset.attrs["Logical_source"]] = l1a_dataset
+                data_dict = {
+                    "logical_source": l1a_dataset.attrs["Logical_source"],
+                    "data": l1a_dataset,
+                    "descriptor": self.descriptor,
+                }
+            print(self.descriptor)
+            print(data_dict)
+
             # process data to L1B products
             datasets = hit_l1b(data_dict)
         elif self.data_level == "l2":
