@@ -107,7 +107,7 @@ def annotate_direct_events(
         L1A direct event data.
     l1b_hk_dataset : xarray.Dataset
         L1B housekeeping data coincident with the L1A DE data.
-    esa_energies_anc : Path
+    esa_energies_anc : pathlib.Path
         Location of the esa-energies ancillary csv file.
 
     Returns
@@ -375,7 +375,7 @@ def de_esa_energy_step(
         The partial L1B dataset.
     l1b_hk_ds : xarray.Dataset
         L1B housekeeping data coincident with the L1A DE data.
-    esa_energies_anc : Path
+    esa_energies_anc : pathlib.Path
         Location of the esa-energies ancillary csv file.
 
     Returns
