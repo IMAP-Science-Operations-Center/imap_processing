@@ -23,7 +23,7 @@ def find_tcp_connections(
     Parameters
     ----------
     start_file_creation : datetime
-        File creation time of first file minus 1 hr.
+        File creation time of last file minus 48 hrs.
     end_file_creation : datetime
         File creation time of last file.
     lines : list
@@ -43,27 +43,38 @@ def find_tcp_connections(
         if f"{partner} antenna partner connection is up." in line:
             timestamp = line.split(" ")[0]
             current_start = datetime.strptime(timestamp, "%Y/%j-%H:%M:%S.%f")
+            # Use the start_file_creation time if the current_start is before it.
+            current_start = max(current_start, start_file_creation)
         elif f"{partner} antenna partner connection is down!" in line:
             timestamp = line.split(" ")[0]
             end_time = datetime.strptime(timestamp, "%Y/%j-%H:%M:%S.%f")
-            if current_start is None:
+            if end_time < start_file_creation:
+                # If the end_time falls outside the 48 hr range then do not append.
+                current_start = None
+                continue
+            elif current_start is None:
+                # If the end_time is hanging at the beginning of the file,
+                # then use start_file_creation.
                 connection_ranges.append((start_file_creation, end_time))
             else:
                 connection_ranges.append((current_start, end_time))
                 current_start = None
 
+    # This is for current_starts that are hanging at the end of the file.
     if current_start is not None:
         connection_ranges.append((current_start, end_file_creation))
 
     return connection_ranges
 
 
-def packets_created(lines: list) -> list:
+def packets_created(start_file_creation: datetime, lines: list) -> list:
     """
     Find timestamps when packets were created based on log lines.
 
     Parameters
     ----------
+    start_file_creation : datetime
+        File creation time of last file minus 48 hrs.
     lines : list
         All lines of log files.
 
@@ -78,21 +89,19 @@ def packets_created(lines: list) -> list:
         if "Renamed iois_1_packets" in line:
             timestamp_str = line.split(" ")[0]
             timestamp = datetime.strptime(timestamp_str, "%Y/%j-%H:%M:%S.%f")
-            packet_times.append(timestamp)
+            # Possible that data extends further than 48 hrs in the past.
+            if timestamp >= start_file_creation:
+                packet_times.append(timestamp)
 
     return packet_times
 
 
-def format_ingest_data(
-    first_filename: str, last_filename: str, all_lines: list
-) -> dict:
+def format_ingest_data(last_filename: str, all_lines: list) -> dict:
     """
     Format TCP connection and packet ingest data from multiple log files.
 
     Parameters
     ----------
-    first_filename : str
-        Log file that is first chronologically.
     last_filename : str
         Log file that is last chronologically.
     all_lines : list[str]
@@ -136,17 +145,15 @@ def format_ingest_data(
       }
     }
     """
-    # File creation time minus 1 hr.
-    first_timestamp_str = first_filename.split(".")[2]
-    first_timestamp_str = first_timestamp_str.replace("_", ":")
-    start_of_time = datetime.strptime(
-        first_timestamp_str, "%Y-%jT%H:%M:%S"
-    ) - timedelta(hours=1)
-
     # File creation time.
     last_timestamp_str = last_filename.split(".")[2]
     last_timestamp_str = last_timestamp_str.replace("_", ":")
     end_of_time = datetime.strptime(last_timestamp_str, "%Y-%jT%H:%M:%S")
+
+    # File creation time of last file minus 48 hrs.
+    start_of_time = datetime.strptime(last_timestamp_str, "%Y-%jT%H:%M:%S") - timedelta(
+        hours=48
+    )
 
     formatted: dict[str, Any] = {
         "summary": "I-ALiRT Real-time Ingest Summary",
@@ -174,7 +181,7 @@ def format_ingest_data(
         ]
 
     # Global packet ingest timestamps
-    packet_times = packets_created(all_lines)
+    packet_times = packets_created(start_of_time, all_lines)
     formatted["packet_ingest"] = [pkt_time.isoformat() for pkt_time in packet_times]
 
     logger.info(f"Created ingest files for {formatted['time_range']}")

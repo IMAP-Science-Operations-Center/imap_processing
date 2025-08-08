@@ -44,7 +44,7 @@ def test_packets_created():
     ) as f:
         lines = f.readlines()
 
-    test = packets_created(lines)
+    test = packets_created(datetime(2025, 7, 31, 16, 33, 39, 0), lines)
 
     # 2025/212-16:33:39.186
     time_0 = datetime(2025, 7, 31, 16, 33, 39, 186000)
@@ -98,7 +98,7 @@ def test_format_ingest_data():
 
     filenames = sorted(filenames)
 
-    data = format_ingest_data(filenames[0], filenames[-1], log_lines)
+    data = format_ingest_data(filenames[-1], log_lines)
 
     assert data["packet_ingest"][0] == "2025-07-31T08:00:00"
     assert data["packet_ingest"][-1] == "2025-07-31T15:00:00"
@@ -148,9 +148,9 @@ def test_format_ingest_data_edge_cases():
     )
     filenames = sorted(filenames)
 
-    data = format_ingest_data(filenames[0], filenames[-1], log_lines)
+    data = format_ingest_data(filenames[-1], log_lines)
 
-    assert data["tcp"]["Kiel"][0]["start"] == "2025-07-30T23:00:00"
+    assert data["tcp"]["Kiel"][0]["start"] == "2025-07-29T02:00:00"
     assert data["tcp"]["Kiel"][0]["end"] == "2025-07-31T00:15:00"
 
     assert data["tcp"]["Kiel"][1]["start"] == "2025-07-31T02:00:00"
