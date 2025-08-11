@@ -46,8 +46,6 @@ def hi_l2(
     l2_dataset : list[xarray.Dataset]
         Level 2 IMAP-Hi dataset ready to be written to a CDF file.
     """
-    # TODO: parse descriptor to determine map configuration
-    direction: Literal["full"] = "full"
     cg_corrected = False
     map_descriptor = MapDescriptor.from_string(descriptor)
 
@@ -55,7 +53,7 @@ def hi_l2(
         psets,
         geometric_factors_path,
         esa_energies_path,
-        direction=direction,
+        spin_phase=map_descriptor.spin_phase,
         output_map=map_descriptor.to_empty_map(),
         cg_corrected=cg_corrected,
     )
@@ -88,7 +86,7 @@ def generate_hi_map(
     esa_energies_path: str | Path,
     output_map: AbstractSkyMap,
     cg_corrected: bool = False,
-    direction: Literal["ram", "anti-ram", "full"] = "full",
+    spin_phase: Literal["ram", "anti-ram", "full"] = "full",
 ) -> AbstractSkyMap:
     """
     Project Hi PSET data into a sky map.
@@ -107,7 +105,7 @@ def generate_hi_map(
     cg_corrected : bool, Optional
         Whether to apply Compton-Getting correction to the energies. Defaults to
         False.
-    direction : str, Optional
+    spin_phase : str, Optional
         Apply filtering to PSET data include ram or anti-ram or full spin data.
         Defaults to "full".
 
@@ -119,13 +117,10 @@ def generate_hi_map(
     # TODO: Implement Compton-Getting correction
     if cg_corrected:
         raise NotImplementedError
-    # TODO: Implement directional filtering
-    if direction != "full":
-        raise NotImplementedError
 
     for pset_path in psets:
         logger.info(f"Processing {pset_path}")
-        pset = HiPointingSet(pset_path)
+        pset = HiPointingSet(pset_path, spin_phase=spin_phase)
 
         # Background rate and uncertainty are exposure time weighted means in
         # the map.

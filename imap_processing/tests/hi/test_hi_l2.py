@@ -102,7 +102,7 @@ def test_genarate_hi_map(hi_l1_test_data_path, furnish_kernels):
             None,
             rectangular_sky_map,
             cg_corrected=False,
-            direction="full",
+            spin_phase="full",
         )
     assert isinstance(sky_map, RectangularSkyMap)
     assert sky_map.spacing_deg == 6
