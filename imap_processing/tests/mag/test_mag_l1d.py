@@ -418,7 +418,7 @@ def test_enhanced_gradiometry_with_quality_flags_detailed():
     magi_epoch = mago_epoch + 500000000  # 0.5 second offset
 
     # Set threshold so medium and large differences exceed it
-    quality_threshold = 3.0
+    quality_threshold = 3.5
 
     grad_ds = MagL1d.calculate_gradiometry_offsets(
         mago_vectors, mago_epoch, magi_vectors, magi_epoch, quality_threshold
@@ -442,7 +442,7 @@ def test_enhanced_gradiometry_with_quality_flags_detailed():
         [[-2.75, -2.75, -2.75], [1.75, 1.75, 1.75], [-3.25, -3.25, -3.25]]
     )
     expected_magnitudes = np.linalg.norm(expected_offsets, axis=1)
-    expected_flags = np.array([1, 1, 1])  # All magnitudes exceed threshold of 3.0
+    expected_flags = np.array([1, 0, 1])
 
     np.testing.assert_allclose(
         grad_ds["gradiometer_offsets"].data, expected_offsets, rtol=1e-10
