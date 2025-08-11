@@ -9,11 +9,13 @@ from imap_processing.quality_flags import ImapDEUltraFlags
 from imap_processing.ultra.l1b.lookup_utils import (
     get_angular_profiles,
     get_back_position,
+    get_ebins,
     get_energy_efficiencies,
     get_energy_norm,
     get_geometric_factor,
     get_image_params,
     get_norm,
+    get_ph_corrected,
     get_y_adjust,
 )
 
@@ -129,3 +131,38 @@ def test_get_geometric_function(ancillary_files):
         gf, np.array([0, 0, 0.13713, 0.1792, 0.35507, 0.1792, 0.13713, 0, 0])
     )
     np.testing.assert_array_equal(quality_flags, np.array([1, 1, 0, 0, 0, 0, 0, 1, 1]))
+
+
+@pytest.mark.external_test_data
+def test_get_ph_corrected(ancillary_files):
+    """Tests function get_ph_corrected."""
+
+    # Should be between 1 and 32 (0 and 31)
+    xlut = np.array([0, 10, 31, 32])
+    # Should be between 1 and 20 (0 and 19)
+    ylut = np.array([3, 10, 19, 32])
+    quality_flags = np.full(xlut.shape, ImapDEUltraFlags.NONE.value, dtype=np.uint16)
+    ph_correct_top, quality_flags = get_ph_corrected(
+        "ultra45", "tp", ancillary_files, xlut, ylut, quality_flags
+    )
+
+    np.testing.assert_array_equal(
+        ph_correct_top, np.array([1429.143693, 1001.839137, 2667.220492, 3214.786627])
+    )
+    np.testing.assert_array_equal(
+        quality_flags,
+        np.array([0, 0, 2, 2]),
+    )
+
+
+@pytest.mark.external_test_data
+def test_get_ebins(ancillary_files):
+    """Tests function get_ph_corrected."""
+
+    energy = np.array([618, 4])
+    ctof = np.array([73, 24])
+    fillval_uint8 = 255
+    ebins = np.full(energy.shape, fillval_uint8, dtype=np.uint8)
+    ebins = get_ebins("l1b-tofxph", energy, ctof, ebins, ancillary_files)
+
+    np.testing.assert_array_equal(ebins, np.array([15, 19]))

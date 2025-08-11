@@ -1,6 +1,9 @@
 """Decommutate HIT CCSDS data and create L1a data products."""
 
 import logging
+from datetime import datetime
+from pathlib import Path
+from typing import Union
 
 import numpy as np
 import xarray as xr
@@ -19,6 +22,11 @@ from imap_processing.hit.l0.constants import (
     ZENITH_ANGLES,
 )
 from imap_processing.hit.l0.decom_hit import decom_hit
+from imap_processing.spice.time import (
+    et_to_datetime64,
+    met_to_datetime64,
+    ttj2000ns_to_et,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +36,7 @@ logger = logging.getLogger(__name__)
 fillval = -9223372036854775808
 
 
-def hit_l1a(packet_file: str) -> list[xr.Dataset]:
+def hit_l1a(packet_file: Path, packet_date: Union[str, None]) -> list[xr.Dataset]:
     """
     Will process HIT L0 data into L1A data products.
 
@@ -36,31 +44,42 @@ def hit_l1a(packet_file: str) -> list[xr.Dataset]:
     ----------
     packet_file : str
         Path to the CCSDS data packet file.
+    packet_date : str
+        The date of the packet data in 'YYYYMMDD' format. This is used to filter
+        data to the correct processing day since L0 will have a 20-minute
+        buffer before and after the processing day.
 
     Returns
     -------
     processed_data : list[xarray.Dataset]
         List of Datasets of L1A processed data.
     """
+    if not packet_date:
+        raise ValueError("Packet date is required for processing L1A data.")
+
     # Unpack ccsds file to xarray datasets
-    datasets_by_apid = get_datasets_by_apid(packet_file)
+    datasets_by_apid = get_datasets_by_apid(str(packet_file))
 
     # Create the attribute manager for this data level
     attr_mgr = get_attribute_manager("l1a")
 
-    l1a_datasets = []
-
     # Process l1a data products
+    l1a_datasets = []
     if HitAPID.HIT_HSKP in datasets_by_apid:
         logger.info("Creating HIT L1A housekeeping dataset")
-        l1a_datasets.append(
-            process_housekeeping_data(
-                datasets_by_apid[HitAPID.HIT_HSKP], attr_mgr, "imap_hit_l1a_hk"
-            )
+        hk_dataset = process_housekeeping_data(
+            datasets_by_apid[HitAPID.HIT_HSKP], attr_mgr, "imap_hit_l1a_hk"
         )
+        # filter the housekeeping dataset to the processing day
+        hk_dataset = filter_dataset_to_processing_day(
+            hk_dataset, str(packet_date), epoch_vals=hk_dataset["epoch"].values
+        )
+        l1a_datasets.append(hk_dataset)
     if HitAPID.HIT_SCIENCE in datasets_by_apid:
         l1a_datasets.extend(
-            process_science(datasets_by_apid[HitAPID.HIT_SCIENCE], attr_mgr)
+            process_science(
+                datasets_by_apid[HitAPID.HIT_SCIENCE], attr_mgr, str(packet_date)
+            )
         )
     return l1a_datasets
 
@@ -102,7 +121,15 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> xr.Dataset:
     sci_dataset : xarray.Dataset
         Xarray dataset with sectored rates data organized by species.
     """
-    updated_dataset = sci_dataset.copy()
+    # Initialize the dataset with the required variables
+    updated_dataset = sci_dataset[
+        [
+            "sectorates",
+            "hdr_minute_cnt",
+            "livetime_counter",
+            "hdr_dynamic_threshold_state",
+        ]
+    ].copy(deep=True)
 
     # Calculate mod 10 values
     hdr_min_count_mod_10 = updated_dataset.hdr_minute_cnt.values % 10
@@ -308,25 +335,272 @@ def add_cdf_attributes(
     return dataset
 
 
+def find_complete_mod10_sets(mod_vals: np.ndarray) -> np.ndarray:
+    """
+    Find start indices where mod values match [0,1,2,3,4,5,6,7,8,9] pattern.
+
+    Parameters
+    ----------
+    mod_vals : np.ndarray
+        1D array of mod 10 values from the hdr_minute_cnt field in the L1A counts data.
+
+    Returns
+    -------
+    np.ndarray
+        Indices in mod_vals where the complete pattern [0, 1, ..., 9] starts.
+    """
+    # The pattern to match is an array from 0-9
+    window_size = 10
+
+    if mod_vals.size < window_size:
+        logger.warning(
+            "Mod 10 array is smaller than the required window size for "
+            "pattern matching."
+        )
+        return np.array([], dtype=int)
+    # Use sliding windows to find pattern matches
+    sw_view = np.lib.stride_tricks.sliding_window_view(mod_vals, window_size)
+    matches = np.all(sw_view == np.arange(window_size), axis=1)
+    return np.where(matches)[0]
+
+
+def subset_sectored_counts(
+    sectored_counts_dataset: xr.Dataset, packet_date: str
+) -> xr.Dataset:
+    """
+    Subset data for complete sets of sectored counts and corresponding livetime values.
+
+    A set of sectored data starts with hydrogen and ends with iron and correspond to
+    the mod 10 values 0-9. The livetime values from the previous 10 minutes are used
+    to calculate the rates for each set since those counts are transmitted 10 minutes
+    after they were collected. Therefore, only complete sets of sectored counts where
+    livetime from the previous 10 minutes are available are included in the output.
+
+    Parameters
+    ----------
+    sectored_counts_dataset : xarray.Dataset
+        The sectored counts dataset.
+
+    packet_date : str
+        The date of the packet data in 'YYYYMMDD' format, used for filtering.
+
+    Returns
+    -------
+    xarray.Dataset
+        A dataset of complete sectored counts and corresponding livetime values
+        for the processing day.
+    """
+    # TODO: Update to use fill values for partial frames rather than drop them
+
+    # Modify livetime_counter to use a new epoch coordinate
+    # that is aligned with the original epoch dimension. This
+    # ensures that livetime doesn't get filtered when the original
+    # epoch dimension is filtered for complete sets.
+    sectored_counts_dataset = update_livetime_coord(sectored_counts_dataset)
+
+    # Identify 10-minute intervals of complete sectored counts
+    # by using the mod 10 values of the header minute counts.
+    # Mod 10 determines the species and energy bin the data belongs
+    # to. A mapping of mod 10 values to species and energy bins is
+    # provided in l0/constants.py for reference.
+    bin_size = 10
+    mod_10: np.ndarray = sectored_counts_dataset.hdr_minute_cnt.values % 10
+    start_indices = find_complete_mod10_sets(mod_10)
+
+    # Filter out start indices that are less than or equal to the bin size
+    # since the previous 10 minutes are needed for calculating rates
+    if start_indices.size == 0:
+        raise ValueError(
+            "No data to process - valid start indices not found for "
+            "complete sectored counts."
+        )
+    else:
+        start_indices = start_indices[start_indices >= bin_size]
+
+    # Subset data for complete sets of sectored counts.
+    # Each set of sectored counts is 10 minutes long, so we take the indices
+    # starting from the start indices and extending to the bin size of 10.
+    # This creates a 1D array of indices that correspond to the complete
+    # sets of sectored counts which is used to filter the L1A dataset and
+    # create the L1B sectored rates dataset.
+    data_indices = np.concatenate(
+        [np.arange(idx, idx + bin_size) for idx in start_indices]
+    )
+    complete_sectored_counts_dataset = sectored_counts_dataset.isel(epoch=data_indices)
+
+    epoch_per_complete_set = np.repeat(
+        [
+            complete_sectored_counts_dataset.epoch[idx : idx + bin_size].mean().item()
+            for idx in range(0, len(complete_sectored_counts_dataset.epoch), 10)
+        ],
+        bin_size,
+    )
+
+    # Filter dataset for data in the processing day
+
+    # Trim the sectored data to epoch_per_complete_set values in the processing day
+    filtered_dataset = filter_dataset_to_processing_day(
+        complete_sectored_counts_dataset, packet_date, epoch_vals=epoch_per_complete_set
+    )
+
+    # Trim livetime to the size of the sectored data but shifted 10 minutes earlier.
+    filtered_dataset = subset_livetime(filtered_dataset)
+
+    return filtered_dataset
+
+
+def update_livetime_coord(sectored_dataset: xr.Dataset) -> xr.Dataset:
+    """
+    Update livetime_counter to use a new epoch coordinate.
+
+    Assign a new epoch coordinate to the `livetime_counter` variable.
+    This new coordinate is aligned with the original `epoch` dimension,
+    ensuring that `livetime_counter` remains unaffected when the original
+    `epoch` dimension is filtered for complete sets in `subset_sectored_counts`
+    function.
+
+    Parameters
+    ----------
+    sectored_dataset : xarray.Dataset
+        The dataset containing sectored counts and livetime_counter data.
+
+    Returns
+    -------
+    xarray.Dataset
+        The updated dataset with modified livetime_counter.
+    """
+    epoch_values = sectored_dataset.epoch.values
+    sectored_dataset = sectored_dataset.assign_coords(
+        {
+            "epoch_livetime": ("epoch", epoch_values),
+        }
+    )
+    da = sectored_dataset["livetime_counter"]
+    da = da.assign_coords(epoch_livetime=("epoch", epoch_values))
+
+    # Swap the dimension from 'epoch' to 'epoch_livetime'
+    da = da.swap_dims({"epoch": "epoch_livetime"})
+
+    # Update the dataset with the modified variable
+    sectored_dataset["livetime_counter"] = da
+
+    return sectored_dataset
+
+
+def subset_livetime(dataset: xr.Dataset) -> xr.Dataset:
+    """
+    Trim livetime to values shifted 10 minutes earlier than sectored data.
+
+    This ensures that the livetime values correspond to the sectored counts correctly
+    since sectored data is collected 10 minutes before it's transmitted.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        The dataset containing sectored counts and livetime data.
+
+    Returns
+    -------
+    xarray.Dataset
+        The updated dataset with trimmed livetime data.
+    """
+    # epoch values are per science frame which is 1 minute
+    epoch_vals = dataset["epoch"].values
+    epoch_livetime_vals = dataset["epoch_livetime"].values
+
+    if not epoch_vals.size:
+        raise ValueError(
+            "Epoch values are empty. Cannot proceed with livetime subsetting."
+        )
+
+    # Get index positions of epoch[0] and epoch[-1] in epoch_livetime
+    start_idx = np.where(epoch_livetime_vals == epoch_vals[0])[0][0]
+    end_idx = np.where(epoch_livetime_vals == epoch_vals[-1])[0][0]
+
+    if start_idx < 10:
+        raise ValueError(
+            "Start index for livetime is less than 10. This indicates that the "
+            "dataset is too small to shift livetime correctly."
+        )
+
+    # Compute shifted indices by 10 minutes
+    start_trimmed = max(start_idx - 10, 0)
+    end_trimmed = max(end_idx - 10, 0)
+
+    return dataset.isel(epoch_livetime=slice(start_trimmed, end_trimmed + 1))
+
+
+def filter_dataset_to_processing_day(
+    dataset: xr.Dataset,
+    packet_date: str,
+    epoch_vals: np.ndarray,
+    sc_tick: bool = False,
+) -> xr.Dataset:
+    """
+    Filter the dataset for data within the processing day.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        The dataset to filter.
+    packet_date : str
+        The date of the packet data in 'YYYYMMDD' format.
+    epoch_vals : np.ndarray
+        An array of epoch values. Used to identify indices of data that
+        belong in the processing day. For sectored counts data, an
+        array of mean epoch values for major frames (10 min. intervals)
+        is used to filter the dataset to ensure that major frames that span
+        midnight, but belong to the processing day, are included. For other
+        datasets, the dataset's epoch coordinate values will be used.
+    sc_tick : bool
+        If true, the dataset's sc_tick will be used to filter data as well.
+        This ensures that the ccsds headers that use sc_tick as a coordinate,
+        instead of epoch, also corresponds to the processing day.
+
+    Returns
+    -------
+    xarray.Dataset
+        The filtered dataset containing data within the processing day.
+    """
+    processing_day = datetime.strptime(packet_date, "%Y%m%d").strftime("%Y-%m-%d")
+
+    # Filter dataset by epoch indices in processing day
+    epoch_dt = et_to_datetime64(ttj2000ns_to_et(epoch_vals))
+    epoch_indices_in_processing_day = np.where(
+        epoch_dt.astype("datetime64[D]") == np.datetime64(processing_day)
+    )[0]
+    dataset = dataset.isel(epoch=epoch_indices_in_processing_day)
+
+    # If sc_tick is provided (coord for ccsds headers), filter by sc_tick too
+    if sc_tick:
+        sc_tick_dt = met_to_datetime64(dataset["sc_tick"].values)
+        indices_in_processing_day = np.where(
+            sc_tick_dt.astype("datetime64[D]") == np.datetime64(processing_day)
+        )[0]
+        dataset = dataset.isel(sc_tick=indices_in_processing_day)
+    return dataset
+
+
 def process_science(
-    dataset: xr.Dataset, attr_mgr: ImapCdfAttributes
+    dataset: xr.Dataset, attr_mgr: ImapCdfAttributes, packet_date: str
 ) -> list[xr.Dataset]:
     """
     Will process science datasets for CDF products.
 
-    Process binary science data for CDF creation. The data is
-    grouped into science frames, decommutated and decompressed,
-    and split into count rates and event datasets. Updates the
-    dataset attributes and coordinates and data variable
-    dimensions according to specifications in a cdf yaml file.
+    The function processes binary science data for CDF creation.
+    The data is decommutated, decompressed, grouped into science frames,
+    and split into count rates, sectored count rates, and event datasets.
+    It also updates the dataset attributes according to specifications
+    in a cdf yaml file.
 
     Parameters
     ----------
     dataset : xarray.Dataset
         A dataset containing HIT science data.
-
     attr_mgr : ImapCdfAttributes
         Attribute manager used to get the data product field's attributes.
+    packet_date : str
+        The date of the packet data, used for processing.
 
     Returns
     -------
@@ -338,20 +612,37 @@ def process_science(
     # Decommutate and decompress the science data
     sci_dataset = decom_hit(dataset)
 
-    # Organize sectored rates by species type
-    sci_dataset = subcom_sectorates(sci_dataset)
+    # Create dataset for sectored data organized by species type
+    sectored_dataset = subcom_sectorates(sci_dataset)
+
+    # Subset sectored data for complete sets (10 min intervals covering all species)
+    sectored_dataset = subset_sectored_counts(sectored_dataset, packet_date)
+
+    # TODO:
+    #  - headers are values per packet rather than per frame. Do these need to align
+    #    with the science frames?
+    #    For instance, the mean epoch for a frame that spans midnight might contain
+    #    packets from the previous day but filtering sc_tick by processing day will
+    #    exclude those packets. Is this an issue?
+
+    # Filter the science dataset to only include data from the processing day
+    sci_dataset = filter_dataset_to_processing_day(
+        sci_dataset, packet_date, epoch_vals=sci_dataset["epoch"].values, sc_tick=True
+    )
 
     # Split the science data into count rates and event datasets
     pha_raw_dataset = xr.Dataset(
         {"pha_raw": sci_dataset["pha_raw"]}, coords={"epoch": sci_dataset["epoch"]}
     )
-    count_rates_dataset = sci_dataset.drop_vars("pha_raw")
+    count_rates_dataset = sci_dataset.drop_vars(["pha_raw", "sectorates"])
 
     # Calculate uncertainties for count rates
     count_rates_dataset = calculate_uncertainties(count_rates_dataset)
+    sectored_count_rates_dataset = calculate_uncertainties(sectored_dataset)
 
     l1a_datasets: dict = {
-        "imap_hit_l1a_counts": count_rates_dataset,
+        "imap_hit_l1a_counts-standard": count_rates_dataset,
+        "imap_hit_l1a_counts-sectored": sectored_count_rates_dataset,
         "imap_hit_l1a_direct-events": pha_raw_dataset,
     }
 

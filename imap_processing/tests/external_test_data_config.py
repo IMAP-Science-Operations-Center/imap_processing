@@ -52,6 +52,8 @@ EXTERNAL_TEST_DATA = [
     # Hi
     ("imap_hi_l1a_45sensor-de_20250415_v999.cdf", "hi/data/l1/"),
     ("imap_hi_l1b_45sensor-de_20250415_v999.cdf", "hi/data/l1/"),
+    ("imap_hi_l1b_90sensor-hk_20241105-repoint00099_v001.cdf", "hi/data/l1/"),
+    ("imap_hi_l1a_90sensor-de_20241105-repoint00099_v001.cdf", "hi/data/l1/"),
     ("imap_hi_l1c_45sensor-pset_20250415_v999.cdf", "hi/data/l1/"),
 
     # I-ALiRT
@@ -90,11 +92,23 @@ EXTERNAL_TEST_DATA = [
     ("imap_ultra_l1b-sensor-gf-noblades_20250101_v000.csv", "ultra/data/l1/"),
     ("imap_ultra_l1b-45sensor-leftslit-lookup_20250101_v000.csv", "ultra/data/l1/"),
     ("imap_ultra_l1b-45sensor-rightslit-lookup_20250101_v000.csv", "ultra/data/l1/"),
-    ("imap_ultra_l1b-45sensor-imgparams-lookup_20250101_v000.csv", "ultra/data/l1/"),
     ("imap_ultra_l1b-45sensor-tdc-norm-lookup_20250101_v000.csv", "ultra/data/l1/"),
     ("imap_ultra_l1b-45sensor-back-pos-lookup_20250101_v000.csv", "ultra/data/l1/"),
     ("imap_ultra_l1b-egynorm-lookup_20250101_v000.csv", "ultra/data/l1/"),
     ("imap_ultra_l1b-yadjust-lookup_20250101_v001.csv", "ultra/data/l1/"),
+    ("imap_ultra_l1b-45sensor-sptpphcorr_20250101_v000.csv", "ultra/data/l1/"),
+    ("imap_ultra_l1b-45sensor-spbtphcorr_20250101_v000.csv", "ultra/data/l1/"),
+    ("imap_ultra_l1b-90sensor-sptpphcorr_20250101_v000.csv", "ultra/data/l1/"),
+    ("imap_ultra_l1b-90sensor-spbtphcorr_20250101_v000.csv", "ultra/data/l1/"),
+    ("ultra45_raw_sc_ultrarawimg_withFSWccs_FM45_40P_Phi28p5_BeamCal_LinearScan_"
+     "phi2850_theta-000_20240207T102740_revised20250724.csv", "ultra/data/l1/"),
+    ("imap_ultra_l1b-45sensor-tofxeflat_20250101_v000.pgm", "ultra/data/l1/"),
+    ("imap_ultra_l1b-45sensor-tofxemedium_20250101_v000.pgm", "ultra/data/l1/"),
+    ("imap_ultra_l1b-45sensor-tofxesteep_20250101_v000.pgm", "ultra/data/l1/"),
+    ("imap_ultra_l1b-90sensor-tofxeflat_20250101_v000.pgm", "ultra/data/l1/"),
+    ("imap_ultra_l1b-90sensor-tofxemedium_20250101_v000.pgm", "ultra/data/l1/"),
+    ("imap_ultra_l1b-90sensor-tofxesteep_20250101_v000.pgm", "ultra/data/l1/"),
+    ("imap_ultra_l1b-tofxph_20250101_v000.pgm","ultra/data/l1/"),
 
     # MAG
     ("mag-l1b-l1c-t013-magi-burst-in.csv",
@@ -135,5 +149,14 @@ EXTERNAL_TEST_DATA = [
     (
         "mag-l1bc-l2-t021-magi-burst-in.csv",
         "mag/validation/L2/T021/",
-    )
+    ),
+
+    # SWE
+    ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L1A.dat", "swe/l1_validation/"),
+    ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L1B_v3.dat", "swe/l1_validation/"),
+    ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_v0B_15.dat", "swe/l2_validation/"),
+    ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v1F_15.dat", "swe/l2_validation/"),
+    ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v0F_15.dat", "swe/l2_validation/"),
+    ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v1H_14_6.dat", "swe/l2_validation/"),
+    ("swe_l0_unpacked-data_20240510_v001_VALIDATION_L2_bins_v0H_14_6.dat", "swe/l2_validation/"),
 ]  # fmt: skip

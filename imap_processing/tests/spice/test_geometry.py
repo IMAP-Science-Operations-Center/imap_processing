@@ -21,7 +21,6 @@ from imap_processing.spice.geometry import (
     solar_longitude,
     spherical_to_cartesian,
 )
-from imap_processing.spice.kernels import ensure_spice
 
 
 @pytest.mark.parametrize(
@@ -31,7 +30,7 @@ from imap_processing.spice.kernels import ensure_spice
         np.linspace(798033670, 798033770),
     ],
 )
-def test_imap_state(et, use_test_metakernel):
+def test_imap_state(et, imap_simple_sim_metakernel):
     """Test coverage for imap_state()"""
     state = imap_state(et, observer=SpiceBody.EARTH)
     if hasattr(et, "__len__"):
@@ -41,8 +40,7 @@ def test_imap_state(et, use_test_metakernel):
 
 
 @pytest.mark.external_kernel
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_imap_state_ecliptic():
+def test_imap_state_ecliptic(imap_ena_sim_metakernel):
     """Tests retrieving IMAP state in the ECLIPJ2000 frame"""
     state = imap_state(798033670)
     assert state.shape == (6,)
@@ -157,6 +155,9 @@ def test_frame_transform(et_strings, position, from_frame, to_frame, furnish_ker
         SpiceFrame.IMAP_DPS,
         SpiceFrame.IMAP_SPACECRAFT,
         SpiceFrame.ECLIPJ2000,
+        SpiceFrame.IMAP_GSE,
+        SpiceFrame.IMAP_GSM,
+        SpiceFrame.IMAP_RTN,
     ],
 )
 @pytest.mark.parametrize(
@@ -236,14 +237,17 @@ def test_frame_transform_az_el_same_frame(spice_frame):
     np.testing.assert_allclose(result, az_el_points)
 
 
+@pytest.mark.external_kernel
 def test_get_rotation_matrix(furnish_kernels):
     """Test coverage for get_rotation_matrix()."""
     kernels = [
         "naif0012.tls",
         "imap_wkcp.tf",
+        "imap_sclk_0000.tsc",
         "imap_science_100.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
+        "de440s.bsp",
     ]
     with furnish_kernels(kernels):
         et = spiceypy.utc2et("2025-09-30T12:00:00.000")
@@ -257,12 +261,17 @@ def test_get_rotation_matrix(furnish_kernels):
             np.arange(10) + et, SpiceFrame.IMAP_IDEX, SpiceFrame.IMAP_SPACECRAFT
         )
         assert rotation.shape == (10, 3, 3)
+        rotation = get_rotation_matrix(
+            et, SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.IMAP_GSE
+        )
+        assert rotation.shape == (3, 3)
 
 
 def test_instrument_pointing(furnish_kernels):
     kernels = [
         "naif0012.tls",
         "imap_wkcp.tf",
+        "imap_sclk_0000.tsc",
         "imap_science_100.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
@@ -288,12 +297,9 @@ def test_instrument_pointing(furnish_kernels):
 
 
 @pytest.mark.external_kernel
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_basis_vectors():
+def test_basis_vectors(imap_ena_sim_metakernel):
     """Test coverage for basis_vectors()."""
-    # This call to SPICE needs to be wrapped with `ensure_spice` so that kernels
-    # get furnished automatically
-    et = ensure_spice(spiceypy.utc2et)("2025-09-30T12:00:00.000")
+    et = spiceypy.utc2et("2025-09-30T12:00:00.000")
     # test input of float
     sc_axes = basis_vectors(et, SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.IMAP_SPACECRAFT)
     np.testing.assert_array_equal(sc_axes, np.eye(3))

@@ -18,6 +18,8 @@ def calculate_spacecraft_pset(
     de_dataset: xr.Dataset,
     extendedspin_dataset: xr.Dataset,
     cullingmask_dataset: xr.Dataset,
+    rates_dataset: xr.Dataset,
+    params_dataset: xr.Dataset,
     name: str,
     ancillary_files: dict,
 ) -> xr.Dataset:
@@ -32,6 +34,10 @@ def calculate_spacecraft_pset(
         Dataset containing extendedspin data.
     cullingmask_dataset : xarray.Dataset
         Dataset containing cullingmask data.
+    rates_dataset : xarray.Dataset
+        Dataset containing image rates data.
+    params_dataset : xarray.Dataset
+        Dataset containing image parameters data.
     name : str
         Name of the dataset.
     ancillary_files : dict
@@ -71,7 +77,9 @@ def calculate_spacecraft_pset(
     # Calculate exposure
     constant_exposure = ancillary_files["l1c-90sensor-dps-exposure"]
     df_exposure = pd.read_csv(constant_exposure)
-    exposure_pointing = get_spacecraft_exposure_times(df_exposure)
+    exposure_pointing = get_spacecraft_exposure_times(
+        df_exposure, rates_dataset, params_dataset
+    )
 
     # For ISTP, epoch should be the center of the time bin.
     pset_dict["epoch"] = de_dataset.epoch.data[:1].astype(np.int64)

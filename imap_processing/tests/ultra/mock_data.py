@@ -6,7 +6,6 @@ import spiceypy as spice
 import xarray as xr
 
 from imap_processing.ena_maps.utils.coordinates import CoordNames
-from imap_processing.spice.kernels import ensure_spice
 from imap_processing.spice.time import str_to_et
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import build_energy_bins
 
@@ -132,9 +131,7 @@ def mock_l1c_pset_product_rectangular(
 
     # Determine the epoch, which is TT time in nanoseconds since J2000 epoch
     tdb_et = str_to_et(timestr)
-    tt_j2000ns = (
-        ensure_spice(spice.unitim, time_kernels_only=True)(tdb_et, "ET", "TT") * 1e9
-    )
+    tt_j2000ns = spice.unitim(tdb_et, "ET", "TT") * 1e9
 
     logical_source = f"imap_ultra_l1c_{head}sensor-spacecraftpset"
     logical_file_id = (
@@ -323,9 +320,7 @@ def mock_l1c_pset_product_healpix(
 
     # Determine the epoch, which is TT time in nanoseconds since J2000 epoch
     tdb_et = str_to_et(timestr)
-    tt_j2000ns = (
-        ensure_spice(spice.unitim, time_kernels_only=True)(tdb_et, "ET", "TT") * 1e9
-    )
+    tt_j2000ns = spice.unitim(tdb_et, "ET", "TT") * 1e9
 
     logical_source = f"imap_ultra_l1c_{head}sensor-spacecraftpset"
     logical_file_id = (

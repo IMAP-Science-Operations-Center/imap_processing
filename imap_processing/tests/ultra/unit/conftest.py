@@ -420,6 +420,16 @@ def events_fsw_comparison_theta_0():
 
 
 @pytest.fixture
+def events_fsw_comparison_theta_0_revised():
+    """FSW test data."""
+    filename = (
+        "ultra45_raw_sc_ultrarawimg_withFSWccs_FM45_40P_Phi28p5_"
+        "BeamCal_LinearScan_phi2850_theta-000_20240207T102740_revised20250724.csv"
+    )
+    return imap_module_directory / "tests" / "ultra" / "data" / "l1" / filename
+
+
+@pytest.fixture
 def de_dataset(ccsds_path_theta_0, xtce_path):
     """L1A test data"""
     test_data = ultra_l1a(ccsds_path_theta_0, apid_input=ULTRA_EVENTS.apid[0])
@@ -470,7 +480,6 @@ def faux_aux_dataset():
     return test_aux_dataset
 
 
-@pytest.mark.external_test_data
 @pytest.fixture
 def ancillary_files():
     """Fixture to return ancillary files."""
@@ -487,11 +496,66 @@ def ancillary_files():
         "l1b-45sensor-rightslit-lookup": path
         / "imap_ultra_l1b-45sensor-rightslit-lookup_20250101_v000.csv",
         "l1b-45sensor-imgparams-lookup": path
-        / "imap_ultra_l1b-45sensor-imgparams-lookup_20250101_v000.csv",
+        / "imap_ultra_l1b-45sensor-imgparams-lookup_20250101_v001.csv",
+        "l1b-90sensor-imgparams-lookup": path
+        / "imap_ultra_l1b-90sensor-imgparams-lookup_20250101_v001.csv",
         "l1b-45sensor-tdc-norm-lookup": path
         / "imap_ultra_l1b-45sensor-tdc-norm-lookup_20250101_v000.csv",
         "l1b-45sensor-back-pos-lookup": path
         / "imap_ultra_l1b-45sensor-back-pos-lookup_20250101_v000.csv",
         "l1b-egynorm-lookup": path / "imap_ultra_l1b-egynorm-lookup_20250101_v000.csv",
         "l1b-yadjust-lookup": path / "imap_ultra_l1b-yadjust-lookup_20250101_v001.csv",
+        "l1b-45sensor-sptpphcorr": path
+        / "imap_ultra_l1b-45sensor-sptpphcorr_20250101_v000.csv",
+        "l1b-45sensor-spbtphcorr": path
+        / "imap_ultra_l1b-45sensor-spbtphcorr_20250101_v000.csv",
+        "l1b-90sensor-sptpphcorr": path
+        / "imap_ultra_l1b-90sensor-sptpphcorr_20250101_v000.csv",
+        "l1b-90sensor-spbtphcorr": path
+        / "imap_ultra_l1b-90sensor-spbtphcorr_20250101_v000.csv",
+        "l1b-45sensor-tofxeflat": path
+        / "imap_ultra_l1b-45sensor-tofxeflat_20250101_v000.pgm",
+        "l1b-45sensor-tofxemedium": path
+        / "imap_ultra_l1b-45sensor-tofxemedium_20250101_v000.pgm",
+        "l1b-45sensor-tofxesteep": path
+        / "imap_ultra_l1b-45sensor-tofxesteep_20250101_v000.pgm",
+        "l1b-90sensor-tofxeflat": path
+        / "imap_ultra_l1b-90sensor-tofxeflat_20250101_v000.pgm",
+        "l1b-90sensor-tofxemediu": path
+        / "imap_ultra_l1b-90sensor-tofxemedium_20250101_v000.pgm",
+        "l1b-90sensor-tofxesteep": path
+        / "imap_ultra_l1b-90sensor-tofxesteep_20250101_v000.pgm",
+        "l1b-tofxph": path / "imap_ultra_l1b-tofxph_20250101_v000.pgm",
     }
+
+
+@pytest.fixture
+def deadtime_datasets():
+    """Fixture to create params and rates datasets needed to calculate the spacecraft
+    exposure time."""
+    # Simulate a test rates dataset.
+    epoch = 200
+    test_l1a_rates_dataset = xr.Dataset(
+        {
+            "fifo_valid_events": (["epoch"], np.random.randint(100, 200, epoch)),
+            "event_active_time": (["epoch"], np.random.uniform(0, 10, epoch)),
+            "start_pos": (["epoch"], np.random.randint(0, 5, epoch)),
+            "start_rf": (["epoch"], np.random.randint(0, 5, epoch)),
+            "start_lf": (["epoch"], np.random.randint(0, 5, epoch)),
+            "coin_tn": (["epoch"], np.random.randint(0, 5, epoch)),
+            "coin_bn": (["epoch"], np.random.randint(0, 5, epoch)),
+            "stop_tn": (["epoch"], np.random.randint(0, 5, epoch)),
+            "stop_bn": (["epoch"], np.random.randint(0, 5, epoch)),
+        }
+    )
+    # Sector mode (image rates cadence = 3) happens 3 times a day (per pointing).
+    # each time the mode changes, it is recorded in the params packet.
+    # Create a test params dataset that simulates the mode changing to 3, 3 times.
+    modes = np.tile(np.arange(4), 3)
+    test_l1a_params_dataset = xr.Dataset(
+        {
+            "imageratescadence": (["epoch"], modes),
+        },
+        coords={"epoch": ("epoch", np.arange(0, epoch, epoch / len(modes)))},
+    )
+    return {"rates": test_l1a_rates_dataset, "params": test_l1a_params_dataset}

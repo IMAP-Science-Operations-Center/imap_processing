@@ -59,7 +59,6 @@ from imap_processing.idex.idex_l1a import PacketParser
 from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.idex.idex_l2a import idex_l2a
 from imap_processing.idex.idex_l2b import idex_l2b
-from imap_processing.idex.idex_l2c import idex_l2c
 from imap_processing.lo.l1a import lo_l1a
 from imap_processing.lo.l1b import lo_l1b
 from imap_processing.lo.l1c import lo_l1c
@@ -517,7 +516,7 @@ class ProcessInstrument(ABC):
         self,
         processed_data: list[xr.Dataset | Path],
         dependencies: ProcessingInputCollection,
-    ) -> None:
+    ) -> list[Path]:
         """
         Complete post-processing.
 
@@ -545,10 +544,17 @@ class ProcessInstrument(ABC):
             method.
         dependencies : ProcessingInputCollection
             Object containing dependencies to process.
+
+        Returns
+        -------
+        list[Path]
+            List of paths to CDF files produced.
         """
+        products: list[Path] = []
+
         if len(processed_data) == 0:
             logger.info("No products to write to CDF file.")
-            return
+            return products
 
         logger.info("Writing products to local storage")
 
@@ -568,7 +574,6 @@ class ProcessInstrument(ABC):
         # start_date.
         # If it is start_date, skip repointing in the output filename.
 
-        products = []
         for ds in processed_data:
             if isinstance(ds, xr.Dataset):
                 ds.attrs["Data_version"] = self.version[1:]  # Strip 'v' from version
@@ -582,6 +587,7 @@ class ProcessInstrument(ABC):
                 products.append(ds)
 
         self.upload_products(products)
+        return products
 
     @final
     def cleanup(self) -> None:
@@ -731,10 +737,18 @@ class Hi(ProcessInstrument):
         elif self.data_level == "l1b":
             l0_files = dependencies.get_file_paths(source="hi", descriptor="raw")
             if l0_files:
-                datasets = hi_l1b.hi_l1b(l0_files[0])
+                datasets = hi_l1b.housekeeping(l0_files[0])
             else:
-                l1a_files = dependencies.get_file_paths(source="hi", data_type="l1a")
-                datasets = hi_l1b.hi_l1b(load_cdf(l1a_files[0]))
+                l1a_de_file = dependencies.get_file_paths(
+                    source="hi", data_type="l1a", descriptor="de"
+                )[0]
+                l1b_hk_file = dependencies.get_file_paths(
+                    source="hi", data_type="l1b", descriptor="hk"
+                )[0]
+                esa_energies_csv = dependencies.get_file_paths(data_type="ancillary")[0]
+                datasets = hi_l1b.annotate_direct_events(
+                    load_cdf(l1a_de_file), load_cdf(l1b_hk_file), esa_energies_csv
+                )
         elif self.data_level == "l1c":
             science_paths = dependencies.get_file_paths(source="hi", data_type="l1b")
             if len(science_paths) != 1:
@@ -789,37 +803,41 @@ class Hit(ProcessInstrument):
 
         dependency_list = dependencies.processing_input
         if self.data_level == "l1a":
-            # 1 science files and 2 spice files
-            if len(dependency_list) > 3:
+            # Two inputs - L0 and SPICE
+            if len(dependency_list) > 2:
                 raise ValueError(
                     f"Unexpected dependencies found for HIT L1A:"
-                    f"{dependency_list}. Expected only one dependency."
+                    f"{dependency_list}. Expected only 2 dependencies, "
+                    f"L0 and time kernels."
                 )
             # process data to L1A products
             science_files = dependencies.get_file_paths(source="hit", descriptor="raw")
-            datasets = hit_l1a(science_files[0])
+            datasets = hit_l1a(science_files[0], self.start_date)
 
         elif self.data_level == "l1b":
-            data_dict = {}
-            # TODO: Sean removed the file number error handling to work with the
-            #  new SPICE dependencies for SIT-4. Need to review and make changes
-            #  if needed.
             l0_files = dependencies.get_file_paths(source="hit", descriptor="raw")
             l1a_files = dependencies.get_file_paths(source="hit", data_type="l1a")
-            if len(l0_files) > 0:
-                # Add path to CCSDS file to process housekeeping
-                data_dict["imap_hit_l0_raw"] = l0_files[0]
+            if len(l0_files) == 1:
+                # Path to CCSDS file to process housekeeping
+                dependency = l0_files[0]
             else:
+                # 1 science file
+                if len(l1a_files) > 1:
+                    raise ValueError(
+                        f"Unexpected dependencies found for HIT L1B:"
+                        f"{l1a_files}. Expected only one dependency."
+                    )
                 # Add L1A dataset to process science data
-                l1a_dataset = load_cdf(l1a_files[0])
-                data_dict[l1a_dataset.attrs["Logical_source"]] = l1a_dataset
+                dependency = load_cdf(l1a_files[0])
             # process data to L1B products
-            datasets = hit_l1b(data_dict)
+            datasets = [hit_l1b(dependency, self.descriptor)]
+
         elif self.data_level == "l2":
+            # 1 science files and 4 ancillary files
             if len(dependency_list) != 5:
                 raise ValueError(
                     f"Unexpected dependencies found for HIT L2:"
-                    f"{dependency_list}. Expected only one dependency."
+                    f"{dependency_list}. Expected only five dependencies."
                 )
             # Add L1B dataset to process science data
             science_files = dependencies.get_file_paths(
@@ -839,7 +857,7 @@ class Hit(ProcessInstrument):
                 )
             l1b_dataset = load_cdf(science_files[0])
             # process data to L2 products
-            datasets = hit_l2(l1b_dataset, ancillary_files)
+            datasets = [hit_l2(l1b_dataset, ancillary_files)]
 
         return datasets
 
@@ -909,16 +927,7 @@ class Idex(ProcessInstrument):
             hk_files = dependencies.get_file_paths(source="idex", descriptor="evt")
             # Remove duplicate housekeeping files
             hk_dependencies = [load_cdf(dep) for dep in list(set(hk_files))]
-            datasets = [idex_l2b(sci_dependencies, hk_dependencies)]
-        elif self.data_level == "l2c":
-            if len(dependency_list) != 1:
-                raise ValueError(
-                    f"Unexpected dependencies found for IDEX L2C:"
-                    f"{dependency_list}. Expected only one dependency."
-                )
-            sci_files = dependencies.get_file_paths(source="idex", descriptor="sci-1mo")
-            dependencies = [load_cdf(f) for f in sci_files]
-            datasets = [idex_l2c(dependencies)]
+            datasets = idex_l2b(sci_dependencies, hk_dependencies)
         return datasets
 
 
@@ -978,15 +987,13 @@ class Lo(ProcessInstrument):
             data_dict = {}
             # TODO: Add ancillary descriptors when maps using them are
             #  implemented.
-            anc_dependencies = dependencies.get_file_paths(
-                source="lo",
-            )
+            anc_dependencies = []
             science_files = dependencies.get_file_paths(source="lo", descriptor="pset")
             psets = []
             for file in science_files:
                 psets.append(load_cdf(file))
             data_dict[psets[0].attrs["Logical_source"]] = psets
-            datasets = lo_l2.lo_l2(data_dict, anc_dependencies)
+            datasets = lo_l2.lo_l2(data_dict, anc_dependencies, self.descriptor)
         return datasets
 
 

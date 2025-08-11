@@ -533,8 +533,7 @@ def test_set_bad_times():
 
 
 @pytest.mark.external_kernel
-@pytest.mark.use_test_metakernel("imap_ena_sim_metakernel.template")
-def test_set_direction():
+def test_set_direction(imap_ena_sim_metakernel):
     # Arrange
     l1b_de = xr.Dataset(
         {},

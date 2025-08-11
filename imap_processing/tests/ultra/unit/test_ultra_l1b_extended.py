@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 from imap_processing import imap_module_directory
+from imap_processing.quality_flags import ImapDEUltraFlags
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.l1b.lookup_utils import get_angular_profiles
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
@@ -33,15 +34,16 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     get_ssd_back_position_and_tof_offset,
     get_ssd_tof,
     interpolate_fwhm,
+    is_back_tof_valid,
+    is_coin_ph_valid,
 )
 
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
-@pytest.mark.external_test_data
 @pytest.fixture
 def test_fixture(de_dataset, events_fsw_comparison_theta_0, ancillary_files):
-    """Fixture to compute and return yf and related data."""
+    """Fixture to compute and yf and related data."""
     # Remove start_type with fill values
     de_dataset = de_dataset.where(de_dataset["start_type"] != 255, drop=True)
 
@@ -103,7 +105,7 @@ def test_get_ph_tof_and_back_positions(test_fixture, ancillary_files):
 
     df_filt, _, _, de_dataset = test_fixture
 
-    ph_tof, _, ph_xb, ph_yb = get_ph_tof_and_back_positions(
+    ph_result = get_ph_tof_and_back_positions(
         de_dataset, df_filt.Xf.astype("float").values, "ultra45", ancillary_files
     )
 
@@ -113,10 +115,10 @@ def test_get_ph_tof_and_back_positions(test_fixture, ancillary_files):
 
     selected_rows = df_filt.iloc[ph_indices]
 
-    np.testing.assert_array_equal(ph_xb, selected_rows["Xb"].astype("float"))
-    np.testing.assert_array_equal(ph_yb, selected_rows["Yb"].astype("float"))
+    np.testing.assert_array_equal(ph_result.xb, selected_rows["Xb"].astype("float"))
+    np.testing.assert_array_equal(ph_result.yb, selected_rows["Yb"].astype("float"))
     np.testing.assert_allclose(
-        ph_tof, selected_rows["TOF"].astype("float"), atol=1e-5, rtol=0
+        ph_result.tof, selected_rows["TOF"].astype("float"), atol=1e-5, rtol=0
     )
 
 
@@ -168,7 +170,7 @@ def test_get_coincidence_positions(test_fixture, ancillary_files):
     """Tests get_coincidence_positions function."""
     df_filt, _, _, de_dataset = test_fixture
     # Get particle tof (t2).
-    _, t2, _, _ = get_ph_tof_and_back_positions(
+    ph_result = get_ph_tof_and_back_positions(
         de_dataset, df_filt.Xf.astype("float").values, "ultra45", ancillary_files
     )
 
@@ -180,7 +182,9 @@ def test_get_coincidence_positions(test_fixture, ancillary_files):
     rows = df_filt.iloc[indices]
 
     # Get coincidence position and eTOF.
-    etof, xc = get_coincidence_positions(de_filtered, t2, "ultra45", ancillary_files)
+    etof, xc = get_coincidence_positions(
+        de_filtered, ph_result.t2, "ultra45", ancillary_files
+    )
 
     np.testing.assert_allclose(xc, rows["Xc"].astype("float"), atol=1e-4, rtol=0)
     np.testing.assert_allclose(
@@ -193,7 +197,7 @@ def test_calculate_etof_xc(test_fixture, ancillary_files):
     """Tests calculate_etof_xc function."""
     df_filt, _, _, de_dataset = test_fixture
     # Get particle tof (t2).
-    _, t2, _, _ = get_ph_tof_and_back_positions(
+    ph_result = get_ph_tof_and_back_positions(
         de_dataset, df_filt.Xf.astype("float").values, "ultra45", ancillary_files
     )
     # Filter based on STOP_TYPE.
@@ -216,10 +220,10 @@ def test_calculate_etof_xc(test_fixture, ancillary_files):
 
     # Calculate for Top and Bottom
     etof_top, xc_top = calculate_etof_xc(
-        de_top, t2[index_top], "ultra45", "TP", ancillary_files
+        de_top, ph_result.t2[index_top], "ultra45", "TP", ancillary_files
     )
     etof_bottom, xc_bottom = calculate_etof_xc(
-        de_bottom, t2[index_bottom], "ultra45", "BT", ancillary_files
+        de_bottom, ph_result.t2[index_bottom], "ultra45", "BT", ancillary_files
     )
 
     # Assertions for Top
@@ -376,9 +380,13 @@ def test_get_energy_ssd(test_fixture, ancillary_files):
 
 
 @pytest.mark.external_test_data
-def test_get_energy_pulse_height(test_fixture, ancillary_files):
+def test_get_energy_pulse_height(
+    test_fixture, ancillary_files, events_fsw_comparison_theta_0_revised
+):
     """Tests get_energy_ssd function."""
     df_filt, _, _, de_dataset = test_fixture
+    df = pd.read_csv(events_fsw_comparison_theta_0_revised)
+    df_filt = df[df["StartType"] != -1]
     df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
     ph_indices = np.nonzero(
         np.isin(de_dataset["stop_type"], [StopType.Top.value, StopType.Bottom.value])
@@ -386,18 +394,25 @@ def test_get_energy_pulse_height(test_fixture, ancillary_files):
 
     test_xb = df_filt["Xb"].astype("float").values
     test_yb = df_filt["Yb"].astype("float").values
+    quality_flags = np.full(test_xb.shape, ImapDEUltraFlags.NONE.value, dtype=np.uint16)
 
-    energy = get_energy_pulse_height(
+    energy, ph_correction = get_energy_pulse_height(
         de_dataset["stop_type"].data,
         de_dataset["energy_ph"].data,
         test_xb,
         test_yb,
         "ultra45",
         ancillary_files,
+        quality_flags,
     )
+
     test_energy = df_ph["Energy"].astype("float")
 
-    assert np.array_equal(test_energy, energy[ph_indices])
+    np.testing.assert_allclose(test_energy.to_numpy(), energy[ph_indices], atol=1e-2)
+
+    flagged_indices = np.nonzero(quality_flags != ImapDEUltraFlags.NONE.value)[0]
+
+    assert flagged_indices.size == 99
 
 
 @pytest.mark.external_test_data
@@ -631,36 +646,93 @@ def test_get_efficiency():
 
 
 @pytest.mark.external_test_data
-def test_determine_ebin_ph(test_fixture):
+def test_determine_ebin_ph(events_fsw_comparison_theta_0_revised, ancillary_files):
     """Tests determine_ebin_ph function."""
-    df_filt, _, _, _ = test_fixture
-    df_ph = df_filt[df_filt["StopType"].isin(StopType.PH.value)]
+    df = pd.read_csv(events_fsw_comparison_theta_0_revised)
+    df_filt = df[df["StartType"] != -1]
+    df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
 
-    bin = determine_ebin_pulse_height(
+    ebins = determine_ebin_pulse_height(
         df_ph["Energy"].astype("float").to_numpy(),
         df_ph["TOF"].astype("float").to_numpy(),
         df_ph["r"].astype("float").to_numpy(),
+        df_ph["BackTOFValid"].astype(bool).values,
+        df_ph["CoinPHValid"].astype(bool).values,
+        ancillary_files,
     )
 
-    # TODO: add in bin values.
+    valid = (
+        (df_ph["Energy"].astype(float).astype(int) >= 0)
+        & (df_ph["Energy"].astype(float).astype(int) < 2048)
+        & (df_ph["cTOF"].astype(float).astype(int) >= 0)
+        & (df_ph["cTOF"].astype(float).astype(int) < 4096)
+        & (df_ph["BackTOFValid"].astype(float) == 1)
+        & (df_ph["CoinPHValid"].astype(float) == 1)
+    )
+
     np.testing.assert_allclose(
-        bin, np.full(len(bin), 255, dtype=np.uint8), atol=1e-05, rtol=0
+        ebins[valid], df_ph["ComputedBin"].astype(float).astype(int)[valid], atol=1e-05
     )
 
 
 @pytest.mark.external_test_data
-def test_determine_ebin_ssd(test_fixture):
+def test_determine_ebin_ssd(events_fsw_comparison_theta_0_revised, ancillary_files):
     """Tests determine_ebin_ssd function."""
-    df_filt, _, _, _ = test_fixture
+    df = pd.read_csv(events_fsw_comparison_theta_0_revised)
+    df_filt = df[df["StartType"] != -1]
     df_ssd = df_filt[df_filt["StopType"].isin(StopType.SSD.value)]
 
-    bin = determine_ebin_ssd(
+    ebins = determine_ebin_ssd(
         df_ssd["Energy"].astype("float").to_numpy(),
         df_ssd["TOF"].astype("float").to_numpy(),
         df_ssd["r"].astype("float").to_numpy(),
+        "ultra45",
+        ancillary_files,
     )
 
-    # TODO: add in bin values.
-    np.testing.assert_allclose(
-        bin, np.full(len(bin), 255, dtype=np.uint8), atol=1e-05, rtol=0
+    valid = (
+        (df_ssd["Energy"].astype(float).astype(int) >= 0)
+        & (df_ssd["Energy"].astype(float).astype(int) < 4096)
+        & (df_ssd["cTOF"].astype(float).astype(int) >= 0)
+        & (df_ssd["cTOF"].astype(float).astype(int) < 2048)
     )
+
+    np.testing.assert_allclose(
+        ebins[valid], df_ssd["ComputedBin"].astype(float).astype(int)[valid], atol=1e-05
+    )
+
+
+@pytest.mark.external_test_data
+def test_is_back_tof_valid(test_fixture, ancillary_files):
+    """Tests is_back_tof_valid function."""
+    df_filt, _, _, de_dataset = test_fixture
+    df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
+
+    valid = is_back_tof_valid(
+        de_dataset,
+        df_filt.Xf.astype("float").values,
+        "ultra45",
+        ancillary_files,
+    )
+    back_tof_valid_bool = df_ph["BackTOFValid"].astype(int).astype(bool).values
+
+    np.testing.assert_equal(back_tof_valid_bool, valid)
+
+
+@pytest.mark.external_test_data
+def test_is_coin_ph_valid(test_fixture, ancillary_files):
+    """Tests is_coin_ph_valid function."""
+    df_filt, _, _, de_dataset = test_fixture
+    df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
+
+    valid = is_coin_ph_valid(
+        df_ph["eTOF"].astype(float).values,
+        df_ph["Xc"].astype(float).values,
+        df_ph["Xb"].astype(float).values,
+        "ultra45",
+        ancillary_files,
+    )
+    coin_ph_valid_bool = df_ph["CoinPHValid"].astype(int).astype(bool).values
+    valid = np.asarray(valid, dtype=bool)
+
+    np.testing.assert_equal(coin_ph_valid_bool, valid)

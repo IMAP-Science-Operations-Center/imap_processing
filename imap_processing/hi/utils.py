@@ -1,12 +1,13 @@
 """IMAP-Hi utils functions."""
 
 import re
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from enum import IntEnum
 from typing import Optional, Union
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
@@ -247,3 +248,146 @@ class CoincidenceBitmap(IntEnum):
         matches = re.findall(pattern, detector_hit_str)
         # Sum the integer value assigned to the detector name for each match
         return sum(CoincidenceBitmap[m] for m in matches)
+
+
+class EsaEnergyStepLookupTable:
+    """Class for holding a esa_step to esa_energy lookup table."""
+
+    def __init__(self) -> None:
+        self.df = pd.DataFrame(
+            columns=["start_met", "end_met", "esa_step", "esa_energy_step"]
+        )
+        self._indexed = False
+
+        # Get the FILLVAL from the CDF attribute manager that will be returned
+        # for queries without matches
+        attr_mgr = ImapCdfAttributes()
+        attr_mgr.add_instrument_global_attrs("hi")
+        attr_mgr.add_instrument_variable_attrs(instrument="hi", level=None)
+        var_attrs = attr_mgr.get_variable_attributes(
+            "hi_de_esa_energy_step", check_schema=False
+        )
+        self._fillval = var_attrs["FILLVAL"]
+        self._esa_energy_step_dtype = var_attrs["dtype"]
+
+    def add_entry(
+        self, start_met: float, end_met: float, esa_step: int, esa_energy_step: int
+    ) -> None:
+        """
+        Add a single entry to the lookup table.
+
+        Parameters
+        ----------
+        start_met : float
+            Start mission elapsed time of the time range.
+        end_met : float
+            End mission elapsed time of the time range.
+        esa_step : int
+            ESA step value.
+        esa_energy_step : int
+            ESA energy step value to be stored.
+        """
+        new_row = pd.DataFrame(
+            {
+                "start_met": [start_met],
+                "end_met": [end_met],
+                "esa_step": [esa_step],
+                "esa_energy_step": [esa_energy_step],
+            }
+        )
+        self.df = pd.concat([self.df, new_row], ignore_index=True)
+        self._indexed = False
+
+    def _ensure_indexed(self) -> None:
+        """
+        Create index for faster queries if not already done.
+
+        Notes
+        -----
+        This method sorts the internal DataFrame by start_met and esa_step
+        for improved query performance.
+        """
+        if not self._indexed:
+            # Sort by start_met and esa_step for better query performance
+            self.df = self.df.sort_values(["start_met", "esa_step"]).reset_index(
+                drop=True
+            )
+            self._indexed = True
+
+    def query(
+        self,
+        query_met: Union[float, Iterable[float]],
+        esa_step: Union[int, Iterable[float]],
+    ) -> Union[float, np.ndarray]:
+        """
+        Query MET(s) and esa_step(s) to retrieve esa_energy_step(s).
+
+        Parameters
+        ----------
+        query_met : float or array_like
+            Mission elapsed time value(s) to query.
+            Can be a single float or array-like of floats.
+        esa_step : int or array_like
+            ESA step value(s) to match. Can be a single int or array-like of ints.
+            Must be same type (scalar or array-like) as query_met.
+
+        Returns
+        -------
+        float or numpy.ndarray
+            - If inputs are scalars: returns float (esa_energy_step)
+            - If inputs are array-like: returns numpy array of esa_energy_steps
+              with same length as inputs.
+              Contains FILLVAL for queries with no matches.
+
+        Raises
+        ------
+        ValueError
+            If one input is scalar and the other is array-like, or if both are
+            array-like but have different lengths.
+
+        Notes
+        -----
+        If multiple entries match a query, returns the first match found.
+        """
+        self._ensure_indexed()
+
+        # Check if inputs are scalars
+        is_scalar_met = np.isscalar(query_met)
+        is_scalar_step = np.isscalar(esa_step)
+
+        # Check for mismatched input types
+        if is_scalar_met != is_scalar_step:
+            raise ValueError(
+                "query_met and esa_step must both be scalars or both be array-like"
+            )
+
+        # Convert to arrays for uniform processing
+        query_mets = np.atleast_1d(query_met)
+        esa_steps = np.atleast_1d(esa_step)
+
+        # Ensure both arrays have the same shape
+        if query_mets.shape != esa_steps.shape:
+            raise ValueError(
+                "query_met and esa_step must have the same "
+                "length when both are array-like"
+            )
+
+        results = np.full_like(query_mets, self._fillval)
+
+        # Lookup esa_energy_steps for queries
+        for i, (qm, es) in enumerate(zip(query_mets, esa_steps)):
+            mask = (
+                (self.df["start_met"] <= qm)
+                & (self.df["end_met"] >= qm)
+                & (self.df["esa_step"] == es)
+            )
+
+            matches = self.df[mask]
+            if not matches.empty:
+                results[i] = matches["esa_energy_step"].iloc[0]
+
+        # Return scalar for scalar inputs, array for array inputs
+        if is_scalar_met and is_scalar_step:
+            return results.astype(self._esa_energy_step_dtype)[0]
+        else:
+            return results.astype(self._esa_energy_step_dtype)

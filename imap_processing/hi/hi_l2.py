@@ -7,8 +7,12 @@ from typing import Literal
 import numpy as np
 import xarray as xr
 
-from imap_processing.ena_maps.ena_maps import HiPointingSet, RectangularSkyMap
-from imap_processing.spice.geometry import SpiceFrame
+from imap_processing.ena_maps.ena_maps import (
+    AbstractSkyMap,
+    HiPointingSet,
+    RectangularSkyMap,
+)
+from imap_processing.ena_maps.utils.naming import MapDescriptor
 
 logger = logging.getLogger(__name__)
 
@@ -43,23 +47,37 @@ def hi_l2(
         Level 2 IMAP-Hi dataset ready to be written to a CDF file.
     """
     # TODO: parse descriptor to determine map configuration
-    sensor = "45" if "45" in descriptor else "90"
     direction: Literal["full"] = "full"
     cg_corrected = False
-    map_spacing = 4
+    map_descriptor = MapDescriptor.from_string(descriptor)
 
-    rect_map = generate_hi_map(
+    sky_map = generate_hi_map(
         psets,
         geometric_factors_path,
         esa_energies_path,
         direction=direction,
+        output_map=map_descriptor.to_empty_map(),
         cg_corrected=cg_corrected,
-        map_spacing=map_spacing,
     )
 
     # Get the map dataset with variables/coordinates in the correct shape
     # TODO get the correct descriptor and frame
-    l2_ds = rect_map.build_cdf_dataset("hi", "l2", "sf", descriptor, sensor=sensor)
+
+    if not isinstance(sky_map, RectangularSkyMap):
+        raise NotImplementedError("HEALPix map output not supported for Hi")
+    if not isinstance(map_descriptor.sensor, str):
+        raise ValueError(
+            "Invalid map_descriptor. Sensor attribute must be of type str "
+            "and be either '45' or '90'"
+        )
+
+    l2_ds = sky_map.build_cdf_dataset(
+        "hi",
+        "l2",
+        map_descriptor.frame_descriptor,
+        descriptor,
+        sensor=map_descriptor.sensor,
+    )
 
     return [l2_ds]
 
@@ -68,12 +86,12 @@ def generate_hi_map(
     psets: list[str | Path],
     geometric_factors_path: str | Path,
     esa_energies_path: str | Path,
+    output_map: AbstractSkyMap,
     cg_corrected: bool = False,
     direction: Literal["ram", "anti-ram", "full"] = "full",
-    map_spacing: int = 4,
-) -> RectangularSkyMap:
+) -> AbstractSkyMap:
     """
-    Project Hi PSET data into a rectangular sky map.
+    Project Hi PSET data into a sky map.
 
     Parameters
     ----------
@@ -83,24 +101,21 @@ def generate_hi_map(
         Where to get the geometric factors from.
     esa_energies_path : str or pathlib.Path
         Where to get the energies from.
+    output_map : AbstractSkyMap
+        The map object to collect data into. Determines pixel spacing,
+        coordinate system, etc.
     cg_corrected : bool, Optional
         Whether to apply Compton-Getting correction to the energies. Defaults to
         False.
     direction : str, Optional
         Apply filtering to PSET data include ram or anti-ram or full spin data.
         Defaults to "full".
-    map_spacing : int, Optional
-        Pixel spacing, in degrees, of the output map in degrees. Defaults to 4.
 
     Returns
     -------
-    sky_map : RectangularSkyMap
+    sky_map : AbstractSkyMap
         The sky map with all the PSET data projected into the map.
     """
-    rect_map = RectangularSkyMap(
-        spacing_deg=map_spacing, spice_frame=SpiceFrame.ECLIPJ2000
-    )
-
     # TODO: Implement Compton-Getting correction
     if cg_corrected:
         raise NotImplementedError
@@ -118,7 +133,7 @@ def generate_hi_map(
             pset.data[var] *= pset.data["exposure_factor"]
 
         # Project (bin) the PSET variables into the map pixels
-        rect_map.project_pset_values_to_map(
+        output_map.project_pset_values_to_map(
             pset,
             ["counts", "exposure_factor", "bg_rates", "bg_rates_unc", "obs_date"],
         )
@@ -127,35 +142,35 @@ def generate_hi_map(
     # Allow divide by zero to fill set pixels with zero exposure time to NaN
     with np.errstate(divide="ignore"):
         for var in VARS_TO_EXPOSURE_TIME_AVERAGE:
-            rect_map.data_1d[var] /= rect_map.data_1d["exposure_factor"]
+            output_map.data_1d[var] /= output_map.data_1d["exposure_factor"]
 
-    rect_map.data_1d.update(calculate_ena_signal_rates(rect_map.data_1d))
-    rect_map.data_1d.update(
+    output_map.data_1d.update(calculate_ena_signal_rates(output_map.data_1d))
+    output_map.data_1d.update(
         calculate_ena_intensity(
-            rect_map.data_1d, geometric_factors_path, esa_energies_path
+            output_map.data_1d, geometric_factors_path, esa_energies_path
         )
     )
 
-    rect_map.data_1d["obs_date"].data = rect_map.data_1d["obs_date"].data.astype(
+    output_map.data_1d["obs_date"].data = output_map.data_1d["obs_date"].data.astype(
         np.int64
     )
     # TODO: Figure out how to compute obs_date_range (stddev of obs_date)
-    rect_map.data_1d["obs_date_range"] = xr.zeros_like(rect_map.data_1d["obs_date"])
+    output_map.data_1d["obs_date_range"] = xr.zeros_like(output_map.data_1d["obs_date"])
 
     # Rename and convert coordinate from esa_energy_step energy
     # TODO: the correct conversion from esa_energy_step to esa_energy
     esa_energy_step_conversion = (np.arange(10, dtype=float) + 1) * 1000
-    rect_map.data_1d = rect_map.data_1d.rename({"esa_energy_step": "energy"})
-    rect_map.data_1d = rect_map.data_1d.assign_coords(
-        energy=esa_energy_step_conversion[rect_map.data_1d["energy"].values]
+    output_map.data_1d = output_map.data_1d.rename({"esa_energy_step": "energy"})
+    output_map.data_1d = output_map.data_1d.assign_coords(
+        energy=esa_energy_step_conversion[output_map.data_1d["energy"].values]
     )
     # Set the energy_step_delta values
     # TODO: get the correct energy delta values (they are set to NaN) in
-    #    rect_map.build_cdf_dataset()
+    #    output_map.build_cdf_dataset()
 
-    rect_map.data_1d = rect_map.data_1d.drop("esa_energy_step_label")
+    output_map.data_1d = output_map.data_1d.drop("esa_energy_step_label")
 
-    return rect_map
+    return output_map
 
 
 def calculate_ena_signal_rates(map_ds: xr.Dataset) -> dict[str, xr.DataArray]:

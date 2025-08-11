@@ -48,6 +48,13 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         attrs=cdf_manager.get_variable_attributes("component", check_schema=False),
     )
 
+    rtn_component = xr.DataArray(
+        ["radial", "tangential", "normal"],
+        name="RTN_component",
+        dims=["RTN_component"],
+        attrs=cdf_manager.get_variable_attributes("RTN_componentt", check_schema=False),
+    )
+
     esa_step = xr.DataArray(
         data=np.arange(8, dtype=np.uint8),
         name="esa_step",
@@ -57,32 +64,39 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
 
     energy_ranges = xr.DataArray(
         data=np.arange(15, dtype=np.uint8),
-        name="energy_ranges",
-        dims=["energy_ranges"],
-        attrs=cdf_manager.get_variable_attributes("energy_ranges", check_schema=False),
+        name="codice_hi_h_energy_ranges",
+        dims=["codice_hi_h_energy_ranges"],
+        attrs=cdf_manager.get_variable_attributes(
+            "codice_hi_h_energy_ranges", check_schema=False
+        ),
     )
 
-    azimuth = xr.DataArray(
+    elevation = xr.DataArray(
         data=np.arange(4, dtype=np.uint8),
-        name="azimuth",
-        dims=["azimuth"],
-        attrs=cdf_manager.get_variable_attributes("azimuth", check_schema=False),
+        name="codice_hi_h_elevation",
+        dims=["codice_hi_h_elevation"],
+        attrs=cdf_manager.get_variable_attributes(
+            "codice_hi_h_elevation", check_schema=False
+        ),
     )
 
-    spin_angle_bin = xr.DataArray(
+    spin_angle = xr.DataArray(
         data=np.arange(4, dtype=np.uint8),
-        name="spin_angle_bin",
-        dims=["spin_angle_bin"],
-        attrs=cdf_manager.get_variable_attributes("spin_angle_bin", check_schema=False),
+        name="codice_hi_h_spin_angle",
+        dims=["codice_hi_h_spin_angle"],
+        attrs=cdf_manager.get_variable_attributes(
+            "codice_hi_h_spin_anglen", check_schema=False
+        ),
     )
 
     coords = {
         "epoch": epoch,
         "component": component,
+        "RTN_component": rtn_component,
         "esa_step": esa_step,
-        "energy_ranges": energy_ranges,
-        "azimuth": azimuth,
-        "spin_angle_bin": spin_angle_bin,
+        "codice_hi_h_energy_ranges": energy_ranges,
+        "codice_hi_h_elevation": elevation,
+        "codice_hi_h_spin_angle": spin_angle,
     }
     dataset = xr.Dataset(
         coords=coords,
@@ -93,13 +107,22 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
     for key in instrument_keys:
         attrs = cdf_manager.get_variable_attributes(key, check_schema=False)
         fillval = attrs.get("FILLVAL")
-        if key.startswith("mag"):
+        if key in ["mag_B_GSE", "mag_B_GSM"]:
             data = np.full((n, 3), fillval, dtype=np.float32)
             dims = ["epoch", "component"]
             dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
-        elif key.startswith("codicehi"):
+        elif key == "mag_B_RTN":
+            data = np.full((n, 3), fillval, dtype=np.float32)
+            dims = ["epoch", "RTN_component"]
+            dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
+        elif key.startswith("codice_hi"):
             data = np.full((n, 15, 4, 4), fillval, dtype=np.float32)
-            dims = ["epoch", "energy", "azimuth", "spin_angle_bin"]
+            dims = [
+                "epoch",
+                "codice_hi_h_energy_ranges",
+                "codice_hi_h_elevation",
+                "codice_hi_h_spin_angle",
+            ]
             dataset[key] = xr.DataArray(data, dims=dims, attrs=attrs)
         elif key == "swe_counterstreaming_electrons":
             data = np.full(n, fillval, dtype=np.uint8)
@@ -123,11 +146,11 @@ def create_xarray_from_records(records: list[dict]) -> xr.Dataset:  # noqa: PLR0
         for key, val in record.items():
             if key in ["apid", "met", "met_in_utc", "ttj2000ns"]:
                 continue
-            elif key.startswith("mag"):
+            elif key in ["mag_B_GSE", "mag_B_GSM", "mag_B_RTN"]:
                 dataset[key].data[i, :] = val
             elif key.startswith("swe_normalized_counts"):
                 dataset[key].data[i, :] = val
-            elif key.startswith("codicehi"):
+            elif key.startswith("codice_hi"):
                 dataset[key].data[i, :, :, :] = val
             else:
                 dataset[key].data[i] = val

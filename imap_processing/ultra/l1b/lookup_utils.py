@@ -292,3 +292,118 @@ def get_geometric_factor(
     quality_flag[outside_fov] |= ImapDEUltraFlags.FOV.value
 
     return geometric_factor
+
+
+def get_ph_corrected(
+    sensor: str,
+    location: str,
+    ancillary_files: dict,
+    xlut: NDArray,
+    ylut: NDArray,
+    quality_flag: NDArray,
+) -> tuple[NDArray, NDArray]:
+    """
+    PH correction for stop anodes, top and bottom.
+
+    Further description is available starting on
+    page 207 of the Ultra Flight Software Document.
+
+    Parameters
+    ----------
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
+    location : str
+        Location: "tp" or "bt".
+    ancillary_files : dict[Path]
+        Ancillary files.
+    xlut : NDArray
+        X lookup index for PH correction.
+    ylut : NDArray
+        Y lookup index for PH correction.
+    quality_flag : NDArray
+        Quality flag to set when there is an outlier.
+
+    Returns
+    -------
+    ph_correction : NDArray
+        Correction for pulse height.
+    quality_flag : NDArray
+        Quality flag updated with PH correction flags.
+    """
+    ph_correct = pd.read_csv(
+        ancillary_files[f"l1b-{sensor[-2:]}sensor-sp{location}phcorr"], header=None
+    )
+    ph_correct_array = ph_correct.to_numpy()
+
+    max_x, max_y = ph_correct_array.shape[0] - 1, ph_correct_array.shape[1] - 1
+
+    # Clamp indices to nearest valid value
+    xlut_clamped = np.clip(xlut.astype(int), 0, max_x)
+    ylut_clamped = np.clip(ylut.astype(int), 0, max_y)
+
+    # Flag where clamping occurred
+    flagged_mask = (xlut != xlut_clamped) | (ylut != ylut_clamped)
+    quality_flag[flagged_mask] |= ImapDEUltraFlags.PHCORR.value
+
+    ph_correction = ph_correct_array[xlut_clamped, ylut_clamped]
+
+    return ph_correction, quality_flag
+
+
+def get_ebins(
+    lut: str,
+    energy: NDArray,
+    ctof: NDArray,
+    ebins: NDArray,
+    ancillary_files: dict,
+) -> NDArray:
+    """
+    Get energy bins from the lookup table.
+
+    Parameters
+    ----------
+    lut : str
+        Lookup table name, e.g., "l1b-tofxpht".
+    energy : NDArray
+        Energy from the event (keV).
+    ctof : NDArray
+        Corrected TOF (tenths of a ns).
+    ebins : NDArray
+        Energy bins to fill with values.
+    ancillary_files : dict[Path]
+        Ancillary files.
+
+    Returns
+    -------
+    ebins : NDArray
+        Energy bins from the lookup table.
+    """
+    with open(ancillary_files[lut]) as f:
+        all_lines = f.readlines()
+        pixel_text = "".join(all_lines[4:])
+
+    lut_array = np.fromstring(pixel_text, sep=" ", dtype=int).reshape((2048, 4096))
+    # Note that the LUT is indexed [energy, ctof] for l1b-tofxph
+    # and [ctof, energy] for everything else.
+    if lut == "l1b-tofxph":
+        energy_lookup = (2048 - np.floor(energy)).astype(int)
+        ctof_lookup = np.floor(ctof).astype(int)
+        valid = (
+            (energy_lookup >= 0)
+            & (energy_lookup < 2048)
+            & (ctof_lookup >= 0)
+            & (ctof_lookup < 4096)
+        )
+        ebins[valid] = lut_array[energy_lookup[valid], ctof_lookup[valid]]
+    else:
+        energy_lookup = np.floor(energy).astype(int)
+        ctof_lookup = (2048 - np.floor(ctof)).astype(int)
+        valid = (
+            (energy_lookup >= 0)
+            & (energy_lookup < 4096)
+            & (ctof_lookup >= 0)
+            & (ctof_lookup < 2048)
+        )
+        ebins[valid] = lut_array[ctof_lookup[valid], energy_lookup[valid]]
+
+    return ebins

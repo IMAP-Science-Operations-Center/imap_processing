@@ -69,6 +69,7 @@ def test_mag_l1d(mag_test_l1d_data, norm_dataset, furnish_kernels, fake_mag_spin
     burst_mago.attrs["Logical_source"] = "imap_mag_l1c_burst-mago"
 
     kernels = [
+        "naif0012.tls",
         "sim_1yr_imap_pointing_frame.bc",
     ]
     with (
