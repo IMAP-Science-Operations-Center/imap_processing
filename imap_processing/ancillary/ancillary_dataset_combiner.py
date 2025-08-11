@@ -152,7 +152,7 @@ class AncillaryCombiner:
 
         This method handles JSON files by converting them to xarray Datasets
         with appropriate structure. Nested dictionaries are flattened using
-        underscore separation.
+        underscore separation, up to 2 levels deep.
 
         Parameters
         ----------
@@ -189,7 +189,6 @@ class AncillaryCombiner:
                 # Handle scalar values
                 data_vars[key] = ([], value)
 
-        print(data_vars)
         return xr.Dataset(data_vars)
 
     def _combine_input_datasets(self) -> xr.Dataset:  # noqa: PLR0912
