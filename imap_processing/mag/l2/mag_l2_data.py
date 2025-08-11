@@ -22,7 +22,8 @@ class ValidFrames(Enum):
     MAG = SpiceFrame.IMAP_MAG
     DSRF = SpiceFrame.IMAP_DPS
     SRF = SpiceFrame.IMAP_SPACECRAFT
-    # TODO: include RTN and GSE as valid frames
+    GSE = SpiceFrame.IMAP_GSE
+    RTN = SpiceFrame.IMAP_RTN
 
 
 @dataclass(kw_only=True)

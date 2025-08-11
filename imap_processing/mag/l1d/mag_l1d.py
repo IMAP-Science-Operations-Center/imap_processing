@@ -105,8 +105,14 @@ def mag_l1d(  # noqa: PLR0912
     norm_srf_dataset = l1d_norm.generate_dataset(attributes, day_to_process)
     l1d_norm.rotate_frame(ValidFrames.DSRF)
     norm_dsrf_dataset = l1d_norm.generate_dataset(attributes, day_to_process)
+    l1d_norm.rotate_frame(ValidFrames.GSE)
+    norm_gse_dataset = l1d_norm.generate_dataset(attributes, day_to_process)
+    l1d_norm.rotate_frame(ValidFrames.RTN)
+    norm_rtn_dataset = l1d_norm.generate_dataset(attributes, day_to_process)
     output_datasets.append(norm_srf_dataset)
     output_datasets.append(norm_dsrf_dataset)
+    output_datasets.append(norm_gse_dataset)
+    output_datasets.append(norm_rtn_dataset)
 
     if input_mago_burst is not None and input_magi_burst is not None:
         # If burst data is provided, use it to create the burst L1d dataset
@@ -128,12 +134,20 @@ def mag_l1d(  # noqa: PLR0912
             spin_offsets=l1d_norm.spin_offsets,
             day=day,
         )
+
+        # TODO: frame specific attributes may be required
         l1d_burst.rotate_frame(ValidFrames.SRF)
         burst_srf_dataset = l1d_burst.generate_dataset(attributes, day_to_process)
         l1d_burst.rotate_frame(ValidFrames.DSRF)
         burst_dsrf_dataset = l1d_burst.generate_dataset(attributes, day_to_process)
+        l1d_burst.rotate_frame(ValidFrames.GSE)
+        burst_gse_dataset = l1d_burst.generate_dataset(attributes, day_to_process)
+        l1d_burst.rotate_frame(ValidFrames.RTN)
+        burst_rtn_dataset = l1d_burst.generate_dataset(attributes, day_to_process)
         output_datasets.append(burst_srf_dataset)
         output_datasets.append(burst_dsrf_dataset)
+        output_datasets.append(burst_gse_dataset)
+        output_datasets.append(burst_rtn_dataset)
 
     # Output ancillary files
     # Add spin offsets dataset from normal mode processing
