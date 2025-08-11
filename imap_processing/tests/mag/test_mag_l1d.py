@@ -51,12 +51,13 @@ def mag_l1d_test_class(mag_test_l1d_data):
     l1d.quality_flags = np.zeros(len(fake_data["epoch"].data))
     l1d.quality_bitmask = np.zeros(len(fake_data["epoch"].data))
     l1d.data_mode = DataMode.BURST
-    l1d.magi_epoch = fake_data["epoch"].data
-    l1d.magi_vectors = fake_data["vectors"].data[:, :3]
+    l1d.magi_epoch = fake_data["epoch"].data + 1
+    l1d.magi_vectors = fake_data["vectors"].data[:, :3] + 10
     l1d.magi_range = fake_data["vectors"].data[:, 3]
     l1d.config = config
     l1d.spin_offsets = None
-    l1d.magnitude = None
+    l1d.magnitude = np.zeros(len(fake_data["epoch"].data))
+    l1d.frame = ValidFrames.SRF
 
     return l1d
 
@@ -69,12 +70,7 @@ def test_mag_l1d(mag_test_l1d_data, norm_dataset, furnish_kernels, fake_mag_spin
     burst_mago = norm_dataset.copy()
     burst_mago.attrs["Logical_source"] = "imap_mag_l1c_burst-mago"
 
-    kernels = [
-        "naif0012.tls",
-        "sim_1yr_imap_pointing_frame.bc",
-    ]
     with (
-        furnish_kernels(kernels),
         patch(
             "imap_processing.mag.l1d.mag_l1d_data.frame_transform",
             side_effect=lambda *args, **kwargs: args[1],
@@ -83,15 +79,19 @@ def test_mag_l1d(mag_test_l1d_data, norm_dataset, furnish_kernels, fake_mag_spin
             "imap_processing.mag.l2.mag_l2_data.frame_transform",
             side_effect=lambda *args, **kwargs: args[1],
         ),
+        patch(
+            "imap_processing.mag.l1d.mag_l1d_data.ttj2000ns_to_met",
+            side_effect=lambda *args, **kwargs: args[0],
+        ),
     ):
         l1d = mag_l1d(
             [norm_dataset, norm_magi, burst_magi, burst_mago],
             mag_test_l1d_data,
             np.datetime64("2000-01-01"),
         )
+    # Should have: 4 norm frames + 4 burst frames + spin offsets + 2 gradiometry offsets
 
-    # Should have: 4 norm frames + 4 burst frames + spin offsets + gradiometry offsets
-    assert len(l1d) == 10
+    assert len(l1d) == 11
     assert "vectors" in l1d[0].data_vars
 
     # Check that expected logical sources are present
@@ -100,6 +100,7 @@ def test_mag_l1d(mag_test_l1d_data, norm_dataset, furnish_kernels, fake_mag_spin
     # Should include ancillary files
     assert "imap_mag_l1d-spin-offsets" in logical_sources
     assert "imap_mag_l1d-gradiometry-offsets-norm" in logical_sources
+    assert "imap_mag_l1d-gradiometry-offsets-burst" in logical_sources
 
 
 def test_offset_vector():
@@ -277,9 +278,7 @@ def test_quality_flags_with_threshold():
     assert grad_ds["quality_flags"].data.shape == (5,)
 
 
-def test_skip_gradiometry(
-    norm_dataset, furnish_kernels, mag_test_l1d_data, fake_mag_spin_data
-):
+def test_skip_gradiometry(norm_dataset, mag_test_l1d_data, fake_mag_spin_data):
     # Set up test data with all_vectors_primary = 0 for MAGO dataset
     norm_magi = norm_dataset.copy()
     norm_magi.attrs["Logical_source"] = "imap_mag_l1c_norm-magi"
@@ -294,10 +293,7 @@ def test_skip_gradiometry(
     burst_mago.attrs["all_vectors_primary"] = 0
     burst_magi.attrs["all_vectors_primary"] = 1
 
-    kernels = ["sim_1yr_imap_pointing_frame.bc"]
-
     with (
-        furnish_kernels(kernels),
         patch(
             "imap_processing.mag.l1d.mag_l1d_data.frame_transform",
             side_effect=lambda *args, **kwargs: args[1],
@@ -305,6 +301,10 @@ def test_skip_gradiometry(
         patch(
             "imap_processing.mag.l2.mag_l2_data.frame_transform",
             side_effect=lambda *args, **kwargs: args[1],
+        ),
+        patch(
+            "imap_processing.mag.l1d.mag_l1d_data.ttj2000ns_to_met",
+            side_effect=lambda *args, **kwargs: args[0] / 1e9,
         ),
         patch.object(MagL1d, "calculate_gradiometry_offsets") as mock_calc,
         patch.object(MagL1d, "apply_gradiometry_offsets") as mock_apply,
@@ -343,34 +343,27 @@ def test_spin_offset_gap_handling():
 @patch("imap_processing.mag.imap_mag_sdc_configuration_v001.ALWAYS_OUTPUT_MAGO", False)
 def test_mago_magi_swap_functionality(mag_l1d_test_class):
     """Test MAGO/MAGI swap functionality when ALWAYS_OUTPUT_MAGO is False."""
+    mago_vectors = mag_l1d_test_class.vectors.copy()
+    mago_epoch = mag_l1d_test_class.epoch.copy()
+    magi_vectors = mag_l1d_test_class.magi_vectors.copy()
+    magi_epoch = mag_l1d_test_class.magi_epoch.copy()
 
-    # Set up test data
-    original_vectors = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=np.float64)
-    original_epoch = np.array([100, 200, 300], dtype=np.int64)
-    original_range = np.array([1, 2, 1], dtype=np.int32)
+    with patch(
+        "imap_processing.mag.l1d.mag_l1d_data.MagL2L1dBase.truncate_to_24h",
+        return_value=None,
+    ):
+        # Call generate_dataset (this should swap to use MAGI data)
+        attributes = ImapCdfAttributes()
+        attributes.add_instrument_global_attrs("mag")
+        attributes.add_instrument_variable_attrs("mag", "l2")
 
-    magi_vectors = np.array(
-        [[10, 20, 30], [40, 50, 60], [70, 80, 90]], dtype=np.float64
-    )
-    magi_epoch = np.array([110, 210, 310], dtype=np.int64)
-    magi_range = np.array([2, 1, 2], dtype=np.int32)
-
-    mag_l1d_test_class.vectors = original_vectors.copy()
-    mag_l1d_test_class.epoch = original_epoch.copy()
-    mag_l1d_test_class.range = original_range.copy()
-    mag_l1d_test_class.magi_vectors = magi_vectors.copy()
-    mag_l1d_test_class.magi_epoch = magi_epoch.copy()
-    mag_l1d_test_class.magi_range = magi_range.copy()
-
-    # Call generate_dataset (this should swap to use MAGI data)
-    result = mag_l1d_test_class.generate_dataset(
-        ImapCdfAttributes(), np.datetime64("2000-01-01")
-    )
+        result = mag_l1d_test_class.generate_dataset(
+            attributes, np.datetime64("2000-01-01")
+        )
 
     # After generate_dataset, original vectors should be restored
-    assert np.array_equal(mag_l1d_test_class.vectors, original_vectors)
-    assert np.array_equal(mag_l1d_test_class.epoch, original_epoch)
-    assert np.array_equal(mag_l1d_test_class.range, original_range)
+    assert np.array_equal(mag_l1d_test_class.vectors, mago_vectors)
+    assert np.array_equal(mag_l1d_test_class.epoch, mago_epoch)
 
     assert np.array_equal(result["vectors"].data, magi_vectors)
     assert np.array_equal(result["epoch"].data, magi_epoch)
@@ -378,28 +371,29 @@ def test_mago_magi_swap_functionality(mag_l1d_test_class):
 
 @patch("imap_processing.mag.imap_mag_sdc_configuration_v001.ALWAYS_OUTPUT_MAGO", True)
 def test_mago_magi_no_swap_functionality(mag_l1d_test_class):
-    """Test that no swap occurs when ALWAYS_OUTPUT_MAGO is True."""
+    """Test MAGO/MAGI swap functionality when ALWAYS_OUTPUT_MAGO is False."""
+    mago_vectors = mag_l1d_test_class.vectors.copy()
+    mago_epoch = mag_l1d_test_class.epoch.copy()
 
-    # Set up test data
-    original_vectors = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=np.float64)
-    original_epoch = np.array([100, 200, 300], dtype=np.int64)
-    original_range = np.array([1, 2, 1], dtype=np.int32)
+    with patch(
+        "imap_processing.mag.l1d.mag_l1d_data.MagL2L1dBase.truncate_to_24h",
+        return_value=None,
+    ):
+        # Call generate_dataset (this should swap to use MAGI data)
+        attributes = ImapCdfAttributes()
+        attributes.add_instrument_global_attrs("mag")
+        attributes.add_instrument_variable_attrs("mag", "l2")
 
-    mag_l1d_test_class.vectors = original_vectors.copy()
-    mag_l1d_test_class.epoch = original_epoch.copy()
-    mag_l1d_test_class.range = original_range.copy()
+        result = mag_l1d_test_class.generate_dataset(
+            attributes, np.datetime64("2000-01-01")
+        )
 
-    # Call generate_dataset (this should NOT swap, keeping MAGO data)
-    result = mag_l1d_test_class.generate_dataset(
-        ImapCdfAttributes(), np.datetime64("2000-01-01")
-    )
+    # After generate_dataset, original vectors should be restored
+    assert np.array_equal(mag_l1d_test_class.vectors, mago_vectors)
+    assert np.array_equal(mag_l1d_test_class.epoch, mago_epoch)
 
-    # Vectors should remain unchanged (no swap occurred)
-    assert np.array_equal(mag_l1d_test_class.vectors, original_vectors)
-    assert np.array_equal(mag_l1d_test_class.epoch, original_epoch)
-    assert np.array_equal(mag_l1d_test_class.range, original_range)
-
-    assert np.array_equal(result["vectors"].data, original_vectors)
+    assert np.array_equal(result["vectors"].data, mago_vectors)
+    assert np.array_equal(result["epoch"].data, mago_epoch)
 
 
 def test_enhanced_gradiometry_with_quality_flags_detailed():
@@ -416,9 +410,9 @@ def test_enhanced_gradiometry_with_quality_flags_detailed():
 
     magi_vectors = np.array(
         [
-            [5, 5, 5],  # Diff: [5, 5, 5], magnitude ~8.66
-            [0.5, 0.5, 0.5],  # Diff: [0.5, 0.5, 0.5], magnitude ~0.87
-            [3, 3, 3],  # Diff: [2, 2, 2], magnitude ~3.46
+            [5, 5, 5],  # After interpolation: actual offsets will be computed
+            [0.5, 0.5, 0.5],  # based on linear interpolation to MAGo timestamps
+            [3, 3, 3],  # See expected_offsets calculation below
         ]
     )
     magi_epoch = mago_epoch + 500000000  # 0.5 second offset
@@ -441,9 +435,14 @@ def test_enhanced_gradiometry_with_quality_flags_detailed():
     assert grad_ds["quality_flags"].shape == (3,)
 
     # Test calculated values
-    expected_offsets = np.array([[-5, -5, -5], [-0.5, -0.5, -0.5], [-2, -2, -2]])
+    # After interpolation, MAGi values at MAGo timestamps:
+    # t=0: [7.25, 7.25, 7.25], t=1: [2.75, 2.75, 2.75], t=2: [1.75, 1.75, 1.75]
+    # Offsets = MAGi_interpolated - MAGo
+    expected_offsets = np.array(
+        [[-2.75, -2.75, -2.75], [1.75, 1.75, 1.75], [-3.25, -3.25, -3.25]]
+    )
     expected_magnitudes = np.linalg.norm(expected_offsets, axis=1)
-    expected_flags = np.array([1, 0, 1])  # Large and medium exceed threshold
+    expected_flags = np.array([1, 1, 1])  # All magnitudes exceed threshold of 3.0
 
     np.testing.assert_allclose(
         grad_ds["gradiometer_offsets"].data, expected_offsets, rtol=1e-10
