@@ -14,6 +14,7 @@ from imap_processing.mag.l2.mag_l2 import retrieve_matrix_from_l2_calibration
 from imap_processing.mag.l2.mag_l2_data import MagL2L1dBase, ValidFrames
 from imap_processing.spice import spin
 from imap_processing.spice.geometry import frame_transform
+from imap_processing.spice.time import ttj2000ns_to_met
 
 
 @dataclass
@@ -400,7 +401,8 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
                 "Spin offsets can only be calculated in NORM mode and SRF frame."
             )
 
-        sc_spin_phase: np.ndarray = spin.get_spacecraft_spin_phase(self.epoch)  # type: ignore
+        epoch_met = ttj2000ns_to_met(self.epoch)
+        sc_spin_phase: np.ndarray = spin.get_spacecraft_spin_phase(epoch_met)
         # mark vectors as nan where they are nan in sc_spin_phase
         vectors = self.vectors.copy().astype(np.float64)
 
