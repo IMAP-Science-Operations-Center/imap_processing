@@ -815,16 +815,11 @@ class Hit(ProcessInstrument):
             datasets = hit_l1a(science_files[0], self.start_date)
 
         elif self.data_level == "l1b":
-            dependency_dict = {}
             l0_files = dependencies.get_file_paths(source="hit", descriptor="raw")
             l1a_files = dependencies.get_file_paths(source="hit", data_type="l1a")
             if len(l0_files) == 1:
-                # Add path to CCSDS file to process housekeeping
-                dependency_dict = {
-                    "data": l0_files[0],
-                    "logical_source": "imap_hit_l0_raw",
-                    "output_descriptor": self.descriptor,
-                }
+                # Path to CCSDS file to process housekeeping
+                dependency = l0_files[0]
             else:
                 # 1 science file
                 if len(l1a_files) > 1:
@@ -833,14 +828,9 @@ class Hit(ProcessInstrument):
                         f"{l1a_files}. Expected only one dependency."
                     )
                 # Add L1A dataset to process science data
-                l1a_dataset = load_cdf(l1a_files[0])
-                dependency_dict = {
-                    "data": l1a_dataset,
-                    "logical_source": l1a_dataset.attrs["Logical_source"],
-                    "output_descriptor": self.descriptor,
-                }
+                dependency = load_cdf(l1a_files[0])
             # process data to L1B products
-            datasets = hit_l1b(dependency_dict)
+            datasets = hit_l1b(dependency, self.descriptor)
 
         elif self.data_level == "l2":
             # 1 science files and 4 ancillary files

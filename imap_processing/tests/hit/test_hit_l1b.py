@@ -27,7 +27,7 @@ from imap_processing.tests.hit.helpers.l1_validation import (
 def packet_filepath():
     """Set path to test data file"""
     # TODO: Update this path when HIT provides a packet file with all apids.
-    #  Current test file only has the housekeeping apid is available.
+    #  Current test file only has the housekeeping apid.
     return (
         imap_module_directory / "tests/hit/test_data/imap_hit_l0_raw_20100105_v001.pkts"
     )
@@ -48,45 +48,35 @@ def packet_date():
 @pytest.fixture
 def dependencies(packet_filepath, sci_packet_filepath, packet_date):
     """Get dependencies for L1B processing"""
-    # Create dictionary of dependencies and add CCSDS packet file
-    dependency_dict = {
-        "hk": {
-            "logical_source": "imap_hit_l0_raw",
-            "data": packet_filepath,
-            "output_descriptor": "hk",
-        }
-    }
-    # Add L1A datasets
-    l1a_datasets = hit_l1a.hit_l1a(packet_filepath, packet_date)
-    # TODO: Remove this when HIT provides a packet file with all apids.
-    l1a_datasets.extend(hit_l1a.hit_l1a(sci_packet_filepath, packet_date))
-    # Add L1A datasets to the data_dict
-    for dataset in l1a_datasets:
-        if dataset.attrs["Logical_source"] == "imap_hit_l1a_counts-standard":
-            dependency_dict["standard-rates"] = {
-                "logical_source": dataset.attrs["Logical_source"],
-                "data": dataset,
-                "output_descriptor": "standard-rates",
-            }
-            dependency_dict["summed-rates"] = {
-                "logical_source": dataset.attrs["Logical_source"],
-                "data": dataset,
-                "output_descriptor": "summed-rates",
-            }
-        elif dataset.attrs["Logical_source"] == "imap_hit_l1a_counts-sectored":
-            dependency_dict["sectored-rates"] = {
-                "data": dataset,
-                "output_descriptor": "sectored-rates",
-                "logical_source": dataset.attrs["Logical_source"],
-            }
+    # Get the L1A datasets from the housekeeping and science packet files
+    l1a_datasets = hit_l1a.hit_l1a(packet_filepath, packet_date) + hit_l1a.hit_l1a(
+        sci_packet_filepath, packet_date
+    )
 
-    return dependency_dict
+    return {
+        "hk": packet_filepath,
+        "standard-rates": next(
+            ds
+            for ds in l1a_datasets
+            if ds.attrs["Logical_source"] == "imap_hit_l1a_counts-standard"
+        ),
+        "summed-rates": next(
+            ds
+            for ds in l1a_datasets
+            if ds.attrs["Logical_source"] == "imap_hit_l1a_counts-standard"
+        ),
+        "sectored-rates": next(
+            ds
+            for ds in l1a_datasets
+            if ds.attrs["Logical_source"] == "imap_hit_l1a_counts-sectored"
+        ),
+    }
 
 
 @pytest.fixture
 def l1b_hk_dataset(dependencies):
     """Get the housekeeping dataset"""
-    datasets = hit_l1b(dependencies["hk"])
+    datasets = hit_l1b(dependencies["hk"], "hk")
     for dataset in datasets:
         if dataset.attrs["Logical_source"] == "imap_hit_l1b_hk":
             return dataset
@@ -95,7 +85,7 @@ def l1b_hk_dataset(dependencies):
 @pytest.fixture
 def l1b_standard_rates_dataset(dependencies):
     """Get the standard rates dataset"""
-    datasets = hit_l1b(dependencies["standard-rates"])
+    datasets = hit_l1b(dependencies["standard-rates"], "standard-rates")
     for dataset in datasets:
         if dataset.attrs["Logical_source"] == "imap_hit_l1b_standard-rates":
             return dataset
@@ -165,7 +155,7 @@ def test_sum_livetime_10min():
 def test_process_summed_rates_data(dependencies):
     """Test the variables in the summed rates dataset"""
 
-    l1a_counts_dataset = dependencies["summed-rates"]["data"]
+    l1a_counts_dataset = dependencies["summed-rates"]
     livetime = xr.DataArray(l1a_counts_dataset["livetime_counter"] / 270)
     l1b_summed_rates_dataset = process_summed_rates_data(l1a_counts_dataset, livetime)
 
@@ -209,7 +199,7 @@ def test_process_summed_rates_data(dependencies):
 def test_process_standard_rates_data(dependencies):
     """Test the variables in the standard rates dataset"""
 
-    l1a_counts_dataset = dependencies["standard-rates"]["data"]
+    l1a_counts_dataset = dependencies["standard-rates"]
     livetime = xr.DataArray(l1a_counts_dataset["livetime_counter"] / 270)
     l1b_standard_rates_dataset = process_standard_rates_data(
         l1a_counts_dataset, livetime
@@ -301,7 +291,7 @@ def test_process_standard_rates_data(dependencies):
 def test_process_sectored_rates_data(dependencies):
     """Test the variables in the sectored rates dataset"""
 
-    l1a_counts_dataset = dependencies["sectored-rates"]["data"]
+    l1a_counts_dataset = dependencies["sectored-rates"]
     livetime = xr.DataArray(l1a_counts_dataset["livetime_counter"] / 270)
     l1b_sectored_rates_dataset = process_sectored_rates_data(
         l1a_counts_dataset, livetime
@@ -560,15 +550,7 @@ def test_hit_l1b_missing_apid(sci_packet_filepath):
         Science CCSDS packet file path. Only contains science APID and is
         missing the housekeeping APID.
     """
-    # Create a dependency dictionary with a science CCSDS packet file
-    # excluding the housekeeping apid
-    dependency = {
-        "data": sci_packet_filepath,
-        "output_descriptor": "hk",
-        "logical_source": "imap_hit_l0_raw",
-    }
-
-    dataset = hit_l1b(dependency)
+    dataset = hit_l1b(sci_packet_filepath, "hk")
     assert len(dataset) == 0
 
 
@@ -589,6 +571,9 @@ def test_hit_l1b(dependencies, dependency_key, expected_logical_source):
     dependencies : dict
         Dictionary of L1B products and their dependencies.
     """
-    dataset = hit_l1b(dependencies.get(dependency_key))
+    # Check that the dataset is created and has the correct logical source
+    dependency = dependencies.get(dependency_key)
+    l1b_descriptor = dependency_key
+    dataset = hit_l1b(dependency, l1b_descriptor)
     assert isinstance(dataset[0], xr.Dataset)
     assert dataset[0].attrs["Logical_source"] == expected_logical_source

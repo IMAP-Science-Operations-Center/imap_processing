@@ -1,6 +1,7 @@
 """IMAP-HIT L1B data processing."""
 
 import logging
+from typing import Union
 
 import numpy as np
 import xarray as xr
@@ -26,7 +27,9 @@ logger = logging.getLogger(__name__)
 # TODO review logging levels to use (debug vs. info)
 
 
-def hit_l1b(dependency: dict) -> list[xr.Dataset]:
+def hit_l1b(
+    dependency: Union[str, xr.Dataset], l1b_descriptor: str
+) -> list[xr.Dataset]:
     """
     Will process HIT data to L1B.
 
@@ -34,35 +37,28 @@ def hit_l1b(dependency: dict) -> list[xr.Dataset]:
 
     Parameters
     ----------
-    dependency : dict
-        A dictionary of dependency info that contains logical source,
-        data and the l1b data descriptor. Data is either an L1A xarray
-        dataset for science data or a file path string to an L0 file to
+    dependency : Union[str, xr.Dataset]
+        Dependency is either an L1A xarray dataset to process
+        science data or a file path string to an L0 file to
         process housekeeping data.
-            {
-                logical_source: str, dependency logical source,
-                data: xarray dataset for L1A data or file path for L0 data,
-                output_descriptor: str, descriptor for the L1B dataset to create,
-            }
+    l1b_descriptor : str
+        The descriptor for the L1B dataset to create.
 
     Returns
     -------
     processed_data : list[xarray.Dataset]
-        List containing one L1B dataset. While there are a total of four l1b datasets,
-        Only one is passed in by cli to be processed at a time.
+        List containing one L1B dataset. While there are a
+        total of four L1B datasets, only one is processed at a time.
     """
     # Create the attribute manager for this data level
     attr_mgr = get_attribute_manager("l1b")
-
-    # Get the descriptor of the L1B product to create from the dependency dict.
-    l1b_descriptor = dependency["output_descriptor"]
 
     l1b_dataset = None
 
     # Create L1B datasets
     if l1b_descriptor == "hk":
         # Unpack ccsds file to xarray datasets
-        packet_file = dependency["data"]
+        packet_file = dependency
         datasets_by_apid = get_datasets_by_apid(packet_file, derived=True)
         if HitAPID.HIT_HSKP in datasets_by_apid:
             # Process housekeeping to L1B.
@@ -70,11 +66,9 @@ def hit_l1b(dependency: dict) -> list[xr.Dataset]:
                 datasets_by_apid[HitAPID.HIT_HSKP], attr_mgr, "imap_hit_l1b_hk"
             )
             logger.info("HIT L1B housekeeping dataset created")
-
     elif l1b_descriptor in ["standard-rates", "summed-rates", "sectored-rates"]:
         # Process science data to L1B datasets
-        l1a_counts_dataset = dependency["data"]
-        l1b_dataset = process_science_data(l1a_counts_dataset, l1b_descriptor, attr_mgr)
+        l1b_dataset = process_science_data(dependency, l1b_descriptor, attr_mgr)
         logger.info("HIT L1B science dataset created")
     else:
         logger.error(f"Unsupported descriptor for L1B processing: {l1b_descriptor}")
