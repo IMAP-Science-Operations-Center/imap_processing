@@ -185,7 +185,7 @@ class TestHiPointingSet:
 
     def test_plays_nice_with_rectangular_sky_map(self, hi_pset_cdf_path):
         """Test that HiPointingSet works with RectangularSkyMap"""
-        hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path)
+        hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path, spin_phase="full")
         rect_map = ena_maps.RectangularSkyMap(
             spacing_deg=2, spice_frame=geometry.SpiceFrame.ECLIPJ2000
         )

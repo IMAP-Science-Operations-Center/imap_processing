@@ -72,7 +72,7 @@ def test_hi_l2_uses_descriptor_to_setup_map(
 
     assert output_map.spice_reference_frame == SpiceFrame.IMAP_HNU
     assert output_map.spacing_deg == 2.0
-    assert mock_generate_hi_map.call_args.kwargs["direction"] == "full"
+    assert mock_generate_hi_map.call_args.kwargs["spin_phase"] == "full"
     assert not mock_generate_hi_map.call_args.kwargs["cg_corrected"]
 
     rect_map.build_cdf_dataset.assert_called_with(
