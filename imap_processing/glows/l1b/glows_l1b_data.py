@@ -11,7 +11,14 @@ import xarray as xr
 
 from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.utils.constants import TimeTuple
-from imap_processing.spice.time import met_to_datetime64
+from imap_processing.spice import geometry
+from imap_processing.spice.geometry import SpiceBody, SpiceFrame, circular_mean_and_std
+from imap_processing.spice.spin import (
+    get_instrument_spin_phase,
+    get_spin_angle,
+    get_spin_data,
+)
+from imap_processing.spice.time import met_to_datetime64, met_to_sclkticks, sct_to_et
 
 
 @dataclass
@@ -218,14 +225,6 @@ class AncillaryExclusions:
                 epoch=day, method="nearest"
             ),
         )
-from imap_processing.spice import geometry
-from imap_processing.spice.geometry import SpiceBody, SpiceFrame, circular_mean_and_std
-from imap_processing.spice.spin import (
-    get_instrument_spin_phase,
-    get_spin_angle,
-    get_spin_data,
-)
-from imap_processing.spice.time import met_to_sclkticks, sct_to_et
 
 
 class AncillaryParameters:
