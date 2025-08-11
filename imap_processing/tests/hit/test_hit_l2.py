@@ -62,14 +62,12 @@ def dependencies(sci_packet_filepath, packet_date):
             # Standard and summed rates datasets are created from the same L1A dataset
             dependencies["imap_hit_l1b_standard-rates"] = hit_l1b(
                 dataset, "standard-rates"
-            )[0]
-            dependencies["imap_hit_l1b_summed-rates"] = hit_l1b(
-                dataset, "summed-rates"
-            )[0]
+            )
+            dependencies["imap_hit_l1b_summed-rates"] = hit_l1b(dataset, "summed-rates")
         elif dataset.attrs["Logical_source"] == "imap_hit_l1a_counts-sectored":
             dependencies["imap_hit_l1b_sectored-rates"] = hit_l1b(
                 dataset, "sectored-rates"
-            )[0]
+            )
     return dependencies
 
 
@@ -881,8 +879,7 @@ def test_hit_l2(
         Dictionary of ancillary file paths
     """
 
-    l2_datasets = hit_l2(
+    l2_dataset = hit_l2(
         dependencies[dataset_key], ancillary_dependencies[ancillary_key]
     )
-    assert len(l2_datasets) == 1
-    assert l2_datasets[0].attrs["Logical_source"] == expected_logical_source
+    assert l2_dataset.attrs["Logical_source"] == expected_logical_source

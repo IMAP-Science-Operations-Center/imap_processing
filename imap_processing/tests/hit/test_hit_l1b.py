@@ -76,19 +76,19 @@ def dependencies(packet_filepath, sci_packet_filepath, packet_date):
 @pytest.fixture
 def l1b_hk_dataset(dependencies):
     """Get the housekeeping dataset"""
-    datasets = hit_l1b(dependencies["hk"], "hk")
-    for dataset in datasets:
-        if dataset.attrs["Logical_source"] == "imap_hit_l1b_hk":
-            return dataset
+    return hit_l1b(dependencies["hk"], "hk")
+    # for dataset in datasets:
+    #     if dataset.attrs["Logical_source"] == "imap_hit_l1b_hk":
+    #         return dataset
 
 
 @pytest.fixture
 def l1b_standard_rates_dataset(dependencies):
     """Get the standard rates dataset"""
-    datasets = hit_l1b(dependencies["standard-rates"], "standard-rates")
-    for dataset in datasets:
-        if dataset.attrs["Logical_source"] == "imap_hit_l1b_standard-rates":
-            return dataset
+    return hit_l1b(dependencies["standard-rates"], "standard-rates")
+    # for dataset in datasets:
+    #     if dataset.attrs["Logical_source"] == "imap_hit_l1b_standard-rates":
+    #         return dataset
 
 
 def test_calculate_rates():
@@ -551,7 +551,7 @@ def test_hit_l1b_missing_apid(sci_packet_filepath):
         missing the housekeeping APID.
     """
     dataset = hit_l1b(sci_packet_filepath, "hk")
-    assert len(dataset) == 0
+    assert dataset is None
 
 
 @pytest.mark.parametrize(
@@ -575,5 +575,5 @@ def test_hit_l1b(dependencies, dependency_key, expected_logical_source):
     dependency = dependencies.get(dependency_key)
     l1b_descriptor = dependency_key
     dataset = hit_l1b(dependency, l1b_descriptor)
-    assert isinstance(dataset[0], xr.Dataset)
-    assert dataset[0].attrs["Logical_source"] == expected_logical_source
+    assert isinstance(dataset, xr.Dataset)
+    assert dataset.attrs["Logical_source"] == expected_logical_source

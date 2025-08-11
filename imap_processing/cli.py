@@ -830,7 +830,7 @@ class Hit(ProcessInstrument):
                 # Add L1A dataset to process science data
                 dependency = load_cdf(l1a_files[0])
             # process data to L1B products
-            datasets = hit_l1b(dependency, self.descriptor)
+            datasets = [hit_l1b(dependency, self.descriptor)]
 
         elif self.data_level == "l2":
             # 1 science files and 4 ancillary files
@@ -857,7 +857,7 @@ class Hit(ProcessInstrument):
                 )
             l1b_dataset = load_cdf(science_files[0])
             # process data to L2 products
-            datasets = hit_l2(l1b_dataset, ancillary_files)
+            datasets = [hit_l2(l1b_dataset, ancillary_files)]
 
         return datasets
 

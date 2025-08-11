@@ -27,16 +27,16 @@ logger = logging.getLogger(__name__)
 #  - review logging levels to use (debug vs. info)
 
 
-def hit_l2(dependency_sci: xr.Dataset, dependencies_anc: list) -> list[xr.Dataset]:
+def hit_l2(dependency_sci: xr.Dataset, dependencies_anc: list) -> xr.Dataset:
     """
-    Will process HIT data to L2.
+    Will process HIT L1B data to L2.
 
     Processes dependencies needed to create L2 data products.
 
     Parameters
     ----------
     dependency_sci : xr.Dataset
-        L1B xarray science dataset that is either summed rates
+        L1B dataset that is either summed rates
         standard rates or sector rates.
 
     dependencies_anc : list
@@ -44,8 +44,8 @@ def hit_l2(dependency_sci: xr.Dataset, dependencies_anc: list) -> list[xr.Datase
 
     Returns
     -------
-    processed_data : list[xarray.Dataset]
-        List of one L2 dataset.
+    l2_dataset : xarray.Dataset
+        The processed L2 dataset from the dependency dataset provided.
     """
     logger.info("Creating HIT L2 science dataset")
 
@@ -74,7 +74,7 @@ def hit_l2(dependency_sci: xr.Dataset, dependencies_anc: list) -> list[xr.Datase
 
         logger.info(f"HIT L2 dataset created for {logical_source}")
 
-    return [l2_dataset]
+    return l2_dataset
 
 
 def add_cdf_attributes(

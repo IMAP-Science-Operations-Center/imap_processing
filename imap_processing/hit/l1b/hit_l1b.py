@@ -27,9 +27,7 @@ logger = logging.getLogger(__name__)
 # TODO review logging levels to use (debug vs. info)
 
 
-def hit_l1b(
-    dependency: Union[str, xr.Dataset], l1b_descriptor: str
-) -> list[xr.Dataset]:
+def hit_l1b(dependency: Union[str, xr.Dataset], l1b_descriptor: str) -> xr.Dataset:
     """
     Will process HIT data to L1B.
 
@@ -46,9 +44,8 @@ def hit_l1b(
 
     Returns
     -------
-    processed_data : list[xarray.Dataset]
-        List containing one L1B dataset. While there are a
-        total of four L1B datasets, only one is processed at a time.
+    l1b_dataset : xarray.Dataset
+        The processed L1B dataset.
     """
     # Create the attribute manager for this data level
     attr_mgr = get_attribute_manager("l1b")
@@ -74,7 +71,7 @@ def hit_l1b(
         logger.error(f"Unsupported descriptor for L1B processing: {l1b_descriptor}")
         raise ValueError(f"Unsupported descriptor: {l1b_descriptor}")
 
-    return [l1b_dataset] if l1b_dataset is not None else []
+    return l1b_dataset
 
 
 def process_science_data(
