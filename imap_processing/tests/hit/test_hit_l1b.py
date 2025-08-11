@@ -554,6 +554,17 @@ def test_hit_l1b_missing_apid(sci_packet_filepath):
     assert dataset is None
 
 
+def test_hit_l1b_unsupported_descriptor():
+    # Arrange
+    dependency = xr.Dataset()  # Mock dependency
+    unsupported_descriptor = "invalid-descriptor"
+
+    with pytest.raises(
+        ValueError, match=f"Unsupported descriptor: {unsupported_descriptor}"
+    ):
+        hit_l1b(dependency, unsupported_descriptor)
+
+
 @pytest.mark.parametrize(
     "dependency_key, expected_logical_source",
     [

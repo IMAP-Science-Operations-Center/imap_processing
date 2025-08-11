@@ -105,50 +105,47 @@ def process_science_data(
     """
     logger.info("Creating HIT L1B science datasets")
 
+    dataset = None
+    logical_source = None
+
     # Calculate fractional livetime from the livetime counter
     livetime = l1a_counts_dataset["livetime_counter"] / LIVESTIM_PULSES
     livetime = livetime.rename("livetime")
 
-    try:
-        # Process counts data to an L1B dataset based on the descriptor
-        if descriptor == "standard-rates":
-            dataset = process_standard_rates_data(l1a_counts_dataset, livetime)
-            logical_source = "imap_hit_l1b_standard-rates"
-        elif descriptor == "summed-rates":
-            dataset = process_summed_rates_data(l1a_counts_dataset, livetime)
-            logical_source = "imap_hit_l1b_summed-rates"
-        elif descriptor == "sectored-rates":
-            dataset = process_sectored_rates_data(l1a_counts_dataset, livetime)
-            logical_source = "imap_hit_l1b_sectored-rates"
-        else:
-            raise ValueError(f"Unsupported descriptor: {descriptor}")
-    except KeyError as e:
-        logger.error(
-            f"Failed to create L1B dataset for descriptor {descriptor} with input data"
-            f" {l1a_counts_dataset.attrs['Logical_source']}: {e}"
-        )
-        raise
+    # Process counts data to an L1B dataset based on the descriptor
+    if descriptor == "standard-rates":
+        dataset = process_standard_rates_data(l1a_counts_dataset, livetime)
+        logical_source = "imap_hit_l1b_standard-rates"
+    elif descriptor == "summed-rates":
+        dataset = process_summed_rates_data(l1a_counts_dataset, livetime)
+        logical_source = "imap_hit_l1b_summed-rates"
+    elif descriptor == "sectored-rates":
+        dataset = process_sectored_rates_data(l1a_counts_dataset, livetime)
+        logical_source = "imap_hit_l1b_sectored-rates"
 
     # Update attributes and dimensions
-    dataset.attrs = attr_mgr.get_global_attributes(logical_source)
-    # TODO: Add CDF attributes to yaml
-    for field in dataset.data_vars.keys():
-        try:
-            # Create a dict of dimensions using the DEPEND_I keys in the attributes
-            dims = {
-                key: value
-                for key, value in attr_mgr.get_variable_attributes(field).items()
-                if "DEPEND" in key
-            }
-            dataset[field].attrs = attr_mgr.get_variable_attributes(field)
-            dataset[field].assign_coords(dims)
-        except KeyError:
-            logger.warning(f"Field {field} not found in attribute manager.")
+    if dataset and logical_source:
+        dataset.attrs = attr_mgr.get_global_attributes(logical_source)
+        # TODO: Add CDF attributes to yaml
+        for field in dataset.data_vars.keys():
+            try:
+                # Create a dict of dimensions using the DEPEND_I keys in the attributes
+                dims = {
+                    key: value
+                    for key, value in attr_mgr.get_variable_attributes(field).items()
+                    if "DEPEND" in key
+                }
+                dataset[field].attrs = attr_mgr.get_variable_attributes(field)
+                dataset[field].assign_coords(dims)
+            except KeyError:
+                logger.warning(f"Field {field} not found in attribute manager.")
 
-    # Skip schema check for epoch to prevent attr_mgr from adding the
-    # DEPEND_0 attribute which isn't required for epoch
-    dataset.epoch.attrs = attr_mgr.get_variable_attributes("epoch", check_schema=False)
-    logger.info(f"HIT L1B dataset created for {logical_source}")
+        # Skip schema check for epoch to prevent attr_mgr from adding the
+        # DEPEND_0 attribute which isn't required for epoch
+        dataset.epoch.attrs = attr_mgr.get_variable_attributes(
+            "epoch", check_schema=False
+        )
+        logger.info(f"HIT L1B dataset created for {logical_source}")
 
     return dataset
 
