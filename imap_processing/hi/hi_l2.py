@@ -2,7 +2,6 @@
 
 import logging
 from pathlib import Path
-from typing import Literal
 
 import numpy as np
 import xarray as xr
@@ -86,7 +85,7 @@ def generate_hi_map(
     esa_energies_path: str | Path,
     output_map: AbstractSkyMap,
     cg_corrected: bool = False,
-    spin_phase: Literal["ram", "anti-ram", "full"] = "full",
+    spin_phase: str = "full",
 ) -> AbstractSkyMap:
     """
     Project Hi PSET data into a sky map.
