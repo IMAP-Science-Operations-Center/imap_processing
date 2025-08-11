@@ -34,10 +34,16 @@ def l1b_hists():
 
 
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
-def test_glows_l2(mock_spice_function, l1a_dataset):
+def test_glows_l2(mock_spice_function, l1a_dataset, mock_ancillary_exclusions):
     mock_spice_function.side_effect = mock_update_spice_parameters
 
-    l1b_hist_dataset = glows_l1b(l1a_dataset[0])
+    l1b_hist_dataset = glows_l1b(
+        l1a_dataset[0],
+        mock_ancillary_exclusions.excluded_regions,
+        mock_ancillary_exclusions.uv_sources,
+        mock_ancillary_exclusions.suspected_transients,
+        mock_ancillary_exclusions.exclusions_by_instr_team,
+    )
     l2 = glows_l2(l1b_hist_dataset)[0]
     assert l2.attrs["Logical_source"] == "imap_glows_l2_hist"
 
@@ -59,10 +65,16 @@ def test_filter_good_times():
 
 
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
-def test_generate_l2(mock_spice_function, l1a_dataset):
+def test_generate_l2(mock_spice_function, l1a_dataset, mock_ancillary_exclusions):
     mock_spice_function.side_effect = mock_update_spice_parameters
 
-    l1b_hist_dataset = glows_l1b(l1a_dataset[0])
+    l1b_hist_dataset = glows_l1b(
+        l1a_dataset[0],
+        mock_ancillary_exclusions.excluded_regions,
+        mock_ancillary_exclusions.uv_sources,
+        mock_ancillary_exclusions.suspected_transients,
+        mock_ancillary_exclusions.exclusions_by_instr_team,
+    )
     l2 = generate_l2(l1b_hist_dataset)
 
     expected_values = {

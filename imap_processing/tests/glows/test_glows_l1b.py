@@ -187,7 +187,11 @@ def ancillary_dict():
     return dictionary
 
 
-def test_histogram_mapping(mock_ancillary_exclusions, mock_ancillary_parameters):
+@patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
+def test_histogram_mapping(
+    mock_spice_function, mock_ancillary_exclusions, mock_ancillary_parameters
+):
+    mock_spice_function.side_effect = mock_update_spice_parameters
     time_val = 1111111.11
     # A = 2.318
     # B = 69.5454
@@ -237,7 +241,10 @@ def test_histogram_mapping(mock_ancillary_exclusions, mock_ancillary_parameters)
 
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_process_histogram(
-    mock_spice_function, hist_dataset, mock_ancillary_exclusions, mock_ancillary_parameters
+    mock_spice_function,
+    hist_dataset,
+    mock_ancillary_exclusions,
+    mock_ancillary_parameters,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
 
@@ -300,8 +307,11 @@ def test_process_de(de_dataset, ancillary_dict):
 
     assert np.isclose(output[8].data[0], expected_temp)
 
+
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
-def test_glows_l1b(mock_spice_function, de_dataset, hist_dataset, mock_ancillary_exclusions):
+def test_glows_l1b(
+    mock_spice_function, de_dataset, hist_dataset, mock_ancillary_exclusions
+):
     mock_spice_function.side_effect = mock_update_spice_parameters
 
     hist_output = glows_l1b(
@@ -391,7 +401,9 @@ def test_glows_l1b(mock_spice_function, de_dataset, hist_dataset, mock_ancillary
 
 
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
-def test_generate_histogram_dataset(mock_spice_function, hist_dataset, mock_ancillary_exclusions):
+def test_generate_histogram_dataset(
+    mock_spice_function, hist_dataset, mock_ancillary_exclusions
+):
     mock_spice_function.side_effect = mock_update_spice_parameters
 
     l1b_data = glows_l1b(
@@ -423,7 +435,12 @@ def test_generate_de_dataset(de_dataset, mock_ancillary_exclusions):
 
 @pytest.mark.external_kernel
 @pytest.mark.usefixtures("use_fake_spin_data_for_time")
-def test_hist_spice_output(use_fake_spin_data_for_time, furnish_kernels):
+def test_hist_spice_output(
+    use_fake_spin_data_for_time,
+    furnish_kernels,
+    mock_ancillary_exclusions,
+    mock_ancillary_parameters,
+):
     # Generate a fake spin data for time
     data_start_time = 504975600.125  # 2026-01-01T15:00:00.125
     use_fake_spin_data_for_time(data_start_time)
@@ -450,6 +467,8 @@ def test_hist_spice_output(use_fake_spin_data_for_time, furnish_kernels):
         "imap_time_offset": 200.0,
         "glows_start_time": 504975603.125,
         "glows_time_offset": 200.0,
+        "ancillary_exclusions": mock_ancillary_exclusions,
+        "ancillary_parameters": mock_ancillary_parameters,
     }
 
     kernels = [

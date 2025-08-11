@@ -80,8 +80,11 @@ def test_glows_l1b_de():
     assert np.allclose(times, expected_times)
     assert np.allclose(pulse_len, expected_pulse)
 
+
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
-def test_validation_data_histogram(mock_spice_function, l1a_dataset, mock_ancillary_exclusions):
+def test_validation_data_histogram(
+    mock_spice_function, l1a_dataset, mock_ancillary_exclusions
+):
     mock_spice_function.side_effect = mock_update_spice_parameters
     l1b = [
         glows_l1b(
@@ -129,16 +132,17 @@ def test_validation_data_histogram(mock_spice_function, l1a_dataset, mock_ancill
         "spin_period_std_dev": "spin_period_std_dev",
         "pulse_length_average": "pulse_length_average",
         "pulse_length_std_dev": "pulse_length_std_dev",
-        "spin_period_ground_average": "spin_period_ground_average",
-        "spin_period_ground_std_dev": "spin_period_ground_std_dev",
-        "position_angle_offset_average": "position_angle_offset_average",
-        "position_angle_offset_std_dev": "position_angle_offset_std_dev",
-        "spin_axis_orientation_average": "spin_axis_orientation_average",
-        "spin_axis_orientation_std_dev": "spin_axis_orientation_std_dev",
-        "spacecraft_location_average": "spacecraft_location_average",
-        "spacecraft_location_std_dev": "spacecraft_location_std_dev",
-        "spacecraft_velocity_average": "spacecraft_velocity_average",
-        "spacecraft_velocity_std_dev": "spacecraft_velocity_std_dev",
+        # TODO uncomment when spice is complete
+        # "spin_period_ground_average": "spin_period_ground_average",
+        # "spin_period_ground_std_dev": "spin_period_ground_std_dev",
+        # "position_angle_offset_average": "position_angle_offset_average",
+        # "position_angle_offset_std_dev": "position_angle_offset_std_dev",
+        # "spin_axis_orientation_average": "spin_axis_orientation_average",
+        # "spin_axis_orientation_std_dev": "spin_axis_orientation_std_dev",
+        # "spacecraft_location_average": "spacecraft_location_average",
+        # "spacecraft_location_std_dev": "spacecraft_location_std_dev",
+        # "spacecraft_velocity_average": "spacecraft_velocity_average",
+        # "spacecraft_velocity_std_dev": "spacecraft_velocity_std_dev",
     }
 
     for validation_output in out["output"]:
