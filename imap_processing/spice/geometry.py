@@ -568,3 +568,46 @@ def solar_longitude(
     lat_coords = cartesian_to_latitudinal(imap_pos, degrees=degrees)[..., 1]
 
     return float(lat_coords) if lat_coords.size == 1 else lat_coords
+
+
+def circular_mean_and_std(angles: np.ndarray) -> tuple[float, float]:
+    """
+    Calculate circular mean and standard deviation for angles.
+
+    This is important for longitude since angles wrap around.
+
+    Parameters
+    ----------
+    angles : np.ndarray
+        Array of angles in radians.
+
+    Returns
+    -------
+    tuple[float, float]
+        Circular_mean : float
+            Circular mean in radians.
+        Circular_std : float
+            Circular standard deviation in radians.
+    """
+    # Convert to unit vectors on the unit circle
+    cos_angles = np.cos(angles)
+    sin_angles = np.sin(angles)
+
+    # Calculate mean of unit vectors
+    mean_cos = np.mean(cos_angles)
+    mean_sin = np.mean(sin_angles)
+
+    # Calculate circular mean
+    circular_mean = np.arctan2(mean_sin, mean_cos)
+
+    # Calculate mean resultant length
+    result = np.sqrt(mean_cos**2 + mean_sin**2)
+
+    # Calculate circular standard deviation
+    # Formula: sqrt(-2 * ln(R))
+    if result > 0:
+        circular_std = np.sqrt(-2 * np.log(result))
+    else:
+        circular_std = np.inf  # Maximum uncertainty
+
+    return circular_mean, circular_std

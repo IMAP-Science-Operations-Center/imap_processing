@@ -219,7 +219,7 @@ class AncillaryExclusions:
             ),
         )
 from imap_processing.spice import geometry
-from imap_processing.spice.geometry import SpiceBody, SpiceFrame
+from imap_processing.spice.geometry import SpiceBody, SpiceFrame, circular_mean_and_std
 from imap_processing.spice.spin import (
     get_instrument_spin_phase,
     get_spin_angle,
@@ -848,15 +848,7 @@ class HistogramL1B:
         )  # Set to zero per algorithm document
 
         # Calculate spin axis orientation
-        spin_axis_orientation = geometry.cartesian_to_latitudinal(
-            geometry.frame_transform(
-                time_range,
-                np.array([0, 0, 1]),
-                SpiceFrame.IMAP_DPS,
-                SpiceFrame.ECLIPJ2000,
-            )
-        )
-        self.spin_axis_orientation_average = np.average(spin_axis_orientation, axis=0)
+
         spin_axis_all_times = geometry.cartesian_to_latitudinal(
             geometry.frame_transform(
                 time_range,
@@ -865,7 +857,12 @@ class HistogramL1B:
                 SpiceFrame.ECLIPJ2000,
             )
         )
-        self.spin_axis_orientation_std_dev = np.std(spin_axis_all_times, axis=0)
+        # Calculate circular statistics for longitude (wraps around)
+        lon_mean, lon_std = circular_mean_and_std(spin_axis_all_times[..., 1])
+        lat_mean = np.mean(spin_axis_all_times[..., 2])
+        lat_std = np.std(spin_axis_all_times[..., 2])
+        self.spin_axis_orientation_average = np.array([lon_mean, lat_mean])
+        self.spin_axis_orientation_std_dev = np.array([lon_std, lat_std])
 
         # Calculate spacecraft location and velocity
         # ------------------------------------------
