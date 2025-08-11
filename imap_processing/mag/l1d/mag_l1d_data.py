@@ -445,14 +445,15 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
                     new_spin_index = (np.abs(self.epoch - estimated_start)).argmin()
 
                     spin_starts = np.append(spin_starts, new_spin_index)
-                    print(f"Inserting new spin start {estimated_start}")
 
+        # Now spin_starts contains all the indices where spins begin, including
+        # estimating skipped or missing spins.
         spin_starts = np.sort(spin_starts)
 
         chunk_start = 0
         offset_epochs = []
-        x_avg = []
-        y_avg = []
+        x_avg_calcs: list[np.float64] = []
+        y_avg_calcs: list[np.float64] = []
         validity_start_times = []
         validity_end_times = []
         start_spin_counters = []
@@ -464,11 +465,6 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
                 chunk_start : chunk_start + self.config.spin_count_calibration + 1
             ]
             chunk_start_idx = chunk_start
-            chunk_start = chunk_start + self.config.spin_count_calibration
-
-            # If we are in the end of the chunk, just grab all remaining data
-            if chunk_start >= len(spin_starts):
-                chunk_indices = np.append(chunk_indices, len(self.epoch))
 
             chunk_vectors = self.vectors[chunk_indices[0] : chunk_indices[-1]]
             chunk_epoch = self.epoch[chunk_indices[0] : chunk_indices[-1]]
@@ -478,18 +474,25 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             y_valid_count: int = int(np.sum(~np.isnan(chunk_vectors[:, 1])))
             total_points = len(chunk_vectors)
 
-            # Skip chunk if more than half of x or y data is NaN
-            if x_valid_count <= total_points / 2 or y_valid_count <= total_points / 2:
-                continue
-
             # average the x and y axes (z is fixed, as the spin axis)
             avg_x = np.nanmean(chunk_vectors[:, 0])
             avg_y = np.nanmean(chunk_vectors[:, 1])
 
+            # Skip chunk if more than half of x or y data is NaN, or if we have less
+            # than half a spin.
+            # in this case, we should reuse the previous averages.
+            if (
+                x_valid_count <= total_points / 2
+                or y_valid_count <= total_points / 2
+                or total_points <= self.config.spin_count_calibration / 2
+            ):
+                avg_x = x_avg_calcs[-1] if x_avg_calcs else FILLVAL
+                avg_y = y_avg_calcs[-1] if y_avg_calcs else FILLVAL
+
             if not np.isnan(avg_x) and not np.isnan(avg_y):
                 offset_epochs.append(chunk_epoch[0])
-                x_avg.append(avg_x)
-                y_avg.append(avg_y)
+                x_avg_calcs.append(avg_x)
+                y_avg_calcs.append(avg_y)
 
                 # Add validity time range for this chunk
                 validity_start_times.append(chunk_epoch[0])
@@ -504,12 +507,14 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
                     )
                 )
 
+            chunk_start = chunk_start + self.config.spin_count_calibration
+
         spin_epoch_dataarray = xr.DataArray(np.array(offset_epochs))
 
         spin_offsets = xr.Dataset(coords={"epoch": spin_epoch_dataarray})
 
-        spin_offsets["x_offset"] = xr.DataArray(np.array(x_avg), dims=["epoch"])
-        spin_offsets["y_offset"] = xr.DataArray(np.array(y_avg), dims=["epoch"])
+        spin_offsets["x_offset"] = xr.DataArray(np.array(x_avg_calcs), dims=["epoch"])
+        spin_offsets["y_offset"] = xr.DataArray(np.array(y_avg_calcs), dims=["epoch"])
         spin_offsets["validity_start_time"] = xr.DataArray(
             np.array(validity_start_times), dims=["epoch"]
         )
