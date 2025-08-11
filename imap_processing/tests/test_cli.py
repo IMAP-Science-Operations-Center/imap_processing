@@ -6,6 +6,7 @@ import shutil
 import sys
 from pathlib import Path
 from unittest import mock
+from unittest.mock import Mock, sentinel
 
 import numpy as np
 import pytest
@@ -24,6 +25,7 @@ from imap_processing.cli import (
     Hi,
     Hit,
     Idex,
+    Lo,
     ProcessInstrument,
     Spacecraft,
     Swe,
@@ -279,19 +281,30 @@ def test_post_processing_returns_empty_list_if_invoked_with_no_data(
 
 
 @pytest.mark.parametrize(
-    "data_level, science_input, anc_input, n_prods",
+    "data_level, function_name, science_input, anc_input, n_prods",
     [
-        ("l1a", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
-        ("l1b", ["imap_hi_l1a_90sensor-de_20241105_v001.cdf"], [], 1),
-        ("l1b", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
+        ("l1a", "hi_l1a", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
+        (
+            "l1b",
+            "annotate_direct_events",
+            [
+                "imap_hi_l1a_90sensor-de_20241105_v001.cdf",
+                "imap_hi_l1b_90sensor-hk_20241105_v001.cdf",
+            ],
+            ["imap_hi_90sensor-esa-energies_20240101_v001.csv"],
+            1,
+        ),
+        ("l1b", "housekeeping", ["imap_hi_l0_raw_20231212_v001.pkts"], [], 2),
         (
             "l1c",
+            "hi_l1c",
             ["imap_hi_l1b_45sensor-de_20250415_v001.cdf"],
             ["imap_hi_calibration-prod-config_20240101_v001.csv"],
             1,
         ),
         (
             "l2",
+            "hi_l2",
             [
                 "imap_hi_l1c_90sensor-pset_20250415_v001.cdf",
                 "imap_hi_l1c_90sensor-pset_20250416_v001.cdf",
@@ -302,7 +315,12 @@ def test_post_processing_returns_empty_list_if_invoked_with_no_data(
     ],
 )
 def test_hi(
-    mock_instrument_dependencies, data_level, science_input, anc_input, n_prods
+    mock_instrument_dependencies,
+    data_level,
+    function_name,
+    science_input,
+    anc_input,
+    n_prods,
 ):
     """Test coverage for cli.Hi class"""
     mocks = mock_instrument_dependencies
@@ -317,7 +335,7 @@ def test_hi(
     # patch autospec=True makes this test confirm that the function call in cli.py
     # matches the mocked function signature.
     with mock.patch(
-        f"imap_processing.cli.hi_{data_level}.hi_{data_level}", autospec=True
+        f"imap_processing.cli.hi_{data_level}.{function_name}", autospec=True
     ) as mock_hi:
         mock_hi.return_value = [xr.Dataset()] * n_prods
         dependency_str = (
@@ -330,6 +348,47 @@ def test_hi(
         instrument.process()
         assert mock_hi.call_count == 1
         assert mock_instrument_dependencies["mock_write_cdf"].call_count == n_prods
+
+
+@mock.patch("imap_processing.cli.lo_l2.lo_l2", autospec=True)
+def test_lo_l2(mock_lo_l2, mock_instrument_dependencies):
+    mocks = mock_instrument_dependencies
+
+    descriptor = "some-ena-map-descriptor"
+
+    mock_loaded_pset_1 = Mock(attrs={"Logical_source": "some_pset_logical_source"})
+    pset_file_paths = [
+        "imap_lo_l1c_pset_20250415_v001.cdf",
+        "imap_lo_l1c_pset_20250416_v001.cdf",
+    ]
+
+    processing_input = ProcessingInputCollection(
+        *[ScienceInput(file_path) for file_path in pset_file_paths],
+    )
+
+    mocks["mock_load_cdf"].side_effect = [mock_loaded_pset_1, sentinel.loaded_pset_2]
+    mocks["mock_pre_processing"].return_value = processing_input
+
+    output_l2_dataset = xr.Dataset()
+    mock_lo_l2.return_value = [output_l2_dataset]
+
+    instrument = Lo(
+        "l2",
+        descriptor,
+        processing_input.serialize(),
+        "20250415",
+        "20250715",
+        "v005",
+        False,
+    )
+    instrument.process()
+
+    mock_lo_l2.assert_called_once_with(
+        {"some_pset_logical_source": [mock_loaded_pset_1, sentinel.loaded_pset_2]},
+        [],
+        descriptor,
+    )
+    mocks["mock_write_cdf"].assert_called_once_with(output_l2_dataset)
 
 
 @mock.patch("imap_processing.cli.quaternions.process_quaternions", autospec=True)
@@ -485,8 +544,8 @@ def test_ultra_l2(mock_ultra_l2, mock_instrument_dependencies):
 def test_idex_l2b(mock_idex_l2b, mock_instrument_dependencies):
     """Test coverage for cli.Idex class with l2b data level"""
     mocks = mock_instrument_dependencies
-    mock_idex_l2b.return_value = xr.Dataset()
-    mocks["mock_write_cdf"].side_effect = ["/path/to/product0"]
+    mock_idex_l2b.return_value = [xr.Dataset(), xr.Dataset()]
+    mocks["mock_write_cdf"].side_effect = ["/path/to/product0", "/path/to/product1"]
     input_collection = ProcessingInputCollection(
         ScienceInput("imap_idex_l1b_evt_20251015_v002.cdf"),
         ScienceInput("imap_idex_l2a_sci-1week_20251017_v018.cdf"),
@@ -496,12 +555,12 @@ def test_idex_l2b(mock_idex_l2b, mock_instrument_dependencies):
 
     dependency_str = input_collection.serialize()
     instrument = Idex(
-        "l2b", "sci-1mo", dependency_str, "20100105", "20100101", "v001", False
+        "l2b", "all", dependency_str, "20100105", "20100101", "v001", False
     )
 
     instrument.process()
     assert mock_idex_l2b.call_count == 1
-    assert mock_instrument_dependencies["mock_write_cdf"].call_count == 1
+    assert mock_instrument_dependencies["mock_write_cdf"].call_count == 2
 
 
 @mock.patch("imap_processing.cli.hit_l1a")

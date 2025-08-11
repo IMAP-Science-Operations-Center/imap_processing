@@ -523,7 +523,7 @@ class TestUltraL2:
         )
         assert "heliospheric frame" in output_map.attrs["Logical_source_description"]
 
-        assert output_map.attrs["Spice_reference_frame"] == "ECLIPJ2000"
+        assert output_map.attrs["Spice_reference_frame"] == "IMAP_HAE"
         assert output_map.attrs["Spacing_degrees"] == "6.0"
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
@@ -539,5 +539,5 @@ class TestUltraL2:
             output_map.attrs["Logical_source"]
             == "imap_ultra_l2_u90-ena-h-sf-nsp-full-hae-nside32-6mo"
         )
-        assert output_map.attrs["Spice_reference_frame"] == "ECLIPJ2000"
+        assert output_map.attrs["Spice_reference_frame"] == "IMAP_HAE"
         assert output_map.attrs["HEALPix_nside"] == "32"

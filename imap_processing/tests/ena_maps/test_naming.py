@@ -166,7 +166,10 @@ class TestNaming:
         self,
     ):
         # Test with a string frame
-        assert MapDescriptor.get_map_coord_frame("hae") is SpiceFrame.ECLIPJ2000
+        assert MapDescriptor.get_map_coord_frame("hae") is SpiceFrame.IMAP_HAE
+        assert MapDescriptor.get_map_coord_frame("hre") is SpiceFrame.IMAP_HRE
+        assert MapDescriptor.get_map_coord_frame("hnu") is SpiceFrame.IMAP_HNU
+        assert MapDescriptor.get_map_coord_frame("gcs") is SpiceFrame.IMAP_GCS
 
         # Test with not implemented 'hgi'
         with pytest.raises(NotImplementedError):
@@ -180,7 +183,7 @@ class TestNaming:
         assert isinstance(output_map_structure_half_deg, RectangularSkyMap)
         assert output_map_structure_half_deg.spacing_deg == 0.5
         assert (
-            output_map_structure_half_deg.spice_reference_frame is SpiceFrame.ECLIPJ2000
+            output_map_structure_half_deg.spice_reference_frame is SpiceFrame.IMAP_HAE
         )
 
         descriptor_str_nside32 = "ulc-ena-h-sf-nsp-full-hae-nside32-1yr"
@@ -217,7 +220,7 @@ class TestMapDescriptor:
         assert md_h45.instrument_descriptor == "h45"
         assert md_h45.duration == "2mo"
         assert md_h45.coordinate_system == "hae"
-        assert md_h45.map_spice_coord_frame == SpiceFrame.ECLIPJ2000
+        assert md_h45.map_spice_coord_frame == SpiceFrame.IMAP_HAE
 
     def test_init_and_instrument_descriptor_lo_hi_throughput_075(self):
         md_lo_hi_075 = MapDescriptor(
@@ -236,7 +239,7 @@ class TestMapDescriptor:
         assert md_lo_hi_075.instrument_descriptor == "t075"
         assert md_lo_hi_075.duration == "6mo"
         assert md_lo_hi_075.coordinate_system == "hae"
-        assert md_lo_hi_075.map_spice_coord_frame == SpiceFrame.ECLIPJ2000
+        assert md_lo_hi_075.map_spice_coord_frame == SpiceFrame.IMAP_HAE
 
     def test_from_string(
         self,

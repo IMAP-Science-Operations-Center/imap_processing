@@ -3,12 +3,13 @@ import pytest
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.ena_maps.ena_maps import HealpixSkyMap, RectangularSkyMap
 from imap_processing.lo.l2.lo_l2 import (
     add_attributes,
     calculate_fluxes,
     calculate_rates,
     lo_l2,
-    project_pset_to_rect_map,
+    project_pset_to_sky_map,
 )
 from imap_processing.spice import geometry
 
@@ -75,11 +76,39 @@ def attr_mgr():
 
 @pytest.mark.external_kernel
 def test_project_pset_to_rect_map(pset, imap_ena_sim_metakernel):
+    # Arrange
+    descriptor = "l090-ena-h-sf-nsp-ram-hae-6deg-3mo"
+
     # Act
-    lo_rect_map = project_pset_to_rect_map([pset], 6, geometry.SpiceFrame.ECLIPJ2000)
+    lo_rect_map = project_pset_to_sky_map([pset], descriptor)
+
+    # Assert
+    assert isinstance(lo_rect_map, RectangularSkyMap)
     assert lo_rect_map.spacing_deg == 6
-    assert lo_rect_map.spice_reference_frame == geometry.SpiceFrame.ECLIPJ2000
+    assert lo_rect_map.spice_reference_frame == geometry.SpiceFrame.IMAP_HAE
     assert lo_rect_map.num_points == 1800
+
+
+@pytest.mark.external_kernel
+def test_project_pset_to_healpix_map(pset, furnish_kernels):
+    # Arrange
+    descriptor = "l090-ena-h-sf-nsp-ram-hnu-nside2-3mo"
+    kernels = [
+        "imap_sclk_0000.tsc",
+        "imap_science_100.tf",
+        "naif0012.tls",
+        "imap_spk_demo.bsp",
+        "sim_1yr_imap_pointing_frame.bc",
+    ]
+    with furnish_kernels(kernels):
+        # Act
+        lo_rect_map = project_pset_to_sky_map([pset], descriptor)
+
+    # Assert
+    assert isinstance(lo_rect_map, HealpixSkyMap)
+    assert lo_rect_map.nside == 2
+    assert lo_rect_map.spice_reference_frame == geometry.SpiceFrame.IMAP_HNU
+    assert lo_rect_map.num_points == 48
 
 
 @pytest.mark.external_kernel
@@ -125,9 +154,10 @@ def test_calculate_fluxes():
 def test_lo_l2(pset, imap_ena_sim_metakernel):
     # Arrange
     pset = {"imap_lo_l1c_pset": [pset]}
+    descriptor = "l090-ena-h-sf-nsp-ram-hae-6deg-3mo"
 
     # Act
-    hflux_map = lo_l2(pset, [])
+    hflux_map = lo_l2(pset, [], descriptor)
 
     # Assert
     assert len(hflux_map) == 1
@@ -135,6 +165,7 @@ def test_lo_l2(pset, imap_ena_sim_metakernel):
         hflux_map[0].attrs["Logical_source"]
         == "imap_lo_l2_l090-ena-h-sf-nsp-ram-hae-6deg-3mo"
     )
+
     data_vars = ["h_counts", "exposure_time", "h_rate", "h_flux", "solid_angle"]
     for var in data_vars:
         assert var in hflux_map[0].data_vars, f"Variable {var} not found in dataset"

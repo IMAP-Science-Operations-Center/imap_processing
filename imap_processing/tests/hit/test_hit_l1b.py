@@ -12,7 +12,6 @@ from imap_processing.hit.l1b.hit_l1b import (
     process_sectored_rates_data,
     process_standard_rates_data,
     process_summed_rates_data,
-    subset_data_for_sectored_counts,
     sum_livetime_10min,
 )
 from imap_processing.tests.hit.helpers.l1_validation import (
@@ -41,14 +40,20 @@ def sci_packet_filepath():
 
 
 @pytest.fixture
-def dependencies(packet_filepath, sci_packet_filepath):
+def packet_date():
+    """Get the date of the packet file"""
+    return "20100105"
+
+
+@pytest.fixture
+def dependencies(packet_filepath, sci_packet_filepath, packet_date):
     """Get dependencies for L1B processing"""
     # Create dictionary of dependencies and add CCSDS packet file
     data_dict = {"imap_hit_l0_raw": packet_filepath}
     # Add L1A datasets
-    l1a_datasets = hit_l1a.hit_l1a(packet_filepath)
+    l1a_datasets = hit_l1a.hit_l1a(packet_filepath, packet_date)
     # TODO: Remove this when HIT provides a packet file with all apids.
-    l1a_datasets.extend(hit_l1a.hit_l1a(sci_packet_filepath))
+    l1a_datasets.extend(hit_l1a.hit_l1a(sci_packet_filepath, packet_date))
     for dataset in l1a_datasets:
         data_dict[dataset.attrs["Logical_source"]] = dataset
     return data_dict
@@ -70,21 +75,6 @@ def l1b_standard_rates_dataset(dependencies):
     for dataset in datasets:
         if dataset.attrs["Logical_source"] == "imap_hit_l1b_standard-rates":
             return dataset
-
-
-@pytest.fixture
-def l1a_counts_dataset(sci_packet_filepath):
-    """Get L1A counts dataset to test l1b processing functions"""
-    l1a_datasets = hit_l1a.hit_l1a(sci_packet_filepath)
-    for dataset in l1a_datasets:
-        if dataset.attrs["Logical_source"] == "imap_hit_l1a_counts":
-            return dataset
-
-
-@pytest.fixture
-def livetime(l1a_counts_dataset: xr.Dataset) -> xr.DataArray:
-    """Calculate livetime for L1A counts dataset"""
-    return xr.DataArray(l1a_counts_dataset["livetime_counter"] / 270)
 
 
 def test_calculate_rates():
@@ -148,120 +138,11 @@ def test_sum_livetime_10min():
     xr.testing.assert_equal(result, expected_livetime)
 
 
-def test_subset_data_for_sectored_counts():
-    """Test the subset_data_for_sectored_counts function."""
-
-    def create_l1a_counts_dataset(hdr_minute_cnt_values):
-        """Helper to create L1A counts dataset."""
-        return xr.Dataset(
-            {
-                "hdr_minute_cnt": ("epoch", hdr_minute_cnt_values),
-                "h_sectored_counts": ("epoch", np.arange(len(hdr_minute_cnt_values))),
-                "he4_sectored_counts": ("epoch", np.arange(len(hdr_minute_cnt_values))),
-            },
-        )
-
-    def validate_subset(l1a_counts_dataset, livetime):
-        """Helper to validate the subset results."""
-        subset_dataset, subset_livetime = subset_data_for_sectored_counts(
-            l1a_counts_dataset, livetime
-        )
-        assert subset_dataset.sizes["epoch"] == 10
-        assert len(subset_livetime["epoch"]) == 10
-        assert np.all(subset_dataset["hdr_minute_cnt"].values % 10 == np.arange(10))
-
-    # Create a sample livetime data array
-    livetime = xr.DataArray(np.arange(1.0, 31.0, dtype=np.float32), dims=["epoch"])
-
-    # Test with partial data at the start and end of the dataset
-    l1a_counts_dataset = create_l1a_counts_dataset(np.arange(105, 135))
-    validate_subset(l1a_counts_dataset, livetime)
-
-    # Test with partial data in the middle of the dataset
-    l1a_counts_dataset = create_l1a_counts_dataset(
-        [
-            100,
-            101,
-            102,
-            103,
-            104,
-            105,
-            106,
-            107,
-            108,
-            109,
-            110,
-            111,
-            112,
-            113,
-            114,
-            120,
-            121,
-            122,
-            123,
-            124,
-            130,
-            131,
-            132,
-            133,
-            134,
-            135,
-            136,
-            137,
-            138,
-            139,
-        ]
-    )
-    validate_subset(l1a_counts_dataset, livetime)
-
-    # Test with partial data at the start, middle, and end of the dataset
-    l1a_counts_dataset = create_l1a_counts_dataset(
-        [
-            105,
-            106,
-            107,
-            108,
-            109,
-            110,
-            111,
-            112,
-            113,
-            114,
-            115,
-            116,
-            117,
-            118,
-            119,
-            120,
-            121,
-            122,
-            130,
-            131,
-            132,
-            133,
-            134,
-            135,
-            136,
-            137,
-            138,
-            139,
-            140,
-            141,
-        ]
-    )
-    validate_subset(l1a_counts_dataset, livetime)
-
-    # Test with only partial data in the dataset
-    l1a_counts_dataset = create_l1a_counts_dataset(np.arange(100, 160, 2))
-    with pytest.raises(
-        ValueError, match="No valid start indices found for complete sectored counts."
-    ):
-        subset_data_for_sectored_counts(l1a_counts_dataset, livetime)
-
-
-def test_process_summed_rates_data(l1a_counts_dataset, livetime):
+def test_process_summed_rates_data(dependencies):
     """Test the variables in the summed rates dataset"""
 
+    l1a_counts_dataset = dependencies["imap_hit_l1a_counts-standard"]
+    livetime = xr.DataArray(l1a_counts_dataset["livetime_counter"] / 270)
     l1b_summed_rates_dataset = process_summed_rates_data(l1a_counts_dataset, livetime)
 
     # Check that a xarray dataset is returned
@@ -301,8 +182,11 @@ def test_process_summed_rates_data(l1a_counts_dataset, livetime):
         assert f"{particle}_energy_delta_plus" in l1b_summed_rates_dataset.data_vars
 
 
-def test_process_standard_rates_data(l1a_counts_dataset, livetime):
+def test_process_standard_rates_data(dependencies):
     """Test the variables in the standard rates dataset"""
+
+    l1a_counts_dataset = dependencies["imap_hit_l1a_counts-standard"]
+    livetime = xr.DataArray(l1a_counts_dataset["livetime_counter"] / 270)
     l1b_standard_rates_dataset = process_standard_rates_data(
         l1a_counts_dataset, livetime
     )
@@ -390,9 +274,11 @@ def test_process_standard_rates_data(l1a_counts_dataset, livetime):
     )
 
 
-def test_process_sectored_rates_data(l1a_counts_dataset, livetime):
+def test_process_sectored_rates_data(dependencies):
     """Test the variables in the sectored rates dataset"""
 
+    l1a_counts_dataset = dependencies["imap_hit_l1a_counts-sectored"]
+    livetime = xr.DataArray(l1a_counts_dataset["livetime_counter"] / 270)
     l1b_sectored_rates_dataset = process_sectored_rates_data(
         l1a_counts_dataset, livetime
     )
@@ -667,7 +553,6 @@ def test_hit_l1b(dependencies):
     dependencies : dict
         Dictionary of L1A datasets and CCSDS packet file path
     """
-    # TODO: update assertions after science data processing is completed
     datasets = hit_l1b(dependencies)
 
     assert len(datasets) == 4

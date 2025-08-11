@@ -42,18 +42,27 @@ def sci_packet_filepath():
 
 
 @pytest.fixture
-def dependencies(sci_packet_filepath):
+def packet_date():
+    """Get the date of the packet file"""
+    return "20100105"
+
+
+@pytest.fixture
+def dependencies(sci_packet_filepath, packet_date):
     """Get dependencies for L2 processing"""
     # Create dictionary of dependencies
     data_dict = {}
-    l1a_datasets = hit_l1a.hit_l1a(sci_packet_filepath)
+    l1a_datasets = hit_l1a.hit_l1a(sci_packet_filepath, packet_date)
     for l1a_dataset in l1a_datasets:
         l1a_data_dict = {}
-        if l1a_dataset.attrs["Logical_source"] == "imap_hit_l1a_counts":
-            l1a_data_dict["imap_hit_l1a_counts"] = l1a_dataset
-            l1b_datasets = hit_l1b(l1a_data_dict)
-            for l1b_dataset in l1b_datasets:
-                data_dict[l1b_dataset.attrs["Logical_source"]] = l1b_dataset
+        if l1a_dataset.attrs["Logical_source"] in [
+            "imap_hit_l1a_counts-standard",
+            "imap_hit_l1a_counts-sectored",
+        ]:
+            l1a_data_dict[l1a_dataset.attrs["Logical_source"]] = l1a_dataset
+        l1b_datasets = hit_l1b(l1a_data_dict)
+        for l1b_dataset in l1b_datasets:
+            data_dict[l1b_dataset.attrs["Logical_source"]] = l1b_dataset
     return data_dict
 
 
@@ -833,8 +842,26 @@ def test_process_standard_intensity(l1b_standard_rates_dataset, ancillary_depend
         )
 
 
-def test_hit_l2(dependencies, ancillary_dependencies):
-    """Test creating L2 datasets ready for CDF output
+@pytest.mark.parametrize(
+    "dataset_key, ancillary_key, expected_logical_source",
+    [
+        ("imap_hit_l1b_summed-rates", "summed", "imap_hit_l2_summed-intensity"),
+        ("imap_hit_l1b_standard-rates", "standard", "imap_hit_l2_standard-intensity"),
+        (
+            "imap_hit_l1b_sectored-rates",
+            "macropixel",
+            "imap_hit_l2_macropixel-intensity",
+        ),
+    ],
+)
+def test_hit_l2(
+    dependencies,
+    ancillary_dependencies,
+    dataset_key,
+    ancillary_key,
+    expected_logical_source,
+):
+    """Test creating L2 datasets ready for CDF output.
 
     Creates a list of xarray datasets for L2 products.
 
@@ -846,21 +873,9 @@ def test_hit_l2(dependencies, ancillary_dependencies):
     ancillary_dependencies : dict
         Dictionary of ancillary file paths
     """
-    l2_datasets = hit_l2(
-        dependencies["imap_hit_l1b_summed-rates"], ancillary_dependencies["summed"]
-    )
-    assert len(l2_datasets) == 1
-    assert l2_datasets[0].attrs["Logical_source"] == "imap_hit_l2_summed-intensity"
 
     l2_datasets = hit_l2(
-        dependencies["imap_hit_l1b_standard-rates"], ancillary_dependencies["standard"]
+        dependencies[dataset_key], ancillary_dependencies[ancillary_key]
     )
     assert len(l2_datasets) == 1
-    assert l2_datasets[0].attrs["Logical_source"] == "imap_hit_l2_standard-intensity"
-
-    l2_datasets = hit_l2(
-        dependencies["imap_hit_l1b_sectored-rates"],
-        ancillary_dependencies["macropixel"],
-    )
-    assert len(l2_datasets) == 1
-    assert l2_datasets[0].attrs["Logical_source"] == "imap_hit_l2_macropixel-intensity"
+    assert l2_datasets[0].attrs["Logical_source"] == expected_logical_source

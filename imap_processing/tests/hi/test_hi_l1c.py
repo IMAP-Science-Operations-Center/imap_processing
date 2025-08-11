@@ -31,8 +31,8 @@ def test_hi_l1c(mock_generate_pset_dataset, hi_test_cal_prod_config_path):
     assert pset.attrs == {}
 
 
-@pytest.mark.external_test_data
 @pytest.mark.external_kernel
+@pytest.mark.external_test_data
 def test_generate_pset_dataset(
     hi_l1_test_data_path,
     hi_test_cal_prod_config_path,

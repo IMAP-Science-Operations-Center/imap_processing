@@ -2,6 +2,7 @@
 
 # TODO: Come back and add in FSW logic.
 import logging
+from collections import namedtuple
 from enum import Enum
 
 import numpy as np
@@ -16,6 +17,7 @@ from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
     get_angular_profiles,
     get_back_position,
+    get_ebins,
     get_energy_efficiencies,
     get_energy_norm,
     get_image_params,
@@ -25,6 +27,8 @@ from imap_processing.ultra.l1b.lookup_utils import (
 )
 
 logger = logging.getLogger(__name__)
+
+FILLVAL_UINT8 = 255
 
 
 class StartType(Enum):
@@ -48,6 +52,9 @@ class CoinType(Enum):
 
     Top = 1
     Bottom = 2
+
+
+PHTOFResult = namedtuple("PHTOFResult", ["tof", "t2", "xb", "yb", "tofx", "tofy"])
 
 
 def get_front_x_position(
@@ -161,7 +168,7 @@ def get_front_y_position(
 
 def get_ph_tof_and_back_positions(
     de_dataset: xarray.Dataset, xf: np.ndarray, sensor: str, ancillary_files: dict
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+) -> PHTOFResult:
     """
     Calculate back xb, yb position and tof.
 
@@ -196,6 +203,10 @@ def get_ph_tof_and_back_positions(
         Back positions in x direction (hundredths of a millimeter).
     yb : np.array
         Back positions in y direction (hundredths of a millimeter).
+    tofx : np.array
+        X front position tof offset (tenths of a nanosecond).
+    tofy : np.array
+        Y front position tof offset (tenths of a nanosecond).
     """
     indices = np.nonzero(
         np.isin(de_dataset["stop_type"], [StopType.Top.value, StopType.Bottom.value])
@@ -278,7 +289,7 @@ def get_ph_tof_and_back_positions(
         stop_type_bottom
     ] / 10 * get_image_params("XFTTOF", sensor, ancillary_files)
 
-    return tof, t2, xb, yb
+    return PHTOFResult(tof=tof, t2=t2, xb=xb, yb=yb, tofx=tofx, tofy=tofy)
 
 
 def get_path_length(
@@ -1134,7 +1145,12 @@ def get_efficiency(
 
 
 def determine_ebin_pulse_height(
-    energy: np.ndarray, tof: np.ndarray, path_length: np.ndarray
+    energy: NDArray,
+    tof: NDArray,
+    path_length: NDArray,
+    backtofvalid: NDArray,
+    coinphvalid: NDArray,
+    ancillary_files: dict,
 ) -> NDArray:
     """
     Determine the species for pulse-height events.
@@ -1152,12 +1168,18 @@ def determine_ebin_pulse_height(
 
     Parameters
     ----------
-    energy : np.ndarray
+    energy : NDArray
         Energy from the PH event (keV).
-    tof : np.ndarray
+    tof : NDArray
         Time of flight of the PH event (tenths of a nanosecond).
-    path_length : np.ndarray
+    path_length : NDArray
         Path length (r) (hundredths of a millimeter).
+    backtofvalid : NDArray
+        Boolean array indicating if the back TOF is valid.
+    coinphvalid : NDArray
+        Boolean array indicating if the Coincidence PH is valid.
+    ancillary_files : dict
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
@@ -1166,15 +1188,22 @@ def determine_ebin_pulse_height(
     """
     # PH event TOF normalization to Z axis
     ctof, _ = get_ctof(tof, path_length, type="PH")
-    # TODO: need lookup tables
-    # placeholder
-    ebin = np.full(len(ctof), 255, dtype=np.uint8)
 
-    return ebin
+    ebins = np.full(path_length.shape, FILLVAL_UINT8, dtype=np.uint8)
+    valid = backtofvalid & coinphvalid
+    ebins[valid] = get_ebins(
+        "l1b-tofxph", energy[valid], ctof[valid], ebins[valid], ancillary_files
+    )
+
+    return ebins
 
 
 def determine_ebin_ssd(
-    energy: np.ndarray, tof: np.ndarray, path_length: np.ndarray
+    energy: NDArray,
+    tof: NDArray,
+    path_length: NDArray,
+    sensor: str,
+    ancillary_files: dict,
 ) -> NDArray:
     """
     Determine the species for SSD events.
@@ -1194,29 +1223,170 @@ def determine_ebin_ssd(
 
     Parameters
     ----------
-    energy : np.ndarray
+    energy : NDArray
         Energy from the SSD event (keV).
-    tof : np.ndarray
+    tof : NDArray
         Time of flight of the SSD event (tenths of a nanosecond).
-    path_length : np.ndarray
+    path_length : NDArray
         Path length (r) (hundredths of a millimeter).
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
+    ancillary_files : dict
+        Ancillary files containing the lookup tables.
 
     Returns
     -------
-    bin : np.ndarray
+    bin : NDArray
         Species bin.
     """
     # SSD event TOF normalization to Z axis
     ctof, _ = get_ctof(tof, path_length, type="SSD")
 
-    ebin = np.full(len(ctof), 255, dtype=np.uint8)  # placeholder
+    ebins = np.full(path_length.shape, FILLVAL_UINT8, dtype=np.uint8)
+    steep_path_length = get_image_params("PathSteepThresh", sensor, ancillary_files)
+    medium_path_length = get_image_params("PathMediumThresh", sensor, ancillary_files)
 
-    # TODO: get these lookup tables
-    # if r < get_image_params("PathSteepThresh"):
-    #     # bin = ExTOFSpeciesSteep[energy, ctof]
-    # elif r < get_image_params("PathMediumThresh"):
-    #     # bin = ExTOFSpeciesMedium[energy, ctof]
-    # else:
-    #     # bin = ExTOFSpeciesFlat[energy, ctof]
+    steep_mask = path_length < steep_path_length
+    medium_mask = (path_length >= steep_path_length) & (
+        path_length < medium_path_length
+    )
+    flat_mask = path_length >= medium_path_length
 
-    return ebin
+    ebins[steep_mask] = get_ebins(
+        f"l1b-{sensor[5::]}sensor-tofxesteep",
+        energy[steep_mask],
+        ctof[steep_mask],
+        ebins[steep_mask],
+        ancillary_files,
+    )
+    ebins[medium_mask] = get_ebins(
+        f"l1b-{sensor[5::]}sensor-tofxemedium",
+        energy[medium_mask],
+        ctof[medium_mask],
+        ebins[medium_mask],
+        ancillary_files,
+    )
+    ebins[flat_mask] = get_ebins(
+        f"l1b-{sensor[5::]}sensor-tofxeflat",
+        energy[flat_mask],
+        ctof[flat_mask],
+        ebins[flat_mask],
+        ancillary_files,
+    )
+
+    return ebins
+
+
+def is_back_tof_valid(
+    de_dataset: xarray.Dataset,
+    xf: NDArray,
+    sensor: str,
+    ancillary_files: dict,
+) -> NDArray:
+    """
+    Determine whether back TOF is valid based on stop type.
+
+    Parameters
+    ----------
+    de_dataset : xarray.Dataset
+        Data in xarray format.
+    xf : NDArray
+        X front position in (hundredths of a millimeter).
+        Has same length as de_dataset.
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
+    ancillary_files : dict
+        Ancillary files for lookup.
+
+    Returns
+    -------
+    valid_mask : NDArray
+        Boolean array indicating whether back TOF is valid.
+
+    Notes
+    -----
+    From page 33 of the IMAP-Ultra Flight Software Specification document.
+    """
+    _, _, _, _, tofx, tofy = get_ph_tof_and_back_positions(
+        de_dataset, xf, "ultra45", ancillary_files
+    )
+    diff = tofy - tofx
+
+    indices = np.nonzero(
+        np.isin(de_dataset["stop_type"], [StopType.Top.value, StopType.Bottom.value])
+    )[0]
+    de_ph = de_dataset.isel(epoch=indices)
+
+    top_mask = de_ph["stop_type"] == StopType.Top.value
+    bottom_mask = de_ph["stop_type"] == StopType.Bottom.value
+
+    valid = np.zeros_like(diff, dtype=bool)
+
+    diff_tp_min = get_image_params("TOFDiffTpMin", sensor, ancillary_files)
+    diff_tp_max = get_image_params("TOFDiffTpMax", sensor, ancillary_files)
+    diff_bt_min = get_image_params("TOFDiffBtMin", sensor, ancillary_files)
+    diff_bt_max = get_image_params("TOFDiffBtMax", sensor, ancillary_files)
+
+    valid[top_mask] = (diff[top_mask] >= diff_tp_min) & (diff[top_mask] <= diff_tp_max)
+    valid[bottom_mask] = (diff[bottom_mask] >= diff_bt_min) & (
+        diff[bottom_mask] <= diff_bt_max
+    )
+
+    return valid
+
+
+def is_coin_ph_valid(
+    etof: NDArray,
+    xc: NDArray,
+    xb: NDArray,
+    sensor: str,
+    ancillary_files: dict,
+) -> NDArray:
+    """
+    Determine whether Coincidence-PH data are valid.
+
+    This is based on thresholds defined in the IMAP-Ultra Flight Software Specification
+    (see page 36).
+
+    Parameters
+    ----------
+    etof : NDArray
+        Electron TOF (tenths of a nanosecond).
+    xc : NDArray
+        Coincidence X position (hundredths of a mm).
+    xb : NDArray
+        Back X position (hundredths of a mm).
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
+    ancillary_files : dict
+        Ancillary files for lookup.
+
+    Returns
+    -------
+    valid_mask : NDArray
+        Boolean array indicating Coin-PH validity.
+
+    Notes
+    -----
+    Logic derived from page 36 of the IMAP-Ultra Flight Software Specification document.
+    """
+    etof_min = get_image_params("eTOFMin", sensor, ancillary_files)
+    etof_max = get_image_params("eTOFMax", sensor, ancillary_files)
+
+    etof_valid = (etof >= etof_min) & (etof <= etof_max)
+
+    diff_x = xc - xb
+    etof_offset1 = get_image_params("eTOFOff1", sensor, ancillary_files)
+    etof_offset2 = get_image_params("eTOFOff2", sensor, ancillary_files)
+    etof_slope1 = get_image_params("eTOFSlope1", sensor, ancillary_files)
+    etof_slope2 = get_image_params("eTOFSlope2", sensor, ancillary_files)
+
+    t1 = (etof - etof_offset1) * etof_slope1 / 1024
+    t2 = (etof - etof_offset2) * etof_slope2 / 1024
+
+    condition_1 = (diff_x >= t1) & (diff_x <= t2)
+    condition_2 = (diff_x >= -t2) & (diff_x <= -t1)
+
+    spatial_valid = condition_1 | condition_2
+
+    return etof_valid & spatial_valid

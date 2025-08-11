@@ -1,12 +1,14 @@
 """Tests the L2b processing for IDEX data"""
 
 import numpy as np
+import pytest
 import xarray as xr
 from numpy.testing import assert_array_equal
 
-from imap_processing.cdf.utils import write_cdf
+from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.idex.idex_constants import (
     FG_TO_KG,
+    IDEX_SPACING_DEG,
     NANOSECONDS_IN_DAY,
     SECONDS_IN_DAY,
 )
@@ -20,18 +22,45 @@ from imap_processing.idex.idex_l2b import (
     compute_rates_by_charge_and_mass,
     get_science_acquisition_on_percentage,
     get_science_acquisition_timestamps,
+    idex_l2b,
 )
+from imap_processing.tests.idex.conftest import L1B_EVT_CDF
 
 
-def test_l2b_logical_source_and_cdf(l2b_dataset: xr.Dataset):
+@pytest.fixture
+def l2b_and_l2c_datasets(l2a_dataset: xr.Dataset) -> list[xr.Dataset]:
+    """Return a ``xarray`` dataset containing test data.
+
+    Returns
+    -------
+    datasets : list[xr.Dataset]
+        A list of ``xarray`` datasets containing the test data for L2B and L2C.
+    """
+    l1b_evt_dataset = load_cdf(L1B_EVT_CDF)
+    l1b_evt_dataset2 = (
+        l1b_evt_dataset.copy()
+    )  # Add a second dataset with different epoch values for testing
+    l2a_dataset2 = (
+        l2a_dataset.copy()
+    )  # Add a second dataset with different epoch values for testing
+    l1b_evt_dataset2["epoch"] = l1b_evt_dataset2["epoch"] + NANOSECONDS_IN_DAY
+    l2a_dataset2["epoch"] = l2a_dataset2["epoch"] + NANOSECONDS_IN_DAY
+    datasets = idex_l2b(
+        [l2a_dataset, l2a_dataset2], [l1b_evt_dataset, l1b_evt_dataset2]
+    )
+    return datasets
+
+
+def test_l2b_logical_source_and_cdf(l2b_and_l2c_datasets: list[xr.Dataset]):
     """Tests that the ``idex_l2b`` function generates datasets
     with the expected logical source.
 
     Parameters
     ----------
-    l2b_dataset : xr.Dataset
+    l2b_and_l2c_datasets : list[xr.Dataset]
         A ``xarray`` dataset containing the test data
     """
+    l2b_dataset = l2b_and_l2c_datasets[0]
     expected_src = "imap_idex_l2b_sci-1mo"
     assert l2b_dataset.attrs["Logical_source"] == expected_src
     # Verify the CDF file can be created with no errors.
@@ -42,13 +71,55 @@ def test_l2b_logical_source_and_cdf(l2b_dataset: xr.Dataset):
     assert file_name.name == "imap_idex_l2b_sci-1mo_20251017_v999.cdf"
 
 
-def test_l2b_cdf_variables(l2b_dataset: xr.Dataset):
+def test_l2c_attrs_and_vars(
+    l2b_and_l2c_datasets: list[xr.Dataset], l2a_dataset: xr.Dataset
+):
+    """Tests that the ``idex_l2b`` function generates datasets
+    with the expected variables and attributes.
+
+    Parameters
+    ----------
+    l2b_and_l2c_datasets : list[xr.Dataset]
+        A ``xarray`` dataset containing the l2c test data.
+    l2a_dataset
+        A ``xarray`` dataset containing the l1b test data.
+    """
+    l2c_dataset = l2b_and_l2c_datasets[1]
+    assert l2c_dataset.attrs["Logical_source"] == "imap_idex_l2c_rectangular-map-1mo"
+    # The total counts in the map should be equal to the number of dust events
+    # in the l2a_dataset (*2 because the l2b fixture counts are doubled)
+    np.testing.assert_allclose(
+        l2c_dataset["counts_by_charge_map"].sum(), len(l2a_dataset.epoch) * 2
+    )
+    np.testing.assert_allclose(
+        l2c_dataset["counts_by_mass_map"].sum(), len(l2a_dataset.epoch) * 2
+    )
+    assert l2c_dataset.sizes == {
+        "epoch": 2,
+        "impact_charge": 10,
+        "mass": 10,
+        "rectangular_lon_pixel": int(360 / IDEX_SPACING_DEG),
+        "rectangular_lat_pixel": int(180 / IDEX_SPACING_DEG),
+    }
+    l2c_dataset.attrs["Data_version"] = "999"
+    # Check the attributes of the dataset by writing to a CDF file
+    rect_file_name = write_cdf(l2c_dataset)
+    assert rect_file_name.exists()
+    assert rect_file_name.name == "imap_idex_l2c_rectangular-map-1mo_20251017_v999.cdf"
+
+    for var in l2c_dataset.data_vars:
+        assert "DICT_KEY" in l2c_dataset[var].attrs, (
+            f"Variable {var} is missing the DICT_KEY attribute for SPASE metadata."
+        )
+
+
+def test_l2b_cdf_variables(l2b_and_l2c_datasets: list[xr.Dataset]):
     """Tests that the ``idex_l2a`` function generates datasets
     with the expected variables.
 
     Parameters
     ----------
-    l2b_dataset : xr.Dataset
+    l2b_and_l2c_datasets : list[xr.Dataset]
         A ``xarray`` dataset containing the test data
     """
     expected_vars = [
@@ -58,12 +129,8 @@ def test_l2b_cdf_variables(l2b_dataset: xr.Dataset):
         "counts_by_mass",
         "rate_by_charge",
         "rate_by_mass",
-        "counts_by_charge_map",
-        "counts_by_mass_map",
-        "rate_by_charge_map",
-        "rate_by_mass_map",
     ]
-
+    l2b_dataset = l2b_and_l2c_datasets[0]
     cdf_vars = l2b_dataset.variables
     for var in expected_vars:
         assert var in cdf_vars
@@ -161,6 +228,7 @@ def test_compute_counts_by_charge_and_mass():
     # and mass bins all in the first spin phase bin. The test should be zero. This
     # should be the same for each epoch except the second epoch which has 2 counts in
     # the first 5 mass and impact charge bins.
+
     l2a_dataset = xr.Dataset(
         {
             "epoch": epochs,

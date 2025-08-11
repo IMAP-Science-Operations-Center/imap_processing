@@ -8,6 +8,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.hi.utils import (
     HIAPID,
     CoincidenceBitmap,
+    EsaEnergyStepLookupTable,
     create_dataset_variables,
     full_dataarray,
     parse_sensor_number,
@@ -122,3 +123,207 @@ def test_create_dataset_variables(var_names, shape, fill_value, lookup_str):
 def test_coincidence_type_string_to_int(sensor_hit_str, expected_val):
     """Test coverage for coincidence_type_string_to_int function"""
     assert CoincidenceBitmap.detector_hit_str_to_int(sensor_hit_str) == expected_val
+
+
+class TestEsaEnergyStepLookupTable:
+    """Test suite for EsaEnergyStepLookupTable class."""
+
+    @pytest.fixture
+    def empty_lookup(self):
+        """Create an empty lookup table for testing."""
+        return EsaEnergyStepLookupTable()
+
+    @pytest.fixture
+    def populated_lookup(self):
+        """Create a lookup table with test data."""
+        lookup = EsaEnergyStepLookupTable()
+        # Columns are: [start_met, end_met, esa_step, esa_energy_step]
+        entries = [
+            (0.0, 10.0, 1, 100.0),
+            (0.0, 10.0, 2, 200.0),
+            (10.0, 20.0, 1, 150.0),
+            (10.0, 20.0, 2, 250.0),
+        ]
+        for entry in entries:
+            lookup.add_entry(*entry)
+        return lookup
+
+    def test_init(self, empty_lookup):
+        """Test initialization of lookup table."""
+        assert len(empty_lookup.df) == 0
+        assert list(empty_lookup.df.columns) == [
+            "start_met",
+            "end_met",
+            "esa_step",
+            "esa_energy_step",
+        ]
+        assert empty_lookup._indexed is False
+
+    def test_add_entry_single(self, empty_lookup):
+        """Test adding a single entry."""
+        empty_lookup.add_entry(0.0, 10.0, 1, 100.0)
+
+        assert len(empty_lookup.df) == 1
+        assert empty_lookup.df.iloc[0]["start_met"] == 0.0
+        assert empty_lookup.df.iloc[0]["end_met"] == 10.0
+        assert empty_lookup.df.iloc[0]["esa_step"] == 1
+        assert empty_lookup.df.iloc[0]["esa_energy_step"] == 100.0
+        assert empty_lookup._indexed is False
+
+    def test_add_entry_multiple(self, empty_lookup):
+        """Test adding multiple entries one by one."""
+        empty_lookup.add_entry(0.0, 10.0, 1, 100.0)
+        empty_lookup.add_entry(10.0, 20.0, 2, 200.0)
+
+        assert len(empty_lookup.df) == 2
+        assert empty_lookup._indexed is False
+
+    def test_ensure_indexed(self, populated_lookup):
+        """Test the indexing functionality."""
+        # Initially not indexed
+        assert populated_lookup._indexed is False
+
+        # Call _ensure_indexed
+        populated_lookup._ensure_indexed()
+        assert populated_lookup._indexed is True
+
+        # Check that data is sorted by start_met, then esa_step
+        df = populated_lookup.df
+        # np.lexsort uses the last key as the primary sort order
+        np.testing.assert_array_equal(
+            np.lexsort((df["esa_step"].values, df["start_met"].values)),
+            np.arange(len(df)),
+        )
+
+    def test_query_scalar_found(self, populated_lookup):
+        """Test scalar query that finds a match."""
+        result = populated_lookup.query(5.0, 1)
+        assert result == 100.0
+
+        result = populated_lookup.query(12.0, 2)
+        assert result == 250.0
+
+    def test_query_scalar_not_found(self, populated_lookup):
+        """Test scalar query that doesn't find a match."""
+        # Query outside time range
+        result = populated_lookup.query(25.0, 1)
+        assert result == 255
+
+        # Query with non-existent esa_step
+        result = populated_lookup.query(5.0, 99)
+        assert result == 255
+
+    def test_query_array_found(self, populated_lookup):
+        """Test array query with matches."""
+        mets = [5.0, 12.0, 8.0]
+        steps = [1, 2, 3]
+        results = populated_lookup.query(mets, steps)
+
+        assert isinstance(results, np.ndarray)
+        assert len(results) == 3
+        assert results[0] == 100  # MET=5.0, step=1
+        assert results[1] == 250  # MET=12.0, step=2
+        assert results[2] == 255  # MET=8.0, step=3
+
+    def test_query_array_all_not_found(self, populated_lookup):
+        """Test array query where no entries are found."""
+        mets = [25.0, 30.0]
+        steps = [1, 2]
+        results = populated_lookup.query(mets, steps)
+
+        assert isinstance(results, np.ndarray)
+        assert len(results) == 2
+        assert results[0] == 255
+        assert results[1] == 255
+
+    def test_query_numpy_arrays(self, populated_lookup):
+        """Test query with numpy arrays as input."""
+        mets = np.array([5.0, 12.0])
+        steps = np.array([1, 2])
+        results = populated_lookup.query(mets, steps)
+
+        assert isinstance(results, np.ndarray)
+        assert len(results) == 2
+        assert results[0] == 100.0
+        assert results[1] == 250.0
+
+    def test_query_mixed_scalar_array_raises_error(self, populated_lookup):
+        """Test that mixing scalar and array inputs raises ValueError."""
+        with pytest.raises(
+            ValueError,
+            match="query_met and esa_step must both be scalars or both be array-like",
+        ):
+            populated_lookup.query(5.0, [1, 2])
+
+        with pytest.raises(
+            ValueError,
+            match="query_met and esa_step must both be scalars or both be array-like",
+        ):
+            populated_lookup.query([5.0, 12.0], 1)
+
+    def test_query_different_length_arrays_raises_error(self, populated_lookup):
+        """Test that arrays of different lengths raise ValueError."""
+        with pytest.raises(
+            ValueError,
+            match="query_met and esa_step must have the same length "
+            "when both are array-like",
+        ):
+            populated_lookup.query([5.0, 12.0], [1, 2, 3])
+
+        with pytest.raises(
+            ValueError,
+            match="query_met and esa_step must have the same length "
+            "when both are array-like",
+        ):
+            populated_lookup.query([5.0, 12.0, 8.0], [1, 2])
+
+    def test_query_different_shape_arrays_raises_error(self, populated_lookup):
+        """Test that arrays of different shapes raise ValueError."""
+        mets = np.array([[5.0, 12.0]])  # Shape (1, 2)
+        steps = np.array([1, 2])  # Shape (2,)
+
+        with pytest.raises(
+            ValueError,
+            match="query_met and esa_step must have the same "
+            "length when both are array-like",
+        ):
+            populated_lookup.query(mets, steps)
+
+    def test_query_single_element_arrays(self, populated_lookup):
+        """Test query with single-element arrays."""
+        results = populated_lookup.query([5.0], [1])
+        assert isinstance(results, np.ndarray)
+        assert len(results) == 1
+        assert results[0] == 100.0
+
+    def test_query_calls_ensure_indexed(self, populated_lookup):
+        """Test that query calls _ensure_indexed."""
+        # Reset indexed flag
+        populated_lookup._indexed = False
+
+        # Call query
+        populated_lookup.query(5.0, 1)
+
+        # Check that indexing was performed
+        assert populated_lookup._indexed is True
+
+    def test_add_entry_resets_indexed_flag(self, populated_lookup):
+        """Test that adding entries resets the indexed flag."""
+        # Ensure it's indexed first
+        populated_lookup._ensure_indexed()
+        assert populated_lookup._indexed is True
+
+        # Add entry
+        populated_lookup.add_entry(20.0, 30.0, 4, 400.0)
+        assert populated_lookup._indexed is False
+
+    def test_edge_case_boundary_values(self, populated_lookup):
+        """Test queries at exact boundary values."""
+        # Test exact start time
+        result = populated_lookup.query(0.0, 1)
+        assert result == 100.0
+
+        # Test exact end time
+        result = populated_lookup.query(10.0, 1)
+        # Should match both (0.0, 10.0, 1, 100.0) and (10.0, 20.0, 1, 150.0)
+        assert result in [100.0, 150.0]

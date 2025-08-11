@@ -27,20 +27,6 @@ spin_phase_labels:
   DEPEND_1: spin_phase
   DICT_KEY: SPASE>Support>SupportQuantity:Other
 
-rectangular_lon_pixel_label:
-  CATDESC: Longitude pixel index label for IDEX SkyMap.
-  FIELDNAM: Longitude pixel label
-  FORMAT: A5
-  VAR_TYPE: metadata
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
-
-rectangular_lat_pixel_label:
-  CATDESC: Latitude pixel index label for IDEX SkyMap.
-  FIELDNAM: Latitude pixel label
-  FORMAT: A5
-  VAR_TYPE: metadata
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
-
 # Index attributes
 mass:
   CATDESC: Log-spaced mass
@@ -85,29 +71,6 @@ impact_charge:
     UNITS: fC
     DICT_KEY: SPASE>Support>SupportQuantity:Other
 
-rectangular_lon_pixel:
-  CATDESC: Longitude pixel center for IDEX SkyMap
-  FIELDNAM: Rectangular Longitude Center
-  FORMAT: F12.6
-  LABLAXIS: Longitude Pixel
-  VAR_TYPE: support_data
-  UNITS: degrees
-  VALIDMIN: 0
-  VALIDMAX: 360
-  FILLVAL: *double_fillval
-  DICT_KEY: SPASE>Support>SupportQuantity:Positional
-
-rectangular_lat_pixel:
-  CATDESC: Latitude pixel center for IDEX SkyMap
-  FIELDNAM: Rectangular Latitude Center
-  FORMAT: F12.6
-  LABLAXIS: Latitude Pixel
-  VAR_TYPE: support_data
-  UNITS: degrees
-  VALIDMIN: -90
-  VALIDMAX: 90
-  FILLVAL: *double_fillval
-  DICT_KEY: SPASE>Support>SupportQuantity:Positional
 
 # Base attributes for charge and mass variables
 base_charge: &base_charge
@@ -140,32 +103,10 @@ base_mass: &base_mass
     VALIDMIN: 0.0
     VALIDMAX: *int_maxval
 
-base_charge_map: &base_charge_map
-  <<: *base_charge
-  DEPEND_2: rectangular_lon_pixel
-  DEPEND_3: rectangular_lat_pixel
-  LABL_PTR_2: rectangular_lon_pixel_label
-  LABL_PTR_3: rectangular_lat_pixel_label
-
-base_mass_map: &base_mass_map
-  <<: *base_mass
-  DEPEND_2: rectangular_lon_pixel
-  DEPEND_3: rectangular_lat_pixel
-  LABL_PTR_2: rectangular_lon_pixel_label
-  LABL_PTR_3: rectangular_lat_pixel_label
-
 rate_by_charge:
     <<: *base_charge
     CATDESC: Count rate per day by impact charge and spin phase.
     FIELDNAM: Rate (day^-1) by Charge
-    UNITS: day^-1
-    FILLVAL: *double_fillval
-    DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
-
-rate_by_charge_map:
-    <<: *base_charge_map
-    CATDESC: Count rate per day by impact charge, longitude, and latitude.
-    FIELDNAM: Rate (day^-1) by Charge Map
     UNITS: day^-1
     FILLVAL: *double_fillval
     DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
@@ -178,14 +119,6 @@ rate_by_mass:
     FILLVAL: *double_fillval
     DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
 
-rate_by_mass_map:
-    <<: *base_mass_map
-    CATDESC: Count rate per day by mass, longitude, and latitude.
-    FIELDNAM: Rate (day^-1) by Mass Map
-    UNITS: day^-1
-    FILLVAL: *double_fillval
-    DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
-
 counts_by_charge:
     <<: *base_charge
     CATDESC: Count by impact charge and spin phase.
@@ -194,26 +127,10 @@ counts_by_charge:
     UNITS: counts
     DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
 
-counts_by_charge_map:
-    <<: *base_charge_map
-    CATDESC: Count by impact charge, longitude, and latitude.
-    FIELDNAM: Counts by Charge Map
-    FORMAT: I8
-    UNITS: counts
-    DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
-
 counts_by_mass:
     <<: *base_mass
     CATDESC: Count by mass and spin phase.
     FIELDNAM: Counts by Mass
-    FORMAT: I8
-    UNITS: counts
-    DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
-
-counts_by_mass_map:
-    <<: *base_mass_map
-    CATDESC: Count by mass, longitude, and latitude.
-    FIELDNAM: Counts by Mass Map
     FORMAT: I8
     UNITS: counts
     DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array

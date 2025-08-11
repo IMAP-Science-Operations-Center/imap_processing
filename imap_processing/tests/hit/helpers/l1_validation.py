@@ -318,6 +318,41 @@ def add_species_energy(data: pd.DataFrame) -> pd.DataFrame:
     return data
 
 
+def compare_sectored_data(frame, species, energy_bin, actual_data, expected_data):
+    """Compare sectored data for a specific frame, species, and energy bin."""
+    if "sectorates_stat_uncert_plus" in expected_data.columns:
+        np.testing.assert_allclose(
+            actual_data[f"{species}_sectored_counts_stat_uncert_plus"][frame][
+                energy_bin
+            ].data,
+            expected_data["sectorates_stat_uncert_plus"][frame],
+            rtol=1e-7,
+            atol=1e-8,
+            err_msg=f"Mismatch in {species}_sectored_counts_stat_uncert_plus "
+            f"at frame {frame}, energy_bin {energy_bin}",
+        )
+    if "sectorates_stat_uncert_minus" in expected_data.columns:
+        np.testing.assert_allclose(
+            actual_data[f"{species}_sectored_counts_stat_uncert_minus"][frame][
+                energy_bin
+            ].data,
+            expected_data["sectorates_stat_uncert_minus"][frame],
+            rtol=1e-7,
+            atol=1e-8,
+            err_msg=f"Mismatch in {species}_sectored_counts_stat_uncert_minus at "
+            f"frame {frame}, energy_bin {energy_bin}",
+        )
+    else:
+        np.testing.assert_allclose(
+            actual_data[f"{species}_sectored_counts"][frame][energy_bin].data,
+            expected_data["sectorates"][frame],
+            rtol=1e-7,
+            atol=1e-8,
+            err_msg=f"Mismatch in {species}_sectored_counts at frame {frame}, "
+            f"energy_bin {energy_bin}",
+        )
+
+
 def compare_data(
     expected_data: pd.DataFrame, actual_data: xr.Dataset, skip: list[str]
 ) -> None:
@@ -331,76 +366,44 @@ def compare_data(
     actual_data : xr.Dataset
         Processed counts data from l1a processing
     skip : list
-        Fields to skip in comparison
+        Data variables to skip in comparison
     """
-    for field in expected_data.columns:
-        if field not in [
-            "sc_tick_by_frame",
-            "species",
-            "energy_bin",
-        ]:
-            assert field in actual_data.data_vars.keys(), (
-                f"Field {field} not found in actual data variables"
-            )
-        if field not in skip:
-            for frame in range(expected_data.shape[0]):
-                if field == "species":
-                    # Compare sectored rates data using species and energy index.
-                    # which are only present in the validation data. In the actual
-                    # data, sectored rates are organized by species in 4D arrays.
-                    #    i.e. h_sectored_counts has shape
-                    #         (epoch, h_energy_index, azimuth, zenith).
-                    # species and energy index are used to find the correct
-                    # array of sectored rate data from the actual data for comparison.
-                    species = expected_data[field][frame]
+    for var in expected_data.columns:
+        if var not in skip:
+            if var not in ["sc_tick_by_frame", "species"]:
+                # Check if the var is in the processed dataset
+                assert var in actual_data.data_vars.keys(), (
+                    f"Field {var} not found in actual data variables"
+                )
+                # Compare data arrays
+                np.testing.assert_allclose(
+                    actual_data[var].values,
+                    np.stack(expected_data[var].values),
+                    rtol=1e-7,
+                    atol=1e-8,
+                    err_msg=f"Mismatch in {var}",
+                )
+            if var == "sc_tick_by_frame":
+                # Get the sc_tick values for each frame in the actual data
+                # to compare with the expected data
+                sc_tick = actual_data.sc_tick.values
+                sc_tick_by_frame = sc_tick[::20]
+                assert np.array_equal(sc_tick_by_frame, expected_data[var].values), (
+                    f"Mismatch in {var}"
+                )
+            if var == "species" and "sectored" in actual_data.Logical_source:
+                # Compare sectored rates data using species and energy bin,
+                # which are only present in the validation data. In the actual
+                # data, sectored rates are organized by species in 4D arrays.
+                #    i.e. h_sectored_counts has shape
+                #         (epoch, h_energy_index, azimuth, zenith).
+                # species and energy bin are used to find the correct
+                # array of sectored rate data from the actual data for comparison.
+                # Check science frame by science frame. A science frame is a row in
+                # the validation data.
+                for frame in range(expected_data.shape[0]):
+                    species = expected_data[var][frame]
                     energy_bin = expected_data["energy_bin"][frame]
-                    if "sectorates_stat_uncert_plus" in expected_data.columns:
-                        np.testing.assert_allclose(
-                            actual_data[f"{species}_sectored_counts_stat_uncert_plus"][
-                                frame
-                            ][energy_bin].data,
-                            expected_data["sectorates_stat_uncert_plus"][frame],
-                            rtol=1e-7,  # relative tolerance
-                            atol=1e-8,  # absolute tolerance
-                            err_msg=f"Mismatch in {species}_sectored_counts_stat_uncert"
-                            f"_plus at frame {frame}, energy_bin {energy_bin}",
-                        )
-                    if "sectorates_stat_uncert_minus" in expected_data.columns:
-                        np.testing.assert_allclose(
-                            actual_data[f"{species}_sectored_counts_stat_uncert_minus"][
-                                frame
-                            ][energy_bin].data,
-                            expected_data["sectorates_stat_uncert_minus"][frame],
-                            rtol=1e-7,
-                            atol=1e-8,
-                            err_msg=f"Mismatch in {species}_sectored_counts_stat_uncert"
-                            f"_minus at frame {frame}, energy_bin {energy_bin}",
-                        )
-                    else:
-                        np.testing.assert_allclose(
-                            actual_data[f"{species}_sectored_counts"][frame][
-                                energy_bin
-                            ].data,
-                            expected_data["sectorates"][frame],
-                            rtol=1e-7,
-                            atol=1e-8,
-                            err_msg=f"Mismatch in {species}_sectored_counts at"
-                            f"frame {frame}, energy_bin {energy_bin}",
-                        )
-                elif field == "sc_tick_by_frame":
-                    # Get the sc_tick values for each frame in the actual data
-                    # to compare with the validation data
-                    sc_tick = actual_data.sc_tick.values
-                    sc_tick_by_frame = sc_tick[::20]
-                    assert np.array_equal(
-                        sc_tick_by_frame[frame], expected_data[field][frame]
-                    ), f"Mismatch in {field} at frame {frame}"
-
-                else:
-                    np.testing.assert_allclose(
-                        actual_data[field][frame].data,
-                        expected_data[field][frame],
-                        rtol=1e-7,
-                        atol=1e-8,
-                        err_msg=f"Mismatch in {field} at frame {frame}",
+                    compare_sectored_data(
+                        frame, species, energy_bin, actual_data, expected_data
                     )

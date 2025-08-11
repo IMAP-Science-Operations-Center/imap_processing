@@ -1,5 +1,7 @@
 """Test coverage for imap_processing.hi.l2.hi_l2.py"""
 
+from unittest.mock import Mock, patch
+
 import numpy as np
 import pytest
 import xarray as xr
@@ -12,6 +14,7 @@ from imap_processing.hi.hi_l2 import (
     generate_hi_map,
     hi_l2,
 )
+from imap_processing.spice.geometry import SpiceFrame
 
 
 @pytest.fixture
@@ -38,7 +41,8 @@ def empty_rectangular_map_dataset() -> xr.Dataset:
 
 
 @pytest.mark.external_test_data
-def test_hi_l2(hi_l1_test_data_path):
+@pytest.mark.external_kernel
+def test_hi_l2(hi_l1_test_data_path, imap_ena_sim_metakernel):
     """Integration type test for hi_l2()"""
     pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
     l2_dataset = hi_l2([pset_path], None, None, "h90-ena-h-sf-nsp-full-hae-4deg-3mo")[0]
@@ -52,14 +56,57 @@ def test_hi_l2(hi_l1_test_data_path):
 
 
 @pytest.mark.external_test_data
-def test_genarate_hi_map(hi_l1_test_data_path):
-    """Test coverage for genarate_hi_map()"""
+@patch("imap_processing.hi.hi_l2.generate_hi_map")
+def test_hi_l2_uses_descriptor_to_setup_map(
+    mock_generate_hi_map,
+    hi_l1_test_data_path,
+):
     pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
-    sky_map = generate_hi_map(
-        [pset_path], None, None, cg_corrected=False, direction="full", map_spacing=6
+    descriptor_str = "h90-ena-h-sf-nsp-full-hnu-2deg-3mo"
+    rect_map = Mock(spec=RectangularSkyMap)
+    mock_generate_hi_map.return_value = rect_map
+
+    _ = hi_l2([pset_path], None, None, descriptor_str)[0]
+
+    output_map = mock_generate_hi_map.call_args.kwargs["output_map"]
+
+    assert output_map.spice_reference_frame == SpiceFrame.IMAP_HNU
+    assert output_map.spacing_deg == 2.0
+    assert mock_generate_hi_map.call_args.kwargs["direction"] == "full"
+    assert not mock_generate_hi_map.call_args.kwargs["cg_corrected"]
+
+    rect_map.build_cdf_dataset.assert_called_with(
+        "hi", "l2", "sf", descriptor_str, sensor="90"
     )
+
+
+@pytest.mark.external_test_data
+def test_genarate_hi_map(hi_l1_test_data_path, furnish_kernels):
+    """Test coverage for genarate_hi_map()"""
+
+    kernels = [
+        "imap_sclk_0000.tsc",
+        "imap_science_100.tf",
+        "naif0012.tls",
+        "imap_spk_demo.bsp",
+    ]
+    with furnish_kernels(kernels):
+        pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
+
+        rectangular_sky_map = RectangularSkyMap(
+            spacing_deg=6, spice_frame=SpiceFrame.IMAP_GCS
+        )
+        sky_map = generate_hi_map(
+            [pset_path],
+            None,
+            None,
+            rectangular_sky_map,
+            cg_corrected=False,
+            direction="full",
+        )
     assert isinstance(sky_map, RectangularSkyMap)
     assert sky_map.spacing_deg == 6
+    assert sky_map.spice_reference_frame == SpiceFrame.IMAP_GCS
 
     # Test that we got some non-zero values
     for var_name in ["counts", "exposure_factor", "obs_date"]:

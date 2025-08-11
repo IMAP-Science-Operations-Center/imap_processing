@@ -43,6 +43,10 @@ def clear_spin_and_repoint_paths(monkeypatch):
 
 
 @pytest.fixture(scope="session")
+def _download_kernels(spice_test_data_path):
+    _download_external_kernels(spice_test_data_path)
+
+
 def _download_external_kernels(spice_test_data_path):
     """This fixture downloads externally-located kernels into the tests/spice/test_data
     directory if they do not already exist there. The fixture is not intended to be
@@ -52,8 +56,7 @@ def _download_external_kernels(spice_test_data_path):
     kernel_urls = [
         "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp",
         "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc",
-        "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/"
-        "earth_1962_240827_2124_combined.bpc",
+        "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/earth_latest_high_prec.bpc",
     ]
 
     for kernel_url in kernel_urls:
@@ -136,7 +139,7 @@ def pytest_collection_modifyitems(items):
     +---------------------+----------------------------+
     | pytest mark         | fixture added              |
     +=====================+============================+
-    | external_kernel     | _download_external_kernels |
+    | external_kernel     | _download_kernels          |
     | external_test_data  | _download_test_data        |
     +---------------------+----------------------------+
 
@@ -148,7 +151,7 @@ def pytest_collection_modifyitems(items):
     pytest.hookspec.pytest_collection_modifyitems
     """
     markers_to_fixtures = {
-        "external_kernel": "_download_external_kernels",
+        "external_kernel": "_download_kernels",
         "external_test_data": "_download_test_data",
     }
 
@@ -462,7 +465,7 @@ def use_fake_repoint_data_for_time(use_test_repoint_data_csv, tmp_path):
 
 
 @pytest.fixture
-def imap_ena_sim_metakernel(furnish_kernels):
+def imap_ena_sim_metakernel(furnish_kernels, _download_kernels):
     kernels = [
         "imap_sclk_0000.tsc",
         "naif0012.tls",
@@ -515,3 +518,4 @@ if __name__ == "__main__":
     # This is to enable downloading files easier by letting us
     # run this file directly
     _download_external_data()
+    _download_external_kernels(imap_module_directory / "tests" / "spice" / "test_data")

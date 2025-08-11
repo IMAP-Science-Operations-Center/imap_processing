@@ -54,6 +54,8 @@ class CoDICEL1aPipeline:
 
     Methods
     -------
+    apply_despinning()
+        Apply the despinning algorithm to lo- angular and priority products.
     decompress_data(science_values)
         Perform decompression on the data.
     define_coordinates()
@@ -86,6 +88,73 @@ class CoDICEL1aPipeline:
         self.plan_id = plan_id
         self.plan_step = plan_step
         self.view_id = view_id
+
+    def apply_despinning(self) -> None:
+        """
+        Apply the despinning algorithm to lo- angular and priority products.
+
+        This only applies to CoDICE-Lo angular and priority data products. See
+        sections 9.3.4 and 9.3.5 of the algorithm document for more details.
+        """
+        # Determine the appropriate dimensions for the despun data
+        num_energies = self.config["dims"]["esa_step"]
+        num_spin_sectors = self.config["dims"]["spin_sector"]
+        num_spins = num_spin_sectors * 2
+        num_counters = self.config["num_counters"]
+        num_positions = self.config["dims"].get(
+            "inst_az"
+        )  # Defaults to None if not present
+
+        # The dimensions are dependent on the specific data product
+        if "angular" in self.config["dataset_name"]:
+            despun_dims: tuple[int, ...] = (
+                num_energies,
+                num_positions,
+                num_spins,
+                num_counters,
+            )
+        elif "priority" in self.config["dataset_name"]:
+            despun_dims = (num_energies, num_spins, num_counters)
+
+        # Placeholder for finalized despun data
+        self.data: list[np.ndarray]  # Needed to appease mypy
+        despun_data = [np.zeros(despun_dims) for _ in range(len(self.data))]
+
+        # Iterate over the energy and spin sector indices, and determine the
+        # appropriate pixel orientation. The combination of the pixel
+        # orientation and the azimuth determine which spin sector the data
+        # gets stored in.
+        # TODO: All these nested for-loops are bad. Try to find a better
+        #       solution.
+        for i, epoch_data in enumerate(self.data):
+            for energy_index in range(num_energies):
+                pixel_orientation = constants.PIXEL_ORIENTATIONS[energy_index]
+                for spin_sector_index in range(num_spin_sectors):
+                    for azimuth_index in range(num_spins):
+                        if pixel_orientation == "A" and azimuth_index < 12:
+                            despun_spin_sector = spin_sector_index
+                        elif pixel_orientation == "A" and azimuth_index >= 12:
+                            despun_spin_sector = spin_sector_index + 12
+                        elif pixel_orientation == "B" and azimuth_index < 12:
+                            despun_spin_sector = spin_sector_index + 12
+                        elif pixel_orientation == "B" and azimuth_index >= 12:
+                            despun_spin_sector = spin_sector_index
+
+                        if "angular" in self.config["dataset_name"]:
+                            spin_data = epoch_data[
+                                energy_index, :, spin_sector_index, :
+                            ]  # (5, 4)
+                            despun_data[i][energy_index, :, despun_spin_sector, :] = (
+                                spin_data
+                            )
+                        elif "priority" in self.config["dataset_name"]:
+                            spin_data = epoch_data[energy_index, spin_sector_index, :]
+                            despun_data[i][energy_index, despun_spin_sector, :] = (
+                                spin_data
+                            )
+
+        # Replace original data
+        self.data = despun_data
 
     def decompress_data(self, science_values: list[NDArray[str]] | list[str]) -> None:
         """
@@ -134,11 +203,14 @@ class CoDICEL1aPipeline:
                 decompressed_values = decompress(values, compression_algorithm)
                 self.raw_data.append(decompressed_values)
 
-    def define_coordinates(self) -> None:
+    def define_coordinates(self) -> None:  # noqa: PLR0912 (too many branches)
         """
         Create ``xr.DataArrays`` for the coords needed in the final dataset.
 
         The coordinates for the dataset depend on the data product being made.
+
+        # TODO: Split this function up or simplify it to avoid too many branches
+        #       error.
         """
         self.coords = {}
 
@@ -169,12 +241,17 @@ class CoDICEL1aPipeline:
             if name in [
                 "esa_step",
                 "inst_az",
-                "spin_sector",
                 "spin_sector_pairs",
                 "spin_sector_index",
                 "ssd_index",
             ]:
                 values = np.arange(self.config["dims"][name])
+                dims = [name]
+            elif name == "spin_sector":
+                if self.config["dataset_name"] in constants.REQUIRES_DESPINNING:
+                    values = np.arange(24)
+                else:
+                    values = np.arange(self.config["dims"][name])
                 dims = [name]
             elif name == "spin_sector_pairs_label":
                 values = np.array(
@@ -197,7 +274,6 @@ class CoDICEL1aPipeline:
                     values = np.arange(self.config["dims"]["inst_az"]).astype(str)
                 dims = ["inst_az"]
             elif name in [
-                "spin_sector_label",
                 "esa_step_label",
                 "spin_sector_index_label",
                 "ssd_index_label",
@@ -205,6 +281,13 @@ class CoDICEL1aPipeline:
                 key = name.removesuffix("_label")
                 values = np.arange(self.config["dims"][key]).astype(str)
                 dims = [key]
+            elif name == "spin_sector_label":
+                key = name.removesuffix("_label")
+                dims = [key]
+                if self.config["dataset_name"] in constants.REQUIRES_DESPINNING:
+                    values = np.arange(24).astype(str)
+                else:
+                    values = np.arange(self.config["dims"][key]).astype(str)
 
             coord = xr.DataArray(
                 values,
@@ -634,6 +717,10 @@ class CoDICEL1aPipeline:
                 reshape_dims
             )
             self.data.append(reshaped_packet_data)
+
+        # Apply despinning if necessary
+        if self.config["dataset_name"] in constants.REQUIRES_DESPINNING:
+            self.apply_despinning()
 
         # No longer need to keep the raw data around
         del self.raw_data

@@ -63,9 +63,15 @@ def hit_l1b(dependencies: dict) -> list[xr.Dataset]:
                 )
             )
             logger.info("HIT L1B housekeeping dataset created")
-    if "imap_hit_l1a_counts" in dependencies:
+    if "imap_hit_l1a_counts-standard" in dependencies:
         # Process science data to L1B datasets
-        l1a_counts_dataset = dependencies["imap_hit_l1a_counts"]
+        l1a_counts_dataset = dependencies["imap_hit_l1a_counts-standard"]
+        l1b_datasets.extend(process_science_data(l1a_counts_dataset, attr_mgr))
+        logger.info("HIT L1B science datasets created")
+
+    if "imap_hit_l1a_counts-sectored" in dependencies:
+        # Process science data to L1B datasets
+        l1a_counts_dataset = dependencies["imap_hit_l1a_counts-sectored"]
         l1b_datasets.extend(process_science_data(l1a_counts_dataset, attr_mgr))
         logger.info("HIT L1B science datasets created")
 
@@ -106,18 +112,22 @@ def process_science_data(
     livetime = l1a_counts_dataset["livetime_counter"] / LIVESTIM_PULSES
     livetime = livetime.rename("livetime")
 
-    # Process counts data to L1B datasets
-    l1b_datasets: dict = {
-        "imap_hit_l1b_standard-rates": process_standard_rates_data(
+    l1b_datasets = {}
+
+    if "imap_hit_l1a_counts-standard" in l1a_counts_dataset.attrs["Logical_source"]:
+        # Process counts data to L1B datasets
+        l1b_datasets["imap_hit_l1b_standard-rates"] = process_standard_rates_data(
             l1a_counts_dataset, livetime
-        ),
-        "imap_hit_l1b_summed-rates": process_summed_rates_data(
+        )
+
+        l1b_datasets["imap_hit_l1b_summed-rates"] = process_summed_rates_data(
             l1a_counts_dataset, livetime
-        ),
-        "imap_hit_l1b_sectored-rates": process_sectored_rates_data(
+        )
+    elif "imap_hit_l1a_counts-sectored" in l1a_counts_dataset.attrs["Logical_source"]:
+        # Process counts data to L1B datasets
+        l1b_datasets["imap_hit_l1b_sectored-rates"] = process_sectored_rates_data(
             l1a_counts_dataset, livetime
-        ),
-    }
+        )
 
     # Update attributes and dimensions
     for logical_source, dataset in l1b_datasets.items():
@@ -359,79 +369,11 @@ def process_summed_rates_data(
     return l1b_summed_rates_dataset
 
 
-def subset_data_for_sectored_counts(
-    l1a_counts_dataset: xr.Dataset, livetime: xr.DataArray
-) -> tuple[xr.Dataset, xr.DataArray]:
-    """
-    Subset data for complete sets of sectored counts and corresponding livetime values.
-
-    A set of sectored data starts with hydrogen and ends with iron and correspond to
-    the mod 10 values 0-9. The livetime values from the previous 10 minutes are used
-    to calculate the rates for each set since those counts are transmitted 10 minutes
-    after they were collected. Therefore, only complete sets of sectored counts where
-    livetime from the previous 10 minutes are available are included in the output.
-
-    Parameters
-    ----------
-    l1a_counts_dataset : xr.Dataset
-        The L1A counts dataset.
-    livetime : xr.DataArray
-        1D array of livetime values calculated from the livetime counter.
-
-    Returns
-    -------
-    tuple[xr.Dataset, xr.DataArray]
-        Dataset of complete sectored counts and corresponding livetime values.
-    """
-    # Identify 10-minute intervals of complete sectored counts.
-    bin_size = 10
-    mod_10 = l1a_counts_dataset.hdr_minute_cnt.values % 10
-    pattern = np.arange(bin_size)
-
-    # Use sliding windows to find pattern matches
-    matches = np.all(
-        np.lib.stride_tricks.sliding_window_view(mod_10, bin_size) == pattern, axis=1
-    )
-    start_indices = np.where(matches)[0]
-
-    # Filter out start indices that are less than or equal to the bin size
-    # since the previous 10 minutes are needed for calculating rates
-    if start_indices.size == 0:
-        logger.error(
-            "No data to process - valid start indices not found for "
-            "complete sectored counts."
-        )
-        raise ValueError("No valid start indices found for complete sectored counts.")
-    else:
-        start_indices = start_indices[start_indices >= bin_size]
-
-    # Subset data for complete sets of sectored counts.
-    # Each set of sectored counts is 10 minutes long, so we take the indices
-    # starting from the start indices and extend to the bin size of 10.
-    # This creates a 1D array of indices that correspond to the complete
-    # sets of sectored counts which is used to filter the L1A dataset and
-    # create the L1B sectored rates dataset.
-    data_indices = np.concatenate(
-        [np.arange(idx, idx + bin_size) for idx in start_indices]
-    )
-    l1b_sectored_rates_dataset = l1a_counts_dataset.isel(epoch=data_indices)
-
-    # Subset livetime values corresponding to the previous 10 minutes
-    # for each start index. This ensures the livetime data aligns correctly
-    # with the sectored counts for rate calculations.
-    livetime_indices = np.concatenate(
-        [np.arange(idx - bin_size, idx) for idx in start_indices]
-    )
-    livetime = livetime.isel(epoch=livetime_indices)
-
-    return l1b_sectored_rates_dataset, livetime
-
-
 def process_sectored_rates_data(
     l1a_counts_dataset: xr.Dataset, livetime: xr.DataArray
 ) -> xr.Dataset:
     """
-    Will process L1B sectored rates data from L1A raw counts data.
+    Will process L1A raw counts data into L1B sectored rates.
 
     A complete set of sectored counts is taken over 10 science frames (10 minutes)
     where each science frame contains counts for one species and energy range.
@@ -451,10 +393,13 @@ def process_sectored_rates_data(
     rotation is split into 15 inclination ranges). See equation 11 in the algorithm
     document.
 
+    NOTE: The L1A counts dataset has complete sets of sectored counts and livetime is
+    already shifted to 10 minutes before the counts. This was handled in L1A processing.
+
     Parameters
     ----------
     l1a_counts_dataset : xr.Dataset
-        The L1A counts dataset.
+        The L1A counts dataset containing sectored counts.
 
     livetime : xr.DataArray
         1D array of livetime values calculated from the livetime counter.
@@ -476,11 +421,6 @@ def process_sectored_rates_data(
         for var in l1a_counts_dataset.data_vars
         if any(str(var).startswith(f"{p}_") for p in particles)
     ]
-
-    # Subset data for complete sets of sectored counts and corresponding livetime values
-    l1a_counts_dataset, livetime = subset_data_for_sectored_counts(
-        l1a_counts_dataset, livetime
-    )
 
     # Sum livetime over 10 minute intervals
     livetime_10min = sum_livetime_10min(livetime)

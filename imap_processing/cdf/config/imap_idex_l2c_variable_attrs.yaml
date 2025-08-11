@@ -1,20 +1,53 @@
+int_fillval: &int_fillval -9223372036854775808
+int_maxval: &int_maxval 9223372036854775807
+double_fillval: &double_fillval -1.0E31
+
+# Base attributes for charge and mass variables
+base_charge: &base_charge
+  CATDESC: " "
+  FIELDNAM: " "
+  DEPEND_0: epoch
+  DEPEND_1: impact_charge
+  DEPEND_2: spin_phase
+  LABL_PTR_1: charge_labels
+  LABL_PTR_2: spin_phase_labels
+  DISPLAY_TYPE: spectrogram
+  VAR_TYPE: data
+  FILLVAL: *int_fillval
+  FORMAT: E10.3
+  VALIDMIN: -1
+  VALIDMAX: *int_maxval
+
+base_mass: &base_mass
+  CATDESC: " "
+  FIELDNAM: " "
+  DEPEND_0: epoch
+  DEPEND_1: mass
+  DEPEND_2: spin_phase
+  LABL_PTR_1: mass_labels
+  LABL_PTR_2: spin_phase_labels
+  DISPLAY_TYPE: spectrogram
+  VAR_TYPE: data
+  FILLVAL: *int_fillval
+  FORMAT: E10.3
+  VALIDMIN: 0.0
+  VALIDMAX: *int_maxval
+
+base_charge_map: &base_charge_map
+  <<: *base_charge
+  DEPEND_2: rectangular_lon_pixel
+  DEPEND_3: rectangular_lat_pixel
+  LABL_PTR_2: rectangular_lon_pixel_label
+  LABL_PTR_3: rectangular_lat_pixel_label
+
+base_mass_map: &base_mass_map
+  <<: *base_mass
+  DEPEND_2: rectangular_lon_pixel
+  DEPEND_3: rectangular_lat_pixel
+  LABL_PTR_2: rectangular_lon_pixel_label
+  LABL_PTR_3: rectangular_lat_pixel_label
+
 # Label attributes
-mass_labels:
-  CATDESC: Labels for mass bins
-  FIELDNAM: Mass Bin Labels
-  VAR_TYPE: metadata
-  FORMAT: A8
-  DEPEND_1: mass_bins
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
-
-charge_labels:
-  CATDESC: Labels for impact charge bins
-  FIELDNAM: Impact Charge Bin Labels
-  VAR_TYPE: metadata
-  FORMAT: A8
-  DEPEND_1: impact_charge_bins
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
-
 rectangular_lon_pixel_label:
   CATDESC: Longitude pixel index label for IDEX SkyMap.
   FIELDNAM: Longitude pixel label
@@ -28,3 +61,60 @@ rectangular_lat_pixel_label:
   FORMAT: A5
   VAR_TYPE: metadata
   DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+# Vars
+rectangular_lon_pixel:
+  CATDESC: Longitude pixel center for IDEX SkyMap
+  FIELDNAM: Rectangular Longitude Center
+  FORMAT: F12.6
+  LABLAXIS: Longitude Pixel
+  VAR_TYPE: support_data
+  UNITS: degrees
+  VALIDMIN: 0
+  VALIDMAX: 360
+  FILLVAL: *double_fillval
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
+
+rectangular_lat_pixel:
+  CATDESC: Latitude pixel center for IDEX SkyMap
+  FIELDNAM: Rectangular Latitude Center
+  FORMAT: F12.6
+  LABLAXIS: Latitude Pixel
+  VAR_TYPE: support_data
+  UNITS: degrees
+  VALIDMIN: -90
+  VALIDMAX: 90
+  FILLVAL: *double_fillval
+  DICT_KEY: SPASE>Support>SupportQuantity:Positional
+
+rate_by_charge_map:
+  <<: *base_charge_map
+  CATDESC: Count rate per day by impact charge, longitude, and latitude.
+  FIELDNAM: Rate (day^-1) by Charge Map
+  UNITS: day^-1
+  FILLVAL: *double_fillval
+  DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
+
+counts_by_charge_map:
+  <<: *base_charge_map
+  CATDESC: Count by impact charge, longitude, and latitude.
+  FIELDNAM: Counts by Charge Map
+  FORMAT: I8
+  UNITS: counts
+  DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
+
+counts_by_mass_map:
+  <<: *base_mass_map
+  CATDESC: Count by mass, longitude, and latitude.
+  FIELDNAM: Counts by Mass Map
+  FORMAT: I8
+  UNITS: counts
+  DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
+
+rate_by_mass_map:
+  <<: *base_mass_map
+  CATDESC: Count rate per day by mass, longitude, and latitude.
+  FIELDNAM: Rate (day^-1) by Mass Map
+  UNITS: day^-1
+  FILLVAL: *double_fillval
+  DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array

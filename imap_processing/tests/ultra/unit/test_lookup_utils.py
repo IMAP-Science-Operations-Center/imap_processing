@@ -9,6 +9,7 @@ from imap_processing.quality_flags import ImapDEUltraFlags
 from imap_processing.ultra.l1b.lookup_utils import (
     get_angular_profiles,
     get_back_position,
+    get_ebins,
     get_energy_efficiencies,
     get_energy_norm,
     get_geometric_factor,
@@ -152,3 +153,16 @@ def test_get_ph_corrected(ancillary_files):
         quality_flags,
         np.array([0, 0, 2, 2]),
     )
+
+
+@pytest.mark.external_test_data
+def test_get_ebins(ancillary_files):
+    """Tests function get_ph_corrected."""
+
+    energy = np.array([618, 4])
+    ctof = np.array([73, 24])
+    fillval_uint8 = 255
+    ebins = np.full(energy.shape, fillval_uint8, dtype=np.uint8)
+    ebins = get_ebins("l1b-tofxph", energy, ctof, ebins, ancillary_files)
+
+    np.testing.assert_array_equal(ebins, np.array([15, 19]))

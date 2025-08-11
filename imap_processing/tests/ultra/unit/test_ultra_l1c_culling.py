@@ -56,7 +56,7 @@ def test_compare_sincpt_with_culling_mask_deterministic(furnish_kernels):
             "imap_sclk_0000.tsc",
             "sim_1yr_imap_pointing_frame.bc",
             "imap_spk_demo.bsp",
-            "earth_1962_240827_2124_combined.bpc",
+            "earth_latest_high_prec.bpc",
             "pck00011.tpc",
             "naif0012.tls",
             "de440s.bsp",
