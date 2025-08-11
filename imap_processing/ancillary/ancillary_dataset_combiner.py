@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections import namedtuple
 from pathlib import Path
 
@@ -144,7 +145,53 @@ class AncillaryCombiner:
         """
         return cdf_to_xarray(filepath)
 
-    def _combine_input_datasets(self) -> xr.Dataset:
+    @staticmethod
+    def convert_json_to_dataset(filepath: str | Path) -> xr.Dataset:
+        """
+        Read a JSON file and convert it to an xarray Dataset.
+
+        This method handles JSON files by converting them to xarray Datasets
+        with appropriate structure. Nested dictionaries are flattened using
+        underscore separation, up to 2 levels deep.
+
+        Parameters
+        ----------
+        filepath : str | Path
+            The path to the JSON file to convert.
+
+        Returns
+        -------
+        xr.Dataset
+            The converted xarray dataset with JSON data as data variables.
+        """
+        with open(filepath) as f:
+            json_data = json.load(f)
+
+        # Convert JSON data to xarray Dataset with appropriate structure
+        # Each top-level key becomes a data variable
+
+        # The structure of the dictionary is {<variable_name>: (dims, data)}
+        # For the lists, we specify the dimension names. For scalars, pass in [].
+        data_vars = {}
+        for key, value in json_data.items():
+            if isinstance(value, (list, tuple)):
+                # Handle arrays/lists
+                data_vars[key] = ([f"dim_{key}"], value)
+            elif isinstance(value, dict):
+                # Handle nested dictionaries by flattening with underscore
+                for subkey, subvalue in value.items():
+                    flat_key = f"{key}_{subkey}"
+                    if isinstance(subvalue, (list, tuple)):
+                        data_vars[flat_key] = ([f"dim_{flat_key}"], subvalue)
+                    else:
+                        data_vars[flat_key] = ([], subvalue)
+            else:
+                # Handle scalar values
+                data_vars[key] = ([], value)
+
+        return xr.Dataset(data_vars)
+
+    def _combine_input_datasets(self) -> xr.Dataset:  # noqa: PLR0912
         """
         Combine all the input datasets into one output dataset.
 
@@ -166,6 +213,10 @@ class AncillaryCombiner:
             The combined dataset.
         """
         output_dataset = xr.Dataset()
+
+        # Handle empty input gracefully
+        if not self.timestamped_data:
+            return output_dataset
 
         full_range_start = None
         full_range_end = None
@@ -258,3 +309,112 @@ class MagAncillaryCombiner(AncillaryCombiner):
         expected_end_date: np.datetime64 | str,
     ):
         super().__init__(ancillary_input, expected_end_date)
+
+
+class GlowsAncillaryCombiner(AncillaryCombiner):
+    """
+    GLOWS-specific instance of AncillaryConverter for bad-angle flag data.
+
+    This class handles GLOWS ancillary files for L1B processing, including:
+    - Excluded regions map (.dat files with ecliptic coordinates)
+    - UV sources map (.dat files with star positions and masking radii)
+    - Suspected transients (.dat files with time-based histogram masks)
+    - Instrument team exclusions (.dat files with time-based histogram masks)
+
+    Parameters
+    ----------
+    ancillary_input : ProcessingInput
+        Collection of GLOWS ancillary files.
+    expected_end_date : np.datetime64 | str
+        The expected end date of the dataset. This is used to fill in the end date
+        of the dataset if it is not provided in the input file. This should either
+        be a numpy datetime64 object or a string in the format YYYYMMDD.
+    """
+
+    def __init__(
+        self,
+        ancillary_input: ProcessingInput | list[Path],
+        expected_end_date: np.datetime64 | str,
+    ):
+        super().__init__(ancillary_input, expected_end_date)
+
+    def convert_file_to_dataset(self, filepath: str | Path) -> xr.Dataset:
+        """
+        Convert GLOWS ancillary .dat files to xarray datasets.
+
+        This method handles different types of GLOWS ancillary files:
+        - excluded_regions: longitude/latitude coordinate pairs
+        - uv_sources: star names with coordinates and masking radii
+        - suspected_transients: time-based histogram masks
+        - exclusions_by_instr_team: time-based histogram masks
+
+        Parameters
+        ----------
+        filepath : str | Path
+            The path to the GLOWS ancillary file to convert.
+
+        Returns
+        -------
+        xr.Dataset
+            The converted xarray dataset with appropriate dimensions and variables.
+        """
+        filepath = Path(filepath)
+        filename = filepath.name
+
+        if "excluded-regions" in filename:
+            # Handle excluded regions (2 columns: longitude, latitude)
+            data = np.loadtxt(filepath, comments="#")
+            return xr.Dataset(
+                {
+                    "ecliptic_longitude_deg": (["region"], data[:, 0]),
+                    "ecliptic_latitude_deg": (["region"], data[:, 1]),
+                }
+            )
+
+        elif "uv-sources" in filename:
+            # Handle UV sources (4 columns: name, longitude, latitude, radius)
+            data = np.loadtxt(filepath, comments="#", dtype=str)
+            return xr.Dataset(
+                {
+                    "object_name": (["source"], data[:, 0]),
+                    "ecliptic_longitude_deg": (["source"], data[:, 1].astype(float)),
+                    "ecliptic_latitude_deg": (["source"], data[:, 2].astype(float)),
+                    "angular_radius_for_masking": (
+                        ["source"],
+                        data[:, 3].astype(float),
+                    ),
+                }
+            )
+
+        elif "suspected-transients" in filename:
+            # Handle suspected transients (time identifier + mask string)
+            with open(filepath) as f:
+                lines = [line.strip() for line in f if not line.startswith("#")]
+            identifiers = [line.split(" ", 1)[0] for line in lines]
+            masks = [line.split(" ", 1)[1] for line in lines]
+            return xr.Dataset(
+                {
+                    "l1b_unique_block_identifier": (["time_block"], identifiers),
+                    "histogram_mask_array": (["time_block"], masks),
+                }
+            )
+
+        elif "exclusions-by-instr-team" in filename:
+            # Handle instrument team exclusions (time identifier + mask string)
+            with open(filepath) as f:
+                lines = [line.strip() for line in f if not line.startswith("#")]
+            identifiers = [line.split(" ", 1)[0] for line in lines]
+            masks = [line.split(" ", 1)[1] for line in lines]
+            return xr.Dataset(
+                {
+                    "l1b_unique_block_identifier": (["time_block"], identifiers),
+                    "histogram_mask_array": (["time_block"], masks),
+                }
+            )
+
+        elif filename.endswith(".json"):
+            # Handle pipeline settings JSON file using the generic read_json method
+            return self.convert_json_to_dataset(filepath)
+
+        else:
+            raise ValueError(f"Unknown GLOWS ancillary file type: {filename}")

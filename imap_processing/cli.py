@@ -36,7 +36,10 @@ from imap_data_access.processing_input import (
 
 import imap_processing
 from imap_processing._version import __version__, __version_tuple__  # noqa: F401
-from imap_processing.ancillary.ancillary_dataset_combiner import MagAncillaryCombiner
+from imap_processing.ancillary.ancillary_dataset_combiner import (
+    GlowsAncillaryCombiner,
+    MagAncillaryCombiner,
+)
 from imap_processing.cdf.utils import load_cdf, write_cdf
 
 # TODO: change how we import things and also folder
@@ -378,7 +381,7 @@ class ProcessInstrument(ABC):
         data_level: str,
         data_descriptor: str,
         dependency_str: str,
-        start_date: str | None,
+        start_date: str,
         repointing: str | None,
         version: str,
         upload_to_sdc: bool,
@@ -685,11 +688,58 @@ class Glows(ProcessInstrument):
             science_files = dependencies.get_file_paths(source="glows")
             if len(science_files) != 1:
                 raise ValueError(
-                    f"GLOWS L1A requires exactly one input science file, received: "
+                    f"GLOWS L1B requires exactly one input science file, received: "
                     f"{science_files}."
                 )
             input_dataset = load_cdf(science_files[0])
-            datasets = [glows_l1b(input_dataset)]
+            # TODO: Replace this by reading from AWS/ProcessingInputs
+
+            glows_ancillary_dir = Path(__file__).parent / "glows" / "ancillary"
+
+            # Create file lists for each ancillary type
+            excluded_regions_files = [
+                glows_ancillary_dir
+                / "imap_glows_map-of-excluded-regions_20250923_v002.dat"
+            ]
+            uv_sources_files = [
+                glows_ancillary_dir / "imap_glows_map-of-uv-sources_20250923_v002.dat"
+            ]
+            suspected_transients_files = [
+                glows_ancillary_dir
+                / "imap_glows_suspected-transients_20250923_v002.dat"
+            ]
+            exclusions_by_instr_team_files = [
+                glows_ancillary_dir
+                / "imap_glows_exclusions-by-instr-team_20250923_v002.dat"
+            ]
+
+            # Use end date buffer for ancillary data
+            current_day = np.datetime64(
+                f"{self.start_date[:4]}-{self.start_date[4:6]}-{self.start_date[6:]}"
+            )
+            day_buffer = current_day + np.timedelta64(3, "D")
+
+            # Create combiners for each ancillary dataset
+            excluded_regions_combiner = GlowsAncillaryCombiner(
+                excluded_regions_files, day_buffer
+            )
+            uv_sources_combiner = GlowsAncillaryCombiner(uv_sources_files, day_buffer)
+            suspected_transients_combiner = GlowsAncillaryCombiner(
+                suspected_transients_files, day_buffer
+            )
+            exclusions_by_instr_team_combiner = GlowsAncillaryCombiner(
+                exclusions_by_instr_team_files, day_buffer
+            )
+
+            datasets = [
+                glows_l1b(
+                    input_dataset,
+                    excluded_regions_combiner.combined_dataset,
+                    uv_sources_combiner.combined_dataset,
+                    suspected_transients_combiner.combined_dataset,
+                    exclusions_by_instr_team_combiner.combined_dataset,
+                )
+            ]
 
         if self.data_level == "l2":
             science_files = dependencies.get_file_paths(source="glows")

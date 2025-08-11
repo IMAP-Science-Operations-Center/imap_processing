@@ -259,7 +259,7 @@ def test_mag_l1b_validation(test_number, mocks):
 @pytest.mark.xfail(reason="All L1C edge cases are not yet complete")
 @pytest.mark.parametrize(("test_number"), ["013", "014", "015", "016"])
 @pytest.mark.parametrize(("sensor"), ["mago", "magi"])
-@pytest.mark.usefixtures("_download_test_data")
+@pytest.mark.external_test_data
 def test_mag_l1c_validation(test_number, sensor):
     # We expect tests 013 and 014 to pass. 015 and 016 are not yet complete.
     # timestamp = (
@@ -317,7 +317,7 @@ def test_mag_l1c_validation(test_number, sensor):
 
 
 @pytest.mark.parametrize(("test_number", "mode"), [("021", "burst"), ("022", "norm")])
-@pytest.mark.usefixtures("_download_test_data")
+@pytest.mark.external_test_data
 def test_mag_l2_validation(test_number, mode):
     source_directory = Path(__file__).parent / "validation" / "L2" / f"T{test_number}"
     magi_in = source_directory / f"mag-l1bc-l2-t{test_number}-mago-{mode}-in.csv"
