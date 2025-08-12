@@ -402,7 +402,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             )
 
         epoch_met = ttj2000ns_to_met(self.epoch)
-        sc_spin_phase: np.ndarray = spin.get_spacecraft_spin_phase(epoch_met)
+        sc_spin_phase = spin.get_spacecraft_spin_phase(epoch_met)
         # mark vectors as nan where they are nan in sc_spin_phase
         vectors = self.vectors.copy().astype(np.float64)
 
@@ -486,8 +486,8 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
                 or y_valid_count <= total_points / 2
                 or total_points <= self.config.spin_count_calibration / 2
             ):
-                avg_x = x_avg_calcs[-1] if x_avg_calcs else FILLVAL
-                avg_y = y_avg_calcs[-1] if y_avg_calcs else FILLVAL
+                avg_x = x_avg_calcs[-1] if x_avg_calcs else np.float64(FILLVAL)
+                avg_y = y_avg_calcs[-1] if y_avg_calcs else np.float64(FILLVAL)
 
             if not np.isnan(avg_x) and not np.isnan(avg_y):
                 offset_epochs.append(chunk_epoch[0])

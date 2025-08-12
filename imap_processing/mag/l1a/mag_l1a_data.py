@@ -242,6 +242,7 @@ class MagL1a:
     twos_complement()
     update_compression_array()
     vectors_per_second_attribute()
+    all_vectors_primary()
     """
 
     is_mago: bool
