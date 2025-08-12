@@ -1,7 +1,6 @@
 """SWAPI metadata generator."""
 
 from pathlib import Path
-from typing import Optional, Union
 
 import pandas as pd
 import yaml
@@ -29,7 +28,7 @@ def get_global_attributes(sheet: pd.DataFrame) -> pd.DataFrame:
 
 
 def get_dataset_attributes(
-    sheet: pd.DataFrame, global_attrs: Optional[dict] = None
+    sheet: pd.DataFrame, global_attrs: dict | None = None
 ) -> dict:
     """
     Get the dataset attributes from a metadata spreadsheet.
@@ -67,7 +66,7 @@ def get_dataset_attributes(
 
 
 # Load all sheets
-def process_file(excel_path: Union[str, Path], output_folder: Path) -> None:
+def process_file(excel_path: str | Path, output_folder: Path) -> None:
     """
     Will process the metadata file and output the metadata to a JSON file.
 

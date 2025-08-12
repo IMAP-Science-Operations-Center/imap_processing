@@ -3,7 +3,6 @@
 import logging
 from collections import defaultdict
 from pathlib import Path
-from typing import Union
 
 import numpy as np
 import xarray as xr
@@ -57,7 +56,7 @@ TOTAL_COUNTERS = ("a_total", "b_total", "c_total", "fee_de_recd", "fee_de_sent")
 logger = logging.getLogger(__name__)
 
 
-def hi_l1a(packet_file_path: Union[str, Path]) -> list[xr.Dataset]:
+def hi_l1a(packet_file_path: str | Path) -> list[xr.Dataset]:
     """
     Will process IMAP raw data to l1a.
 
@@ -111,7 +110,7 @@ def hi_l1a(packet_file_path: Union[str, Path]) -> list[xr.Dataset]:
 
 
 def hi_packet_file_to_datasets(
-    packet_file_path: Union[str, Path], use_derived_value: bool = False
+    packet_file_path: str | Path, use_derived_value: bool = False
 ) -> dict[int, xr.Dataset]:
     """
     Extract hi datasets from packet file.

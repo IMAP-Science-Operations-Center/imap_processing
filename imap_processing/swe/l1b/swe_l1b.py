@@ -2,7 +2,6 @@
 
 import logging
 from pathlib import Path
-from typing import Union
 
 import numpy as np
 import numpy.typing as npt
@@ -51,7 +50,7 @@ def get_esa_dataframe(esa_table_number: int) -> pd.DataFrame:
 
 
 def deadtime_correction(
-    counts: np.ndarray, acq_duration: Union[int, npt.NDArray]
+    counts: np.ndarray, acq_duration: int | npt.NDArray
 ) -> npt.NDArray:
     """
     Calculate deadtime correction.

@@ -149,7 +149,8 @@ def synthetic_trigger_id_and_tof_data():
     )
     data = [arr[good_inds] for arr in data]
     data_vars = {
-        n: xr.DataArray(arr, dims=["event_met"]) for n, arr in zip(var_names, data)
+        n: xr.DataArray(arr, dims=["event_met"])
+        for n, arr in zip(var_names, data, strict=False)
     }
     synthetic_l1a_ds = xr.Dataset(
         coords={

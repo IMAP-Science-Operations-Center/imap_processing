@@ -944,7 +944,7 @@ def get_spin_number(de_met: NDArray, de_spin: NDArray) -> NDArray:
     possible_spins = spin_numbers & 0xFF
 
     # Assign each group based on time.
-    for start, end in zip(spin_start_indices, spin_end_indices):
+    for start, end in zip(spin_start_indices, spin_end_indices, strict=False):
         # Now that we have the possible spins from the Universal Spin Table,
         # we match the times of those spins to the nearest times in the DE data.
         possible_times = spin_start_mets[possible_spins == de_spin_sorted[start]]

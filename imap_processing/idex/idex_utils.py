@@ -1,7 +1,5 @@
 """Contains helper functions to support IDEX processing."""
 
-from typing import Optional
-
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
@@ -31,7 +29,7 @@ def setup_dataset(
     dataset: xr.Dataset,
     match_strings: list,
     idex_attrs: ImapCdfAttributes,
-    data_vars: Optional[dict] = None,
+    data_vars: dict | None = None,
 ) -> xr.Dataset:
     """
     Initialize a dataset and copy over any dataArrays.

@@ -75,7 +75,7 @@ def get_energy_delta_minus_plus() -> tuple[NDArray, NDArray]:
     """
     bins, _, bin_geom_means = build_energy_bins()
     bins_energy_delta_plus, bins_energy_delta_minus = [], []
-    for bin_edges, bin_geom_mean in zip(bins, bin_geom_means):
+    for bin_edges, bin_geom_mean in zip(bins, bin_geom_means, strict=False):
         bins_energy_delta_plus.append(bin_edges[1] - bin_geom_mean)
         bins_energy_delta_minus.append(bin_geom_mean - bin_edges[0])
     return abs(np.array(bins_energy_delta_minus)), abs(np.array(bins_energy_delta_plus))
@@ -291,7 +291,7 @@ def get_sectored_rates(rates_ds: xr.Dataset, params_ds: xr.Dataset) -> xr.Datase
     # Build a list of conditions for each sector mode time range
     conditions = [
         (rates_ds["epoch"] >= start) & (rates_ds["epoch"] < end)
-        for start, end in zip(mode_3_start, mode_3_end)
+        for start, end in zip(mode_3_start, mode_3_end, strict=False)
     ]
 
     sector_mode_mask = np.logical_or.reduce(conditions)
