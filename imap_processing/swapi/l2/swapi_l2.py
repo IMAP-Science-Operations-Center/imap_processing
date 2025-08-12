@@ -66,7 +66,7 @@ def solve_full_sweep_energy(
 
     first_63_energies = []
 
-    for time, sweep_id in zip(data_time, sweep_table, strict=False):
+    for time, sweep_id in zip(data_time, sweep_table):
         # Find the sweep's ESA data for the given time and sweep_id
         subset = esa_table_df[
             (esa_table_df["timestamp"] <= time) & (esa_table_df["Sweep #"] == sweep_id)

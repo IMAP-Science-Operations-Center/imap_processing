@@ -1,6 +1,7 @@
 """Generate ULTRA L1a CDFs."""
 
 import logging
+from typing import Optional
 
 import xarray as xr
 
@@ -43,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 
 def ultra_l1a(  # noqa: PLR0912
-    packet_file: str, apid_input: int | None = None
+    packet_file: str, apid_input: Optional[int] = None
 ) -> list[xr.Dataset]:
     """
     Will process ULTRA L0 data into L1A CDF files at output_filepath.

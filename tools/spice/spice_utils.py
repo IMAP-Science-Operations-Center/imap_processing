@@ -2,6 +2,7 @@
 
 import logging
 import os
+from typing import Optional
 
 import spiceypy
 
@@ -9,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def list_files_with_extensions(
-    directory: str, extensions: list[str] | None = None
+    directory: str, extensions: Optional[list[str]] = None
 ) -> list[str]:
     """
     List all files in a given directory that have the specified extensions.
@@ -43,7 +44,7 @@ def list_files_with_extensions(
     return matching_files
 
 
-def list_loaded_kernels(extensions: list[str] | None = None) -> list:
+def list_loaded_kernels(extensions: Optional[list[str]] = None) -> list:
     """
     List furnished spice kernels, optionally filtered by specific extensions.
 

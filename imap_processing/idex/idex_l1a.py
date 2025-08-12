@@ -17,6 +17,7 @@ Examples
 import logging
 from enum import IntEnum
 from pathlib import Path
+from typing import Union
 
 import numpy as np
 import numpy.typing as npt
@@ -60,7 +61,7 @@ class PacketParser:
         The path and filename to the L0 file to read.
     """
 
-    def __init__(self, packet_file: str | Path) -> None:
+    def __init__(self, packet_file: Union[str, Path]) -> None:
         """
         Read a L0 pkts file and perform all of the decom work.
 
@@ -249,7 +250,7 @@ def _read_waveform_bits(waveform_raw: str, high_sample: bool = True) -> list[int
 
 
 def calculate_idex_epoch_time(
-    shcoarse_time: float | np.ndarray, shfine_time: float | np.ndarray
+    shcoarse_time: Union[float, np.ndarray], shfine_time: Union[float, np.ndarray]
 ) -> npt.NDArray[np.int64]:
     """
     Calculate the epoch time from the FPGA header time variables.

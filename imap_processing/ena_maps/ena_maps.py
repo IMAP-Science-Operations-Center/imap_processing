@@ -252,7 +252,7 @@ class PointingSet(ABC):
         """Abstract method to initialize the pointing set object."""
         self.spice_reference_frame = spice_reference_frame
 
-        if isinstance(dataset, str | Path):
+        if isinstance(dataset, (str, Path)):
             dataset = load_cdf(dataset)
             self.data = dataset
         else:
@@ -412,7 +412,6 @@ class RectangularPointingSet(PointingSet):
         for dim, constructed_bins in zip(
             [CoordNames.AZIMUTH_L1C.value, CoordNames.ELEVATION_L1C.value],
             [self.sky_grid.az_bin_midpoints, self.sky_grid.el_bin_midpoints],
-            strict=False,
         ):
             if not np.allclose(
                 sorted(constructed_bins),
@@ -523,7 +522,6 @@ class UltraPointingSet(HealpixPointingSet):
         for dim, constructed_bins in zip(
             [CoordNames.AZIMUTH_L1C.value, CoordNames.ELEVATION_L1C.value],
             [azimuth_pixel_center, elevation_pixel_center],
-            strict=False,
         ):
             if not np.allclose(
                 self.data[dim],
@@ -1750,7 +1748,7 @@ class HealpixSkyMap(AbstractSkyMap):
             # into two lists, then convert both to numpy arrays
             # and move the pixel dim to the last dim of values
             interpolated_data_by_rect_pixel, subdiv_depth_of_value_by_pixel = zip(
-                *best_value_and_recursion_depth_by_pixel, strict=False
+                *best_value_and_recursion_depth_by_pixel
             )
             interpolated_data_by_rect_pixel = np.moveaxis(
                 np.array(interpolated_data_by_rect_pixel), 0, -1

@@ -2,6 +2,7 @@
 
 import logging
 from decimal import Decimal
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -69,7 +70,7 @@ def count_rate(
 def optimize_pseudo_parameters(
     count_rates: np.ndarray,
     count_rate_error: np.ndarray,
-    energy_passbands: np.ndarray | None = None,
+    energy_passbands: Optional[np.ndarray] = None,
 ) -> (dict)[str, list[float]]:
     """
     Find the pseudo speed (u), density (n) and temperature (T) of solar wind particles.

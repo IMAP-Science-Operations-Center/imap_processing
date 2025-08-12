@@ -30,7 +30,7 @@ def test_process_cmd_echo(decom_test_data, cmd_echo_test_path):
     np.testing.assert_array_equal(df.Opcode, decom_ultra["opcode"].values.flatten())
 
     for i, (row, opcode) in enumerate(
-        zip(decom_ultra["arguments"].values, decom_ultra["opcode"].values, strict=False)
+        zip(decom_ultra["arguments"].values, decom_ultra["opcode"].values)
     ):
         expected_arg = df.Arguments.values[i].strip()
         expected_len = len(expected_arg.split())

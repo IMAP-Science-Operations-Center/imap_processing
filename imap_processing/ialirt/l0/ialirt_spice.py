@@ -56,10 +56,7 @@ def get_rotation_matrix(axis: NDArray, angle: NDArray) -> NDArray:
     """
     angle_rad = np.radians(angle)
     rot_matrices = np.array(
-        [
-            spice.axisar(z, float(phase))
-            for z, phase in zip(axis, angle_rad, strict=False)
-        ]
+        [spice.axisar(z, float(phase)) for z, phase in zip(axis, angle_rad)]
     )
 
     return rot_matrices
@@ -188,7 +185,7 @@ def transform_instrument_vectors_to_inertial(
     vectors = np.array(
         [
             spice.mxv(rot.T.copy(), vec)
-            for rot, vec in zip(total_rotations, instrument_vectors, strict=False)
+            for rot, vec in zip(total_rotations, instrument_vectors)
         ]
     )
 

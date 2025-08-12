@@ -3,6 +3,7 @@
 
 import logging
 from enum import Enum
+from typing import Optional
 
 import numpy as np
 from scipy.interpolate import make_interp_spline
@@ -43,8 +44,8 @@ def linear(
     input_vectors: np.ndarray,
     input_timestamps: np.ndarray,
     output_timestamps: np.ndarray,
-    input_rate: VecSec | None = None,
-    output_rate: VecSec | None = None,
+    input_rate: Optional[VecSec] = None,
+    output_rate: Optional[VecSec] = None,
 ) -> np.ndarray:
     """
     Linear interpolation of input vectors to output timestamps.
@@ -79,8 +80,8 @@ def quadratic(
     input_vectors: np.ndarray,
     input_timestamps: np.ndarray,
     output_timestamps: np.ndarray,
-    input_rate: VecSec | None = None,
-    output_rate: VecSec | None = None,
+    input_rate: Optional[VecSec] = None,
+    output_rate: Optional[VecSec] = None,
 ) -> np.ndarray:
     """
     Quadratic interpolation of input vectors to output timestamps.
@@ -114,8 +115,8 @@ def cubic(
     input_vectors: np.ndarray,
     input_timestamps: np.ndarray,
     output_timestamps: np.ndarray,
-    input_rate: VecSec | None = None,
-    output_rate: VecSec | None = None,
+    input_rate: Optional[VecSec] = None,
+    output_rate: Optional[VecSec] = None,
 ) -> np.ndarray:
     """
     Cubic interpolation of input vectors to output timestamps.
@@ -174,8 +175,8 @@ def cic_filter(
     input_vectors: np.ndarray,
     input_timestamps: np.ndarray,
     output_timestamps: np.ndarray,
-    input_rate: VecSec | None,
-    output_rate: VecSec | None,
+    input_rate: Optional[VecSec],
+    output_rate: Optional[VecSec],
 ):
     """
     Apply CIC filter to data before interpolating.
@@ -241,8 +242,8 @@ def linear_filtered(
     input_vectors: np.ndarray,
     input_timestamps: np.ndarray,
     output_timestamps: np.ndarray,
-    input_rate: VecSec | None = None,
-    output_rate: VecSec | None = None,
+    input_rate: Optional[VecSec] = None,
+    output_rate: Optional[VecSec] = None,
 ) -> np.ndarray:
     """
     Linear filtered interpolation of input vectors to output timestamps.
@@ -280,8 +281,8 @@ def quadratic_filtered(
     input_vectors: np.ndarray,
     input_timestamps: np.ndarray,
     output_timestamps: np.ndarray,
-    input_rate: VecSec | None = None,
-    output_rate: VecSec | None = None,
+    input_rate: Optional[VecSec] = None,
+    output_rate: Optional[VecSec] = None,
 ) -> np.ndarray:
     """
     Quadratic filtered interpolation of input vectors to output timestamps.
@@ -319,8 +320,8 @@ def cubic_filtered(
     input_vectors: np.ndarray,
     input_timestamps: np.ndarray,
     output_timestamps: np.ndarray,
-    input_rate: VecSec | None = None,
-    output_rate: VecSec | None = None,
+    input_rate: Optional[VecSec] = None,
+    output_rate: Optional[VecSec] = None,
 ) -> np.ndarray:
     """
     Cubic filtered interpolation of input vectors to output timestamps.

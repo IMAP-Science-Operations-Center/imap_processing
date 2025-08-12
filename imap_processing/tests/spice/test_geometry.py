@@ -143,9 +143,7 @@ def test_frame_transform(et_strings, position, from_frame, to_frame, furnish_ker
         if position.ndim == 1:
             position = np.broadcast_to(position, (len(et), 3))
             result = np.broadcast_to(result, (len(et), 3))
-        for spice_et, spice_position, test_result in zip(
-            et, position, result, strict=False
-        ):
+        for spice_et, spice_position, test_result in zip(et, position, result):
             rotation_matrix = spiceypy.pxform(from_frame.name, to_frame.name, spice_et)
             spice_result = spiceypy.mxv(rotation_matrix, spice_position)
             np.testing.assert_allclose(test_result, spice_result, atol=1e-12)
@@ -310,7 +308,7 @@ def test_basis_vectors(imap_ena_sim_metakernel):
     sc_axes = basis_vectors(et_array, SpiceFrame.IMAP_SPACECRAFT, SpiceFrame.ECLIPJ2000)
     assert sc_axes.shape == (10, 3, 3)
     # Verify that for each time, the basis vectors are correct
-    for et, basis_matrix in zip(et_array, sc_axes, strict=False):
+    for et, basis_matrix in zip(et_array, sc_axes):
         np.testing.assert_array_equal(
             basis_matrix,
             frame_transform(

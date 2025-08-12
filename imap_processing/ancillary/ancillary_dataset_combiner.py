@@ -174,14 +174,14 @@ class AncillaryCombiner:
         # For the lists, we specify the dimension names. For scalars, pass in [].
         data_vars = {}
         for key, value in json_data.items():
-            if isinstance(value, list | tuple):
+            if isinstance(value, (list, tuple)):
                 # Handle arrays/lists
                 data_vars[key] = ([f"dim_{key}"], value)
             elif isinstance(value, dict):
                 # Handle nested dictionaries by flattening with underscore
                 for subkey, subvalue in value.items():
                     flat_key = f"{key}_{subkey}"
-                    if isinstance(subvalue, list | tuple):
+                    if isinstance(subvalue, (list, tuple)):
                         data_vars[flat_key] = ([f"dim_{flat_key}"], subvalue)
                     else:
                         data_vars[flat_key] = ([], subvalue)

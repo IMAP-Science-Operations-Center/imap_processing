@@ -397,9 +397,7 @@ class TestCalibrationProductConfig:
         assert "coincidence_type_values" in df.columns
         for _, row in df.iterrows():
             for detect_string, val in zip(
-                row["coincidence_type_list"],
-                row["coincidence_type_values"],
-                strict=False,
+                row["coincidence_type_list"], row["coincidence_type_values"]
             ):
                 assert val == CoincidenceBitmap.detector_hit_str_to_int(detect_string)
 
