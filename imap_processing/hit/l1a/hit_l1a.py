@@ -3,7 +3,6 @@
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Union
 
 import numpy as np
 import xarray as xr
@@ -36,7 +35,7 @@ logger = logging.getLogger(__name__)
 fillval = -9223372036854775808
 
 
-def hit_l1a(packet_file: Path, packet_date: Union[str, None]) -> list[xr.Dataset]:
+def hit_l1a(packet_file: Path, packet_date: str | None) -> list[xr.Dataset]:
     """
     Will process HIT L0 data into L1A data products.
 

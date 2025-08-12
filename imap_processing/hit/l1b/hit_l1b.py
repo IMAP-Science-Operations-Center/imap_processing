@@ -1,7 +1,6 @@
 """IMAP-HIT L1B data processing."""
 
 import logging
-from typing import Union
 
 import numpy as np
 import xarray as xr
@@ -27,7 +26,7 @@ logger = logging.getLogger(__name__)
 # TODO review logging levels to use (debug vs. info)
 
 
-def hit_l1b(dependency: Union[str, xr.Dataset], l1b_descriptor: str) -> xr.Dataset:
+def hit_l1b(dependency: str | xr.Dataset, l1b_descriptor: str) -> xr.Dataset:
     """
     Will process HIT data to L1B.
 

@@ -220,7 +220,7 @@ def test_phi_to_bin():
 
     expected_bins = np.arange(30)
 
-    for phi, expected_bin in zip(phis, expected_bins):
+    for phi, expected_bin in zip(phis, expected_bins, strict=False):
         assert phi_to_bin(phi) == expected_bin
 
 

@@ -4,7 +4,6 @@ import re
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -101,9 +100,9 @@ def parse_sensor_number(full_string: str) -> int:
 def full_dataarray(
     name: str,
     attrs: dict,
-    coords: Optional[dict[str, xr.DataArray]] = None,
-    shape: Optional[Union[int, Sequence[int]]] = None,
-    fill_value: Optional[float] = None,
+    coords: dict[str, xr.DataArray] | None = None,
+    shape: int | Sequence[int] | None = None,
+    fill_value: float | None = None,
 ) -> xr.DataArray:
     """
     Generate an empty xarray.DataArray with appropriate attributes.
@@ -159,9 +158,9 @@ def full_dataarray(
 
 def create_dataset_variables(
     variable_names: list[str],
-    variable_shape: Optional[Union[int, Sequence[int]]] = None,
-    coords: Optional[dict[str, xr.DataArray]] = None,
-    fill_value: Optional[float] = None,
+    variable_shape: int | Sequence[int] | None = None,
+    coords: dict[str, xr.DataArray] | None = None,
+    fill_value: float | None = None,
     att_manager_lookup_str: str = "{0}",
 ) -> dict[str, xr.DataArray]:
     """
@@ -316,9 +315,9 @@ class EsaEnergyStepLookupTable:
 
     def query(
         self,
-        query_met: Union[float, Iterable[float]],
-        esa_step: Union[int, Iterable[float]],
-    ) -> Union[float, np.ndarray]:
+        query_met: float | Iterable[float],
+        esa_step: int | Iterable[float],
+    ) -> float | np.ndarray:
         """
         Query MET(s) and esa_step(s) to retrieve esa_energy_step(s).
 
@@ -375,7 +374,7 @@ class EsaEnergyStepLookupTable:
         results = np.full_like(query_mets, self._fillval)
 
         # Lookup esa_energy_steps for queries
-        for i, (qm, es) in enumerate(zip(query_mets, esa_steps)):
+        for i, (qm, es) in enumerate(zip(query_mets, esa_steps, strict=False)):
             mask = (
                 (self.df["start_met"] <= qm)
                 & (self.df["end_met"] >= qm)

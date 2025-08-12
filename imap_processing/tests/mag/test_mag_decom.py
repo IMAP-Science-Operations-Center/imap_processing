@@ -127,7 +127,7 @@ def test_mag_raw_cdf_generation(cdf_attrs):
 def test_comparison():
     l0_args = [f.name for f in fields(MagL0)][2:-1]
     values = np.zeros(len(l0_args), dtype=int)
-    attrs = dict(zip(l0_args, values))
+    attrs = dict(zip(l0_args, values, strict=False))
     attrs["VECTORS"] = np.array([1.0, 2.0, 3.0, 4.0])
     attrs["SHCOARSE"] = 1234
     l0_match = MagL0(

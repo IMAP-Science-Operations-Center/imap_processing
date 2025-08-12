@@ -399,7 +399,7 @@ def combine_segmented_packets(dataset: xr.Dataset) -> xr.Dataset:
     # Combine the segmented packets into a single binary string
     dataset["events"] = [
         "".join(dataset["data"].values[start : end + 1])
-        for start, end in zip(seg_starts, seg_ends)
+        for start, end in zip(seg_starts, seg_ends, strict=False)
     ]
 
     # drop any group of segmented packets that aren't sequential
@@ -441,7 +441,8 @@ def find_valid_groups(
     """
     # Check if the sequence counters from the CCSDS header are sequential
     grouped_seq_ctrs = [
-        np.array(seq_ctrs[start : end + 1]) for start, end in zip(seg_starts, seg_ends)
+        np.array(seq_ctrs[start : end + 1])
+        for start, end in zip(seg_starts, seg_ends, strict=False)
     ]
     valid_groups = [is_sequential(seq_ctrs) for seq_ctrs in grouped_seq_ctrs]
     return valid_groups

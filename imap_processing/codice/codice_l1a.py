@@ -191,7 +191,7 @@ class CoDICEL1aPipeline:
 
         else:
             for packet_data, byte_count in zip(
-                science_values, self.dataset.byte_count.data
+                science_values, self.dataset.byte_count.data, strict=False
             ):
                 # Convert from numpy array to byte object
                 values = packet_data[()]
@@ -326,7 +326,7 @@ class CoDICEL1aPipeline:
         # the num_counters dimension to isolate the data for each counter so
         # each counter's data can be placed in a separate CDF data variable.
         for counter, variable_name in zip(
-            range(all_data.shape[-1]), self.config["variable_names"]
+            range(all_data.shape[-1]), self.config["variable_names"], strict=False
         ):
             # Extract the counter data
             counter_data = all_data[..., counter]

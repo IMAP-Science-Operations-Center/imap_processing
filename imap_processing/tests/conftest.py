@@ -4,7 +4,6 @@ import logging
 import time
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional, Union
 
 import cdflib
 import imap_data_access
@@ -239,8 +238,8 @@ def use_fake_spin_data_for_time(
 
     def wrapped_set_spin_data_filepath(
         start_met: float,
-        end_met: Optional[int] = None,
-        spin_period: Optional[float] = 15.0,
+        end_met: int | None = None,
+        spin_period: float | None = 15.0,
     ) -> pd.DataFrame:
         """
         Generate and use fake spin data for testing.
@@ -268,8 +267,8 @@ def use_fake_spin_data_for_time(
 def generate_spin_data():
     def make_data(
         start_met: float,
-        end_met: Optional[float] = None,
-        spin_period: Optional[float] = None,
+        end_met: float | None = None,
+        spin_period: float | None = None,
     ) -> pd.DataFrame:
         """
         Generate a spin table CSV covering one or more days.
@@ -371,9 +370,9 @@ def use_test_repoint_data_csv(monkeypatch):
 
 
 def generate_repoint_data(
-    repoint_start_met: Union[float, np.ndarray],
-    repoint_end_met: Optional[Union[float, np.ndarray]] = None,
-    repoint_id_start: Optional[int] = 0,
+    repoint_start_met: float | np.ndarray,
+    repoint_end_met: float | np.ndarray | None = None,
+    repoint_id_start: int | None = 0,
 ) -> pd.DataFrame:
     """
     Generate a repoint dataframe for the star/end times provided.
@@ -435,9 +434,9 @@ def use_fake_repoint_data_for_time(use_test_repoint_data_csv, tmp_path):
     """
 
     def wrapped_repoint_data_filepath(
-        repoint_start_met: Union[float, np.ndarray],
-        repoint_end_met: Optional[Union[float, np.ndarray]] = None,
-        repoint_id_start: Optional[int] = 0,
+        repoint_start_met: float | np.ndarray,
+        repoint_end_met: float | np.ndarray | None = None,
+        repoint_id_start: int | None = 0,
     ) -> pd.DataFrame:
         """
         Generate and use fake repoint data for testing.

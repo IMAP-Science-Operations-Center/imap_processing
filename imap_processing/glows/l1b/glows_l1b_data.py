@@ -4,7 +4,6 @@ import dataclasses
 import json
 from dataclasses import InitVar, dataclass, field
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import xarray as xr
@@ -454,11 +453,11 @@ class DirectEventL1B:
     pulse_test_in_progress: InitVar[np.double]
     memory_error_detected: InitVar[np.double]
     # The following variables are created from the InitVar data
-    de_flags: Optional[np.ndarray] = field(init=False, default=None)
+    de_flags: np.ndarray | None = field(init=False, default=None)
     # TODO: First two values of DE are sec/subsec
-    direct_event_glows_times: Optional[np.ndarray] = field(init=False, default=None)
+    direct_event_glows_times: np.ndarray | None = field(init=False, default=None)
     # 3rd value is pulse length
-    direct_event_pulse_lengths: Optional[np.ndarray] = field(init=False, default=None)
+    direct_event_pulse_lengths: np.ndarray | None = field(init=False, default=None)
     # TODO: where does the multi-event flag go?
 
     def __post_init__(

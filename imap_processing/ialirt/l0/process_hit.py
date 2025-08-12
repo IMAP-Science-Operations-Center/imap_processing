@@ -91,18 +91,20 @@ def create_l1(
     fast_rate_1_dict = {
         prefix: value
         for prefix, value in zip(
-            HIT_PREFIX_TO_RATE_TYPE["FAST_RATE_1"], fast_rate_1.data
+            HIT_PREFIX_TO_RATE_TYPE["FAST_RATE_1"], fast_rate_1.data, strict=False
         )
     }
     fast_rate_2_dict = {
         prefix: value
         for prefix, value in zip(
-            HIT_PREFIX_TO_RATE_TYPE["FAST_RATE_2"], fast_rate_2.data
+            HIT_PREFIX_TO_RATE_TYPE["FAST_RATE_2"], fast_rate_2.data, strict=False
         )
     }
     slow_rate_dict = {
         prefix: value
-        for prefix, value in zip(HIT_PREFIX_TO_RATE_TYPE["SLOW_RATE"], slow_rate.data)
+        for prefix, value in zip(
+            HIT_PREFIX_TO_RATE_TYPE["SLOW_RATE"], slow_rate.data, strict=False
+        )
     }
 
     l1 = {**fast_rate_1_dict, **fast_rate_2_dict, **slow_rate_dict}

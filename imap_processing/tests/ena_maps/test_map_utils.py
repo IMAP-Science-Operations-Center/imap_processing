@@ -90,7 +90,7 @@ class TestENAMapMappingUtils:
         # Create the expected projection values by summing the input values in a loop
         # This is different from the binning function, which uses np.bincount
         expected_projection_values = np.zeros((extra_axis_size, projection_grid_size))
-        for ii, ip in zip(input_indices, projection_indices):
+        for ii, ip in zip(input_indices, projection_indices, strict=False):
             expected_projection_values[:, ip] += value_array[:, ii]
 
         np.testing.assert_allclose(projection_values, expected_projection_values)
@@ -128,7 +128,7 @@ class TestENAMapMappingUtils:
         # Create the expected projection values by summing the input values in a loop
         # This is different from the binning function, which uses np.bincount
         expected_projection_values = np.zeros((*extra_axes_sizes, projection_grid_size))
-        for ii, ip in zip(input_indices, projection_indices):
+        for ii, ip in zip(input_indices, projection_indices, strict=False):
             expected_projection_values[..., ip] += value_array[..., ii]
 
         np.testing.assert_allclose(projection_values, expected_projection_values)

@@ -1,7 +1,6 @@
 """MAG L1C processing module."""
 
 import logging
-from typing import Optional
 
 import numpy as np
 import xarray as xr
@@ -183,7 +182,7 @@ def mag_l1c(
 
 
 def select_datasets(
-    first_input_dataset: xr.Dataset, second_input_dataset: Optional[xr.Dataset] = None
+    first_input_dataset: xr.Dataset, second_input_dataset: xr.Dataset | None = None
 ) -> tuple[xr.Dataset, xr.Dataset]:
     """
     Given one or two datasets, assign one to norm and one to burst.
@@ -503,7 +502,7 @@ def generate_timeline(epoch_data: np.ndarray, gaps: np.ndarray) -> np.ndarray:
 
 
 def find_all_gaps(
-    epoch_data: np.ndarray, vecsec_dict: Optional[dict] = None
+    epoch_data: np.ndarray, vecsec_dict: dict | None = None
 ) -> np.ndarray:
     """
     Find all the gaps in the epoch data.

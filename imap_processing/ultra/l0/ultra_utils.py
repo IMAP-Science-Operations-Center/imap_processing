@@ -1,6 +1,6 @@
 """Contains data classes to support Ultra L0 processing."""
 
-from typing import NamedTuple, Union
+from typing import NamedTuple
 
 
 class PacketProperties(NamedTuple):
@@ -9,23 +9,21 @@ class PacketProperties(NamedTuple):
     apid: list  # List of APIDs
     logical_source: list  # List of logical sources
     addition_to_logical_desc: str  # Description of the logical source
-    width: Union[int, None]  # Width of binary data (could be None).
+    width: int | None  # Width of binary data (could be None).
     # Block, image_planes, pixel_window_rows, and pixel_window_columns are important for
     # decompressing the images and a description is available on page 171 of IMAP-Ultra
     # Flight Software Specification document (7523-9009_Rev_-.pdf).
-    block: Union[int, None]  # Number of values in each block (could be None).
-    len_array: Union[
-        int, None
-    ]  # Length of the array to be decompressed (could be None).
-    mantissa_bit_length: Union[int, None]  # used to determine the level of
+    block: int | None  # Number of values in each block (could be None).
+    len_array: int | None  # Length of the array to be decompressed (could be None).
+    mantissa_bit_length: int | None  # used to determine the level of
     # precision that can be recovered from compressed data (could be None).
-    image_planes: Union[int, None] = None
+    image_planes: int | None = None
     # number of images. See table 11 in the FSSD.
-    pixel_window_rows: Union[int, None] = None
+    pixel_window_rows: int | None = None
     # number of rows in each image. See table 49 in the FSSD.
-    pixel_window_columns: Union[int, None] = None
+    pixel_window_columns: int | None = None
     # number of columns in each image. See table 49 in the FSSD.
-    image_planes_per_packet: Union[int, None] = None
+    image_planes_per_packet: int | None = None
     # number of image planes in each packet. See table 52 in the FSSD.
 
 
