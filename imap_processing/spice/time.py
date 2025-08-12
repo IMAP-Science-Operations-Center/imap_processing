@@ -3,7 +3,6 @@
 import typing
 from collections.abc import Collection, Iterable
 from datetime import datetime
-from typing import Union
 
 import numpy as np
 import numpy.typing as npt
@@ -180,7 +179,7 @@ def met_to_utc(met: npt.ArrayLike, precision: int = 9) -> npt.NDArray[str]:
 
 def met_to_datetime64(
     met: npt.ArrayLike,
-) -> Union[np.datetime64, npt.NDArray[np.datetime64]]:
+) -> np.datetime64 | npt.NDArray[np.datetime64]:
     """
     Convert mission elapsed time (MET) to datetime.datetime.
 
@@ -199,7 +198,7 @@ def met_to_datetime64(
 
 def et_to_datetime64(
     et: npt.ArrayLike,
-) -> Union[np.datetime64, npt.NDArray[np.datetime64]]:
+) -> np.datetime64 | npt.NDArray[np.datetime64]:
     """
     Convert ET to numpy datetime64.
 
@@ -218,8 +217,8 @@ def et_to_datetime64(
 
 @typing.no_type_check
 def et_to_met(
-    et: Union[float, Collection[float]],
-) -> Union[float, np.ndarray]:
+    et: float | Collection[float],
+) -> float | np.ndarray:
     """
     Convert ephemeris time to mission elapsed time (MET).
 
@@ -268,8 +267,8 @@ def ttj2000ns_to_met(
 
 @typing.no_type_check
 def sct_to_et(
-    sclk_ticks: Union[float, Collection[float]],
-) -> Union[float, np.ndarray]:
+    sclk_ticks: float | Collection[float],
+) -> float | np.ndarray:
     """
     Convert encoded spacecraft clock "ticks" to ephemeris time.
 
@@ -293,8 +292,8 @@ def sct_to_et(
 
 @typing.no_type_check
 def sct_to_ttj2000s(
-    sclk_ticks: Union[float, Iterable[float]],
-) -> Union[float, np.ndarray]:
+    sclk_ticks: float | Iterable[float],
+) -> float | np.ndarray:
     """
     Convert encoded spacecraft clock "ticks" to terrestrial time (TT).
 
@@ -324,8 +323,8 @@ def sct_to_ttj2000s(
 
 @typing.no_type_check
 def str_to_et(
-    time_str: Union[str, Iterable[str]],
-) -> Union[float, np.ndarray]:
+    time_str: str | Iterable[str],
+) -> float | np.ndarray:
     """
     Convert string to ephemeris time.
 
@@ -349,11 +348,11 @@ def str_to_et(
 
 @typing.no_type_check
 def et_to_utc(
-    et: Union[float, Iterable[float]],
+    et: float | Iterable[float],
     format_str: str = "ISOC",
     precision: int = 3,
     utclen: int = 24,
-) -> Union[str, np.ndarray]:
+) -> str | np.ndarray:
     """
     Convert ephemeris time to UTC.
 

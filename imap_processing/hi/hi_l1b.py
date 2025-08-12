@@ -3,7 +3,6 @@
 import logging
 from enum import IntEnum
 from pathlib import Path
-from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -47,7 +46,7 @@ ATTR_MGR.add_instrument_global_attrs("hi")
 ATTR_MGR.add_instrument_variable_attrs(instrument="hi", level=None)
 
 
-def housekeeping(packet_file_path: Union[str, Path]) -> list[xr.Dataset]:
+def housekeeping(packet_file_path: str | Path) -> list[xr.Dataset]:
     """
     Will process IMAP raw data to l1b housekeeping dataset.
 
@@ -439,7 +438,7 @@ def get_esa_to_esa_energy_step_lut(
     mode_changes = np.diff(padded_mask.astype(int))
     hsvsci_starts = np.nonzero(mode_changes == 1)[0]
     hsvsci_ends = np.nonzero(mode_changes == -1)[0]
-    for i_start, i_end in zip(hsvsci_starts, hsvsci_ends):
+    for i_start, i_end in zip(hsvsci_starts, hsvsci_ends, strict=False):
         contiguous_hvsci_ds = l1b_hk_ds.isel(dict(epoch=slice(i_start, i_end)))
         # Find median inner and outer ESA voltages for each ESA step
         for esa_step in esa_steps:

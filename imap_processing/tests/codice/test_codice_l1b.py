@@ -44,7 +44,7 @@ def test_l1b_data(request) -> xr.Dataset:
 
 @pytest.mark.parametrize(
     "test_l1b_data, expected_logical_source",
-    list(zip(TEST_L1A_FILES, EXPECTED_LOGICAL_SOURCES)),
+    list(zip(TEST_L1A_FILES, EXPECTED_LOGICAL_SOURCES, strict=False)),
     indirect=["test_l1b_data"],
 )
 def test_l1b_logical_sources(test_l1b_data: xr.Dataset, expected_logical_source: str):

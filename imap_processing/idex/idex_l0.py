@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
 from xarray import Dataset
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def decom_packets(
-    packet_file: Union[str, Path],
+    packet_file: str | Path,
 ) -> tuple[list[Any], dict[int, Dataset], dict[int, Dataset]]:
     """
     Decom IDEX data packets using IDEX packet definition.

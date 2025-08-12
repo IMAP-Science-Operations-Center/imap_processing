@@ -16,7 +16,6 @@ Examples
 
 import logging
 from enum import Enum
-from typing import Union
 
 import pandas as pd
 import xarray as xr
@@ -226,7 +225,7 @@ def convert_waveforms(
 
 def get_trigger_mode_and_level(
     l1a_dataset: xr.Dataset,
-) -> Union[dict[str, xr.DataArray], dict]:
+) -> dict[str, xr.DataArray] | dict:
     """
     Determine the trigger mode and threshold level for each event.
 
@@ -249,7 +248,7 @@ def get_trigger_mode_and_level(
 
     def compute_trigger_values(
         trigger_mode: int, trigger_controls: int, gain_channel: str
-    ) -> Union[tuple[str, Union[int, float]], tuple[None, None]]:
+    ) -> tuple[str, int | float] | tuple[None, None]:
         """
         Compute the trigger mode label and threshold level.
 

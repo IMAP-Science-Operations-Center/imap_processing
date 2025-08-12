@@ -90,7 +90,10 @@ def calculate_de(
     ]
 
     de_dict.update(
-        {key: de_dataset[dataset_key] for key, dataset_key in zip(keys, dataset_keys)}
+        {
+            key: de_dataset[dataset_key]
+            for key, dataset_key in zip(keys, dataset_keys, strict=False)
+        }
     )
 
     valid_mask = de_dataset["start_type"].data != FILLVAL_UINT8

@@ -4,7 +4,6 @@ import functools
 import logging
 from functools import reduce
 from pathlib import Path
-from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -129,7 +128,7 @@ def _load_spin_data_with_cache(csv_paths: tuple[Path]) -> pd.DataFrame:
     return combined_df
 
 
-def interpolate_spin_data(query_met_times: Union[float, npt.NDArray]) -> pd.DataFrame:
+def interpolate_spin_data(query_met_times: float | npt.NDArray) -> pd.DataFrame:
     """
     Interpolate spin table data to the queried MET times.
 
@@ -214,9 +213,9 @@ def interpolate_spin_data(query_met_times: Union[float, npt.NDArray]) -> pd.Data
 
 
 def get_spin_angle(
-    spin_phases: Union[float, npt.NDArray],
+    spin_phases: float | npt.NDArray,
     degrees: bool = False,
-) -> Union[float, npt.NDArray]:
+) -> float | npt.NDArray:
     """
     Convert spin_phases to radians or degrees.
 
@@ -249,8 +248,8 @@ def get_spin_angle(
 
 
 def get_spacecraft_spin_phase(
-    query_met_times: Union[float, npt.NDArray],
-) -> Union[float, npt.NDArray]:
+    query_met_times: float | npt.NDArray,
+) -> float | npt.NDArray:
     """
     Get the spacecraft spin phase for the input query times.
 
@@ -274,8 +273,8 @@ def get_spacecraft_spin_phase(
 
 
 def get_instrument_spin_phase(
-    query_met_times: Union[float, npt.NDArray], instrument: SpiceFrame
-) -> Union[float, npt.NDArray]:
+    query_met_times: float | npt.NDArray, instrument: SpiceFrame
+) -> float | npt.NDArray:
     """
     Get the instrument spin phase for the input query times.
 

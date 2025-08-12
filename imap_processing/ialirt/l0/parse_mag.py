@@ -2,7 +2,6 @@
 
 import logging
 from decimal import Decimal
-from typing import Union
 
 import numpy as np
 import xarray as xr
@@ -202,7 +201,7 @@ def get_time(
         (grouped_data["group"] == group).values
     ][pkt_counter == 2]
 
-    time_data: dict[str, Union[int, float]] = {
+    time_data: dict[str, int | float] = {
         "pri_coarsetm": int(pri_coarsetm.item()),
         "pri_fintm": int(pri_fintm.item()),
         "sec_coarsetm": int(sec_coarsetm.item()),

@@ -8,7 +8,6 @@ Reference: https://spiceypy.readthedocs.io/en/main/documentation.html.
 
 import logging
 import typing
-from typing import Union
 
 import numpy as np
 import spiceypy
@@ -69,7 +68,7 @@ def calculate_azimuth_and_elevation(
     longitude: float,
     latitude: float,
     altitude: float,
-    observation_time: Union[float, np.ndarray],
+    observation_time: float | np.ndarray,
     target: str = SpiceBody.IMAP.name,
 ) -> tuple:
     """
@@ -133,8 +132,8 @@ def calculate_doppler(
     longitude: float,
     latitude: float,
     altitude: float,
-    observation_time: Union[float, np.ndarray],
-) -> Union[float, ndarray[float]]:
+    observation_time: float | np.ndarray,
+) -> float | ndarray[float]:
     """
     Calculate the doppler velocity.
 

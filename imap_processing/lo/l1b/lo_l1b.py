@@ -3,7 +3,7 @@
 import logging
 from dataclasses import Field
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 import xarray as xr
@@ -204,7 +204,7 @@ def get_avg_spin_durations_per_cycle(
     return avg_spin_durations_per_cycle
 
 
-def get_spin_angle(l1a_de: xr.Dataset) -> Union[np.ndarray[np.float64], Any]:
+def get_spin_angle(l1a_de: xr.Dataset) -> np.ndarray[np.float64] | Any:
     """
     Get the spin angle (0 - 360 degrees) for each DE.
 
@@ -587,7 +587,7 @@ def convert_tofs_to_eu(
     tof_conversions = [TOF0_CONV, TOF1_CONV, TOF2_CONV, TOF3_CONV]
 
     # Loop through the TOF fields and convert them to engineering units
-    for tof, conv in zip(tof_fields, tof_conversions):
+    for tof, conv in zip(tof_fields, tof_conversions, strict=False):
         # Get the fill value for the L1A and L1B TOF
         fillval_1a = attr_mgr_l1a.get_variable_attributes(tof)["FILLVAL"]
         fillval_1b = attr_mgr_l1b.get_variable_attributes(tof)["FILLVAL"]

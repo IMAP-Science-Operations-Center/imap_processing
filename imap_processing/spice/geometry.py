@@ -11,7 +11,6 @@ Paradigms for developing this module:
 
 import typing
 from enum import IntEnum
-from typing import Union
 
 import numpy as np
 import numpy.typing as npt
@@ -99,7 +98,7 @@ BORESIGHT_LOOKUP = {
 
 
 def imap_state(
-    et: Union[np.ndarray, float],
+    et: np.ndarray | float,
     ref_frame: SpiceFrame = SpiceFrame.ECLIPJ2000,
     abcorr: str = "NONE",
     observer: SpiceBody = SpiceBody.SUN,
@@ -171,7 +170,7 @@ def get_spacecraft_to_instrument_spin_phase_offset(instrument: SpiceFrame) -> fl
 
 
 def frame_transform(
-    et: Union[float, npt.NDArray],
+    et: float | npt.NDArray,
     position: npt.NDArray,
     from_frame: SpiceFrame,
     to_frame: SpiceFrame,
@@ -245,7 +244,7 @@ def frame_transform(
 
 
 def frame_transform_az_el(
-    et: Union[float, npt.NDArray],
+    et: float | npt.NDArray,
     az_el: npt.NDArray,
     from_frame: SpiceFrame,
     to_frame: SpiceFrame,
@@ -295,7 +294,7 @@ def frame_transform_az_el(
 
 
 def get_rotation_matrix(
-    et: Union[float, npt.NDArray],
+    et: float | npt.NDArray,
     from_frame: SpiceFrame,
     to_frame: SpiceFrame,
 ) -> npt.NDArray:
@@ -333,7 +332,7 @@ def get_rotation_matrix(
 
 
 def instrument_pointing(
-    et: Union[float, npt.NDArray],
+    et: float | npt.NDArray,
     instrument: SpiceFrame,
     to_frame: SpiceFrame,
     cartesian: bool = False,
@@ -371,7 +370,7 @@ def instrument_pointing(
 
 
 def basis_vectors(
-    et: Union[float, npt.NDArray],
+    et: float | npt.NDArray,
     from_frame: SpiceFrame,
     to_frame: SpiceFrame,
 ) -> npt.NDArray:
@@ -544,9 +543,9 @@ def cartesian_to_latitudinal(coords: NDArray, degrees: bool = True) -> NDArray:
 
 
 def solar_longitude(
-    et: Union[np.ndarray, float],
+    et: np.ndarray | float,
     degrees: bool = True,
-) -> Union[float, npt.NDArray]:
+) -> float | npt.NDArray:
     """
     Compute the solar longitude of the Imap Spacecraft.
 

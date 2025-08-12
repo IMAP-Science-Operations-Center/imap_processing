@@ -607,7 +607,7 @@ def get_science_acquisition_timestamps(
     epochs = evt_dataset["epoch"][sc_indices].data
     # Now the state change values and check if it is either a science
     # acquisition start or science acquisition stop event.
-    for v1, v2, epoch in zip(val1, val2, epochs):
+    for v1, v2, epoch in zip(val1, val2, epochs, strict=False):
         # An "acquire" start will have val1=ACQSETUP and val2=ACQ
         # An "acquire" stop will have val1=ACQ and val2=CHILL
         if (v1, v2) == (IDEXEvtAcquireCodes.ACQSETUP, IDEXEvtAcquireCodes.ACQ):

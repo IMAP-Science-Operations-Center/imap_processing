@@ -3,7 +3,6 @@
 import functools
 import logging
 from pathlib import Path
-from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -113,7 +112,7 @@ def _load_repoint_data_with_cache(csv_path: Path) -> pd.DataFrame:
 
 
 def interpolate_repoint_data(
-    query_met_times: Union[float, npt.NDArray],
+    query_met_times: float | npt.NDArray,
 ) -> pd.DataFrame:
     """
     Interpolate repointing data to the queried MET times.
