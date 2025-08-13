@@ -1,6 +1,7 @@
 """Test calculate_ingest functions."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from typing import Any
 
 from imap_processing import imap_module_directory
 from imap_processing.ialirt.calculate_ingest import (
@@ -8,6 +9,7 @@ from imap_processing.ialirt.calculate_ingest import (
     format_ingest_data,
     packets_created,
 )
+from imap_processing.ialirt.constants import STATIONS
 
 TEST_PATH = imap_module_directory / "tests" / "ialirt" / "data" / "l0"
 
@@ -21,20 +23,35 @@ def test_find_tcp_connections():
     start_of_time = datetime.strptime(timestamp_str, "%Y-%jT%H:%M:%S") - timedelta(
         hours=1
     )
-    end_of_time = start_of_time
+    end_of_time = start_of_time + timedelta(hours=48)
 
     with open(TEST_PATH / filename, encoding="utf-8") as f:
         lines = f.readlines()
 
-    test = find_tcp_connections(start_of_time, end_of_time, lines, "Kiel")
+    formatted: dict[str, Any] = {
+        "summary": "I-ALiRT Real-time Ingest Summary",
+        "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "time_format": "UTC (ISOC)",
+        "stations": list(STATIONS),
+        "time_range": [
+            start_of_time.isoformat(),
+            end_of_time.isoformat(),
+        ],  # Overall time range of the data
+        "packet_ingest": [],  # Global packet ingest times
+        "tcp": {
+            station: [] for station in list(STATIONS)
+        },  # Per-station TCP connection windows
+    }
+
+    test = find_tcp_connections(start_of_time, end_of_time, lines, formatted)
 
     # 2025/212-16:33:03.247
     time_0 = datetime(2025, 7, 31, 16, 33, 3, 247000)
     # 2025/212-16:33:40.189
     time_1 = datetime(2025, 7, 31, 16, 33, 40, 189000)
 
-    assert test[0][0] == time_0
-    assert test[0][1] == time_1
+    assert test["tcp"]["Kiel"][0]["start"] == datetime.isoformat(time_0)
+    assert test["tcp"]["Kiel"][0]["end"] == datetime.isoformat(time_1)
 
 
 def test_packets_created():
