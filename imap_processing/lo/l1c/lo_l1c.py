@@ -277,58 +277,52 @@ def get_spin_numbers(l1b_de: xr.Dataset) -> tuple[int, int]:
     """
     repoint_df = get_repoint_data()
     spin_df = get_spin_data()
-    print(spin_df.head(50))
 
-    # Convert repoint end MET to TTJ2000NS
+    # Convert repoint and spin MET to TTJ2000NS
     repoint_df["repoint_end_ttj2000ns"] = met_to_ttj2000ns(repoint_df["repoint_end_met"])
-    repoint_df["repoint_start_ttj2000ns"] = met_to_ttj2000ns(repoint_df["repoint_start_met"])
-    print()
-    print(repoint_df.head())
-    # Convert spin start MET to TTJ2000NS
+    repoint_df["repoint_start_ttj2000ns"] = met_to_ttj2000ns(
+        repoint_df["repoint_start_met"])
     spin_df["spin_start_ttj2000ns"] = met_to_ttj2000ns(spin_df["spin_start_met"])
 
     first_epoch = l1b_de["epoch"][0].item()
     last_epoch = l1b_de["epoch"][-1].item()
-    # Find the repoint interval that contains first_epoch
-    repoint_mask_first = (
-            (repoint_df["repoint_end_ttj2000ns"] <= first_epoch)
-            & (repoint_df["repoint_start_ttj2000ns"].shift(-1) >= first_epoch)
-    )
-    repoint_mask_last = (
-        (repoint_df["repoint_end_ttj2000ns"] <= last_epoch) &
-        (repoint_df["repoint_start_ttj2000ns"].shift(-1) > last_epoch)
-    )
-    #TODO: getting first idx is confusing, should only have 1
-    repoint_first_idx = repoint_mask_first.idxmax() if repoint_mask_first.any() else None
-    repoint_last_idx = repoint_mask_last.idxmax() if repoint_mask_last.any() else None
 
-    pointing_start = repoint_df["repoint_end_ttj2000ns"].iloc[
-        repoint_first_idx] if repoint_first_idx is not None else None
-    pointing_end = repoint_df["repoint_start_ttj2000ns"].iloc[
-        repoint_last_idx + 1] if repoint_last_idx is not None else None
+    pointing_start, pointing_end = pointing_times(repoint_df, first_epoch)
 
+    pointing_start_spin_idx = find_spin_idx(spin_df, pointing_start)
+    pointing_end_spin_idx = find_spin_idx(spin_df, pointing_end, start=False)
 
-    print(f"Repoint end time: {pointing_start}")
-    print(f"First epoch: {first_epoch}")
-
-    pointing_start_spin_mask = (
-        (spin_df["spin_start_ttj2000ns"] <= pointing_start) &
-        (spin_df["spin_start_ttj2000ns"].shift(-1) > pointing_start)
-    )
-    pointing_end_spin_mask = (
-        (spin_df["spin_start_ttj2000ns"] <= pointing_end - 1) &
-        (spin_df["spin_start_ttj2000ns"].shift(-1) >= pointing_end - 1)
-    )
-
-    pointing_start_spin_idx = pointing_start_spin_mask.idxmax() if pointing_start_spin_mask.any() else None
-    pointing_end_spin_idx = pointing_end_spin_mask.idxmax() if pointing_end_spin_mask.any() else None
-    start_spin_number = spin_df["spin_number"].iloc[pointing_start_spin_idx] if pointing_start_spin_idx is not None else None
-    end_spin_number = spin_df["spin_number"].iloc[pointing_end_spin_idx] if pointing_end_spin_idx is not None else None
+    start_spin_number = spin_df["spin_number"].iloc[
+        pointing_start_spin_idx] if pointing_start_spin_idx is not None else None
+    end_spin_number = spin_df["spin_number"].iloc[
+        pointing_end_spin_idx] if pointing_end_spin_idx is not None else None
 
     print(f"Start spin number: {start_spin_number}")
 
     return start_spin_number, end_spin_number
 
+def pointing_times(df, epoch):
+    mask_start = (df["repoint_end_ttj2000ns"] <= epoch) & (
+                df["repoint_start_ttj2000ns"].shift(-1) >= epoch)
+    mask_end = (df["repoint_end_ttj2000ns"] <= epoch) & (
+                df["repoint_start_ttj2000ns"].shift(-1) > epoch)
+
+    if all(mask_start == mask_end):
+        repoint_idx = mask_start.idxmax() if mask_start.any() else None
+        pointing_start = df["repoint_end_ttj2000ns"].iloc[
+            repoint_idx] if repoint_idx is not None else None
+        pointing_end = df["repoint_start_ttj2000ns"].iloc[
+            repoint_idx + 1] if repoint_idx is not None else None
+    return pointing_start, pointing_end
+
+def find_spin_idx(df, time, start=True):
+    if start:
+        mask = (df["spin_start_ttj2000ns"] <= time) & (
+                    df["spin_start_ttj2000ns"].shift(-1) > time)
+    else:
+        mask = (df["spin_start_ttj2000ns"] <= time - 1) & (
+                    df["spin_start_ttj2000ns"].shift(-1) >= time - 1)
+    return mask.idxmax() if mask.any() else None
 
 def calculate_exposure_times(counts: xr.DataArray, l1b_de: xr.Dataset) -> xr.DataArray:
     """

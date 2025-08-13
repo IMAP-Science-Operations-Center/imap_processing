@@ -4,7 +4,6 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.spice.time import met_to_ttj2000ns
 from imap_processing.lo.l1c.lo_l1c import (
     FilterType,
     calculate_exposure_times,
@@ -14,6 +13,7 @@ from imap_processing.lo.l1c.lo_l1c import (
     initialize_pset,
     lo_l1c,
 )
+from imap_processing.spice.time import met_to_ttj2000ns
 
 
 @pytest.fixture
@@ -49,14 +49,15 @@ def l1b_de():
     )
     return l1b_de
 
+
 @pytest.fixture
 def repoint_met():
     met = np.arange(511000000, 511000000 + 86400 * 5, 86400)
     return met
+
+
 @pytest.fixture
-def l1b_de_spin(repoint_met):
-
-
+def l1b_de_spin():
     l1b_de = xr.Dataset(
         {
             "pointing_bin_lon": ("epoch", [20, 0, 20, 2000, 3500]),
@@ -81,6 +82,7 @@ def l1b_de_spin(repoint_met):
         },
     )
     return l1b_de
+
 
 @pytest.fixture
 def anc_dependencies():
@@ -244,7 +246,10 @@ def test_create_doubles_pset_counts(l1b_de, doubles_counts):
 
 
 def test_get_spin_numbers(
-    l1b_de_spin, repoint_met,  use_fake_repoint_data_for_time, use_fake_spin_data_for_time
+    l1b_de_spin,
+    repoint_met,
+    use_fake_repoint_data_for_time,
+    use_fake_spin_data_for_time,
 ):
     # Arrange
 
