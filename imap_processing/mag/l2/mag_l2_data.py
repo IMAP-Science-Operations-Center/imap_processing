@@ -13,6 +13,7 @@ from imap_processing.spice.geometry import SpiceFrame, frame_transform
 from imap_processing.spice.time import (
     et_to_ttj2000ns,
     str_to_et,
+    ttj2000ns_to_et,
 )
 
 
@@ -56,6 +57,9 @@ class MagL2L1dBase:
         file in L2, marked as good always in L1D.
     frame:
         The reference frame of the input vectors. Starts as the MAG instrument frame.
+    epoch_et: np.ndarray
+        The epoch timestamps converted to ET format. Used for frame transformations.
+        Calculated on first use and then saved. Should not be passed in.
     """
 
     vectors: np.ndarray
@@ -67,6 +71,7 @@ class MagL2L1dBase:
     data_mode: DataMode
     magnitude: np.ndarray = field(init=False)
     frame: ValidFrames = ValidFrames.MAG
+    epoch_et: np.ndarray | None = field(init=False, default=None)
 
     def generate_dataset(
         self,
@@ -302,8 +307,10 @@ class MagL2L1dBase:
             The frame to rotate the data to. Must be one of the ValidFrames enum
             values.
         """
+        if self.epoch_et is None:
+            self.epoch_et = ttj2000ns_to_et(self.epoch)
         self.vectors = frame_transform(
-            self.epoch,
+            self.epoch_et,
             self.vectors,
             from_frame=self.frame.value,
             to_frame=end_frame.value,
