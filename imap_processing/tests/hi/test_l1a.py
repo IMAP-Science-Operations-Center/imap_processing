@@ -103,6 +103,20 @@ def test_app_hist_decom(hi_l0_test_data_path):
     assert cem_raw_cdf_filepath.name.startswith("imap_hi_l1a_90sensor-hist_")
 
 
+def test_memdmp_decom(hi_l0_test_data_path):
+    """Test memdmp data"""
+    bin_data_path = hi_l0_test_data_path / "imap_hi_l0_raw-memdmp_20260926_v003.pkts"
+    processed_data = hi_l1a(packet_file_path=bin_data_path)
+
+    # Write CDFs
+    for ds in processed_data:
+        memdmp_filepath = write_cdf(ds)
+        sensor_num = "45" if ds["pkt_apid"].data[0] == HIAPID.H45_MEMDMP else "90"
+        assert memdmp_filepath.name.startswith(
+            f"imap_hi_l1a_{sensor_num}sensor-memdmp_"
+        )
+
+
 def test_unpack_hist_counter():
     """Test hi.l1a.histogram.unpack_hist_counter()"""
     # To ensure correct unpacking, use expected values with ones in the upper
