@@ -50,11 +50,11 @@ def l1b_de():
     return l1b_de
 
 @pytest.fixture
-def spin_met():
-    met = np.array([511000000, 511000001, 511000002, 511000003, 511000004])
+def repoint_met():
+    met = np.arange(511000000, 511000000 + 86400 * 5, 86400)
     return met
 @pytest.fixture
-def l1b_de_spin(spin_met):
+def l1b_de_spin(repoint_met):
 
 
     l1b_de = xr.Dataset(
@@ -77,7 +77,7 @@ def l1b_de_spin(spin_met):
             "avg_spin_durations": ("epoch", [15.2, 15.2, 14.9, 15, 14.9]),
         },
         coords={
-            "epoch": met_to_ttj2000ns(spin_met),
+            "epoch": met_to_ttj2000ns(np.arange(511000000, 511000000 + 200, 40) + 901),
         },
     )
     return l1b_de
@@ -244,14 +244,14 @@ def test_create_doubles_pset_counts(l1b_de, doubles_counts):
 
 
 def test_get_spin_numbers(
-    l1b_de_spin, spin_met,  use_fake_repoint_data_for_time, use_fake_spin_data_for_time
+    l1b_de_spin, repoint_met,  use_fake_repoint_data_for_time, use_fake_spin_data_for_time
 ):
     # Arrange
 
-    use_fake_spin_data_for_time(spin_met[0])
-    use_fake_repoint_data_for_time(spin_met)
+    use_fake_spin_data_for_time(repoint_met[0])
+    use_fake_repoint_data_for_time(repoint_met)
 
-    expected_spin_numbers = np.array([1, 2, 3, 4, 5])
+    expected_spin_numbers = (60, 5759)
 
     # Act
     spin_numbers = get_spin_numbers(l1b_de_spin)
