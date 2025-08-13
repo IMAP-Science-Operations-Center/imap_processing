@@ -8,15 +8,13 @@ from imap_processing.ialirt.constants import STATIONS
 
 logger = logging.getLogger(__name__)
 
-ALL_STATIONS = [*STATIONS.keys()]
-
 
 def find_tcp_connections(
     start_file_creation: datetime,
     end_file_creation: datetime,
     lines: list,
-    partner: str,
-) -> list:
+    formatted: dict,
+) -> dict:
     """
     Find tcp connection time ranges for ground station from log lines.
 
@@ -28,24 +26,34 @@ def find_tcp_connections(
         File creation time of last file.
     lines : list
         All lines of log files.
-    partner : str
-        Ground station partner.
+    formatted : dict
+        Input dictionary.
 
     Returns
     -------
-    connection_ranges : list
-        List of (start, end) representing TCP connection windows.
+    formatted : dict
+        Output dictionary.
     """
     connection_ranges = []
     current_start = None
 
     for line in lines:
-        if f"{partner} antenna partner connection is up." in line:
+        if "antenna partner connection is" in line:
+            msg = " ".join(line.split(" ")[1:])
+            station = msg.split(" antenna")[0]
+
+            if station not in formatted["tcp"]:
+                formatted["tcp"][station] = []
+
+            if station not in formatted["stations"]:
+                formatted["stations"].append(station)
+
+        if f"{station} antenna partner connection is up." in line:
             timestamp = line.split(" ")[0]
             current_start = datetime.strptime(timestamp, "%Y/%j-%H:%M:%S.%f")
             # Use the start_file_creation time if the current_start is before it.
             current_start = max(current_start, start_file_creation)
-        elif f"{partner} antenna partner connection is down!" in line:
+        elif f"{station} antenna partner connection is down!" in line:
             timestamp = line.split(" ")[0]
             end_time = datetime.strptime(timestamp, "%Y/%j-%H:%M:%S.%f")
             if end_time < start_file_creation:
@@ -64,7 +72,12 @@ def find_tcp_connections(
     if current_start is not None:
         connection_ranges.append((current_start, end_file_creation))
 
-    return connection_ranges
+    formatted["tcp"][station] = [
+        {"start": start.isoformat(), "end": end.isoformat()}
+        for start, end in connection_ranges
+    ]
+
+    return formatted
 
 
 def packets_created(start_file_creation: datetime, lines: list) -> list:
@@ -159,26 +172,21 @@ def format_ingest_data(last_filename: str, all_lines: list) -> dict:
         "summary": "I-ALiRT Real-time Ingest Summary",
         "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "time_format": "UTC (ISOC)",
-        "stations": ALL_STATIONS,
+        "stations": list(STATIONS),
         "time_range": [
             start_of_time.isoformat(),
             end_of_time.isoformat(),
         ],  # Overall time range of the data
         "packet_ingest": [],  # Global packet ingest times
         "tcp": {
-            station: [] for station in ALL_STATIONS
+            station: [] for station in list(STATIONS)
         },  # Per-station TCP connection windows
     }
 
     # TCP connection data for each station
-    for station in ALL_STATIONS:
-        tcp_ranges = find_tcp_connections(
-            start_of_time, end_of_time, all_lines, station
-        )
-        formatted["tcp"][station] = [
-            {"start": start.isoformat(), "end": end.isoformat()}
-            for start, end in tcp_ranges
-        ]
+    formatted = find_tcp_connections(
+        start_of_time, end_of_time, all_lines, formatted
+    )
 
     # Global packet ingest timestamps
     packet_times = packets_created(start_of_time, all_lines)
