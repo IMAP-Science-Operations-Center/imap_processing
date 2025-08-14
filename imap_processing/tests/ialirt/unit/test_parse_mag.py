@@ -17,10 +17,11 @@ from imap_processing.ialirt.l0.parse_mag import (
     get_pkt_counter,
     get_status_data,
     get_time,
-    process_packet,
     retrieve_matrix_from_single_l1b_calibration,
     transform_to_frames,
 )
+from imap_processing.ialirt.utils.grouping import find_groups
+from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.mag.constants import MAX_FINE_TIME
 from imap_processing.spice.geometry import SpiceFrame
 from imap_processing.spice.time import et_to_ttj2000ns, met_to_ttj2000ns
@@ -235,13 +236,46 @@ def test_calculate_l1b(grouped_data, xarray_data, calibration_dataset):
 def test_process_packet(xarray_data, mag_test_data, calibration_dataset):
     """Tests the parse_packet function."""
 
-    # Create fake data here since instrument packet doesn't contain it.
-    xarray_data["sc_sclk_sec"] = xarray_data["mag_acq_tm_coarse"]
-    xarray_data["sc_sclk_sub_sec"] = xarray_data["mag_acq_tm_fine"]
+    # Add required parameters.
+    xarray_data["met"] = calculate_time(
+        xarray_data["mag_acq_tm_coarse"], xarray_data["mag_acq_tm_fine"], 256
+    )
+    xarray_data["pkt_counter"] = get_pkt_counter(xarray_data["mag_status"])
 
-    _, parsed_packets = process_packet(xarray_data, calibration_dataset)
+    grouped_data = find_groups(xarray_data, (0, 3), "pkt_counter", "met")
 
-    for packet in parsed_packets:
+    unique_groups = np.unique(grouped_data["group"])
+    l1b_data = []
+
+    for group in unique_groups:
+        # Get status values for each group.
+        status_values = grouped_data["mag_status"][
+            (grouped_data["group"] == group).values
+        ]
+        pkt_counter = grouped_data["pkt_counter"][
+            (grouped_data["group"] == group).values
+        ]
+
+        # Get decoded status data.
+        status_data = get_status_data(status_values, pkt_counter)
+
+        # Get science values for each group.
+        science_values = grouped_data["mag_data"][
+            (grouped_data["group"] == group).values
+        ]
+        science_data = extract_magnetic_vectors(science_values)
+        _, _, time_data = calculate_l1b(
+            grouped_data,
+            group,
+            pkt_counter,
+            science_data,
+            status_data,
+            calibration_dataset,
+        )
+
+        l1b_data.append({**status_data, **science_data, **time_data})
+
+    for packet in l1b_data:
         index = packet["pri_coarsetm"] == mag_test_data["PRI_COARSETM"]
         matching_rows = mag_test_data[index]
 
@@ -268,10 +302,49 @@ def test_process_spacecraft_packet(
         packet_path, xtce_ialirt_path, use_derived_value=False
     )[478]
 
-    mag_data, parsed_packets = process_packet(sc_xarray_data, calibration_dataset)
+    # Add required parameters.
+    sc_xarray_data["met"] = calculate_time(
+        sc_xarray_data["mag_acq_tm_coarse"], sc_xarray_data["mag_acq_tm_fine"], 256
+    )
+    sc_xarray_data["pkt_counter"] = get_pkt_counter(sc_xarray_data["mag_status"])
+
+    grouped_data = find_groups(sc_xarray_data, (0, 3), "pkt_counter", "met")
+
+    unique_groups = np.unique(grouped_data["group"])
+    l1b_data = []
+
+    for group in unique_groups:
+        # Get status values for each group.
+        status_values = grouped_data["mag_status"][
+            (grouped_data["group"] == group).values
+        ]
+        pkt_counter = grouped_data["pkt_counter"][
+            (grouped_data["group"] == group).values
+        ]
+        if not np.array_equal(pkt_counter, np.arange(4)):
+            continue
+
+        # Get decoded status data.
+        status_data = get_status_data(status_values, pkt_counter)
+
+        # Get science values for each group.
+        science_values = grouped_data["mag_data"][
+            (grouped_data["group"] == group).values
+        ]
+        science_data = extract_magnetic_vectors(science_values)
+        _, _, time_data = calculate_l1b(
+            grouped_data,
+            group,
+            pkt_counter,
+            science_data,
+            status_data,
+            calibration_dataset,
+        )
+
+        l1b_data.append({**status_data, **science_data, **time_data})
 
     sequence = []
-    for packet in parsed_packets:
+    for packet in l1b_data:
         index = (mag_sc_test_data["pri_coarse"] == packet["pri_coarsetm"]) & (
             mag_sc_test_data["pri_fine"] == packet["pri_fintm"]
         )
