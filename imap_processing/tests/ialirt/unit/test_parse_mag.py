@@ -5,7 +5,6 @@ import pandas as pd
 import pytest
 import spiceypy
 import xarray as xr
-from scipy.interpolate import make_interp_spline
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
@@ -402,49 +401,31 @@ def test_calibrate_and_offset_vectors(ialirt_mag_test_l1d_data):
 
     # Every offset is zero.
     # For every range (0 to 3), the 3 by 3 calibration matrix is the identity matrix.
-    np.testing.assert_allclose(mago_out, mago_vectors[0:3])
-    np.testing.assert_allclose(magi_out, magi_vectors[0:3])
+    np.testing.assert_allclose(mago_out.squeeze(), mago_vectors.squeeze()[0:3])
+    np.testing.assert_allclose(magi_out.squeeze(), magi_vectors.squeeze()[0:3])
 
 
 def test_apply_gradiometry_correction(ialirt_mag_test_l1d_data):
     """Tests apply_gradiometry_correction function."""
 
-    gradiometer_factor = ialirt_mag_test_l1d_data["gradiometer_factor"]
+    gradiometer_factor = ialirt_mag_test_l1d_data["gradiometer_factor"].values
 
     # MAGo and MAGi vectors.
-    mago_vector_eclipj2000 = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
-    magi_vector_eclipj2000 = np.array([[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]])
+    mago_vector_eclipj2000 = np.array([1.0, 2.0, 3.0])
+    magi_vector_eclipj2000 = np.array([4.0, 5.0, 6.0])
 
-    time_data = {
-        "primary_epoch": np.array([1.0, 2.0]),
-        "secondary_epoch": np.array([3.0, 4.0]),
-    }
+    time_data = {"primary_epoch": np.float64(1), "secondary_epoch": np.float64(2)}
 
     mago_corrected, magnitude = apply_gradiometry_correction(
         mago_vector_eclipj2000, magi_vector_eclipj2000, time_data, gradiometer_factor
     )
 
-    spline = make_interp_spline(
-        time_data["secondary_epoch"], magi_vector_eclipj2000, k=1
-    )
-    interpolated_vectors = spline(time_data["primary_epoch"])
-
     # Spot check.
     np.testing.assert_array_equal(
-        interpolated_vectors, np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+        mago_corrected.squeeze(), np.array([0.25, 1.25, 2.25])
     )
-    offset = interpolated_vectors - mago_vector_eclipj2000
 
-    offset_value = np.apply_along_axis(
-        np.dot,
-        1,
-        offset,
-        gradiometer_factor,
-    )
-    expected_mago_corrected = mago_vector_eclipj2000 - offset_value
-    np.testing.assert_array_equal(mago_corrected, expected_mago_corrected)
-
-    expected_magnitude = np.sqrt(np.sum(mago_corrected**2, axis=1))
+    expected_magnitude = np.sqrt(np.sum(mago_corrected.squeeze() ** 2, axis=-1))
     np.testing.assert_array_equal(magnitude, expected_magnitude)
 
 
@@ -509,7 +490,9 @@ def test_transform_to_frames(furnish_kernels, spice_test_data_path):
 
 
 @pytest.mark.external_test_data
-def test_process_packet(sc_packet_path, calibration_dataset, ialirt_mag_test_l1d_data, furnish_kernels):
+def test_process_packet(
+    sc_packet_path, calibration_dataset, ialirt_mag_test_l1d_data, furnish_kernels
+):
     """Test the process_packet function."""
 
     kernels = [
@@ -527,6 +510,25 @@ def test_process_packet(sc_packet_path, calibration_dataset, ialirt_mag_test_l1d
         packet_path, xtce_ialirt_path, use_derived_value=False
     )[478]
     with furnish_kernels(kernels):
-        mag_data = process_packet(sc_xarray_data, calibration_dataset, ialirt_mag_test_l1d_data)
+        mag_data = process_packet(
+            sc_xarray_data, calibration_dataset, ialirt_mag_test_l1d_data
+        )
 
-    print('hi')
+    # TODO: add validation data.
+    assert isinstance(mag_data[0], dict)
+    expected_keys = {
+        "apid",
+        "met",
+        "met_in_utc",
+        "ttj2000ns",
+        "mag_epoch",
+        "mag_B_GSE",
+        "mag_B_GSM",
+        "mag_B_RTN",
+        "mag_B_magnitude",
+        "mag_phi_B_GSM",
+        "mag_theta_B_GSM",
+        "mag_phi_B_GSE",
+        "mag_theta_B_GSE",
+    }
+    assert expected_keys.issubset(mag_data[0].keys())

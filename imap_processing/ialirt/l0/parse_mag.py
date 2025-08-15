@@ -324,7 +324,6 @@ def calibrate_and_offset_vectors(
     calibrated_and_offset_vectors : np.ndarray
         Calibrated and offset vectors, shape (n, 3).
     """
-
     # Apply calibration matrix -> (n,4)
     # apply_calibration_offset_single_vector
     calibrated = MagL2L1dBase.apply_calibration(vectors.reshape(1, 4), calibration)
@@ -374,12 +373,11 @@ def apply_gradiometry_correction(
         np.array([time_data["primary_epoch"]]),
         magi_vector_eclipj2000.reshape(1, 3),
         np.array([time_data["secondary_epoch"]]),
+        align_timestamps=False,
     )
     mago_corrected = MagL1d.apply_gradiometry_offsets(
         gradiometry_offsets, mago_vector_eclipj2000, gradiometer_factor
     )
-    if np.isnan(mago_corrected).any():
-            print("hi")
     magnitude = np.linalg.norm(mago_corrected, axis=-1).squeeze()
 
     return mago_corrected, magnitude
@@ -483,7 +481,10 @@ def transform_to_inertial(
     return inertial_vector
 
 
-def transform_to_frames(target_time: float, inertial_vector: np.ndarray,) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def transform_to_frames(
+    target_time: float,
+    inertial_vector: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Transform vector to different frames.
 
@@ -504,7 +505,7 @@ def transform_to_frames(target_time: float, inertial_vector: np.ndarray,) -> tup
         Transformed vector in the GSM frame, shape (3,).
     rtn_vector : np.ndarray
         Transformed vector in the RTN frame, shape (3,).
-"""
+    """
     et_target_time = ttj2000ns_to_et(target_time)
 
     gse_vector = frame_transform(
@@ -521,8 +522,9 @@ def transform_to_frames(target_time: float, inertial_vector: np.ndarray,) -> tup
 
 
 def process_packet(
-    accumulated_data: xr.Dataset, engineering_calibration_dataset: xr.Dataset,
-        l1d_calibration_dataset: xr.Dataset
+    accumulated_data: xr.Dataset,
+    engineering_calibration_dataset: xr.Dataset,
+    l1d_calibration_dataset: xr.Dataset,
 ) -> list[dict]:
     """
     Parse the MAG packets.
@@ -617,30 +619,48 @@ def process_packet(
         magi_out = calibrate_and_offset_vectors(
             updated_vector_magi, magi_calibration, offsets, is_magi=True
         )
-        sc_spin_phase_rad = grouped_data["sc_spin_phase"][(grouped_data["group"] == group).values]
-        sc_inertial_right = grouped_data["sc_inertial_right"][(grouped_data["group"] == group).values]
-        sc_inertial_decline = grouped_data["sc_inertial_decline"][(grouped_data["group"] == group).values]
+        sc_spin_phase_rad = grouped_data["sc_spin_phase"][
+            (grouped_data["group"] == group).values
+        ]
+        sc_inertial_right = grouped_data["sc_inertial_right"][
+            (grouped_data["group"] == group).values
+        ]
+        sc_inertial_decline = grouped_data["sc_inertial_decline"][
+            (grouped_data["group"] == group).values
+        ]
 
-        attitude_time = met_to_ttj2000ns(grouped_data["met"][(grouped_data["group"] == group).values])
+        attitude_time = met_to_ttj2000ns(
+            grouped_data["met"][(grouped_data["group"] == group).values]
+        )
 
         # Convert to ECLIPJ2000 frame.
-        mago_inertial_vector = transform_to_inertial(sc_spin_phase_rad.values,
-                                                     sc_inertial_right.values,
-                                                     sc_inertial_decline.values,
-                                                     attitude_time,
-                                                     time_data["primary_epoch"], mago_out)
-        magi_inertial_vector = transform_to_inertial(sc_spin_phase_rad.values,
-                                                     sc_inertial_right.values,
-                                                     sc_inertial_decline.values,
-                                                     attitude_time,
-                                                     time_data["secondary_epoch"], magi_out)
+        mago_inertial_vector = transform_to_inertial(
+            sc_spin_phase_rad.values,
+            sc_inertial_right.values,
+            sc_inertial_decline.values,
+            attitude_time,
+            time_data["primary_epoch"],
+            mago_out,
+        )
+        magi_inertial_vector = transform_to_inertial(
+            sc_spin_phase_rad.values,
+            sc_inertial_right.values,
+            sc_inertial_decline.values,
+            attitude_time,
+            time_data["secondary_epoch"],
+            magi_out,
+        )
 
-        mago_corrected, magnitude = apply_gradiometry_correction(mago_inertial_vector,
-                                                                 magi_inertial_vector,
-                                                                 time_data,
-                                                                 l1d_calibration_dataset["gradiometer_factor"].values)
+        mago_corrected, magnitude = apply_gradiometry_correction(
+            mago_inertial_vector,
+            magi_inertial_vector,
+            time_data,
+            l1d_calibration_dataset["gradiometer_factor"].values,
+        )
 
-        gse_vector, gsm_vector, rtn_vector = transform_to_frames(time_data["primary_epoch"], mago_corrected)
+        gse_vector, gsm_vector, rtn_vector = transform_to_frames(
+            time_data["primary_epoch"], mago_corrected
+        )
 
         spherical_gsm = cartesian_to_spherical(gsm_vector)
         spherical_gse = cartesian_to_spherical(gse_vector)
