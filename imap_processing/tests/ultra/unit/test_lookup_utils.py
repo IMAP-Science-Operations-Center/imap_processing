@@ -16,6 +16,7 @@ from imap_processing.ultra.l1b.lookup_utils import (
     get_image_params,
     get_norm,
     get_ph_corrected,
+    get_scattering_calibration_data,
     get_y_adjust,
 )
 
@@ -166,3 +167,17 @@ def test_get_ebins(ancillary_files):
     ebins = get_ebins("l1b-tofxph", energy, ctof, ebins, ancillary_files)
 
     np.testing.assert_array_equal(ebins, np.array([15, 19]))
+
+
+@pytest.mark.external_test_data
+def test_get_scattering_data(ancillary_files):
+    """Tests function get_scattering_data."""
+
+    (a_theta_val, g_theta_val, a_phi_val, g_phi_val) = get_scattering_calibration_data(
+        ancillary_files,
+        "l1b-90sensor-scattering-calibration",
+        np.array([47, 43]),
+        np.array([43, 42]),
+    )
+    np.testing.assert_array_equal(a_theta_val, np.array([np.nan, 35.23100]))
+    np.testing.assert_array_equal(g_theta_val, np.array([np.nan, -0.72148]))
