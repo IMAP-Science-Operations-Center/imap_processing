@@ -9,7 +9,7 @@ epoch:
   LABLAXIS: epoch
   FILLVAL: -9223372036854775808
   FORMAT: " " # Supposedly not required, fails in xarray_to_cdf
-  VALIDMIN: 315576066184000000   # 2010-01-01T00:00:00 mission start (APL 0 epoch)
+  VALIDMIN: 811857669184000000   # 2025-09-23T00:00:00 mission launch
   VALIDMAX: 3155716869184000000  # 2100-01-01T00:00:00 mission end
   UNITS: ns
   VAR_TYPE: support_data
@@ -20,6 +20,7 @@ epoch:
   REFERENCE_POSITION: Rotating Earth Geoid
   RESOLUTION: ' '
   DICT_KEY: "SPASE>Support>SupportQantity:Temporal"
+
 
 # <=== Data Variables ===>
 # Default Attrs for all metadata variables unless overridden
