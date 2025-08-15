@@ -378,6 +378,8 @@ def apply_gradiometry_correction(
     mago_corrected = MagL1d.apply_gradiometry_offsets(
         gradiometry_offsets, mago_vector_eclipj2000, gradiometer_factor
     )
+    if np.isnan(mago_corrected).any():
+            print("hi")
     magnitude = np.linalg.norm(mago_corrected, axis=-1).squeeze()
 
     return mago_corrected, magnitude
@@ -639,9 +641,6 @@ def process_packet(
                                                                  l1d_calibration_dataset["gradiometer_factor"].values)
 
         gse_vector, gsm_vector, rtn_vector = transform_to_frames(time_data["primary_epoch"], mago_corrected)
-
-        if np.isnan(gse_vector).any():
-            print("hi")
 
         spherical_gsm = cartesian_to_spherical(gsm_vector)
         spherical_gse = cartesian_to_spherical(gse_vector)
