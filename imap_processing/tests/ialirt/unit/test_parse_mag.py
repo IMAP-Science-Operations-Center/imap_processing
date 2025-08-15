@@ -17,8 +17,10 @@ from imap_processing.ialirt.l0.parse_mag import (
     get_pkt_counter,
     get_status_data,
     get_time,
+    process_packet,
     retrieve_matrix_from_single_l1b_calibration,
     transform_to_frames,
+    transform_to_inertial,
 )
 from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.ialirt.utils.time import calculate_time
@@ -233,7 +235,7 @@ def test_calculate_l1b(grouped_data, xarray_data, calibration_dataset):
     assert "secondary_epoch" in time_data
 
 
-def test_process_packet(xarray_data, mag_test_data, calibration_dataset):
+def test_l1b_data(xarray_data, mag_test_data, calibration_dataset):
     """Tests the parse_packet function."""
 
     # Add required parameters.
@@ -383,13 +385,8 @@ def test_calibrate_and_offset_vectors(ialirt_mag_test_l1d_data):
     """Tests calibrate_and_offset_vectors function."""
 
     # MAGo and MAGi raw counts
-    mago_vectors = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
-    magi_vectors = np.array([[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]])
-
-    # Range values (mago is 0 to 1, magi is 2 to 3)
-    # Range values (0 to 3) represent MAG gain setting
-    mago_range = np.array([0, 1])
-    magi_range = np.array([2, 3])
+    mago_vectors = np.array([[1.0, 2.0, 3.0, 0]])
+    magi_vectors = np.array([[7.0, 8.0, 9.0, 2]])
 
     # Calibration and offsets from ancillary cdf
     mago_calibration = ialirt_mag_test_l1d_data["URFTOORFO"][0]
@@ -397,16 +394,16 @@ def test_calibrate_and_offset_vectors(ialirt_mag_test_l1d_data):
     offsets = ialirt_mag_test_l1d_data["offsets"][0]
 
     mago_out = calibrate_and_offset_vectors(
-        mago_vectors, mago_range, mago_calibration, offsets, is_magi=False
+        mago_vectors, mago_calibration, offsets, is_magi=False
     )
     magi_out = calibrate_and_offset_vectors(
-        magi_vectors, magi_range, magi_calibration, offsets, is_magi=True
+        magi_vectors, magi_calibration, offsets, is_magi=True
     )
 
     # Every offset is zero.
     # For every range (0 to 3), the 3 by 3 calibration matrix is the identity matrix.
-    np.testing.assert_allclose(mago_out, mago_vectors)
-    np.testing.assert_allclose(magi_out, magi_vectors)
+    np.testing.assert_allclose(mago_out, mago_vectors[0:3])
+    np.testing.assert_allclose(magi_out, magi_vectors[0:3])
 
 
 def test_apply_gradiometry_correction(ialirt_mag_test_l1d_data):
@@ -476,13 +473,18 @@ def test_transform_to_frames(furnish_kernels, spice_test_data_path):
     target_time = 817561854.0  # halfway between 90° and 180° spin phase
 
     with furnish_kernels(kernels):
-        inertial_vector, gse_vector, gsm_vector, rtn_vector = transform_to_frames(
+        inertial_vector = transform_to_inertial(
             np.radians(spin_phase),
             np.radians(ra),
             np.radians(dec),
             et_to_ttj2000ns(attitude_time),
             et_to_ttj2000ns(target_time),
             mag_vector,
+        )
+
+        gse_vector, gsm_vector, rtn_vector = transform_to_frames(
+            et_to_ttj2000ns(target_time),
+            inertial_vector,
         )
 
         rot_ecl_to_gse = spiceypy.pxform(
@@ -504,3 +506,27 @@ def test_transform_to_frames(furnish_kernels, spice_test_data_path):
     np.testing.assert_allclose(gse_vector, expected_gse, atol=1e-05)
     np.testing.assert_allclose(gsm_vector, expected_gsm, atol=1e-05)
     np.testing.assert_allclose(rtn_vector, expected_rtn, atol=1e-05)
+
+
+@pytest.mark.external_test_data
+def test_process_packet(sc_packet_path, calibration_dataset, ialirt_mag_test_l1d_data, furnish_kernels):
+    """Test the process_packet function."""
+
+    kernels = [
+        "imap_science_100.tf",
+        "imap_wkcp.tf",
+        "naif0012.tls",
+        "de440s.bsp",
+        "imap_spk_demo.bsp",
+        "pck00011.tpc",
+        "imap_sclk_0000.tsc",
+    ]
+
+    packet_path, xtce_ialirt_path = sc_packet_path
+    sc_xarray_data = packet_file_to_datasets(
+        packet_path, xtce_ialirt_path, use_derived_value=False
+    )[478]
+    with furnish_kernels(kernels):
+        mag_data = process_packet(sc_xarray_data, calibration_dataset, ialirt_mag_test_l1d_data)
+
+    print('hi')
