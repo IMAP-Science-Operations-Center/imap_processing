@@ -198,16 +198,16 @@ def test_get_pixels_below_fwhm_scattering_threshold(ancillary_files):
         [
             [np.nan, 10],  # This will result in a NaN value (False)
             [5, -0.1],  # FWHM value below the threshold (True)
-            [4, -0.1],
+            [4, -0.1],  # FWHM value below the threshold (True)
         ]
-    )  # FWHM value below the threshold (True)
+    )
     phi_coeffs = np.array(
         [
             [3, -0.1],  # FWHM value below the threshold (True)
             [5, -0.1],  # FWHM value below the threshold (True)
-            [15, -0.1],
+            [15, -0.1],  # FWHM value above the threshold (False)
         ]
-    )  # FWHM value above the threshold (False)
+    )
     # Only pixels where both the theta and phi coefficients are below the FWHM
     # threshold should be True.
     expected_pixel_mask = np.array([False, True, False])
