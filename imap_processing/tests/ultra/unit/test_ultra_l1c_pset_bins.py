@@ -7,10 +7,12 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
+from scipy import interpolate
 
 from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c import ultra_l1c_pset_bins
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
+    apply_deadtime_correction,
     build_energy_bins,
     get_deadtime_interpolator,
     get_deadtime_ratios,
@@ -41,6 +43,16 @@ def test_data():
     v = np.column_stack((vx_sc, vy_sc, vz_sc))
 
     return v, energy
+
+
+@pytest.fixture
+def random_spin_data():
+    """Fixture for random spin data."""
+    with mock.patch(
+        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_spacecraft_spin_phase"
+    ) as mock_spin_phases:
+        mock_spin_phases.side_effect = lambda time: np.random.random(time.shape)
+        yield
 
 
 def test_build_energy_bins():
@@ -212,7 +224,7 @@ def test_get_deadtime_ratios():
     assert np.all(deadtime_correction_factors >= 0)
 
 
-def test_get_deadtime_interpolator():
+def test_get_deadtime_interpolator(random_spin_data):
     """Tests get_deadtime_correction_factors function."""
 
     sector_rate_seconds = 20 * 60  # 20 minutes in seconds
@@ -225,34 +237,38 @@ def test_get_deadtime_interpolator():
     deadtime_ratios = xr.DataArray(
         np.random.uniform(0.1, 1.0, num_deadtimes), dims=["epoch"]
     )
-    spin_phases = np.random.random(deadtime_ratios.shape)
-    with mock.patch(
-        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_spacecraft_spin_phase"
-    ) as mock_spin_phases:
-        mock_spin_phases.return_value = spin_phases
-        interpolator = get_deadtime_interpolator(
-            deadtime_ratios, np.ones_like(deadtime_ratios)
-        )
+    interpolator = get_deadtime_interpolator(
+        deadtime_ratios, np.ones_like(deadtime_ratios)
+    )
     assert callable(interpolator)
     deadtime = interpolator(180)
     assert (deadtime >= 0) & (deadtime < 1)
 
     # Assert value error is raised for NaN values
-    with mock.patch(
-        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_spacecraft_spin_phase"
-    ) as mock_spin_phases:
-        mock_spin_phases.return_value = spin_phases
-        with pytest.raises(
-            ValueError,
-            match="Dead time ratios contain NaN values, cannot create interpolator.",
-        ):
-            get_deadtime_interpolator(
-                np.nan * deadtime_ratios, np.ones_like(deadtime_ratios)
-            )
+    with pytest.raises(
+        ValueError,
+        match="Dead time ratios contain NaN values, cannot create interpolator.",
+    ):
+        get_deadtime_interpolator(
+            np.nan * deadtime_ratios, np.ones_like(deadtime_ratios)
+        )
+
+
+@pytest.mark.external_kernel
+def test_apply_deadtime_correction(imap_ena_sim_metakernel):
+    """Tests apply_deadtime_correction function."""
+    nside = 8
+    mock_spin_phases = np.arange(360)
+    mock_deadtime_ratios = mock_spin_phases * 0.01
+    interpolator = interpolate.PchipInterpolator(mock_spin_phases, mock_deadtime_ratios)
+    exposure_pointing = np.ones(hp.nside2npix(nside))
+    apply_deadtime_correction(exposure_pointing, interpolator, 45, nside=nside)
 
 
 @pytest.mark.external_test_data
-def test_get_spacecraft_exposure_times(deadtime_datasets):
+def test_get_spacecraft_exposure_times(
+    deadtime_datasets, random_spin_data, imap_ena_sim_metakernel
+):
     """Test get_spacecraft_exposure_times function."""
     constant_exposure = (
         TEST_PATH / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv"
@@ -260,7 +276,7 @@ def test_get_spacecraft_exposure_times(deadtime_datasets):
     rates = deadtime_datasets["rates"]
     params = deadtime_datasets["params"]
     df_exposure = pd.read_csv(constant_exposure)
-    exposure_pointing = get_spacecraft_exposure_times(df_exposure, rates, params)
+    exposure_pointing = get_spacecraft_exposure_times(df_exposure, rates, params, 90)
     assert exposure_pointing.shape == (196608,)
 
     np.testing.assert_allclose(

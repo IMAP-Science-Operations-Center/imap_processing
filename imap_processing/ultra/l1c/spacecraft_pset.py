@@ -22,6 +22,7 @@ def calculate_spacecraft_pset(
     params_dataset: xr.Dataset,
     name: str,
     ancillary_files: dict,
+    instrument_id: int,
 ) -> xr.Dataset:
     """
     Create dictionary with defined datatype for Pointing Set Grid Data.
@@ -42,6 +43,8 @@ def calculate_spacecraft_pset(
         Name of the dataset.
     ancillary_files : dict
         Ancillary files.
+    instrument_id : int
+        Instrument ID, either 45 or 90.
 
     Returns
     -------
@@ -77,8 +80,9 @@ def calculate_spacecraft_pset(
     # Calculate exposure
     constant_exposure = ancillary_files["l1c-90sensor-dps-exposure"]
     df_exposure = pd.read_csv(constant_exposure)
+
     exposure_pointing = get_spacecraft_exposure_times(
-        df_exposure, rates_dataset, params_dataset
+        df_exposure, rates_dataset, params_dataset, instrument_id
     )
 
     # For ISTP, epoch should be the center of the time bin.
