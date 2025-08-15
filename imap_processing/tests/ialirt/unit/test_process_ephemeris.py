@@ -138,3 +138,18 @@ def test_build_output(furnish_kernels):
                     time_interval,
                 )
             )
+
+
+@pytest.mark.external_kernel
+def test_generate_text_files(furnish_kernels):
+    kernels = [
+        "naif0012.tls",
+        "pck00011.tpc",
+        "de440s.bsp",
+        "imap_spk_demo.bsp",
+        "earth_latest_high_prec.bpc",
+    ]
+    with furnish_kernels(kernels):
+        process_ephemeris.generate_text_files(
+            station="Kiel", day="20250813", file_path="../test_text_files"
+        )
