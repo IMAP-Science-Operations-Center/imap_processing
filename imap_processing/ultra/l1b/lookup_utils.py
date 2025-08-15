@@ -293,7 +293,7 @@ def get_scattering_coefficients(
     instrument_id: int,
     theta: NDArray,
     phi: NDArray,
-) -> tuple[NDArray, NDArray, NDArray, NDArray]:
+) -> tuple[NDArray, NDArray]:
     """
     Get a and g coefficients for theta and phi to compute scattering FWHM.
 
@@ -301,7 +301,7 @@ def get_scattering_coefficients(
     ----------
     ancillary_files : dict[Path]
         Ancillary files.
-    instrument_id : str
+    instrument_id : int
         Instrument ID, either 45 or 90.
     theta : NDArray
         Elevation angles in degrees.
@@ -347,15 +347,15 @@ def get_scattering_coefficients(
     a_phi_val = a_phi[phi_idx, theta_idx]
     g_phi_val = g_phi[phi_idx, theta_idx]
 
-    return a_theta_val, g_theta_val, a_phi_val, g_phi_val
+    return np.column_stack([a_theta_val, g_theta_val]), np.column_stack(
+        [a_phi_val, g_phi_val]
+    )
 
 
 def pixels_below_fwhm_scattering_threshold(
-    theta: np.ndarray,
-    phi: np.ndarray,
+    theta_coeffs: np.ndarray,
+    phi_coeffs: np.ndarray,
     energy: int,
-    ancillary_files: dict,
-    instrument_id: int,
 ) -> np.ndarray:
     """
     Determine pixels below the FWHM scattering threshold.
@@ -367,16 +367,12 @@ def pixels_below_fwhm_scattering_threshold(
 
     Parameters
     ----------
-    theta : NDArray
-        Elevation angles in degrees.
-    phi : NDArray
-        Azimuth angles in degrees.
-    energy : NDArray
+    theta_coeffs : NDArray
+        Coefficients for theta FWHM calculation (a and g) for each pixel.
+    phi_coeffs : NDArray
+        Coefficients for phi FWHM calculation (a and g) for each pixel.
+    energy : int
         Energy in keV.
-    ancillary_files : dict[Path]
-        Ancillary files containing the lookup tables.
-    instrument_id : int
-        Instrument ID, either 45 or 90.
 
     Returns
     -------
@@ -384,18 +380,15 @@ def pixels_below_fwhm_scattering_threshold(
         Boolean array indicating pixels below the scattering threshold.
     """
     scattering_thresholds = UltraConstants.ULTRA_FWHM_SCATTERING_CULLING_THRESHOLDS
-    # Get scattering coefficients
-    a_theta_val, g_theta_val, a_phi_val, g_phi_val = get_scattering_coefficients(
-        ancillary_files, instrument_id, theta, phi
-    )
     # Calculate FWHM for theta and phi
-    fwhm_theta = a_theta_val * energy**g_theta_val
-    fwhm_phi = a_phi_val * energy**g_phi_val
+    fwhm_theta = theta_coeffs[:, 0] * energy ** theta_coeffs[:, 1]
+    fwhm_phi = phi_coeffs[:, 0] * energy ** phi_coeffs[:, 1]
 
+    # Get the scattering threshold based on the energy
     threshold = next(
         threshold
         for energy_range, threshold in scattering_thresholds.items()
-        if energy_range[0] <= energy <= energy_range[1]
+        if energy_range[0] <= energy < energy_range[1]
     )
     # Combine conditions for both theta and phi
     return np.logical_and(fwhm_theta <= threshold, fwhm_phi <= threshold)

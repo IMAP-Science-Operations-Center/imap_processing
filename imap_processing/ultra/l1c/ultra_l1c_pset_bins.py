@@ -386,10 +386,11 @@ def get_spacecraft_exposure_times(
         constant_exposure["Exposure Time"] * 5760
     )  # 5760 spins per pointing (for now)
 
-    exposure_pointing_adjusted = apply_deadtime_correction(
-        exposure_pointing, rates_dataset, params_dataset
-    )
-    return exposure_pointing_adjusted
+    # TODO uncomment the line below when implemented
+    # exposure_pointing_adjusted = apply_deadtime_correction(
+    #     exposure_pointing, rates_dataset, params_dataset
+    # )
+    return exposure_pointing
 
 
 def get_helio_exposure_times(
