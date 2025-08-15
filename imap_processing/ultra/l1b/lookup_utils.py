@@ -7,6 +7,7 @@ import xarray as xr
 from numpy.typing import NDArray
 
 from imap_processing.quality_flags import ImapDEUltraFlags
+from imap_processing.ultra.constants import UltraConstants
 
 
 def get_y_adjust(dy_lut: np.ndarray, ancillary_files: dict) -> npt.NDArray:
@@ -382,6 +383,7 @@ def pixels_below_fwhm_scattering_threshold(
     numpy.ndarray
         Boolean array indicating pixels below the scattering threshold.
     """
+    scattering_thresholds = UltraConstants.ULTRA_FWHM_SCATTERING_CULLING_THRESHOLDS
     # Get scattering coefficients
     a_theta_val, g_theta_val, a_phi_val, g_phi_val = get_scattering_coefficients(
         ancillary_files, instrument_id, theta, phi
@@ -389,8 +391,14 @@ def pixels_below_fwhm_scattering_threshold(
     # Calculate FWHM for theta and phi
     fwhm_theta = a_theta_val * energy**g_theta_val
     fwhm_phi = a_phi_val * energy**g_phi_val
-    pixels_below_scattering_threshold = np.array(fwhm_theta) + np.ndarray(fwhm_phi)
-    return pixels_below_scattering_threshold
+
+    threshold = next(
+        threshold
+        for energy_range, threshold in scattering_thresholds.items()
+        if energy_range[0] <= energy <= energy_range[1]
+    )
+    # Combine conditions for both theta and phi
+    return np.logical_and(fwhm_theta <= threshold, fwhm_phi <= threshold)
 
 
 def is_inside_fov(phi: np.ndarray, theta: np.ndarray) -> np.ndarray:
