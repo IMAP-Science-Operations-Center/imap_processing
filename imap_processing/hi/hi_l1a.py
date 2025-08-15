@@ -55,6 +55,8 @@ LONG_COUNTERS = (
 TOTAL_COUNTERS = ("a_total", "b_total", "c_total", "fee_de_recd", "fee_de_sent")
 
 # MEMDMP Packet definition of uint32 fields
+# This is a mapping of variable name to index when the dump_data in the
+# HVSCI MEMDMP packet is interpreted as an array of uint32 values.
 MEMDMP_DATA_INDS = {
     "lastbin_shorten": 9,
     "coinc_length": 60,
@@ -545,8 +547,11 @@ def finish_memdmp_dataset(input_ds: xr.Dataset) -> xr.Dataset:
         dataset.data_vars[var_name].attrs.update(attrs)
 
     new_vars = dict()
-    # Convert all the dump_data from all packets into a single uint32 array
+    # Concatenate the dump_data from all packets into a single bytes string and
+    # interpret that bytes string as an array of uint32 values.
     full_uint32_data = np.frombuffer(dataset["dump_data"].data.sum(), dtype=">u4")
+    # index_stride is the stride to traverse from packet to packet for a given
+    # item in the binary dump data.
     index_stride = int(dataset["num_bytes"].data[0] // 4)
     for new_var, offset in MEMDMP_DATA_INDS.items():
         # The indices for each variable in the dump_data is the starting
