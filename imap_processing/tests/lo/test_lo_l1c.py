@@ -258,7 +258,10 @@ def test_get_pointing_times(l1b_de_spin, repoint_met, use_fake_repoint_data_for_
     # Arrange
     use_fake_repoint_data_for_time(repoint_met)
 
-    expected_pointing_times = (repoint_met[0] + 900, repoint_met[1])
+    expected_pointing_times = (
+        np.array([repoint_met[0] + 900]),
+        np.array([repoint_met[1]]),
+    )
 
     # Act
     pointing_times = get_pointing_times(l1b_de_spin["epoch"].values[0])
@@ -275,7 +278,7 @@ def test_get_spin_numbers(
 
     use_fake_spin_data_for_time(repoint_met[0])
 
-    expected_spin_numbers = (60, 5759)
+    expected_spin_numbers = (np.array([60]), np.array([5759]))
 
     # Act
     spin_numbers = get_spin_numbers(repoint_met[0] + 900, repoint_met[1])

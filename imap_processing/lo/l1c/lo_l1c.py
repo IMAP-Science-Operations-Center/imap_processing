@@ -2,7 +2,6 @@
 
 from dataclasses import Field
 from enum import Enum
-from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -61,18 +60,8 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         full_counts = create_pset_counts(l1b_goodtimes_only)
 
         # Set the pointing start and end times based on the first epoch
-        point_start_met, pointing_end_met = get_pointing_times(
+        pset["pointing_start_met"], pset["pointing_end_met"] = get_pointing_times(
             l1b_goodtimes_only["epoch"][0].item()
-        )
-        pset["pointing_start_met"] = xr.DataArray(
-            np.array([point_start_met]),
-            dims=["epoch"],
-            # attrs=attr_mgr.get_variable_attributes("pointing_start_met"),
-        )
-        pset["pointing_end_met"] = xr.DataArray(
-            np.array([pointing_end_met]),
-            dims=["epoch"],
-            # attrs=attr_mgr.get_variable_attributes("pointing_end_met"),
         )
 
         # Set the epoch to the start of the pointing
@@ -82,18 +71,8 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         )
 
         # Get the start and end spin numbers based on the pointing start and end MET
-        start_spin_number, end_spin_number = get_spin_numbers(
+        pset["start_spin_number"], pset["end_spin_number"] = get_spin_numbers(
             pset["pointing_start_met"].item(), pset["pointing_end_met"].item()
-        )
-        pset["start_spin_number"] = xr.DataArray(
-            np.array([start_spin_number]),
-            dims=["epoch"],
-            # attrs=attr_mgr.get_variable_attributes("start_spin_number"),
-        )
-        pset["end_spin_number"] = xr.DataArray(
-            np.array([end_spin_number]),
-            dims=["epoch"],
-            # attrs=attr_mgr.get_variable_attributes("end_spin_number"),
         )
 
         # Set the counts
@@ -299,7 +278,7 @@ def create_pset_counts(
     return counts
 
 
-def get_pointing_times(epoch: int) -> tuple[Any | None, Any | None]:
+def get_pointing_times(epoch: int) -> tuple[xr.DataArray, xr.DataArray]:
     """
     Get the pointing start and end times for a given epoch.
 
@@ -313,7 +292,7 @@ def get_pointing_times(epoch: int) -> tuple[Any | None, Any | None]:
 
     Returns
     -------
-    tuple[int, int]
+    tuple[xarray.DataArray, xarray.DataArray]
         The pointing start and end times in TTJ2000NS.
         If no pointing times are found, both values will be None.
     """
@@ -346,12 +325,15 @@ def get_pointing_times(epoch: int) -> tuple[Any | None, Any | None]:
         else None
     )
 
-    return pointing_start, pointing_end
+    return (
+        xr.DataArray(np.array([pointing_start]), dims=["epoch"]),
+        xr.DataArray(np.array([pointing_end]), dims=["epoch"]),
+    )
 
 
 def get_spin_numbers(
     pointing_start: int, pointing_end: int
-) -> tuple[Any | None, Any | None]:
+) -> tuple[xr.DataArray, xr.DataArray]:
     """
     Get the start and end spin numbers from the L1B Direct Event dataset.
 
@@ -367,10 +349,10 @@ def get_spin_numbers(
 
     Returns
     -------
-    tuple[int, int]
+    tuple[xarray.DataArray, xarray.DataArray]
         The start and end spin numbers.
     """
-    # Get the spoin table
+    # Get the spin table
     spin_df = get_spin_data()
 
     # create a mask for the spin that contains the start of the pointing
@@ -395,7 +377,10 @@ def get_spin_numbers(
         spin_df["spin_number"].iloc[spin_end_idx] if spin_end_idx is not None else None
     )
 
-    return start_spin_number, end_spin_number
+    return (
+        xr.DataArray(np.array([start_spin_number]), dims=["epoch"]),
+        xr.DataArray(np.array([end_spin_number]), dims=["epoch"]),
+    )
 
 
 def calculate_exposure_times(counts: xr.DataArray, l1b_de: xr.Dataset) -> xr.DataArray:
