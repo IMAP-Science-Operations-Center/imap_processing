@@ -70,12 +70,12 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
         "imap_codice_l2_lo-counters-singles",
         "imap_codice_l2_lo-counters-aggregated",
         "imap_codice_l2_lo-sw-priority",
-        "imap_codice_l2_lo-nsw-priorty",
+        "imap_codice_l2_lo-nsw-priority",
     ]:
         # No changes needed. Just save to an L2 CDF file.
         pass
 
-    if dataset_name == "imap_codice_l2_hi-direct-events":
+    elif dataset_name == "imap_codice_l2_hi-direct-events":
         # Convert the following data variables to physical units using
         # calibration data:
         #    - ssd_energy
@@ -128,7 +128,7 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
     elif dataset_name == "imap_codice_l2_lo-nsw-species":
         # Calculate the non-sunward solar wind species intensities using
         # equation described in section 11.2.4 of algorithm document.
-        # Calculate the pickup ion non- sunward solar wind intensities using
+        # Calculate the pickup ion non-sunward solar wind intensities using
         # equation described in section 11.2.4 of algorithm document.
         pass
 
