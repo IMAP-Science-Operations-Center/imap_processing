@@ -100,7 +100,6 @@ def met_to_ttj2000ns(
     return np.asarray(sct_to_ttj2000s(sclk_ticks) * 1e9, dtype=np.int64)
 
 
-@typing.no_type_check
 def ttj2000ns_to_et(tt_ns: npt.ArrayLike) -> npt.NDArray[float]:
     """
     Convert TT J2000 epoch nanoseconds to TDB J2000 epoch seconds.
@@ -127,7 +126,6 @@ def ttj2000ns_to_et(tt_ns: npt.ArrayLike) -> npt.NDArray[float]:
     return vectorized_unitim(tt_seconds, "TT", "ET")
 
 
-@typing.no_type_check
 def et_to_ttj2000ns(et: npt.ArrayLike) -> npt.NDArray[float]:
     """
     Convert TDB J2000 epoch seconds to TT J2000 epoch nanoseconds.
@@ -152,7 +150,6 @@ def et_to_ttj2000ns(et: npt.ArrayLike) -> npt.NDArray[float]:
     return tt_ns
 
 
-@typing.no_type_check
 def met_to_utc(met: npt.ArrayLike, precision: int = 9) -> npt.NDArray[str]:
     """
     Convert mission elapsed time (MET) to UTC.
@@ -215,7 +212,6 @@ def et_to_datetime64(
     return np.array(et_to_utc(et), dtype=np.datetime64)[()]
 
 
-@typing.no_type_check
 def et_to_met(
     et: float | Collection[float],
 ) -> float | np.ndarray:
@@ -265,7 +261,6 @@ def ttj2000ns_to_met(
     return met
 
 
-@typing.no_type_check
 def sct_to_et(
     sclk_ticks: float | Collection[float],
 ) -> float | np.ndarray:
@@ -290,7 +285,6 @@ def sct_to_et(
     return vectorized_sct2e(IMAP_SC_ID, sclk_ticks)
 
 
-@typing.no_type_check
 def sct_to_ttj2000s(
     sclk_ticks: float | Iterable[float],
 ) -> float | np.ndarray:
@@ -314,14 +308,13 @@ def sct_to_ttj2000s(
         Terrestrial time, seconds past J2000.
     """
 
-    def conversion(sclk_ticks):  # numpydoc ignore=GL08
+    def conversion(sclk_ticks: float) -> float:  # numpydoc ignore=GL08
         return spiceypy.unitim(spiceypy.sct2e(IMAP_SC_ID, sclk_ticks), "ET", "TT")
 
     vectorized_func = _vectorize(conversion, otypes=[float])
     return vectorized_func(sclk_ticks)
 
 
-@typing.no_type_check
 def str_to_et(
     time_str: str | Iterable[str],
 ) -> float | np.ndarray:
@@ -346,7 +339,6 @@ def str_to_et(
     return vectorized_str2et(time_str)
 
 
-@typing.no_type_check
 def et_to_utc(
     et: float | Iterable[float],
     format_str: str = "ISOC",
