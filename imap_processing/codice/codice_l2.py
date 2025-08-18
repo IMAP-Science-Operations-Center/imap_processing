@@ -108,24 +108,24 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
         # See section 11.1.2 of algorithm document
         pass
 
-    elif dataset_name in ["imap_codice_l2_lo-sw-angular"]:
+    elif dataset_name == "imap_codice_l2_lo-sw-angular":
         # Calculate the sunward angular intensities using equation described in
         # section 11.2.3 of algorithm document.
         pass
 
-    elif dataset_name in ["imap_codice_l2_lo-nsw-angular"]:
+    elif dataset_name == "imap_codice_l2_lo-nsw-angular":
         # Calculate the non-sunward angular intensities using equation described
         # in section 11.2.3 of algorithm document.
         pass
 
-    elif dataset_name in ["imap_codice_l2_lo-sw-species"]:
+    elif dataset_name == "imap_codice_l2_lo-sw-species":
         # Calculate the sunward solar wind species intensities using equation
         # described in section 11.2.4 of algorithm document.
         # Calculate the pickup ion sunward solar wind intensities using equation
         # described in section 11.2.4 of algorithm document.
         pass
 
-    elif dataset_name in ["imap_codice_l2_lo-nsw-species"]:
+    elif dataset_name == "imap_codice_l2_lo-nsw-species":
         # Calculate the non-sunward solar wind species intensities using
         # equation described in section 11.2.4 of algorithm document.
         # Calculate the pickup ion non- sunward solar wind intensities using
