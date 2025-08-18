@@ -2,6 +2,7 @@
 
 from dataclasses import Field
 from enum import Enum
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -58,7 +59,44 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         l1b_goodtimes_only = filter_goodtimes(l1b_de, anc_dependencies)
         pset = initialize_pset(l1b_goodtimes_only, attr_mgr, logical_source)
         full_counts = create_pset_counts(l1b_goodtimes_only)
-        start_spin_number, end_spin_number = get_spin_numbers(l1b_goodtimes_only)
+
+        # Set the pointing start and end times based on the first epoch
+        point_start_met, pointing_end_met = get_pointing_times(
+            l1b_goodtimes_only["epoch"][0].item()
+        )
+        pset["pointing_start_met"] = xr.DataArray(
+            np.array([point_start_met]),
+            dims=["epoch"],
+            # attrs=attr_mgr.get_variable_attributes("pointing_start_met"),
+        )
+        pset["pointing_end_met"] = xr.DataArray(
+            np.array([pointing_end_met]),
+            dims=["epoch"],
+            # attrs=attr_mgr.get_variable_attributes("pointing_end_met"),
+        )
+
+        # Set the epoch to the start of the pointing
+        pset["epoch"] = xr.DataArray(
+            met_to_ttj2000ns(pset["pointing_start_met"].values),
+            attrs=attr_mgr.get_variable_attributes("epoch"),
+        )
+
+        # Get the start and end spin numbers based on the pointing start and end MET
+        start_spin_number, end_spin_number = get_spin_numbers(
+            pset["pointing_start_met"].item(), pset["pointing_end_met"].item()
+        )
+        pset["start_spin_number"] = xr.DataArray(
+            np.array([start_spin_number]),
+            dims=["epoch"],
+            # attrs=attr_mgr.get_variable_attributes("start_spin_number"),
+        )
+        pset["end_spin_number"] = xr.DataArray(
+            np.array([end_spin_number]),
+            dims=["epoch"],
+            # attrs=attr_mgr.get_variable_attributes("end_spin_number"),
+        )
+
+        # Set the counts
         pset["triples_counts"] = create_pset_counts(
             l1b_goodtimes_only, FilterType.TRIPLES
         )
@@ -67,6 +105,8 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         )
         pset["h_counts"] = create_pset_counts(l1b_goodtimes_only, FilterType.HYDROGEN)
         pset["o_counts"] = create_pset_counts(l1b_goodtimes_only, FilterType.OXYGEN)
+
+        # Set the exposure time
         pset["exposure_time"] = calculate_exposure_times(
             full_counts, l1b_goodtimes_only
         )
@@ -77,6 +117,7 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
 
     pset = pset.assign_coords(
         {
+            "epoch": pset["epoch"],
             "energy": np.arange(1, 8),
             "longitude": np.arange(3600),
             "latitude": np.arange(40),
@@ -258,7 +299,59 @@ def create_pset_counts(
     return counts
 
 
-def get_spin_numbers(l1b_de: xr.Dataset) -> tuple[int, int]:
+def get_pointing_times(epoch: int) -> tuple[Any | None, Any | None]:
+    """
+    Get the pointing start and end times for a given epoch.
+
+    The pointing start time is the end of the repointing period
+    and the pointing end time is the start of the next repointing period.
+
+    Parameters
+    ----------
+    epoch : int
+        The first epoch time in the L1B Direct Events (TTJ2000NS).
+
+    Returns
+    -------
+    tuple[int, int]
+        The pointing start and end times in TTJ2000NS.
+        If no pointing times are found, both values will be None.
+    """
+    # Get the repoint table
+    repoint_df = get_repoint_data()
+
+    # Convert repoint and spin MET to TTJ2000NS to compare with the epoch
+    repoint_df["repoint_end_ttj2000ns"] = met_to_ttj2000ns(
+        repoint_df["repoint_end_met"]
+    )
+    repoint_df["repoint_start_ttj2000ns"] = met_to_ttj2000ns(
+        repoint_df["repoint_start_met"]
+    )
+
+    repoint_mask = (repoint_df["repoint_end_ttj2000ns"] <= epoch) & (
+        repoint_df["repoint_start_ttj2000ns"].shift(-1) >= epoch
+    )
+
+    # Get the repoint index that contains the epoch
+    repoint_idx = repoint_mask.idxmax() if repoint_mask.any() else None
+    # use the index to get the pointing start and end times
+    pointing_start = (
+        repoint_df["repoint_end_met"].iloc[repoint_idx]
+        if repoint_idx is not None
+        else None
+    )
+    pointing_end = (
+        repoint_df["repoint_start_met"].iloc[repoint_idx + 1]
+        if repoint_idx is not None
+        else None
+    )
+
+    return pointing_start, pointing_end
+
+
+def get_spin_numbers(
+    pointing_start: int, pointing_end: int
+) -> tuple[Any | None, Any | None]:
     """
     Get the start and end spin numbers from the L1B Direct Event dataset.
 
@@ -267,102 +360,42 @@ def get_spin_numbers(l1b_de: xr.Dataset) -> tuple[int, int]:
 
     Parameters
     ----------
-    l1b_de : xarray.Dataset
-        L1B Direct Event dataset.
+    pointing_start : int
+        The pointing start time in MET.
+    pointing_end : int
+        The pointing end time in MET.
 
     Returns
     -------
     tuple[int, int]
         The start and end spin numbers.
     """
-    repoint_df = get_repoint_data()
+    # Get the spoin table
     spin_df = get_spin_data()
 
-    # Convert repoint and spin MET to TTJ2000NS
-    repoint_df["repoint_end_ttj2000ns"] = met_to_ttj2000ns(
-        repoint_df["repoint_end_met"]
+    # create a mask for the spin that contains the start of the pointing
+    mask_start = (spin_df["spin_start_met"] <= pointing_start) & (
+        spin_df["spin_start_met"].shift(-1) > pointing_start
     )
-    repoint_df["repoint_start_ttj2000ns"] = met_to_ttj2000ns(
-        repoint_df["repoint_start_met"]
+    # create a masks for the spin that contains the end of the pointing
+    mask_end = (spin_df["spin_start_met"] <= pointing_end) & (
+        spin_df["spin_start_met"].shift(-1) >= pointing_end
     )
-    spin_df["spin_start_ttj2000ns"] = met_to_ttj2000ns(spin_df["spin_start_met"])
+    # get the index for the spin that contains the start and end of the pointing
+    spin_start_idx = mask_start.idxmax() if mask_start.any() else None
+    spin_end_idx = mask_end.idxmax() if mask_end.any() else None
 
-    first_epoch = l1b_de["epoch"][0].item()
-    last_epoch = l1b_de["epoch"][-1].item()
-
-    pointing_start, pointing_end = pointing_times(repoint_df, first_epoch)
-
-    pointing_start_spin_idx = find_spin_idx(spin_df, pointing_start)
-    pointing_end_spin_idx = find_spin_idx(spin_df, pointing_end, start=False)
-
+    # get the spin numbers for the start and end of the pointing
     start_spin_number = (
-        spin_df["spin_number"].iloc[pointing_start_spin_idx]
-        if pointing_start_spin_idx is not None
+        spin_df["spin_number"].iloc[spin_start_idx]
+        if spin_start_idx is not None
         else None
     )
     end_spin_number = (
-        spin_df["spin_number"].iloc[pointing_end_spin_idx]
-        if pointing_end_spin_idx is not None
-        else None
+        spin_df["spin_number"].iloc[spin_end_idx] if spin_end_idx is not None else None
     )
-
-    print(f"Start spin number: {start_spin_number}")
 
     return start_spin_number, end_spin_number
-
-
-def pointing_times(df, epoch):
-    """
-    Get the pointing start and end times for a given epoch.
-    The pointing start time is the end of the repointing period
-    and the pointing end time is the start of the next repointing period.
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        DataFrame containing the repointing data with columns:
-            - repoint_end_ttj2000ns
-            - repoint_start_ttj2000ns
-    epoch : int
-        The epoch time in TTJ2000NS to find the pointing start and end times for
-    Returns
-    -------
-    tuple[int, int]
-        The pointing start and end times in TTJ2000NS.
-        If no pointing times are found, both values will be None.
-    """
-    mask_start = (df["repoint_end_ttj2000ns"] <= epoch) & (
-        df["repoint_start_ttj2000ns"].shift(-1) >= epoch
-    )
-    mask_end = (df["repoint_end_ttj2000ns"] <= epoch) & (
-        df["repoint_start_ttj2000ns"].shift(-1) > epoch
-    )
-
-    if all(mask_start == mask_end):
-        repoint_idx = mask_start.idxmax() if mask_start.any() else None
-        pointing_start = (
-            df["repoint_end_ttj2000ns"].iloc[repoint_idx]
-            if repoint_idx is not None
-            else None
-        )
-        pointing_end = (
-            df["repoint_start_ttj2000ns"].iloc[repoint_idx + 1]
-            if repoint_idx is not None
-            else None
-        )
-    return pointing_start, pointing_end
-
-
-def find_spin_idx(df, time, start=True):
-    if start:
-        mask = (df["spin_start_ttj2000ns"] <= time) & (
-            df["spin_start_ttj2000ns"].shift(-1) > time
-        )
-    else:
-        mask = (df["spin_start_ttj2000ns"] <= time - 1) & (
-            df["spin_start_ttj2000ns"].shift(-1) >= time - 1
-        )
-    return mask.idxmax() if mask.any() else None
 
 
 def calculate_exposure_times(counts: xr.DataArray, l1b_de: xr.Dataset) -> xr.DataArray:
