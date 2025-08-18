@@ -1,8 +1,8 @@
-"""Packet ingest and tcp times for each station."""
+"""Packet ingest and tcp connection times for each station."""
 
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from typing import Any
 
 from imap_processing.ialirt.constants import STATIONS
 
@@ -13,7 +13,7 @@ def find_tcp_connections(
     start_file_creation: datetime,
     end_file_creation: datetime,
     lines: list,
-    formatted: dict,
+    realtime_summary: dict,
 ) -> dict:
     """
     Find tcp connection time ranges for ground station from log lines.
@@ -26,15 +26,15 @@ def find_tcp_connections(
         File creation time of last file.
     lines : list
         All lines of log files.
-    formatted : dict
-        Input dictionary.
+    realtime_summary : dict
+        Input dictionary containing ingest parameters.
 
     Returns
     -------
-    formatted : dict
-        Output dictionary.
+    realtime_summary : dict
+        Output dictionary with tcp connection info.
     """
-    current_starts: dict[str, Optional[datetime]] = {}
+    current_starts: dict[str, datetime | None] = {}
 
     for line in lines:
         if "antenna partner connection is" not in line:
@@ -44,10 +44,10 @@ def find_tcp_connections(
         msg = " ".join(line.split(" ")[1:])
         station = msg.split(" antenna")[0]
 
-        if station not in formatted["tcp"]:
-            formatted["tcp"][station] = []
-        if station not in formatted["stations"]:
-            formatted["stations"].append(station)
+        if station not in realtime_summary["connection_times"]:
+            realtime_summary["connection_times"][station] = []
+        if station not in realtime_summary["stations"]:
+            realtime_summary["stations"].append(station)
 
         timestamp = datetime.strptime(timestamp_str, "%Y/%j-%H:%M:%S.%f")
 
@@ -57,7 +57,7 @@ def find_tcp_connections(
         elif f"{station} antenna partner connection is down!" in line:
             start = current_starts.get(station)
             if start is not None:
-                formatted["tcp"][station].append(
+                realtime_summary["connection_times"][station].append(
                     {
                         "start": datetime.isoformat(start),
                         "end": datetime.isoformat(timestamp),
@@ -66,7 +66,7 @@ def find_tcp_connections(
                 current_starts[station] = None
             else:
                 # No matching "up"
-                formatted["tcp"][station].append(
+                realtime_summary["connection_times"][station].append(
                     {
                         "start": datetime.isoformat(start_file_creation),
                         "end": datetime.isoformat(timestamp),
@@ -77,7 +77,7 @@ def find_tcp_connections(
     # Handle hanging "up" at the end of file
     for station, start in current_starts.items():
         if start is not None:
-            formatted["tcp"][station].append(
+            realtime_summary["connection_times"][station].append(
                 {
                     "start": datetime.isoformat(start),
                     "end": datetime.isoformat(end_file_creation),
@@ -85,15 +85,15 @@ def find_tcp_connections(
             )
 
     # Filter out connection windows that are completely outside the time window
-    for station in formatted["tcp"]:
-        formatted["tcp"][station] = [
+    for station in realtime_summary["connection_times"]:
+        realtime_summary["connection_times"][station] = [
             window
-            for window in formatted["tcp"][station]
+            for window in realtime_summary["connection_times"][station]
             if datetime.fromisoformat(window["end"]) >= start_file_creation
             and datetime.fromisoformat(window["start"]) <= end_file_creation
         ]
 
-    return formatted
+    return realtime_summary
 
 
 def packets_created(start_file_creation: datetime, lines: list) -> list:
@@ -160,7 +160,7 @@ def format_ingest_data(last_filename: str, log_lines: list) -> dict:
         "2025-07-31T00:00:00",
         "2025-07-31T02:01:00"
       ],
-      "tcp": {
+      "connection_times": {
         "Kiel": [
           {
             "start": "2025-07-30T23:00:00",
@@ -198,7 +198,7 @@ def format_ingest_data(last_filename: str, log_lines: list) -> dict:
             end_of_time.isoformat(),
         ],  # Overall time range of the data
         "packet_ingest": [],  # Global packet ingest times
-        "tcp": {
+        "connection_times": {
             station: [] for station in list(STATIONS)
         },  # Per-station TCP connection windows
     }
