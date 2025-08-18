@@ -268,7 +268,6 @@ def test_get_pointing_times(l1b_de_spin, repoint_met, use_fake_repoint_data_for_
 
 
 def test_get_spin_numbers(
-    l1b_de_spin,
     repoint_met,
     use_fake_spin_data_for_time,
 ):
@@ -279,7 +278,7 @@ def test_get_spin_numbers(
     expected_spin_numbers = (60, 5759)
 
     # Act
-    spin_numbers = get_spin_numbers(l1b_de_spin, repoint_met[0] + 900, repoint_met[1])
+    spin_numbers = get_spin_numbers(repoint_met[0] + 900, repoint_met[1])
 
     # Assert
     np.testing.assert_array_equal(spin_numbers, expected_spin_numbers)
