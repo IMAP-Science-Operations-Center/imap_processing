@@ -64,8 +64,73 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
             variable_name, check_schema=False
         )
 
-    # TODO: Add L2-specific algorithms/functionality here. For SIT-4, we can
-    #       just keep the data as-is.
+    if dataset_name in [
+        "imap_codice_l2_hi-counters-singles",
+        "imap_codice_l2_hi-counters-aggregated",
+        "imap_codice_l2_lo-counters-singles",
+        "imap_codice_l2_lo-counters-aggregated",
+        "imap_codice_l2_lo-sw-priority",
+        "imap_codice_l2_lo-nsw-priorty",
+    ]:
+        # No changes needed. Just save to an L2 CDF file.
+        pass
+
+    if dataset_name == "imap_codice_l2_hi-direct-events":
+        # Convert the following data variables to physical units using
+        # calibration data:
+        #    - ssd_energy
+        #    - tof
+        #    - elevation_angle
+        #    - spin_angle
+        # The other data variables require no changes
+        # See section 11.1.2 of algorithm document
+        pass
+
+    elif dataset_name == "imap_codice_l2_hi-sectored":
+        # Convert the sectored count rates using equation described in section
+        # 11.1.3 of algorithm document.
+        pass
+
+    elif dataset_name == "imap_codice_l2_hi-omni":
+        # Calculate the omni-directional intensity for each species using
+        # equation described in section 11.1.4 of algorithm document
+        pass
+
+    elif dataset_name == "imap_codice_l2_lo-direct-events":
+        # Convert the following data variables to physical units using
+        # calibration data:
+        #    - apd_energy
+        #    - elevation_angle
+        #    - tof
+        #    - spin_sector
+        #    - esa_step
+        # The other data variables require no changes
+        # See section 11.1.2 of algorithm document
+        pass
+
+    elif dataset_name in ["imap_codice_l2_lo-sw-angular"]:
+        # Calculate the sunward angular intensities using equation described in
+        # section 11.2.3 of algorithm document.
+        pass
+
+    elif dataset_name in ["imap_codice_l2_lo-nsw-angular"]:
+        # Calculate the non-sunward angular intensities using equation described
+        # in section 11.2.3 of algorithm document.
+        pass
+
+    elif dataset_name in ["imap_codice_l2_lo-sw-species"]:
+        # Calculate the sunward solar wind species intensities using equation
+        # described in section 11.2.4 of algorithm document.
+        # Calculate the pickup ion sunward solar wind intensities using equation
+        # described in section 11.2.4 of algorithm document.
+        pass
+
+    elif dataset_name in ["imap_codice_l2_lo-nsw-species"]:
+        # Calculate the non-sunward solar wind species intensities using
+        # equation described in section 11.2.4 of algorithm document.
+        # Calculate the pickup ion non- sunward solar wind intensities using
+        # equation described in section 11.2.4 of algorithm document.
+        pass
 
     logger.info(f"\nFinal data product:\n{l2_dataset}\n")
 
