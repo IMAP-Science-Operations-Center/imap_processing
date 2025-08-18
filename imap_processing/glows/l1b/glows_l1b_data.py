@@ -8,11 +8,12 @@ from typing import Optional
 
 import numpy as np
 import xarray as xr
+from scipy.stats import circmean, circstd
 
 from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.utils.constants import TimeTuple
 from imap_processing.spice import geometry
-from imap_processing.spice.geometry import SpiceBody, SpiceFrame, circular_mean_and_std
+from imap_processing.spice.geometry import SpiceBody, SpiceFrame
 from imap_processing.spice.spin import (
     get_instrument_spin_phase,
     get_spin_angle,
@@ -857,9 +858,10 @@ class HistogramL1B:
             )
         )
         # Calculate circular statistics for longitude (wraps around)
-        lon_mean, lon_std = circular_mean_and_std(spin_axis_all_times[..., 1])
-        lat_mean = np.mean(spin_axis_all_times[..., 2])
-        lat_std = np.std(spin_axis_all_times[..., 2])
+        lon_mean = circmean(spin_axis_all_times[..., 1], low=-np.pi, high=np.pi)
+        lon_std = circstd(spin_axis_all_times[..., 1], low=-np.pi, high=np.pi)
+        lat_mean = circmean(spin_axis_all_times[..., 2], low=-np.pi, high=np.pi)
+        lat_std = circstd(spin_axis_all_times[..., 2], low=-np.pi, high=np.pi)
         self.spin_axis_orientation_average = np.array([lon_mean, lat_mean])
         self.spin_axis_orientation_std_dev = np.array([lon_std, lat_std])
 
