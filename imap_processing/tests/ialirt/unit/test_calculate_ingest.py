@@ -38,7 +38,7 @@ def test_find_tcp_connections():
             end_of_time.isoformat(),
         ],  # Overall time range of the data
         "packet_ingest": [],  # Global packet ingest times
-        "tcp": {
+        "connection_times": {
             station: [] for station in list(STATIONS)
         },  # Per-station TCP connection windows
     }
@@ -50,8 +50,8 @@ def test_find_tcp_connections():
     # 2025/212-16:33:40.189
     time_1 = datetime(2025, 7, 31, 16, 33, 40, 189000)
 
-    assert test["tcp"]["Kiel"][0]["start"] == datetime.isoformat(time_0)
-    assert test["tcp"]["Kiel"][0]["end"] == datetime.isoformat(time_1)
+    assert test["connection_times"]["Kiel"][0]["start"] == datetime.isoformat(time_0)
+    assert test["connection_times"]["Kiel"][0]["end"] == datetime.isoformat(time_1)
 
 
 def test_packets_created():
@@ -119,8 +119,8 @@ def test_format_ingest_data():
 
     assert data["packet_ingest"][0] == "2025-07-31T08:00:00"
     assert data["packet_ingest"][-1] == "2025-07-31T15:00:00"
-    assert data["tcp"]["Kiel"][0]["start"] == "2025-07-31T08:00:00"
-    assert data["tcp"]["Kiel"][0]["end"] == "2025-07-31T16:00:00"
+    assert data["connection_times"]["Kiel"][0]["start"] == "2025-07-31T08:00:00"
+    assert data["connection_times"]["Kiel"][0]["end"] == "2025-07-31T16:00:00"
 
 
 def test_format_ingest_data_edge_cases():
@@ -167,11 +167,11 @@ def test_format_ingest_data_edge_cases():
 
     data = format_ingest_data(filenames[-1], log_lines)
 
-    assert data["tcp"]["Kiel"][0]["start"] == "2025-07-29T02:00:00"
-    assert data["tcp"]["Kiel"][0]["end"] == "2025-07-31T00:15:00"
+    assert data["connection_times"]["Kiel"][0]["start"] == "2025-07-29T02:00:00"
+    assert data["connection_times"]["Kiel"][0]["end"] == "2025-07-31T00:15:00"
 
-    assert data["tcp"]["Kiel"][1]["start"] == "2025-07-31T02:00:00"
-    assert data["tcp"]["Kiel"][1]["end"] == "2025-07-31T02:00:00"
+    assert data["connection_times"]["Kiel"][1]["start"] == "2025-07-31T02:00:00"
+    assert data["connection_times"]["Kiel"][1]["end"] == "2025-07-31T02:00:00"
 
     assert data["packet_ingest"][0] == "2025-07-31T00:00:00"
     assert data["packet_ingest"][1] == "2025-07-31T02:01:00"
