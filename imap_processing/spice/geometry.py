@@ -137,7 +137,9 @@ def get_spacecraft_to_instrument_spin_phase_offset(instrument: SpiceFrame) -> fl
     Get the spin phase offset from the spacecraft to the instrument.
 
     For now, the offset is a fixed lookup based on `Table 1: Nominal Instrument
-    to S/C CS Transformations` in document `7516-0011_drw.pdf`. These fixed
+    to S/C CS Transformations` in document `7516-0011_drw.pdf`. That Table
+    defines the angle from the spacecraft y-axis. We add 90 and take the modulous
+    with 360 in order to get the angle from the spacecraft x-axis. These fixed
     values will need to be updated based on calibration data or retrieved using
     SPICE and the latest IMAP frame kernel.
 
@@ -153,18 +155,18 @@ def get_spacecraft_to_instrument_spin_phase_offset(instrument: SpiceFrame) -> fl
     """
     # TODO: Implement retrieval from SPICE?
     offset_lookup = {
-        SpiceFrame.IMAP_LO_BASE: 330 / 360,
-        SpiceFrame.IMAP_HI_45: 255 / 360,
-        SpiceFrame.IMAP_HI_90: 285 / 360,
-        SpiceFrame.IMAP_ULTRA_45: 33 / 360,
-        SpiceFrame.IMAP_ULTRA_90: 210 / 360,
-        SpiceFrame.IMAP_SWAPI: 168 / 360,
-        SpiceFrame.IMAP_IDEX: 90 / 360,
-        SpiceFrame.IMAP_CODICE: 136 / 360,
-        SpiceFrame.IMAP_HIT: 30 / 360,
-        SpiceFrame.IMAP_SWE: 153 / 360,
-        SpiceFrame.IMAP_GLOWS: 127 / 360,
-        SpiceFrame.IMAP_MAG: 0 / 360,
+        SpiceFrame.IMAP_LO_BASE: 60 / 360,  # (330 + 90) % 360 = 60
+        SpiceFrame.IMAP_HI_45: 345 / 360,  # 255 + 90 = 345
+        SpiceFrame.IMAP_HI_90: 15 / 360,  # (285 + 90) % 360 = 15
+        SpiceFrame.IMAP_ULTRA_45: 123 / 360,  # 33 + 90 = 123
+        SpiceFrame.IMAP_ULTRA_90: 300 / 360,  # 210 + 90 = 300
+        SpiceFrame.IMAP_SWAPI: 258 / 360,  # 168 + 90 = 258
+        SpiceFrame.IMAP_IDEX: 180 / 360,  # 90 + 90 = 180
+        SpiceFrame.IMAP_CODICE: 226 / 360,  # 136 + 90 = 226
+        SpiceFrame.IMAP_HIT: 120 / 360,  # 30 + 90 = 120
+        SpiceFrame.IMAP_SWE: 243 / 360,  # 153 + 90 = 243
+        SpiceFrame.IMAP_GLOWS: 217 / 360,  # 127 + 90 = 217
+        SpiceFrame.IMAP_MAG: 90 / 360,  # 0 + 90 = 90
     }
     return offset_lookup[instrument]
 

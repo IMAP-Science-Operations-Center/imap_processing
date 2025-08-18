@@ -49,24 +49,24 @@ def test_imap_state_ecliptic(imap_ena_sim_metakernel):
 @pytest.mark.parametrize(
     "instrument, expected_offset",
     [
-        (SpiceFrame.IMAP_LO_BASE, 330 / 360),
-        (SpiceFrame.IMAP_HI_45, 255 / 360),
-        (SpiceFrame.IMAP_HI_90, 285 / 360),
-        (SpiceFrame.IMAP_ULTRA_45, 33 / 360),
-        (SpiceFrame.IMAP_ULTRA_90, 210 / 360),
-        (SpiceFrame.IMAP_SWAPI, 168 / 360),
-        (SpiceFrame.IMAP_IDEX, 90 / 360),
-        (SpiceFrame.IMAP_CODICE, 136 / 360),
-        (SpiceFrame.IMAP_HIT, 30 / 360),
-        (SpiceFrame.IMAP_SWE, 153 / 360),
-        (SpiceFrame.IMAP_GLOWS, 127 / 360),
-        (SpiceFrame.IMAP_MAG, 0 / 360),
+        (SpiceFrame.IMAP_LO_BASE, ((330 / 360) + 0.25) % 1),
+        (SpiceFrame.IMAP_HI_45, ((255 / 360) + 0.25) % 1),
+        (SpiceFrame.IMAP_HI_90, ((285 / 360) + 0.25) % 1),
+        (SpiceFrame.IMAP_ULTRA_45, ((33 / 360) + 0.25) % 1),
+        (SpiceFrame.IMAP_ULTRA_90, ((210 / 360) + 0.25) % 1),
+        (SpiceFrame.IMAP_SWAPI, ((168 / 360) + 0.25) % 1),
+        (SpiceFrame.IMAP_IDEX, ((90 / 360) + 0.25) % 1),
+        (SpiceFrame.IMAP_CODICE, ((136 / 360) + 0.25) % 1),
+        (SpiceFrame.IMAP_HIT, ((30 / 360) + 0.25) % 1),
+        (SpiceFrame.IMAP_SWE, ((153 / 360) + 0.25) % 1),
+        (SpiceFrame.IMAP_GLOWS, ((127 / 360) + 0.25) % 1),
+        (SpiceFrame.IMAP_MAG, ((0 / 360) + 0.25) % 1),
     ],
 )
 def test_get_spacecraft_to_instrument_spin_phase_offset(instrument, expected_offset):
     """Test coverage for get_spacecraft_to_instrument_spin_phase_offset()"""
     result = get_spacecraft_to_instrument_spin_phase_offset(instrument)
-    assert result == expected_offset
+    np.testing.assert_almost_equal(result, expected_offset)
 
 
 @pytest.mark.parametrize(
