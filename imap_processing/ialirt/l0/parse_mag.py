@@ -342,9 +342,10 @@ def calibrate_and_offset_vectors(
 
 
 def apply_gradiometry_correction(
-    mago_vector_eclipj2000: np.ndarray,
-    magi_vector_eclipj2000: np.ndarray,
-    time_data: dict,
+    mago_vectors_eclipj2000: np.ndarray,
+    mago_time_data: np.ndarray,
+    magi_vectors_eclipj2000: np.ndarray,
+    magi_time_data: np.ndarray,
     gradiometer_factor: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
@@ -352,14 +353,16 @@ def apply_gradiometry_correction(
 
     Parameters
     ----------
-    mago_vector_eclipj2000 : np.ndarray
+    mago_vectors_eclipj2000 : np.ndarray
         MAGo vectors in inertial frame, shape (N, 3).
-    magi_vector_eclipj2000 : np.ndarray
+    mago_time_data : np.ndarray
+        Time for primary sensor, shape (N, 3).
+    magi_vectors_eclipj2000 : np.ndarray
         MAGi vectors in inertial frame, shape (M, 3).
-    time_data : dict
-        Coarse and fine time for Primary and Secondary Sensors.
+    magi_time_data : np.ndarray
+        Time for secondary sensor, shape (N, 3).
     gradiometer_factor : np.ndarray
-        3-element vector used to project gradiometry offset, shape (3,).
+        A (3,3) element matrix to scale and rotate the gradiometer offsets.
 
     Returns
     -------
@@ -369,14 +372,13 @@ def apply_gradiometry_correction(
         Magnitude of corrected MAGo vectors, shape (N,).
     """
     gradiometry_offsets = MagL1d.calculate_gradiometry_offsets(
-        mago_vector_eclipj2000.reshape(1, 3),
-        np.array([time_data["primary_epoch"]]),
-        magi_vector_eclipj2000.reshape(1, 3),
-        np.array([time_data["secondary_epoch"]]),
-        align_timestamps=False,
+        mago_vectors_eclipj2000,
+        mago_time_data,
+        magi_vectors_eclipj2000,
+        magi_time_data,
     )
     mago_corrected = MagL1d.apply_gradiometry_offsets(
-        gradiometry_offsets, mago_vector_eclipj2000, gradiometer_factor
+        gradiometry_offsets, mago_vectors_eclipj2000, gradiometer_factor
     )
     magnitude = np.linalg.norm(mago_corrected, axis=-1).squeeze()
 
@@ -482,7 +484,7 @@ def transform_to_inertial(
 
 
 def transform_to_frames(
-    target_time: float,
+    target_time: np.ndarray,
     inertial_vector: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
@@ -490,7 +492,7 @@ def transform_to_frames(
 
     Parameters
     ----------
-    target_time : float
+    target_time : np.ndarray
         Time at which to apply the transformation.
         Will be primary_epoch (mago vector).
         Example: time_data['primary_epoch'].
@@ -563,6 +565,11 @@ def process_packet(
 
     unique_groups = np.unique(grouped_data["group"])
     mag_data = []
+    met_all = []
+    mago_vectors_all = []
+    mago_times_all = []
+    magi_vectors_all = []
+    magi_times_all = []
 
     for group in unique_groups:
         # Get status values for each group.
@@ -651,37 +658,53 @@ def process_packet(
             magi_out,
         )
 
-        mago_corrected, magnitude = apply_gradiometry_correction(
-            mago_inertial_vector,
-            magi_inertial_vector,
-            time_data,
-            l1d_calibration_dataset["gradiometer_factor"].values,
-        )
-
-        gse_vector, gsm_vector, rtn_vector = transform_to_frames(
-            time_data["primary_epoch"], mago_corrected
-        )
-
-        spherical_gsm = cartesian_to_spherical(gsm_vector)
-        spherical_gse = cartesian_to_spherical(gse_vector)
-
-        # Placeholder for real data.
         met = grouped_data["met"][(grouped_data["group"] == group).values]
+        met_all.append(met.values[0])
+        mago_times_all.append(time_data["primary_epoch"])
+        mago_vectors_all.append(mago_inertial_vector)
+        magi_vectors_all.append(magi_inertial_vector)
+        magi_times_all.append(time_data["secondary_epoch"])
+
+    mago_corrected, magnitude = apply_gradiometry_correction(
+        np.array(mago_vectors_all),
+        np.array(mago_times_all),
+        np.array(magi_vectors_all),
+        np.array(magi_times_all),
+        l1d_calibration_dataset["gradiometer_factor"].values.squeeze(),
+    )
+
+    gse_vector, gsm_vector, rtn_vector = transform_to_frames(
+        np.array(mago_times_all), mago_corrected
+    )
+
+    spherical = cartesian_to_spherical(gsm_vector)
+    phi_gsm = spherical[:, 1]
+    theta_gsm = spherical[:, 2]
+
+    spherical = cartesian_to_spherical(gse_vector)
+    phi_gse = spherical[:, 1]
+    theta_gse = spherical[:, 2]
+
+    # Omit the first value since we expect it to be extrapolated.
+    for i in range(len(mago_corrected)):
+        if i == 0:
+            continue
+
         mag_data.append(
             {
                 "apid": 478,
-                "met": int(met.values.min()),
-                "met_in_utc": met_to_utc(met.values.min()).split(".")[0],
-                "ttj2000ns": int(met_to_ttj2000ns(met.values.min())),
-                "mag_epoch": int(time_data["primary_epoch"]),
-                "mag_B_GSE": [Decimal(str(v)) for v in gse_vector],
-                "mag_B_GSM": [Decimal(str(v)) for v in gsm_vector],
-                "mag_B_RTN": [Decimal(str(v)) for v in rtn_vector],
-                "mag_B_magnitude": Decimal(str(magnitude)),
-                "mag_phi_B_GSM": Decimal(str(spherical_gsm[1])),
-                "mag_theta_B_GSM": Decimal(str(spherical_gsm[2])),
-                "mag_phi_B_GSE": Decimal(str(spherical_gse[1])),
-                "mag_theta_B_GSE": Decimal(str(spherical_gse[2])),
+                "met": int(met_all[i]),
+                "met_in_utc": met_to_utc(met_all[i]).split(".")[0],
+                "ttj2000ns": int(met_to_ttj2000ns(met_all[i])),
+                "mag_epoch": int(mago_times_all[i]),
+                "mag_B_GSE": [Decimal(str(v)) for v in gse_vector[i]],
+                "mag_B_GSM": [Decimal(str(v)) for v in gsm_vector[i]],
+                "mag_B_RTN": [Decimal(str(v)) for v in rtn_vector[i]],
+                "mag_B_magnitude": Decimal(str(magnitude[i])),
+                "mag_phi_B_GSM": Decimal(str(phi_gsm[i])),
+                "mag_theta_B_GSM": Decimal(str(theta_gsm[i])),
+                "mag_phi_B_GSE": Decimal(str(phi_gse[i])),
+                "mag_theta_B_GSE": Decimal(str(theta_gse[i])),
             }
         )
 

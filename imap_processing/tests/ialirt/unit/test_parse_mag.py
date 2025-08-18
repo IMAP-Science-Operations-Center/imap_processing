@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 import spiceypy
 import xarray as xr
+from scipy.interpolate import make_interp_spline
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
@@ -411,21 +412,43 @@ def test_apply_gradiometry_correction(ialirt_mag_test_l1d_data):
     gradiometer_factor = ialirt_mag_test_l1d_data["gradiometer_factor"].values
 
     # MAGo and MAGi vectors.
-    mago_vector_eclipj2000 = np.array([1.0, 2.0, 3.0])
-    magi_vector_eclipj2000 = np.array([4.0, 5.0, 6.0])
+    mago_vector_eclipj2000 = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+    magi_vector_eclipj2000 = np.array([[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]])
 
-    time_data = {"primary_epoch": np.float64(1), "secondary_epoch": np.float64(2)}
+    time_data = {
+        "primary_epoch": np.array([1.0, 2.0]),
+        "secondary_epoch": np.array([3.0, 4.0]),
+    }
 
     mago_corrected, magnitude = apply_gradiometry_correction(
-        mago_vector_eclipj2000, magi_vector_eclipj2000, time_data, gradiometer_factor
+        mago_vector_eclipj2000,
+        np.array(time_data["primary_epoch"]),
+        magi_vector_eclipj2000,
+        np.array(time_data["secondary_epoch"]),
+        gradiometer_factor.squeeze(),
     )
+
+    spline = make_interp_spline(
+        time_data["secondary_epoch"], magi_vector_eclipj2000, k=1
+    )
+    interpolated_vectors = spline(time_data["primary_epoch"])
 
     # Spot check.
     np.testing.assert_array_equal(
-        mago_corrected.squeeze(), np.array([0.25, 1.25, 2.25])
+        interpolated_vectors, np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
     )
+    offset = interpolated_vectors - mago_vector_eclipj2000
 
-    expected_magnitude = np.sqrt(np.sum(mago_corrected.squeeze() ** 2, axis=-1))
+    offset_value = np.apply_along_axis(
+        np.dot,
+        1,
+        offset,
+        gradiometer_factor.squeeze(),
+    )
+    expected_mago_corrected = mago_vector_eclipj2000 - offset_value
+    np.testing.assert_array_equal(mago_corrected, expected_mago_corrected)
+
+    expected_magnitude = np.sqrt(np.sum(mago_corrected**2, axis=1))
     np.testing.assert_array_equal(magnitude, expected_magnitude)
 
 

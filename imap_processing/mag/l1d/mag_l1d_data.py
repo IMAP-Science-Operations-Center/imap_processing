@@ -504,7 +504,6 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         mago_epoch: np.ndarray,
         magi_vectors: np.ndarray,
         magi_epoch: np.ndarray,
-        align_timestamps: bool = True,
     ) -> xr.Dataset:
         """
         Calculate the gradiometry offsets between MAGo and MAGi.
@@ -526,9 +525,6 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             The MAGi vectors, shape (N, 3).
         magi_epoch : np.ndarray
             The MAGi epoch values, shape (N,).
-        align_timestamps : bool, optional
-            Whether to align the MAGi timestamps to the MAGo timestamps using linear
-            interpolation. Default is True.
 
         Returns
         -------
@@ -537,14 +533,11 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             - epoch: the timestamp of the MAGo data
             - gradiometer_offsets: the offset values (MAGi - MAGo) for each axis
         """
-        aligned_magi = magi_vectors
-
-        if align_timestamps:
-            aligned_magi = linear(
-                magi_vectors,
-                magi_epoch,
-                mago_epoch,
-            )
+        aligned_magi = linear(
+            magi_vectors,
+            magi_epoch,
+            mago_epoch,
+        )
 
         diff = aligned_magi - mago_vectors
 
