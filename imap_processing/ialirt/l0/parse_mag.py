@@ -25,10 +25,12 @@ from imap_processing.mag.l1b.mag_l1b import (
 from imap_processing.mag.l1d.mag_l1d_data import MagL1d
 from imap_processing.mag.l2.mag_l2_data import MagL2L1dBase
 from imap_processing.spice.geometry import (
+    SpiceFrame,
     cartesian_to_spherical,
+    frame_transform,
     spherical_to_cartesian,
 )
-from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
+from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc, ttj2000ns_to_et
 
 logger = logging.getLogger(__name__)
 
@@ -386,14 +388,14 @@ def apply_gradiometry_correction(
     return mago_corrected, magnitude
 
 
-def transform_to_inertial(
+def transform_to_frames(
     sc_spin_phase_rad: np.ndarray,
     sc_inertial_right: np.ndarray,
     sc_inertial_decline: np.ndarray,
     attitude_time: np.ndarray,
     target_time: float,
     mag_vector: np.ndarray,
-) -> np.ndarray:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Transform vector to ECLIPJ2000.
 
@@ -421,6 +423,12 @@ def transform_to_inertial(
     -------
     inertial_vector : np.ndarray
         Transformed vector in the ECLIPJ2000 frame, shape (3,).
+    gse_vector : np.ndarray
+        Transformed vector in the GSE frame, shape (3,).
+    gsm_vector : np.ndarray
+        Transformed vector in the GSM frame, shape (3,).
+    rtn_vector : np.ndarray
+        Transformed vector in the RTN frame, shape (3,).
 
     Notes
     -----
@@ -481,7 +489,19 @@ def transform_to_inertial(
         np.array([dec_deg]),
     )[0]
 
-    return inertial_vector
+    et_target_time = ttj2000ns_to_et(target_time)
+
+    gse_vector = frame_transform(
+        et_target_time, inertial_vector, SpiceFrame.ECLIPJ2000, SpiceFrame.IMAP_GSE
+    )
+    gsm_vector = frame_transform(
+        et_target_time, inertial_vector, SpiceFrame.ECLIPJ2000, SpiceFrame.IMAP_GSM
+    )
+    rtn_vector = frame_transform(
+        et_target_time, inertial_vector, SpiceFrame.ECLIPJ2000, SpiceFrame.IMAP_RTN
+    )
+
+    return inertial_vector, gse_vector, gsm_vector, rtn_vector
 
 
 def process_packet(

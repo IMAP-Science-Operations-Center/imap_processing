@@ -15,11 +15,13 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 class HIAPID(IntEnum):
     """Create ENUM for apid."""
 
+    H45_MEMDMP = 740
     H45_APP_NHK = 754
     H45_SCI_CNT = 769
     H45_SCI_DE = 770
     H45_DIAG_FEE = 772
 
+    H90_MEMDMP = 804
     H90_APP_NHK = 818
     H90_SCI_CNT = 833
     H90_SCI_DE = 834

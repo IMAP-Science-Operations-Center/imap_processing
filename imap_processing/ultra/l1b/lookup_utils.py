@@ -7,6 +7,7 @@ import xarray as xr
 from numpy.typing import NDArray
 
 from imap_processing.quality_flags import ImapDEUltraFlags
+from imap_processing.ultra.constants import UltraConstants
 
 
 def get_y_adjust(dy_lut: np.ndarray, ancillary_files: dict) -> npt.NDArray:
@@ -281,17 +282,147 @@ def get_geometric_factor(
     # Fetch geometric factor values at nearest (phi, theta) pairs
     geometric_factor = gf_table[phi_idx, theta_idx]
 
-    phi_rad = np.deg2rad(phi)
-    numerator = 5.0 * np.cos(phi_rad)
-    denominator = 1 + 2.80 * np.cos(phi_rad)
-    # Equation 19 in the Ultra Algorithm Document.
-    theta_nom = np.arctan(numerator / denominator)
-    theta_nom = np.rad2deg(theta_nom)
-
-    outside_fov = np.abs(theta) > theta_nom
+    outside_fov = ~is_inside_fov(np.deg2rad(phi), np.deg2rad(theta))
     quality_flag[outside_fov] |= ImapDEUltraFlags.FOV.value
 
     return geometric_factor
+
+
+def get_scattering_coefficients(
+    ancillary_files: dict,
+    instrument_id: int,
+    theta: NDArray,
+    phi: NDArray,
+) -> tuple[NDArray, NDArray]:
+    """
+    Get a and g coefficients for theta and phi to compute scattering FWHM.
+
+    Parameters
+    ----------
+    ancillary_files : dict[Path]
+        Ancillary files.
+    instrument_id : int
+        Instrument ID, either 45 or 90.
+    theta : NDArray
+        Elevation angles in degrees.
+    phi : NDArray
+        Azimuth angles in degrees.
+
+    Returns
+    -------
+    tuple
+        Scattering a and g values corresponding to the given theta and phi values.
+    """
+    # TODO remove the line below when the 45 sensor scattering coefficients are
+    #   delivered.
+    instrument_id = 90
+    descriptor = f"l1b-{instrument_id}sensor-scattering-calibration"
+    theta_grid = pd.read_csv(
+        ancillary_files[descriptor], header=None, skiprows=7, nrows=241
+    ).to_numpy(dtype=float)
+    phi_grid = pd.read_csv(
+        ancillary_files[descriptor], header=None, skiprows=249, nrows=241
+    ).to_numpy(dtype=float)
+    a_theta = pd.read_csv(
+        ancillary_files[descriptor], header=None, skiprows=491, nrows=241
+    ).to_numpy(dtype=float)
+    g_theta = pd.read_csv(
+        ancillary_files[descriptor], header=None, skiprows=733, nrows=241
+    ).to_numpy(dtype=float)
+    a_phi = pd.read_csv(
+        ancillary_files[descriptor], header=None, skiprows=975, nrows=241
+    ).to_numpy(dtype=float)
+    g_phi = pd.read_csv(
+        ancillary_files[descriptor], header=None, skiprows=1217, nrows=241
+    ).to_numpy(dtype=float)
+
+    # Assume uniform grids: extract 1D arrays from first row/col
+    theta_vals = theta_grid[0, :]  # columns represent theta
+    phi_vals = phi_grid[:, 0]  # rows represent phi
+
+    # Find nearest index in table for each input value
+    phi_idx = np.abs(phi_vals[:, None] - phi).argmin(axis=0)
+    theta_idx = np.abs(theta_vals[:, None] - theta).argmin(axis=0)
+
+    # Fetch a and g values at nearest (phi, theta) pairs
+    a_theta_val = a_theta[phi_idx, theta_idx]
+    g_theta_val = g_theta[phi_idx, theta_idx]
+    a_phi_val = a_phi[phi_idx, theta_idx]
+    g_phi_val = g_phi[phi_idx, theta_idx]
+
+    return np.column_stack([a_theta_val, g_theta_val]), np.column_stack(
+        [a_phi_val, g_phi_val]
+    )
+
+
+def mask_below_fwhm_scattering_threshold(
+    theta_coeffs: np.ndarray,
+    phi_coeffs: np.ndarray,
+    energy: int,
+) -> np.ndarray:
+    """
+    Determine indices of theta and phi values below the FWHM scattering threshold.
+
+    For each phi and theta, calculate the FWHM using the formula:
+    FWHM = A*E^g
+    If Phi FWHM or Theta FWHM > the scattering requirements from the table above,
+    mask the instrument frame pixel.
+
+    Parameters
+    ----------
+    theta_coeffs : NDArray
+        Coefficients for theta FWHM calculation (a and g) for each pixel.
+    phi_coeffs : NDArray
+        Coefficients for phi FWHM calculation (a and g) for each pixel.
+    energy : int
+        Energy in keV.
+
+    Returns
+    -------
+    numpy.ndarray
+        Boolean array indicating incides below the scattering threshold.
+    """
+    scattering_thresholds = UltraConstants.ULTRA_FWHM_SCATTERING_CULLING_THRESHOLDS
+    # Calculate FWHM for theta and phi
+    fwhm_theta = theta_coeffs[:, 0] * energy ** theta_coeffs[:, 1]
+    fwhm_phi = phi_coeffs[:, 0] * energy ** phi_coeffs[:, 1]
+
+    # Get the scattering threshold based on the energy
+    threshold = next(
+        threshold
+        for energy_range, threshold in scattering_thresholds.items()
+        if energy_range[0] <= energy < energy_range[1]
+    )
+    # Combine conditions for both theta and phi
+    return np.logical_and(fwhm_theta <= threshold, fwhm_phi <= threshold)
+
+
+def is_inside_fov(phi: np.ndarray, theta: np.ndarray) -> np.ndarray:
+    """
+    Determine angles in the field of view (FOV).
+
+    This function is used in the deadtime correction to determine whether a given
+    (theta, phi) angle is within the instrument's Field of View (FOV).
+    Only pixels inside the FOV are considered for time accumulation. The FOV boundary
+    is defined by equation 19 in the Ultra Algorithm Document.
+
+    Parameters
+    ----------
+    phi : np.ndarray
+        Azimuth angles in radians.
+    theta : np.ndarray
+        Elevation angles in radians.
+
+    Returns
+    -------
+    numpy.ndarray
+        Boolean array indicating if the angle is in the FOV, False otherwise.
+    """
+    numerator = 5.0 * np.cos(phi)
+    denominator = 1 + 2.80 * np.cos(phi)
+    # Equation 19 in the Ultra Algorithm Document.
+    theta_nom = np.arctan(numerator / denominator)
+    return np.abs(theta) <= theta_nom
 
 
 def get_ph_corrected(

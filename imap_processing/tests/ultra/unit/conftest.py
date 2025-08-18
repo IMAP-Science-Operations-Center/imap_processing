@@ -526,6 +526,8 @@ def ancillary_files():
         "l1b-90sensor-tofxesteep": path
         / "imap_ultra_l1b-90sensor-tofxesteep_20250101_v000.pgm",
         "l1b-tofxph": path / "imap_ultra_l1b-tofxph_20250101_v000.pgm",
+        "l1b-90sensor-scattering-calibration": path
+        / "imap_ultra_l1b-90sensor-scattering-calibration-data_20250101_v000.csv",
     }
 
 

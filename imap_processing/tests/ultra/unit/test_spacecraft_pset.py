@@ -22,6 +22,7 @@ from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
+@pytest.mark.external_test_data
 @pytest.mark.external_kernel
 def test_calculate_spacecraft_pset(deadtime_datasets, imap_ena_sim_metakernel):
     """Tests calculate_spacecraft_pset function."""

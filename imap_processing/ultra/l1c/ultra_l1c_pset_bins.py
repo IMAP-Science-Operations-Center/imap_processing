@@ -380,17 +380,16 @@ def get_spacecraft_exposure_times(
         Healpix tessellation of the sky
         in the pointing (dps) frame.
     """
-    # TODO: uncomment these lines when the deadtime correction is implemented
-    # sectored_rates = get_sectored_rates(rates_dataset, params_dataset)
-    # get_deadtime_correction_factors(sectored_rates)
-    # TODO: calculate the deadtime correction function
-    # TODO: Apply the deadtime correction to the exposure times
     # TODO: use the universal spin table and
     #  universal pointing table here to determine actual number of spins
     exposure_pointing = (
         constant_exposure["Exposure Time"] * 5760
     )  # 5760 spins per pointing (for now)
 
+    # TODO uncomment the line below when implemented
+    # exposure_pointing_adjusted = apply_deadtime_correction(
+    #     exposure_pointing, rates_dataset, params_dataset
+    # )
     return exposure_pointing
 
 

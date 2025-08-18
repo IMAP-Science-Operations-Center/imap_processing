@@ -3,6 +3,8 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
+import numpy as np
+
 
 @dataclass(frozen=True)
 class UltraConstants:
@@ -51,7 +53,6 @@ class UltraConstants:
     Z_DSTOP: float = 2.6 / 2  # Position of stop foil on Z axis [mm]
     Z_DS: float = 46.19 - (2.6 / 2)  # Position of slit on Z axis [mm]
     DF: float = 3.39  # Distance from slit to foil [mm]
-
     # Derived constants
     DMIN_PH_CTOF: float = (
         Z_DS - (2**0.5) * DF
@@ -129,3 +130,13 @@ class UltraConstants:
         341.989454569026,
         1e5,
     ]
+    # Culling FWHM Scattering values as a function of energy.
+    # The tuple represents the energy range (min, max) in keV, and the value is the
+    # FWHM scattering threshold in degrees.
+    ULTRA_FWHM_SCATTERING_CULLING_THRESHOLDS: ClassVar[dict] = {
+        (1, 5): 12,
+        (5, 8): 10,
+        (8, 10): 8,
+        (10, 20): 6,
+        (20, np.inf): 4,
+    }

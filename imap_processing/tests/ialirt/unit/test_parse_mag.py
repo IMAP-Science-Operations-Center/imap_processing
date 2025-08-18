@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+import spiceypy
 import xarray as xr
 from scipy.interpolate import make_interp_spline
 
@@ -18,10 +19,11 @@ from imap_processing.ialirt.l0.parse_mag import (
     get_time,
     process_packet,
     retrieve_matrix_from_single_l1b_calibration,
-    transform_to_inertial,
+    transform_to_frames,
 )
 from imap_processing.mag.constants import MAX_FINE_TIME
-from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.spice.geometry import SpiceFrame
+from imap_processing.spice.time import et_to_ttj2000ns, met_to_ttj2000ns
 from imap_processing.utils import packet_file_to_datasets
 
 
@@ -377,10 +379,17 @@ def test_apply_gradiometry_correction(ialirt_mag_test_l1d_data):
 
 
 @pytest.mark.external_kernel
-def test_transform_to_inertial(furnish_kernels, spice_test_data_path):
-    """Test transform_to_inertial over multiple spin phases."""
+def test_transform_to_frames(furnish_kernels, spice_test_data_path):
+    """Test transform_to_frames over multiple spin phases."""
 
-    kernels = ["imap_wkcp.tf"]
+    kernels = [
+        "imap_science_100.tf",
+        "imap_wkcp.tf",
+        "naif0012.tls",
+        "de440s.bsp",
+        "imap_spk_demo.bsp",
+        "pck00011.tpc",
+    ]
 
     # Use a fixed spin axis pointing at +Z (RA=0, Dec=90)
     ra = np.array([0.0, 0.0, 0.0, 0.0])
@@ -390,19 +399,35 @@ def test_transform_to_inertial(furnish_kernels, spice_test_data_path):
     # Unit vector pointing along +X in instrument frame
     mag_vector = np.array([1.0, 0.0, 0.0])
 
-    attitude_time = np.array([1000.0, 1010.0, 1020.0, 1030.0])
-    target_time = 1015.0  # halfway between 90° and 180° spin phase
+    attitude_time = np.array([817561851.0, 817561853.0, 817561855.0, 817561857.0])
+    target_time = 817561854.0  # halfway between 90° and 180° spin phase
 
     with furnish_kernels(kernels):
-        result = transform_to_inertial(
+        inertial_vector, gse_vector, gsm_vector, rtn_vector = transform_to_frames(
             np.radians(spin_phase),
             np.radians(ra),
             np.radians(dec),
-            attitude_time,
-            target_time,
+            et_to_ttj2000ns(attitude_time),
+            et_to_ttj2000ns(target_time),
             mag_vector,
         )
 
+        rot_ecl_to_gse = spiceypy.pxform(
+            SpiceFrame.ECLIPJ2000.name, SpiceFrame.IMAP_GSE.name, target_time
+        )
+        expected_gse = spiceypy.mxv(rot_ecl_to_gse, inertial_vector)
+        rot_ecl_to_gsm = spiceypy.pxform(
+            SpiceFrame.ECLIPJ2000.name, SpiceFrame.IMAP_GSM.name, target_time
+        )
+        expected_gsm = spiceypy.mxv(rot_ecl_to_gsm, inertial_vector)
+        rot_ecl_to_rtn = spiceypy.pxform(
+            SpiceFrame.ECLIPJ2000.name, SpiceFrame.IMAP_RTN.name, target_time
+        )
+        expected_rtn = spiceypy.mxv(rot_ecl_to_rtn, inertial_vector)
+
     # With spin phase halfway between 90 and 180, vector should be pointing at 135.
     expected_vector = np.array([-np.sqrt(2) / 2, np.sqrt(2) / 2, 0.0])
-    np.testing.assert_allclose(result, expected_vector, atol=1e-05)
+    np.testing.assert_allclose(inertial_vector, expected_vector, atol=1e-05)
+    np.testing.assert_allclose(gse_vector, expected_gse, atol=1e-05)
+    np.testing.assert_allclose(gsm_vector, expected_gsm, atol=1e-05)
+    np.testing.assert_allclose(rtn_vector, expected_rtn, atol=1e-05)
