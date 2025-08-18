@@ -18,7 +18,7 @@ from imap_processing.ultra.l1b.lookup_utils import (
     get_ph_corrected,
     get_scattering_coefficients,
     get_y_adjust,
-    pixels_below_fwhm_scattering_threshold,
+    mask_below_fwhm_scattering_threshold,
 )
 
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
@@ -176,7 +176,7 @@ def test_get_scattering_coefficients(ancillary_files):
 
     theta_coeffs, phi_coeffs = get_scattering_coefficients(
         ancillary_files,
-        90,
+        45,
         np.array([47, 43]),
         np.array([43, 42]),
     )
@@ -191,8 +191,8 @@ def test_get_scattering_coefficients(ancillary_files):
 
 
 @pytest.mark.external_test_data
-def test_get_pixels_below_fwhm_scattering_threshold(ancillary_files):
-    """Tests function get_pixels_below_fwhm_scattering_threshold."""
+def test_get_mask_below_fwhm_scattering_threshold(ancillary_files):
+    """Tests function get_mask_below_fwhm_scattering_threshold."""
     energy = 5  # At energy 5, the FWHM threshold is 10
     theta_coeffs = np.array(
         [
@@ -208,11 +208,9 @@ def test_get_pixels_below_fwhm_scattering_threshold(ancillary_files):
             [15, -0.1],  # FWHM value above the threshold (False)
         ]
     )
-    # Only pixels where both the theta and phi coefficients are below the FWHM
+    # Only indices where both the theta and phi coefficients are below the FWHM
     # threshold should be True.
     expected_pixel_mask = np.array([False, True, False])
-    pixel_mask = pixels_below_fwhm_scattering_threshold(
-        theta_coeffs, phi_coeffs, energy
-    )
-    assert pixel_mask.shape == (3,)
+    pixel_mask = mask_below_fwhm_scattering_threshold(theta_coeffs, phi_coeffs, energy)
+    np.testing.assert_array_equal(pixel_mask.shape, (3,))
     np.testing.assert_array_equal(pixel_mask, expected_pixel_mask)
