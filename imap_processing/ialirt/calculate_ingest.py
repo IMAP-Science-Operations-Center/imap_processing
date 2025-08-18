@@ -1,4 +1,4 @@
-"""Packet ingest times for each station."""
+"""Packet ingest and tcp times for each station."""
 
 import logging
 from datetime import datetime, timedelta, timezone
@@ -110,7 +110,7 @@ def packets_created(start_file_creation: datetime, lines: list) -> list:
     Returns
     -------
     packet_times : list
-        List of datetime objects when packets were finalized.
+        List of datetime objects when packets were created.
     """
     packet_times = []
 
@@ -125,7 +125,7 @@ def packets_created(start_file_creation: datetime, lines: list) -> list:
     return packet_times
 
 
-def format_ingest_data(last_filename: str, all_lines: list) -> dict:
+def format_ingest_data(last_filename: str, log_lines: list) -> dict:
     """
     Format TCP connection and packet ingest data from multiple log files.
 
@@ -133,12 +133,12 @@ def format_ingest_data(last_filename: str, all_lines: list) -> dict:
     ----------
     last_filename : str
         Log file that is last chronologically.
-    all_lines : list[str]
+    log_lines : list[str]
         Combined lines from all log files (assumed already sorted by time).
 
     Returns
     -------
-    formatted : dict
+    realtime_summary : dict
         Structured output with TCP connection windows per station
         and global packet ingest timestamps.
 
@@ -173,6 +173,10 @@ def format_ingest_data(last_filename: str, all_lines: list) -> dict:
         ]
       }
     }
+
+    where time_range is the overall time range of the data,
+    packet_ingest contains timestamps when packets were finalized,
+    and tcp contains connection windows for each station.
     """
     # File creation time.
     last_timestamp_str = last_filename.split(".")[2]
@@ -184,7 +188,7 @@ def format_ingest_data(last_filename: str, all_lines: list) -> dict:
         hours=48
     )
 
-    formatted: dict[str, Any] = {
+    realtime_summary: dict[str, Any] = {
         "summary": "I-ALiRT Real-time Ingest Summary",
         "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "time_format": "UTC (ISOC)",
@@ -200,12 +204,16 @@ def format_ingest_data(last_filename: str, all_lines: list) -> dict:
     }
 
     # TCP connection data for each station
-    formatted = find_tcp_connections(start_of_time, end_of_time, all_lines, formatted)
+    realtime_summary = find_tcp_connections(
+        start_of_time, end_of_time, log_lines, realtime_summary
+    )
 
     # Global packet ingest timestamps
-    packet_times = packets_created(start_of_time, all_lines)
-    formatted["packet_ingest"] = [pkt_time.isoformat() for pkt_time in packet_times]
+    packet_times = packets_created(start_of_time, log_lines)
+    realtime_summary["packet_ingest"] = [
+        pkt_time.isoformat() for pkt_time in packet_times
+    ]
 
-    logger.info(f"Created ingest files for {formatted['time_range']}")
+    logger.info(f"Created ingest files for {realtime_summary['time_range']}")
 
-    return formatted
+    return realtime_summary

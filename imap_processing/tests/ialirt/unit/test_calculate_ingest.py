@@ -61,15 +61,15 @@ def test_packets_created():
     ) as f:
         lines = f.readlines()
 
-    test = packets_created(datetime(2025, 7, 31, 16, 33, 39, 0), lines)
+    actual_output = packets_created(datetime(2025, 7, 31, 16, 33, 39, 0), lines)
 
     # 2025/212-16:33:39.186
     time_0 = datetime(2025, 7, 31, 16, 33, 39, 186000)
     # 2025/212-16:34:40.199
     time_1 = datetime(2025, 7, 31, 16, 34, 40, 199000)
 
-    assert test[0] == time_0
-    assert test[1] == time_1
+    assert actual_output[0] == time_0
+    assert actual_output[1] == time_1
 
 
 def test_format_ingest_data():
@@ -124,7 +124,7 @@ def test_format_ingest_data():
 
 
 def test_format_ingest_data_edge_cases():
-    """Test the format_ingest_data_edge_cases function."""
+    """Test the edge cases of the format_ingest_data function."""
 
     # File names for a short 3 hour test window
     filenames = [
