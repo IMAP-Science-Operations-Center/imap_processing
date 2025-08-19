@@ -64,7 +64,7 @@ def calculate_extendedspin(
     first_epochs = filtered_dataset["epoch"].values[first_indices]
 
     # Get the number of pulses per spin.
-    start_per_spin, stop_per_spin, coin_per_spin = get_pulses_per_spin(rates_dataset)
+    pulses = get_pulses_per_spin(rates_dataset)
 
     # These will be the coordinates.
     extendedspin_dict["epoch"] = first_epochs
@@ -76,9 +76,9 @@ def calculate_extendedspin(
     extendedspin_dict["spin_start_time"] = spin_starttime
     extendedspin_dict["spin_period"] = spin_period
     extendedspin_dict["spin_rate"] = spin_rates
-    extendedspin_dict["start_pulses_per_spin"] = start_per_spin
-    extendedspin_dict["stop_pulses_per_spin"] = stop_per_spin
-    extendedspin_dict["coin_pulses_per_spin"] = coin_per_spin
+    extendedspin_dict["start_pulses_per_spin"] = pulses.start_per_spin
+    extendedspin_dict["stop_pulses_per_spin"] = pulses.stop_per_spin
+    extendedspin_dict["coin_pulses_per_spin"] = pulses.coin_per_spin
     # TODO: this will be used to track rejected events in each
     #  spin based on quality flags in de l1b data.
     extendedspin_dict["rejected_events_per_spin"] = np.full_like(
