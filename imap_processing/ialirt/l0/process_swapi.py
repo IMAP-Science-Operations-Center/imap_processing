@@ -94,18 +94,10 @@ def optimize_pseudo_parameters(
     if not energy_passbands:
         # Read in energy passbands
         energy_data = pd.read_csv(
-            f"{imap_module_directory}/tests/swapi/lut/imap_swapi_esa-unit"
-            f"-conversion_20250626_v001.csv"
+            f"{imap_module_directory}/tests/swapi/lut/swapi_ialirt_energy_steps.csv"
         )
-        energy_passbands = (
-            energy_data["Energy"][0:63]
-            .replace(",", "", regex=True)
-            .to_numpy()
-            .astype(float)
-        )
+        energy_passbands = energy_data["Energy [eV/q]"][0:63].to_numpy().astype(float)
 
-    # Initial guess pulled from page 52 of the IMAP SWAPI Instrument Algorithms Document
-    initial_param_guess = np.array([550, 5.27, 1e5])
     solution_dict = {  # type: ignore
         "pseudo_speed": [],
         "pseudo_density": [],
@@ -115,8 +107,16 @@ def optimize_pseudo_parameters(
     for sweep in np.arange(count_rates.shape[0]):
         current_sweep_count_rates = count_rates[sweep, :]
         current_sweep_count_rate_errors = count_rate_error[sweep, :]
-        # Find the max count rate, and use the 6 points surrounding it (inclusive)
+        # Find the max count rate, and use the 5 points surrounding it
         max_index = np.argmax(current_sweep_count_rates)
+        initial_speed_guess = np.sqrt(energy_passbands[max_index]) * Consts.speed_coeff
+        initial_param_guess = np.array(
+            [
+                initial_speed_guess,
+                5 * (400 / initial_speed_guess) ** 2,
+                60000 * (initial_speed_guess / 400) ** 2,
+            ]
+        )
         sol = curve_fit(
             f=count_rate,
             xdata=energy_passbands.take(

@@ -168,26 +168,56 @@ def test_count_rate():
     )
 
 
-@pytest.mark.skip(reason="Differences between scipy versions.")
-def test_optimize_parameters(xarray_data, ialirt_test_data):
+def test_optimize_parameters():
     """Test that the optimize_pseudo_parameters() function works correctly."""
 
-    result = optimize_pseudo_parameters(*ialirt_test_data)
+    # The following files and values are all validation sets provided by the SWAPI team.
+    test_data = {
+        "test_set_1": {
+            "file_name": "ialirt_test_data_u_sw_550_n_sw_5_T_sw_100000_v2.csv",
+            "expected_values": {  # expected output and acceptable tolerance
+                "pseudo_speed": (550, 0.01),
+                "pseudo_density": (5, 0.14),
+                "pseudo_temperature": (1e5, 0.2),
+            },
+        },
+        "test_set_2": {
+            "file_name": "ialirt_test_data_u_sw_650_n_sw_3.0_T_sw_120000_v2.csv",
+            "expected_values": {  # expected output and acceptable tolerance
+                "pseudo_speed": (650, 0.01),
+                "pseudo_density": (3, 0.3),
+                "pseudo_temperature": (1.2e5, 0.28),
+            },
+        },
+        "test_set_3": {
+            "file_name": "ialirt_test_data_u_sw_400_n_sw_6.0_T_sw_80000_v2.csv",
+            "expected_values": {  # expected output and acceptable tolerance
+                "pseudo_speed": (400, 0.01),
+                "pseudo_density": (6, 0.39),
+                "pseudo_temperature": (8e4, 0.15),
+            },
+        },
+    }
 
-    # Test output corresponding to this exact set of test inputs.
-    expected_speed = [550.2067500045512, 550.2067500045512]
-    expected_density = [15.964441588773008, 15.964441588773008]
-    expected_temperature = [101695.2160638631, 101695.2160638631]
+    for test_set in test_data:
+        energy_data = pd.read_csv(
+            f"{imap_module_directory}/tests/ialirt/data/l0/"
+            f"{test_data[test_set]['file_name']}",
+        )
+        count_rates = energy_data["Count Rates [Hz]"].to_numpy()
+        count_rates[0] = 0.0
+        count_rates = np.tile(count_rates, (2, 1))
+        count_rates_errors = energy_data["Count Rates Error [Hz]"].to_numpy()
+        count_rates_errors = np.tile(count_rates_errors, (2, 1))
 
-    assert np.allclose(result["pseudo_speed"], expected_speed, rtol=0.01), (
-        "Pseudo speed did not match the expected result."
-    )
-    assert np.allclose(result["pseudo_density"], expected_density, rtol=0.01), (
-        "Pseudo density did not match the expected result."
-    )
-    assert np.allclose(result["pseudo_temperature"], expected_temperature, rtol=0.01), (
-        "Pseudo temperature did not match the expected result."
-    )
+        result = optimize_pseudo_parameters(count_rates, count_rates_errors)
+
+        for param in test_data[test_set]["expected_values"]:
+            assert np.allclose(
+                result[param][0],
+                test_data[test_set]["expected_values"][param][0],
+                rtol=test_data[test_set]["expected_values"][param][1],
+            ), f"{param} did not match the expected result within the tolerance."
 
 
 @pytest.mark.external_test_data
