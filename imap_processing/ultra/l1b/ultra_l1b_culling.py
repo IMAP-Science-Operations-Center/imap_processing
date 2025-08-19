@@ -1,6 +1,7 @@
 """Culls Events for ULTRA L1b."""
 
 import logging
+from collections import namedtuple
 
 import numpy as np
 import pandas as pd
@@ -20,6 +21,18 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 SPIN_DURATION = 15  # Default spin duration in seconds.
+
+RateResult = namedtuple(
+    "RateResult",
+    [
+        "start_per_spin",
+        "stop_per_spin",
+        "coin_per_spin",
+        "start_pulses",
+        "stop_pulses",
+        "coin_pulses",
+    ],
+)
 
 
 def get_energy_histogram(
@@ -394,7 +407,7 @@ def get_spin_and_duration(met: NDArray, spin: NDArray) -> tuple[NDArray, NDArray
     return assigned_spin_number, assigned_duration
 
 
-def get_pulses_per_spin(rates: xr.Dataset) -> tuple[NDArray, NDArray, NDArray]:
+def get_pulses_per_spin(rates: xr.Dataset) -> RateResult:
     """
     Get the total number of pulses per spin.
 
@@ -411,6 +424,12 @@ def get_pulses_per_spin(rates: xr.Dataset) -> tuple[NDArray, NDArray, NDArray]:
         Total stop pulses per spin.
     coin_per_spin : NDArray
         Total coincidence pulses per spin.
+    start_pulses : NDArray
+        Total start pulses.
+    stop_pulses : NDArray
+        Total stop pulses.
+    coin_pulses : NDArray
+        Total coincidence pulses.
     """
     spin_number, duration = get_spin_and_duration(rates["shcoarse"], rates["spin"])
 
@@ -448,4 +467,11 @@ def get_pulses_per_spin(rates: xr.Dataset) -> tuple[NDArray, NDArray, NDArray]:
     stop_per_spin = np.bincount(spin_idx, weights=stop_pulses)
     coin_per_spin = np.bincount(spin_idx, weights=coin_pulses)
 
-    return start_per_spin, stop_per_spin, coin_per_spin
+    return RateResult(
+        start_per_spin=start_per_spin,
+        stop_per_spin=stop_per_spin,
+        coin_per_spin=coin_per_spin,
+        start_pulses=start_pulses,
+        stop_pulses=stop_pulses,
+        coin_pulses=coin_pulses,
+    )
