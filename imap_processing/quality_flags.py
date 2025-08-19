@@ -80,6 +80,7 @@ class ImapScatteringUltraFlags(FlagNameMixin):
 
     NONE = CommonFlags.NONE
     ABOVE_THRESHOLD = 2**0  # bit 0
+    NAN_PHI_OR_THETA = 2**1  # bit 1
 
 
 class ImapInstrumentUltraFlags(FlagNameMixin):

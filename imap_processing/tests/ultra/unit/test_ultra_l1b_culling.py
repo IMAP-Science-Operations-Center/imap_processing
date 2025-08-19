@@ -18,6 +18,7 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     flag_hk,
     flag_imap_instruments,
     flag_rates,
+    flag_scattering,
     get_energy_histogram,
     get_n_sigma,
     get_pulses_per_spin,
@@ -238,3 +239,15 @@ def test_get_pulses(rates_l1_test_path, use_fake_spin_data_for_time):
     np.testing.assert_allclose(pulses.start_pulses, start_pulses_total)
     np.testing.assert_allclose(pulses.stop_pulses, stop_pulses_total)
     np.testing.assert_allclose(pulses.coin_pulses, coin_pulses_total)
+
+
+@pytest.mark.external_test_data
+def test_flag_scattering(ancillary_files):
+    """Tests 2, 2, 2, 2, 2, 2, 2 function."""
+    tof_energy = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9])
+    theta = np.array([1, 2, 50, 50, 50, 60, 70, 80, 90])
+    phi = np.array([10, 20, 30, 40, 50, 60, 70, 80, 90])
+
+    quality_flags = flag_scattering(tof_energy, theta, phi, ancillary_files, "ultra45")
+
+    assert np.all(quality_flags == np.array([1, 1, 2, 2, 2, 2, 2, 2, 2]))
