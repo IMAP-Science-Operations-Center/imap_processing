@@ -4,7 +4,7 @@ default_attrs: &default
   # Assumed values for all variable attrs unless overwritten
   DEPEND_0: epoch
   DISPLAY_TYPE: time_series
-  FILLVAL: -1e31
+  FILLVAL: -1.0e+31
   FORMAT: I12
   VALIDMIN: -9223372036854775808
   VALIDMAX: 9223372036854775807
