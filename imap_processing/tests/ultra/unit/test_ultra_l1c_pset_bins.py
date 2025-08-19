@@ -12,6 +12,7 @@ from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c import ultra_l1c_pset_bins
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
+    calculate_background_rates,
     get_deadtime_interpolator,
     get_deadtime_ratios,
     get_energy_delta_minus_plus,
@@ -385,3 +386,46 @@ def test_get_helio_sensitivity(monkeypatch, imap_ena_sim_metakernel):
     flat_helio = np.nansum(helio_sensitivity, axis=0)
 
     np.testing.assert_allclose(flat_sc, flat_helio, atol=1e-5)
+
+
+def test_calculate_background_rates(
+    rates_l1_test_path, use_fake_spin_data_for_time, ancillary_files
+):
+    "Tests calculate_background_rates function."
+
+    df = pd.read_csv(rates_l1_test_path)
+
+    # Simulate a spin table from MET = 0 to MET = 141 * 15 seconds
+    use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
+
+    rates = {
+        # Stop pulses
+        "stop_tn": df["StopTopNorthCFD"],
+        "stop_bn": df["StopBottomNorthCFD"],
+        "stop_te": df["StopTopEastCFD"],
+        "stop_be": df["StopBottomEastCFD"],
+        "stop_ts": df["StopTopSouthCFD"],
+        "stop_bs": df["StopBottomSouthCFD"],
+        "stop_tw": df["StopTopWestCFD"],
+        "stop_bw": df["StopBottomWestCFD"],
+        # Start pulses
+        "start_rf": df["StartRightFullCFD"],
+        "start_lf": df["StartLeftFullCFD"],
+        # Coincidence pulses
+        "coin_tn": df["CoinTopNorthCFD"],
+        "coin_bn": df["CoinBottomNorthCFD"],
+        "coin_ts": df["CoinTopSouthCFD"],
+        "coin_bs": df["CoinBottomSouthCFD"],
+        # Additional info
+        "shcoarse": df["TimeTag"],
+        "spin": df["Spin"],
+    }
+    energy_bin_edges, _, _ = build_energy_bins()
+    cullingmask_spin_number = np.array([130, 131])
+
+    background_rates = calculate_background_rates(
+        rates, "ultra45", ancillary_files, energy_bin_edges, cullingmask_spin_number
+    )
+
+    assert background_rates.shape == (len(energy_bin_edges), hp.nside2npix(128))
+    assert np.allclose(background_rates[0, :], np.full((196608,), 6.37052558e-11))
