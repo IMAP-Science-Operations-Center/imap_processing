@@ -697,7 +697,9 @@ class HistogramL1B:
     imap_time_offset: np.double  # No conversion needed from l1a->l1b
     glows_start_time: np.double  # No conversion needed from l1a->l1b
     glows_time_offset: np.double  # No conversion needed from l1a->l1b
-    unique_block_identifier: str = field(init=False)
+    # unique_block_identifier: str = field(
+    #     init=False
+    # )  # Could be datetime TODO: Can't put a string in data
     imap_spin_angle_bin_cntr: np.ndarray = field(init=False)  # Same size as bins
     histogram_flag_array: np.ndarray = field(init=False)
     spin_period_ground_average: np.double = field(init=False)  # retrieved from SPICE?
@@ -803,9 +805,9 @@ class HistogramL1B:
         # is_inside_excluded_region, is_excluded_by_instr_team,
         # is_suspected_transient] x 3600 bins
         self.histogram_flag_array = self._compute_histogram_flag_array(day_exclusions)
-        # Generate ISO datetime string using SPICE functions
-        datetime64_time = met_to_datetime64(self.imap_start_time)
-        self.unique_block_identifier = np.datetime_as_string(datetime64_time, "s")
+        # self.unique_block_identifier = np.datetime_as_string(
+        #     np.datetime64(int(self.imap_start_time), "ns"), "s"
+        # )
         self.flags = np.ones((FLAG_LENGTH,), dtype=np.uint8)
 
     def output_data(self) -> tuple:

@@ -45,8 +45,8 @@ def mag_l1d(  # noqa: PLR0912
     input_mago_burst = None
     for dataset in science_data:
         source = dataset.attrs.get("Logical_source", "")
-        instrument_mode = source.split("_")[-1]
-        match instrument_mode:
+        ins_mode = source.split("_")[-1]
+        match ins_mode:
             case "norm-magi":
                 input_magi_norm = dataset
             case "norm-mago":

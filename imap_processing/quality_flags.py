@@ -123,9 +123,3 @@ class SWAPIFlags(
     SCEM_V_ST = 2**12  # bit 12
     SCEM_I_ST = 2**13  # bit 13
     SCEM_INT_ST = 2**14  # bit 14
-
-
-class GLOWSL1bFlags(FlagNameMixin):
-    """Glows L1b flags."""
-
-    NONE = CommonFlags.NONE
