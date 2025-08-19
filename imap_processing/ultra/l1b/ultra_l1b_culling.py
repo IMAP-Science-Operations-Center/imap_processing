@@ -492,7 +492,7 @@ def flag_scattering(
     Parameters
     ----------
     tof_energy : NDArray
-        Energy bins in keV.
+        TOF energy for each event in keV.
     theta : NDArray
         Elevation angles in degrees.
     phi : NDArray
@@ -507,19 +507,24 @@ def flag_scattering(
     )
 
     scattering_thresholds = UltraConstants.ULTRA_FWHM_SCATTERING_CULLING_THRESHOLDS
+    # TODO: add exceed energy range flag.
 
-    for i, (e_min, e_max) in enumerate(scattering_thresholds):
+    for (e_min, e_max), threshold in scattering_thresholds.items():
         event_mask = (tof_energy >= e_min) & (tof_energy < e_max)
+        # Input the theta and phi values for the current energy range.
+        # Returns a_theta_val, g_theta_val, a_phi_val, g_phi_val
         theta_coeffs, phi_coeffs = get_scattering_coefficients(
             ancillary_files, sensor[-2:], theta[event_mask], phi[event_mask]
         )
-        fwhm_theta = theta_coeffs[:, 0] * tof_energy ** theta_coeffs[:, 1]
-        fwhm_phi = phi_coeffs[:, 0] * tof_energy ** phi_coeffs[:, 1]
+        fwhm_theta = theta_coeffs[:, 0] * tof_energy[event_mask] ** theta_coeffs[:, 1]
+        fwhm_phi = phi_coeffs[:, 0] * tof_energy[event_mask] ** phi_coeffs[:, 1]
+        # Add a NaN flag here.
 
-        np.logical_and(
-            fwhm_theta <= scattering_thresholds[i], fwhm_phi <= scattering_thresholds[i]
-        )
+        theta_exceeds = fwhm_theta > threshold
+        phi_exceeds = fwhm_phi > threshold
+        either_exceeds = theta_exceeds | phi_exceeds
 
-        quality_flags[event_mask] |= ImapScatteringUltraFlags.FWHM_SCATTERING.value
+        # Only set flags for events where either theta or phi FWHM exceed the threshold
+        quality_flags[np.where(event_mask)[0][either_exceeds]] |= ImapScatteringUltraFlags.ABOVE_THRESHOLD.value
 
     return quality_flags
