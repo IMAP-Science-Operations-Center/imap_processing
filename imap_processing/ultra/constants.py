@@ -134,7 +134,7 @@ class UltraConstants:
     # The tuple represents the energy range (min, max) in keV, and the value is the
     # FWHM scattering threshold in degrees.
     ULTRA_FWHM_SCATTERING_CULLING_THRESHOLDS: ClassVar[dict] = {
-        (1, 5): 12,
+        (0, 5): 12,
         (5, 8): 10,
         (8, 10): 8,
         (10, 20): 6,

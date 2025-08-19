@@ -384,17 +384,55 @@ def mask_below_fwhm_scattering_threshold(
     """
     scattering_thresholds = UltraConstants.ULTRA_FWHM_SCATTERING_CULLING_THRESHOLDS
     # Calculate FWHM for theta and phi
-    fwhm_theta = theta_coeffs[:, 0] * energy ** theta_coeffs[:, 1]
-    fwhm_phi = phi_coeffs[:, 0] * energy ** phi_coeffs[:, 1]
+    fwhm_theta = theta_coeffs[..., 0] * energy ** theta_coeffs[..., 1]
+    fwhm_phi = phi_coeffs[..., 0] * energy ** phi_coeffs[..., 1]
 
-    # Get the scattering threshold based on the energy
-    threshold = next(
-        threshold
-        for energy_range, threshold in scattering_thresholds.items()
-        if energy_range[0] <= energy < energy_range[1]
-    )
+    try:
+        # Get the scattering threshold based on the energy
+        threshold = next(
+            threshold
+            for energy_range, threshold in scattering_thresholds.items()
+            if energy_range[0] <= energy < energy_range[1]
+        )
+    except StopIteration as e:
+        raise ValueError(
+            f"Energy {energy} keV is out of bounds for scattering thresholds."
+        ) from e
     # Combine conditions for both theta and phi
     return np.logical_and(fwhm_theta <= threshold, fwhm_phi <= threshold)
+
+
+def get_nominal_fov_by_spin_phase(
+    ancillary_files: dict, instrument_id: int
+) -> tuple[NDArray, NDArray, NDArray]:
+    """
+    Get indices of pixels in the nominal FOV as a function of spin phase.
+
+    This function also returns the theta / phi values in the instrument frame and
+    right ascension / declination values in the IMAP frame.
+
+    Parameters
+    ----------
+    ancillary_files : dict[Path]
+        Ancillary files.
+    instrument_id : int
+        Instrument ID, either 45 or 90.
+
+    Returns
+    -------
+    tuple
+        Scattering a and g values corresponding to the given theta and phi values.
+    """
+    # descriptor = f"l1b-{instrument_id}sensor-scattering-calibration"
+    filename = "/Users/luco3133/projects/ultra_stuff/exp_index_test.csv"
+
+    calibration_data = pd.read_csv(filename, header=None, skiprows=1).to_numpy(
+        dtype=float
+    )
+    ra_and_dec = calibration_data[:, :2]
+    theta_and_phi = np.random.randint(-60, 60, size=ra_and_dec.shape)
+    fov_indices_by_spin_phase = calibration_data[:, 2:].astype(bool)
+    return fov_indices_by_spin_phase, theta_and_phi, ra_and_dec
 
 
 def is_inside_fov(phi: np.ndarray, theta: np.ndarray) -> np.ndarray:

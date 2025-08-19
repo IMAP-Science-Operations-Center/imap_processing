@@ -82,7 +82,7 @@ def calculate_spacecraft_pset(
     df_exposure = pd.read_csv(constant_exposure)
 
     exposure_pointing = get_spacecraft_exposure_times(
-        df_exposure, rates_dataset, params_dataset, instrument_id
+        df_exposure, rates_dataset, params_dataset, instrument_id, ancillary_files
     )
 
     # For ISTP, epoch should be the center of the time bin.

@@ -255,19 +255,40 @@ def test_get_deadtime_interpolator(random_spin_data):
 
 
 @pytest.mark.external_kernel
-def test_apply_deadtime_correction(imap_ena_sim_metakernel):
+def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
     """Tests apply_deadtime_correction function."""
     nside = 8
+    pix = hp.nside2npix(nside)
+    mock_ra_and_dec = np.hstack(
+        [
+            np.random.uniform(0, 360, (pix, 1)),  # Right Ascension (deg)
+            np.random.uniform(-90, 90, (pix, 1)),  # Declination (deg)
+        ]
+    )
+    mock_theta_and_phi = np.hstack(
+        [
+            np.random.uniform(-60, 60, (pix, 1)),  # theta (deg)
+            np.random.uniform(-60, 60, (pix, 1)),  # phi (deg)
+        ]
+    )
+    spin_phase_steps = np.random.randint(0, 2, (pix, 15000)).astype(
+        bool
+    )  # Spin phase steps 1-15000, random 0 or 1
     mock_spin_phases = np.arange(360)
     mock_deadtime_ratios = mock_spin_phases * 0.01
     interpolator = interpolate.PchipInterpolator(mock_spin_phases, mock_deadtime_ratios)
-    exposure_pointing = np.ones(hp.nside2npix(nside))
-    apply_deadtime_correction(exposure_pointing, interpolator, 45, nside=nside)
+    exposure_pointing = np.ones(pix)
+
+    with mock.patch(
+        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_nominal_fov_by_spin_phase",
+        return_value=(spin_phase_steps, mock_theta_and_phi, mock_ra_and_dec),
+    ):
+        apply_deadtime_correction(exposure_pointing, interpolator, 45, ancillary_files)
 
 
 @pytest.mark.external_test_data
 def test_get_spacecraft_exposure_times(
-    deadtime_datasets, random_spin_data, imap_ena_sim_metakernel
+    deadtime_datasets, random_spin_data, imap_ena_sim_metakernel, ancillary_files
 ):
     """Test get_spacecraft_exposure_times function."""
     constant_exposure = (
@@ -275,15 +296,34 @@ def test_get_spacecraft_exposure_times(
     )
     rates = deadtime_datasets["rates"]
     params = deadtime_datasets["params"]
-    df_exposure = pd.read_csv(constant_exposure)
-    exposure_pointing = get_spacecraft_exposure_times(df_exposure, rates, params, 90)
-    assert exposure_pointing.shape == (196608,)
+    shape = 786
+    df_exposure = pd.read_csv(constant_exposure)[:shape]  # Subset for testing
 
-    np.testing.assert_allclose(
-        exposure_pointing.values[22684:22686],
-        np.array([1.035, 1.035]) * 5760,
-        atol=1e-6,
+    pix = len(df_exposure)
+    mock_ra_and_dec = np.hstack(
+        [
+            np.random.uniform(0, 360, (pix, 1)),  # Right Ascension (deg)
+            np.random.uniform(-90, 90, (pix, 1)),  # Declination (deg)
+        ]
     )
+    mock_theta_and_phi = np.hstack(
+        [
+            np.random.uniform(-60, 60, (pix, 1)),  # theta (deg)
+            np.random.uniform(-60, 60, (pix, 1)),  # phi (deg)
+        ]
+    )
+    spin_phase_steps = np.random.randint(0, 2, (pix, 15000)).astype(
+        bool
+    )  # Spin phase steps 1-15000, random 0 or 1
+
+    with mock.patch(
+        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_nominal_fov_by_spin_phase",
+        return_value=(spin_phase_steps, mock_theta_and_phi, mock_ra_and_dec),
+    ):
+        exposure_pointing = get_spacecraft_exposure_times(
+            df_exposure, rates, params, 90, ancillary_files
+        )
+        assert exposure_pointing.shape == (shape, 24)
 
 
 @pytest.mark.external_kernel

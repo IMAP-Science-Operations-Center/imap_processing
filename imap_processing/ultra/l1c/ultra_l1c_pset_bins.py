@@ -12,12 +12,15 @@ from scipy.interpolate import PchipInterpolator, interp1d
 from imap_processing.spice.geometry import (
     SpiceFrame,
     cartesian_to_spherical,
-    frame_transform,
     imap_state,
 )
 from imap_processing.spice.spin import get_spacecraft_spin_phase, get_spin_angle
 from imap_processing.ultra.constants import UltraConstants
-from imap_processing.ultra.l1b.lookup_utils import is_inside_fov
+from imap_processing.ultra.l1b.lookup_utils import (
+    get_nominal_fov_by_spin_phase,
+    get_scattering_coefficients,
+    mask_below_fwhm_scattering_threshold,
+)
 
 # TODO: add species binning.
 FILLVAL_FLOAT32 = -1.0e31
@@ -358,166 +361,73 @@ def get_deadtime_interpolator(
     )
 
 
-def compute_instrument_frame_az_and_el(vecs: NDArray) -> tuple[NDArray, NDArray]:
-    """
-    Compute azimuth and elevation angles in the instrument frame.
-
-    Parameters
-    ----------
-    vecs : NDArray
-        Unit vectors in the instrument frame, shape (N, 3) or (N, boundary_vecs, 3).
-
-    Returns
-    -------
-    tuple(numpy.ndarray, numpy.ndarray)
-        Theta and phi angles in the instrument frame.
-    """
-    # convert to theta, phi
-    d = 1  # TODO calculate correct d
-    r = np.sqrt(vecs[..., 0] ** 2 + vecs[..., 1] ** 2 + d**2)
-
-    # Calculate phi
-    phi = np.arctan(vecs[..., 2] / d)
-    # Calculate theta
-    theta = np.arcsin(vecs[..., 0] / r)
-    return theta, phi
-
-
-def compute_boundary_scale_factor(theta: np.ndarray, phi: np.ndarray) -> np.ndarray:
-    """
-    Compute the scale factors using the boundary and center pixel vectors.
-
-    This weighting attempts to approximate how much of the FOV is in a pixel and will
-    be used to correct the exposure time.
-
-    Parameters
-    ----------
-    theta : np.ndarray
-        Azimuth angles of the boundary vectors in the instrument frame.
-        Shape = (n, boundary_pix + 1). Plus one for the center pixel.
-    phi : np.ndarray
-        Elevation angles of the boundary vectors in the instrument frame.
-        Shape = (n, boundary_pix + 1) Plus one for the center pixel.
-
-    Returns
-    -------
-    numpy.array
-        Scale factor for each pixel, shape = (n,).
-    """
-    # Get boundary vectors + center pixel that are inside the FOV
-    inside_fov = is_inside_fov(theta, phi)  # Shape (n, boundary_pix + 1)
-    # For each pixel, return the number that are inside the FOV over
-    # the total number of vectors.
-    return np.count_nonzero(inside_fov, axis=-1) / theta.shape[-1]
-
-
 def apply_deadtime_correction(
-    exposure_pointing: np.ndarray,
+    exposure_pointing: pandas.DataFrame,
     deadtime_interpolator: PchipInterpolator,
     instrument_id: int,
-    nside: int = 128,
-    nested: bool = False,
-    boundary_pix: int = 8,
+    ancillary_files: dict,
 ) -> np.ndarray:
     """
     Adjust the exposure time at each pixel to account for dead time.
 
     Parameters
     ----------
-    exposure_pointing : np.ndarray
-        Total exposure times of pixels in a Healpix tessellation of the sky in the
-        pointing (dps) frame.
+    exposure_pointing : pandas.DataFrame
+        Exposure data.
     deadtime_interpolator : PchipInterpolator
         Interpolating function for dead time ratios.
     instrument_id : int,
         Instrument ID, either 45 or 90.
-    nside : int, optional
-        HEALPix NSIDE resolution. Default is 128.
-    nested : bool, optional
-        Whether to use NESTED indexing.
-    boundary_pix : int, optional
-        Number of boundary pixels to consider for each HEALPix pixel.
+    ancillary_files : dict
+        Dictionary containing ancillary files.
 
     Returns
     -------
     exposure_pointing_adjusted : np.ndarray
         Adjusted exposure times accounting for dead time.
     """
-    # Get the correct instrument frame
-    instrument_frame = (
-        SpiceFrame.IMAP_ULTRA_45 if instrument_id == 45 else SpiceFrame.IMAP_ULTRA_90
+    # Get lookup table for FOV indices by spin phase
+    fov_indices_by_spin_phase, theta_and_phi, ra_and_dec = (
+        get_nominal_fov_by_spin_phase(ancillary_files, instrument_id)
     )
     # Get energy bin geometric means
     energy_bin_geometric_means = build_energy_bins()[2]
-    # Get pixel unit vectors pointing from the center of the
-    # HEALPix sphere to the center of each pixel on the sky.
-    npix = hp.nside2npix(nside)
-    pixel_vecs = np.column_stack(
-        hp.pix2vec(nside, np.arange(npix), nest=nested)
-    )  # shape: (npix, 3)
-
-    # boundary_step = boundary_pix / 4
-    # boundary_vecs = np.stack(
-    #     [
-    #         hp.boundaries(nside, px, nest=nested, step=boundary_step).T
-    #         for px in range(npix)
-    #     ]
-    # )  # shape: (npix, boundary_pix, 3)
-
+    # Exposure time should now be of shape (npix, energy)
+    exposure_pointing = np.repeat(
+        exposure_pointing.to_numpy()[:, np.newaxis],
+        len(energy_bin_geometric_means),
+        axis=1,
+    )
+    steps = fov_indices_by_spin_phase.shape[1]
     # nominal amount the spacecraft would have spun in 1 ms
-    nominal_ms_spin = 360 / (15 * 1000)
-
-    # Starting at Spin-Phase = 0, and incrementing in fine steps (1 ms), spin the
+    nominal_ms_spin = 360 / steps
+    # Using the lookup table, get the indices of the pixels inside the FOV at the
+    # current spin phase step.
+    theta = theta_and_phi[:, 0]
+    phi = theta_and_phi[:, 1]
+    theta_coeffs, phi_coeffs = get_scattering_coefficients(
+        ancillary_files, instrument_id, theta, phi
+    )
+    # Starting at Spin-phase = 0, and incrementing in fine steps (1 ms), spin the
     # spacecraft in the despun frame. At each iteration, query the dead-time ratio
     # from the function previously built and apply the nominal exposure time
-    et = 798052670.0  # TODO get spin phase 0 time
-    for spin_phase in np.arange(0, 360, nominal_ms_spin):
-        # Get the vectors in the instrument frame
-        pixel_vecs_inst = frame_transform(
-            et=et,
-            position=pixel_vecs,
-            from_frame=SpiceFrame.ECLIPJ2000,
-            to_frame=instrument_frame,
-        )
-        # boundary_vecs_inst = frame_transform(
-        #     et=et,
-        #     position=boundary_vecs,
-        #     from_frame=SpiceFrame.ECLIPJ2000,
-        #     to_frame=instrument_frame,
-        # )
-        # Get Theta/Phi in the instrument frame
-        theta, phi = compute_instrument_frame_az_and_el(pixel_vecs_inst)
-        # Get mask for pixels in the FOR
-        inside_fov = is_inside_fov(phi, theta)
-        # theta_in_fov = theta[inside_fov]
-        # phi_in_fov = phi[inside_fov]
-        # boundary_theta, boundary_phi = compute_instrument_frame_az_and_el(
-        #     boundary_vecs_inst[inside_fov]
-        # )
-        # boundary_scale_factor = compute_boundary_scale_factor(
-        #     np.hstack((boundary_theta, theta_in_fov[:, np.newaxis])),
-        #     np.hstack((boundary_phi, phi_in_fov[:, np.newaxis])),
-        # )
-        if any(inside_fov):
-            for energy in energy_bin_geometric_means:
-                # TODO compute scattering FWHM_Phi & FWHM_Theta
+    for i in range(steps):
+        # Calculate spin phase for the current iteration
+        spin_phase = np.arange(0, 360, steps)
+        fov_inds = fov_indices_by_spin_phase[:, i]
+        for energy_idx in range(len(energy_bin_geometric_means)):
+            # Get a mask for pixels below the FWHM scattering threshold
+            energy = int(energy_bin_geometric_means[energy_idx])
+            scattering_mask = mask_below_fwhm_scattering_threshold(
+                theta_coeffs[fov_inds], phi_coeffs[fov_inds], energy
+            )
+            deadtime_ratio = deadtime_interpolator(spin_phase)
 
-                # fwhm_phi = get
-                # fwhm_theta = theta
-                # If either Phi FWHM or Theta FWHM > the scattering requirements do not
-                # include
-                # the instrument frame pixel at the current spin phase
-                # TODO uncomment and replace thresholds
-                # if fwhm_phi > 10 or fwhm_theta > 10:
-                #     continue
-                deadtime_ratio = deadtime_interpolator(spin_phase) * energy
-
-                # Apply the nominal exposure time (1 ms) to every pixel in the FOR,
-                # scaled by the deadtime ratio
-                exposure_pointing[inside_fov] += nominal_ms_spin * deadtime_ratio
-                # print("Spin Phase: ", spin_phase, "Deadtime Ratio: ", deadtime_ratio,)
-                # increment time by 1ms
-                et = et + 0.001
+            # Apply the nominal exposure time (1 ms) to every pixel in the FOR,
+            # scaled by the deadtime ratio
+            exposure_pointing[fov_inds][scattering_mask, energy_idx] += (
+                nominal_ms_spin * deadtime_ratio
+            )
 
     return exposure_pointing
 
@@ -527,6 +437,7 @@ def get_spacecraft_exposure_times(
     rates_dataset: xr.Dataset,
     params_dataset: xr.Dataset,
     instrument_id: int,
+    ancillary_files: dict,
 ) -> NDArray:
     """
     Compute exposure times for HEALPix pixels.
@@ -541,6 +452,8 @@ def get_spacecraft_exposure_times(
         Dataset containing image parameters data.
     instrument_id : int
         Instrument ID, either 45 or 90.
+    ancillary_files : dict
+        Dictionary containing ancillary files.
 
     Returns
     -------
@@ -559,9 +472,8 @@ def get_spacecraft_exposure_times(
     exposure_pointing = (
         constant_exposure["Exposure Time"] * 5760
     )  # 5760 spins per pointing (for now)
-
     exposure_pointing_adjusted = apply_deadtime_correction(
-        exposure_pointing, deadtime_interpolator, instrument_id
+        exposure_pointing, deadtime_interpolator, instrument_id, ancillary_files
     )
     return exposure_pointing_adjusted
 
