@@ -180,8 +180,8 @@ def test_calculate_spacecraft_pset_with_cdf(
         "imap_ultra_l1b_45sensor-de": dataset,
         "imap_ultra_l1b_45sensor-extendedspin": xr.Dataset(),  # placeholder
         "imap_ultra_l1b_45sensor-cullingmask": xr.Dataset(),  # placeholder
-        "imap_ultra_45sensor-rates": deadtime_datasets["rates"],
-        "imap_ultra_45sensor-params": deadtime_datasets["params"],
+        "imap_ultra_l1a_45sensor-rates": deadtime_datasets["rates"],
+        "imap_ultra_l1a_45sensor-params": deadtime_datasets["params"],
     }
 
     path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
