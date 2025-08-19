@@ -107,7 +107,7 @@ compression_flags_attrs:
 
 generated_flag_attrs:
   <<: *default
-  CATDESC: Data has been downsampled and interpolated from higher frequency measurements
+  CATDESC: Flag indicating data has been downsampled and interpolated from higher frequency measurements
   FIELDNAM: Generated Flag
   LABLAXIS: Generated Flag
   FILLVAL: 255
