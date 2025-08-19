@@ -106,7 +106,7 @@ compression_flags_attrs:
   DISPLAY_TYPE: no_plot
 
 generated_flag_attrs:
-  <<: *default
+  <<: *support_default
   CATDESC: Flag indicating data has been downsampled and interpolated from higher frequency measurements
   FIELDNAM: Generated Flag
   LABLAXIS: Generated Flag
