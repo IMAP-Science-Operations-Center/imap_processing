@@ -423,6 +423,7 @@ def get_nominal_fov_by_spin_phase(
     tuple
         Scattering a and g values corresponding to the given theta and phi values.
     """
+    # TODO replace with actual lookup table when available.
     # descriptor = f"l1b-{instrument_id}sensor-scattering-calibration"
     filename = "/Users/luco3133/projects/ultra_stuff/exp_index_test.csv"
 

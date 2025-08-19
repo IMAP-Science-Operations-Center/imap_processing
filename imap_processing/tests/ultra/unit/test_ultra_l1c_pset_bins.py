@@ -284,6 +284,7 @@ def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
         return_value=(spin_phase_steps, mock_theta_and_phi, mock_ra_and_dec),
     ):
         apply_deadtime_correction(exposure_pointing, interpolator, 45, ancillary_files)
+        # TODO check shapes and values
 
 
 @pytest.mark.external_test_data
