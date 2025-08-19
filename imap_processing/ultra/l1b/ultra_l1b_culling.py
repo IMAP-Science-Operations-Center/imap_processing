@@ -13,9 +13,13 @@ from imap_processing.quality_flags import (
     ImapHkUltraFlags,
     ImapInstrumentUltraFlags,
     ImapRatesUltraFlags,
+    ImapScatteringUltraFlags,
 )
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
+from imap_processing.ultra.l1b.lookup_utils import (
+    get_scattering_coefficients,
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -475,3 +479,47 @@ def get_pulses_per_spin(rates: xr.Dataset) -> RateResult:
         stop_pulses=stop_pulses,
         coin_pulses=coin_pulses,
     )
+
+
+def flag_scattering(
+    tof_energy: NDArray,
+    theta: NDArray,
+    phi: NDArray,
+    ancillary_files: dict,
+    sensor: str,
+):
+    """
+    Parameters
+    ----------
+    tof_energy : NDArray
+        Energy bins in keV.
+    theta : NDArray
+        Elevation angles in degrees.
+    phi : NDArray
+        Azimuth angles in degrees.
+    ancillary_files : dict[Path]
+        Ancillary files.
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
+    """
+    quality_flags = np.full(
+        phi.shape, ImapScatteringUltraFlags.NONE.value, dtype=np.uint16
+    )
+
+    scattering_thresholds = UltraConstants.ULTRA_FWHM_SCATTERING_CULLING_THRESHOLDS
+
+    for i, (e_min, e_max) in enumerate(scattering_thresholds):
+        event_mask = (tof_energy >= e_min) & (tof_energy < e_max)
+        theta_coeffs, phi_coeffs = get_scattering_coefficients(
+            ancillary_files, sensor[-2:], theta[event_mask], phi[event_mask]
+        )
+        fwhm_theta = theta_coeffs[:, 0] * tof_energy ** theta_coeffs[:, 1]
+        fwhm_phi = phi_coeffs[:, 0] * tof_energy ** phi_coeffs[:, 1]
+
+        np.logical_and(
+            fwhm_theta <= scattering_thresholds[i], fwhm_phi <= scattering_thresholds[i]
+        )
+
+        quality_flags[event_mask] |= ImapScatteringUltraFlags.FWHM_SCATTERING.value
+
+    return quality_flags

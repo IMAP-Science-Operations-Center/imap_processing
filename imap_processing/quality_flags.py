@@ -75,6 +75,13 @@ class ImapRatesUltraFlags(FlagNameMixin):
     PARTIALSPIN = 2**2  # bit 2
 
 
+class ImapScatteringUltraFlags(FlagNameMixin):
+    """IMAP Ultra Scattering flags."""
+
+    NONE = CommonFlags.NONE
+    ABOVE_THRESHOLD = 2**0  # bit 0
+
+
 class ImapInstrumentUltraFlags(FlagNameMixin):
     """IMAP Ultra flags using other instruments."""
 
