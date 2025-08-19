@@ -197,8 +197,8 @@ def process_histogram(
         "spacecraft_location_std_dev": ["ecliptic"],
         "spacecraft_velocity_average": ["ecliptic"],
         "spacecraft_velocity_std_dev": ["ecliptic"],
-        "spin_axis_orientation_average": ["ecliptic"],
-        "spin_axis_orientation_std_dev": ["ecliptic"],
+        "spin_axis_orientation_average": ["latitudinal"],
+        "spin_axis_orientation_std_dev": ["latitudinal"],
         "flags": ["flag_dim"],
     }
 
@@ -230,7 +230,7 @@ def process_histogram(
         tuple
             Tuple of processed L1B data arrays from HistogramL1B.output_data().
         """
-        return HistogramL1B(  # type: ignore[call-arg]
+        return HistogramL1B(
             *args, ancillary_exclusions, ancillary_parameters
         ).output_data()
 
@@ -308,6 +308,15 @@ def create_l1b_hist_output(
         attrs=cdf_attrs.get_variable_attributes("ecliptic_attrs", check_schema=False),
     )
 
+    latitudinal_data = xr.DataArray(
+        np.arange(2),
+        name="latitudinal",
+        dims=["latitudinal"],
+        attrs=cdf_attrs.get_variable_attributes(
+            "latitudinal_attrs", check_schema=False
+        ),
+    )
+
     bin_data = xr.DataArray(
         input_dataset["bins"].data,
         name="bins",
@@ -334,6 +343,7 @@ def create_l1b_hist_output(
             "bad_angle_flags": bad_flag_data,
             "bad_time_flags": flag_data,
             "ecliptic": eclipic_data,
+            "latitudinal": latitudinal_data,
         },
         attrs=cdf_attrs.get_global_attributes("imap_glows_l1b_hist"),
     )
