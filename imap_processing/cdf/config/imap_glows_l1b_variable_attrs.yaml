@@ -203,9 +203,11 @@ number_of_spins_per_block:
   VALIDMIN: 1
 
 unique_block_identifier:
-  <<: *support_data_defaults
   CATDESC: YYYY-MM-DDThh:mm:ss based on IMAP UTC time
   FIELDNAM: YYYY-MM-DDThh:mm:ss based on IMAP UTC time
+  FORMAT: A19
+  VAR_TYPE: support_data
+  DEPEND_0: epoch
 
 number_of_bins_per_histogram:
   <<: *support_data_defaults
