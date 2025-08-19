@@ -63,8 +63,8 @@ def ultra_l1c(
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-de"],
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-extendedspin"],
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-cullingmask"],
-                data_dict[f"imap_ultra_{instrument_id}sensor-rates"],
-                data_dict[f"imap_ultra_{instrument_id}sensor-params"],
+                data_dict[f"imap_ultra_l1a_{instrument_id}sensor-rates"],
+                data_dict[f"imap_ultra_l1a_{instrument_id}sensor-params"],
                 f"imap_ultra_l1c_{instrument_id}sensor-spacecraftpset",
                 ancillary_files,
             )
