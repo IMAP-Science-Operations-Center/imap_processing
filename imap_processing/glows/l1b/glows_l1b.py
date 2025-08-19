@@ -230,7 +230,7 @@ def process_histogram(
         tuple
             Tuple of processed L1B data arrays from HistogramL1B.output_data().
         """
-        return HistogramL1B(
+        return HistogramL1B(  # type: ignore[call-arg]
             *args, ancillary_exclusions, ancillary_parameters
         ).output_data()
 
