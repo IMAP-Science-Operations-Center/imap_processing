@@ -435,12 +435,22 @@ def test_generate_de_dataset(de_dataset, mock_ancillary_exclusions):
 
 @pytest.mark.external_kernel
 @pytest.mark.usefixtures("use_fake_spin_data_for_time")
+@patch("imap_processing.spice.geometry.imap_state")
 def test_hist_spice_output(
+    mock_imap_state,
     use_fake_spin_data_for_time,
     furnish_kernels,
     mock_ancillary_exclusions,
     mock_ancillary_parameters,
 ):
+    # Mock the imap_state function
+    mock_imap_state.return_value = np.array(
+        [
+            [1.0, 2.0, 3.0, 0.1, 0.2, 0.3],  # Example position and velocity data
+            [4.0, 5.0, 6.0, 0.4, 0.5, 0.6],
+        ]
+    )
+
     # Generate a fake spin data for time
     data_start_time = 504975600.125  # 2026-01-01T15:00:00.125
     use_fake_spin_data_for_time(data_start_time)
@@ -483,7 +493,7 @@ def test_hist_spice_output(
     with furnish_kernels(kernels):
         hist_data = HistogramL1B(**params)
 
-        # # Assert that all these variables are the correct shape:
+        # Assert that all these variables are the correct shape:
         assert isinstance(hist_data.spin_period_ground_average, np.float64)
         assert isinstance(hist_data.spin_period_ground_std_dev, np.float64)
         assert isinstance(hist_data.position_angle_offset_average, np.float64)

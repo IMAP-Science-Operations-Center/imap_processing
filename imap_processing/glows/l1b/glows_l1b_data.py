@@ -870,7 +870,7 @@ class HistogramL1B:
         # imap_state returns [x, y, z, vx, vy, vz].
         # First three columns for position and last three for velocity.
         imap_state = geometry.imap_state(
-            time_range, SpiceFrame.ECLIPJ2000, observer=SpiceBody.SUN
+            et=time_range, ref_frame=SpiceFrame.ECLIPJ2000, observer=SpiceBody.SUN
         )
         position = imap_state[:, :3]
         velocity = imap_state[:, 3:]
