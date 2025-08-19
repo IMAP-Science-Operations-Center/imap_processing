@@ -161,8 +161,7 @@ def mag_l1c(
         output_core_dims=[[]],
         vectorize=True,
     )
-    # output_dataset['vector_magnitude'].attrs =
-    # attribute_manager.get_variable_attributes("vector_magnitude_attrs")
+    output_dataset['vector_magnitude'].attrs = attribute_manager.get_variable_attributes("vector_magnitude_attrs")
 
     output_dataset["compression_flags"] = xr.DataArray(
         completed_timeline[:, 6:8],
@@ -175,7 +174,7 @@ def mag_l1c(
         completed_timeline[:, 5],
         name="generated_flag",
         dims=["epoch"],
-        # attrs=attribute_manager.get_variable_attributes("generated_flag_attrs"),
+        attrs=attribute_manager.get_variable_attributes("generated_flag_attrs"),
     )
 
     return output_dataset
