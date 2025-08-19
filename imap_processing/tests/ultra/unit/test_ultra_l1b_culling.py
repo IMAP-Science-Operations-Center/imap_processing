@@ -210,7 +210,7 @@ def test_get_pulses(rates_l1_test_path, use_fake_spin_data_for_time):
         "spin": df["Spin"],
     }
 
-    start_per_spin, stop_per_spin, coin_per_spin = get_pulses_per_spin(pulse_dict)
+    pulses = get_pulses_per_spin(pulse_dict)
     unique_spins = np.unique(pulse_dict["spin"])
 
     start_pulses_total = pulse_dict["start_rf"] + pulse_dict["start_lf"]
@@ -231,6 +231,10 @@ def test_get_pulses(rates_l1_test_path, use_fake_spin_data_for_time):
 
     for i, spin in enumerate(unique_spins):
         mask = pulse_dict["spin"] == spin
-        assert np.isclose(start_per_spin[i], np.sum(start_pulses_total[mask]))
-        assert np.isclose(stop_per_spin[i], np.sum(stop_pulses_total[mask]))
-        assert np.isclose(coin_per_spin[i], np.sum(coin_pulses_total[mask]))
+        assert np.isclose(pulses.start_per_spin[i], np.sum(start_pulses_total[mask]))
+        assert np.isclose(pulses.stop_per_spin[i], np.sum(stop_pulses_total[mask]))
+        assert np.isclose(pulses.coin_per_spin[i], np.sum(coin_pulses_total[mask]))
+
+    np.testing.assert_allclose(pulses.start_pulses, start_pulses_total)
+    np.testing.assert_allclose(pulses.stop_pulses, stop_pulses_total)
+    np.testing.assert_allclose(pulses.coin_pulses, coin_pulses_total)
