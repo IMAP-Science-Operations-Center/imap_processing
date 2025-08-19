@@ -1,4 +1,4 @@
-"""Tests to support I-ALiRT MAG packet parsing."""
+"""Tests to support I-ALiRT MAG packet processing."""
 
 import numpy as np
 import pandas as pd
