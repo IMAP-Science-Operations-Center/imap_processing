@@ -388,15 +388,14 @@ def test_get_helio_sensitivity(monkeypatch, imap_ena_sim_metakernel):
     np.testing.assert_allclose(flat_sc, flat_helio, atol=1e-5)
 
 
+@pytest.mark.external_kernel
 def test_calculate_background_rates(
     rates_l1_test_path, use_fake_spin_data_for_time, ancillary_files
 ):
     "Tests calculate_background_rates function."
-
-    df = pd.read_csv(rates_l1_test_path)
-
     # Simulate a spin table from MET = 0 to MET = 141 * 15 seconds
     use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
+    df = pd.read_csv(rates_l1_test_path)
 
     rates = {
         # Stop pulses
