@@ -16,6 +16,11 @@ from imap_processing.spice.geometry import (
 )
 from imap_processing.spice.spin import get_spacecraft_spin_phase, get_spin_angle
 from imap_processing.ultra.constants import UltraConstants
+from imap_processing.ultra.l1b.lookup_utils import get_image_params
+from imap_processing.ultra.l1b.ultra_l1b_culling import (
+    get_pulses_per_spin,
+    get_spin_and_duration,
+)
 
 # TODO: add species binning.
 FILLVAL_FLOAT32 = -1.0e31
@@ -34,15 +39,8 @@ def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray, np.ndarr
     energy_bin_geometric_means : np.ndarray
         Array of geometric means of energy bins.
     """
-    # Calculate energy step
-    energy_step = (1 + UltraConstants.ALPHA / 2) / (1 - UltraConstants.ALPHA / 2)
-
     # Create energy bins.
-    energy_bin_edges = UltraConstants.ENERGY_START * energy_step ** np.arange(
-        UltraConstants.N_BINS + 1
-    )
-    # Add a zero to the left side for outliers and round to nearest 3 decimal places.
-    energy_bin_edges = np.around(np.insert(energy_bin_edges, 0, 0), 3)
+    energy_bin_edges = np.array(UltraConstants.CULLING_ENERGY_BIN_EDGES)
     energy_midpoints = (energy_bin_edges[:-1] + energy_bin_edges[1:]) / 2
 
     intervals = [
@@ -692,3 +690,84 @@ def get_helio_sensitivity(
         )
 
     return helio_sensitivity
+
+
+def calculate_background_rates(
+    rates_dataset: xr.Dataset,
+    sensor: str,
+    ancillary_files: dict,
+    energy_bin_edges: list[tuple[float, float]],
+    cullingmask_spin_number: NDArray,
+    nside: int = 128,
+) -> NDArray:
+    """
+    Calculate background rates based on the provided parameters.
+
+    Parameters
+    ----------
+    rates_dataset : xr.Dataset
+        Rates dataset.
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
+    ancillary_files : dict[Path]
+        Ancillary files containing the lookup tables.
+    energy_bin_edges : list[tuple[float, float]]
+        Energy bin edges.
+    cullingmask_spin_number : NDArray
+        Goodtime spins.
+        Ex. imap_ultra_l1b_45sensor-cullingmask[0]["spin_number"]
+        This is used to determine the number of pulses per spin.
+    nside : int, optional
+        The nside parameter of the Healpix tessellation (default is 128).
+
+    Returns
+    -------
+    background_rates : NDArray of shape (n_energy_bins, n_HEALPix pixels)
+        Calculated background rates.
+
+    Notes
+    -----
+    See Eqn. 3, 8, and 20 in the Algorithm Document for the equation.
+    """
+    pulses = get_pulses_per_spin(rates_dataset)
+    # Pulses for the pointing.
+    etof_min = get_image_params("eTOFMin", sensor, ancillary_files)
+    etof_max = get_image_params("eTOFMax", sensor, ancillary_files)
+    spin_number, _ = get_spin_and_duration(
+        rates_dataset["shcoarse"], rates_dataset["spin"]
+    )
+
+    # Get dmin for PH (mm).
+    dmin_ctof = UltraConstants.DMIN_PH_CTOF
+
+    # Compute number of HEALPix pixels that cover the sphere
+    n_pix = hp.nside2npix(nside)
+
+    # Initialize background rate array: (n_energy_bins, n_HEALPix pixels)
+    background_rates = np.zeros((len(energy_bin_edges), n_pix))
+
+    # Only select pulses from goodtimes.
+    goodtime_mask = np.isin(spin_number, cullingmask_spin_number)
+    mean_start_pulses = np.mean(pulses.start_pulses[goodtime_mask])
+    mean_stop_pulses = np.mean(pulses.stop_pulses[goodtime_mask])
+    mean_coin_pulses = np.mean(pulses.coin_pulses[goodtime_mask])
+
+    for i, (e_min, e_max) in enumerate(energy_bin_edges):
+        # Calculate ctof for the energy bin boundaries by combining Eqn. 3 and 8.
+        # Compute speed for min and max energy using E = 1/2mv^2 -> v = sqrt(2E/m)
+        vmin = np.sqrt(2 * e_min * UltraConstants.KEV_J / UltraConstants.MASS_H)  # m/s
+        vmax = np.sqrt(2 * e_max * UltraConstants.KEV_J / UltraConstants.MASS_H)  # m/s
+        # Compute cTOF = dmin / v
+        # Multiply times 1e-3 to convert to m.
+        ctof_min = dmin_ctof * 1e-3 / vmax * 1e-9  # Convert to ns
+        ctof_max = dmin_ctof * 1e-3 / vmin * 1e-9  # Convert to ns
+
+        background_rates[i, :] = (
+            np.abs(ctof_max - ctof_min)
+            * (etof_max - etof_min)
+            * mean_start_pulses
+            * mean_stop_pulses
+            * mean_coin_pulses
+        ) / 30.0
+
+    return background_rates
