@@ -79,6 +79,15 @@ default_lo_ialirt_attrs: &default_lo_ialirt
   VALIDMIN: 0.0
   DICT_KEY: SPASE>Support>SupportQuantity:Other
 
+default_hi_ialirt_attrs: &default_hi_ialirt
+  VAR_TYPE: support_data
+  FORMAT: '%f'
+  SCALETYP: log
+  UNITS: MeV/nuc
+  VALIDMAX: 200.0
+  VALIDMIN: 0.05000000074505806
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
 # <=== Coordinates ===>
 event_num:
     CATDESC: Event Number
@@ -1278,3 +1287,45 @@ o_plus_7_over_o_plus_6_ratio:
   <<: *default_lo_ialirt
   CATDESC: Charge State Ratio - O+7/O+6
   FIELDNAM: O+7/O+6
+
+# hi-ialirt Attributes
+energy_h_minus:
+  <<: *default_hi_ialirt
+  CATDESC: Energy Table Minus value
+  FIELDNAM: energy delta minus
+  LABLAXIS: MeV/nuc
+
+energy_h_plus:
+  <<: *default_hi_ialirt
+  CATDESC: Energy Table Plus value
+  FIELDNAM: energy delta plus
+  LABLAXIS: MeV/nuc
+
+h:
+  <<: *default_hi_ialirt
+  CATDESC: h (x2 spacing)
+  DEPEND_0: epoch
+  DEPEND_1: energy_h
+  DEPEND_2: ssd_index
+  DEPEND_3: spin_sector_index
+  DISPLAY_TYPE: time_series
+  FIELDNAM: h
+  FILLVAL: 4294967294
+  LABLAXIS: Diff. Intensity
+  SCALETYP: linear
+  UNITS: '# / cm2 s sr MeV/nuc'
+  VALIDMAX: 16777216
+  VALIDMIN: 0
+  VAR_TYPE: data
+
+spin_angles:
+  <<: *default_hi_ialirt
+  CATDESC: Spin Angle
+  DEPEND_1: spin_sector_index
+  DEPEND_2: elevation_angle
+  FIELDNAM: Spin Angle
+  LABLAXIS: Spin Angle
+  SCALETYP: linear
+  UNITS: degrees
+  VALIDMAX: 360.0
+  VALIDMIN: 0.0
