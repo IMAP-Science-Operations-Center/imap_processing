@@ -181,60 +181,6 @@ def get_spacecraft_count_rate_uncertainty(hist: NDArray, exposure: NDArray) -> N
     return rate_uncertainty
 
 
-def get_spacecraft_background_rates(
-    nside: int = 128,
-) -> NDArray:
-    """
-    Calculate background rates.
-
-    Parameters
-    ----------
-    nside : int, optional
-        The nside parameter of the Healpix tessellation (default is 128).
-
-    Returns
-    -------
-    background_rates : np.ndarray
-        Array of background rates.
-
-    Notes
-    -----
-    This is a placeholder.
-    TODO: background rates to be provided by IT.
-    """
-    npix = hp.nside2npix(nside)
-    _, energy_midpoints, _ = build_energy_bins()
-    background = np.zeros((len(energy_midpoints), npix))
-    return background
-
-
-def get_helio_background_rates(
-    nside: int = 128,
-) -> NDArray:
-    """
-    Calculate background rates.
-
-    Parameters
-    ----------
-    nside : int, optional
-        The nside parameter of the Healpix tessellation (default is 128).
-
-    Returns
-    -------
-    background_rates : np.ndarray
-        Array of background rates.
-
-    Notes
-    -----
-    This is a placeholder.
-    TODO: background rates to be provided by IT.
-    """
-    npix = hp.nside2npix(nside)
-    _, energy_midpoints, _ = build_energy_bins()
-    background = np.zeros((len(energy_midpoints), npix))
-    return background
-
-
 def get_deadtime_ratios(sectored_rates_ds: xr.Dataset) -> xr.DataArray:
     """
     Compute the dead time ratio at each sector.
@@ -721,7 +667,7 @@ def get_helio_sensitivity(
     return helio_sensitivity
 
 
-def calculate_background_rates(
+def get_spacecraft_background_rates(
     rates_dataset: xr.Dataset,
     sensor: str,
     ancillary_files: dict,

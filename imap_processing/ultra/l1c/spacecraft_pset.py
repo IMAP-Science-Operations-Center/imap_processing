@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     get_spacecraft_background_rates,
@@ -49,6 +50,7 @@ def calculate_spacecraft_pset(
         Dataset containing the data.
     """
     pset_dict: dict[str, np.ndarray] = {}
+    sensor = parse_filename_like(name)["sensor"][0:2]
 
     v_mag_dps_spacecraft = np.linalg.norm(de_dataset["velocity_dps_sc"].values, axis=1)
     vhat_dps_spacecraft = (
@@ -64,9 +66,6 @@ def calculate_spacecraft_pset(
     )
     healpix = np.arange(n_pix)
 
-    # calculate background rates
-    background_rates = get_spacecraft_background_rates()
-
     efficiencies = ancillary_files["l1c-90sensor-efficiencies"]
     geometric_function = ancillary_files["l1c-90sensor-gf"]
 
@@ -79,6 +78,15 @@ def calculate_spacecraft_pset(
     df_exposure = pd.read_csv(constant_exposure)
     exposure_pointing = get_spacecraft_exposure_times(
         df_exposure, rates_dataset, params_dataset
+    )
+
+    # Calculate background rates
+    background_rates = get_spacecraft_background_rates(
+        rates_dataset,
+        sensor,
+        ancillary_files,
+        intervals,
+        cullingmask_dataset["spin_number"].values,
     )
 
     # For ISTP, epoch should be the center of the time bin.
