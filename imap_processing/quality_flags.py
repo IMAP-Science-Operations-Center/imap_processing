@@ -37,7 +37,7 @@ class ENAFlags(FlagNameMixin):
     BADSPIN = 2**2  # bit 2, Bad spin
 
 
-class ImapDEUltraFlags(FlagNameMixin):
+class ImapDEOutliersUltraFlags(FlagNameMixin):
     """IMAP Ultra flags."""
 
     NONE = CommonFlags.NONE
@@ -75,7 +75,7 @@ class ImapRatesUltraFlags(FlagNameMixin):
     PARTIALSPIN = 2**2  # bit 2
 
 
-class ImapScatteringUltraFlags(FlagNameMixin):
+class ImapDEScatteringUltraFlags(FlagNameMixin):
     """IMAP Ultra Scattering flags."""
 
     NONE = CommonFlags.NONE

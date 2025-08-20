@@ -4,12 +4,16 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.utils import parse_filename_like
-from imap_processing.quality_flags import ImapDEUltraFlags
+from imap_processing.quality_flags import (
+    ImapDEOutliersUltraFlags,
+    ImapDEScatteringUltraFlags,
+)
 from imap_processing.spice.geometry import SpiceFrame
 from imap_processing.ultra.l1b.lookup_utils import get_geometric_factor
 from imap_processing.ultra.l1b.ultra_l1b_annotated import (
     get_annotated_particle_velocity,
 )
+from imap_processing.ultra.l1b.ultra_l1b_culling import flag_scattering
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     StopType,
     determine_ebin_pulse_height,
@@ -137,7 +141,12 @@ def calculate_de(
 
     start_type = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
     quality_flags = np.full(
-        de_dataset["epoch"].shape, ImapDEUltraFlags.NONE.value, dtype=np.uint16
+        de_dataset["epoch"].shape, ImapDEOutliersUltraFlags.NONE.value, dtype=np.uint16
+    )
+    scattering_quality_flags = np.full(
+        de_dataset["epoch"].shape,
+        ImapDEScatteringUltraFlags.NONE.value,
+        dtype=np.uint16,
     )
 
     xf[valid_indices] = get_front_x_position(
@@ -342,7 +351,16 @@ def calculate_de(
         de_dict["theta"],
         quality_flags,
     )
-    de_dict["quality_fov"] = quality_flags
+    de_dict["quality_outliers"] = quality_flags
+    flag_scattering(
+        de_dict["tof_energy"],
+        de_dict["theta"],
+        de_dict["phi"],
+        ancillary_files,
+        sensor,
+        scattering_quality_flags,
+    )
+    de_dict["quality_scattering"] = scattering_quality_flags
 
     dataset = create_dataset(de_dict, name, "l1b")
 

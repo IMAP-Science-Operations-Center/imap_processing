@@ -10,10 +10,10 @@ from numpy.typing import NDArray
 
 from imap_processing.quality_flags import (
     ImapAttitudeUltraFlags,
+    ImapDEScatteringUltraFlags,
     ImapHkUltraFlags,
     ImapInstrumentUltraFlags,
     ImapRatesUltraFlags,
-    ImapScatteringUltraFlags,
 )
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
@@ -487,7 +487,8 @@ def flag_scattering(
     phi: NDArray,
     ancillary_files: dict,
     sensor: str,
-) -> NDArray:
+    quality_flags: NDArray,
+) -> None:
     """
     Flag events where either theta or phi FWHM exceed the threshold or equal nan.
 
@@ -503,16 +504,9 @@ def flag_scattering(
         Ancillary files.
     sensor : str
         Sensor name: "ultra45" or "ultra90".
-
-    Returns
-    -------
     quality_flags : NDArray
         Quality flags.
     """
-    quality_flags = np.full(
-        phi.shape, ImapScatteringUltraFlags.NONE.value, dtype=np.uint16
-    )
-
     scattering_thresholds = UltraConstants.ULTRA_FWHM_SCATTERING_CULLING_THRESHOLDS
 
     for (e_min, e_max), threshold in scattering_thresholds.items():
@@ -520,22 +514,22 @@ def flag_scattering(
         # Input the theta and phi values for the current energy range.
         # Returns a_theta_val, g_theta_val, a_phi_val, g_phi_val
         theta_coeffs, phi_coeffs = get_scattering_coefficients(
-            ancillary_files, sensor[-2:], theta[event_mask], phi[event_mask]
+            ancillary_files, int(sensor[-2:]), theta[event_mask], phi[event_mask]
         )
+        # FWHM_PHI = A_PHI * E^G_PHI
+        # FWHM_THETA = A_THETA * E^G_THETA
         fwhm_theta = theta_coeffs[:, 0] * tof_energy[event_mask] ** theta_coeffs[:, 1]
         fwhm_phi = phi_coeffs[:, 0] * tof_energy[event_mask] ** phi_coeffs[:, 1]
         is_nan = np.isnan(fwhm_theta) | np.isnan(fwhm_phi)
         quality_flags[np.where(event_mask)[0][is_nan]] |= (
-            ImapScatteringUltraFlags.NAN_PHI_OR_THETA.value
+            ImapDEScatteringUltraFlags.NAN_PHI_OR_THETA.value
         )
 
         theta_exceeds = fwhm_theta > threshold
         phi_exceeds = fwhm_phi > threshold
         either_exceeds = theta_exceeds | phi_exceeds
 
-        # Only set flags for events where either theta or phi FWHM exceed the threshold
+        # Set flags for events where either theta or phi FWHM exceed the threshold
         quality_flags[np.where(event_mask)[0][either_exceeds]] |= (
-            ImapScatteringUltraFlags.ABOVE_THRESHOLD.value
+            ImapDEScatteringUltraFlags.ABOVE_THRESHOLD.value
         )
-
-    return quality_flags

@@ -7,6 +7,7 @@ import pytest
 from imap_processing import imap_module_directory
 from imap_processing.quality_flags import (
     ImapAttitudeUltraFlags,
+    ImapDEScatteringUltraFlags,
     ImapHkUltraFlags,
     ImapInstrumentUltraFlags,
     ImapRatesUltraFlags,
@@ -247,7 +248,10 @@ def test_flag_scattering(ancillary_files):
     tof_energy = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9])
     theta = np.array([1, 2, 50, 50, 50, 60, 70, 80, 90])
     phi = np.array([10, 20, 30, 40, 50, 60, 70, 80, 90])
+    quality_flags = np.full(
+        phi.shape, ImapDEScatteringUltraFlags.NONE.value, dtype=np.uint16
+    )
 
-    quality_flags = flag_scattering(tof_energy, theta, phi, ancillary_files, "ultra45")
+    flag_scattering(tof_energy, theta, phi, ancillary_files, "ultra45", quality_flags)
 
     assert np.all(quality_flags == np.array([1, 1, 2, 2, 2, 2, 2, 2, 2]))

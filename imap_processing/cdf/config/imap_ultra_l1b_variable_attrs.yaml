@@ -509,10 +509,18 @@ quality_hk:
   DEPEND_1: spin_number
   DEPEND_2: energy_bin_geometric_mean
 
-quality_fov:
+quality_outliers:
   <<: *default_uint16
-  CATDESC: Quality flag for direct event for events outside of the FOV.
-  FIELDNAM: quality_fov
-  LABLAXIS: quality fov
+  CATDESC: Quality flag for direct event for events outliers.
+  FIELDNAM: quality_outliers
+  LABLAXIS: quality_outliers
+  # TODO: come back to format
+  UNITS: " "
+
+quality_scattering:
+  <<: *default_uint16
+  CATDESC: Quality flag for direct event scattering.
+  FIELDNAM: quality_scattering
+  LABLAXIS: quality_scattering
   # TODO: come back to format
   UNITS: " "
