@@ -167,6 +167,10 @@ def get_spacecraft_count_rate_uncertainty(hist: NDArray, exposure: NDArray) -> N
     -------
     count_rate_uncertainty : NDArray
         Rate uncertainty with shape (n_pix, n_energy_bins) (counts/sec).
+
+    Notes
+    -----
+    These calculations were based on Eqn 15 from the IMAP-Ultra Algorithm Document.
     """
     count_uncertainty = np.sqrt(hist)
 
