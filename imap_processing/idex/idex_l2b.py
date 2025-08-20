@@ -109,7 +109,7 @@ def idex_l2b(
         "processed at the same time as L2B datasets because L2C needs no additional "
         "dependencies."
     )
-
+    l2b_rate_vars, l2c_rate_vars = None, None
     # create the attribute manager for this data level
     idex_l2b_attrs = get_idex_attrs("l2b")
     idex_l2c_attrs = get_idex_attrs("l2c")
@@ -127,20 +127,71 @@ def idex_l2b(
     ) = compute_counts_by_charge_and_mass(l2a_dataset, epoch_doy_unique)
     # Get science acquisition percentage for each day
     daily_on_percentage = get_science_acquisition_on_percentage(evt_dataset)
-    (
-        rate_by_charge,
-        rate_by_mass,
-        rate_by_charge_map,
-        rate_by_mass_map,
-        rate_quality_flags,
-    ) = compute_rates_by_charge_and_mass(
-        counts_by_charge,
-        counts_by_mass,
-        counts_by_charge_map,
-        counts_by_mass_map,
-        epoch_doy_unique,
-        daily_on_percentage,
-    )
+    if daily_on_percentage is None:
+        logger.warning(
+            "No science acquisition uptime percentages found. Unable to compute rates"
+        )
+    else:
+        (
+            rate_by_charge,
+            rate_by_mass,
+            rate_by_charge_map,
+            rate_by_mass_map,
+            rate_quality_flags,
+        ) = compute_rates_by_charge_and_mass(
+            counts_by_charge,
+            counts_by_mass,
+            counts_by_charge_map,
+            counts_by_mass_map,
+            epoch_doy_unique,
+            daily_on_percentage,
+        )
+        l2b_rate_vars = {
+            "rate_calculation_quality_flags": xr.DataArray(
+                name="rate_calculation_quality_flags",
+                data=rate_quality_flags,
+                dims="epoch",
+                attrs=idex_l2b_attrs.get_variable_attributes(
+                    "rate_calculation_quality_flags"
+                ),
+            ),
+            "rate_by_charge": xr.DataArray(
+                name="rate_by_charge",
+                data=rate_by_charge,
+                dims=("epoch", "impact_charge", "spin_phase"),
+                attrs=idex_l2b_attrs.get_variable_attributes("rate_by_charge"),
+            ),
+            "rate_by_mass": xr.DataArray(
+                name="rate_by_mass",
+                data=rate_by_mass,
+                dims=("epoch", "mass", "spin_phase"),
+                attrs=idex_l2b_attrs.get_variable_attributes("rate_by_mass"),
+            ),
+        }
+        l2c_rate_vars = {
+            "rate_by_charge_map": xr.DataArray(
+                name="rate_by_charge_map",
+                data=rate_by_charge_map,
+                dims=(
+                    "epoch",
+                    "impact_charge",
+                    "rectangular_lon_pixel",
+                    "rectangular_lat_pixel",
+                ),
+                attrs=idex_l2c_attrs.get_variable_attributes("rate_by_charge_map"),
+            ),
+            "rate_by_mass_map": xr.DataArray(
+                name="rate_by_mass_map",
+                data=rate_by_mass_map,
+                dims=(
+                    "epoch",
+                    "mass",
+                    "rectangular_lon_pixel",
+                    "rectangular_lat_pixel",
+                ),
+                attrs=idex_l2c_attrs.get_variable_attributes("rate_by_mass_map"),
+            ),
+        }
     # Create l2b Dataset
     charge_bins = np.arange(len(CHARGE_BIN_EDGES) - 1)
     mass_bins = np.arange(len(CHARGE_BIN_EDGES) - 1)
@@ -209,14 +260,6 @@ def idex_l2b(
                 "spin_phase_labels", check_schema=False
             ),
         ),
-        "rate_calculation_quality_flags": xr.DataArray(
-            name="rate_calculation_quality_flags",
-            data=rate_quality_flags,
-            dims="epoch",
-            attrs=idex_l2b_attrs.get_variable_attributes(
-                "rate_calculation_quality_flags"
-            ),
-        ),
         "counts_by_charge": xr.DataArray(
             name="counts_by_charge",
             data=counts_by_charge.astype(np.int64),
@@ -228,18 +271,6 @@ def idex_l2b(
             data=counts_by_mass.astype(np.int64),
             dims=("epoch", "mass", "spin_phase"),
             attrs=idex_l2b_attrs.get_variable_attributes("counts_by_mass"),
-        ),
-        "rate_by_charge": xr.DataArray(
-            name="rate_by_charge",
-            data=rate_by_charge,
-            dims=("epoch", "impact_charge", "spin_phase"),
-            attrs=idex_l2b_attrs.get_variable_attributes("rate_by_charge"),
-        ),
-        "rate_by_mass": xr.DataArray(
-            name="rate_by_mass",
-            data=rate_by_mass,
-            dims=("epoch", "mass", "spin_phase"),
-            attrs=idex_l2b_attrs.get_variable_attributes("rate_by_mass"),
         ),
     }
     l2c_vars = common_vars | {
@@ -297,29 +328,13 @@ def idex_l2b(
             ),
             attrs=idex_l2c_attrs.get_variable_attributes("counts_by_mass_map"),
         ),
-        "rate_by_charge_map": xr.DataArray(
-            name="rate_by_charge_map",
-            data=rate_by_charge_map,
-            dims=(
-                "epoch",
-                "impact_charge",
-                "rectangular_lon_pixel",
-                "rectangular_lat_pixel",
-            ),
-            attrs=idex_l2c_attrs.get_variable_attributes("rate_by_charge_map"),
-        ),
-        "rate_by_mass_map": xr.DataArray(
-            name="rate_by_mass_map",
-            data=rate_by_mass_map,
-            dims=(
-                "epoch",
-                "mass",
-                "rectangular_lon_pixel",
-                "rectangular_lat_pixel",
-            ),
-            attrs=idex_l2c_attrs.get_variable_attributes("rate_by_mass_map"),
-        ),
     }
+    # Add rate variables if they were computed
+    if l2c_rate_vars:
+        l2c_vars = l2c_vars | l2c_rate_vars
+    if l2b_rate_vars:
+        l2b_vars = l2b_vars | l2b_rate_vars
+
     l2b_dataset = xr.Dataset(
         coords={"epoch": epoch},
         data_vars=l2b_vars,
@@ -629,7 +644,7 @@ def get_science_acquisition_timestamps(
     )
 
 
-def get_science_acquisition_on_percentage(evt_dataset: xr.Dataset) -> dict:
+def get_science_acquisition_on_percentage(evt_dataset: xr.Dataset) -> dict | None:
     """
     Calculate the percentage of time science acquisition was occurring for each day.
 
@@ -642,10 +657,16 @@ def get_science_acquisition_on_percentage(evt_dataset: xr.Dataset) -> dict:
     -------
     dict
         Percentages of time the instrument was in science acquisition mode for each day
-         of year.
+         of year. Returns None if no science acquisition events are found.
     """
     # Get science acquisition start and stop times
     evt_logs, evt_time, evt_values = get_science_acquisition_timestamps(evt_dataset)
+    if len(evt_time) == 0:
+        logger.warning(
+            "No science acquisition events found in event dataset. Returning empty "
+            "uptime percentages."
+        )
+        return None
     # Track total and 'on' durations per day
     daily_totals: collections.defaultdict = defaultdict(timedelta)
     daily_on: collections.defaultdict = defaultdict(timedelta)
