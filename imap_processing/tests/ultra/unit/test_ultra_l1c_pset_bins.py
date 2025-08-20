@@ -267,24 +267,36 @@ def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
     )
     mock_theta_and_phi = np.hstack(
         [
-            np.random.uniform(-60, 60, (pix, 1)),  # theta (deg)
-            np.random.uniform(-60, 60, (pix, 1)),  # phi (deg)
+            np.full((pix, 1), -1.54120),  # theta (deg)
+            np.full((pix, 1), -18.12384),  # phi (deg)
         ]
     )
-    spin_phase_steps = np.random.randint(0, 2, (pix, 15000)).astype(
-        bool
-    )  # Spin phase steps 1-15000, random 0 or 1
+    spin_phase_steps = np.zeros((pix, 15000)).astype(bool)  # Spin phase steps 1-15000,
+    # Simulate first 100 pixels are in the FOR for all spin phases
+    inside_inds = 100
+    spin_phase_steps[:inside_inds, :] = True
     mock_spin_phases = np.arange(360)
-    mock_deadtime_ratios = mock_spin_phases * 0.01
+    mock_deadtime_ratios = np.ones_like(mock_spin_phases)
     interpolator = interpolate.PchipInterpolator(mock_spin_phases, mock_deadtime_ratios)
-    exposure_pointing = np.ones(pix)
+    exposure_pointing = pd.Series(np.ones(pix))
 
     with mock.patch(
-        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_nominal_fov_by_spin_phase",
+        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_nominal_for_by_spin_phase",
         return_value=(spin_phase_steps, mock_theta_and_phi, mock_ra_and_dec),
     ):
-        apply_deadtime_correction(exposure_pointing, interpolator, 45, ancillary_files)
-        # TODO check shapes and values
+        exposure_pointing_adjusted = apply_deadtime_correction(
+            exposure_pointing, interpolator, 45, ancillary_files
+        )
+    # The adjusted exposure should now be a function of pixels and energy (24)
+    np.testing.assert_array_equal(exposure_pointing_adjusted.shape, (pix, 24))
+    # Check that the pixels inside the FOR have adjusted exposure > 1.0
+    # Subset the energy dimension to check values in the last energy bin. These
+    # Should have pixels that are below the FWHM scattering threshold and therefore,
+    # have the exposure adjusted.
+    last_energy_bin_vals = np.where(build_energy_bins()[2] >= 30)[0]
+    assert np.all(exposure_pointing_adjusted[:inside_inds, last_energy_bin_vals] > 1.0)
+    # Assert that pixels outside the FOR remain at 1.0
+    assert np.all(exposure_pointing_adjusted[inside_inds:, :] == 1.0)
 
 
 @pytest.mark.external_test_data
@@ -318,7 +330,7 @@ def test_get_spacecraft_exposure_times(
     )  # Spin phase steps 1-15000, random 0 or 1
 
     with mock.patch(
-        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_nominal_fov_by_spin_phase",
+        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_nominal_for_by_spin_phase",
         return_value=(spin_phase_steps, mock_theta_and_phi, mock_ra_and_dec),
     ):
         exposure_pointing = get_spacecraft_exposure_times(

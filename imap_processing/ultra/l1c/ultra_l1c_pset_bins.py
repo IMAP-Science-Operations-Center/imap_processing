@@ -17,7 +17,7 @@ from imap_processing.spice.geometry import (
 from imap_processing.spice.spin import get_spacecraft_spin_phase, get_spin_angle
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
-    get_nominal_fov_by_spin_phase,
+    get_nominal_for_by_spin_phase,
     get_scattering_coefficients,
     mask_below_fwhm_scattering_threshold,
 )
@@ -386,9 +386,9 @@ def apply_deadtime_correction(
     exposure_pointing_adjusted : np.ndarray
         Adjusted exposure times accounting for dead time.
     """
-    # Get lookup table for FOV indices by spin phase
-    fov_indices_by_spin_phase, theta_and_phi, ra_and_dec = (
-        get_nominal_fov_by_spin_phase(ancillary_files, instrument_id)
+    # Get lookup table for FOR indices by spin phase step
+    for_indices_by_spin_phase, theta_and_phi, ra_and_dec = (
+        get_nominal_for_by_spin_phase(ancillary_files, instrument_id)
     )
     # Get energy bin geometric means
     energy_bin_geometric_means = build_energy_bins()[2]
@@ -398,34 +398,40 @@ def apply_deadtime_correction(
         len(energy_bin_geometric_means),
         axis=1,
     )
-    steps = fov_indices_by_spin_phase.shape[1]
-    # nominal amount the spacecraft would have spun in 1 ms
-    nominal_ms_spin = 360 / steps
-    # Using the lookup table, get the indices of the pixels inside the FOV at the
+    steps = for_indices_by_spin_phase.shape[1]
+    # nominal spin phase step. 1 ms per step.
+    nominal_ms_spin = 360 / (15 * 1000)  # degrees per ms
+    # Using the lookup table, get the indices of the pixels inside the FOR at the
     # current spin phase step.
     theta = theta_and_phi[:, 0]
     phi = theta_and_phi[:, 1]
     theta_coeffs, phi_coeffs = get_scattering_coefficients(
         ancillary_files, instrument_id, theta, phi
     )
-    # Starting at Spin-phase = 0, and incrementing in fine steps (1 ms), spin the
-    # spacecraft in the despun frame. At each iteration, query the dead-time ratio
-    # from the function previously built and apply the nominal exposure time
+    # Calculate the array of spin phases for each step
+    spin_phases = np.arange(start=0, stop=360, step=360 / steps)
+
+    # The "for_indices_by_spin_phase" lookup table contains the boolean values of each
+    # pixel at each spin phase step, indicating whether the pixel is inside the FOR.
+    # It starts at Spin-phase = 0, and increments in fine steps (1 ms), spinning the
+    # spacecraft in the despun frame. At each iteration, query for the pixels in the
+    # FOR, and calculate whether the FWHM value is below the threshold at the energy.
+    # Query the dead-time ratio and apply the nominal exposure time
     for i in range(steps):
         # Calculate spin phase for the current iteration
-        spin_phase = np.arange(0, 360, steps)
-        fov_inds = fov_indices_by_spin_phase[:, i]
+        for_inds = for_indices_by_spin_phase[:, i]
         for energy_idx in range(len(energy_bin_geometric_means)):
             # Get a mask for pixels below the FWHM scattering threshold
             energy = int(energy_bin_geometric_means[energy_idx])
             scattering_mask = mask_below_fwhm_scattering_threshold(
-                theta_coeffs[fov_inds], phi_coeffs[fov_inds], energy
+                theta_coeffs[for_inds], phi_coeffs[for_inds], energy
             )
-            deadtime_ratio = deadtime_interpolator(spin_phase)
-
-            # Apply the nominal exposure time (1 ms) to every pixel in the FOR,
-            # scaled by the deadtime ratio
-            exposure_pointing[fov_inds][scattering_mask, energy_idx] += (
+            deadtime_ratio = deadtime_interpolator(spin_phases[i])
+            # TODO add the boundary scale factor when available
+            # Apply the nominal exposure time (1 ms) scaled by the deadtime ratio to
+            # every pixel in the FOR, that is below the FWHM scattering threshold,
+            pixels_to_apply_correction = np.where(for_inds)[0][scattering_mask]
+            exposure_pointing[pixels_to_apply_correction, energy_idx] += (
                 nominal_ms_spin * deadtime_ratio
             )
 

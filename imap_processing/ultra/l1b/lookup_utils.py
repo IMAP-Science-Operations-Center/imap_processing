@@ -402,11 +402,11 @@ def mask_below_fwhm_scattering_threshold(
     return np.logical_and(fwhm_theta <= threshold, fwhm_phi <= threshold)
 
 
-def get_nominal_fov_by_spin_phase(
+def get_nominal_for_by_spin_phase(
     ancillary_files: dict, instrument_id: int
 ) -> tuple[NDArray, NDArray, NDArray]:
     """
-    Get indices of pixels in the nominal FOV as a function of spin phase.
+    Get indices of pixels in the nominal FOR as a function of spin phase.
 
     This function also returns the theta / phi values in the instrument frame and
     right ascension / declination values in the IMAP frame.
@@ -430,10 +430,14 @@ def get_nominal_fov_by_spin_phase(
     calibration_data = pd.read_csv(filename, header=None, skiprows=1).to_numpy(
         dtype=float
     )
-    ra_and_dec = calibration_data[:, :2]
-    theta_and_phi = np.random.randint(-60, 60, size=ra_and_dec.shape)
-    fov_indices_by_spin_phase = calibration_data[:, 2:].astype(bool)
-    return fov_indices_by_spin_phase, theta_and_phi, ra_and_dec
+    ra_and_dec = calibration_data[:, :2]  # Shape (npix, 2)
+    theta_and_phi = np.random.randint(-60, 60, size=ra_and_dec.shape)  # Shape (npix, 2)
+    # This array indicates whether each pixel is in the nominal FOR at each spin phase
+    # step (15000 steps for a full rotation with 1 ms resolution).
+    for_indices_by_spin_phase = calibration_data[:, 2:].astype(
+        bool
+    )  # Shape (npix, 15000)
+    return for_indices_by_spin_phase, theta_and_phi, ra_and_dec
 
 
 def is_inside_fov(phi: np.ndarray, theta: np.ndarray) -> np.ndarray:
