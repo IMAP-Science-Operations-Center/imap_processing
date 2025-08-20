@@ -175,7 +175,7 @@ def test_l1a_data_array_shape(test_l1a_data, index):
                     len(processed_dataset["epoch"].data),
                 )
             # For some direct event variables:
-            elif re.match(r"P[0-7]_(NumEvents|DataQuality)", variable):
+            elif re.match(r"p[0-7]_(num_events|data_quality)", variable):
                 assert processed_dataset[variable].data.shape == (77,)
             # For the k-factor
             elif variable == "k_factor":
@@ -314,7 +314,6 @@ def test_l1a_validate_dimensions(test_l1a_data, index):
 
 
 @pytest.mark.parametrize("index", range(len(DESCRIPTORS)))
-@pytest.mark.xfail(reason="Validation test turned off; awaiting fixes")
 def test_l1a_validate_epoch_values(test_l1a_data, index):
     """Tests that the epoch values in the generated data products match the
     validation data.
@@ -331,20 +330,18 @@ def test_l1a_validate_epoch_values(test_l1a_data, index):
     dataset = test_l1a_data[index]
     validation_dataset = load_cdf(VALIDATION_DATA[index])
 
-    if descriptor in ["hskp", "hi-ialirt", "hi-omni"]:
+    if descriptor in ["hi-ialirt", "lo-ialirt"]:
         pytest.xfail(
             f"Awaiting implementation of proper epoch calculation for {descriptor}"
         )
 
-    # TODO: Once new L1a validation is used, this probably can be tweaked for
-    #       even lower tolerance, and we can add checks for epoch_delta_minus
-    #       and epoch_delta_plus
+    # TODO: Add checks for epoch_delta_minus
+    # TODO: Revisit this at some point to see if we can do an exact comparison
     np.testing.assert_allclose(
         dataset.epoch.data, validation_dataset.epoch.data, rtol=1e-6, atol=0
     )
 
 
-@pytest.mark.xfail(reason="Validation test turned off; awaiting fixes")
 def test_l1a_validate_hskp_data(test_l1a_data):
     """Tests that the L1a housekeeping data is valid"""
 
@@ -393,6 +390,7 @@ def test_l1a_validate_support_variables(test_l1a_data, index):
         "spin_period",
         "st_bias_gain_mode",
         "sw_bias_gain_mode",
+        "k_factor",
     ]
 
     descriptor = DESCRIPTORS[index]

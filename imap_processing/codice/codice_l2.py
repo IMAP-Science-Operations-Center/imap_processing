@@ -82,6 +82,7 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
         #    - tof
         #    - elevation_angle
         #    - spin_angle
+        # These converted variables are *in addition* to the existing L1 variables
         # The other data variables require no changes
         # See section 11.1.2 of algorithm document
         pass
@@ -94,6 +95,7 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
     elif dataset_name == "imap_codice_l2_hi-omni":
         # Calculate the omni-directional intensity for each species using
         # equation described in section 11.1.4 of algorithm document
+        # hopefully this can also apply to hi-ialirt
         pass
 
     elif dataset_name == "imap_codice_l2_lo-direct-events":
@@ -104,6 +106,7 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
         #    - tof
         #    - spin_sector
         #    - esa_step
+        # These converted variables are *in addition* to the existing L1 variables
         # The other data variables require no changes
         # See section 11.1.2 of algorithm document
         pass
@@ -123,6 +126,7 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
         # described in section 11.2.4 of algorithm document.
         # Calculate the pickup ion sunward solar wind intensities using equation
         # described in section 11.2.4 of algorithm document.
+        # Hopefully this can also apply to lo-ialirt
         pass
 
     elif dataset_name == "imap_codice_l2_lo-nsw-species":
