@@ -87,7 +87,7 @@ def get_spacecraft_histogram(
     nested: bool = False,
 ) -> tuple[NDArray, NDArray, NDArray, NDArray]:
     """
-    Compute a 3D histogram of the particle data using HEALPix binning.
+    Compute a 2D histogram of the particle data using HEALPix binning.
 
     Parameters
     ----------
@@ -106,7 +106,7 @@ def get_spacecraft_histogram(
     Returns
     -------
     hist : np.ndarray
-        A 3D histogram array with shape (n_pix, n_energy_bins).
+        A 2D histogram array with shape (n_pix, n_energy_bins).
     latitude : np.ndarray
         Array of latitude values.
     longitude : np.ndarray
@@ -150,6 +150,31 @@ def get_spacecraft_histogram(
         hist[i, :] += np.bincount(hpix_idx[mask], minlength=n_pix).astype(np.float64)
 
     return hist, latitude, longitude, n_pix
+
+
+def get_spacecraft_count_rate_uncertainty(hist: NDArray, exposure: NDArray) -> NDArray:
+    """
+    Calculate the count rate uncertainty for HEALPix-binned data.
+
+    Parameters
+    ----------
+    hist : NDArray
+        A 2D histogram array with shape (n_pix, n_energy_bins).
+    exposure : NDArray
+        A 2D array of exposure times with shape (n_pix, n_energy_bins).
+
+    Returns
+    -------
+    count_rate_uncertainty : NDArray
+        Rate uncertainty with shape (n_pix, n_energy_bins) (counts/sec).
+    """
+    count_uncertainty = np.sqrt(hist)
+
+    rate_uncertainty = np.zeros_like(hist)
+    valid = exposure > 0
+    rate_uncertainty[valid] = count_uncertainty[valid] / exposure[valid]
+
+    return rate_uncertainty
 
 
 def get_spacecraft_background_rates(

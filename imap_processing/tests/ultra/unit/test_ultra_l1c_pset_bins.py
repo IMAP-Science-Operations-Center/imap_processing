@@ -21,6 +21,7 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     get_helio_sensitivity,
     get_sectored_rates,
     get_spacecraft_background_rates,
+    get_spacecraft_count_rate_uncertainty,
     get_spacecraft_exposure_times,
     get_spacecraft_histogram,
     get_spacecraft_sensitivity,
@@ -428,3 +429,17 @@ def test_calculate_background_rates(
 
     assert background_rates.shape == (len(energy_bin_edges), hp.nside2npix(128))
     assert np.allclose(background_rates[0, :], np.full((196608,), 6.37052558e-11))
+
+
+def test_rate_uncertainty():
+    """Tests spacecraft_count_rate_uncertainty function."""
+
+    hist = np.array(
+        [[0.0, 1.0, 4.0], [9.0, 16.0, 25.0], [36.0, 49.0, 64.0], [0.0, 100.0, 121.0]]
+    )
+
+    exposure = np.ones_like(hist)
+    uncertainty = get_spacecraft_count_rate_uncertainty(hist, exposure)
+    expected = np.sqrt(hist)
+
+    np.testing.assert_allclose(uncertainty, expected, atol=1e-6)
