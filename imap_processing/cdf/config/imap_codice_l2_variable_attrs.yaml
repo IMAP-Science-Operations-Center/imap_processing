@@ -53,6 +53,7 @@ default_lo_species_attrs: &default_lo_species
 
 default_lo_angular_attrs: &default_lo_angular
   <<: *default
+  VAR_TYPE: data
   DEPEND_1: energy_table
   DEPEND_2: elevation_angle
   DEPEND_3: spin_angle
@@ -63,7 +64,20 @@ default_lo_angular_attrs: &default_lo_angular
   UNITS: particles / cm2 s sr keV/q
   VALIDMAX: 10000000000.0
   VALIDMIN: 1.000000013351432e-10
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+default_lo_ialirt_attrs: &default_lo_ialirt
+  <<: *default
   VAR_TYPE: data
+  DISPLAY_TYPE: time_series
+  FILLVAL: 1.0e+31
+  FORMAT: '%lf'
+  LABLAXIS: ratio
+  SCALETYP: linear
+  UNITS: ratio
+  VALIDMAX: 1.0e+31
+  VALIDMIN: 0.0
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 # <=== Coordinates ===>
 event_num:
@@ -1233,3 +1247,34 @@ lo-nsw-species-o:
 lo-nsw-angular-heplusplus:
   CATDESC: Counts - NSW - He++
   FIELDNAM: Non-Sunward Facing Counts - NSW - He++
+
+# lo-ialirt Attributes
+c_over_o_abundance_ratio:
+  <<: *default_lo_ialirt
+  CATDESC: Elemental Abundance Ratio - C/O
+  FIELDNAM: C/O
+
+c_plus_6_over_c_plus_5_ratio:
+  <<: *default_lo_ialirt
+  CATDESC: Charge State Ratio - C+6/C+5
+  FIELDNAM: C+6/C+5
+
+fe_low_over_fe_high_ratio:
+  <<: *default_lo_ialirt
+  CATDESC: Charge State Ratio - Fe(low)/Fe(high)
+  FIELDNAM: Fe(low)/Fe(high)
+
+fe_over_o_abundance_ratio:
+  <<: *default_lo_ialirt
+  CATDESC: Elemental Abundance Ratio - Fe/O
+  FIELDNAM: Fe/O
+
+mg_over_o_abundance_ratio:
+  <<: *default_lo_ialirt
+  CATDESC: Elemental Abundance Ratio - Mg/O
+  FIELDNAM: Mg/O
+
+o_plus_7_over_o_plus_6_ratio:
+  <<: *default_lo_ialirt
+  CATDESC: Charge State Ratio - O+7/O+6
+  FIELDNAM: O+7/O+6
