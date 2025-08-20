@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from imap_processing import imap_module_directory
-from imap_processing.quality_flags import ImapDEUltraFlags
+from imap_processing.quality_flags import ImapDEOutliersUltraFlags
 from imap_processing.ultra.l1b.lookup_utils import (
     get_angular_profiles,
     get_back_position,
@@ -124,7 +124,9 @@ def test_get_geometric_function(ancillary_files):
 
     phi = np.array([-65, -64, -39, -1.3, 0, 1.3, 39, 64, 65])
     theta = np.array([-65, -64, -39, -1.3, 0, 1.3, 39, 64, 65])
-    quality_flags = np.full(phi.shape, ImapDEUltraFlags.NONE.value, dtype=np.uint16)
+    quality_flags = np.full(
+        phi.shape, ImapDEOutliersUltraFlags.NONE.value, dtype=np.uint16
+    )
     gf = get_geometric_factor(
         ancillary_files, "l1b-sensor-gf-noblades", phi, theta, quality_flags
     )
@@ -143,7 +145,9 @@ def test_get_ph_corrected(ancillary_files):
     xlut = np.array([0, 10, 31, 32])
     # Should be between 1 and 20 (0 and 19)
     ylut = np.array([3, 10, 19, 32])
-    quality_flags = np.full(xlut.shape, ImapDEUltraFlags.NONE.value, dtype=np.uint16)
+    quality_flags = np.full(
+        xlut.shape, ImapDEOutliersUltraFlags.NONE.value, dtype=np.uint16
+    )
     ph_correct_top, quality_flags = get_ph_corrected(
         "ultra45", "tp", ancillary_files, xlut, ylut, quality_flags
     )
