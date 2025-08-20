@@ -36,7 +36,7 @@ direct_events_attrs: &direct_events
     VALIDMAX: 10000
     DICT_KEY: SPASE>Support>SupportQuantity:Other
 
-default_lo_sw_species_attrs: &default_lo_sw_species
+default_lo_species_attrs: &default_lo_species
   <<: *default
   VAR_TYPE: data
   DEPEND_1: energy_table
@@ -50,6 +50,7 @@ default_lo_sw_species_attrs: &default_lo_sw_species
   VALIDMIN: 1.000000013351432e-10
   DICT_KEY: SPASE>Support>SupportQuantity:Other
 
+
 default_lo_sw_angular_attrs: &default_lo_sw_angular
   <<: *default
   DEPEND_1: energy_table
@@ -58,6 +59,20 @@ default_lo_sw_angular_attrs: &default_lo_sw_angular
   DISPLAY_TYPE: time_series
   FORMAT: '%f'
   LABLAXIS: 'Diff. # Flux'
+  SCALETYP: log
+  UNITS: particles / cm2 s sr keV/q
+  VALIDMAX: 10000000000.0
+  VALIDMIN: 1.000000013351432e-10
+  VAR_TYPE: data
+
+default_lo_nsw_species_attrs: &default_lo_nsw_species_attrs
+  DEPEND_0: epoch
+  DEPEND_1: energy_table
+  DEPEND_2: spin_sector_index
+  DISPLAY_TYPE: time_series
+  FILLVAL: .nan
+  FORMAT: '%f'
+  LABLAXIS: Diff. Intensity
   SCALETYP: log
   UNITS: particles / cm2 s sr keV/q
   VALIDMAX: 10000000000.0
@@ -1087,82 +1102,82 @@ P7_TOF:
 # lo-sw-species Attributes
 
 lo-sw-species-cnoplus:
-  <<: *default_lo_sw_species
+  <<: *default_lo_species
   CATDESC: Counts - SW - CNO+ (PUI)
   FIELDNAM: Counts - SW - CNO+ (PUI)
 
 lo-sw-species-cplus4:
-  <<: *default_lo_sw_species
+  <<: *default_lo_species
   CATDESC: Counts - SW - C+4
   FIELDNAM: Counts - SW - C+4
 
 lo-sw-species-cplus5:
-  <<: *default_lo_sw_species
+  <<: *default_lo_species
   CATDESC: Counts - SW - C+5
   FIELDNAM: Counts - SW - C+5
 
 lo-sw-species-cplus6:
-  <<: *default_lo_sw_species
+  <<: *default_lo_species
   CATDESC: Counts - SW - C+6
   FIELDNAM: Counts - SW - C+6
 
 lo-sw-species-fe_hiq:
-  <<: *default_lo_sw_species
+  <<: *default_lo_species
   CATDESC: Counts - SW - Fe highQ
   FIELDNAM: Counts - SW - Fe highQ
 
 lo-sw-species-fe_loq:
-  <<: *default_lo_sw_species
+  <<: *default_lo_species
   CATDESC: Counts - SW - Fe lowQ
   FIELDNAM: Counts - SW - Fe lowQ
 
 lo-sw-species-heplus:
-  <<: *default_lo_sw_species
+  <<: *default_lo_species
   CATDESC: Counts - SW - He+ (PUI)
   FIELDNAM: Counts - SW - He+ (PUI)
 
 lo-sw-species-heplusplus:
-  <<: *default_lo_sw_species
+  <<: *default_lo_species
   CATDESC: Counts - SW - He++
   FIELDNAM: Counts - SW - He++
 
 lo-sw-species-hplus:
-  <<: *default_lo_sw_species
+  <<: *default_lo_species
   CATDESC: Counts - SW - H+
   FIELDNAM: Counts - SW - H+
 
 lo-sw-species-mg:
-  <<: *default_lo_sw_species
+  <<: *default_lo_species
   CATDESC: Counts - SW - Mg
   FIELDNAM: Counts - SW - Mg
 
 lo-sw-species-ne:
-  <<: *default_lo_sw_species
+  <<: *default_lo_species
   CATDESC: Counts - SW - Ne
   FIELDNAM: Counts - SW - Ne
 
 lo-sw-species-oplus5:
-  <<: *default_lo_sw_species
+  <<: *default_lo_species
   CATDESC: Counts - SW - O+5
   FIELDNAM: Counts - SW - O+5
 
 lo-sw-species-oplus6:
-  <<: *default_lo_sw_species
+  <<: *default_lo_species
   CATDESC: Counts - SW - O+6
   FIELDNAM: Counts - SW - O+6
 
 lo-sw-species-oplus7:
-  <<: *default_lo_sw_species
+  <<: *default_lo_species
   CATDESC: Counts - SW - O+7
   FIELDNAM: Counts - SW - O+7
 
 lo-sw-species-oplus8:
-  <<: *default_lo_sw_species
+  <<: *default_lo_species
   CATDESC: Counts - SW - O+8
   FIELDNAM: Counts - SW - O+8
 
 lo-sw-species-si:
-  <<: *default_lo_sw_species
+  <<: *default_lo_species
   CATDESC: Counts - SW - Si
   FIELDNAM: Counts - SW - Si
 
@@ -1186,3 +1201,44 @@ lo-sw-angular-oplus6:
   <<: *default_lo_sw_angular
   CATDESC: Counts - SW - O+6
   FIELDNAM: Sunward Facing Counts - SW - O+6
+
+# lo-nsw-species Attributes
+lo-nsw-species-c:
+  <<: *default_lo_nsw_species_attrs
+  CATDESC: Counts - NSW - C
+  FIELDNAM: Counts - NSW - C
+
+lo-nsw-species-cnoplus:
+  <<: *default_lo_nsw_species_attrs
+  CATDESC: Counts - NSW - CNO+
+  FIELDNAM: Counts - NSW - CNO+
+
+lo-nsw-species-fe:
+  <<: *default_lo_nsw_species_attrs
+  CATDESC: Counts - NSW - Fe
+  FIELDNAM: Counts - NSW - Fe
+
+lo-nsw-species-heplus:
+  <<: *default_lo_nsw_species_attrs
+  CATDESC: Counts - NSW - He+
+  FIELDNAM: Counts - NSW - He+
+
+lo-nsw-species-heplusplus:
+  <<: *default_lo_nsw_species_attrs
+  CATDESC: Counts - NSW - He++
+  FIELDNAM: Counts - NSW - He++
+
+lo-nsw-species-hplus:
+  <<: *default_lo_nsw_species_attrs
+  CATDESC: Counts - NSW - H+
+  FIELDNAM: Counts - NSW - H+
+
+lo-nsw-species-ne_si_mg:
+  <<: *default_lo_nsw_species_attrs
+  CATDESC: Counts - NSW - Ne_Si_Mg
+  FIELDNAM: Counts - NSW - Ne_Si_Mg
+
+lo-nsw-species-o:
+  <<: *default_lo_nsw_species_attrs
+  CATDESC: Counts - NSW - O
+  FIELDNAM: Counts - NSW - O
