@@ -528,6 +528,11 @@ def ancillary_files():
         "l1b-tofxph": path / "imap_ultra_l1b-tofxph_20250101_v000.pgm",
         "l1b-90sensor-scattering-calibration": path
         / "imap_ultra_l1b-90sensor-scattering-calibration-data_20250101_v000.csv",
+        "l1c-90sensor-dps-exposure": path
+        / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
+        "l1c-90sensor-efficiencies": path
+        / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
+        "l1c-90sensor-gf": path / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
     }
 
 
@@ -548,6 +553,8 @@ def deadtime_datasets():
             "coin_bn": (["epoch"], np.random.randint(0, 5, epoch)),
             "stop_tn": (["epoch"], np.random.randint(0, 5, epoch)),
             "stop_bn": (["epoch"], np.random.randint(0, 5, epoch)),
+            "shcoarse": (["epoch"], np.arange(epoch)),
+            "spin": (["epoch"], 127 + (np.arange(epoch) % (141 - 127))),
         }
     )
     # Sector mode (image rates cadence = 3) happens 3 times a day (per pointing).
