@@ -16,6 +16,21 @@ default_attrs: &default
     VALIDMAX: *max_int
     VAR_TYPE: data
 
+default_lo_sw_species_attrs: &default_lo_sw_species
+  <<: *default
+  VAR_TYPE: data
+  DEPEND_1: energy_table
+  DEPEND_2: spin_sector_index
+  DISPLAY_TYPE: time_series
+  FILLVAL: .nan
+  FORMAT: '%f'
+  LABLAXIS: Diff. Intensity
+  SCALETYP: log
+  UNITS: particles / cm2 s sr keV/q
+  VALIDMAX: 10000000000.0
+  VALIDMIN: 1.000000013351432e-10
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
 # <=== Coordinates ===>
 event_num:
     CATDESC: Event Number
@@ -1026,3 +1041,101 @@ P7_TOF:
     FILLVAL: 65535
     LABL_PTR_1: event_num_label
     VALIDMAX: 1024
+
+
+# <=== lo-sw-species Attributes ===>
+
+cnoplus:
+  <<: *default_lo_sw_species
+  CATDESC: Counts - SW - CNO+ (PUI)
+  FIELDNAM: Counts - SW - CNO+ (PUI)
+
+cplus4:
+  <<: *default_lo_sw_species
+  CATDESC: Counts - SW - C+4
+  FIELDNAM: Counts - SW - C+4
+
+cplus5:
+  <<: *default_lo_sw_species
+  CATDESC: Counts - SW - C+5
+  FIELDNAM: Counts - SW - C+5
+
+cplus6:
+  <<: *default_lo_sw_species
+  CATDESC: Counts - SW - C+6
+  FIELDNAM: Counts - SW - C+6
+
+data_quality:
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: 255
+  FORMAT: '%d'
+  LABLAXIS: Data Quality
+  SCALETYP: linear
+  UNITS: ' '
+  VALIDMAX: 1
+  VALIDMIN: 0
+  VAR_TYPE: data
+  CATDESC: Indicates whether data quality is suspect (1).
+  FIELDNAM: Data Quality
+
+fe_hiq:
+  <<: *default_lo_sw_species
+  CATDESC: Counts - SW - Fe highQ
+  FIELDNAM: Counts - SW - Fe highQ
+
+fe_loq:
+  <<: *default_lo_sw_species
+  CATDESC: Counts - SW - Fe lowQ
+  FIELDNAM: Counts - SW - Fe lowQ
+
+heplus:
+  <<: *default_lo_sw_species
+  CATDESC: Counts - SW - He+ (PUI)
+  FIELDNAM: Counts - SW - He+ (PUI)
+
+heplusplus:
+  <<: *default_lo_sw_species
+  CATDESC: Counts - SW - He++
+  FIELDNAM: Counts - SW - He++
+
+hplus:
+  <<: *default_lo_sw_species
+  CATDESC: Counts - SW - H+
+  FIELDNAM: Counts - SW - H+
+
+mg:
+  <<: *default_lo_sw_species
+  CATDESC: Counts - SW - Mg
+  FIELDNAM: Counts - SW - Mg
+
+ne:
+  <<: *default_lo_sw_species
+  CATDESC: Counts - SW - Ne
+  FIELDNAM: Counts - SW - Ne
+
+oplus5:
+  <<: *default_lo_sw_species
+  CATDESC: Counts - SW - O+5
+  FIELDNAM: Counts - SW - O+5
+
+oplus6:
+  <<: *default_lo_sw_species
+  CATDESC: Counts - SW - O+6
+  FIELDNAM: Counts - SW - O+6
+
+oplus7:
+  <<: *default_lo_sw_species
+  CATDESC: Counts - SW - O+7
+  FIELDNAM: Counts - SW - O+7
+
+oplus8:
+  <<: *default_lo_sw_species
+  CATDESC: Counts - SW - O+8
+  FIELDNAM: Counts - SW - O+8
+
+si:
+  <<: *default_lo_sw_species
+  CATDESC: Counts - SW - Si
+  FIELDNAM: Counts - SW - Si
+
