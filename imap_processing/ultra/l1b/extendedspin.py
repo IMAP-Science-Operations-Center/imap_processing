@@ -4,6 +4,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.ultra.l1b.ultra_l1b_culling import (
+    count_rejected_events_per_spin,
     flag_attitude,
     flag_hk,
     flag_imap_instruments,
@@ -66,6 +67,13 @@ def calculate_extendedspin(
     # Get the number of pulses per spin.
     pulses = get_pulses_per_spin(rates_dataset)
 
+    # Track rejected events in each spin based on
+    # quality flags in de l1b data.
+    rejected_counts = count_rejected_events_per_spin(
+        de_dataset["spin"].values,
+        de_dataset["quality_scattering"].values,
+        de_dataset["quality_outliers"].values,
+    )
     # These will be the coordinates.
     extendedspin_dict["epoch"] = first_epochs
     extendedspin_dict["spin_number"] = spin
@@ -79,12 +87,7 @@ def calculate_extendedspin(
     extendedspin_dict["start_pulses_per_spin"] = pulses.start_per_spin
     extendedspin_dict["stop_pulses_per_spin"] = pulses.stop_per_spin
     extendedspin_dict["coin_pulses_per_spin"] = pulses.coin_per_spin
-    # TODO: this will be used to track rejected events in each
-    #  spin based on quality flags in de l1b data.
-    extendedspin_dict["rejected_events_per_spin"] = np.full_like(
-        spin, FILLVAL_UINT16, dtype=np.uint16
-    )
-
+    extendedspin_dict["rejected_events_per_spin"] = rejected_counts
     extendedspin_dict["quality_attitude"] = attitude_qf
     extendedspin_dict["quality_ena_rates"] = rates_qf
     extendedspin_dict["quality_hk"] = hk_qf

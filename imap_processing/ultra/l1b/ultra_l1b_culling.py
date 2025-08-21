@@ -20,6 +20,7 @@ from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
     get_scattering_coefficients,
 )
+from imap_processing.ultra.l1b.quality_flag_filters import DE_QUALITY_FLAG_FILTERS
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -537,3 +538,47 @@ def flag_scattering(
         quality_flags[np.where(event_mask)[0][either_exceeds]] |= (
             ImapDEScatteringUltraFlags.ABOVE_THRESHOLD.value
         )
+
+
+def count_rejected_events_per_spin(
+    spins: NDArray, quality_scattering: NDArray, quality_outliers: NDArray
+) -> NDArray:
+    """
+    Count rejected events per spin based on DE_QUALITY_FLAG_FILTERS.
+
+    Parameters
+    ----------
+    spins : NDArray
+        Spins in which each direct event is within.
+    quality_scattering : NDArray
+        Quality scattering flags.
+    quality_outliers : NDArray
+        Quality outliers flags.
+
+    Returns
+    -------
+    rejected_counts : NDArray
+        Rejected counts per spin.
+    """
+    # Bitmasks from the DE_QUALITY_FLAG_FILTERS
+    scattering_mask = sum(
+        flag.value for flag in DE_QUALITY_FLAG_FILTERS["quality_scattering"]
+    )
+    outliers_mask = sum(
+        flag.value for flag in DE_QUALITY_FLAG_FILTERS["quality_outliers"]
+    )
+
+    # Boolean mask where event is rejected due to relevant flags
+    rejected = ((quality_scattering & scattering_mask) != 0) | (
+        (quality_outliers & outliers_mask) != 0
+    )
+
+    # Unique spin numbers
+    unique_spins = np.unique(spins)
+
+    # Count rejected events per spin
+    rejected_counts = {
+        spin: int(np.count_nonzero(rejected[spins == spin])) for spin in unique_spins
+    }
+
+    return rejected_counts

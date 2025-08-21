@@ -15,6 +15,7 @@ from imap_processing.quality_flags import (
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.ultra_l1b_culling import (
     compare_aux_univ_spin_table,
+    count_rejected_events_per_spin,
     flag_attitude,
     flag_hk,
     flag_imap_instruments,
@@ -262,3 +263,17 @@ def test_flag_scattering(ancillary_files):
     )
     flag_scattering(tof_energy, theta, phi, ancillary_files, "ultra45", quality_flags)
     assert np.all(quality_flags == np.array([1, 1, 2, 2, 2, 2, 2, 2, 2]))
+
+
+def test_count_rejected_events_per_spin():
+    """Tests count_rejected_events_per_spin function."""
+
+    spins = np.array([0, 0, 0, 1, 1, 2, 2, 2, 2])
+    quality_scattering = np.array([0, 1, 0, 1, 1, 0, 0, 1, 0])
+    quality_outliers = np.array([0, 0, 1, 0, 1, 0, 1, 0, 0])
+
+    counted = count_rejected_events_per_spin(
+        spins, quality_scattering, quality_outliers
+    )
+
+    np.testing.array_equal(counted.scattering, np.array([2, 2, 2]))
