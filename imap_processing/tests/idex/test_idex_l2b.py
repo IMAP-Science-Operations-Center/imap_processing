@@ -1,5 +1,7 @@
 """Tests the L2b processing for IDEX data"""
 
+from unittest import mock
+
 import numpy as np
 import pytest
 import xarray as xr
@@ -215,6 +217,17 @@ def test_get_science_acquisition_on_percentage(decom_test_data_evt: list[xr.Data
     # The uptime should be less than 1% for both
     assert on_percentages[8] < 1
     assert on_percentages[9] < 1  # The uptime should be less than 1%
+
+
+def test_get_science_acquisition_on_percentage_no_acquisition(caplog):
+    """Test the function returns an empty dict when there is no science acquisition."""
+    with mock.patch(
+        "imap_processing.idex.idex_l2b.get_science_acquisition_timestamps",
+        return_value=([], [], []),
+    ):
+        on_percentages = get_science_acquisition_on_percentage(xr.Dataset())
+    assert not on_percentages
+    assert "No science acquisition events found" in caplog.text
 
 
 def test_compute_counts_by_charge_and_mass():

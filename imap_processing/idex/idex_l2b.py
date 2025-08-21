@@ -126,11 +126,6 @@ def idex_l2b(
     ) = compute_counts_by_charge_and_mass(l2a_dataset, epoch_doy_unique)
     # Get science acquisition percentage for each day
     daily_on_percentage = get_science_acquisition_on_percentage(evt_dataset)
-    if daily_on_percentage == {}:
-        logger.warning(
-            "No science acquisition uptime percentages found. Rates will all be set"
-            " to -1"
-        )
     (
         rate_by_charge,
         rate_by_mass,
@@ -654,7 +649,7 @@ def get_science_acquisition_on_percentage(evt_dataset: xr.Dataset) -> dict:
     if len(evt_time) == 0:
         logger.warning(
             "No science acquisition events found in event dataset. Returning empty "
-            "uptime percentages."
+            "uptime percentages. All rate variables will be set to -1."
         )
         return {}
     # Track total and 'on' durations per day
