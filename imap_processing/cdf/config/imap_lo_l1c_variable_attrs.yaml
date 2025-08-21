@@ -113,6 +113,10 @@ hae_longitude:
   FORMAT: I12
   UNITS: degrees
   LABLAXIS: Bin longitudes
+  DEPEND_1: spin_angle
+  DEPEND_2: off_angle
+  LABL_PTR_1: spin_angle_label
+  LABL_PTR_2: off_angle_label
 
 hae_latitude:
   <<: *default
@@ -123,6 +127,10 @@ hae_latitude:
   FORMAT: I12
   UNITS: degrees
   LABLAXIS: Bin latitudes
+  DEPEND_1: spin_angle
+  DEPEND_2: off_angle
+  LABL_PTR_1: spin_angle_label
+  LABL_PTR_2: off_angle_label
 
 exposure_time:
   <<: *default
