@@ -6,7 +6,6 @@ TEST_L0_FILE = TEST_DATA_PATH / "imap_codice_l0_raw_20241110_v001.pkts"
 TEST_L1A_FILES = [
     TEST_DATA_PATH / "imap_codice_l1a_hi-counters-aggregated_20241110_v999.cdf",
     TEST_DATA_PATH / "imap_codice_l1a_hi-counters-singles_20241110_v999.cdf",
-    TEST_DATA_PATH / "imap_codice_l1a_hi-direct-events_20241110_v999.cdf",
     TEST_DATA_PATH / "imap_codice_l1a_hi-ialirt_20241110_v999.cdf",
     TEST_DATA_PATH / "imap_codice_l1a_hi-omni_20241110_v999.cdf",
     TEST_DATA_PATH / "imap_codice_l1a_hi-priority_20241110_v999.cdf",
@@ -15,7 +14,6 @@ TEST_L1A_FILES = [
     TEST_DATA_PATH / "imap_codice_l1a_lo-counters-aggregated_20241110_v999.cdf",
     TEST_DATA_PATH / "imap_codice_l1a_lo-counters-singles_20241110_v999.cdf",
     TEST_DATA_PATH / "imap_codice_l1a_lo-ialirt_20241110_v999.cdf",
-    TEST_DATA_PATH / "imap_codice_l1a_lo-direct-events_20241110_v999.cdf",
     TEST_DATA_PATH / "imap_codice_l1a_lo-nsw-angular_20241110_v999.cdf",
     TEST_DATA_PATH / "imap_codice_l1a_lo-nsw-priority_20241110_v999.cdf",
     TEST_DATA_PATH / "imap_codice_l1a_lo-nsw-species_20241110_v999.cdf",
