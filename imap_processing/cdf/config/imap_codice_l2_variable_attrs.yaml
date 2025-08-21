@@ -23,8 +23,10 @@ max_epoch: &max_epoch 3155630469184000000
 #  -Replace hash with num, counts, or rates? '# / cm2 s sr MeV/nuc'
 #  -LABLAXIS: Diff. Intensity vs 'Diff. # Flux'  Both are used. Are these the same?
 #  -should fillval for lo-ialirt be negative instead of positive? See ISTP guidelines
-#  -what to do with duplicate spin_sector_index variables? Renamed the hi-ialirt one to hi-ialirt-spin_sector_index
-#   for now. The difference is in the VALIDMAX value, which is 4 for hi-ialirt-spin_sector_index and 12 for the others.
+#  -what to do with duplicate spin_sector_index variables? Added product prefix for now
+#   (hi-ialirt-spin_sector_index, lo-nsw-spin_sector_index). The difference is in the VALIDMAX value. the two lo ones
+#   are an exact match.
+#  -lo ialirt only has epoch as coordinate. Should there be more?
 
 
 # <=== Defaults ===>
@@ -132,57 +134,68 @@ energy_delta_attrs: &energy_delta_default
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
 
 spin_angles_attrs: &spin_angles_default
-  <<: *default
   VAR_TYPE: support_data
   CATDESC: Spin Angle
-  DEPEND_1: spin_sector_index
-  DEPEND_2: elevation_angle
   FIELDNAM: Spin Angle
   LABLAXIS: Spin Angle
   SCALETYP: linear
   UNITS: degrees
+  FILLVAL: *int_fillval
   VALIDMAX: 360.0
   VALIDMIN: 0.0
   FORMAT: '%f'
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifer:DirectionAngle.AzimuthAngle
 
+spin_sector_index_attrs: &spin_sector_index_default
+  VAR_TYPE: support_data
+  CATDESC: Spin Sector Index
+  FIELDNAM: Spin Sector Index
+  FORMAT: '%d'
+  LABLAXIS: ' '
+  SCALETYP: linear
+  UNITS: ' '
+  VALIDMAX: 1
+  VALIDMIN: 0
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+
 # <=== Coordinates ===>
 event_num:
-    CATDESC: Event Number
-    FIELDNAM: Event Number
-    FILLVAL: *uint16_fillval
-    FORMAT: I5
-    LABLAXIS: Event Number
-    SCALETYP: linear
-    UNITS: " "
-    VALIDMIN: 0
-    VALIDMAX: 10000
-    VAR_TYPE: support_data
-    DICT_KEY: SPASE>Support>SupportQuantity:Other
+  CATDESC: Event Number
+  FIELDNAM: Event Number
+  FILLVAL: *uint16_fillval
+  FORMAT: I5
+  LABLAXIS: Event Number
+  SCALETYP: linear
+  UNITS: " "
+  VALIDMIN: 0
+  VALIDMAX: 10000
+  VAR_TYPE: support_data
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 epoch_delta_minus:
-    CATDESC: Time from acquisition start to acquisition center
-    FIELDNAM: epoch_delta_minus
-    FILLVAL: *int_fillval
-    FORMAT: I18
-    LABLAXIS: epoch_delta_minus
-    SCALETYP: linear
-    UNITS: ns
-    VALIDMIN: *min_int
-    VALIDMAX: *max_int
-    VAR_TYPE: support_data
+  CATDESC: Time from acquisition start to acquisition center
+  FIELDNAM: epoch_delta_minus
+  FILLVAL: *int_fillval
+  FORMAT: I18
+  LABLAXIS: epoch_delta_minus
+  SCALETYP: linear
+  UNITS: ns
+  VALIDMIN: *min_int
+  VALIDMAX: *max_int
+  VAR_TYPE: support_data
 
 epoch_delta_plus:
-    CATDESC: Time from acquisition center to acquisition end
-    FIELDNAM: epoch_delta_plus
-    FILLVAL: *int_fillval
-    FORMAT: I18
-    LABLAXIS: epoch_delta_plus
-    SCALETYP: linear
-    UNITS: ns
-    VALIDMIN: *min_int
-    VALIDMAX: *max_int
-    VAR_TYPE: support_data
+  CATDESC: Time from acquisition center to acquisition end
+  FIELDNAM: epoch_delta_plus
+  FILLVAL: *int_fillval
+  FORMAT: I18
+  LABLAXIS: epoch_delta_plus
+  SCALETYP: linear
+  UNITS: ns
+  VALIDMIN: *min_int
+  VALIDMAX: *max_int
+  VAR_TYPE: support_data
 
 elevation_angle:
   CATDESC: Elevation Angle
@@ -193,6 +206,20 @@ elevation_angle:
   UNITS: degrees
   VALIDMAX: 180.0
   VALIDMIN: 0.0
+  VAR_TYPE: support_data
+
+spin_angle:
+  <<: *spin_angles_default
+
+energy_table:
+  CATDESC: Energy Table
+  FIELDNAM: Energy Table
+  FORMAT: '%f'
+  LABLAXIS: keV/e
+  SCALETYP: log
+  UNITS: keV/e
+  VALIDMAX: 82.0
+  VALIDMIN: 0.5
   VAR_TYPE: support_data
 
 energy_cno:
@@ -250,27 +277,19 @@ energy_uh:
   DELTA_MINUS_VAR: energy_uh_minus
   DELTA_PLUS_VAR: energy_uh_plus
 
-spin_sector_index:
-  CATDESC: Spin Sector Index
-  FIELDNAM: Spin Sector Index
-  FORMAT: '%d'
-  LABLAXIS: ' '
-  SCALETYP: linear
-  UNITS: ' '
+hi-sectored-spin_sector_index:
+  <<: *spin_sector_index_default
   VALIDMAX: 12
-  VALIDMIN: 0
-  VAR_TYPE: support_data
 
 hi-ialirt-spin_sector_index:
-  CATDESC: Spin Sector Index
-  FIELDNAM: Spin Sector Index
-  FORMAT: '%d'
-  LABLAXIS: ' '
-  SCALETYP: linear
-  UNITS: ' '
+  <<: *spin_sector_index_default
   VALIDMAX: 4
-  VALIDMIN: 0
-  VAR_TYPE: support_data
+
+lo-nsw-species-spin_sector_index:
+  <<: *spin_sector_index_default
+
+lo-sw-species-spin_sector_index:
+  <<: *spin_sector_index_default
 
 
 # <=== Labels ===>
@@ -1461,6 +1480,8 @@ hi-ialirt-h:
 
 hi-ialirt-spin_angles:
   <<: *spin_angles_default
+  DEPEND_1: spin_sector_index
+  DEPEND_2: elevation_angle
 
 # hi-omni Attributes
 hi-omni-energy_c_minus:
@@ -1683,4 +1704,6 @@ hi-sectored-energy_he3he4_plus:
 
 hi-sectored-spin_angles:
   <<: *spin_angles_default
+  DEPEND_1: spin_sector_index
+  DEPEND_2: elevation_angle
 
