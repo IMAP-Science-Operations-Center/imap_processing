@@ -373,7 +373,6 @@ def test_get_helio_sensitivity(monkeypatch, imap_ena_sim_metakernel):
     np.testing.assert_allclose(flat_sc, flat_helio, atol=1e-5)
 
 
-@pytest.mark.external_kernel
 def test_get_spacecraft_background_rates(
     rates_l1_test_path, use_fake_spin_data_for_time, ancillary_files
 ):
