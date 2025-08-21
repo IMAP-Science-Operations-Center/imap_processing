@@ -195,19 +195,19 @@ class TestHiPointingSet:
 
 @pytest.fixture
 def lo_pset_ds():
-    h_counts = np.zeros((1, 3600, 40, 7))
+    h_counts = np.zeros((1, 7, 3600, 40))
     h_counts[:, :, 0:10, :] = 1
 
-    exposure_time = np.full((1, 3600, 40, 7), 0.5)
+    exposure_time = np.full((1, 7, 3600, 40), 0.5)
     dataset = xr.Dataset()
     dataset["h_counts"] = xr.DataArray(
         h_counts,
-        dims=("epoch", "longitude", "latitude", "energy"),
+        dims=("epoch", "esa_energy_step", "spin_angle", "off_angle"),
         name="h_counts",
     )
     dataset["exposure_time"] = xr.DataArray(
         exposure_time,
-        dims=("epoch", "longitude", "latitude", "energy"),
+        dims=("epoch", "esa_energy_step", "spin_angle", "off_angle"),
         name="exposure_time",
     )
     dataset.coords["epoch"] = xr.DataArray(
@@ -215,20 +215,20 @@ def lo_pset_ds():
         dims=["epoch"],
         name="epoch",
     )
-    dataset.coords["longitude"] = xr.DataArray(
+    dataset.coords["spin_angle"] = xr.DataArray(
         [i for i in range(3600)],
-        dims=["longitude"],
-        name="longitude",
+        dims=["spin_angle"],
+        name="spin_angle",
     )
-    dataset.coords["latitude"] = xr.DataArray(
+    dataset.coords["off_angle"] = xr.DataArray(
         [i for i in range(40)],
-        dims=["latitude"],
-        name="latitude",
+        dims=["off_angle"],
+        name="off_angle",
     )
-    dataset.coords["energy"] = xr.DataArray(
+    dataset.coords["esa_energy_step"] = xr.DataArray(
         [i for i in range(1, 8)],
-        dims=["energy"],
-        name="energy",
+        dims=["esa_energy_step"],
+        name="esa_energy_step",
     )
 
     attr_mgr = ImapCdfAttributes()
