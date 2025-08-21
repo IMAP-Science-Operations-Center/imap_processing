@@ -5,18 +5,21 @@
 # For details on how the SDC selects ancillary files for processing, see:
 # https://imap-processing.readthedocs.io/en/latest/data-access/calibration-files.html
 #
+# Values in this file were taken from the mean values extracted by Paul Janzen from
+# data take on Nov 4/24 for Hi90 and Feb 8/25 for Hi45.
+#
 # This file will be used twice in Hi processing:
 #   - To generate a mapping from ESA Step to ESA Energy Step for each contiguous HVSCI
 #     interval. This is used in L1B DE processing.
 #   - In L2 processing to associate an ESA Energy Step to an Energy band.
 esa_energy_step,nominal_central_energy,inner_esa_voltage,inner_esa_delta_v,outer_esa_voltage,outer_esa_delta_v
 0,,0,25,0,25
-1,0.50,-472,25,122,25
-2,0.75,-713,25,164,25
-3,1.10,-1047,25,213,25
-4,1.65,-1564,25,270,25
-5,2.50,-2089,25,718,25
-6,3.75,-2893,25,1232,25
-7,5.70,-4147,25,2034,25
-8,8.52,-5948,25,3185,25
-9,12.8,-8650,25,4911,25
+1,0.50,-465,25,100,25
+2,0.75,-703,25,142,25
+3,1.10,-1010,25,191,25
+4,1.65,-1532,25,247,25
+5,2.50,-2056,25,695,25
+6,3.75,-2867,25,1213,25
+7,5.70,-4116,25,2014,25
+8,8.52,-5917,25,3169,25
+9,12.8,-8624,25,4897,25

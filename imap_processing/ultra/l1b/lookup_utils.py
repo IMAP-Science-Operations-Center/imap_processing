@@ -6,7 +6,7 @@ import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
 
-from imap_processing.quality_flags import ImapDEUltraFlags
+from imap_processing.quality_flags import ImapDEOutliersUltraFlags
 from imap_processing.ultra.constants import UltraConstants
 
 
@@ -283,7 +283,7 @@ def get_geometric_factor(
     geometric_factor = gf_table[phi_idx, theta_idx]
 
     outside_fov = ~is_inside_fov(np.deg2rad(phi), np.deg2rad(theta))
-    quality_flag[outside_fov] |= ImapDEUltraFlags.FOV.value
+    quality_flag[outside_fov] |= ImapDEOutliersUltraFlags.FOV.value
 
     return geometric_factor
 
@@ -474,7 +474,7 @@ def get_ph_corrected(
 
     # Flag where clamping occurred
     flagged_mask = (xlut != xlut_clamped) | (ylut != ylut_clamped)
-    quality_flag[flagged_mask] |= ImapDEUltraFlags.PHCORR.value
+    quality_flag[flagged_mask] |= ImapDEOutliersUltraFlags.PHCORR.value
 
     ph_correction = ph_correct_array[xlut_clamped, ylut_clamped]
 

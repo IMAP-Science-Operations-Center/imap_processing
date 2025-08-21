@@ -15,6 +15,7 @@ from imap_processing.mag.constants import (
     MAX_COMPRESSED_VECTOR_BITS,
     MAX_FINE_TIME,
     RANGE_BIT_WIDTH,
+    PrimarySensor,
 )
 from imap_processing.spice.time import met_to_ttj2000ns
 
@@ -241,6 +242,7 @@ class MagL1a:
     twos_complement()
     update_compression_array()
     vectors_per_second_attribute()
+    all_vectors_primary()
     """
 
     is_mago: bool
@@ -1117,3 +1119,27 @@ class MagL1a:
                 last_vectors_per_second = vecsec
 
         return output_str
+
+    def all_vectors_primary(self) -> bool:
+        """
+        Check if all vectors in the file are from the primary sensor.
+
+        For MAGO datasets, this checks if MAGO was consistently the primary sensor
+        across all packets. For MAGI datasets, this checks if MAGI was consistently
+        the primary sensor across all packets.
+
+        Returns
+        -------
+        bool
+            True if all vectors are from the primary sensor across all packets,
+            False otherwise.
+        """
+        expected_primary_value = (
+            PrimarySensor.MAGO.value if self.is_mago else PrimarySensor.MAGI.value
+        )
+
+        for _, packet in self.packet_definitions.items():
+            if packet.mago_is_primary != expected_primary_value:
+                return False
+
+        return True

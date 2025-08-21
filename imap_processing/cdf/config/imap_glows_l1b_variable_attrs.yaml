@@ -229,6 +229,18 @@ ecliptic_attrs:
   VAR_TYPE: support_data
   FORMAT: I1
 
+latitudinal_attrs:
+  <<: *default_attrs
+  VALIDMIN: 0
+  VALIDMAX: 360
+  CATDESC: Component index for cartesian latitudinal coordinates
+  FIELDNAM: Component index
+  LABLAXIS: Index
+  UNITS: ' '
+  FILLVAL: 999
+  VAR_TYPE: support_data
+  FORMAT: I3
+
 number_of_events:
   <<: *support_data_defaults
   CATDESC: Total number of events/counts in histogram

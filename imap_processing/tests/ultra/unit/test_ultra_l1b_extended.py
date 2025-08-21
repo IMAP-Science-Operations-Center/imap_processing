@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from imap_processing import imap_module_directory
-from imap_processing.quality_flags import ImapDEUltraFlags
+from imap_processing.quality_flags import ImapDEOutliersUltraFlags
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.l1b.lookup_utils import get_angular_profiles
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
@@ -394,7 +394,9 @@ def test_get_energy_pulse_height(
 
     test_xb = df_filt["Xb"].astype("float").values
     test_yb = df_filt["Yb"].astype("float").values
-    quality_flags = np.full(test_xb.shape, ImapDEUltraFlags.NONE.value, dtype=np.uint16)
+    quality_flags = np.full(
+        test_xb.shape, ImapDEOutliersUltraFlags.NONE.value, dtype=np.uint16
+    )
 
     energy, ph_correction = get_energy_pulse_height(
         de_dataset["stop_type"].data,
@@ -410,7 +412,9 @@ def test_get_energy_pulse_height(
 
     np.testing.assert_allclose(test_energy.to_numpy(), energy[ph_indices], atol=1e-2)
 
-    flagged_indices = np.nonzero(quality_flags != ImapDEUltraFlags.NONE.value)[0]
+    flagged_indices = np.nonzero(quality_flags != ImapDEOutliersUltraFlags.NONE.value)[
+        0
+    ]
 
     assert flagged_indices.size == 99
 

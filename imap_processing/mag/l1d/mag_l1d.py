@@ -9,7 +9,7 @@ from imap_processing.mag.l1d.mag_l1d_data import MagL1d, MagL1dConfiguration
 from imap_processing.mag.l2.mag_l2_data import ValidFrames
 
 
-def mag_l1d(
+def mag_l1d(  # noqa: PLR0912
     science_data: list[xr.Dataset],
     calibration_dataset: xr.Dataset,
     day_to_process: np.datetime64,
@@ -45,16 +45,18 @@ def mag_l1d(
     input_mago_burst = None
     for dataset in science_data:
         source = dataset.attrs.get("Logical_source", "")
-        if "norm-magi" in source:
-            input_magi_norm = dataset
-        elif "norm-mago" in source:
-            input_mago_norm = dataset
-        elif "burst-magi" in source:
-            input_magi_burst = dataset
-        elif "burst-mago" in source:
-            input_mago_burst = dataset
-        else:
-            raise ValueError(f"Input data has invalid logical source {source}")
+        instrument_mode = source.split("_")[-1]
+        match instrument_mode:
+            case "norm-magi":
+                input_magi_norm = dataset
+            case "norm-mago":
+                input_mago_norm = dataset
+            case "burst-magi":
+                input_magi_burst = dataset
+            case "burst-mago":
+                input_mago_burst = dataset
+            case _:
+                raise ValueError(f"Input data has invalid logical source {source}")
 
     if input_magi_norm is None or input_mago_norm is None:
         raise ValueError(
@@ -72,8 +74,9 @@ def mag_l1d(
     mago_vectors = input_mago_norm["vectors"].data[:, :3]
     magi_vectors = input_magi_norm["vectors"].data[:, :3]
 
-    # TODO: verify that MAGO is primary sensor for all vectors before applying
-    #  gradiometry
+    # Verify that MAGO is primary sensor for all vectors before applying gradiometry
+    if not input_mago_norm.attrs.get("all_vectors_primary", 1):
+        config.apply_gradiometry = False
 
     # TODO: L1D attributes
     attributes = ImapCdfAttributes()
@@ -95,12 +98,21 @@ def mag_l1d(
         day=day,
     )
 
+    # Nominally, this is expected to create MAGO data. However, if the configuration
+    # setting for always_output_mago is set to False, it will create MAGI data.
+
     l1d_norm.rotate_frame(ValidFrames.SRF)
     norm_srf_dataset = l1d_norm.generate_dataset(attributes, day_to_process)
     l1d_norm.rotate_frame(ValidFrames.DSRF)
     norm_dsrf_dataset = l1d_norm.generate_dataset(attributes, day_to_process)
+    l1d_norm.rotate_frame(ValidFrames.GSE)
+    norm_gse_dataset = l1d_norm.generate_dataset(attributes, day_to_process)
+    l1d_norm.rotate_frame(ValidFrames.RTN)
+    norm_rtn_dataset = l1d_norm.generate_dataset(attributes, day_to_process)
     output_datasets.append(norm_srf_dataset)
     output_datasets.append(norm_dsrf_dataset)
+    output_datasets.append(norm_gse_dataset)
+    output_datasets.append(norm_rtn_dataset)
 
     if input_mago_burst is not None and input_magi_burst is not None:
         # If burst data is provided, use it to create the burst L1d dataset
@@ -122,12 +134,43 @@ def mag_l1d(
             spin_offsets=l1d_norm.spin_offsets,
             day=day,
         )
+
+        # TODO: frame specific attributes may be required
         l1d_burst.rotate_frame(ValidFrames.SRF)
         burst_srf_dataset = l1d_burst.generate_dataset(attributes, day_to_process)
         l1d_burst.rotate_frame(ValidFrames.DSRF)
         burst_dsrf_dataset = l1d_burst.generate_dataset(attributes, day_to_process)
+        l1d_burst.rotate_frame(ValidFrames.GSE)
+        burst_gse_dataset = l1d_burst.generate_dataset(attributes, day_to_process)
+        l1d_burst.rotate_frame(ValidFrames.RTN)
+        burst_rtn_dataset = l1d_burst.generate_dataset(attributes, day_to_process)
         output_datasets.append(burst_srf_dataset)
         output_datasets.append(burst_dsrf_dataset)
+        output_datasets.append(burst_gse_dataset)
+        output_datasets.append(burst_rtn_dataset)
 
-    # TODO: Output ancillary files
+    # Output ancillary files
+    # Add spin offsets dataset from normal mode processing
+    if l1d_norm.spin_offsets is not None:
+        spin_offset_dataset = l1d_norm.generate_spin_offset_dataset()
+        spin_offset_dataset.attrs["Logical_source"] = "imap_mag_l1d-spin-offsets"
+        output_datasets.append(spin_offset_dataset)
+
+    # Add gradiometry offsets dataset if gradiometry was applied
+    if l1d_norm.config.apply_gradiometry and hasattr(l1d_norm, "gradiometry_offsets"):
+        gradiometry_dataset = l1d_norm.gradiometry_offsets.copy()
+        gradiometry_dataset.attrs["Logical_source"] = (
+            "imap_mag_l1d-gradiometry-offsets-norm"
+        )
+        output_datasets.append(gradiometry_dataset)
+
+        # Also add burst gradiometry offsets if burst data was processed
+        if input_mago_burst is not None and input_magi_burst is not None:
+            if hasattr(l1d_burst, "gradiometry_offsets"):
+                burst_gradiometry_dataset = l1d_burst.gradiometry_offsets.copy()
+                burst_gradiometry_dataset.attrs["Logical_source"] = (
+                    "imap_mag_l1d-gradiometry-offsets-burst"
+                )
+                output_datasets.append(burst_gradiometry_dataset)
+
     return output_datasets

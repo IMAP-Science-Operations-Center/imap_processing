@@ -12,6 +12,7 @@ from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c import ultra_l1c_pset_bins
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
+    calculate_background_rates,
     get_deadtime_interpolator,
     get_deadtime_ratios,
     get_energy_delta_minus_plus,
@@ -20,6 +21,7 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     get_helio_sensitivity,
     get_sectored_rates,
     get_spacecraft_background_rates,
+    get_spacecraft_count_rate_uncertainty,
     get_spacecraft_exposure_times,
     get_spacecraft_histogram,
     get_spacecraft_sensitivity,
@@ -49,15 +51,15 @@ def test_build_energy_bins():
     energy_bin_start = [interval[0] for interval in intervals]
     energy_bin_end = [interval[1] for interval in intervals]
 
-    assert energy_bin_start[0] == 0
-    assert energy_bin_start[1] == 3.385
+    assert energy_bin_start[0] == 3.385
+    assert np.allclose(energy_bin_start[1], 4.137, atol=1e-3)
     assert len(intervals) == 24
     assert energy_midpoints[0] == (energy_bin_start[0] + energy_bin_end[0]) / 2
 
     # Comparison to expected values.
-    np.testing.assert_allclose(energy_bin_end[1], 4.137, atol=1e-4)
-    np.testing.assert_allclose(energy_bin_start[-1], 279.810, atol=1e-4)
-    np.testing.assert_allclose(energy_bin_end[-1], 341.989, atol=1e-4)
+    np.testing.assert_allclose(energy_bin_end[1], 5.056, atol=1e-3)
+    np.testing.assert_allclose(energy_bin_start[-1], 341.989, atol=1e-3)
+    np.testing.assert_allclose(energy_bin_end[-1], 100000, atol=1e-3)
 
     expected_geometric_means = np.sqrt(
         np.array(energy_bin_start) * np.array(energy_bin_end)
@@ -104,8 +106,8 @@ def test_get_spacecraft_histogram(test_data):
     assert latitude.shape == (n_pix,)
     assert longitude.shape == (n_pix,)
 
-    # Spot check that 2 counts are in the third energy bin
-    assert np.sum(hist[2, :]) == 2
+    # Spot check that 1 count is in the first energy bin
+    assert np.sum(hist[1, :]) == 2
 
     # Test overlapping energy bins
     overlapping_bins = [
@@ -385,3 +387,59 @@ def test_get_helio_sensitivity(monkeypatch, imap_ena_sim_metakernel):
     flat_helio = np.nansum(helio_sensitivity, axis=0)
 
     np.testing.assert_allclose(flat_sc, flat_helio, atol=1e-5)
+
+
+@pytest.mark.external_kernel
+def test_calculate_background_rates(
+    rates_l1_test_path, use_fake_spin_data_for_time, ancillary_files
+):
+    "Tests calculate_background_rates function."
+    # Simulate a spin table from MET = 0 to MET = 141 * 15 seconds
+    use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
+    df = pd.read_csv(rates_l1_test_path)
+
+    rates = {
+        # Stop pulses
+        "stop_tn": df["StopTopNorthCFD"],
+        "stop_bn": df["StopBottomNorthCFD"],
+        "stop_te": df["StopTopEastCFD"],
+        "stop_be": df["StopBottomEastCFD"],
+        "stop_ts": df["StopTopSouthCFD"],
+        "stop_bs": df["StopBottomSouthCFD"],
+        "stop_tw": df["StopTopWestCFD"],
+        "stop_bw": df["StopBottomWestCFD"],
+        # Start pulses
+        "start_rf": df["StartRightFullCFD"],
+        "start_lf": df["StartLeftFullCFD"],
+        # Coincidence pulses
+        "coin_tn": df["CoinTopNorthCFD"],
+        "coin_bn": df["CoinBottomNorthCFD"],
+        "coin_ts": df["CoinTopSouthCFD"],
+        "coin_bs": df["CoinBottomSouthCFD"],
+        # Additional info
+        "shcoarse": df["TimeTag"],
+        "spin": df["Spin"],
+    }
+    energy_bin_edges, _, _ = build_energy_bins()
+    cullingmask_spin_number = np.array([130, 131])
+
+    background_rates = calculate_background_rates(
+        rates, "ultra45", ancillary_files, energy_bin_edges, cullingmask_spin_number
+    )
+
+    assert background_rates.shape == (len(energy_bin_edges), hp.nside2npix(128))
+    assert np.allclose(background_rates[0, :], np.full((196608,), 6.37052558e-11))
+
+
+def test_rate_uncertainty():
+    """Tests spacecraft_count_rate_uncertainty function."""
+
+    hist = np.array(
+        [[0.0, 1.0, 4.0], [9.0, 16.0, 25.0], [36.0, 49.0, 64.0], [0.0, 100.0, 121.0]]
+    )
+
+    exposure = np.ones_like(hist)
+    uncertainty = get_spacecraft_count_rate_uncertainty(hist, exposure)
+    expected = np.sqrt(hist)
+
+    np.testing.assert_allclose(uncertainty, expected, atol=1e-6)

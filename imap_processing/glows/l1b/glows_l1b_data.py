@@ -7,10 +7,18 @@ from pathlib import Path
 
 import numpy as np
 import xarray as xr
+from scipy.stats import circmean, circstd
 
 from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.utils.constants import TimeTuple
-from imap_processing.spice.time import met_to_datetime64
+from imap_processing.spice import geometry
+from imap_processing.spice.geometry import SpiceBody, SpiceFrame
+from imap_processing.spice.spin import (
+    get_instrument_spin_phase,
+    get_spin_angle,
+    get_spin_data,
+)
+from imap_processing.spice.time import met_to_datetime64, met_to_sclkticks, sct_to_et
 
 
 @dataclass
@@ -702,16 +710,17 @@ class HistogramL1B:
     # )  # Could be datetime TODO: Can't put a string in data
     imap_spin_angle_bin_cntr: np.ndarray = field(init=False)  # Same size as bins
     histogram_flag_array: np.ndarray = field(init=False)
-    spin_period_ground_average: np.double = field(init=False)  # retrieved from SPICE?
-    spin_period_ground_std_dev: np.double = field(init=False)  # retrieved from SPICE?
-    position_angle_offset_average: np.double = field(init=False)  # retrieved from SPICE
+    # These two are retrieved from spin data
+    spin_period_ground_average: np.double = field(init=False)
+    spin_period_ground_std_dev: np.double = field(init=False)
+    position_angle_offset_average: np.double = field(init=False)  # from SPICE
     position_angle_offset_std_dev: np.double = field(init=False)  # from SPICE
-    spin_axis_orientation_std_dev: np.double = field(init=False)  # from SPICE
-    spin_axis_orientation_average: np.double = field(init=False)  # retrieved from SPICE
-    spacecraft_location_average: np.ndarray = field(init=False)  # retrieved from SPIC
-    spacecraft_location_std_dev: np.ndarray = field(init=False)  # retrieved from SPIC
-    spacecraft_velocity_average: np.ndarray = field(init=False)  # retrieved from SPIC
-    spacecraft_velocity_std_dev: np.ndarray = field(init=False)  # retrieved from SPIC
+    spin_axis_orientation_std_dev: np.ndarray = field(init=False)  # from SPICE
+    spin_axis_orientation_average: np.ndarray = field(init=False)  # from SPICE
+    spacecraft_location_average: np.ndarray = field(init=False)  # from SPICE
+    spacecraft_location_std_dev: np.ndarray = field(init=False)  # from SPICE
+    spacecraft_velocity_average: np.ndarray = field(init=False)  # from SPICE
+    spacecraft_velocity_std_dev: np.ndarray = field(init=False)  # from SPICE
     flags: np.ndarray = field(init=False)
     ancillary_exclusions: InitVar[AncillaryExclusions]
     ancillary_parameters: InitVar[AncillaryParameters]
@@ -754,18 +763,8 @@ class HistogramL1B:
         # self.histogram_flag_array = np.zeros((2,))
         day = met_to_datetime64(self.imap_start_time)
 
-        # TODO: These pieces will need to be filled in from SPICE kernels. For now,
-        #  they are placeholders. GLOWS example code has better placeholders if needed.
-        self.spin_period_ground_average = np.double(-999.9)
-        self.spin_period_ground_std_dev = np.double(-999.9)
-        self.position_angle_offset_average = np.double(-999.9)
-        self.position_angle_offset_std_dev = np.double(-999.9)
-        self.spin_axis_orientation_std_dev = np.double(-999.9)
-        self.spin_axis_orientation_average = np.double(-999.9)
-        self.spacecraft_location_average = np.array([-999.9, -999.9, -999.9])
-        self.spacecraft_location_std_dev = np.array([-999.9, -999.9, -999.9])
-        self.spacecraft_velocity_average = np.array([-999.9, -999.9, -999.9])
-        self.spacecraft_velocity_std_dev = np.array([-999.9, -999.9, -999.9])
+        # Add SPICE related variables
+        self.update_spice_parameters()
         # Will require some additional inputs
         self.imap_spin_angle_bin_cntr = np.zeros((3600,))
 
@@ -809,6 +808,76 @@ class HistogramL1B:
         #     np.datetime64(int(self.imap_start_time), "ns"), "s"
         # )
         self.flags = np.ones((FLAG_LENGTH,), dtype=np.uint8)
+
+    def update_spice_parameters(self) -> None:
+        """Update SPICE parameters based on the current state."""
+        data_start_met = self.imap_start_time
+        # use of imap_start_time and glows_time_offset is correct.
+        data_end_met = np.double(self.imap_start_time) + np.double(
+            self.glows_time_offset
+        )
+        data_start_time_et = sct_to_et(met_to_sclkticks(data_start_met))
+        data_end_time_et = sct_to_et(met_to_sclkticks(data_end_met))
+
+        time_range = np.arange(data_start_time_et, data_end_time_et)
+
+        # Calculate spin period
+        # ---------------------
+        spin_data = get_spin_data()
+        # select spin data within the range from data start time to end time
+        spin_data = spin_data[
+            (spin_data["spin_start_met"] >= data_start_met)
+            & (spin_data["spin_start_met"] <= data_end_met)
+        ]
+
+        self.spin_period_ground_average = np.average(spin_data["spin_period_sec"])
+        self.spin_period_ground_std_dev = np.std(spin_data["spin_period_sec"])
+
+        # Calculate position angle offset
+        # --------------------------------
+        angle_offset = 360 - get_spin_angle(
+            get_instrument_spin_phase(
+                self.imap_start_time, instrument=geometry.SpiceFrame.IMAP_GLOWS
+            ),
+            degrees=True,
+        )
+        self.position_angle_offset_average = np.double(angle_offset)
+        self.position_angle_offset_std_dev = np.double(
+            0.0
+        )  # Set to zero per algorithm document
+
+        # Calculate spin axis orientation
+
+        spin_axis_all_times = geometry.cartesian_to_latitudinal(
+            geometry.frame_transform(
+                time_range,
+                np.array([0, 0, 1]),
+                SpiceFrame.IMAP_DPS,
+                SpiceFrame.ECLIPJ2000,
+            )
+        )
+        # Calculate circular statistics for longitude (wraps around)
+        lon_mean = circmean(spin_axis_all_times[..., 1], low=-np.pi, high=np.pi)
+        lon_std = circstd(spin_axis_all_times[..., 1], low=-np.pi, high=np.pi)
+        lat_mean = circmean(spin_axis_all_times[..., 2], low=-np.pi, high=np.pi)
+        lat_std = circstd(spin_axis_all_times[..., 2], low=-np.pi, high=np.pi)
+        self.spin_axis_orientation_average = np.array([lon_mean, lat_mean])
+        self.spin_axis_orientation_std_dev = np.array([lon_std, lat_std])
+
+        # Calculate spacecraft location and velocity
+        # ------------------------------------------
+        # imap_state returns [x, y, z, vx, vy, vz].
+        # First three columns for position and last three for velocity.
+        imap_state = geometry.imap_state(
+            et=time_range, ref_frame=SpiceFrame.ECLIPJ2000, observer=SpiceBody.SUN
+        )
+        position = imap_state[:, :3]
+        velocity = imap_state[:, 3:]
+        # averange and standard deviation over time (rows)
+        self.spacecraft_location_average = np.average(position, axis=0)
+        self.spacecraft_location_std_dev = np.std(position, axis=0)
+        self.spacecraft_velocity_average = np.average(velocity, axis=0)
+        self.spacecraft_velocity_std_dev = np.std(velocity, axis=0)
 
     def output_data(self) -> tuple:
         """

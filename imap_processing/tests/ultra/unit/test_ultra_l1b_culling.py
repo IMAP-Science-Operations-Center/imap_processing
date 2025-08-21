@@ -7,6 +7,7 @@ import pytest
 from imap_processing import imap_module_directory
 from imap_processing.quality_flags import (
     ImapAttitudeUltraFlags,
+    ImapDEScatteringUltraFlags,
     ImapHkUltraFlags,
     ImapInstrumentUltraFlags,
     ImapRatesUltraFlags,
@@ -18,6 +19,7 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     flag_hk,
     flag_imap_instruments,
     flag_rates,
+    flag_scattering,
     get_energy_histogram,
     get_n_sigma,
     get_pulses_per_spin,
@@ -210,7 +212,7 @@ def test_get_pulses(rates_l1_test_path, use_fake_spin_data_for_time):
         "spin": df["Spin"],
     }
 
-    start_per_spin, stop_per_spin, coin_per_spin = get_pulses_per_spin(pulse_dict)
+    pulses = get_pulses_per_spin(pulse_dict)
     unique_spins = np.unique(pulse_dict["spin"])
 
     start_pulses_total = pulse_dict["start_rf"] + pulse_dict["start_lf"]
@@ -231,6 +233,32 @@ def test_get_pulses(rates_l1_test_path, use_fake_spin_data_for_time):
 
     for i, spin in enumerate(unique_spins):
         mask = pulse_dict["spin"] == spin
-        assert np.isclose(start_per_spin[i], np.sum(start_pulses_total[mask]))
-        assert np.isclose(stop_per_spin[i], np.sum(stop_pulses_total[mask]))
-        assert np.isclose(coin_per_spin[i], np.sum(coin_pulses_total[mask]))
+        assert np.isclose(pulses.start_per_spin[i], np.sum(start_pulses_total[mask]))
+        assert np.isclose(pulses.stop_per_spin[i], np.sum(stop_pulses_total[mask]))
+        assert np.isclose(pulses.coin_per_spin[i], np.sum(coin_pulses_total[mask]))
+
+    np.testing.assert_allclose(pulses.start_pulses, start_pulses_total)
+    np.testing.assert_allclose(pulses.stop_pulses, stop_pulses_total)
+    np.testing.assert_allclose(pulses.coin_pulses, coin_pulses_total)
+
+
+@pytest.mark.external_test_data
+def test_flag_scattering(ancillary_files):
+    """Tests flag_scattering function."""
+    tof_energy = np.full(9, 0.5)
+    theta = np.full(9, 30.0)
+    phi = np.full(9, 60.0)
+    quality_flags = np.full(
+        phi.shape, ImapDEScatteringUltraFlags.NONE.value, dtype=np.uint16
+    )
+    flag_scattering(tof_energy, theta, phi, ancillary_files, "ultra45", quality_flags)
+    assert np.all(quality_flags == 0)
+
+    tof_energy = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9])
+    theta = np.array([1, 2, 50, 50, 50, 60, 70, 80, 90])
+    phi = np.array([10, 20, 30, 40, 50, 60, 70, 80, 90])
+    quality_flags = np.full(
+        phi.shape, ImapDEScatteringUltraFlags.NONE.value, dtype=np.uint16
+    )
+    flag_scattering(tof_energy, theta, phi, ancillary_files, "ultra45", quality_flags)
+    assert np.all(quality_flags == np.array([1, 1, 2, 2, 2, 2, 2, 2, 2]))
