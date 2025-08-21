@@ -1,5 +1,6 @@
 """Test coverage for imap_processing.hi.l2.hi_l2.py"""
 
+from unittest import mock
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -46,7 +47,12 @@ def empty_rectangular_map_dataset() -> xr.Dataset:
 def test_hi_l2(hi_l1_test_data_path, imap_ena_sim_metakernel):
     """Integration type test for hi_l2()"""
     pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
-    l2_dataset = hi_l2([pset_path], None, None, "h90-ena-h-sf-nsp-full-hae-4deg-3mo")[0]
+    esa_energies_lut_path = (
+        hi_l1_test_data_path / "imap_hi_90sensor-esa-energies_20240101_v001.csv"
+    )
+    l2_dataset = hi_l2(
+        [pset_path], None, esa_energies_lut_path, "h90-ena-h-sf-nsp-full-hae-4deg-3mo"
+    )[0]
     assert isinstance(l2_dataset, xr.Dataset)
     assert len(l2_dataset.data_vars) == 15
     np.testing.assert_array_equal(
@@ -81,8 +87,11 @@ def test_hi_l2_uses_descriptor_to_setup_map(
     )
 
 
+@mock.patch("imap_processing.hi.hi_l2.calculate_ena_intensity", autospec=True)
 @pytest.mark.external_test_data
-def test_genarate_hi_map(hi_l1_test_data_path, furnish_kernels):
+def test_genarate_hi_map(
+    mock_calc_ena_intensity, hi_l1_test_data_path, furnish_kernels
+):
     """Test coverage for genarate_hi_map()"""
 
     kernels = [
@@ -108,6 +117,9 @@ def test_genarate_hi_map(hi_l1_test_data_path, furnish_kernels):
     assert isinstance(sky_map, RectangularSkyMap)
     assert sky_map.spacing_deg == 6
     assert sky_map.spice_reference_frame == SpiceFrame.IMAP_GCS
+
+    # Check that calculate_ena_intensities was called
+    mock_calc_ena_intensity.assert_called_once()
 
     # Test that we got some non-zero values
     for var_name in ["counts", "exposure_factor", "obs_date"]:
@@ -162,8 +174,11 @@ def test_calculate_ena_signal_rates(empty_rectangular_map_dataset):
     assert np.nanmin(signal_rates_vars["ena_signal_rate_stat_unc"].values) == 1 / 2
 
 
-def test_calculate_ena_intensity(empty_rectangular_map_dataset):
+def test_calculate_ena_intensity(empty_rectangular_map_dataset, hi_l1_test_data_path):
     """Test coverage for calculate_ena_intensity"""
+    esa_energies_lut_path = (
+        hi_l1_test_data_path / "imap_hi_90sensor-esa-energies_20240101_v001.csv"
+    )
     # Start with an empty (coords only) dataset
     map_ds = empty_rectangular_map_dataset
     # Add some data_vars needed for the ena intensity calculations
@@ -188,7 +203,7 @@ def test_calculate_ena_intensity(empty_rectangular_map_dataset):
             ),
         }
     )
-    ena_intesity_vars = calculate_ena_intensity(map_ds, None, None)
+    ena_intesity_vars = calculate_ena_intensity(map_ds, None, esa_energies_lut_path)
 
     # TODO: add value/functional test checks once the full algorithm is implemented
     for var_name in [
