@@ -244,14 +244,21 @@ def test_get_pulses(rates_l1_test_path, use_fake_spin_data_for_time):
 
 @pytest.mark.external_test_data
 def test_flag_scattering(ancillary_files):
-    """Tests 2, 2, 2, 2, 2, 2, 2 function."""
+    """Tests flag_scattering function."""
+    tof_energy = np.full(9, 0.5)
+    theta = np.full(9, 30.0)
+    phi = np.full(9, 60.0)
+    quality_flags = np.full(
+        phi.shape, ImapDEScatteringUltraFlags.NONE.value, dtype=np.uint16
+    )
+    flag_scattering(tof_energy, theta, phi, ancillary_files, "ultra45", quality_flags)
+    assert np.all(quality_flags == 0)
+
     tof_energy = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9])
     theta = np.array([1, 2, 50, 50, 50, 60, 70, 80, 90])
     phi = np.array([10, 20, 30, 40, 50, 60, 70, 80, 90])
     quality_flags = np.full(
         phi.shape, ImapDEScatteringUltraFlags.NONE.value, dtype=np.uint16
     )
-
     flag_scattering(tof_energy, theta, phi, ancillary_files, "ultra45", quality_flags)
-
     assert np.all(quality_flags == np.array([1, 1, 2, 2, 2, 2, 2, 2, 2]))
