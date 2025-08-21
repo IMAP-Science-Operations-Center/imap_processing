@@ -6,9 +6,13 @@ max_int: &max_int 9223372036854775807
 # TODO:
 #  -update fillval, validmin and validmax for floats (look at l1a yaml)
 #  -add DICT_KEY where applicable
-#  -Update default_attrs as needed (i.e. format)
+#  -Update default_attrs where needed (i.e. format)
 #  -Update format to use Fortran values
 #  -Add coordinate attributes
+#  -Add LABLAXIS or LABL_PTR_1 where applicable
+#  -Add energy defaults
+#  -Add energy delta defaults
+#  -Should energy delta vars have DEPEND_1: energy_XX to point to energy it's a delta of?
 
 
 # <=== Defaults ===>
@@ -80,6 +84,7 @@ default_lo_ialirt_attrs: &default_lo_ialirt
   DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 default_hi_ialirt_attrs: &default_hi_ialirt
+  <<: *default
   VAR_TYPE: support_data
   FORMAT: '%f'
   SCALETYP: log
@@ -87,6 +92,34 @@ default_hi_ialirt_attrs: &default_hi_ialirt
   VALIDMAX: 200.0
   VALIDMIN: 0.05000000074505806
   DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+default_hi_omni_attrs: &default_hi_omni
+  <<: *default
+  VAR_TYPE: data
+  DISPLAY_TYPE: time_series
+  FILLVAL: 4294967294
+  FORMAT: '%f'
+  LABLAXIS: Diff. Intensity
+  SCALETYP: linear
+  UNITS: '# / cm2 s sr MeV/nuc'
+  VALIDMAX: 16777216.0
+  VALIDMIN: 0
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+default_omni_energy_attrs: &default_omni_energy
+  <<: *default_hi_omni
+  CATDESC: Energy Table
+  LABLAXIS: MeV/nuc
+  SCALETYP: log
+  UNITS: MeV/nuc
+  VALIDMAX: 200.0
+  VALIDMIN: 0.05000000074505806
+  VAR_TYPE: support_data
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Characteristic
+
+default_omni_energy_delta_attrs: &default_omni_energy_delta
+  <<: *default_omni_energy
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
 
 # <=== Coordinates ===>
 event_num:
@@ -1258,50 +1291,50 @@ lo-nsw-angular-heplusplus:
   FIELDNAM: Non-Sunward Facing Counts - NSW - He++
 
 # lo-ialirt Attributes
-c_over_o_abundance_ratio:
+lo-ialirt-c_over_o_abundance_ratio:
   <<: *default_lo_ialirt
   CATDESC: Elemental Abundance Ratio - C/O
   FIELDNAM: C/O
 
-c_plus_6_over_c_plus_5_ratio:
+lo-ialirt-c_plus_6_over_c_plus_5_ratio:
   <<: *default_lo_ialirt
   CATDESC: Charge State Ratio - C+6/C+5
   FIELDNAM: C+6/C+5
 
-fe_low_over_fe_high_ratio:
+lo-ialirt-fe_low_over_fe_high_ratio:
   <<: *default_lo_ialirt
   CATDESC: Charge State Ratio - Fe(low)/Fe(high)
   FIELDNAM: Fe(low)/Fe(high)
 
-fe_over_o_abundance_ratio:
+lo-ialirt-fe_over_o_abundance_ratio:
   <<: *default_lo_ialirt
   CATDESC: Elemental Abundance Ratio - Fe/O
   FIELDNAM: Fe/O
 
-mg_over_o_abundance_ratio:
+lo-ialirt-mg_over_o_abundance_ratio:
   <<: *default_lo_ialirt
   CATDESC: Elemental Abundance Ratio - Mg/O
   FIELDNAM: Mg/O
 
-o_plus_7_over_o_plus_6_ratio:
+lo-ialirt-o_plus_7_over_o_plus_6_ratio:
   <<: *default_lo_ialirt
   CATDESC: Charge State Ratio - O+7/O+6
   FIELDNAM: O+7/O+6
 
 # hi-ialirt Attributes
-energy_h_minus:
+hi-ialirt-energy_h_minus:
   <<: *default_hi_ialirt
   CATDESC: Energy Table Minus value
   FIELDNAM: energy delta minus
   LABLAXIS: MeV/nuc
 
-energy_h_plus:
+hi-ialirt-energy_h_plus:
   <<: *default_hi_ialirt
   CATDESC: Energy Table Plus value
   FIELDNAM: energy delta plus
   LABLAXIS: MeV/nuc
 
-h:
+hi-ialirt-h:
   <<: *default_hi_ialirt
   CATDESC: h (x2 spacing)
   DEPEND_0: epoch
@@ -1318,7 +1351,7 @@ h:
   VALIDMIN: 0
   VAR_TYPE: data
 
-spin_angles:
+hi-ialirt-spin_angles:
   <<: *default_hi_ialirt
   CATDESC: Spin Angle
   DEPEND_1: spin_sector_index
@@ -1329,3 +1362,139 @@ spin_angles:
   UNITS: degrees
   VALIDMAX: 360.0
   VALIDMIN: 0.0
+
+# hi-omni Attributes
+hi-omni-c:
+  <<: *default_hi_omni
+  CATDESC: c (Root 2 spacing)
+  DEPEND_0: epoch
+  DEPEND_1: energy_c
+  FIELDNAM: c
+
+hi-omni-energy_c_minus:
+  <<: *default_omni_energy_delta
+  FIELDNAM: energy delta minus
+
+hi-omni-energy_c_plus:
+  <<: *default_omni_energy_delta
+  FIELDNAM: energy delta plus
+
+hi-omni-energy_fe_minus:
+  <<: *default_omni_energy_delta
+  FIELDNAM: energy delta minus
+
+hi-omni-energy_fe_plus:
+  <<: *default_omni_energy_delta
+  FIELDNAM: energy delta plus
+
+hi-omni-energy_h_minus:
+  <<: *default_omni_energy_delta
+  FIELDNAM: energy delta minus
+
+hi-omni-energy_h_plus:
+  <<: *default_omni_energy_delta
+  FIELDNAM: energy delta plus
+
+hi-omni-energy_he3_minus:
+  <<: *default_omni_energy_delta
+  FIELDNAM: energy delta minus
+
+hi-omni-energy_he3_plus:
+  <<: *default_omni_energy_delta
+  FIELDNAM: energy delta plus
+
+hi-omni-energy_he4_minus:
+  <<: *default_omni_energy_delta
+  FIELDNAM: energy delta minus
+
+hi-omni-energy_he4_plus:
+  <<: *default_omni_energy_delta
+  FIELDNAM: energy delta plus
+
+hi-omni-energy_junk_minus:
+  <<: *default_omni_energy_delta
+  FIELDNAM: energy delta minus
+
+hi-omni-energy_junk_plus:
+  <<: *default_omni_energy_delta
+  FIELDNAM: energy delta plus
+
+hi-omni-energy_ne_mg_si_minus:
+  <<: *default_omni_energy_delta
+  FIELDNAM: energy delta minus
+
+hi-omni-energy_ne_mg_si_plus:
+  <<: *default_omni_energy_delta
+  FIELDNAM: energy delta plus
+
+hi-omni-energy_o_minus:
+  <<: *default_omni_energy_delta
+  FIELDNAM: energy delta minus
+
+hi-omni-energy_o_plus:
+  <<: *default_omni_energy_delta
+  FIELDNAM: energy delta plus
+
+hi-omni-energy_uh_minus:
+  <<: *default_omni_energy_delta
+  FIELDNAM: energy delta minus
+
+hi-omni-energy_uh_plus:
+  <<: *default_omni_energy_delta
+  FIELDNAM: energy delta plus
+
+hi-omni-fe:
+  <<: *default_hi_omni
+  CATDESC: fe (Root 2 spacing)
+  DEPEND_0: epoch
+  DEPEND_1: energy_fe
+  FIELDNAM: fe
+
+hi-omni-h:
+  <<: *default_hi_omni
+  CATDESC: h (Root 2 spacing)
+  DEPEND_0: epoch
+  DEPEND_1: energy_h
+  FIELDNAM: h
+
+hi-omni-he3:
+  <<: *default_hi_omni
+  CATDESC: he3 (Root 2 spacing)
+  DEPEND_0: epoch
+  DEPEND_1: energy_he3
+  FIELDNAM: he3
+
+hi-omni-he4:
+  <<: *default_hi_omni
+  CATDESC: he4 (Root 2 spacing)
+  DEPEND_0: epoch
+  DEPEND_1: energy_he4
+  FIELDNAM: he4
+
+hi-omni-junk:
+  <<: *default_hi_omni
+  CATDESC: junk (Root 2 spacing)
+  DEPEND_0: epoch
+  DEPEND_1: energy_junk
+  FIELDNAM: junk
+
+hi-omni-ne_mg_si:
+  <<: *default_hi_omni
+  CATDESC: ne-mg-si (Root 2 spacing)
+  DEPEND_0: epoch
+  DEPEND_1: energy_ne_mg_si
+  FIELDNAM: ne-mg-si
+
+hi-omni-o:
+  <<: *default_hi_omni
+  CATDESC: o (Root 2 spacing)
+  DEPEND_0: epoch
+  DEPEND_1: energy_o
+  FIELDNAM: o
+
+hi-omni-uh:
+  <<: *default_hi_omni
+  CATDESC: uh (Root 2 spacing)
+  DEPEND_0: epoch
+  DEPEND_1: energy_uh
+  FIELDNAM: uh
