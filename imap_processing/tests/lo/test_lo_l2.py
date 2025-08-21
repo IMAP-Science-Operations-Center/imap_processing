@@ -23,17 +23,20 @@ def pset():
 
     dataset = xr.Dataset(
         {
-            "h_counts": (("epoch", "energy", "longitude", "latitude"), h_counts),
+            "h_counts": (
+                ("epoch", "esa_energy_step", "spin_angle", "off_angle"),
+                h_counts,
+            ),
             "exposure_time": (
-                ("epoch", "energy", "longitude", "latitude"),
+                ("epoch", "esa_energy_step", "spin_angle", "off_angle"),
                 exposure_time,
             ),
         },
         coords={
             "epoch": [8.1794907049e17],
-            "energy": [i for i in range(1, 8)],
-            "longitude": [i for i in range(3600)],
-            "latitude": [i for i in range(40)],
+            "esa_energy_step": [i for i in range(1, 8)],
+            "spin_angle": [i for i in range(3600)],
+            "off_angle": [i for i in range(40)],
         },
     )
     return dataset

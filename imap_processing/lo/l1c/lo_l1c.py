@@ -107,16 +107,12 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
             full_counts, l1b_goodtimes_only
         )
     pset.attrs = attr_mgr.get_global_attributes(logical_source)
-    # TODO: Temp fix before adding attribute variables.
-    #  CDF won't open if DEPEND_0 is not deleted currently.
-    del pset["epoch"].attrs["DEPEND_0"]
 
     pset = pset.assign_coords(
         {
-            "epoch": pset["epoch"],
-            "energy": np.arange(1, 8),
-            "longitude": np.arange(3600),
-            "latitude": np.arange(40),
+            "esa_energy_step": np.arange(1, 8),
+            "spin_angle": np.arange(3600),
+            "off_angle": np.arange(40),
         }
     )
 
@@ -289,7 +285,7 @@ def create_pset_counts(
 
     counts = xr.DataArray(
         data=hist.astype(np.int16),
-        dims=["epoch", "energy", "longitude", "latitude"],
+        dims=["epoch", "esa_energy_step", "spin_angle", "off_angle"],
     )
 
     return counts
@@ -336,7 +332,7 @@ def calculate_exposure_times(counts: xr.DataArray, l1b_de: xr.Dataset) -> xr.Dat
 
     exposure_time = xr.DataArray(
         data=stat.astype(np.float16),
-        dims=["epoch", "energy", "longitude", "latitude"],
+        dims=["epoch", "esa_energy_step", "spin_angle", "off_angle"],
     )
 
     return exposure_time
@@ -368,8 +364,6 @@ def create_datasets(
     #  can be used direction
     epoch_converted_time = [1]
 
-    # Create a data array for the epoch time
-    # TODO: might need to update the attrs to use new YAML file
     epoch_time = xr.DataArray(
         data=epoch_converted_time,
         name="epoch",
@@ -378,38 +372,54 @@ def create_datasets(
     )
 
     if logical_source == "imap_lo_l1c_pset":
-        esa_step = xr.DataArray(
+        esa_energy_step = xr.DataArray(
             data=[1, 2, 3, 4, 5, 6, 7],
-            name="esa_step",
-            dims=["esa_step"],
-            attrs=attr_mgr.get_variable_attributes("esa_step"),
+            name="esa_energy_step",
+            dims=["esa_energy_step"],
+            attrs=attr_mgr.get_variable_attributes("esa_energy_step"),
         )
-        pointing_bins = xr.DataArray(
-            data=np.arange(3600),
-            name="pointing_bins",
-            dims=["pointing_bins"],
-            attrs=attr_mgr.get_variable_attributes("pointing_bins"),
-        )
-
-        esa_step_label = xr.DataArray(
-            esa_step.values.astype(str),
+        esa_energy_step_label = xr.DataArray(
+            esa_energy_step.values.astype(str),
             name="esa_step_label",
             dims=["esa_step_label"],
             attrs=attr_mgr.get_variable_attributes("esa_step_label"),
         )
-        pointing_bins_label = xr.DataArray(
-            pointing_bins.values.astype(str),
-            name="pointing_bins_label",
-            dims=["pointing_bins_label"],
-            attrs=attr_mgr.get_variable_attributes("pointing_bins_label"),
+
+        spin_angle = xr.DataArray(
+            data=np.arange(3600),
+            name="spin_angle",
+            dims=["spin_angle"],
+            attrs=attr_mgr.get_variable_attributes("spin_angle"),
         )
+        spin_angle_label = xr.DataArray(
+            spin_angle.values.astype(str),
+            name="spin_angle_label",
+            dims=["spin_angle_label"],
+            attrs=attr_mgr.get_variable_attributes("spin_angle_label"),
+        )
+
+        off_angle = xr.DataArray(
+            data=np.arange(40),
+            name="off_angle",
+            dims=["off_angle"],
+            attrs=attr_mgr.get_variable_attributes("off_angle"),
+        )
+        off_angle_label = xr.DataArray(
+            spin_angle.values.astype(str),
+            name="off_angle_label",
+            dims=["off_angle_label"],
+            attrs=attr_mgr.get_variable_attributes("off_angle_label"),
+        )
+
         dataset = xr.Dataset(
             coords={
                 "epoch": epoch_time,
-                "pointing_bins": pointing_bins,
-                "pointing_bins_label": pointing_bins_label,
-                "esa_step": esa_step,
-                "esa_step_label": esa_step_label,
+                "esa_energy_step": esa_energy_step,
+                "esa_energy_step_label": esa_energy_step_label,
+                "spin_angle": spin_angle,
+                "spin_angle_label": spin_angle_label,
+                "off_angle": off_angle,
+                "off_angle_label": off_angle_label,
             },
             attrs=attr_mgr.get_global_attributes(logical_source),
         )
@@ -429,30 +439,34 @@ def create_datasets(
 
         # Create a data array for the current field and add it to the dataset
         # TODO: TEMPORARY. need to update to use l1b data once that's available.
-        if field in ["pointing_start", "pointing_end", "mode", "pivot_angle"]:
+        if field in [
+            "pointing_start_met",
+            "pointing_end_met",
+            "esa_mode",
+            "pivot_angle",
+        ]:
             dataset[field] = xr.DataArray(
                 data=[1],
                 dims=dims,
                 attrs=attr_mgr.get_variable_attributes(field),
             )
         # TODO: This is temporary.
-        #  The data type will be set in the data class when that's created
         elif field == "exposure_time":
             dataset[field] = xr.DataArray(
-                data=np.ones((1, 7), dtype=np.float16),
+                data=np.ones((1, 7, 3600, 40), dtype=np.float16),
                 dims=dims,
                 attrs=attr_mgr.get_variable_attributes(field),
             )
 
-        elif "rate" in field:
+        elif "rates" in field:
             dataset[field] = xr.DataArray(
-                data=np.ones((1, 3600, 7), dtype=np.float16),
+                data=np.ones((1, 7, 3600, 40), dtype=np.float16),
                 dims=dims,
                 attrs=attr_mgr.get_variable_attributes(field),
             )
         else:
             dataset[field] = xr.DataArray(
-                data=np.ones((1, 3600, 7), dtype=np.int16),
+                data=np.ones((1, 7, 3600, 40), dtype=np.int16),
                 dims=dims,
                 attrs=attr_mgr.get_variable_attributes(field),
             )
