@@ -1,7 +1,19 @@
 # <=== Useful Variables ===>
 int_fillval: &int_fillval -9223372036854775808
+uint8_fillval: &uint8_fillval 255
+uint16_fillval: &uint16_fillval 65535
+uint32_fillval: &uint32_fillval 4294967295
+real_fillval: &real_fillval -1.0e+31
+
 min_int: &min_int -9223372036854775808
+min_epoch: &min_epoch -315575942816000000
+
 max_int: &max_int 9223372036854775807
+max_uint8: &max_uint8 255
+max_uint16: &max_uint16 65535
+max_uint24: &max_uint24 8388607
+max_uint32: &max_uint32 4294967295
+max_epoch: &max_epoch 3155630469184000000
 
 # TODO:
 #  -update fillval, validmin and validmax for floats (look at l1a yaml)
@@ -13,36 +25,37 @@ max_int: &max_int 9223372036854775807
 #  -Add energy defaults
 #  -Add energy delta defaults
 #  -Should energy delta vars have DEPEND_1: energy_XX to point to energy it's a delta of?
+#  -Replace hash with num, counts, or rates? '# / cm2 s sr MeV/nuc'
+#  -LABLAXIS: Diff. Intensity vs 'Diff. # Flux'  Both are used. Are these the same?
 
 
 # <=== Defaults ===>
 default_attrs: &default
-    DEPEND_0: epoch
-    DISPLAY_TYPE: no_plot
-    FIELDNAM: " "
-    FILLVAL: *int_fillval
-    FORMAT: I12
-    SCALETYP: linear
-    UNITS: dN
-    VALIDMIN: *min_int
-    VALIDMAX: *max_int
-    VAR_TYPE: data
-
-direct_events_attrs: &direct_events
-    <<: *default
-    CATDESC: Fill in at creation
-    DISPLAY_TYPE: time_series
-    FIELDNAM: Fill in at creation
-    FILLVAL: 255
-    FORMAT: I5
-    UNITS: unitless
-    VALIDMIN: 0
-    VALIDMAX: 10000
-    DICT_KEY: SPASE>Support>SupportQuantity:Other
-
-default_lo_species_attrs: &default_lo_species
-  <<: *default
   VAR_TYPE: data
+  DEPEND_0: epoch
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: " "
+  FILLVAL: *int_fillval
+  FORMAT: I12
+  SCALETYP: linear
+  UNITS: dN
+  VALIDMIN: *min_int
+  VALIDMAX: *max_int
+
+direct_events_attrs: &direct_events_default
+  <<: *default
+  CATDESC: Fill in at creation
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Fill in at creation
+  FILLVAL: uint8_fillval
+  FORMAT: I5
+  UNITS: unitless
+  VALIDMIN: 0
+  VALIDMAX: 10000
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+lo_species_attrs: &lo_species_default
+  <<: *default
   DEPEND_1: energy_table
   DEPEND_2: spin_sector_index
   DISPLAY_TYPE: time_series
@@ -54,10 +67,8 @@ default_lo_species_attrs: &default_lo_species
   VALIDMIN: 1.000000013351432e-10
   DICT_KEY: SPASE>Support>SupportQuantity:Other
 
-
-default_lo_angular_attrs: &default_lo_angular
+lo_angular_attrs: &lo_angular_default
   <<: *default
-  VAR_TYPE: data
   DEPEND_1: energy_table
   DEPEND_2: elevation_angle
   DEPEND_3: spin_angle
@@ -70,34 +81,21 @@ default_lo_angular_attrs: &default_lo_angular
   VALIDMIN: 1.000000013351432e-10
   DICT_KEY: SPASE>Support>SupportQuantity:Other
 
-default_lo_ialirt_attrs: &default_lo_ialirt
+lo_ialirt_attrs: &lo_ialirt_default
   <<: *default
-  VAR_TYPE: data
   DISPLAY_TYPE: time_series
   FILLVAL: 1.0e+31
   FORMAT: '%lf'
   LABLAXIS: ratio
-  SCALETYP: linear
   UNITS: ratio
   VALIDMAX: 1.0e+31
   VALIDMIN: 0.0
   DICT_KEY: SPASE>Support>SupportQuantity:Other
 
-default_hi_ialirt_attrs: &default_hi_ialirt
+hi_omni_attrs: &hi_omni_default
   <<: *default
-  VAR_TYPE: support_data
-  FORMAT: '%f'
-  SCALETYP: log
-  UNITS: MeV/nuc
-  VALIDMAX: 200.0
-  VALIDMIN: 0.05000000074505806
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
-
-default_hi_omni_attrs: &default_hi_omni
-  <<: *default
-  VAR_TYPE: data
   DISPLAY_TYPE: time_series
-  FILLVAL: 4294967294
+  FILLVAL: uint32_fillval
   FORMAT: '%f'
   LABLAXIS: Diff. Intensity
   SCALETYP: linear
@@ -106,20 +104,48 @@ default_hi_omni_attrs: &default_hi_omni
   VALIDMIN: 0
   DICT_KEY: SPASE>Support>SupportQuantity:Other
 
-default_omni_energy_attrs: &default_omni_energy
-  <<: *default_hi_omni
+hi_sectored_attrs: &hi_sectored_attrs_default
+  <<: *default
+  DISPLAY_TYPE: time_series
+  DEPEND_2: elevation_angle
+  DEPEND_3: spin_sector_index
+  FILLVAL: uint32_fillval
+  FORMAT: '%f'
+  LABLAXIS: 'Diff. # Flux'
+  UNITS: '# / cm2 s sr MeV/nuc'
+  VALIDMAX: 16777216
+  VALIDMIN: 0
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+energy_attrs: &energy_default
+  VAR_TYPE: support_data
   CATDESC: Energy Table
   LABLAXIS: MeV/nuc
   SCALETYP: log
   UNITS: MeV/nuc
+  FORMAT: '%f'
   VALIDMAX: 200.0
   VALIDMIN: 0.05000000074505806
-  VAR_TYPE: support_data
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Characteristic
 
-default_omni_energy_delta_attrs: &default_omni_energy_delta
-  <<: *default_omni_energy
+energy_delta_attrs: &energy_delta_default
+  <<: *energy_default
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Uncertainty
+
+spin_angles_attrs: &spin_angles_default
+  <<: *default
+  VAR_TYPE: support_data
+  CATDESC: Spin Angle
+  DEPEND_1: spin_sector_index
+  DEPEND_2: elevation_angle
+  FIELDNAM: Spin Angle
+  LABLAXIS: Spin Angle
+  SCALETYP: linear
+  UNITS: degrees
+  VALIDMAX: 360.0
+  VALIDMIN: 0.0
+  FORMAT: '%f'
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:ArrivalDirection,Qualifer:DirectionAngle.AzimuthAngle
 
 # <=== Coordinates ===>
 event_num:
@@ -168,8 +194,8 @@ event_num_label:
     VAR_TYPE: metadata
 
 # <=== Dataset Variable Attributes ===>
-# The following are set in multiple data products
 
+# The following are set in multiple data products
 data_quality:
     <<: *default
     CATDESC: Indicates whether data quality is suspect (1).
@@ -189,7 +215,7 @@ data_quality:
 
 # TODO: update var names to be lowercase and underscores.
 P0_APD_ID:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 0 APD ID
     DEPEND_1: event_num
     FIELDNAM: Priority 0 APD ID
@@ -197,7 +223,7 @@ P0_APD_ID:
     VALIDMAX: 32
 
 P0_APDEnergy:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 0 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 0 APD Energy
@@ -206,7 +232,7 @@ P0_APDEnergy:
     VALIDMAX: 512
 
 P0_APDGain:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 0 APD Gain
     DEPEND_1: event_num
     FIELDNAM: Priority 0 APD Gain
@@ -214,7 +240,7 @@ P0_APDGain:
     VALIDMAX: 1
 
 P0_DataQuality:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 0 Data Quality
     FIELDNAM: Priority 0 Data Quality
     LABLAXIS: " "
@@ -222,7 +248,7 @@ P0_DataQuality:
     DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 P0_EnergyStep:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 0 Energy Step
     DEPEND_1: event_num
     FIELDNAM: Priority 0 Energy Step
@@ -230,7 +256,7 @@ P0_EnergyStep:
     VALIDMAX: 128
 
 P0_ERGE:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 0 Energy Range
     DEPEND_1: event_num
     FIELDNAM: Priority 0 Energy Range
@@ -238,7 +264,7 @@ P0_ERGE:
     VALIDMAX: 4
 
 P0_MultiFlag:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 0 Multi Flag
     DEPEND_1: event_num
     FIELDNAM: Priority 0 Multi Flag
@@ -246,14 +272,14 @@ P0_MultiFlag:
     VALIDMAX: 1
 
 P0_NumEvents:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 0 Number of Events
     FIELDNAM: Priority 0 Number of Events
     FILLVAL: 65535
     LABLAXIS: " "
 
 P0_PHAType:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 0 PHA Type
     DEPEND_1: event_num
     FIELDNAM: Priority 0 PHA Type
@@ -261,7 +287,7 @@ P0_PHAType:
     VALIDMAX: 4
 
 P0_Position:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 0 Position
     DEPEND_1: event_num
     FIELDNAM: Priority 0 Position
@@ -269,7 +295,7 @@ P0_Position:
     VALIDMAX: 32
 
 P0_SpinAngle:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 0 Spin Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 0 Spin Angle
@@ -277,7 +303,7 @@ P0_SpinAngle:
     VALIDMAX: 128
 
 P0_SpinNumber:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 0 Spin Number
     DEPEND_1: event_num
     FIELDNAM: Priority 0 Spin Number
@@ -285,7 +311,7 @@ P0_SpinNumber:
     VALIDMAX: 32
 
 P0_SSD_ID:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 0 SSD ID or Azimuth Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 0 SSD ID or Azimuth Angle
@@ -293,7 +319,7 @@ P0_SSD_ID:
     VALIDMAX: 32
 
 P0_SSDEnergy:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 0 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 0 APD Energy
@@ -301,7 +327,7 @@ P0_SSDEnergy:
     VALIDMAX: 2048
 
 P0_TOF:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 0 Time of Flight
     DEPEND_1: event_num
     FIELDNAM: Priority 0 Time of Flight
@@ -310,7 +336,7 @@ P0_TOF:
     VALIDMAX: 1024
 
 P0_Type:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 0 Type
     DEPEND_1: event_num
     FIELDNAM: Priority 0 Type
@@ -318,7 +344,7 @@ P0_Type:
     VALIDMAX: 3
 
 P1_APD_ID:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 1 APD ID
     DEPEND_1: event_num
     FIELDNAM: Priority 1 APD ID
@@ -326,7 +352,7 @@ P1_APD_ID:
     VALIDMAX: 32
 
 P1_APDEnergy:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 1 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 1 APD Energy
@@ -335,7 +361,7 @@ P1_APDEnergy:
     VALIDMAX: 512
 
 P1_APDGain:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 1 APD Gain
     DEPEND_1: event_num
     FIELDNAM: Priority 1 APD Gain
@@ -343,7 +369,7 @@ P1_APDGain:
     VALIDMAX: 1
 
 P1_DataQuality:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 1 Data Quality
     FIELDNAM: Priority 1 Data Quality
     LABLAXIS: " "
@@ -351,7 +377,7 @@ P1_DataQuality:
     DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 P1_EnergyStep:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 1 Energy Step
     DEPEND_1: event_num
     FIELDNAM: Priority 1 Energy Step
@@ -359,7 +385,7 @@ P1_EnergyStep:
     VALIDMAX: 128
 
 P1_ERGE:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 1 Energy Range
     DEPEND_1: event_num
     FIELDNAM: Priority 1 Energy Range
@@ -367,7 +393,7 @@ P1_ERGE:
     VALIDMAX: 4
 
 P1_MultiFlag:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 1 Multi Flag
     DEPEND_1: event_num
     FIELDNAM: Priority 1 Multi Flag
@@ -375,14 +401,14 @@ P1_MultiFlag:
     VALIDMAX: 1
 
 P1_NumEvents:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 1 Number of Events
     FIELDNAM: Priority 1 Number of Events
     FILLVAL: 65535
     LABLAXIS: " "
 
 P1_PHAType:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 1 PHA Type
     DEPEND_1: event_num
     FIELDNAM: Priority 1 PHA Type
@@ -390,7 +416,7 @@ P1_PHAType:
     VALIDMAX: 4
 
 P1_Position:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 1 Position
     DEPEND_1: event_num
     FIELDNAM: Priority 1 Position
@@ -398,7 +424,7 @@ P1_Position:
     VALIDMAX: 32
 
 P1_SpinAngle:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 1 Spin Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 1 Spin Angle
@@ -406,7 +432,7 @@ P1_SpinAngle:
     VALIDMAX: 128
 
 P1_SpinNumber:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 1 Spin Number
     DEPEND_1: event_num
     FIELDNAM: Priority 1 Spin Number
@@ -414,7 +440,7 @@ P1_SpinNumber:
     VALIDMAX: 32
 
 P1_SSD_ID:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 1 SSD ID or Azimuth Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 1 SSD ID or Azimuth Angle
@@ -422,7 +448,7 @@ P1_SSD_ID:
     VALIDMAX: 32
 
 P1_SSDEnergy:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 1 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 1 APD Energy
@@ -430,7 +456,7 @@ P1_SSDEnergy:
     VALIDMAX: 2048
 
 P1_TOF:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 1 Time of Flight
     DEPEND_1: event_num
     FIELDNAM: Priority 1 Time of Flight
@@ -439,7 +465,7 @@ P1_TOF:
     VALIDMAX: 1024
 
 P1_Type:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 1 Type
     DEPEND_1: event_num
     FIELDNAM: Priority 1 Type
@@ -447,7 +473,7 @@ P1_Type:
     VALIDMAX: 3
 
 P2_APD_ID:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 2 APD ID
     DEPEND_1: event_num
     FIELDNAM: Priority 2 APD ID
@@ -455,7 +481,7 @@ P2_APD_ID:
     VALIDMAX: 32
 
 P2_APDEnergy:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 2 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 2 APD Energy
@@ -464,7 +490,7 @@ P2_APDEnergy:
     VALIDMAX: 512
 
 P2_APDGain:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 2 APD Gain
     DEPEND_1: event_num
     FIELDNAM: Priority 2 APD Gain
@@ -472,7 +498,7 @@ P2_APDGain:
     VALIDMAX: 1
 
 P2_DataQuality:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 2 Data Quality
     FIELDNAM: Priority 2 Data Quality
     LABLAXIS: " "
@@ -480,7 +506,7 @@ P2_DataQuality:
     DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 P2_EnergyStep:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 2 Energy Step
     DEPEND_1: event_num
     FIELDNAM: Priority 2 Energy Step
@@ -488,7 +514,7 @@ P2_EnergyStep:
     VALIDMAX: 128
 
 P2_ERGE:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 2 Energy Range
     DEPEND_1: event_num
     FIELDNAM: Priority 2 Energy Range
@@ -496,7 +522,7 @@ P2_ERGE:
     VALIDMAX: 4
 
 P2_MultiFlag:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 2 Multi Flag
     DEPEND_1: event_num
     FIELDNAM: Priority 2 Multi Flag
@@ -504,14 +530,14 @@ P2_MultiFlag:
     VALIDMAX: 1
 
 P2_NumEvents:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 2 Number of Events
     FIELDNAM: Priority 2 Number of Events
     FILLVAL: 65535
     LABLAXIS: " "
 
 P2_PHAType:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 2 PHA Type
     DEPEND_1: event_num
     FIELDNAM: Priority 2 PHA Type
@@ -519,7 +545,7 @@ P2_PHAType:
     VALIDMAX: 4
 
 P2_Position:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 2 Position
     DEPEND_1: event_num
     FIELDNAM: Priority 2 Position
@@ -527,7 +553,7 @@ P2_Position:
     VALIDMAX: 32
 
 P2_SpinAngle:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 2 Spin Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 2 Spin Angle
@@ -535,7 +561,7 @@ P2_SpinAngle:
     VALIDMAX: 128
 
 P2_SpinNumber:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 2 Spin Number
     DEPEND_1: event_num
     FIELDNAM: Priority 2 Spin Number
@@ -543,7 +569,7 @@ P2_SpinNumber:
     VALIDMAX: 32
 
 P2_SSD_ID:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 2 SSD ID or Azimuth Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 2 SSD ID or Azimuth Angle
@@ -551,7 +577,7 @@ P2_SSD_ID:
     VALIDMAX: 32
 
 P2_SSDEnergy:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 2 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 2 APD Energy
@@ -559,7 +585,7 @@ P2_SSDEnergy:
     VALIDMAX: 2048
 
 P2_TOF:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 2 Time of Flight
     DEPEND_1: event_num
     FIELDNAM: Priority 2 Time of Flight
@@ -568,7 +594,7 @@ P2_TOF:
     VALIDMAX: 1024
 
 P2_Type:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 2 Type
     DEPEND_1: event_num
     FIELDNAM: Priority 2 Type
@@ -576,7 +602,7 @@ P2_Type:
     VALIDMAX: 3
 
 P3_APD_ID:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 3 APD ID
     DEPEND_1: event_num
     FIELDNAM: Priority 3 APD ID
@@ -584,7 +610,7 @@ P3_APD_ID:
     VALIDMAX: 32
 
 P3_APDEnergy:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 3 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 3 APD Energy
@@ -593,7 +619,7 @@ P3_APDEnergy:
     VALIDMAX: 512
 
 P3_APDGain:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 3 APD Gain
     DEPEND_1: event_num
     FIELDNAM: Priority 3 APD Gain
@@ -601,7 +627,7 @@ P3_APDGain:
     VALIDMAX: 1
 
 P3_DataQuality:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 3 Data Quality
     FIELDNAM: Priority 3 Data Quality
     LABLAXIS: " "
@@ -609,7 +635,7 @@ P3_DataQuality:
     DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 P3_EnergyStep:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 3 Energy Step
     DEPEND_1: event_num
     FIELDNAM: Priority 3 Energy Step
@@ -617,7 +643,7 @@ P3_EnergyStep:
     VALIDMAX: 128
 
 P3_ERGE:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 3 Energy Range
     DEPEND_1: event_num
     FIELDNAM: Priority 3 Energy Range
@@ -625,7 +651,7 @@ P3_ERGE:
     VALIDMAX: 4
 
 P3_MultiFlag:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 3 Multi Flag
     DEPEND_1: event_num
     FIELDNAM: Priority 3 Multi Flag
@@ -633,14 +659,14 @@ P3_MultiFlag:
     VALIDMAX: 1
 
 P3_NumEvents:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 3 Number of Events
     FIELDNAM: Priority 3 Number of Events
     FILLVAL: 65535
     LABLAXIS: " "
 
 P3_PHAType:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 3 PHA Type
     DEPEND_1: event_num
     FIELDNAM: Priority 3 PHA Type
@@ -648,7 +674,7 @@ P3_PHAType:
     VALIDMAX: 4
 
 P3_Position:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 3 Position
     DEPEND_1: event_num
     FIELDNAM: Priority 3 Position
@@ -656,7 +682,7 @@ P3_Position:
     VALIDMAX: 32
 
 P3_SpinAngle:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 3 Spin Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 3 Spin Angle
@@ -664,7 +690,7 @@ P3_SpinAngle:
     VALIDMAX: 128
 
 P3_SpinNumber:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 3 Spin Number
     DEPEND_1: event_num
     FIELDNAM: Priority 3 Spin Number
@@ -672,7 +698,7 @@ P3_SpinNumber:
     VALIDMAX: 32
 
 P3_SSD_ID:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 3 SSD ID or Azimuth Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 3 SSD ID or Azimuth Angle
@@ -680,7 +706,7 @@ P3_SSD_ID:
     VALIDMAX: 32
 
 P3_SSDEnergy:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 3 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 3 APD Energy
@@ -688,7 +714,7 @@ P3_SSDEnergy:
     VALIDMAX: 2048
 
 P3_TOF:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 3 Time of Flight
     DEPEND_1: event_num
     FIELDNAM: Priority 3 Time of Flight
@@ -697,7 +723,7 @@ P3_TOF:
     VALIDMAX: 1024
 
 P3_Type:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 3 Type
     DEPEND_1: event_num
     FIELDNAM: Priority 3 Type
@@ -705,7 +731,7 @@ P3_Type:
     VALIDMAX: 3
 
 P4_APD_ID:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 4 APD ID
     DEPEND_1: event_num
     FIELDNAM: Priority 4 APD ID
@@ -713,7 +739,7 @@ P4_APD_ID:
     VALIDMAX: 32
 
 P4_APDEnergy:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 4 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 4 APD Energy
@@ -722,7 +748,7 @@ P4_APDEnergy:
     VALIDMAX: 512
 
 P4_APDGain:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 4 APD Gain
     DEPEND_1: event_num
     FIELDNAM: Priority 4 APD Gain
@@ -730,7 +756,7 @@ P4_APDGain:
     VALIDMAX: 1
 
 P4_DataQuality:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 4 Data Quality
     FIELDNAM: Priority 4 Data Quality
     LABLAXIS: " "
@@ -738,7 +764,7 @@ P4_DataQuality:
     DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 P4_EnergyStep:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 4 Energy Step
     DEPEND_1: event_num
     FIELDNAM: Priority 4 Energy Step
@@ -746,7 +772,7 @@ P4_EnergyStep:
     VALIDMAX: 128
 
 P4_ERGE:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 4 Energy Range
     DEPEND_1: event_num
     FIELDNAM: Priority 4 Energy Range
@@ -754,7 +780,7 @@ P4_ERGE:
     VALIDMAX: 4
 
 P4_MultiFlag:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 4 Multi Flag
     DEPEND_1: event_num
     FIELDNAM: Priority 4 Multi Flag
@@ -762,14 +788,14 @@ P4_MultiFlag:
     VALIDMAX: 1
 
 P4_NumEvents:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 4 Number of Events
     FIELDNAM: Priority 4 Number of Events
     FILLVAL: 65535
     LABLAXIS: " "
 
 P4_PHAType:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 4 PHA Type
     DEPEND_1: event_num
     FIELDNAM: Priority 4 PHA Type
@@ -777,7 +803,7 @@ P4_PHAType:
     VALIDMAX: 4
 
 P4_Position:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 4 Position
     DEPEND_1: event_num
     FIELDNAM: Priority 4 Position
@@ -785,7 +811,7 @@ P4_Position:
     VALIDMAX: 32
 
 P4_SpinAngle:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 4 Spin Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 4 Spin Angle
@@ -793,7 +819,7 @@ P4_SpinAngle:
     VALIDMAX: 128
 
 P4_SpinNumber:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 4 Spin Number
     DEPEND_1: event_num
     FIELDNAM: Priority 4 Spin Number
@@ -801,7 +827,7 @@ P4_SpinNumber:
     VALIDMAX: 32
 
 P4_SSD_ID:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 4 SSD ID or Azimuth Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 4 SSD ID or Azimuth Angle
@@ -809,7 +835,7 @@ P4_SSD_ID:
     VALIDMAX: 32
 
 P4_SSDEnergy:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 4 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 4 APD Energy
@@ -817,7 +843,7 @@ P4_SSDEnergy:
     VALIDMAX: 2048
 
 P4_TOF:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 4 Time of Flight
     DEPEND_1: event_num
     FIELDNAM: Priority 4 Time of Flight
@@ -826,7 +852,7 @@ P4_TOF:
     VALIDMAX: 1024
 
 P4_Type:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 4 Type
     DEPEND_1: event_num
     FIELDNAM: Priority 4 Type
@@ -834,7 +860,7 @@ P4_Type:
     VALIDMAX: 3
 
 P5_APD_ID:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 5 APD ID
     DEPEND_1: event_num
     FIELDNAM: Priority 5 APD ID
@@ -842,7 +868,7 @@ P5_APD_ID:
     VALIDMAX: 32
 
 P5_APDEnergy:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 5 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 5 APD Energy
@@ -851,7 +877,7 @@ P5_APDEnergy:
     VALIDMAX: 512
 
 P5_APDGain:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 5 APD Gain
     DEPEND_1: event_num
     FIELDNAM: Priority 5 APD Gain
@@ -859,7 +885,7 @@ P5_APDGain:
     VALIDMAX: 1
 
 P5_DataQuality:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 5 Data Quality
     FIELDNAM: Priority 5 Data Quality
     LABLAXIS: " "
@@ -867,7 +893,7 @@ P5_DataQuality:
     DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 P5_EnergyStep:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 5 Energy Step
     DEPEND_1: event_num
     FIELDNAM: Priority 5 Energy Step
@@ -875,7 +901,7 @@ P5_EnergyStep:
     VALIDMAX: 128
 
 P5_ERGE:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 5 Energy Range
     DEPEND_1: event_num
     FIELDNAM: Priority 5 Energy Range
@@ -883,7 +909,7 @@ P5_ERGE:
     VALIDMAX: 4
 
 P5_MultiFlag:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 5 Multi Flag
     DEPEND_1: event_num
     FIELDNAM: Priority 5 Multi Flag
@@ -891,14 +917,14 @@ P5_MultiFlag:
     VALIDMAX: 1
 
 P5_NumEvents:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 5 Number of Events
     FIELDNAM: Priority 5 Number of Events
     FILLVAL: 65535
     LABLAXIS: " "
 
 P5_PHAType:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 5 PHA Type
     DEPEND_1: event_num
     FIELDNAM: Priority 5 PHA Type
@@ -906,7 +932,7 @@ P5_PHAType:
     VALIDMAX: 4
 
 P5_Position:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 5 Position
     DEPEND_1: event_num
     FIELDNAM: Priority 5 Position
@@ -914,7 +940,7 @@ P5_Position:
     VALIDMAX: 32
 
 P5_SpinAngle:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 5 Spin Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 5 Spin Angle
@@ -922,7 +948,7 @@ P5_SpinAngle:
     VALIDMAX: 128
 
 P5_SpinNumber:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 5 Spin Number
     DEPEND_1: event_num
     FIELDNAM: Priority 5 Spin Number
@@ -930,7 +956,7 @@ P5_SpinNumber:
     VALIDMAX: 32
 
 P5_SSD_ID:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 5 SSD ID or Azimuth Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 5 SSD ID or Azimuth Angle
@@ -938,7 +964,7 @@ P5_SSD_ID:
     VALIDMAX: 32
 
 P5_SSDEnergy:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 5 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 5 APD Energy
@@ -946,7 +972,7 @@ P5_SSDEnergy:
     VALIDMAX: 2048
 
 P5_TOF:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 5 Time of Flight
     DEPEND_1: event_num
     FIELDNAM: Priority 5 Time of Flight
@@ -955,7 +981,7 @@ P5_TOF:
     VALIDMAX: 1024
 
 P5_Type:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 5 Type
     DEPEND_1: event_num
     FIELDNAM: Priority 5 Type
@@ -963,7 +989,7 @@ P5_Type:
     VALIDMAX: 3
 
 P6_APD_ID:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 6 APD ID
     DEPEND_1: event_num
     FIELDNAM: Priority 6 APD ID
@@ -971,7 +997,7 @@ P6_APD_ID:
     VALIDMAX: 32
 
 P6_APDEnergy:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 6 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 6 APD Energy
@@ -980,7 +1006,7 @@ P6_APDEnergy:
     VALIDMAX: 512
 
 P6_APDGain:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 6 APD Gain
     DEPEND_1: event_num
     FIELDNAM: Priority 6 APD Gain
@@ -988,7 +1014,7 @@ P6_APDGain:
     VALIDMAX: 1
 
 P6_DataQuality:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 6 Data Quality
     FIELDNAM: Priority 6 Data Quality
     LABLAXIS: " "
@@ -996,7 +1022,7 @@ P6_DataQuality:
     DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 P6_EnergyStep:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 6 Energy Step
     DEPEND_1: event_num
     FIELDNAM: Priority 6 Energy Step
@@ -1004,7 +1030,7 @@ P6_EnergyStep:
     VALIDMAX: 128
 
 P6_MultiFlag:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 6 Multi Flag
     DEPEND_1: event_num
     FIELDNAM: Priority 6 Multi Flag
@@ -1012,14 +1038,14 @@ P6_MultiFlag:
     VALIDMAX: 1
 
 P6_NumEvents:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 6 Number of Events
     FIELDNAM: Priority 6 Number of Events
     FILLVAL: 65535
     LABLAXIS: " "
 
 P6_PHAType:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 6 PHA Type
     DEPEND_1: event_num
     FIELDNAM: Priority 6 PHA Type
@@ -1027,7 +1053,7 @@ P6_PHAType:
     VALIDMAX: 4
 
 P6_Position:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 6 Position
     DEPEND_1: event_num
     FIELDNAM: Priority 6 Position
@@ -1035,7 +1061,7 @@ P6_Position:
     VALIDMAX: 32
 
 P6_SpinAngle:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 6 Spin Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 6 Spin Angle
@@ -1043,7 +1069,7 @@ P6_SpinAngle:
     VALIDMAX: 128
 
 P6_TOF:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 6 Time of Flight
     DEPEND_1: event_num
     FIELDNAM: Priority 6 Time of Flight
@@ -1052,7 +1078,7 @@ P6_TOF:
     VALIDMAX: 1024
 
 P7_APD_ID:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 7 APD ID
     DEPEND_1: event_num
     FIELDNAM: Priority 7 APD ID
@@ -1060,7 +1086,7 @@ P7_APD_ID:
     VALIDMAX: 32
 
 P7_APDEnergy:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 7 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 7 APD Energy
@@ -1069,7 +1095,7 @@ P7_APDEnergy:
     VALIDMAX: 512
 
 P7_APDGain:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 7 APD Gain
     DEPEND_1: event_num
     FIELDNAM: Priority 7 APD Gain
@@ -1077,7 +1103,7 @@ P7_APDGain:
     VALIDMAX: 1
 
 P7_DataQuality:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 7 Data Quality
     FIELDNAM: Priority 7 Data Quality
     LABLAXIS: " "
@@ -1085,7 +1111,7 @@ P7_DataQuality:
     DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 P7_EnergyStep:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 7 Energy Step
     DEPEND_1: event_num
     FIELDNAM: Priority 7 Energy Step
@@ -1093,7 +1119,7 @@ P7_EnergyStep:
     VALIDMAX: 128
 
 P7_MultiFlag:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 7 Multi Flag
     DEPEND_1: event_num
     FIELDNAM: Priority 7 Multi Flag
@@ -1101,14 +1127,14 @@ P7_MultiFlag:
     VALIDMAX: 1
 
 P7_NumEvents:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 7 Number of Events
     FIELDNAM: Priority 7 Number of Events
     FILLVAL: 65535
     LABLAXIS: " "
 
 P7_PHAType:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 7 PHA Type
     DEPEND_1: event_num
     FIELDNAM: Priority 7 PHA Type
@@ -1116,7 +1142,7 @@ P7_PHAType:
     VALIDMAX: 4
 
 P7_Position:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 7 Position
     DEPEND_1: event_num
     FIELDNAM: Priority 7 Position
@@ -1124,7 +1150,7 @@ P7_Position:
     VALIDMAX: 32
 
 P7_SpinAngle:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 7 Spin Angle
     DEPEND_1: event_num
     FIELDNAM: Priority 7 Spin Angle
@@ -1132,7 +1158,7 @@ P7_SpinAngle:
     VALIDMAX: 128
 
 P7_TOF:
-    <<: *direct_events
+    <<: *direct_events_default
     CATDESC: Priority 7 Time of Flight
     DEPEND_1: event_num
     FIELDNAM: Priority 7 Time of Flight
@@ -1142,146 +1168,145 @@ P7_TOF:
 
 
 # lo-sw-species Attributes
-
 lo-sw-species-cnoplus:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - SW - CNO+ (PUI)
   FIELDNAM: Counts - SW - CNO+ (PUI)
 
 lo-sw-species-cplus4:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - SW - C+4
   FIELDNAM: Counts - SW - C+4
 
 lo-sw-species-cplus5:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - SW - C+5
   FIELDNAM: Counts - SW - C+5
 
 lo-sw-species-cplus6:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - SW - C+6
   FIELDNAM: Counts - SW - C+6
 
 lo-sw-species-fe_hiq:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - SW - Fe highQ
   FIELDNAM: Counts - SW - Fe highQ
 
 lo-sw-species-fe_loq:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - SW - Fe lowQ
   FIELDNAM: Counts - SW - Fe lowQ
 
 lo-sw-species-heplus:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - SW - He+ (PUI)
   FIELDNAM: Counts - SW - He+ (PUI)
 
 lo-sw-species-heplusplus:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - SW - He++
   FIELDNAM: Counts - SW - He++
 
 lo-sw-species-hplus:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - SW - H+
   FIELDNAM: Counts - SW - H+
 
 lo-sw-species-mg:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - SW - Mg
   FIELDNAM: Counts - SW - Mg
 
 lo-sw-species-ne:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - SW - Ne
   FIELDNAM: Counts - SW - Ne
 
 lo-sw-species-oplus5:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - SW - O+5
   FIELDNAM: Counts - SW - O+5
 
 lo-sw-species-oplus6:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - SW - O+6
   FIELDNAM: Counts - SW - O+6
 
 lo-sw-species-oplus7:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - SW - O+7
   FIELDNAM: Counts - SW - O+7
 
 lo-sw-species-oplus8:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - SW - O+8
   FIELDNAM: Counts - SW - O+8
 
 lo-sw-species-si:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - SW - Si
   FIELDNAM: Counts - SW - Si
 
 # lo-sw-angular Attributes
 lo-sw-angular-fe_loq:
-  <<: *default_lo_angular
+  <<: *lo_angular_default
   CATDESC: Counts - SW - Fe lowQ
   FIELDNAM: Sunward Facing Counts - SW - Fe lowQ
 
 lo-sw-angular-heplusplus:
-  <<: *default_lo_angular
+  <<: *lo_angular_default
   CATDESC: Counts - SW - He++
   FIELDNAM: Sunward Facing Counts - SW - He++
 
 lo-sw-angular-hplus:
-  <<: *default_lo_angular
+  <<: *lo_angular_default
   CATDESC: Counts - SW - H+
   FIELDNAM: Sunward Facing Counts - SW - H+
 
 lo-sw-angular-oplus6:
-  <<: *default_lo_angular
+  <<: *lo_angular_default
   CATDESC: Counts - SW - O+6
   FIELDNAM: Sunward Facing Counts - SW - O+6
 
 # lo-nsw-species Attributes
 lo-nsw-species-c:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - NSW - C
   FIELDNAM: Counts - NSW - C
 
 lo-nsw-species-cnoplus:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - NSW - CNO+
   FIELDNAM: Counts - NSW - CNO+
 
 lo-nsw-species-fe:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - NSW - Fe
   FIELDNAM: Counts - NSW - Fe
 
 lo-nsw-species-heplus:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - NSW - He+
   FIELDNAM: Counts - NSW - He+
 
 lo-nsw-species-heplusplus:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - NSW - He++
   FIELDNAM: Counts - NSW - He++
 
 lo-nsw-species-hplus:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - NSW - H+
   FIELDNAM: Counts - NSW - H+
 
 lo-nsw-species-ne_si_mg:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - NSW - Ne_Si_Mg
   FIELDNAM: Counts - NSW - Ne_Si_Mg
 
 lo-nsw-species-o:
-  <<: *default_lo_species
+  <<: *lo_species_default
   CATDESC: Counts - NSW - O
   FIELDNAM: Counts - NSW - O
 
@@ -1292,209 +1317,282 @@ lo-nsw-angular-heplusplus:
 
 # lo-ialirt Attributes
 lo-ialirt-c_over_o_abundance_ratio:
-  <<: *default_lo_ialirt
+  <<: *lo_ialirt_default
   CATDESC: Elemental Abundance Ratio - C/O
   FIELDNAM: C/O
 
 lo-ialirt-c_plus_6_over_c_plus_5_ratio:
-  <<: *default_lo_ialirt
+  <<: *lo_ialirt_default
   CATDESC: Charge State Ratio - C+6/C+5
   FIELDNAM: C+6/C+5
 
 lo-ialirt-fe_low_over_fe_high_ratio:
-  <<: *default_lo_ialirt
+  <<: *lo_ialirt_default
   CATDESC: Charge State Ratio - Fe(low)/Fe(high)
   FIELDNAM: Fe(low)/Fe(high)
 
 lo-ialirt-fe_over_o_abundance_ratio:
-  <<: *default_lo_ialirt
+  <<: *lo_ialirt_default
   CATDESC: Elemental Abundance Ratio - Fe/O
   FIELDNAM: Fe/O
 
 lo-ialirt-mg_over_o_abundance_ratio:
-  <<: *default_lo_ialirt
+  <<: *lo_ialirt_default
   CATDESC: Elemental Abundance Ratio - Mg/O
   FIELDNAM: Mg/O
 
 lo-ialirt-o_plus_7_over_o_plus_6_ratio:
-  <<: *default_lo_ialirt
+  <<: *lo_ialirt_default
   CATDESC: Charge State Ratio - O+7/O+6
   FIELDNAM: O+7/O+6
 
 # hi-ialirt Attributes
 hi-ialirt-energy_h_minus:
-  <<: *default_hi_ialirt
+  <<: *energy_delta_default
   CATDESC: Energy Table Minus value
   FIELDNAM: energy delta minus
-  LABLAXIS: MeV/nuc
 
 hi-ialirt-energy_h_plus:
-  <<: *default_hi_ialirt
+  <<: *energy_delta_default
   CATDESC: Energy Table Plus value
   FIELDNAM: energy delta plus
-  LABLAXIS: MeV/nuc
 
 hi-ialirt-h:
-  <<: *default_hi_ialirt
+  <<: *default
   CATDESC: h (x2 spacing)
-  DEPEND_0: epoch
+  FIELDNAM: h
   DEPEND_1: energy_h
   DEPEND_2: ssd_index
   DEPEND_3: spin_sector_index
   DISPLAY_TYPE: time_series
-  FIELDNAM: h
   FILLVAL: 4294967294
   LABLAXIS: Diff. Intensity
-  SCALETYP: linear
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216
   VALIDMIN: 0
-  VAR_TYPE: data
 
 hi-ialirt-spin_angles:
-  <<: *default_hi_ialirt
-  CATDESC: Spin Angle
-  DEPEND_1: spin_sector_index
-  DEPEND_2: elevation_angle
-  FIELDNAM: Spin Angle
-  LABLAXIS: Spin Angle
-  SCALETYP: linear
-  UNITS: degrees
-  VALIDMAX: 360.0
-  VALIDMIN: 0.0
+  <<: *spin_angles_default
 
 # hi-omni Attributes
+hi-omni-energy_c_minus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Minus value
+  FIELDNAM: energy delta minus
+
+hi-omni-energy_c_plus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Plus value
+  FIELDNAM: energy delta plus
+
+hi-omni-energy_fe_minus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Minus value
+  FIELDNAM: energy delta minus
+
+hi-omni-energy_fe_plus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Plus value
+  FIELDNAM: energy delta plus
+
+hi-omni-energy_h_minus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Minus value
+  FIELDNAM: energy delta minus
+
+hi-omni-energy_h_plus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Plus value
+  FIELDNAM: energy delta plus
+
+hi-omni-energy_he3_minus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Minus value
+  FIELDNAM: energy delta minus
+
+hi-omni-energy_he3_plus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Plus value
+  FIELDNAM: energy delta plus
+
+hi-omni-energy_he4_minus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Minus value
+  FIELDNAM: energy delta minus
+
+hi-omni-energy_he4_plus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Plus value
+  FIELDNAM: energy delta plus
+
+hi-omni-energy_junk_minus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Minus value
+  FIELDNAM: energy delta minus
+
+hi-omni-energy_junk_plus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Plus value
+  FIELDNAM: energy delta plus
+
+hi-omni-energy_ne_mg_si_minus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Minus value
+  FIELDNAM: energy delta minus
+
+hi-omni-energy_ne_mg_si_plus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Plus value
+  FIELDNAM: energy delta plus
+
+hi-omni-energy_o_minus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Minus value
+  FIELDNAM: energy delta minus
+
+hi-omni-energy_o_plus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Plus value
+  FIELDNAM: energy delta plus
+
+hi-omni-energy_uh_minus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Minus value
+  FIELDNAM: energy delta minus
+
+hi-omni-energy_uh_plus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Plus value
+  FIELDNAM: energy delta plus
+
 hi-omni-c:
-  <<: *default_hi_omni
+  <<: *hi_omni_default
   CATDESC: c (Root 2 spacing)
   DEPEND_0: epoch
   DEPEND_1: energy_c
   FIELDNAM: c
 
-hi-omni-energy_c_minus:
-  <<: *default_omni_energy_delta
-  FIELDNAM: energy delta minus
-
-hi-omni-energy_c_plus:
-  <<: *default_omni_energy_delta
-  FIELDNAM: energy delta plus
-
-hi-omni-energy_fe_minus:
-  <<: *default_omni_energy_delta
-  FIELDNAM: energy delta minus
-
-hi-omni-energy_fe_plus:
-  <<: *default_omni_energy_delta
-  FIELDNAM: energy delta plus
-
-hi-omni-energy_h_minus:
-  <<: *default_omni_energy_delta
-  FIELDNAM: energy delta minus
-
-hi-omni-energy_h_plus:
-  <<: *default_omni_energy_delta
-  FIELDNAM: energy delta plus
-
-hi-omni-energy_he3_minus:
-  <<: *default_omni_energy_delta
-  FIELDNAM: energy delta minus
-
-hi-omni-energy_he3_plus:
-  <<: *default_omni_energy_delta
-  FIELDNAM: energy delta plus
-
-hi-omni-energy_he4_minus:
-  <<: *default_omni_energy_delta
-  FIELDNAM: energy delta minus
-
-hi-omni-energy_he4_plus:
-  <<: *default_omni_energy_delta
-  FIELDNAM: energy delta plus
-
-hi-omni-energy_junk_minus:
-  <<: *default_omni_energy_delta
-  FIELDNAM: energy delta minus
-
-hi-omni-energy_junk_plus:
-  <<: *default_omni_energy_delta
-  FIELDNAM: energy delta plus
-
-hi-omni-energy_ne_mg_si_minus:
-  <<: *default_omni_energy_delta
-  FIELDNAM: energy delta minus
-
-hi-omni-energy_ne_mg_si_plus:
-  <<: *default_omni_energy_delta
-  FIELDNAM: energy delta plus
-
-hi-omni-energy_o_minus:
-  <<: *default_omni_energy_delta
-  FIELDNAM: energy delta minus
-
-hi-omni-energy_o_plus:
-  <<: *default_omni_energy_delta
-  FIELDNAM: energy delta plus
-
-hi-omni-energy_uh_minus:
-  <<: *default_omni_energy_delta
-  FIELDNAM: energy delta minus
-
-hi-omni-energy_uh_plus:
-  <<: *default_omni_energy_delta
-  FIELDNAM: energy delta plus
-
 hi-omni-fe:
-  <<: *default_hi_omni
+  <<: *hi_omni_default
   CATDESC: fe (Root 2 spacing)
   DEPEND_0: epoch
   DEPEND_1: energy_fe
   FIELDNAM: fe
 
 hi-omni-h:
-  <<: *default_hi_omni
+  <<: *hi_omni_default
   CATDESC: h (Root 2 spacing)
   DEPEND_0: epoch
   DEPEND_1: energy_h
   FIELDNAM: h
 
 hi-omni-he3:
-  <<: *default_hi_omni
+  <<: *hi_omni_default
   CATDESC: he3 (Root 2 spacing)
   DEPEND_0: epoch
   DEPEND_1: energy_he3
   FIELDNAM: he3
 
 hi-omni-he4:
-  <<: *default_hi_omni
+  <<: *hi_omni_default
   CATDESC: he4 (Root 2 spacing)
   DEPEND_0: epoch
   DEPEND_1: energy_he4
   FIELDNAM: he4
 
 hi-omni-junk:
-  <<: *default_hi_omni
+  <<: *hi_omni_default
   CATDESC: junk (Root 2 spacing)
   DEPEND_0: epoch
   DEPEND_1: energy_junk
   FIELDNAM: junk
 
 hi-omni-ne_mg_si:
-  <<: *default_hi_omni
+  <<: *hi_omni_default
   CATDESC: ne-mg-si (Root 2 spacing)
   DEPEND_0: epoch
   DEPEND_1: energy_ne_mg_si
   FIELDNAM: ne-mg-si
 
 hi-omni-o:
-  <<: *default_hi_omni
+  <<: *hi_omni_default
   CATDESC: o (Root 2 spacing)
   DEPEND_0: epoch
   DEPEND_1: energy_o
   FIELDNAM: o
 
 hi-omni-uh:
-  <<: *default_hi_omni
+  <<: *hi_omni_default
   CATDESC: uh (Root 2 spacing)
   DEPEND_0: epoch
   DEPEND_1: energy_uh
   FIELDNAM: uh
+
+# hi-sectored Attributes
+hi-sectored-cno:
+  <<: *hi_sectored_attrs_default
+  CATDESC: cno (x2 spacing)
+  FIELDNAM: cno
+  DEPEND_1: energy_cno
+
+hi-sectored-fe:
+  <<: *hi_sectored_attrs_default
+  CATDESC: fe (x2 spacing)
+  FIELDNAM: fe
+  DEPEND_1: energy_fe
+
+hi-sectored-h:
+  <<: *hi_sectored_attrs_default
+  CATDESC: h (x2 spacing)
+  FIELDNAM: h
+  DEPEND_1: energy_h
+
+hi-sectored-he3he4:
+  <<: *hi_sectored_attrs_default
+  CATDESC: he3he4 (x2 spacing)
+  FIELDNAM: he3he4
+  DEPEND_1: energy_he3he4
+
+hi-sectored-energy_cno_minus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Minus value
+  FIELDNAM: energy delta minus
+
+hi-sectored-energy_cno_plus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Plus value
+  FIELDNAM: energy delta plus
+
+hi-sectored-energy_fe_minus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Minus value
+  FIELDNAM: energy delta minus
+
+hi-sectored-energy_fe_plus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Plus value
+  FIELDNAM: energy delta plus
+
+hi-sectored-energy_h_minus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Minus value
+  FIELDNAM: energy delta minus
+
+hi-sectored-energy_h_plus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Plus value
+  FIELDNAM: energy delta plus
+
+hi-sectored-energy_he3he4_minus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Minus value
+  FIELDNAM: energy delta minus
+
+hi-sectored-energy_he3he4_plus:
+  <<: *energy_delta_default
+  CATDESC: Energy Table Plus value
+  FIELDNAM: energy delta plus
+
+hi-sectored-spin_angles:
+  <<: *spin_angles_default
+
