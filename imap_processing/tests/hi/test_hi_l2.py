@@ -11,6 +11,7 @@ from imap_processing.ena_maps.ena_maps import RectangularSkyMap
 from imap_processing.hi.hi_l2 import (
     calculate_ena_intensity,
     calculate_ena_signal_rates,
+    esa_energy_lookup,
     generate_hi_map,
     hi_l2,
 )
@@ -196,3 +197,14 @@ def test_calculate_ena_intensity(empty_rectangular_map_dataset):
         "ena_intensity_sys_err",
     ]:
         assert var_name in ena_intesity_vars
+
+
+def test_esa_energy_lookup(hi_l1_test_data_path):
+    """Test coverage for esa_energy_lookup()"""
+    lookup_file = (
+        hi_l1_test_data_path / "imap_hi_90sensor-esa-energies_20240101_v001.csv"
+    )
+    esa_energy_steps = np.array([1, 2, 3, 3, 7, 8, 9])
+    expected_energies = np.array([0.5, 0.75, 1.1, 1.1, 5.7, 8.52, 12.8])
+    retrieved_energies = esa_energy_lookup(lookup_file, esa_energy_steps)
+    np.testing.assert_array_equal(retrieved_energies, expected_energies)

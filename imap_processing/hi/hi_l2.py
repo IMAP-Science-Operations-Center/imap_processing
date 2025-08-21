@@ -4,6 +4,7 @@ import logging
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from imap_processing.ena_maps.ena_maps import (
@@ -268,3 +269,30 @@ def calculate_ena_intensity(
     )
 
     return intensity_vars
+
+
+def esa_energy_lookup(
+    esa_energies_path: str | Path, esa_energy_steps: np.ndarray
+) -> np.ndarray:
+    """
+    Lookup the nominal central energy values for given esa energy steps.
+
+    Parameters
+    ----------
+    esa_energies_path : str or pathlib.Path
+        Location of the calibration csv file containing the lookup data.
+    esa_energy_steps : numpy.ndarray
+        The ESA energy steps to get energies for.
+
+    Returns
+    -------
+    esa_energies: numpy.ndarray
+        The nominal central energy for the given esa energy steps.
+    """
+    esa_energies_lut = pd.read_csv(
+        esa_energies_path, comment="#", index_col="esa_energy_step"
+    )
+    esa_energies = esa_energies_lut.loc[esa_energy_steps][
+        "nominal_central_energy"
+    ].values
+    return esa_energies
