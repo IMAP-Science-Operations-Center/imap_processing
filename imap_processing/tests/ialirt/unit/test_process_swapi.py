@@ -137,7 +137,11 @@ def test_process_swapi_ialirt(
         0 : xarray_data["swapi_flag"].shape[0]
     ].data
 
-    swapi_result = process_swapi_ialirt(xarray_data)
+    energy_passbands = pd.read_csv(
+        f"{imap_module_directory}/tests/ialirt/data/l0/swapi_ialirt_energy_steps.csv"
+    )
+
+    swapi_result = process_swapi_ialirt(xarray_data, energy_passbands)
 
     key_names = [
         "apid",
@@ -159,7 +163,7 @@ def test_count_rate():
     """Use random realistic values to test for expected output of count_rate()."""
 
     actual_result = count_rate(1370, *[550, 5.27, 1e5])
-    expected_result = 621.0028766348703
+    expected_result = 3073.023325893161
     assert actual_result == expected_result, (
         f"The actual result of count_rate()"
         f" {actual_result} does not "
@@ -199,6 +203,11 @@ def test_optimize_parameters():
         },
     }
 
+    calibration_test_file = pd.read_csv(
+        f"{imap_module_directory}/tests/ialirt/data/l0/swapi_ialirt_energy_steps.csv"
+    )
+    energy_passbands = calibration_test_file["Energy"][0:63].to_numpy().astype(float)
+
     for test_set in test_data:
         energy_data = pd.read_csv(
             f"{imap_module_directory}/tests/ialirt/data/l0/"
@@ -210,7 +219,9 @@ def test_optimize_parameters():
         count_rates_errors = energy_data["Count Rates Error [Hz]"].to_numpy()
         count_rates_errors = np.tile(count_rates_errors, (2, 1))
 
-        result = optimize_pseudo_parameters(count_rates, count_rates_errors)
+        result = optimize_pseudo_parameters(
+            count_rates, count_rates_errors, energy_passbands
+        )
 
         for param in test_data[test_set]["expected_values"]:
             assert np.allclose(
@@ -223,9 +234,12 @@ def test_optimize_parameters():
 @pytest.mark.external_test_data
 def test_process_spacecraft_packet(sc_xarray_data):
     """Tests spacecraft packet processing."""
+    calibration_file = pd.read_csv(
+        f"{imap_module_directory}/tests/ialirt/data/l0/swapi_ialirt_energy_steps.csv"
+    )
 
     # Case 1: Not fixing the sequence number attribute, which is all zeros.
-    swapi_product = process_swapi_ialirt(sc_xarray_data)
+    swapi_product = process_swapi_ialirt(sc_xarray_data, calibration_file)
     assert swapi_product == []
 
     # Case 2: Overwriting swapi_seq_number to be an acceptable array of numbers.
@@ -238,7 +252,7 @@ def test_process_spacecraft_packet(sc_xarray_data):
     extended_data = np.tile(base_sequence, repeat_times)[:target_length]
     sc_xarray_data["swapi_seq_number"].data = extended_data
 
-    swapi_product1 = process_swapi_ialirt(sc_xarray_data)
+    swapi_product1 = process_swapi_ialirt(sc_xarray_data, calibration_file)
     key_names = [
         "apid",
         "met",
