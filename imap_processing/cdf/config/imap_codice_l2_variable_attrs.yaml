@@ -18,15 +18,13 @@ max_epoch: &max_epoch 3155630469184000000
 # TODO:
 #  -update fillval, validmin and validmax for floats (look at l1a yaml)
 #  -add DICT_KEY where applicable
-#  -Update default_attrs where needed (i.e. format)
 #  -Update format to use Fortran values
-#  -Add coordinate attributes
 #  -Add LABLAXIS or LABL_PTR_1 where applicable
-#  -Add energy defaults
-#  -Add energy delta defaults
-#  -Should energy delta vars have DEPEND_1: energy_XX to point to energy it's a delta of?
 #  -Replace hash with num, counts, or rates? '# / cm2 s sr MeV/nuc'
 #  -LABLAXIS: Diff. Intensity vs 'Diff. # Flux'  Both are used. Are these the same?
+#  -should fillval for lo-ialirt be negative instead of positive? See ISTP guidelines
+#  -what to do with duplicate spin_sector_index variables? Renamed the hi-ialirt one to hi-ialirt-spin_sector_index
+#   for now. The difference is in the VALIDMAX value, which is 4 for hi-ialirt-spin_sector_index and 12 for the others.
 
 
 # <=== Defaults ===>
@@ -47,7 +45,7 @@ direct_events_attrs: &direct_events_default
   CATDESC: Fill in at creation
   DISPLAY_TYPE: time_series
   FIELDNAM: Fill in at creation
-  FILLVAL: uint8_fillval
+  FILLVAL: *uint8_fillval
   FORMAT: I5
   UNITS: unitless
   VALIDMIN: 0
@@ -95,7 +93,7 @@ lo_ialirt_attrs: &lo_ialirt_default
 hi_omni_attrs: &hi_omni_default
   <<: *default
   DISPLAY_TYPE: time_series
-  FILLVAL: uint32_fillval
+  FILLVAL: *uint32_fillval
   FORMAT: '%f'
   LABLAXIS: Diff. Intensity
   SCALETYP: linear
@@ -109,7 +107,7 @@ hi_sectored_attrs: &hi_sectored_attrs_default
   DISPLAY_TYPE: time_series
   DEPEND_2: elevation_angle
   DEPEND_3: spin_sector_index
-  FILLVAL: uint32_fillval
+  FILLVAL: *uint32_fillval
   FORMAT: '%f'
   LABLAXIS: 'Diff. # Flux'
   UNITS: '# / cm2 s sr MeV/nuc'
@@ -119,7 +117,8 @@ hi_sectored_attrs: &hi_sectored_attrs_default
 
 energy_attrs: &energy_default
   VAR_TYPE: support_data
-  CATDESC: Energy Table
+  CATDESC: Geometric Mean of the Energy
+  FIELDNAM: Energy Table
   LABLAXIS: MeV/nuc
   SCALETYP: log
   UNITS: MeV/nuc
@@ -151,7 +150,7 @@ spin_angles_attrs: &spin_angles_default
 event_num:
     CATDESC: Event Number
     FIELDNAM: Event Number
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     FORMAT: I5
     LABLAXIS: Event Number
     SCALETYP: linear
@@ -185,30 +184,119 @@ epoch_delta_plus:
     VALIDMAX: *max_int
     VAR_TYPE: support_data
 
+elevation_angle:
+  CATDESC: Elevation Angle
+  FIELDNAM: Elevation Angle
+  FORMAT: '%f'
+  LABLAXIS: Elevation Angle
+  SCALETYP: linear
+  UNITS: degrees
+  VALIDMAX: 180.0
+  VALIDMIN: 0.0
+  VAR_TYPE: support_data
+
+energy_cno:
+  <<: *energy_default
+  DELTA_MINUS_VAR: energy_cno_minus
+  DELTA_PLUS_VAR: energy_cno_plus
+
+energy_fe:
+  <<: *energy_default
+  DELTA_MINUS_VAR: energy_fe_minus
+  DELTA_PLUS_VAR: energy_fe_plus
+
+energy_h:
+  <<: *energy_default
+  DELTA_MINUS_VAR: energy_h_minus
+  DELTA_PLUS_VAR: energy_h_plus
+
+energy_he3he4:
+  <<: *energy_default
+  DELTA_MINUS_VAR: energy_he3he4_minus
+  DELTA_PLUS_VAR: energy_he3he4_plus
+
+energy_c:
+  <<: *energy_default
+  DELTA_MINUS_VAR: energy_c_minus
+  DELTA_PLUS_VAR: energy_c_plus
+
+energy_he3:
+  <<: *energy_default
+  DELTA_MINUS_VAR: energy_he3_minus
+  DELTA_PLUS_VAR: energy_he3_plus
+
+energy_he4:
+  <<: *energy_default
+  DELTA_MINUS_VAR: energy_he4_minus
+  DELTA_PLUS_VAR: energy_he4_plus
+
+energy_junk:
+  <<: *energy_default
+  DELTA_MINUS_VAR: energy_junk_minus
+  DELTA_PLUS_VAR: energy_junk_plus
+
+energy_ne_mg_si:
+  <<: *energy_default
+  DELTA_MINUS_VAR: energy_ne_mg_si_minus
+  DELTA_PLUS_VAR: energy_ne_mg_si_plus
+
+energy_o:
+  <<: *energy_default
+  DELTA_MINUS_VAR: energy_o_minus
+  DELTA_PLUS_VAR: energy_o_plus
+
+energy_uh:
+  <<: *energy_default
+  DELTA_MINUS_VAR: energy_uh_minus
+  DELTA_PLUS_VAR: energy_uh_plus
+
+spin_sector_index:
+  CATDESC: Spin Sector Index
+  FIELDNAM: Spin Sector Index
+  FORMAT: '%d'
+  LABLAXIS: ' '
+  SCALETYP: linear
+  UNITS: ' '
+  VALIDMAX: 12
+  VALIDMIN: 0
+  VAR_TYPE: support_data
+
+hi-ialirt-spin_sector_index:
+  CATDESC: Spin Sector Index
+  FIELDNAM: Spin Sector Index
+  FORMAT: '%d'
+  LABLAXIS: ' '
+  SCALETYP: linear
+  UNITS: ' '
+  VALIDMAX: 4
+  VALIDMIN: 0
+  VAR_TYPE: support_data
+
+
 # <=== Labels ===>
 event_num_label:
-    CATDESC: Event Number
-    DEPEND_1: event_num
-    FIELDNAM: Event Number
-    FORMAT: A5
-    VAR_TYPE: metadata
+  CATDESC: Event Number
+  DEPEND_1: event_num
+  FIELDNAM: Event Number
+  FORMAT: A5
+  VAR_TYPE: metadata
 
 # <=== Dataset Variable Attributes ===>
 
 # The following are set in multiple data products
 data_quality:
-    <<: *default
-    CATDESC: Indicates whether data quality is suspect (1).
-    DISPLAY_TYPE: time_series
-    FIELDNAM: Data Quality
-    FILLVAL: 255
-    FORMAT: '%d'
-    LABLAXIS: Data Quality
-    SCALETYP: linear
-    UNITS: ' '
-    VALIDMAX: 1
-    VALIDMIN: 0
-    VAR_TYPE: data
+  <<: *default
+  CATDESC: Indicates whether data quality is suspect (1).
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Data Quality
+  FILLVAL: *uint8_fillval
+  FORMAT: '%d'
+  LABLAXIS: Data Quality
+  SCALETYP: linear
+  UNITS: ' '
+  VALIDMAX: 1
+  VALIDMIN: 0
+  VAR_TYPE: data
 
 # The following are data product-specific
 # Direct Events Attributes
@@ -227,7 +315,7 @@ P0_APDEnergy:
     CATDESC: Priority 0 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 0 APD Energy
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABL_PTR_1: event_num_label
     VALIDMAX: 512
 
@@ -275,7 +363,7 @@ P0_NumEvents:
     <<: *direct_events_default
     CATDESC: Priority 0 Number of Events
     FIELDNAM: Priority 0 Number of Events
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABLAXIS: " "
 
 P0_PHAType:
@@ -331,7 +419,7 @@ P0_TOF:
     CATDESC: Priority 0 Time of Flight
     DEPEND_1: event_num
     FIELDNAM: Priority 0 Time of Flight
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABL_PTR_1: event_num_label
     VALIDMAX: 1024
 
@@ -356,7 +444,7 @@ P1_APDEnergy:
     CATDESC: Priority 1 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 1 APD Energy
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABL_PTR_1: event_num_label
     VALIDMAX: 512
 
@@ -404,7 +492,7 @@ P1_NumEvents:
     <<: *direct_events_default
     CATDESC: Priority 1 Number of Events
     FIELDNAM: Priority 1 Number of Events
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABLAXIS: " "
 
 P1_PHAType:
@@ -460,7 +548,7 @@ P1_TOF:
     CATDESC: Priority 1 Time of Flight
     DEPEND_1: event_num
     FIELDNAM: Priority 1 Time of Flight
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABL_PTR_1: event_num_label
     VALIDMAX: 1024
 
@@ -485,7 +573,7 @@ P2_APDEnergy:
     CATDESC: Priority 2 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 2 APD Energy
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABL_PTR_1: event_num_label
     VALIDMAX: 512
 
@@ -533,7 +621,7 @@ P2_NumEvents:
     <<: *direct_events_default
     CATDESC: Priority 2 Number of Events
     FIELDNAM: Priority 2 Number of Events
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABLAXIS: " "
 
 P2_PHAType:
@@ -589,7 +677,7 @@ P2_TOF:
     CATDESC: Priority 2 Time of Flight
     DEPEND_1: event_num
     FIELDNAM: Priority 2 Time of Flight
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABL_PTR_1: event_num_label
     VALIDMAX: 1024
 
@@ -614,7 +702,7 @@ P3_APDEnergy:
     CATDESC: Priority 3 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 3 APD Energy
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABL_PTR_1: event_num_label
     VALIDMAX: 512
 
@@ -662,7 +750,7 @@ P3_NumEvents:
     <<: *direct_events_default
     CATDESC: Priority 3 Number of Events
     FIELDNAM: Priority 3 Number of Events
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABLAXIS: " "
 
 P3_PHAType:
@@ -718,7 +806,7 @@ P3_TOF:
     CATDESC: Priority 3 Time of Flight
     DEPEND_1: event_num
     FIELDNAM: Priority 3 Time of Flight
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABL_PTR_1: event_num_label
     VALIDMAX: 1024
 
@@ -743,7 +831,7 @@ P4_APDEnergy:
     CATDESC: Priority 4 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 4 APD Energy
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABL_PTR_1: event_num_label
     VALIDMAX: 512
 
@@ -791,7 +879,7 @@ P4_NumEvents:
     <<: *direct_events_default
     CATDESC: Priority 4 Number of Events
     FIELDNAM: Priority 4 Number of Events
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABLAXIS: " "
 
 P4_PHAType:
@@ -847,7 +935,7 @@ P4_TOF:
     CATDESC: Priority 4 Time of Flight
     DEPEND_1: event_num
     FIELDNAM: Priority 4 Time of Flight
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABL_PTR_1: event_num_label
     VALIDMAX: 1024
 
@@ -872,7 +960,7 @@ P5_APDEnergy:
     CATDESC: Priority 5 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 5 APD Energy
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABL_PTR_1: event_num_label
     VALIDMAX: 512
 
@@ -920,7 +1008,7 @@ P5_NumEvents:
     <<: *direct_events_default
     CATDESC: Priority 5 Number of Events
     FIELDNAM: Priority 5 Number of Events
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABLAXIS: " "
 
 P5_PHAType:
@@ -976,7 +1064,7 @@ P5_TOF:
     CATDESC: Priority 5 Time of Flight
     DEPEND_1: event_num
     FIELDNAM: Priority 5 Time of Flight
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABL_PTR_1: event_num_label
     VALIDMAX: 1024
 
@@ -1001,7 +1089,7 @@ P6_APDEnergy:
     CATDESC: Priority 6 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 6 APD Energy
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABL_PTR_1: event_num_label
     VALIDMAX: 512
 
@@ -1041,7 +1129,7 @@ P6_NumEvents:
     <<: *direct_events_default
     CATDESC: Priority 6 Number of Events
     FIELDNAM: Priority 6 Number of Events
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABLAXIS: " "
 
 P6_PHAType:
@@ -1073,7 +1161,7 @@ P6_TOF:
     CATDESC: Priority 6 Time of Flight
     DEPEND_1: event_num
     FIELDNAM: Priority 6 Time of Flight
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABL_PTR_1: event_num_label
     VALIDMAX: 1024
 
@@ -1090,7 +1178,7 @@ P7_APDEnergy:
     CATDESC: Priority 7 APD Energy
     DEPEND_1: event_num
     FIELDNAM: Priority 7 APD Energy
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABL_PTR_1: event_num_label
     VALIDMAX: 512
 
@@ -1130,7 +1218,7 @@ P7_NumEvents:
     <<: *direct_events_default
     CATDESC: Priority 7 Number of Events
     FIELDNAM: Priority 7 Number of Events
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABLAXIS: " "
 
 P7_PHAType:
@@ -1162,7 +1250,7 @@ P7_TOF:
     CATDESC: Priority 7 Time of Flight
     DEPEND_1: event_num
     FIELDNAM: Priority 7 Time of Flight
-    FILLVAL: 65535
+    FILLVAL: *uint16_fillval
     LABL_PTR_1: event_num_label
     VALIDMAX: 1024
 
