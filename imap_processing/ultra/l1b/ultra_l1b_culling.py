@@ -540,6 +540,40 @@ def flag_scattering(
         )
 
 
+def get_de_rejection_mask(
+    quality_scattering: NDArray, quality_outliers: NDArray
+) -> NDArray:
+    """
+    Create boolean mask where event is rejected due to relevant flags.
+
+    Parameters
+    ----------
+    quality_scattering : NDArray
+        Quality scattering flags.
+    quality_outliers : NDArray
+        Quality outliers flags.
+
+    Returns
+    -------
+    rejected : NDArray
+        Rejected events where True = rejected.
+    """
+    # Bitmasks from the DE_QUALITY_FLAG_FILTERS
+    scattering_mask = sum(
+        flag.value for flag in DE_QUALITY_FLAG_FILTERS["quality_scattering"]
+    )
+    outliers_mask = sum(
+        flag.value for flag in DE_QUALITY_FLAG_FILTERS["quality_outliers"]
+    )
+
+    # Boolean mask where event is rejected due to relevant flags
+    rejected = ((quality_scattering & scattering_mask) != 0) | (
+        (quality_outliers & outliers_mask) != 0
+    )
+
+    return rejected
+
+
 def count_rejected_events_per_spin(
     spins: NDArray, quality_scattering: NDArray, quality_outliers: NDArray
 ) -> NDArray:
@@ -560,25 +594,15 @@ def count_rejected_events_per_spin(
     rejected_counts : NDArray
         Rejected counts per spin.
     """
-    # Bitmasks from the DE_QUALITY_FLAG_FILTERS
-    scattering_mask = sum(
-        flag.value for flag in DE_QUALITY_FLAG_FILTERS["quality_scattering"]
-    )
-    outliers_mask = sum(
-        flag.value for flag in DE_QUALITY_FLAG_FILTERS["quality_outliers"]
-    )
-
     # Boolean mask where event is rejected due to relevant flags
-    rejected = ((quality_scattering & scattering_mask) != 0) | (
-        (quality_outliers & outliers_mask) != 0
-    )
+    rejected = get_de_rejection_mask(quality_scattering, quality_outliers)
 
     # Unique spin numbers
     unique_spins = np.unique(spins)
 
     # Count rejected events per spin
-    rejected_counts = {
-        spin: int(np.count_nonzero(rejected[spins == spin])) for spin in unique_spins
-    }
+    rejected_counts = np.array(
+        [np.count_nonzero(rejected[spins == spin]) for spin in unique_spins], dtype=int
+    )
 
     return rejected_counts

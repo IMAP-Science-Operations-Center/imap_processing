@@ -17,6 +17,8 @@ from imap_processing.ultra.l1c.l1c_lookup_utils import (
     calculate_pixels_within_scattering_threshold,
     get_spacecraft_pointing_lookup_tables,
 )
+from imap_processing.spice.time import sct_to_et
+from imap_processing.ultra.l1b.ultra_l1b_culling import get_de_rejection_mask
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     get_efficiencies_and_geometric_function,
@@ -67,6 +69,11 @@ def calculate_helio_pset(
         Dataset containing the data.
     """
     pset_dict: dict[str, np.ndarray] = {}
+
+    rejected = get_de_rejection_mask(
+        de_dataset["quality_scattering"].values, de_dataset["quality_outliers"].values
+    )
+    de_dataset = de_dataset.isel(epoch=~rejected)
 
     v_mag_helio_spacecraft = np.linalg.norm(
         de_dataset["velocity_dps_helio"].values, axis=1

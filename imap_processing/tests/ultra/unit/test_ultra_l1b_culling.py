@@ -21,6 +21,7 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     flag_imap_instruments,
     flag_rates,
     flag_scattering,
+    get_de_rejection_mask,
     get_energy_histogram,
     get_n_sigma,
     get_pulses_per_spin,
@@ -265,6 +266,18 @@ def test_flag_scattering(ancillary_files):
     assert np.all(quality_flags == np.array([1, 1, 2, 2, 2, 2, 2, 2, 2]))
 
 
+def test_get_de_rejection_mask():
+    """Tests get_de_rejection_mask function."""
+    quality_scattering = np.array([0, 1, 0, 1, 1, 0, 0, 1, 0])
+    quality_outliers = np.array([0, 0, 1, 0, 1, 0, 1, 0, 0])
+
+    counted = get_de_rejection_mask(quality_scattering, quality_outliers)
+
+    np.testing.assert_array_equal(
+        counted, np.array([False, True, True, True, True, False, True, True, False])
+    )
+
+
 def test_count_rejected_events_per_spin():
     """Tests count_rejected_events_per_spin function."""
 
@@ -276,4 +289,4 @@ def test_count_rejected_events_per_spin():
         spins, quality_scattering, quality_outliers
     )
 
-    np.testing.array_equal(counted.scattering, np.array([2, 2, 2]))
+    np.testing.assert_array_equal(counted, np.array([2, 2, 2]))

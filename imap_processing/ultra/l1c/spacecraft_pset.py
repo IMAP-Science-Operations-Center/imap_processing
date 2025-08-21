@@ -10,7 +10,8 @@ from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
     calculate_pixels_within_scattering_threshold,
     get_spacecraft_pointing_lookup_tables,
-)
+from imap_processing.ultra.l1b.ultra_l1b_culling import get_de_rejection_mask
+
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     get_efficiencies_and_geometric_function,
@@ -62,6 +63,12 @@ def calculate_spacecraft_pset(
     """
     pset_dict: dict[str, np.ndarray] = {}
     sensor = parse_filename_like(name)["sensor"][0:2]
+
+    # Before we use the de_dataset to calculate the pointing set grid we need to filter.
+    rejected = get_de_rejection_mask(
+        de_dataset["quality_scattering"].values, de_dataset["quality_outliers"].values
+    )
+    de_dataset = de_dataset.isel(epoch=~rejected)
 
     v_mag_dps_spacecraft = np.linalg.norm(de_dataset["velocity_dps_sc"].values, axis=1)
     vhat_dps_spacecraft = (
