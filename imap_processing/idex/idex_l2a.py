@@ -361,7 +361,7 @@ def log_smooth_powerlaw(log_v: float, log_a: float, params: np.ndarray) -> float
         Velocity.
     log_a : float
         Scale factor.
-    params : np.array
+    params : np.ndarray
         Calibration parameters for the power law.
 
     Returns
