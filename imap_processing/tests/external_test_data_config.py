@@ -62,10 +62,12 @@ EXTERNAL_TEST_DATA = [
     # IDEX
     ("idex_l1a_validation_file.h5", "idex/test_data/"),
     ("idex_l1b_validation_file.h5", "idex/test_data/"),
-    ("IMAP-Ultra45_r1_L1_V0_shortened.csv", "ultra/data/l1/"),
+    ("imap_idex_l2a-calibration-curve-yield-params_20250101_v001.csv", "idex/test_data/"),
+    ("imap_idex_l2a-calibration-curve-t-rise_20250101_v001.csv", "idex/test_data/"),
 
     # Ultra
     ("FM90_Startup_20230711T081655.CCSDS", "ultra/data/l0/"),
+    ("IMAP-Ultra45_r1_L1_V0_shortened.csv", "ultra/data/l1/"),
     ("FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.CCSDS", "ultra/data/l0/"),
     ("ultra45_raw_sc_rawnrgevnt_19840122_00.csv", "ultra/data/l0/"),
     ("ultra45_raw_sc_enaphxtofhnrgimg_FM45_UltraFM45Extra_TV_Tests_2024-01-22T0930_20240122T093008.csv",
