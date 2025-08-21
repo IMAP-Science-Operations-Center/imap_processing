@@ -141,6 +141,9 @@ def idex_l2b(
         daily_on_percentage,
     )
     # Create l2b Dataset
+    charge_bins = CHARGE_BIN_EDGES[1:]
+    mass_bins = CHARGE_BIN_EDGES[1:]
+    spin_phase_bins = SPIN_PHASE_BIN_EDGES[1:]
 
     # Define xarrays that are shared between l2b and l2c
     epoch = xr.DataArray(
@@ -159,7 +162,7 @@ def idex_l2b(
         ),
         "charge_labels": xr.DataArray(
             name="impact_charge_labels",
-            data=CHARGE_BIN_EDGES.astype(str),
+            data=charge_bins.astype(str),
             dims="impact_charge",
             attrs=idex_l2b_attrs.get_variable_attributes(
                 "charge_labels", check_schema=False
@@ -167,7 +170,7 @@ def idex_l2b(
         ),
         "mass_labels": xr.DataArray(
             name="mass_labels",
-            data=MASS_BIN_EDGES.astype(str),
+            data=mass_bins.astype(str),
             dims="mass",
             attrs=idex_l2b_attrs.get_variable_attributes(
                 "mass_labels", check_schema=False
@@ -175,7 +178,7 @@ def idex_l2b(
         ),
         "impact_charge": xr.DataArray(
             name="impact_charge",
-            data=CHARGE_BIN_EDGES,
+            data=charge_bins,
             dims="impact_charge",
             attrs=idex_l2b_attrs.get_variable_attributes(
                 "impact_charge", check_schema=False
@@ -183,7 +186,7 @@ def idex_l2b(
         ),
         "mass": xr.DataArray(
             name="mass",
-            data=MASS_BIN_EDGES,
+            data=mass_bins,
             dims="mass",
             attrs=idex_l2b_attrs.get_variable_attributes("mass", check_schema=False),
         ),
@@ -191,7 +194,7 @@ def idex_l2b(
     l2b_vars = common_vars | {
         "spin_phase": xr.DataArray(
             name="spin_phase",
-            data=SPIN_PHASE_BIN_EDGES,
+            data=spin_phase_bins,
             dims="spin_phase",
             attrs=idex_l2b_attrs.get_variable_attributes(
                 "spin_phase", check_schema=False
@@ -199,7 +202,7 @@ def idex_l2b(
         ),
         "spin_phase_labels": xr.DataArray(
             name="spin_phase_labels",
-            data=SPIN_PHASE_BIN_EDGES.astype(str),
+            data=spin_phase_bins.astype(str),
             dims="spin_phase",
             attrs=idex_l2b_attrs.get_variable_attributes(
                 "spin_phase_labels", check_schema=False
