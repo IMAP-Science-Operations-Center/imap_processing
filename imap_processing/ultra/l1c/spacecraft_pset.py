@@ -4,6 +4,11 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from imap_processing.ultra.l1b.lookup_utils import (
+    get_nominal_for_by_spin_phase,
+    get_scattering_coefficients,
+    mask_below_fwhm_scattering_threshold,
+)
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     get_spacecraft_background_rates,
@@ -12,6 +17,66 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     interpolate_sensitivity,
 )
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
+
+
+def calculate_pixels_within_scattering_threshold(
+    ancillary_files: dict,
+    instrument_id: int,
+) -> list:
+    """
+    Calculate pixels within the FWHM scattering threshold for each spin phase step.
+
+    Parameters
+    ----------
+    ancillary_files : dict
+        Dictionary containing ancillary files.
+    instrument_id : int,
+        Instrument ID, either 45 or 90.
+
+    Returns
+    -------
+    exposure_pointing_adjusted : list
+        A Nested list of arrays indicating pixels within the scattering threshold.
+        The outer list indicates spin phase steps, the middle list indicates energy
+        bins, and the inner arrays contain indices indicating pixels that are below
+        the FWHM scattering threshold.
+    """
+    pixels_below_scattering = []
+    # Get lookup table for FOR indices by spin phase step
+    for_indices_by_spin_phase, theta_and_phi, ra_and_dec = (
+        get_nominal_for_by_spin_phase(ancillary_files, instrument_id)
+    )
+    # Get energy bin geometric means
+    energy_bin_geometric_means = build_energy_bins()[2]
+    steps = for_indices_by_spin_phase.shape[1]
+    # Using the lookup table, get the indices of the pixels inside the FOR at the
+    # current spin phase step.
+    theta = theta_and_phi[:, 0]
+    phi = theta_and_phi[:, 1]
+    theta_coeffs, phi_coeffs = get_scattering_coefficients(
+        ancillary_files, instrument_id, theta, phi
+    )
+    # The "for_indices_by_spin_phase" lookup table contains the boolean values of each
+    # pixel at each spin phase step, indicating whether the pixel is inside the FOR.
+    # It starts at Spin-phase = 0, and increments in fine steps (1 ms), spinning the
+    # spacecraft in the despun frame. At each iteration, query for the pixels in the
+    # FOR, and calculate whether the FWHM value is below the threshold at the energy.
+    for i in range(steps):
+        # Calculate spin phase for the current iteration
+        for_inds = for_indices_by_spin_phase[:, i]
+        pixels_below_scattering_for_energy = []
+        for energy_idx in range(len(energy_bin_geometric_means)):
+            # Get a mask for pixels below the FWHM scattering threshold
+            energy = int(energy_bin_geometric_means[energy_idx])
+            scattering_mask = mask_below_fwhm_scattering_threshold(
+                theta_coeffs[for_inds], phi_coeffs[for_inds], energy
+            )
+            pixels_below_scattering_for_energy.append(
+                np.where(for_inds)[0][scattering_mask]
+            )
+        pixels_below_scattering.append(pixels_below_scattering_for_energy)
+
+    return pixels_below_scattering
 
 
 def calculate_spacecraft_pset(
@@ -70,19 +135,23 @@ def calculate_spacecraft_pset(
     # calculate background rates
     background_rates = get_spacecraft_background_rates()
 
+    # Todo: calculate efficiency and geometric function dataframes as a function
     efficiencies = ancillary_files["l1c-90sensor-efficiencies"]
     geometric_function = ancillary_files["l1c-90sensor-gf"]
 
     df_efficiencies = pd.read_csv(efficiencies)
     df_geometric_function = pd.read_csv(geometric_function)
-    sensitivity = interpolate_sensitivity(df_efficiencies, df_geometric_function)
 
+    sensitivity = interpolate_sensitivity(df_efficiencies, df_geometric_function)
+    pixels_below_scattering = calculate_pixels_within_scattering_threshold(
+        ancillary_files, instrument_id
+    )
     # Calculate exposure
     constant_exposure = ancillary_files["l1c-90sensor-dps-exposure"]
     df_exposure = pd.read_csv(constant_exposure)
 
     exposure_pointing = get_spacecraft_exposure_times(
-        df_exposure, rates_dataset, params_dataset, instrument_id, ancillary_files
+        df_exposure, rates_dataset, params_dataset, pixels_below_scattering
     )
 
     # For ISTP, epoch should be the center of the time bin.
@@ -92,7 +161,7 @@ def calculate_spacecraft_pset(
     pset_dict["longitude"] = longitude[np.newaxis, ...]
     pset_dict["energy_bin_geometric_mean"] = energy_bin_geometric_means
     pset_dict["background_rates"] = background_rates[np.newaxis, ...]
-    pset_dict["exposure_factor"] = exposure_pointing.to_numpy()[np.newaxis, ...]
+    pset_dict["exposure_factor"] = exposure_pointing[np.newaxis, ...]
     pset_dict["pixel_index"] = healpix
     pset_dict["energy_bin_delta"] = np.diff(intervals, axis=1).squeeze()[
         np.newaxis, ...

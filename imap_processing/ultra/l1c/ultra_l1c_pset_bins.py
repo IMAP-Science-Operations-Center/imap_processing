@@ -7,7 +7,7 @@ import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
 from scipy import interpolate
-from scipy.interpolate import PchipInterpolator, interp1d
+from scipy.interpolate import interp1d
 
 from imap_processing.spice.geometry import (
     SpiceFrame,
@@ -16,11 +16,6 @@ from imap_processing.spice.geometry import (
 )
 from imap_processing.spice.spin import get_spacecraft_spin_phase, get_spin_angle
 from imap_processing.ultra.constants import UltraConstants
-from imap_processing.ultra.l1b.lookup_utils import (
-    get_nominal_for_by_spin_phase,
-    get_scattering_coefficients,
-    mask_below_fwhm_scattering_threshold,
-)
 
 # TODO: add species binning.
 FILLVAL_FLOAT32 = -1.0e31
@@ -303,27 +298,28 @@ def get_sectored_rates(rates_ds: xr.Dataset, params_ds: xr.Dataset) -> xr.Datase
     return rates_ds.isel(epoch=sector_mode_mask)
 
 
-def get_deadtime_interpolator(
-    deadtime_ratios: xr.DataArray, timestamps: xr.DataArray
-) -> PchipInterpolator:
+def get_deadtime_ratios_by_spin_phase(
+    sectored_rates: xr.Dataset,
+) -> np.ndarray:
     """
-    Create PCHIP function for dead time ratio vs spin phase.
+    Calculate nominal deadtime ratios at every spin phase step (1ms res).
 
     Parameters
     ----------
-    deadtime_ratios : xarray.DataArray
-        Dead time ratios for each sector.
-    timestamps : xarray.DataArray
-        Epoch values corresponding to the dead time ratios.
+    sectored_rates : xarray.Dataset
+        Dataset containing sector mode image rates data.
 
     Returns
     -------
-    scipy.interpolate.PchipInterpolator
-        Interpolating function for dead time ratios.
+    numpy.ndarray
+        Nominal deadtime ratios at every spin phase step (1ms res).
     """
+    deadtime_ratios = get_deadtime_ratios(sectored_rates)
     # Get the spin phase at the start of each sector rate measurement
     spin_phases = np.asarray(
-        get_spin_angle(get_spacecraft_spin_phase(np.array(timestamps)), degrees=True)
+        get_spin_angle(
+            get_spacecraft_spin_phase(np.array(sectored_rates.epoch.data)), degrees=True
+        )
     )
     # Assume the sectored rate data is evenly spaced in time, and find the middle spin
     # phase value for each sector.
@@ -355,17 +351,20 @@ def get_deadtime_interpolator(
         raise ValueError(
             "Dead time ratios contain NaN values, cannot create interpolator."
         )
-    # Return a PCHIP interpolator for the dead time ratios
-    return interpolate.PchipInterpolator(
+    interpolator = interpolate.PchipInterpolator(
         deadtime_medians["spin_phase"].values, deadtime_medians["deadtime_ratio"].values
     )
+    # Calculate the nominal spin phases at 1 ms resolution and query the pchip
+    # interpolator to get the deadtime ratios.
+    steps = 15 * 1000  # 15 seconds at 1 ms resolution
+    nominal_spin_phases_1ms_res = np.arange(0, 360, 360 / steps)
+    return interpolator(nominal_spin_phases_1ms_res)
 
 
 def apply_deadtime_correction(
     exposure_pointing: pandas.DataFrame,
-    deadtime_interpolator: PchipInterpolator,
-    instrument_id: int,
-    ancillary_files: dict,
+    deadtime_ratios: np.ndarray,
+    pixels_below_scattering: list,
 ) -> np.ndarray:
     """
     Adjust the exposure time at each pixel to account for dead time.
@@ -374,65 +373,52 @@ def apply_deadtime_correction(
     ----------
     exposure_pointing : pandas.DataFrame
         Exposure data.
-    deadtime_interpolator : PchipInterpolator
+    deadtime_ratios : PchipInterpolator
         Interpolating function for dead time ratios.
-    instrument_id : int,
-        Instrument ID, either 45 or 90.
-    ancillary_files : dict
-        Dictionary containing ancillary files.
+    pixels_below_scattering : list
+        A Nested list of arrays indicating pixels within the scattering threshold.
+        The outer list indicates spin phase steps, the middle list indicates energy
+        bins, and the inner arrays contain indices indicating pixels that are below
+        the FWHM scattering threshold.
 
     Returns
     -------
     exposure_pointing_adjusted : np.ndarray
         Adjusted exposure times accounting for dead time.
     """
-    # Get lookup table for FOR indices by spin phase step
-    for_indices_by_spin_phase, theta_and_phi, ra_and_dec = (
-        get_nominal_for_by_spin_phase(ancillary_files, instrument_id)
-    )
     # Get energy bin geometric means
     energy_bin_geometric_means = build_energy_bins()[2]
     # Exposure time should now be of shape (npix, energy)
     exposure_pointing = np.repeat(
-        exposure_pointing.to_numpy()[:, np.newaxis],
+        exposure_pointing.to_numpy()[np.newaxis, :],
         len(energy_bin_geometric_means),
-        axis=1,
+        axis=0,
     )
-    steps = for_indices_by_spin_phase.shape[1]
-    # nominal spin phase step. 1 ms per step.
-    nominal_ms_spin = 360 / (15 * 1000)  # degrees per ms
-    # Using the lookup table, get the indices of the pixels inside the FOR at the
-    # current spin phase step.
-    theta = theta_and_phi[:, 0]
-    phi = theta_and_phi[:, 1]
-    theta_coeffs, phi_coeffs = get_scattering_coefficients(
-        ancillary_files, instrument_id, theta, phi
-    )
-    # Calculate the array of spin phases for each step
-    spin_phases = np.arange(start=0, stop=360, step=360 / steps)
-
-    # The "for_indices_by_spin_phase" lookup table contains the boolean values of each
-    # pixel at each spin phase step, indicating whether the pixel is inside the FOR.
-    # It starts at Spin-phase = 0, and increments in fine steps (1 ms), spinning the
-    # spacecraft in the despun frame. At each iteration, query for the pixels in the
-    # FOR, and calculate whether the FWHM value is below the threshold at the energy.
-    # Query the dead-time ratio and apply the nominal exposure time
+    steps = len(pixels_below_scattering)
+    # nominal spin phase step.
+    nominal_ms_step = 15 / steps  # time step
+    # Query the dead-time ratio and apply the nominal exposure time to pixels in the FOR
+    # and below the scattering threshold
+    # Loop through the spin phase steps. This is spinning the spacecraft by nominal
+    # 1 ms steps in the despun frame.
     for i in range(steps):
-        # Calculate spin phase for the current iteration
-        for_inds = for_indices_by_spin_phase[:, i]
-        for energy_idx in range(len(energy_bin_geometric_means)):
-            # Get a mask for pixels below the FWHM scattering threshold
-            energy = int(energy_bin_geometric_means[energy_idx])
-            scattering_mask = mask_below_fwhm_scattering_threshold(
-                theta_coeffs[for_inds], phi_coeffs[for_inds], energy
-            )
-            deadtime_ratio = deadtime_interpolator(spin_phases[i])
-            # TODO add the boundary scale factor when available
+        pixels_below_threshold_for_spin_phase = pixels_below_scattering[i]
+        if (
+            len(pixels_below_threshold_for_spin_phase) == 1
+            and pixels_below_threshold_for_spin_phase[0].size == 0
+        ):
+            continue
+        # Loop through energy bins
+        for energy_bin_idx in range(len(energy_bin_geometric_means)):
+            pixels_below_for_at_energy_bin = pixels_below_threshold_for_spin_phase[
+                energy_bin_idx
+            ]
+            if pixels_below_for_at_energy_bin.size == 0:
+                continue
             # Apply the nominal exposure time (1 ms) scaled by the deadtime ratio to
             # every pixel in the FOR, that is below the FWHM scattering threshold,
-            pixels_to_apply_correction = np.where(for_inds)[0][scattering_mask]
-            exposure_pointing[pixels_to_apply_correction, energy_idx] += (
-                nominal_ms_spin * deadtime_ratio
+            exposure_pointing[energy_bin_idx, pixels_below_for_at_energy_bin] += (
+                nominal_ms_step * deadtime_ratios[i]
             )
 
     return exposure_pointing
@@ -442,8 +428,7 @@ def get_spacecraft_exposure_times(
     constant_exposure: pandas.DataFrame,
     rates_dataset: xr.Dataset,
     params_dataset: xr.Dataset,
-    instrument_id: int,
-    ancillary_files: dict,
+    pixels_below_scattering: list[list],
 ) -> NDArray:
     """
     Compute exposure times for HEALPix pixels.
@@ -456,10 +441,11 @@ def get_spacecraft_exposure_times(
         Dataset containing image rates data.
     params_dataset : xarray.Dataset
         Dataset containing image parameters data.
-    instrument_id : int
-        Instrument ID, either 45 or 90.
-    ancillary_files : dict
-        Dictionary containing ancillary files.
+    pixels_below_scattering : list
+        List of lists indicating pixels within the scattering threshold.
+        The outer list indicates spin phase steps, the middle list indicates energy
+        bins, and the inner list contains pixel indices indicating pixels that are
+        below the FWHM scattering threshold.
 
     Returns
     -------
@@ -471,15 +457,12 @@ def get_spacecraft_exposure_times(
     # TODO: use the universal spin table and
     #  universal pointing table here to determine actual number of spins
     sectored_rates = get_sectored_rates(rates_dataset, params_dataset)
-    deadtime_ratios = get_deadtime_ratios(sectored_rates)
-    deadtime_interpolator = get_deadtime_interpolator(
-        deadtime_ratios, sectored_rates.epoch.data
-    )
+    nominal_deadtime_ratios = get_deadtime_ratios_by_spin_phase(sectored_rates)
     exposure_pointing = (
         constant_exposure["Exposure Time"] * 5760
     )  # 5760 spins per pointing (for now)
     exposure_pointing_adjusted = apply_deadtime_correction(
-        exposure_pointing, deadtime_interpolator, instrument_id, ancillary_files
+        exposure_pointing, nominal_deadtime_ratios, pixels_below_scattering
     )
     return exposure_pointing_adjusted
 

@@ -7,15 +7,17 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
-from scipy import interpolate
 
 from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c import ultra_l1c_pset_bins
+from imap_processing.ultra.l1c.spacecraft_pset import (
+    calculate_pixels_withing_scattering_threshold,
+)
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     apply_deadtime_correction,
     build_energy_bins,
-    get_deadtime_interpolator,
     get_deadtime_ratios,
+    get_deadtime_ratios_by_spin_phase,
     get_energy_delta_minus_plus,
     get_helio_background_rates,
     get_helio_exposure_times,
@@ -43,16 +45,6 @@ def test_data():
     v = np.column_stack((vx_sc, vy_sc, vz_sc))
 
     return v, energy
-
-
-@pytest.fixture
-def random_spin_data():
-    """Fixture for random spin data."""
-    with mock.patch(
-        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_spacecraft_spin_phase"
-    ) as mock_spin_phases:
-        mock_spin_phases.side_effect = lambda time: np.random.random(time.shape)
-        yield
 
 
 def test_build_energy_bins():
@@ -237,21 +229,24 @@ def test_get_deadtime_interpolator(random_spin_data):
     deadtime_ratios = xr.DataArray(
         np.random.uniform(0.1, 1.0, num_deadtimes), dims=["epoch"]
     )
-    interpolator = get_deadtime_interpolator(
-        deadtime_ratios, np.ones_like(deadtime_ratios)
-    )
-    assert callable(interpolator)
-    deadtime = interpolator(180)
-    assert (deadtime >= 0) & (deadtime < 1)
-
-    # Assert value error is raised for NaN values
-    with pytest.raises(
-        ValueError,
-        match="Dead time ratios contain NaN values, cannot create interpolator.",
+    sectored_rates_ds = xr.Dataset({"epoch": ("epoch", np.ones_like(deadtime_ratios))})
+    with mock.patch(
+        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_deadtime_ratios",
+        return_value=deadtime_ratios,
     ):
-        get_deadtime_interpolator(
-            np.nan * deadtime_ratios, np.ones_like(deadtime_ratios)
-        )
+        deadtime_ratios = get_deadtime_ratios_by_spin_phase(sectored_rates_ds)
+    np.testing.assert_array_equal(deadtime_ratios.shape, (15000))
+
+    with mock.patch(
+        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_deadtime_ratios",
+        return_value=deadtime_ratios * np.nan,
+    ):
+        # Assert value error is raised for NaN values
+        with pytest.raises(
+            ValueError,
+            match="Dead time ratios contain NaN values, cannot create interpolator.",
+        ):
+            get_deadtime_ratios_by_spin_phase(sectored_rates_ds)
 
 
 @pytest.mark.external_kernel
@@ -275,28 +270,30 @@ def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
     # Simulate first 100 pixels are in the FOR for all spin phases
     inside_inds = 100
     spin_phase_steps[:inside_inds, :] = True
-    mock_spin_phases = np.arange(360)
-    mock_deadtime_ratios = np.ones_like(mock_spin_phases)
-    interpolator = interpolate.PchipInterpolator(mock_spin_phases, mock_deadtime_ratios)
+    deadtime_ratios = np.ones(15000)
     exposure_pointing = pd.Series(np.ones(pix))
 
     with mock.patch(
-        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_nominal_for_by_spin_phase",
+        "imap_processing.ultra.l1c.spacecraft_pset.get_nominal_for_by_spin_phase",
         return_value=(spin_phase_steps, mock_theta_and_phi, mock_ra_and_dec),
     ):
-        exposure_pointing_adjusted = apply_deadtime_correction(
-            exposure_pointing, interpolator, 45, ancillary_files
+        pixels_below_threshold = calculate_pixels_withing_scattering_threshold(
+            ancillary_files, 45
         )
+
+    exposure_pointing_adjusted = apply_deadtime_correction(
+        exposure_pointing, deadtime_ratios, pixels_below_threshold
+    )
     # The adjusted exposure should now be a function of pixels and energy (24)
-    np.testing.assert_array_equal(exposure_pointing_adjusted.shape, (pix, 24))
+    np.testing.assert_array_equal(exposure_pointing_adjusted.shape, (24, pix))
     # Check that the pixels inside the FOR have adjusted exposure > 1.0
     # Subset the energy dimension to check values in the last energy bin. These
     # Should have pixels that are below the FWHM scattering threshold and therefore,
     # have the exposure adjusted.
     last_energy_bin_vals = np.where(build_energy_bins()[2] >= 30)[0]
-    assert np.all(exposure_pointing_adjusted[:inside_inds, last_energy_bin_vals] > 1.0)
+    assert np.all(exposure_pointing_adjusted[last_energy_bin_vals, :inside_inds] > 1.0)
     # Assert that pixels outside the FOR remain at 1.0
-    assert np.all(exposure_pointing_adjusted[inside_inds:, :] == 1.0)
+    assert np.all(exposure_pointing_adjusted[:, inside_inds:] == 1.0)
 
 
 @pytest.mark.external_test_data
@@ -330,13 +327,16 @@ def test_get_spacecraft_exposure_times(
     )  # Spin phase steps 1-15000, random 0 or 1
 
     with mock.patch(
-        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_nominal_for_by_spin_phase",
+        "imap_processing.ultra.l1c.spacecraft_pset.get_nominal_for_by_spin_phase",
         return_value=(spin_phase_steps, mock_theta_and_phi, mock_ra_and_dec),
     ):
-        exposure_pointing = get_spacecraft_exposure_times(
-            df_exposure, rates, params, 90, ancillary_files
+        pixels_below_threshold = calculate_pixels_withing_scattering_threshold(
+            ancillary_files, 45
         )
-        assert exposure_pointing.shape == (shape, 24)
+        exposure_pointing = get_spacecraft_exposure_times(
+            df_exposure, rates, params, pixels_below_threshold
+        )
+        assert exposure_pointing.shape == (24, shape)
 
 
 @pytest.mark.external_kernel

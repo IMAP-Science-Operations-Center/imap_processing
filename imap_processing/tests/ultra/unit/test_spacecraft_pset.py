@@ -24,7 +24,9 @@ TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
-def test_calculate_spacecraft_pset(deadtime_datasets, imap_ena_sim_metakernel):
+def test_calculate_spacecraft_pset(
+    deadtime_datasets, imap_ena_sim_metakernel, random_spin_data, ancillary_files
+):
     """Tests calculate_spacecraft_pset function."""
     # This is just setting up the data so that it is in the format of l1b_de_dataset.
     test_path = TEST_PATH / "ultra-90_raw_event_data_shortened.csv"
@@ -65,15 +67,6 @@ def test_calculate_spacecraft_pset(deadtime_datasets, imap_ena_sim_metakernel):
         },
     )
 
-    path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
-    ancillary = {
-        "l1c-90sensor-dps-exposure": path
-        / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
-        "l1c-90sensor-efficiencies": path
-        / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
-        "l1c-90sensor-gf": path / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
-    }
-
     spacecraft_pset = calculate_spacecraft_pset(
         test_l1b_de_dataset,
         test_l1b_de_dataset,  # placeholder for extendedspin_dataset
@@ -81,7 +74,8 @@ def test_calculate_spacecraft_pset(deadtime_datasets, imap_ena_sim_metakernel):
         deadtime_datasets["rates"],
         deadtime_datasets["params"],
         "imap_ultra_l1c_45sensor-spacecraftpset",
-        ancillary,
+        ancillary_files,
+        45,
     )
     assert "pixel_index" in spacecraft_pset.coords
     assert "epoch" in spacecraft_pset.coords
@@ -91,7 +85,7 @@ def test_calculate_spacecraft_pset(deadtime_datasets, imap_ena_sim_metakernel):
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
 def test_calculate_spacecraft_pset_with_cdf(
-    ancillary_files, deadtime_datasets, imap_ena_sim_metakernel
+    ancillary_files, deadtime_datasets, imap_ena_sim_metakernel, random_spin_data
 ):
     """Tests calculate_spacecraft_pset function with imported test data."""
 
@@ -137,15 +131,6 @@ def test_calculate_spacecraft_pset_with_cdf(
         name = "imap_ultra_l1b_45sensor-de"
         dataset = create_dataset(de_dict, name, "l1b")
 
-        path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
-        ancillary = {
-            "l1c-90sensor-dps-exposure": path
-            / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
-            "l1c-90sensor-efficiencies": path
-            / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
-            "l1c-90sensor-gf": path / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
-        }
-
         spacecraft_pset = calculate_spacecraft_pset(
             dataset,
             xr.Dataset(),  # placeholder for extendedspin_dataset
@@ -153,7 +138,8 @@ def test_calculate_spacecraft_pset_with_cdf(
             deadtime_datasets["rates"],
             deadtime_datasets["params"],
             "imap_ultra_l1c_45sensor-spacecraftpset",
-            ancillary,
+            ancillary_files,
+            45,
         )
         # TODO: validate with output histogram data once we have it in healpix.
         assert (
