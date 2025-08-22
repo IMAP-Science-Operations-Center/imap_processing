@@ -27,6 +27,7 @@ max_epoch: &max_epoch 3155630469184000000
 #   (hi-ialirt-spin_sector_index, lo-nsw-spin_sector_index). The difference is in the VALIDMAX value. the two lo ones
 #   are an exact match.
 #  -lo ialirt only has epoch as coordinate. Should there be more?
+#  -is the validmin for energy variables correct? VALIDMIN: 0.05000000074505806
 
 
 # <=== Defaults ===>
@@ -293,12 +294,133 @@ lo-sw-species-spin_sector_index:
 
 
 # <=== Labels ===>
+#TODO: double check FORMAT for labels
 event_num_label:
   CATDESC: Event Number
-  DEPEND_1: event_num
   FIELDNAM: Event Number
   FORMAT: A5
   VAR_TYPE: metadata
+
+epoch_delta_minus_label:
+  CATDESC: Time from acquisition start to acquisition center
+  FIELDNAM: Epoch delta minus
+  FORMAT: A18
+  VAR_TYPE: metadata
+
+epoch_delta_plus_label:
+  CATDESC: Time from acquisition center to acquisition end
+  FIELDNAM: Epoch delta plus
+  FORMAT: A18
+  VAR_TYPE: metadata
+
+elevation_angle_label:
+  CATDESC: Elevation Angle
+  FIELDNAM: Elevation Angle
+  FORMAT: A6
+  VAR_TYPE: metadata
+
+spin_angle_label:
+  CATDESC: Spin Angle
+  FIELDNAM: Spin Angle
+  FORMAT: A6
+  VAR_TYPE: metadata
+
+energy_table_label:
+  CATDESC: Energy Table
+  FIELDNAM: Energy Table
+  FORMAT: A4
+  VAR_TYPE: metadata
+
+energy_cno_label:
+  CATDESC: Energy CNO
+  FIELDNAM: Energy CNO
+  FORMAT: A6
+  VAR_TYPE: metadata
+
+energy_fe_label:
+  CATDESC: Energy Fe
+  FIELDNAM: Energy Fe
+  FORMAT: A6
+  VAR_TYPE: metadata
+
+energy_h_label:
+  CATDESC: Energy H
+  FIELDNAM: Energy H
+  FORMAT: A6
+  VAR_TYPE: metadata
+
+energy_he3he4_label:
+  CATDESC: Energy He3He4
+  FIELDNAM: Energy He3He4
+  FORMAT: A6
+  VAR_TYPE: metadata
+
+energy_c_label:
+  CATDESC: Energy C
+  FIELDNAM: Energy C
+  FORMAT: A6
+  VAR_TYPE: metadata
+
+energy_he3_label:
+  CATDESC: Energy He3
+  FIELDNAM: Energy He3
+  FORMAT: A6
+  VAR_TYPE: metadata
+
+energy_he4_label:
+  CATDESC: Energy He4
+  FIELDNAM: Energy He4
+  FORMAT: A6
+  VAR_TYPE: metadata
+
+energy_junk_label:
+  CATDESC: Energy Junk
+  FIELDNAM: Energy Junk
+  FORMAT: A6
+  VAR_TYPE: metadata
+
+energy_ne_mg_si_label:
+  CATDESC: Energy NeMgSi
+  FIELDNAM: Energy NeMgSi
+  FORMAT: A6
+  VAR_TYPE: metadata
+
+energy_o_label:
+  CATDESC: Energy O
+  FIELDNAM: Energy O
+  FORMAT: A6
+  VAR_TYPE: metadata
+
+energy_uh_label:
+  CATDESC: Energy UH
+  FIELDNAM: Energy UH
+  FORMAT: A6
+  VAR_TYPE: metadata
+
+hi-sectored-spin_sector_index_label:
+  CATDESC: Spin Sector Index for Hi-Sectored
+  FIELDNAM: Spin Sector Index for Hi-Sectored
+  FORMAT: A2
+  VAR_TYPE: metadata
+
+hi-ialirt-spin_sector_index_label:
+  CATDESC: Spin Sector Index for Hi-Ialirt
+  FIELDNAM: Spin Sector Index for Hi-Ialirt
+  FORMAT: A1
+  VAR_TYPE: metadata
+
+lo-nsw-species-spin_sector_index_label:
+  CATDESC: Spin Sector Index for Lo-NSW Species
+  FIELDNAM: Spin Sector Index for Lo-NSW Species
+  FORMAT: A1
+  VAR_TYPE: metadata
+
+lo-sw-species-spin_sector_index_label:
+  CATDESC: Spin Sector Index for Lo-SW Species
+  FIELDNAM: Spin Sector Index for Lo-SW Species
+  FORMAT: A1
+  VAR_TYPE: metadata
+
 
 # <=== Dataset Variable Attributes ===>
 
