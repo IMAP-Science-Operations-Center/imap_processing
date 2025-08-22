@@ -97,6 +97,16 @@ class TestUltraL2:
         pset["background_rates"].values = np.ones_like(pset["background_rates"].values)
         pset["sensitivity"].values = np.ones_like(pset["sensitivity"].values)
         pset["energy_bin_delta"].values = np.ones_like(pset["energy_bin_delta"].values)
+
+        n_pixels = pset.dims["pixel_index"]
+        quality_flags = np.zeros((1, n_pixels), dtype=np.uint16)
+        # # Flag every other pixel (e.g., even indices)
+        # quality_flags[0, ::2] = ImapPSETUltraFlags.EARTH_FOV.value
+        pset["spacecraft_pset_quality_flags"] = xr.DataArray(
+            data=quality_flags,
+            dims=("epoch", "pixel_index"),
+        )
+
         if epoch_dim_for_energy_delta:
             # add an extra dim to the start
             pset["energy_bin_delta"] = pset["energy_bin_delta"].expand_dims(

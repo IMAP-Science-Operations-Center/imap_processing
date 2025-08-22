@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+import healpy as hp
 import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
@@ -17,6 +18,7 @@ from imap_processing.ena_maps.utils.naming import (
     MapDescriptor,
     ns_to_duration_months,
 )
+from imap_processing.quality_flags import ImapPSETUltraFlags
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import get_energy_delta_minus_plus
 
 logger = logging.getLogger(__name__)
@@ -238,7 +240,63 @@ def generate_ultra_healpix_skymap(
 
     all_pset_epochs = []
     for ultra_l1c_pset in ultra_l1c_psets:
-        pointing_set = ena_maps.UltraPointingSet(ultra_l1c_pset)
+        # Mask out pixels where EARTH_FOV flag is set
+        # Mask out pixels where EARTH_FOV flag is set
+        flags = ultra_l1c_pset["spacecraft_pset_quality_flags"].isel(epoch=0).values
+        pixel_mask = (flags & ImapPSETUltraFlags.EARTH_FOV.value) == 0
+
+        # Create a mask as a DataArray for broadcasting
+        pixel_mask_da = xr.DataArray(
+            pixel_mask,
+            dims=["pixel_index"],
+            coords={"pixel_index": ultra_l1c_pset["pixel_index"]},
+        )
+
+        # Apply mask only to data variables with pixel_index in dimensions
+        masked_data_vars = {}
+        for var_name, da in ultra_l1c_pset.data_vars.items():
+            if "pixel_index" in da.dims:
+                masked_data_vars[var_name] = da.where(pixel_mask_da, drop=False)
+            else:
+                masked_data_vars[var_name] = da
+
+        # Apply mask to coordinates with pixel_index, but preserve pixel_index itself
+        masked_coords = {}
+        for coord_name, da in ultra_l1c_pset.coords.items():
+            if "pixel_index" in da.dims:
+                if coord_name == "pixel_index":
+                    # Preserve pixel_index without applying the mask
+                    masked_coords[coord_name] = da
+                else:
+                    masked_coords[coord_name] = da.where(pixel_mask_da, drop=False)
+            else:
+                masked_coords[coord_name] = da
+
+        # Reconstruct the dataset without dropping pixels
+        masked_pset = xr.Dataset(
+            data_vars=masked_data_vars,
+            coords=masked_coords,
+            attrs=ultra_l1c_pset.attrs,
+        )
+
+        # Patch NaNs in longitude and latitude with true HEALPix centers (if necessary)
+        if "longitude" in masked_pset and "latitude" in masked_pset:
+            npix = masked_pset.dims["pixel_index"]
+            nside = hp.npix2nside(npix)
+            lon, lat = hp.pix2ang(nside=nside, ipix=np.arange(npix), lonlat=True)
+
+            lon_da = masked_pset["longitude"].values
+            lat_da = masked_pset["latitude"].values
+
+            lon_da[np.isnan(lon_da)] = lon[np.isnan(lon_da)]
+            lat_da[np.isnan(lat_da)] = lat[np.isnan(lat_da)]
+
+            masked_pset["longitude"].values = lon_da
+            masked_pset["latitude"].values = lat_da
+
+        # Create the pointing set from the masked data
+        pointing_set = ena_maps.UltraPointingSet(masked_pset)
+
         all_pset_epochs.append(pointing_set.epoch)
         logger.info(
             f"Projecting a PointingSet with {pointing_set.num_points} pixels "
