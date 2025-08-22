@@ -61,12 +61,12 @@ def test_compare_sincpt_with_culling_mask_deterministic(furnish_kernels):
             "de440s.bsp",
         ]
     ):
-        et = np.array([817561854.185627])
+        et = np.array([817561854.185627, 817561854.185628])
         keepout_radius_km = 6378.1  # Earth radius
         nside = 128
         npix = hp.nside2npix(nside)
         spacecraft_pset_quality_flags = np.full(
-            [len(et), npix], ImapPSETUltraFlags.NONE.value, dtype=np.uint16
+            npix, ImapPSETUltraFlags.NONE.value, dtype=np.uint16
         )
 
         # Compute culling mask and IMAP-to-Earth unit vector
@@ -78,10 +78,20 @@ def test_compare_sincpt_with_culling_mask_deterministic(furnish_kernels):
             nside=nside,
         )
 
-        false_indices = np.where(~mask)[1]
-        assert (
-            spacecraft_pset_quality_flags[0][int(false_indices)]
+        culled = np.any(~mask, axis=0)
+        # Culled pixels must have the flag set (bitwise check is safest)
+        assert np.all(
+            (spacecraft_pset_quality_flags[culled] & ImapPSETUltraFlags.EARTH_FOV.value)
             == ImapPSETUltraFlags.EARTH_FOV.value
+        )
+
+        # Non-culled pixels must not have the flag
+        assert np.all(
+            (
+                spacecraft_pset_quality_flags[~culled]
+                & ImapPSETUltraFlags.EARTH_FOV.value
+            )
+            == 0
         )
 
         # Computes the 3D unit vectors pointing to the centers of all HEALPix pixels
