@@ -88,11 +88,17 @@ def test_hi_l2_uses_descriptor_to_setup_map(
 
 
 @mock.patch("imap_processing.hi.hi_l2.calculate_ena_intensity", autospec=True)
+@mock.patch("imap_processing.hi.hi_l2.esa_energy_lookup", autospec=True)
 @pytest.mark.external_test_data
 def test_genarate_hi_map(
-    mock_calc_ena_intensity, hi_l1_test_data_path, furnish_kernels
+    mock_esa_energy_lookup,
+    mock_calc_ena_intensity,
+    hi_l1_test_data_path,
+    furnish_kernels,
 ):
     """Test coverage for genarate_hi_map()"""
+
+    mock_esa_energy_lookup.side_effect = lambda x, y: y
 
     kernels = [
         "imap_sclk_0000.tsc",
