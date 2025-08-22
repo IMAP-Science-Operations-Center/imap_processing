@@ -21,6 +21,14 @@ def pset():
 
     exposure_time = np.full((1, 7, 3600, 40), 0.5)
 
+    lons = np.linspace(0, 359.9, 3600)
+    lats = np.linspace(-2, 2, 40)
+    lons, lats = np.meshgrid(lons, lats, indexing="ij")
+    hae_longitude = np.empty((1, 3600, 40))
+    hae_latitude = np.empty((1, 3600, 40))
+    hae_longitude[0, :, :] = lons
+    hae_latitude[0, :, :] = lats
+
     dataset = xr.Dataset(
         {
             "h_counts": (
@@ -31,6 +39,8 @@ def pset():
                 ("epoch", "esa_energy_step", "spin_angle", "off_angle"),
                 exposure_time,
             ),
+            "hae_longitude": (("epoch", "spin_angle", "off_angle"), hae_longitude),
+            "hae_latitude": (("epoch", "spin_angle", "off_angle"), hae_latitude),
         },
         coords={
             "epoch": [8.1794907049e17],
