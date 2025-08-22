@@ -28,7 +28,7 @@ impact_charge_base: &impact_charge_base
   DICT_KEY: SPASE>Particle>ParticleType:Dust>ParticleQuantity:Current>Qualifier:Derived # TODO quantity should be charge but there is no SPASE charge
 
 mass_estimate_base: &mass_estimate_base
-  UNITS: amu
+  UNITS: Kg
   VALIDMIN: 0.0
   VALIDMAX: *int_maxval
   VAR_TYPE: data
@@ -127,7 +127,7 @@ target_fit_parameter_index:
 mass_index:
   CATDESC: Mass index values from 1 to 500
   FIELDNAM: Mass Index
-  UNITS: amu
+  UNITS: Kg
   FORMAT: I4
   VAR_TYPE: support_data
   SCALETYP: linear
@@ -157,7 +157,7 @@ tof_snr:
 tof_peak_kappa:
   CATDESC: TOF High spectrum with x-axis converted from time to mass.
   FIELDNAM: Mass Scale
-  UNITS: amu
+  UNITS: Kg
   VALIDMIN: 0.0
   VALIDMAX: 1.0
   VAR_TYPE: data
@@ -219,7 +219,7 @@ tof_peak_reduced_chi_squared:
 mass_scale:
   CATDESC: TOF High spectrum with x-axis converted from time to mass.
   FIELDNAM: Mass Scale
-  UNITS: amu
+  UNITS: Kg
   VALIDMIN: 0.0
   VALIDMAX: *int_maxval
   FILLVAL: *double_fillval
