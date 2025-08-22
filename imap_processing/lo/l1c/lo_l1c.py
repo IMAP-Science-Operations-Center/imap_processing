@@ -13,6 +13,18 @@ from imap_processing.spice.repoint import get_pointing_times
 from imap_processing.spice.spin import get_spin_number
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_met
 
+N_ESA_ENERGY_STEPS = 7
+N_SPIN_ANGLE_BINS = 3600
+N_OFF_ANGLE_BINS = 40
+# 1 time, 7 energy steps, 3600 spin angle bins, and 40 off angle bins
+PSET_SHAPE = (1, N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS)
+PSET_DIMS = ["epoch", "esa_energy_step", "spin_angle", "off_angle"]
+ESA_ENERGY_STEPS = np.arange(N_ESA_ENERGY_STEPS) + 1  # 1 to 7 inclusive
+SPIN_ANGLE_BIN_EDGES = np.linspace(0, 360, N_SPIN_ANGLE_BINS + 1)
+SPIN_ANGLE_BIN_CENTERS = (SPIN_ANGLE_BIN_EDGES[:-1] + SPIN_ANGLE_BIN_EDGES[1:]) / 2
+OFF_ANGLE_BIN_EDGES = np.linspace(-2, 2, N_OFF_ANGLE_BINS + 1)
+OFF_ANGLE_BIN_CENTERS = (OFF_ANGLE_BIN_EDGES[:-1] + OFF_ANGLE_BIN_EDGES[1:]) / 2
+
 
 class FilterType(str, Enum):
     """
@@ -110,9 +122,9 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
 
     pset = pset.assign_coords(
         {
-            "esa_energy_step": np.arange(1, 8),
-            "spin_angle": np.arange(3600) / 3600 + 0.05,
-            "off_angle": np.arange(40) / 40 - 1.95,
+            "esa_energy_step": ESA_ENERGY_STEPS,
+            "spin_angle": SPIN_ANGLE_BIN_CENTERS,
+            "off_angle": OFF_ANGLE_BIN_CENTERS,
         }
     )
 
@@ -285,7 +297,7 @@ def create_pset_counts(
 
     counts = xr.DataArray(
         data=hist.astype(np.int16),
-        dims=["epoch", "esa_energy_step", "spin_angle", "off_angle"],
+        dims=PSET_DIMS,
     )
 
     return counts
@@ -311,11 +323,6 @@ def calculate_exposure_times(counts: xr.DataArray, l1b_de: xr.Dataset) -> xr.Dat
     exposure_time : xarray.DataArray
         The exposure times for the L1B Direct Event dataset.
     """
-    # Create bin edges
-    lon_edges = np.arange(3601)
-    lat_edges = np.arange(41)
-    energy_edges = np.arange(8)
-
     data = np.column_stack(
         (l1b_de["esa_step"], l1b_de["pointing_bin_lon"], l1b_de["pointing_bin_lat"])
     )
@@ -325,14 +332,19 @@ def calculate_exposure_times(counts: xr.DataArray, l1b_de: xr.Dataset) -> xr.Dat
         # exposure time equation from Lo Alg Document 10.1.1.4
         4 * l1b_de["avg_spin_durations"].to_numpy() / 3600,
         statistic="mean",
-        bins=[energy_edges, lon_edges, lat_edges],
+        # NOTE: The l1b pointing_bin_lon is bin number, not actual angle
+        bins=[
+            np.arange(N_ESA_ENERGY_STEPS + 1),
+            np.arange(N_SPIN_ANGLE_BINS + 1),
+            np.arange(N_OFF_ANGLE_BINS + 1),
+        ],
     )
 
     stat = result.statistic[np.newaxis, :, :, :]
 
     exposure_time = xr.DataArray(
         data=stat.astype(np.float16),
-        dims=["epoch", "esa_energy_step", "spin_angle", "off_angle"],
+        dims=PSET_DIMS,
     )
 
     return exposure_time
@@ -373,7 +385,7 @@ def create_datasets(
 
     if logical_source == "imap_lo_l1c_pset":
         esa_energy_step = xr.DataArray(
-            data=[1, 2, 3, 4, 5, 6, 7],
+            data=ESA_ENERGY_STEPS,
             name="esa_energy_step",
             dims=["esa_energy_step"],
             attrs=attr_mgr.get_variable_attributes("esa_energy_step"),
@@ -386,7 +398,7 @@ def create_datasets(
         )
 
         spin_angle = xr.DataArray(
-            data=np.arange(3600) / 3600 + 0.05,
+            data=SPIN_ANGLE_BIN_CENTERS,
             name="spin_angle",
             dims=["spin_angle"],
             attrs=attr_mgr.get_variable_attributes("spin_angle"),
@@ -399,7 +411,7 @@ def create_datasets(
         )
 
         off_angle = xr.DataArray(
-            data=np.arange(40) / 40 - 1.95,
+            data=OFF_ANGLE_BIN_CENTERS,
             name="off_angle",
             dims=["off_angle"],
             attrs=attr_mgr.get_variable_attributes("off_angle"),
@@ -460,13 +472,13 @@ def create_datasets(
 
         elif "rates" in field:
             dataset[field] = xr.DataArray(
-                data=np.ones((1, 7, 3600, 40), dtype=np.float16),
+                data=np.ones(PSET_SHAPE, dtype=np.float16),
                 dims=dims,
                 attrs=attr_mgr.get_variable_attributes(field),
             )
         else:
             dataset[field] = xr.DataArray(
-                data=np.ones((1, 7, 3600, 40), dtype=np.int16),
+                data=np.ones(PSET_SHAPE, dtype=np.int16),
                 dims=dims,
                 attrs=attr_mgr.get_variable_attributes(field),
             )

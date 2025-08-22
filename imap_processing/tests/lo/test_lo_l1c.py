@@ -5,6 +5,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.lo.l1c.lo_l1c import (
+    PSET_SHAPE,
     FilterType,
     calculate_exposure_times,
     create_pset_counts,
@@ -102,7 +103,7 @@ def attr_mgr():
 @pytest.fixture
 def counts():
     """Fixture for initial counts."""
-    return np.zeros((1, 7, 3600, 40))
+    return np.zeros(PSET_SHAPE)
 
 
 @pytest.fixture
