@@ -456,6 +456,7 @@ def get_spacecraft_exposure_times(
     #  universal pointing table here to determine actual number of spins
     sectored_rates = get_sectored_rates(rates_dataset, params_dataset)
     nominal_deadtime_ratios = get_deadtime_ratios_by_spin_phase(sectored_rates)
+    # TODO save nominal_deadtime_ratios to the pset.
     exposure_pointing = (
         constant_exposure["Exposure Time"] * 5760
     )  # 5760 spins per pointing (for now)
