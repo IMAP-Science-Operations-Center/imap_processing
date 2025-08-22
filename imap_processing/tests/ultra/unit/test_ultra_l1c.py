@@ -214,6 +214,8 @@ def test_calculate_spacecraft_pset_with_cdf(
         tof_tenths_ns,
     )
     de_dict["direct_event_velocity"] = v.astype(np.float32)
+    de_dict["quality_scattering"] = np.zeros(len(v), dtype=np.uint16)
+    de_dict["quality_outliers"] = np.zeros(len(v), dtype=np.uint16)
 
     ultra_frame = SpiceFrame.IMAP_ULTRA_45
     _, sc_dps_velocity, _ = get_annotated_particle_velocity(
@@ -308,6 +310,8 @@ def test_calculate_helio_pset_with_cdf(
 
     de_dict["velocity_dps_helio"] = helio_dps_velocity
     de_dict["energy_heliosphere"] = get_de_energy_kev(helio_dps_velocity, species_bin)
+    de_dict["quality_scattering"] = np.zeros(len(helio_dps_velocity), dtype=np.uint16)
+    de_dict["quality_outliers"] = np.zeros(len(helio_dps_velocity), dtype=np.uint16)
 
     name = "imap_ultra_l1b_45sensor-de"
     dataset = create_dataset(de_dict, name, "l1b")
