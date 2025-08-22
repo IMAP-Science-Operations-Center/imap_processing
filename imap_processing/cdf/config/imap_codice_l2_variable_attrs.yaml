@@ -28,6 +28,7 @@ max_epoch: &max_epoch 3155630469184000000
 #   are an exact match.
 #  -lo ialirt only has epoch as coordinate. Should there be more?
 #  -is the validmin for energy variables correct? VALIDMIN: 0.05000000074505806
+#  - what is the difference between spin_angle and spin_sector_index coordinates?
 
 
 # <=== Defaults ===>
@@ -59,9 +60,10 @@ lo_species_attrs: &lo_species_default
   <<: *default
   DEPEND_1: energy_table
   DEPEND_2: spin_sector_index
+  LABL_PTR_1: energy_table_label
+  LABL_PTR_2: spin_sector_index_label
   DISPLAY_TYPE: time_series
   FORMAT: '%f'
-  LABLAXIS: Diff. Intensity
   SCALETYP: log
   UNITS: particles / cm2 s sr keV/q
   VALIDMAX: 10000000000.0
@@ -73,9 +75,11 @@ lo_angular_attrs: &lo_angular_default
   DEPEND_1: energy_table
   DEPEND_2: elevation_angle
   DEPEND_3: spin_angle
+  LABL_PTR_1: energy_table_label
+  LABL_PTR_2: elevation_angle_label
+  LABL_PTR_3: spin_angle_label
   DISPLAY_TYPE: time_series
   FORMAT: '%f'
-  LABLAXIS: 'Diff. # Flux'
   SCALETYP: log
   UNITS: particles / cm2 s sr keV/q
   VALIDMAX: 10000000000.0
@@ -110,9 +114,10 @@ hi_sectored_attrs: &hi_sectored_attrs_default
   DISPLAY_TYPE: time_series
   DEPEND_2: elevation_angle
   DEPEND_3: spin_sector_index
+  LABL_PTR_2: elevation_angle_label
+  LABL_PTR_3: spin_sector_index_label
   FILLVAL: *uint32_fillval
   FORMAT: '%f'
-  LABLAXIS: 'Diff. # Flux'
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216
   VALIDMIN: 0
@@ -122,7 +127,7 @@ energy_attrs: &energy_default
   VAR_TYPE: support_data
   CATDESC: Geometric Mean of the Energy
   FIELDNAM: Energy Table
-  LABLAXIS: MeV/nuc
+  LABLAXIS: Energy
   SCALETYP: log
   UNITS: MeV/nuc
   FORMAT: '%f'
@@ -138,7 +143,6 @@ spin_angles_attrs: &spin_angles_default
   VAR_TYPE: support_data
   CATDESC: Spin Angle
   FIELDNAM: Spin Angle
-  LABLAXIS: Spin Angle
   SCALETYP: linear
   UNITS: degrees
   FILLVAL: *int_fillval
@@ -211,6 +215,7 @@ elevation_angle:
 
 spin_angle:
   <<: *spin_angles_default
+  LABLAXIS: Spin Angle
 
 energy_table:
   CATDESC: Energy Table
@@ -1580,11 +1585,13 @@ hi-ialirt-energy_h_minus:
   <<: *energy_delta_default
   CATDESC: Energy Table Minus value
   FIELDNAM: energy delta minus
+  DEPEND_1: energy_h
 
 hi-ialirt-energy_h_plus:
   <<: *energy_delta_default
   CATDESC: Energy Table Plus value
   FIELDNAM: energy delta plus
+  DEPEND_1: energy_h
 
 hi-ialirt-h:
   <<: *default
@@ -1593,6 +1600,9 @@ hi-ialirt-h:
   DEPEND_1: energy_h
   DEPEND_2: ssd_index
   DEPEND_3: spin_sector_index
+  LABL_PTR_1: energy_h_label
+  LABL_PTR_2: ssd_index_label
+  LABL_PTR_3: spin_sector_index_label
   DISPLAY_TYPE: time_series
   FILLVAL: 4294967294
   LABLAXIS: Diff. Intensity
@@ -1604,160 +1614,190 @@ hi-ialirt-spin_angles:
   <<: *spin_angles_default
   DEPEND_1: spin_sector_index
   DEPEND_2: elevation_angle
+  LABL_PTR_1: spin_sector_index_label
+  LABL_PTR_2: elevation_angle_label
 
 # hi-omni Attributes
 hi-omni-energy_c_minus:
   <<: *energy_delta_default
   CATDESC: Energy Table Minus value
   FIELDNAM: energy delta minus
+  DEPEND_1: energy_c
 
 hi-omni-energy_c_plus:
   <<: *energy_delta_default
   CATDESC: Energy Table Plus value
   FIELDNAM: energy delta plus
+  DEPEND_1: energy_c
 
 hi-omni-energy_fe_minus:
   <<: *energy_delta_default
   CATDESC: Energy Table Minus value
   FIELDNAM: energy delta minus
+  DEPEND_1: energy_fe
 
 hi-omni-energy_fe_plus:
   <<: *energy_delta_default
   CATDESC: Energy Table Plus value
   FIELDNAM: energy delta plus
+  DEPEND_1: energy_fe
 
 hi-omni-energy_h_minus:
   <<: *energy_delta_default
   CATDESC: Energy Table Minus value
   FIELDNAM: energy delta minus
+  DEPEND_1: energy_h
 
 hi-omni-energy_h_plus:
   <<: *energy_delta_default
   CATDESC: Energy Table Plus value
   FIELDNAM: energy delta plus
+  DEPEND_1: energy_h
 
 hi-omni-energy_he3_minus:
   <<: *energy_delta_default
   CATDESC: Energy Table Minus value
   FIELDNAM: energy delta minus
+  DEPEND_1: energy_he3
 
 hi-omni-energy_he3_plus:
   <<: *energy_delta_default
   CATDESC: Energy Table Plus value
   FIELDNAM: energy delta plus
+  DEPEND_1: energy_he3
 
 hi-omni-energy_he4_minus:
   <<: *energy_delta_default
   CATDESC: Energy Table Minus value
   FIELDNAM: energy delta minus
+  DEPEND_1: energy_he4
 
 hi-omni-energy_he4_plus:
   <<: *energy_delta_default
   CATDESC: Energy Table Plus value
   FIELDNAM: energy delta plus
+  DEPEND_1: energy_he4
 
 hi-omni-energy_junk_minus:
   <<: *energy_delta_default
   CATDESC: Energy Table Minus value
   FIELDNAM: energy delta minus
+  DEPEND_1: energy_junk
 
 hi-omni-energy_junk_plus:
   <<: *energy_delta_default
   CATDESC: Energy Table Plus value
   FIELDNAM: energy delta plus
+  DEPEND_1: energy_junk
 
 hi-omni-energy_ne_mg_si_minus:
   <<: *energy_delta_default
   CATDESC: Energy Table Minus value
   FIELDNAM: energy delta minus
+  DEPEND_1: energy_ne_mg_si
 
 hi-omni-energy_ne_mg_si_plus:
   <<: *energy_delta_default
   CATDESC: Energy Table Plus value
   FIELDNAM: energy delta plus
+  DEPEND_1: energy_ne_mg_si
 
 hi-omni-energy_o_minus:
   <<: *energy_delta_default
   CATDESC: Energy Table Minus value
   FIELDNAM: energy delta minus
+  DEPEND_1: energy_o
 
 hi-omni-energy_o_plus:
   <<: *energy_delta_default
   CATDESC: Energy Table Plus value
   FIELDNAM: energy delta plus
+  DEPEND_1: energy_o
 
 hi-omni-energy_uh_minus:
   <<: *energy_delta_default
   CATDESC: Energy Table Minus value
   FIELDNAM: energy delta minus
+  DEPEND_1: energy_uh
 
 hi-omni-energy_uh_plus:
   <<: *energy_delta_default
   CATDESC: Energy Table Plus value
   FIELDNAM: energy delta plus
+  DEPEND_1: energy_uh
 
 hi-omni-c:
   <<: *hi_omni_default
   CATDESC: c (Root 2 spacing)
+  FIELDNAM: c
   DEPEND_0: epoch
   DEPEND_1: energy_c
-  FIELDNAM: c
+  LABLAXIS: energy_c_label
 
 hi-omni-fe:
   <<: *hi_omni_default
   CATDESC: fe (Root 2 spacing)
+  FIELDNAM: fe
   DEPEND_0: epoch
   DEPEND_1: energy_fe
-  FIELDNAM: fe
+  LABLAXIS: energy_fe_label
 
 hi-omni-h:
   <<: *hi_omni_default
   CATDESC: h (Root 2 spacing)
+  FIELDNAM: h
   DEPEND_0: epoch
   DEPEND_1: energy_h
-  FIELDNAM: h
+  LABLAXIS: energy_h_label
 
 hi-omni-he3:
   <<: *hi_omni_default
   CATDESC: he3 (Root 2 spacing)
+  FIELDNAM: he3
   DEPEND_0: epoch
   DEPEND_1: energy_he3
-  FIELDNAM: he3
+  LABLAXIS: energy_he3_label
+
 
 hi-omni-he4:
   <<: *hi_omni_default
   CATDESC: he4 (Root 2 spacing)
+  FIELDNAM: he4
   DEPEND_0: epoch
   DEPEND_1: energy_he4
-  FIELDNAM: he4
+  LABLAXIS: energy_he4_label
 
 hi-omni-junk:
   <<: *hi_omni_default
   CATDESC: junk (Root 2 spacing)
+  FIELDNAM: junk
   DEPEND_0: epoch
   DEPEND_1: energy_junk
-  FIELDNAM: junk
+  LABLAXIS: energy_junk_label
 
 hi-omni-ne_mg_si:
   <<: *hi_omni_default
   CATDESC: ne-mg-si (Root 2 spacing)
+  FIELDNAM: ne-mg-si
   DEPEND_0: epoch
   DEPEND_1: energy_ne_mg_si
-  FIELDNAM: ne-mg-si
+  LABLAXIS: energy_ne_mg_si_label
 
 hi-omni-o:
   <<: *hi_omni_default
   CATDESC: o (Root 2 spacing)
+  FIELDNAM: o
   DEPEND_0: epoch
   DEPEND_1: energy_o
-  FIELDNAM: o
+  LABLAXIS: energy_o_label
 
 hi-omni-uh:
   <<: *hi_omni_default
   CATDESC: uh (Root 2 spacing)
+  FIELDNAM: uh
   DEPEND_0: epoch
   DEPEND_1: energy_uh
-  FIELDNAM: uh
+  LABLAXIS: energy_uh_label
 
 # hi-sectored Attributes
 hi-sectored-cno:
@@ -1765,67 +1805,81 @@ hi-sectored-cno:
   CATDESC: cno (x2 spacing)
   FIELDNAM: cno
   DEPEND_1: energy_cno
+  LABL_PTR_1: energy_cno_label
 
 hi-sectored-fe:
   <<: *hi_sectored_attrs_default
   CATDESC: fe (x2 spacing)
   FIELDNAM: fe
   DEPEND_1: energy_fe
+  LABL_PTR_1: energy_fe_label
 
 hi-sectored-h:
   <<: *hi_sectored_attrs_default
   CATDESC: h (x2 spacing)
   FIELDNAM: h
   DEPEND_1: energy_h
+  LABL_PTR_1: energy_h_label
 
 hi-sectored-he3he4:
   <<: *hi_sectored_attrs_default
   CATDESC: he3he4 (x2 spacing)
   FIELDNAM: he3he4
   DEPEND_1: energy_he3he4
+  LABL_PTR_1: energy_he3he4_label
 
 hi-sectored-energy_cno_minus:
   <<: *energy_delta_default
   CATDESC: Energy Table Minus value
   FIELDNAM: energy delta minus
+  DEPEND_1: energy_cno
 
 hi-sectored-energy_cno_plus:
   <<: *energy_delta_default
   CATDESC: Energy Table Plus value
   FIELDNAM: energy delta plus
+  DEPEND_1: energy_cno
 
 hi-sectored-energy_fe_minus:
   <<: *energy_delta_default
   CATDESC: Energy Table Minus value
   FIELDNAM: energy delta minus
+  DEPEND_1: energy_fe
 
 hi-sectored-energy_fe_plus:
   <<: *energy_delta_default
   CATDESC: Energy Table Plus value
   FIELDNAM: energy delta plus
+  DEPEND_1: energy_fe
 
 hi-sectored-energy_h_minus:
   <<: *energy_delta_default
   CATDESC: Energy Table Minus value
   FIELDNAM: energy delta minus
+  DEPEND_1: energy_h
 
 hi-sectored-energy_h_plus:
   <<: *energy_delta_default
   CATDESC: Energy Table Plus value
   FIELDNAM: energy delta plus
+  DEPEND_1: energy_h
 
 hi-sectored-energy_he3he4_minus:
   <<: *energy_delta_default
   CATDESC: Energy Table Minus value
   FIELDNAM: energy delta minus
+  DEPEND_1: energy_he3he4
 
 hi-sectored-energy_he3he4_plus:
   <<: *energy_delta_default
   CATDESC: Energy Table Plus value
   FIELDNAM: energy delta plus
+  DEPEND_1: energy_he3he4
 
 hi-sectored-spin_angles:
   <<: *spin_angles_default
   DEPEND_1: spin_sector_index
   DEPEND_2: elevation_angle
+  LABL_PTR_1: spin_sector_index_label
+  LABL_PTR_2: elevation_angle_label
 
