@@ -14,6 +14,7 @@ from imap_processing.spice.geometry import (
     cartesian_to_spherical,
     frame_transform,
     frame_transform_az_el,
+    get_instrument_mounting_az_el,
     get_rotation_matrix,
     get_spacecraft_to_instrument_spin_phase_offset,
     imap_state,
@@ -47,26 +48,61 @@ def test_imap_state_ecliptic(imap_ena_sim_metakernel):
 
 
 @pytest.mark.parametrize(
-    "instrument, expected_offset",
+    "instrument, expected_az_el",
     [
-        (SpiceFrame.IMAP_LO_BASE, ((330 / 360) + 0.25) % 1),
-        (SpiceFrame.IMAP_HI_45, ((255 / 360) + 0.25) % 1),
-        (SpiceFrame.IMAP_HI_90, ((285 / 360) + 0.25) % 1),
-        (SpiceFrame.IMAP_ULTRA_45, ((33 / 360) + 0.25) % 1),
-        (SpiceFrame.IMAP_ULTRA_90, ((210 / 360) + 0.25) % 1),
-        (SpiceFrame.IMAP_SWAPI, ((168 / 360) + 0.25) % 1),
-        (SpiceFrame.IMAP_IDEX, ((90 / 360) + 0.25) % 1),
-        (SpiceFrame.IMAP_CODICE, ((136 / 360) + 0.25) % 1),
-        (SpiceFrame.IMAP_HIT, ((30 / 360) + 0.25) % 1),
-        (SpiceFrame.IMAP_SWE, ((153 / 360) + 0.25) % 1),
-        (SpiceFrame.IMAP_GLOWS, ((127 / 360) + 0.25) % 1),
-        (SpiceFrame.IMAP_MAG, ((0 / 360) + 0.25) % 1),
+        # Expected spin-phase offsets based on 7516-0011_drw.pdf
+        (SpiceFrame.IMAP_LO_BASE, (60, 0)),  # (330 + 90) % 360 = 60
+        # Note HI_45 and HI_90 appear to be swapped in imap_wkcp.tf so the
+        # expected values are swapped here.
+        (SpiceFrame.IMAP_HI_45, (15, 0)),  # 255 + 90 = 345
+        (SpiceFrame.IMAP_HI_90, (345, -45)),  # (285 + 90) % 360 = 15
+        (SpiceFrame.IMAP_ULTRA_45, (123, -45)),  # 33 + 90 = 123
+        (SpiceFrame.IMAP_ULTRA_90, (300, 0)),  # 210 + 90 = 300
+        (SpiceFrame.IMAP_SWAPI, (258, 0)),  # 168 + 90 = 258
+        (SpiceFrame.IMAP_IDEX, (180, -45)),  # 90 + 90 = 180
+        (SpiceFrame.IMAP_CODICE, (226, 0)),  # 136 + 90 = 226
+        (SpiceFrame.IMAP_HIT, (120, 0)),  # 30 + 90 = 120
+        (SpiceFrame.IMAP_SWE, (243, 0)),  # 153 + 90 = 243
+        (SpiceFrame.IMAP_GLOWS, (217, 15)),  # 127 + 90 = 217
+        (SpiceFrame.IMAP_MAG, (90, 0)),  # 0 + 90 = 90
     ],
 )
-def test_get_spacecraft_to_instrument_spin_phase_offset(instrument, expected_offset):
+def test_get_instrument_mounting_az_el(
+    furnish_kernels, spice_test_data_path, instrument, expected_az_el
+):
+    """Test coverage for get_instrument_mounting_az_el()"""
+    with furnish_kernels([spice_test_data_path / "imap_wkcp.tf"]):
+        result = get_instrument_mounting_az_el(instrument)
+        np.testing.assert_allclose(result, expected_az_el, atol=1e-2)
+
+
+@pytest.mark.parametrize(
+    "instrument, expected_offset",
+    [
+        # Expected spin-phase offsets based on 7516-0011_drw.pdf
+        (SpiceFrame.IMAP_LO_BASE, 60 / 360),  # (330 + 90) % 360 = 60
+        # Note HI_45 and HI_90 appear to be swapped in imap_wkcp.tf so the
+        # expected values are swapped here.
+        (SpiceFrame.IMAP_HI_45, 15 / 360),  # 255 + 90 = 345
+        (SpiceFrame.IMAP_HI_90, 345 / 360),  # (285 + 90) % 360 = 15
+        (SpiceFrame.IMAP_ULTRA_45, 123 / 360),  # 33 + 90 = 123
+        (SpiceFrame.IMAP_ULTRA_90, 300 / 360),  # 210 + 90 = 300
+        (SpiceFrame.IMAP_SWAPI, 258 / 360),  # 168 + 90 = 258
+        (SpiceFrame.IMAP_IDEX, 180 / 360),  # 90 + 90 = 180
+        (SpiceFrame.IMAP_CODICE, 226 / 360),  # 136 + 90 = 226
+        (SpiceFrame.IMAP_HIT, 120 / 360),  # 30 + 90 = 120
+        (SpiceFrame.IMAP_SWE, 243 / 360),  # 153 + 90 = 243
+        (SpiceFrame.IMAP_GLOWS, 217 / 360),  # 127 + 90 = 217
+        (SpiceFrame.IMAP_MAG, 90 / 360),  # 0 + 90 = 90
+    ],
+)
+def test_get_spacecraft_to_instrument_spin_phase_offset(
+    furnish_kernels, spice_test_data_path, instrument, expected_offset
+):
     """Test coverage for get_spacecraft_to_instrument_spin_phase_offset()"""
-    result = get_spacecraft_to_instrument_spin_phase_offset(instrument)
-    np.testing.assert_almost_equal(result, expected_offset)
+    with furnish_kernels([spice_test_data_path / "imap_wkcp.tf"]):
+        result = get_spacecraft_to_instrument_spin_phase_offset(instrument)
+        np.testing.assert_almost_equal(result, expected_offset, decimal=5)
 
 
 @pytest.mark.parametrize(
