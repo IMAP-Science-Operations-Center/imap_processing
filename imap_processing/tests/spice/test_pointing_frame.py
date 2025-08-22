@@ -22,7 +22,7 @@ from imap_processing.spice.time import TICK_DURATION
 
 
 @pytest.fixture
-def pointing_frame_kernels(furnish_kernels, spice_test_data_path):
+def furnish_pointing_frame_kernels(furnish_kernels, spice_test_data_path):
     """List SPICE kernels."""
     required_kernels = [
         "naif0012.tls",
@@ -36,7 +36,7 @@ def pointing_frame_kernels(furnish_kernels, spice_test_data_path):
 
 
 @pytest.fixture
-def et_times(pointing_frame_kernels):
+def et_times(furnish_pointing_frame_kernels):
     """Tests get_et_times function."""
     ck_kernel, _, _, _ = spiceypy.kdata(0, "ck")
     ck_cover = spiceypy.ckcov(ck_kernel, -43000, True, "INTERVAL", 0, "TDB")
@@ -88,12 +88,12 @@ def test_write_pointing_frame_ck(
     segment_end_offset,
     quaternion,
     segment_id,
-    pointing_frame_kernels,
+    furnish_pointing_frame_kernels,
     tmp_path,
 ):
     """Test coverage for write_pointing_frame_ck"""
     ck_cover = spiceypy.ckcov(
-        pointing_frame_kernels[-1],
+        furnish_pointing_frame_kernels[-1],
         SpiceFrame.IMAP_SPACECRAFT,
         True,
         "INTERVAL",
@@ -146,7 +146,7 @@ def test_write_pointing_frame_ck(
     assert parent_file in lines[5]
 
 
-def test_average_quaternions(et_times, pointing_frame_kernels):
+def test_average_quaternions(et_times, furnish_pointing_frame_kernels):
     """Tests average_quaternions function."""
     q_avg = _average_quaternions(et_times)
 
@@ -155,7 +155,7 @@ def test_average_quaternions(et_times, pointing_frame_kernels):
     np.testing.assert_allclose(q_avg, q_avg_expected, atol=1e-4)
 
 
-def test_create_rotation_matrix(et_times, pointing_frame_kernels):
+def test_create_rotation_matrix(et_times, furnish_pointing_frame_kernels):
     """Tests create_rotation_matrix function."""
     q_avg = _average_quaternions(et_times)
     rotation_matrix = _create_rotation_matrix(q_avg)
@@ -186,7 +186,7 @@ def get_ck_met_coverage(ck_path: str):
 
 def test_calculate_pointing_attitude_segments(
     spice_test_data_path,
-    pointing_frame_kernels,
+    furnish_pointing_frame_kernels,
     tmp_path,
     et_times,
     use_fake_repoint_data_for_time,
@@ -200,7 +200,7 @@ def test_calculate_pointing_attitude_segments(
     #   2. Starts one second before the CK ends, ends 10 seconds after the CK ends
     # Result is the pointing starts 1-second after the CK start and ends 1-second
     # before the CK end
-    ck_met_start, ck_met_end = get_ck_met_coverage(pointing_frame_kernels[-1])
+    ck_met_start, ck_met_end = get_ck_met_coverage(furnish_pointing_frame_kernels[-1])
     use_fake_repoint_data_for_time(
         np.array([ck_met_start - 10, ck_met_end - 1]),
         np.array([ck_met_start + 1, ck_met_end + 10]),
@@ -232,7 +232,7 @@ def test_calculate_pointing_attitude_segments(
 
 
 def test_multiple_pointings(
-    pointing_frame_kernels,
+    furnish_pointing_frame_kernels,
     spice_test_data_path,
     use_fake_repoint_data_for_time,
 ):
@@ -243,7 +243,7 @@ def test_multiple_pointings(
     #   2. Starts one hour after CK start, ends 1 second after it starts
     #   3. Starts one second before the CK ends, ends 10 seconds after the CK ends
     # Result is 2 pointings
-    ck_met_start, ck_met_end = get_ck_met_coverage(pointing_frame_kernels[-1])
+    ck_met_start, ck_met_end = get_ck_met_coverage(furnish_pointing_frame_kernels[-1])
     repoint_start_met = np.array(
         [ck_met_start - 10, ck_met_start + 60 * 60, ck_met_end - 1]
     )
