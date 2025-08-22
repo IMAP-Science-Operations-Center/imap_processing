@@ -254,12 +254,6 @@ def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
     """Tests apply_deadtime_correction function."""
     nside = 8
     pix = hp.nside2npix(nside)
-    mock_ra_and_dec = np.hstack(
-        [
-            np.random.uniform(0, 360, (pix, 1)),  # Right Ascension (deg)
-            np.random.uniform(-90, 90, (pix, 1)),  # Declination (deg)
-        ]
-    )
     mock_theta_and_phi = np.hstack(
         [
             np.full((pix, 1), -1.54120),  # theta (deg)
@@ -273,13 +267,9 @@ def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
     deadtime_ratios = np.ones(15000)
     exposure_pointing = pd.Series(np.ones(pix))
 
-    with mock.patch(
-        "imap_processing.ultra.l1c.spacecraft_pset.get_nominal_for_by_spin_phase",
-        return_value=(spin_phase_steps, mock_theta_and_phi, mock_ra_and_dec),
-    ):
-        pixels_below_threshold = calculate_pixels_within_scattering_threshold(
-            ancillary_files, 45
-        )
+    pixels_below_threshold = calculate_pixels_within_scattering_threshold(
+        spin_phase_steps, mock_theta_and_phi, ancillary_files, 45
+    )
 
     exposure_pointing_adjusted = apply_deadtime_correction(
         exposure_pointing, deadtime_ratios, pixels_below_threshold
@@ -310,12 +300,6 @@ def test_get_spacecraft_exposure_times(
     df_exposure = pd.read_csv(constant_exposure)[:shape]  # Subset for testing
 
     pix = len(df_exposure)
-    mock_ra_and_dec = np.hstack(
-        [
-            np.random.uniform(0, 360, (pix, 1)),  # Right Ascension (deg)
-            np.random.uniform(-90, 90, (pix, 1)),  # Declination (deg)
-        ]
-    )
     mock_theta_and_phi = np.hstack(
         [
             np.random.uniform(-60, 60, (pix, 1)),  # theta (deg)
@@ -326,17 +310,13 @@ def test_get_spacecraft_exposure_times(
         bool
     )  # Spin phase steps 1-15000, random 0 or 1
 
-    with mock.patch(
-        "imap_processing.ultra.l1c.spacecraft_pset.get_nominal_for_by_spin_phase",
-        return_value=(spin_phase_steps, mock_theta_and_phi, mock_ra_and_dec),
-    ):
-        pixels_below_threshold = calculate_pixels_within_scattering_threshold(
-            ancillary_files, 45
-        )
-        exposure_pointing = get_spacecraft_exposure_times(
-            df_exposure, rates, params, pixels_below_threshold
-        )
-        assert exposure_pointing.shape == (24, shape)
+    pixels_below_threshold = calculate_pixels_within_scattering_threshold(
+        spin_phase_steps, mock_theta_and_phi, ancillary_files, 45
+    )
+    exposure_pointing = get_spacecraft_exposure_times(
+        df_exposure, rates, params, pixels_below_threshold
+    )
+    assert exposure_pointing.shape == (24, shape)
 
 
 @pytest.mark.external_kernel

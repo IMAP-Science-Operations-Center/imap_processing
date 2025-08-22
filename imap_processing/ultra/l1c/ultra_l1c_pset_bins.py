@@ -16,6 +16,13 @@ from imap_processing.spice.geometry import (
 )
 from imap_processing.spice.spin import get_spacecraft_spin_phase, get_spin_angle
 from imap_processing.ultra.constants import UltraConstants
+from imap_processing.ultra.l1b.lookup_utils import (
+    get_geometric_factor,
+)
+from imap_processing.ultra.l1b.ultra_l1b_extended import (
+    get_efficiency,
+    get_efficiency_interpolator,
+)
 
 # TODO: add species binning.
 FILLVAL_FLOAT32 = -1.0e31
@@ -394,30 +401,21 @@ def apply_deadtime_correction(
         len(energy_bin_geometric_means),
         axis=0,
     )
-    steps = len(pixels_below_scattering)
     # nominal spin phase step.
-    nominal_ms_step = 15 / steps  # time step
+    nominal_ms_step = 15 / len(pixels_below_scattering)  # time step
     # Query the dead-time ratio and apply the nominal exposure time to pixels in the FOR
     # and below the scattering threshold
     # Loop through the spin phase steps. This is spinning the spacecraft by nominal
     # 1 ms steps in the despun frame.
-    for i in range(steps):
-        pixels_below_threshold_for_spin_phase = pixels_below_scattering[i]
-        if (
-            len(pixels_below_threshold_for_spin_phase) == 1
-            and pixels_below_threshold_for_spin_phase[0].size == 0
-        ):
-            continue
+    for i, pixels_at_spin in enumerate(pixels_below_scattering):
         # Loop through energy bins
         for energy_bin_idx in range(len(energy_bin_geometric_means)):
-            pixels_below_for_at_energy_bin = pixels_below_threshold_for_spin_phase[
-                energy_bin_idx
-            ]
-            if pixels_below_for_at_energy_bin.size == 0:
+            pixels_at_energy_and_spin = pixels_at_spin[energy_bin_idx]
+            if pixels_at_energy_and_spin.size == 0:
                 continue
             # Apply the nominal exposure time (1 ms) scaled by the deadtime ratio to
             # every pixel in the FOR, that is below the FWHM scattering threshold,
-            exposure_pointing[energy_bin_idx, pixels_below_for_at_energy_bin] += (
+            exposure_pointing[energy_bin_idx, pixels_at_energy_and_spin] += (
                 nominal_ms_step * deadtime_ratios[i]
             )
 
@@ -465,6 +463,87 @@ def get_spacecraft_exposure_times(
         exposure_pointing, nominal_deadtime_ratios, pixels_below_scattering
     )
     return exposure_pointing_adjusted
+
+
+def get_efficiencies_and_geometric_function(
+    pixels_below_scattering: list[list],
+    theta_and_phi: np.ndarray,
+    ancillary_files: dict,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Compute the geometric factor and efficiency for each pixel and energy bin.
+
+    The results are averaged over all spin phases.
+
+    Parameters
+    ----------
+    pixels_below_scattering : list
+        List of lists indicating pixels within the scattering threshold.
+        The outer list indicates spin phase steps, the middle list indicates energy
+        bins, and the inner list contains pixel indices indicating pixels that are
+        below the FWHM scattering threshold.
+    theta_and_phi : np.ndarray
+        Array of theta and phi values for each pixel. First column is theta,
+        second is phi.
+    ancillary_files : dict
+        Dictionary containing ancillary files.
+
+    Returns
+    -------
+    gf_summation : np.ndarray
+        Summation of geometric factors for each pixel and energy bin.
+    eff_summation : np.ndarray
+        Summation of efficiencies for each pixel and energy bin.
+    """
+    # Load callable efficiency interpolator function
+    eff_interpolator = get_efficiency_interpolator(ancillary_files)
+    # Get energy bin geometric means
+    energy_bin_geometric_means = build_energy_bins()[2]
+    energy_bins = len(energy_bin_geometric_means)
+    # Number of pixels is the length of theta or phi
+    npix = theta_and_phi.shape[0]
+    # Initialize summation arrays for geometric factors and efficiencies
+    gf_summation = np.zeros((energy_bins, npix))
+    eff_summation = np.zeros((energy_bins, npix))
+    sample_count = np.zeros((energy_bins, npix))
+    # Compute gf and eff for these theta/phi pairs
+    gf_values = get_geometric_factor(
+        ancillary_files,
+        "l1b-sensor-gf-blades",
+        theta_and_phi[:, 0],  # Theta
+        theta_and_phi[:, 1],  # Phi
+        np.zeros(theta_and_phi.shape[0]).astype(np.uint16),
+    )
+    # Loop through spin phases
+    for pixels_at_spin in pixels_below_scattering:
+        # Loop through energy bins
+        for energy_bin_idx in range(energy_bins):
+            pixel_inds = pixels_at_spin[energy_bin_idx]
+            if pixel_inds.size == 0:
+                continue
+            energy = energy_bin_geometric_means[energy_bin_idx]
+            # Get theta and phi vals for pixels in the FOR at this spin phase
+            theta_vals = theta_and_phi[pixel_inds, 0]
+            phi_vals = theta_and_phi[pixel_inds, 1]
+            eff_values = get_efficiency(
+                np.full(phi_vals.shape, energy),
+                phi_vals,
+                theta_vals,
+                ancillary_files,
+                interpolator=eff_interpolator,
+            )
+
+            # Accumulate
+            gf_summation[energy_bin_idx, pixel_inds] += gf_values[pixel_inds]
+            eff_summation[energy_bin_idx, pixel_inds] += eff_values
+            sample_count[energy_bin_idx, pixel_inds] += 1
+
+    # return averaged geometric factors and efficiencies across all spin phases
+    # These are now energy dependent.
+    non_zero = sample_count > 0
+    gf_averaged = gf_summation[non_zero] / sample_count[non_zero]
+    eff_averaged = eff_summation[non_zero] / sample_count[non_zero]
+    return gf_averaged, eff_averaged
 
 
 def get_helio_exposure_times(

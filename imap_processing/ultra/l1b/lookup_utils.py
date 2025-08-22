@@ -233,12 +233,45 @@ def get_energy_efficiencies(ancillary_files: dict) -> pd.DataFrame:
     return lookup_table
 
 
+def get_geometric_factor_lookup(
+    ancillary_files: dict, filename: str
+) -> tuple[NDArray, NDArray, NDArray]:
+    """
+    Load geometric factor, theta, and phi lookup tables from a CSV file.
+
+    Parameters
+    ----------
+    ancillary_files : dict
+        Dictionary containing file paths for ancillary data.
+    filename : str
+        Key for the filename in ancillary_files.
+
+    Returns
+    -------
+    tuple[NDArray, NDArray, NDArray]
+        Geometric factor table, theta table, phi table.
+    """
+    gf_table = pd.read_csv(
+        ancillary_files[filename], header=None, skiprows=6, nrows=301
+    ).to_numpy(dtype=float)
+    theta_table = pd.read_csv(
+        ancillary_files[filename], header=None, skiprows=308, nrows=301
+    ).to_numpy(dtype=float)
+    phi_table = pd.read_csv(
+        ancillary_files[filename], header=None, skiprows=610, nrows=301
+    ).to_numpy(dtype=float)
+    return gf_table, theta_table, phi_table
+
+
 def get_geometric_factor(
     ancillary_files: dict,
     filename: str,
     phi: NDArray,
     theta: NDArray,
     quality_flag: NDArray,
+    gf_table: NDArray = None,
+    theta_table: NDArray = None,
+    phi_table: NDArray = None,
 ) -> tuple[NDArray, NDArray]:
     """
     Lookup table for geometric factor using nearest neighbor.
@@ -255,22 +288,22 @@ def get_geometric_factor(
         Elevation angles in degrees.
     quality_flag : NDArray
         Quality flag to set when geometric factor is zero.
+    gf_table : NDArray, optional
+        Pre-loaded geometric factor table, by default None.
+    theta_table : NDArray, optional
+        Pre-loaded theta table, by default None.
+    phi_table : NDArray, optional
+        Pre-loaded phi table, by default None.
 
     Returns
     -------
     geometric_factor : NDArray
         Geometric factor.
     """
-    gf_table = pd.read_csv(
-        ancillary_files[filename], header=None, skiprows=6, nrows=301
-    ).to_numpy(dtype=float)
-    theta_table = pd.read_csv(
-        ancillary_files[filename], header=None, skiprows=308, nrows=301
-    ).to_numpy(dtype=float)
-    phi_table = pd.read_csv(
-        ancillary_files[filename], header=None, skiprows=610, nrows=301
-    ).to_numpy(dtype=float)
-
+    if np.any(not array for array in [gf_table, theta_table, phi_table]):
+        gf_table, theta_table, phi_table = get_geometric_factor_lookup(
+            ancillary_files, filename
+        )
     # Assume uniform grids: extract 1D arrays from first row/col
     theta_vals = theta_table[0, :]  # columns represent theta
     phi_vals = phi_table[:, 0]  # rows represent phi

@@ -11,15 +11,17 @@ from imap_processing.ultra.l1b.lookup_utils import (
 )
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
+    get_efficiencies_and_geometric_function,
     get_spacecraft_background_rates,
     get_spacecraft_exposure_times,
     get_spacecraft_histogram,
-    interpolate_sensitivity,
 )
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 
 def calculate_pixels_within_scattering_threshold(
+    for_indices_by_spin_phase: np.ndarray,
+    theta_and_phi: np.ndarray,
     ancillary_files: dict,
     instrument_id: int,
 ) -> list:
@@ -28,6 +30,13 @@ def calculate_pixels_within_scattering_threshold(
 
     Parameters
     ----------
+    for_indices_by_spin_phase : np.ndarray
+        A 2D boolean array where cols are spin phase steps are rows are HEALPix pixels.
+        True indicates pixels that are within the Field of Regard (FOR) at that
+        spin phase.
+    theta_and_phi : np.ndarray
+        A 2D array where the first column is theta values and the second column is
+        phi values for each HEALPix pixel.
     ancillary_files : dict
         Dictionary containing ancillary files.
     instrument_id : int,
@@ -42,10 +51,6 @@ def calculate_pixels_within_scattering_threshold(
         the FWHM scattering threshold.
     """
     pixels_below_scattering = []
-    # Get lookup table for FOR indices by spin phase step
-    for_indices_by_spin_phase, theta_and_phi, ra_and_dec = (
-        get_nominal_for_by_spin_phase(ancillary_files, instrument_id)
-    )
     # Get energy bin geometric means
     energy_bin_geometric_means = build_energy_bins()[2]
     steps = for_indices_by_spin_phase.shape[1]
@@ -135,17 +140,19 @@ def calculate_spacecraft_pset(
     # calculate background rates
     background_rates = get_spacecraft_background_rates()
 
-    # Todo: calculate efficiency and geometric function dataframes as a function
-    efficiencies = ancillary_files["l1c-90sensor-efficiencies"]
-    geometric_function = ancillary_files["l1c-90sensor-gf"]
-
-    df_efficiencies = pd.read_csv(efficiencies)
-    df_geometric_function = pd.read_csv(geometric_function)
-
-    sensitivity = interpolate_sensitivity(df_efficiencies, df_geometric_function)
-    pixels_below_scattering = calculate_pixels_within_scattering_threshold(
-        ancillary_files, instrument_id
+    # Get lookup table for FOR indices by spin phase step
+    for_indices_by_spin_phase, theta_and_phi, ra_and_dec = (
+        get_nominal_for_by_spin_phase(ancillary_files, instrument_id)
     )
+    pixels_below_scattering = calculate_pixels_within_scattering_threshold(
+        for_indices_by_spin_phase, theta_and_phi, ancillary_files, instrument_id
+    )
+    # calculate efficiency and geometric function as a function of energy
+    efficiencies, geometric_function = get_efficiencies_and_geometric_function(
+        pixels_below_scattering, theta_and_phi, ancillary_files
+    )
+    # TODO handle sensitivity
+    # sensitivity = interpolate_sensitivity(efficiencies, geometric_function)
     # Calculate exposure
     constant_exposure = ancillary_files["l1c-90sensor-dps-exposure"]
     df_exposure = pd.read_csv(constant_exposure)
@@ -166,7 +173,7 @@ def calculate_spacecraft_pset(
     pset_dict["energy_bin_delta"] = np.diff(intervals, axis=1).squeeze()[
         np.newaxis, ...
     ]
-    pset_dict["sensitivity"] = sensitivity[np.newaxis, ...]
+    # pset_dict["sensitivity"] = sensitivity[np.newaxis, ...]
 
     dataset = create_dataset(pset_dict, name, "l1c")
 
