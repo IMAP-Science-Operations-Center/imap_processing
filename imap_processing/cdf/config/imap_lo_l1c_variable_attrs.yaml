@@ -35,7 +35,7 @@ spin_angle_label:
 spin_angle:
   VALIDMIN: 0
   VALIDMAX: 360
-  CATDESC: Spin angle in despun pointing frame
+  CATDESC: Spin angle bin center in despun pointing frame
   FIELDNAM: Spin angle
   UNITS: "degrees"
   FORMAT: I4
@@ -51,7 +51,7 @@ off_angle_label:
 off_angle:
   VALIDMIN: -2
   VALIDMAX: 2
-  CATDESC: Off axis angle in despun pointing frame
+  CATDESC: Off axis angle bin center in despun pointing frame
   FIELDNAM: Off axis angle
   UNITS: "degrees"
   FORMAT: I4
