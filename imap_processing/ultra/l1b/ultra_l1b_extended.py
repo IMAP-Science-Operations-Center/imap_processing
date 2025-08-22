@@ -13,6 +13,7 @@ from numpy.typing import NDArray
 from scipy.interpolate import LinearNDInterpolator, RegularGridInterpolator
 
 from imap_processing.spice.spin import get_spin_data
+from imap_processing.spice.time import sct_to_et
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
     get_angular_profiles,
@@ -984,9 +985,9 @@ def get_eventtimes(
     Returns
     -------
     event_times : np.ndarray
-        Event times.
+        Event times in et.
     spin_starts : np.ndarray
-        Spin start times.
+        Spin start times in et.
     spin_period_sec : np.ndarray
         Spin period in seconds.
 
@@ -1007,7 +1008,7 @@ def get_eventtimes(
 
     event_times = spin_starts + spin_period_sec * (phase_angle / 720)
 
-    return event_times, spin_starts, spin_period_sec
+    return sct_to_et(event_times), sct_to_et(spin_starts), spin_period_sec
 
 
 def interpolate_fwhm(

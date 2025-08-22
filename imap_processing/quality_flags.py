@@ -83,6 +83,13 @@ class ImapDEScatteringUltraFlags(FlagNameMixin):
     NAN_PHI_OR_THETA = 2**1  # bit 1
 
 
+class ImapPSETUltraFlags(FlagNameMixin):
+    """IMAP Ultra Rates flags."""
+
+    NONE = CommonFlags.NONE
+    EARTH_FOV = 2**0  # bit 0
+
+
 class ImapInstrumentUltraFlags(FlagNameMixin):
     """IMAP Ultra flags using other instruments."""
 

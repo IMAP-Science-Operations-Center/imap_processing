@@ -12,6 +12,8 @@ from imap_processing.ultra.l1c.l1c_lookup_utils import (
     calculate_pixels_within_scattering_threshold,
     get_spacecraft_pointing_lookup_tables,
 )
+from imap_processing.quality_flags import ImapPSETUltraFlags
+from imap_processing.ultra.l1c.ultra_l1c_culling import compute_culling_mask
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     get_efficiencies_and_geometric_function,
@@ -65,6 +67,9 @@ def calculate_spacecraft_pset(
         Dataset containing the data.
     """
     pset_dict: dict[str, np.ndarray] = {}
+    spacecraft_pset_quality_flags = np.full(
+        de_dataset["epoch"].shape, ImapPSETUltraFlags.NONE.value, dtype=np.uint16
+    )
     sensor = parse_filename_like(name)["sensor"][0:2]
     # Select only the species we are interested in.
     indices = np.where(de_dataset["species"].values == species_id)[0]
@@ -143,6 +148,19 @@ def calculate_spacecraft_pset(
         goodtimes_dataset["spin_number"].values,
     )
 
+    start: float = np.min(de_dataset["event_times"].values)
+    end: float = np.max(de_dataset["event_times"].values)
+
+    # Time bins in 30 minute intervals
+    time_bins = np.arange(start, end + 1800, 1800)
+
+    # Compute mask for culling the Earth
+    compute_culling_mask(
+        time_bins,
+        6378.1,  # Earth radius
+        spacecraft_pset_quality_flags,
+    )
+
     # For ISTP, epoch should be the center of the time bin.
     pset_dict["epoch"] = de_dataset.epoch.data[:1].astype(np.int64)
     pset_dict["counts"] = counts[np.newaxis, ...]
@@ -153,6 +171,9 @@ def calculate_spacecraft_pset(
     pset_dict["exposure_factor"] = exposure_pointing
     pset_dict["pixel_index"] = healpix
     pset_dict["energy_bin_delta"] = np.diff(intervals, axis=1).squeeze()[
+        np.newaxis, ...
+    ]
+    pset_dict["spacecraft_pset_quality_flags"] = spacecraft_pset_quality_flags[
         np.newaxis, ...
     ]
 

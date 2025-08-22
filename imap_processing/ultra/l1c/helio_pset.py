@@ -18,6 +18,9 @@ from imap_processing.ultra.l1c.l1c_lookup_utils import (
     calculate_pixels_within_scattering_threshold,
     get_spacecraft_pointing_lookup_tables,
 )
+from imap_processing.quality_flags import ImapPSETUltraFlags
+from imap_processing.spice.time import sct_to_et
+from imap_processing.ultra.l1c.ultra_l1c_culling import compute_culling_mask
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     get_efficiencies_and_geometric_function,
@@ -74,6 +77,9 @@ def calculate_helio_pset(
     # Select only the species we are interested in.
     indices = np.where(de_dataset["species"].values == species_id)[0]
     species_dataset = de_dataset.isel(epoch=indices)
+    helio_pset_quality_flags = np.full(
+        de_dataset["epoch"].shape, ImapPSETUltraFlags.NONE.value, dtype=np.uint16
+    )
 
     rejected = get_de_rejection_mask(
         species_dataset["quality_scattering"].values,
@@ -151,6 +157,19 @@ def calculate_helio_pset(
     )
     sensitivity = efficiencies * geometric_function
 
+    start: float = np.min(de_dataset["event_times"].values)
+    end: float = np.max(de_dataset["event_times"].values)
+
+    # Time bins in 30 minute intervals
+    time_bins = np.arange(start, end + 1800, 1800)
+
+    # Compute mask for culling the Earth
+    compute_culling_mask(
+        time_bins,
+        6378.1,  # Earth radius
+        helio_pset_quality_flags,
+    )
+
     # For ISTP, epoch should be the center of the time bin.
     pset_dict["epoch"] = de_dataset.epoch.data[:1].astype(np.int64)
     pset_dict["counts"] = counts[np.newaxis, ...]
@@ -167,6 +186,7 @@ def calculate_helio_pset(
     pset_dict["geometric_function"] = geometric_function
     pset_dict["dead_time_ratio"] = deadtime_ratios
     pset_dict["spin_phase_step"] = np.arange(len(deadtime_ratios))
+    pset_dict["helio_pset_quality_flags"] = helio_pset_quality_flags[np.newaxis, ...]
 
     dataset = create_dataset(pset_dict, name, "l1c")
 

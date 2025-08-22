@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 import spiceypy
 
+from imap_processing.quality_flags import ImapPSETUltraFlags
 from imap_processing.spice.geometry import SpiceBody
 from imap_processing.ultra.l1c.ultra_l1c_culling import compute_culling_mask
 
@@ -63,10 +64,24 @@ def test_compare_sincpt_with_culling_mask_deterministic(furnish_kernels):
         et = np.array([817561854.185627])
         keepout_radius_km = 6378.1  # Earth radius
         nside = 128
+        npix = hp.nside2npix(nside)
+        spacecraft_pset_quality_flags = np.full(
+            [len(et), npix], ImapPSETUltraFlags.NONE.value, dtype=np.uint16
+        )
 
         # Compute culling mask and IMAP-to-Earth unit vector
         mask, unit_vectors = compute_culling_mask(
-            et, keepout_radius_km, observer=SpiceBody.EARTH, nside=nside
+            et,
+            keepout_radius_km,
+            spacecraft_pset_quality_flags,
+            observer=SpiceBody.EARTH,
+            nside=nside,
+        )
+
+        false_indices = np.where(~mask)[1]
+        assert (
+            spacecraft_pset_quality_flags[0][int(false_indices)]
+            == ImapPSETUltraFlags.EARTH_FOV.value
         )
 
         # Computes the 3D unit vectors pointing to the centers of all HEALPix pixels
