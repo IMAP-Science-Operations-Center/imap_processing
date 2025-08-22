@@ -16,14 +16,17 @@ from imap_processing.spice.geometry import (
 )
 from imap_processing.spice.spin import get_spacecraft_spin_phase, get_spin_angle
 from imap_processing.ultra.constants import UltraConstants
-
-from imap_processing.ultra.l1b.ultra_l1b_extended import (
-    get_efficiency,
-    get_efficiency_interpolator,
-from imap_processing.ultra.l1b.lookup_utils import get_image_params, get_geometric_factor
+from imap_processing.ultra.l1b.lookup_utils import (
+    get_geometric_factor,
+    get_image_params,
+)
 from imap_processing.ultra.l1b.ultra_l1b_culling import (
     get_pulses_per_spin,
     get_spin_and_duration,
+)
+from imap_processing.ultra.l1b.ultra_l1b_extended import (
+    get_efficiency,
+    get_efficiency_interpolator,
 )
 
 # TODO: add species binning.
