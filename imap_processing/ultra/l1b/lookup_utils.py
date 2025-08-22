@@ -424,8 +424,8 @@ def get_nominal_for_by_spin_phase(
         Scattering a and g values corresponding to the given theta and phi values.
     """
     # TODO replace with actual lookup table when available.
-    # descriptor = f"l1b-{instrument_id}sensor-scattering-calibration"
-    filename = "/Users/luco3133/projects/ultra_stuff/exp_index_test.csv"
+    descriptor = f"l1c-{instrument_id}sensor-nominal-for-lookup"
+    filename = ancillary_files[descriptor]
 
     calibration_data = pd.read_csv(filename, header=None, skiprows=1).to_numpy(
         dtype=float

@@ -21,6 +21,14 @@ TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
 @pytest.fixture
+def fake_spin_data(spice_test_data_path, use_test_spin_data_csv):
+    """Generate fake spin dataframe for testing"""
+    fake_spin_path = spice_test_data_path / "fake_spin_data.csv"
+    use_test_spin_data_csv([fake_spin_path])
+    return fake_spin_path
+
+
+@pytest.fixture
 def mock_data_l1b_dict():
     # Create sample data for the xarray Dataset
     epoch = np.arange(
@@ -131,7 +139,7 @@ def test_ultra_l1c_error(mock_data_l1b_dict):
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
 def test_calculate_spacecraft_pset_with_cdf(
-    ancillary_files, deadtime_datasets, imap_ena_sim_metakernel
+    deadtime_datasets, imap_ena_sim_metakernel, ancillary_files, fake_spin_data
 ):
     """Tests ultra_l1c function with imported test data."""
 
@@ -182,15 +190,6 @@ def test_calculate_spacecraft_pset_with_cdf(
         "imap_ultra_l1b_45sensor-cullingmask": xr.Dataset(),  # placeholder
         "imap_ultra_45sensor-rates": deadtime_datasets["rates"],
         "imap_ultra_45sensor-params": deadtime_datasets["params"],
-    }
-
-    path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
-    ancillary_files = {
-        "l1c-90sensor-dps-exposure": path
-        / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
-        "l1c-90sensor-efficiencies": path
-        / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
-        "l1c-90sensor-gf": path / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
     }
 
     output_datasets = ultra_l1c(data_dict, ancillary_files, has_spice=False)
@@ -266,6 +265,8 @@ def test_calculate_helio_pset_with_cdf(ancillary_files, imap_ena_sim_metakernel)
         "l1c-90sensor-efficiencies": path
         / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
         "l1c-90sensor-gf": path / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
+        "l1c-45sensor-nominal-for-lookup": path
+        / "imap_ultra_l1c-45sensor-nominal-for-lookup_20250101_v000.csv",
     }
 
     output_datasets = ultra_l1c(data_dict, ancillary_files, has_spice=True)

@@ -11,7 +11,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c import ultra_l1c_pset_bins
 from imap_processing.ultra.l1c.spacecraft_pset import (
-    calculate_pixels_withing_scattering_threshold,
+    calculate_pixels_within_scattering_threshold,
 )
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     apply_deadtime_correction,
@@ -277,7 +277,7 @@ def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
         "imap_processing.ultra.l1c.spacecraft_pset.get_nominal_for_by_spin_phase",
         return_value=(spin_phase_steps, mock_theta_and_phi, mock_ra_and_dec),
     ):
-        pixels_below_threshold = calculate_pixels_withing_scattering_threshold(
+        pixels_below_threshold = calculate_pixels_within_scattering_threshold(
             ancillary_files, 45
         )
 
@@ -330,7 +330,7 @@ def test_get_spacecraft_exposure_times(
         "imap_processing.ultra.l1c.spacecraft_pset.get_nominal_for_by_spin_phase",
         return_value=(spin_phase_steps, mock_theta_and_phi, mock_ra_and_dec),
     ):
-        pixels_below_threshold = calculate_pixels_withing_scattering_threshold(
+        pixels_below_threshold = calculate_pixels_within_scattering_threshold(
             ancillary_files, 45
         )
         exposure_pointing = get_spacecraft_exposure_times(

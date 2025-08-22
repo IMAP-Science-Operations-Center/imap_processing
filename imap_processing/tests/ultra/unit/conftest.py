@@ -535,6 +535,8 @@ def ancillary_files():
         "l1c-90sensor-efficiencies": path
         / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
         "l1c-90sensor-gf": path / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
+        "l1c-45sensor-nominal-for-lookup": path
+        / "imap_ultra_l1c-45sensor-nominal-for-lookup_20250101_v000.csv",
     }
 
 
