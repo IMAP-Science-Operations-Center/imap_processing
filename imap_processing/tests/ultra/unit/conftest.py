@@ -557,6 +557,8 @@ def deadtime_datasets():
             "coin_bn": (["epoch"], np.random.randint(0, 5, epoch)),
             "stop_tn": (["epoch"], np.random.randint(0, 5, epoch)),
             "stop_bn": (["epoch"], np.random.randint(0, 5, epoch)),
+            "shcoarse": (["epoch"], np.arange(epoch)),
+            "spin": (["epoch"], 127 + (np.arange(epoch) % (141 - 127))),
         }
     )
     # Sector mode (image rates cadence = 3) happens 3 times a day (per pointing).

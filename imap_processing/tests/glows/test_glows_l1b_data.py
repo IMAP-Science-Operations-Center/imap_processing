@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -11,6 +12,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     HistogramL1B,
 )
 from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.tests.glows.conftest import mock_update_spice_parameters
 
 
 def test_glows_l1b_ancillary_file():
@@ -79,7 +81,11 @@ def test_glows_l1b_de():
     assert np.allclose(pulse_len, expected_pulse)
 
 
-def test_validation_data_histogram(l1a_dataset, mock_ancillary_exclusions):
+@patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
+def test_validation_data_histogram(
+    mock_spice_function, l1a_dataset, mock_ancillary_exclusions
+):
+    mock_spice_function.side_effect = mock_update_spice_parameters
     l1b = [
         glows_l1b(
             l1a_dataset[0],

@@ -29,6 +29,7 @@ from imap_processing.ultra.l1b.lookup_utils import (
 logger = logging.getLogger(__name__)
 
 FILLVAL_UINT8 = 255
+FILLVAL_FLOAT32 = -1.0e31
 
 
 class StartType(Enum):
@@ -541,9 +542,9 @@ def get_de_velocity(
     v_y = delta_v[:, 1] / tof * 1e3
     v_z = delta_v[:, 2] / tof * 1e3
 
-    v_x[tof < 0] = np.nan  # used as fillvals
-    v_y[tof < 0] = np.nan
-    v_z[tof < 0] = np.nan
+    v_x[tof < 0] = FILLVAL_FLOAT32  # used as fillvals
+    v_y[tof < 0] = FILLVAL_FLOAT32
+    v_z[tof < 0] = FILLVAL_FLOAT32
 
     velocities = np.vstack((v_x, v_y, v_z)).T
 

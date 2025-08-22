@@ -1,5 +1,7 @@
 """Tests the L2b processing for IDEX data"""
 
+from unittest import mock
+
 import numpy as np
 import pytest
 import xarray as xr
@@ -215,6 +217,17 @@ def test_get_science_acquisition_on_percentage(decom_test_data_evt: list[xr.Data
     # The uptime should be less than 1% for both
     assert on_percentages[8] < 1
     assert on_percentages[9] < 1  # The uptime should be less than 1%
+
+
+def test_get_science_acquisition_on_percentage_no_acquisition(caplog):
+    """Test the function returns an empty dict when there is no science acquisition."""
+    with mock.patch(
+        "imap_processing.idex.idex_l2b.get_science_acquisition_timestamps",
+        return_value=([], [], []),
+    ):
+        on_percentages = get_science_acquisition_on_percentage(xr.Dataset())
+    assert not on_percentages
+    assert "No science acquisition events found" in caplog.text
 
 
 def test_compute_counts_by_charge_and_mass():
@@ -466,3 +479,45 @@ def test_compute_rates_by_charge_and_mass_missing_acquisition_time(caplog):
     # Assert that quality flags are 0 for the missing acquisition time
     assert quality_flags[0] == 1
     assert quality_flags[1] == 0
+
+
+def test_compute_rates_no_acquisition_data(caplog):
+    """Test that the function produces -1 rates when hk data isn't available."""
+    caplog.at_level("WARNING")
+    # Mock example inputs
+    counts_by_charge = np.ones(
+        (2, len(CHARGE_BIN_EDGES), len(SPIN_PHASE_BIN_EDGES) - 1)
+    )
+    counts_by_mass = counts_by_charge
+    counts_by_charge_map = np.ones(
+        (
+            2,
+            len(CHARGE_BIN_EDGES),
+            len(SKY_GRID.az_bin_edges) - 1,
+            len(SKY_GRID.el_bin_edges) - 1,
+        )
+    )
+    counts_by_mass_map = counts_by_charge_map
+    # Mock DOY values for the epochs
+    epoch_doy = np.array([1, 2])
+    # Mock daily idex uptime percentages. Purposefully leave out day 2 to simulate
+    # missing acquisition times
+    daily_on_percentage = {}
+    # Compute the rates by charge and mass and assert there is a warning in the logs.
+    rate_by_charge, rate_by_mass, rate_mass_map, rate_charge_map, quality_flags = (
+        compute_rates_by_charge_and_mass(
+            counts_by_charge,
+            counts_by_mass,
+            counts_by_charge_map,
+            counts_by_mass_map,
+            epoch_doy,
+            daily_on_percentage,
+        )
+    )
+
+    # All rates by charge and mass should be -1.0
+    np.testing.assert_array_equal(rate_by_charge, np.full(rate_by_charge.shape, -1.0))
+    np.testing.assert_array_equal(rate_by_mass, np.full(rate_by_mass.shape, -1.0))
+
+    # Assert that quality flags are all 0 for missing acquisition times
+    np.testing.assert_array_equal(quality_flags, np.full(quality_flags.shape, 0))

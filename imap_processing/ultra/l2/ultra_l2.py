@@ -20,7 +20,6 @@ from imap_processing.ena_maps.utils.naming import (
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import get_energy_delta_minus_plus
 
 logger = logging.getLogger(__name__)
-logger.info("Importing ultra_l2 module")
 
 # Default properties for the Ultra L2 map
 DEFAULT_ULTRA_L2_MAP_STRUCTURE: ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap = (

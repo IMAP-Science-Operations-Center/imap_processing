@@ -124,7 +124,10 @@ def _download_external_data():
                     file.write(response.content)
                 logger.info(f"Downloaded file: {source}")
             else:
-                logger.error(f"Failed to download file: {response.status_code}")
+                logger.error(
+                    f"Failed to download file: {source} "
+                    f"with response: {response.status_code}"
+                )
         else:
             logger.info(f"File already exists: {destination}")
 

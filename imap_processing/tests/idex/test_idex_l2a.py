@@ -3,6 +3,7 @@
 from unittest import mock
 
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 from scipy.stats import exponnorm
@@ -16,6 +17,7 @@ from imap_processing.idex.idex_l2a import (
     butter_lowpass_filter,
     calculate_kappa,
     calculate_snr,
+    calculate_velocity_and_mass,
     chi_square,
     estimate_dust_mass,
     fit_impact,
@@ -28,7 +30,9 @@ from imap_processing.idex.idex_utils import get_idex_attrs
 
 
 @pytest.fixture
-def l2a_dataset(l1b_dataset: xr.Dataset, decom_test_data_sci) -> xr.Dataset:
+def l2a_dataset(
+    l1b_dataset: xr.Dataset, decom_test_data_sci, ancillary_files, _download_test_data
+) -> xr.Dataset:
     """Return a ``xarray`` dataset containing test data.
     Returns
     -------
@@ -45,7 +49,7 @@ def l2a_dataset(l1b_dataset: xr.Dataset, decom_test_data_sci) -> xr.Dataset:
         "imap_processing.idex.idex_l1b.get_spice_data",
         return_value={"spin_phase": spin_phase_angles},
     ):
-        dataset = idex_l2a(idex_l1b(decom_test_data_sci))
+        dataset = idex_l2a(idex_l1b(decom_test_data_sci), ancillary_files)
     return dataset
 
 
@@ -62,6 +66,7 @@ def mock_microphonics_noise(time: np.ndarray) -> np.ndarray:
     return combined_sig
 
 
+@pytest.mark.external_test_data
 def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset):
     """Tests that the ``idex_l2a`` function generates datasets
     with the expected logical source.
@@ -86,18 +91,21 @@ def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset):
         "target_low_fit_parameters",
         "target_low_impact_charge",
         "target_low_dust_mass_estimate",
+        "target_low_velocity_estimate",
         "target_low_chi_squared",
         "target_low_reduced_chi_squared",
         "target_low_fit_results",
         "target_high_fit_parameters",
         "target_high_impact_charge",
         "target_high_dust_mass_estimate",
+        "target_high_velocity_estimate",
         "target_high_chi_squared",
         "target_high_reduced_chi_squared",
         "target_high_fit_results",
         "ion_grid_fit_parameters",
         "ion_grid_impact_charge",
         "ion_grid_dust_mass_estimate",
+        "ion_grid_velocity_estimate",
         "ion_grid_chi_squared",
         "ion_grid_reduced_chi_squared",
         "ion_grid_fit_results",
@@ -265,6 +273,21 @@ def test_analyze_peaks_warning(caplog):
     np.testing.assert_array_equal(redchi, np.zeros(redchi.shape))
     np.testing.assert_array_equal(fit_params, np.zeros(fit_params.shape))
     np.testing.assert_array_equal(area_under_curve, np.zeros(area_under_curve.shape))
+
+
+@pytest.mark.external_test_data
+def test_velocity_and_mass_estimate(ancillary_files):
+    """Tests that the velocity and mass estimate function."""
+    # Load calibration coefficients from ancillary files
+    t_rise_params = pd.read_csv(
+        ancillary_files["l2a-calibration-curve-yield-params"], skiprows=1, header=None
+    ).values.flatten()[:8]
+    yield_params = pd.read_csv(
+        ancillary_files["l2a-calibration-curve-t-rise"], skiprows=1, header=None
+    ).values.flatten()[:8]
+    estimates = calculate_velocity_and_mass(10, 2, t_rise_params, yield_params)
+    assert len(estimates) == 2
+    assert not np.any(np.isnan(estimates))
 
 
 def test_analyze_peaks_perfect_fits():

@@ -25,9 +25,16 @@ TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
 def test_calculate_spacecraft_pset(
-    deadtime_datasets, imap_ena_sim_metakernel, random_spin_data, ancillary_files
+    random_spin_data
+    deadtime_datasets,
+    imap_ena_sim_metakernel,
+    use_fake_spin_data_for_time,
+    ancillary_files,
 ):
     """Tests calculate_spacecraft_pset function."""
+    # Simulate a spin table from MET = 0 to MET = 141 * 15 seconds
+    use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
+
     # This is just setting up the data so that it is in the format of l1b_de_dataset.
     test_path = TEST_PATH / "ultra-90_raw_event_data_shortened.csv"
     df = pd.read_csv(test_path)
@@ -60,6 +67,7 @@ def test_calculate_spacecraft_pset(
                 particle_velocity_dps_spacecraft,
             ),
             "energy_spacecraft": (["epoch"], energy_dps_spacecraft),
+            "spin_number": (["epoch"], df["Spin"].values),
         },
         coords={
             "epoch": ("epoch", epoch),
@@ -85,10 +93,15 @@ def test_calculate_spacecraft_pset(
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
 def test_calculate_spacecraft_pset_with_cdf(
-    ancillary_files, deadtime_datasets, imap_ena_sim_metakernel, random_spin_data
+    random_spin_data
+    ancillary_files,
+    deadtime_datasets,
+    imap_ena_sim_metakernel,
+    use_fake_spin_data_for_time,
 ):
     """Tests calculate_spacecraft_pset function with imported test data."""
-
+    # Simulate a spin table from MET = 0 to MET = 141 * 15 seconds
+    use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
     df = pd.read_csv(TEST_PATH / "IMAP-Ultra45_r1_L1_V0_shortened.csv")
 
     # Loop over all unique pointing numbers
@@ -127,14 +140,17 @@ def test_calculate_spacecraft_pset_with_cdf(
 
         de_dict["velocity_dps_sc"] = sc_dps_velocity
         de_dict["energy_spacecraft"] = get_de_energy_kev(sc_dps_velocity, species_bin)
+        # Made up data for spin_number and energy_bin_geometric_mean
+        de_dict["spin_number"] = np.full(len(sc_dps_velocity), 128)
+        de_dict["energy_bin_geometric_mean"] = np.zeros(len(sc_dps_velocity))
 
         name = "imap_ultra_l1b_45sensor-de"
         dataset = create_dataset(de_dict, name, "l1b")
 
         spacecraft_pset = calculate_spacecraft_pset(
             dataset,
-            xr.Dataset(),  # placeholder for extendedspin_dataset
-            xr.Dataset(),  # placeholder for cullingmask_dataset
+            dataset,  # placeholder for extendedspin_dataset
+            dataset,  # placeholder for cullingmask_dataset
             deadtime_datasets["rates"],
             deadtime_datasets["params"],
             "imap_ultra_l1c_45sensor-spacecraftpset",

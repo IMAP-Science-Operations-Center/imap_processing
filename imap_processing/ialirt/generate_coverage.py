@@ -11,8 +11,21 @@ from imap_processing.spice.time import et_to_utc, str_to_et
 # Logger setup
 logger = logging.getLogger(__name__)
 
-# TODO: get a list of all potential DSN stations.
-ALL_STATIONS = [*STATIONS.keys(), "DSS-55", "DSS-56", "DSS-74", "DSS-75"]
+ALL_STATIONS = [
+    *STATIONS.keys(),
+    "DSS-24",
+    "DSS-25",
+    "DSS-26",
+    "DSS-34",
+    "DSS-35",
+    "DSS-36",
+    "DSS-53",
+    "DSS-54",
+    "DSS-55",
+    "DSS-56",
+    "DSS-74",
+    "DSS-75",
+]
 
 
 def generate_coverage(

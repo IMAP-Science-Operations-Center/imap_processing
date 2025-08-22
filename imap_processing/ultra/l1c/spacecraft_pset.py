@@ -9,6 +9,7 @@ from imap_processing.ultra.l1b.lookup_utils import (
     get_scattering_coefficients,
     mask_below_fwhm_scattering_threshold,
 )
+from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     get_efficiencies_and_geometric_function,
@@ -122,6 +123,7 @@ def calculate_spacecraft_pset(
         Dataset containing the data.
     """
     pset_dict: dict[str, np.ndarray] = {}
+    sensor = parse_filename_like(name)["sensor"][0:2]
 
     v_mag_dps_spacecraft = np.linalg.norm(de_dataset["velocity_dps_sc"].values, axis=1)
     vhat_dps_spacecraft = (
@@ -153,12 +155,22 @@ def calculate_spacecraft_pset(
     )
     # TODO handle sensitivity
     # sensitivity = interpolate_sensitivity(efficiencies, geometric_function)
+    
     # Calculate exposure
     constant_exposure = ancillary_files["l1c-90sensor-dps-exposure"]
     df_exposure = pd.read_csv(constant_exposure)
 
     exposure_pointing = get_spacecraft_exposure_times(
         df_exposure, rates_dataset, params_dataset, pixels_below_scattering
+    )
+
+    # Calculate background rates
+    background_rates = get_spacecraft_background_rates(
+        rates_dataset,
+        sensor,
+        ancillary_files,
+        intervals,
+        cullingmask_dataset["spin_number"].values,
     )
 
     # For ISTP, epoch should be the center of the time bin.

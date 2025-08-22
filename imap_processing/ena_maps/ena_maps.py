@@ -592,12 +592,30 @@ class HiPointingSet(PointingSet):
 
     Parameters
     ----------
-    dataset : xarray.Dataset
-        Hi L1C pointing set data loaded in an xarray.DataArray.
+    dataset : xarray.Dataset | str | Path
+        Hi L1C pointing set data loaded in a xarray.DataArray.
+    spin_phase : str
+        Include ENAs from "full", "ram" or "anti-ram" phases of the spin.
     """
 
-    def __init__(self, dataset: xr.Dataset):
+    def __init__(self, dataset: xr.Dataset | str | Path, spin_phase: str):
         super().__init__(dataset, spice_reference_frame=geometry.SpiceFrame.ECLIPJ2000)
+
+        # Filter out ENAs from non-selected portions of the spin.
+        if spin_phase not in ["full", "ram", "anti-ram"]:
+            raise ValueError(f"Unrecognized spin_phase value: {spin_phase}.")
+        # ram only includes spin-phase interval [0, 0.5)
+        # which is the first half of the spin_angle_bins
+        elif spin_phase == "ram":
+            self.data = self.data.isel(
+                spin_angle_bin=slice(0, self.data["spin_angle_bin"].data.size // 2)
+            )
+        # anti-ram includes spin-phase interval [0.5, 1)
+        # which is the second half of the spin_angle_bins
+        elif spin_phase == "anti-ram":
+            self.data = self.data.isel(
+                spin_angle_bin=slice(self.data["spin_angle_bin"].data.size // 2, None)
+            )
 
         # Rename some PSET vars to match L2 variables
         self.data = self.data.rename(

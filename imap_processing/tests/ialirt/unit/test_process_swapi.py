@@ -74,7 +74,7 @@ def ialirt_test_data():
     """Extract test data for unit tests below."""
 
     energy_data = pd.read_csv(
-        f"{imap_module_directory}/tests/ialirt/test_data/ialirt_test_data.csv"
+        f"{imap_module_directory}/tests/ialirt/data/l0/ialirt_test_data.csv"
     )
     count_rates = energy_data["Count Rates [Hz]"].to_numpy()
     count_rates = np.tile(count_rates, (2, 1))

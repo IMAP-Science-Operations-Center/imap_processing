@@ -24,7 +24,7 @@ import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
 from scipy.integrate import quad
-from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit, root_scalar
 from scipy.signal import butter, detrend, filtfilt, find_peaks
 from scipy.stats import exponnorm
 
@@ -52,7 +52,33 @@ class BaselineNoiseTime(IntEnum):
     STOP = -5
 
 
-def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
+def load_calibration_files(ancillary_files: dict) -> tuple[NDArray, NDArray]:
+    """
+    Load calibration files for IDEX L2A processing.
+
+    Parameters
+    ----------
+    ancillary_files : dict
+        Dictionary containing paths to calibration files.
+
+    Returns
+    -------
+    numpy.ndarray
+        Calibration parameters for the rise time function.
+    numpy.ndarray
+        Calibration parameters for the charge yield function.
+    """
+    # Load calibration coefficients from ancillary files
+    t_rise_params = pd.read_csv(
+        ancillary_files["l2a-calibration-curve-yield-params"], skiprows=1, header=None
+    ).values.flatten()[:8]
+    yield_params = pd.read_csv(
+        ancillary_files["l2a-calibration-curve-t-rise"], skiprows=1, header=None
+    ).values.flatten()[:8]
+    return t_rise_params, yield_params
+
+
+def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
     """
     Will process IDEX l1b data to create l2a data products.
 
@@ -68,6 +94,9 @@ def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
     ----------
     l1b_dataset : xarray.Dataset
         IDEX L1a dataset to process.
+    ancillary_files : dict
+        Ancillary files containing calibration coefficients needed to estimate
+        velocity and mass of the dust particles.
 
     Returns
     -------
@@ -79,6 +108,7 @@ def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
     logger.info(
         f"Running IDEX L2A processing on dataset: {l1b_dataset.attrs['Logical_source']}"
     )
+    t_rise_params, yield_params = load_calibration_files(ancillary_files)
 
     tof_high = l1b_dataset["TOF_High"]
     hs_time = l1b_dataset["time_high_sample_rate"]
@@ -176,11 +206,24 @@ def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
             output_dtypes=[np.float64] * 6,
             keep_attrs=True,
         )
+        # Calculate mass and velocity estimates
+        velocity_mass_results = xr.apply_ufunc(
+            calculate_velocity_and_mass,
+            fit_results[1],  # signal amplitude
+            fit_results[0].data[:, 3],  # fit params
+            output_core_dims=[[], []],
+            vectorize=True,
+            output_dtypes=[np.float64, np.float64],
+            keep_attrs=True,
+            kwargs={"t_rise_params": t_rise_params, "yield_params": yield_params},
+        )
+
         waveform_name = waveform.lower()
         output_vars = {
             f"{waveform_name}_fit_parameters": fit_results[0],
             f"{waveform_name}_impact_charge": fit_results[1],
-            f"{waveform_name}_dust_mass_estimate": fit_results[1],
+            f"{waveform_name}_velocity_estimate": velocity_mass_results[0],
+            f"{waveform_name}_dust_mass_estimate": velocity_mass_results[1],
             # Same as impact_charge for now
             f"{waveform_name}_chi_squared": fit_results[2],
             f"{waveform_name}_reduced_chi_squared": fit_results[3],
@@ -259,6 +302,89 @@ def idex_l2a(l1b_dataset: xr.Dataset) -> xr.Dataset:
     logger.info("IDEX L2A science data processing completed.")
     l2a_dataset.attrs.update(idex_attrs.get_global_attributes("imap_idex_l2a_sci"))
     return l2a_dataset
+
+
+def calculate_velocity_and_mass(
+    sig_amp: float, t_rise: float, t_rise_params: np.ndarray, yield_params: np.ndarray
+) -> tuple[float, float]:
+    """
+    Calculate velocity and mass estimates.
+
+    The fitted target signals are used to generate IDEX’s specific charge yield as a
+    function of the impact speed. The calibration curve is fitted with a
+    segmented power law distribution. The charge yield curve enables the mass of
+    the dust particle to be estimated from the total charge it generates on the target.
+
+    Parameters
+    ----------
+    sig_amp : float
+        Signal amplitude.
+    t_rise : float
+        T_rise fit parameter from the target fit.
+    t_rise_params : np.ndarray
+        Calibration parameters for rise time.
+    yield_params : np.ndarray
+        Calibration parameters for yield.
+
+    Returns
+    -------
+    v_est : float
+        Estimated velocity.
+    mass_est : float
+        Estimated mass.
+    """
+    log_a_t: float = np.log10(t_rise_params[0])
+    try:
+        root = root_scalar(
+            lambda lv: log_smooth_powerlaw(lv, log_a_t, t_rise_params[1:])
+            - np.log10(t_rise),
+            bracket=[-1, 2],
+        )
+        v_est = 10**root.root
+    except Exception:
+        logger.error(
+            "Unable to calculate velocity and mass estimate. "
+            "The root finding failed for power law function. "
+            "Returning nans for the estimate."
+        )
+        return np.nan, np.nan
+
+    log_a_y: float = np.log10(yield_params[0])
+    yield_val = 10 ** log_smooth_powerlaw(np.log10(v_est), log_a_y, yield_params[1:])
+    mass_est = sig_amp / yield_val
+
+    return v_est, mass_est
+
+
+def log_smooth_powerlaw(log_v: float, log_a: float, params: np.ndarray) -> float:
+    """
+    Define a smoothly transitioning power law to fit the calibration curve to.
+
+    Parameters
+    ----------
+    log_v : float
+        Velocity.
+    log_a : float
+        Scale factor.
+    params : np.ndarray
+        Calibration parameters for the power law.
+
+    Returns
+    -------
+    float
+        The value of the power law at the given velocity.
+    """
+    # Unpack the rest of the calibration parameters
+    # a1, a2, and a3 are the power law exponents for the low, medium, and high-velocity
+    # segments.
+    # vb and vc are the characteristic speeds where the slope transition happens, and k
+    # setting the sharpness of the transitions.
+    a1, a2, a3, vb, vc, k, m = params
+    v = 10**log_v
+    base = log_a + a1 * log_v
+    transition1 = (1 + (v / vb) ** m) ** ((a2 - a1) / m)
+    transition2 = (1 + (v / vc) ** m) ** ((a3 - a2) / m)
+    return base + np.log10(transition1 * transition2)
 
 
 def time_to_mass(

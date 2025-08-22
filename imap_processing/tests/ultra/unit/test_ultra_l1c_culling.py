@@ -33,8 +33,6 @@ def test_compute_culling_mask(furnish_kernels, spice_test_data_path):
     step_seconds = 1800  # 30 minutes
     et_steps = np.arange(et_start, et_end, step_seconds)
 
-    spiceypy.kclear()
-
     with furnish_kernels(kernels):
         mask, _ = compute_culling_mask(et_steps, keepout_radius_km)
 

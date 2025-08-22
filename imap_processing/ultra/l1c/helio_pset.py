@@ -7,7 +7,6 @@ import xarray as xr
 from imap_processing.spice.time import sct_to_et
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
-    get_helio_background_rates,
     get_helio_exposure_times,
     get_helio_sensitivity,
     get_spacecraft_histogram,
@@ -61,9 +60,6 @@ def calculate_helio_pset(
 
     healpix = np.arange(n_pix)
 
-    # calculate background rates
-    background_rates = get_helio_background_rates()
-
     efficiencies = ancillary_files["l1c-90sensor-efficiencies"]
     geometric_function = ancillary_files["l1c-90sensor-gf"]
 
@@ -87,7 +83,6 @@ def calculate_helio_pset(
     pset_dict["latitude"] = latitude[np.newaxis, ...]
     pset_dict["longitude"] = longitude[np.newaxis, ...]
     pset_dict["energy_bin_geometric_mean"] = energy_bin_geometric_means
-    pset_dict["background_rates"] = background_rates[np.newaxis, ...]
     pset_dict["helio_exposure_factor"] = exposure_pointing[np.newaxis, ...]
     pset_dict["pixel_index"] = healpix
     pset_dict["energy_bin_delta"] = np.diff(intervals, axis=1).squeeze()[
