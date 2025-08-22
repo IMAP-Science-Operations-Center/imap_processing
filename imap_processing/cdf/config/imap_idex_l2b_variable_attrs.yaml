@@ -32,12 +32,12 @@ mass:
   CATDESC: Log-spaced mass
   FIELDNAM: Mass (kg)
   UNITS: kg
-  FORMAT: I4
+  FORMAT: E10.4
   VAR_TYPE: support_data
   SCALETYP: log
   LABLAXIS: Mass (kg)
-  VALIDMIN: 0
-  VALIDMAX: 10
+  VALIDMIN: 0.0
+  VALIDMAX: 1.00e-14
   FILLVAL: *double_fillval
   LABL_PTR_1: mass_labels
   DICT_KEY: SPASE>Support>SupportQuantity:Other
@@ -51,8 +51,8 @@ spin_phase:
     SCALETYP: linear
     FILLVAL: *int_fillval
     FORMAT: I4
-    VALIDMIN: 0
-    VALIDMAX: 3
+    VALIDMIN: 0.0
+    VALIDMAX: 360
     LABL_PTR_1: spin_phase_labels
     UNITS: deg
     DICT_KEY: SPASE>SupportQuantity:SpinPhase,Qualifier:Array
@@ -64,9 +64,9 @@ impact_charge:
     VAR_TYPE: support_data
     SCALETYP: log
     FILLVAL: *int_fillval
-    FORMAT: I4
-    VALIDMIN: 0
-    VALIDMAX: 10
+    FORMAT: E10.3
+    VALIDMIN: 0.0
+    VALIDMAX: 1.00e04
     LABL_PTR_1: spin_phase_labels
     UNITS: fC
     DICT_KEY: SPASE>Support>SupportQuantity:Other

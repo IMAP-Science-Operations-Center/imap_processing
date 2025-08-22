@@ -147,7 +147,7 @@ class TestHiPointingSet:
     def test_init(self, hi_pset_cdf_path):
         """Test coverage for __init__ method."""
         pset_ds = load_cdf(hi_pset_cdf_path)
-        hi_pset = ena_maps.HiPointingSet(pset_ds)
+        hi_pset = ena_maps.HiPointingSet(pset_ds, spin_phase="full")
         assert isinstance(hi_pset, ena_maps.HiPointingSet)
         assert hi_pset.spice_reference_frame == geometry.SpiceFrame.ECLIPJ2000
         assert hi_pset.num_points == 3600
@@ -157,13 +157,35 @@ class TestHiPointingSet:
             assert var_name in hi_pset.data
 
     def test_from_cdf(self, hi_pset_cdf_path):
-        """Test coverage for from_cdf method."""
-        hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path)
+        """Test coverage for instantiating HiPointingSet from cdf."""
+        hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path, spin_phase="full")
         assert isinstance(hi_pset, ena_maps.HiPointingSet)
+
+    def test_spin_phase_filtering(self, hi_pset_cdf_path):
+        """Test coverage for filtering pset data by ram or anti-ram directions."""
+        pset_ds = load_cdf(hi_pset_cdf_path)
+
+        # Test ram only direction
+        hi_pset = ena_maps.HiPointingSet(pset_ds, spin_phase="ram")
+        assert hi_pset.num_points == 1800
+        np.testing.assert_array_equal(
+            hi_pset.data["spin_angle_bin"].data, np.arange(1800)
+        )
+
+        # Test anti-ram direction
+        hi_pset = ena_maps.HiPointingSet(pset_ds, spin_phase="anti-ram")
+        assert hi_pset.num_points == 1800
+        np.testing.assert_array_equal(
+            hi_pset.data["spin_angle_bin"].data, np.arange(1800) + 1800
+        )
+
+        # Test value error
+        with pytest.raises(ValueError, match="Unrecognized spin_phase value:"):
+            _ = ena_maps.HiPointingSet(pset_ds, spin_phase="foo-phase")
 
     def test_plays_nice_with_rectangular_sky_map(self, hi_pset_cdf_path):
         """Test that HiPointingSet works with RectangularSkyMap"""
-        hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path)
+        hi_pset = ena_maps.HiPointingSet(hi_pset_cdf_path, spin_phase="full")
         rect_map = ena_maps.RectangularSkyMap(
             spacing_deg=2, spice_frame=geometry.SpiceFrame.ECLIPJ2000
         )

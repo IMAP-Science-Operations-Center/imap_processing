@@ -11,7 +11,7 @@ from imap_processing.ultra.l1b.ultra_l1b_annotated import (
 
 
 @pytest.fixture
-def kernels(spice_test_data_path):
+def furnish_kernels(spice_test_data_path, furnish_kernels):
     """List SPICE kernels."""
     required_kernels = [
         "imap_science_100.tf",
@@ -23,16 +23,13 @@ def kernels(spice_test_data_path):
         "de440s.bsp",
         "imap_spk_demo.bsp",
     ]
-    kernels = [str(spice_test_data_path / kernel) for kernel in required_kernels]
-
-    return kernels
+    with furnish_kernels(required_kernels):
+        yield [str(spice_test_data_path / kernel) for kernel in required_kernels]
 
 
 @pytest.mark.external_kernel
-def test_get_particle_velocity(spice_test_data_path, kernels):
+def test_get_particle_velocity(spice_test_data_path, furnish_kernels):
     """Tests get_particle_velocity function."""
-    spiceypy.furnsh(kernels)
-
     pointing_cover = spiceypy.ckcov(
         str(spice_test_data_path / "sim_1yr_imap_pointing_frame.bc"),
         SpiceFrame.IMAP_DPS.value,

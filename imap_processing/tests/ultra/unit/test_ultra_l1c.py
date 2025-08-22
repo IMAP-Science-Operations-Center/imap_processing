@@ -131,10 +131,14 @@ def test_ultra_l1c_error(mock_data_l1b_dict):
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
 def test_calculate_spacecraft_pset_with_cdf(
-    ancillary_files, deadtime_datasets, imap_ena_sim_metakernel
+    ancillary_files,
+    deadtime_datasets,
+    imap_ena_sim_metakernel,
+    use_fake_spin_data_for_time,
 ):
     """Tests ultra_l1c function with imported test data."""
-
+    # Simulate a spin table from MET = 0 to MET = 141 * 15 seconds
+    use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
     df = pd.read_csv(TEST_PATH / "IMAP-Ultra45_r1_L1_V0_shortened.csv")
 
     # Select a single pointing number
@@ -172,25 +176,19 @@ def test_calculate_spacecraft_pset_with_cdf(
 
     de_dict["velocity_dps_sc"] = sc_dps_velocity
     de_dict["energy_spacecraft"] = get_de_energy_kev(sc_dps_velocity, species_bin)
+    # Made up data for spin_number and energy_bin_geometric_mean
+    de_dict["spin_number"] = np.full(len(sc_dps_velocity), 128)
+    de_dict["energy_bin_geometric_mean"] = np.zeros(len(sc_dps_velocity))
 
     name = "imap_ultra_l1b_45sensor-de"
     dataset = create_dataset(de_dict, name, "l1b")
 
     data_dict = {
         "imap_ultra_l1b_45sensor-de": dataset,
-        "imap_ultra_l1b_45sensor-extendedspin": xr.Dataset(),  # placeholder
-        "imap_ultra_l1b_45sensor-cullingmask": xr.Dataset(),  # placeholder
+        "imap_ultra_l1b_45sensor-extendedspin": dataset,  # placeholder
+        "imap_ultra_l1b_45sensor-cullingmask": dataset,  # placeholder
         "imap_ultra_l1a_45sensor-rates": deadtime_datasets["rates"],
         "imap_ultra_l1a_45sensor-params": deadtime_datasets["params"],
-    }
-
-    path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
-    ancillary_files = {
-        "l1c-90sensor-dps-exposure": path
-        / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
-        "l1c-90sensor-efficiencies": path
-        / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
-        "l1c-90sensor-gf": path / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
     }
 
     output_datasets = ultra_l1c(data_dict, ancillary_files, has_spice=False)

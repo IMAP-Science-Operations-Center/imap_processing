@@ -12,11 +12,9 @@ from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c import ultra_l1c_pset_bins
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
-    calculate_background_rates,
     get_deadtime_interpolator,
     get_deadtime_ratios,
     get_energy_delta_minus_plus,
-    get_helio_background_rates,
     get_helio_exposure_times,
     get_helio_sensitivity,
     get_sectored_rates,
@@ -128,20 +126,6 @@ def test_get_spacecraft_histogram(test_data):
 def mock_imap_state(time, ref_frame):
     # Position (0, 0, 0), exaggerated velocity to force visible transformation
     return np.array([0, 0, 0, 0, 0, 0])
-
-
-def test_get_spacecraft_background_rates():
-    """Tests get_background_rates function."""
-    background_rates = get_spacecraft_background_rates(nside=128)
-    _, energy_midpoints, _ = build_energy_bins()
-    assert background_rates.shape == (len(energy_midpoints), hp.nside2npix(128))
-
-
-def test_get_helio_background_rates():
-    """Tests get_background_rates function."""
-    background_rates = get_helio_background_rates(nside=128)
-    _, energy_midpoints, _ = build_energy_bins()
-    assert background_rates.shape == (len(energy_midpoints), hp.nside2npix(128))
 
 
 def test_get_sectored_rates():
@@ -389,8 +373,7 @@ def test_get_helio_sensitivity(monkeypatch, imap_ena_sim_metakernel):
     np.testing.assert_allclose(flat_sc, flat_helio, atol=1e-5)
 
 
-@pytest.mark.external_kernel
-def test_calculate_background_rates(
+def test_get_spacecraft_background_rates(
     rates_l1_test_path, use_fake_spin_data_for_time, ancillary_files
 ):
     "Tests calculate_background_rates function."
@@ -423,7 +406,7 @@ def test_calculate_background_rates(
     energy_bin_edges, _, _ = build_energy_bins()
     cullingmask_spin_number = np.array([130, 131])
 
-    background_rates = calculate_background_rates(
+    background_rates = get_spacecraft_background_rates(
         rates, "ultra45", ancillary_files, energy_bin_edges, cullingmask_spin_number
     )
 

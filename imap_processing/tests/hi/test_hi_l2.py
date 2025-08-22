@@ -1,5 +1,6 @@
 """Test coverage for imap_processing.hi.l2.hi_l2.py"""
 
+from unittest import mock
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -11,6 +12,7 @@ from imap_processing.ena_maps.ena_maps import RectangularSkyMap
 from imap_processing.hi.hi_l2 import (
     calculate_ena_intensity,
     calculate_ena_signal_rates,
+    esa_energy_lookup,
     generate_hi_map,
     hi_l2,
 )
@@ -45,7 +47,12 @@ def empty_rectangular_map_dataset() -> xr.Dataset:
 def test_hi_l2(hi_l1_test_data_path, imap_ena_sim_metakernel):
     """Integration type test for hi_l2()"""
     pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
-    l2_dataset = hi_l2([pset_path], None, None, "h90-ena-h-sf-nsp-full-hae-4deg-3mo")[0]
+    esa_energies_lut_path = (
+        hi_l1_test_data_path / "imap_hi_90sensor-esa-energies_20240101_v001.csv"
+    )
+    l2_dataset = hi_l2(
+        [pset_path], None, esa_energies_lut_path, "h90-ena-h-sf-nsp-full-hae-4deg-3mo"
+    )[0]
     assert isinstance(l2_dataset, xr.Dataset)
     assert len(l2_dataset.data_vars) == 15
     np.testing.assert_array_equal(
@@ -72,7 +79,7 @@ def test_hi_l2_uses_descriptor_to_setup_map(
 
     assert output_map.spice_reference_frame == SpiceFrame.IMAP_HNU
     assert output_map.spacing_deg == 2.0
-    assert mock_generate_hi_map.call_args.kwargs["direction"] == "full"
+    assert mock_generate_hi_map.call_args.kwargs["spin_phase"] == "full"
     assert not mock_generate_hi_map.call_args.kwargs["cg_corrected"]
 
     rect_map.build_cdf_dataset.assert_called_with(
@@ -80,9 +87,18 @@ def test_hi_l2_uses_descriptor_to_setup_map(
     )
 
 
+@mock.patch("imap_processing.hi.hi_l2.calculate_ena_intensity", autospec=True)
+@mock.patch("imap_processing.hi.hi_l2.esa_energy_lookup", autospec=True)
 @pytest.mark.external_test_data
-def test_genarate_hi_map(hi_l1_test_data_path, furnish_kernels):
+def test_genarate_hi_map(
+    mock_esa_energy_lookup,
+    mock_calc_ena_intensity,
+    hi_l1_test_data_path,
+    furnish_kernels,
+):
     """Test coverage for genarate_hi_map()"""
+
+    mock_esa_energy_lookup.side_effect = lambda x, y: y
 
     kernels = [
         "imap_sclk_0000.tsc",
@@ -102,11 +118,14 @@ def test_genarate_hi_map(hi_l1_test_data_path, furnish_kernels):
             None,
             rectangular_sky_map,
             cg_corrected=False,
-            direction="full",
+            spin_phase="full",
         )
     assert isinstance(sky_map, RectangularSkyMap)
     assert sky_map.spacing_deg == 6
     assert sky_map.spice_reference_frame == SpiceFrame.IMAP_GCS
+
+    # Check that calculate_ena_intensities was called
+    mock_calc_ena_intensity.assert_called_once()
 
     # Test that we got some non-zero values
     for var_name in ["counts", "exposure_factor", "obs_date"]:
@@ -161,8 +180,11 @@ def test_calculate_ena_signal_rates(empty_rectangular_map_dataset):
     assert np.nanmin(signal_rates_vars["ena_signal_rate_stat_unc"].values) == 1 / 2
 
 
-def test_calculate_ena_intensity(empty_rectangular_map_dataset):
+def test_calculate_ena_intensity(empty_rectangular_map_dataset, hi_l1_test_data_path):
     """Test coverage for calculate_ena_intensity"""
+    esa_energies_lut_path = (
+        hi_l1_test_data_path / "imap_hi_90sensor-esa-energies_20240101_v001.csv"
+    )
     # Start with an empty (coords only) dataset
     map_ds = empty_rectangular_map_dataset
     # Add some data_vars needed for the ena intensity calculations
@@ -187,7 +209,7 @@ def test_calculate_ena_intensity(empty_rectangular_map_dataset):
             ),
         }
     )
-    ena_intesity_vars = calculate_ena_intensity(map_ds, None, None)
+    ena_intesity_vars = calculate_ena_intensity(map_ds, None, esa_energies_lut_path)
 
     # TODO: add value/functional test checks once the full algorithm is implemented
     for var_name in [
@@ -196,3 +218,14 @@ def test_calculate_ena_intensity(empty_rectangular_map_dataset):
         "ena_intensity_sys_err",
     ]:
         assert var_name in ena_intesity_vars
+
+
+def test_esa_energy_lookup(hi_l1_test_data_path):
+    """Test coverage for esa_energy_lookup()"""
+    lookup_file = (
+        hi_l1_test_data_path / "imap_hi_90sensor-esa-energies_20240101_v001.csv"
+    )
+    esa_energy_steps = np.array([1, 2, 3, 3, 7, 8, 9])
+    expected_energies = np.array([0.5, 0.75, 1.1, 1.1, 5.7, 8.52, 12.8])
+    retrieved_energies = esa_energy_lookup(lookup_file, esa_energy_steps)
+    np.testing.assert_array_equal(retrieved_energies, expected_energies)
