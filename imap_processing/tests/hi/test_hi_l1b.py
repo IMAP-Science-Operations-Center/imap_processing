@@ -69,9 +69,16 @@ def test_hi_annotate_direct_events(
 
 
 @pytest.mark.external_test_data
+@mock.patch(
+    "imap_processing.spice.spin.get_spacecraft_to_instrument_spin_phase_offset",
+    return_value=0,
+)
 @mock.patch("imap_processing.hi.hi_l1b.instrument_pointing")
 def test_annotate_direct_events_with_hk(
-    mock_instrument_pointing, hi_l1_test_data_path, use_fake_spin_data_for_time
+    mock_instrument_pointing,
+    mock_inst_phase_offset,
+    hi_l1_test_data_path,
+    use_fake_spin_data_for_time,
 ):
     """Test imap_processing.hi_l1b.annotate_direct_events() with a
     coincident de and hk dataset but mocked spice."""
