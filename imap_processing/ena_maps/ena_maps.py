@@ -848,6 +848,7 @@ class AbstractSkyMap(ABC):
                 *non_spatial_axes_shape,
                 pointing_set.num_points,
             )
+            # OK here
 
             if value_key not in self.data_1d.data_vars:
                 # Initialize the map data array if it doesn't exist (values start at 0)
