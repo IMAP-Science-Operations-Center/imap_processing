@@ -241,13 +241,12 @@ def calculate_ena_intensity(
     esa_energy = esa_energy_lookup(esa_energies_path, map_ds["esa_energy_step"].data)
 
     # Convert ENA Signal Rate to Flux
+    flux_conversion_divisor = geometric_factor * esa_energy[:, np.newaxis]
     intensity_vars = {
-        "ena_intensity": map_ds["ena_signal_rates"]
-        / (geometric_factor * esa_energy[:, np.newaxis]),
+        "ena_intensity": map_ds["ena_signal_rates"] / flux_conversion_divisor,
         "ena_intensity_stat_unc": map_ds["ena_signal_rate_stat_unc"]
-        / (geometric_factor * esa_energy[:, np.newaxis]),
-        "ena_intensity_sys_err": map_ds["bg_rates_unc"]
-        / (geometric_factor * esa_energy[:, np.newaxis]),
+        / flux_conversion_divisor,
+        "ena_intensity_sys_err": map_ds["bg_rates_unc"] / flux_conversion_divisor,
     }
 
     # TODO: Correctly implement combining of calibration products. For now, just sum
