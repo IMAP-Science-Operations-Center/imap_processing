@@ -4,12 +4,12 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.ultra.l1b.lookup_utils import (
     get_nominal_for_by_spin_phase,
     get_scattering_coefficients,
     mask_below_fwhm_scattering_threshold,
 )
-from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
     get_efficiencies_and_geometric_function,
@@ -139,9 +139,6 @@ def calculate_spacecraft_pset(
     )
     healpix = np.arange(n_pix)
 
-    # calculate background rates
-    background_rates = get_spacecraft_background_rates()
-
     # Get lookup table for FOR indices by spin phase step
     for_indices_by_spin_phase, theta_and_phi, ra_and_dec = (
         get_nominal_for_by_spin_phase(ancillary_files, instrument_id)
@@ -155,7 +152,7 @@ def calculate_spacecraft_pset(
     )
     # TODO handle sensitivity
     # sensitivity = interpolate_sensitivity(efficiencies, geometric_function)
-    
+
     # Calculate exposure
     constant_exposure = ancillary_files["l1c-90sensor-dps-exposure"]
     df_exposure = pd.read_csv(constant_exposure)

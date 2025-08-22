@@ -25,7 +25,7 @@ TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
 def test_calculate_spacecraft_pset(
-    random_spin_data
+    random_spin_data,
     deadtime_datasets,
     imap_ena_sim_metakernel,
     use_fake_spin_data_for_time,
@@ -93,7 +93,7 @@ def test_calculate_spacecraft_pset(
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
 def test_calculate_spacecraft_pset_with_cdf(
-    random_spin_data
+    random_spin_data,
     ancillary_files,
     deadtime_datasets,
     imap_ena_sim_metakernel,
