@@ -7,7 +7,7 @@ default_attrs: &default
   DEPEND_0: epoch
   VALIDMAX: 9223372036854775807
   VAR_TYPE: data
-  UNITS: ' '
+  UNITS: " "
 
 # Non-epoch Coordinates
 esa_energy_step_label:
@@ -21,7 +21,7 @@ esa_energy_step:
   VALIDMAX: 7
   CATDESC: Energy Step
   FIELDNAM: Energy Step
-  UNITS: ' '
+  UNITS: " "
   FORMAT: I1
   VAR_TYPE: support_data
   LABLAXIS: ESA
@@ -34,13 +34,13 @@ spin_angle_label:
 
 spin_angle:
   VALIDMIN: 0
-  VALIDMAX: 3599
-  CATDESC: Spin angle bins
-  FIELDNAM: Spin angle bins
-  UNITS: ' '
+  VALIDMAX: 360
+  CATDESC: Spin angle in despun pointing frame
+  FIELDNAM: Spin angle
+  UNITS: "degrees"
   FORMAT: I4
   VAR_TYPE: support_data
-  LABLAXIS: spin angle bins
+  LABLAXIS: spin angle
 
 off_angle_label:
   CATDESC: Off axis angles
@@ -49,14 +49,14 @@ off_angle_label:
   VAR_TYPE: metadata
 
 off_angle:
-  VALIDMIN: 0
-  VALIDMAX: 39
-  CATDESC: Off axis angle bins
-  FIELDNAM: Off axis angle bins
-  UNITS: ' '
+  VALIDMIN: -2
+  VALIDMAX: 2
+  CATDESC: Off axis angle in despun pointing frame
+  FIELDNAM: Off axis angle
+  UNITS: "degrees"
   FORMAT: I4
   VAR_TYPE: support_data
-  LABLAXIS: off axis angle bins
+  LABLAXIS: off axis angle
 
 pointing_start_met:
   <<: *default

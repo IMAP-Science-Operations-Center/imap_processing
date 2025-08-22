@@ -111,8 +111,8 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
     pset = pset.assign_coords(
         {
             "esa_energy_step": np.arange(1, 8),
-            "spin_angle": np.arange(3600),
-            "off_angle": np.arange(40),
+            "spin_angle": np.arange(3600) / 3600 + 0.05,
+            "off_angle": np.arange(40) / 40 - 1.95,
         }
     )
 
@@ -386,7 +386,7 @@ def create_datasets(
         )
 
         spin_angle = xr.DataArray(
-            data=np.arange(3600),
+            data=np.arange(3600) / 3600 + 0.05,
             name="spin_angle",
             dims=["spin_angle"],
             attrs=attr_mgr.get_variable_attributes("spin_angle"),
@@ -399,13 +399,13 @@ def create_datasets(
         )
 
         off_angle = xr.DataArray(
-            data=np.arange(40),
+            data=np.arange(40) / 40 - 1.95,
             name="off_angle",
             dims=["off_angle"],
             attrs=attr_mgr.get_variable_attributes("off_angle"),
         )
         off_angle_label = xr.DataArray(
-            spin_angle.values.astype(str),
+            off_angle.values.astype(str),
             name="off_angle_label",
             dims=["off_angle_label"],
             attrs=attr_mgr.get_variable_attributes("off_angle_label"),
