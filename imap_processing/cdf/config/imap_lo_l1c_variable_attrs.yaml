@@ -56,7 +56,7 @@ off_angle:
   UNITS: "degrees"
   FORMAT: I4
   VAR_TYPE: support_data
-  LABLAXIS: off axis angle
+  LABLAXIS: off angle
 
 pointing_start_met:
   <<: *default
@@ -64,7 +64,7 @@ pointing_start_met:
   FIELDNAM: Pointing start time
   FORMAT: I12
   UNITS: s
-  LABLAXIS: pointing start time
+  LABLAXIS: pointing start
 
 pointing_end_met:
   <<: *default
@@ -72,21 +72,21 @@ pointing_end_met:
   FIELDNAM: Pointing end time
   FORMAT: I12
   UNITS: s
-  LABLAXIS: pointing end time
+  LABLAXIS: pointing end
 
 start_spin_number:
   <<: *default
   CATDESC: The spin number at the start of the pointing
   FIELDNAM: Spin number at start of pointing
   FORMAT: I12
-  LABLAXIS: First spin number of pointing
+  LABLAXIS: Start spin
 
 end_spin_number:
   <<: *default
   CATDESC: The spin number at the start of the pointing
   FIELDNAM: Spin number at the end of the pointing
   FORMAT: I12
-  LABLAXIS: Last spin number of pointing
+  LABLAXIS: End spin
 
 pivot_angle:
   <<: *default
@@ -99,11 +99,11 @@ pivot_angle:
 
 esa_mode:
   <<: *default
-  DEPEND_0: esa_energy_step
+  DEPEND_1: esa_energy_step
   CATDESC: Science Mode for Pointing
   FIELDNAM: Science Mode
   FORMAT: I12
-  LABLAXIS: science mode
+  LABLAXIS: esa mode
 
 hae_longitude:
   <<: *default
@@ -112,7 +112,7 @@ hae_longitude:
   FIELDNAM: Bin longitudes
   FORMAT: I12
   UNITS: degrees
-  LABLAXIS: Bin longitudes
+  LABLAXIS: longitude
   DEPEND_1: spin_angle
   DEPEND_2: off_angle
   LABL_PTR_1: spin_angle_label
@@ -126,7 +126,7 @@ hae_latitude:
   FIELDNAM: Bin latitudes
   FORMAT: I12
   UNITS: degrees
-  LABLAXIS: Bin latitudes
+  LABLAXIS: latitude
   DEPEND_1: spin_angle
   DEPEND_2: off_angle
   LABL_PTR_1: spin_angle_label
@@ -164,7 +164,7 @@ doubles_counts:
   DEPEND_3: off_angle
   FIELDNAM: Double coincidence counts
   FORMAT: I12
-  LABLAXIS: double coincidence counts
+  LABLAXIS: doubles
   LABL_PTR_1: esa_energy_step_label
   LABL_PTR_2: spin_angle_label
   LABL_PTR_3: off_angle_label
@@ -192,6 +192,8 @@ h_background_rates:
   LABL_PTR_2: spin_angle_label
   LABL_PTR_3: off_angle_label
   FORMAT: I12
+  DELTA_PLUS_VAR: h_background_rates_stat_uncert
+  DELTA_MINUS_VAR: h_background_rates_stat_uncert
 
 h_background_rates_stat_uncert:
   <<: *default
@@ -240,6 +242,8 @@ o_background_rates:
   LABL_PTR_2: spin_angle_label
   LABL_PTR_3: off_angle_label
   FORMAT: I12
+  DELTA_PLUS_VAR: o_background_rates_stat_uncert
+  DELTA_MINUS_VAR: o_background_rates_stat_uncert
 
 o_background_rates_stat_uncert:
   <<: *default
