@@ -15,20 +15,12 @@ max_uint24: &max_uint24 8388607
 max_uint32: &max_uint32 4294967295
 max_epoch: &max_epoch 3155630469184000000
 
-# TODO:
-#  -update fillval, validmin and validmax for floats (look at l1a yaml)
-#  -add DICT_KEY where applicable
-#  -Update format to use Fortran values
-#  -Add LABLAXIS or LABL_PTR_1 where applicable
-#  -Replace hash with num, counts, or rates? '# / cm2 s sr MeV/nuc'
-#  -LABLAXIS: Diff. Intensity vs 'Diff. # Flux'  Both are used. Are these the same?
-#  -should fillval for lo-ialirt be negative instead of positive? See ISTP guidelines
-#  -what to do with duplicate spin_sector_index variables? Added product prefix for now
-#   (hi-ialirt-spin_sector_index, lo-nsw-spin_sector_index). The difference is in the VALIDMAX value. the two lo ones
-#   are an exact match.
-#  -lo ialirt only has epoch as coordinate. Should there be more?
-#  -is the validmin for energy variables correct? VALIDMIN: 0.05000000074505806
-#  - what is the difference between spin_angle and spin_sector_index coordinates?
+# TODO: Complete SPASE. Used HIT as reference for intensity attributes
+# TODO: Update FORMAT to use fortran format
+# TODO: Review units with CoDICE
+# TODO: Review LABLAXIS with CoDICE. Diff. Intensity vs Diff. # Flux
+# TODO: Review FILLVAL with CoDICE. lo-ialirt has 1.0e+31, but should it be negative?
+# TODO: Review VALIDMIN with CoDICE (i.e. VALIDMIN: 0.05000000074505806 ??)
 
 
 # <=== Defaults ===>
@@ -43,6 +35,7 @@ default_attrs: &default
   UNITS: dN
   VALIDMIN: *min_int
   VALIDMAX: *max_int
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 direct_events_attrs: &direct_events_default
   <<: *default
@@ -54,7 +47,16 @@ direct_events_attrs: &direct_events_default
   UNITS: unitless
   VALIDMIN: 0
   VALIDMAX: 10000
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+lo_ialirt_attrs: &lo_ialirt_default
+  <<: *default
+  DISPLAY_TYPE: time_series
+  FILLVAL: 1.0e+31
+  FORMAT: '%lf'
+  LABLAXIS: ratio
+  UNITS: ratio
+  VALIDMAX: 1.0e+31
+  VALIDMIN: 0.0
 
 lo_species_attrs: &lo_species_default
   <<: *default
@@ -84,18 +86,7 @@ lo_angular_attrs: &lo_angular_default
   UNITS: particles / cm2 s sr keV/q
   VALIDMAX: 10000000000.0
   VALIDMIN: 1.000000013351432e-10
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
-
-lo_ialirt_attrs: &lo_ialirt_default
-  <<: *default
-  DISPLAY_TYPE: time_series
-  FILLVAL: 1.0e+31
-  FORMAT: '%lf'
-  LABLAXIS: ratio
-  UNITS: ratio
-  VALIDMAX: 1.0e+31
-  VALIDMIN: 0.0
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
 
 hi_omni_attrs: &hi_omni_default
   <<: *default
@@ -107,7 +98,7 @@ hi_omni_attrs: &hi_omni_default
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
   VALIDMIN: 0
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
 
 hi_sectored_attrs: &hi_sectored_attrs_default
   <<: *default
@@ -121,7 +112,7 @@ hi_sectored_attrs: &hi_sectored_attrs_default
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216
   VALIDMIN: 0
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
 
 energy_attrs: &energy_default
   VAR_TYPE: support_data
@@ -1730,7 +1721,6 @@ hi-omni-c:
   <<: *hi_omni_default
   CATDESC: c (Root 2 spacing)
   FIELDNAM: c
-  DEPEND_0: epoch
   DEPEND_1: energy_c
   LABLAXIS: energy_c_label
 
@@ -1738,7 +1728,6 @@ hi-omni-fe:
   <<: *hi_omni_default
   CATDESC: fe (Root 2 spacing)
   FIELDNAM: fe
-  DEPEND_0: epoch
   DEPEND_1: energy_fe
   LABLAXIS: energy_fe_label
 
@@ -1746,7 +1735,6 @@ hi-omni-h:
   <<: *hi_omni_default
   CATDESC: h (Root 2 spacing)
   FIELDNAM: h
-  DEPEND_0: epoch
   DEPEND_1: energy_h
   LABLAXIS: energy_h_label
 
@@ -1754,7 +1742,6 @@ hi-omni-he3:
   <<: *hi_omni_default
   CATDESC: he3 (Root 2 spacing)
   FIELDNAM: he3
-  DEPEND_0: epoch
   DEPEND_1: energy_he3
   LABLAXIS: energy_he3_label
 
@@ -1763,7 +1750,6 @@ hi-omni-he4:
   <<: *hi_omni_default
   CATDESC: he4 (Root 2 spacing)
   FIELDNAM: he4
-  DEPEND_0: epoch
   DEPEND_1: energy_he4
   LABLAXIS: energy_he4_label
 
@@ -1771,7 +1757,6 @@ hi-omni-junk:
   <<: *hi_omni_default
   CATDESC: junk (Root 2 spacing)
   FIELDNAM: junk
-  DEPEND_0: epoch
   DEPEND_1: energy_junk
   LABLAXIS: energy_junk_label
 
@@ -1779,7 +1764,6 @@ hi-omni-ne_mg_si:
   <<: *hi_omni_default
   CATDESC: ne-mg-si (Root 2 spacing)
   FIELDNAM: ne-mg-si
-  DEPEND_0: epoch
   DEPEND_1: energy_ne_mg_si
   LABLAXIS: energy_ne_mg_si_label
 
@@ -1787,7 +1771,6 @@ hi-omni-o:
   <<: *hi_omni_default
   CATDESC: o (Root 2 spacing)
   FIELDNAM: o
-  DEPEND_0: epoch
   DEPEND_1: energy_o
   LABLAXIS: energy_o_label
 
@@ -1795,7 +1778,6 @@ hi-omni-uh:
   <<: *hi_omni_default
   CATDESC: uh (Root 2 spacing)
   FIELDNAM: uh
-  DEPEND_0: epoch
   DEPEND_1: energy_uh
   LABLAXIS: energy_uh_label
 
