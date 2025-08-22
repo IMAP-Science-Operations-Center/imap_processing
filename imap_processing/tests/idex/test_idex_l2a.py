@@ -275,6 +275,7 @@ def test_analyze_peaks_warning(caplog):
     np.testing.assert_array_equal(area_under_curve, np.zeros(area_under_curve.shape))
 
 
+@pytest.mark.external_test_data
 def test_velocity_and_mass_estimate(ancillary_files):
     """Tests that the velocity and mass estimate function."""
     # Load calibration coefficients from ancillary files

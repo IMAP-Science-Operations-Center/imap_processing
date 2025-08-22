@@ -342,7 +342,12 @@ def calculate_velocity_and_mass(
         )
         v_est = 10**root.root
     except Exception:
-        v_est = 0.0
+        logger.error(
+            "Unable to calculate velocity and mass estimate. "
+            "The root finding failed for power law function. "
+            "Returning nans for the estimate."
+        )
+        return np.nan, np.nan
 
     log_a_y: float = np.log10(yield_params[0])
     yield_val = 10 ** log_smooth_powerlaw(np.log10(v_est), log_a_y, yield_params[1:])
