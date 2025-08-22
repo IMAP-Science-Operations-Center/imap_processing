@@ -154,7 +154,9 @@ def test_ultra_l1b_extendedspin(
 ):
     """Tests that L1b data is created."""
     use_fake_spin_data_for_time(0, 141 * 15)
-    l1b_de_dataset_path = TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207_v999.cdf"
+    l1b_de_dataset_path = (
+        TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207-repoint99999_v999.cdf"
+    )
     l1b_de_dataset = load_cdf(l1b_de_dataset_path)
 
     data_dict = {
@@ -180,7 +182,9 @@ def test_ultra_l1b_extendedspin(
 @pytest.mark.external_test_data
 def test_cdf_extendedspin(use_fake_spin_data_for_time, faux_aux_dataset, rates_dataset):
     use_fake_spin_data_for_time(0, 141 * 15)
-    l1b_de_dataset_path = TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207_v999.cdf"
+    l1b_de_dataset_path = (
+        TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207-repoint99999_v999.cdf"
+    )
     l1b_de_dataset = load_cdf(l1b_de_dataset_path)
 
     data_dict = {
@@ -210,7 +214,9 @@ def test_cdf_extendedspin(use_fake_spin_data_for_time, faux_aux_dataset, rates_d
 def test_cdf_cullingmask(use_fake_spin_data_for_time, faux_aux_dataset, rates_dataset):
     """Tests that CDF file is created and contains same attributes as xarray."""
     use_fake_spin_data_for_time(0, 141 * 15)
-    l1b_de_dataset_path = TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207_v999.cdf"
+    l1b_de_dataset_path = (
+        TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207-repoint99999_v999.cdf"
+    )
     l1b_de_dataset = load_cdf(l1b_de_dataset_path)
 
     data_dict = {
@@ -244,7 +250,9 @@ def test_cdf_cullingmask(use_fake_spin_data_for_time, faux_aux_dataset, rates_da
 def test_cdf_badtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_dataset):
     """Tests that CDF file is created and contains same attributes as xarray."""
     use_fake_spin_data_for_time(0, 141 * 15)
-    l1b_de_dataset_path = TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207_v999.cdf"
+    l1b_de_dataset_path = (
+        TEST_PATH / "imap_ultra_l1b_45sensor-de_20240207-repoint99999_v999"
+    )
     l1b_de_dataset = load_cdf(l1b_de_dataset_path)
 
     data_dict = {

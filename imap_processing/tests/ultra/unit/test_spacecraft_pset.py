@@ -68,6 +68,14 @@ def test_calculate_spacecraft_pset(
             ),
             "energy_spacecraft": (["epoch"], energy_dps_spacecraft),
             "spin_number": (["epoch"], df["Spin"].values),
+            "quality_scattering": (
+                ["epoch"],
+                np.zeros(len(df["Spin"].values), dtype=np.uint16),
+            ),
+            "quality_outliers": (
+                ["epoch"],
+                np.zeros(len(df["Spin"].values), dtype=np.uint16),
+            ),
         },
         coords={
             "epoch": ("epoch", epoch),
@@ -143,6 +151,8 @@ def test_calculate_spacecraft_pset_with_cdf(
         # Made up data for spin_number and energy_bin_geometric_mean
         de_dict["spin_number"] = np.full(len(sc_dps_velocity), 128)
         de_dict["energy_bin_geometric_mean"] = np.zeros(len(sc_dps_velocity))
+        de_dict["quality_scattering"] = np.zeros(len(sc_dps_velocity), dtype=np.uint16)
+        de_dict["quality_outliers"] = np.zeros(len(sc_dps_velocity), dtype=np.uint16)
 
         name = "imap_ultra_l1b_45sensor-de"
         dataset = create_dataset(de_dict, name, "l1b")
