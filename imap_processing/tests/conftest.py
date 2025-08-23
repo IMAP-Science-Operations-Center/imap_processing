@@ -401,8 +401,10 @@ def generate_repoint_data(
         repoint_start_times = np.array(repoint_start_met)
     elif isinstance(repoint_start_met, np.ndarray):
         repoint_start_times = repoint_start_met
+    repoint_start_times = np.atleast_1d(repoint_start_met)
     if repoint_end_met is None:
         repoint_end_met = repoint_start_times + 15 * 60
+
     # Calculate UTC times without spice (accepting ~5 second inaccuracy)
     repoint_start_dt64 = TTJ2000_EPOCH + (repoint_start_times * 1e9).astype(
         "timedelta64[ns]"
