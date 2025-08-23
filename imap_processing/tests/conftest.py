@@ -397,10 +397,6 @@ def generate_repoint_data(
         Repoint dataframe with start and end repoint times provided and incrementing
         repoint_ids starting at 1.
     """
-    if isinstance(repoint_start_met, float):
-        repoint_start_times = np.array(repoint_start_met)
-    elif isinstance(repoint_start_met, np.ndarray):
-        repoint_start_times = repoint_start_met
     repoint_start_times = np.atleast_1d(repoint_start_met)
     if repoint_end_met is None:
         repoint_end_met = repoint_start_times + 15 * 60
