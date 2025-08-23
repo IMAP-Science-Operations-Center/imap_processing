@@ -9,8 +9,7 @@ from imap_processing.lo.l1c.lo_l1c import (
     calculate_exposure_times,
     create_pset_counts,
     filter_goodtimes,
-    get_pointing_times,
-    get_spin_numbers,
+    get_pointing_end_time,
     initialize_pset,
     lo_l1c,
 )
@@ -79,7 +78,7 @@ def l1b_de_spin():
             "avg_spin_durations": ("epoch", [15.2, 15.2, 14.9, 15, 14.9]),
         },
         coords={
-            "epoch": met_to_ttj2000ns(np.arange(511000000, 511000000 + 200, 40) + 901),
+            "epoch": met_to_ttj2000ns(np.arange(511000000, 511000000 + 200, 40) + 902),
         },
     )
     return l1b_de
@@ -140,16 +139,16 @@ def doubles_counts(counts):
 
 
 def test_lo_l1c(
-    l1b_de,
+    l1b_de_spin,
     anc_dependencies,
     use_fake_repoint_data_for_time,
     use_fake_spin_data_for_time,
     repoint_met,
 ):
     # Arrange
-    data = {"imap_lo_l1b_de": l1b_de}
-    use_fake_spin_data_for_time(482300000)
-    use_fake_repoint_data_for_time(np.arange(482300000, 482300000 + 86400 * 5, 86400))
+    data = {"imap_lo_l1b_de": l1b_de_spin}
+    use_fake_spin_data_for_time(511000000)
+    use_fake_repoint_data_for_time(np.arange(511000000, 511000000 + 86400 * 5, 86400))
 
     expected_logical_source = "imap_lo_l1c_pset"
     # Act
@@ -254,39 +253,6 @@ def test_create_doubles_pset_counts(l1b_de, doubles_counts):
     np.testing.assert_array_equal(counts, doubles_counts)
 
 
-def test_get_pointing_times(l1b_de_spin, repoint_met, use_fake_repoint_data_for_time):
-    # Arrange
-    use_fake_repoint_data_for_time(repoint_met)
-
-    expected_pointing_times = (
-        np.array([repoint_met[0] + 900]),
-        np.array([repoint_met[1]]),
-    )
-
-    # Act
-    pointing_times = get_pointing_times(l1b_de_spin["epoch"].values[0])
-
-    # Assert
-    np.testing.assert_array_equal(pointing_times, expected_pointing_times)
-
-
-def test_get_spin_numbers(
-    repoint_met,
-    use_fake_spin_data_for_time,
-):
-    # Arrange
-
-    use_fake_spin_data_for_time(repoint_met[0])
-
-    expected_spin_numbers = (np.array([60]), np.array([5759]))
-
-    # Act
-    spin_numbers = get_spin_numbers(repoint_met[0] + 900, repoint_met[1])
-
-    # Assert
-    np.testing.assert_array_equal(spin_numbers, expected_spin_numbers)
-
-
 def test_calculate_exposure_times(l1b_de):
     # Arrange
     counts = create_pset_counts(l1b_de)
@@ -305,3 +271,18 @@ def test_calculate_exposure_times(l1b_de):
         expected_exposure_times,
         atol=1e-2,
     )
+
+
+def test_get_pointing_end_time(
+    l1b_de_spin,
+    anc_dependencies,
+    use_fake_repoint_data_for_time,
+    use_fake_spin_data_for_time,
+    repoint_met,
+):
+    use_fake_spin_data_for_time(511000000)
+    use_fake_repoint_data_for_time(np.arange(511000000, 511000000 + 86400 * 5, 86400))
+
+    pointing_end_time = get_pointing_end_time(511000900)
+
+    assert pointing_end_time.item() == 511000000 + 86400
