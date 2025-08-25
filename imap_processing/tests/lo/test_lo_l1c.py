@@ -9,7 +9,6 @@ from imap_processing.lo.l1c.lo_l1c import (
     calculate_exposure_times,
     create_pset_counts,
     filter_goodtimes,
-    get_pointing_end_time,
     initialize_pset,
     lo_l1c,
 )
@@ -271,18 +270,3 @@ def test_calculate_exposure_times(l1b_de):
         expected_exposure_times,
         atol=1e-2,
     )
-
-
-def test_get_pointing_end_time(
-    l1b_de_spin,
-    anc_dependencies,
-    use_fake_repoint_data_for_time,
-    use_fake_spin_data_for_time,
-    repoint_met,
-):
-    use_fake_spin_data_for_time(511000000)
-    use_fake_repoint_data_for_time(np.arange(511000000, 511000000 + 86400 * 5, 86400))
-
-    pointing_end_time = get_pointing_end_time(511000900)
-
-    assert pointing_end_time.item() == 511000000 + 86400
