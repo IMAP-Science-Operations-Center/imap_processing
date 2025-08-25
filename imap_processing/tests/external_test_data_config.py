@@ -69,6 +69,13 @@ EXTERNAL_TEST_DATA = [
     ("imap_codice_l1b_lo-sw-priority_20250814211100_v0.0.5.cdf", "codice/data/l1b_validation"),
     ("imap_codice_l1b_lo-sw-species_20250814211100_v0.0.5.cdf", "codice/data/l1b_validation"),
 
+    # L2 Direct Inputs
+    ("imap_codice_l1a_hi-direct-events_20250814211100_v0.0.3.cdf", "codice/data/l2_data/"),
+    ("imap_codice_l1a_lo-direct-events_20250814211100_v0.0.3.cdf", "codice/data/l2_data/"),
+    # L2 Validation data
+    ("imap_codice_l2_hi-direct-events_20250814211100_v0.0.3.cdf", "codice/data/l2_validation/"),
+    ("imap_codice_l2_lo-direct-events_20250814211100_v0.0.3.cdf", "codice/data/l2_validation/"),
+
     # Hi
     ("imap_hi_l1a_45sensor-de_20250415_v999.cdf", "hi/data/l1/"),
     ("imap_hi_l1b_45sensor-de_20250415_v999.cdf", "hi/data/l1/"),

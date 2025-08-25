@@ -13,19 +13,207 @@ import logging
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 
+from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
-from imap_processing.codice.constants import HALF_SPIN_LUT
+from imap_processing.codice.constants import (
+    HALF_SPIN_LUT,
+    HI_ELEVATION_ANGLE,
+    HI_GAIN_MODES,
+    HI_SPIN_ANGLE,
+    HI_SSD_ID_TO_INDEX,
+)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
+def codice_hi_direct_event(l1a_data: xr.Dataset) -> xr.Dataset:
+    """
+    Calculate Hi Direct Event physical quantities.
+
+    Convert the following data variables to physical units using
+    calibration data:
+       - ssd_energy
+       - tof
+       - elevation_angle
+       - spin_angle
+    The other data variables require no changes
+    See section 11.1.2 of algorithm document
+
+    Parameters
+    ----------
+    l1a_data : xarray.Dataset
+        The input dataset containing the raw data variables.
+
+    Returns
+    -------
+    data : xarray.Dataset
+        The dataset with the physical quantities calculated.
+    """
+    # ---------------------------------------------------
+    # Carry these data in L2 without any modification
+    #   Gain
+    #   Multi-Flag
+    #   Spin Number
+    # ---------------------------------------------------
+    l2_dataset = xr.Dataset()
+
+    l2_dataset = l1a_data[["gain", "multi_flag", "spin_number"]].copy(deep=True)
+
+    # ------------------------------------------------------
+    # SSD Energy
+    # ------------------------------------------------------
+    # Read in SSD energy value
+    ssd_energy_file = Path(
+        f"{imap_module_directory}/"
+        "codice/data/imap_codice_l2_hi-ssd-energy-lut_2050523_v001.csv"
+    )
+    ssd_energy_df = pd.read_csv(ssd_energy_file)
+    # ssd_energy shape (n, priority, event_num)
+    l1a_ssd_energy = l1a_data["ssd_energy"].data
+    l1a_ssd_id = l1a_data["ssd_id"].data
+    # 'gain' variable has 0 to 3 where
+    #  0	No energy
+    #  1	Low Gain or LG
+    #  2	Mid Gain or MG
+    #  3	High Gain or HG
+
+    l1a_gain = l1a_data["gain"].data
+    # Now map SSD ID and Gain to column names.
+    # Formula to lookup correct column name is
+    #   SSD_ID * 3 + Gain - 1
+    # Example of column name: SSD 1 - MG
+
+    # Flatten the arrays for vectorized operations
+    flat_ssd_id = l1a_ssd_id.flatten()
+    flat_gain = l1a_gain.flatten()
+
+    # Create mask for valid values
+    #   SSD ID must be <= 15
+    #   Gain must be > 3
+    #   SSD Energy must be > 2047
+    # These variables map to those number in LUT
+    flat_ssd_energy = l1a_ssd_energy.flatten()
+    valid_mask = (flat_ssd_id <= 15) & (flat_gain > 3) & (flat_ssd_energy > 2047)
+
+    # Create arrays to store results
+    l2_ssd_energy = np.full(flat_ssd_id.shape, np.nan, dtype=float)
+
+    # Extract valid SSD IDs and gains
+    valid_ssd_ids = flat_ssd_id[valid_mask]
+    valid_gains = flat_gain[valid_mask]
+
+    # Map valid gains to gain modes using NumPy's vectorized operations
+    gain_modes = np.array([HI_GAIN_MODES.get(g, "No Gain") for g in valid_gains])
+
+    # Create column names for valid entries
+    column_names = np.array(
+        [
+            f"SSD {sid} - {mode}"
+            for sid, mode in zip(valid_ssd_ids, gain_modes, strict=False)
+        ]
+    )
+
+    # Filter for column names that exist in the DataFrame
+    column_exists_mask = np.isin(column_names, ssd_energy_df.columns)
+    valid_indices = np.where(valid_mask)[0][column_exists_mask]
+    valid_column_values = column_names[column_exists_mask]
+    valid_row_values = flat_ssd_energy[valid_indices]
+
+    # Process each valid entry
+    for i, (row_val, col_name) in enumerate(
+        zip(valid_row_values, valid_column_values, strict=False)
+    ):
+        # Get the index in the original flattened array
+        orig_idx = valid_indices[i]
+        # Look up the energy value in the DataFrame
+        energy_value = ssd_energy_df.loc[
+            ssd_energy_df["bin_num"] == row_val, col_name
+        ].iloc[0]
+        # Store the result in the output array
+        l2_ssd_energy[orig_idx] = energy_value
+
+    l2_dataset["ssd_energy"] = (
+        l1a_data["ssd_energy"].dims,
+        l2_ssd_energy.reshape(l1a_ssd_energy.shape),
+    )
+
+    # ------------------------------------
+    # TOF in ns
+    # ------------------------------------
+    # LUT has these column, tof_raw,TOF (ns),E/n (MeV/n)
+    tof_file = Path(
+        f"{imap_module_directory}/"
+        "codice/data/imap_codice_l2_hi-tof-lut_2050523_v001.csv"
+    )
+    tof_df = pd.read_csv(tof_file)
+    # Read LUT column into its variables
+    lut_raw = tof_df["tof_raw"].values
+    lut_tof_ns = tof_df["TOF (ns)"].values
+
+    # L1A TOF data shape (n, 6, event_num)
+    l1a_tof_data = l1a_data["tof"].data
+
+    # Flatten l1a_tof_data for easier look up
+    l1a_tof_data_flat = l1a_tof_data.flatten()
+
+    # Only process valid TOF values (<= 1023):
+    #   * Create a mask for valid TOF values
+    #   * Prepare integer index array with -1 default
+    #   * Look up where each valid TOF using searchsorted
+    valid_mask = l1a_tof_data_flat <= 1023
+    l1a_tof_data_idx = np.full_like(l1a_tof_data_flat, -1, dtype=int)
+    l1a_tof_data_idx[valid_mask] = np.searchsorted(
+        lut_raw, l1a_tof_data_flat[valid_mask]
+    )
+    # If TOF data has value greater than 1023, fill nan
+    # by default
+    tof_ns = np.full_like(l1a_tof_data_flat, np.nan, dtype=float)
+    # Map indices to TOF (ns) data for valid entries
+    tof_ns[valid_mask] = lut_tof_ns[l1a_tof_data_idx[valid_mask]]
+    # Reshape back to original shape
+    tof_ns = tof_ns.reshape(l1a_tof_data.shape)
+
+    # Add to dataset as new variable
+    l2_dataset["tof"] = (l1a_data["tof"].dims, tof_ns)
+
+    # ------------------------
+    # Elevation and Spin Angle
+    # ------------------------
+    # SSD ID is used for finding both elevation and spin angles
+    ssd_id_flat = l1a_ssd_id.flatten()
+
+    # Map SSD ID to index. If bigger than 2047, it's solar anomalies. Use nan as
+    # indicator of solar anomalies
+    ssd_idx = np.array([HI_SSD_ID_TO_INDEX.get(x, np.nan) for x in ssd_id_flat])
+    # Prepare mask for valid indices that are not nan to look up
+    # elevation angle
+    elevation_valid_mask = ~np.isnan(ssd_idx)
+    elevation_angle = np.full_like(ssd_idx, np.nan, dtype=float)
+    elevation_angle[elevation_valid_mask] = HI_ELEVATION_ANGLE[
+        ssd_idx[elevation_valid_mask].astype(int)
+    ]
+    elevation_angle = elevation_angle.reshape(l1a_ssd_id.shape)
+    l2_dataset["elevation_angle"] = (l1a_data["ssd_id"].dims, elevation_angle)
+
+    # Prepare mask for valid indices that are not nan to look up
+    # spin angle
+    spin_valid_mask = ~np.isnan(ssd_idx)
+    spin_angle = np.full_like(ssd_idx, np.nan, dtype=float)
+    spin_angle[spin_valid_mask] = HI_SPIN_ANGLE[ssd_idx[spin_valid_mask].astype(int)]
+    spin_angle = spin_angle.reshape(l1a_ssd_id.shape)
+    l2_dataset["spin_angle"] = (l1a_data["ssd_id"].dims, spin_angle)
+
+    return l2_dataset
+
+
 def process_codice_l2(file_path: Path) -> xr.Dataset:
     """
-    Will process CoDICE l1 data to create l2 data products.
+    Process L1A Direct Events to L2.
 
     Parameters
     ----------
@@ -86,7 +274,7 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
         # These converted variables are *in addition* to the existing L1 variables
         # The other data variables require no changes
         # See section 11.1.2 of algorithm document
-        pass
+        l2_dataset = codice_hi_direct_event(l2_dataset)
 
     elif dataset_name == "imap_codice_l2_hi-sectored":
         # Convert the sectored count rates using equation described in section
@@ -139,7 +327,7 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
         # equation described in section 11.2.4 of algorithm document.
         pass
 
-    logger.info(f"\nFinal data product:\n{l2_dataset}\n")
+    # logger.info(f"\nFinal data product:\n{l2_dataset}\n")
 
     return l2_dataset
 

@@ -2259,3 +2259,66 @@ HALF_SPIN_LUT = {
     30: [116, 117, 118, 119, 120, 121],
     31: [122, 123, 124, 125, 126, 127],
 }
+
+HI_SSD_INDEX = np.arange(12, dtype=int)
+HI_SSD_ID = np.array([0, 1, 3, 4, 5, 7, 8, 9, 11, 12, 13, 15], dtype=int)
+# Map SSD ID to INDEX that will used in L2 processing.
+# For Example,
+#   {
+#       np.int64(0): 0,
+#       np.int64(1): 1,
+#       np.int64(3): 2,
+#       np.int64(4): 3,
+#       np.int64(5): 4,
+#       np.int64(7): 5,
+#       np.int64(8): 6,
+#       np.int64(9): 7,
+#       np.int64(11): 8,
+#       np.int64(12): 9,
+#       np.int64(13): 10,
+#       np.int64(15): 11
+#   }
+HI_SSD_ID_TO_INDEX = {sid: i for i, sid in enumerate(HI_SSD_ID)}
+
+HI_SPIN_ANGLE = np.array(
+    [
+        277.50,
+        236.61,
+        221.19,
+        217.50,
+        221.19,
+        236.61,
+        277.50,
+        318.39,
+        333.81,
+        337.50,
+        333.81,
+        318.39,
+    ],
+    dtype=float,
+)
+
+HI_ELEVATION_ANGLE = np.array(
+    [
+        150.0,
+        138.6,
+        115.7,
+        90.0,
+        64.3,
+        41.4,
+        30.0,
+        41.4,
+        64.3,
+        90.0,
+        115.7,
+        138.6,
+    ],
+    dtype=float,
+)
+
+HI_GAIN_MODES = {
+    0: "No Gain",
+    1: "LG",
+    2: "MG",
+    3: "HG",
+}
