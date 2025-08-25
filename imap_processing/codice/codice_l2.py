@@ -59,10 +59,25 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
     l2_dataset.attrs = cdf_attrs.get_global_attributes(dataset_name)
 
     # Set the variable attributes
-    for variable_name in l2_dataset:
-        l2_dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
-            variable_name, check_schema=False
-        )
+    for variable_name in l2_dataset.data_vars.keys():
+        try:
+            l2_dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
+                variable_name, check_schema=False
+            )
+        except KeyError:
+            # Some variables may have a product descriptor prefix in the
+            # cdf attributes key if they are common to multiple products.
+            descriptor = dataset_name.split("imap_codice_l2_")[-1]
+            cdf_attrs_key = f"{descriptor}-{variable_name}"
+            try:
+                l2_dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
+                    f"{cdf_attrs_key}", check_schema=False
+                )
+            except KeyError:
+                logger.error(
+                    f"Field '{variable_name}' and '{cdf_attrs_key}' not found in "
+                    f"attribute manager."
+                )
 
     if dataset_name in [
         "imap_codice_l2_hi-counters-singles",
