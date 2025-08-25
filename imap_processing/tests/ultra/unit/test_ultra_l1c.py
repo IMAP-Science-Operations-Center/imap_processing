@@ -139,6 +139,7 @@ def test_ultra_l1c_error(mock_data_l1b_dict):
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
 def test_calculate_spacecraft_pset_with_cdf(
+    random_spin_data,
     ancillary_files,
     deadtime_datasets,
     imap_ena_sim_metakernel,

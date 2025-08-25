@@ -1,5 +1,7 @@
 """Contains tools for lookup tables for l1b."""
 
+import logging
+
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
@@ -8,6 +10,8 @@ from numpy.typing import NDArray
 
 from imap_processing.quality_flags import ImapDEOutliersUltraFlags
 from imap_processing.ultra.constants import UltraConstants
+
+logger = logging.getLogger(__name__)
 
 
 def get_y_adjust(dy_lut: np.ndarray, ancillary_files: dict) -> npt.NDArray:
@@ -393,10 +397,12 @@ def mask_below_fwhm_scattering_threshold(
             for energy_range, threshold in scattering_thresholds.items()
             if energy_range[0] <= energy < energy_range[1]
         )
-    except StopIteration as e:
-        raise ValueError(
-            f"Energy {energy} keV is out of bounds for scattering thresholds."
-        ) from e
+    except StopIteration:
+        logger.warning(
+            f"Energy {energy} keV is out of bounds for scattering thresholds. Using "
+            f"zero for as threshold."
+        )
+        threshold = 0
     # Combine conditions for both theta and phi
     return np.logical_and(fwhm_theta <= threshold, fwhm_phi <= threshold)
 
