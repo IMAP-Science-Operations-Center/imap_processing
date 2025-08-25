@@ -256,7 +256,7 @@ def test_create_doubles_pset_counts(l1b_de, doubles_counts):
 def test_calculate_exposure_times(l1b_de):
     # Arrange
     counts = create_pset_counts(l1b_de)
-    expected_exposure_times = np.full((1, 7, 3600, 40), np.nan)
+    expected_exposure_times = np.full(PSET_SHAPE, np.nan)
     # Average of the exposure times for each bin
     expected_exposure_times[0, 1, 20, 20] = 4 * np.mean([15.2, 14.9]) / 3600
     expected_exposure_times[0, 4, 2000, 20] = 4 * 15 / 3600
