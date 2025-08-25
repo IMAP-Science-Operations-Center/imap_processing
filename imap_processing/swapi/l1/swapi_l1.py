@@ -470,9 +470,20 @@ def process_swapi_science(
     scem_compression_flags = process_sweep_data(good_sweep_sci, "scem_rng_st")
     coin_compression_flags = process_sweep_data(good_sweep_sci, "coin_rng_st")
 
-    swp_pcem_counts = decompress_count(raw_pcem_count, pcem_compression_flags)
-    swp_scem_counts = decompress_count(raw_scem_count, scem_compression_flags)
-    swp_coin_counts = decompress_count(raw_coin_count, coin_compression_flags)
+    swp_pcem_counts = decompress_count(raw_pcem_count, pcem_compression_flags).astype(
+        np.float32
+    )
+    swp_scem_counts = decompress_count(raw_scem_count, scem_compression_flags).astype(
+        np.float32
+    )
+    swp_coin_counts = decompress_count(raw_coin_count, coin_compression_flags).astype(
+        np.float32
+    )
+    # Fill first index of 72 steps with nan value per
+    # SWAPI team's instruction. nan helps with plotting.
+    swp_pcem_counts[:, 0] = np.nan
+    swp_scem_counts[:, 0] = np.nan
+    swp_coin_counts[:, 0] = np.nan
 
     # ====================================================
     # Load the CDF attributes
@@ -600,17 +611,17 @@ def process_swapi_science(
     )
 
     dataset["swp_pcem_counts"] = xr.DataArray(
-        np.array(swp_pcem_counts, dtype=np.uint16),
+        np.array(swp_pcem_counts, dtype=np.float32),
         dims=["epoch", "esa_step"],
         attrs=cdf_manager.get_variable_attributes("pcem_counts"),
     )
     dataset["swp_scem_counts"] = xr.DataArray(
-        np.array(swp_scem_counts, dtype=np.uint16),
+        np.array(swp_scem_counts, dtype=np.float32),
         dims=["epoch", "esa_step"],
         attrs=cdf_manager.get_variable_attributes("scem_counts"),
     )
     dataset["swp_coin_counts"] = xr.DataArray(
-        np.array(swp_coin_counts, dtype=np.uint16),
+        np.array(swp_coin_counts, dtype=np.float32),
         dims=["epoch", "esa_step"],
         attrs=cdf_manager.get_variable_attributes("coin_counts"),
     )

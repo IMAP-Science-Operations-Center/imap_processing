@@ -10,7 +10,7 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.swapi.l1.swapi_l1 import swapi_l1
 from imap_processing.swapi.l2.swapi_l2 import (
-    TIME_PER_BIN,
+    SWAPI_LIVETIME,
     solve_full_sweep_energy,
     swapi_l2,
 )
@@ -123,7 +123,7 @@ def test_swapi_l2_cdf(
     # Test uncertainty variables are as expected
     np.testing.assert_array_equal(
         l2_dataset["swp_pcem_rate_stat_uncert_plus"],
-        l1_dataset["swp_pcem_counts_stat_uncert_plus"] / TIME_PER_BIN,
+        l1_dataset["swp_pcem_counts_stat_uncert_plus"] / SWAPI_LIVETIME,
     )
     # Since L2 data's date is before any date in ESA unit conversion table,
     # check that it returns nan in first 63 energy steps
