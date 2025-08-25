@@ -18,9 +18,10 @@ max_epoch: &max_epoch 3155630469184000000
 # TODO: Complete SPASE. Used HIT as reference for intensity attributes
 # TODO: Update FORMAT to use fortran format
 # TODO: Review units with CoDICE
-# TODO: Review LABLAXIS with CoDICE. Diff. Intensity vs Diff. # Flux
-# TODO: Review FILLVAL with CoDICE. lo-ialirt has 1.0e+31, but should it be negative?
-# TODO: Review VALIDMIN with CoDICE (i.e. VALIDMIN: 0.05000000074505806 ??)
+# TODO: Review LABLAXIS with CoDICE. (Diff. Intensity vs Diff. # Flux)
+# TODO: Review FILLVAL with CoDICE. (lo-ialirt has 1.0e+31, but should it be negative?)
+# TODO: Review VALIDMIN with CoDICE (VALIDMIN: 0.05000000074505806 ??)
+# TODO: Update direct events attributes - products have new structure
 
 
 # <=== Defaults ===>
@@ -147,7 +148,7 @@ spin_sector_index_attrs: &spin_sector_index_default
   CATDESC: Spin Sector Index
   FIELDNAM: Spin Sector Index
   FORMAT: '%d'
-  LABLAXIS: ' '
+  LABLAXIS: Spin Sector Index
   SCALETYP: linear
   UNITS: ' '
   VALIDMAX: 1
@@ -163,7 +164,7 @@ event_num:
   FORMAT: I5
   LABLAXIS: Event Number
   SCALETYP: linear
-  UNITS: " "
+  UNITS: ' '
   VALIDMIN: 0
   VALIDMAX: 10000
   VAR_TYPE: support_data
@@ -171,10 +172,10 @@ event_num:
 
 epoch_delta_minus:
   CATDESC: Time from acquisition start to acquisition center
-  FIELDNAM: epoch_delta_minus
+  FIELDNAM: epoch delta minus
   FILLVAL: *int_fillval
   FORMAT: I18
-  LABLAXIS: epoch_delta_minus
+  LABLAXIS: Epoch Delta Minus
   SCALETYP: linear
   UNITS: ns
   VALIDMIN: *min_int
@@ -183,10 +184,10 @@ epoch_delta_minus:
 
 epoch_delta_plus:
   CATDESC: Time from acquisition center to acquisition end
-  FIELDNAM: epoch_delta_plus
+  FIELDNAM: epoch delta plus
   FILLVAL: *int_fillval
   FORMAT: I18
-  LABLAXIS: epoch_delta_plus
+  LABLAXIS: Epoch Delta Plus
   SCALETYP: linear
   UNITS: ns
   VALIDMIN: *min_int
@@ -1587,7 +1588,7 @@ hi-ialirt-energy_h_plus:
 hi-ialirt-h:
   <<: *default
   CATDESC: h (x2 spacing)
-  FIELDNAM: h
+  FIELDNAM: h Diff. Intensity
   DEPEND_1: energy_h
   DEPEND_2: ssd_index
   DEPEND_3: spin_sector_index
@@ -1596,7 +1597,6 @@ hi-ialirt-h:
   LABL_PTR_3: spin_sector_index_label
   DISPLAY_TYPE: time_series
   FILLVAL: 4294967294
-  LABLAXIS: Diff. Intensity
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216
   VALIDMIN: 0
@@ -1722,28 +1722,28 @@ hi-omni-c:
   CATDESC: c (Root 2 spacing)
   FIELDNAM: c
   DEPEND_1: energy_c
-  LABLAXIS: energy_c_label
+  LABL_PTR_1: energy_c_label
 
 hi-omni-fe:
   <<: *hi_omni_default
   CATDESC: fe (Root 2 spacing)
   FIELDNAM: fe
   DEPEND_1: energy_fe
-  LABLAXIS: energy_fe_label
+  LABL_PTR_1: energy_fe_label
 
 hi-omni-h:
   <<: *hi_omni_default
   CATDESC: h (Root 2 spacing)
   FIELDNAM: h
   DEPEND_1: energy_h
-  LABLAXIS: energy_h_label
+  LABL_PTR_1: energy_h_label
 
 hi-omni-he3:
   <<: *hi_omni_default
   CATDESC: he3 (Root 2 spacing)
   FIELDNAM: he3
   DEPEND_1: energy_he3
-  LABLAXIS: energy_he3_label
+  LABL_PTR_1: energy_he3_label
 
 
 hi-omni-he4:
@@ -1751,35 +1751,35 @@ hi-omni-he4:
   CATDESC: he4 (Root 2 spacing)
   FIELDNAM: he4
   DEPEND_1: energy_he4
-  LABLAXIS: energy_he4_label
+  LABL_PTR_1: energy_he4_label
 
 hi-omni-junk:
   <<: *hi_omni_default
   CATDESC: junk (Root 2 spacing)
   FIELDNAM: junk
   DEPEND_1: energy_junk
-  LABLAXIS: energy_junk_label
+  LABL_PTR_1: energy_junk_label
 
 hi-omni-ne_mg_si:
   <<: *hi_omni_default
   CATDESC: ne-mg-si (Root 2 spacing)
   FIELDNAM: ne-mg-si
   DEPEND_1: energy_ne_mg_si
-  LABLAXIS: energy_ne_mg_si_label
+  LABL_PTR_1: energy_ne_mg_si_label
 
 hi-omni-o:
   <<: *hi_omni_default
   CATDESC: o (Root 2 spacing)
   FIELDNAM: o
   DEPEND_1: energy_o
-  LABLAXIS: energy_o_label
+  LABL_PTR_1: energy_o_label
 
 hi-omni-uh:
   <<: *hi_omni_default
   CATDESC: uh (Root 2 spacing)
   FIELDNAM: uh
   DEPEND_1: energy_uh
-  LABLAXIS: energy_uh_label
+  LABL_PTR_1: energy_uh_label
 
 # hi-sectored Attributes
 hi-sectored-cno:
