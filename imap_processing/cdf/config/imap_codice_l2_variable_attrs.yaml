@@ -69,9 +69,10 @@ lo_species_attrs: &lo_species_default
   FORMAT: '%f'
   SCALETYP: log
   UNITS: particles / cm2 s sr keV/q
+  FILLVAL: *real_fillval
   VALIDMAX: 10000000000.0
   VALIDMIN: 1.000000013351432e-10
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
+  DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
 
 lo_angular_attrs: &lo_angular_default
   <<: *default
@@ -85,6 +86,7 @@ lo_angular_attrs: &lo_angular_default
   FORMAT: '%f'
   SCALETYP: log
   UNITS: particles / cm2 s sr keV/q
+  FILLVAL: *real_fillval
   VALIDMAX: 10000000000.0
   VALIDMIN: 1.000000013351432e-10
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
@@ -92,13 +94,13 @@ lo_angular_attrs: &lo_angular_default
 hi_omni_attrs: &hi_omni_default
   <<: *default
   DISPLAY_TYPE: time_series
-  FILLVAL: *uint32_fillval
   FORMAT: '%f'
   LABLAXIS: Diff. Intensity
   SCALETYP: linear
   UNITS: '# / cm2 s sr MeV/nuc'
+  FILLVAL: *real_fillval
   VALIDMAX: 16777216.0
-  VALIDMIN: 0
+  VALIDMIN: 0.0
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:NumberFlux,Qualifier:Differential
 
 hi_sectored_attrs: &hi_sectored_attrs_default
@@ -117,12 +119,13 @@ hi_sectored_attrs: &hi_sectored_attrs_default
 
 energy_attrs: &energy_default
   VAR_TYPE: support_data
-  CATDESC: Geometric Mean of the Energy
+  CATDESC: Geometric mean energy per nucleon
   FIELDNAM: Energy Table
   LABLAXIS: Energy
   SCALETYP: log
   UNITS: MeV/nuc
   FORMAT: '%f'
+  FILLVAL: *real_fillval
   VALIDMAX: 200.0
   VALIDMIN: 0.05000000074505806
   DICT_KEY: SPASE>Particle>ParticleType:Ion,ParticleQuantity:EnergyPerCharge,Qualifier:Characteristic
@@ -137,7 +140,7 @@ spin_angles_attrs: &spin_angles_default
   FIELDNAM: Spin Angle
   SCALETYP: linear
   UNITS: degrees
-  FILLVAL: *int_fillval
+  FILLVAL: *real_fillval
   VALIDMAX: 360.0
   VALIDMIN: 0.0
   FORMAT: '%f'
