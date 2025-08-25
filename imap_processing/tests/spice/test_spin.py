@@ -279,11 +279,14 @@ def test_get_spin_table_merge(tmp_path, use_test_spin_data_csv):
         SpiceFrame.IMAP_MAG,
     ],
 )
-def test_get_instrument_spin_phase(instrument, fake_spin_data):
+def test_get_instrument_spin_phase(
+    instrument, fake_spin_data, furnish_kernels, spice_test_data_path
+):
     """Test coverage for get_instrument_spin_phase()"""
     met_times = np.array([7.5, 30, 61, 75, 106, 121, 136])
     expected_nan_mask = np.array([False, False, True, False, True, True, False])
-    inst_phase = spin.get_instrument_spin_phase(met_times, instrument)
+    with furnish_kernels([spice_test_data_path / "imap_wkcp.tf"]):
+        inst_phase = spin.get_instrument_spin_phase(met_times, instrument)
     assert inst_phase.shape == met_times.shape
     np.testing.assert_array_equal(np.isnan(inst_phase), expected_nan_mask)
     assert np.logical_and(
