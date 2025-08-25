@@ -15,7 +15,7 @@ max_uint24: &max_uint24 8388607
 max_uint32: &max_uint32 4294967295
 max_epoch: &max_epoch 3155630469184000000
 
-# TODO: Complete SPASE. Used HIT as reference for intensity attributes
+# TODO: Complete SPASE. 'Other' used temporarily.
 # TODO: Update FORMAT to use fortran format
 # TODO: Review units with CoDICE
 # TODO: Review LABLAXIS with CoDICE. (Diff. Intensity vs Diff. # Flux)
