@@ -212,7 +212,7 @@ def interpolate_spin_data(query_met_times: float | npt.NDArray) -> pd.DataFrame:
     return out_df
 
 
-def get_spin_number(query_met_time: float) -> int:
+def get_spin_number(met_time: float) -> int:
     """
     Get the spin number for the input query time.
 
@@ -221,7 +221,7 @@ def get_spin_number(query_met_time: float) -> int:
 
     Parameters
     ----------
-    query_met_time : float
+    met_time : float
         Query time in Mission Elapsed Time (MET).
 
     Returns
@@ -229,7 +229,7 @@ def get_spin_number(query_met_time: float) -> int:
     spin_number : int
         Spin number for the input query time.
     """
-    spin_df = interpolate_spin_data(query_met_time)
+    spin_df = interpolate_spin_data(met_time)
     return spin_df["spin_number"].item()
 
 

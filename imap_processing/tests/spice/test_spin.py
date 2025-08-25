@@ -97,13 +97,16 @@ def test_interpolate_spin_data(query_met_times, expected, fake_spin_data):
         )
 
 
-def test_get_spin_number(fake_spin_data):
+@pytest.mark.parametrize(
+    "met_time,spin_number_expected", [(0, 0), (14.9, 0), (15.1, 1), (32, 2)]
+)
+def test_get_spin_number(fake_spin_data, met_time, spin_number_expected):
     """Test get_spin_number() with generated spin data."""
     # Call the function
-    spin_number = spin.get_spin_number(query_met_time=15.1)
+    spin_number = spin.get_spin_number(met_time=met_time)
 
     # Test the value
-    assert spin_number == 1
+    assert spin_number == spin_number_expected
 
 
 @pytest.mark.parametrize(
