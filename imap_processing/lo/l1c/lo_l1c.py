@@ -9,7 +9,7 @@ import xarray as xr
 from scipy.stats import binned_statistic_dd
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.spice.repoint import get_pointing_start_time, get_repoint_data
+from imap_processing.spice.repoint import get_pointing_times
 from imap_processing.spice.spin import get_spin_number
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_met
 
@@ -59,21 +59,21 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         full_counts = create_pset_counts(l1b_goodtimes_only)
 
         # Set the pointing start and end times based on the first epoch
-        pointing_start_met = get_pointing_start_time(
+        pointing_start_met, pointing_end_met = get_pointing_times(
             ttj2000ns_to_met(l1b_goodtimes_only["epoch"][0].item())
         )
+
         pset["pointing_start_met"] = xr.DataArray(
             np.array([pointing_start_met]),
             dims="epoch",
             # attrs=attr_mgr.get_variable_attributes("pointing_start_met)"
         )
-
-        # set the pointing end met as the start of the next repointing
-        pset["pointing_end_met"] = get_pointing_end_time(
-            pset["pointing_start_met"].item()
+        pset["pointing_end_met"] = xr.DataArray(
+            np.array([pointing_end_met]),
+            dims="epoch",
+            # attrs=attr_mgr.get_variable_attributes("pointing_start_met)"
         )
 
-        # pset["pointing_end_met"] = xr.DataArray(
         # Set the epoch to the start of the pointing
         pset["epoch"] = xr.DataArray(
             met_to_ttj2000ns(pset["pointing_start_met"].values),
@@ -82,12 +82,12 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
 
         # Get the start and end spin numbers based on the pointing start and end MET
         pset["start_spin_number"] = xr.DataArray(
-            np.array([get_spin_number(pset["pointing_start_met"].item())]),
+            [get_spin_number(pset["pointing_start_met"].item())],
             dims="epoch",
             # attrs=attr_mgr.get_variable_attributes("start_spin_number"),
         )
         pset["end_spin_number"] = xr.DataArray(
-            np.array([get_spin_number(pset["pointing_end_met"].item())]),
+            [get_spin_number(pset["pointing_end_met"].item())],
             dims="epoch",
             # attrs=attr_mgr.get_variable_attributes("end_spin_number"),
         )
@@ -340,34 +340,6 @@ def calculate_exposure_times(counts: xr.DataArray, l1b_de: xr.Dataset) -> xr.Dat
     )
 
     return exposure_time
-
-
-def get_pointing_end_time(pointing_start_met: float) -> xr.DataArray:
-    """
-    Get the end of the current pointing in MET.
-
-    The pointing end MET time is set to the start of the next repointing.
-
-    Parameters
-    ----------
-    pointing_start_met : xr.DataArray
-        The start time of the pointing in MET.
-
-    Returns
-    -------
-    pointing_end_met : xr.DataArray
-        The pointing end MET time.
-    """
-    repoint_df = get_repoint_data()
-    pointing_idx = repoint_df.index[
-        repoint_df["repoint_end_met"] == pointing_start_met
-    ][0]
-    pointing_end_met = xr.DataArray(
-        np.array([repoint_df["repoint_start_met"].iloc[pointing_idx + 1]]),
-        dims="epoch",
-        # attrs=attr_mgr.get_variable_attributes("pointing_end_met")
-    )
-    return pointing_end_met
 
 
 def create_datasets(
