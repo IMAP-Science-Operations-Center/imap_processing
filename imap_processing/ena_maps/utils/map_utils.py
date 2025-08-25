@@ -44,10 +44,19 @@ def bin_single_array_at_indices(
     -------
     NDArray
         Binned values on the projection grid.
+
+    Raises
+    ------
+    ValueError
+        If the input and projection indices are not 1D arrays
+        with the same number of elements.
+    NotImplementedError
+        If the input value_array has dimensionality less than 1.
     """
     if input_indices is None:
         input_indices = np.arange(value_array.shape[-1])
 
+    # Both sets of indices must be 1D with the same number of elements
     if input_indices.ndim != 1 or projection_indices.ndim != 1:
         raise ValueError(
             "Indices must be 1D arrays. "
@@ -71,6 +80,7 @@ def bin_single_array_at_indices(
             minlength=num_projection_indices,
         )
     elif value_array.ndim >= 2:
+        # Apply bincount to each row independently
         binned_values = np.apply_along_axis(
             lambda x: np.bincount(
                 projection_indices[~np.isnan(x[..., input_indices])],

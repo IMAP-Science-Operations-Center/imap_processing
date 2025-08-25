@@ -59,6 +59,7 @@ REQUIRED_L1C_VARIABLES_PULL = [
     "sensitivity",
     "background_rates",
     "obs_date",
+    "spacecraft_pset_quality_flags",
 ]
 
 # These variables are projected to the map as the mean of pointing set pixels value,
@@ -351,6 +352,9 @@ def generate_ultra_healpix_skymap(
             value_keys=output_map_structure.values_to_pull_project,
             index_match_method=ena_maps.IndexMatchMethod.PULL,
         )
+
+    pixel_mask = ~np.isnan(skymap.data_1d["spacecraft_pset_quality_flags"])
+    pixel_mask_1d = pixel_mask.squeeze("epoch")
 
     # Subsequent processing for weighted quantities at SkyMap level
     skymap.data_1d[VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE] /= (
