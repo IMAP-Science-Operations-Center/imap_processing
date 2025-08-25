@@ -1,5 +1,7 @@
 """Pytest plugin module for test data paths."""
 
+from unittest import mock
+
 import numpy as np
 import pytest
 import xarray as xr
@@ -533,6 +535,8 @@ def ancillary_files():
         "l1c-90sensor-efficiencies": path
         / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
         "l1c-90sensor-gf": path / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
+        "l1c-45sensor-nominal-for-lookup": path
+        / "imap_ultra_l1c-45sensor-nominal-for-lookup_20250101_v000.csv",
     }
 
 
@@ -568,3 +572,13 @@ def deadtime_datasets():
         coords={"epoch": ("epoch", np.arange(0, epoch, epoch / len(modes)))},
     )
     return {"rates": test_l1a_rates_dataset, "params": test_l1a_params_dataset}
+
+
+@pytest.fixture
+def random_spin_data():
+    """Fixture for random spin data."""
+    with mock.patch(
+        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_spacecraft_spin_phase"
+    ) as mock_spin_phases:
+        mock_spin_phases.side_effect = lambda time: np.random.random(time.shape)
+        yield

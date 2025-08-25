@@ -14,6 +14,7 @@ from imap_processing.ultra.l1b.lookup_utils import (
     get_energy_norm,
     get_geometric_factor,
     get_image_params,
+    get_nominal_for_by_spin_phase,
     get_norm,
     get_ph_corrected,
     get_scattering_coefficients,
@@ -192,6 +193,20 @@ def test_get_scattering_coefficients(ancillary_files):
     np.testing.assert_array_equal(phi_coeffs[:, 0], np.array([np.nan, 168.3100]))
     # Test b phi coefficients
     np.testing.assert_array_equal(phi_coeffs[:, 1], np.array([np.nan, -1.0752]))
+
+
+@pytest.mark.external_test_data
+def test_get_nominal_for_by_spin_phase(ancillary_files):
+    """Tests function get_nominal_fov_by_spin_phase."""
+    for_inds, theta_and_phi, ra_and_dec = get_nominal_for_by_spin_phase(
+        ancillary_files, 45
+    )
+    np.testing.assert_array_equal(for_inds.shape, (3072, 15000))
+    np.testing.assert_array_equal(theta_and_phi.shape, (3072, 2))
+    np.testing.assert_array_equal(ra_and_dec.shape, (3072, 2))
+
+    # Assert fov_inds contains only 0s and 1s
+    assert np.all(np.isin(for_inds, [0, 1]))
 
 
 @pytest.mark.external_test_data

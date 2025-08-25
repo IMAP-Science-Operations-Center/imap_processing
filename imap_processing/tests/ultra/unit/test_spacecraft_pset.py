@@ -25,6 +25,7 @@ TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
 def test_calculate_spacecraft_pset(
+    random_spin_data,
     deadtime_datasets,
     imap_ena_sim_metakernel,
     use_fake_spin_data_for_time,
@@ -82,6 +83,7 @@ def test_calculate_spacecraft_pset(
         deadtime_datasets["params"],
         "imap_ultra_l1c_45sensor-spacecraftpset",
         ancillary_files,
+        45,
     )
     assert "pixel_index" in spacecraft_pset.coords
     assert "epoch" in spacecraft_pset.coords
@@ -91,6 +93,7 @@ def test_calculate_spacecraft_pset(
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
 def test_calculate_spacecraft_pset_with_cdf(
+    random_spin_data,
     ancillary_files,
     deadtime_datasets,
     imap_ena_sim_metakernel,
@@ -152,6 +155,7 @@ def test_calculate_spacecraft_pset_with_cdf(
             deadtime_datasets["params"],
             "imap_ultra_l1c_45sensor-spacecraftpset",
             ancillary_files,
+            45,
         )
         # TODO: validate with output histogram data once we have it in healpix.
         assert (

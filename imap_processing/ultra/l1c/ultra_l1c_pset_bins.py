@@ -7,7 +7,7 @@ import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
 from scipy import interpolate
-from scipy.interpolate import PchipInterpolator, interp1d
+from scipy.interpolate import interp1d
 
 from imap_processing.spice.geometry import (
     SpiceFrame,
@@ -16,10 +16,17 @@ from imap_processing.spice.geometry import (
 )
 from imap_processing.spice.spin import get_spacecraft_spin_phase, get_spin_angle
 from imap_processing.ultra.constants import UltraConstants
-from imap_processing.ultra.l1b.lookup_utils import get_image_params
+from imap_processing.ultra.l1b.lookup_utils import (
+    get_geometric_factor,
+    get_image_params,
+)
 from imap_processing.ultra.l1b.ultra_l1b_culling import (
     get_pulses_per_spin,
     get_spin_and_duration,
+)
+from imap_processing.ultra.l1b.ultra_l1b_extended import (
+    get_efficiency,
+    get_efficiency_interpolator,
 )
 
 # TODO: add species binning.
@@ -271,27 +278,28 @@ def get_sectored_rates(rates_ds: xr.Dataset, params_ds: xr.Dataset) -> xr.Datase
     return rates_ds.isel(epoch=sector_mode_mask)
 
 
-def get_deadtime_interpolator(
-    deadtime_ratios: xr.DataArray, timestamps: xr.DataArray
-) -> PchipInterpolator:
+def get_deadtime_ratios_by_spin_phase(
+    sectored_rates: xr.Dataset,
+) -> np.ndarray:
     """
-    Create PCHIP function for dead time ratio vs spin phase.
+    Calculate nominal deadtime ratios at every spin phase step (1ms res).
 
     Parameters
     ----------
-    deadtime_ratios : xarray.DataArray
-        Dead time ratios for each sector.
-    timestamps : xarray.DataArray
-        Epoch values corresponding to the dead time ratios.
+    sectored_rates : xarray.Dataset
+        Dataset containing sector mode image rates data.
 
     Returns
     -------
-    scipy.interpolate.PchipInterpolator
-        Interpolating function for dead time ratios.
+    numpy.ndarray
+        Nominal deadtime ratios at every spin phase step (1ms res).
     """
+    deadtime_ratios = get_deadtime_ratios(sectored_rates)
     # Get the spin phase at the start of each sector rate measurement
     spin_phases = np.asarray(
-        get_spin_angle(get_spacecraft_spin_phase(np.array(timestamps)), degrees=True)
+        get_spin_angle(
+            get_spacecraft_spin_phase(np.array(sectored_rates.epoch.data)), degrees=True
+        )
     )
     # Assume the sectored rate data is evenly spaced in time, and find the middle spin
     # phase value for each sector.
@@ -323,16 +331,75 @@ def get_deadtime_interpolator(
         raise ValueError(
             "Dead time ratios contain NaN values, cannot create interpolator."
         )
-    # Return a PCHIP interpolator for the dead time ratios
-    return interpolate.PchipInterpolator(
+    interpolator = interpolate.PchipInterpolator(
         deadtime_medians["spin_phase"].values, deadtime_medians["deadtime_ratio"].values
     )
+    # Calculate the nominal spin phases at 1 ms resolution and query the pchip
+    # interpolator to get the deadtime ratios.
+    steps = 15 * 1000  # 15 seconds at 1 ms resolution
+    nominal_spin_phases_1ms_res = np.arange(0, 360, 360 / steps)
+    return interpolator(nominal_spin_phases_1ms_res)
+
+
+def apply_deadtime_correction(
+    exposure_pointing: pandas.DataFrame,
+    deadtime_ratios: np.ndarray,
+    pixels_below_scattering: list,
+) -> np.ndarray:
+    """
+    Adjust the exposure time at each pixel to account for dead time.
+
+    Parameters
+    ----------
+    exposure_pointing : pandas.DataFrame
+        Exposure data.
+    deadtime_ratios : PchipInterpolator
+        Interpolating function for dead time ratios.
+    pixels_below_scattering : list
+        A Nested list of arrays indicating pixels within the scattering threshold.
+        The outer list indicates spin phase steps, the middle list indicates energy
+        bins, and the inner arrays contain indices indicating pixels that are below
+        the FWHM scattering threshold.
+
+    Returns
+    -------
+    exposure_pointing_adjusted : np.ndarray
+        Adjusted exposure times accounting for dead time.
+    """
+    # Get energy bin geometric means
+    energy_bin_geometric_means = build_energy_bins()[2]
+    # Exposure time should now be of shape (npix, energy)
+    exposure_pointing = np.repeat(
+        exposure_pointing.to_numpy()[np.newaxis, :],
+        len(energy_bin_geometric_means),
+        axis=0,
+    )
+    # nominal spin phase step.
+    nominal_ms_step = 15 / len(pixels_below_scattering)  # time step
+    # Query the dead-time ratio and apply the nominal exposure time to pixels in the FOR
+    # and below the scattering threshold
+    # Loop through the spin phase steps. This is spinning the spacecraft by nominal
+    # 1 ms steps in the despun frame.
+    for i, pixels_at_spin in enumerate(pixels_below_scattering):
+        # Loop through energy bins
+        for energy_bin_idx in range(len(energy_bin_geometric_means)):
+            pixels_at_energy_and_spin = pixels_at_spin[energy_bin_idx]
+            if pixels_at_energy_and_spin.size == 0:
+                continue
+            # Apply the nominal exposure time (1 ms) scaled by the deadtime ratio to
+            # every pixel in the FOR, that is below the FWHM scattering threshold,
+            exposure_pointing[energy_bin_idx, pixels_at_energy_and_spin] += (
+                nominal_ms_step * deadtime_ratios[i]
+            )
+
+    return exposure_pointing
 
 
 def get_spacecraft_exposure_times(
     constant_exposure: pandas.DataFrame,
     rates_dataset: xr.Dataset,
     params_dataset: xr.Dataset,
+    pixels_below_scattering: list[list],
 ) -> NDArray:
     """
     Compute exposure times for HEALPix pixels.
@@ -345,6 +412,11 @@ def get_spacecraft_exposure_times(
         Dataset containing image rates data.
     params_dataset : xarray.Dataset
         Dataset containing image parameters data.
+    pixels_below_scattering : list
+        List of lists indicating pixels within the scattering threshold.
+        The outer list indicates spin phase steps, the middle list indicates energy
+        bins, and the inner list contains pixel indices indicating pixels that are
+        below the FWHM scattering threshold.
 
     Returns
     -------
@@ -355,15 +427,97 @@ def get_spacecraft_exposure_times(
     """
     # TODO: use the universal spin table and
     #  universal pointing table here to determine actual number of spins
+    sectored_rates = get_sectored_rates(rates_dataset, params_dataset)
+    nominal_deadtime_ratios = get_deadtime_ratios_by_spin_phase(sectored_rates)
+    # TODO save nominal_deadtime_ratios to the pset.
     exposure_pointing = (
         constant_exposure["Exposure Time"] * 5760
     )  # 5760 spins per pointing (for now)
+    exposure_pointing_adjusted = apply_deadtime_correction(
+        exposure_pointing, nominal_deadtime_ratios, pixels_below_scattering
+    )
+    return exposure_pointing_adjusted
 
-    # TODO uncomment the line below when implemented
-    # exposure_pointing_adjusted = apply_deadtime_correction(
-    #     exposure_pointing, rates_dataset, params_dataset
-    # )
-    return exposure_pointing
+
+def get_efficiencies_and_geometric_function(
+    pixels_below_scattering: list[list],
+    theta_and_phi: np.ndarray,
+    ancillary_files: dict,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Compute the geometric factor and efficiency for each pixel and energy bin.
+
+    The results are averaged over all spin phases.
+
+    Parameters
+    ----------
+    pixels_below_scattering : list
+        List of lists indicating pixels within the scattering threshold.
+        The outer list indicates spin phase steps, the middle list indicates energy
+        bins, and the inner list contains pixel indices indicating pixels that are
+        below the FWHM scattering threshold.
+    theta_and_phi : np.ndarray
+        Array of theta and phi values for each pixel. First column is theta,
+        second is phi.
+    ancillary_files : dict
+        Dictionary containing ancillary files.
+
+    Returns
+    -------
+    gf_summation : np.ndarray
+        Summation of geometric factors for each pixel and energy bin.
+    eff_summation : np.ndarray
+        Summation of efficiencies for each pixel and energy bin.
+    """
+    # Load callable efficiency interpolator function
+    eff_interpolator = get_efficiency_interpolator(ancillary_files)
+    # Get energy bin geometric means
+    energy_bin_geometric_means = build_energy_bins()[2]
+    energy_bins = len(energy_bin_geometric_means)
+    # Number of pixels is the length of theta or phi
+    npix = theta_and_phi.shape[0]
+    # Initialize summation arrays for geometric factors and efficiencies
+    gf_summation = np.zeros((energy_bins, npix))
+    eff_summation = np.zeros((energy_bins, npix))
+    sample_count = np.zeros((energy_bins, npix))
+    # Compute gf and eff for these theta/phi pairs
+    gf_values = get_geometric_factor(
+        ancillary_files,
+        "l1b-sensor-gf-blades",
+        theta_and_phi[:, 0],  # Theta
+        theta_and_phi[:, 1],  # Phi
+        np.zeros(theta_and_phi.shape[0]).astype(np.uint16),
+    )
+    # Loop through spin phases
+    for pixels_at_spin in pixels_below_scattering:
+        # Loop through energy bins
+        for energy_bin_idx in range(energy_bins):
+            pixel_inds = pixels_at_spin[energy_bin_idx]
+            if pixel_inds.size == 0:
+                continue
+            energy = energy_bin_geometric_means[energy_bin_idx]
+            # Get theta and phi vals for pixels in the FOR at this spin phase
+            theta_vals = theta_and_phi[pixel_inds, 0]
+            phi_vals = theta_and_phi[pixel_inds, 1]
+            eff_values = get_efficiency(
+                np.full(phi_vals.shape, energy),
+                phi_vals,
+                theta_vals,
+                ancillary_files,
+                interpolator=eff_interpolator,
+            )
+
+            # Accumulate
+            gf_summation[energy_bin_idx, pixel_inds] += gf_values[pixel_inds]
+            eff_summation[energy_bin_idx, pixel_inds] += eff_values
+            sample_count[energy_bin_idx, pixel_inds] += 1
+
+    # return averaged geometric factors and efficiencies across all spin phases
+    # These are now energy dependent.
+    non_zero = sample_count > 0
+    gf_averaged = gf_summation[non_zero] / sample_count[non_zero]
+    eff_averaged = eff_summation[non_zero] / sample_count[non_zero]
+    return gf_averaged, eff_averaged
 
 
 def get_helio_exposure_times(

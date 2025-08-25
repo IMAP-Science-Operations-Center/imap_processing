@@ -1,5 +1,7 @@
 """Contains tools for lookup tables for l1b."""
 
+import logging
+
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
@@ -8,6 +10,8 @@ from numpy.typing import NDArray
 
 from imap_processing.quality_flags import ImapDEOutliersUltraFlags
 from imap_processing.ultra.constants import UltraConstants
+
+logger = logging.getLogger(__name__)
 
 
 def get_y_adjust(dy_lut: np.ndarray, ancillary_files: dict) -> npt.NDArray:
@@ -270,7 +274,6 @@ def get_geometric_factor(
     phi_table = pd.read_csv(
         ancillary_files[filename], header=None, skiprows=610, nrows=301
     ).to_numpy(dtype=float)
-
     # Assume uniform grids: extract 1D arrays from first row/col
     theta_vals = theta_table[0, :]  # columns represent theta
     phi_vals = phi_table[:, 0]  # rows represent phi
@@ -384,17 +387,62 @@ def mask_below_fwhm_scattering_threshold(
     """
     scattering_thresholds = UltraConstants.ULTRA_FWHM_SCATTERING_CULLING_THRESHOLDS
     # Calculate FWHM for theta and phi
-    fwhm_theta = theta_coeffs[:, 0] * energy ** theta_coeffs[:, 1]
-    fwhm_phi = phi_coeffs[:, 0] * energy ** phi_coeffs[:, 1]
+    fwhm_theta = theta_coeffs[..., 0] * energy ** theta_coeffs[..., 1]
+    fwhm_phi = phi_coeffs[..., 0] * energy ** phi_coeffs[..., 1]
 
-    # Get the scattering threshold based on the energy
-    threshold = next(
-        threshold
-        for energy_range, threshold in scattering_thresholds.items()
-        if energy_range[0] <= energy < energy_range[1]
-    )
+    try:
+        # Get the scattering threshold based on the energy
+        threshold = next(
+            threshold
+            for energy_range, threshold in scattering_thresholds.items()
+            if energy_range[0] <= energy < energy_range[1]
+        )
+    except StopIteration:
+        logger.warning(
+            f"Energy {energy} keV is out of bounds for scattering thresholds. Using "
+            f"zero for as threshold."
+        )
+        threshold = 0
     # Combine conditions for both theta and phi
     return np.logical_and(fwhm_theta <= threshold, fwhm_phi <= threshold)
+
+
+def get_nominal_for_by_spin_phase(
+    ancillary_files: dict, instrument_id: int
+) -> tuple[NDArray, NDArray, NDArray]:
+    """
+    Get indices of pixels in the nominal FOR as a function of spin phase.
+
+    This function also returns the theta / phi values in the instrument frame and
+    right ascension / declination values in the IMAP frame.
+
+    Parameters
+    ----------
+    ancillary_files : dict[Path]
+        Ancillary files.
+    instrument_id : int
+        Instrument ID, either 45 or 90.
+
+    Returns
+    -------
+    tuple
+        Scattering a and g values corresponding to the given theta and phi values.
+    """
+    # TODO replace with actual lookup table when available.
+    descriptor = f"l1c-{instrument_id}sensor-nominal-for-lookup"
+    filename = ancillary_files[descriptor]
+
+    calibration_data = pd.read_csv(filename, header=None, skiprows=1).to_numpy(
+        dtype=float
+    )
+    ra_and_dec = calibration_data[:, :2]  # Shape (npix, 2)
+    theta_and_phi = np.random.randint(-60, 60, size=ra_and_dec.shape)  # Shape (npix, 2)
+    # This array indicates whether each pixel is in the nominal FOR at each spin phase
+    # step (15000 steps for a full rotation with 1 ms resolution).
+    for_indices_by_spin_phase = calibration_data[:, 2:].astype(
+        bool
+    )  # Shape (npix, 15000)
+    return for_indices_by_spin_phase, theta_and_phi, ra_and_dec
 
 
 def is_inside_fov(phi: np.ndarray, theta: np.ndarray) -> np.ndarray:

@@ -67,6 +67,7 @@ def ultra_l1c(
                 data_dict[f"imap_ultra_l1a_{instrument_id}sensor-params"],
                 f"imap_ultra_l1c_{instrument_id}sensor-spacecraftpset",
                 ancillary_files,
+                instrument_id,
             )
             output_datasets = [spacecraft_pset]
     if not output_datasets:

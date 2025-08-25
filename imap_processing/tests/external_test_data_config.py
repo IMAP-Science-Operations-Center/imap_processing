@@ -112,6 +112,7 @@ EXTERNAL_TEST_DATA = [
     ("imap_ultra_l1b-90sensor-tofxemedium_20250101_v000.pgm", "ultra/data/l1/"),
     ("imap_ultra_l1b-90sensor-tofxesteep_20250101_v000.pgm", "ultra/data/l1/"),
     ("imap_ultra_l1b-tofxph_20250101_v000.pgm","ultra/data/l1/"),
+    ("imap_ultra_l1c-45sensor-nominal-for-lookup_20250101_v000.csv", "ultra/data/l1/"),
 
     # MAG
     ("mag-l1b-l1c-t013-magi-burst-in.csv",
