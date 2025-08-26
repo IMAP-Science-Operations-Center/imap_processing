@@ -140,7 +140,7 @@ def process_swapi_ialirt(
     unpacked_data : xr.Dataset
         SWAPI I-ALiRT data that has been parsed from the spacecraft packet.
     calibration_lut_table : pd.DataFrame
-        DataFrame containing the contents of the SWAPI lookup table.
+        DataFrame containing the contents of the SWAPI esa-unit-conversion lookup table.
 
     Returns
     -------

@@ -224,11 +224,14 @@ def test_optimize_parameters():
         )
 
         for param in test_data[test_set]["expected_values"]:
-            assert np.allclose(
-                result[param][0],
-                test_data[test_set]["expected_values"][param][0],
-                rtol=test_data[test_set]["expected_values"][param][1],
-            ), f"{param} did not match the expected result within the tolerance."
+            (
+                np.testing.assert_allclose(
+                    result[param][0],
+                    test_data[test_set]["expected_values"][param][0],
+                    rtol=test_data[test_set]["expected_values"][param][1],
+                ),
+                f"{param} did not match the expected result within the tolerance.",
+            )
 
 
 @pytest.mark.external_test_data
