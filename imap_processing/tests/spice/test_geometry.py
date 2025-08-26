@@ -77,32 +77,39 @@ def test_get_instrument_mounting_az_el(
 
 
 @pytest.mark.parametrize(
-    "instrument, expected_offset",
+    "instrument",
     [
         # Expected spin-phase offsets based on 7516-0011_drw.pdf
-        (SpiceFrame.IMAP_LO_BASE, 60 / 360),  # (330 + 90) % 360 = 60
-        # Note HI_45 and HI_90 appear to be swapped in imap_wkcp.tf so the
-        # expected values are swapped here.
-        (SpiceFrame.IMAP_HI_45, 15 / 360),  # 255 + 90 = 345
-        (SpiceFrame.IMAP_HI_90, 345 / 360),  # (285 + 90) % 360 = 15
-        (SpiceFrame.IMAP_ULTRA_45, 123 / 360),  # 33 + 90 = 123
-        (SpiceFrame.IMAP_ULTRA_90, 300 / 360),  # 210 + 90 = 300
-        (SpiceFrame.IMAP_SWAPI, 258 / 360),  # 168 + 90 = 258
-        (SpiceFrame.IMAP_IDEX, 180 / 360),  # 90 + 90 = 180
-        (SpiceFrame.IMAP_CODICE, 226 / 360),  # 136 + 90 = 226
-        (SpiceFrame.IMAP_HIT, 120 / 360),  # 30 + 90 = 120
-        (SpiceFrame.IMAP_SWE, 243 / 360),  # 153 + 90 = 243
-        (SpiceFrame.IMAP_GLOWS, 217 / 360),  # 127 + 90 = 217
-        (SpiceFrame.IMAP_MAG, 90 / 360),  # 0 + 90 = 90
+        SpiceFrame.IMAP_LO_BASE,
+        SpiceFrame.IMAP_HI_45,
+        SpiceFrame.IMAP_HI_90,
+        SpiceFrame.IMAP_ULTRA_45,
+        SpiceFrame.IMAP_ULTRA_90,
+        SpiceFrame.IMAP_SWAPI,
+        SpiceFrame.IMAP_IDEX,
+        SpiceFrame.IMAP_CODICE,
+        SpiceFrame.IMAP_HIT,
+        SpiceFrame.IMAP_SWE,
+        SpiceFrame.IMAP_GLOWS,
+        SpiceFrame.IMAP_MAG,
     ],
 )
 def test_get_spacecraft_to_instrument_spin_phase_offset(
-    furnish_kernels, spice_test_data_path, instrument, expected_offset
+    furnish_kernels, spice_test_data_path, instrument
 ):
     """Test coverage for get_spacecraft_to_instrument_spin_phase_offset()"""
+    # Test that the offset is close to SPICE derived mounting azimuth
     with furnish_kernels([spice_test_data_path / "imap_wkcp.tf"]):
+        # TODO: Remove this switch when we get a new imap_frames kernel
+        #    Hi 45 and Hi 90 are swapped in the imap_wkcp.tf kernel
+        if instrument == SpiceFrame.IMAP_HI_45:
+            expected = get_instrument_mounting_az_el(SpiceFrame.IMAP_HI_90)[0] / 360
+        elif instrument == SpiceFrame.IMAP_HI_90:
+            expected = get_instrument_mounting_az_el(SpiceFrame.IMAP_HI_45)[0] / 360
+        else:
+            expected = get_instrument_mounting_az_el(instrument)[0] / 360
         result = get_spacecraft_to_instrument_spin_phase_offset(instrument)
-        np.testing.assert_almost_equal(result, expected_offset, decimal=5)
+        np.testing.assert_almost_equal(result, expected, decimal=5)
 
 
 @pytest.mark.parametrize(
