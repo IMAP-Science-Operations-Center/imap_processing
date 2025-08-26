@@ -159,10 +159,8 @@ def swapi_l2(
 
     To process science data to L2, we need to:
     - convert counts to rates. This is done by dividing the counts by the
-        SWAPI_LIVETIME time. SWAPI_LIVETIME is the acquisition time
-        per energy bin which is obtained by dividing the time for one complete
-        sweep (12 s, coarse + fine sweep) by the total energy steps (72),
-        i.e., SWAPI_LIVETIME = 0.145 s. This will be constant.
+        SWAPI_LIVETIME time. LIVETIME is data acquisition time. It will
+        be constant, SWAPI_LIVETIME = 0.145 s.
 
     - update uncertainty. Calculate new uncertainty value using
         SWP_PCEM_ERR data from level one and divide by SWAPI_LIVETIME. Eg.
