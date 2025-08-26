@@ -251,7 +251,7 @@ def generate_ultra_healpix_skymap(
         flags_1d = pointing_set.data["quality_flags"].isel(epoch=0)
         pixel_mask = (flags_1d & ImapPSETUltraFlags.EARTH_FOV.value) == 0
 
-        # Only count the number of pointing set pixels which are not flagged.d.
+        # Only count the number of pointing set pixels which are not flagged.
         pointing_set.data["num_pointing_set_pixel_members"] = xr.DataArray(
             pixel_mask.astype(int),
             dims=(CoordNames.HEALPIX_INDEX.value),
@@ -270,28 +270,38 @@ def generate_ultra_healpix_skymap(
         pointing_set.data["obs_date_squared_for_std"] = (
             pointing_set.data["obs_date_range"] ** 2
         )
-        # Put nans in exposure factor values that are flagged.
+
         # Add solid_angle * exposure of pointing set as data_var
         # so this quantity is projected to map pixels for use in weighted averaging
         pointing_set.data["pointing_set_exposure_times_solid_angle"] = (
             pointing_set.data["exposure_factor"] * pointing_set.solid_angle
         )
         mask = ~pixel_mask  # shape (pixel,)
+        # Set pointing_set_exposure_times_solid_angle to nan for flagged pixels.
         pointing_set.data["pointing_set_exposure_times_solid_angle"].values[:, mask] = (
             np.nan
         )
+        # Set exposure factor to nan for flagged pixels.
         pointing_set.data["exposure_factor"].values[:, mask] = np.nan
 
+        # Set background rates to nan for flagged pixels.
         background_rates = pointing_set.data["background_rates"].astype(float)
         background_rates.values[..., mask] = np.nan
         pointing_set.data["background_rates"] = background_rates
 
+        # Set counts to nan for flagged pixels.
         counts = pointing_set.data["counts"].astype(float)
         counts.values[..., mask] = np.nan
         pointing_set.data["counts"] = counts
 
+        # Set sensitivity to nan for flagged pixels.
+        sensitivity = pointing_set.data["sensitivity"].astype(float)
+        sensitivity.values[..., mask] = np.nan
+        pointing_set.data["sensitivity"] = sensitivity
+
         # Initial processing for weighted quantities at PSET level
-        # Set the values to nan where the pixel mask is False.
+        # Weight the values by exposure and solid angle
+        # Ensure only valid pointing set pixels contribute to the weighted mean.
         pointing_set.data[
             VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE
         ] = (
