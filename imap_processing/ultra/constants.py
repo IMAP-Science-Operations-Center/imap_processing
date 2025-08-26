@@ -3,8 +3,6 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-import numpy as np
-
 
 @dataclass(frozen=True)
 class UltraConstants:
@@ -108,14 +106,3 @@ class UltraConstants:
         341.989454569026,
         1e5,
     ]
-    # TODO read these in from a lookup table
-    # Culling FWHM Scattering values as a function of energy.
-    # The tuple represents the energy range (min, max) in keV, and the value is the
-    # FWHM scattering threshold in degrees.
-    ULTRA_FWHM_SCATTERING_CULLING_THRESHOLDS: ClassVar[dict] = {
-        (1, 5): 12,
-        (5, 8): 10,
-        (8, 10): 8,
-        (10, 20): 6,
-        (20, np.inf): 4,
-    }

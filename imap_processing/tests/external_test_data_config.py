@@ -116,6 +116,7 @@ EXTERNAL_TEST_DATA = [
     ("imap_ultra_l1c-90sensor-sc-pointing-phi-n32-test_20250101_v000.csv", "ultra/data/l1/"),
     ("imap_ultra_l1c-90sensor-sc-pointing-index-n32-test_20250101_v000.csv", "ultra/data/l1/"),
     ("imap_ultra_l1c-90sensor-sc-pointing-bsf-n32-test_20250101_v000.csv", "ultra/data/l1/"),
+    ("imap_ultra_l1b-scattering-thresholds-per-energy_20250101_v000.csv", "ultra/data/l1/"),
 
     # MAG
     ("mag-l1b-l1c-t013-magi-burst-in.csv",

@@ -17,6 +17,7 @@ from imap_processing.ultra.l1b.lookup_utils import (
     get_norm,
     get_ph_corrected,
     get_scattering_coefficients,
+    get_scattering_thresholds,
     get_y_adjust,
 )
 
@@ -196,3 +197,17 @@ def test_get_scattering_coefficients(ancillary_files):
     np.testing.assert_array_equal(phi_coeffs[:, 0], np.array([np.nan, 168.3100]))
     # Test b phi coefficients
     np.testing.assert_array_equal(phi_coeffs[:, 1], np.array([np.nan, -1.0752]))
+
+
+@pytest.mark.external_test_data
+def test_get_scattering_thresholds(ancillary_files):
+    """Tests function get_scattering_thresholds."""
+
+    thresholds = get_scattering_thresholds(
+        ancillary_files=ancillary_files,
+    )
+    assert thresholds[(1.0, 5.0)] == 12.0
+    assert thresholds[(5.0, 8.0)] == 10.0
+    assert thresholds[(8.0, 10.0)] == 8.0
+    assert thresholds[(10.0, 20.0)] == 6.0
+    assert thresholds[(20.0, np.inf)] == 4.0

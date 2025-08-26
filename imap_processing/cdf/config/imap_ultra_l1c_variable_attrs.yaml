@@ -17,6 +17,11 @@ default_float32_attrs: &default_float32
   VALIDMAX: 3.4028235e+38
   dtype: float32
 
+energy_dependent_attrs: &energy_dependent
+  <<: *default_float32
+  DEPEND_0: energy_bin_geometric_mean
+  DEPEND_1: pixel_index
+
 latitude:
   <<: *default_float32
   CATDESC: Latitude bin center corresponding to healpix index with range [-90, 90].
@@ -39,21 +44,48 @@ species_bin:
   # TODO: come back to format
   UNITS: " "
 
-exposure_factor:
+dead_time_ratio:
   <<: *default_float32
-  CATDESC: Exposure time for a pointing.
-  FIELDNAM: exposure_factor
-  LABLAXIS: exposure factor
-  # TODO: come back to format
-  UNITS: seconds
+  CATDESC: Dead time correction ratios for each spin phase step (1ms resolution).
+  DEPEND_0: spin_phase_steps
+  FIELDNAM: dead_time_ratios
+  LABLAXIS: Dead Time Ratio
+  UNITS: " "
+  VALIDMIN: 0.0
 
 sensitivity:
-  <<: *default_float32
+  <<: *energy_dependent
   CATDESC: Calibration/sensitivity factor.
   FIELDNAM: sensitivity
   LABLAXIS: sensitivity
   # TODO: come back to format
   UNITS: counts/second
+
+geometric_factor:
+  <<: *energy_dependent
+  CATDESC: The effective sensitive area within the Field of View.
+  FIELDNAM: geometric_factor
+  LABLAXIS: Geometric Factor
+  UNITS: " "
+  VALIDMIN: 0.0
+
+efficiency:
+  <<: *energy_dependent
+  CATDESC: Estimated event efficiency for particles path through the instrument.
+  FIELDNAM: efficiency
+  LABLAXIS: Efficiency
+  UNITS: " "
+  VALIDMIN: 0.0
+  VALIDMAX: 1.0
+
+exposure_factor:
+  <<: *energy_dependent
+  CATDESC: Exposure time with the deadtime correction applied for a pointing.
+  FIELDNAM: exposure_factor
+  LABLAXIS: exposure factor
+  # TODO: come back to format
+  UNITS: seconds
+
 
 counts:
   <<: *default

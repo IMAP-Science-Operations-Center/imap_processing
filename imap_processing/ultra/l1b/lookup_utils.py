@@ -575,3 +575,29 @@ def get_ebins(
         ebins[valid] = lut_array[ctof_lookup[valid], energy_lookup[valid]]
 
     return ebins
+
+
+def get_scattering_thresholds(ancillary_files: dict) -> dict:
+    """
+    Load scattering culling thresholds as a function of energy from a lookup table.
+
+    Parameters
+    ----------
+    ancillary_files : dict[Path]
+        Ancillary files.
+
+    Returns
+    -------
+    threshold_dict
+         Dictionary containing energy ranges and the corresponding scattering culling
+          threshold.
+    """
+    # Culling FWHM Scattering values as a function of energy.
+    thresholds = pd.read_csv(
+        ancillary_files["l1b-scattering-thresholds-per-energy"], header=None, skiprows=1
+    ).to_numpy()
+    # The first two columns represent the energy range (min, max) in keV, and the
+    # value is the FWHM scattering threshold in degrees
+    threshold_dict = {(row[0], row[1]): row[2] for row in thresholds}
+
+    return threshold_dict

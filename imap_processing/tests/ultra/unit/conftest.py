@@ -551,6 +551,8 @@ def ancillary_files():
         / "imap_ultra_l1c-90sensor-sc-pointing-index-n32-test_20250101_v000.csv",
         "l1c-45sensor-sc-pointing-bsf-n32": path
         / "imap_ultra_l1c-90sensor-sc-pointing-bsf-n32-test_20250101_v000.csv",
+        "l1b-scattering-thresholds-per-energy": path
+        / "imap_ultra_l1b-scattering-thresholds-per-energy_20250101_v000.csv",
     }
 
 

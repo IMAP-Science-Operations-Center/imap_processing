@@ -6,9 +6,9 @@ import numpy as np
 import pandas as pd
 from numpy._typing import NDArray
 
-from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
     get_scattering_coefficients,
+    get_scattering_thresholds,
     load_scattering_lookup_tables,
 )
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import build_energy_bins
@@ -20,6 +20,8 @@ def mask_below_fwhm_scattering_threshold(
     theta_coeffs: np.ndarray,
     phi_coeffs: np.ndarray,
     energy: int,
+    ancillary_files: dict | None = None,
+    scattering_thresholds: dict | None = None,
 ) -> np.ndarray:
     """
     Determine indices of theta and phi values below the FWHM scattering threshold.
@@ -37,13 +39,22 @@ def mask_below_fwhm_scattering_threshold(
         Coefficients for phi FWHM calculation (a and g) for each pixel.
     energy : int
         Energy in keV.
+    ancillary_files : dict
+        Ancillary files.
+    scattering_thresholds : dict
+        Scattering thresholds as a function of energy ranges.
 
     Returns
     -------
     numpy.ndarray
         Boolean array indicating indices below the scattering threshold.
     """
-    scattering_thresholds = UltraConstants.ULTRA_FWHM_SCATTERING_CULLING_THRESHOLDS
+    if scattering_thresholds is None:
+        if ancillary_files is None:
+            raise ValueError(
+                "Either ancillary_files or scattering_thresholds must be provided."
+            )
+        scattering_thresholds = get_scattering_thresholds(ancillary_files)
     # Calculate FWHM for theta and phi
     fwhm_theta = theta_coeffs[..., 0] * energy ** theta_coeffs[..., 1]
     fwhm_phi = phi_coeffs[..., 0] * energy ** phi_coeffs[..., 1]
@@ -100,6 +111,8 @@ def calculate_pixels_within_scattering_threshold(
     """
     # Load scattering coefficient lookup table
     scattering_luts = load_scattering_lookup_tables(ancillary_files, instrument_id)
+    # Load scattering thresholds
+    scattering_thresholds = get_scattering_thresholds(ancillary_files)
     pixels_below_scattering = []
     # Get energy bin geometric means
     energy_bin_geometric_means = build_energy_bins()[2]
@@ -125,7 +138,10 @@ def calculate_pixels_within_scattering_threshold(
                 theta, phi, lookup_tables=scattering_luts
             )
             scattering_mask = mask_below_fwhm_scattering_threshold(
-                theta_coeffs, phi_coeffs, energy
+                theta_coeffs,
+                phi_coeffs,
+                energy,
+                scattering_thresholds=scattering_thresholds,
             )
             pixels_below_scattering_for_energy.append(
                 np.where(for_inds)[0][scattering_mask]

@@ -49,6 +49,7 @@ def create_dataset(  # noqa: PLR0912
             "epoch": data_dict["epoch"],
             "pixel_index": data_dict["pixel_index"],
             "energy_bin_geometric_mean": data_dict["energy_bin_geometric_mean"],
+            "spin_phase_step": data_dict["spin_phase_step"],
         }
         default_dimension = "pixel_index"
     # L1b de data product
@@ -95,7 +96,13 @@ def create_dataset(  # noqa: PLR0912
 
     for key, data in data_dict.items():
         # Skip keys that are coordinates.
-        if key in ["epoch", "spin_number", "energy_bin_geometric_mean", "pixel_index"]:
+        if key in [
+            "epoch",
+            "spin_number",
+            "energy_bin_geometric_mean",
+            "pixel_index",
+            "spin_phase_step",
+        ]:
             continue
         elif key in velocity_keys:
             dataset[key] = xr.DataArray(
@@ -159,7 +166,7 @@ def create_dataset(  # noqa: PLR0912
         }:
             dataset[key] = xr.DataArray(
                 data,
-                dims=["spin_phase"],
+                dims=["spin_phase_step"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         else:

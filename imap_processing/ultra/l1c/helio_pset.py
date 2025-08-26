@@ -143,6 +143,7 @@ def calculate_helio_pset(
     pset_dict["efficiency"] = efficiencies
     pset_dict["geometric_function"] = geometric_function
     pset_dict["dead_time_ratio"] = deadtime_ratios
+    pset_dict["spin_phase_step"] = np.arange(len(deadtime_ratios))
 
     dataset = create_dataset(pset_dict, name, "l1c")
 
