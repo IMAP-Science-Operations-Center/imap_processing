@@ -40,6 +40,8 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
     # Open the l1 file
     l1_dataset = load_cdf(file_path)
 
+    print(list(l1_dataset.data_vars.keys()))
+
     # Use the logical source as a way to distinguish between data products and
     # set some useful distinguishing variables
     # TODO: Could clean this up by using imap-data-access methods?
@@ -178,3 +180,14 @@ def add_dataset_attributes(
                     f"attribute manager."
                 )
     return l2_dataset
+
+
+if __name__ == "__main__":
+    from pathlib import Path
+
+    l1b_file_path = Path(
+        "/Users/martinva/Desktop/IMAP/codice/updated_codice-CDFs-9/imap_codice_l1b_lo-sw-species_20241110193900_v0.0.3.cdf"
+    )
+
+    l2_dataset = process_codice_l2(l1b_file_path)
+    print(l2_dataset)
