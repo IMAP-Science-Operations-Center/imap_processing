@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from imap_processing.quality_flags import ImapPSETUltraFlags
 from imap_processing.spice.repoint import get_pointing_times
 from imap_processing.spice.time import (
     et_to_met,
@@ -18,8 +19,6 @@ from imap_processing.ultra.l1c.l1c_lookup_utils import (
     calculate_pixels_within_scattering_threshold,
     get_spacecraft_pointing_lookup_tables,
 )
-from imap_processing.quality_flags import ImapPSETUltraFlags
-from imap_processing.spice.time import sct_to_et
 from imap_processing.ultra.l1c.ultra_l1c_culling import compute_culling_mask
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
@@ -186,7 +185,7 @@ def calculate_helio_pset(
     pset_dict["geometric_function"] = geometric_function
     pset_dict["dead_time_ratio"] = deadtime_ratios
     pset_dict["spin_phase_step"] = np.arange(len(deadtime_ratios))
-    pset_dict["helio_pset_quality_flags"] = helio_pset_quality_flags[np.newaxis, ...]
+    pset_dict["quality_flags"] = helio_pset_quality_flags[np.newaxis, ...]
 
     dataset = create_dataset(pset_dict, name, "l1c")
 

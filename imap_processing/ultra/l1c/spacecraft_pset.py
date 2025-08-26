@@ -173,9 +173,7 @@ def calculate_spacecraft_pset(
     pset_dict["energy_bin_delta"] = np.diff(intervals, axis=1).squeeze()[
         np.newaxis, ...
     ]
-    pset_dict["spacecraft_pset_quality_flags"] = spacecraft_pset_quality_flags[
-        np.newaxis, ...
-    ]
+    pset_dict["quality_flags"] = spacecraft_pset_quality_flags[np.newaxis, ...]
 
     pset_dict["sensitivity"] = sensitivity
     pset_dict["efficiency"] = efficiencies
