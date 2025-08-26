@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-import healpy as hp
 import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
@@ -59,7 +58,6 @@ REQUIRED_L1C_VARIABLES_PULL = [
     "sensitivity",
     "background_rates",
     "obs_date",
-    "spacecraft_pset_quality_flags",
 ]
 
 # These variables are projected to the map as the mean of pointing set pixels value,
@@ -241,63 +239,7 @@ def generate_ultra_healpix_skymap(
 
     all_pset_epochs = []
     for ultra_l1c_pset in ultra_l1c_psets:
-        # Mask out pixels where EARTH_FOV flag is set
-        # Mask out pixels where EARTH_FOV flag is set
-        flags = ultra_l1c_pset["spacecraft_pset_quality_flags"].isel(epoch=0).values
-        pixel_mask = (flags & ImapPSETUltraFlags.EARTH_FOV.value) == 0
-
-        # Create a mask as a DataArray for broadcasting
-        pixel_mask_da = xr.DataArray(
-            pixel_mask,
-            dims=["pixel_index"],
-            coords={"pixel_index": ultra_l1c_pset["pixel_index"]},
-        )
-
-        # Apply mask only to data variables with pixel_index in dimensions
-        masked_data_vars = {}
-        for var_name, da in ultra_l1c_pset.data_vars.items():
-            if "pixel_index" in da.dims:
-                masked_data_vars[var_name] = da.where(pixel_mask_da, drop=False)
-            else:
-                masked_data_vars[var_name] = da
-
-        # Apply mask to coordinates with pixel_index, but preserve pixel_index itself
-        masked_coords = {}
-        for coord_name, da in ultra_l1c_pset.coords.items():
-            if "pixel_index" in da.dims:
-                if coord_name == "pixel_index":
-                    # Preserve pixel_index without applying the mask
-                    masked_coords[coord_name] = da
-                else:
-                    masked_coords[coord_name] = da.where(pixel_mask_da, drop=False)
-            else:
-                masked_coords[coord_name] = da
-
-        # Reconstruct the dataset without dropping pixels
-        masked_pset = xr.Dataset(
-            data_vars=masked_data_vars,
-            coords=masked_coords,
-            attrs=ultra_l1c_pset.attrs,
-        )
-
-        # Patch NaNs in longitude and latitude with true HEALPix centers (if necessary)
-        if "longitude" in masked_pset and "latitude" in masked_pset:
-            npix = masked_pset.dims["pixel_index"]
-            nside = hp.npix2nside(npix)
-            lon, lat = hp.pix2ang(nside=nside, ipix=np.arange(npix), lonlat=True)
-
-            lon_da = masked_pset["longitude"].values
-            lat_da = masked_pset["latitude"].values
-
-            lon_da[np.isnan(lon_da)] = lon[np.isnan(lon_da)]
-            lat_da[np.isnan(lat_da)] = lat[np.isnan(lat_da)]
-
-            masked_pset["longitude"].values = lon_da
-            masked_pset["latitude"].values = lat_da
-
-        # Create the pointing set from the masked data
-        pointing_set = ena_maps.UltraPointingSet(masked_pset)
-
+        pointing_set = ena_maps.UltraPointingSet(ultra_l1c_pset)
         all_pset_epochs.append(pointing_set.epoch)
         logger.info(
             f"Projecting a PointingSet with {pointing_set.num_points} pixels "
@@ -307,9 +249,12 @@ def generate_ultra_healpix_skymap(
             "\nThese values will be pull projected: "
             f">> {output_map_structure.values_to_pull_project}",
         )
+        flags_1d = pointing_set.data["spacecraft_pset_quality_flags"].isel(epoch=0)
+        pixel_mask = (flags_1d & ImapPSETUltraFlags.EARTH_FOV.value) == 0
 
+        # Only count the number of pointing set pixels which are not flagged.d.
         pointing_set.data["num_pointing_set_pixel_members"] = xr.DataArray(
-            np.ones(pointing_set.num_points, dtype=int),
+            pixel_mask.astype(int),
             dims=(CoordNames.HEALPIX_INDEX.value),
         )
 
@@ -326,18 +271,36 @@ def generate_ultra_healpix_skymap(
         pointing_set.data["obs_date_squared_for_std"] = (
             pointing_set.data["obs_date_for_std"] ** 2
         )
-
+        # Put nans in exposure factor values that are flagged.
         # Add solid_angle * exposure of pointing set as data_var
         # so this quantity is projected to map pixels for use in weighted averaging
         pointing_set.data["pointing_set_exposure_times_solid_angle"] = (
             pointing_set.data["exposure_factor"] * pointing_set.solid_angle
         )
+        mask = ~pixel_mask  # shape (pixel,)
+        pointing_set.data["pointing_set_exposure_times_solid_angle"].values[:, mask] = (
+            np.nan
+        )
+        pointing_set.data["exposure_factor"].values[:, mask] = np.nan
+
+        background_rates = pointing_set.data["background_rates"].astype(float)
+        background_rates.values[..., mask] = np.nan
+        pointing_set.data["background_rates"] = background_rates
+
+        counts = pointing_set.data["counts"].astype(float)
+        counts.values[..., mask] = np.nan
+        pointing_set.data["counts"] = counts
 
         # Initial processing for weighted quantities at PSET level
-        # Weight the values by exposure and solid angle
+        # Set the values to nan where the pixel mask is False.
         pointing_set.data[
             VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE
-        ] *= pointing_set.data["pointing_set_exposure_times_solid_angle"]
+        ] = (
+            pointing_set.data[
+                VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE
+            ]
+            * pointing_set.data["pointing_set_exposure_times_solid_angle"]
+        ).where(pixel_mask)
 
         # Project values such as counts via the PUSH method
         skymap.project_pset_values_to_map(
@@ -352,10 +315,7 @@ def generate_ultra_healpix_skymap(
             value_keys=output_map_structure.values_to_pull_project,
             index_match_method=ena_maps.IndexMatchMethod.PULL,
         )
-
-    pixel_mask = ~np.isnan(skymap.data_1d["spacecraft_pset_quality_flags"])
-    pixel_mask_1d = pixel_mask.squeeze("epoch")
-
+    # TODO: figure out what to do with obs_date
     # Subsequent processing for weighted quantities at SkyMap level
     skymap.data_1d[VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE] /= (
         skymap.data_1d["pointing_set_exposure_times_solid_angle"]

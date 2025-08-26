@@ -835,7 +835,8 @@ class AbstractSkyMap(ABC):
 
         for value_key in value_keys:
             pset_values = pointing_set.data[value_key]
-
+            if value_key == "background_rates":
+                print("hi")
             # If multiple spatial axes present
             # (i.e (az, el) for rectangular coordinate PSET),
             # flatten them in the values array to match the raveled indices
@@ -848,7 +849,6 @@ class AbstractSkyMap(ABC):
                 *non_spatial_axes_shape,
                 pointing_set.num_points,
             )
-            # OK here
 
             if value_key not in self.data_1d.data_vars:
                 # Initialize the map data array if it doesn't exist (values start at 0)
@@ -888,7 +888,8 @@ class AbstractSkyMap(ABC):
             # dividing pointing_projected_values by some binned weights.
             # For unweighted means, we could use the number of pointing set pixels
             # that correspond to each map pixel as the weights.
-            self.data_1d[value_key] += pointing_projected_values
+            valid = ~np.isnan(pointing_projected_values)
+            self.data_1d[value_key].values[valid] += pointing_projected_values[valid]
 
         # TODO: The max epoch needs to include the pset duration. Right now it
         #     is just capturing the start epoch. See issue #1747

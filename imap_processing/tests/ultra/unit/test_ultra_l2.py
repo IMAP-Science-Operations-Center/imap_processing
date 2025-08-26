@@ -10,9 +10,9 @@ from astropy_healpix.healpy import nside2pixarea
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils.coordinates import CoordNames
+from imap_processing.quality_flags import ImapPSETUltraFlags
 from imap_processing.tests.ultra.mock_data import mock_l1c_pset_product_healpix
 from imap_processing.ultra.l2 import ultra_l2
-from imap_processing.quality_flags import ImapPSETUltraFlags
 
 
 class TestUltraL2:
@@ -102,10 +102,15 @@ class TestUltraL2:
         n_pixels = pset.dims["pixel_index"]
         quality_flags = np.zeros((1, n_pixels), dtype=np.uint16)
         # # Flag every other pixel (e.g., even indices)
-        quality_flags[0, ::2] = ImapPSETUltraFlags.EARTH_FOV.value
+        # quality_flags[0, ::2] = ImapPSETUltraFlags.EARTH_FOV.value
         pset["spacecraft_pset_quality_flags"] = xr.DataArray(
             data=quality_flags,
             dims=("epoch", "pixel_index"),
+        )
+
+        pset2 = pset.copy(deep=True)
+        pset2["spacecraft_pset_quality_flags"][0, ::2] = (
+            ImapPSETUltraFlags.EARTH_FOV.value
         )
 
         if epoch_dim_for_energy_delta:
@@ -117,9 +122,7 @@ class TestUltraL2:
         # Create the Healpix skymap in the desired frame.
         with furnish_kernels(self.required_kernel_names):
             hp_skymap, _ = ultra_l2.generate_ultra_healpix_skymap(
-                ultra_l1c_psets=[
-                    pset,
-                ],
+                ultra_l1c_psets=[pset, pset2],
                 output_map_structure=ena_maps.AbstractSkyMap.from_properties_dict(
                     {
                         "sky_tiling_type": "HEALPIX",
