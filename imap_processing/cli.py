@@ -713,6 +713,10 @@ class Glows(ProcessInstrument):
                 / "imap_glows_exclusions-by-instr-team_20250923_v002.dat"
             ]
 
+            pipeline_settings = [
+                glows_ancillary_dir / "imap_glows_pipeline-settings_20250923_v002.json"
+            ]
+
             # Use end date buffer for ancillary data
             current_day = np.datetime64(
                 f"{self.start_date[:4]}-{self.start_date[4:6]}-{self.start_date[6:]}"
@@ -730,6 +734,9 @@ class Glows(ProcessInstrument):
             exclusions_by_instr_team_combiner = GlowsAncillaryCombiner(
                 exclusions_by_instr_team_files, day_buffer
             )
+            pipeline_settings_combiner = GlowsAncillaryCombiner(
+                pipeline_settings, day_buffer
+            )
 
             datasets = [
                 glows_l1b(
@@ -738,6 +745,7 @@ class Glows(ProcessInstrument):
                     uv_sources_combiner.combined_dataset,
                     suspected_transients_combiner.combined_dataset,
                     exclusions_by_instr_team_combiner.combined_dataset,
+                    pipeline_settings_combiner.combined_dataset,
                 )
             ]
 
