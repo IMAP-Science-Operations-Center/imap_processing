@@ -112,11 +112,20 @@ def calculate_helio_pset(
     constant_exposure = ancillary_files["l1c-90sensor-dps-exposure"]
     df_exposure = pd.read_csv(constant_exposure)
     exposure_time, deadtime_ratios = get_spacecraft_exposure_times(
-        df_exposure, rates_dataset, params_dataset, pixels_below_scattering
+        df_exposure,
+        rates_dataset,
+        params_dataset,
+        pixels_below_scattering,
+        boundary_scale_factors,
     )
     # calculate efficiency and geometric function as a function of energy
     efficiencies, geometric_function = get_efficiencies_and_geometric_function(
-        pixels_below_scattering, theta_vals, phi_vals, n_pix, ancillary_files
+        pixels_below_scattering,
+        boundary_scale_factors,
+        theta_vals,
+        phi_vals,
+        n_pix,
+        ancillary_files,
     )
     # Get midpoint timestamp for pointing.
     # TODO remove sct_to_et conversion

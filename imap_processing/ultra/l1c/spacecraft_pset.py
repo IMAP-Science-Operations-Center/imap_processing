@@ -104,7 +104,12 @@ def calculate_spacecraft_pset(
     )
     # calculate efficiency and geometric function as a function of energy
     efficiencies, geometric_function = get_efficiencies_and_geometric_function(
-        pixels_below_scattering, theta_vals, phi_vals, n_pix, ancillary_files
+        pixels_below_scattering,
+        boundary_scale_factors,
+        theta_vals,
+        phi_vals,
+        n_pix,
+        ancillary_files,
     )
     sensitivity = efficiencies * geometric_function
 
@@ -113,7 +118,11 @@ def calculate_spacecraft_pset(
     df_exposure = pd.read_csv(constant_exposure)
 
     exposure_pointing, deadtime_ratios = get_spacecraft_exposure_times(
-        df_exposure, rates_dataset, params_dataset, pixels_below_scattering
+        df_exposure,
+        rates_dataset,
+        params_dataset,
+        pixels_below_scattering,
+        boundary_scale_factors,
     )
 
     # Calculate background rates
