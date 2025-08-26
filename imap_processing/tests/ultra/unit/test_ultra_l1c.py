@@ -231,6 +231,7 @@ def test_calculate_spacecraft_pset_with_cdf(
     # Made up data for spin_number and energy_bin_geometric_mean
     de_dict["spin_number"] = np.full(len(sc_dps_velocity), 128)
     de_dict["energy_bin_geometric_mean"] = np.zeros(len(sc_dps_velocity))
+    de_dict["species"] = np.ones(len(sc_dps_velocity), dtype=np.uint8)
 
     name = "imap_ultra_l1b_45sensor-de"
     dataset = create_dataset(de_dict, name, "l1b")
@@ -312,6 +313,7 @@ def test_calculate_helio_pset_with_cdf(
     de_dict["energy_heliosphere"] = get_de_energy_kev(helio_dps_velocity, species_bin)
     de_dict["quality_scattering"] = np.zeros(len(helio_dps_velocity), dtype=np.uint16)
     de_dict["quality_outliers"] = np.zeros(len(helio_dps_velocity), dtype=np.uint16)
+    de_dict["species"] = np.ones(len(helio_dps_velocity), dtype=np.uint8)
 
     name = "imap_ultra_l1b_45sensor-de"
     dataset = create_dataset(de_dict, name, "l1b")
