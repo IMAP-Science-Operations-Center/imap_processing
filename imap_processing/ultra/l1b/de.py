@@ -338,18 +338,18 @@ def calculate_de(
         de_dict["tof_energy"], de_dict["phi"], de_dict["theta"], ancillary_files
     )
     de_dict["geometric_factor_blades"] = get_geometric_factor(
+        de_dict["phi"],
+        de_dict["theta"],
+        quality_flags,
         ancillary_files,
         "l1b-sensor-gf-blades",
-        de_dict["phi"],
-        de_dict["theta"],
-        quality_flags,
     )
     de_dict["geometric_factor_noblades"] = get_geometric_factor(
-        ancillary_files,
-        "l1b-sensor-gf-noblades",
         de_dict["phi"],
         de_dict["theta"],
         quality_flags,
+        ancillary_files,
+        "l1b-sensor-gf-noblades",
     )
     de_dict["quality_outliers"] = quality_flags
     flag_scattering(
