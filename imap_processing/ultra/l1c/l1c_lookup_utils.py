@@ -92,7 +92,7 @@ def calculate_pixels_within_scattering_threshold(
 
     Returns
     -------
-    exposure_pointing_adjusted : list
+    pixels_below_scattering : list
         A Nested list of arrays indicating pixels within the scattering threshold.
         The outer list indicates spin phase steps, the middle list indicates energy
         bins, and the inner arrays contain indices indicating pixels that are below

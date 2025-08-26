@@ -1,6 +1,6 @@
 from unittest import mock
 
-import healpy as hp
+import astropy_healpix.healpy as hp
 import numpy as np
 import pandas as pd
 import pytest
