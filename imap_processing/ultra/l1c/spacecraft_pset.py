@@ -33,6 +33,7 @@ def calculate_spacecraft_pset(
     name: str,
     ancillary_files: dict,
     instrument_id: int,
+    species_id: int = 1,
 ) -> xr.Dataset:
     """
     Create dictionary with defined datatype for Pointing Set Grid Data.
@@ -55,6 +56,8 @@ def calculate_spacecraft_pset(
         Ancillary files.
     instrument_id : int
         Instrument ID, either 45 or 90.
+    species_id : int, optional
+        Species ID, default of 1 refers to Hydrogen.
 
     Returns
     -------
@@ -63,22 +66,26 @@ def calculate_spacecraft_pset(
     """
     pset_dict: dict[str, np.ndarray] = {}
     sensor = parse_filename_like(name)["sensor"][0:2]
+    indices = np.where(de_dataset["species"].values == species_id)[0]
+    species_dataset = de_dataset.isel(epoch=indices)
 
     # Before we use the de_dataset to calculate the pointing set grid we need to filter.
     rejected = get_de_rejection_mask(
-        de_dataset["quality_scattering"].values, de_dataset["quality_outliers"].values
+        species_dataset["quality_scattering"].values, species_dataset["quality_outliers"].values
     )
-    de_dataset = de_dataset.isel(epoch=~rejected)
+    species_dataset = species_dataset.isel(epoch=~rejected)
 
-    v_mag_dps_spacecraft = np.linalg.norm(de_dataset["velocity_dps_sc"].values, axis=1)
+    v_mag_dps_spacecraft = np.linalg.norm(
+        species_dataset["velocity_dps_sc"].values, axis=1
+    )
     vhat_dps_spacecraft = (
-        de_dataset["velocity_dps_sc"].values / v_mag_dps_spacecraft[:, np.newaxis]
+        species_dataset["velocity_dps_sc"].values / v_mag_dps_spacecraft[:, np.newaxis]
     )
 
     intervals, _, energy_bin_geometric_means = build_energy_bins()
     counts, latitude, longitude, n_pix = get_spacecraft_histogram(
         vhat_dps_spacecraft,
-        de_dataset["energy_spacecraft"].values,
+        species_dataset["energy_spacecraft"].values,
         intervals,
         nside=128,
     )

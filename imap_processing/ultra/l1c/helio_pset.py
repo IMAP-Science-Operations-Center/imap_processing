@@ -39,6 +39,7 @@ def calculate_helio_pset(
     name: str,
     ancillary_files: dict,
     instrument_id: int,
+    species_id: int = 1,
 ) -> xr.Dataset:
     """
     Create dictionary with defined datatype for Pointing Set Grid Data.
@@ -61,6 +62,8 @@ def calculate_helio_pset(
         Ancillary files.
     instrument_id : int
         Instrument ID, either 45 or 90.
+    species_id : int, optional
+        Species ID, default of 1 refers to Hydrogen.
 
     Returns
     -------
@@ -68,6 +71,8 @@ def calculate_helio_pset(
         Dataset containing the data.
     """
     pset_dict: dict[str, np.ndarray] = {}
+    indices = np.where(de_dataset["species"].values == species_id)[0]
+    species_dataset = de_dataset.isel(epoch=indices)
 
     rejected = get_de_rejection_mask(
         de_dataset["quality_scattering"].values, de_dataset["quality_outliers"].values
@@ -75,15 +80,16 @@ def calculate_helio_pset(
     de_dataset = de_dataset.isel(epoch=~rejected)
 
     v_mag_helio_spacecraft = np.linalg.norm(
-        de_dataset["velocity_dps_helio"].values, axis=1
+        species_dataset["velocity_dps_helio"].values, axis=1
     )
     vhat_dps_helio = (
-        de_dataset["velocity_dps_helio"].values / v_mag_helio_spacecraft[:, np.newaxis]
+        species_dataset["velocity_dps_helio"].values
+        / v_mag_helio_spacecraft[:, np.newaxis]
     )
     intervals, _, energy_bin_geometric_means = build_energy_bins()
     counts, latitude, longitude, n_pix = get_spacecraft_histogram(
         vhat_dps_helio,
-        de_dataset["energy_heliosphere"].values,
+        species_dataset["energy_heliosphere"].values,
         intervals,
         nside=128,
     )
@@ -121,7 +127,7 @@ def calculate_helio_pset(
     # Get midpoint timestamp for pointing.
     # TODO remove sct_to_et conversion
     pointing_start, pointing_stop = get_pointing_times(
-        et_to_met(sct_to_et(de_dataset["event_times"].data[0]))
+        et_to_met(sct_to_et(species_dataset["event_times"].data[0]))
     )
     mid_time = ttj2000ns_to_et(met_to_ttj2000ns((pointing_start + pointing_stop) / 2))
     exposure_time, efficiency, geometric_function = get_helio_adjusted_data(
