@@ -125,6 +125,8 @@ def get_variable_attributes_optional_energy_dependence(
         and (CoordNames.ENERGY_ULTRA_L1C.value not in variable_dims)
     ):
         variable_name = f"{variable_name}_energy_independent"
+    if variable_name == "counts":
+        variable_name = "ena_count"
 
     metadata = cdf_attrs.get_variable_attributes(
         variable_name=variable_name,
@@ -203,7 +205,7 @@ def generate_ultra_healpix_skymap(
     output_map_structure.values_to_push_project.extend(
         [
             "num_pointing_set_pixel_members",
-            "obs_date_for_std",
+            "obs_date_range",
             "obs_date_squared_for_std",
         ]
     )
@@ -262,11 +264,11 @@ def generate_ultra_healpix_skymap(
             fill_value=pointing_set.epoch,
             dtype=np.int64,
         )
-        pointing_set.data["obs_date_for_std"] = pointing_set.data["obs_date"].astype(
+        pointing_set.data["obs_date_range"] = pointing_set.data["obs_date"].astype(
             np.float64
         )
         pointing_set.data["obs_date_squared_for_std"] = (
-            pointing_set.data["obs_date_for_std"] ** 2
+            pointing_set.data["obs_date_range"] ** 2
         )
         # Put nans in exposure factor values that are flagged.
         # Add solid_angle * exposure of pointing set as data_var
@@ -366,7 +368,7 @@ def generate_ultra_healpix_skymap(
                 )
                 - (
                     (
-                        skymap.data_1d["obs_date_for_std"]
+                        skymap.data_1d["obs_date_range"]
                         / (skymap.data_1d["num_pointing_set_pixel_members"])
                     )
                     ** 2

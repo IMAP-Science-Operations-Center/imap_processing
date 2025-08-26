@@ -133,7 +133,10 @@ class TestUltraL2:
 
         # Check that required variables are present, and dropped variables are not
         expected_vars = [
+            "counts",
+            "background_rates",
             "ena_intensity",
+            "obs_date_for_std",
             "ena_intensity_stat_unc",
             "exposure_factor",
             "obs_date",
@@ -234,7 +237,10 @@ class TestUltraL2:
 
         # Check that required variables are present, and dropped variables are not
         expected_vars = [
+            "counts",
+            "background_rates",
             "ena_intensity",
+            "obs_date_for_std",
             "ena_intensity_stat_unc",
             "exposure_factor",
             "obs_date",
