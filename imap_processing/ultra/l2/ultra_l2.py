@@ -72,12 +72,9 @@ VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE = [
 # calculate ena_intensity and its statistical uncertainty
 # They will not be present in the final map
 VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION = [
-    "counts",
-    "background_rates",
     "pointing_set_exposure_times_solid_angle",
     "num_pointing_set_pixel_members",
     "corrected_count_rate",
-    "obs_date_for_std",
     "obs_date_squared_for_std",
 ]
 
@@ -249,7 +246,7 @@ def generate_ultra_healpix_skymap(
             "\nThese values will be pull projected: "
             f">> {output_map_structure.values_to_pull_project}",
         )
-        flags_1d = pointing_set.data["spacecraft_pset_quality_flags"].isel(epoch=0)
+        flags_1d = pointing_set.data["quality_flags"].isel(epoch=0)
         pixel_mask = (flags_1d & ImapPSETUltraFlags.EARTH_FOV.value) == 0
 
         # Only count the number of pointing set pixels which are not flagged.d.
@@ -315,7 +312,7 @@ def generate_ultra_healpix_skymap(
             value_keys=output_map_structure.values_to_pull_project,
             index_match_method=ena_maps.IndexMatchMethod.PULL,
         )
-    # TODO: figure out what to do with obs_date
+
     # Subsequent processing for weighted quantities at SkyMap level
     skymap.data_1d[VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE] /= (
         skymap.data_1d["pointing_set_exposure_times_solid_angle"]

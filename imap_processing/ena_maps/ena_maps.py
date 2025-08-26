@@ -835,8 +835,7 @@ class AbstractSkyMap(ABC):
 
         for value_key in value_keys:
             pset_values = pointing_set.data[value_key]
-            if value_key == "background_rates":
-                print("hi")
+
             # If multiple spatial axes present
             # (i.e (az, el) for rectangular coordinate PSET),
             # flatten them in the values array to match the raveled indices
