@@ -1,7 +1,5 @@
 """Contains tools for lookup tables for l1b."""
 
-import logging
-
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
@@ -9,9 +7,6 @@ import xarray as xr
 from numpy.typing import NDArray
 
 from imap_processing.quality_flags import ImapDEOutliersUltraFlags
-from imap_processing.ultra.constants import UltraConstants
-
-logger = logging.getLogger(__name__)
 
 
 def get_y_adjust(dy_lut: np.ndarray, ancillary_files: dict) -> npt.NDArray:
@@ -291,33 +286,25 @@ def get_geometric_factor(
     return geometric_factor
 
 
-def get_scattering_coefficients(
-    ancillary_files: dict,
-    instrument_id: int,
-    theta: NDArray,
-    phi: NDArray,
-) -> tuple[NDArray, NDArray]:
+def load_scattering_lookup_tables(ancillary_files: dict, instrument_id: int) -> dict:
     """
-    Get a and g coefficients for theta and phi to compute scattering FWHM.
+    Load scattering coefficient lookup tables for the specified instrument.
 
     Parameters
     ----------
-    ancillary_files : dict[Path]
+    ancillary_files : dict
         Ancillary files.
     instrument_id : int
         Instrument ID, either 45 or 90.
-    theta : NDArray
-        Elevation angles in degrees.
-    phi : NDArray
-        Azimuth angles in degrees.
 
     Returns
     -------
-    tuple
-        Scattering a and g values corresponding to the given theta and phi values.
+    dict
+        Dictionary containing arrays for theta_grid, phi_grid, a_theta, g_theta,
+         a_phi, g_phi.
     """
     # TODO remove the line below when the 45 sensor scattering coefficients are
-    #   delivered.
+    #  delivered.
     instrument_id = 90
     descriptor = f"l1b-{instrument_id}sensor-scattering-calibration"
     theta_grid = pd.read_csv(
@@ -338,16 +325,66 @@ def get_scattering_coefficients(
     g_phi = pd.read_csv(
         ancillary_files[descriptor], header=None, skiprows=1217, nrows=241
     ).to_numpy(dtype=float)
+    return {
+        "theta_grid": theta_grid,
+        "phi_grid": phi_grid,
+        "a_theta": a_theta,
+        "g_theta": g_theta,
+        "a_phi": a_phi,
+        "g_phi": g_phi,
+    }
 
-    # Assume uniform grids: extract 1D arrays from first row/col
+
+def get_scattering_coefficients(
+    theta: NDArray,
+    phi: NDArray,
+    lookup_tables: dict | None = None,
+    ancillary_files: dict | None = None,
+    instrument_id: int | None = None,
+) -> tuple[NDArray, NDArray]:
+    """
+    Get a and g coefficients for theta and phi to compute scattering FWHM.
+
+    Parameters
+    ----------
+    theta : NDArray
+        Elevation angles in degrees.
+    phi : NDArray
+        Azimuth angles in degrees.
+    lookup_tables : dict, optional
+        Preloaded lookup tables. If not provided, will load using ancillary_files and
+         instrument_id.
+    ancillary_files : dict, optional
+        Ancillary files, required if lookup_tables is not provided.
+    instrument_id : int, optional
+        Instrument ID, required if lookup_tables is not provided.
+
+    Returns
+    -------
+    tuple
+        Scattering a and g values corresponding to the given theta and phi values.
+    """
+    if lookup_tables is None:
+        if ancillary_files is None or instrument_id is None:
+            raise ValueError(
+                "ancillary_files and instrument_id must be provided if lookup_tables "
+                "is not supplied."
+            )
+        lookup_tables = load_scattering_lookup_tables(ancillary_files, instrument_id)
+
+    theta_grid = lookup_tables["theta_grid"]
+    phi_grid = lookup_tables["phi_grid"]
+    a_theta = lookup_tables["a_theta"]
+    g_theta = lookup_tables["g_theta"]
+    a_phi = lookup_tables["a_phi"]
+    g_phi = lookup_tables["g_phi"]
+
     theta_vals = theta_grid[0, :]  # columns represent theta
     phi_vals = phi_grid[:, 0]  # rows represent phi
 
-    # Find nearest index in table for each input value
     phi_idx = np.abs(phi_vals[:, None] - phi).argmin(axis=0)
     theta_idx = np.abs(theta_vals[:, None] - theta).argmin(axis=0)
 
-    # Fetch a and g values at nearest (phi, theta) pairs
     a_theta_val = a_theta[phi_idx, theta_idx]
     g_theta_val = g_theta[phi_idx, theta_idx]
     a_phi_val = a_phi[phi_idx, theta_idx]
@@ -356,93 +393,6 @@ def get_scattering_coefficients(
     return np.column_stack([a_theta_val, g_theta_val]), np.column_stack(
         [a_phi_val, g_phi_val]
     )
-
-
-def mask_below_fwhm_scattering_threshold(
-    theta_coeffs: np.ndarray,
-    phi_coeffs: np.ndarray,
-    energy: int,
-) -> np.ndarray:
-    """
-    Determine indices of theta and phi values below the FWHM scattering threshold.
-
-    For each phi and theta, calculate the FWHM using the formula:
-    FWHM = A*E^g
-    If Phi FWHM or Theta FWHM > the scattering requirements from the table above,
-    mask the instrument frame pixel.
-
-    Parameters
-    ----------
-    theta_coeffs : NDArray
-        Coefficients for theta FWHM calculation (a and g) for each pixel.
-    phi_coeffs : NDArray
-        Coefficients for phi FWHM calculation (a and g) for each pixel.
-    energy : int
-        Energy in keV.
-
-    Returns
-    -------
-    numpy.ndarray
-        Boolean array indicating incides below the scattering threshold.
-    """
-    scattering_thresholds = UltraConstants.ULTRA_FWHM_SCATTERING_CULLING_THRESHOLDS
-    # Calculate FWHM for theta and phi
-    fwhm_theta = theta_coeffs[..., 0] * energy ** theta_coeffs[..., 1]
-    fwhm_phi = phi_coeffs[..., 0] * energy ** phi_coeffs[..., 1]
-
-    try:
-        # Get the scattering threshold based on the energy
-        threshold = next(
-            threshold
-            for energy_range, threshold in scattering_thresholds.items()
-            if energy_range[0] <= energy < energy_range[1]
-        )
-    except StopIteration:
-        logger.warning(
-            f"Energy {energy} keV is out of bounds for scattering thresholds. Using "
-            f"zero for as threshold."
-        )
-        threshold = 0
-    # Combine conditions for both theta and phi
-    return np.logical_and(fwhm_theta <= threshold, fwhm_phi <= threshold)
-
-
-def get_nominal_for_by_spin_phase(
-    ancillary_files: dict, instrument_id: int
-) -> tuple[NDArray, NDArray, NDArray]:
-    """
-    Get indices of pixels in the nominal FOR as a function of spin phase.
-
-    This function also returns the theta / phi values in the instrument frame and
-    right ascension / declination values in the IMAP frame.
-
-    Parameters
-    ----------
-    ancillary_files : dict[Path]
-        Ancillary files.
-    instrument_id : int
-        Instrument ID, either 45 or 90.
-
-    Returns
-    -------
-    tuple
-        Scattering a and g values corresponding to the given theta and phi values.
-    """
-    # TODO replace with actual lookup table when available.
-    descriptor = f"l1c-{instrument_id}sensor-nominal-for-lookup"
-    filename = ancillary_files[descriptor]
-
-    calibration_data = pd.read_csv(filename, header=None, skiprows=1).to_numpy(
-        dtype=float
-    )
-    ra_and_dec = calibration_data[:, :2]  # Shape (npix, 2)
-    theta_and_phi = np.random.randint(-60, 60, size=ra_and_dec.shape)  # Shape (npix, 2)
-    # This array indicates whether each pixel is in the nominal FOR at each spin phase
-    # step (15000 steps for a full rotation with 1 ms resolution).
-    for_indices_by_spin_phase = calibration_data[:, 2:].astype(
-        bool
-    )  # Shape (npix, 15000)
-    return for_indices_by_spin_phase, theta_and_phi, ra_and_dec
 
 
 def is_inside_fov(phi: np.ndarray, theta: np.ndarray) -> np.ndarray:

@@ -535,8 +535,22 @@ def ancillary_files():
         "l1c-90sensor-efficiencies": path
         / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
         "l1c-90sensor-gf": path / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
-        "l1c-45sensor-nominal-for-lookup": path
-        / "imap_ultra_l1c-45sensor-nominal-for-lookup_20250101_v000.csv",
+        "l1c-90sensor-sc-pointing-theta-n32": path
+        / "imap_ultra_l1c-90sensor-sc-pointing-theta-n32-test_20250101_v000.csv",
+        "l1c-90sensor-sc-pointing-phi-n32": path
+        / "imap_ultra_l1c-90sensor-sc-pointing-phi-n32-test_20250101_v000.csv",
+        "l1c-90sensor-sc-pointing-index-n32": path
+        / "imap_ultra_l1c-90sensor-sc-pointing-index-n32-test_20250101_v000.csv",
+        "l1c-90sensor-sc-pointing-bsf-n32": path
+        / "imap_ultra_l1c-90sensor-sc-pointing-bsf-n32-test_20250101_v000.csv",
+        "l1c-45sensor-sc-pointing-theta-n32": path
+        / "imap_ultra_l1c-90sensor-sc-pointing-theta-n32-test_20250101_v000.csv",
+        "l1c-45sensor-sc-pointing-phi-n32": path
+        / "imap_ultra_l1c-90sensor-sc-pointing-phi-n32-test_20250101_v000.csv",
+        "l1c-45sensor-sc-pointing-index-n32": path
+        / "imap_ultra_l1c-90sensor-sc-pointing-index-n32-test_20250101_v000.csv",
+        "l1c-45sensor-sc-pointing-bsf-n32": path
+        / "imap_ultra_l1c-90sensor-sc-pointing-bsf-n32-test_20250101_v000.csv",
     }
 
 

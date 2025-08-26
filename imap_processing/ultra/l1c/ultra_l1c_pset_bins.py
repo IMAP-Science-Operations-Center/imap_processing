@@ -3,11 +3,9 @@
 import astropy_healpix.healpy as hp
 import numpy as np
 import pandas
-import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
 from scipy import interpolate
-from scipy.interpolate import interp1d
 
 from imap_processing.spice.geometry import (
     SpiceFrame,
@@ -400,7 +398,7 @@ def get_spacecraft_exposure_times(
     rates_dataset: xr.Dataset,
     params_dataset: xr.Dataset,
     pixels_below_scattering: list[list],
-) -> NDArray:
+) -> tuple[NDArray, NDArray]:
     """
     Compute exposure times for HEALPix pixels.
 
@@ -424,24 +422,27 @@ def get_spacecraft_exposure_times(
         Total exposure times of pixels in a
         Healpix tessellation of the sky
         in the pointing (dps) frame.
+    nominal_deadtime_ratios : np.ndarray
+        Deadtime ratios at each spin phase step (1ms res).
     """
     # TODO: use the universal spin table and
     #  universal pointing table here to determine actual number of spins
     sectored_rates = get_sectored_rates(rates_dataset, params_dataset)
     nominal_deadtime_ratios = get_deadtime_ratios_by_spin_phase(sectored_rates)
-    # TODO save nominal_deadtime_ratios to the pset.
     exposure_pointing = (
         constant_exposure["Exposure Time"] * 5760
     )  # 5760 spins per pointing (for now)
     exposure_pointing_adjusted = apply_deadtime_correction(
         exposure_pointing, nominal_deadtime_ratios, pixels_below_scattering
     )
-    return exposure_pointing_adjusted
+    return exposure_pointing_adjusted, nominal_deadtime_ratios
 
 
 def get_efficiencies_and_geometric_function(
     pixels_below_scattering: list[list],
-    theta_and_phi: np.ndarray,
+    theta_vals: np.ndarray,
+    phi_vals: np.ndarray,
+    npix: int,
     ancillary_files: dict,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
@@ -456,9 +457,12 @@ def get_efficiencies_and_geometric_function(
         The outer list indicates spin phase steps, the middle list indicates energy
         bins, and the inner list contains pixel indices indicating pixels that are
         below the FWHM scattering threshold.
-    theta_and_phi : np.ndarray
-        Array of theta and phi values for each pixel. First column is theta,
-        second is phi.
+    theta_vals : np.ndarray
+        A 2D array of theta values for each HEALPix pixel at each spin phase step.
+    phi_vals : np.ndarray
+         A 2D array of phi values for each HEALPix pixel at each spin phase step.
+    npix : int
+        Number of HEALPix pixels.
     ancillary_files : dict
         Dictionary containing ancillary files.
 
@@ -474,67 +478,76 @@ def get_efficiencies_and_geometric_function(
     # Get energy bin geometric means
     energy_bin_geometric_means = build_energy_bins()[2]
     energy_bins = len(energy_bin_geometric_means)
-    # Number of pixels is the length of theta or phi
-    npix = theta_and_phi.shape[0]
     # Initialize summation arrays for geometric factors and efficiencies
     gf_summation = np.zeros((energy_bins, npix))
     eff_summation = np.zeros((energy_bins, npix))
     sample_count = np.zeros((energy_bins, npix))
-    # Compute gf and eff for these theta/phi pairs
-    gf_values = get_geometric_factor(
-        ancillary_files,
-        "l1b-sensor-gf-blades",
-        theta_and_phi[:, 0],  # Theta
-        theta_and_phi[:, 1],  # Phi
-        np.zeros(theta_and_phi.shape[0]).astype(np.uint16),
-    )
     # Loop through spin phases
-    for pixels_at_spin in pixels_below_scattering:
+    for i, pixels_at_spin in enumerate(pixels_below_scattering):
         # Loop through energy bins
+        # Compute gf and eff for these theta/phi pairs
+        theta_at_spin = theta_vals[:, i]
+        phi_at_spin = phi_vals[:, i]
+        gf_values = get_geometric_factor(
+            ancillary_files,
+            "l1b-sensor-gf-blades",
+            theta_at_spin,
+            phi_at_spin,
+            np.zeros(len(phi_at_spin)).astype(np.uint16),
+        )
         for energy_bin_idx in range(energy_bins):
             pixel_inds = pixels_at_spin[energy_bin_idx]
             if pixel_inds.size == 0:
                 continue
             energy = energy_bin_geometric_means[energy_bin_idx]
-            # Get theta and phi vals for pixels in the FOR at this spin phase
-            theta_vals = theta_and_phi[pixel_inds, 0]
-            phi_vals = theta_and_phi[pixel_inds, 1]
             eff_values = get_efficiency(
-                np.full(phi_vals.shape, energy),
-                phi_vals,
-                theta_vals,
+                np.full(phi_at_spin[pixel_inds].shape, energy),
+                phi_at_spin[pixel_inds],
+                theta_at_spin[pixel_inds],
                 ancillary_files,
                 interpolator=eff_interpolator,
             )
-
-            # Accumulate
+            # Accumulate gf and eff values
             gf_summation[energy_bin_idx, pixel_inds] += gf_values[pixel_inds]
             eff_summation[energy_bin_idx, pixel_inds] += eff_values
             sample_count[energy_bin_idx, pixel_inds] += 1
 
     # return averaged geometric factors and efficiencies across all spin phases
     # These are now energy dependent.
-    non_zero = sample_count > 0
-    gf_averaged = gf_summation[non_zero] / sample_count[non_zero]
-    eff_averaged = eff_summation[non_zero] / sample_count[non_zero]
+    gf_averaged = np.divide(gf_summation, sample_count, where=sample_count != 0)
+    eff_averaged = np.divide(eff_summation, sample_count, where=sample_count != 0)
     return gf_averaged, eff_averaged
 
 
-def get_helio_exposure_times(
+def get_helio_adjusted_data(
     time: np.ndarray,
-    df_exposure: pd.DataFrame,
+    exposure_time: np.ndarray,
+    geometric_factor: np.ndarray,
+    efficiency: np.ndarray,
+    ra: np.ndarray,
+    dec: np.ndarray,
     nside: int = 128,
     nested: bool = False,
-) -> NDArray:
+) -> tuple[NDArray, NDArray, NDArray]:
     """
-    Compute a 2D (Healpix index, energy) array of exposure in the helio frame.
+    Compute 2D (Healpix index, energy) arrays for in the helio frame.
+
+    Build CG corrected exposure, efficiency, and geometric factor arrays.
 
     Parameters
     ----------
     time : np.ndarray
         Median time of pointing in et.
-    df_exposure : pd.DataFrame
-        Spacecraft exposure in healpix coordinates.
+    exposure_time : np.ndarray
+        Spacecraft exposure. Shape = (energy, npix).
+    geometric_factor : np.ndarray
+        Geometric factor values. Shape = (energy, npix).
+    efficiency : np.ndarray
+        Efficiency values. Shape = (energy, npix).
+    ra : np.ndarray
+        Right ascension in the spacecraft frame (degrees).
+    dec : np.ndarray
+        Declination in the spacecraft frame (degrees).
     nside : int, optional
         The nside parameter of the Healpix tessellation (default is 128).
     nested : bool, optional
@@ -543,7 +556,11 @@ def get_helio_exposure_times(
     Returns
     -------
     helio_exposure : np.ndarray
-        A 2D array of shape (npix, n_energy_bins).
+        A 2D array of shape (n_energy_bins, npix).
+    helio_efficiency : np.ndarray
+        A 2D array of shape (n_energy_bins, npix).
+    helio_geometric_factors : np.ndarray
+        A 2D array of shape (n_energy_bins, npix).
 
     Notes
     -----
@@ -551,10 +568,6 @@ def get_helio_exposure_times(
     """
     # Get energy midpoints.
     _, energy_midpoints, _ = build_energy_bins()
-    # Extract (RA/Dec) and exposure from the spacecraft frame.
-    ra = df_exposure["Right Ascension (deg)"].values
-    dec = df_exposure["Declination (deg)"].values
-    exposure_flat = df_exposure["Exposure Time"].values
 
     # The Cartesian state vector representing the position and velocity of the
     # IMAP spacecraft.
@@ -565,12 +578,21 @@ def get_helio_exposure_times(
     # Convert (RA, Dec) angles into 3D unit vectors.
     # Each unit vector represents a direction in the sky where the spacecraft observed
     # and accumulated exposure time.
+    npix = hp.nside2npix(nside)
     unit_dirs = hp.ang2vec(ra, dec, lonlat=True).T  # Shape (N, 3)
-
+    shape = (len(energy_midpoints), int(npix))
+    if np.any(
+        [arr.shape != shape for arr in [exposure_time, geometric_factor, efficiency]]
+    ):
+        raise ValueError(
+            f"Input arrays must have the same shape {shape}, but got "
+            f"{exposure_time.shape}, {geometric_factor.shape}, {efficiency.shape}."
+        )
     # Initialize output array.
     # Each row corresponds to a HEALPix pixel, and each column to an energy bin.
-    npix = hp.nside2npix(nside)
     helio_exposure = np.zeros((len(energy_midpoints), npix))
+    helio_efficiency = np.zeros((len(energy_midpoints), npix))
+    helio_geometric_factors = np.zeros((len(energy_midpoints), npix))
 
     # Loop through energy bins and compute transformed exposure.
     for i, energy_midpoint in enumerate(energy_midpoints):
@@ -600,225 +622,19 @@ def get_helio_exposure_times(
         # Convert azimuth/elevation directions to HEALPix pixel indices.
         hpix_idx = hp.ang2pix(nside, az, el, nest=nested, lonlat=True)
 
-        # Accumulate exposure values into HEALPix pixels for this energy bin.
+        # Accumulate exposure, eff, and gf values into HEALPix pixels for this energy
+        # bin.
         helio_exposure[i, :] = np.bincount(
-            hpix_idx, weights=exposure_flat, minlength=npix
+            hpix_idx, weights=exposure_time[i, :], minlength=npix
+        )
+        helio_efficiency[i, :] = np.bincount(
+            hpix_idx, weights=efficiency[i, :], minlength=npix
+        )
+        helio_geometric_factors[i, :] = np.bincount(
+            hpix_idx, weights=geometric_factor[i, :], minlength=npix
         )
 
-    return helio_exposure
-
-
-def get_spacecraft_sensitivity(
-    efficiencies: pandas.DataFrame,
-    geometric_function: pandas.DataFrame,
-) -> tuple[pandas.DataFrame, NDArray, NDArray, NDArray]:
-    """
-    Compute sensitivity as efficiency * geometric factor.
-
-    Parameters
-    ----------
-    efficiencies : pandas.DataFrame
-        Efficiencies at different energy levels.
-    geometric_function : pandas.DataFrame
-        Geometric function.
-
-    Returns
-    -------
-    pointing_sensitivity : pandas.DataFrame
-        Sensitivity with dimensions (HEALPIX pixel_number, energy).
-    energy_vals : NDArray
-        Energy values of dataframe.
-    right_ascension : NDArray
-        Right ascension (longitude/azimuth) values of dataframe (0 - 360 degrees).
-    declination : NDArray
-        Declination (latitude/elevation) values of dataframe (-90 to 90 degrees).
-    """
-    # Exclude "Right Ascension (deg)" and "Declination (deg)" from the multiplication
-    energy_columns = [
-        col
-        for col in efficiencies.columns
-        if col not in ["Right Ascension (deg)", "Declination (deg)"]
-    ]
-    sensitivity = efficiencies[energy_columns].mul(
-        geometric_function["Response (cm2-sr)"].values, axis=0
-    )
-
-    right_ascension = efficiencies["Right Ascension (deg)"]
-    declination = efficiencies["Declination (deg)"]
-
-    energy_vals = np.array([float(col.replace("keV", "")) for col in energy_columns])
-
-    return sensitivity, energy_vals, right_ascension, declination
-
-
-def grid_sensitivity(
-    efficiencies: pandas.DataFrame,
-    geometric_function: pandas.DataFrame,
-    energy: float,
-) -> NDArray:
-    """
-    Grid the sensitivity.
-
-    Parameters
-    ----------
-    efficiencies : pandas.DataFrame
-        Efficiencies at different energy levels.
-    geometric_function : pandas.DataFrame
-        Geometric function.
-    energy : float
-        Energy to which we are interpolating.
-
-    Returns
-    -------
-    interpolated_sensitivity : np.ndarray
-        Sensitivity with dimensions (HEALPIX pixel_number, 1).
-    """
-    sensitivity, energy_vals, right_ascension, declination = get_spacecraft_sensitivity(
-        efficiencies, geometric_function
-    )
-
-    # Create interpolator over energy dimension for each pixel (axis=1)
-    interp_func = interp1d(
-        energy_vals,
-        sensitivity.values,
-        axis=1,
-        bounds_error=False,
-        fill_value=np.nan,
-    )
-
-    # Interpolate to energy
-    interpolated = interp_func(energy)
-    interpolated = np.where(np.isnan(interpolated), FILLVAL_FLOAT32, interpolated)
-
-    return interpolated
-
-
-def interpolate_sensitivity(
-    efficiencies: pd.DataFrame,
-    geometric_function: pd.DataFrame,
-    nside: int = 128,
-) -> NDArray:
-    """
-    Interpolate the sensitivity and bin it in HEALPix space.
-
-    Parameters
-    ----------
-    efficiencies : pandas.DataFrame
-        Efficiencies at different energy levels.
-    geometric_function : pandas.DataFrame
-        Geometric function.
-    nside : int, optional
-        Healpix nside resolution (default is 128).
-
-    Returns
-    -------
-    interpolated_sensitivity : np.ndarray
-        Array of shape (n_energy_bins, n_healpix_pixels).
-    """
-    _, _, energy_bin_geometric_means = build_energy_bins()
-    npix = hp.nside2npix(nside)
-
-    interpolated_sensitivity = np.full(
-        (len(energy_bin_geometric_means), npix), FILLVAL_FLOAT32
-    )
-
-    for i, energy in enumerate(energy_bin_geometric_means):
-        pixel_sensitivity = grid_sensitivity(
-            efficiencies, geometric_function, energy
-        ).flatten()
-        interpolated_sensitivity[i, :] = pixel_sensitivity
-
-    return interpolated_sensitivity
-
-
-def get_helio_sensitivity(
-    time: np.ndarray,
-    efficiencies: pandas.DataFrame,
-    geometric_function: pandas.DataFrame,
-    nside: int = 128,
-    nested: bool = False,
-) -> NDArray:
-    """
-    Compute a 2D (Healpix index, energy) array of sensitivity in the helio frame.
-
-    Parameters
-    ----------
-    time : np.ndarray
-        Median time of pointing in et.
-    efficiencies : pandas.DataFrame
-        Efficiencies at different energy levels.
-    geometric_function : pandas.DataFrame
-        Geometric function.
-    nside : int, optional
-        The nside parameter of the Healpix tessellation (default is 128).
-    nested : bool, optional
-        Whether the Healpix tessellation is nested (default is False).
-
-    Returns
-    -------
-    helio_sensitivity : np.ndarray
-        A 2D array of shape (npix, n_energy_bins).
-
-    Notes
-    -----
-    These calculations are performed once per pointing.
-    """
-    # Get energy midpoints.
-    _, energy_midpoints, _ = build_energy_bins()
-
-    # Get sensitivity on the spacecraft grid
-    _, _, ra, dec = get_spacecraft_sensitivity(efficiencies, geometric_function)
-
-    # The Cartesian state vector representing the position and velocity of the
-    # IMAP spacecraft.
-    state = imap_state(time, ref_frame=SpiceFrame.IMAP_DPS)
-
-    # Extract the velocity part of the state vector
-    spacecraft_velocity = state[3:6]
-    # Convert (RA, Dec) angles into 3D unit vectors.
-    # Each unit vector represents a direction in the sky where the spacecraft observed
-    # and accumulated sensitivity.
-    unit_dirs = hp.ang2vec(ra, dec, lonlat=True).T  # Shape (N, 3)
-
-    # Initialize output array.
-    # Each row corresponds to a HEALPix pixel, and each column to an energy bin.
-    npix = hp.nside2npix(nside)
-    helio_sensitivity = np.zeros((len(energy_midpoints), npix))
-
-    # Loop through energy bins and compute transformed sensitivity.
-    for i, energy in enumerate(energy_midpoints):
-        # Convert the midpoint energy to a velocity (km/s).
-        # Based on kinetic energy equation: E = 1/2 * m * v^2.
-        energy_velocity = (
-            np.sqrt(2 * energy * UltraConstants.KEV_J / UltraConstants.MASS_H) / 1e3
-        )
-
-        # Use Galilean Transform to transform the velocity wrt spacecraft
-        # to the velocity wrt heliosphere.
-        # energy_velocity * cartesian -> apply the magnitude of the velocity
-        # to every position on the grid in the despun grid.
-        helio_velocity = spacecraft_velocity.reshape(1, 3) + energy_velocity * unit_dirs
-
-        # Normalized vectors representing the direction of the heliocentric velocity.
-        helio_normalized = helio_velocity / np.linalg.norm(
-            helio_velocity, axis=1, keepdims=True
-        )
-
-        # Convert Cartesian heliocentric vectors into spherical coordinates.
-        # Result: azimuth (longitude) and elevation (latitude) in degrees.
-        helio_spherical = cartesian_to_spherical(helio_normalized)
-        az, el = helio_spherical[:, 1], helio_spherical[:, 2]
-
-        # Convert azimuth/elevation directions to HEALPix pixel indices.
-        hpix_idx = hp.ang2pix(nside, az, el, nest=nested, lonlat=True)
-        gridded_sensitivity = grid_sensitivity(efficiencies, geometric_function, energy)
-
-        # Accumulate sensitivity values into HEALPix pixels for this energy bin.
-        helio_sensitivity[i, :] = np.bincount(
-            hpix_idx, weights=gridded_sensitivity, minlength=npix
-        )
-
-    return helio_sensitivity
+    return helio_exposure, helio_efficiency, helio_geometric_factors
 
 
 def get_spacecraft_background_rates(

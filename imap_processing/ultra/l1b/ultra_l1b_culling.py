@@ -514,7 +514,11 @@ def flag_scattering(
         # Input the theta and phi values for the current energy range.
         # Returns a_theta_val, g_theta_val, a_phi_val, g_phi_val
         theta_coeffs, phi_coeffs = get_scattering_coefficients(
-            ancillary_files, int(sensor[-2:]), theta[event_mask], phi[event_mask]
+            theta[event_mask],
+            phi[event_mask],
+            lookup_tables=None,
+            ancillary_files=ancillary_files,
+            instrument_id=int(sensor[-2:]),
         )
         # FWHM_PHI = A_PHI * E^G_PHI
         # FWHM_THETA = A_THETA * E^G_THETA

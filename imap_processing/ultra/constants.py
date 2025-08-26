@@ -108,6 +108,7 @@ class UltraConstants:
         341.989454569026,
         1e5,
     ]
+    # TODO read these in from a lookup table
     # Culling FWHM Scattering values as a function of energy.
     # The tuple represents the energy range (min, max) in keV, and the value is the
     # FWHM scattering threshold in degrees.
