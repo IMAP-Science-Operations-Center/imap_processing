@@ -6,7 +6,13 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from imap_processing.spice.time import sct_to_et
+from imap_processing.spice.repoint import get_pointing_times
+from imap_processing.spice.time import (
+    et_to_met,
+    met_to_ttj2000ns,
+    sct_to_et,
+    ttj2000ns_to_et,
+)
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
     calculate_pixels_within_scattering_threshold,
     get_spacecraft_pointing_lookup_tables,
@@ -106,8 +112,12 @@ def calculate_helio_pset(
     efficiencies, geometric_function = get_efficiencies_and_geometric_function(
         pixels_below_scattering, theta_vals, phi_vals, n_pix, ancillary_files
     )
-    # TODO fix midpoint time calculation
-    mid_time = sct_to_et(np.median(de_dataset["event_times"].data))
+    # Get midpoint timestamp for pointing.
+    # TODO remove sct_to_et conversion
+    pointing_start, pointing_stop = get_pointing_times(
+        et_to_met(sct_to_et(de_dataset["event_times"].data[0]))
+    )
+    mid_time = ttj2000ns_to_et(met_to_ttj2000ns((pointing_start + pointing_stop) / 2))
     exposure_time, efficiency, geometric_function = get_helio_adjusted_data(
         mid_time,
         exposure_time,

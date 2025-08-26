@@ -524,7 +524,7 @@ def get_efficiencies_and_geometric_function(
 
 
 def get_helio_adjusted_data(
-    time: np.ndarray,
+    time: float,
     exposure_time: np.ndarray,
     geometric_factor: np.ndarray,
     efficiency: np.ndarray,
@@ -540,7 +540,7 @@ def get_helio_adjusted_data(
 
     Parameters
     ----------
-    time : np.ndarray
+    time : float
         Median time of pointing in et.
     exposure_time : np.ndarray
         Spacecraft exposure. Shape = (energy, npix).

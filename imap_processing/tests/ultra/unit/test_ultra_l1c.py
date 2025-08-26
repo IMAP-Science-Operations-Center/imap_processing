@@ -262,11 +262,13 @@ def test_calculate_helio_pset_with_cdf(
     mock_spacecraft_pointing_lookups,
     deadtime_datasets,
     use_fake_spin_data_for_time,
+    use_fake_repoint_data_for_time,
 ):
     """Tests ultra_l1c function with imported test data."""
 
     # Simulate a spin table from MET = 0 to MET = 141 * 15 seconds
     use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
+    use_fake_repoint_data_for_time(np.arange(4.32374e08, 4.99374e08 + 10, 10))
     df = pd.read_csv(TEST_PATH / "IMAP-Ultra45_r1_L1_V0_shortened.csv")
 
     # Select a single pointing number
