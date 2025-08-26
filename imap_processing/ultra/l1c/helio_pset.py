@@ -75,9 +75,10 @@ def calculate_helio_pset(
     species_dataset = de_dataset.isel(epoch=indices)
 
     rejected = get_de_rejection_mask(
-        de_dataset["quality_scattering"].values, de_dataset["quality_outliers"].values
+        species_dataset["quality_scattering"].values,
+        species_dataset["quality_outliers"].values,
     )
-    de_dataset = de_dataset.isel(epoch=~rejected)
+    de_dataset = species_dataset.isel(epoch=~rejected)
 
     v_mag_helio_spacecraft = np.linalg.norm(
         species_dataset["velocity_dps_helio"].values, axis=1
