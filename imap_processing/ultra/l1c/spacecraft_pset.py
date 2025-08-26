@@ -67,9 +67,7 @@ def calculate_spacecraft_pset(
         Dataset containing the data.
     """
     pset_dict: dict[str, np.ndarray] = {}
-    spacecraft_pset_quality_flags = np.full(
-        de_dataset["epoch"].shape, ImapPSETUltraFlags.NONE.value, dtype=np.uint16
-    )
+
     sensor = parse_filename_like(name)["sensor"][0:2]
     # Select only the species we are interested in.
     indices = np.where(de_dataset["species"].values == species_id)[0]
@@ -146,6 +144,9 @@ def calculate_spacecraft_pset(
         ancillary_files,
         intervals,
         goodtimes_dataset["spin_number"].values,
+    )
+    spacecraft_pset_quality_flags = np.full(
+        n_pix, ImapPSETUltraFlags.NONE.value, dtype=np.uint16
     )
 
     start: float = np.min(de_dataset["event_times"].values)

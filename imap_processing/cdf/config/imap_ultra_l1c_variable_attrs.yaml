@@ -17,6 +17,14 @@ default_float32_attrs: &default_float32
   VALIDMAX: 3.4028235e+38
   dtype: float32
 
+default_uint16_attrs: &default_uint16
+  <<: *default
+  FILLVAL: 65535
+  FORMAT: I5
+  VALIDMIN: 0
+  VALIDMAX: 65535
+  dtype: uint16
+
 energy_dependent_attrs: &energy_dependent
   <<: *default_float32
   DEPEND_1: energy_bin_geometric_mean
@@ -105,6 +113,17 @@ counts:
   LABLAXIS: counts
   # TODO: come back to format
   UNITS: counts
+
+
+quality_flags:
+  <<: *default_uint16
+  CATDESC: Spin filter derived from Ultra ena rates. Bitwise flagging used to filter the spin.
+  FIELDNAM: quality_ena_rates
+  LABLAXIS: quality_ena_rates
+  DEPEND_0: epoch
+  DEPEND_1: spin_number
+  DEPEND_2: energy_bin_geometric_mean
+  UNITS: " "
 
 background_rates:
   <<: *default_float32

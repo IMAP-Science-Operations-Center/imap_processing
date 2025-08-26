@@ -8,6 +8,7 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.spice.geometry import SpiceFrame
+from imap_processing.spice.time import met_to_sclkticks, sct_to_et
 from imap_processing.ultra.l1b.ultra_l1b_annotated import (
     get_annotated_particle_velocity,
 )
@@ -77,6 +78,7 @@ def test_calculate_spacecraft_pset(
                 ["epoch"],
                 np.zeros(len(df["Spin"].values), dtype=np.uint16),
             ),
+            "event_times": sct_to_et(met_to_sclkticks(df["MET"].values)),
         },
         coords={
             "epoch": ("epoch", epoch),

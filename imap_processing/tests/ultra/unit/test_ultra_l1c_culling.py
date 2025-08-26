@@ -33,9 +33,17 @@ def test_compute_culling_mask(furnish_kernels, spice_test_data_path):
     et_end = 817644684.1856259
     step_seconds = 1800  # 30 minutes
     et_steps = np.arange(et_start, et_end, step_seconds)
+    nside = 128
+    npix = hp.nside2npix(nside)
+
+    spacecraft_pset_quality_flags = np.full(
+        npix, ImapPSETUltraFlags.NONE.value, dtype=np.uint16
+    )
 
     with furnish_kernels(kernels):
-        mask, _ = compute_culling_mask(et_steps, keepout_radius_km)
+        mask, _ = compute_culling_mask(
+            et_steps, keepout_radius_km, spacecraft_pset_quality_flags
+        )
 
     assert mask.shape[0] == len(et_steps)
     assert mask.shape[1] == hp.nside2npix(128)
