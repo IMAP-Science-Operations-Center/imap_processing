@@ -232,15 +232,12 @@ def get_energy_efficiencies(ancillary_files: dict) -> pd.DataFrame:
     return lookup_table
 
 
-def get_geometric_factor(
+def load_geometric_factor_tables(
     ancillary_files: dict,
     filename: str,
-    phi: NDArray,
-    theta: NDArray,
-    quality_flag: NDArray,
-) -> tuple[NDArray, NDArray]:
+) -> dict:
     """
-    Lookup table for geometric factor using nearest neighbor.
+    Lookup tables for geometric factor.
 
     Parameters
     ----------
@@ -248,17 +245,11 @@ def get_geometric_factor(
         Ancillary files.
     filename : str
         Name of the file in ancillary_files to use.
-    phi : NDArray
-        Azimuth angles in degrees.
-    theta : NDArray
-        Elevation angles in degrees.
-    quality_flag : NDArray
-        Quality flag to set when geometric factor is zero.
 
     Returns
     -------
-    geometric_factor : NDArray
-        Geometric factor.
+    geometric_factor_tables : dict
+        Geometric factor lookup tables.
     """
     gf_table = pd.read_csv(
         ancillary_files[filename], header=None, skiprows=6, nrows=301
@@ -269,16 +260,64 @@ def get_geometric_factor(
     phi_table = pd.read_csv(
         ancillary_files[filename], header=None, skiprows=610, nrows=301
     ).to_numpy(dtype=float)
+
+    return {
+        "gf_table": gf_table,
+        "theta_table": theta_table,
+        "phi_table": phi_table,
+    }
+
+
+def get_geometric_factor(
+    phi: NDArray,
+    theta: NDArray,
+    quality_flag: NDArray,
+    ancillary_files: dict | None = None,
+    filename: str | None = None,
+    geometric_factor_tables: dict | None = None,
+) -> tuple[NDArray, NDArray]:
+    """
+    Lookup table for geometric factor using nearest neighbor.
+
+    Parameters
+    ----------
+    phi : NDArray
+        Azimuth angles in degrees.
+    theta : NDArray
+        Elevation angles in degrees.
+    quality_flag : NDArray
+        Quality flag to set when geometric factor is zero.
+    ancillary_files : dict[Path], optional
+        Ancillary files.
+    filename : str, optional
+        Name of the file in ancillary_files to use.
+    geometric_factor_tables : dict, optional
+        Preloaded geometric factor lookup tables. If not provided, will load.
+
+    Returns
+    -------
+    geometric_factor : NDArray
+        Geometric factor.
+    """
+    if geometric_factor_tables is None:
+        if ancillary_files is None or filename is None:
+            raise ValueError(
+                "ancillary_files and filename must be provided if "
+                "geometric_factor_tables is not supplied."
+            )
+        geometric_factor_tables = load_geometric_factor_tables(
+            ancillary_files, filename
+        )
     # Assume uniform grids: extract 1D arrays from first row/col
-    theta_vals = theta_table[0, :]  # columns represent theta
-    phi_vals = phi_table[:, 0]  # rows represent phi
+    theta_vals = geometric_factor_tables["theta_table"][0, :]  # columns represent theta
+    phi_vals = geometric_factor_tables["phi_table"][:, 0]  # rows represent phi
 
     # Find nearest index in table for each input value
     phi_idx = np.abs(phi_vals[:, None] - phi).argmin(axis=0)
     theta_idx = np.abs(theta_vals[:, None] - theta).argmin(axis=0)
 
     # Fetch geometric factor values at nearest (phi, theta) pairs
-    geometric_factor = gf_table[phi_idx, theta_idx]
+    geometric_factor = geometric_factor_tables["gf_table"][phi_idx, theta_idx]
 
     outside_fov = ~is_inside_fov(np.deg2rad(phi), np.deg2rad(theta))
     quality_flag[outside_fov] |= ImapDEOutliersUltraFlags.FOV.value

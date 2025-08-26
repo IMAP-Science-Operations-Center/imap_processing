@@ -127,7 +127,11 @@ def test_get_geometric_function(ancillary_files):
         phi.shape, ImapDEOutliersUltraFlags.NONE.value, dtype=np.uint16
     )
     gf = get_geometric_factor(
-        ancillary_files, "l1b-sensor-gf-noblades", phi, theta, quality_flags
+        phi,
+        theta,
+        quality_flags,
+        ancillary_files,
+        "l1b-sensor-gf-noblades",
     )
 
     np.testing.assert_array_equal(

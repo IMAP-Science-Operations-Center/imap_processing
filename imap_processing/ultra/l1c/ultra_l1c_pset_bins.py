@@ -17,6 +17,7 @@ from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
     get_geometric_factor,
     get_image_params,
+    load_geometric_factor_tables,
 )
 from imap_processing.ultra.l1b.ultra_l1b_culling import (
     get_pulses_per_spin,
@@ -475,6 +476,10 @@ def get_efficiencies_and_geometric_function(
     """
     # Load callable efficiency interpolator function
     eff_interpolator = get_efficiency_interpolator(ancillary_files)
+    # load geometric factor lookup table
+    geometric_lookup_table = load_geometric_factor_tables(
+        ancillary_files, "l1b-sensor-gf-blades"
+    )
     # Get energy bin geometric means
     energy_bin_geometric_means = build_energy_bins()[2]
     energy_bins = len(energy_bin_geometric_means)
@@ -489,11 +494,10 @@ def get_efficiencies_and_geometric_function(
         theta_at_spin = theta_vals[:, i]
         phi_at_spin = phi_vals[:, i]
         gf_values = get_geometric_factor(
-            ancillary_files,
-            "l1b-sensor-gf-blades",
-            theta_at_spin,
-            phi_at_spin,
-            np.zeros(len(phi_at_spin)).astype(np.uint16),
+            phi=phi_at_spin,
+            theta=theta_at_spin,
+            quality_flag=np.zeros(len(phi_at_spin)).astype(np.uint16),
+            geometric_factor_tables=geometric_lookup_table,
         )
         for energy_bin_idx in range(energy_bins):
             pixel_inds = pixels_at_spin[energy_bin_idx]
