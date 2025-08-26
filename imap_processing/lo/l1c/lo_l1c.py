@@ -118,6 +118,15 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         pset["exposure_time"] = calculate_exposure_times(
             full_counts, l1b_goodtimes_only
         )
+
+        # Set backgrounds
+        pset["h_background_rates"] = set_background_rates()
+        pset["o_background_rates"] = set_background_rates()
+        pset["h_background_sys_err"] = set_background_sys_err()
+        pset["o_background_sys_err"] = set_background_sys_err()
+        pset["h_background_stat_err"] = set_background_stat_uncert()
+        pset["o_background_stat_err"] = set_background_stat_uncert()
+
     pset.attrs = attr_mgr.get_global_attributes(logical_source)
 
     pset = pset.assign_coords(
@@ -484,3 +493,46 @@ def create_datasets(
             )
 
     return dataset
+
+def set_background_rates(epoch: xr.DataArray, anc_dependencies: list, species: FilterType) -> xr.DataArray:
+    """
+    Set the background rates for the specified species.
+
+    The background rates are set to a constant value of 0.01 counts/s for all bins.
+
+    Parameters
+    ----------
+    species : FilterType
+        The species to set the background rates for. Can be "h" or "o".
+
+    Returns
+    -------
+    background_rates : xarray.DataArray
+        The background rates for the specified species.
+    """
+    if species not in {FilterType.HYDROGEN, FilterType.OXYGEN}:
+        raise ValueError("Species must be 'h' or 'o'.")
+
+    # read in the background rates from ancillary file
+    background_df = pd.read_csv(anc_dependencies[1])
+    met_time =
+    #TODO: inclusive or exclusive for each end?
+    goodtimes_bg = background_df[epoch >= background_df["GoodTime_strt"] and epoch <= background_df["GoodTime_end"]]
+    goodtimes_bg_rate = goodtimes_bg[goodtimes_bg["rate/sigma"] == "rate"]
+    goodtimes_bg_uncert = goodtimes_bg[goodtimes_bg["rate/sigma"] == "sigma"]
+
+
+
+
+
+    background_rates = xr.DataArray(
+        data=np.full(PSET_SHAPE, 0.01, dtype=np.float16),
+        dims=PSET_DIMS,
+        attrs={
+            "LONG_NAME": f"{species.upper()} background rates",
+            "UNITS": "counts/s",
+            "DESCRIPTION": f"Background rates for {species.upper()} in counts per second.",
+        },
+    )
+
+    return background_rates
