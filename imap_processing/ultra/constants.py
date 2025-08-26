@@ -3,6 +3,8 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
+import numpy as np
+
 
 @dataclass(frozen=True)
 class UltraConstants:
@@ -51,7 +53,6 @@ class UltraConstants:
     Z_DSTOP: float = 2.6 / 2  # Position of stop foil on Z axis [mm]
     Z_DS: float = 46.19 - (2.6 / 2)  # Position of slit on Z axis [mm]
     DF: float = 3.39  # Distance from slit to foil [mm]
-
     # Derived constants
     DMIN_PH_CTOF: float = (
         Z_DS - (2**0.5) * DF
@@ -79,53 +80,42 @@ class UltraConstants:
     CULLING_RPM_MIN = 2.0
     CULLING_RPM_MAX = 6.0
 
-    # Thresholds for culling based on counts.
+    # Thresholds for culling based on counts (keV).
     CULLING_ENERGY_BIN_EDGES: ClassVar[list] = [
         3.385,
         4.13722222222222,
-        4.13722222222222,
-        5.05660493827161,
         5.05660493827161,
         6.18029492455419,
-        6.18029492455419,
-        7.55369379667734,
         7.55369379667734,
         9.23229241816119,
-        9.23229241816119,
-        11.2839129555303,
         11.2839129555303,
         13.7914491678704,
-        13.7914491678704,
-        16.8562156496194,
         16.8562156496194,
         20.6020413495348,
-        20.6020413495348,
-        25.1802727605426,
         25.1802727605426,
         30.775888929552,
-        30.775888929552,
-        37.6149753583414,
         37.6149753583414,
         45.9738587713061,
-        45.9738587713061,
-        56.1902718315964,
         56.1902718315964,
         68.6769989052845,
-        68.6769989052845,
-        83.93855421757,
         83.93855421757,
         102.591566265919,
-        102.591566265919,
-        125.38969210279,
         125.38969210279,
         153.254068125632,
-        153.254068125632,
-        187.310527709106,
         187.310527709106,
         228.93508942224,
-        228.93508942224,
-        279.809553738294,
         279.809553738294,
         341.989454569026,
         1e5,
     ]
+    # TODO read these in from a lookup table
+    # Culling FWHM Scattering values as a function of energy.
+    # The tuple represents the energy range (min, max) in keV, and the value is the
+    # FWHM scattering threshold in degrees.
+    ULTRA_FWHM_SCATTERING_CULLING_THRESHOLDS: ClassVar[dict] = {
+        (1, 5): 12,
+        (5, 8): 10,
+        (8, 10): 8,
+        (10, 20): 6,
+        (20, np.inf): 4,
+    }

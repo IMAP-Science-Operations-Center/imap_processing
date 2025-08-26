@@ -129,31 +129,35 @@ HI_IALIRT_VARIABLE_NAMES = ["h"]
 
 # CDF variable names used for direct event data products
 HI_DE_CDF_FIELDS = [
-    "NumEvents",
-    "DataQuality",
-    "SSDEnergy",
-    "TOF",
-    "SSD_ID",
-    "ERGE",
-    "MultiFlag",
-    "Type",
-    "SpinAngle",
-    "SpinNumber",
+    "num_events",
+    "data_quality",
+    "ssd_energy",
+    "tof",
+    "ssd_id",
+    "gain",
+    "multi_flag",
+    "type",
+    "spin_sector",
+    "spin_number",
 ]
-HI_DE_VARIABLE_NAMES = [f"P{n}_{field}" for n in range(6) for field in HI_DE_CDF_FIELDS]
+HI_DIRECT_EVENTS_VARIABLE_NAMES = [
+    f"p{n}_{field}" for n in range(6) for field in HI_DE_CDF_FIELDS
+]
 LO_DE_CDF_FIELDS = [
-    "NumEvents",
-    "DataQuality",
-    "APDGain",
-    "APD_ID",
-    "APDEnergy",
-    "TOF",
-    "MultiFlag",
-    "PHAType",
-    "SpinAngle",
-    "EnergyStep",
+    "num_events",
+    "data_quality",
+    "gain",
+    "apd_id",
+    "apd_energy",
+    "tof",
+    "multi_flag",
+    "type",
+    "spin_sector",
+    "energy_step",
 ]
-LO_DE_VARIABLE_NAMES = [f"P{n}_{field}" for n in range(8) for field in LO_DE_CDF_FIELDS]
+LO_DIRECT_EVENTS_VARIABLE_NAMES = [
+    f"p{n}_{field}" for n in range(8) for field in LO_DE_CDF_FIELDS
+]
 
 # Final I-ALiRT data product fields
 CODICE_LO_IAL_DATA_FIELDS = [
@@ -171,34 +175,34 @@ CODICE_HI_IAL_DATA_FIELDS = ["h"]
 # TODO: Try to convince Joey to move to lower case variable names with
 #       underscores?
 LO_COUNTERS_AGGREGATED_ACTIVE_VARIABLES = {
-    "TCR": True,
-    "DCR": True,
-    "TOFPlusAPD": False,
-    "TOFOnly": False,
-    "PositionPlusAPD": False,
-    "PositionOnly": False,
-    "STAorSTBPlusAPD": False,
-    "STAorSTBOnly": False,
-    "Reserved1": False,
-    "Reserved2": False,
-    "SPOnly": False,
-    "APDOnly": False,
-    "LowTOFCutoff": False,
-    "STA": True,
-    "STB": True,
-    "SP": True,
-    "TotalPositionCount": True,
-    "InvalidPositionCount": False,
-    "ASIC1FlagInvalid": False,
-    "ASIC2FlagInvalid": False,
-    "ASIC1ChannelInvalid": False,
-    "ASIC2ChannelInvalid": False,
-    "TEC4TimeoutTOFNoPos": False,
-    "TEC4TimeoutPosNoTOF": False,
-    "TEC4TimeoutNoPosTOF": False,
-    "TEC5TimeoutTOFNoPos": False,
-    "TEC5TimeoutPosNoTOF": False,
-    "TEC5TimeoutNoPosTOF": False,
+    "tcr": True,
+    "dcr": True,
+    "tof_plus_apd": False,
+    "tof_only": False,
+    "position_plus_apd": False,
+    "position_only": False,
+    "sta_or_stb_plus_apd": False,
+    "sta_or_stb_only": False,
+    "reserved1": False,
+    "reserved2": False,
+    "sp_only": False,
+    "apd_only": False,
+    "low_tof_cutoff": False,
+    "sta": True,
+    "stb": True,
+    "sp": True,
+    "total_position_count": True,
+    "invalid_position_count": False,
+    "asic1_flag_invalid": False,
+    "asic2_flag_invalid": False,
+    "asic1_channel_invalid": False,
+    "asic2_channel_invalid": False,
+    "tec4_timeout_tof_no_pos": False,
+    "tec4_timeout_pos_no_tof": False,
+    "tec4_timeout_no_pos_tof": False,
+    "tec5_timeout_tof_no_pos": False,
+    "tec5_timeout_pos_no_tof": False,
+    "tec5_timeout_no_pos_tof": False,
 }
 LO_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
     name
@@ -206,22 +210,22 @@ LO_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
     if is_active
 ]
 HI_COUNTERS_AGGREGATED_ACTIVE_VARIABLES = {
-    "DCR": True,
-    "STO": True,
-    "SPO": True,
-    "Reserved1": False,
-    "MST": True,
-    "Reserved2": False,
-    "Reserved3": False,
-    "Reserved4": False,
-    "Reserved5": False,
-    "LowTOFCutoff": False,
-    "Reserved6": False,
-    "Reserved7": False,
-    "ASIC1FlagInvalid": True,
-    "ASIC2FlagInvalid": True,
-    "ASIC1ChannelInvalid": False,
-    "ASIC2ChannelInvalid": False,
+    "dcr": True,
+    "sto": True,
+    "spo": True,
+    "reserved1": False,
+    "mst": True,
+    "reserved2": False,
+    "reserved3": False,
+    "reserved4": False,
+    "reserved5": False,
+    "low_tof_cutoff": False,
+    "reserved6": False,
+    "reserved7": False,
+    "asic1_flag_invalid": True,
+    "asic2_flag_invalid": True,
+    "asic1_channel_invalid": False,
+    "asic_2_channel_invalid": False,
 }
 HI_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
     name
@@ -728,42 +732,42 @@ DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
     CODICEAPID.COD_HI_PHA: {
         "num_priorities": 6,
         "bit_structure": {
-            "SSDEnergy": {
+            "ssd_energy": {
                 "bit_length": 11,
                 "dtype": np.uint16,
                 "fillval": np.iinfo(np.uint16).max,
             },
-            "TOF": {
+            "tof": {
                 "bit_length": 10,
                 "dtype": np.uint16,
                 "fillval": np.iinfo(np.uint16).max,
             },
-            "SSD_ID": {
+            "ssd_id": {
                 "bit_length": 4,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "ERGE": {
+            "gain": {
                 "bit_length": 2,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "MultiFlag": {
+            "multi_flag": {
                 "bit_length": 1,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "Type": {
+            "type": {
                 "bit_length": 2,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "SpinAngle": {
+            "spin_sector": {
                 "bit_length": 5,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "SpinNumber": {
+            "spin_number": {
                 "bit_length": 4,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
@@ -784,47 +788,47 @@ DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
     CODICEAPID.COD_LO_PHA: {
         "num_priorities": 8,
         "bit_structure": {
-            "APDGain": {
+            "gain": {
                 "bit_length": 1,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "APD_ID": {
+            "apd_id": {
                 "bit_length": 5,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "Position": {
+            "position": {
                 "bit_length": 5,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "APDEnergy": {
+            "apd_energy": {
                 "bit_length": 9,
                 "dtype": np.uint16,
                 "fillval": np.iinfo(np.uint16).max,
             },
-            "TOF": {
+            "tof": {
                 "bit_length": 10,
                 "dtype": np.uint16,
                 "fillval": np.iinfo(np.uint16).max,
             },
-            "MultiFlag": {
+            "multi_flag": {
                 "bit_length": 1,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "PHAType": {
+            "type": {
                 "bit_length": 2,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "SpinAngle": {
+            "spin_sector": {
                 "bit_length": 5,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,
             },
-            "EnergyStep": {
+            "energy_step": {
                 "bit_length": 7,
                 "dtype": np.uint8,
                 "fillval": np.iinfo(np.uint8).max,

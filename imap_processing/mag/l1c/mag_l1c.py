@@ -124,6 +124,23 @@ def mag_l1c(
     try:
         global_attributes["is_mago"] = normal_mode_dataset.attrs["is_mago"]
         global_attributes["is_active"] = normal_mode_dataset.attrs["is_active"]
+
+        # Check if all vectors are primary in both normal and burst datasets
+        is_mago = normal_mode_dataset.attrs.get("is_mago", "False") == "True"
+        normal_all_primary = normal_mode_dataset.attrs.get("all_vectors_primary", False)
+
+        # Default for missing burst dataset: 1 if MAGO (expected primary), 0 if MAGI
+        burst_all_primary = is_mago
+        if burst_mode_dataset is not None:
+            burst_all_primary = burst_mode_dataset.attrs.get(
+                "all_vectors_primary", False
+            )
+
+        # Both datasets must have all vectors primary for the combined result to be True
+        global_attributes["all_vectors_primary"] = (
+            normal_all_primary and burst_all_primary
+        )
+
         global_attributes["missing_sequences"] = normal_mode_dataset.attrs[
             "missing_sequences"
         ]
@@ -161,8 +178,9 @@ def mag_l1c(
         output_core_dims=[[]],
         vectorize=True,
     )
-    # output_dataset['vector_magnitude'].attrs =
-    # attribute_manager.get_variable_attributes("vector_magnitude_attrs")
+    output_dataset[
+        "vector_magnitude"
+    ].attrs = attribute_manager.get_variable_attributes("vector_magnitude_attrs")
 
     output_dataset["compression_flags"] = xr.DataArray(
         completed_timeline[:, 6:8],
@@ -175,7 +193,7 @@ def mag_l1c(
         completed_timeline[:, 5],
         name="generated_flag",
         dims=["epoch"],
-        # attrs=attribute_manager.get_variable_attributes("generated_flag_attrs"),
+        attrs=attribute_manager.get_variable_attributes("generated_flag_attrs"),
     )
 
     return output_dataset

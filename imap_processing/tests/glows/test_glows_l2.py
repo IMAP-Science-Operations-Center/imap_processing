@@ -1,13 +1,18 @@
+from unittest.mock import patch
+
 import numpy as np
 import pytest
 import xarray as xr
 
+from imap_processing.glows.l1b.glows_l1b import glows_l1b
+from imap_processing.glows.l1b.glows_l1b_data import HistogramL1B
 from imap_processing.glows.l2.glows_l2 import (
     generate_l2,
     glows_l2,
     return_good_times,
 )
 from imap_processing.glows.l2.glows_l2_data import DailyLightcurve
+from imap_processing.tests.glows.conftest import mock_update_spice_parameters
 
 
 @pytest.fixture
@@ -28,7 +33,17 @@ def l1b_hists():
     return input
 
 
-def test_glows_l2(l1b_hist_dataset):
+@patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
+def test_glows_l2(mock_spice_function, l1a_dataset, mock_ancillary_exclusions):
+    mock_spice_function.side_effect = mock_update_spice_parameters
+
+    l1b_hist_dataset = glows_l1b(
+        l1a_dataset[0],
+        mock_ancillary_exclusions.excluded_regions,
+        mock_ancillary_exclusions.uv_sources,
+        mock_ancillary_exclusions.suspected_transients,
+        mock_ancillary_exclusions.exclusions_by_instr_team,
+    )
     l2 = glows_l2(l1b_hist_dataset)[0]
     assert l2.attrs["Logical_source"] == "imap_glows_l2_hist"
 
@@ -49,7 +64,17 @@ def test_filter_good_times():
     assert np.array_equal(good_times, expected_good_times)
 
 
-def test_generate_l2(l1b_hist_dataset):
+@patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
+def test_generate_l2(mock_spice_function, l1a_dataset, mock_ancillary_exclusions):
+    mock_spice_function.side_effect = mock_update_spice_parameters
+
+    l1b_hist_dataset = glows_l1b(
+        l1a_dataset[0],
+        mock_ancillary_exclusions.excluded_regions,
+        mock_ancillary_exclusions.uv_sources,
+        mock_ancillary_exclusions.suspected_transients,
+        mock_ancillary_exclusions.exclusions_by_instr_team,
+    )
     l2 = generate_l2(l1b_hist_dataset)
 
     expected_values = {

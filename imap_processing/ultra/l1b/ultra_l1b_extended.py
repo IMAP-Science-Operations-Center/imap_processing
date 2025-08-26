@@ -29,6 +29,7 @@ from imap_processing.ultra.l1b.lookup_utils import (
 logger = logging.getLogger(__name__)
 
 FILLVAL_UINT8 = 255
+FILLVAL_FLOAT32 = -1.0e31
 
 
 class StartType(Enum):
@@ -541,9 +542,9 @@ def get_de_velocity(
     v_y = delta_v[:, 1] / tof * 1e3
     v_z = delta_v[:, 2] / tof * 1e3
 
-    v_x[tof < 0] = np.nan  # used as fillvals
-    v_y[tof < 0] = np.nan
-    v_z[tof < 0] = np.nan
+    v_x[tof < 0] = FILLVAL_FLOAT32  # used as fillvals
+    v_y[tof < 0] = FILLVAL_FLOAT32
+    v_z[tof < 0] = FILLVAL_FLOAT32
 
     velocities = np.vstack((v_x, v_y, v_z)).T
 
@@ -1100,20 +1101,12 @@ def get_fwhm(
     return phi_interp, theta_interp
 
 
-def get_efficiency(
-    energy: NDArray, phi_inst: NDArray, theta_inst: NDArray, ancillary_files: dict
-) -> NDArray:
+def get_efficiency_interpolator(ancillary_files: dict) -> RegularGridInterpolator:
     """
-    Interpolate efficiency values for each event.
+    Return a callable function that interpolates efficiency values for each event.
 
     Parameters
     ----------
-    energy : NDArray
-        Energy values for each event.
-    phi_inst : NDArray
-        Instrument-frame azimuth angle for each event.
-    theta_inst : NDArray
-        Instrument-frame elevation angle for each event.
     ancillary_files : dict
         Ancillary files.
 
@@ -1140,6 +1133,41 @@ def get_efficiency(
         bounds_error=False,
         fill_value=np.nan,
     )
+
+    return interpolator
+
+
+def get_efficiency(
+    energy: NDArray,
+    phi_inst: NDArray,
+    theta_inst: NDArray,
+    ancillary_files: dict,
+    interpolator: RegularGridInterpolator = None,
+) -> np.ndarray:
+    """
+    Return interpolated efficiency values for each event.
+
+    Parameters
+    ----------
+    energy : NDArray
+        Energy values for each event.
+    phi_inst : NDArray
+        Instrument-frame azimuth angle for each event.
+    theta_inst : NDArray
+        Instrument-frame elevation angle for each event.
+    ancillary_files : dict
+        Ancillary files.
+    interpolator : RegularGridInterpolator, optional
+        Precomputed interpolator to use for efficiency lookup.
+        If None, a new interpolator will be created from the ancillary files.
+
+    Returns
+    -------
+    efficiency : NDArray
+        Interpolated efficiency values.
+    """
+    if not interpolator:
+        interpolator = get_efficiency_interpolator(ancillary_files)
 
     return interpolator((theta_inst, phi_inst, energy))
 

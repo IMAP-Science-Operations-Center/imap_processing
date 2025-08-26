@@ -183,3 +183,16 @@ def mock_ancillary_parameters():
         },
     }
     return AncillaryParameters(mock_table)
+
+
+def mock_update_spice_parameters(self, *args, **kwargs):
+    self.spin_period_ground_average = np.float64(0.0)
+    self.spin_period_ground_std_dev = np.float64(0.0)
+    self.position_angle_offset_average = np.float64(0.0)
+    self.position_angle_offset_std_dev = np.float64(0.0)
+    self.spin_axis_orientation_average = np.zeros(2, dtype=np.float64)
+    self.spin_axis_orientation_std_dev = np.zeros(2, dtype=np.float64)
+    self.spacecraft_location_average = np.zeros(3, dtype=np.float64)
+    self.spacecraft_location_std_dev = np.zeros(3, dtype=np.float64)
+    self.spacecraft_velocity_average = np.zeros(3, dtype=np.float64)
+    self.spacecraft_velocity_std_dev = np.zeros(3, dtype=np.float64)

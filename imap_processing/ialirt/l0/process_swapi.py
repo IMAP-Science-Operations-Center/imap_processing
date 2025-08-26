@@ -15,7 +15,7 @@ from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.spice.time import met_to_ttj2000ns, met_to_utc
 from imap_processing.swapi.l1.swapi_l1 import process_sweep_data
-from imap_processing.swapi.l2.swapi_l2 import TIME_PER_BIN
+from imap_processing.swapi.l2.swapi_l2 import SWAPI_LIVETIME
 
 logger = logging.getLogger(__name__)
 
@@ -190,8 +190,8 @@ def process_swapi_ialirt(unpacked_data: xr.Dataset) -> list[dict]:
             continue
 
     raw_coin_count = process_sweep_data(grouped_dataset, "swapi_coin_cnt")
-    raw_coin_rate = raw_coin_count / TIME_PER_BIN
-    count_rate_error = np.sqrt(raw_coin_count) / TIME_PER_BIN
+    raw_coin_rate = raw_coin_count / SWAPI_LIVETIME
+    count_rate_error = np.sqrt(raw_coin_count) / SWAPI_LIVETIME
 
     solution = optimize_pseudo_parameters(raw_coin_rate, count_rate_error)
 

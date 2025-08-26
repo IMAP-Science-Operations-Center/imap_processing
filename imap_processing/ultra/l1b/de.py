@@ -4,12 +4,16 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.utils import parse_filename_like
-from imap_processing.quality_flags import ImapDEUltraFlags
+from imap_processing.quality_flags import (
+    ImapDEOutliersUltraFlags,
+    ImapDEScatteringUltraFlags,
+)
 from imap_processing.spice.geometry import SpiceFrame
 from imap_processing.ultra.l1b.lookup_utils import get_geometric_factor
 from imap_processing.ultra.l1b.ultra_l1b_annotated import (
     get_annotated_particle_velocity,
 )
+from imap_processing.ultra.l1b.ultra_l1b_culling import flag_scattering
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     StopType,
     determine_ebin_pulse_height,
@@ -119,6 +123,7 @@ def calculate_de(
     tof = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     etof = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     ctof = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    tof_energy = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     magnitude_v = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     energy = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     e_bin = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
@@ -130,10 +135,18 @@ def calculate_de(
     sc_dps_velocity = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
     helio_velocity = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
     spin_starts = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
+    velocities = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
+    v_hat = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
+    r_hat = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
 
     start_type = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
     quality_flags = np.full(
-        de_dataset["epoch"].shape, ImapDEUltraFlags.NONE.value, dtype=np.uint16
+        de_dataset["epoch"].shape, ImapDEOutliersUltraFlags.NONE.value, dtype=np.uint16
+    )
+    scattering_quality_flags = np.full(
+        de_dataset["epoch"].shape,
+        ImapDEScatteringUltraFlags.NONE.value,
+        dtype=np.uint16,
     )
 
     xf[valid_indices] = get_front_x_position(
@@ -268,17 +281,22 @@ def calculate_de(
     de_dict["phi"] = phi
     de_dict["theta"] = theta
 
-    v, vhat, r = get_de_velocity(
-        (de_dict["x_front"], de_dict["y_front"]),
-        (de_dict["x_back"], de_dict["y_back"]),
-        de_dict["front_back_distance"],
-        de_dict["tof_start_stop"],
+    velocities[valid_indices], v_hat[valid_indices], r_hat[valid_indices] = (
+        get_de_velocity(
+            (de_dict["x_front"][valid_indices], de_dict["y_front"][valid_indices]),
+            (de_dict["x_back"][valid_indices], de_dict["y_back"][valid_indices]),
+            de_dict["front_back_distance"][valid_indices],
+            de_dict["tof_start_stop"][valid_indices],
+        )
     )
-    de_dict["direct_event_velocity"] = v.astype(np.float32)
-    de_dict["direct_event_unit_velocity"] = vhat.astype(np.float32)
-    de_dict["direct_event_unit_position"] = r.astype(np.float32)
+    de_dict["direct_event_velocity"] = velocities.astype(np.float32)
+    de_dict["direct_event_unit_velocity"] = v_hat.astype(np.float32)
+    de_dict["direct_event_unit_position"] = r_hat.astype(np.float32)
 
-    de_dict["tof_energy"] = get_de_energy_kev(v, species_bin)
+    tof_energy[valid_indices] = get_de_energy_kev(
+        velocities[valid_indices], species_bin[valid_indices]
+    )
+    de_dict["tof_energy"] = tof_energy
     de_dict["energy"] = energy
     de_dict["ebin"] = e_bin
     de_dict["species"] = species_bin
@@ -320,20 +338,29 @@ def calculate_de(
         de_dict["tof_energy"], de_dict["phi"], de_dict["theta"], ancillary_files
     )
     de_dict["geometric_factor_blades"] = get_geometric_factor(
+        de_dict["phi"],
+        de_dict["theta"],
+        quality_flags,
         ancillary_files,
         "l1b-sensor-gf-blades",
-        de_dict["phi"],
-        de_dict["theta"],
-        quality_flags,
     )
     de_dict["geometric_factor_noblades"] = get_geometric_factor(
-        ancillary_files,
-        "l1b-sensor-gf-noblades",
         de_dict["phi"],
         de_dict["theta"],
         quality_flags,
+        ancillary_files,
+        "l1b-sensor-gf-noblades",
     )
-    de_dict["quality_fov"] = quality_flags
+    de_dict["quality_outliers"] = quality_flags
+    flag_scattering(
+        de_dict["tof_energy"],
+        de_dict["theta"],
+        de_dict["phi"],
+        ancillary_files,
+        sensor,
+        scattering_quality_flags,
+    )
+    de_dict["quality_scattering"] = scattering_quality_flags
 
     dataset = create_dataset(de_dict, name, "l1b")
 

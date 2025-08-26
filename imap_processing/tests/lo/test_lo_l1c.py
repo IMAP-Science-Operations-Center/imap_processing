@@ -5,6 +5,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.lo.l1c.lo_l1c import (
+    PSET_SHAPE,
     FilterType,
     calculate_exposure_times,
     create_pset_counts,
@@ -12,6 +13,7 @@ from imap_processing.lo.l1c.lo_l1c import (
     initialize_pset,
     lo_l1c,
 )
+from imap_processing.spice.time import met_to_ttj2000ns
 
 
 @pytest.fixture
@@ -49,6 +51,40 @@ def l1b_de():
 
 
 @pytest.fixture
+def repoint_met():
+    met = np.arange(511000000, 511000000 + 86400 * 5, 86400)
+    return met
+
+
+@pytest.fixture
+def l1b_de_spin():
+    l1b_de = xr.Dataset(
+        {
+            "pointing_bin_lon": ("epoch", [20, 0, 20, 2000, 3500]),
+            "pointing_bin_lat": ("epoch", [20, 20, 20, 20, 20]),
+            "esa_step": ("epoch", [1, 2, 1, 4, 5]),
+            "coincidence_type": (
+                "epoch",
+                [
+                    "111111",
+                    "111100",
+                    "111000",
+                    "110100",
+                    "110000",
+                ],
+            ),
+            "species": ("epoch", ["h", "o", "h", "h", "o"]),
+            "spin_cycle": ("epoch", [1, 2, 3, 4, 5]),
+            "avg_spin_durations": ("epoch", [15.2, 15.2, 14.9, 15, 14.9]),
+        },
+        coords={
+            "epoch": met_to_ttj2000ns(np.arange(511000000, 511000000 + 200, 40) + 902),
+        },
+    )
+    return l1b_de
+
+
+@pytest.fixture
 def anc_dependencies():
     anc_dependencies_path = (
         imap_module_directory / "tests/lo/test_anc/imap_lo_goodtimes_20250415_v001.csv"
@@ -67,7 +103,7 @@ def attr_mgr():
 @pytest.fixture
 def counts():
     """Fixture for initial counts."""
-    return np.zeros((1, 7, 3600, 40))
+    return np.zeros(PSET_SHAPE)
 
 
 @pytest.fixture
@@ -102,9 +138,17 @@ def doubles_counts(counts):
     return doubles
 
 
-def test_lo_l1c(l1b_de, anc_dependencies):
+def test_lo_l1c(
+    l1b_de_spin,
+    anc_dependencies,
+    use_fake_repoint_data_for_time,
+    use_fake_spin_data_for_time,
+    repoint_met,
+):
     # Arrange
-    data = {"imap_lo_l1b_de": l1b_de}
+    data = {"imap_lo_l1b_de": l1b_de_spin}
+    use_fake_spin_data_for_time(511000000)
+    use_fake_repoint_data_for_time(np.arange(511000000, 511000000 + 86400 * 5, 86400))
 
     expected_logical_source = "imap_lo_l1c_pset"
     # Act
@@ -212,7 +256,7 @@ def test_create_doubles_pset_counts(l1b_de, doubles_counts):
 def test_calculate_exposure_times(l1b_de):
     # Arrange
     counts = create_pset_counts(l1b_de)
-    expected_exposure_times = np.full((1, 7, 3600, 40), np.nan)
+    expected_exposure_times = np.full(PSET_SHAPE, np.nan)
     # Average of the exposure times for each bin
     expected_exposure_times[0, 1, 20, 20] = 4 * np.mean([15.2, 14.9]) / 3600
     expected_exposure_times[0, 4, 2000, 20] = 4 * 15 / 3600

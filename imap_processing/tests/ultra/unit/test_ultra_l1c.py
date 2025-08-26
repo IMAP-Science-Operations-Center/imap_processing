@@ -1,3 +1,6 @@
+from unittest import mock
+
+import astropy_healpix.healpy as hp
 import numpy as np
 import pandas as pd
 import pytest
@@ -18,6 +21,51 @@ from imap_processing.ultra.l1c.ultra_l1c import ultra_l1c
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
+
+
+@pytest.fixture
+def mock_spacecraft_pointing_lookups():
+    """Test lookup tables fixture."""
+    pix = hp.nside2npix(128)
+    steps = 10  # Reduced for testing
+    for_indices_by_spin_phase = np.random.choice(
+        [True, False], size=(pix, steps), p=[0.1, 0.9]
+    )
+    theta_vals = np.random.uniform(-60, 60, size=(pix, steps))
+    phi_vals = np.random.uniform(-60, 60, size=(pix, steps))
+    ra_and_dec = np.random.uniform(-80, 80, size=(pix, 2))
+    boundary_scale_factors = np.ones((pix, steps))
+    with (
+        mock.patch(
+            "imap_processing.ultra.l1c.spacecraft_pset.get_spacecraft_pointing_lookup_tables"
+        ) as mock_lookup,
+        mock.patch(
+            "imap_processing.ultra.l1c.helio_pset.get_spacecraft_pointing_lookup_tables"
+        ) as mock_lookup_helio,
+    ):
+        mock_lookup.return_value = (
+            for_indices_by_spin_phase,
+            theta_vals,
+            phi_vals,
+            ra_and_dec,
+            boundary_scale_factors,
+        )
+        mock_lookup_helio.return_value = (
+            for_indices_by_spin_phase,
+            theta_vals,
+            phi_vals,
+            ra_and_dec,
+            boundary_scale_factors,
+        )
+        yield mock_lookup
+
+
+@pytest.fixture
+def fake_spin_data(spice_test_data_path, use_test_spin_data_csv):
+    """Generate fake spin dataframe for testing"""
+    fake_spin_path = spice_test_data_path / "fake_spin_data.csv"
+    use_test_spin_data_csv([fake_spin_path])
+    return fake_spin_path
 
 
 @pytest.fixture
@@ -131,10 +179,16 @@ def test_ultra_l1c_error(mock_data_l1b_dict):
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
 def test_calculate_spacecraft_pset_with_cdf(
-    ancillary_files, deadtime_datasets, imap_ena_sim_metakernel
+    random_spin_data,
+    ancillary_files,
+    deadtime_datasets,
+    imap_ena_sim_metakernel,
+    use_fake_spin_data_for_time,
+    mock_spacecraft_pointing_lookups,
 ):
     """Tests ultra_l1c function with imported test data."""
-
+    # Simulate a spin table from MET = 0 to MET = 141 * 15 seconds
+    use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
     df = pd.read_csv(TEST_PATH / "IMAP-Ultra45_r1_L1_V0_shortened.csv")
 
     # Select a single pointing number
@@ -172,25 +226,19 @@ def test_calculate_spacecraft_pset_with_cdf(
 
     de_dict["velocity_dps_sc"] = sc_dps_velocity
     de_dict["energy_spacecraft"] = get_de_energy_kev(sc_dps_velocity, species_bin)
+    # Made up data for spin_number and energy_bin_geometric_mean
+    de_dict["spin_number"] = np.full(len(sc_dps_velocity), 128)
+    de_dict["energy_bin_geometric_mean"] = np.zeros(len(sc_dps_velocity))
 
     name = "imap_ultra_l1b_45sensor-de"
     dataset = create_dataset(de_dict, name, "l1b")
 
     data_dict = {
         "imap_ultra_l1b_45sensor-de": dataset,
-        "imap_ultra_l1b_45sensor-extendedspin": xr.Dataset(),  # placeholder
-        "imap_ultra_l1b_45sensor-cullingmask": xr.Dataset(),  # placeholder
-        "imap_ultra_45sensor-rates": deadtime_datasets["rates"],
-        "imap_ultra_45sensor-params": deadtime_datasets["params"],
-    }
-
-    path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
-    ancillary_files = {
-        "l1c-90sensor-dps-exposure": path
-        / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
-        "l1c-90sensor-efficiencies": path
-        / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
-        "l1c-90sensor-gf": path / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
+        "imap_ultra_l1b_45sensor-extendedspin": dataset,  # placeholder
+        "imap_ultra_l1b_45sensor-cullingmask": dataset,  # placeholder
+        "imap_ultra_l1a_45sensor-rates": deadtime_datasets["rates"],
+        "imap_ultra_l1a_45sensor-params": deadtime_datasets["params"],
     }
 
     output_datasets = ultra_l1c(data_dict, ancillary_files, has_spice=False)
@@ -207,9 +255,20 @@ def test_calculate_spacecraft_pset_with_cdf(
 
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
-def test_calculate_helio_pset_with_cdf(ancillary_files, imap_ena_sim_metakernel):
+def test_calculate_helio_pset_with_cdf(
+    random_spin_data,
+    ancillary_files,
+    imap_ena_sim_metakernel,
+    mock_spacecraft_pointing_lookups,
+    deadtime_datasets,
+    use_fake_spin_data_for_time,
+    use_fake_repoint_data_for_time,
+):
     """Tests ultra_l1c function with imported test data."""
 
+    # Simulate a spin table from MET = 0 to MET = 141 * 15 seconds
+    use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
+    use_fake_repoint_data_for_time(np.arange(4.32374e08, 4.99374e08 + 10, 10))
     df = pd.read_csv(TEST_PATH / "IMAP-Ultra45_r1_L1_V0_shortened.csv")
 
     # Select a single pointing number
@@ -257,15 +316,8 @@ def test_calculate_helio_pset_with_cdf(ancillary_files, imap_ena_sim_metakernel)
         "imap_ultra_l1b_45sensor-de": dataset,
         "imap_ultra_l1b_45sensor-extendedspin": xr.Dataset(),  # placeholder
         "imap_ultra_l1b_45sensor-cullingmask": xr.Dataset(),  # placeholder
-    }
-
-    path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
-    ancillary_files = {
-        "l1c-90sensor-dps-exposure": path
-        / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
-        "l1c-90sensor-efficiencies": path
-        / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
-        "l1c-90sensor-gf": path / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
+        "imap_ultra_l1a_45sensor-rates": deadtime_datasets["rates"],
+        "imap_ultra_l1a_45sensor-params": deadtime_datasets["params"],
     }
 
     output_datasets = ultra_l1c(data_dict, ancillary_files, has_spice=True)

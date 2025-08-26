@@ -7,69 +7,86 @@ default_attrs: &default
   DEPEND_0: epoch
   VALIDMAX: 9223372036854775807
   VAR_TYPE: data
-  UNITS: ' '
+  UNITS: " "
 
 # Non-epoch Coordinates
-esa_step_label:
+esa_energy_step_label:
   CATDESC: ESA Steps
   FIELDNAM: ESA Steps
   FORMAT: A1
   VAR_TYPE: metadata
 
-esa_step:
+esa_energy_step:
   VALIDMIN: 1
   VALIDMAX: 7
-  FILLVAL: -9223372036854775808
   CATDESC: Energy Step
-  DEPEND_1: esa_step
   FIELDNAM: Energy Step
-  UNITS: ' '
+  UNITS: " "
   FORMAT: I1
   VAR_TYPE: support_data
   LABLAXIS: ESA
-  LABL_PTR_1: esa_step_label
 
-pointing_bins_label:
-  CATDESC: Pointing bins
-  FIELDNAM: Pointing bins
+spin_angle_label:
+  CATDESC: Spin angles
+  FIELDNAM: Spin angles
   FORMAT: A4
   VAR_TYPE: metadata
 
-pointing_bins:
+spin_angle:
   VALIDMIN: 0
-  VALIDMAX: 3599
-  FILLVAL: -9223372036854775808
-  CATDESC: Pointing bins
-  DEPEND_1: pointing_bins
-  FIELDNAM: Pointing Bins
-  UNITS: ' '
+  VALIDMAX: 360
+  CATDESC: Spin angle bin center in despun pointing frame
+  FIELDNAM: Spin angle
+  UNITS: "degrees"
   FORMAT: I4
   VAR_TYPE: support_data
-  LABLAXIS: pointing bins
-  LABL_PTR_1: pointing_bins_label
+  LABLAXIS: spin angle
 
-pointing_start:
+off_angle_label:
+  CATDESC: Off axis angles
+  FIELDNAM: Off axis angles
+  FORMAT: A4
+  VAR_TYPE: metadata
+
+off_angle:
+  VALIDMIN: -2
+  VALIDMAX: 2
+  CATDESC: Off axis angle bin center in despun pointing frame
+  FIELDNAM: Off axis angle
+  UNITS: "degrees"
+  FORMAT: I4
+  VAR_TYPE: support_data
+  LABLAXIS: off angle
+
+pointing_start_met:
   <<: *default
   CATDESC: MET of start of pointing
   FIELDNAM: Pointing start time
   FORMAT: I12
   UNITS: s
-  LABLAXIS: pointing start time
+  LABLAXIS: pointing start
 
-pointing_end:
+pointing_end_met:
   <<: *default
   CATDESC: MET of end of pointing
   FIELDNAM: Pointing end time
   FORMAT: I12
   UNITS: s
-  LABLAXIS: pointing end time
+  LABLAXIS: pointing end
 
-mode:
+start_spin_number:
   <<: *default
-  CATDESC: Science Mode for Pointing
-  FIELDNAM: Science Mode
+  CATDESC: The spin number at the start of the pointing
+  FIELDNAM: Spin number at start of pointing
   FORMAT: I12
-  LABLAXIS: science mode
+  LABLAXIS: Start spin
+
+end_spin_number:
+  <<: *default
+  CATDESC: The spin number at the start of the pointing
+  FIELDNAM: Spin number at the end of the pointing
+  FORMAT: I12
+  LABLAXIS: End spin
 
 pivot_angle:
   <<: *default
@@ -80,100 +97,174 @@ pivot_angle:
   UNITS: degrees
   LABLAXIS: pivot angle
 
-triples_counts:
+esa_mode:
   <<: *default
-  CATDESC: Counts for triple coincidence events
-  DEPEND_1: pointing_bins
-  DEPEND_2: esa_step
-  FIELDNAM: triples coincidence counts
+  DEPEND_1: esa_energy_step
+  CATDESC: Science Mode for Pointing
+  FIELDNAM: Science Mode
   FORMAT: I12
-  LABLAXIS: triples coincidence counts
-  LABL_PTR_1: pointing_bins_label
-  LABL_PTR_2: esa_step_label
+  LABLAXIS: esa mode
 
-triples_rates:
+hae_longitude:
   <<: *default
-  CATDESC: Count rates for triple coincidence events
-  DEPEND_1: pointing_bins
-  DEPEND_2: esa_step
-  FILLVAL: -1.0000000E+31
-  FIELDNAM: triple coincidence count rates
-  LABLAXIS: triple coincidence count rates
-  LABL_PTR_1: pointing_bins_label
-  LABL_PTR_2: esa_step_label
-
-doubles_counts:
-  <<: *default
-  CATDESC: "Counts for double coincidence events"
-  DEPEND_1: pointing_bins
-  DEPEND_2: esa_step
-  FIELDNAM: Double coincidence counts
+  VALIDMAX: 360
+  CATDESC: Bin longitudes in HAE coordinates
+  FIELDNAM: Bin longitudes
   FORMAT: I12
-  LABLAXIS: double coincidence counts
-  LABL_PTR_1: pointing_bins_label
-  LABL_PTR_2: esa_step_label
+  UNITS: degrees
+  LABLAXIS: longitude
+  DEPEND_1: spin_angle
+  DEPEND_2: off_angle
+  LABL_PTR_1: spin_angle_label
+  LABL_PTR_2: off_angle_label
 
-doubles_rates:
+hae_latitude:
   <<: *default
-  CATDESC: Count rates for double coincidence events
-  DEPEND_1: pointing_bins
-  DEPEND_2: esa_step
-  FILLVAL: -1.0000000E+31
-  FIELDNAM: double coincidence count rates
-  LABLAXIS: double coincidence count rates
-  LABL_PTR_1: pointing_bins_label
-  LABL_PTR_2: esa_step_label
-
-hydrogen_counts:
-  <<: *default
-  CATDESC: Counts for Hydrogen events
-  DEPEND_1: pointing_bins
-  DEPEND_2: esa_step
-  FIELDNAM: Hydrogen counts
+  VALIDMIN: -90
+  VALIDMAX: 90
+  CATDESC: Bin latitudes in HAE coordinates
+  FIELDNAM: Bin latitudes
   FORMAT: I12
-  LABLAXIS: H counts
-  LABL_PTR_1: pointing_bins_label
-  LABL_PTR_2: esa_step_label
-
-hydrogen_rates:
-  <<: *default
-  CATDESC: Count rates for Hydrogen events
-  DEPEND_1: pointing_bins
-  DEPEND_2: esa_step
-  FILLVAL: -1.0000000E+31
-  FIELDNAM: Hydrogen count rates
-  LABLAXIS: H coincidence count rates
-  LABL_PTR_1: pointing_bins_label
-  LABL_PTR_2: esa_step_label
-
-oxygen_counts:
-  <<: *default
-  CATDESC: Count rates for Oxygen events
-  DEPEND_1: pointing_bins
-  DEPEND_2: esa_step
-  FORMAT: I12
-  FIELDNAM: Oxygen count rates
-  LABLAXIS: O count rates
-  LABL_PTR_1: pointing_bins_label
-  LABL_PTR_2: esa_step_label
-
-oxygen_rates:
-  <<: *default
-  CATDESC : Count rates for Oxygen events
-  DEPEND_1 : pointing_bins
-  DEPEND_2 : esa_step
-  FILLVAL: -1.0000000E+31
-  FIELDNAM : Oxygen count rates
-  LABLAXIS : O count rates
-  LABL_PTR_1: pointing_bins_label
-  LABL_PTR_2: esa_step_label
+  UNITS: degrees
+  LABLAXIS: latitude
+  DEPEND_1: spin_angle
+  DEPEND_2: off_angle
+  LABL_PTR_1: spin_angle_label
+  LABL_PTR_2: off_angle_label
 
 exposure_time:
   <<: *default
   CATDESC: Exposure times by ESA step
-  DEPEND_1: esa_step
-  FILLVAL: -1.0000000E+31
   FIELDNAM: Exposure Times
+  DEPEND_1: esa_energy_step
+  DEPEND_2: spin_angle
+  DEPEND_3: off_angle
+  LABL_PTR_1: esa_energy_step_label
+  LABL_PTR_2: spin_angle_label
+  LABL_PTR_3: off_angle_label
   UNITS: "s"
-  LABLAXIS: exposure times
-  LABL_PTR_1: esa_step_label
+
+triples_counts:
+  <<: *default
+  CATDESC: Counts for triple coincidence events
+  FIELDNAM: triples coincidence counts
+  DEPEND_1: esa_energy_step
+  DEPEND_2: spin_angle
+  DEPEND_3: off_angle
+  LABL_PTR_1: esa_energy_step_label
+  LABL_PTR_2: spin_angle_label
+  LABL_PTR_3: off_angle_label
+  FORMAT: I12
+
+doubles_counts:
+  <<: *default
+  CATDESC: Counts for double coincidence events
+  DEPEND_1: esa_energy_step
+  DEPEND_2: spin_angle
+  DEPEND_3: off_angle
+  FIELDNAM: Double coincidence counts
+  FORMAT: I12
+  LABLAXIS: doubles
+  LABL_PTR_1: esa_energy_step_label
+  LABL_PTR_2: spin_angle_label
+  LABL_PTR_3: off_angle_label
+
+h_counts:
+  <<: *default
+  CATDESC: Counts for Hydrogen events
+  FIELDNAM: Hydrogen counts
+  DEPEND_1: esa_energy_step
+  DEPEND_2: spin_angle
+  DEPEND_3: off_angle
+  LABL_PTR_1: esa_energy_step_label
+  LABL_PTR_2: spin_angle_label
+  LABL_PTR_3: off_angle_label
+  FORMAT: I12
+
+h_background_rates:
+  <<: *default
+  CATDESC: Background Hydrogen rates
+  FIELDNAM: Background Hydrogen rates
+  DEPEND_1: esa_energy_step
+  DEPEND_2: spin_angle
+  DEPEND_3: off_angle
+  LABL_PTR_1: esa_energy_step_label
+  LABL_PTR_2: spin_angle_label
+  LABL_PTR_3: off_angle_label
+  FORMAT: I12
+  DELTA_PLUS_VAR: h_background_rates_stat_uncert
+  DELTA_MINUS_VAR: h_background_rates_stat_uncert
+
+h_background_rates_stat_uncert:
+  <<: *default
+  CATDESC: Background Hydrogen rates statistical uncertainty
+  FIELDNAM: Background Hydrogen rates stat uncertainty
+  DEPEND_1: esa_energy_step
+  DEPEND_2: spin_angle
+  DEPEND_3: off_angle
+  LABL_PTR_1: esa_energy_step_label
+  LABL_PTR_2: spin_angle_label
+  LABL_PTR_3: off_angle_label
+  FORMAT: I12
+
+h_background_rates_sys_err:
+  <<: *default
+  CATDESC: Background Hydrogen rates systematic error
+  FIELDNAM: Background Hydrogen rates systematic error
+  DEPEND_1: esa_energy_step
+  DEPEND_2: spin_angle
+  DEPEND_3: off_angle
+  LABL_PTR_1: esa_energy_step_label
+  LABL_PTR_2: spin_angle_label
+  LABL_PTR_3: off_angle_label
+  FORMAT: I12
+
+o_counts:
+  <<: *default
+  CATDESC: Count rates for Oxygen events
+  DEPEND_1: esa_energy_step
+  DEPEND_2: spin_angle
+  DEPEND_3: off_angle
+  FORMAT: I12
+  FIELDNAM: Oxygen count rates
+  LABL_PTR_1: esa_energy_step_label
+  LABL_PTR_2: spin_angle_label
+  LABL_PTR_3: off_angle_label
+
+o_background_rates:
+  <<: *default
+  CATDESC: Background Oxygen rates
+  FIELDNAM: Background Oxygen rates
+  DEPEND_1: esa_energy_step
+  DEPEND_2: spin_angle
+  DEPEND_3: off_angle
+  LABL_PTR_1: esa_energy_step_label
+  LABL_PTR_2: spin_angle_label
+  LABL_PTR_3: off_angle_label
+  FORMAT: I12
+  DELTA_PLUS_VAR: o_background_rates_stat_uncert
+  DELTA_MINUS_VAR: o_background_rates_stat_uncert
+
+o_background_rates_stat_uncert:
+  <<: *default
+  CATDESC: Background Oxygen rates statistical uncertainty
+  FIELDNAM: Background Oxygen rates stat uncertainty
+  DEPEND_1: esa_energy_step
+  DEPEND_2: spin_angle
+  DEPEND_3: off_angle
+  LABL_PTR_1: esa_energy_step_label
+  LABL_PTR_2: spin_angle_label
+  LABL_PTR_3: off_angle_label
+  FORMAT: I12
+
+o_background_rates_sys_err:
+  <<: *default
+  CATDESC: Background Oxygen rates systematic error
+  FIELDNAM: Background Oxygen rates systematic error
+  DEPEND_1: esa_energy_step
+  DEPEND_2: spin_angle
+  DEPEND_3: off_angle
+  LABL_PTR_1: esa_energy_step_label
+  LABL_PTR_2: spin_angle_label
+  LABL_PTR_3: off_angle_label
+  FORMAT: I12

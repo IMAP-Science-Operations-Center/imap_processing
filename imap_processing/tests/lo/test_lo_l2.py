@@ -4,6 +4,15 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps.ena_maps import HealpixSkyMap, RectangularSkyMap
+from imap_processing.lo.l1c.lo_l1c import (
+    ESA_ENERGY_STEPS,
+    N_OFF_ANGLE_BINS,
+    N_SPIN_ANGLE_BINS,
+    OFF_ANGLE_BIN_CENTERS,
+    PSET_DIMS,
+    PSET_SHAPE,
+    SPIN_ANGLE_BIN_CENTERS,
+)
 from imap_processing.lo.l2.lo_l2 import (
     add_attributes,
     calculate_fluxes,
@@ -16,24 +25,37 @@ from imap_processing.spice import geometry
 
 @pytest.fixture
 def pset():
-    h_counts = np.zeros((1, 7, 3600, 40))
+    h_counts = np.zeros(PSET_SHAPE)
     h_counts[:, :, :, 0:10] = 1
 
-    exposure_time = np.full((1, 7, 3600, 40), 0.5)
+    exposure_time = np.full(PSET_SHAPE, 0.5)
+
+    lons, lats = np.meshgrid(
+        SPIN_ANGLE_BIN_CENTERS, OFF_ANGLE_BIN_CENTERS, indexing="ij"
+    )
+    hae_longitude = np.empty((1, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS))
+    hae_latitude = np.empty((1, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS))
+    hae_longitude[0, :, :] = lons
+    hae_latitude[0, :, :] = lats
 
     dataset = xr.Dataset(
         {
-            "h_counts": (("epoch", "energy", "longitude", "latitude"), h_counts),
+            "h_counts": (
+                PSET_DIMS,
+                h_counts,
+            ),
             "exposure_time": (
-                ("epoch", "energy", "longitude", "latitude"),
+                PSET_DIMS,
                 exposure_time,
             ),
+            "hae_longitude": (("epoch", "spin_angle", "off_angle"), hae_longitude),
+            "hae_latitude": (("epoch", "spin_angle", "off_angle"), hae_latitude),
         },
         coords={
             "epoch": [8.1794907049e17],
-            "energy": [i for i in range(1, 8)],
-            "longitude": [i for i in range(3600)],
-            "latitude": [i for i in range(40)],
+            "esa_energy_step": ESA_ENERGY_STEPS,
+            "spin_angle": SPIN_ANGLE_BIN_CENTERS,
+            "off_angle": OFF_ANGLE_BIN_CENTERS,
         },
     )
     return dataset
@@ -59,7 +81,7 @@ def map():
             "epoch": [8.1794907049e17],
             "longitude": [i for i in range(60)],
             "latitude": [i for i in range(30)],
-            "energy": [i for i in range(1, 8)],
+            "energy": ESA_ENERGY_STEPS,
         },
     )
     return dataset

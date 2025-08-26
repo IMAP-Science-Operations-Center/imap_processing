@@ -1,6 +1,7 @@
 """Culls Events for ULTRA L1b."""
 
 import logging
+from collections import namedtuple
 
 import numpy as np
 import pandas as pd
@@ -9,17 +10,33 @@ from numpy.typing import NDArray
 
 from imap_processing.quality_flags import (
     ImapAttitudeUltraFlags,
+    ImapDEScatteringUltraFlags,
     ImapHkUltraFlags,
     ImapInstrumentUltraFlags,
     ImapRatesUltraFlags,
 )
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
+from imap_processing.ultra.l1b.lookup_utils import (
+    get_scattering_coefficients,
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 SPIN_DURATION = 15  # Default spin duration in seconds.
+
+RateResult = namedtuple(
+    "RateResult",
+    [
+        "start_per_spin",
+        "stop_per_spin",
+        "coin_per_spin",
+        "start_pulses",
+        "stop_pulses",
+        "coin_pulses",
+    ],
+)
 
 
 def get_energy_histogram(
@@ -394,7 +411,7 @@ def get_spin_and_duration(met: NDArray, spin: NDArray) -> tuple[NDArray, NDArray
     return assigned_spin_number, assigned_duration
 
 
-def get_pulses_per_spin(rates: xr.Dataset) -> tuple[NDArray, NDArray, NDArray]:
+def get_pulses_per_spin(rates: xr.Dataset) -> RateResult:
     """
     Get the total number of pulses per spin.
 
@@ -411,6 +428,12 @@ def get_pulses_per_spin(rates: xr.Dataset) -> tuple[NDArray, NDArray, NDArray]:
         Total stop pulses per spin.
     coin_per_spin : NDArray
         Total coincidence pulses per spin.
+    start_pulses : NDArray
+        Total start pulses.
+    stop_pulses : NDArray
+        Total stop pulses.
+    coin_pulses : NDArray
+        Total coincidence pulses.
     """
     spin_number, duration = get_spin_and_duration(rates["shcoarse"], rates["spin"])
 
@@ -448,4 +471,69 @@ def get_pulses_per_spin(rates: xr.Dataset) -> tuple[NDArray, NDArray, NDArray]:
     stop_per_spin = np.bincount(spin_idx, weights=stop_pulses)
     coin_per_spin = np.bincount(spin_idx, weights=coin_pulses)
 
-    return start_per_spin, stop_per_spin, coin_per_spin
+    return RateResult(
+        start_per_spin=start_per_spin,
+        stop_per_spin=stop_per_spin,
+        coin_per_spin=coin_per_spin,
+        start_pulses=start_pulses,
+        stop_pulses=stop_pulses,
+        coin_pulses=coin_pulses,
+    )
+
+
+def flag_scattering(
+    tof_energy: NDArray,
+    theta: NDArray,
+    phi: NDArray,
+    ancillary_files: dict,
+    sensor: str,
+    quality_flags: NDArray,
+) -> None:
+    """
+    Flag events where either theta or phi FWHM exceed the threshold or equal nan.
+
+    Parameters
+    ----------
+    tof_energy : NDArray
+        TOF energy for each event in keV.
+    theta : NDArray
+        Elevation angles in degrees.
+    phi : NDArray
+        Azimuth angles in degrees.
+    ancillary_files : dict[Path]
+        Ancillary files.
+    sensor : str
+        Sensor name: "ultra45" or "ultra90".
+    quality_flags : NDArray
+        Quality flags.
+    """
+    scattering_thresholds = UltraConstants.ULTRA_FWHM_SCATTERING_CULLING_THRESHOLDS
+
+    for (e_min, e_max), threshold in scattering_thresholds.items():
+        event_mask = (tof_energy >= e_min) & (tof_energy < e_max)
+        # Input the theta and phi values for the current energy range.
+        # Returns a_theta_val, g_theta_val, a_phi_val, g_phi_val
+        theta_coeffs, phi_coeffs = get_scattering_coefficients(
+            theta[event_mask],
+            phi[event_mask],
+            lookup_tables=None,
+            ancillary_files=ancillary_files,
+            instrument_id=int(sensor[-2:]),
+        )
+        # FWHM_PHI = A_PHI * E^G_PHI
+        # FWHM_THETA = A_THETA * E^G_THETA
+        fwhm_theta = theta_coeffs[:, 0] * tof_energy[event_mask] ** theta_coeffs[:, 1]
+        fwhm_phi = phi_coeffs[:, 0] * tof_energy[event_mask] ** phi_coeffs[:, 1]
+        is_nan = np.isnan(fwhm_theta) | np.isnan(fwhm_phi)
+        quality_flags[np.where(event_mask)[0][is_nan]] |= (
+            ImapDEScatteringUltraFlags.NAN_PHI_OR_THETA.value
+        )
+
+        theta_exceeds = fwhm_theta > threshold
+        phi_exceeds = fwhm_phi > threshold
+        either_exceeds = theta_exceeds | phi_exceeds
+
+        # Set flags for events where either theta or phi FWHM exceed the threshold
+        quality_flags[np.where(event_mask)[0][either_exceeds]] |= (
+            ImapDEScatteringUltraFlags.ABOVE_THRESHOLD.value
+        )

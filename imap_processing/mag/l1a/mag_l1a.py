@@ -328,6 +328,7 @@ def generate_dataset(
     global_attributes = attribute_manager.get_global_attributes(logical_file_id)
     global_attributes["is_mago"] = str(bool(single_file_l1a.is_mago))
     global_attributes["is_active"] = str(bool(single_file_l1a.is_active))
+    global_attributes["all_vectors_primary"] = single_file_l1a.all_vectors_primary()
     global_attributes["vectors_per_second"] = (
         single_file_l1a.vectors_per_second_attribute()
     )

@@ -70,6 +70,17 @@ def test_interpolate_repoint_data(fake_repoint_data):
         np.testing.assert_array_equal(repoint_df[key].values, expected_array)
 
 
+def test_get_pointing_times(fake_repoint_data):
+    """Test coverage for get_pointing_times function."""
+    times = 6
+    expected_times = (5.1, 15.2)
+
+    pointing_start_time, pointing_end_time = repoint.get_pointing_times(times)
+
+    assert pointing_start_time == expected_times[0]
+    assert pointing_end_time == expected_times[1]
+
+
 @pytest.mark.parametrize(
     "query_times, match_str",
     [

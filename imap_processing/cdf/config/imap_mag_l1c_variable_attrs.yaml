@@ -4,7 +4,7 @@ default_attrs: &default
   # Assumed values for all variable attrs unless overwritten
   DEPEND_0: epoch
   DISPLAY_TYPE: time_series
-  FILLVAL: -9223372036854775808
+  FILLVAL: -1.0e+31
   FORMAT: I12
   VALIDMIN: -9223372036854775808
   VALIDMAX: 9223372036854775807
@@ -104,6 +104,29 @@ compression_flags_attrs:
   VALIDMIN: 0
   LABL_PTR_1: compression_label
   DISPLAY_TYPE: no_plot
+
+generated_flag_attrs:
+  <<: *support_default
+  CATDESC: Flag indicating data has been downsampled and interpolated from higher frequency measurements
+  FIELDNAM: Generated Flag
+  LABLAXIS: Generated Flag
+  FILLVAL: 255
+  FORMAT: I1
+  UNITS: ' '
+  VALIDMAX: 1
+  VALIDMIN: 0
+  DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+vector_magnitude_attrs:
+  <<: *support_default
+  CATDESC: Magnitude of the magnetic field vector
+  FIELDNAM: Magnetic Field Magnitude
+  LABLAXIS: "|B|"
+  FORMAT: F12.5
+  UNITS: nT
+  VALIDMIN: 0
+  VALIDMAX: 9223372036854775807
+  DICT_KEY: SPASE>Field>FieldQuantity:Magnetic,Qualifier:Scalar
 
 compression:
     <<: *support_default

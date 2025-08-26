@@ -193,3 +193,31 @@ def interpolate_repoint_data(
     out_df["repoint_in_progress"] = query_met_times < out_df["repoint_end_met"].values
 
     return out_df
+
+
+def get_pointing_times(met_time: float) -> tuple[float, float]:
+    """
+    Get the start and end MET times for the pointing that contains the query MET time.
+
+    Parameters
+    ----------
+    met_time : float
+        The MET time in a pointing.
+
+    Returns
+    -------
+    pointing_start_time : float
+        The MET time of the repoint maneuver that ends before the query MET time.
+    pointing_end_time : float
+        The MET time of the repoint maneuver that starts after the query MET time.
+    """
+    # Find the pointing start time by finding the repoint end time
+    repoint_df = interpolate_repoint_data(met_time)
+    pointing_start_met = repoint_df["repoint_end_met"].item()
+    # Find the pointing end time by finding the next repoint start time
+    repoint_df = get_repoint_data()
+    pointing_idx = repoint_df.index[
+        repoint_df["repoint_end_met"] == pointing_start_met
+    ][0]
+    pointing_end_met = repoint_df["repoint_start_met"].iloc[pointing_idx + 1].item()
+    return pointing_start_met, pointing_end_met

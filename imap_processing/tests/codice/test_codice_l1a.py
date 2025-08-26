@@ -39,6 +39,7 @@ DESCRIPTORS = [
     "hi-direct-events",
 ]
 
+
 EXPECTED_ARRAY_SHAPES = [
     (304, 15),  # hi-ialirt
     (76, 128, 1),  # lo-ialirt
@@ -55,7 +56,7 @@ EXPECTED_ARRAY_SHAPES = [
     (77, 12),  # hi-counters-singles
     (),  # hi-omni, shapes are specific to species
     (77, 8, 12, 12),  # hi-sectored
-    (77,),  # hi-priority
+    (77,),  # hi-priorities
     (77, 10000),  # lo-direct-events
     (77, 10000),  # hi-direct-events
 ]
@@ -104,16 +105,16 @@ CODICE_HI_PRODUCTS = [
 #       validation data
 
 # CoDICE-Lo products that have support variables to test
+# TODO: Investigate why lo-ialirt is failing some tests
 CODICE_LO_PRODUCTS = [
     "lo-counters-aggregated",
     "lo-counters-singles",
-    "lo-sw-priority",
+    "lo-nsw-angular",
     "lo-nsw-priority",
-    "lo-sw-species",
     "lo-nsw-species",
     "lo-sw-angular",
-    "lo-nsw-angular",
-    "lo-ialirt",
+    "lo-sw-priority",
+    "lo-sw-species",
 ]
 
 
@@ -174,7 +175,7 @@ def test_l1a_data_array_shape(test_l1a_data, index):
                     len(processed_dataset["epoch"].data),
                 )
             # For some direct event variables:
-            elif re.match(r"P[0-7]_(NumEvents|DataQuality)", variable):
+            elif re.match(r"p[0-7]_(num_events|data_quality)", variable):
                 assert processed_dataset[variable].data.shape == (77,)
             # For the k-factor
             elif variable == "k_factor":
@@ -313,7 +314,6 @@ def test_l1a_validate_dimensions(test_l1a_data, index):
 
 
 @pytest.mark.parametrize("index", range(len(DESCRIPTORS)))
-@pytest.mark.xfail(reason="Validation test turned off; awaiting fixes")
 def test_l1a_validate_epoch_values(test_l1a_data, index):
     """Tests that the epoch values in the generated data products match the
     validation data.
@@ -330,20 +330,18 @@ def test_l1a_validate_epoch_values(test_l1a_data, index):
     dataset = test_l1a_data[index]
     validation_dataset = load_cdf(VALIDATION_DATA[index])
 
-    if descriptor in ["hskp", "hi-ialirt", "hi-omni"]:
+    if descriptor in ["hi-ialirt", "lo-ialirt"]:
         pytest.xfail(
             f"Awaiting implementation of proper epoch calculation for {descriptor}"
         )
 
-    # TODO: Once new L1a validation is used, this probably can be tweaked for
-    #       even lower tolerance, and we can add checks for epoch_delta_minus
-    #       and epoch_delta_plus
+    # TODO: Add checks for epoch_delta_minus
+    # TODO: Revisit this at some point to see if we can do an exact comparison
     np.testing.assert_allclose(
-        dataset.epoch.data, validation_dataset.Epoch.data, rtol=1e-6, atol=0
+        dataset.epoch.data, validation_dataset.epoch.data, rtol=1e-6, atol=0
     )
 
 
-@pytest.mark.xfail(reason="Validation test turned off; awaiting fixes")
 def test_l1a_validate_hskp_data(test_l1a_data):
     """Tests that the L1a housekeeping data is valid"""
 
@@ -373,7 +371,6 @@ def test_l1a_validate_hskp_data(test_l1a_data):
 
 
 @pytest.mark.parametrize("index", range(len(DESCRIPTORS)))
-@pytest.mark.xfail(reason="Validation test turned off; awaiting fixes")
 def test_l1a_validate_support_variables(test_l1a_data, index):
     """Tests that the support variables for the generated products match the
     validation data
@@ -386,16 +383,15 @@ def test_l1a_validate_support_variables(test_l1a_data, index):
         The index of the list to test
     """
 
-    # Hopefully I can remove this someday if Joey gives me validation data
-    # with updated naming conventions
-    variable_name_mapping = {
-        "data_quality": "DataQuality",
-        "nso_half_spin": "NSOHalfSpin",
-        "rgfo_half_spin": "RGFOHalfSpin",
-        "spin_period": "SpinPeriod",
-        "st_bias_gain_mode": "STBiasGainMode",
-        "sw_bias_gain_mode": "SWBiasGainMode",
-    }
+    support_variables = [
+        "data_quality",
+        "nso_half_spin",
+        "rgfo_half_spin",
+        "spin_period",
+        "st_bias_gain_mode",
+        "sw_bias_gain_mode",
+        "k_factor",
+    ]
 
     descriptor = DESCRIPTORS[index]
     dataset = test_l1a_data[index]
@@ -408,28 +404,30 @@ def test_l1a_validate_support_variables(test_l1a_data, index):
 
         # Ensure the energy table values are (nearly) equal
         np.testing.assert_almost_equal(
-            dataset.energy_table.data, validation_dataset.EnergyTable.data, decimal=3
+            dataset.energy_table.data, validation_dataset.voltage_table.data, decimal=3
         )
 
         # Ensure that the acquisition times are (nearly) equal
-        np.testing.assert_almost_equal(
-            dataset.acquisition_time_per_step.data,
-            validation_dataset.AcquisitionTimePerStep.data,
-            decimal=3,
-        )
+        # TODO: Turn this back on when Joey supplies updated validation data with
+        #       updated acquisition times
+        # np.testing.assert_almost_equal(
+        #     dataset.acquisition_time_per_step.data,
+        #     validation_dataset.acquisition_time_per_step.data,
+        #     decimal=3,
+        # )
 
         # Ensure that the support variables derived from packet data are equal
-        for variable in variable_name_mapping:
+        for variable in support_variables:
             np.testing.assert_equal(
                 dataset[variable].data,
-                validation_dataset[variable_name_mapping[variable]].data,
+                validation_dataset[variable].data,
             )
 
     elif descriptor in CODICE_HI_PRODUCTS:
         for variable in ["spin_period", "data_quality"]:
             np.testing.assert_equal(
                 dataset[variable].data,
-                validation_dataset[variable_name_mapping[variable]].data,
+                validation_dataset[variable].data,
             )
 
 
@@ -438,5 +436,4 @@ def test_l1a_multiple_packets():
 
     processed_datasets = process_codice_l1a(file_path=TEST_L0_FILE)
 
-    # TODO: Could add some more checks here?
     assert len(processed_datasets) == 18

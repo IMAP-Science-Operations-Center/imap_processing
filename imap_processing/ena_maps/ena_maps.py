@@ -592,12 +592,30 @@ class HiPointingSet(PointingSet):
 
     Parameters
     ----------
-    dataset : xarray.Dataset
-        Hi L1C pointing set data loaded in an xarray.DataArray.
+    dataset : xarray.Dataset | str | Path
+        Hi L1C pointing set data loaded in a xarray.DataArray.
+    spin_phase : str
+        Include ENAs from "full", "ram" or "anti-ram" phases of the spin.
     """
 
-    def __init__(self, dataset: xr.Dataset):
+    def __init__(self, dataset: xr.Dataset | str | Path, spin_phase: str):
         super().__init__(dataset, spice_reference_frame=geometry.SpiceFrame.ECLIPJ2000)
+
+        # Filter out ENAs from non-selected portions of the spin.
+        if spin_phase not in ["full", "ram", "anti-ram"]:
+            raise ValueError(f"Unrecognized spin_phase value: {spin_phase}.")
+        # ram only includes spin-phase interval [0, 0.5)
+        # which is the first half of the spin_angle_bins
+        elif spin_phase == "ram":
+            self.data = self.data.isel(
+                spin_angle_bin=slice(0, self.data["spin_angle_bin"].data.size // 2)
+            )
+        # anti-ram includes spin-phase interval [0.5, 1)
+        # which is the second half of the spin_angle_bins
+        elif spin_phase == "anti-ram":
+            self.data = self.data.isel(
+                spin_angle_bin=slice(self.data["spin_angle_bin"].data.size // 2, None)
+            )
 
         # Rename some PSET vars to match L2 variables
         self.data = self.data.rename(
@@ -633,29 +651,16 @@ class LoPointingSet(PointingSet):
     """
 
     def __init__(self, dataset: xr.Dataset):
-        super().__init__(dataset, spice_reference_frame=geometry.SpiceFrame.IMAP_DPS)
-        # TODO: Use spatial_utils.az_el_grid instead of
-        #  manually creating the lon/lat values
-        inferred_spacing_deg = 360 / dataset.longitude.size
-        longitude_bin_centers = np.arange(
-            0 + inferred_spacing_deg / 2, 360, inferred_spacing_deg
-        )
-        latitude_bin_centers = np.arange(
-            -2 + inferred_spacing_deg / 2, 2, inferred_spacing_deg
-        )
+        super().__init__(dataset, spice_reference_frame=geometry.SpiceFrame.IMAP_HAE)
 
-        # Could be wrong about the order here
-        longitude_grid, latitude_grid = np.meshgrid(
-            longitude_bin_centers,
-            latitude_bin_centers,
-            indexing="ij",
+        # The HAE centers are stored in the pset as (1, 3600, 40) arrays
+        self.az_el_points = np.column_stack(
+            (
+                np.squeeze(self.data["hae_longitude"]).values.ravel(),
+                np.squeeze(self.data["hae_latitude"]).values.ravel(),
+            )
         )
-
-        longitude = longitude_grid.ravel()
-        latitude = latitude_grid.ravel()
-
-        self.az_el_points = np.column_stack((longitude, latitude))
-        self.spatial_coords = ("longitude", "latitude")
+        self.spatial_coords = ("spin_angle", "off_angle")
 
 
 # Define the Map classes

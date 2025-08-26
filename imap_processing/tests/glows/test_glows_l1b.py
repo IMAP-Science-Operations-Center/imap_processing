@@ -1,5 +1,6 @@
 import dataclasses
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -13,6 +14,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     DirectEventL1B,
     HistogramL1B,
 )
+from imap_processing.tests.glows.conftest import mock_update_spice_parameters
 
 
 @pytest.fixture
@@ -185,7 +187,11 @@ def ancillary_dict():
     return dictionary
 
 
-def test_histogram_mapping(mock_ancillary_exclusions, mock_ancillary_parameters):
+@patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
+def test_histogram_mapping(
+    mock_spice_function, mock_ancillary_exclusions, mock_ancillary_parameters
+):
+    mock_spice_function.side_effect = mock_update_spice_parameters
     time_val = 1111111.11
     # A = 2.318
     # B = 69.5454
@@ -233,9 +239,15 @@ def test_histogram_mapping(mock_ancillary_exclusions, mock_ancillary_parameters)
     assert output[10] - expected_temp < 0.1
 
 
+@patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_process_histogram(
-    hist_dataset, mock_ancillary_exclusions, mock_ancillary_parameters
+    mock_spice_function,
+    hist_dataset,
+    mock_ancillary_exclusions,
+    mock_ancillary_parameters,
 ):
+    mock_spice_function.side_effect = mock_update_spice_parameters
+
     time_val = np.single(1111111.11)
     # A = 2.318
     # B = 69.5454
@@ -296,7 +308,12 @@ def test_process_de(de_dataset, ancillary_dict):
     assert np.isclose(output[8].data[0], expected_temp)
 
 
-def test_glows_l1b(de_dataset, hist_dataset, mock_ancillary_exclusions):
+@patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
+def test_glows_l1b(
+    mock_spice_function, de_dataset, hist_dataset, mock_ancillary_exclusions
+):
+    mock_spice_function.side_effect = mock_update_spice_parameters
+
     hist_output = glows_l1b(
         hist_dataset,
         mock_ancillary_exclusions.excluded_regions,
@@ -383,8 +400,11 @@ def test_glows_l1b(de_dataset, hist_dataset, mock_ancillary_exclusions):
         assert key in de_output
 
 
-def test_generate_histogram_dataset(hist_dataset, mock_ancillary_exclusions):
-    # Create mock ancillary objects
+@patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
+def test_generate_histogram_dataset(
+    mock_spice_function, hist_dataset, mock_ancillary_exclusions
+):
+    mock_spice_function.side_effect = mock_update_spice_parameters
 
     l1b_data = glows_l1b(
         hist_dataset,
@@ -393,6 +413,7 @@ def test_generate_histogram_dataset(hist_dataset, mock_ancillary_exclusions):
         mock_ancillary_exclusions.suspected_transients,
         mock_ancillary_exclusions.exclusions_by_instr_team,
     )
+
     output_path = write_cdf(l1b_data)
 
     assert Path.exists(output_path)
@@ -410,3 +431,78 @@ def test_generate_de_dataset(de_dataset, mock_ancillary_exclusions):
     output_path = write_cdf(l1b_data)
 
     assert Path.exists(output_path)
+
+
+@pytest.mark.external_kernel
+@pytest.mark.usefixtures("use_fake_spin_data_for_time")
+@patch("imap_processing.spice.geometry.imap_state")
+def test_hist_spice_output(
+    mock_imap_state,
+    use_fake_spin_data_for_time,
+    furnish_kernels,
+    mock_ancillary_exclusions,
+    mock_ancillary_parameters,
+):
+    # Mock the imap_state function
+    mock_imap_state.return_value = np.array(
+        [
+            [1.0, 2.0, 3.0, 0.1, 0.2, 0.3],  # Example position and velocity data
+            [4.0, 5.0, 6.0, 0.4, 0.5, 0.6],
+        ]
+    )
+
+    # Generate a fake spin data for time
+    data_start_time = 504975600.125  # 2026-01-01T15:00:00.125
+    use_fake_spin_data_for_time(data_start_time)
+    params = {
+        "histogram": np.zeros((1, 3600)),
+        "flight_software_version": "v0.0.1",
+        "seq_count_in_pkts_file": 0,
+        "first_spin_id": 0,
+        "last_spin_id": 0,
+        "flags_set_onboard": 0,
+        "is_generated_on_ground": 1,
+        "number_of_spins_per_block": 1,
+        "number_of_bins_per_histogram": 3600,
+        "number_of_events": 0,
+        "filter_temperature_average": 20.0,
+        "filter_temperature_variance": 0.0,
+        "hv_voltage_average": 1000.0,
+        "hv_voltage_variance": 0.0,
+        "spin_period_average": 10.0,
+        "spin_period_variance": 0.0,
+        "pulse_length_average": 50.0,
+        "pulse_length_variance": 0.0,
+        "imap_start_time": 504975603.125,
+        "imap_time_offset": 200.0,
+        "glows_start_time": 504975603.125,
+        "glows_time_offset": 200.0,
+        "ancillary_exclusions": mock_ancillary_exclusions,
+        "ancillary_parameters": mock_ancillary_parameters,
+    }
+
+    kernels = [
+        "naif0012.tls",
+        "de440s.bsp",
+        "imap_sclk_0000.tsc",
+        "imap_wkcp.tf",
+        "imap_science_100.tf",
+        "sim_1yr_imap_attitude.bc",
+        "sim_1yr_imap_pointing_frame.bc",
+    ]
+    with furnish_kernels(kernels):
+        hist_data = HistogramL1B(**params)
+
+        # Assert that all these variables are the correct shape:
+        assert isinstance(hist_data.spin_period_ground_average, np.float64)
+        assert isinstance(hist_data.spin_period_ground_std_dev, np.float64)
+        assert isinstance(hist_data.position_angle_offset_average, np.float64)
+        assert isinstance(hist_data.position_angle_offset_std_dev, np.float64)
+        assert hist_data.spin_axis_orientation_std_dev.shape == (2,)
+        assert hist_data.spin_axis_orientation_average.shape == (2,)
+        assert hist_data.spacecraft_location_average.shape == (3,)
+        assert hist_data.spacecraft_location_std_dev.shape == (3,)
+        assert hist_data.spacecraft_velocity_average.shape == (3,)
+        assert hist_data.spacecraft_velocity_std_dev.shape == (3,)
+
+        # TODO: Maxine will validate actual data with GLOWS team

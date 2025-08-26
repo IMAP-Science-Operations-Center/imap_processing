@@ -10,21 +10,21 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c import ultra_l1c_pset_bins
+from imap_processing.ultra.l1c.spacecraft_pset import (
+    calculate_pixels_within_scattering_threshold,
+)
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
+    apply_deadtime_correction,
     build_energy_bins,
-    get_deadtime_interpolator,
     get_deadtime_ratios,
+    get_deadtime_ratios_by_spin_phase,
     get_energy_delta_minus_plus,
-    get_helio_background_rates,
-    get_helio_exposure_times,
-    get_helio_sensitivity,
+    get_helio_adjusted_data,
     get_sectored_rates,
     get_spacecraft_background_rates,
+    get_spacecraft_count_rate_uncertainty,
     get_spacecraft_exposure_times,
     get_spacecraft_histogram,
-    get_spacecraft_sensitivity,
-    grid_sensitivity,
-    interpolate_sensitivity,
 )
 
 BASE_PATH = imap_module_directory / "ultra" / "lookup_tables"
@@ -49,15 +49,15 @@ def test_build_energy_bins():
     energy_bin_start = [interval[0] for interval in intervals]
     energy_bin_end = [interval[1] for interval in intervals]
 
-    assert energy_bin_start[0] == 0
-    assert energy_bin_start[1] == 3.385
+    assert energy_bin_start[0] == 3.385
+    assert np.allclose(energy_bin_start[1], 4.137, atol=1e-3)
     assert len(intervals) == 24
     assert energy_midpoints[0] == (energy_bin_start[0] + energy_bin_end[0]) / 2
 
     # Comparison to expected values.
-    np.testing.assert_allclose(energy_bin_end[1], 4.137, atol=1e-4)
-    np.testing.assert_allclose(energy_bin_start[-1], 279.810, atol=1e-4)
-    np.testing.assert_allclose(energy_bin_end[-1], 341.989, atol=1e-4)
+    np.testing.assert_allclose(energy_bin_end[1], 5.056, atol=1e-3)
+    np.testing.assert_allclose(energy_bin_start[-1], 341.989, atol=1e-3)
+    np.testing.assert_allclose(energy_bin_end[-1], 100000, atol=1e-3)
 
     expected_geometric_means = np.sqrt(
         np.array(energy_bin_start) * np.array(energy_bin_end)
@@ -104,8 +104,8 @@ def test_get_spacecraft_histogram(test_data):
     assert latitude.shape == (n_pix,)
     assert longitude.shape == (n_pix,)
 
-    # Spot check that 2 counts are in the third energy bin
-    assert np.sum(hist[2, :]) == 2
+    # Spot check that 1 count is in the first energy bin
+    assert np.sum(hist[1, :]) == 2
 
     # Test overlapping energy bins
     overlapping_bins = [
@@ -126,20 +126,6 @@ def test_get_spacecraft_histogram(test_data):
 def mock_imap_state(time, ref_frame):
     # Position (0, 0, 0), exaggerated velocity to force visible transformation
     return np.array([0, 0, 0, 0, 0, 0])
-
-
-def test_get_spacecraft_background_rates():
-    """Tests get_background_rates function."""
-    background_rates = get_spacecraft_background_rates(nside=128)
-    _, energy_midpoints, _ = build_energy_bins()
-    assert background_rates.shape == (len(energy_midpoints), hp.nside2npix(128))
-
-
-def test_get_helio_background_rates():
-    """Tests get_background_rates function."""
-    background_rates = get_helio_background_rates(nside=128)
-    _, energy_midpoints, _ = build_energy_bins()
-    assert background_rates.shape == (len(energy_midpoints), hp.nside2npix(128))
 
 
 def test_get_sectored_rates():
@@ -167,6 +153,16 @@ def test_get_sectored_rates():
         sectored_rates["test_data"].data,
         np.hstack([np.arange(10, 20), np.arange(30, 40), np.arange(50, 60)]),
     )
+    # Test with one mode shift in the middle of the dataset.
+    modes = np.array([1, 3, 1])
+    test_l1a_params_dataset = xr.Dataset(
+        {
+            "imageratescadence": (["epoch"], modes),
+        },
+        coords={"epoch": ("epoch", np.arange(0, epoch, epoch / len(modes)))},
+    )
+    sectored_rates = get_sectored_rates(test_l1a_rates_dataset, test_l1a_params_dataset)
+    np.testing.assert_array_equal(sectored_rates["test_data"].data, np.arange(20, 40))
 
     # Test with one mode shift in the middle of the dataset.
     modes = np.array([1, 3, 1])
@@ -202,7 +198,7 @@ def test_get_deadtime_ratios():
     assert np.all(deadtime_correction_factors >= 0)
 
 
-def test_get_deadtime_interpolator():
+def test_get_deadtime_interpolator(random_spin_data):
     """Tests get_deadtime_correction_factors function."""
 
     sector_rate_seconds = 20 * 60  # 20 minutes in seconds
@@ -215,53 +211,93 @@ def test_get_deadtime_interpolator():
     deadtime_ratios = xr.DataArray(
         np.random.uniform(0.1, 1.0, num_deadtimes), dims=["epoch"]
     )
-    spin_phases = np.random.random(deadtime_ratios.shape)
+    sectored_rates_ds = xr.Dataset({"epoch": ("epoch", np.ones_like(deadtime_ratios))})
     with mock.patch(
-        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_spacecraft_spin_phase"
-    ) as mock_spin_phases:
-        mock_spin_phases.return_value = spin_phases
-        interpolator = get_deadtime_interpolator(
-            deadtime_ratios, np.ones_like(deadtime_ratios)
-        )
-    assert callable(interpolator)
-    deadtime = interpolator(180)
-    assert (deadtime >= 0) & (deadtime < 1)
+        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_deadtime_ratios",
+        return_value=deadtime_ratios,
+    ):
+        deadtime_ratios = get_deadtime_ratios_by_spin_phase(sectored_rates_ds)
+    np.testing.assert_array_equal(deadtime_ratios.shape, (15000))
 
-    # Assert value error is raised for NaN values
     with mock.patch(
-        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_spacecraft_spin_phase"
-    ) as mock_spin_phases:
-        mock_spin_phases.return_value = spin_phases
+        "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_deadtime_ratios",
+        return_value=deadtime_ratios * np.nan,
+    ):
+        # Assert value error is raised for NaN values
         with pytest.raises(
             ValueError,
             match="Dead time ratios contain NaN values, cannot create interpolator.",
         ):
-            get_deadtime_interpolator(
-                np.nan * deadtime_ratios, np.ones_like(deadtime_ratios)
-            )
+            get_deadtime_ratios_by_spin_phase(sectored_rates_ds)
+
+
+@pytest.mark.external_kernel
+def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
+    """Tests apply_deadtime_correction function."""
+    nside = 8
+    pix = hp.nside2npix(nside)
+    steps = 500  # Reduced for testing
+    mock_theta = np.random.uniform(-60, 60, (pix, steps))
+    mock_phi = np.random.uniform(-60, 60, (pix, steps))
+    spin_phase_steps = np.zeros((pix, steps)).astype(bool)  # Spin phase steps 1-15000,
+    # Simulate first 100 pixels are in the FOR for all spin phases
+    inside_inds = 100
+    spin_phase_steps[:inside_inds, :] = True
+    deadtime_ratios = np.ones(steps)
+    exposure_pointing = pd.Series(np.ones(pix))
+
+    pixels_below_threshold = calculate_pixels_within_scattering_threshold(
+        spin_phase_steps, mock_theta, mock_phi, ancillary_files, 45
+    )
+
+    exposure_pointing_adjusted = apply_deadtime_correction(
+        exposure_pointing, deadtime_ratios, pixels_below_threshold
+    )
+    # The adjusted exposure should now be a function of pixels and energy (24)
+    np.testing.assert_array_equal(exposure_pointing_adjusted.shape, (24, pix))
+    # Check that the pixels inside the FOR have adjusted exposure > 1.0
+    # Subset the energy dimension to check values in the last energy bin. These
+    # Should have pixels that are below the FWHM scattering threshold and therefore,
+    # have the exposure adjusted.
+    last_energy_bin_vals = np.where(build_energy_bins()[2] >= 30)[0]
+    assert np.all(exposure_pointing_adjusted[last_energy_bin_vals, :inside_inds] > 1.0)
+    # Assert that pixels outside the FOR remain at 1.0
+    assert np.all(exposure_pointing_adjusted[:, inside_inds:] == 1.0)
 
 
 @pytest.mark.external_test_data
-def test_get_spacecraft_exposure_times(deadtime_datasets):
+def test_get_spacecraft_exposure_times(
+    deadtime_datasets, random_spin_data, imap_ena_sim_metakernel, ancillary_files
+):
     """Test get_spacecraft_exposure_times function."""
     constant_exposure = (
         TEST_PATH / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv"
     )
+    steps = 500  # reduced for testing
     rates = deadtime_datasets["rates"]
     params = deadtime_datasets["params"]
-    df_exposure = pd.read_csv(constant_exposure)
-    exposure_pointing = get_spacecraft_exposure_times(df_exposure, rates, params)
-    assert exposure_pointing.shape == (196608,)
+    shape = 786
+    df_exposure = pd.read_csv(constant_exposure)[:shape]  # Subset for testing
 
-    np.testing.assert_allclose(
-        exposure_pointing.values[22684:22686],
-        np.array([1.035, 1.035]) * 5760,
-        atol=1e-6,
+    pix = len(df_exposure)
+    mock_theta = np.random.uniform(-60, 60, (pix, steps))
+    mock_phi = np.random.uniform(-60, 60, (pix, steps))
+    spin_phase_steps = np.random.randint(0, 2, (pix, steps)).astype(
+        bool
+    )  # Spin phase steps, random 0 or 1
+
+    pixels_below_threshold = calculate_pixels_within_scattering_threshold(
+        spin_phase_steps, mock_theta, mock_phi, ancillary_files, 45
     )
+    exposure_pointing, deadtimes = get_spacecraft_exposure_times(
+        df_exposure, rates, params, pixels_below_threshold
+    )
+    np.testing.assert_array_equal(exposure_pointing.shape, (24, shape))
+    np.testing.assert_array_equal(deadtimes.shape, (15000,))
 
 
 @pytest.mark.external_kernel
-def test_get_helio_exposure_times(imap_ena_sim_metakernel):
+def test_get_helio_exposure_time_and_sensitivity(imap_ena_sim_metakernel):
     """Tests get_helio_exposure_times function."""
 
     start_time = 829485054.185627
@@ -269,109 +305,79 @@ def test_get_helio_exposure_times(imap_ena_sim_metakernel):
 
     mid_time = np.average([start_time, end_time])
 
-    constant_exposure = (
-        TEST_PATH / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv"
-    )
-    df_exposure = pd.read_csv(constant_exposure)
-
-    helio_exposure = get_helio_exposure_times(mid_time, df_exposure)
-
     _, energy_midpoints, _ = build_energy_bins()
-
     nside = 128
     npix = hp.nside2npix(nside)
-    assert helio_exposure.shape == (len(energy_midpoints), npix)
+    shape = (len(energy_midpoints), npix)
+    exposure = np.ones(shape)
+    eff = np.ones(shape)
+    gf = np.ones(shape)
+    mock_ra = np.random.uniform(-80, 80, (npix))
+    mock_dec = np.random.uniform(-80, 80, (npix))
 
-    total_input = np.sum(df_exposure["Exposure Time"].values)
-    total_output = np.sum(helio_exposure[23, :])
-
-    assert np.allclose(total_input, total_output, atol=1e-6)
-
-
-@pytest.mark.external_test_data
-def test_get_spacecraft_sensitivity():
-    """Tests get_spacecraft_sensitivity function."""
-    # TODO: remove below here with lookup table aux api
-    efficiencies = TEST_PATH / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv"
-    geometric_function = TEST_PATH / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv"
-
-    df_efficiencies = pd.read_csv(efficiencies)
-    df_geometric_function = pd.read_csv(geometric_function)
-
-    sensitivity, energy_vals, right_ascension, declination = get_spacecraft_sensitivity(
-        df_efficiencies, df_geometric_function
+    helio_exposure, helio_eff, helio_gf = get_helio_adjusted_data(
+        mid_time, exposure, gf, eff, mock_ra, mock_dec
     )
 
-    assert sensitivity.shape == (df_efficiencies.shape[0], df_efficiencies.shape[1] - 2)
-    assert np.array_equal(energy_vals, np.arange(3.0, 80.5, 0.5))
+    for helio_array, array in zip(
+        [helio_exposure, helio_eff, helio_gf], [exposure, eff, gf], strict=False
+    ):
+        total_input = np.sum(array)
+        total_output = np.sum(total_input)
+        assert np.allclose(total_input, total_output, atol=1e-6)
+        assert helio_array.shape == shape
 
-    df_efficiencies_test = pd.DataFrame(
-        {"3.0keV": [1.0, 2.0], "3.5keV": [3.0, 4.0], "4.0keV": [5.0, 6.0]}
+
+def test_get_spacecraft_background_rates(
+    rates_l1_test_path, use_fake_spin_data_for_time, ancillary_files
+):
+    "Tests calculate_background_rates function."
+    # Simulate a spin table from MET = 0 to MET = 141 * 15 seconds
+    use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
+    df = pd.read_csv(rates_l1_test_path)
+
+    rates = {
+        # Stop pulses
+        "stop_tn": df["StopTopNorthCFD"],
+        "stop_bn": df["StopBottomNorthCFD"],
+        "stop_te": df["StopTopEastCFD"],
+        "stop_be": df["StopBottomEastCFD"],
+        "stop_ts": df["StopTopSouthCFD"],
+        "stop_bs": df["StopBottomSouthCFD"],
+        "stop_tw": df["StopTopWestCFD"],
+        "stop_bw": df["StopBottomWestCFD"],
+        # Start pulses
+        "start_rf": df["StartRightFullCFD"],
+        "start_lf": df["StartLeftFullCFD"],
+        # Coincidence pulses
+        "coin_tn": df["CoinTopNorthCFD"],
+        "coin_bn": df["CoinBottomNorthCFD"],
+        "coin_ts": df["CoinTopSouthCFD"],
+        "coin_bs": df["CoinBottomSouthCFD"],
+        # Additional info
+        "shcoarse": df["TimeTag"],
+        "spin": df["Spin"],
+    }
+    energy_bin_edges, _, _ = build_energy_bins()
+    cullingmask_spin_number = np.array([130, 131])
+
+    background_rates = get_spacecraft_background_rates(
+        rates, "ultra45", ancillary_files, energy_bin_edges, cullingmask_spin_number
     )
 
-    df_geometric_function_test = pd.DataFrame({"Response": [0.1, 0.2]})
+    assert background_rates.shape == (len(energy_bin_edges), hp.nside2npix(128))
+    assert np.allclose(background_rates[0, :], np.full((196608,), 6.37052558e-11))
 
-    df_sensitivity_test = df_efficiencies_test.mul(
-        df_geometric_function_test["Response"], axis=0
+
+def test_rate_uncertainty():
+    """Tests spacecraft_count_rate_uncertainty function."""
+
+    hist = np.array(
+        [[0.0, 1.0, 4.0], [9.0, 16.0, 25.0], [36.0, 49.0, 64.0], [0.0, 100.0, 121.0]]
     )
 
-    expected_sensitivity = pd.DataFrame(
-        {"3.0keV": [0.1, 0.4], "3.5keV": [0.3, 0.8], "4.0keV": [0.5, 1.2]}
-    )
+    exposure = np.ones_like(hist)
+    uncertainty = get_spacecraft_count_rate_uncertainty(hist, exposure)
+    expected = np.sqrt(hist)
 
-    assert np.allclose(
-        df_sensitivity_test.to_numpy(), expected_sensitivity.to_numpy(), atol=1e-6
-    )
-
-    expected_result = sensitivity["3.0keV"].values
-    result = grid_sensitivity(df_efficiencies, df_geometric_function, 3.0)
-
-    assert np.allclose(result, expected_result, atol=1e-5)
-
-    # Check that out-of-bounds energy returns all FILL values
-    result = grid_sensitivity(df_efficiencies, df_geometric_function, 2.5)
-    assert np.all(result == -1.0e31)
-
-    result = interpolate_sensitivity(df_efficiencies, df_geometric_function)
-    assert result.shape == (24, 196608)
-
-
-@pytest.mark.external_test_data
-@pytest.mark.external_kernel
-def test_get_helio_sensitivity(monkeypatch, imap_ena_sim_metakernel):
-    """Test get_helio_sensitivity function."""
-
-    # Load test data
-    efficiencies = TEST_PATH / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv"
-    geometric_function = TEST_PATH / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv"
-    df_efficiencies = pd.read_csv(efficiencies)
-    df_geometric_function = pd.read_csv(geometric_function)
-
-    # Patch spacecraft velocity to be zero
-    monkeypatch.setattr(ultra_l1c_pset_bins, "imap_state", mock_imap_state)
-
-    # Define time
-    start_time = 829485054.185627
-    end_time = 829567884.185627
-    mid_time = np.average([start_time, end_time])
-
-    # Build energy bins and spacecraft-frame sensitivity
-    _, energy_midpoints, _ = build_energy_bins()
-    sc_sensitivity = []
-    for energy in energy_midpoints:
-        s = grid_sensitivity(df_efficiencies, df_geometric_function, energy)
-        sc_sensitivity.append(s)
-    sc_sensitivity = np.stack(sc_sensitivity, axis=1).T  # shape: (n_energy_bins, npix)
-
-    # Compute helio-frame sensitivity
-    helio_sensitivity = get_helio_sensitivity(
-        mid_time,
-        df_efficiencies,
-        df_geometric_function,
-    )
-
-    # Flatten and compare
-    flat_sc = np.nansum(sc_sensitivity, axis=0)
-    flat_helio = np.nansum(helio_sensitivity, axis=0)
-
-    np.testing.assert_allclose(flat_sc, flat_helio, atol=1e-5)
+    np.testing.assert_allclose(uncertainty, expected, atol=1e-6)

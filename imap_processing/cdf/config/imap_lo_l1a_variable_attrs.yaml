@@ -78,17 +78,6 @@ spin_default_attrs: &spin_default
   DEPEND_1: spin
   LABL_PTR_1: spin_label
 
-
-# Re-used Coordinate
-epoch:
-  <<: *default_int64
-  CATDESC: Epoch Time
-  DEPEND_0: epoch
-  FIELDNAM: Epoch time
-  Units: 'ns'
-  VAR_TYPE: support_data
-  LABLAXIS: Epoch
-
 esa_step_label:
    CATDESC: ESA Steps
    FIELDNAM: ESA Steps

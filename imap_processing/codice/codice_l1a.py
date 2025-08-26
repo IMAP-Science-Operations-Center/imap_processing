@@ -1053,9 +1053,9 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     # Create the CDF data variables for each Priority and Field
     for i in range(constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["num_priorities"]):
         for field in constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["cdf_fields"]:
-            variable_name = f"P{i}_{field}"
+            variable_name = f"p{i}_{field}"
             attrs = cdf_attrs.get_variable_attributes(variable_name)
-            if field in ["NumEvents", "DataQuality"]:
+            if field in ["num_events", "data_quality"]:
                 dims = ["epoch"]
             else:
                 dims = ["epoch", "event_num"]
@@ -1513,13 +1513,15 @@ def reshape_de_data(
     for priority_num in range(num_priorities):
         for field in bit_structure:
             if field not in ["Priority", "Spare"]:
-                data[f"P{priority_num}_{field}"] = np.full(
+                data[f"p{priority_num}_{field}"] = np.full(
                     (num_epochs, 10000),
                     bit_structure[field]["fillval"],
                     dtype=bit_structure[field]["dtype"],
                 )
-        data[f"P{priority_num}_NumEvents"] = np.full(num_epochs, 65535, dtype=np.uint16)
-        data[f"P{priority_num}_DataQuality"] = np.full(num_epochs, 255, dtype=np.uint8)
+        data[f"p{priority_num}_num_events"] = np.full(
+            num_epochs, 65535, dtype=np.uint16
+        )
+        data[f"p{priority_num}_data_quality"] = np.full(num_epochs, 255, dtype=np.uint8)
 
     # decompressed_data is one large list of values of length
     # (<number of epochs> * <number of priorities>)
@@ -1543,8 +1545,8 @@ def reshape_de_data(
 
             # Number of events and data quality can be determined at this stage
             num_events = num_events_arr[epoch_start:epoch_end][i]
-            data[f"P{priority_num}_NumEvents"][epoch_index] = num_events
-            data[f"P{priority_num}_DataQuality"][epoch_index] = data_quality[i]
+            data[f"p{priority_num}_num_events"][epoch_index] = num_events
+            data[f"p{priority_num}_data_quality"][epoch_index] = data_quality[i]
 
             # Iterate over each event
             for event_index in range(num_events):
@@ -1575,7 +1577,7 @@ def reshape_de_data(
                     )
 
                     # Set the value into the data array
-                    data[f"P{priority_num}_{field_name}"][epoch_index, event_index] = (
+                    data[f"p{priority_num}_{field_name}"][epoch_index, event_index] = (
                         value
                     )
                     bit_position += field_components["bit_length"]

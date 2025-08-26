@@ -12,7 +12,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 logger = logging.getLogger(__name__)
 
 
-TIME_PER_BIN = 0.167  # seconds
+SWAPI_LIVETIME = 0.145  # seconds
 
 
 def solve_full_sweep_energy(
@@ -159,14 +159,12 @@ def swapi_l2(
 
     To process science data to L2, we need to:
     - convert counts to rates. This is done by dividing the counts by the
-        TIME_PER_BIN time. TIME_PER_BIN is the exposure time per energy bin which is
-        obtained by dividing the time for one complete sweep
-        (12 s, coarse + fine sweep) by the total energy steps (72),
-        i.e., TIME_PER_BIN = 12/72 = 0.167 s. This will be constant.
+        SWAPI_LIVETIME time. LIVETIME is data acquisition time. It will
+        be constant, SWAPI_LIVETIME = 0.145 s.
 
     - update uncertainty. Calculate new uncertainty value using
-        SWP_PCEM_ERR data from level one and divide by TIME_PER_BIN. Eg.
-            SWP_PCEM_UNC = SWP_PCEM_ERR / TIME_PER_BIN
+        SWP_PCEM_ERR data from level one and divide by SWAPI_LIVETIME. Eg.
+            SWP_PCEM_UNC = SWP_PCEM_ERR / SWAPI_LIVETIME
         Do the same for SCEM and COIN data.
 
     Parameters
@@ -233,9 +231,9 @@ def swapi_l2(
     ]
 
     # convert counts to rate
-    l2_dataset["swp_pcem_rate"] = l1_dataset["swp_pcem_counts"] / TIME_PER_BIN
-    l2_dataset["swp_scem_rate"] = l1_dataset["swp_scem_counts"] / TIME_PER_BIN
-    l2_dataset["swp_coin_rate"] = l1_dataset["swp_coin_counts"] / TIME_PER_BIN
+    l2_dataset["swp_pcem_rate"] = l1_dataset["swp_pcem_counts"] / SWAPI_LIVETIME
+    l2_dataset["swp_scem_rate"] = l1_dataset["swp_scem_counts"] / SWAPI_LIVETIME
+    l2_dataset["swp_coin_rate"] = l1_dataset["swp_coin_counts"] / SWAPI_LIVETIME
     # update attrs
     l2_dataset["swp_pcem_rate"].attrs = cdf_manager.get_variable_attributes("pcem_rate")
     l2_dataset["swp_scem_rate"].attrs = cdf_manager.get_variable_attributes("scem_rate")
@@ -243,22 +241,22 @@ def swapi_l2(
 
     # update uncertainty
     l2_dataset["swp_pcem_rate_stat_uncert_plus"] = (
-        l1_dataset["swp_pcem_counts_stat_uncert_plus"] / TIME_PER_BIN
+        l1_dataset["swp_pcem_counts_stat_uncert_plus"] / SWAPI_LIVETIME
     )
     l2_dataset["swp_pcem_rate_stat_uncert_minus"] = (
-        l1_dataset["swp_pcem_counts_stat_uncert_minus"] / TIME_PER_BIN
+        l1_dataset["swp_pcem_counts_stat_uncert_minus"] / SWAPI_LIVETIME
     )
     l2_dataset["swp_scem_rate_stat_uncert_plus"] = (
-        l1_dataset["swp_scem_counts_stat_uncert_plus"] / TIME_PER_BIN
+        l1_dataset["swp_scem_counts_stat_uncert_plus"] / SWAPI_LIVETIME
     )
     l2_dataset["swp_scem_rate_stat_uncert_minus"] = (
-        l1_dataset["swp_scem_counts_stat_uncert_minus"] / TIME_PER_BIN
+        l1_dataset["swp_scem_counts_stat_uncert_minus"] / SWAPI_LIVETIME
     )
     l2_dataset["swp_coin_rate_stat_uncert_plus"] = (
-        l1_dataset["swp_coin_counts_stat_uncert_plus"] / TIME_PER_BIN
+        l1_dataset["swp_coin_counts_stat_uncert_plus"] / SWAPI_LIVETIME
     )
     l2_dataset["swp_coin_rate_stat_uncert_minus"] = (
-        l1_dataset["swp_coin_counts_stat_uncert_minus"] / TIME_PER_BIN
+        l1_dataset["swp_coin_counts_stat_uncert_minus"] / SWAPI_LIVETIME
     )
     # update attrs
     l2_dataset[
