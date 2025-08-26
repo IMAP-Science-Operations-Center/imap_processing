@@ -571,7 +571,7 @@ def get_helio_adjusted_data(
     These calculations are performed once per pointing.
     """
     # Get energy midpoints.
-    _, energy_midpoints, _ = build_energy_bins()
+    _, _, energy_bin_geometric_means = build_energy_bins()
 
     # The Cartesian state vector representing the position and velocity of the
     # IMAP spacecraft.
@@ -584,7 +584,7 @@ def get_helio_adjusted_data(
     # and accumulated exposure time.
     npix = hp.nside2npix(nside)
     unit_dirs = hp.ang2vec(ra, dec, lonlat=True).T  # Shape (N, 3)
-    shape = (len(energy_midpoints), int(npix))
+    shape = (len(energy_bin_geometric_means), int(npix))
     if np.any(
         [arr.shape != shape for arr in [exposure_time, geometric_factor, efficiency]]
     ):
@@ -594,16 +594,16 @@ def get_helio_adjusted_data(
         )
     # Initialize output array.
     # Each row corresponds to a HEALPix pixel, and each column to an energy bin.
-    helio_exposure = np.zeros((len(energy_midpoints), npix))
-    helio_efficiency = np.zeros((len(energy_midpoints), npix))
-    helio_geometric_factors = np.zeros((len(energy_midpoints), npix))
+    helio_exposure = np.zeros(shape)
+    helio_efficiency = np.zeros(shape)
+    helio_geometric_factors = np.zeros(shape)
 
     # Loop through energy bins and compute transformed exposure.
-    for i, energy_midpoint in enumerate(energy_midpoints):
+    for i, energy_mean in enumerate(energy_bin_geometric_means):
         # Convert the midpoint energy to a velocity (km/s).
         # Based on kinetic energy equation: E = 1/2 * m * v^2.
         energy_velocity = (
-            np.sqrt(2 * energy_midpoint * UltraConstants.KEV_J / UltraConstants.MASS_H)
+            np.sqrt(2 * energy_mean * UltraConstants.KEV_J / UltraConstants.MASS_H)
             / 1e3
         )
 
