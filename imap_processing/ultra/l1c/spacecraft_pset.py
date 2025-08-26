@@ -7,13 +7,9 @@ import pandas as pd
 import xarray as xr
 
 from imap_processing.cdf.utils import parse_filename_like
-from imap_processing.ultra.l1b.lookup_utils import (
-    get_scattering_coefficients,
-    load_scattering_lookup_tables,
-)
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
+    calculate_pixels_within_scattering_threshold,
     get_spacecraft_pointing_lookup_tables,
-    mask_below_fwhm_scattering_threshold,
 )
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
@@ -25,76 +21,6 @@ from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 logger = logging.getLogger(__name__)
-
-
-def calculate_pixels_within_scattering_threshold(
-    for_indices_by_spin_phase: np.ndarray,
-    theta_vals: np.ndarray,
-    phi_vals: np.ndarray,
-    ancillary_files: dict,
-    instrument_id: int,
-) -> list:
-    """
-    Calculate pixels within the FWHM scattering threshold for each spin phase step.
-
-    Parameters
-    ----------
-    for_indices_by_spin_phase : np.ndarray
-        A 2D boolean array where cols are spin phase steps are rows are HEALPix pixels.
-        True indicates pixels that are within the Field of Regard (FOR) at that
-        spin phase.
-    theta_vals : np.ndarray
-        A 2D array of theta values for each HEALPix pixel at each spin phase step.
-    phi_vals : np.ndarray
-         A 2D array of phi values for each HEALPix pixel at each spin phase step.
-    ancillary_files : dict
-        Dictionary containing ancillary files.
-    instrument_id : int,
-        Instrument ID, either 45 or 90.
-
-    Returns
-    -------
-    exposure_pointing_adjusted : list
-        A Nested list of arrays indicating pixels within the scattering threshold.
-        The outer list indicates spin phase steps, the middle list indicates energy
-        bins, and the inner arrays contain indices indicating pixels that are below
-        the FWHM scattering threshold.
-    """
-    # Load scattering coefficient lookup table
-    scattering_luts = load_scattering_lookup_tables(ancillary_files, instrument_id)
-    pixels_below_scattering = []
-    # Get energy bin geometric means
-    energy_bin_geometric_means = build_energy_bins()[2]
-    steps = for_indices_by_spin_phase.shape[1]
-    # The "for_indices_by_spin_phase" lookup table contains the boolean values of each
-    # pixel at each spin phase step, indicating whether the pixel is inside the FOR.
-    # It starts at Spin-phase = 0, and increments in fine steps (1 ms), spinning the
-    # spacecraft in the despun frame. At each iteration, query for the pixels in the
-    # FOR, and calculate whether the FWHM value is below the threshold at the energy.
-    for i in range(steps):
-        # Calculate spin phase for the current iteration
-        for_inds = for_indices_by_spin_phase[:, i]
-        pixels_below_scattering_for_energy = []
-
-        for energy_idx in range(len(energy_bin_geometric_means)):
-            # Get a mask for pixels below the FWHM scattering threshold
-            energy = int(energy_bin_geometric_means[energy_idx])
-            # Using the lookup table, get the indices of the pixels inside the FOR at
-            # the current spin phase step.
-            theta = theta_vals[for_inds, i]
-            phi = phi_vals[for_inds, i]
-            theta_coeffs, phi_coeffs = get_scattering_coefficients(
-                theta, phi, lookup_tables=scattering_luts
-            )
-            scattering_mask = mask_below_fwhm_scattering_threshold(
-                theta_coeffs, phi_coeffs, energy
-            )
-            pixels_below_scattering_for_energy.append(
-                np.where(for_inds)[0][scattering_mask]
-            )
-        pixels_below_scattering.append(pixels_below_scattering_for_energy)
-
-    return pixels_below_scattering
 
 
 def calculate_spacecraft_pset(

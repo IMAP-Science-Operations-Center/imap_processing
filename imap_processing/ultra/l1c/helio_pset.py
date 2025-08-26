@@ -8,10 +8,8 @@ import xarray as xr
 
 from imap_processing.spice.time import sct_to_et
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
-    get_spacecraft_pointing_lookup_tables,
-)
-from imap_processing.ultra.l1c.spacecraft_pset import (
     calculate_pixels_within_scattering_threshold,
+    get_spacecraft_pointing_lookup_tables,
 )
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
