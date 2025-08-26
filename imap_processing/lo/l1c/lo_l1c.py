@@ -78,12 +78,12 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         pset["pointing_start_met"] = xr.DataArray(
             np.array([pointing_start_met]),
             dims="epoch",
-            # attrs=attr_mgr.get_variable_attributes("pointing_start_met)"
+            attrs=attr_mgr.get_variable_attributes("pointing_start_met"),
         )
         pset["pointing_end_met"] = xr.DataArray(
             np.array([pointing_end_met]),
             dims="epoch",
-            # attrs=attr_mgr.get_variable_attributes("pointing_start_met)"
+            attrs=attr_mgr.get_variable_attributes("pointing_end_met"),
         )
 
         # Set the epoch to the start of the pointing
@@ -96,12 +96,12 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         pset["start_spin_number"] = xr.DataArray(
             [get_spin_number(pset["pointing_start_met"].item())],
             dims="epoch",
-            # attrs=attr_mgr.get_variable_attributes("start_spin_number"),
+            attrs=attr_mgr.get_variable_attributes("start_spin_number"),
         )
         pset["end_spin_number"] = xr.DataArray(
             [get_spin_number(pset["pointing_end_met"].item())],
             dims="epoch",
-            # attrs=attr_mgr.get_variable_attributes("end_spin_number"),
+            attrs=attr_mgr.get_variable_attributes("end_spin_number"),
         )
 
         # Set the counts
