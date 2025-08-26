@@ -347,7 +347,7 @@ def mock_l1c_pset_product_healpix(
                 np.full_like(counts, 0.05, dtype=float),
             ),
             "exposure_factor": (
-                exposure_dims,
+                exposure_dims,  # special case: optionally energy dependent exposure
                 exposure_time,
             ),
             "sensitivity": (
