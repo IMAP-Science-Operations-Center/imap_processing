@@ -19,7 +19,7 @@ max_epoch: &max_epoch 3155630469184000000
 # TODO: Update FORMAT to use fortran format
 # TODO: Review units with CoDICE
 # TODO: Review LABLAXIS with CoDICE. (Diff. Intensity vs Diff. # Flux)
-# TODO: Review FILLVAL with CoDICE. (lo-ialirt has 1.0e+31, but should it be negative?)
+# TODO: Review FILLVAL with CoDICE.
 # TODO: Review VALIDMIN with CoDICE (VALIDMIN: 0.05000000074505806 ??)
 # TODO: Update direct events attributes - products have new structure
 
@@ -52,7 +52,7 @@ direct_events_attrs: &direct_events_default
 lo_ialirt_attrs: &lo_ialirt_default
   <<: *default
   DISPLAY_TYPE: time_series
-  FILLVAL: 1.0e+31
+  FILLVAL: *real_fillval
   FORMAT: '%lf'
   LABLAXIS: ratio
   UNITS: ratio
@@ -184,6 +184,7 @@ epoch_delta_minus:
   VALIDMIN: *min_int
   VALIDMAX: *max_int
   VAR_TYPE: support_data
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Uncertainty
 
 epoch_delta_plus:
   CATDESC: Time from acquisition center to acquisition end
@@ -196,6 +197,7 @@ epoch_delta_plus:
   VALIDMIN: *min_int
   VALIDMAX: *max_int
   VAR_TYPE: support_data
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Uncertainty
 
 elevation_angle:
   CATDESC: Elevation Angle
@@ -216,7 +218,7 @@ energy_table:
   CATDESC: Energy Table
   FIELDNAM: Energy Table
   FORMAT: '%f'
-  LABLAXIS: keV/e
+  LABLAXIS: Energy per charge
   SCALETYP: log
   UNITS: keV/e
   VALIDMAX: 82.0
