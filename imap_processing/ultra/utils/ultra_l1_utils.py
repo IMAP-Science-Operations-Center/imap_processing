@@ -32,7 +32,7 @@ def create_dataset(  # noqa: PLR0912
     cdf_manager.add_instrument_global_attrs("ultra")
     cdf_manager.add_instrument_variable_attrs("ultra", level)
 
-    # L1b extended spin, badtimes, and cullingmask data products
+    # L1b extended spin, badtimes, and goodtimes data products
     if "spin_number" in data_dict.keys():
         coords = {
             "spin_number": ("spin_number", data_dict["spin_number"]),

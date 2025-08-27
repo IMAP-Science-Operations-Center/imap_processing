@@ -359,10 +359,10 @@ def test_get_spacecraft_background_rates(
         "spin": df["Spin"],
     }
     energy_bin_edges, _, _ = build_energy_bins()
-    cullingmask_spin_number = np.array([130, 131])
+    goodtimes_spin_number = np.array([130, 131])
 
     background_rates = get_spacecraft_background_rates(
-        rates, "ultra45", ancillary_files, energy_bin_edges, cullingmask_spin_number
+        rates, "ultra45", ancillary_files, energy_bin_edges, goodtimes_spin_number
     )
 
     assert background_rates.shape == (len(energy_bin_edges), hp.nside2npix(128))

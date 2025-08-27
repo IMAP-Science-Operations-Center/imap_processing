@@ -33,7 +33,7 @@ def ultra_l1c(
     for instrument_id in [45, 90]:
         if (
             f"imap_ultra_l1a_{instrument_id}sensor-histogram" in data_dict
-            and f"imap_ultra_l1b_{instrument_id}sensor-cullingmask" in data_dict
+            and f"imap_ultra_l1b_{instrument_id}sensor-goodtimes" in data_dict
         ):
             histogram_dataset = calculate_histogram(
                 data_dict[f"imap_ultra_l1a_{instrument_id}sensor-histogram"],
@@ -41,7 +41,7 @@ def ultra_l1c(
             )
             output_datasets = [histogram_dataset]
         elif (
-            f"imap_ultra_l1b_{instrument_id}sensor-cullingmask" in data_dict
+            f"imap_ultra_l1b_{instrument_id}sensor-goodtimes" in data_dict
             and f"imap_ultra_l1b_{instrument_id}sensor-de" in data_dict
             and f"imap_ultra_l1b_{instrument_id}sensor-extendedspin" in data_dict
             and has_spice
@@ -49,7 +49,7 @@ def ultra_l1c(
             helio_pset = calculate_helio_pset(
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-de"],
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-extendedspin"],
-                data_dict[f"imap_ultra_l1b_{instrument_id}sensor-cullingmask"],
+                data_dict[f"imap_ultra_l1b_{instrument_id}sensor-goodtimes"],
                 data_dict[f"imap_ultra_l1a_{instrument_id}sensor-rates"],
                 data_dict[f"imap_ultra_l1a_{instrument_id}sensor-params"],
                 f"imap_ultra_l1c_{instrument_id}sensor-heliopset",
@@ -58,14 +58,14 @@ def ultra_l1c(
             )
             output_datasets = [helio_pset]
         elif (
-            f"imap_ultra_l1b_{instrument_id}sensor-cullingmask" in data_dict
+            f"imap_ultra_l1b_{instrument_id}sensor-goodtimes" in data_dict
             and f"imap_ultra_l1b_{instrument_id}sensor-de" in data_dict
             and f"imap_ultra_l1b_{instrument_id}sensor-extendedspin" in data_dict
         ):
             spacecraft_pset = calculate_spacecraft_pset(
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-de"],
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-extendedspin"],
-                data_dict[f"imap_ultra_l1b_{instrument_id}sensor-cullingmask"],
+                data_dict[f"imap_ultra_l1b_{instrument_id}sensor-goodtimes"],
                 data_dict[f"imap_ultra_l1a_{instrument_id}sensor-rates"],
                 data_dict[f"imap_ultra_l1a_{instrument_id}sensor-params"],
                 f"imap_ultra_l1c_{instrument_id}sensor-spacecraftpset",

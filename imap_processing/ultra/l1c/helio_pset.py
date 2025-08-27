@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 def calculate_helio_pset(
     de_dataset: xr.Dataset,
     extendedspin_dataset: xr.Dataset,
-    cullingmask_dataset: xr.Dataset,
+    goodtimes_dataset: xr.Dataset,
     rates_dataset: xr.Dataset,
     params_dataset: xr.Dataset,
     name: str,
@@ -49,8 +49,8 @@ def calculate_helio_pset(
         Dataset containing de data.
     extendedspin_dataset : xarray.Dataset
         Dataset containing extendedspin data.
-    cullingmask_dataset : xarray.Dataset
-        Dataset containing cullingmask data.
+    goodtimes_dataset : xarray.Dataset
+        Dataset containing goodtimes data.
     rates_dataset : xarray.Dataset
         Dataset containing image rates data.
     params_dataset : xarray.Dataset

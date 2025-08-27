@@ -96,22 +96,22 @@ def mock_data_l1b_dict():
         data_vars=data_vars_histogram, coords=coords, attrs=attrs_histogram
     )
 
-    data_vars_cullingmask = {
+    data_vars_goodtimes = {
         "spin_number": ("epoch", np.zeros(5)),
     }
 
-    attrs_cullingmask = {
-        "Logical_source": "imap_ultra_l1b_45sensor-cullingmask",
+    attrs_goodtimes = {
+        "Logical_source": "imap_ultra_l1b_45sensor-goodtimes",
         "Logical_source_description": "IMAP Mission ULTRA Instrument "
         "Level-1B Culling Mask Data",
     }
 
-    dataset_cullingmask = xr.Dataset(
-        data_vars_cullingmask, coords={"epoch": epoch}, attrs=attrs_cullingmask
+    dataset_goodtimes = xr.Dataset(
+        data_vars_goodtimes, coords={"epoch": epoch}, attrs=attrs_goodtimes
     )
 
     data_dict = {
-        "imap_ultra_l1b_45sensor-cullingmask": dataset_cullingmask,
+        "imap_ultra_l1b_45sensor-goodtimes": dataset_goodtimes,
         "imap_ultra_l1a_45sensor-histogram": dataset_histogram,
     }
     return data_dict
@@ -238,7 +238,7 @@ def test_calculate_spacecraft_pset_with_cdf(
     data_dict = {
         "imap_ultra_l1b_45sensor-de": dataset,
         "imap_ultra_l1b_45sensor-extendedspin": dataset,  # placeholder
-        "imap_ultra_l1b_45sensor-cullingmask": dataset,  # placeholder
+        "imap_ultra_l1b_45sensor-goodtimes": dataset,  # placeholder
         "imap_ultra_l1a_45sensor-rates": deadtime_datasets["rates"],
         "imap_ultra_l1a_45sensor-params": deadtime_datasets["params"],
     }
@@ -319,7 +319,7 @@ def test_calculate_helio_pset_with_cdf(
     data_dict = {
         "imap_ultra_l1b_45sensor-de": dataset,
         "imap_ultra_l1b_45sensor-extendedspin": xr.Dataset(),  # placeholder
-        "imap_ultra_l1b_45sensor-cullingmask": xr.Dataset(),  # placeholder
+        "imap_ultra_l1b_45sensor-goodtimes": xr.Dataset(),  # placeholder
         "imap_ultra_l1a_45sensor-rates": deadtime_datasets["rates"],
         "imap_ultra_l1a_45sensor-params": deadtime_datasets["params"],
     }

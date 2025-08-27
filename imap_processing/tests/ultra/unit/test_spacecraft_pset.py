@@ -86,7 +86,7 @@ def test_calculate_spacecraft_pset(
     spacecraft_pset = calculate_spacecraft_pset(
         test_l1b_de_dataset,
         test_l1b_de_dataset,  # placeholder for extendedspin_dataset
-        test_l1b_de_dataset,  # placeholder for cullingmask_dataset
+        test_l1b_de_dataset,  # placeholder for goodtimes_dataset
         deadtime_datasets["rates"],
         deadtime_datasets["params"],
         "imap_ultra_l1c_45sensor-spacecraftpset",
@@ -160,7 +160,7 @@ def test_calculate_spacecraft_pset_with_cdf(
         spacecraft_pset = calculate_spacecraft_pset(
             dataset,
             dataset,  # placeholder for extendedspin_dataset
-            dataset,  # placeholder for cullingmask_dataset
+            dataset,  # placeholder for goodtimes_dataset
             deadtime_datasets["rates"],
             deadtime_datasets["params"],
             "imap_ultra_l1c_45sensor-spacecraftpset",

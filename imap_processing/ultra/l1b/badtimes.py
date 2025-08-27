@@ -13,7 +13,7 @@ FILLVAL_UINT32 = 4294967295
 
 def calculate_badtimes(
     extendedspin_dataset: xr.Dataset,
-    cullingmask_spins: NDArray,
+    goodtimes_spins: NDArray,
     name: str,
 ) -> xr.Dataset:
     """
@@ -23,7 +23,7 @@ def calculate_badtimes(
     ----------
     extendedspin_dataset : xarray.Dataset
         Dataset containing the data.
-    cullingmask_spins : np.ndarray
+    goodtimes_spins : np.ndarray
         Dataset containing the culled data.
     name : str
         Name of the dataset.
@@ -34,7 +34,7 @@ def calculate_badtimes(
         Dataset containing the extendedspin data that has been culled.
     """
     culled_spins = np.setdiff1d(
-        extendedspin_dataset["spin_number"].values, cullingmask_spins
+        extendedspin_dataset["spin_number"].values, goodtimes_spins
     )
     extendedspin_dataset = extendedspin_dataset.assign_coords(
         epoch=("spin_number", extendedspin_dataset["epoch"].values)
