@@ -65,7 +65,7 @@ sensitivity:
 
 geometric_function:
   <<: *energy_dependent
-  CATDESC: The effective sensitive area within the Field of View.
+  CATDESC: The effective sensitive area as a function of theta and phi in instrument frame (energy independent).
   FIELDNAM: geometric_function
   LABLAXIS: Geometric Factor
   UNITS: " "

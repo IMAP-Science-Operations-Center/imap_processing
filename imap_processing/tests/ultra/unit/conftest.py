@@ -2,6 +2,7 @@
 
 from unittest import mock
 
+import astropy_healpix.healpy as hp
 import numpy as np
 import pytest
 import xarray as xr
@@ -598,3 +599,41 @@ def random_spin_data():
     ) as mock_spin_phases:
         mock_spin_phases.side_effect = lambda time: np.random.random(time.shape)
         yield
+
+
+@pytest.fixture
+def mock_spacecraft_pointing_lookups():
+    """Test lookup tables fixture."""
+    pix = hp.nside2npix(8)  # reduced for testing
+    steps = 5  # Reduced for testing
+    for_indices_by_spin_phase = np.random.choice(
+        [True, False], size=(pix, steps), p=[0.1, 0.9]
+    )
+    theta_vals = np.random.uniform(-60, 60, size=(pix, steps))
+    phi_vals = np.random.uniform(-60, 60, size=(pix, steps))
+    # Ra and Dec pixel shape needs to be the default healpix pixel count
+    ra_and_dec = np.random.uniform(-80, 80, size=(hp.nside2npix(128), 2))
+    boundary_scale_factors = np.ones((pix, steps))
+    with (
+        mock.patch(
+            "imap_processing.ultra.l1c.spacecraft_pset.get_spacecraft_pointing_lookup_tables"
+        ) as mock_lookup,
+        mock.patch(
+            "imap_processing.ultra.l1c.helio_pset.get_spacecraft_pointing_lookup_tables"
+        ) as mock_lookup_helio,
+    ):
+        mock_lookup.return_value = (
+            for_indices_by_spin_phase,
+            theta_vals,
+            phi_vals,
+            ra_and_dec,
+            boundary_scale_factors,
+        )
+        mock_lookup_helio.return_value = (
+            for_indices_by_spin_phase,
+            theta_vals,
+            phi_vals,
+            ra_and_dec,
+            boundary_scale_factors,
+        )
+        yield mock_lookup

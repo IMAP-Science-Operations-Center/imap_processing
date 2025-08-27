@@ -595,7 +595,7 @@ def get_scattering_thresholds(ancillary_files: dict) -> dict:
     # Culling FWHM Scattering values as a function of energy.
     thresholds = pd.read_csv(
         ancillary_files["l1b-scattering-thresholds-per-energy"], header=None, skiprows=1
-    ).to_numpy()
+    ).to_numpy(dtype=float)
     # The first two columns represent the energy range (min, max) in keV, and the
     # value is the FWHM scattering threshold in degrees
     threshold_dict = {(row[0], row[1]): row[2] for row in thresholds}

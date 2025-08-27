@@ -39,7 +39,7 @@ def test_get_spacecraft_pointing_lookup_tables(ancillary_files):
 @pytest.mark.external_test_data
 def test_get_mask_below_fwhm_scattering_threshold(ancillary_files):
     """Tests function get_mask_below_fwhm_scattering_threshold."""
-    energy = 5  # At energy 5, the FWHM threshold is 10
+    energy = np.array([[5]])  # At energy 5, the FWHM threshold is 10
     theta_coeffs = np.array(
         [
             [np.nan, 10],  # This will result in a NaN value (False)

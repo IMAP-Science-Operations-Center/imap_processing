@@ -30,6 +30,7 @@ def test_calculate_spacecraft_pset(
     imap_ena_sim_metakernel,
     use_fake_spin_data_for_time,
     ancillary_files,
+    mock_spacecraft_pointing_lookups,
 ):
     """Tests calculate_spacecraft_pset function."""
     # Simulate a spin table from MET = 0 to MET = 141 * 15 seconds
@@ -106,6 +107,7 @@ def test_calculate_spacecraft_pset_with_cdf(
     deadtime_datasets,
     imap_ena_sim_metakernel,
     use_fake_spin_data_for_time,
+    mock_spacecraft_pointing_lookups,
 ):
     """Tests calculate_spacecraft_pset function with imported test data."""
     # Simulate a spin table from MET = 0 to MET = 141 * 15 seconds

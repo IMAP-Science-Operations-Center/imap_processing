@@ -140,6 +140,7 @@ def calculate_pixels_within_scattering_threshold(
 
         # Skip if no pixels in FOR
         if not np.any(for_inds):
+            logger.info(f"No pixels found in FOR at spin phase step {i}")
             pixels_below_scattering.append(
                 [
                     np.array([], dtype=int)
@@ -157,7 +158,10 @@ def calculate_pixels_within_scattering_threshold(
         # Get a mask for pixels below the FWHM scattering threshold
         energies = energy_bin_geometric_means[np.newaxis, :]
         scattering_mask = mask_below_fwhm_scattering_threshold(
-            theta_coeffs, phi_coeffs, energies, scattering_thresholds=scattering_thresholds,
+            theta_coeffs,
+            phi_coeffs,
+            energies,
+            scattering_thresholds=scattering_thresholds,
         )
         # Extract pixel indices for each energy
         for_pixel_indices = np.where(for_inds)[0]
