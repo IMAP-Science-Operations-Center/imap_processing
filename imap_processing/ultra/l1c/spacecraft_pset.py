@@ -56,7 +56,7 @@ def calculate_spacecraft_pset(
         Ancillary files.
     instrument_id : int
         Instrument ID, either 45 or 90.
-    species_id : int, optional
+    species_id : int
         Species ID, default of 1 refers to Hydrogen.
 
     Returns
