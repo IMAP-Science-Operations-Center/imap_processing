@@ -52,32 +52,7 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
 
     # Get the L2 CDF attributes
     cdf_attrs = ImapCdfAttributes()
-    cdf_attrs.add_instrument_global_attrs("codice")
-    cdf_attrs.add_instrument_variable_attrs("codice", "l2")
-
-    # Update the global attributes
-    l2_dataset.attrs = cdf_attrs.get_global_attributes(dataset_name)
-
-    # Set the variable attributes
-    for variable_name in l2_dataset.data_vars.keys():
-        try:
-            l2_dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
-                variable_name, check_schema=False
-            )
-        except KeyError:
-            # Some variables may have a product descriptor prefix in the
-            # cdf attributes key if they are common to multiple products.
-            descriptor = dataset_name.split("imap_codice_l2_")[-1]
-            cdf_attrs_key = f"{descriptor}-{variable_name}"
-            try:
-                l2_dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
-                    f"{cdf_attrs_key}", check_schema=False
-                )
-            except KeyError:
-                logger.error(
-                    f"Field '{variable_name}' and '{cdf_attrs_key}' not found in "
-                    f"attribute manager."
-                )
+    l2_dataset = add_dataset_attributes(l2_dataset, dataset_name, cdf_attrs)
 
     if dataset_name in [
         "imap_codice_l2_hi-counters-singles",
@@ -149,4 +124,53 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
 
     logger.info(f"\nFinal data product:\n{l2_dataset}\n")
 
+    return l2_dataset
+
+
+def add_dataset_attributes(
+    l2_dataset: xr.Dataset, dataset_name: str, cdf_attrs: ImapCdfAttributes
+) -> xr.Dataset:
+    """
+    Add the global and variable attributes to the dataset.
+
+    Parameters
+    ----------
+    l2_dataset : xarray.Dataset
+        The dataset to update.
+    dataset_name : str
+        The name of the dataset.
+    cdf_attrs : ImapCdfAttributes
+        The attribute manager for CDF attributes.
+
+    Returns
+    -------
+    xarray.Dataset
+        The updated dataset.
+    """
+    cdf_attrs.add_instrument_global_attrs("codice")
+    cdf_attrs.add_instrument_variable_attrs("codice", "l2")
+
+    # Update the global attributes
+    l2_dataset.attrs = cdf_attrs.get_global_attributes(dataset_name)
+
+    # Set the variable attributes
+    for variable_name in l2_dataset.data_vars.keys():
+        try:
+            l2_dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
+                variable_name, check_schema=False
+            )
+        except KeyError:
+            # Some variables may have a product descriptor prefix in the
+            # cdf attributes key if they are common to multiple products.
+            descriptor = dataset_name.split("imap_codice_l2_")[-1]
+            cdf_attrs_key = f"{descriptor}-{variable_name}"
+            try:
+                l2_dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
+                    f"{cdf_attrs_key}", check_schema=False
+                )
+            except KeyError:
+                logger.error(
+                    f"Field '{variable_name}' and '{cdf_attrs_key}' not found in "
+                    f"attribute manager."
+                )
     return l2_dataset
