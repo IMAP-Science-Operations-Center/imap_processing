@@ -19,8 +19,8 @@ default_float32_attrs: &default_float32
 
 energy_dependent_attrs: &energy_dependent
   <<: *default_float32
-  DEPEND_0: energy_bin_geometric_mean
-  DEPEND_1: pixel_index
+  DEPEND_1: energy_bin_geometric_mean
+  DEPEND_2: pixel_index
 
 latitude:
   <<: *default_float32
