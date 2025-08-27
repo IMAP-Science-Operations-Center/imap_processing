@@ -46,7 +46,7 @@ def build_energy_bins() -> tuple[list[tuple[float, float]], np.ndarray, np.ndarr
         Array of geometric means of energy bins.
     """
     # Create energy bins.
-    energy_bin_edges = np.array(UltraConstants.CULLING_ENERGY_BIN_EDGES)
+    energy_bin_edges = np.array(UltraConstants.PSET_ENERGY_BIN_EDGES)
     energy_midpoints = (energy_bin_edges[:-1] + energy_bin_edges[1:]) / 2
 
     intervals = [
