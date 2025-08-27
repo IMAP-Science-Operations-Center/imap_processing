@@ -141,7 +141,7 @@ def test_build_output(furnish_kernels):
 
 
 @pytest.mark.external_kernel
-def test_generate_text_files(furnish_kernels):
+def test_generate_text_files(furnish_kernels, tmpdir):
     kernels = [
         "naif0012.tls",
         "pck00011.tpc",
@@ -151,10 +151,10 @@ def test_generate_text_files(furnish_kernels):
     ]
     with furnish_kernels(kernels):
         process_ephemeris.generate_text_files(
-            station="Kiel", day="20250813", file_path="../test_text_files"
+            station="Kiel", day="20250815", file_path=tmpdir
         )
 
-    with open("../test_text_files/20250813_Kiel.txt") as file:
+    with open(f"{tmpdir}/20250815_Kiel.txt") as file:
         lines = file.readlines()
         assert lines[0] == "Station: Kiel\n"
         assert "(km/s)\n" in lines[8]
