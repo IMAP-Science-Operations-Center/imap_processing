@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
+    get_scattering_thresholds_for_energy,
     get_spacecraft_pointing_lookup_tables,
     mask_below_fwhm_scattering_threshold,
 )
@@ -39,7 +40,8 @@ def test_get_spacecraft_pointing_lookup_tables(ancillary_files):
 @pytest.mark.external_test_data
 def test_get_mask_below_fwhm_scattering_threshold(ancillary_files):
     """Tests function get_mask_below_fwhm_scattering_threshold."""
-    energy = np.array([[5]])  # At energy 5, the FWHM threshold is 10
+    energy = np.array([5])  # At energy 5, the FWHM threshold is 10
+    thresholds = get_scattering_thresholds_for_energy(energy, ancillary_files)
     theta_coeffs = np.array(
         [
             [np.nan, 10],  # This will result in a NaN value (False)
@@ -58,7 +60,35 @@ def test_get_mask_below_fwhm_scattering_threshold(ancillary_files):
     # threshold should be True.
     expected_pixel_mask = np.array([[False], [True], [False]])
     pixel_mask = mask_below_fwhm_scattering_threshold(
-        theta_coeffs, phi_coeffs, energy, ancillary_files
+        theta_coeffs, phi_coeffs, energy[np.newaxis, :], thresholds
+    )
+    np.testing.assert_array_equal(pixel_mask.shape, (3, 1))
+    np.testing.assert_array_equal(pixel_mask, expected_pixel_mask)
+
+
+@pytest.mark.external_test_data
+def test_get_mask_below_fwhm_scattering_threshold_zero(ancillary_files):
+    """Tests function get_mask_below_fwhm_scattering_threshold."""
+    energy = np.array([0])  # At energy 0, the FWHM threshold is 0
+    thresholds = get_scattering_thresholds_for_energy(ancillary_files, energy)
+    theta_coeffs = np.array(
+        [
+            [np.nan, 10],  # This will result in a NaN value (False)
+            [5, -0.1],  # FWHM value below the threshold (True)
+            [4, -0.1],  # FWHM value below the threshold (True)
+        ]
+    )
+    phi_coeffs = np.array(
+        [
+            [3, -0.1],  # FWHM value below the threshold (True)
+            [5, -0.1],  # FWHM value below the threshold (True)
+            [15, -0.1],  # FWHM value above the threshold (False)
+        ]
+    )
+    # Since energy is zero, all should be False although some pixels are below threshold
+    expected_pixel_mask = np.array([[False], [False], [False]])
+    pixel_mask = mask_below_fwhm_scattering_threshold(
+        theta_coeffs, phi_coeffs, energy, thresholds
     )
     np.testing.assert_array_equal(pixel_mask.shape, (3, 1))
     np.testing.assert_array_equal(pixel_mask, expected_pixel_mask)
