@@ -26,14 +26,14 @@ TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 @pytest.fixture
 def mock_spacecraft_pointing_lookups():
     """Test lookup tables fixture."""
-    pix = hp.nside2npix(128)
-    steps = 10  # Reduced for testing
+    pix = hp.nside2npix(8)  # Reduced for testing
+    steps = 5  # Reduced for testing
     for_indices_by_spin_phase = np.random.choice(
         [True, False], size=(pix, steps), p=[0.1, 0.9]
     )
     theta_vals = np.random.uniform(-60, 60, size=(pix, steps))
     phi_vals = np.random.uniform(-60, 60, size=(pix, steps))
-    ra_and_dec = np.random.uniform(-80, 80, size=(pix, 2))
+    ra_and_dec = np.random.uniform(-80, 80, size=(hp.nside2npix(128), 2))
     boundary_scale_factors = np.ones((pix, steps))
     with (
         mock.patch(
