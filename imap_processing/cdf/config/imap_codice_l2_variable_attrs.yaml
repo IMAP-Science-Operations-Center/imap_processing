@@ -17,11 +17,8 @@ max_epoch: &max_epoch 3155630469184000000
 
 # TODO: Complete SPASE. 'Other' used temporarily.
 # TODO: Update FORMAT to use fortran format
-# TODO: Review units with CoDICE
-# TODO: Review LABLAXIS with CoDICE. (Diff. Intensity vs Diff. # Flux)
-# TODO: Review FILLVAL with CoDICE.
 # TODO: Review VALIDMIN with CoDICE (VALIDMIN: 0.05000000074505806 ??)
-# TODO: Update direct events attributes - products have new structure
+# TODO: Update direct events attributes - products have new var names
 
 
 # <=== Defaults ===>
@@ -33,19 +30,16 @@ default_attrs: &default
   FILLVAL: *int_fillval
   FORMAT: I12
   SCALETYP: linear
-  UNITS: dN
+  UNITS: ' '
   VALIDMIN: *min_int
   VALIDMAX: *max_int
   DICT_KEY: SPASE>Support>SupportQuantity:Other
 
 direct_events_attrs: &direct_events_default
   <<: *default
-  CATDESC: Fill in at creation
   DISPLAY_TYPE: time_series
-  FIELDNAM: Fill in at creation
   FILLVAL: *uint8_fillval
   FORMAT: I5
-  UNITS: unitless
   VALIDMIN: 0
   VALIDMAX: 10000
 
@@ -55,7 +49,7 @@ lo_ialirt_attrs: &lo_ialirt_default
   FILLVAL: *real_fillval
   FORMAT: '%lf'
   LABLAXIS: ratio
-  UNITS: ratio
+  UNITS: ' '
   VALIDMAX: 1.0e+31
   VALIDMIN: 0.0
 
@@ -65,7 +59,7 @@ lo_species_attrs: &lo_species_default
   DEPEND_2: spin_sector_index
   LABL_PTR_1: energy_table_label
   LABL_PTR_2: spin_sector_index_label
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FORMAT: '%f'
   SCALETYP: log
   UNITS: particles / cm2 s sr keV/q
@@ -82,7 +76,7 @@ lo_angular_attrs: &lo_angular_default
   LABL_PTR_1: energy_table_label
   LABL_PTR_2: elevation_angle_label
   LABL_PTR_3: spin_angle_label
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FORMAT: '%f'
   SCALETYP: log
   UNITS: particles / cm2 s sr keV/q
@@ -93,7 +87,7 @@ lo_angular_attrs: &lo_angular_default
 
 hi_omni_attrs: &hi_omni_default
   <<: *default
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FORMAT: '%f'
   LABLAXIS: Diff. Intensity
   SCALETYP: linear
@@ -105,7 +99,7 @@ hi_omni_attrs: &hi_omni_default
 
 hi_sectored_attrs: &hi_sectored_attrs_default
   <<: *default
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   DEPEND_2: elevation_angle
   DEPEND_3: spin_sector_index
   LABL_PTR_2: elevation_angle_label
@@ -148,12 +142,14 @@ spin_angles_attrs: &spin_angles_default
 
 spin_sector_index_attrs: &spin_sector_index_default
   VAR_TYPE: support_data
+  DISPLAY_TYPE: no_plot
   CATDESC: Spin Sector Index
   FIELDNAM: Spin Sector Index
   FORMAT: '%d'
   LABLAXIS: Spin Sector Index
   SCALETYP: linear
   UNITS: ' '
+  FILLVAL: *uint8_fillval
   VALIDMAX: 1
   VALIDMIN: 0
   DICT_KEY: SPASE>Support>SupportQuantity:Other
@@ -429,6 +425,7 @@ lo-sw-species-spin_sector_index_label:
 # The following are set in multiple data products
 data_quality:
   <<: *default
+  VAR_TYPE: data
   CATDESC: Indicates whether data quality is suspect (1).
   DISPLAY_TYPE: time_series
   FIELDNAM: Data Quality
@@ -439,7 +436,7 @@ data_quality:
   UNITS: ' '
   VALIDMAX: 1
   VALIDMIN: 0
-  VAR_TYPE: data
+  DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
 
 # The following are data product-specific
 # Direct Events Attributes
@@ -1600,7 +1597,7 @@ hi-ialirt-h:
   LABL_PTR_1: energy_h_label
   LABL_PTR_2: ssd_index_label
   LABL_PTR_3: spin_sector_index_label
-  DISPLAY_TYPE: time_series
+  DISPLAY_TYPE: spectrogram
   FILLVAL: 4294967294
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216
