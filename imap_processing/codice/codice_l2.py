@@ -65,6 +65,7 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
         "imap_codice_l2_lo-nsw-priority",
     ]:
         # No changes needed. Just save to an L2 CDF file.
+        # TODO: May not even need L2 files for these products
         pass
 
     elif dataset_name == "imap_codice_l2_hi-direct-events":
@@ -134,14 +135,14 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
 
 
 def add_dataset_attributes(
-    l2_dataset: xr.Dataset, dataset_name: str, cdf_attrs: ImapCdfAttributes
+    dataset: xr.Dataset, dataset_name: str, cdf_attrs: ImapCdfAttributes
 ) -> xr.Dataset:
     """
     Add the global and variable attributes to the dataset.
 
     Parameters
     ----------
-    l2_dataset : xarray.Dataset
+    dataset : xarray.Dataset
         The dataset to update.
     dataset_name : str
         The name of the dataset.
@@ -157,12 +158,12 @@ def add_dataset_attributes(
     cdf_attrs.add_instrument_variable_attrs("codice", "l2")
 
     # Update the global attributes
-    l2_dataset.attrs = cdf_attrs.get_global_attributes(dataset_name)
+    dataset.attrs = cdf_attrs.get_global_attributes(dataset_name)
 
     # Set the variable attributes
-    for variable_name in l2_dataset.data_vars.keys():
+    for variable_name in dataset.data_vars.keys():
         try:
-            l2_dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
+            dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
                 variable_name, check_schema=False
             )
         except KeyError:
@@ -171,7 +172,7 @@ def add_dataset_attributes(
             descriptor = dataset_name.split("imap_codice_l2_")[-1]
             cdf_attrs_key = f"{descriptor}-{variable_name}"
             try:
-                l2_dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
+                dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
                     f"{cdf_attrs_key}", check_schema=False
                 )
             except KeyError:
@@ -179,7 +180,7 @@ def add_dataset_attributes(
                     f"Field '{variable_name}' and '{cdf_attrs_key}' not found in "
                     f"attribute manager."
                 )
-    return l2_dataset
+    return dataset
 
 
 if __name__ == "__main__":
