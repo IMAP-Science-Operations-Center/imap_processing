@@ -414,8 +414,8 @@ lo-nsw-species-spin_sector_index_label:
   VAR_TYPE: metadata
 
 lo-sw-species-spin_sector_index_label:
-  CATDESC: Spin Sector Index for Lo-SW Species
-  FIELDNAM: Spin Sector Index for Lo-SW Species
+  CATDESC: Spin Sector Index for Lo SW-Species
+  FIELDNAM: Spin Sector Index for Lo SW-Species
   FORMAT: A1
   VAR_TYPE: metadata
 
