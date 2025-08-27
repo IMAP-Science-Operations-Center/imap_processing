@@ -402,8 +402,8 @@ hi-sectored-spin_sector_index_label:
   VAR_TYPE: metadata
 
 hi-ialirt-spin_sector_index_label:
-  CATDESC: Spin Sector Index for Hi-Ialirt
-  FIELDNAM: Spin Sector Index for Hi-Ialirt
+  CATDESC: Spin Sector Index for Hi I-ALiRT
+  FIELDNAM: Spin Sector Index for Hi I-ALiRT
   FORMAT: A1
   VAR_TYPE: metadata
 
