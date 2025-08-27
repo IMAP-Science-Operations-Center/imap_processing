@@ -35,7 +35,7 @@ Level 1B Processing Code:
 
     l1b.ultra_l1b
     l1b.badtimes
-    l1b.cullingmask
+    l1b.goodtimes
     l1b.de
     l1b.extendedspin
 
