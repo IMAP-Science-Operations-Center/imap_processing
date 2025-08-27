@@ -676,7 +676,7 @@ class Glows(ProcessInstrument):
         datasets: list[xr.Dataset] = []
 
         if self.data_level == "l1a":
-            science_files = dependencies.get_file_paths(source="glows")
+            science_files = dependencies.get_file_paths(source="glows", data_type="l0")
             if len(science_files) != 1:
                 raise ValueError(
                     f"GLOWS L1A requires exactly one input science file, received: "
@@ -685,37 +685,30 @@ class Glows(ProcessInstrument):
             datasets = glows_l1a(science_files[0])
 
         if self.data_level == "l1b":
-            science_files = dependencies.get_file_paths(source="glows")
+            science_files = dependencies.get_file_paths(source="glows", data_type="l1a")
             if len(science_files) != 1:
                 raise ValueError(
                     f"GLOWS L1B requires exactly one input science file, received: "
                     f"{science_files}."
                 )
             input_dataset = load_cdf(science_files[0])
-            # TODO: Replace this by reading from AWS/ProcessingInputs
-
-            glows_ancillary_dir = Path(__file__).parent / "glows" / "ancillary"
 
             # Create file lists for each ancillary type
-            excluded_regions_files = [
-                glows_ancillary_dir
-                / "imap_glows_map-of-excluded-regions_20250923_v002.dat"
-            ]
-            uv_sources_files = [
-                glows_ancillary_dir / "imap_glows_map-of-uv-sources_20250923_v002.dat"
-            ]
-            suspected_transients_files = [
-                glows_ancillary_dir
-                / "imap_glows_suspected-transients_20250923_v002.dat"
-            ]
-            exclusions_by_instr_team_files = [
-                glows_ancillary_dir
-                / "imap_glows_exclusions-by-instr-team_20250923_v002.dat"
-            ]
-
-            pipeline_settings = [
-                glows_ancillary_dir / "imap_glows_pipeline-settings_20250923_v002.json"
-            ]
+            excluded_regions_files = dependencies.get_processing_inputs(
+                descriptor="map-of-excluded-regions"
+            )[0]
+            uv_sources_files = dependencies.get_processing_inputs(
+                descriptor="map-of-uv-sources"
+            )[0]
+            suspected_transients_files = dependencies.get_processing_inputs(
+                descriptor="suspected-transients"
+            )[0]
+            exclusions_by_instr_team_files = dependencies.get_processing_inputs(
+                descriptor="exclusions-by-instr-team"
+            )[0]
+            pipeline_settings = dependencies.get_processing_inputs(
+                descriptor="pipeline-settings"
+            )[0]
 
             # Use end date buffer for ancillary data
             current_day = np.datetime64(

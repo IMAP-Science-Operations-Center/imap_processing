@@ -16,6 +16,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     HistogramL1B,
     PipelineSettings,
 )
+from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
 
 
 def glows_l1b(
@@ -58,6 +59,8 @@ def glows_l1b(
     cdf_attrs.add_instrument_global_attrs("glows")
     cdf_attrs.add_instrument_variable_attrs("glows", "l1b")
 
+    day = et_to_datetime64(ttj2000ns_to_et(input_dataset["epoch"].data[0]))
+
     # Create ancillary exclusions object from passed-in datasets
     ancillary_exclusions = AncillaryExclusions(
         excluded_regions=excluded_regions,
@@ -65,8 +68,9 @@ def glows_l1b(
         suspected_transients=suspected_transients,
         exclusions_by_instr_team=exclusions_by_instr_team,
     )
-
-    pipeline_settings = PipelineSettings(pipeline_settings_dataset)
+    pipeline_settings = PipelineSettings(
+        pipeline_settings_dataset.sel(epoch=day, method="nearest"),
+    )
 
     with open(
         Path(__file__).parents[1] / "ancillary" / "l1b_conversion_table_v001.json"
@@ -244,7 +248,7 @@ def process_histogram(
             Tuple of processed L1B data arrays from HistogramL1B.output_data().
         """
         return HistogramL1B(  # type: ignore[call-arg]
-            *args, ancillary_exclusions, ancillary_parameters
+            *args, ancillary_exclusions, ancillary_parameters, pipeline_settings
         ).output_data()
 
     l1b_fields = xr.apply_ufunc(
