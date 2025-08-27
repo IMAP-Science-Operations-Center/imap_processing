@@ -44,7 +44,7 @@ def calculate_extendedspin(
     de_dataset = dict_datasets[f"imap_ultra_l1b_{instrument_id}sensor-de"]
 
     extendedspin_dict = {}
-    rates_qf, spin, energy_midpoints, n_sigma_per_energy = flag_rates(
+    rates_qf, spin, energy_bin_geometric_mean, n_sigma_per_energy = flag_rates(
         de_dataset["spin"].values,
         de_dataset["energy"].values,
     )
@@ -77,7 +77,7 @@ def calculate_extendedspin(
     # These will be the coordinates.
     extendedspin_dict["epoch"] = first_epochs
     extendedspin_dict["spin_number"] = spin
-    extendedspin_dict["energy_bin_geometric_mean"] = energy_midpoints
+    extendedspin_dict["energy_bin_geometric_mean"] = energy_bin_geometric_mean
 
     extendedspin_dict["ena_rates"] = count_rates
     extendedspin_dict["ena_rates_threshold"] = n_sigma_per_energy

@@ -248,8 +248,8 @@ def flag_rates(
         Quality flags.
     spin : NDArray
         Spin data.
-    energy_midpoints : NDArray
-        Energy midpoint data.
+    energy_bin_geometric_mean : NDArray
+        Energy bin geometric mean.
     n_sigma_per_energy_reshape : NDArray
         N sigma per energy.
     """
@@ -263,7 +263,7 @@ def flag_rates(
     threshold = get_n_sigma(count_rates, duration, sigma=sigma)
 
     bin_edges = np.array(UltraConstants.CULLING_ENERGY_BIN_EDGES)
-    energy_midpoints = np.sqrt(bin_edges[:-1] * bin_edges[1:])
+    energy_bin_geometric_mean = np.sqrt(bin_edges[:-1] * bin_edges[1:])
     spin = np.unique(spin_number)
 
     # Indices where the counts exceed the threshold
@@ -274,7 +274,7 @@ def flag_rates(
     quality_flags[:, 0] |= ImapRatesUltraFlags.FIRSTSPIN.value
     quality_flags[:, -1] |= ImapRatesUltraFlags.LASTSPIN.value
 
-    return quality_flags, spin, energy_midpoints, threshold
+    return quality_flags, spin, energy_bin_geometric_mean, threshold
 
 
 def compare_aux_univ_spin_table(
