@@ -13,6 +13,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     AncillaryParameters,
     DirectEventL1B,
     HistogramL1B,
+    PipelineSettings,
 )
 from imap_processing.tests.glows.conftest import mock_update_spice_parameters
 
@@ -189,7 +190,10 @@ def ancillary_dict():
 
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_histogram_mapping(
-    mock_spice_function, mock_ancillary_exclusions, mock_ancillary_parameters
+    mock_spice_function,
+    mock_ancillary_exclusions,
+    mock_ancillary_parameters,
+    mock_pipeline_settings,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
     time_val = 1111111.11
@@ -202,6 +206,12 @@ def test_histogram_mapping(
     encoded_val = expected_temp * 2.318 + 69.5454
 
     # For now, testing types and number of inputs
+    pipeline_settings = PipelineSettings(
+        mock_pipeline_settings.sel(
+            epoch=mock_pipeline_settings.epoch[0], method="nearest"
+        )
+    )
+
     output = tuple(
         dataclasses.asdict(
             HistogramL1B(
@@ -229,6 +239,7 @@ def test_histogram_mapping(
                 time_val,
                 mock_ancillary_exclusions,
                 mock_ancillary_parameters,
+                pipeline_settings,
             )
         ).values()
     )
@@ -245,6 +256,7 @@ def test_process_histogram(
     hist_dataset,
     mock_ancillary_exclusions,
     mock_ancillary_parameters,
+    mock_pipeline_settings,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
 
@@ -256,6 +268,12 @@ def test_process_histogram(
     test_hists = np.zeros((200,))
     # For temp
     encoded_val = np.single(expected_temp * 2.318 + 69.5454)
+
+    pipeline_settings = PipelineSettings(
+        mock_pipeline_settings.sel(
+            epoch=mock_pipeline_settings.epoch[0], method="nearest"
+        )
+    )
 
     test_l1b = HistogramL1B(
         test_hists,
@@ -282,10 +300,14 @@ def test_process_histogram(
         time_val,
         mock_ancillary_exclusions,
         mock_ancillary_parameters,
+        pipeline_settings,
     )
 
     output = process_histogram(
-        hist_dataset, mock_ancillary_exclusions, mock_ancillary_parameters
+        hist_dataset,
+        mock_ancillary_exclusions,
+        mock_ancillary_parameters,
+        pipeline_settings,
     )
     assert len(output) == len(dataclasses.asdict(test_l1b))
 
@@ -310,7 +332,11 @@ def test_process_de(de_dataset, ancillary_dict):
 
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_glows_l1b(
-    mock_spice_function, de_dataset, hist_dataset, mock_ancillary_exclusions
+    mock_spice_function,
+    de_dataset,
+    hist_dataset,
+    mock_ancillary_exclusions,
+    mock_pipeline_settings,
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
 
@@ -320,6 +346,7 @@ def test_glows_l1b(
         mock_ancillary_exclusions.uv_sources,
         mock_ancillary_exclusions.suspected_transients,
         mock_ancillary_exclusions.exclusions_by_instr_team,
+        mock_pipeline_settings,
     )
 
     assert hist_output["histogram"].dims == ("epoch", "bins")
@@ -378,6 +405,7 @@ def test_glows_l1b(
         mock_ancillary_exclusions.uv_sources,
         mock_ancillary_exclusions.suspected_transients,
         mock_ancillary_exclusions.exclusions_by_instr_team,
+        mock_pipeline_settings,
     )
 
     # From table 15 in the algorithm document
@@ -402,7 +430,7 @@ def test_glows_l1b(
 
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_generate_histogram_dataset(
-    mock_spice_function, hist_dataset, mock_ancillary_exclusions
+    mock_spice_function, hist_dataset, mock_ancillary_exclusions, mock_pipeline_settings
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
 
@@ -412,6 +440,7 @@ def test_generate_histogram_dataset(
         mock_ancillary_exclusions.uv_sources,
         mock_ancillary_exclusions.suspected_transients,
         mock_ancillary_exclusions.exclusions_by_instr_team,
+        mock_pipeline_settings,
     )
 
     output_path = write_cdf(l1b_data)
@@ -419,13 +448,16 @@ def test_generate_histogram_dataset(
     assert Path.exists(output_path)
 
 
-def test_generate_de_dataset(de_dataset, mock_ancillary_exclusions):
+def test_generate_de_dataset(
+    de_dataset, mock_ancillary_exclusions, mock_pipeline_settings
+):
     l1b_data = glows_l1b(
         de_dataset,
         mock_ancillary_exclusions.excluded_regions,
         mock_ancillary_exclusions.uv_sources,
         mock_ancillary_exclusions.suspected_transients,
         mock_ancillary_exclusions.exclusions_by_instr_team,
+        mock_pipeline_settings,
     )
 
     output_path = write_cdf(l1b_data)
@@ -442,6 +474,7 @@ def test_hist_spice_output(
     furnish_kernels,
     mock_ancillary_exclusions,
     mock_ancillary_parameters,
+    mock_pipeline_settings,
 ):
     # Mock the imap_state function
     mock_imap_state.return_value = np.array(
@@ -479,6 +512,11 @@ def test_hist_spice_output(
         "glows_time_offset": 200.0,
         "ancillary_exclusions": mock_ancillary_exclusions,
         "ancillary_parameters": mock_ancillary_parameters,
+        "pipeline_settings": PipelineSettings(
+            mock_pipeline_settings.sel(
+                epoch=mock_pipeline_settings.epoch[0], method="nearest"
+            )
+        ),
     }
 
     kernels = [

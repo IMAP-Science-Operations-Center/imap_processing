@@ -83,7 +83,7 @@ def test_glows_l1b_de():
 
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_validation_data_histogram(
-    mock_spice_function, l1a_dataset, mock_ancillary_exclusions
+    mock_spice_function, l1a_dataset, mock_ancillary_exclusions, mock_pipeline_settings
 ):
     mock_spice_function.side_effect = mock_update_spice_parameters
     l1b = [
@@ -93,6 +93,7 @@ def test_validation_data_histogram(
             mock_ancillary_exclusions.uv_sources,
             mock_ancillary_exclusions.suspected_transients,
             mock_ancillary_exclusions.exclusions_by_instr_team,
+            mock_pipeline_settings,
         ),
         glows_l1b(
             l1a_dataset[1],
@@ -100,6 +101,7 @@ def test_validation_data_histogram(
             mock_ancillary_exclusions.uv_sources,
             mock_ancillary_exclusions.suspected_transients,
             mock_ancillary_exclusions.exclusions_by_instr_team,
+            mock_pipeline_settings,
         ),
     ]
     end_time = l1b[0]["epoch"].data[-1]
@@ -167,7 +169,9 @@ def test_validation_data_histogram(
             )
 
 
-def test_validation_data_de(l1a_dataset, mock_ancillary_exclusions):
+def test_validation_data_de(
+    l1a_dataset, mock_ancillary_exclusions, mock_pipeline_settings
+):
     de_data = l1a_dataset[1]
 
     l1b = glows_l1b(
@@ -176,6 +180,7 @@ def test_validation_data_de(l1a_dataset, mock_ancillary_exclusions):
         mock_ancillary_exclusions.uv_sources,
         mock_ancillary_exclusions.suspected_transients,
         mock_ancillary_exclusions.exclusions_by_instr_team,
+        mock_pipeline_settings,
     )
     validation_data = (
         Path(__file__).parent / "validation_data" / "imap_glows_l1b_de_output.json"

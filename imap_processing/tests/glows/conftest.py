@@ -47,13 +47,14 @@ def l1a_dataset(packet_path):
 
 
 @pytest.fixture
-def l1b_hist_dataset(l1a_dataset, mock_ancillary_exclusions):
+def l1b_hist_dataset(l1a_dataset, mock_ancillary_exclusions, mock_pipeline_settings):
     return glows_l1b(
         l1a_dataset[0],
         mock_ancillary_exclusions.excluded_regions,
         mock_ancillary_exclusions.uv_sources,
         mock_ancillary_exclusions.suspected_transients,
         mock_ancillary_exclusions.exclusions_by_instr_team,
+        mock_pipeline_settings,
     )
 
 
@@ -183,6 +184,49 @@ def mock_ancillary_parameters():
         },
     }
     return AncillaryParameters(mock_table)
+
+
+@pytest.fixture
+def mock_pipeline_settings():
+    """Create a mock PipelineSettings dataset for testing."""
+    # Create a mock dataset with pipeline settings data which matches the output
+    # from GlowsAncillaryCombiner
+    epoch_range = np.arange(
+        np.datetime64("2010-01-01"), np.datetime64("2010-12-31"), dtype="datetime64[D]"
+    )
+
+    mock_pipeline_dataset = xr.Dataset(
+        {
+            "active_bad_angle_flags": (
+                ["epoch", "flag_index"],
+                np.tile([True, True, True, True], (len(epoch_range), 1)),
+            ),
+            "active_bad_time_flags": (
+                ["epoch", "time_flag_index"],
+                np.tile(
+                    [True] * 17, (len(epoch_range), 1)
+                ),  # 17 bad time flags from the JSON
+            ),
+            "sunrise_offset": (["epoch"], [0.0] * len(epoch_range)),
+            "sunset_offset": (["epoch"], [0.0] * len(epoch_range)),
+            "n_sigma_threshold_lower": (["epoch"], [3.0] * len(epoch_range)),
+            "n_sigma_threshold_upper": (["epoch"], [3.0] * len(epoch_range)),
+            "relative_difference_threshold": (["epoch"], [7.0e-5] * len(epoch_range)),
+            "std_dev_threshold__celsius_deg": (["epoch"], [2.03] * len(epoch_range)),
+            "std_dev_threshold__volt": (["epoch"], [50.0] * len(epoch_range)),
+            "std_dev_threshold__sec": (["epoch"], [0.033333] * len(epoch_range)),
+            "std_dev_threshold__usec": (["epoch"], [1.0] * len(epoch_range)),
+            "angular_radius_for_excl_regions__deg": (
+                ["epoch"],
+                [2.0] * len(epoch_range),
+            ),
+            "number_of_good_histograms_at_night": (["epoch"], [3] * len(epoch_range)),
+            "l3a_nominal_number_of_bins": (["epoch"], [90] * len(epoch_range)),
+        },
+        coords={"epoch": epoch_range},
+    )
+
+    return mock_pipeline_dataset
 
 
 def mock_update_spice_parameters(self, *args, **kwargs):
