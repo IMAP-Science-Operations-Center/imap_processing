@@ -1398,149 +1398,149 @@ P7_TOF:
 # lo-sw-species Attributes
 lo-sw-species-cnoplus:
   <<: *lo_species_default
-  CATDESC: Counts - SW - CNO+ (PUI)
+  CATDESC: Counts - Sunward - CNO+ Pick Up Ions (PUI)
   FIELDNAM: Counts - SW - CNO+ (PUI)
 
 lo-sw-species-cplus4:
   <<: *lo_species_default
-  CATDESC: Counts - SW - C+4
+  CATDESC: Counts - Sunward - C+4
   FIELDNAM: Counts - SW - C+4
 
 lo-sw-species-cplus5:
   <<: *lo_species_default
-  CATDESC: Counts - SW - C+5
+  CATDESC: Counts - Sunward - C+5
   FIELDNAM: Counts - SW - C+5
 
 lo-sw-species-cplus6:
   <<: *lo_species_default
-  CATDESC: Counts - SW - C+6
+  CATDESC: Counts - Sunward - C+6
   FIELDNAM: Counts - SW - C+6
 
 lo-sw-species-fe_hiq:
   <<: *lo_species_default
-  CATDESC: Counts - SW - Fe highQ
+  CATDESC: Counts - Sunward - Fe highQ
   FIELDNAM: Counts - SW - Fe highQ
 
 lo-sw-species-fe_loq:
   <<: *lo_species_default
-  CATDESC: Counts - SW - Fe lowQ
+  CATDESC: Counts - Sunward - Fe lowQ
   FIELDNAM: Counts - SW - Fe lowQ
 
 lo-sw-species-heplus:
   <<: *lo_species_default
-  CATDESC: Counts - SW - He+ (PUI)
+  CATDESC: Counts - Sunward - He+ (PUI)
   FIELDNAM: Counts - SW - He+ (PUI)
 
 lo-sw-species-heplusplus:
   <<: *lo_species_default
-  CATDESC: Counts - SW - He++
+  CATDESC: Counts - Sunward - He++
   FIELDNAM: Counts - SW - He++
 
 lo-sw-species-hplus:
   <<: *lo_species_default
-  CATDESC: Counts - SW - H+
+  CATDESC: Counts - Sunward - H+
   FIELDNAM: Counts - SW - H+
 
 lo-sw-species-mg:
   <<: *lo_species_default
-  CATDESC: Counts - SW - Mg
+  CATDESC: Counts - Sunward - Mg
   FIELDNAM: Counts - SW - Mg
 
 lo-sw-species-ne:
   <<: *lo_species_default
-  CATDESC: Counts - SW - Ne
+  CATDESC: Counts - Sunward - Ne
   FIELDNAM: Counts - SW - Ne
 
 lo-sw-species-oplus5:
   <<: *lo_species_default
-  CATDESC: Counts - SW - O+5
+  CATDESC: Counts - Sunward - O+5
   FIELDNAM: Counts - SW - O+5
 
 lo-sw-species-oplus6:
   <<: *lo_species_default
-  CATDESC: Counts - SW - O+6
+  CATDESC: Counts - Sunward - O+6
   FIELDNAM: Counts - SW - O+6
 
 lo-sw-species-oplus7:
   <<: *lo_species_default
-  CATDESC: Counts - SW - O+7
+  CATDESC: Counts - Sunward - O+7
   FIELDNAM: Counts - SW - O+7
 
 lo-sw-species-oplus8:
   <<: *lo_species_default
-  CATDESC: Counts - SW - O+8
+  CATDESC: Counts - Sunward - O+8
   FIELDNAM: Counts - SW - O+8
 
 lo-sw-species-si:
   <<: *lo_species_default
-  CATDESC: Counts - SW - Si
+  CATDESC: Counts - Sunward - Si
   FIELDNAM: Counts - SW - Si
 
 # lo-sw-angular Attributes
 lo-sw-angular-fe_loq:
   <<: *lo_angular_default
-  CATDESC: Counts - SW - Fe lowQ
+  CATDESC: Counts - Sunward - Fe lowQ
   FIELDNAM: Sunward Facing Counts - SW - Fe lowQ
 
 lo-sw-angular-heplusplus:
   <<: *lo_angular_default
-  CATDESC: Counts - SW - He++
+  CATDESC: Counts - Sunward - He++
   FIELDNAM: Sunward Facing Counts - SW - He++
 
 lo-sw-angular-hplus:
   <<: *lo_angular_default
-  CATDESC: Counts - SW - H+
+  CATDESC: Counts - Sunward - H+
   FIELDNAM: Sunward Facing Counts - SW - H+
 
 lo-sw-angular-oplus6:
   <<: *lo_angular_default
-  CATDESC: Counts - SW - O+6
+  CATDESC: Counts - Sunward - O+6
   FIELDNAM: Sunward Facing Counts - SW - O+6
 
 # lo-nsw-species Attributes
 lo-nsw-species-c:
   <<: *lo_species_default
-  CATDESC: Counts - NSW - C
+  CATDESC: Counts - Non-Sunward - C
   FIELDNAM: Counts - NSW - C
 
 lo-nsw-species-cnoplus:
   <<: *lo_species_default
-  CATDESC: Counts - NSW - CNO+
+  CATDESC: Counts - Non-Sunward - CNO+
   FIELDNAM: Counts - NSW - CNO+
 
 lo-nsw-species-fe:
   <<: *lo_species_default
-  CATDESC: Counts - NSW - Fe
+  CATDESC: Counts - Non-Sunward - Fe
   FIELDNAM: Counts - NSW - Fe
 
 lo-nsw-species-heplus:
   <<: *lo_species_default
-  CATDESC: Counts - NSW - He+
+  CATDESC: Counts - Non-Sunward - He+
   FIELDNAM: Counts - NSW - He+
 
 lo-nsw-species-heplusplus:
   <<: *lo_species_default
-  CATDESC: Counts - NSW - He++
+  CATDESC: Counts - Non-Sunward - He++
   FIELDNAM: Counts - NSW - He++
 
 lo-nsw-species-hplus:
   <<: *lo_species_default
-  CATDESC: Counts - NSW - H+
+  CATDESC: Counts - Non-Sunward - H+
   FIELDNAM: Counts - NSW - H+
 
 lo-nsw-species-ne_si_mg:
   <<: *lo_species_default
-  CATDESC: Counts - NSW - Ne_Si_Mg
+  CATDESC: Counts - Non-Sunward - Ne_Si_Mg
   FIELDNAM: Counts - NSW - Ne_Si_Mg
 
 lo-nsw-species-o:
   <<: *lo_species_default
-  CATDESC: Counts - NSW - O
+  CATDESC: Counts - Non-Sunward - O
   FIELDNAM: Counts - NSW - O
 
 # lo-nsw-angular Attributes
 lo-nsw-angular-heplusplus:
-  CATDESC: Counts - NSW - He++
+  CATDESC: Counts - Non-Sunward - He++
   FIELDNAM: Non-Sunward Facing Counts - NSW - He++
 
 # lo-ialirt Attributes
