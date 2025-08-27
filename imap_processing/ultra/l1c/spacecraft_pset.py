@@ -7,6 +7,7 @@ import pandas as pd
 import xarray as xr
 
 from imap_processing.cdf.utils import parse_filename_like
+from imap_processing.ultra.l1b.ultra_l1b_culling import get_de_rejection_mask
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
     calculate_pixels_within_scattering_threshold,
     get_spacecraft_pointing_lookup_tables,
@@ -63,6 +64,12 @@ def calculate_spacecraft_pset(
     pset_dict: dict[str, np.ndarray] = {}
     sensor = parse_filename_like(name)["sensor"][0:2]
 
+    # Before we use the de_dataset to calculate the pointing set grid we need to filter.
+    rejected = get_de_rejection_mask(
+        de_dataset["quality_scattering"].values, de_dataset["quality_outliers"].values
+    )
+    de_dataset = de_dataset.isel(epoch=~rejected)
+
     v_mag_dps_spacecraft = np.linalg.norm(de_dataset["velocity_dps_sc"].values, axis=1)
     vhat_dps_spacecraft = (
         de_dataset["velocity_dps_sc"].values / v_mag_dps_spacecraft[:, np.newaxis]
@@ -97,7 +104,12 @@ def calculate_spacecraft_pset(
     )
     # calculate efficiency and geometric function as a function of energy
     efficiencies, geometric_function = get_efficiencies_and_geometric_function(
-        pixels_below_scattering, theta_vals, phi_vals, n_pix, ancillary_files
+        pixels_below_scattering,
+        boundary_scale_factors,
+        theta_vals,
+        phi_vals,
+        n_pix,
+        ancillary_files,
     )
     sensitivity = efficiencies * geometric_function
 
@@ -106,7 +118,11 @@ def calculate_spacecraft_pset(
     df_exposure = pd.read_csv(constant_exposure)
 
     exposure_pointing, deadtime_ratios = get_spacecraft_exposure_times(
-        df_exposure, rates_dataset, params_dataset, pixels_below_scattering
+        df_exposure,
+        rates_dataset,
+        params_dataset,
+        pixels_below_scattering,
+        boundary_scale_factors,
     )
 
     # Calculate background rates

@@ -137,7 +137,11 @@ def test_process_swapi_ialirt(
         0 : xarray_data["swapi_flag"].shape[0]
     ].data
 
-    swapi_result = process_swapi_ialirt(xarray_data)
+    energy_passbands = pd.read_csv(
+        f"{imap_module_directory}/tests/ialirt/data/l0/swapi_ialirt_energy_steps.csv"
+    )
+
+    swapi_result = process_swapi_ialirt(xarray_data, energy_passbands)
 
     key_names = [
         "apid",
@@ -159,7 +163,7 @@ def test_count_rate():
     """Use random realistic values to test for expected output of count_rate()."""
 
     actual_result = count_rate(1370, *[550, 5.27, 1e5])
-    expected_result = 621.0028766348703
+    expected_result = 3073.023325893161
     assert actual_result == expected_result, (
         f"The actual result of count_rate()"
         f" {actual_result} does not "
@@ -168,34 +172,77 @@ def test_count_rate():
     )
 
 
-@pytest.mark.skip(reason="Differences between scipy versions.")
-def test_optimize_parameters(xarray_data, ialirt_test_data):
+def test_optimize_parameters():
     """Test that the optimize_pseudo_parameters() function works correctly."""
 
-    result = optimize_pseudo_parameters(*ialirt_test_data)
+    # The following files and values are all validation sets provided by the SWAPI team.
+    test_data = {
+        "test_set_1": {
+            "file_name": "ialirt_test_data_u_sw_550_n_sw_5_T_sw_100000_v2.csv",
+            "expected_values": {  # expected output and acceptable tolerance
+                "pseudo_speed": (550, 0.01),
+                "pseudo_density": (5, 0.14),
+                "pseudo_temperature": (1e5, 0.2),
+            },
+        },
+        "test_set_2": {
+            "file_name": "ialirt_test_data_u_sw_650_n_sw_3.0_T_sw_120000_v2.csv",
+            "expected_values": {  # expected output and acceptable tolerance
+                "pseudo_speed": (650, 0.01),
+                "pseudo_density": (3, 0.3),
+                "pseudo_temperature": (1.2e5, 0.28),
+            },
+        },
+        "test_set_3": {
+            "file_name": "ialirt_test_data_u_sw_400_n_sw_6.0_T_sw_80000_v2.csv",
+            "expected_values": {  # expected output and acceptable tolerance
+                "pseudo_speed": (400, 0.01),
+                "pseudo_density": (6, 0.39),
+                "pseudo_temperature": (8e4, 0.15),
+            },
+        },
+    }
 
-    # Test output corresponding to this exact set of test inputs.
-    expected_speed = [550.2067500045512, 550.2067500045512]
-    expected_density = [15.964441588773008, 15.964441588773008]
-    expected_temperature = [101695.2160638631, 101695.2160638631]
+    calibration_test_file = pd.read_csv(
+        f"{imap_module_directory}/tests/ialirt/data/l0/swapi_ialirt_energy_steps.csv"
+    )
+    energy_passbands = calibration_test_file["Energy"][0:63].to_numpy().astype(float)
 
-    assert np.allclose(result["pseudo_speed"], expected_speed, rtol=0.01), (
-        "Pseudo speed did not match the expected result."
-    )
-    assert np.allclose(result["pseudo_density"], expected_density, rtol=0.01), (
-        "Pseudo density did not match the expected result."
-    )
-    assert np.allclose(result["pseudo_temperature"], expected_temperature, rtol=0.01), (
-        "Pseudo temperature did not match the expected result."
-    )
+    for test_set in test_data:
+        energy_data = pd.read_csv(
+            f"{imap_module_directory}/tests/ialirt/data/l0/"
+            f"{test_data[test_set]['file_name']}",
+        )
+        count_rates = energy_data["Count Rates [Hz]"].to_numpy()
+        count_rates[0] = 0.0
+        count_rates = np.tile(count_rates, (2, 1))
+        count_rates_errors = energy_data["Count Rates Error [Hz]"].to_numpy()
+        count_rates_errors = np.tile(count_rates_errors, (2, 1))
+
+        result = optimize_pseudo_parameters(
+            count_rates, count_rates_errors, energy_passbands
+        )
+
+        for param in test_data[test_set]["expected_values"]:
+            (
+                np.testing.assert_allclose(
+                    result[param][0],
+                    test_data[test_set]["expected_values"][param][0],
+                    rtol=test_data[test_set]["expected_values"][param][1],
+                ),
+                f"{param} did not match the expected result within the tolerance.",
+            )
 
 
 @pytest.mark.external_test_data
 def test_process_spacecraft_packet(sc_xarray_data):
     """Tests spacecraft packet processing."""
+    calibration_file = pd.read_csv(
+        f"{imap_module_directory}/tests/ialirt/data/l0/swapi_ialirt_energy_steps.csv"
+    )
 
     # Case 1: Not fixing the sequence number attribute, which is all zeros.
-    swapi_product = process_swapi_ialirt(sc_xarray_data)
+    swapi_product = process_swapi_ialirt(sc_xarray_data, calibration_file)
     assert swapi_product == []
 
     # Case 2: Overwriting swapi_seq_number to be an acceptable array of numbers.
@@ -208,7 +255,7 @@ def test_process_spacecraft_packet(sc_xarray_data):
     extended_data = np.tile(base_sequence, repeat_times)[:target_length]
     sc_xarray_data["swapi_seq_number"].data = extended_data
 
-    swapi_product1 = process_swapi_ialirt(sc_xarray_data)
+    swapi_product1 = process_swapi_ialirt(sc_xarray_data, calibration_file)
     key_names = [
         "apid",
         "met",

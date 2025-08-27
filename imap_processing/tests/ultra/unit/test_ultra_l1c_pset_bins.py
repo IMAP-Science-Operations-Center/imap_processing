@@ -249,9 +249,9 @@ def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
     pixels_below_threshold = calculate_pixels_within_scattering_threshold(
         spin_phase_steps, mock_theta, mock_phi, ancillary_files, 45
     )
-
+    boundary_sf = np.ones((pix, steps))
     exposure_pointing_adjusted = apply_deadtime_correction(
-        exposure_pointing, deadtime_ratios, pixels_below_threshold
+        exposure_pointing, deadtime_ratios, pixels_below_threshold, boundary_sf
     )
     # The adjusted exposure should now be a function of pixels and energy (24)
     np.testing.assert_array_equal(exposure_pointing_adjusted.shape, (24, pix))
@@ -289,8 +289,9 @@ def test_get_spacecraft_exposure_times(
     pixels_below_threshold = calculate_pixels_within_scattering_threshold(
         spin_phase_steps, mock_theta, mock_phi, ancillary_files, 45
     )
+    boundary_sf = np.ones((pix, steps))
     exposure_pointing, deadtimes = get_spacecraft_exposure_times(
-        df_exposure, rates, params, pixels_below_threshold
+        df_exposure, rates, params, pixels_below_threshold, boundary_sf
     )
     np.testing.assert_array_equal(exposure_pointing.shape, (24, shape))
     np.testing.assert_array_equal(deadtimes.shape, (15000,))

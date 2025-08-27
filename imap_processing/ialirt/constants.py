@@ -33,10 +33,12 @@ class IalirtSwapiConstants:
     boltz = 1.380649e-23  # Boltzmann constant, J/K
     at_mass = 1.6605390666e-27  # atomic mass, kg
     prot_mass = 1.007276466621 * at_mass  # mass of proton, kg
-    eff_area = 3.3e-5 * 1e-4  # effective area, meters squared
+    eff_area = 1.633e-4 * 1e-4  # effective area, cm2 to meters squared
     az_fov = np.deg2rad(30)  # azimuthal width of the field of view, radians
     fwhm_width = 0.085  # FWHM of energy width
     speed_ew = 0.5 * fwhm_width  # speed width of energy passband
+    e_charge = 1.602176634e-19  # electronic charge, [C]
+    speed_coeff = np.sqrt(2 * e_charge / prot_mass) / 1e3
 
 
 class StationProperties(NamedTuple):

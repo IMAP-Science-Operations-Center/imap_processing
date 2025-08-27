@@ -3,7 +3,7 @@
 import numpy as np
 import xarray as xr
 
-from imap_processing.ultra.l1b.quality_flag_filters import QUALITY_FLAG_FILTERS
+from imap_processing.ultra.l1b.quality_flag_filters import SPIN_QUALITY_FLAG_FILTERS
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset, extract_data_dict
 
 FILLVAL_UINT16 = 65535
@@ -32,14 +32,17 @@ def calculate_cullingmask(extendedspin_dataset: xr.Dataset, name: str) -> xr.Dat
     good_mask = (
         (
             extendedspin_dataset["quality_attitude"]
-            & sum(flag.value for flag in QUALITY_FLAG_FILTERS["quality_attitude"])
+            & sum(flag.value for flag in SPIN_QUALITY_FLAG_FILTERS["quality_attitude"])
         )
         == 0
     ) & (
         (
             (
                 extendedspin_dataset["quality_ena_rates"]
-                & sum(flag.value for flag in QUALITY_FLAG_FILTERS["quality_ena_rates"])
+                & sum(
+                    flag.value
+                    for flag in SPIN_QUALITY_FLAG_FILTERS["quality_ena_rates"]
+                )
             )
             == 0
         ).all(dim="energy_bin_geometric_mean")

@@ -9,7 +9,6 @@ import xarray as xr
 from scipy.optimize import curve_fit
 from scipy.special import erf
 
-from imap_processing import imap_module_directory
 from imap_processing.ialirt.constants import IalirtSwapiConstants as Consts
 from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.ialirt.utils.time import calculate_time
@@ -69,7 +68,7 @@ def count_rate(
 def optimize_pseudo_parameters(
     count_rates: np.ndarray,
     count_rate_error: np.ndarray,
-    energy_passbands: np.ndarray | None = None,
+    energy_passbands: np.ndarray,
 ) -> (dict)[str, list[float]]:
     """
     Find the pseudo speed (u), density (n) and temperature (T) of solar wind particles.
@@ -83,7 +82,7 @@ def optimize_pseudo_parameters(
     count_rate_error : np.ndarray
         Standard deviation of the coincidence count rates parameter.
     energy_passbands : np.ndarray, default None
-        Energy passbands, passed in only for testing purposes.
+        Energy values, taken from the SWAPI lookup table.
 
     Returns
     -------
@@ -91,21 +90,6 @@ def optimize_pseudo_parameters(
         Dictionary containing the optimized speed, density, and temperature values for
         each sweep included in the input count_rates array.
     """
-    if not energy_passbands:
-        # Read in energy passbands
-        energy_data = pd.read_csv(
-            f"{imap_module_directory}/tests/swapi/lut/imap_swapi_esa-unit"
-            f"-conversion_20250626_v001.csv"
-        )
-        energy_passbands = (
-            energy_data["Energy"][0:63]
-            .replace(",", "", regex=True)
-            .to_numpy()
-            .astype(float)
-        )
-
-    # Initial guess pulled from page 52 of the IMAP SWAPI Instrument Algorithms Document
-    initial_param_guess = np.array([550, 5.27, 1e5])
     solution_dict = {  # type: ignore
         "pseudo_speed": [],
         "pseudo_density": [],
@@ -115,8 +99,16 @@ def optimize_pseudo_parameters(
     for sweep in np.arange(count_rates.shape[0]):
         current_sweep_count_rates = count_rates[sweep, :]
         current_sweep_count_rate_errors = count_rate_error[sweep, :]
-        # Find the max count rate, and use the 6 points surrounding it (inclusive)
+        # Find the max count rate, and use the 5 points surrounding it
         max_index = np.argmax(current_sweep_count_rates)
+        initial_speed_guess = np.sqrt(energy_passbands[max_index]) * Consts.speed_coeff
+        initial_param_guess = np.array(
+            [
+                initial_speed_guess,
+                5 * (400 / initial_speed_guess) ** 2,
+                60000 * (initial_speed_guess / 400) ** 2,
+            ]
+        )
         sol = curve_fit(
             f=count_rate,
             xdata=energy_passbands.take(
@@ -137,7 +129,9 @@ def optimize_pseudo_parameters(
     return solution_dict
 
 
-def process_swapi_ialirt(unpacked_data: xr.Dataset) -> list[dict]:
+def process_swapi_ialirt(
+    unpacked_data: xr.Dataset, calibration_lut_table: pd.DataFrame
+) -> list[dict]:
     """
     Extract I-ALiRT variables and calculate coincidence count rate.
 
@@ -145,6 +139,8 @@ def process_swapi_ialirt(unpacked_data: xr.Dataset) -> list[dict]:
     ----------
     unpacked_data : xr.Dataset
         SWAPI I-ALiRT data that has been parsed from the spacecraft packet.
+    calibration_lut_table : pd.DataFrame
+        DataFrame containing the contents of the SWAPI esa-unit-conversion lookup table.
 
     Returns
     -------
@@ -193,7 +189,28 @@ def process_swapi_ialirt(unpacked_data: xr.Dataset) -> list[dict]:
     raw_coin_rate = raw_coin_count / SWAPI_LIVETIME
     count_rate_error = np.sqrt(raw_coin_count) / SWAPI_LIVETIME
 
-    solution = optimize_pseudo_parameters(raw_coin_rate, count_rate_error)
+    # Extract energy values from the calibration lookup table file
+    calibration_lut_table["timestamp"] = pd.to_datetime(
+        calibration_lut_table["timestamp"], format="%m/%d/%Y %H:%M"
+    )
+    calibration_lut_table["timestamp"] = calibration_lut_table["timestamp"].to_numpy(
+        dtype="datetime64[ns]"
+    )
+
+    # Find the sweep's energy data for the latest time, where sweep_id == 2
+    subset = calibration_lut_table[
+        (calibration_lut_table["timestamp"] == calibration_lut_table["timestamp"].max())
+        & (calibration_lut_table["Sweep #"] == 2)
+    ]
+    if subset.empty:
+        energy_passbands = np.full(63, np.nan, dtype=np.float64)
+    else:
+        subset = subset.sort_values(["timestamp", "ESA Step #"])
+        energy_passbands = subset["Energy"][0:63].to_numpy().astype(float)
+
+    solution = optimize_pseudo_parameters(
+        raw_coin_rate, count_rate_error, energy_passbands
+    )
 
     swapi_data = []
 

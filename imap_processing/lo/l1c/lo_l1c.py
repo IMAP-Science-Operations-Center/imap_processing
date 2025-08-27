@@ -4,11 +4,11 @@ from dataclasses import Field
 from enum import Enum
 
 import numpy as np
-import pandas as pd
 import xarray as xr
 from scipy.stats import binned_statistic_dd
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.lo import lo_ancillary
 from imap_processing.spice.repoint import get_pointing_times
 from imap_processing.spice.spin import get_spin_number
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_met
@@ -189,7 +189,7 @@ def filter_goodtimes(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
         Filtered L1B Direct Event dataset.
     """
     # the goodtimes are currently the only ancillary file needed for L1C processing
-    goodtimes_table_df = pd.read_csv(anc_dependencies[0])
+    goodtimes_table_df = lo_ancillary.read_ancillary_file(anc_dependencies[0])
 
     # convert goodtimes from MET to TTJ2000
     goodtimes_start = met_to_ttj2000ns(goodtimes_table_df["GoodTime_strt"])

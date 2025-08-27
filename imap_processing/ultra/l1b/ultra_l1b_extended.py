@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 FILLVAL_UINT8 = 255
 FILLVAL_FLOAT32 = -1.0e31
+FILLVAL_FLOAT64 = -1.0e31
 
 
 class StartType(Enum):
@@ -633,13 +634,17 @@ def get_de_energy_kev(v: np.ndarray, species: np.ndarray) -> NDArray:
     # Compute the sum of squares.
     v2 = np.sum(vv**2, axis=1)
 
-    index_hydrogen = np.where(species == 1)
-    energy = np.full_like(v2, np.nan)
+    # Only compute where species == 1 and v is valid
+    index_hydrogen = species == 1
+    valid_velocity = np.isfinite(v2)
+    valid_mask = index_hydrogen & valid_velocity
+
+    energy = np.full_like(v2, FILLVAL_FLOAT32)
 
     # TODO: we will calculate the energies of the different species here.
     # 1/2 mv^2 in Joules, convert to keV
-    energy[index_hydrogen] = (
-        0.5 * UltraConstants.MASS_H * v2[index_hydrogen] * UltraConstants.J_KEV
+    energy[valid_mask] = (
+        0.5 * UltraConstants.MASS_H * v2[valid_mask] * UltraConstants.J_KEV
     )
 
     return energy
@@ -1042,8 +1047,11 @@ def interpolate_fwhm(
     )
 
     # Note: will return nan for those out-of-bounds inputs.
-    phi_interp = interp_phi((energy, phi_inst))
-    theta_interp = interp_theta((energy, theta_inst))
+    phi_vals = interp_phi((energy, phi_inst))
+    theta_vals = interp_theta((energy, theta_inst))
+
+    phi_interp = np.where(np.isnan(phi_vals), FILLVAL_FLOAT32, phi_vals)
+    theta_interp = np.where(np.isnan(theta_vals), FILLVAL_FLOAT32, theta_vals)
 
     return phi_interp, theta_interp
 
@@ -1081,8 +1089,8 @@ def get_fwhm(
     theta_interp : NDArray
         Interpolated theta FWHM values.
     """
-    phi_interp = np.full_like(phi_inst, np.nan, dtype=np.float64)
-    theta_interp = np.full_like(theta_inst, np.nan, dtype=np.float64)
+    phi_interp = np.full_like(phi_inst, FILLVAL_FLOAT64, dtype=np.float64)
+    theta_interp = np.full_like(theta_inst, FILLVAL_FLOAT64, dtype=np.float64)
     lt_table = get_angular_profiles("left", sensor, ancillary_files)
     rt_table = get_angular_profiles("right", sensor, ancillary_files)
 
@@ -1131,7 +1139,7 @@ def get_efficiency_interpolator(ancillary_files: dict) -> RegularGridInterpolato
         (theta_vals, phi_vals, energy_vals),
         efficiency_grid,
         bounds_error=False,
-        fill_value=np.nan,
+        fill_value=FILLVAL_FLOAT32,
     )
 
     return interpolator

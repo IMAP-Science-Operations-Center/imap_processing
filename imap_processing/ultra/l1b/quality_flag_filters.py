@@ -2,13 +2,22 @@
 
 from imap_processing.quality_flags import (
     FlagNameMixin,
+    ImapDEOutliersUltraFlags,
+    ImapDEScatteringUltraFlags,
     ImapRatesUltraFlags,
 )
 
-QUALITY_FLAG_FILTERS: dict[str, list[FlagNameMixin]] = {
+SPIN_QUALITY_FLAG_FILTERS: dict[str, list[FlagNameMixin]] = {
     "quality_attitude": [],
     "quality_ena_rates": [
         ImapRatesUltraFlags.FIRSTSPIN,
         ImapRatesUltraFlags.LASTSPIN,
+    ],
+}
+
+DE_QUALITY_FLAG_FILTERS: dict[str, list[FlagNameMixin]] = {
+    "quality_outliers": [ImapDEOutliersUltraFlags.FOV],
+    "quality_scattering": [
+        ImapDEScatteringUltraFlags.ABOVE_THRESHOLD,
     ],
 }

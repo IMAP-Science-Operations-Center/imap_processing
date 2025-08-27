@@ -344,6 +344,7 @@ def apply_deadtime_correction(
     exposure_pointing: pandas.DataFrame,
     deadtime_ratios: np.ndarray,
     pixels_below_scattering: list,
+    boundary_scale_factors: NDArray,
 ) -> np.ndarray:
     """
     Adjust the exposure time at each pixel to account for dead time.
@@ -359,6 +360,8 @@ def apply_deadtime_correction(
         The outer list indicates spin phase steps, the middle list indicates energy
         bins, and the inner arrays contain indices indicating pixels that are below
         the FWHM scattering threshold.
+    boundary_scale_factors : np.ndarray
+        Boundary scale factors for each pixel at each spin phase.
 
     Returns
     -------
@@ -388,7 +391,9 @@ def apply_deadtime_correction(
             # Apply the nominal exposure time (1 ms) scaled by the deadtime ratio to
             # every pixel in the FOR, that is below the FWHM scattering threshold,
             exposure_pointing[energy_bin_idx, pixels_at_energy_and_spin] += (
-                nominal_ms_step * deadtime_ratios[i]
+                nominal_ms_step
+                * deadtime_ratios[i]
+                * boundary_scale_factors[pixels_at_energy_and_spin, i]
             )
 
     return exposure_pointing
@@ -399,6 +404,7 @@ def get_spacecraft_exposure_times(
     rates_dataset: xr.Dataset,
     params_dataset: xr.Dataset,
     pixels_below_scattering: list[list],
+    boundary_scale_factors: NDArray,
 ) -> tuple[NDArray, NDArray]:
     """
     Compute exposure times for HEALPix pixels.
@@ -416,6 +422,8 @@ def get_spacecraft_exposure_times(
         The outer list indicates spin phase steps, the middle list indicates energy
         bins, and the inner list contains pixel indices indicating pixels that are
         below the FWHM scattering threshold.
+    boundary_scale_factors : np.ndarray
+        Boundary scale factors for each pixel at each spin phase.
 
     Returns
     -------
@@ -434,13 +442,17 @@ def get_spacecraft_exposure_times(
         constant_exposure["Exposure Time"] * 5760
     )  # 5760 spins per pointing (for now)
     exposure_pointing_adjusted = apply_deadtime_correction(
-        exposure_pointing, nominal_deadtime_ratios, pixels_below_scattering
+        exposure_pointing,
+        nominal_deadtime_ratios,
+        pixels_below_scattering,
+        boundary_scale_factors,
     )
     return exposure_pointing_adjusted, nominal_deadtime_ratios
 
 
 def get_efficiencies_and_geometric_function(
     pixels_below_scattering: list[list],
+    boundary_scale_factors: np.ndarray,
     theta_vals: np.ndarray,
     phi_vals: np.ndarray,
     npix: int,
@@ -458,6 +470,8 @@ def get_efficiencies_and_geometric_function(
         The outer list indicates spin phase steps, the middle list indicates energy
         bins, and the inner list contains pixel indices indicating pixels that are
         below the FWHM scattering threshold.
+    boundary_scale_factors : np.ndarray
+        Boundary scale factors for each pixel at each spin phase.
     theta_vals : np.ndarray
         A 2D array of theta values for each HEALPix pixel at each spin phase step.
     phi_vals : np.ndarray
@@ -512,8 +526,12 @@ def get_efficiencies_and_geometric_function(
                 interpolator=eff_interpolator,
             )
             # Accumulate gf and eff values
-            gf_summation[energy_bin_idx, pixel_inds] += gf_values[pixel_inds]
-            eff_summation[energy_bin_idx, pixel_inds] += eff_values
+            gf_summation[energy_bin_idx, pixel_inds] += (
+                gf_values[pixel_inds] * boundary_scale_factors[pixel_inds, i]
+            )
+            eff_summation[energy_bin_idx, pixel_inds] += (
+                eff_values * boundary_scale_factors[pixel_inds, i]
+            )
             sample_count[energy_bin_idx, pixel_inds] += 1
 
     # return averaged geometric factors and efficiencies across all spin phases
