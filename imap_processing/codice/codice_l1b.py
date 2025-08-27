@@ -9,9 +9,6 @@ from imap_processing.codice.codice_l1b import process_codice_l1b
 dataset = process_codice_l1b(l1a_filenanme)
 """
 
-# TODO: Figure out how to convert hi-priority data product. Need an updated
-#       algorithm document that describes this.
-
 import logging
 from pathlib import Path
 
@@ -49,9 +46,6 @@ def convert_to_rates(
     rates_data : np.ndarray
         The converted data array.
     """
-    # TODO: Temporary workaround to create CDFs for SIT-4. Revisit after SIT-4.
-    acq_times = 1
-
     if descriptor in [
         "lo-counters-aggregated",
         "lo-counters-singles",
@@ -65,6 +59,13 @@ def convert_to_rates(
     ]:
         # Applying rate calculation described in section 10.2 of the algorithm
         # document
+        # In order to divide by acquisition times, we must reshape the acq
+        # time data array to match the data variable shape
+        dims = [1] * dataset[variable_name].data.ndim
+        dims[1] = 128
+        acq_times = dataset.acquisition_time_per_step.data.reshape(dims)
+
+        # Now perform the calculation
         rates_data = dataset[variable_name].data / (
             acq_times
             * 1e-6  # Converting from microseconds to seconds
@@ -80,13 +81,16 @@ def convert_to_rates(
     ]:
         # Applying rate calculation described in section 10.1 of the algorithm
         # document
+        # TODO: HI_ACQUISITION_TIME is in seconds. Does this need to be in
+        #       microseconds?
         rates_data = dataset[variable_name].data / (
             constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spin_sectors"]
             * constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spins"]
-            * acq_times
+            * constants.HI_ACQUISITION_TIME
         )
     elif descriptor == "hskp":
-        rates_data = dataset[variable_name].data / acq_times
+        # Convert to physical units
+        raise NotImplementedError
 
     return rates_data
 
@@ -138,12 +142,7 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
     if descriptor == "hskp":
         # TODO: Check with Joey if any housekeeping data needs to be converted
         variables_to_convert = []
-    elif descriptor == "hi-sectored":
-        variables_to_convert = ["h", "he3he4", "cno", "fe"]
-    elif descriptor == "hi-omni":
-        variables_to_convert = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
-    elif descriptor == "hi-ialirt":
-        variables_to_convert = ["h"]
+        print(l1b_dataset.ssdo_vmon.data.shape)
     else:
         variables_to_convert = getattr(
             constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
