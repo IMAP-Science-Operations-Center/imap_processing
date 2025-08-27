@@ -66,12 +66,14 @@ def calculate_spacecraft_pset(
     """
     pset_dict: dict[str, np.ndarray] = {}
     sensor = parse_filename_like(name)["sensor"][0:2]
+    # Select only the species we are interested in.
     indices = np.where(de_dataset["species"].values == species_id)[0]
     species_dataset = de_dataset.isel(epoch=indices)
 
     # Before we use the de_dataset to calculate the pointing set grid we need to filter.
     rejected = get_de_rejection_mask(
-        species_dataset["quality_scattering"].values, species_dataset["quality_outliers"].values
+        species_dataset["quality_scattering"].values,
+        species_dataset["quality_outliers"].values,
     )
     species_dataset = species_dataset.isel(epoch=~rejected)
 

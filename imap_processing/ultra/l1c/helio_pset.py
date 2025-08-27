@@ -71,6 +71,7 @@ def calculate_helio_pset(
         Dataset containing the data.
     """
     pset_dict: dict[str, np.ndarray] = {}
+    # Select only the species we are interested in.
     indices = np.where(de_dataset["species"].values == species_id)[0]
     species_dataset = de_dataset.isel(epoch=indices)
 
