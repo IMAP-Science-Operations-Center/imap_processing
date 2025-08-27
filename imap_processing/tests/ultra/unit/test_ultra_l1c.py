@@ -267,10 +267,6 @@ def test_calculate_helio_pset_with_cdf(
     use_fake_spin_data_for_time,
 ):
     """Tests ultra_l1c function with imported test data."""
-    # Create a profiler
-    profiler = cProfile.Profile()
-    # Start profiling
-    profiler.enable()
     # Simulate a spin table from MET = 0 to MET = 141 * 15 seconds
     use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
     df = pd.read_csv(TEST_PATH / "IMAP-Ultra45_r1_L1_V0_shortened.csv")
@@ -339,15 +335,3 @@ def test_calculate_helio_pset_with_cdf(
         test_data_path.name
         == "imap_ultra_l1c_45sensor-heliopset_20250415-repoint00001_v999.cdf"
     )
-    # Stop profiling
-    profiler.disable()
-    profile_file = "test_function_profile.prof"
-    profiler.dump_stats(profile_file)
-
-    # Create stats object and print results
-    stats = pstats.Stats(profile_file)
-
-    print("\n" + "=" * 80)
-    print("TOP 20 FUNCTIONS BY TOTAL TIME (including sub-calls)")
-    print("=" * 80)
-    stats.sort_stats("cumulative").print_stats(20)

@@ -25,6 +25,7 @@ energy_dependent_attrs: &energy_dependent
 latitude:
   <<: *default_float32
   CATDESC: Latitude bin center corresponding to healpix index with range [-90, 90].
+  DEPEND_1: pixel_index
   FIELDNAM: latitude
   LABLAXIS: latitude
   UNITS: degrees
@@ -32,6 +33,7 @@ latitude:
 longitude:
   <<: *default_float32
   CATDESC: Longitude bin center corresponding to healpix index with range [0, 360].
+  DEPEND_1: pixel_index
   FIELDNAM: longitude
   LABLAXIS: longitude
   UNITS: degrees
@@ -47,7 +49,7 @@ species_bin:
 dead_time_ratio:
   <<: *default_float32
   CATDESC: Dead time correction ratios for each spin phase step (1ms resolution).
-  DEPEND_0: spin_phase_steps
+  DEPEND_1: spin_phase_step
   FIELDNAM: dead_time_ratios
   LABLAXIS: Dead Time Ratio
   UNITS: " "
@@ -61,10 +63,10 @@ sensitivity:
   # TODO: come back to format
   UNITS: counts/second
 
-geometric_factor:
+geometric_function:
   <<: *energy_dependent
   CATDESC: The effective sensitive area within the Field of View.
-  FIELDNAM: geometric_factor
+  FIELDNAM: geometric_function
   LABLAXIS: Geometric Factor
   UNITS: " "
   VALIDMIN: 0.0
@@ -86,10 +88,19 @@ exposure_factor:
   # TODO: come back to format
   UNITS: seconds
 
+helio_exposure_factor:
+  <<: *energy_dependent
+  CATDESC: Exposure time with the deadtime correction applied for a pointing.
+  FIELDNAM: exposure_factor
+  LABLAXIS: exposure factor
+  # TODO: come back to format
+  UNITS: seconds
 
 counts:
   <<: *default
   CATDESC: Counts for a spin.
+  DEPEND_1: energy_bin_geometric_mean
+  DEPEND_2: pixel_index
   FIELDNAM: counts
   LABLAXIS: counts
   # TODO: come back to format
