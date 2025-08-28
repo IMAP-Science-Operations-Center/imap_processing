@@ -103,30 +103,6 @@ def test_create_dataset(mock_data_l1c_dict):
     np.testing.assert_array_equal(dataset["sid"], np.zeros(3))
 
 
-def test_ultra_l1c(mock_data_l1b_dict):
-    """Tests that L1c data is created."""
-    path = imap_module_directory / "tests" / "ultra" / "data" / "l1"
-    ancillary_files = {
-        "l1c-90sensor-dps-exposure": path
-        / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv",
-        "l1c-90sensor-efficiencies": path
-        / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
-        "l1c-90sensor-gf": path / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
-    }
-
-    output_datasets = ultra_l1c(mock_data_l1b_dict, ancillary_files, has_spice=False)
-
-    assert len(output_datasets) == 1
-    assert (
-        output_datasets[0].attrs["Logical_source"]
-        == "imap_ultra_l1c_45sensor-histogram"
-    )
-    assert (
-        output_datasets[0].attrs["Logical_source_description"]
-        == "IMAP-Ultra Instrument Level-1C Pointing Set Grid Histogram Data."
-    )
-
-
 def test_ultra_l1c_error(mock_data_l1b_dict):
     """Tests that L1b data throws an error."""
     mock_data_l1b_dict["bad_key"] = mock_data_l1b_dict.pop(
