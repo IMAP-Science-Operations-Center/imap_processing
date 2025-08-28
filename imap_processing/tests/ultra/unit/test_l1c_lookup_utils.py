@@ -70,7 +70,7 @@ def test_get_mask_below_fwhm_scattering_threshold(ancillary_files):
 def test_get_mask_below_fwhm_scattering_threshold_zero(ancillary_files):
     """Tests function get_mask_below_fwhm_scattering_threshold."""
     energy = np.array([0])  # At energy 0, the FWHM threshold is 0
-    thresholds = get_scattering_thresholds_for_energy(ancillary_files, energy)
+    thresholds = get_scattering_thresholds_for_energy(energy, ancillary_files)
     theta_coeffs = np.array(
         [
             [np.nan, 10],  # This will result in a NaN value (False)
