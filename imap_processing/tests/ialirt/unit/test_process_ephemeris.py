@@ -151,10 +151,10 @@ def test_generate_text_files(furnish_kernels, tmpdir):
     ]
     with furnish_kernels(kernels):
         process_ephemeris.generate_text_files(
-            station="Kiel", day="20250815", file_path=tmpdir
+            station="Kiel", day="2025-08-15", file_path=tmpdir
         )
 
-    with open(f"{tmpdir}/20250815_Kiel.txt") as file:
+    with open(f"{tmpdir}/2025-08-15_Kiel.txt") as file:
         lines = file.readlines()
         assert lines[0] == "Station: Kiel\n"
         assert "(km/s)\n" in lines[8]

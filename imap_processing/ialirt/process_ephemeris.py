@@ -251,7 +251,7 @@ def generate_text_files(station: str, day: str, file_path: str) -> None:
         Station name.
     day : str
         The day for which to generate a pointing schedule, in ISO format.
-        Ex: "20250811".
+        Ex: "2025-08-11".
     file_path : str
         The directory location to save the generated schedule file.
     """
