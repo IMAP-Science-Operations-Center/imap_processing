@@ -72,6 +72,22 @@ default_float64_attrs: &default_float64
   VALIDMAX: 1.7976931348623157e+308
   dtype: float64
 
+computed_ebin:
+  <<: *default_uint8
+  CATDESC: Computed event bin index
+  FIELDNAM: Bin
+  LABLAXIS: bin
+  UNITS: " "
+  DEPEND_0: epoch
+
+ebin:
+  <<: *default_uint8
+  CATDESC: Event bin index
+  FIELDNAM: Bin
+  LABLAXIS: bin
+  UNITS: " "
+  DEPEND_0: epoch
+
 x_front:
   <<: *default_float32
   CATDESC: x front position

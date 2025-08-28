@@ -42,6 +42,7 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 FILLVAL_UINT8 = 255
+FILLVAL_UINT32 = 4294967295
 FILLVAL_FLOAT32 = -1.0e31
 
 
@@ -127,6 +128,7 @@ def calculate_de(
     magnitude_v = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     energy = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     e_bin = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
+    e_bin_l1a = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
     species_bin = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
     t2 = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
     event_times = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
@@ -143,6 +145,10 @@ def calculate_de(
     quality_flags = np.full(
         de_dataset["epoch"].shape, ImapDEOutliersUltraFlags.NONE.value, dtype=np.uint16
     )
+    # Track PH or SSD
+    quality_flags[ph_indices] |= ImapDEOutliersUltraFlags.PH.value
+    quality_flags[ssd_indices] |= ImapDEOutliersUltraFlags.SSD.value
+
     scattering_quality_flags = np.full(
         de_dataset["epoch"].shape,
         ImapDEScatteringUltraFlags.NONE.value,
@@ -264,6 +270,8 @@ def calculate_de(
         tof[ssd_indices], r[ssd_indices], "SSD"
     )
 
+
+
     # Combine ph_yb and ssd_yb along with their indices
     de_dict["x_front"] = xf.astype(np.float32)
     de_dict["event_times"] = event_times
@@ -289,7 +297,6 @@ def calculate_de(
             de_dict["tof_start_stop"][valid_indices],
         )
     )
-    de_dict["direct_event_velocity"] = velocities.astype(np.float32)
     de_dict["direct_event_unit_velocity"] = v_hat.astype(np.float32)
     de_dict["direct_event_unit_position"] = r_hat.astype(np.float32)
 
@@ -298,7 +305,10 @@ def calculate_de(
     )
     de_dict["tof_energy"] = tof_energy
     de_dict["energy"] = energy
-    de_dict["ebin"] = e_bin
+    de_dict["computed_ebin"] = e_bin
+    valid_ebin = de_dataset["bin"].values != FILLVAL_UINT32
+    e_bin_l1a[valid_ebin] = de_dataset["bin"].values[valid_ebin]
+    de_dict["ebin"] = e_bin_l1a
     de_dict["species"] = species_bin
 
     # Annotated Events.
@@ -313,7 +323,7 @@ def calculate_de(
             helio_velocity[valid_events],
         ) = get_annotated_particle_velocity(
             event_times[valid_events],
-            de_dict["direct_event_velocity"][valid_events],
+            velocities.astype(np.float32)[valid_events],
             ultra_frame,
             SpiceFrame.IMAP_DPS,
             SpiceFrame.IMAP_SPACECRAFT,

@@ -114,3 +114,15 @@ class UltraConstants:
         341.989454569026,
         1e5,
     ]
+
+    # Valid event filter constants
+    # Note these appear similar to image params constants
+    # but they should be used only for the valid event filter.
+    ETOFOFF1_EVENTFILTER = 100
+    ETOFOFF2_EVENTFILTER = -50
+    ETOFSLOPE1_EVENTFILTER = 6667
+    ETOFSLOPE2_EVENTFILTER = 7500
+    ETOFMAX_EVENTFILTER = 90
+    ETOFMIN_EVENTFILTER = -400
+    TOFDIFFTPMIN_EVENTFILTER = 226
+    TOFDIFFTPMAX_EVENTFILTER = 266

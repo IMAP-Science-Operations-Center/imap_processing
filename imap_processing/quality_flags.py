@@ -43,6 +43,8 @@ class ImapDEOutliersUltraFlags(FlagNameMixin):
     NONE = CommonFlags.NONE
     FOV = 2**0  # bit 0
     PHCORR = 2**1  # bit 1
+    SSD = 2**2  # bit 2 # SSD event
+    PH = 2**3  # bit 3 # PH event
 
 
 class ImapHkUltraFlags(FlagNameMixin):

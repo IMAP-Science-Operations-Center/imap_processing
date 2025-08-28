@@ -9,11 +9,13 @@ from imap_processing.quality_flags import ImapDEOutliersUltraFlags
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.spice.time import sct_to_et
 from imap_processing.ultra.l1b.lookup_utils import get_angular_profiles
+from imap_processing.ultra.l1b.lookup_utils import get_angular_profiles, get_norm
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     CoinType,
     StartType,
     StopType,
     calculate_etof_xc,
+    create_valid_event_filter,
     determine_ebin_pulse_height,
     determine_ebin_ssd,
     determine_species,
@@ -741,3 +743,25 @@ def test_is_coin_ph_valid(test_fixture, ancillary_files):
     valid = np.asarray(valid, dtype=bool)
 
     np.testing.assert_equal(coin_ph_valid_bool, valid)
+
+
+@pytest.mark.external_test_data
+def test_create_valid_event_filter(test_fixture, ancillary_files):
+    """Tests create_valid_event_filter function."""
+    df_filt, _, _, _ = test_fixture
+    df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
+
+    # Test data
+    ctof = df_ph["cTOF"].astype(float).values
+    etof = df_ph["eTOF"].astype(float).values
+    xc = df_ph["Xc"].astype(float).values
+    xb = df_ph["Xb"].astype(float).values
+    stop_north_tdc = df_ph["StopNorthTDC"].astype(int).values
+    stop_south_tdc = df_ph["StopSouthTDC"].astype(int).values
+    stop_east_tdc = df_ph["StopEastTDC"].astype(int).values
+    stop_west_tdc = df_ph["StopWestTDC"].astype(int).values
+
+    combined_mask = create_valid_event_filter(ctof, etof, xc, xb, stop_north_tdc,
+                                              stop_south_tdc, stop_east_tdc,
+                                              stop_west_tdc, "ultra45", ancillary_files)
+    print('hi')
