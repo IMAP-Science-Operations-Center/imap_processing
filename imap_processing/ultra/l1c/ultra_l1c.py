@@ -3,7 +3,6 @@
 import xarray as xr
 
 from imap_processing.ultra.l1c.helio_pset import calculate_helio_pset
-from imap_processing.ultra.l1c.histogram import calculate_histogram
 from imap_processing.ultra.l1c.spacecraft_pset import calculate_spacecraft_pset
 
 
@@ -32,15 +31,6 @@ def ultra_l1c(
     # Account for possibility of having 45 and 90 in dictionary.
     for instrument_id in [45, 90]:
         if (
-            f"imap_ultra_l1a_{instrument_id}sensor-histogram" in data_dict
-            and f"imap_ultra_l1b_{instrument_id}sensor-goodtimes" in data_dict
-        ):
-            histogram_dataset = calculate_histogram(
-                data_dict[f"imap_ultra_l1a_{instrument_id}sensor-histogram"],
-                f"imap_ultra_l1c_{instrument_id}sensor-histogram",
-            )
-            output_datasets = [histogram_dataset]
-        elif (
             f"imap_ultra_l1b_{instrument_id}sensor-goodtimes" in data_dict
             and f"imap_ultra_l1b_{instrument_id}sensor-de" in data_dict
             and f"imap_ultra_l1b_{instrument_id}sensor-extendedspin" in data_dict
@@ -48,7 +38,6 @@ def ultra_l1c(
         ):
             helio_pset = calculate_helio_pset(
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-de"],
-                data_dict[f"imap_ultra_l1b_{instrument_id}sensor-extendedspin"],
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-goodtimes"],
                 data_dict[f"imap_ultra_l1a_{instrument_id}sensor-rates"],
                 data_dict[f"imap_ultra_l1a_{instrument_id}sensor-params"],
@@ -64,7 +53,6 @@ def ultra_l1c(
         ):
             spacecraft_pset = calculate_spacecraft_pset(
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-de"],
-                data_dict[f"imap_ultra_l1b_{instrument_id}sensor-extendedspin"],
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-goodtimes"],
                 data_dict[f"imap_ultra_l1a_{instrument_id}sensor-rates"],
                 data_dict[f"imap_ultra_l1a_{instrument_id}sensor-params"],
