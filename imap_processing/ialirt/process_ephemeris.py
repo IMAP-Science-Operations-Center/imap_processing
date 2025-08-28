@@ -241,9 +241,9 @@ def build_output(
     return output_dict
 
 
-def generate_text_files(station: str, day: str, file_path: str) -> None:
+def generate_text_files(station: str, day: str) -> list[str]:
     """
-    Generate a pointing schedule text file and save it to the input file path.
+    Generate a pointing schedule text file and return it as a list of strings.
 
     Parameters
     ----------
@@ -252,8 +252,11 @@ def generate_text_files(station: str, day: str, file_path: str) -> None:
     day : str
         The day for which to generate a pointing schedule, in ISO format.
         Ex: "2025-08-11".
-    file_path : str
-        The directory location to save the generated schedule file.
+
+    Returns
+    -------
+    lines : list[str]
+        A list of strings that makeup the lines of a pointing schedule file.
     """
     station_properties = STATIONS[station]
 
@@ -269,32 +272,29 @@ def generate_text_files(station: str, day: str, file_path: str) -> None:
         time_endpoints,
     )
 
-    with open(f"{file_path}/{day}_{station}.txt", "w") as file:
-        file.writelines(
-            [
-                f"Station: {station}\n",
-                "Target: IMAP\n",
-                f"Creation date (UTC): {datetime.utcnow()}\n",
-                f"Start time: {time_endpoints[0]}\n",
-                f"End time: {time_endpoints[1]}\n",
-                "Cadence (sec): 60\n\n",
-                "Date/Time",
-                "Azimuth".rjust(29),
-                "Elevation".rjust(17),
-                "Doppler".rjust(15) + "\n",
-                "(UTC)",
-                "(deg.)".rjust(33),
-                "(deg.)".rjust(16),
-                "(km/s)".rjust(16) + "\n",
-            ]
+    lines = [
+        f"Station: {station}\n",
+        "Target: IMAP\n",
+        f"Creation date (UTC): {datetime.utcnow()}\n",
+        f"Start time: {time_endpoints[0]}\n",
+        f"End time: {time_endpoints[1]}\n",
+        "Cadence (sec): 60\n\n",
+        "Date/Time"
+        + "Azimuth".rjust(29)
+        + "Elevation".rjust(17)
+        + "Doppler".rjust(15)
+        + "\n",
+        "(UTC)" + "(deg.)".rjust(33) + "(deg.)".rjust(16) + "(km/s)".rjust(16) + "\n",
+    ]
+
+    length = len(output_dict["time"])
+    for i in range(length):
+        lines.append(
+            f"{output_dict['time'][i]}"
+            + f"{output_dict['azimuth'][i]}".rjust(16)
+            + f"{output_dict['elevation'][i]}".rjust(16)
+            + f"{output_dict['doppler'][i]}".rjust(15)
+            + "\n"
         )
-        length = len(output_dict["time"])
-        for i in range(length):
-            file.writelines(
-                [
-                    f"{output_dict['time'][i]}",
-                    f"{output_dict['azimuth'][i]}".rjust(16),
-                    f"{output_dict['elevation'][i]}".rjust(16),
-                    f"{output_dict['doppler'][i]}".rjust(15) + "\n",
-                ]
-            )
+
+    return lines

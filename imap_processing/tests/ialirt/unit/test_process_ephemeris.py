@@ -150,11 +150,7 @@ def test_generate_text_files(furnish_kernels, tmpdir):
         "earth_latest_high_prec.bpc",
     ]
     with furnish_kernels(kernels):
-        process_ephemeris.generate_text_files(
-            station="Kiel", day="2025-08-15", file_path=tmpdir
-        )
+        output = process_ephemeris.generate_text_files(station="Kiel", day="2025-08-15")
 
-    with open(f"{tmpdir}/2025-08-15_Kiel.txt") as file:
-        lines = file.readlines()
-        assert lines[0] == "Station: Kiel\n"
-        assert "(km/s)\n" in lines[8]
+    assert output[0] == "Station: Kiel\n"
+    assert "(km/s)\n" in output[7]
