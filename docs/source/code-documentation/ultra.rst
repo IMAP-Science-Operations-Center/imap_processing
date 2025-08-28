@@ -47,5 +47,5 @@ Level 1C Processing Code:
     :recursive:
 
     l1c.ultra_l1c
-    l1c.histogram
     l1c.spacecraft_pset
+    l1c.helio_pset
