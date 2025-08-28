@@ -286,37 +286,37 @@ def test_get_de_velocity(test_fixture):
     )
     np.testing.assert_allclose(
         vhat[test_tof > 0][:, 0],
-        df_ph["vhatX"].astype("float").values[test_tof > 0],
-        atol=1e-01,
-        rtol=0,
-    )
-    np.testing.assert_allclose(
-        vhat[test_tof > 0][:, 1],
-        df_ph["vhatY"].astype("float").values[test_tof > 0],
-        atol=1e-01,
-        rtol=0,
-    )
-    np.testing.assert_allclose(
-        vhat[test_tof > 0][:, 2],
-        df_ph["vhatZ"].astype("float").values[test_tof > 0],
-        atol=1e-01,
-        rtol=0,
-    )
-    np.testing.assert_allclose(
-        r[test_tof > 0][:, 0],
         -df_ph["vhatX"].astype("float").values[test_tof > 0],
         atol=1e-01,
         rtol=0,
     )
     np.testing.assert_allclose(
-        r[test_tof > 0][:, 1],
+        vhat[test_tof > 0][:, 1],
         -df_ph["vhatY"].astype("float").values[test_tof > 0],
         atol=1e-01,
         rtol=0,
     )
     np.testing.assert_allclose(
-        r[test_tof > 0][:, 2],
+        vhat[test_tof > 0][:, 2],
         -df_ph["vhatZ"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
+    )
+    np.testing.assert_allclose(
+        r[test_tof > 0][:, 0],
+        df_ph["vhatX"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
+    )
+    np.testing.assert_allclose(
+        r[test_tof > 0][:, 1],
+        df_ph["vhatY"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
+    )
+    np.testing.assert_allclose(
+        r[test_tof > 0][:, 2],
+        df_ph["vhatZ"].astype("float").values[test_tof > 0],
         atol=1e-01,
         rtol=0,
     )
