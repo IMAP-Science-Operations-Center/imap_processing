@@ -8,6 +8,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.spice.geometry import SpiceFrame
+from imap_processing.spice.time import et_to_met
 from imap_processing.ultra.l1b.ultra_l1b_annotated import (
     get_annotated_particle_velocity,
 )
@@ -231,7 +232,10 @@ def test_calculate_helio_pset_with_cdf(
 ):
     """Tests ultra_l1c function with imported test data."""
     # Simulate a spin table from MET = 0 to MET = 141 * 15 seconds
-    use_fake_spin_data_for_time(start_met=0, end_met=141 * 15)
+    use_fake_spin_data_for_time(
+        start_met=et_to_met(817561854.185627),
+        end_met=et_to_met(817561854.185627 + 141 * 15),
+    )
     df = pd.read_csv(TEST_PATH / "IMAP-Ultra45_r1_L1_V0_shortened.csv")
 
     # Select a single pointing number
