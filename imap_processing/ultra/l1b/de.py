@@ -145,9 +145,6 @@ def calculate_de(
     quality_flags = np.full(
         de_dataset["epoch"].shape, ImapDEOutliersUltraFlags.NONE.value, dtype=np.uint16
     )
-    # Track PH or SSD
-    quality_flags[ph_indices] |= ImapDEOutliersUltraFlags.PH.value
-    quality_flags[ssd_indices] |= ImapDEOutliersUltraFlags.SSD.value
 
     scattering_quality_flags = np.full(
         de_dataset["epoch"].shape,
@@ -219,8 +216,13 @@ def calculate_de(
         etof[ph_indices],
         xc[ph_indices],
         xb[ph_indices],
+        de_dataset["stop_north_tdc"][ph_indices].values,
+        de_dataset["stop_south_tdc"][ph_indices].values,
+        de_dataset["stop_east_tdc"][ph_indices].values,
+        de_dataset["stop_west_tdc"][ph_indices].values,
         f"ultra{sensor}",
         ancillary_files,
+        quality_flags[ph_indices],
     )
     e_bin[ph_indices] = determine_ebin_pulse_height(
         energy[ph_indices],
@@ -269,8 +271,6 @@ def calculate_de(
     ctof[ssd_indices], magnitude_v[ssd_indices] = get_ctof(
         tof[ssd_indices], r[ssd_indices], "SSD"
     )
-
-
 
     # Combine ph_yb and ssd_yb along with their indices
     de_dict["x_front"] = xf.astype(np.float32)

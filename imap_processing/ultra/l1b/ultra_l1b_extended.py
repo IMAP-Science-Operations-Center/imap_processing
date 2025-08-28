@@ -12,6 +12,7 @@ from numpy import ndarray
 from numpy.typing import NDArray
 from scipy.interpolate import LinearNDInterpolator, RegularGridInterpolator
 
+from imap_processing.quality_flags import ImapDEOutliersUltraFlags
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.spice.time import sct_to_et
 from imap_processing.ultra.constants import UltraConstants
@@ -1376,69 +1377,19 @@ def is_coin_ph_valid(
     etof: NDArray,
     xc: NDArray,
     xb: NDArray,
+    stop_north_tdc: NDArray,
+    stop_south_tdc: NDArray,
+    stop_east_tdc: NDArray,
+    stop_west_tdc: NDArray,
     sensor: str,
     ancillary_files: dict,
+    quality_flags: NDArray,
 ) -> NDArray:
     """
-    Determine whether Coincidence-PH data are valid.
-
-    This is based on thresholds defined in the IMAP-Ultra Flight Software Specification
-    (see page 36).
+    Determine event validity.
 
     Parameters
     ----------
-    etof : NDArray
-        Electron TOF (tenths of a nanosecond).
-    xc : NDArray
-        Coincidence X position (hundredths of a mm).
-    xb : NDArray
-        Back X position (hundredths of a mm).
-    sensor : str
-        Sensor name: "ultra45" or "ultra90".
-    ancillary_files : dict
-        Ancillary files for lookup.
-
-    Returns
-    -------
-    valid_mask : NDArray
-        Boolean array indicating Coin-PH validity.
-
-    Notes
-    -----
-    Logic derived from page 36 of the IMAP-Ultra Flight Software Specification document.
-    """
-    etof_min = get_image_params("eTOFMin", sensor, ancillary_files)
-    etof_max = get_image_params("eTOFMax", sensor, ancillary_files)
-
-    etof_valid = (etof >= etof_min) & (etof <= etof_max)
-
-    diff_x = xc - xb
-    etof_offset1 = get_image_params("eTOFOff1", sensor, ancillary_files)
-    etof_offset2 = get_image_params("eTOFOff2", sensor, ancillary_files)
-    etof_slope1 = get_image_params("eTOFSlope1", sensor, ancillary_files)
-    etof_slope2 = get_image_params("eTOFSlope2", sensor, ancillary_files)
-
-    t1 = (etof - etof_offset1) * etof_slope1 / 1024
-    t2 = (etof - etof_offset2) * etof_slope2 / 1024
-
-    condition_1 = (diff_x >= t1) & (diff_x <= t2)
-    condition_2 = (diff_x >= -t2) & (diff_x <= -t1)
-
-    spatial_valid = condition_1 | condition_2
-
-    return etof_valid & spatial_valid
-
-
-def create_valid_event_filter(ctof: NDArray, etof: NDArray,
-                              xc: NDArray, xb: NDArray, stop_north_tdc: NDArray, stop_south_tdc: NDArray,
-                              stop_east_tdc: NDArray, stop_west_tdc: NDArray, sensor: str, ancillary_files: dict) -> NDArray:#, quality_flags: NDArray):
-    """
-    Determine whether back TOF is valid based on stop type.
-
-    Parameters
-    ----------
-    ctof : NDArray
-        Corrected TOF (tenths of a ns).
     etof : NDArray
         Time for the electrons to travel back to the coincidence
         anode (tenths of a nanosecond).
@@ -1447,17 +1398,19 @@ def create_valid_event_filter(ctof: NDArray, etof: NDArray,
     xb : NDArray
         Back positions in x direction (hundredths of a millimeter).
     stop_north_tdc : NDArray
-        Stop North Time to Digital Converter
+        Stop North Time to Digital Converter.
     stop_south_tdc : NDArray
-        Stop South Time to Digital Converter
+        Stop South Time to Digital Converter.
     stop_east_tdc : NDArray
-        Stop East Time to Digital Converter
+        Stop East Time to Digital Converter.
     stop_west_tdc : NDArray
-        Stop West Time to Digital Converter
+        Stop West Time to Digital Converter.
     sensor : str
         Sensor name: "ultra45" or "ultra90".
     ancillary_files : dict
         Ancillary files for lookup.
+    quality_flags : NDArray
+        Quality flag to set when there is an outlier.
 
     Returns
     -------
@@ -1468,33 +1421,34 @@ def create_valid_event_filter(ctof: NDArray, etof: NDArray,
     -----
     From page 36 of the IMAP-Ultra Flight Software Specification document.
     """
-
     # Make certain etof is within range for tenths of a nanosecond.
-    etof_valid = (etof >= UltraConstants.ETOFMIN_EVENTFILTER) & (etof <= UltraConstants.ETOFMAX_EVENTFILTER)
+    etof_valid = (etof >= UltraConstants.ETOFMIN_EVENTFILTER) & (
+        etof <= UltraConstants.ETOFMAX_EVENTFILTER
+    )
 
     # Hundredths of a mm.
     diff_x = xc - xb
 
-    t1 = (etof - UltraConstants.ETOFOFF1_EVENTFILTER) * UltraConstants.ETOFSLOPE1_EVENTFILTER / 1024
-    t2 = (etof - UltraConstants.ETOFOFF2_EVENTFILTER) * UltraConstants.ETOFSLOPE2_EVENTFILTER / 1024
+    t1 = (
+        (etof - UltraConstants.ETOFOFF1_EVENTFILTER)
+        * UltraConstants.ETOFSLOPE1_EVENTFILTER
+        / 1024
+    )
+    t2 = (
+        (etof - UltraConstants.ETOFOFF2_EVENTFILTER)
+        * UltraConstants.ETOFSLOPE2_EVENTFILTER
+        / 1024
+    )
 
     condition_1 = (diff_x >= t1) & (diff_x <= t2)
     condition_2 = (diff_x >= -t2) & (diff_x <= -t1)
 
     spatial_valid = condition_1 | condition_2
 
-    sp_n_norm = get_norm(
-        stop_north_tdc, "SpN", sensor, ancillary_files
-    )
-    sp_s_norm = get_norm(
-        stop_south_tdc, "SpS", sensor, ancillary_files
-    )
-    sp_e_norm = get_norm(
-        stop_east_tdc, "SpE", sensor, ancillary_files
-    )
-    sp_w_norm = get_norm(
-        stop_west_tdc, "SpW", sensor, ancillary_files
-    )
+    sp_n_norm = get_norm(stop_north_tdc, "SpN", sensor, ancillary_files)
+    sp_s_norm = get_norm(stop_south_tdc, "SpS", sensor, ancillary_files)
+    sp_e_norm = get_norm(stop_east_tdc, "SpE", sensor, ancillary_files)
+    sp_w_norm = get_norm(stop_west_tdc, "SpW", sensor, ancillary_files)
 
     tofx = sp_n_norm + sp_s_norm
     tofy = sp_e_norm + sp_w_norm
@@ -1502,13 +1456,12 @@ def create_valid_event_filter(ctof: NDArray, etof: NDArray,
     # Units in tenths of a nanosecond
     delta_tof = tofy - tofx
 
-    delta_tof_mask = (
-            (delta_tof >= UltraConstants.TOFDIFFTPMIN_EVENTFILTER) &
-            (delta_tof <= UltraConstants.TOFDIFFTPMAX_EVENTFILTER)
+    delta_tof_mask = (delta_tof >= UltraConstants.TOFDIFFTPMIN_EVENTFILTER) & (
+        delta_tof <= UltraConstants.TOFDIFFTPMAX_EVENTFILTER
     )
-     # TODO: Ask Ultra team where 5 and 55 come from.
-    ctof_mask = (ctof >= 5) & (ctof <= 55)
 
-    combined_mask = etof_valid & spatial_valid & delta_tof_mask & ctof_mask
+    combined_mask = etof_valid & spatial_valid & delta_tof_mask
 
-    return combined_mask, diff_x, etof
+    quality_flags[~combined_mask] |= ImapDEOutliersUltraFlags.COINPH.value
+
+    return combined_mask
