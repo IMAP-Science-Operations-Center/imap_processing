@@ -114,6 +114,7 @@ class UltraConstants:
         228.93508942224,
         279.809553738294,
         341.989454569026,
+        1e5,
     ]
     # TODO read these in from a lookup table
     # Culling FWHM Scattering values as a function of energy.
