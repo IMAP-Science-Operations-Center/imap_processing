@@ -7,12 +7,12 @@ import pandas as pd
 import xarray as xr
 
 from imap_processing.cdf.utils import parse_filename_like
+from imap_processing.quality_flags import ImapPSETUltraFlags
 from imap_processing.ultra.l1b.ultra_l1b_culling import get_de_rejection_mask
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
     calculate_pixels_within_scattering_threshold,
     get_spacecraft_pointing_lookup_tables,
 )
-from imap_processing.quality_flags import ImapPSETUltraFlags
 from imap_processing.ultra.l1c.ultra_l1c_culling import compute_culling_mask
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     build_energy_bins,
