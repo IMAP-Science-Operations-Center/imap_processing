@@ -80,7 +80,7 @@ def bin_single_array_at_indices(
 
     num_projection_indices = np.prod(projection_grid_shape)
 
-    # Only valid (non-NaN) values are summed into bins.
+    # Only valid values are summed into bins.
     if value_array.ndim == 1:
         values = value_array[input_indices]
         binned_values = np.bincount(
