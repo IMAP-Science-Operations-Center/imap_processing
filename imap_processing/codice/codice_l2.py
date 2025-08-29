@@ -197,7 +197,8 @@ def compute_geometric_factors(dataset: xr.Dataset) -> np.ndarray:
     L2 dataset.
 
     If the half-spin value is less than the corresponding rgfo_half_spin value,
-    the geometric factor is set to 0.75; otherwise, it is set to 0.5.
+    the geometric factor is set to 0.75 (full mode); otherwise, it is set to 0.5
+    (reduced mode).
 
     NOTE: Half spin values are associated with ESA steps which corresponds to the
     index of the energy_per_charge dimension that is between 0 and 127.
@@ -270,15 +271,3 @@ def process_lo_sw_species(
     # valid_pick_up_ion_vars = ["heplus", "cnoplus"]
 
     return dataset
-
-
-if __name__ == "__main__":
-    from pathlib import Path
-
-    l1b_file_path = Path(
-        "/Users/martinva/Desktop/IMAP/codice/updated_codice-CDFs-9/imap_codice_l1b_lo-sw-species_20241110193900_v0.0.3.cdf"
-    )
-
-    l2_dataset = process_codice_l2(l1b_file_path)
-
-    print(l2_dataset)
