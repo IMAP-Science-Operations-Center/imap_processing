@@ -15,9 +15,12 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 
+from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice import constants
+from imap_processing.codice.utils import CODICEAPID
+from imap_processing.utils import packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -81,8 +84,6 @@ def convert_to_rates(
     ]:
         # Applying rate calculation described in section 10.1 of the algorithm
         # document
-        # TODO: HI_ACQUISITION_TIME is in seconds. Does this need to be in
-        #       microseconds?
         rates_data = dataset[variable_name].data / (
             constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spin_sectors"]
             * constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spins"]
@@ -135,30 +136,41 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
     # Update the global attributes
     l1b_dataset.attrs = cdf_attrs.get_global_attributes(dataset_name)
 
-    # Determine which variables need to be converted from counts to rates
-    # TODO: Figure out exactly which hskp variables need to be converted
-    # Housekeeping and binned datasets are treated a bit differently since
-    # not all variables need to be converted
     if descriptor == "hskp":
-        # TODO: Check with Joey if any housekeeping data needs to be converted
-        variables_to_convert = []
-        print(l1b_dataset.ssdo_vmon.data.shape)
+        xtce_filename = "codice_packet_definition.xml"
+        xtce_packet_definition = Path(
+            f"{imap_module_directory}/codice/packet_definitions/{xtce_filename}"
+        )
+        packet_file = (
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l0_raw_20241110_v001.pkts"
+        )
+        datasets: dict[int, xr.Dataset] = packet_file_to_datasets(
+            packet_file, xtce_packet_definition, use_derived_value=True
+        )
+        l1b_dataset = datasets[CODICEAPID.COD_NHK]
+
+        # TODO: Drop the same variables as we do in L1a
+
     else:
         variables_to_convert = getattr(
             constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
         )
 
-    # Apply the conversion to rates
-    for variable_name in variables_to_convert:
-        l1b_dataset[variable_name].data = convert_to_rates(
-            l1b_dataset, descriptor, variable_name
-        )
+        # Apply the conversion to rates
+        for variable_name in variables_to_convert:
+            l1b_dataset[variable_name].data = convert_to_rates(
+                l1b_dataset, descriptor, variable_name
+            )
 
-        # Set the variable attributes
-        cdf_attrs_key = f"{descriptor}-{variable_name}"
-        l1b_dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
-            cdf_attrs_key, check_schema=False
-        )
+            # Set the variable attributes
+            cdf_attrs_key = f"{descriptor}-{variable_name}"
+            l1b_dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
+                cdf_attrs_key, check_schema=False
+            )
 
     logger.info(f"\nFinal data product:\n{l1b_dataset}\n")
 
