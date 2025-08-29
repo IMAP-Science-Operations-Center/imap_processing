@@ -184,10 +184,10 @@ def get_spacecraft_pointing_lookup_tables(
         A 2D array of boundary scale factors for each HEALPix pixel at each spin phase
         step.
     """
-    theta_descriptor = f"l1c-{instrument_id}sensor-sc-pointing-theta-n32"
-    phi_descriptor = f"l1c-{instrument_id}sensor-sc-pointing-phi-n32"
-    index_descriptor = f"l1c-{instrument_id}sensor-sc-pointing-index-n32"
-    bsf_descriptor = f"l1c-{instrument_id}sensor-sc-pointing-bsf-n32"
+    theta_descriptor = f"l1c-{instrument_id}sensor-sc-pointing-theta"
+    phi_descriptor = f"l1c-{instrument_id}sensor-sc-pointing-phi"
+    index_descriptor = f"l1c-{instrument_id}sensor-sc-pointing-index"
+    bsf_descriptor = f"l1c-{instrument_id}sensor-sc-pointing-bsf"
 
     theta_vals = pd.read_csv(
         ancillary_files[theta_descriptor], header=None, skiprows=1

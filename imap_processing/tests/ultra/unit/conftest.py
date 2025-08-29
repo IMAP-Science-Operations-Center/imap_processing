@@ -536,22 +536,22 @@ def ancillary_files():
         "l1c-90sensor-efficiencies": path
         / "imap_ultra_l1c-90sensor-efficiencies_20250101_v000.csv",
         "l1c-90sensor-gf": path / "imap_ultra_l1c-90sensor-gf_20250101_v000.csv",
-        "l1c-90sensor-sc-pointing-theta-n32": path
-        / "imap_ultra_l1c-90sensor-sc-pointing-theta-n32-test_20250101_v000.csv",
-        "l1c-90sensor-sc-pointing-phi-n32": path
-        / "imap_ultra_l1c-90sensor-sc-pointing-phi-n32-test_20250101_v000.csv",
-        "l1c-90sensor-sc-pointing-index-n32": path
-        / "imap_ultra_l1c-90sensor-sc-pointing-index-n32-test_20250101_v000.csv",
-        "l1c-90sensor-sc-pointing-bsf-n32": path
-        / "imap_ultra_l1c-90sensor-sc-pointing-bsf-n32-test_20250101_v000.csv",
-        "l1c-45sensor-sc-pointing-theta-n32": path
-        / "imap_ultra_l1c-90sensor-sc-pointing-theta-n32-test_20250101_v000.csv",
-        "l1c-45sensor-sc-pointing-phi-n32": path
-        / "imap_ultra_l1c-90sensor-sc-pointing-phi-n32-test_20250101_v000.csv",
-        "l1c-45sensor-sc-pointing-index-n32": path
-        / "imap_ultra_l1c-90sensor-sc-pointing-index-n32-test_20250101_v000.csv",
-        "l1c-45sensor-sc-pointing-bsf-n32": path
-        / "imap_ultra_l1c-90sensor-sc-pointing-bsf-n32-test_20250101_v000.csv",
+        "l1c-90sensor-sc-pointing-theta": path
+        / "imap_ultra_l1c-90sensor-sc-pointing-theta-test_20250101_v000.csv",
+        "l1c-90sensor-sc-pointing-phi": path
+        / "imap_ultra_l1c-90sensor-sc-pointing-phi-test_20250101_v000.csv",
+        "l1c-90sensor-sc-pointing-index": path
+        / "imap_ultra_l1c-90sensor-sc-pointing-index-test_20250101_v000.csv",
+        "l1c-90sensor-sc-pointing-bsf": path
+        / "imap_ultra_l1c-90sensor-sc-pointing-bsf-test_20250101_v000.csv",
+        "l1c-45sensor-sc-pointing-theta": path
+        / "imap_ultra_l1c-90sensor-sc-pointing-theta-test_20250101_v000.csv",
+        "l1c-45sensor-sc-pointing-phi": path
+        / "imap_ultra_l1c-90sensor-sc-pointing-phi-test_20250101_v000.csv",
+        "l1c-45sensor-sc-pointing-index": path
+        / "imap_ultra_l1c-90sensor-sc-pointing-index-test_20250101_v000.csv",
+        "l1c-45sensor-sc-pointing-bsf": path
+        / "imap_ultra_l1c-90sensor-sc-pointing-bsf-test_20250101_v000.csv",
         "l1b-scattering-thresholds-per-energy": path
         / "imap_ultra_l1b-scattering-thresholds-per-energy_20250101_v000.csv",
     }
