@@ -15,7 +15,7 @@ from imap_processing.spice.time import (
 )
 from imap_processing.ultra.l1b.ultra_l1b_culling import get_de_rejection_mask
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
-    calculate_pixels_within_scattering_threshold,
+    calculate_fwhm_spun_scattering,
     get_spacecraft_pointing_lookup_tables,
 )
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
@@ -109,13 +109,20 @@ def calculate_helio_pset(
     # Check that the number of rows in the lookup table matches the number of pixels
     if for_indices_by_spin_phase.shape[0] != n_pix:
         logger.warning(
-            "The lookup table is expected to have the same number of rows as "
-            "the number of HEALPix pixels."
+            "The spacecraft pointing lookup table is expected to have the same number "
+            "of rows as the number of HEALPix pixels."
         )
-
-    pixels_below_scattering = calculate_pixels_within_scattering_threshold(
-        for_indices_by_spin_phase, theta_vals, phi_vals, ancillary_files, instrument_id
+    logger.info("calculating spun FWHM scattering values.")
+    pixels_below_scattering, scattering_theta, scattering_phi, scattering_thresholds = (
+        calculate_fwhm_spun_scattering(
+            for_indices_by_spin_phase,
+            theta_vals,
+            phi_vals,
+            ancillary_files,
+            instrument_id,
+        )
     )
+    logger.info("Calculating spacecraft exposure times with deadtime correction.")
     # Calculate exposure
     constant_exposure = ancillary_files["l1c-90sensor-dps-exposure"]
     df_exposure = pd.read_csv(constant_exposure)
@@ -126,6 +133,7 @@ def calculate_helio_pset(
         pixels_below_scattering,
         boundary_scale_factors,
     )
+    logger.info("Calculating spun efficiencies and geometric function.")
     # calculate efficiency and geometric function as a function of energy
     efficiencies, geometric_function = get_efficiencies_and_geometric_function(
         pixels_below_scattering,
@@ -141,6 +149,7 @@ def calculate_helio_pset(
         et_to_met(sct_to_et(species_dataset["event_times"].data[0]))
     )
     mid_time = ttj2000ns_to_et(met_to_ttj2000ns((pointing_start + pointing_stop) / 2))
+    logger.info("Adjusting data for helio frame.")
     exposure_time, efficiency, geometric_function = get_helio_adjusted_data(
         mid_time,
         exposure_time,
@@ -167,6 +176,10 @@ def calculate_helio_pset(
     pset_dict["geometric_function"] = geometric_function
     pset_dict["dead_time_ratio"] = deadtime_ratios
     pset_dict["spin_phase_step"] = np.arange(len(deadtime_ratios))
+
+    pset_dict["scatter_theta"] = scattering_theta
+    pset_dict["scatter_phi"] = scattering_phi
+    pset_dict["scatter_threshold"] = scattering_thresholds
 
     dataset = create_dataset(pset_dict, name, "l1c")
 

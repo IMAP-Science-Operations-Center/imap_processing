@@ -21,7 +21,7 @@ def mask_below_fwhm_scattering_threshold(
     phi_coeffs: np.ndarray,
     energy: np.ndarray,
     scattering_thresholds: np.ndarray,
-) -> np.ndarray:
+) -> tuple[NDArray, NDArray, NDArray]:
     """
     Determine indices of theta and phi values below the FWHM scattering threshold.
 
@@ -43,8 +43,12 @@ def mask_below_fwhm_scattering_threshold(
 
     Returns
     -------
-    numpy.ndarray
+    scattering_mask : numpy.ndarray
         Boolean array indicating indices below the scattering threshold.
+    fwhm_theta : numpy.ndarray
+        Calculated FWHM values for theta.
+    fwhm_phi : numpy.ndarray
+        Calculated FWHM values for phi.
     """
     # Calculate FWHM for all pixels and all energies
     fwhm_theta = theta_coeffs[..., 0:1] * (
@@ -58,18 +62,21 @@ def mask_below_fwhm_scattering_threshold(
 
     # Combine conditions for both theta and phi.
     # shape = (npix, energy.shape[1])
-    return np.logical_and(fwhm_theta <= thresholds, fwhm_phi <= thresholds)
+    scattering_mask = np.logical_and(fwhm_theta <= thresholds, fwhm_phi <= thresholds)
+    return scattering_mask, fwhm_theta, fwhm_phi
 
 
-def calculate_pixels_within_scattering_threshold(
+def calculate_fwhm_spun_scattering(
     for_indices_by_spin_phase: np.ndarray,
     theta_vals: np.ndarray,
     phi_vals: np.ndarray,
     ancillary_files: dict,
     instrument_id: int,
-) -> list:
+) -> tuple[list, NDArray, NDArray, NDArray]:
     """
-    Calculate pixels within the FWHM scattering threshold for each spin phase step.
+    Calculate FWHM scattering values for each pixel, energy bin, and spin phase step.
+
+    This function also calculates a mask for pixels that are below the FWHM threshold.
 
     Parameters
     ----------
@@ -93,6 +100,14 @@ def calculate_pixels_within_scattering_threshold(
         The outer list indicates spin phase steps, the middle list indicates energy
         bins, and the inner arrays contain indices indicating pixels that are below
         the FWHM scattering threshold.
+    scattering_fwhm_theta : NDArray
+        Calculated FWHM scatting values for theta at each energy bin and averaged
+        over spin phase.
+    scattering_fwhm_phi : NDArray
+        Calculated FWHM scatting values for theta at each energy bin and averaged
+        over spin phase.
+    scattering_thresholds_for_energy_mean : NDArray
+        Scattering thresholds corresponding to each energy bin.
     """
     # Load scattering coefficient lookup table
     scattering_luts = load_scattering_lookup_tables(ancillary_files, instrument_id)
@@ -103,6 +118,13 @@ def calculate_pixels_within_scattering_threshold(
     scattering_thresholds_for_energy_mean = get_scattering_thresholds_for_energy(
         energy_bin_geometric_means, ancillary_files
     )
+    # Initialize arrays to accumulate FWHM values for averaging
+    fwhm_theta_sum = np.zeros(
+        (len(energy_bin_geometric_means), for_indices_by_spin_phase.shape[0])
+    )
+    fwhm_phi_sum = np.zeros_like(fwhm_theta_sum)
+    sample_count = np.zeros_like(fwhm_theta_sum)
+
     steps = for_indices_by_spin_phase.shape[1]
     energies = energy_bin_geometric_means[np.newaxis, :]
     # The "for_indices_by_spin_phase" lookup table contains the boolean values of each
@@ -132,7 +154,7 @@ def calculate_pixels_within_scattering_threshold(
             theta, phi, lookup_tables=scattering_luts
         )
         # Get a mask for pixels below the FWHM scattering threshold
-        scattering_mask = mask_below_fwhm_scattering_threshold(
+        scattering_mask, fwhm_theta, fwhm_phi = mask_below_fwhm_scattering_threshold(
             theta_coeffs,
             phi_coeffs,
             energies,
@@ -147,8 +169,19 @@ def calculate_pixels_within_scattering_threshold(
             pixels_below_scattering_for_energy.append(for_pixel_indices[valid_pixels])
 
         pixels_below_scattering.append(pixels_below_scattering_for_energy)
+        # Accumulate FWHM values for averaging
+        fwhm_theta_sum[:, for_inds] += fwhm_theta.T
+        fwhm_phi_sum[:, for_inds] += fwhm_phi.T
+        sample_count[:, for_inds] += 1
 
-    return pixels_below_scattering
+    fwhm_phi_avg = np.divide(fwhm_theta_sum, sample_count, where=sample_count != 0)
+    fwhm_theta_avg = np.divide(fwhm_theta_sum, sample_count, where=sample_count != 0)
+    return (
+        pixels_below_scattering,
+        fwhm_theta_avg,
+        fwhm_phi_avg,
+        scattering_thresholds_for_energy_mean,
+    )
 
 
 def get_spacecraft_pointing_lookup_tables(

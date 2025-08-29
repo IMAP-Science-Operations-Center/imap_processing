@@ -9,7 +9,7 @@ import xarray as xr
 from imap_processing.cdf.utils import parse_filename_like
 from imap_processing.ultra.l1b.ultra_l1b_culling import get_de_rejection_mask
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
-    calculate_pixels_within_scattering_threshold,
+    calculate_fwhm_spun_scattering,
     get_spacecraft_pointing_lookup_tables,
 )
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
@@ -107,10 +107,17 @@ def calculate_spacecraft_pset(
             "The lookup table is expected to have the same number of rows as "
             "the number of HEALPix pixels."
         )
-
-    pixels_below_scattering = calculate_pixels_within_scattering_threshold(
-        for_indices_by_spin_phase, theta_vals, phi_vals, ancillary_files, instrument_id
+    logger.info("calculating spun FWHM scattering values.")
+    pixels_below_scattering, scattering_theta, scattering_phi, scattering_thresholds = (
+        calculate_fwhm_spun_scattering(
+            for_indices_by_spin_phase,
+            theta_vals,
+            phi_vals,
+            ancillary_files,
+            instrument_id,
+        )
     )
+    logger.info("Calculating spun efficiencies and geometric function.")
     # calculate efficiency and geometric function as a function of energy
     efficiencies, geometric_function = get_efficiencies_and_geometric_function(
         pixels_below_scattering,
@@ -125,7 +132,7 @@ def calculate_spacecraft_pset(
     # Calculate exposure
     constant_exposure = ancillary_files["l1c-90sensor-dps-exposure"]
     df_exposure = pd.read_csv(constant_exposure)
-
+    logger.info("Calculating spacecraft exposure times with deadtime correction.")
     exposure_pointing, deadtime_ratios = get_spacecraft_exposure_times(
         df_exposure,
         rates_dataset,
@@ -133,7 +140,7 @@ def calculate_spacecraft_pset(
         pixels_below_scattering,
         boundary_scale_factors,
     )
-
+    logger.info("Calculating background rates.")
     # Calculate background rates
     background_rates = get_spacecraft_background_rates(
         rates_dataset,
@@ -161,6 +168,10 @@ def calculate_spacecraft_pset(
     pset_dict["geometric_function"] = geometric_function
     pset_dict["dead_time_ratio"] = deadtime_ratios
     pset_dict["spin_phase_step"] = np.arange(len(deadtime_ratios))
+
+    pset_dict["scatter_theta"] = scattering_theta
+    pset_dict["scatter_phi"] = scattering_phi
+    pset_dict["scatter_threshold"] = scattering_thresholds
 
     dataset = create_dataset(pset_dict, name, "l1c")
 

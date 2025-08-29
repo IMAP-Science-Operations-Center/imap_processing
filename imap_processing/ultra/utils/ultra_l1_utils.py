@@ -110,7 +110,7 @@ def create_dataset(  # noqa: PLR0912
                 dims=["epoch", "component"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
-        elif key == "ena_rates_threshold":
+        elif key in ["ena_rates_threshold", "scatter_threshold"]:
             dataset[key] = xr.DataArray(
                 data,
                 dims=["energy_bin_geometric_mean"],
@@ -155,6 +155,8 @@ def create_dataset(  # noqa: PLR0912
             "sensitivity",
             "efficiency",
             "geometric_function",
+            "scatter_theta",
+            "scatter_phi",
         }:
             dataset[key] = xr.DataArray(
                 data,

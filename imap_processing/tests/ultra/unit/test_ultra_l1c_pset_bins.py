@@ -11,7 +11,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c import ultra_l1c_pset_bins
 from imap_processing.ultra.l1c.spacecraft_pset import (
-    calculate_pixels_within_scattering_threshold,
+    calculate_fwhm_spun_scattering,
 )
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
     apply_deadtime_correction,
@@ -246,8 +246,10 @@ def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
     deadtime_ratios = np.ones(steps)
     exposure_pointing = pd.Series(np.ones(pix))
 
-    pixels_below_threshold = calculate_pixels_within_scattering_threshold(
-        spin_phase_steps, mock_theta, mock_phi, ancillary_files, 45
+    pixels_below_threshold, fwhm_theta, fwhm_phi, thresholds = (
+        calculate_fwhm_spun_scattering(
+            spin_phase_steps, mock_theta, mock_phi, ancillary_files, 45
+        )
     )
     boundary_sf = np.ones((pix, steps))
     exposure_pointing_adjusted = apply_deadtime_correction(
@@ -286,8 +288,10 @@ def test_get_spacecraft_exposure_times(
         bool
     )  # Spin phase steps, random 0 or 1
 
-    pixels_below_threshold = calculate_pixels_within_scattering_threshold(
-        spin_phase_steps, mock_theta, mock_phi, ancillary_files, 45
+    pixels_below_threshold, fwhm_theta, fwhm_phi, thresholds = (
+        calculate_fwhm_spun_scattering(
+            spin_phase_steps, mock_theta, mock_phi, ancillary_files, 45
+        )
     )
     boundary_sf = np.ones((pix, steps))
     exposure_pointing, deadtimes = get_spacecraft_exposure_times(
