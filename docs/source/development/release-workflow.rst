@@ -79,6 +79,6 @@ Deployment
 ^^^^^^^^^^
 
 Once a release is created in GitHub, a GitHub action workflow is used to automatically deploy the changes. In the case
-of ``sds_data_manager``, a ``Deploy`` workflow is used to to deploy the software to AWS. For ``imap_processing`` and
+of ``sds_data_manager``, a ``Deploy`` workflow is used to deploy the software to AWS. For ``imap_processing`` and
 ``imap-data-access``, a ``Build and upload to PyPi`` workflow is used to build the package and upload it to PyPi. The
 person performing the release should check that these workflows succeeded successfully.
