@@ -2180,6 +2180,10 @@ ACQUISITION_TIMES = {
     ],
 }
 
+# TODO: Update EFFICIENCY value when better information is available.
+# Constant for CoDICE Intensity calculations.
+EFFICIENCY = 1
+
 # Lookup table for mapping half-spin (keys) to esa steps (values)
 # This is used to determine geometry factors L2
 HALF_SPIN_LUT = {
