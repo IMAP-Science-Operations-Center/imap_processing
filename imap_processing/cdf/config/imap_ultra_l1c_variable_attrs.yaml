@@ -96,6 +96,27 @@ helio_exposure_factor:
   # TODO: come back to format
   UNITS: seconds
 
+scatter_theta:
+  <<: *energy_dependent
+  CATDESC: Scattering theta values for a pointing.
+  FIELDNAM: scatter_theta
+  LABLAXIS: scatter theta
+  UNITS: degrees
+
+scatter_phi:
+  <<: *energy_dependent
+  CATDESC: Scattering phi values for a pointing.
+  FIELDNAM: scatter_phi
+  LABLAXIS: scatter phi
+  UNITS: degrees
+
+scatter_threshold:
+  <<: *energy_dependent
+  CATDESC: Scattering threshold values for each energy bin for a pointing.
+  FIELDNAM: scatter_threshold
+  LABLAXIS: scatter threshold
+  UNITS: degrees
+
 counts:
   <<: *default
   CATDESC: Counts for a spin.
