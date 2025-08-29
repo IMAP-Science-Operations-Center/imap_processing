@@ -125,7 +125,7 @@ class CoDICEL1aPipeline:
         # orientation and the azimuth determine which spin sector the data
         # gets stored in.
         # TODO: All these nested for-loops are bad. Try to find a better
-        #       solution.
+        #       solution. See GitHub issue #2136.
         for i, epoch_data in enumerate(self.data):
             for energy_index in range(num_energies):
                 pixel_orientation = constants.PIXEL_ORIENTATIONS[energy_index]
@@ -345,7 +345,7 @@ class CoDICEL1aPipeline:
             # energy dimension
             # TODO: This bit of code may no longer be needed once I can figure
             #       out how to run hi-sectored product through the
-            #       create_binned_dataset function
+            #       create_binned_dataset function. See GitHub issue #2137.
             if self.config["dataset_name"] == "imap_codice_l1a_hi-sectored":
                 dims = [
                     f"energy_{variable_name}" if item == "esa_step" else item
@@ -367,7 +367,7 @@ class CoDICEL1aPipeline:
         # longer need the "esa_step" coordinate
         # TODO: This bit of code may no longer be needed once I can figure
         #       out how to run hi-sectored product through the
-        #       create_binned_dataset function
+        #       create_binned_dataset function. See GitHub issue #2137.
         if self.config["dataset_name"] == "imap_codice_l1a_hi-sectored":
             for species in self.config["energy_table"]:
                 dataset = self.define_energy_bins(dataset, species)
@@ -822,9 +822,6 @@ def group_ialirt_data(
 
     # Workaround to get this function working for both I-ALiRT spacecraft
     # data and CoDICE-specific I-ALiRT test data from Joey
-    # TODO: Once CoDICE I-ALiRT processing is more established, we can probably
-    #       do away with processing the test data from Joey and just use the
-    #       I-ALiRT data that is constructed closer to what we expect in-flight.
     if hasattr(packets, "acquisition_time"):
         time_key = "acquisition_time"
         counter_key = "counter"
@@ -880,7 +877,7 @@ def create_binned_dataset(
         Xarray dataset containing the final processed dataset.
     """
     # TODO: hi-sectored data product should be processed similar to hi-omni,
-    #       so I should be able to use this method.
+    #       so I should be able to use this method. See GitHub issue #2137.
 
     # Get the four "main" parameters for processing
     table_id, plan_id, plan_step, view_id = get_params(dataset)
@@ -901,7 +898,7 @@ def create_binned_dataset(
         attrs=pipeline.cdf_attrs.get_variable_attributes("epoch", check_schema=False),
     )
     # TODO: Figure out how to calculate epoch centers and deltas and store them
-    #       in variables here
+    #       in variables here. See GitHub issue #1501.
     dataset = xr.Dataset(
         coords={"epoch": coord},
         attrs=pipeline.cdf_attrs.get_global_attributes(pipeline.config["dataset_name"]),

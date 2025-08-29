@@ -172,8 +172,6 @@ CODICE_HI_IAL_DATA_FIELDS = ["h"]
 
 # lo- and hi-counters-aggregated data product variables are dynamically
 # determined based on the number of active counters
-# TODO: Try to convince Joey to move to lower case variable names with
-#       underscores?
 LO_COUNTERS_AGGREGATED_ACTIVE_VARIABLES = {
     "tcr": True,
     "dcr": True,
@@ -438,7 +436,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
         "instrument": "hi",
         "num_counters": len(
             HI_COUNTERS_AGGREGATED_VARIABLE_NAMES
-        ),  # The number of counters depends on the number of active counters
+        ),  # The number of counters depends on the number of *active* counters
         "support_variables": ["data_quality", "spin_period"],
         "variable_names": HI_COUNTERS_AGGREGATED_VARIABLE_NAMES,
     },
@@ -527,7 +525,7 @@ DATA_PRODUCT_CONFIGURATIONS: dict[CODICEAPID | int, dict] = {
         "instrument": "lo",
         "num_counters": len(
             LO_COUNTERS_AGGREGATED_VARIABLE_NAMES
-        ),  # The number of counters depends on the number of active counters
+        ),  # The number of counters depends on the number of *active* counters
         "support_variables": [
             "energy_table",
             "acquisition_time_per_step",
@@ -689,9 +687,9 @@ L1B_DATA_PRODUCT_CONFIGURATIONS: dict[str, dict] = {
         "num_spin_sectors": 24,
         "num_spins": 4,
     },
-    "hi-priority": {  # TODO: Ask Joey to define these
-        "num_spin_sectors": 1,
-        "num_spins": 1,
+    "hi-priority": {
+        "num_spin_sectors": 24,
+        "num_spins": 16,
     },
     "hi-sectored": {
         "num_spin_sectors": 2,
@@ -849,7 +847,7 @@ DE_DATA_PRODUCT_CONFIGURATIONS: dict[Any, dict[str, Any]] = {
 }
 
 # Define the packet fields needed to be stored in segmented data and their
-# corresponding bit lengths for direct event data products
+# corresponding bit lengths for I-ALiRT data products
 IAL_BIT_STRUCTURE = {
     "SHCOARSE": 32,
     "PACKET_VERSION": 16,
@@ -1657,6 +1655,8 @@ PIXEL_ORIENTATIONS = {
 # processing. These are taken from the "Acq Time" column in the "Lo Stepping"
 # tab of the "*-SCI-LUT-*.xml" spreadsheet that largely defines CoDICE
 # processing.
+# TODO: Do away with this lookup table and instead calculate the acquisition
+#       times. See GitHub issue #1945.
 ACQUISITION_TIMES = {
     0: [
         578.70833333,
