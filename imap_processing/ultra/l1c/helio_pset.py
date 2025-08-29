@@ -2,8 +2,8 @@
 
 import logging
 
+import astropy_healpix.healpy as hp
 import numpy as np
-import pandas as pd
 import xarray as xr
 
 from imap_processing.quality_flags import ImapPSETUltraFlags
@@ -73,9 +73,6 @@ def calculate_helio_pset(
     # Select only the species we are interested in.
     indices = np.where(de_dataset["species"].values == species_id)[0]
     species_dataset = de_dataset.isel(epoch=indices)
-    helio_pset_quality_flags = np.full(
-        de_dataset["epoch"].shape, ImapPSETUltraFlags.NONE.value, dtype=np.uint16
-    )
 
     rejected = get_de_rejection_mask(
         species_dataset["quality_scattering"].values,
@@ -91,15 +88,6 @@ def calculate_helio_pset(
         / v_mag_helio_spacecraft[:, np.newaxis]
     )
     intervals, _, energy_bin_geometric_means = build_energy_bins()
-    counts, latitude, longitude, n_pix = get_spacecraft_histogram(
-        vhat_dps_helio,
-        species_dataset["energy_heliosphere"].values,
-        intervals,
-        nside=128,
-    )
-
-    healpix = np.arange(n_pix)
-
     # Get lookup table for FOR indices by spin phase step
     (
         for_indices_by_spin_phase,
@@ -108,32 +96,35 @@ def calculate_helio_pset(
         ra_and_dec,
         boundary_scale_factors,
     ) = get_spacecraft_pointing_lookup_tables(ancillary_files, instrument_id)
-    # Check that the number of rows in the lookup table matches the number of pixels
-    if for_indices_by_spin_phase.shape[0] != n_pix:
-        logger.warning(
-            "The spacecraft pointing lookup table is expected to have the same number "
-            "of rows as the number of HEALPix pixels."
-        )
+
     logger.info("calculating spun FWHM scattering values.")
-    pixels_below_scattering, scattering_theta, scattering_phi, scattering_thresholds = (
-        calculate_fwhm_spun_scattering(
+    pixels_below_scattering, scattering_theta, scattering_phi, scattering_thresholds = calculate_fwhm_spun_scattering(
             for_indices_by_spin_phase,
             theta_vals,
             phi_vals,
             ancillary_files,
             instrument_id,
         )
+
+    nside = hp.npix2nside(for_indices_by_spin_phase.shape[0])
+    counts, latitude, longitude, n_pix = get_spacecraft_histogram(
+        vhat_dps_helio,
+        species_dataset["energy_heliosphere"].values,
+        intervals,
+        nside=nside,
     )
+    helio_pset_quality_flags = np.full(
+        n_pix, ImapPSETUltraFlags.NONE.value, dtype=np.uint16
+    )
+    healpix = np.arange(n_pix)
+
     logger.info("Calculating spacecraft exposure times with deadtime correction.")
-    # Calculate exposure
-    constant_exposure = ancillary_files["l1c-90sensor-dps-exposure"]
-    df_exposure = pd.read_csv(constant_exposure)
     exposure_time, deadtime_ratios = get_spacecraft_exposure_times(
-        df_exposure,
         rates_dataset,
         params_dataset,
         pixels_below_scattering,
         boundary_scale_factors,
+        n_pix=n_pix,
     )
     logger.info("Calculating spun efficiencies and geometric function.")
     # calculate efficiency and geometric function as a function of energy
@@ -159,12 +150,9 @@ def calculate_helio_pset(
         efficiencies,
         ra_and_dec[:, 0],
         ra_and_dec[:, 1],
+        nside=nside,
     )
     sensitivity = efficiencies * geometric_function
-
-    helio_pset_quality_flags = np.full(
-        n_pix, ImapPSETUltraFlags.NONE.value, dtype=np.uint16
-    )
 
     start: float = np.min(de_dataset["event_times"].values)
     end: float = np.max(de_dataset["event_times"].values)
@@ -177,6 +165,7 @@ def calculate_helio_pset(
         time_bins,
         6378.1,  # Earth radius
         helio_pset_quality_flags,
+        nside=nside,
     )
 
     # For ISTP, epoch should be the center of the time bin.

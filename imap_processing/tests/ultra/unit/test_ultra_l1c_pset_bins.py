@@ -14,8 +14,8 @@ from imap_processing.ultra.l1c.spacecraft_pset import (
     calculate_fwhm_spun_scattering,
 )
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
-    apply_deadtime_correction,
     build_energy_bins,
+    calculate_exposure_time,
     get_deadtime_ratios,
     get_deadtime_ratios_by_spin_phase,
     get_energy_delta_minus_plus,
@@ -244,7 +244,6 @@ def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
     inside_inds = 100
     spin_phase_steps[:inside_inds, :] = True
     deadtime_ratios = np.ones(steps)
-    exposure_pointing = pd.Series(np.ones(pix))
 
     pixels_below_threshold, fwhm_theta, fwhm_phi, thresholds = (
         calculate_fwhm_spun_scattering(
@@ -252,8 +251,8 @@ def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
         )
     )
     boundary_sf = np.ones((pix, steps))
-    exposure_pointing_adjusted = apply_deadtime_correction(
-        exposure_pointing, deadtime_ratios, pixels_below_threshold, boundary_sf
+    exposure_pointing_adjusted = calculate_exposure_time(
+        deadtime_ratios, pixels_below_threshold, boundary_sf, pix
     )
     # The adjusted exposure should now be a function of pixels and energy (24)
     np.testing.assert_array_equal(exposure_pointing_adjusted.shape, (24, pix))
@@ -262,9 +261,9 @@ def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
     # Should have pixels that are below the FWHM scattering threshold and therefore,
     # have the exposure adjusted.
     last_energy_bin_vals = np.where(build_energy_bins()[2] >= 30)[0]
-    assert np.all(exposure_pointing_adjusted[last_energy_bin_vals, :inside_inds] > 1.0)
+    assert np.all(exposure_pointing_adjusted[last_energy_bin_vals, :inside_inds] > 0)
     # Assert that pixels outside the FOR remain at 1.0
-    assert np.all(exposure_pointing_adjusted[:, inside_inds:] == 1.0)
+    assert np.all(exposure_pointing_adjusted[:, inside_inds:] == 0)
 
 
 @pytest.mark.external_test_data
@@ -272,16 +271,11 @@ def test_get_spacecraft_exposure_times(
     deadtime_datasets, random_spin_data, imap_ena_sim_metakernel, ancillary_files
 ):
     """Test get_spacecraft_exposure_times function."""
-    constant_exposure = (
-        TEST_PATH / "imap_ultra_l1c-90sensor-dps-exposure_20250101_v000.csv"
-    )
     steps = 500  # reduced for testing
     rates = deadtime_datasets["rates"]
     params = deadtime_datasets["params"]
-    shape = 786
-    df_exposure = pd.read_csv(constant_exposure)[:shape]  # Subset for testing
 
-    pix = len(df_exposure)
+    pix = 786
     mock_theta = np.random.uniform(-60, 60, (pix, steps))
     mock_phi = np.random.uniform(-60, 60, (pix, steps))
     spin_phase_steps = np.random.randint(0, 2, (pix, steps)).astype(
@@ -295,9 +289,9 @@ def test_get_spacecraft_exposure_times(
     )
     boundary_sf = np.ones((pix, steps))
     exposure_pointing, deadtimes = get_spacecraft_exposure_times(
-        df_exposure, rates, params, pixels_below_threshold, boundary_sf
+        rates, params, pixels_below_threshold, boundary_sf, pix
     )
-    np.testing.assert_array_equal(exposure_pointing.shape, (24, shape))
+    np.testing.assert_array_equal(exposure_pointing.shape, (24, pix))
     np.testing.assert_array_equal(deadtimes.shape, (15000,))
 
 

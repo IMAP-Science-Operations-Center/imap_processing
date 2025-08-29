@@ -2,7 +2,6 @@
 
 import astropy_healpix.healpy as hp
 import numpy as np
-import pandas
 import xarray as xr
 from numpy.typing import NDArray
 from scipy import interpolate
@@ -340,19 +339,17 @@ def get_deadtime_ratios_by_spin_phase(
     return interpolator(nominal_spin_phases_1ms_res)
 
 
-def apply_deadtime_correction(
-    exposure_pointing: pandas.DataFrame,
+def calculate_exposure_time(
     deadtime_ratios: np.ndarray,
     pixels_below_scattering: list,
     boundary_scale_factors: NDArray,
+    n_pix: int,
 ) -> np.ndarray:
     """
     Adjust the exposure time at each pixel to account for dead time.
 
     Parameters
     ----------
-    exposure_pointing : pandas.DataFrame
-        Exposure data.
     deadtime_ratios : PchipInterpolator
         Interpolating function for dead time ratios.
     pixels_below_scattering : list
@@ -362,6 +359,8 @@ def apply_deadtime_correction(
         the FWHM scattering threshold.
     boundary_scale_factors : np.ndarray
         Boundary scale factors for each pixel at each spin phase.
+    n_pix : int
+        Number of HEALPix pixels.
 
     Returns
     -------
@@ -370,12 +369,8 @@ def apply_deadtime_correction(
     """
     # Get energy bin geometric means
     energy_bin_geometric_means = build_energy_bins()[2]
-    # Exposure time should now be of shape (npix, energy)
-    exposure_pointing = np.repeat(
-        exposure_pointing.to_numpy()[np.newaxis, :],
-        len(energy_bin_geometric_means),
-        axis=0,
-    )
+    # Exposure time should now be of shape (energy, npix)
+    exposure_pointing = np.zeros((len(energy_bin_geometric_means), n_pix))
     # nominal spin phase step.
     nominal_ms_step = 15 / len(pixels_below_scattering)  # time step
     # Query the dead-time ratio and apply the nominal exposure time to pixels in the FOR
@@ -400,19 +395,17 @@ def apply_deadtime_correction(
 
 
 def get_spacecraft_exposure_times(
-    constant_exposure: pandas.DataFrame,
     rates_dataset: xr.Dataset,
     params_dataset: xr.Dataset,
     pixels_below_scattering: list[list],
     boundary_scale_factors: NDArray,
+    n_pix: int,
 ) -> tuple[NDArray, NDArray]:
     """
     Compute exposure times for HEALPix pixels.
 
     Parameters
     ----------
-    constant_exposure : pandas.DataFrame
-        Exposure data.
     rates_dataset : xarray.Dataset
         Dataset containing image rates data.
     params_dataset : xarray.Dataset
@@ -424,6 +417,8 @@ def get_spacecraft_exposure_times(
         below the FWHM scattering threshold.
     boundary_scale_factors : np.ndarray
         Boundary scale factors for each pixel at each spin phase.
+    n_pix : int
+        Number of HEALPix pixels.
 
     Returns
     -------
@@ -438,14 +433,8 @@ def get_spacecraft_exposure_times(
     #  universal pointing table here to determine actual number of spins
     sectored_rates = get_sectored_rates(rates_dataset, params_dataset)
     nominal_deadtime_ratios = get_deadtime_ratios_by_spin_phase(sectored_rates)
-    exposure_pointing = (
-        constant_exposure["Exposure Time"] * 5760
-    )  # 5760 spins per pointing (for now)
-    exposure_pointing_adjusted = apply_deadtime_correction(
-        exposure_pointing,
-        nominal_deadtime_ratios,
-        pixels_below_scattering,
-        boundary_scale_factors,
+    exposure_pointing_adjusted = calculate_exposure_time(
+        nominal_deadtime_ratios, pixels_below_scattering, boundary_scale_factors, n_pix
     )
     return exposure_pointing_adjusted, nominal_deadtime_ratios
 

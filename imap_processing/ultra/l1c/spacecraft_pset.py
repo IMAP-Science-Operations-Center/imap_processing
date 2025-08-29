@@ -2,8 +2,8 @@
 
 import logging
 
+import astropy_healpix.healpy as hp
 import numpy as np
-import pandas as pd
 import xarray as xr
 
 from imap_processing.cdf.utils import parse_filename_like
@@ -85,13 +85,6 @@ def calculate_spacecraft_pset(
     )
 
     intervals, _, energy_bin_geometric_means = build_energy_bins()
-    counts, latitude, longitude, n_pix = get_spacecraft_histogram(
-        vhat_dps_spacecraft,
-        species_dataset["energy_spacecraft"].values,
-        intervals,
-        nside=128,
-    )
-    healpix = np.arange(n_pix)
 
     # Get lookup table for FOR indices by spin phase step
     (
@@ -101,22 +94,25 @@ def calculate_spacecraft_pset(
         ra_and_dec,
         boundary_scale_factors,
     ) = get_spacecraft_pointing_lookup_tables(ancillary_files, instrument_id)
-    # Check that the number of rows in the lookup table matches the number of pixels
-    if for_indices_by_spin_phase.shape[0] != n_pix:
-        logger.warning(
-            "The lookup table is expected to have the same number of rows as "
-            "the number of HEALPix pixels."
-        )
+
     logger.info("calculating spun FWHM scattering values.")
-    pixels_below_scattering, scattering_theta, scattering_phi, scattering_thresholds = (
-        calculate_fwhm_spun_scattering(
+    pixels_below_scattering, scattering_theta, scattering_phi, scattering_thresholds = calculate_fwhm_spun_scattering(
             for_indices_by_spin_phase,
             theta_vals,
             phi_vals,
             ancillary_files,
             instrument_id,
         )
+    # Determine nside from the lookup table
+    nside = hp.npix2nside(len(for_indices_by_spin_phase))
+    counts, latitude, longitude, n_pix = get_spacecraft_histogram(
+        vhat_dps_spacecraft,
+        species_dataset["energy_spacecraft"].values,
+        intervals,
+        nside=nside,
     )
+    healpix = np.arange(n_pix)
+
     logger.info("Calculating spun efficiencies and geometric function.")
     # calculate efficiency and geometric function as a function of energy
     efficiencies, geometric_function = get_efficiencies_and_geometric_function(
@@ -129,16 +125,14 @@ def calculate_spacecraft_pset(
     )
     sensitivity = efficiencies * geometric_function
 
-    # Calculate exposure
-    constant_exposure = ancillary_files["l1c-90sensor-dps-exposure"]
-    df_exposure = pd.read_csv(constant_exposure)
+    # Calculate exposure times
     logger.info("Calculating spacecraft exposure times with deadtime correction.")
     exposure_pointing, deadtime_ratios = get_spacecraft_exposure_times(
-        df_exposure,
         rates_dataset,
         params_dataset,
         pixels_below_scattering,
         boundary_scale_factors,
+        n_pix=n_pix,
     )
     logger.info("Calculating background rates.")
     # Calculate background rates
@@ -148,6 +142,7 @@ def calculate_spacecraft_pset(
         ancillary_files,
         intervals,
         goodtimes_dataset["spin_number"].values,
+        nside=nside,
     )
     spacecraft_pset_quality_flags = np.full(
         n_pix, ImapPSETUltraFlags.NONE.value, dtype=np.uint16
@@ -164,6 +159,7 @@ def calculate_spacecraft_pset(
         time_bins,
         6378.1,  # Earth radius
         spacecraft_pset_quality_flags,
+        nside=nside,
     )
 
     # For ISTP, epoch should be the center of the time bin.
