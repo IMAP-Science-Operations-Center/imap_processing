@@ -249,6 +249,7 @@ def generate_ultra_healpix_skymap(
             f">> {output_map_structure.values_to_pull_project}",
         )
         flags_1d = pointing_set.data["quality_flags"].isel(epoch=0)
+        # This is a good pixel mask where zero is when the earth is not in the FOV.
         pixel_mask = (flags_1d & ImapPSETUltraFlags.EARTH_FOV.value) == 0
 
         # Only count the number of pointing set pixels which are not flagged.
