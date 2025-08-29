@@ -33,7 +33,8 @@ def ultra_l1c(
         if (
             f"imap_ultra_l1b_{instrument_id}sensor-goodtimes" in data_dict
             and f"imap_ultra_l1b_{instrument_id}sensor-de" in data_dict
-            and f"imap_ultra_l1b_{instrument_id}sensor-extendedspin" in data_dict
+            and f"imap_ultra_l1a_{instrument_id}sensor-rates" in data_dict
+            and f"imap_ultra_l1a_{instrument_id}sensor-params" in data_dict
             and has_spice
         ):
             helio_pset = calculate_helio_pset(
@@ -49,7 +50,8 @@ def ultra_l1c(
         elif (
             f"imap_ultra_l1b_{instrument_id}sensor-goodtimes" in data_dict
             and f"imap_ultra_l1b_{instrument_id}sensor-de" in data_dict
-            and f"imap_ultra_l1b_{instrument_id}sensor-extendedspin" in data_dict
+            and f"imap_ultra_l1a_{instrument_id}sensor-rates" in data_dict
+            and f"imap_ultra_l1a_{instrument_id}sensor-params" in data_dict
         ):
             spacecraft_pset = calculate_spacecraft_pset(
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-de"],
