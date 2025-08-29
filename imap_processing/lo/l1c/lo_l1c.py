@@ -1,5 +1,6 @@
 """IMAP-Lo L1C Data Processing."""
 
+import logging
 from dataclasses import Field
 from enum import Enum
 
@@ -67,13 +68,40 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         logical_source = "imap_lo_l1c_pset"
         l1b_de = sci_dependencies["imap_lo_l1b_de"]
         l1b_goodtimes_only = filter_goodtimes(l1b_de, anc_dependencies)
-        pset = initialize_pset(l1b_goodtimes_only, attr_mgr, logical_source)
-        full_counts = create_pset_counts(l1b_goodtimes_only)
 
         # Set the pointing start and end times based on the first epoch
         pointing_start_met, pointing_end_met = get_pointing_times(
             ttj2000ns_to_met(l1b_goodtimes_only["epoch"][0].item())
         )
+
+        pset = xr.Dataset(
+            attrs=attr_mgr.get_global_attributes(logical_source),
+        )
+
+        # Set the epoch to the start of the pointing
+        pset["epoch"] = xr.DataArray(
+            met_to_ttj2000ns(pset["pointing_start_met"].values),
+            attrs=attr_mgr.get_variable_attributes("epoch"),
+        )
+
+        # ESA mode needs to be added to L1B DE. Adding try statement
+        # to avoid error until it's available in the dataset
+        try:
+            pset["esa_mode"] = xr.DataArray(
+                l1b_de["esa_mode"].values[0],
+                dims=["epoch"],
+                attrs=attr_mgr.get_variable_attributes("esa_mode"),
+            )
+        except KeyError:
+            logging.debug(
+                "ESA mode not found in L1B DE dataset. \
+                Setting to default value of 0 for Hi-Res."
+            )
+            pset["esa_mode"] = xr.DataArray(
+                0,
+                dims=["epoch"],
+                attrs=attr_mgr.get_variable_attributes("esa_mode"),
+            )
 
         pset["pointing_start_met"] = xr.DataArray(
             np.array([pointing_start_met]),
@@ -84,12 +112,6 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
             np.array([pointing_end_met]),
             dims="epoch",
             attrs=attr_mgr.get_variable_attributes("pointing_end_met"),
-        )
-
-        # Set the epoch to the start of the pointing
-        pset["epoch"] = xr.DataArray(
-            met_to_ttj2000ns(pset["pointing_start_met"].values),
-            attrs=attr_mgr.get_variable_attributes("epoch"),
         )
 
         # Get the start and end spin numbers based on the pointing start and end MET
@@ -103,6 +125,8 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
             dims="epoch",
             attrs=attr_mgr.get_variable_attributes("end_spin_number"),
         )
+
+        full_counts = create_pset_counts(l1b_de, FilterType.NONE)
 
         # Set the counts
         pset["triples_counts"] = create_pset_counts(
@@ -120,12 +144,29 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         )
 
         # Set backgrounds
-        pset["h_background_rates"] = set_background_rates()
-        pset["o_background_rates"] = set_background_rates()
-        pset["h_background_sys_err"] = set_background_sys_err()
-        pset["o_background_sys_err"] = set_background_sys_err()
-        pset["h_background_stat_err"] = set_background_stat_uncert()
-        pset["o_background_stat_err"] = set_background_stat_uncert()
+        (
+            pset["h_background_rates"],
+            pset["h_background_stat_uncert"],
+            pset["h_background_sys_err"],
+        ) = set_background_rates(
+            pset["pointing_start_met"].item(),
+            pset["pointing_end_met"].item(),
+            anc_dependencies,
+            FilterType.HYDROGEN,
+            attr_mgr,
+        )
+
+        (
+            pset["o_background_rates"],
+            pset["o_background_stat_uncert"],
+            pset["o_background_sys_err"],
+        ) = set_background_rates(
+            pset["pointing_start_met"].item(),
+            pset["pointing_end_met"].item(),
+            anc_dependencies,
+            FilterType.OXYGEN,
+            attr_mgr,
+        )
 
     pset.attrs = attr_mgr.get_global_attributes(logical_source)
 
@@ -138,44 +179,6 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
     )
 
     return [pset]
-
-
-def initialize_pset(
-    l1b_de: xr.Dataset, attr_mgr: ImapCdfAttributes, logical_source: str
-) -> xr.Dataset:
-    """
-    Initialize the PSET dataset and set the Epoch.
-
-    The Epoch time is set to the first of the L1B
-    Direct Event times. There is one Epoch per PSET file.
-
-    Parameters
-    ----------
-    l1b_de : xarray.Dataset
-        L1B Direct Event dataset.
-    attr_mgr : ImapCdfAttributes
-        Attribute manager used to get the L1C attributes.
-    logical_source : str
-        The logical source of the pset.
-
-    Returns
-    -------
-    pset : xarray.Dataset
-        Initialized PSET dataset.
-    """
-    pset = xr.Dataset(
-        attrs=attr_mgr.get_global_attributes(logical_source),
-    )
-    # TODO: Need to create utility to get start of repointing to use
-    #  for the pset epoch time. Setting to first DE for now
-    pset_epoch = l1b_de["epoch"][0].item()
-    pset["epoch"] = xr.DataArray(
-        np.array([pset_epoch]),
-        dims=["epoch"],
-        attrs=attr_mgr.get_variable_attributes("epoch"),
-    )
-
-    return pset
 
 
 def filter_goodtimes(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
@@ -494,7 +497,14 @@ def create_datasets(
 
     return dataset
 
-def set_background_rates(epoch: xr.DataArray, anc_dependencies: list, species: FilterType) -> xr.DataArray:
+
+def set_background_rates(
+    pointing_start_met: float,
+    pointing_end_met: float,
+    anc_dependencies: list,
+    species: FilterType,
+    attr_mgr: ImapCdfAttributes,
+) -> xr.DataArray:
     """
     Set the background rates for the specified species.
 
@@ -502,8 +512,16 @@ def set_background_rates(epoch: xr.DataArray, anc_dependencies: list, species: F
 
     Parameters
     ----------
+    pointing_start_met : float
+        The start MET time of the pointing.
+    pointing_end_met : float
+        The end MET time of the pointing.
+    anc_dependencies : list
+        Ancillary files needed for L1C data product creation.
     species : FilterType
         The species to set the background rates for. Can be "h" or "o".
+    attr_mgr : ImapCdfAttributes
+        Attribute manager used to get the L1C attributes.
 
     Returns
     -------
@@ -513,26 +531,45 @@ def set_background_rates(epoch: xr.DataArray, anc_dependencies: list, species: F
     if species not in {FilterType.HYDROGEN, FilterType.OXYGEN}:
         raise ValueError("Species must be 'h' or 'o'.")
 
+    bg_rates = np.zeros((7, 3600, 40), dtype=np.float16)
+    bg_stat_uncert = np.zeros((7, 3600, 40), dtype=np.float16)
+    bg_sys_err = np.zeros((7, 3600, 40), dtype=np.float16)
+
     # read in the background rates from ancillary file
-    background_df = pd.read_csv(anc_dependencies[1])
-    met_time =
-    #TODO: inclusive or exclusive for each end?
-    goodtimes_bg = background_df[epoch >= background_df["GoodTime_strt"] and epoch <= background_df["GoodTime_end"]]
-    goodtimes_bg_rate = goodtimes_bg[goodtimes_bg["rate/sigma"] == "rate"]
-    goodtimes_bg_uncert = goodtimes_bg[goodtimes_bg["rate/sigma"] == "sigma"]
+    background_df = lo_ancillary.read_ancillary_file(anc_dependencies[1])
+    # find to the rows for the current pointing
+    pointing_bg_df = background_df[
+        background_df["GoodTime_strt"] >= pointing_start_met
+        and background_df["GoodTime_end"] <= pointing_end_met
+    ]
 
+    for _, row in pointing_bg_df.iterrows():
+        bin_start = int(row["bin_strt"]) * 60
+        bin_end = int(row["bin_end"]) * 60
+        for esa_step in range(1, 8):
+            value = row[f"E-Step{esa_step + 1}"]
+            if row["type"] == "rate":
+                bg_rates[esa_step, bin_start:bin_end, :] = value
+            elif row["type"] == "sigma":
+                bg_stat_uncert[esa_step, bin_start:bin_end, :] = value
+            else:
+                raise ValueError("Unknown background type in ancillary file.")
 
-
-
-
-    background_rates = xr.DataArray(
-        data=np.full(PSET_SHAPE, 0.01, dtype=np.float16),
-        dims=PSET_DIMS,
-        attrs={
-            "LONG_NAME": f"{species.upper()} background rates",
-            "UNITS": "counts/s",
-            "DESCRIPTION": f"Background rates for {species.upper()} in counts per second.",
-        },
+    # set the background rates, uncertainties, and systematic errors
+    bg_rates_data = xr.DataArray(
+        data=bg_rates,
+        dims=["esa_energy_step", "spin_angle", "off_angle"],
+        attrs=attr_mgr.get_variable_attributes(f"{species}_background_rates"),
+    )
+    bg_stat_uncert_data = xr.DataArray(
+        data=bg_stat_uncert,
+        dims=["esa_energy_step", "spin_angle", "off_angle"],
+        attrs=attr_mgr.get_variable_attributes(f"{species}_background_stat_uncert"),
+    )
+    bg_sys_err_data = xr.DataArray(
+        data=bg_sys_err,
+        dims=["esa_energy_step", "spin_angle", "off_angle"],
+        attrs=attr_mgr.get_variable_attributes(f"{species}_background_sys_err"),
     )
 
-    return background_rates
+    return bg_rates_data, bg_stat_uncert_data, bg_sys_err_data

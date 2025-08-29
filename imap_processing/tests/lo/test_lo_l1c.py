@@ -10,7 +10,6 @@ from imap_processing.lo.l1c.lo_l1c import (
     calculate_exposure_times,
     create_pset_counts,
     filter_goodtimes,
-    initialize_pset,
     lo_l1c,
 )
 from imap_processing.spice.time import met_to_ttj2000ns
@@ -86,10 +85,18 @@ def l1b_de_spin():
 
 @pytest.fixture
 def anc_dependencies():
-    anc_dependencies_path = (
-        imap_module_directory / "tests/lo/test_anc/imap_lo_goodtimes_20250415_v001.csv"
-    )
-    return [str(anc_dependencies_path)]
+    anc_dependencies_path = [
+        str(
+            imap_module_directory
+            / "tests/lo/test_anc/imap_lo_goodtimes_20250415_v001.csv"
+        ),
+        str(
+            imap_module_directory
+            / "tests/lo/test_anc/\
+            imap_lo_hydrogen-background-small_20250101_20270101_v001.csv"
+        ),
+    ]
+    return anc_dependencies_path
 
 
 @pytest.fixture
@@ -156,19 +163,6 @@ def test_lo_l1c(
 
     # Assert
     assert expected_logical_source == output_dataset[0].attrs["Logical_source"]
-
-
-def test_initialize_pset(l1b_de, attr_mgr):
-    # Arrange
-    logical_source = "imap_lo_l1c_pset"
-    expected_epoch = 7.9794907049e17
-
-    # Act
-    pset = initialize_pset(l1b_de, attr_mgr, logical_source)
-
-    # Assert
-    assert pset.attrs["Logical_source"] == logical_source
-    np.testing.assert_array_equal(pset["epoch"], expected_epoch)
 
 
 def test_filter_goodtimes(l1b_de, anc_dependencies):
@@ -271,3 +265,13 @@ def test_calculate_exposure_times(l1b_de):
         expected_exposure_times,
         atol=1e-2,
     )
+
+
+def test_set_background_rates(l1b_de_spin, anc_dependencies):
+    # Arrange
+    # pointing_start_met = met_to_datetime64(473389100.0)
+    # Act
+    # set_background_rates(l1b_de_spin, anc_dependencies, FilterType.HYDROGEN)
+
+    # Assert
+    pass
