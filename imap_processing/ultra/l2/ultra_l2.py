@@ -276,28 +276,6 @@ def generate_ultra_healpix_skymap(
         pointing_set.data["pointing_set_exposure_times_solid_angle"] = (
             pointing_set.data["exposure_factor"] * pointing_set.solid_angle
         )
-        mask = ~pixel_mask  # shape (pixel,)
-        # Set pointing_set_exposure_times_solid_angle to nan for flagged pixels.
-        pointing_set.data["pointing_set_exposure_times_solid_angle"].values[:, mask] = (
-            np.nan
-        )
-        # Set exposure factor to nan for flagged pixels.
-        pointing_set.data["exposure_factor"].values[:, mask] = np.nan
-
-        # Set background rates to nan for flagged pixels.
-        background_rates = pointing_set.data["background_rates"].astype(float)
-        background_rates.values[..., mask] = np.nan
-        pointing_set.data["background_rates"] = background_rates
-
-        # Set counts to nan for flagged pixels.
-        counts = pointing_set.data["counts"].astype(float)
-        counts.values[..., mask] = np.nan
-        pointing_set.data["counts"] = counts
-
-        # Set sensitivity to nan for flagged pixels.
-        sensitivity = pointing_set.data["sensitivity"].astype(float)
-        sensitivity.values[..., mask] = np.nan
-        pointing_set.data["sensitivity"] = sensitivity
 
         # Initial processing for weighted quantities at PSET level
         # Weight the values by exposure and solid angle
@@ -316,6 +294,7 @@ def generate_ultra_healpix_skymap(
             pointing_set=pointing_set,
             value_keys=output_map_structure.values_to_push_project,
             index_match_method=ena_maps.IndexMatchMethod.PUSH,
+            valid_mask=pixel_mask.values,
         )
 
         # Project values such as exposure_factor via the PULL method
@@ -323,6 +302,7 @@ def generate_ultra_healpix_skymap(
             pointing_set=pointing_set,
             value_keys=output_map_structure.values_to_pull_project,
             index_match_method=ena_maps.IndexMatchMethod.PULL,
+            valid_mask=pixel_mask.values,
         )
 
     # Subsequent processing for weighted quantities at SkyMap level
