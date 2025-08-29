@@ -40,7 +40,7 @@ def decom_packets(packet_file: Path) -> dict[int, xr.Dataset]:
     #       because the simulated housekeeping data being used has various
     #       mis-matches from the telemetry definition. This may be updated
     #       once new simulated housekeeping data are acquired. See GitHub issue
-    #       2135.
+    #       #2135.
     if "hskp" in str(packet_file):
         xtce_filename = "P_COD_NHK.xml"
     else:
