@@ -256,13 +256,13 @@ def test_apply_deadtime_correction(imap_ena_sim_metakernel, ancillary_files):
     )
     # The adjusted exposure should now be a function of pixels and energy (24)
     np.testing.assert_array_equal(exposure_pointing_adjusted.shape, (24, pix))
-    # Check that the pixels inside the FOR have adjusted exposure > 1.0
+    # Check that the pixels inside the FOR have adjusted exposure > 0.
     # Subset the energy dimension to check values in the last energy bin. These
     # Should have pixels that are below the FWHM scattering threshold and therefore,
     # have the exposure adjusted.
     last_energy_bin_vals = np.where(build_energy_bins()[2] >= 30)[0]
     assert np.all(exposure_pointing_adjusted[last_energy_bin_vals, :inside_inds] > 0)
-    # Assert that pixels outside the FOR remain at 1.0
+    # Assert that pixels outside the FOR remain at 0.
     assert np.all(exposure_pointing_adjusted[:, inside_inds:] == 0)
 
 
