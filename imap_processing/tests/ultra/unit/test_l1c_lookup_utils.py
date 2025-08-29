@@ -59,7 +59,7 @@ def test_get_mask_below_fwhm_scattering_threshold(ancillary_files):
     # Only indices where both the theta and phi coefficients are below the FWHM
     # threshold should be True.
     expected_pixel_mask = np.array([[False], [True], [False]])
-    pixel_mask = mask_below_fwhm_scattering_threshold(
+    pixel_mask, scat_theta, scat_phi = mask_below_fwhm_scattering_threshold(
         theta_coeffs, phi_coeffs, energy[np.newaxis, :], thresholds
     )
     np.testing.assert_array_equal(pixel_mask.shape, (3, 1))
@@ -87,7 +87,7 @@ def test_get_mask_below_fwhm_scattering_threshold_zero(ancillary_files):
     )
     # Since energy is zero, all should be False although some pixels are below threshold
     expected_pixel_mask = np.array([[False], [False], [False]])
-    pixel_mask = mask_below_fwhm_scattering_threshold(
+    pixel_mask, scat_theta, scat_phi = mask_below_fwhm_scattering_threshold(
         theta_coeffs, phi_coeffs, energy, thresholds
     )
     np.testing.assert_array_equal(pixel_mask.shape, (3, 1))
