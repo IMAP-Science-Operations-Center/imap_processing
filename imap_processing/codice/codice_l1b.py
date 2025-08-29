@@ -89,9 +89,6 @@ def convert_to_rates(
             * constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spins"]
             * constants.HI_ACQUISITION_TIME
         )
-    elif descriptor == "hskp":
-        # Convert to physical units
-        raise NotImplementedError
 
     return rates_data
 
@@ -136,6 +133,7 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
     # Update the global attributes
     l1b_dataset.attrs = cdf_attrs.get_global_attributes(dataset_name)
 
+    # TODO: This was thrown together quickly and should be double-checked
     if descriptor == "hskp":
         xtce_filename = "codice_packet_definition.xml"
         xtce_packet_definition = Path(
@@ -153,7 +151,8 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
         )
         l1b_dataset = datasets[CODICEAPID.COD_NHK]
 
-        # TODO: Drop the same variables as we do in L1a
+        # TODO: Drop the same variables as we do in L1a? (see line 1103 in
+        #       codice_l1a.py
 
     else:
         variables_to_convert = getattr(
