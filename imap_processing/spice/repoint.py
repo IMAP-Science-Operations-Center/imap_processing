@@ -232,8 +232,6 @@ def get_repoint_mid_time(met_time: float) -> float:
     Get the mid-point time between the end of one repoint and
     start of the next. Input could be a MET time.
 
-    TODO: Fix this if mid-point definition is changed later.
-
     Parameters
     ----------
     met_time : float
@@ -245,7 +243,7 @@ def get_repoint_mid_time(met_time: float) -> float:
         The mid MET time of the repoint maneuver.
     """
     pointing_start_met, pointing_end_met = get_pointing_times(met_time)
-    return float(np.mean([pointing_start_met, pointing_end_met]))
+    return (pointing_start_met + pointing_end_met) / 2
 
 
 def get_mid_point_state(met_time: float) -> npt.NDArray:

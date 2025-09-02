@@ -111,10 +111,7 @@ def test_mid_point_state(mock_get_pointing_times, mock_imap_state, furnish_kerne
     ]
     with furnish_kernels(kernels):
         state = repoint.get_mid_point_state(met)
-        if hasattr(met, "__len__"):
-            np.testing.assert_array_equal(state.shape, (len(met), 6))
-        else:
-            assert state.shape == (6,)
+        assert state.shape == (6,)
 
 
 @pytest.mark.parametrize(
