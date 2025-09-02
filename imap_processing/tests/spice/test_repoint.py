@@ -107,12 +107,7 @@ def test_mid_point_state(mock_get_pointing_times, mock_imap_state, furnish_kerne
     )
     kernels = [
         "naif0012.tls",
-        "de440s.bsp",
         "imap_sclk_0000.tsc",
-        "imap_wkcp.tf",
-        "imap_science_100.tf",
-        "sim_1yr_imap_attitude.bc",
-        "sim_1yr_imap_pointing_frame.bc",
     ]
     with furnish_kernels(kernels):
         state = repoint.get_mid_point_state(met)

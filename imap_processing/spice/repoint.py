@@ -248,7 +248,7 @@ def get_repoint_mid_time(met_time: float) -> float:
     return float(np.mean([pointing_start_met, pointing_end_met]))
 
 
-def get_mid_point_state(met_time: float) -> float:
+def get_mid_point_state(met_time: float) -> npt.NDArray:
     """
     Get IMAP state for the mid-point.
 
@@ -262,7 +262,7 @@ def get_mid_point_state(met_time: float) -> float:
 
     Returns
     -------
-    mid_point_state : float
+    mid_point_state : numpy.ndarray
         The mid state of the pointing maneuver.
     """
     # Get mid point time in ET
@@ -271,4 +271,4 @@ def get_mid_point_state(met_time: float) -> float:
 
     # Convert mid point time to state
     pointing_state = imap_state(mid_point_time_et)
-    return float(pointing_state)
+    return pointing_state
