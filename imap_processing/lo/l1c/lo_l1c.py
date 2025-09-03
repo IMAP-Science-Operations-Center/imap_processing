@@ -151,8 +151,8 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         ) = set_background_rates(
             pset["pointing_start_met"].item(),
             pset["pointing_end_met"].item(),
-            anc_dependencies,
             FilterType.HYDROGEN,
+            anc_dependencies,
             attr_mgr,
         )
 
@@ -163,8 +163,8 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         ) = set_background_rates(
             pset["pointing_start_met"].item(),
             pset["pointing_end_met"].item(),
-            anc_dependencies,
             FilterType.OXYGEN,
+            anc_dependencies,
             attr_mgr,
         )
 
@@ -501,8 +501,8 @@ def create_datasets(
 def set_background_rates(
     pointing_start_met: float,
     pointing_end_met: float,
-    anc_dependencies: list,
     species: FilterType,
+    anc_dependencies: list,
     attr_mgr: ImapCdfAttributes,
 ) -> xr.DataArray:
     """
@@ -516,10 +516,10 @@ def set_background_rates(
         The start MET time of the pointing.
     pointing_end_met : float
         The end MET time of the pointing.
-    anc_dependencies : list
-        Ancillary files needed for L1C data product creation.
     species : FilterType
         The species to set the background rates for. Can be "h" or "o".
+    anc_dependencies : list
+        Ancillary files needed for L1C data product creation.
     attr_mgr : ImapCdfAttributes
         Attribute manager used to get the L1C attributes.
 
@@ -536,17 +536,31 @@ def set_background_rates(
     bg_sys_err = np.zeros((7, 3600, 40), dtype=np.float16)
 
     # read in the background rates from ancillary file
-    background_df = lo_ancillary.read_ancillary_file(anc_dependencies[1])
+    if species == FilterType.HYDROGEN:
+        background_df = lo_ancillary.read_ancillary_file(
+            next(s for s in anc_dependencies if "hydrogen-background" in s)
+        )
+    else:
+        background_df = lo_ancillary.read_ancillary_file(
+            next(s for s in anc_dependencies if "oxygen-background" in s)
+        )
+
     # find to the rows for the current pointing
     pointing_bg_df = background_df[
-        background_df["GoodTime_strt"] >= pointing_start_met
-        and background_df["GoodTime_end"] <= pointing_end_met
+        (background_df["GoodTime_strt"] >= pointing_start_met)
+        & (background_df["GoodTime_end"] <= pointing_end_met)
     ]
 
+    # for each row in the bg ancillary file for this pointing
     for _, row in pointing_bg_df.iterrows():
+        # convert the bin start and end resolution from 6 degrees to .1 degrees
         bin_start = int(row["bin_strt"]) * 60
+        # The last bin end in the file is 0, which means 60 degrees. This is
+        # converted to 0.1 degree resolution of 3600
         bin_end = int(row["bin_end"]) * 60
-        for esa_step in range(1, 8):
+        bin_end = np.where(bin_end == 0, 3600, bin_end)
+        # for each energy step, set the background rate and uncertainty
+        for esa_step in range(0, 7):
             value = row[f"E-Step{esa_step + 1}"]
             if row["type"] == "rate":
                 bg_rates[esa_step, bin_start:bin_end, :] = value
@@ -564,12 +578,12 @@ def set_background_rates(
     bg_stat_uncert_data = xr.DataArray(
         data=bg_stat_uncert,
         dims=["esa_energy_step", "spin_angle", "off_angle"],
-        attrs=attr_mgr.get_variable_attributes(f"{species}_background_stat_uncert"),
+        # attrs=attr_mgr.get_variable_attributes(f"{species}_background_stat_uncert"),
     )
     bg_sys_err_data = xr.DataArray(
         data=bg_sys_err,
         dims=["esa_energy_step", "spin_angle", "off_angle"],
-        attrs=attr_mgr.get_variable_attributes(f"{species}_background_sys_err"),
+        # attrs=attr_mgr.get_variable_attributes(f"{species}_background_sys_err"),
     )
 
     return bg_rates_data, bg_stat_uncert_data, bg_sys_err_data

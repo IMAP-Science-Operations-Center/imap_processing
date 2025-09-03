@@ -11,6 +11,7 @@ from imap_processing.lo.l1c.lo_l1c import (
     create_pset_counts,
     filter_goodtimes,
     lo_l1c,
+    set_background_rates,
 )
 from imap_processing.spice.time import met_to_ttj2000ns
 
@@ -95,6 +96,11 @@ def anc_dependencies():
             / "tests/lo/test_anc/\
             imap_lo_hydrogen-background-small_20250101_20270101_v001.csv"
         ),
+        str(
+            imap_module_directory
+            / "tests/lo/test_anc/\
+            imap_lo_oxygen-background-small_20250101_20270101_v001.csv"
+        ),
     ]
     return anc_dependencies_path
 
@@ -143,6 +149,40 @@ def doubles_counts(counts):
     doubles[0, 4, 2000, 20] = 1
     doubles[0, 5, 3500, 20] = 1
     return doubles
+
+
+@pytest.fixture
+def expected_bg():
+    expected_rates = np.array(
+        [
+            np.full((3600, 40), 0.0098),
+            np.full((3600, 40), 0.0089),
+            np.full((3600, 40), 0.0118),
+            np.full((3600, 40), 0.0113),
+            np.full((3600, 40), 0.0056),
+            np.full((3600, 40), 0.0008),
+            np.full((3600, 40), 0.0),
+        ],
+        dtype=np.float16,
+    )
+
+    expected_uncert = np.array(
+        [
+            np.full((3600, 40), 0.0025),
+            np.full((3600, 40), 0.002),
+            np.full((3600, 40), 0.0015),
+            np.full((3600, 40), 0.0015),
+            np.full((3600, 40), 0.001),
+            np.full((3600, 40), 0.0008),
+            np.full((3600, 40), 0.0),
+        ],
+        dtype=np.float16,
+    )
+
+    expected_err = np.zeros((7, 3600, 40), dtype=np.float16)
+
+    expected_bg = (expected_rates, expected_uncert, expected_err)
+    return expected_bg
 
 
 def test_lo_l1c(
@@ -267,11 +307,29 @@ def test_calculate_exposure_times(l1b_de):
     )
 
 
-def test_set_background_rates(l1b_de_spin, anc_dependencies):
+@pytest.mark.parametrize("species", [FilterType.HYDROGEN, FilterType.OXYGEN])
+def test_set_background_rates(
+    l1b_de_spin, anc_dependencies, attr_mgr, species, expected_bg
+):
     # Arrange
-    # pointing_start_met = met_to_datetime64(473389100.0)
+    pointing_start_met = 473389100.0
+    pointing_end_met = 473472100.0
+
     # Act
-    # set_background_rates(l1b_de_spin, anc_dependencies, FilterType.HYDROGEN)
+    rates, uncert, err = set_background_rates(
+        pointing_start_met, pointing_end_met, species, anc_dependencies, attr_mgr
+    )
 
     # Assert
-    pass
+    np.testing.assert_array_equal(
+        rates.values,
+        expected_bg[0],
+    )
+    np.testing.assert_array_equal(
+        uncert.values,
+        expected_bg[1],
+    )
+    np.testing.assert_array_equal(
+        err.values,
+        expected_bg[2],
+    )
