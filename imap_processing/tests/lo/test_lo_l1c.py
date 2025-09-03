@@ -94,12 +94,14 @@ def anc_dependencies():
             / "tests/lo/test_anc/imap_lo_goodtimes_20250415_v001.csv"
         ),
         str(
-            imap_module_directory / "tests/lo/test_anc/"
-            + "imap_lo_hydrogen-background-small_20250101_20270101_v001.csv"
+            imap_module_directory
+            / "tests/lo/test_anc/"
+            / "imap_lo_hydrogen-background-small_20250101_20270101_v001.csv"
         ),
         str(
-            imap_module_directory / "tests/lo/test_anc/"
-            + "imap_lo_oxygen-background-small_20250101_20270101_v001.csv"
+            imap_module_directory
+            / "tests/lo/test_anc/"
+            / "imap_lo_oxygen-background-small_20250101_20270101_v001.csv"
         ),
     ]
     return anc_dependencies_path

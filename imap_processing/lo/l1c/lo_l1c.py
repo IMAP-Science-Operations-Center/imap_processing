@@ -141,8 +141,8 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         # Set backgrounds
         (
             pset["h_background_rates"],
-            pset["h_background_stat_uncert"],
-            pset["h_background_sys_err"],
+            pset["h_background_rates_stat_uncert"],
+            pset["h_background_rates_sys_err"],
         ) = set_background_rates(
             pset["pointing_start_met"].item(),
             pset["pointing_end_met"].item(),
@@ -153,8 +153,8 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
 
         (
             pset["o_background_rates"],
-            pset["o_background_stat_uncert"],
-            pset["o_background_sys_err"],
+            pset["o_background_rates_stat_uncert"],
+            pset["o_background_rates_sys_err"],
         ) = set_background_rates(
             pset["pointing_start_met"].item(),
             pset["pointing_end_met"].item(),
@@ -573,12 +573,14 @@ def set_background_rates(
     bg_stat_uncert_data = xr.DataArray(
         data=bg_stat_uncert,
         dims=["esa_energy_step", "spin_angle", "off_angle"],
-        # attrs=attr_mgr.get_variable_attributes(f"{species}_background_stat_uncert"),
+        attrs=attr_mgr.get_variable_attributes(
+            f"{species}_background_rates_stat_uncert"
+        ),
     )
     bg_sys_err_data = xr.DataArray(
         data=bg_sys_err,
         dims=["esa_energy_step", "spin_angle", "off_angle"],
-        # attrs=attr_mgr.get_variable_attributes(f"{species}_background_sys_err"),
+        attrs=attr_mgr.get_variable_attributes(f"{species}_background_rates_sys_err"),
     )
 
     return bg_rates_data, bg_stat_uncert_data, bg_sys_err_data
