@@ -21,10 +21,10 @@ def test_read_backgrounds():
         np.array(
             [
                 pd.Timestamp("2025-01-01"),
-                473389200,
-                473407618,
+                473389200.0,
+                473472000.0,
                 0,
-                59,
+                1,
                 "Lo",
                 0.0098,
                 0.0089,
@@ -32,7 +32,7 @@ def test_read_backgrounds():
                 0.0113,
                 0.0056,
                 0.0008,
-                0,
+                0.0000,
                 "rate",
             ],
             dtype=object,
