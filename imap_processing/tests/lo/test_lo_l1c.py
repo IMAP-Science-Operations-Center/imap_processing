@@ -351,7 +351,7 @@ def test_set_background_rates_species_error(anc_dependencies, attr_mgr):
 
     # Act
     with pytest.raises(
-        ValueError, match=f"Species must be 'h' or 'o', but got {species.value}."
+        ValueError, match="Species must be 'h' or 'o', but got doubles."
     ):
         rates, uncert, err = set_background_rates(
             pointing_start_met, pointing_end_met, species, anc_dependencies, attr_mgr
