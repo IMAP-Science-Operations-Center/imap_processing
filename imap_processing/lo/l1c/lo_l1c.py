@@ -568,19 +568,21 @@ def set_background_rates(
     bg_rates_data = xr.DataArray(
         data=bg_rates,
         dims=["esa_energy_step", "spin_angle", "off_angle"],
-        attrs=attr_mgr.get_variable_attributes(f"{species}_background_rates"),
+        attrs=attr_mgr.get_variable_attributes(f"{species.value}_background_rates"),
     )
     bg_stat_uncert_data = xr.DataArray(
         data=bg_stat_uncert,
         dims=["esa_energy_step", "spin_angle", "off_angle"],
         attrs=attr_mgr.get_variable_attributes(
-            f"{species}_background_rates_stat_uncert"
+            f"{species.value}_background_rates_stat_uncert"
         ),
     )
     bg_sys_err_data = xr.DataArray(
         data=bg_sys_err,
         dims=["esa_energy_step", "spin_angle", "off_angle"],
-        attrs=attr_mgr.get_variable_attributes(f"{species}_background_rates_sys_err"),
+        attrs=attr_mgr.get_variable_attributes(
+            f"{species.value}_background_rates_sys_err"
+        ),
     )
 
     return bg_rates_data, bg_stat_uncert_data, bg_sys_err_data
