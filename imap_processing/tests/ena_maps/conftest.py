@@ -49,3 +49,8 @@ def rectangular_l1c_pset_datasets():
             for i, mid_latitude in enumerate(np.arange(-90, 90, 22.5))
         ],
     }
+
+
+@pytest.fixture(scope="session")
+def ena_maps_test_data_path(imap_tests_path):
+    return imap_tests_path / "ena_maps" / "data"
