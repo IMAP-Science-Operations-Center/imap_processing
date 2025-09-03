@@ -527,7 +527,7 @@ def set_background_rates(
         - The systematic errors for the background rates.
     """
     if species not in {FilterType.HYDROGEN, FilterType.OXYGEN}:
-        raise ValueError(f"Species must be 'h' or 'o', but got {species}.")
+        raise ValueError(f"Species must be 'h' or 'o', but got {species.value}.")
 
     bg_rates = np.zeros(
         (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS), dtype=np.float16
