@@ -114,17 +114,22 @@ class PowerLawFluxCorrector:
         # Create extended arrays by repeating first and last values. This allows
         # for linear differencing to be used on the ends and central differencing
         # to be used on the interior of the array with a single vectorized equation.
+        # Interior points use central differencing equation:
+        #     gamma_k = ln(J_{k+1}/J_{k-1}) / ln(E_{k+1}/E_{k-1})
+        # Left boundary uses linear forward differencing:
+        #     gamma_k = ln(J_{k+1}/J_{k}) / ln(E_{k+1}/E_{k})
+        # Right boundary uses linear backward differencing:
+        #     gamma_k = ln(J_{k}/J_{k-1}) / ln(E_{k}/E_{k-1})
         log_extended_fluxes = log_fluxes[extended_inds]
         log_extended_energies = log_energies[extended_inds]
 
-        # Try central differencing for all points using extended arrays
-        # Point k uses extended indices: left=k, right=k+2
+        # Extract the left and right log values to use in slope calculation
         left_log_fluxes = log_extended_fluxes[:-2]  # indices 0 to n_levels-1
         right_log_fluxes = log_extended_fluxes[2:]  # indices 2 to n_levels+1
         left_log_energies = log_extended_energies[:-2]
         right_log_energies = log_extended_energies[2:]
 
-        # Central differencing where both sides are finite
+        # Compute power-law slopes for valid indices
         central_valid = np.isfinite(left_log_fluxes) & np.isfinite(right_log_fluxes)
         gamma[central_valid] = (
             (right_log_fluxes - left_log_fluxes)
@@ -240,7 +245,7 @@ class PowerLawFluxCorrector:
             gamma_corr, _ = self.estimate_power_law_slope(source_fluxes_half, energies)
             gamma_n = 0.5 * (gamma_pred + gamma_corr)
 
-            # Final source flux estimate for this iteration - vectorized
+            # Final source flux estimate for this iteration
             eta_final = self.eta_esa(energy_levels, gamma_n)
             source_fluxes_n = observed_fluxes / eta_final
             source_uncertainties = observed_uncertainties / eta_final
