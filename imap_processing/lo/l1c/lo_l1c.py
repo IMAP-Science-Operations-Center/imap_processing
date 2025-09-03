@@ -75,30 +75,25 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         )
 
         pset = xr.Dataset(
+            coords={"epoch": np.array([met_to_ttj2000ns(pointing_start_met)])},
             attrs=attr_mgr.get_global_attributes(logical_source),
-        )
-
-        # Set the epoch to the start of the pointing
-        pset["epoch"] = xr.DataArray(
-            met_to_ttj2000ns(pset["pointing_start_met"].values),
-            attrs=attr_mgr.get_variable_attributes("epoch"),
         )
 
         # ESA mode needs to be added to L1B DE. Adding try statement
         # to avoid error until it's available in the dataset
-        try:
-            pset["esa_mode"] = xr.DataArray(
-                l1b_de["esa_mode"].values[0],
-                dims=["epoch"],
-                attrs=attr_mgr.get_variable_attributes("esa_mode"),
-            )
-        except KeyError:
+        if "esa_mode" not in l1b_de:
             logging.debug(
                 "ESA mode not found in L1B DE dataset. \
                 Setting to default value of 0 for Hi-Res."
             )
             pset["esa_mode"] = xr.DataArray(
-                0,
+                np.array([0]),
+                dims=["epoch"],
+                attrs=attr_mgr.get_variable_attributes("esa_mode"),
+            )
+        else:
+            pset["esa_mode"] = xr.DataArray(
+                l1b_de["esa_mode"].values[0],
                 dims=["epoch"],
                 attrs=attr_mgr.get_variable_attributes("esa_mode"),
             )

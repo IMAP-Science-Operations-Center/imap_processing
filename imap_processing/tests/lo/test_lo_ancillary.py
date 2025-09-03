@@ -12,7 +12,7 @@ def test_read_backgrounds():
         ANCILLARY_DIR / "imap_lo_hydrogen-background-small_20250101_20270101_v001.csv"
     )
     df = lo_ancillary.read_ancillary_file(ancillary_file)
-    assert len(df) == 12
+    assert len(df) == 240
 
     # spot check the first row
     first_row = df.iloc[0]

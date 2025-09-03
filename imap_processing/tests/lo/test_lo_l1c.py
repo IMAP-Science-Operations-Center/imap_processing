@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import numpy as np
 import pytest
 import xarray as xr
@@ -92,14 +94,12 @@ def anc_dependencies():
             / "tests/lo/test_anc/imap_lo_goodtimes_20250415_v001.csv"
         ),
         str(
-            imap_module_directory
-            / "tests/lo/test_anc/\
-            imap_lo_hydrogen-background-small_20250101_20270101_v001.csv"
+            imap_module_directory / "tests/lo/test_anc/"
+            + "imap_lo_hydrogen-background-small_20250101_20270101_v001.csv"
         ),
         str(
-            imap_module_directory
-            / "tests/lo/test_anc/\
-            imap_lo_oxygen-background-small_20250101_20270101_v001.csv"
+            imap_module_directory / "tests/lo/test_anc/"
+            + "imap_lo_oxygen-background-small_20250101_20270101_v001.csv"
         ),
     ]
     return anc_dependencies_path
@@ -185,7 +185,12 @@ def expected_bg():
     return expected_bg
 
 
+@patch(
+    "imap_processing.lo.l1c.lo_l1c.set_background_rates",
+    return_value=(None, None, None),
+)
 def test_lo_l1c(
+    mock_set_background_rates,
     l1b_de_spin,
     anc_dependencies,
     use_fake_repoint_data_for_time,
@@ -198,6 +203,7 @@ def test_lo_l1c(
     use_fake_repoint_data_for_time(np.arange(511000000, 511000000 + 86400 * 5, 86400))
 
     expected_logical_source = "imap_lo_l1c_pset"
+
     # Act
     output_dataset = lo_l1c(data, anc_dependencies)
 
