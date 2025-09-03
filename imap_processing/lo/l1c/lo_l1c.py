@@ -499,7 +499,7 @@ def set_background_rates(
     species: FilterType,
     anc_dependencies: list,
     attr_mgr: ImapCdfAttributes,
-) -> xr.DataArray:
+) -> tuple[xr.DataArray, xr.DataArray, xr.DataArray]:
     """
     Set the background rates for the specified species.
 
@@ -520,15 +520,24 @@ def set_background_rates(
 
     Returns
     -------
-    background_rates : xarray.DataArray
-        The background rates for the specified species.
+    background_rates : tuple[xr.DataArray, xr.DataArray, xr.DataArray]
+        Tuple containing:
+        - The background rates for the specified species.
+        - The statistical uncertainties for the background rates.
+        - The systematic errors for the background rates.
     """
     if species not in {FilterType.HYDROGEN, FilterType.OXYGEN}:
-        raise ValueError("Species must be 'h' or 'o'.")
+        raise ValueError(f"Species must be 'h' or 'o', but got {species}.")
 
-    bg_rates = np.zeros((7, 3600, 40), dtype=np.float16)
-    bg_stat_uncert = np.zeros((7, 3600, 40), dtype=np.float16)
-    bg_sys_err = np.zeros((7, 3600, 40), dtype=np.float16)
+    bg_rates = np.zeros(
+        (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS), dtype=np.float16
+    )
+    bg_stat_uncert = np.zeros(
+        (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS), dtype=np.float16
+    )
+    bg_sys_err = np.zeros(
+        (N_ESA_ENERGY_STEPS, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS), dtype=np.float16
+    )
 
     # read in the background rates from ancillary file
     if species == FilterType.HYDROGEN:
@@ -546,14 +555,17 @@ def set_background_rates(
         & (background_df["GoodTime_end"] <= pointing_end_met)
     ]
 
+    # convert the bin start and end resolution from 6 degrees to .1 degrees
+    pointing_bg_df["bin_strt"] = pointing_bg_df["bin_strt"] * 60
+    # The last bin end in the file is 0, which means 60 degrees. This is
+    # converted to 0.1 degree resolution of 3600
+    pointing_bg_df["bin_end"] = pointing_bg_df["bin_end"] * 60
+    pointing_bg_df.loc[pointing_bg_df["bin_end"] == 0, "bin_end"] = 3600
+
     # for each row in the bg ancillary file for this pointing
     for _, row in pointing_bg_df.iterrows():
-        # convert the bin start and end resolution from 6 degrees to .1 degrees
-        bin_start = int(row["bin_strt"]) * 60
-        # The last bin end in the file is 0, which means 60 degrees. This is
-        # converted to 0.1 degree resolution of 3600
-        bin_end = int(row["bin_end"]) * 60
-        bin_end = np.where(bin_end == 0, 3600, bin_end)
+        bin_start = int(row["bin_strt"])
+        bin_end = int(row["bin_end"])
         # for each energy step, set the background rate and uncertainty
         for esa_step in range(0, 7):
             value = row[f"E-Step{esa_step + 1}"]
@@ -562,6 +574,7 @@ def set_background_rates(
             elif row["type"] == "sigma":
                 bg_stat_uncert[esa_step, bin_start:bin_end, :] = value
             else:
+                print("TYPE", row["type"])
                 raise ValueError("Unknown background type in ancillary file.")
 
     # set the background rates, uncertainties, and systematic errors

@@ -341,3 +341,18 @@ def test_set_background_rates(
         err.values,
         expected_bg[2],
     )
+
+
+def test_set_background_rates_species_error(anc_dependencies, attr_mgr):
+    # Arrange
+    pointing_start_met = 473389100.0
+    pointing_end_met = 473472100.0
+    species = FilterType.DOUBLES
+
+    # Act
+    with pytest.raises(
+        ValueError, match=f"Species must be 'h' or 'o', but got {species.value}."
+    ):
+        rates, uncert, err = set_background_rates(
+            pointing_start_met, pointing_end_met, species, anc_dependencies, attr_mgr
+        )
