@@ -218,7 +218,7 @@ class TestPowerLawFluxCorrector:
     )
     def test_apply_flux_correction(self, mock_predictor_corrector, hi_coeffs_file):
         """Test applying the correction to map data."""
-        mock_predictor_corrector.side_effect = lambda f, d_f, e: (f * 2, d_f / 2)
+        mock_predictor_corrector.side_effect = lambda f, d_f, e: (f * 2, d_f / 2, 0)
         flux = np.arange(90).reshape(9, 10)
         delta_flux = np.sqrt(flux)
         energies = np.arange(flux.shape[0])
