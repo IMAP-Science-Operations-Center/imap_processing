@@ -56,8 +56,13 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
     cdf_attrs = ImapCdfAttributes()
     l2_dataset = add_dataset_attributes(l2_dataset, dataset_name, cdf_attrs)
 
+    # TODO: update list of datasets that need geometric factors (if needed)
     # Compute geometric factors needed for intensity calculations
-    geometric_factors = compute_geometric_factors(l2_dataset)
+    if dataset_name in [
+        "imap_codice_l2_lo-sw-species",
+        "imap_codice_l2_lo-nsw-species",
+    ]:
+        geometric_factors = compute_geometric_factors(l2_dataset)
 
     if dataset_name in [
         "imap_codice_l2_hi-counters-singles",
