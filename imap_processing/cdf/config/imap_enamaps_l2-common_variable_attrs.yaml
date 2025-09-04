@@ -220,7 +220,7 @@ geometric_function:
 
 efficiency:
   <<: *default_float32
-  CATDESC: Estimated event efficiency for particles path through the instrument calculated from multiple pointing sets.
+  CATDESC: Event efficiency calculated from multiple pointing sets.
   FIELDNAM: efficiency
   UNITS: " "
   DEPEND_0: epoch
