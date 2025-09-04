@@ -122,15 +122,15 @@ ena_intensity:
   CATDESC: Mono-energetic ENA intensity.
   FIELDNAM: Intensity
   UNITS: counts/(s * cm^2 * Sr * KeV)
-  DELTA_MINUS_VAR: ena_intensity_stat_unc
-  DELTA_PLUS_VAR: ena_intensity_stat_unc
+  DELTA_MINUS_VAR: ena_intensity_stat_uncert
+  DELTA_PLUS_VAR: ena_intensity_stat_uncert
   DEPEND_0: epoch
   VAR_TYPE: data
   LABLAXIS: Intensity
   DISPLAY_TYPE: image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
-ena_intensity_stat_unc:
+ena_intensity_stat_uncert:
   <<: *default_float32
   CATDESC: ENA intensity statistical uncertainty.
   FIELDNAM: Intensity stat unc
@@ -196,6 +196,9 @@ exposure_factor: &exposure_factor
   DISPLAY_TYPE: no_plot
   DICT_KEY: SPASE>TemporalDescription:Exposure,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
+exposure_time:
+  <<: *exposure_factor
+
 obs_date: &obs_date
   <<: *default_int64
   datatype: int64
@@ -243,3 +246,433 @@ solid_angle:
   LABLAXIS: Solid Angle
   DISPLAY_TYPE: image
   DICT_KEY: SPASE>Support>SupportQuantity:Other
+
+energy_h:
+  <<: *default_float32
+  CATDESC: Center energy level.
+  FIELDNAM: Center energy level of H species
+  LABLAXIS: Energy of bin
+  UNITS: keV
+  VAR_TYPE: support_data
+  SCALE_TYP: linear
+  # We might not have these set up yet
+  DELTA_MINUS_VAR: energy_delta_minus
+  DELTA_PLUS_VAR: energy_delta_plus
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Energy,Qualifier:Incident
+
+energy_h_stat_uncert:
+  <<: *default_float32
+  CATDESC: Statistical uncertainty in center energy level.
+  FIELDNAM: Center energy level stat unc
+  LABLAXIS: Energy of bin stat unc
+  UNITS: keV
+  VAR_TYPE: support_data
+  SCALE_TYP: linear
+  # We might not have these set up yet
+  DELTA_MINUS_VAR: energy_delta_minus
+  DELTA_PLUS_VAR: energy_delta_plus
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Energy,Qualifier:Uncertainty
+
+energy_o:
+  <<: *default_float32
+  CATDESC: Center energy level of Oxygen species.
+  FIELDNAM: Center energy level of O
+  LABLAXIS: Energy of bin
+  UNITS: keV
+  VAR_TYPE: support_data
+  SCALE_TYP: linear
+  # We might not have these set up yet
+  DELTA_MINUS_VAR: energy_delta_minus
+  DELTA_PLUS_VAR: energy_delta_plus
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Energy,Qualifier:Incident
+
+energy_o_stat_uncert:
+  <<: *default_float32
+  CATDESC: Statistical uncertainty in center energy level of Oxygen species.
+  FIELDNAM: Center energy level of O stat unc
+  LABLAXIS: Energy of bin stat unc
+  UNITS: keV
+  VAR_TYPE: support_data
+  SCALE_TYP: linear
+  # We might not have these set up yet
+  DELTA_MINUS_VAR: energy_delta_minus
+  DELTA_PLUS_VAR: energy_delta_plus
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Energy,Qualifier:Uncertainty
+
+h_counts:
+  <<: *default_float32
+  CATDESC: Integrated H ENA counts over all energy bins.
+  FIELDNAM: H Counts
+  UNITS: counts
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: H Counts
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Hydrogen,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+h_rate:
+  <<: *default_float32
+  CATDESC: Integrated H ENA rates over all energy bins.
+  FIELDNAM: H Rates
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: H Rates
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Hydrogen,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+h_rate_stat_uncert:
+  <<: *default_float32
+  CATDESC: H ENA rates statistical uncertainty.
+  FIELDNAM: H Rates stat unc
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: H Rates Stat Unc
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Hydrogen,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+h_rate_sys_err:
+  <<: *default_float32
+  CATDESC: H ENA rates non-statistical error.
+  FIELDNAM: H Rates non-stat error
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: H Rates Non-Statistical Err
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Hydrogen,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+h_bg_rate:
+  <<: *default_float32
+  CATDESC: Estimated background H ENA rates over all energy bins.
+  FIELDNAM: H Background Rates
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: H Background Rates
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Hydrogen,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+h_bg_rate_stat_uncert:
+  <<: *default_float32
+  CATDESC: Estimated background H ENA rates statistical uncertainty.
+  FIELDNAM: H Background Rates stat unc
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: H Background Rates Stat Unc
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Hydrogen,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+h_bg_rate_sys_err:
+  <<: *default_float32
+  CATDESC: Estimated background H ENA rates non-statistical error.
+  FIELDNAM: H Background Rates non-stat error
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: H Background Rates Non-Statistical Err
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Hydrogen,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+h_intensity:
+  <<: *default_float32
+  CATDESC: Integrated H ENA intensity.
+  FIELDNAM: H Intensity
+  UNITS: counts/(s * cm^2 * Sr)
+  DELTA_MINUS_VAR: h_intensity_stat_uncert
+  DELTA_PLUS_VAR: h_intensity_stat_uncert
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: H Intensity
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Hydrogen,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+h_intensity_stat_uncert:
+  <<: *default_float32
+  CATDESC: H ENA intensity statistical uncertainty.
+  FIELDNAM: H Intensity stat unc
+  UNITS: counts/(s * cm^2 * Sr)
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: H Intensity Stat Unc
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Hydrogen,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+h_intensity_sys_err:
+  <<: *default_float32
+  CATDESC: H ENA intensity non-statistical error.
+  FIELDNAM: H Intensity non-stat error
+  UNITS: counts/(s * cm^2 * Sr)
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: H Intensity Non-Statistical Err
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Hydrogen,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+h_bg_intensity:
+  <<: *default_float32
+  CATDESC: Estimated background H ENA intensities.
+  FIELDNAM: H Background Intensity
+  UNITS: counts/(s * cm^2 * Sr)
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: H Background Intensity
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Hydrogen,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+h_bg_intensity_stat_uncert:
+  <<: *default_float32
+  CATDESC: Estimated background H ENA intensity statistical uncertainty.
+  FIELDNAM: H Background Intensity stat unc
+  UNITS: counts/(s * cm^2 * Sr)
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: H Background Intensity Stat Unc
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Hydrogen,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+h_bg_intensity_sys_err:
+  <<: *default_float32
+  CATDESC: Estimated background H ENA intensities non-statistical error.
+  FIELDNAM: H Background Intensity non-stat error
+  UNITS: counts/(s * cm^2 * Sr)
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: H Background Intensity Non-Statistical Err
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Hydrogen,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+o_counts:
+  <<: *default_float32
+  CATDESC: Integrated O ENA counts over all energy bins.
+  FIELDNAM: O Counts
+  UNITS: counts
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: O Counts
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Oxygen,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+o_rate:
+  <<: *default_float32
+  CATDESC: Integrated O ENA rates over all energy bins.
+  FIELDNAM: O Rates
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: O Rates
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Oxygen,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+o_rate_stat_uncert:
+  <<: *default_float32
+  CATDESC: O ENA rates statistical uncertainty.
+  FIELDNAM: O Rates stat unc
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: O Rates Stat Unc
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Oxygen,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+o_rate_sys_err:
+  <<: *default_float32
+  CATDESC: O ENA rates non-statistical error.
+  FIELDNAM: O Rates non-stat error
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: O Rates Non-Statistical Err
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Oxygen,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+o_bg_rate:
+  <<: *default_float32
+  CATDESC: Estimated background O ENA rates over all energy bins.
+  FIELDNAM: O Background Rates
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: O Background Rates
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Oxygen,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+o_bg_rate_stat_uncert:
+  <<: *default_float32
+  CATDESC: Estimated background O ENA rates statistical uncertainty.
+  FIELDNAM: O Background Rates stat unc
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: O Background Rates Stat Unc
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Oxygen,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+o_bg_rate_sys_err:
+  <<: *default_float32
+  CATDESC: Estimated background O ENA rates non-statistical error.
+  FIELDNAM: O Background Rates non-stat error
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: O Background Rates Non-Statistical Err
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Oxygen,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+o_intensity:
+  <<: *default_float32
+  CATDESC: Integrated O ENA intensities.
+  FIELDNAM: O Intensity
+  UNITS: counts/(s * cm^2 * Sr)
+  DELTA_MINUS_VAR: o_intensity_stat_uncert
+  DELTA_PLUS_VAR: o_intensity_stat_uncert
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: O Intensity
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Oxygen,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+o_intensity_stat_uncert:
+  <<: *default_float32
+  CATDESC: O ENA intensity statistical uncertainty.
+  FIELDNAM: O Intensity stat unc
+  UNITS: counts/(s * cm^2 * Sr)
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: O Intensity Stat Unc
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Oxygen,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+o_intensity_sys_err:
+  <<: *default_float32
+  CATDESC: O ENA intensity non-statistical error.
+  FIELDNAM: O Intensity non-stat error
+  UNITS: counts/(s * cm^2 * Sr)
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: O Intensity Non-Statistical Err
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Oxygen,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+o_bg_intensity:
+  <<: *default_float32
+  CATDESC: Estimated background O ENA intesnities.
+  FIELDNAM: O Background Intensity
+  UNITS: counts/(s * cm^2 * Sr)
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: O Background Intensity
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Oxygen,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+o_bg_intensity_stat_uncert:
+  <<: *default_float32
+  CATDESC: Estimated background O ENA intensities statistical uncertainty.
+  FIELDNAM: O Background Intensity stat unc
+  UNITS: counts/(s * cm^2 * Sr)
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: O Background Intensity Stat Unc
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Oxygen,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+o_bg_intensity_sys_err:
+  <<: *default_float32
+  CATDESC: Estimated background O ENA intensity non-statistical error.
+  FIELDNAM: O Background Intensity non-stat error
+  UNITS: counts/(s * cm^2 * Sr)
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: O Background Intensity Non-Statistical Err
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Oxygen,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+doubles_counts:
+  <<: *default_float32
+  CATDESC: Integrated Double ENA counts over all energy bins.
+  FIELDNAM: Double Counts
+  UNITS: counts
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Double Counts
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Hydrogen,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+doubles_rate:
+  <<: *default_float32
+  CATDESC: Integrated Double ENA rates over all energy bins.
+  FIELDNAM: Double Rates
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Double Rates
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Hydrogen,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+doubles_rate_stat_uncert:
+  <<: *default_float32
+  CATDESC: Double ENA rates statistical uncertainty.
+  FIELDNAM: Double Rates stat unc
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Double Rates Stat Unc
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Hydrogen,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+doubles_rate_sys_err:
+  <<: *default_float32
+  CATDESC: Double ENA rates non-statistical error.
+  FIELDNAM: Double Rates non-stat error
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Double Rates Non-Statistical Err
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Hydrogen,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+triples_counts:
+  <<: *default_float32
+  CATDESC: Integrated Triple ENA counts over all energy bins.
+  FIELDNAM: Triple Counts
+  UNITS: counts
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Triple Counts
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Hydrogen,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+triples_rate:
+  <<: *default_float32
+  CATDESC: Integrated Triple ENA rates over all energy bins.
+  FIELDNAM: Triple Rates
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Triple Rates
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Hydrogen,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+triples_rate_stat_uncert:
+  <<: *default_float32
+  CATDESC: Triple ENA rates statistical uncertainty.
+  FIELDNAM: Triple Rates stat unc
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Triple Rates Stat Unc
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Hydrogen,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+triples_rate_sys_err:
+  <<: *default_float32
+  CATDESC: Triple ENA rates non-statistical error.
+  FIELDNAM: Triple Rates non-stat error
+  UNITS: counts/s
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Triple Rates Non-Statistical Err
+  DISPLAY_TYPE: image
+  DICT_KEY: SPASE>Particle>ParticleType:Hydrogen,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
