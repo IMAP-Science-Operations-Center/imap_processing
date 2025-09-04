@@ -16,6 +16,8 @@ from imap_processing.lo.l1b.tof_conversions import (
     TOF3_CONV,
 )
 from imap_processing.spice.geometry import SpiceFrame, instrument_pointing
+from imap_processing.spice.repoint import get_pointing_times
+from imap_processing.spice.spin import get_spin_number
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 
 logger = logging.getLogger(__name__)
@@ -133,7 +135,7 @@ def initialize_l1b_de(
         # TODO: Add pos to YAML file
         # attrs=attr_mgr.get_variable_attributes("pos"),
     )
-    l1b_de["mode"] = xr.DataArray(
+    l1b_de["mode_bit"] = xr.DataArray(
         l1a_de["mode"].values,
         dims=["epoch"],
         # TODO: Add mode to YAML file
@@ -275,19 +277,21 @@ def set_spin_cycle(l1a_de: xr.Dataset, l1b_de: xr.Dataset) -> xr.Dataset:
     l1b_de : xarray.Dataset
         The L1B DE dataset with the spin cycle added for each direct event.
     """
+    pointing_start_time, pointing_end_time = get_pointing_times(
+        l1a_de["met"].values[0].item()
+    )
+    spin_start_num = get_spin_number(pointing_start_time)
     counts = l1a_de["de_count"].values
     # split the esa_steps into ASC groups
     de_asc_groups = np.split(l1a_de["esa_step"].values, np.cumsum(counts)[:-1])
     spin_cycle = []
-    for i, esa_asc_group in enumerate(de_asc_groups):
-        # TODO: Spin Number does not reset for each pointing. Need to figure out
-        #  how to retain this information across days
-        # increment the spin_start by 28 after each aggregated science cycle
-        spin_start = i * 28
+    for esa_asc_group in de_asc_groups:
         # calculate the spin cycle for each DE in the ASC group
         # TODO: Add equation number in algorithm document when new version is
         # available. Add to docstring as well
-        spin_cycle.extend(spin_start + 7 + (esa_asc_group - 1) * 2)
+        spin_cycle.extend(spin_start_num + 7 + (esa_asc_group - 1) * 2)
+        # increment the spin start number by 28 for the next ASC
+        spin_start_num += 28
 
     l1b_de["spin_cycle"] = xr.DataArray(
         spin_cycle,
