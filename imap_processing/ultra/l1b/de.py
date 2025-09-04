@@ -83,7 +83,6 @@ def calculate_de(
         "event_type",
         "de_event_met",
         "phase_angle",
-        "spin",
     ]
     dataset_keys = [
         "coin_type",
@@ -91,7 +90,6 @@ def calculate_de(
         "stop_type",
         "shcoarse",
         "phase_angle",
-        "spin",
     ]
 
     de_dict.update(

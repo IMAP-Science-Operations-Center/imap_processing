@@ -31,6 +31,7 @@ SPIN_DURATION = 15  # Default spin duration in seconds.
 RateResult = namedtuple(
     "RateResult",
     [
+        "unique_spins",
         "start_per_spin",
         "stop_per_spin",
         "coin_per_spin",
@@ -424,6 +425,8 @@ def get_pulses_per_spin(rates: xr.Dataset) -> RateResult:
 
     Returns
     -------
+    unique_spins : NDArray
+        Unique spin numbers.
     start_per_spin : NDArray
         Total start pulses per spin.
     stop_per_spin : NDArray
@@ -474,6 +477,7 @@ def get_pulses_per_spin(rates: xr.Dataset) -> RateResult:
     coin_per_spin = np.bincount(spin_idx, weights=coin_pulses)
 
     return RateResult(
+        unique_spins=unique_spins,
         start_per_spin=start_per_spin,
         stop_per_spin=stop_per_spin,
         coin_per_spin=coin_per_spin,
