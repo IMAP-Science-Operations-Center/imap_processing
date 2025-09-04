@@ -82,14 +82,14 @@ def test_get_pointing_times(fake_repoint_data):
     assert pointing_end_time == expected_times[1]
 
 
-def test_get_repoint_mid_time(fake_repoint_data, monkeypatch):
-    """Test coverage for get_repoint_mid_time function."""
+def test_get_pointing_mid_time(fake_repoint_data, monkeypatch):
+    """Test coverage for get_pointing_mid_time function."""
     times = 6
     expected_times = (5.1, 15.2)
 
     expected_mid_time = np.mean(expected_times)
 
-    mid_time = repoint.get_repoint_mid_time(times)
+    mid_time = repoint.get_pointing_mid_time(times)
 
     assert mid_time == expected_mid_time
 
