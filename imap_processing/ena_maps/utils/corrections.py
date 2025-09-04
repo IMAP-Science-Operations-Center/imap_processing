@@ -132,7 +132,8 @@ class PowerLawFluxCorrector:
 
         # Compute uncertainty slopes
         if uncertainties is not None:
-            rel_unc_sq = (uncertainties / fluxes) ** 2
+            with np.errstate(divide="ignore"):
+                rel_unc_sq = (uncertainties / fluxes) ** 2
             extended_rel_unc_sq = rel_unc_sq[extended_inds]
             delta_gamma = np.sqrt(
                 extended_rel_unc_sq[:-2] + extended_rel_unc_sq[2:]
