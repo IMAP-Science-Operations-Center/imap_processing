@@ -242,12 +242,18 @@ def test_spin_bin():
     np.testing.assert_array_equal(l1b_de["spin_bin"], expected_spin_bins)
 
 
-def test_spin_cycle():
+@patch(
+    "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+    return_value=(0, 0),
+)
+@patch("imap_processing.lo.l1b.lo_l1b.get_spin_number", return_value=0)
+def test_spin_cycle(mock_get_spin_number, mock_get_pointing_times):
     # Arrange
     de = xr.Dataset(
         {
             "de_count": ("epoch", [2, 3]),
             "esa_step": ("direct_event", [1, 2, 3, 4, 5]),
+            "met": ("epoch", [0, 7]),
         },
         coords={"epoch": [0, 1], "direct_event": [1, 2, 3, 4, 5]},
     )
