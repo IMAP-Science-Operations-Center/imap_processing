@@ -358,7 +358,7 @@ def set_spin_cycle(
     for esa_asc_group in de_asc_groups:
         # calculate the spin cycle for each DE in the ASC group
         # TODO: Add equation number in algorithm document when new version is
-        # available. Add to docstring as well
+        #  available. Add to docstring as well
         spin_cycle.extend(spin_start_num + 7 + (esa_asc_group - 1) * 2)
         # increment the spin start number by 28 for the next ASC
         spin_start_num += 28

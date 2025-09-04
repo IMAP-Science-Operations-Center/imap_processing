@@ -1021,16 +1021,19 @@ class Lo(ProcessInstrument):
         elif self.data_level == "l1b":
             data_dict = {}
             science_files = dependencies.get_file_paths(source="lo", data_type="l1a")
+            ancillary_files = dependencies.get_file_paths(
+                source="lo", data_type="ancillary"
+            )
             logger.info(f"Science files for L1B: {science_files}")
             for file in science_files:
                 dataset = load_cdf(file)
                 data_dict[dataset.attrs["Logical_source"]] = dataset
-            datasets = lo_l1b.lo_l1b(data_dict)
+            datasets = lo_l1b.lo_l1b(data_dict, ancillary_files)
 
         elif self.data_level == "l1c":
             data_dict = {}
             anc_dependencies: list = dependencies.get_file_paths(
-                source="lo", descriptor="goodtimes"
+                source="lo", data_type="ancillary"
             )
             science_files = dependencies.get_file_paths(source="lo", descriptor="de")
             for file in science_files:
