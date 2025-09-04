@@ -60,12 +60,6 @@ def calculate_extendedspin(
     hk_qf = flag_hk(de_dataset["spin"].values)
     inst_qf = flag_imap_instruments(de_dataset["spin"].values)
 
-    # Get the first epoch for each spin.
-    mask = xr.DataArray(np.isin(de_dataset["spin"], spin), dims="epoch")
-    filtered_dataset = de_dataset.where(mask, drop=True)
-    _, first_indices = np.unique(filtered_dataset["spin"].values, return_index=True)
-    first_epochs = filtered_dataset["epoch"].values[first_indices]
-
     # Get the number of pulses per spin.
     pulses = get_pulses_per_spin(rates_dataset)
 
@@ -77,7 +71,6 @@ def calculate_extendedspin(
         de_dataset["quality_outliers"].values,
     )
     # These will be the coordinates.
-    extendedspin_dict["epoch"] = first_epochs
     extendedspin_dict["spin_number"] = spin
     extendedspin_dict["energy_bin_geometric_mean"] = energy_bin_geometric_mean
 

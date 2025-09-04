@@ -7,6 +7,7 @@ from imap_processing.ultra.l1b.quality_flag_filters import SPIN_QUALITY_FLAG_FIL
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset, extract_data_dict
 
 FILLVAL_UINT16 = 65535
+FILLVAL_FLOAT32 = -1.0e31
 FILLVAL_FLOAT64 = -1.0e31
 FILLVAL_UINT32 = 4294967295
 
@@ -27,6 +28,7 @@ def calculate_goodtimes(extendedspin_dataset: xr.Dataset, name: str) -> xr.Datas
     goodtimes_dataset : xarray.Dataset
         Dataset containing the extendedspin data that remains after culling.
     """
+    n_bins = extendedspin_dataset.dims["energy_bin_geometric_mean"]
     # If the spin rate was too high or low then the spin should be thrown out.
     # If the rates at any energy level are too high then throw out the entire spin.
     good_mask = (
@@ -47,9 +49,6 @@ def calculate_goodtimes(extendedspin_dataset: xr.Dataset, name: str) -> xr.Datas
             == 0
         ).all(dim="energy_bin_geometric_mean")
     )
-    extendedspin_dataset = extendedspin_dataset.assign_coords(
-        epoch=("spin_number", extendedspin_dataset["epoch"].values)
-    )
     filtered_dataset = extendedspin_dataset.sel(
         spin_number=extendedspin_dataset["spin_number"][good_mask]
     )
@@ -61,9 +60,6 @@ def calculate_goodtimes(extendedspin_dataset: xr.Dataset, name: str) -> xr.Datas
     if goodtimes_dataset["spin_number"].size == 0:
         goodtimes_dataset = goodtimes_dataset.drop_dims("spin_number")
         goodtimes_dataset = goodtimes_dataset.expand_dims(spin_number=[FILLVAL_UINT32])
-        goodtimes_dataset = goodtimes_dataset.assign_coords(
-            epoch=("spin_number", [extendedspin_dataset["epoch"].values[0]])
-        )
         goodtimes_dataset["spin_start_time"] = xr.DataArray(
             np.array([FILLVAL_FLOAT64], dtype="float64"), dims=["spin_number"]
         )
@@ -73,16 +69,44 @@ def calculate_goodtimes(extendedspin_dataset: xr.Dataset, name: str) -> xr.Datas
         goodtimes_dataset["spin_rate"] = xr.DataArray(
             np.array([FILLVAL_FLOAT64], dtype="float64"), dims=["spin_number"]
         )
+        goodtimes_dataset["start_pulses_per_spin"] = xr.DataArray(
+            np.array([FILLVAL_FLOAT32], dtype="float32"),
+            dims=["spin_number"],
+        )
+        goodtimes_dataset["stop_pulses_per_spin"] = xr.DataArray(
+            np.array([FILLVAL_FLOAT32], dtype="float32"),
+            dims=["spin_number"],
+        )
+        goodtimes_dataset["coin_pulses_per_spin"] = xr.DataArray(
+            np.array([FILLVAL_FLOAT32], dtype="float32"),
+            dims=["spin_number"],
+        )
+        goodtimes_dataset["rejected_events_per_spin"] = xr.DataArray(
+            np.array([FILLVAL_UINT32], dtype="uint32"),
+            dims=["spin_number"],
+        )
         goodtimes_dataset["quality_attitude"] = xr.DataArray(
             np.array([FILLVAL_UINT16], dtype="uint16"), dims=["spin_number"]
         )
+        goodtimes_dataset["quality_hk"] = xr.DataArray(
+            np.array([FILLVAL_UINT16], dtype="uint16"),
+            dims=["spin_number"],
+        )
+        goodtimes_dataset["quality_instruments"] = xr.DataArray(
+            np.array([FILLVAL_UINT16], dtype="uint16"),
+            dims=["spin_number"],
+        )
         goodtimes_dataset["quality_ena_rates"] = (
             ("energy_bin_geometric_mean", "spin_number"),
-            np.full((3, 1), FILLVAL_UINT16, dtype="uint16"),
+            np.full((n_bins, 1), FILLVAL_UINT16, dtype="uint16"),
         )
         goodtimes_dataset["ena_rates"] = (
             ("energy_bin_geometric_mean", "spin_number"),
-            np.full((3, 1), FILLVAL_FLOAT64, dtype="float64"),
+            np.full((n_bins, 1), FILLVAL_FLOAT64, dtype="float64"),
+        )
+        goodtimes_dataset["ena_rates_threshold"] = (
+            ("energy_bin_geometric_mean", "spin_number"),
+            np.full((n_bins, 1), FILLVAL_FLOAT32, dtype="float32"),
         )
 
     return goodtimes_dataset
