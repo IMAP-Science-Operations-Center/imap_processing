@@ -62,9 +62,8 @@ def mock_half_spin_lut(monkeypatch):
         1: list(range(0, 64)),
         2: list(range(64, 128)),
     }
-    monkeypatch.setitem(
-        compute_geometric_factors.__globals__,
-        "HALF_SPIN_LUT",
+    monkeypatch.setattr(
+        "imap_processing.codice.codice_l2.HALF_SPIN_LUT",
         mock_lut,
     )
 
