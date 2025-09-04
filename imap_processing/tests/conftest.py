@@ -474,7 +474,7 @@ def imap_ena_sim_metakernel(furnish_kernels, _download_kernels):
         "naif0012.tls",
         "imap_spk_demo.bsp",
         "sim_1yr_imap_attitude.bc",
-        "imap_wkcp.tf",
+        "imap_001.tf",
         "de440s.bsp",
         "imap_science_100.tf",
         "sim_1yr_imap_pointing_frame.bc",
@@ -485,7 +485,7 @@ def imap_ena_sim_metakernel(furnish_kernels, _download_kernels):
 
 @pytest.fixture
 def imap_ialirt_sim_metakernel(furnish_kernels):
-    kernels = ["imap_wkcp.tf"]
+    kernels = ["imap_001.tf"]
     with furnish_kernels(kernels) as k:
         yield k
 

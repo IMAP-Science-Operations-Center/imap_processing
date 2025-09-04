@@ -52,10 +52,8 @@ def test_imap_state_ecliptic(imap_ena_sim_metakernel):
     [
         # Expected spin-phase offsets based on 7516-0011_drw.pdf
         (SpiceFrame.IMAP_LO_BASE, (60, 0)),  # (330 + 90) % 360 = 60
-        # Note HI_45 and HI_90 appear to be swapped in imap_wkcp.tf so the
-        # expected values are swapped here.
-        (SpiceFrame.IMAP_HI_45, (15, 0)),  # 255 + 90 = 345
-        (SpiceFrame.IMAP_HI_90, (345, -45)),  # (285 + 90) % 360 = 15
+        (SpiceFrame.IMAP_HI_45, (345, -45)),  # 255 + 90 = 345
+        (SpiceFrame.IMAP_HI_90, (15, 0)),  # (285 + 90) % 360 = 15
         (SpiceFrame.IMAP_ULTRA_45, (123, -45)),  # 33 + 90 = 123
         (SpiceFrame.IMAP_ULTRA_90, (300, 0)),  # 210 + 90 = 300
         (SpiceFrame.IMAP_SWAPI, (258, 0)),  # 168 + 90 = 258
@@ -64,14 +62,15 @@ def test_imap_state_ecliptic(imap_ena_sim_metakernel):
         (SpiceFrame.IMAP_HIT, (120, 0)),  # 30 + 90 = 120
         (SpiceFrame.IMAP_SWE, (243, 0)),  # 153 + 90 = 243
         (SpiceFrame.IMAP_GLOWS, (217, 15)),  # 127 + 90 = 217
-        (SpiceFrame.IMAP_MAG, (90, 0)),  # 0 + 90 = 90
+        (SpiceFrame.IMAP_MAG_I, (90, 0)),  # 0 + 90 = 90
+        (SpiceFrame.IMAP_MAG_O, (90, 0)),  # 0 + 90 = 90
     ],
 )
 def test_get_instrument_mounting_az_el(
     furnish_kernels, spice_test_data_path, instrument, expected_az_el
 ):
     """Test coverage for get_instrument_mounting_az_el()"""
-    with furnish_kernels([spice_test_data_path / "imap_wkcp.tf"]):
+    with furnish_kernels([spice_test_data_path / "imap_001.tf"]):
         result = get_instrument_mounting_az_el(instrument)
         np.testing.assert_allclose(result, expected_az_el, atol=1e-2)
 
@@ -91,7 +90,8 @@ def test_get_instrument_mounting_az_el(
         SpiceFrame.IMAP_HIT,
         SpiceFrame.IMAP_SWE,
         SpiceFrame.IMAP_GLOWS,
-        SpiceFrame.IMAP_MAG,
+        SpiceFrame.IMAP_MAG_I,
+        SpiceFrame.IMAP_MAG_O,
     ],
 )
 def test_get_spacecraft_to_instrument_spin_phase_offset(
@@ -99,15 +99,8 @@ def test_get_spacecraft_to_instrument_spin_phase_offset(
 ):
     """Test coverage for get_spacecraft_to_instrument_spin_phase_offset()"""
     # Test that the offset is close to SPICE derived mounting azimuth
-    with furnish_kernels([spice_test_data_path / "imap_wkcp.tf"]):
-        # TODO: Remove this switch when we get a new imap_frames kernel
-        #    Hi 45 and Hi 90 are swapped in the imap_wkcp.tf kernel
-        if instrument == SpiceFrame.IMAP_HI_45:
-            expected = get_instrument_mounting_az_el(SpiceFrame.IMAP_HI_90)[0] / 360
-        elif instrument == SpiceFrame.IMAP_HI_90:
-            expected = get_instrument_mounting_az_el(SpiceFrame.IMAP_HI_45)[0] / 360
-        else:
-            expected = get_instrument_mounting_az_el(instrument)[0] / 360
+    with furnish_kernels([spice_test_data_path / "imap_001.tf"]):
+        expected = get_instrument_mounting_az_el(instrument)[0] / 360
         result = get_spacecraft_to_instrument_spin_phase_offset(instrument)
         np.testing.assert_almost_equal(result, expected, decimal=5)
 
@@ -158,7 +151,7 @@ def test_frame_transform(et_strings, position, from_frame, to_frame, furnish_ker
     kernels = [
         "naif0012.tls",
         "imap_sclk_0000.tsc",
-        "imap_wkcp.tf",
+        "imap_001.tf",
         "imap_science_100.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
@@ -287,7 +280,7 @@ def test_get_rotation_matrix(furnish_kernels):
     """Test coverage for get_rotation_matrix()."""
     kernels = [
         "naif0012.tls",
-        "imap_wkcp.tf",
+        "imap_001.tf",
         "imap_sclk_0000.tsc",
         "imap_science_100.tf",
         "sim_1yr_imap_attitude.bc",
@@ -315,7 +308,7 @@ def test_get_rotation_matrix(furnish_kernels):
 def test_instrument_pointing(furnish_kernels):
     kernels = [
         "naif0012.tls",
-        "imap_wkcp.tf",
+        "imap_001.tf",
         "imap_sclk_0000.tsc",
         "imap_science_100.tf",
         "sim_1yr_imap_attitude.bc",
