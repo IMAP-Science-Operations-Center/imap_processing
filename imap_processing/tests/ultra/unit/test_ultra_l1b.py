@@ -202,6 +202,7 @@ def test_cdf_extendedspin(use_fake_spin_data_for_time, faux_aux_dataset, rates_d
     """Tests that CDF file is created and contains same attributes as xarray."""
     l1b_extendedspin_dataset[0].attrs["Data_version"] = "999"
     l1b_extendedspin_dataset[0].attrs["Repointing"] = "repoint99999"
+    l1b_extendedspin_dataset[0].attrs["Start_date"] = "20240207"
     test_data_path = write_cdf(l1b_extendedspin_dataset[0])
     assert test_data_path.exists()
     assert (
@@ -238,6 +239,7 @@ def test_cdf_goodtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_data
     )
     goodtimes_dataset[0].attrs["Data_version"] = "999"
     goodtimes_dataset[0].attrs["Repointing"] = "repoint99999"
+    goodtimes_dataset[0].attrs["Start_date"] = "20240207"
     test_data_path = write_cdf(goodtimes_dataset[0])
     assert test_data_path.exists()
     assert (
@@ -283,6 +285,7 @@ def test_cdf_badtimes(use_fake_spin_data_for_time, faux_aux_dataset, rates_datas
     )
     l1b_badtimes_dataset[0].attrs["Data_version"] = "999"
     l1b_badtimes_dataset[0].attrs["Repointing"] = "repoint99999"
+    l1b_badtimes_dataset[0].attrs["Start_date"] = "20240207"
     test_data_path = write_cdf(l1b_badtimes_dataset[0])
     assert test_data_path.exists()
     assert (
