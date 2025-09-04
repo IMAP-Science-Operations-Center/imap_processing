@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import numpy as np
 import pytest
 import xarray as xr
@@ -10,8 +12,8 @@ from imap_processing.lo.l1c.lo_l1c import (
     calculate_exposure_times,
     create_pset_counts,
     filter_goodtimes,
-    initialize_pset,
     lo_l1c,
+    set_background_rates,
 )
 from imap_processing.spice.time import met_to_ttj2000ns
 
@@ -86,10 +88,23 @@ def l1b_de_spin():
 
 @pytest.fixture
 def anc_dependencies():
-    anc_dependencies_path = (
-        imap_module_directory / "tests/lo/test_anc/imap_lo_goodtimes_20250415_v001.csv"
-    )
-    return [str(anc_dependencies_path)]
+    anc_dependencies_path = [
+        str(
+            imap_module_directory
+            / "tests/lo/test_anc/imap_lo_goodtimes_20250415_v001.csv"
+        ),
+        str(
+            imap_module_directory
+            / "tests/lo/test_anc/"
+            / "imap_lo_hydrogen-background-small_20250101_20270101_v001.csv"
+        ),
+        str(
+            imap_module_directory
+            / "tests/lo/test_anc/"
+            / "imap_lo_oxygen-background-small_20250101_20270101_v001.csv"
+        ),
+    ]
+    return anc_dependencies_path
 
 
 @pytest.fixture
@@ -138,7 +153,46 @@ def doubles_counts(counts):
     return doubles
 
 
+@pytest.fixture
+def expected_bg():
+    expected_rates = np.array(
+        [
+            np.full((3600, 40), 0.0098),
+            np.full((3600, 40), 0.0089),
+            np.full((3600, 40), 0.0118),
+            np.full((3600, 40), 0.0113),
+            np.full((3600, 40), 0.0056),
+            np.full((3600, 40), 0.0008),
+            np.full((3600, 40), 0.0),
+        ],
+        dtype=np.float16,
+    )
+
+    expected_uncert = np.array(
+        [
+            np.full((3600, 40), 0.0025),
+            np.full((3600, 40), 0.002),
+            np.full((3600, 40), 0.0015),
+            np.full((3600, 40), 0.0015),
+            np.full((3600, 40), 0.001),
+            np.full((3600, 40), 0.0008),
+            np.full((3600, 40), 0.0),
+        ],
+        dtype=np.float16,
+    )
+
+    expected_err = np.zeros((7, 3600, 40), dtype=np.float16)
+
+    expected_bg = (expected_rates, expected_uncert, expected_err)
+    return expected_bg
+
+
+@patch(
+    "imap_processing.lo.l1c.lo_l1c.set_background_rates",
+    return_value=(None, None, None),
+)
 def test_lo_l1c(
+    mock_set_background_rates,
     l1b_de_spin,
     anc_dependencies,
     use_fake_repoint_data_for_time,
@@ -151,24 +205,12 @@ def test_lo_l1c(
     use_fake_repoint_data_for_time(np.arange(511000000, 511000000 + 86400 * 5, 86400))
 
     expected_logical_source = "imap_lo_l1c_pset"
+
     # Act
     output_dataset = lo_l1c(data, anc_dependencies)
 
     # Assert
     assert expected_logical_source == output_dataset[0].attrs["Logical_source"]
-
-
-def test_initialize_pset(l1b_de, attr_mgr):
-    # Arrange
-    logical_source = "imap_lo_l1c_pset"
-    expected_epoch = 7.9794907049e17
-
-    # Act
-    pset = initialize_pset(l1b_de, attr_mgr, logical_source)
-
-    # Assert
-    assert pset.attrs["Logical_source"] == logical_source
-    np.testing.assert_array_equal(pset["epoch"], expected_epoch)
 
 
 def test_filter_goodtimes(l1b_de, anc_dependencies):
@@ -271,3 +313,46 @@ def test_calculate_exposure_times(l1b_de):
         expected_exposure_times,
         atol=1e-2,
     )
+
+
+@pytest.mark.parametrize("species", [FilterType.HYDROGEN, FilterType.OXYGEN])
+def test_set_background_rates(
+    l1b_de_spin, anc_dependencies, attr_mgr, species, expected_bg
+):
+    # Arrange
+    pointing_start_met = 473389100.0
+    pointing_end_met = 473472100.0
+
+    # Act
+    rates, uncert, err = set_background_rates(
+        pointing_start_met, pointing_end_met, species, anc_dependencies, attr_mgr
+    )
+
+    # Assert
+    np.testing.assert_array_equal(
+        rates.values,
+        expected_bg[0],
+    )
+    np.testing.assert_array_equal(
+        uncert.values,
+        expected_bg[1],
+    )
+    np.testing.assert_array_equal(
+        err.values,
+        expected_bg[2],
+    )
+
+
+def test_set_background_rates_species_error(anc_dependencies, attr_mgr):
+    # Arrange
+    pointing_start_met = 473389100.0
+    pointing_end_met = 473472100.0
+    species = FilterType.DOUBLES
+
+    # Act
+    with pytest.raises(
+        ValueError, match="Species must be 'h' or 'o', but got doubles."
+    ):
+        rates, uncert, err = set_background_rates(
+            pointing_start_met, pointing_end_met, species, anc_dependencies, attr_mgr
+        )

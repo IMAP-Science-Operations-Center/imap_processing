@@ -12,7 +12,7 @@ def test_read_backgrounds():
         ANCILLARY_DIR / "imap_lo_hydrogen-background-small_20250101_20270101_v001.csv"
     )
     df = lo_ancillary.read_ancillary_file(ancillary_file)
-    assert len(df) == 12
+    assert len(df) == 240
 
     # spot check the first row
     first_row = df.iloc[0]
@@ -21,10 +21,10 @@ def test_read_backgrounds():
         np.array(
             [
                 pd.Timestamp("2025-01-01"),
-                473389200,
-                473407618,
+                473389200.0,
+                473472000.0,
                 0,
-                59,
+                1,
                 "Lo",
                 0.0098,
                 0.0089,
@@ -32,7 +32,7 @@ def test_read_backgrounds():
                 0.0113,
                 0.0056,
                 0.0008,
-                0,
+                0.0000,
                 "rate",
             ],
             dtype=object,
