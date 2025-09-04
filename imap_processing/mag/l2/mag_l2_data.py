@@ -20,6 +20,7 @@ from imap_processing.spice.time import (
 class ValidFrames(Enum):
     """SPICE reference frames for output."""
 
+    # TODO: Use correct IMAP_MAG_I or IMAP_MAG_O frame here
     MAG = SpiceFrame.IMAP_MAG
     DSRF = SpiceFrame.IMAP_DPS
     SRF = SpiceFrame.IMAP_SPACECRAFT
