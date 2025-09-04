@@ -5,10 +5,7 @@ from unittest import mock
 import numpy as np
 import pytest
 
-from imap_processing.ena_maps.utils.corrections import (
-    PowerLawFluxCorrector,
-    estimate_power_law_slope,
-)
+from imap_processing.ena_maps.utils.corrections import PowerLawFluxCorrector
 
 
 @pytest.fixture
@@ -24,51 +21,6 @@ def hi_coeffs_file(ena_maps_test_data_path):
 def lo_coeffs_file(ena_maps_test_data_path):
     """Define the location of the hi coefficients file."""
     return ena_maps_test_data_path / "imap_lo_esa-eta-fit-factors_20240101_v001.csv"
-
-
-def test_estimate_power_law_with_uncertainties():
-    """Test slope estimation with flux uncertainties."""
-
-    fluxes = np.array([10, 20, 40, 80, 160, 320, 640])
-    energies = np.arange(8) + 1
-    uncertainties = np.sqrt(fluxes)
-    gamma, delta_gamma = estimate_power_law_slope(fluxes, energies, uncertainties)
-    assert np.all(np.isfinite(gamma))
-    assert delta_gamma is not None
-    assert np.all(delta_gamma > 0)
-
-
-def test_estimate_power_law_with_zero_flux():
-    """Test slope estimation falls back to linear differencing."""
-
-    fluxes = np.array([10, 0, 40, 60, 0, 0, 80])
-    uncertainties = np.maximum(0.1 * fluxes, 1)
-    expected_gamma = np.array(
-        [
-            0,  # End point should fail to find slope
-            np.log(40 / 10) / np.log(3 / 1),  # Normal central differencing log-slope
-            np.log(60 / 40) / np.log(4 / 3),  # Fallback to forward linear differencing
-            np.log(60 / 40) / np.log(4 / 3),  # Fallback to backward linear differencing
-            0,  # No differencing scheme works
-            0,  # No differencing scheme works
-            0,  # End point fails to find slope
-        ]
-    )
-    expected_delta_gamma = np.array(
-        [
-            0,
-            np.sqrt(2 * (0.1**2)) / np.log(3 / 1),
-            np.sqrt(2 * (0.1**2)) / np.log(4 / 3),
-            np.sqrt(2 * (0.1**2)) / np.log(4 / 3),
-            0,
-            0,
-            0,
-        ]
-    )
-    energies = np.arange(len(fluxes)) + 1
-    gamma, delta_gamma = estimate_power_law_slope(fluxes, energies, uncertainties)
-    np.testing.assert_array_almost_equal(gamma, expected_gamma)
-    np.testing.assert_array_almost_equal(delta_gamma, expected_delta_gamma)
 
 
 class TestPowerLawFluxCorrector:
@@ -89,6 +41,57 @@ class TestPowerLawFluxCorrector:
         gamma = np.array([1.5, 10])
         eta = corr.eta_esa(k, gamma)
         assert eta[1] == 1
+
+    def test_estimate_power_law_with_uncertainties(self):
+        """Test slope estimation with flux uncertainties."""
+
+        fluxes = np.array([10, 20, 40, 80, 160, 320, 640])
+        energies = np.arange(8) + 1
+        uncertainties = np.sqrt(fluxes)
+        gamma, delta_gamma = PowerLawFluxCorrector.estimate_power_law_slope(
+            fluxes, energies, uncertainties
+        )
+        assert np.all(np.isfinite(gamma))
+        assert delta_gamma is not None
+        assert np.all(delta_gamma > 0)
+
+    def test_estimate_power_law_with_zero_flux(self):
+        """Test slope estimation falls back to linear differencing."""
+
+        fluxes = np.array([10, 0, 40, 60, 0, 0, 80])
+        uncertainties = np.maximum(0.1 * fluxes, 1)
+        expected_gamma = np.array(
+            [
+                0,  # End point should fail to find slope
+                np.log(40 / 10)
+                / np.log(3 / 1),  # Normal central differencing log-slope
+                np.log(60 / 40)
+                / np.log(4 / 3),  # Fallback to forward linear differencing
+                np.log(60 / 40)
+                / np.log(4 / 3),  # Fallback to backward linear differencing
+                0,  # No differencing scheme works
+                0,  # No differencing scheme works
+                0,  # End point fails to find slope
+            ]
+        )
+        expected_delta_gamma = np.array(
+            [
+                0,
+                np.sqrt(2 * (0.1**2)) / np.log(3 / 1),
+                np.sqrt(2 * (0.1**2)) / np.log(4 / 3),
+                np.sqrt(2 * (0.1**2)) / np.log(4 / 3),
+                0,
+                0,
+                0,
+            ]
+        )
+        energies = np.arange(len(fluxes)) + 1
+        corr = PowerLawFluxCorrector
+        gamma, delta_gamma = corr.estimate_power_law_slope(
+            fluxes, energies, uncertainties
+        )
+        np.testing.assert_array_almost_equal(gamma, expected_gamma)
+        np.testing.assert_array_almost_equal(delta_gamma, expected_delta_gamma)
 
     def test_predictor_corrector_nonconvergence(self, lo_coeffs_file):
         """Test predictor-corrector stops after max_iterations."""
