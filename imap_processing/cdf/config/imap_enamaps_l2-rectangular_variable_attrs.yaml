@@ -134,6 +134,38 @@ exposure_factor:
   LABL_PTR_2: longitude_label
   LABL_PTR_3: latitude_label
 
+efficiency:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+geometric_function:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+positional_uncertainty_theta:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+positional_uncertainty_phi:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
 obs_date:
   DEPEND_1: energy
   DEPEND_2: longitude
@@ -143,6 +175,14 @@ obs_date:
   LABL_PTR_3: latitude_label
 
 obs_date_range:
+  DEPEND_1: energy
+  DEPEND_2: longitude
+  DEPEND_3: latitude
+  LABL_PTR_1: energy_label
+  LABL_PTR_2: longitude_label
+  LABL_PTR_3: latitude_label
+
+obs_date_for_std:
   DEPEND_1: energy
   DEPEND_2: longitude
   DEPEND_3: latitude
