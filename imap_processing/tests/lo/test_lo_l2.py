@@ -20,6 +20,7 @@ from imap_processing.lo.l1c.lo_l1c import (
 from imap_processing.lo.l2.lo_l2 import (
     add_efficiency_factors_to_pset,
     calculate_all_rates_and_intensities,
+    calculate_backgrounds,
     calculate_efficiency_corrected_quantities,
     calculate_intensities,
     calculate_rates,
@@ -55,6 +56,12 @@ def sample_pset():
 
     exposure_time = np.full(PSET_SHAPE, 0.5)
 
+    # Create background rates data for h and o only
+    h_background_rates = np.full(PSET_SHAPE, 0.1)  # 0.1 counts/s background
+    o_background_rates = np.full(PSET_SHAPE, 0.05)  # 0.05 counts/s background
+    h_background_rates_stat_uncert = np.full(PSET_SHAPE, 0.01)  # 10% uncertainty
+    o_background_rates_stat_uncert = np.full(PSET_SHAPE, 0.005)  # 10% uncertainty
+
     # Create coordinate arrays
     lons, lats = np.meshgrid(
         SPIN_ANGLE_BIN_CENTERS, OFF_ANGLE_BIN_CENTERS, indexing="ij"
@@ -71,6 +78,16 @@ def sample_pset():
             "doubles_counts": (PSET_DIMS, doubles_counts),
             "triples_counts": (PSET_DIMS, triples_counts),
             "exposure_time": (PSET_DIMS, exposure_time),
+            "h_bg_rate": (PSET_DIMS, h_background_rates),
+            "o_bg_rate": (PSET_DIMS, o_background_rates),
+            "h_bg_rate_stat_uncert": (
+                PSET_DIMS,
+                h_background_rates_stat_uncert,
+            ),
+            "o_bg_rate_stat_uncert": (
+                PSET_DIMS,
+                o_background_rates_stat_uncert,
+            ),
             "hae_longitude": (("epoch", "spin_angle", "off_angle"), hae_longitude),
             "hae_latitude": (("epoch", "spin_angle", "off_angle"), hae_latitude),
         },
@@ -93,6 +110,12 @@ def minimal_pset():
     triples_counts = np.ones(PSET_SHAPE) * 0.1  # Some triples events
     exposure_time = np.full(PSET_SHAPE, 1.0)  # 1 second exposure for easy math
 
+    # Create simple background rates for testing
+    h_background_rates = np.full(PSET_SHAPE, 0.2)  # 0.2 counts/s
+    o_background_rates = np.full(PSET_SHAPE, 0.1)  # 0.1 counts/s
+    h_background_rates_stat_uncert = np.full(PSET_SHAPE, 0.02)  # 10% uncertainty
+    o_background_rates_stat_uncert = np.full(PSET_SHAPE, 0.01)  # 10% uncertainty
+
     # Simple coordinate arrays
     lons, lats = np.meshgrid(
         SPIN_ANGLE_BIN_CENTERS, OFF_ANGLE_BIN_CENTERS, indexing="ij"
@@ -109,6 +132,16 @@ def minimal_pset():
             "doubles_counts": (PSET_DIMS, doubles_counts),
             "triples_counts": (PSET_DIMS, triples_counts),
             "exposure_time": (PSET_DIMS, exposure_time),
+            "h_background_rates": (PSET_DIMS, h_background_rates),
+            "o_background_rates": (PSET_DIMS, o_background_rates),
+            "h_background_rates_stat_uncert": (
+                PSET_DIMS,
+                h_background_rates_stat_uncert,
+            ),
+            "o_background_rates_stat_uncert": (
+                PSET_DIMS,
+                o_background_rates_stat_uncert,
+            ),
             "hae_longitude": (("epoch", "spin_angle", "off_angle"), hae_longitude),
             "hae_latitude": (("epoch", "spin_angle", "off_angle"), hae_latitude),
         },
@@ -212,6 +245,48 @@ def sample_sky_map_dataset():
     # Add exposure time
     exposure = np.ones((1, n_energy, n_lon, n_lat)) * 1.0  # 1 second
     dataset["exposure_time"] = (("epoch", "energy", "longitude", "latitude"), exposure)
+
+    return dataset
+
+
+@pytest.fixture
+def sample_dataset_with_background_intermediates():
+    """Create a dataset with background intermediate variables for testing."""
+    # Create a simple rectangular map with background data
+    n_energy = 7
+
+    dataset = xr.Dataset(
+        coords={
+            "epoch": [8.1794907049e17],
+            "energy": list(range(n_energy)),
+        }
+    )
+
+    # Add the intermediate background variables that would be created
+    # during projection from pset to map
+    for var in ["h", "o"]:
+        # Background rate data (already projected)
+        bg_rate_exposure_time = np.ones((1, n_energy)) * 0.2  # 0.2 counts
+        dataset[f"{var}_bg_rate_exposure_time"] = (
+            ("epoch", "energy"),
+            bg_rate_exposure_time,
+        )
+
+        # Background uncertainty squared times exposure time squared
+        bg_rate_stat_uncert_exposure_time2 = np.ones((1, n_energy)) * 0.004  # 0.02^2
+        dataset[f"{var}_bg_rate_stat_uncert_exposure_time2"] = (
+            ("epoch", "energy"),
+            bg_rate_stat_uncert_exposure_time2,
+        )
+
+    # Add exposure time (this would be the projected exposure time)
+    exposure = np.ones((1, n_energy)) * 1.0  # 1 second
+    dataset["exposure_time"] = (("epoch", "energy"), exposure)
+
+    # Add geometric factors for systematic uncertainty calculation
+    for var in ["h", "o"]:
+        dataset[f"{var}_gf"] = (("energy",), np.ones(n_energy) * 1e-4)
+        dataset[f"{var}_gf_stat_uncert"] = (("energy",), np.ones(n_energy) * 1e-5)
 
     return dataset
 
@@ -548,6 +623,82 @@ class TestCalculateIntensities:
             calculate_intensities(dataset)
 
 
+class TestCalculateBackgrounds:
+    """Tests for the calculate_backgrounds function."""
+
+    def test_calculate_backgrounds_basic(
+        self, sample_dataset_with_background_intermediates
+    ):
+        """Test basic background calculations with standard data."""
+        dataset = sample_dataset_with_background_intermediates
+
+        result = calculate_backgrounds(dataset)
+
+        # Check that background intensities were calculated
+        for var in ["h", "o"]:
+            assert f"{var}_bg_intensity" in result.data_vars
+            assert f"{var}_bg_intensity_stat_uncert" in result.data_vars
+            assert f"{var}_bg_intensity_sys_err" in result.data_vars
+
+        # Check background intensity calculation
+        # bg_rate_exposure_time / exposure_time = 0.2 / 1.0 = 0.2
+        expected_bg_intensity = 0.2
+        assert np.allclose(result["h_bg_intensity"].values, expected_bg_intensity)
+        assert np.allclose(result["o_bg_intensity"].values, expected_bg_intensity)
+
+        # Check statistical uncertainty calculation
+        # sqrt(bg_rate_stat_uncert_exposure_time2) / exposure_time
+        # sqrt(0.004) / 1.0 = 0.063...
+        expected_stat_uncert = np.sqrt(0.004) / 1.0
+        assert np.allclose(
+            result["h_bg_intensity_stat_uncert"].values, expected_stat_uncert
+        )
+        assert np.allclose(
+            result["o_bg_intensity_stat_uncert"].values, expected_stat_uncert
+        )
+
+        # Check systematic uncertainty calculation
+        # (gf_stat_uncert / gf) * bg_intensity = (1e-5 / 1e-4) * 0.2 = 0.02
+        expected_sys_err = (1e-5 / 1e-4) * 0.2
+        assert np.allclose(result["h_bg_intensity_sys_err"].values, expected_sys_err)
+        assert np.allclose(result["o_bg_intensity_sys_err"].values, expected_sys_err)
+
+    def test_calculate_backgrounds_zero_exposure(self):
+        """Test background calculations with zero exposure time."""
+        dataset = xr.Dataset(
+            {
+                "h_bg_rate_exposure_time": (("epoch", "energy"), np.ones((1, 7)) * 0.2),
+                "o_bg_rate_exposure_time": (("epoch", "energy"), np.ones((1, 7)) * 0.1),
+                "h_bg_rate_stat_uncert_exposure_time2": (
+                    ("epoch", "energy"),
+                    np.ones((1, 7)) * 0.004,
+                ),
+                "o_bg_rate_stat_uncert_exposure_time2": (
+                    ("epoch", "energy"),
+                    np.ones((1, 7)) * 0.001,
+                ),
+                "exposure_time": (
+                    ("epoch", "energy"),
+                    np.zeros((1, 7)),
+                ),  # Zero exposure
+                "h_gf": (("energy",), np.ones(7) * 1e-4),
+                "o_gf": (("energy",), np.ones(7) * 1e-4),
+                "h_gf_stat_uncert": (("energy",), np.ones(7) * 1e-5),
+                "o_gf_stat_uncert": (("energy",), np.ones(7) * 1e-5),
+            },
+            coords={"epoch": [8.1794907049e17], "energy": list(range(7))},
+        )
+
+        result = calculate_backgrounds(dataset)
+
+        # Should handle division by zero gracefully
+        assert "h_bg_intensity" in result.data_vars
+        assert "o_bg_intensity" in result.data_vars
+        # Results should be infinite where exposure time is zero
+        assert np.all(np.isinf(result["h_bg_intensity"].values))
+        assert np.all(np.isinf(result["o_bg_intensity"].values))
+
+
 class TestInitializeGeometricFactorVariables:
     """Tests for the initialize_geometric_factor_variables function."""
 
@@ -629,6 +780,10 @@ class TestCleanupIntermediateVariables:
                 "h_gf_stat_uncert": (("energy",), np.ones(7)),
                 "o_counts_over_eff": (("energy",), np.ones(7)),
                 "o_gf": (("energy",), np.ones(7)),
+                "h_bg_rate_exposure_time": (("energy",), np.ones(7)),
+                "o_bg_rate_exposure_time": (("energy",), np.ones(7)),
+                "h_bg_rate_stat_uncert_exposure_time2": (("energy",), np.ones(7)),
+                "o_bg_rate_stat_uncert_exposure_time2": (("energy",), np.ones(7)),
                 "h_intensity": (("energy",), np.ones(7)),  # Should be kept
                 "exposure_time": (("energy",), np.ones(7)),  # Should be kept
             }
@@ -648,6 +803,10 @@ class TestCleanupIntermediateVariables:
         assert "h_gf_stat_uncert" not in result.data_vars
         assert "o_counts_over_eff" not in result.data_vars
         assert "o_gf" not in result.data_vars
+        assert "h_bg_rate_exposure_time" not in result.data_vars
+        assert "o_bg_rate_exposure_time" not in result.data_vars
+        assert "h_bg_rate_stat_uncert_exposure_time2" not in result.data_vars
+        assert "o_bg_rate_stat_uncert_exposure_time2" not in result.data_vars
 
     def test_cleanup_partial_variables(self):
         """Test cleanup when only some intermediate variables exist."""
@@ -702,6 +861,17 @@ class TestCalculateAllRatesAndIntensities:
                 "energy_o": (("energy",), np.ones(7) * 0.1),
                 "h_gf_stat_uncert": (("energy",), np.ones(7) * 1e-5),
                 "o_gf_stat_uncert": (("energy",), np.ones(7) * 1e-5),
+                # Background intermediate data
+                "h_bg_rate_exposure_time": (("energy",), np.ones(7) * 0.3),
+                "o_bg_rate_exposure_time": (("energy",), np.ones(7) * 0.15),
+                "h_bg_rate_stat_uncert_exposure_time2": (
+                    ("energy",),
+                    np.ones(7) * 0.009,
+                ),
+                "o_bg_rate_stat_uncert_exposure_time2": (
+                    ("energy",),
+                    np.ones(7) * 0.0025,
+                ),
             }
         )
 
@@ -723,9 +893,19 @@ class TestCalculateAllRatesAndIntensities:
         assert "h_intensity_sys_err" in result.data_vars
         assert "o_intensity_sys_err" in result.data_vars
 
+        # Check that background intensities were calculated
+        assert "h_bg_intensity" in result.data_vars
+        assert "o_bg_intensity" in result.data_vars
+        assert "h_bg_intensity_stat_uncert" in result.data_vars
+        assert "o_bg_intensity_stat_uncert" in result.data_vars
+        assert "h_bg_intensity_sys_err" in result.data_vars
+        assert "o_bg_intensity_sys_err" in result.data_vars
+
         # Check that intermediate variables were cleaned up
         assert "h_counts_over_eff" not in result.data_vars
         assert "h_gf" not in result.data_vars
+        assert "h_bg_rate_exposure_time" not in result.data_vars
+        assert "o_bg_rate_exposure_time" not in result.data_vars
 
 
 @pytest.mark.external_kernel

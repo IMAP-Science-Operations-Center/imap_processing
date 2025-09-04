@@ -270,6 +270,16 @@ def normalize_pset_coordinates(
         # Align the pset energy coordinates to match the map
         pset_renamed = pset_renamed.assign_coords(energy=map_energy_coords)
 
+    # Rename the background rates variables for the maps
+    # TODO: Do we want to change either one to be consistent across all levels?
+    bg_rename_map = {
+        "h_background_rates": "h_bg_rate",
+        "o_background_rates": "o_bg_rate",
+        "h_background_rates_stat_uncert": "h_bg_rate_stat_uncert",
+        "o_background_rates_stat_uncert": "o_bg_rate_stat_uncert",
+    }
+    pset_renamed = pset_renamed.rename_vars(bg_rename_map)
+
     return pset_renamed
 
 
@@ -353,6 +363,17 @@ def calculate_efficiency_corrected_quantities(pset: xr.Dataset) -> xr.Dataset:
             pset["efficiency"] ** 2
         )
 
+    # Backgrounds are only for h/o
+    for var in ["h", "o"]:
+        # background * exposure_time for weighted average
+        pset[f"{var}_bg_rate_exposure_time"] = (
+            pset[f"{var}_bg_rate"] * pset["exposure_time"]
+        )
+        # background_uncertainty ** 2 * exposure_time ** 2
+        pset[f"{var}_bg_rate_stat_uncert_exposure_time2"] = (
+            pset[f"{var}_bg_rate_stat_uncert"] ** 2 * pset["exposure_time"] ** 2
+        )
+
     return pset
 
 
@@ -385,6 +406,16 @@ def project_pset_to_map(pset: xr.Dataset, output_map: AbstractSkyMap) -> None:
                     f"{var}_counts_over_eff_squared",
                 ]
             )
+
+    for var in ["h", "o"]:
+        value_keys.extend(
+            [
+                f"{var}_bg_rate",
+                f"{var}_bg_rate_stat_uncert",
+                f"{var}_bg_rate_exposure_time",
+                f"{var}_bg_rate_stat_uncert_exposure_time2",
+            ]
+        )
 
     # Create LoPointingSet and project to map
     lo_pset = ena_maps.LoPointingSet(pset)
@@ -583,6 +614,9 @@ def calculate_all_rates_and_intensities(dataset: xr.Dataset) -> xr.Dataset:
     # Step 2: Calculate intensities for H and O only
     dataset = calculate_intensities(dataset)
 
+    # Step 3: Calculate background rates and intensities
+    dataset = calculate_backgrounds(dataset)
+
     # Step 3: Clean up intermediate variables
     dataset = cleanup_intermediate_variables(dataset)
 
@@ -655,8 +689,42 @@ def calculate_intensities(dataset: xr.Dataset) -> xr.Dataset:
             dataset[f"{var}_gf_stat_uncert"]
             / dataset[f"{var}_gf"]
             * dataset[f"{var}_intensity"]
-        )  # TODO: Add background rates (only for H and O)
-        # TODO: Add background intensities (only for H and O)
+        )
+
+    return dataset
+
+
+def calculate_backgrounds(dataset: xr.Dataset) -> xr.Dataset:
+    """
+    Calculate background rates and intensities.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        Dataset with count rates, geometric factors, and center energies.
+
+    Returns
+    -------
+    xr.Dataset
+        Dataset with calculated background rates and intensities.
+    """
+    for var in ["h", "o"]:
+        # Equation 6 from mapping document (background rate)
+        # exposure time weighted average of the background rates
+        dataset[f"{var}_bg_intensity"] = (
+            dataset[f"{var}_bg_rate_exposure_time"] / dataset["exposure_time"]
+        )
+        # Equation 7 from mapping document (background intensity)
+        dataset[f"{var}_bg_intensity_stat_uncert"] = np.sqrt(
+            dataset[f"{var}_bg_rate_stat_uncert_exposure_time2"]
+            / dataset["exposure_time"] ** 2
+        )
+        # Equation 8 from mapping document (background systematic uncertainty)
+        dataset[f"{var}_bg_intensity_sys_err"] = (
+            dataset[f"{var}_gf_stat_uncert"]
+            / dataset[f"{var}_gf"]
+            * dataset[f"{var}_bg_intensity"]
+        )
 
     return dataset
 
@@ -684,8 +752,12 @@ def cleanup_intermediate_variables(dataset: xr.Dataset) -> xr.Dataset:
         potential_vars = [
             f"{var}_counts_over_eff",
             f"{var}_counts_over_eff_squared",
+            # geometric factors
             f"{var}_gf",
             f"{var}_gf_stat_uncert",
+            # Backgrounds only for h/o
+            f"{var}_bg_rate_exposure_time",
+            f"{var}_bg_rate_stat_uncert_exposure_time2",
         ]
         for potential_var in potential_vars:
             if potential_var in dataset.data_vars:
