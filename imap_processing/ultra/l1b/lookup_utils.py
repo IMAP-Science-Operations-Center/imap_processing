@@ -345,7 +345,7 @@ def load_scattering_lookup_tables(ancillary_files: dict, instrument_id: int) -> 
     # TODO remove the line below when the 45 sensor scattering coefficients are
     #  delivered.
     instrument_id = 90
-    descriptor = f"l1b-{instrument_id}sensor-scattering-calibration"
+    descriptor = f"l1b-{instrument_id}sensor-scattering-calibration-data"
     theta_grid = pd.read_csv(
         ancillary_files[descriptor], header=None, skiprows=7, nrows=241
     ).to_numpy(dtype=float)
