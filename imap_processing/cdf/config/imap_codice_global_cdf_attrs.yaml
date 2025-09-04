@@ -237,6 +237,6 @@ imap_codice_l2_hi-direct-events:
 
 imap_codice_l2_lo-sw-species:
   <<: *instrument_base
-  Data_type: L2_lo-sw-species>Level-2 Lo Sunward Species Counts Data
+  Data_type: L2_lo-sw-species>Level-2 Lo Sunward Species Intensities Data
   Logical_source: imap_codice_l2_lo-sw-species
   Logical_source_description: IMAP Mission CoDICE Lo Level-2 Sunward Species Intensity Data.
