@@ -155,6 +155,8 @@ class TestUltraL2:
             "scatter_theta",
             "scatter_phi",
             "obs_date",
+            "obs_date_range",
+            "obs_date_for_std",
         ]
         for var in expected_vars:
             assert var in hp_skymap.data_1d.data_vars

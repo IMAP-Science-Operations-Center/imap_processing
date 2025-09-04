@@ -267,8 +267,10 @@ def generate_ultra_healpix_skymap(
     )
 
     all_pset_epochs = []
+    solid_angles = []
     for ultra_l1c_pset in ultra_l1c_psets:
         pointing_set = ena_maps.UltraPointingSet(ultra_l1c_pset)
+        solid_angles.append(pointing_set.solid_angle)
         all_pset_epochs.append(pointing_set.epoch)
         logger.info(
             f"Projecting a PointingSet with {pointing_set.num_points} pixels "
@@ -404,7 +406,7 @@ def generate_ultra_healpix_skymap(
     skymap.data_1d = skymap.data_1d.drop_vars(
         VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION,
     )
-
+    print(solid_angles, "HERE")
     return skymap, np.array(all_pset_epochs)
 
 
@@ -650,6 +652,8 @@ def ultra_l2(
             )
         )
 
-    # Adjust the dtype of obs_date to be int64
+    # Adjust the dtype of obs dates to be int64
     map_dataset["obs_date"] = map_dataset["obs_date"].astype(np.int64)
+    map_dataset["obs_date_range"] = map_dataset["obs_date_range"].astype(np.int64)
+    map_dataset["obs_date_for_std"] = map_dataset["obs_date_for_std"].astype(np.int64)
     return [map_dataset]
