@@ -364,8 +364,7 @@ spin_start_time:
   LABLAXIS: spin start time
   # TODO: come back to format
   UNITS: s
-  DEPEND_0: epoch
-  DEPEND_1: spin_number
+  DEPEND_0: spin_number
 
 spin_period:
   <<: *default
@@ -373,8 +372,7 @@ spin_period:
   FIELDNAM: spin_period
   LABLAXIS: spin_period
   UNITS: s
-  DEPEND_0: epoch
-  DEPEND_1: spin_number
+  DEPEND_0: spin_number
 
 spin_rate:
   <<: *default
@@ -382,8 +380,7 @@ spin_rate:
   FIELDNAM: spin_rate
   LABLAXIS: spin_rate
   UNITS: rpm
-  DEPEND_0: epoch
-  DEPEND_1: spin_number
+  DEPEND_0: spin_number
 
 rate_start_pulses:
   <<: *default
@@ -440,8 +437,7 @@ start_pulses_per_spin:
   CATDESC: Total start pulses per spin.
   FIELDNAM: start_pulses_per_spin
   LABLAXIS: start pulses per spin
-  DEPEND_0: epoch
-  DEPEND_1: spin_number
+  DEPEND_0: spin_number
   UNITS: " "
 
 stop_pulses_per_spin:
@@ -449,8 +445,7 @@ stop_pulses_per_spin:
   CATDESC: Total start pulses per spin.
   FIELDNAM: stop_pulses_per_spin
   LABLAXIS: stop pulses per spin
-  DEPEND_0: epoch
-  DEPEND_1: spin_number
+  DEPEND_0: spin_number
   UNITS: " "
 
 coin_pulses_per_spin:
@@ -458,8 +453,7 @@ coin_pulses_per_spin:
   CATDESC: Total coincidence pulses per spin.
   FIELDNAM: coin_pulses_per_spin
   LABLAXIS: coin_pulses_per_spin
-  DEPEND_0: epoch
-  DEPEND_1: spin_number
+  DEPEND_0: spin_number
   UNITS: " "
 
 rejected_events_per_spin:
@@ -467,8 +461,7 @@ rejected_events_per_spin:
   CATDESC: Rejected events per spin.
   FIELDNAM: rejected_events_per_spin
   LABLAXIS: rejected events per spin
-  DEPEND_0: epoch
-  DEPEND_1: spin_number
+  DEPEND_0: spin_number
   UNITS: " "
 
 ena_rates_threshold:
@@ -485,8 +478,7 @@ quality_ena_rates:
   CATDESC: Spin filter derived from Ultra ena rates. Bitwise flagging used to filter the spin.
   FIELDNAM: quality_ena_rates
   LABLAXIS: quality_ena_rates
-  DEPEND_0: energy_bin_geometric_mean
-  DEPEND_1: spin_number
+  DEPEND_0: spin_number
   UNITS: " "
 
 quality_attitude:
@@ -496,9 +488,8 @@ quality_attitude:
   LABLAXIS: quality attitude
   # TODO: come back to format
   UNITS: " "
-  DEPEND_0: epoch
-  DEPEND_1: spin_number
-  DEPEND_2: energy_bin_geometric_mean
+  DEPEND_0: spin_number
+  DEPEND_1: energy_bin_geometric_mean
 
 quality_instruments:
   <<: *default_uint16
@@ -507,9 +498,8 @@ quality_instruments:
   LABLAXIS: quality instruments
   # TODO: come back to format
   UNITS: " "
-  DEPEND_0: epoch
-  DEPEND_1: spin_number
-  DEPEND_2: energy_bin_geometric_mean
+  DEPEND_0: spin_number
+  DEPEND_1: energy_bin_geometric_mean
 
 quality_hk:
   <<: *default_uint16
@@ -518,9 +508,8 @@ quality_hk:
   LABLAXIS: quality hk
   # TODO: come back to format
   UNITS: " "
-  DEPEND_0: epoch
-  DEPEND_1: spin_number
-  DEPEND_2: energy_bin_geometric_mean
+  DEPEND_0: spin_number
+  DEPEND_1: energy_bin_geometric_mean
 
 quality_outliers:
   <<: *default_uint16
