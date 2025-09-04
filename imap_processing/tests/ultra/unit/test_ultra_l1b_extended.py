@@ -9,8 +9,6 @@ from imap_processing.quality_flags import ImapDEOutliersUltraFlags
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.spice.time import sct_to_et
 from imap_processing.ultra.l1b.lookup_utils import get_angular_profiles
-from imap_processing.ultra.l1b.lookup_utils import get_angular_profiles, get_norm
-from imap_processing.ultra.l1b.lookup_utils import get_angular_profiles
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     CoinType,
     StartType,
