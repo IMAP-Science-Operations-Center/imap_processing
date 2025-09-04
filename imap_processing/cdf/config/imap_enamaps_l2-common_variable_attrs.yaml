@@ -207,6 +207,50 @@ exposure_factor: &exposure_factor
   DISPLAY_TYPE: no_plot
   DICT_KEY: SPASE>TemporalDescription:Exposure,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
+geometric_function:
+  <<: *default_float32
+  CATDESC: The geometric function calculated from multiple pointing sets.
+  FIELDNAM: geometric_function
+  UNITS: cm^2 sr
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Geometric Factor
+  DISPLAY_TYPE: no_plot
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:GeometricFactor,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+efficiency:
+  <<: *default_float32
+  CATDESC: Estimated event efficiency for particles path through the instrument calculated from multiple pointing sets.
+  FIELDNAM: efficiency
+  UNITS: " "
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Efficiency
+  DISPLAY_TYPE: no_plot
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Other
+
+positional_uncertainty_theta:
+  <<: *default_float32
+  CATDESC: Positional uncertainty in theta direction calculated from multiple pointing sets.
+  FIELDNAM: positional_uncertainty_theta
+  UNITS: degrees
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Position Uncertainty Theta
+  DISPLAY_TYPE: no_plot
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:ArrivalDirection,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
+positional_uncertainty_phi:
+  <<: *default_float32
+  CATDESC: Positional uncertainty in phi direction calculated from multiple pointing sets.
+  FIELDNAM: positional_uncertainty_phi
+  UNITS: degrees
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: Position Uncertainty Phi
+  DISPLAY_TYPE: no_plot
+  DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:ArrivalDirection,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+
 obs_date: &obs_date
   <<: *default_int64
   datatype: int64
@@ -222,8 +266,20 @@ obs_date: &obs_date
 obs_date_range:
   <<: *default_int64
   datatype: int64
-  CATDESC: Standard deviation of the observation date.
+  CATDESC: Range of the observation dates.
   FIELDNAM: Observation date range
+  UNITS: ns
+  DEPEND_0: epoch
+  VAR_TYPE: data
+  LABLAXIS: epoch
+  DISPLAY_TYPE: image
+  TIME_SCALE: Terrestrial Time
+
+obs_date_for_std:
+  <<: *default_int64
+  datatype: int64
+  CATDESC: Standard deviation of the observation date.
+  FIELDNAM: Observation date standard deviation
   UNITS: ns
   DEPEND_0: epoch
   VAR_TYPE: data

@@ -267,10 +267,8 @@ def generate_ultra_healpix_skymap(
     )
 
     all_pset_epochs = []
-    solid_angles = []
     for ultra_l1c_pset in ultra_l1c_psets:
         pointing_set = ena_maps.UltraPointingSet(ultra_l1c_pset)
-        solid_angles.append(pointing_set.solid_angle)
         all_pset_epochs.append(pointing_set.epoch)
         logger.info(
             f"Projecting a PointingSet with {pointing_set.num_points} pixels "
@@ -406,11 +404,10 @@ def generate_ultra_healpix_skymap(
     skymap.data_1d = skymap.data_1d.drop_vars(
         VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION,
     )
-    print(solid_angles, "HERE")
     return skymap, np.array(all_pset_epochs)
 
 
-def ultra_l2(
+def ultra_l2(  # noqa: PLR0912
     data_dict: dict[str, xr.Dataset | str | Path],
     output_map_structure: (
         ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap
@@ -513,6 +510,7 @@ def ultra_l2(
         map_dataset = healpix_skymap.to_dataset()
         # Add attributes related to the map
         map_attrs = {
+            "HEALPix_solid_angle": str(healpix_skymap.solid_angle),
             "HEALPix_nside": str(output_map_structure.nside),
             "HEALPix_nest": str(output_map_structure.nested),
         }
@@ -586,6 +584,13 @@ def ultra_l2(
     # Energy at L1C is named "energy_bin_geometric_mean", but at L2 it is standardized
     # to "energy" for all instruments.
     map_dataset = map_dataset.rename({"energy_bin_geometric_mean": "energy"})
+
+    # Rename positional uncertainty variables if present
+    if "scatter_theta" in map_dataset and "scatter_phi" in map_dataset:
+        map_dataset = map_dataset.rename(
+            {"scatter_theta": "positional_uncertainty_theta"}
+        )
+        map_dataset = map_dataset.rename({"scatter_phi": "positional_uncertainty_phi"})
 
     # Add the defined attributes to the map's global attrs
     map_dataset.attrs.update(map_attrs)
