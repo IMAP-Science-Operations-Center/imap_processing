@@ -250,11 +250,13 @@ def generate_ultra_healpix_skymap(
         )
         flags_1d = pointing_set.data["quality_flags"].isel(epoch=0)
         # This is a good pixel mask where zero is when the earth is not in the FOV.
-        pixel_mask = (flags_1d & ImapPSETUltraFlags.EARTH_FOV.value) == 0
+        good_pixel_mask = (
+            (flags_1d & ImapPSETUltraFlags.EARTH_FOV.value) == 0
+        ).to_numpy()
 
         # Only count the number of pointing set pixels which are not flagged.
         pointing_set.data["num_pointing_set_pixel_members"] = xr.DataArray(
-            pixel_mask.astype(int),
+            good_pixel_mask.astype(int),
             dims=(CoordNames.HEALPIX_INDEX.value),
         )
 
@@ -288,14 +290,14 @@ def generate_ultra_healpix_skymap(
                 VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE
             ]
             * pointing_set.data["pointing_set_exposure_times_solid_angle"]
-        ).where(pixel_mask)
+        ).where(good_pixel_mask)
 
         # Project values such as counts via the PUSH method
         skymap.project_pset_values_to_map(
             pointing_set=pointing_set,
             value_keys=output_map_structure.values_to_push_project,
             index_match_method=ena_maps.IndexMatchMethod.PUSH,
-            valid_mask=pixel_mask.values,
+            pset_valid_mask=good_pixel_mask,
         )
 
         # Project values such as exposure_factor via the PULL method
@@ -303,7 +305,7 @@ def generate_ultra_healpix_skymap(
             pointing_set=pointing_set,
             value_keys=output_map_structure.values_to_pull_project,
             index_match_method=ena_maps.IndexMatchMethod.PULL,
-            valid_mask=pixel_mask.values,
+            pset_valid_mask=good_pixel_mask,
         )
 
     # Subsequent processing for weighted quantities at SkyMap level

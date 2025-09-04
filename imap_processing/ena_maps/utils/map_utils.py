@@ -76,24 +76,22 @@ def bin_single_array_at_indices(
         )
 
     input_valid_mask = np.asarray(input_valid_mask, dtype=bool)
-    mask_idx = input_valid_mask[input_indices]
 
     num_projection_indices = np.prod(projection_grid_shape)
 
     # Only valid values are summed into bins.
     if value_array.ndim == 1:
-        values = value_array[input_indices]
         binned_values = np.bincount(
-            projection_indices[mask_idx],
-            weights=values[mask_idx],
+            projection_indices[input_valid_mask],
+            weights=value_array[input_indices[input_valid_mask]],
             minlength=num_projection_indices,
         )
     elif value_array.ndim >= 2:
         # Apply bincount to each row independently
         binned_values = np.apply_along_axis(
             lambda x: np.bincount(
-                projection_indices[mask_idx],
-                weights=x[..., input_indices][mask_idx],
+                projection_indices[input_valid_mask],
+                weights=x[..., input_indices][input_valid_mask],
                 minlength=num_projection_indices,
             ),
             axis=-1,

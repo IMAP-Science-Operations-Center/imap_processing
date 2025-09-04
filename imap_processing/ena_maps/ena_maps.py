@@ -781,7 +781,7 @@ class AbstractSkyMap(ABC):
         pointing_set: PointingSet,
         value_keys: list[str] | None = None,
         index_match_method: IndexMatchMethod = IndexMatchMethod.PUSH,
-        valid_mask: NDArray | None = None,
+        pset_valid_mask: NDArray | None = None,
     ) -> None:
         """
         Project a pointing set's values to the map grid.
@@ -803,7 +803,7 @@ class AbstractSkyMap(ABC):
         index_match_method : IndexMatchMethod, optional
             The method of index matching to use for all values.
             Default is IndexMatchMethod.PUSH.
-        valid_mask : NDArray, optional
+        pset_valid_mask : NDArray, optional
             A boolean mask of shape (number of pointing set pixels,) indicating
             which pixels in the pointing set should be considered valid for projection.
             If None, all pixels are considered valid. Default is None.
@@ -819,8 +819,8 @@ class AbstractSkyMap(ABC):
             if value_key not in pointing_set.data.data_vars:
                 raise ValueError(f"Value key {value_key} not found in pointing set.")
 
-        if valid_mask is None:
-            valid_mask = np.ones(pointing_set.num_points, dtype=bool)
+        if pset_valid_mask is None:
+            pset_valid_mask = np.ones(pointing_set.num_points, dtype=bool)
 
         if index_match_method is IndexMatchMethod.PUSH:
             # Determine the indices of the sky map grid that correspond to
@@ -881,7 +881,7 @@ class AbstractSkyMap(ABC):
                     value_array=raveled_pset_data,
                     projection_grid_shape=self.binning_grid_shape,
                     projection_indices=matched_indices_push,
-                    input_valid_mask=valid_mask,
+                    input_valid_mask=pset_valid_mask,
                 )
                 # TODO: we may need to allow for unweighted/weighted means here by
                 # dividing pointing_projected_values by some binned weights.
@@ -889,17 +889,19 @@ class AbstractSkyMap(ABC):
                 # that correspond to each map pixel as the weights.
                 self.data_1d[value_key] += pointing_projected_values
             elif index_match_method is IndexMatchMethod.PULL:
+                valid_map_mask = pset_valid_mask[matched_indices_pull]
                 # We know that there will only be one value per sky map pixel,
                 # so we can use the matched indices directly
-                pointing_projected_values = raveled_pset_data[..., matched_indices_pull]
+                pointing_projected_values = raveled_pset_data[
+                    ..., matched_indices_pull[valid_map_mask]
+                ]
                 # TODO: we may need to allow for unweighted/weighted means here by
                 # dividing pointing_projected_values by some binned weights.
                 # For unweighted means, we could use the number of pointing set pixels
                 # that correspond to each map pixel as the weights.
-                valid = valid_mask[matched_indices_pull]
-                self.data_1d[value_key].values[..., valid] += pointing_projected_values[
-                    ..., valid
-                ]
+                self.data_1d[value_key].values[..., valid_map_mask] += (
+                    pointing_projected_values
+                )
             else:
                 raise NotImplementedError(
                     "Only PUSH and PULL index matching methods are supported."
