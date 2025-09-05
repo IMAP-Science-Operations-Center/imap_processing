@@ -24,6 +24,7 @@ from imap_processing.lo.l2.lo_l2 import (
     calculate_efficiency_corrected_quantities,
     calculate_intensities,
     calculate_rates,
+    calculate_sputtering_corrections,
     cleanup_intermediate_variables,
     create_sky_map_from_psets,
     initialize_geometric_factor_variables,
@@ -381,6 +382,96 @@ def sample_dataset_with_background_intermediates():
     dataset["geometric_factor_stat_uncert"] = (("energy",), np.ones(n_energy) * 1e-5)
 
     return dataset
+
+
+@pytest.fixture
+def sample_dataset_with_sputtering_data():
+    """Create datasets with ENA intensities for sputtering correction testing."""
+    # Create a simple map dataset with the required variables for sputtering correction
+    n_energy = 7
+    n_lon, n_lat = 10, 5  # Smaller for testing
+
+    coords = {
+        "epoch": [8.1794907049e17],
+        "energy": list(range(n_energy)),
+        "longitude": np.linspace(0, 360, n_lon, endpoint=False),
+        "latitude": np.linspace(-90, 90, n_lat),
+    }
+
+    # Create hydrogen dataset
+    h_intensity_values = np.ones((1, n_energy, n_lon, n_lat)) * 1e6  # Base intensity
+    h_intensity_values[0, 4, :, :] *= 3  # Higher at energy level 4 (ESA level 5)
+    h_intensity_values[0, 5, :, :] *= 2  # Higher at energy level 5 (ESA level 6)
+
+    h_dataset = xr.Dataset(coords=coords)
+    h_dataset["ena_intensity"] = (
+        ("epoch", "energy", "longitude", "latitude"),
+        h_intensity_values,
+    )
+
+    # Add hydrogen background rates (lower values)
+    h_bg_rates_values = np.ones((1, n_energy, n_lon, n_lat)) * 0.1e6  # 10% of intensity
+    h_dataset["bg_rates"] = (
+        ("epoch", "energy", "longitude", "latitude"),
+        h_bg_rates_values,
+    )
+
+    # Add statistical uncertainties
+    h_dataset["ena_intensity_stat_uncert"] = (
+        ("epoch", "energy", "longitude", "latitude"),
+        np.sqrt(h_intensity_values) * 0.1,
+    )
+
+    h_dataset["bg_rates_stat_uncert"] = (
+        ("epoch", "energy", "longitude", "latitude"),
+        np.sqrt(h_bg_rates_values) * 0.1,
+    )
+
+    # Add systematic error
+    h_dataset["ena_intensity_sys_err"] = (
+        ("epoch", "energy", "longitude", "latitude"),
+        h_intensity_values * 0.05,
+    )
+
+    # Create oxygen dataset
+    o_intensity_values = np.ones((1, n_energy, n_lon, n_lat)) * 1e6  # Base intensity
+    o_intensity_values[0, 4, :, :] *= 5  # Higher at energy level 4 (ESA level 5)
+    o_intensity_values[0, 5, :, :] *= 3  # Higher at energy level 5 (ESA level 6)
+
+    o_dataset = xr.Dataset(coords=coords)
+    o_dataset["ena_intensity"] = (
+        ("epoch", "energy", "longitude", "latitude"),
+        o_intensity_values,
+    )
+
+    # Add oxygen background rates (lower values)
+    o_bg_rates_values = np.ones((1, n_energy, n_lon, n_lat)) * 0.1e6  # 10% of intensity
+    o_dataset["bg_rates"] = (
+        ("epoch", "energy", "longitude", "latitude"),
+        o_bg_rates_values,
+    )
+
+    # Add statistical uncertainties
+    o_dataset["ena_intensity_stat_uncert"] = (
+        ("epoch", "energy", "longitude", "latitude"),
+        np.sqrt(o_intensity_values) * 0.1,
+    )
+
+    o_dataset["bg_rates_stat_uncert"] = (
+        ("epoch", "energy", "longitude", "latitude"),
+        np.sqrt(o_bg_rates_values) * 0.1,
+    )
+
+    # Add systematic error
+    o_dataset["ena_intensity_sys_err"] = (
+        ("epoch", "energy", "longitude", "latitude"),
+        o_intensity_values * 0.05,
+    )
+
+    # Add geometric factors for intensity calculations
+    o_dataset["geometric_factor"] = (("energy",), np.ones(n_energy))
+
+    return h_dataset, o_dataset
 
 
 # =============================================================================
@@ -851,6 +942,376 @@ class TestCalculateBackgrounds:
         # Results should be infinite where exposure time is zero
         assert np.all(np.isinf(result["bg_rates"].values))
         assert np.all(np.isinf(result["bg_rates_stat_uncert"].values))
+
+
+class TestCalculateSputteringCorrections:
+    """Tests for the calculate_sputtering_corrections function."""
+
+    def test_calculate_sputtering_corrections_basic(
+        self, sample_dataset_with_sputtering_data
+    ):
+        """Test basic sputtering corrections for hydrogen and oxygen intensities."""
+        h_dataset, o_dataset = sample_dataset_with_sputtering_data
+
+        # Test with hydrogen dataset first
+        original_h_intensity = h_dataset["ena_intensity"].copy()
+        original_h_stat_uncert = h_dataset["ena_intensity_stat_uncert"].copy()
+        original_h_sys_err = h_dataset["ena_intensity_sys_err"].copy()
+
+        result_h = calculate_sputtering_corrections(h_dataset, o_dataset)
+
+        # Check that only energy levels 4 and 5 (ESA levels 5 and 6) were modified
+        # for hydrogen
+        for energy_idx in [0, 1, 2, 3, 6]:
+            np.testing.assert_array_equal(
+                result_h["ena_intensity"][0, energy_idx, :, :].values,
+                original_h_intensity[0, energy_idx, :, :].values,
+                err_msg=f"Hydrogen energy level {energy_idx} should not be modified",
+            )
+
+        # Check that energy levels 4 and 5 were modified (should be lower)
+        assert np.all(
+            result_h["ena_intensity"][0, 4, :, :].values
+            < original_h_intensity[0, 4, :, :].values
+        ), (
+            "Hydrogen energy level 4 intensity should be reduced by sputtering "
+            "correction"
+        )
+
+        assert np.all(
+            result_h["ena_intensity"][0, 5, :, :].values
+            < original_h_intensity[0, 5, :, :].values
+        ), (
+            "Hydrogen energy level 5 intensity should be reduced by sputtering "
+            "correction"
+        )
+
+        # Check that uncertainties were also updated for levels 4 and 5
+        assert not np.array_equal(
+            result_h["ena_intensity_stat_uncert"][0, 4, :, :].values,
+            original_h_stat_uncert[0, 4, :, :].values,
+        ), "Statistical uncertainty should be updated for hydrogen energy level 4"
+
+        assert not np.array_equal(
+            result_h["ena_intensity_sys_err"][0, 4, :, :].values,
+            original_h_sys_err[0, 4, :, :].values,
+        ), "Systematic error should be updated for hydrogen energy level 4"
+
+        # Test with oxygen dataset
+        original_o_intensity = o_dataset["ena_intensity"].copy()
+
+        result_o = calculate_sputtering_corrections(o_dataset, o_dataset)
+
+        # Check that only energy levels 4 and 5 were modified for oxygen
+        for energy_idx in [0, 1, 2, 3, 6]:
+            np.testing.assert_array_equal(
+                result_o["ena_intensity"][0, energy_idx, :, :].values,
+                original_o_intensity[0, energy_idx, :, :].values,
+                err_msg=f"Oxygen energy level {energy_idx} should not be modified",
+            )
+
+        # Check that energy levels 4 and 5 were modified
+        assert np.all(
+            result_o["ena_intensity"][0, 4, :, :].values
+            < original_o_intensity[0, 4, :, :].values
+        ), "Oxygen energy level 4 intensity should be reduced by sputtering correction"
+
+        assert np.all(
+            result_o["ena_intensity"][0, 5, :, :].values
+            < original_o_intensity[0, 5, :, :].values
+        ), "Oxygen energy level 5 intensity should be reduced by sputtering correction"
+
+    def test_calculate_sputtering_corrections_equations(
+        self, sample_dataset_with_sputtering_data
+    ):
+        """Test that sputtering corrections follow the correct equations."""
+        h_dataset, o_dataset = sample_dataset_with_sputtering_data
+
+        # Get the subset that will be processed (energy levels 4 and 5)
+        o_small_dataset = o_dataset.isel(epoch=0, energy=[4, 5])
+
+        # Calculate expected j_o_prime (Equation 9)
+        expected_j_o_prime = o_small_dataset["ena_intensity"] - o_small_dataset[
+            "bg_rates"
+        ] / (o_small_dataset["geometric_factor"] * o_small_dataset["energy"])
+        expected_j_o_prime = expected_j_o_prime.where(expected_j_o_prime >= 0, 0)
+
+        # Expected correction factors from the mapping document table 2
+        sputter_correction_factor = np.array([0.15, 0.01])
+
+        # Calculate expected corrected intensity (Equation 11) for hydrogen
+        h_small_dataset = h_dataset.isel(epoch=0, energy=[4, 5])
+        expected_corrected_intensity = (
+            h_small_dataset["ena_intensity"]
+            - sputter_correction_factor[:, np.newaxis, np.newaxis] * expected_j_o_prime
+        )
+
+        # Run the function
+        result = calculate_sputtering_corrections(h_dataset, o_dataset)
+
+        # Check that the corrected intensities match expected values
+        np.testing.assert_allclose(
+            result["ena_intensity"][0, [4, 5], :, :].values,
+            expected_corrected_intensity.values,
+            rtol=1e-10,
+            err_msg="Sputtering-corrected intensities don't match expected calculation",
+        )
+
+    def test_calculate_sputtering_corrections_negative_j_o_prime(self):
+        """Test handling when j_o_prime becomes negative."""
+        # Create dataset where background > intensity (would give negative j_o_prime)
+        coords = {
+            "epoch": [8.1794907049e17],
+            "energy": list(range(7)),
+            "longitude": np.linspace(0, 360, 5, endpoint=False),
+            "latitude": np.linspace(-90, 90, 3),
+        }
+
+        # Create hydrogen dataset
+        h_dataset = xr.Dataset(coords=coords)
+        h_dataset["ena_intensity"] = (
+            ("epoch", "energy", "longitude", "latitude"),
+            np.ones((1, 7, 5, 3)) * 1e6,
+        )
+        h_dataset["bg_rates"] = (
+            ("epoch", "energy", "longitude", "latitude"),
+            np.ones((1, 7, 5, 3)) * 0.5e6,
+        )
+
+        # Add required uncertainty variables for hydrogen
+        h_dataset["ena_intensity_stat_uncert"] = (
+            ("epoch", "energy", "longitude", "latitude"),
+            np.ones((1, 7, 5, 3)) * 0.1e6,
+        )
+        h_dataset["bg_rates_stat_uncert"] = (
+            ("epoch", "energy", "longitude", "latitude"),
+            np.ones((1, 7, 5, 3)) * 0.05e6,
+        )
+        h_dataset["ena_intensity_sys_err"] = (
+            ("epoch", "energy", "longitude", "latitude"),
+            np.ones((1, 7, 5, 3)) * 0.05e6,
+        )
+
+        # Create oxygen dataset where background > intensity
+        o_dataset = xr.Dataset(coords=coords)
+        o_dataset["ena_intensity"] = (
+            ("epoch", "energy", "longitude", "latitude"),
+            np.ones((1, 7, 5, 3)) * 1e6,
+        )
+        o_dataset["bg_rates"] = (
+            ("epoch", "energy", "longitude", "latitude"),
+            np.ones((1, 7, 5, 3)) * 2e6,  # Higher than signal
+        )
+
+        # Add required uncertainty variables for oxygen
+        o_dataset["ena_intensity_stat_uncert"] = (
+            ("epoch", "energy", "longitude", "latitude"),
+            np.ones((1, 7, 5, 3)) * 0.1e6,
+        )
+        o_dataset["bg_rates_stat_uncert"] = (
+            ("epoch", "energy", "longitude", "latitude"),
+            np.ones((1, 7, 5, 3)) * 0.1e6,
+        )
+        o_dataset["ena_intensity_sys_err"] = (
+            ("epoch", "energy", "longitude", "latitude"),
+            np.ones((1, 7, 5, 3)) * 0.05e6,
+        )
+        o_dataset["geometric_factor"] = (("energy",), np.ones(7))
+
+        result = calculate_sputtering_corrections(h_dataset, o_dataset)
+
+        # Function should handle negative j_o_prime by setting it to zero
+        # This means no sputtering correction should be applied
+        # The corrected intensity should equal the original intensity
+        np.testing.assert_allclose(
+            result["ena_intensity"][0, [4, 5], :, :].values,
+            h_dataset["ena_intensity"][0, [4, 5], :, :].values,
+            rtol=1e-10,
+            err_msg=(
+                "When background > signal, no sputtering correction should be applied"
+            ),
+        )
+
+    def test_calculate_sputtering_corrections_only_oxygen(
+        self, sample_dataset_with_sputtering_data
+    ):
+        """Test that sputtering corrections work for different species datasets."""
+        h_dataset, o_dataset = sample_dataset_with_sputtering_data
+
+        # Store original hydrogen values
+        original_h_intensity = h_dataset["ena_intensity"].copy()
+        original_h_stat_uncert = h_dataset["ena_intensity_stat_uncert"].copy()
+        original_h_sys_err = h_dataset["ena_intensity_sys_err"].copy()
+
+        # Store original oxygen values
+        original_o_intensity = o_dataset["ena_intensity"].copy()
+
+        # Test hydrogen dataset with oxygen reference
+        result_h = calculate_sputtering_corrections(h_dataset, o_dataset)
+
+        # Check that hydrogen values changed for energy levels 4 and 5
+        assert not np.array_equal(
+            result_h["ena_intensity"][0, 4, :, :].values,
+            original_h_intensity[0, 4, :, :].values,
+        ), "Hydrogen intensity should be affected by sputtering corrections"
+
+        assert not np.array_equal(
+            result_h["ena_intensity_stat_uncert"][0, 4, :, :].values,
+            original_h_stat_uncert[0, 4, :, :].values,
+        ), "Hydrogen stat uncertainty should be updated"
+
+        assert not np.array_equal(
+            result_h["ena_intensity_sys_err"][0, 4, :, :].values,
+            original_h_sys_err[0, 4, :, :].values,
+        ), "Hydrogen sys error should be updated"
+
+        # Test oxygen dataset with itself as reference
+        result_o = calculate_sputtering_corrections(o_dataset, o_dataset)
+
+        # Check that oxygen values also changed
+        assert not np.array_equal(
+            result_o["ena_intensity"][0, 4, :, :].values,
+            original_o_intensity[0, 4, :, :].values,
+        ), "Oxygen intensity should also be affected by sputtering corrections"
+
+    def test_calculate_sputtering_corrections_uncertainty_propagation(
+        self, sample_dataset_with_sputtering_data
+    ):
+        """Test that uncertainties are properly propagated in sputtering corrections."""
+        h_dataset, o_dataset = sample_dataset_with_sputtering_data
+
+        # Get subset for manual calculation
+        o_small_dataset = o_dataset.isel(epoch=0, energy=[4, 5])
+        h_small_dataset = h_dataset.isel(epoch=0, energy=[4, 5])
+
+        # Manual calculation following equations 10, 12
+        j_o_prime = o_small_dataset["ena_intensity"] - o_small_dataset["bg_rates"]
+        j_o_prime = j_o_prime.where(j_o_prime >= 0, 0)
+
+        j_o_prime_var = (
+            o_small_dataset["ena_intensity_stat_uncert"] ** 2
+            + (
+                o_small_dataset["bg_rates_stat_uncert"]
+                / (o_small_dataset["energy"] * o_small_dataset["geometric_factor"])
+            )
+            ** 2
+        )
+
+        sputter_correction_factor = np.array([0.15, 0.01])[:, np.newaxis, np.newaxis]
+
+        expected_corrected_var = (
+            h_small_dataset["ena_intensity_stat_uncert"] ** 2
+            + (sputter_correction_factor**2) * j_o_prime_var
+        )
+
+        result = calculate_sputtering_corrections(h_dataset, o_dataset)
+
+        # Check that statistical uncertainties match expected propagation
+        np.testing.assert_allclose(
+            result["ena_intensity_stat_uncert"][0, [4, 5], :, :].values ** 2,
+            expected_corrected_var.values,
+            rtol=1e-10,
+            err_msg="Statistical uncertainty propagation is incorrect",
+        )
+
+    def test_calculate_sputtering_corrections_energy_levels(self):
+        """Test that sputtering corrections are applied to correct energy levels."""
+        # Create minimal dataset for testing specific energy level targeting
+        coords = {
+            "epoch": [8.1794907049e17],
+            "energy": list(range(7)),
+            "longitude": [0, 90, 180, 270],
+            "latitude": [-45, 0, 45],
+        }
+
+        # Create hydrogen dataset
+        h_dataset = xr.Dataset(coords=coords)
+        h_intensity_data = np.zeros((1, 7, 4, 3))
+        h_bg_rates_data = np.zeros((1, 7, 4, 3))
+
+        # Set specific values for energy levels 4 and 5 only
+        h_intensity_data[0, 4, :, :] = 200_000_000  # 200M for energy index 4
+        h_intensity_data[0, 5, :, :] = 250_000_000  # 250M for energy index 5
+        h_bg_rates_data[0, 4, :, :] = 20_000_000  # 20M background
+        h_bg_rates_data[0, 5, :, :] = 25_000_000  # 25M background
+
+        h_dataset["ena_intensity"] = (
+            ("epoch", "energy", "longitude", "latitude"),
+            h_intensity_data,
+        )
+        h_dataset["bg_rates"] = (
+            ("epoch", "energy", "longitude", "latitude"),
+            h_bg_rates_data,
+        )
+        h_dataset["ena_intensity_stat_uncert"] = (
+            ("epoch", "energy", "longitude", "latitude"),
+            np.ones((1, 7, 4, 3)) * 100_000,
+        )
+        h_dataset["bg_rates_stat_uncert"] = (
+            ("epoch", "energy", "longitude", "latitude"),
+            np.ones((1, 7, 4, 3)) * 10_000,
+        )
+        h_dataset["ena_intensity_sys_err"] = (
+            ("epoch", "energy", "longitude", "latitude"),
+            np.ones((1, 7, 4, 3)) * 50_000,
+        )
+
+        # Create oxygen dataset with higher values
+        o_dataset = xr.Dataset(coords=coords)
+        o_intensity_data = np.zeros((1, 7, 4, 3))
+        o_bg_rates_data = np.zeros((1, 7, 4, 3))
+
+        # Set specific values for energy levels 4 and 5 only
+        o_intensity_data[0, 4, :, :] = 250_000_000  # 250M for energy index 4
+        o_intensity_data[0, 5, :, :] = 300_000_000  # 300M for energy index 5
+        o_bg_rates_data[0, 4, :, :] = 25_000_000  # 25M background
+        o_bg_rates_data[0, 5, :, :] = 30_000_000  # 30M background
+
+        o_dataset["ena_intensity"] = (
+            ("epoch", "energy", "longitude", "latitude"),
+            o_intensity_data,
+        )
+        o_dataset["bg_rates"] = (
+            ("epoch", "energy", "longitude", "latitude"),
+            o_bg_rates_data,
+        )
+        o_dataset["ena_intensity_stat_uncert"] = (
+            ("epoch", "energy", "longitude", "latitude"),
+            np.ones((1, 7, 4, 3)) * 100_000,
+        )
+        o_dataset["bg_rates_stat_uncert"] = (
+            ("epoch", "energy", "longitude", "latitude"),
+            np.ones((1, 7, 4, 3)) * 10_000,
+        )
+        o_dataset["ena_intensity_sys_err"] = (
+            ("epoch", "energy", "longitude", "latitude"),
+            np.ones((1, 7, 4, 3)) * 50_000,
+        )
+        o_dataset["geometric_factor"] = (("energy",), np.ones(7))
+
+        # Make a copy to preserve original values for comparison
+        original_h_dataset = h_dataset.copy(deep=True)
+        result = calculate_sputtering_corrections(h_dataset, o_dataset)
+
+        # Only energy indices 4 and 5 should be modified
+        modified_indices = [4, 5]
+        unchanged_indices = [0, 1, 2, 3, 6]
+
+        for idx in unchanged_indices:
+            np.testing.assert_array_equal(
+                result["ena_intensity"][0, idx, :, :].values,
+                original_h_dataset["ena_intensity"][0, idx, :, :].values,
+                err_msg=f"Energy index {idx} should not be modified",
+            )
+
+        for idx in modified_indices:
+            # Check that values changed with some tolerance for numerical precision
+            original_values = original_h_dataset["ena_intensity"][0, idx, :, :].values
+            corrected_values = result["ena_intensity"][0, idx, :, :].values
+
+            assert not np.allclose(corrected_values, original_values, rtol=1e-10), (
+                f"Energy index {idx} should be modified"
+            )
 
 
 class TestInitializeGeometricFactorVariables:

@@ -597,7 +597,7 @@ def populate_geometric_factors(
 
 
 def calculate_all_rates_and_intensities(
-    dataset: xr.Dataset,
+    dataset: xr.Dataset, sputtering_correction: bool = False
 ) -> xr.Dataset:
     """
     Calculate rates and intensities with proper error propagation.
@@ -606,6 +606,9 @@ def calculate_all_rates_and_intensities(
     ----------
     dataset : xr.Dataset
         Sky map dataset with count data and geometric factors.
+    sputtering_correction : bool, optional
+        Whether to apply sputtering corrections to oxygen intensities.
+        Default is False.
 
     Returns
     -------
@@ -622,7 +625,14 @@ def calculate_all_rates_and_intensities(
     # Step 3: Calculate background rates and intensities
     dataset = calculate_backgrounds(dataset)
 
-    # Step 4: Clean up intermediate variables
+    # Optional Step 4: Calculate sputtering corrections
+    if sputtering_correction:
+        # TODO: The second dataset is for Oxygen specifically,
+        #       if we get an H dataset in, we may need to calculate
+        #       the O dataset separately before calling here.
+        dataset = calculate_sputtering_corrections(dataset, dataset)
+
+    # Step 5: Clean up intermediate variables
     dataset = cleanup_intermediate_variables(dataset)
 
     return dataset
@@ -724,6 +734,92 @@ def calculate_backgrounds(dataset: xr.Dataset) -> xr.Dataset:
         dataset["bg_rates"]
         * dataset["geometric_factor_stat_uncert"]
         / dataset["geometric_factor"]
+    )
+
+    return dataset
+
+
+def calculate_sputtering_corrections(
+    dataset: xr.Dataset, o_dataset: xr.Dataset
+) -> xr.Dataset:
+    """
+    Calculate sputtering corrections from oxygen intensities.
+
+    Only for Oxygen sputtering and correction only at ESA levels 5 and 6
+    for 90 degree maps. If off-angle maps are made, we may have to extend
+    this to levels 3 and 4 as well.
+
+    Follows equations 9-13 from the mapping document.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        Dataset with count rates, geometric factors, and center energies.
+        This could be either an H or O dataset.
+    o_dataset : xr.Dataset
+        Dataset specifically for oxygen, needed to access oxygen intensities
+        and uncertainties.
+
+    Returns
+    -------
+    xr.Dataset
+        Dataset with calculated sputtering-corrected intensities and their
+        uncertainties for hydrogen and oxygen.
+    """
+    logger.info("Applying sputtering corrections to oxygen intensities")
+    # Only apply sputtering correction to esa levels 5 and 6 (indices 4 and 5)
+    energy_indices = [4, 5]
+    small_dataset = dataset.isel(epoch=0, energy=energy_indices)
+    o_small_dataset = o_dataset.isel(epoch=0, energy=energy_indices)
+
+    # NOTE: We only have background rates, so turn them into intensities
+    o_small_dataset["bg_intensity"] = o_small_dataset["bg_rates"] / (
+        o_small_dataset["geometric_factor"] * o_small_dataset["energy"]
+    )
+    o_small_dataset["bg_intensity_stat_uncert"] = o_small_dataset[
+        "bg_rates_stat_uncert"
+    ] / (o_small_dataset["geometric_factor"] * o_small_dataset["energy"])
+
+    # Equation 9
+    j_o_prime = o_small_dataset["ena_intensity"] - o_small_dataset["bg_intensity"]
+    j_o_prime.values[j_o_prime.values < 0] = 0  # No negative intensities
+
+    # Equation 10
+    j_o_prime_var = (
+        o_small_dataset["ena_intensity_stat_uncert"] ** 2
+        + o_small_dataset["bg_intensity_stat_uncert"] ** 2
+    )
+
+    # NOTE: From table 2 of the mapping document, for energy level 5 and 6
+    sputter_correction_factor = xr.DataArray(
+        [0.15, 0.01], dims=["energy"], coords={"energy": energy_indices}
+    )
+    # Equation 11
+    # Remove the sputtered oxygen intensity to correct the original O intensity
+    sputter_corrected_intensity = (
+        small_dataset["ena_intensity"] - sputter_correction_factor * j_o_prime
+    )
+
+    # Equation 12
+    sputter_corrected_intensity_var = (
+        small_dataset["ena_intensity_stat_uncert"] ** 2
+        + (sputter_correction_factor**2) * j_o_prime_var
+    )
+
+    # Equation 13
+    sputter_corrected_intensity_sys_err = (
+        sputter_corrected_intensity
+        / small_dataset["ena_intensity"]
+        * small_dataset["ena_intensity_sys_err"]
+    )
+
+    # Now put the corrected values into the original dataset
+    dataset["ena_intensity"][0, energy_indices, ...] = sputter_corrected_intensity
+    dataset["ena_intensity_stat_uncert"][0, energy_indices, ...] = np.sqrt(
+        sputter_corrected_intensity_var
+    )
+    dataset["ena_intensity_sys_err"][0, energy_indices, ...] = (
+        sputter_corrected_intensity_sys_err
     )
 
     return dataset
