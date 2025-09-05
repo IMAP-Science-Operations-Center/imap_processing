@@ -24,7 +24,8 @@ import imap_data_access
 import numpy as np
 import spiceypy
 import xarray as xr
-from imap_data_access import ScienceFilePath
+from imap_data_access import ScienceFilePath, SPICEFilePath
+from imap_data_access.file_validation import generate_imap_file_path
 from imap_data_access.io import download
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
@@ -407,32 +408,35 @@ class ProcessInstrument(ABC):
             A list of file paths to upload to the SDC.
         """
         if self.upload_to_sdc:
-            # Validate that the files don't already exist
-            for filename in products:
-                file_path = ScienceFilePath(filename)
-                existing_file = imap_data_access.query(
-                    instrument=file_path.instrument,
-                    data_level=file_path.data_level,
-                    descriptor=file_path.descriptor,
-                    start_date=file_path.start_date,
-                    end_date=file_path.start_date,
-                    repointing=file_path.repointing,
-                    version=file_path.version,
-                    extension="cdf",
-                    table="science",
-                )
-                if existing_file:
-                    raise ProcessInstrument.ImapFileExistsError(
-                        f"File {filename} already exists in the IMAP SDC. "
-                        "No files were uploaded."
-                        f"Generated files: {products}."
-                    )
-
-            if len(products) == 0:
+            if not products:
                 logger.info("No files to upload.")
+                return
+
             for filename in products:
-                logger.info(f"Uploading file: {filename}")
-                imap_data_access.upload(filename)
+                file_obj = generate_imap_file_path(filename)
+
+                if isinstance(file_obj, SPICEFilePath):
+                    # upload SPICE files (DPS)
+                    logger.info(f"Uploading SPICE file: {filename}")
+                    try:
+                        imap_data_access.upload(filename)
+                    except ProcessInstrument.ImapFileExistsError as e:
+                        logger.error(f"Failed to upload SPICE file {filename}: {e}")
+                        # Continue to upload next file
+                        continue
+
+                elif isinstance(file_obj, ScienceFilePath):
+                    logger.info(f"Uploading science file: {filename}")
+                    try:
+                        imap_data_access.upload(filename)
+                    except ProcessInstrument.ImapFileExistsError as e:
+                        logger.error(f"Failed to upload science file {filename}: {e}")
+                        # Continue to upload next file
+                        continue
+                else:
+                    logger.info(
+                        f"File type for {filename} is not supported for upload."
+                    )
 
     @final
     def process(self) -> None:
