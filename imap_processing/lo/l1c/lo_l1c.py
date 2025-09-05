@@ -93,7 +93,7 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
             )
         else:
             pset["esa_mode"] = xr.DataArray(
-                l1b_de["esa_mode"].values[0],
+                np.array([l1b_de["esa_mode"].values[0]]),
                 dims=["epoch"],
                 attrs=attr_mgr.get_variable_attributes("esa_mode"),
             )
@@ -196,10 +196,12 @@ def filter_goodtimes(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
         Filtered L1B Direct Event dataset.
     """
     # the goodtimes are currently the only ancillary file needed for L1C processing
-    goodtimes_table_df = lo_ancillary.read_ancillary_file(anc_dependencies[0])
+    goodtimes_table_df = lo_ancillary.read_ancillary_file(
+        next(str(s) for s in anc_dependencies if "good-times" in str(s))
+    )
 
     # convert goodtimes from MET to TTJ2000
-    goodtimes_start = met_to_ttj2000ns(goodtimes_table_df["GoodTime_strt"])
+    goodtimes_start = met_to_ttj2000ns(goodtimes_table_df["GoodTime_start"])
     goodtimes_end = met_to_ttj2000ns(goodtimes_table_df["GoodTime_end"])
 
     # Create a mask for epochs within any of the start/end time ranges
@@ -542,21 +544,21 @@ def set_background_rates(
     # read in the background rates from ancillary file
     if species == FilterType.HYDROGEN:
         background_df = lo_ancillary.read_ancillary_file(
-            next(s for s in anc_dependencies if "hydrogen-background" in s)
+            next(str(s) for s in anc_dependencies if "hydrogen-background" in str(s))
         )
     else:
         background_df = lo_ancillary.read_ancillary_file(
-            next(s for s in anc_dependencies if "oxygen-background" in s)
+            next(str(s) for s in anc_dependencies if "oxygen-background" in str(s))
         )
 
     # find to the rows for the current pointing
     pointing_bg_df = background_df[
-        (background_df["GoodTime_strt"] >= pointing_start_met)
+        (background_df["GoodTime_start"] >= pointing_start_met)
         & (background_df["GoodTime_end"] <= pointing_end_met)
     ]
 
     # convert the bin start and end resolution from 6 degrees to .1 degrees
-    pointing_bg_df["bin_strt"] = pointing_bg_df["bin_strt"] * 60
+    pointing_bg_df["bin_start"] = pointing_bg_df["bin_start"] * 60
     # The last bin end in the file is 0, which means 60 degrees. This is
     # converted to 0.1 degree resolution of 3600
     pointing_bg_df["bin_end"] = pointing_bg_df["bin_end"] * 60

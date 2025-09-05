@@ -196,7 +196,7 @@ def set_esa_mode(
     """
     # Read the sweep table from the ancillary files
     sweep_df = lo_ancillary.read_ancillary_file(
-        next(s for s in anc_dependencies if "sweep-table" in s)
+        next(str(s) for s in anc_dependencies if "sweep-table" in str(s))
     )
 
     # Get the sweep table rows that correspond to the time period of the pointing
