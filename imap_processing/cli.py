@@ -24,9 +24,7 @@ import imap_data_access
 import numpy as np
 import spiceypy
 import xarray as xr
-from imap_data_access import ScienceFilePath, SPICEFilePath
-from imap_data_access.file_validation import generate_imap_file_path
-from imap_data_access.io import download
+from imap_data_access.io import IMAPDataAccessError, download
 from imap_data_access.processing_input import (
     ProcessingInputCollection,
     ProcessingInputType,
@@ -413,30 +411,18 @@ class ProcessInstrument(ABC):
                 return
 
             for filename in products:
-                file_obj = generate_imap_file_path(filename)
-
-                if isinstance(file_obj, SPICEFilePath):
-                    # upload SPICE files (DPS)
-                    logger.info(f"Uploading SPICE file: {filename}")
-                    try:
-                        imap_data_access.upload(filename)
-                    except ProcessInstrument.ImapFileExistsError as e:
-                        logger.error(f"Failed to upload SPICE file {filename}: {e}")
-                        # Continue to upload next file
+                try:
+                    logger.info(f"Uploading file: {filename}")
+                    imap_data_access.upload(filename)
+                except IMAPDataAccessError as e:
+                    msg = str(e)
+                    if "FileAlreadyExists" in msg and "409" in msg:
+                        logger.warning("Skipping upload of existing file, %s", filename)
                         continue
-
-                elif isinstance(file_obj, ScienceFilePath):
-                    logger.info(f"Uploading science file: {filename}")
-                    try:
-                        imap_data_access.upload(filename)
-                    except ProcessInstrument.ImapFileExistsError as e:
-                        logger.error(f"Failed to upload science file {filename}: {e}")
-                        # Continue to upload next file
-                        continue
-                else:
-                    logger.info(
-                        f"File type for {filename} is not supported for upload."
-                    )
+                    else:
+                        raise ValueError(f"Upload failed with error: {msg}") from e
+                except Exception as e:
+                    raise ValueError(f"Upload failed unknown error: {e!r}") from e
 
     @final
     def process(self) -> None:
@@ -1236,7 +1222,7 @@ class Spacecraft(ProcessInstrument):
             The list of processed products.
         """
         print(f"Processing Spacecraft {self.data_level}")
-
+        processed_dataset = []
         if self.data_level == "l1a":
             if self.descriptor == "quaternions":
                 # File path is expected output file path
@@ -1247,22 +1233,22 @@ class Spacecraft(ProcessInstrument):
                         f"{input_files}. Expected only one dependency."
                     )
                 datasets = list(quaternions.process_quaternions(input_files[0]))
-                return datasets
+                processed_dataset.extend(datasets)
             elif self.descriptor == "pointing-attitude":
                 spice_inputs = dependencies.get_file_paths(
                     data_type=SPICESource.SPICE.value
                 )
-                print("inputs: ", spice_inputs)
                 ah_paths = [path for path in spice_inputs if ".ah" in path.suffixes]
-                print("attitude history paths: ", ah_paths)
+                # TODO: refactor if multiple attitude history files are found
                 pointing_kernel_paths = (
                     pointing_frame.generate_pointing_attitude_kernel(ah_paths[0])
                 )
-                return pointing_kernel_paths
+                processed_dataset.extend(pointing_kernel_paths)
         else:
             raise NotImplementedError(
                 f"Spacecraft processing not implemented for level {self.data_level}"
             )
+        return processed_dataset
 
 
 class Swapi(ProcessInstrument):
