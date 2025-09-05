@@ -38,29 +38,24 @@ from imap_processing.lo.l2.lo_l2 import (
 # =============================================================================
 
 
+@pytest.fixture(params=["h", "o", "doubles", "triples"])
+def species_name(request):
+    """Parametrized fixture for different species names."""
+    return request.param
+
+
 @pytest.fixture
 def sample_pset():
     """Create a sample pointing set with typical data variables."""
     # Create counts data with some non-zero values
-    h_counts = np.zeros(PSET_SHAPE)
-    h_counts[:, 2:4, 10:20, 5:15] = 5  # Add some counts for testing
+    counts = np.zeros(PSET_SHAPE)
+    counts[:, 2:4, 10:20, 5:15] = 5  # Add some counts for testing
 
-    o_counts = np.zeros(PSET_SHAPE)
-    o_counts[:, 1:3, 15:25, 8:18] = 3
+    exposure_factor = np.full(PSET_SHAPE, 0.5)
 
-    doubles_counts = np.zeros(PSET_SHAPE)
-    doubles_counts[:, 0:2, 5:15, 10:20] = 2
-
-    triples_counts = np.zeros(PSET_SHAPE)
-    triples_counts[:, 3:5, 20:30, 15:25] = 1
-
-    exposure_time = np.full(PSET_SHAPE, 0.5)
-
-    # Create background rates data for h and o only
-    h_background_rates = np.full(PSET_SHAPE, 0.1)  # 0.1 counts/s background
-    o_background_rates = np.full(PSET_SHAPE, 0.05)  # 0.05 counts/s background
-    h_background_rates_stat_uncert = np.full(PSET_SHAPE, 0.01)  # 10% uncertainty
-    o_background_rates_stat_uncert = np.full(PSET_SHAPE, 0.005)  # 10% uncertainty
+    # Create background rates data
+    background_rates = np.full(PSET_SHAPE, 0.1)  # 0.1 counts/s background
+    background_rates_stat_uncert = np.full(PSET_SHAPE, 0.01)  # 10% uncertainty
 
     # Create coordinate arrays
     lons, lats = np.meshgrid(
@@ -73,20 +68,12 @@ def sample_pset():
 
     dataset = xr.Dataset(
         {
-            "h_counts": (PSET_DIMS, h_counts),
-            "o_counts": (PSET_DIMS, o_counts),
-            "doubles_counts": (PSET_DIMS, doubles_counts),
-            "triples_counts": (PSET_DIMS, triples_counts),
-            "exposure_time": (PSET_DIMS, exposure_time),
-            "h_bg_rate": (PSET_DIMS, h_background_rates),
-            "o_bg_rate": (PSET_DIMS, o_background_rates),
-            "h_bg_rate_stat_uncert": (
+            "counts": (PSET_DIMS, counts),
+            "exposure_factor": (PSET_DIMS, exposure_factor),
+            "background_rates": (PSET_DIMS, background_rates),
+            "background_rates_stat_uncert": (
                 PSET_DIMS,
-                h_background_rates_stat_uncert,
-            ),
-            "o_bg_rate_stat_uncert": (
-                PSET_DIMS,
-                o_background_rates_stat_uncert,
+                background_rates_stat_uncert,
             ),
             "hae_longitude": (("epoch", "spin_angle", "off_angle"), hae_longitude),
             "hae_latitude": (("epoch", "spin_angle", "off_angle"), hae_latitude),
@@ -102,19 +89,69 @@ def sample_pset():
 
 
 @pytest.fixture
+def sample_pset_for_species(species_name):
+    """Create a sample pointing set for a specific species."""
+    # Create counts data with some non-zero values
+    counts = np.zeros(PSET_SHAPE)
+    if species_name == "h":
+        counts[:, 2:4, 10:20, 5:15] = 5
+    elif species_name == "o":
+        counts[:, 1:3, 15:25, 8:18] = 3
+    elif species_name == "doubles":
+        counts[:, 0:2, 5:15, 10:20] = 2
+    elif species_name == "triples":
+        counts[:, 3:5, 20:30, 15:25] = 1
+
+    exposure_factor = np.full(PSET_SHAPE, 0.5)
+
+    # Create coordinate arrays
+    lons, lats = np.meshgrid(
+        SPIN_ANGLE_BIN_CENTERS, OFF_ANGLE_BIN_CENTERS, indexing="ij"
+    )
+    hae_longitude = np.empty((1, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS))
+    hae_latitude = np.empty((1, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS))
+    hae_longitude[0, :, :] = lons
+    hae_latitude[0, :, :] = lats
+
+    # Base dataset with coords and exposure time
+    dataset_dict = {
+        "counts": (PSET_DIMS, counts),
+        "exposure_factor": (PSET_DIMS, exposure_factor),
+        "hae_longitude": (("epoch", "spin_angle", "off_angle"), hae_longitude),
+        "hae_latitude": (("epoch", "spin_angle", "off_angle"), hae_latitude),
+    }
+
+    # Add background rates only for h and o
+    if species_name in ["h", "o"]:
+        bg_rates = np.full(PSET_SHAPE, 0.1 if species_name == "h" else 0.05)
+        bg_uncert = np.full(PSET_SHAPE, 0.01 if species_name == "h" else 0.005)
+        dataset_dict["background_rates"] = (PSET_DIMS, bg_rates)
+        dataset_dict["background_rates_stat_uncert"] = (
+            PSET_DIMS,
+            bg_uncert,
+        )
+
+    dataset = xr.Dataset(
+        dataset_dict,
+        coords={
+            "epoch": [8.1794907049e17],
+            "esa_energy_step": ESA_ENERGY_STEPS,
+            "spin_angle": SPIN_ANGLE_BIN_CENTERS,
+            "off_angle": OFF_ANGLE_BIN_CENTERS,
+        },
+    )
+    return dataset
+
+
+@pytest.fixture
 def minimal_pset():
-    """Create a minimal pointing set with all count types for testing."""
-    h_counts = np.ones(PSET_SHAPE)  # All ones for easy testing
-    o_counts = np.ones(PSET_SHAPE) * 0.5  # Half the hydrogen counts
-    doubles_counts = np.ones(PSET_SHAPE) * 0.2  # Some doubles events
-    triples_counts = np.ones(PSET_SHAPE) * 0.1  # Some triples events
-    exposure_time = np.full(PSET_SHAPE, 1.0)  # 1 second exposure for easy math
+    """Create a minimal pointing set with typical data for testing."""
+    counts = np.ones(PSET_SHAPE)  # All ones for easy testing
+    exposure_factor = np.full(PSET_SHAPE, 1.0)  # 1 second exposure for easy math
 
     # Create simple background rates for testing
-    h_background_rates = np.full(PSET_SHAPE, 0.2)  # 0.2 counts/s
-    o_background_rates = np.full(PSET_SHAPE, 0.1)  # 0.1 counts/s
-    h_background_rates_stat_uncert = np.full(PSET_SHAPE, 0.02)  # 10% uncertainty
-    o_background_rates_stat_uncert = np.full(PSET_SHAPE, 0.01)  # 10% uncertainty
+    background_rates = np.full(PSET_SHAPE, 0.2)  # 0.2 counts/s
+    background_rates_stat_uncert = np.full(PSET_SHAPE, 0.02)  # 10% uncertainty
 
     # Simple coordinate arrays
     lons, lats = np.meshgrid(
@@ -127,24 +164,66 @@ def minimal_pset():
 
     dataset = xr.Dataset(
         {
-            "h_counts": (PSET_DIMS, h_counts),
-            "o_counts": (PSET_DIMS, o_counts),
-            "doubles_counts": (PSET_DIMS, doubles_counts),
-            "triples_counts": (PSET_DIMS, triples_counts),
-            "exposure_time": (PSET_DIMS, exposure_time),
-            "h_background_rates": (PSET_DIMS, h_background_rates),
-            "o_background_rates": (PSET_DIMS, o_background_rates),
-            "h_background_rates_stat_uncert": (
+            "counts": (PSET_DIMS, counts),
+            "exposure_factor": (PSET_DIMS, exposure_factor),
+            "background_rates": (PSET_DIMS, background_rates),
+            "background_rates_stat_uncert": (
                 PSET_DIMS,
-                h_background_rates_stat_uncert,
-            ),
-            "o_background_rates_stat_uncert": (
-                PSET_DIMS,
-                o_background_rates_stat_uncert,
+                background_rates_stat_uncert,
             ),
             "hae_longitude": (("epoch", "spin_angle", "off_angle"), hae_longitude),
             "hae_latitude": (("epoch", "spin_angle", "off_angle"), hae_latitude),
         },
+        coords={
+            "epoch": [8.1794907049e17],
+            "esa_energy_step": ESA_ENERGY_STEPS,
+            "spin_angle": SPIN_ANGLE_BIN_CENTERS,
+            "off_angle": OFF_ANGLE_BIN_CENTERS,
+        },
+    )
+    return dataset
+
+
+@pytest.fixture
+def minimal_pset_for_species(species_name):
+    """Create a minimal pointing set for a specific species."""
+    # Create simple counts data
+    if species_name == "h":
+        counts = np.ones(PSET_SHAPE)
+    elif species_name == "o":
+        counts = np.ones(PSET_SHAPE) * 0.5
+    elif species_name == "doubles":
+        counts = np.ones(PSET_SHAPE) * 0.2
+    elif species_name == "triples":
+        counts = np.ones(PSET_SHAPE) * 0.1
+
+    exposure_factor = np.full(PSET_SHAPE, 1.0)  # 1 second exposure for easy math
+
+    # Simple coordinate arrays
+    lons, lats = np.meshgrid(
+        SPIN_ANGLE_BIN_CENTERS, OFF_ANGLE_BIN_CENTERS, indexing="ij"
+    )
+    hae_longitude = np.empty((1, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS))
+    hae_latitude = np.empty((1, N_SPIN_ANGLE_BINS, N_OFF_ANGLE_BINS))
+    hae_longitude[0, :, :] = lons
+    hae_latitude[0, :, :] = lats
+
+    # Base dataset with coords and exposure time
+    dataset_dict = {
+        "counts": (PSET_DIMS, counts),
+        "exposure_factor": (PSET_DIMS, exposure_factor),
+        "hae_longitude": (("epoch", "spin_angle", "off_angle"), hae_longitude),
+        "hae_latitude": (("epoch", "spin_angle", "off_angle"), hae_latitude),
+    }
+
+    # Add background rates for all species
+    bg_rates = np.full(PSET_SHAPE, 0.2 if species_name == "h" else 0.1)
+    bg_uncert = np.full(PSET_SHAPE, 0.02 if species_name == "h" else 0.01)
+    dataset_dict["background_rates"] = (PSET_DIMS, bg_rates)
+    dataset_dict["background_rates_stat_uncert"] = (PSET_DIMS, bg_uncert)
+
+    dataset = xr.Dataset(
+        dataset_dict,
         coords={
             "epoch": [8.1794907049e17],
             "esa_energy_step": ESA_ENERGY_STEPS,
@@ -223,28 +302,48 @@ def sample_sky_map_dataset():
         }
     )
 
-    # Add count data
-    for var in ["h", "o", "doubles", "triples"]:
-        counts = np.ones((1, n_energy, n_lon, n_lat)) * 10  # 10 counts for easy math
-        dataset[f"{var}_counts"] = (
-            ("epoch", "energy", "longitude", "latitude"),
-            counts,
-        )
+    # Current lo_l2.py uses generic variable names, not species-specific
+    counts = np.ones((1, n_energy, n_lon, n_lat)) * 10  # 10 counts for easy math
+    dataset["counts"] = (("epoch", "energy", "longitude", "latitude"), counts)
 
-        # Add efficiency-corrected quantities for intensity calculations
-        eff_corr = counts / 0.9  # Assuming 90% efficiency
-        dataset[f"{var}_counts_over_eff"] = (
-            ("epoch", "energy", "longitude", "latitude"),
-            eff_corr,
-        )
-        dataset[f"{var}_counts_over_eff_squared"] = (
-            ("epoch", "energy", "longitude", "latitude"),
-            eff_corr,
-        )
+    # Add efficiency-corrected quantities for intensity calculations
+    eff_corr = counts / 0.9  # Assuming 90% efficiency
+    dataset["counts_over_eff"] = (
+        ("epoch", "energy", "longitude", "latitude"),
+        eff_corr,
+    )
+    dataset["counts_over_eff_squared"] = (
+        ("epoch", "energy", "longitude", "latitude"),
+        eff_corr,
+    )
 
-    # Add exposure time
+    # Add exposure time using the current naming convention
     exposure = np.ones((1, n_energy, n_lon, n_lat)) * 1.0  # 1 second
-    dataset["exposure_time"] = (("epoch", "energy", "longitude", "latitude"), exposure)
+    dataset["exposure_factor"] = (
+        ("epoch", "energy", "longitude", "latitude"),
+        exposure,
+    )
+
+    return dataset
+
+
+@pytest.fixture
+def sample_dataset_with_geometric_factors():
+    """Create a dataset with geometric factors for testing calculations."""
+    dataset = xr.Dataset(
+        coords={
+            "epoch": [8.1794907049e17],
+            "energy": list(range(7)),
+        }
+    )
+
+    # Add current generic variable names used by lo_l2.py
+    dataset["counts_over_eff"] = (("epoch", "energy"), np.ones((1, 7)) * 100)
+    dataset["counts_over_eff_squared"] = (("epoch", "energy"), np.ones((1, 7)) * 100)
+    dataset["exposure_factor"] = (("epoch", "energy"), np.ones((1, 7)) * 1.0)
+    dataset["geometric_factor"] = (("energy",), np.ones(7) * 1e-4)
+    dataset["energy"] = (("energy",), np.ones(7) * 0.1)  # Energy values
+    dataset["geometric_factor_stat_uncert"] = (("energy",), np.ones(7) * 1e-5)
 
     return dataset
 
@@ -262,31 +361,24 @@ def sample_dataset_with_background_intermediates():
         }
     )
 
-    # Add the intermediate background variables that would be created
-    # during projection from pset to map
-    for var in ["h", "o"]:
-        # Background rate data (already projected)
-        bg_rate_exposure_time = np.ones((1, n_energy)) * 0.2  # 0.2 counts
-        dataset[f"{var}_bg_rate_exposure_time"] = (
-            ("epoch", "energy"),
-            bg_rate_exposure_time,
-        )
+    # Add the intermediate background variables using current naming convention
+    bg_rate_exposure_factor = np.ones((1, n_energy)) * 0.2  # 0.2 counts
+    dataset["bg_rates_exposure_factor"] = (("epoch", "energy"), bg_rate_exposure_factor)
 
-        # Background uncertainty squared times exposure time squared
-        bg_rate_stat_uncert_exposure_time2 = np.ones((1, n_energy)) * 0.004  # 0.02^2
-        dataset[f"{var}_bg_rate_stat_uncert_exposure_time2"] = (
-            ("epoch", "energy"),
-            bg_rate_stat_uncert_exposure_time2,
-        )
+    # Background uncertainty squared times exposure time squared
+    bg_rate_stat_uncert_exposure_factor2 = np.ones((1, n_energy)) * 0.004  # 0.02^2
+    dataset["bg_rates_stat_uncert_exposure_factor2"] = (
+        ("epoch", "energy"),
+        bg_rate_stat_uncert_exposure_factor2,
+    )
 
-    # Add exposure time (this would be the projected exposure time)
+    # Add exposure time (using current naming convention)
     exposure = np.ones((1, n_energy)) * 1.0  # 1 second
-    dataset["exposure_time"] = (("epoch", "energy"), exposure)
+    dataset["exposure_factor"] = (("epoch", "energy"), exposure)
 
     # Add geometric factors for systematic uncertainty calculation
-    for var in ["h", "o"]:
-        dataset[f"{var}_gf"] = (("energy",), np.ones(n_energy) * 1e-4)
-        dataset[f"{var}_gf_stat_uncert"] = (("energy",), np.ones(n_energy) * 1e-5)
+    dataset["geometric_factor"] = (("energy",), np.ones(n_energy) * 1e-4)
+    dataset["geometric_factor_stat_uncert"] = (("energy",), np.ones(n_energy) * 1e-5)
 
     return dataset
 
@@ -370,52 +462,100 @@ class TestLoadEfficiencyData:
 class TestNormalizePsetCoordinates:
     """Tests for the normalize_pset_coordinates function."""
 
-    def test_normalize_coordinates_basic(self, minimal_pset):
-        """Test basic coordinate normalization."""
-        # Create a mock output map with energy dimension and coordinates
-        mock_output_map = Mock()
-        mock_output_map.data_1d.dims = ["energy"]
-        # Create energy coordinates that will be assigned
-        energy_coords = np.array([10, 20, 30, 40, 50, 60, 70], dtype=float)
-        mock_output_map.data_1d.coords.get.return_value = energy_coords
+    @pytest.mark.parametrize("species", ["h", "o"])
+    def test_normalize_coordinates_basic(self, species):
+        """Test basic coordinate normalization for a specific species."""
+        # Create a pset with the specified species
+        pset = xr.Dataset(
+            {
+                f"{species}_counts": (PSET_DIMS, np.ones(PSET_SHAPE)),
+                "exposure_time": (PSET_DIMS, np.ones(PSET_SHAPE)),
+                f"{species}_background_rates": (PSET_DIMS, np.ones(PSET_SHAPE) * 0.1),
+                f"{species}_background_rates_stat_uncert": (
+                    PSET_DIMS,
+                    np.ones(PSET_SHAPE) * 0.01,
+                ),
+            },
+            coords={
+                "epoch": [8.1794907049e17],
+                "esa_energy_step": ESA_ENERGY_STEPS,
+                "spin_angle": SPIN_ANGLE_BIN_CENTERS,
+                "off_angle": OFF_ANGLE_BIN_CENTERS,
+            },
+        )
 
-        result = normalize_pset_coordinates(minimal_pset, mock_output_map)
+        result = normalize_pset_coordinates(pset, species)
 
         # Check that dimensions were renamed
         assert "energy" in result.dims
         assert "esa_energy_step" not in result.dims
 
-        # Check that energy coordinate is present and properly assigned
+        # Check that energy coordinate is present
         assert "energy" in result.coords
-        np.testing.assert_array_equal(result.coords["energy"], energy_coords)
+        np.testing.assert_array_equal(result.coords["energy"], list(range(7)))
 
         # Check that old coordinate variable was dropped
         assert "esa_energy_step" not in result.variables
 
-    def test_normalize_coordinates_no_energy_in_map(self, minimal_pset):
-        """Test normalization when output map has no energy dimension."""
-        mock_output_map = Mock()
-        mock_output_map.data_1d.dims = []
+        # Check that variables were renamed
+        assert "counts" in result.data_vars
+        assert "exposure_factor" in result.data_vars
+        assert "bg_rates" in result.data_vars
+        assert "bg_rates_stat_uncert" in result.data_vars
 
-        result = normalize_pset_coordinates(minimal_pset, mock_output_map)
+        # Check that old variable names are gone
+        assert f"{species}_counts" not in result.data_vars
+        assert "exposure_time" not in result.data_vars
 
-        # Should still rename dimensions
-        assert "energy" in result.dims
-        assert "esa_energy_step" not in result.dims
+    @pytest.mark.parametrize("species", ["doubles", "triples"])
+    def test_normalize_coordinates_no_background(self, species):
+        """Test normalization for species without background rates."""
+        # Create a pset with only counts and exposure time
+        pset = xr.Dataset(
+            {
+                f"{species}_counts": (PSET_DIMS, np.ones(PSET_SHAPE)),
+                "exposure_time": (PSET_DIMS, np.ones(PSET_SHAPE)),
+            },
+            coords={
+                "epoch": [8.1794907049e17],
+                "esa_energy_step": ESA_ENERGY_STEPS,
+                "spin_angle": SPIN_ANGLE_BIN_CENTERS,
+                "off_angle": OFF_ANGLE_BIN_CENTERS,
+            },
+        )
 
-    def test_normalize_coordinates_removes_old_coordinate(self, minimal_pset):
+        # For species without background rates, the function should fail
+        # because it tries to access background variables that don't exist
+        with pytest.raises(ValueError, match="cannot rename"):
+            normalize_pset_coordinates(pset, species)
+
+    def test_normalize_coordinates_removes_old_coordinate(self):
         """Test that old esa_energy_step coordinate is removed."""
-        # Add esa_energy_step as a variable (not just coordinate)
-        pset_with_var = minimal_pset.copy()
-        pset_with_var["esa_energy_step"] = xr.DataArray([1, 2, 3, 4, 5, 6, 7])
+        species = "h"
+        pset = xr.Dataset(
+            {
+                f"{species}_counts": (PSET_DIMS, np.ones(PSET_SHAPE)),
+                "exposure_time": (PSET_DIMS, np.ones(PSET_SHAPE)),
+                f"{species}_background_rates": (PSET_DIMS, np.ones(PSET_SHAPE) * 0.1),
+                f"{species}_background_rates_stat_uncert": (
+                    PSET_DIMS,
+                    np.ones(PSET_SHAPE) * 0.01,
+                ),
+                "esa_energy_step_var": xr.DataArray([1, 2, 3, 4, 5, 6, 7]),  # Variable
+            },
+            coords={
+                "epoch": [8.1794907049e17],
+                "esa_energy_step": ESA_ENERGY_STEPS,
+                "spin_angle": SPIN_ANGLE_BIN_CENTERS,
+                "off_angle": OFF_ANGLE_BIN_CENTERS,
+            },
+        )
 
-        mock_output_map = Mock()
-        mock_output_map.data_1d.dims = []
+        result = normalize_pset_coordinates(pset, species)
 
-        result = normalize_pset_coordinates(pset_with_var, mock_output_map)
-
-        # Should remove the esa_energy_step variable
+        # Should remove the esa_energy_step coordinate and variable
         assert "esa_energy_step" not in result.variables
+        assert "esa_energy_step_var" in result.variables  # Data variable should remain
 
 
 class TestAddEfficiencyFactorsToPset:
@@ -483,143 +623,163 @@ class TestAddEfficiencyFactorsToPset:
 class TestCalculateEfficiencyCorrectedQuantities:
     """Tests for the calculate_efficiency_corrected_quantities function."""
 
-    def test_calculate_efficiency_corrected_quantities(self, sample_pset):
+    def test_calculate_efficiency_corrected_quantities(self):
         """Test calculation of efficiency-corrected quantities."""
-        # Add efficiency factors using the correct dimension name
-        pset = sample_pset.copy()
-        efficiency = np.array([0.8, 0.85, 0.9, 0.95, 0.88, 0.92, 0.87])
-        pset["efficiency"] = xr.DataArray(efficiency, dims=["esa_energy_step"])
+        # Create a dataset with the current generic variable names
+        pset = xr.Dataset(
+            {
+                "counts": (("energy",), np.ones(7) * 10),  # 10 counts
+                "exposure_factor": (("energy",), np.ones(7) * 1.0),  # 1 second
+                "bg_rates": (("energy",), np.ones(7) * 0.1),  # 0.1 counts/s
+                "bg_rates_stat_uncert": (("energy",), np.ones(7) * 0.01),  # uncertainty
+                "efficiency": (
+                    ("energy",),
+                    np.array([0.8, 0.85, 0.9, 0.95, 0.88, 0.92, 0.87]),
+                ),
+            },
+            coords={"energy": list(range(7))},
+        )
 
         result = calculate_efficiency_corrected_quantities(pset)
 
         # Check that corrected quantities were added
-        for var in ["h", "o", "doubles", "triples"]:
-            assert f"{var}_counts_over_eff" in result.data_vars
-            assert f"{var}_counts_over_eff_squared" in result.data_vars
+        assert "counts_over_eff" in result.data_vars
+        assert "counts_over_eff_squared" in result.data_vars
+        assert "bg_rates_exposure_factor" in result.data_vars
+        assert "bg_rates_stat_uncert_exposure_factor2" in result.data_vars
 
-            # Check dimensions
-            assert result[f"{var}_counts_over_eff"].dims == pset[f"{var}_counts"].dims
+        # Check dimensions
+        assert result["counts_over_eff"].dims == pset["counts"].dims
 
-            # Check that division by efficiency happened
-            expected_over_eff = pset[f"{var}_counts"] / pset["efficiency"]
-            xr.testing.assert_allclose(
-                result[f"{var}_counts_over_eff"], expected_over_eff
-            )
+        # Check that division by efficiency happened correctly
+        expected_over_eff = pset["counts"] / pset["efficiency"]
+        xr.testing.assert_allclose(result["counts_over_eff"], expected_over_eff)
 
-            # Check that division by efficiency squared happened
-            expected_over_eff_sq = pset[f"{var}_counts"] / (pset["efficiency"] ** 2)
-            xr.testing.assert_allclose(
-                result[f"{var}_counts_over_eff_squared"], expected_over_eff_sq
-            )
+        # Check that division by efficiency squared happened correctly
+        expected_over_eff_sq = pset["counts"] / (pset["efficiency"] ** 2)
+        xr.testing.assert_allclose(
+            result["counts_over_eff_squared"], expected_over_eff_sq
+        )
+
+        # Check background rate calculations
+        expected_bg_exposure = pset["bg_rates"] * pset["exposure_factor"]
+        xr.testing.assert_allclose(
+            result["bg_rates_exposure_factor"], expected_bg_exposure
+        )
+
+        expected_bg_uncert_exposure = (
+            pset["bg_rates_stat_uncert"] ** 2 * pset["exposure_factor"] ** 2
+        )
+        xr.testing.assert_allclose(
+            result["bg_rates_stat_uncert_exposure_factor2"], expected_bg_uncert_exposure
+        )
 
 
 class TestCalculateRates:
     """Tests for the calculate_rates function."""
 
-    def test_calculate_rates_all_variables(self, sample_sky_map_dataset):
-        """Test rate calculation for all particle types."""
+    def test_calculate_rates_basic(self, sample_sky_map_dataset):
+        """Test rate calculation with current implementation."""
         result = calculate_rates(sample_sky_map_dataset)
 
-        # Check that rates were calculated for all variables
-        for var in ["h", "o", "doubles", "triples"]:
-            assert f"{var}_rate" in result.data_vars
-            assert f"{var}_rate_stat_uncert" in result.data_vars
+        # Check that the expected output variables were created
+        assert "ena_count_rate" in result.data_vars
+        assert "ena_count_rate_stat_uncert" in result.data_vars
 
-            # Check dimensions
-            assert (
-                result[f"{var}_rate"].dims
-                == sample_sky_map_dataset[f"{var}_counts"].dims
-            )
+        # Check dimensions match input
+        assert result["ena_count_rate"].dims == sample_sky_map_dataset["counts"].dims
 
-            # Check rate calculation (counts / exposure_time)
-            # With counts=10 and exposure=1, rate should be 10
-            assert np.all(result[f"{var}_rate"].values == 10.0)
+        # Check rate calculation (counts / exposure_factor)
+        # With counts=10 and exposure_factor=1, rate should be 10
+        expected_rate = (
+            sample_sky_map_dataset["counts"] / sample_sky_map_dataset["exposure_factor"]
+        )
+        xr.testing.assert_allclose(result["ena_count_rate"], expected_rate)
 
-            # Check uncertainty calculation (sqrt(counts) / exposure_time)
-            # With counts=10 and exposure=1, uncertainty should be sqrt(10)
-            expected_uncert = np.sqrt(10.0)
-            assert np.allclose(
-                result[f"{var}_rate_stat_uncert"].values, expected_uncert
-            )
+        # Check uncertainty calculation (sqrt(counts) / exposure_factor)
+        expected_uncert = (
+            np.sqrt(sample_sky_map_dataset["counts"])
+            / sample_sky_map_dataset["exposure_factor"]
+        )
+        xr.testing.assert_allclose(
+            result["ena_count_rate_stat_uncert"], expected_uncert
+        )
 
     def test_calculate_rates_missing_variables(self):
-        """Rate calculation when some variables are missing should raise error."""
-        # Create dataset with only hydrogen counts
+        """Rate calculation when required variables are missing."""
+        # Create dataset missing required variables
         dataset = xr.Dataset(
             {
-                "h_counts": (("epoch", "energy"), np.ones((1, 7)) * 5),
-                "exposure_time": (("epoch", "energy"), np.ones((1, 7))),
+                "counts": (("epoch", "energy"), np.ones((1, 7)) * 5),
+                # Missing exposure_factor
             }
         )
 
-        # The current function tries to access all variables,
-        # so it should raise KeyError
-        with pytest.raises(KeyError, match="No variable named 'o_counts'"):
+        # Should raise KeyError for missing exposure_factor
+        with pytest.raises(KeyError, match="exposure_factor"):
             calculate_rates(dataset)
 
 
 class TestCalculateIntensities:
     """Tests for the calculate_intensities function."""
 
-    def test_calculate_intensities_h_and_o(self):
-        """Test intensity calculation for hydrogen and oxygen."""
-        # Create a dataset with the required variables
-        dataset = xr.Dataset(
-            {
-                "h_counts_over_eff": (
-                    ("energy",),
-                    np.ones(7) * 100,
-                ),  # 100 corrected counts
-                "h_counts_over_eff_squared": (("energy",), np.ones(7) * 100),
-                "o_counts_over_eff": (
-                    ("energy",),
-                    np.ones(7) * 50,
-                ),  # 50 corrected counts
-                "o_counts_over_eff_squared": (("energy",), np.ones(7) * 50),
-                "exposure_time": (("energy",), np.ones(7) * 1.0),  # 1 second exposure
-                "h_gf": (("energy",), np.ones(7) * 1e-4),  # Geometric factor
-                "o_gf": (("energy",), np.ones(7) * 1e-4),
-                "energy_h": (("energy",), np.ones(7) * 0.1),  # 0.1 keV
-                "energy_o": (("energy",), np.ones(7) * 0.1),
-                "h_gf_stat_uncert": (("energy",), np.ones(7) * 1e-5),  # 10% uncertainty
-                "o_gf_stat_uncert": (("energy",), np.ones(7) * 1e-5),
-            }
-        )
+    def test_calculate_intensities_basic(self, sample_dataset_with_geometric_factors):
+        """Test intensity calculation with current implementation."""
+        result = calculate_intensities(sample_dataset_with_geometric_factors)
 
-        result = calculate_intensities(dataset)
-
-        # Check that intensities were calculated
-        for var in ["h", "o"]:
-            assert f"{var}_intensity" in result.data_vars
-            assert f"{var}_intensity_stat_uncert" in result.data_vars
-            assert f"{var}_intensity_sys_err" in result.data_vars
+        # Check that the expected output variables were created
+        assert "ena_intensity" in result.data_vars
+        assert "ena_intensity_stat_uncert" in result.data_vars
+        assert "ena_intensity_sys_err" in result.data_vars
 
         # Check intensity calculation:
-        # counts_over_eff / (gf * energy * exposure_time)
-        # For h: 100 / (1e-4 * 0.1 * 1.0) = 100 / 1e-5 = 1e7
-        expected_h_intensity = 100 / (1e-4 * 0.1 * 1.0)
-        assert np.allclose(result["h_intensity"].values, expected_h_intensity)
+        # counts_over_eff / (geometric_factor * energy * exposure_factor)
+        # 100 / (1e-4 * 0.1 * 1.0) = 100 / 1e-5 = 1e7
+        expected_intensity = sample_dataset_with_geometric_factors[
+            "counts_over_eff"
+        ] / (
+            sample_dataset_with_geometric_factors["geometric_factor"]
+            * sample_dataset_with_geometric_factors["energy"]
+            * sample_dataset_with_geometric_factors["exposure_factor"]
+        )
+        xr.testing.assert_allclose(result["ena_intensity"], expected_intensity)
 
-        # For o: 50 / (1e-4 * 0.1 * 1.0) = 50 / 1e-5 = 5e6
-        expected_o_intensity = 50 / (1e-4 * 0.1 * 1.0)
-        assert np.allclose(result["o_intensity"].values, expected_o_intensity)
+        # Check statistical uncertainty calculation
+        expected_stat_uncert = np.sqrt(
+            sample_dataset_with_geometric_factors["counts_over_eff_squared"]
+            / (
+                sample_dataset_with_geometric_factors["geometric_factor"]
+                * sample_dataset_with_geometric_factors["energy"]
+                * sample_dataset_with_geometric_factors["exposure_factor"]
+            )
+        )
+        xr.testing.assert_allclose(
+            result["ena_intensity_stat_uncert"], expected_stat_uncert
+        )
+
+        # Check systematic uncertainty calculation
+        expected_sys_err = (
+            result["ena_intensity"]
+            * sample_dataset_with_geometric_factors["geometric_factor_stat_uncert"]
+            / sample_dataset_with_geometric_factors["geometric_factor"]
+        )
+        xr.testing.assert_allclose(result["ena_intensity_sys_err"], expected_sys_err)
 
     def test_calculate_intensities_missing_variables(self):
-        """Test intensity calculation when some variables are missing."""
-        # Create dataset with only hydrogen variables
+        """Test intensity calculation when required variables are missing."""
+        # Create dataset missing geometric_factor
         dataset = xr.Dataset(
             {
-                "h_counts_over_eff": (("energy",), np.ones(7) * 100),
-                "h_counts_over_eff_squared": (("energy",), np.ones(7) * 100),
-                "exposure_time": (("energy",), np.ones(7) * 1.0),
-                "h_gf": (("energy",), np.ones(7) * 1e-4),
-                "energy_h": (("energy",), np.ones(7) * 0.1),
-                "h_gf_stat_uncert": (("energy",), np.ones(7) * 1e-5),
+                "counts_over_eff": (("energy",), np.ones(7) * 100),
+                "counts_over_eff_squared": (("energy",), np.ones(7) * 100),
+                "exposure_factor": (("energy",), np.ones(7) * 1.0),
+                "energy": (("energy",), np.ones(7) * 0.1),
+                # Missing geometric_factor
             }
         )
 
-        # Function should fail when trying to access missing 'o' variables
-        with pytest.raises(KeyError, match="No variable named 'o_counts_over_eff'"):
+        # Should raise KeyError for missing geometric_factor
+        with pytest.raises(KeyError, match="geometric_factor"):
             calculate_intensities(dataset)
 
 
@@ -634,57 +794,50 @@ class TestCalculateBackgrounds:
 
         result = calculate_backgrounds(dataset)
 
-        # Check that background intensities were calculated
-        for var in ["h", "o"]:
-            assert f"{var}_bg_intensity" in result.data_vars
-            assert f"{var}_bg_intensity_stat_uncert" in result.data_vars
-            assert f"{var}_bg_intensity_sys_err" in result.data_vars
+        # Check that background variables were calculated
+        assert "bg_rates" in result.data_vars
+        assert "bg_rates_stat_uncert" in result.data_vars
+        assert "bg_rates_sys_err" in result.data_vars
 
-        # Check background intensity calculation
-        # bg_rate_exposure_time / exposure_time = 0.2 / 1.0 = 0.2
-        expected_bg_intensity = 0.2
-        assert np.allclose(result["h_bg_intensity"].values, expected_bg_intensity)
-        assert np.allclose(result["o_bg_intensity"].values, expected_bg_intensity)
+        # Check background rate calculation
+        # bg_rates_exposure_factor / exposure_factor = 0.2 / 1.0 = 0.2
+        expected_bg_rate = (
+            dataset["bg_rates_exposure_factor"] / dataset["exposure_factor"]
+        )
+        xr.testing.assert_allclose(result["bg_rates"], expected_bg_rate)
 
         # Check statistical uncertainty calculation
-        # sqrt(bg_rate_stat_uncert_exposure_time2) / exposure_time
-        # sqrt(0.004) / 1.0 = 0.063...
-        expected_stat_uncert = np.sqrt(0.004) / 1.0
-        assert np.allclose(
-            result["h_bg_intensity_stat_uncert"].values, expected_stat_uncert
+        # sqrt(bg_rates_stat_uncert_exposure_factor2) / exposure_factor^2
+        expected_stat_uncert = np.sqrt(
+            dataset["bg_rates_stat_uncert_exposure_factor2"]
+            / dataset["exposure_factor"] ** 2
         )
-        assert np.allclose(
-            result["o_bg_intensity_stat_uncert"].values, expected_stat_uncert
-        )
+        xr.testing.assert_allclose(result["bg_rates_stat_uncert"], expected_stat_uncert)
 
         # Check systematic uncertainty calculation
-        # (gf_stat_uncert / gf) * bg_intensity = (1e-5 / 1e-4) * 0.2 = 0.02
-        expected_sys_err = (1e-5 / 1e-4) * 0.2
-        assert np.allclose(result["h_bg_intensity_sys_err"].values, expected_sys_err)
-        assert np.allclose(result["o_bg_intensity_sys_err"].values, expected_sys_err)
+        # (geometric_factor_stat_uncert / geometric_factor) * bg_rates
+        expected_sys_err = (
+            result["bg_rates"]
+            * dataset["geometric_factor_stat_uncert"]
+            / dataset["geometric_factor"]
+        )
+        xr.testing.assert_allclose(result["bg_rates_sys_err"], expected_sys_err)
 
     def test_calculate_backgrounds_zero_exposure(self):
         """Test background calculations with zero exposure time."""
         dataset = xr.Dataset(
             {
-                "h_bg_rate_exposure_time": (("epoch", "energy"), np.ones((1, 7)) * 0.2),
-                "o_bg_rate_exposure_time": (("epoch", "energy"), np.ones((1, 7)) * 0.1),
-                "h_bg_rate_stat_uncert_exposure_time2": (
+                "bg_rates_exposure_factor": (
+                    ("epoch", "energy"),
+                    np.ones((1, 7)) * 0.2,
+                ),
+                "bg_rates_stat_uncert_exposure_factor2": (
                     ("epoch", "energy"),
                     np.ones((1, 7)) * 0.004,
                 ),
-                "o_bg_rate_stat_uncert_exposure_time2": (
-                    ("epoch", "energy"),
-                    np.ones((1, 7)) * 0.001,
-                ),
-                "exposure_time": (
-                    ("epoch", "energy"),
-                    np.zeros((1, 7)),
-                ),  # Zero exposure
-                "h_gf": (("energy",), np.ones(7) * 1e-4),
-                "o_gf": (("energy",), np.ones(7) * 1e-4),
-                "h_gf_stat_uncert": (("energy",), np.ones(7) * 1e-5),
-                "o_gf_stat_uncert": (("energy",), np.ones(7) * 1e-5),
+                "exposure_factor": (("epoch", "energy"), np.zeros((1, 7))),
+                "geometric_factor": (("energy",), np.ones(7) * 1e-4),
+                "geometric_factor_stat_uncert": (("energy",), np.ones(7) * 1e-5),
             },
             coords={"epoch": [8.1794907049e17], "energy": list(range(7))},
         )
@@ -692,11 +845,12 @@ class TestCalculateBackgrounds:
         result = calculate_backgrounds(dataset)
 
         # Should handle division by zero gracefully
-        assert "h_bg_intensity" in result.data_vars
-        assert "o_bg_intensity" in result.data_vars
+        assert "bg_rates" in result.data_vars
+        assert "bg_rates_stat_uncert" in result.data_vars
+        assert "bg_rates_sys_err" in result.data_vars
         # Results should be infinite where exposure time is zero
-        assert np.all(np.isinf(result["h_bg_intensity"].values))
-        assert np.all(np.isinf(result["o_bg_intensity"].values))
+        assert np.all(np.isinf(result["bg_rates"].values))
+        assert np.all(np.isinf(result["bg_rates_stat_uncert"].values))
 
 
 class TestInitializeGeometricFactorVariables:
@@ -716,18 +870,9 @@ class TestInitializeGeometricFactorVariables:
 
         # Check that all geometric factor variables were initialized
         expected_vars = [
-            "energy_h",
-            "energy_h_stat_uncert",
-            "h_gf",
-            "h_gf_stat_uncert",
-            "energy_o",
-            "energy_o_stat_uncert",
-            "o_gf",
-            "o_gf_stat_uncert",
-            "doubles_gf",
-            "doubles_gf_stat_uncert",
-            "triples_gf",
-            "triples_gf_stat_uncert",
+            "energy_stat_uncert",
+            "geometric_factor",
+            "geometric_factor_stat_uncert",
         ]
 
         for var in expected_vars:
@@ -736,33 +881,56 @@ class TestInitializeGeometricFactorVariables:
             assert result[var].shape == (7,)
             assert np.all(result[var].values == 0)  # Should be initialized to zeros
 
+        # The energy coordinate should also be updated
+        assert "energy" in result.coords
+        assert result.coords["energy"].shape == (7,)
+        assert np.all(result.coords["energy"].values == 0)  # Should be zeros
+
 
 class TestPopulateGeometricFactors:
     """Tests for the populate_geometric_factors function."""
 
-    def test_populate_geometric_factors(self, sample_geometric_factor_data):
-        """Test population of geometric factor values."""
+    @pytest.mark.parametrize("species", ["h", "o"])
+    def test_populate_geometric_factors(self, species, sample_geometric_factor_data):
+        """Test population of geometric factor values for a specific species."""
         h_gf_data, o_gf_data = sample_geometric_factor_data
+        gf_data = h_gf_data if species == "h" else o_gf_data
 
         # Create initialized dataset
         dataset = xr.Dataset(coords={"energy": range(7)})
         dataset = initialize_geometric_factor_variables(dataset)
 
-        result = populate_geometric_factors(dataset, h_gf_data, o_gf_data)
+        result = populate_geometric_factors(dataset, gf_data, species)
 
         # Check that values were populated correctly
         for i in range(7):
-            # Check hydrogen values
-            assert result["energy_h"].values[i] == 0.01 * (i + 1)
-            assert result["h_gf"].values[i] == 1e-4 * (i + 1)
+            if species == "h":
+                # Check hydrogen values
+                assert result["energy"].values[i] == 0.01 * (i + 1)
+                assert result["geometric_factor"].values[i] == 1e-4 * (i + 1)
+                assert result["geometric_factor_stat_uncert"].values[i] == (
+                    1e-5 * (i + 1)
+                )
+            else:  # oxygen
+                assert result["energy"].values[i] == 0.015 * (i + 1)
+                assert result["geometric_factor"].values[i] == 1.5e-4 * (i + 1)
+                assert result["geometric_factor_stat_uncert"].values[i] == (
+                    1.5e-5 * (i + 1)
+                )
 
-            # Check oxygen values
-            assert result["energy_o"].values[i] == 0.015 * (i + 1)
-            assert result["o_gf"].values[i] == 1.5e-4 * (i + 1)
+    def test_populate_geometric_factors_no_gf_species(self):
+        """Test population for species without geometric factors."""
+        # Create initialized dataset
+        dataset = xr.Dataset(coords={"energy": range(7)})
+        dataset = initialize_geometric_factor_variables(dataset)
 
-            # Check general geometric factors
-            assert result["doubles_gf"].values[i] == 2e-4 * (i + 1)
-            assert result["triples_gf"].values[i] == 3e-4 * (i + 1)
+        gf_data = pd.DataFrame()  # Empty dataframe
+
+        # Test with doubles (no geometric factors)
+        result = populate_geometric_factors(dataset, gf_data, "doubles")
+
+        # Should return dataset unchanged (all zeros)
+        assert np.all(result["geometric_factor"].values == 0)
 
 
 class TestCleanupIntermediateVariables:
@@ -770,64 +938,51 @@ class TestCleanupIntermediateVariables:
 
     def test_cleanup_intermediate_variables(self):
         """Test removal of intermediate variables."""
-        # Create dataset with intermediate variables
+        # Create dataset with intermediate variables using current naming
         dataset = xr.Dataset(
             {
-                "h_counts": (("energy",), np.ones(7)),
-                "h_counts_over_eff": (("energy",), np.ones(7)),
-                "h_counts_over_eff_squared": (("energy",), np.ones(7)),
-                "h_gf": (("energy",), np.ones(7)),
-                "h_gf_stat_uncert": (("energy",), np.ones(7)),
-                "o_counts_over_eff": (("energy",), np.ones(7)),
-                "o_gf": (("energy",), np.ones(7)),
-                "h_bg_rate_exposure_time": (("energy",), np.ones(7)),
-                "o_bg_rate_exposure_time": (("energy",), np.ones(7)),
-                "h_bg_rate_stat_uncert_exposure_time2": (("energy",), np.ones(7)),
-                "o_bg_rate_stat_uncert_exposure_time2": (("energy",), np.ones(7)),
-                "h_intensity": (("energy",), np.ones(7)),  # Should be kept
-                "exposure_time": (("energy",), np.ones(7)),  # Should be kept
+                "counts": (("energy",), np.ones(7)),
+                "counts_over_eff": (("energy",), np.ones(7)),
+                "counts_over_eff_squared": (("energy",), np.ones(7)),
+                "bg_rates_exposure_factor": (("energy",), np.ones(7)),
+                "bg_rates_stat_uncert_exposure_factor2": (("energy",), np.ones(7)),
+                "ena_intensity": (("energy",), np.ones(7)),  # Should be kept
+                "exposure_factor": (("energy",), np.ones(7)),  # Should be kept
             }
         )
 
         result = cleanup_intermediate_variables(dataset)
 
         # Should keep these variables
-        assert "h_counts" in result.data_vars
-        assert "h_intensity" in result.data_vars
-        assert "exposure_time" in result.data_vars
+        assert "counts" in result.data_vars
+        assert "ena_intensity" in result.data_vars
+        assert "exposure_factor" in result.data_vars
 
         # Should remove these intermediate variables
-        assert "h_counts_over_eff" not in result.data_vars
-        assert "h_counts_over_eff_squared" not in result.data_vars
-        assert "h_gf" not in result.data_vars
-        assert "h_gf_stat_uncert" not in result.data_vars
-        assert "o_counts_over_eff" not in result.data_vars
-        assert "o_gf" not in result.data_vars
-        assert "h_bg_rate_exposure_time" not in result.data_vars
-        assert "o_bg_rate_exposure_time" not in result.data_vars
-        assert "h_bg_rate_stat_uncert_exposure_time2" not in result.data_vars
-        assert "o_bg_rate_stat_uncert_exposure_time2" not in result.data_vars
+        assert "counts_over_eff" not in result.data_vars
+        assert "counts_over_eff_squared" not in result.data_vars
+        assert "bg_rates_exposure_factor" not in result.data_vars
+        assert "bg_rates_stat_uncert_exposure_factor2" not in result.data_vars
 
     def test_cleanup_partial_variables(self):
         """Test cleanup when only some intermediate variables exist."""
         # Create dataset with only some intermediate variables
         dataset = xr.Dataset(
             {
-                "h_counts": (("energy",), np.ones(7)),
-                "h_counts_over_eff": (("energy",), np.ones(7)),
-                "exposure_time": (("energy",), np.ones(7)),
-                # Missing: h_counts_over_eff_squared, h_gf, etc.
+                "counts": (("energy",), np.ones(7)),
+                "counts_over_eff": (("energy",), np.ones(7)),
+                "exposure_factor": (("energy",), np.ones(7)),
             }
         )
 
         result = cleanup_intermediate_variables(dataset)
 
         # Should keep these
-        assert "h_counts" in result.data_vars
-        assert "exposure_time" in result.data_vars
+        assert "counts" in result.data_vars
+        assert "exposure_factor" in result.data_vars
 
         # Should remove only the existing intermediate variable
-        assert "h_counts_over_eff" not in result.data_vars
+        assert "counts_over_eff" not in result.data_vars
 
 
 # =============================================================================
@@ -840,37 +995,24 @@ class TestCalculateAllRatesAndIntensities:
 
     def test_calculate_all_rates_and_intensities_complete(self):
         """Test the complete rates and intensities calculation pipeline."""
-        # Create a comprehensive dataset
+        # Create a comprehensive dataset with current naming convention
         dataset = xr.Dataset(
             {
-                # Count data (all required by calculate_rates)
-                "h_counts": (("energy",), np.ones(7) * 10),
-                "o_counts": (("energy",), np.ones(7) * 5),
-                "doubles_counts": (("energy",), np.ones(7) * 2),
-                "triples_counts": (("energy",), np.ones(7) * 1),
+                # Count data (current generic naming)
+                "counts": (("energy",), np.ones(7) * 10),
                 # Efficiency corrected data
-                "h_counts_over_eff": (("energy",), np.ones(7) * 12),  # 10/0.83 ≈ 12
-                "h_counts_over_eff_squared": (("energy",), np.ones(7) * 12),
-                "o_counts_over_eff": (("energy",), np.ones(7) * 6),  # 5/0.83 ≈ 6
-                "o_counts_over_eff_squared": (("energy",), np.ones(7) * 6),
+                "counts_over_eff": (("energy",), np.ones(7) * 12),  # 10/0.83 ≈ 12
+                "counts_over_eff_squared": (("energy",), np.ones(7) * 12),
                 # Other required data
-                "exposure_time": (("energy",), np.ones(7) * 1.0),
-                "h_gf": (("energy",), np.ones(7) * 1e-4),
-                "o_gf": (("energy",), np.ones(7) * 1e-4),
-                "energy_h": (("energy",), np.ones(7) * 0.1),
-                "energy_o": (("energy",), np.ones(7) * 0.1),
-                "h_gf_stat_uncert": (("energy",), np.ones(7) * 1e-5),
-                "o_gf_stat_uncert": (("energy",), np.ones(7) * 1e-5),
+                "exposure_factor": (("energy",), np.ones(7) * 1.0),
+                "geometric_factor": (("energy",), np.ones(7) * 1e-4),
+                "energy": (("energy",), np.ones(7) * 0.1),
+                "geometric_factor_stat_uncert": (("energy",), np.ones(7) * 1e-5),
                 # Background intermediate data
-                "h_bg_rate_exposure_time": (("energy",), np.ones(7) * 0.3),
-                "o_bg_rate_exposure_time": (("energy",), np.ones(7) * 0.15),
-                "h_bg_rate_stat_uncert_exposure_time2": (
+                "bg_rates_exposure_factor": (("energy",), np.ones(7) * 0.3),
+                "bg_rates_stat_uncert_exposure_factor2": (
                     ("energy",),
                     np.ones(7) * 0.009,
-                ),
-                "o_bg_rate_stat_uncert_exposure_time2": (
-                    ("energy",),
-                    np.ones(7) * 0.0025,
                 ),
             }
         )
@@ -878,49 +1020,34 @@ class TestCalculateAllRatesAndIntensities:
         result = calculate_all_rates_and_intensities(dataset)
 
         # Check that rates were calculated
-        assert "h_rate" in result.data_vars
-        assert "o_rate" in result.data_vars
-        assert "doubles_rate" in result.data_vars
-        assert "triples_rate" in result.data_vars
-        assert "h_rate_stat_uncert" in result.data_vars
-        assert "o_rate_stat_uncert" in result.data_vars
+        assert "ena_count_rate" in result.data_vars
+        assert "ena_count_rate_stat_uncert" in result.data_vars
 
         # Check that intensities were calculated
-        assert "h_intensity" in result.data_vars
-        assert "o_intensity" in result.data_vars
-        assert "h_intensity_stat_uncert" in result.data_vars
-        assert "o_intensity_stat_uncert" in result.data_vars
-        assert "h_intensity_sys_err" in result.data_vars
-        assert "o_intensity_sys_err" in result.data_vars
+        assert "ena_intensity" in result.data_vars
+        assert "ena_intensity_stat_uncert" in result.data_vars
+        assert "ena_intensity_sys_err" in result.data_vars
 
-        # Check that background intensities were calculated
-        assert "h_bg_intensity" in result.data_vars
-        assert "o_bg_intensity" in result.data_vars
-        assert "h_bg_intensity_stat_uncert" in result.data_vars
-        assert "o_bg_intensity_stat_uncert" in result.data_vars
-        assert "h_bg_intensity_sys_err" in result.data_vars
-        assert "o_bg_intensity_sys_err" in result.data_vars
+        # Check that background rates were calculated
+        assert "bg_rates" in result.data_vars
+        assert "bg_rates_stat_uncert" in result.data_vars
+        assert "bg_rates_sys_err" in result.data_vars
 
         # Check that intermediate variables were cleaned up
-        assert "h_counts_over_eff" not in result.data_vars
-        assert "h_gf" not in result.data_vars
-        assert "h_bg_rate_exposure_time" not in result.data_vars
-        assert "o_bg_rate_exposure_time" not in result.data_vars
+        assert "counts_over_eff" not in result.data_vars
+        assert "counts_over_eff_squared" not in result.data_vars
+        assert "bg_rates_exposure_factor" not in result.data_vars
+        assert "bg_rates_stat_uncert_exposure_factor2" not in result.data_vars
 
 
 @pytest.mark.external_kernel
 class TestIntegrationWithMocks:
     """Integration tests using mocked external dependencies."""
 
-    def test_lo_l2_integration_minimal(
-        self, minimal_pset, sample_geometric_factor_data
-    ):
+    def test_lo_l2_integration_minimal(self, minimal_pset_for_species):
         """Test the main lo_l2 function with minimal mocking."""
-        # This is a complex integration test - let's simplify it to just test
-        # that the main function doesn't crash with proper mocking
-
-        # Prepare input
-        sci_dependencies = {"imap_lo_l1c_pset": [minimal_pset]}
+        # Test with hydrogen data
+        sci_dependencies = {"imap_lo_l1c_pset": [minimal_pset_for_species]}
         anc_dependencies = []
         descriptor = "l090-ena-h-sf-nsp-ram-hae-6deg-3mo"
 
@@ -929,28 +1056,28 @@ class TestIntegrationWithMocks:
             patch(
                 "imap_processing.lo.l2.lo_l2.create_sky_map_from_psets"
             ) as mock_create_map,
-            patch(
-                "imap_processing.lo.l2.lo_l2.load_geometric_factor_data"
-            ) as mock_load_gf,
+            patch("imap_processing.lo.l2.lo_l2.add_geometric_factors") as mock_add_gf,
             patch(
                 "imap_processing.lo.l2.lo_l2.calculate_all_rates_and_intensities"
             ) as mock_calc_rates,
+            patch("imap_processing.lo.l2.lo_l2.finalize_dataset") as mock_finalize,
         ):
-            # Setup mocks to return minimal valid datasets
-            h_gf_data, o_gf_data = sample_geometric_factor_data
-            mock_load_gf.return_value = (h_gf_data, o_gf_data)
-
-            # Mock the sky map creation to return a complete dataset
+            # Setup mock returns
             mock_sky_map = Mock()
-            mock_result_dataset = xr.Dataset(
-                {
-                    "h_intensity": (("epoch", "energy"), np.ones((1, 7))),
-                    "o_intensity": (("epoch", "energy"), np.ones((1, 7)) * 0.5),
-                    "exposure_time": (("epoch", "energy"), np.ones((1, 7))),
-                }
-            )
-            mock_sky_map.to_dataset.return_value = mock_result_dataset
+            mock_dataset = xr.Dataset({"test_var": (("energy",), np.ones(7))})
+            mock_sky_map.to_dataset.return_value = mock_dataset
             mock_create_map.return_value = mock_sky_map
+            mock_add_gf.return_value = mock_dataset
+            mock_calc_rates.return_value = mock_dataset
+            mock_finalize.return_value = mock_dataset
+
+            # Run the function - should not crash
+            result = lo_l2(sci_dependencies, anc_dependencies, descriptor)
+
+            # Basic validation
+            assert isinstance(result, list)
+            assert len(result) == 1
+            assert isinstance(result[0], xr.Dataset)
 
             # Mock the rates calculation to return the dataset unchanged
             mock_calc_rates.side_effect = lambda x: x
@@ -981,20 +1108,21 @@ class TestErrorHandling:
         with pytest.raises(ValueError, match="No pointing set data found"):
             lo_l2(sci_dependencies, anc_dependencies, descriptor)
 
-    def test_create_sky_map_healpix_not_supported(self, minimal_pset):
+    def test_create_sky_map_healpix_not_supported(self, minimal_pset_for_species):
         """Test error when HEALPix map is requested."""
-        descriptor = "l090-ena-h-sf-nsp-ram-hnu-nside2-3mo"  # HEALPix descriptor
-
         with patch.object(MapDescriptor, "from_string") as mock_from_string:
             mock_map_desc = Mock()
             mock_healpix_map = Mock()  # Not a RectangularSkyMap
             mock_map_desc.to_empty_map.return_value = mock_healpix_map
+            mock_map_desc.species = "h"
             mock_from_string.return_value = mock_map_desc
 
             with pytest.raises(
                 NotImplementedError, match="HEALPix map output not supported"
             ):
-                create_sky_map_from_psets([minimal_pset], descriptor, pd.DataFrame())
+                create_sky_map_from_psets(
+                    [minimal_pset_for_species], mock_map_desc, pd.DataFrame()
+                )
 
 
 # =============================================================================
@@ -1018,39 +1146,33 @@ class TestEdgeCases:
         """Test handling of zero exposure times."""
         dataset = xr.Dataset(
             {
-                "h_counts": (("energy",), np.ones(7) * 10),
-                "o_counts": (("energy",), np.ones(7) * 5),
-                "doubles_counts": (("energy",), np.ones(7) * 2),
-                "triples_counts": (("energy",), np.ones(7) * 1),
-                "exposure_time": (("energy",), np.zeros(7)),  # Zero exposure
+                "counts": (("energy",), np.ones(7) * 10),
+                "exposure_factor": (("energy",), np.zeros(7)),  # Zero exposure
             }
         )
 
         result = calculate_rates(dataset)
 
         # Should handle division by zero gracefully
-        assert "h_rate" in result.data_vars
+        assert "ena_count_rate" in result.data_vars
         # Rates should be infinite where exposure time is zero
-        assert np.all(np.isinf(result["h_rate"].values))
+        assert np.all(np.isinf(result["ena_count_rate"].values))
 
     def test_negative_counts_handling(self):
         """Test handling of negative count values."""
         dataset = xr.Dataset(
             {
-                "h_counts": (("energy",), np.array([-1, 0, 1, 2, 3, 4, 5])),
-                "o_counts": (("energy",), np.array([0, 1, 2, 3, 4, 5, 6])),
-                "doubles_counts": (("energy",), np.array([0, 0, 1, 1, 2, 2, 3])),
-                "triples_counts": (("energy",), np.array([0, 0, 0, 1, 1, 1, 2])),
-                "exposure_time": (("energy",), np.ones(7)),
+                "counts": (("energy",), np.array([-1, 0, 1, 2, 3, 4, 5])),
+                "exposure_factor": (("energy",), np.ones(7)),
             }
         )
 
         result = calculate_rates(dataset)
 
         # Should calculate rates even with negative counts
-        assert "h_rate" in result.data_vars
-        assert "h_rate_stat_uncert" in result.data_vars
+        assert "ena_count_rate" in result.data_vars
+        assert "ena_count_rate_stat_uncert" in result.data_vars
 
         # Uncertainty calculation should handle negative counts
         # (sqrt of negative gives NaN, which is expected behavior)
-        assert np.isnan(result["h_rate_stat_uncert"].values[0])
+        assert np.isnan(result["ena_count_rate_stat_uncert"].values[0])

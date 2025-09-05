@@ -60,24 +60,25 @@ def lo_l2(
         raise ValueError("No pointing set data found in science dependencies")
     psets = sci_dependencies["imap_lo_l1c_pset"]
 
-    # TODO: Remove this hardcoded logical source
-    logical_source = "imap_lo_l2_l090-ena-h-sf-nsp-ram-hae-6deg-3mo"
+    # Parse the map descriptor to get species and other attributes
+    map_descriptor = MapDescriptor.from_string(descriptor)
+    logger.info(f"Processing map for species: {map_descriptor.species}")
 
     logger.info("Step 1: Loading ancillary data")
     efficiency_data = load_efficiency_data(anc_dependencies)
 
     logger.info(f"Step 2: Creating sky map from {len(psets)} pointing sets")
-    sky_map = create_sky_map_from_psets(psets, descriptor, efficiency_data)
+    sky_map = create_sky_map_from_psets(psets, map_descriptor, efficiency_data)
 
     logger.info("Step 3: Converting to dataset and adding geometric factors")
     dataset = sky_map.to_dataset()
-    dataset = add_geometric_factors(dataset)
+    dataset = add_geometric_factors(dataset, map_descriptor.species)
 
     logger.info("Step 4: Calculating rates and intensities")
     dataset = calculate_all_rates_and_intensities(dataset)
 
     logger.info("Step 5: Finalizing dataset with attributes")
-    dataset = finalize_dataset(dataset, logical_source)
+    dataset = finalize_dataset(dataset, descriptor)
 
     logger.info("IMAP-Lo L2 processing pipeline completed successfully")
     return [dataset]
@@ -120,7 +121,7 @@ def load_efficiency_data(anc_dependencies: list) -> pd.DataFrame:
     )
 
 
-def finalize_dataset(dataset: xr.Dataset, logical_source: str) -> xr.Dataset:
+def finalize_dataset(dataset: xr.Dataset, descriptor: str) -> xr.Dataset:
     """
     Add attributes and perform final dataset preparation.
 
@@ -128,8 +129,8 @@ def finalize_dataset(dataset: xr.Dataset, logical_source: str) -> xr.Dataset:
     ----------
     dataset : xr.Dataset
         The dataset to finalize with attributes.
-    logical_source : str
-        The logical source identifier for global attributes.
+    descriptor : str
+        The descriptor for this map dataset.
 
     Returns
     -------
@@ -143,7 +144,12 @@ def finalize_dataset(dataset: xr.Dataset, logical_source: str) -> xr.Dataset:
     attr_mgr.add_instrument_variable_attrs(instrument="enamaps", level="l2-rectangular")
 
     # Add global and variable attributes
-    dataset.attrs.update(attr_mgr.get_global_attributes(logical_source))
+    dataset.attrs.update(attr_mgr.get_global_attributes("imap_lo_l2_enamap"))
+
+    # Our global attributes have placeholders for descriptor
+    # so iterate through here and fill that in with the map-specific descriptor
+    for key in ["Data_type", "Logical_source", "Logical_source_description"]:
+        dataset.attrs[key] = dataset.attrs[key].format(descriptor=descriptor)
     for var in dataset.data_vars:
         try:
             dataset[var].attrs = attr_mgr.get_variable_attributes(var)
@@ -165,7 +171,9 @@ def finalize_dataset(dataset: xr.Dataset, logical_source: str) -> xr.Dataset:
 
 
 def create_sky_map_from_psets(
-    psets: list[xr.Dataset], descriptor: str, efficiency_data: pd.DataFrame
+    psets: list[xr.Dataset],
+    map_descriptor: MapDescriptor,
+    efficiency_data: pd.DataFrame,
 ) -> AbstractSkyMap:
     """
     Create a sky map by processing all pointing sets.
@@ -174,8 +182,8 @@ def create_sky_map_from_psets(
     ----------
     psets : list[xr.Dataset]
         List of pointing set datasets to process.
-    descriptor : str
-        Map descriptor string defining the projection and binning.
+    map_descriptor : MapDescriptor
+        Map descriptor object defining the projection and binning.
     efficiency_data : pd.DataFrame
         Efficiency factor data for correcting counts.
 
@@ -190,7 +198,6 @@ def create_sky_map_from_psets(
         If HEALPix map output is requested (only rectangular maps supported).
     """
     # Initialize the output map
-    map_descriptor = MapDescriptor.from_string(descriptor)
     output_map = map_descriptor.to_empty_map()
 
     if not isinstance(output_map, RectangularSkyMap):
@@ -200,14 +207,18 @@ def create_sky_map_from_psets(
     # Process each pointing set
     for i, pset in enumerate(psets):
         logger.debug(f"Processing pointing set {i + 1}/{len(psets)}")
-        processed_pset = process_single_pset(pset, output_map, efficiency_data)
+        processed_pset = process_single_pset(
+            pset, efficiency_data, map_descriptor.species
+        )
         project_pset_to_map(processed_pset, output_map)
 
     return output_map
 
 
 def process_single_pset(
-    pset: xr.Dataset, output_map: AbstractSkyMap, efficiency_data: pd.DataFrame
+    pset: xr.Dataset,
+    efficiency_data: pd.DataFrame,
+    species: str,
 ) -> xr.Dataset:
     """
     Process a single pointing set for projection to the sky map.
@@ -216,10 +227,10 @@ def process_single_pset(
     ----------
     pset : xr.Dataset
         Single pointing set dataset to process.
-    output_map : AbstractSkyMap
-        The target sky map for coordinate alignment.
     efficiency_data : pd.DataFrame
         Efficiency factor data for correcting counts.
+    species : str
+        The species to process (e.g., "h", "o").
 
     Returns
     -------
@@ -227,7 +238,7 @@ def process_single_pset(
         Processed pointing set ready for projection with efficiency corrections applied.
     """
     # Step 1: Normalize coordinate system
-    pset_processed = normalize_pset_coordinates(pset, output_map)
+    pset_processed = normalize_pset_coordinates(pset, species)
 
     # Step 2: Add efficiency factors
     pset_processed = add_efficiency_factors_to_pset(pset_processed, efficiency_data)
@@ -238,9 +249,7 @@ def process_single_pset(
     return pset_processed
 
 
-def normalize_pset_coordinates(
-    pset: xr.Dataset, output_map: AbstractSkyMap
-) -> xr.Dataset:
+def normalize_pset_coordinates(pset: xr.Dataset, species: str) -> xr.Dataset:
     """
     Normalize pointing set coordinates to match the output map.
 
@@ -248,8 +257,8 @@ def normalize_pset_coordinates(
     ----------
     pset : xr.Dataset
         Input pointing set dataset with potentially mismatched coordinates.
-    output_map : AbstractSkyMap
-        Target sky map for coordinate alignment.
+    species : str
+        The species to process (e.g., "h", "o").
 
     Returns
     -------
@@ -260,25 +269,22 @@ def normalize_pset_coordinates(
     pset_renamed = pset.rename_dims({"esa_energy_step": "energy"})
 
     # Drop the esa_energy_step coordinate first to avoid conflicts
-    if "esa_energy_step" in pset_renamed.variables:
-        pset_renamed = pset_renamed.drop_vars("esa_energy_step")
+    pset_renamed = pset_renamed.drop_vars("esa_energy_step")
 
     # Ensure the pset energy coordinates match the output map
-    if "energy" in output_map.data_1d.dims:
-        # Get the energy coordinates from the output map
-        map_energy_coords = output_map.data_1d.coords.get("energy", range(7))
-        # Align the pset energy coordinates to match the map
-        pset_renamed = pset_renamed.assign_coords(energy=map_energy_coords)
+    # TODO: Do we even need this if we are assigning the true
+    #       energy levels later?
+    pset_renamed = pset_renamed.assign_coords(energy=range(7))
 
-    # Rename the background rates variables for the maps
-    # TODO: Do we want to change either one to be consistent across all levels?
-    bg_rename_map = {
-        "h_background_rates": "h_bg_rate",
-        "o_background_rates": "o_bg_rate",
-        "h_background_rates_stat_uncert": "h_bg_rate_stat_uncert",
-        "o_background_rates_stat_uncert": "o_bg_rate_stat_uncert",
+    # Rename the variables in the pset for projection to the map
+    # L2 wants different variable names than l1c
+    rename_map = {
+        "exposure_time": "exposure_factor",
+        f"{species}_counts": "counts",
+        f"{species}_background_rates": "bg_rates",
+        f"{species}_background_rates_stat_uncert": "bg_rates_stat_uncert",
     }
-    pset_renamed = pset_renamed.rename_vars(bg_rename_map)
+    pset_renamed = pset_renamed.rename_vars(rename_map)
 
     return pset_renamed
 
@@ -341,7 +347,9 @@ def add_efficiency_factors_to_pset(
     return pset
 
 
-def calculate_efficiency_corrected_quantities(pset: xr.Dataset) -> xr.Dataset:
+def calculate_efficiency_corrected_quantities(
+    pset: xr.Dataset,
+) -> xr.Dataset:
     """
     Calculate efficiency-corrected quantities for each particle type.
 
@@ -355,29 +363,25 @@ def calculate_efficiency_corrected_quantities(pset: xr.Dataset) -> xr.Dataset:
     xr.Dataset
         Pointing set with efficiency-corrected count variables added.
     """
-    for var in ["h", "o", "doubles", "triples"]:
-        # counts / efficiency
-        pset[f"{var}_counts_over_eff"] = pset[f"{var}_counts"] / pset["efficiency"]
-        # counts / efficiency**2 (for variance propagation)
-        pset[f"{var}_counts_over_eff_squared"] = pset[f"{var}_counts"] / (
-            pset["efficiency"] ** 2
-        )
+    # counts / efficiency
+    pset["counts_over_eff"] = pset["counts"] / pset["efficiency"]
+    # counts / efficiency**2 (for variance propagation)
+    pset["counts_over_eff_squared"] = pset["counts"] / (pset["efficiency"] ** 2)
 
-    # Backgrounds are only for h/o
-    for var in ["h", "o"]:
-        # background * exposure_time for weighted average
-        pset[f"{var}_bg_rate_exposure_time"] = (
-            pset[f"{var}_bg_rate"] * pset["exposure_time"]
-        )
-        # background_uncertainty ** 2 * exposure_time ** 2
-        pset[f"{var}_bg_rate_stat_uncert_exposure_time2"] = (
-            pset[f"{var}_bg_rate_stat_uncert"] ** 2 * pset["exposure_time"] ** 2
-        )
+    # background * exposure_factor for weighted average
+    pset["bg_rates_exposure_factor"] = pset["bg_rates"] * pset["exposure_factor"]
+    # background_uncertainty ** 2 * exposure_factor ** 2
+    pset["bg_rates_stat_uncert_exposure_factor2"] = (
+        pset["bg_rates_stat_uncert"] ** 2 * pset["exposure_factor"] ** 2
+    )
 
     return pset
 
 
-def project_pset_to_map(pset: xr.Dataset, output_map: AbstractSkyMap) -> None:
+def project_pset_to_map(
+    pset: xr.Dataset,
+    output_map: AbstractSkyMap,
+) -> None:
     """
     Project pointing set data to the output map.
 
@@ -394,28 +398,16 @@ def project_pset_to_map(pset: xr.Dataset, output_map: AbstractSkyMap) -> None:
         Function modifies output_map in place.
     """
     # Define base quantities to project
-    value_keys = ["exposure_time"]
-
-    # Add quantities for each particle type that exists in the dataset
-    for var in ["h", "o", "doubles", "triples"]:
-        if f"{var}_counts" in pset.data_vars:
-            value_keys.extend(
-                [
-                    f"{var}_counts",
-                    f"{var}_counts_over_eff",
-                    f"{var}_counts_over_eff_squared",
-                ]
-            )
-
-    for var in ["h", "o"]:
-        value_keys.extend(
-            [
-                f"{var}_bg_rate",
-                f"{var}_bg_rate_stat_uncert",
-                f"{var}_bg_rate_exposure_time",
-                f"{var}_bg_rate_stat_uncert_exposure_time2",
-            ]
-        )
+    value_keys = [
+        "exposure_factor",
+        "counts",
+        "counts_over_eff",
+        "counts_over_eff_squared",
+        "bg_rates",
+        "bg_rates_stat_uncert",
+        "bg_rates_exposure_factor",
+        "bg_rates_stat_uncert_exposure_factor2",
+    ]
 
     # Create LoPointingSet and project to map
     lo_pset = ena_maps.LoPointingSet(pset)
@@ -432,7 +424,7 @@ def project_pset_to_map(pset: xr.Dataset, output_map: AbstractSkyMap) -> None:
 # =============================================================================
 
 
-def add_geometric_factors(dataset: xr.Dataset) -> xr.Dataset:
+def add_geometric_factors(dataset: xr.Dataset, species: str) -> xr.Dataset:
     """
     Add geometric factors to the sky map after projection.
 
@@ -440,49 +432,72 @@ def add_geometric_factors(dataset: xr.Dataset) -> xr.Dataset:
     ----------
     dataset : xr.Dataset
         Sky map dataset to add geometric factors to.
+    species : str
+        The species to process (only "h" and "o" have geometric factors).
 
     Returns
     -------
     xr.Dataset
-        Dataset with geometric factor variables added for each energy step.
+        Dataset with geometric factor variables added for the specified species.
     """
-    logger.info("Loading and applying geometric factors")
-    # Load geometric factor data
-    h_gf_data, o_gf_data = load_geometric_factor_data()
+    # Only add geometric factors for hydrogen and oxygen
+    if species not in ["h", "o"]:
+        logger.warning(f"No geometric factors to add for species: {species}")
+        return dataset
+
+    logger.info(f"Loading and applying geometric factors for species: {species}")
+
+    # Load geometric factor data for the specific species
+    gf_data = load_geometric_factor_data(species)
 
     # Initialize geometric factor variables
     dataset = initialize_geometric_factor_variables(dataset)
 
     # Populate geometric factors for each energy step
-    dataset = populate_geometric_factors(dataset, h_gf_data, o_gf_data)
+    dataset = populate_geometric_factors(dataset, gf_data, species)
 
     return dataset
 
 
-def load_geometric_factor_data() -> tuple[pd.DataFrame, pd.DataFrame]:
+def load_geometric_factor_data(species: str) -> pd.DataFrame:
     """
-    Load hydrogen and oxygen geometric factor data from ancillary files.
+    Load geometric factor data for the specified species.
+
+    Parameters
+    ----------
+    species : str
+        The species to load geometric factors for ("h" or "o").
 
     Returns
     -------
-    tuple[pd.DataFrame, pd.DataFrame]
-        Hydrogen and oxygen geometric factor dataframes.
+    pd.DataFrame
+        Geometric factor dataframe for the specified species.
+
+    Raises
+    ------
+    ValueError
+        If species is not "h" or "o".
     """
+    if species not in ["h", "o"]:
+        raise ValueError(
+            f"Geometric factors only available for 'h' and 'o', got '{species}'"
+        )
+
     anc_path = Path(__file__).parent.parent / "ancillary_data"
 
-    h_gf_df = lo_ancillary.read_ancillary_file(
-        anc_path / "imap_lo_hydrogen-geometric-factor_v001.csv"
-    )
-    o_gf_df = lo_ancillary.read_ancillary_file(
-        anc_path / "imap_lo_oxygen-geometric-factor_v001.csv"
-    )
+    if species == "h":
+        gf_file = anc_path / "imap_lo_hydrogen-geometric-factor_v001.csv"
+    else:  # species == "o"
+        gf_file = anc_path / "imap_lo_oxygen-geometric-factor_v001.csv"
 
-    return h_gf_df, o_gf_df
+    return lo_ancillary.read_ancillary_file(gf_file)
 
 
-def initialize_geometric_factor_variables(dataset: xr.Dataset) -> xr.Dataset:
+def initialize_geometric_factor_variables(
+    dataset: xr.Dataset,
+) -> xr.Dataset:
     """
-    Initialize all geometric factor variables with proper dimensions.
+    Initialize geometric factor variables for the specified species.
 
     Parameters
     ----------
@@ -492,24 +507,16 @@ def initialize_geometric_factor_variables(dataset: xr.Dataset) -> xr.Dataset:
     Returns
     -------
     xr.Dataset
-        Dataset with initialized geometric factor variables for all energy steps.
+        Dataset with initialized geometric factor variables for the specified species.
     """
     gf_vars = [
-        "energy_h",
-        "energy_h_stat_uncert",
-        "h_gf",
-        "h_gf_stat_uncert",
-        "energy_o",
-        "energy_o_stat_uncert",
-        "o_gf",
-        "o_gf_stat_uncert",
-        "doubles_gf",
-        "doubles_gf_stat_uncert",
-        "triples_gf",
-        "triples_gf_stat_uncert",
+        "energy",
+        "energy_stat_uncert",
+        "geometric_factor",
+        "geometric_factor_stat_uncert",
     ]
 
-    # Initialize all variables with proper dimensions (energy only)
+    # Initialize variables with proper dimensions (energy only)
     for var in gf_vars:
         dataset[var] = xr.DataArray(
             np.zeros(7),
@@ -520,7 +527,9 @@ def initialize_geometric_factor_variables(dataset: xr.Dataset) -> xr.Dataset:
 
 
 def populate_geometric_factors(
-    dataset: xr.Dataset, h_gf_data: pd.DataFrame, o_gf_data: pd.DataFrame
+    dataset: xr.Dataset,
+    gf_data: pd.DataFrame,
+    species: str,
 ) -> xr.Dataset:
     """
     Populate geometric factor values for each energy step.
@@ -529,31 +538,36 @@ def populate_geometric_factors(
     ----------
     dataset : xr.Dataset
         Dataset with initialized geometric factor variables.
-    h_gf_data : pd.DataFrame
-        Hydrogen geometric factor data from ancillary files.
-    o_gf_data : pd.DataFrame
-        Oxygen geometric factor data from ancillary files.
+    gf_data : pd.DataFrame
+        Geometric factor data for the specified species.
+    species : str
+        The species to process (only "h" and "o" have geometric factors).
 
     Returns
     -------
     xr.Dataset
-        Dataset with populated geometric factor values for all energy steps.
+        Dataset with populated geometric factor values for the specified species.
     """
-    # Mapping of dataset variables to dataframe columns
-    gf_vars = {
-        "energy_h": "Cntr_E",
-        "energy_h_stat_uncert": "Cntr_E_unc",
-        "h_gf": "GF_Trpl_H",
-        "h_gf_stat_uncert": "GF_Trpl_H_unc",
-        "energy_o": "Cntr_E",
-        "energy_o_stat_uncert": "Cntr_E_unc",
-        "o_gf": "GF_Trpl_O",
-        "o_gf_stat_uncert": "GF_Trpl_O_unc",
-        "doubles_gf": "GF_Dbl_all",
-        "doubles_gf_stat_uncert": "GF_Dbl_all_unc",
-        "triples_gf": "GF_Trpl_all",
-        "triples_gf_stat_uncert": "GF_Trpl_all_unc",
-    }
+    # Only populate if the species has geometric factors
+    if species not in ["h", "o"]:
+        logger.debug(f"No geometric factors to populate for species: {species}")
+        return dataset
+
+    # Mapping of dataset variables to dataframe columns for this species
+    if species == "h":
+        gf_vars = {
+            "energy": "Cntr_E",
+            "energy_stat_uncert": "Cntr_E_unc",
+            "geometric_factor": "GF_Trpl_H",
+            "geometric_factor_stat_uncert": "GF_Trpl_H_unc",
+        }
+    else:  # species == "o"
+        gf_vars = {
+            "energy": "Cntr_E",
+            "energy_stat_uncert": "Cntr_E_unc",
+            "geometric_factor": "GF_Trpl_O",
+            "geometric_factor_stat_uncert": "GF_Trpl_O_unc",
+        }
 
     # Get ESA mode from the map (assuming it's constant or we take the first)
     # TODO: Figure out how to handle esa_mode properly
@@ -566,24 +580,13 @@ def populate_geometric_factors(
     # Populate the geometric factors for each energy step
     for i in range(7):
         # Get geometric factor data for this energy step and ESA mode
-        h_gf_row = h_gf_data[
-            (h_gf_data["esa_mode"] == esa_mode)
-            & (h_gf_data["Observed_E-Step"] == i + 1)
-        ].iloc[0]
-        o_gf_row = o_gf_data[
-            (o_gf_data["esa_mode"] == esa_mode)
-            & (o_gf_data["Observed_E-Step"] == i + 1)
+        gf_row = gf_data[
+            (gf_data["esa_mode"] == esa_mode) & (gf_data["Observed_E-Step"] == i + 1)
         ].iloc[0]
 
         # Fill energy step with the geometric factor values
         for var, col in gf_vars.items():
-            if var.startswith("energy_h") or var.startswith("h_gf"):
-                dataset[var].values[i] = h_gf_row[col]
-            elif var.startswith("energy_o") or var.startswith("o_gf"):
-                dataset[var].values[i] = o_gf_row[col]
-            elif var.endswith("_gf"):
-                # These are general geometric factors from hydrogen file
-                dataset[var].values[i] = h_gf_row[col]
+            dataset[var].values[i] = gf_row[col]
 
     return dataset
 
@@ -593,7 +596,9 @@ def populate_geometric_factors(
 # =============================================================================
 
 
-def calculate_all_rates_and_intensities(dataset: xr.Dataset) -> xr.Dataset:
+def calculate_all_rates_and_intensities(
+    dataset: xr.Dataset,
+) -> xr.Dataset:
     """
     Calculate rates and intensities with proper error propagation.
 
@@ -605,19 +610,19 @@ def calculate_all_rates_and_intensities(dataset: xr.Dataset) -> xr.Dataset:
     Returns
     -------
     xr.Dataset
-        Dataset with calculated rates, intensities, and uncertainties for all
-        particle types.
+        Dataset with calculated rates, intensities, and uncertainties for the
+        specified species.
     """
-    # Step 1: Calculate rates for all particle types
+    # Step 1: Calculate rates for the specified species
     dataset = calculate_rates(dataset)
 
-    # Step 2: Calculate intensities for H and O only
+    # Step 2: Calculate intensities
     dataset = calculate_intensities(dataset)
 
     # Step 3: Calculate background rates and intensities
     dataset = calculate_backgrounds(dataset)
 
-    # Step 3: Clean up intermediate variables
+    # Step 4: Clean up intermediate variables
     dataset = cleanup_intermediate_variables(dataset)
 
     return dataset
@@ -636,24 +641,24 @@ def calculate_rates(dataset: xr.Dataset) -> xr.Dataset:
     -------
     xr.Dataset
         Dataset with calculated count rates and statistical uncertainties
-        for all particle types.
+        for the specified species.
     """
-    for var in ["h", "o", "doubles", "triples"]:
-        # Rate = counts / exposure_time
-        dataset[f"{var}_rate"] = dataset[f"{var}_counts"] / dataset["exposure_time"]
+    # Rate = counts / exposure_factor
+    # TODO: Account for ena / isn naming differences
+    dataset["ena_count_rate"] = dataset["counts"] / dataset["exposure_factor"]
 
-        # Poisson uncertainty on the counts propagated to the rate
-        # TODO: Is there uncertainty in the exposure time too?
-        dataset[f"{var}_rate_stat_uncert"] = (
-            np.sqrt(dataset[f"{var}_counts"]) / dataset["exposure_time"]
-        )
+    # Poisson uncertainty on the counts propagated to the rate
+    # TODO: Is there uncertainty in the exposure time too?
+    dataset["ena_count_rate_stat_uncert"] = (
+        np.sqrt(dataset["counts"]) / dataset["exposure_factor"]
+    )
 
     return dataset
 
 
 def calculate_intensities(dataset: xr.Dataset) -> xr.Dataset:
     """
-    Calculate particle intensities and uncertainties for H and O.
+    Calculate particle intensities and uncertainties for the specified species.
 
     Parameters
     ----------
@@ -664,39 +669,34 @@ def calculate_intensities(dataset: xr.Dataset) -> xr.Dataset:
     -------
     xr.Dataset
         Dataset with calculated particle intensities and their statistical
-        and systematic uncertainties for hydrogen and oxygen.
+        and systematic uncertainties for the specified species.
     """
-    for var in ["h", "o"]:
-        # Equation 3 from mapping document (average intensity)
-        dataset[f"{var}_intensity"] = dataset[f"{var}_counts_over_eff"] / (
-            dataset[f"{var}_gf"] * dataset[f"energy_{var}"] * dataset["exposure_time"]
-        )
+    # Equation 3 from mapping document (average intensity)
+    dataset["ena_intensity"] = dataset["counts_over_eff"] / (
+        dataset["geometric_factor"] * dataset["energy"] * dataset["exposure_factor"]
+    )
 
-        # Equation 4 from mapping document (statistical uncertainty)
-        # Note that we need to take the square root to get the uncertainty as
-        # the equation is for the variance
-        dataset[f"{var}_intensity_stat_uncert"] = np.sqrt(
-            dataset[f"{var}_counts_over_eff_squared"]
-            / (
-                dataset[f"{var}_gf"]
-                * dataset[f"energy_{var}"]
-                * dataset["exposure_time"]
-            )
-        )
+    # Equation 4 from mapping document (statistical uncertainty)
+    # Note that we need to take the square root to get the uncertainty as
+    # the equation is for the variance
+    dataset["ena_intensity_stat_uncert"] = np.sqrt(
+        dataset["counts_over_eff_squared"]
+        / (dataset["geometric_factor"] * dataset["energy"] * dataset["exposure_factor"])
+    )
 
-        # Equation 5 from mapping document (systematic uncertainty)
-        dataset[f"{var}_intensity_sys_err"] = (
-            dataset[f"{var}_gf_stat_uncert"]
-            / dataset[f"{var}_gf"]
-            * dataset[f"{var}_intensity"]
-        )
+    # Equation 5 from mapping document (systematic uncertainty)
+    dataset["ena_intensity_sys_err"] = (
+        dataset["ena_intensity"]
+        * dataset["geometric_factor_stat_uncert"]
+        / dataset["geometric_factor"]
+    )
 
     return dataset
 
 
 def calculate_backgrounds(dataset: xr.Dataset) -> xr.Dataset:
     """
-    Calculate background rates and intensities.
+    Calculate background rates and intensities for the specified species.
 
     Parameters
     ----------
@@ -706,25 +706,25 @@ def calculate_backgrounds(dataset: xr.Dataset) -> xr.Dataset:
     Returns
     -------
     xr.Dataset
-        Dataset with calculated background rates and intensities.
+        Dataset with calculated background rates and intensities for the
+        specified species.
     """
-    for var in ["h", "o"]:
-        # Equation 6 from mapping document (background rate)
-        # exposure time weighted average of the background rates
-        dataset[f"{var}_bg_intensity"] = (
-            dataset[f"{var}_bg_rate_exposure_time"] / dataset["exposure_time"]
-        )
-        # Equation 7 from mapping document (background intensity)
-        dataset[f"{var}_bg_intensity_stat_uncert"] = np.sqrt(
-            dataset[f"{var}_bg_rate_stat_uncert_exposure_time2"]
-            / dataset["exposure_time"] ** 2
-        )
-        # Equation 8 from mapping document (background systematic uncertainty)
-        dataset[f"{var}_bg_intensity_sys_err"] = (
-            dataset[f"{var}_gf_stat_uncert"]
-            / dataset[f"{var}_gf"]
-            * dataset[f"{var}_bg_intensity"]
-        )
+    # Equation 6 from mapping document (background rate)
+    # exposure time weighted average of the background rates
+    dataset["bg_rates"] = (
+        dataset["bg_rates_exposure_factor"] / dataset["exposure_factor"]
+    )
+    # Equation 7 from mapping document (background statistical uncertainty)
+    dataset["bg_rates_stat_uncert"] = np.sqrt(
+        dataset["bg_rates_stat_uncert_exposure_factor2"]
+        / dataset["exposure_factor"] ** 2
+    )
+    # Equation 8 from mapping document (background systematic uncertainty)
+    dataset["bg_rates_sys_err"] = (
+        dataset["bg_rates"]
+        * dataset["geometric_factor_stat_uncert"]
+        / dataset["geometric_factor"]
+    )
 
     return dataset
 
@@ -747,20 +747,17 @@ def cleanup_intermediate_variables(dataset: xr.Dataset) -> xr.Dataset:
     # i.e. the ones that were projected from the pset only for the purposes
     # of math and not desired in the output.
     vars_to_remove = []
-    for var in ["h", "o", "doubles", "triples"]:
-        # Only remove variables that exist in the dataset
-        potential_vars = [
-            f"{var}_counts_over_eff",
-            f"{var}_counts_over_eff_squared",
-            # geometric factors
-            f"{var}_gf",
-            f"{var}_gf_stat_uncert",
-            # Backgrounds only for h/o
-            f"{var}_bg_rate_exposure_time",
-            f"{var}_bg_rate_stat_uncert_exposure_time2",
-        ]
-        for potential_var in potential_vars:
-            if potential_var in dataset.data_vars:
-                vars_to_remove.append(potential_var)
+
+    # Only remove variables that exist in the dataset for the specific species
+    potential_vars = [
+        "counts_over_eff",
+        "counts_over_eff_squared",
+        "bg_rates_exposure_factor",
+        "bg_rates_stat_uncert_exposure_factor2",
+    ]
+
+    for potential_var in potential_vars:
+        if potential_var in dataset.data_vars:
+            vars_to_remove.append(potential_var)
 
     return dataset.drop_vars(vars_to_remove)
