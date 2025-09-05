@@ -256,7 +256,7 @@ def test_mag_l1b_validation(test_number, mocks):
         assert np.allclose(expected_time, mago_time, atol=1e-6, rtol=0)
 
 
-@pytest.mark.xfail(reason="All L1C edge cases are not yet complete")
+# @pytest.mark.xfail(reason="All L1C edge cases are not yet complete")
 @pytest.mark.parametrize(("test_number"), ["013", "014", "015", "016"])
 @pytest.mark.parametrize(("sensor"), ["mago", "magi"])
 @pytest.mark.external_test_data
@@ -426,4 +426,39 @@ def get_vecsec(test_number, sensor, mode):
         },
         "016": {"mago": {"norm": "", "burst": ""}, "magi": {"norm": "", "burst": ""}},
     }
+    #MAGO Total records: 1728
+# Unique time differences:
+# 0.249s: 1151 occurrences
+# 0.249s: 1151 occurrences
+# 0.249s: 1151 occurrences
+# 0.250s: 1151 occurrences
+# 0.499s: 575 occurrences
+# 0.499s: 575 occurrences
+# 0.499s: 575 occurrences
+# 0.500s: 575 occurrences
+# 331.761s: 1 occurrences
+#
+# Looking for transitions...
+# Transition at index 1152: 0.250s -> 331.761s at 2025-03-11 12:43:46.527199
+# Transition at index 1153: 331.761s -> 0.500s at 2025-03-11 12:43:47.027199
+
+    # MAGI
+    # Total records: 864
+    # Unique time differences:
+    # 0.499s: 575 occurrences
+    # 0.499s: 575 occurrences
+    # 0.499s: 575 occurrences
+    # 0.499s: 575 occurrences
+    # 0.499s: 575 occurrences
+    # 0.500s: 575 occurrences
+    # 0.500s: 575 occurrences
+    # 0.999s: 287 occurrences
+    # 0.999s: 287 occurrences
+    # 0.999s: 287 occurrences
+    # 1.000s: 287 occurrences
+    # 332.511s: 1 occurrences
+    #
+    # Looking for transitions...
+    #     Transition at index 288: 1.000s -> 332.511s at 2025-03-11 12:43:46.527168
+    # Transition at index 289: 332.511s -> 0.500s at 2025-03-11 12:43:47.027168
     return vecsec[test_number][sensor][mode]

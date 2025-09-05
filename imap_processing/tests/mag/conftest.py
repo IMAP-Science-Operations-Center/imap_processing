@@ -12,6 +12,7 @@ from imap_processing.ancillary.ancillary_dataset_combiner import MagAncillaryCom
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.mag.constants import VecSec
 from imap_processing.mag.l1a.mag_l1a import mag_l1a
+from imap_processing.mag.l1c.mag_l1c import vectors_per_second_from_string
 from imap_processing.spice.time import TTJ2000_EPOCH
 
 
@@ -140,6 +141,8 @@ def mag_generate_l1b_from_csv(df, logical_source):
 
     dataset.attrs["Logical_source"] = logical_source
     dataset.attrs["vectors_per_second"] = f"{epoch_ns[0]}:2"
+    print(vectors_per_second_from_string(dataset.attrs["vectors_per_second"]))
+
 
     return dataset
 

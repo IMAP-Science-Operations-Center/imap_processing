@@ -656,9 +656,12 @@ def vectors_per_second_from_string(vecsec_string: str) -> dict:
     """
     vecsec_dict = {}
     vecsec_segments = vecsec_string.split(",")
+    print(vecsec_string)
+    print(vecsec_segments)
     for vecsec_segment in vecsec_segments:
-        start_time, vecsec = vecsec_segment.split(":")
-        vecsec_dict[int(start_time)] = int(vecsec)
+        if vecsec_segment:
+            start_time, vecsec = vecsec_segment.split(":")
+            vecsec_dict[int(start_time)] = int(vecsec)
 
     return vecsec_dict
 
