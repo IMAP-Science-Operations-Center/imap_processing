@@ -166,6 +166,9 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
             The day we are processing, in np.datetime64[D] format. This is used to
             truncate the data to exactly 24 hours.
         """
+        # The main data frame is MAGO, even though we have MAGI data included.
+        self.frame = ValidFrames.MAGO
+
         # set the magnitude before truncating
         self.magnitude = np.zeros(self.vectors.shape[0], dtype=np.float64)  # type: ignore[has-type]
         self.truncate_to_24h(day)
@@ -272,8 +275,19 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         end_frame : ValidFrames
             The frame to rotate to. Should be one of the ValidFrames enum.
         """
+        # If we're ever in a state where we rotated into the MAGI frame, update the
+        # start frame to be MAGO instead
+        if self.frame == ValidFrames.MAGI:
+            self.frame = ValidFrames.MAGO
+
         start_frame = self.frame
+
         super().rotate_frame(end_frame)
+        # If we were in MAGO frame, we need to rotate MAGI vectors from MAGI to
+        # end_frame
+        if start_frame == ValidFrames.MAGO:
+            start_frame = ValidFrames.MAGI
+
         self.magi_vectors = frame_transform(
             self.magi_epoch,
             self.magi_vectors,

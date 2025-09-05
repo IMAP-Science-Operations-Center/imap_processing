@@ -20,8 +20,8 @@ from imap_processing.spice.time import (
 class ValidFrames(Enum):
     """SPICE reference frames for output."""
 
-    # TODO: Use correct IMAP_MAG_I or IMAP_MAG_O frame here
-    MAG = SpiceFrame.IMAP_MAG
+    MAGO = SpiceFrame.IMAP_MAG_O
+    MAGI = SpiceFrame.IMAP_MAG_I
     DSRF = SpiceFrame.IMAP_DPS
     SRF = SpiceFrame.IMAP_SPACECRAFT
     GSE = SpiceFrame.IMAP_GSE
@@ -57,7 +57,7 @@ class MagL2L1dBase:
         Quality bitmask for each vector. Should be of length n. Copied from offset
         file in L2, marked as good always in L1D.
     frame:
-        The reference frame of the input vectors. Starts as the MAG instrument frame.
+        The reference frame of the input vectors. Defaults to the MAGO instrument frame.
     epoch_et: np.ndarray
         The epoch timestamps converted to ET format. Used for frame transformations.
         Calculated on first use and then saved. Should not be passed in.
@@ -71,7 +71,7 @@ class MagL2L1dBase:
     quality_bitmask: np.ndarray
     data_mode: DataMode
     magnitude: np.ndarray = field(init=False)
-    frame: ValidFrames = ValidFrames.MAG
+    frame: ValidFrames = ValidFrames.MAGO
     epoch_et: np.ndarray | None = field(init=False, default=None)
 
     def generate_dataset(
