@@ -12,14 +12,14 @@
 #   - To generate a mapping from ESA Step to ESA Energy Step for each contiguous HVSCI
 #     interval. This is used in L1B DE processing.
 #   - In L2 processing to associate an ESA Energy Step to an Energy band.
-esa_energy_step,nominal_central_energy,inner_esa_voltage,inner_esa_delta_v,outer_esa_voltage,outer_esa_delta_v
+esa_energy_step,nominal_central_energy,bandpass_sigma,bandpass_fwhm,inner_esa_voltage,inner_esa_delta_v,outer_esa_voltage,outer_esa_delta_v
 0,,0,25,0,25
-1,0.50,-465,25,100,25
-2,0.75,-703,25,142,25
-3,1.10,-1010,25,191,25
-4,1.65,-1532,25,247,25
-5,2.50,-2056,25,695,25
-6,3.75,-2867,25,1213,25
-7,5.70,-4116,25,2014,25
-8,8.52,-5917,25,3169,25
-9,12.8,-8624,25,4897,25
+1,0.50,0.10,0.23,-465,25,100,25
+2,0.75,0.15,0.35,-703,25,142,25
+3,1.10,0.22,0.52,-1010,25,191,25
+4,1.65,0.33,0.78,-1532,25,247,25
+5,2.50,0.50,1.17,-2056,25,695,25
+6,3.75,0.75,1.76,-2867,25,1213,25
+7,5.70,1.14,2.68,-4116,25,2014,25
+8,8.52,1.70,4.00,-5917,25,3169,25
+9,12.8,2.55,6.01,-8624,25,4897,25

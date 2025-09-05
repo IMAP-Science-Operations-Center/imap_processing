@@ -13,6 +13,7 @@ from imap_processing.ena_maps.ena_maps import (
     RectangularSkyMap,
 )
 from imap_processing.ena_maps.utils.naming import MapDescriptor
+from imap_processing.hi.utils import CalibrationProductConfig
 
 logger = logging.getLogger(__name__)
 
@@ -153,14 +154,25 @@ def generate_hi_map(
     output_map.data_1d["obs_date_range"] = xr.zeros_like(output_map.data_1d["obs_date"])
 
     # Rename and convert coordinate from esa_energy_step energy
-    esa_energies = esa_energy_lookup(
+    esa_df = esa_energy_df(
         esa_energies_path, output_map.data_1d["esa_energy_step"].data
     )
     output_map.data_1d = output_map.data_1d.rename({"esa_energy_step": "energy"})
-    output_map.data_1d = output_map.data_1d.assign_coords(energy=esa_energies)
+    output_map.data_1d = output_map.data_1d.assign_coords(
+        energy=esa_df["nominal_central_energy"].values
+    )
     # Set the energy_step_delta values
-    # TODO: get the correct energy delta values (they are set to NaN) in
-    #    output_map.build_cdf_dataset()
+    energy_delta = 2 * esa_df["bandpass_sigma"]
+    output_map.data_1d["energy_delta_minus"] = xr.DataArray(
+        energy_delta,
+        name="energy_delta_minus",
+        dims=["energy"],
+    )
+    output_map.data_1d["energy_delta_plus"] = xr.DataArray(
+        energy_delta,
+        name="energy_delta_minus",
+        dims=["energy"],
+    )
 
     output_map.data_1d = output_map.data_1d.drop("esa_energy_step_label")
 
@@ -223,25 +235,26 @@ def calculate_ena_intensity(
     geometric_factors_path : str or pathlib.Path
         Where to get the geometric factors from.
     esa_energies_path : str or pathlib.Path
-        Where to get the energies from.
+        Where to get the esa energies, energy deltas, and geometric factors.
 
     Returns
     -------
     intensity_vars : dict[str, xarray.DataArray]
         ENA Intensity with statistical and systematic uncertainties.
     """
-    # TODO: Implement geometric factor lookup
-    if geometric_factors_path:
-        raise NotImplementedError
-    geometric_factor = xr.DataArray(
-        np.ones((map_ds["esa_energy_step"].size, map_ds["calibration_prod"].size)),
-        coords=[map_ds["esa_energy_step"], map_ds["calibration_prod"]],
+    # read calibration product configuration file
+    cal_prod_df = CalibrationProductConfig.from_csv(geometric_factors_path)
+    # reindex_like removes esa_energy_steps and calibration products not in the
+    # map_ds esa_energy_step and calibration_product coordinates
+    geometric_factor = cal_prod_df.to_xarray().reindex_like(map_ds)["geometric_factor"]
+    geometric_factor = geometric_factor.transpose(
+        *[coord for coord in map_ds.coords if coord in geometric_factor.coords]
     )
-
-    esa_energy = esa_energy_lookup(esa_energies_path, map_ds["esa_energy_step"].data)
+    energy_df = esa_energy_df(esa_energies_path, map_ds["esa_energy_step"].data)
+    esa_energy = energy_df.to_xarray()["nominal_central_energy"]
 
     # Convert ENA Signal Rate to Flux
-    flux_conversion_divisor = geometric_factor * esa_energy[:, np.newaxis]
+    flux_conversion_divisor = geometric_factor * esa_energy
     intensity_vars = {
         "ena_intensity": map_ds["ena_signal_rates"] / flux_conversion_divisor,
         "ena_intensity_stat_unc": map_ds["ena_signal_rate_stat_unc"]
@@ -267,9 +280,9 @@ def calculate_ena_intensity(
     return intensity_vars
 
 
-def esa_energy_lookup(
+def esa_energy_df(
     esa_energies_path: str | Path, esa_energy_steps: np.ndarray
-) -> np.ndarray:
+) -> pd.DataFrame:
     """
     Lookup the nominal central energy values for given esa energy steps.
 
@@ -282,13 +295,11 @@ def esa_energy_lookup(
 
     Returns
     -------
-    esa_energies: numpy.ndarray
-        The nominal central energy for the given esa energy steps.
+    esa_energies_df: pandas.DataFrame
+        Full data frame from the csv file filtered to only include the
+        esa_energy_steps input.
     """
     esa_energies_lut = pd.read_csv(
         esa_energies_path, comment="#", index_col="esa_energy_step"
     )
-    esa_energies = esa_energies_lut.loc[esa_energy_steps][
-        "nominal_central_energy"
-    ].values
-    return esa_energies
+    return esa_energies_lut.loc[esa_energy_steps]

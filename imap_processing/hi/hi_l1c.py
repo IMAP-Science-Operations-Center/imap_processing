@@ -19,7 +19,7 @@ from imap_processing.hi.hi_l1a import (
     HALF_CLOCK_TICK_S,
 )
 from imap_processing.hi.utils import (
-    CoincidenceBitmap,
+    CalibrationProductConfig,
     create_dataset_variables,
     full_dataarray,
     parse_sensor_number,
@@ -378,8 +378,9 @@ def pset_counts(
                 filtered_de_df["spin_phase"].to_numpy() * N_SPIN_BINS
             ).astype(int)
             # When iterating over rows of a dataframe, the names of the multi-index
-            # are not preserved. Below, `config_row.Index[0]` gets the cal_prod_num
-            # value from the namedtuple representing the dataframe row.
+            # are not preserved. Below, `config_row.Index[0]` gets the
+            # calibration_prod value from the namedtuple representing the
+            # dataframe row.
             np.add.at(
                 counts_var["counts"].data[0, i_esa, config_row.Index[0]],
                 spin_bin_indices,
@@ -684,109 +685,3 @@ def good_time_and_phase_mask(
     """
     # TODO: Implement this once we have Goodtimes data product defined.
     return np.full_like(tick_mets, True, dtype=bool)
-
-
-@pd.api.extensions.register_dataframe_accessor("cal_prod_config")
-class CalibrationProductConfig:
-    """
-    Register custom accessor for calibration product configuration DataFrames.
-
-    Parameters
-    ----------
-    pandas_obj : pandas.DataFrame
-        Object to run validation and use accessor functions on.
-    """
-
-    index_columns = (
-        "cal_prod_num",
-        "esa_energy_step",
-    )
-    tof_detector_pairs = ("ab", "ac1", "bc1", "c1c2")
-    required_columns = (
-        "coincidence_type_list",
-        *[
-            f"tof_{det_pair}_{limit}"
-            for det_pair in tof_detector_pairs
-            for limit in ["low", "high"]
-        ],
-    )
-
-    def __init__(self, pandas_obj: pd.DataFrame) -> None:
-        self._validate(pandas_obj)
-        self._obj = pandas_obj
-        self._add_coincidence_values_column()
-
-    def _validate(self, df: pd.DataFrame) -> None:
-        """
-        Validate the current configuration.
-
-        Parameters
-        ----------
-        df : pandas.DataFrame
-            Object to validate.
-
-        Raises
-        ------
-        AttributeError : If the dataframe does not pass validation.
-        """
-        for index_name in self.index_columns:
-            if index_name in df.index:
-                raise AttributeError(
-                    f"Required index {index_name} not present in dataframe."
-                )
-        # Verify that the Dataframe has all the required columns
-        for col in self.required_columns:
-            if col not in df.columns:
-                raise AttributeError(f"Required column {col} not present in dataframe.")
-        # TODO: Verify that the same ESA energy steps exist in all unique calibration
-        #   product numbers
-
-    def _add_coincidence_values_column(self) -> None:
-        """Generate and add the coincidence_type_values column to the dataframe."""
-        # Add a column that consists of the coincidence type strings converted
-        # to integer values
-        self._obj["coincidence_type_values"] = self._obj.apply(
-            lambda row: tuple(
-                CoincidenceBitmap.detector_hit_str_to_int(entry)
-                for entry in row["coincidence_type_list"]
-            ),
-            axis=1,
-        )
-
-    @classmethod
-    def from_csv(cls, path: Path) -> pd.DataFrame:
-        """
-        Read configuration CSV file into a pandas.DataFrame.
-
-        Parameters
-        ----------
-        path : pathlib.Path
-            Location of the Calibration Product configuration CSV file.
-
-        Returns
-        -------
-        dataframe : pandas.DataFrame
-            Validated calibration product configuration data frame.
-        """
-        df = pd.read_csv(
-            path,
-            index_col=cls.index_columns,
-            converters={"coincidence_type_list": lambda s: tuple(s.split("|"))},
-            comment="#",
-        )
-        # Force the _init_ method to run by using the namespace
-        _ = df.cal_prod_config.number_of_products
-        return df
-
-    @property
-    def number_of_products(self) -> int:
-        """
-        Get the number of calibration products in the current configuration.
-
-        Returns
-        -------
-        number_of_products : int
-            The maximum number of calibration products defined in the list of
-            calibration product definitions.
-        """
-        return len(self._obj.index.unique(level="cal_prod_num"))

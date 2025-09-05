@@ -4,6 +4,7 @@ from unittest import mock
 from unittest.mock import Mock, patch
 
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 
@@ -12,7 +13,7 @@ from imap_processing.ena_maps.ena_maps import RectangularSkyMap
 from imap_processing.hi.hi_l2 import (
     calculate_ena_intensity,
     calculate_ena_signal_rates,
-    esa_energy_lookup,
+    esa_energy_df,
     generate_hi_map,
     hi_l2,
 )
@@ -32,7 +33,7 @@ def empty_rectangular_map_dataset() -> xr.Dataset:
     map_ds = xr.Dataset(
         coords={
             k: xr.DataArray(
-                np.arange(v),
+                np.arange(v) + 1 if k == "esa_energy_step" else np.arange(v),
                 name=k,
                 dims=[k],
             )
@@ -42,16 +43,32 @@ def empty_rectangular_map_dataset() -> xr.Dataset:
     return map_ds
 
 
+@pytest.fixture
+def esa_energies_lut_path(hi_l1_test_data_path):
+    return hi_l1_test_data_path / "imap_hi_90sensor-esa-energies_20240101_v001.csv"
+
+
+@pytest.fixture
+def geometric_factors_path(hi_l1_test_data_path):
+    return hi_l1_test_data_path / "imap_hi_90sensor-cal-prod_20240101_v001.csv"
+
+
 @pytest.mark.external_test_data
 @pytest.mark.external_kernel
-def test_hi_l2(hi_l1_test_data_path, imap_ena_sim_metakernel):
+def test_hi_l2(
+    hi_l1_test_data_path,
+    esa_energies_lut_path,
+    geometric_factors_path,
+    imap_ena_sim_metakernel,
+):
     """Integration type test for hi_l2()"""
     pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
-    esa_energies_lut_path = (
-        hi_l1_test_data_path / "imap_hi_90sensor-esa-energies_20240101_v001.csv"
-    )
+
     l2_dataset = hi_l2(
-        [pset_path], None, esa_energies_lut_path, "h90-ena-h-sf-nsp-full-hae-4deg-3mo"
+        [pset_path],
+        geometric_factors_path,
+        esa_energies_lut_path,
+        "h90-ena-h-sf-nsp-full-hae-4deg-3mo",
     )[0]
     assert isinstance(l2_dataset, xr.Dataset)
     assert len(l2_dataset.data_vars) == 15
@@ -88,7 +105,7 @@ def test_hi_l2_uses_descriptor_to_setup_map(
 
 
 @mock.patch("imap_processing.hi.hi_l2.calculate_ena_intensity", autospec=True)
-@mock.patch("imap_processing.hi.hi_l2.esa_energy_lookup", autospec=True)
+@mock.patch("imap_processing.hi.hi_l2.esa_energy_df", autospec=True)
 @pytest.mark.external_test_data
 def test_genarate_hi_map(
     mock_esa_energy_lookup,
@@ -98,7 +115,9 @@ def test_genarate_hi_map(
 ):
     """Test coverage for genarate_hi_map()"""
 
-    mock_esa_energy_lookup.side_effect = lambda x, y: y
+    mock_esa_energy_lookup.side_effect = lambda x, y: pd.DataFrame(
+        {"nominal_central_energy": y, "bandpass_sigma": np.ones_like(y)}
+    )
 
     kernels = [
         "imap_sclk_0000.tsc",
@@ -180,11 +199,10 @@ def test_calculate_ena_signal_rates(empty_rectangular_map_dataset):
     assert np.nanmin(signal_rates_vars["ena_signal_rate_stat_unc"].values) == 1 / 2
 
 
-def test_calculate_ena_intensity(empty_rectangular_map_dataset, hi_l1_test_data_path):
+def test_calculate_ena_intensity(
+    empty_rectangular_map_dataset, esa_energies_lut_path, geometric_factors_path
+):
     """Test coverage for calculate_ena_intensity"""
-    esa_energies_lut_path = (
-        hi_l1_test_data_path / "imap_hi_90sensor-esa-energies_20240101_v001.csv"
-    )
     # Start with an empty (coords only) dataset
     map_ds = empty_rectangular_map_dataset
     # Add some data_vars needed for the ena intensity calculations
@@ -209,7 +227,9 @@ def test_calculate_ena_intensity(empty_rectangular_map_dataset, hi_l1_test_data_
             ),
         }
     )
-    ena_intesity_vars = calculate_ena_intensity(map_ds, None, esa_energies_lut_path)
+    ena_intesity_vars = calculate_ena_intensity(
+        map_ds, geometric_factors_path, esa_energies_lut_path
+    )
 
     # TODO: add value/functional test checks once the full algorithm is implemented
     for var_name in [
@@ -220,12 +240,11 @@ def test_calculate_ena_intensity(empty_rectangular_map_dataset, hi_l1_test_data_
         assert var_name in ena_intesity_vars
 
 
-def test_esa_energy_lookup(hi_l1_test_data_path):
+def test_esa_energy_lookup(esa_energies_lut_path):
     """Test coverage for esa_energy_lookup()"""
-    lookup_file = (
-        hi_l1_test_data_path / "imap_hi_90sensor-esa-energies_20240101_v001.csv"
-    )
     esa_energy_steps = np.array([1, 2, 3, 3, 7, 8, 9])
     expected_energies = np.array([0.5, 0.75, 1.1, 1.1, 5.7, 8.52, 12.8])
-    retrieved_energies = esa_energy_lookup(lookup_file, esa_energy_steps)
+    energy_df = esa_energy_df(esa_energies_lut_path, esa_energy_steps)
+    retrieved_energies = energy_df["nominal_central_energy"].values
     np.testing.assert_array_equal(retrieved_energies, expected_energies)
+    assert "bandpass_sigma" in energy_df

@@ -18,6 +18,11 @@ def hi_l1_test_data_path(hi_test_data_path):
     return hi_test_data_path / "l1"
 
 
+@pytest.fixture(scope="session")
+def hi_test_cal_prod_config_path(hi_l1_test_data_path):
+    return hi_l1_test_data_path / "imap_hi_90sensor-cal-prod_20240101_v001.csv"
+
+
 def create_metaevent(esa_step, met_subseconds, met_seconds):
     start_bitmask_data = 0  # META
     return (
