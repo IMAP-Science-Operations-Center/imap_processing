@@ -725,7 +725,7 @@ def test_is_back_tof_valid(test_fixture, ancillary_files):
 
 
 @pytest.mark.external_test_data
-def test_create_valid_event_filter(test_fixture, ancillary_files):
+def test_is_coin_ph_valid(test_fixture, ancillary_files):
     """Tests is_coin_ph_valid function."""
     df_filt, _, _, de_dataset = test_fixture
     df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]

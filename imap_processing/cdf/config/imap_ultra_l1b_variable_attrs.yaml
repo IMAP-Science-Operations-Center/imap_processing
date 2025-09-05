@@ -75,16 +75,16 @@ default_float64_attrs: &default_float64
 computed_ebin:
   <<: *default_uint8
   CATDESC: Computed event bin index
-  FIELDNAM: Bin
-  LABLAXIS: bin
+  FIELDNAM: Computed ebin
+  LABLAXIS: computed_ebin
   UNITS: " "
   DEPEND_0: epoch
 
 ebin:
   <<: *default_uint8
   CATDESC: Event bin index
-  FIELDNAM: Bin
-  LABLAXIS: bin
+  FIELDNAM: Ebin
+  LABLAXIS: ebin
   UNITS: " "
   DEPEND_0: epoch
 
