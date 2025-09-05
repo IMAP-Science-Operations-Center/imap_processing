@@ -1263,7 +1263,6 @@ class Spacecraft(ProcessInstrument):
             raise NotImplementedError(
                 f"Spacecraft processing not implemented for level {self.data_level}"
             )
-        return []
 
 
 class Swapi(ProcessInstrument):
