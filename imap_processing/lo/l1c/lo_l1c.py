@@ -566,7 +566,7 @@ def set_background_rates(
 
     # for each row in the bg ancillary file for this pointing
     for _, row in pointing_bg_df.iterrows():
-        bin_start = int(row["bin_strt"])
+        bin_start = int(row["bin_start"])
         bin_end = int(row["bin_end"])
         # for each energy step, set the background rate and uncertainty
         for esa_step in range(0, 7):

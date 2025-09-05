@@ -91,7 +91,7 @@ def anc_dependencies():
     anc_dependencies_path = [
         str(
             imap_module_directory
-            / "tests/lo/test_anc/imap_lo_goodtimes_20250415_v001.csv"
+            / "tests/lo/test_anc/imap_lo_good-times_20250415_v001.csv"
         ),
         str(
             imap_module_directory
