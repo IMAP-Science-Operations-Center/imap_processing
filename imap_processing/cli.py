@@ -1234,34 +1234,32 @@ class Spacecraft(ProcessInstrument):
         print(f"Processing Spacecraft {self.data_level}")
 
         if self.data_level == "l1a":
-            # File path is expected output file path
-            input_files = dependencies.get_file_paths(source="spacecraft")
-            if len(input_files) > 1:
-                raise ValueError(
-                    f"Unexpected dependencies found for Spacecraft L1A: "
-                    f"{input_files}. Expected only one dependency."
+            if self.descriptor == "quaternions":
+                # File path is expected output file path
+                input_files = dependencies.get_file_paths(source="spacecraft")
+                if len(input_files) > 1:
+                    raise ValueError(
+                        f"Unexpected dependencies found for Spacecraft L1A: "
+                        f"{input_files}. Expected only one dependency."
+                    )
+                datasets = list(quaternions.process_quaternions(input_files[0]))
+                return datasets
+            elif self.descriptor == "pointing-attitude":
+                spice_inputs = dependencies.get_file_paths(
+                    data_type=SPICESource.SPICE.value
                 )
-            datasets = list(quaternions.process_quaternions(input_files[0]))
-            return datasets
-        elif self.data_level == "spice":
-            spice_inputs = dependencies.get_file_paths(
-                data_type=SPICESource.SPICE.value
-            )
-            ah_paths = [path for path in spice_inputs if ".ah" in path.suffixes]
-            if len(ah_paths) != 1:
-                raise ValueError(
-                    f"Unexpected spice dependencies found for Spacecraft "
-                    f"pointing_kernel: {ah_paths}. Expected exactly one "
-                    f"attitude history file."
+                print("inputs: ", spice_inputs)
+                ah_paths = [path for path in spice_inputs if ".ah" in path.suffixes]
+                print("attitude history paths: ", ah_paths)
+                pointing_kernel_paths = (
+                    pointing_frame.generate_pointing_attitude_kernel(ah_paths[0])
                 )
-            pointing_kernel_paths = pointing_frame.generate_pointing_attitude_kernel(
-                ah_paths[0]
-            )
-            return pointing_kernel_paths
+                return pointing_kernel_paths
         else:
             raise NotImplementedError(
                 f"Spacecraft processing not implemented for level {self.data_level}"
             )
+        return []
 
 
 class Swapi(ProcessInstrument):

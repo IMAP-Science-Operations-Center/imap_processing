@@ -210,7 +210,9 @@ def calculate_pointing_attitude_segments(
     count = spiceypy.ktotal("ck")
     loaded_ck_kernel, _, _, _ = spiceypy.kdata(count - 1, "ck")
     if str(ck_path) != loaded_ck_kernel:
-        raise ValueError(f"Error: Expected CK kernel {ck_path}")
+        raise ValueError(
+            f"Error: Expected CK kernel {ck_path} but loaded {loaded_ck_kernel}"
+        )
 
     id_imap_spacecraft = spiceypy.gipool("FRAME_IMAP_SPACECRAFT", 0, 1)
 
