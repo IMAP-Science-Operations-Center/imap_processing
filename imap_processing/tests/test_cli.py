@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest import mock
 from unittest.mock import Mock, sentinel
 
+import imap_data_access.io
 import numpy as np
 import pytest
 import spiceypy
@@ -26,7 +27,6 @@ from imap_processing.cli import (
     Hit,
     Idex,
     Lo,
-    ProcessInstrument,
     Spacecraft,
     Swe,
     Ultra,
@@ -444,7 +444,7 @@ def test_spacecraft_pointing_kernel(
     mocks["mock_pre_processing"].return_value = input_collection
 
     instrument = Spacecraft(
-        "spice", "pointing_kernel", dependency_str, "20240410", "12345", "v005", False
+        "l1a", "pointing-attitude", dependency_str, "20240410", "12345", "v005", False
     )
 
     instrument.process()
@@ -683,20 +683,20 @@ def test_spin_and_repoint_table_handling():
 
 @mock.patch("imap_processing.cli.swe_l1a")
 @pytest.mark.parametrize(
-    "query_return, expected_error",
+    "query_return, expected_warning",
     [
-        ([], None),
+        ([], False),
         (
             [
                 '{"file_path": '
                 '"/path/to/imap_swe_l1a_test_20100105_v001.cdf", "instrument": "swe"}'
             ],
-            ProcessInstrument.ImapFileExistsError,
+            True,
         ),
     ],
 )
 def test_post_processing(
-    mock_swe_l1a, mock_instrument_dependencies, query_return, expected_error
+    mock_swe_l1a, mock_instrument_dependencies, query_return, expected_warning
 ):
     """Test coverage for post processing"""
     mocks = mock_instrument_dependencies
@@ -708,6 +708,14 @@ def test_post_processing(
         "mock_write_cdf"
     ].return_value = "/path/to/imap_swe_l1a_test_20100105_v001.cdf"
     mocks["mock_query"].return_value = query_return
+
+    # Setup for testing file exists handling in upload_products
+    if expected_warning:
+        # Mock the upload method to simulate a file exists error
+        mocks["mock_upload"].side_effect = imap_data_access.io.IMAPDataAccessError(
+            '409 Conflict: {"error": "FileAlreadyExists", '
+            '"message": "The file already exists."}'
+        )
 
     test_ds = xr.Dataset()
     mock_swe_l1a.return_value = [test_ds]
@@ -723,16 +731,18 @@ def test_post_processing(
     )
     instrument = Swe("l1a", "raw", dependency_str, "20100105", None, "v001", True)
 
-    if expected_error:
-        with pytest.raises(expected_error):
-            instrument.process()
-    else:
-        # This function calls both the instrument.do_processing() and
-        # instrument.post_processing()
+    # Now we expect the process to complete without errors in both cases
+    # The current implementation should skip over the file exists error
+    with mock.patch("logging.Logger.warning") as mock_warning:
         instrument.process()
-        assert mock_swe_l1a.call_count == 1
-        # This test is testing that one file was uploaded
-        assert mocks["mock_upload"].call_count == 1
+        if expected_warning:
+            # Verify that we saw a warning about skipping upload
+            assert any(
+                "Skipping upload" in str(call) for call in mock_warning.call_args_list
+            )
+        else:
+            # This is testing that one file was uploaded successfully
+            assert mocks["mock_upload"].call_count == 1
 
     # Test parent injection
     assert test_ds.attrs["Parents"] == [
