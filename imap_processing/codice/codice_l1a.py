@@ -938,7 +938,7 @@ def create_binned_dataset(
     return dataset
 
 
-def create_direct_event_dataset(apid: int, unpacked_ds: xr.Dataset) -> xr.Dataset:
+def create_direct_event_dataset(apid: int, unpacked_dataset: xr.Dataset) -> xr.Dataset:
     """
     Create dataset for direct event data.
 
@@ -952,7 +952,7 @@ def create_direct_event_dataset(apid: int, unpacked_ds: xr.Dataset) -> xr.Datase
     dictionary. Padding is added to any fields that have less than 10000 events.
 
     In order to process these data, we must take the decommed raw data, group
-    the unpacked_ds appropriately based on their `seq_flgs`, decompress the data,
+    the unpacked_dataset appropriately based on their `seq_flgs`, decompress the data,
     then arrange the data into CDF data variables for each priority and bit
     field. For example, P2_SpinAngle represents the spin angles for the 2nd
     priority data.
@@ -961,7 +961,7 @@ def create_direct_event_dataset(apid: int, unpacked_ds: xr.Dataset) -> xr.Datase
     ----------
     apid : int
         The APID of the packet.
-    unpacked_ds : xarray.Dataset
+    unpacked_dataset : xarray.Dataset
         The unpacked dataset to process.
 
     Returns
@@ -970,13 +970,13 @@ def create_direct_event_dataset(apid: int, unpacked_ds: xr.Dataset) -> xr.Datase
         Xarray dataset containing the direct event data.
     """
     # Group and decompress the data
-    grouped_data = group_data(unpacked_ds)
+    grouped_data = group_data(unpacked_dataset)
     decompressed_data = [
         decompress(group, CoDICECompression.LOSSLESS) for group in grouped_data
     ]
 
     # Reshape the packet data into CDF-ready variables
-    reshaped_de_data = reshape_de_data(unpacked_ds, decompressed_data, apid)
+    reshaped_de_data = reshape_de_data(unpacked_dataset, decompressed_data, apid)
 
     # Gather the CDF attributes
     cdf_attrs = ImapCdfAttributes()
@@ -986,11 +986,11 @@ def create_direct_event_dataset(apid: int, unpacked_ds: xr.Dataset) -> xr.Datase
     # Determine the epochs to use in the dataset, which are the epochs whenever
     # there is a start of a segment and the priority is 0
     epoch_indices = np.where(
-        ((unpacked_ds.seq_flgs.data == 3) | (unpacked_ds.seq_flgs.data == 1))
-        & (unpacked_ds.priority.data == 0)
+        ((unpacked_dataset.seq_flgs.data == 3) | (unpacked_dataset.seq_flgs.data == 1))
+        & (unpacked_dataset.priority.data == 0)
     )[0]
-    acq_start_seconds = unpacked_ds.acq_start_seconds[epoch_indices]
-    acq_start_subseconds = unpacked_ds.acq_start_subseconds[epoch_indices]
+    acq_start_seconds = unpacked_dataset.acq_start_seconds[epoch_indices]
+    acq_start_subseconds = unpacked_dataset.acq_start_subseconds[epoch_indices]
 
     # Calculate epoch variables
     epochs, epochs_delta_minus, epochs_delta_plus = calculate_epoch_values(
@@ -1615,23 +1615,23 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
         # Housekeeping data
         if apid == CODICEAPID.COD_NHK:
             processed_dataset = create_hskp_dataset(dataset)
-            # logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # Event data
         elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
             processed_dataset = create_direct_event_dataset(apid, dataset)
-            # logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # I-ALiRT data
         elif apid in [CODICEAPID.COD_LO_IAL, CODICEAPID.COD_HI_IAL]:
             processed_dataset = create_ialirt_dataset(apid, dataset)
-            # logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # hi-omni data
         elif apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
             science_values = [packet.data for packet in dataset.data]
             processed_dataset = create_binned_dataset(apid, dataset, science_values)
-            # logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # Everything else
         elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
@@ -1649,7 +1649,7 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
             pipeline.define_coordinates()
             processed_dataset = pipeline.define_data_variables()
 
-            # logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
 
         # For APIDs that don't require processing
         else:
