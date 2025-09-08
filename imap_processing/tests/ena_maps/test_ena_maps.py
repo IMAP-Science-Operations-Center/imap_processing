@@ -623,6 +623,13 @@ class TestRectangularSkyMap:
             name="foo_var",
             dims=[k for k in coord_sizes.keys()],
         )
+        # Add required energy delta variables
+        for side in ["minus", "plus"]:
+            mock_dataset[f"{CoordNames.ENERGY_L2.value}_delta_{side}"] = xr.DataArray(
+                np.ones_like(mock_dataset[CoordNames.ENERGY_L2.value].data),
+                name=f"{CoordNames.ENERGY_L2.value}_delta_{side}",
+                dims=[CoordNames.ENERGY_L2.value],
+            )
         return mock_dataset
 
     @mock.patch("imap_processing.ena_maps.ena_maps.RectangularSkyMap.to_dataset")
@@ -683,8 +690,31 @@ class TestRectangularSkyMap:
         skymap = ena_maps.RectangularSkyMap(6, geometry.SpiceFrame.ECLIPJ2000)
         skymap.min_epoch = 10
         skymap.max_epoch = 15
+        # Test that variables with not attributes defined raise KeyError
         with pytest.raises(
             KeyError, match="Attributes for variable no_attrs_var not found"
+        ):
+            _ = skymap.build_cdf_dataset(
+                "hi", "l2", "sf", "foo_descriptor", sensor="45"
+            )
+
+        # Test that missing energy delta variable raise KeyError
+        # Test for missing energy_delta_plus
+        mock_dataset = mock_dataset.drop(["no_attrs_var", "energy_delta_plus"])
+        mock_to_dataset.return_value = mock_dataset
+        with pytest.raises(
+            KeyError,
+            match="Required variable 'energy_delta_plus' not found in cdf Dataset.",
+        ):
+            _ = skymap.build_cdf_dataset(
+                "hi", "l2", "sf", "foo_descriptor", sensor="45"
+            )
+        # Test for missing energy_delta_minus
+        mock_dataset = mock_dataset.drop(["energy_delta_minus"])
+        mock_to_dataset.return_value = mock_dataset
+        with pytest.raises(
+            KeyError,
+            match="Required variable 'energy_delta_minus' not found in cdf Dataset.",
         ):
             _ = skymap.build_cdf_dataset(
                 "hi", "l2", "sf", "foo_descriptor", sensor="45"

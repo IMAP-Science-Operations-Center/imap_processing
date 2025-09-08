@@ -1296,6 +1296,17 @@ class RectangularSkyMap(AbstractSkyMap):
                     name=f"{coord_name}_delta",
                     dims=[coord_name],
                 )
+            elif coord_name == CoordNames.ENERGY_L2.value:
+                if f"{coord_name}_delta_minus" not in cdf_ds:
+                    raise KeyError(
+                        f"Required variable '{coord_name}_delta_minus' "
+                        f"not found in cdf Dataset."
+                    )
+                if f"{coord_name}_delta_plus" not in cdf_ds:
+                    raise KeyError(
+                        f"Required variable '{coord_name}_delta_plus' "
+                        f"not found in cdf Dataset."
+                    )
 
         # Object which holds CDF attributes for the map
         cdf_attrs = ImapCdfAttributes()
