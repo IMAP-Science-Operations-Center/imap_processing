@@ -229,11 +229,13 @@ def cic_filter(
     cic1 = cic1 / decimation_factor
     cic2 = np.convolve(cic1, cic1)
     delay = (len(cic2) - 1) // 2
+
     input_filtered = input_timestamps
+    vectors_filtered = lfilter(cic2, 1, input_vectors, axis=0)
     if delay != 0:
         input_filtered = input_timestamps[:-delay]
+        vectors_filtered = vectors_filtered[delay:]
 
-    vectors_filtered = lfilter(cic2, 1, input_vectors, axis=0)[delay:]
     return input_filtered, vectors_filtered
 
 
@@ -270,6 +272,12 @@ def linear_filtered(
         Interpolated vectors of shape (m, 3) where m is equal to the number of output
         timestamps. Contains x, y, z components of the vector.
     """
+    if input_vectors.shape[0] != input_timestamps.shape[0]:
+        raise ValueError(
+            "Input vectors and input timestamps must have the same length. "
+            f"Got {input_vectors.shape[0]} and {input_timestamps.shape[0]}"
+        )
+
     input_filtered, vectors_filtered = cic_filter(
         input_vectors, input_timestamps, output_timestamps, input_rate, output_rate
     )

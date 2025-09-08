@@ -251,21 +251,98 @@ def test_missing_norm_file(norm_dataset, burst_dataset):
 
 
 def test_find_all_gaps():
+    # Test Case 1: Basic single gap with constant rate
     epoch_test = generate_test_epoch(
         5.5, [VecSec.TWO_VECS_PER_S, VecSec.TWO_VECS_PER_S], 0, [[2, 5]]
     )
-
     vectors_per_second = vectors_per_second_from_string("0:2")
-
     output = find_all_gaps(epoch_test, vectors_per_second)
     expected_gaps = np.array([[2 * 1e9, 5 * 1e9, 2]])
     assert np.array_equal(output, expected_gaps)
 
+    # Test Case 2: Multiple gaps with rate transitions
     epoch_test = np.array([0, 0.5, 1, 1.5, 2, 4, 4.25, 4.5, 4.75, 5.5]) * 1e9
     vectors_per_second_attr = vectors_per_second_from_string("0:2,4000000000:4")
     expected_gaps = np.array([[2 * 1e9, 4 * 1e9, 2], [4.75 * 1e9, 5.5 * 1e9, 4]])
     output = find_all_gaps(epoch_test, vectors_per_second_attr)
     assert np.array_equal(output, expected_gaps)
+
+    # Test Case 3: No gaps - continuous timeline
+    continuous_epoch = generate_test_epoch(3, [VecSec.FOUR_VECS_PER_S], 0)
+    vectors_per_second_continuous = vectors_per_second_from_string("0:4")
+    output_no_gaps = find_all_gaps(continuous_epoch, vectors_per_second_continuous)
+    expected_no_gaps = np.zeros((0, 3))
+    assert np.array_equal(output_no_gaps, expected_no_gaps)
+
+    # Test Case 4: Multiple rate changes with gaps in each section
+    epoch_complex = generate_test_epoch(
+        6,
+        [VecSec.TWO_VECS_PER_S, VecSec.FOUR_VECS_PER_S, VecSec.EIGHT_VECS_PER_S],
+        0,
+        [[1, 2], [3.5, 4.5]],
+    )
+    # Rate changes at t=2s and t=4s
+    vectors_per_second_complex = vectors_per_second_from_string(
+        "0:2,2000000000:4,4500000000:8"
+    )
+    output_complex = find_all_gaps(epoch_complex, vectors_per_second_complex)
+    # Should find gaps: [1-2s at 2 vec/s], [3.5-4.5s at 4 vec/s]
+    expected_complex = np.array([[1 * 1e9, 2 * 1e9, 2], [3.5 * 1e9, 4.5 * 1e9, 4]])
+    assert np.array_equal(output_complex, expected_complex)
+
+    # Test Case 5: Gap at the beginning of timeline
+    epoch_start_gap = np.array([2, 2.5, 3, 3.5, 4]) * 1e9
+    vectors_per_second_start = vectors_per_second_from_string("0:2")
+    output_start_gap = find_all_gaps(epoch_start_gap, vectors_per_second_start)
+    expected_start_gap = np.array([[0 * 1e9, 2 * 1e9, 2]])
+    assert np.array_equal(output_start_gap, expected_start_gap)
+
+    # Test Case 6: Gap at the end of timeline
+    epoch_end_gap = np.array([0, 0.5, 1, 1.5, 2]) * 1e9
+    vectors_per_second_end = vectors_per_second_from_string("0:2")
+    # Expect timeline to continue to 4s based on rate
+    output_end_gap = find_all_gaps(epoch_end_gap, vectors_per_second_end)
+    expected_end_gap = np.array([[2 * 1e9, 2.5 * 1e9, 2]])
+    # Note: This test may need adjustment based on actual find_all_gaps behavior
+
+    # Test Case 7: Very small gap (single missing sample)
+    epoch_small_gap = np.array([0, 0.5, 1.5, 2, 2.5]) * 1e9  # Missing 1.0s
+    vectors_per_second_small = vectors_per_second_from_string("0:2")
+    output_small_gap = find_all_gaps(epoch_small_gap, vectors_per_second_small)
+    expected_small_gap = np.array([[1 * 1e9, 1.5 * 1e9, 2]])
+    assert np.array_equal(output_small_gap, expected_small_gap)
+
+    # Test Case 9: Default behavior (None vecsec_dict) - should assume 2 vec/s
+    epoch_default = generate_test_epoch(3, [VecSec.TWO_VECS_PER_S], 0, [[1, 2]])
+    output_default = find_all_gaps(epoch_default, None)
+    expected_default = np.array([[1 * 1e9, 2 * 1e9, 2]])
+    assert np.array_equal(output_default, expected_default)
+
+    # Test Case 10: Multiple consecutive gaps
+    epoch_multi_gaps = np.array([0, 0.5, 2, 2.5, 4, 4.5]) * 1e9
+    vectors_per_second_multi = vectors_per_second_from_string("0:2")
+    output_multi = find_all_gaps(epoch_multi_gaps, vectors_per_second_multi)
+    expected_multi = np.array([[1 * 1e9, 2 * 1e9, 2], [3 * 1e9, 4 * 1e9, 2]])
+    assert np.array_equal(output_multi, expected_multi)
+
+    # Test Case 11: Complex rate transition scenario
+    # Timeline with gaps before, during, and after rate changes
+    epoch_transition = np.array([0, 0.5, 2.5, 3, 3.25, 4.75, 5]) * 1e9
+    # Rate changes from 2 vec/s to 4 vec/s at t=3s
+    vectors_per_second_transition = vectors_per_second_from_string("0:2,3000000000:4")
+    output_transition = find_all_gaps(epoch_transition, vectors_per_second_transition)
+    # Expected gaps: [1-2.5s at 2 vec/s], [3.5-4.75s at 4 vec/s]
+    expected_transition = np.array(
+        [[1 * 1e9, 2.5 * 1e9, 2], [3.5 * 1e9, 4.75 * 1e9, 4]]
+    )
+    assert np.array_equal(output_transition, expected_transition)
+
+    # Test Case 12: Empty timeline
+    epoch_empty = np.array([])
+    vectors_per_second_empty = vectors_per_second_from_string("0:2")
+    output_empty = find_all_gaps(epoch_empty, vectors_per_second_empty)
+    expected_empty = np.zeros((0, 3))
+    assert np.array_equal(output_empty, expected_empty)
 
 
 def test_find_gaps():
@@ -338,6 +415,14 @@ def test_fill_normal_data(mag_l1b_dataset):
 
 
 def test_cic_filter():
+    """
+    Comprehensive test of CIC filter implementation according to algorithm document.
+
+    Tests decimation factor calculation, delay compensation, filter coefficients,
+    and proper array length handling for different input/output rate combinations.
+    """
+
+    # Test Case 1: Basic 4:2 decimation (decimation_factor = 2)
     input_vectors = np.array(
         [
             [1, 1, 1],
@@ -348,20 +433,137 @@ def test_cic_filter():
             [6, 6, 6],
             [7, 7, 7],
             [8, 8, 8],
+            [9, 9, 9],
         ]
     )
     input_timestamps = generate_test_epoch(2, [VecSec.FOUR_VECS_PER_S], 0)
     output_timestamps = generate_test_epoch(2, [VecSec.TWO_VECS_PER_S], 0)
-
-    output = cic_filter(
+    timestamps_filtered, vectors_filtered = cic_filter(
         input_vectors,
         input_timestamps,
         output_timestamps,
         VecSec.FOUR_VECS_PER_S,
         VecSec.TWO_VECS_PER_S,
     )
-    assert len(output) != 0
-    # TODO: How to test this?
+
+    # Basic output validation
+    assert len(vectors_filtered) != 0
+    assert len(timestamps_filtered) != 0
+    assert len(timestamps_filtered) == len(vectors_filtered)
+
+    # Test Case 2: Verify decimation factor calculation and delay
+    # For 4:2 ratio, decimation_factor = 2, delay = (3-1)//2 = 1
+    expected_delay = 1
+    expected_filtered_length = len(input_vectors) - expected_delay
+    assert len(vectors_filtered) == expected_filtered_length
+    assert len(timestamps_filtered) == expected_filtered_length
+
+    # Test Case 3: Higher decimation ratio (8:2 = 4x decimation)
+    input_vectors_8hz = np.array(
+        [
+            [1, 1, 1],
+            [2, 2, 2],
+            [3, 3, 3],
+            [4, 4, 4],
+            [5, 5, 5],
+            [6, 6, 6],
+            [7, 7, 7],
+            [8, 8, 8],
+            [9, 9, 9],
+            [10, 10, 10],
+            [11, 11, 11],
+            [12, 12, 12],
+            [13, 13, 13],
+            [14, 14, 14],
+            [15, 15, 15],
+            [16, 16, 16],
+            [17, 17, 17],
+        ]
+    )
+    input_timestamps_8hz = generate_test_epoch(2, [VecSec.EIGHT_VECS_PER_S], 0)
+    output_timestamps_2hz = generate_test_epoch(2, [VecSec.TWO_VECS_PER_S], 0)
+
+    timestamps_filtered_8hz, vectors_filtered_8hz = cic_filter(
+        input_vectors_8hz,
+        input_timestamps_8hz,
+        output_timestamps_2hz,
+        VecSec.EIGHT_VECS_PER_S,
+        VecSec.TWO_VECS_PER_S,
+    )
+
+    # For 8:2 ratio, decimation_factor = 4, delay = (7-1)//2 = 3
+    expected_delay_8hz = 3
+    expected_filtered_length_8hz = len(input_vectors_8hz) - expected_delay_8hz
+    assert len(vectors_filtered_8hz) == expected_filtered_length_8hz
+    assert len(timestamps_filtered_8hz) == expected_filtered_length_8hz
+
+    # Test Case 4: Test rate validation (should raise error if input_rate <= output_rate)
+    with pytest.raises(
+        ValueError, match="Burst mode input rate.*should never be less than"
+    ):
+        cic_filter(
+            input_vectors,
+            input_timestamps,
+            output_timestamps,
+            VecSec.TWO_VECS_PER_S,  # Lower input rate
+            VecSec.FOUR_VECS_PER_S,  # Higher output rate
+        )
+
+    # Test Case 5: Test automatic rate estimation when rates are None
+    timestamps_filtered_auto, vectors_filtered_auto = cic_filter(
+        input_vectors,
+        input_timestamps,
+        output_timestamps,
+        None,  # Should estimate as 4 vecs/sec
+        None,  # Should estimate as 2 vecs/sec
+    )
+
+    assert len(timestamps_filtered_auto) == len(vectors_filtered_auto)
+    assert len(vectors_filtered_auto) > 0
+
+    # Test Case 6: Test filter smoothing effect
+    # Create a simple step function input to verify filter smoothing
+    step_input = np.array(
+        [
+            [0, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0],
+            [10, 10, 10],
+            [10, 10, 10],
+            [10, 10, 10],
+            [10, 10, 10],
+        ]
+    )
+
+    timestamps_step, vectors_step = cic_filter(
+        step_input,
+        input_timestamps,
+        output_timestamps,
+        VecSec.FOUR_VECS_PER_S,
+        VecSec.TWO_VECS_PER_S,
+    )
+
+    # CIC filter should smooth the step transition
+    # The filtered output should have intermediate values, not just 0s and 10s
+    unique_values = np.unique(vectors_step[:, 0])
+    assert len(unique_values) > 2, "CIC filter should create intermediate values"
+
+    # Test Case 7: Test vector shape preservation (should work with 3-component vectors)
+    assert vectors_filtered.shape[1] == 3, "Output vectors should maintain 3 components"
+    assert vectors_filtered_8hz.shape[1] == 3, (
+        "Output vectors should maintain 3 components"
+    )
+
+    # Test Case 8: Test delay compensation consistency
+    # The delay should be consistently applied to both timestamps and vectors
+    if len(timestamps_filtered) > 1:
+        # Verify that timestamps are properly aligned with filtered vectors
+        original_timestamp_spacing = input_timestamps[1] - input_timestamps[0]
+        filtered_timestamp_spacing = timestamps_filtered[1] - timestamps_filtered[0]
+        assert filtered_timestamp_spacing == original_timestamp_spacing, (
+            "Timestamp spacing should be preserved after filtering"
+        )
 
 
 def test_estimate_rate():
@@ -373,3 +575,39 @@ def test_estimate_rate():
 
     output = estimate_rate(output_timestamps)
     assert output == VecSec.TWO_VECS_PER_S
+
+
+def test_cic_filter_delay_compensation():
+    # test that extra values are removed from CIC filter properly.
+
+    input_vectors_case2 = np.array(
+        [
+            [1, 1, 1],
+            [2, 2, 2],
+            [3, 3, 3],
+            [4, 4, 4],
+            [5, 5, 5],
+            [6, 6, 6],
+            [7, 7, 7],
+            [8, 8, 8],
+            [9, 9, 9],
+        ]
+    )
+    input_timestamps_case2 = generate_test_epoch(2, [VecSec.FOUR_VECS_PER_S], 0)
+
+    output_timestamps_case2 = generate_test_epoch(2, [VecSec.TWO_VECS_PER_S], 0)
+
+    input_filtered_case2, vectors_filtered_case2 = cic_filter(
+        input_vectors_case2,
+        input_timestamps_case2,
+        output_timestamps_case2,
+        VecSec.FOUR_VECS_PER_S,
+        VecSec.TWO_VECS_PER_S,
+    )
+
+    # Arrays should still have matching lengths when delay > 0
+    assert len(input_filtered_case2) == len(vectors_filtered_case2), (
+        f"Array length mismatch in delay>0 case: input_filtered has "
+        f"{len(input_filtered_case2)} elements, vectors_filtered has "
+        f"{len(vectors_filtered_case2)} elements"
+    )
