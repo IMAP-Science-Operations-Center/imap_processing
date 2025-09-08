@@ -690,7 +690,7 @@ class TestRectangularSkyMap:
         skymap = ena_maps.RectangularSkyMap(6, geometry.SpiceFrame.ECLIPJ2000)
         skymap.min_epoch = 10
         skymap.max_epoch = 15
-        # Test that variables with not attributes defined raise KeyError
+        # Test that variables with no attributes defined raise KeyError
         with pytest.raises(
             KeyError, match="Attributes for variable no_attrs_var not found"
         ):

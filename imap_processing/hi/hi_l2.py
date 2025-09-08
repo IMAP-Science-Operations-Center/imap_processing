@@ -161,8 +161,8 @@ def generate_hi_map(
     output_map.data_1d = output_map.data_1d.assign_coords(
         energy=esa_df["nominal_central_energy"].values
     )
-    # Set the energy_step_delta values
-    energy_delta = 2 * esa_df["bandpass_sigma"]
+    # Set the energy_step_delta values to the energy bandpass half-width-half-max
+    energy_delta = esa_df["bandpass_fwhm"].values / 2
     output_map.data_1d["energy_delta_minus"] = xr.DataArray(
         energy_delta,
         name="energy_delta_minus",
@@ -170,7 +170,7 @@ def generate_hi_map(
     )
     output_map.data_1d["energy_delta_plus"] = xr.DataArray(
         energy_delta,
-        name="energy_delta_minus",
+        name="energy_delta_plus",
         dims=["energy"],
     )
 
