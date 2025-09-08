@@ -469,31 +469,25 @@ def test_rotate_frames(mag_l1d_test_class):
         else:
             return vectors + 300
 
-    with (
-        patch(
-            "imap_processing.mag.l2.mag_l2_data.frame_transform",
-            side_effect=mock_frame_transform,
-        ) as mock_transform_l2,
-        patch(
-            "imap_processing.mag.l1d.mag_l1d_data.frame_transform",
-            side_effect=mock_frame_transform,
-        ) as mock_transform_l1d,
-    ):
+    with patch(
+        "imap_processing.mag.l1d.mag_l1d_data.frame_transform",
+        side_effect=mock_frame_transform,
+    ) as mock_transform_l1d:
         target_frame = ValidFrames.SRF
         mag_l1d_test_class.rotate_frame(target_frame)
 
-        # Verify both frame_transform functions were called
-        # L2 version called for MAGO vectors (via super().rotate_frame())
-        mock_transform_l2.assert_called_once()
-        l2_call_args = mock_transform_l2.call_args
-        assert l2_call_args[1]["from_frame"] == ValidFrames.MAGO.value
-        assert l2_call_args[1]["to_frame"] == ValidFrames.SRF.value
+        # Verify frame_transform was called twice (once for MAGO, once for MAGI)
+        assert mock_transform_l1d.call_count == 2
 
-        # L1D version called for MAGI vectors
-        mock_transform_l1d.assert_called_once()
-        l1d_call_args = mock_transform_l1d.call_args
-        assert l1d_call_args[1]["from_frame"] == ValidFrames.MAGI.value
-        assert l1d_call_args[1]["to_frame"] == ValidFrames.SRF.value
+        # First call should be for MAGO vectors
+        first_call_args = mock_transform_l1d.call_args_list[0]
+        assert first_call_args[1]["from_frame"] == ValidFrames.MAGO.value
+        assert first_call_args[1]["to_frame"] == ValidFrames.SRF.value
+
+        # Second call should be for MAGI vectors
+        second_call_args = mock_transform_l1d.call_args_list[1]
+        assert second_call_args[1]["from_frame"] == ValidFrames.MAGI.value
+        assert second_call_args[1]["to_frame"] == ValidFrames.SRF.value
 
         # Check that MAGO vectors were transformed from MAGO frame (+100)
         expected_mago_vectors = initial_vectors + 100
