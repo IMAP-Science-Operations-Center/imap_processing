@@ -420,9 +420,9 @@ class ProcessInstrument(ABC):
                         logger.warning("Skipping upload of existing file, %s", filename)
                         continue
                     else:
-                        raise ValueError(f"Upload failed with error: {msg}") from e
+                        logger.error(f"Upload failed with error: {msg}")
                 except Exception as e:
-                    raise ValueError(f"Upload failed unknown error: {e!r}") from e
+                    logger.error(f"Upload failed unknown error: {e}")
 
     @final
     def process(self) -> None:
