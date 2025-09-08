@@ -84,8 +84,8 @@ VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION = [
     "pointing_set_exposure_times_solid_angle",
     "num_pointing_set_pixel_members",
     "corrected_count_rate",
-    "obs_date_squared_for_std",
     "obs_date_for_std",
+    "obs_date_squared_for_std",
 ]
 
 # These variables may or may not be energy dependent, depending on the
@@ -215,7 +215,7 @@ def generate_ultra_healpix_skymap(
     output_map_structure.values_to_push_project.extend(
         [
             "num_pointing_set_pixel_members",
-            "obs_date_range",
+            "obs_date_for_std",
             "obs_date_squared_for_std",
         ]
     )
@@ -298,11 +298,11 @@ def generate_ultra_healpix_skymap(
             fill_value=pointing_set.epoch,
             dtype=np.int64,
         )
-        pointing_set.data["obs_date_range"] = pointing_set.data["obs_date"].astype(
+        pointing_set.data["obs_date_for_std"] = pointing_set.data["obs_date"].astype(
             np.float64
         )
         pointing_set.data["obs_date_squared_for_std"] = (
-            pointing_set.data["obs_date_range"] ** 2
+            pointing_set.data["obs_date_for_std"] ** 2
         )
 
         # Add solid_angle * exposure of pointing set as data_var
@@ -392,7 +392,7 @@ def generate_ultra_healpix_skymap(
                 )
                 - (
                     (
-                        skymap.data_1d["obs_date_range"]
+                        skymap.data_1d["obs_date_for_std"]
                         / (skymap.data_1d["num_pointing_set_pixel_members"])
                     )
                     ** 2
