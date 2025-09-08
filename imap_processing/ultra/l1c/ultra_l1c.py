@@ -2,6 +2,7 @@
 
 import xarray as xr
 
+from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1c.helio_pset import calculate_helio_pset
 from imap_processing.ultra.l1c.spacecraft_pset import calculate_spacecraft_pset
 
@@ -61,8 +62,19 @@ def ultra_l1c(
                 f"imap_ultra_l1c_{instrument_id}sensor-spacecraftpset",
                 ancillary_files,
                 instrument_id,
+                UltraConstants.TOFXPH_SPECIES_GROUPS["proton"],
             )
-            output_datasets = [spacecraft_pset]
+            spacecraft_pset_non_proton = calculate_spacecraft_pset(
+                data_dict[f"imap_ultra_l1b_{instrument_id}sensor-de"],
+                data_dict[f"imap_ultra_l1b_{instrument_id}sensor-goodtimes"],
+                data_dict[f"imap_ultra_l1a_{instrument_id}sensor-rates"],
+                data_dict[f"imap_ultra_l1a_{instrument_id}sensor-params"],
+                f"imap_ultra_l1c_{instrument_id}sensor-spacecraftpset-nonproton",
+                ancillary_files,
+                instrument_id,
+                UltraConstants.TOFXPH_SPECIES_GROUPS["non_proton"],
+            )
+            output_datasets = [spacecraft_pset, spacecraft_pset_non_proton]
     if not output_datasets:
         raise ValueError("Data dictionary does not contain the expected keys.")
 

@@ -260,6 +260,18 @@ imap_ultra_l1c_90sensor-spacecraftpset:
     Logical_source: imap_ultra_l1c_90sensor-spacecraftpset
     Logical_source_description: IMAP-Ultra Instrument Level-1C Spacecraft Pointing Set Grid.
 
+imap_ultra_l1c_45sensor-spacecraftpset-nonproton:
+    <<: *instrument_base
+    Data_type: L1C_45Sensor-PSET>Level-1C Pointing Set Grid for Ultra45
+    Logical_source: imap_ultra_l1c_45sensor-spacecraftpset-nonproton
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Spacecraft Pointing Set Grid for Non-Proton Species.
+
+imap_ultra_l1c_90sensor-spacecraftpset-nonproton:
+    <<: *instrument_base
+    Data_type: L1C_90Sensor-PSET>Level-1C Pointing Set Grid for Ultra90
+    Logical_source: imap_ultra_l1c_90sensor-spacecraftpset-nonproton
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Spacecraft Pointing Set Grid for Non-Proton Species.
+
 imap_ultra_l1c_45sensor-heliopset:
     <<: *instrument_base
     Data_type: L1C_45Sensor-PSET>Level-1C Pointing Set Grid for Ultra45
