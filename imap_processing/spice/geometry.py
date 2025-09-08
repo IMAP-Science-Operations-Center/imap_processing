@@ -21,7 +21,7 @@ from numpy.typing import NDArray
 class SpiceBody(IntEnum):
     """Enum containing SPICE IDs for bodies that we use."""
 
-    # A subset of IMAP Specific bodies as defined in imap_wkcp.tf
+    # A subset of IMAP Specific bodies as defined in imap_001.tf
     IMAP = -43
     IMAP_SPACECRAFT = -43000
     # IMAP Pointing Frame (Despun) as defined in imap_science_xxx.tf
@@ -33,7 +33,7 @@ class SpiceBody(IntEnum):
 
 
 class SpiceFrame(IntEnum):
-    """SPICE IDs for reference frames in imap_wkcp.tf and imap_science_xxx.tf."""
+    """SPICE IDs for reference frames in imap_###.tf and imap_science_xxx.tf."""
 
     # Standard SPICE Frames
     J2000 = spiceypy.irfnum("J2000")
@@ -41,7 +41,7 @@ class SpiceFrame(IntEnum):
     ITRF93 = 13000
     # IMAP Pointing Frame (Despun) as defined in imap_science_xxx.tf
     IMAP_DPS = -43901
-    # IMAP specific as defined in imap_wkcp.tf
+    # IMAP specific as defined in imap_###.tf
     IMAP_SPACECRAFT = -43000
     IMAP_LO_BASE = -43100
     IMAP_LO_STAR_SENSOR = -43103
@@ -50,13 +50,17 @@ class SpiceFrame(IntEnum):
     IMAP_HI_90 = -43160
     IMAP_ULTRA_45 = -43200
     IMAP_ULTRA_90 = -43210
-    IMAP_MAG = -43250
+    # TODO: remove IMAP_MAG frame once all usages have been removed
+    IMAP_MAG = -43999
+    IMAP_MAG_BOOM = -43250
+    IMAP_MAG_I = -43251
+    IMAP_MAG_O = -43252
     IMAP_SWE = -43300
     IMAP_SWAPI = -43350
     IMAP_CODICE = -43400
     IMAP_HIT = -43500
     IMAP_IDEX = -43700
-    IMAP_GLOWS = -43750
+    IMAP_GLOWS = -43751
 
     # IMAP Science Frames (new additions from imap_science_xxx.tf)
     IMAP_OMD = -43900
@@ -87,7 +91,8 @@ BORESIGHT_LOOKUP = {
     SpiceFrame.IMAP_HI_90: np.array([0, 1, 0]),
     SpiceFrame.IMAP_ULTRA_45: np.array([0, 0, 1]),
     SpiceFrame.IMAP_ULTRA_90: np.array([0, 0, 1]),
-    SpiceFrame.IMAP_MAG: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_MAG_I: np.array([0, 0, 1]),
+    SpiceFrame.IMAP_MAG_O: np.array([0, 0, 1]),
     SpiceFrame.IMAP_SWE: np.array([-1, 0, 0]),
     SpiceFrame.IMAP_SWAPI: np.array([0, 1, 0]),
     SpiceFrame.IMAP_CODICE: np.array([0, 0, 1]),
@@ -162,7 +167,8 @@ def get_instrument_mounting_az_el(instrument: SpiceFrame) -> np.ndarray:
         SpiceFrame.IMAP_HI_90: np.array([0, 1, 0]),
         SpiceFrame.IMAP_ULTRA_45: np.array([0, 0, 1]),
         SpiceFrame.IMAP_ULTRA_90: np.array([0, 0, 1]),
-        SpiceFrame.IMAP_MAG: np.array([-1, 0, 0]),
+        SpiceFrame.IMAP_MAG_I: np.array([-1, 0, 0]),
+        SpiceFrame.IMAP_MAG_O: np.array([-1, 0, 0]),
         SpiceFrame.IMAP_SWE: np.array([-1, 0, 0]),
         SpiceFrame.IMAP_SWAPI: np.array([0, 0, -1]),
         SpiceFrame.IMAP_CODICE: np.array([-1, 0, 0]),
@@ -214,7 +220,8 @@ def get_spacecraft_to_instrument_spin_phase_offset(instrument: SpiceFrame) -> fl
         SpiceFrame.IMAP_HIT: 120 / 360,  # 30 + 90 = 120
         SpiceFrame.IMAP_SWE: 243 / 360,  # 153 + 90 = 243
         SpiceFrame.IMAP_GLOWS: 217 / 360,  # 127 + 90 = 217
-        SpiceFrame.IMAP_MAG: 90 / 360,  # 0 + 90 = 90
+        SpiceFrame.IMAP_MAG_I: 90 / 360,  # 0 + 90 = 90
+        SpiceFrame.IMAP_MAG_O: 90 / 360,  # 0 + 90 = 90
     }
     return phase_offset_lookup[instrument]
 

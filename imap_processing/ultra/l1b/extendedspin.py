@@ -2,6 +2,7 @@
 
 import numpy as np
 import xarray as xr
+from numpy.typing import NDArray
 
 from imap_processing.ultra.l1b.ultra_l1b_culling import (
     count_rejected_events_per_spin,
@@ -15,6 +16,7 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
 FILLVAL_UINT16 = 65535
+FILLVAL_FLOAT32 = -1.0e31
 
 
 def calculate_extendedspin(
@@ -58,12 +60,6 @@ def calculate_extendedspin(
     hk_qf = flag_hk(de_dataset["spin"].values)
     inst_qf = flag_imap_instruments(de_dataset["spin"].values)
 
-    # Get the first epoch for each spin.
-    mask = xr.DataArray(np.isin(de_dataset["spin"], spin), dims="epoch")
-    filtered_dataset = de_dataset.where(mask, drop=True)
-    _, first_indices = np.unique(filtered_dataset["spin"].values, return_index=True)
-    first_epochs = filtered_dataset["epoch"].values[first_indices]
-
     # Get the number of pulses per spin.
     pulses = get_pulses_per_spin(rates_dataset)
 
@@ -75,7 +71,6 @@ def calculate_extendedspin(
         de_dataset["quality_outliers"].values,
     )
     # These will be the coordinates.
-    extendedspin_dict["epoch"] = first_epochs
     extendedspin_dict["spin_number"] = spin
     extendedspin_dict["energy_bin_geometric_mean"] = energy_bin_geometric_mean
 
@@ -84,9 +79,26 @@ def calculate_extendedspin(
     extendedspin_dict["spin_start_time"] = spin_starttime
     extendedspin_dict["spin_period"] = spin_period
     extendedspin_dict["spin_rate"] = spin_rates
-    extendedspin_dict["start_pulses_per_spin"] = pulses.start_per_spin
-    extendedspin_dict["stop_pulses_per_spin"] = pulses.stop_per_spin
-    extendedspin_dict["coin_pulses_per_spin"] = pulses.coin_per_spin
+
+    # Get index of pulses.unique_spins corresponding to each spin.
+    idx: NDArray[np.intp] = np.searchsorted(pulses.unique_spins, spin)
+
+    # Validate that the spin values match
+    valid = (idx < pulses.unique_spins.size) & (pulses.unique_spins[idx] == spin)
+
+    start_per_spin = np.full(len(spin), FILLVAL_FLOAT32, dtype=np.float32)
+    stop_per_spin = np.full(len(spin), FILLVAL_FLOAT32, dtype=np.float32)
+    coin_per_spin = np.full(len(spin), FILLVAL_FLOAT32, dtype=np.float32)
+
+    # Fill only the valid ones
+    start_per_spin[valid] = pulses.start_per_spin[idx[valid]]
+    stop_per_spin[valid] = pulses.stop_per_spin[idx[valid]]
+    coin_per_spin[valid] = pulses.coin_per_spin[idx[valid]]
+
+    # account for rates spins which are not in the direct event spins
+    extendedspin_dict["start_pulses_per_spin"] = start_per_spin
+    extendedspin_dict["stop_pulses_per_spin"] = stop_per_spin
+    extendedspin_dict["coin_pulses_per_spin"] = coin_per_spin
     extendedspin_dict["rejected_events_per_spin"] = rejected_counts
     extendedspin_dict["quality_attitude"] = attitude_qf
     extendedspin_dict["quality_ena_rates"] = rates_qf

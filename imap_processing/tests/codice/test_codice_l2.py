@@ -2,11 +2,16 @@
 
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.codice.codice_l2 import add_dataset_attributes, process_codice_l2
+from imap_processing.codice.codice_l2 import (
+    add_dataset_attributes,
+    compute_geometric_factors,
+    process_codice_l2,
+)
 
 from .conftest import TEST_L2_FILES
 
@@ -45,6 +50,24 @@ def mock_cdf_attrs():
     return cdf_attrs
 
 
+@pytest.fixture
+def mock_half_spin_lut(monkeypatch):
+    """
+    Mock HALF_SPIN_LUT for testing.
+    Example:
+      ESA steps 0–63 belong to half_spin=1
+      ESA steps 64–127 belong to half_spin=2
+    """
+    mock_lut = {
+        1: list(range(0, 64)),
+        2: list(range(64, 128)),
+    }
+    monkeypatch.setattr(
+        "imap_processing.codice.codice_l2.HALF_SPIN_LUT",
+        mock_lut,
+    )
+
+
 @pytest.mark.parametrize(
     "test_l2_data, expected_logical_source",
     list(zip(TEST_L2_FILES, EXPECTED_LOGICAL_SOURCES, strict=False)),
@@ -65,6 +88,40 @@ def test_l2_logical_sources(test_l2_data: xr.Dataset, expected_logical_source: s
     dataset = test_l2_data
 
     assert dataset.attrs["Logical_source"] == expected_logical_source
+
+
+def test_compute_geometric_factors_all_full_mode(mock_half_spin_lut):
+    # rgfo_half_spin = 3 means all half_spin values (1 or 2) are < rgfo_half_spin
+    dataset = xr.Dataset({"rgfo_half_spin": (("epoch",), np.array([3, 3]))})
+
+    result = compute_geometric_factors(dataset)
+
+    # Expect 0.75 everywhere
+    expected = np.full((2, 128), 0.75)
+    np.testing.assert_array_equal(result, expected)
+
+
+def test_compute_geometric_factors_all_reduced_mode(mock_half_spin_lut):
+    # rgfo_half_spin = 0 means all half_spin values (>=1) are >= rgfo_half_spin
+    dataset = xr.Dataset({"rgfo_half_spin": (("epoch",), np.array([0]))})
+
+    result = compute_geometric_factors(dataset)
+
+    # Expect 0.5 everywhere
+    expected = np.full((1, 128), 0.5)
+    np.testing.assert_array_equal(result, expected)
+
+
+def test_compute_geometric_factors_mixed(mock_half_spin_lut):
+    # rgfo_half_spin = 2
+    dataset = xr.Dataset({"rgfo_half_spin": (("epoch",), np.array([2]))})
+
+    result = compute_geometric_factors(dataset)
+
+    # ESA steps 0-63 (half_spin=1) -> 1 < 2 → 0.75
+    # ESA steps 64-127 (half_spin=2) -> 2 !< 2 → 0.5
+    expected = np.array([[0.75] * 64 + [0.5] * 64])
+    np.testing.assert_array_equal(result, expected)
 
 
 def test_add_dataset_attributes(mock_cdf_attrs):

@@ -9,6 +9,7 @@ import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.lo import lo_ancillary
 from imap_processing.lo.l1b.tof_conversions import (
     TOF0_CONV,
     TOF1_CONV,
@@ -16,20 +17,24 @@ from imap_processing.lo.l1b.tof_conversions import (
     TOF3_CONV,
 )
 from imap_processing.spice.geometry import SpiceFrame, instrument_pointing
+from imap_processing.spice.repoint import get_pointing_times
+from imap_processing.spice.spin import get_spin_number
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def lo_l1b(dependencies: dict) -> list[Path]:
+def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
     """
     Will process IMAP-Lo L1A data into L1B CDF data products.
 
     Parameters
     ----------
-    dependencies : dict
+    sci_dependencies : dict
         Dictionary of datasets needed for L1B data product creation in xarray Datasets.
+    anc_dependencies : list
+        List of ancillary file paths needed for L1B data product creation.
 
     Returns
     -------
@@ -43,17 +48,20 @@ def lo_l1b(dependencies: dict) -> list[Path]:
     # create the attribute manager to access L1A fillval attributes
     attr_mgr_l1a = ImapCdfAttributes()
     attr_mgr_l1a.add_instrument_variable_attrs(instrument="lo", level="l1a")
-    logger.info(f"\n Dependencies: {list(dependencies.keys())}\n")
+    logger.info(f"\n Dependencies: {list(sci_dependencies.keys())}\n")
     # if the dependencies are used to create Annotated Direct Events
-    if "imap_lo_l1a_de" in dependencies and "imap_lo_l1a_spin" in dependencies:
+    if "imap_lo_l1a_de" in sci_dependencies and "imap_lo_l1a_spin" in sci_dependencies:
         logger.info("\nProcessing IMAP-Lo L1B Direct Events...")
         logical_source = "imap_lo_l1b_de"
         # get the dependency dataset for l1b direct events
-        l1a_de = dependencies["imap_lo_l1a_de"]
-        spin_data = dependencies["imap_lo_l1a_spin"]
+        l1a_de = sci_dependencies["imap_lo_l1a_de"]
+        spin_data = sci_dependencies["imap_lo_l1a_spin"]
 
         # Initialize the L1B DE dataset
         l1b_de = initialize_l1b_de(l1a_de, attr_mgr_l1b, logical_source)
+        pointing_start_met, pointing_end_met = get_pointing_times(
+            l1a_de["met"].values[0].item()
+        )
         # Get the start and end times for each spin epoch
         acq_start, acq_end = convert_start_end_acq_times(spin_data)
         # Get the average spin durations for each epoch
@@ -66,7 +74,7 @@ def lo_l1b(dependencies: dict) -> list[Path]:
         # spin bins are 0 - 60 bins
         l1b_de = set_spin_bin(l1b_de, spin_angle)
         # set the spin cycle for each direct event
-        l1b_de = set_spin_cycle(l1a_de, l1b_de)
+        l1b_de = set_spin_cycle(pointing_start_met, l1a_de, l1b_de)
         # get spin start times for each event
         spin_start_time = get_spin_start_times(l1a_de, l1b_de, spin_data, acq_end)
         # get the absolute met for each event
@@ -75,6 +83,10 @@ def lo_l1b(dependencies: dict) -> list[Path]:
         )
         # set the epoch for each event
         l1b_de = set_each_event_epoch(l1b_de)
+        # Set the ESA mode for each direct event
+        l1b_de = set_esa_mode(
+            pointing_start_met, pointing_end_met, anc_dependencies, l1b_de
+        )
         # Set the average spin duration for each direct event
         l1b_de = set_avg_spin_durations_per_event(
             l1a_de, l1b_de, avg_spin_durations_per_cycle
@@ -133,7 +145,7 @@ def initialize_l1b_de(
         # TODO: Add pos to YAML file
         # attrs=attr_mgr.get_variable_attributes("pos"),
     )
-    l1b_de["mode"] = xr.DataArray(
+    l1b_de["mode_bit"] = xr.DataArray(
         l1a_de["mode"].values,
         dims=["epoch"],
         # TODO: Add mode to YAML file
@@ -150,6 +162,65 @@ def initialize_l1b_de(
         dims=["epoch"],
         # TODO: Add esa_step to YAML file
         # attrs=attr_mgr.get_variable_attributes("esa_step"),
+    )
+
+    return l1b_de
+
+
+def set_esa_mode(
+    pointing_start_met: float,
+    pointing_end_met: float,
+    anc_dependencies: list,
+    l1b_de: xr.Dataset,
+) -> xr.Dataset:
+    """
+    Set the ESA mode for each direct event.
+
+    The ESA mode is determined from the sweep table for the time period of the pointing.
+
+    Parameters
+    ----------
+    pointing_start_met : float
+        Start time for the pointing in MET seconds.
+    pointing_end_met : float
+        End time for the pointing in MET seconds.
+    anc_dependencies : list
+        List of ancillary file paths.
+    l1b_de : xarray.Dataset
+        The L1B DE dataset.
+
+    Returns
+    -------
+    l1b_de : xr.Dataset
+        The L1B DE dataset with the ESA mode added.
+    """
+    # Read the sweep table from the ancillary files
+    sweep_df = lo_ancillary.read_ancillary_file(
+        next(s for s in anc_dependencies if "sweep-table" in s)
+    )
+
+    # Get the sweep table rows that correspond to the time period of the pointing
+    pointing_sweep_df = sweep_df[
+        (sweep_df["GoodTime_start"] >= pointing_start_met)
+        & (sweep_df["GoodTime_start"] <= pointing_end_met)
+    ]
+
+    # Check that there is only one ESA mode in the sweep table for the pointing
+    if len(pointing_sweep_df["ESA_Mode"].unique()) == 1:
+        # Update the ESA mode strings to be 0 for HiRes and 1 for HiThr
+        sweep_df["esa_mode"] = sweep_df["ESA_Mode"].map({"HiRes": 0, "HiThr": 1})
+        # Get the ESA mode for the pointing
+        esa_mode = sweep_df["esa_mode"].values[0]
+        # Repeat the ESA mode for each direct event in the pointing
+        esa_mode_array = np.repeat(esa_mode, len(l1b_de["epoch"]))
+    else:
+        raise ValueError("Multiple ESA modes found in sweep table for pointing.")
+
+    l1b_de["esa_mode"] = xr.DataArray(
+        esa_mode_array,
+        dims=["epoch"],
+        # TODO: Add esa_mode to YAML file
+        # attrs=attr_mgr.get_variable_attributes("esa_mode"),
     )
 
     return l1b_de
@@ -252,7 +323,9 @@ def set_spin_bin(l1b_de: xr.Dataset, spin_angle: np.ndarray) -> xr.Dataset:
     return l1b_de
 
 
-def set_spin_cycle(l1a_de: xr.Dataset, l1b_de: xr.Dataset) -> xr.Dataset:
+def set_spin_cycle(
+    pointing_start_met: float, l1a_de: xr.Dataset, l1b_de: xr.Dataset
+) -> xr.Dataset:
     """
     Set the spin cycle for each direct event.
 
@@ -265,6 +338,8 @@ def set_spin_cycle(l1a_de: xr.Dataset, l1b_de: xr.Dataset) -> xr.Dataset:
 
     Parameters
     ----------
+    pointing_start_met : float
+        The start time of the pointing in MET seconds.
     l1a_de : xarray.Dataset
         The L1A DE dataset.
     l1b_de : xarray.Dataset
@@ -275,19 +350,18 @@ def set_spin_cycle(l1a_de: xr.Dataset, l1b_de: xr.Dataset) -> xr.Dataset:
     l1b_de : xarray.Dataset
         The L1B DE dataset with the spin cycle added for each direct event.
     """
+    spin_start_num = get_spin_number(pointing_start_met)
     counts = l1a_de["de_count"].values
     # split the esa_steps into ASC groups
     de_asc_groups = np.split(l1a_de["esa_step"].values, np.cumsum(counts)[:-1])
     spin_cycle = []
-    for i, esa_asc_group in enumerate(de_asc_groups):
-        # TODO: Spin Number does not reset for each pointing. Need to figure out
-        #  how to retain this information across days
-        # increment the spin_start by 28 after each aggregated science cycle
-        spin_start = i * 28
+    for esa_asc_group in de_asc_groups:
         # calculate the spin cycle for each DE in the ASC group
         # TODO: Add equation number in algorithm document when new version is
-        # available. Add to docstring as well
-        spin_cycle.extend(spin_start + 7 + (esa_asc_group - 1) * 2)
+        #  available. Add to docstring as well
+        spin_cycle.extend(spin_start_num + 7 + (esa_asc_group - 1) * 2)
+        # increment the spin start number by 28 for the next ASC
+        spin_start_num += 28
 
     l1b_de["spin_cycle"] = xr.DataArray(
         spin_cycle,

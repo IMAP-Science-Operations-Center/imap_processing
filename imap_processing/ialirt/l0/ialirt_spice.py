@@ -133,6 +133,7 @@ def transform_instrument_vectors_to_inertial(
     spin_phase: NDArray,
     sc_inertial_right: NDArray,
     sc_inertial_decline: NDArray,
+    # TODO: Use correct IMAP_MAG_I or IMAP_MAG_O frame here
     instrument_frame: SpiceFrame = SpiceFrame.IMAP_MAG,
     spacecraft_frame: SpiceFrame = SpiceFrame.IMAP_SPACECRAFT,
 ) -> NDArray:

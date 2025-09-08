@@ -12,6 +12,7 @@ from numpy import ndarray
 from numpy.typing import NDArray
 from scipy.interpolate import LinearNDInterpolator, RegularGridInterpolator
 
+from imap_processing.quality_flags import ImapDEOutliersUltraFlags
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.spice.time import sct_to_et
 from imap_processing.ultra.constants import UltraConstants
@@ -553,7 +554,7 @@ def get_de_velocity(
     v_hat = velocities / np.linalg.norm(velocities, axis=1)[:, None]
     r_hat = -v_hat
 
-    return velocities, v_hat, r_hat
+    return velocities, -v_hat, -r_hat
 
 
 def get_ssd_tof(
@@ -1376,54 +1377,91 @@ def is_coin_ph_valid(
     etof: NDArray,
     xc: NDArray,
     xb: NDArray,
+    stop_north_tdc: NDArray,
+    stop_south_tdc: NDArray,
+    stop_east_tdc: NDArray,
+    stop_west_tdc: NDArray,
     sensor: str,
     ancillary_files: dict,
+    quality_flags: NDArray,
 ) -> NDArray:
     """
-    Determine whether Coincidence-PH data are valid.
-
-    This is based on thresholds defined in the IMAP-Ultra Flight Software Specification
-    (see page 36).
+    Determine event validity.
 
     Parameters
     ----------
     etof : NDArray
-        Electron TOF (tenths of a nanosecond).
+        Time for the electrons to travel back to the coincidence
+        anode (tenths of a nanosecond).
     xc : NDArray
-        Coincidence X position (hundredths of a mm).
+        X coincidence position (hundredths of a millimeter).
     xb : NDArray
-        Back X position (hundredths of a mm).
+        Back positions in x direction (hundredths of a millimeter).
+    stop_north_tdc : NDArray
+        Stop North Time to Digital Converter.
+    stop_south_tdc : NDArray
+        Stop South Time to Digital Converter.
+    stop_east_tdc : NDArray
+        Stop East Time to Digital Converter.
+    stop_west_tdc : NDArray
+        Stop West Time to Digital Converter.
     sensor : str
         Sensor name: "ultra45" or "ultra90".
     ancillary_files : dict
         Ancillary files for lookup.
+    quality_flags : NDArray
+        Quality flag to set when there is an outlier.
 
     Returns
     -------
-    valid_mask : NDArray
-        Boolean array indicating Coin-PH validity.
+    combined_mask : NDArray
+        Boolean array indicating whether back TOF is valid.
 
     Notes
     -----
-    Logic derived from page 36 of the IMAP-Ultra Flight Software Specification document.
+    From page 36 of the IMAP-Ultra Flight Software Specification document.
     """
-    etof_min = get_image_params("eTOFMin", sensor, ancillary_files)
-    etof_max = get_image_params("eTOFMax", sensor, ancillary_files)
+    # Make certain etof is within range for tenths of a nanosecond.
+    etof_valid = (etof >= UltraConstants.ETOFMIN_EVENTFILTER) & (
+        etof <= UltraConstants.ETOFMAX_EVENTFILTER
+    )
 
-    etof_valid = (etof >= etof_min) & (etof <= etof_max)
-
+    # Hundredths of a mm.
     diff_x = xc - xb
-    etof_offset1 = get_image_params("eTOFOff1", sensor, ancillary_files)
-    etof_offset2 = get_image_params("eTOFOff2", sensor, ancillary_files)
-    etof_slope1 = get_image_params("eTOFSlope1", sensor, ancillary_files)
-    etof_slope2 = get_image_params("eTOFSlope2", sensor, ancillary_files)
 
-    t1 = (etof - etof_offset1) * etof_slope1 / 1024
-    t2 = (etof - etof_offset2) * etof_slope2 / 1024
+    t1 = (
+        (etof - UltraConstants.ETOFOFF1_EVENTFILTER)
+        * UltraConstants.ETOFSLOPE1_EVENTFILTER
+        / 1024
+    )
+    t2 = (
+        (etof - UltraConstants.ETOFOFF2_EVENTFILTER)
+        * UltraConstants.ETOFSLOPE2_EVENTFILTER
+        / 1024
+    )
 
     condition_1 = (diff_x >= t1) & (diff_x <= t2)
     condition_2 = (diff_x >= -t2) & (diff_x <= -t1)
 
     spatial_valid = condition_1 | condition_2
 
-    return etof_valid & spatial_valid
+    sp_n_norm = get_norm(stop_north_tdc, "SpN", sensor, ancillary_files)
+    sp_s_norm = get_norm(stop_south_tdc, "SpS", sensor, ancillary_files)
+    sp_e_norm = get_norm(stop_east_tdc, "SpE", sensor, ancillary_files)
+    sp_w_norm = get_norm(stop_west_tdc, "SpW", sensor, ancillary_files)
+
+    tofx = sp_n_norm + sp_s_norm
+    tofy = sp_e_norm + sp_w_norm
+
+    # Units in tenths of a nanosecond
+    delta_tof = tofy - tofx
+
+    delta_tof_mask = (delta_tof >= UltraConstants.TOFDIFFTPMIN_EVENTFILTER) & (
+        delta_tof <= UltraConstants.TOFDIFFTPMAX_EVENTFILTER
+    )
+
+    combined_mask = etof_valid & spatial_valid & delta_tof_mask
+
+    quality_flags[~combined_mask] |= ImapDEOutliersUltraFlags.COINPH.value
+
+    return combined_mask

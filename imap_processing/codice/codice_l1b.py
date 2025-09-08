@@ -9,18 +9,18 @@ from imap_processing.codice.codice_l1b import process_codice_l1b
 dataset = process_codice_l1b(l1a_filenanme)
 """
 
-# TODO: Figure out how to convert hi-priority data product. Need an updated
-#       algorithm document that describes this.
-
 import logging
 from pathlib import Path
 
 import numpy as np
 import xarray as xr
 
+from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
 from imap_processing.codice import constants
+from imap_processing.codice.utils import CODICEAPID
+from imap_processing.utils import packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -49,9 +49,6 @@ def convert_to_rates(
     rates_data : np.ndarray
         The converted data array.
     """
-    # TODO: Temporary workaround to create CDFs for SIT-4. Revisit after SIT-4.
-    acq_times = 1
-
     if descriptor in [
         "lo-counters-aggregated",
         "lo-counters-singles",
@@ -65,6 +62,13 @@ def convert_to_rates(
     ]:
         # Applying rate calculation described in section 10.2 of the algorithm
         # document
+        # In order to divide by acquisition times, we must reshape the acq
+        # time data array to match the data variable shape
+        dims = [1] * dataset[variable_name].data.ndim
+        dims[1] = 128
+        acq_times = dataset.acquisition_time_per_step.data.reshape(dims)
+
+        # Now perform the calculation
         rates_data = dataset[variable_name].data / (
             acq_times
             * 1e-6  # Converting from microseconds to seconds
@@ -83,10 +87,8 @@ def convert_to_rates(
         rates_data = dataset[variable_name].data / (
             constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spin_sectors"]
             * constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spins"]
-            * acq_times
+            * constants.HI_ACQUISITION_TIME
         )
-    elif descriptor == "hskp":
-        rates_data = dataset[variable_name].data / acq_times
 
     return rates_data
 
@@ -131,35 +133,43 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
     # Update the global attributes
     l1b_dataset.attrs = cdf_attrs.get_global_attributes(dataset_name)
 
-    # Determine which variables need to be converted from counts to rates
-    # TODO: Figure out exactly which hskp variables need to be converted
-    # Housekeeping and binned datasets are treated a bit differently since
-    # not all variables need to be converted
+    # TODO: This was thrown together quickly and should be double-checked
     if descriptor == "hskp":
-        # TODO: Check with Joey if any housekeeping data needs to be converted
-        variables_to_convert = []
-    elif descriptor == "hi-sectored":
-        variables_to_convert = ["h", "he3he4", "cno", "fe"]
-    elif descriptor == "hi-omni":
-        variables_to_convert = ["h", "he3", "he4", "c", "o", "ne_mg_si", "fe", "uh"]
-    elif descriptor == "hi-ialirt":
-        variables_to_convert = ["h"]
+        xtce_filename = "codice_packet_definition.xml"
+        xtce_packet_definition = Path(
+            f"{imap_module_directory}/codice/packet_definitions/{xtce_filename}"
+        )
+        packet_file = (
+            imap_module_directory
+            / "tests"
+            / "codice"
+            / "data"
+            / "imap_codice_l0_raw_20241110_v001.pkts"
+        )
+        datasets: dict[int, xr.Dataset] = packet_file_to_datasets(
+            packet_file, xtce_packet_definition, use_derived_value=True
+        )
+        l1b_dataset = datasets[CODICEAPID.COD_NHK]
+
+        # TODO: Drop the same variables as we do in L1a? (see line 1103 in
+        #       codice_l1a.py
+
     else:
         variables_to_convert = getattr(
             constants, f"{descriptor.upper().replace('-', '_')}_VARIABLE_NAMES"
         )
 
-    # Apply the conversion to rates
-    for variable_name in variables_to_convert:
-        l1b_dataset[variable_name].data = convert_to_rates(
-            l1b_dataset, descriptor, variable_name
-        )
+        # Apply the conversion to rates
+        for variable_name in variables_to_convert:
+            l1b_dataset[variable_name].data = convert_to_rates(
+                l1b_dataset, descriptor, variable_name
+            )
 
-        # Set the variable attributes
-        cdf_attrs_key = f"{descriptor}-{variable_name}"
-        l1b_dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
-            cdf_attrs_key, check_schema=False
-        )
+            # Set the variable attributes
+            cdf_attrs_key = f"{descriptor}-{variable_name}"
+            l1b_dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
+                cdf_attrs_key, check_schema=False
+            )
 
     logger.info(f"\nFinal data product:\n{l1b_dataset}\n")
 

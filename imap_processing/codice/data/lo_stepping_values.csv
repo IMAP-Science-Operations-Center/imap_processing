@@ -1,4 +1,4 @@
-table_num,row_num,num_reps,store_data,e1,e2,e3,e4,e5,e6,e7,e8,acq_time
+table_num,half_spin_num,num_reps,store_data,e1,e2,e3,e4,e5,e6,e7,e8,acq_time
 0,0,1,12,0,-,-,-,-,-,-,-,578.708333
 0,1,1,12,1,-,-,-,-,-,-,-,578.708333
 0,2,1,12,2,-,-,-,-,-,-,-,578.708333

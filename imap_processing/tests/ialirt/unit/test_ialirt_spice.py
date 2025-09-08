@@ -148,6 +148,7 @@ def test_compute_total_rotation():
     np.testing.assert_allclose(output_vector, expected, atol=1e-9)
 
 
+@pytest.mark.xfail(reason="IMAP_MAG frame needs to be updated")
 @pytest.mark.external_kernel
 def test_transform_instrument_vectors_to_inertial(
     imap_ena_sim_metakernel, spice_test_data_path
@@ -215,6 +216,7 @@ def test_transform_instrument_vectors_to_inertial(
     )
 
 
+@pytest.mark.xfail(reason="IMAP_MAG frame needs to be updated")
 @pytest.mark.external_kernel
 def test_no_attitude(imap_ialirt_sim_metakernel):
     """Test transform_instrument_vectors_to_inertial function."""

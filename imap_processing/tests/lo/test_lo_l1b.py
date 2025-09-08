@@ -23,6 +23,7 @@ from imap_processing.lo.l1b.lo_l1b import (
     set_bad_times,
     set_coincidence_type,
     set_each_event_epoch,
+    set_esa_mode,
     set_event_met,
     set_pointing_bin,
     set_pointing_direction,
@@ -47,6 +48,16 @@ def dependencies():
 
 
 @pytest.fixture
+def anc_dependencies():
+    return [
+        str(
+            imap_module_directory
+            / "tests/lo/test_anc/imap_lo_sweep-table-small_20250101_20260301_v001.csv",
+        )
+    ]
+
+
+@pytest.fixture
 def attr_mgr_l1b():
     attr_mgr_l1b = ImapCdfAttributes()
     attr_mgr_l1b.add_instrument_global_attrs(instrument="lo")
@@ -62,8 +73,21 @@ def attr_mgr_l1a():
     return attr_mgr
 
 
-@patch("imap_processing.lo.l1b.lo_l1b.instrument_pointing")
-def test_lo_l1b(mock_instrument_pointing):
+@patch(
+    "imap_processing.lo.l1b.lo_l1b.instrument_pointing",
+    return_value=np.zeros((2000, 2)),
+)
+@patch(
+    "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
+    return_value=(473389199, 473472001),
+)
+@patch("imap_processing.lo.l1b.lo_l1b.get_spin_number", return_value=0)
+def test_lo_l1b(
+    mock_instrument_pointing,
+    mocked_get_pointing_times,
+    mock_spin_number,
+    anc_dependencies,
+):
     # Arrange
     de_file = (
         imap_module_directory / "tests/lo/test_cdfs/imap_lo_l1a_de_20241022_v002.cdf"
@@ -77,9 +101,9 @@ def test_lo_l1b(mock_instrument_pointing):
         data[dataset.attrs["Logical_source"]] = dataset
 
     expected_logical_source = "imap_lo_l1b_de"
-    mock_instrument_pointing.return_value = np.zeros((2000, 2))
+
     # Act
-    output_file = lo_l1b(data)
+    output_file = lo_l1b(data, anc_dependencies)
 
     # Assert
     assert expected_logical_source == output_file[0].attrs["Logical_source"]
@@ -149,12 +173,50 @@ def test_initialize_dataset(dependencies, attr_mgr_l1b):
     assert len(l1b_de.coords) == 0
     for l1b_name, l1a_name in {
         "pos": "pos",
-        "mode": "mode",
+        "mode_bit": "mode",
         "absent": "coincidence_type",
         "esa_step": "esa_step",
     }.items():
         assert l1b_name in l1b_de.data_vars
         np.testing.assert_array_equal(l1b_de[l1b_name], l1a_de[l1a_name])
+
+
+def test_set_esa_mode(anc_dependencies, attr_mgr_l1b):
+    # Arrange
+    l1b_de = xr.Dataset(
+        {},
+        coords={"epoch": [0, 1, 2, 3, 4]},
+    )
+    pointing_start_met = 473389199
+    pointing_end_met = 473472001
+
+    expected_esa_mode = np.array([0, 0, 0, 0, 0])
+
+    # Act
+    l1b_de = set_esa_mode(
+        pointing_start_met, pointing_end_met, anc_dependencies, l1b_de
+    )
+
+    # Assert
+    np.testing.assert_array_equal(l1b_de["esa_mode"].values, expected_esa_mode)
+
+
+def test_set_esa_mode_error(anc_dependencies, attr_mgr_l1b):
+    # Arrange
+    l1b_de = xr.Dataset(
+        {},
+        coords={"epoch": [0, 1, 2, 3, 4]},
+    )
+    pointing_start_met = 473389199
+    pointing_end_met = 509369021
+
+    # Act / Assert
+    with pytest.raises(
+        ValueError, match="Multiple ESA modes found in sweep table for pointing."
+    ):
+        l1b_de = set_esa_mode(
+            pointing_start_met, pointing_end_met, anc_dependencies, l1b_de
+        )
 
 
 def test_convert_start_end_acq_times():
@@ -242,15 +304,18 @@ def test_spin_bin():
     np.testing.assert_array_equal(l1b_de["spin_bin"], expected_spin_bins)
 
 
-def test_spin_cycle():
+@patch("imap_processing.lo.l1b.lo_l1b.get_spin_number", return_value=0)
+def test_spin_cycle(mock_get_spin_number):
     # Arrange
     de = xr.Dataset(
         {
             "de_count": ("epoch", [2, 3]),
             "esa_step": ("direct_event", [1, 2, 3, 4, 5]),
+            "met": ("epoch", [0, 7]),
         },
         coords={"epoch": [0, 1], "direct_event": [1, 2, 3, 4, 5]},
     )
+    pointing_start_met = 0
 
     # spin_cycle = spin_start + 7 + (esa_step - 1) * 2
     # where spin start is the spin number for the first spin
@@ -260,7 +325,7 @@ def test_spin_cycle():
     spin_cycle_data = xr.Dataset()
 
     # Act
-    spin_cycle_data = set_spin_cycle(de, spin_cycle_data)
+    spin_cycle_data = set_spin_cycle(pointing_start_met, de, spin_cycle_data)
 
     # Assert
     np.testing.assert_array_equal(spin_cycle_data["spin_cycle"], spin_cycle_expected)

@@ -10,6 +10,7 @@ from astropy_healpix.healpy import nside2pixarea
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils.coordinates import CoordNames
+from imap_processing.quality_flags import ImapPSETUltraFlags
 from imap_processing.tests.ultra.mock_data import mock_l1c_pset_product_healpix
 from imap_processing.ultra.l2 import ultra_l2
 
@@ -132,7 +133,10 @@ class TestUltraL2:
 
         # Check that required variables are present, and dropped variables are not
         expected_vars = [
+            "counts",
+            "background_rates",
             "ena_intensity",
+            "obs_date_range",
             "ena_intensity_stat_unc",
             "exposure_factor",
             "obs_date",
@@ -166,6 +170,96 @@ class TestUltraL2:
             hp_skymap.data_1d["ena_intensity_stat_unc"].values,
             expected_ena_intensity_unc,
             rtol=rtol,
+        )
+
+    @pytest.mark.parametrize("epoch_dim_for_energy_delta", [True, False])
+    @pytest.mark.parametrize(
+        ["map_frame", "rtol"],
+        [
+            # Tight tolerance when 'projecting' to the same frame
+            ("IMAP_DPS", 1e-8),
+            # Loose tolerance of 30% error vs naive ena_intensity
+            # estimate with real projection.
+            # TODO: Ideally this tolerance will tighten if we can fix the issue with
+            # the exposure time for uneven numbers of pixels from each PointingSet.
+            ("ECLIPJ2000", 3e-1),
+        ],
+    )
+    @pytest.mark.usefixtures("_mock_single_pset", "_setup_spice_kernels_list")
+    def test_generate_ultra_healpix_skymap_quality_flag(
+        self, epoch_dim_for_energy_delta, map_frame, rtol, furnish_kernels
+    ):
+        # Avoid modifying the original pset
+        pset = self.ultra_pset.copy(deep=True)
+
+        # Set the values in the single input PSET for easy calculation
+        # of the expected ena_intensity and ena_intensity statistical uncertainty
+        pset["counts"].values = np.full_like(pset["counts"].values, 10)
+        pset["exposure_factor"].values = np.ones_like(pset["exposure_factor"].values)
+        pset["background_rates"].values = np.ones_like(pset["background_rates"].values)
+        pset["sensitivity"].values = np.ones_like(pset["sensitivity"].values)
+        pset["energy_bin_delta"].values = np.ones_like(pset["energy_bin_delta"].values)
+
+        pset_quality = pset.copy(deep=True)
+        # Flag every other pixel (e.g., even indices)
+        pset_quality["quality_flags"][0, ::2] = ImapPSETUltraFlags.EARTH_FOV.value
+
+        if epoch_dim_for_energy_delta:
+            # add an extra dim to the start
+            pset["energy_bin_delta"] = pset["energy_bin_delta"].expand_dims(
+                {CoordNames.TIME.value: pset["epoch"].values}
+            )
+
+        # Create the Healpix skymap in the desired frame.
+        with furnish_kernels(self.required_kernel_names):
+            hp_skymap, _ = ultra_l2.generate_ultra_healpix_skymap(
+                ultra_l1c_psets=[pset, pset_quality],
+                output_map_structure=ena_maps.AbstractSkyMap.from_properties_dict(
+                    {
+                        "sky_tiling_type": "HEALPIX",
+                        "spice_reference_frame": map_frame,
+                        "values_to_push_project": [
+                            "counts",
+                        ],
+                        "values_to_pull_project": [
+                            "exposure_factor",
+                            "sensitivity",
+                            "background_rates",
+                        ],
+                        "nside": 32,
+                        "nested": False,
+                    }
+                ),
+            )
+
+        assert hp_skymap.nside == 32
+        assert hp_skymap.nested is False
+
+        # Check that required variables are present, and dropped variables are not
+        expected_vars = [
+            "counts",
+            "background_rates",
+            "ena_intensity",
+            "obs_date_range",
+            "ena_intensity_stat_unc",
+            "exposure_factor",
+            "obs_date",
+        ]
+        for var in expected_vars:
+            assert var in hp_skymap.data_1d.data_vars
+        unexpected_vars = ultra_l2.VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION
+        for var in unexpected_vars:
+            assert var not in hp_skymap.data_1d.data_vars
+
+        energy_bins = 24
+        n_pix = 196608
+        n_counts = 10 * energy_bins * n_pix * 1.5
+
+        # The total counts in the skymap should be equal to the sum of the counts
+        # in the individual psets
+        np.testing.assert_allclose(
+            hp_skymap.data_1d["counts"].sum(),
+            n_counts,
         )
 
     @pytest.mark.usefixtures("_mock_multiple_psets", "_setup_spice_kernels_list")

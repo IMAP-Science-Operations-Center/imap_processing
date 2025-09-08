@@ -12,10 +12,12 @@ dataset = process_codice_l2(l1_filename)
 import logging
 from pathlib import Path
 
+import numpy as np
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import load_cdf
+from imap_processing.codice.constants import HALF_SPIN_LUT
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -54,6 +56,14 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
     cdf_attrs = ImapCdfAttributes()
     l2_dataset = add_dataset_attributes(l2_dataset, dataset_name, cdf_attrs)
 
+    # TODO: update list of datasets that need geometric factors (if needed)
+    # Compute geometric factors needed for intensity calculations
+    if dataset_name in [
+        "imap_codice_l2_lo-sw-species",
+        "imap_codice_l2_lo-nsw-species",
+    ]:
+        geometric_factors = compute_geometric_factors(l2_dataset)
+
     if dataset_name in [
         "imap_codice_l2_hi-counters-singles",
         "imap_codice_l2_hi-counters-aggregated",
@@ -63,6 +73,7 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
         "imap_codice_l2_lo-nsw-priority",
     ]:
         # No changes needed. Just save to an L2 CDF file.
+        # TODO: May not even need L2 files for these products
         pass
 
     elif dataset_name == "imap_codice_l2_hi-direct-events":
@@ -117,6 +128,8 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
         # Calculate the pickup ion sunward solar wind intensities using equation
         # described in section 11.2.4 of algorithm document.
         # Hopefully this can also apply to lo-ialirt
+        # TODO: WIP - needs to be completed
+        l2_dataset = process_lo_sw_species(l2_dataset, geometric_factors)
         pass
 
     elif dataset_name == "imap_codice_l2_lo-nsw-species":
@@ -132,14 +145,14 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
 
 
 def add_dataset_attributes(
-    l2_dataset: xr.Dataset, dataset_name: str, cdf_attrs: ImapCdfAttributes
+    dataset: xr.Dataset, dataset_name: str, cdf_attrs: ImapCdfAttributes
 ) -> xr.Dataset:
     """
     Add the global and variable attributes to the dataset.
 
     Parameters
     ----------
-    l2_dataset : xarray.Dataset
+    dataset : xarray.Dataset
         The dataset to update.
     dataset_name : str
         The name of the dataset.
@@ -155,12 +168,12 @@ def add_dataset_attributes(
     cdf_attrs.add_instrument_variable_attrs("codice", "l2")
 
     # Update the global attributes
-    l2_dataset.attrs = cdf_attrs.get_global_attributes(dataset_name)
+    dataset.attrs = cdf_attrs.get_global_attributes(dataset_name)
 
     # Set the variable attributes
-    for variable_name in l2_dataset.data_vars.keys():
+    for variable_name in dataset.data_vars.keys():
         try:
-            l2_dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
+            dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
                 variable_name, check_schema=False
             )
         except KeyError:
@@ -169,7 +182,7 @@ def add_dataset_attributes(
             descriptor = dataset_name.split("imap_codice_l2_")[-1]
             cdf_attrs_key = f"{descriptor}-{variable_name}"
             try:
-                l2_dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
+                dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
                     f"{cdf_attrs_key}", check_schema=False
                 )
             except KeyError:
@@ -177,4 +190,89 @@ def add_dataset_attributes(
                     f"Field '{variable_name}' and '{cdf_attrs_key}' not found in "
                     f"attribute manager."
                 )
-    return l2_dataset
+    return dataset
+
+
+def compute_geometric_factors(dataset: xr.Dataset) -> np.ndarray:
+    """
+    Calculate geometric factors needed for intensity calculations.
+
+    Geometric factors are determined by comparing the half-spin values per
+    esa_step in the HALF_SPIN_LUT to the rgfo_half_spin values in the provided
+    L2 dataset.
+
+    If the half-spin value is less than the corresponding rgfo_half_spin value,
+    the geometric factor is set to 0.75 (full mode); otherwise, it is set to 0.5
+    (reduced mode).
+
+    NOTE: Half spin values are associated with ESA steps which corresponds to the
+    index of the energy_per_charge dimension that is between 0 and 127.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        The L2 dataset containing rgfo_half_spin data variable.
+
+    Returns
+    -------
+    geometric_factors : np.ndarray
+        A 2D array of geometric factors with shape (epoch, esa_steps).
+    """
+    # Convert the HALF_SPIN_LUT to a reverse mapping of esa_step to half_spin
+    esa_step_to_half_spin_map = {
+        val: key for key, vals in HALF_SPIN_LUT.items() for val in vals
+    }
+
+    # Create a list of half_spin values corresponding to ESA steps (0 to 127)
+    half_spin_values = np.array(
+        [esa_step_to_half_spin_map[step] for step in range(128)]
+    )
+
+    # Expand dimensions to compare each rgfo_half_spin value against
+    # all half_spin_values
+    rgfo_half_spin = dataset.rgfo_half_spin.data[:, np.newaxis]  # Shape: (epoch, 1)
+
+    # Perform the comparison and calculate geometric factors
+    geometric_factors = np.where(half_spin_values < rgfo_half_spin, 0.75, 0.5)
+
+    return geometric_factors
+
+
+def process_lo_sw_species(
+    dataset: xr.Dataset, geometric_factors: np.ndarray
+) -> xr.Dataset:
+    """
+    Process the lo-sw-species L2 dataset to calculate species intensities.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        The L2 dataset to process.
+    geometric_factors : np.ndarray
+        The geometric factors array with shape (epoch, esa_steps).
+
+    Returns
+    -------
+    xarray.Dataset
+        The updated L2 dataset with species intensities calculated.
+    """
+    # TODO: WIP - implement intensity calculations
+    # valid_solar_wind_vars = [
+    #     "hplus",
+    #     "heplusplus",
+    #     "cplus4",
+    #     "cplus5",
+    #     "cplus6",
+    #     "oplus5",
+    #     "oplus6",
+    #     "oplus7",
+    #     "oplus8",
+    #     "ne",
+    #     "mg",
+    #     "si",
+    #     "fe_loq",
+    #     "fe_hiq",
+    # ]
+    # valid_pick_up_ion_vars = ["heplus", "cnoplus"]
+
+    return dataset

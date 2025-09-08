@@ -938,7 +938,7 @@ def create_binned_dataset(
     return dataset
 
 
-def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
+def create_direct_event_dataset(apid: int, unpacked_dataset: xr.Dataset) -> xr.Dataset:
     """
     Create dataset for direct event data.
 
@@ -952,7 +952,7 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     dictionary. Padding is added to any fields that have less than 10000 events.
 
     In order to process these data, we must take the decommed raw data, group
-    the packets appropriately based on their `seq_flgs`, decompress the data,
+    the unpacked_dataset appropriately based on their `seq_flgs`, decompress the data,
     then arrange the data into CDF data variables for each priority and bit
     field. For example, P2_SpinAngle represents the spin angles for the 2nd
     priority data.
@@ -961,8 +961,8 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     ----------
     apid : int
         The APID of the packet.
-    packets : xarray.Dataset
-        The packets to process.
+    unpacked_dataset : xarray.Dataset
+        The unpacked dataset to process.
 
     Returns
     -------
@@ -970,13 +970,13 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
         Xarray dataset containing the direct event data.
     """
     # Group and decompress the data
-    grouped_data = group_data(packets)
+    grouped_data = group_data(unpacked_dataset)
     decompressed_data = [
         decompress(group, CoDICECompression.LOSSLESS) for group in grouped_data
     ]
 
     # Reshape the packet data into CDF-ready variables
-    data = reshape_de_data(packets, decompressed_data, apid)
+    reshaped_de_data = reshape_de_data(unpacked_dataset, decompressed_data, apid)
 
     # Gather the CDF attributes
     cdf_attrs = ImapCdfAttributes()
@@ -986,11 +986,11 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     # Determine the epochs to use in the dataset, which are the epochs whenever
     # there is a start of a segment and the priority is 0
     epoch_indices = np.where(
-        ((packets.seq_flgs.data == 3) | (packets.seq_flgs.data == 1))
-        & (packets.priority.data == 0)
+        ((unpacked_dataset.seq_flgs.data == 3) | (unpacked_dataset.seq_flgs.data == 1))
+        & (unpacked_dataset.priority.data == 0)
     )[0]
-    acq_start_seconds = packets.acq_start_seconds[epoch_indices]
-    acq_start_subseconds = packets.acq_start_subseconds[epoch_indices]
+    acq_start_seconds = unpacked_dataset.acq_start_seconds[epoch_indices]
+    acq_start_subseconds = unpacked_dataset.acq_start_subseconds[epoch_indices]
 
     # Calculate epoch variables
     epochs, epochs_delta_minus, epochs_delta_plus = calculate_epoch_values(
@@ -1048,20 +1048,19 @@ def create_direct_event_dataset(apid: int, packets: xr.Dataset) -> xr.Dataset:
     )
 
     # Create the CDF data variables for each Priority and Field
-    for i in range(constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["num_priorities"]):
-        for field in constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["cdf_fields"]:
-            variable_name = f"p{i}_{field}"
-            attrs = cdf_attrs.get_variable_attributes(variable_name)
-            if field in ["num_events", "data_quality"]:
-                dims = ["epoch"]
-            else:
-                dims = ["epoch", "event_num"]
-            dataset[variable_name] = xr.DataArray(
-                np.array(data[variable_name]),
-                name=variable_name,
-                dims=dims,
-                attrs=attrs,
-            )
+    for field in constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["cdf_fields"]:
+        if field in ["num_events", "data_quality"]:
+            attrs = cdf_attrs.get_variable_attributes("de_2d_attrs")
+            dims = ["epoch", "priority"]
+        else:
+            attrs = cdf_attrs.get_variable_attributes("de_3d_attrs")
+            dims = ["epoch", "priority", "event_num"]
+        dataset[field] = xr.DataArray(
+            np.array(reshaped_de_data[field]),
+            name=field,
+            dims=dims,
+            attrs=attrs,
+        )
 
     return dataset
 
@@ -1487,7 +1486,7 @@ def reshape_de_data(
         CDF variable names, and the values represent the data.
     """
     # Dictionary to hold all the (soon to be restructured) direct event data
-    data: dict[str, np.ndarray] = {}
+    de_data: dict[str, np.ndarray] = {}
 
     # Extract some useful variables
     num_priorities = constants.DE_DATA_PRODUCT_CONFIGURATIONS[apid]["num_priorities"]
@@ -1507,18 +1506,20 @@ def reshape_de_data(
 
     # Initialize data arrays for each priority and field to store the data
     # We also need arrays to hold number of events and data quality
-    for priority_num in range(num_priorities):
-        for field in bit_structure:
-            if field not in ["Priority", "Spare"]:
-                data[f"p{priority_num}_{field}"] = np.full(
-                    (num_epochs, 10000),
-                    bit_structure[field]["fillval"],
-                    dtype=bit_structure[field]["dtype"],
-                )
-        data[f"p{priority_num}_num_events"] = np.full(
-            num_epochs, 65535, dtype=np.uint16
-        )
-        data[f"p{priority_num}_data_quality"] = np.full(num_epochs, 255, dtype=np.uint8)
+    for field in bit_structure:
+        # if these two, no need to store
+        if field not in ["Priority", "Spare"]:
+            de_data[f"{field}"] = np.full(
+                (num_epochs, num_priorities, 10000),
+                bit_structure[field]["fillval"],
+                dtype=bit_structure[field]["dtype"],
+            )
+    # Add other additional fields of l1a
+    de_data["num_events"] = np.full(
+        (num_epochs, num_priorities), 65535, dtype=np.uint16
+    )
+
+    de_data["data_quality"] = np.full((num_epochs, num_priorities), 255, dtype=np.uint8)
 
     # decompressed_data is one large list of values of length
     # (<number of epochs> * <number of priorities>)
@@ -1542,8 +1543,8 @@ def reshape_de_data(
 
             # Number of events and data quality can be determined at this stage
             num_events = num_events_arr[epoch_start:epoch_end][i]
-            data[f"p{priority_num}_num_events"][epoch_index] = num_events
-            data[f"p{priority_num}_data_quality"][epoch_index] = data_quality[i]
+            de_data["num_events"][epoch_index, priority_num] = num_events
+            de_data["data_quality"][epoch_index, priority_num] = data_quality[i]
 
             # Iterate over each event
             for event_index in range(num_events):
@@ -1574,12 +1575,12 @@ def reshape_de_data(
                     )
 
                     # Set the value into the data array
-                    data[f"p{priority_num}_{field_name}"][epoch_index, event_index] = (
+                    de_data[f"{field_name}"][epoch_index, priority_num, event_index] = (
                         value
                     )
                     bit_position += field_components["bit_length"]
 
-    return data
+    return de_data
 
 
 def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:

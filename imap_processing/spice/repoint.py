@@ -9,6 +9,8 @@ import pandas as pd
 from numpy import typing as npt
 
 from imap_processing.spice import config
+from imap_processing.spice.geometry import imap_state
+from imap_processing.spice.time import met_to_sclkticks, sct_to_et
 
 logger = logging.getLogger(__name__)
 
@@ -221,3 +223,50 @@ def get_pointing_times(met_time: float) -> tuple[float, float]:
     ][0]
     pointing_end_met = repoint_df["repoint_start_met"].iloc[pointing_idx + 1].item()
     return pointing_start_met, pointing_end_met
+
+
+def get_pointing_mid_time(met_time: float) -> float:
+    """
+    Get mid-point of the pointing for the given MET time.
+
+    Get the mid-point time between the end of one repoint and
+    start of the next. Input could be a MET time.
+
+    Parameters
+    ----------
+    met_time : float
+        The MET time in a repoint.
+
+    Returns
+    -------
+    repoint_mid_time : float
+        The mid MET time of the repoint maneuver.
+    """
+    pointing_start_met, pointing_end_met = get_pointing_times(met_time)
+    return (pointing_start_met + pointing_end_met) / 2
+
+
+def get_mid_point_state(met_time: float) -> npt.NDArray:
+    """
+    Get IMAP state for the mid-point.
+
+    Get IMAP state for the mid-point of the pointing in
+    reference frame, ECLIPJ2000 and observer, SUN.
+
+    Parameters
+    ----------
+    met_time : float
+        The MET time in a pointing.
+
+    Returns
+    -------
+    mid_point_state : numpy.ndarray
+        The mid state of the pointing maneuver.
+    """
+    # Get mid point time in ET
+    mid_point_time = get_pointing_mid_time(met_time)
+    mid_point_time_et = sct_to_et(met_to_sclkticks(mid_point_time))
+
+    # Convert mid point time to state
+    pointing_state = imap_state(mid_point_time_et)
+    return pointing_state

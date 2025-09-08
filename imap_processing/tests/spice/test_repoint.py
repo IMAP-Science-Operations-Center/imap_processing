@@ -1,6 +1,7 @@
 """Test coverage for imap_processing.spice.repoint.py"""
 
 from pathlib import Path
+from unittest import mock
 
 import numpy as np
 import pandas as pd
@@ -79,6 +80,38 @@ def test_get_pointing_times(fake_repoint_data):
 
     assert pointing_start_time == expected_times[0]
     assert pointing_end_time == expected_times[1]
+
+
+def test_get_pointing_mid_time(fake_repoint_data, monkeypatch):
+    """Test coverage for get_pointing_mid_time function."""
+    times = 6
+    expected_times = (5.1, 15.2)
+
+    expected_mid_time = np.mean(expected_times)
+
+    mid_time = repoint.get_pointing_mid_time(times)
+
+    assert mid_time == expected_mid_time
+
+
+@pytest.mark.external_kernel
+@mock.patch("imap_processing.spice.repoint.imap_state")
+@mock.patch("imap_processing.spice.repoint.get_pointing_times")
+def test_mid_point_state(mock_get_pointing_times, mock_imap_state, furnish_kernels):
+    """Test coverage for imap_state()"""
+    met = 5
+    mock_get_pointing_times.return_value = (5.1, 15.2)
+    # Mock the imap_state function
+    mock_imap_state.return_value = np.array(
+        [1.0, 2.0, 3.0, 0.1, 0.2, 0.3],  # Example position and velocity data
+    )
+    kernels = [
+        "naif0012.tls",
+        "imap_sclk_0000.tsc",
+    ]
+    with furnish_kernels(kernels):
+        state = repoint.get_mid_point_state(met)
+        assert state.shape == (6,)
 
 
 @pytest.mark.parametrize(

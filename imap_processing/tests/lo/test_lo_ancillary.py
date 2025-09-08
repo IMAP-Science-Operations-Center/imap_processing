@@ -41,7 +41,14 @@ def test_read_backgrounds():
 
 
 def test_read_geometric_factor():
-    ancillary_file = ANCILLARY_DIR / "imap_lo_hydrogen-geometric-factor_v001.csv"
+    # NOTE: The geometric factors are stored in the main project repository
+    #       rather than the test ancillary data because they should be rarely
+    #       changed and are considered basically static reference data.
+
+    ancillary_file = (
+        imap_module_directory
+        / "lo/ancillary_data/imap_lo_hydrogen-geometric-factor_v001.csv"
+    )
     df = lo_ancillary.read_ancillary_file(ancillary_file)
     assert len(df) == 72
     assert "esa_mode" in df.columns

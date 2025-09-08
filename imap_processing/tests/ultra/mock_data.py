@@ -6,6 +6,7 @@ import spiceypy as spice
 import xarray as xr
 
 from imap_processing.ena_maps.utils.coordinates import CoordNames
+from imap_processing.quality_flags import ImapPSETUltraFlags
 from imap_processing.spice.time import str_to_et
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import build_energy_bins
 
@@ -368,6 +369,10 @@ def mock_l1c_pset_product_healpix(
             "energy_bin_delta": (
                 [CoordNames.ENERGY_ULTRA_L1C.value],
                 energy_bin_delta,
+            ),
+            "quality_flags": (
+                [CoordNames.TIME.value, CoordNames.HEALPIX_INDEX.value],
+                np.full((1, npix), ImapPSETUltraFlags.NONE.value, dtype=np.uint16),
             ),
         },
         coords={

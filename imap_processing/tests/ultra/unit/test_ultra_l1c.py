@@ -187,6 +187,7 @@ def test_calculate_spacecraft_pset_with_cdf(
     output_datasets = ultra_l1c(data_dict, ancillary_files, has_spice=False)
     output_datasets[0].attrs["Data_version"] = "999"
     output_datasets[0].attrs["Repointing"] = f"repoint{pointing + 1:05d}"
+    output_datasets[0].attrs["Start_date"] = "20250415"
     test_data_path = write_cdf(output_datasets[0], istp=True)
 
     assert test_data_path.exists()

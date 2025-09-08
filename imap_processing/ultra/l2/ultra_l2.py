@@ -17,6 +17,7 @@ from imap_processing.ena_maps.utils.naming import (
     MapDescriptor,
     ns_to_duration_months,
 )
+from imap_processing.quality_flags import ImapPSETUltraFlags
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import get_energy_delta_minus_plus
 
 logger = logging.getLogger(__name__)
@@ -71,12 +72,9 @@ VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE = [
 # calculate ena_intensity and its statistical uncertainty
 # They will not be present in the final map
 VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION = [
-    "counts",
-    "background_rates",
     "pointing_set_exposure_times_solid_angle",
     "num_pointing_set_pixel_members",
     "corrected_count_rate",
-    "obs_date_for_std",
     "obs_date_squared_for_std",
 ]
 
@@ -127,6 +125,8 @@ def get_variable_attributes_optional_energy_dependence(
         and (CoordNames.ENERGY_ULTRA_L1C.value not in variable_dims)
     ):
         variable_name = f"{variable_name}_energy_independent"
+    if variable_name == "counts":
+        variable_name = "ena_count"
 
     metadata = cdf_attrs.get_variable_attributes(
         variable_name=variable_name,
@@ -205,7 +205,7 @@ def generate_ultra_healpix_skymap(
     output_map_structure.values_to_push_project.extend(
         [
             "num_pointing_set_pixel_members",
-            "obs_date_for_std",
+            "obs_date_range",
             "obs_date_squared_for_std",
         ]
     )
@@ -248,9 +248,15 @@ def generate_ultra_healpix_skymap(
             "\nThese values will be pull projected: "
             f">> {output_map_structure.values_to_pull_project}",
         )
+        flags_1d = pointing_set.data["quality_flags"].isel(epoch=0)
+        # This is a good pixel mask where zero is when the earth is not in the FOV.
+        good_pixel_mask = (
+            (flags_1d & ImapPSETUltraFlags.EARTH_FOV.value) == 0
+        ).to_numpy()
 
+        # Only count the number of pointing set pixels which are not flagged.
         pointing_set.data["num_pointing_set_pixel_members"] = xr.DataArray(
-            np.ones(pointing_set.num_points, dtype=int),
+            good_pixel_mask.astype(int),
             dims=(CoordNames.HEALPIX_INDEX.value),
         )
 
@@ -261,11 +267,11 @@ def generate_ultra_healpix_skymap(
             fill_value=pointing_set.epoch,
             dtype=np.int64,
         )
-        pointing_set.data["obs_date_for_std"] = pointing_set.data["obs_date"].astype(
+        pointing_set.data["obs_date_range"] = pointing_set.data["obs_date"].astype(
             np.float64
         )
         pointing_set.data["obs_date_squared_for_std"] = (
-            pointing_set.data["obs_date_for_std"] ** 2
+            pointing_set.data["obs_date_range"] ** 2
         )
 
         # Add solid_angle * exposure of pointing set as data_var
@@ -276,15 +282,22 @@ def generate_ultra_healpix_skymap(
 
         # Initial processing for weighted quantities at PSET level
         # Weight the values by exposure and solid angle
+        # Ensure only valid pointing set pixels contribute to the weighted mean.
         pointing_set.data[
             VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE
-        ] *= pointing_set.data["pointing_set_exposure_times_solid_angle"]
+        ] = (
+            pointing_set.data[
+                VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE
+            ]
+            * pointing_set.data["pointing_set_exposure_times_solid_angle"]
+        ).where(good_pixel_mask)
 
         # Project values such as counts via the PUSH method
         skymap.project_pset_values_to_map(
             pointing_set=pointing_set,
             value_keys=output_map_structure.values_to_push_project,
             index_match_method=ena_maps.IndexMatchMethod.PUSH,
+            pset_valid_mask=good_pixel_mask,
         )
 
         # Project values such as exposure_factor via the PULL method
@@ -292,6 +305,7 @@ def generate_ultra_healpix_skymap(
             pointing_set=pointing_set,
             value_keys=output_map_structure.values_to_pull_project,
             index_match_method=ena_maps.IndexMatchMethod.PULL,
+            pset_valid_mask=good_pixel_mask,
         )
 
     # Subsequent processing for weighted quantities at SkyMap level
@@ -347,7 +361,7 @@ def generate_ultra_healpix_skymap(
                 )
                 - (
                     (
-                        skymap.data_1d["obs_date_for_std"]
+                        skymap.data_1d["obs_date_range"]
                         / (skymap.data_1d["num_pointing_set_pixel_members"])
                     )
                     ** 2

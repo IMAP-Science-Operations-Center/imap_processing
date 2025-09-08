@@ -284,37 +284,37 @@ def test_get_de_velocity(test_fixture):
     )
     np.testing.assert_allclose(
         vhat[test_tof > 0][:, 0],
-        df_ph["vhatX"].astype("float").values[test_tof > 0],
-        atol=1e-01,
-        rtol=0,
-    )
-    np.testing.assert_allclose(
-        vhat[test_tof > 0][:, 1],
-        df_ph["vhatY"].astype("float").values[test_tof > 0],
-        atol=1e-01,
-        rtol=0,
-    )
-    np.testing.assert_allclose(
-        vhat[test_tof > 0][:, 2],
-        df_ph["vhatZ"].astype("float").values[test_tof > 0],
-        atol=1e-01,
-        rtol=0,
-    )
-    np.testing.assert_allclose(
-        r[test_tof > 0][:, 0],
         -df_ph["vhatX"].astype("float").values[test_tof > 0],
         atol=1e-01,
         rtol=0,
     )
     np.testing.assert_allclose(
-        r[test_tof > 0][:, 1],
+        vhat[test_tof > 0][:, 1],
         -df_ph["vhatY"].astype("float").values[test_tof > 0],
         atol=1e-01,
         rtol=0,
     )
     np.testing.assert_allclose(
-        r[test_tof > 0][:, 2],
+        vhat[test_tof > 0][:, 2],
         -df_ph["vhatZ"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
+    )
+    np.testing.assert_allclose(
+        r[test_tof > 0][:, 0],
+        df_ph["vhatX"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
+    )
+    np.testing.assert_allclose(
+        r[test_tof > 0][:, 1],
+        df_ph["vhatY"].astype("float").values[test_tof > 0],
+        atol=1e-01,
+        rtol=0,
+    )
+    np.testing.assert_allclose(
+        r[test_tof > 0][:, 2],
+        df_ph["vhatZ"].astype("float").values[test_tof > 0],
         atol=1e-01,
         rtol=0,
     )
@@ -730,14 +730,32 @@ def test_is_coin_ph_valid(test_fixture, ancillary_files):
     df_filt, _, _, de_dataset = test_fixture
     df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
 
-    valid = is_coin_ph_valid(
-        df_ph["eTOF"].astype(float).values,
-        df_ph["Xc"].astype(float).values,
-        df_ph["Xb"].astype(float).values,
+    # Test data
+    ctof = df_ph["cTOF"].astype(float).values
+    etof = df_ph["eTOF"].astype(float).values
+    xc = df_ph["Xc"].astype(float).values
+    xb = df_ph["Xb"].astype(float).values
+    stop_north_tdc = df_ph["StopNorthTDC"].astype(int).values
+    stop_south_tdc = df_ph["StopSouthTDC"].astype(int).values
+    stop_east_tdc = df_ph["StopEastTDC"].astype(int).values
+    stop_west_tdc = df_ph["StopWestTDC"].astype(int).values
+    quality_flags = np.full(
+        len(ctof), ImapDEOutliersUltraFlags.NONE.value, dtype=np.uint16
+    )
+
+    combined_mask = is_coin_ph_valid(
+        etof,
+        xc,
+        xb,
+        stop_north_tdc,
+        stop_south_tdc,
+        stop_east_tdc,
+        stop_west_tdc,
         "ultra45",
         ancillary_files,
+        quality_flags,
     )
-    coin_ph_valid_bool = df_ph["CoinPHValid"].astype(int).astype(bool).values
-    valid = np.asarray(valid, dtype=bool)
 
-    np.testing.assert_equal(coin_ph_valid_bool, valid)
+    assert len(etof) == np.count_nonzero(combined_mask) + np.count_nonzero(
+        quality_flags
+    )
