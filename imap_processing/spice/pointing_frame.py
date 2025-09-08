@@ -208,7 +208,6 @@ def calculate_pointing_attitude_segments(
     # Check that the last loaded kernel matches it input kernel name. This ensures
     # that this CK take priority when computing attitude for it's time coverage.
     count = spiceypy.ktotal("ck")
-    # TODO: fix this for when we get multiple CK kernels
     loaded_ck_kernel, _, _, _ = spiceypy.kdata(count - 1, "ck")
     if str(ck_path) != loaded_ck_kernel:
         raise ValueError(

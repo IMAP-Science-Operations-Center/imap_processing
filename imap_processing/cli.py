@@ -1239,9 +1239,8 @@ class Spacecraft(ProcessInstrument):
                     data_type=SPICESource.SPICE.value
                 )
                 ah_paths = [path for path in spice_inputs if ".ah" in path.suffixes]
-                # TODO: refactor if multiple attitude history files are found
                 pointing_kernel_paths = (
-                    pointing_frame.generate_pointing_attitude_kernel(ah_paths[0])
+                    pointing_frame.generate_pointing_attitude_kernel(ah_paths[-1])
                 )
                 processed_dataset.extend(pointing_kernel_paths)
         else:
