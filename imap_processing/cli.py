@@ -1223,26 +1223,25 @@ class Spacecraft(ProcessInstrument):
         """
         print(f"Processing Spacecraft {self.data_level}")
         processed_dataset = []
-        if self.data_level == "l1a":
-            if self.descriptor == "quaternions":
-                # File path is expected output file path
-                input_files = dependencies.get_file_paths(source="spacecraft")
-                if len(input_files) > 1:
-                    raise ValueError(
-                        f"Unexpected dependencies found for Spacecraft L1A: "
-                        f"{input_files}. Expected only one dependency."
-                    )
-                datasets = list(quaternions.process_quaternions(input_files[0]))
-                processed_dataset.extend(datasets)
-            elif self.descriptor == "pointing-attitude":
-                spice_inputs = dependencies.get_file_paths(
-                    data_type=SPICESource.SPICE.value
+        if self.descriptor == "quaternions":
+            # File path is expected output file path
+            input_files = dependencies.get_file_paths(source="spacecraft")
+            if len(input_files) > 1:
+                raise ValueError(
+                    f"Unexpected dependencies found for Spacecraft L1A: "
+                    f"{input_files}. Expected only one dependency."
                 )
-                ah_paths = [path for path in spice_inputs if ".ah" in path.suffixes]
-                pointing_kernel_paths = (
-                    pointing_frame.generate_pointing_attitude_kernel(ah_paths[-1])
-                )
-                processed_dataset.extend(pointing_kernel_paths)
+            datasets = list(quaternions.process_quaternions(input_files[0]))
+            processed_dataset.extend(datasets)
+        elif self.descriptor == "pointing-attitude":
+            spice_inputs = dependencies.get_file_paths(
+                data_type=SPICESource.SPICE.value
+            )
+            ah_paths = [path for path in spice_inputs if ".ah" in path.suffixes]
+            pointing_kernel_paths = pointing_frame.generate_pointing_attitude_kernel(
+                ah_paths[-1]
+            )
+            processed_dataset.extend(pointing_kernel_paths)
         else:
             raise NotImplementedError(
                 f"Spacecraft processing not implemented for level {self.data_level}"
