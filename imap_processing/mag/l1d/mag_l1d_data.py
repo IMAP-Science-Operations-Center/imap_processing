@@ -1,6 +1,7 @@
 # mypy: disable-error-code="unused-ignore"
 """Data classes for MAG L1D processing."""
 
+import logging
 from dataclasses import InitVar, dataclass
 
 import numpy as np
@@ -14,7 +15,9 @@ from imap_processing.mag.l2.mag_l2 import retrieve_matrix_from_l2_calibration
 from imap_processing.mag.l2.mag_l2_data import MagL2L1dBase, ValidFrames
 from imap_processing.spice import spin
 from imap_processing.spice.geometry import frame_transform
-from imap_processing.spice.time import ttj2000ns_to_met
+from imap_processing.spice.time import ttj2000ns_to_et, ttj2000ns_to_met
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -275,25 +278,41 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
         end_frame : ValidFrames
             The frame to rotate to. Should be one of the ValidFrames enum.
         """
-        # If we're ever in a state where we rotated into the MAGI frame, update the
-        # start frame to be MAGO instead
-        if self.frame == ValidFrames.MAGI:
-            self.frame = ValidFrames.MAGO
+        # Self.frame should refer to the main data in self.vectors, which is MAGO
+        # data. For most frames, MAGO and MAGI are in the same frame, except the
+        # instrument reference frame.
+        if ValidFrames.MAGI in (self.frame, end_frame):
+            raise ValueError(
+                "MAGL1d.frame should never be equal to MAGI frame. If the "
+                "data is in the instrument frame, use MAGO."
+            )
 
         start_frame = self.frame
 
-        super().rotate_frame(end_frame)
+        if self.epoch_et is None:
+            self.epoch_et: np.ndarray = ttj2000ns_to_et(self.epoch)
+            self.magi_epoch_et: np.ndarray = ttj2000ns_to_et(self.magi_epoch)
+
+        self.vectors = frame_transform(
+            self.epoch_et,
+            self.vectors,
+            from_frame=start_frame.value,
+            to_frame=end_frame.value,
+        )
+
         # If we were in MAGO frame, we need to rotate MAGI vectors from MAGI to
         # end_frame
         if start_frame == ValidFrames.MAGO:
             start_frame = ValidFrames.MAGI
 
         self.magi_vectors = frame_transform(
-            self.magi_epoch,
+            self.magi_epoch_et,
             self.magi_vectors,
             from_frame=start_frame.value,
             to_frame=end_frame.value,
         )
+
+        self.frame = end_frame
 
     def _calibrate_and_offset_vectors(
         self,
