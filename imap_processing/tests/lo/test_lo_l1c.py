@@ -15,7 +15,7 @@ from imap_processing.lo.l1c.lo_l1c import (
     lo_l1c,
     set_background_rates,
 )
-from imap_processing.spice.time import met_to_datetime64, met_to_ttj2000ns
+from imap_processing.spice.time import met_to_ttj2000ns
 
 
 @pytest.fixture
@@ -356,11 +356,3 @@ def test_set_background_rates_species_error(anc_dependencies, attr_mgr):
         rates, uncert, err = set_background_rates(
             pointing_start_met, pointing_end_met, species, anc_dependencies, attr_mgr
         )
-
-
-def test_times():
-    print()
-    print("POINTING START:", met_to_datetime64(482372988.0))
-    print("GOODTIME START:", met_to_datetime64(482374800))
-    print("POINTING END:", met_to_datetime64(482455818.0))
-    print("GOODTIME END:", met_to_datetime64(482457600))
