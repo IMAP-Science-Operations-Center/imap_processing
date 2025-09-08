@@ -85,6 +85,7 @@ VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION = [
     "num_pointing_set_pixel_members",
     "corrected_count_rate",
     "obs_date_squared_for_std",
+    "obs_date_for_std",
 ]
 
 # These variables may or may not be energy dependent, depending on the
@@ -587,10 +588,8 @@ def ultra_l2(  # noqa: PLR0912
 
     # Rename positional uncertainty variables if present
     if "scatter_theta" in map_dataset and "scatter_phi" in map_dataset:
-        map_dataset = map_dataset.rename(
-            {"scatter_theta": "positional_uncertainty_theta"}
-        )
-        map_dataset = map_dataset.rename({"scatter_phi": "positional_uncertainty_phi"})
+        map_dataset = map_dataset.rename({"scatter_theta": "positional_uncert_theta"})
+        map_dataset = map_dataset.rename({"scatter_phi": "positional_uncert_phi"})
 
     # Add the defined attributes to the map's global attrs
     map_dataset.attrs.update(map_attrs)
@@ -660,5 +659,5 @@ def ultra_l2(  # noqa: PLR0912
     # Adjust the dtype of obs dates to be int64
     map_dataset["obs_date"] = map_dataset["obs_date"].astype(np.int64)
     map_dataset["obs_date_range"] = map_dataset["obs_date_range"].astype(np.int64)
-    map_dataset["obs_date_for_std"] = map_dataset["obs_date_for_std"].astype(np.int64)
+
     return [map_dataset]

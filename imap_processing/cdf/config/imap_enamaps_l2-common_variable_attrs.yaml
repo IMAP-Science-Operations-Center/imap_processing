@@ -229,7 +229,7 @@ efficiency:
   DISPLAY_TYPE: no_plot
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Other
 
-positional_uncertainty_theta:
+positional_uncert_theta:
   <<: *default_float32
   CATDESC: Positional uncertainty in theta direction calculated from multiple pointing sets.
   FIELDNAM: positional_uncertainty_theta
@@ -240,7 +240,7 @@ positional_uncertainty_theta:
   DISPLAY_TYPE: no_plot
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:ArrivalDirection,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
-positional_uncertainty_phi:
+positional_uncert_phi:
   <<: *default_float32
   CATDESC: Positional uncertainty in phi direction calculated from multiple pointing sets.
   FIELDNAM: positional_uncertainty_phi
@@ -266,20 +266,8 @@ obs_date: &obs_date
 obs_date_range:
   <<: *default_int64
   datatype: int64
-  CATDESC: Range of the observation dates.
-  FIELDNAM: Observation date range
-  UNITS: ns
-  DEPEND_0: epoch
-  VAR_TYPE: data
-  LABLAXIS: epoch
-  DISPLAY_TYPE: image
-  TIME_SCALE: Terrestrial Time
-
-obs_date_for_std:
-  <<: *default_int64
-  datatype: int64
   CATDESC: Standard deviation of the observation date.
-  FIELDNAM: Observation date standard deviation
+  FIELDNAM: Observation date range
   UNITS: ns
   DEPEND_0: epoch
   VAR_TYPE: data

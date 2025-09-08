@@ -150,7 +150,7 @@ geometric_function:
   LABL_PTR_2: longitude_label
   LABL_PTR_3: latitude_label
 
-positional_uncertainty_theta:
+positional_uncert_theta:
   DEPEND_1: energy
   DEPEND_2: longitude
   DEPEND_3: latitude
@@ -158,7 +158,7 @@ positional_uncertainty_theta:
   LABL_PTR_2: longitude_label
   LABL_PTR_3: latitude_label
 
-positional_uncertainty_phi:
+positional_uncert_phi:
   DEPEND_1: energy
   DEPEND_2: longitude
   DEPEND_3: latitude
