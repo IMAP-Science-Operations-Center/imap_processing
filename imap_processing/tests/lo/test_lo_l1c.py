@@ -15,7 +15,7 @@ from imap_processing.lo.l1c.lo_l1c import (
     lo_l1c,
     set_background_rates,
 )
-from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.spice.time import met_to_datetime64, met_to_ttj2000ns
 
 
 @pytest.fixture
@@ -35,7 +35,7 @@ def l1b_de():
                     "110000",
                 ],
             ),
-            "species": ("epoch", ["h", "o", "h", "h", "o"]),
+            "species": ("epoch", ["H", "O", "H", "H", "O"]),
             "spin_cycle": ("epoch", [1, 2, 3, 4, 5]),
             "avg_spin_durations": ("epoch", [15.2, 15.2, 14.9, 15, 14.9]),
         },
@@ -75,7 +75,7 @@ def l1b_de_spin():
                     "110000",
                 ],
             ),
-            "species": ("epoch", ["h", "o", "h", "h", "o"]),
+            "species": ("epoch", ["H", "O", "H", "H", "O"]),
             "spin_cycle": ("epoch", [1, 2, 3, 4, 5]),
             "avg_spin_durations": ("epoch", [15.2, 15.2, 14.9, 15, 14.9]),
         },
@@ -224,7 +224,7 @@ def test_filter_goodtimes(l1b_de, anc_dependencies):
                 "epoch",
                 ["111111", "111100", "111000", "110100", "110000", "000000"],
             ),
-            "species": ("epoch", ["h", "o", "h", "h", "o", "u"]),
+            "species": ("epoch", ["H", "O", "H", "H", "O", "U"]),
             "spin_cycle": ("epoch", [1, 2, 3, 4, 5, 12]),
             "avg_spin_durations": ("epoch", [15.2, 15.2, 14.9, 15, 14.9, 50]),
         },
@@ -356,3 +356,11 @@ def test_set_background_rates_species_error(anc_dependencies, attr_mgr):
         rates, uncert, err = set_background_rates(
             pointing_start_met, pointing_end_met, species, anc_dependencies, attr_mgr
         )
+
+
+def test_times():
+    print()
+    print("POINTING START:", met_to_datetime64(482372988.0))
+    print("GOODTIME START:", met_to_datetime64(482374800))
+    print("POINTING END:", met_to_datetime64(482455818.0))
+    print("GOODTIME END:", met_to_datetime64(482457600))
