@@ -63,6 +63,12 @@ class TestUltraL2:
                     )
                 )
             ]
+            # Add extra ultra specific variables to each pset
+            for pset in self.ultra_psets:
+                pset["efficiency"] = xr.ones_like(pset["exposure_factor"])
+                pset["geometric_function"] = xr.ones_like(pset["exposure_factor"])
+                pset["scatter_theta"] = xr.ones_like(pset["exposure_factor"])
+                pset["scatter_phi"] = xr.ones_like(pset["exposure_factor"])
 
         self.psets_total_counts = np.sum(
             [pset["counts"].values.sum() for pset in self.ultra_psets]
@@ -348,6 +354,11 @@ class TestUltraL2:
                 "values_to_pull_project": [
                     "exposure_factor",
                     "sensitivity",
+                    "efficiency",
+                    "sensitivity",
+                    "geometric_function",
+                    "scatter_theta",
+                    "scatter_phi",
                 ],
                 "nside": 16,
                 "nested": True,
@@ -392,6 +403,10 @@ class TestUltraL2:
             ),
         )
         assert map_dataset["solid_angle"].attrs["UNITS"] == "sr"
+
+        # Check that the positional uncertainty variables were renamed
+        assert "positional_uncert_theta" in map_dataset
+        assert "positional_uncert_phi" in map_dataset
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
     def test_ultra_l2_rectangular(self, mock_data_dict, furnish_kernels):
