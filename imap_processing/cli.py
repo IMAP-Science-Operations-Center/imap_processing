@@ -1129,9 +1129,9 @@ class Mag(ProcessInstrument):
             input_data = [load_cdf(dep) for dep in science_files]
             # Input datasets can be in any order, and are validated within mag_l1c
             if len(input_data) == 1:
-                datasets = [mag_l1c(input_data[0])]
+                datasets = [mag_l1c(input_data[0], current_day)]
             elif len(input_data) == 2:
-                datasets = [mag_l1c(input_data[0], input_data[1])]
+                datasets = [mag_l1c(input_data[0], current_day, input_data[1])]
             else:
                 raise ValueError(
                     f"Invalid dependencies found for MAG L1C:"

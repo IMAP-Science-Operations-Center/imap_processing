@@ -18,6 +18,7 @@ from imap_processing.mag.l1c.mag_l1c import (
     mag_l1c,
     process_mag_l1c,
     vectors_per_second_from_string,
+    calculate_allowed_gap,
 )
 from imap_processing.tests.mag.conftest import (
     generate_test_epoch,
@@ -202,7 +203,7 @@ def test_interpolate_gaps(norm_dataset, mag_l1b_dataset):
 
 
 def test_mag_l1c(norm_dataset, burst_dataset):
-    l1c = mag_l1c(burst_dataset, norm_dataset)
+    l1c = mag_l1c(burst_dataset, np.datetime64('2025-01-01'), norm_dataset)
     assert l1c["vector_magnitude"].shape == (len(l1c["epoch"].data),)
     assert l1c["vector_magnitude"].data[0] == np.linalg.norm(l1c["vectors"].data[0][:4])
     assert l1c["vector_magnitude"].data[-1] == np.linalg.norm(

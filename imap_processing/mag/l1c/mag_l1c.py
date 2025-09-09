@@ -9,12 +9,14 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.mag import imap_mag_sdc_configuration_v001 as configuration
 from imap_processing.mag.constants import ModeFlags, VecSec
 from imap_processing.mag.l1c.interpolation_methods import InterpolationFunction
+from imap_processing.spice.time import et_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
 
 
 def mag_l1c(
     first_input_dataset: xr.Dataset,
+    day_to_process: np.datetime64,
     second_input_dataset: xr.Dataset = None,
 ) -> xr.Dataset:
     """
@@ -27,6 +29,9 @@ def mag_l1c(
     first_input_dataset : xr.Dataset
         The first input dataset to process. This can be either burst or norm data, for
         mago or magi.
+    day_to_process : np.datetime64
+        The day to process, in np.datetime64[D] format. This is used to fill gaps at
+        the beginning or end of the day if needed.
     second_input_dataset : xr.Dataset, optional
         The second input dataset to process. This should be burst if first_input_dataset
         was norm, or norm if first_input_dataset was burst. It should match the
@@ -263,13 +268,15 @@ def process_mag_l1c(
     normal_mode_dataset: xr.Dataset,
     burst_mode_dataset: xr.Dataset,
     interpolation_function: InterpolationFunction,
+    day_to_process: np.datetime64 = None,
 ) -> np.ndarray:
     """
     Create MAG L1C data from L1B datasets.
 
     This function starts from the normal mode dataset and completes the following steps:
     1. find all the gaps in the dataset
-    2. generate a new timeline with the gaps filled
+    2. generate a new timeline with the gaps filled, including new timestamps to fill
+    out the rest of the day to +/- 15 minutes on either side
     3. fill the timeline with normal mode data (so, all the non-gap timestamps)
     4. interpolate the gaps using the burst mode data and the method specified in
         interpolation_function.
@@ -288,6 +295,10 @@ def process_mag_l1c(
         The burst mode dataset, which is used to fill in the gaps in the normal mode.
     interpolation_function : InterpolationFunction
         The interpolation function to use to fill in the gaps.
+    day_to_process : np.datetime64, optional
+        The day to process, in np.datetime64[D] format. This is used to fill
+        gaps at the beginning or end of the day if needed. If not included, these
+        gaps will not be filled.
 
     Returns
     -------
@@ -307,6 +318,15 @@ def process_mag_l1c(
         np.zeros(len(normal_mode_dataset))
     )
 
+    if day_to_process is not None:
+        day_start = day_to_process.astype(np.datetime64["s"]) - np.timedelta64(15, "m")
+
+        # get the end of the day plus 15 minutes
+        day_end = day_to_process.astype(np.datetime64["s"]) + np.timedelta64(1, "D") + np.timedelta64(15, "m")
+
+        day_start_ns = et_to_ttj2000ns(str_to_et(str(day_start)))
+        day_end_ns = et_to_ttj2000ns(str_to_et(str(day_end)))
+
     gaps = find_all_gaps(norm_epoch, normal_vecsec_dict)
 
     new_timeline = generate_timeline(norm_epoch, gaps)
@@ -319,7 +339,7 @@ def process_mag_l1c(
 
 
 def fill_normal_data(
-    normal_dataset: xr.Dataset, new_timeline: np.ndarray
+    normal_dataset: xr.Dataset, new_timeline: np.ndarray, day_to_process: np.datetime64 = None
 ) -> np.ndarray:
     """
     Fill the new timeline with the normal mode data.
@@ -332,6 +352,10 @@ def fill_normal_data(
         The normal mode dataset.
     new_timeline : np.ndarray
         A 1D array of timestamps to fill.
+    day_to_process : np.datetime64, optional
+        The day to process, in np.datetime64[D] format. This is used to fill
+        gaps at the beginning or end of the day if needed. If not included, these
+        gaps will not be filled.
 
     Returns
     -------
@@ -341,12 +365,12 @@ def fill_normal_data(
         Indices: 0 - epoch, 1-4 - vector x, y, z, and range, 5 - generated flag,
         6-7 - compression flags.
     """
-    # TODO: fill with FILLVAL?
+    # TODO: fill with FILLVAL
     filled_timeline: np.ndarray = np.zeros((len(new_timeline), 8))
     filled_timeline[:, 0] = new_timeline
     # Flags, will also indicate any missed timestamps
     filled_timeline[:, 5] = ModeFlags.MISSING.value
-
+    # TODO: add timestamps to fill out beginning or end of day if needed
     for index, timestamp in enumerate(normal_dataset["epoch"].data):
         timeline_index = np.searchsorted(new_timeline, timestamp)
         filled_timeline[timeline_index, 1:5] = normal_dataset["vectors"].data[index]
@@ -399,9 +423,11 @@ def interpolate_gaps(
         )
 
     for gap in gaps:
-        # TODO: we might need a few inputs before or after start/end
+        # TODO: we need extra data at the beginning and end of the gap
         burst_gap_start = (np.abs(burst_epochs - gap[0])).argmin()
         burst_gap_end = (np.abs(burst_epochs - gap[1])).argmin()
+        # if this gap is too big, we may be missing burst data at the start or end of
+        # the day and shouldn't use it here.
 
         # for the CIC filter, we need 2x normal mode cadence seconds
 
@@ -500,11 +526,14 @@ def generate_timeline(epoch_data: np.ndarray, gaps: np.ndarray) -> np.ndarray:
     # When we have our gaps, generate the full timeline
     last_gap = 0
     for gap in gaps:
+        # todo: add a special case where epoch data doesn't match gap - these are for the
+        # gaps at the beginning or end of the day
         gap_start_index = np.where(epoch_data == gap[0])[0]
         gap_end_index = np.where(epoch_data == gap[1])[0]
         if gap_start_index.size != 1 or gap_end_index.size != 1:
             raise ValueError("Gap start or end not found in input timeline")
 
+        # Does full_timeline need to include 15 minute buffer if that is missing?
         full_timeline = np.concatenate(
             (
                 full_timeline,
@@ -553,6 +582,10 @@ def find_all_gaps(
         vecsec_dict = {0: VecSec.TWO_VECS_PER_S.value}
 
     end_index = epoch_data.shape[0]
+    # Probably we just need to do the 24 hours for gap filling and retrieve extra data from the burst mode to fill
+    # TODO: call find_gaps on the start of the day minutes concat with timeline and end of day minutes
+    # if burst mode is missing then we need to go back to the previous day's file
+    # be careful updating timeline as we don't want to change indicies around.
     for start_time in reversed(sorted(vecsec_dict.keys())):
         start_index = np.where(start_time == epoch_data)[0][0]
         gaps = np.concatenate(
