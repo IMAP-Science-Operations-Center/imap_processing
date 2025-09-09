@@ -26,6 +26,7 @@ from imap_processing.codice.constants import (
     HI_SPIN_ANGLE,
     HI_SSD_ID_TO_INDEX,
 )
+from imap_processing.codice.utils import reshape_ssd_energy_df
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -75,6 +76,14 @@ def codice_hi_direct_event(l1a_data: xr.Dataset) -> xr.Dataset:
         "codice/data/imap_codice_l2_hi-ssd-energy-lut_2050523_v001.csv"
     )
     ssd_energy_df = pd.read_csv(ssd_energy_file)
+    
+    # Reshape the dataframe into a 3D array (rows, ssd, gain)
+    # This makes lookup by SSD ID and gain more efficient
+    # - First dimension: bin_num (row index in the CSV)
+    # - Second dimension: SSD ID (0-15)
+    # - Third dimension: Gain (0=LG, 1=MG, 2=HG)
+    ssd_energy_3d = reshape_ssd_energy_df(ssd_energy_df)
+    
     # ssd_energy shape (n, priority, event_num)
     l1a_ssd_energy = l1a_data["ssd_energy"].data
     l1a_ssd_id = l1a_data["ssd_id"].data
@@ -96,48 +105,45 @@ def codice_hi_direct_event(l1a_data: xr.Dataset) -> xr.Dataset:
 
     # Create mask for valid values
     #   SSD ID must be <= 15
-    #   Gain must be > 3
-    #   SSD Energy must be > 2047
+    #   Gain must be > 0 and <= 3 (1=LG, 2=MG, 3=HG)
+    #   SSD Energy must be > 0 and <= 2047
     # These variables map to those number in LUT
     flat_ssd_energy = l1a_ssd_energy.flatten()
-    valid_mask = (flat_ssd_id <= 15) & (flat_gain > 3) & (flat_ssd_energy > 2047)
+    valid_mask = (flat_ssd_id <= 15) & (flat_gain > 0) & (flat_gain <= 3) & (flat_ssd_energy <= 2047) & (flat_ssd_energy > 0)
 
     # Create arrays to store results
     l2_ssd_energy = np.full(flat_ssd_id.shape, np.nan, dtype=float)
 
-    # Extract valid SSD IDs and gains
-    valid_ssd_ids = flat_ssd_id[valid_mask]
-    valid_gains = flat_gain[valid_mask]
+    # 1. Store invalid indices for later
+    invalid_indices = np.where(~valid_mask)[0]
+    
+    # 2. Make temporary copies and overwrite invalid values with zeros for lookup
+    tmp_ssd_energy = flat_ssd_energy.copy()
+    tmp_ssd_id = flat_ssd_id.copy()
+    tmp_gain = flat_gain.copy()
+    
+    # Set invalid values to zero (or valid defaults) for safe lookup
+    tmp_ssd_energy[~valid_mask] = 0
+    tmp_ssd_id[~valid_mask] = 0
+    tmp_gain[~valid_mask] = 0
 
-    # Map valid gains to gain modes using NumPy's vectorized operations
-    gain_modes = np.array([HI_GAIN_MODES.get(g, "No Gain") for g in valid_gains])
+    # Get the corresponding row indices in the lookup table for all values
+    row_indices = np.searchsorted(ssd_energy_df['bin_num'].values, tmp_ssd_energy)
 
-    # Create column names for valid entries
-    column_names = np.array(
-        [
-            f"SSD {sid} - {mode}"
-            for sid, mode in zip(valid_ssd_ids, gain_modes, strict=False)
-        ]
-    )
+    # Adjust gain values to 0-based index (1->0=LG, 2->1=MG, 3->2=HG)
+    tmp_gain = tmp_gain - 1
+    
+    # 3. Vectorized lookup using our 3D array (rows, ssd, gain)
+    # Clip indices to valid ranges to avoid out-of-bounds errors
+    row_indices = np.clip(row_indices, 0, ssd_energy_3d.shape[0] - 1)
+    tmp_ssd_id = np.clip(tmp_ssd_id, 0, 15)
+    tmp_gain = np.clip(tmp_gain, 0, 2)
+    
+    # Look up all values at once
+    l2_ssd_energy = ssd_energy_3d[row_indices, tmp_ssd_id, tmp_gain]
 
-    # Filter for column names that exist in the DataFrame
-    column_exists_mask = np.isin(column_names, ssd_energy_df.columns)
-    valid_indices = np.where(valid_mask)[0][column_exists_mask]
-    valid_column_values = column_names[column_exists_mask]
-    valid_row_values = flat_ssd_energy[valid_indices]
-
-    # Process each valid entry
-    for i, (row_val, col_name) in enumerate(
-        zip(valid_row_values, valid_column_values, strict=False)
-    ):
-        # Get the index in the original flattened array
-        orig_idx = valid_indices[i]
-        # Look up the energy value in the DataFrame
-        energy_value = ssd_energy_df.loc[
-            ssd_energy_df["bin_num"] == row_val, col_name
-        ].iloc[0]
-        # Store the result in the output array
-        l2_ssd_energy[orig_idx] = energy_value
+    # 4. Fill invalid indices back with NaN
+    l2_ssd_energy[invalid_indices] = np.nan
 
     l2_dataset["ssd_energy"] = (
         l1a_data["ssd_energy"].dims,
