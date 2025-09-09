@@ -148,7 +148,7 @@ def calibration_dataset():
         / "mag"
         / "validation"
         / "calibration"
-        / "imap_mag_l1b-calibration_20240229_v001.cdf"
+        / "imap_mag_l1b-calibration_20240229_v002.cdf"
     )
     return calibration_dataset
 
@@ -452,7 +452,6 @@ def test_apply_gradiometry_correction(ialirt_mag_test_l1d_data):
     np.testing.assert_array_equal(magnitude, expected_magnitude)
 
 
-@pytest.mark.xfail(reason="IMAP_MAG frame needs to be updated")
 @pytest.mark.external_kernel
 def test_transform_to_frames(furnish_kernels, spice_test_data_path):
     """Test transform_to_frames over multiple spin phases."""
@@ -485,6 +484,7 @@ def test_transform_to_frames(furnish_kernels, spice_test_data_path):
             et_to_ttj2000ns(attitude_time),
             et_to_ttj2000ns(target_time),
             mag_vector,
+            SpiceFrame.IMAP_MAG_O,
         )
 
         gse_vector, gsm_vector, rtn_vector = transform_to_frames(
@@ -513,7 +513,6 @@ def test_transform_to_frames(furnish_kernels, spice_test_data_path):
     np.testing.assert_allclose(rtn_vector, expected_rtn, atol=1e-05)
 
 
-@pytest.mark.xfail(reason="IMAP_MAG frame needs to be updated")
 @pytest.mark.external_test_data
 def test_process_packet(
     sc_packet_path, calibration_dataset, ialirt_mag_test_l1d_data, furnish_kernels
@@ -539,7 +538,6 @@ def test_process_packet(
             sc_xarray_data, calibration_dataset, ialirt_mag_test_l1d_data
         )
 
-    # TODO: add validation data.
     assert isinstance(mag_data[0], dict)
     expected_keys = {
         "apid",

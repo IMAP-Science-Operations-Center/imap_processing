@@ -392,6 +392,7 @@ def transform_to_inertial(
     attitude_time: np.ndarray,
     target_time: float,
     mag_vector: np.ndarray,
+    instrument_frame: SpiceFrame,
 ) -> np.ndarray:
     """
     Transform vector to ECLIPJ2000.
@@ -415,6 +416,8 @@ def transform_to_inertial(
         Example: time_data['primary_epoch'].
     mag_vector : numpy.ndarray
         Vector, shape (3).
+    instrument_frame : SpiceFrame
+        SPICE frame of the instrument.
 
     Returns
     -------
@@ -478,6 +481,7 @@ def transform_to_inertial(
         np.array([spin_phase_deg]),
         np.array([ra_deg]),
         np.array([dec_deg]),
+        instrument_frame,
     )[0]
 
     return inertial_vector
@@ -648,6 +652,7 @@ def process_packet(
             attitude_time,
             time_data["primary_epoch"],
             mago_out,
+            SpiceFrame.IMAP_MAG_O,
         )
         magi_inertial_vector = transform_to_inertial(
             sc_spin_phase_rad.values,
@@ -656,6 +661,7 @@ def process_packet(
             attitude_time,
             time_data["secondary_epoch"],
             magi_out,
+            SpiceFrame.IMAP_MAG_I,
         )
 
         met = grouped_data["met"][(grouped_data["group"] == group).values]
