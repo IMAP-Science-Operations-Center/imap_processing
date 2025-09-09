@@ -116,7 +116,7 @@ def test_genarate_hi_map(
     """Test coverage for genarate_hi_map()"""
 
     mock_esa_energy_lookup.side_effect = lambda x, y: pd.DataFrame(
-        {"nominal_central_energy": y, "bandpass_sigma": np.ones_like(y)}
+        {"nominal_central_energy": y, "bandpass_fwhm": np.ones_like(y)}
     )
 
     kernels = [
@@ -247,4 +247,4 @@ def test_esa_energy_lookup(esa_energies_lut_path):
     energy_df = esa_energy_df(esa_energies_lut_path, esa_energy_steps)
     retrieved_energies = energy_df["nominal_central_energy"].values
     np.testing.assert_array_equal(retrieved_energies, expected_energies)
-    assert "bandpass_sigma" in energy_df
+    assert "bandpass_fwhm" in energy_df
