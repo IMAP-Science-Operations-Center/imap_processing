@@ -239,7 +239,7 @@ energy_heliosphere:
 species:
   <<: *default_uint8
   DISPLAY_TYPE: no_plot
-  CATDESC: Label species type.
+  CATDESC: Label species type. Non-proton (heavy ion) = 0, proton = 1, misc = 3
   FIELDNAM: Label species type.
   LABLAXIS: species
   UNITS: " "

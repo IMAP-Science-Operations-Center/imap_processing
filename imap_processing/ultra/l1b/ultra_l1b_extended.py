@@ -839,25 +839,16 @@ def get_ctof(
     return ctof, magnitude_v
 
 
-def determine_species(tof: np.ndarray, path_length: np.ndarray, type: str) -> NDArray:
+def determine_species(e_bin: np.ndarray, type: str) -> NDArray:
     """
     Determine the species for pulse-height events.
 
-    Species is determined from the particle velocity.
-    For velocity, the particle TOF is normalized with respect
-    to a fixed distance dmin between the front and back detectors.
-    The normalized TOF is termed the corrected TOF (ctof).
-    Particle species are determined from ctof using thresholds.
-
-    Further description is available on pages 42-44 of
-    IMAP-Ultra Flight Software Specification document.
+    Species is determined using the computed e_bin.
 
     Parameters
     ----------
-    tof : np.ndarray
-        Time of flight of the SSD event (tenths of a nanosecond).
-    path_length : np.ndarray
-        Path length (r) (hundredths of a millimeter).
+    e_bin : np.ndarray
+        Computed e_bin.
     type : str
         Type of data (PH or SSD).
 
@@ -866,11 +857,17 @@ def determine_species(tof: np.ndarray, path_length: np.ndarray, type: str) -> ND
     species_bin : np.array
         Species bin.
     """
-    # Event TOF normalization to Z axis
-    ctof, _ = get_ctof(tof, path_length, type)
-    # Assign Species 1 ("H") to bins
-    # TODO: this is a placeholder for future species assignments.
-    species_bin = np.full(len(ctof), 1, dtype=np.uint8)
+    if type == "PH":
+        species_groups = UltraConstants.TOFXPH_SPECIES_GROUPS
+    if type == "SSD":
+        species_groups = UltraConstants.TOFXE_SPECIES_GROUPS
+
+    non_proton_bins = species_groups["non_proton"]
+    proton_bins = species_groups["proton"]
+
+    species_bin = np.full(e_bin.shape, fill_value=2, dtype=int)
+    species_bin[np.isin(e_bin, non_proton_bins)] = 0
+    species_bin[np.isin(e_bin, proton_bins)] = 1
 
     return species_bin
 

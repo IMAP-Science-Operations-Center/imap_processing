@@ -8,6 +8,7 @@ from imap_processing import imap_module_directory
 from imap_processing.quality_flags import ImapDEOutliersUltraFlags
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.spice.time import sct_to_et
+from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import get_angular_profiles
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
     CoinType,
@@ -341,11 +342,7 @@ def test_get_de_energy_kev(test_fixture):
     df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
     df_ph = df_ph[df_ph["energy_revised"].astype("str") != "FILL"]
 
-    species_bin_ph = determine_species(
-        df_ph["TOF"].astype("float").to_numpy(),
-        df_ph["r"].astype("float").to_numpy(),
-        "PH",
-    )
+    species_bin_ph = np.ones_like(df_ph["Energy"].values, dtype=np.uint8)
     test_xf, test_yf, test_xb, test_yb, test_d, test_tof = (
         df_ph[col].astype("float").values
         for col in ["Xf", "Yf", "Xb", "Yb", "d", "TOF"]
@@ -457,28 +454,47 @@ def test_get_ctof(test_fixture):
 
 
 @pytest.mark.external_test_data
-def test_determine_species(test_fixture):
+def test_determine_species():
     """Tests determine_species function."""
-    df_filt, _, _, _ = test_fixture
-    df_ph = df_filt[np.isin(df_filt["StopType"], [StopType.PH.value])]
-    df_ssd = df_filt[np.isin(df_filt["StopType"], [StopType.SSD.value])]
 
-    species_bin_ph = determine_species(
-        df_ph["TOF"].astype("float").to_numpy(),
-        df_ph["r"].astype("float").to_numpy(),
+    species_bin_ph_proton = determine_species(
+        np.array(UltraConstants.TOFXPH_SPECIES_GROUPS["proton"], dtype=np.uint8),
         "PH",
     )
-    species_bin_ssd = determine_species(
-        df_ssd["TOF"].astype("float").to_numpy(),
-        df_ssd["r"].astype("float").to_numpy(),
+    species_bin_ph_non_proton = determine_species(
+        np.array(UltraConstants.TOFXPH_SPECIES_GROUPS["non_proton"], dtype=np.uint8),
+        "PH",
+    )
+
+    species_bin_ssd_proton = determine_species(
+        np.array(UltraConstants.TOFXE_SPECIES_GROUPS["proton"], dtype=np.uint8),
+        "SSD",
+    )
+
+    species_bin_ssd_non_proton = determine_species(
+        np.array(UltraConstants.TOFXE_SPECIES_GROUPS["non_proton"], dtype=np.uint8),
         "SSD",
     )
 
     np.testing.assert_array_equal(
-        species_bin_ph, np.full(len(df_ph), 1, dtype=np.uint8)
+        species_bin_ph_proton,
+        np.full(len(UltraConstants.TOFXPH_SPECIES_GROUPS["proton"]), 1, dtype=np.uint8),
     )
     np.testing.assert_array_equal(
-        species_bin_ssd, np.full(len(df_ssd), 1, dtype=np.uint8)
+        species_bin_ssd_proton,
+        np.full(len(UltraConstants.TOFXE_SPECIES_GROUPS["proton"]), 1, dtype=np.uint8),
+    )
+    np.testing.assert_array_equal(
+        species_bin_ph_non_proton,
+        np.full(
+            len(UltraConstants.TOFXPH_SPECIES_GROUPS["non_proton"]), 0, dtype=np.uint8
+        ),
+    )
+    np.testing.assert_array_equal(
+        species_bin_ssd_non_proton,
+        np.full(
+            len(UltraConstants.TOFXE_SPECIES_GROUPS["non_proton"]), 0, dtype=np.uint8
+        ),
     )
 
 

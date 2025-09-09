@@ -46,6 +46,7 @@ def ultra_l1c(
                 f"imap_ultra_l1c_{instrument_id}sensor-heliopset",
                 ancillary_files,
                 instrument_id,
+                UltraConstants.TOFXPH_SPECIES_GROUPS["proton"],
             )
             output_datasets = [helio_pset]
         elif (

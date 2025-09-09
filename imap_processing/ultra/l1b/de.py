@@ -197,7 +197,6 @@ def calculate_de(
         (xb[ph_indices], yb[ph_indices]),
         d[ph_indices],
     )
-    species_bin[ph_indices] = determine_species(tof[ph_indices], r[ph_indices], "PH")
     etof[ph_indices], xc[ph_indices] = get_coincidence_positions(
         de_dataset.isel(epoch=ph_indices),
         t2[ph_indices],
@@ -230,6 +229,7 @@ def calculate_de(
         coinphvalid,
         ancillary_files,
     )
+    species_bin[ph_indices] = determine_species(e_bin[ph_indices], "PH")
     ctof[ph_indices], magnitude_v[ph_indices] = get_ctof(
         tof[ph_indices], r[ph_indices], "PH"
     )
@@ -263,9 +263,7 @@ def calculate_de(
         f"ultra{sensor}",
         ancillary_files,
     )
-    species_bin[ssd_indices] = determine_species(
-        tof[ssd_indices], r[ssd_indices], "SSD"
-    )
+    species_bin[ssd_indices] = determine_species(e_bin[ssd_indices], "SSD")
     ctof[ssd_indices], magnitude_v[ssd_indices] = get_ctof(
         tof[ssd_indices], r[ssd_indices], "SSD"
     )

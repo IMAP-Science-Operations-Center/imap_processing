@@ -127,6 +127,10 @@ class UltraConstants:
     TOFDIFFTPMIN_EVENTFILTER = 226
     TOFDIFFTPMAX_EVENTFILTER = 266
 
+    TOFXE_SPECIES_GROUPS: ClassVar[dict[str, list[int]]] = {
+        "proton": [3],
+        "non_proton": [20, 28, 36],
+    }
     TOFXPH_SPECIES_GROUPS: ClassVar[dict[str, list[int]]] = {
         "proton": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
         "non_proton": [20, 21, 22, 23, 24, 25, 26],

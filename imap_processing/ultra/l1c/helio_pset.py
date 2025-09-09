@@ -40,7 +40,7 @@ def calculate_helio_pset(
     name: str,
     ancillary_files: dict,
     instrument_id: int,
-    species_id: int = 1,
+    species_id: list,
 ) -> xr.Dataset:
     """
     Create dictionary with defined datatype for Pointing Set Grid Data.
@@ -61,8 +61,8 @@ def calculate_helio_pset(
         Ancillary files.
     instrument_id : int
         Instrument ID, either 45 or 90.
-    species_id : int
-        Species ID, default of 1 refers to Hydrogen.
+    species_id : List
+        Species ID.
 
     Returns
     -------
@@ -71,7 +71,7 @@ def calculate_helio_pset(
     """
     pset_dict: dict[str, np.ndarray] = {}
     # Select only the species we are interested in.
-    indices = np.where(de_dataset["species"].values == species_id)[0]
+    indices = np.where(np.isin(de_dataset["e_bin"].values, species_id))[0]
     species_dataset = de_dataset.isel(epoch=indices)
 
     rejected = get_de_rejection_mask(
