@@ -284,7 +284,7 @@ def test_cdf_extof_high_time(ccsds_path_extra):
     test_data_path = write_cdf(test_data[0], istp=True)
     assert test_data_path.exists()
     assert (
-        test_data_path.name == "imap_ultra_l1a_45sensor-histogram-ena-extof-hi-time_"
+        test_data_path.name == "imap_ultra_l1a_45sensor-histogram-ion-extof-hi-time_"
         "20240122-repoint99999_v999.cdf"
     )
 
@@ -298,7 +298,7 @@ def test_cdf_extof_high_energy(ccsds_path_extra):
     test_data_path = write_cdf(test_data[0], istp=True)
     assert test_data_path.exists()
     assert (
-        test_data_path.name == "imap_ultra_l1a_45sensor-histogram-ena-extof-hi-nrg_"
+        test_data_path.name == "imap_ultra_l1a_45sensor-histogram-ion-extof-hi-nrg_"
         "20240122-repoint99999_v999.cdf"
     )
 

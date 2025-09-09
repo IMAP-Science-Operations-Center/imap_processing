@@ -265,50 +265,35 @@ def tof_high_angular_test_path():
 @pytest.fixture
 def tof_high_energy_test_path():
     """Returns the xtce test data directory."""
-    filename = (
-        "ultra45_raw_sc_enaphxtofhnrgimg_FM45_UltraFM45Extra_TV_Tests_"
-        "2024-01-22T0930_20240122T093008.csv"
-    )
+    filename = "ultra45_l1b_raw_sc_enaphxtofhnrgimg_20240122_00_SDCStyle.csv"
     return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
 
 @pytest.fixture
 def tof_high_time_test_path():
     """Returns the xtce test data directory."""
-    filename = (
-        "ultra45_raw_sc_ultraenaphxtofhtimeresimg_FM45_UltraFM45Extra_"
-        "TV_Tests_2024-01-22T0930_20240122T093008.csv"
-    )
+    filename = "ultra45_l1b_raw_sc_enaphxtofhtimeimg_20240122_00_SDCStyle.csv"
     return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
 
 @pytest.fixture
 def extof_high_angular_test_path():
     """Returns the xtce test data directory."""
-    filename = (
-        "ultra45_raw_sc_enaextofhangimg_FM45_UltraFM45Extra_TV_Tests_"
-        "2024-01-22T0930_20240122T093008.csv"
-    )
+    filename = "ultra45_l1b_raw_sc_enaextofhangimg_20240122_00_SDCStyle.csv"
     return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
 
 @pytest.fixture
 def extof_high_time_test_path():
     """Returns the xtce test data directory."""
-    filename = (
-        "ultra45_raw_sc_ionexhtimeimg_FM45_UltraFM45Extra_TV_Tests_"
-        "2024-01-22T0930_20240122T093008.csv"
-    )
+    filename = "ultra45_l1b_raw_sc_ionextofhtimeimg_20240122_00_SDCStyle.csv"
     return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
 
 @pytest.fixture
 def extof_high_energy_test_path():
     """Returns the xtce test data directory."""
-    filename = (
-        "ultra45_raw_sc_ionextofhnrgimg_FM45_UltraFM45Extra_TV_Tests_"
-        "2024-01-22T0930_20240122T093008.csv"
-    )
+    filename = "ultra45_l1b_raw_sc_ionextofhnrgimg_20240122_00_SDCStyle.csv"
     return imap_module_directory / "tests" / "ultra" / "data" / "l0" / filename
 
 
