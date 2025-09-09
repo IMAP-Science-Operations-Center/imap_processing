@@ -587,6 +587,9 @@ def find_all_gaps(
     # if burst mode is missing then we need to go back to the previous day's file
     # be careful updating timeline as we don't want to change indicies around.
     for start_time in reversed(sorted(vecsec_dict.keys())):
+
+        print(f"Closest time in epoch to start time: {epoch_data[(np.abs(start_time - epoch_data)).argmin()]}")
+        print(f"Difference in seconds: {(np.abs(start_time - epoch_data)).min() / 1e9}")
         start_index = np.where(start_time == epoch_data)[0][0]
         gaps = np.concatenate(
             (
