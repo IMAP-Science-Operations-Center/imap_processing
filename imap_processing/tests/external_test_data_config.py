@@ -11,6 +11,7 @@ EXTERNAL_TEST_DATA = [
 
     # CoDICE
     # L0 data
+    ("imap_codice_l0_raw_20241110_v001.pkts", "codice/data/l0_data/"),
     ("imap_codice_lo-sw-species_20250814_v001.pkts", "codice/data/l0_data/"),
     ("imap_codice_lo-nsw-species_20250814_v001.pkts", "codice/data/l0_data/"),
     ("imap_codice_lo-sw-angular_20250814_v001.pkts", "codice/data/l0_data/"),
