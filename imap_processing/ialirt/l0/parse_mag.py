@@ -588,10 +588,6 @@ def process_packet(
         ]
 
         if not np.array_equal(pkt_counter, np.arange(4)):
-            logger.info(
-                f"Group {group} does not contain all values from 0 to "
-                f"3 without duplicates."
-            )
             continue
 
         # Get decoded status data.

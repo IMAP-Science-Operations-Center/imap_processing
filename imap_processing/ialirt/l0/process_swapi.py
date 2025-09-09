@@ -179,10 +179,6 @@ def process_swapi_ialirt(
 
         # Ensure no duplicates and all values from 0 to 11 are present
         if not np.array_equal(seq_values.astype(int), np.arange(12)):
-            logger.info(
-                f"SWAPI group {group} does not contain all sequence values from 0 to "
-                f"11 without duplicates."
-            )
             continue
 
     raw_coin_count = process_sweep_data(grouped_dataset, "swapi_coin_cnt")

@@ -485,10 +485,6 @@ def process_swe(accumulated_data: xr.Dataset, in_flight_cal_files: list) -> list
 
         # Ensure no duplicates and all values from 0 to 59 are present
         if not np.array_equal(seq_values, np.arange(60)):
-            logger.info(
-                f"Group {group} does not contain all values from 0 to "
-                f"59 without duplicates."
-            )
             continue
         # Prepare raw counts array just for this group
         # (8 energy steps, 7 CEMs, 30 phi bins)

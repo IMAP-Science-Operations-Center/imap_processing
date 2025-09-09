@@ -148,10 +148,6 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
 
         # Ensure no duplicates and all values from 0 to 59 are present
         if not np.array_equal(subcom_values, np.arange(60)):
-            logger.warning(
-                f"Group {group} does not contain all values from 0 to "
-                f"59 without duplicates."
-            )
             continue
 
         fast_rate_1 = grouped_data["hit_fast_rate_1"][
