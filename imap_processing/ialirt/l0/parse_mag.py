@@ -268,6 +268,13 @@ def calculate_l1b(
         retrieve_matrix_from_single_l1b_calibration(calibration_dataset, is_mago=False)
     )
 
+    logger.info(
+        f"calibration_matrix_mago shape: {calibration_matrix_mago.values.shape}."
+    )
+    logger.info(
+        f"calibration_matrix_magi shape: {calibration_matrix_magi.values.shape}."
+    )
+
     # Get time values for each group.
     time_data = get_time(
         grouped_data, group, pkt_counter, time_shift_mago, time_shift_magi
@@ -290,8 +297,12 @@ def calculate_l1b(
         ]
     )
 
-    updated_vector_mago = calibrate_vector(input_vector_mago, calibration_matrix_mago)
-    updated_vector_magi = calibrate_vector(input_vector_magi, calibration_matrix_magi)
+    updated_vector_mago = calibrate_vector(
+        input_vector_mago, calibration_matrix_mago.values
+    )
+    updated_vector_magi = calibrate_vector(
+        input_vector_magi, calibration_matrix_magi.values
+    )
 
     return updated_vector_mago, updated_vector_magi, time_data
 
