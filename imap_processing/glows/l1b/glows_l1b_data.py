@@ -851,7 +851,7 @@ class HistogramL1B:
             geometry.frame_transform(
                 time_range,
                 np.array([0, 0, 1]),
-                SpiceFrame.IMAP_DPS,
+                SpiceFrame.IMAP_SPACECRAFT,
                 SpiceFrame.ECLIPJ2000,
             )
         )
@@ -872,7 +872,7 @@ class HistogramL1B:
         )
         position = imap_state[:, :3]
         velocity = imap_state[:, 3:]
-        # averange and standard deviation over time (rows)
+        # average and standard deviation over time (rows)
         self.spacecraft_location_average = np.average(position, axis=0)
         self.spacecraft_location_std_dev = np.std(position, axis=0)
         self.spacecraft_velocity_average = np.average(velocity, axis=0)
