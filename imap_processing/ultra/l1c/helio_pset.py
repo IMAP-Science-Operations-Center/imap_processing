@@ -41,7 +41,7 @@ def calculate_helio_pset(
     ancillary_files: dict,
     instrument_id: int,
     species_id: list,
-) -> xr.Dataset:
+) -> xr.Dataset | None:
     """
     Create dictionary with defined datatype for Pointing Set Grid Data.
 
@@ -78,7 +78,7 @@ def calculate_helio_pset(
         species_dataset["quality_scattering"].values,
         species_dataset["quality_outliers"].values,
     )
-    de_dataset = species_dataset.isel(epoch=~rejected)
+    species_dataset = species_dataset.isel(epoch=~rejected)
 
     v_mag_helio_spacecraft = np.linalg.norm(
         species_dataset["velocity_dps_helio"].values, axis=1
@@ -156,8 +156,8 @@ def calculate_helio_pset(
     )
     sensitivity = efficiencies * geometric_function
 
-    start: float = np.min(de_dataset["event_times"].values)
-    end: float = np.max(de_dataset["event_times"].values)
+    start: float = np.min(species_dataset["event_times"].values)
+    end: float = np.max(species_dataset["event_times"].values)
 
     # Time bins in 30 minute intervals
     time_bins = np.arange(start, end + 1800, 1800)

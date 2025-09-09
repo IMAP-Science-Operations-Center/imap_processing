@@ -75,6 +75,10 @@ def calculate_spacecraft_pset(
     indices = np.where(np.isin(de_dataset["e_bin"].values, species_id))[0]
     species_dataset = de_dataset.isel(epoch=indices)
 
+    # If there are no species return None.
+    if indices.size == 0:
+        return None
+
     # Before we use the de_dataset to calculate the pointing set grid we need to filter.
     rejected = get_de_rejection_mask(
         species_dataset["quality_scattering"].values,
@@ -155,8 +159,8 @@ def calculate_spacecraft_pset(
         n_pix, ImapPSETUltraFlags.NONE.value, dtype=np.uint16
     )
 
-    start: float = np.min(de_dataset["event_times"].values)
-    end: float = np.max(de_dataset["event_times"].values)
+    start: float = np.min(species_dataset["event_times"].values)
+    end: float = np.max(species_dataset["event_times"].values)
 
     # Time bins in 30 minute intervals
     time_bins = np.arange(start, end + 1800, 1800)

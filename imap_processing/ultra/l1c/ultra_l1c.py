@@ -65,6 +65,7 @@ def ultra_l1c(
                 instrument_id,
                 UltraConstants.TOFXPH_SPECIES_GROUPS["proton"],
             )
+            output_datasets = [spacecraft_pset]
             spacecraft_pset_non_proton = calculate_spacecraft_pset(
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-de"],
                 data_dict[f"imap_ultra_l1b_{instrument_id}sensor-goodtimes"],
@@ -75,7 +76,8 @@ def ultra_l1c(
                 instrument_id,
                 UltraConstants.TOFXPH_SPECIES_GROUPS["non_proton"],
             )
-            output_datasets = [spacecraft_pset, spacecraft_pset_non_proton]
+            if spacecraft_pset_non_proton is not None:
+                output_datasets.append(spacecraft_pset_non_proton)
     if not output_datasets:
         raise ValueError("Data dictionary does not contain the expected keys.")
 

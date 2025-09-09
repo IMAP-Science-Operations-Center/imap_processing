@@ -11,6 +11,7 @@ import xarray as xr
 from imap_processing import imap_module_directory
 from imap_processing.spice.geometry import SpiceFrame
 from imap_processing.spice.time import met_to_sclkticks, sct_to_et
+from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.ultra_l1b_annotated import (
     get_annotated_particle_velocity,
 )
@@ -66,6 +67,7 @@ def test_calculate_spacecraft_pset(
     test_l1b_de_dataset = xr.Dataset(
         {
             "species": (["epoch"], species),
+            "e_bin": (["epoch"], np.ones(len(species), dtype=np.uint8)),
             "velocity_dps_sc": (
                 ["epoch", "component"],
                 particle_velocity_dps_spacecraft,
@@ -105,6 +107,7 @@ def test_calculate_spacecraft_pset(
             "imap_ultra_l1c_45sensor-spacecraftpset",
             ancillary_files,
             45,
+            UltraConstants.TOFXPH_SPECIES_GROUPS["proton"],
         )
     assert "pixel_index" in spacecraft_pset.coords
     assert "epoch" in spacecraft_pset.coords
@@ -167,7 +170,7 @@ def test_calculate_spacecraft_pset_with_cdf(
         de_dict["energy_bin_geometric_mean"] = np.zeros(len(sc_dps_velocity))
         de_dict["quality_scattering"] = np.zeros(len(sc_dps_velocity), dtype=np.uint16)
         de_dict["quality_outliers"] = np.zeros(len(sc_dps_velocity), dtype=np.uint16)
-        de_dict["species"] = np.ones(len(sc_dps_velocity), dtype=np.uint8)
+        de_dict["e_bin"] = np.ones(len(sc_dps_velocity), dtype=np.uint8)
         de_dict["event_times"] = 817561854.185627 + (
             df_subset["tdb"].values - df_subset["tdb"].values[0]
         )
@@ -192,6 +195,7 @@ def test_calculate_spacecraft_pset_with_cdf(
                 "imap_ultra_l1c_45sensor-spacecraftpset",
                 ancillary_files,
                 45,
+                UltraConstants.TOFXPH_SPECIES_GROUPS["proton"],
             )
         # TODO: validate with output histogram data once we have it in healpix.
         assert (
