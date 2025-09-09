@@ -62,7 +62,9 @@ def codice_hi_direct_event(l1a_data: xr.Dataset) -> xr.Dataset:
     # ---------------------------------------------------
     l2_dataset = xr.Dataset()
 
-    l2_dataset = l1a_data[["gain", "multi_flag", "spin_number"]].copy(deep=True)
+    # Only include variables that exist in the dataset to avoid KeyError
+    l2_vars = [var for var in ["gain", "multi_flag", "spin_number"] if var in l1a_data]
+    l2_dataset = l1a_data[l2_vars].copy(deep=True)
 
     # ------------------------------------------------------
     # SSD Energy
