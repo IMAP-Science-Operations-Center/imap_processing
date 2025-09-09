@@ -6,6 +6,7 @@ other CoDICE processing modules.
 """
 
 from enum import IntEnum
+
 import numpy as np
 import pandas as pd
 
@@ -64,40 +65,41 @@ class CoDICECompression(IntEnum):
 def reshape_ssd_energy_df(ssd_energy_df: pd.DataFrame) -> np.ndarray:
     """
     Reshape the SSD energy dataframe into a 3D array.
-    
+
     The resulting array will have dimensions (rows, ssd, gain), where:
     - rows is the number of bin values in the dataframe
     - ssd is the number of SSDs (0-15)
     - gain is the number of gain modes (LG, MG, HG)
-    
+
     Parameters
     ----------
     ssd_energy_df : pandas.DataFrame
         The SSD energy dataframe with columns like 'SSD 0 - LG', 'SSD 0 - MG', etc.
-        
+
     Returns
     -------
     numpy.ndarray
-        A 3D array with dimensions (rows, ssd, gain)
+        A 3D array with dimensions (rows, ssd, gain).
     """
     # Get the number of rows in the dataframe
     num_rows = len(ssd_energy_df)
     # Number of SSDs (0-15)
     num_ssds = 16
     # Number of gain modes (LG, MG, HG)
-    num_gains = 3
-    
+    num_gains = 4
+
     # Create an empty 3D array
     ssd_energy_3d = np.full((num_rows, num_ssds, num_gains), np.nan)
-    
+
     # Map gain mode strings to indices
-    gain_mode_map = {"LG": 0, "MG": 1, "HG": 2}
-    
+    # 0: No energy, 1: Low Gain (LG), 2: Mid Gain (MG), 3: High Gain (HG)
+    gain_mode_map = {"No energy": 0, "LG": 1, "MG": 2, "HG": 3}
+
     # Fill the 3D array
     for ssd_id in range(num_ssds):
         for gain_name, gain_idx in gain_mode_map.items():
             col_name = f"SSD {ssd_id} - {gain_name}"
             if col_name in ssd_energy_df.columns:
                 ssd_energy_3d[:, ssd_id, gain_idx] = ssd_energy_df[col_name].values
-    
+
     return ssd_energy_3d
