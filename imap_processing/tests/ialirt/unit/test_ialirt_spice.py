@@ -11,6 +11,7 @@ from imap_processing.ialirt.l0.ialirt_spice import (
     get_z_axis,
     transform_instrument_vectors_to_inertial,
 )
+from imap_processing.spice.geometry import SpiceFrame
 
 
 def test_get_z_axis():
@@ -148,7 +149,6 @@ def test_compute_total_rotation():
     np.testing.assert_allclose(output_vector, expected, atol=1e-9)
 
 
-@pytest.mark.xfail(reason="IMAP_MAG frame needs to be updated")
 @pytest.mark.external_kernel
 def test_transform_instrument_vectors_to_inertial(
     imap_ena_sim_metakernel, spice_test_data_path
@@ -190,16 +190,18 @@ def test_transform_instrument_vectors_to_inertial(
         np.array([120.0]),
         np.array([np.degrees(ra)]),
         np.array([np.degrees(dec)]),
+        SpiceFrame.IMAP_MAG_O,
     )
     v_manual_1 = transform_instrument_vectors_to_inertial(
         instrument_vector,
         np.array([240.0]),
         np.array([np.degrees(ra)]),
         np.array([np.degrees(dec)]),
+        SpiceFrame.IMAP_MAG_O,
     )
 
-    rot_inst_to_inertial_0 = spiceypy.pxform("IMAP_MAG", "ECLIPJ2000", et_start + 10)
-    rot_inst_to_inertial_1 = spiceypy.pxform("IMAP_MAG", "ECLIPJ2000", et_start + 20)
+    rot_inst_to_inertial_0 = spiceypy.pxform("IMAP_MAG_O", "ECLIPJ2000", et_start + 10)
+    rot_inst_to_inertial_1 = spiceypy.pxform("IMAP_MAG_O", "ECLIPJ2000", et_start + 20)
 
     v_spice_0 = spiceypy.mxv(rot_inst_to_inertial_0, instrument_vector[0])
     v_spice_1 = spiceypy.mxv(rot_inst_to_inertial_1, instrument_vector[0])
@@ -216,7 +218,6 @@ def test_transform_instrument_vectors_to_inertial(
     )
 
 
-@pytest.mark.xfail(reason="IMAP_MAG frame needs to be updated")
 @pytest.mark.external_kernel
 def test_no_attitude(imap_ialirt_sim_metakernel):
     """Test transform_instrument_vectors_to_inertial function."""
@@ -234,6 +235,7 @@ def test_no_attitude(imap_ialirt_sim_metakernel):
         spin_phase,
         np.array([np.degrees(ra)]),
         np.array([np.degrees(dec)]),
+        SpiceFrame.IMAP_MAG_O,
     )
 
     # TODO: Put this into GSE and GSM once we have proper kernels.
