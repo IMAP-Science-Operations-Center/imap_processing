@@ -884,35 +884,29 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
         0,
     )
 
-    # Equation 17-23
+    # NOTE: E8 virtual channel calculation is from the text. This is to
+    # start the calculations off from the higher energies and avoid
+    # reliance on IMAP Hi energy channels.
     # E8 is a virtual energy channel at 2.1 * E7
     e8 = 2.1 * dataset["energy"].values[-1]
 
-    # Check for valid energy ratios and j_c_prime values for gamma calculation
-    j_c_5 = j_c_prime.isel(energy=5)
-    j_c_6 = j_c_prime.isel(energy=6)
-    e_5 = dataset["energy"].isel(energy=5)
-    e_6 = dataset["energy"].isel(energy=6)
+    j_c_6 = j_c_prime.isel(energy=5)
+    j_c_7 = j_c_prime.isel(energy=6)
+    e_6 = dataset["energy"].isel(energy=5)
+    e_7 = dataset["energy"].isel(energy=6)
 
-    # Handle division by zero and invalid ratios
-    ratio_valid = (j_c_6 > 0) & (j_c_5 > 0) & (e_6 > 0) & (e_5 != e_6)
+    # Calculate gamma, ignoring any invalid values
+    # Fill in the invalid values with zeros after the fact
+    with np.errstate(divide="ignore", invalid="ignore"):
+        gamma = np.log(j_c_6 / j_c_7) / np.log(e_6 / e_7)
+        j_8_b = j_c_7 * (e8 / e_7) ** gamma
 
-    if np.any(ratio_valid.values):
-        gamma = np.log(j_c_5 / j_c_6) / np.log(e_5 / e_6)
-        # Handle NaN or infinite gamma values
-        gamma = gamma.where(np.isfinite(gamma), 0)
-        j_8_b = j_c_6 * (e8 / e_6) ** gamma
-        # Ensure j_8_b is finite and non-negative
-        j_8_b = j_8_b.where(np.isfinite(j_8_b) & (j_8_b >= 0), 0)
-    else:
-        logger.warning(
-            "Cannot calculate valid gamma for E8 virtual channel, setting j_8_b to zero"
-        )
-        j_8_b = xr.zeros_like(j_c_6)
+    # Set j_8_b to zero where the calculation was invalid
+    j_8_b = j_8_b.where(np.isfinite(j_8_b) & (j_8_b > 0), 0)
 
     # Initialize bootstrap intensity and uncertainty arrays
     dataset["bootstrap_intensity"] = xr.zeros_like(dataset["ena_intensity"])
-    dataset["bootstrap_intensity_stat_uncert"] = xr.zeros_like(dataset["ena_intensity"])
+    dataset["bootstrap_intensity_var"] = xr.zeros_like(dataset["ena_intensity"])
     dataset["bootstrap_intensity_sys_err"] = xr.zeros_like(dataset["ena_intensity"])
 
     for i in range(6, -1, -1):
@@ -928,10 +922,7 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
         )
         # NOTE: We will square root at the end to get the uncertainty, but
         #       all equations are with variances
-        dataset["bootstrap_intensity_stat_uncert"][0, i, ...] = (
-            j_c_prime_var[0, i, ...]
-            + (bootstrap_factor[i, 7] ** 2) * j_c_prime_var[0, 6, ...]
-        )
+        dataset["bootstrap_intensity_var"][0, i, ...] = j_c_prime_var[0, i, ...]
 
         for k in range(i + 1, 7):
             logger.debug(
@@ -943,9 +934,9 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
             )
 
             # Summation terms from equations 25-30
-            dataset["bootstrap_intensity_stat_uncert"][0, i, ...] += (
+            dataset["bootstrap_intensity_var"][0, i, ...] += (
                 bootstrap_factor[i, k] ** 2
-            ) * dataset["bootstrap_intensity_stat_uncert"][0, k, ...]
+            ) * dataset["bootstrap_intensity_var"][0, k, ...]
 
         # Again zero any bootstrap fluxes that are negative
         dataset["bootstrap_intensity"][0, i, ...].values[
@@ -959,10 +950,9 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
     )
 
     # Update the original intensity values
-    # Equation 33
-    dataset["ena_intensity"] -= j_c_prime - (
-        dataset["bootstrap_intensity"] - bg_intensity
-    )
+    # Equation 32 / 33
+    # ena_intensity = ena_intensity (J_c) - (j_c_prime - J_b)
+    dataset["ena_intensity"] -= j_c_prime - dataset["bootstrap_intensity"]
 
     # Ensure corrected intensities are non-negative
     dataset["ena_intensity"] = dataset["ena_intensity"].where(
@@ -971,9 +961,7 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
 
     # Equation 34 - statistical uncertainty
     # Take the square root, since we were in variances up to this point
-    dataset["ena_intensity_stat_uncert"] = np.sqrt(
-        dataset["bootstrap_intensity_stat_uncert"]
-    )
+    dataset["ena_intensity_stat_uncert"] = np.sqrt(dataset["bootstrap_intensity_var"])
 
     # Equation 35 - systematic error for corrected intensity
     # Handle division by zero and ensure reasonable values
@@ -997,7 +985,7 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
     dataset = dataset.drop_vars(
         [
             "bootstrap_intensity",
-            "bootstrap_intensity_stat_uncert",
+            "bootstrap_intensity_var",
             "bootstrap_intensity_sys_err",
         ]
     )
