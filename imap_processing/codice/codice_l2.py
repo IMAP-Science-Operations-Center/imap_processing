@@ -37,12 +37,13 @@ def codice_hi_direct_event(l1a_data: xr.Dataset) -> xr.Dataset:
 
     Convert the following data variables to physical units using
     calibration data:
-       - ssd_energy
-       - tof
-       - elevation_angle
-       - spin_angle
-    The other data variables require no changes
-    See section 11.1.2 of algorithm document
+    - ssd_energy
+    - tof
+    - elevation_angle
+    - spin_angle
+
+    The other data variables require no changes.
+    See section 11.1.2 of algorithm document.
 
     Parameters
     ----------
