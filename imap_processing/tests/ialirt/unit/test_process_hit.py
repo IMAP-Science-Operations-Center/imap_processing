@@ -193,11 +193,11 @@ def test_process_hit(xarray_data, caplog):
         i for i in range(29) for _ in range(2)
     ] + [59, 59]
 
-    with caplog.at_level("WARNING"):
+    with caplog.at_level("INFO"):
         process_hit(subset)
 
     assert any(
-        "does not contain all values from 0 to 59 without duplicates" in message
+        "skipped due to missing or duplicate pkt_counter values" in message
         for message in caplog.text.splitlines()
     )
 
