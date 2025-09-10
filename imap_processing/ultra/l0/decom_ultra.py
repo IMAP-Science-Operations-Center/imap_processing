@@ -102,10 +102,9 @@ def process_ultra_tof(ds: xr.Dataset, packet_props: PacketProperties) -> xr.Data
                 binary = convert_to_binary_string(group["packetdata"].values[i])
                 # Determine how many planes to decompress in this packet.
                 # the last packet might have fewer planes than planes_per_packet.
-                if plane_count + planes_per_packet > image_planes:
-                    planes_in_packet = image_planes - plane_count
-                else:
-                    planes_in_packet = planes_per_packet
+                # Take the minimum of the remaining planes or the max planes per packet
+                # value.
+                planes_in_packet = min(image_planes - plane_count, planes_per_packet)
                 decompressed = decompress_image(
                     group["p00"].values[i],
                     binary,
