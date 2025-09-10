@@ -197,8 +197,11 @@ def calculate_spacecraft_pset(
     pset_dict["dead_time_ratio"] = deadtime_ratios
     pset_dict["spin_phase_step"] = np.arange(len(deadtime_ratios))
 
-    pset_dict["scatter_theta"] = scattering_theta
-    pset_dict["scatter_phi"] = scattering_phi
+    # Convert FWHM to gaussian uncertainty by dividing by 2.355
+    # See algorithm documentation (section 3.5.7, third bullet point) for more details
+    pset_dict["scatter_theta"] = scattering_theta / 2.355
+    pset_dict["scatter_phi"] = scattering_phi / 2.355
+
     pset_dict["scatter_threshold"] = scattering_thresholds
 
     # Add the energy delta plus/minus to the dataset
