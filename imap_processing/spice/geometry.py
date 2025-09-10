@@ -50,8 +50,6 @@ class SpiceFrame(IntEnum):
     IMAP_HI_90 = -43160
     IMAP_ULTRA_45 = -43200
     IMAP_ULTRA_90 = -43210
-    # TODO: remove IMAP_MAG frame once all usages have been removed
-    IMAP_MAG = -43999
     IMAP_MAG_BOOM = -43250
     IMAP_MAG_I = -43251
     IMAP_MAG_O = -43252
