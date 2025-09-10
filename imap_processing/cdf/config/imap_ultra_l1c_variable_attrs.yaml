@@ -106,14 +106,14 @@ helio_exposure_factor:
 
 scatter_theta:
   <<: *energy_dependent
-  CATDESC: Scattering theta values for a pointing.
+  CATDESC: Scattering theta values for a pointing (reported in gaussian uncertainty).
   FIELDNAM: scatter_theta
   LABLAXIS: scatter theta
   UNITS: degrees
 
 scatter_phi:
   <<: *energy_dependent
-  CATDESC: Scattering phi values for a pointing.
+  CATDESC: Scattering phi values for a pointing (reported in gaussian uncertainty).
   FIELDNAM: scatter_phi
   LABLAXIS: scatter phi
   UNITS: degrees
