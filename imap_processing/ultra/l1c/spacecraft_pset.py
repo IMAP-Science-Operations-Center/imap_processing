@@ -72,7 +72,7 @@ def calculate_spacecraft_pset(
     pset_dict: dict[str, np.ndarray] = {}
 
     sensor = parse_filename_like(name)["sensor"][0:2]
-    indices = np.where(np.isin(de_dataset["e_bin"].values, species_id))[0]
+    indices = np.where(np.isin(de_dataset["ebin"].values, species_id))[0]
     species_dataset = de_dataset.isel(epoch=indices)
 
     # If there are no species return None.

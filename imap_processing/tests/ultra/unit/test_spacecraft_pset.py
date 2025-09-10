@@ -67,7 +67,7 @@ def test_calculate_spacecraft_pset(
     test_l1b_de_dataset = xr.Dataset(
         {
             "species": (["epoch"], species),
-            "e_bin": (["epoch"], np.ones(len(species), dtype=np.uint8)),
+            "ebin": (["epoch"], np.ones(len(species), dtype=np.uint8)),
             "velocity_dps_sc": (
                 ["epoch", "component"],
                 particle_velocity_dps_spacecraft,
@@ -170,7 +170,7 @@ def test_calculate_spacecraft_pset_with_cdf(
         de_dict["energy_bin_geometric_mean"] = np.zeros(len(sc_dps_velocity))
         de_dict["quality_scattering"] = np.zeros(len(sc_dps_velocity), dtype=np.uint16)
         de_dict["quality_outliers"] = np.zeros(len(sc_dps_velocity), dtype=np.uint16)
-        de_dict["e_bin"] = np.ones(len(sc_dps_velocity), dtype=np.uint8)
+        de_dict["ebin"] = np.ones(len(sc_dps_velocity), dtype=np.uint8)
         de_dict["event_times"] = 817561854.185627 + (
             df_subset["tdb"].values - df_subset["tdb"].values[0]
         )
