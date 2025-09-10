@@ -853,8 +853,8 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
     """
     logger.info("Applying bootstrap corrections")
 
-    # Table 3 bootstrap terms h_i,k
-    bootstrap_factor = np.array(
+    # Table 3 bootstrap terms h_i,k - convert to xarray for better dimension handling
+    bootstrap_factor_array = np.array(
         [
             [0, 0.03, 0.01, 0, 0, 0, 0, 0],
             [0, 0, 0.05, 0.02, 0.01, 0, 0, 0],
@@ -864,6 +864,15 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
             [0, 0, 0, 0, 0, 0, 0.52, 0.061],
             [0, 0, 0, 0, 0, 0, 0, 0.75],
         ]
+    )
+    # Create xarray DataArray with named dimensions for proper broadcasting
+    bootstrap_factor = xr.DataArray(
+        bootstrap_factor_array,
+        dims=["energy_i", "energy_k"],
+        coords={
+            "energy_i": list(range(7)),
+            "energy_k": list(range(8)),  # Include virtual channel 7 (index 7)
+        },
     )
 
     # Equation 14
@@ -910,6 +919,12 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
     dataset["bootstrap_intensity_sys_err"] = xr.zeros_like(dataset["ena_intensity"])
 
     for i in range(6, -1, -1):
+        # Create views for the current energy channel to avoid repeated indexing
+        bootstrap_intensity_i = dataset["bootstrap_intensity"][0, i, ...]
+        bootstrap_intensity_var_i = dataset["bootstrap_intensity_var"][0, i, ...]
+        j_c_prime_i = j_c_prime[0, i, ...]
+        j_c_prime_var_i = j_c_prime_var[0, i, ...]
+
         # Initialize the variable with the non-summation term and virtual
         # channel energy subtraction first, then iterate through the other
         # channels which can be looked up via indexing
@@ -917,31 +932,37 @@ def calculate_bootstrap_corrections(dataset: xr.Dataset) -> xr.Dataset:
         # included the k=8 term here.
         # NOTE: The paper uses 1-based indexing and we use 0-based indexing
         #       so there is an off-by-one difference in the indices.
-        dataset["bootstrap_intensity"][0, i, ...] = (
-            j_c_prime[0, i, ...] - bootstrap_factor[i, 7] * j_8_b[0, ...]
+        bootstrap_intensity_i[:] = (
+            j_c_prime_i - bootstrap_factor.sel(energy_i=i, energy_k=7) * j_8_b[0, ...]
         )
         # NOTE: We will square root at the end to get the uncertainty, but
         #       all equations are with variances
-        dataset["bootstrap_intensity_var"][0, i, ...] = j_c_prime_var[0, i, ...]
+        bootstrap_intensity_var_i[:] = j_c_prime_var_i
 
-        for k in range(i + 1, 7):
-            logger.debug(
-                f"Subtracting bootstrap factor h_{i},{k} * J_{k}_b from J_{i}_b"
-            )
-            # Subtraction terms from equations 18-23
-            dataset["bootstrap_intensity"][0, i, ...] -= (
-                bootstrap_factor[i, k] * dataset["bootstrap_intensity"][0, k, ...]
-            )
+        # Vectorized summation using xarray's built-in broadcasting
+        # Select the relevant k indices for summation (k = i+1 to 6)
+        k_indices = list(range(i + 1, 7))
 
-            # Summation terms from equations 25-30
-            dataset["bootstrap_intensity_var"][0, i, ...] += (
-                bootstrap_factor[i, k] ** 2
-            ) * dataset["bootstrap_intensity_var"][0, k, ...]
+        # Get bootstrap factors for this i and the relevant k values
+        # Rename energy_k dimension to energy for alignment with intensity
+        bootstrap_factors_k = bootstrap_factor.sel(
+            energy_i=i, energy_k=k_indices
+        ).rename({"energy_k": "energy"})
+
+        # Get intensity slices - these will have an 'energy' dimension still
+        intensity_k = dataset["bootstrap_intensity"][0, k_indices, ...]
+        intensity_var_k = dataset["bootstrap_intensity_var"][0, k_indices, ...]
+
+        # Subtraction terms from equations 18-23 (xarray vectorized)
+        bootstrap_intensity_i -= (bootstrap_factors_k * intensity_k).sum(dim="energy")
+
+        # Summation terms from equations 25-30 (xarray vectorized)
+        bootstrap_intensity_var_i += (bootstrap_factors_k**2 * intensity_var_k).sum(
+            dim="energy"
+        )
 
         # Again zero any bootstrap fluxes that are negative
-        dataset["bootstrap_intensity"][0, i, ...].values[
-            dataset["bootstrap_intensity"][0, i, ...] < 0
-        ] = 0.0
+        bootstrap_intensity_i.values[bootstrap_intensity_i < 0] = 0.0
 
     # Equation 31 - systematic error propagation for bootstrap intensity
     # Handle division by zero: only compute where j_c_prime > 0
