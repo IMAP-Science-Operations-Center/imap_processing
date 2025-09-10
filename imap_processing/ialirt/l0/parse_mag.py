@@ -577,6 +577,7 @@ def process_packet(
     mago_times_all = []
     magi_vectors_all = []
     magi_times_all = []
+    incomplete_groups = []
 
     for group in unique_groups:
         # Get status values for each group.
@@ -588,6 +589,7 @@ def process_packet(
         ]
 
         if not np.array_equal(pkt_counter, np.arange(4)):
+            incomplete_groups.append(group)
             continue
 
         # Get decoded status data.
@@ -669,6 +671,13 @@ def process_packet(
         mago_vectors_all.append(mago_inertial_vector)
         magi_vectors_all.append(magi_inertial_vector)
         magi_times_all.append(time_data["secondary_epoch"])
+
+    if incomplete_groups:
+        logger.info(
+            f"The following mag groups were skipped due to "
+            f"missing or duplicate pkt_counter values: "
+            f"{incomplete_groups}"
+        )
 
     mago_corrected, magnitude = apply_gradiometry_correction(
         np.array(mago_vectors_all),
