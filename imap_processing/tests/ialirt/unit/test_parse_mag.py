@@ -1,14 +1,17 @@
 """Tests to support I-ALiRT MAG packet processing."""
 
+import shutil
+
+import imap_data_access
 import numpy as np
 import pandas as pd
 import pytest
 import spiceypy
 import xarray as xr
+from imap_data_access.processing_input import AncillaryInput
 from scipy.interpolate import make_interp_spline
 
 from imap_processing import imap_module_directory
-from imap_processing.cdf.utils import load_cdf
 from imap_processing.ialirt.l0.parse_mag import (
     apply_gradiometry_correction,
     calculate_l1b,
@@ -25,6 +28,7 @@ from imap_processing.ialirt.l0.parse_mag import (
 from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.ialirt.utils.time import calculate_time
 from imap_processing.mag.constants import MAX_FINE_TIME
+from imap_processing.mag.l1b.mag_l1b import MagAncillaryCombiner
 from imap_processing.spice.geometry import SpiceFrame
 from imap_processing.spice.time import et_to_ttj2000ns, met_to_ttj2000ns
 from imap_processing.utils import packet_file_to_datasets
@@ -140,9 +144,9 @@ def grouped_data():
 
 
 @pytest.fixture
-def calibration_dataset():
+def calibration_dataset(tmp_path):
     """Returns the calibration data."""
-    calibration_dataset = load_cdf(
+    file_path = (
         imap_module_directory
         / "tests"
         / "mag"
@@ -150,7 +154,23 @@ def calibration_dataset():
         / "calibration"
         / "imap_mag_l1b-calibration_20240229_v002.cdf"
     )
-    return calibration_dataset
+
+    filename = file_path.name
+    date_str = filename.split("_")[-2]
+
+    # Set up the path structure expected by AncillaryInput
+    expected_path = tmp_path / "imap" / "ancillary" / "mag"
+    expected_path.mkdir(parents=True)
+
+    target_file = expected_path / filename
+    shutil.copy2(file_path, target_file)
+
+    imap_data_access.config["DATA_DIR"] = tmp_path
+
+    input_files = AncillaryInput(filename)
+    calibration_dataset = MagAncillaryCombiner(input_files, date_str)
+
+    return calibration_dataset.combined_dataset
 
 
 def test_get_pkt_counter(xarray_data):

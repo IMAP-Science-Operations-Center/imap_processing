@@ -747,10 +747,10 @@ def retrieve_matrix_from_single_l1b_calibration(
         update_vector, calibrate_vector, and shift_time.
     """
     if is_mago:
-        calibration_matrix = calibration_dataset["MFOTOURFO"]
-        time_shift = calibration_dataset["OTS"]
+        calibration_matrix = calibration_dataset["MFOTOURFO"].squeeze("epoch")
+        time_shift = calibration_dataset["OTS"].squeeze("epoch")
     else:
-        calibration_matrix = calibration_dataset["MFITOURFI"]
-        time_shift = calibration_dataset["ITS"]
+        calibration_matrix = calibration_dataset["MFITOURFI"].squeeze("epoch")
+        time_shift = calibration_dataset["ITS"].squeeze("epoch")
 
     return calibration_matrix, time_shift
