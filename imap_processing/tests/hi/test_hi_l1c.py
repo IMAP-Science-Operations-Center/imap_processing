@@ -159,7 +159,7 @@ def test_pset_counts_empty_l1b(hi_l1_test_data_path, hi_test_cal_prod_config_pat
         HIAPID.H90_SCI_DE.sensor,
     )
     counts_var = hi_l1c.pset_counts(empty_pset.coords, cal_config_df, l1b_dataset)
-    assert "counts" in counts_var
+    assert counts_var["counts"].data.sum() == 0
 
 
 def test_get_tof_window_mask():
