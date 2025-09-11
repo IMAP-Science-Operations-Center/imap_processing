@@ -3,7 +3,6 @@
 import logging
 from dataclasses import Field
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 import xarray as xr
@@ -68,11 +67,6 @@ def lo_l1b(sci_dependencies: dict, anc_dependencies: list) -> list[Path]:
         avg_spin_durations_per_cycle = get_avg_spin_durations_per_cycle(
             acq_start, acq_end
         )
-        # get spin angle (0 - 360 degrees) for each DE
-        spin_angle = get_spin_angle(l1a_de)
-        # calculate and set the spin bin based on the spin angle
-        # spin bins are 0 - 60 bins
-        l1b_de = set_spin_bin(l1b_de, spin_angle)
         # set the spin cycle for each direct event
         l1b_de = set_spin_cycle(pointing_start_met, l1a_de, l1b_de)
         # get spin start times for each event
@@ -273,54 +267,6 @@ def get_avg_spin_durations_per_cycle(
     # There are 28 spins per epoch (1 aggregated science cycle)
     avg_spin_durations_per_cycle = (acq_end - acq_start) / 28
     return avg_spin_durations_per_cycle
-
-
-def get_spin_angle(l1a_de: xr.Dataset) -> np.ndarray[np.float64] | Any:
-    """
-    Get the spin angle (0 - 360 degrees) for each DE.
-
-    Parameters
-    ----------
-    l1a_de : xarray.Dataset
-        The L1A DE dataset.
-
-    Returns
-    -------
-    spin_angle : np.ndarray
-        The spin angle for each DE.
-    """
-    de_times = l1a_de["de_time"].values
-    # DE Time is 12 bit DN. The max possible value is 4096
-    spin_angle = np.array(de_times / 4096 * 360, dtype=np.float64)
-    return spin_angle
-
-
-def set_spin_bin(l1b_de: xr.Dataset, spin_angle: np.ndarray) -> xr.Dataset:
-    """
-    Set the spin bin (0 - 60 bins) for each Direct Event where each bin is 6 degrees.
-
-    Parameters
-    ----------
-    l1b_de : xarray.Dataset
-        The L1B Direct Event dataset.
-    spin_angle : np.ndarray
-        The spin angle (0-360 degrees) for each Direct Event.
-
-    Returns
-    -------
-    l1b_de : xarray.Dataset
-        The L1B DE dataset with the spin bin added.
-    """
-    # Get the spin bin for each DE
-    # Spin bins are 0 - 60 where each bin is 6 degrees
-    spin_bin = (spin_angle // 6).astype(int)
-    l1b_de["spin_bin"] = xr.DataArray(
-        spin_bin,
-        dims=["epoch"],
-        # TODO: Add spin angle to YAML file
-        # attrs=attr_mgr.get_variable_attributes("spin_bin"),
-    )
-    return l1b_de
 
 
 def set_spin_cycle(
@@ -783,17 +729,17 @@ def set_pointing_direction(l1b_de: xr.Dataset) -> xr.Dataset:
     # Get the pointing bin for each DE
     et = ttj2000ns_to_et(l1b_de["epoch"])
 
-    direction = instrument_pointing(et, SpiceFrame.IMAP_LO_BASE, SpiceFrame.IMAP_DPS)
+    direction = instrument_pointing(et, SpiceFrame.IMAP_LO_BASE, SpiceFrame.IMAP_HAE)
     # TODO: Need to ask Lo what to do if a latitude is outside of the
     # +/-2 degree range. Is that possible?
-    l1b_de["direction_lon"] = xr.DataArray(
+    l1b_de["direction_spin"] = xr.DataArray(
         direction[:, 0],
         dims=["epoch"],
         # TODO: Add direction_lon to YAML file
         # attrs=attr_mgr.get_variable_attributes("direction_lon"),
     )
 
-    l1b_de["direction_lat"] = xr.DataArray(
+    l1b_de["direction_off_angle"] = xr.DataArray(
         direction[:, 1],
         dims=["epoch"],
         # TODO: Add direction_lat to YAML file
@@ -807,7 +753,7 @@ def set_pointing_bin(l1b_de: xr.Dataset) -> xr.Dataset:
     """
     Set the pointing bin for each direct event.
 
-    The pointing bins are defined as 3600 bins for longitude and 40 bins for latitude.
+    The pointing bins are defined as 3600 bins for spin and 40 bins for off angle.
     Each bin is 0.1 degrees. The bins are defined as follows:
     Longitude bins: -180 to 180 degrees
     Latitude bins: -2 to 2 degrees
@@ -823,9 +769,9 @@ def set_pointing_bin(l1b_de: xr.Dataset) -> xr.Dataset:
         The L1B DE dataset with the pointing bins added.
     """
     # First column: latitudes
-    lats = l1b_de["direction_lat"]
+    lats = l1b_de["direction_off_angle"]
     # Second column: longitudes
-    lons = l1b_de["direction_lon"]
+    lons = l1b_de["direction_spin"]
 
     # Define bin edges
     # 3600 bins, 0.1° each
@@ -838,14 +784,14 @@ def set_pointing_bin(l1b_de: xr.Dataset) -> xr.Dataset:
     lon_bins = np.digitize(lons, lon_bins) - 1
     lat_bins = np.digitize(lats, lat_bins) - 1
 
-    l1b_de["pointing_bin_lon"] = xr.DataArray(
+    l1b_de["off_angle_bin"] = xr.DataArray(
         lon_bins,
         dims=["epoch"],
         # TODO: Add pointing_bin_lon to YAML file
         # attrs=attr_mgr.get_variable_attributes("pointing_bin_lon"),
     )
 
-    l1b_de["pointing_bin_lat"] = xr.DataArray(
+    l1b_de["spin_bin"] = xr.DataArray(
         lat_bins,
         dims=["epoch"],
         # TODO: Add point_bin_lat to YAML file
