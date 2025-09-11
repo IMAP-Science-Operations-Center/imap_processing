@@ -264,25 +264,40 @@ def create_de_dataset(de_data_dict: dict[str, npt.ArrayLike]) -> xr.Dataset:
         attrs=epoch_attrs,
     )
 
-    event_met_attrs = attr_mgr.get_variable_attributes(
-        "hi_de_event_met", check_schema=False
-    )
-    # For L1A DE, event_met is its own dimension, so we remove the DEPEND_0 attribute
-    _ = event_met_attrs.pop("DEPEND_0")
-
     # Compute the meta-event MET in seconds
     meta_event_met = (
         np.array(de_data_dict["esa_step_seconds"]).astype(np.float64)
         + np.array(de_data_dict["esa_step_milliseconds"]) * MILLISECOND_TO_S
     )
-    # Compute the MET of each event in seconds
-    # event MET = meta_event_met + de_clock
-    # See Hi Algorithm Document section 2.2.5
-    event_met_array = np.array(
-        meta_event_met[de_data_dict["ccsds_index"]]
-        + np.array(de_data_dict["de_tag"]) * DE_CLOCK_TICK_S,
-        dtype=event_met_attrs.pop("dtype"),
+
+    event_met_attrs = attr_mgr.get_variable_attributes(
+        "hi_de_event_met", check_schema=False
     )
+    # For L1A DE, event_met is its own dimension, so we remove the DEPEND_0 attribute
+    _ = event_met_attrs.pop("DEPEND_0")
+    event_met_dtype = event_met_attrs.pop("dtype")
+
+    # If there are no events, add a single event with fill values
+    if len(de_data_dict["de_tag"]) == 0:
+        logger.warning(
+            "No direct events found in SCIDE packets. "
+            "Creating a false DE entry with fill values."
+        )
+        for key in ["de_tag", "trigger_id", "tof_1", "tof_2", "tof_3", "ccsds_index"]:
+            attrs = attr_mgr.get_variable_attributes(f"hi_de_{key}", check_schema=False)
+            de_data_dict[key] = [attrs["FILLVAL"]]
+        event_met_array = np.array([event_met_attrs["FILLVAL"]], dtype=event_met_dtype)
+    else:
+        # Compute the MET of each event in seconds
+        # event MET = meta_event_met + de_clock
+        # See Hi Algorithm Document section 2.2.5
+        event_met_array = np.array(
+            meta_event_met[de_data_dict["ccsds_index"]]
+            + np.array(de_data_dict["de_tag"]) * DE_CLOCK_TICK_S,
+            dtype=event_met_dtype,
+        )
+
+    # Create the event_met coordinate
     event_met = xr.DataArray(
         event_met_array,
         name="event_met",
@@ -290,10 +305,12 @@ def create_de_dataset(de_data_dict: dict[str, npt.ArrayLike]) -> xr.Dataset:
         attrs=event_met_attrs,
     )
 
+    # Create a dataset with only coordinates
     dataset = xr.Dataset(
         coords={"epoch": epoch, "event_met": event_met},
     )
 
+    # Add variable to the dataset
     for var_name, data in de_data_dict.items():
         attrs = attr_mgr.get_variable_attributes(
             f"hi_de_{var_name}", check_schema=False
@@ -557,7 +574,7 @@ def finish_memdmp_dataset(input_ds: xr.Dataset) -> xr.Dataset:
         # offset index with a stride of the number of bytes in the dump
         # data divided by 4 (32-bit values).
         new_vars[new_var] = xr.DataArray(
-            data=full_uint32_data[offset::index_stride],
+            data=full_uint32_data[offset::index_stride].astype(np.uint32),
             dims=["epoch"],
         )
 

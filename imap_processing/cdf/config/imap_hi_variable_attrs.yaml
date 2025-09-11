@@ -252,6 +252,7 @@ hi_de_ccsds_index:
 # LABL_PTR_i expects VAR_TYPE of metadata with char data type
 hi_hist_angle_label:
   CATDESC: Angle bin centers for histogram data.
+  DEPEND_1: angle
   FIELDNAM: ANGLE
   FORMAT: A5
   VAR_TYPE: metadata

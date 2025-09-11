@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from cdflib.xarray import xarray_to_cdf
 
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.hi.hi_l1a import (
@@ -35,6 +36,34 @@ def test_sci_de_decom(hi_l0_test_data_path):
     cdf_filename = "imap_hi_l1a_90sensor-de_20241105_v999.cdf"
     cdf_filepath = write_cdf(processed_data[0])
     assert cdf_filepath.name == cdf_filename
+
+
+def test_create_de_dataset_no_events(tmp_path):
+    """Test that a DE dataset with no events correctly generates a CDF."""
+    # Generate a fake de_data_dict with no events
+    keys_with_data = [
+        "ccsds_met",
+        "src_seq_ctr",
+        "pkt_len",
+        "last_spin_num",
+        "spin_invalids",
+        "esa_step",
+        "esa_step_seconds",
+        "esa_step_milliseconds",
+    ]
+    de_data_dict = {k: np.arange(10) for k in keys_with_data}
+    empty_keys = ["de_tag", "trigger_id", "tof_1", "tof_2", "tof_3", "ccsds_index"]
+    for k in empty_keys:
+        de_data_dict[k] = []
+
+    ds = create_de_dataset(de_data_dict)
+    for k in empty_keys:
+        assert len(ds[k].data) == 1
+
+    # Just need to make sure that a cdf file gets written with compression on
+    out_path = tmp_path / "de.cdf"
+    xarray_to_cdf(ds, str(out_path), compression=6)
+    assert out_path.exists()
 
 
 def test_diag_fee_decom(hi_l0_test_data_path):
