@@ -141,6 +141,27 @@ def test_pset_counts(hi_l1_test_data_path, hi_test_cal_prod_config_path):
     assert "counts" in counts_var
 
 
+@pytest.mark.external_test_data
+def test_pset_counts_empty_l1b(hi_l1_test_data_path, hi_test_cal_prod_config_path):
+    """Test coverage for pset_counts function when the input L1b contains no counts."""
+    l1b_de_path = hi_l1_test_data_path / "imap_hi_l1b_45sensor-de_20250415_v999.cdf"
+    l1b_dataset = load_cdf(l1b_de_path)
+    # remove all but one event and set its trigger_id to zero
+    l1b_dataset = l1b_dataset.isel(event_met=[0])
+    l1b_dataset["trigger_id"].data[0] = 0
+    cal_config_df = imap_processing.hi.utils.CalibrationProductConfig.from_csv(
+        hi_test_cal_prod_config_path
+    )
+    empty_pset = hi_l1c.empty_pset_dataset(
+        100,
+        l1b_dataset.esa_energy_step.data,
+        cal_config_df.cal_prod_config.number_of_products,
+        HIAPID.H90_SCI_DE.sensor,
+    )
+    counts_var = hi_l1c.pset_counts(empty_pset.coords, cal_config_df, l1b_dataset)
+    assert "counts" in counts_var
+
+
 def test_get_tof_window_mask():
     """Test coverage for get_tof_window_mask function."""
     # Create a synthetic dataframe with required columns containing data
@@ -166,20 +187,37 @@ def test_get_tof_window_mask():
         ],
     )
     prod_config_row = Row((1, 0), 0, 1, -1, 2, 1, 5, 4, 6)
-    synth_df = pd.DataFrame(
-        {
-            "tof_ab": np.array(
-                [0, 2, 1, 0, -1, -5, -11], dtype=np.int32
-            ),  # T, F, T, T, F, F, FILL
-            "tof_ac1": np.array(
-                [-1, 2, -2, 0, 3, 0, -12], dtype=np.int32
-            ),  # T, T, F, T, F, T, FILL
-            "tof_bc1": np.array(
-                [1, 5, 3, 0, 6, 2, -13], dtype=np.int32
-            ),  # T, T, T, F, F, T, FILL
-            "tof_c1c2": np.array(
-                [4, 6, 5, 3, 7, -9, -14], dtype=np.int32
-            ),  # T, T, T, F, F, F, FILL
+    synth_df = xr.Dataset(
+        coords={
+            "event_met": xr.DataArray(
+                np.arange(7), name="event_met", dims=["event_met"]
+            )
+        },
+        data_vars={
+            "tof_ab": xr.DataArray(
+                np.array(
+                    [0, 2, 1, 0, -1, -5, -11], dtype=np.int32
+                ),  # T, F, T, T, F, F, FILL
+                dims=["event_met"],
+            ),
+            "tof_ac1": xr.DataArray(
+                np.array(
+                    [-1, 2, -2, 0, 3, 0, -12], dtype=np.int32
+                ),  # T, T, F, T, F, T, FILL
+                dims=["event_met"],
+            ),
+            "tof_bc1": xr.DataArray(
+                np.array(
+                    [1, 5, 3, 0, 6, 2, -13], dtype=np.int32
+                ),  # T, T, T, F, F, T, FILL
+                dims=["event_met"],
+            ),
+            "tof_c1c2": xr.DataArray(
+                np.array(
+                    [4, 6, 5, 3, 7, -9, -14], dtype=np.int32
+                ),  # T, T, T, F, F, F, FILL
+                dims=["event_met"],
+            ),
         },
     )
     expected_mask = np.array([True, False, False, False, False, False, True])
