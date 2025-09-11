@@ -119,6 +119,17 @@ def test_genarate_hi_map(
         {"nominal_central_energy": y, "bandpass_fwhm": np.ones_like(y)}
     )
 
+    def add_zero_intensities(ds, *args):
+        zeros_array = xr.zeros_like(ds["ena_signal_rates"].sum(dim="calibration_prod"))
+        intensity_vars = {
+            "ena_intensity": zeros_array,
+            "ena_intensity_stat_unc": zeros_array,
+            "ena_intensity_sys_err": zeros_array,
+        }
+        return ds.update(intensity_vars)
+
+    mock_calc_ena_intensity.side_effect = add_zero_intensities
+
     kernels = [
         "imap_sclk_0000.tsc",
         "imap_science_100.tf",
@@ -218,6 +229,11 @@ def test_calculate_ena_intensity(
                 np.arange(np.prod(tuple(map_ds.sizes.values()))).reshape(var_shape) % 4
                 + 1,
                 name="ena_signal_rate_stat_unc",
+                dims=list(map_ds.sizes.keys()),
+            ),
+            "bg_rates": xr.DataArray(
+                np.arange(np.prod(tuple(map_ds.sizes.values()))).reshape(var_shape) % 3,
+                name="bg_rates_unc",
                 dims=list(map_ds.sizes.keys()),
             ),
             "bg_rates_unc": xr.DataArray(

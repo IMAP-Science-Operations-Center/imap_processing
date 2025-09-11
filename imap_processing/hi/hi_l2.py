@@ -328,7 +328,9 @@ def combine_calibration_products(
         combined_flux = weighted_flux_sum / weight_sum
 
     map_ds["ena_intensity"] = combined_flux
-    map_ds["ena_intensity_stat_unc"] = improved_stat_unc
+    map_ds["ena_intensity_stat_unc"] = np.sqrt(
+        (improved_stat_unc**2).sum(dim="calibration_prod")
+    )
     # For systematic error, take root sum of squares
     map_ds["ena_intensity_sys_err"] = np.sqrt((sys_err**2).sum(dim="calibration_prod"))
 
@@ -364,16 +366,17 @@ def _calculate_improved_uncertainties(
     improved_unc : xr.DataArray
         Improved statistical uncertainty estimates.
     """
-    n_calib_prods = map_ds["ena_intensity"].sizes["calibration_prod"]
+    n_calib_prods = map_ds["ena_intensity"].sizes.get("calibration_prod", 1)
 
     if n_calib_prods <= 1:
         # No improvement possible with single calibration product
         return map_ds["ena_intensity_stat_unc"]
 
+    logger.debug("Computing geometric factor normalized signal rates")
     # Convert flux back to signal rates: signal_rate = flux * geom_factor
     signal_rates = map_ds["ena_signal_rates"]
 
-    # Compute geometric factor normalized signal rate
+    # Compute geometric factor normalized signal rate (vectorized approach)
     # This represents the weighted average signal rate per unit geometric factor
     geometric_factor_norm_signal_rates = signal_rates.sum(
         dim="calibration_prod"
@@ -383,6 +386,7 @@ def _calculate_improved_uncertainties(
     # averaged_signal_rate_i = geometric_factor_norm_signal_rates * geometric_factor_i
     averaged_signal_rates = geometric_factor_norm_signal_rates * geometric_factors
 
+    logger.debug("Including background rates in uncertainty calculation")
     # Convert averaged signal rates back to flux uncertainties
     # Total count rates for Poisson uncertainty calculation
     total_count_rates_for_uncertainty = averaged_signal_rates + map_ds["bg_rates"]
@@ -392,8 +396,8 @@ def _calculate_improved_uncertainties(
         total_count_rates_for_uncertainty < 1, 1, total_count_rates_for_uncertainty
     )
 
+    logger.debug("Computing improved flux uncertainties")
     # Statistical uncertainty:
-    #     sqrt(total_counts / (exposure_time * geom_factor * esa_energies)
     with np.errstate(divide="ignore", invalid="ignore"):
         improved_unc = np.sqrt(
             total_count_rates_for_uncertainty
