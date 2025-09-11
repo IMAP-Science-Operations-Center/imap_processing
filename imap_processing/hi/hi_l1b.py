@@ -158,7 +158,7 @@ def annotate_direct_events(
     return [l1b_de_dataset]
 
 
-def any_good_direct_events(dataset: xr.Dataset) -> np.bool_:
+def any_good_direct_events(dataset: xr.Dataset) -> bool:
     """
     Test dataset to see if there are any good direct events.
 
@@ -173,10 +173,10 @@ def any_good_direct_events(dataset: xr.Dataset) -> np.bool_:
 
     Returns
     -------
-    any_good_events : numpy.bool_
+    any_good_events : bool
         True if there is at least one good direct event. False otherwise.
     """
-    return np.any(dataset["trigger_id"] != dataset["trigger_id"].attrs["FILLVAL"])
+    return bool(np.any(dataset["trigger_id"] != dataset["trigger_id"].attrs["FILLVAL"]))
 
 
 def compute_coincidence_type_and_tofs(
