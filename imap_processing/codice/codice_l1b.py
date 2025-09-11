@@ -26,6 +26,32 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
+def get_n_sector_for_esa_step(esa_step: int) -> int:
+    """
+    Get the number of spin sectors for a given ESA step.
+    
+    According to section 10.2.2 of the algorithm document, due to the ESA 
+    stepping scheme, the last spin sector at ESA step 127 is used as a 
+    flyback step and so counts are not accumulated. Thus:
+    - n_sector = 12 for ESA steps 0-126
+    - n_sector = 11 for ESA step 127
+    
+    Parameters
+    ----------
+    esa_step : int
+        The ESA step number (0-127).
+        
+    Returns
+    -------
+    int
+        The number of spin sectors for the given ESA step.
+    """
+    if esa_step == 127:
+        return 11
+    else:
+        return 12
+
+
 def convert_to_rates(
     dataset: xr.Dataset, descriptor: str, variable_name: str
 ) -> np.ndarray:
@@ -56,8 +82,6 @@ def convert_to_rates(
         "lo-sw-angular",
         "lo-nsw-priority",
         "lo-sw-priority",
-        "lo-nsw-species",
-        "lo-sw-species",
         "lo-ialirt",
     ]:
         # Applying rate calculation described in section 10.2 of the algorithm
@@ -73,6 +97,28 @@ def convert_to_rates(
             acq_times
             * 1e-6  # Converting from microseconds to seconds
             * constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spin_sectors"]
+        )
+    elif descriptor in ["lo-nsw-species", "lo-sw-species"]:
+        # Special handling for Lo species data products
+        # Applying rate calculation described in section 10.2.2 of the algorithm
+        # document where n_sector varies by ESA step
+        dims = [1] * dataset[variable_name].data.ndim
+        dims[1] = 128
+        acq_times = dataset.acquisition_time_per_step.data.reshape(dims)
+        
+        # Create n_sector array based on ESA step
+        # ESA step 127 uses n_sector = 11, all others use n_sector = 12
+        n_sector_array = np.full(128, 12)  # Default to 12 for all ESA steps
+        n_sector_array[127] = 11  # ESA step 127 uses 11 sectors
+        
+        # Reshape n_sector_array to match data dimensions
+        n_sector_reshaped = n_sector_array.reshape(dims)
+        
+        # Apply the formula: Rj(l) = cj(l) / (t_acquire * 10^-6 * n_sector)
+        rates_data = dataset[variable_name].data / (
+            acq_times
+            * 1e-6  # Converting from microseconds to seconds
+            * n_sector_reshaped
         )
     elif descriptor in [
         "hi-counters-aggregated",
