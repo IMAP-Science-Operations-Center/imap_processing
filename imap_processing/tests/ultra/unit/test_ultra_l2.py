@@ -101,7 +101,7 @@ class TestUltraL2:
         # of the expected ena_intensity and ena_intensity statistical uncertainty
         pset["counts"].values = np.full_like(pset["counts"].values, 10)
         pset["exposure_factor"].values = np.ones_like(pset["exposure_factor"])
-        pset["background_rates"].values = np.ones_like(pset["background_rates"].values)
+        pset["bg_rate"].values = np.ones_like(pset["bg_rate"].values)
         pset["sensitivity"].values = np.ones_like(pset["sensitivity"].values)
         pset["energy_bin_delta"].values = np.ones_like(pset["energy_bin_delta"].values)
         pset["efficiency"] = xr.ones_like(pset["exposure_factor"])
@@ -136,7 +136,7 @@ class TestUltraL2:
                             "efficiency",
                             "scatter_theta",
                             "scatter_phi",
-                            "background_rates",
+                            "bg_rate",
                         ],
                         "nside": 32,
                         "nested": False,
@@ -150,7 +150,7 @@ class TestUltraL2:
         # Check that required variables are present, and dropped variables are not
         expected_vars = [
             "counts",
-            "background_rates",
+            "bg_rate",
             "ena_intensity",
             "obs_date_range",
             "ena_intensity_stat_unc",
@@ -217,7 +217,7 @@ class TestUltraL2:
         # of the expected ena_intensity and ena_intensity statistical uncertainty
         pset["counts"].values = np.full_like(pset["counts"].values, 10)
         pset["exposure_factor"].values = np.ones_like(pset["exposure_factor"].values)
-        pset["background_rates"].values = np.ones_like(pset["background_rates"].values)
+        pset["bg_rate"].values = np.ones_like(pset["bg_rate"].values)
         pset["sensitivity"].values = np.ones_like(pset["sensitivity"].values)
         pset["energy_bin_delta"].values = np.ones_like(pset["energy_bin_delta"].values)
 
@@ -245,7 +245,7 @@ class TestUltraL2:
                         "values_to_pull_project": [
                             "exposure_factor",
                             "sensitivity",
-                            "background_rates",
+                            "bg_rate",
                         ],
                         "nside": 32,
                         "nested": False,
@@ -259,7 +259,7 @@ class TestUltraL2:
         # Check that required variables are present, and dropped variables are not
         expected_vars = [
             "counts",
-            "background_rates",
+            "bg_rate",
             "ena_intensity",
             "obs_date_range",
             "ena_intensity_stat_unc",
@@ -302,7 +302,7 @@ class TestUltraL2:
                             "values_to_pull_project": [
                                 "exposure_factor",
                                 "sensitivity",
-                                "background_rates",
+                                "bg_rate",
                             ],
                             "spacing_deg": 2.0,
                         }

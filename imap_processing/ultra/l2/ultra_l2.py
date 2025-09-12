@@ -35,7 +35,7 @@ DEFAULT_ULTRA_L2_MAP_STRUCTURE: ena_maps.RectangularSkyMap | ena_maps.HealpixSky
             "values_to_pull_project": [
                 "exposure_factor",
                 "sensitivity",
-                "background_rates",
+                "bg_rate",
             ],
             "nside": 32,
             "nested": False,
@@ -57,7 +57,7 @@ REQUIRED_L1C_VARIABLES_PUSH = [
 REQUIRED_L1C_VARIABLES_PULL = [
     "exposure_factor",
     "sensitivity",
-    "background_rates",
+    "bg_rate",
     "obs_date",
 ]
 # These variables are expected but not strictly required. In certain test scenarios,
@@ -73,7 +73,7 @@ EXPECTED_L1C_VARIABLES_PULL = [
 # weighted by that pointing set pixel's exposure and solid angle
 VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE = [
     "sensitivity",
-    "background_rates",
+    "bg_rate",
     "obs_date",
     "geometric_function",
     "efficiency",
@@ -351,7 +351,7 @@ def generate_ultra_healpix_skymap(
 
     # Background rates must be scaled by the ratio of the solid angles of the
     # map pixel / pointing set pixel
-    skymap.data_1d["background_rates"] *= skymap.solid_angle / pointing_set.solid_angle
+    skymap.data_1d["bg_rate"] *= skymap.solid_angle / pointing_set.solid_angle
 
     # Get the energy bin widths from a PointingSet (they will all be the same)
     delta_energy = pointing_set.data["energy_bin_delta"]
@@ -368,7 +368,7 @@ def generate_ultra_healpix_skymap(
         # Get corrected count rate with background subtraction applied
         skymap.data_1d["corrected_count_rate"] = (
             skymap.data_1d["counts"].astype(float) / skymap.data_1d["exposure_factor"]
-        ) - skymap.data_1d["background_rates"]
+        ) - skymap.data_1d["bg_rate"]
 
         # Calculate ena_intensity = corrected_counts / (
         # sensitivity * solid_angle * delta_energy)

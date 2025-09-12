@@ -163,7 +163,7 @@ ena_rate:
   DISPLAY_TYPE: image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
-background_rates:
+bg_rate:
   <<: *default_float32
   CATDESC: Estimated background count rate.
   FIELDNAM: Background Rate
