@@ -14,7 +14,6 @@ from imap_processing.lo.l1b.lo_l1b import (
     convert_tofs_to_eu,
     create_datasets,
     get_avg_spin_durations_per_cycle,
-    get_spin_angle,
     get_spin_start_times,
     identify_species,
     initialize_l1b_de,
@@ -27,7 +26,6 @@ from imap_processing.lo.l1b.lo_l1b import (
     set_event_met,
     set_pointing_bin,
     set_pointing_direction,
-    set_spin_bin,
     set_spin_cycle,
 )
 from imap_processing.spice.time import met_to_ttj2000ns
@@ -75,7 +73,7 @@ def attr_mgr_l1a():
 
 @patch(
     "imap_processing.lo.l1b.lo_l1b.instrument_pointing",
-    return_value=np.zeros((2000, 2)),
+    return_value=np.zeros((2000, 3)),
 )
 @patch(
     "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
@@ -267,41 +265,6 @@ def test_get_avg_spin_durations():
 
     # Assert
     np.testing.assert_array_equal(avg_spin_durations, expected_avg_spin_durations)
-
-
-def test_get_spin_angle():
-    # Arrange
-    de = xr.Dataset(
-        {
-            "de_count": ("epoch", [2, 3]),
-            "de_time": ("direct_event", [0000, 1000, 2000, 3000, 4000]),
-        },
-        coords={"epoch": [0, 1], "direct_event": [0, 1, 2, 3, 4]},
-    )
-    spin_angle_expected = np.array([0, 87.89, 175.78, 263.67, 351.56])
-
-    # Act
-    spin_angle = get_spin_angle(de)
-
-    # Assert
-    np.testing.assert_allclose(
-        spin_angle,
-        spin_angle_expected,
-        atol=1e-2,
-    )
-
-
-def test_spin_bin():
-    # Arrange
-    l1b_de = xr.Dataset()
-    spin_angle = np.array([0, 50, 150, 250, 365])
-    expected_spin_bins = np.array([0, 8, 25, 41, 60])
-
-    # Act
-    l1b_de = set_spin_bin(l1b_de, spin_angle)
-
-    # Assert
-    np.testing.assert_array_equal(l1b_de["spin_bin"], expected_spin_bins)
 
 
 @patch("imap_processing.lo.l1b.lo_l1b.get_spin_number", return_value=0)
@@ -597,71 +560,68 @@ def test_set_bad_times():
     np.testing.assert_array_equal(l1b_de["badtimes"], expected_bad_times)
 
 
-@pytest.mark.external_kernel
+@patch(
+    "imap_processing.lo.l1b.lo_l1b.instrument_pointing",
+    return_value=np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]]),
+)
 def test_set_direction(imap_ena_sim_metakernel):
     # Arrange
     l1b_de = xr.Dataset(
         {},
         coords={
-            "epoch": [
-                7.9794907254e17,
-                # + 1 second. Should be 24deg diff from
-                # previous epoch
-                7.9794907254e17 + 1e9,
-                # + 7.5 seconds. Should be 180deg diff from
-                # first epoch
-                7.9794907254e17 + 7.5e9,
-                # + 15 seconds. Should be 360deg diff from
-                # previous epoch
-                7.9794907254e17 + 15e9,
-            ],
+            "epoch": [0, 1, 2, 3],
         },
     )
     # latitudes are -90 to 90
-    expected_direction_lat = np.array([0, 0, 0, 0])
-    # longitude are -180 to 180
-    expected_direction_lon = np.array([140.5, 164.5, -39.5, 140.5])
+    expected_hae_x = np.array([1, 4, 7, 10])
+    expected_hae_y = np.array([2, 5, 8, 11])
+    expected_hae_z = np.array([3, 6, 9, 12])
 
     # Act
     l1b_de = set_pointing_direction(l1b_de)
 
     # Assert
     np.testing.assert_allclose(
-        l1b_de["direction_lat"].values,
-        expected_direction_lat,
+        l1b_de["hae_x"].values,
+        expected_hae_x,
         atol=1e-1,
     )
     np.testing.assert_allclose(
-        l1b_de["direction_lon"].values,
-        expected_direction_lon,
+        l1b_de["hae_y"].values,
+        expected_hae_y,
+        atol=1e-1,
+    )
+    np.testing.assert_allclose(
+        l1b_de["hae_z"].values,
+        expected_hae_z,
         atol=1e-1,
     )
 
 
-def test_pointing_bins():
+@patch(
+    "imap_processing.lo.l1b.lo_l1b.instrument_pointing",
+    return_value=np.array([[-180, -2], [0, 0], [90, 1], [180, 2]]),
+)
+def test_pointing_bins(imap_ena_sim_metakernel):
     # Arrange
     l1b_de = xr.Dataset(
-        {
-            "direction_lat": ("epoch", [0, 0, 0, 0, 0]),
-            "direction_lon": ("epoch", [-180, 91.3, 116.3, 140.5, 180]),
-        },
+        {},
         coords={
             "epoch": [
                 7.9794907049e17,
                 7.9794907153e17,
                 7.9794907254e17,
                 7.9794907354e17,
-                7.9794907454e17,
             ],
         },
     )
 
-    expected_pointing_lats = np.array([20, 20, 20, 20, 20])
-    expected_pointing_lons = np.array([0, 2712, 2962, 3205, 3600])
+    expected_pointing_lats = np.array([0, 20, 30, 40])
+    expected_pointing_lons = np.array([0, 1800, 2700, 3600])
 
     # Act
     l1b_de = set_pointing_bin(l1b_de)
 
     # Assert
-    np.testing.assert_array_equal(l1b_de["pointing_bin_lat"], expected_pointing_lats)
-    np.testing.assert_array_equal(l1b_de["pointing_bin_lon"], expected_pointing_lons)
+    np.testing.assert_array_equal(l1b_de["off_angle_bin"], expected_pointing_lats)
+    np.testing.assert_array_equal(l1b_de["spin_bin"], expected_pointing_lons)

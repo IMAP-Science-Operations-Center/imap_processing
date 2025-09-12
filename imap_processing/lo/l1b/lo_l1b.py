@@ -728,22 +728,31 @@ def set_pointing_direction(l1b_de: xr.Dataset) -> xr.Dataset:
     """
     # Get the pointing bin for each DE
     et = ttj2000ns_to_et(l1b_de["epoch"])
-
-    direction = instrument_pointing(et, SpiceFrame.IMAP_LO_BASE, SpiceFrame.IMAP_HAE)
+    # get the direction in HAE coordinates
+    direction = instrument_pointing(
+        et, SpiceFrame.IMAP_LO_BASE, SpiceFrame.IMAP_HAE, cartesian=True
+    )
     # TODO: Need to ask Lo what to do if a latitude is outside of the
     # +/-2 degree range. Is that possible?
-    l1b_de["direction_spin"] = xr.DataArray(
+    l1b_de["hae_x"] = xr.DataArray(
         direction[:, 0],
         dims=["epoch"],
         # TODO: Add direction_lon to YAML file
-        # attrs=attr_mgr.get_variable_attributes("direction_lon"),
+        # attrs=attr_mgr.get_variable_attributes("hae_x"),
     )
 
-    l1b_de["direction_off_angle"] = xr.DataArray(
+    l1b_de["hae_y"] = xr.DataArray(
         direction[:, 1],
         dims=["epoch"],
         # TODO: Add direction_lat to YAML file
-        # attrs=attr_mgr.get_variable_attributes("direction_lat"),
+        # attrs=attr_mgr.get_variable_attributes("hae_y"),
+    )
+
+    l1b_de["hae_z"] = xr.DataArray(
+        direction[:, 2],
+        dims=["epoch"],
+        # TODO: Add direction_lat to YAML file
+        # attrs=attr_mgr.get_variable_attributes("hae_z"),
     )
 
     return l1b_de
@@ -768,10 +777,14 @@ def set_pointing_bin(l1b_de: xr.Dataset) -> xr.Dataset:
     l1b_de : xarray.Dataset
         The L1B DE dataset with the pointing bins added.
     """
+    et = ttj2000ns_to_et(l1b_de["epoch"])
+
+    # get lon and lat in degrees
+    direction = instrument_pointing(et, SpiceFrame.IMAP_LO_BASE, SpiceFrame.IMAP_HAE)
     # First column: latitudes
-    lats = l1b_de["direction_off_angle"]
+    lats = direction[:, 1]
     # Second column: longitudes
-    lons = l1b_de["direction_spin"]
+    lons = direction[:, 0]
 
     # Define bin edges
     # 3600 bins, 0.1° each
@@ -784,18 +797,18 @@ def set_pointing_bin(l1b_de: xr.Dataset) -> xr.Dataset:
     lon_bins = np.digitize(lons, lon_bins) - 1
     lat_bins = np.digitize(lats, lat_bins) - 1
 
-    l1b_de["off_angle_bin"] = xr.DataArray(
+    l1b_de["spin_bin"] = xr.DataArray(
         lon_bins,
         dims=["epoch"],
         # TODO: Add pointing_bin_lon to YAML file
-        # attrs=attr_mgr.get_variable_attributes("pointing_bin_lon"),
+        # attrs=attr_mgr.get_variable_attributes("spin_bin"),
     )
 
-    l1b_de["spin_bin"] = xr.DataArray(
+    l1b_de["off_angle_bin"] = xr.DataArray(
         lat_bins,
         dims=["epoch"],
         # TODO: Add point_bin_lat to YAML file
-        # attrs=attr_mgr.get_variable_attributes("pointing_bin_lat"),
+        # attrs=attr_mgr.get_variable_attributes("spin_bin"),
     )
 
     return l1b_de
