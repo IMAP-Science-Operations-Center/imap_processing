@@ -314,23 +314,21 @@ def combine_calibration_products(
     # Perform inverse-variance weighted averaging
     # Handle divide by zero and invalid values
     with np.errstate(divide="ignore", invalid="ignore"):
-        weights = 1.0 / total_unc_squared
-        # Set weights to 0 where uncertainty is 0, inf, or nan
-        weights = xr.where(
-            (total_unc_squared == 0) | ~np.isfinite(total_unc_squared), 0, weights
-        )
+        flux_weights = 1.0 / total_unc_squared
 
-        # Weighted sum and sum of weights
-        weighted_flux_sum = (ena_flux * weights).sum(dim="calibration_prod")
-        weight_sum = weights.sum(dim="calibration_prod")
+        # Calculate weights for statistical uncertainty combination using only
+        # statistical uncertainty
+        stat_weights = 1.0 / (improved_stat_unc**2)
 
-        # Combined flux
-        combined_flux = weighted_flux_sum / weight_sum
+        # Combined statistical uncertainty from inverse-variance formula
+        combined_stat_unc = np.sqrt(1.0 / stat_weights.sum(dim="calibration_prod"))
+
+        # Use total uncertainty weights for flux combination
+        weighted_flux_sum = (ena_flux * flux_weights).sum(dim="calibration_prod")
+        combined_flux = weighted_flux_sum / flux_weights.sum(dim="calibration_prod")
 
     map_ds["ena_intensity"] = combined_flux
-    map_ds["ena_intensity_stat_unc"] = np.sqrt(
-        (improved_stat_unc**2).sum(dim="calibration_prod")
-    )
+    map_ds["ena_intensity_stat_unc"] = combined_stat_unc
     # For systematic error, take root sum of squares
     map_ds["ena_intensity_sys_err"] = np.sqrt((sys_err**2).sum(dim="calibration_prod"))
 
@@ -373,17 +371,21 @@ def _calculate_improved_uncertainties(
         return map_ds["ena_intensity_stat_unc"]
 
     logger.debug("Computing geometric factor normalized signal rates")
-    # Convert flux back to signal rates: signal_rate = flux * geom_factor
+
+    # signal_rates = counts / exposure_factor - bg_rates
+    # signal_rates shape is: (n_epoch, n_energy, n_cal_prod, n_spatial_pixels)
     signal_rates = map_ds["ena_signal_rates"]
 
     # Compute geometric factor normalized signal rate (vectorized approach)
     # This represents the weighted average signal rate per unit geometric factor
+    # geometric_factor_norm_signal_rates shape is: (n_epoch, n_energy, n_spatial_pixels)
     geometric_factor_norm_signal_rates = signal_rates.sum(
         dim="calibration_prod"
     ) / geometric_factors.sum(dim="calibration_prod")
 
     # For each calibration product, the averaged signal rate estimate is:
     # averaged_signal_rate_i = geometric_factor_norm_signal_rates * geometric_factor_i
+    # averaged_signal_rates shape is: (n_epoch, n_energy, n_cal_prod, n_spatial_pixels)
     averaged_signal_rates = geometric_factor_norm_signal_rates * geometric_factors
 
     logger.debug("Including background rates in uncertainty calculation")

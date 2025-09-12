@@ -241,6 +241,11 @@ def test_calculate_ena_intensity(
                 name="bg_rates_unc",
                 dims=list(map_ds.sizes.keys()),
             ),
+            "exposure_factor": xr.DataArray(
+                np.arange(np.prod(tuple(map_ds.sizes.values()))).reshape(var_shape) % 7,
+                name="bg_rates_unc",
+                dims=list(map_ds.sizes.keys()),
+            ),
         }
     )
     ena_intesity_vars = calculate_ena_intensity(
