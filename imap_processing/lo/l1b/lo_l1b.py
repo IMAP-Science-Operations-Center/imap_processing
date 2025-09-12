@@ -15,7 +15,11 @@ from imap_processing.lo.l1b.tof_conversions import (
     TOF2_CONV,
     TOF3_CONV,
 )
-from imap_processing.spice.geometry import SpiceFrame, instrument_pointing
+from imap_processing.spice.geometry import (
+    SpiceFrame,
+    cartesian_to_latitudinal,
+    instrument_pointing,
+)
 from imap_processing.spice.repoint import get_pointing_times
 from imap_processing.spice.spin import get_spin_number
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
@@ -777,14 +781,16 @@ def set_pointing_bin(l1b_de: xr.Dataset) -> xr.Dataset:
     l1b_de : xarray.Dataset
         The L1B DE dataset with the pointing bins added.
     """
-    et = ttj2000ns_to_et(l1b_de["epoch"])
-
-    # get lon and lat in degrees
-    direction = instrument_pointing(et, SpiceFrame.IMAP_LO_BASE, SpiceFrame.IMAP_HAE)
-    # First column: latitudes
-    lats = direction[:, 1]
-    # Second column: longitudes
-    lons = direction[:, 0]
+    x = l1b_de["hae_x"]
+    y = l1b_de["hae_y"]
+    z = l1b_de["hae_z"]
+    # convert the pointing direction to latitudinal coordinates
+    direction = cartesian_to_latitudinal(np.column_stack((x, y, z)))
+    # first column: radius (Not needed)
+    # second column: longitude
+    lons = direction[:, 1]
+    # third column: latitude
+    lats = direction[:, 2]
 
     # Define bin edges
     # 3600 bins, 0.1° each

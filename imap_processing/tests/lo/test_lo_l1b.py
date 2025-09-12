@@ -80,10 +80,15 @@ def attr_mgr_l1a():
     return_value=(473389199, 473472001),
 )
 @patch("imap_processing.lo.l1b.lo_l1b.get_spin_number", return_value=0)
+@patch(
+    "imap_processing.lo.l1b.lo_l1b.cartesian_to_latitudinal",
+    return_value=np.zeros((2000, 3)),
+)
 def test_lo_l1b(
     mock_instrument_pointing,
     mocked_get_pointing_times,
     mock_spin_number,
+    mock_cartesian_to_latitudinal,
     anc_dependencies,
 ):
     # Arrange
@@ -599,13 +604,17 @@ def test_set_direction(imap_ena_sim_metakernel):
 
 
 @patch(
-    "imap_processing.lo.l1b.lo_l1b.instrument_pointing",
-    return_value=np.array([[-180, -2], [0, 0], [90, 1], [180, 2]]),
+    "imap_processing.lo.l1b.lo_l1b.cartesian_to_latitudinal",
+    return_value=np.array([[0, -180, -2], [0, 0, 0], [0, 90, 1], [0, 180, 2]]),
 )
 def test_pointing_bins(imap_ena_sim_metakernel):
     # Arrange
     l1b_de = xr.Dataset(
-        {},
+        {
+            "hae_x": ("epoch", [1, 1, 1, 1]),
+            "hae_y": ("epoch", [0, 0, 0, 0]),
+            "hae_z": ("epoch", [0, 0, 0, 0]),
+        },
         coords={
             "epoch": [
                 7.9794907049e17,
