@@ -304,12 +304,12 @@ def combine_calibration_products(
 
     # Calculate improved uncertainty estimates using geometric factor ratios
     # to reduce bias from Poisson uncertainty estimation
-    improved_stat_unc = _calculate_improved_uncertainties(
+    improved_stat_unc_sq = _calculate_improved_uncertainties(
         map_ds, geometric_factors, esa_energies
     )
 
     # Calculate total uncertainty (quadrature sum of statistical and systematic)
-    total_unc_squared = improved_stat_unc**2 + sys_err**2
+    total_unc_squared = improved_stat_unc_sq + sys_err**2
 
     # Perform inverse-variance weighted averaging
     # Handle divide by zero and invalid values
@@ -318,7 +318,7 @@ def combine_calibration_products(
 
         # Calculate weights for statistical uncertainty combination using only
         # statistical uncertainty
-        stat_weights = 1.0 / (improved_stat_unc**2)
+        stat_weights = 1.0 / improved_stat_unc_sq
 
         # Combined statistical uncertainty from inverse-variance formula
         combined_stat_unc = np.sqrt(1.0 / stat_weights.sum(dim="calibration_prod"))
