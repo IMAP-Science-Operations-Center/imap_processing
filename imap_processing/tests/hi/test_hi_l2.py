@@ -1,7 +1,7 @@
 """Test coverage for imap_processing.hi.l2.hi_l2.py"""
 
 from unittest import mock
-from unittest.mock import Mock, patch
+from unittest.mock import patch, Mock
 
 import numpy as np
 import pandas as pd
@@ -10,6 +10,7 @@ import xarray as xr
 
 from imap_processing.cdf.utils import write_cdf
 from imap_processing.ena_maps.ena_maps import RectangularSkyMap
+from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.hi.hi_l2 import (
     _calculate_improved_stat_variance,
     calculate_ena_intensity,
@@ -27,10 +28,9 @@ def empty_rectangular_map_dataset() -> xr.Dataset:
     """Generate an empty rectangular map Dataset with coords only"""
     coords = {
         "epoch": 1,
-        "esa_energy_step": 3,
+        "esa_energy_step": 9,
         "calibration_prod": 2,
-        "longitude": 9,
-        "latitude": 4,
+        "spatial": 12,
     }
     map_ds = xr.Dataset(
         coords={
@@ -53,6 +53,26 @@ def esa_energies_lut_path(hi_l1_test_data_path):
 @pytest.fixture
 def geometric_factors_path(hi_l1_test_data_path):
     return hi_l1_test_data_path / "imap_hi_90sensor-cal-prod_20240101_v001.csv"
+
+
+@pytest.fixture
+def esa_eta_fit_factors_path(imap_tests_path):
+    return (
+        imap_tests_path
+        / "ena_maps/data/imap_hi_90sensor-esa-eta-fit-factors_20240101_v001.csv"
+    )
+
+
+@pytest.fixture
+def anc_path_dict(
+    esa_energies_lut_path, geometric_factors_path, esa_eta_fit_factors_path
+):
+    path_dict = {
+        "cal-prod": geometric_factors_path,
+        "esa-energies": esa_energies_lut_path,
+        "esa-eta-fit-factors": esa_eta_fit_factors_path,
+    }
+    return path_dict
 
 
 @pytest.fixture
@@ -127,8 +147,7 @@ def sample_map_dataset():
 @pytest.mark.external_kernel
 def test_hi_l2(
     hi_l1_test_data_path,
-    esa_energies_lut_path,
-    geometric_factors_path,
+    anc_path_dict,
     imap_ena_sim_metakernel,
 ):
     """Integration type test for hi_l2()"""
@@ -136,8 +155,7 @@ def test_hi_l2(
 
     l2_dataset = hi_l2(
         [pset_path],
-        geometric_factors_path,
-        esa_energies_lut_path,
+        anc_path_dict,
         "h90-ena-h-sf-nsp-full-hae-4deg-3mo",
     )[0]
     assert isinstance(l2_dataset, xr.Dataset)
@@ -150,27 +168,29 @@ def test_hi_l2(
 
 
 @pytest.mark.external_test_data
+@patch(
+    "imap_processing.ena_maps.ena_maps.RectangularSkyMap.build_cdf_dataset",
+    autospec=True,
+)
 @patch("imap_processing.hi.hi_l2.generate_hi_map")
 def test_hi_l2_uses_descriptor_to_setup_map(
     mock_generate_hi_map,
+    mock_map_build_cdf_dataset,
     hi_l1_test_data_path,
 ):
     pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
     descriptor_str = "h90-ena-h-sf-nsp-full-hnu-2deg-3mo"
-    rect_map = Mock(spec=RectangularSkyMap)
+    rect_map = MapDescriptor.from_string(descriptor_str).to_empty_map()
     mock_generate_hi_map.return_value = rect_map
+    mock_map_build_cdf_dataset.return_value = xr.Dataset()
 
-    _ = hi_l2([pset_path], None, None, descriptor_str)[0]
+    _ = hi_l2([pset_path], None, descriptor_str)[0]
 
-    output_map = mock_generate_hi_map.call_args.kwargs["output_map"]
+    assert rect_map.spice_reference_frame == SpiceFrame.IMAP_HNU
+    assert rect_map.spacing_deg == 2.0
 
-    assert output_map.spice_reference_frame == SpiceFrame.IMAP_HNU
-    assert output_map.spacing_deg == 2.0
-    assert mock_generate_hi_map.call_args.kwargs["spin_phase"] == "full"
-    assert not mock_generate_hi_map.call_args.kwargs["cg_corrected"]
-
-    rect_map.build_cdf_dataset.assert_called_with(
-        "hi", "l2", "sf", descriptor_str, sensor="90"
+    mock_map_build_cdf_dataset.assert_called_with(
+        rect_map, "hi", "l2", "sf", descriptor_str, sensor="90"
     )
 
 
@@ -181,6 +201,7 @@ def test_genarate_hi_map(
     mock_esa_energy_lookup,
     mock_calc_ena_intensity,
     hi_l1_test_data_path,
+    anc_path_dict,
     furnish_kernels,
 ):
     """Test coverage for genarate_hi_map()"""
@@ -188,7 +209,7 @@ def test_genarate_hi_map(
     mock_esa_energy_lookup.side_effect = lambda x, y: pd.DataFrame(
         {"nominal_central_energy": y, "bandpass_fwhm": np.ones_like(y)}
     )
-    mock_calc_ena_intensity.side_effect = lambda x, y, z: x
+    mock_calc_ena_intensity.side_effect = lambda x, y: x
 
     kernels = [
         "imap_sclk_0000.tsc",
@@ -199,16 +220,12 @@ def test_genarate_hi_map(
     with furnish_kernels(kernels):
         pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
 
-        rectangular_sky_map = RectangularSkyMap(
-            spacing_deg=6, spice_frame=SpiceFrame.IMAP_GCS
-        )
+        descriptor_str = "h90-ena-h-sf-nsp-full-gcs-6deg-3mo"
+        rect_map = MapDescriptor.from_string(descriptor_str)
         sky_map = generate_hi_map(
             [pset_path],
-            None,
-            None,
-            rectangular_sky_map,
-            cg_corrected=False,
-            spin_phase="full",
+            anc_path_dict,
+            rect_map,
         )
     assert isinstance(sky_map, RectangularSkyMap)
     assert sky_map.spacing_deg == 6
@@ -270,22 +287,10 @@ def test_calculate_ena_signal_rates(empty_rectangular_map_dataset):
     assert np.nanmin(signal_rates_vars["ena_signal_rate_stat_unc"].values) == 1 / 2
 
 
-@patch("imap_processing.hi.utils.CalibrationProductConfig.from_csv")
 def test_calculate_ena_intensity(
-    mock_cal_prod_config, empty_rectangular_map_dataset, esa_energies_lut_path
+    empty_rectangular_map_dataset, anc_path_dict
 ):
     """Test coverage for calculate_ena_intensity"""
-    # Mock the calibration product configuration
-    mock_cal_prod_instance = Mock()
-    mock_xarray = Mock()
-    mock_xarray.reindex_like.return_value = {
-        "geometric_factor": xr.DataArray(
-            np.ones((3, 2)), dims=["esa_energy_step", "calibration_prod"]
-        )
-    }
-    mock_cal_prod_instance.to_xarray.return_value = mock_xarray
-    mock_cal_prod_config.return_value = mock_cal_prod_instance
-
     # Start with an empty (coords only) dataset
     map_ds = empty_rectangular_map_dataset
     # Add some data_vars needed for the ena intensity calculations
@@ -327,9 +332,8 @@ def test_calculate_ena_intensity(
             ),
         }
     )
-
     result_ds = calculate_ena_intensity(
-        map_ds, "dummy_geom_path", esa_energies_lut_path
+        map_ds, anc_path_dict
     )
 
     for var_name in [

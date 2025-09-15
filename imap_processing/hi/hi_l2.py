@@ -10,8 +10,8 @@ import xarray as xr
 from imap_processing.ena_maps.ena_maps import (
     AbstractSkyMap,
     HiPointingSet,
-    RectangularSkyMap,
 )
+from imap_processing.ena_maps.utils.corrections import PowerLawFluxCorrector
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.hi.utils import CalibrationProductConfig
 
@@ -23,8 +23,7 @@ VARS_TO_EXPOSURE_TIME_AVERAGE = ["bg_rates", "bg_rates_unc", "obs_date"]
 
 def hi_l2(
     psets: list[str | Path],
-    geometric_factors_path: str | Path,
-    esa_energies_path: str | Path,
+    l2_ancillary_path_dict: dict[str, Path],
     descriptor: str,
 ) -> list[xr.Dataset]:
     """
@@ -34,10 +33,9 @@ def hi_l2(
     ----------
     psets : list of str or pathlib.Path
         List of input PSETs to make a map from.
-    geometric_factors_path : str or pathlib.Path
-        Where to get the geometric factors from.
-    esa_energies_path : str or pathlib.Path
-        Where to get the energies from.
+    l2_ancillary_path_dict : dict[str, Path]
+        Mapping containing ancillary file descriptors as keys and file paths as
+        values. Require keys are: ["cal-prod", "esa-energies", "esa-eta-fit-factors"].
     descriptor : str
         Output filename descriptor. Contains full configuration for the options
         of how to generate the map.
@@ -47,22 +45,13 @@ def hi_l2(
     l2_dataset : list[xarray.Dataset]
         Level 2 IMAP-Hi dataset ready to be written to a CDF file.
     """
-    cg_corrected = False
-    map_descriptor = MapDescriptor.from_string(descriptor)
-
-    sky_map = generate_hi_map(
-        psets,
-        geometric_factors_path,
-        esa_energies_path,
-        spin_phase=map_descriptor.spin_phase,
-        output_map=map_descriptor.to_empty_map(),
-        cg_corrected=cg_corrected,
+    logger.info(
+        f"Hi L2 processing running for descriptor: {descriptor} with"
+        f"{len(psets)} PSETs input."
     )
 
-    # Get the map dataset with variables/coordinates in the correct shape
-    # TODO get the correct descriptor and frame
-
-    if not isinstance(sky_map, RectangularSkyMap):
+    map_descriptor = MapDescriptor.from_string(descriptor)
+    if "nside" in map_descriptor.resolution_str:
         raise NotImplementedError("HEALPix map output not supported for Hi")
     if not isinstance(map_descriptor.sensor, str):
         raise ValueError(
@@ -70,6 +59,11 @@ def hi_l2(
             "and be either '45' or '90'"
         )
 
+    sky_map = generate_hi_map(
+        psets,
+        l2_ancillary_path_dict,
+        map_descriptor,
+    )
     l2_ds = sky_map.build_cdf_dataset(
         "hi",
         "l2",
@@ -83,11 +77,8 @@ def hi_l2(
 
 def generate_hi_map(
     psets: list[str | Path],
-    geometric_factors_path: str | Path,
-    esa_energies_path: str | Path,
-    output_map: AbstractSkyMap,
-    cg_corrected: bool = False,
-    spin_phase: str = "full",
+    l2_ancillary_path_dict: dict[str, Path],
+    descriptor: MapDescriptor,
 ) -> AbstractSkyMap:
     """
     Project Hi PSET data into a sky map.
@@ -96,32 +87,27 @@ def generate_hi_map(
     ----------
     psets : list of str or pathlib.Path
         List of input PSETs to make a map from.
-    geometric_factors_path : str or pathlib.Path
-        Where to get the geometric factors from.
-    esa_energies_path : str or pathlib.Path
-        Where to get the energies from.
-    output_map : AbstractSkyMap
-        The map object to collect data into. Determines pixel spacing,
-        coordinate system, etc.
-    cg_corrected : bool, Optional
-        Whether to apply Compton-Getting correction to the energies. Defaults to
-        False.
-    spin_phase : str, Optional
-        Apply filtering to PSET data include ram or anti-ram or full spin data.
-        Defaults to "full".
+    l2_ancillary_path_dict : dict[str, Path]
+        Mapping containing ancillary file descriptors as keys and file paths as
+        values. Require keys are: ["cal-prod", "esa-energies", "esa-eta-fit-factors"].
+    descriptor : str
+        Output filename descriptor. Contains full configuration for the options
+        of how to generate the map.
 
     Returns
     -------
     sky_map : AbstractSkyMap
         The sky map with all the PSET data projected into the map.
     """
+    output_map = descriptor.to_empty_map()
+
     # TODO: Implement Compton-Getting correction
-    if cg_corrected:
-        raise NotImplementedError
+    if descriptor.frame_descriptor != "sf":
+        raise NotImplementedError("CG correction not implemented for Hi")
 
     for pset_path in psets:
         logger.info(f"Processing {pset_path}")
-        pset = HiPointingSet(pset_path, spin_phase=spin_phase)
+        pset = HiPointingSet(pset_path, spin_phase=descriptor.spin_phase)
 
         # Background rate and uncertainty are exposure time weighted means in
         # the map.
@@ -142,7 +128,7 @@ def generate_hi_map(
 
     output_map.data_1d.update(calculate_ena_signal_rates(output_map.data_1d))
     output_map.data_1d = calculate_ena_intensity(
-        output_map.data_1d, geometric_factors_path, esa_energies_path
+        output_map.data_1d, l2_ancillary_path_dict
     )
 
     output_map.data_1d["obs_date"].data = output_map.data_1d["obs_date"].data.astype(
@@ -153,7 +139,8 @@ def generate_hi_map(
 
     # Rename and convert coordinate from esa_energy_step energy
     esa_df = esa_energy_df(
-        esa_energies_path, output_map.data_1d["esa_energy_step"].data
+        l2_ancillary_path_dict["esa-energies"],
+        output_map.data_1d["esa_energy_step"].data,
     )
     output_map.data_1d = output_map.data_1d.rename({"esa_energy_step": "energy"})
     output_map.data_1d = output_map.data_1d.assign_coords(
@@ -220,8 +207,7 @@ def calculate_ena_signal_rates(map_ds: xr.Dataset) -> dict[str, xr.DataArray]:
 
 def calculate_ena_intensity(
     map_ds: xr.Dataset,
-    geometric_factors_path: str | Path,
-    esa_energies_path: str | Path,
+    l2_ancillary_path_dict: dict[str, Path],
 ) -> xr.Dataset:
     """
     Calculate the ena intensities.
@@ -230,10 +216,9 @@ def calculate_ena_intensity(
     ----------
     map_ds : xarray.Dataset
         Map dataset that has ena_signal_rate fields calculated.
-    geometric_factors_path : str or pathlib.Path
-        Where to get the geometric factors from.
-    esa_energies_path : str or pathlib.Path
-        Where to get the esa energies, energy deltas, and geometric factors.
+    l2_ancillary_path_dict : dict[str, Path]
+        Mapping containing ancillary file descriptors as keys and file paths as
+        values. Require keys are: ["cal-prod", "esa-energies", "esa-eta-fit-factors"].
 
     Returns
     -------
@@ -242,14 +227,16 @@ def calculate_ena_intensity(
         ena_intensity_sys_err.
     """
     # read calibration product configuration file
-    cal_prod_df = CalibrationProductConfig.from_csv(geometric_factors_path)
+    cal_prod_df = CalibrationProductConfig.from_csv(l2_ancillary_path_dict["cal-prod"])
     # reindex_like removes esa_energy_steps and calibration products not in the
     # map_ds esa_energy_step and calibration_product coordinates
     geometric_factor = cal_prod_df.to_xarray().reindex_like(map_ds)["geometric_factor"]
     geometric_factor = geometric_factor.transpose(
         *[coord for coord in map_ds.coords if coord in geometric_factor.coords]
     )
-    energy_df = esa_energy_df(esa_energies_path, map_ds["esa_energy_step"].data)
+    energy_df = esa_energy_df(
+        l2_ancillary_path_dict["esa-energies"], map_ds["esa_energy_step"].data
+    )
     esa_energy = energy_df.to_xarray()["nominal_central_energy"]
 
     # Convert ENA Signal Rate to Flux
@@ -267,6 +254,16 @@ def calculate_ena_intensity(
         geometric_factor,
         esa_energy,
     )
+
+    # Flux correction
+    corrector = PowerLawFluxCorrector(l2_ancillary_path_dict["esa-eta-fit-factors"])
+    corrected_intensity, corrected_stat_unc = corrector.apply_flux_correction(
+        map_ds["ena_intensity"].values[0],
+        map_ds["ena_intensity_stat_unc"].values[0],
+        esa_energy.data,
+    )
+    map_ds["ena_intensity"].data = corrected_intensity[np.newaxis, ...]
+    map_ds["ena_intensity_stat_unc"].data = corrected_stat_unc[np.newaxis, ...]
 
     return map_ds
 
