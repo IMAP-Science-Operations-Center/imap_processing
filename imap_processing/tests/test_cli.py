@@ -309,7 +309,11 @@ def test_post_processing_returns_empty_list_if_invoked_with_no_data(
                 "imap_hi_l1c_90sensor-pset_20250415_v001.cdf",
                 "imap_hi_l1c_90sensor-pset_20250416_v001.cdf",
             ],
-            [],
+            [
+                "imap_hi_calibration-prod-config_20240101_v001.csv",
+                "imap_hi_90sensor-esa-energies_20240101_v001.csv",
+                "imap_hi_90sensor-esa-eta-fit-factors_20240101_v001.csv",
+            ],
             1,
         ),
     ],

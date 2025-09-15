@@ -809,13 +809,26 @@ class Hi(ProcessInstrument):
             datasets = hi_l1c.hi_l1c(load_cdf(science_paths[0]), anc_paths[0])
         elif self.data_level == "l2":
             science_paths = dependencies.get_file_paths(source="hi", data_type="l1c")
-            # TODO get ancillary paths
-            geometric_factors_path = ""
-            esa_energies_path = ""
+            anc_dependencies = dependencies.get_processing_inputs(data_type="ancillary")
+            if len(anc_dependencies) != 3:
+                raise ValueError(
+                    f"Expected three ancillary dependencies for L2 processing including"
+                    f"cal-prod, esa-energies, and esa-eta-fit-factors."
+                    f"Got {[anc_dep.descriptor for anc_dep in anc_dependencies]}"
+                    "."
+                )
+            # Get individual L2 ancillary dependencies
+            # Strip the "45sensor" or "90sensor" off the ancillary descriptor and
+            # create a mapping from descriptor to path
+            l2_ancillary_path_dict = {
+                "-".join(dep.descriptor.split("-")[1:]): dep.imap_file_paths[
+                    0
+                ].construct_path()
+                for dep in anc_dependencies
+            }
             datasets = hi_l2.hi_l2(
                 science_paths,
-                geometric_factors_path,
-                esa_energies_path,
+                l2_ancillary_path_dict,
                 self.descriptor,
             )
         else:
