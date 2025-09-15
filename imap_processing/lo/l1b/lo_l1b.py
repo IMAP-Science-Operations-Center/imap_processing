@@ -684,7 +684,7 @@ def identify_species(l1b_de: xr.Dataset) -> xr.Dataset:
     return l1b_de
 
 
-def set_bad_times(l1b_de: xr.Dataset) -> xr.Dataset:
+def set_bad_times(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
     """
     Set the bad times for each direct event.
 
@@ -698,9 +698,21 @@ def set_bad_times(l1b_de: xr.Dataset) -> xr.Dataset:
     l1b_de : xarray.Dataset
         The L1B DE dataset with the bad times added.
     """
-    # Initialize all times as not bad for now
-    # TODO: Update to set badtimes based on criteria that
-    #  will be defined in the algorithm document
+    badtimes_df = lo_ancillary.read_ancillary_file(
+        next(str(s) for s in anc_dependencies if "bad-times" in str(s))
+    )
+
+    badtimes_start = met_to_ttj2000ns(badtimes_df["BadTime_start"])
+    badtimes_end = met_to_ttj2000ns(badtimes_df["BadTime_end"])
+
+    badtimes_mask = np.zeroes_like(l1b_de["epoch"], dtype=bool)
+
+    for start, end in zip(badtimes_start, badtimes_end, strict=False):
+        badtimes_mask |= (l1b_de["epoch"] >= start) & (l1b_de["epoch"] <= end)
+
+
+
+
     # 1 = badtime, 0 = not badtime
     l1b_de["badtimes"] = xr.DataArray(
         np.zeros(len(l1b_de["epoch"]), dtype=int),
