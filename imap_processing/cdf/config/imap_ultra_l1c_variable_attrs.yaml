@@ -147,10 +147,10 @@ quality_flags:
   DEPEND_2: energy_bin_geometric_mean
   UNITS: " "
 
-bg_rate:
+background_rates:
   <<: *default_float32
   CATDESC: Background rates. Background dominated by accidentals caused by a combination of UV light and misregistered low energy ENA events.
-  FIELDNAM: bg_rate
+  FIELDNAM: background_rates
   LABLAXIS: background rates
   # TODO: come back to format
   UNITS: counts/second
