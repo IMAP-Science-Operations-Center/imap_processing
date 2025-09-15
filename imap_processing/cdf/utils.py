@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import logging
 import re
 import warnings
@@ -148,6 +149,10 @@ def write_cdf(
     dataset.attrs["Logical_file_id"] = file_path.stem
     # Add the processing version to the dataset attributes
     dataset.attrs["ground_software_version"] = imap_processing._version.__version__
+    dataset.attrs["Generation_date"] = datetime.datetime.now(
+        datetime.timezone.utc
+    ).strftime("%Y%m%d")
+    dataset.attrs["Generated_by"] = "IMAP Science Data Center"
 
     # Convert the xarray object to a CDF
     if "l1" in data_level:
