@@ -27,6 +27,7 @@ default_uint16_attrs: &default_uint16
 
 energy_dependent_attrs: &energy_dependent
   <<: *default_float32
+  DEPEND_0: epoch
   DEPEND_1: energy_bin_geometric_mean
   DEPEND_2: pixel_index
 
@@ -65,15 +66,15 @@ dead_time_ratio:
 
 sensitivity:
   <<: *energy_dependent
-  CATDESC: Calibration/sensitivity factor.
+  CATDESC: Averaged instrument sensitive area.
   FIELDNAM: sensitivity
   LABLAXIS: sensitivity
   # TODO: come back to format
-  UNITS: counts/second
+  UNITS: cm^2
 
 geometric_function:
   <<: *energy_dependent
-  CATDESC: The effective sensitive area as a function of theta and phi in instrument frame (energy independent).
+  CATDESC: Averaged aperture area as seen by the backstop.
   FIELDNAM: geometric_function
   LABLAXIS: Geometric Factor
   UNITS: cm^2
@@ -81,7 +82,7 @@ geometric_function:
 
 efficiency:
   <<: *energy_dependent
-  CATDESC: Estimated event efficiency for particles path through the instrument.
+  CATDESC: Efficiency of the instrument in converting ENAs to valid events.
   FIELDNAM: efficiency
   LABLAXIS: Efficiency
   UNITS: " "
@@ -146,10 +147,10 @@ quality_flags:
   DEPEND_2: energy_bin_geometric_mean
   UNITS: " "
 
-background_rates:
+bg_rate:
   <<: *default_float32
   CATDESC: Background rates. Background dominated by accidentals caused by a combination of UV light and misregistered low energy ENA events.
-  FIELDNAM: background_rates
+  FIELDNAM: bg_rate
   LABLAXIS: background rates
   # TODO: come back to format
   UNITS: counts/second
