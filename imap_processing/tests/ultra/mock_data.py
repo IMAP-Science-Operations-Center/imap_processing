@@ -338,7 +338,7 @@ def mock_l1c_pset_product_healpix(
                 ],
                 counts,
             ),
-            "bg_rate": (
+            "background_rates": (
                 [
                     CoordNames.TIME.value,
                     CoordNames.ENERGY_ULTRA_L1C.value,

@@ -145,7 +145,7 @@ def create_dataset(  # noqa: PLR0912
             )
         elif key in {
             "counts",
-            "bg_rate",
+            "background_rates",
             "exposure_factor",
             "helio_exposure_factor",
             "sensitivity",

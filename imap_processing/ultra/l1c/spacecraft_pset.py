@@ -183,7 +183,7 @@ def calculate_spacecraft_pset(
     pset_dict["latitude"] = latitude[np.newaxis, ...]
     pset_dict["longitude"] = longitude[np.newaxis, ...]
     pset_dict["energy_bin_geometric_mean"] = energy_bin_geometric_means
-    pset_dict["bg_rate"] = background_rates[np.newaxis, ...]
+    pset_dict["background_rates"] = background_rates[np.newaxis, ...]
     pset_dict["exposure_factor"] = exposure_pointing[np.newaxis, ...]
     pset_dict["pixel_index"] = healpix
     pset_dict["energy_bin_delta"] = np.diff(intervals, axis=1).squeeze()[
