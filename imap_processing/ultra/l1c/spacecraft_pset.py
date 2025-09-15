@@ -191,16 +191,16 @@ def calculate_spacecraft_pset(
     ]
     pset_dict["quality_flags"] = spacecraft_pset_quality_flags[np.newaxis, ...]
 
-    pset_dict["sensitivity"] = sensitivity[np.newaxis, ...]
-    pset_dict["efficiency"] = efficiencies[np.newaxis, ...]
-    pset_dict["geometric_function"] = geometric_function[np.newaxis, ...]
+    pset_dict["sensitivity"] = sensitivity
+    pset_dict["efficiency"] = efficiencies
+    pset_dict["geometric_function"] = geometric_function
     pset_dict["dead_time_ratio"] = deadtime_ratios
     pset_dict["spin_phase_step"] = np.arange(len(deadtime_ratios))
 
     # Convert FWHM to gaussian uncertainty by dividing by 2.355
     # See algorithm documentation (section 3.5.7, third bullet point) for more details
-    pset_dict["scatter_theta"] = scattering_theta[np.newaxis, ...] / 2.355
-    pset_dict["scatter_phi"] = scattering_phi[np.newaxis, ...] / 2.355
+    pset_dict["scatter_theta"] = scattering_theta / 2.355
+    pset_dict["scatter_phi"] = scattering_phi / 2.355
 
     pset_dict["scatter_threshold"] = scattering_thresholds
 

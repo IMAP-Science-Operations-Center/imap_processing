@@ -148,6 +148,13 @@ def create_dataset(  # noqa: PLR0912
             "background_rates",
             "exposure_factor",
             "helio_exposure_factor",
+        }:
+            dataset[key] = xr.DataArray(
+                data,
+                dims=["epoch", "energy_bin_geometric_mean", "pixel_index"],
+                attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
+            )
+        elif key in {
             "sensitivity",
             "efficiency",
             "geometric_function",
@@ -156,7 +163,7 @@ def create_dataset(  # noqa: PLR0912
         }:
             dataset[key] = xr.DataArray(
                 data,
-                dims=["epoch", "energy_bin_geometric_mean", "pixel_index"],
+                dims=["energy_bin_geometric_mean", "pixel_index"],
                 attrs=cdf_manager.get_variable_attributes(key, check_schema=False),
             )
         elif key in {

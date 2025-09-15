@@ -27,7 +27,6 @@ default_uint16_attrs: &default_uint16
 
 energy_dependent_attrs: &energy_dependent
   <<: *default_float32
-  DEPEND_0: epoch
   DEPEND_1: energy_bin_geometric_mean
   DEPEND_2: pixel_index
 
@@ -91,6 +90,7 @@ efficiency:
 
 exposure_factor:
   <<: *energy_dependent
+  DEPEND_0: epoch
   CATDESC: Exposure time with the deadtime correction applied for a pointing.
   FIELDNAM: exposure_factor
   LABLAXIS: exposure factor
