@@ -710,9 +710,6 @@ def set_bad_times(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
     for start, end in zip(badtimes_start, badtimes_end, strict=False):
         badtimes_mask |= (l1b_de["epoch"] >= start) & (l1b_de["epoch"] <= end)
 
-
-
-
     # 1 = badtime, 0 = not badtime
     l1b_de["badtimes"] = xr.DataArray(
         np.zeros(len(l1b_de["epoch"]), dtype=int),
