@@ -237,7 +237,7 @@ def calculate_ena_intensity(
 
     Returns
     -------
-    map_ds : xarray.DataSet
+    map_ds : xarray.Dataset
         Map dataset with new variables: ena_intensity, ena_intensity_stat_unc,
         ena_intensity_sys_err.
     """
@@ -294,7 +294,7 @@ def combine_calibration_products(
 
     Returns
     -------
-    map_ds : xarray.DataSet
+    map_ds : xarray.Dataset
         Map dataset with updated variables: ena_intensity, ena_intensity_stat_unc,
         ena_intensity_sys_err now combined across calibration products at each
         energy level.
