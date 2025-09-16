@@ -8,7 +8,12 @@ import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.cdf.utils import write_cdf
-from imap_processing.glows.l1b.glows_l1b import glows_l1b, process_de, process_histogram
+from imap_processing.glows.l1b.glows_l1b import (
+    glows_l1b,
+    glows_l1b_de,
+    process_de,
+    process_histogram,
+)
 from imap_processing.glows.l1b.glows_l1b_data import (
     AncillaryParameters,
     DirectEventL1B,
@@ -399,14 +404,7 @@ def test_glows_l1b(
     for key in expected_hist_data:
         assert key in hist_output
 
-    de_output = glows_l1b(
-        de_dataset,
-        mock_ancillary_exclusions.excluded_regions,
-        mock_ancillary_exclusions.uv_sources,
-        mock_ancillary_exclusions.suspected_transients,
-        mock_ancillary_exclusions.exclusions_by_instr_team,
-        mock_pipeline_settings,
-    )
+    de_output = glows_l1b_de(de_dataset)
 
     # From table 15 in the algorithm document
     expected_de_data = [
@@ -451,14 +449,7 @@ def test_generate_histogram_dataset(
 def test_generate_de_dataset(
     de_dataset, mock_ancillary_exclusions, mock_pipeline_settings
 ):
-    l1b_data = glows_l1b(
-        de_dataset,
-        mock_ancillary_exclusions.excluded_regions,
-        mock_ancillary_exclusions.uv_sources,
-        mock_ancillary_exclusions.suspected_transients,
-        mock_ancillary_exclusions.exclusions_by_instr_team,
-        mock_pipeline_settings,
-    )
+    l1b_data = glows_l1b_de(de_dataset)
 
     output_path = write_cdf(l1b_data)
 
