@@ -28,12 +28,12 @@ def glows_l1b(
     pipeline_settings_dataset: xr.Dataset,
 ) -> xr.Dataset:
     """
-    Will process the GLOWS L1B data and format the output datasets.
+    Will process the histogram GLOWS L1B data and format the output datasets.
 
     Parameters
     ----------
     input_dataset : xr.Dataset
-        Dataset of input values.
+        Dataset of input values for L1A histogram data.
     excluded_regions : xr.Dataset
         Dataset containing excluded sky regions with ecliptic coordinates. This
         is the output from GlowsAncillaryCombiner.
@@ -77,29 +77,37 @@ def glows_l1b(
     ) as f:
         ancillary_parameters = AncillaryParameters(json.loads(f.read()))
 
-    logical_source = (
-        input_dataset.attrs["Logical_source"][0]
-        if isinstance(input_dataset.attrs["Logical_source"], list)
-        else input_dataset.attrs["Logical_source"]
+    output_dataarrays = process_histogram(
+        input_dataset, ancillary_exclusions, ancillary_parameters, pipeline_settings
+    )
+    output_dataset = create_l1b_hist_output(
+        output_dataarrays, input_dataset["epoch"], input_dataset["bins"], cdf_attrs
     )
 
-    if "hist" in logical_source:
-        output_dataarrays = process_histogram(
-            input_dataset, ancillary_exclusions, ancillary_parameters, pipeline_settings
-        )
-        output_dataset = create_l1b_hist_output(
-            output_dataarrays, input_dataset["epoch"], input_dataset["bins"], cdf_attrs
-        )
+    return output_dataset
 
-    elif "de" in logical_source:
-        output_dataset = create_l1b_de_output(input_dataset, cdf_attrs)
 
-    else:
-        raise ValueError(
-            f"Logical_source {input_dataset.attrs['Logical_source']} for input file "
-            f"does not match histogram "
-            "('hist') or direct event ('de')."
-        )
+def glows_l1b_de(
+    input_dataset: xr.Dataset,
+) -> xr.Dataset:
+    """
+    Process GLOWS L1B direct events data.
+
+    Parameters
+    ----------
+    input_dataset : xr.Dataset
+        The input dataset to process.
+
+    Returns
+    -------
+    xr.Dataset
+        The processed L1B direct events dataset.
+    """
+    cdf_attrs = ImapCdfAttributes()
+    cdf_attrs.add_instrument_global_attrs("glows")
+    cdf_attrs.add_instrument_variable_attrs("glows", "l1b")
+
+    output_dataset = create_l1b_de_output(input_dataset, cdf_attrs)
 
     return output_dataset
 
@@ -247,7 +255,7 @@ def process_histogram(
         tuple
             Tuple of processed L1B data arrays from HistogramL1B.output_data().
         """
-        return HistogramL1B(  # type: ignore[call-arg]
+        return HistogramL1B(
             *args, ancillary_exclusions, ancillary_parameters, pipeline_settings
         ).output_data()
 

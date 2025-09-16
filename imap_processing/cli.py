@@ -51,7 +51,7 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 #   call cdf.utils.write_cdf
 from imap_processing.codice import codice_l1a, codice_l1b, codice_l2
 from imap_processing.glows.l1a.glows_l1a import glows_l1a
-from imap_processing.glows.l1b.glows_l1b import glows_l1b
+from imap_processing.glows.l1b.glows_l1b import glows_l1b, glows_l1b_de
 from imap_processing.glows.l2.glows_l2 import glows_l2
 from imap_processing.hi import hi_l1a, hi_l1b, hi_l1c, hi_l2
 from imap_processing.hit.l1a.hit_l1a import hit_l1a
@@ -682,55 +682,60 @@ class Glows(ProcessInstrument):
                     f"{science_files}."
                 )
             input_dataset = load_cdf(science_files[0])
+            if "hist" in self.descriptor:
+                # Create file lists for each ancillary type
+                excluded_regions_files = dependencies.get_processing_inputs(
+                    descriptor="map-of-excluded-regions"
+                )[0]
+                uv_sources_files = dependencies.get_processing_inputs(
+                    descriptor="map-of-uv-sources"
+                )[0]
+                suspected_transients_files = dependencies.get_processing_inputs(
+                    descriptor="suspected-transients"
+                )[0]
+                exclusions_by_instr_team_files = dependencies.get_processing_inputs(
+                    descriptor="exclusions-by-instr-team"
+                )[0]
+                pipeline_settings = dependencies.get_processing_inputs(
+                    descriptor="pipeline-settings"
+                )[0]
 
-            # Create file lists for each ancillary type
-            excluded_regions_files = dependencies.get_processing_inputs(
-                descriptor="map-of-excluded-regions"
-            )[0]
-            uv_sources_files = dependencies.get_processing_inputs(
-                descriptor="map-of-uv-sources"
-            )[0]
-            suspected_transients_files = dependencies.get_processing_inputs(
-                descriptor="suspected-transients"
-            )[0]
-            exclusions_by_instr_team_files = dependencies.get_processing_inputs(
-                descriptor="exclusions-by-instr-team"
-            )[0]
-            pipeline_settings = dependencies.get_processing_inputs(
-                descriptor="pipeline-settings"
-            )[0]
-
-            # Use end date buffer for ancillary data
-            current_day = np.datetime64(
-                f"{self.start_date[:4]}-{self.start_date[4:6]}-{self.start_date[6:]}"
-            )
-            day_buffer = current_day + np.timedelta64(3, "D")
-
-            # Create combiners for each ancillary dataset
-            excluded_regions_combiner = GlowsAncillaryCombiner(
-                excluded_regions_files, day_buffer
-            )
-            uv_sources_combiner = GlowsAncillaryCombiner(uv_sources_files, day_buffer)
-            suspected_transients_combiner = GlowsAncillaryCombiner(
-                suspected_transients_files, day_buffer
-            )
-            exclusions_by_instr_team_combiner = GlowsAncillaryCombiner(
-                exclusions_by_instr_team_files, day_buffer
-            )
-            pipeline_settings_combiner = GlowsAncillaryCombiner(
-                pipeline_settings, day_buffer
-            )
-
-            datasets = [
-                glows_l1b(
-                    input_dataset,
-                    excluded_regions_combiner.combined_dataset,
-                    uv_sources_combiner.combined_dataset,
-                    suspected_transients_combiner.combined_dataset,
-                    exclusions_by_instr_team_combiner.combined_dataset,
-                    pipeline_settings_combiner.combined_dataset,
+                # Use end date buffer for ancillary data
+                current_day = np.datetime64(
+                    f"{self.start_date[:4]}-{self.start_date[4:6]}-{self.start_date[6:]}"
                 )
-            ]
+                day_buffer = current_day + np.timedelta64(3, "D")
+
+                # Create combiners for each ancillary dataset
+                excluded_regions_combiner = GlowsAncillaryCombiner(
+                    excluded_regions_files, day_buffer
+                )
+                uv_sources_combiner = GlowsAncillaryCombiner(
+                    uv_sources_files, day_buffer
+                )
+                suspected_transients_combiner = GlowsAncillaryCombiner(
+                    suspected_transients_files, day_buffer
+                )
+                exclusions_by_instr_team_combiner = GlowsAncillaryCombiner(
+                    exclusions_by_instr_team_files, day_buffer
+                )
+                pipeline_settings_combiner = GlowsAncillaryCombiner(
+                    pipeline_settings, day_buffer
+                )
+
+                datasets = [
+                    glows_l1b(
+                        input_dataset,
+                        excluded_regions_combiner.combined_dataset,
+                        uv_sources_combiner.combined_dataset,
+                        suspected_transients_combiner.combined_dataset,
+                        exclusions_by_instr_team_combiner.combined_dataset,
+                        pipeline_settings_combiner.combined_dataset,
+                    )
+                ]
+            else:
+                # Direct events
+                datasets = [glows_l1b_de(input_dataset)]
 
         if self.data_level == "l2":
             science_files = dependencies.get_file_paths(source="glows")
