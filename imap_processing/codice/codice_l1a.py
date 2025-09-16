@@ -325,11 +325,27 @@ class CoDICEL1aPipeline:
         # different depending on the data product). In any case, iterate over
         # the num_counters dimension to isolate the data for each counter so
         # each counter's data can be placed in a separate CDF data variable.
+        # For Lo SW species, all_data has shape (9, 16, 128, 1) -> (epochs,
+        # num_counters, num_energy_steps, num_spin_sectors)
+        if self.config["dataset_name"] in [
+            "imap_codice_l1a_lo-sw-species",
+            "imap_codice_l1a_lo-nsw-species",
+        ]:
+            num_counters = all_data.shape[1]
+        else:
+            num_counters = all_data.shape[-1]
+
         for counter, variable_name in zip(
-            range(all_data.shape[-1]), self.config["variable_names"], strict=False
+            range(num_counters), self.config["variable_names"], strict=False
         ):
             # Extract the counter data
-            counter_data = all_data[..., counter]
+            if self.config["dataset_name"] in [
+                "imap_codice_l1a_lo-sw-species",
+                "imap_codice_l1a_lo-nsw-species",
+            ]:
+                counter_data = all_data[:, counter, :, :]
+            else:
+                counter_data = all_data[..., counter]
 
             # Get the CDF attributes
             descriptor = self.config["dataset_name"].split("imap_codice_l1a_")[-1]
@@ -708,10 +724,19 @@ class CoDICEL1aPipeline:
 
         # Reshape the data based on how it is written to the data array of
         # the packet data. The number of counters is the last dimension / axis.
-        reshape_dims = (
-            *self.config["dims"].values(),
-            self.config["num_counters"],
-        )
+        if self.config["dataset_name"] in [
+            "imap_codice_l1a_lo-sw-species",
+            "imap_codice_l1a_lo-nsw-species",
+        ]:
+            reshape_dims = (
+                self.config["num_counters"],
+                *self.config["dims"].values(),
+            )
+        else:
+            reshape_dims = (
+                *self.config["dims"].values(),
+                self.config["num_counters"],
+            )
         for packet_data in self.raw_data:
             reshaped_packet_data = np.array(packet_data, dtype=np.uint32).reshape(
                 reshape_dims

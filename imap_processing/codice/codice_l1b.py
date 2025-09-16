@@ -66,12 +66,17 @@ def convert_to_rates(
         # time data array to match the data variable shape
         dims = [1] * dataset[variable_name].data.ndim
         dims[1] = 128
-        acq_times = dataset.acquisition_time_per_step.data.reshape(dims)
+        acq_times = dataset.acquisition_time_per_step.data.reshape(dims)  # (128)
+        # have an array of shape (128,)
+        # fill first 127 with default value of 12. Then fill last with 11.
+        # Then use that for species.
+        n_sector = np.full_like(12, (128))
+        print(n_sector)
 
         # Now perform the calculation
         rates_data = dataset[variable_name].data / (
             acq_times
-            * 1e-6  # Converting from microseconds to seconds
+            * 1e-3  # Converting from milliseconds to seconds
             * constants.L1B_DATA_PRODUCT_CONFIGURATIONS[descriptor]["num_spin_sectors"]
         )
     elif descriptor in [

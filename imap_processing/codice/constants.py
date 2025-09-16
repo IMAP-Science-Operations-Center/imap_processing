@@ -214,17 +214,17 @@ HI_COUNTERS_AGGREGATED_ACTIVE_VARIABLES = {
     "spo": True,
     "reserved1": False,
     "mst": True,
-    "reserved2": False,
-    "reserved3": False,
+    "ssdo": True,
+    "stssd": True,
     "reserved4": False,
     "reserved5": False,
-    "low_tof_cutoff": False,
+    "low_tof_cutoff": True,
     "reserved6": False,
     "reserved7": False,
     "asic1_flag_invalid": True,
     "asic2_flag_invalid": True,
-    "asic1_channel_invalid": False,
-    "asic_2_channel_invalid": False,
+    "asic1_channel_invalid": True,
+    "asic2_channel_invalid": True,
 }
 HI_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
     name
@@ -961,7 +961,15 @@ ESA_SWEEP_TABLE_ID_LOOKUP = {
 # use. Currently, LO Stepping table 0 is used for every plan_id/plan_step
 # combination, but may change in the future. These are defined in the "Lo
 # Stepping" tab of the "*-SCI-LUT-*.xml" spreadsheet that largely defines CoDICE
-# processing.
+# processing. Eg.
+#   (plan_id, plan_step) -> id of acquisition time to look for
+#   (0, 0) -> 0
+# At this time, plan_id should be zero. Table Number' in lo_stepping tab is plan_id.
+
+# In the LUT table, go to 'Plan' tab
+# Then look at 'Plan' column. That's plan ID. Then 'Lo Stepping' column in that tab
+# should match 'Table Number' in lo_stepping tab which is plan_id in above logic.
+
 LO_STEPPING_TABLE_ID_LOOKUP = {
     (0, 0): 0,
     (0, 1): 0,

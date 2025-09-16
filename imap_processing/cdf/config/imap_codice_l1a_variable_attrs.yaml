@@ -413,16 +413,16 @@ hi-counters-aggregated-mst:
     FIELDNAM: Multi Start
     LABLAXIS: "events"
 
-hi-counters-aggregated-reserved2:
+hi-counters-aggregated-ssdo:
     <<: *events
-    CATDESC: Reserved 2
-    FIELDNAM: Reserved 2
+    CATDESC: Singles - Start
+    FIELDNAM: Singles - Start
     LABLAXIS: "events"
 
-hi-counters-aggregated-reserved3:
+hi-counters-aggregated-stssd:
     <<: *events
-    CATDESC: Reserved 3
-    FIELDNAM: Reserved 3
+    CATDESC: Singles - Stop
+    FIELDNAM: Singles - Stop
     LABLAXIS: "events"
 
 hi-counters-aggregated-reserved4:
@@ -1148,11 +1148,11 @@ lo-sw-angular-hplus:
     CATDESC: Sunward H+ Species
     FIELDNAM: SW - H+
     DEPEND_1: inst_az
-    DEPEND_2: spin_sector
-    DEPEND_3: esa_step
+    DEPEND_2: esa_step
+    DEPEND_3: spin_sector
     LABL_PTR_1: inst_az_label
-    LABL_PTR_2: spin_sector_label
-    LABL_PTR_3: esa_step_label
+    LABL_PTR_2: esa_step_label
+    LABL_PTR_3: spin_sector_label
 
 lo-sw-angular-heplusplus:
     <<: *counters
@@ -1268,152 +1268,151 @@ lo-sw-species-hplus:
     <<: *counters
     CATDESC: H+ Sunward Species
     FIELDNAM: SW - H+
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 lo-sw-species-heplusplus:
     <<: *counters
     CATDESC: He++ Sunward Species
     FIELDNAM: SW - He++
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 lo-sw-species-cplus4:
     <<: *counters
     CATDESC: C+4 Sunward Species
     FIELDNAM: SW - C+4
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 lo-sw-species-cplus5:
     <<: *counters
     CATDESC: C+5 Sunward Species
     FIELDNAM: SW - C+5
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 lo-sw-species-cplus6:
     <<: *counters
     CATDESC: C+6 Sunward Species
     FIELDNAM: SW - C+6
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 lo-sw-species-oplus5:
     <<: *counters
     CATDESC: O+5 Sunward Species
     FIELDNAM: SW - O+5
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 lo-sw-species-oplus6:
     <<: *counters
     CATDESC: O+6 Sunward Species
     FIELDNAM: SW - O+6
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 lo-sw-species-oplus7:
     <<: *counters
     CATDESC: O+7 Sunward Species
     FIELDNAM: SW - O+7
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 lo-sw-species-oplus8:
     <<: *counters
     CATDESC: O+8 Sunward Species
     FIELDNAM: SW - O+8
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 lo-sw-species-ne:
     <<: *counters
     CATDESC: Ne Sunward Species
     FIELDNAM: SW - Ne
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 lo-sw-species-mg:
     <<: *counters
     CATDESC: Mg Sunward Species
     FIELDNAM: SW - Mg
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 lo-sw-species-si:
     <<: *counters
     CATDESC: Si Sunward Species
     FIELDNAM: SW - Si
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
-
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 lo-sw-species-fe_loq:
     <<: *counters
     CATDESC: Fe lowQ Sunward Species
     FIELDNAM: SW - Fe lowQ
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 lo-sw-species-fe_hiq:
     <<: *counters
     CATDESC: Fe highQ Sunward Species
     FIELDNAM: SW - Fe highQ
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 lo-sw-species-heplus:
     <<: *counters
     CATDESC: He+ Pickup Ion Sunward Species
     FIELDNAM: SW - He+ (PUI)
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 lo-sw-species-cnoplus:
     <<: *counters
     CATDESC: CNO+ Pickup Ion Sunward Species
     FIELDNAM: SW - CNO+ (PUI)
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 # lo-nsw-species
 lo-nsw-species-hplus:
     <<: *counters
     CATDESC: H+ Non-sunward Species
     FIELDNAM: NSW - H+
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
     LABL_PTR_1: spin_sector_label
     LABL_PTR_2: esa_step_label
 
@@ -1421,8 +1420,8 @@ lo-nsw-species-heplusplus:
     <<: *counters
     CATDESC: He++ Non-sunward Species
     FIELDNAM: NSW - He++
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
     LABL_PTR_1: spin_sector_label
     LABL_PTR_2: esa_step_label
 
@@ -1430,8 +1429,8 @@ lo-nsw-species-c:
     <<: *counters
     CATDESC: C Non-sunward Species
     FIELDNAM: NSW - C
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
     LABL_PTR_1: spin_sector_label
     LABL_PTR_2: esa_step_label
 
@@ -1439,8 +1438,8 @@ lo-nsw-species-o:
     <<: *counters
     CATDESC: O Non-sunward Species
     FIELDNAM: NSW - O
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
     LABL_PTR_1: spin_sector_label
     LABL_PTR_2: esa_step_label
 
@@ -1448,8 +1447,8 @@ lo-nsw-species-ne_si_mg:
     <<: *counters
     CATDESC: Ne-Si-Mg Non-sunward Species
     FIELDNAM: NSW - Ne_Si_Mg
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
     LABL_PTR_1: spin_sector_label
     LABL_PTR_2: esa_step_label
 
@@ -1457,8 +1456,8 @@ lo-nsw-species-fe:
     <<: *counters
     CATDESC: Fe Non-sunward Species
     FIELDNAM: NSW - Fe
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
     LABL_PTR_1: spin_sector_label
     LABL_PTR_2: esa_step_label
 
@@ -1466,8 +1465,8 @@ lo-nsw-species-heplus:
     <<: *counters
     CATDESC: He+ Non-sunward Species
     FIELDNAM: NSW - He+
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
     LABL_PTR_1: spin_sector_label
     LABL_PTR_2: esa_step_label
 
@@ -1475,8 +1474,8 @@ lo-nsw-species-cnoplus:
     <<: *counters
     CATDESC: CNO+ Non-sunward Species
     FIELDNAM: NSW - CNO+
-    DEPEND_1: spin_sector
-    DEPEND_2: esa_step
+    DEPEND_1: esa_step
+    DEPEND_2: spin_sector
     LABL_PTR_1: spin_sector_label
     LABL_PTR_2: esa_step_label
 
