@@ -9,7 +9,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.mag import imap_mag_sdc_configuration_v001 as configuration
 from imap_processing.mag.constants import ModeFlags, VecSec
 from imap_processing.mag.l1c.interpolation_methods import InterpolationFunction
-from imap_processing.spice.time import et_to_ttj2000ns
+from imap_processing.spice.time import et_to_ttj2000ns, str_to_et
 
 logger = logging.getLogger(__name__)
 
@@ -268,7 +268,7 @@ def process_mag_l1c(
     normal_mode_dataset: xr.Dataset,
     burst_mode_dataset: xr.Dataset,
     interpolation_function: InterpolationFunction,
-    day_to_process: np.datetime64 = None,
+    day_to_process: np.datetime64 | None = None,
 ) -> np.ndarray:
     """
     Create MAG L1C data from L1B datasets.
@@ -317,17 +317,23 @@ def process_mag_l1c(
     output_dataset["sample_interpolated"] = xr.DataArray(
         np.zeros(len(normal_mode_dataset))
     )
+    day_start_ns = None
+    day_end_ns = None
 
     if day_to_process is not None:
-        day_start = day_to_process.astype(np.datetime64["s"]) - np.timedelta64(15, "m")
+        day_start = day_to_process.astype("datetime64[s]") - np.timedelta64(15, "m")
 
         # get the end of the day plus 15 minutes
-        day_end = day_to_process.astype(np.datetime64["s"]) + np.timedelta64(1, "D") + np.timedelta64(15, "m")
+        day_end = (
+            day_to_process.astype("datetime64[s]")
+            + np.timedelta64(1, "D")
+            + np.timedelta64(15, "m")
+        )
 
         day_start_ns = et_to_ttj2000ns(str_to_et(str(day_start)))
         day_end_ns = et_to_ttj2000ns(str_to_et(str(day_end)))
 
-    gaps = find_all_gaps(norm_epoch, normal_vecsec_dict)
+    gaps = find_all_gaps(norm_epoch, normal_vecsec_dict, day_start_ns, day_end_ns)
 
     new_timeline = generate_timeline(norm_epoch, gaps)
     norm_filled = fill_normal_data(normal_mode_dataset, new_timeline)
@@ -339,7 +345,9 @@ def process_mag_l1c(
 
 
 def fill_normal_data(
-    normal_dataset: xr.Dataset, new_timeline: np.ndarray, day_to_process: np.datetime64 = None
+    normal_dataset: xr.Dataset,
+    new_timeline: np.ndarray,
+    day_to_process: np.datetime64 | None = None,
 ) -> np.ndarray:
     """
     Fill the new timeline with the normal mode data.
@@ -519,7 +527,9 @@ def generate_timeline(epoch_data: np.ndarray, gaps: np.ndarray) -> np.ndarray:
     last_index = 0
     for gap in gaps:
         epoch_start_index = np.searchsorted(epoch_data, gap[0], side="left")
-        full_timeline = np.concatenate((full_timeline, epoch_data[last_index: epoch_start_index]))
+        full_timeline = np.concatenate(
+            (full_timeline, epoch_data[last_index:epoch_start_index])
+        )
         generated_timestamps = generate_missing_timestamps(gap)
         if generated_timestamps.size == 0:
             continue
@@ -530,11 +540,11 @@ def generate_timeline(epoch_data: np.ndarray, gaps: np.ndarray) -> np.ndarray:
         generated_timestamps = generated_timestamps[mask]
 
         if generated_timestamps.size == 0:
-            print(f"All generated timestamps already exist in timeline")
+            print("All generated timestamps already exist in timeline")
             continue
 
         full_timeline = np.concatenate((full_timeline, generated_timestamps))
-        last_index = np.searchsorted(epoch_data, gap[1], side="left")
+        last_index = int(np.searchsorted(epoch_data, gap[1], side="left"))
 
     full_timeline = np.concatenate((full_timeline, epoch_data[last_index:]))
 
@@ -542,8 +552,10 @@ def generate_timeline(epoch_data: np.ndarray, gaps: np.ndarray) -> np.ndarray:
 
 
 def find_all_gaps(
-    epoch_data: np.ndarray, vecsec_dict: dict | None = None, start_of_day_ns = None,
-        end_of_day_ns = None
+    epoch_data: np.ndarray,
+    vecsec_dict: dict | None = None,
+    start_of_day_ns: float | None = None,
+    end_of_day_ns: float | None = None,
 ) -> np.ndarray:
     """
     Find all the gaps in the epoch data.
@@ -563,6 +575,12 @@ def find_all_gaps(
         A dictionary of the form {start: vecsec, start: vecsec} where start is the time
         in nanoseconds and vecsec is the number of vectors per second. This will be
         used to find the gaps. If not provided, a 1/2 second gap is assumed.
+    start_of_day_ns : float, optional
+        The start of the day in nanoseconds since TTJ2000. If provided, a gap will be
+        added from this time to the first epoch if they don't match.
+    end_of_day_ns : float, optional
+        The end of the day in nanoseconds since TTJ2000. If provided, a gap will be
+        added from the last epoch to this time if they don't match.
 
     Returns
     -------
@@ -586,13 +604,9 @@ def find_all_gaps(
             (gaps, np.array([[start_of_day_ns, epoch_data[0], vecsec_dict[0]]]))
         )
 
-    # Probably we just need to do the 24 hours for gap filling and retrieve extra data from the burst mode to fill
-    # if burst mode is missing then we need to go back to the previous day's file
-    # be careful updating timeline as we don't want to change indicies around.
     for start_time in reversed(sorted(vecsec_dict.keys())):
         # Find the start index that is equal to or immediately after start_time
         start_index = np.searchsorted(epoch_data, start_time, side="left")
-        eq = np.where(epoch_data == start_time)
         gaps = np.concatenate(
             (
                 find_gaps(
@@ -602,7 +616,6 @@ def find_all_gaps(
             )
         )
         end_index = start_index
-
 
     if end_of_day_ns is not None and epoch_data[-1] < end_of_day_ns:
         gaps = np.concatenate(

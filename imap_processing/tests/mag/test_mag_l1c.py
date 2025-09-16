@@ -3,7 +3,7 @@ import pytest
 import xarray as xr
 
 from imap_processing.mag import imap_mag_sdc_configuration_v001 as configuration
-from imap_processing.mag.constants import VecSec, ModeFlags
+from imap_processing.mag.constants import ModeFlags, VecSec
 from imap_processing.mag.l1c.interpolation_methods import (
     InterpolationFunction,
     cic_filter,
@@ -202,7 +202,7 @@ def test_interpolate_gaps(norm_dataset, mag_l1b_dataset):
 
 
 def test_mag_l1c(norm_dataset, burst_dataset):
-    l1c = mag_l1c(burst_dataset, np.datetime64('2025-01-01'), norm_dataset)
+    l1c = mag_l1c(burst_dataset, np.datetime64("2025-01-01"), norm_dataset)
     assert l1c["vector_magnitude"].shape == (len(l1c["epoch"].data),)
     assert l1c["vector_magnitude"].data[0] == np.linalg.norm(l1c["vectors"].data[0][:4])
     assert l1c["vector_magnitude"].data[-1] == np.linalg.norm(
@@ -293,23 +293,20 @@ def test_find_all_gaps():
     # Test Case 5: Gap at the beginning of timeline
     epoch_start_gap = np.array([2, 2.5, 3, 3.5, 4]) * 1e9
     vectors_per_second_start = vectors_per_second_from_string("0:2")
-    output_start_gap = find_all_gaps(epoch_start_gap, vectors_per_second_start, start_of_day_ns=0, end_of_day_ns=4*1e9)
+    output_start_gap = find_all_gaps(
+        epoch_start_gap,
+        vectors_per_second_start,
+        start_of_day_ns=0,
+        end_of_day_ns=4 * 1e9,
+    )
     expected_start_gap = np.array([[0 * 1e9, 2 * 1e9, 2]])
     assert np.array_equal(output_start_gap, expected_start_gap)
-
-    # Test Case 6: Gap at the end of timeline
-    epoch_end_gap = np.array([0, 0.5, 1, 1.5, 2]) * 1e9
-    vectors_per_second_end = vectors_per_second_from_string("0:2")
-    # Expect timeline to continue to 4s based on rate
-    output_end_gap = find_all_gaps(epoch_end_gap, vectors_per_second_end)
-    expected_end_gap = np.array([[2 * 1e9, 2.5 * 1e9, 2]])
-    # Note: This test may need adjustment based on actual find_all_gaps behavior
 
     # Test Case 7: Very small gap (single missing sample)
     epoch_small_gap = np.array([0, 0.5, 1.5, 2, 2.5]) * 1e9  # Missing 1.0s
     vectors_per_second_small = vectors_per_second_from_string("0:2")
     output_small_gap = find_all_gaps(epoch_small_gap, vectors_per_second_small)
-    expected_small_gap = np.array([[.5 * 1e9, 1.5 * 1e9, 2]])
+    expected_small_gap = np.array([[0.5 * 1e9, 1.5 * 1e9, 2]])
     assert np.array_equal(output_small_gap, expected_small_gap)
 
     # Test Case 8: Default behavior (None vecsec_dict) - should assume 2 vec/s
@@ -322,7 +319,7 @@ def test_find_all_gaps():
     epoch_multi_gaps = np.array([0, 0.5, 2, 2.5, 4, 4.5]) * 1e9
     vectors_per_second_multi = vectors_per_second_from_string("0:2")
     output_multi = find_all_gaps(epoch_multi_gaps, vectors_per_second_multi)
-    expected_multi = np.array([[.5 * 1e9, 2 * 1e9, 2], [2.5 * 1e9, 4 * 1e9, 2]])
+    expected_multi = np.array([[0.5 * 1e9, 2 * 1e9, 2], [2.5 * 1e9, 4 * 1e9, 2]])
     assert np.array_equal(output_multi, expected_multi)
 
     # Test Case 10: Complex rate transition scenario
@@ -346,13 +343,10 @@ def test_find_all_gaps():
     # Test Case 12: Start and end of day gaps
     epoch_partial_day = np.array([2, 2.5, 3, 3.5, 4]) * 1e9
     start_of_day_ns = 0 * 1e9  # Day starts at 0
-    end_of_day_ns = 6 * 1e9    # Day ends at 6s
+    end_of_day_ns = 6 * 1e9  # Day ends at 6s
     vectors_per_second_day = vectors_per_second_from_string("0:2")
     output_day_gaps = find_all_gaps(
-        epoch_partial_day, 
-        vectors_per_second_day, 
-        start_of_day_ns, 
-        end_of_day_ns
+        epoch_partial_day, vectors_per_second_day, start_of_day_ns, end_of_day_ns
     )
     # Should find gaps at beginning (0-2s) and end (4-6s)
     expected_day_gaps = np.array([[0 * 1e9, 2 * 1e9, 2], [4 * 1e9, 6 * 1e9, 2]])
@@ -361,10 +355,7 @@ def test_find_all_gaps():
     # Test Case 13: Timeline covers full day (no start/end gaps)
     epoch_full_day = np.array([0, 0.5, 1, 1.5, 2, 2.5, 3]) * 1e9
     output_full_day = find_all_gaps(
-        epoch_full_day,
-        vectors_per_second_from_string("0:2"),
-        0 * 1e9,
-        3 * 1e9
+        epoch_full_day, vectors_per_second_from_string("0:2"), 0 * 1e9, 3 * 1e9
     )
     expected_full_day = np.zeros((0, 3))  # No gaps
     assert np.array_equal(output_full_day, expected_full_day)
@@ -372,7 +363,12 @@ def test_find_all_gaps():
     # Test Case 14: Single timestamp timeline
     epoch_single = np.array([1.5]) * 1e9
     vectors_per_second_single = vectors_per_second_from_string("0:2")
-    output_single = find_all_gaps(epoch_single, vectors_per_second_single, start_of_day_ns=0, end_of_day_ns=2.5*1e9)
+    output_single = find_all_gaps(
+        epoch_single,
+        vectors_per_second_single,
+        start_of_day_ns=0,
+        end_of_day_ns=2.5 * 1e9,
+    )
     # Should find gap from previous expected timestamp to next
     expected_single = np.array([[0, 1.5 * 1e9, 2], [1.5 * 1e9, 2.5 * 1e9, 2]])
     assert np.array_equal(output_single, expected_single)
@@ -388,7 +384,7 @@ def test_find_all_gaps():
 
     # Test Case 18: Non-uniform timestamps within tolerance
     # Test the 7.5% tolerance mentioned in find_gaps function
-    epoch_tolerance = np.array([0, 0.46, 0.93, 1.39, 1.86]) * 1e9  # ~6% deviation from 0.5s
+    epoch_tolerance = np.array([0, 0.46, 0.93, 1.39, 1.86]) * 1e9  # ~6% deviation
     vectors_per_second_tolerance = vectors_per_second_from_string("0:2")
     output_tolerance = find_all_gaps(epoch_tolerance, vectors_per_second_tolerance)
     expected_tolerance = np.zeros((0, 3))  # Should not detect gaps due to tolerance
@@ -398,9 +394,15 @@ def test_find_all_gaps():
     epoch_no_gaps_multi_rate = generate_test_epoch(
         4, [VecSec.TWO_VECS_PER_S, VecSec.FOUR_VECS_PER_S], 0, []
     )
-    epoch_no_gaps_multi_rate = np.array([0.0, 0.5 * 1e9, 1 * 1e9, 1.5 * 1e9, 2 * 1e9, 2.25 * 1e9, 2.5 * 1e9, 2.75 * 1e9])
-    vectors_per_second_multi_no_gaps = vectors_per_second_from_string("0:2,2000000000:4")
-    output_no_gaps_multi = find_all_gaps(epoch_no_gaps_multi_rate, vectors_per_second_multi_no_gaps)
+    epoch_no_gaps_multi_rate = np.array(
+        [0.0, 0.5 * 1e9, 1 * 1e9, 1.5 * 1e9, 2 * 1e9, 2.25 * 1e9, 2.5 * 1e9, 2.75 * 1e9]
+    )
+    vectors_per_second_multi_no_gaps = vectors_per_second_from_string(
+        "0:2,2000000000:4"
+    )
+    output_no_gaps_multi = find_all_gaps(
+        epoch_no_gaps_multi_rate, vectors_per_second_multi_no_gaps
+    )
     expected_no_gaps_multi = np.zeros((0, 3))
     assert np.array_equal(output_no_gaps_multi, expected_no_gaps_multi)
 
@@ -462,17 +464,17 @@ def test_generate_timeline():
     epoch_beginning_gap = np.array([2, 2.5, 3, 3.5, 4]) * 1e9
     # Gap from 0s to 2s (beginning of day gap)
     gaps_beginning = np.array([[0, 2 * 1e9, 2]])
-    
+
     output_beginning = generate_timeline(epoch_beginning_gap, gaps_beginning)
     expected_beginning = np.array([0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]) * 1e9
     assert np.array_equal(output_beginning, expected_beginning)
 
-    # Test Case: Gap at end of day  
+    # Test Case: Gap at end of day
     # Timeline ends at 3s but day should end at 5s
     epoch_end_gap = np.array([0, 0.5, 1, 1.5, 2, 2.5, 3]) * 1e9
     # Gap from 3s to 5s (end of day gap)
     gaps_end = np.array([[3 * 1e9, 5 * 1e9, 2]])
-    
+
     output_end = generate_timeline(epoch_end_gap, gaps_end)
     # Expected: 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
     expected_end = np.array([0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5]) * 1e9
@@ -482,7 +484,7 @@ def test_generate_timeline():
     epoch_middle_only = np.array([2, 2.5, 3]) * 1e9
     # Gaps at beginning (0-2s) and end (3-5s)
     gaps_both_ends = np.array([[0, 2 * 1e9, 2], [3 * 1e9, 5 * 1e9, 2]])
-    
+
     output_both = generate_timeline(epoch_middle_only, gaps_both_ends)
     # Expected: 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
     expected_both = np.array([0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5]) * 1e9
@@ -491,132 +493,152 @@ def test_generate_timeline():
     # Test Case: Adjacent gaps that cause sorting issues (reproduces validation bug)
     epoch_edge = np.array([0, 0.5, 1, 2, 3, 3.5, 4]) * 1e9
     gaps = find_all_gaps(epoch_edge, vectors_per_second_from_string("0:2"))
-    gaps_edge = np.array([[1 * 1e9, 2 * 1e9, 2], [2 * 1e9, 3 * 1e9, 2]])  # Adjacent gaps
-    
+    gaps_edge = np.array([[1 * 1e9, 2 * 1e9, 2], [2 * 1e9, 3 * 1e9, 2]])  # Adjacent
+
     # This test case reproduces the sorting bug from the validation test
     # The function should work but currently fails due to sorting issue
     output_edge = generate_timeline(epoch_edge, gaps_edge)
-    
+
     # Expected result: properly sorted timeline with gap fills
     expected_edge = np.array([0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]) * 1e9
-    
+    assert np.array_equal(output_edge, expected_edge)
+
 
 def test_gap_detection_timeline_generation_workflow():
-    """
-    Test the complete workflow of gap detection, timeline generation, and normal data filling.
-    
-    This tests the core workflow from mag_l1c.py lines 330-333:
-    1. find_all_gaps(norm_epoch, normal_vecsec_dict)
-    2. generate_timeline(norm_epoch, gaps)
-    3. fill_normal_data(normal_mode_dataset, new_timeline)
-    """
     # Create a test dataset with gaps
     # Timeline: 0, 0.5, 1, 1.5, [gap 2-4], 4, 4.5, 5, [gap 5.5-6.5], 6.5, 7
     original_epoch = np.array([0, 0.5, 1, 1.5, 4, 4.5, 5, 6.5, 7]) * 1e9
-    
+
     # Create a test normal mode dataset
     dataset = mag_l1a_dataset_generator(len(original_epoch))
     dataset["epoch"] = xr.DataArray(original_epoch, name="epoch", dims=["epoch"])
-    
+
     # Set vectors to identifiable values for testing
-    vectors = np.array([[i, i+1, i+2, i+3] for i in range(len(original_epoch))])
+    vectors = np.array([[i, i + 1, i + 2, i + 3] for i in range(len(original_epoch))])
     dataset["vectors"].data = vectors
-    
+
     # Set compression flags
     compression_flags = np.array([[0, 0] for _ in range(len(original_epoch))])
     dataset["compression_flags"].data = compression_flags
-    
+
     # Set vectors_per_second attribute (constant 2 vec/s)
     dataset.attrs["vectors_per_second"] = "0:2"
-    
+
     # Step 1: Find gaps in the timeline
-    normal_vecsec_dict = vectors_per_second_from_string(dataset.attrs["vectors_per_second"])
+    normal_vecsec_dict = vectors_per_second_from_string(
+        dataset.attrs["vectors_per_second"]
+    )
     gaps = find_all_gaps(original_epoch, normal_vecsec_dict)
-    
+
     # Verify gaps were found correctly
-    expected_gaps = np.array([
-        [1.5 * 1e9, 4 * 1e9, 2],    # Gap from 1.5s to 4s at 2 vec/s
-        [5 * 1e9, 6.5 * 1e9, 2]     # Gap from 5s to 6.5s at 2 vec/s
-    ])
-    assert np.array_equal(gaps, expected_gaps), f"Expected gaps {expected_gaps}, got {gaps}"
-    
+    expected_gaps = np.array(
+        [
+            [1.5 * 1e9, 4 * 1e9, 2],  # Gap from 1.5s to 4s at 2 vec/s
+            [5 * 1e9, 6.5 * 1e9, 2],  # Gap from 5s to 6.5s at 2 vec/s
+        ]
+    )
+    assert np.array_equal(gaps, expected_gaps)
     # Step 2: Generate new timeline with gaps filled
     new_timeline = generate_timeline(original_epoch, gaps)
-    
+
     # Verify new timeline includes original data plus gap-filling timestamps
-    expected_timeline = np.array([
-        0, 0.5, 1, 1.5,                    # Original data before first gap
-        2, 2.5, 3, 3.5, 4,                 # Gap fill: 1.5-4s at 0.5s intervals
-        4.5, 5,                            # Original data between gaps
-        5.5, 6, 6.5,                       # Gap fill: 5-6.5s at 0.5s intervals
-        7                                   # Original data after last gap
-    ]) * 1e9
-    
-    assert np.array_equal(new_timeline, expected_timeline), \
+    expected_timeline = (
+        np.array(
+            [
+                0,
+                0.5,
+                1,
+                1.5,  # Original data before first gap
+                2,
+                2.5,
+                3,
+                3.5,
+                4,  # Gap fill: 1.5-4s at 0.5s intervals
+                4.5,
+                5,  # Original data between gaps
+                5.5,
+                6,
+                6.5,  # Gap fill: 5-6.5s at 0.5s intervals
+                7,  # Original data after last gap
+            ]
+        )
+        * 1e9
+    )
+
+    assert np.array_equal(new_timeline, expected_timeline), (
         f"Expected timeline {expected_timeline}, got {new_timeline}"
-    
+    )
+
     # Step 3: Fill the new timeline with normal mode data
     norm_filled = fill_normal_data(dataset, new_timeline)
     print(norm_filled)
-    # Verify output shape: (n_timestamps, 8) where 8 = [epoch, x, y, z, range, flag, comp1, comp2]
+    # Verify output shape: (n_timestamps, 8) where 8 = [epoch, x, y, z, range, flag,
+    # comp1, comp2]
     expected_shape = (len(new_timeline), 8)
-    assert norm_filled.shape == expected_shape, \
+    assert norm_filled.shape == expected_shape, (
         f"Expected shape {expected_shape}, got {norm_filled.shape}"
-    
+    )
+
     # Verify timestamps match new_timeline
-    assert np.array_equal(norm_filled[:, 0], new_timeline), \
+    assert np.array_equal(norm_filled[:, 0], new_timeline), (
         "Timeline column should match new_timeline"
-    
+    )
+
     # Verify original data points are correctly filled
-    original_indices = [0, 1, 2, 3, 8, 9, 10, 13, 14]  # Indices of original data in new timeline
+    original_indices = [0, 1, 2, 3, 8, 9, 10, 13, 14]  # Indices of original data in
+    # new timeline
     for i, orig_idx in enumerate(original_indices):
         # Check vector data (columns 1-4)
         expected_vector = vectors[i]
         actual_vector = norm_filled[orig_idx, 1:5]
-        assert np.array_equal(actual_vector, expected_vector), \
-            f"Original data point {i} should have vector {expected_vector}, got {actual_vector}"
-        
+        assert np.array_equal(actual_vector, expected_vector)
+
         # Check flag is set to NORM (0)
-        assert norm_filled[orig_idx, 5] == ModeFlags.NORM.value, \
-            f"Original data point {i} should have NORM flag"
-        
+        assert norm_filled[orig_idx, 5] == ModeFlags.NORM.value
+
         # Check compression flags (columns 6-7)
         expected_compression = compression_flags[i]
         actual_compression = norm_filled[orig_idx, 6:8]
-        assert np.array_equal(actual_compression, expected_compression), \
-            f"Original data point {i} should have compression {expected_compression}, got {actual_compression}"
-    
+        assert np.array_equal(actual_compression, expected_compression)
+
     # Verify gap timestamps are marked as missing
     gap_indices = [4, 5, 6, 7, 11, 12]  # Indices of gap-fill timestamps in new timeline
     for gap_idx in gap_indices:
         # Check vectors are zero (no data filled yet)
-        assert np.all(norm_filled[gap_idx, 1:5] == 0), \
+        assert np.all(norm_filled[gap_idx, 1:5] == 0), (
             f"Gap timestamp {gap_idx} should have zero vectors"
-        
+        )
+
         # Check flag is set to MISSING (-1)
-        assert norm_filled[gap_idx, 5] == ModeFlags.MISSING.value, \
+        assert norm_filled[gap_idx, 5] == ModeFlags.MISSING.value, (
             f"Gap timestamp {gap_idx} should have MISSING flag"
-        
+        )
+
         # Check compression flags are zero
-        assert np.all(norm_filled[gap_idx, 6:8] == 0), \
+        assert np.all(norm_filled[gap_idx, 6:8] == 0), (
             f"Gap timestamp {gap_idx} should have zero compression flags"
-    
+        )
+
     # Test with multiple vector rates
     # Create dataset with rate transition at t=3s
     dataset_multi_rate = dataset.copy(deep=True)
     dataset_multi_rate.attrs["vectors_per_second"] = "0:2,3000000000:4"
-    
+
     # Find gaps with multiple rates
-    multi_rate_vecsec_dict = vectors_per_second_from_string(dataset_multi_rate.attrs["vectors_per_second"])
+    multi_rate_vecsec_dict = vectors_per_second_from_string(
+        dataset_multi_rate.attrs["vectors_per_second"]
+    )
     gaps_multi_rate = find_all_gaps(original_epoch, multi_rate_vecsec_dict)
-    
+
     # Generate timeline and fill data
     new_timeline_multi = generate_timeline(original_epoch, gaps_multi_rate)
     norm_filled_multi = fill_normal_data(dataset_multi_rate, new_timeline_multi)
-    
+
     # Verify the workflow completes successfully with multiple rates
     assert norm_filled_multi.shape[1] == 8, "Multi-rate output should have 8 columns"
-    assert len(norm_filled_multi) >= len(original_epoch), "Multi-rate output should include all original data"
+    assert len(norm_filled_multi) >= len(original_epoch), (
+        "Multi-rate output should include all original data"
+    )
 
 
 def test_fill_normal_data(mag_l1b_dataset):
@@ -718,7 +740,7 @@ def test_cic_filter():
     assert len(vectors_filtered_8hz) == expected_filtered_length_8hz
     assert len(timestamps_filtered_8hz) == expected_filtered_length_8hz
 
-    # Test Case 4: Test rate validation (should raise error if input_rate <= output_rate)
+    # Test Case 4: Test rate validation
     with pytest.raises(
         ValueError, match="Burst mode input rate.*should never be less than"
     ):

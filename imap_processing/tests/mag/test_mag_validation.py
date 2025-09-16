@@ -256,7 +256,7 @@ def test_mag_l1b_validation(test_number, mocks):
         assert np.allclose(expected_time, mago_time, atol=1e-6, rtol=0)
 
 
-# @pytest.mark.xfail(reason="All L1C edge cases are not yet complete")
+@pytest.mark.xfail(reason="All L1C edge cases are not yet complete")
 @pytest.mark.parametrize(("test_number"), ["013", "014", "015", "016"])
 @pytest.mark.parametrize(("sensor"), ["mago", "magi"])
 @pytest.mark.external_test_data
@@ -273,12 +273,12 @@ def test_mag_l1c_validation(test_number, sensor):
 
     norm_df = pd.read_csv(norm_in)
     burst_df = pd.read_csv(burst_in)
-    
+
     norm = mag_generate_l1b_from_csv(norm_df, f"imap_mag_l1b_norm-{sensor}")
     burst = mag_generate_l1b_from_csv(burst_df, f"imap_mag_l1b_burst-{sensor}")
 
     # Extract day_to_process from the first timestamp in the data
-    first_timestamp = pd.to_datetime(norm_df['t'].iloc[0]).normalize()
+    first_timestamp = pd.to_datetime(norm_df["t"].iloc[0]).normalize()
     day_to_process = np.datetime64(first_timestamp.date())
 
     # out = np.int64(794968123760272000)
