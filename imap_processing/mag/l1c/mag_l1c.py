@@ -370,7 +370,6 @@ def fill_normal_data(
     filled_timeline[:, 0] = new_timeline
     # Flags, will also indicate any missed timestamps
     filled_timeline[:, 5] = ModeFlags.MISSING.value
-    # TODO: add timestamps to fill out beginning or end of day if needed
     for index, timestamp in enumerate(normal_dataset["epoch"].data):
         timeline_index = np.searchsorted(new_timeline, timestamp)
         filled_timeline[timeline_index, 1:5] = normal_dataset["vectors"].data[index]
@@ -454,10 +453,6 @@ def interpolate_gaps(
         gap_timeline = filled_norm_timeline[
             (filled_norm_timeline > gap[0]) & (filled_norm_timeline < gap[1])
         ]
-        logger.info(
-            f"difference between gap start and burst start: "
-            f"{gap_timeline[0] - burst_epochs[burst_start]}"
-        )
 
         short = (gap_timeline >= burst_epochs[burst_start]) & (
             gap_timeline <= burst_epochs[burst_gap_end]
@@ -513,43 +508,42 @@ def generate_timeline(epoch_data: np.ndarray, gaps: np.ndarray) -> np.ndarray:
         The existing timeline data, in the shape (n,).
     gaps : numpy.ndarray
         An array of gaps to fill, with shape (n, 2) where n is the number of gaps.
-        The gap is specified as (start, end) where start and end both exist in the
-        timeline already.
+        The gap is specified as (start, end).
 
     Returns
     -------
     numpy.ndarray
         The new timeline, filled with the existing data and the generated gaps.
     """
-    full_timeline: np.ndarray = np.zeros(0)
-
-    # When we have our gaps, generate the full timeline
-    last_gap = 0
+    full_timeline: np.ndarray = np.array([])
+    last_index = 0
     for gap in gaps:
-        # todo: add a special case where epoch data doesn't match gap - these are for the
-        # gaps at the beginning or end of the day
-        gap_start_index = np.where(epoch_data == gap[0])[0]
-        gap_end_index = np.where(epoch_data == gap[1])[0]
-        if gap_start_index.size != 1 or gap_end_index.size != 1:
-            raise ValueError("Gap start or end not found in input timeline")
+        epoch_start_index = np.searchsorted(epoch_data, gap[0], side="left")
+        full_timeline = np.concatenate((full_timeline, epoch_data[last_index: epoch_start_index]))
+        generated_timestamps = generate_missing_timestamps(gap)
+        if generated_timestamps.size == 0:
+            continue
 
-        # Does full_timeline need to include 15 minute buffer if that is missing?
-        full_timeline = np.concatenate(
-            (
-                full_timeline,
-                epoch_data[last_gap : gap_start_index[0]],
-                generate_missing_timestamps(gap),
-            )
-        )
-        last_gap = gap_end_index[0]
+        # Remove any generated timestamps that are already in the timeline
+        # Use np.isin to check for exact matches
+        mask = ~np.isin(generated_timestamps, full_timeline)
+        generated_timestamps = generated_timestamps[mask]
 
-    full_timeline = np.concatenate((full_timeline, epoch_data[last_gap:]))
+        if generated_timestamps.size == 0:
+            print(f"All generated timestamps already exist in timeline")
+            continue
+
+        full_timeline = np.concatenate((full_timeline, generated_timestamps))
+        last_index = np.searchsorted(epoch_data, gap[1], side="left")
+
+    full_timeline = np.concatenate((full_timeline, epoch_data[last_index:]))
 
     return full_timeline
 
 
 def find_all_gaps(
-    epoch_data: np.ndarray, vecsec_dict: dict | None = None
+    epoch_data: np.ndarray, vecsec_dict: dict | None = None, start_of_day_ns = None,
+        end_of_day_ns = None
 ) -> np.ndarray:
     """
     Find all the gaps in the epoch data.
@@ -557,6 +551,9 @@ def find_all_gaps(
     If vectors_per_second_attr is provided, it will be used to find the gaps. Otherwise,
     it will assume a nominal 1/2 second gap. A gap is defined as missing data from the
     expected sequence as defined by vectors_per_second_attr.
+
+    If start_of_day_ns and end_of_day_ns are provided, gaps at the beginning and end of
+    the day will be added if the epoch_data does not cover the full day.
 
     Parameters
     ----------
@@ -575,22 +572,27 @@ def find_all_gaps(
         timeline.
     """
     gaps: np.ndarray = np.zeros((0, 3))
-    if vecsec_dict is None:
-        # TODO: when we go back to the previous file, also retrieve expected
-        #  vectors per second
-        # If no vecsec is provided, assume 2 vectors per second
-        vecsec_dict = {0: VecSec.TWO_VECS_PER_S.value}
+
+    # TODO: when we go back to the previous file, also retrieve expected
+    #  vectors per second
+
+    vecsec_dict = {0: VecSec.TWO_VECS_PER_S.value} | (vecsec_dict or {})
 
     end_index = epoch_data.shape[0]
+
+    if start_of_day_ns is not None and epoch_data[0] > start_of_day_ns:
+        # Add a gap from the start of the day to the first timestamp
+        gaps = np.concatenate(
+            (gaps, np.array([[start_of_day_ns, epoch_data[0], vecsec_dict[0]]]))
+        )
+
     # Probably we just need to do the 24 hours for gap filling and retrieve extra data from the burst mode to fill
-    # TODO: call find_gaps on the start of the day minutes concat with timeline and end of day minutes
     # if burst mode is missing then we need to go back to the previous day's file
     # be careful updating timeline as we don't want to change indicies around.
     for start_time in reversed(sorted(vecsec_dict.keys())):
-
-        print(f"Closest time in epoch to start time: {epoch_data[(np.abs(start_time - epoch_data)).argmin()]}")
-        print(f"Difference in seconds: {(np.abs(start_time - epoch_data)).min() / 1e9}")
-        start_index = np.where(start_time == epoch_data)[0][0]
+        # Find the start index that is equal to or immediately after start_time
+        start_index = np.searchsorted(epoch_data, start_time, side="left")
+        eq = np.where(epoch_data == start_time)
         gaps = np.concatenate(
             (
                 find_gaps(
@@ -600,6 +602,12 @@ def find_all_gaps(
             )
         )
         end_index = start_index
+
+
+    if end_of_day_ns is not None and epoch_data[-1] < end_of_day_ns:
+        gaps = np.concatenate(
+            (gaps, np.array([[epoch_data[-1], end_of_day_ns, vecsec_dict[start_time]]]))
+        )
 
     return gaps
 
@@ -628,11 +636,9 @@ def find_gaps(timeline_data: np.ndarray, vectors_per_second: int) -> np.ndarray:
     # Expected difference between timestamps in nanoseconds.
     expected_gap = 1 / vectors_per_second * 1e9
 
-    # TODO: timestamps can vary by a few ms. Per Alastair, this can be around 7.5% of
-    #  cadence without counting as a "gap".
     diffs = abs(np.diff(timeline_data))
-    # 3.5e7 == 7.5% of 0.5s in nanoseconds, a common gap. In the future, this number
-    # will be calculated from the expected gap.
+
+    # Gap can be up to 7.5% larger than expected vectors per second due to clock drift
     gap_index = np.asarray(diffs - expected_gap > expected_gap * 0.075).nonzero()[0]
     output: np.ndarray = np.zeros((len(gap_index), 3))
 
@@ -643,7 +649,6 @@ def find_gaps(timeline_data: np.ndarray, vectors_per_second: int) -> np.ndarray:
             vectors_per_second,
         ]
 
-    # TODO: How should I handle/find gaps at the end?
     return output
 
 
@@ -658,7 +663,8 @@ def generate_missing_timestamps(gap: np.ndarray) -> np.ndarray:
     ----------
     gap : numpy.ndarray
         Array of timestamps of shape (2,) containing n gaps with start_gap and
-        end_gap. Start_gap and end_gap both correspond to points in timeline_data.
+        end_gap. Start_gap and end_gap both correspond to points in timeline_data and
+        are included in the output timespan.
 
     Returns
     -------
@@ -666,9 +672,7 @@ def generate_missing_timestamps(gap: np.ndarray) -> np.ndarray:
         Completed timeline.
     """
     # Generated timestamps should always be 0.5 seconds apart
-    # TODO: is this in the configuration file?
     difference_ns = 0.5 * 1e9
-
     output: np.ndarray = np.arange(gap[0], gap[1], difference_ns)
     return output
 
@@ -692,8 +696,6 @@ def vectors_per_second_from_string(vecsec_string: str) -> dict:
     """
     vecsec_dict = {}
     vecsec_segments = vecsec_string.split(",")
-    print(vecsec_string)
-    print(vecsec_segments)
     for vecsec_segment in vecsec_segments:
         if vecsec_segment:
             start_time, vecsec = vecsec_segment.split(":")

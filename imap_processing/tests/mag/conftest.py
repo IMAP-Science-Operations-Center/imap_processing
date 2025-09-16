@@ -138,6 +138,7 @@ def mag_generate_l1b_from_csv(df, logical_source):
     epoch = [np.datetime64(t) - np.datetime64(TTJ2000_EPOCH) for t in df["t"]]
     epoch_ns = [(e / np.timedelta64(1, "ns")).astype(np.int64) for e in epoch]
     dataset.coords["epoch"] = xr.DataArray(epoch_ns, name="epoch", dims=["epoch"])
+    print(f"Read out epoch values from CSV: {epoch_ns[0]/1e9}s to {epoch_ns[-1]/1e9}s")
 
     dataset.attrs["Logical_source"] = logical_source
     dataset.attrs["vectors_per_second"] = f"{epoch_ns[0]}:2"
