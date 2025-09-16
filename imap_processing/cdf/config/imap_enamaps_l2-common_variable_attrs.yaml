@@ -212,9 +212,8 @@ geometric_function:
   CATDESC: Averaged aperture area as seen by the backstop.
   FIELDNAM: Geometric Function
   UNITS: cm^2 sr
-  DEPEND_0: epoch
-  VAR_TYPE: data
-  LABLAXIS: Geometric Factor
+  VAR_TYPE: support_data
+  LABLAXIS: Geometric Function
   DISPLAY_TYPE: no_plot
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:GeometricFactor,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
@@ -234,8 +233,7 @@ positional_uncert_theta:
   CATDESC: Averaged position uncertainty along the theta dimension of the instrument.
   FIELDNAM: Positional Uncertainty Theta
   UNITS: degrees
-  DEPEND_0: epoch
-  VAR_TYPE: data
+  VAR_TYPE: support_data
   LABLAXIS: Position Uncertainty Theta
   DISPLAY_TYPE: no_plot
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:ArrivalDirection,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
@@ -245,8 +243,7 @@ positional_uncert_phi:
   CATDESC: Averaged position uncertainty along the phi dimension of the instrument.
   FIELDNAM: Positional Uncertainty Phi
   UNITS: degrees
-  DEPEND_0: epoch
-  VAR_TYPE: data
+  VAR_TYPE: support_data
   LABLAXIS: Position Uncertainty Phi
   DISPLAY_TYPE: no_plot
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:ArrivalDirection,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical

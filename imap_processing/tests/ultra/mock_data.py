@@ -318,6 +318,7 @@ def mock_l1c_pset_product_healpix(
     # add an epoch dimension
     counts = np.expand_dims(counts, axis=0)
     sensitivity = np.ones_like(counts)
+    geometric_function = sensitivity[0]  # pointing independent
 
     # Determine the epoch, which is TT time in nanoseconds since J2000 epoch
     tdb_et = str_to_et(timestr)
@@ -357,6 +358,13 @@ def mock_l1c_pset_product_healpix(
                     CoordNames.HEALPIX_INDEX.value,
                 ],
                 sensitivity,
+            ),
+            "geometric_function": (
+                [
+                    CoordNames.ENERGY_ULTRA_L1C.value,
+                    CoordNames.HEALPIX_INDEX.value,
+                ],
+                geometric_function,
             ),
             CoordNames.AZIMUTH_L1C.value: (
                 [CoordNames.HEALPIX_INDEX.value],

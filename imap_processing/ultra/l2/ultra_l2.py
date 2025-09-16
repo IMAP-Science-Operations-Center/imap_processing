@@ -64,8 +64,10 @@ REQUIRED_L1C_VARIABLES_PULL = [
 # they may be missing, in which case we will raise a warning and continue.
 # All psets must be consistent and either have these variables or not.
 EXPECTED_L1C_VARIABLES_PULL = [
-    "geometric_function",
     "efficiency",
+]
+EXPECTED_L1C_POINTING_INDEPENDENT_VARIABLES_PULL = [
+    "geometric_function",
     "scatter_theta",
     "scatter_phi",
 ]
@@ -75,10 +77,7 @@ VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE = [
     "sensitivity",
     "background_rates",
     "obs_date",
-    "geometric_function",
     "efficiency",
-    "scatter_theta",
-    "scatter_phi",
 ]
 
 # These variables are dropped after they are used to
@@ -148,7 +147,7 @@ def get_variable_attributes_optional_energy_dependence(
     return metadata
 
 
-def generate_ultra_healpix_skymap(
+def generate_ultra_healpix_skymap(  # noqa: PLR0912
     ultra_l1c_psets: list[str | xr.Dataset],
     output_map_structure: (
         ena_maps.RectangularSkyMap | ena_maps.HealpixSkyMap
@@ -252,6 +251,7 @@ def generate_ultra_healpix_skymap(
     # Add expected but not required variables to the pull projection list
     # Log a warning if they are missing from any PSET but continue processing.
     expected_present_vars = []
+    expected_present_vars_pointing_ind = []
     first_pset = (
         load_cdf(ultra_l1c_psets[0])
         if isinstance(ultra_l1c_psets[0], (str, Path))
@@ -266,12 +266,21 @@ def generate_ultra_healpix_skymap(
         else:
             expected_present_vars.append(var)
 
+    for var in EXPECTED_L1C_POINTING_INDEPENDENT_VARIABLES_PULL:
+        if var not in first_pset.variables:
+            logger.warning(
+                f"Expected variable {var} not found in the first L1C PSET. "
+                "This variable will not be projected to the map."
+            )
+        else:
+            expected_present_vars_pointing_ind.append(var)
+
     output_map_structure.values_to_pull_project = list(
         set(output_map_structure.values_to_pull_project + expected_present_vars)
     )
 
     all_pset_epochs = []
-    for ultra_l1c_pset in ultra_l1c_psets:
+    for i, ultra_l1c_pset in enumerate(ultra_l1c_psets):
         pointing_set = ena_maps.UltraPointingSet(ultra_l1c_pset)
         all_pset_epochs.append(pointing_set.epoch)
         logger.info(
@@ -343,7 +352,15 @@ def generate_ultra_healpix_skymap(
             index_match_method=ena_maps.IndexMatchMethod.PULL,
             pset_valid_mask=good_pixel_mask,
         )
-
+        if i == 0:
+            # Pull pointing independent variables if they exist in the PSETs
+            # Use first pset
+            skymap.project_pset_values_to_map(
+                pointing_set=pointing_set,
+                value_keys=expected_present_vars_pointing_ind,
+                index_match_method=ena_maps.IndexMatchMethod.PULL,
+                pset_valid_mask=good_pixel_mask,
+            )
     # Subsequent processing for weighted quantities at SkyMap level
     skymap.data_1d[existing_vars_to_weight] /= skymap.data_1d[
         "pointing_set_exposure_times_solid_angle"
@@ -635,7 +652,6 @@ def ultra_l2(  # noqa: PLR0912
         energy_delta_plus,
         dims=(CoordNames.ENERGY_L2.value,),
     )
-
     # Add variable specific attributes to the map's data_vars and coords
     for variable in map_dataset.data_vars:
         # Skip the subdivision depth variables, as these will only be
@@ -643,14 +659,25 @@ def ultra_l2(  # noqa: PLR0912
         if "subdivision_depth" in variable:
             continue
 
+        # Support variables do not have epoch as the first dimension
+        # skip schema check for support variables or choords
+        skip_schema_check = not (
+            "epoch" not in map_dataset[variable].dims  # Support data
+            or variable
+            in [
+                "longitude",
+                "latitude",
+                "longitude_delta",
+                "latitude_delta",
+            ]  # Coordinate vars
+        )
         # The longitude and latitude variables will be present only in Healpix tiled
         # map, and, as support_data, should not have schema validation
         map_dataset[variable].attrs.update(
             get_variable_attributes_optional_energy_dependence(
                 cdf_attrs=cdf_attrs,
                 variable_array=map_dataset[variable],
-                check_schema=variable
-                not in ["longitude", "latitude", "longitude_delta", "latitude_delta"],
+                check_schema=skip_schema_check,
             )
         )
     for coord_variable in map_dataset.coords:

@@ -8,6 +8,7 @@ import xarray as xr
 from astropy_healpix.healpy import nside2pixarea
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.quality_flags import ImapPSETUltraFlags
@@ -30,7 +31,10 @@ class TestUltraL2:
     def _mock_single_pset(self, _setup_spice_kernels_list, furnish_kernels):
         with furnish_kernels(self.required_kernel_names):
             self.ultra_pset = mock_l1c_pset_product_healpix(
-                nside=128, stripe_center_lat=0, timestr="2025-05-15T12:00:00"
+                nside=128,
+                stripe_center_lat=0,
+                timestr="2025-05-15T12:00:00",
+                energy_dependent_exposure=True,
             )
 
     @pytest.fixture
@@ -65,10 +69,9 @@ class TestUltraL2:
             ]
             # Add extra ultra specific variables to each pset
             for pset in self.ultra_psets:
-                pset["efficiency"] = xr.ones_like(pset["exposure_factor"])
-                pset["geometric_function"] = xr.ones_like(pset["exposure_factor"])
-                pset["scatter_theta"] = xr.ones_like(pset["exposure_factor"])
-                pset["scatter_phi"] = xr.ones_like(pset["exposure_factor"])
+                pset["efficiency"] = xr.ones_like(pset["sensitivity"])
+                pset["scatter_theta"] = xr.ones_like(pset["geometric_function"])
+                pset["scatter_phi"] = xr.ones_like(pset["geometric_function"])
 
         self.psets_total_counts = np.sum(
             [pset["counts"].values.sum() for pset in self.ultra_psets]
@@ -103,11 +106,13 @@ class TestUltraL2:
         pset["exposure_factor"].values = np.ones_like(pset["exposure_factor"])
         pset["background_rates"].values = np.ones_like(pset["background_rates"].values)
         pset["sensitivity"].values = np.ones_like(pset["sensitivity"].values)
+        pset["geometric_function"].values = np.ones_like(
+            pset["geometric_function"].values
+        )
         pset["energy_bin_delta"].values = np.ones_like(pset["energy_bin_delta"].values)
-        pset["efficiency"] = xr.ones_like(pset["exposure_factor"])
-        pset["geometric_function"] = xr.ones_like(pset["exposure_factor"])
-        pset["scatter_theta"] = xr.ones_like(pset["exposure_factor"])
-        pset["scatter_phi"] = xr.ones_like(pset["exposure_factor"])
+        pset["efficiency"] = xr.ones_like(pset["sensitivity"])
+        pset["scatter_theta"] = xr.ones_like(pset["geometric_function"])
+        pset["scatter_phi"] = xr.ones_like(pset["geometric_function"])
 
         pset["energy_bin_delta"].values = np.ones_like(pset["energy_bin_delta"].values)
         if epoch_dim_for_energy_delta:
@@ -319,13 +324,18 @@ class TestUltraL2:
             hp_skymap.data_1d["counts"].sum(),
             self.psets_total_counts,
         )
-
+        # The pointing independent variables should have been pulled once
+        np.testing.assert_allclose(
+            hp_skymap.data_1d["geometric_function"],
+            np.ones_like(hp_skymap.data_1d["geometric_function"]),
+        )
         # The map should contain the following variables,
         # because we did not drop any variables
         expected_vars = (
             ultra_l2.REQUIRED_L1C_VARIABLES_PUSH
             + ultra_l2.REQUIRED_L1C_VARIABLES_PULL
             + ultra_l2.VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION
+            + ultra_l2.EXPECTED_L1C_POINTING_INDEPENDENT_VARIABLES_PULL
             + ["ena_intensity", "ena_intensity_stat_unc"]
         )
         for var in expected_vars:
@@ -337,10 +347,21 @@ class TestUltraL2:
             CoordNames.ENERGY_ULTRA_L1C.value,
             CoordNames.GENERIC_PIXEL.value,
         )
+        pointing_independent_dims = (
+            CoordNames.ENERGY_ULTRA_L1C.value,
+            CoordNames.GENERIC_PIXEL.value,
+        )
         assert hp_skymap.data_1d["counts"].dims == counts_dims
         assert hp_skymap.data_1d["ena_intensity"].dims == counts_dims
         assert hp_skymap.data_1d["ena_intensity_stat_unc"].dims == counts_dims
         assert hp_skymap.data_1d["exposure_factor"].dims == counts_dims
+        assert hp_skymap.data_1d["sensitivity"].dims == counts_dims
+        assert hp_skymap.data_1d["background_rates"].dims == counts_dims
+        assert hp_skymap.data_1d["efficiency"].dims == counts_dims
+
+        assert hp_skymap.data_1d["geometric_function"].dims == pointing_independent_dims
+        assert hp_skymap.data_1d["scatter_theta"].dims == pointing_independent_dims
+        assert hp_skymap.data_1d["scatter_phi"].dims == pointing_independent_dims
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
     def test_ultra_l2_output_unbinned_healpix(self, mock_data_dict, furnish_kernels):
@@ -658,3 +679,5 @@ class TestUltraL2:
         )
         assert output_map.attrs["Spice_reference_frame"] == "IMAP_HAE"
         assert output_map.attrs["HEALPix_nside"] == "32"
+
+        write_cdf(output_map)
