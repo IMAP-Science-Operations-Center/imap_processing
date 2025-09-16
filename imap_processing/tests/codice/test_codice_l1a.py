@@ -287,13 +287,14 @@ def test_lo_sw_species():
         / "imap_codice_l1a_lo-sw-species_20250814211100_v0.0.3.cdf"
     )
 
-    # Load only the validation data we need
     val_data = load_cdf(val_path)
 
     # Process the input data
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
 
     # Variables to exclude from comparison
+    # TODO: have validation data rename voltage_table to energy_table
+    # TODO: fix epoch in future work
     exclude_vars = [
         "voltage_table",
         "epoch_delta_plus",
@@ -301,15 +302,10 @@ def test_lo_sw_species():
         "energy_table",
     ]
 
-    # Get the list of variables that are present in both datasets
-    common_vars = [
-        var
-        for var in val_data.data_vars
-        if var not in exclude_vars and var in processed_data
-    ]
-
     # Compare only the common variables
-    for variable in common_vars:
+    for variable in val_data.data_vars:
+        if variable in exclude_vars:
+            continue
         assert processed_data[variable].shape == val_data[variable].shape, (
             f"Unexpected shape for variable '{variable}': "
             f"{processed_data[variable].shape} vs expected {val_data[variable].shape}"
@@ -340,7 +336,6 @@ def test_lo_nsw_species():
         / "imap_codice_l1a_lo-nsw-species_20250814211100_v0.0.3.cdf"
     )
 
-    # Load only the validation data we need
     val_data = load_cdf(val_path)
 
     # Process the input data
@@ -354,15 +349,10 @@ def test_lo_nsw_species():
         "energy_table",
     ]
 
-    # Get the list of variables that are present in both datasets
-    common_vars = [
-        var
-        for var in val_data.data_vars
-        if var not in exclude_vars and var in processed_data
-    ]
-
     # Compare only the common variables
-    for variable in common_vars:
+    for variable in val_data.data_vars:
+        if variable in exclude_vars:
+            continue
         assert processed_data[variable].shape == val_data[variable].shape, (
             f"Unexpected shape for variable '{variable}': "
             f"{processed_data[variable].shape} vs expected {val_data[variable].shape}"
@@ -578,45 +568,22 @@ def test_hi_priority():
         / "imap_codice_l1a_hi-priority_20250807174600_v0.0.3.cdf"
     )
 
-    # Load only the validation data we need
     val_data = load_cdf(val_path)
 
     # Process the input data
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
 
-    # Variables to exclude from comparison
-    exclude_vars = ["epoch_delta_plus", "epoch_delta_minus"]
-
-    # Get the list of variables that are present in both datasets
-    common_vars = [
-        var
-        for var in val_data.data_vars
-        if var not in exclude_vars and var in processed_data
-    ]
-
-    # Compare only the common variables
-    for variable in common_vars:
+    for variable in val_data.data_vars:
         assert processed_data[variable].shape == val_data[variable].shape, (
             f"Unexpected shape for variable '{variable}': "
             f"{processed_data[variable].shape} vs expected {val_data[variable].shape}"
         )
-        try:
-            np.testing.assert_allclose(
-                processed_data[variable].values,
-                val_data[variable].values,
-                rtol=1e-5,
-                err_msg=f"Mismatch in variable '{variable}'",
-            )
-        except AssertionError as e:
-            print(f"Warning: Mismatch in variable '{variable}'")
-            print(e)
-            # Only fail if values are significantly different
-            np.testing.assert_allclose(
-                processed_data[variable].values,
-                val_data[variable].values,
-                rtol=1e-2,
-                err_msg=f"Significant mismatch in variable '{variable}'",
-            )
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in variable '{variable}'",
+        )
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-priority_20250814_v999.cdf"

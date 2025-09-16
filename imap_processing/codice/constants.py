@@ -964,9 +964,7 @@ ESA_SWEEP_TABLE_ID_LOOKUP = {
 # processing. Eg.
 #   (plan_id, plan_step) -> id of acquisition time
 #   (0, 0) -> 0
-# Plan id is derived from above LUT table. In the LUT table, go to 'Plan' tab
-# Then look at 'Plan' column. That's plan ID. Then 'Lo Stepping' column in that tab
-# should match 'Table Number' in lo_stepping tab which is plan_id in above logic.
+
 
 LO_STEPPING_TABLE_ID_LOOKUP = {
     (0, 0): 0,

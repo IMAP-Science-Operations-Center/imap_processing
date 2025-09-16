@@ -183,12 +183,22 @@ def process_codice_l1b(file_path: Path) -> xr.Dataset:
             l1b_dataset[variable_name].data = convert_to_rates(
                 l1b_dataset, descriptor, variable_name
             )
-
             # Set the variable attributes
             cdf_attrs_key = f"{descriptor}-{variable_name}"
             l1b_dataset[variable_name].attrs = cdf_attrs.get_variable_attributes(
                 cdf_attrs_key, check_schema=False
             )
+
+        if descriptor in ["lo-sw-species", "lo-nsw-species"]:
+            # Do not carry these variable attributes from L1a to L1b
+            drop_variables = [
+                "k_factor",
+                "nso_half_spin",
+                "sw_bias_gain_mode",
+                "st_bias_gain_mode",
+                "spin_period",
+            ]
+            l1b_dataset = l1b_dataset.drop_vars(drop_variables)
 
     logger.info(f"\nFinal data product:\n{l1b_dataset}\n")
 
