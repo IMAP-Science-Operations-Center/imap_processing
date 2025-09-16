@@ -78,7 +78,7 @@ def convert_to_rates(
         # Applying rate calculation described in section 10.2 of the algorithm
         # document
         # In order to divide by acquisition times, we must reshape the acq
-        # time data array to match the data variable shape
+        # time data array to match the data variable shape (epoch, esa_step, sector)
         dims = [1] * dataset[variable_name].data.ndim
         dims[1] = 128
         acq_times = dataset.acquisition_time_per_step.data.reshape(dims)  # (128)

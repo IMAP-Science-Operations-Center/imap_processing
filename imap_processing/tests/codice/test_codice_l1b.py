@@ -30,8 +30,6 @@ def test_l1b_lo_sw_species():
     )
     l1b_val_data = load_cdf(l1b_val_data)
     processed_data = process_codice_l1b(l1a_test_file)
-    # print(f"l1a input: {load_cdf(l1a_test_file).data_vars}")
-    # print(f"l1b val: {l1b_val_data.data_vars}")
 
     for variable in l1b_val_data.data_vars:
         if variable in ["hplus", "heplusplus"]:
