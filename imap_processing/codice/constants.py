@@ -962,11 +962,9 @@ ESA_SWEEP_TABLE_ID_LOOKUP = {
 # combination, but may change in the future. These are defined in the "Lo
 # Stepping" tab of the "*-SCI-LUT-*.xml" spreadsheet that largely defines CoDICE
 # processing. Eg.
-#   (plan_id, plan_step) -> id of acquisition time to look for
+#   (plan_id, plan_step) -> id of acquisition time
 #   (0, 0) -> 0
-# At this time, plan_id should be zero. Table Number' in lo_stepping tab is plan_id.
-
-# In the LUT table, go to 'Plan' tab
+# Plan id is derived from above LUT table. In the LUT table, go to 'Plan' tab
 # Then look at 'Plan' column. That's plan ID. Then 'Lo Stepping' column in that tab
 # should match 'Table Number' in lo_stepping tab which is plan_id in above logic.
 

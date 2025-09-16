@@ -327,22 +327,18 @@ class CoDICEL1aPipeline:
         # each counter's data can be placed in a separate CDF data variable.
         # For Lo SW species, all_data has shape (9, 16, 128, 1) -> (epochs,
         # num_counters, num_energy_steps, num_spin_sectors)
-        if self.config["dataset_name"] in [
-            "imap_codice_l1a_lo-sw-species",
-            "imap_codice_l1a_lo-nsw-species",
-        ]:
+        if self._is_lo_species_dataset():
+            # For Lo species datasets, counters are the second dimension (index 1)
             num_counters = all_data.shape[1]
         else:
+            # For all other datasets, counters are the last dimension
             num_counters = all_data.shape[-1]
 
         for counter, variable_name in zip(
             range(num_counters), self.config["variable_names"], strict=False
         ):
             # Extract the counter data
-            if self.config["dataset_name"] in [
-                "imap_codice_l1a_lo-sw-species",
-                "imap_codice_l1a_lo-nsw-species",
-            ]:
+            if self._is_lo_species_dataset():
                 counter_data = all_data[:, counter, :, :]
             else:
                 counter_data = all_data[..., counter]
@@ -724,15 +720,14 @@ class CoDICEL1aPipeline:
 
         # Reshape the data based on how it is written to the data array of
         # the packet data. The number of counters is the last dimension / axis.
-        if self.config["dataset_name"] in [
-            "imap_codice_l1a_lo-sw-species",
-            "imap_codice_l1a_lo-nsw-species",
-        ]:
+        if self._is_lo_species_dataset():
+            # For Lo species datasets, counters are the first dimension
             reshape_dims = (
                 self.config["num_counters"],
                 *self.config["dims"].values(),
             )
         else:
+            # For all other datasets, counters are the last dimension
             reshape_dims = (
                 *self.config["dims"].values(),
                 self.config["num_counters"],
@@ -749,6 +744,24 @@ class CoDICEL1aPipeline:
 
         # No longer need to keep the raw data around
         del self.raw_data
+
+    def _is_lo_species_dataset(self) -> bool:
+        """
+        Check if the current dataset is a Lo species dataset.
+
+        Lo species datasets have a different data structure where counters are the
+        second dimension (index 1) instead of the last dimension.
+
+        Returns
+        -------
+        bool
+            True if the dataset is a Lo species dataset
+            (lo-sw-species or lo-nsw-species), False otherwise.
+        """
+        return self.config["dataset_name"] in [
+            "imap_codice_l1a_lo-sw-species",
+            "imap_codice_l1a_lo-nsw-species",
+        ]
 
     def set_data_product_config(self, apid: int, dataset: xr.Dataset) -> None:
         """
