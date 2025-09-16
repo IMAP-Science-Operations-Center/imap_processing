@@ -56,6 +56,7 @@ def convert_to_rates(
         "lo-sw-angular",
         "lo-nsw-priority",
         "lo-sw-priority",
+        "lo-ialirt",
     ]:
         # Applying rate calculation described in section 10.2 of the algorithm
         # document
@@ -73,7 +74,6 @@ def convert_to_rates(
     elif descriptor in [
         "lo-nsw-species",
         "lo-sw-species",
-        "lo-ialirt",
     ]:
         # Applying rate calculation described in section 10.2 of the algorithm
         # document
