@@ -304,21 +304,21 @@ def combine_calibration_products(
 
     # Calculate improved uncertainty estimates using geometric factor ratios
     # to reduce bias from Poisson uncertainty estimation
-    improved_stat_unc_sq = _calculate_improved_uncertainties(
+    improved_stat_variance = _calculate_improved_stat_variance(
         map_ds, geometric_factors, esa_energies
     )
 
     # Calculate total uncertainty (quadrature sum of statistical and systematic)
-    total_unc_squared = improved_stat_unc_sq + sys_err**2
+    total_variance = improved_stat_variance + sys_err**2
 
     # Perform inverse-variance weighted averaging
     # Handle divide by zero and invalid values
     with np.errstate(divide="ignore", invalid="ignore"):
-        flux_weights = 1.0 / total_unc_squared
+        flux_weights = 1.0 / total_variance
 
         # Calculate weights for statistical uncertainty combination using only
         # statistical uncertainty
-        stat_weights = 1.0 / improved_stat_unc_sq
+        stat_weights = 1.0 / improved_stat_variance
 
         # Combined statistical uncertainty from inverse-variance formula
         combined_stat_unc = np.sqrt(1.0 / stat_weights.sum(dim="calibration_prod"))
@@ -335,7 +335,7 @@ def combine_calibration_products(
     return map_ds
 
 
-def _calculate_improved_uncertainties(
+def _calculate_improved_stat_variance(
     map_ds: xr.Dataset,
     geometric_factors: xr.DataArray,
     esa_energies: xr.DataArray,
@@ -391,7 +391,7 @@ def _calculate_improved_uncertainties(
     logger.debug("Including background rates in uncertainty calculation")
     # Convert averaged signal rates back to flux uncertainties
     # Total count rates for Poisson uncertainty calculation
-    total_count_rates_for_uncertainty = averaged_signal_rates + map_ds["bg_rates"]
+    total_count_rates_for_uncertainty = map_ds["bg_rates"] + averaged_signal_rates
 
     # Ensure non-negative values for sqrt and minimum of 1 for uncertainty calculation
     total_count_rates_for_uncertainty = xr.where(
@@ -399,21 +399,20 @@ def _calculate_improved_uncertainties(
     )
 
     logger.debug("Computing improved flux uncertainties")
-    # Statistical uncertainty:
+    # Statistical variance:
     with np.errstate(divide="ignore", invalid="ignore"):
-        improved_unc = np.sqrt(
-            total_count_rates_for_uncertainty
-            / (map_ds["exposure_factor"] * (geometric_factors * esa_energies))
+        improved_variance = total_count_rates_for_uncertainty / (
+            map_ds["exposure_factor"] * (geometric_factors * esa_energies)
         )
 
     # Handle invalid cases by falling back to original uncertainties
-    improved_unc = xr.where(
-        ~np.isfinite(improved_unc) | (geometric_factors == 0),
+    improved_variance = xr.where(
+        ~np.isfinite(improved_variance) | (geometric_factors == 0),
         map_ds["ena_intensity_stat_unc"],
-        improved_unc,
+        improved_variance,
     )
 
-    return improved_unc
+    return improved_variance
 
 
 def esa_energy_df(
