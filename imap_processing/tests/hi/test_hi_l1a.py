@@ -146,6 +146,29 @@ def test_memdmp_decom(hi_l0_test_data_path):
         )
 
 
+def test_validate_memdmp(hi_l0_test_data_path):
+    """Validate parsing of memdmp data against csv from Paul."""
+    bin_data_path = hi_l0_test_data_path / "H90_MEMDMP-2025-07-09.bin"
+    memdmp_ds = hi_l1a(packet_file_path=bin_data_path)[0]
+
+    def hex_convertor(hex_value):
+        """Define a converter function for hex values."""
+        return int(hex_value, 16)
+
+    validation_df = pd.read_csv(
+        hi_l0_test_data_path / "H90_MEMDMP-2025-07-09.csv",
+        header=0,
+        index_col=False,
+        converters={"memory_id": hex_convertor, "start_address": hex_convertor},
+    )
+    for col_name, series in validation_df.items():
+        np.testing.assert_array_equal(
+            memdmp_ds[col_name].data,
+            series.values,
+            err_msg=f"Validation of {col_name} failed",
+        )
+
+
 def test_unpack_hist_counter():
     """Test hi.l1a.histogram.unpack_hist_counter()"""
     # To ensure correct unpacking, use expected values with ones in the upper

@@ -57,23 +57,23 @@ TOTAL_COUNTERS = ("a_total", "b_total", "c_total", "fee_de_recd", "fee_de_sent")
 # This is a mapping of variable name to index when the dump_data in the
 # HVSCI MEMDMP packet is interpreted as an array of uint32 values.
 MEMDMP_DATA_INDS = {
-    "lastbin_shorten": 9,
+    "lastbin_shorten": 10,
     "coinc_length": 60,
     "de_timetag": 65,
-    "ab_min": 67,
-    "ab_max": 68,
-    "ac_min": 69,
-    "ac_max": 70,
-    "ba_min": 71,
-    "ba_max": 72,
-    "bc_min": 73,
-    "bc_max": 74,
-    "ca_min": 75,
-    "ca_max": 76,
-    "cb_min": 77,
-    "cb_max": 78,
-    "cc_min": 79,
-    "cc_max": 80,
+    "ab_max": 67,
+    "ab_min": 68,
+    "ac_max": 69,
+    "ac_min": 70,
+    "ba_max": 71,
+    "ba_min": 72,
+    "bc_max": 73,
+    "bc_min": 74,
+    "ca_max": 75,
+    "ca_min": 76,
+    "cb_max": 77,
+    "cb_min": 78,
+    "cc_max": 79,
+    "cc_min": 80,
     "cfd_dac_a": 82,
     "cfd_dac_b": 83,
     "cfd_dac_c": 84,
@@ -577,6 +577,9 @@ def finish_memdmp_dataset(input_ds: xr.Dataset) -> xr.Dataset:
             data=full_uint32_data[offset::index_stride].astype(np.uint32),
             dims=["epoch"],
         )
+        # Need to add one to de_timetag value
+        if new_var == "de_timetag":
+            new_vars[new_var].data += 1
 
     # Remove binary memory dump data and add parsed variables
     dataset = dataset.drop("dump_data")
