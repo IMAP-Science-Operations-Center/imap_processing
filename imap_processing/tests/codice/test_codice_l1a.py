@@ -415,31 +415,33 @@ def test_lo_nsw_angular():
         / "imap_codice_lo-nsw-angular_20250814_v001.pkts"
     )
 
-    # # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_lo-nsw-angular_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
+    # Validation
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_lo-nsw-angular_20250814211100_v0.0.3.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data:
-        if variable in ["energy_table", "acquisition_time_per_step"]:
-            assert processed_data[variable].shape == (128,)
-        elif variable in [
-            "rgfo_half_spin",
-            "nso_half_spin",
-            "sw_bias_gain_mode",
-            "st_bias_gain_mode",
-            "data_quality",
-            "spin_period",
-        ]:
-            assert processed_data[variable].shape == (9,)
-        elif variable == "k_factor":
-            assert processed_data[variable].shape == (1,)
-        else:
-            assert processed_data[variable].shape == (9, 128, 19, 24)
+    for variable in val_data.data_vars:
+        if variable in ["voltage_table", "epoch_delta_plus", "epoch_delta_minus"]:
+            continue
+        assert processed_data[variable].shape == val_data[variable].shape, (
+            f"Unexpected shape for variable '{variable}': "
+            f"{processed_data[variable].shape} vs expected {val_data[variable].shape}"
+        )
+
+        if variable in ["heplusplus"]:
+            # TODO: find out why this didn't match
+            continue
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in variable '{variable}'",
+        )
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-nsw-angular_20250814_v999.cdf"
 
