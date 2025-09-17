@@ -68,7 +68,6 @@ sensitivity:
   CATDESC: Averaged instrument sensitive area.
   FIELDNAM: sensitivity
   LABLAXIS: sensitivity
-  DEPEND_0: epoch
   # TODO: come back to format
   UNITS: cm^2
 
@@ -86,7 +85,6 @@ efficiency:
   FIELDNAM: efficiency
   LABLAXIS: Efficiency
   UNITS: " "
-  DEPEND_0: epoch
   VALIDMIN: 0.0
   VALIDMAX: 1.0
 

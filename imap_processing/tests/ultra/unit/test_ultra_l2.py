@@ -70,8 +70,8 @@ class TestUltraL2:
             # Add extra ultra specific variables to each pset
             for pset in self.ultra_psets:
                 pset["efficiency"] = xr.ones_like(pset["sensitivity"])
-                pset["scatter_theta"] = xr.ones_like(pset["geometric_function"])
-                pset["scatter_phi"] = xr.ones_like(pset["geometric_function"])
+                pset["scatter_theta"] = xr.ones_like(pset["sensitivity"])
+                pset["scatter_phi"] = xr.ones_like(pset["sensitivity"])
 
         self.psets_total_counts = np.sum(
             [pset["counts"].values.sum() for pset in self.ultra_psets]
@@ -106,13 +106,11 @@ class TestUltraL2:
         pset["exposure_factor"].values = np.ones_like(pset["exposure_factor"])
         pset["background_rates"].values = np.ones_like(pset["background_rates"].values)
         pset["sensitivity"].values = np.ones_like(pset["sensitivity"].values)
-        pset["geometric_function"].values = np.ones_like(
-            pset["geometric_function"].values
-        )
+        pset["geometric_function"].values = np.ones_like(pset["sensitivity"].values)
         pset["energy_bin_delta"].values = np.ones_like(pset["energy_bin_delta"].values)
         pset["efficiency"] = xr.ones_like(pset["sensitivity"])
-        pset["scatter_theta"] = xr.ones_like(pset["geometric_function"])
-        pset["scatter_phi"] = xr.ones_like(pset["geometric_function"])
+        pset["scatter_theta"] = xr.ones_like(pset["sensitivity"])
+        pset["scatter_phi"] = xr.ones_like(pset["sensitivity"])
 
         pset["energy_bin_delta"].values = np.ones_like(pset["energy_bin_delta"].values)
         if epoch_dim_for_energy_delta:
@@ -355,10 +353,10 @@ class TestUltraL2:
         assert hp_skymap.data_1d["ena_intensity"].dims == counts_dims
         assert hp_skymap.data_1d["ena_intensity_stat_unc"].dims == counts_dims
         assert hp_skymap.data_1d["exposure_factor"].dims == counts_dims
-        assert hp_skymap.data_1d["sensitivity"].dims == counts_dims
         assert hp_skymap.data_1d["background_rates"].dims == counts_dims
-        assert hp_skymap.data_1d["efficiency"].dims == counts_dims
 
+        assert hp_skymap.data_1d["sensitivity"].dims == pointing_independent_dims
+        assert hp_skymap.data_1d["efficiency"].dims == pointing_independent_dims
         assert hp_skymap.data_1d["geometric_function"].dims == pointing_independent_dims
         assert hp_skymap.data_1d["scatter_theta"].dims == pointing_independent_dims
         assert hp_skymap.data_1d["scatter_phi"].dims == pointing_independent_dims

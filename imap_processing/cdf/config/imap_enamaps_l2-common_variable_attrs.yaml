@@ -190,8 +190,7 @@ sensitivity:
   CATDESC: Averaged instrument sensitive area.
   FIELDNAM: Sensitivity
   UNITS: cm^2
-  DEPEND_0: epoch
-  VAR_TYPE: data
+  VAR_TYPE: support_data
   LABLAXIS: sensitivity
   DISPLAY_TYPE: image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:GeometricFactor,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
@@ -222,8 +221,7 @@ efficiency:
   CATDESC: Efficiency of the instrument in converting ENAs to valid events.
   FIELDNAM: Efficiency
   UNITS: " "
-  DEPEND_0: epoch
-  VAR_TYPE: data
+  VAR_TYPE: support_data
   LABLAXIS: Efficiency
   DISPLAY_TYPE: no_plot
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Other

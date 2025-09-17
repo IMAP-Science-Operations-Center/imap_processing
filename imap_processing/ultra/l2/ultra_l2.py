@@ -56,20 +56,18 @@ REQUIRED_L1C_VARIABLES_PUSH = [
 ]
 REQUIRED_L1C_VARIABLES_PULL = [
     "exposure_factor",
-    "sensitivity",
     "background_rates",
     "obs_date",
 ]
 # These variables are expected but not strictly required. In certain test scenarios,
 # they may be missing, in which case we will raise a warning and continue.
 # All psets must be consistent and either have these variables or not.
-EXPECTED_L1C_VARIABLES_PULL = [
-    "efficiency",
-]
 EXPECTED_L1C_POINTING_INDEPENDENT_VARIABLES_PULL = [
     "geometric_function",
     "scatter_theta",
     "scatter_phi",
+    "sensitivity",
+    "efficiency",
 ]
 # These variables are projected to the map as the mean of pointing set pixels value,
 # weighted by that pointing set pixel's exposure and solid angle
@@ -77,6 +75,9 @@ VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE = [
     "sensitivity",
     "background_rates",
     "obs_date",
+    "scatter_theta",
+    "scatter_phi",
+    "geometric_function",
     "efficiency",
 ]
 
@@ -250,21 +251,12 @@ def generate_ultra_healpix_skymap(  # noqa: PLR0912
     # TODO remove this in the future once all test data includes these variables
     # Add expected but not required variables to the pull projection list
     # Log a warning if they are missing from any PSET but continue processing.
-    expected_present_vars = []
     expected_present_vars_pointing_ind = []
     first_pset = (
         load_cdf(ultra_l1c_psets[0])
         if isinstance(ultra_l1c_psets[0], (str, Path))
         else ultra_l1c_psets[0]
     )
-    for var in EXPECTED_L1C_VARIABLES_PULL:
-        if var not in first_pset.variables:
-            logger.warning(
-                f"Expected variable {var} not found in the first L1C PSET. "
-                "This variable will not be projected to the map."
-            )
-        else:
-            expected_present_vars.append(var)
 
     for var in EXPECTED_L1C_POINTING_INDEPENDENT_VARIABLES_PULL:
         if var not in first_pset.variables:
@@ -275,12 +267,24 @@ def generate_ultra_healpix_skymap(  # noqa: PLR0912
         else:
             expected_present_vars_pointing_ind.append(var)
 
+    # Get existing variables that should be weighted by exposure and solid angle
+    existing_vars_to_weight = []
+    pointing_indep_vars = []
+    for var in VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE:
+        if var in first_pset:
+            existing_vars_to_weight.append(var)
+            if "epoch" not in first_pset[var].dims:
+                pointing_indep_vars.append(var)
+
     output_map_structure.values_to_pull_project = list(
-        set(output_map_structure.values_to_pull_project + expected_present_vars)
+        set(
+            output_map_structure.values_to_pull_project
+            + expected_present_vars_pointing_ind
+        )
     )
 
     all_pset_epochs = []
-    for i, ultra_l1c_pset in enumerate(ultra_l1c_psets):
+    for ultra_l1c_pset in ultra_l1c_psets:
         pointing_set = ena_maps.UltraPointingSet(ultra_l1c_pset)
         all_pset_epochs.append(pointing_set.epoch)
         logger.info(
@@ -323,12 +327,11 @@ def generate_ultra_healpix_skymap(  # noqa: PLR0912
             pointing_set.data["exposure_factor"] * pointing_set.solid_angle
         )
 
-        # Get variables that should be weighted by exposure and solid angle
-        existing_vars_to_weight = []
-        for var in VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE:
-            if var in pointing_set.data:
-                existing_vars_to_weight.append(var)
-
+        # if the variable does not have an epoch dimension, add one temporarily
+        # to allow for correct broadcasting during weighting.
+        # Keep track of which variables were modified so we can revert them later.
+        for var in pointing_indep_vars:
+            pointing_set.data[var] = pointing_set.data[var].expand_dims("epoch", axis=0)
         # Initial processing for weighted quantities at PSET level
         # Weight the values by exposure and solid angle
         # Ensure only valid pointing set pixels contribute to the weighted mean.
@@ -352,19 +355,14 @@ def generate_ultra_healpix_skymap(  # noqa: PLR0912
             index_match_method=ena_maps.IndexMatchMethod.PULL,
             pset_valid_mask=good_pixel_mask,
         )
-        if i == 0:
-            # Pull pointing independent variables if they exist in the PSETs
-            # Use first pset
-            skymap.project_pset_values_to_map(
-                pointing_set=pointing_set,
-                value_keys=expected_present_vars_pointing_ind,
-                index_match_method=ena_maps.IndexMatchMethod.PULL,
-                pset_valid_mask=good_pixel_mask,
-            )
+
     # Subsequent processing for weighted quantities at SkyMap level
     skymap.data_1d[existing_vars_to_weight] /= skymap.data_1d[
         "pointing_set_exposure_times_solid_angle"
     ]
+    # Revert any pointing independent variables back to their original dims
+    for var in pointing_indep_vars:
+        skymap.data_1d[var] = skymap.data_1d[var].squeeze("epoch", drop=True)
 
     # Background rates must be scaled by the ratio of the solid angles of the
     # map pixel / pointing set pixel

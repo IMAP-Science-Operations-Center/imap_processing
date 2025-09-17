@@ -148,8 +148,6 @@ def create_dataset(  # noqa: PLR0912
             "background_rates",
             "exposure_factor",
             "helio_exposure_factor",
-            "sensitivity",
-            "efficiency",
         }:
             dataset[key] = xr.DataArray(
                 data,
@@ -160,6 +158,8 @@ def create_dataset(  # noqa: PLR0912
             "geometric_function",
             "scatter_theta",
             "scatter_phi",
+            "sensitivity",
+            "efficiency",
         }:
             dataset[key] = xr.DataArray(
                 data,

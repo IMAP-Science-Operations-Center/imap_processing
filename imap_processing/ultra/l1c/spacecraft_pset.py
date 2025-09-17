@@ -191,8 +191,8 @@ def calculate_spacecraft_pset(
     ]
     pset_dict["quality_flags"] = spacecraft_pset_quality_flags[np.newaxis, ...]
 
-    pset_dict["sensitivity"] = sensitivity[np.newaxis, ...]
-    pset_dict["efficiency"] = efficiencies[np.newaxis, ...]
+    pset_dict["sensitivity"] = sensitivity
+    pset_dict["efficiency"] = efficiencies
     pset_dict["geometric_function"] = geometric_function
     pset_dict["dead_time_ratio"] = deadtime_ratios
     pset_dict["spin_phase_step"] = np.arange(len(deadtime_ratios))
