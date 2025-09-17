@@ -10,6 +10,7 @@ from scipy.stats import binned_statistic_dd
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.lo import lo_ancillary
+from imap_processing.lo.l1b.lo_l1b import set_bad_or_goodtimes
 from imap_processing.spice.repoint import get_pointing_times
 from imap_processing.spice.spin import get_spin_number
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_met
@@ -200,19 +201,17 @@ def filter_goodtimes(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
         next(str(s) for s in anc_dependencies if "good-times" in str(s))
     )
 
-    # convert goodtimes from MET to TTJ2000
-    goodtimes_start = met_to_ttj2000ns(goodtimes_table_df["GoodTime_start"])
-    goodtimes_end = met_to_ttj2000ns(goodtimes_table_df["GoodTime_end"])
+    esa_steps = l1b_de["esa_step"].values
+    epochs = l1b_de["epoch"].values
+    spin_bins = l1b_de["spin_bin"].values
 
-    # Create a mask for epochs within any of the start/end time ranges
-    goodtimes_mask = np.zeros_like(l1b_de["epoch"], dtype=bool)
-
-    # Iterate over the good times and create a mask
-    for start, end in zip(goodtimes_start, goodtimes_end, strict=False):
-        goodtimes_mask |= (l1b_de["epoch"] >= start) & (l1b_de["epoch"] < end)
+    # Get array of bools for each epoch 1 = good time, 0 not good time
+    goodtimes_mask = set_bad_or_goodtimes(
+        goodtimes_table_df, epochs, esa_steps, spin_bins
+    )
 
     # Filter the dataset using the mask
-    filtered_epochs = l1b_de.sel(epoch=goodtimes_mask)
+    filtered_epochs = l1b_de.sel(epoch=goodtimes_mask.astype(bool))
 
     return filtered_epochs
 

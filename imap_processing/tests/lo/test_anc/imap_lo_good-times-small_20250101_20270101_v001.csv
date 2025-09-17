@@ -1,0 +1,13 @@
+YYYYDDD,GoodTime_start,GoodTime_end,bin_start,bin_end,Instrument,E-Step1,E-Step2,E-Step3,E-Step4,E-Step5,E-Step6,E-Step7,Comment
+2025001,473389200,473407618,30,59,Lo,1,0,1,0,1,0,1,#generated good time
+2025001,473407618,473420896,0,29,Lo,1,1,1,1,1,1,1,#generated good time
+2025001,473420896,473472000,0,59,Lo,1,1,1,1,1,1,1,#generated good time
+2025002,473475600,473526046,0,59,Lo,1,1,1,1,1,1,1,#generated good time
+2025002,473528426,473558400,0,59,Lo,1,1,1,1,1,1,1,#generated good time
+2025003,473562000,473644800,0,59,Lo,1,1,1,1,1,1,1,#generated good time
+2025004,473648400,473731200,0,59,Lo,1,1,1,1,1,1,1,#generated good time
+2025005,473734800,473817600,0,59,Lo,1,1,1,1,1,1,1,#generated good time
+2025006,473821200,473904000,0,59,Lo,1,1,1,1,1,1,1,#generated good time
+2025007,473907600,473990400,0,59,Lo,1,1,1,1,1,1,1,#generated good time
+2025008,473994000,474050712,0,59,Lo,1,1,1,1,1,1,1,#generated good time
+2025008,474055891,474076800,0,59,Lo,1,1,1,1,1,1,1,#generated good time
