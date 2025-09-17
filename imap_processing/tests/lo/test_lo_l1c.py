@@ -38,6 +38,7 @@ def l1b_de():
             "species": ("epoch", ["H", "O", "H", "H", "O"]),
             "spin_cycle": ("epoch", [1, 2, 3, 4, 5]),
             "avg_spin_durations": ("epoch", [15.2, 15.2, 14.9, 15, 14.9]),
+            "spin_bin": ("epoch", [1900, 2000, 3000, 3000, 3000]),
         },
         coords={
             "epoch": [
@@ -78,6 +79,7 @@ def l1b_de_spin():
             "species": ("epoch", ["H", "O", "H", "H", "O"]),
             "spin_cycle": ("epoch", [1, 2, 3, 4, 5]),
             "avg_spin_durations": ("epoch", [15.2, 15.2, 14.9, 15, 14.9]),
+            "spin_bin": ("epoch", [1900, 2000, 3000, 3000, 3000]),
         },
         coords={
             "epoch": met_to_ttj2000ns(np.arange(511000000, 511000000 + 200, 40) + 902),
@@ -187,11 +189,10 @@ def expected_bg():
     return expected_bg
 
 
-@patch(
-    "imap_processing.lo.l1c.lo_l1c.set_background_rates",
-    return_value=(None, None, None),
-)
+@patch("imap_processing.lo.l1c.lo_l1c.set_background_rates")
+@patch("imap_processing.lo.l1c.lo_l1c.filter_goodtimes")
 def test_lo_l1c(
+    mock_filter_goodtimes,
     mock_set_background_rates,
     l1b_de_spin,
     anc_dependencies,
@@ -203,7 +204,8 @@ def test_lo_l1c(
     data = {"imap_lo_l1b_de": l1b_de_spin}
     use_fake_spin_data_for_time(511000000)
     use_fake_repoint_data_for_time(np.arange(511000000, 511000000 + 86400 * 5, 86400))
-
+    mock_set_background_rates.return_value = (None, None, None)
+    mock_filter_goodtimes.return_value = l1b_de_spin
     expected_logical_source = "imap_lo_l1c_pset"
 
     # Act

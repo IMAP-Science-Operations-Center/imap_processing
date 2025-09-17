@@ -69,7 +69,7 @@ def lo_l1c(sci_dependencies: dict, anc_dependencies: list) -> list[xr.Dataset]:
         logical_source = "imap_lo_l1c_pset"
         l1b_de = sci_dependencies["imap_lo_l1b_de"]
         l1b_goodtimes_only = filter_goodtimes(l1b_de, anc_dependencies)
-
+        # TODO: Need to handle case where no good times are found
         # Set the pointing start and end times based on the first epoch
         pointing_start_met, pointing_end_met = get_pointing_times(
             ttj2000ns_to_met(l1b_goodtimes_only["epoch"][0].item())
