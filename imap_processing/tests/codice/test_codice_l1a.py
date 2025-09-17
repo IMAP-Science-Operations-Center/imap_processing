@@ -512,18 +512,25 @@ def test_hi_omni():
         / "imap_codice_hi-omni_20250814_v001.pkts"
     )
 
-    # # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_hi-omni_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
+    # Validation
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_hi-omni_20250814211100_v0.0.3.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     # hi-omni has species-specific shapes
     for variable in constants.HI_OMNI_VARIABLE_NAMES:
-        assert processed_data[variable].shape == EXPECTED_HI_OMNI_ARRAY_SHAPES[variable]
+        assert processed_data[variable].shape == val_data[variable].shape
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in variable '{variable}'",
+        )
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-omni_20250814_v999.cdf"
 
