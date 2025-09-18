@@ -33,7 +33,7 @@ def hi_l2(
     ----------
     psets : list of str or pathlib.Path
         List of input PSETs to make a map from.
-    l2_ancillary_path_dict : dict[str, Path]
+    l2_ancillary_path_dict : dict[str, pathlib.Path]
         Mapping containing ancillary file descriptors as keys and file paths as
         values. Require keys are: ["cal-prod", "esa-energies", "esa-eta-fit-factors"].
     descriptor : str
@@ -87,10 +87,10 @@ def generate_hi_map(
     ----------
     psets : list of str or pathlib.Path
         List of input PSETs to make a map from.
-    l2_ancillary_path_dict : dict[str, Path]
+    l2_ancillary_path_dict : dict[str, pathlib.Path]
         Mapping containing ancillary file descriptors as keys and file paths as
         values. Require keys are: ["cal-prod", "esa-energies", "esa-eta-fit-factors"].
-    descriptor : str
+    descriptor : imap_processing.ena_maps.utils.naming.MapDescriptor
         Output filename descriptor. Contains full configuration for the options
         of how to generate the map.
 
@@ -216,7 +216,7 @@ def calculate_ena_intensity(
     ----------
     map_ds : xarray.Dataset
         Map dataset that has ena_signal_rate fields calculated.
-    l2_ancillary_path_dict : dict[str, Path]
+    l2_ancillary_path_dict : dict[str, pathlib.Path]
         Mapping containing ancillary file descriptors as keys and file paths as
         values. Require keys are: ["cal-prod", "esa-energies", "esa-eta-fit-factors"].
 

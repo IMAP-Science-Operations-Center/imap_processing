@@ -107,6 +107,7 @@ nitpick_ignore_regex = [
     (r"py:.*", r".*CoDICECompression.*"),
     (r"py:.*", r".*RectangularSkyMap.*"),
     (r"py:.*", r".*AbstractSkyMap.*"),
+    (r"py:.*", r".*MapDescriptor.*"),
     (r"py:.*", r".*.lo.l0.utils.*"),
     (r"py:.*", r".*.lo.l0.data_classes.*"),
     (r"py:.*", r".*.hi.*.[A-Z][a-zA-Z]*.*"),  # match any hi CamelCase class
