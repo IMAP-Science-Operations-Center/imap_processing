@@ -761,6 +761,8 @@ class CoDICEL1aPipeline:
         return self.config["dataset_name"] in [
             "imap_codice_l1a_lo-sw-species",
             "imap_codice_l1a_lo-nsw-species",
+            "imap_codice_l1a_lo-sw-angular",
+            "imap_codice_l1a_lo-nsw-angular",
         ]
 
     def set_data_product_config(self, apid: int, dataset: xr.Dataset) -> None:
@@ -1653,23 +1655,23 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
         # Housekeeping data
         if apid == CODICEAPID.COD_NHK:
             processed_dataset = create_hskp_dataset(dataset)
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+            logger.info(f"\nProcessed {CODICEAPID(apid).name} packet\n")
 
         # Event data
         elif apid in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
             processed_dataset = create_direct_event_dataset(apid, dataset)
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+            logger.info(f"\nProcessed {CODICEAPID(apid).name} packet\n")
 
         # I-ALiRT data
         elif apid in [CODICEAPID.COD_LO_IAL, CODICEAPID.COD_HI_IAL]:
             processed_dataset = create_ialirt_dataset(apid, dataset)
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+            logger.info(f"\nProcessed {CODICEAPID(apid).name} packet\n")
 
         # hi-omni data
         elif apid == CODICEAPID.COD_HI_OMNI_SPECIES_COUNTS:
             science_values = [packet.data for packet in dataset.data]
             processed_dataset = create_binned_dataset(apid, dataset, science_values)
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+            logger.info(f"\nProcessed {CODICEAPID(apid).name} packet\n")
 
         # Everything else
         elif apid in constants.APIDS_FOR_SCIENCE_PROCESSING:
@@ -1687,7 +1689,7 @@ def process_codice_l1a(file_path: Path) -> list[xr.Dataset]:
             pipeline.define_coordinates()
             processed_dataset = pipeline.define_data_variables()
 
-            logger.info(f"\nFinal data product:\n{processed_dataset}\n")
+            logger.info(f"\nProcessed {CODICEAPID(apid).name} packet\n")
 
         # For APIDs that don't require processing
         else:

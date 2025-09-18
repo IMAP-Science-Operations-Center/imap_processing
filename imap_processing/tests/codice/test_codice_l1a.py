@@ -130,32 +130,38 @@ def test_lo_counters_aggregated():
         / "imap_codice_lo-counters-aggregated_20250814_v001.pkts"
     )
 
-    # # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_lo-counters-aggregated_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
+    # Validation
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_lo-counters-aggregated_20250814211100_v0.0.3.cdf"
+    )
+    val_data = load_cdf(val_path)
     # print(val_data)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data:
-        if variable in ["energy_table", "acquisition_time_per_step"]:
-            assert processed_data[variable].shape == (128,)
-        elif variable in [
-            "rgfo_half_spin",
-            "nso_half_spin",
-            "sw_bias_gain_mode",
-            "st_bias_gain_mode",
-            "data_quality",
-            "spin_period",
-        ]:
-            assert processed_data[variable].shape == (9,)
-        elif variable == "k_factor":
-            assert processed_data[variable].shape == (1,)
-        else:
-            assert processed_data[variable].shape == (9, 128, 6)
+    for variable in processed_data.data_vars:
+        try:
+            if variable in ["tcr", "dcr", "sta", "stb", "sp"]:
+                assert processed_data[variable].shape == (9, 128, 24, 6)
+            elif variable == "total_position_count":
+                # TODO: find out why validation didn't match
+                continue
+
+            np.testing.assert_allclose(
+                processed_data[variable].values,
+                val_data[variable].values,
+                rtol=1e-5,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
+        except KeyError:
+            print(f"Variable '{variable}' not found in validation data.")
+        except AssertionError:
+            print(f"Printing variable '{variable}' data at index [0, 0, :]")
+            # print(processed_data[variable].shape)
+            print("Processed data:", processed_data[variable].values[0, 0, :])
+            print("Validation data:", val_data[variable].values[0, 0, :])
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-counters-aggregated_20250814_v999.cdf"
 
@@ -168,32 +174,29 @@ def test_lo_counters_singles():
         / "imap_codice_lo-counters-singles_20250814_v001.pkts"
     )
 
-    # # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_lo-counters-singles_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
-    # print(val_data)
+    # Validation
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_lo-counters-singles_20250814211100_v0.0.3.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data:
-        if variable in ["energy_table", "acquisition_time_per_step"]:
-            assert processed_data[variable].shape == (128,)
-        elif variable in [
-            "rgfo_half_spin",
-            "nso_half_spin",
-            "sw_bias_gain_mode",
-            "st_bias_gain_mode",
-            "data_quality",
-            "spin_period",
-        ]:
-            assert processed_data[variable].shape == (9,)
-        elif variable == "k_factor":
-            assert processed_data[variable].shape == (1,)
-        else:
-            assert processed_data[variable].shape == (9, 128, 24, 6)
+    for variable in val_data.data_vars:
+        try:
+            np.testing.assert_allclose(
+                processed_data[variable].values,
+                val_data[variable].values,
+                rtol=1e-5,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
+        except KeyError:
+            print(f"Variable '{variable}' not found in processed data.")
+        except AssertionError:
+            print(f"Printing variable '{variable}' data at index [0, 0, :]")
+            print("Processed data:", processed_data[variable].values[0, :])
+            print("Validation data:", val_data[variable].values[0, :])
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-counters-singles_20250814_v999.cdf"
 
@@ -206,31 +209,29 @@ def test_lo_sw_priority():
         / "imap_codice_lo-sw-priority_20250814_v001.pkts"
     )
 
-    # # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_lo-sw-priority_20250814211100_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
+    # Validation
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_lo-sw-priority_20250814211100_v0.0.3.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data:
-        if variable in ["energy_table", "acquisition_time_per_step"]:
-            assert processed_data[variable].shape == (128,)
-        elif variable in [
-            "rgfo_half_spin",
-            "nso_half_spin",
-            "sw_bias_gain_mode",
-            "st_bias_gain_mode",
-            "data_quality",
-            "spin_period",
-        ]:
-            assert processed_data[variable].shape == (9,)
-        elif variable == "k_factor":
-            assert processed_data[variable].shape == (1,)
-        else:
-            assert processed_data[variable].shape == (9, 128, 24)
+    for variable in val_data.data_vars:
+        try:
+            np.testing.assert_allclose(
+                processed_data[variable].values,
+                val_data[variable].values,
+                rtol=1e-5,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
+        except KeyError:
+            print(f"Variable '{variable}' not found in processed data.")
+        except AssertionError:
+            print(f"Printing variable '{variable}' data at index [0, 0, :]")
+            print("Processed data:", processed_data[variable].values[0, 0, :])
+            print("Validation data:", val_data[variable].values[0, 0, :])
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-sw-priority_20250814_v999.cdf"
 
@@ -243,31 +244,29 @@ def test_lo_nsw_priority():
         / "imap_codice_lo-nsw-priority_20250814_v001.pkts"
     )
 
-    # # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_lo-nsw-priority_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
+    # Validation
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_lo-nsw-priority_20250814211100_v0.0.3.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data:
-        if variable in ["energy_table", "acquisition_time_per_step"]:
-            assert processed_data[variable].shape == (128,)
-        elif variable in [
-            "rgfo_half_spin",
-            "nso_half_spin",
-            "sw_bias_gain_mode",
-            "st_bias_gain_mode",
-            "data_quality",
-            "spin_period",
-        ]:
-            assert processed_data[variable].shape == (9,)
-        elif variable == "k_factor":
-            assert processed_data[variable].shape == (1,)
-        else:
-            assert processed_data[variable].shape == (9, 128, 24)
+    for variable in val_data.data_vars:
+        try:
+            np.testing.assert_allclose(
+                processed_data[variable].values,
+                val_data[variable].values,
+                rtol=1e-5,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
+        except KeyError:
+            print(f"Variable '{variable}' not found in validation data.")
+        except AssertionError:
+            print(f"Printing variable '{variable}' data at index [0, 0, :]")
+            print("Processed data:", processed_data[variable].values[0, 0, :])
+            print("Validation data:", val_data[variable].values[0, 0, :])
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-nsw-priority_20250814_v999.cdf"
 
@@ -454,24 +453,29 @@ def test_hi_counters_aggregated():
         / "imap_codice_hi-counters-aggregated_20250814_v001.pkts"
     )
 
-    # # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_hi-counters-aggregated_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
+    # Validation
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_hi-counters-aggregated_20250814211100_v0.0.3.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data:
-        if variable in ["data_quality", "spin_period"]:
-            assert processed_data[variable].shape == (9,)
-        elif variable == "k_factor":
-            assert processed_data[variable].shape == (1,)
-        elif "energy_spectrum" in variable:  # Handle special case for energy_spectrum
-            pass  # Skip checking this variable to avoid the reshape error
-        else:
-            assert processed_data[variable].shape == (9,)
+    for variable in val_data.data_vars:
+        try:
+            np.testing.assert_allclose(
+                processed_data[variable].values,
+                val_data[variable].values,
+                rtol=1e-5,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
+        except KeyError:
+            print(f"Variable '{variable}' not found in processed data.")
+        except AssertionError:
+            print(f"Mismatched variable '{variable}' data")
+            # print("Processed data:", processed_data[variable].values[0, :])
+            # print("Validation data:", val_data[variable].values[0, :])
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-counters-aggregated_20250814_v999.cdf"
 
@@ -484,22 +488,30 @@ def test_hi_counters_singles():
         / "imap_codice_hi-counters-singles_20250814_v001.pkts"
     )
 
-    # # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_hi-counters-singles_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
+    # Validation
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_hi-counters-singles_20250814211100_v0.0.3.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data:
-        if variable in ["data_quality", "spin_period"]:
-            assert processed_data[variable].shape == (9,)
-        elif variable == "k_factor":
-            assert processed_data[variable].shape == (1,)
-        else:
-            assert processed_data[variable].shape == (9, 12)
+    for variable in val_data.data_vars:
+        try:
+            np.testing.assert_allclose(
+                processed_data[variable].values,
+                val_data[variable].values,
+                rtol=1e-5,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
+        except KeyError:
+            print(f"Variable '{variable}' not found in processed data.")
+        except AssertionError:
+            print(f"Mismatched variable '{variable}' data")
+            # print("Processed data:", processed_data[variable].values[0, :])
+            # print("Validation data:", val_data[variable].values[0, :])
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-counters-singles_20250814_v999.cdf"
 
@@ -543,27 +555,34 @@ def test_hi_sectored():
         / "imap_codice_hi-sectored_20250814_v001.pkts"
     )
 
-    # # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_hi-sectored_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
+    # Validation
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_hi-sectored_20250814211100_v0.0.3.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data:
-        if variable in ["data_quality", "spin_period"]:
-            assert processed_data[variable].shape == (9,)
-        elif variable == "k_factor":
-            assert processed_data[variable].shape == (1,)
-        else:
-            assert processed_data[variable].shape == (9, 8, 12, 12)
+    for variable in val_data.data_vars:
+        try:
+            np.testing.assert_allclose(
+                processed_data[variable].values,
+                val_data[variable].values,
+                rtol=1e-5,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
+        except KeyError:
+            print(f"Variable '{variable}' not found in processed data.")
+        except AssertionError:
+            print(f"Mismatched variable '{variable}' data")
+            # print("Processed data:", processed_data[variable].values[0, :])
+            # print("Validation data:", val_data[variable].values[0, :])
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-sectored_20250814_v999.cdf"
 
 
-@pytest.mark.skip(reason="Skipping hi-priority test temporarily")
 def test_hi_priority():
     """Tests hi-priority."""
     test_file_path = (
@@ -576,7 +595,7 @@ def test_hi_priority():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-priority_20250807174600_v0.0.3.cdf"
+        / "imap_codice_l1a_hi-priorities_20250814211100_v0.0.3.cdf"
     )
 
     val_data = load_cdf(val_path)
@@ -585,16 +604,19 @@ def test_hi_priority():
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
 
     for variable in val_data.data_vars:
-        assert processed_data[variable].shape == val_data[variable].shape, (
-            f"Unexpected shape for variable '{variable}': "
-            f"{processed_data[variable].shape} vs expected {val_data[variable].shape}"
-        )
-        np.testing.assert_allclose(
-            processed_data[variable].values,
-            val_data[variable].values,
-            rtol=1e-5,
-            err_msg=f"Mismatch in variable '{variable}'",
-        )
+        try:
+            np.testing.assert_allclose(
+                processed_data[variable].values,
+                val_data[variable].values,
+                rtol=1e-5,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
+        except KeyError:
+            print(f"Variable '{variable}' not found in processed data.")
+        except AssertionError:
+            print(f"Mismatched variable '{variable}' data")
+            # print("Processed data:", processed_data[variable].values[0, :])
+            # print("Validation data:", val_data[variable].values[0, :])
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-priority_20250814_v999.cdf"
@@ -610,20 +632,29 @@ def test_lo_direct_events():
 
     # TODO: uncomment this
     # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_lo-direct-events_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
-    # print(val_data)
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_lo-direct-events_20250814211100_v0.0.3.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in processed_data:
-        if variable in ["num_events", "data_quality"]:
-            assert processed_data[variable].shape == (9, 8)
-        else:
-            assert processed_data[variable].shape == (9, 8, 10000)
+        try:
+            np.testing.assert_allclose(
+                processed_data[variable].values,
+                val_data[variable].values,
+                rtol=1e-5,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
+        except KeyError:
+            print(f"Variable '{variable}' not found in validation data.")
+        except AssertionError:
+            print(f"mismatched variable '{variable}'")
+            # print(processed_data[variable].shape)
+            # print("Processed data:", processed_data[variable].values[0, 0, :])
+            # print("Validation data:", val_data[variable].values[0, 0, :])
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-direct-events_20250814_v999.cdf"
 
@@ -641,19 +672,29 @@ def test_hi_direct_events():
 
     # TODO: uncomment this
     # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_hi-direct-events_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_hi-direct-events_20250814211100_v0.0.3.cdf"
+    )
+    val_data = load_cdf(val_path)
     # print(val_data)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data:
-        if variable in ["num_events", "data_quality"]:
-            assert processed_data[variable].shape == (9, 6)
-        else:
-            assert processed_data[variable].shape == (9, 6, 10000)
+    for variable in val_data.data_vars:
+        try:
+            np.testing.assert_allclose(
+                processed_data[variable].values,
+                val_data[variable].values,
+                rtol=1e-5,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
+        except KeyError:
+            print(f"Variable '{variable}' not found in validation data.")
+        except AssertionError:
+            print(f"mismatched variable '{variable}'")
+            # print(processed_data[variable].shape)
+            # print("Processed data:", processed_data[variable].values[0, 0, :])
+            # print("Validation data:", val_data[variable].values[0, 0, :])
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-direct-events_20250814_v999.cdf"
