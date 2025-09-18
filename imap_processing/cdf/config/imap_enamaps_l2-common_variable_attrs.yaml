@@ -127,7 +127,7 @@ ena_intensity:
   DEPEND_0: epoch
   VAR_TYPE: data
   LABLAXIS: Intensity
-  DISPLAY_TYPE: image
+  DISPLAY_TYPE: map_image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 ena_intensity_stat_uncert:
@@ -138,7 +138,7 @@ ena_intensity_stat_uncert:
   DEPEND_0: epoch
   VAR_TYPE: data
   LABLAXIS: Statistical Unc
-  DISPLAY_TYPE: image
+  DISPLAY_TYPE: map_image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 ena_intensity_sys_err:
@@ -149,7 +149,7 @@ ena_intensity_sys_err:
   DEPEND_0: epoch
   VAR_TYPE: data
   LABLAXIS: Non-Statistical Err
-  DISPLAY_TYPE: image
+  DISPLAY_TYPE: map_image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 ena_rate:
@@ -160,7 +160,7 @@ ena_rate:
   DEPEND_0: epoch
   VAR_TYPE: data
   LABLAXIS: Rate
-  DISPLAY_TYPE: image
+  DISPLAY_TYPE: map_image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 bg_rate:
@@ -171,7 +171,7 @@ bg_rate:
   DEPEND_0: epoch
   VAR_TYPE: data
   LABLAXIS: Rate
-  DISPLAY_TYPE: image
+  DISPLAY_TYPE: map_image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 ena_count:
@@ -182,7 +182,7 @@ ena_count:
   DEPEND_0: epoch
   VAR_TYPE: data
   LABLAXIS: Count
-  DISPLAY_TYPE: image
+  DISPLAY_TYPE: map_image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 sensitivity:
@@ -192,7 +192,7 @@ sensitivity:
   UNITS: cm^2
   VAR_TYPE: support_data
   LABLAXIS: sensitivity
-  DISPLAY_TYPE: image
+  DISPLAY_TYPE: map_image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:GeometricFactor,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 exposure_factor: &exposure_factor
@@ -255,7 +255,7 @@ obs_date: &obs_date
   DEPEND_0: epoch
   VAR_TYPE: data
   LABLAXIS: epoch
-  DISPLAY_TYPE: image
+  DISPLAY_TYPE: no_plot
   DICT_KEY: SPASE>TemporalDescription:TimeSpan,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 obs_date_range:
@@ -267,7 +267,7 @@ obs_date_range:
   DEPEND_0: epoch
   VAR_TYPE: data
   LABLAXIS: epoch
-  DISPLAY_TYPE: image
+  DISPLAY_TYPE: no_plot
   TIME_SCALE: Terrestrial Time
 
 # These copied metadata vars will allow for variables
@@ -284,12 +284,11 @@ obs_date_range_energy_independent:
 
 solid_angle:
   <<: *default_float32
-  VAR_TYPE: support_data
   CATDESC: Solid angle subtended by each pixel.
   FIELDNAM: Solid Angle
   DEPEND_0: epoch
+  VAR_TYPE: support_data
   UNITS: sr
-  VAR_TYPE: data
   LABLAXIS: Solid Angle
-  DISPLAY_TYPE: image
+  DISPLAY_TYPE: map_image
   DICT_KEY: SPASE>Support>SupportQuantity:Other
