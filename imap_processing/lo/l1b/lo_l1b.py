@@ -5,7 +5,7 @@ from dataclasses import Field
 from pathlib import Path
 
 import numpy as np
-import pandas
+import pandas as pd
 import xarray as xr
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
@@ -723,7 +723,7 @@ def set_bad_times(l1b_de: xr.Dataset, anc_dependencies: list) -> xr.Dataset:
 
 
 def set_bad_or_goodtimes(
-    times_df: pandas.DataFrame,
+    times_df: pd.DataFrame,
     epochs: np.ndarray,
     esa_steps: np.ndarray,
     spin_bins: np.ndarray,
@@ -757,6 +757,8 @@ def set_bad_or_goodtimes(
         raise ValueError("DataFrame must contain either BadTime or GoodTime columns.")
 
     # Create masks for time and bin ranges using broadcasting
+    # the bin_start and bin_end are 6 degree bins and need to be converted to
+    # 0.1 degree bins to align with the spin_bins, so multiply by 60
     time_mask = (epochs[:, None] >= times_start) & (epochs[:, None] <= times_end)
     bin_mask = (spin_bins[:, None] >= times_df["bin_start"].values * 60) & (
         spin_bins[:, None] <= times_df["bin_end"].values * 60
