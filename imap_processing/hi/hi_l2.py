@@ -10,6 +10,7 @@ import xarray as xr
 from imap_processing.ena_maps.ena_maps import (
     AbstractSkyMap,
     HiPointingSet,
+    RectangularSkyMap,
 )
 from imap_processing.ena_maps.utils.corrections import PowerLawFluxCorrector
 from imap_processing.ena_maps.utils.naming import MapDescriptor
@@ -64,6 +65,9 @@ def hi_l2(
         l2_ancillary_path_dict,
         map_descriptor,
     )
+    if not isinstance(sky_map, RectangularSkyMap):
+        raise NotImplementedError("Healpix map output not supported for Hi")
+
     l2_ds = sky_map.build_cdf_dataset(
         "hi",
         "l2",
