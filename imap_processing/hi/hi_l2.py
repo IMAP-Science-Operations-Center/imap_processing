@@ -302,34 +302,36 @@ def combine_calibration_products(
     ena_flux = map_ds["ena_intensity"]
     sys_err = map_ds["ena_intensity_sys_err"]
 
-    # Calculate improved uncertainty estimates using geometric factor ratios
-    # to reduce bias from Poisson uncertainty estimation
+    # Calculate improved statistical variance estimates using geometric factor
+    # ratios to reduce bias from Poisson uncertainty estimation
     improved_stat_variance = _calculate_improved_stat_variance(
         map_ds, geometric_factors, esa_energies
     )
 
-    # Calculate total uncertainty (quadrature sum of statistical and systematic)
+    # Calculate total variance
+    # Note that sys_err contains uncertainty, so it must be squared to get
+    # the systematic variance needed in this equation.
     total_variance = improved_stat_variance + sys_err**2
 
     # Perform inverse-variance weighted averaging
     # Handle divide by zero and invalid values
     with np.errstate(divide="ignore", invalid="ignore"):
-        flux_weights = 1.0 / total_variance
-
-        # Calculate weights for statistical uncertainty combination using only
-        # statistical uncertainty
+        # Calculate weights for statistical variance combination using only
+        # statistical variance
         stat_weights = 1.0 / improved_stat_variance
 
         # Combined statistical uncertainty from inverse-variance formula
         combined_stat_unc = np.sqrt(1.0 / stat_weights.sum(dim="calibration_prod"))
 
-        # Use total uncertainty weights for flux combination
+        # Use total variance weights for flux combination
+        flux_weights = 1.0 / total_variance
         weighted_flux_sum = (ena_flux * flux_weights).sum(dim="calibration_prod")
         combined_flux = weighted_flux_sum / flux_weights.sum(dim="calibration_prod")
 
     map_ds["ena_intensity"] = combined_flux
     map_ds["ena_intensity_stat_unc"] = combined_stat_unc
-    # For systematic error, take root sum of squares
+    # For systematic error, just do quadrature sum over the systematic error for
+    # each calibration product.
     map_ds["ena_intensity_sys_err"] = np.sqrt((sys_err**2).sum(dim="calibration_prod"))
 
     return map_ds
@@ -341,7 +343,7 @@ def _calculate_improved_stat_variance(
     esa_energies: xr.DataArray,
 ) -> xr.DataArray:
     """
-    Calculate improved statistical uncertainties using geometric factor ratios.
+    Calculate improved statistical variances using geometric factor ratios.
 
     This implements the algorithm from Hi Algorithm Document Section 3.1.2:
     For calibration product X, replace N_X in the uncertainty calculation with
@@ -361,14 +363,14 @@ def _calculate_improved_stat_variance(
 
     Returns
     -------
-    improved_unc : xr.DataArray
-        Improved statistical uncertainty estimates.
+    improved_variance : xr.DataArray
+        Improved statistical variance estimates.
     """
     n_calib_prods = map_ds["ena_intensity"].sizes.get("calibration_prod", 1)
 
     if n_calib_prods <= 1:
         # No improvement possible with single calibration product
-        return map_ds["ena_intensity_stat_unc"]
+        return map_ds["ena_intensity_stat_unc"] ** 2
 
     logger.debug("Computing geometric factor normalized signal rates")
 

@@ -387,8 +387,8 @@ def test_combine_calibration_products(sample_map_dataset):
     )
 
 
-def test_calculate_improved_uncertainties(sample_map_dataset):
-    """Test _calculate_improved_uncertainties function"""
+def test_calculate_improved_variance(sample_map_dataset):
+    """Test _calculate_improved_stat_variance function"""
     test_ds, geometric_factors, esa_energies = sample_map_dataset
 
     improved_unc = _calculate_improved_stat_variance(
@@ -404,8 +404,8 @@ def test_calculate_improved_uncertainties(sample_map_dataset):
     assert np.all(np.isfinite(improved_unc.values))
 
 
-def test_calculate_improved_uncertainties_single_product():
-    """Test improved uncertainties with single calibration product"""
+def test_calculate_improved_variance_single_product():
+    """Test improved variance with single calibration product"""
     coords = {
         "epoch": 1,
         "esa_energy_step": 1,
@@ -431,13 +431,13 @@ def test_calculate_improved_uncertainties_single_product():
         }
     )
 
-    improved_unc = _calculate_improved_stat_variance(
+    improved_var = _calculate_improved_stat_variance(
         test_ds, geom_factors, esa_energies
     )
 
     # With single product, should return original uncertainties
     np.testing.assert_array_equal(
-        improved_unc.values, test_ds["ena_intensity_stat_unc"].values
+        improved_var.values, test_ds["ena_intensity_stat_unc"].values ** 2
     )
 
 
