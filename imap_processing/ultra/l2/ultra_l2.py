@@ -326,7 +326,7 @@ def generate_ultra_healpix_skymap(  # noqa: PLR0912
         pointing_set.data["pointing_set_exposure_times_solid_angle"] = (
             pointing_set.data["exposure_factor"] * pointing_set.solid_angle
         )
-
+        # TODO add generalized code in ena_maps to handle this
         # if the variable does not have an epoch dimension, add one temporarily
         # to allow for correct broadcasting during weighting.
         # Keep track of which variables were modified so we can revert them later.
