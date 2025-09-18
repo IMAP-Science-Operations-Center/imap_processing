@@ -108,10 +108,10 @@ class CoDICEL1aPipeline:
         # The dimensions are dependent on the specific data product
         if "angular" in self.config["dataset_name"]:
             despun_dims: tuple[int, ...] = (
+                num_counters,
                 num_energies,
                 num_positions,
                 num_spins,
-                num_counters,
             )
         elif "priority" in self.config["dataset_name"]:
             despun_dims = (num_energies, num_spins, num_counters)
@@ -142,9 +142,9 @@ class CoDICEL1aPipeline:
 
                         if "angular" in self.config["dataset_name"]:
                             spin_data = epoch_data[
-                                energy_index, :, spin_sector_index, :
+                                :, energy_index, :, spin_sector_index
                             ]  # (5, 4)
-                            despun_data[i][energy_index, :, despun_spin_sector, :] = (
+                            despun_data[i][:, energy_index, :, despun_spin_sector] = (
                                 spin_data
                             )
                         elif "priority" in self.config["dataset_name"]:

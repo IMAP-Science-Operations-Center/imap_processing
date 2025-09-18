@@ -393,7 +393,10 @@ def test_lo_sw_angular():
         )
 
         if variable in ["hplus", "heplusplus", "oplus6", "fe_loq"]:
-            # TODO: find out why this didn't match
+            # TODO: remove this if statement after despin bug
+            print(f"first ten values of {variable} do not match:")
+            print(f"Processed: {processed_data[variable].values[0, 0, 0, :]}")
+            print(f"Validation: {val_data[variable].values[0, 0, 0, :]}")
             continue
         np.testing.assert_allclose(
             processed_data[variable].values,
@@ -432,7 +435,13 @@ def test_lo_nsw_angular():
         )
 
         if variable in ["heplusplus"]:
-            # TODO: find out why this didn't match
+            # TODO: uncomment this if statement after despin bug
+            print(
+                f"first ten values of {variable} do not match: "
+                f"{processed_data[variable].values.shape},{val_data[variable].values.shape}"
+            )
+            print(f"Processed: {processed_data[variable].values[3, 0, 0, :]}")
+            print(f"Validation: {val_data[variable].values[3, 0, 0, :]}")
             continue
         np.testing.assert_allclose(
             processed_data[variable].values,
