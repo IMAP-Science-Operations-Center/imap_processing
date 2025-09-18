@@ -1,7 +1,7 @@
 """Test coverage for imap_processing.hi.l2.hi_l2.py"""
 
 from unittest import mock
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -287,9 +287,7 @@ def test_calculate_ena_signal_rates(empty_rectangular_map_dataset):
     assert np.nanmin(signal_rates_vars["ena_signal_rate_stat_unc"].values) == 1 / 2
 
 
-def test_calculate_ena_intensity(
-    empty_rectangular_map_dataset, anc_path_dict
-):
+def test_calculate_ena_intensity(empty_rectangular_map_dataset, anc_path_dict):
     """Test coverage for calculate_ena_intensity"""
     # Start with an empty (coords only) dataset
     map_ds = empty_rectangular_map_dataset
@@ -332,9 +330,7 @@ def test_calculate_ena_intensity(
             ),
         }
     )
-    result_ds = calculate_ena_intensity(
-        map_ds, anc_path_dict
-    )
+    result_ds = calculate_ena_intensity(map_ds, anc_path_dict)
 
     for var_name in [
         "ena_intensity",
