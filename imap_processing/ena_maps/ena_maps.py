@@ -1331,25 +1331,23 @@ class RectangularSkyMap(AbstractSkyMap):
         )
         cdf_ds.attrs.update(map_attrs)
 
-        # Set the variable attributes
-        for var in [*cdf_ds.data_vars, *cdf_ds.coords]:
+        # Set the variable and coordinate attributes
+        for name, data_array in {**cdf_ds.data_vars, **cdf_ds.coords}.items():
             try:
-                # Don't check schema on label or delta variables
-                ignore_schema_substrings = ["_label", "_delta"]
-                check_schema = (
-                    False if any(s in var for s in ignore_schema_substrings) else True
-                )
+                # We only check the schema on data variables that include "epoch"
+                # in their list of dimensions.
+                check_schema = "epoch" in data_array.dims
                 var_attrs = cdf_attrs.get_variable_attributes(
-                    variable_name=var,
+                    variable_name=name,
                     check_schema=check_schema,
                 )
             except KeyError as e:
                 raise KeyError(
-                    f"Attributes for variable {var} not found in "
+                    f"Attributes for variable {name} not found in "
                     f"loaded variable attributes."
                 ) from e
 
-            cdf_ds[var].attrs.update(var_attrs)
+            cdf_ds[name].attrs.update(var_attrs)
 
         return cdf_ds
 

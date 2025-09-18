@@ -22,6 +22,7 @@ longitude_delta:
   VAR_TYPE: metadata
   dtype: float32
   CATDESC: Half-width of longitude pixel
+  DEPEND_1: longitude
   FORMAT: F12.6
   UNITS: degrees
   FIELDNAM: longitude delta
@@ -38,6 +39,7 @@ latitude_delta:
   VAR_TYPE: metadata
   dtype: float32
   CATDESC: Half-width of latitude pixel
+  DEPEND_1: latitude
   FORMAT: F12.6
   UNITS: degrees
   FIELDNAM: latitude delta
