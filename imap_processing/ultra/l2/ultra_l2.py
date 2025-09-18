@@ -160,7 +160,7 @@ def generate_ultra_healpix_skymap(  # noqa: PLR0912
     This function combines IMAP Ultra L1C pointing sets into a single L2 HealpixSkyMap.
     It handles the projection of values from pointing sets to the map, applies necessary
     weighting and background subtraction, and calculates ena_intensity
-    and ena_intensity_stat_unc.
+    and ena_intensity_stat_uncert.
 
     Parameters
     ----------
@@ -391,7 +391,7 @@ def generate_ultra_healpix_skymap(  # noqa: PLR0912
             skymap.data_1d["sensitivity"] * skymap.solid_angle * delta_energy
         )
 
-        skymap.data_1d["ena_intensity_stat_unc"] = (
+        skymap.data_1d["ena_intensity_stat_uncert"] = (
             skymap.data_1d["counts"].astype(float) ** 0.5
         ) / (
             skymap.data_1d["exposure_factor"]
@@ -630,7 +630,7 @@ def ultra_l2(
     # Add systematic error as all zeros with shape matching statistical unc
     # TODO: update once we have information from the instrument team
     map_dataset["ena_intensity_sys_err"] = xr.zeros_like(
-        map_dataset["ena_intensity_stat_unc"],
+        map_dataset["ena_intensity_stat_uncert"],
     )
 
     # Add epoch_delta

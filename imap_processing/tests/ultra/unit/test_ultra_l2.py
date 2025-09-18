@@ -156,7 +156,7 @@ class TestUltraL2:
             "background_rates",
             "ena_intensity",
             "obs_date_range",
-            "ena_intensity_stat_unc",
+            "ena_intensity_stat_uncert",
             "exposure_factor",
             "sensitivity",
             "geometric_function",
@@ -191,7 +191,7 @@ class TestUltraL2:
             rtol=rtol,
         )
         np.testing.assert_allclose(
-            hp_skymap.data_1d["ena_intensity_stat_unc"].values,
+            hp_skymap.data_1d["ena_intensity_stat_uncert"].values,
             expected_ena_intensity_unc,
             rtol=rtol,
         )
@@ -265,7 +265,7 @@ class TestUltraL2:
             "background_rates",
             "ena_intensity",
             "obs_date_range",
-            "ena_intensity_stat_unc",
+            "ena_intensity_stat_uncert",
             "exposure_factor",
             "obs_date",
         ]
@@ -334,7 +334,7 @@ class TestUltraL2:
             + ultra_l2.REQUIRED_L1C_VARIABLES_PULL
             + ultra_l2.VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION
             + ultra_l2.EXPECTED_L1C_POINTING_INDEPENDENT_VARIABLES_PULL
-            + ["ena_intensity", "ena_intensity_stat_unc"]
+            + ["ena_intensity", "ena_intensity_stat_uncert"]
         )
         for var in expected_vars:
             assert var in hp_skymap.data_1d.data_vars
@@ -351,7 +351,7 @@ class TestUltraL2:
         )
         assert hp_skymap.data_1d["counts"].dims == counts_dims
         assert hp_skymap.data_1d["ena_intensity"].dims == counts_dims
-        assert hp_skymap.data_1d["ena_intensity_stat_unc"].dims == counts_dims
+        assert hp_skymap.data_1d["ena_intensity_stat_uncert"].dims == counts_dims
         assert hp_skymap.data_1d["exposure_factor"].dims == counts_dims
         assert hp_skymap.data_1d["background_rates"].dims == counts_dims
 
@@ -493,7 +493,7 @@ class TestUltraL2:
         )
         assert rect_map_dataset["ena_intensity"].dims == expected_ena_intensity_dims
         assert (
-            rect_map_dataset["ena_intensity_stat_unc"].dims
+            rect_map_dataset["ena_intensity_stat_uncert"].dims
             == expected_ena_intensity_dims
         )
         assert rect_map_dataset["exposure_factor"].dims == expected_ena_intensity_dims

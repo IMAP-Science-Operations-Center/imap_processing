@@ -121,7 +121,7 @@ def sample_map_dataset():
             "ena_intensity": xr.DataArray(
                 np.random.rand(*shape) * 100 + 50, dims=list(coords.keys())
             ),
-            "ena_intensity_stat_unc": xr.DataArray(
+            "ena_intensity_stat_uncert": xr.DataArray(
                 np.random.rand(*shape) * 10 + 5, dims=list(coords.keys())
             ),
             "ena_intensity_sys_err": xr.DataArray(
@@ -370,7 +370,7 @@ def test_calculate_ena_intensity(ena_intensity_map_ds, anc_path_dict):
 
     for var_name in [
         "ena_intensity",
-        "ena_intensity_stat_unc",
+        "ena_intensity_stat_uncert",
         "ena_intensity_sys_err",
     ]:
         assert var_name in result_ds
@@ -423,7 +423,11 @@ def test_combine_calibration_products(sample_map_dataset):
     )
 
     # Check that all expected variables are present
-    expected_vars = ["ena_intensity", "ena_intensity_stat_unc", "ena_intensity_sys_err"]
+    expected_vars = [
+        "ena_intensity",
+        "ena_intensity_stat_uncert",
+        "ena_intensity_sys_err",
+    ]
     for var_name in expected_vars:
         assert var_name in result_ds
         # Check that calibration_prod dimension has been removed
@@ -441,7 +445,7 @@ def test_combine_calibration_products(sample_map_dataset):
     )
 
     # Check that combined uncertainty is reasonable
-    combined_unc = result_ds["ena_intensity_stat_unc"]
+    combined_unc = result_ds["ena_intensity_stat_uncert"]
     assert np.all(combined_unc.values[np.isfinite(combined_unc.values)] >= 0), (
         "Combined uncertainty should be non-negative"
     )
@@ -465,7 +469,7 @@ def test_calculate_improved_variance(sample_map_dataset):
     )
 
     # Check that result has same shape as input statistical uncertainties
-    original_unc = test_ds["ena_intensity_stat_unc"]
+    original_unc = test_ds["ena_intensity_stat_uncert"]
     assert improved_unc.shape == original_unc.shape
 
     # Check that improved uncertainties are finite and non-negative
@@ -494,7 +498,7 @@ def test_calculate_improved_variance_single_product():
             "ena_intensity": xr.DataArray(
                 np.array([[[[[100.0]]]]]), dims=list(coords.keys())
             ),
-            "ena_intensity_stat_unc": xr.DataArray(
+            "ena_intensity_stat_uncert": xr.DataArray(
                 np.array([[[[[10.0]]]]]), dims=list(coords.keys())
             ),
         }
@@ -506,7 +510,7 @@ def test_calculate_improved_variance_single_product():
 
     # With single product, should return original uncertainties
     np.testing.assert_array_equal(
-        improved_var.values, test_ds["ena_intensity_stat_unc"].values ** 2
+        improved_var.values, test_ds["ena_intensity_stat_uncert"].values ** 2
     )
 
 
@@ -539,7 +543,7 @@ def test_weighted_average_mathematical_correctness():
     test_ds = xr.Dataset(
         {
             "ena_intensity": xr.DataArray(flux_values, dims=list(coords.keys())),
-            "ena_intensity_stat_unc": xr.DataArray(
+            "ena_intensity_stat_uncert": xr.DataArray(
                 stat_unc_values, dims=list(coords.keys())
             ),
             "ena_intensity_sys_err": xr.DataArray(
@@ -570,7 +574,7 @@ def test_weighted_average_mathematical_correctness():
 
     # Check that results are finite and reasonable
     assert np.isfinite(result_ds["ena_intensity"].values[0, 0, 0, 0])
-    assert result_ds["ena_intensity_stat_unc"].values[0, 0, 0, 0] > 0
+    assert result_ds["ena_intensity_stat_uncert"].values[0, 0, 0, 0] > 0
     assert result_ds["ena_intensity_sys_err"].values[0, 0, 0, 0] > 0
 
     # Systematic error should be root sum of squares
@@ -600,7 +604,7 @@ def test_statistical_uncertainty_combination_correctness():
     test_ds = xr.Dataset(
         {
             "ena_intensity": xr.DataArray(flux_values, dims=list(coords.keys())),
-            "ena_intensity_stat_unc": xr.DataArray(
+            "ena_intensity_stat_uncert": xr.DataArray(
                 stat_unc_values, dims=list(coords.keys())
             ),
             "ena_intensity_sys_err": xr.DataArray(
@@ -634,7 +638,7 @@ def test_statistical_uncertainty_combination_correctness():
     expected_flux = np.sum(flux_values.squeeze() * flux_weights) / np.sum(flux_weights)
 
     np.testing.assert_almost_equal(
-        result_ds["ena_intensity_stat_unc"].values,
+        result_ds["ena_intensity_stat_uncert"].values,
         expected_combined_stat_unc,
         decimal=10,
     )
@@ -660,7 +664,7 @@ def test_combine_calibration_products_edge_cases():
             "ena_intensity": xr.DataArray(
                 np.array([100.0]).reshape(1, 1, 1, 1, 1), dims=list(coords.keys())
             ),
-            "ena_intensity_stat_unc": xr.DataArray(
+            "ena_intensity_stat_uncert": xr.DataArray(
                 np.array([10.0]).reshape(1, 1, 1, 1, 1), dims=list(coords.keys())
             ),
             "ena_intensity_sys_err": xr.DataArray(
@@ -682,5 +686,5 @@ def test_combine_calibration_products_edge_cases():
     np.testing.assert_almost_equal(result_ds["ena_intensity"].values[0, 0, 0, 0], 100.0)
 
     # Check that calibration_prod dimension was removed
-    for var in ["ena_intensity", "ena_intensity_stat_unc", "ena_intensity_sys_err"]:
+    for var in ["ena_intensity", "ena_intensity_stat_uncert", "ena_intensity_sys_err"]:
         assert "calibration_prod" not in result_ds[var].dims

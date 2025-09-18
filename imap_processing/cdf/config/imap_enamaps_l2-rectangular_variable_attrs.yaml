@@ -67,7 +67,7 @@ ena_intensity:
   LABL_PTR_2: longitude_label
   LABL_PTR_3: latitude_label
 
-ena_intensity_stat_unc:
+ena_intensity_stat_uncert:
   DEPEND_1: energy
   DEPEND_2: longitude
   DEPEND_3: latitude

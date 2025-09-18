@@ -229,7 +229,7 @@ def calculate_ena_intensity(
     Returns
     -------
     map_ds : xarray.Dataset
-        Map dataset with new variables: ena_intensity, ena_intensity_stat_unc,
+        Map dataset with new variables: ena_intensity, ena_intensity_stat_uncert,
         ena_intensity_sys_err.
     """
     # read calibration product configuration file
@@ -248,7 +248,7 @@ def calculate_ena_intensity(
     # Convert ENA Signal Rate to Flux
     flux_conversion_divisor = geometric_factor * esa_energy
     map_ds["ena_intensity"] = map_ds["ena_signal_rates"] / flux_conversion_divisor
-    map_ds["ena_intensity_stat_unc"] = (
+    map_ds["ena_intensity_stat_uncert"] = (
         map_ds["ena_signal_rate_stat_unc"] / flux_conversion_divisor
     )
     map_ds["ena_intensity_sys_err"] = map_ds["bg_rates_unc"] / flux_conversion_divisor
@@ -302,7 +302,7 @@ def combine_calibration_products(
     Returns
     -------
     map_ds : xarray.Dataset
-        Map dataset with updated variables: ena_intensity, ena_intensity_stat_unc,
+        Map dataset with updated variables: ena_intensity, ena_intensity_stat_uncert,
         ena_intensity_sys_err now combined across calibration products at each
         energy level.
     """
@@ -336,7 +336,7 @@ def combine_calibration_products(
         combined_flux = weighted_flux_sum / flux_weights.sum(dim="calibration_prod")
 
     map_ds["ena_intensity"] = combined_flux
-    map_ds["ena_intensity_stat_unc"] = combined_stat_unc
+    map_ds["ena_intensity_stat_uncert"] = combined_stat_unc
     # For systematic error, just do quadrature sum over the systematic error for
     # each calibration product.
     map_ds["ena_intensity_sys_err"] = np.sqrt((sys_err**2).sum(dim="calibration_prod"))
@@ -377,7 +377,7 @@ def _calculate_improved_stat_variance(
 
     if n_calib_prods <= 1:
         # No improvement possible with single calibration product
-        return map_ds["ena_intensity_stat_unc"] ** 2
+        return map_ds["ena_intensity_stat_uncert"] ** 2
 
     logger.debug("Computing geometric factor normalized signal rates")
 
@@ -417,7 +417,7 @@ def _calculate_improved_stat_variance(
     # Handle invalid cases by falling back to original uncertainties
     improved_variance = xr.where(
         ~np.isfinite(improved_variance) | (geometric_factors == 0),
-        map_ds["ena_intensity_stat_unc"],
+        map_ds["ena_intensity_stat_uncert"],
         improved_variance,
     )
 

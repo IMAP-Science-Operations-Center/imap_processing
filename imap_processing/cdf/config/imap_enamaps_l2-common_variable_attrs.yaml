@@ -122,15 +122,15 @@ ena_intensity:
   CATDESC: Mono-energetic ENA intensity.
   FIELDNAM: Intensity
   UNITS: counts/(s * cm^2 * Sr * KeV)
-  DELTA_MINUS_VAR: ena_intensity_stat_unc
-  DELTA_PLUS_VAR: ena_intensity_stat_unc
+  DELTA_MINUS_VAR: ena_intensity_stat_uncert
+  DELTA_PLUS_VAR: ena_intensity_stat_uncert
   DEPEND_0: epoch
   VAR_TYPE: data
   LABLAXIS: Intensity
   DISPLAY_TYPE: image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Incident,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
-ena_intensity_stat_unc:
+ena_intensity_stat_uncert:
   <<: *default_float32
   CATDESC: ENA intensity statistical uncertainty.
   FIELDNAM: Intensity stat unc
