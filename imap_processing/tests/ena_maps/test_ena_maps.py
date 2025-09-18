@@ -642,7 +642,7 @@ class TestRectangularSkyMap:
         skymap.min_epoch = 10
         skymap.max_epoch = 15
         cdf_dataset = skymap.build_cdf_dataset(
-            "hi", "l2", "sf", "foo_descriptor", sensor="45"
+            "hi", "l2", "foo_descriptor", sensor="45"
         )
 
         # Check that expected var gets removed
@@ -694,9 +694,7 @@ class TestRectangularSkyMap:
         with pytest.raises(
             KeyError, match="Attributes for variable no_attrs_var not found"
         ):
-            _ = skymap.build_cdf_dataset(
-                "hi", "l2", "sf", "foo_descriptor", sensor="45"
-            )
+            _ = skymap.build_cdf_dataset("hi", "l2", "foo_descriptor", sensor="45")
 
         # Test that missing energy delta variable raise KeyError
         # Test for missing energy_delta_plus
@@ -706,9 +704,7 @@ class TestRectangularSkyMap:
             KeyError,
             match="Required variable 'energy_delta_plus' not found in cdf Dataset.",
         ):
-            _ = skymap.build_cdf_dataset(
-                "hi", "l2", "sf", "foo_descriptor", sensor="45"
-            )
+            _ = skymap.build_cdf_dataset("hi", "l2", "foo_descriptor", sensor="45")
         # Test for missing energy_delta_minus
         mock_dataset = mock_dataset.drop(["energy_delta_minus"])
         mock_to_dataset.return_value = mock_dataset
@@ -716,9 +712,7 @@ class TestRectangularSkyMap:
             KeyError,
             match="Required variable 'energy_delta_minus' not found in cdf Dataset.",
         ):
-            _ = skymap.build_cdf_dataset(
-                "hi", "l2", "sf", "foo_descriptor", sensor="45"
-            )
+            _ = skymap.build_cdf_dataset("hi", "l2", "foo_descriptor", sensor="45")
 
 
 class TestHealpixSkyMap:

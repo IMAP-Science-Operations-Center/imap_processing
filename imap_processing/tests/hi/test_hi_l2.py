@@ -152,6 +152,7 @@ def test_hi_l2(
 ):
     """Integration type test for hi_l2()"""
     pset_path = hi_l1_test_data_path / "imap_hi_l1c_45sensor-pset_20250415_v999.cdf"
+    descriptor = "h90-ena-h-sf-nsp-full-hae-4deg-3mo"
 
     l2_dataset = hi_l2(
         [pset_path],
@@ -159,6 +160,12 @@ def test_hi_l2(
         "h90-ena-h-sf-nsp-full-hae-4deg-3mo",
     )[0]
     assert isinstance(l2_dataset, xr.Dataset)
+
+    # Check some global attributes
+    assert l2_dataset.attrs["Data_type"].startswith(f"L2_{descriptor}")
+    assert l2_dataset.attrs["Logical_source"] == f"imap_hi_l2_{descriptor}"
+    assert "Hi90" in l2_dataset.attrs["Logical_source_description"]
+
     assert len(l2_dataset.data_vars) == 15
     np.testing.assert_array_equal(
         l2_dataset["ena_intensity"].dims, ["epoch", "energy", "longitude", "latitude"]

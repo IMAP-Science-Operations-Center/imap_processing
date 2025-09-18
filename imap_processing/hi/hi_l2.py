@@ -66,7 +66,6 @@ def hi_l2(
     l2_ds = sky_map.build_cdf_dataset(
         "hi",
         "l2",
-        map_descriptor.frame_descriptor,
         descriptor,
         sensor=map_descriptor.sensor,
     )

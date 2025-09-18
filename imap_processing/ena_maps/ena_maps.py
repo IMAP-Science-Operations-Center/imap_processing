@@ -1222,7 +1222,6 @@ class RectangularSkyMap(AbstractSkyMap):
         self,
         instrument: str,
         level: str,
-        frame: str,
         descriptor: str,
         sensor: str | None = None,
     ) -> xr.Dataset:
@@ -1235,8 +1234,6 @@ class RectangularSkyMap(AbstractSkyMap):
             Instrument name. "hi", "lo", "ultra".
         level : str
             Product level. "l2" or "l3".
-        frame : str
-            Map frame. "sf", "hf" or "hk".
         descriptor : str
             Descriptor for filename.
         sensor : str, optional
@@ -1318,16 +1315,14 @@ class RectangularSkyMap(AbstractSkyMap):
         )
 
         # Now set global attributes
-        map_attrs = cdf_attrs.get_global_attributes(
-            f"imap_{instrument}_{level}_enamap-{frame}"
-        )
+        map_attrs = cdf_attrs.get_global_attributes(f"imap_{instrument}_{level}_enamap")
         map_attrs["Spacing_degrees"] = str(self.spacing_deg)
         for key in ["Data_type", "Logical_source", "Logical_source_description"]:
             map_attrs[key] = map_attrs[key].format(
                 descriptor=descriptor,
                 sensor=sensor,
             )
-            # Always add the following attributes to the map
+        # Always add the following attributes to the map
         map_attrs.update(
             {
                 "Sky_tiling_type": self.tiling_type.value,
