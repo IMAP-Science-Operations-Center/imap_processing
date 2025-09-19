@@ -268,12 +268,12 @@ def calculate_ena_intensity(
         # dimension by passing the zeroth element.
         corrected_intensity, corrected_stat_unc = corrector.apply_flux_correction(
             map_ds["ena_intensity"].values[0],
-            map_ds["ena_intensity_stat_unc"].values[0],
+            map_ds["ena_intensity_stat_uncert"].values[0],
             esa_energy.data,
         )
         # Add the size 1 epoch dimension back in to the corrected fluxes.
         map_ds["ena_intensity"].data = corrected_intensity[np.newaxis, ...]
-        map_ds["ena_intensity_stat_unc"].data = corrected_stat_unc[np.newaxis, ...]
+        map_ds["ena_intensity_stat_uncert"].data = corrected_stat_unc[np.newaxis, ...]
 
     return map_ds
 
