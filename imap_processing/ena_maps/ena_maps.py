@@ -1335,8 +1335,8 @@ class RectangularSkyMap(AbstractSkyMap):
         for name, data_array in {**cdf_ds.data_vars, **cdf_ds.coords}.items():
             try:
                 # We only check the schema on data variables that include "epoch"
-                # in their list of dimensions.
-                check_schema = "epoch" in data_array.dims
+                # in their list of dimensions (But not epoch itself).
+                check_schema = name != "epoch" and "epoch" in data_array.dims
                 var_attrs = cdf_attrs.get_variable_attributes(
                     variable_name=name,
                     check_schema=check_schema,

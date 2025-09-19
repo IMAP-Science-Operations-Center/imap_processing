@@ -54,15 +54,6 @@ energy_label:
   FORMAT: A16
   DEPEND_1: energy
 
-epoch_delta:
-  <<: *default_int64
-  CATDESC: Number of nanoseconds covered by data included in this map product.
-  FIELDNAM: epoch_delta
-  UNITS: ns
-  VAR_TYPE: support_data
-  DISPLAY_TYPE: no_plot
-  TIME_SCALE: Terrestrial Time
-
 energy_delta_minus:
   <<: *default_float32
   VAR_TYPE: support_data
@@ -87,29 +78,37 @@ energy_delta_plus:
   LABL_PTR_1: energy_label
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:Energy,Qualifier:Uncertainty
 
+epoch_delta:
+  <<: *default_int64
+  CATDESC: Number of nanoseconds covered by data included in this map product.
+  FIELDNAM: epoch_delta
+  UNITS: ns
+  VAR_TYPE: support_data
+  DISPLAY_TYPE: no_plot
+  TIME_SCALE: Terrestrial Time
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal
+
 # These two coordinates will be treated differently in the
 # HEALPix and rectangular tilings. They will be substantially overridden
 # in the tiling-specific YAML files.
 longitude:
   <<: *default_float32
-  CATDESC: Pixel center longitude in range [0, 360].
-  FIELDNAM: Longitude
-  LABLAXIS: Longitude
+  CATDESC: Pixel center longitude in {frame} reference frame in the range [0, 360].
+  FIELDNAM: {frame} Longitude
+  LABLAXIS: {frame} Longitude
   UNITS: degrees
   VAR_TYPE: support_data
-  DISPLAY_TYPE: no_plot
   VALIDMIN: 0
   VALIDMAX: 360
   DICT_KEY: SPASE>Support>SupportQuantity:Orientation,Qualifier:DirectionAngle.AzimuthAngle,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 latitude:
   <<: *default_float32
-  CATDESC: Pixel center latitude in range [-90, 90].
-  FIELDNAM: Latitude
-  LABLAXIS: Latitude
+  CATDESC: Pixel center latitude in {frame} reference frame in the range [-90, 90].
+  FIELDNAM: {frame} Latitude
+  LABLAXIS: {frame} Latitude
   UNITS: degrees
   VAR_TYPE: support_data
-  DISPLAY_TYPE: no_plot
   VALIDMIN: -90
   VALIDMAX: 90
   DICT_KEY: SPASE>Support>SupportQuantity:Orientation,Qualifier:DirectionAngle.ElevationAngle,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
@@ -136,7 +135,7 @@ ena_intensity_stat_uncert:
   FIELDNAM: Intensity stat unc
   UNITS: counts/(s * cm^2 * Sr * KeV)
   DEPEND_0: epoch
-  VAR_TYPE: data
+  VAR_TYPE: support_data
   LABLAXIS: Statistical Unc
   DISPLAY_TYPE: map_image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
@@ -147,7 +146,7 @@ ena_intensity_sys_err:
   FIELDNAM: Intensity non-stat error
   UNITS: counts/(s * cm^2 * Sr * KeV)
   DEPEND_0: epoch
-  VAR_TYPE: data
+  VAR_TYPE: support_data
   LABLAXIS: Non-Statistical Err
   DISPLAY_TYPE: map_image
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:NumberFlux,Qualifier:Uncertainty,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
@@ -192,7 +191,7 @@ sensitivity:
   UNITS: cm^2
   VAR_TYPE: support_data
   LABLAXIS: sensitivity
-  DISPLAY_TYPE: map_image
+  DISPLAY_TYPE: no_plot
   DICT_KEY: SPASE>Particle>ParticleType:Atom,ParticleQuantity:GeometricFactor,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
 
 exposure_factor: &exposure_factor
@@ -204,7 +203,7 @@ exposure_factor: &exposure_factor
   VAR_TYPE: data
   LABLAXIS: Exposure
   DISPLAY_TYPE: no_plot
-  DICT_KEY: SPASE>TemporalDescription:Exposure,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal
 
 geometric_function:
   <<: *default_float32
@@ -253,7 +252,7 @@ obs_date: &obs_date
   FIELDNAM: J2000 Nanoseconds
   UNITS: ns
   DEPEND_0: epoch
-  VAR_TYPE: data
+  VAR_TYPE: support_data
   LABLAXIS: epoch
   DISPLAY_TYPE: no_plot
   DICT_KEY: SPASE>TemporalDescription:TimeSpan,Qualifier:Directional,CoordinateSystemName:HAE,CoordinateRepresentation:Spherical
@@ -265,10 +264,11 @@ obs_date_range:
   FIELDNAM: Observation date range
   UNITS: ns
   DEPEND_0: epoch
-  VAR_TYPE: data
+  VAR_TYPE: support_data
   LABLAXIS: epoch
   DISPLAY_TYPE: no_plot
   TIME_SCALE: Terrestrial Time
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal
 
 # These copied metadata vars will allow for variables
 # to be either energy-dependent or independent.
@@ -290,5 +290,5 @@ solid_angle:
   VAR_TYPE: support_data
   UNITS: sr
   LABLAXIS: Solid Angle
-  DISPLAY_TYPE: map_image
+  DISPLAY_TYPE: no_plot
   DICT_KEY: SPASE>Support>SupportQuantity:Other

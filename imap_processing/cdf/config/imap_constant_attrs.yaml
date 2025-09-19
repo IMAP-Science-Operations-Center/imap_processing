@@ -19,7 +19,7 @@ epoch:
   TIME_SCALE: Terrestrial Time
   REFERENCE_POSITION: Rotating Earth Geoid
   RESOLUTION: ' '
-  DICT_KEY: "SPASE>Support>SupportQantity:Temporal"
+  DICT_KEY: "SPASE>Support>SupportQuantity:Temporal"
 
 
 # <=== Data Variables ===>

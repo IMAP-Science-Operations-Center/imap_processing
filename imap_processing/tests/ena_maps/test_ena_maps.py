@@ -650,12 +650,17 @@ class TestRectangularSkyMap:
         # Check the epoch values
         assert CoordNames.TIME.value in cdf_dataset
         assert cdf_dataset[CoordNames.TIME.value].values[0] == skymap.min_epoch
+        assert (
+            cdf_dataset[CoordNames.TIME.value].attrs["DELTA_PLUS_VAR"] == "epoch_delta"
+        )
+        # Check epoch_delta
         assert f"{CoordNames.TIME.value}_delta" in cdf_dataset
         assert (
             cdf_dataset[f"{CoordNames.TIME.value}_delta"].values[0]
             == skymap.max_epoch - skymap.min_epoch
         )
 
+        # Energy related checks
         assert CoordNames.ENERGY_L2.value in cdf_dataset
         assert f"{CoordNames.ENERGY_L2.value}_delta_plus" in cdf_dataset
         assert f"{CoordNames.ENERGY_L2.value}_delta_minus" in cdf_dataset
@@ -668,6 +673,19 @@ class TestRectangularSkyMap:
         assert CoordNames.ELEVATION_L2.value in cdf_dataset
         assert f"{CoordNames.ELEVATION_L2.value}_delta" in cdf_dataset
         assert f"{CoordNames.ELEVATION_L2.value}_label" in cdf_dataset
+
+        # Check that coordinate variables don't have the following variable attributes
+        not_coord_attrs = ["DEPEND_0", "DISPLAY_TYPE"]
+        for var in [
+            CoordNames.TIME.value,
+            CoordNames.ENERGY_L2.value,
+            CoordNames.AZIMUTH_L2.value,
+            CoordNames.ELEVATION_L2.value,
+        ]:
+            for attr in not_coord_attrs:
+                assert attr not in cdf_dataset[var].attrs, (
+                    f"attr '{attr}' should not be in variable attributes for '{var}'"
+                )
 
     @mock.patch("imap_processing.ena_maps.ena_maps.RectangularSkyMap.to_dataset")
     def test_build_cdf_dataset_key_error(
