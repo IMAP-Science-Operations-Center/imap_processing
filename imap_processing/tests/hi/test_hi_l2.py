@@ -197,7 +197,7 @@ def test_hi_l2_uses_descriptor_to_setup_map(
     assert rect_map.spacing_deg == 2.0
 
     mock_map_build_cdf_dataset.assert_called_with(
-        rect_map, "hi", "l2", "sf", descriptor_str, sensor="90"
+        rect_map, "hi", "l2", descriptor_str, sensor="90"
     )
 
 
