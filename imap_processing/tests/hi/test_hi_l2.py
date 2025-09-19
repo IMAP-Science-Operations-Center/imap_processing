@@ -240,6 +240,24 @@ def test_genarate_hi_map(
         assert np.nanmax(sky_map.data_1d[var_name].data) > 0
 
 
+def test_generate_hi_map_not_implemented():
+    """Test that the generate_hi_map function raises NotImplementedError."""
+    # Test that trying to produce Healpix raises
+    with pytest.raises(
+        NotImplementedError, match="Healpix map output not supported for Hi"
+    ):
+        _ = generate_hi_map(
+            [], {}, MapDescriptor.from_string("h90-ena-h-sf-nsp-full-gcs-nside32-3mo")
+        )
+    # Temporary test for CG correction not implemented
+    with pytest.raises(
+        NotImplementedError, match="CG correction not implemented for Hi"
+    ):
+        _ = generate_hi_map(
+            [], {}, MapDescriptor.from_string("h90-ena-h-hf-nsp-full-gcs-6deg-3mo")
+        )
+
+
 def test_calculate_ena_signal_rates(empty_rectangular_map_dataset):
     """Test coverage for calculate_ena_signal_rates"""
     # Start with an empty (coords only) dataset

@@ -8,7 +8,6 @@ import pandas as pd
 import xarray as xr
 
 from imap_processing.ena_maps.ena_maps import (
-    AbstractSkyMap,
     HiPointingSet,
     RectangularSkyMap,
 )
@@ -52,8 +51,6 @@ def hi_l2(
     )
 
     map_descriptor = MapDescriptor.from_string(descriptor)
-    if "nside" in map_descriptor.resolution_str:
-        raise NotImplementedError("HEALPix map output not supported for Hi")
     if not isinstance(map_descriptor.sensor, str):
         raise ValueError(
             "Invalid map_descriptor. Sensor attribute must be of type str "
@@ -65,8 +62,6 @@ def hi_l2(
         l2_ancillary_path_dict,
         map_descriptor,
     )
-    if not isinstance(sky_map, RectangularSkyMap):
-        raise NotImplementedError("Healpix map output not supported for Hi")
 
     l2_ds = sky_map.build_cdf_dataset(
         "hi",
@@ -83,7 +78,7 @@ def generate_hi_map(
     psets: list[str | Path],
     l2_ancillary_path_dict: dict[str, Path],
     descriptor: MapDescriptor,
-) -> AbstractSkyMap:
+) -> RectangularSkyMap:
     """
     Project Hi PSET data into a sky map.
 
@@ -100,10 +95,13 @@ def generate_hi_map(
 
     Returns
     -------
-    sky_map : AbstractSkyMap
+    sky_map : RectangularSkyMap
         The sky map with all the PSET data projected into the map.
     """
     output_map = descriptor.to_empty_map()
+
+    if not isinstance(output_map, RectangularSkyMap):
+        raise NotImplementedError("Healpix map output not supported for Hi")
 
     # TODO: Implement Compton-Getting correction
     if descriptor.frame_descriptor != "sf":
