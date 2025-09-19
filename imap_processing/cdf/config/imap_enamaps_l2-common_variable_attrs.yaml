@@ -93,9 +93,9 @@ epoch_delta:
 # in the tiling-specific YAML files.
 longitude:
   <<: *default_float32
-  CATDESC: Pixel center longitude in {frame} reference frame in the range [0, 360].
-  FIELDNAM: {frame} Longitude
-  LABLAXIS: {frame} Longitude
+  CATDESC: "Pixel center longitude in {frame} reference frame in the range [0, 360]."
+  FIELDNAM: "{frame} Longitude"
+  LABLAXIS: "{frame} Longitude"
   UNITS: degrees
   VAR_TYPE: support_data
   VALIDMIN: 0
@@ -104,9 +104,9 @@ longitude:
 
 latitude:
   <<: *default_float32
-  CATDESC: Pixel center latitude in {frame} reference frame in the range [-90, 90].
-  FIELDNAM: {frame} Latitude
-  LABLAXIS: {frame} Latitude
+  CATDESC: "Pixel center latitude in {frame} reference frame in the range [-90, 90]."
+  FIELDNAM: "{frame} Latitude"
+  LABLAXIS: "{frame} Latitude"
   UNITS: degrees
   VAR_TYPE: support_data
   VALIDMIN: -90
