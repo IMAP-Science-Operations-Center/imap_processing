@@ -132,7 +132,7 @@ def generate_hi_map(
 
     output_map.data_1d.update(calculate_ena_signal_rates(output_map.data_1d))
     output_map.data_1d = calculate_ena_intensity(
-        output_map.data_1d, l2_ancillary_path_dict
+        output_map.data_1d, l2_ancillary_path_dict, descriptor
     )
 
     output_map.data_1d["obs_date"].data = output_map.data_1d["obs_date"].data.astype(
@@ -212,6 +212,7 @@ def calculate_ena_signal_rates(map_ds: xr.Dataset) -> dict[str, xr.DataArray]:
 def calculate_ena_intensity(
     map_ds: xr.Dataset,
     l2_ancillary_path_dict: dict[str, Path],
+    descriptor: MapDescriptor,
 ) -> xr.Dataset:
     """
     Calculate the ena intensities.
@@ -223,6 +224,10 @@ def calculate_ena_intensity(
     l2_ancillary_path_dict : dict[str, pathlib.Path]
         Mapping containing ancillary file descriptors as keys and file paths as
         values. Require keys are: ["cal-prod", "esa-energies", "esa-eta-fit-factors"].
+    descriptor : imap_processing.ena_maps.utils.naming.MapDescriptor
+        Output filename descriptor. Contains full configuration for the options
+        of how to generate the map. For this function, the principal data string
+        is used to determine if a flux correction should be applied.
 
     Returns
     -------
@@ -259,18 +264,19 @@ def calculate_ena_intensity(
         esa_energy,
     )
 
-    # Flux correction
-    corrector = PowerLawFluxCorrector(l2_ancillary_path_dict["esa-eta-fit-factors"])
-    # FluxCorrector does not accept the size 1 epoch dimension. Remove that
-    # dimension by passing the zeroth element.
-    corrected_intensity, corrected_stat_unc = corrector.apply_flux_correction(
-        map_ds["ena_intensity"].values[0],
-        map_ds["ena_intensity_stat_unc"].values[0],
-        esa_energy.data,
-    )
-    # Add the size 1 epoch dimension back in to the corrected fluxes.
-    map_ds["ena_intensity"].data = corrected_intensity[np.newaxis, ...]
-    map_ds["ena_intensity_stat_unc"].data = corrected_stat_unc[np.newaxis, ...]
+    if "raw" not in descriptor.principal_data:
+        # Flux correction
+        corrector = PowerLawFluxCorrector(l2_ancillary_path_dict["esa-eta-fit-factors"])
+        # FluxCorrector does not accept the size 1 epoch dimension. Remove that
+        # dimension by passing the zeroth element.
+        corrected_intensity, corrected_stat_unc = corrector.apply_flux_correction(
+            map_ds["ena_intensity"].values[0],
+            map_ds["ena_intensity_stat_unc"].values[0],
+            esa_energy.data,
+        )
+        # Add the size 1 epoch dimension back in to the corrected fluxes.
+        map_ds["ena_intensity"].data = corrected_intensity[np.newaxis, ...]
+        map_ds["ena_intensity_stat_unc"].data = corrected_stat_unc[np.newaxis, ...]
 
     return map_ds
 

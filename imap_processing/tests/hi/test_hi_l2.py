@@ -23,7 +23,7 @@ from imap_processing.hi.hi_l2 import (
 from imap_processing.spice.geometry import SpiceFrame
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def empty_rectangular_map_dataset() -> xr.Dataset:
     """Generate an empty rectangular map Dataset with coords only"""
     coords = {
@@ -209,7 +209,7 @@ def test_genarate_hi_map(
     mock_esa_energy_lookup.side_effect = lambda x, y: pd.DataFrame(
         {"nominal_central_energy": y, "bandpass_fwhm": np.ones_like(y)}
     )
-    mock_calc_ena_intensity.side_effect = lambda x, y: x
+    mock_calc_ena_intensity.side_effect = lambda x, y, z: x
 
     kernels = [
         "imap_sclk_0000.tsc",
@@ -287,10 +287,11 @@ def test_calculate_ena_signal_rates(empty_rectangular_map_dataset):
     assert np.nanmin(signal_rates_vars["ena_signal_rate_stat_unc"].values) == 1 / 2
 
 
-def test_calculate_ena_intensity(empty_rectangular_map_dataset, anc_path_dict):
-    """Test coverage for calculate_ena_intensity"""
+@pytest.fixture(scope="module")
+def ena_intensity_map_ds(empty_rectangular_map_dataset):
+    """Fixture that produces a dataset to use in testing ena_intensity."""
     # Start with an empty (coords only) dataset
-    map_ds = empty_rectangular_map_dataset
+    map_ds = empty_rectangular_map_dataset.copy()
     # Add some data_vars needed for the ena intensity calculations
     var_shape = tuple(map_ds.sizes.values())
     map_ds.update(
@@ -330,7 +331,17 @@ def test_calculate_ena_intensity(empty_rectangular_map_dataset, anc_path_dict):
             ),
         }
     )
-    result_ds = calculate_ena_intensity(map_ds, anc_path_dict)
+    return map_ds
+
+
+def test_calculate_ena_intensity(ena_intensity_map_ds, anc_path_dict):
+    """Test coverage for calculate_ena_intensity"""
+    descriptor_str = "h90-ena-h-sf-nsp-full-gcs-6deg-3mo"
+    map_descriptor = MapDescriptor.from_string(descriptor_str)
+
+    result_ds = calculate_ena_intensity(
+        ena_intensity_map_ds, anc_path_dict, map_descriptor
+    )
 
     for var_name in [
         "ena_intensity",
@@ -340,6 +351,39 @@ def test_calculate_ena_intensity(empty_rectangular_map_dataset, anc_path_dict):
         assert var_name in result_ds
         # Check that calibration_prod dimension has been removed
         assert "calibration_prod" not in result_ds[var_name].dims
+
+
+@pytest.mark.parametrize(
+    "descriptor_str, flux_corrected",
+    [
+        ("h90-ena-h-sf-nsp-anti-gcs-6deg-3mo", True),
+        ("h90-enaraw-h-hf-nsp-ram-gcs-6deg-3mo", False),
+    ],
+)
+@mock.patch("imap_processing.hi.hi_l2.PowerLawFluxCorrector", autospec=True)
+def test_calculate_ena_intensity_flux_correction_logic(
+    mock_flux_corrector_class,
+    descriptor_str,
+    flux_corrected,
+    ena_intensity_map_ds,
+    anc_path_dict,
+):
+    """Test that flux correction is applied based on map descriptor."""
+    # Create a mock instance that will be returned when PowerLawFluxCorrector
+    # is instantiated
+    mock_instance = mock_flux_corrector_class.return_value
+    mock_instance.apply_flux_correction.side_effect = (
+        lambda intensity, stat_unc, energy: (intensity, stat_unc)
+    )
+
+    map_descriptor = MapDescriptor.from_string(descriptor_str)
+    _ = calculate_ena_intensity(ena_intensity_map_ds, anc_path_dict, map_descriptor)
+
+    # Now check if the method was called based on the flux_corrected expectation
+    if flux_corrected:
+        mock_instance.apply_flux_correction.assert_called_once()
+    else:
+        mock_instance.apply_flux_correction.assert_not_called()
 
 
 def test_combine_calibration_products(sample_map_dataset):
