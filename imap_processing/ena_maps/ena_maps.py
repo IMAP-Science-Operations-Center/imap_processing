@@ -1350,7 +1350,9 @@ class RectangularSkyMap(AbstractSkyMap):
             cdf_ds[name].attrs.update(var_attrs)
 
         # Manually adjust epoch attributes
-        cdf_ds["epoch"].attrs.update({"DELTA_PLUS_VAR": "epoch_delta"})
+        cdf_ds["epoch"].attrs.update(
+            {"DELTA_PLUS_VAR": "epoch_delta", "BIN_LOCATION": 0}
+        )
 
         return cdf_ds
 
