@@ -85,7 +85,7 @@ def reshape_ssd_energy_df(ssd_energy_df: pd.DataFrame) -> np.ndarray:
     num_rows = len(ssd_energy_df)
     # Number of SSDs (0-15)
     num_ssds = 16
-    # Number of gain modes (LG, MG, HG)
+    # Number of gain modes (No Gain, LG, MG, HG)
     num_gains = 4
 
     # Create an empty 3D array

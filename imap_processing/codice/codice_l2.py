@@ -61,9 +61,6 @@ def codice_hi_direct_event(l1a_data: xr.Dataset) -> xr.Dataset:
     #   Multi-Flag
     #   Spin Number
     # ---------------------------------------------------
-    l2_dataset = xr.Dataset()
-
-    # Only include variables that exist in the dataset to avoid KeyError
     l2_vars = [var for var in ["gain", "multi_flag", "spin_number"] if var in l1a_data]
     l2_dataset = l1a_data[l2_vars].copy(deep=True)
 
@@ -328,7 +325,7 @@ def process_codice_l2(file_path: Path) -> xr.Dataset:
         # equation described in section 11.2.4 of algorithm document.
         pass
 
-    # logger.info(f"\nFinal data product:\n{l2_dataset}\n")
+    logger.info(f"\nProcessing completed: {dataset_name}")
 
     return l2_dataset
 
