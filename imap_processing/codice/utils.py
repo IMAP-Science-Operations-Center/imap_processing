@@ -66,10 +66,14 @@ def reshape_ssd_energy_df(ssd_energy_df: pd.DataFrame) -> np.ndarray:
     """
     Reshape the SSD energy dataframe into a 3D array.
 
-    The resulting array will have dimensions (rows, ssd, gain), where:
-    - rows is the number of bin values in the dataframe
-    - ssd is the number of SSDs (0-15)
-    - gain is the number of gain modes (LG, MG, HG)
+    Data frame has data in this format:
+    bin_num,SSD 0 - LG ,SSD 0 - MG,SSD 0 - HG, ...,SSD 15 - LG ,SSD 15 - MG,SSD 15 - HG
+
+    Now we want to reformat the data into this resulting array will have
+    dimensions (rows, ssd, gain), where:
+        - rows is the number of bin values in the dataframe
+        - ssd is the number of SSDs (0-15)
+        - gain is the number of gain modes (LG, MG, HG)
 
     Parameters
     ----------
@@ -93,13 +97,16 @@ def reshape_ssd_energy_df(ssd_energy_df: pd.DataFrame) -> np.ndarray:
 
     # Map gain mode strings to indices
     # 0: No energy, 1: Low Gain (LG), 2: Mid Gain (MG), 3: High Gain (HG)
-    gain_mode_map = {"No energy": 0, "LG": 1, "MG": 2, "HG": 3}
+    gain_mode_map = {"LG": 1, "MG": 2, "HG": 3}
+
+    # update column names to remove white spaces to reduce reading error
+    ssd_energy_df = ssd_energy_df.copy()
+    ssd_energy_df.columns = ssd_energy_df.columns.str.strip()
 
     # Fill the 3D array
     for ssd_id in range(num_ssds):
         for gain_name, gain_idx in gain_mode_map.items():
             col_name = f"SSD {ssd_id} - {gain_name}"
-            if col_name in ssd_energy_df.columns:
-                ssd_energy_3d[:, ssd_id, gain_idx] = ssd_energy_df[col_name].values
+            ssd_energy_3d[:, ssd_id, gain_idx] = ssd_energy_df[col_name].values
 
     return ssd_energy_3d
