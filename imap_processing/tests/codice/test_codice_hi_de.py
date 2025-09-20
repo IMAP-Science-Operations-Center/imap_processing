@@ -35,22 +35,9 @@ def test_hi_de():
     val_dataset = load_cdf(val_file)
     # print(val_dataset.data_vars)
     for variable in l2_dataset.data_vars:
-        assert l2_dataset[variable].shape == val_dataset[variable].shape
         if variable in ["gain", "multi-flag", "spin_number"]:
             np.testing.assert_array_equal(
                 l2_dataset[variable].values, val_dataset[variable].values
-            )
-        elif variable == "elevation_angle":
-            # Test if both get nan in same place
-            np.testing.assert_array_equal(
-                np.isnan(l2_dataset[variable].values),
-                np.isnan(val_dataset[variable].values),
-            )
-            # Test if values are close (ignoring nan)
-            np.testing.assert_allclose(
-                l2_dataset[variable].values,
-                val_dataset[variable].values,
-                equal_nan=True,
             )
         elif variable == "spin_angle":
             # Test if both get nan in same place
@@ -65,32 +52,10 @@ def test_hi_de():
             #     val_dataset[variable].values,
             #     equal_nan=True,
             # )
-        elif variable == "tof_ns":
-            # Test if both get nan in same place
-            np.testing.assert_array_equal(
-                np.isnan(l2_dataset[variable].values),
-                np.isnan(val_dataset[variable].values),
-            )
-            # Test if values are close (ignoring nan)
-            np.testing.assert_allclose(
-                l2_dataset[variable].values,
-                val_dataset[variable].values,
-                equal_nan=True,
-            )
-        elif variable == "ssd_energy":
-            # Test if both get nan in same place
-            np.testing.assert_array_equal(
-                (np.isnan(l2_dataset[variable].values)).shape,
-                (np.isnan(val_dataset[variable].values)).shape,
-            )
-
-            non_nan_indices = np.where(
-                ~np.isnan(l2_dataset[variable].values)
-                & ~np.isnan(val_dataset[variable].values)
-            )
-
-            # Test if values are close (ignoring nan)
-            np.testing.assert_allclose(
-                l2_dataset[variable].values[non_nan_indices],
-                val_dataset[variable].values[non_nan_indices],
-            )
+            continue
+        np.testing.assert_allclose(
+            l2_dataset[variable].values,
+            val_dataset[variable].values,
+            rtol=1e-5,
+            equal_nan=True,
+        )
