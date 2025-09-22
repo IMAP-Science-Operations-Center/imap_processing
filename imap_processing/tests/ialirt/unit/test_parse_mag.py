@@ -458,12 +458,13 @@ def test_transform_to_frames(furnish_kernels, spice_test_data_path):
 
     kernels = [
         "imap_science_100.tf",
-        "imap_001.tf",
+        "imap_100.tf",
         "naif0012.tls",
         "de440s.bsp",
         "imap_spk_demo.bsp",
         "pck00011.tpc",
     ]
+    inst_frame = SpiceFrame.IMAP_MAG_O
 
     # Use a fixed spin axis pointing at +Z (RA=0, Dec=90)
     ra = np.array([0.0, 0.0, 0.0, 0.0])
@@ -477,6 +478,20 @@ def test_transform_to_frames(furnish_kernels, spice_test_data_path):
     target_time = 817561854.0  # halfway between 90° and 180° spin phase
 
     with furnish_kernels(kernels):
+        # With spin phase halfway between 90 and 180, the +X MAG_O vector should
+        # be pointing at 135. Since MAG is not mounted perfectly with the
+        # instrument +X pointing in the S/C -Y direction, we need to rotate the
+        # expected vector from the instrument frame to the S/C frame.
+        inst_to_sc_rot = spiceypy.pxform(
+            inst_frame.name, SpiceFrame.IMAP_SPACECRAFT.name, 0.0
+        )
+        inverse_spin_phase_rot = spiceypy.axisar(
+            np.array([0, 0, 1]), float(np.radians(-135.0))
+        )
+        expected_vector = (
+            inverse_spin_phase_rot @ inst_to_sc_rot @ np.array([1.0, 0.0, 0.0])
+        )
+
         inertial_vector = transform_to_inertial(
             np.radians(spin_phase),
             np.radians(ra),
@@ -484,7 +499,7 @@ def test_transform_to_frames(furnish_kernels, spice_test_data_path):
             et_to_ttj2000ns(attitude_time),
             et_to_ttj2000ns(target_time),
             mag_vector,
-            SpiceFrame.IMAP_MAG_O,
+            inst_frame,
         )
 
         gse_vector, gsm_vector, rtn_vector = transform_to_frames(
@@ -505,8 +520,6 @@ def test_transform_to_frames(furnish_kernels, spice_test_data_path):
         )
         expected_rtn = spiceypy.mxv(rot_ecl_to_rtn, inertial_vector)
 
-    # With spin phase halfway between 90 and 180, vector should be pointing at 135.
-    expected_vector = np.array([-np.sqrt(2) / 2, np.sqrt(2) / 2, 0.0])
     np.testing.assert_allclose(inertial_vector, expected_vector, atol=1e-05)
     np.testing.assert_allclose(gse_vector, expected_gse, atol=1e-05)
     np.testing.assert_allclose(gsm_vector, expected_gsm, atol=1e-05)
@@ -521,7 +534,7 @@ def test_process_packet(
 
     kernels = [
         "imap_science_100.tf",
-        "imap_001.tf",
+        "imap_100.tf",
         "naif0012.tls",
         "de440s.bsp",
         "imap_spk_demo.bsp",

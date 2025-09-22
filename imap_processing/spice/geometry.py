@@ -21,7 +21,7 @@ from numpy.typing import NDArray
 class SpiceBody(IntEnum):
     """Enum containing SPICE IDs for bodies that we use."""
 
-    # A subset of IMAP Specific bodies as defined in imap_001.tf
+    # A subset of IMAP Specific bodies as defined in imap_xxx.tf
     IMAP = -43
     IMAP_SPACECRAFT = -43000
     # IMAP Pointing Frame (Despun) as defined in imap_science_xxx.tf
@@ -58,7 +58,7 @@ class SpiceFrame(IntEnum):
     IMAP_CODICE = -43400
     IMAP_HIT = -43500
     IMAP_IDEX = -43700
-    IMAP_GLOWS = -43751
+    IMAP_GLOWS = -43750
 
     # IMAP Science Frames (new additions from imap_science_xxx.tf)
     IMAP_OMD = -43900
@@ -85,6 +85,8 @@ class SpiceFrame(IntEnum):
 
 BORESIGHT_LOOKUP = {
     SpiceFrame.IMAP_LO_BASE: np.array([0, -1, 0]),
+    SpiceFrame.IMAP_LO: np.array([0, -1, 0]),
+    SpiceFrame.IMAP_LO_STAR_SENSOR: np.array([0, -1, 0]),
     SpiceFrame.IMAP_HI_45: np.array([0, 1, 0]),
     SpiceFrame.IMAP_HI_90: np.array([0, 1, 0]),
     SpiceFrame.IMAP_ULTRA_45: np.array([0, 0, 1]),
@@ -160,7 +162,7 @@ def get_instrument_mounting_az_el(instrument: SpiceFrame) -> np.ndarray:
     # frame that is used to compute the s/c to instrument mounting.
     # Most of these vectors are the same as the instrument boresight vector.
     mounting_normal_vector = {
-        SpiceFrame.IMAP_LO_BASE: np.array([0, -1, 0]),
+        SpiceFrame.IMAP_LO_BASE: np.array([0, 0, -1]),
         SpiceFrame.IMAP_HI_45: np.array([0, 1, 0]),
         SpiceFrame.IMAP_HI_90: np.array([0, 1, 0]),
         SpiceFrame.IMAP_ULTRA_45: np.array([0, 0, 1]),
@@ -207,19 +209,20 @@ def get_spacecraft_to_instrument_spin_phase_offset(instrument: SpiceFrame) -> fl
         The spin phase offset from the spacecraft to the instrument.
     """
     phase_offset_lookup = {
-        SpiceFrame.IMAP_LO_BASE: 60 / 360,  # (330 + 90) % 360 = 60
-        SpiceFrame.IMAP_HI_45: 345 / 360,  # 255 + 90 = 345
-        SpiceFrame.IMAP_HI_90: 15 / 360,  # (285 + 90) % 360 = 15
-        SpiceFrame.IMAP_ULTRA_45: 123 / 360,  # 33 + 90 = 123
-        SpiceFrame.IMAP_ULTRA_90: 300 / 360,  # 210 + 90 = 300
+        # Phase offset values based on imap_100.tf frame kernel
+        SpiceFrame.IMAP_LO: 60 / 360,  # (330 + 90) % 360 = 60
+        SpiceFrame.IMAP_HI_45: 344.8264 / 360,  # 255 + 90 = 345
+        SpiceFrame.IMAP_HI_90: 15.1649 / 360,  # (285 + 90) % 360 = 15
+        SpiceFrame.IMAP_ULTRA_45: 122.8642 / 360,  # 33 + 90 = 123
+        SpiceFrame.IMAP_ULTRA_90: 299.9511 / 360,  # 210 + 90 = 300
         SpiceFrame.IMAP_SWAPI: 258 / 360,  # 168 + 90 = 258
-        SpiceFrame.IMAP_IDEX: 180 / 360,  # 90 + 90 = 180
-        SpiceFrame.IMAP_CODICE: 226 / 360,  # 136 + 90 = 226
-        SpiceFrame.IMAP_HIT: 120 / 360,  # 30 + 90 = 120
-        SpiceFrame.IMAP_SWE: 243 / 360,  # 153 + 90 = 243
-        SpiceFrame.IMAP_GLOWS: 217 / 360,  # 127 + 90 = 217
-        SpiceFrame.IMAP_MAG_I: 90 / 360,  # 0 + 90 = 90
-        SpiceFrame.IMAP_MAG_O: 90 / 360,  # 0 + 90 = 90
+        SpiceFrame.IMAP_IDEX: 179.9229 / 360,  # 90 + 90 = 180
+        SpiceFrame.IMAP_CODICE: 225.9086 / 360,  # 136 + 90 = 226
+        SpiceFrame.IMAP_HIT: 119.6452 / 360,  # 30 + 90 = 120
+        SpiceFrame.IMAP_SWE: 243.0155 / 360,  # 153 + 90 = 243
+        SpiceFrame.IMAP_GLOWS: 217.1384 / 360,  # 127 + 90 = 217
+        SpiceFrame.IMAP_MAG_I: 89.9709 / 360,  # 0 + 90 = 90
+        SpiceFrame.IMAP_MAG_O: 89.4077 / 360,  # 0 + 90 = 90
     }
     return phase_offset_lookup[instrument]
 

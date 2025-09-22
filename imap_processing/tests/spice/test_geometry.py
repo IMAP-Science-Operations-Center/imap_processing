@@ -52,6 +52,8 @@ def test_imap_state_ecliptic(imap_ena_sim_metakernel):
     [
         # Expected spin-phase offsets based on 7516-0011_drw.pdf
         (SpiceFrame.IMAP_LO_BASE, (60, 0)),  # (330 + 90) % 360 = 60
+        # TODO: we need a Lo-pivot CK to test IMAP_LO
+        # (SpiceFrame.IMAP_LO, (60, 0)),  # (330 + 90) % 360 = 60
         (SpiceFrame.IMAP_HI_45, (345, -45)),  # 255 + 90 = 345
         (SpiceFrame.IMAP_HI_90, (15, 0)),  # (285 + 90) % 360 = 15
         (SpiceFrame.IMAP_ULTRA_45, (123, -45)),  # 33 + 90 = 123
@@ -70,16 +72,18 @@ def test_get_instrument_mounting_az_el(
     furnish_kernels, spice_test_data_path, instrument, expected_az_el
 ):
     """Test coverage for get_instrument_mounting_az_el()"""
-    with furnish_kernels([spice_test_data_path / "imap_001.tf"]):
+    with furnish_kernels([spice_test_data_path / "imap_100.tf"]):
         result = get_instrument_mounting_az_el(instrument)
-        np.testing.assert_allclose(result, expected_az_el, atol=1e-2)
+        # Testing as built angles against nominal. Allow for 0.75 degrees of
+        # mounting error.
+        np.testing.assert_allclose(result, expected_az_el, atol=0.75)
 
 
 @pytest.mark.parametrize(
     "instrument",
     [
         # Expected spin-phase offsets based on 7516-0011_drw.pdf
-        SpiceFrame.IMAP_LO_BASE,
+        SpiceFrame.IMAP_LO,
         SpiceFrame.IMAP_HI_45,
         SpiceFrame.IMAP_HI_90,
         SpiceFrame.IMAP_ULTRA_45,
@@ -99,8 +103,13 @@ def test_get_spacecraft_to_instrument_spin_phase_offset(
 ):
     """Test coverage for get_spacecraft_to_instrument_spin_phase_offset()"""
     # Test that the offset is close to SPICE derived mounting azimuth
-    with furnish_kernels([spice_test_data_path / "imap_001.tf"]):
-        expected = get_instrument_mounting_az_el(instrument)[0] / 360
+    with furnish_kernels([spice_test_data_path / "imap_100.tf"]):
+        # Lo requires an additional kernel to use the below function. So here,
+        # we use the IMAP_LO_BASE frame to verify
+        verify_inst = (
+            instrument if instrument != SpiceFrame.IMAP_LO else SpiceFrame.IMAP_LO_BASE
+        )
+        expected = get_instrument_mounting_az_el(verify_inst)[0] / 360
         result = get_spacecraft_to_instrument_spin_phase_offset(instrument)
         np.testing.assert_almost_equal(result, expected, decimal=5)
 
@@ -151,7 +160,7 @@ def test_frame_transform(et_strings, position, from_frame, to_frame, furnish_ker
     kernels = [
         "naif0012.tls",
         "imap_sclk_0000.tsc",
-        "imap_001.tf",
+        "imap_100.tf",
         "imap_science_100.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
@@ -280,7 +289,7 @@ def test_get_rotation_matrix(furnish_kernels):
     """Test coverage for get_rotation_matrix()."""
     kernels = [
         "naif0012.tls",
-        "imap_001.tf",
+        "imap_100.tf",
         "imap_sclk_0000.tsc",
         "imap_science_100.tf",
         "sim_1yr_imap_attitude.bc",
@@ -308,7 +317,7 @@ def test_get_rotation_matrix(furnish_kernels):
 def test_instrument_pointing(furnish_kernels):
     kernels = [
         "naif0012.tls",
-        "imap_001.tf",
+        "imap_100.tf",
         "imap_sclk_0000.tsc",
         "imap_science_100.tf",
         "sim_1yr_imap_attitude.bc",
@@ -332,6 +341,63 @@ def test_instrument_pointing(furnish_kernels):
             et, SpiceFrame.IMAP_HI_90, SpiceFrame.ECLIPJ2000, cartesian=True
         )
         assert ins_pointing.shape == (3, 3)
+
+
+@pytest.mark.parametrize(
+    "frame",
+    [
+        SpiceFrame.IMAP_LO_BASE,
+        SpiceFrame.IMAP_HI_45,
+        SpiceFrame.IMAP_HI_90,
+        SpiceFrame.IMAP_ULTRA_45,
+        SpiceFrame.IMAP_ULTRA_90,
+        SpiceFrame.IMAP_MAG_I,
+        SpiceFrame.IMAP_MAG_O,
+        SpiceFrame.IMAP_SWE,
+        SpiceFrame.IMAP_SWAPI,
+        SpiceFrame.IMAP_CODICE,
+        SpiceFrame.IMAP_HIT,
+        SpiceFrame.IMAP_IDEX,
+        SpiceFrame.IMAP_GLOWS,
+    ],
+)
+def test_instrument_pointing_all_instruments(frame, furnish_kernels):
+    """Test the ability to compute instrument pointing for all but Lo."""
+    kernels = [
+        "naif0012.tls",
+        "imap_100.tf",
+        "imap_sclk_0000.tsc",
+        "imap_science_100.tf",
+        "sim_1yr_imap_attitude.bc",
+        "sim_1yr_imap_pointing_frame.bc",
+    ]
+    with furnish_kernels(kernels):
+        et = spiceypy.utc2et("2025-06-12T12:00:00.000")
+        # This only tests functionality, not values
+        _ = instrument_pointing(et, frame, SpiceFrame.ECLIPJ2000)
+
+
+@pytest.mark.parametrize(
+    "frame",
+    [
+        SpiceFrame.IMAP_LO,
+        SpiceFrame.IMAP_LO_STAR_SENSOR,
+    ],
+)
+@pytest.mark.xfail(reason="LO and LO_STAR_SENSOR require Lo pivot CK")
+def test_instrument_pointing_lo_ck(frame, furnish_kernels):
+    """Test calculating Lo pointing."""
+    kernels = [
+        "naif0012.tls",
+        "imap_100.tf",
+        "imap_sclk_0000.tsc",
+        "imap_science_100.tf",
+        "sim_1yr_imap_attitude.bc",
+        "sim_1yr_imap_pointing_frame.bc",
+    ]
+    with furnish_kernels(kernels):
+        et = spiceypy.utc2et("2025-06-12T12:00:00.000")
+        _ = instrument_pointing(et, frame, SpiceFrame.ECLIPJ2000)
 
 
 @pytest.mark.external_kernel
