@@ -192,11 +192,16 @@ def get_spacecraft_to_instrument_spin_phase_offset(instrument: SpiceFrame) -> fl
     """
     Get the spin phase offset from the spacecraft to the instrument.
 
-    For now, the offset is a fixed lookup based on `Table 1: Nominal Instrument
+    Nominal offset values were determined using `Table 1: Nominal Instrument
     to S/C CS Transformations` in document `7516-0011_drw.pdf`. That Table
-    defines the angle from the spacecraft y-axis. We add 90 and take the modulous
-    with 360 in order to get the angle from the spacecraft x-axis. These fixed
-    values will need to be updated based on calibration data.
+    defines the angle from the spacecraft y-axis. We add 90-degrees and take the
+    modulus with 360 to get the angle from the spacecraft x-axis. This math is
+    shown in the comments after each key value pair in the dictionary defined
+    in code. The true values differ slightly from the nominal values. True
+    values are derived from the frame definitions in the IMAP frames kernel
+    which uses ground calibration measurements to define the as-built mounting
+    of each instrument. The function in this module, `get_instrument_mounting_az_el`,
+    was used to retrieve the true azimuth angles from the IMAP frames kernel.
 
     Parameters
     ----------
@@ -210,6 +215,7 @@ def get_spacecraft_to_instrument_spin_phase_offset(instrument: SpiceFrame) -> fl
     """
     phase_offset_lookup = {
         # Phase offset values based on imap_100.tf frame kernel
+        # See docstring notes for details on how these values were determined.
         SpiceFrame.IMAP_LO: 60 / 360,  # (330 + 90) % 360 = 60
         SpiceFrame.IMAP_HI_45: 344.8264 / 360,  # 255 + 90 = 345
         SpiceFrame.IMAP_HI_90: 15.1649 / 360,  # (285 + 90) % 360 = 15
