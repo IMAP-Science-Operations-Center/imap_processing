@@ -90,7 +90,7 @@ rectangular_lat_pixel:
 rate_by_charge_map:
   <<: *base_charge_map
   CATDESC: Count rate per day by impact charge, longitude, and latitude.
-  FIELDNAM: Rate (day^-1) by Charge Map
+  FIELDNAM: Rate by Charge Map
   UNITS: day^-1
   FILLVAL: *double_fillval
   DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
@@ -114,7 +114,7 @@ counts_by_mass_map:
 rate_by_mass_map:
   <<: *base_mass_map
   CATDESC: Count rate per day by mass, longitude, and latitude.
-  FIELDNAM: Rate (day^-1) by Mass Map
+  FIELDNAM: Rate by Mass Map
   UNITS: day^-1
   FILLVAL: *double_fillval
   DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array

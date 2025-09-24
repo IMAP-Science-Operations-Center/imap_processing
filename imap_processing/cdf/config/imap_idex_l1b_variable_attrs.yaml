@@ -3,6 +3,8 @@ double_fillval: &double_fillval -1.0E31
 
 data_min: &data_min 0
 data_max: &data_max 4095
+spice_data_min: -2.0e7
+spice_data_max: 2.0e7
 
 # <=== Base Attributes ===>
 string_base_attrs: &string_base
@@ -48,6 +50,8 @@ spice_base: &spice_base
   VAR_TYPE: data
   DISPLAY_TYPE: time_series
   UNITS: Degrees
+  VALIDMIN: spice_data_min
+  VALIDMAX: spice_data_max
 
 # <=== Instrument Setting Attributes ===>
 trigger_mode:
@@ -342,7 +346,6 @@ current_neg2p5v_bus:
   UNITS: A
 
 # <=== Spice Data Attributes ===>
-# TODO: Get actual validmin and vaildmax for ephemeris attrs
 ephemeris_position_x:
   <<: *spice_base
   FIELDNAM: Position X
@@ -362,7 +365,7 @@ ephemeris_position_y:
 ephemeris_position_z:
   <<: *spice_base
   FIELDNAM: Position Z
-  CATDESC: Cartesian coordinate Z positions for the IMAP spacecraft in the ECLIPJ2000 frame.
+  CATDESC: Cartesian coord Z positions for the IMAP spacecraft in the ECLIPJ2000 frame.
   LABLAXIS: Position Z
   UNITS: km
   DICT_KEY: SPASE>Support>SupportQuantity:Positional

@@ -4,8 +4,8 @@ double_fillval: &double_fillval -1.0E31
 
 # Label attributes
 mass_labels:
-  CATDESC: Labels for Mass (kg)
-  FIELDNAM: Mass (kg)
+  CATDESC: Labels for Mass
+  FIELDNAM: Mass
   VAR_TYPE: metadata
   FORMAT: A8
   DEPEND_1: mass
@@ -30,23 +30,23 @@ spin_phase_labels:
 # Index attributes
 mass:
   CATDESC: Log-spaced mass
-  FIELDNAM: Mass (kg)
+  FIELDNAM: Mass
   UNITS: kg
   FORMAT: E10.4
   VAR_TYPE: support_data
   SCALETYP: log
-  LABLAXIS: Mass (kg)
+  LABLAXIS: Mass
   VALIDMIN: 0.0
   VALIDMAX: 1.00e-14
   FILLVAL: *double_fillval
   LABL_PTR_1: mass_labels
-  DICT_KEY: SPASE>Support>SupportQuantity:Other
+  DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Mass
 
 spin_phase:
     CATDESC: The spacecraft spin phase at the time of detection
     VAR_NOTES: This is given in 4 bins [315-45, 45-135, 135-225, 225-315] degrees.
-    FIELDNAM: Spin Phase (deg)
-    LABLAXIS: Spin Phase (deg)
+    FIELDNAM: Spin Phase
+    LABLAXIS: Spin Phase
     VAR_TYPE: support_data
     SCALETYP: linear
     FILLVAL: *int_fillval
@@ -55,12 +55,12 @@ spin_phase:
     VALIDMAX: 360
     LABL_PTR_1: spin_phase_labels
     UNITS: deg
-    DICT_KEY: SPASE>SupportQuantity:SpinPhase,Qualifier:Array
+    DICT_KEY: SPASE>Support>SupportQuantity:SpinPhase,Qualifier:Array
 
 impact_charge:
     CATDESC: Log-spaced impact charge
-    FIELDNAM: Impact Charge (fC)
-    LABLAXIS: Impact Charge (fC)
+    FIELDNAM: Impact Charge
+    LABLAXIS: Impact Charge
     VAR_TYPE: support_data
     SCALETYP: log
     FILLVAL: *int_fillval
@@ -106,18 +106,18 @@ base_mass: &base_mass
 rate_by_charge:
     <<: *base_charge
     CATDESC: Count rate per day by impact charge and spin phase.
-    FIELDNAM: Rate (day^-1) by Charge
+    FIELDNAM: Rate by Charge
     UNITS: day^-1
     FILLVAL: *double_fillval
-    DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
+    DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:CountRate,Qualifier:Array
 
 rate_by_mass:
     <<: *base_mass
     CATDESC: Count rate per day by mass and spin phase.
-    FIELDNAM: Rate (day^-1) by Mass
+    FIELDNAM: Rate by Mass
     UNITS: day^-1
     FILLVAL: *double_fillval
-    DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
+    DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:CountRate,Qualifier:Array
 
 counts_by_charge:
     <<: *base_charge
@@ -147,7 +147,7 @@ impact_day_of_year:
     VALIDMAX: 366
     VAR_TYPE: data
     UNITS: days
-    DICT_KEY: SPASE>SupportQuantity:Temporal,Qualifier:Array
+    DICT_KEY: SPASE>Support>SupportQuantity:Temporal
 
 rate_calculation_quality_flags:
   CATDESC: Quality flag for rate calculation (1 = good, 0 = insufficient IDEX uptime data)
@@ -161,4 +161,4 @@ rate_calculation_quality_flags:
   VALIDMAX: 1
   VAR_TYPE: data
   UNITS: " "
-  DICT_KEY: SPASE>SupportQuantity:QualityFlag,Qualifier:Array
+  DICT_KEY: SPASE>Support>SupportQuantity:QualityFlag
