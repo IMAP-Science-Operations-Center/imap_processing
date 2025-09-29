@@ -258,33 +258,41 @@ def packet_file_to_datasets(
 
     with open(packet_file, "rb") as binary_data:
         packet_generator = packet_definition.packet_generator(binary_data)
-        for packet in packet_generator:
-            apid = packet["PKT_APID"]
-            if apid not in data_dict:
-                # This is the first packet for this APID
-                data_dict[apid] = collections.defaultdict(list)
-                datatype_mapping[apid] = dict()
-                variable_mapping[apid] = packet.keys()
-            if variable_mapping[apid] != packet.keys():
-                raise ValueError(
-                    f"Packet fields do not match for APID {apid}. This could be "
-                    f"due to a conditional packet definition in the XTCE, while this "
-                    f"function currently only supports flat packet definitions."
-                    f"\nExpected: {variable_mapping[apid]},\n"
-                    f"got: {packet.keys()}"
-                )
-
-            # TODO: Do we want to give an option to remove the header content?
-            packet_content = packet.user_data | packet.header
-
-            for key, value in packet_content.items():
-                val = value if use_derived_value else value.raw_value
-                data_dict[apid][key].append(val)
-                if key not in datatype_mapping[apid]:
-                    # Add this datatype to the mapping
-                    datatype_mapping[apid][key] = _get_minimum_numpy_datatype(
-                        key, packet_definition, use_derived_value=use_derived_value
+        try:
+            for _i, packet in enumerate(packet_generator):
+                apid = packet["PKT_APID"]
+                if apid not in data_dict:
+                    # This is the first packet for this APID
+                    data_dict[apid] = collections.defaultdict(list)
+                    datatype_mapping[apid] = dict()
+                    variable_mapping[apid] = packet.keys()
+                if variable_mapping[apid] != packet.keys():
+                    raise ValueError(
+                        f"Packet fields do not match for APID {apid}. "
+                        f"This could be due to a conditional packet "
+                        f"definition in the XTCE, while this "
+                        f"function currently only supports flat "
+                        f"packet definitions."
+                        f"\nExpected: {variable_mapping[apid]},\n"
+                        f"got: {packet.keys()}"
                     )
+
+                # TODO: Do we want to give an option to remove the header content?
+                packet_content = packet.user_data | packet.header
+
+                for key, value in packet_content.items():
+                    val = value if use_derived_value else value.raw_value
+                    data_dict[apid][key].append(val)
+                    if key not in datatype_mapping[apid]:
+                        # Add this datatype to the mapping
+                        datatype_mapping[apid][key] = _get_minimum_numpy_datatype(
+                            key, packet_definition, use_derived_value=use_derived_value
+                        )
+        except Exception as e:
+            if isinstance(e, ValueError) and "Packet fields do not match" in str(e):
+                raise
+            logger.warning(f"Truncated or malformed packet #{_i}. Skipping.")
+            logger.warning(f"Details: {e}")
 
     dataset_by_apid = {}
 
