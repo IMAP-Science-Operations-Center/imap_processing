@@ -351,6 +351,8 @@ class CoDICEL1aPipeline:
             # Extract the counter data
             if self._is_lo_species_dataset():
                 counter_data = all_data[:, counter, :, :]
+            elif "sectored" in self.config["dataset_name"]:
+                counter_data = all_data[:, counter, :, :, :]
             else:
                 counter_data = all_data[..., counter]
 
@@ -375,6 +377,7 @@ class CoDICEL1aPipeline:
                     for item in dims
                 ]
 
+            print(dims, counter_data.shape, variable_name)
             # Create the CDF data variable
             dataset[variable_name] = xr.DataArray(
                 counter_data,
@@ -734,6 +737,12 @@ class CoDICEL1aPipeline:
         if self._is_lo_species_dataset():
             print("angular or species")
             # For Lo species datasets, counters are the first dimension
+            reshape_dims = (
+                self.config["num_counters"],
+                *self.config["dims"].values(),
+            )
+        elif "sectored" in self.config["dataset_name"]:
+            # For sectored datasets, counters are the second dimension
             reshape_dims = (
                 self.config["num_counters"],
                 *self.config["dims"].values(),

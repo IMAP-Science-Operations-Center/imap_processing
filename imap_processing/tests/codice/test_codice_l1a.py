@@ -599,8 +599,8 @@ def test_hi_sectored():
             print(f"Variable '{variable}' not found in processed data.")
         except AssertionError:
             print(f"Mismatched variable '{variable}' data")
-            # print("Processed data:", processed_data[variable].values[0, :])
-            # print("Validation data:", val_data[variable].values[0, :])
+            # print("Processed data:", processed_data[variable].values[0])
+            # print("Validation data:", val_data[variable].values[0])
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-sectored_20250814_v999.cdf"
