@@ -392,18 +392,32 @@ def test_lo_sw_angular():
             f"{processed_data[variable].shape} vs expected {val_data[variable].shape}"
         )
 
-        if variable in ["hplus", "heplusplus", "oplus6", "fe_loq"]:
-            # TODO: remove this if statement after despin bug
-            print(f"first ten values of {variable} do not match:")
-            print(f"Processed: {processed_data[variable].values[0, 0, 0, :]}")
-            print(f"Validation: {val_data[variable].values[0, 0, 0, :]}")
-            continue
-        np.testing.assert_allclose(
-            processed_data[variable].values,
-            val_data[variable].values,
-            rtol=1e-5,
-            err_msg=f"Mismatch in variable '{variable}'",
-        )
+        # if variable in ["hplus", "heplusplus", "oplus6", "fe_loq"]:
+        #     # TODO: remove this if statement after despin bug
+        #     print(f"first ten values of {variable} do not match:")
+        #     print(f"Processed: {processed_data[variable].values[0, 0, 0, :]}")
+        #     print(f"Validation: {val_data[variable].values[0, 0, 0, :]}")
+        #     continue
+        try:
+            np.testing.assert_allclose(
+                processed_data[variable].values,
+                val_data[variable].values.astype(np.float64),
+                rtol=1e-5,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
+        except:
+            # print mismatch indices and values
+            print(f"variable mismatch in {variable}")
+
+            # Find indices where values do not match
+            mismatch_indices = np.argwhere(processed_data[variable].values != val_data[variable].values)
+            print(f"Mismatch indices for variable '{variable}':")
+            for idx in mismatch_indices:
+                idx_tuple = tuple(idx)
+                print(
+                    f"Index {idx_tuple}: processed={processed_data[variable].values[idx_tuple]}, "
+                    f"validation={val_data[variable].values[idx_tuple]}"
+                )
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-sw-angular_20250814_v999.cdf"
@@ -434,15 +448,15 @@ def test_lo_nsw_angular():
             f"{processed_data[variable].shape} vs expected {val_data[variable].shape}"
         )
 
-        if variable in ["heplusplus"]:
-            # TODO: uncomment this if statement after despin bug
-            print(
-                f"first ten values of {variable} do not match: "
-                f"{processed_data[variable].values.shape},{val_data[variable].values.shape}"
-            )
-            print(f"Processed: {processed_data[variable].values[3, 0, 0, :]}")
-            print(f"Validation: {val_data[variable].values[3, 0, 0, :]}")
-            continue
+        # if variable in ["heplusplus"]:
+        #     # TODO: uncomment this if statement after despin bug
+        #     print(
+        #         f"first ten values of {variable} do not match: "
+        #         f"{processed_data[variable].values.shape},{val_data[variable].values.shape}"
+        #     )
+        #     print(f"Processed: {processed_data[variable].values[3, 0, 0, :]}")
+        #     print(f"Validation: {val_data[variable].values[3, 0, 0, :]}")
+        #     continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,

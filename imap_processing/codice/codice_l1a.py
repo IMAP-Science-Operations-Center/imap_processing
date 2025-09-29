@@ -130,21 +130,32 @@ class CoDICEL1aPipeline:
             for energy_index in range(num_energies):
                 pixel_orientation = constants.PIXEL_ORIENTATIONS[energy_index]
                 for spin_sector_index in range(num_spin_sectors):
-                    for azimuth_index in range(num_spins):
-                        if pixel_orientation == "A" and azimuth_index < 12:
+                    for azimuth_index in range(num_positions):
+                        if "-sw-" in self.config["dataset_name"]:
+                            # do something
+                            position_index = constants.SW_INDEX_TO_POSITION[azimuth_index]
+                        elif "-nsw-" in self.config["dataset_name"]:
+                            position_index = constants.NSW_INDEX_TO_POSITION[azimuth_index]
+
+                        if pixel_orientation == "A" and position_index < 12:
                             despun_spin_sector = spin_sector_index
-                        elif pixel_orientation == "A" and azimuth_index >= 12:
+                        elif pixel_orientation == "A" and position_index >= 12:
                             despun_spin_sector = spin_sector_index + 12
-                        elif pixel_orientation == "B" and azimuth_index < 12:
+                        elif pixel_orientation == "B" and position_index < 12:
                             despun_spin_sector = spin_sector_index + 12
-                        elif pixel_orientation == "B" and azimuth_index >= 12:
+                        elif pixel_orientation == "B" and position_index >= 12:
                             despun_spin_sector = spin_sector_index
 
                         if "angular" in self.config["dataset_name"]:
+                            # Epoch data shape (4, 128, 5, 12)
+                            # self.data shape (9, 4, 128, 5, 12)
                             spin_data = epoch_data[
-                                :, energy_index, :, spin_sector_index
-                            ]  # (5, 4)
-                            despun_data[i][:, energy_index, :, despun_spin_sector] = (
+                                :, energy_index, azimuth_index, spin_sector_index
+                            ]
+                            # print(f"epoch data {i}", epoch_data.shape, epoch_data)
+                            # print(f"{np.array(self.data).shape}")
+                            # print("spin data", spin_data.shape, spin_data)
+                            despun_data[i][:, energy_index, azimuth_index, despun_spin_sector] = (
                                 spin_data
                             )
                         elif "priority" in self.config["dataset_name"]:
@@ -721,6 +732,7 @@ class CoDICEL1aPipeline:
         # Reshape the data based on how it is written to the data array of
         # the packet data. The number of counters is the last dimension / axis.
         if self._is_lo_species_dataset():
+            print("angular or species")
             # For Lo species datasets, counters are the first dimension
             reshape_dims = (
                 self.config["num_counters"],
@@ -732,6 +744,7 @@ class CoDICEL1aPipeline:
                 *self.config["dims"].values(),
                 self.config["num_counters"],
             )
+
         for packet_data in self.raw_data:
             reshaped_packet_data = np.array(packet_data, dtype=np.uint32).reshape(
                 reshape_dims
@@ -740,7 +753,9 @@ class CoDICEL1aPipeline:
 
         # Apply despinning if necessary
         if self.config["dataset_name"] in constants.REQUIRES_DESPINNING:
+            # print("Before despinning", np.array(self.data)[0, 0, 0, 0, :])
             self.apply_despinning()
+            # print("After despinning", np.array(self.data)[0, 0, 0, 0, :])
 
         # No longer need to keep the raw data around
         del self.raw_data
