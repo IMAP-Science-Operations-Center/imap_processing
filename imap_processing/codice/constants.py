@@ -236,8 +236,8 @@ HI_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
 REQUIRES_DESPINNING = [
     "imap_codice_l1a_lo-sw-angular",
     "imap_codice_l1a_lo-nsw-angular",
-    "imap_codice_l1a_lo-sw-priority",
-    "imap_codice_l1a_lo-nsw-priority",
+    # "imap_codice_l1a_lo-sw-priority",
+    # "imap_codice_l1a_lo-nsw-priority",
 ]
 
 # Energy tables for CoDICE-Hi data products. These values represent the edges
@@ -406,11 +406,13 @@ OMNI_ENERGY_TABLE = {
     "junk": [0.05, 0.070710678],
 }
 
+# In the future, we get csv file with these column:
+# species, min_energy, max_energy, product (descriptor of the product)
 SECTORED_ENERGY_TABLE = {
-    "h": [0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8],
-    "he3he4": [0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4],
-    "cno": [0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4],
-    "fe": [0.0125, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2],
+    "h": [0.020, 0.040, 0.080, 0.160, 0.320, 0.640, 1.280, 2.560, 5.120],
+    "he3he4": [0.020, 0.040, 0.080, 0.160, 0.320, 0.640, 1.280, 2.560, 5.120],
+    "cno": [0.020, 0.040, 0.080, 0.160, 0.320, 0.640, 1.280, 2.560, 5.120],
+    "fe": [0.020, 0.040, 0.080, 0.160, 0.320, 0.640, 1.280, 2.560, 5.120],
 }
 
 # Various configurations to support processing of individual data products
