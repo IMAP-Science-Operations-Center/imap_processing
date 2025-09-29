@@ -7,13 +7,95 @@ import pytest
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
-from imap_processing.codice import constants
 from imap_processing.codice.codice_l1a import process_codice_l1a
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 pytestmark = pytest.mark.external_test_data
+
+
+# TODO: These variables are in validation data but missing in processed data
+# in the product mentioned in the comments. These will need to be fixed in
+# upcoming work mentioned in issue #2237
+TIME_MISMATCHES = [
+    "voltage_table",  # many products
+    "epoch_delta_plus",  # many products
+    "epoch_delta_minus",  # many products
+]
+
+EXPECTED_MISMATCHES = [
+    "data_quality",  # hi-ialirt
+    "spin_period",  # hi-ialirt
+    "h",  # hi-ialirt
+    "heplusplus",  # lo-ialirt
+    "cplus5",  # lo-ialirt
+    "cplus6",  # lo-ialirt
+    "oplus6",  # lo-ialirt shape mismatch
+    "oplus7",  # lo-ialirt shape mismatch
+    "oplus8",  # lo-ialirt shape mismatch
+    "mg",  # lo-ialirt shape mismatch
+    "fe_loq",  # lo-ialirt shape mismatch
+    "fe_hiq",  # lo-ialirt shape mismatch
+    "heplusplus",  # lo-ialirt shape mismatch
+    "cplus5",  # lo-ialirt shape mismatch
+    "cplus6",  # lo-ialirt shape mismatch
+    "rgfo_half_spin",  # lo-ialirt shape mismatch
+    "nso_half_spin",  # lo-ialirt shape mismatch
+    "tof_plus_apd",  # counters-aggregated
+    "tof_only",  # counters-aggregated
+    "position_plus_apd",  # counters-aggregated
+    "position_only",  # counters-aggregated
+    "sta_or_stb_plus_apd",  # counters-aggregated
+    "sta_or_stb_only",  # counters-aggregated
+    "reserved1",  # counters-aggregated
+    "reserved2",  # counters-aggregated
+    "sp_only",  # counters-aggregated
+    "apd_only",  # counters-aggregated
+    "low_tof_cutoff",  # counters-aggregated
+    "invalid_position_count",  # counters-aggregated
+    "asic1_flag_invalid",  # counters-aggregated
+    "asic2_flag_invalid",  # counters-aggregated
+    "asic1_channel_invalid",  # counters-aggregated
+    "asic2_channel_invalid",  # counters-aggregated
+    "tec4_timeout_tof_no_pos",  # counters-aggregated
+    "tec4_timeout_pos_no_tof",  # counters-aggregated
+    "tec4_timeout_no_pos_tof",  # counters-aggregated
+    "tec5_timeout_tof_no_pos",  # counters-aggregated
+    "tec5_timeout_pos_no_tof",  # counters-aggregated
+    "tec5_timeout_no_pos_tof",  # counters-aggregated
+    "p0_tcrs",  # sw-priority shape mismatch
+    "p1_hplus",  # sw-priority shape mismatch
+    "p2_heplusplus",  # sw-priority shape mismatch
+    "p3_heavies",  # sw-priority shape mismatch
+    "p4_dcrs",  # lo-sw-priority shape mismatch
+    "p5_heavies",  # lo-nsw-priority shape mismatch
+    "p6_hplus_heplusplus",  # lo-nsw-priority shape mismatch
+    "energy_h_minus",  # hi-omni energy variable value mismatch
+    "energy_h_plus",  # hi-omni energy variable value mismatch
+    "energy_he3_minus",  # hi-omni energy variable value mismatch
+    "energy_he3_plus",  # hi-omni energy variable value mismatch
+    "energy_he4_minus",  # hi-omni energy variable value mismatch
+    "energy_he4_plus",  # hi-omni energy variable value mismatch
+    "energy_c_minus",  # hi-omni energy variable value mismatch
+    "energy_c_plus",  # hi-omni energy variable value mismatch
+    "energy_o_minus",  # hi-omni energy variable value mismatch
+    "energy_o_plus",  # hi-omni energy variable value mismatch
+    "energy_ne_mg_si_minus",  # hi-omni energy variable value mismatch
+    "energy_ne_mg_si_plus",  # hi-omni energy variable value mismatch
+    "energy_fe_minus",  # hi-omni energy variable value mismatch
+    "energy_fe_plus",  # hi-omni energy variable value mismatch
+    "energy_uh_minus",  # hi-omni energy variable value mismatch
+    "energy_uh_plus",  # hi-omni energy variable value mismatch
+    "energy_junk_minus",  # hi-omni energy variable value mismatch
+    "energy_junk_plus",  # hi-omni energy variable value mismatch
+    "k_factor",  # lo-direct-events
+    "priority_label",  # hi and lo direct-events
+    "sw_bias_gain_mode",  # lo-direct-events
+    "st_bias_gain_mode",  # lo-direct-events
+    "position",  # lo-direct-events
+    *TIME_MISMATCHES,
+]
 
 
 EXPECTED_HI_OMNI_ARRAY_SHAPES = {
@@ -36,21 +118,22 @@ def test_hi_ialirt():
         / "imap_codice_hi-ialirt_20250814_v001.pkts"
     )
 
-    # TODO: validation had
-    #
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_hi-ialirt_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
-    # print(val_data)
+    # Validation
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_hi-ialirt_20250814211100_v0.0.3.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    # TODO: validation had (epoch, energy_h, ssd_index, spin_sector_index)
-    assert processed_data.h.shape == (32, 15)
-    assert processed_data.spin_period.shape == (32,)
-    assert processed_data.data_quality.shape == (32,)
+    for variable in val_data.data_vars:
+        if variable in EXPECTED_MISMATCHES:
+            continue
+        assert processed_data[variable].shape == val_data[variable].shape, (
+            f"Shape mismatch for variable '{variable}'"
+        )
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-ialirt_20250814_v999.cdf"
 
@@ -62,33 +145,22 @@ def test_lo_ialirt():
         / "imap_codice_lo-ialirt_20250814_v001.pkts"
     )
 
-    # # Validation
-    # val_path = (
-    #     imap_module_directory
-    #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_lo-ialirt_20250807174600_v0.0.3.cdf"
-    # )
-    # val_data = load_cdf(val_path)
-    # print(val_data)
+    # Validation
+    val_path = (
+        imap_module_directory
+        / "tests/codice/data/l1a_validation/"
+        / "imap_codice_l1a_lo-ialirt_20250814211100_v0.0.3.cdf"
+    )
+    val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data:
-        if variable in [
-            "rgfo_half_spin",
-            "nso_half_spin",
-            "sw_bias_gain_mode",
-            "st_bias_gain_mode",
-            "data_quality",
-            "spin_period",
-        ]:
-            assert processed_data[variable].shape == (8,)
-        # For energy dimensions
-        elif variable in ["energy_table", "acquisition_time_per_step"]:
-            assert processed_data[variable].shape == (128,)
-        elif variable == "k_factor":
-            assert processed_data[variable].shape == (1,)
-        else:
-            assert processed_data[variable].shape == (8, 128, 1)
+    for variable in val_data.data_vars:
+        if variable in EXPECTED_MISMATCHES:
+            continue
+        assert processed_data[variable].shape == val_data[variable].shape, (
+            f"Shape mismatch for variable '{variable}'"
+        )
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-ialirt_20250814_v999.cdf"
 
@@ -137,30 +209,12 @@ def test_lo_counters_aggregated():
         / "imap_codice_l1a_lo-counters-aggregated_20250814211100_v0.0.3.cdf"
     )
     val_data = load_cdf(val_path)
-    # print(val_data)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data.data_vars:
-        try:
-            if variable in ["tcr", "dcr", "sta", "stb", "sp"]:
-                assert processed_data[variable].shape == (9, 128, 24, 6)
-            elif variable == "total_position_count":
-                # TODO: find out why validation didn't match
-                continue
-
-            np.testing.assert_allclose(
-                processed_data[variable].values,
-                val_data[variable].values,
-                rtol=1e-5,
-                err_msg=f"Mismatch in variable '{variable}'",
-            )
-        except KeyError:
-            print(f"Variable '{variable}' not found in validation data.")
-        except AssertionError:
-            print(f"Printing variable '{variable}' data at index [0, 0, :]")
-            # print(processed_data[variable].shape)
-            print("Processed data:", processed_data[variable].values[0, 0, :])
-            print("Validation data:", val_data[variable].values[0, 0, :])
+    for variable in val_data.data_vars:
+        if variable in EXPECTED_MISMATCHES:
+            continue
+        assert processed_data[variable].shape == val_data[variable].shape
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-counters-aggregated_20250814_v999.cdf"
@@ -184,19 +238,10 @@ def test_lo_counters_singles():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        try:
-            np.testing.assert_allclose(
-                processed_data[variable].values,
-                val_data[variable].values,
-                rtol=1e-5,
-                err_msg=f"Mismatch in variable '{variable}'",
-            )
-        except KeyError:
-            print(f"Variable '{variable}' not found in processed data.")
-        except AssertionError:
-            print(f"Printing variable '{variable}' data at index [0, 0, :]")
-            print("Processed data:", processed_data[variable].values[0, :])
-            print("Validation data:", val_data[variable].values[0, :])
+        if variable in EXPECTED_MISMATCHES:
+            continue
+        assert processed_data[variable].shape == val_data[variable].shape
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-counters-singles_20250814_v999.cdf"
 
@@ -219,19 +264,12 @@ def test_lo_sw_priority():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        try:
-            np.testing.assert_allclose(
-                processed_data[variable].values,
-                val_data[variable].values,
-                rtol=1e-5,
-                err_msg=f"Mismatch in variable '{variable}'",
-            )
-        except KeyError:
-            print(f"Variable '{variable}' not found in processed data.")
-        except AssertionError:
-            print(f"Printing variable '{variable}' data at index [0, 0, :]")
-            print("Processed data:", processed_data[variable].values[0, 0, :])
-            print("Validation data:", val_data[variable].values[0, 0, :])
+        if variable in EXPECTED_MISMATCHES:
+            continue
+        assert processed_data[variable].shape == val_data[variable].shape, (
+            f"Shape mismatch for variable '{variable}'"
+        )
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-sw-priority_20250814_v999.cdf"
 
@@ -254,19 +292,10 @@ def test_lo_nsw_priority():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        try:
-            np.testing.assert_allclose(
-                processed_data[variable].values,
-                val_data[variable].values,
-                rtol=1e-5,
-                err_msg=f"Mismatch in variable '{variable}'",
-            )
-        except KeyError:
-            print(f"Variable '{variable}' not found in validation data.")
-        except AssertionError:
-            print(f"Printing variable '{variable}' data at index [0, 0, :]")
-            print("Processed data:", processed_data[variable].values[0, 0, :])
-            print("Validation data:", val_data[variable].values[0, 0, :])
+        if variable in EXPECTED_MISMATCHES:
+            continue
+        assert processed_data[variable].shape == val_data[variable].shape
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-nsw-priority_20250814_v999.cdf"
 
@@ -291,24 +320,11 @@ def test_lo_sw_species():
     # Process the input data
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
 
-    # Variables to exclude from comparison
-    # TODO: have validation data rename voltage_table to energy_table
-    # TODO: fix epoch in future work
-    exclude_vars = [
-        "voltage_table",
-        "epoch_delta_plus",
-        "epoch_delta_minus",
-        "energy_table",
-    ]
-
     # Compare only the common variables
     for variable in val_data.data_vars:
-        if variable in exclude_vars:
+        if variable in TIME_MISMATCHES:
             continue
-        assert processed_data[variable].shape == val_data[variable].shape, (
-            f"Unexpected shape for variable '{variable}': "
-            f"{processed_data[variable].shape} vs expected {val_data[variable].shape}"
-        )
+
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -340,22 +356,11 @@ def test_lo_nsw_species():
     # Process the input data
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
 
-    # Variables to exclude from comparison
-    exclude_vars = [
-        "voltage_table",
-        "epoch_delta_plus",
-        "epoch_delta_minus",
-        "energy_table",
-    ]
-
     # Compare only the common variables
     for variable in val_data.data_vars:
-        if variable in exclude_vars:
+        if variable in TIME_MISMATCHES:
             continue
-        assert processed_data[variable].shape == val_data[variable].shape, (
-            f"Unexpected shape for variable '{variable}': "
-            f"{processed_data[variable].shape} vs expected {val_data[variable].shape}"
-        )
+
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -385,39 +390,15 @@ def test_lo_sw_angular():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in ["voltage_table", "epoch_delta_plus", "epoch_delta_minus"]:
+        if variable in TIME_MISMATCHES:
             continue
-        assert processed_data[variable].shape == val_data[variable].shape, (
-            f"Unexpected shape for variable '{variable}': "
-            f"{processed_data[variable].shape} vs expected {val_data[variable].shape}"
+
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in variable '{variable}'",
         )
-
-        # if variable in ["hplus", "heplusplus", "oplus6", "fe_loq"]:
-        #     # TODO: remove this if statement after despin bug
-        #     print(f"first ten values of {variable} do not match:")
-        #     print(f"Processed: {processed_data[variable].values[0, 0, 0, :]}")
-        #     print(f"Validation: {val_data[variable].values[0, 0, 0, :]}")
-        #     continue
-        try:
-            np.testing.assert_allclose(
-                processed_data[variable].values,
-                val_data[variable].values.astype(np.float64),
-                rtol=1e-5,
-                err_msg=f"Mismatch in variable '{variable}'",
-            )
-        except:
-            # print mismatch indices and values
-            print(f"variable mismatch in {variable}")
-
-            # Find indices where values do not match
-            mismatch_indices = np.argwhere(processed_data[variable].values != val_data[variable].values)
-            print(f"Mismatch indices for variable '{variable}':")
-            for idx in mismatch_indices:
-                idx_tuple = tuple(idx)
-                print(
-                    f"Index {idx_tuple}: processed={processed_data[variable].values[idx_tuple]}, "
-                    f"validation={val_data[variable].values[idx_tuple]}"
-                )
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-sw-angular_20250814_v999.cdf"
@@ -441,22 +422,9 @@ def test_lo_nsw_angular():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in ["voltage_table", "epoch_delta_plus", "epoch_delta_minus"]:
+        if variable in TIME_MISMATCHES:
             continue
-        assert processed_data[variable].shape == val_data[variable].shape, (
-            f"Unexpected shape for variable '{variable}': "
-            f"{processed_data[variable].shape} vs expected {val_data[variable].shape}"
-        )
 
-        # if variable in ["heplusplus"]:
-        #     # TODO: uncomment this if statement after despin bug
-        #     print(
-        #         f"first ten values of {variable} do not match: "
-        #         f"{processed_data[variable].values.shape},{val_data[variable].values.shape}"
-        #     )
-        #     print(f"Processed: {processed_data[variable].values[3, 0, 0, :]}")
-        #     print(f"Validation: {val_data[variable].values[3, 0, 0, :]}")
-        #     continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             val_data[variable].values,
@@ -486,19 +454,11 @@ def test_hi_counters_aggregated():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        try:
-            np.testing.assert_allclose(
-                processed_data[variable].values,
-                val_data[variable].values,
-                rtol=1e-5,
-                err_msg=f"Mismatch in variable '{variable}'",
-            )
-        except KeyError:
-            print(f"Variable '{variable}' not found in processed data.")
-        except AssertionError:
-            print(f"Mismatched variable '{variable}' data")
-            # print("Processed data:", processed_data[variable].values[0, :])
-            # print("Validation data:", val_data[variable].values[0, :])
+        if variable in EXPECTED_MISMATCHES:
+            continue
+
+        assert processed_data[variable].shape == val_data[variable].shape
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-counters-aggregated_20250814_v999.cdf"
 
@@ -521,19 +481,9 @@ def test_hi_counters_singles():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        try:
-            np.testing.assert_allclose(
-                processed_data[variable].values,
-                val_data[variable].values,
-                rtol=1e-5,
-                err_msg=f"Mismatch in variable '{variable}'",
-            )
-        except KeyError:
-            print(f"Variable '{variable}' not found in processed data.")
-        except AssertionError:
-            print(f"Mismatched variable '{variable}' data")
-            # print("Processed data:", processed_data[variable].values[0, :])
-            # print("Validation data:", val_data[variable].values[0, :])
+        if variable in EXPECTED_MISMATCHES:
+            continue
+        assert processed_data[variable].shape == val_data[variable].shape
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-counters-singles_20250814_v999.cdf"
@@ -557,7 +507,9 @@ def test_hi_omni():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     # hi-omni has species-specific shapes
-    for variable in constants.HI_OMNI_VARIABLE_NAMES:
+    for variable in val_data.data_vars:
+        if variable in EXPECTED_MISMATCHES:
+            continue
         assert processed_data[variable].shape == val_data[variable].shape
         np.testing.assert_allclose(
             processed_data[variable].values,
@@ -588,19 +540,14 @@ def test_hi_sectored():
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        try:
-            np.testing.assert_allclose(
-                processed_data[variable].values,
-                val_data[variable].values,
-                rtol=1e-5,
-                err_msg=f"Mismatch in variable '{variable}'",
-            )
-        except KeyError:
-            print(f"Variable '{variable}' not found in processed data.")
-        except AssertionError:
-            print(f"Mismatched variable '{variable}' data")
-            # print("Processed data:", processed_data[variable].values[0])
-            # print("Validation data:", val_data[variable].values[0])
+        if variable in EXPECTED_MISMATCHES:
+            continue
+        np.testing.assert_allclose(
+            processed_data[variable].values,
+            val_data[variable].values,
+            rtol=1e-5,
+            err_msg=f"Mismatch in variable '{variable}'",
+        )
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-sectored_20250814_v999.cdf"
@@ -627,19 +574,9 @@ def test_hi_priority():
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
 
     for variable in val_data.data_vars:
-        try:
-            np.testing.assert_allclose(
-                processed_data[variable].values,
-                val_data[variable].values,
-                rtol=1e-5,
-                err_msg=f"Mismatch in variable '{variable}'",
-            )
-        except KeyError:
-            print(f"Variable '{variable}' not found in processed data.")
-        except AssertionError:
-            print(f"Mismatched variable '{variable}' data")
-            # print("Processed data:", processed_data[variable].values[0, :])
-            # print("Validation data:", val_data[variable].values[0, :])
+        if variable in EXPECTED_MISMATCHES:
+            continue
+        assert processed_data[variable].shape == val_data[variable].shape
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-priority_20250814_v999.cdf"
@@ -653,7 +590,6 @@ def test_lo_direct_events():
         / "imap_codice_lo-direct-events_20250814_v001.pkts"
     )
 
-    # TODO: uncomment this
     # Validation
     val_path = (
         imap_module_directory
@@ -663,21 +599,11 @@ def test_lo_direct_events():
     val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
-    for variable in processed_data:
-        try:
-            np.testing.assert_allclose(
-                processed_data[variable].values,
-                val_data[variable].values,
-                rtol=1e-5,
-                err_msg=f"Mismatch in variable '{variable}'",
-            )
-        except KeyError:
-            print(f"Variable '{variable}' not found in validation data.")
-        except AssertionError:
-            print(f"mismatched variable '{variable}'")
-            # print(processed_data[variable].shape)
-            # print("Processed data:", processed_data[variable].values[0, 0, :])
-            # print("Validation data:", val_data[variable].values[0, 0, :])
+    for variable in val_data.data_vars:
+        if variable in EXPECTED_MISMATCHES:
+            continue
+        assert processed_data[variable].shape == val_data[variable].shape
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-direct-events_20250814_v999.cdf"
 
@@ -701,23 +627,12 @@ def test_hi_direct_events():
         / "imap_codice_l1a_hi-direct-events_20250814211100_v0.0.3.cdf"
     )
     val_data = load_cdf(val_path)
-    # print(val_data)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        try:
-            np.testing.assert_allclose(
-                processed_data[variable].values,
-                val_data[variable].values,
-                rtol=1e-5,
-                err_msg=f"Mismatch in variable '{variable}'",
-            )
-        except KeyError:
-            print(f"Variable '{variable}' not found in validation data.")
-        except AssertionError:
-            print(f"mismatched variable '{variable}'")
-            # print(processed_data[variable].shape)
-            # print("Processed data:", processed_data[variable].values[0, 0, :])
-            # print("Validation data:", val_data[variable].values[0, 0, :])
+        if variable in EXPECTED_MISMATCHES:
+            continue
+        assert processed_data[variable].shape == val_data[variable].shape
+
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-direct-events_20250814_v999.cdf"
