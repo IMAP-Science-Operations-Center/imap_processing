@@ -288,9 +288,10 @@ def packet_file_to_datasets(
                         datatype_mapping[apid][key] = _get_minimum_numpy_datatype(
                             key, packet_definition, use_derived_value=use_derived_value
                         )
-        except Exception as e:
-            if isinstance(e, ValueError) and "Packet fields do not match" in str(e):
+        except ValueError as e:
+            if "Packet fields do not match" in str(e):
                 raise
+        except Exception as e:
             logger.warning(f"Truncated or malformed packet #{_i}. Skipping.")
             logger.warning(f"Details: {e}")
 
