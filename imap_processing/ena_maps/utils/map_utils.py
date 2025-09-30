@@ -53,7 +53,7 @@ def vectorized_bincount(
            [0., 0., 2., 1.]])
     """
     # Handle 1D case directly
-    if indices.ndim == 1 and weights.ndim == 1:
+    if indices.ndim == 1 and (weights is None or weights.ndim == 1):
         return np.bincount(indices, weights=weights, minlength=minlength)
 
     # For multi-dimensional arrays, broadcast indices and weights
