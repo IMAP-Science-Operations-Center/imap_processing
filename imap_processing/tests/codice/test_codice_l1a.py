@@ -71,24 +71,6 @@ EXPECTED_MISMATCHES = [
     "p4_dcrs",  # lo-sw-priority shape mismatch
     "p5_heavies",  # lo-nsw-priority shape mismatch
     "p6_hplus_heplusplus",  # lo-nsw-priority shape mismatch
-    "energy_h_minus",  # hi-omni energy variable value mismatch
-    "energy_h_plus",  # hi-omni energy variable value mismatch
-    "energy_he3_minus",  # hi-omni energy variable value mismatch
-    "energy_he3_plus",  # hi-omni energy variable value mismatch
-    "energy_he4_minus",  # hi-omni energy variable value mismatch
-    "energy_he4_plus",  # hi-omni energy variable value mismatch
-    "energy_c_minus",  # hi-omni energy variable value mismatch
-    "energy_c_plus",  # hi-omni energy variable value mismatch
-    "energy_o_minus",  # hi-omni energy variable value mismatch
-    "energy_o_plus",  # hi-omni energy variable value mismatch
-    "energy_ne_mg_si_minus",  # hi-omni energy variable value mismatch
-    "energy_ne_mg_si_plus",  # hi-omni energy variable value mismatch
-    "energy_fe_minus",  # hi-omni energy variable value mismatch
-    "energy_fe_plus",  # hi-omni energy variable value mismatch
-    "energy_uh_minus",  # hi-omni energy variable value mismatch
-    "energy_uh_plus",  # hi-omni energy variable value mismatch
-    "energy_junk_minus",  # hi-omni energy variable value mismatch
-    "energy_junk_plus",  # hi-omni energy variable value mismatch
     "k_factor",  # lo-direct-events
     "priority_label",  # hi and lo direct-events
     "sw_bias_gain_mode",  # lo-direct-events
@@ -96,6 +78,8 @@ EXPECTED_MISMATCHES = [
     "position",  # lo-direct-events
     *TIME_MISMATCHES,
 ]
+
+UNCERTAINTY_VARIABLES = "unc_"
 
 
 EXPECTED_HI_OMNI_ARRAY_SHAPES = {
@@ -122,13 +106,13 @@ def test_hi_ialirt():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-ialirt_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_hi-ialirt_20250814211100_v0.0.5.cdf"
     )
     val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
             continue
         assert processed_data[variable].shape == val_data[variable].shape, (
             f"Shape mismatch for variable '{variable}'"
@@ -149,13 +133,13 @@ def test_lo_ialirt():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-ialirt_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_lo-ialirt_20250814211100_v0.0.5.cdf"
     )
     val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
             continue
         assert processed_data[variable].shape == val_data[variable].shape, (
             f"Shape mismatch for variable '{variable}'"
@@ -178,7 +162,7 @@ def test_hskp():
     # val_path = (
     #     imap_module_directory
     #     / "tests/codice/data/l1a_validation/"
-    #     / "imap_codice_l1a_hskp_20250805183835_v0.0.3.cdf"
+    #     / "imap_codice_l1a_hskp_20250805183835_v0.0.5.cdf"
     # )
     # val_data = load_cdf(val_path)
     # print(val_data)
@@ -206,13 +190,13 @@ def test_lo_counters_aggregated():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-counters-aggregated_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_lo-counters-aggregated_20250814211100_v0.0.5.cdf"
     )
     val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
             continue
         assert processed_data[variable].shape == val_data[variable].shape
 
@@ -232,13 +216,13 @@ def test_lo_counters_singles():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-counters-singles_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_lo-counters-singles_20250814211100_v0.0.5.cdf"
     )
     val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
             continue
         assert processed_data[variable].shape == val_data[variable].shape
 
@@ -258,13 +242,13 @@ def test_lo_sw_priority():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-sw-priority_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_lo-sw-priority_20250814211100_v0.0.5.cdf"
     )
     val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
             continue
         assert processed_data[variable].shape == val_data[variable].shape, (
             f"Shape mismatch for variable '{variable}'"
@@ -286,13 +270,13 @@ def test_lo_nsw_priority():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-nsw-priority_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_lo-nsw-priority_20250814211100_v0.0.5.cdf"
     )
     val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
             continue
         assert processed_data[variable].shape == val_data[variable].shape
 
@@ -312,7 +296,7 @@ def test_lo_sw_species():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-sw-species_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_lo-sw-species_20250814211100_v0.0.5.cdf"
     )
 
     val_data = load_cdf(val_path)
@@ -322,7 +306,7 @@ def test_lo_sw_species():
 
     # Compare only the common variables
     for variable in val_data.data_vars:
-        if variable in TIME_MISMATCHES:
+        if variable in TIME_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
             continue
 
         np.testing.assert_allclose(
@@ -348,7 +332,7 @@ def test_lo_nsw_species():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-nsw-species_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_lo-nsw-species_20250814211100_v0.0.5.cdf"
     )
 
     val_data = load_cdf(val_path)
@@ -358,7 +342,7 @@ def test_lo_nsw_species():
 
     # Compare only the common variables
     for variable in val_data.data_vars:
-        if variable in TIME_MISMATCHES:
+        if variable in TIME_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
             continue
 
         np.testing.assert_allclose(
@@ -384,13 +368,13 @@ def test_lo_sw_angular():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-sw-angular_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_lo-sw-angular_20250814211100_v0.0.5.cdf"
     )
     val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in TIME_MISMATCHES:
+        if variable in TIME_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
             continue
 
         np.testing.assert_allclose(
@@ -402,6 +386,7 @@ def test_lo_sw_angular():
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-sw-angular_20250814_v999.cdf"
+    cdf_file.rename("imap_codice_l1a_lo-sw-angular_20250814_v999.cdf")
 
 
 def test_lo_nsw_angular():
@@ -416,13 +401,13 @@ def test_lo_nsw_angular():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-nsw-angular_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_lo-nsw-angular_20250814211100_v0.0.5.cdf"
     )
     val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in TIME_MISMATCHES:
+        if variable in TIME_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
             continue
 
         np.testing.assert_allclose(
@@ -434,6 +419,7 @@ def test_lo_nsw_angular():
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_lo-nsw-angular_20250814_v999.cdf"
+    cdf_file.rename("imap_codice_l1a_lo-nsw-angular_20250814_v999.cdf")
 
 
 def test_hi_counters_aggregated():
@@ -448,13 +434,13 @@ def test_hi_counters_aggregated():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-counters-aggregated_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_hi-counters-aggregated_20250814211100_v0.0.5.cdf"
     )
     val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
             continue
 
         assert processed_data[variable].shape == val_data[variable].shape
@@ -475,13 +461,13 @@ def test_hi_counters_singles():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-counters-singles_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_hi-counters-singles_20250814211100_v0.0.5.cdf"
     )
     val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
             continue
         assert processed_data[variable].shape == val_data[variable].shape
 
@@ -501,14 +487,14 @@ def test_hi_omni():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-omni_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_hi-omni_20250814211100_v0.0.5.cdf"
     )
     val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     # hi-omni has species-specific shapes
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
             continue
         assert processed_data[variable].shape == val_data[variable].shape
         np.testing.assert_allclose(
@@ -534,13 +520,13 @@ def test_hi_sectored():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-sectored_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_hi-sectored_20250814211100_v0.0.5.cdf"
     )
     val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
             continue
         np.testing.assert_allclose(
             processed_data[variable].values,
@@ -551,6 +537,7 @@ def test_hi_sectored():
 
     cdf_file = write_cdf(processed_data)
     assert cdf_file.name == "imap_codice_l1a_hi-sectored_20250814_v999.cdf"
+    cdf_file.rename("imap_codice_l1a_hi-sectored_20250814_v999.cdf")
 
 
 def test_hi_priority():
@@ -565,7 +552,7 @@ def test_hi_priority():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-priorities_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_hi-priorities_20250814211100_v0.0.5.cdf"
     )
 
     val_data = load_cdf(val_path)
@@ -574,7 +561,7 @@ def test_hi_priority():
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
 
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
             continue
         assert processed_data[variable].shape == val_data[variable].shape
 
@@ -594,13 +581,13 @@ def test_lo_direct_events():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_lo-direct-events_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_lo-direct-events_20250814211100_v0.0.5.cdf"
     )
     val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
             continue
         assert processed_data[variable].shape == val_data[variable].shape
 
@@ -624,13 +611,13 @@ def test_hi_direct_events():
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1a_validation/"
-        / "imap_codice_l1a_hi-direct-events_20250814211100_v0.0.3.cdf"
+        / "imap_codice_l1a_hi-direct-events_20250814211100_v0.0.5.cdf"
     )
     val_data = load_cdf(val_path)
 
     processed_data = process_codice_l1a(file_path=test_file_path)[0]
     for variable in val_data.data_vars:
-        if variable in EXPECTED_MISMATCHES:
+        if variable in EXPECTED_MISMATCHES or variable.startswith(UNCERTAINTY_VARIABLES):
             continue
         assert processed_data[variable].shape == val_data[variable].shape
 

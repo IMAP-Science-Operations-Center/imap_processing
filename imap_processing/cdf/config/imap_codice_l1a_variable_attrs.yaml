@@ -1147,56 +1147,56 @@ lo-sw-angular-hplus:
     <<: *counters
     CATDESC: Sunward H+ Species
     FIELDNAM: SW - H+
-    DEPEND_1: inst_az
-    DEPEND_2: esa_step
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
     DEPEND_3: spin_sector
-    LABL_PTR_1: inst_az_label
-    LABL_PTR_2: esa_step_label
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: inst_az_label
     LABL_PTR_3: spin_sector_label
 
 lo-sw-angular-heplusplus:
     <<: *counters
     CATDESC: Sunward He++ Species
     FIELDNAM: SW - He++
-    DEPEND_1: inst_az
-    DEPEND_2: spin_sector
-    DEPEND_3: esa_step
-    LABL_PTR_1: inst_az_label
-    LABL_PTR_2: spin_sector_label
-    LABL_PTR_3: esa_step_label
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
+    DEPEND_3: spin_sector
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: inst_az_label
+    LABL_PTR_3: spin_sector_label
 
 lo-sw-angular-oplus6:
     <<: *counters
     CATDESC: Sunward O+6 Species
     FIELDNAM: SW - O+6
-    DEPEND_1: inst_az
-    DEPEND_2: spin_sector
-    DEPEND_3: esa_step
-    LABL_PTR_1: inst_az_label
-    LABL_PTR_2: spin_sector_label
-    LABL_PTR_3: esa_step_label
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
+    DEPEND_3: spin_sector
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: inst_az_label
+    LABL_PTR_3: spin_sector_label
 
 lo-sw-angular-fe_loq:
     <<: *counters
     CATDESC: Sunward Fe lowQ Species
     FIELDNAM: SW - Fe lowQ
-    DEPEND_1: inst_az
-    DEPEND_2: spin_sector
-    DEPEND_3: esa_step
-    LABL_PTR_1: inst_az_label
-    LABL_PTR_2: spin_sector_label
-    LABL_PTR_3: esa_step_label
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
+    DEPEND_3: spin_sector
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: inst_az_label
+    LABL_PTR_3: spin_sector_label
 
 lo-nsw-angular-heplusplus:
     <<: *counters
     CATDESC: Non-sunward He++ Species
     FIELDNAM: NSW - He++
-    DEPEND_1: inst_az
-    DEPEND_2: spin_sector
-    DEPEND_3: esa_step
-    LABL_PTR_1: inst_az_label
-    LABL_PTR_2: spin_sector_label
-    LABL_PTR_3: esa_step_label
+    DEPEND_1: esa_step
+    DEPEND_2: inst_az
+    DEPEND_3: spin_sector
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: inst_az_label
+    LABL_PTR_3: spin_sector_label
 
 # lo-sw-priority
 lo-sw-priority-p0_tcrs:
@@ -1413,8 +1413,8 @@ lo-nsw-species-hplus:
     FIELDNAM: NSW - H+
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 lo-nsw-species-heplusplus:
     <<: *counters
@@ -1422,8 +1422,8 @@ lo-nsw-species-heplusplus:
     FIELDNAM: NSW - He++
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 lo-nsw-species-c:
     <<: *counters
@@ -1431,8 +1431,8 @@ lo-nsw-species-c:
     FIELDNAM: NSW - C
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 lo-nsw-species-o:
     <<: *counters
@@ -1440,8 +1440,8 @@ lo-nsw-species-o:
     FIELDNAM: NSW - O
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 lo-nsw-species-ne_si_mg:
     <<: *counters
@@ -1449,8 +1449,8 @@ lo-nsw-species-ne_si_mg:
     FIELDNAM: NSW - Ne_Si_Mg
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 lo-nsw-species-fe:
     <<: *counters
@@ -1458,8 +1458,8 @@ lo-nsw-species-fe:
     FIELDNAM: NSW - Fe
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 lo-nsw-species-heplus:
     <<: *counters
@@ -1467,8 +1467,8 @@ lo-nsw-species-heplus:
     FIELDNAM: NSW - He+
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 lo-nsw-species-cnoplus:
     <<: *counters
@@ -1476,8 +1476,8 @@ lo-nsw-species-cnoplus:
     FIELDNAM: NSW - CNO+
     DEPEND_1: esa_step
     DEPEND_2: spin_sector
-    LABL_PTR_1: spin_sector_label
-    LABL_PTR_2: esa_step_label
+    LABL_PTR_1: esa_step_label
+    LABL_PTR_2: spin_sector_label
 
 # lo-ialirt
 lo-ialirt-heplusplus:
