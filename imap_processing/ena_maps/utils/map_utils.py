@@ -59,38 +59,35 @@ def vectorized_bincount(
     # For multi-dimensional arrays, broadcast indices and weights
     if weights is not None:
         indices_bc, weights_bc = np.broadcast_arrays(indices, weights)
+        weights_flat = weights_bc.ravel()
     else:
         indices_bc = indices
-        weights_bc = None
+        weights_flat = None
 
     # Get the shape for reshaping output
-    output_shape = indices_bc.shape[:-1]
-    n_samples = np.prod(output_shape)
+    non_spatial_shape = indices_bc.shape[:-1]
+    n_binsets = np.prod(non_spatial_shape)
 
     # Determine actual minlength if not specified
     if minlength == 0:
         minlength = int(np.max(indices_bc)) + 1
 
-    # Add offsets to indices to separate each sample's bins
-    # Each sample gets its own set of bins: sample 0 uses bins [0, minlength),
-    # sample 1 uses bins [minlength, 2*minlength), etc.
-    offsets = np.arange(n_samples).reshape(*output_shape, 1) * minlength
-    indices_offset = (indices_bc + offsets).ravel()
+    # We want to flatten the multi-dimensional bincount problem into a 1D problem.
+    # This can be done by offsetting the indices for each element of each additional
+    # dimension by an integer multiple of the number of bins. Doing so gives
+    # each element in the additional dimensions its own set of 1D bins: index 0
+    # uses bins [0, minlength), index 1 uses bins [minlength, 2*minlength), etc.
+    offsets = np.arange(n_binsets).reshape(*non_spatial_shape, 1) * minlength
+    indices_flat = (indices_bc + offsets).ravel()
 
-    # Flatten weights if provided
-    if weights_bc is not None:
-        weights_flat = weights_bc.ravel()
-    else:
-        weights_flat = None
-
-    # Single bincount call with offset indices
+    # Single bincount call with flattened data
     binned_flat = np.bincount(
-        indices_offset, weights=weights_flat, minlength=n_samples * minlength
+        indices_flat, weights=weights_flat, minlength=n_binsets * minlength
     )
 
     # Reshape to separate each sample's bins
-    binned_values = binned_flat.reshape(n_samples, -1)[:, :minlength].reshape(
-        *output_shape, minlength
+    binned_values = binned_flat.reshape(n_binsets, -1)[:, :minlength].reshape(
+        *non_spatial_shape, minlength
     )
 
     return binned_values

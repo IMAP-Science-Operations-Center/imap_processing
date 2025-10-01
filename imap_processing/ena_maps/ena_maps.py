@@ -117,7 +117,7 @@ def match_coords_to_indices(
     flat_indices_input_grid_output_frame : NDArray
         Array of pixel indices mapping each input object pixel center to a pixel
         in the output object. If the input object has multi-dimensional coordinates
-        defines, the output indices with also be multi-dimensional. The shape of
+        defined, the output indices will also be multi-dimensional. The shape of
         the output array is (..., n) where ... matches the non-spatial dimensions
         of the input object and n is the number of spatial pixels in the input
         object. Output indices may contain 0, 1, or multiple occurrences of the
