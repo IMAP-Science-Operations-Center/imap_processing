@@ -89,7 +89,7 @@ class CoDICEL1aPipeline:
         self.plan_step = plan_step
         self.view_id = view_id
 
-    def apply_despinning(self) -> None:
+    def apply_despinning(self) -> None:  # noqa: PLR0912 (too many branches)
         """
         Apply the despinning algorithm to lo- angular and priority products.
 
@@ -213,7 +213,7 @@ class CoDICEL1aPipeline:
                 decompressed_values = decompress(values, compression_algorithm)
                 self.raw_data.append(decompressed_values)
 
-    def define_coordinates(self) -> None:
+    def define_coordinates(self) -> None:  # noqa: PLR0912 (too many branches)
         """
         Create ``xr.DataArrays`` for the coords needed in the final dataset.
 
@@ -337,7 +337,7 @@ class CoDICEL1aPipeline:
         # each counter's data can be placed in a separate CDF data variable.
         # For Lo SW species, all_data has shape (9, 16, 128, 1) -> (epochs,
         # num_counters, num_energy_steps, num_spin_sectors)
-        if self._is_lo_species_dataset():
+        if self._is_different_dimension():
             # For Lo species datasets, counters are the second dimension (index 1)
             num_counters = all_data.shape[1]
         else:
@@ -348,7 +348,7 @@ class CoDICEL1aPipeline:
             range(num_counters), self.config["variable_names"], strict=False
         ):
             # Extract the counter data
-            if self._is_lo_species_dataset():
+            if self._is_different_dimension():
                 counter_data = all_data[:, counter, :, :]
             elif "sectored" in self.config["dataset_name"]:
                 counter_data = all_data[:, counter, :, :, :]
@@ -732,7 +732,7 @@ class CoDICEL1aPipeline:
 
         # Reshape the data based on how it is written to the data array of
         # the packet data. The number of counters is the last dimension / axis.
-        if self._is_lo_species_dataset():
+        if self._is_different_dimension():
             # For Lo species datasets, counters are the first dimension
             reshape_dims = (
                 self.config["num_counters"],
@@ -764,7 +764,7 @@ class CoDICEL1aPipeline:
         # No longer need to keep the raw data around
         del self.raw_data
 
-    def _is_lo_species_dataset(self) -> bool:
+    def _is_different_dimension(self) -> bool:
         """
         Check if the current dataset is a Lo species dataset.
 

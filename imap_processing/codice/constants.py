@@ -236,6 +236,7 @@ HI_COUNTERS_AGGREGATED_VARIABLE_NAMES = [
 REQUIRES_DESPINNING = [
     "imap_codice_l1a_lo-sw-angular",
     "imap_codice_l1a_lo-nsw-angular",
+    # TBD if this requires despinning
     # "imap_codice_l1a_lo-sw-priority",
     # "imap_codice_l1a_lo-nsw-priority",
 ]
@@ -2196,7 +2197,27 @@ ACQUISITION_TIMES = {
 
 # These are for product that requires despinning in l1b.
 SW_INDEX_TO_POSITION = [1, 2, 3, 23, 24]
-NSW_INDEX_TO_POSITION = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
+NSW_INDEX_TO_POSITION = [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+]
 
 # TODO: Update EFFICIENCY value when better information is available.
 # Constant for CoDICE Intensity calculations.
